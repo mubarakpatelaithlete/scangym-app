@@ -48,6 +48,14 @@ app.get('/api/v2/health', (req, res) => {
   });
 });
 
+// -- Config endpoint (public keys for frontend) --
+app.get("/api/config", (req, res) => {
+  res.json({
+    mapsKey: process.env.GOOGLE_MAPS_API_KEY || "",
+    stripeKey: process.env.STRIPE_PUBLISHABLE_KEY || "",
+    brand: "ScanGym",
+  });
+});
 // -- Feature Routes (Tasks 1-24 with CEO corrections) --
 app.use('/api/reviews', reviewsRouter);
 app.use('/api/chat', chatRouter);

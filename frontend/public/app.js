@@ -1,7 +1,19 @@
 // ScanGym Frontend v3.0 - All 24 Tasks
 const API='/api/v2';
-const MAPS_KEY='AIzaSyC5H7xigvY1Te90OSKyPTyiKUg2tRbBfFQ';
-const STRIPE_PK='pk_live_51Ss8P0DPbSptA7HKWLnsjajAHtjQUeK5ubq3SjUv8lpyCcXXXZ7vkAD5mv6UFpiRlCidArsgoTUVdFE7f5DaVT7g00XlmkxRVy';
+let MAPS_KEY='';
+let STRIPE_PK='';
+
+// Load public config from server (keys injected via env vars, not hardcoded)
+async function loadConfig() {
+  try {
+    const r = await fetch('/api/config');
+    const c = await r.json();
+    MAPS_KEY = c.mapsKey || '';
+    STRIPE_PK = c.stripeKey || '';
+  } catch(e) { console.warn('Config load failed:', e); }
+}
+loadConfig();
+
 
 // ─── State ───
 let state={user:null,gyms:[],currentGym:null,searchLat:null,searchLng:null,route:'/',bookings:[],wallet:{balance:0}};
