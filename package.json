@@ -1,0 +1,13 @@
+{
+  "name": "scangym-app",
+  "version": "3.0.0",
+  "description": "ScanGym - Book a Gym. Anywhere. Full-stack gym finder & booking marketplace.",
+  "private": true,
+  "scripts": {
+    "start": "cd server && node server.js",
+    "dev": "cd server && node server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
