@@ -158,7 +158,7 @@ router.get('/:gymId', optionalAuth, async (req, res) => {
     const gym = gymResult.rows[0];
 
     // Fetch EVERYTHING from Google Places API
-    const placeDetails = await fetchGooglePlaceDetails(gym.google_place_id);
+    const placeDetails = await fetchGooglePlaceDetails(gym.place_id);
 
     // ScanGym-specific reviews (from our DB)
     let scangymReviews = { total: 0, avgRating: 0, latest: [] };
@@ -225,7 +225,7 @@ router.get('/:gymId', optionalAuth, async (req, res) => {
         },
         phone: placeDetails?.nationalPhoneNumber || placeDetails?.formatted_phone_number || gym.phone,
         website: placeDetails?.websiteUri || placeDetails?.website || gym.website,
-        googlePlaceId: gym.google_place_id,
+        googlePlaceId: gym.place_id,
         googleMapsUrl: placeDetails?.url || null,
       },
 
@@ -272,9 +272,9 @@ router.get('/:gymId', optionalAuth, async (req, res) => {
           lat: placeDetails?.location?.latitude || placeDetails?.geometry?.location?.lat || gym.latitude,
           lng: placeDetails?.location?.longitude || placeDetails?.geometry?.location?.lng || gym.longitude,
         },
-        placeId: gym.google_place_id,
-        embedUrl: gym.google_place_id
-          ? `https://www.google.com/maps/embed/v1/place?key=${GOOGLE_MAPS_API_KEY}&q=place_id:${gym.google_place_id}`
+        placeId: gym.place_id,
+        embedUrl: gym.place_id
+          ? `https://www.google.com/maps/embed/v1/place?key=${GOOGLE_MAPS_API_KEY}&q=place_id:${gym.place_id}`
           : null,
       },
     };
@@ -292,10 +292,10 @@ router.get('/:gymId/photos', async (req, res) => {
     const gymId = parseInt(req.params.gymId);
     if (isNaN(gymId)) return res.status(400).json({ error: 'Invalid gym ID' });
 
-    const gym = await pool.query('SELECT google_place_id, name FROM gyms WHERE id = $1', [gymId]);
+    const gym = await pool.query('SELECT place_id, name FROM gyms WHERE id = $1', [gymId]);
     if (gym.rows.length === 0) return res.status(404).json({ error: 'Gym not found' });
 
-    const placeId = gym.rows[0].google_place_id;
+    const placeId = gym.rows[0].place_id;
     let photos = [];
     if (placeId && GOOGLE_MAPS_API_KEY) {
       const placeDetails = await fetchGooglePlaceDetails(placeId);
@@ -321,10 +321,10 @@ router.get('/:gymId/hours', async (req, res) => {
     const gymId = parseInt(req.params.gymId);
     if (isNaN(gymId)) return res.status(400).json({ error: 'Invalid gym ID' });
 
-    const gym = await pool.query('SELECT google_place_id, name FROM gyms WHERE id = $1', [gymId]);
+    const gym = await pool.query('SELECT place_id, name FROM gyms WHERE id = $1', [gymId]);
     if (gym.rows.length === 0) return res.status(404).json({ error: 'Gym not found' });
 
-    const placeId = gym.rows[0].google_place_id;
+    const placeId = gym.rows[0].place_id;
     let openingHours = null;
     let currentHours = null;
     if (placeId && GOOGLE_MAPS_API_KEY) {
