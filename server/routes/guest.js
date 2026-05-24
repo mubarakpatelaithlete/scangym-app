@@ -112,7 +112,7 @@ router.get('/gym/:id', async (req, res) => {
       ...g,
       // Task 23: Google Maps direction link
       directionsUrl: g.latitude && g.longitude
-        ? `https://www.google.com/maps/dir/?api=1&destination=${g.latitude},${g.longitude}&destination_place_id=${g.google_place_id || ''}`
+        ? `https://www.google.com/maps/dir/?api=1&destination=${g.latitude},${g.longitude}&destination_place_id=${g.place_id || ''}`
         : g.address ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(g.address)}` : null,
       reviewSummary: {
         total: parseInt(reviewStats.rows[0].total),
