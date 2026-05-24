@@ -88,7 +88,7 @@ router.get('/gym/:gymId', optionalAuth, async (req, res) => {
         embedUrl,
         apiKey: GOOGLE_MAPS_API_KEY,
         destination: destLat && destLng ? { lat: parseFloat(destLat), lng: parseFloat(destLng) } : null,
-        placeId: g.google_place_id || null,
+        placeId: g.place_id || null,
         zoom: 16,
       },
 
@@ -130,7 +130,7 @@ router.get('/booking/:bookingId', authenticateUser, async (req, res) => {
 
     const booking = await pool.query(
       `SELECT b.*, g.name as gym_name, g.address, g.city, g.latitude, g.longitude,
-              g.operating_hours, g.phone, g.google_place_id, g.day_pass_price
+              g.operating_hours, g.phone, g.place_id, g.day_pass_price
        FROM bookings b LEFT JOIN gyms g ON b.gym_id = g.id
        WHERE b.id = $1 AND b.user_id = $2`,
       [bookingId, userId]
@@ -259,7 +259,7 @@ router.get('/booking/:bookingId', authenticateUser, async (req, res) => {
           embedUrl,
           apiKey: GOOGLE_MAPS_API_KEY,
           destination: destLat && destLng ? { lat: parseFloat(destLat), lng: parseFloat(destLng) } : null,
-          placeId: b.google_place_id || null,
+          placeId: b.place_id || null,
         },
         route: routeData,
         renderNote: 'Render map INSIDE ScanGym app. User NEVER leaves the platform.',
