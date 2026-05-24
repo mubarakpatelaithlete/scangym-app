@@ -290,20 +290,27 @@ router.get('/:gymId', optionalAuth, async (req, res) => {
 router.get('/:gymId/photos', async (req, res) => {
   try {
     const gymId = parseInt(req.params.gymId);
+    if (isNaN(gymId)) return res.status(400).json({ error: 'Invalid gym ID' });
+
     const gym = await pool.query('SELECT google_place_id, name FROM gyms WHERE id = $1', [gymId]);
     if (gym.rows.length === 0) return res.status(404).json({ error: 'Gym not found' });
 
-    const placeDetails = await fetchGooglePlaceDetails(gym.rows[0].google_place_id);
-    const photos = buildPhotoUrls(placeDetails?.photos, 20);
+    const placeId = gym.rows[0].google_place_id;
+    let photos = [];
+    if (placeId && GOOGLE_MAPS_API_KEY) {
+      const placeDetails = await fetchGooglePlaceDetails(placeId);
+      photos = buildPhotoUrls(placeDetails?.photos, 20);
+    }
 
     res.json({
       gymId,
       gymName: gym.rows[0].name,
       photos,
-      source: 'google_places',
+      source: placeId ? 'google_places' : 'none',
       total: photos.length,
     });
   } catch (err) {
+    console.error('Gym photos error:', err);
     res.status(500).json({ error: 'Failed to fetch photos' });
   }
 });
@@ -312,19 +319,29 @@ router.get('/:gymId/photos', async (req, res) => {
 router.get('/:gymId/hours', async (req, res) => {
   try {
     const gymId = parseInt(req.params.gymId);
+    if (isNaN(gymId)) return res.status(400).json({ error: 'Invalid gym ID' });
+
     const gym = await pool.query('SELECT google_place_id, name FROM gyms WHERE id = $1', [gymId]);
     if (gym.rows.length === 0) return res.status(404).json({ error: 'Gym not found' });
 
-    const placeDetails = await fetchGooglePlaceDetails(gym.rows[0].google_place_id);
+    const placeId = gym.rows[0].google_place_id;
+    let openingHours = null;
+    let currentHours = null;
+    if (placeId && GOOGLE_MAPS_API_KEY) {
+      const placeDetails = await fetchGooglePlaceDetails(placeId);
+      openingHours = parseOpeningHours(placeDetails?.regularOpeningHours || placeDetails?.opening_hours);
+      currentHours = parseOpeningHours(placeDetails?.currentOpeningHours);
+    }
 
     res.json({
       gymId,
       gymName: gym.rows[0].name,
-      openingHours: parseOpeningHours(placeDetails?.regularOpeningHours || placeDetails?.opening_hours),
-      currentHours: parseOpeningHours(placeDetails?.currentOpeningHours),
-      source: 'google_places',
+      openingHours,
+      currentHours,
+      source: placeId ? 'google_places' : 'none',
     });
   } catch (err) {
+    console.error('Gym hours error:', err);
     res.status(500).json({ error: 'Failed to fetch hours' });
   }
 });

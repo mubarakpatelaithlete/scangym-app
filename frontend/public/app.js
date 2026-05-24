@@ -149,8 +149,17 @@ function Footer(){
           <a onclick="navigate('/terms')" class="block text-slate-400 hover:text-brand cursor-pointer">Terms of Service</a>
         </div>
         <div class="flex gap-3 mt-4 flex-wrap">
-          ${['Instagram','Twitter/X','TikTok','YouTube','Facebook','Pinterest','Threads','Tumblr'].map(s=>
-            `<a href="#" class="text-slate-500 hover:text-brand text-xs">${s}</a>`
+          ${[
+            {name:'Instagram',url:'https://instagram.com/scangym'},
+            {name:'Twitter/X',url:'https://x.com/scangym'},
+            {name:'TikTok',url:'https://tiktok.com/@scangym'},
+            {name:'YouTube',url:'https://youtube.com/@scangym'},
+            {name:'Facebook',url:'https://facebook.com/scangym'},
+            {name:'Pinterest',url:'https://pinterest.com/scangym'},
+            {name:'Threads',url:'https://threads.net/@scangym'},
+            {name:'Tumblr',url:'https://scangym.tumblr.com'}
+          ].map(s=>
+            `<a href="${s.url}" target="_blank" rel="noopener" class="text-slate-500 hover:text-brand text-xs">${s.name}</a>`
           ).join('')}
         </div>
       </div>
@@ -350,11 +359,11 @@ function SearchPage(){
         </div>
       </div>
       ${gyms.length?`
-        <!-- Embedded Map (Task 23) -->
-        <div class="mb-6 rounded-2xl overflow-hidden border border-slate-700 h-64">
+        <!-- Embedded Map (Task 23) - only show if Maps key is configured -->
+        ${MAPS_KEY?`<div class="mb-6 rounded-2xl overflow-hidden border border-slate-700 h-64">
           <iframe width="100%" height="100%" frameborder="0" style="border:0"
             src="https://www.google.com/maps/embed/v1/search?key=${MAPS_KEY}&q=gyms+near+bolton+uk&zoom=13" allowfullscreen></iframe>
-        </div>
+        </div>`:''}
         <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 pb-20">
           ${gyms.map(g=>GymCard(g)).join('')}
         </div>
@@ -418,10 +427,10 @@ function GymProfilePage(){
           <!-- Map (Task 23 - Uber style, embedded, no external links) -->
           <div class="bg-card rounded-xl overflow-hidden border border-slate-700">
             <h3 class="text-white font-semibold p-5 pb-2">📍 Location & Directions</h3>
-            <div class="h-64">
+            ${MAPS_KEY?`<div class="h-64">
               <iframe width="100%" height="100%" frameborder="0" style="border:0"
                 src="https://www.google.com/maps/embed/v1/place?key=${MAPS_KEY}&q=${encodeURIComponent(gym.name+' '+( gym.vicinity||'Bolton'))}&zoom=15" allowfullscreen></iframe>
-            </div>
+            </div>`:`<div class="h-48 flex items-center justify-center bg-slate-800"><p class="text-slate-400 text-sm">📍 ${gym.formatted_address||gym.vicinity||gym.address||'Bolton, UK'}</p></div>`}
             <div class="p-4 flex items-center gap-3 border-t border-slate-700">
               <span class="text-2xl">🚶</span>
               <div>
@@ -808,6 +817,11 @@ function render(){
   else if(path==='/privacy')page=InfoPage('Privacy Policy','<p>Last updated: May 2026</p><p>ScanGym ("we", "us") respects your privacy. We collect only what\'s needed to process bookings: name, email, phone number, payment details, and location data.</p><p>We use Stripe for payments (PCI compliant), Twilio for OTP verification, and Google Maps for gym locations.</p><p>We never sell your data. Contact: privacy@scangym.com</p>');
   else if(path==='/terms')page=InfoPage('Terms of Service','<p>Last updated: May 2026</p><p>By using ScanGym, you agree to these terms. ScanGym is a marketplace connecting gym-goers with gym owners. We are not a gym operator.</p><p>Bookings are 24-hour day passes. Free cancellation up to 2 hours before session start.</p><p>Contact: legal@scangym.com</p>');
   else if(path==='/cookies')page=InfoPage('Cookie Policy','<p>We use essential cookies for authentication and preferences. Analytics cookies help us understand usage patterns. You can disable non-essential cookies in your browser settings.</p>');
+  else if(path==='/bookings')page=InfoPage('My Bookings','<p class="text-xl text-white font-bold">Your Gym Sessions</p><p>View your upcoming and past bookings, download QR codes, and manage cancellations.</p><p><a onclick="navigate(\'/login\')" class="text-brand cursor-pointer">Log in to see your bookings →</a></p>');
+  else if(path==='/featured')page=InfoPage('Featured Listings','<p class="text-xl text-white font-bold">Featured Gyms on ScanGym</p><p>Get your gym seen by thousands. Featured listings appear at the top of search results with a highlighted badge.</p><p>✅ Priority placement in search</p><p>✅ Featured badge on your profile</p><p>✅ 3x more profile views on average</p><p><a onclick="navigate(\'/contact\')" class="text-brand cursor-pointer">Contact us about featured listings →</a></p>');
+  else if(path==='/careers')page=InfoPage('Careers at ScanGym','<p class="text-xl text-white font-bold">Join the Team</p><p>We\'re building the future of gym access in the UK. Currently a lean team based in Manchester.</p><p>Interested in working with us? Send your CV to:</p><p>📧 <strong>careers@scangym.com</strong></p>');
+  else if(path==='/help')page=InfoPage('Help Center','<p class="text-xl text-white font-bold">How Can We Help?</p><p><strong>How do I book a gym?</strong><br>Search for a gym → Pick your date/time → Pay → Get your QR code.</p><p><strong>How do I cancel?</strong><br>Free cancellation up to 2 hours before your session from your bookings page.</p><p><strong>I can\'t scan my QR code</strong><br>Make sure your screen brightness is at max. If it still doesn\'t work, show the booking confirmation to staff.</p><p><strong>How do I get a refund?</strong><br>Cancelled bookings are refunded to your ScanGym Wallet instantly, or to your card within 5-10 days.</p><p>📧 Still stuck? Email <strong>support@scangym.com</strong></p>');
+  else if(path==='/scan')page=InfoPage('QR Scan Entry','<p class="text-xl text-white font-bold">📱 How QR Entry Works</p><p>1. Book a gym session on ScanGym</p><p>2. Get your unique QR code instantly</p><p>3. Scan at the gym entrance to check in</p><p>4. Scan again when you leave to check out</p><p>Your 24-hour day pass is valid from the moment you scan in. No staff interaction needed — it\'s completely contactless.</p><p><a onclick="navigate(\'/explore\')" class="text-brand cursor-pointer">Find a gym to try it →</a></p>');
   else page=InfoPage('Page Not Found','<p>Sorry, this page doesn\'t exist yet.</p><p><a onclick="navigate(\'/\')" class="text-brand cursor-pointer">← Back to home</a></p>');
 
   document.getElementById('app').innerHTML=NavBar()+`<main class="fade-in">${page}</main>`+Footer();
@@ -817,7 +831,12 @@ function render(){
 state.route=location.pathname;
 render();
 
-// Auto-load gyms if on explore page
+// Auto-load data based on initial route
 if(state.route==='/explore'||state.route==='/nearby'){
   getLocation().then(loc=>{state.searchLat=loc.lat;state.searchLng=loc.lng;loadGyms(loc.lat,loc.lng)});
+}
+// Load gym profile when visiting /gym/:id directly
+if(state.route.startsWith('/gym/')){
+  const gymId=state.route.split('/gym/')[1];
+  if(gymId)openGym(gymId);
 }
