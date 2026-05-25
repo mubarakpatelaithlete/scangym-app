@@ -1,159 +1,167 @@
 /**
  * Booking Routes — Create and manage gym bookings
- * Flow: Select gym + date/time → Create booking → Pay → Get QR
+ * 
+ * Uses existing public.bookings table:
+ *   - id: SERIAL
+ *   - gym_id: INTEGER
+ *   - user_id: VARCHAR (UUID string from users.id)
+ *   - booking_date: TIMESTAMP
+ *   - start_time, end_time: TEXT
+ *   - total_amount: NUMERIC
+ *   - booking_code: VARCHAR (human-readable like 5WCB-8VDY)
+ *   - qr_code: VARCHAR (machine code like BOOK_xxx)
+ *   - qr_code_url: TEXT (data URL with QR image)
+ *   - status: TEXT (pending, confirmed, confirmed_unpaid, etc.)
+ *   - stripe_checkout_session_id, stripe_payment_intent_id: TEXT
+ *   - booking_type: TEXT (default 'instant')
+ *   - user_email, user_name: VARCHAR
  */
 const express = require('express');
 const router = express.Router();
 const pool = require('../middleware/db');
-const { authenticateUser } = require('../middleware/auth');
+const crypto = require('crypto');
 
-// Auto-create bookings table
-(async () => {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS bookings (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER NOT NULL,
-        gym_id INTEGER NOT NULL,
-        gym_name VARCHAR(255),
-        booking_date DATE NOT NULL,
-        booking_time VARCHAR(10) NOT NULL,
-        price DECIMAL(10,2) NOT NULL DEFAULT 5.00,
-        status VARCHAR(30) DEFAULT 'pending_payment',
-        stripe_session_id VARCHAR(255),
-        stripe_payment_intent VARCHAR(255),
-        created_at TIMESTAMP DEFAULT NOW(),
-        paid_at TIMESTAMP,
-        cancelled_at TIMESTAMP
-      )
-    `);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_bookings_user ON bookings(user_id)`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_bookings_gym ON bookings(gym_id)`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status)`);
-    console.log('Bookings table ready');
-  } catch (err) {
-    console.error('Bookings table error:', err.message);
+// Generate human-readable booking code (e.g., 5WCB-8VDY)
+function generateBookingCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 8; i++) {
+    code += chars[Math.floor(Math.random() * chars.length)];
+    if (i === 3) code += '-';
   }
-})();
+  return code;
+}
+
+// Generate machine booking code
+function generateQRCode() {
+  return 'BOOK_' + crypto.randomBytes(8).toString('hex').toUpperCase();
+}
 
 /**
  * POST /api/bookings/create
- * Create a new booking (auth required)
+ * Create a new booking (requires auth)
  */
-router.post('/create', authenticateUser, async (req, res) => {
+router.post('/create', async (req, res) => {
   try {
-    const userId = req.user.id;
-    const { gymId, date, time } = req.body;
+    if (!req.session || !req.session.userId) {
+      return res.status(401).json({ error: 'Not authenticated', message: 'Please log in first' });
+    }
 
+    const { gymId, date, time } = req.body;
     if (!gymId || !date || !time) {
       return res.status(400).json({ error: 'gymId, date, and time are required' });
     }
 
-    // Get gym details
-    const gym = await pool.query('SELECT id, name, day_pass_price FROM gyms WHERE id = $1', [parseInt(gymId)]);
+    // Get gym info
+    const gym = await pool.query('SELECT id, name, address FROM gyms WHERE id = $1', [gymId]);
     if (gym.rows.length === 0) {
       return res.status(404).json({ error: 'Gym not found' });
     }
 
     const g = gym.rows[0];
 
-    // Determine price — off-peak before 10am is £3.75, otherwise £5.00
-    const hour = parseInt(time.split(':')[0]);
-    const price = hour < 10 ? 3.75 : (parseFloat(g.day_pass_price) || 5.00);
+    // Calculate end time (1 hour session)
+    const [hours, mins] = time.split(':').map(Number);
+    const endHour = (hours + 1) % 24;
+    const endTime = `${String(endHour).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
 
-    // Check for duplicate booking
-    const existing = await pool.query(
-      `SELECT id FROM bookings WHERE user_id = $1 AND gym_id = $2 AND booking_date = $3 AND booking_time = $4 AND status != 'cancelled'`,
-      [userId, parseInt(gymId), date, time]
+    // Pricing: before 10am = £3.75 (off-peak), otherwise £5.00
+    const price = hours < 10 ? 3.75 : 5.00;
+
+    const bookingCode = generateBookingCode();
+    const qrCode = generateQRCode();
+
+    // Create booking in existing table
+    const result = await pool.query(
+      `INSERT INTO public.bookings 
+        (gym_id, user_id, booking_date, start_time, end_time, total_amount, 
+         platform_fee_amount, booking_type, booking_code, qr_code, status, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'instant', $8, $9, 'pending', NOW(), NOW())
+       RETURNING *`,
+      [gymId, req.session.userId, date, time, endTime, price, price * 0.10, bookingCode, qrCode]
     );
-    if (existing.rows.length > 0) {
-      return res.status(409).json({ error: 'You already have a booking for this gym at this time' });
-    }
-
-    // Create booking
-    const result = await pool.query(`
-      INSERT INTO bookings (user_id, gym_id, gym_name, booking_date, booking_time, price, status)
-      VALUES ($1, $2, $3, $4, $5, $6, 'pending_payment')
-      RETURNING *
-    `, [userId, parseInt(gymId), g.name, date, time, price]);
 
     const booking = result.rows[0];
 
-    res.status(201).json({
+    res.json({
+      success: true,
       booking: {
         id: booking.id,
         gymId: booking.gym_id,
-        gymName: booking.gym_name,
+        gymName: g.name,
         date: booking.booking_date,
-        time: booking.booking_time,
-        price: parseFloat(booking.price),
+        time: booking.start_time,
+        endTime: booking.end_time,
+        price: parseFloat(booking.total_amount),
+        bookingCode: booking.booking_code,
         status: booking.status,
       },
-      message: 'Booking created — proceed to payment',
     });
   } catch (err) {
     console.error('Create booking error:', err);
-    res.status(500).json({ error: 'Failed to create booking' });
+    res.status(500).json({ error: 'Failed to create booking', detail: err.message });
   }
 });
 
 /**
  * GET /api/bookings
- * List user's bookings (auth required)
+ * List user's bookings
  */
-router.get('/', authenticateUser, async (req, res) => {
+router.get('/', async (req, res) => {
   try {
-    const userId = req.user.id;
+    if (!req.session || !req.session.userId) {
+      return res.status(401).json({ error: 'Not authenticated', message: 'Please log in first' });
+    }
+
     const result = await pool.query(
-      `SELECT b.*, q.qr_token, q.scan_count, q.status as qr_status, q.expires_at as qr_expires
-       FROM bookings b
-       LEFT JOIN booking_qr_codes q ON b.id = q.booking_id
-       WHERE b.user_id = $1
-       ORDER BY b.created_at DESC
-       LIMIT 20`,
-      [userId]
+      `SELECT b.*, g.name as gym_name 
+       FROM public.bookings b 
+       LEFT JOIN public.gyms g ON b.gym_id = g.id
+       WHERE b.user_id = $1 
+       ORDER BY b.created_at DESC`,
+      [req.session.userId]
     );
 
-    res.json({
-      bookings: result.rows.map(b => ({
-        id: b.id,
-        gymId: b.gym_id,
-        gymName: b.gym_name,
-        date: b.booking_date,
-        time: b.booking_time,
-        price: parseFloat(b.price),
-        status: b.status,
-        createdAt: b.created_at,
-        paidAt: b.paid_at,
-        qr: b.qr_token ? {
-          token: b.qr_token,
-          scanCount: b.scan_count,
-          status: b.qr_status,
-          expiresAt: b.qr_expires,
-        } : null,
-      })),
-    });
+    const bookings = result.rows.map(b => ({
+      id: b.id,
+      gymName: b.gym_name || 'Gym',
+      date: b.booking_date,
+      time: b.start_time,
+      endTime: b.end_time,
+      price: parseFloat(b.total_amount || 0),
+      bookingCode: b.booking_code,
+      status: b.status,
+      qr: b.qr_code_url ? {
+        token: b.qr_code,
+        dataUrl: b.qr_code_url,
+        scanCount: b.checked_in_at ? 1 : 0,
+        status: b.checked_in_at ? 'used' : 'active',
+      } : null,
+    }));
+
+    res.json({ success: true, bookings });
   } catch (err) {
     console.error('List bookings error:', err);
-    res.status(500).json({ error: 'Failed to fetch bookings' });
+    res.status(500).json({ error: 'Failed to list bookings' });
   }
 });
 
 /**
  * GET /api/bookings/:id
- * Get single booking detail (auth required)
+ * Get single booking
  */
-router.get('/:id', authenticateUser, async (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
-    const userId = req.user.id;
-    const bookingId = parseInt(req.params.id);
+    if (!req.session || !req.session.userId) {
+      return res.status(401).json({ error: 'Not authenticated', message: 'Please log in first' });
+    }
 
     const result = await pool.query(
-      `SELECT b.*, q.qr_token, q.scan_count, q.max_scans, q.status as qr_status, q.expires_at as qr_expires
-       FROM bookings b
-       LEFT JOIN booking_qr_codes q ON b.id = q.booking_id
+      `SELECT b.*, g.name as gym_name 
+       FROM public.bookings b 
+       LEFT JOIN public.gyms g ON b.gym_id = g.id
        WHERE b.id = $1 AND b.user_id = $2`,
-      [bookingId, userId]
+      [req.params.id, req.session.userId]
     );
 
     if (result.rows.length === 0) {
@@ -162,29 +170,22 @@ router.get('/:id', authenticateUser, async (req, res) => {
 
     const b = result.rows[0];
     res.json({
-      booking: {
-        id: b.id,
-        gymId: b.gym_id,
-        gymName: b.gym_name,
-        date: b.booking_date,
-        time: b.booking_time,
-        price: parseFloat(b.price),
-        status: b.status,
-        createdAt: b.created_at,
-        paidAt: b.paid_at,
-        qr: b.qr_token ? {
-          token: b.qr_token,
-          scanCount: b.scan_count,
-          maxScans: b.max_scans,
-          scansRemaining: b.max_scans - b.scan_count,
-          status: b.qr_status,
-          expiresAt: b.qr_expires,
-        } : null,
-      },
+      id: b.id,
+      gymName: b.gym_name || 'Gym',
+      date: b.booking_date,
+      time: b.start_time,
+      endTime: b.end_time,
+      price: parseFloat(b.total_amount || 0),
+      bookingCode: b.booking_code,
+      status: b.status,
+      qr: b.qr_code_url ? {
+        token: b.qr_code,
+        dataUrl: b.qr_code_url,
+      } : null,
     });
   } catch (err) {
     console.error('Get booking error:', err);
-    res.status(500).json({ error: 'Failed to fetch booking' });
+    res.status(500).json({ error: 'Failed to get booking' });
   }
 });
 
