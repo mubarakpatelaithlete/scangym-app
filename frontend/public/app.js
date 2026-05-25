@@ -1,4 +1,4 @@
-// ScanGym Frontend v3.0 - All 24 Tasks
+// ScanGym Frontend v3.1 - Full Booking Pipeline
 const API='/api/v2';
 let MAPS_KEY='';
 let STRIPE_PK='';
@@ -14,15 +14,32 @@ async function loadConfig() {
 }
 loadConfig();
 
+// Check if user is already logged in
+async function checkAuth() {
+  try {
+    const r = await fetch('/api/auth/user', { credentials: 'include' });
+    if (r.ok) {
+      const user = await r.json();
+      if (user && user.id) { state.user = user; }
+    }
+  } catch(e) {}
+}
+checkAuth();
+
 
 // ─── State ───
-let state={user:null,gyms:[],currentGym:null,searchLat:null,searchLng:null,route:'/',bookings:[],wallet:{balance:0}};
+let state={user:null,gyms:[],currentGym:null,searchLat:null,searchLng:null,route:'/',bookings:[],wallet:{balance:0},authPhone:'',authStep:'phone',lastBooking:null,lastQR:null};
 
 // ─── API Client ───
 const api={
-  async get(url){const r=await fetch(API+url);return r.json()},
-  async post(url,body){const r=await fetch(API+url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});return r.json()},
+  async get(url){const r=await fetch(API+url,{credentials:'include'});return r.json()},
+  async post(url,body){const r=await fetch(API+url,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(body)});return r.json()},
   async getGuest(url){const r=await fetch('/api/guest'+url);return r.json()},
+  async authPost(url,body){const r=await fetch('/api/auth'+url,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(body)});return r.json()},
+  async bookPost(url,body){const r=await fetch('/api/bookings'+url,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(body)});return r.json()},
+  async bookGet(url){const r=await fetch('/api/bookings'+(url||''),{credentials:'include'});return r.json()},
+  async payPost(url,body){const r=await fetch('/api/payment'+url,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(body)});return r.json()},
+  async payGet(url){const r=await fetch('/api/payment'+url,{credentials:'include'});return r.json()},
 };
 
 // ─── Router ───
@@ -91,7 +108,7 @@ function NavBar(){
         <a onclick="navigate('/for-gyms')" class="text-slate-300 hover:text-brand cursor-pointer">For Gyms</a>
       </div>
       <div class="flex items-center gap-3">
-        <a onclick="navigate('/login')" class="px-4 py-2 text-sm text-slate-300 hover:text-white cursor-pointer">Log In</a>
+        <a onclick="navigate('/login')" class="px-4 py-2 text-sm text-slate-300 hover:text-white cursor-pointer">${state.user ? '👤 '+( state.user.name||state.user.phone) : 'Log In'}</a>
         <a onclick="navigate('/explore')" class="px-4 py-2 text-sm bg-brand text-white rounded-xl hover:bg-orange-600 cursor-pointer font-medium">Find a Gym</a>
       </div>
     </div>
@@ -497,10 +514,10 @@ function GymProfilePage(){
               </div>
             </div>
 
-            <button class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-4 rounded-xl text-lg transition shadow-lg shadow-brand/20">
+            <button onclick="handleBookNow('${gym.id||gym.place_id}')" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-4 rounded-xl text-lg transition shadow-lg shadow-brand/20">
               Book Now — £${gym.price_tier||'5'}.00
             </button>
-            <button class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 py-3 rounded-xl text-sm transition">
+            <button onclick="handleBookNow('${gym.id||gym.place_id}')" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 py-3 rounded-xl text-sm transition">
               Continue as Guest 👤
             </button>
 
@@ -743,27 +760,290 @@ function InfoPage(title,content){
 
 // ─── Page: Login ───
 function LoginPage(){
+  if(state.user){
+    return`
+    <div class="pt-20 min-h-screen px-4 flex items-center justify-center">
+      <div class="max-w-md w-full text-center">
+        <div class="w-16 h-16 bg-accent rounded-2xl flex items-center justify-center mx-auto mb-4"><span class="text-white font-bold text-2xl">✓</span></div>
+        <h1 class="font-brand text-2xl font-bold text-white mb-2">Welcome back!</h1>
+        <p class="text-slate-400 mb-6">Logged in as ${state.user.phone}</p>
+        <div class="space-y-3">
+          <button onclick="navigate('/explore')" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-4 rounded-xl transition">Find a Gym</button>
+          <button onclick="navigate('/my-bookings')" class="w-full bg-slate-800 hover:bg-slate-700 text-white py-3 rounded-xl transition">My Bookings</button>
+          <button onclick="handleLogout()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-400 py-3 rounded-xl transition text-sm">Log Out</button>
+        </div>
+      </div>
+    </div>`;
+  }
+  const isCodeStep = state.authStep === 'code';
   return`
   <div class="pt-20 min-h-screen px-4 flex items-center justify-center">
     <div class="max-w-md w-full">
       <div class="text-center mb-8">
         <div class="w-16 h-16 bg-brand rounded-2xl flex items-center justify-center mx-auto mb-4"><span class="text-white font-bold text-2xl">S</span></div>
         <h1 class="font-brand text-2xl font-bold text-white">Welcome to ScanGym</h1>
-        <p class="text-slate-400 text-sm mt-1">Enter your phone number to get started</p>
+        <p class="text-slate-400 text-sm mt-1">${isCodeStep ? 'Enter the code we sent to '+state.authPhone : 'Enter your phone number to get started'}</p>
       </div>
       <div class="bg-card rounded-2xl border border-slate-700 p-6 space-y-4">
+        <div id="auth-error" class="hidden bg-red-900/50 border border-red-500 text-red-300 text-sm rounded-lg p-3"></div>
+        ${isCodeStep ? `
+        <div>
+          <label class="text-slate-400 text-xs mb-1 block">Verification Code</label>
+          <input id="auth-code" type="text" maxlength="6" placeholder="Enter 6-digit code" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-3 text-white text-sm placeholder-slate-500 outline-none focus:border-brand text-center tracking-widest text-lg">
+        </div>
+        <button id="auth-btn" onclick="handleVerifyCode()" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-4 rounded-xl transition">Verify & Log In</button>
+        <div class="text-center">
+          <a onclick="state.authStep='phone';render()" class="text-slate-400 text-sm hover:text-brand cursor-pointer">← Change phone number</a>
+        </div>
+        ` : `
         <div>
           <label class="text-slate-400 text-xs mb-1 block">Phone Number</label>
           <div class="flex gap-2">
             <span class="bg-slate-800 border border-slate-600 rounded-lg px-3 py-3 text-white text-sm">+44</span>
-            <input type="tel" placeholder="7XXX XXXXXX" class="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-3 py-3 text-white text-sm placeholder-slate-500 outline-none focus:border-brand">
+            <input id="auth-phone" type="tel" placeholder="7XXX XXXXXX" class="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-3 py-3 text-white text-sm placeholder-slate-500 outline-none focus:border-brand">
           </div>
         </div>
-        <button class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-4 rounded-xl transition">Send Verification Code</button>
+        <button id="auth-btn" onclick="handleSendCode()" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-4 rounded-xl transition">Send Verification Code</button>
+        `}
         <div class="text-center">
           <a onclick="navigate('/explore')" class="text-slate-400 text-sm hover:text-brand cursor-pointer">Continue as Guest →</a>
         </div>
       </div>
+    </div>
+  </div>`;
+}
+
+// ─── Auth Handlers ───
+window.handleSendCode=async function(){
+  const phoneInput=document.getElementById('auth-phone');
+  const btn=document.getElementById('auth-btn');
+  const errDiv=document.getElementById('auth-error');
+  if(!phoneInput)return;
+  const phone=phoneInput.value.replace(/\s/g,'');
+  if(!phone||phone.length<10){
+    errDiv.textContent='Please enter a valid phone number';errDiv.classList.remove('hidden');return;
+  }
+  btn.textContent='Sending...';btn.disabled=true;
+  errDiv.classList.add('hidden');
+  try{
+    const fullPhone=phone.startsWith('+') ? phone : '+44'+phone.replace(/^0/,'');
+    const r=await api.authPost('/send-code',{phone:fullPhone});
+    if(r.success){
+      state.authPhone=r.phone||fullPhone;
+      state.authStep='code';
+      render();
+    }else{
+      errDiv.textContent=r.error||'Failed to send code';errDiv.classList.remove('hidden');
+      btn.textContent='Send Verification Code';btn.disabled=false;
+    }
+  }catch(e){
+    errDiv.textContent='Network error — try again';errDiv.classList.remove('hidden');
+    btn.textContent='Send Verification Code';btn.disabled=false;
+  }
+};
+
+window.handleVerifyCode=async function(){
+  const codeInput=document.getElementById('auth-code');
+  const btn=document.getElementById('auth-btn');
+  const errDiv=document.getElementById('auth-error');
+  if(!codeInput)return;
+  const code=codeInput.value.trim();
+  if(!code||code.length<4){
+    errDiv.textContent='Please enter the verification code';errDiv.classList.remove('hidden');return;
+  }
+  btn.textContent='Verifying...';btn.disabled=true;
+  errDiv.classList.add('hidden');
+  try{
+    const r=await api.authPost('/verify',{phone:state.authPhone,code});
+    if(r.success&&r.user){
+      state.user=r.user;
+      state.authStep='phone';
+      // If we were trying to book, go back to gym
+      if(state.pendingBookGym){
+        navigate('/gym/'+state.pendingBookGym);
+        state.pendingBookGym=null;
+      }else{
+        navigate('/');
+      }
+    }else{
+      errDiv.textContent=r.error||'Invalid code';errDiv.classList.remove('hidden');
+      btn.textContent='Verify & Log In';btn.disabled=false;
+    }
+  }catch(e){
+    errDiv.textContent='Network error — try again';errDiv.classList.remove('hidden');
+    btn.textContent='Verify & Log In';btn.disabled=false;
+  }
+};
+
+window.handleLogout=async function(){
+  await api.authPost('/logout',{});
+  state.user=null;
+  navigate('/');
+};
+
+// ─── Booking Handler ───
+window.handleBookNow=async function(gymId){
+  if(!state.user){
+    state.pendingBookGym=gymId;
+    navigate('/login');
+    return;
+  }
+  const dateInput=document.querySelector('input[type="date"]');
+  const timeSelect=document.querySelector('select');
+  const date=dateInput?dateInput.value:'';
+  const time=timeSelect?timeSelect.value:'';
+  if(!date||!time){alert('Please select a date and time');return;}
+
+  // Show loading
+  const btns=document.querySelectorAll('button');
+  btns.forEach(b=>{if(b.textContent.includes('Book Now')){b.textContent='Creating booking...';b.disabled=true;}});
+
+  try{
+    // Step 1: Create booking
+    const booking=await api.bookPost('/create',{gymId:parseInt(gymId),date,time});
+    if(booking.error){alert(booking.error);location.reload();return;}
+
+    // Step 2: Create Stripe checkout
+    const payment=await api.payPost('/checkout',{bookingId:booking.booking.id});
+    if(payment.error){alert(payment.error||'Payment error');location.reload();return;}
+
+    // Step 3: Redirect to Stripe
+    if(payment.checkoutUrl){
+      window.location.href=payment.checkoutUrl;
+    }
+  }catch(e){
+    console.error('Booking error:',e);
+    alert('Something went wrong. Please try again.');
+    location.reload();
+  }
+};
+
+// ─── Page: Booking Success ───
+function BookingSuccessPage(){
+  const params=new URLSearchParams(window.location.search);
+  const sessionId=params.get('session_id');
+  const bookingId=params.get('booking_id');
+
+  if(!sessionId||!bookingId){
+    return`<div class="pt-20 min-h-screen px-4 text-center"><p class="text-red-400 mt-20">Invalid booking confirmation link.</p></div>`;
+  }
+
+  // Verify payment and get QR (async — will update DOM)
+  if(!state.lastQR){
+    setTimeout(async()=>{
+      try{
+        const r=await api.payGet('/verify?session_id='+sessionId+'&booking_id='+bookingId);
+        if(r.success){
+          state.lastBooking=r.booking;
+          state.lastQR=r.qr;
+          render();
+        }else{
+          document.getElementById('booking-result').innerHTML=`<p class="text-red-400">${r.error||'Payment verification failed'}</p>`;
+        }
+      }catch(e){
+        document.getElementById('booking-result').innerHTML=`<p class="text-red-400">Failed to verify payment. Please contact support.</p>`;
+      }
+    },500);
+
+    return`
+    <div class="pt-20 min-h-screen px-4 flex items-center justify-center">
+      <div id="booking-result" class="text-center">
+        <div class="text-6xl mb-4 animate-pulse">⏳</div>
+        <p class="text-white text-xl font-bold">Verifying your payment...</p>
+        <p class="text-slate-400 mt-2">Please wait a moment</p>
+      </div>
+    </div>`;
+  }
+
+  const b=state.lastBooking;
+  const qr=state.lastQR;
+  return`
+  <div class="pt-20 min-h-screen px-4 flex items-center justify-center">
+    <div class="max-w-md w-full">
+      <div class="text-center mb-6">
+        <div class="text-6xl mb-4">🎉</div>
+        <h1 class="font-brand text-3xl font-bold text-white">Booking Confirmed!</h1>
+        <p class="text-accent text-lg mt-2">Your QR code is ready</p>
+      </div>
+
+      <div class="bg-card rounded-2xl border border-slate-700 p-6 space-y-4">
+        <div class="text-center">
+          <p class="text-white font-bold text-lg">${b.gymName}</p>
+          <p class="text-slate-400">${b.date} at ${b.time}</p>
+          <p class="text-brand font-bold text-xl mt-1">£${b.price.toFixed(2)}</p>
+        </div>
+
+        <div class="border-t border-slate-700 pt-4">
+          <p class="text-white font-bold text-center mb-3">📱 Your QR Code</p>
+          <div class="bg-white rounded-xl p-4 flex items-center justify-center">
+            <img src="${qr.dataUrl}" alt="QR Code" class="w-64 h-64">
+          </div>
+          <p class="text-slate-400 text-xs text-center mt-2">Token: ${qr.token}</p>
+        </div>
+
+        <div class="bg-slate-800 rounded-xl p-4 space-y-2 text-sm">
+          <p class="text-white font-bold">How it works:</p>
+          <p class="text-slate-400">📲 <strong class="text-white">Scan 1 (Entry):</strong> Show this QR at the gym entrance</p>
+          <p class="text-slate-400">🏋️ <strong class="text-white">Work out:</strong> Train for up to 24 hours</p>
+          <p class="text-slate-400">🚪 <strong class="text-white">Scan 2 (Exit):</strong> Scan again when you leave</p>
+          <p class="text-accent text-xs mt-2">⚠️ QR expires after 2 scans or 24 hours — like JD Gym</p>
+        </div>
+
+        <div class="space-y-2">
+          <button onclick="navigate('/my-bookings')" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-3 rounded-xl transition">View My Bookings</button>
+          <button onclick="navigate('/explore')" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 py-3 rounded-xl transition">Book Another Gym</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ─── Page: My Bookings ───
+function MyBookingsPage(){
+  if(!state.user){
+    return`<div class="pt-20 min-h-screen px-4 text-center"><p class="text-slate-400 mt-20">Please <a onclick="navigate('/login')" class="text-brand cursor-pointer">log in</a> to see your bookings.</p></div>`;
+  }
+
+  // Load bookings async
+  if(!state.bookingsLoaded){
+    setTimeout(async()=>{
+      try{
+        const r=await api.bookGet('');
+        state.bookings=r.bookings||[];
+        state.bookingsLoaded=true;
+        render();
+      }catch(e){}
+    },100);
+    return`<div class="pt-20 min-h-screen px-4 text-center"><p class="text-slate-400 mt-20 animate-pulse">Loading bookings...</p></div>`;
+  }
+
+  const bookings=state.bookings;
+  return`
+  <div class="pt-20 min-h-screen px-4">
+    <div class="max-w-2xl mx-auto py-12">
+      <h1 class="font-brand text-3xl font-bold text-white mb-6 text-center">📋 My Bookings</h1>
+      ${bookings.length===0 ? `
+        <div class="text-center py-12">
+          <p class="text-slate-400 text-lg mb-4">No bookings yet</p>
+          <button onclick="navigate('/explore')" class="bg-brand hover:bg-orange-600 text-white font-bold px-8 py-3 rounded-xl">Find a Gym</button>
+        </div>
+      ` : bookings.map(b=>`
+        <div class="bg-card rounded-2xl border border-slate-700 p-5 mb-4">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-white font-bold text-lg">${b.gymName||'Gym'}</p>
+              <p class="text-slate-400 text-sm">${b.date} at ${b.time}</p>
+              <p class="text-brand font-bold">£${b.price.toFixed(2)}</p>
+            </div>
+            <span class="px-3 py-1 rounded-full text-xs font-bold ${b.status==='confirmed'?'bg-accent/20 text-accent':'bg-yellow-500/20 text-yellow-400'}">${b.status}</span>
+          </div>
+          ${b.qr ? `
+            <div class="mt-3 pt-3 border-t border-slate-700">
+              <p class="text-sm text-slate-400">QR: <code class="text-white">${b.qr.token}</code> · ${b.qr.scanCount}/${2} scans used · ${b.qr.status}</p>
+            </div>
+          ` : ''}
+        </div>
+      `).join('')}
     </div>
   </div>`;
 }
@@ -817,7 +1097,8 @@ function render(){
   else if(path==='/privacy')page=InfoPage('Privacy Policy','<p>Last updated: May 2026</p><p>ScanGym ("we", "us") respects your privacy. We collect only what\'s needed to process bookings: name, email, phone number, payment details, and location data.</p><p>We use Stripe for payments (PCI compliant), Twilio for OTP verification, and Google Maps for gym locations.</p><p>We never sell your data. Contact: privacy@scangym.com</p>');
   else if(path==='/terms')page=InfoPage('Terms of Service','<p>Last updated: May 2026</p><p>By using ScanGym, you agree to these terms. ScanGym is a marketplace connecting gym-goers with gym owners. We are not a gym operator.</p><p>Bookings are 24-hour day passes. Free cancellation up to 2 hours before session start.</p><p>Contact: legal@scangym.com</p>');
   else if(path==='/cookies')page=InfoPage('Cookie Policy','<p>We use essential cookies for authentication and preferences. Analytics cookies help us understand usage patterns. You can disable non-essential cookies in your browser settings.</p>');
-  else if(path==='/bookings')page=InfoPage('My Bookings','<p class="text-xl text-white font-bold">Your Gym Sessions</p><p>View your upcoming and past bookings, download QR codes, and manage cancellations.</p><p><a onclick="navigate(\'/login\')" class="text-brand cursor-pointer">Log in to see your bookings →</a></p>');
+  else if(path==='/bookings'||path==='/my-bookings')page=MyBookingsPage();
+  else if(path==='/booking-success')page=BookingSuccessPage();
   else if(path==='/featured')page=InfoPage('Featured Listings','<p class="text-xl text-white font-bold">Featured Gyms on ScanGym</p><p>Get your gym seen by thousands. Featured listings appear at the top of search results with a highlighted badge.</p><p>✅ Priority placement in search</p><p>✅ Featured badge on your profile</p><p>✅ 3x more profile views on average</p><p><a onclick="navigate(\'/contact\')" class="text-brand cursor-pointer">Contact us about featured listings →</a></p>');
   else if(path==='/careers')page=InfoPage('Careers at ScanGym','<p class="text-xl text-white font-bold">Join the Team</p><p>We\'re building the future of gym access in the UK. Currently a lean team based in Manchester.</p><p>Interested in working with us? Send your CV to:</p><p>📧 <strong>careers@scangym.com</strong></p>');
   else if(path==='/help')page=InfoPage('Help Center','<p class="text-xl text-white font-bold">How Can We Help?</p><p><strong>How do I book a gym?</strong><br>Search for a gym → Pick your date/time → Pay → Get your QR code.</p><p><strong>How do I cancel?</strong><br>Free cancellation up to 2 hours before your session from your bookings page.</p><p><strong>I can\'t scan my QR code</strong><br>Make sure your screen brightness is at max. If it still doesn\'t work, show the booking confirmation to staff.</p><p><strong>How do I get a refund?</strong><br>Cancelled bookings are refunded to your ScanGym Wallet instantly, or to your card within 5-10 days.</p><p>📧 Still stuck? Email <strong>support@scangym.com</strong></p>');
