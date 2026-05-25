@@ -23,7 +23,7 @@ const QRCode = require('qrcode');
       CREATE TABLE IF NOT EXISTS booking_qr_codes (
         id SERIAL PRIMARY KEY,
         booking_id INTEGER NOT NULL,
-        user_id INTEGER NOT NULL,
+        user_id VARCHAR(255) NOT NULL,
         gym_id INTEGER NOT NULL,
         qr_token VARCHAR(100) UNIQUE NOT NULL,
         max_scans INTEGER DEFAULT 2,
@@ -42,7 +42,7 @@ const QRCode = require('qrcode');
         booking_id INTEGER NOT NULL,
         qr_code_id INTEGER NOT NULL,
         gym_id INTEGER NOT NULL,
-        user_id INTEGER NOT NULL,
+        user_id VARCHAR(255) NOT NULL,
         scan_type VARCHAR(10) NOT NULL,
         scan_number INTEGER NOT NULL,
         scanned_at TIMESTAMP DEFAULT NOW()
