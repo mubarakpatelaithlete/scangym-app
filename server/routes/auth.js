@@ -1,6 +1,12 @@
 /**
  * Auth Routes — Twilio Verify OTP Login
  * Flow: Enter phone → Send OTP → Verify → Session created
+ * 
+ * IMPORTANT: Uses existing public.users table schema:
+ *   - id: VARCHAR (UUID via gen_random_uuid())
+ *   - phone_number: VARCHAR (not "phone")
+ *   - first_name, last_name: VARCHAR (not "name")
+ *   - email, stripe_customer_id, etc.
  */
 const express = require('express');
 const router = express.Router();
@@ -9,26 +15,6 @@ const pool = require('../middleware/db');
 const TWILIO_SID = process.env.TWILIO_ACCOUNT_SID;
 const TWILIO_TOKEN = process.env.TWILIO_AUTH_TOKEN;
 const TWILIO_VERIFY_SID = process.env.TWILIO_VERIFY_SERVICE_SID;
-
-// Auto-create users table
-(async () => {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        phone VARCHAR(20) UNIQUE NOT NULL,
-        name VARCHAR(100),
-        email VARCHAR(255),
-        created_at TIMESTAMP DEFAULT NOW(),
-        last_login TIMESTAMP DEFAULT NOW()
-      )
-    `);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_users_phone ON users(phone)`);
-    console.log('Users table ready');
-  } catch (err) {
-    console.error('Users table error:', err.message);
-  }
-})();
 
 /**
  * POST /api/auth/send-code
@@ -80,6 +66,7 @@ router.post('/send-code', async (req, res) => {
 /**
  * POST /api/auth/verify
  * Verify OTP, create/find user, set session
+ * Uses existing public.users table (phone_number column, UUID id)
  */
 router.post('/verify', async (req, res) => {
   try {
@@ -108,42 +95,47 @@ router.post('/verify', async (req, res) => {
     const data = await response.json();
 
     if (!response.ok || data.status !== 'approved') {
+      console.error('Twilio verify response:', JSON.stringify(data));
       return res.status(400).json({ error: 'Invalid or expired verification code' });
     }
 
-    // Find or create user
-    let user = await pool.query('SELECT * FROM users WHERE phone = $1', [normalizedPhone]);
+    // Find or create user in existing public.users table
+    // Column is phone_number (not phone), id is UUID string
+    let user = await pool.query('SELECT * FROM public.users WHERE phone_number = $1', [normalizedPhone]);
 
     if (user.rows.length === 0) {
-      // New user — create account
+      // New user — create account with UUID
       user = await pool.query(
-        'INSERT INTO users (phone) VALUES ($1) RETURNING *',
+        `INSERT INTO public.users (id, phone_number, created_at, updated_at) 
+         VALUES (gen_random_uuid(), $1, NOW(), NOW()) RETURNING *`,
         [normalizedPhone]
       );
+      console.log('Created new user:', normalizedPhone);
     } else {
-      // Existing user — update last login
-      await pool.query('UPDATE users SET last_login = NOW() WHERE phone = $1', [normalizedPhone]);
+      // Existing user — update timestamp
+      await pool.query('UPDATE public.users SET updated_at = NOW() WHERE phone_number = $1', [normalizedPhone]);
+      console.log('Existing user login:', normalizedPhone);
     }
 
     const u = user.rows[0];
 
     // Set session
     req.session.userId = u.id;
-    req.session.phone = u.phone;
+    req.session.phone = u.phone_number;
 
     res.json({
       success: true,
       user: {
         id: u.id,
-        phone: u.phone,
-        name: u.name,
+        phone: u.phone_number,
+        name: [u.first_name, u.last_name].filter(Boolean).join(' ') || null,
         email: u.email,
       },
       message: 'Logged in successfully',
     });
   } catch (err) {
     console.error('Verify error:', err);
-    res.status(500).json({ error: 'Verification failed' });
+    res.status(500).json({ error: 'Verification failed', detail: err.message });
   }
 });
 
@@ -157,14 +149,24 @@ router.get('/user', async (req, res) => {
       return res.status(401).json({ error: 'Not authenticated', message: 'Please log in first' });
     }
 
-    const user = await pool.query('SELECT id, phone, name, email, created_at FROM users WHERE id = $1', [req.session.userId]);
+    const user = await pool.query(
+      'SELECT id, phone_number, first_name, last_name, email, created_at FROM public.users WHERE id = $1',
+      [req.session.userId]
+    );
 
     if (user.rows.length === 0) {
       req.session.destroy();
       return res.status(401).json({ error: 'User not found' });
     }
 
-    res.json(user.rows[0]);
+    const u = user.rows[0];
+    res.json({
+      id: u.id,
+      phone: u.phone_number,
+      name: [u.first_name, u.last_name].filter(Boolean).join(' ') || null,
+      email: u.email,
+      created_at: u.created_at,
+    });
   } catch (err) {
     console.error('Get user error:', err);
     res.status(500).json({ error: 'Failed to get user' });
