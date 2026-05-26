@@ -316,7 +316,7 @@ function HomePage(){
         <button onclick="findGyms()" class="bg-slate-800 hover:bg-slate-700 text-white font-medium text-sm px-8 py-3 rounded-xl transition-all w-full max-w-lg">
           📍 Use My Location — Find Gyms Near Me
         </button>
-        <p class="text-slate-500 text-sm mt-4">Search any city worldwide · ${fmtCount(GYM_COUNT)} gyms · Powered by Google</p>
+        <p class="text-slate-500 text-sm mt-4">Search any city worldwide · ${fmtCount(GYM_COUNT)} gyms </p>
         <!-- Skyscanner-style trending cities -->
         <div class="flex flex-wrap justify-center gap-2 mt-4 max-w-lg mx-auto">
           ${['🇬🇧 London','🇬🇧 Manchester','🇬🇧 Birmingham','🇬🇧 Bolton','🇦🇪 Dubai','🇺🇸 New York','🇪🇸 Barcelona','🇩🇪 Berlin'].map(c=>{
@@ -391,7 +391,7 @@ function HomePage(){
       <div class="max-w-5xl mx-auto grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
         ${[
           {icon:'🤖',title:'AI Personal Coach',desc:'Personalized workout plans, form analysis, and nutrition advice. Unlocks after your first gym check-in.',link:'/coach'},
-          {icon:'📸',title:'Real Gym Photos',desc:'See actual photos, reviews, equipment lists, and busy times before you visit. All from Google Places.',link:'/explore'},
+          {icon:'📸',title:'Real Gym Photos',desc:'See actual photos, reviews, equipment lists, and busy times before you visit. All real, all verified.',link:'/explore'},
           {icon:'💬',title:'Chat with Gym',desc:'AI answers your questions instantly. Need a human? It escalates to the gym owner via SMS.',link:''},
           {icon:'🗺️',title:'Uber-Style Directions',desc:'Embedded Google Maps after booking. Walking distance, real-time navigation, never leave ScanGym.',link:''},
           {icon:'💰',title:'ScanGym Wallet',desc:'Add £20, get £22. Top-up bonuses, referral credits, and challenge rewards.',link:'/wallet'},
@@ -518,7 +518,7 @@ function SearchPage(){
         <div>
           <h1 class="font-brand text-2xl font-bold text-white">Gyms ${searchLabel}</h1>
           <!-- Booking.com style: show total scale -->
-          <p class="text-slate-400 text-sm">Showing <span class="text-white font-medium">${gyms.length}</span> of <span class="text-white font-medium">${fmtCount(GYM_COUNT)}</span> gyms worldwide · Powered by Google Places</p>
+          <p class="text-slate-400 text-sm">Showing <span class="text-white font-medium">${gyms.length}</span> of <span class="text-white font-medium">${fmtCount(GYM_COUNT)}</span> gyms worldwide </p>
         </div>
         <!-- Skyscanner-style sort tabs -->
         <div class="flex gap-1 bg-slate-800 rounded-lg p-1">
