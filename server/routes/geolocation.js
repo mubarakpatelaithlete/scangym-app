@@ -1,28 +1,22 @@
 /**
  * ═══════════════════════════════════════════════════════════════
- *  GOOGLE GEOLOCATION API — Server Route (Express.js)
+ *  GEOLOCATION API — Server Route (Express.js)
  * ═══════════════════════════════════════════════════════════════
  * 
- * Server-side proxy for Google Maps Geolocation API.
- * Required by Layers 3 and 5 of the 5-layer waterfall.
+ * Server-side proxy for geolocation. Tries Google Maps Geolocation
+ * API first (best accuracy), falls back to free IP services if
+ * Google API is not enabled or fails.
  * 
- * INSTALLATION:
- *   1. Copy this file to: server/routes/geolocation.js
- *   2. In server.js, add:
- *        const geolocationRouter = require('./routes/geolocation');
- *      with the other imports at the top, then:
- *        app.use('/api/geolocation', geolocationRouter);
- *      with the other app.use() routes
- *   3. Make sure GOOGLE_MAPS_API_KEY is set in your environment
- *      (you already have this for Places API)
+ * Required by Layers 3 and 5 of the 5-layer waterfall.
  * 
  * ENDPOINTS:
  *   POST /api/geolocation     → full geolocation (WiFi + cell + IP)
  *   POST /api/geolocation/ip  → IP-only fallback (city-level)
  * 
- * COST:
- *   ~£0.004 per request ($5 per 1,000 requests)
- *   Only hits when GPS fails, so maybe 5-10% of users = very cheap
+ * FALLBACK CHAIN:
+ *   1. Google Maps Geolocation API (if enabled & key set)
+ *   2. ipapi.co (free, 1000 req/day)
+ *   3. ip-api.com (free, 45 req/min)
  * ═══════════════════════════════════════════════════════════════
  */
 
@@ -33,27 +27,13 @@ const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
 const GOOGLE_GEO_URL = 'https://www.googleapis.com/geolocation/v1/geolocate';
 
 /**
- * POST /api/geolocation
- * Full geolocation — accepts optional WiFi/cell data for better accuracy.
- * Falls back to IP geolocation if no extra data provided.
+ * Try Google Maps Geolocation API
+ * Returns { lat, lng, accuracy, source } or null on failure
  */
-router.post('/', async (req, res) => {
-  if (!GOOGLE_MAPS_API_KEY) {
-    console.error('[Geolocation] GOOGLE_MAPS_API_KEY not configured');
-    return res.status(500).json({ error: 'Geolocation service not configured' });
-  }
+async function tryGoogleGeolocation(requestBody) {
+  if (!GOOGLE_MAPS_API_KEY) return null;
 
   try {
-    // Build request — accept optional WiFi/cell data from client
-    const requestBody = { considerIp: true };
-
-    if (req.body && req.body.wifiAccessPoints && req.body.wifiAccessPoints.length > 0) {
-      requestBody.wifiAccessPoints = req.body.wifiAccessPoints;
-    }
-    if (req.body && req.body.cellTowers && req.body.cellTowers.length > 0) {
-      requestBody.cellTowers = req.body.cellTowers;
-    }
-
     const response = await fetch(
       `${GOOGLE_GEO_URL}?key=${GOOGLE_MAPS_API_KEY}`,
       {
@@ -64,22 +44,120 @@ router.post('/', async (req, res) => {
     );
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('[Geolocation] Google API error:', response.status, errorData);
-      return res.status(response.status).json({
-        error: 'Geolocation failed',
-        detail: errorData.error ? errorData.error.message : 'Unknown error',
-      });
+      const err = await response.json().catch(() => ({}));
+      console.warn('[Geolocation] Google API error:', response.status, err.error?.message || '');
+      return null;
     }
 
     const data = await response.json();
-
-    res.json({
+    return {
       lat: data.location.lat,
       lng: data.location.lng,
       accuracy: data.accuracy,
       source: 'google_geolocation',
+    };
+  } catch (error) {
+    console.warn('[Geolocation] Google API failed:', error.message);
+    return null;
+  }
+}
+
+/**
+ * Try ipapi.co — free IP geolocation (1000 req/day, no key)
+ * Returns { lat, lng, accuracy, source } or null on failure
+ */
+async function tryIpApi() {
+  try {
+    const response = await fetch('https://ipapi.co/json/', {
+      headers: { 'User-Agent': 'ScanGym/1.0' },
+      signal: AbortSignal.timeout(3000),
     });
+
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    if (!data.latitude || !data.longitude) return null;
+
+    return {
+      lat: data.latitude,
+      lng: data.longitude,
+      accuracy: 5000, // city-level ~5km
+      source: 'ipapi_co',
+    };
+  } catch (error) {
+    console.warn('[Geolocation] ipapi.co failed:', error.message);
+    return null;
+  }
+}
+
+/**
+ * Try ip-api.com — free IP geolocation (45 req/min, no key)
+ * Returns { lat, lng, accuracy, source } or null on failure
+ */
+async function tryIpApiCom() {
+  try {
+    const response = await fetch('http://ip-api.com/json/?fields=lat,lon,status', {
+      signal: AbortSignal.timeout(3000),
+    });
+
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    if (data.status !== 'success' || !data.lat || !data.lon) return null;
+
+    return {
+      lat: data.lat,
+      lng: data.lon,
+      accuracy: 10000, // city-level ~10km
+      source: 'ip_api_com',
+    };
+  } catch (error) {
+    console.warn('[Geolocation] ip-api.com failed:', error.message);
+    return null;
+  }
+}
+
+/**
+ * Run the server-side geolocation fallback chain
+ */
+async function geolocate(googleBody) {
+  // 1. Try Google (best accuracy: ~20-200m with WiFi, ~city with IP)
+  const google = await tryGoogleGeolocation(googleBody);
+  if (google) return google;
+
+  // 2. Try ipapi.co (city-level)
+  const ipapi = await tryIpApi();
+  if (ipapi) return ipapi;
+
+  // 3. Try ip-api.com (city-level)
+  const ipApiCom = await tryIpApiCom();
+  if (ipApiCom) return ipApiCom;
+
+  return null;
+}
+
+/**
+ * POST /api/geolocation
+ * Full geolocation — accepts optional WiFi/cell data for better accuracy.
+ */
+router.post('/', async (req, res) => {
+  try {
+    const requestBody = { considerIp: true };
+
+    if (req.body && req.body.wifiAccessPoints && req.body.wifiAccessPoints.length > 0) {
+      requestBody.wifiAccessPoints = req.body.wifiAccessPoints;
+    }
+    if (req.body && req.body.cellTowers && req.body.cellTowers.length > 0) {
+      requestBody.cellTowers = req.body.cellTowers;
+    }
+
+    const result = await geolocate(requestBody);
+
+    if (!result) {
+      return res.status(503).json({ error: 'All geolocation services failed' });
+    }
+
+    res.json(result);
   } catch (error) {
     console.error('[Geolocation] Server error:', error.message);
     res.status(500).json({ error: 'Geolocation service error' });
@@ -92,34 +170,14 @@ router.post('/', async (req, res) => {
  * City-level accuracy (~2-10km), no permissions needed.
  */
 router.post('/ip', async (req, res) => {
-  if (!GOOGLE_MAPS_API_KEY) {
-    return res.status(500).json({ error: 'Geolocation service not configured' });
-  }
-
   try {
-    const response = await fetch(
-      `${GOOGLE_GEO_URL}?key=${GOOGLE_MAPS_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ considerIp: true }),
-      }
-    );
+    const result = await geolocate({ considerIp: true });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('[Geolocation/IP] Google API error:', response.status, errorData);
-      return res.status(response.status).json({ error: 'IP geolocation failed' });
+    if (!result) {
+      return res.status(503).json({ error: 'All IP geolocation services failed' });
     }
 
-    const data = await response.json();
-
-    res.json({
-      lat: data.location.lat,
-      lng: data.location.lng,
-      accuracy: data.accuracy,
-      source: 'google_ip',
-    });
+    res.json(result);
   } catch (error) {
     console.error('[Geolocation/IP] Server error:', error.message);
     res.status(500).json({ error: 'IP geolocation service error' });
