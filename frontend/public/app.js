@@ -1,4 +1,4 @@
-// ScanGym Frontend v3.2.0 - Live Google Places API
+// ScanGym Frontend v3.2.1 - Live Google Places API
 const API='/api/v2';
 let MAPS_KEY='';
 let STRIPE_PK='';
