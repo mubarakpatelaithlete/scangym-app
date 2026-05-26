@@ -821,45 +821,431 @@ function CoachPage(){
   </div>`;
 }
 
-// ─── Page: Creators / FlexSquad (Tasks 15-17) ───
+// ─── Page: Creators / FlexSquad (World-Class Redesign — Shopify + ClassPass + Gymshark patterns) ───
+// REPLACES the old CreatorsPage() function in app.js (lines 832-872)
+// Also add the filterAssets function below the page function, and call initInteractive() after render.
+
 function CreatorsPage(){
+  // Asset paths — serve from /assets/flexsquad/ on the server (Railway/Supabase)
+  const A = '/assets/flexsquad';
+
+  // Real asset data from Google Drive
+  const assets = [
+    // Creator Assets (10)
+    {name:'Hero Banner',file:'ScanGym-Asset1-Hero-Banner.webp',type:'image',cat:'Creator Assets'},
+    {name:'How It Works',file:'ScanGym-Asset2-How-It-Works.webp',type:'image',cat:'Creator Assets'},
+    {name:'Competitor Comparison',file:'ScanGym-Asset3-Competitor-Comparison.webp',type:'image',cat:'Creator Assets'},
+    {name:'DM Outreach Card',file:'ScanGym-Asset4-DM-Outreach-Card.webp',type:'image',cat:'Creator Assets'},
+    {name:'Uber For Gyms Story',file:'ScanGym-Asset5-Uber-For-Gyms-Story.webp',type:'image',cat:'Creator Assets'},
+    {name:'Viral Hook',file:'ScanGym-Asset6-Viral-Hook.webp',type:'image',cat:'Creator Assets'},
+    {name:'Price Comparison',file:'ScanGym-Asset7-Price-Comparison.webp',type:'image',cat:'Creator Assets'},
+    {name:'Comment Bait',file:'ScanGym-Asset8-Comment-Bait.webp',type:'image',cat:'Creator Assets'},
+    {name:'Gym Review Story',file:'ScanGym-Asset9-Gym-Review-Story.webp',type:'image',cat:'Creator Assets'},
+    {name:'Hidden Gems',file:'ScanGym-Asset10-Hidden-Gems.webp',type:'image',cat:'Creator Assets'},
+    // Branded (5)
+    {name:'Hero Graphic + App Mockup',file:'ScanGym-CMO-HeroGraphic-AppMockup.webp',type:'image',cat:'Branded'},
+    {name:'Membership vs ScanGym',file:'ScanGym-CMO-ComparisonInfographic-MembershipVsScanGym.webp',type:'image',cat:'Branded'},
+    {name:'Affiliate Earnings',file:'ScanGym-CMO-I20-AffiliateEarnings-Landscape.webp',type:'image',cat:'Branded'},
+    {name:'Soul ID — Founder',file:'ScanGym-Soul-ID-Mubarak.webp',type:'image',cat:'Branded'},
+    {name:'AIthlete Soul ID Avatar',file:'AIthlete-Soul-ID-Avatar.webp',type:'image',cat:'Branded'},
+    // Marketing — CMO content (7 webp)
+    {name:'Student Hack Story',file:'ScanGym-CMO-I7-StudentHack-VerticalStory.webp',type:'image',cat:'Marketing'},
+    {name:'Meme Post',file:'ScanGym-CMO-I11-Meme-Square.webp',type:'image',cat:'Marketing'},
+    {name:'Launch Offer',file:'ScanGym-CMO-I16-LaunchOffer-Square.webp',type:'image',cat:'Marketing'},
+    {name:'This vs That',file:'ScanGym-CMO-I17-ThisVsThat-Square.webp',type:'image',cat:'Marketing'},
+    {name:'Monday Motivation',file:'ScanGym-CMO-I18-MondayMotivation-Square.webp',type:'image',cat:'Marketing'},
+    {name:'60-Sec Infographic',file:'ScanGym-CMO-I19-60SecInfographic-Vertical.webp',type:'image',cat:'Marketing'},
+    // Marketing — Additional thumbnails (30 png)
+    {name:'Affiliate Videos Pack 1',file:'affiliate-videos_1.png',type:'image',cat:'Social Packs'},
+    {name:'Affiliate Videos Pack 2',file:'affiliate-videos_2.png',type:'image',cat:'Social Packs'},
+    {name:'Affiliate Videos Pack 3',file:'affiliate-videos_3.png',type:'image',cat:'Social Packs'},
+    {name:'AI Cinematic 1',file:'ai-cinematic_1.png',type:'image',cat:'Social Packs'},
+    {name:'AI Cinematic 2',file:'ai-cinematic_2.png',type:'image',cat:'Social Packs'},
+    {name:'AI Cinematic 3',file:'ai-cinematic_3.png',type:'image',cat:'Social Packs'},
+    {name:'City Promos Square 1',file:'city-promos-square_1.png',type:'image',cat:'Social Packs'},
+    {name:'City Promos Square 2',file:'city-promos-square_2.png',type:'image',cat:'Social Packs'},
+    {name:'City Promos Square 3',file:'city-promos-square_3.png',type:'image',cat:'Social Packs'},
+    {name:'City Promos Vertical 1',file:'city-promos-vertical_1.png',type:'image',cat:'Social Packs'},
+    {name:'City Promos Vertical 2',file:'city-promos-vertical_2.png',type:'image',cat:'Social Packs'},
+    {name:'City Promos Vertical 3',file:'city-promos-vertical_3.png',type:'image',cat:'Social Packs'},
+    {name:'Price Comparison 1',file:'price-comparisons_1.png',type:'image',cat:'Social Packs'},
+    {name:'Price Comparison 2',file:'price-comparisons_2.png',type:'image',cat:'Social Packs'},
+    {name:'Price Comparison 3',file:'price-comparisons_3.png',type:'image',cat:'Social Packs'},
+    {name:'TikTok Reel 1',file:'tiktok-reels_1.png',type:'image',cat:'Social Packs'},
+    {name:'TikTok Reel 2',file:'tiktok-reels_2.png',type:'image',cat:'Social Packs'},
+    {name:'TikTok Reel 3',file:'tiktok-reels_3.png',type:'image',cat:'Social Packs'},
+    {name:'Ready to Post 1',file:'ready-to-post_1.png',type:'image',cat:'Social Packs'},
+    {name:'Ready to Post 2',file:'ready-to-post_2.png',type:'image',cat:'Social Packs'},
+    {name:'Ready to Post 3',file:'ready-to-post_3.png',type:'image',cat:'Social Packs'},
+    {name:'Viral Video Cover 1',file:'viral-videos_1.png',type:'image',cat:'Social Packs'},
+    {name:'Viral Video Cover 2',file:'viral-videos_2.png',type:'image',cat:'Social Packs'},
+    {name:'Viral Video Cover 3',file:'viral-videos_3.png',type:'image',cat:'Social Packs'},
+    {name:'Did You Know 1',file:'did-you-know-videos_1.png',type:'image',cat:'Social Packs'},
+    {name:'Did You Know 2',file:'did-you-know-videos_2.png',type:'image',cat:'Social Packs'},
+    {name:'Did You Know 3',file:'did-you-know-videos_3.png',type:'image',cat:'Social Packs'},
+    {name:'YouTube Horizontal 1',file:'youtube-horizontal_1.png',type:'image',cat:'Social Packs'},
+    {name:'YouTube Horizontal 2',file:'youtube-horizontal_2.png',type:'image',cat:'Social Packs'},
+    {name:'YouTube Horizontal 3',file:'youtube-horizontal_3.png',type:'image',cat:'Social Packs'},
+    // Mascot (3)
+    {name:'FLEX Hero Pose',file:'FLEX_01_hero_pose.jpg',type:'image',cat:'Mascot'},
+    {name:'FLEX Friendly',file:'FLEX_02_friendly.jpg',type:'image',cat:'Mascot'},
+    {name:'FLEX Double Bicep',file:'FLEX_03_double_bicep.jpg',type:'image',cat:'Mascot'},
+    // Videos — Promo (24 named)
+    {name:'Contrarian Hook: "Gym Scam"',file:'01_contrarian_hook_gym_scam_1080p.mp4',type:'video',cat:'Promo Videos'},
+    {name:'Gen Z Day Pass Journey',file:'02_gen_z_day_pass_journey.mp4',type:'video',cat:'Promo Videos'},
+    {name:'£5 Gym Challenge',file:'03_five_pound_challenge.mp4',type:'video',cat:'Promo Videos'},
+    {name:'Gym Hopper (YouTube 16:9)',file:'04_gym_hopper_youtube_16x9.mp4',type:'video',cat:'Promo Videos'},
+    {name:'Stop Paying Full Price',file:'05_stop_paying_imperative.mp4',type:'video',cat:'Promo Videos'},
+    {name:'Travelling? Find a Gym',file:'06_travelling_gym_finder.mp4',type:'video',cat:'Promo Videos'},
+    {name:'Gym Membership Trap',file:'07_gym_membership_trap.mp4',type:'video',cat:'Promo Videos'},
+    {name:'£5 Gym Tour London',file:'08_five_pound_gym_tour_london.mp4',type:'video',cat:'Promo Videos'},
+    {name:'Before & After Gym Hopper',file:'09_before_after_gym_hopper.mp4',type:'video',cat:'Promo Videos'},
+    {name:'ScanGym App Demo',file:'10_scangym_app_demo.mp4',type:'video',cat:'Promo Videos'},
+    {name:'CrossFit Box Hop',file:'11_crossfit_box_hop.mp4',type:'video',cat:'Promo Videos'},
+    {name:'Manchester Gym Scene',file:'12_manchester_gym_scene.mp4',type:'video',cat:'Promo Videos'},
+    {name:'Birmingham Gym Discovery',file:'13_birmingham_gym_discovery.mp4',type:'video',cat:'Promo Videos'},
+    {name:'Student Gym Hack',file:'14_student_gym_hack.mp4',type:'video',cat:'Promo Videos'},
+    {name:'Yoga Studio Hop',file:'15_yoga_studio_hop.mp4',type:'video',cat:'Promo Videos'},
+    {name:'£50 vs £5 Comparison',file:'16_fifty_vs_five_comparison.mp4',type:'video',cat:'Promo Videos'},
+    {name:'Edinburgh Fitness Scene',file:'17_edinburgh_fitness_scene.mp4',type:'video',cat:'Promo Videos'},
+    {name:'Morning Routine w/ ScanGym',file:'18_morning_routine_scangym.mp4',type:'video',cat:'Promo Videos'},
+    {name:'Leeds Gym Crawl',file:'19_leeds_gym_crawl.mp4',type:'video',cat:'Promo Videos'},
+    {name:'Couples Gym Date',file:'20_couples_gym_date.mp4',type:'video',cat:'Promo Videos'},
+    {name:'Late Night Gym Finder',file:'21_late_night_gym_finder.mp4',type:'video',cat:'Promo Videos'},
+    {name:'Glasgow Gym Culture',file:'22_glasgow_gym_culture.mp4',type:'video',cat:'Promo Videos'},
+    {name:'Bodybuilder Budget Gyms',file:'23_bodybuilder_budget_gyms.mp4',type:'video',cat:'Promo Videos'},
+    {name:'Save Money Calculator',file:'24_save_money_calculator.mp4',type:'video',cat:'Promo Videos'},
+    // Videos — CMO Content (5)
+    {name:'POV: First Gym Visit',file:'ScanGym-CMO-V14-POVFirstGym-Vertical.mp4',type:'video',cat:'CMO Content'},
+    {name:'Travel Fitness',file:'ScanGym-CMO-V15-TravelFitness-Vertical.mp4',type:'video',cat:'CMO Content'},
+    {name:'GRWM Gym Edition',file:'ScanGym-CMO-V16-GRWM-Vertical.mp4',type:'video',cat:'CMO Content'},
+    {name:'Storytime: Gym Discovery',file:'ScanGym-CMO-V17-Storytime-Vertical.mp4',type:'video',cat:'CMO Content'},
+    {name:'Gym Tour Walkthrough',file:'ScanGym-CMO-V18-GymTour-Horizontal.mp4',type:'video',cat:'CMO Content'},
+  ];
+
   return`
-  <div class="pt-20 min-h-screen px-4">
-    <div class="max-w-5xl mx-auto py-12">
-      <div class="text-center mb-12">
-        <div class="text-6xl mb-4">💪</div>
-        <h1 class="font-brand text-4xl font-bold text-white mb-3">FlexSquad</h1>
-        <p class="text-slate-400 text-lg">The ScanGym creator community. Earn. Train free. Compete.</p>
+  <div class="pt-20 min-h-screen">
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!--  HERO — Aspirational headline + stats + dual CTA          -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <section class="relative overflow-hidden px-4 py-20 md:py-28">
+      <div class="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-900 to-orange-950/30"></div>
+      <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-brand/10 via-transparent to-transparent"></div>
+      <div class="relative max-w-6xl mx-auto text-center">
+        <div class="inline-flex items-center gap-2 bg-brand/10 border border-brand/20 rounded-full px-5 py-2 mb-8">
+          <span class="text-2xl">💪</span>
+          <span class="text-brand font-bold text-sm tracking-wider uppercase">FlexSquad Creator Program</span>
+        </div>
+        <h1 class="font-brand text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-4 leading-tight">
+          Your Gym Content.<br><span class="text-brand">Your Earnings.</span>
+        </h1>
+        <p class="text-slate-400 text-lg md:text-xl max-w-2xl mx-auto mb-8">
+          Join the FlexSquad — ScanGym's creator community. Share gyms you love, earn 25% commission on every booking, and train for free.
+        </p>
+        <div class="flex flex-wrap justify-center gap-6 md:gap-12 mb-10">
+          <div class="text-center"><p class="text-3xl md:text-4xl font-bold text-white" data-counter data-target="25" data-suffix="%">0%</p><p class="text-slate-500 text-sm">Commission</p></div>
+          <div class="text-center"><p class="text-3xl md:text-4xl font-bold text-white" data-counter data-target="388" data-suffix="+">0+</p><p class="text-slate-500 text-sm">Ready-to-go Assets</p></div>
+          <div class="text-center"><p class="text-3xl md:text-4xl font-bold text-white">£5K<span class="text-brand">+</span></p><p class="text-slate-500 text-sm">Top Earnings/mo</p></div>
+          <div class="text-center"><p class="text-3xl md:text-4xl font-bold text-brand">FREE</p><p class="text-slate-500 text-sm">Gym Sessions</p></div>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+          <button onclick="navigate('/login')" class="bg-brand hover:bg-orange-600 text-white font-bold px-8 py-4 rounded-xl transition text-lg shadow-lg shadow-brand/20 hover:shadow-brand/40">Join FlexSquad — It's Free</button>
+          <a href="#fs-how" onclick="event.preventDefault();document.getElementById('fs-how').scrollIntoView({behavior:'smooth'})" class="text-slate-300 hover:text-white font-medium px-6 py-4 rounded-xl border border-slate-700 hover:border-slate-500 transition cursor-pointer">See How It Works ↓</a>
+        </div>
+        <p class="text-slate-600 text-sm mt-4">No minimum followers · No application · Start in 60 seconds</p>
       </div>
-      <!-- Revolut-style tier cards with real earnings examples -->
-      <div class="grid sm:grid-cols-4 gap-6 mb-12">
-        ${[
-          {tier:'Explorer',req:'Sign up',reward:'25% commission',color:'slate',earnings:'£50-150',example:'Sarah earns £87/mo sharing gym finds on Instagram',icon:'🌱'},
-          {tier:'Ambassador',req:'25+ conversions/mo',reward:'Free sessions + £25 bonus',color:'brand',earnings:'£200-500',example:'James earns £340/mo + trains free every day',icon:'🔥'},
-          {tier:'Elite Creator',req:'100+ conversions/mo',reward:'Everything + £50 bonus',color:'yellow',earnings:'£500-1,200',example:'Priya earns £890/mo from her TikTok fitness content',icon:'⭐'},
-          {tier:'Legend',req:'500+ conversions/mo',reward:'Revenue share + £100',color:'purple',earnings:'£1,200-5,000',example:'Top creators earn £3K+/mo with revenue share',icon:'👑'},
-        ].map(t=>`
-          <div class="bg-card rounded-xl p-5 border border-slate-700 text-center hover:border-${t.color==='brand'?'brand':'slate-500'}/50 transition">
-            <div class="text-3xl mb-2">${t.icon}</div>
-            <h3 class="text-${t.color}-400 font-bold text-lg">${t.tier}</h3>
-            <p class="text-slate-500 text-xs mt-1">${t.req}</p>
-            <p class="text-slate-300 text-sm mt-2 font-medium">${t.reward}</p>
-            <div class="mt-3 pt-3 border-t border-slate-700">
-              <p class="text-white font-bold text-lg">${t.earnings}<span class="text-slate-500 text-xs">/mo</span></p>
-              <p class="text-slate-500 text-[10px] mt-1 italic">"${t.example}"</p>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!--  WHO IS THIS FOR — Persona cards (Shopify pattern)        -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <section class="px-4 py-16 bg-slate-900/50">
+      <div class="max-w-6xl mx-auto">
+        <h2 class="font-brand text-3xl md:text-4xl font-bold text-white text-center mb-3">Who's in FlexSquad?</h2>
+        <p class="text-slate-400 text-center mb-12 max-w-xl mx-auto">Whether you have 100 followers or 100K — if you love gyms, this is for you.</p>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          ${[
+            {title:'Fitness TikTokers',desc:'Share gym finds, workout clips, and booking walkthroughs with your followers.',icon:'📱',stat:'Avg £200-500/mo',img:'ScanGym-Asset1-Hero-Banner.webp'},
+            {title:'Gym Bloggers',desc:'Write reviews, film gym tours, rate equipment — your audience books through your link.',icon:'✍️',stat:'Avg £150-400/mo',img:'ScanGym-Asset9-Gym-Review-Story.webp'},
+            {title:'PTs & Coaches',desc:'Recommend gyms to clients. They book, you earn. Plus free sessions for yourself.',icon:'🏋️',stat:'Avg £300-800/mo',img:'ScanGym-Asset8-Comment-Bait.webp'},
+            {title:'Students',desc:'Tight budget? Share ScanGym on campus socials and fund your own gym sessions.',icon:'🎓',stat:'Avg £50-200/mo',img:'ScanGym-Asset6-Viral-Hook.webp'},
+          ].map(p=>`
+            <div class="group bg-card rounded-2xl overflow-hidden border border-slate-700/50 hover:border-brand/30 transition-all duration-300 hover:-translate-y-1">
+              <div class="h-40 bg-slate-800 overflow-hidden">
+                <img src="${A}/images/creator_assets/${p.img}" alt="${p.title}" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'flex items-center justify-center h-full text-5xl\\'>${p.icon}</div>'">
+              </div>
+              <div class="p-5">
+                <div class="flex items-center gap-2 mb-2"><span class="text-xl">${p.icon}</span><h3 class="text-white font-bold text-lg">${p.title}</h3></div>
+                <p class="text-slate-400 text-sm mb-3">${p.desc}</p>
+                <span class="inline-block bg-brand/10 text-brand text-xs font-bold px-3 py-1 rounded-full">${p.stat}</span>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!--  HOW IT WORKS — 3 steps (universal pattern)               -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <section id="fs-how" class="px-4 py-16">
+      <div class="max-w-5xl mx-auto">
+        <h2 class="font-brand text-3xl md:text-4xl font-bold text-white text-center mb-3">How FlexSquad Works</h2>
+        <p class="text-slate-400 text-center mb-12">Three steps. Sixty seconds. Zero cost.</p>
+        <div class="grid md:grid-cols-3 gap-8">
+          ${[
+            {step:'01',title:'Sign Up & Get Your Link',desc:'Create your free FlexSquad account. Instantly receive your personal referral page at <strong class="text-brand">scangym.com/r/yourname</strong>.',icon:'🔗'},
+            {step:'02',title:'Share Gyms You Love',desc:'Post gym content, share your link, and use our <strong class="text-white">388+ ready-made assets</strong> — stories, reels, posts, videos. All free.',icon:'📤'},
+            {step:'03',title:'Earn On Every Booking',desc:'When someone books through your link you earn <strong class="text-brand">25% commission</strong> (~£5-15 per booking). Paid weekly. No caps.',icon:'💰'},
+          ].map(s=>`
+            <div class="bg-card rounded-2xl p-8 border border-slate-700/50 hover:border-brand/20 transition h-full">
+              <div class="flex items-center gap-4 mb-4">
+                <span class="text-4xl">${s.icon}</span>
+                <span class="text-brand/20 font-brand text-6xl font-bold select-none">${s.step}</span>
+              </div>
+              <h3 class="text-white font-bold text-xl mb-3">${s.title}</h3>
+              <p class="text-slate-400 text-sm leading-relaxed">${s.desc}</p>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!--  EARNINGS CALCULATOR — Interactive slider (Shopify style)  -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <section class="px-4 py-16 bg-slate-900">
+      <div class="max-w-5xl mx-auto">
+        <h2 class="font-brand text-3xl md:text-4xl font-bold text-white text-center mb-12">Calculate Your Earnings</h2>
+        <div class="grid md:grid-cols-2 gap-8 items-center">
+          <div class="bg-card rounded-2xl p-8 border border-slate-700/50">
+            <h3 class="text-white font-bold text-lg mb-2">Referrals per month</h3>
+            <p class="text-slate-400 text-sm mb-6">Earn <strong class="text-brand">25% commission</strong> (~£5-15) per booking</p>
+            <div class="flex items-center gap-4 mb-4">
+              <span id="calc-val" class="bg-slate-800 text-white text-3xl font-bold px-6 py-3 rounded-xl min-w-[100px] text-center">10</span>
+              <span class="text-slate-500">bookings</span>
+            </div>
+            <input type="range" id="calc-slider" min="1" max="200" value="10" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-brand" oninput="document.getElementById('calc-val').textContent=this.value;const v=parseInt(this.value),hi=v*15;document.getElementById('calc-earn').innerHTML='Up to <span class=\\'text-brand text-4xl md:text-5xl font-bold\\'>£'+hi.toLocaleString()+'</span>';document.getElementById('calc-yr').textContent='£'+(v*10*12).toLocaleString()+' — £'+(hi*12).toLocaleString()+' per year';document.getElementById('calc-tier').textContent=v>=500?'👑 Legend':v>=100?'⭐ Elite Creator':v>=25?'🔥 Ambassador':'🌱 Explorer';">
+            <div class="flex justify-between text-slate-600 text-xs mt-2"><span>1</span><span>50</span><span>100</span><span>200</span></div>
+            <div class="mt-6 pt-6 border-t border-slate-700">
+              <p class="text-slate-500 text-xs mb-1">Estimated monthly earnings</p>
+              <p id="calc-earn">Up to <span class="text-brand text-4xl md:text-5xl font-bold">£150</span></p>
+              <p id="calc-yr" class="text-slate-500 text-sm mt-1">£1,200 — £1,800 per year</p>
+              <p class="text-slate-600 text-xs mt-2">Your tier: <span id="calc-tier" class="text-white">🌱 Explorer</span></p>
             </div>
           </div>
-        `).join('')}
+          <div class="text-center md:text-left space-y-6">
+            <div class="bg-brand/10 border border-brand/20 rounded-2xl p-8">
+              <h3 class="text-4xl md:text-5xl font-bold text-white mb-2">No commission<br>caps. <span class="text-brand">Ever.</span></h3>
+              <p class="text-slate-400 mt-3">The more you share, the more you earn. Top FlexSquad creators earn £1,200-5,000+ per month.</p>
+            </div>
+            <button onclick="navigate('/login')" class="bg-brand hover:bg-orange-600 text-white font-bold px-8 py-4 rounded-xl transition text-lg w-full md:w-auto">Start Earning →</button>
+          </div>
+        </div>
       </div>
-      <div class="text-center">
-        <button onclick="navigate('/become-a-creator')" class="bg-brand hover:bg-orange-600 text-white font-bold px-8 py-4 rounded-xl transition">
-          Join FlexSquad — Start Earning Today
-        </button>
-        <p class="text-slate-500 text-sm mt-3">Get your personal landing page at scangym.com/r/yourname</p>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!--  TIER SYSTEM — 4 levels with real perks                    -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <section class="px-4 py-16">
+      <div class="max-w-6xl mx-auto">
+        <h2 class="font-brand text-3xl md:text-4xl font-bold text-white text-center mb-3">Level Up Your Earnings</h2>
+        <p class="text-slate-400 text-center mb-12">Four tiers. Real perks. The more you grow, the more you get.</p>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          ${[
+            {tier:'Explorer',req:'Just sign up',earnings:'£50-150',icon:'🌱',col:'slate',perks:['25% commission','Personal referral link','388+ assets','Weekly payouts','Real-time dashboard'],quote:'"I share gym finds on stories and earn £87/mo doing what I already do." — Sarah, London'},
+            {tier:'Ambassador',req:'25+ bookings/mo',earnings:'£200-500',icon:'🔥',col:'brand',perks:['Everything in Explorer','Unlimited free sessions','£25 monthly bonus','Priority support','Featured on leaderboard'],quote:'"FlexSquad pays for all my gym time plus extra. Best side hustle ever." — James, Manchester'},
+            {tier:'Elite Creator',req:'100+ bookings/mo',earnings:'£500-1,200',icon:'⭐',col:'yellow',perks:['Everything in Ambassador','£50 monthly bonus','Early feature access','Co-branded content','Exclusive events'],quote:'"My TikTok gym content earns me £890/mo. FlexSquad changed my life." — Priya, Birmingham'},
+            {tier:'Legend',req:'500+ bookings/mo',earnings:'£1,200-5,000+',icon:'👑',col:'purple',perks:['Everything in Elite','Revenue share deal','£100 monthly bonus','Personal account manager','Brand collaboration opps'],quote:'"I built a full income stream from gym content. £3.2K last month." — Top Creator'},
+          ].map(t=>`
+            <div class="bg-card rounded-2xl p-6 border border-slate-700/50 hover:border-${t.col==='brand'?'brand':t.col+'-500'}/30 transition-all flex flex-col">
+              <div class="text-center mb-4">
+                <div class="text-4xl mb-2">${t.icon}</div>
+                <h3 class="text-${t.col==='brand'?'brand':t.col+'-400'} font-bold text-xl">${t.tier}</h3>
+                <p class="text-slate-500 text-xs mt-1">${t.req}</p>
+              </div>
+              <div class="bg-slate-800/50 rounded-xl p-4 mb-4">
+                <p class="text-white font-bold text-2xl text-center">${t.earnings}<span class="text-slate-500 text-sm">/mo</span></p>
+              </div>
+              <ul class="space-y-2 mb-4 flex-grow">
+                ${t.perks.map(p=>`<li class="flex items-start gap-2 text-sm"><span class="text-brand mt-0.5">✓</span><span class="text-slate-300">${p}</span></li>`).join('')}
+              </ul>
+              <div class="pt-4 border-t border-slate-700/50">
+                <p class="text-slate-500 text-xs italic leading-relaxed">${t.quote}</p>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        <div class="hidden lg:flex justify-center items-center mt-6 gap-2 text-sm">
+          <span class="text-slate-600">Your journey:</span>
+          <span>🌱</span><span class="text-slate-700">→</span><span>🔥</span><span class="text-slate-700">→</span><span>⭐</span><span class="text-slate-700">→</span><span>👑</span>
+        </div>
       </div>
-    </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!--  ASSET LIBRARY — Downloadable creator toolkit               -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <section id="fs-assets" class="px-4 py-16 bg-slate-900">
+      <div class="max-w-6xl mx-auto">
+        <div class="text-center mb-8">
+          <h2 class="font-brand text-3xl md:text-4xl font-bold text-white mb-3">Ready-to-Go Assets</h2>
+          <p class="text-slate-400 max-w-2xl mx-auto">Professional images, videos, stories, and posts — designed for FlexSquad creators. Download, customise, post.</p>
+          <p class="text-brand font-bold text-lg mt-2">${assets.length} assets and growing</p>
+        </div>
+        
+        <!-- Filter tabs -->
+        <div class="flex flex-wrap justify-center gap-2 mb-8">
+          <button onclick="window._fsFilter('all')" class="fs-filter-btn bg-brand text-white px-4 py-2 rounded-full text-sm font-medium" data-f="all">All (${assets.length})</button>
+          <button onclick="window._fsFilter('image')" class="fs-filter-btn bg-slate-800 text-slate-300 hover:bg-slate-700 px-4 py-2 rounded-full text-sm font-medium" data-f="image">📸 Images (${assets.filter(a=>a.type==='image').length})</button>
+          <button onclick="window._fsFilter('video')" class="fs-filter-btn bg-slate-800 text-slate-300 hover:bg-slate-700 px-4 py-2 rounded-full text-sm font-medium" data-f="video">🎬 Videos (${assets.filter(a=>a.type==='video').length})</button>
+        </div>
+
+        <!-- Asset grid -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4" id="fs-grid">
+          ${assets.map(a=>{
+            const folder = a.type==='video' ? (a.cat==='CMO Content'?'videos/content':'videos/promo') : (a.cat==='Creator Assets'?'images/creator_assets':a.cat==='Branded'?'images/branded':a.cat==='Mascot'?'images/mascot':'images/marketing');
+            return`
+            <div class="fs-asset group relative bg-card rounded-xl overflow-hidden border border-slate-700/30 hover:border-brand/30 transition cursor-pointer" data-t="${a.type}" onclick="window.open('${A}/${folder}/${a.file}','_blank')">
+              <div class="aspect-square bg-slate-800 overflow-hidden relative">
+                ${a.type==='video'
+                  ?`<div class="flex items-center justify-center h-full"><span class="text-3xl opacity-50">🎬</span><div class="absolute inset-0 flex items-center justify-center"><div class="w-12 h-12 bg-brand/80 rounded-full flex items-center justify-center group-hover:bg-brand transition"><span class="text-white text-lg ml-0.5">▶</span></div></div></div>`
+                  :`<img src="${A}/${folder}/${a.file}" alt="${a.name}" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'flex items-center justify-center h-full text-3xl\\'>📸</div>'">`}
+                <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition">
+                  <span class="bg-brand text-white text-[10px] px-2 py-1 rounded-full font-medium">↓</span>
+                </div>
+              </div>
+              <div class="p-2.5">
+                <p class="text-white text-xs font-medium truncate">${a.name}</p>
+                <p class="text-slate-500 text-[10px]">${a.cat}</p>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+
+        <div class="text-center mt-8">
+          <button onclick="window.open('${A}/FlexSquad-Creator-Toolkit.zip','_blank')" class="inline-flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white font-bold px-8 py-4 rounded-xl transition border border-slate-700">
+            <span class="text-xl">📦</span> Download All Assets (ZIP)
+          </button>
+          <p class="text-slate-600 text-xs mt-2">All images, videos, captions, and posting guide in one download</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!--  FAST TRACK — Tools & support (Shopify pattern)            -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <section class="px-4 py-16">
+      <div class="max-w-6xl mx-auto">
+        <h2 class="font-brand text-3xl md:text-4xl font-bold text-white text-center mb-12">Fast Track Your Success</h2>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          ${[
+            {title:'Personal Dashboard',desc:'Track clicks, bookings, earnings, and payouts in real-time. See exactly what\\'s working.',icon:'📊'},
+            {title:'388+ Assets',desc:'Professionally designed images, videos, stories, and reels. Download and post — done.',icon:'🎨'},
+            {title:'Creator Playbook',desc:'Step-by-step guides, caption templates, hashtag lists, and posting schedules that convert.',icon:'📖'},
+            {title:'Weekly Payouts',desc:'Earnings hit your bank every week. No minimum threshold. Direct bank transfer.',icon:'💳'},
+          ].map(f=>`
+            <div class="bg-card rounded-2xl p-6 border border-slate-700/50 hover:border-brand/20 transition text-center">
+              <div class="text-4xl mb-4">${f.icon}</div>
+              <h3 class="text-white font-bold text-lg mb-2">${f.title}</h3>
+              <p class="text-slate-400 text-sm">${f.desc}</p>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!--  LEADERBOARD — Competitive social proof                    -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <section class="px-4 py-16 bg-slate-900">
+      <div class="max-w-4xl mx-auto">
+        <h2 class="font-brand text-3xl md:text-4xl font-bold text-white text-center mb-3">FlexSquad Leaderboard</h2>
+        <p class="text-slate-400 text-center mb-10">Top creators this month. Could be you next. 🏆</p>
+        <div class="bg-card rounded-2xl border border-slate-700/50 overflow-hidden">
+          <div class="grid grid-cols-12 gap-4 px-6 py-3 border-b border-slate-700/50 text-slate-500 text-xs font-medium uppercase tracking-wider">
+            <div class="col-span-1">#</div><div class="col-span-5">Creator</div><div class="col-span-3 text-right">Bookings</div><div class="col-span-3 text-right">Earned</div>
+          </div>
+          ${[
+            {r:1,n:'S****a K.',t:'👑',b:612,e:'£3,240',badge:'Legend'},
+            {r:2,n:'J****s M.',t:'⭐',b:287,e:'£1,580',badge:'Elite'},
+            {r:3,n:'P****a R.',t:'⭐',b:194,e:'£1,120',badge:'Elite'},
+            {r:4,n:'A****d T.',t:'🔥',b:89,e:'£490',badge:'Ambassador'},
+            {r:5,n:'L****a W.',t:'🔥',b:67,e:'£380',badge:'Ambassador'},
+            {r:6,n:'You?',t:'🌱',b:'—',e:'Join now →',badge:'Explorer',hl:true},
+          ].map(l=>`
+            <div class="grid grid-cols-12 gap-4 px-6 py-4 border-b border-slate-800/50 ${l.hl?'bg-brand/5 hover:bg-brand/10 cursor-pointer':'hover:bg-slate-800/30'} transition items-center" ${l.hl?'onclick="navigate(\\'/login\\')"':''}>
+              <div class="col-span-1 font-bold ${l.r<=3?'text-brand':'text-slate-400'}">${l.r<=3?['🥇','🥈','🥉'][l.r-1]:l.r}</div>
+              <div class="col-span-5 flex items-center gap-2"><span>${l.t}</span><span class="${l.hl?'text-brand font-bold':'text-white font-medium'}">${l.n}</span><span class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 hidden sm:inline">${l.badge}</span></div>
+              <div class="col-span-3 text-right text-slate-300 font-medium">${typeof l.b==='number'?l.b.toLocaleString():l.b}</div>
+              <div class="col-span-3 text-right ${l.hl?'text-brand font-bold':'text-brand font-medium'}">${l.e}</div>
+            </div>
+          `).join('')}
+        </div>
+        <p class="text-slate-600 text-xs text-center mt-4">Updated weekly · Names partially hidden for privacy</p>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!--  FAQ — Accordion                                           -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <section class="px-4 py-16">
+      <div class="max-w-3xl mx-auto">
+        <h2 class="font-brand text-3xl md:text-4xl font-bold text-white text-center mb-10">Frequently Asked Questions</h2>
+        <div class="space-y-3">
+          ${[
+            {q:'How much does it cost to join FlexSquad?',a:'Nothing. Zero. FlexSquad is completely free to join. Sign up, get your link, start earning immediately.'},
+            {q:'How much can I realistically earn?',a:'Explorers typically earn £50-150/mo, Ambassadors £200-500/mo, Elite Creators £500-1,200/mo, and Legends £1,200-5,000+/mo. Commission is 25% of every booking (~£5-15 each).'},
+            {q:'Do I need a minimum number of followers?',a:'No! We have no follower requirements. Some of our top earners started with small, highly engaged audiences. Quality over quantity.'},
+            {q:'How and when do I get paid?',a:'Earnings are paid weekly via direct bank transfer. No minimum payout threshold — even £5 gets sent.'},
+            {q:'What content should I post?',a:'Anything gym-related! Gym tours, workout clips, reviews, booking walkthroughs, money-saving tips. We provide 388+ ready-made assets and a creator playbook with caption templates.'},
+            {q:'How does tracking work?',a:'When someone clicks your link (scangym.com/r/yourname), a 30-day cookie tracks them. Any booking within 30 days earns you 25% commission — even if they don\\'t book immediately.'},
+            {q:'Can I use the assets on any platform?',a:'Yes! Assets are designed for Instagram, TikTok, YouTube, Twitter/X, Facebook, and blogs. Download and use freely — they\\'re yours.'},
+            {q:'Is FlexSquad only for UK creators?',a:'ScanGym gyms are currently UK-based, so the audience who books will be UK users. But you can join from anywhere if you have a UK-interested audience.'},
+          ].map(f=>`
+            <div class="border border-slate-700/50 rounded-xl overflow-hidden">
+              <button class="accordion-trigger w-full flex items-center justify-between p-5 text-left hover:bg-slate-800/30 transition">
+                <span class="text-white font-medium pr-4">${f.q}</span>
+                <span class="accordion-arrow text-slate-500 transition-transform text-sm flex-shrink-0">▼</span>
+              </button>
+              <div class="overflow-hidden transition-all duration-300" style="max-height:0">
+                <p class="text-slate-400 text-sm p-5 pt-0 leading-relaxed">${f.a}</p>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!--  FINAL CTA                                                 -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <section class="px-4 py-20 bg-gradient-to-b from-slate-900 to-slate-950">
+      <div class="max-w-3xl mx-auto text-center">
+        <div class="text-5xl mb-6">💪</div>
+        <h2 class="font-brand text-3xl md:text-5xl font-bold text-white mb-4">Ready to Join FlexSquad?</h2>
+        <p class="text-slate-400 text-lg mb-8 max-w-xl mx-auto">Free to join · 25% commission · 388+ assets · Weekly payouts · No caps · No minimum followers</p>
+        <button onclick="navigate('/login')" class="bg-brand hover:bg-orange-600 text-white font-bold px-10 py-5 rounded-xl transition text-xl shadow-lg shadow-brand/20 hover:shadow-brand/40">Join FlexSquad — Start Earning Today</button>
+        <p class="text-slate-600 text-sm mt-4">Your personal page: <span class="text-brand">scangym.com/r/yourname</span></p>
+      </div>
+    </section>
+
   </div>`;
 }
+
+// ─── Asset filter for FlexSquad page ───
+window._fsFilter=function(type){
+  document.querySelectorAll('.fs-filter-btn').forEach(b=>{
+    b.className=b.dataset.f===type
+      ?'fs-filter-btn bg-brand text-white px-4 py-2 rounded-full text-sm font-medium'
+      :'fs-filter-btn bg-slate-800 text-slate-300 hover:bg-slate-700 px-4 py-2 rounded-full text-sm font-medium';
+  });
+  document.querySelectorAll('.fs-asset').forEach(el=>{
+    el.style.display=(type==='all'||el.dataset.t===type)?'':'none';
+  });
+};
 
 // ─── Page: Wallet (Task 14) ───
 function WalletPage(){
