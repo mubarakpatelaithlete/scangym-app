@@ -130,7 +130,7 @@ app.get("/api/config", async (req, res) => {
     mapsKey: process.env.GOOGLE_MAPS_API_KEY || "",
     stripeKey: process.env.STRIPE_PUBLISHABLE_KEY || "",
     brand: "ScanGym",
-    gymCount: 1200000, // Live Google Places API — 1.2M+ gyms worldwide
+    gymCount: gymCount, // Actual count from database
     liveSearch: true,
   });
 });
