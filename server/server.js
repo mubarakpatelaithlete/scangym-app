@@ -20,6 +20,7 @@ const convictionRouter = require('./routes/conviction');
 const authRouter = require('./routes/auth');
 const bookingRouter = require('./routes/booking');
 const paymentRouter = require('./routes/payment');
+const liveSearchRouter = require('./routes/liveSearch');
 const analyticsMiddleware = require('./middleware/analytics');
 
 const app = express();
@@ -101,16 +102,16 @@ const apiPaths = [
   '/api/reviews', '/api/chat', '/api/wallet', '/api/guest',
   '/api/coach', '/api/gym-profile', '/api/owner', '/api/stats',
   '/api/creators', '/api/directions', '/api/qr', '/api/conviction',
-  '/api/auth', '/api/bookings', '/api/payment',
+  '/api/auth', '/api/bookings', '/api/payment', '/api/live',
 ];
 apiPaths.forEach(p => app.use(p, express.json()));
 
 // -- Health check --
 app.get('/api/v2/health', (req, res) => {
   res.json({
-    status: 'ok', version: 'v3.1', brand: 'ScanGym',
+    status: 'ok', version: 'v3.2.0', brand: 'ScanGym',
     ts: new Date().toISOString(),
-    features: 17, tasks: '24/24 + auth + booking + payment', ok: true,
+    features: 18, tasks: '24/24 + auth + booking + payment + live-search', ok: true,
     frontend: fs.existsSync(path.join(FRONTEND_DIR, 'index.html')) ? 'v3' : 'none',
   });
 });
@@ -127,7 +128,8 @@ app.get("/api/config", async (req, res) => {
     mapsKey: process.env.GOOGLE_MAPS_API_KEY || "",
     stripeKey: process.env.STRIPE_PUBLISHABLE_KEY || "",
     brand: "ScanGym",
-    gymCount,
+    gymCount: 1200000, // Live Google Places API — 1.2M+ gyms worldwide
+    liveSearch: true,
   });
 });
 
@@ -149,6 +151,7 @@ app.use('/api/conviction', convictionRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/bookings', bookingRouter);
 app.use('/api/payment', paymentRouter);
+app.use('/api/live', liveSearchRouter);
 
 // -- Serve Frontend --
 if (fs.existsSync(FRONTEND_DIR)) {

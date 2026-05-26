@@ -39,6 +39,8 @@ const api={
   async get(url){const r=await fetch(API+url,{credentials:'include'});return r.json()},
   async post(url,body){const r=await fetch(API+url,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(body)});return r.json()},
   async getGuest(url){const r=await fetch('/api/guest'+url);return r.json()},
+  async getLive(url){const r=await fetch('/api/live'+url);return r.json()},
+  async postLive(url,body){const r=await fetch('/api/live'+url,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(body)});return r.json()},
   async authPost(url,body){const r=await fetch('/api/auth'+url,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(body)});return r.json()},
   async bookPost(url,body){const r=await fetch('/api/bookings'+url,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(body)});return r.json()},
   async bookGet(url){const r=await fetch('/api/bookings'+(url||''),{credentials:'include'});return r.json()},
@@ -203,16 +205,23 @@ function Footer(){
 
 function GymCard(gym){
   const badges=getRandomBadges(gym,3);
-  const price=gym.price_tier||'5.00';
-  const dist=gym.distance?`${gym.distance.toFixed(1)} mi`:'Nearby';
-  const photo=gym.photo_url||`https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${gym.photo_reference||''}&key=${MAPS_KEY}`;
-  const hasPhoto=gym.photo_url||gym.photo_reference;
+  const price=gym.dayPassPrice||gym.price_tier||'5.00';
+  const dist=gym.distanceText||(gym.distance?`${gym.distance.toFixed(1)} km`:'Nearby');
+  // Support both live API (photo field) and DB gyms (photo_url / photo_reference)
+  const photo=gym.photo||gym.photo_url||
+    (gym.photoReference?`https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${gym.photoReference}&key=${MAPS_KEY}`:
+    (gym.photo_reference?`https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${gym.photo_reference}&key=${MAPS_KEY}`:''));
+  const hasPhoto=!!photo;
+  // Use placeId for live results, id for DB gyms
+  const gymIdentifier=gym.placeId||gym.place_id||gym.id;
+  const isLive=!!gym.placeId;
   return`
-  <div class="gym-card bg-card rounded-2xl overflow-hidden border border-slate-700 cursor-pointer" onclick="openGym('${gym.id||gym.place_id}')">
+  <div class="gym-card bg-card rounded-2xl overflow-hidden border border-slate-700 cursor-pointer" onclick="openGym('${gymIdentifier}',${isLive})">
     <div class="relative h-48 bg-slate-700">
-      ${hasPhoto?`<img src="${photo}" alt="${gym.name}" class="w-full h-full object-cover" loading="lazy">`
+      ${hasPhoto?`<img src="${photo}" alt="${gym.name}" class="w-full h-full object-cover" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'w-full h-full flex items-center justify-center text-4xl\\'>🏋️</div>'">`
         :`<div class="w-full h-full flex items-center justify-center text-4xl">🏋️</div>`}
       <div class="absolute top-3 right-3 bg-brand text-white px-3 py-1 rounded-full text-sm font-bold">£${price}</div>
+      ${gym.openNow===true?`<div class="absolute top-3 left-3 bg-green-600 text-white px-2 py-1 rounded-full text-xs font-medium">Open Now</div>`:''}
       ${badges[0]?`<div class="absolute bottom-3 left-3 bg-black/70 text-white px-2 py-1 rounded-lg text-xs backdrop-blur">${badges[0].icon} ${badges[0].text}</div>`:''}
     </div>
     <div class="p-4">
@@ -221,9 +230,10 @@ function GymCard(gym){
         <span class="text-xs text-slate-400 whitespace-nowrap ml-2">${dist}</span>
       </div>
       <div class="flex items-center gap-2 mb-3">
-        <span class="text-yellow-400 text-sm">★ ${gym.rating||'4.5'}</span>
-        <span class="text-slate-500 text-xs">(${gym.user_ratings_total||Math.floor(Math.random()*200+20)} reviews)</span>
+        <span class="text-yellow-400 text-sm">★ ${gym.rating||'New'}</span>
+        <span class="text-slate-500 text-xs">(${gym.totalReviews||gym.user_ratings_total||0} reviews)</span>
       </div>
+      <p class="text-slate-500 text-xs mb-2 truncate">${gym.address||''}</p>
       <div class="flex flex-wrap gap-1.5">
         ${badges.slice(1).map(b=>`<span class="text-xs bg-slate-700/50 text-slate-300 px-2 py-0.5 rounded-full">${b.icon} ${b.text}</span>`).join('')}
       </div>
@@ -251,11 +261,18 @@ function HomePage(){
           Book a Gym.<br><span class="text-brand">Anywhere.</span>
         </h1>
         <p class="text-xl text-slate-400 mb-8">3 taps. That's it. £5 day passes, QR entry, free cancellation.</p>
-        <button onclick="findGyms()" class="bg-brand hover:bg-orange-600 text-white font-bold text-lg px-12 py-5 rounded-2xl shadow-lg shadow-brand/30 transition-all hover:scale-105 w-full max-w-md">
-          📍 Find a Gym Near Me
+        <div class="flex gap-2 max-w-lg mx-auto mb-4">
+          <input type="text" id="home-search" placeholder="Search city, area, or gym name..." 
+            class="flex-1 bg-card border border-slate-600 rounded-xl px-4 py-4 text-white placeholder-slate-500 focus:border-brand outline-none text-sm"
+            onkeydown="if(event.key==='Enter'){const v=document.getElementById('home-search').value;if(v)searchGyms(v);navigate('/explore')}">
+          <button onclick="const v=document.getElementById('home-search').value;if(v){searchGyms(v);navigate('/explore')}else{findGyms()}" class="bg-brand hover:bg-orange-600 text-white font-bold text-lg px-8 py-4 rounded-xl shadow-lg shadow-brand/30 transition-all hover:scale-105">
+            🔍
+          </button>
+        </div>
+        <button onclick="findGyms()" class="bg-slate-800 hover:bg-slate-700 text-white font-medium text-sm px-8 py-3 rounded-xl transition-all w-full max-w-lg">
+          📍 Use My Location — Find Gyms Near Me
         </button>
-        <p class="text-slate-500 text-sm mt-4">Uses your location · 1.2M+ gyms worldwide</p>
-        <a onclick="navigate('/explore?city=bolton')" class="text-brand text-sm underline cursor-pointer mt-2 block">Or search by city</a>
+        <p class="text-slate-500 text-sm mt-4">Search any city worldwide · 1.2M+ gyms · Powered by Google</p>
       </div>
     </section>
 
@@ -365,21 +382,73 @@ function HomePage(){
 // ─── Page: Search Results ───
 async function loadGyms(lat,lng){
   try{
-    const data=await api.getGuest(`/gyms?lat=${lat}&lng=${lng}&limit=30`);
-    state.gyms=data.gyms||data||[];
+    // LIVE Google Places API — searches every gym on Earth
+    const data=await api.getLive(`/nearby?lat=${lat}&lng=${lng}&radius=10000`);
+    state.gyms=data.gyms||[];
+    state.nextPageToken=data.nextPageToken||null;
     render();
+    // If we have more pages, load them in background
+    if(data.nextPageToken){
+      setTimeout(async()=>{
+        try{
+          const page2=await api.getLive(`/nearby?lat=${lat}&lng=${lng}&pagetoken=${data.nextPageToken}`);
+          if(page2.gyms){state.gyms=[...state.gyms,...page2.gyms];render();}
+          if(page2.nextPageToken){
+            setTimeout(async()=>{
+              const page3=await api.getLive(`/nearby?lat=${lat}&lng=${lng}&pagetoken=${page2.nextPageToken}`);
+              if(page3.gyms){state.gyms=[...state.gyms,...page3.gyms];render();}
+            },2500);
+          }
+        }catch(e){}
+      },2500);
+    }
   }catch(e){console.error('Failed to load gyms:',e)}
+}
+
+async function searchGyms(query){
+  try{
+    state.searchQuery=query;
+    const data=await api.getLive(`/search?q=${encodeURIComponent(query)}`);
+    state.gyms=data.gyms||[];
+    state.nextPageToken=data.nextPageToken||null;
+    render();
+    // Load more pages
+    if(data.nextPageToken){
+      setTimeout(async()=>{
+        try{
+          const page2=await api.getLive(`/search?q=${encodeURIComponent(query)}&pagetoken=${data.nextPageToken}`);
+          if(page2.gyms){state.gyms=[...state.gyms,...page2.gyms];render();}
+        }catch(e){}
+      },2500);
+    }
+  }catch(e){console.error('Search failed:',e)}
 }
 
 function SearchPage(){
   const gyms=state.gyms||[];
+  const searchLabel=state.searchQuery||'Near You';
   return`
   <div class="pt-20 min-h-screen px-4">
     <div class="max-w-7xl mx-auto">
+      <!-- Live Search Bar -->
+      <div class="mb-6">
+        <div class="flex gap-2">
+          <div class="flex-1 relative">
+            <input type="text" id="gym-search-input" placeholder="Search gyms anywhere — London, Dubai, New York..." 
+              class="w-full bg-card border border-slate-600 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-brand outline-none text-sm"
+              value="${state.searchQuery||''}"
+              onkeydown="if(event.key==='Enter'){window.doSearch()}">
+            <span class="absolute right-3 top-3 text-slate-500">🔍</span>
+          </div>
+          <button onclick="window.doSearch()" class="bg-brand hover:bg-orange-600 text-white px-6 py-3 rounded-xl text-sm font-medium transition">Search</button>
+          <button onclick="findGyms()" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-3 rounded-xl text-sm transition" title="Use GPS">📍</button>
+        </div>
+      </div>
+
       <div class="flex items-center justify-between mb-6 flex-wrap gap-4">
         <div>
-          <h1 class="font-brand text-2xl font-bold text-white">Gyms Near You</h1>
-          <p class="text-slate-400 text-sm">${gyms.length} gyms found · Bolton, UK</p>
+          <h1 class="font-brand text-2xl font-bold text-white">Gyms ${searchLabel}</h1>
+          <p class="text-slate-400 text-sm">${gyms.length}+ gyms found · Powered by Google Places · 1.2M+ gyms worldwide</p>
         </div>
         <div class="flex gap-2">
           <button class="px-3 py-1.5 bg-card border border-slate-600 rounded-lg text-xs text-slate-300">💰 Price</button>
@@ -389,10 +458,10 @@ function SearchPage(){
         </div>
       </div>
       ${gyms.length?`
-        <!-- Embedded Map (Task 23) - only show if Maps key is configured -->
-        ${MAPS_KEY?`<div class="mb-6 rounded-2xl overflow-hidden border border-slate-700 h-64">
+        <!-- Embedded Map -->
+        ${MAPS_KEY&&gyms[0]?`<div class="mb-6 rounded-2xl overflow-hidden border border-slate-700 h-64">
           <iframe width="100%" height="100%" frameborder="0" style="border:0"
-            src="https://www.google.com/maps/embed/v1/search?key=${MAPS_KEY}&q=gyms+near+bolton+uk&zoom=13" allowfullscreen></iframe>
+            src="https://www.google.com/maps/embed/v1/search?key=${MAPS_KEY}&q=${encodeURIComponent(state.searchQuery||'gyms near me')}&zoom=13${gyms[0].latitude?'&center='+gyms[0].latitude+','+gyms[0].longitude:''}" allowfullscreen></iframe>
         </div>`:''}
         <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 pb-20">
           ${gyms.map(g=>GymCard(g)).join('')}
@@ -413,11 +482,13 @@ function GymProfilePage(){
   const gym=state.currentGym;
   if(!gym)return`<div class="pt-24 text-center"><div class="animate-spin w-8 h-8 border-2 border-brand border-t-transparent rounded-full mx-auto"></div></div>`;
   const badges=getRandomBadges(gym,6);
+  const mainPhoto=gym.photo_url||gym.photo||(gym.photos_list?.[0]?.url)||'';
+  const gymId=gym.place_id||gym.placeId||gym.id;
   return`
   <div class="pt-20 min-h-screen">
     <!-- Photo Banner -->
     <div class="h-72 bg-slate-700 relative">
-      ${gym.photo_url?`<img src="${gym.photo_url}" class="w-full h-full object-cover">`:'<div class="w-full h-full flex items-center justify-center text-6xl">🏋️</div>'}
+      ${mainPhoto?`<img src="${mainPhoto}" class="w-full h-full object-cover" onerror="this.style.display='none'">`:'<div class="w-full h-full flex items-center justify-center text-6xl">🏋️</div>'}
       <div class="absolute inset-0 bg-gradient-to-t from-dark via-transparent to-transparent"></div>
       <div class="absolute bottom-4 left-4 right-4">
         <h1 class="font-brand text-3xl font-bold text-white">${gym.name}</h1>
@@ -436,13 +507,22 @@ function GymProfilePage(){
             <span class="text-slate-600">|</span>
             <span class="text-accent text-sm font-medium">✅ Free cancellation</span>
             <span class="text-slate-600">|</span>
-            <span class="text-slate-400 text-sm">🕐 ${gym.opening_hours?.open_now?'Open Now':'Hours vary'}</span>
+            <span class="text-slate-400 text-sm">🕐 ${gym.opening_hours?.isOpen===true?'<span class="text-green-400">Open Now</span>':(gym.opening_hours?.isOpen===false?'<span class="text-red-400">Closed</span>':'Hours vary')}</span>
           </div>
 
           <!-- Conviction Badges (Task 9 - 33 techniques) -->
           <div class="flex flex-wrap gap-2">
             ${badges.map(b=>`<span class="bg-slate-800 border border-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-full">${b.icon} ${b.text}</span>`).join('')}
           </div>
+
+          <!-- Opening Hours (Live from Google) -->
+          ${gym.opening_hours?.weekday?.length?`
+          <div class="bg-card rounded-xl p-5 border border-slate-700">
+            <h3 class="text-white font-semibold mb-3">🕐 Opening Hours</h3>
+            <div class="space-y-1">
+              ${gym.opening_hours.weekday.map(d=>`<p class="text-slate-400 text-sm">${d}</p>`).join('')}
+            </div>
+          </div>`:``}
 
           <!-- Facilities -->
           <div class="bg-card rounded-xl p-5 border border-slate-700">
@@ -453,6 +533,17 @@ function GymProfilePage(){
               ).join('')}
             </div>
           </div>
+
+          <!-- Photo Gallery (Live from Google) -->
+          ${gym.photos_list?.length>1?`
+          <div class="bg-card rounded-xl p-5 border border-slate-700">
+            <h3 class="text-white font-semibold mb-3">📸 Photos</h3>
+            <div class="grid grid-cols-3 gap-2">
+              ${gym.photos_list.slice(0,9).map(p=>`
+                <img src="${p.thumbnail||p.url}" class="w-full h-24 object-cover rounded-lg" loading="lazy" onerror="this.style.display='none'">
+              `).join('')}
+            </div>
+          </div>`:``}
 
           <!-- Map (Task 23 - Uber style, embedded, no external links) -->
           <div class="bg-card rounded-xl overflow-hidden border border-slate-700">
@@ -485,23 +576,36 @@ function GymProfilePage(){
             </div>
           </div>
 
-          <!-- Reviews (Task 3) -->
+          <!-- Reviews (Live from Google + ScanGym) -->
           <div class="bg-card rounded-xl p-5 border border-slate-700">
             <h3 class="text-white font-semibold mb-3">⭐ Reviews</h3>
-            ${[
-              {name:'Sarah M.',stars:5,text:'Amazing gym! Clean, spacious, great equipment. Squat rack was free both times I visited.',time:'2 days ago'},
-              {name:'James K.',stars:4,text:'Good value for £5. Decent cardio section. Showers could be cleaner but overall solid.',time:'1 week ago'},
-              {name:'Priya R.',stars:5,text:'Love the no-membership model. Booked through ScanGym and the QR entry was seamless.',time:'2 weeks ago'},
-            ].map(r=>`
+            ${(gym.reviews_data?.google?.length||gym.reviews_data?.scangym?.length)?
+              (gym.reviews_data.google||[]).concat(gym.reviews_data.scangym||[]).slice(0,5).map(r=>`
               <div class="border-b border-slate-700 pb-4 mb-4 last:border-0 last:mb-0 last:pb-0">
                 <div class="flex items-center justify-between mb-1">
-                  <span class="text-white text-sm font-medium">${r.name}</span>
-                  <span class="text-slate-500 text-xs">${r.time}</span>
+                  <span class="text-white text-sm font-medium">${r.author||r.name||'Anonymous'}</span>
+                  <span class="text-slate-500 text-xs">${r.relativeTime||r.time||''} ${r.source==='google'?'· via Google':''}</span>
                 </div>
-                <div class="text-yellow-400 text-xs mb-1">${'★'.repeat(r.stars)}${'☆'.repeat(5-r.stars)}</div>
-                <p class="text-slate-400 text-sm">${r.text}</p>
+                <div class="text-yellow-400 text-xs mb-1">${'★'.repeat(r.rating||5)}${'☆'.repeat(5-(r.rating||5))}</div>
+                <p class="text-slate-400 text-sm">${r.text||r.comment||''}</p>
               </div>
-            `).join('')}
+            `).join('')
+            :`
+              ${[
+                {name:'Sarah M.',stars:5,text:'Amazing gym! Clean, spacious, great equipment. Squat rack was free both times I visited.',time:'2 days ago'},
+                {name:'James K.',stars:4,text:'Good value for £5. Decent cardio section. Showers could be cleaner but overall solid.',time:'1 week ago'},
+                {name:'Priya R.',stars:5,text:'Love the no-membership model. Booked through ScanGym and the QR entry was seamless.',time:'2 weeks ago'},
+              ].map(r=>`
+                <div class="border-b border-slate-700 pb-4 mb-4 last:border-0 last:mb-0 last:pb-0">
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="text-white text-sm font-medium">${r.name}</span>
+                    <span class="text-slate-500 text-xs">${r.time}</span>
+                  </div>
+                  <div class="text-yellow-400 text-xs mb-1">${'★'.repeat(r.stars)}${'☆'.repeat(5-r.stars)}</div>
+                  <p class="text-slate-400 text-sm">${r.text}</p>
+                </div>
+              `).join('')}
+            `}
           </div>
         </div>
 
@@ -511,7 +615,7 @@ function GymProfilePage(){
             <p class="text-white font-bold text-lg">£${gym.price_tier||'5'}.00</p>
             <p class="text-slate-400 text-xs">24-Hour Day Pass</p>
           </div>
-          <button onclick="handleBookNow('${gym.id||gym.place_id}')" class="bg-brand hover:bg-orange-600 text-white font-bold py-3 px-8 rounded-xl text-base transition shadow-lg shadow-brand/20">
+          <button onclick="handleBookNow('${gymId}')" class="bg-brand hover:bg-orange-600 text-white font-bold py-3 px-8 rounded-xl text-base transition shadow-lg shadow-brand/20">
             Book Now
           </button>
         </div>
@@ -538,10 +642,10 @@ function GymProfilePage(){
               </div>
             </div>
 
-            <button onclick="handleBookNow('${gym.id||gym.place_id}')" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-4 rounded-xl text-lg transition shadow-lg shadow-brand/20">
+            <button onclick="handleBookNow('${gymId}')" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-4 rounded-xl text-lg transition shadow-lg shadow-brand/20">
               Book Now — £${gym.price_tier||'5'}.00
             </button>
-            <button onclick="handleBookNow('${gym.id||gym.place_id}')" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 py-3 rounded-xl text-sm transition">
+            <button onclick="handleBookNow('${gymId}')" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 py-3 rounded-xl text-sm transition">
               Continue as Guest 👤
             </button>
 
@@ -923,8 +1027,18 @@ window.handleBookNow=async function(gymId){
   btns.forEach(b=>{if(b.textContent.includes('Book Now')){b.textContent='Creating booking...';b.disabled=true;}});
 
   try{
+    let dbGymId=gymId;
+    
+    // If this is a Google Place ID (not numeric), ensure gym exists in DB first
+    if(isNaN(parseInt(gymId))){
+      const ensured=await api.postLive('/ensure-gym',{placeId:gymId});
+      if(ensured.error){alert(ensured.error);location.reload();return;}
+      dbGymId=ensured.gymId;
+      console.log(`Gym ensured in DB: ${ensured.name} (ID: ${dbGymId}, created: ${ensured.created})`);
+    }
+
     // Step 1: Create booking
-    const booking=await api.bookPost('/create',{gymId:parseInt(gymId),date,time});
+    const booking=await api.bookPost('/create',{gymId:parseInt(dbGymId),date,time});
     if(booking.error){alert(booking.error);location.reload();return;}
 
     // Step 2: Create Stripe checkout
@@ -1080,16 +1194,49 @@ window.findGyms=async function(){
   state.searchLat=loc.lat;state.searchLng=loc.lng;
   await loadGyms(loc.lat,loc.lng);
 };
-window.openGym=async function(id){
+window.openGym=async function(id,isLive){
   navigate('/gym/'+id);
+  // Check if this is a Google Place ID (starts with "ChI" or similar) or numeric DB id
+  const isPlaceId=isLive||isNaN(parseInt(id));
   try{
-    const data=await api.getGuest('/gym/'+id);
-    state.currentGym=data.gym||data;
+    if(isPlaceId){
+      // Live Google Places lookup
+      const data=await api.getLive('/place/'+id);
+      if(data.gym){
+        state.currentGym={
+          ...data.gym,
+          id:data.gym.dbId||data.gym.placeId,
+          place_id:data.gym.placeId,
+          photo_url:data.photos?.[0]?.url||null,
+          photos_list:data.photos||[],
+          rating:data.rating?.google||null,
+          user_ratings_total:data.rating?.googleTotal||0,
+          formatted_address:data.gym.address,
+          vicinity:data.gym.address,
+          opening_hours:data.openingHours,
+          reviews_data:data.reviews,
+          pricing:data.pricing,
+          map:data.map,
+          source:'live',
+        };
+      }
+    }else{
+      const data=await api.getGuest('/gym/'+id);
+      state.currentGym=data.gym||data;
+    }
     render();
   }catch(e){
-    // Use gym from list
-    state.currentGym=state.gyms.find(g=>(g.id||g.place_id)==id)||{name:'Loading...',id};
+    console.error('Failed to load gym:',e);
+    state.currentGym=state.gyms.find(g=>(g.placeId||g.id)==id)||{name:'Loading...',id};
     render();
+  }
+};
+
+window.doSearch=function(){
+  const input=document.getElementById('gym-search-input');
+  if(input&&input.value.trim()){
+    navigate('/explore');
+    searchGyms(input.value.trim());
   }
 };
 
@@ -1143,5 +1290,5 @@ if(state.route==='/explore'||state.route==='/nearby'){
 // Load gym profile when visiting /gym/:id directly
 if(state.route.startsWith('/gym/')){
   const gymId=state.route.split('/gym/')[1];
-  if(gymId)openGym(gymId);
+  if(gymId)openGym(gymId,isNaN(parseInt(gymId)));
 }
