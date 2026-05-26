@@ -158,7 +158,7 @@ app.use('/api/geolocation', geolocationRouter);
 
 // -- Serve Frontend --
 if (fs.existsSync(FRONTEND_DIR)) {
-  app.use(express.static(FRONTEND_DIR, { maxAge: '1d' }));
+  app.use(express.static(FRONTEND_DIR, { maxAge: '1d', dotfiles: 'allow' }));
 
   // SPA fallback - serve index.html for all non-API routes
   app.get('*', (req, res) => {
