@@ -8,7 +8,7 @@
  */
 const pool = require('./db');
 
-// Create analytics table if not exists
+// Create analytics table if not exists (with migration for missing columns)
 (async () => {
   try {
     await pool.query(`
@@ -29,6 +29,12 @@ const pool = require('./db');
         created_at TIMESTAMP DEFAULT NOW()
       )
     `);
+    // Add missing columns if table was created before they were added
+    const cols = ['funnel_step VARCHAR(30)', 'query_params JSONB', 'response_status INTEGER', 'response_time_ms INTEGER'];
+    for (const col of cols) {
+      const name = col.split(' ')[0];
+      try { await pool.query(`ALTER TABLE analytics_events ADD COLUMN IF NOT EXISTS ${col}`); } catch(e) { /* column exists */ }
+    }
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_analytics_created ON analytics_events(created_at DESC)`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_analytics_path ON analytics_events(path)`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_analytics_funnel ON analytics_events(funnel_step)`);
