@@ -236,8 +236,8 @@ router.post('/scan', async (req, res) => {
     let userName = 'Member';
     let gymName = 'Gym';
     try {
-      const user = await pool.query('SELECT name, phone FROM users WHERE id = $1', [qr.user_id]);
-      if (user.rows[0]) userName = user.rows[0].name || 'Member';
+      const user = await pool.query('SELECT first_name, last_name, phone_number FROM users WHERE id = $1', [qr.user_id]);
+      if (user.rows[0]) userName = [user.rows[0].first_name, user.rows[0].last_name].filter(Boolean).join(' ') || 'Member';
       const gym = await pool.query('SELECT name FROM gyms WHERE id = $1', [qr.gym_id]);
       if (gym.rows[0]) gymName = gym.rows[0].name;
     } catch (e) {}

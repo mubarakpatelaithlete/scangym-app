@@ -1,7 +1,8 @@
-// ScanGym Frontend v3.1 - Full Booking Pipeline
+// ScanGym Frontend v3.1.1 - Full Booking Pipeline
 const API='/api/v2';
 let MAPS_KEY='';
 let STRIPE_PK='';
+let GYM_COUNT=2;
 
 // Load public config from server (keys injected via env vars, not hardcoded)
 async function loadConfig() {
@@ -10,6 +11,9 @@ async function loadConfig() {
     const c = await r.json();
     MAPS_KEY = c.mapsKey || '';
     STRIPE_PK = c.stripeKey || '';
+    GYM_COUNT = c.gymCount || 2;
+    // Re-render if already on page so dynamic count shows
+    if(document.getElementById('app')) render();
   } catch(e) { console.warn('Config load failed:', e); }
 }
 loadConfig();
@@ -108,9 +112,20 @@ function NavBar(){
         <a onclick="navigate('/for-gyms')" class="text-slate-300 hover:text-brand cursor-pointer">For Gyms</a>
       </div>
       <div class="flex items-center gap-3">
-        <a onclick="navigate('/login')" class="px-4 py-2 text-sm text-slate-300 hover:text-white cursor-pointer">${state.user ? '👤 '+( state.user.name||state.user.phone) : 'Log In'}</a>
+        <a onclick="navigate('/login')" class="hidden md:inline px-4 py-2 text-sm text-slate-300 hover:text-white cursor-pointer">${state.user ? '👤 '+( state.user.name||state.user.phone) : 'Log In'}</a>
         <a onclick="navigate('/explore')" class="px-4 py-2 text-sm bg-brand text-white rounded-xl hover:bg-orange-600 cursor-pointer font-medium">Find a Gym</a>
+        <button onclick="document.getElementById('mobile-menu').classList.toggle('hidden')" class="md:hidden p-2 text-slate-300 hover:text-white">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
       </div>
+    </div>
+    <!-- Mobile Menu -->
+    <div id="mobile-menu" class="hidden md:hidden bg-dark/98 backdrop-blur-lg border-b border-slate-800 px-4 pb-4 space-y-2">
+      <a onclick="navigate('/coach');document.getElementById('mobile-menu').classList.add('hidden')" class="block py-2 text-slate-300 hover:text-brand cursor-pointer">✨ AI Coach</a>
+      <a onclick="navigate('/explore');document.getElementById('mobile-menu').classList.add('hidden')" class="block py-2 text-slate-300 hover:text-brand cursor-pointer">Discover Nearby</a>
+      <a onclick="navigate('/creators');document.getElementById('mobile-menu').classList.add('hidden')" class="block py-2 text-slate-300 hover:text-brand cursor-pointer">Creators</a>
+      <a onclick="navigate('/for-gyms');document.getElementById('mobile-menu').classList.add('hidden')" class="block py-2 text-slate-300 hover:text-brand cursor-pointer">For Gyms</a>
+      <a onclick="navigate('/login');document.getElementById('mobile-menu').classList.add('hidden')" class="block py-2 text-brand font-medium cursor-pointer">${state.user ? '👤 '+(state.user.name||state.user.phone) : '🔑 Log In'}</a>
     </div>
   </nav>`;
 }
@@ -170,11 +185,9 @@ function Footer(){
             {name:'Instagram',url:'https://instagram.com/scangym'},
             {name:'Twitter/X',url:'https://x.com/scangym'},
             {name:'TikTok',url:'https://tiktok.com/@scangym'},
-            {name:'YouTube',url:'https://youtube.com/@scangym'},
             {name:'Facebook',url:'https://facebook.com/scangym'},
             {name:'Pinterest',url:'https://pinterest.com/scangym'},
-            {name:'Threads',url:'https://threads.net/@scangym'},
-            {name:'Tumblr',url:'https://scangym.tumblr.com'}
+            {name:'Threads',url:'https://threads.net/@scangym'}
           ].map(s=>
             `<a href="${s.url}" target="_blank" rel="noopener" class="text-slate-500 hover:text-brand text-xs">${s.name}</a>`
           ).join('')}
@@ -183,7 +196,7 @@ function Footer(){
     </div>
     <div class="max-w-7xl mx-auto border-t border-slate-800 pt-6 flex flex-col md:flex-row items-center justify-between">
       <p class="text-slate-600 text-xs">© 2026 ScanGym. All rights reserved.</p>
-      <p class="text-slate-700 text-xs mt-2 md:mt-0">Manchester, UK • 58 gyms and growing 🚀</p>
+      <p class="text-slate-700 text-xs mt-2 md:mt-0">Manchester, UK • ${GYM_COUNT} gyms and growing 🚀</p>
     </div>
   </footer>`;
 }
@@ -232,7 +245,7 @@ function HomePage(){
       <div class="relative max-w-3xl mx-auto">
         <div class="inline-flex items-center gap-2 bg-brand/10 border border-brand/30 rounded-full px-4 py-1.5 mb-6">
           <span class="badge text-accent text-xs font-medium">●</span>
-          <span class="text-brand text-sm font-medium">58 gyms live in Bolton • No membership needed</span>
+          <span class="text-brand text-sm font-medium">${GYM_COUNT} gyms live in Bolton • No membership needed</span>
         </div>
         <h1 class="font-brand text-5xl md:text-7xl font-extrabold text-white mb-4 leading-tight">
           Book a Gym.<br><span class="text-brand">Anywhere.</span>
@@ -249,7 +262,7 @@ function HomePage(){
     <!-- Trust bar -->
     <section class="py-8 border-y border-slate-800 bg-slate-900/50">
       <div class="max-w-5xl mx-auto flex flex-wrap justify-center gap-8 px-4 text-center">
-        <div><span class="text-2xl font-bold text-white">58</span><p class="text-xs text-slate-500">Gyms Live</p></div>
+        <div><span class="text-2xl font-bold text-white">${GYM_COUNT}</span><p class="text-xs text-slate-500">Gyms Live</p></div>
         <div><span class="text-2xl font-bold text-white">£5</span><p class="text-xs text-slate-500">From / Session</p></div>
         <div><span class="text-2xl font-bold text-white">24hr</span><p class="text-xs text-slate-500">Day Pass</p></div>
         <div><span class="text-2xl font-bold text-white">QR</span><p class="text-xs text-slate-500">Scan Entry</p></div>
@@ -492,8 +505,19 @@ function GymProfilePage(){
           </div>
         </div>
 
+        <!-- Mobile Sticky Book Now CTA -->
+        <div class="lg:hidden fixed bottom-0 left-0 right-0 bg-dark/98 backdrop-blur-lg border-t border-slate-700 p-3 z-40 flex items-center justify-between">
+          <div>
+            <p class="text-white font-bold text-lg">£${gym.price_tier||'5'}.00</p>
+            <p class="text-slate-400 text-xs">24-Hour Day Pass</p>
+          </div>
+          <button onclick="handleBookNow('${gym.id||gym.place_id}')" class="bg-brand hover:bg-orange-600 text-white font-bold py-3 px-8 rounded-xl text-base transition shadow-lg shadow-brand/20">
+            Book Now
+          </button>
+        </div>
+
         <!-- Booking Sidebar (Task 5 - 3-step flow, Task 9 - conviction, Task 12 - 24hr pass, Task 19 - guest) -->
-        <div class="lg:col-span-1">
+        <div class="lg:col-span-1 hidden lg:block">
           <div class="sticky top-20 bg-card rounded-2xl border border-slate-700 p-6 space-y-4">
             <div class="text-center">
               <p class="text-slate-400 text-sm">24-Hour Day Pass</p>
@@ -1087,7 +1111,7 @@ function render(){
   else if(path==='/login'||path==='/signup')page=LoginPage();
   else if(path==='/how-it-works')page=InfoPage('How It Works','<p>1. Find a gym near you using GPS or search</p><p>2. Book a 24-hour day pass from £5</p><p>3. Pay with Apple Pay, Google Pay, or card (guest checkout available)</p><p>4. Get your QR code — scan in at the gym, scan out when done</p><p>5. Rate your session and earn rewards</p>');
   else if(path==='/pricing')page=InfoPage('Pricing','<p class="text-2xl font-bold text-white">From £5 per session</p><p>4 tiers based on gym quality: Basic £5 · Standard £7.50 · Premium £12 · Elite £18</p><p>🏷️ Off-peak discount: 25% off before 10am and after 8pm</p><p>📦 Multi-pass: Buy 5 sessions, get 1 free</p><p>💰 Wallet top-up: Add £20, get £22 (10% bonus)</p><p>✅ Free cancellation up to 2 hours before</p><p>No memberships. No contracts. No hidden fees.</p>');
-  else if(path==='/about')page=InfoPage('About ScanGym','<p>ScanGym is the Skyscanner for gyms — a marketplace connecting fitness enthusiasts with gym owners who have unused capacity.</p><p>Founded in Manchester, UK by Mubarak Ibrahim Patel.</p><p>🏋️ 58 gyms live in Bolton</p><p>🎯 Mission: Make any gym accessible to anyone, anywhere, for a fair price.</p><p>📧 info@scangym.com</p>');
+  else if(path==='/about')page=InfoPage('About ScanGym','<p>ScanGym is the Skyscanner for gyms — a marketplace connecting fitness enthusiasts with gym owners who have unused capacity.</p><p>Founded in Manchester, UK by Mubarak Ibrahim Patel.</p><p>🏋️ Growing gym network in Bolton</p><p>🎯 Mission: Make any gym accessible to anyone, anywhere, for a fair price.</p><p>📧 info@scangym.com</p>');
   else if(path==='/faq')page=InfoPage('FAQ','<p><strong>How much does it cost?</strong><br>From £5 per 24-hour session. No membership needed.</p><p><strong>How do I get in?</strong><br>QR code on your phone. Scan at the door.</p><p><strong>Can I cancel?</strong><br>Free cancellation up to 2 hours before your session.</p><p><strong>Do I need an account?</strong><br>No — guest checkout available with just email + card.</p><p><strong>How long can I stay?</strong><br>24 hours from scan-in. Scan out when done.</p>');
   else if(path==='/for-gyms'||path==='/list-your-gym'||path==='/owner-benefits')page=InfoPage('For Gym Owners','<p class="text-xl text-white font-bold">Fill your empty hours. Earn more revenue.</p><p>ScanGym sends you paying customers during your quiet periods. You control:</p><p>💸 <strong>Your pricing</strong> — set in one tap from 4 tiers</p><p>⏸️ <strong>Your availability</strong> — pause bookings anytime with one toggle</p><p>📊 <strong>Your data</strong> — see bookings, revenue, ratings, peak hours</p><p>🥤 <strong>Free equipment</strong> — vending machines, QR scanners for listed gyms</p><p>🏦 <strong>Gym loans</strong> — opening finance from £10k-500k</p><p>Zero listing fee. Zero commitment. You only pay a small commission on bookings.</p><p><a onclick="navigate(\'/contact\')" class="text-brand cursor-pointer">Contact us to list your gym →</a></p>');
   else if(path==='/blog')page=InfoPage('Blog / Transformations','<p class="text-xl text-white">Real transformations. Real people. Real gyms.</p><p>Coming soon — stories from ScanGym users who found their perfect gym.</p><p>Want to share your story? <a onclick="navigate(\'/contact\')" class="text-brand cursor-pointer">Get in touch →</a></p>');

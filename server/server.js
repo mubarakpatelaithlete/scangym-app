@@ -47,6 +47,55 @@ app.use(session({
 // Analytics tracking middleware (Task 21)
 app.use(analyticsMiddleware);
 
+// Stripe webhook needs raw body BEFORE json parsing
+app.post('/api/payment/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  const pool = require('./middleware/db');
+  const STRIPE_SECRET = process.env.STRIPE_SECRET_KEY;
+  const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
+  let stripe;
+  try { stripe = require('stripe')(STRIPE_SECRET); } catch(e) { return res.status(500).send('Stripe not configured'); }
+
+  let event;
+  try {
+    if (STRIPE_WEBHOOK_SECRET) {
+      const sig = req.headers['stripe-signature'];
+      event = stripe.webhooks.constructEvent(req.body, sig, STRIPE_WEBHOOK_SECRET);
+    } else {
+      // No webhook secret configured — parse directly (less secure, but functional)
+      event = JSON.parse(req.body.toString());
+    }
+  } catch (err) {
+    console.error('Webhook signature verification failed:', err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object;
+    if (session.payment_status === 'paid' && session.metadata?.bookingId) {
+      const bookingId = parseInt(session.metadata.bookingId);
+      try {
+        // Generate QR code token
+        const qrToken = 'BOOK_' + require('crypto').randomBytes(8).toString('hex').toUpperCase();
+        await pool.query(
+          `UPDATE public.bookings
+           SET status = 'confirmed',
+               qr_code = $1,
+               stripe_payment_intent_id = $2,
+               stripe_payment_status = 'paid',
+               updated_at = NOW()
+           WHERE id = $3 AND status != 'confirmed'`,
+          [qrToken, session.payment_intent, bookingId]
+        );
+        console.log(`✅ Webhook: Booking #${bookingId} confirmed via Stripe`);
+      } catch (dbErr) {
+        console.error('Webhook DB error:', dbErr.message);
+      }
+    }
+  }
+
+  res.json({ received: true });
+});
+
 // Parse JSON for API routes
 const apiPaths = [
   '/api/reviews', '/api/chat', '/api/wallet', '/api/guest',
@@ -67,11 +116,18 @@ app.get('/api/v2/health', (req, res) => {
 });
 
 // -- Config endpoint (public keys for frontend) --
-app.get("/api/config", (req, res) => {
+app.get("/api/config", async (req, res) => {
+  let gymCount = 2;
+  try {
+    const pool = require('./middleware/db');
+    const r = await pool.query("SELECT COUNT(*) FROM gyms WHERE is_active = true");
+    gymCount = parseInt(r.rows[0].count) || 2;
+  } catch(e) {}
   res.json({
     mapsKey: process.env.GOOGLE_MAPS_API_KEY || "",
     stripeKey: process.env.STRIPE_PUBLISHABLE_KEY || "",
     brand: "ScanGym",
+    gymCount,
   });
 });
 
