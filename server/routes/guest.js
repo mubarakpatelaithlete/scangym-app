@@ -126,6 +126,38 @@ router.get('/gym/:id', async (req, res) => {
   }
 });
 
+// GET /api/guest/featured - Featured gyms (fallback when GPS unavailable)
+router.get('/featured', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT id, name, city, address, average_rating, total_reviews, photos,
+             hourly_rate, day_pass_price, latitude, longitude, description
+      FROM gyms WHERE is_active = true
+      ORDER BY average_rating DESC NULLS LAST
+      LIMIT 20
+    `);
+    res.json({
+      gyms: result.rows.map(g => ({
+        id: g.id,
+        name: g.name,
+        city: g.city,
+        address: g.address,
+        vicinity: g.address || g.city,
+        rating: g.average_rating,
+        user_ratings_total: g.total_reviews || 0,
+        dayPassPrice: g.day_pass_price || g.hourly_rate || '5.00',
+        price_tier: g.day_pass_price || '5.00',
+        latitude: g.latitude,
+        longitude: g.longitude,
+        photo: g.photos ? (Array.isArray(g.photos) ? g.photos[0] : null) : null,
+      })),
+    });
+  } catch (err) {
+    console.error('Featured gyms error:', err);
+    res.status(500).json({ error: 'Failed to fetch featured gyms' });
+  }
+});
+
 // GET /api/guest/popular - Popular gyms
 router.get('/popular', async (req, res) => {
   try {
