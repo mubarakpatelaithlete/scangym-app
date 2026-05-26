@@ -21,6 +21,7 @@ const authRouter = require('./routes/auth');
 const bookingRouter = require('./routes/booking');
 const paymentRouter = require('./routes/payment');
 const liveSearchRouter = require('./routes/liveSearch');
+const geolocationRouter = require('./routes/geolocation');
 const analyticsMiddleware = require('./middleware/analytics');
 
 const app = express();
@@ -103,6 +104,7 @@ const apiPaths = [
   '/api/coach', '/api/gym-profile', '/api/owner', '/api/stats',
   '/api/creators', '/api/directions', '/api/qr', '/api/conviction',
   '/api/auth', '/api/bookings', '/api/payment', '/api/live',
+  '/api/geolocation',
 ];
 apiPaths.forEach(p => app.use(p, express.json()));
 
@@ -152,6 +154,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/bookings', bookingRouter);
 app.use('/api/payment', paymentRouter);
 app.use('/api/live', liveSearchRouter);
+app.use('/api/geolocation', geolocationRouter);
 
 // -- Serve Frontend --
 if (fs.existsSync(FRONTEND_DIR)) {
