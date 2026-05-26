@@ -157,6 +157,12 @@ app.use('/api/live', liveSearchRouter);
 app.use('/api/geolocation', geolocationRouter);
 
 // -- Serve Frontend --
+// Digital Asset Links for Android TWA verification
+app.get('/.well-known/assetlinks.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send('[\n  {\n    "relation": [\n      "delegate_permission/common.handle_all_urls"\n    ],\n    "target": {\n      "namespace": "android_app",\n      "package_name": "com.scangym.app",\n      "sha256_cert_fingerprints": [\n        "DB:C8:C8:0A:38:CD:2D:79:1D:35:20:A1:88:8A:5B:80:0F:3E:D2:A8:EE:D9:1C:28:56:8B:08:D2:51:EA:98:8D"\n      ]\n    }\n  }\n]');
+});
+
 if (fs.existsSync(FRONTEND_DIR)) {
   app.use(express.static(FRONTEND_DIR, { maxAge: '1d', dotfiles: 'allow' }));
 
