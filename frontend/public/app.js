@@ -78,16 +78,8 @@ function navigate(path,pushState=true){
 window.addEventListener('popstate',()=>{state.route=location.pathname;render()});
 
 // ─── Geolocation ───
-function getLocation(){
-  return new Promise((resolve)=>{
-    if(navigator.geolocation){
-      navigator.geolocation.getCurrentPosition(
-        p=>resolve({lat:p.coords.latitude,lng:p.coords.longitude}),
-        ()=>resolve({lat:53.578,lng:-2.429}) // Default Bolton
-      );
-    }else resolve({lat:53.578,lng:-2.429});
-  });
-}
+// 5-layer waterfall GPS loaded from robust-location.js
+// getLocation() is now defined globally by that script
 
 // ─── Conviction Techniques (Task 9) ───
 const BADGES=[
@@ -1304,6 +1296,12 @@ window.navigate=navigate;
 window.findGyms=async function(){
   navigate('/explore');
   const loc=await getLocation();
+  if(!loc){
+    // All 5 GPS layers failed — focus the search bar so user can type location
+    const el=document.getElementById('search-input');
+    if(el){el.focus();el.placeholder='Type your city or postcode...';}
+    return;
+  }
   state.searchLat=loc.lat;state.searchLng=loc.lng;
   await loadGyms(loc.lat,loc.lng);
 };
@@ -1401,7 +1399,7 @@ render();
 
 // Auto-load data based on initial route
 if(state.route==='/explore'||state.route==='/nearby'){
-  getLocation().then(loc=>{state.searchLat=loc.lat;state.searchLng=loc.lng;loadGyms(loc.lat,loc.lng)});
+  getLocation().then(loc=>{if(loc){state.searchLat=loc.lat;state.searchLng=loc.lng;loadGyms(loc.lat,loc.lng);}});
 }
 // Load gym profile when visiting /gym/:id directly
 if(state.route.startsWith('/gym/')){
