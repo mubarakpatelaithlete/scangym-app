@@ -109,7 +109,7 @@ apiPaths.forEach(p => app.use(p, express.json()));
 // -- Health check --
 app.get('/api/v2/health', (req, res) => {
   res.json({
-    status: 'ok', version: 'v3.2.1', brand: 'ScanGym',
+    status: 'ok', version: 'v3.3.0', brand: 'ScanGym',
     ts: new Date().toISOString(),
     features: 18, tasks: '24/24 + auth + booking + payment + live-search', ok: true,
     frontend: fs.existsSync(path.join(FRONTEND_DIR, 'index.html')) ? 'v3' : 'none',
