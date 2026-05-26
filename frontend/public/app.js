@@ -1,8 +1,9 @@
-// ScanGym Frontend v3.1.1 - Full Booking Pipeline
+// ScanGym Frontend v3.2.0 - Live Google Places API
 const API='/api/v2';
 let MAPS_KEY='';
 let STRIPE_PK='';
 let GYM_COUNT=2;
+function fmtCount(n){if(n>=1000000)return (n/1000000).toFixed(1).replace(/\.0$/,'')+'M+';if(n>=1000)return (n/1000).toFixed(0)+'K+';return n.toLocaleString();}
 
 // Load public config from server (keys injected via env vars, not hardcoded)
 async function loadConfig() {
@@ -198,7 +199,7 @@ function Footer(){
     </div>
     <div class="max-w-7xl mx-auto border-t border-slate-800 pt-6 flex flex-col md:flex-row items-center justify-between">
       <p class="text-slate-600 text-xs">© 2026 ScanGym. All rights reserved.</p>
-      <p class="text-slate-700 text-xs mt-2 md:mt-0">Manchester, UK • ${GYM_COUNT} gyms and growing 🚀</p>
+      <p class="text-slate-700 text-xs mt-2 md:mt-0">Manchester, UK • ${fmtCount(GYM_COUNT)} gyms and growing 🚀</p>
     </div>
   </footer>`;
 }
@@ -255,7 +256,7 @@ function HomePage(){
       <div class="relative max-w-3xl mx-auto">
         <div class="inline-flex items-center gap-2 bg-brand/10 border border-brand/30 rounded-full px-4 py-1.5 mb-6">
           <span class="badge text-accent text-xs font-medium">●</span>
-          <span class="text-brand text-sm font-medium">${GYM_COUNT} gyms live in Bolton • No membership needed</span>
+          <span class="text-brand text-sm font-medium">${fmtCount(GYM_COUNT)} gyms live in Bolton • No membership needed</span>
         </div>
         <h1 class="font-brand text-5xl md:text-7xl font-extrabold text-white mb-4 leading-tight">
           Book a Gym.<br><span class="text-brand">Anywhere.</span>
@@ -279,7 +280,7 @@ function HomePage(){
     <!-- Trust bar -->
     <section class="py-8 border-y border-slate-800 bg-slate-900/50">
       <div class="max-w-5xl mx-auto flex flex-wrap justify-center gap-8 px-4 text-center">
-        <div><span class="text-2xl font-bold text-white">${GYM_COUNT}</span><p class="text-xs text-slate-500">Gyms Live</p></div>
+        <div><span class="text-2xl font-bold text-white">${fmtCount(GYM_COUNT)}</span><p class="text-xs text-slate-500">Gyms Live</p></div>
         <div><span class="text-2xl font-bold text-white">£5</span><p class="text-xs text-slate-500">From / Session</p></div>
         <div><span class="text-2xl font-bold text-white">24hr</span><p class="text-xs text-slate-500">Day Pass</p></div>
         <div><span class="text-2xl font-bold text-white">QR</span><p class="text-xs text-slate-500">Scan Entry</p></div>
