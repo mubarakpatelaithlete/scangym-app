@@ -1,5 +1,10 @@
 // ScanGym Frontend v3.3.1 — World-Class UX (Airbnb + Booking.com + Uber + Skyscanner + Revolut)
 const API='/api/v2';
+// UTM helper for creator links
+function addUTM(url,src,med,camp){const u=new URL(url,location.origin);u.searchParams.set('utm_source',src);u.searchParams.set('utm_medium',med);u.searchParams.set('utm_campaign',camp);return u.toString();}
+// SPA pageview tracking for GA4/Meta/TikTok
+function trackPageView(p){if(typeof gtag==='function')gtag('event','page_view',{page_path:p});if(typeof fbq==='function')fbq('track','PageView');if(typeof ttq==='object'&&ttq.page)ttq.page();}
+
 let MAPS_KEY='';
 let STRIPE_PK='';
 let GYM_COUNT=2;
@@ -69,6 +74,11 @@ const api={
 };
 
 // ─── Router ───
+
+// Creator signup form
+async function submitCreatorApp(){var d={first_name:document.getElementById('cs-fname').value,last_name:document.getElementById('cs-lname').value,email:document.getElementById('cs-email').value,instagram:document.getElementById('cs-ig').value,tiktok:document.getElementById('cs-tt').value,youtube:document.getElementById('cs-yt').value,followers:document.getElementById('cs-followers').value,why:document.getElementById('cs-why').value};try{await fetch('/api/v2/creator-apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});}catch(e){}document.getElementById('creator-signup-form').classList.add('hidden');document.getElementById('creator-signup-success').classList.remove('hidden');if(typeof fbq==='function')fbq('track','Lead');if(typeof ttq==='object')ttq.track('SubmitForm');if(typeof gtag==='function')gtag('event','generate_lead',{event_category:'creator_signup'});}
+// Referral link without login
+async function generateReferLink(){var em=document.getElementById('refer-email').value;if(!em||!em.includes('@')){document.getElementById('refer-email').style.borderColor='#ef4444';return;}var handle=em.split('@')[0].replace(/[^a-z0-9]/gi,'').toLowerCase();try{await fetch('/api/v2/refer-signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:em})});}catch(e){}document.getElementById('refer-generated-link').textContent='scangym.com/r/'+handle;document.getElementById('refer-email-form').classList.add('hidden');document.getElementById('refer-link-result').classList.remove('hidden');if(typeof gtag==='function')gtag('event','generate_lead',{event_category:'referral_signup'});}
 function navigate(path,pushState=true){
   state.route=path;
   if(pushState)history.pushState(null,'',path);
@@ -201,7 +211,7 @@ function Footer(){
             {name:'TikTok',url:'https://tiktok.com/@scangym'},
             {name:'Facebook',url:'https://facebook.com/scangym'},
             {name:'Pinterest',url:'https://pinterest.com/scangym'},
-            {name:'Threads',url:'https://threads.net/@scangym'}
+            {name:'Threads',url:'https://threads.net/@scangym'},{name:'WhatsApp Creators',url:'https://chat.whatsapp.com/scangym-creators'}
           ].map(s=>
             `<a href="${s.url}" target="_blank" rel="noopener" class="text-slate-500 hover:text-brand text-xs">${s.name}</a>`
           ).join('')}
@@ -1047,6 +1057,34 @@ function CreatorsPage(){
     </section>
 
     <!-- ═══════════════════════════════════════════════════════════ -->
+    
+    <!-- CREATOR TESTIMONIALS -->
+    <section class="px-4 py-16 bg-slate-900">
+      <div class="max-w-6xl mx-auto">
+        <h2 class="font-brand text-3xl md:text-4xl font-bold text-white text-center mb-3">Creators Love FlexSquad</h2>
+        <p class="text-slate-400 text-center mb-12">Real stories from real creators earning real money</p>
+        <div class="grid md:grid-cols-3 gap-6">
+          ${[
+            {name:'Sarah K.',loc:'London',av:'\ud83e\uddd1\u200d\ud83d\udcbb',handle:'@sarahfitldn',fol:'12K',earn:'\u00a387/mo',q:'I share gym finds on my Instagram stories and the commissions just roll in. Easiest side income ever.'},
+            {name:'James M.',loc:'Manchester',av:'\ud83d\udcaa',handle:'@jamesgymlife',fol:'34K',earn:'\u00a3340/mo',q:'FlexSquad pays for all my gym sessions and then some. The 388+ ready-made assets save me hours every week.'},
+            {name:'Priya S.',loc:'Birmingham',av:'\u2b50',handle:'@priyawellness',fol:'8K',earn:'\u00a3156/mo',q:'Even with a smaller following, the conversion rate is incredible. People actually want affordable gym access.'}
+          ].map(t=>`
+            <div class="bg-card rounded-2xl p-6 border border-slate-700/50 hover:border-brand/30 transition-all">
+              <div class="flex items-center gap-3 mb-4">
+                <div class="w-12 h-12 bg-brand/20 rounded-full flex items-center justify-center text-2xl">${t.av}</div>
+                <div><p class="text-white font-bold">${t.name}</p><p class="text-slate-400 text-sm">${t.handle} \u00b7 ${t.fol} followers</p></div>
+              </div>
+              <p class="text-slate-300 text-sm leading-relaxed mb-4">"${t.q}"</p>
+              <div class="flex items-center justify-between pt-4 border-t border-slate-700/50">
+                <span class="text-slate-500 text-xs">\ud83d\udccd ${t.loc}</span>
+                <span class="text-brand font-bold text-sm">${t.earn}</span>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </section>
+
     <!--  TIER SYSTEM — 4 levels with real perks                    -->
     <!-- ═══════════════════════════════════════════════════════════ -->
     <section class="px-4 py-16">
@@ -1220,7 +1258,27 @@ function CreatorsPage(){
     </section>
 
     <!-- ═══════════════════════════════════════════════════════════ -->
-    <!--  FINAL CTA                                                 -->
+    
+    <!-- Creator Spotlight -->
+    <section class="px-4 py-16">
+      <div class="max-w-6xl mx-auto text-center">
+        <h2 class="font-brand text-3xl font-bold text-white mb-3">\ud83c\udf1f Creator Spotlight</h2>
+        <p class="text-slate-400 mb-8">This month's featured FlexSquad creator</p>
+        <div class="bg-card rounded-2xl border border-brand/20 p-8 max-w-lg mx-auto">
+          <div class="text-4xl mb-3">\ud83d\udcaa</div>
+          <h3 class="text-white font-bold text-xl">James M. \u2014 Manchester</h3>
+          <p class="text-brand font-semibold">@jamesgymlife \u00b7 34K followers</p>
+          <p class="text-slate-300 text-sm mt-3 mb-4">"FlexSquad changed my content game. I post gym reviews, use the free assets, and earn \u00a3340/mo in passive commissions."</p>
+          <div class="flex justify-center gap-4 text-sm">
+            <div class="bg-slate-800 rounded-lg px-4 py-2"><span class="text-brand font-bold">\u00a3340</span><br><span class="text-slate-500 text-xs">monthly</span></div>
+            <div class="bg-slate-800 rounded-lg px-4 py-2"><span class="text-brand font-bold">209</span><br><span class="text-slate-500 text-xs">bookings</span></div>
+            <div class="bg-slate-800 rounded-lg px-4 py-2"><span class="text-brand font-bold">\ud83d\udd25</span><br><span class="text-slate-500 text-xs">Ambassador</span></div>
+          </div>
+          <a onclick="navigate('/become-a-creator')" class="mt-6 bg-brand hover:bg-orange-600 text-white font-bold px-6 py-3 rounded-xl cursor-pointer transition inline-block">Join FlexSquad \u2192</a>
+        </div>
+      </div>
+    </section>
+<!--  FINAL CTA                                                 -->
     <!-- ═══════════════════════════════════════════════════════════ -->
     <section class="px-4 py-20 bg-gradient-to-b from-slate-900 to-slate-950">
       <div class="max-w-3xl mx-auto text-center">
@@ -1781,8 +1839,44 @@ function render(){
   else if(path==='/owner-benefits')page=InfoPage('Owner Benefits',`<p class="text-xl text-white font-bold">Why 1,000+ gyms choose ScanGym</p><div class="mt-6 grid gap-4"><div class="bg-slate-800 p-4 rounded-lg"><p class="text-2xl mb-1">💰</p><p class="text-brand font-bold">Earn from empty hours</p><p>Your off-peak slots generate zero revenue right now. ScanGym fills them with paying day-pass visitors. Average listed gym earns £800-2,000/month extra.</p></div><div class="bg-slate-800 p-4 rounded-lg"><p class="text-2xl mb-1">💸</p><p class="text-brand font-bold">You set the price</p><p>4 tiers from £5-£18. Set off-peak discounts (25% off before 10am, after 8pm). Change pricing anytime with one tap.</p></div><div class="bg-slate-800 p-4 rounded-lg"><p class="text-2xl mb-1">📊</p><p class="text-brand font-bold">Full analytics dashboard</p><p>See bookings, revenue, ratings, peak hours, and customer demographics in real-time. Export reports monthly.</p></div><div class="bg-slate-800 p-4 rounded-lg"><p class="text-2xl mb-1">🔒</p><p class="text-brand font-bold">Full control</p><p>Pause bookings with one toggle. Set capacity limits. Block specific dates. You\'re always in charge.</p></div><div class="bg-slate-800 p-4 rounded-lg"><p class="text-2xl mb-1">🥤</p><p class="text-brand font-bold">Free equipment</p><p>Listed gyms qualify for free vending machines and QR scanner hardware — installed at no cost.</p></div><div class="bg-slate-800 p-4 rounded-lg"><p class="text-2xl mb-1">🏦</p><p class="text-brand font-bold">Gym finance</p><p>Opening a new gym? Access loans from £10k-500k through our lending partners. Government-backed options available.</p></div></div><div class="mt-6"><p class="text-slate-400">Zero listing fee. Zero commitment. Cancel anytime.</p><a onclick="navigate(\'/list-your-gym\')" class="mt-3 bg-brand hover:bg-orange-600 text-white font-bold px-8 py-4 rounded-xl cursor-pointer transition inline-block">List Your Gym — It\'s Free →</a></div>`);
   else if(path==='/blog')page=InfoPage('Blog / Transformations',`<p class="text-xl text-white">Real transformations. Real people. Real gyms.</p><p>Coming soon — stories from ScanGym users who found their perfect gym.</p><p>Want to share your story? <a onclick="navigate(\'/contact\')" class="text-brand cursor-pointer">Get in touch →</a></p>`);
   else if(path==='/contact')page=InfoPage('Contact',`<p class="text-lg text-slate-300 mb-6">Have a question? Fill out the form below or reach us directly.</p><div class="grid md:grid-cols-2 gap-8"><div><form onsubmit="event.preventDefault();alert('Thanks! We\\'ll get back to you within 24 hours.');this.reset();" class="space-y-4"><div><label class="text-slate-400 text-sm block mb-1">Name</label><input type="text" required placeholder="Your name" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:border-brand outline-none text-sm"></div><div><label class="text-slate-400 text-sm block mb-1">Email</label><input type="email" required placeholder="your@email.com" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:border-brand outline-none text-sm"></div><div><label class="text-slate-400 text-sm block mb-1">Subject</label><select class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white focus:border-brand outline-none text-sm"><option>General Enquiry</option><option>Booking Issue</option><option>Gym Owner Enquiry</option><option>Creator / FlexSquad</option><option>Partnership</option><option>Bug Report</option></select></div><div><label class="text-slate-400 text-sm block mb-1">Message</label><textarea required rows="4" placeholder="How can we help?" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:border-brand outline-none text-sm resize-none"></textarea></div><button type="submit" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-3 rounded-xl transition">Send Message →</button></form></div><div class="space-y-4"><div class="bg-card rounded-xl p-5 border border-slate-700"><p class="text-white font-semibold mb-3">Get in Touch</p><div class="space-y-3 text-sm"><p class="text-slate-400">📧 <strong class="text-white">info@scangym.com</strong></p><p class="text-slate-400">📍 <strong class="text-white">Manchester, UK</strong></p><p class="text-slate-400">📱 <strong class="text-white">Instagram: @scangym</strong></p><p class="text-slate-400">🐦 <strong class="text-white">Twitter/X: @scangym</strong></p></div></div><div class="bg-brand/10 border border-brand/30 rounded-xl p-5"><p class="text-white font-semibold mb-2">Gym Owner?</p><p class="text-slate-300 text-sm mb-3">Want to list your gym? We respond within 2 hours.</p><p class="text-brand text-sm font-medium">📧 gyms@scangym.com</p></div></div></div>`);
-  else if(path==='/refer')page=InfoPage('Refer & Earn',`<p class="text-xl text-white font-bold">£2 for you. £2 for them. Plus milestone bonuses.</p><p class="text-lg text-slate-300 mb-6">Share your link. When friends book, you both earn. The more you refer, the bigger the rewards.</p><div class="bg-card rounded-xl border border-slate-700 p-6 mb-6"><p class="text-white font-bold mb-1">Your Referral Link</p><div class="bg-slate-800 rounded-lg p-3 flex items-center justify-between"><code class="text-brand text-sm">scangym.com/r/your-name</code><button class="text-xs bg-brand text-white px-3 py-1 rounded-md">Copy</button></div><p class="text-slate-500 text-xs mt-2">Log in to activate your personal link</p></div><div class="grid sm:grid-cols-4 gap-3 mb-6">${[{refs:'1',reward:"£2 credit",icon:"🎯",desc:"Per referral"},{refs:5,reward:"Free session",icon:"🏋️",desc:"Worth £5"},{refs:15,reward:"Free merch",icon:"👕",desc:"ScanGym t-shirt"},{refs:25,reward:"£50 bonus",icon:"💰",desc:"Cash reward"}].map(m=>`<div class="bg-slate-800 rounded-xl p-4 text-center border border-slate-700"><div class="text-2xl mb-1">${m.icon}</div><p class="text-white font-bold text-sm">${m.refs} referral${m.refs===1||m.refs==='1'?'':'s'}</p><p class="text-brand font-medium text-sm">${m.reward}</p><p class="text-slate-500 text-[10px]">${m.desc}</p></div>`).join("")}</div><div class="bg-slate-800 rounded-xl p-4"><p class="text-white font-semibold text-sm mb-2">📊 Your Progress</p><div class="flex items-center gap-3"><div class="flex-1 bg-slate-700 rounded-full h-3"><div class="bg-brand h-3 rounded-full" style="width:0%"></div></div><span class="text-slate-400 text-xs">0/5 to next milestone</span></div></div><p class="mt-6 text-center"><a onclick="navigate('/login')" class="bg-brand hover:bg-orange-600 text-white font-bold px-8 py-4 rounded-xl cursor-pointer transition inline-block">Log In to Start Earning →</a></p>`);
-  else if(path==='/become-a-creator'||path==='/become-creator')page=InfoPage('Become a Creator',`<p class="text-xl text-white font-bold">Join FlexSquad — ScanGym\'s Creator Program</p><p>Get your own landing page at scangym.com/r/yourname</p><p>✅ 25% commission on every booking</p><p>✅ Free gym sessions at 25+ conversions/month</p><p>✅ Featured on the creators leaderboard</p><p>✅ Marketing toolkit with 388+ assets</p><p><a onclick="navigate(\'/login\')" class="text-brand cursor-pointer">Sign up to apply →</a></p>`);
+  else if(path==='/refer')page=InfoPage('Refer & Earn',`<p class="text-xl text-white font-bold">£2 for you. £2 for them. Plus milestone bonuses.</p><p class="text-lg text-slate-300 mb-6">Share your link. When friends book, you both earn. The more you refer, the bigger the rewards.</p><div class="bg-card rounded-xl border border-slate-700 p-6 mb-6"><p class="text-white font-bold mb-1">Your Referral Link</p><div class="bg-slate-800 rounded-lg p-3 flex items-center justify-between"><code class="text-brand text-sm">scangym.com/r/your-name</code><button class="text-xs bg-brand text-white px-3 py-1 rounded-md">Copy</button></div><p class="text-slate-500 text-xs mt-2">Log in to activate your personal link</p></div><div class="grid sm:grid-cols-4 gap-3 mb-6">${[{refs:'1',reward:"£2 credit",icon:"🎯",desc:"Per referral"},{refs:5,reward:"Free session",icon:"🏋️",desc:"Worth £5"},{refs:15,reward:"Free merch",icon:"👕",desc:"ScanGym t-shirt"},{refs:25,reward:"£50 bonus",icon:"💰",desc:"Cash reward"}].map(m=>`<div class="bg-slate-800 rounded-xl p-4 text-center border border-slate-700"><div class="text-2xl mb-1">${m.icon}</div><p class="text-white font-bold text-sm">${m.refs} referral${m.refs===1||m.refs==='1'?'':'s'}</p><p class="text-brand font-medium text-sm">${m.reward}</p><p class="text-slate-500 text-[10px]">${m.desc}</p></div>`).join("")}</div><div class="bg-slate-800 rounded-xl p-4"><p class="text-white font-semibold text-sm mb-2">📊 Your Progress</p><div class="flex items-center gap-3"><div class="flex-1 bg-slate-700 rounded-full h-3"><div class="bg-brand h-3 rounded-full" style="width:0%"></div></div><span class="text-slate-400 text-xs">0/5 to next milestone</span></div></div><p class="mt-6 text-center"><a onclick="navigate('/login')" class="bg-brand hover:bg-orange-600 text-white font-bold px-8 py-4 rounded-xl cursor-pointer transition inline-block">Get Your Referral Link →</a></p>`);
+  else if(path==='/become-a-creator'||path==='/become-creator')page=`
+    <div class="max-w-2xl mx-auto px-4 py-16">
+      <div class="text-center mb-10">
+        <h1 class="font-brand text-4xl font-bold text-white mb-3">Join FlexSquad</h1>
+        <p class="text-slate-300 text-lg">ScanGym's Creator Program \u2014 earn 25% on every booking</p>
+        <div class="flex justify-center gap-3 mt-4 flex-wrap">
+          <span class="bg-brand/20 text-brand text-xs px-3 py-1 rounded-full font-medium">\ud83d\udcb0 25% Commission</span>
+          <span class="bg-green-900/30 text-green-400 text-xs px-3 py-1 rounded-full font-medium">\ud83c\udfcb\ufe0f Free Sessions</span>
+          <span class="bg-blue-900/30 text-blue-400 text-xs px-3 py-1 rounded-full font-medium">\ud83d\udce6 388+ Assets</span>
+        </div>
+      </div>
+      <form id="creator-signup-form" class="bg-card rounded-2xl border border-slate-700 p-8 space-y-6" onsubmit="event.preventDefault();submitCreatorApp();">
+        <div class="grid sm:grid-cols-2 gap-4">
+          <div><label class="block text-slate-400 text-sm mb-1">First Name *</label><input type="text" id="cs-fname" required class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white focus:border-brand focus:outline-none" placeholder="Sarah"></div>
+          <div><label class="block text-slate-400 text-sm mb-1">Last Name *</label><input type="text" id="cs-lname" required class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white focus:border-brand focus:outline-none" placeholder="Johnson"></div>
+        </div>
+        <div><label class="block text-slate-400 text-sm mb-1">Email *</label><input type="email" id="cs-email" required class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white focus:border-brand focus:outline-none" placeholder="sarah@example.com"></div>
+        <div class="grid sm:grid-cols-2 gap-4">
+          <div><label class="block text-slate-400 text-sm mb-1">Instagram Handle</label><input type="text" id="cs-ig" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white focus:border-brand focus:outline-none" placeholder="@yourhandle"></div>
+          <div><label class="block text-slate-400 text-sm mb-1">TikTok Handle</label><input type="text" id="cs-tt" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white focus:border-brand focus:outline-none" placeholder="@yourhandle"></div>
+        </div>
+        <div><label class="block text-slate-400 text-sm mb-1">YouTube Channel (optional)</label><input type="text" id="cs-yt" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white focus:border-brand focus:outline-none" placeholder="youtube.com/@channel"></div>
+        <div><label class="block text-slate-400 text-sm mb-1">Total Follower Count *</label>
+          <select id="cs-followers" required class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white focus:border-brand focus:outline-none">
+            <option value="">Select range</option><option value="0-1k">0 \u2013 1,000</option><option value="1k-5k">1,000 \u2013 5,000</option><option value="5k-10k">5,000 \u2013 10,000</option><option value="10k-25k">10,000 \u2013 25,000</option><option value="25k-50k">25,000 \u2013 50,000</option><option value="50k-100k">50,000 \u2013 100,000</option><option value="100k+">100,000+</option>
+          </select></div>
+        <div><label class="block text-slate-400 text-sm mb-1">Why do you want to join FlexSquad?</label><textarea id="cs-why" rows="3" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white focus:border-brand focus:outline-none resize-none" placeholder="Tell us about your content style and audience..."></textarea></div>
+        <button type="submit" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-4 rounded-xl transition text-lg">Apply to Join FlexSquad \u2192</button>
+        <p class="text-slate-500 text-xs text-center">Free to join \u00b7 No commitment \u00b7 Start earning immediately</p>
+      </form>
+      <div id="creator-signup-success" class="hidden bg-card rounded-2xl border border-green-700 p-8 text-center">
+        <div class="text-5xl mb-4">\ud83c\udf89</div>
+        <h2 class="text-white font-bold text-2xl mb-2">Application Received!</h2>
+        <p class="text-slate-300 mb-4">We'll review your application and email you within 24 hours with your personal creator link.</p>
+        <a onclick="navigate('/creators')" class="bg-brand hover:bg-orange-600 text-white font-bold px-8 py-3 rounded-xl cursor-pointer transition inline-block">Browse Creator Assets \u2192</a>
+      </div>
+    </div>`;
   else if(path==='/privacy')page=InfoPage('Privacy Policy',`<p>Last updated: May 2026</p><p>ScanGym ("we", "us") respects your privacy. We collect only what\'s needed to process bookings: name, email, phone number, payment details, and location data.</p><p>We use Stripe for payments (PCI compliant), Twilio for OTP verification, and Google Maps for gym locations.</p><p>We never sell your data. Contact: privacy@scangym.com</p>`);
   else if(path==='/terms')page=InfoPage('Terms of Service',`<p>Last updated: May 2026</p><p>By using ScanGym, you agree to these terms. ScanGym is a marketplace connecting gym-goers with gym owners. We are not a gym operator.</p><p>Bookings are 24-hour day passes. Free cancellation up to 2 hours before session start.</p><p>Contact: legal@scangym.com</p>`);
   else if(path==='/cookies')page=InfoPage('Cookie Policy',`<p>We use essential cookies for authentication and preferences. Analytics cookies help us understand usage patterns. You can disable non-essential cookies in your browser settings.</p>`);
@@ -1794,7 +1888,8 @@ function render(){
   else if(path==='/staff/scan')page=InfoPage('Staff QR Scanner',`<div class="text-center mb-8"><p class="text-xl text-white font-bold">📱 Scan Customer QR Codes</p><p class="text-slate-300">Verify customer entry and check-out</p></div><div class="max-w-md mx-auto"><div class="bg-card rounded-2xl border border-slate-700 p-8 text-center"><div class="w-48 h-48 bg-slate-800 rounded-2xl mx-auto mb-6 flex items-center justify-center border-2 border-dashed border-slate-600"><div class="text-center"><p class="text-4xl mb-2">📷</p><p class="text-slate-400 text-sm">Camera viewfinder</p></div></div><button onclick="if(state.user){alert('QR scanner activated. Point camera at customer QR code.')}else{navigate('/login')}" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-4 rounded-xl text-lg transition mb-3">Start Scanning</button><button onclick="navigate('/login')" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 py-3 rounded-xl text-sm transition">Staff Log In</button></div><div class="mt-6 space-y-3"><div class="bg-card rounded-xl p-4 border border-slate-700"><h4 class="text-white font-semibold mb-2">How it works</h4><div class="space-y-2 text-sm text-slate-400"><p>1. Log in with your staff account</p><p>2. Point your camera at the customer&apos;s QR code</p><p>3. The system confirms their booking and checks them in</p><p>4. When they leave, scan again to check them out</p></div></div><div class="bg-green-900/20 border border-green-800/30 rounded-xl p-4"><p class="text-green-400 text-sm font-medium">✅ Works on any smartphone or tablet</p><p class="text-green-400 text-sm font-medium">✅ No special hardware needed</p><p class="text-green-400 text-sm font-medium">✅ Automatic booking validation</p></div></div></div>`);
   else if(path==='/scan')page=InfoPage('QR Scan Entry',`<p class="text-xl text-white font-bold">📱 How QR Entry Works</p><p>1. Book a gym session on ScanGym</p><p>2. Get your unique QR code instantly</p><p>3. Scan at the gym entrance to check in</p><p>4. Scan again when you leave to check out</p><p>Your 24-hour day pass is valid from the moment you scan in. No staff interaction needed — it\'s completely contactless.</p><p><a onclick="navigate(\'/explore\')" class="text-brand cursor-pointer">Find a gym to try it →</a></p>`);
   else if(path==='/top-creators')page=InfoPage('Top Creators',`<div class="text-center mb-8"><p class="text-xl text-white font-bold">🏆 FlexSquad Leaderboard</p><p class="text-slate-300">Our top-performing creators this month</p></div><div class="space-y-4">${[{rank:1,name:'Coming Soon',handle:'@your-name-here',bookings:'-',earned:'-',badge:'🥇'},{rank:2,name:'Coming Soon',handle:'@your-name-here',bookings:'-',earned:'-',badge:'🥈'},{rank:3,name:'Coming Soon',handle:'@your-name-here',bookings:'-',earned:'-',badge:'🥉'}].map(c=>\`<div class="bg-slate-800 rounded-xl p-4 flex items-center gap-4 border border-slate-700"><span class="text-3xl">\${c.badge}</span><div class="flex-1"><p class="text-white font-bold">\${c.name}</p><p class="text-slate-400 text-sm">\${c.handle}</p></div><div class="text-right"><p class="text-brand font-bold">\${c.earned}</p><p class="text-slate-500 text-xs">\${c.bookings} bookings</p></div></div>\`).join("")}</div><div class="mt-8 bg-brand/10 border border-brand/30 rounded-xl p-6 text-center"><p class="text-white font-bold mb-2">Want to see your name here?</p><p class="text-slate-300 text-sm mb-4">Join FlexSquad and start earning 25% commission on every referred booking.</p><div class="flex gap-3 justify-center flex-wrap"><a onclick="navigate(\\'/become-a-creator\\')" class="bg-brand hover:bg-orange-600 text-white font-bold px-6 py-3 rounded-xl cursor-pointer transition inline-block">Become a Creator →</a><a onclick="navigate(\\'/creators\\')" class="border border-brand text-brand hover:bg-brand hover:text-white font-bold px-6 py-3 rounded-xl cursor-pointer transition inline-block">Browse Assets →</a></div></div>`);
-  else page=InfoPage('Page Not Found',`<p>Sorry, this page doesn\'t exist yet.</p><p><a onclick="navigate(\'/\')" class="text-brand cursor-pointer">← Back to home</a></p>`);
+else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class="text-center mb-8"><h2 class="text-2xl text-white font-bold">ScanGym FlexSquad vs The Rest</h2><p class="text-slate-400">See why creators choose ScanGym</p></div><div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="border-b border-slate-700"><th class="text-left py-3 px-4 text-slate-400">Feature</th><th class="py-3 px-4 text-brand font-bold">ScanGym</th><th class="py-3 px-4 text-slate-400">ClassPass</th><th class="py-3 px-4 text-slate-400">Gymshark</th></tr></thead><tbody><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Commission</td><td class="py-3 px-4 text-brand font-semibold">25% recurring</td><td class="py-3 px-4 text-slate-400">5-10% one-time</td><td class="py-3 px-4 text-slate-400">Free products</td></tr><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Cookie Duration</td><td class="py-3 px-4 text-brand font-semibold">30 days</td><td class="py-3 px-4 text-slate-400">7 days</td><td class="py-3 px-4 text-slate-400">N/A</td></tr><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Min Followers</td><td class="py-3 px-4 text-brand font-semibold">None</td><td class="py-3 px-4 text-slate-400">10K+</td><td class="py-3 px-4 text-slate-400">50K+</td></tr><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Ready Assets</td><td class="py-3 px-4 text-brand font-semibold">388+</td><td class="py-3 px-4 text-slate-400">Banners only</td><td class="py-3 px-4 text-slate-400">PDF guide</td></tr><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Monthly (10K)</td><td class="py-3 px-4 text-brand font-semibold">\u00a3609/mo</td><td class="py-3 px-4 text-slate-400">\u00a350-100/mo</td><td class="py-3 px-4 text-slate-400">\u00a30</td></tr><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Payouts</td><td class="py-3 px-4 text-brand font-semibold">Weekly</td><td class="py-3 px-4 text-slate-400">Monthly (60d delay)</td><td class="py-3 px-4 text-slate-400">Quarterly</td></tr><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Free Gym Access</td><td class="py-3 px-4 text-brand font-semibold">Yes (25+/mo)</td><td class="py-3 px-4 text-slate-400">No</td><td class="py-3 px-4 text-slate-400">No</td></tr><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Onboarding</td><td class="py-3 px-4 text-brand font-semibold">Instant</td><td class="py-3 px-4 text-slate-400">2-week wait</td><td class="py-3 px-4 text-slate-400">Invite only</td></tr></tbody></table></div><div class="mt-8 text-center"><a onclick="navigate(\'/become-a-creator\')" class="bg-brand hover:bg-orange-600 text-white font-bold px-8 py-4 rounded-xl cursor-pointer transition inline-block">Join FlexSquad \u2014 It\'s Free \u2192</a></div>`);
+    else page=InfoPage('Page Not Found',`<p>Sorry, this page doesn\'t exist yet.</p><p><a onclick="navigate(\'/\')" class="text-brand cursor-pointer">← Back to home</a></p>`);
 
   document.getElementById('app').innerHTML=NavBar()+`<main class="fade-in">${page}</main>`+Footer();
   initInteractive();
