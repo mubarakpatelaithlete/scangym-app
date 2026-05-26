@@ -1,6 +1,6 @@
 {
   "name": "scangym-api",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "description": "ScanGym API Server \u2014 Full booking pipeline with auth, payment & QR",
   "main": "server.js",
   "scripts": {
