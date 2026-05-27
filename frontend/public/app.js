@@ -299,7 +299,7 @@ function HomePage(){
       <div class="relative max-w-3xl mx-auto">
         <div class="inline-flex items-center gap-2 bg-brand/10 border border-brand/30 rounded-full px-4 py-1.5 mb-6">
           <span class="badge text-accent text-xs font-medium">●</span>
-          <span class="text-brand text-sm font-medium">${fmtCount(GYM_COUNT)} gyms live in Bolton • No membership needed</span>
+          <span class="text-brand text-sm font-medium">${fmtCount(GYM_COUNT)} gyms worldwide • No membership needed</span>
         </div>
         <h1 class="font-brand text-5xl md:text-7xl font-extrabold text-white mb-4 leading-tight">
           Book a Gym.<br><span class="text-brand">Anywhere.</span>
