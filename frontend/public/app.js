@@ -29,11 +29,10 @@ function initAccordions(){document.querySelectorAll('.accordion-trigger').forEac
 // Init all interactive elements after render
 function initInteractive(){setTimeout(()=>{initCounters();initCarousels();initAccordions();},100);}
 
-// Load public config from server (keys injected via env vars, not hardcoded)
+// Load public config from server (uses prefetched promise if available)
 async function loadConfig() {
   try {
-    const r = await fetch('/api/config');
-    const c = await r.json();
+    const c = window.__configPromise ? await window.__configPromise : await fetch('/api/config').then(r=>r.json());
     MAPS_KEY = c.mapsKey || '';
     STRIPE_PK = c.stripeKey || '';
     GYM_COUNT = c.gymCount || 2;
