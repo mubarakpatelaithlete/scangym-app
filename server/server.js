@@ -114,7 +114,7 @@ apiPaths.forEach(p => app.use(p, express.json()));
 // -- Health check --
 app.get('/api/v2/health', (req, res) => {
   res.json({
-    status: 'ok', version: 'v3.3.1', brand: 'ScanGym',
+    status: 'ok', version: 'v4.1.0', brand: 'ScanGym', build: 'viktor-deploy-test-' + Date.now(),
     ts: new Date().toISOString(),
     features: 18, tasks: '24/24 + auth + booking + payment + live-search', ok: true,
     frontend: fs.existsSync(path.join(FRONTEND_DIR, 'index.html')) ? 'v3' : 'none',
@@ -195,5 +195,11 @@ if (fs.existsSync(FRONTEND_DIR)) {
 
 // -- Start --
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`ScanGym v3.1 on :${PORT} | Frontend: ${fs.existsSync(FRONTEND_DIR+'/index.html')?'v3':'proxy'} | Auth: local session`);
+  // List all files in public/ for debugging
+  const pubFiles = fs.existsSync(FRONTEND_DIR) ? fs.readdirSync(FRONTEND_DIR) : ['NO_PUBLIC_DIR'];
+  console.log(`ScanGym v4.1.0 on :${PORT} | Frontend: ${fs.existsSync(FRONTEND_DIR+'/index.html')?'v3':'proxy'} | Auth: local session`);
+  console.log(`Public files: ${pubFiles.join(', ')}`);
+  console.log(`Has styles.css: ${fs.existsSync(path.join(FRONTEND_DIR, 'styles.css'))}`);
+  console.log(`Has sw.js: ${fs.existsSync(path.join(FRONTEND_DIR, 'sw.js'))}`);
+  console.log(`Index.html size: ${fs.existsSync(path.join(FRONTEND_DIR, 'index.html')) ? fs.statSync(path.join(FRONTEND_DIR, 'index.html')).size : 'MISSING'}`);
 });
