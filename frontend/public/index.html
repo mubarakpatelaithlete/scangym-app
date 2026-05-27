@@ -5,23 +5,64 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>ScanGym - Book a Gym. Anywhere.</title>
 <meta name="description" content="Find and book gyms near you. 24-hour day passes, QR entry, no membership needed.">
+
+<!-- Preconnect to critical origins (eliminate DNS+TCP+TLS latency) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<!-- Preload critical resources (browser fetches immediately) -->
+<link rel="preload" href="/app.js" as="script" crossorigin>
+<link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" as="style">
+
+<!-- Tailwind — using CDN with config -->
 <script src="https://cdn.tailwindcss.com"></script>
 <script>tailwind.config={darkMode:'class',theme:{extend:{colors:{brand:'#F97316',accent:'#00e676',dark:'#0f172a',card:'#1e293b'}}}}</script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
+
+<!-- Fonts with display=swap (prevents invisible text during load) -->
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
-<style>body{font-family:'Inter',sans-serif;background:#0f172a;color:#e2e8f0}h1,h2,h3,.font-brand{font-family:'Sora',sans-serif}.fade-in{animation:fi .3s ease-in}@keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}.gym-card:hover{transform:translateY(-4px);box-shadow:0 12px 40px rgba(249,115,22,.15)}.gym-card{transition:all .2s}.badge{animation:pulse 2s infinite}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.7}}</style>
-<!-- GA4 — replace G-XXXXXXXXXX with your Measurement ID -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
-<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-XXXXXXXXXX');</script>
-<!-- Meta Pixel — replace YOUR_PIXEL_ID -->
-<script>!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','YOUR_PIXEL_ID');fbq('track','PageView');</script>
-<noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=YOUR_PIXEL_ID&ev=PageView&noscript=1"/></noscript>
-<!-- TikTok Pixel — replace YOUR_TIKTOK_PIXEL_ID -->
-<script>!function(w,d,t){w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie"];ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);ttq.instance=function(t){for(var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e};ttq.load=function(e,n){var i="https://analytics.tiktok.com/i18n/pixel/events.js";ttq._i=ttq._i||{};ttq._i[e]=[];ttq._i[e]._u=i;ttq._t=ttq._t||{};ttq._t[e+"_"+n]=1;var o=document.createElement("script");o.type="text/javascript";o.async=!0;o.src=i+"?sdkid="+e+"&lib="+t;var a=document.getElementsByTagName("script")[0];a.parentNode.insertBefore(o,a)};ttq.load('YOUR_TIKTOK_PIXEL_ID');ttq.page();}(window,document,'ttq');</script>
+
+<!-- Critical CSS inlined (above-the-fold renders instantly) -->
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:#0f172a;color:#e2e8f0;-webkit-font-smoothing:antialiased}
+h1,h2,h3,.font-brand{font-family:'Sora',sans-serif}
+#app{min-height:100vh}
+.fade-in{animation:fi .3s ease-in}
+@keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.gym-card:hover{transform:translateY(-4px);box-shadow:0 12px 40px rgba(249,115,22,.15)}
+.gym-card{transition:all .2s}
+.badge{animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.7}}
+/* Skeleton loading for instant perceived speed */
+.skeleton{background:linear-gradient(90deg,#1e293b 25%,#334155 50%,#1e293b 75%);background-size:200% 100%;animation:shimmer 1.5s infinite}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+</style>
+
+<!-- Loading skeleton shown instantly while JS loads -->
 </head>
 <body class="bg-dark min-h-screen">
-<div id="app"></div>
-<script src="/robust-location.js"></script>
-<script type="module" src="/app.js"></script>
+<div id="app">
+  <!-- Skeleton UI: shown instantly, replaced when app.js renders -->
+  <nav style="background:#0f172a;border-bottom:1px solid #1e293b;padding:12px 24px;display:flex;align-items:center;justify-content:space-between">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:24px">🏋️</span>
+      <span style="font-family:Sora,sans-serif;font-weight:800;font-size:20px;color:white">Scan<span style="color:#F97316">Gym</span></span>
+    </div>
+    <div style="display:flex;gap:12px">
+      <div class="skeleton" style="width:64px;height:32px;border-radius:8px"></div>
+      <div class="skeleton" style="width:80px;height:32px;border-radius:8px"></div>
+    </div>
+  </nav>
+  <div style="max-width:768px;margin:80px auto;padding:0 24px;text-align:center">
+    <div class="skeleton" style="width:240px;height:24px;border-radius:12px;margin:0 auto 24px"></div>
+    <div class="skeleton" style="width:100%;max-width:500px;height:56px;border-radius:16px;margin:0 auto 16px"></div>
+    <div class="skeleton" style="width:100%;max-width:400px;height:48px;border-radius:12px;margin:0 auto 16px"></div>
+    <div class="skeleton" style="width:200px;height:16px;border-radius:8px;margin:0 auto"></div>
+  </div>
+</div>
+<!-- Prefetch config data while JS loads (eliminates 500ms render-block) -->
+<script>window.__configPromise=fetch('/api/config').then(r=>r.json()).catch(()=>({mapsKey:'',stripeKey:'',brand:'ScanGym',gymCount:1200000,liveSearch:true}));</script>
+<script src="/robust-location.js" defer></script>
+<script src="/app.js" defer></script>
 </body>
 </html>
