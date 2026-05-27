@@ -3,6 +3,7 @@ const path = require('path');
 const cors = require('cors');
 const fs = require('fs');
 const session = require('express-session');
+const compression = require('compression');
 
 // Import feature routes
 const reviewsRouter = require('./routes/reviews');
@@ -31,6 +32,8 @@ const PORT = process.env.PORT || 5000;
 const FRONTEND_DIR = path.join(__dirname, 'public');
 
 // -- Middleware --
+// Gzip/deflate compression — reduces transfer size by 60-80%
+app.use(compression({ level: 6, threshold: 256 }));
 app.use(cors({ origin: true, credentials: true }));
 
 // Session middleware (must come before routes)
@@ -164,12 +167,24 @@ app.get('/.well-known/assetlinks.json', (req, res) => {
 });
 
 if (fs.existsSync(FRONTEND_DIR)) {
-  app.use(express.static(FRONTEND_DIR, { maxAge: '1d', dotfiles: 'allow' }));
+  // Long cache for immutable JS/CSS assets, short for HTML
+  app.use(express.static(FRONTEND_DIR, {
+    maxAge: '7d',
+    dotfiles: 'allow',
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'no-cache'); // Always revalidate HTML
+      } else if (filePath.endsWith('.js') || filePath.endsWith('.css')) {
+        res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+      }
+    }
+  }));
 
   // SPA fallback - serve index.html for all non-API routes
   app.get('*', (req, res) => {
     const indexPath = path.join(FRONTEND_DIR, 'index.html');
     if (fs.existsSync(indexPath)) {
+      res.setHeader('Cache-Control', 'no-cache');
       res.sendFile(indexPath);
     } else {
       res.status(404).json({ error: 'Frontend not available' });
