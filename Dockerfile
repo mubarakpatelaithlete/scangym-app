@@ -2,8 +2,8 @@ FROM node:20-slim
 
 WORKDIR /app
 
-# v3.3.0 speed build
-ARG BUILD_VERSION=3.4.0
+# v4.0.0 — Performance Optimized Build (force clean rebuild)
+ARG BUILD_VERSION=4.0.0
 
 # Copy server deps & install
 COPY server/package.json ./
@@ -19,11 +19,18 @@ COPY frontend/public/ ./public/
 # Minify JavaScript for ~40% smaller files
 RUN terser public/app.js -c -m --toplevel -o public/app.js && \
     terser public/robust-location.js -c -m -o public/robust-location.js && \
+    terser public/sw.js -c -m -o public/sw.js && \
     echo "Minified JS files" && \
     ls -la public/*.js
 
-# Verify liveSearch.js is present
-RUN ls -la routes/liveSearch.js && echo "liveSearch.js OK"
+# Verify critical performance files exist
+RUN echo "=== Build Verification ===" && \
+    ls -la public/index.html && \
+    ls -la public/styles.css && echo "styles.css OK" && \
+    ls -la public/sw.js && echo "sw.js OK" && \
+    ls -la public/app.js && echo "app.js OK" && \
+    ls -la routes/liveSearch.js && echo "liveSearch.js OK" && \
+    echo "=== All critical files present ==="
 
 EXPOSE 3000
 
