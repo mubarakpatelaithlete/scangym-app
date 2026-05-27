@@ -186,6 +186,8 @@ if (fs.existsSync(FRONTEND_DIR)) {
         res.setHeader('Cache-Control', 'no-cache');
       } else if (filePath.endsWith('sw.js')) {
         res.setHeader('Cache-Control', 'no-cache');
+      } else if (filePath.endsWith('app.js') || filePath.endsWith('robust-location.js')) {
+        res.setHeader('Cache-Control', 'no-cache');
       } else if (filePath.endsWith('.js') || filePath.endsWith('.css')) {
         res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
       } else if (/\.(webp|jpg|jpeg|png|gif|svg|ico)$/i.test(filePath)) {
