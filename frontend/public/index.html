@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
 <!-- Preload critical resources (browser fetches immediately) -->
-<link rel="preload" href="/app.js" as="script" crossorigin>
+<link rel="preload" href="/app.js?v=242" as="script" crossorigin>
 <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" as="style">
 
 <!-- Tailwind — using CDN with config -->
@@ -63,6 +63,6 @@ h1,h2,h3,.font-brand{font-family:'Sora',sans-serif}
 <!-- Prefetch config data while JS loads (eliminates 500ms render-block) -->
 <script>window.__configPromise=fetch('/api/config').then(r=>r.json()).catch(()=>({mapsKey:'',stripeKey:'',brand:'ScanGym',gymCount:1200000,liveSearch:true}));</script>
 <script src="/robust-location.js" defer></script>
-<script src="/app.js" defer></script>
+<script src="/app.js?v=242" defer></script>
 </body>
 </html>
