@@ -1722,13 +1722,13 @@ function CreatorsPage(){
       'YouTube Thumbs AI':'images/youtube_thumbs_ai',
     };
             const folder = folderMap[a.cat] || 'images/marketing';
-            const driveThumb=d=>`https://drive.google.com/thumbnail?id=${d}&sz=w250`;const driveUrl=d=>`https://drive.google.com/uc?export=download&id=${d}`;
+            const driveUrl=d=>`https://drive.google.com/uc?export=download&id=${d}`;
+            const ctrCat=c=>c.toLowerCase().replace(/\s+/g,'_').replace(/&/g,'and').replace(/-/g,'_');
+            const ctrThumb=(c,f)=>`${A}/thumbs_ctr/${ctrCat(c)}/${f.replace(/\.[^.]+$/,'')}.webp`;
             return`
             <div class="fs-asset group relative bg-card rounded-xl overflow-hidden border border-slate-700/30 hover:border-brand/30 transition" data-t="${a.type}">
               <div class="aspect-square bg-slate-800 overflow-hidden relative">
-                ${a.type==='video'
-                  ?`<div class="flex items-center justify-center h-full relative">${a.did?`<img src="${driveThumb(a.did)}" class="w-full h-full object-cover opacity-70" onerror="this.outerHTML='<span class=\\'text-3xl opacity-50\\'>🎬</span>'">`:`<span class="text-3xl opacity-50">🎬</span>`}<div class="absolute inset-0 flex items-center justify-center"><div class="w-12 h-12 bg-brand/80 rounded-full flex items-center justify-center group-hover:bg-brand transition"><span class="text-white text-lg ml-0.5">▶</span></div></div></div>`
-                  :`<img src="${a.did?driveThumb(a.did):`${A}/${folder.replace('images/','thumbs/')}/${a.file.replace(/\.(png|jpg|jpeg)$/i,'.webp')}`}" alt="${a.name}" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300" width="250" height="250" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'flex items-center justify-center h-full text-3xl\\'>📸</div>'">`}
+                <img src="${ctrThumb(a.cat,a.file)}" alt="${a.name}" class="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300" width="250" height="250" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'flex items-center justify-center h-full text-3xl\\'>${a.type==='video'?'🎬':'📸'}</div>'">${a.type==='video'?`<div class="absolute inset-0 flex items-center justify-center pointer-events-none"><div class="w-12 h-12 bg-brand/80 rounded-full flex items-center justify-center group-hover:bg-brand transition shadow-lg"><span class="text-white text-lg ml-0.5">▶</span></div></div>`:``}
                 <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition">
                   <a href="${a.did?`https://drive.google.com/uc?export=download&id=${a.did}`:`${A}/${folder}/${a.file}`}" download="${a.file}" onclick="event.stopPropagation()" class="bg-brand hover:bg-green-500 text-white text-[10px] px-2.5 py-1.5 rounded-full font-bold shadow-lg flex items-center gap-1 no-underline" title="Download ${a.name}">⬇ Download</a>
                 </div>
