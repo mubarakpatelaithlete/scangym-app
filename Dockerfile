@@ -3,7 +3,7 @@ FROM node:20-slim
 WORKDIR /app
 
 # v3.3.0 speed build
-ARG BUILD_VERSION=3.3.0
+ARG BUILD_VERSION=3.4.0
 
 # Copy server deps & install
 COPY server/package.json ./
