@@ -11,17 +11,17 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
 <!-- Preload critical resources (browser fetches immediately) -->
-<link rel="preload" href="/app.js?v=242" as="script" crossorigin>
-<link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" as="style">
+<link rel="preload" href="/styles.css" as="style">
+<link rel="preload" href="/app.js" as="script">
 
-<!-- Tailwind — using CDN with config -->
-<script src="https://cdn.tailwindcss.com"></script>
-<script>tailwind.config={darkMode:'class',theme:{extend:{colors:{brand:'#F97316',accent:'#00e676',dark:'#0f172a',card:'#1e293b'}}}}</script>
+<!-- Pre-compiled Tailwind CSS (replaces CDN runtime — 5KB gzip vs 100KB JS) -->
+<link rel="stylesheet" href="/styles.css">
 
-<!-- Fonts with display=swap (prevents invisible text during load) -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+<!-- Fonts: reduced to 3 weights (400, 600, 700) with display=swap -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Sora:wght@600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Sora:wght@600;700&display=swap" rel="stylesheet"></noscript>
 
-<!-- Critical CSS inlined (above-the-fold renders instantly) -->
+<!-- Critical CSS inlined (above-the-fold renders instantly without external CSS) -->
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:#0f172a;color:#e2e8f0;-webkit-font-smoothing:antialiased}
@@ -33,12 +33,24 @@ h1,h2,h3,.font-brand{font-family:'Sora',sans-serif}
 .gym-card{transition:all .2s}
 .badge{animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.7}}
-/* Skeleton loading for instant perceived speed */
 .skeleton{background:linear-gradient(90deg,#1e293b 25%,#334155 50%,#1e293b 75%);background-size:200% 100%;animation:shimmer 1.5s infinite}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 </style>
 
-<!-- Loading skeleton shown instantly while JS loads -->
+<!-- Speculation Rules for instant page transitions (Chrome 121+) -->
+<script type="speculationrules">
+{
+  "prerender": [{
+    "where": { "href_matches": "/*" },
+    "eagerness": "moderate"
+  }],
+  "prefetch": [{
+    "where": { "href_matches": "/*" },
+    "eagerness": "moderate"
+  }]
+}
+</script>
+
 </head>
 <body class="bg-dark min-h-screen">
 <div id="app">
@@ -60,9 +72,20 @@ h1,h2,h3,.font-brand{font-family:'Sora',sans-serif}
     <div class="skeleton" style="width:200px;height:16px;border-radius:8px;margin:0 auto"></div>
   </div>
 </div>
-<!-- Prefetch config data while JS loads (eliminates 500ms render-block) -->
+
+<!-- Prefetch config data while JS loads (eliminates render-block wait) -->
 <script>window.__configPromise=fetch('/api/config').then(r=>r.json()).catch(()=>({mapsKey:'',stripeKey:'',brand:'ScanGym',gymCount:1200000,liveSearch:true}));</script>
+
+<!-- Register service worker for instant repeat visits -->
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('/sw.js').catch(()=>{});
+  });
+}
+</script>
+
 <script src="/robust-location.js" defer></script>
-<script src="/app.js?v=242" defer></script>
+<script src="/app.js" defer></script>
 </body>
 </html>

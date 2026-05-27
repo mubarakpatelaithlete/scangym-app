@@ -16,7 +16,8 @@
     "qrcode": "^1.5.3",
     "nodemailer": "^6.9.7",
     "stripe": "^14.0.0",
-    "compression": "^1.7.4"
+    "compression": "^1.7.4",
+    "shrink-ray-current": "^4.0.3"
   },
   "engines": {
     "node": ">=18.0.0"

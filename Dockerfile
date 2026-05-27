@@ -2,10 +2,10 @@ FROM node:20-slim
 
 WORKDIR /app
 
-# v3.3.0 speed build
-ARG BUILD_VERSION=3.4.0
+# v4.0.0 — Performance Optimization Build
+ARG BUILD_VERSION=4.0.0
 
-# Copy server deps & install
+# Copy server deps & install (including Brotli compression)
 COPY server/package.json ./
 RUN npm install --production
 
@@ -19,11 +19,14 @@ COPY frontend/public/ ./public/
 # Minify JavaScript for ~40% smaller files
 RUN terser public/app.js -c -m --toplevel -o public/app.js && \
     terser public/robust-location.js -c -m -o public/robust-location.js && \
+    terser public/sw.js -c -m -o public/sw.js && \
     echo "Minified JS files" && \
     ls -la public/*.js
 
-# Verify liveSearch.js is present
-RUN ls -la routes/liveSearch.js && echo "liveSearch.js OK"
+# Verify critical files
+RUN ls -la public/styles.css && echo "Pre-compiled CSS OK" && \
+    ls -la public/sw.js && echo "Service Worker OK" && \
+    ls -la routes/liveSearch.js && echo "liveSearch.js OK"
 
 EXPOSE 3000
 
