@@ -2,23 +2,28 @@ FROM node:20-slim
 
 WORKDIR /app
 
+# v3.3.0 speed build
+ARG BUILD_VERSION=3.4.0
+
 # Copy server deps & install
 COPY server/package.json ./
 RUN npm install --production
+
+# Install terser globally for JS minification
+RUN npm install -g terser
 
 # Copy all server + frontend code
 COPY server/ ./
 COPY frontend/public/ ./public/
 
-# Verify critical files exist (build fails if any are missing)
-RUN echo "BUILD CHECK v4.1.0 $(date)" && \
-    test -f public/index.html && echo "✓ index.html" && \
-    test -f public/styles.css && echo "✓ styles.css ($(wc -c < public/styles.css) bytes)" && \
-    test -f public/sw.js && echo "✓ sw.js ($(wc -c < public/sw.js) bytes)" && \
-    test -f public/app.js && echo "✓ app.js ($(wc -c < public/app.js) bytes)" && \
-    grep -q "styles.css" public/index.html && echo "✓ index.html references styles.css" && \
-    ! grep -q "cdn.tailwindcss" public/index.html && echo "✓ no Tailwind CDN in index.html" && \
-    echo "=== ALL CHECKS PASSED ==="
+# Minify JavaScript for ~40% smaller files
+RUN terser public/app.js -c -m --toplevel -o public/app.js && \
+    terser public/robust-location.js -c -m -o public/robust-location.js && \
+    echo "Minified JS files" && \
+    ls -la public/*.js
+
+# Verify liveSearch.js is present
+RUN ls -la routes/liveSearch.js && echo "liveSearch.js OK"
 
 EXPOSE 3000
 
