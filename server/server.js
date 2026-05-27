@@ -3,14 +3,7 @@ const path = require('path');
 const cors = require('cors');
 const fs = require('fs');
 const session = require('express-session');
-
-// Brotli + Zopfli compression (15-20% smaller than gzip alone)
-let compress;
-try {
-  compress = require('shrink-ray-current');
-} catch(e) {
-  compress = require('compression');
-}
+const compression = require('compression');
 
 // Import feature routes
 const reviewsRouter = require('./routes/reviews');
@@ -39,8 +32,8 @@ const PORT = process.env.PORT || 5000;
 const FRONTEND_DIR = path.join(__dirname, 'public');
 
 // -- Middleware --
-// Brotli + gzip compression — reduces transfer size by 70-85%
-app.use(compress({ threshold: 256, brotli: { quality: 4 } }));
+// Gzip/deflate compression — reduces transfer size by 60-80%
+app.use(compression({ level: 6, threshold: 256 }));
 app.use(cors({ origin: true, credentials: true }));
 
 // Session middleware (must come before routes)
@@ -173,41 +166,17 @@ app.get('/.well-known/assetlinks.json', (req, res) => {
   res.send('[\n  {\n    "relation": [\n      "delegate_permission/common.handle_all_urls"\n    ],\n    "target": {\n      "namespace": "android_app",\n      "package_name": "com.scangym.app",\n      "sha256_cert_fingerprints": [\n        "DB:C8:C8:0A:38:CD:2D:79:1D:35:20:A1:88:8A:5B:80:0F:3E:D2:A8:EE:D9:1C:28:56:8B:08:D2:51:EA:98:8D"\n      ]\n    }\n  }\n]');
 });
 
-// -- Security + Performance Headers --
-app.use((req, res, next) => {
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  next();
-});
-
 if (fs.existsSync(FRONTEND_DIR)) {
-  // Optimized static file serving with smart caching
+  // Long cache for immutable JS/CSS assets, short for HTML
   app.use(express.static(FRONTEND_DIR, {
     maxAge: '7d',
     dotfiles: 'allow',
-    etag: true,
-    lastModified: true,
     setHeaders: (res, filePath) => {
-      // HTML: always revalidate
       if (filePath.endsWith('.html')) {
-        res.setHeader('Cache-Control', 'no-cache');
-      }
-      // Service worker: always revalidate (so updates propagate)
-      else if (filePath.endsWith('sw.js')) {
-        res.setHeader('Cache-Control', 'no-cache');
-      }
-      // JS/CSS: immutable long-cache (content-hash when available)
-      else if (filePath.endsWith('.js') || filePath.endsWith('.css')) {
-        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-      }
-      // Images: long cache
-      else if (/\.(webp|jpg|jpeg|png|gif|svg|ico|avif)$/i.test(filePath)) {
-        res.setHeader('Cache-Control', 'public, max-age=2592000, immutable');
-      }
-      // Fonts: long cache
-      else if (/\.(woff2?|ttf|otf|eot)$/i.test(filePath)) {
-        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        res.setHeader('Cache-Control', 'no-store, must-revalidate'); // Never cache HTML
+        res.setHeader('Surrogate-Control', 'no-store');
+      } else if (filePath.endsWith('.js') || filePath.endsWith('.css')) {
+        res.setHeader('Cache-Control', 'public, max-age=86400'); // 1 day cache for JS/CSS
       }
     }
   }));
@@ -216,7 +185,8 @@ if (fs.existsSync(FRONTEND_DIR)) {
   app.get('*', (req, res) => {
     const indexPath = path.join(FRONTEND_DIR, 'index.html');
     if (fs.existsSync(indexPath)) {
-      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Cache-Control', 'no-store, must-revalidate');
+      res.setHeader('Surrogate-Control', 'no-store');
       res.sendFile(indexPath);
     } else {
       res.status(404).json({ error: 'Frontend not available' });
