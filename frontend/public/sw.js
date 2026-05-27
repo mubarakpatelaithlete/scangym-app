@@ -4,7 +4,7 @@ const CACHE_NAME = 'scangym-v1';
 const STATIC_ASSETS = [
   '/',
   '/styles.css',
-  '/app.js',
+  '/app.v420.js',
   '/robust-location.js'
 ];
 
