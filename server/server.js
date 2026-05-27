@@ -4,13 +4,8 @@ const cors = require('cors');
 const fs = require('fs');
 const session = require('express-session');
 
-// Brotli + Zopfli compression (15-20% smaller than gzip alone)
-let compress;
-try {
-  compress = require('shrink-ray-current');
-} catch(e) {
-  compress = require('compression');
-}
+// Compression middleware (gzip — reduces transfer size by 70-85%)
+const compress = require('compression');
 
 // Import feature routes
 const reviewsRouter = require('./routes/reviews');
@@ -39,8 +34,8 @@ const PORT = process.env.PORT || 5000;
 const FRONTEND_DIR = path.join(__dirname, 'public');
 
 // -- Middleware --
-// Brotli + gzip compression — reduces transfer size by 70-85%
-app.use(compress({ threshold: 256, brotli: { quality: 4 } }));
+// gzip compression — reduces transfer size by 70-85%
+app.use(compress({ threshold: 256 }));
 app.use(cors({ origin: true, credentials: true }));
 
 // Session middleware (must come before routes)
