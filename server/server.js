@@ -114,7 +114,7 @@ apiPaths.forEach(p => app.use(p, express.json()));
 // -- Health check --
 app.get('/api/v2/health', (req, res) => {
   res.json({
-    status: 'ok', version: 'v4.1.0', brand: 'ScanGym', build: 'viktor-deploy-test-' + Date.now(),
+    status: 'ok', version: 'v4.1.0', brand: 'ScanGym',
     ts: new Date().toISOString(),
     features: 18, tasks: '24/24 + auth + booking + payment + live-search', ok: true,
     frontend: fs.existsSync(path.join(FRONTEND_DIR, 'index.html')) ? 'v3' : 'none',
@@ -168,14 +168,30 @@ app.get('/.well-known/assetlinks.json', (req, res) => {
 
 if (fs.existsSync(FRONTEND_DIR)) {
   // Long cache for immutable JS/CSS assets, short for HTML
+  // Security headers
+  app.use((req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    next();
+  });
+
   app.use(express.static(FRONTEND_DIR, {
     maxAge: '7d',
     dotfiles: 'allow',
+    etag: true,
+    lastModified: true,
     setHeaders: (res, filePath) => {
       if (filePath.endsWith('.html')) {
-        res.setHeader('Cache-Control', 'no-cache'); // Always revalidate HTML
+        res.setHeader('Cache-Control', 'no-cache');
+      } else if (filePath.endsWith('sw.js')) {
+        res.setHeader('Cache-Control', 'no-cache');
       } else if (filePath.endsWith('.js') || filePath.endsWith('.css')) {
-        res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      } else if (/\.(webp|jpg|jpeg|png|gif|svg|ico)$/i.test(filePath)) {
+        res.setHeader('Cache-Control', 'public, max-age=2592000, immutable');
+      } else if (/\.(woff2?|ttf|otf|eot)$/i.test(filePath)) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
       }
     }
   }));
@@ -195,11 +211,5 @@ if (fs.existsSync(FRONTEND_DIR)) {
 
 // -- Start --
 app.listen(PORT, '0.0.0.0', () => {
-  // List all files in public/ for debugging
-  const pubFiles = fs.existsSync(FRONTEND_DIR) ? fs.readdirSync(FRONTEND_DIR) : ['NO_PUBLIC_DIR'];
   console.log(`ScanGym v4.1.0 on :${PORT} | Frontend: ${fs.existsSync(FRONTEND_DIR+'/index.html')?'v3':'proxy'} | Auth: local session`);
-  console.log(`Public files: ${pubFiles.join(', ')}`);
-  console.log(`Has styles.css: ${fs.existsSync(path.join(FRONTEND_DIR, 'styles.css'))}`);
-  console.log(`Has sw.js: ${fs.existsSync(path.join(FRONTEND_DIR, 'sw.js'))}`);
-  console.log(`Index.html size: ${fs.existsSync(path.join(FRONTEND_DIR, 'index.html')) ? fs.statSync(path.join(FRONTEND_DIR, 'index.html')).size : 'MISSING'}`);
 });
