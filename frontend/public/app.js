@@ -1153,7 +1153,7 @@ function CreatorsPage(){
           ].map(p=>`
             <div class="group bg-card rounded-2xl overflow-hidden border border-slate-700/50 hover:border-brand/30 transition-all duration-300 hover:-translate-y-1">
               <div class="h-40 bg-slate-800 overflow-hidden">
-                <img src="${A}/images/creator_assets/${p.img}" alt="${p.title}" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'flex items-center justify-center h-full text-5xl\\'>${p.icon}</div>'">
+                <img src="${A}/thumbs/creator_assets/${p.img}" alt="${p.title}" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" width="400" height="225" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'flex items-center justify-center h-full text-5xl\\'>${p.icon}</div>'">
               </div>
               <div class="p-5">
                 <div class="flex items-center gap-2 mb-2"><span class="text-xl">${p.icon}</span><h3 class="text-white font-bold text-lg">${p.title}</h3></div>
@@ -1320,7 +1320,7 @@ function CreatorsPage(){
               <div class="aspect-square bg-slate-800 overflow-hidden relative">
                 ${a.type==='video'
                   ?`<div class="flex items-center justify-center h-full"><span class="text-3xl opacity-50">🎬</span><div class="absolute inset-0 flex items-center justify-center"><div class="w-12 h-12 bg-brand/80 rounded-full flex items-center justify-center group-hover:bg-brand transition"><span class="text-white text-lg ml-0.5">▶</span></div></div></div>`
-                  :`<img src="${A}/${folder}/${a.file}" alt="${a.name}" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'flex items-center justify-center h-full text-3xl\\'>📸</div>'">`}
+                  :`<img src="${A}/${folder.replace('images/','thumbs/')}/${a.file.replace(/\.(png|jpg|jpeg)$/i,'.webp')}" alt="${a.name}" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300" width="250" height="250" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'flex items-center justify-center h-full text-3xl\\'>📸</div>'">`}
                 <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition">
                   <span class="bg-brand text-white text-[10px] px-2 py-1 rounded-full font-medium">↓</span>
                 </div>
