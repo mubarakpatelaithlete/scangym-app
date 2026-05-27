@@ -12,7 +12,7 @@
 
 <!-- Preload critical resources (browser fetches immediately) -->
 <link rel="preload" href="/styles.css" as="style">
-<link rel="preload" href="/app.js" as="script">
+<link rel="preload" href="/app.js?v=4.2.0" as="script">
 
 <!-- Pre-compiled Tailwind CSS (replaces CDN runtime — 5KB gzip vs 100KB JS) -->
 <link rel="stylesheet" href="/styles.css">
@@ -86,6 +86,6 @@ if('serviceWorker' in navigator){
 </script>
 
 <script src="/robust-location.js" defer></script>
-<script src="/app.js" defer></script>
+<script src="/app.js?v=4.2.0" defer></script>
 </body>
 </html>
