@@ -173,10 +173,9 @@ if (fs.existsSync(FRONTEND_DIR)) {
     dotfiles: 'allow',
     setHeaders: (res, filePath) => {
       if (filePath.endsWith('.html')) {
-        res.setHeader('Cache-Control', 'no-store, must-revalidate'); // Never cache HTML
-        res.setHeader('Surrogate-Control', 'no-store');
+        res.setHeader('Cache-Control', 'no-cache'); // Always revalidate HTML
       } else if (filePath.endsWith('.js') || filePath.endsWith('.css')) {
-        res.setHeader('Cache-Control', 'public, max-age=86400'); // 1 day cache for JS/CSS
+        res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
       }
     }
   }));
@@ -185,8 +184,7 @@ if (fs.existsSync(FRONTEND_DIR)) {
   app.get('*', (req, res) => {
     const indexPath = path.join(FRONTEND_DIR, 'index.html');
     if (fs.existsSync(indexPath)) {
-      res.setHeader('Cache-Control', 'no-store, must-revalidate');
-      res.setHeader('Surrogate-Control', 'no-store');
+      res.setHeader('Cache-Control', 'no-cache');
       res.sendFile(indexPath);
     } else {
       res.status(404).json({ error: 'Frontend not available' });
