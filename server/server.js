@@ -93,9 +93,42 @@ app.post('/api/payment/webhook', express.raw({ type: 'application/json' }), asyn
            WHERE id = $3 AND status != 'confirmed'`,
           [qrToken, session.payment_intent, bookingId]
         );
-        console.log(`✅ Webhook: Booking #${bookingId} confirmed via Stripe`);
+        console.log(`✅ Webhook: Booking #${bookingId} confirmed via Stripe (checkout.session.completed)`);
       } catch (dbErr) {
         console.error('Webhook DB error:', dbErr.message);
+      }
+    }
+  }
+
+  // Blocker 2 Fix: Handle payment_intent.succeeded as a safety net for the
+  // inline Stripe Elements flow. The frontend calls /confirm-intent directly,
+  // but this webhook catches any edge cases (network drop after payment, etc.)
+  if (event.type === 'payment_intent.succeeded') {
+    const intent = event.data.object;
+    const bookingId = intent.metadata?.bookingId ? parseInt(intent.metadata.bookingId) : null;
+    if (bookingId) {
+      try {
+        // Only update if not already confirmed (avoid double-processing)
+        const existing = await pool.query(
+          'SELECT id, status FROM public.bookings WHERE id = $1',
+          [bookingId]
+        );
+        if (existing.rows.length > 0 && existing.rows[0].status !== 'confirmed') {
+          const qrToken = 'BOOK_' + require('crypto').randomBytes(8).toString('hex').toUpperCase();
+          await pool.query(
+            `UPDATE public.bookings
+             SET status = 'confirmed',
+                 qr_code = $1,
+                 stripe_payment_intent_id = $2,
+                 stripe_payment_status = 'paid',
+                 updated_at = NOW()
+             WHERE id = $3 AND status != 'confirmed'`,
+            [qrToken, intent.id, bookingId]
+          );
+          console.log(`✅ Webhook: Booking #${bookingId} confirmed via Stripe (payment_intent.succeeded)`);
+        }
+      } catch (dbErr) {
+        console.error('Webhook DB error (payment_intent.succeeded):', dbErr.message);
       }
     }
   }
@@ -124,18 +157,14 @@ app.get('/api/v2/health', (req, res) => {
 });
 
 // -- Config endpoint (public keys for frontend) --
+// Blocker 1 Fix: Removed gymCount from response so frontend falls back to
+// 1,200,000 (the Google Places universe). The DB only has ~4 partner gyms
+// but search returns 20+ via Google Places — showing "4" killed credibility.
 app.get("/api/config", async (req, res) => {
-  let gymCount = 2;
-  try {
-    const pool = require('./middleware/db');
-    const r = await pool.query("SELECT COUNT(*) FROM gyms WHERE is_active = true");
-    gymCount = parseInt(r.rows[0].count) || 2;
-  } catch(e) {}
   res.json({
     mapsKey: process.env.GOOGLE_MAPS_API_KEY || "",
     stripeKey: process.env.STRIPE_PUBLISHABLE_KEY || "",
     brand: "ScanGym",
-    gymCount: gymCount, // Actual count from database
     liveSearch: true,
   });
 });
