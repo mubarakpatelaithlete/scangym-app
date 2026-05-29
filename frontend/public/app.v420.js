@@ -133,6 +133,7 @@ function NavBar(){
         <a onclick="navigate('/explore')" class="text-slate-300 hover:text-brand cursor-pointer">Discover Nearby</a>
         <a onclick="navigate('/creators')" class="text-slate-300 hover:text-brand cursor-pointer">Creators</a>
         <a onclick="navigate('/for-gyms')" class="text-slate-300 hover:text-brand cursor-pointer">For Gyms</a>
+        <a onclick="navigate('/bookings')" class="text-slate-300 hover:text-brand cursor-pointer">📋 My Bookings</a>
       </div>
       <div class="flex items-center gap-3">
         <a onclick="navigate('/login')" class="hidden md:inline px-4 py-2 text-sm text-slate-300 hover:text-white cursor-pointer">${state.user ? '👤 '+( state.user.name||state.user.phone) : 'Log In'}</a>
@@ -148,6 +149,7 @@ function NavBar(){
       <a onclick="navigate('/explore');document.getElementById('mobile-menu').classList.add('hidden')" class="block py-2 text-slate-300 hover:text-brand cursor-pointer">Discover Nearby</a>
       <a onclick="navigate('/creators');document.getElementById('mobile-menu').classList.add('hidden')" class="block py-2 text-slate-300 hover:text-brand cursor-pointer">Creators</a>
       <a onclick="navigate('/for-gyms');document.getElementById('mobile-menu').classList.add('hidden')" class="block py-2 text-slate-300 hover:text-brand cursor-pointer">For Gyms</a>
+      <a onclick="navigate('/bookings');document.getElementById('mobile-menu').classList.add('hidden')" class="block py-2 text-slate-300 hover:text-brand cursor-pointer">📋 My Bookings</a>
       <a onclick="navigate('/login');document.getElementById('mobile-menu').classList.add('hidden')" class="block py-2 text-brand font-medium cursor-pointer">${state.user ? '👤 '+(state.user.name||state.user.phone) : '🔑 Log In'}</a>
     </div>
   </nav>`;
@@ -259,7 +261,7 @@ function GymCard(gym){
       <!-- Booking.com strikethrough pricing -->
       <div class="absolute top-3 right-3 bg-brand text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
         £${price}
-        <span class="ml-1 bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">${discount}% OFF</span>
+        
       </div>
       ${topGym?`<div class="absolute top-3 left-3 bg-yellow-500 text-black px-2.5 py-1 rounded-full text-xs font-bold shadow-lg">⭐ Top Gym</div>`
         :gym.openNow===true?`<div class="absolute top-3 left-3 bg-green-600 text-white px-2.5 py-1 rounded-full text-xs font-medium shadow-lg flex items-center gap-1"><span class="w-1.5 h-1.5 bg-green-300 rounded-full animate-pulse"></span> Open${cTime?' until '+cTime:' Now'}</div>`:``}
@@ -299,7 +301,7 @@ function HomePage(){
       <div class="relative max-w-3xl mx-auto">
         <div class="inline-flex items-center gap-2 bg-brand/10 border border-brand/30 rounded-full px-4 py-1.5 mb-6">
           <span class="badge text-accent text-xs font-medium">●</span>
-          <span class="text-brand text-sm font-medium">${fmtCount(GYM_COUNT)} gyms worldwide • No membership needed</span>
+          <span class="text-brand text-sm font-medium">${GYM_COUNT>=1000?fmtCount(GYM_COUNT)+" gyms worldwide • ":""}No membership needed</span>
         </div>
         <h1 class="font-brand text-5xl md:text-7xl font-extrabold text-white mb-4 leading-tight">
           Book a Gym.<br><span class="text-brand">Anywhere.</span>
@@ -316,7 +318,7 @@ function HomePage(){
         <button onclick="findGyms()" class="bg-slate-800 hover:bg-slate-700 text-white font-medium text-sm px-8 py-3 rounded-xl transition-all w-full max-w-lg">
           📍 Use My Location — Find Gyms Near Me
         </button>
-        <p class="text-slate-500 text-sm mt-4">Search any city worldwide · ${fmtCount(GYM_COUNT)} gyms </p>
+        <p class="text-slate-500 text-sm mt-4">Search any city worldwide</p>
         <!-- Skyscanner-style trending cities -->
         <div class="flex flex-wrap justify-center gap-2 mt-4 max-w-lg mx-auto">
           ${['🇬🇧 London','🇬🇧 Manchester','🇬🇧 Birmingham','🇬🇧 Bolton','🇦🇪 Dubai','🇺🇸 New York','🇪🇸 Barcelona','🇩🇪 Berlin'].map(c=>{
@@ -518,7 +520,7 @@ function SearchPage(){
         <div>
           <h1 class="font-brand text-2xl font-bold text-white">Gyms ${searchLabel}</h1>
           <!-- Booking.com style: show total scale -->
-          <p class="text-slate-400 text-sm">Showing <span class="text-white font-medium">${gyms.length}</span> of <span class="text-white font-medium">${fmtCount(GYM_COUNT)}</span> gyms worldwide </p>
+          <p class="text-slate-400 text-sm">Showing <span class="text-white font-medium">${gyms.length}</span> gyms nearby </p>
         </div>
         <!-- Skyscanner-style sort tabs -->
         <div class="flex gap-1 bg-slate-800 rounded-lg p-1">
@@ -1859,7 +1861,16 @@ function BookingSuccessPage(){
 // ─── Page: My Bookings ───
 function MyBookingsPage(){
   if(!state.user){
-    return`<div class="pt-20 min-h-screen px-4 text-center"><p class="text-slate-400 mt-20">Please <a onclick="navigate('/login')" class="text-brand cursor-pointer">log in</a> to see your bookings.</p></div>`;
+    return`<div class="pt-20 min-h-screen px-4">
+      <div class="max-w-md mx-auto py-12 text-center">
+        <div class="text-6xl mb-6">📋</div>
+        <h1 class="font-brand text-3xl font-bold text-white mb-3">My Bookings</h1>
+        <p class="text-slate-400 mb-8">Log in to view your bookings, QR codes, and booking history.</p>
+        <button onclick="navigate('/login')" class="bg-brand hover:bg-orange-600 text-white font-bold px-8 py-3 rounded-xl transition shadow-lg shadow-brand/20 w-full">🔑 Log In to View Bookings</button>
+        <p class="text-slate-500 text-sm mt-4">Don't have an account? Book a gym first and we'll create one for you.</p>
+        <button onclick="navigate('/explore')" class="mt-3 bg-slate-800 hover:bg-slate-700 text-white px-8 py-3 rounded-xl transition w-full">🔍 Find a Gym Near You</button>
+      </div>
+    </div>`;
   }
 
   // Load bookings async
