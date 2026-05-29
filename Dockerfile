@@ -13,7 +13,7 @@ COPY server/ ./
 COPY frontend/public/ ./public/
 
 # Verify files and log sizes
-RUN echo "=== v4.2.0 Build ===" && \
+RUN echo "=== v4.3.0 Build ===" && \
     ls -la public/index.html && \
     ls -la public/reels/index.html 2>/dev/null && echo "Reels app: OK" || echo "Reels app: missing" && \
     ls -la public/styles.css public/sw.js 2>/dev/null || true && \
