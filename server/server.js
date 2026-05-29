@@ -26,6 +26,7 @@ const geolocationRouter = require('./routes/geolocation');
 const analyticsMiddleware = require('./middleware/analytics');
 
 const app = express();
+app.set('trust proxy', 1); // Trust Railway's reverse proxy (needed for secure cookies + IP detection)
 const PORT = process.env.PORT || 5000;
 
 // Frontend directory (Dockerfile copies it to ./public/)
@@ -42,11 +43,12 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: false, // Railway terminates SSL at proxy
+    secure: process.env.NODE_ENV === 'production', // true on Railway (HTTPS via proxy)
     httpOnly: true,
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     sameSite: 'lax',
   },
+  proxy: true, // Trust Railway's reverse proxy for secure cookies
 }));
 
 // Analytics tracking middleware (Task 21)
@@ -231,4 +233,15 @@ if (fs.existsSync(FRONTEND_DIR)) {
 // -- Start --
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`ScanGym v4.1.0 on :${PORT} | Frontend: ${fs.existsSync(FRONTEND_DIR+'/index.html')?'v3':'proxy'} | Auth: local session`);
+  
+  // Build H3 spatial index for nearby gym lookups (Uber Technique #3)
+  try {
+    const pool = require('./middleware/db');
+    app.locals.pool = pool;
+    if (geolocationRouter.buildH3Index) {
+      geolocationRouter.buildH3Index(pool).catch(e => console.warn('[H3] Index build deferred:', e.message));
+    }
+  } catch (e) {
+    console.warn('[H3] DB not available for index build:', e.message);
+  }
 });

@@ -1,7 +1,9 @@
 // ScanGym Frontend v3.3.1 — World-Class UX (Airbnb + Booking.com + Uber + Skyscanner + Revolut)
 
 // Inject CSS animations for loading experience
-(function(){const s=document.createElement('style');s.textContent='@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}#fun-fact{transition:opacity 0.2s ease}.gym-card{animation:fadeInUp 0.3s ease-out both}';document.head.appendChild(s)})();
+(function(){const s=document.createElement('style');s.textContent='@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}#fun-fact{transition:opacity 0.2s ease}.gym-card{animation:fadeInUp 0.3s ease-out both}.animate-slide-up{animation:slideUp 0.3s ease-out}';document.head.appendChild(s)})();
+// Load Stripe.js for inline payment (Fix #5)
+(function(){const s=document.createElement('script');s.src='https://js.stripe.com/v3/';s.async=true;document.head.appendChild(s)})();
 const API='/api/v2';
 // UTM helper for creator links
 function addUTM(url,src,med,camp){const u=new URL(url,location.origin);u.searchParams.set('utm_source',src);u.searchParams.set('utm_medium',med);u.searchParams.set('utm_campaign',camp);return u.toString();}
@@ -805,13 +807,13 @@ function SearchPage(){
         </div>
       </div>
       <!-- ClassPass-style activity filters + Booking.com filters -->
-      <div class="flex gap-2 mb-6 flex-wrap">
-        <button class="px-3 py-1.5 bg-card border border-slate-600 rounded-full text-xs text-slate-300 hover:border-brand hover:text-brand transition">🏋️ Free Weights</button>
-        <button class="px-3 py-1.5 bg-card border border-slate-600 rounded-full text-xs text-slate-300 hover:border-brand hover:text-brand transition">🧘 Yoga</button>
-        <button class="px-3 py-1.5 bg-card border border-slate-600 rounded-full text-xs text-slate-300 hover:border-brand hover:text-brand transition">🥊 Boxing</button>
-        <button class="px-3 py-1.5 bg-card border border-slate-600 rounded-full text-xs text-slate-300 hover:border-brand hover:text-brand transition">🏊 Swimming</button>
-        <button class="px-3 py-1.5 bg-card border border-slate-600 rounded-full text-xs text-slate-300 hover:border-brand hover:text-brand transition">💪 CrossFit</button>
-        <button class="px-3 py-1.5 bg-card border border-slate-600 rounded-full text-xs text-slate-300 hover:border-brand hover:text-brand transition">🕐 Open Now</button>
+      <div class="flex gap-2 mb-6 flex-wrap" id="gym-filters">
+        <button onclick="filterGyms('free weights')" class="filter-btn px-3 py-1.5 bg-card border border-slate-600 rounded-full text-xs text-slate-300 hover:border-brand hover:text-brand transition">🏋️ Free Weights</button>
+        <button onclick="filterGyms('yoga')" class="filter-btn px-3 py-1.5 bg-card border border-slate-600 rounded-full text-xs text-slate-300 hover:border-brand hover:text-brand transition">🧘 Yoga</button>
+        <button onclick="filterGyms('boxing')" class="filter-btn px-3 py-1.5 bg-card border border-slate-600 rounded-full text-xs text-slate-300 hover:border-brand hover:text-brand transition">🥊 Boxing</button>
+        <button onclick="filterGyms('swimming')" class="filter-btn px-3 py-1.5 bg-card border border-slate-600 rounded-full text-xs text-slate-300 hover:border-brand hover:text-brand transition">🏊 Swimming</button>
+        <button onclick="filterGyms('crossfit')" class="filter-btn px-3 py-1.5 bg-card border border-slate-600 rounded-full text-xs text-slate-300 hover:border-brand hover:text-brand transition">💪 CrossFit</button>
+        <button onclick="filterGyms('24 hour')" class="filter-btn px-3 py-1.5 bg-card border border-slate-600 rounded-full text-xs text-slate-300 hover:border-brand hover:text-brand transition">🕐 Open Now</button>
         <button class="px-3 py-1.5 bg-accent/20 border border-accent/50 rounded-full text-xs text-accent font-medium">✅ Free Cancellation</button>
       </div>
       ${gyms.length?`
@@ -1095,18 +1097,15 @@ function GymProfilePage(){
           </div>          </div>
         </div>
 
-        <!-- Mobile Sticky Book Now CTA -->
+        <!-- Mobile Sticky Book Now CTA (Fix #3: opens full booking sheet) -->
         <div class="lg:hidden fixed bottom-0 left-0 right-0 bg-dark/98 backdrop-blur-lg border-t border-slate-700 p-3 z-40 flex items-center justify-between">
           <div>
             <p class="text-white font-bold text-lg">£${gym.price_tier||'5'}.00</p>
             <p class="text-slate-400 text-xs">No account needed</p>
           </div>
           <div class="flex gap-2">
-            <button onclick="window.scrollTo({top:document.querySelector('#guest-email-form-${gymId}')?.offsetTop-100||0,behavior:'smooth'});document.getElementById('guest-email-input')?.focus()" class="bg-slate-700 hover:bg-slate-600 text-white font-medium py-3 px-4 rounded-xl text-sm transition">
-              Guest 👤
-            </button>
-            <button onclick="handleBookNow('${gymId}')" class="bg-brand hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-xl text-base transition shadow-lg shadow-brand/20">
-              Book Now
+            <button onclick="showBookingSheet('${gymId}')" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-3 px-8 rounded-xl text-base transition shadow-lg shadow-brand/20">
+              Book Now — £${gym.price_tier||'5'}.00
             </button>
           </div>
         </div>
@@ -2551,16 +2550,24 @@ window.handleLogout=async function(){
 
 // ─── Booking Handler ───
 window.handleBookNow=async function(gymId){
-  if(!state.user){
-    state.pendingBookGym=gymId;
-    navigate('/login');
-    return;
-  }
+  // Fix #2 + #3: Show booking modal instead of forcing login
+  // On mobile, date/time picker is hidden — show modal with everything
   const dateInput=document.querySelector('input[type="date"]');
   const timeSelect=document.querySelector('select');
   const date=dateInput?dateInput.value:'';
   const time=timeSelect?timeSelect.value:'';
-  if(!date||!time){alert('Please select a date and time');return;}
+
+  // If no date/time selected (mobile), show booking bottom sheet
+  if(!date||!time){
+    showBookingSheet(gymId);
+    return;
+  }
+
+  // Guest-first: if not logged in, prompt for email instead of forcing phone OTP
+  if(!state.user){
+    showBookingSheet(gymId, date, time);
+    return;
+  }
 
   // Show loading
   const btns=document.querySelectorAll('button');
@@ -2596,6 +2603,246 @@ window.handleBookNow=async function(gymId){
   }
 };
 
+
+// ─── Booking Bottom Sheet (Fix #2 + #3: guest-first, mobile-friendly) ───
+window.showBookingSheet=function(gymId, prefillDate, prefillTime){
+  // Remove existing sheet if any
+  document.getElementById('booking-sheet')?.remove();
+
+  const gym=state.currentGym||state.gyms.find(g=>(g.placeId||g.place_id||g.id)==gymId)||{};
+  const price=gym.price_tier||'5';
+  const today=new Date().toISOString().split('T')[0];
+  const currentHour=new Date().getHours();
+  const defaultTime=prefillTime||`${String(Math.min(currentHour+1,20)).padStart(2,'0')}:00`;
+
+  const sheet=document.createElement('div');
+  sheet.id='booking-sheet';
+  sheet.innerHTML=`
+  <div class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center" onclick="if(event.target===this)closeBookingSheet()">
+    <div class="bg-slate-900 w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl border-t sm:border border-slate-700 p-6 max-h-[90vh] overflow-y-auto animate-slide-up">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-brand text-xl font-bold text-white">Book ${gym.name||'Gym'}</h2>
+        <button onclick="closeBookingSheet()" class="text-slate-400 hover:text-white text-2xl">&times;</button>
+      </div>
+
+      <div class="text-center mb-4">
+        <p class="text-3xl font-bold text-white">£${price}<span class="text-lg text-slate-500">.00</span></p>
+        <p class="text-accent text-xs">✅ Free cancellation up to 2hrs before</p>
+      </div>
+
+      <div class="space-y-3 mb-4">
+        <div class="bg-slate-800 rounded-lg p-3">
+          <label class="text-slate-400 text-xs mb-1 block">📅 Date</label>
+          <input type="date" id="sheet-date" value="${prefillDate||today}" min="${today}" class="w-full bg-transparent text-white text-sm outline-none">
+        </div>
+        <div class="bg-slate-800 rounded-lg p-3">
+          <label class="text-slate-400 text-xs mb-1 block">🕐 Time</label>
+          <select id="sheet-time" class="w-full bg-transparent text-white text-sm outline-none">
+            ${Array.from({length:15},(_,i)=>{const h=6+i;return`<option value="${String(h).padStart(2,'0')}:00" ${String(h).padStart(2,'0')+':00'===defaultTime?'selected':''}>${String(h).padStart(2,'0')}:00${h<10?' (Off-peak £3.75)':''}</option>`;}).join('')}
+          </select>
+        </div>
+        <div class="bg-slate-800 rounded-lg p-3">
+          <label class="text-slate-400 text-xs mb-1 block">📧 Email (for QR code)</label>
+          <input type="email" id="sheet-email" placeholder="your@email.com" autocomplete="email" class="w-full bg-transparent text-white text-sm outline-none placeholder-slate-500">
+        </div>
+      </div>
+
+      <button id="sheet-book-btn" onclick="submitBookingSheet('${gymId}')" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-4 rounded-xl text-lg transition shadow-lg shadow-brand/20 mb-3">
+        Book Now — £${price}.00
+      </button>
+
+      ${state.user?`<p class="text-center text-slate-500 text-xs">Logged in as ${state.user.phone||'user'}</p>`
+        :`<p class="text-center text-slate-500 text-xs">No account needed · QR sent to your email</p>
+           <button onclick="closeBookingSheet();navigate('/login')" class="w-full mt-2 bg-slate-800 hover:bg-slate-700 text-slate-300 py-2.5 rounded-xl text-sm transition">
+             Or log in with phone number
+           </button>`}
+
+      <div class="flex items-center justify-center gap-3 mt-3 text-xs text-slate-500">
+        <span>🔒 Secure payment</span><span>•</span><span>📧 QR sent instantly</span><span>•</span><span>↩️ Free cancellation</span>
+      </div>
+    </div>
+  </div>`;
+  document.body.appendChild(sheet);
+};
+
+window.closeBookingSheet=function(){
+  const sheet=document.getElementById('booking-sheet');
+  if(sheet)sheet.remove();
+};
+
+window.submitBookingSheet=async function(gymId){
+  const date=document.getElementById('sheet-date')?.value;
+  const time=document.getElementById('sheet-time')?.value;
+  const email=document.getElementById('sheet-email')?.value;
+  const btn=document.getElementById('sheet-book-btn');
+
+  if(!date||!time){alert('Please select a date and time');return;}
+  if(!state.user&&(!email||!email.includes('@'))){
+    document.getElementById('sheet-email').style.borderColor='#ef4444';
+    document.getElementById('sheet-email').placeholder='Please enter a valid email';
+    return;
+  }
+
+  btn.textContent='Creating booking...';btn.disabled=true;
+
+  try{
+    let dbGymId=gymId;
+    // Ensure Google Place exists in DB
+    if(isNaN(parseInt(gymId))){
+      const ensured=await api.postLive('/ensure-gym',{placeId:gymId});
+      if(ensured.error){alert(ensured.error);btn.textContent='Book Now';btn.disabled=false;return;}
+      dbGymId=ensured.gymId;
+    }
+
+    let booking;
+    if(state.user){
+      // Authenticated booking
+      booking=await api.bookPost('/create',{gymId:parseInt(dbGymId),date,time});
+    }else{
+      // Guest booking (primary path — no login needed)
+      booking=await fetch('/api/bookings/guest-create',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({gymId:parseInt(dbGymId),date,time,email})
+      }).then(r=>r.json());
+    }
+
+    if(booking.error){alert(booking.error);btn.textContent='Book Now';btn.disabled=false;return;}
+
+    // Try inline Stripe Elements (Fix #5)
+    btn.textContent='Loading payment...';
+    if(STRIPE_PK&&window.Stripe){
+      try{
+        const intentData=await fetch('/api/payment/create-intent',{
+          method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
+          body:JSON.stringify({bookingId:booking.booking.id,email:email||undefined})
+        }).then(r=>r.json());
+
+        if(intentData.clientSecret){
+          showStripeElements(intentData.clientSecret, booking.booking.id, gymId);
+          return;
+        }
+      }catch(e){console.warn('Stripe Elements failed, falling back to redirect:',e);}
+    }
+
+    // Fallback: Stripe redirect checkout
+    let payment;
+    if(state.user){
+      payment=await api.payPost('/checkout',{bookingId:booking.booking.id});
+    }else{
+      payment=await fetch('/api/payment/guest-checkout',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({bookingId:booking.booking.id,email})
+      }).then(r=>r.json());
+    }
+
+    if(payment.checkoutUrl){
+      window.location.href=payment.checkoutUrl;
+    }else{
+      alert(payment.error||'Payment error');
+      btn.textContent='Book Now';btn.disabled=false;
+    }
+  }catch(e){
+    console.error('Booking error:',e);
+    alert('Something went wrong. Please try again.');
+    btn.textContent='Book Now';btn.disabled=false;
+  }
+};
+
+// ─── Stripe Elements Inline Payment (Fix #5) ───
+window.showStripeElements=function(clientSecret, bookingId, gymId){
+  const sheet=document.getElementById('booking-sheet');
+  if(!sheet) return;
+
+  const container=sheet.querySelector('.animate-slide-up');
+  container.innerHTML=`
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="font-brand text-xl font-bold text-white">💳 Payment</h2>
+      <button onclick="closeBookingSheet()" class="text-slate-400 hover:text-white text-2xl">&times;</button>
+    </div>
+    <div id="stripe-payment-element" class="mb-4 bg-white rounded-xl p-4"></div>
+    <div id="stripe-error" class="text-red-400 text-sm mb-2"></div>
+    <button id="stripe-pay-btn" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-4 rounded-xl text-lg transition shadow-lg shadow-brand/20">
+      Pay Now
+    </button>
+    <div class="flex items-center justify-center gap-3 mt-3 text-xs text-slate-500">
+      <span>🔒 Powered by Stripe</span><span>•</span><span>🍎 Apple Pay</span><span>•</span><span>💳 Google Pay</span>
+    </div>
+  `;
+
+  const stripe=window.Stripe(STRIPE_PK);
+  const elements=stripe.elements({clientSecret,appearance:{theme:'night',variables:{colorPrimary:'#f97316'}}});
+  const paymentElement=elements.create('payment',{
+    layout:'tabs',
+    wallets:{applePay:'auto',googlePay:'auto'},
+  });
+  paymentElement.mount('#stripe-payment-element');
+
+  document.getElementById('stripe-pay-btn').addEventListener('click',async()=>{
+    const btn=document.getElementById('stripe-pay-btn');
+    btn.textContent='Processing...';btn.disabled=true;
+    document.getElementById('stripe-error').textContent='';
+
+    const {error,paymentIntent}=await stripe.confirmPayment({
+      elements,
+      confirmParams:{return_url:window.location.origin+'/booking-success?booking_id='+bookingId},
+      redirect:'if_required',
+    });
+
+    if(error){
+      document.getElementById('stripe-error').textContent=error.message;
+      btn.textContent='Pay Now';btn.disabled=false;
+    }else if(paymentIntent&&paymentIntent.status==='succeeded'){
+      // Confirm on backend + get QR
+      btn.textContent='Generating QR code...';
+      try{
+        const result=await fetch('/api/payment/confirm-intent',{
+          method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
+          body:JSON.stringify({bookingId,paymentIntentId:paymentIntent.id})
+        }).then(r=>r.json());
+
+        if(result.success){
+          state.lastBooking=result.booking;
+          state.lastQR=result.qr;
+          closeBookingSheet();
+          navigate('/booking-success?session_id=inline&booking_id='+bookingId);
+        }else{
+          alert(result.error||'Confirmation failed');
+          btn.textContent='Pay Now';btn.disabled=false;
+        }
+      }catch(e){
+        alert('Payment confirmed but QR generation failed. Please check your bookings.');
+        closeBookingSheet();
+        navigate('/my-bookings');
+      }
+    }
+  });
+};
+
+// ─── Resume Abandoned Booking (Fix #8) ───
+window.checkPendingBooking=async function(){
+  try{
+    const lastBookingId=localStorage.getItem('sg_pending_booking');
+    if(!lastBookingId) return;
+    const r=await fetch('/api/payment/resume?booking_id='+lastBookingId).then(r=>r.json());
+    if(r.canResume){
+      // Show a non-intrusive banner
+      const banner=document.createElement('div');
+      banner.id='resume-banner';
+      banner.className='fixed top-16 left-0 right-0 bg-brand/95 text-white text-center py-3 px-4 z-50 backdrop-blur-sm';
+      banner.innerHTML=`
+        <p class="text-sm font-medium">You have an unfinished booking for <strong>${r.booking.gymName}</strong></p>
+        <div class="flex justify-center gap-2 mt-2">
+          <button onclick="window.location.href='${r.checkoutUrl}'" class="bg-white text-brand font-bold px-4 py-1.5 rounded-lg text-sm">Resume Payment →</button>
+          <button onclick="localStorage.removeItem('sg_pending_booking');document.getElementById('resume-banner').remove()" class="bg-white/20 text-white px-3 py-1.5 rounded-lg text-sm">Dismiss</button>
+        </div>`;
+      document.body.appendChild(banner);
+    }else{
+      localStorage.removeItem('sg_pending_booking');
+    }
+  }catch(e){}
+};
+// Check on page load
+setTimeout(()=>checkPendingBooking(),2000);
 
 // ─── Guest Checkout Flow ───
 window.handleGuestBook=async function(gymId){
@@ -2670,12 +2917,18 @@ function BookingSuccessPage(){
   const sessionId=params.get('session_id');
   const bookingId=params.get('booking_id');
 
-  if(!sessionId||!bookingId){
+  if(!bookingId){
     return`<div class="pt-20 min-h-screen px-4 text-center"><p class="text-red-400 mt-20">Invalid booking confirmation link.</p></div>`;
   }
+  // Clean up pending booking marker (Fix #8)
+  localStorage.removeItem('sg_pending_booking');
 
   // Verify payment and get QR (async — will update DOM)
   if(!state.lastQR){
+    // For inline Stripe, QR is already set before navigating here
+    if(sessionId==='inline'){
+      return`<div class="pt-20 min-h-screen px-4 text-center"><p class="text-white mt-20">Loading...</p></div>`;
+    }
     setTimeout(async()=>{
       try{
         const r=await api.payGet('/verify?session_id='+sessionId+'&booking_id='+bookingId);
@@ -2841,20 +3094,33 @@ async function loadFallbackGyms(){
 window.findGyms=async function(){
   navigate('/explore');
   setTimeout(()=>startLoadingAnimation(),100);
+
+  // Uber Technique #1: Parallel signal race — IP + GPS fire simultaneously
+  const cityPromise=fetch('/api/geolocation/auto-city',{credentials:'include'}).then(r=>r.json()).catch(()=>null);
+
   const loc=await getLocation();
   if(!loc){
     stopLoadingAnimation();
-    // GPS failed — load featured gyms from DB as fallback
-    try{
-      const data=await api.getGuest('/featured');
-      if(data.gyms&&data.gyms.length){state.gyms=data.gyms;state.searchQuery='Featured Gyms';render();}
-      else{await loadFallbackGyms();}
-    }catch(e){await loadFallbackGyms();}
+    // GPS failed — use IP city detection (Technique #4: in-memory GeoIP on server)
+    const cityData=await cityPromise;
+    if(cityData&&cityData.query){
+      searchGyms(cityData.query);
+      setCachedLocation(cityData); // Technique #2: cache for instant return
+      recordLocationForPrediction(cityData); // Technique #5: learn pattern
+    }else{
+      try{
+        const data=await api.getGuest('/featured');
+        if(data.gyms&&data.gyms.length){state.gyms=data.gyms;state.searchQuery='Featured Gyms';render();}
+        else{searchGyms('gyms in London');}
+      }catch(e){searchGyms('gyms in London');}
+    }
     const el=document.getElementById('gym-search-input');
     if(el){el.focus();el.placeholder='Type your city or postcode...';}
     return;
   }
   state.searchLat=loc.lat;state.searchLng=loc.lng;
+  setCachedLocation({lat:loc.lat,lng:loc.lng,city:'Near You',query:'Near You'}); // Technique #2
+  recordLocationForPrediction({lat:loc.lat,lng:loc.lng,city:'Near You',query:'Near You'}); // Technique #5
   stopLoadingAnimation();
   await loadGyms(loc.lat,loc.lng);
 };
@@ -2893,6 +3159,177 @@ window.openGym=async function(id,isLive){
     console.error('Failed to load gym:',e);
     state.currentGym=state.gyms.find(g=>(g.placeId||g.id)==id)||{name:'Loading...',id};
     render();
+  }
+};
+
+// ─── Filter Gyms by Activity Type (Fix #4) ───
+window._allGyms=[];
+window.filterGyms=function(type){
+  if(!window._allGyms.length) window._allGyms=[...state.gyms];
+  const q=(state.searchQuery||'').replace(/\s+(free weights|yoga|boxing|swimming|crossfit|24 hour)/gi,'');
+  searchGyms((q+' '+type).trim());
+  // Toggle active state on filter buttons
+  document.querySelectorAll('.filter-btn').forEach(btn=>{
+    const isActive=btn.textContent.toLowerCase().includes(type.toLowerCase());
+    btn.className=btn.className.replace(/bg-brand text-white|bg-card.*text-slate-300/,'')+(isActive?' bg-brand text-white':' bg-card border border-slate-600 text-slate-300');
+  });
+};
+
+// ═══════════════════════════════════════════════════════════════
+//  UBER-GRADE LOCATION DETECTION — All 5 Techniques
+// ═══════════════════════════════════════════════════════════════
+
+// Technique #2: Client-Side Location Cache (localStorage)
+const LOC_CACHE_KEY='sg_location_cache';
+const LOC_CACHE_TTL=5*60*1000; // 5 min active, 30 min return
+const LOC_HISTORY_KEY='sg_location_history'; // Technique #5: prediction data
+
+function getCachedLocation(){
+  try{
+    const raw=localStorage.getItem(LOC_CACHE_KEY);
+    if(!raw)return null;
+    const cached=JSON.parse(raw);
+    const age=Date.now()-cached.timestamp;
+    if(age>30*60*1000)return null; // expired
+    return {...cached,age_ms:age,from_cache:true};
+  }catch(e){return null;}
+}
+function setCachedLocation(loc){
+  try{
+    localStorage.setItem(LOC_CACHE_KEY,JSON.stringify({...loc,timestamp:Date.now()}));
+  }catch(e){}
+}
+
+// Technique #5: Record search location for time-of-day prediction
+function recordLocationForPrediction(loc){
+  try{
+    const history=JSON.parse(localStorage.getItem(LOC_HISTORY_KEY)||'[]');
+    const now=new Date();
+    const hour=now.getHours();
+    history.push({
+      lat:loc.lat,lng:loc.lng,city:loc.city,query:loc.query,
+      timeSlot:hour<6?'night':hour<12?'morning':hour<17?'afternoon':'evening',
+      dayType:(now.getDay()===0||now.getDay()===6)?'weekend':'weekday',
+      ts:Date.now()
+    });
+    // Keep last 20
+    if(history.length>20)history.shift();
+    localStorage.setItem(LOC_HISTORY_KEY,JSON.stringify(history));
+    // Also report to server for server-side prediction
+    fetch('/api/geolocation/cache',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(loc),credentials:'include'}).catch(()=>{});
+  }catch(e){}
+}
+
+// Technique #5: Get predicted location from past behavior
+function getPredictedLocation(){
+  try{
+    const history=JSON.parse(localStorage.getItem(LOC_HISTORY_KEY)||'[]');
+    if(history.length<3)return null; // Need at least 3 data points
+    const now=new Date();
+    const hour=now.getHours();
+    const timeSlot=hour<6?'night':hour<12?'morning':hour<17?'afternoon':'evening';
+    const dayType=(now.getDay()===0||now.getDay()===6)?'weekend':'weekday';
+    // Find matches for same time slot
+    const matches=history.filter(h=>h.timeSlot===timeSlot);
+    const exact=matches.filter(h=>h.dayType===dayType);
+    const best=exact.length>0?exact[exact.length-1]:matches.length>0?matches[matches.length-1]:null;
+    if(!best)return null;
+    return{...best,source:'prediction',confidence:exact.length>2?'high':matches.length>1?'medium':'low'};
+  }catch(e){return null;}
+}
+
+// ─── Main Auto-Load Function (all 5 techniques combined) ───
+window._autoLoaded=false;
+window.autoLoadGyms=async function(){
+  if(window._autoLoaded||state.gyms.length>0||state.searchQuery) return;
+  window._autoLoaded=true;
+
+  const t0=performance.now();
+
+  try{
+    // ▸ STEP 1: Instant results from client cache (Technique #2, <1ms)
+    const cached=getCachedLocation();
+    if(cached&&cached.query){
+      console.log('[Location] Cache hit:',cached.city,'('+(Date.now()-cached.timestamp)+'ms old)');
+      searchGyms(cached.query);
+      // Don't return — still try GPS upgrade below
+    }
+
+    // ▸ STEP 2: If no cache, try prediction (Technique #5, <1ms)
+    if(!cached){
+      const predicted=getPredictedLocation();
+      if(predicted&&predicted.confidence!=='low'){
+        console.log('[Location] Prediction:',predicted.city,'(confidence:',predicted.confidence+')');
+        searchGyms(predicted.query);
+      }
+    }
+
+    // ▸ STEP 3: Parallel Signal Race (Technique #1)
+    // Fire IP detection (server uses in-memory GeoIP = Technique #4) + GPS simultaneously
+    const cityPromise=fetch('/api/geolocation/auto-city',{credentials:'include'}).then(r=>r.json()).catch(()=>null);
+    const gpsPromise=new Promise((resolve)=>{
+      if(!navigator.geolocation){resolve(null);return;}
+      navigator.geolocation.getCurrentPosition(
+        pos=>resolve({lat:pos.coords.latitude,lng:pos.coords.longitude}),
+        ()=>resolve(null),
+        {timeout:4000,maximumAge:300000,enableHighAccuracy:false}
+      );
+    });
+
+    // IP result arrives first (~5ms with geoip-lite, ~200ms with external API)
+    const cityData=await cityPromise;
+    if(cityData&&cityData.query&&state.gyms.length===0){
+      searchGyms(cityData.query);
+      setCachedLocation(cityData);
+      recordLocationForPrediction(cityData);
+      console.log('[Location] IP city:',cityData.city,'via',cityData.source,'in',cityData.resolve_ms+'ms');
+    }
+
+    // GPS arrives later — upgrade results with precise nearby search
+    const gps=await gpsPromise;
+    if(gps){
+      state.searchLat=gps.lat;state.searchLng=gps.lng;
+      const gpsLoc={lat:gps.lat,lng:gps.lng,city:cityData?.city||'Near You',query:'Near You'};
+      setCachedLocation(gpsLoc);
+      recordLocationForPrediction(gpsLoc);
+
+      // ▸ STEP 4: H3 hex grid lookup (Technique #3) + live nearby search in parallel
+      const [h3Result,nearbyResult]=await Promise.allSettled([
+        fetch('/api/geolocation/nearby-h3?lat='+gps.lat+'&lng='+gps.lng).then(r=>r.json()).catch(()=>null),
+        api.getLive('/nearby?lat='+gps.lat+'&lng='+gps.lng+'&radius=5000').catch(()=>null)
+      ]);
+
+      // Merge H3 DB gyms + live Google Places gyms (deduplicated)
+      let mergedGyms=[];
+      const h3Gyms=h3Result.value?.gyms||[];
+      const liveGyms=nearbyResult.value?.gyms||[];
+
+      if(liveGyms.length>0){
+        mergedGyms=[...liveGyms];
+        // Add H3 DB gyms that aren't in live results
+        const liveIds=new Set(liveGyms.map(g=>g.placeId||g.place_id||g.id));
+        for(const hg of h3Gyms){
+          if(!liveIds.has(hg.id)&&!liveIds.has(String(hg.id)))mergedGyms.push(hg);
+        }
+      }else if(h3Gyms.length>0){
+        mergedGyms=h3Gyms;
+      }
+
+      if(mergedGyms.length>0){
+        state.gyms=mergedGyms;
+        state.searchQuery='Near You';
+        render();
+      }
+
+      console.log('[Location] GPS upgrade:',gps.lat.toFixed(4),gps.lng.toFixed(4),
+        '| H3:',h3Gyms.length,'gyms | Live:',liveGyms.length,'gyms | Merged:',mergedGyms.length);
+    }
+
+    console.log('[Location] Total resolve time:',Math.round(performance.now()-t0)+'ms');
+  }catch(e){
+    console.warn('[Location] Error:',e.message);
+    // Ultimate fallback — always show something
+    if(state.gyms.length===0)searchGyms('gyms in London');
   }
 };
 
@@ -3252,18 +3689,19 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
 
   document.getElementById('app').innerHTML=NavBar()+`<main class="fade-in">${page}</main>`+Footer();
   initInteractive();
+  // Auto-load gyms when navigating to search page (Fix #1 + #6)
+  if(path==='/explore'||path==='/nearby'||path==='/search'){
+    autoLoadGyms();
+  }
 }
 
 // ─── Init ───
 state.route=location.pathname;
 render();
 
-// Auto-load data based on initial route
+// Auto-load data based on initial route (uses Uber-style IP+GPS parallel detection)
 if(state.route==='/explore'||state.route==='/nearby'||state.route==='/search'){
-  getLocation().then(loc=>{
-    if(loc){state.searchLat=loc.lat;state.searchLng=loc.lng;loadGyms(loc.lat,loc.lng);}
-    else{loadFallbackGyms();}
-  }).catch(()=>{loadFallbackGyms();});
+  autoLoadGyms();
 }
 // Load gym profile when visiting /gym/:id directly
 if(state.route.startsWith('/gym/')){
