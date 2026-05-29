@@ -1,4 +1,7 @@
 // ScanGym Frontend v3.3.1 — World-Class UX (Airbnb + Booking.com + Uber + Skyscanner + Revolut)
+
+// Inject CSS animations for loading experience
+(function(){const s=document.createElement('style');s.textContent='@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}#fun-fact{transition:opacity 0.2s ease}.gym-card{animation:fadeInUp 0.3s ease-out both}';document.head.appendChild(s)})();
 const API='/api/v2';
 // UTM helper for creator links
 function addUTM(url,src,med,camp){const u=new URL(url,location.origin);u.searchParams.set('utm_source',src);u.searchParams.set('utm_medium',med);u.searchParams.set('utm_campaign',camp);return u.toString();}
@@ -180,6 +183,57 @@ window.openPhotoViewer=function(idx){
   renderViewer();
   overlay.addEventListener('click',function(e){if(e.target===overlay)overlay.remove();});
   document.body.appendChild(overlay);
+};
+
+
+// ─── Dopamine Loading Animation (#11) ───
+const LOADING_STAGES=[
+  {msg:'📡 Getting your location...',sub:'Activating GPS satellites',pct:10},
+  {msg:'🌍 Location locked!',sub:'Scanning nearby area',pct:30},
+  {msg:'🔍 Scanning 1.2M gyms worldwide...',sub:'Finding the best ones near you',pct:50},
+  {msg:'⭐ Comparing ratings & reviews...',sub:'Only showing top-rated gyms',pct:70},
+  {msg:'💰 Calculating best prices...',sub:'Finding off-peak deals',pct:85},
+  {msg:'✨ Almost ready!',sub:'Preparing your personalized results',pct:95},
+];
+const FUN_FACTS=[
+  'ScanGym has access to 1.2 million gyms across 190+ countries',
+  'The average ScanGym user saves £340/year vs gym memberships',
+  'Over 67% of gym memberships go unused — that\'s why we\'re pay-per-visit',
+  'The most popular gym time worldwide? 6-7pm on Mondays',
+  'London has 4,200+ gyms — more than any other European city',
+  'A 30-minute gym session burns 200-400 calories on average',
+  'ScanGym QR entry takes just 2 seconds — faster than tapping your Oyster card',
+  '73% of people who try a new gym within 5 miles of home become regulars',
+  'Off-peak gym sessions are 25-40% cheaper on ScanGym',
+  'The world\'s largest gym is Gold\'s Gym Venice Beach at 40,000 sq ft',
+];
+window._loadingInterval=null;
+window.startLoadingAnimation=function(){
+  let stage=0,factIdx=0;
+  clearInterval(window._loadingInterval);
+  window._loadingInterval=setInterval(()=>{
+    stage=Math.min(stage+1,LOADING_STAGES.length-1);
+    const s=LOADING_STAGES[stage];
+    const el1=document.getElementById('loading-stage');
+    const el2=document.getElementById('loading-sub');
+    const bar=document.getElementById('loading-bar');
+    const fact=document.getElementById('fun-fact');
+    if(el1)el1.textContent=s.msg;
+    if(el2)el2.textContent=s.sub;
+    if(bar)bar.style.width=s.pct+'%';
+    if(stage%2===1&&fact){
+      factIdx=(factIdx+1)%FUN_FACTS.length;
+      fact.style.opacity='0';
+      setTimeout(()=>{fact.textContent=FUN_FACTS[factIdx];fact.style.opacity='1';},200);
+    }
+  },1800);
+};
+window.stopLoadingAnimation=function(){
+  clearInterval(window._loadingInterval);
+  const bar=document.getElementById('loading-bar');
+  if(bar)bar.style.width='100%';
+  const el1=document.getElementById('loading-stage');
+  if(el1)el1.textContent='🎉 Found gyms near you!';
 };
 
 // ─── Dynamic Pricing Logic ───
@@ -744,10 +798,41 @@ function SearchPage(){
           ${gyms.map(g=>GymCard(g)).join('')}
         </div>
       `:`
-        <div class="text-center py-20">
-          <div class="text-5xl mb-4">🔍</div>
-          <p class="text-slate-400">Finding gyms near you...</p>
-          <div class="mt-4 w-8 h-8 border-2 border-brand border-t-transparent rounded-full animate-spin mx-auto"></div>
+        <!-- Dopamine Loading Experience (#11) -->
+        <div id="loading-experience" class="pb-10">
+          <div class="mb-6">
+            <div class="flex items-center gap-3 mb-2">
+              <div class="w-8 h-8 border-2 border-brand border-t-transparent rounded-full animate-spin"></div>
+              <div>
+                <p class="text-white font-semibold text-sm" id="loading-stage">📡 Getting your location...</p>
+                <p class="text-slate-500 text-xs" id="loading-sub">Activating GPS satellites</p>
+              </div>
+            </div>
+            <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+              <div class="h-full bg-gradient-to-r from-brand to-orange-400 rounded-full transition-all duration-1000 ease-out" id="loading-bar" style="width:10%"></div>
+            </div>
+          </div>
+          <div class="bg-gradient-to-r from-brand/10 to-purple-500/10 border border-brand/20 rounded-xl p-4 mb-6" id="fun-fact-box">
+            <p class="text-brand text-xs font-medium mb-1">💡 DID YOU KNOW</p>
+            <p class="text-white text-sm" id="fun-fact">ScanGym has access to 1.2 million gyms across 190+ countries</p>
+          </div>
+          <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            ${[1,2,3,4,5,6].map((_,i)=>`
+              <div class="bg-card rounded-2xl overflow-hidden border border-slate-700" style="animation:fadeInUp 0.3s ease-out ${i*0.1}s both">
+                <div class="h-48 bg-slate-700 relative overflow-hidden">
+                  <div class="absolute inset-0 bg-gradient-to-r from-slate-700 via-slate-600 to-slate-700" style="animation:shimmer 1.5s ease-in-out infinite"></div>
+                </div>
+                <div class="p-4 space-y-3">
+                  <div class="h-4 bg-slate-700 rounded-full w-3/4 animate-pulse"></div>
+                  <div class="h-3 bg-slate-700 rounded-full w-1/2 animate-pulse"></div>
+                  <div class="flex justify-between">
+                    <div class="h-6 bg-slate-700 rounded-lg w-16 animate-pulse"></div>
+                    <div class="h-6 bg-slate-700 rounded-lg w-20 animate-pulse"></div>
+                  </div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
         </div>
       `}
     </div>
@@ -2710,8 +2795,10 @@ async function loadFallbackGyms(){
 
 window.findGyms=async function(){
   navigate('/explore');
+  setTimeout(()=>startLoadingAnimation(),100);
   const loc=await getLocation();
   if(!loc){
+    stopLoadingAnimation();
     // GPS failed — load featured gyms from DB as fallback
     try{
       const data=await api.getGuest('/featured');
@@ -2723,6 +2810,7 @@ window.findGyms=async function(){
     return;
   }
   state.searchLat=loc.lat;state.searchLng=loc.lng;
+  stopLoadingAnimation();
   await loadGyms(loc.lat,loc.lng);
 };
 window.openGym=async function(id,isLive){
