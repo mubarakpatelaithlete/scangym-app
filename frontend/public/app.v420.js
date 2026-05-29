@@ -90,8 +90,34 @@ function askGymQuestion(question, gymId) {
       answer = `Free WiFi is included with all bookings! Connect to the gym's WiFi after scanning in. Perfect for streaming your workout playlist. 📶`;
     } else if (q.includes('class') || q.includes('yoga') || q.includes('spin') || q.includes('session')) {
       answer = `Classes are included with Standard tier and above. Available classes vary by gym — check the gym's schedule above or ask at reception. Popular classes include yoga, spin, HIIT, and boxing. 🧘`;
-    } else if (q.includes('open') || q.includes('hours') || q.includes('close') || q.includes('time')) {
+    } else if (q.includes('open') || q.includes('hours') || q.includes('close') || q.includes('when do')) {
       answer = `${gym.name || 'This gym'} operating hours: ${gym.opening_hours?.weekday_text?.[0] || 'Check the info section above for current hours'}. ScanGym QR entry works during all operating hours — no staff needed! ⏰`;
+    } else if (q.includes('apple pay') || q.includes('google pay') || q.includes('contactless') || q.includes('payment method') || q.includes('card')) {
+      answer = `Yes! ScanGym accepts Apple Pay, Google Pay, all major credit/debit cards, and bank transfers. Payment is processed securely through Stripe — your card details are never stored on our servers. 💳`;
+    } else if (q.includes('best time') || q.includes('when should') || q.includes('quietest') || q.includes('recommend')) {
+      answer = `The best time to visit ${gym.name || 'this gym'} is before 10am or after 8pm for the quietest sessions AND the lowest prices (off-peak saves you 25%). Mondays and Fridays before 7am are the hidden gems — almost empty! 🕐`;
+    } else if (q.includes('towel') || (q.includes('bring') && !q.includes('guest'))) {
+      answer = `Towels are included with Standard tier and above. For Basic tier, bring your own towel. We recommend bringing: gym shoes, water bottle, lock, and workout clothes. Everything else is provided! 🎒`;
+    } else if (q.includes('safe') || q.includes('security') || q.includes('steal') || q.includes('theft') || q.includes('cctv')) {
+      answer = `${gym.name || 'This gym'} has 24/7 CCTV, secure lockers, and QR-verified entry — only paying customers can enter. Your belongings are safe! 🔐`;
+    } else if (q.includes('first time') || q.includes('beginner') || q.includes('never been') || q.includes('new to')) {
+      answer = `Welcome! 🎉 First visit guide: 1) Book a Basic session (just £5) to try it. 2) Arrive 5 mins early. 3) Scan QR at entry. 4) Staff can give you a tour — just ask! 5) Free cancellation if you change your mind. No pressure!`;
+    } else if (q.includes('membership') || q.includes('subscribe') || q.includes('monthly') || q.includes('contract')) {
+      answer = `ScanGym is 100% pay-per-visit — no memberships, no contracts, no monthly fees! Buy a 5-session pack (£20, save £5) or just pay per visit. The average gym-goer saves £340/year vs traditional memberships. 💰`;
+    } else if (q.includes('personal trainer') || q.includes('pt ') || q.includes('coach') || q.includes('training plan')) {
+      answer = `Personal trainers are available at most ScanGym partner gyms. After booking, check the gym's PT board or ask at reception. Pro tip: many PTs offer a free 15-min intro session for first-timers! 💪`;
+    } else if (q.includes('protein') || q.includes('shake') || q.includes('nutrition') || q.includes('food') || q.includes('cafe') || q.includes('vending')) {
+      answer = `Most ScanGym partner gyms have a vending area or shake bar. Check the amenities section above for food/drink options. Pro tip: bring a protein shake for post-workout — lockers keep them cool! 🥤`;
+    } else if (q.includes('pool') || q.includes('swim') || q.includes('sauna') || q.includes('steam') || q.includes('spa') || q.includes('jacuzzi')) {
+      answer = `Pool, sauna, and spa access varies by gym. Check the facilities section above for specific amenities. These are typically included with Premium (£12) or Elite (£18) tier bookings. 🏊`;
+    } else if (q.includes('accessible') || q.includes('wheelchair') || q.includes('disabled') || q.includes('disability')) {
+      answer = `Accessibility is important to us. Most ScanGym partner gyms have step-free access, accessible changing rooms, and adapted equipment. For specific accessibility info, we recommend calling the gym directly. ♿`;
+    } else if (q.includes('child') || q.includes('kid') || q.includes('creche') || q.includes('baby')) {
+      answer = `Childcare facilities vary by gym. Some have creches or kids' zones — check the amenities above. ScanGym users must be 16+ to book independently, under-16s need a guardian present. 👶`;
+    } else if (q.includes('photo') || q.includes('picture') || q.includes('selfie') || q.includes('instagram')) {
+      answer = `Most gyms are photo-friendly! Be respectful of other members. ${gym.name || 'This gym'} has great lighting for workout selfies. Tag @scangym on Instagram for a chance to be featured! 📸`;
+    } else if (q.includes('music') || q.includes('headphone') || q.includes('speaker') || q.includes('playlist')) {
+      answer = `Most gyms play background music. You can bring your own headphones for your playlist. Bluetooth speakers are usually not allowed in shared areas. WiFi is free for streaming! 🎵`;
     } else {
       answer = `Great question! I don't have specific info on that right now. Here's what you can do:\n\n• 📧 Email hello@scangym.com — we reply within 2 hours\n• 📱 Call the gym directly using the number above\n• 💬 Book and check in person — free cancellation if it's not right!\n\nIs there anything else I can help with?`;
     }
@@ -1073,11 +1099,16 @@ function GymProfilePage(){
         <div class="lg:hidden fixed bottom-0 left-0 right-0 bg-dark/98 backdrop-blur-lg border-t border-slate-700 p-3 z-40 flex items-center justify-between">
           <div>
             <p class="text-white font-bold text-lg">£${gym.price_tier||'5'}.00</p>
-            <p class="text-slate-400 text-xs">24-Hour Day Pass</p>
+            <p class="text-slate-400 text-xs">No account needed</p>
           </div>
-          <button onclick="handleBookNow('${gymId}')" class="bg-brand hover:bg-orange-600 text-white font-bold py-3 px-8 rounded-xl text-base transition shadow-lg shadow-brand/20">
-            Book Now
-          </button>
+          <div class="flex gap-2">
+            <button onclick="window.scrollTo({top:document.querySelector('#guest-email-form-${gymId}')?.offsetTop-100||0,behavior:'smooth'});document.getElementById('guest-email-input')?.focus()" class="bg-slate-700 hover:bg-slate-600 text-white font-medium py-3 px-4 rounded-xl text-sm transition">
+              Guest 👤
+            </button>
+            <button onclick="handleBookNow('${gymId}')" class="bg-brand hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-xl text-base transition shadow-lg shadow-brand/20">
+              Book Now
+            </button>
+          </div>
         </div>
 
         <!-- Booking Sidebar (Task 5 - 3-step flow, Task 9 - conviction, Task 12 - 24hr pass, Task 19 - guest) -->
@@ -1109,16 +1140,30 @@ function GymProfilePage(){
             <button onclick="handleBookNow('${gymId}')" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-4 rounded-xl text-lg transition shadow-lg shadow-brand/20">
               Book Now — £${gym.price_tier||'5'}.00
             </button>
-            <button data-guest-btn onclick="document.getElementById('guest-email-form-${gymId}').classList.toggle('hidden')" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 py-3 rounded-xl text-sm transition">
-              Continue as Guest 👤
-            </button>
-            <div id="guest-email-form-${gymId}" class="hidden mt-3 bg-slate-800/50 rounded-xl p-4 border border-slate-700">
-              <p class="text-white text-sm font-medium mb-2">📧 Enter your email to book as guest</p>
-              <input id="guest-email-input" type="email" placeholder="your@email.com" class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-3 text-white text-sm placeholder-slate-500 outline-none focus:border-brand mb-3">
-              <button onclick="const em=document.getElementById('guest-email-input').value;if(!em||!em.includes('@')){document.getElementById('guest-email-input').style.borderColor='#ef4444';return;}processGuestBooking('${gymId}',em)" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-3 rounded-xl transition">
-                Book as Guest →
-              </button>
-              <p class="text-slate-500 text-xs mt-2 text-center">No account needed. QR code sent to your email.</p>
+            <!-- Guest Checkout - Booking.com/Amazon style: visible by default, minimal friction -->
+            <div class="mt-1 border-t border-slate-700 pt-4">
+              <p class="text-slate-400 text-xs text-center mb-3">─── or book without an account ───</p>
+              <div id="guest-email-form-${gymId}" class="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
+                <div class="flex items-center gap-2 mb-3">
+                  <span class="text-lg">👤</span>
+                  <p class="text-white text-sm font-semibold">Continue as Guest</p>
+                  <span class="ml-auto bg-emerald-500/20 text-emerald-400 text-xs px-2 py-0.5 rounded-full">Most popular</span>
+                </div>
+                <input id="guest-email-input" type="email" placeholder="your@email.com" autocomplete="email" class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-3 text-white text-sm placeholder-slate-500 outline-none focus:border-brand mb-2">
+                <button data-guest-btn onclick="const em=document.getElementById('guest-email-input').value;if(!em||!em.includes('@')){document.getElementById('guest-email-input').style.borderColor='#ef4444';document.getElementById('guest-email-input').placeholder='Please enter valid email';return;}processGuestBooking('${gymId}',em)" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-3 rounded-xl transition flex items-center justify-center gap-2">
+                  <span>Book as Guest</span><span>→</span>
+                </button>
+                <div class="flex items-center justify-center gap-3 mt-3 text-xs text-slate-500">
+                  <span>🔒 256-bit encrypted</span>
+                  <span>•</span>
+                  <span>📧 QR sent instantly</span>
+                </div>
+                <div class="flex items-center justify-center gap-3 mt-1 text-xs text-slate-500">
+                  <span>✅ No account needed</span>
+                  <span>•</span>
+                  <span>↩️ Free cancellation</span>
+                </div>
+              </div>
             </div>
 
             <div class="space-y-2 text-xs">
