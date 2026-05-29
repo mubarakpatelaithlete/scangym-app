@@ -92,18 +92,9 @@ window.addEventListener('popstate',()=>{state.route=location.pathname;render()})
 
 // ─── Conviction Techniques (Task 9) ───
 const BADGES=[
-  {icon:'🔥',text:'Booked {n} times today',type:'social'},
-  {icon:'⏰',text:'Only {n} spots left',type:'scarcity'},
-  {icon:'💰',text:'Price locked for 15 min',type:'urgency'},
   {icon:'✅',text:'Free cancellation',type:'risk'},
-  {icon:'⭐',text:'{rating}★ from {n} reviews',type:'authority'},
-  {icon:'📉',text:'Off-peak: save {n}%',type:'value'},
-  {icon:'🏋️',text:'{n} people training now',type:'social'},
-  {icon:'🎯',text:'Top pick in {area}',type:'authority'},
-  {icon:'💳',text:'Apple Pay • 1 tap',type:'friction'},
   {icon:'🔒',text:'No membership needed',type:'risk'},
   {icon:'📍',text:'{n} min walk',type:'proximity'},
-  {icon:'🆓',text:'First session £3.75',type:'anchor'},
 ];
 
 function getRandomBadges(gym,count=4){
@@ -242,7 +233,7 @@ function GymCard(gym){
   const isLive=!!gym.placeId;
   const topGym=isTopGym(gym);
   const cTime=closingTime(gym);
-  const looking=peopleLooking(gym.name);
+  // const looking removed - was fake
   const mAgo=minutesAgo(gym.name);
   // Airbnb-style photo carousel (multiple photos if available)
   const allPhotos=photos.length>1?photos.slice(0,5).map(p=>p.thumbnail||p.url||photo):[photo];
@@ -598,13 +589,7 @@ function GymProfilePage(){
             <span class="text-sm">${gym.opening_hours?.isOpen===true?`<span class="text-green-400 flex items-center gap-1"><span class="w-2 h-2 bg-green-400 rounded-full animate-pulse inline-block"></span> Open Now${closingTime(gym)?' · Closes '+closingTime(gym):''}</span>`:(gym.opening_hours?.isOpen===false?'<span class="text-red-400">Closed</span>':'<span class="text-slate-400">Hours vary</span>')}</span>
           </div>
 
-          <!-- Booking.com urgency badges -->
-          <div class="flex flex-wrap gap-2">
-            
-            
-            
-            ${badges.slice(0,3).map(b=>`<span class="bg-slate-800 border border-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-full">${b.icon} ${b.text}</span>`).join('')}
-          </div>
+
 
           <!-- Opening Hours (Live from Google) -->
           ${gym.opening_hours?.weekday?.length?`
@@ -736,10 +721,7 @@ function GymProfilePage(){
               
               <p class="text-accent text-xs mt-2">✅ Free cancellation up to 2hrs before</p>
             </div>
-            <!-- Booking.com urgency in sidebar -->
-            <div class="bg-red-900/20 border border-red-800/30 rounded-lg p-3 text-center">
-              <p class="text-red-400 text-xs font-medium">🔥 ${bookedToday(gym.name)} people booked this gym today</p>
-            </div>
+
 
             <div class="space-y-3">
               <div class="bg-slate-800 rounded-lg p-3">
@@ -1901,16 +1883,37 @@ function MyBookingsPage(){
           <div class="flex justify-between items-start">
             <div>
               <p class="text-white font-bold text-lg">${b.gymName||'Gym'}</p>
-              <p class="text-slate-400 text-sm">${b.date} at ${b.time}</p>
+              <p class="text-slate-400 text-sm">${(()=>{try{const d=new Date(b.date);return d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'})}catch(e){return b.date}})()}${b.time?' at '+b.time:''}</p>
               <p class="text-brand font-bold">£${b.price.toFixed(2)}</p>
             </div>
             <span class="px-3 py-1 rounded-full text-xs font-bold ${b.status==='confirmed'?'bg-accent/20 text-accent':'bg-yellow-500/20 text-yellow-400'}">${b.status}</span>
           </div>
           ${b.qr ? `
-            <div class="mt-3 pt-3 border-t border-slate-700">
-              <p class="text-sm text-slate-400">QR: <code class="text-white">${b.qr.token}</code> · ${b.qr.scanCount}/${2} scans used · ${b.qr.status}</p>
+            <div class="mt-4 pt-4 border-t border-slate-700">
+              <div class="flex items-center gap-4">
+                <div class="bg-white rounded-xl p-3 flex-shrink-0">
+                  <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(b.qr.token)}" alt="QR Code" class="w-24 h-24">
+                </div>
+                <div>
+                  <p class="text-white font-semibold text-sm">Show this at reception</p>
+                  <p class="text-slate-400 text-xs mt-1">Scans: ${b.qr.scanCount}/2 used</p>
+                  <span class="inline-block mt-2 px-2 py-1 rounded-full text-xs font-bold ${b.qr.status==='active'?'bg-accent/20 text-accent':'bg-slate-700 text-slate-400'}">${b.qr.status}</span>
+                </div>
+              </div>
             </div>
-          ` : ''}
+          ` : `
+            <div class="mt-4 pt-4 border-t border-slate-700">
+              <div class="flex items-center gap-3">
+                <div class="bg-slate-800 rounded-xl p-3 flex-shrink-0">
+                  <div class="w-24 h-24 flex items-center justify-center text-4xl">🎟️</div>
+                </div>
+                <div>
+                  <p class="text-slate-400 text-sm">QR code will appear once booking is confirmed</p>
+                  <p class="text-slate-500 text-xs mt-1">Show at gym reception for entry</p>
+                </div>
+              </div>
+            </div>
+          `}
         </div>
       `).join('')}
     </div>
