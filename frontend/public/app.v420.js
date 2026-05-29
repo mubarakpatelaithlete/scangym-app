@@ -2092,8 +2092,326 @@ function render(){
   else if(path==='/suppliers/loans')page=SupplierPage('loans');
   else if(path==='/login'||path==='/signup'||path==='/register')page=LoginPage();
   else if(path==='/how-it-works')page=InfoPage('How It Works',`<p>1. Find a gym near you using GPS or search</p><p>2. Book a 24-hour day pass from £5</p><p>3. Pay with Apple Pay, Google Pay, or card (guest checkout available)</p><p>4. Get your QR code — scan in at the gym, scan out when done</p><p>5. Rate your session and earn rewards</p>`);
-  else if(path==='/pricing')page=InfoPage('Pricing',`<p class="text-xl text-white font-bold mb-6">Simple, transparent pricing. No hidden fees.</p><div class="grid sm:grid-cols-4 gap-4 mb-8">${[{name:"Basic",price:"5",features:["24hr day pass","Free cancellation","QR scan entry","Free WiFi"],best:false},{name:"Standard",price:"7.50",features:["Everything in Basic","Studio classes","Sauna access","Towel included"],best:true},{name:"Premium",price:"12",features:["Everything in Standard","Personal locker","Priority booking","Peak hours included"],best:false},{name:"Elite",price:"18",features:["Everything in Premium","Guest +1 free","All equipment","VIP treatment"],best:false}].map(p=>`<div class="bg-slate-800 rounded-xl p-5 border ${p.best?"border-brand":"border-slate-700"} text-center relative"><div class="mb-3">${p.best?"<span class=\"absolute -top-3 left-1/2 -translate-x-1/2 bg-brand text-white text-xs px-3 py-1 rounded-full font-bold\">⭐ Most Popular</span>":""}${""}<p class="text-3xl font-bold text-white">£${p.price}</p><p class="text-slate-500 text-xs">per session</p></div><div class="space-y-2 text-left">${p.features.map(f=>`<p class="text-slate-300 text-sm flex items-center gap-2"><span class="text-green-400">✓</span> ${f}</p>`).join("")}</div><button onclick="navigate('/explore')" class="mt-4 w-full ${p.best?"bg-brand hover:bg-orange-600":"bg-slate-700 hover:bg-slate-600"} text-white py-2.5 rounded-lg text-sm font-medium transition">Choose ${p.name}</button></div>`).join("")}</div><p class="text-center text-slate-400 text-sm">🏷️ Off-peak discount: 25% off before 10am & after 8pm · 📦 Multi-pass: 5 for the price of 4 · 💰 Wallet: Add £20, get £22</p><p class="text-center text-accent text-sm mt-2">✅ Free cancellation up to 2 hours before · No memberships · No contracts</p>`);
-  else if(path==='/about')page=InfoPage('About ScanGym',`<p class="text-xl text-white font-bold">The Skyscanner for Gyms</p><p class="text-lg text-slate-300">We're building a world where any gym is accessible to anyone, anywhere, for a fair price.</p><div class="mt-8 border-l-2 border-brand pl-6 space-y-6">${[{date:"2026",title:"Founded in Manchester",desc:"Mubarak Ibrahim Patel launches ScanGym — a marketplace connecting fitness enthusiasts with gym owners who have unused capacity."},{date:"2026",title:"1.2M+ Gyms Listed",desc:"Every gym on Earth becomes searchable via Google Places API integration. Real photos, real ratings, real-time data."},{date:"2026",title:"QR Scan-and-Go",desc:"Contactless gym entry with unique QR codes. No staff interaction, no membership cards — just scan and train."},{date:"2026",title:"AI Coach Launch",desc:"GPT-4o powered personal training. Custom workout plans, form analysis, and nutrition advice for every gym-goer."},{date:"Coming",title:"Global Expansion",desc:"Bringing ScanGym to every city on Earth. Dubai, New York, Barcelona, Berlin — gym access without borders."}].map(m=>`<div class="relative"><span class="absolute -left-[33px] w-4 h-4 bg-brand rounded-full border-2 border-dark"></span><p class="text-brand text-xs font-bold">${m.date}</p><p class="text-white font-semibold">${m.title}</p><p class="text-slate-400 text-sm">${m.desc}</p></div>`).join("")}</div><div class="mt-8 grid sm:grid-cols-3 gap-4"><div class="bg-slate-800 rounded-xl p-4 text-center"><p class="text-2xl font-bold text-white" data-counter data-target="1200000" data-suffix="+">0</p><p class="text-slate-500 text-xs">Gyms Listed</p></div><div class="bg-slate-800 rounded-xl p-4 text-center"><p class="text-2xl font-bold text-white" data-counter data-target="50" data-suffix="+">0</p><p class="text-slate-500 text-xs">Countries</p></div><div class="bg-slate-800 rounded-xl p-4 text-center"><p class="text-2xl font-bold text-white" data-counter data-target="18" data-suffix="">0</p><p class="text-slate-500 text-xs">Features Built</p></div></div><div class="mt-8"><p class="text-slate-400">📍 Manchester, UK · 📧 hello@scangym.com · 📱 @scangym</p></div>`);
+  else if(path==='/pricing')page=InfoPage('Pricing',`
+<!-- Uber-style Hero -->
+<div class="text-center mb-10">
+  <p class="text-brand text-sm font-bold tracking-widest uppercase mb-3">⚡ Live Pricing</p>
+  <h1 class="text-4xl sm:text-5xl font-black text-white leading-tight mb-4">How much does<br>a gym session cost?</h1>
+  <p class="text-slate-400 text-lg">Real-time pricing. Changes by time of day.</p>
+</div>
+
+<!-- Live Price Clock -->
+<div class="bg-slate-800/80 backdrop-blur rounded-2xl p-6 border border-slate-700/50 mb-8">
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <p class="text-white font-bold text-lg">Right now</p>
+      <p class="text-slate-400 text-sm" id="pricing-time-label">Checking time...</p>
+    </div>
+    <div class="text-right">
+      <p class="text-4xl font-black text-white" id="pricing-live-price">£—</p>
+      <p class="text-slate-500 text-xs">per session</p>
+    </div>
+  </div>
+  
+  <!-- Surge indicator bar -->
+  <div class="relative mb-2">
+    <div class="flex justify-between text-xs text-slate-500 mb-1">
+      <span>6am</span><span>10am</span><span>2pm</span><span>6pm</span><span>10pm</span>
+    </div>
+    <div class="h-8 rounded-full overflow-hidden flex">
+      <div class="bg-emerald-500/80 flex-[4]" title="Off-peak £3.75"></div>
+      <div class="bg-yellow-500/80 flex-[2]" title="Standard £5"></div>
+      <div class="bg-emerald-500/60 flex-[4]" title="Off-peak £3.75"></div>
+      <div class="bg-orange-500/80 flex-[2]" title="Peak £5"></div>
+      <div class="bg-red-500/70 flex-[2]" title="Rush £6.50"></div>
+      <div class="bg-orange-500/60 flex-[2]" title="Peak £5"></div>
+    </div>
+    <!-- Current time marker -->
+    <div id="pricing-time-marker" class="absolute top-5 w-0.5 h-10 bg-white shadow-lg shadow-white/50 transition-all" style="left:50%">
+      <div class="absolute -top-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-white rounded-full shadow-lg"></div>
+    </div>
+  </div>
+  <div class="flex justify-between text-xs mt-1">
+    <span class="text-emerald-400">🟢 Off-peak</span>
+    <span class="text-yellow-400">🟡 Standard</span>
+    <span class="text-red-400">🔴 Rush hour</span>
+  </div>
+</div>
+
+<!-- Uber-style Service Tiers -->
+<p class="text-white font-bold text-xl mb-4">Choose your session</p>
+<div class="space-y-3 mb-8" id="pricing-tiers">
+  
+  <!-- Tier 1: Basic -->
+  <div class="bg-slate-800/60 rounded-2xl p-5 border border-slate-700/50 hover:border-brand/50 transition cursor-pointer group" onclick="this.classList.toggle('border-brand');this.classList.toggle('border-slate-700/50')">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 bg-slate-700 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition">🏋️</div>
+        <div>
+          <p class="text-white font-bold text-lg">Basic</p>
+          <p class="text-slate-400 text-sm">Gym floor access · QR entry</p>
+        </div>
+      </div>
+      <div class="text-right">
+        <p class="text-white font-bold text-xl" data-tier-price="basic">£3.75</p>
+        <p class="text-emerald-400 text-xs font-medium">25% off now</p>
+      </div>
+    </div>
+    <div class="mt-3 pt-3 border-t border-slate-700/30 flex flex-wrap gap-2">
+      <span class="text-xs bg-slate-700/50 text-slate-300 px-2 py-1 rounded-full">✓ Free cancellation</span>
+      <span class="text-xs bg-slate-700/50 text-slate-300 px-2 py-1 rounded-full">✓ QR scan entry</span>
+      <span class="text-xs bg-slate-700/50 text-slate-300 px-2 py-1 rounded-full">✓ Free WiFi</span>
+    </div>
+  </div>
+  
+  <!-- Tier 2: Standard (Popular) -->
+  <div class="bg-slate-800/60 rounded-2xl p-5 border-2 border-brand relative cursor-pointer group">
+    <span class="absolute -top-3 left-5 bg-brand text-white text-xs px-3 py-1 rounded-full font-bold">⭐ Most booked</span>
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 bg-brand/20 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition">💪</div>
+        <div>
+          <p class="text-white font-bold text-lg">Standard</p>
+          <p class="text-slate-400 text-sm">+ Classes · Sauna · Towel</p>
+        </div>
+      </div>
+      <div class="text-right">
+        <p class="text-white font-bold text-xl" data-tier-price="standard">£5.60</p>
+        <p class="text-emerald-400 text-xs font-medium">25% off now</p>
+      </div>
+    </div>
+    <div class="mt-3 pt-3 border-t border-slate-700/30 flex flex-wrap gap-2">
+      <span class="text-xs bg-brand/20 text-brand px-2 py-1 rounded-full">✓ Studio classes</span>
+      <span class="text-xs bg-brand/20 text-brand px-2 py-1 rounded-full">✓ Sauna & steam</span>
+      <span class="text-xs bg-brand/20 text-brand px-2 py-1 rounded-full">✓ Towel included</span>
+      <span class="text-xs bg-brand/20 text-brand px-2 py-1 rounded-full">✓ Free cancellation</span>
+    </div>
+  </div>
+  
+  <!-- Tier 3: Premium -->
+  <div class="bg-slate-800/60 rounded-2xl p-5 border border-slate-700/50 hover:border-purple-500/50 transition cursor-pointer group" onclick="this.classList.toggle('border-purple-500');this.classList.toggle('border-slate-700/50')">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 bg-purple-900/30 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition">🔥</div>
+        <div>
+          <p class="text-white font-bold text-lg">Premium</p>
+          <p class="text-slate-400 text-sm">+ Locker · Priority · Peak hrs</p>
+        </div>
+      </div>
+      <div class="text-right">
+        <p class="text-white font-bold text-xl" data-tier-price="premium">£9.00</p>
+        <p class="text-emerald-400 text-xs font-medium">25% off now</p>
+      </div>
+    </div>
+    <div class="mt-3 pt-3 border-t border-slate-700/30 flex flex-wrap gap-2">
+      <span class="text-xs bg-purple-900/30 text-purple-300 px-2 py-1 rounded-full">✓ Personal locker</span>
+      <span class="text-xs bg-purple-900/30 text-purple-300 px-2 py-1 rounded-full">✓ Priority booking</span>
+      <span class="text-xs bg-purple-900/30 text-purple-300 px-2 py-1 rounded-full">✓ Peak hours</span>
+      <span class="text-xs bg-purple-900/30 text-purple-300 px-2 py-1 rounded-full">✓ Everything in Standard</span>
+    </div>
+  </div>
+  
+  <!-- Tier 4: Elite -->
+  <div class="bg-gradient-to-r from-slate-800/80 to-slate-800/40 rounded-2xl p-5 border border-yellow-600/30 hover:border-yellow-500/50 transition cursor-pointer group" onclick="this.classList.toggle('border-yellow-500');this.classList.toggle('border-yellow-600/30')">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 bg-yellow-900/30 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition">👑</div>
+        <div>
+          <p class="text-white font-bold text-lg">Elite</p>
+          <p class="text-slate-400 text-sm">+ Guest +1 · VIP · All access</p>
+        </div>
+      </div>
+      <div class="text-right">
+        <p class="text-white font-bold text-xl" data-tier-price="elite">£13.50</p>
+        <p class="text-emerald-400 text-xs font-medium">25% off now</p>
+      </div>
+    </div>
+    <div class="mt-3 pt-3 border-t border-slate-700/30 flex flex-wrap gap-2">
+      <span class="text-xs bg-yellow-900/30 text-yellow-400 px-2 py-1 rounded-full">✓ Bring a friend free</span>
+      <span class="text-xs bg-yellow-900/30 text-yellow-400 px-2 py-1 rounded-full">✓ VIP treatment</span>
+      <span class="text-xs bg-yellow-900/30 text-yellow-400 px-2 py-1 rounded-full">✓ All equipment</span>
+      <span class="text-xs bg-yellow-900/30 text-yellow-400 px-2 py-1 rounded-full">✓ Everything in Premium</span>
+    </div>
+  </div>
+  
+</div>
+
+<!-- CTA -->
+<div class="text-center mb-10">
+  <button onclick="navigate('/explore')" class="bg-brand hover:bg-orange-600 text-white font-bold text-lg px-10 py-4 rounded-2xl transition shadow-lg shadow-brand/30 hover:scale-105 transform">
+    Find a Gym & Book →
+  </button>
+  <p class="text-slate-500 text-sm mt-3">Free cancellation · No membership · No contracts</p>
+</div>
+
+<!-- How Dynamic Pricing Works -->
+<div class="mb-8">
+  <p class="text-white font-bold text-xl mb-4">How pricing works</p>
+  <div class="grid sm:grid-cols-3 gap-4">
+    <div class="bg-slate-800/50 rounded-xl p-5 text-center">
+      <div class="text-3xl mb-3">🕐</div>
+      <p class="text-white font-bold mb-1">Time-based</p>
+      <p class="text-slate-400 text-sm">Prices drop 25% during off-peak hours. Early birds & night owls save more.</p>
+    </div>
+    <div class="bg-slate-800/50 rounded-xl p-5 text-center">
+      <div class="text-3xl mb-3">📊</div>
+      <p class="text-white font-bold mb-1">Demand-driven</p>
+      <p class="text-slate-400 text-sm">Like Uber surge — busy = slightly higher. Quiet = cheaper. Real-time.</p>
+    </div>
+    <div class="bg-slate-800/50 rounded-xl p-5 text-center">
+      <div class="text-3xl mb-3">🎯</div>
+      <p class="text-white font-bold mb-1">Gym sets price</p>
+      <p class="text-slate-400 text-sm">Each gym sets their base rate. You always see the final price before booking.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Price Breakdown -->
+<div class="bg-slate-800/50 rounded-2xl p-6 border border-slate-700/30 mb-8">
+  <p class="text-white font-bold text-lg mb-4">What's included in every booking</p>
+  <div class="space-y-3">
+    <div class="flex justify-between items-center py-2 border-b border-slate-700/30">
+      <span class="text-slate-300">Session fee</span>
+      <span class="text-white font-bold">from £3.75</span>
+    </div>
+    <div class="flex justify-between items-center py-2 border-b border-slate-700/30">
+      <span class="text-slate-300">Booking fee</span>
+      <span class="text-emerald-400 font-bold">£0.00</span>
+    </div>
+    <div class="flex justify-between items-center py-2 border-b border-slate-700/30">
+      <span class="text-slate-300">Cancellation fee</span>
+      <span class="text-emerald-400 font-bold">Free (2hr+)</span>
+    </div>
+    <div class="flex justify-between items-center py-2 border-b border-slate-700/30">
+      <span class="text-slate-300">QR scan entry</span>
+      <span class="text-emerald-400 font-bold">Included</span>
+    </div>
+    <div class="flex justify-between items-center py-2">
+      <span class="text-slate-300">Membership required</span>
+      <span class="text-emerald-400 font-bold">Never</span>
+    </div>
+  </div>
+</div>
+
+<!-- Save More Section -->
+<div class="mb-8">
+  <p class="text-white font-bold text-xl mb-4">Save more</p>
+  <div class="grid sm:grid-cols-2 gap-4">
+    <div class="bg-gradient-to-br from-emerald-900/30 to-slate-800/50 rounded-xl p-5 border border-emerald-800/30">
+      <p class="text-emerald-400 font-bold text-lg mb-1">📦 Multi-pass</p>
+      <p class="text-white text-2xl font-black">5 for 4</p>
+      <p class="text-slate-400 text-sm mt-1">Buy 5 sessions, pay for 4. One session free.</p>
+    </div>
+    <div class="bg-gradient-to-br from-blue-900/30 to-slate-800/50 rounded-xl p-5 border border-blue-800/30">
+      <p class="text-blue-400 font-bold text-lg mb-1">💰 Wallet top-up</p>
+      <p class="text-white text-2xl font-black">Add £20 → Get £22</p>
+      <p class="text-slate-400 text-sm mt-1">10% bonus credit when you top up your wallet.</p>
+    </div>
+    <div class="bg-gradient-to-br from-purple-900/30 to-slate-800/50 rounded-xl p-5 border border-purple-800/30">
+      <p class="text-purple-400 font-bold text-lg mb-1">🌅 Off-peak</p>
+      <p class="text-white text-2xl font-black">25% off</p>
+      <p class="text-slate-400 text-sm mt-1">Before 10am & after 8pm. Best prices guaranteed.</p>
+    </div>
+    <div class="bg-gradient-to-br from-brand/20 to-slate-800/50 rounded-xl p-5 border border-brand/30">
+      <p class="text-brand font-bold text-lg mb-1">🤝 Refer & earn</p>
+      <p class="text-white text-2xl font-black">£2 per friend</p>
+      <p class="text-slate-400 text-sm mt-1">You earn £2. They get £2 off. Everyone wins.</p>
+    </div>
+  </div>
+</div>
+
+<!-- vs Gym Membership -->
+<div class="bg-slate-800/50 rounded-2xl p-6 border border-slate-700/30 mb-8">
+  <p class="text-white font-bold text-lg mb-4">ScanGym vs gym membership</p>
+  <div class="space-y-3">
+    <div class="flex justify-between items-center py-2 border-b border-slate-700/30">
+      <span class="text-slate-400 text-sm">Commitment</span>
+      <div class="flex gap-6 text-sm">
+        <span class="text-emerald-400 font-medium">Pay per visit</span>
+        <span class="text-red-400">12-month contract</span>
+      </div>
+    </div>
+    <div class="flex justify-between items-center py-2 border-b border-slate-700/30">
+      <span class="text-slate-400 text-sm">Cancel anytime</span>
+      <div class="flex gap-6 text-sm">
+        <span class="text-emerald-400 font-medium">✓ Yes, free</span>
+        <span class="text-red-400">✗ £30+ fee</span>
+      </div>
+    </div>
+    <div class="flex justify-between items-center py-2 border-b border-slate-700/30">
+      <span class="text-slate-400 text-sm">Access</span>
+      <div class="flex gap-6 text-sm">
+        <span class="text-emerald-400 font-medium">1.2M+ gyms</span>
+        <span class="text-red-400">1 gym only</span>
+      </div>
+    </div>
+    <div class="flex justify-between items-center py-2">
+      <span class="text-slate-400 text-sm">If you skip a month</span>
+      <div class="flex gap-6 text-sm">
+        <span class="text-emerald-400 font-medium">£0 — free</span>
+        <span class="text-red-400">Still pay £30+</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Dynamic Pricing Script -->
+<script>
+(function(){
+  const hour=new Date().getHours();
+  const min=new Date().getMinutes();
+  
+  // Pricing tiers by time
+  let multiplier=1.0, label='', discountLabel='';
+  if(hour<6){multiplier=0.75;label='🟢 Off-peak · Late night';discountLabel='25% off now';}
+  else if(hour<10){multiplier=0.75;label='🟢 Off-peak · Early bird';discountLabel='25% off now';}
+  else if(hour<12){multiplier=1.0;label='🟡 Standard · Morning';discountLabel='';}
+  else if(hour<16){multiplier=0.85;label='🟢 Midday quiet';discountLabel='15% off now';}
+  else if(hour<18){multiplier=1.0;label='🟡 Standard · Afternoon';discountLabel='';}
+  else if(hour<20){multiplier=1.15;label='🔴 Rush hour · Peak demand';discountLabel='High demand';}
+  else{multiplier=0.75;label='🟢 Off-peak · Evening';discountLabel='25% off now';}
+  
+  // Base prices
+  const bases={basic:5,standard:7.50,premium:12,elite:18};
+  
+  // Update live price
+  const liveEl=document.getElementById('pricing-live-price');
+  const labelEl=document.getElementById('pricing-time-label');
+  if(liveEl)liveEl.textContent='£'+(bases.basic*multiplier).toFixed(2);
+  if(labelEl)labelEl.textContent=label;
+  
+  // Update tier prices
+  document.querySelectorAll('[data-tier-price]').forEach(el=>{
+    const tier=el.getAttribute('data-tier-price');
+    const price=(bases[tier]*multiplier).toFixed(2);
+    el.textContent='£'+price;
+    const discEl=el.parentElement.querySelector('.text-emerald-400,.text-red-400');
+    if(discEl){
+      if(multiplier<1){
+        discEl.textContent=Math.round((1-multiplier)*100)+'% off now';
+        discEl.className='text-emerald-400 text-xs font-medium';
+      }else if(multiplier>1){
+        discEl.textContent='⚡ High demand';
+        discEl.className='text-red-400 text-xs font-medium';
+      }else{
+        discEl.textContent='Standard rate';
+        discEl.className='text-slate-500 text-xs font-medium';
+      }
+    }
+  });
+  
+  // Position time marker
+  const marker=document.getElementById('pricing-time-marker');
+  if(marker){
+    // 6am-10pm = 16 hours mapped to 0-100%
+    const totalMin=(hour-6)*60+min;
+    const pct=Math.max(0,Math.min(100,(totalMin/(16*60))*100));
+    marker.style.left=pct+'%';
+  }
+})();
+</script>
+`);
+    else if(path==='/about')page=InfoPage('About ScanGym',`<p class="text-xl text-white font-bold">The Skyscanner for Gyms</p><p class="text-lg text-slate-300">We're building a world where any gym is accessible to anyone, anywhere, for a fair price.</p><div class="mt-8 border-l-2 border-brand pl-6 space-y-6">${[{date:"2026",title:"Founded in Manchester",desc:"Mubarak Ibrahim Patel launches ScanGym — a marketplace connecting fitness enthusiasts with gym owners who have unused capacity."},{date:"2026",title:"1.2M+ Gyms Listed",desc:"Every gym on Earth becomes searchable via Google Places API integration. Real photos, real ratings, real-time data."},{date:"2026",title:"QR Scan-and-Go",desc:"Contactless gym entry with unique QR codes. No staff interaction, no membership cards — just scan and train."},{date:"2026",title:"AI Coach Launch",desc:"GPT-4o powered personal training. Custom workout plans, form analysis, and nutrition advice for every gym-goer."},{date:"Coming",title:"Global Expansion",desc:"Bringing ScanGym to every city on Earth. Dubai, New York, Barcelona, Berlin — gym access without borders."}].map(m=>`<div class="relative"><span class="absolute -left-[33px] w-4 h-4 bg-brand rounded-full border-2 border-dark"></span><p class="text-brand text-xs font-bold">${m.date}</p><p class="text-white font-semibold">${m.title}</p><p class="text-slate-400 text-sm">${m.desc}</p></div>`).join("")}</div><div class="mt-8 grid sm:grid-cols-3 gap-4"><div class="bg-slate-800 rounded-xl p-4 text-center"><p class="text-2xl font-bold text-white" data-counter data-target="1200000" data-suffix="+">0</p><p class="text-slate-500 text-xs">Gyms Listed</p></div><div class="bg-slate-800 rounded-xl p-4 text-center"><p class="text-2xl font-bold text-white" data-counter data-target="50" data-suffix="+">0</p><p class="text-slate-500 text-xs">Countries</p></div><div class="bg-slate-800 rounded-xl p-4 text-center"><p class="text-2xl font-bold text-white" data-counter data-target="18" data-suffix="">0</p><p class="text-slate-500 text-xs">Features Built</p></div></div><div class="mt-8"><p class="text-slate-400">📍 Manchester, UK · 📧 hello@scangym.com · 📱 @scangym</p></div>`);
   else if(path==='/faq')page=InfoPage('Frequently Asked Questions',`<p class="text-slate-400 mb-6">Everything you need to know. Click any question to expand.</p><div class="space-y-3">${[{cat:"For Gym-Goers",qs:[{q:"How much does it cost?",a:"From £5 per 24-hour session. 4 tiers: Basic £5, Standard £7.50, Premium £12, Elite £18. Off-peak 25% cheaper."},{q:"How do I get in?",a:"After booking, you get a unique QR code. Open it on your phone and scan at the gym entrance. 100% contactless — no staff needed."},{q:"Can I cancel?",a:"Yes! Free cancellation up to 2 hours before your session. Refund goes to your ScanGym Wallet instantly, or back to your card in 5-10 days."},{q:"Do I need an account?",a:"No! Guest checkout available — just email + card. Apple Pay and Google Pay supported for even faster checkout."},{q:"How long can I stay?",a:"24 hours from scan-in. Scan out when you leave."}]},{cat:"For Gym Owners",qs:[{q:"How much does it cost to list?",a:"Zero. Free to list. We only take a small commission on bookings. You set your own prices and control availability."},{q:"What equipment do I get?",a:"Listed gyms qualify for free vending machines and QR scanner hardware — installed at no cost to you."},{q:"How do I get paid?",a:"Direct bank transfer, weekly. Full analytics dashboard shows your bookings, revenue, and ratings in real-time."}]},{cat:"For Creators",qs:[{q:"How does FlexSquad work?",a:"Sign up, get your personal referral page (scangym.com/r/yourname), share it. Earn 25% commission on every booking."},{q:"How much can I earn?",a:"Explorers: £50-150/mo. Ambassadors: £200-500/mo + free sessions. Elite: £500-1,200/mo. Legends: £1,200-5,000/mo."}]}].map(cat=>`<div class="mb-4"><h3 class="text-brand font-bold text-sm mb-2">${cat.cat}</h3>${cat.qs.map(q=>`<div class="border border-slate-700 rounded-lg mb-2 overflow-hidden"><button class="accordion-trigger w-full flex items-center justify-between p-4 text-left hover:bg-slate-800/50 transition"><span class="text-white text-sm font-medium">${q.q}</span><span class="accordion-arrow text-slate-500 transition-transform">▼</span></button><div class="overflow-hidden transition-all duration-300" style="max-height:0"><p class="text-slate-400 text-sm p-4 pt-0">${q.a}</p></div></div>`).join("")}</div>`).join("")}</div>`);
   else if(path==='/for-gyms'||path==='/gym-owners')page=InfoPage('For Gym Owners',`<p class="text-xl text-white font-bold">Fill your empty hours. Earn more revenue.</p><p class="text-lg text-slate-300">1.2M+ gym-goers search ScanGym monthly. Turn your quiet hours into profit.</p><div class="mt-6 bg-brand/10 border border-brand/30 rounded-xl p-6"><p class="text-white font-bold mb-3">💰 Revenue Calculator — How much could you earn?</p><div class="grid sm:grid-cols-3 gap-4 mb-4"><div><label class="text-slate-400 text-xs">Empty slots per day</label><input type="range" id="calc-slots" min="2" max="50" value="10" class="w-full accent-brand" oninput="document.getElementById('calc-result').textContent='£'+((this.value*5*0.85)*30).toLocaleString()"></div><div class="text-center"><p class="text-slate-400 text-xs">Estimated monthly revenue</p><p id="calc-result" class="text-3xl font-bold text-brand">£1,275</p></div><div class="text-center"><p class="text-slate-400 text-xs">Your commission</p><p class="text-white font-bold">85%</p><p class="text-slate-500 text-xs">You keep · We take 15%</p></div></div><p class="text-slate-500 text-xs">Based on £5 avg day pass × 10 bookings/day × 30 days. Actual results vary.</p></div><div class="mt-6 grid sm:grid-cols-3 gap-4"><div class="bg-slate-800 p-4 rounded-lg text-center"><p class="text-3xl mb-2">💸</p><p class="text-white font-semibold text-sm">You set the price</p><p class="text-slate-500 text-xs">4 tiers £5-£18. Change anytime.</p></div><div class="bg-slate-800 p-4 rounded-lg text-center"><p class="text-3xl mb-2">⏸️</p><p class="text-white font-semibold text-sm">Full control</p><p class="text-slate-500 text-xs">Pause bookings with one toggle.</p></div><div class="bg-slate-800 p-4 rounded-lg text-center"><p class="text-3xl mb-2">🥤</p><p class="text-white font-semibold text-sm">Free equipment</p><p class="text-slate-500 text-xs">Vending machines + QR scanners.</p></div></div><p class="mt-6 text-center text-slate-400">Zero listing fee. Zero commitment. Cancel anytime.</p><div class="mt-6 flex gap-4 flex-wrap justify-center"><a onclick="navigate('/list-your-gym')" class="bg-brand hover:bg-orange-600 text-white font-bold px-8 py-4 rounded-xl cursor-pointer transition inline-block shadow-lg shadow-brand/20">List Your Gym — It's Free →</a><a onclick="navigate('/owner-benefits')" class="border border-brand text-brand hover:bg-brand hover:text-white font-bold px-8 py-4 rounded-xl cursor-pointer transition inline-block">See All Benefits →</a></div>`);
   else if(path==='/list-your-gym')page=InfoPage('List Your Gym',`<div class="text-center mb-8"><p class="text-xl text-white font-bold">Get your gym listed in 10 minutes</p><p class="text-slate-300">Free forever. Start earning from day one.</p><div class="mt-3 flex justify-center gap-2"><span class="bg-green-900/30 text-green-400 text-xs px-3 py-1 rounded-full font-medium">⏱ 10-minute setup</span><span class="bg-blue-900/30 text-blue-400 text-xs px-3 py-1 rounded-full font-medium">💰 Free forever</span><span class="bg-brand/20 text-brand text-xs px-3 py-1 rounded-full font-medium">📊 Instant dashboard</span></div></div><div class="relative space-y-6">${[{step:"1",title:"Tell us about your gym",desc:"Name, address, facilities, opening hours. Your Google listing auto-fills most of this. Takes 3 minutes.",time:"3 min"},{step:"2",title:"Set your pricing",desc:"Choose from 4 tiers: Basic £5 · Standard £7.50 · Premium £12 · Elite £18. Set off-peak discounts to fill quiet hours. Change anytime.",time:"2 min"},{step:"3",title:"Go live",desc:"We ship you a free QR scanner. Plug it in at your entrance. Customers scan in and out — fully automated, contactless check-in.",time:"5 min"}].map(s=>`<div class="flex gap-4"><div class="w-10 h-10 bg-brand rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">${s.step}</div><div class="flex-1 bg-slate-800 rounded-lg p-4"><div class="flex items-center justify-between"><p class="text-white font-bold">${s.title}</p><span class="text-brand text-xs font-medium">${s.time}</span></div><p class="text-slate-400 text-sm mt-1">${s.desc}</p></div></div>`).join("")}</div><div class="mt-8 bg-green-900/20 border border-green-800/30 rounded-xl p-5"><p class="text-white font-bold mb-2">✅ What you get — free:</p><div class="grid sm:grid-cols-2 gap-2 text-sm">${["Listing on ScanGym (1.2M+ gyms)","Free QR scanner hardware","Owner analytics dashboard","Free vending machine (optional)","Zero listing fee — forever","85% commission to you","Weekly direct bank payouts","Pause bookings anytime"].map(f=>`<p class="text-slate-300 flex items-center gap-2"><span class="text-green-400">✓</span>${f}</p>`).join("")}</div></div><div class="mt-6 text-center"><a onclick="navigate('/contact')" class="bg-brand hover:bg-orange-600 text-white font-bold px-10 py-4 rounded-xl cursor-pointer transition inline-block shadow-lg shadow-brand/20 text-lg">List Your Gym — Free →</a><p class="text-slate-500 text-sm mt-3">📧 hello@scangym.com · 📱 @scangym</p></div>`);
