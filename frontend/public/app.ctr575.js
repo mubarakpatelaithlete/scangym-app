@@ -1094,7 +1094,7 @@ function GymProfilePage(){
               </button>
               <p class="text-slate-500 text-xs text-center mt-2">Only verified visitors can leave reviews</p>
             </div>
-          </div>          </div>
+          </div>
         </div>
 
         <!-- Mobile Sticky Book Now CTA (Fix #3: opens full booking sheet) -->
