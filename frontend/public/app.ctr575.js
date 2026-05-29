@@ -739,9 +739,17 @@ function GymProfilePage(){
             <button onclick="handleBookNow('${gymId}')" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-4 rounded-xl text-lg transition shadow-lg shadow-brand/20">
               Book Now — £${gym.price_tier||'5'}.00
             </button>
-            <button onclick="handleBookNow('${gymId}')" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 py-3 rounded-xl text-sm transition">
+            <button data-guest-btn onclick="document.getElementById('guest-email-form-${gymId}').classList.toggle('hidden')" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 py-3 rounded-xl text-sm transition">
               Continue as Guest 👤
             </button>
+            <div id="guest-email-form-${gymId}" class="hidden mt-3 bg-slate-800/50 rounded-xl p-4 border border-slate-700">
+              <p class="text-white text-sm font-medium mb-2">📧 Enter your email to book as guest</p>
+              <input id="guest-email-input" type="email" placeholder="your@email.com" class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-3 text-white text-sm placeholder-slate-500 outline-none focus:border-brand mb-3">
+              <button onclick="const em=document.getElementById('guest-email-input').value;if(!em||!em.includes('@')){document.getElementById('guest-email-input').style.borderColor='#ef4444';return;}processGuestBooking('${gymId}',em)" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-3 rounded-xl transition">
+                Book as Guest →
+              </button>
+              <p class="text-slate-500 text-xs mt-2 text-center">No account needed. QR code sent to your email.</p>
+            </div>
 
             <div class="space-y-2 text-xs">
               <div class="flex items-center gap-2 text-slate-400"><span>🔒</span><span>No membership. No contract.</span></div>
@@ -2168,6 +2176,74 @@ window.handleBookNow=async function(gymId){
     }
   }catch(e){
     console.error('Booking error:',e);
+    alert('Something went wrong. Please try again.');
+    location.reload();
+  }
+};
+
+
+// ─── Guest Checkout Flow ───
+window.handleGuestBook=async function(gymId){
+  // Show guest checkout form
+  const sidebar=document.getElementById('guest-form-area');
+  if(sidebar){sidebar.classList.toggle('hidden');return;}
+  
+  // If no form area exists, create inline form
+  const bookArea=document.querySelector('[data-guest-area]');
+  if(bookArea){bookArea.classList.toggle('hidden');return;}
+  
+  // Fallback: show prompt
+  const email=prompt('Enter your email for guest checkout:');
+  if(!email||!email.includes('@'))return;
+  
+  await processGuestBooking(gymId,email);
+};
+
+window.processGuestBooking=async function(gymId,email){
+  const dateInput=document.querySelector('input[type="date"]');
+  const timeSelect=document.querySelector('select');
+  const date=dateInput?dateInput.value:'';
+  const time=timeSelect?timeSelect.value:'';
+  if(!date||!time){alert('Please select a date and time');return;}
+
+  // Show loading
+  const guestBtn=document.querySelector('[data-guest-btn]');
+  if(guestBtn){guestBtn.textContent='Creating booking...';guestBtn.disabled=true;}
+
+  try{
+    let dbGymId=gymId;
+    
+    // If Google Place ID, ensure gym exists in DB
+    if(isNaN(parseInt(gymId))){
+      const ensured=await api.postLive('/ensure-gym',{placeId:gymId});
+      if(ensured.error){alert(ensured.error);location.reload();return;}
+      dbGymId=ensured.gymId;
+    }
+
+    // Step 1: Create guest booking
+    const booking=await fetch('/api/bookings/guest-create',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({gymId:parseInt(dbGymId),date,time,email})
+    }).then(r=>r.json());
+    
+    if(booking.error){alert(booking.error);location.reload();return;}
+
+    // Step 2: Create Stripe guest checkout
+    const payment=await fetch('/api/payment/guest-checkout',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({bookingId:booking.booking.id,email})
+    }).then(r=>r.json());
+    
+    if(payment.error){alert(payment.error||'Payment error');location.reload();return;}
+
+    // Step 3: Redirect to Stripe
+    if(payment.checkoutUrl){
+      window.location.href=payment.checkoutUrl;
+    }
+  }catch(e){
+    console.error('Guest booking error:',e);
     alert('Something went wrong. Please try again.');
     location.reload();
   }

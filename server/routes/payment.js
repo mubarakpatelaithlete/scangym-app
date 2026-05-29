@@ -191,4 +191,67 @@ router.get('/verify', async (req, res) => {
   }
 });
 
+
+
+/**
+ * POST /api/payment/guest-checkout
+ * Create Stripe Checkout for a guest booking (no auth required, uses session guestBookingId)
+ */
+router.post('/guest-checkout', async (req, res) => {
+  try {
+    if (!stripe) {
+      return res.status(500).json({ error: 'Payment system not configured' });
+    }
+
+    const { bookingId, email } = req.body;
+    if (!bookingId) return res.status(400).json({ error: 'bookingId is required' });
+
+    // Get booking (guest bookings have user_id = 'guest')
+    const result = await pool.query(
+      `SELECT b.*, g.name as gym_name 
+       FROM public.bookings b 
+       LEFT JOIN public.gyms g ON b.gym_id = g.id
+       WHERE b.id = $1 AND b.user_id = 'guest'`,
+      [bookingId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    const booking = result.rows[0];
+    if (booking.status === 'confirmed') {
+      return res.status(400).json({ error: 'Booking already paid' });
+    }
+
+    const amount = Math.round(parseFloat(booking.total_amount) * 100);
+    const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      mode: 'payment',
+      customer_email: email || booking.user_email,
+      line_items: [{
+        price_data: {
+          currency: 'gbp',
+          product_data: {
+            name: `ScanGym Session — ${booking.gym_name || 'Gym'}`,
+            description: `${booking.start_time} - ${booking.end_time} on ${new Date(booking.booking_date).toLocaleDateString('en-GB')}`,
+          },
+          unit_amount: amount,
+        },
+        quantity: 1,
+      }],
+      metadata: { bookingId: String(booking.id), guest: 'true' },
+      success_url: `${baseUrl}/booking-success?session_id={CHECKOUT_SESSION_ID}&booking_id=${booking.id}`,
+      cancel_url: `${baseUrl}/gym/${booking.gym_id}`,
+    });
+
+    res.json({ success: true, checkoutUrl: session.url });
+  } catch (err) {
+    console.error('Guest checkout error:', err);
+    res.status(500).json({ error: 'Failed to create checkout', detail: err.message });
+  }
+});
+
 module.exports = router;

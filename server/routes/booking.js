@@ -189,4 +189,80 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+
+
+/**
+ * POST /api/bookings/guest-create
+ * Create a booking as a guest (no login required - just email)
+ */
+router.post('/guest-create', async (req, res) => {
+  try {
+    const { gymId, date, time, email, name } = req.body;
+    if (!gymId || !date || !time || !email) {
+      return res.status(400).json({ error: 'gymId, date, time, and email are required' });
+    }
+
+    // Validate email
+    if (!email.includes('@') || !email.includes('.')) {
+      return res.status(400).json({ error: 'Please enter a valid email address' });
+    }
+
+    // Get gym info
+    const gym = await pool.query('SELECT id, name, address FROM gyms WHERE id = $1', [gymId]);
+    if (gym.rows.length === 0) {
+      return res.status(404).json({ error: 'Gym not found' });
+    }
+
+    const g = gym.rows[0];
+
+    // Calculate end time (1 hour session)
+    const [hours, mins] = time.split(':').map(Number);
+    const endHour = (hours + 1) % 24;
+    const endTime = `${String(endHour).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+
+    // Pricing: before 10am = £3.75 (off-peak), otherwise £5.00
+    const price = hours < 10 ? 3.75 : 5.00;
+
+    const bookingCode = generateBookingCode();
+    const qrCode = generateQRCode();
+
+    // Create guest booking with email (user_id = 'guest')
+    const result = await pool.query(
+      `INSERT INTO public.bookings 
+        (gym_id, user_id, booking_date, start_time, end_time, total_amount, 
+         platform_fee_amount, booking_type, booking_code, qr_code, status,
+         user_email, user_name, created_at, updated_at)
+       VALUES ($1, 'guest', $2, $3, $4, $5, $6, 'instant', $7, $8, 'pending', $9, $10, NOW(), NOW())
+       RETURNING *`,
+      [gymId, date, time, endTime, price, price * 0.10, bookingCode, qrCode, email, name || 'Guest']
+    );
+
+    const booking = result.rows[0];
+
+    // Store guest booking in session for payment
+    if (req.session) {
+      req.session.guestBookingId = booking.id;
+      req.session.guestEmail = email;
+    }
+
+    res.json({
+      success: true,
+      booking: {
+        id: booking.id,
+        gymId: booking.gym_id,
+        gymName: g.name,
+        date: booking.booking_date,
+        time: booking.start_time,
+        endTime: booking.end_time,
+        price: parseFloat(booking.total_amount),
+        bookingCode: booking.booking_code,
+        status: booking.status,
+      },
+    });
+  } catch (err) {
+    console.error('Guest booking error:', err);
+    res.status(500).json({ error: 'Failed to create booking', detail: err.message });
+  }
+});
+
 module.exports = router;
