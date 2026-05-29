@@ -27,7 +27,57 @@ function initCarousels(){document.querySelectorAll('.gym-carousel').forEach(c=>{
 // Accordion FAQ (Airbnb style)
 function initAccordions(){document.querySelectorAll('.accordion-trigger').forEach(btn=>{btn.addEventListener('click',()=>{const content=btn.nextElementSibling;const arrow=btn.querySelector('.accordion-arrow');if(content.style.maxHeight){content.style.maxHeight=null;arrow.style.transform='rotate(0deg)';}else{content.style.maxHeight=content.scrollHeight+'px';arrow.style.transform='rotate(180deg)';}});});}
 // Init all interactive elements after render
-function initInteractive(){setTimeout(()=>{initCounters();initCarousels();initAccordions();},100);}
+
+// ─── Dynamic Pricing Logic ───
+function initDynamicPricing(){
+  if(!document.getElementById('pricing-live-price'))return;
+  const hour=new Date().getHours();
+  const min=new Date().getMinutes();
+  
+  let multiplier=1.0, label='';
+  if(hour<6){multiplier=0.75;label='🟢 Off-peak · Late night';}
+  else if(hour<10){multiplier=0.75;label='🟢 Off-peak · Early bird';}
+  else if(hour<12){multiplier=1.0;label='🟡 Standard · Morning';}
+  else if(hour<16){multiplier=0.85;label='🟢 Midday quiet';}
+  else if(hour<18){multiplier=1.0;label='🟡 Standard · Afternoon';}
+  else if(hour<20){multiplier=1.15;label='🔴 Rush hour · Peak demand';}
+  else{multiplier=0.75;label='🟢 Off-peak · Evening';}
+  
+  const bases={basic:5,standard:7.50,premium:12,elite:18};
+  
+  const liveEl=document.getElementById('pricing-live-price');
+  const labelEl=document.getElementById('pricing-time-label');
+  if(liveEl)liveEl.textContent='£'+(bases.basic*multiplier).toFixed(2);
+  if(labelEl)labelEl.textContent=label;
+  
+  document.querySelectorAll('[data-tier-price]').forEach(el=>{
+    const tier=el.getAttribute('data-tier-price');
+    const price=(bases[tier]*multiplier).toFixed(2);
+    el.textContent='£'+price;
+    const discEl=el.parentElement.querySelector('.text-emerald-400,.text-red-400,.text-slate-500');
+    if(discEl){
+      if(multiplier<1){
+        discEl.textContent=Math.round((1-multiplier)*100)+'% off now';
+        discEl.className='text-emerald-400 text-xs font-medium';
+      }else if(multiplier>1){
+        discEl.textContent='⚡ High demand';
+        discEl.className='text-red-400 text-xs font-medium';
+      }else{
+        discEl.textContent='Standard rate';
+        discEl.className='text-slate-500 text-xs font-medium';
+      }
+    }
+  });
+  
+  const marker=document.getElementById('pricing-time-marker');
+  if(marker){
+    const totalMin=(hour-6)*60+min;
+    const pct=Math.max(0,Math.min(100,(totalMin/(16*60))*100));
+    marker.style.left=pct+'%';
+  }
+}
+
+function initInteractive(){setTimeout(()=>{initCounters();initCarousels();initAccordions();initDynamicPricing();},100);}
 
 // Load public config from server (uses prefetched promise if available)
 async function loadConfig() {
@@ -2768,61 +2818,7 @@ function render(){
   </div>
 </div>
 
-<!-- Dynamic Pricing Script -->
-<script>
-(function(){
-  const hour=new Date().getHours();
-  const min=new Date().getMinutes();
-  
-  // Pricing tiers by time
-  let multiplier=1.0, label='', discountLabel='';
-  if(hour<6){multiplier=0.75;label='🟢 Off-peak · Late night';discountLabel='25% off now';}
-  else if(hour<10){multiplier=0.75;label='🟢 Off-peak · Early bird';discountLabel='25% off now';}
-  else if(hour<12){multiplier=1.0;label='🟡 Standard · Morning';discountLabel='';}
-  else if(hour<16){multiplier=0.85;label='🟢 Midday quiet';discountLabel='15% off now';}
-  else if(hour<18){multiplier=1.0;label='🟡 Standard · Afternoon';discountLabel='';}
-  else if(hour<20){multiplier=1.15;label='🔴 Rush hour · Peak demand';discountLabel='High demand';}
-  else{multiplier=0.75;label='🟢 Off-peak · Evening';discountLabel='25% off now';}
-  
-  // Base prices
-  const bases={basic:5,standard:7.50,premium:12,elite:18};
-  
-  // Update live price
-  const liveEl=document.getElementById('pricing-live-price');
-  const labelEl=document.getElementById('pricing-time-label');
-  if(liveEl)liveEl.textContent='£'+(bases.basic*multiplier).toFixed(2);
-  if(labelEl)labelEl.textContent=label;
-  
-  // Update tier prices
-  document.querySelectorAll('[data-tier-price]').forEach(el=>{
-    const tier=el.getAttribute('data-tier-price');
-    const price=(bases[tier]*multiplier).toFixed(2);
-    el.textContent='£'+price;
-    const discEl=el.parentElement.querySelector('.text-emerald-400,.text-red-400');
-    if(discEl){
-      if(multiplier<1){
-        discEl.textContent=Math.round((1-multiplier)*100)+'% off now';
-        discEl.className='text-emerald-400 text-xs font-medium';
-      }else if(multiplier>1){
-        discEl.textContent='⚡ High demand';
-        discEl.className='text-red-400 text-xs font-medium';
-      }else{
-        discEl.textContent='Standard rate';
-        discEl.className='text-slate-500 text-xs font-medium';
-      }
-    }
-  });
-  
-  // Position time marker
-  const marker=document.getElementById('pricing-time-marker');
-  if(marker){
-    // 6am-10pm = 16 hours mapped to 0-100%
-    const totalMin=(hour-6)*60+min;
-    const pct=Math.max(0,Math.min(100,(totalMin/(16*60))*100));
-    marker.style.left=pct+'%';
-  }
-})();
-</script>
+
 `);
     else if(path==='/about')page=InfoPage('About ScanGym',`<p class="text-xl text-white font-bold">The Skyscanner for Gyms</p><p class="text-lg text-slate-300">We're building a world where any gym is accessible to anyone, anywhere, for a fair price.</p><div class="mt-8 border-l-2 border-brand pl-6 space-y-6">${[{date:"2026",title:"Founded in Manchester",desc:"Mubarak Ibrahim Patel launches ScanGym — a marketplace connecting fitness enthusiasts with gym owners who have unused capacity."},{date:"2026",title:"1.2M+ Gyms Listed",desc:"Every gym on Earth becomes searchable via Google Places API integration. Real photos, real ratings, real-time data."},{date:"2026",title:"QR Scan-and-Go",desc:"Contactless gym entry with unique QR codes. No staff interaction, no membership cards — just scan and train."},{date:"2026",title:"AI Coach Launch",desc:"GPT-4o powered personal training. Custom workout plans, form analysis, and nutrition advice for every gym-goer."},{date:"Coming",title:"Global Expansion",desc:"Bringing ScanGym to every city on Earth. Dubai, New York, Barcelona, Berlin — gym access without borders."}].map(m=>`<div class="relative"><span class="absolute -left-[33px] w-4 h-4 bg-brand rounded-full border-2 border-dark"></span><p class="text-brand text-xs font-bold">${m.date}</p><p class="text-white font-semibold">${m.title}</p><p class="text-slate-400 text-sm">${m.desc}</p></div>`).join("")}</div><div class="mt-8 grid sm:grid-cols-3 gap-4"><div class="bg-slate-800 rounded-xl p-4 text-center"><p class="text-2xl font-bold text-white" data-counter data-target="1200000" data-suffix="+">0</p><p class="text-slate-500 text-xs">Gyms Listed</p></div><div class="bg-slate-800 rounded-xl p-4 text-center"><p class="text-2xl font-bold text-white" data-counter data-target="50" data-suffix="+">0</p><p class="text-slate-500 text-xs">Countries</p></div><div class="bg-slate-800 rounded-xl p-4 text-center"><p class="text-2xl font-bold text-white" data-counter data-target="18" data-suffix="">0</p><p class="text-slate-500 text-xs">Features Built</p></div></div><div class="mt-8"><p class="text-slate-400">📍 Manchester, UK · 📧 hello@scangym.com · 📱 @scangym</p></div>`);
   else if(path==='/faq')page=InfoPage('Frequently Asked Questions',`<p class="text-slate-400 mb-6">Everything you need to know. Click any question to expand.</p><div class="space-y-3">${[{cat:"For Gym-Goers",qs:[{q:"How much does it cost?",a:"From £5 per 24-hour session. 4 tiers: Basic £5, Standard £7.50, Premium £12, Elite £18. Off-peak 25% cheaper."},{q:"How do I get in?",a:"After booking, you get a unique QR code. Open it on your phone and scan at the gym entrance. 100% contactless — no staff needed."},{q:"Can I cancel?",a:"Yes! Free cancellation up to 2 hours before your session. Refund goes to your ScanGym Wallet instantly, or back to your card in 5-10 days."},{q:"Do I need an account?",a:"No! Guest checkout available — just email + card. Apple Pay and Google Pay supported for even faster checkout."},{q:"How long can I stay?",a:"24 hours from scan-in. Scan out when you leave."}]},{cat:"For Gym Owners",qs:[{q:"How much does it cost to list?",a:"Zero. Free to list. We only take a small commission on bookings. You set your own prices and control availability."},{q:"What equipment do I get?",a:"Listed gyms qualify for free vending machines and QR scanner hardware — installed at no cost to you."},{q:"How do I get paid?",a:"Direct bank transfer, weekly. Full analytics dashboard shows your bookings, revenue, and ratings in real-time."}]},{cat:"For Creators",qs:[{q:"How does FlexSquad work?",a:"Sign up, get your personal referral page (scangym.com/r/yourname), share it. Earn 25% commission on every booking."},{q:"How much can I earn?",a:"Explorers: £50-150/mo. Ambassadors: £200-500/mo + free sessions. Elite: £500-1,200/mo. Legends: £1,200-5,000/mo."}]}].map(cat=>`<div class="mb-4"><h3 class="text-brand font-bold text-sm mb-2">${cat.cat}</h3>${cat.qs.map(q=>`<div class="border border-slate-700 rounded-lg mb-2 overflow-hidden"><button class="accordion-trigger w-full flex items-center justify-between p-4 text-left hover:bg-slate-800/50 transition"><span class="text-white text-sm font-medium">${q.q}</span><span class="accordion-arrow text-slate-500 transition-transform">▼</span></button><div class="overflow-hidden transition-all duration-300" style="max-height:0"><p class="text-slate-400 text-sm p-4 pt-0">${q.a}</p></div></div>`).join("")}</div>`).join("")}</div>`);
