@@ -3095,18 +3095,19 @@ window.findGyms=async function(){
   navigate('/explore');
   setTimeout(()=>startLoadingAnimation(),100);
 
-  // Uber-style: start IP city search immediately while GPS loads
-  const cityPromise=fetch('/api/geolocation/auto-city').then(r=>r.json()).catch(()=>null);
+  // Uber Technique #1: Parallel signal race — IP + GPS fire simultaneously
+  const cityPromise=fetch('/api/geolocation/auto-city',{credentials:'include'}).then(r=>r.json()).catch(()=>null);
 
   const loc=await getLocation();
   if(!loc){
     stopLoadingAnimation();
-    // GPS failed — use IP city detection (Fix #6)
+    // GPS failed — use IP city detection (Technique #4: in-memory GeoIP on server)
     const cityData=await cityPromise;
     if(cityData&&cityData.query){
       searchGyms(cityData.query);
+      setCachedLocation(cityData); // Technique #2: cache for instant return
+      recordLocationForPrediction(cityData); // Technique #5: learn pattern
     }else{
-      // Ultimate fallback
       try{
         const data=await api.getGuest('/featured');
         if(data.gyms&&data.gyms.length){state.gyms=data.gyms;state.searchQuery='Featured Gyms';render();}
@@ -3118,6 +3119,8 @@ window.findGyms=async function(){
     return;
   }
   state.searchLat=loc.lat;state.searchLng=loc.lng;
+  setCachedLocation({lat:loc.lat,lng:loc.lng,city:'Near You',query:'Near You'}); // Technique #2
+  recordLocationForPrediction({lat:loc.lat,lng:loc.lng,city:'Near You',query:'Near You'}); // Technique #5
   stopLoadingAnimation();
   await loadGyms(loc.lat,loc.lng);
 };
@@ -3172,47 +3175,161 @@ window.filterGyms=function(type){
   });
 };
 
-// ─── Auto-load City Gyms (Fix #1 + #6: Uber-style instant results) ───
-// On first visit to search page, auto-detect city via IP and pre-load results
-// GPS runs in parallel for precision upgrade (Uber pattern)
+// ═══════════════════════════════════════════════════════════════
+//  UBER-GRADE LOCATION DETECTION — All 5 Techniques
+// ═══════════════════════════════════════════════════════════════
+
+// Technique #2: Client-Side Location Cache (localStorage)
+const LOC_CACHE_KEY='sg_location_cache';
+const LOC_CACHE_TTL=5*60*1000; // 5 min active, 30 min return
+const LOC_HISTORY_KEY='sg_location_history'; // Technique #5: prediction data
+
+function getCachedLocation(){
+  try{
+    const raw=localStorage.getItem(LOC_CACHE_KEY);
+    if(!raw)return null;
+    const cached=JSON.parse(raw);
+    const age=Date.now()-cached.timestamp;
+    if(age>30*60*1000)return null; // expired
+    return {...cached,age_ms:age,from_cache:true};
+  }catch(e){return null;}
+}
+function setCachedLocation(loc){
+  try{
+    localStorage.setItem(LOC_CACHE_KEY,JSON.stringify({...loc,timestamp:Date.now()}));
+  }catch(e){}
+}
+
+// Technique #5: Record search location for time-of-day prediction
+function recordLocationForPrediction(loc){
+  try{
+    const history=JSON.parse(localStorage.getItem(LOC_HISTORY_KEY)||'[]');
+    const now=new Date();
+    const hour=now.getHours();
+    history.push({
+      lat:loc.lat,lng:loc.lng,city:loc.city,query:loc.query,
+      timeSlot:hour<6?'night':hour<12?'morning':hour<17?'afternoon':'evening',
+      dayType:(now.getDay()===0||now.getDay()===6)?'weekend':'weekday',
+      ts:Date.now()
+    });
+    // Keep last 20
+    if(history.length>20)history.shift();
+    localStorage.setItem(LOC_HISTORY_KEY,JSON.stringify(history));
+    // Also report to server for server-side prediction
+    fetch('/api/geolocation/cache',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(loc),credentials:'include'}).catch(()=>{});
+  }catch(e){}
+}
+
+// Technique #5: Get predicted location from past behavior
+function getPredictedLocation(){
+  try{
+    const history=JSON.parse(localStorage.getItem(LOC_HISTORY_KEY)||'[]');
+    if(history.length<3)return null; // Need at least 3 data points
+    const now=new Date();
+    const hour=now.getHours();
+    const timeSlot=hour<6?'night':hour<12?'morning':hour<17?'afternoon':'evening';
+    const dayType=(now.getDay()===0||now.getDay()===6)?'weekend':'weekday';
+    // Find matches for same time slot
+    const matches=history.filter(h=>h.timeSlot===timeSlot);
+    const exact=matches.filter(h=>h.dayType===dayType);
+    const best=exact.length>0?exact[exact.length-1]:matches.length>0?matches[matches.length-1]:null;
+    if(!best)return null;
+    return{...best,source:'prediction',confidence:exact.length>2?'high':matches.length>1?'medium':'low'};
+  }catch(e){return null;}
+}
+
+// ─── Main Auto-Load Function (all 5 techniques combined) ───
 window._autoLoaded=false;
 window.autoLoadGyms=async function(){
   if(window._autoLoaded||state.gyms.length>0||state.searchQuery) return;
   window._autoLoaded=true;
+
+  const t0=performance.now();
+
   try{
-    // Parallel: IP city detection + GPS attempt
-    const cityPromise=fetch('/api/geolocation/auto-city').then(r=>r.json()).catch(()=>({query:'gyms in London',city:'London'}));
+    // ▸ STEP 1: Instant results from client cache (Technique #2, <1ms)
+    const cached=getCachedLocation();
+    if(cached&&cached.query){
+      console.log('[Location] Cache hit:',cached.city,'('+(Date.now()-cached.timestamp)+'ms old)');
+      searchGyms(cached.query);
+      // Don't return — still try GPS upgrade below
+    }
+
+    // ▸ STEP 2: If no cache, try prediction (Technique #5, <1ms)
+    if(!cached){
+      const predicted=getPredictedLocation();
+      if(predicted&&predicted.confidence!=='low'){
+        console.log('[Location] Prediction:',predicted.city,'(confidence:',predicted.confidence+')');
+        searchGyms(predicted.query);
+      }
+    }
+
+    // ▸ STEP 3: Parallel Signal Race (Technique #1)
+    // Fire IP detection (server uses in-memory GeoIP = Technique #4) + GPS simultaneously
+    const cityPromise=fetch('/api/geolocation/auto-city',{credentials:'include'}).then(r=>r.json()).catch(()=>null);
     const gpsPromise=new Promise((resolve)=>{
       if(!navigator.geolocation){resolve(null);return;}
       navigator.geolocation.getCurrentPosition(
         pos=>resolve({lat:pos.coords.latitude,lng:pos.coords.longitude}),
         ()=>resolve(null),
-        {timeout:3000,maximumAge:300000}
+        {timeout:4000,maximumAge:300000,enableHighAccuracy:false}
       );
     });
 
-    // Load from IP city immediately (Uber: show results in <1s)
+    // IP result arrives first (~5ms with geoip-lite, ~200ms with external API)
     const cityData=await cityPromise;
-    if(cityData.query&&state.gyms.length===0){
+    if(cityData&&cityData.query&&state.gyms.length===0){
       searchGyms(cityData.query);
+      setCachedLocation(cityData);
+      recordLocationForPrediction(cityData);
+      console.log('[Location] IP city:',cityData.city,'via',cityData.source,'in',cityData.resolve_ms+'ms');
     }
 
-    // If GPS arrives, upgrade with nearby search (precision)
+    // GPS arrives later — upgrade results with precise nearby search
     const gps=await gpsPromise;
     if(gps){
       state.searchLat=gps.lat;state.searchLng=gps.lng;
-      try{
-        const nearby=await api.getLive('/nearby?lat='+gps.lat+'&lng='+gps.lng+'&radius=5000');
-        if(nearby.gyms&&nearby.gyms.length>0){
-          state.gyms=nearby.gyms;
-          state.searchQuery='Near You';
-          render();
+      const gpsLoc={lat:gps.lat,lng:gps.lng,city:cityData?.city||'Near You',query:'Near You'};
+      setCachedLocation(gpsLoc);
+      recordLocationForPrediction(gpsLoc);
+
+      // ▸ STEP 4: H3 hex grid lookup (Technique #3) + live nearby search in parallel
+      const [h3Result,nearbyResult]=await Promise.allSettled([
+        fetch('/api/geolocation/nearby-h3?lat='+gps.lat+'&lng='+gps.lng).then(r=>r.json()).catch(()=>null),
+        api.getLive('/nearby?lat='+gps.lat+'&lng='+gps.lng+'&radius=5000').catch(()=>null)
+      ]);
+
+      // Merge H3 DB gyms + live Google Places gyms (deduplicated)
+      let mergedGyms=[];
+      const h3Gyms=h3Result.value?.gyms||[];
+      const liveGyms=nearbyResult.value?.gyms||[];
+
+      if(liveGyms.length>0){
+        mergedGyms=[...liveGyms];
+        // Add H3 DB gyms that aren't in live results
+        const liveIds=new Set(liveGyms.map(g=>g.placeId||g.place_id||g.id));
+        for(const hg of h3Gyms){
+          if(!liveIds.has(hg.id)&&!liveIds.has(String(hg.id)))mergedGyms.push(hg);
         }
-      }catch(e){}
+      }else if(h3Gyms.length>0){
+        mergedGyms=h3Gyms;
+      }
+
+      if(mergedGyms.length>0){
+        state.gyms=mergedGyms;
+        state.searchQuery='Near You';
+        render();
+      }
+
+      console.log('[Location] GPS upgrade:',gps.lat.toFixed(4),gps.lng.toFixed(4),
+        '| H3:',h3Gyms.length,'gyms | Live:',liveGyms.length,'gyms | Merged:',mergedGyms.length);
     }
+
+    console.log('[Location] Total resolve time:',Math.round(performance.now()-t0)+'ms');
   }catch(e){
+    console.warn('[Location] Error:',e.message);
     // Ultimate fallback — always show something
-    searchGyms('gyms in London');
+    if(state.gyms.length===0)searchGyms('gyms in London');
   }
 };
 
