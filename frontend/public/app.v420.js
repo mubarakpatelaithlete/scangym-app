@@ -118,6 +118,70 @@ function askGymQuestion(question, gymId) {
   }, 800 + Math.random() * 700); // 0.8-1.5s delay for realistic feel
 }
 
+
+// ─── Hero Carousel & Photo Viewer ───
+window._heroIdx=0;
+window.heroSlide=function(dir){
+  const slides=document.getElementById('hero-slides');
+  const counter=document.getElementById('hero-counter');
+  const dots=document.getElementById('hero-dots');
+  if(!slides)return;
+  const total=slides.children.length;
+  if(total<=1)return;
+  window._heroIdx=((window._heroIdx||0)+dir+total)%total;
+  slides.style.transform='translateX(-'+(window._heroIdx*(100/total))+'%)';
+  if(counter)counter.textContent=window._heroIdx+1;
+  if(dots){
+    Array.from(dots.children).forEach((d,i)=>{
+      d.className='w-1.5 h-1.5 rounded-full transition-all '+(i===window._heroIdx?'bg-white w-3':'bg-white/40');
+    });
+  }
+};
+// Touch swipe support for hero carousel
+(function(){
+  let startX=0,startY=0,isDragging=false;
+  document.addEventListener('touchstart',function(e){
+    const carousel=e.target.closest('#hero-carousel');
+    if(!carousel)return;
+    startX=e.touches[0].clientX;
+    startY=e.touches[0].clientY;
+    isDragging=true;
+  },{passive:true});
+  document.addEventListener('touchend',function(e){
+    if(!isDragging)return;
+    isDragging=false;
+    const dx=e.changedTouches[0].clientX-startX;
+    const dy=e.changedTouches[0].clientY-startY;
+    if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)){
+      heroSlide(dx<0?1:-1);
+    }
+  },{passive:true});
+})();
+// Photo viewer (fullscreen lightbox)
+window.openPhotoViewer=function(idx){
+  const photos=state.currentGym?.photos_list||[];
+  if(!photos.length)return;
+  let current=idx||0;
+  const overlay=document.createElement('div');
+  overlay.id='photo-viewer-overlay';
+  overlay.className='fixed inset-0 z-50 bg-black/95 flex items-center justify-center';
+  function renderViewer(){
+    const p=photos[current];
+    overlay.innerHTML='<button onclick="document.getElementById(\'photo-viewer-overlay\').remove()" class="absolute top-4 right-4 text-white text-2xl z-10 w-10 h-10 flex items-center justify-center bg-black/40 rounded-full hover:bg-black/60">✕</button>'
+      +'<button onclick="viewerNav(-1)" class="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/40 hover:bg-black/60 text-white rounded-full flex items-center justify-center text-xl z-10">‹</button>'
+      +'<img src="'+(p.url||p.thumbnail||p)+'" class="max-w-full max-h-[85vh] object-contain rounded-lg" />'
+      +'<button onclick="viewerNav(1)" class="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/40 hover:bg-black/60 text-white rounded-full flex items-center justify-center text-xl z-10">›</button>'
+      +'<div class="absolute bottom-4 left-1/2 -translate-x-1/2 text-white text-sm bg-black/50 px-3 py-1 rounded-full">'+(current+1)+' / '+photos.length+'</div>';
+  }
+  window.viewerNav=function(dir){
+    current=((current||0)+dir+photos.length)%photos.length;
+    renderViewer();
+  };
+  renderViewer();
+  overlay.addEventListener('click',function(e){if(e.target===overlay)overlay.remove();});
+  document.body.appendChild(overlay);
+};
+
 // ─── Dynamic Pricing Logic ───
 function initDynamicPricing(){
   if(!document.getElementById('pricing-live-price'))return;
@@ -167,7 +231,7 @@ function initDynamicPricing(){
   }
 }
 
-function initInteractive(){setTimeout(()=>{initCounters();initCarousels();initAccordions();initDynamicPricing();},100);}
+function initInteractive(){setTimeout(()=>{initCounters();initCarousels();initAccordions();initDynamicPricing();window._heroIdx=0;},100);}
 
 // Load public config from server (uses prefetched promise if available)
 async function loadConfig() {
@@ -699,10 +763,18 @@ function GymProfilePage(){
   const gymId=gym.place_id||gym.placeId||gym.id;
   return`
   <div class="pt-20 min-h-screen overflow-x-hidden">
-    <!-- Photo Banner -->
-    <div class="h-72 bg-slate-700 relative overflow-hidden">
-      ${mainPhoto?`<img src="${mainPhoto}" class="w-full h-full object-cover" onerror="this.style.display='none'">`:'<div class="w-full h-full flex items-center justify-center text-6xl">🏋️</div>'}
-      <div class="absolute inset-0 bg-gradient-to-t from-dark via-transparent to-transparent"></div>
+    <!-- Photo/Video Hero Carousel (All Google Places media) -->
+    <div class="h-80 bg-slate-800 relative overflow-hidden gym-hero-carousel" id="hero-carousel">
+      ${(()=>{
+        const allMedia=gym.photos_list||[];
+        if(allMedia.length===0&&!mainPhoto) return '<div class="w-full h-full flex items-center justify-center text-6xl bg-slate-800">🏋️</div>';
+        const photos=allMedia.length>0?allMedia:(mainPhoto?[{url:mainPhoto,thumbnail:mainPhoto}]:[]);
+        return '<div class="flex h-full transition-transform duration-300 ease-out" id="hero-slides" style="width:'+photos.length*100+'%;touch-action:pan-y;">'+photos.map((p,i)=>'<div class="h-full flex-shrink-0" style="width:'+(100/photos.length)+'%"><img src="'+(p.url||p.thumbnail||p)+'" alt="'+gym.name+' photo '+(i+1)+'" class="w-full h-full object-cover" loading="'+(i<2?'eager':'lazy')+'" onerror="this.src=\'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 300%22><rect fill=%22%23334155%22 width=%22400%22 height=%22300%22/><text x=%22200%22 y=%22150%22 text-anchor=%22middle%22 fill=%22%2394a3b8%22 font-size=%2248%22>🏋️</text></svg>\'"></div>').join('')+'</div>'
+        +(photos.length>1?'<div class="absolute top-3 right-3 bg-black/60 text-white text-xs px-2.5 py-1 rounded-full font-medium backdrop-blur-sm"><span id="hero-counter">1</span>/'+photos.length+'</div>':'')
+        +(photos.length>1?'<button onclick="heroSlide(-1)" class="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/40 hover:bg-black/60 text-white rounded-full flex items-center justify-center backdrop-blur-sm transition text-lg">‹</button><button onclick="heroSlide(1)" class="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/40 hover:bg-black/60 text-white rounded-full flex items-center justify-center backdrop-blur-sm transition text-lg">›</button>':'')
+        +(photos.length>1?'<div class="absolute bottom-16 left-1/2 -translate-x-1/2 flex gap-1.5" id="hero-dots">'+photos.map((_,i)=>'<div class="w-1.5 h-1.5 rounded-full '+(i===0?'bg-white':'bg-white/40')+' transition-all"></div>').join('')+'</div>':'');
+      })()}
+      <div class="absolute inset-0 bg-gradient-to-t from-dark via-transparent to-transparent pointer-events-none"></div>
       <div class="absolute bottom-4 left-4 right-4">
         <h1 class="font-brand text-3xl font-bold text-white">${gym.name}</h1>
         <p class="text-slate-300 text-sm mt-1">${gym.formatted_address||gym.vicinity||'Bolton, UK'}</p>
@@ -764,13 +836,18 @@ function GymProfilePage(){
             </div>
           </div>
 
-          <!-- Photo Gallery (Live from Google) -->
+          <!-- Photo Gallery (All Google Places Photos) -->
           ${gym.photos_list?.length>1?`
           <div class="bg-card rounded-xl p-5 border border-slate-700">
-            <h3 class="text-white font-semibold mb-3">📸 Photos</h3>
-            <div class="grid grid-cols-3 gap-2">
-              ${gym.photos_list.slice(0,9).map(p=>`
-                <img src="${p.thumbnail||p.url}" class="w-full h-24 object-cover rounded-lg" loading="lazy" onerror="this.style.display='none'">
+            <h3 class="text-white font-semibold mb-3">📸 All Photos <span class="text-slate-500 font-normal text-sm">(${gym.photos_list.length})</span></h3>
+            <div class="grid grid-cols-3 gap-2" id="photo-gallery">
+              ${gym.photos_list.map((p,i)=>`
+                <div class="relative group cursor-pointer" onclick="openPhotoViewer(${i})">
+                  <img src="${p.thumbnail||p.url}" class="w-full h-28 object-cover rounded-lg transition group-hover:brightness-75" loading="lazy" onerror="this.parentElement.style.display='none'">
+                  <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                    <span class="text-white text-lg">🔍</span>
+                  </div>
+                </div>
               `).join('')}
             </div>
           </div>`:``}
