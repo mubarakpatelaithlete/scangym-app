@@ -184,4 +184,75 @@ router.post('/ip', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/geolocation/auto-city
+ * Ultra-fast city detection from visitor IP — no permissions needed.
+ * Returns a search query the frontend can use to auto-load gyms.
+ * Inspired by Uber's approach: start loading results from IP immediately,
+ * then upgrade to GPS precision if the user grants permission.
+ */
+router.get('/auto-city', async (req, res) => {
+  try {
+    // Get visitor IP (Railway sets x-forwarded-for)
+    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip;
+
+    // Try ipapi.co first — returns city + country
+    try {
+      const r = await fetch(`https://ipapi.co/${ip === '127.0.0.1' || ip === '::1' ? '' : ip + '/'}json/`, {
+        headers: { 'User-Agent': 'ScanGym/1.0' },
+        signal: AbortSignal.timeout(2000),
+      });
+      if (r.ok) {
+        const data = await r.json();
+        if (data.city) {
+          return res.json({
+            city: data.city,
+            region: data.region,
+            country: data.country_name,
+            lat: data.latitude,
+            lng: data.longitude,
+            query: `gyms in ${data.city}`,
+            source: 'ipapi_co',
+          });
+        }
+      }
+    } catch (e) {}
+
+    // Fallback: ip-api.com
+    try {
+      const r = await fetch(`http://ip-api.com/json/${ip === '127.0.0.1' || ip === '::1' ? '' : ip}?fields=city,regionName,country,lat,lon,status`, {
+        signal: AbortSignal.timeout(2000),
+      });
+      if (r.ok) {
+        const data = await r.json();
+        if (data.status === 'success' && data.city) {
+          return res.json({
+            city: data.city,
+            region: data.regionName,
+            country: data.country,
+            lat: data.lat,
+            lng: data.lon,
+            query: `gyms in ${data.city}`,
+            source: 'ip_api_com',
+          });
+        }
+      }
+    } catch (e) {}
+
+    // Default fallback — London (biggest market)
+    res.json({
+      city: 'London',
+      region: 'England',
+      country: 'United Kingdom',
+      lat: 51.5074,
+      lng: -0.1278,
+      query: 'gyms in London',
+      source: 'default',
+    });
+  } catch (error) {
+    console.error('[Geolocation/auto-city] Error:', error.message);
+    res.json({ city: 'London', query: 'gyms in London', source: 'default' });
+  }
+});
+
 module.exports = router;

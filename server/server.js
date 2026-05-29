@@ -26,6 +26,7 @@ const geolocationRouter = require('./routes/geolocation');
 const analyticsMiddleware = require('./middleware/analytics');
 
 const app = express();
+app.set('trust proxy', 1); // Trust Railway's reverse proxy (needed for secure cookies + IP detection)
 const PORT = process.env.PORT || 5000;
 
 // Frontend directory (Dockerfile copies it to ./public/)
@@ -42,11 +43,12 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: false, // Railway terminates SSL at proxy
+    secure: process.env.NODE_ENV === 'production', // true on Railway (HTTPS via proxy)
     httpOnly: true,
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     sameSite: 'lax',
   },
+  proxy: true, // Trust Railway's reverse proxy for secure cookies
 }));
 
 // Analytics tracking middleware (Task 21)
