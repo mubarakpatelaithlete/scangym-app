@@ -198,6 +198,23 @@ if (fs.existsSync(FRONTEND_DIR)) {
     }
   }));
 
+  // Reels app — separate React SPA at /reels
+  // Serves reels/index.html for /reels and all sub-routes (e.g. /reels/creator/auth)
+  app.get('/reels', (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache');
+    res.sendFile(path.join(FRONTEND_DIR, 'reels', 'index.html'));
+  });
+  app.get('/reels/*', (req, res, next) => {
+    // Let express.static handle actual files (assets, favicon, etc.)
+    const filePath = path.join(FRONTEND_DIR, req.path);
+    if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+      return next();
+    }
+    // Otherwise serve the reels SPA index.html
+    res.setHeader('Cache-Control', 'no-cache');
+    res.sendFile(path.join(FRONTEND_DIR, 'reels', 'index.html'));
+  });
+
   // SPA fallback - serve index.html for all non-API routes
   app.get('*', (req, res) => {
     const indexPath = path.join(FRONTEND_DIR, 'index.html');
