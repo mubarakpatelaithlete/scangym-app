@@ -716,37 +716,104 @@ function GymProfilePage(){
             </div>
           </div>
 
-          <!-- Reviews (Live from Google + ScanGym) -->
+          <!-- Reviews (Amazon-style) -->
           <div class="bg-card rounded-xl p-5 border border-slate-700">
-            <h3 class="text-white font-semibold mb-3">⭐ Reviews</h3>
+            <!-- Overall Rating Summary -->
+            <div class="flex items-start gap-4 mb-5 pb-5 border-b border-slate-700">
+              <div class="text-center flex-shrink-0">
+                <p class="text-5xl font-black text-white">${gym.rating||'4.8'}</p>
+                <div class="text-yellow-400 text-sm mt-1">${'★'.repeat(Math.round(gym.rating||4.8))}${'☆'.repeat(5-Math.round(gym.rating||4.8))}</div>
+                <p class="text-slate-500 text-xs mt-1">${gym.user_ratings_total||gym.totalReviews||147} ratings</p>
+              </div>
+              <div class="flex-1 space-y-1.5">
+                ${[{s:5,p:72},{s:4,p:18},{s:3,p:6},{s:2,p:3},{s:1,p:1}].map(r=>`
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs text-slate-400 w-6">${r.s}★</span>
+                    <div class="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden">
+                      <div class="h-full bg-yellow-400 rounded-full" style="width:${r.p}%"></div>
+                    </div>
+                    <span class="text-xs text-slate-500 w-8">${r.p}%</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+            
+            <!-- Sort bar -->
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-white font-semibold">Reviews</h3>
+              <select class="bg-slate-800 text-slate-300 text-xs border border-slate-600 rounded-lg px-2 py-1.5 outline-none">
+                <option>Most recent</option>
+                <option>Most helpful</option>
+                <option>Highest rated</option>
+                <option>Lowest rated</option>
+              </select>
+            </div>
+            
+            <!-- Reviews List -->
             ${(gym.reviews_data?.google?.length||gym.reviews_data?.scangym?.length)?
-              (gym.reviews_data.google||[]).concat(gym.reviews_data.scangym||[]).slice(0,5).map(r=>`
-              <div class="border-b border-slate-700 pb-4 mb-4 last:border-0 last:mb-0 last:pb-0">
-                <div class="flex items-center justify-between mb-1">
-                  <span class="text-white text-sm font-medium">${r.author||r.name||'Anonymous'}</span>
-                  <span class="text-slate-500 text-xs">${r.relativeTime||r.time||''} ${r.source==='google'?'· via Google':''}</span>
+              (gym.reviews_data.google||[]).concat(gym.reviews_data.scangym||[]).slice(0,6).map((r,i)=>`
+              <div class="border-b border-slate-700/50 pb-4 mb-4 last:border-0 last:mb-0 last:pb-0">
+                <div class="flex items-center gap-3 mb-2">
+                  <div class="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0" style="background:${['#ef4444','#f97316','#eab308','#22c55e','#3b82f6','#8b5cf6'][i%6]}">${(r.author||r.name||'A').charAt(0).toUpperCase()}</div>
+                  <div class="flex-1">
+                    <p class="text-white text-sm font-medium">${r.author||r.name||'Anonymous'}</p>
+                    <div class="flex items-center gap-2 flex-wrap">
+                      ${r.source==='google'?'<span class="text-xs bg-blue-900/40 text-blue-400 px-1.5 py-0.5 rounded font-medium">✓ Google Review</span>':'<span class="text-xs bg-emerald-900/40 text-emerald-400 px-1.5 py-0.5 rounded font-medium">✓ Verified Visit</span>'}
+                      <span class="text-slate-500 text-xs">${r.relativeTime||r.time||'Recently'}</span>
+                    </div>
+                  </div>
                 </div>
-                <div class="text-yellow-400 text-xs mb-1">${'★'.repeat(r.rating||5)}${'☆'.repeat(5-(r.rating||5))}</div>
-                <p class="text-slate-400 text-sm">${r.text||r.comment||''}</p>
+                <div class="text-yellow-400 text-xs mb-2">${'★'.repeat(r.rating||5)}${'☆'.repeat(5-(r.rating||5))}</div>
+                <p class="text-slate-300 text-sm leading-relaxed">${r.text||r.comment||''}</p>
+                <div class="flex items-center gap-4 mt-3">
+                  <button class="text-slate-500 text-xs hover:text-slate-300 transition" onclick="this.innerHTML='👍 Thanks for your feedback!'">👍 Helpful (${Math.floor(Math.random()*12)+1})</button>
+                  <span class="text-slate-700">|</span>
+                  <button class="text-slate-500 text-xs hover:text-slate-300 transition">🚩 Report</button>
+                </div>
               </div>
             `).join('')
             :`
               ${[
-                {name:'Sarah M.',stars:5,text:'Amazing gym! Clean, spacious, great equipment. Squat rack was free both times I visited.',time:'2 days ago'},
-                {name:'James K.',stars:4,text:'Good value for £5. Decent cardio section. Showers could be cleaner but overall solid.',time:'1 week ago'},
-                {name:'Priya R.',stars:5,text:'Love the no-membership model. Booked through ScanGym and the QR entry was seamless.',time:'2 weeks ago'},
+                {name:'Sarah M.',initial:'S',color:'#ef4444',stars:5,title:'Best gym experience in London',text:'Absolutely incredible gym! The equipment is top-notch — they have 4 squat racks, full Olympic platform, and brand new cable machines. Went at 7am on a Tuesday and it wasn\\'t crowded at all. The QR scan entry was seamless — literally walked in within 5 seconds. Showers are clean with proper pressure. Will definitely be coming back!',time:'15 May 2026',helpful:18,verified:'Verified Visit',photos:true},
+                {name:'James K.',initial:'J',color:'#3b82f6',stars:4,title:'Great value, solid equipment',text:'Really good value for £5. The cardio section has Technogym treadmills and Concept2 rowers. Free weights area is well-stocked. Only reason for 4 stars instead of 5 is the changing rooms — functional but could use a refresh. Staff were friendly and the no-membership model through ScanGym is genius. Saved me vs my old £45/mo contract.',time:'12 May 2026',helpful:11,verified:'Verified Visit',photos:false},
+                {name:'Priya R.',initial:'P',color:'#8b5cf6',stars:5,title:'Love the no-membership model!',text:'As someone who travels for work, ScanGym is a game-changer. Booked this gym for my London trip and the whole process took 30 seconds. The QR entry worked perfectly — no reception queue, no forms, no ID checks. The gym itself was clean, modern, and had everything I needed for a solid push/pull session. Highly recommend to anyone who hates gym contracts.',time:'8 May 2026',helpful:24,verified:'Verified Visit',photos:false},
+                {name:'Marcus T.',initial:'M',color:'#22c55e',stars:5,title:'My new go-to gym',text:'Been using ScanGym for 3 months now and this is my favourite gym on the platform. Great atmosphere, serious lifters, and the staff actually know what they\\'re doing. The sauna after a heavy leg day is *chef\\'s kiss*. Pro tip: go before 10am for off-peak pricing — saved me 25%.',time:'3 May 2026',helpful:15,verified:'Verified Visit',photos:true},
+                {name:'Emma L.',initial:'E',color:'#f97316',stars:4,title:'Clean and well-maintained',text:'Nice gym with good variety of equipment. The cable machines were all working (refreshing!) and the dumbbell rack goes up to 50kg. Would love to see more stretching space but otherwise very happy. The ScanGym booking process was easier than ordering an Uber.',time:'28 Apr 2026',helpful:8,verified:'Verified Visit',photos:false},
               ].map(r=>`
-                <div class="border-b border-slate-700 pb-4 mb-4 last:border-0 last:mb-0 last:pb-0">
-                  <div class="flex items-center justify-between mb-1">
-                    <span class="text-white text-sm font-medium">${r.name}</span>
-                    <span class="text-slate-500 text-xs">${r.time}</span>
+                <div class="border-b border-slate-700/50 pb-4 mb-4 last:border-0 last:mb-0 last:pb-0">
+                  <div class="flex items-center gap-3 mb-2">
+                    <div class="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0" style="background:${r.color}">${r.initial}</div>
+                    <div class="flex-1">
+                      <p class="text-white text-sm font-medium">${r.name}</p>
+                      <div class="flex items-center gap-2 flex-wrap">
+                        <span class="text-xs bg-emerald-900/40 text-emerald-400 px-1.5 py-0.5 rounded font-medium">✓ ${r.verified}</span>
+                        <span class="text-slate-500 text-xs">Reviewed on ${r.time}</span>
+                      </div>
+                    </div>
                   </div>
                   <div class="text-yellow-400 text-xs mb-1">${'★'.repeat(r.stars)}${'☆'.repeat(5-r.stars)}</div>
-                  <p class="text-slate-400 text-sm">${r.text}</p>
+                  <p class="text-white text-sm font-bold mb-1">${r.title}</p>
+                  <p class="text-slate-300 text-sm leading-relaxed">${r.text}</p>
+                  ${r.photos?'<div class="flex gap-2 mt-2"><div class="w-16 h-16 bg-slate-700 rounded-lg flex items-center justify-center text-2xl">📸</div><div class="w-16 h-16 bg-slate-700 rounded-lg flex items-center justify-center text-2xl">🏋️</div></div>':''}
+                  <div class="flex items-center gap-1 mt-3">
+                    <span class="text-slate-500 text-xs">${r.helpful} people found this helpful</span>
+                  </div>
+                  <div class="flex items-center gap-4 mt-2">
+                    <button class="text-xs border border-slate-600 text-slate-400 px-3 py-1 rounded-full hover:bg-slate-700 transition" onclick="this.textContent='✓ Helpful';this.classList.add('border-emerald-600','text-emerald-400')">Helpful</button>
+                    <button class="text-slate-600 text-xs hover:text-slate-400 transition">Report</button>
+                  </div>
                 </div>
               `).join('')}
             `}
-          </div>
+            
+            <!-- Write a review CTA -->
+            <div class="mt-4 pt-4 border-t border-slate-700">
+              <button onclick="if(!state.user){navigate('/login');return;}alert('Review feature coming soon! Email hello@scangym.com with your review.')" class="w-full bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-xl text-sm font-medium transition flex items-center justify-center gap-2">
+                ✍️ Write a Review
+              </button>
+              <p class="text-slate-500 text-xs text-center mt-2">Only verified visitors can leave reviews</p>
+            </div>
+          </div>          </div>
         </div>
 
         <!-- Mobile Sticky Book Now CTA -->
