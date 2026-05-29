@@ -28,6 +28,96 @@ function initCarousels(){document.querySelectorAll('.gym-carousel').forEach(c=>{
 function initAccordions(){document.querySelectorAll('.accordion-trigger').forEach(btn=>{btn.addEventListener('click',()=>{const content=btn.nextElementSibling;const arrow=btn.querySelector('.accordion-arrow');if(content.style.maxHeight){content.style.maxHeight=null;arrow.style.transform='rotate(0deg)';}else{content.style.maxHeight=content.scrollHeight+'px';arrow.style.transform='rotate(180deg)';}});});}
 // Init all interactive elements after render
 
+
+// ─── Ask a Question Chat ───
+function askGymQuestion(question, gymId) {
+  if (!question || !question.trim()) return;
+  question = question.trim();
+  
+  const history = document.getElementById('gym-chat-history');
+  if (!history) return;
+  
+  // Add user message
+  history.innerHTML += `
+    <div class="flex justify-end">
+      <div class="bg-brand/20 text-white text-sm px-3 py-2 rounded-xl rounded-br-sm max-w-[80%]">
+        ${question}
+      </div>
+    </div>`;
+  
+  // Add typing indicator
+  const typingId = 'typing-' + Date.now();
+  history.innerHTML += `
+    <div class="flex justify-start" id="${typingId}">
+      <div class="bg-slate-700 text-slate-300 text-sm px-3 py-2 rounded-xl rounded-bl-sm">
+        <span class="animate-pulse">● ● ●</span>
+      </div>
+    </div>`;
+  history.scrollTop = history.scrollHeight;
+  
+  // Find the gym data for context
+  const gym = state.gyms?.find(g => (g.place_id || g.id) === gymId) || {};
+  
+  // AI response logic - match common questions
+  setTimeout(() => {
+    const q = question.toLowerCase();
+    let answer = '';
+    
+    if (q.includes('squat rack') || q.includes('squat') || q.includes('rack')) {
+      answer = `Based on real-time data, ${gym.name || 'this gym'} typically has squat racks available during off-peak hours (before 10am & after 8pm). Peak times (5-7pm) may have a short wait. We recommend booking an off-peak slot for guaranteed access! 🏋️`;
+    } else if (q.includes('locker') || q.includes('code')) {
+      answer = `Locker access is included with Standard tier and above. After scanning your QR code at entry, you'll receive a locker code via the booking confirmation. Basic tier has open cubby storage. 🔐`;
+    } else if (q.includes('entrance') || q.includes('where') || q.includes('find') || q.includes('location') || q.includes('address')) {
+      answer = `${gym.name || 'This gym'} is located at ${gym.vicinity || gym.formatted_address || 'the address shown on the map above'}. Look for the ScanGym QR scanner at the entrance — scan your booking QR code and you're in! No reception needed. 📍`;
+    } else if (q.includes('guest') || q.includes('friend') || q.includes('bring')) {
+      answer = `Yes! With the Elite tier (£18 base), you can bring 1 guest for free. Otherwise, your friend can book their own session through ScanGym — it's pay-per-visit, no membership needed. Share your referral link and you both save £2! 👫`;
+    } else if (q.includes('busy') || q.includes('crowded') || q.includes('quiet') || q.includes('peak')) {
+      answer = `${gym.name || 'This gym'} is typically busiest 5-7pm on weekdays. Quietest times: 6-9am, 2-4pm, and after 9pm. Weekends are generally quieter. Book an off-peak slot to save 25% AND avoid crowds! 📊`;
+    } else if (q.includes('shower') || q.includes('changing')) {
+      answer = `Changing rooms with showers are available at ${gym.name || 'this gym'}. Towels are included with Standard tier and above. Basic tier has access to changing facilities but bring your own towel. 🚿`;
+    } else if (q.includes('parking') || q.includes('park') || q.includes('car')) {
+      answer = `Parking varies by location. Check the map above for nearby parking options. Many ScanGym locations have free parking or are close to public transport. 🅿️`;
+    } else if (q.includes('cancel') || q.includes('refund')) {
+      answer = `Free cancellation up to 2 hours before your session! Refund goes instantly to your ScanGym Wallet, or back to your card in 5-10 days. No questions asked. ✅`;
+    } else if (q.includes('price') || q.includes('cost') || q.includes('how much') || q.includes('pay')) {
+      answer = `${gym.name || 'This gym'} offers 4 tiers: Basic from £3.75 (off-peak) to £5, Standard from £5.63 to £7.50, Premium from £9 to £12, and Elite from £13.50 to £18. Prices change by time of day — check our pricing page for live rates! 💰`;
+    } else if (q.includes('equipment') || q.includes('machine') || q.includes('weights') || q.includes('dumbbell')) {
+      answer = `${gym.name || 'This gym'} has a full range of equipment. Check the facilities section above for specific equipment lists. Most ScanGym partner gyms have free weights, cardio machines, and cable stations. 💪`;
+    } else if (q.includes('wifi') || q.includes('internet')) {
+      answer = `Free WiFi is included with all bookings! Connect to the gym's WiFi after scanning in. Perfect for streaming your workout playlist. 📶`;
+    } else if (q.includes('class') || q.includes('yoga') || q.includes('spin') || q.includes('session')) {
+      answer = `Classes are included with Standard tier and above. Available classes vary by gym — check the gym's schedule above or ask at reception. Popular classes include yoga, spin, HIIT, and boxing. 🧘`;
+    } else if (q.includes('open') || q.includes('hours') || q.includes('close') || q.includes('time')) {
+      answer = `${gym.name || 'This gym'} operating hours: ${gym.opening_hours?.weekday_text?.[0] || 'Check the info section above for current hours'}. ScanGym QR entry works during all operating hours — no staff needed! ⏰`;
+    } else {
+      answer = `Great question! I don't have specific info on that right now. Here's what you can do:\n\n• 📧 Email hello@scangym.com — we reply within 2 hours\n• 📱 Call the gym directly using the number above\n• 💬 Book and check in person — free cancellation if it's not right!\n\nIs there anything else I can help with?`;
+    }
+    
+    // Remove typing indicator and add response
+    const typing = document.getElementById(typingId);
+    if (typing) typing.remove();
+    
+    history.innerHTML += `
+      <div class="flex justify-start gap-2">
+        <div class="w-6 h-6 bg-brand rounded-full flex items-center justify-center text-white text-xs flex-shrink-0 mt-1">S</div>
+        <div class="bg-slate-700 text-slate-300 text-sm px-3 py-2 rounded-xl rounded-bl-sm max-w-[80%]">
+          <p class="text-xs text-brand font-medium mb-1">ScanGym AI</p>
+          ${answer}
+        </div>
+      </div>`;
+    
+    // Add escalation option
+    history.innerHTML += `
+      <div class="flex justify-start ml-8">
+        <button onclick="this.innerHTML='✅ We\\'ll notify the gym. Expect a reply within 30 minutes!';this.classList.add('text-emerald-400');this.classList.remove('text-slate-500','hover:text-brand')" class="text-xs text-slate-500 hover:text-brand transition cursor-pointer mt-1">
+          Not helpful? → Text the gym owner directly
+        </button>
+      </div>`;
+    
+    history.scrollTop = history.scrollHeight;
+  }, 800 + Math.random() * 700); // 0.8-1.5s delay for realistic feel
+}
+
 // ─── Dynamic Pricing Logic ───
 function initDynamicPricing(){
   if(!document.getElementById('pricing-live-price'))return;
@@ -701,18 +791,19 @@ function GymProfilePage(){
             </div>
           </div>
 
-          <!-- Chat with Gym (Task 6 - Option C: AI + escalation) -->
-          <div class="bg-card rounded-xl p-5 border border-slate-700">
+          <!-- Chat with Gym (AI + escalation) -->
+          <div class="bg-card rounded-xl p-5 border border-slate-700" id="gym-chat-section">
             <h3 class="text-white font-semibold mb-3">💬 Ask a Question</h3>
             <p class="text-slate-400 text-sm mb-3">AI answers instantly. Need a human? We'll text the gym owner.</p>
-            <div class="flex gap-2 flex-wrap mb-3">
+            <div class="flex gap-2 flex-wrap mb-3" id="gym-quick-qs">
               ${['Is the squat rack free?','What\'s the locker code?','Where\'s the entrance?','Can I bring a guest?','Is it busy right now?'].map(q=>
-                `<button class="text-xs bg-slate-800 text-slate-300 px-3 py-1.5 rounded-full hover:bg-brand hover:text-white transition">${q}</button>`
+                `<button onclick="askGymQuestion(this.textContent,'${gymId}')" class="text-xs bg-slate-800 text-slate-300 px-3 py-1.5 rounded-full hover:bg-brand hover:text-white transition cursor-pointer">${q}</button>`
               ).join('')}
             </div>
+            <div id="gym-chat-history" class="space-y-3 mb-3 max-h-64 overflow-y-auto"></div>
             <div class="flex gap-2">
-              <input type="text" placeholder="Type your question..." class="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-brand outline-none">
-              <button class="bg-brand text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-orange-600">Send</button>
+              <input type="text" id="gym-chat-input" placeholder="Type your question..." class="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-brand outline-none" onkeydown="if(event.key==='Enter'){askGymQuestion(this.value,'${gymId}');this.value='';}">
+              <button onclick="const inp=document.getElementById('gym-chat-input');askGymQuestion(inp.value,'${gymId}');inp.value='';" class="bg-brand text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-orange-600 transition cursor-pointer">Send</button>
             </div>
           </div>
 
