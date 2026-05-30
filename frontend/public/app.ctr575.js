@@ -1,7 +1,22 @@
-// ScanGym Frontend v3.3.1 — World-Class UX (Airbnb + Booking.com + Uber + Skyscanner + Revolut)
+// ScanGym Frontend v3.4.0 — World-Class UX (Airbnb + Booking.com + Uber + Skyscanner + Revolut)
 
 // Inject CSS animations for loading experience
-(function(){const s=document.createElement('style');s.textContent='@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}#fun-fact{transition:opacity 0.2s ease}.gym-card{animation:fadeInUp 0.3s ease-out both}.animate-slide-up{animation:slideUp 0.3s ease-out}@keyframes skeletonPulse{0%,100%{opacity:.6}50%{opacity:.3}}@keyframes locationDot{0%,100%{box-shadow:0 0 0 0 rgba(249,115,22,.4)}50%{box-shadow:0 0 0 8px rgba(249,115,22,0)}}.skel-card{animation:skeletonPulse 1.8s ease-in-out infinite}.loc-dot{animation:locationDot 1.5s ease-in-out infinite}.cards-enter .gym-card{animation:fadeInUp .4s ease-out both}';document.head.appendChild(s)})();
+(function(){const s=document.createElement('style');s.textContent='@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}#fun-fact{transition:opacity 0.2s ease}.gym-card{animation:fadeInUp 0.3s ease-out both}.animate-slide-up{animation:slideUp 0.3s ease-out}@keyframes skeletonPulse{0%,100%{opacity:.6}50%{opacity:.3}}@keyframes locationDot{0%,100%{box-shadow:0 0 0 0 rgba(249,115,22,.4)}50%{box-shadow:0 0 0 8px rgba(249,115,22,0)}}.skel-card{animation:skeletonPulse 1.8s ease-in-out infinite}.loc-dot{animation:locationDot 1.5s ease-in-out infinite}.cards-enter .gym-card{animation:fadeInUp .4s ease-out both}@keyframes toastIn{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes toastOut{from{transform:translateY(0);opacity:1}to{transform:translateY(-100%);opacity:0}}@keyframes spin{to{transform:rotate(360deg)}}.sg-spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}';document.head.appendChild(s)})();
+
+// ─── Toast Notification System (replaces alert()) ───
+window.sgToast=function(msg, type='error', duration=4000){
+  const existing=document.getElementById('sg-toast');
+  if(existing)existing.remove();
+  const colors={error:'bg-red-500',success:'bg-green-500',warning:'bg-amber-500',info:'bg-blue-500'};
+  const icons={error:'❌',success:'✅',warning:'⚠️',info:'ℹ️'};
+  const toast=document.createElement('div');
+  toast.id='sg-toast';
+  toast.className=`fixed top-4 left-1/2 -translate-x-1/2 ${colors[type]||colors.error} text-white px-5 py-3 rounded-xl shadow-2xl z-[9999] text-sm font-medium flex items-center gap-2 max-w-sm`;
+  toast.style.animation='toastIn .3s ease-out';
+  toast.innerHTML=`<span>${icons[type]||''}</span><span>${msg}</span>`;
+  document.body.appendChild(toast);
+  setTimeout(()=>{toast.style.animation='toastOut .3s ease-in forwards';setTimeout(()=>toast.remove(),300)},duration);
+};
 // Load Stripe.js for inline payment (Fix #5)
 (function(){const s=document.createElement('script');s.src='https://js.stripe.com/v3/';s.async=true;document.head.appendChild(s)})();
 const API='/api/v2';
@@ -26,7 +41,15 @@ function isTopGym(gym){return(gym.rating||0)>=4.5;}
 function originalPrice(price){return null;}
 function discountPct(price){return 0;}
 // Animated counter on scroll (Booking.com style)
-function initCounters(){const obs=new IntersectionObserver((entries)=>{entries.forEach(e=>{if(e.isIntersecting){const el=e.target;const target=parseInt(el.dataset.target)||0;const suffix=el.dataset.suffix||'';const duration=1500;const start=performance.now();const step=(now)=>{const progress=Math.min((now-start)/duration,1);const eased=1-Math.pow(1-progress,3);el.textContent=Math.floor(eased*target).toLocaleString()+suffix;if(progress<1)requestAnimationFrame(step);};requestAnimationFrame(step);obs.unobserve(el);}});},{threshold:0.3});document.querySelectorAll('[data-counter]').forEach(el=>obs.observe(el));}
+function initCounters(){
+  // Set final values immediately as fallback, then animate when visible
+  document.querySelectorAll('[data-counter]').forEach(el=>{
+    const target=parseInt(el.dataset.target)||0;
+    const suffix=el.dataset.suffix||'';
+    el.textContent=target.toLocaleString()+suffix; // Fallback: show final value
+  });
+  const obs=new IntersectionObserver((entries)=>{entries.forEach(e=>{if(e.isIntersecting){const el=e.target;const target=parseInt(el.dataset.target)||0;const suffix=el.dataset.suffix||'';el.textContent='0'+suffix;const duration=1500;const start=performance.now();const step=(now)=>{const progress=Math.min((now-start)/duration,1);const eased=1-Math.pow(1-progress,3);el.textContent=Math.floor(eased*target).toLocaleString()+suffix;if(progress<1)requestAnimationFrame(step);};requestAnimationFrame(step);obs.unobserve(el);}});},{threshold:0.3});document.querySelectorAll('[data-counter]').forEach(el=>obs.observe(el));
+}
 // Photo carousel for gym cards (Airbnb style)
 function initCarousels(){document.querySelectorAll('.gym-carousel').forEach(c=>{const imgs=c.querySelectorAll('.carousel-img');const dots=c.querySelectorAll('.carousel-dot');let current=0;c.querySelector('.carousel-next')?.addEventListener('click',(e)=>{e.stopPropagation();current=(current+1)%imgs.length;imgs.forEach((img,i)=>{img.style.transform=`translateX(${(i-current)*100}%)`;});dots.forEach((d,i)=>{d.className=i===current?'carousel-dot w-2 h-2 rounded-full bg-white':'carousel-dot w-2 h-2 rounded-full bg-white/40';});});c.querySelector('.carousel-prev')?.addEventListener('click',(e)=>{e.stopPropagation();current=(current-1+imgs.length)%imgs.length;imgs.forEach((img,i)=>{img.style.transform=`translateX(${(i-current)*100}%)`;});dots.forEach((d,i)=>{d.className=i===current?'carousel-dot w-2 h-2 rounded-full bg-white':'carousel-dot w-2 h-2 rounded-full bg-white/40';});});});}
 // Accordion FAQ (Airbnb style)
@@ -935,7 +958,7 @@ function GymProfilePage(){
             <span class="text-slate-600">|</span>
             <span class="text-accent text-sm font-medium">✅ Free cancellation</span>
             <span class="text-slate-600">|</span>
-            <span class="text-sm">${gym.opening_hours?.isOpen===true?`<span class="text-green-400 flex items-center gap-1"><span class="w-2 h-2 bg-green-400 rounded-full animate-pulse inline-block"></span> Open Now${closingTime(gym)?' · Closes '+closingTime(gym):''}</span>`:(gym.opening_hours?.isOpen===false?'<span class="text-red-400">Closed</span>':'<span class="text-slate-400">Hours vary</span>')}</span>
+            <span class="text-sm">${gym.opening_hours?.isOpen===true?`<span class="text-green-400 flex items-center gap-1"><span class="w-2 h-2 bg-green-400 rounded-full animate-pulse inline-block"></span> Open Now${closingTime(gym)?' · Closes '+closingTime(gym):''}</span>`:(gym.opening_hours?.isOpen===false?'<span class="text-slate-400">Closed now · Book for any date →</span>':'<span class="text-slate-400">Hours vary</span>')}</span>
           </div>
 
 
@@ -2653,22 +2676,24 @@ window.submitBookingSheet=async function(gymId){
   const time=document.getElementById('sheet-time')?.value;
   const email=document.getElementById('sheet-email')?.value;
   const btn=document.getElementById('sheet-book-btn');
+  const resetBtn=()=>{const h=parseInt(time||'10');const p=h<10?'3.75':'5.00';btn.innerHTML='Book Now — £'+p;btn.disabled=false;};
 
-  if(!date||!time){alert('Please select a date and time');return;}
+  if(!date||!time){sgToast('Please select a date and time','warning');return;}
   if(!state.user&&(!email||!email.includes('@'))){
     document.getElementById('sheet-email').style.borderColor='#ef4444';
     document.getElementById('sheet-email').placeholder='Please enter a valid email';
+    sgToast('Please enter a valid email address','warning');
     return;
   }
 
-  btn.textContent='Creating booking...';btn.disabled=true;
+  btn.innerHTML='<span class="sg-spinner"></span>Creating booking...';btn.disabled=true;
 
   try{
     let dbGymId=gymId;
     // Ensure Google Place exists in DB
     if(isNaN(parseInt(gymId))){
       const ensured=await api.postLive('/ensure-gym',{placeId:gymId});
-      if(ensured.error){alert(ensured.error);btn.textContent='Book Now';btn.disabled=false;return;}
+      if(ensured.error){sgToast(ensured.error);resetBtn();return;}
       dbGymId=ensured.gymId;
     }
 
@@ -2684,16 +2709,20 @@ window.submitBookingSheet=async function(gymId){
       }).then(r=>r.json());
     }
 
-    if(booking.error){alert(booking.error);btn.textContent='Book Now';btn.disabled=false;return;}
+    if(booking.error){sgToast(booking.error);resetBtn();return;}
+
+    // Store pending booking for resume (Fix #8)
+    localStorage.setItem('sg_pending_booking',booking.booking.id);
+    if(email)localStorage.setItem('sg_last_email',email);
 
     // Try inline Stripe Elements (Fix #5)
-    btn.textContent='Loading payment...';
+    btn.innerHTML='<span class="sg-spinner"></span>Loading payment...';
     if(STRIPE_PK&&window.Stripe){
       try{
         const intentData=await fetch('/api/payment/create-intent',{
           method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
           body:JSON.stringify({bookingId:booking.booking.id,email:email||undefined})
-        }).then(r=>r.json());
+        }).then(r=>{if(!r.ok)throw new Error('Server error');return r.json();});
 
         if(intentData.clientSecret){
           showStripeElements(intentData.clientSecret, booking.booking.id, gymId);
@@ -2703,6 +2732,7 @@ window.submitBookingSheet=async function(gymId){
     }
 
     // Fallback: Stripe redirect checkout
+    btn.innerHTML='<span class="sg-spinner"></span>Redirecting to payment...';
     let payment;
     if(state.user){
       payment=await api.payPost('/checkout',{bookingId:booking.booking.id});
@@ -2710,19 +2740,19 @@ window.submitBookingSheet=async function(gymId){
       payment=await fetch('/api/payment/guest-checkout',{
         method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({bookingId:booking.booking.id,email})
-      }).then(r=>r.json());
+      }).then(r=>{if(!r.ok)throw new Error('Server error');return r.json();});
     }
 
     if(payment.checkoutUrl){
       window.location.href=payment.checkoutUrl;
     }else{
-      alert(payment.error||'Payment error');
-      btn.textContent='Book Now';btn.disabled=false;
+      sgToast(payment.error||'Payment could not be started. Please try again.');
+      resetBtn();
     }
   }catch(e){
     console.error('Booking error:',e);
-    alert('Something went wrong. Please try again.');
-    btn.textContent='Book Now';btn.disabled=false;
+    sgToast('Something went wrong. Please try again.');
+    resetBtn();
   }
 };
 
@@ -2740,6 +2770,7 @@ window.showStripeElements=function(clientSecret, bookingId, gymId){
   const endHour=String(Math.min(bookHour+1,23)).padStart(2,'0')+':00';
   const price=bookHour<10?'3.75':'5.00';
   const formattedDate=new Date(bookDate+'T00:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+  const accessLabel='24hr access from '+bookTime;
 
   const container=sheet.querySelector('.animate-slide-up');
   container.innerHTML=`
@@ -2754,7 +2785,7 @@ window.showStripeElements=function(clientSecret, bookingId, gymId){
         <div class="w-10 h-10 bg-brand/20 rounded-lg flex items-center justify-center text-lg flex-shrink-0">🏋️</div>
         <div class="flex-1 min-w-0">
           <p class="text-white font-bold text-sm truncate">${gymName}</p>
-          <p class="text-slate-400 text-xs mt-0.5">${formattedDate} · ${bookTime} – ${endHour}</p>
+          <p class="text-slate-400 text-xs mt-0.5">${formattedDate} · ${accessLabel}</p>
         </div>
         <div class="text-right flex-shrink-0">
           <p class="text-white font-bold text-lg">£${price}</p>
@@ -2820,14 +2851,15 @@ window.showStripeElements=function(clientSecret, bookingId, gymId){
         if(result.success){
           state.lastBooking=result.booking;
           state.lastQR=result.qr;
+          localStorage.removeItem('sg_pending_booking');
           closeBookingSheet();
           navigate('/booking-success?session_id=inline&booking_id='+bookingId);
         }else{
-          alert(result.error||'Confirmation failed');
+          sgToast(result.error||'Confirmation failed. Please contact support.');
           btn.textContent='Pay Now';btn.disabled=false;
         }
       }catch(e){
-        alert('Payment confirmed but QR generation failed. Please check your bookings.');
+        sgToast('Payment confirmed! QR code will be sent to your email.','success',5000);
         closeBookingSheet();
         navigate('/my-bookings');
       }
@@ -2883,11 +2915,11 @@ window.processGuestBooking=async function(gymId,email){
   const timeSelect=document.querySelector('select');
   const date=dateInput?dateInput.value:'';
   const time=timeSelect?timeSelect.value:'';
-  if(!date||!time){alert('Please select a date and time');return;}
+  if(!date||!time){sgToast('Please select a date and time','warning');return;}
 
   // Show loading
   const guestBtn=document.querySelector('[data-guest-btn]');
-  if(guestBtn){guestBtn.textContent='Creating booking...';guestBtn.disabled=true;}
+  if(guestBtn){guestBtn.innerHTML='<span class="sg-spinner"></span>Creating booking...';guestBtn.disabled=true;}
 
   try{
     let dbGymId=gymId;
@@ -2895,7 +2927,7 @@ window.processGuestBooking=async function(gymId,email){
     // If Google Place ID, ensure gym exists in DB
     if(isNaN(parseInt(gymId))){
       const ensured=await api.postLive('/ensure-gym',{placeId:gymId});
-      if(ensured.error){alert(ensured.error);location.reload();return;}
+      if(ensured.error){sgToast(ensured.error);if(guestBtn){guestBtn.textContent='Book Now';guestBtn.disabled=false;}return;}
       dbGymId=ensured.gymId;
     }
 
@@ -2906,7 +2938,7 @@ window.processGuestBooking=async function(gymId,email){
       body:JSON.stringify({gymId:parseInt(dbGymId),date,time,email})
     }).then(r=>r.json());
     
-    if(booking.error){alert(booking.error);location.reload();return;}
+    if(booking.error){sgToast(booking.error);if(guestBtn){guestBtn.textContent='Book Now';guestBtn.disabled=false;}return;}
 
     // Step 2: Create Stripe guest checkout
     const payment=await fetch('/api/payment/guest-checkout',{
@@ -2915,7 +2947,7 @@ window.processGuestBooking=async function(gymId,email){
       body:JSON.stringify({bookingId:booking.booking.id,email})
     }).then(r=>r.json());
     
-    if(payment.error){alert(payment.error||'Payment error');location.reload();return;}
+    if(payment.error){sgToast(payment.error||'Payment could not be started');if(guestBtn){guestBtn.textContent='Book Now';guestBtn.disabled=false;}return;}
 
     // Step 3: Redirect to Stripe
     if(payment.checkoutUrl){
@@ -2923,8 +2955,8 @@ window.processGuestBooking=async function(gymId,email){
     }
   }catch(e){
     console.error('Guest booking error:',e);
-    alert('Something went wrong. Please try again.');
-    location.reload();
+    sgToast('Something went wrong. Please try again.');
+    if(guestBtn){guestBtn.textContent='Book Now';guestBtn.disabled=false;}
   }
 };
 
@@ -3029,7 +3061,7 @@ function BookingSuccessPage(){
           </div>
           <div class="text-center px-2">
             <p class="text-slate-500 text-xs mb-1">🕐 Time</p>
-            <p class="text-white font-semibold text-sm">${b.time}${b.endTime?' — '+b.endTime:''}</p>
+            <p class="text-white font-semibold text-sm">24hr access from ${b.time}</p>
           </div>
           <div class="text-center px-2">
             <p class="text-slate-500 text-xs mb-1">🎫 Booking</p>
@@ -3093,6 +3125,9 @@ function BookingSuccessPage(){
         <button onclick="navigate('/explore')" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-brand/20">
           Book Another Gym
         </button>
+        <button onclick="cancelBooking(${b.id})" class="w-full bg-transparent hover:bg-red-900/30 text-red-400 hover:text-red-300 font-medium py-3 rounded-xl transition border border-red-900/30 text-sm">
+          ↩️ Cancel Booking (free up to 2hrs before)
+        </button>
       </div>
 
       <!-- Reassurance Footer -->
@@ -3107,6 +3142,27 @@ function BookingSuccessPage(){
 }
 
 // ─── Page: My Bookings ───
+// ─── Cancel Booking (with Stripe refund) ───
+window.cancelBooking=async function(bookingId){
+  if(!confirm('Cancel this booking? You\'ll receive a full refund to your card within 3-5 business days.'))return;
+  const email=document.getElementById('sheet-email')?.value||state.user?.email||localStorage.getItem('sg_last_email')||prompt('Enter the email you used to book:');
+  if(!email)return;
+  try{
+    const r=await fetch('/api/bookings/cancel',{
+      method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
+      body:JSON.stringify({bookingId,email})
+    }).then(r=>r.json());
+    if(r.success){
+      sgToast(r.message,'success',6000);
+      setTimeout(()=>navigate('/explore'),2000);
+    }else{
+      sgToast(r.error||'Cancellation failed');
+    }
+  }catch(e){
+    sgToast('Failed to cancel. Please email hello@scangym.com');
+  }
+};
+
 function MyBookingsPage(){
   if(!state.user){
     return`<div class="pt-20 min-h-screen px-4">

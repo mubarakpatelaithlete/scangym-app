@@ -122,8 +122,16 @@ router.get('/search', async (req, res) => {
       url = `${BASE_URL}/textsearch/json?query=${encoded}&type=${typeParam}&key=${GOOGLE_MAPS_API_KEY}`;
     }
 
-    const response = await fetch(url);
-    const data = await response.json();
+    // Google Places pagetoken requires ~2s delay before it becomes valid.
+    // Retry up to 2 times with backoff for INVALID_REQUEST on pagination.
+    let data;
+    const maxRetries = pagetoken ? 2 : 0;
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      if (attempt > 0) await new Promise(r => setTimeout(r, 2000));
+      const response = await fetch(url);
+      data = await response.json();
+      if (data.status !== 'INVALID_REQUEST' || !pagetoken) break;
+    }
 
     if (data.status === 'ZERO_RESULTS') {
       const result = { gyms: [], total: 0, nextPageToken: null, query: searchQuery, source: 'google_places_live' };

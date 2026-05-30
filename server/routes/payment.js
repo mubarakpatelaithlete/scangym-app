@@ -142,8 +142,8 @@ router.post('/checkout', async (req, res) => {
         },
         quantity: 1,
       }],
-      success_url: `https://scangym.com/booking-success?session_id={CHECKOUT_SESSION_ID}&booking_id=${booking.id}`,
-      cancel_url: `https://scangym.com/gym/${booking.gym_id}`,
+      success_url: `${process.env.BASE_URL || 'https://scangym.com'}/booking-success?session_id={CHECKOUT_SESSION_ID}&booking_id=${booking.id}`,
+      cancel_url: `${process.env.BASE_URL || 'https://scangym.com'}/gym/${booking.gym_id}`,
       metadata: {
         bookingId: booking.id.toString(),
         userId: req.session.userId,
