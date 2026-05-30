@@ -1,4 +1,4 @@
-// ScanGym Frontend v4.0.0 — Uber-Level Checkout (single screen, Apple Pay, Google Pay, zero friction)
+// ScanGym Frontend v4.1.0 — Uber-Level Checkout (single screen, Apple Pay, Google Pay, zero friction)
 
 // Inject CSS animations for loading experience
 (function(){const s=document.createElement('style');s.textContent='@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}#fun-fact{transition:opacity 0.2s ease}.gym-card{animation:fadeInUp 0.3s ease-out both}.animate-slide-up{animation:slideUp 0.3s ease-out}@keyframes skeletonPulse{0%,100%{opacity:.6}50%{opacity:.3}}@keyframes locationDot{0%,100%{box-shadow:0 0 0 0 rgba(249,115,22,.4)}50%{box-shadow:0 0 0 8px rgba(249,115,22,0)}}.skel-card{animation:skeletonPulse 1.8s ease-in-out infinite}.loc-dot{animation:locationDot 1.5s ease-in-out infinite}.cards-enter .gym-card{animation:fadeInUp .4s ease-out both}@keyframes toastIn{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes toastOut{from{transform:translateY(0);opacity:1}to{transform:translateY(-100%);opacity:0}}@keyframes spin{to{transform:rotate(360deg)}}.sg-spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}';document.head.appendChild(s)})();
@@ -2648,11 +2648,26 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
           </div>
         </div>
 
-        <!-- Email — auto-saved from last booking -->
-        <div class="bg-slate-800/80 rounded-xl p-3 mb-4">
+        <!-- Email — hidden for returning users (Uber-style: 0 fields) -->
+        <div class="bg-slate-800/80 rounded-xl p-3 mb-4" id="uc-email-section">
+          ${savedEmail?`
+          <div id="uc-email-saved" class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="text-sm">📧</span>
+              <span class="text-white text-sm font-medium">${savedEmail}</span>
+            </div>
+            <button onclick="document.getElementById('uc-email-saved').style.display='none';document.getElementById('uc-email-edit').style.display='block';document.getElementById('uc-email').focus()" class="text-brand text-xs font-medium hover:underline">change</button>
+          </div>
+          <div id="uc-email-edit" style="display:none">
+            <label class="text-slate-500 text-[10px] uppercase tracking-wider font-bold block mb-1">Email for QR code</label>
+            <input type="email" id="uc-email" value="${savedEmail}" autocomplete="email" inputmode="email"
+              class="w-full bg-transparent text-white text-sm outline-none font-medium placeholder-slate-600">
+          </div>
+          `:`
           <label class="text-slate-500 text-[10px] uppercase tracking-wider font-bold block mb-1">Email for QR code</label>
-          <input type="email" id="uc-email" value="${savedEmail}" placeholder="your@email.com" autocomplete="email" inputmode="email"
+          <input type="email" id="uc-email" value="" placeholder="your@email.com" autocomplete="email" inputmode="email"
             class="w-full bg-transparent text-white text-sm outline-none font-medium placeholder-slate-600">
+          `}
         </div>
 
         <!-- Stripe Payment Element — loads inline (Apple Pay / Google Pay / Card) -->
