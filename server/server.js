@@ -35,11 +35,46 @@ const FRONTEND_DIR = path.join(__dirname, 'public');
 // -- Middleware --
 // Gzip/deflate compression — reduces transfer size by 60-80%
 app.use(compression({ level: 6, threshold: 256 }));
-app.use(cors({ origin: true, credentials: true }));
+// CORS — locked to known origins (was: origin: true — accepted everything)
+const ALLOWED_ORIGINS = [
+  'https://scangym.com',
+  'https://www.scangym.com',
+  'https://scangym-api-v2-production.up.railway.app',
+];
+if (process.env.NODE_ENV !== 'production') {
+  ALLOWED_ORIGINS.push('http://localhost:3000', 'http://localhost:5000');
+}
+app.use(cors({
+  origin: (origin, cb) => {
+    // Allow same-origin requests (no origin header) and whitelisted origins
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+    cb(new Error('CORS: origin not allowed'));
+  },
+  credentials: true,
+}));
+
+// Rate limiting — protect auth, payment, and chat endpoints from abuse
+const rateLimit = require('express-rate-limit');
+const globalLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 300, standardHeaders: true, legacyHeaders: false });
+const authLimiter  = rateLimit({ windowMs: 15 * 60 * 1000, max: 10,  message: { error: 'Too many attempts, try again in 15 minutes' } });
+const paymentLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20, message: { error: 'Too many payment requests, try again later' } });
+app.use(globalLimiter);
+app.use('/api/auth', authLimiter);
+app.use('/api/payment', paymentLimiter);
 
 // Session middleware (must come before routes)
+// Session store: PostgreSQL via connect-pg-simple (was: default MemoryStore — leaked memory + lost sessions on deploy)
+const pgSession = require('connect-pg-simple')(session);
+const sessionStore = process.env.DATABASE_URL
+  ? new pgSession({ conString: process.env.DATABASE_URL, tableName: 'user_sessions', createTableIfMissing: true })
+  : undefined; // falls back to MemoryStore in local dev only
+
+if (!process.env.SESSION_SECRET) {
+  console.error('⚠️  SESSION_SECRET env var is not set — sessions are insecure. Set it in Railway.');
+}
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'scangym-secret-2026',
+  store: sessionStore,
+  secret: process.env.SESSION_SECRET || (() => { if (process.env.NODE_ENV === 'production') throw new Error('SESSION_SECRET is required in production'); return 'dev-only-secret-' + Date.now(); })(),
   resave: false,
   saveUninitialized: false,
   cookie: {
