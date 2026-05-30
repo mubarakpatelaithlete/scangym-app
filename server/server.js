@@ -247,14 +247,41 @@ if (fs.existsSync(FRONTEND_DIR)) {
   });
 
   // SPA fallback - serve index.html for all non-API routes
+  // UBER PATTERN #4: Inject Cloudflare geolocation + IP geo into HTML for 0ms location detection
+  let _indexHtmlCache = null;
   app.get('*', (req, res) => {
     const indexPath = path.join(FRONTEND_DIR, 'index.html');
-    if (fs.existsSync(indexPath)) {
-      res.setHeader('Cache-Control', 'no-cache');
-      res.sendFile(indexPath);
-    } else {
-      res.status(404).json({ error: 'Frontend not available' });
+    if (!fs.existsSync(indexPath)) {
+      return res.status(404).json({ error: 'Frontend not available' });
     }
+    // Read and cache the template
+    if (!_indexHtmlCache) _indexHtmlCache = fs.readFileSync(indexPath, 'utf8');
+
+    // Build geo hint from Cloudflare headers (0ms) or geoip-lite (<1ms)
+    let geoHint = 'null';
+    const cfCity = req.headers['cf-ipcity'];
+    const cfCountry = req.headers['cf-ipcountry'];
+    const cfLat = req.headers['cf-iplatitude'];
+    const cfLng = req.headers['cf-iplongitude'];
+    if (cfCity && cfCity !== 'XX') {
+      geoHint = JSON.stringify({ city: cfCity, country: cfCountry || '', lat: parseFloat(cfLat) || null, lng: parseFloat(cfLng) || null, source: 'cloudflare_edge' });
+    } else {
+      // Fallback: geoip-lite in-memory lookup (<1ms)
+      try {
+        const geoip = require('geoip-lite');
+        const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.ip;
+        const geo = geoip ? geoip.lookup(ip) : null;
+        if (geo && geo.city) {
+          geoHint = JSON.stringify({ city: geo.city, country: geo.country, lat: geo.ll?.[0], lng: geo.ll?.[1], source: 'geoip_inline' });
+        }
+      } catch (e) {}
+    }
+
+    // Inject geo hint script right before </head>
+    const html = _indexHtmlCache.replace('</head>', `<script>window.__geoHint=${geoHint};</script>\n</head>`);
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(html);
   });
   console.log('Serving frontend from', FRONTEND_DIR);
 }

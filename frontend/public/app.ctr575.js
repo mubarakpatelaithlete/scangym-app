@@ -1,7 +1,7 @@
 // ScanGym Frontend v3.3.1 — World-Class UX (Airbnb + Booking.com + Uber + Skyscanner + Revolut)
 
 // Inject CSS animations for loading experience
-(function(){const s=document.createElement('style');s.textContent='@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}#fun-fact{transition:opacity 0.2s ease}.gym-card{animation:fadeInUp 0.3s ease-out both}.animate-slide-up{animation:slideUp 0.3s ease-out}';document.head.appendChild(s)})();
+(function(){const s=document.createElement('style');s.textContent='@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}#fun-fact{transition:opacity 0.2s ease}.gym-card{animation:fadeInUp 0.3s ease-out both}.animate-slide-up{animation:slideUp 0.3s ease-out}@keyframes skeletonPulse{0%,100%{opacity:.6}50%{opacity:.3}}@keyframes locationDot{0%,100%{box-shadow:0 0 0 0 rgba(249,115,22,.4)}50%{box-shadow:0 0 0 8px rgba(249,115,22,0)}}.skel-card{animation:skeletonPulse 1.8s ease-in-out infinite}.loc-dot{animation:locationDot 1.5s ease-in-out infinite}.cards-enter .gym-card{animation:fadeInUp .4s ease-out both}';document.head.appendChild(s)})();
 // Load Stripe.js for inline payment (Fix #5)
 (function(){const s=document.createElement('script');s.src='https://js.stripe.com/v3/';s.async=true;document.head.appendChild(s)})();
 const API='/api/v2';
@@ -235,33 +235,22 @@ const FUN_FACTS=[
   'Off-peak gym sessions are 25-40% cheaper on ScanGym',
   'The world\'s largest gym is Gold\'s Gym Venice Beach at 40,000 sq ft',
 ];
+// ═══ PATTERN #5: Anticipation Animation — rotate fun facts while skeleton shows ═══
 window._loadingInterval=null;
 window.startLoadingAnimation=function(){
-  let stage=0,factIdx=0;
+  let factIdx=0;
   clearInterval(window._loadingInterval);
   window._loadingInterval=setInterval(()=>{
-    stage=Math.min(stage+1,LOADING_STAGES.length-1);
-    const s=LOADING_STAGES[stage];
-    const el1=document.getElementById('loading-stage');
-    const el2=document.getElementById('loading-sub');
-    const bar=document.getElementById('loading-bar');
     const fact=document.getElementById('fun-fact');
-    if(el1)el1.textContent=s.msg;
-    if(el2)el2.textContent=s.sub;
-    if(bar)bar.style.width=s.pct+'%';
-    if(stage%2===1&&fact){
+    if(fact){
       factIdx=(factIdx+1)%FUN_FACTS.length;
       fact.style.opacity='0';
       setTimeout(()=>{fact.textContent=FUN_FACTS[factIdx];fact.style.opacity='1';},200);
     }
-  },1800);
+  },3000);
 };
 window.stopLoadingAnimation=function(){
   clearInterval(window._loadingInterval);
-  const bar=document.getElementById('loading-bar');
-  if(bar)bar.style.width='100%';
-  const el1=document.getElementById('loading-stage');
-  if(el1)el1.textContent='🎉 Found gyms near you!';
 };
 
 // ─── Dynamic Pricing Logic ───
@@ -795,13 +784,33 @@ async function searchGyms(query){
 
 function SearchPage(){
   const gyms=state.gyms||[];
+  const isLoading=gyms.length===0;
   // Blocker 6 Fix: Strip "gyms"/"gym" from query to avoid "Gyms London gyms" duplication
   const rawLabel=state.searchQuery||'Near You';
   const searchLabel=rawLabel.replace(/\bgyms?\b/gi,'').trim()||rawLabel;
+
+  // ═══ UBER PATTERN #1: Skeleton cards (shown inline in same grid as real cards) ═══
+  const skeletonCards=[0,1,2,3,4,5].map((n)=>`
+    <div class="bg-card rounded-2xl overflow-hidden border border-slate-700 skel-card" style="animation-delay:${n*0.12}s">
+      <div class="h-48 bg-slate-700 relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-r from-slate-700 via-slate-600 to-slate-700" style="animation:shimmer 1.5s ease-in-out infinite"></div>
+      </div>
+      <div class="p-4 space-y-3">
+        <div class="h-4 bg-slate-700 rounded-full w-3/4"></div>
+        <div class="h-3 bg-slate-700 rounded-full w-1/2"></div>
+        <div class="flex justify-between">
+          <div class="h-6 bg-slate-700 rounded-lg w-16"></div>
+          <div class="h-6 bg-slate-700 rounded-lg w-20"></div>
+        </div>
+      </div>
+    </div>`).join('');
+
+  // ═══ UBER PATTERN #2: ALWAYS show full page layout — header, search, filters, sort, grid ═══
+  // The page looks "loaded" instantly. Only the card content swaps from skeleton to real.
   return`
   <div class="pt-20 min-h-screen px-4">
     <div class="max-w-7xl mx-auto">
-      <!-- Live Search Bar -->
+      <!-- Search Bar — ALWAYS visible -->
       <div class="mb-6">
         <div class="flex gap-2">
           <div class="flex-1 relative">
@@ -809,94 +818,75 @@ function SearchPage(){
               class="w-full bg-card border border-slate-600 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-brand outline-none text-sm"
               value="${state.searchQuery||''}"
               onkeydown="if(event.key==='Enter'){window.doSearch()}">
-            <span class="absolute right-3 top-3 text-slate-500">🔍</span>
+            <span class="absolute right-3 top-3 text-slate-500">\u{1F50D}</span>
           </div>
           <button onclick="window.doSearch()" class="bg-brand hover:bg-orange-600 text-white px-6 py-3 rounded-xl text-sm font-medium transition">Search</button>
-          <button onclick="findGyms()" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-3 rounded-xl text-sm transition" title="Use GPS">📍</button>
+          <button onclick="findGyms()" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-3 rounded-xl text-sm transition" title="Use GPS">\u{1F4CD}</button>
         </div>
       </div>
 
+      <!-- Header + Sort — ALWAYS visible (Uber: page looks complete from frame 1) -->
       <div class="flex items-center justify-between mb-4 flex-wrap gap-4">
         <div>
-          <h1 class="font-brand text-2xl font-bold text-white">Gyms in ${searchLabel}</h1>
-          <!-- Booking.com style: show total scale -->
-          <p class="text-slate-400 text-sm">Showing <span class="text-white font-medium">${gyms.length}</span> gyms nearby </p>
+          <h1 class="font-brand text-2xl font-bold text-white">${isLoading?'Finding gyms...':'Gyms in '+searchLabel}</h1>
+          <div class="flex items-center gap-2 mt-1">
+            ${isLoading?`
+              <!-- PATTERN #5: Anticipation — pulsing location dot, NOT a spinner -->
+              <div class="w-2 h-2 rounded-full bg-brand loc-dot"></div>
+              <p class="text-slate-400 text-sm">Detecting your location\u2026</p>
+            `:`
+              <p class="text-slate-400 text-sm">Showing <span class="text-white font-medium">${gyms.length}</span> gyms nearby</p>
+            `}
+          </div>
         </div>
-        <!-- Skyscanner-style sort tabs -->
         <div class="flex gap-1 bg-slate-800 rounded-lg p-1">
-          <button onclick="state.gyms.sort((a,b)=>(parseFloat(a.price_tier||5)-parseFloat(b.price_tier||5)));render()" class="px-3 py-1.5 rounded-md text-xs text-slate-300 hover:bg-brand hover:text-white transition">💰 Cheapest</button>
-          <button onclick="state.gyms.sort((a,b)=>(b.rating||0)-(a.rating||0));render()" class="px-3 py-1.5 rounded-md text-xs text-slate-300 hover:bg-brand hover:text-white transition">⭐ Best Rated</button>
-          <button onclick="state.gyms.sort((a,b)=>(a.distance||99)-(b.distance||99));render()" class="px-3 py-1.5 rounded-md text-xs text-slate-300 hover:bg-brand hover:text-white transition">📍 Nearest</button>
+          <button onclick="state.gyms.sort((a,b)=>(parseFloat(a.price_tier||5)-parseFloat(b.price_tier||5)));render()" class="px-3 py-1.5 rounded-md text-xs text-slate-300 hover:bg-brand hover:text-white transition">\u{1F4B0} Cheapest</button>
+          <button onclick="state.gyms.sort((a,b)=>(b.rating||0)-(a.rating||0));render()" class="px-3 py-1.5 rounded-md text-xs text-slate-300 hover:bg-brand hover:text-white transition">\u2B50 Best Rated</button>
+          <button onclick="state.gyms.sort((a,b)=>(a.distance||99)-(b.distance||99));render()" class="px-3 py-1.5 rounded-md text-xs text-slate-300 hover:bg-brand hover:text-white transition">\u{1F4CD} Nearest</button>
         </div>
       </div>
-      <!-- ClassPass-style activity filters + Booking.com filters -->
+
+      <!-- Filters — ALWAYS visible -->
       <div class="flex gap-2 mb-6 flex-wrap" id="gym-filters">
-        <button onclick="filterGyms('free weights')" class="filter-btn px-3 py-1.5 bg-card border border-slate-600 rounded-full text-xs text-slate-300 hover:border-brand hover:text-brand transition">🏋️ Free Weights</button>
-        <button onclick="filterGyms('yoga')" class="filter-btn px-3 py-1.5 bg-card border border-slate-600 rounded-full text-xs text-slate-300 hover:border-brand hover:text-brand transition">🧘 Yoga</button>
-        <button onclick="filterGyms('boxing')" class="filter-btn px-3 py-1.5 bg-card border border-slate-600 rounded-full text-xs text-slate-300 hover:border-brand hover:text-brand transition">🥊 Boxing</button>
-        <button onclick="filterGyms('swimming')" class="filter-btn px-3 py-1.5 bg-card border border-slate-600 rounded-full text-xs text-slate-300 hover:border-brand hover:text-brand transition">🏊 Swimming</button>
-        <button onclick="filterGyms('crossfit')" class="filter-btn px-3 py-1.5 bg-card border border-slate-600 rounded-full text-xs text-slate-300 hover:border-brand hover:text-brand transition">💪 CrossFit</button>
-        <button onclick="filterGyms('24 hour')" class="filter-btn px-3 py-1.5 bg-card border border-slate-600 rounded-full text-xs text-slate-300 hover:border-brand hover:text-brand transition">🕐 Open Now</button>
-        <button class="px-3 py-1.5 bg-accent/20 border border-accent/50 rounded-full text-xs text-accent font-medium">✅ Free Cancellation</button>
+        <button onclick="filterGyms('free weights')" class="filter-btn px-3 py-1.5 bg-card border border-slate-600 rounded-full text-xs text-slate-300 hover:border-brand hover:text-brand transition">\u{1F3CB}\uFE0F Free Weights</button>
+        <button onclick="filterGyms('yoga')" class="filter-btn px-3 py-1.5 bg-card border border-slate-600 rounded-full text-xs text-slate-300 hover:border-brand hover:text-brand transition">\u{1F9D8} Yoga</button>
+        <button onclick="filterGyms('boxing')" class="filter-btn px-3 py-1.5 bg-card border border-slate-600 rounded-full text-xs text-slate-300 hover:border-brand hover:text-brand transition">\u{1F94A} Boxing</button>
+        <button onclick="filterGyms('swimming')" class="filter-btn px-3 py-1.5 bg-card border border-slate-600 rounded-full text-xs text-slate-300 hover:border-brand hover:text-brand transition">\u{1F3CA} Swimming</button>
+        <button onclick="filterGyms('crossfit')" class="filter-btn px-3 py-1.5 bg-card border border-slate-600 rounded-full text-xs text-slate-300 hover:border-brand hover:text-brand transition">\u{1F4AA} CrossFit</button>
+        <button onclick="filterGyms('24 hour')" class="filter-btn px-3 py-1.5 bg-card border border-slate-600 rounded-full text-xs text-slate-300 hover:border-brand hover:text-brand transition">\u{1F550} Open Now</button>
+        <button class="px-3 py-1.5 bg-accent/20 border border-accent/50 rounded-full text-xs text-accent font-medium">\u2705 Free Cancellation</button>
       </div>
-      ${gyms.length?`
-        <!-- Embedded Map -->
-        ${MAPS_KEY&&gyms[0]?`<div class="mb-6 rounded-2xl overflow-hidden border border-slate-700 h-64">
-          <iframe width="100%" height="100%" frameborder="0" style="border:0"
-            src="https://www.google.com/maps/embed/v1/search?key=${MAPS_KEY}&q=${encodeURIComponent(state.searchQuery||'gyms near me')}&zoom=13${gyms[0].latitude?'&center='+gyms[0].latitude+','+gyms[0].longitude:''}" allowfullscreen></iframe>
-        </div>`:''}
-        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 pb-20">
-          ${gyms.map(g=>GymCard(g)).join('')}
-        </div>
-      `:`
-        <!-- Dopamine Loading Experience (#11) -->
-        <div id="loading-experience" class="pb-10">
-          <div class="mb-6">
-            <div class="flex items-center gap-3 mb-2">
-              <div class="w-8 h-8 border-2 border-brand border-t-transparent rounded-full animate-spin"></div>
-              <div>
-                <p class="text-white font-semibold text-sm" id="loading-stage">📡 Getting your location...</p>
-                <p class="text-slate-500 text-xs" id="loading-sub">Activating GPS satellites</p>
-              </div>
-            </div>
-            <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-              <div class="h-full bg-gradient-to-r from-brand to-orange-400 rounded-full transition-all duration-1000 ease-out" id="loading-bar" style="width:10%"></div>
-            </div>
-          </div>
-          <!-- Quick search escape: if auto-detect is slow, user can search manually -->
-          <div class="mb-4">
-            <p class="text-slate-400 text-xs mb-2">Or search for gyms directly:</p>
-            <div class="flex gap-2 flex-wrap">
-              <button onclick="searchGyms('gyms in London')" class="text-xs bg-slate-800 hover:bg-brand hover:text-white text-slate-400 px-3 py-1.5 rounded-full transition">London</button>
-              <button onclick="searchGyms('gyms in Manchester')" class="text-xs bg-slate-800 hover:bg-brand hover:text-white text-slate-400 px-3 py-1.5 rounded-full transition">Manchester</button>
-              <button onclick="searchGyms('gyms in Birmingham')" class="text-xs bg-slate-800 hover:bg-brand hover:text-white text-slate-400 px-3 py-1.5 rounded-full transition">Birmingham</button>
-              <button onclick="searchGyms('gyms in Dubai')" class="text-xs bg-slate-800 hover:bg-brand hover:text-white text-slate-400 px-3 py-1.5 rounded-full transition">Dubai</button>
-              <button onclick="searchGyms('gyms in New York')" class="text-xs bg-slate-800 hover:bg-brand hover:text-white text-slate-400 px-3 py-1.5 rounded-full transition">New York</button>
-            </div>
-          </div>
-          <div class="bg-gradient-to-r from-brand/10 to-purple-500/10 border border-brand/20 rounded-xl p-4 mb-6" id="fun-fact-box">
-            <p class="text-brand text-xs font-medium mb-1">💡 DID YOU KNOW</p>
-            <p class="text-white text-sm" id="fun-fact">ScanGym has access to 1.2 million gyms across 190+ countries</p>
-          </div>
-          <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            ${[1,2,3,4,5,6].map((_,i)=>`
-              <div class="bg-card rounded-2xl overflow-hidden border border-slate-700" style="animation:fadeInUp 0.3s ease-out ${i*0.1}s both">
-                <div class="h-48 bg-slate-700 relative overflow-hidden">
-                  <div class="absolute inset-0 bg-gradient-to-r from-slate-700 via-slate-600 to-slate-700" style="animation:shimmer 1.5s ease-in-out infinite"></div>
-                </div>
-                <div class="p-4 space-y-3">
-                  <div class="h-4 bg-slate-700 rounded-full w-3/4 animate-pulse"></div>
-                  <div class="h-3 bg-slate-700 rounded-full w-1/2 animate-pulse"></div>
-                  <div class="flex justify-between">
-                    <div class="h-6 bg-slate-700 rounded-lg w-16 animate-pulse"></div>
-                    <div class="h-6 bg-slate-700 rounded-lg w-20 animate-pulse"></div>
-                  </div>
-                </div>
-              </div>
-            `).join('')}
+
+      ${isLoading?`
+        <!-- PATTERN #5: Anticipation — city shortcuts + fun facts while skeletons load -->
+        <div class="mb-4">
+          <div class="flex gap-2 flex-wrap">
+            <button onclick="searchGyms('gyms in London')" class="text-xs bg-slate-800 hover:bg-brand hover:text-white text-slate-400 px-3 py-1.5 rounded-full transition">\u{1F4CD} London</button>
+            <button onclick="searchGyms('gyms in Manchester')" class="text-xs bg-slate-800 hover:bg-brand hover:text-white text-slate-400 px-3 py-1.5 rounded-full transition">\u{1F4CD} Manchester</button>
+            <button onclick="searchGyms('gyms in Birmingham')" class="text-xs bg-slate-800 hover:bg-brand hover:text-white text-slate-400 px-3 py-1.5 rounded-full transition">\u{1F4CD} Birmingham</button>
+            <button onclick="searchGyms('gyms in Dubai')" class="text-xs bg-slate-800 hover:bg-brand hover:text-white text-slate-400 px-3 py-1.5 rounded-full transition">\u{1F4CD} Dubai</button>
+            <button onclick="searchGyms('gyms in New York')" class="text-xs bg-slate-800 hover:bg-brand hover:text-white text-slate-400 px-3 py-1.5 rounded-full transition">\u{1F4CD} New York</button>
           </div>
         </div>
-      `}
+        <div class="bg-gradient-to-r from-brand/10 to-purple-500/10 border border-brand/20 rounded-xl p-4 mb-6" id="fun-fact-box">
+          <p class="text-brand text-xs font-medium mb-1">\u{1F4A1} DID YOU KNOW</p>
+          <p class="text-white text-sm" id="fun-fact">ScanGym has access to 1.2 million gyms across 190+ countries</p>
+        </div>
+      `:''}
+
+      <!-- Map — skeleton when loading, real when data exists -->
+      ${(!isLoading&&MAPS_KEY&&gyms[0])?`<div class="mb-6 rounded-2xl overflow-hidden border border-slate-700 h-64">
+        <iframe width="100%" height="100%" frameborder="0" style="border:0"
+          src="https://www.google.com/maps/embed/v1/search?key=${MAPS_KEY}&q=${encodeURIComponent(state.searchQuery||'gyms near me')}&zoom=13${gyms[0].latitude?'&center='+gyms[0].latitude+','+gyms[0].longitude:''}" allowfullscreen></iframe>
+      </div>`:(isLoading?`<div class="mb-6 rounded-2xl border border-slate-700 h-48 bg-slate-800 relative overflow-hidden skel-card">
+        <div class="absolute inset-0 bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800" style="animation:shimmer 2s ease-in-out infinite"></div>
+        <div class="absolute inset-0 flex items-center justify-center"><p class="text-slate-500 text-sm">\u{1F5FA}\uFE0F Map loading\u2026</p></div>
+      </div>`:'')}
+
+      <!-- ═══ PATTERN #1 + #2: Same grid layout — skeleton OR real cards, seamless swap ═══ -->
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 pb-20${!isLoading?' cards-enter':''}">
+        ${isLoading?skeletonCards:gyms.map(g=>GymCard(g)).join('')}
+      </div>
     </div>
   </div>`;
 }
@@ -3212,35 +3202,27 @@ async function loadFallbackGyms(){
 
 window.findGyms=async function(){
   navigate('/explore');
-  setTimeout(()=>startLoadingAnimation(),100);
+  // Uses the same 5-layer cascade — but forces GPS as primary
+  // Show existing results or London while GPS resolves
+  if(state.gyms.length===0) searchGyms('gyms in London');
 
-  // Uber Technique #1: Parallel signal race — IP + GPS fire simultaneously
+  // Fire IP + GPS in parallel (never wait for GPS alone)
   const cityPromise=fetch('/api/geolocation/auto-city',{credentials:'include'}).then(r=>r.json()).catch(()=>null);
 
   const loc=await getLocation();
   if(!loc){
-    stopLoadingAnimation();
-    // GPS failed — use IP city detection (Technique #4: in-memory GeoIP on server)
+    // GPS denied — use IP city
     const cityData=await cityPromise;
     if(cityData&&cityData.query){
       searchGyms(cityData.query);
-      setCachedLocation(cityData); // Technique #2: cache for instant return
-      recordLocationForPrediction(cityData); // Technique #5: learn pattern
-    }else{
-      try{
-        const data=await api.getGuest('/featured');
-        if(data.gyms&&data.gyms.length){state.gyms=data.gyms;state.searchQuery='Featured Gyms';render();}
-        else{searchGyms('gyms in London');}
-      }catch(e){searchGyms('gyms in London');}
+      setCachedLocation(cityData);
+      recordLocationForPrediction(cityData);
     }
-    const el=document.getElementById('gym-search-input');
-    if(el){el.focus();el.placeholder='Type your city or postcode...';}
     return;
   }
   state.searchLat=loc.lat;state.searchLng=loc.lng;
-  setCachedLocation({lat:loc.lat,lng:loc.lng,city:'Near You',query:'Near You'}); // Technique #2
-  recordLocationForPrediction({lat:loc.lat,lng:loc.lng,city:'Near You',query:'Near You'}); // Technique #5
-  stopLoadingAnimation();
+  setCachedLocation({lat:loc.lat,lng:loc.lng,city:'Near You',query:'Near You'});
+  recordLocationForPrediction({lat:loc.lat,lng:loc.lng,city:'Near You',query:'Near You'});
   await loadGyms(loc.lat,loc.lng);
 };
 window.openGym=async function(id,isLive){
@@ -3357,108 +3339,129 @@ function getPredictedLocation(){
   }catch(e){return null;}
 }
 
-// ─── Main Auto-Load Function — UBER PATTERN: show content FIRST, detect location in BACKGROUND ───
+// ═══════════════════════════════════════════════════════════════════
+//  UBER PATTERN #3: 5-LAYER LOCATION CASCADE — NEVER WAIT FOR GPS
+// ═══════════════════════════════════════════════════════════════════
+// Each layer fires independently. Faster layers show results first.
+// Slower layers silently UPGRADE results when they arrive.
+// GPS is layer 5 (slowest) — it NEVER blocks the UI.
+//
+// Layer 1: localStorage cache ........... <1ms
+// Layer 2: Server-injected CF geo hint .. 0ms (window.__geoHint)
+// Layer 3: /api/geolocation/auto-city ... <5ms (geoip-lite in-memory)
+// Layer 4: Time-of-day prediction ....... <1ms (localStorage history)
+// Layer 5: GPS .......................... 1-10s (fire & forget)
+// ═══════════════════════════════════════════════════════════════════
 window._autoLoaded=false;
+window._locationLayer=0; // Track which layer is currently showing (higher = more precise)
+
+// Silent upgrade: only swap results if the new layer is more precise than what's showing
+function _upgradeLocation(layer, query, meta){
+  if(layer<=window._locationLayer) return false; // Already showing more precise data
+  window._locationLayer=layer;
+  console.log('[Location] Layer',layer,'upgrade →',query,meta?.source||'');
+  searchGyms(query);
+  if(meta){
+    setCachedLocation(meta);
+    recordLocationForPrediction(meta);
+  }
+  return true;
+}
+
 window.autoLoadGyms=async function(){
   if(window._autoLoaded||state.gyms.length>0||state.searchQuery) return;
   window._autoLoaded=true;
+  window._locationLayer=0;
 
   const t0=performance.now();
 
-  // ━━━ UBER RULE #1: NEVER show an empty loading screen. Show results IMMEDIATELY. ━━━
-  // Check client cache first (<1ms) — if we have it, show it instantly
+  // ━━━ LAYER 1: localStorage cache (<1ms) ━━━
   const cached=getCachedLocation();
-  let instantQuery=null;
   if(cached&&cached.query){
-    instantQuery=cached.query;
-    console.log('[Location] Cache hit:',cached.city,'— showing instantly');
-  } else {
-    // Check prediction (<1ms)
-    const predicted=getPredictedLocation();
-    if(predicted&&predicted.confidence!=='low'){
-      instantQuery=predicted.query;
-      console.log('[Location] Prediction:',predicted.city,'— showing instantly');
-    }
+    _upgradeLocation(1, cached.query, null);
+    console.log('[Location] L1 cache:',cached.city,'('+cached.age_ms+'ms old)');
   }
 
-  // ━━━ FIRE INSTANT RESULTS — don't await, show content in <200ms ━━━
-  // This is the Uber trick: show SOMETHING immediately, upgrade later
-  const instantSearch=searchGyms(instantQuery||'gyms in London');
-  // Don't await — let it render while we detect location in parallel
+  // ━━━ LAYER 2: Server-injected Cloudflare geo hint (0ms — embedded in HTML) ━━━
+  if(window.__geoHint&&window.__geoHint.city){
+    const gh=window.__geoHint;
+    _upgradeLocation(2, 'gyms in '+gh.city, {city:gh.city,country:gh.country,lat:gh.lat,lng:gh.lng,query:'gyms in '+gh.city,source:gh.source});
+    console.log('[Location] L2 CF hint:',gh.city,'(0ms)');
+  }
 
-  // ━━━ UBER RULE #2: Detect location in BACKGROUND, upgrade silently ━━━
-  try{
-    // Fire IP detection + GPS simultaneously (parallel signal race)
-    const cityPromise=fetch('/api/geolocation/auto-city',{credentials:'include'}).then(r=>r.json()).catch(()=>null);
-    const gpsPromise=new Promise((resolve)=>{
-      if(!navigator.geolocation){resolve(null);return;}
-      navigator.geolocation.getCurrentPosition(
-        pos=>resolve({lat:pos.coords.latitude,lng:pos.coords.longitude}),
-        ()=>resolve(null),
-        {timeout:4000,maximumAge:300000,enableHighAccuracy:false}
-      );
-    });
+  // ━━━ LAYER 4: Time-of-day prediction (<1ms) ━━━
+  const predicted=getPredictedLocation();
+  if(predicted&&predicted.confidence==='high'){
+    _upgradeLocation(1, predicted.query, null); // Same priority as cache
+    console.log('[Location] L4 prediction:',predicted.city,'(confidence:',predicted.confidence+')');
+  }
 
-    // Wait for instant search to finish (typically <500ms)
-    await instantSearch;
+  // ━━━ If no layer fired yet, show London IMMEDIATELY (never empty screen) ━━━
+  if(window._locationLayer===0){
+    searchGyms('gyms in London');
+    console.log('[Location] Default: London (no cache/hint available)');
+  }
 
-    // IP result — if different from what we're showing, upgrade silently
-    const cityData=await cityPromise;
-    if(cityData&&cityData.query){
-      setCachedLocation(cityData);
-      recordLocationForPrediction(cityData);
-      console.log('[Location] IP city:',cityData.city,'via',cityData.source,'in',cityData.resolve_ms+'ms');
-      // Only upgrade if we were showing default London and IP gives different city
-      if(!instantQuery&&cityData.query!=='gyms in London'){
-        await searchGyms(cityData.query);
-        console.log('[Location] Upgraded to IP city:',cityData.city);
-      }
+  // ━━━ LAYER 3: Server-side IP geolocation (<5ms via geoip-lite in-memory) ━━━
+  // Fires in background — upgrades results when response arrives
+  fetch('/api/geolocation/auto-city',{credentials:'include'}).then(r=>r.json()).then(cityData=>{
+    if(cityData&&cityData.city&&cityData.query){
+      _upgradeLocation(3, cityData.query, cityData);
+      console.log('[Location] L3 IP city:',cityData.city,'via',cityData.source,'in',cityData.resolve_ms+'ms');
     }
+  }).catch(()=>{});
 
-    // GPS arrives later — upgrade to precise nearby results
-    const gps=await gpsPromise;
-    if(gps){
-      state.searchLat=gps.lat;state.searchLng=gps.lng;
-      const gpsLoc={lat:gps.lat,lng:gps.lng,city:cityData?.city||'Near You',query:'Near You'};
-      setCachedLocation(gpsLoc);
-      recordLocationForPrediction(gpsLoc);
+  // ━━━ LAYER 5: GPS — FIRE AND FORGET (1-10 seconds, NEVER blocks UI) ━━━
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(
+      async(pos)=>{
+        const gps={lat:pos.coords.latitude,lng:pos.coords.longitude};
+        state.searchLat=gps.lat;state.searchLng=gps.lng;
+        console.log('[Location] L5 GPS:',gps.lat.toFixed(4),gps.lng.toFixed(4),'in',Math.round(performance.now()-t0)+'ms');
 
-      // H3 hex grid + live nearby search in parallel
-      const [h3Result,nearbyResult]=await Promise.allSettled([
-        fetch('/api/geolocation/nearby-h3?lat='+gps.lat+'&lng='+gps.lng).then(r=>r.json()).catch(()=>null),
-        api.getLive('/nearby?lat='+gps.lat+'&lng='+gps.lng+'&radius=5000').catch(()=>null)
-      ]);
+        // GPS is the most precise — always upgrade
+        const gpsLoc={lat:gps.lat,lng:gps.lng,city:'Near You',query:'Near You',source:'gps'};
+        setCachedLocation(gpsLoc);
+        recordLocationForPrediction(gpsLoc);
 
-      // Merge H3 DB gyms + live Google Places gyms (deduplicated)
-      let mergedGyms=[];
-      const h3Gyms=h3Result.value?.gyms||[];
-      const liveGyms=nearbyResult.value?.gyms||[];
+        // Fire H3 + live nearby search in parallel for maximum gym coverage
+        try{
+          const [h3Result,nearbyResult]=await Promise.allSettled([
+            fetch('/api/geolocation/nearby-h3?lat='+gps.lat+'&lng='+gps.lng).then(r=>r.json()).catch(()=>null),
+            api.getLive('/nearby?lat='+gps.lat+'&lng='+gps.lng+'&radius=5000').catch(()=>null)
+          ]);
 
-      if(liveGyms.length>0){
-        mergedGyms=[...liveGyms];
-        const liveIds=new Set(liveGyms.map(g=>g.placeId||g.place_id||g.id));
-        for(const hg of h3Gyms){
-          if(!liveIds.has(hg.id)&&!liveIds.has(String(hg.id)))mergedGyms.push(hg);
+          let mergedGyms=[];
+          const h3Gyms=h3Result.value?.gyms||[];
+          const liveGyms=nearbyResult.value?.gyms||[];
+
+          if(liveGyms.length>0){
+            mergedGyms=[...liveGyms];
+            const liveIds=new Set(liveGyms.map(g=>g.placeId||g.place_id||g.id));
+            for(const hg of h3Gyms){
+              if(!liveIds.has(hg.id)&&!liveIds.has(String(hg.id)))mergedGyms.push(hg);
+            }
+          }else if(h3Gyms.length>0){
+            mergedGyms=h3Gyms;
+          }
+
+          if(mergedGyms.length>0){
+            window._locationLayer=5;
+            state.gyms=mergedGyms;
+            state.searchQuery='Near You';
+            render();
+            console.log('[Location] L5 GPS upgrade: H3:',h3Gyms.length,'Live:',liveGyms.length,'Merged:',mergedGyms.length);
+          }
+        }catch(e){
+          console.warn('[Location] L5 GPS nearby search error:',e.message);
         }
-      }else if(h3Gyms.length>0){
-        mergedGyms=h3Gyms;
-      }
-
-      if(mergedGyms.length>0){
-        state.gyms=mergedGyms;
-        state.searchQuery='Near You';
-        render();
-      }
-
-      console.log('[Location] GPS upgrade:',gps.lat.toFixed(4),gps.lng.toFixed(4),
-        '| H3:',h3Gyms.length,'gyms | Live:',liveGyms.length,'gyms | Merged:',mergedGyms.length);
-    }
-
-    console.log('[Location] Total resolve time:',Math.round(performance.now()-t0)+'ms');
-  }catch(e){
-    console.warn('[Location] Background detection error:',e.message);
-    // Not a problem — instant results are already showing
+      },
+      ()=>{console.log('[Location] L5 GPS denied/unavailable — not blocking, other layers active');},
+      {timeout:5000,maximumAge:300000,enableHighAccuracy:false}
+    );
   }
+
+  console.log('[Location] Cascade fired in',Math.round(performance.now()-t0)+'ms — all layers running independently');
 };
 
 window.doSearch=function(){
