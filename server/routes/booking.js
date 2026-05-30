@@ -60,10 +60,9 @@ router.post('/create', async (req, res) => {
 
     const g = gym.rows[0];
 
-    // Calculate end time (1 hour session)
+    // 24-hour day pass: access starts at selected time, ends 24hrs later
     const [hours, mins] = time.split(':').map(Number);
-    const endHour = (hours + 1) % 24;
-    const endTime = `${String(endHour).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+    const endTime = time; // Same time next day (24hr access)
 
     // Pricing: before 10am = £3.75 (off-peak), otherwise £5.00
     const price = hours < 10 ? 3.75 : 5.00;
@@ -215,10 +214,9 @@ router.post('/guest-create', async (req, res) => {
 
     const g = gym.rows[0];
 
-    // Calculate end time (1 hour session)
+    // 24-hour day pass: access starts at selected time, ends 24hrs later
     const [hours, mins] = time.split(':').map(Number);
-    const endHour = (hours + 1) % 24;
-    const endTime = `${String(endHour).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+    const endTime = time; // Same time next day (24hr access)
 
     // Pricing: before 10am = £3.75 (off-peak), otherwise £5.00
     const price = hours < 10 ? 3.75 : 5.00;
@@ -262,6 +260,104 @@ router.post('/guest-create', async (req, res) => {
   } catch (err) {
     console.error('Guest booking error:', err);
     res.status(500).json({ error: 'Failed to create booking', detail: err.message });
+  }
+});
+
+/**
+ * POST /api/bookings/cancel
+ * Cancel a booking and issue a Stripe refund.
+ * "Free cancellation up to 2hrs before" — enforced here.
+ */
+router.post('/cancel', async (req, res) => {
+  try {
+    const { bookingId, email } = req.body;
+    if (!bookingId) return res.status(400).json({ error: 'bookingId is required' });
+
+    // Find booking — support both auth and guest (by email)
+    let result;
+    if (req.session?.userId) {
+      result = await pool.query(
+        `SELECT b.*, g.name as gym_name FROM public.bookings b
+         LEFT JOIN public.gyms g ON b.gym_id = g.id
+         WHERE b.id = $1 AND b.user_id = $2`,
+        [bookingId, req.session.userId]
+      );
+    } else if (email) {
+      result = await pool.query(
+        `SELECT b.*, g.name as gym_name FROM public.bookings b
+         LEFT JOIN public.gyms g ON b.gym_id = g.id
+         WHERE b.id = $1 AND b.user_email = $2`,
+        [bookingId, email]
+      );
+    } else {
+      return res.status(401).json({ error: 'Please provide your email to cancel' });
+    }
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    const booking = result.rows[0];
+
+    if (booking.status === 'cancelled') {
+      return res.status(400).json({ error: 'Booking is already cancelled' });
+    }
+
+    if (booking.status === 'pending') {
+      // Pending bookings can be cancelled immediately (no payment to refund)
+      await pool.query(
+        `UPDATE public.bookings SET status = 'cancelled', updated_at = NOW() WHERE id = $1`,
+        [bookingId]
+      );
+      return res.json({ success: true, refunded: false, message: 'Booking cancelled (no payment was made)' });
+    }
+
+    // Check 2-hour cancellation policy
+    const bookingStart = new Date(`${booking.booking_date.toISOString().split('T')[0]}T${booking.start_time}:00`);
+    const hoursUntilStart = (bookingStart - new Date()) / (1000 * 60 * 60);
+
+    if (hoursUntilStart < 2) {
+      return res.status(400).json({
+        error: 'Cancellation window has passed',
+        message: 'Free cancellation is available up to 2 hours before your session',
+      });
+    }
+
+    // Issue Stripe refund
+    let refunded = false;
+    if (booking.stripe_payment_intent_id) {
+      try {
+        const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+        await stripe.refunds.create({ payment_intent: booking.stripe_payment_intent_id });
+        refunded = true;
+        console.log(`✅ Refund issued for booking #${bookingId} (${booking.stripe_payment_intent_id})`);
+      } catch (stripeErr) {
+        console.error('Stripe refund error:', stripeErr.message);
+        // If refund fails (already refunded, etc.), still cancel the booking
+        if (stripeErr.code === 'charge_already_refunded') {
+          refunded = true;
+        } else {
+          return res.status(500).json({ error: 'Refund failed. Please contact support.', detail: stripeErr.message });
+        }
+      }
+    }
+
+    // Update booking status
+    await pool.query(
+      `UPDATE public.bookings SET status = 'cancelled', stripe_payment_status = $1, updated_at = NOW() WHERE id = $2`,
+      [refunded ? 'refunded' : 'cancelled', bookingId]
+    );
+
+    res.json({
+      success: true,
+      refunded,
+      message: refunded
+        ? `Booking cancelled. £${parseFloat(booking.total_amount).toFixed(2)} refund issued to your card (3-5 business days).`
+        : 'Booking cancelled successfully.',
+    });
+  } catch (err) {
+    console.error('Cancel booking error:', err);
+    res.status(500).json({ error: 'Failed to cancel booking' });
   }
 });
 
