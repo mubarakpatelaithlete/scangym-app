@@ -3357,46 +3357,38 @@ function getPredictedLocation(){
   }catch(e){return null;}
 }
 
-// ─── Main Auto-Load Function (all 5 techniques combined) ───
+// ─── Main Auto-Load Function — UBER PATTERN: show content FIRST, detect location in BACKGROUND ───
 window._autoLoaded=false;
 window.autoLoadGyms=async function(){
   if(window._autoLoaded||state.gyms.length>0||state.searchQuery) return;
   window._autoLoaded=true;
 
   const t0=performance.now();
-  // Safety net: if still loading after 6s, force show search UI (never leave user stuck)
-  const safetyTimer=setTimeout(()=>{
-    if(state.gyms.length===0){
-      console.warn('[Location] Safety timeout — forcing London search fallback');
-      searchGyms('gyms in London');
-      // Also show the search bar prominently
-      const el=document.getElementById('gym-search-input');
-      if(el){el.focus();el.placeholder='Type a city, area, or gym name...';}
-    }
-  },6000);
 
+  // ━━━ UBER RULE #1: NEVER show an empty loading screen. Show results IMMEDIATELY. ━━━
+  // Check client cache first (<1ms) — if we have it, show it instantly
+  const cached=getCachedLocation();
+  let instantQuery=null;
+  if(cached&&cached.query){
+    instantQuery=cached.query;
+    console.log('[Location] Cache hit:',cached.city,'— showing instantly');
+  } else {
+    // Check prediction (<1ms)
+    const predicted=getPredictedLocation();
+    if(predicted&&predicted.confidence!=='low'){
+      instantQuery=predicted.query;
+      console.log('[Location] Prediction:',predicted.city,'— showing instantly');
+    }
+  }
+
+  // ━━━ FIRE INSTANT RESULTS — don't await, show content in <200ms ━━━
+  // This is the Uber trick: show SOMETHING immediately, upgrade later
+  const instantSearch=searchGyms(instantQuery||'gyms in London');
+  // Don't await — let it render while we detect location in parallel
+
+  // ━━━ UBER RULE #2: Detect location in BACKGROUND, upgrade silently ━━━
   try{
-    // ▸ STEP 1: Instant results from client cache (Technique #2, <1ms)
-    const cached=getCachedLocation();
-    if(cached&&cached.query){
-      console.log('[Location] Cache hit:',cached.city,'('+(Date.now()-cached.timestamp)+'ms old)');
-      await searchGyms(cached.query);
-      if(state.gyms.length>0){clearTimeout(safetyTimer);}
-      // Don't return — still try GPS upgrade below
-    }
-
-    // ▸ STEP 2: If no cache, try prediction (Technique #5, <1ms)
-    if(!cached){
-      const predicted=getPredictedLocation();
-      if(predicted&&predicted.confidence!=='low'){
-        console.log('[Location] Prediction:',predicted.city,'(confidence:',predicted.confidence+')');
-        await searchGyms(predicted.query);
-        if(state.gyms.length>0){clearTimeout(safetyTimer);}
-      }
-    }
-
-    // ▸ STEP 3: Parallel Signal Race (Technique #1)
-    // Fire IP detection (server uses in-memory GeoIP = Technique #4) + GPS simultaneously
+    // Fire IP detection + GPS simultaneously (parallel signal race)
     const cityPromise=fetch('/api/geolocation/auto-city',{credentials:'include'}).then(r=>r.json()).catch(()=>null);
     const gpsPromise=new Promise((resolve)=>{
       if(!navigator.geolocation){resolve(null);return;}
@@ -3407,17 +3399,23 @@ window.autoLoadGyms=async function(){
       );
     });
 
-    // IP result arrives first (~5ms with geoip-lite, ~200ms with external API)
+    // Wait for instant search to finish (typically <500ms)
+    await instantSearch;
+
+    // IP result — if different from what we're showing, upgrade silently
     const cityData=await cityPromise;
-    if(cityData&&cityData.query&&state.gyms.length===0){
-      await searchGyms(cityData.query);
-      if(state.gyms.length>0){clearTimeout(safetyTimer);}
+    if(cityData&&cityData.query){
       setCachedLocation(cityData);
       recordLocationForPrediction(cityData);
       console.log('[Location] IP city:',cityData.city,'via',cityData.source,'in',cityData.resolve_ms+'ms');
+      // Only upgrade if we were showing default London and IP gives different city
+      if(!instantQuery&&cityData.query!=='gyms in London'){
+        await searchGyms(cityData.query);
+        console.log('[Location] Upgraded to IP city:',cityData.city);
+      }
     }
 
-    // GPS arrives later — upgrade results with precise nearby search
+    // GPS arrives later — upgrade to precise nearby results
     const gps=await gpsPromise;
     if(gps){
       state.searchLat=gps.lat;state.searchLng=gps.lng;
@@ -3425,7 +3423,7 @@ window.autoLoadGyms=async function(){
       setCachedLocation(gpsLoc);
       recordLocationForPrediction(gpsLoc);
 
-      // ▸ STEP 4: H3 hex grid lookup (Technique #3) + live nearby search in parallel
+      // H3 hex grid + live nearby search in parallel
       const [h3Result,nearbyResult]=await Promise.allSettled([
         fetch('/api/geolocation/nearby-h3?lat='+gps.lat+'&lng='+gps.lng).then(r=>r.json()).catch(()=>null),
         api.getLive('/nearby?lat='+gps.lat+'&lng='+gps.lng+'&radius=5000').catch(()=>null)
@@ -3438,7 +3436,6 @@ window.autoLoadGyms=async function(){
 
       if(liveGyms.length>0){
         mergedGyms=[...liveGyms];
-        // Add H3 DB gyms that aren't in live results
         const liveIds=new Set(liveGyms.map(g=>g.placeId||g.place_id||g.id));
         for(const hg of h3Gyms){
           if(!liveIds.has(hg.id)&&!liveIds.has(String(hg.id)))mergedGyms.push(hg);
@@ -3450,7 +3447,6 @@ window.autoLoadGyms=async function(){
       if(mergedGyms.length>0){
         state.gyms=mergedGyms;
         state.searchQuery='Near You';
-        clearTimeout(safetyTimer);
         render();
       }
 
@@ -3458,18 +3454,10 @@ window.autoLoadGyms=async function(){
         '| H3:',h3Gyms.length,'gyms | Live:',liveGyms.length,'gyms | Merged:',mergedGyms.length);
     }
 
-    // If STILL no gyms after all attempts, force London
-    if(state.gyms.length===0){
-      clearTimeout(safetyTimer);
-      await searchGyms('gyms in London');
-    }
-
     console.log('[Location] Total resolve time:',Math.round(performance.now()-t0)+'ms');
   }catch(e){
-    console.warn('[Location] Error:',e.message);
-    clearTimeout(safetyTimer);
-    // Ultimate fallback — always show something
-    if(state.gyms.length===0)searchGyms('gyms in London');
+    console.warn('[Location] Background detection error:',e.message);
+    // Not a problem — instant results are already showing
   }
 };
 

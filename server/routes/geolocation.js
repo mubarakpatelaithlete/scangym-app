@@ -272,6 +272,24 @@ router.get('/auto-city', async (req, res) => {
   try {
     const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip;
 
+    // 0. Cloudflare geolocation headers (FREE, 0ms — injected by CF edge)
+    // Enable: Cloudflare Dashboard → Rules → Transform Rules → Managed Transforms → "Add visitor location headers"
+    const cfCity = req.headers['cf-ipcity'];
+    const cfCountry = req.headers['cf-ipcountry'];
+    const cfLat = req.headers['cf-iplatitude'];
+    const cfLng = req.headers['cf-iplongitude'];
+    if (cfCity && cfCity !== 'XX') {
+      const result = {
+        city: cfCity, country: cfCountry || '',
+        lat: cfLat ? parseFloat(cfLat) : null, lng: cfLng ? parseFloat(cfLng) : null,
+        query: `gyms in ${cfCity}`, source: 'cloudflare_edge',
+        resolve_ms: 0,
+      };
+      setCachedLocation(req, result);
+      recordLocationForPrediction(req, result);
+      return res.json(result);
+    }
+
     // 1. Check cache first (Technique #2)
     const cached = getCachedLocation(req);
     if (cached) {
