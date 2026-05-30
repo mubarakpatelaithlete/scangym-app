@@ -1186,30 +1186,9 @@ function GymProfilePage(){
             <button onclick="event.preventDefault();event.stopPropagation();showUberCheckout('${gymId}')" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-4 rounded-xl text-lg transition shadow-lg shadow-brand/20">
               Book Now — £${gym.price_tier||'5'}.00
             </button>
-            <!-- Guest Checkout - Booking.com/Amazon style: visible by default, minimal friction -->
-            <div class="mt-1 border-t border-slate-700 pt-4">
-              <p class="text-slate-400 text-xs text-center mb-3">─── or book without an account ───</p>
-              <div id="guest-email-form-${gymId}" class="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
-                <div class="flex items-center gap-2 mb-3">
-                  <span class="text-lg">👤</span>
-                  <p class="text-white text-sm font-semibold">Continue as Guest</p>
-                  <span class="ml-auto bg-emerald-500/20 text-emerald-400 text-xs px-2 py-0.5 rounded-full">Most popular</span>
-                </div>
-                <input id="guest-email-input" type="email" placeholder="your@email.com" autocomplete="email" class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-3 text-white text-sm placeholder-slate-500 outline-none focus:border-brand mb-2">
-                <button data-guest-btn onclick="const em=document.getElementById('guest-email-input').value;if(!em||!em.includes('@')){document.getElementById('guest-email-input').style.borderColor='#ef4444';document.getElementById('guest-email-input').placeholder='Please enter valid email';return;}processGuestBooking('${gymId}',em)" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-3 rounded-xl transition flex items-center justify-center gap-2">
-                  <span>Book as Guest</span><span>→</span>
-                </button>
-                <div class="flex items-center justify-center gap-3 mt-3 text-xs text-slate-500">
-                  <span>🔒 256-bit encrypted</span>
-                  <span>•</span>
-                  <span>📧 QR sent instantly</span>
-                </div>
-                <div class="flex items-center justify-center gap-3 mt-1 text-xs text-slate-500">
-                  <span>✅ No account needed</span>
-                  <span>•</span>
-                  <span>↩️ Free cancellation</span>
-                </div>
-              </div>
+            <!-- Trust signals under Book Now (Uber-style: single path, no confusion) -->
+            <div class="mt-2 flex items-center justify-center gap-3 text-xs text-slate-500">
+              <span>✅ No account needed</span><span>•</span><span>📧 QR sent instantly</span><span>•</span><span>↩️ Free cancel</span>
             </div>
 
             <div class="space-y-2 text-xs">
