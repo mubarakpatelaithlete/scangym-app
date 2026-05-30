@@ -3200,30 +3200,25 @@ async function loadFallbackGyms(){
   }catch(e){console.warn('Fallback gym load failed:',e);}
 }
 
-window.findGyms=async function(){
+window.findGyms=function(){
   navigate('/explore');
-  // Uses the same 5-layer cascade — but forces GPS as primary
-  // Show existing results or London while GPS resolves
-  if(state.gyms.length===0) searchGyms('gyms in London');
 
-  // Fire IP + GPS in parallel (never wait for GPS alone)
-  const cityPromise=fetch('/api/geolocation/auto-city',{credentials:'include'}).then(r=>r.json()).catch(()=>null);
-
-  const loc=await getLocation();
-  if(!loc){
-    // GPS denied — use IP city
-    const cityData=await cityPromise;
-    if(cityData&&cityData.query){
-      searchGyms(cityData.query);
-      setCachedLocation(cityData);
-      recordLocationForPrediction(cityData);
-    }
-    return;
+  // ━━━ UBER RULE: Show results INSTANTLY, upgrade in background ━━━
+  // NEVER await GPS. NEVER show blank screen. NEVER block the UI.
+  const cached=getCachedLocation();
+  if(state.gyms.length===0){
+    searchGyms(cached?.query||'gyms in London');
   }
-  state.searchLat=loc.lat;state.searchLng=loc.lng;
-  setCachedLocation({lat:loc.lat,lng:loc.lng,city:'Near You',query:'Near You'});
-  recordLocationForPrediction({lat:loc.lat,lng:loc.lng,city:'Near You',query:'Near You'});
-  await loadGyms(loc.lat,loc.lng);
+
+  // ━━━ Fire IP detection — upgrades in ~100ms (non-blocking) ━━━
+  fetch('/api/geolocation/auto-city',{credentials:'include'}).then(r=>r.json()).then(cityData=>{
+    if(cityData&&cityData.city&&cityData.query){
+      _upgradeLocation(3, cityData.query, cityData);
+    }
+  }).catch(()=>{});
+
+  // ━━━ Fire GPS — FIRE AND FORGET, NEVER awaited (non-blocking) ━━━
+  _fireGPS(true); // true = high accuracy (user explicitly asked for GPS)
 };
 window.openGym=async function(id,isLive){
   navigate('/gym/'+id);
@@ -3340,6 +3335,120 @@ function getPredictedLocation(){
 }
 
 // ═══════════════════════════════════════════════════════════════════
+//  UBER GPS HELPER — Permission pre-check + watchPosition + fire-and-forget
+// ═══════════════════════════════════════════════════════════════════
+// Based on Uber's documented patterns:
+// 1. Check permission state BEFORE requesting (skip if denied → save 5s timeout)
+// 2. Use watchPosition (first fix in <500ms from cached GPS) not getCurrentPosition
+// 3. Never await — fire and forget, upgrade results via callback
+// ═══════════════════════════════════════════════════════════════════
+window._gpsWatchId=null;
+function _fireGPS(highAccuracy){
+  // ━━━ PERMISSION PRE-CHECK: Skip GPS instantly if permission is denied ━━━
+  if(navigator.permissions&&navigator.permissions.query){
+    navigator.permissions.query({name:'geolocation'}).then(function(status){
+      if(status.state==='denied'){
+        console.log('[Location] GPS permission denied — skipping entirely (0ms saved vs 5s timeout)');
+        return;
+      }
+      _startGPSWatch(highAccuracy);
+    }).catch(function(){
+      // Permissions API not supported — try GPS anyway
+      _startGPSWatch(highAccuracy);
+    });
+  }else{
+    _startGPSWatch(highAccuracy);
+  }
+}
+
+function _startGPSWatch(highAccuracy){
+  if(!navigator.geolocation) return;
+  // Clear any existing watch
+  if(window._gpsWatchId!==null){
+    navigator.geolocation.clearWatch(window._gpsWatchId);
+    window._gpsWatchId=null;
+  }
+
+  const t0=performance.now();
+  let bestAccuracy=Infinity;
+
+  // ━━━ UBER PATTERN: watchPosition gives first fix in <500ms (cached GPS) ━━━
+  // Then progressively improves. We take the first fix, upgrade when better arrives.
+  window._gpsWatchId=navigator.geolocation.watchPosition(
+    async function(pos){
+      const accuracy=pos.coords.accuracy;
+      const gps={lat:pos.coords.latitude,lng:pos.coords.longitude};
+      console.log('[GPS] Fix received:',gps.lat.toFixed(4),gps.lng.toFixed(4),
+        'accuracy:',Math.round(accuracy)+'m','in',Math.round(performance.now()-t0)+'ms');
+
+      // Only process if this is more accurate than what we have
+      if(accuracy>=bestAccuracy) return;
+      bestAccuracy=accuracy;
+
+      state.searchLat=gps.lat;state.searchLng=gps.lng;
+      const gpsLoc={lat:gps.lat,lng:gps.lng,city:'Near You',query:'Near You',source:'gps'};
+      setCachedLocation(gpsLoc);
+      recordLocationForPrediction(gpsLoc);
+
+      // If accuracy is good enough (<500m), load nearby gyms
+      if(accuracy<500||window._locationLayer<5){
+        try{
+          const [h3Result,nearbyResult]=await Promise.allSettled([
+            fetch('/api/geolocation/nearby-h3?lat='+gps.lat+'&lng='+gps.lng).then(r=>r.json()).catch(()=>null),
+            api.getLive('/nearby?lat='+gps.lat+'&lng='+gps.lng+'&radius=5000').catch(()=>null)
+          ]);
+          let mergedGyms=[];
+          const h3Gyms=h3Result.value?.gyms||[];
+          const liveGyms=nearbyResult.value?.gyms||[];
+          if(liveGyms.length>0){
+            mergedGyms=[...liveGyms];
+            const liveIds=new Set(liveGyms.map(g=>g.placeId||g.place_id||g.id));
+            for(const hg of h3Gyms){
+              if(!liveIds.has(hg.id)&&!liveIds.has(String(hg.id)))mergedGyms.push(hg);
+            }
+          }else if(h3Gyms.length>0){
+            mergedGyms=h3Gyms;
+          }
+          if(mergedGyms.length>0){
+            window._locationLayer=5;
+            state.gyms=mergedGyms;
+            state.searchQuery='Near You';
+            render();
+            console.log('[GPS] Upgraded to GPS results: H3:',h3Gyms.length,'Live:',liveGyms.length,'Merged:',mergedGyms.length);
+          }
+        }catch(e){
+          console.warn('[GPS] Nearby search error:',e.message);
+        }
+      }
+
+      // If accuracy is excellent (<100m), stop watching
+      if(accuracy<100){
+        navigator.geolocation.clearWatch(window._gpsWatchId);
+        window._gpsWatchId=null;
+        console.log('[GPS] Excellent accuracy achieved (',Math.round(accuracy),'m) — watch stopped');
+      }
+    },
+    function(err){
+      console.log('[GPS] Error:',err.message,'— not blocking, other layers active');
+      if(window._gpsWatchId!==null){
+        navigator.geolocation.clearWatch(window._gpsWatchId);
+        window._gpsWatchId=null;
+      }
+    },
+    {enableHighAccuracy:highAccuracy,timeout:8000,maximumAge:highAccuracy?0:60000}
+  );
+
+  // Safety: auto-clear watch after 15s to prevent battery drain
+  setTimeout(function(){
+    if(window._gpsWatchId!==null){
+      navigator.geolocation.clearWatch(window._gpsWatchId);
+      window._gpsWatchId=null;
+      console.log('[GPS] Watch auto-cleared after 15s safety timeout');
+    }
+  },15000);
+}
+
+// ═══════════════════════════════════════════════════════════════════
 //  UBER PATTERN #3: 5-LAYER LOCATION CASCADE — NEVER WAIT FOR GPS
 // ═══════════════════════════════════════════════════════════════════
 // Each layer fires independently. Faster layers show results first.
@@ -3411,55 +3520,10 @@ window.autoLoadGyms=async function(){
     }
   }).catch(()=>{});
 
-  // ━━━ LAYER 5: GPS — FIRE AND FORGET (1-10 seconds, NEVER blocks UI) ━━━
-  if(navigator.geolocation){
-    navigator.geolocation.getCurrentPosition(
-      async(pos)=>{
-        const gps={lat:pos.coords.latitude,lng:pos.coords.longitude};
-        state.searchLat=gps.lat;state.searchLng=gps.lng;
-        console.log('[Location] L5 GPS:',gps.lat.toFixed(4),gps.lng.toFixed(4),'in',Math.round(performance.now()-t0)+'ms');
-
-        // GPS is the most precise — always upgrade
-        const gpsLoc={lat:gps.lat,lng:gps.lng,city:'Near You',query:'Near You',source:'gps'};
-        setCachedLocation(gpsLoc);
-        recordLocationForPrediction(gpsLoc);
-
-        // Fire H3 + live nearby search in parallel for maximum gym coverage
-        try{
-          const [h3Result,nearbyResult]=await Promise.allSettled([
-            fetch('/api/geolocation/nearby-h3?lat='+gps.lat+'&lng='+gps.lng).then(r=>r.json()).catch(()=>null),
-            api.getLive('/nearby?lat='+gps.lat+'&lng='+gps.lng+'&radius=5000').catch(()=>null)
-          ]);
-
-          let mergedGyms=[];
-          const h3Gyms=h3Result.value?.gyms||[];
-          const liveGyms=nearbyResult.value?.gyms||[];
-
-          if(liveGyms.length>0){
-            mergedGyms=[...liveGyms];
-            const liveIds=new Set(liveGyms.map(g=>g.placeId||g.place_id||g.id));
-            for(const hg of h3Gyms){
-              if(!liveIds.has(hg.id)&&!liveIds.has(String(hg.id)))mergedGyms.push(hg);
-            }
-          }else if(h3Gyms.length>0){
-            mergedGyms=h3Gyms;
-          }
-
-          if(mergedGyms.length>0){
-            window._locationLayer=5;
-            state.gyms=mergedGyms;
-            state.searchQuery='Near You';
-            render();
-            console.log('[Location] L5 GPS upgrade: H3:',h3Gyms.length,'Live:',liveGyms.length,'Merged:',mergedGyms.length);
-          }
-        }catch(e){
-          console.warn('[Location] L5 GPS nearby search error:',e.message);
-        }
-      },
-      ()=>{console.log('[Location] L5 GPS denied/unavailable — not blocking, other layers active');},
-      {timeout:5000,maximumAge:300000,enableHighAccuracy:false}
-    );
-  }
+  // ━━━ LAYER 5: GPS — FIRE AND FORGET via _fireGPS() ━━━
+  // Uses watchPosition (fast first fix <500ms) + permissions pre-check
+  // Duplicate GPS logic is centralized in _fireGPS()/_startGPSWatch()
+  _fireGPS(false); // false = low accuracy first (auto-detect, not user-requested)
 
   console.log('[Location] Cascade fired in',Math.round(performance.now()-t0)+'ms — all layers running independently');
 };
