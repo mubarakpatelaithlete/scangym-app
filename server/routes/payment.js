@@ -525,4 +525,136 @@ router.post('/confirm-intent', async (req, res) => {
   }
 });
 
+/**
+ * POST /api/payment/instant-checkout
+ * Uber-level: Creates booking + payment intent in ONE call.
+ * Frontend shows single checkout sheet with Stripe Elements immediately.
+ */
+router.post('/instant-checkout', async (req, res) => {
+  try {
+    if (!stripe) return res.status(500).json({ error: 'Payment not configured' });
+
+    const { gymId, date, time, email, placeId } = req.body;
+    if (!date || !time || !email) {
+      return res.status(400).json({ error: 'date, time, and email are required' });
+    }
+    if (!email.includes('@') || !email.includes('.')) {
+      return res.status(400).json({ error: 'Please enter a valid email address' });
+    }
+
+    // Resolve gym ID (Google Place ID → DB ID)
+    let dbGymId = gymId;
+    if (placeId && isNaN(parseInt(gymId))) {
+      // Ensure gym exists in DB
+      const ensureResult = await pool.query('SELECT id FROM public.gyms WHERE google_place_id = $1', [placeId]);
+      if (ensureResult.rows.length > 0) {
+        dbGymId = ensureResult.rows[0].id;
+      } else {
+        return res.status(400).json({ error: 'Gym not found. Please search again.' });
+      }
+    }
+
+    // Get gym info
+    const gym = await pool.query('SELECT id, name, address FROM gyms WHERE id = $1', [dbGymId]);
+    if (gym.rows.length === 0) {
+      return res.status(404).json({ error: 'Gym not found' });
+    }
+    const g = gym.rows[0];
+
+    // Pricing: before 10am = £3.75 (off-peak), otherwise £5.00
+    const [hours] = time.split(':').map(Number);
+    const price = hours < 10 ? 3.75 : 5.00;
+    const amount = Math.round(price * 100);
+
+    // Generate booking codes
+    const crypto = require('crypto');
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let bookingCode = '';
+    for (let i = 0; i < 8; i++) {
+      bookingCode += chars[Math.floor(Math.random() * chars.length)];
+      if (i === 3) bookingCode += '-';
+    }
+    const qrCode = 'BOOK_' + crypto.randomBytes(8).toString('hex').toUpperCase();
+
+    // Create booking
+    const bookingResult = await pool.query(
+      `INSERT INTO public.bookings 
+        (gym_id, user_id, booking_date, start_time, end_time, total_amount, 
+         platform_fee_amount, booking_type, booking_code, qr_code, status,
+         user_email, user_name, created_at, updated_at)
+       VALUES ($1, 'guest', $2, $3, $4, $5, $6, 'instant', $7, $8, 'pending', $9, 'Guest', NOW(), NOW())
+       RETURNING *`,
+      [dbGymId, date, time, time, price, price * 0.10, bookingCode, qrCode, email]
+    );
+    const booking = bookingResult.rows[0];
+
+    // Create PaymentIntent with automatic payment methods (enables Apple Pay, Google Pay, cards, etc.)
+    const intent = await stripe.paymentIntents.create({
+      amount,
+      currency: 'gbp',
+      automatic_payment_methods: { enabled: true },
+      metadata: { bookingId: String(booking.id), gymName: g.name },
+      receipt_email: email,
+    });
+
+    // Link intent to booking
+    await pool.query(
+      'UPDATE public.bookings SET stripe_payment_intent_id = $1, updated_at = NOW() WHERE id = $2',
+      [intent.id, booking.id]
+    );
+
+    // Store in session
+    if (req.session) {
+      req.session.guestBookingId = booking.id;
+      req.session.guestEmail = email;
+    }
+
+    res.json({
+      success: true,
+      bookingId: booking.id,
+      intentId: intent.id,
+      clientSecret: intent.client_secret,
+      amount: price,
+      gymName: g.name,
+      bookingCode,
+    });
+  } catch (err) {
+    console.error('Instant checkout error:', err);
+    res.status(500).json({ error: 'Failed to create checkout', detail: err.message });
+  }
+});
+
+/**
+ * POST /api/payment/update-intent-amount
+ * Updates a PaymentIntent amount when user changes time (off-peak vs standard)
+ */
+router.post('/update-intent-amount', async (req, res) => {
+  try {
+    if (!stripe) return res.status(500).json({ error: 'Payment not configured' });
+
+    const { paymentIntentId, amount, time, bookingId } = req.body;
+    if (!paymentIntentId || !amount) return res.status(400).json({ error: 'paymentIntentId and amount required' });
+
+    // Update Stripe PaymentIntent
+    await stripe.paymentIntents.update(paymentIntentId, {
+      amount: Math.round(amount * 100),
+    });
+
+    // Update booking amount + time if provided
+    if (bookingId && time) {
+      const [hours] = time.split(':').map(Number);
+      const price = hours < 10 ? 3.75 : 5.00;
+      await pool.query(
+        'UPDATE public.bookings SET total_amount = $1, start_time = $2, end_time = $3, platform_fee_amount = $4, updated_at = NOW() WHERE id = $5',
+        [price, time, time, price * 0.10, bookingId]
+      );
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Update intent error:', err);
+    res.status(500).json({ error: 'Failed to update payment' });
+  }
+});
+
 module.exports = router;

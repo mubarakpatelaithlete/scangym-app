@@ -1,4 +1,4 @@
-// ScanGym Frontend v3.4.0 — World-Class UX (Airbnb + Booking.com + Uber + Skyscanner + Revolut)
+// ScanGym Frontend v4.0.0 — Uber-Level Checkout (single screen, Apple Pay, Google Pay, zero friction)
 
 // Inject CSS animations for loading experience
 (function(){const s=document.createElement('style');s.textContent='@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}#fun-fact{transition:opacity 0.2s ease}.gym-card{animation:fadeInUp 0.3s ease-out both}.animate-slide-up{animation:slideUp 0.3s ease-out}@keyframes skeletonPulse{0%,100%{opacity:.6}50%{opacity:.3}}@keyframes locationDot{0%,100%{box-shadow:0 0 0 0 rgba(249,115,22,.4)}50%{box-shadow:0 0 0 8px rgba(249,115,22,0)}}.skel-card{animation:skeletonPulse 1.8s ease-in-out infinite}.loc-dot{animation:locationDot 1.5s ease-in-out infinite}.cards-enter .gym-card{animation:fadeInUp .4s ease-out both}@keyframes toastIn{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes toastOut{from{transform:translateY(0);opacity:1}to{transform:translateY(-100%);opacity:0}}@keyframes spin{to{transform:rotate(360deg)}}.sg-spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}';document.head.appendChild(s)})();
@@ -1151,7 +1151,7 @@ function GymProfilePage(){
             <p class="text-slate-400 text-xs">No account needed</p>
           </div>
           <div class="flex gap-2">
-            <button onclick="event.preventDefault();event.stopPropagation();showBookingSheet('${gymId}')" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-3 px-8 rounded-xl text-base transition shadow-lg shadow-brand/20">
+            <button onclick="event.preventDefault();event.stopPropagation();showUberCheckout('${gymId}')" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-3 px-8 rounded-xl text-base transition shadow-lg shadow-brand/20">
               Book Now — £${gym.price_tier||'5'}.00
             </button>
           </div>
@@ -1183,7 +1183,7 @@ function GymProfilePage(){
               </div>
             </div>
 
-            <button onclick="event.preventDefault();event.stopPropagation();showBookingSheet('${gymId}')" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-4 rounded-xl text-lg transition shadow-lg shadow-brand/20">
+            <button onclick="event.preventDefault();event.stopPropagation();showUberCheckout('${gymId}')" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-4 rounded-xl text-lg transition shadow-lg shadow-brand/20">
               Book Now — £${gym.price_tier||'5'}.00
             </button>
             <!-- Guest Checkout - Booking.com/Amazon style: visible by default, minimal friction -->
@@ -2595,276 +2595,297 @@ window.handleLogout=async function(){
   navigate('/');
 };
 
-// ─── Booking Handler (Uber-style: always open single booking sheet — no scroll jumps) ───
+// ─── Booking Handler (Uber-level: ONE tap → ONE screen → DONE) ───
 window.handleBookNow=async function(gymId){
-  // Uber pattern: ONE action → ONE modal. Always open the booking bottom sheet.
   // Grab sidebar date/time if the user already selected them (desktop)
   const dateInput=document.querySelector('.sticky input[type="date"]');
   const timeSelect=document.querySelector('.sticky select');
   const date=dateInput?dateInput.value:'';
   const time=timeSelect?timeSelect.value:'';
-  showBookingSheet(gymId, date||undefined, time||undefined);
+  showUberCheckout(gymId, date||undefined, time||undefined);
 };
 
 
-// ─── Booking Bottom Sheet (Fix #2 + #3: guest-first, mobile-friendly) ───
-window.showBookingSheet=function(gymId, prefillDate, prefillTime){
-  // Remove existing sheet if any
+// ═══════════════════════════════════════════════════════════════════════════
+//  UBER-LEVEL CHECKOUT — Single screen: booking details + payment + Apple Pay
+//  Zero modals-on-modals. ONE sheet. ONE "Confirm & Pay". Done.
+// ═══════════════════════════════════════════════════════════════════════════
+
+// State for the active checkout
+window._checkoutState={stripe:null,elements:null,bookingId:null,intentId:null,gymId:null};
+
+window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
   document.getElementById('booking-sheet')?.remove();
 
   const gym=state.currentGym||state.gyms.find(g=>(g.placeId||g.place_id||g.id)==gymId)||{};
-  const price=gym.price_tier||'5';
+  const gymName=gym.name||'Gym';
+  const gymAddr=gym.vicinity||gym.formatted_address||gym.address||'';
   const today=new Date().toISOString().split('T')[0];
   const currentHour=new Date().getHours();
   const defaultTime=prefillTime||`${String(Math.min(currentHour+1,20)).padStart(2,'0')}:00`;
+  const defaultHour=parseInt(defaultTime);
+  const defaultPrice=defaultHour<10?'3.75':'5.00';
+  const savedEmail=localStorage.getItem('sg_last_email')||'';
 
   const sheet=document.createElement('div');
   sheet.id='booking-sheet';
   sheet.innerHTML=`
   <div class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center" onclick="if(event.target===this)closeBookingSheet()">
-    <div class="bg-slate-900 w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl border-t sm:border border-slate-700 p-6 max-h-[90vh] overflow-y-auto animate-slide-up">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="font-brand text-xl font-bold text-white">Book ${gym.name||'Gym'}</h2>
-        <button onclick="closeBookingSheet()" class="text-slate-400 hover:text-white text-2xl">&times;</button>
-      </div>
-
-      <div class="text-center mb-4">
-        <p id="sheet-hero-price" class="text-3xl font-bold text-white">£${price}<span class="text-lg text-slate-500">.00</span></p>
-        <p id="sheet-savings-badge" class="text-green-400 text-xs font-medium mt-1" style="display:none">🎉 Off-peak — you save £1.25!</p>
-        <p class="text-accent text-xs mt-1">✅ Free cancellation up to 2hrs before</p>
-      </div>
-
-      <div class="space-y-3 mb-4">
-        <div class="bg-slate-800 rounded-lg p-3">
-          <label class="text-slate-400 text-xs mb-1 block">📅 Date</label>
-          <input type="date" id="sheet-date" value="${prefillDate||today}" min="${today}" class="w-full bg-transparent text-white text-sm outline-none">
-        </div>
-        <div class="bg-slate-800 rounded-lg p-3">
-          <label class="text-slate-400 text-xs mb-1 block">🕐 Time</label>
-          <select id="sheet-time" class="w-full bg-transparent text-white text-sm outline-none" onchange="(function(sel){var h=parseInt(sel.value);var btn=document.getElementById('sheet-book-btn');var hero=document.getElementById('sheet-hero-price');var badge=document.getElementById('sheet-savings-badge');var isOffPeak=h<10;var p=isOffPeak?'3.75':'${price}.00';if(btn)btn.textContent='Book Now — £'+p;if(hero)hero.innerHTML=isOffPeak?'£3<span class=\\'text-lg text-slate-500\\'>.75</span>':'£${price}<span class=\\'text-lg text-slate-500\\'>.00</span>';if(badge)badge.style.display=isOffPeak?'block':'none';})(this)">
-            ${Array.from({length:15},(_,i)=>{const h=6+i;return`<option value="${String(h).padStart(2,'0')}:00" ${String(h).padStart(2,'0')+':00'===defaultTime?'selected':''}>${String(h).padStart(2,'0')}:00${h<10?' (Off-peak £3.75)':''}</option>`;}).join('')}
-          </select>
-        </div>
-        <div class="bg-slate-800 rounded-lg p-3">
-          <label class="text-slate-400 text-xs mb-1 block">📧 Email (for QR code)</label>
-          <input type="email" id="sheet-email" placeholder="your@email.com" autocomplete="email" class="w-full bg-transparent text-white text-sm outline-none placeholder-slate-500">
+    <div class="uber-checkout bg-slate-900 w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl border-t sm:border border-slate-700 max-h-[92vh] overflow-y-auto animate-slide-up" style="-webkit-overflow-scrolling:touch">
+      
+      <!-- Uber-style header bar -->
+      <div class="sticky top-0 bg-slate-900/95 backdrop-blur-sm z-10 px-5 pt-5 pb-3 border-b border-slate-800">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 bg-brand rounded-lg flex items-center justify-center text-lg">🏋️</div>
+            <div>
+              <p class="text-white font-bold text-sm leading-tight">${gymName}</p>
+              <p class="text-slate-500 text-xs">${gymAddr.length>35?gymAddr.substring(0,35)+'...':gymAddr}</p>
+            </div>
+          </div>
+          <button onclick="closeBookingSheet()" class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition">&times;</button>
         </div>
       </div>
 
-      <button id="sheet-book-btn" onclick="submitBookingSheet('${gymId}')" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-4 rounded-xl text-lg transition shadow-lg shadow-brand/20 mb-3">
-        Book Now — £${price}.00
-      </button>
+      <div class="px-5 pb-5 pt-4">
+        <!-- Price hero -->
+        <div class="text-center mb-4">
+          <p id="uc-price" class="text-4xl font-black text-white">£${defaultPrice}</p>
+          <p id="uc-badge" class="text-xs font-medium mt-1 ${defaultHour<10?'text-green-400':'text-slate-500'}">${defaultHour<10?'🎉 Off-peak price':'24-hour day pass'}</p>
+          <p class="text-green-500/80 text-xs mt-1">✅ Free cancellation up to 2hrs before</p>
+        </div>
 
-      ${state.user?`<p class="text-center text-slate-500 text-xs">Logged in as ${state.user.phone||'user'}</p>`
-        :`<p class="text-center text-slate-500 text-xs">✅ No account needed · Guest checkout · QR sent to your email</p>`}
+        <!-- Booking details — compact horizontal row like Uber -->
+        <div class="grid grid-cols-2 gap-2 mb-4">
+          <div class="bg-slate-800/80 rounded-xl p-3">
+            <label class="text-slate-500 text-[10px] uppercase tracking-wider font-bold block mb-1">Date</label>
+            <input type="date" id="uc-date" value="${prefillDate||today}" min="${today}" class="w-full bg-transparent text-white text-sm outline-none font-medium">
+          </div>
+          <div class="bg-slate-800/80 rounded-xl p-3">
+            <label class="text-slate-500 text-[10px] uppercase tracking-wider font-bold block mb-1">Time</label>
+            <select id="uc-time" class="w-full bg-transparent text-white text-sm outline-none font-medium appearance-none">
+              ${Array.from({length:15},(_,i)=>{const h=6+i;const v=String(h).padStart(2,'0')+':00';return`<option value="${v}" ${v===defaultTime?'selected':''}>${v}${h<10?' · £3.75':''}</option>`;}).join('')}
+            </select>
+          </div>
+        </div>
 
-      <div class="flex items-center justify-center gap-3 mt-3 text-xs text-slate-500">
-        <span>🔒 Secure payment</span><span>•</span><span>📧 QR sent instantly</span><span>•</span><span>↩️ Free cancellation</span>
+        <!-- Email — auto-saved from last booking -->
+        <div class="bg-slate-800/80 rounded-xl p-3 mb-4">
+          <label class="text-slate-500 text-[10px] uppercase tracking-wider font-bold block mb-1">Email for QR code</label>
+          <input type="email" id="uc-email" value="${savedEmail}" placeholder="your@email.com" autocomplete="email" inputmode="email"
+            class="w-full bg-transparent text-white text-sm outline-none font-medium placeholder-slate-600">
+        </div>
+
+        <!-- Stripe Payment Element — loads inline (Apple Pay / Google Pay / Card) -->
+        <div id="uc-payment-area" class="mb-4">
+          <div class="bg-slate-800/60 rounded-xl p-6 text-center">
+            <div class="sg-spinner mx-auto mb-2" style="width:24px;height:24px;border-color:rgba(255,255,255,.15);border-top-color:#f97316"></div>
+            <p class="text-slate-500 text-xs">Loading payment methods...</p>
+          </div>
+        </div>
+        <div id="uc-error" class="text-red-400 text-sm mb-2 hidden"></div>
+
+        <!-- Single CTA — Uber style -->
+        <button id="uc-pay-btn" disabled class="w-full bg-brand hover:bg-orange-600 disabled:bg-slate-700 disabled:text-slate-500 text-white font-bold py-4 rounded-xl text-lg transition shadow-lg shadow-brand/20 flex items-center justify-center gap-2">
+          <span id="uc-btn-text">Loading...</span>
+        </button>
+
+        <!-- Trust signals -->
+        <div class="flex items-center justify-center gap-2 mt-3 text-[10px] text-slate-600">
+          <span>🔒 Secure</span><span>·</span><span>📧 Instant QR</span><span>·</span><span>↩️ Free cancel</span><span>·</span><span>Stripe</span>
+        </div>
       </div>
     </div>
   </div>`;
   document.body.appendChild(sheet);
+
+  // Bind time change → update price display
+  document.getElementById('uc-time').addEventListener('change',function(){
+    const h=parseInt(this.value);
+    const isOff=h<10;
+    const p=isOff?'3.75':'5.00';
+    document.getElementById('uc-price').textContent='£'+p;
+    document.getElementById('uc-badge').textContent=isOff?'🎉 Off-peak price':'24-hour day pass';
+    document.getElementById('uc-badge').className='text-xs font-medium mt-1 '+(isOff?'text-green-400':'text-slate-500');
+    const btn=document.getElementById('uc-btn-text');
+    if(btn&&!btn.textContent.includes('Processing'))btn.textContent='Confirm & Pay · £'+p;
+    // Update Stripe intent amount if we already have one
+    _updateCheckoutAmount(h);
+  });
+
+  // Now create the booking + payment intent in ONE server call
+  _initUberPayment(gymId, gym);
 };
+
+// Create booking + PaymentIntent and mount Stripe Elements
+async function _initUberPayment(gymId, gym){
+  const date=document.getElementById('uc-date')?.value;
+  const time=document.getElementById('uc-time')?.value;
+  const email=document.getElementById('uc-email')?.value||'';
+  const payArea=document.getElementById('uc-payment-area');
+  const payBtn=document.getElementById('uc-pay-btn');
+  const btnText=document.getElementById('uc-btn-text');
+
+  if(!STRIPE_PK||!window.Stripe){
+    payArea.innerHTML='<p class="text-red-400 text-sm text-center">Payment system loading... please wait.</p>';
+    // Retry after Stripe.js loads
+    setTimeout(()=>_initUberPayment(gymId,gym),1000);
+    return;
+  }
+
+  try{
+    // Step 1: Ensure gym exists in DB (if Google Place ID)
+    let dbGymId=gymId;
+    if(isNaN(parseInt(gymId))){
+      const ensured=await api.postLive('/ensure-gym',{placeId:gymId});
+      if(ensured.error){sgToast(ensured.error);closeBookingSheet();return;}
+      dbGymId=ensured.gymId;
+    }
+
+    // Step 2: Create booking + PaymentIntent in ONE call
+    const result=await fetch('/api/payment/instant-checkout',{
+      method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
+      body:JSON.stringify({gymId:parseInt(dbGymId),placeId:gymId,date,time,email:email||'guest@scangym.com'})
+    }).then(r=>{if(!r.ok)throw new Error('Server error '+r.status);return r.json();});
+
+    if(result.error){
+      payArea.innerHTML=`<p class="text-red-400 text-sm text-center">${result.error}</p>`;
+      return;
+    }
+
+    // Store checkout state
+    const bookingId=result.bookingId;
+    window._checkoutState.bookingId=bookingId;
+    window._checkoutState.intentId=result.intentId;
+    window._checkoutState.gymId=gymId;
+    localStorage.setItem('sg_pending_booking',bookingId);
+
+    // Step 3: Mount Stripe Payment Element with Apple Pay + Google Pay
+    const stripeInstance=window.Stripe(STRIPE_PK);
+    window._checkoutState.stripe=stripeInstance;
+
+    const userCountry=(()=>{try{const tz=Intl.DateTimeFormat().resolvedOptions().timeZone||'';const map={'Europe/London':'GB','America/New_York':'US','America/Los_Angeles':'US','Asia/Dubai':'AE','Europe/Paris':'FR','Europe/Berlin':'DE','Europe/Madrid':'ES','Australia/Sydney':'AU','Asia/Tokyo':'JP','America/Toronto':'CA'};return map[tz]||'GB';}catch(e){return 'GB';}})();
+
+    const elements=stripeInstance.elements({
+      clientSecret:result.clientSecret,
+      appearance:{
+        theme:'night',
+        variables:{colorPrimary:'#f97316',fontFamily:'-apple-system,BlinkMacSystemFont,Inter,sans-serif',borderRadius:'10px',colorBackground:'#1e293b'},
+        rules:{'.Input':{border:'1px solid #334155',padding:'12px'},'.Tab':{border:'1px solid #334155'},'.Tab--selected':{borderColor:'#f97316'}}
+      }
+    });
+    window._checkoutState.elements=elements;
+
+    // Replace loading spinner with actual payment element
+    payArea.innerHTML='<div id="uc-stripe-el"></div>';
+    const paymentElement=elements.create('payment',{
+      layout:{type:'tabs',defaultCollapsed:false},
+      wallets:{applePay:'auto',googlePay:'auto'},
+      fields:{billingDetails:{address:{postalCode:'auto',country:'auto'}}},
+      defaultValues:{billingDetails:{address:{country:userCountry},email:email||undefined}},
+    });
+    paymentElement.mount('#uc-stripe-el');
+
+    // Enable the pay button once Stripe is ready
+    paymentElement.on('ready',()=>{
+      const h=parseInt(document.getElementById('uc-time')?.value||'10');
+      const p=h<10?'3.75':'5.00';
+      btnText.textContent='Confirm & Pay · £'+p;
+      payBtn.disabled=false;
+    });
+
+    // Handle pay button click
+    payBtn.addEventListener('click',()=>_handleUberPay(bookingId));
+
+  }catch(e){
+    console.error('Checkout init error:',e);
+    payArea.innerHTML='<p class="text-red-400 text-sm text-center">Failed to load checkout. Please try again.</p>';
+  }
+}
+
+// Handle the single "Confirm & Pay" button
+async function _handleUberPay(bookingId){
+  const btn=document.getElementById('uc-pay-btn');
+  const btnText=document.getElementById('uc-btn-text');
+  const errEl=document.getElementById('uc-error');
+  if(!btn||btn.disabled)return;
+
+  // Update email on booking if changed
+  const email=document.getElementById('uc-email')?.value;
+  if(!email||!email.includes('@')){
+    errEl.textContent='Please enter a valid email for your QR code';
+    errEl.classList.remove('hidden');
+    document.getElementById('uc-email')?.focus();
+    return;
+  }
+  localStorage.setItem('sg_last_email',email);
+
+  btn.disabled=true;
+  btnText.innerHTML='<span class="sg-spinner"></span> Processing...';
+  errEl.classList.add('hidden');
+
+  const {stripe,elements}=window._checkoutState;
+  if(!stripe||!elements){sgToast('Payment not ready. Please try again.');btn.disabled=false;btnText.textContent='Confirm & Pay';return;}
+
+  // Confirm payment with Stripe
+  const {error,paymentIntent}=await stripe.confirmPayment({
+    elements,
+    confirmParams:{return_url:window.location.origin+'/booking-success?booking_id='+bookingId},
+    redirect:'if_required',
+  });
+
+  if(error){
+    errEl.textContent=error.message;
+    errEl.classList.remove('hidden');
+    const h=parseInt(document.getElementById('uc-time')?.value||'10');
+    btnText.textContent='Confirm & Pay · £'+(h<10?'3.75':'5.00');
+    btn.disabled=false;
+    return;
+  }
+
+  if(paymentIntent&&paymentIntent.status==='succeeded'){
+    btnText.innerHTML='<span class="sg-spinner"></span> Generating QR...';
+    try{
+      const result=await fetch('/api/payment/confirm-intent',{
+        method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
+        body:JSON.stringify({bookingId,paymentIntentId:paymentIntent.id})
+      }).then(r=>r.json());
+
+      if(result.success){
+        state.lastBooking=result.booking;
+        state.lastQR=result.qr;
+        localStorage.removeItem('sg_pending_booking');
+        closeBookingSheet();
+        navigate('/booking-success?session_id=inline&booking_id='+bookingId);
+      }else{
+        sgToast(result.error||'Confirmation failed. Contact support.');
+        btnText.textContent='Confirm & Pay';btn.disabled=false;
+      }
+    }catch(e){
+      sgToast('Payment confirmed! QR code will be sent to your email.','success',5000);
+      closeBookingSheet();
+      navigate('/my-bookings');
+    }
+  }
+}
+
+// Update PaymentIntent amount when time changes (off-peak vs standard)
+async function _updateCheckoutAmount(hour){
+  const cs=window._checkoutState;
+  if(!cs.bookingId)return;
+  const price=hour<10?3.75:5.00;
+  try{
+    await fetch('/api/payment/update-intent-amount',{
+      method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
+      body:JSON.stringify({paymentIntentId:cs.intentId,amount:price,time:String(hour).padStart(2,'0')+':00',bookingId:cs.bookingId})
+    });
+  }catch(e){console.warn('Amount update failed:',e);}
+}
 
 window.closeBookingSheet=function(){
   const sheet=document.getElementById('booking-sheet');
   if(sheet)sheet.remove();
-};
-
-window.submitBookingSheet=async function(gymId){
-  const date=document.getElementById('sheet-date')?.value;
-  const time=document.getElementById('sheet-time')?.value;
-  const email=document.getElementById('sheet-email')?.value;
-  const btn=document.getElementById('sheet-book-btn');
-  const resetBtn=()=>{const h=parseInt(time||'10');const p=h<10?'3.75':'5.00';btn.innerHTML='Book Now — £'+p;btn.disabled=false;};
-
-  if(!date||!time){sgToast('Please select a date and time','warning');return;}
-  if(!state.user&&(!email||!email.includes('@'))){
-    document.getElementById('sheet-email').style.borderColor='#ef4444';
-    document.getElementById('sheet-email').placeholder='Please enter a valid email';
-    sgToast('Please enter a valid email address','warning');
-    return;
-  }
-
-  btn.innerHTML='<span class="sg-spinner"></span>Creating booking...';btn.disabled=true;
-
-  try{
-    let dbGymId=gymId;
-    // Ensure Google Place exists in DB
-    if(isNaN(parseInt(gymId))){
-      const ensured=await api.postLive('/ensure-gym',{placeId:gymId});
-      if(ensured.error){sgToast(ensured.error);resetBtn();return;}
-      dbGymId=ensured.gymId;
-    }
-
-    let booking;
-    if(state.user){
-      // Authenticated booking
-      booking=await api.bookPost('/create',{gymId:parseInt(dbGymId),date,time});
-    }else{
-      // Guest booking (primary path — no login needed)
-      booking=await fetch('/api/bookings/guest-create',{
-        method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({gymId:parseInt(dbGymId),date,time,email})
-      }).then(r=>r.json());
-    }
-
-    if(booking.error){sgToast(booking.error);resetBtn();return;}
-
-    // Store pending booking for resume (Fix #8)
-    localStorage.setItem('sg_pending_booking',booking.booking.id);
-    if(email)localStorage.setItem('sg_last_email',email);
-
-    // Try inline Stripe Elements (Fix #5)
-    btn.innerHTML='<span class="sg-spinner"></span>Loading payment...';
-    if(STRIPE_PK&&window.Stripe){
-      try{
-        const intentData=await fetch('/api/payment/create-intent',{
-          method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
-          body:JSON.stringify({bookingId:booking.booking.id,email:email||undefined})
-        }).then(r=>{if(!r.ok)throw new Error('Server error');return r.json();});
-
-        if(intentData.clientSecret){
-          showStripeElements(intentData.clientSecret, booking.booking.id, gymId);
-          return;
-        }
-      }catch(e){console.warn('Stripe Elements failed, falling back to redirect:',e);}
-    }
-
-    // Fallback: Stripe redirect checkout
-    btn.innerHTML='<span class="sg-spinner"></span>Redirecting to payment...';
-    let payment;
-    if(state.user){
-      payment=await api.payPost('/checkout',{bookingId:booking.booking.id});
-    }else{
-      payment=await fetch('/api/payment/guest-checkout',{
-        method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({bookingId:booking.booking.id,email})
-      }).then(r=>{if(!r.ok)throw new Error('Server error');return r.json();});
-    }
-
-    if(payment.checkoutUrl){
-      window.location.href=payment.checkoutUrl;
-    }else{
-      sgToast(payment.error||'Payment could not be started. Please try again.');
-      resetBtn();
-    }
-  }catch(e){
-    console.error('Booking error:',e);
-    sgToast('Something went wrong. Please try again.');
-    resetBtn();
-  }
-};
-
-// ─── Stripe Elements Inline Payment (Uber-style: order summary + payment on SAME screen) ───
-window.showStripeElements=function(clientSecret, bookingId, gymId){
-  const sheet=document.getElementById('booking-sheet');
-  if(!sheet) return;
-
-  // Grab booking context from the sheet before replacing content
-  const gym=state.currentGym||state.gyms.find(g=>(g.placeId||g.place_id||g.id)==gymId)||{};
-  const gymName=gym.name||'Gym';
-  const bookDate=document.getElementById('sheet-date')?.value||new Date().toISOString().split('T')[0];
-  const bookTime=document.getElementById('sheet-time')?.value||'09:00';
-  const bookHour=parseInt(bookTime);
-  const endHour=String(Math.min(bookHour+1,23)).padStart(2,'0')+':00';
-  const price=bookHour<10?'3.75':'5.00';
-  const formattedDate=new Date(bookDate+'T00:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
-  const accessLabel='24hr access from '+bookTime;
-
-  const container=sheet.querySelector('.animate-slide-up');
-  container.innerHTML=`
-    <div class="flex items-center justify-between mb-3">
-      <h2 class="font-brand text-lg font-bold text-white">Confirm & Pay</h2>
-      <button onclick="closeBookingSheet()" class="text-slate-400 hover:text-white text-2xl">&times;</button>
-    </div>
-
-    <!-- Uber-style: Order summary ABOVE payment (single-screen checkout) -->
-    <div class="bg-slate-800/80 rounded-xl p-4 mb-4 border border-slate-700/50">
-      <div class="flex items-start gap-3">
-        <div class="w-10 h-10 bg-brand/20 rounded-lg flex items-center justify-center text-lg flex-shrink-0">🏋️</div>
-        <div class="flex-1 min-w-0">
-          <p class="text-white font-bold text-sm truncate">${gymName}</p>
-          <p class="text-slate-400 text-xs mt-0.5">${formattedDate} · ${accessLabel}</p>
-        </div>
-        <div class="text-right flex-shrink-0">
-          <p class="text-white font-bold text-lg">£${price}</p>
-          ${bookHour<10?'<p class="text-green-400 text-xs font-medium">Off-peak</p>':''}
-        </div>
-      </div>
-      <div class="flex items-center gap-3 mt-3 pt-3 border-t border-slate-700/50 text-xs text-slate-400">
-        <span>🎟️ Day Pass</span><span>·</span><span>📧 QR to email</span><span>·</span><span>↩️ Free cancel 2hrs</span>
-      </div>
-    </div>
-
-    <div id="stripe-payment-element" class="mb-3 bg-white rounded-xl p-3"></div>
-    <div id="stripe-error" class="text-red-400 text-sm mb-2"></div>
-    <button id="stripe-pay-btn" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-4 rounded-xl text-lg transition shadow-lg shadow-brand/20">
-      Pay £${price} Now
-    </button>
-    <div class="flex items-center justify-center gap-3 mt-3 text-xs text-slate-500">
-      <span>🔒 Secure payment</span><span>•</span><span>Powered by Stripe</span>
-    </div>
-  `;
-
-  const stripe=window.Stripe(STRIPE_PK);
-  const elements=stripe.elements({clientSecret,appearance:{theme:'night',variables:{colorPrimary:'#f97316',fontFamily:'-apple-system,BlinkMacSystemFont,sans-serif'}}});
-  // Detect user country from timezone or default to GB (UK-focused product)
-  const userCountry=(()=>{
-    try{
-      const tz=Intl.DateTimeFormat().resolvedOptions().timeZone||'';
-      const tzCountryMap={'Europe/London':'GB','Europe/Manchester':'GB','Europe/Belfast':'GB','America/New_York':'US','America/Los_Angeles':'US','America/Chicago':'US','America/Denver':'US','Asia/Dubai':'AE','Asia/Kolkata':'IN','Europe/Paris':'FR','Europe/Berlin':'DE','Europe/Madrid':'ES','Europe/Rome':'IT','Australia/Sydney':'AU','Asia/Tokyo':'JP','Asia/Singapore':'SG','America/Toronto':'CA','Pacific/Auckland':'NZ','Asia/Shanghai':'CN','Asia/Hong_Kong':'HK'};
-      return tzCountryMap[tz]||'GB';
-    }catch(e){return 'GB';}
-  })();
-  const paymentElement=elements.create('payment',{
-    layout:'tabs',
-    wallets:{applePay:'auto',googlePay:'auto'},
-    fields:{billingDetails:{address:{postalCode:'auto',country:'auto'}}},
-    defaultValues:{billingDetails:{address:{country:userCountry}}},
-  });
-  paymentElement.mount('#stripe-payment-element');
-
-  document.getElementById('stripe-pay-btn').addEventListener('click',async()=>{
-    const btn=document.getElementById('stripe-pay-btn');
-    btn.textContent='Processing...';btn.disabled=true;
-    document.getElementById('stripe-error').textContent='';
-
-    const {error,paymentIntent}=await stripe.confirmPayment({
-      elements,
-      confirmParams:{return_url:window.location.origin+'/booking-success?booking_id='+bookingId},
-      redirect:'if_required',
-    });
-
-    if(error){
-      document.getElementById('stripe-error').textContent=error.message;
-      btn.textContent='Pay Now';btn.disabled=false;
-    }else if(paymentIntent&&paymentIntent.status==='succeeded'){
-      // Confirm on backend + get QR
-      btn.textContent='Generating QR code...';
-      try{
-        const result=await fetch('/api/payment/confirm-intent',{
-          method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
-          body:JSON.stringify({bookingId,paymentIntentId:paymentIntent.id})
-        }).then(r=>r.json());
-
-        if(result.success){
-          state.lastBooking=result.booking;
-          state.lastQR=result.qr;
-          localStorage.removeItem('sg_pending_booking');
-          closeBookingSheet();
-          navigate('/booking-success?session_id=inline&booking_id='+bookingId);
-        }else{
-          sgToast(result.error||'Confirmation failed. Please contact support.');
-          btn.textContent='Pay Now';btn.disabled=false;
-        }
-      }catch(e){
-        sgToast('Payment confirmed! QR code will be sent to your email.','success',5000);
-        closeBookingSheet();
-        navigate('/my-bookings');
-      }
-    }
-  });
+  window._checkoutState={stripe:null,elements:null,bookingId:null,intentId:null,gymId:null};
 };
 
 // ─── Resume Abandoned Booking (Fix #8) ───
