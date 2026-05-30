@@ -64,10 +64,33 @@ app.use('/api/payment', paymentLimiter);
 
 // Session middleware (must come before routes)
 // Session store: PostgreSQL via connect-pg-simple (was: default MemoryStore — leaked memory + lost sessions on deploy)
+// NOTE: createTableIfMissing uses CREATE INDEX (not IF NOT EXISTS) which throws
+// "relation IDX_session_expire already exists" on every query after first boot,
+// causing 500 errors. We create the table ourselves, then set createTableIfMissing: false.
 const pgSession = require('connect-pg-simple')(session);
-const sessionStore = process.env.DATABASE_URL
-  ? new pgSession({ conString: process.env.DATABASE_URL, tableName: 'user_sessions', createTableIfMissing: true })
-  : undefined; // falls back to MemoryStore in local dev only
+let sessionStore;
+if (process.env.DATABASE_URL) {
+  const { Pool } = require('pg');
+  const sessionPool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
+  // Ensure session table + index exist (idempotent)
+  sessionPool.query(`
+    CREATE TABLE IF NOT EXISTS "user_sessions" (
+      "sid" varchar NOT NULL COLLATE "default",
+      "sess" json NOT NULL,
+      "expire" timestamp(6) NOT NULL,
+      CONSTRAINT "user_sessions_pkey" PRIMARY KEY ("sid")
+    );
+    CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "user_sessions" ("expire");
+  `).then(() => console.log('Session table ready'))
+    .catch(err => console.error('Session table setup error:', err.message));
+  sessionStore = new pgSession({
+    pool: sessionPool,
+    tableName: 'user_sessions',
+    createTableIfMissing: false,  // We handle it above with IF NOT EXISTS
+    pruneSessionInterval: 60 * 15, // Clean expired sessions every 15 min
+    errorLog: (err) => console.error('Session store error:', err.message),
+  });
+} // falls back to MemoryStore in local dev only
 
 if (!process.env.SESSION_SECRET) {
   console.error('⚠️  SESSION_SECRET env var is not set — sessions are insecure. Set it in Railway.');
@@ -320,6 +343,13 @@ if (fs.existsSync(FRONTEND_DIR)) {
   });
   console.log('Serving frontend from', FRONTEND_DIR);
 }
+
+// -- Global error handler — return JSON, not Express's default HTML --
+app.use((err, req, res, next) => {
+  console.error(`[${req.method} ${req.path}] Unhandled error:`, err.message || err);
+  if (res.headersSent) return next(err);
+  res.status(err.status || 500).json({ error: err.message || 'Internal server error' });
+});
 
 // -- Start --
 app.listen(PORT, '0.0.0.0', () => {
