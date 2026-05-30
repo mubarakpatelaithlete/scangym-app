@@ -428,12 +428,14 @@ router.post('/create-intent', async (req, res) => {
 
     const amount = Math.round(parseFloat(booking.total_amount) * 100);
 
+    // Uber-style: explicit payment methods, no Stripe Link (which adds confusing
+    // "Save my info" email+phone fields that look required but aren't)
     const intent = await stripe.paymentIntents.create({
       amount,
       currency: 'gbp',
       metadata: { bookingId: String(booking.id), gymName: booking.gym_name || '' },
       receipt_email: email || booking.user_email || undefined,
-      automatic_payment_methods: { enabled: true },
+      payment_method_types: ['card', 'amazon_pay', 'revolut_pay'],
     });
 
     // Store payment intent ID on booking
