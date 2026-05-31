@@ -1,4 +1,4 @@
-// ScanGym Frontend v5.2.2 — TikTok-spec Reels nav buttons (48dp, positioned above action strip)
+// ScanGym Frontend v5.3.0 — Uber-grade location accuracy (reverse geocoding, accuracy gate, dynamic radius)
 
 // Inject CSS animations for loading experience
 (function(){const s=document.createElement('style');s.textContent='@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}#fun-fact{transition:opacity 0.2s ease}.gym-card{animation:fadeInUp 0.3s ease-out both}.animate-slide-up{animation:slideUp 0.3s ease-out}@keyframes skeletonPulse{0%,100%{opacity:.6}50%{opacity:.3}}@keyframes locationDot{0%,100%{box-shadow:0 0 0 0 rgba(249,115,22,.4)}50%{box-shadow:0 0 0 8px rgba(249,115,22,0)}}.skel-card{animation:skeletonPulse 1.8s ease-in-out infinite}.loc-dot{animation:locationDot 1.5s ease-in-out infinite}.cards-enter .gym-card{animation:fadeInUp .4s ease-out both}@keyframes toastIn{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes toastOut{from{transform:translateY(0);opacity:1}to{transform:translateY(-100%);opacity:0}}@keyframes spin{to{transform:rotate(360deg)}}.sg-spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}/* ── 3-Tab System ── */.sg-tab-bar{position:fixed;bottom:0;left:0;right:0;height:64px;background:rgba(10,10,22,.97);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:space-around;border-top:1px solid rgba(255,255,255,.08);z-index:9000;padding-bottom:env(safe-area-inset-bottom,0)}.sg-tab-item{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:6px 16px;border-radius:12px;transition:all .2s;-webkit-tap-highlight-color:transparent;user-select:none}.sg-tab-item .sg-tab-icon{font-size:24px;opacity:.45;transition:all .2s}.sg-tab-item .sg-tab-label{font-size:10px;font-weight:600;color:rgba(255,255,255,.4);transition:all .2s}.sg-tab-item.active .sg-tab-icon{opacity:1;transform:scale(1.1)}.sg-tab-item.active .sg-tab-label{color:#f97316}.sg-tab-content{padding-bottom:72px;min-height:100vh}.sg-tab-content.reels-active{padding-bottom:0}.sg-reels-frame{position:fixed;top:0;left:0;right:0;bottom:64px;border:none;width:100%;height:calc(100vh - 64px);z-index:1}.sg-more-hub{padding:20px 16px 100px;max-width:480px;margin:0 auto}.sg-more-section{margin-bottom:20px}.sg-more-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.3);margin-bottom:8px;padding-left:4px}.sg-more-item{display:flex;align-items:center;gap:14px;padding:14px 16px;background:rgba(255,255,255,.04);border-radius:14px;margin-bottom:6px;border:1px solid rgba(255,255,255,.04);cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}.sg-more-item:active{transform:scale(.98);background:rgba(255,255,255,.08)}.sg-more-item .sg-mi-icon{font-size:20px;width:40px;height:40px;background:rgba(255,255,255,.06);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.sg-more-item .sg-mi-text{flex:1}.sg-more-item .sg-mi-text h4{color:#fff;font-size:14px;font-weight:600;margin:0}.sg-more-item .sg-mi-text p{color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0}.sg-more-item .sg-mi-arrow{color:rgba(255,255,255,.2);font-size:16px}.sg-more-profile{display:flex;align-items:center;gap:14px;margin-bottom:28px;padding-top:12px}.sg-more-avatar{width:56px;height:56px;background:linear-gradient(135deg,#f97316,#fb923c);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff;flex-shrink:0}.sg-more-profile-info h3{color:#fff;font-size:18px;font-weight:700;margin:0}.sg-more-profile-info p{color:rgba(255,255,255,.4);font-size:13px;margin:2px 0 0}.sg-more-social{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}.sg-more-social a{display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:rgba(255,255,255,.04);border-radius:12px;border:1px solid rgba(255,255,255,.06);font-size:16px;transition:all .15s;text-decoration:none}.sg-more-social a:active{background:rgba(255,255,255,.1);transform:scale(.95)}.sg-more-back{display:flex;align-items:center;gap:8px;padding:12px 0;cursor:pointer;color:rgba(255,255,255,.6);font-size:14px;font-weight:600;margin-bottom:4px;-webkit-tap-highlight-color:transparent}.sg-more-back:active{color:#f97316}#sg-search-overlay{transition:opacity .2s ease}#sg-search-overlay.active{opacity:1!important}.hide-scrollbar::-webkit-scrollbar{display:none}.sg-dashboard{-webkit-tap-highlight-color:transparent}';document.head.appendChild(s)})();
@@ -846,7 +846,7 @@ function SearchPage(){
               <div class="w-2 h-2 rounded-full bg-brand loc-dot"></div>
               <p class="text-slate-400 text-sm">Detecting your location\u2026</p>
             `:`
-              <p class="text-slate-400 text-sm">Showing <span class="text-white font-medium">${gyms.length}</span> gyms nearby</p>
+              <p class="text-slate-400 text-sm">Showing <span class="text-white font-medium">${gyms.length}</span> gyms nearby${window._gpsAccuracy!==null?(' · '+(window._gpsAccuracy<50?'<span style="color:#22c55e">📍 Precise</span>':window._gpsAccuracy<200?'<span style="color:#f59e0b">📍 Approximate</span>':'<span style="color:#ef4444">📍 Low accuracy</span>')):''}</p>
             `}
           </div>
         </div>
@@ -3450,6 +3450,27 @@ function getPredictedLocation(){
 }
 
 // ═══════════════════════════════════════════════════════════════════
+//  FIX #1 + #6: REVERSE GEOCODING — Show "Gyms in Shoreditch" not "Near You"
+// ═══════════════════════════════════════════════════════════════════
+// Uses server-side endpoint that calls free Nominatim API (no key needed)
+// Falls back gracefully to "Near You" if reverse geocoding fails
+window._gpsAccuracy=null; // Track current GPS accuracy for indicator
+window._gpsLocationName=null; // Track resolved location name
+
+async function _reverseGeocode(lat,lng){
+  try{
+    const r=await fetch('/api/geolocation/reverse-geocode?lat='+lat+'&lng='+lng,{credentials:'include'});
+    if(!r.ok)return null;
+    const data=await r.json();
+    if(data&&data.name)return data;
+    return null;
+  }catch(e){
+    console.warn('[ReverseGeo] Failed:',e.message);
+    return null;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
 //  UBER GPS HELPER — Permission pre-check + watchPosition + fire-and-forget
 // ═══════════════════════════════════════════════════════════════════
 // Based on Uber's documented patterns:
@@ -3500,17 +3521,38 @@ function _startGPSWatch(highAccuracy){
       if(accuracy>=bestAccuracy) return;
       bestAccuracy=accuracy;
 
+      // ━━━ FIX #4: Track accuracy for indicator ━━━
+      window._gpsAccuracy=Math.round(accuracy);
+
       state.searchLat=gps.lat;state.searchLng=gps.lng;
-      const gpsLoc={lat:gps.lat,lng:gps.lng,city:'Near You',query:'Near You',source:'gps'};
+
+      // ━━━ FIX #3: ACCURACY THRESHOLD GATE ━━━
+      // Only use GPS results if accuracy is good enough (<200m)
+      // If >200m, keep showing city-level results from earlier layers
+      if(accuracy>200&&window._locationLayer>=3){
+        console.log('[GPS] Accuracy',Math.round(accuracy)+'m too loose (>200m) — keeping city-level results, waiting for better fix');
+        render(); // Re-render to update accuracy indicator
+        return;
+      }
+
+      // ━━━ FIX #1 + #6: REVERSE GEOCODE — "Gyms in Shoreditch" not "Near You" ━━━
+      // Fire reverse geocoding in parallel with gym search
+      let locationName='Near You';
+      const reverseGeoPromise=accuracy<200?_reverseGeocode(gps.lat,gps.lng):null;
+
+      // ━━━ FIX #5: DYNAMIC SEARCH RADIUS based on accuracy ━━━
+      const searchRadius=Math.max(Math.round(accuracy*3),2000);
+
+      const gpsLoc={lat:gps.lat,lng:gps.lng,city:locationName,query:locationName,source:'gps',accuracy:Math.round(accuracy)};
       setCachedLocation(gpsLoc);
       recordLocationForPrediction(gpsLoc);
 
-      // If accuracy is good enough (<500m), load nearby gyms
-      if(accuracy<500||window._locationLayer<5){
+      // If accuracy is good enough (<200m), load nearby gyms with dynamic radius
+      if(accuracy<200||window._locationLayer<5){
         try{
           const [h3Result,nearbyResult]=await Promise.allSettled([
             fetch('/api/geolocation/nearby-h3?lat='+gps.lat+'&lng='+gps.lng).then(r=>r.json()).catch(()=>null),
-            api.getLive('/nearby?lat='+gps.lat+'&lng='+gps.lng+'&radius=5000').catch(()=>null)
+            api.getLive('/nearby?lat='+gps.lat+'&lng='+gps.lng+'&radius='+searchRadius).catch(()=>null)
           ]);
           let mergedGyms=[];
           const h3Gyms=h3Result.value?.gyms||[];
@@ -3524,20 +3566,35 @@ function _startGPSWatch(highAccuracy){
           }else if(h3Gyms.length>0){
             mergedGyms=h3Gyms;
           }
+
+          // ━━━ FIX #1: Resolve reverse geocode result ━━━
+          if(reverseGeoPromise){
+            try{
+              const geo=await reverseGeoPromise;
+              if(geo&&geo.name){
+                locationName=geo.name;
+                window._gpsLocationName=geo.name;
+                // Update cache with real location name
+                setCachedLocation({...gpsLoc,city:geo.name,query:geo.name});
+                console.log('[GPS] Reverse geocoded:',geo.name,'('+geo.type+')');
+              }
+            }catch(e){console.warn('[GPS] Reverse geocode failed, using "Near You"');}
+          }
+
           if(mergedGyms.length>0){
             window._locationLayer=5;
             state.gyms=mergedGyms;
-            state.searchQuery='Near You';
+            state.searchQuery=locationName;
             render();
-            console.log('[GPS] Upgraded to GPS results: H3:',h3Gyms.length,'Live:',liveGyms.length,'Merged:',mergedGyms.length);
+            console.log('[GPS] Upgraded to GPS results: H3:',h3Gyms.length,'Live:',liveGyms.length,'Merged:',mergedGyms.length,'radius:',searchRadius+'m','location:',locationName);
           }
         }catch(e){
           console.warn('[GPS] Nearby search error:',e.message);
         }
       }
 
-      // If accuracy is excellent (<100m), stop watching
-      if(accuracy<100){
+      // If accuracy is excellent (<50m), stop watching
+      if(accuracy<50){
         navigator.geolocation.clearWatch(window._gpsWatchId);
         window._gpsWatchId=null;
         console.log('[GPS] Excellent accuracy achieved (',Math.round(accuracy),'m) — watch stopped');
@@ -3550,7 +3607,7 @@ function _startGPSWatch(highAccuracy){
         window._gpsWatchId=null;
       }
     },
-    {enableHighAccuracy:highAccuracy,timeout:8000,maximumAge:highAccuracy?0:60000}
+    {enableHighAccuracy:true,timeout:10000,maximumAge:0} // FIX #2: Always high accuracy + fresh position
   );
 
   // Safety: auto-clear watch after 15s to prevent battery drain
@@ -3641,7 +3698,7 @@ window.autoLoadGyms=async function(){
   // ━━━ LAYER 5: GPS — FIRE AND FORGET via _fireGPS() ━━━
   // Uses watchPosition (fast first fix <500ms) + permissions pre-check
   // Duplicate GPS logic is centralized in _fireGPS()/_startGPSWatch()
-  _fireGPS(false); // false = low accuracy first (auto-detect, not user-requested)
+  _fireGPS(true); // FIX #2: Always request high accuracy — battery impact negligible (15s auto-stop)
 
   console.log('[Location] Cascade fired in',Math.round(performance.now()-t0)+'ms — all layers running independently');
 };

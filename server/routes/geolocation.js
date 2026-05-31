@@ -515,6 +515,101 @@ router.get('/cache', (req, res) => {
   res.json({ cached: false });
 });
 
+/**
+ * GET /api/geolocation/reverse-geocode
+ * FIX #1 + #6: Reverse geocode GPS coords → neighborhood/city name
+ * Uses free Nominatim API (no API key required, 1 req/sec limit)
+ * Falls back to Google Maps Geocoding if GOOGLE_MAPS_API_KEY is set
+ * Query: ?lat=51.5074&lng=-0.1278
+ */
+router.get('/reverse-geocode', async (req, res) => {
+  const start = Date.now();
+  try {
+    const lat = parseFloat(req.query.lat);
+    const lng = parseFloat(req.query.lng);
+    if (isNaN(lat) || isNaN(lng)) {
+      return res.status(400).json({ error: 'lat and lng are required' });
+    }
+
+    // Strategy 1: Try Google Maps Reverse Geocoding (most accurate)
+    if (GOOGLE_MAPS_API_KEY) {
+      try {
+        const gUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GOOGLE_MAPS_API_KEY}&result_type=neighborhood|sublocality|locality`;
+        const gRes = await fetch(gUrl, { signal: AbortSignal.timeout(3000) });
+        const gData = await gRes.json();
+        if (gData.status === 'OK' && gData.results && gData.results.length > 0) {
+          // Find the most specific result (neighborhood > sublocality > locality)
+          let bestName = null;
+          let bestType = 'locality';
+          for (const result of gData.results) {
+            for (const comp of result.address_components || []) {
+              if (comp.types.includes('neighborhood')) {
+                bestName = comp.long_name;
+                bestType = 'neighborhood';
+                break;
+              } else if (comp.types.includes('sublocality') && bestType !== 'neighborhood') {
+                bestName = comp.long_name;
+                bestType = 'sublocality';
+              } else if (comp.types.includes('locality') && bestType === 'locality') {
+                bestName = comp.long_name;
+              }
+            }
+            if (bestType === 'neighborhood') break;
+          }
+          if (bestName) {
+            return res.json({
+              name: bestName,
+              type: bestType,
+              source: 'google_geocoding',
+              resolve_ms: Date.now() - start,
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('[ReverseGeo] Google failed, trying Nominatim:', e.message);
+      }
+    }
+
+    // Strategy 2: Free Nominatim API (OpenStreetMap)
+    try {
+      const nUrl = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=16&addressdetails=1`;
+      const nRes = await fetch(nUrl, {
+        headers: { 'User-Agent': 'ScanGym/5.3.0 (https://scangym.com)' },
+        signal: AbortSignal.timeout(3000),
+      });
+      const nData = await nRes.json();
+      if (nData && nData.address) {
+        // Pick most specific: suburb > neighbourhood > city_district > city > town
+        const addr = nData.address;
+        const name = addr.suburb || addr.neighbourhood || addr.city_district ||
+                     addr.city || addr.town || addr.village || addr.county || null;
+        if (name) {
+          return res.json({
+            name: name,
+            type: addr.suburb ? 'suburb' : addr.neighbourhood ? 'neighbourhood' :
+                  addr.city_district ? 'city_district' : 'city',
+            full_address: nData.display_name,
+            source: 'nominatim',
+            resolve_ms: Date.now() - start,
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('[ReverseGeo] Nominatim failed:', e.message);
+    }
+
+    // Fallback: check in-memory geoip for nearest city
+    if (geoip) {
+      // Can't reverse geocode from IP, but return null gracefully
+    }
+
+    res.json({ name: null, source: 'none', resolve_ms: Date.now() - start });
+  } catch (error) {
+    console.error('[ReverseGeo] Error:', error.message);
+    res.json({ name: null, source: 'error' });
+  }
+});
+
 // ─── H3 Index Builder Hook ───
 // Called from server.js after DB pool is ready
 router.buildH3Index = buildH3Index;
