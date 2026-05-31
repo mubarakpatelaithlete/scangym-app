@@ -2952,9 +2952,10 @@ async function _handleUberPay(bookingId){
   if(paymentIntent&&paymentIntent.status==='succeeded'){
     btnText.innerHTML='<span class="sg-spinner"></span> Generating QR...';
     try{
+      const confirmEmail=document.getElementById('uc-email')?.value||'';
       const result=await fetch('/api/payment/confirm-intent',{
         method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
-        body:JSON.stringify({bookingId,paymentIntentId:paymentIntent.id})
+        body:JSON.stringify({bookingId,paymentIntentId:paymentIntent.id,email:confirmEmail})
       }).then(r=>r.json());
 
       if(result.success){
