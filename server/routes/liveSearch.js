@@ -90,7 +90,7 @@ function extractCity(address) {
 // ═══════════════════════════════════════════════════════════════
 router.get('/search', async (req, res) => {
   try {
-    const { q, query, pagetoken, type } = req.query;
+    const { q, query, pagetoken, type, lat, lng, radius } = req.query;
     const searchQuery = q || query;
 
     if (!searchQuery && !pagetoken) {
@@ -101,8 +101,8 @@ router.get('/search', async (req, res) => {
       return res.status(500).json({ error: 'Google Maps API key not configured' });
     }
 
-    // Check cache
-    const cacheKey = `search:${searchQuery}:${pagetoken || ''}`;
+    // Check cache (include lat/lng in cache key for location-biased searches)
+    const cacheKey = `search:${searchQuery}:${pagetoken || ''}:${lat || ''}:${lng || ''}`;
     const cached = getCached(cacheKey);
     if (cached) return res.json(cached);
 
@@ -120,6 +120,18 @@ router.get('/search', async (req, res) => {
       // Filter to gym-related types
       const typeParam = type || 'gym';
       url = `${BASE_URL}/textsearch/json?query=${encoded}&type=${typeParam}&key=${GOOGLE_MAPS_API_KEY}`;
+
+      // ━━━ LOCATION BIAS FIX: Add coordinates + radius so Google biases to the right area ━━━
+      if (lat && lng) {
+        const r = radius || 20000; // 20km default bias radius
+        url += `&location=${lat},${lng}&radius=${r}`;
+      }
+      // ━━━ REGION BIAS: Hint Google to prefer results in this country ━━━
+      // Detect region from query or default to UK (primary market)
+      const regionMatch = searchQuery.match(/\b(uk|gb|us|ae|in|au|ca|de|fr|es|it)\b/i);
+      if (regionMatch) {
+        url += `&region=${regionMatch[1].toLowerCase()}`;
+      }
     }
 
     // Google Places pagetoken requires ~2s delay before it becomes valid.
