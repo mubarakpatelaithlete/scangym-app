@@ -1,7 +1,7 @@
-// ScanGym Frontend v5.0.0 — TikTok-Style 3-Tab Redesign (Book · Reels · More)
+// ScanGym Frontend v5.1.0 — Uber-Style Dashboard + Reels Nav Buttons + Bug Fixes
 
 // Inject CSS animations for loading experience
-(function(){const s=document.createElement('style');s.textContent='@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}#fun-fact{transition:opacity 0.2s ease}.gym-card{animation:fadeInUp 0.3s ease-out both}.animate-slide-up{animation:slideUp 0.3s ease-out}@keyframes skeletonPulse{0%,100%{opacity:.6}50%{opacity:.3}}@keyframes locationDot{0%,100%{box-shadow:0 0 0 0 rgba(249,115,22,.4)}50%{box-shadow:0 0 0 8px rgba(249,115,22,0)}}.skel-card{animation:skeletonPulse 1.8s ease-in-out infinite}.loc-dot{animation:locationDot 1.5s ease-in-out infinite}.cards-enter .gym-card{animation:fadeInUp .4s ease-out both}@keyframes toastIn{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes toastOut{from{transform:translateY(0);opacity:1}to{transform:translateY(-100%);opacity:0}}@keyframes spin{to{transform:rotate(360deg)}}.sg-spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}/* ── 3-Tab System ── */.sg-tab-bar{position:fixed;bottom:0;left:0;right:0;height:64px;background:rgba(10,10,22,.97);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:space-around;border-top:1px solid rgba(255,255,255,.08);z-index:9000;padding-bottom:env(safe-area-inset-bottom,0)}.sg-tab-item{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:6px 16px;border-radius:12px;transition:all .2s;-webkit-tap-highlight-color:transparent;user-select:none}.sg-tab-item .sg-tab-icon{font-size:24px;opacity:.45;transition:all .2s}.sg-tab-item .sg-tab-label{font-size:10px;font-weight:600;color:rgba(255,255,255,.4);transition:all .2s}.sg-tab-item.active .sg-tab-icon{opacity:1;transform:scale(1.1)}.sg-tab-item.active .sg-tab-label{color:#f97316}.sg-tab-content{padding-bottom:72px;min-height:100vh}.sg-tab-content.reels-active{padding-bottom:0}.sg-reels-frame{position:fixed;top:0;left:0;right:0;bottom:64px;border:none;width:100%;height:calc(100vh - 64px);z-index:1}.sg-more-hub{padding:20px 16px 100px;max-width:480px;margin:0 auto}.sg-more-section{margin-bottom:20px}.sg-more-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.3);margin-bottom:8px;padding-left:4px}.sg-more-item{display:flex;align-items:center;gap:14px;padding:14px 16px;background:rgba(255,255,255,.04);border-radius:14px;margin-bottom:6px;border:1px solid rgba(255,255,255,.04);cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}.sg-more-item:active{transform:scale(.98);background:rgba(255,255,255,.08)}.sg-more-item .sg-mi-icon{font-size:20px;width:40px;height:40px;background:rgba(255,255,255,.06);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.sg-more-item .sg-mi-text{flex:1}.sg-more-item .sg-mi-text h4{color:#fff;font-size:14px;font-weight:600;margin:0}.sg-more-item .sg-mi-text p{color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0}.sg-more-item .sg-mi-arrow{color:rgba(255,255,255,.2);font-size:16px}.sg-more-profile{display:flex;align-items:center;gap:14px;margin-bottom:28px;padding-top:12px}.sg-more-avatar{width:56px;height:56px;background:linear-gradient(135deg,#f97316,#fb923c);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff;flex-shrink:0}.sg-more-profile-info h3{color:#fff;font-size:18px;font-weight:700;margin:0}.sg-more-profile-info p{color:rgba(255,255,255,.4);font-size:13px;margin:2px 0 0}.sg-more-social{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}.sg-more-social a{display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:rgba(255,255,255,.04);border-radius:12px;border:1px solid rgba(255,255,255,.06);font-size:16px;transition:all .15s;text-decoration:none}.sg-more-social a:active{background:rgba(255,255,255,.1);transform:scale(.95)}.sg-more-back{display:flex;align-items:center;gap:8px;padding:12px 0;cursor:pointer;color:rgba(255,255,255,.6);font-size:14px;font-weight:600;margin-bottom:4px;-webkit-tap-highlight-color:transparent}.sg-more-back:active{color:#f97316}';document.head.appendChild(s)})();
+(function(){const s=document.createElement('style');s.textContent='@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}#fun-fact{transition:opacity 0.2s ease}.gym-card{animation:fadeInUp 0.3s ease-out both}.animate-slide-up{animation:slideUp 0.3s ease-out}@keyframes skeletonPulse{0%,100%{opacity:.6}50%{opacity:.3}}@keyframes locationDot{0%,100%{box-shadow:0 0 0 0 rgba(249,115,22,.4)}50%{box-shadow:0 0 0 8px rgba(249,115,22,0)}}.skel-card{animation:skeletonPulse 1.8s ease-in-out infinite}.loc-dot{animation:locationDot 1.5s ease-in-out infinite}.cards-enter .gym-card{animation:fadeInUp .4s ease-out both}@keyframes toastIn{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes toastOut{from{transform:translateY(0);opacity:1}to{transform:translateY(-100%);opacity:0}}@keyframes spin{to{transform:rotate(360deg)}}.sg-spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}/* ── 3-Tab System ── */.sg-tab-bar{position:fixed;bottom:0;left:0;right:0;height:64px;background:rgba(10,10,22,.97);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:space-around;border-top:1px solid rgba(255,255,255,.08);z-index:9000;padding-bottom:env(safe-area-inset-bottom,0)}.sg-tab-item{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:6px 16px;border-radius:12px;transition:all .2s;-webkit-tap-highlight-color:transparent;user-select:none}.sg-tab-item .sg-tab-icon{font-size:24px;opacity:.45;transition:all .2s}.sg-tab-item .sg-tab-label{font-size:10px;font-weight:600;color:rgba(255,255,255,.4);transition:all .2s}.sg-tab-item.active .sg-tab-icon{opacity:1;transform:scale(1.1)}.sg-tab-item.active .sg-tab-label{color:#f97316}.sg-tab-content{padding-bottom:72px;min-height:100vh}.sg-tab-content.reels-active{padding-bottom:0}.sg-reels-frame{position:fixed;top:0;left:0;right:0;bottom:64px;border:none;width:100%;height:calc(100vh - 64px);z-index:1}.sg-more-hub{padding:20px 16px 100px;max-width:480px;margin:0 auto}.sg-more-section{margin-bottom:20px}.sg-more-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.3);margin-bottom:8px;padding-left:4px}.sg-more-item{display:flex;align-items:center;gap:14px;padding:14px 16px;background:rgba(255,255,255,.04);border-radius:14px;margin-bottom:6px;border:1px solid rgba(255,255,255,.04);cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}.sg-more-item:active{transform:scale(.98);background:rgba(255,255,255,.08)}.sg-more-item .sg-mi-icon{font-size:20px;width:40px;height:40px;background:rgba(255,255,255,.06);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.sg-more-item .sg-mi-text{flex:1}.sg-more-item .sg-mi-text h4{color:#fff;font-size:14px;font-weight:600;margin:0}.sg-more-item .sg-mi-text p{color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0}.sg-more-item .sg-mi-arrow{color:rgba(255,255,255,.2);font-size:16px}.sg-more-profile{display:flex;align-items:center;gap:14px;margin-bottom:28px;padding-top:12px}.sg-more-avatar{width:56px;height:56px;background:linear-gradient(135deg,#f97316,#fb923c);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff;flex-shrink:0}.sg-more-profile-info h3{color:#fff;font-size:18px;font-weight:700;margin:0}.sg-more-profile-info p{color:rgba(255,255,255,.4);font-size:13px;margin:2px 0 0}.sg-more-social{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}.sg-more-social a{display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:rgba(255,255,255,.04);border-radius:12px;border:1px solid rgba(255,255,255,.06);font-size:16px;transition:all .15s;text-decoration:none}.sg-more-social a:active{background:rgba(255,255,255,.1);transform:scale(.95)}.sg-more-back{display:flex;align-items:center;gap:8px;padding:12px 0;cursor:pointer;color:rgba(255,255,255,.6);font-size:14px;font-weight:600;margin-bottom:4px;-webkit-tap-highlight-color:transparent}.sg-more-back:active{color:#f97316}#sg-search-overlay{transition:opacity .2s ease}#sg-search-overlay.active{opacity:1!important}.hide-scrollbar::-webkit-scrollbar{display:none}.sg-dashboard{-webkit-tap-highlight-color:transparent}';document.head.appendChild(s)})();
 
 // ─── Toast Notification System (replaces alert()) ───
 window.sgToast=function(msg, type='error', duration=4000){
@@ -600,160 +600,127 @@ function GymCard(gym){
 
 // ─── Page: Home ───
 function HomePage(){
+  // Uber-style single-screen dashboard — everything fits in one viewport, no scroll
+  const hour=new Date().getHours();
+  const greeting=hour<12?'Good morning ☀️':hour<17?'Good afternoon 💪':'Good evening 🌙';
+  const trendingCities=['🇬🇧 London','🇬🇧 Manchester','🇬🇧 Birmingham','🇬🇧 Bolton','🇦🇪 Dubai','🇺🇸 New York','🇪🇸 Barcelona','🇩🇪 Berlin'];
   return`
-  <div class="min-h-screen">
-    <!-- Hero -->
-    <section class="relative pt-14 pb-16 px-4 text-center overflow-hidden">
-      <div class="absolute inset-0 bg-gradient-to-b from-brand/10 via-transparent to-transparent"></div>
-      <div class="relative max-w-3xl mx-auto">
-        <div class="inline-flex items-center gap-2 bg-brand/10 border border-brand/30 rounded-full px-4 py-1.5 mb-6">
-          <span class="badge text-accent text-xs font-medium">●</span>
-          <span class="text-brand text-sm font-medium">${GYM_COUNT>=1000?fmtCount(GYM_COUNT)+" gyms worldwide • ":""}No membership needed</span>
-        </div>
-        <h1 class="font-brand text-5xl md:text-7xl font-extrabold text-white mb-4 leading-tight">
-          Book a Gym.<br><span class="text-brand">Anywhere.</span>
-        </h1>
-        <p class="text-xl text-slate-400 mb-8">3 taps. That's it. £5 day passes, QR entry, free cancellation.</p>
-        <div class="flex gap-2 max-w-lg mx-auto mb-4">
-          <input type="text" id="home-search" placeholder="Search city, area, or gym name..." 
-            class="flex-1 bg-card border border-slate-600 rounded-xl px-4 py-4 text-white placeholder-slate-500 focus:border-brand outline-none text-sm"
-            onkeydown="if(event.key==='Enter'){const v=document.getElementById('home-search').value;if(v)searchGyms(v,true);navigate('/explore')}">
-          <button onclick="const v=document.getElementById('home-search').value;if(v){searchGyms(v,true);navigate('/explore')}else{findGyms()}" class="bg-brand hover:bg-orange-600 text-white font-bold text-lg px-8 py-4 rounded-xl shadow-lg shadow-brand/30 transition-all hover:scale-105">
-            🔍
-          </button>
-        </div>
-        <button onclick="findGyms()" class="bg-slate-800 hover:bg-slate-700 text-white font-medium text-sm px-8 py-3 rounded-xl transition-all w-full max-w-lg">
-          📍 Use My Location — Find Gyms Near Me
-        </button>
-        <p class="text-slate-500 text-sm mt-4">Search any city worldwide</p>
-        <!-- Skyscanner-style trending cities -->
-        <div class="flex flex-wrap justify-center gap-2 mt-4 max-w-lg mx-auto">
-          ${['🇬🇧 London','🇬🇧 Manchester','🇬🇧 Birmingham','🇬🇧 Bolton','🇦🇪 Dubai','🇺🇸 New York','🇪🇸 Barcelona','🇩🇪 Berlin'].map(c=>{
-            const city=c.split(' ')[1];
-            return`<button onclick="searchGyms('${city} gyms',true);navigate('/explore')" class="text-xs bg-slate-800 hover:bg-brand hover:text-white text-slate-400 px-3 py-1.5 rounded-full transition">${c}</button>`;
-          }).join('')}
-        </div>
-        <p class="text-slate-600 text-xs mt-2">🔥 Trending now</p>
-      </div>
-    </section>
+  <div class="sg-dashboard" style="height:calc(100vh - 64px);display:flex;flex-direction:column;overflow:hidden;padding:0 16px;padding-top:env(safe-area-inset-top,16px);">
 
-    <!-- Booking.com FOMO banner -->
-    <section class="py-3 bg-green-900/30 border-y border-green-800/30">
-      <p class="text-center text-green-400 text-sm font-medium animate-pulse">🔥 Live now · Explore gyms near you</p>
-    </section>
+    <!-- Logo + Greeting -->
+    <div style="padding:16px 0 12px;flex-shrink:0;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <div style="width:36px;height:36px;background:#f97316;border-radius:12px;display:flex;align-items:center;justify-content:center;">
+          <span style="color:#fff;font-weight:900;font-size:18px;">S</span>
+        </div>
+        <span class="font-brand" style="font-size:20px;"><span style="color:#f97316;">Scan</span><span style="color:#fff;">Gym</span></span>
+      </div>
+      <p style="color:rgba(255,255,255,.5);font-size:14px;margin:0;">${greeting}</p>
+    </div>
 
-    <!-- Trust bar — Booking.com animated counters -->
-    <section class="py-8 border-b border-slate-800 bg-slate-900/50">
-      <div class="max-w-5xl mx-auto flex flex-wrap justify-center gap-8 px-4 text-center">
-        <div><span class="text-2xl font-bold text-white">${fmtCount(GYM_COUNT)}</span><p class="text-xs text-slate-500">Gyms Listed</p></div>
-        <div><span class="text-2xl font-bold text-white">£5</span><p class="text-xs text-slate-500">From / Session</p></div>
-        <div><span class="text-2xl font-bold text-white">24hr</span><p class="text-xs text-slate-500">Day Pass</p></div>
-        <div><span class="text-2xl font-bold text-white">QR</span><p class="text-xs text-slate-500">Scan Entry</p></div>
-        <div><span class="text-2xl font-bold text-white">0</span><p class="text-xs text-slate-500">Contracts</p></div>
-        <div><span class="text-2xl font-bold text-accent">FREE</span><p class="text-xs text-slate-500">Cancellation</p></div>
-        <div><span class="text-2xl font-bold text-blue-400" data-counter data-target="50" data-suffix="+">0</span><p class="text-xs text-slate-500">Countries</p></div>
-      </div>
-    </section>
+    <!-- Search bar (like Uber "Where to?") -->
+    <div onclick="document.getElementById('sg-search-overlay').style.display='flex';setTimeout(()=>{document.getElementById('sg-search-overlay').classList.add('active');document.getElementById('sg-search-input').focus();},10)" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:16px 18px;display:flex;align-items:center;gap:12px;cursor:pointer;flex-shrink:0;margin-bottom:12px;">
+      <span style="font-size:20px;opacity:.6;">🔍</span>
+      <span style="color:rgba(255,255,255,.4);font-size:15px;font-weight:500;">Search gym or city...</span>
+      <span style="margin-left:auto;background:rgba(255,255,255,.06);padding:4px 10px;border-radius:8px;font-size:11px;color:rgba(255,255,255,.3);">📅 Today</span>
+    </div>
 
-    <!-- How It Works — Uber 3-step simplicity -->
-    <section class="py-20 px-4">
-      <div class="max-w-5xl mx-auto text-center mb-12">
-        <h2 class="font-brand text-3xl font-bold text-white mb-3">3 Steps. That's It.</h2>
-        <p class="text-slate-400">Faster than ordering an Uber</p>
+    <!-- GPS button (like Uber recent address) -->
+    <div onclick="findGyms()" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;flex-shrink:0;margin-bottom:14px;-webkit-tap-highlight-color:transparent;" ontouchstart="this.style.background='rgba(255,255,255,.08)'" ontouchend="this.style.background='rgba(255,255,255,.04)'">
+      <div style="width:40px;height:40px;background:rgba(249,115,22,.12);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+        <span style="font-size:18px;">📍</span>
       </div>
-      <div class="max-w-5xl mx-auto grid md:grid-cols-3 gap-8">
-        <div class="text-center p-8 bg-card rounded-2xl border border-slate-700 hover:border-brand/50 transition relative">
-          <div class="absolute -top-4 left-1/2 -translate-x-1/2 w-8 h-8 bg-brand rounded-full flex items-center justify-center text-white font-bold text-sm">1</div>
-          <div class="w-20 h-20 bg-brand/10 rounded-2xl flex items-center justify-center mx-auto mb-4 text-4xl">🔍</div>
-          <h3 class="text-white font-bold text-lg mb-2">Search</h3>
-          <p class="text-slate-400 text-sm">Type any city or tap GPS. See real photos, live ratings, and prices for 1.2M+ gyms worldwide.</p>
-          <p class="text-brand text-xs mt-3 font-medium">⚡ Results in under 1 second</p>
-        </div>
-        <div class="text-center p-8 bg-card rounded-2xl border border-slate-700 hover:border-brand/50 transition relative">
-          <div class="absolute -top-4 left-1/2 -translate-x-1/2 w-8 h-8 bg-brand rounded-full flex items-center justify-center text-white font-bold text-sm">2</div>
-          <div class="w-20 h-20 bg-brand/10 rounded-2xl flex items-center justify-center mx-auto mb-4 text-4xl">💳</div>
-          <h3 class="text-white font-bold text-lg mb-2">Book</h3>
-          <p class="text-slate-400 text-sm">Pay with Apple Pay, Google Pay, or card. No account needed — guest checkout in 3 taps.</p>
-          <p class="text-accent text-xs mt-3 font-medium">✅ Free cancellation included</p>
-        </div>
-        <div class="text-center p-8 bg-card rounded-2xl border border-slate-700 hover:border-brand/50 transition relative">
-          <div class="absolute -top-4 left-1/2 -translate-x-1/2 w-8 h-8 bg-brand rounded-full flex items-center justify-center text-white font-bold text-sm">3</div>
-          <div class="w-20 h-20 bg-brand/10 rounded-2xl flex items-center justify-center mx-auto mb-4 text-4xl">📲</div>
-          <h3 class="text-white font-bold text-lg mb-2">Scan & Train</h3>
-          <p class="text-slate-400 text-sm">Show your QR code at the door. Train for 24 hours. Scan out when done.</p>
-          <p class="text-blue-400 text-xs mt-3 font-medium">📱 100% contactless entry</p>
-        </div>
+      <div style="flex:1;">
+        <p style="color:#fff;font-size:14px;font-weight:600;margin:0;">Use My Location</p>
+        <p style="color:rgba(255,255,255,.35);font-size:12px;margin:2px 0 0;">Find gyms near you</p>
       </div>
-      <div class="text-center mt-8">
-        <div class="flex items-center justify-center gap-2 text-slate-500 text-sm">
-          <span>🍎 Apple Pay</span><span>·</span><span>Google Pay</span><span>·</span><span>💳 Visa/MC</span><span>·</span><span>👤 No account needed</span>
-        </div>
-      </div>
-    </section>
+      <span style="color:rgba(255,255,255,.15);font-size:18px;">›</span>
+    </div>
 
-    <!-- Features from 24 Tasks -->
-    <section class="py-20 px-4 bg-slate-900/50 border-y border-slate-800">
-      <div class="max-w-5xl mx-auto text-center mb-12">
-        <h2 class="font-brand text-3xl font-bold text-white mb-3">Everything You Need</h2>
-        <p class="text-slate-400">More than just a booking — a complete gym experience</p>
+    <!-- Promo card (like Uber yellow card) -->
+    <div onclick="navigate('/explore')" style="background:linear-gradient(135deg,#f97316,#fb923c);border-radius:16px;padding:18px 20px;display:flex;align-items:center;gap:14px;cursor:pointer;flex-shrink:0;margin-bottom:14px;position:relative;overflow:hidden;">
+      <div style="position:absolute;top:-20px;right:-10px;font-size:60px;opacity:.15;transform:rotate(15deg);">🏋️</div>
+      <div style="flex:1;position:relative;z-index:1;">
+        <p style="color:#fff;font-weight:800;font-size:16px;margin:0;">£5 Day Pass</p>
+        <p style="color:rgba(255,255,255,.85);font-size:12px;margin:4px 0 0;">No membership · Free cancellation · QR entry</p>
       </div>
-      <div class="max-w-5xl mx-auto grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        ${[
-          {icon:'🤖',title:'AI Personal Coach',desc:'Personalized workout plans, form analysis, and nutrition advice. Unlocks after your first gym check-in.',link:'/coach'},
-          {icon:'📸',title:'Real Gym Photos',desc:'See actual photos, reviews, equipment lists, and busy times before you visit. All real, all verified.',link:'/explore'},
-          {icon:'💬',title:'Chat with Gym',desc:'AI answers your questions instantly. Need a human? It escalates to the gym owner via SMS.',link:''},
-          {icon:'🗺️',title:'Uber-Style Directions',desc:'Embedded Google Maps after booking. Walking distance, real-time navigation, never leave ScanGym.',link:''},
-          {icon:'💰',title:'ScanGym Wallet',desc:'Add £20, get £22. Top-up bonuses, referral credits, and challenge rewards.',link:'/wallet'},
-          {icon:'📊',title:'Smart Pricing',desc:'Off-peak discounts from real-time data. Multi-pass bundles: 5 for the price of 4.',link:'/pricing'},
-          {icon:'🏆',title:'FlexSquad Creators',desc:'Join the community. Earn commission, get free sessions, compete on the leaderboard.',link:'/creators'},
-          {icon:'📱',title:'2-Scan QR Entry',desc:'Scan in at the door. Scan out when done. 24-hour day pass, JD Gym style.',link:'/scan'},
-          {icon:'⭐',title:'Rate Your Session',desc:'Uber-style 1-5 star rating after your workout. Help others find the best gyms.',link:''},
-        ].map(f=>`
-          <div class="p-6 bg-card rounded-2xl border border-slate-700 hover:border-brand/50 transition cursor-pointer" ${f.link?`onclick="navigate('${f.link}')"`:''}> 
-            <div class="text-3xl mb-3">${f.icon}</div>
-            <h3 class="text-white font-semibold mb-2">${f.title}</h3>
-            <p class="text-slate-400 text-sm">${f.desc}</p>
+      <span style="color:rgba(255,255,255,.7);font-size:20px;position:relative;z-index:1;">→</span>
+    </div>
+
+    <!-- City chips (like Uber "For you" row) -->
+    <div style="flex-shrink:0;margin-bottom:14px;">
+      <p style="color:rgba(255,255,255,.35);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin:0 0 8px 2px;">🔥 Trending Cities</p>
+      <div style="display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;padding-bottom:4px;" class="hide-scrollbar">
+        ${trendingCities.map(c=>{
+          const city=c.split(' ').slice(1).join(' ');
+          return`<button onclick="event.stopPropagation();searchGyms('`+city+` gyms',true);navigate('/explore')" style="flex-shrink:0;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:10px 16px;color:rgba(255,255,255,.7);font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px;-webkit-tap-highlight-color:transparent;white-space:nowrap;" ontouchstart="this.style.background='rgba(249,115,22,.15)';this.style.borderColor='rgba(249,115,22,.3)'" ontouchend="this.style.background='rgba(255,255,255,.06)';this.style.borderColor='rgba(255,255,255,.08)'">`+c+`</button>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <!-- Stats row (fills remaining space) -->
+    <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:8px;min-height:0;align-content:start;">
+      <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;justify-content:center;">
+        <p style="font-size:22px;font-weight:800;color:#fff;margin:0;">${fmtCount(GYM_COUNT)}</p>
+        <p style="font-size:11px;color:rgba(255,255,255,.3);margin:4px 0 0;">Gyms worldwide</p>
+      </div>
+      <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;justify-content:center;">
+        <p style="font-size:22px;font-weight:800;color:#f97316;margin:0;">50+</p>
+        <p style="font-size:11px;color:rgba(255,255,255,.3);margin:4px 0 0;">Countries</p>
+      </div>
+      <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;justify-content:center;">
+        <p style="font-size:22px;font-weight:800;color:#22c55e;margin:0;">QR</p>
+        <p style="font-size:11px;color:rgba(255,255,255,.3);margin:4px 0 0;">Scan entry</p>
+      </div>
+      <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;justify-content:center;">
+        <p style="font-size:22px;font-weight:800;color:#60a5fa;margin:0;">0</p>
+        <p style="font-size:11px;color:rgba(255,255,255,.3);margin:4px 0 0;">Contracts needed</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Full-screen search overlay (like Uber "Plan your trip") -->
+  <div id="sg-search-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(5,8,22,.98);backdrop-filter:blur(20px);z-index:9500;flex-direction:column;padding:0 16px;padding-top:env(safe-area-inset-top,12px);opacity:0;transition:opacity .2s ease;" onclick="event.stopPropagation()">
+    <!-- Header -->
+    <div style="display:flex;align-items:center;gap:12px;padding:16px 0 12px;flex-shrink:0;">
+      <button onclick="event.stopPropagation();document.getElementById('sg-search-overlay').classList.remove('active');setTimeout(()=>document.getElementById('sg-search-overlay').style.display='none',200)" style="width:36px;height:36px;background:rgba(255,255,255,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;color:#fff;font-size:18px;">←</button>
+      <p style="color:#fff;font-size:18px;font-weight:700;margin:0;">Find a Gym</p>
+    </div>
+
+    <!-- Search input -->
+    <div style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0;margin-bottom:16px;">
+      <span style="font-size:16px;opacity:.5;">🔍</span>
+      <input type="text" id="sg-search-input" placeholder="City, area, or gym name..." style="flex:1;background:transparent;border:none;outline:none;color:#fff;font-size:15px;font-weight:500;" autocomplete="off"
+        onkeydown="if(event.key==='Enter'){const v=this.value;if(v){searchGyms(v,true);navigate('/explore');document.getElementById('sg-search-overlay').classList.remove('active');setTimeout(()=>document.getElementById('sg-search-overlay').style.display='none',200)}}">
+    </div>
+
+    <!-- GPS option -->
+    <div onclick="findGyms();document.getElementById('sg-search-overlay').classList.remove('active');setTimeout(()=>document.getElementById('sg-search-overlay').style.display='none',200)" style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:rgba(255,255,255,.04);border-radius:14px;cursor:pointer;margin-bottom:16px;flex-shrink:0;">
+      <div style="width:40px;height:40px;background:rgba(249,115,22,.12);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+        <span style="font-size:18px;">📍</span>
+      </div>
+      <div>
+        <p style="color:#fff;font-size:14px;font-weight:600;margin:0;">Use my location</p>
+        <p style="color:rgba(255,255,255,.35);font-size:12px;margin:2px 0 0;">Find gyms nearby</p>
+      </div>
+    </div>
+
+    <!-- Popular cities list -->
+    <p style="color:rgba(255,255,255,.3);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;margin:0 0 8px 4px;flex-shrink:0;">Popular Cities</p>
+    <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;">
+      ${['London, United Kingdom','Manchester, United Kingdom','Birmingham, United Kingdom','Bolton, United Kingdom','Dubai, UAE','New York, United States','Barcelona, Spain','Berlin, Germany','Paris, France','Amsterdam, Netherlands','Sydney, Australia','Los Angeles, United States'].map((city,i)=>{
+        const name=city.split(',')[0];
+        return`<div onclick="searchGyms('`+name+` gyms',true);navigate('/explore');document.getElementById('sg-search-overlay').classList.remove('active');setTimeout(()=>document.getElementById('sg-search-overlay').style.display='none',200)" style="display:flex;align-items:center;gap:14px;padding:13px 16px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.04);-webkit-tap-highlight-color:transparent;">
+          <span style="font-size:16px;opacity:.4;">📍</span>
+          <div style="flex:1;">
+            <p style="color:#fff;font-size:14px;font-weight:500;margin:0;">`+name+`</p>
+            <p style="color:rgba(255,255,255,.3);font-size:12px;margin:2px 0 0;">`+city.split(',').slice(1).join(',').trim()+`</p>
           </div>
-        `).join('')}
-      </div>
-    </section>
-
-    <!-- For Gym Owners -->
-    <section class="py-20 px-4">
-      <div class="max-w-4xl mx-auto text-center">
-        <h2 class="font-brand text-3xl font-bold text-white mb-3">Own a Gym?</h2>
-        <p class="text-slate-400 mb-8">Fill your empty hours. Control your pricing. Zero commitment.</p>
-        <div class="grid sm:grid-cols-3 gap-6 mb-8">
-          <div class="p-5 bg-card rounded-xl border border-slate-700 text-center">
-            <div class="text-2xl mb-2">💸</div>
-            <h4 class="text-white font-medium text-sm">1-Click Pricing</h4>
-            <p class="text-slate-500 text-xs mt-1">Set your price in one tap. Pause bookings anytime.</p>
-          </div>
-          <div class="p-5 bg-card rounded-xl border border-slate-700 text-center">
-            <div class="text-2xl mb-2">📊</div>
-            <h4 class="text-white font-medium text-sm">Analytics Dashboard</h4>
-            <p class="text-slate-500 text-xs mt-1">See bookings, revenue, ratings, and peak hours.</p>
-          </div>
-          <div class="p-5 bg-card rounded-xl border border-slate-700 text-center">
-            <div class="text-2xl mb-2">🥤</div>
-            <h4 class="text-white font-medium text-sm">Free Equipment</h4>
-            <p class="text-slate-500 text-xs mt-1">Vending machines, QR scanners — free for listed gyms.</p>
-          </div>
-        </div>
-        <button onclick="navigate('/list-your-gym')" class="bg-brand hover:bg-orange-600 text-white font-bold px-8 py-4 rounded-xl transition">List Your Gym — It's Free</button>
-      </div>
-    </section>
-
-    <!-- CTA -->
-    <section class="py-20 px-4 bg-gradient-to-b from-brand/10 to-transparent">
-      <div class="max-w-3xl mx-auto text-center">
-        <h2 class="font-brand text-4xl font-bold text-white mb-4">Ready to Train?</h2>
-        <p class="text-slate-400 mb-8">£5. No membership. No contract. Just you and the weights.</p>
-        <button onclick="findGyms()" class="bg-brand hover:bg-orange-600 text-white font-bold text-lg px-12 py-5 rounded-2xl shadow-lg shadow-brand/30 transition-all hover:scale-105">
-          📍 Find Gyms Near Me
-        </button>
-      </div>
-    </section>
+          <span style="color:rgba(255,255,255,.12);font-size:16px;">›</span>
+        </div>`;
+      }).join('')}
+    </div>
   </div>`;
 }
 
@@ -1167,7 +1134,7 @@ function GymProfilePage(){
         </div>
 
         <!-- Mobile Sticky Book Now CTA (Fix #3: opens full booking sheet) -->
-        <div class="lg:hidden fixed bottom-0 left-0 right-0 bg-dark/98 backdrop-blur-lg border-t border-slate-700 p-3 z-40 flex items-center justify-between">
+        <div class="lg:hidden fixed left-0 right-0 bg-dark/98 backdrop-blur-lg border-t border-slate-700 p-3 z-40 flex items-center justify-between" style="bottom:64px">
           <div>
             <p class="text-white font-bold text-lg">£${gym.price_tier||'5'}.00</p>
             <p class="text-slate-400 text-xs">No account needed</p>
@@ -2715,7 +2682,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
 
         <!-- Single CTA — Uber style -->
         <button id="uc-pay-btn" disabled class="w-full bg-brand hover:bg-orange-600 disabled:bg-slate-700 disabled:text-slate-500 text-white font-bold py-4 rounded-xl text-lg transition shadow-lg shadow-brand/20 flex items-center justify-center gap-2">
-          <span id="uc-btn-text">Loading...</span>
+          <span id="uc-btn-text">Confirm & Pay</span>
         </button>
 
         <!-- Powered by Stripe -->
@@ -2770,12 +2737,8 @@ async function _initUberPayment(gymId, gym){
       dbGymId=ensured.gymId;
     }
 
-    // Fix: Validate email before proceeding — never default to guest@scangym.com
-    if(!email||!email.includes('@')||!email.includes('.')){
-      payArea.innerHTML='<p class="text-red-400 text-sm text-center">Please enter a valid email — we\'ll send your QR code there.</p>';
-      document.getElementById('uc-email')?.focus();
-      return;
-    }
+    // Email validation moved to pay button click — don't block payment element loading
+    const _emailValid=email&&email.includes('@')&&email.includes('.');
 
     // Step 2: Create booking + PaymentIntent in ONE call
     const gymInfo=state.currentGym||state.gyms.find(g=>(g.placeId||g.place_id||g.id)==gymId)||{};
@@ -4179,8 +4142,21 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
   let html='';
 
   if(tab==='reels'){
-    // Full-screen Reels iframe + tab bar
-    html=`<iframe src="/reels/" class="sg-reels-frame" allow="autoplay; fullscreen" loading="lazy"></iframe>`+BottomTabBar();
+    // Full-screen Reels with nav buttons on right side (like Share/Download but for navigation)
+    html=`<div style="position:fixed;top:0;left:0;right:0;bottom:0;z-index:1;">
+      <iframe src="/reels/" class="sg-reels-frame" style="bottom:0;height:100vh;" allow="autoplay; fullscreen" loading="lazy"></iframe>
+      <!-- Right-side nav buttons (below where Share/Download would be) -->
+      <div class="sg-reels-nav" style="position:fixed;right:12px;bottom:100px;z-index:9100;display:flex;flex-direction:column;align-items:center;gap:14px;">
+        <div onclick="switchTab('book')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;-webkit-tap-highlight-color:transparent;">
+          <div style="width:44px;height:44px;background:rgba(0,0,0,.55);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;">🏋️</div>
+          <span style="color:#fff;font-size:10px;font-weight:600;text-shadow:0 1px 4px rgba(0,0,0,.8);">Book</span>
+        </div>
+        <div onclick="switchTab('more')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;-webkit-tap-highlight-color:transparent;">
+          <div style="width:44px;height:44px;background:rgba(0,0,0,.55);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;">☰</div>
+          <span style="color:#fff;font-size:10px;font-weight:600;text-shadow:0 1px 4px rgba(0,0,0,.8);">More</span>
+        </div>
+      </div>
+    </div>`;
   } else if(tab==='more' && (path==='/more'||path==='/more/')){
     // More hub page
     html=`<main class="sg-tab-content fade-in">${MoreHubPage()}</main>`+BottomTabBar();
@@ -4192,8 +4168,11 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
       </div>
       ${page}
     </main>`+BottomTabBar();
+  } else if(path==='/' && tab==='book') {
+    // Book tab home — Uber dashboard, no padding, no scroll
+    html=`<main class="fade-in" style="overflow:hidden;">${page}</main>`+BottomTabBar();
   } else {
-    // Book tab — full content
+    // Book tab sub-pages (explore, gym detail, etc)
     html=`<main class="sg-tab-content fade-in">${page}</main>`+BottomTabBar();
   }
 
