@@ -2671,6 +2671,20 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
           `}
         </div>
 
+        <!-- Saved Card (1-tap mode) — hidden by default, shown for logged-in users with saved cards -->
+        <div id="uc-saved-card" class="hidden mb-3">
+          <div class="bg-slate-800/80 rounded-xl p-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-7 bg-slate-700 rounded flex items-center justify-center text-xs font-bold text-white" id="uc-card-brand">💳</div>
+              <div>
+                <p class="text-white text-sm font-medium">•••• <span id="uc-card-last4">****</span></p>
+                <p class="text-green-400 text-[10px] font-medium">⚡ 1-tap booking enabled</p>
+              </div>
+            </div>
+            <button onclick="document.getElementById('uc-saved-card').classList.add('hidden');document.getElementById('uc-payment-area').classList.remove('hidden');document.getElementById('uc-pay-btn').dataset.mode='new'" class="text-slate-500 text-xs hover:text-white transition">Use different card</button>
+          </div>
+        </div>
+
         <!-- Stripe Payment Element — loads inline (Apple Pay / Google Pay / Card) -->
         <div id="uc-payment-area" class="mb-3">
           <div class="bg-slate-800/60 rounded-xl p-6 text-center">
@@ -2681,7 +2695,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
         <div id="uc-error" class="text-red-400 text-sm mb-2 hidden"></div>
 
         <!-- Single CTA — Uber style -->
-        <button id="uc-pay-btn" disabled class="w-full bg-brand hover:bg-orange-600 disabled:bg-slate-700 disabled:text-slate-500 text-white font-bold py-4 rounded-xl text-lg transition shadow-lg shadow-brand/20 flex items-center justify-center gap-2">
+        <button id="uc-pay-btn" disabled class="w-full bg-brand hover:bg-orange-600 disabled:bg-slate-700 disabled:text-slate-500 text-white font-bold py-4 rounded-xl text-lg transition shadow-lg shadow-brand/20 flex items-center justify-center gap-2" data-mode="new">
           <span id="uc-btn-text">Confirm & Pay</span>
         </button>
 
@@ -2720,6 +2734,28 @@ async function _initUberPayment(gymId, gym){
   const payArea=document.getElementById('uc-payment-area');
   const payBtn=document.getElementById('uc-pay-btn');
   const btnText=document.getElementById('uc-btn-text');
+
+  // ═══ UBER-STYLE: Check for saved cards (1-tap mode) ═══
+  if(state.user){
+    try{
+      const cardsResp=await fetch('/api/payment/saved-cards',{credentials:'include'}).then(r=>r.json());
+      if(cardsResp.cards&&cardsResp.cards.length>0){
+        const card=cardsResp.cards.find(c=>c.isDefault)||cardsResp.cards[0];
+        window._checkoutState.savedCardId=card.id;
+        const brandIcons={visa:'💳 Visa',mastercard:'💳 MC',amex:'💳 Amex'};
+        document.getElementById('uc-card-brand').textContent=brandIcons[card.brand]||'💳';
+        document.getElementById('uc-card-last4').textContent=card.last4;
+        document.getElementById('uc-saved-card').classList.remove('hidden');
+        payArea.classList.add('hidden');
+        const h=parseInt(time||'10');const p=h<10?'3.75':'5.00';
+        btnText.textContent='⚡ Book Now · £'+p;
+        payBtn.disabled=false;
+        payBtn.dataset.mode='saved';
+        payBtn.addEventListener('click',()=>_handleQuickCheckout(gymId));
+        return; // Skip loading Stripe Elements — not needed!
+      }
+    }catch(e){console.log('No saved cards, loading regular checkout');}
+  }
 
   if(!STRIPE_PK||!window.Stripe){
     payArea.innerHTML='<p class="text-red-400 text-sm text-center">Payment system loading... please wait.</p>';
@@ -2803,6 +2839,76 @@ async function _initUberPayment(gymId, gym){
   }
 }
 
+// ═══ UBER-STYLE: 1-Tap Quick Checkout with saved card ═══
+async function _handleQuickCheckout(gymId){
+  const btn=document.getElementById('uc-pay-btn');
+  const btnText=document.getElementById('uc-btn-text');
+  const errEl=document.getElementById('uc-error');
+  if(!btn||btn.disabled)return;
+  if(btn.dataset.mode!=='saved')return; // Fall through to regular flow
+
+  const email=document.getElementById('uc-email')?.value;
+  if(!email||!email.includes('@')){
+    errEl.textContent='Please enter a valid email for your QR code';
+    errEl.classList.remove('hidden');
+    document.getElementById('uc-email')?.focus();
+    return;
+  }
+  localStorage.setItem('sg_last_email',email);
+
+  btn.disabled=true;
+  btnText.innerHTML='<span class="sg-spinner"></span> Booking instantly...';
+  errEl.classList.add('hidden');
+
+  try{
+    // Resolve gym ID
+    let dbGymId=gymId;
+    if(isNaN(parseInt(gymId))){
+      const ensured=await fetch('/api/live/ensure-gym',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({placeId:gymId})}).then(r=>r.json());
+      if(ensured.error){sgToast(ensured.error);closeBookingSheet();return;}
+      dbGymId=ensured.gymId;
+    }
+
+    const date=document.getElementById('uc-date')?.value;
+    const time=document.getElementById('uc-time')?.value;
+    const cardId=window._checkoutState.savedCardId;
+
+    const result=await fetch('/api/payment/quick-checkout',{
+      method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
+      body:JSON.stringify({gymId:parseInt(dbGymId),placeId:gymId,date,time,cardId})
+    }).then(r=>r.json());
+
+    if(result.requiresAuth){
+      // SCA required — fall back to regular Stripe Elements flow
+      sgToast('Card requires verification. Loading payment form...');
+      document.getElementById('uc-saved-card').classList.add('hidden');
+      document.getElementById('uc-payment-area').classList.remove('hidden');
+      btn.dataset.mode='new';
+      btnText.textContent='Confirm & Pay';btn.disabled=false;
+      _initUberPayment(gymId,{});
+      return;
+    }
+
+    if(result.success){
+      state.lastBooking=result.booking;
+      state.lastQR=result.qr;
+      localStorage.removeItem('sg_pending_booking');
+      closeBookingSheet();
+      navigate('/booking-success?session_id=quick&booking_id='+result.booking.id);
+      sgToast('⚡ Booked instantly!','success',3000);
+    }else{
+      errEl.textContent=result.error||'Quick checkout failed';
+      errEl.classList.remove('hidden');
+      btnText.textContent='⚡ Book Now';btn.disabled=false;
+    }
+  }catch(e){
+    console.error('Quick checkout error:',e);
+    errEl.textContent='Something went wrong. Please try again.';
+    errEl.classList.remove('hidden');
+    btnText.textContent='⚡ Book Now';btn.disabled=false;
+  }
+}
+
 // Handle the single "Confirm & Pay" button
 async function _handleUberPay(bookingId){
   const btn=document.getElementById('uc-pay-btn');
@@ -2857,7 +2963,13 @@ async function _handleUberPay(bookingId){
         localStorage.removeItem('sg_pending_booking');
         closeBookingSheet();
         navigate('/booking-success?session_id=inline&booking_id='+bookingId);
-        // Fix: Post-booking prompt — offer to save card for 1-tap next time
+        // Uber-style: Save card after payment for 1-tap future bookings
+        if(state.user&&paymentIntent){
+          // Logged-in user: auto-save card silently
+          fetch('/api/payment/save-card',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({paymentIntentId:paymentIntent.id})})
+            .then(r=>r.json()).then(r=>{if(r.success){localStorage.setItem('sg_has_saved_card','1');console.log('Card saved for 1-tap booking');}}).catch(()=>{});
+        }
+        // Post-booking prompt for guests — offer account creation
         if(!localStorage.getItem('sg_save_card_dismissed')&&!state.user){
           setTimeout(()=>{
             const banner=document.createElement('div');

@@ -227,6 +227,15 @@ app.get("/api/config", async (req, res) => {
   });
 });
 
+// -- DB Migrations (idempotent — safe to run every startup) --
+if (process.env.DATABASE_URL) {
+  pool.query(`
+    ALTER TABLE public.users ADD COLUMN IF NOT EXISTS stripe_customer_id VARCHAR(255);
+    CREATE INDEX IF NOT EXISTS idx_users_stripe_customer ON public.users (stripe_customer_id) WHERE stripe_customer_id IS NOT NULL;
+  `).then(() => console.log('✅ DB migration: stripe_customer_id ready'))
+    .catch(err => console.error('DB migration error:', err.message));
+}
+
 // -- Feature Routes (Tasks 1-24 with CEO corrections) --
 app.use('/api/reviews', reviewsRouter);
 app.use('/api/chat', chatRouter);
