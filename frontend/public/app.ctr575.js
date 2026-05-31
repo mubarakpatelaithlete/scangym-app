@@ -1,4 +1,4 @@
-// ScanGym Frontend v5.1.0 — Uber-Style Dashboard + Reels Nav Buttons + Bug Fixes
+// ScanGym Frontend v5.2.0 — All Fixes: Reels iframe, social proof, booking flow
 
 // Inject CSS animations for loading experience
 (function(){const s=document.createElement('style');s.textContent='@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}#fun-fact{transition:opacity 0.2s ease}.gym-card{animation:fadeInUp 0.3s ease-out both}.animate-slide-up{animation:slideUp 0.3s ease-out}@keyframes skeletonPulse{0%,100%{opacity:.6}50%{opacity:.3}}@keyframes locationDot{0%,100%{box-shadow:0 0 0 0 rgba(249,115,22,.4)}50%{box-shadow:0 0 0 8px rgba(249,115,22,0)}}.skel-card{animation:skeletonPulse 1.8s ease-in-out infinite}.loc-dot{animation:locationDot 1.5s ease-in-out infinite}.cards-enter .gym-card{animation:fadeInUp .4s ease-out both}@keyframes toastIn{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes toastOut{from{transform:translateY(0);opacity:1}to{transform:translateY(-100%);opacity:0}}@keyframes spin{to{transform:rotate(360deg)}}.sg-spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}/* ── 3-Tab System ── */.sg-tab-bar{position:fixed;bottom:0;left:0;right:0;height:64px;background:rgba(10,10,22,.97);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:space-around;border-top:1px solid rgba(255,255,255,.08);z-index:9000;padding-bottom:env(safe-area-inset-bottom,0)}.sg-tab-item{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:6px 16px;border-radius:12px;transition:all .2s;-webkit-tap-highlight-color:transparent;user-select:none}.sg-tab-item .sg-tab-icon{font-size:24px;opacity:.45;transition:all .2s}.sg-tab-item .sg-tab-label{font-size:10px;font-weight:600;color:rgba(255,255,255,.4);transition:all .2s}.sg-tab-item.active .sg-tab-icon{opacity:1;transform:scale(1.1)}.sg-tab-item.active .sg-tab-label{color:#f97316}.sg-tab-content{padding-bottom:72px;min-height:100vh}.sg-tab-content.reels-active{padding-bottom:0}.sg-reels-frame{position:fixed;top:0;left:0;right:0;bottom:64px;border:none;width:100%;height:calc(100vh - 64px);z-index:1}.sg-more-hub{padding:20px 16px 100px;max-width:480px;margin:0 auto}.sg-more-section{margin-bottom:20px}.sg-more-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.3);margin-bottom:8px;padding-left:4px}.sg-more-item{display:flex;align-items:center;gap:14px;padding:14px 16px;background:rgba(255,255,255,.04);border-radius:14px;margin-bottom:6px;border:1px solid rgba(255,255,255,.04);cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}.sg-more-item:active{transform:scale(.98);background:rgba(255,255,255,.08)}.sg-more-item .sg-mi-icon{font-size:20px;width:40px;height:40px;background:rgba(255,255,255,.06);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.sg-more-item .sg-mi-text{flex:1}.sg-more-item .sg-mi-text h4{color:#fff;font-size:14px;font-weight:600;margin:0}.sg-more-item .sg-mi-text p{color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0}.sg-more-item .sg-mi-arrow{color:rgba(255,255,255,.2);font-size:16px}.sg-more-profile{display:flex;align-items:center;gap:14px;margin-bottom:28px;padding-top:12px}.sg-more-avatar{width:56px;height:56px;background:linear-gradient(135deg,#f97316,#fb923c);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff;flex-shrink:0}.sg-more-profile-info h3{color:#fff;font-size:18px;font-weight:700;margin:0}.sg-more-profile-info p{color:rgba(255,255,255,.4);font-size:13px;margin:2px 0 0}.sg-more-social{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}.sg-more-social a{display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:rgba(255,255,255,.04);border-radius:12px;border:1px solid rgba(255,255,255,.06);font-size:16px;transition:all .15s;text-decoration:none}.sg-more-social a:active{background:rgba(255,255,255,.1);transform:scale(.95)}.sg-more-back{display:flex;align-items:center;gap:8px;padding:12px 0;cursor:pointer;color:rgba(255,255,255,.6);font-size:14px;font-weight:600;margin-bottom:4px;-webkit-tap-highlight-color:transparent}.sg-more-back:active{color:#f97316}#sg-search-overlay{transition:opacity .2s ease}#sg-search-overlay.active{opacity:1!important}.hide-scrollbar::-webkit-scrollbar{display:none}.sg-dashboard{-webkit-tap-highlight-color:transparent}';document.head.appendChild(s)})();
@@ -419,7 +419,7 @@ function getRandomBadges(gym,count=4){
     let t=badge.text
       .replace('{n}',Math.floor(Math.random()*30+5))
       .replace('{rating}',gym?.rating||'4.5')
-      .replace('{area}',gym?.city||'Bolton');
+      .replace('{area}',gym?.city||(gym?.vicinity||gym?.formatted_address||'').split(',').pop()?.trim()||'your area');
     return{...badge,text:t};
   });
 }
@@ -925,7 +925,7 @@ function GymProfilePage(){
       <div class="absolute inset-0 bg-gradient-to-t from-dark via-transparent to-transparent pointer-events-none"></div>
       <div class="absolute bottom-4 left-4 right-4">
         <h1 class="font-brand text-3xl font-bold text-white">${gym.name}</h1>
-        <p class="text-slate-300 text-sm mt-1">${gym.formatted_address||gym.vicinity||'Bolton, UK'}</p>
+        <p class="text-slate-300 text-sm mt-1">${gym.formatted_address||gym.vicinity||''}</p>
       </div>
     </div>
 
@@ -1006,8 +1006,8 @@ function GymProfilePage(){
             <h3 class="text-white font-semibold p-5 pb-2">📍 Location & Directions</h3>
             ${MAPS_KEY?`<div class="h-64">
               <iframe width="100%" height="100%" frameborder="0" style="border:0"
-                src="https://www.google.com/maps/embed/v1/place?key=${MAPS_KEY}&q=${encodeURIComponent(gym.name+' '+( gym.vicinity||'Bolton'))}&zoom=15" allowfullscreen></iframe>
-            </div>`:`<div class="h-48 flex items-center justify-center bg-slate-800"><p class="text-slate-400 text-sm">📍 ${gym.formatted_address||gym.vicinity||gym.address||'Bolton, UK'}</p></div>`}
+                src="https://www.google.com/maps/embed/v1/place?key=${MAPS_KEY}&q=${encodeURIComponent(gym.name+' '+( gym.vicinity||gym.formatted_address||''))}&zoom=15" allowfullscreen></iframe>
+            </div>`:`<div class="h-48 flex items-center justify-center bg-slate-800"><p class="text-slate-400 text-sm">📍 ${gym.formatted_address||gym.vicinity||gym.address||''}</p></div>`}
             <div class="p-4 flex items-center gap-3 border-t border-slate-700">
               <span class="text-2xl">🚶</span>
               <div>
@@ -4143,8 +4143,15 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
 
   if(tab==='reels'){
     // Full-screen Reels with nav buttons on right side (like Share/Download but for navigation)
-    html=`<div style="position:fixed;top:0;left:0;right:0;bottom:0;z-index:1;">
-      <iframe src="/reels/" class="sg-reels-frame" style="bottom:0;height:100vh;" allow="autoplay; fullscreen" loading="lazy"></iframe>
+    html=`<div style="position:fixed;top:0;left:0;right:0;bottom:0;z-index:1;background:#000;">
+      <iframe id="sg-reels-iframe" src="/reels/" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;z-index:1;" allow="autoplay; fullscreen" loading="lazy" onload="this.style.opacity='1'" onerror="document.getElementById('sg-reels-fallback').style.display='flex'"></iframe>
+      <!-- Fallback placeholder if iframe fails -->
+      <div id="sg-reels-fallback" style="display:none;position:absolute;top:0;left:0;right:0;bottom:0;z-index:2;background:linear-gradient(180deg,#0a0a16 0%,#111127 100%);flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;">
+        <div style="font-size:64px;margin-bottom:16px;">🎬</div>
+        <p style="color:#fff;font-size:22px;font-weight:800;margin:0 0 8px;">Reels Coming Soon</p>
+        <p style="color:rgba(255,255,255,.45);font-size:14px;margin:0 0 24px;max-width:280px;">Gym workout videos, tips, and inspiration from creators worldwide.</p>
+        <button onclick="switchTab('book')" style="background:#f97316;color:#fff;font-weight:700;font-size:15px;padding:14px 32px;border-radius:14px;border:none;cursor:pointer;box-shadow:0 4px 20px rgba(249,115,22,.3);">🏋️ Find a Gym Instead</button>
+      </div>
       <!-- Right-side nav buttons (below where Share/Download would be) -->
       <div class="sg-reels-nav" style="position:fixed;right:12px;bottom:100px;z-index:9100;display:flex;flex-direction:column;align-items:center;gap:14px;">
         <div onclick="switchTab('book')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;-webkit-tap-highlight-color:transparent;">
