@@ -465,7 +465,7 @@ router.post('/confirm-intent', async (req, res) => {
   try {
     if (!stripe) return res.status(500).json({ error: 'Payment not configured' });
 
-    const { bookingId, paymentIntentId } = req.body;
+    const { bookingId, paymentIntentId, email } = req.body;
     if (!bookingId || !paymentIntentId) return res.status(400).json({ error: 'bookingId and paymentIntentId required' });
 
     // Verify the payment intent is actually paid
@@ -478,6 +478,14 @@ router.post('/confirm-intent', async (req, res) => {
     const result = await pool.query('SELECT * FROM public.bookings WHERE id = $1', [bookingId]);
     if (result.rows.length === 0) return res.status(404).json({ error: 'Booking not found' });
     const booking = result.rows[0];
+
+    // Update email if provided (collected at payment confirmation time)
+    if (email && email.includes('@')) {
+      await pool.query('UPDATE public.bookings SET user_email = $1, updated_at = NOW() WHERE id = $2', [email, bookingId]);
+      booking.user_email = email;
+      // Also update Stripe receipt_email
+      try { await stripe.paymentIntents.update(paymentIntentId, { receipt_email: email }); } catch(e) {}
+    }
 
     // Generate QR
     const qrToken = booking.qr_code || 'BOOK_' + require('crypto').randomBytes(8).toString('hex').toUpperCase();
@@ -535,12 +543,12 @@ router.post('/instant-checkout', async (req, res) => {
     if (!stripe) return res.status(500).json({ error: 'Payment not configured' });
 
     const { gymId, date, time, email, placeId } = req.body;
-    if (!date || !time || !email) {
-      return res.status(400).json({ error: 'date, time, and email are required' });
+    if (!date || !time) {
+      return res.status(400).json({ error: 'date and time are required' });
     }
-    if (!email.includes('@') || !email.includes('.')) {
-      return res.status(400).json({ error: 'Please enter a valid email address' });
-    }
+    // Email is optional at init (Stripe Elements mount before user types email)
+    // Will be collected before payment confirmation
+    const userEmail = (email && email.includes('@')) ? email : null;
 
     // Resolve gym ID (Google Place ID → DB ID)
     let dbGymId = gymId;
@@ -598,7 +606,7 @@ router.post('/instant-checkout', async (req, res) => {
          user_email, user_name, created_at, updated_at)
        VALUES ($1, 'guest', $2, $3, $4, $5, $6, 'instant', $7, $8, 'pending', $9, 'Guest', NOW(), NOW())
        RETURNING *`,
-      [dbGymId, date, time, time, price, price * 0.10, bookingCode, qrCode, email]
+      [dbGymId, date, time, time, price, price * 0.10, bookingCode, qrCode, userEmail || 'pending@scangym.com']
     );
     const booking = bookingResult.rows[0];
 
@@ -608,7 +616,7 @@ router.post('/instant-checkout', async (req, res) => {
       currency: 'gbp',
       automatic_payment_methods: { enabled: true },
       metadata: { bookingId: String(booking.id), gymName: g.name },
-      receipt_email: email,
+      ...(userEmail ? { receipt_email: userEmail } : {}),
     });
 
     // Link intent to booking
@@ -620,7 +628,7 @@ router.post('/instant-checkout', async (req, res) => {
     // Store in session
     if (req.session) {
       req.session.guestBookingId = booking.id;
-      req.session.guestEmail = email;
+      req.session.guestEmail = userEmail;
     }
 
     res.json({
