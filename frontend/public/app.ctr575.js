@@ -354,7 +354,7 @@ checkAuth();
 
 
 // ─── State ───
-let state={user:null,gyms:[],currentGym:null,searchLat:null,searchLng:null,route:'/',bookings:[],wallet:{balance:0},authPhone:'',authStep:'phone',lastBooking:null,lastQR:null};
+let state={user:null,gyms:[],currentGym:null,searchLat:null,searchLng:null,route:'/',bookings:[],wallet:{balance:0},authPhone:'',authStep:'phone',lastBooking:null,lastQR:null,userExplicitSearch:false};
 
 // ─── API Client ───
 const api={
@@ -599,8 +599,8 @@ function HomePage(){
         <div class="flex gap-2 max-w-lg mx-auto mb-4">
           <input type="text" id="home-search" placeholder="Search city, area, or gym name..." 
             class="flex-1 bg-card border border-slate-600 rounded-xl px-4 py-4 text-white placeholder-slate-500 focus:border-brand outline-none text-sm"
-            onkeydown="if(event.key==='Enter'){const v=document.getElementById('home-search').value;if(v)searchGyms(v);navigate('/explore')}">
-          <button onclick="const v=document.getElementById('home-search').value;if(v){searchGyms(v);navigate('/explore')}else{findGyms()}" class="bg-brand hover:bg-orange-600 text-white font-bold text-lg px-8 py-4 rounded-xl shadow-lg shadow-brand/30 transition-all hover:scale-105">
+            onkeydown="if(event.key==='Enter'){const v=document.getElementById('home-search').value;if(v)searchGyms(v,true);navigate('/explore')}">
+          <button onclick="const v=document.getElementById('home-search').value;if(v){searchGyms(v,true);navigate('/explore')}else{findGyms()}" class="bg-brand hover:bg-orange-600 text-white font-bold text-lg px-8 py-4 rounded-xl shadow-lg shadow-brand/30 transition-all hover:scale-105">
             🔍
           </button>
         </div>
@@ -612,7 +612,7 @@ function HomePage(){
         <div class="flex flex-wrap justify-center gap-2 mt-4 max-w-lg mx-auto">
           ${['🇬🇧 London','🇬🇧 Manchester','🇬🇧 Birmingham','🇬🇧 Bolton','🇦🇪 Dubai','🇺🇸 New York','🇪🇸 Barcelona','🇩🇪 Berlin'].map(c=>{
             const city=c.split(' ')[1];
-            return`<button onclick="searchGyms('${city} gyms');navigate('/explore')" class="text-xs bg-slate-800 hover:bg-brand hover:text-white text-slate-400 px-3 py-1.5 rounded-full transition">${c}</button>`;
+            return`<button onclick="searchGyms('${city} gyms',true);navigate('/explore')" class="text-xs bg-slate-800 hover:bg-brand hover:text-white text-slate-400 px-3 py-1.5 rounded-full transition">${c}</button>`;
           }).join('')}
         </div>
         <p class="text-slate-600 text-xs mt-2">🔥 Trending now</p>
@@ -765,8 +765,11 @@ async function loadGyms(lat,lng){
   }catch(e){console.error('Failed to load gyms:',e)}
 }
 
-async function searchGyms(query){
+async function searchGyms(query, isExplicit){
   try{
+    // Fix: Track when user explicitly searched (city button or typed query)
+    // This prevents GPS/IP from overriding their intent
+    if(isExplicit) state.userExplicitSearch=true;
     state.searchQuery=query;
     // Add timeout to prevent infinite loading — abort after 8 seconds
     const controller=new AbortController();
@@ -884,11 +887,11 @@ function SearchPage(){
         <!-- PATTERN #5: Anticipation — city shortcuts + fun facts while skeletons load -->
         <div class="mb-4">
           <div class="flex gap-2 flex-wrap">
-            <button onclick="searchGyms('gyms in London')" class="text-xs bg-slate-800 hover:bg-brand hover:text-white text-slate-400 px-3 py-1.5 rounded-full transition">\u{1F4CD} London</button>
-            <button onclick="searchGyms('gyms in Manchester')" class="text-xs bg-slate-800 hover:bg-brand hover:text-white text-slate-400 px-3 py-1.5 rounded-full transition">\u{1F4CD} Manchester</button>
-            <button onclick="searchGyms('gyms in Birmingham')" class="text-xs bg-slate-800 hover:bg-brand hover:text-white text-slate-400 px-3 py-1.5 rounded-full transition">\u{1F4CD} Birmingham</button>
-            <button onclick="searchGyms('gyms in Dubai')" class="text-xs bg-slate-800 hover:bg-brand hover:text-white text-slate-400 px-3 py-1.5 rounded-full transition">\u{1F4CD} Dubai</button>
-            <button onclick="searchGyms('gyms in New York')" class="text-xs bg-slate-800 hover:bg-brand hover:text-white text-slate-400 px-3 py-1.5 rounded-full transition">\u{1F4CD} New York</button>
+            <button onclick="searchGyms('gyms in London',true)" class="text-xs bg-slate-800 hover:bg-brand hover:text-white text-slate-400 px-3 py-1.5 rounded-full transition">\u{1F4CD} London</button>
+            <button onclick="searchGyms('gyms in Manchester',true)" class="text-xs bg-slate-800 hover:bg-brand hover:text-white text-slate-400 px-3 py-1.5 rounded-full transition">\u{1F4CD} Manchester</button>
+            <button onclick="searchGyms('gyms in Birmingham',true)" class="text-xs bg-slate-800 hover:bg-brand hover:text-white text-slate-400 px-3 py-1.5 rounded-full transition">\u{1F4CD} Birmingham</button>
+            <button onclick="searchGyms('gyms in Dubai',true)" class="text-xs bg-slate-800 hover:bg-brand hover:text-white text-slate-400 px-3 py-1.5 rounded-full transition">\u{1F4CD} Dubai</button>
+            <button onclick="searchGyms('gyms in New York',true)" class="text-xs bg-slate-800 hover:bg-brand hover:text-white text-slate-400 px-3 py-1.5 rounded-full transition">\u{1F4CD} New York</button>
           </div>
         </div>
         <div class="bg-gradient-to-r from-brand/10 to-purple-500/10 border border-brand/20 rounded-xl p-4 mb-6" id="fun-fact-box">
@@ -958,10 +961,11 @@ function GymProfilePage(){
             <span class="text-slate-600">|</span>
             <span class="text-accent text-sm font-medium">✅ Free cancellation</span>
             <span class="text-slate-600">|</span>
-            <span class="text-sm">${gym.opening_hours?.isOpen===true?`<span class="text-green-400 flex items-center gap-1"><span class="w-2 h-2 bg-green-400 rounded-full animate-pulse inline-block"></span> Open Now${closingTime(gym)?' · Closes '+closingTime(gym):''}</span>`:(gym.opening_hours?.isOpen===false?'<span class="text-slate-400">Closed now · Book for any date →</span>':'<span class="text-slate-400">Hours vary</span>')}</span>
+            <span class="text-sm">${gym.opening_hours?.isOpen===true?`<span class="text-green-400 flex items-center gap-1"><span class="w-2 h-2 bg-green-400 rounded-full animate-pulse inline-block"></span> Open Now${closingTime(gym)?' · Closes '+closingTime(gym):''}</span>`:(gym.opening_hours?.isOpen===false?'<span class="text-brand font-medium">📅 Schedule your visit — pick any date</span>':'<span class="text-slate-400">Hours vary</span>')}</span>
           </div>
 
-
+          <!-- Conviction signals — Booking.com persuasion (loaded async) -->
+          <div id="conviction-signals" class="space-y-2"></div>
 
           <!-- Opening Hours (Live from Google) -->
           ${gym.opening_hours?.weekday?.length?`
@@ -1183,13 +1187,14 @@ function GymProfilePage(){
               </div>
             </div>
 
+            <!-- Trust signals ABOVE Book Now — visible immediately -->
+            <div class="flex items-center justify-center gap-3 text-xs text-slate-500 mb-3">
+              <span>✅ No account needed</span><span>•</span><span>📧 QR sent instantly</span><span>•</span><span>↩️ Free cancel</span>
+            </div>
+
             <button onclick="event.preventDefault();event.stopPropagation();showUberCheckout('${gymId}')" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-4 rounded-xl text-lg transition shadow-lg shadow-brand/20">
               Book Now — £${gym.price_tier||'5'}.00
             </button>
-            <!-- Trust signals under Book Now (Uber-style: single path, no confusion) -->
-            <div class="mt-2 flex items-center justify-center gap-3 text-xs text-slate-500">
-              <span>✅ No account needed</span><span>•</span><span>📧 QR sent instantly</span><span>•</span><span>↩️ Free cancel</span>
-            </div>
 
             <div class="space-y-2 text-xs">
               <div class="flex items-center gap-2 text-slate-400"><span>🔒</span><span>No membership. No contract.</span></div>
@@ -2626,16 +2631,27 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
         </div>
       </div>
 
-      <div class="px-5 pb-5 pt-4">
-        <!-- Price hero -->
-        <div class="text-center mb-4">
-          <p id="uc-price" class="text-4xl font-black text-white">£${defaultPrice}</p>
-          <p id="uc-badge" class="text-xs font-medium mt-1 ${defaultHour<10?'text-green-400':'text-slate-500'}">${defaultHour<10?'🎉 Off-peak price':'24-hour day pass'}</p>
-          <p class="text-green-500/80 text-xs mt-1">✅ Free cancellation up to 2hrs before</p>
+      <div class="px-5 pb-5 pt-3">
+        <!-- Trust signals — above the fold, visible immediately -->
+        <div class="flex items-center justify-center gap-3 mb-3 text-xs">
+          <span class="text-green-400 font-medium">✅ No account needed</span>
+          <span class="text-slate-600">·</span>
+          <span class="text-green-400 font-medium">↩️ Free cancel</span>
+          <span class="text-slate-600">·</span>
+          <span class="text-slate-400">🔒 Secure</span>
+        </div>
+
+        <!-- Compact price + badge inline -->
+        <div class="flex items-center justify-between mb-3 bg-slate-800/60 rounded-xl px-4 py-2.5">
+          <div class="flex items-center gap-2">
+            <p id="uc-price" class="text-2xl font-bold text-white">£${defaultPrice}</p>
+            <p id="uc-badge" class="text-xs font-medium ${defaultHour<10?'text-green-400':'text-slate-500'}">${defaultHour<10?'🎉 Off-peak':'24hr day pass'}</p>
+          </div>
+          <span class="text-green-500/80 text-xs">✅ Free cancel</span>
         </div>
 
         <!-- Booking details — compact horizontal row like Uber -->
-        <div class="grid grid-cols-2 gap-2 mb-4">
+        <div class="grid grid-cols-2 gap-2 mb-3">
           <div class="bg-slate-800/80 rounded-xl p-3">
             <label class="text-slate-500 text-[10px] uppercase tracking-wider font-bold block mb-1">Date</label>
             <input type="date" id="uc-date" value="${prefillDate||today}" min="${today}" class="w-full bg-transparent text-white text-sm outline-none font-medium">
@@ -2649,7 +2665,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
         </div>
 
         <!-- Email — hidden for returning users (Uber-style: 0 fields) -->
-        <div class="bg-slate-800/80 rounded-xl p-3 mb-4" id="uc-email-section">
+        <div class="bg-slate-800/80 rounded-xl p-3 mb-3" id="uc-email-section">
           ${savedEmail?`
           <div id="uc-email-saved" class="flex items-center justify-between">
             <div class="flex items-center gap-2">
@@ -2671,7 +2687,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
         </div>
 
         <!-- Stripe Payment Element — loads inline (Apple Pay / Google Pay / Card) -->
-        <div id="uc-payment-area" class="mb-4">
+        <div id="uc-payment-area" class="mb-3">
           <div class="bg-slate-800/60 rounded-xl p-6 text-center">
             <div class="sg-spinner mx-auto mb-2" style="width:24px;height:24px;border-color:rgba(255,255,255,.15);border-top-color:#f97316"></div>
             <p class="text-slate-500 text-xs">Loading payment methods...</p>
@@ -2684,9 +2700,9 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
           <span id="uc-btn-text">Loading...</span>
         </button>
 
-        <!-- Trust signals -->
-        <div class="flex items-center justify-center gap-2 mt-3 text-[10px] text-slate-600">
-          <span>🔒 Secure</span><span>·</span><span>📧 Instant QR</span><span>·</span><span>↩️ Free cancel</span><span>·</span><span>Stripe</span>
+        <!-- Powered by Stripe -->
+        <div class="flex items-center justify-center gap-1 mt-2 text-[10px] text-slate-600">
+          <span>🔒 Powered by Stripe</span><span>·</span><span>📧 QR sent instantly</span>
         </div>
       </div>
     </div>
@@ -2736,10 +2752,18 @@ async function _initUberPayment(gymId, gym){
       dbGymId=ensured.gymId;
     }
 
+    // Fix: Validate email before proceeding — never default to guest@scangym.com
+    if(!email||!email.includes('@')||!email.includes('.')){
+      payArea.innerHTML='<p class="text-red-400 text-sm text-center">Please enter a valid email — we\'ll send your QR code there.</p>';
+      document.getElementById('uc-email')?.focus();
+      return;
+    }
+
     // Step 2: Create booking + PaymentIntent in ONE call
+    const gymInfo=state.currentGym||state.gyms.find(g=>(g.placeId||g.place_id||g.id)==gymId)||{};
     const result=await fetch('/api/payment/instant-checkout',{
       method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
-      body:JSON.stringify({gymId:parseInt(dbGymId),placeId:gymId,date,time,email:email||'guest@scangym.com'})
+      body:JSON.stringify({gymId:parseInt(dbGymId),placeId:gymId,date,time,email,gymName:gymInfo.name||'Gym',gymAddress:gymInfo.formatted_address||gymInfo.vicinity||gymInfo.address||''})
     }).then(r=>{if(!r.ok)throw new Error('Server error '+r.status);return r.json();});
 
     if(result.error){
@@ -2775,6 +2799,7 @@ async function _initUberPayment(gymId, gym){
     const paymentElement=elements.create('payment',{
       layout:{type:'tabs',defaultCollapsed:false},
       wallets:{applePay:'auto',googlePay:'auto'},
+      paymentMethodOrder:['apple_pay','google_pay','card'],
       fields:{billingDetails:{address:{postalCode:'auto',country:'auto'}}},
       defaultValues:{billingDetails:{address:{country:userCountry},email:email||undefined}},
     });
@@ -2851,6 +2876,23 @@ async function _handleUberPay(bookingId){
         localStorage.removeItem('sg_pending_booking');
         closeBookingSheet();
         navigate('/booking-success?session_id=inline&booking_id='+bookingId);
+        // Fix: Post-booking prompt — offer to save card for 1-tap next time
+        if(!localStorage.getItem('sg_save_card_dismissed')&&!state.user){
+          setTimeout(()=>{
+            const banner=document.createElement('div');
+            banner.id='save-card-banner';
+            banner.className='fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:max-w-sm bg-slate-800 border border-brand/40 rounded-2xl p-4 z-50 shadow-2xl shadow-brand/10';
+            banner.innerHTML=`
+              <p class="text-white font-bold text-sm mb-1">⚡ Save your card for 1-tap booking?</p>
+              <p class="text-slate-400 text-xs mb-3">Create a free account to skip payment entry next time — like Uber.</p>
+              <div class="flex gap-2">
+                <button onclick="navigate('/login');document.getElementById('save-card-banner')?.remove()" class="flex-1 bg-brand text-white font-bold py-2 rounded-lg text-sm hover:bg-orange-600 transition">Create Account</button>
+                <button onclick="localStorage.setItem('sg_save_card_dismissed','1');document.getElementById('save-card-banner')?.remove()" class="px-3 py-2 text-slate-500 text-sm hover:text-slate-300 transition">Not now</button>
+              </div>`;
+            document.body.appendChild(banner);
+            setTimeout(()=>banner.remove(),15000);
+          },3000);
+        }
       }else{
         sgToast(result.error||'Confirmation failed. Contact support.');
         btnText.textContent='Confirm & Pay';btn.disabled=false;
@@ -3273,6 +3315,8 @@ async function loadFallbackGyms(){
 
 window.findGyms=function(){
   navigate('/explore');
+  // User explicitly requested GPS — clear the explicit search lock
+  state.userExplicitSearch=false;
 
   // ━━━ UBER RULE: Show results INSTANTLY, upgrade in background ━━━
   // NEVER await GPS. NEVER show blank screen. NEVER block the UI.
@@ -3322,12 +3366,31 @@ window.openGym=async function(id,isLive){
       state.currentGym=data.gym||data;
     }
     render();
+    // Load conviction signals (Booking.com persuasion techniques) async
+    _loadConvictionSignals(id);
   }catch(e){
     console.error('Failed to load gym:',e);
     state.currentGym=state.gyms.find(g=>(g.placeId||g.id)==id)||{name:'Loading...',id};
     render();
   }
 };
+
+// Fetch and render conviction signals for a gym
+async function _loadConvictionSignals(gymId){
+  try{
+    const dbGymId=isNaN(parseInt(gymId))?1:parseInt(gymId);
+    const data=await fetch('/api/conviction/gym/'+dbGymId+'?limit=4',{credentials:'include'}).then(r=>r.json());
+    if(data.signals&&data.signals.length>0){
+      const container=document.getElementById('conviction-signals');
+      if(!container)return;
+      const categoryColors={social_proof:'bg-blue-900/30 border-blue-500/30 text-blue-400',scarcity:'bg-red-900/30 border-red-500/30 text-red-400',urgency:'bg-amber-900/30 border-amber-500/30 text-amber-400',trust:'bg-green-900/30 border-green-500/30 text-green-400',authority:'bg-purple-900/30 border-purple-500/30 text-purple-400'};
+      container.innerHTML=data.signals.map(s=>{
+        const colors=categoryColors[s.category]||categoryColors.trust;
+        return'<div class="'+colors.split(' ').filter(c=>c.startsWith('bg-')||c.startsWith('border-')).join(' ')+' border rounded-lg px-3 py-2 text-sm '+colors.split(' ').filter(c=>c.startsWith('text-')).join(' ')+'">'+s.message+'</div>';
+      }).join('');
+    }
+  }catch(e){console.warn('Conviction signals failed:',e);}
+}
 
 // ─── Filter Gyms by Activity Type (Fix #4) ───
 window._allGyms=[];
@@ -3537,6 +3600,9 @@ window._locationLayer=0; // Track which layer is currently showing (higher = mor
 
 // Silent upgrade: only swap results if the new layer is more precise than what's showing
 function _upgradeLocation(layer, query, meta){
+  // Fix: Never override an explicit user search (city button click or typed query)
+  // GPS/IP should not hijack what the user deliberately asked for
+  if(state.userExplicitSearch) return false;
   if(layer<=window._locationLayer) return false; // Already showing more precise data
   window._locationLayer=layer;
   console.log('[Location] Layer',layer,'upgrade →',query,meta?.source||'');
@@ -3603,7 +3669,7 @@ window.doSearch=function(){
   const input=document.getElementById('gym-search-input');
   if(input&&input.value.trim()){
     navigate('/explore');
-    searchGyms(input.value.trim());
+    searchGyms(input.value.trim(),true);
   }
 };
 

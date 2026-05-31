@@ -545,12 +545,26 @@ router.post('/instant-checkout', async (req, res) => {
     // Resolve gym ID (Google Place ID → DB ID)
     let dbGymId = gymId;
     if (placeId && isNaN(parseInt(gymId))) {
-      // Ensure gym exists in DB
+      // Ensure gym exists in DB — auto-create if not found (upsert pattern)
       const ensureResult = await pool.query('SELECT id FROM public.gyms WHERE google_place_id = $1', [placeId]);
       if (ensureResult.rows.length > 0) {
         dbGymId = ensureResult.rows[0].id;
       } else {
-        return res.status(400).json({ error: 'Gym not found. Please search again.' });
+        // Fix: Auto-create gym record instead of failing — user found it via Google Places
+        try {
+          const gymName = req.body.gymName || 'Gym';
+          const gymAddress = req.body.gymAddress || '';
+          const insertResult = await pool.query(
+            `INSERT INTO public.gyms (name, address, google_place_id, day_pass_price, created_at, updated_at)
+             VALUES ($1, $2, $3, 5.00, NOW(), NOW()) RETURNING id`,
+            [gymName, gymAddress, placeId]
+          );
+          dbGymId = insertResult.rows[0].id;
+          console.log(`[Payment] Auto-created gym "${gymName}" (DB id: ${dbGymId}) from Place ID: ${placeId}`);
+        } catch (insertErr) {
+          console.error('[Payment] Failed to auto-create gym:', insertErr.message);
+          return res.status(400).json({ error: 'Gym not found. Please search again.' });
+        }
       }
     }
 
