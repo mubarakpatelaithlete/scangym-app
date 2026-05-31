@@ -1,7 +1,7 @@
-// ScanGym Frontend v4.1.0 — Uber-Level Checkout (single screen, Apple Pay, Google Pay, zero friction)
+// ScanGym Frontend v5.0.0 — TikTok-Style 3-Tab Redesign (Book · Reels · More)
 
 // Inject CSS animations for loading experience
-(function(){const s=document.createElement('style');s.textContent='@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}#fun-fact{transition:opacity 0.2s ease}.gym-card{animation:fadeInUp 0.3s ease-out both}.animate-slide-up{animation:slideUp 0.3s ease-out}@keyframes skeletonPulse{0%,100%{opacity:.6}50%{opacity:.3}}@keyframes locationDot{0%,100%{box-shadow:0 0 0 0 rgba(249,115,22,.4)}50%{box-shadow:0 0 0 8px rgba(249,115,22,0)}}.skel-card{animation:skeletonPulse 1.8s ease-in-out infinite}.loc-dot{animation:locationDot 1.5s ease-in-out infinite}.cards-enter .gym-card{animation:fadeInUp .4s ease-out both}@keyframes toastIn{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes toastOut{from{transform:translateY(0);opacity:1}to{transform:translateY(-100%);opacity:0}}@keyframes spin{to{transform:rotate(360deg)}}.sg-spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}';document.head.appendChild(s)})();
+(function(){const s=document.createElement('style');s.textContent='@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}#fun-fact{transition:opacity 0.2s ease}.gym-card{animation:fadeInUp 0.3s ease-out both}.animate-slide-up{animation:slideUp 0.3s ease-out}@keyframes skeletonPulse{0%,100%{opacity:.6}50%{opacity:.3}}@keyframes locationDot{0%,100%{box-shadow:0 0 0 0 rgba(249,115,22,.4)}50%{box-shadow:0 0 0 8px rgba(249,115,22,0)}}.skel-card{animation:skeletonPulse 1.8s ease-in-out infinite}.loc-dot{animation:locationDot 1.5s ease-in-out infinite}.cards-enter .gym-card{animation:fadeInUp .4s ease-out both}@keyframes toastIn{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes toastOut{from{transform:translateY(0);opacity:1}to{transform:translateY(-100%);opacity:0}}@keyframes spin{to{transform:rotate(360deg)}}.sg-spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}/* ── 3-Tab System ── */.sg-tab-bar{position:fixed;bottom:0;left:0;right:0;height:64px;background:rgba(10,10,22,.97);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:space-around;border-top:1px solid rgba(255,255,255,.08);z-index:9000;padding-bottom:env(safe-area-inset-bottom,0)}.sg-tab-item{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:6px 16px;border-radius:12px;transition:all .2s;-webkit-tap-highlight-color:transparent;user-select:none}.sg-tab-item .sg-tab-icon{font-size:24px;opacity:.45;transition:all .2s}.sg-tab-item .sg-tab-label{font-size:10px;font-weight:600;color:rgba(255,255,255,.4);transition:all .2s}.sg-tab-item.active .sg-tab-icon{opacity:1;transform:scale(1.1)}.sg-tab-item.active .sg-tab-label{color:#f97316}.sg-tab-content{padding-bottom:72px;min-height:100vh}.sg-tab-content.reels-active{padding-bottom:0}.sg-reels-frame{position:fixed;top:0;left:0;right:0;bottom:64px;border:none;width:100%;height:calc(100vh - 64px);z-index:1}.sg-more-hub{padding:20px 16px 100px;max-width:480px;margin:0 auto}.sg-more-section{margin-bottom:20px}.sg-more-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.3);margin-bottom:8px;padding-left:4px}.sg-more-item{display:flex;align-items:center;gap:14px;padding:14px 16px;background:rgba(255,255,255,.04);border-radius:14px;margin-bottom:6px;border:1px solid rgba(255,255,255,.04);cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}.sg-more-item:active{transform:scale(.98);background:rgba(255,255,255,.08)}.sg-more-item .sg-mi-icon{font-size:20px;width:40px;height:40px;background:rgba(255,255,255,.06);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.sg-more-item .sg-mi-text{flex:1}.sg-more-item .sg-mi-text h4{color:#fff;font-size:14px;font-weight:600;margin:0}.sg-more-item .sg-mi-text p{color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0}.sg-more-item .sg-mi-arrow{color:rgba(255,255,255,.2);font-size:16px}.sg-more-profile{display:flex;align-items:center;gap:14px;margin-bottom:28px;padding-top:12px}.sg-more-avatar{width:56px;height:56px;background:linear-gradient(135deg,#f97316,#fb923c);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff;flex-shrink:0}.sg-more-profile-info h3{color:#fff;font-size:18px;font-weight:700;margin:0}.sg-more-profile-info p{color:rgba(255,255,255,.4);font-size:13px;margin:2px 0 0}.sg-more-social{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}.sg-more-social a{display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:rgba(255,255,255,.04);border-radius:12px;border:1px solid rgba(255,255,255,.06);font-size:16px;transition:all .15s;text-decoration:none}.sg-more-social a:active{background:rgba(255,255,255,.1);transform:scale(.95)}.sg-more-back{display:flex;align-items:center;gap:8px;padding:12px 0;cursor:pointer;color:rgba(255,255,255,.6);font-size:14px;font-weight:600;margin-bottom:4px;-webkit-tap-highlight-color:transparent}.sg-more-back:active{color:#f97316}';document.head.appendChild(s)})();
 
 // ─── Toast Notification System (replaces alert()) ───
 window.sgToast=function(msg, type='error', duration=4000){
@@ -354,7 +354,7 @@ checkAuth();
 
 
 // ─── State ───
-let state={user:null,gyms:[],currentGym:null,searchLat:null,searchLng:null,route:'/',bookings:[],wallet:{balance:0},authPhone:'',authStep:'phone',lastBooking:null,lastQR:null,userExplicitSearch:false};
+let state={user:null,gyms:[],currentGym:null,searchLat:null,searchLng:null,route:'/',bookings:[],wallet:{balance:0},authPhone:'',authStep:'phone',lastBooking:null,lastQR:null,userExplicitSearch:false,activeTab:'book'};
 
 // ─── API Client ───
 const api={
@@ -376,13 +376,31 @@ const api={
 async function submitCreatorApp(){var d={first_name:document.getElementById('cs-fname').value,last_name:document.getElementById('cs-lname').value,email:document.getElementById('cs-email').value,instagram:document.getElementById('cs-ig').value,tiktok:document.getElementById('cs-tt').value,youtube:document.getElementById('cs-yt').value,followers:document.getElementById('cs-followers').value,why:document.getElementById('cs-why').value};try{await fetch('/api/v2/creator-apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});}catch(e){}document.getElementById('creator-signup-form').classList.add('hidden');document.getElementById('creator-signup-success').classList.remove('hidden');if(typeof fbq==='function')fbq('track','Lead');if(typeof ttq==='object')ttq.track('SubmitForm');if(typeof gtag==='function')gtag('event','generate_lead',{event_category:'creator_signup'});}
 // Referral link without login
 async function generateReferLink(){var em=document.getElementById('refer-email').value;if(!em||!em.includes('@')){document.getElementById('refer-email').style.borderColor='#ef4444';return;}var handle=em.split('@')[0].replace(/[^a-z0-9]/gi,'').toLowerCase();try{await fetch('/api/v2/refer-signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:em})});}catch(e){}document.getElementById('refer-generated-link').textContent='scangym.com/r/'+handle;document.getElementById('refer-email-form').classList.add('hidden');document.getElementById('refer-link-result').classList.remove('hidden');if(typeof gtag==='function')gtag('event','generate_lead',{event_category:'referral_signup'});}
+// ─── 3-Tab Navigation System ───
+function getTabForRoute(path){
+  if(path==='/'||path===''||path==='/explore'||path==='/nearby'||path==='/search'||path.startsWith('/gym/')||path==='/booking-success'||path.startsWith('/r/'))return 'book';
+  if(path==='/reels')return 'reels';
+  return 'more';
+}
+function switchTab(tab){
+  state.activeTab=tab;
+  if(tab==='book'){state.route=state._lastBookRoute||'/';history.pushState(null,'',state.route);}
+  else if(tab==='reels'){state.route='/reels';history.pushState(null,'','/reels');}
+  else if(tab==='more'){state.route=state._lastMoreRoute||'/more';history.pushState(null,'',state.route);}
+  render();
+  window.scrollTo(0,0);
+}
 function navigate(path,pushState=true){
   state.route=path;
+  state.activeTab=getTabForRoute(path);
+  // Remember last route per tab for back-navigation
+  if(state.activeTab==='book')state._lastBookRoute=path;
+  else if(state.activeTab==='more')state._lastMoreRoute=path;
   if(pushState)history.pushState(null,'',path);
   render();
   window.scrollTo(0,0);
 }
-window.addEventListener('popstate',()=>{state.route=location.pathname;render()});
+window.addEventListener('popstate',()=>{state.route=location.pathname;state.activeTab=getTabForRoute(state.route);render();});
 
 // ─── Geolocation ───
 // 5-layer waterfall GPS loaded from robust-location.js
@@ -585,7 +603,7 @@ function HomePage(){
   return`
   <div class="min-h-screen">
     <!-- Hero -->
-    <section class="relative pt-32 pb-20 px-4 text-center overflow-hidden">
+    <section class="relative pt-14 pb-16 px-4 text-center overflow-hidden">
       <div class="absolute inset-0 bg-gradient-to-b from-brand/10 via-transparent to-transparent"></div>
       <div class="relative max-w-3xl mx-auto">
         <div class="inline-flex items-center gap-2 bg-brand/10 border border-brand/30 rounded-full px-4 py-1.5 mb-6">
@@ -834,7 +852,7 @@ function SearchPage(){
   // ═══ UBER PATTERN #2: ALWAYS show full page layout — header, search, filters, sort, grid ═══
   // The page looks "loaded" instantly. Only the card content swaps from skeleton to real.
   return`
-  <div class="pt-20 min-h-screen px-4">
+  <div class="pt-8 min-h-screen px-4">
     <div class="max-w-7xl mx-auto">
       <!-- Search Bar — ALWAYS visible -->
       <div class="mb-6">
@@ -920,12 +938,12 @@ function SearchPage(){
 // ─── Page: Gym Profile (Task 2 + 6 + 9 + 23) ───
 function GymProfilePage(){
   const gym=state.currentGym;
-  if(!gym)return`<div class="pt-24 text-center"><div class="animate-spin w-8 h-8 border-2 border-brand border-t-transparent rounded-full mx-auto"></div></div>`;
+  if(!gym)return`<div class="pt-8 text-center"><div class="animate-spin w-8 h-8 border-2 border-brand border-t-transparent rounded-full mx-auto"></div></div>`;
   const badges=getRandomBadges(gym,6);
   const mainPhoto=gym.photo_url||gym.photo||(gym.photos_list?.[0]?.url)||'';
   const gymId=gym.place_id||gym.placeId||gym.id;
   return`
-  <div class="pt-20 min-h-screen overflow-x-hidden">
+  <div class="pt-8 min-h-screen overflow-x-hidden">
     <!-- Photo/Video Hero Carousel (All Google Places media) -->
     <div class="h-80 bg-slate-800 relative overflow-hidden gym-hero-carousel" id="hero-carousel">
       ${(()=>{
@@ -1222,7 +1240,7 @@ function GymProfilePage(){
 // ─── Page: AI Coach (Task 1) ───
 function CoachPage(){
   return`
-  <div class="pt-20 min-h-screen px-4">
+  <div class="pt-8 min-h-screen px-4">
     <div class="max-w-3xl mx-auto py-12">
       <div class="text-center mb-12">
         <div class="text-6xl mb-4">🤖</div>
@@ -1906,7 +1924,7 @@ function CreatorsPage(){
     ];
 
   return`
-  <div class="pt-20 min-h-screen">
+  <div class="pt-8 min-h-screen">
 
     <!-- ═══════════════════════════════════════════════════════════ -->
     <!--  HERO — Aspirational headline + stats + dual CTA          -->
@@ -2329,7 +2347,7 @@ window._fsFilter=function(type){
 // ─── Page: Wallet (Task 14) ───
 function WalletPage(){
   return`
-  <div class="pt-20 min-h-screen px-4">
+  <div class="pt-8 min-h-screen px-4">
     <div class="max-w-2xl mx-auto py-12">
       <h1 class="font-brand text-3xl font-bold text-white mb-2 text-center">💰 ScanGym Wallet</h1>
       <p class="text-slate-400 text-center mb-8">Top up, save more, pay faster.</p>
@@ -2375,7 +2393,7 @@ function SupplierPage(type){
     ]},
   }[type]||data.vending;
   return`
-  <div class="pt-20 min-h-screen px-4">
+  <div class="pt-8 min-h-screen px-4">
     <div class="max-w-3xl mx-auto py-12">
       <a onclick="navigate('/for-gyms')" class="text-brand text-sm cursor-pointer mb-4 block">← Back to Gym Owners</a>
       <h1 class="font-brand text-3xl font-bold text-white mb-3">${data.title}</h1>
@@ -2405,7 +2423,7 @@ function SupplierPage(type){
 // ─── Page: CEO Dashboard (Task 21) ───
 function DashboardPage(){
   return`
-  <div class="pt-20 min-h-screen px-4">
+  <div class="pt-8 min-h-screen px-4">
     <div class="max-w-6xl mx-auto py-8">
       <h1 class="font-brand text-2xl font-bold text-white mb-6">📊 CEO Dashboard</h1>
       <div class="grid sm:grid-cols-5 gap-4 mb-8">
@@ -2448,7 +2466,7 @@ function DashboardPage(){
 // ─── Page: Generic Info Pages ───
 function InfoPage(title,content){
   return`
-  <div class="pt-20 min-h-screen px-4">
+  <div class="pt-8 min-h-screen px-4">
     <div class="max-w-3xl mx-auto py-12">
       <h1 class="font-brand text-3xl font-bold text-white mb-6">${title}</h1>
       <div class="prose prose-invert text-slate-300 space-y-4">${content}</div>
@@ -2460,7 +2478,7 @@ function InfoPage(title,content){
 function LoginPage(){
   if(state.user){
     return`
-    <div class="pt-20 min-h-screen px-4 flex items-center justify-center">
+    <div class="pt-8 min-h-screen px-4 flex items-center justify-center">
       <div class="max-w-md w-full text-center">
         <div class="w-16 h-16 bg-accent rounded-2xl flex items-center justify-center mx-auto mb-4"><span class="text-white font-bold text-2xl">✓</span></div>
         <h1 class="font-brand text-2xl font-bold text-white mb-2">Welcome back!</h1>
@@ -2475,7 +2493,7 @@ function LoginPage(){
   }
   const isCodeStep = state.authStep === 'code';
   return`
-  <div class="pt-20 min-h-screen px-4 flex items-center justify-center">
+  <div class="pt-8 min-h-screen px-4 flex items-center justify-center">
     <div class="max-w-md w-full">
       <div class="text-center mb-8">
         <div class="w-16 h-16 bg-brand rounded-2xl flex items-center justify-center mx-auto mb-4"><span class="text-white font-bold text-2xl">S</span></div>
@@ -3024,7 +3042,7 @@ function BookingSuccessPage(){
   const bookingId=params.get('booking_id');
 
   if(!bookingId){
-    return`<div class="pt-20 min-h-screen px-4 text-center"><p class="text-red-400 mt-20">Invalid booking confirmation link.</p></div>`;
+    return`<div class="pt-8 min-h-screen px-4 text-center"><p class="text-red-400 mt-20">Invalid booking confirmation link.</p></div>`;
   }
   // Clean up pending booking marker (Fix #8)
   localStorage.removeItem('sg_pending_booking');
@@ -3033,7 +3051,7 @@ function BookingSuccessPage(){
   if(!state.lastQR){
     // For inline Stripe, QR is already set before navigating here
     if(sessionId==='inline'){
-      return`<div class="pt-20 min-h-screen px-4 text-center"><p class="text-white mt-20">Loading...</p></div>`;
+      return`<div class="pt-8 min-h-screen px-4 text-center"><p class="text-white mt-20">Loading...</p></div>`;
     }
     setTimeout(async()=>{
       try{
@@ -3051,7 +3069,7 @@ function BookingSuccessPage(){
     },500);
 
     return`
-    <div class="pt-20 min-h-screen px-4 flex items-center justify-center">
+    <div class="pt-8 min-h-screen px-4 flex items-center justify-center">
       <div id="booking-result" class="text-center">
         <div class="text-6xl mb-4 animate-pulse">⏳</div>
         <p class="text-white text-xl font-bold">Verifying your payment...</p>
@@ -3222,7 +3240,7 @@ window.cancelBooking=async function(bookingId){
 
 function MyBookingsPage(){
   if(!state.user){
-    return`<div class="pt-20 min-h-screen px-4">
+    return`<div class="pt-8 min-h-screen px-4">
       <div class="max-w-md mx-auto py-12 text-center">
         <div class="text-6xl mb-6">📋</div>
         <h1 class="font-brand text-3xl font-bold text-white mb-3">My Bookings</h1>
@@ -3244,12 +3262,12 @@ function MyBookingsPage(){
         render();
       }catch(e){}
     },100);
-    return`<div class="pt-20 min-h-screen px-4 text-center"><p class="text-slate-400 mt-20 animate-pulse">Loading bookings...</p></div>`;
+    return`<div class="pt-8 min-h-screen px-4 text-center"><p class="text-slate-400 mt-20 animate-pulse">Loading bookings...</p></div>`;
   }
 
   const bookings=state.bookings;
   return`
-  <div class="pt-20 min-h-screen px-4">
+  <div class="pt-8 min-h-screen px-4">
     <div class="max-w-2xl mx-auto py-12">
       <h1 class="font-brand text-3xl font-bold text-white mb-6 text-center">📋 My Bookings</h1>
       ${bookings.length===0 ? `
@@ -3674,6 +3692,142 @@ window.doSearch=function(){
 };
 
 // ─── Router ───
+// ─── Bottom Tab Bar (TikTok-style) ───
+function BottomTabBar(){
+  const t=state.activeTab;
+  return`<div class="sg-tab-bar">
+    <div class="sg-tab-item ${t==='book'?'active':''}" onclick="switchTab('book')">
+      <span class="sg-tab-icon">🏋️</span>
+      <span class="sg-tab-label">Book</span>
+    </div>
+    <div class="sg-tab-item ${t==='reels'?'active':''}" onclick="switchTab('reels')">
+      <span class="sg-tab-icon">🎬</span>
+      <span class="sg-tab-label">Reels</span>
+    </div>
+    <div class="sg-tab-item ${t==='more'?'active':''}" onclick="switchTab('more')">
+      <span class="sg-tab-icon">☰</span>
+      <span class="sg-tab-label">More</span>
+    </div>
+  </div>`;
+}
+
+// ─── More Hub Page (Everything Else) ───
+function MoreHubPage(){
+  const u=state.user;
+  const avatar=u?(u.name||u.phone||'U').charAt(0).toUpperCase():'?';
+  const displayName=u?(u.name||u.phone):'Guest';
+  const email=u?.email||'';
+
+  function moreItem(icon,title,sub,route){
+    return`<div class="sg-more-item" onclick="navigate('${route}')">
+      <div class="sg-mi-icon">${icon}</div>
+      <div class="sg-mi-text"><h4>${title}</h4>${sub?`<p>${sub}</p>`:''}</div>
+      <span class="sg-mi-arrow">›</span>
+    </div>`;
+  }
+
+  return`<div class="sg-more-hub">
+    <!-- Profile -->
+    <div class="sg-more-profile" onclick="navigate('${u?'/bookings':'/login'}')">
+      <div class="sg-more-avatar">${avatar}</div>
+      <div class="sg-more-profile-info">
+        <h3>${displayName}</h3>
+        <p>${u?(email||'Tap to view bookings'):'Tap to sign in'}</p>
+      </div>
+    </div>
+
+    <!-- Activity -->
+    <div class="sg-more-section">
+      <div class="sg-more-section-title">Activity</div>
+      ${moreItem('📋','My Bookings','Upcoming & past visits','/bookings')}
+      ${moreItem('💰','ScanGym Wallet','Balance & credits','/wallet')}
+      ${moreItem('🎟️','Refer & Earn','Invite friends, get £2','/refer')}
+    </div>
+
+    <!-- Explore -->
+    <div class="sg-more-section">
+      <div class="sg-more-section-title">Explore</div>
+      ${moreItem('✨','AI Coach','Personalized workout plans','/coach')}
+      ${moreItem('📍','Discover Nearby','Find gyms around you','/explore')}
+      ${moreItem('🎨','Creators','FlexSquad community','/creators')}
+      ${moreItem('🏆','Top Creators','Leaderboard & earnings','/top-creators')}
+      ${moreItem('📝','Blog & Transformations','Stories & inspiration','/blog')}
+    </div>
+
+    <!-- How ScanGym Works -->
+    <div class="sg-more-section">
+      <div class="sg-more-section-title">Learn</div>
+      ${moreItem('❓','How It Works','3 taps to book a gym','/how-it-works')}
+      ${moreItem('⚡','Pricing','Day pass rates & tiers','/pricing')}
+      ${moreItem('💬','FAQ','Common questions','/faq')}
+      ${moreItem('🆘','Help Center','Get support','/help')}
+    </div>
+
+    <!-- For Gym Owners -->
+    <div class="sg-more-section">
+      <div class="sg-more-section-title">For Gym Owners</div>
+      ${moreItem('🏢','List Your Gym','It\'s free — start earning','/list-your-gym')}
+      ${moreItem('📊','Owner Benefits','Revenue & analytics','/owner-benefits')}
+      ${moreItem('⭐','Featured Listings','Get more visibility','/featured')}
+      ${moreItem('🥤','Free Vending Machines','For your gym','/suppliers/vending')}
+      ${moreItem('📱','Free QR Scanners','Entry system','/suppliers/qr')}
+      ${moreItem('🏦','Gym Opening Loans','Funding options','/suppliers/loans')}
+      ${moreItem('📷','Staff QR Scanner','Check-in system','/staff/scan')}
+      ${moreItem('📈','Dashboard','Admin panel','/dashboard')}
+    </div>
+
+    <!-- For Businesses -->
+    <div class="sg-more-section">
+      <div class="sg-more-section-title">For Businesses</div>
+      ${moreItem('🏢','Corporate Wellness','Gym access for teams','/for-corporates')}
+      ${moreItem('🤝','Become a Creator','Join FlexSquad','/become-a-creator')}
+      ${moreItem('🔗','Creator Comparison','ScanGym vs others','/compare')}
+    </div>
+
+    <!-- Company -->
+    <div class="sg-more-section">
+      <div class="sg-more-section-title">Company</div>
+      ${moreItem('ℹ️','About Us','Our mission','/about')}
+      ${moreItem('💼','Careers','Join the team','/careers')}
+      ${moreItem('✉️','Contact','Get in touch','/contact')}
+    </div>
+
+    <!-- Account -->
+    <div class="sg-more-section">
+      <div class="sg-more-section-title">Account</div>
+      ${moreItem(u?'👤':'🔑',u?'My Profile':'Log In',u?(u.name||u.phone):'Sign in or create account','/login')}
+    </div>
+
+    <!-- Legal -->
+    <div class="sg-more-section">
+      <div class="sg-more-section-title">Legal</div>
+      ${moreItem('🔒','Privacy Policy','Your data rights','/privacy')}
+      ${moreItem('🍪','Cookie Policy','How we use cookies','/cookies')}
+      ${moreItem('📄','Terms of Service','Usage terms','/terms')}
+    </div>
+
+    <!-- Social -->
+    <div class="sg-more-section">
+      <div class="sg-more-section-title">Follow Us</div>
+      <div class="sg-more-social">
+        <a href="https://instagram.com/scangym" target="_blank" rel="noopener">📸</a>
+        <a href="https://x.com/scangym" target="_blank" rel="noopener">𝕏</a>
+        <a href="https://tiktok.com/@scangym" target="_blank" rel="noopener">🎵</a>
+        <a href="https://facebook.com/scangym" target="_blank" rel="noopener">📘</a>
+        <a href="https://pinterest.com/scangym" target="_blank" rel="noopener">📌</a>
+        <a href="https://threads.net/@scangym" target="_blank" rel="noopener">🧵</a>
+        <a href="https://chat.whatsapp.com/scangym-creators" target="_blank" rel="noopener">💬</a>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="text-align:center;padding:20px 0 8px;border-top:1px solid rgba(255,255,255,.06);margin-top:12px">
+      <p style="color:rgba(255,255,255,.2);font-size:11px">© 2026 ScanGym · Manchester, UK</p>
+      <p style="color:rgba(255,255,255,.15);font-size:10px;margin-top:4px">${GYM_COUNT>=1000?fmtCount(GYM_COUNT)+' gyms':'Gyms'} and growing 🚀</p>
+    </div>
+  </div>`;
+}
+
 function render(){
   const path=state.route;
   let page='';
@@ -4017,9 +4171,33 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
 
   else if(path==='/booking')page=InfoPage('Book a Gym Session',`<p class="text-xl text-white font-bold mb-2">3 taps. That’s it.</p><p class="text-lg text-slate-300 mb-8">Find a gym, pick your time, and go. No membership required.</p><div class="relative space-y-6 mb-8">${[{step:"1",icon:"🔍",title:"Find a Gym",desc:"Search by city, area, or gym name. Filter by price, rating, facilities, and distance. 1.2M+ gyms worldwide.",time:"30 sec"},{step:"2",icon:"📅",title:"Pick Your Session",desc:"Choose your date and time slot. Day passes are valid for 24 hours from scan-in. 4 price tiers from £5.",time:"20 sec"},{step:"3",icon:"💳",title:"Pay Securely",desc:"Apple Pay, Google Pay, or card. Guest checkout available — no account needed. Free cancellation up to 2 hours before.",time:"10 sec"},{step:"4",icon:"📱",title:"Get Your QR Code",desc:"Instant QR code on your phone. Walk up to the gym, scan at the entrance, and you’re in. Fully contactless.",time:"Instant"},{step:"5",icon:"🏋️",title:"Train & Check Out",desc:"Enjoy the full gym for 24 hours. Scan out when you leave. Rate your experience and earn rewards.",time:"Your pace"}].map(s=>`<div class="flex gap-4"><div class="w-10 h-10 bg-brand rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">${s.step}</div><div class="flex-1 bg-slate-800 rounded-lg p-4"><div class="flex items-center justify-between"><p class="text-white font-bold"><span class="mr-2">${s.icon}</span>${s.title}</p><span class="text-brand text-xs font-medium">${s.time}</span></div><p class="text-slate-400 text-sm mt-1">${s.desc}</p></div></div>`).join("")}</div><div class="grid sm:grid-cols-3 gap-4 mb-8"><div class="bg-green-900/20 border border-green-800/30 rounded-xl p-4 text-center"><p class="text-2xl mb-1">✅</p><p class="text-white font-semibold text-sm">Free Cancellation</p><p class="text-slate-500 text-xs">Up to 2 hours before</p></div><div class="bg-blue-900/20 border border-blue-800/30 rounded-xl p-4 text-center"><p class="text-2xl mb-1">🔒</p><p class="text-white font-semibold text-sm">Secure Payment</p><p class="text-slate-500 text-xs">Stripe + Apple/Google Pay</p></div><div class="bg-brand/10 border border-brand/30 rounded-xl p-4 text-center"><p class="text-2xl mb-1">⚡</p><p class="text-white font-semibold text-sm">No Membership</p><p class="text-slate-500 text-xs">Pay per session only</p></div></div><div class="text-center"><a onclick="navigate('/explore')" class="bg-brand hover:bg-orange-600 text-white font-bold px-10 py-4 rounded-xl cursor-pointer transition inline-block shadow-lg shadow-brand/20 text-lg">Find a Gym Near You →</a><p class="text-slate-500 text-sm mt-3">From £5 per session · No contracts · No sign-up required</p></div>`);
   else if(path==='/for-corporates')page=InfoPage('Corporate Wellness',`<p class="text-xl text-white font-bold mb-2">Gym access for your entire team. Zero admin.</p><p class="text-lg text-slate-300 mb-8">Give employees access to 1.2M+ gyms worldwide. No memberships, no contracts, no hassle.</p><div class="bg-brand/10 border border-brand/30 rounded-xl p-6 mb-8"><p class="text-white font-bold mb-3">📊 Why Companies Choose ScanGym</p><div class="grid sm:grid-cols-4 gap-4">${[{stat:"67%",label:"less sick days",desc:"with active employees"},{stat:"41%",label:"higher retention",desc:"with wellness perks"},{stat:"3.2x",label:"ROI",desc:"on wellness spend"},{stat:"£0",label:"setup cost",desc:"start immediately"}].map(s=>`<div class="text-center"><p class="text-2xl font-bold text-brand">${s.stat}</p><p class="text-white text-sm font-medium">${s.label}</p><p class="text-slate-500 text-xs">${s.desc}</p></div>`).join("")}</div></div><div class="grid sm:grid-cols-2 gap-6 mb-8"><div class="bg-slate-800 rounded-xl p-6 border border-slate-700"><p class="text-2xl mb-2">🏢</p><p class="text-white font-bold mb-1">Pay-Per-Use</p><p class="text-slate-400 text-sm mb-3">Only pay when employees actually use a gym. No monthly minimums.</p><div class="space-y-2"><p class="text-slate-300 text-sm flex items-center gap-2"><span class="text-green-400">✓</span> From £5 per session</p><p class="text-slate-300 text-sm flex items-center gap-2"><span class="text-green-400">✓</span> Monthly invoicing</p><p class="text-slate-300 text-sm flex items-center gap-2"><span class="text-green-400">✓</span> Usage dashboard</p></div></div><div class="bg-slate-800 rounded-xl p-6 border border-slate-700"><p class="text-2xl mb-2">💳</p><p class="text-white font-bold mb-1">Credit Allowance</p><p class="text-slate-400 text-sm mb-3">Give each employee a monthly gym credit. They choose where to train.</p><div class="space-y-2"><p class="text-slate-300 text-sm flex items-center gap-2"><span class="text-green-400">✓</span> Set per-employee budgets</p><p class="text-slate-300 text-sm flex items-center gap-2"><span class="text-green-400">✓</span> Unused credits roll over</p><p class="text-slate-300 text-sm flex items-center gap-2"><span class="text-green-400">✓</span> Admin controls</p></div></div></div><div class="bg-slate-800 rounded-xl p-6 border border-slate-700 mb-8"><p class="text-white font-bold mb-4">How It Works for Companies</p><div class="grid sm:grid-cols-3 gap-4">${[{step:"1",title:"Sign Up",desc:"Tell us your team size and budget. We set up your company portal in minutes."},{step:"2",title:"Invite Team",desc:"Send email invites. Employees use the web or app — no training needed."},{step:"3",title:"Track & Report",desc:"See usage, spend, and engagement in your admin dashboard. Export reports for HR."}].map(s=>`<div class="text-center"><div class="w-10 h-10 bg-brand rounded-full flex items-center justify-center text-white font-bold text-sm mx-auto mb-3">${s.step}</div><p class="text-white font-semibold text-sm">${s.title}</p><p class="text-slate-400 text-xs mt-1">${s.desc}</p></div>`).join("")}</div></div><div class="bg-green-900/20 border border-green-800/30 rounded-xl p-6 mb-8"><p class="text-white font-bold mb-3">✅ What’s Included — Every Plan</p><div class="grid sm:grid-cols-2 gap-2 text-sm">${["Access to 1.2M+ gyms worldwide","No per-employee minimums","Admin dashboard & reporting","Free cancellation policy","24/7 email & chat support","GDPR compliant","Monthly or annual billing","Dedicated account manager (50+ staff)"].map(f=>`<p class="text-slate-300 flex items-center gap-2"><span class="text-green-400">✓</span>${f}</p>`).join("")}</div></div><div class="text-center"><a onclick="navigate('/contact')" class="bg-brand hover:bg-orange-600 text-white font-bold px-10 py-4 rounded-xl cursor-pointer transition inline-block shadow-lg shadow-brand/20 text-lg">Get a Corporate Quote →</a><p class="text-slate-500 text-sm mt-3">📧 hello@scangym.com · Free setup · Cancel anytime</p></div>`);
+  else if(path==='/more')page=MoreHubPage();
     else page=InfoPage('Page Not Found',`<p>Sorry, this page doesn\'t exist yet.</p><p><a onclick="navigate(\'/\')" class="text-brand cursor-pointer">← Back to home</a></p>`);
 
-  document.getElementById('app').innerHTML=NavBar()+`<main class="fade-in">${page}</main>`+Footer();
+  // ── 3-Tab Layout: No NavBar, No Footer, Bottom Tab Bar ──
+  const tab=state.activeTab;
+  let html='';
+
+  if(tab==='reels'){
+    // Full-screen Reels iframe + tab bar
+    html=`<iframe src="/reels/" class="sg-reels-frame" allow="autoplay; fullscreen" loading="lazy"></iframe>`+BottomTabBar();
+  } else if(tab==='more' && (path==='/more'||path==='/more/')){
+    // More hub page
+    html=`<main class="sg-tab-content fade-in">${MoreHubPage()}</main>`+BottomTabBar();
+  } else if(tab==='more'){
+    // Sub-page within More tab — show back button + page content
+    html=`<main class="sg-tab-content fade-in">
+      <div style="max-width:480px;margin:0 auto;padding:12px 16px 0">
+        <div class="sg-more-back" onclick="navigate('/more')">← Back to More</div>
+      </div>
+      ${page}
+    </main>`+BottomTabBar();
+  } else {
+    // Book tab — full content
+    html=`<main class="sg-tab-content fade-in">${page}</main>`+BottomTabBar();
+  }
+
+  document.getElementById('app').innerHTML=html;
   initInteractive();
   // Auto-load gyms when navigating to search page (Fix #1 + #6)
   if(path==='/explore'||path==='/nearby'||path==='/search'){
@@ -4029,6 +4207,7 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
 
 // ─── Init ───
 state.route=location.pathname;
+state.activeTab=getTabForRoute(state.route);
 render();
 
 // Auto-load data based on initial route (uses Uber-style IP+GPS parallel detection)

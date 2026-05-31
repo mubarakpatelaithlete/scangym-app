@@ -54,22 +54,21 @@ h1,h2,h3,.font-brand{font-family:'Sora',sans-serif}
 </head>
 <body class="bg-dark min-h-screen">
 <div id="app">
-  <!-- Skeleton UI: shown instantly, replaced when app.js renders -->
-  <nav style="background:#0f172a;border-bottom:1px solid #1e293b;padding:12px 24px;display:flex;align-items:center;justify-content:space-between">
-    <div style="display:flex;align-items:center;gap:8px">
-      <span style="font-size:24px">🏋️</span>
-      <span style="font-family:Sora,sans-serif;font-weight:800;font-size:20px;color:white">Scan<span style="color:#F97316">Gym</span></span>
+  <!-- Skeleton UI: shown instantly, replaced when app.js renders (v5 — bottom tab only) -->
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:0 24px;text-align:center">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:40px">
+      <span style="font-size:28px">🏋️</span>
+      <span style="font-family:Sora,sans-serif;font-weight:800;font-size:24px;color:white">Scan<span style="color:#F97316">Gym</span></span>
     </div>
-    <div style="display:flex;gap:12px">
-      <div class="skeleton" style="width:64px;height:32px;border-radius:8px"></div>
-      <div class="skeleton" style="width:80px;height:32px;border-radius:8px"></div>
-    </div>
-  </nav>
-  <div style="max-width:768px;margin:80px auto;padding:0 24px;text-align:center">
-    <div class="skeleton" style="width:240px;height:24px;border-radius:12px;margin:0 auto 24px"></div>
-    <div class="skeleton" style="width:100%;max-width:500px;height:56px;border-radius:16px;margin:0 auto 16px"></div>
-    <div class="skeleton" style="width:100%;max-width:400px;height:48px;border-radius:12px;margin:0 auto 16px"></div>
+    <div class="skeleton" style="width:100%;max-width:320px;height:48px;border-radius:14px;margin:0 auto 12px"></div>
+    <div class="skeleton" style="width:100%;max-width:320px;height:48px;border-radius:14px;margin:0 auto 16px"></div>
     <div class="skeleton" style="width:200px;height:16px;border-radius:8px;margin:0 auto"></div>
+  </div>
+  <!-- Skeleton tab bar -->
+  <div style="position:fixed;bottom:0;left:0;right:0;height:64px;background:rgba(10,10,22,.97);display:flex;align-items:center;justify-content:space-around;border-top:1px solid rgba(255,255,255,.08);padding-bottom:env(safe-area-inset-bottom,0)">
+    <div style="text-align:center"><span style="font-size:24px">🏋️</span><br><span style="font-size:10px;color:#f97316;font-weight:600">Book</span></div>
+    <div style="text-align:center;opacity:.45"><span style="font-size:24px">🎬</span><br><span style="font-size:10px;color:rgba(255,255,255,.4);font-weight:600">Reels</span></div>
+    <div style="text-align:center;opacity:.45"><span style="font-size:24px">☰</span><br><span style="font-size:10px;color:rgba(255,255,255,.4);font-weight:600">More</span></div>
   </div>
 </div>
 
