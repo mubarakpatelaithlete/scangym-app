@@ -750,7 +750,7 @@ async function loadGyms(lat,lng){
   }catch(e){console.error('Failed to load gyms:',e)}
 }
 
-async function searchGyms(query, isExplicit){
+async function searchGyms(query, isExplicit, _triggerLayer){
   try{
     // Fix: Track when user explicitly searched (city button or typed query)
     // This prevents GPS/IP from overriding their intent
@@ -759,8 +759,19 @@ async function searchGyms(query, isExplicit){
     // Add timeout to prevent infinite loading — abort after 8 seconds
     const controller=new AbortController();
     const timeout=setTimeout(()=>controller.abort(),8000);
-    const data=await api.getLive(`/search?q=${encodeURIComponent(query)}`);
+    // ━━━ LOCATION BIAS FIX: Pass detected coordinates to bias Google Places search ━━━
+    let searchUrl=`/search?q=${encodeURIComponent(query)}`;
+    if(state.searchLat&&state.searchLng){
+      searchUrl+=`&lat=${state.searchLat}&lng=${state.searchLng}`;
+    }
+    const data=await api.getLive(searchUrl);
     clearTimeout(timeout);
+    // ━━━ RACE CONDITION FIX: If GPS (layer 5) loaded while this API call was in-flight, ━━━
+    // ━━━ discard these stale results. GPS data is always more accurate. ━━━
+    if(_triggerLayer && window._locationLayer > _triggerLayer){
+      console.log('[Search] Discarding stale L'+_triggerLayer+' results for "'+query+'" — L'+window._locationLayer+' already loaded');
+      return;
+    }
     state.gyms=data.gyms||[];
     state.nextPageToken=data.nextPageToken||null;
     render();
@@ -3757,7 +3768,13 @@ function _upgradeLocation(layer, query, meta){
   if(layer<=window._locationLayer) return false; // Already showing more precise data
   window._locationLayer=layer;
   console.log('[Location] Layer',layer,'upgrade →',query,meta?.source||'');
-  searchGyms(query);
+  // ━━━ FIX: Set searchLat/Lng from meta so text search gets location bias ━━━
+  if(meta&&meta.lat&&meta.lng){
+    state.searchLat=meta.lat;
+    state.searchLng=meta.lng;
+  }
+  // ━━━ RACE CONDITION FIX: Pass layer so searchGyms can discard stale results ━━━
+  searchGyms(query, false, layer);
   if(meta){
     setCachedLocation(meta);
     recordLocationForPrediction(meta);
@@ -3795,7 +3812,7 @@ window.autoLoadGyms=async function(){
 
   // ━━━ If no layer fired yet, show London IMMEDIATELY (never empty screen) ━━━
   if(window._locationLayer===0){
-    searchGyms('gyms in London');
+    searchGyms('gyms in London', false, 0);
     console.log('[Location] Default: London (no cache/hint available)');
   }
 
