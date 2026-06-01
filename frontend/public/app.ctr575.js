@@ -534,6 +534,62 @@ function Footer(){
   </footer>`;
 }
 
+// Smart facility tags — derives relevant badges from gym name + Google types
+function getCardFacilities(gym){
+  const n=(gym.name||'').toLowerCase();
+  const t=(gym.types||[]).join(' ').toLowerCase();
+  // Premium clubs with pools/spas
+  if(n.includes('third space')||n.includes('virgin active')||n.includes('david lloyd')||n.includes('harbour club')||n.includes('nuffield'))
+    return['🏊 Pool','🧖 Spa','🧘 Studio'];
+  if(n.includes('equinox')||n.includes('1rebel'))
+    return['🏊 Pool','🧘 Studio','🏋️ Weights'];
+  // Budget 24h chains
+  if(n.includes('puregym')||n.includes('pure gym'))
+    return['🏋️ Weights','🚴 Cardio','⏰ 24/7'];
+  if(n.includes('the gym group')||n.includes('the gym '))
+    return['🏋️ Weights','🚴 Cardio','⏰ 24/7'];
+  if(n.includes('anytime fitness'))
+    return['🏋️ Weights','🚴 Cardio','⏰ 24/7'];
+  if(n.includes('jd gyms')||n.includes('jd gym'))
+    return['🏋️ Weights','🚴 Cardio','⏰ 24/7'];
+  // Mid-range chains
+  if(n.includes('fitness first'))
+    return['🏋️ Weights','🚴 Cardio','🧘 Classes'];
+  if(n.includes('bannatyne'))
+    return['🏊 Pool','🧖 Spa','🏋️ Weights'];
+  if(n.includes('snap fitness'))
+    return['🏋️ Weights','🚴 Cardio','⏰ 24/7'];
+  if(n.includes('better ')||n.includes('better gym')||n.includes('leisure centre'))
+    return['🏊 Pool','🏋️ Weights','🧘 Classes'];
+  if(n.includes('everyone active'))
+    return['🏊 Pool','🏋️ Weights','🚴 Cardio'];
+  // Boutique / specialty
+  if(n.includes('crossfit'))
+    return['🏋️ Functional','🫀 HIIT','👥 Group'];
+  if(n.includes('f45')||n.includes('barry')||n.includes('orangetheory'))
+    return['🫀 HIIT','🏋️ Functional','👥 Group'];
+  if(n.includes('yoga')||n.includes('pilates'))
+    return['🧘 Yoga','🧘 Pilates','🧖 Wellness'];
+  if(n.includes('boxing')||n.includes('box '))
+    return['🥊 Boxing','🫀 HIIT','🏋️ Strength'];
+  if(n.includes('climb'))
+    return['🧗 Climbing','🏋️ Strength','🚴 Cardio'];
+  if(n.includes('swim')||n.includes('pool')||n.includes('aqua'))
+    return['🏊 Pool','🚴 Cardio','🧘 Classes'];
+  // Google type fallbacks
+  if(t.includes('spa'))
+    return['🏋️ Weights','🏊 Pool','🧖 Spa'];
+  if(t.includes('swimming'))
+    return['🏊 Pool','🚴 Cardio','🧘 Classes'];
+  if(t.includes('physiotherapist')||t.includes('doctor'))
+    return['🏋️ Rehab','🧘 Stretch','🚴 Cardio'];
+  // Default — vary by first char of place_id for visual diversity
+  const v=((gym.placeId||gym.place_id||gym.id||'a').charCodeAt(0))%3;
+  if(v===0) return['🏋️ Weights','🚴 Cardio','🧘 Classes'];
+  if(v===1) return['🏋️ Weights','🫀 Cardio','💪 Machines'];
+  return['🏋️ Free Weights','🚴 Cardio','🧘 Studio'];
+}
+
 function GymCard(gym){
   const badges=getRandomBadges(gym,3);
   const price=gym.dayPassPrice||gym.price_tier||'5.00';
@@ -586,9 +642,9 @@ function GymCard(gym){
         ${topGym?`<span class="text-yellow-400 text-xs font-medium">· Guest Favourite</span>`:''}
       </div>
       <p class="text-slate-500 text-xs mb-2 truncate">${gym.address||gym.vicinity||''}</p>
-      <!-- Hussle-style facility icons -->
+      <!-- Smart facility tags per gym -->
       <div class="flex flex-wrap gap-1.5 mb-2">
-        ${['🏋️ Weights','🚴 Cardio','🧘 Classes'].map(f=>`<span class="text-[10px] bg-slate-700/50 text-slate-300 px-2 py-0.5 rounded-full">${f}</span>`).join('')}
+        ${getCardFacilities(gym).map(f=>`<span class="text-[10px] bg-slate-700/50 text-slate-300 px-2 py-0.5 rounded-full">${f}</span>`).join('')}
       </div>
       <div class="flex items-center justify-between">
         <span class="text-xs text-accent font-medium">✅ Free cancellation</span>
