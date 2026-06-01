@@ -542,13 +542,16 @@ router.post('/instant-checkout', async (req, res) => {
   try {
     if (!stripe) return res.status(500).json({ error: 'Payment not configured' });
 
-    const { gymId, date, time, email, placeId } = req.body;
+    const { gymId, date, time, email, placeId, passType } = req.body;
     if (!date || !time) {
       return res.status(400).json({ error: 'date and time are required' });
     }
     // Email is optional at init (Stripe Elements mount before user types email)
     // Will be collected before payment confirmation
     const userEmail = (email && email.includes('@')) ? email : null;
+    
+    // Pass type pricing
+    const passTypeClean = passType || 'day';
 
     // Resolve gym ID (Google Place ID → DB ID)
     let dbGymId = gymId;
@@ -583,9 +586,15 @@ router.post('/instant-checkout', async (req, res) => {
     }
     const g = gym.rows[0];
 
-    // Pricing: before 10am = £3.75 (off-peak), otherwise £5.00
+    // Pass-based pricing with off-peak discounts
     const [hours] = time.split(':').map(Number);
-    const price = hours < 10 ? 3.75 : 5.00;
+    const PASS_PRICES = {
+      day:    { peak: 5.00, offPeak: 3.75 },
+      '3day': { peak: 12.00, offPeak: 9.00 },
+      weekly: { peak: 20.00, offPeak: 15.00 },
+    };
+    const passPricing = PASS_PRICES[passTypeClean] || PASS_PRICES.day;
+    const price = hours < 10 ? passPricing.offPeak : passPricing.peak;
     const amount = Math.round(price * 100);
 
     // Generate booking codes
@@ -615,7 +624,7 @@ router.post('/instant-checkout', async (req, res) => {
       amount,
       currency: 'gbp',
       automatic_payment_methods: { enabled: true },
-      metadata: { bookingId: String(booking.id), gymName: g.name },
+      metadata: { bookingId: String(booking.id), gymName: g.name, passType: passTypeClean },
       ...(userEmail ? { receipt_email: userEmail } : {}),
     });
 
@@ -654,7 +663,7 @@ router.post('/update-intent-amount', async (req, res) => {
   try {
     if (!stripe) return res.status(500).json({ error: 'Payment not configured' });
 
-    const { paymentIntentId, amount, time, bookingId } = req.body;
+    const { paymentIntentId, amount, time, bookingId, passType } = req.body;
     if (!paymentIntentId || !amount) return res.status(400).json({ error: 'paymentIntentId and amount required' });
 
     // Update Stripe PaymentIntent
@@ -664,8 +673,15 @@ router.post('/update-intent-amount', async (req, res) => {
 
     // Update booking amount + time if provided
     if (bookingId && time) {
+      const passTypeClean = passType || 'day';
+      const PASS_PRICES = {
+        day:    { peak: 5.00, offPeak: 3.75 },
+        '3day': { peak: 12.00, offPeak: 9.00 },
+        weekly: { peak: 20.00, offPeak: 15.00 },
+      };
+      const pp = PASS_PRICES[passTypeClean] || PASS_PRICES.day;
       const [hours] = time.split(':').map(Number);
-      const price = hours < 10 ? 3.75 : 5.00;
+      const price = hours < 10 ? pp.offPeak : pp.peak;
       await pool.query(
         'UPDATE public.bookings SET total_amount = $1, start_time = $2, end_time = $3, platform_fee_amount = $4, updated_at = NOW() WHERE id = $5',
         [price, time, time, price * 0.10, bookingId]
@@ -676,6 +692,108 @@ router.post('/update-intent-amount', async (req, res) => {
   } catch (err) {
     console.error('Update intent error:', err);
     res.status(500).json({ error: 'Failed to update payment' });
+  }
+});
+
+
+/**
+ * POST /api/payment/cash-booking
+ * Reserve a booking to pay cash at the gym reception.
+ * No Stripe involved — booking created with status 'reserved_cash'.
+ */
+router.post('/cash-booking', async (req, res) => {
+  try {
+    const { gymId, placeId, date, time, email, passType, gymName, gymAddress } = req.body;
+    if (!date || !time) return res.status(400).json({ error: 'date and time required' });
+    if (!email || !email.includes('@')) return res.status(400).json({ error: 'Valid email required' });
+
+    // Resolve gym ID
+    let dbGymId = gymId;
+    if (placeId && isNaN(parseInt(gymId))) {
+      const ensureResult = await pool.query('SELECT id FROM public.gyms WHERE place_id = $1', [placeId]);
+      if (ensureResult.rows.length > 0) {
+        dbGymId = ensureResult.rows[0].id;
+      } else {
+        try {
+          const gn = gymName || 'Gym';
+          const insertResult = await pool.query(
+            `INSERT INTO public.gyms (name, address, place_id, day_pass_price, owner_id, slug, is_active, created_at, updated_at)
+             VALUES ($1, $2, $3, 5.00, 'system', $4, true, NOW(), NOW()) RETURNING id`,
+            [gn, gymAddress || '', placeId, gn.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 100)]
+          );
+          dbGymId = insertResult.rows[0].id;
+        } catch (e) {
+          return res.status(400).json({ error: 'Gym not found' });
+        }
+      }
+    }
+
+    // Get gym info
+    const gym = await pool.query('SELECT id, name FROM gyms WHERE id = $1', [dbGymId]);
+    if (gym.rows.length === 0) return res.status(404).json({ error: 'Gym not found' });
+    const g = gym.rows[0];
+
+    // Pass-based pricing
+    const passTypeClean = passType || 'day';
+    const PASS_PRICES = {
+      day:    { peak: 5.00, offPeak: 3.75 },
+      '3day': { peak: 12.00, offPeak: 9.00 },
+      weekly: { peak: 20.00, offPeak: 15.00 },
+    };
+    const pp = PASS_PRICES[passTypeClean] || PASS_PRICES.day;
+    const [hours] = time.split(':').map(Number);
+    const price = hours < 10 ? pp.offPeak : pp.peak;
+
+    // Generate booking codes
+    const crypto = require('crypto');
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let bookingCode = 'CASH-';
+    for (let i = 0; i < 6; i++) bookingCode += chars[Math.floor(Math.random() * chars.length)];
+    const qrCode = 'CASH_' + crypto.randomBytes(8).toString('hex').toUpperCase();
+
+    // Create booking with cash status
+    const bookingResult = await pool.query(
+      `INSERT INTO public.bookings
+        (gym_id, user_id, booking_date, start_time, end_time, total_amount,
+         platform_fee_amount, booking_type, booking_code, qr_code, status,
+         user_email, user_name, created_at, updated_at)
+       VALUES ($1, 'guest', $2, $3, $4, $5, $6, $7, $8, $9, 'reserved_cash', $10, 'Guest', NOW(), NOW())
+       RETURNING *`,
+      [dbGymId, date, time, time, price, price * 0.10, passTypeClean + '_cash', bookingCode, qrCode, email]
+    );
+    const booking = bookingResult.rows[0];
+
+    // Generate QR
+    let qrDataUrl = null;
+    if (QRCode) {
+      const qrPayload = JSON.stringify({ type: 'scangym_cash', bookingId: booking.id, token: qrCode, gymId: dbGymId, payAtGym: true });
+      try { qrDataUrl = await QRCode.toDataURL(qrPayload, { width: 400, margin: 2 }); } catch(e) {}
+    }
+
+    // Update QR URL
+    if (qrDataUrl) {
+      await pool.query('UPDATE public.bookings SET qr_code_url = $1, updated_at = NOW() WHERE id = $2', [qrDataUrl, booking.id]);
+    }
+
+    const bookingDate = new Date(booking.booking_date).toLocaleDateString('en-GB');
+
+    // Send confirmation email (if email transport configured)
+    sendConfirmationEmail({
+      to: email, gymName: g.name, date: bookingDate,
+      time: booking.start_time, endTime: booking.end_time,
+      price: price.toFixed(2), bookingCode, qrDataUrl,
+    }).catch(err => console.error('[Cash email] Send failed:', err.message));
+
+    res.json({
+      success: true,
+      booking: { id: booking.id, gymName: g.name, date: bookingDate, time: booking.start_time, price, bookingCode, status: 'reserved_cash', paymentMethod: 'cash' },
+      qr: { token: qrCode, dataUrl: qrDataUrl },
+    });
+
+    console.log('[Cash Booking] Reserved:', bookingCode, 'at', g.name, '£' + price, passTypeClean);
+  } catch (err) {
+    console.error('Cash booking error:', err);
+    res.status(500).json({ error: 'Failed to create reservation' });
   }
 });
 
