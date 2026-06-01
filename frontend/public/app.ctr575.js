@@ -3240,6 +3240,11 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
     const isOP=h<10||h>=20;
     const displayPrice=isOP?offPeak:price;
 
+    // Keep deferred Stripe Elements amount in sync with current selection
+    if(cs.elements&&!cs.clientSecret){
+      try{cs.elements.update({amount:Math.round(displayPrice*100)});}catch(e){}
+    }
+
     // Icon button values
     const valPass=document.getElementById('ub-val-pass');
     const valPayment=document.getElementById('ub-val-payment');
@@ -3409,7 +3414,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
     }
 
     // ─── Card payment via Stripe ───
-    if(!cs.elements||!cs.stripe||!cs.clientSecret){
+    if(!cs.elements||!cs.stripe){
       errEl?.querySelector('.ub-error-text')&&(errEl.querySelector('.ub-error-text').textContent='Payment not ready yet — try again in a moment');
       errEl?.classList.remove('hidden');
       return;
@@ -3419,7 +3424,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
     btnText.innerHTML='<span class="sg-spinner" style="width:18px;height:18px;display:inline-block"></span> Processing payment…';
 
     try{
-      // Submit Stripe Elements form first
+      // Submit Stripe Elements form first (validates card details)
       const submitResult=await cs.elements.submit();
       if(submitResult.error){
         errEl?.querySelector('.ub-error-text')&&(errEl.querySelector('.ub-error-text').textContent=submitResult.error.message||'Payment details incomplete');
@@ -3428,10 +3433,29 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
         return;
       }
 
-      // Confirm the payment
+      // NOW create PaymentIntent with the user's FINAL selections (deferred intent)
+      const gymInfo=state.currentGym||state.gyms.find(g=>(g.placeId||g.place_id||g.id)==gymId)||{};
+      const intentResult=await fetch('/api/payment/instant-checkout',{
+        method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
+        body:JSON.stringify({gymId:parseInt(cs.dbGymId||gymId),placeId:gymId,date:cs.selectedDate,time:cs.selectedTime==='anytime'?'':cs.selectedTime,email,gymName:gymInfo.name||gymName||'Gym',gymAddress:gymInfo.formatted_address||gymInfo.vicinity||gymInfo.address||gymAddr||'',passType:cs.selectedPass||'day'})
+      }).then(r=>{if(!r.ok)throw new Error('Server error '+r.status);return r.json();});
+
+      if(intentResult.error){
+        errEl?.querySelector('.ub-error-text')&&(errEl.querySelector('.ub-error-text').textContent=intentResult.error||'Failed to create booking');
+        errEl?.classList.remove('hidden');
+        btnText.textContent='Confirm and pay';btn.disabled=false;
+        return;
+      }
+
+      cs.bookingId=intentResult.bookingId;
+      cs.intentId=intentResult.intentId;
+      cs.clientSecret=intentResult.clientSecret;
+      localStorage.setItem('sg_pending_booking',intentResult.bookingId);
+
+      // Confirm the payment with the fresh clientSecret
       const {error,paymentIntent}=await cs.stripe.confirmPayment({
         elements:cs.elements,
-        clientSecret:cs.clientSecret,
+        clientSecret:intentResult.clientSecret,
         confirmParams:{
           return_url:window.location.origin+'/booking-success?booking_id='+(cs.bookingId||''),
           receipt_email:email||undefined,
@@ -3515,7 +3539,7 @@ async function _initUberPaymentNew(gymId, gym){
     }catch(e){console.log('No saved cards');}
   }
 
-  // Load Stripe Elements for card payment
+  // Load Stripe Elements for card payment (DEFERRED — no PaymentIntent yet)
   if(!STRIPE_PK||!window.Stripe){
     stripeArea.innerHTML='<div class="ub-stripe-wrap"><p style="color:rgba(255,255,255,.35);font-size:12px;text-align:center">Loading payment system…</p></div>';
     setTimeout(()=>_initUberPaymentNew(gymId,gym),1000);
@@ -3523,38 +3547,33 @@ async function _initUberPaymentNew(gymId, gym){
   }
 
   try{
+    // Resolve gym DB ID for later use at confirm time
     let dbGymId=gymId;
     if(isNaN(parseInt(gymId))){
       const ensured=await api.postLive('/ensure-gym',{placeId:gymId});
       if(ensured.error){sgToast(ensured.error);closeBookingSheet();return;}
       dbGymId=ensured.gymId;
     }
-
-    const gymInfo=state.currentGym||state.gyms.find(g=>(g.placeId||g.place_id||g.id)==gymId)||{};
-    const email=document.getElementById('ub-email')?.value||'';
-
-    const result=await fetch('/api/payment/instant-checkout',{
-      method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
-      body:JSON.stringify({gymId:parseInt(dbGymId),placeId:gymId,date:cs.selectedDate,time:cs.selectedTime==='anytime'?'':cs.selectedTime,email,gymName:gymInfo.name||'Gym',gymAddress:gymInfo.formatted_address||gymInfo.vicinity||gymInfo.address||'',passType:cs.selectedPass||'day'})
-    }).then(r=>{if(!r.ok)throw new Error('Server error '+r.status);return r.json();});
-
-    if(result.error){
-      stripeArea.innerHTML=`<div class="ub-stripe-wrap"><p style="color:#f87171;font-size:13px;text-align:center">${result.error}</p></div>`;
-      return;
-    }
-
-    cs.bookingId=result.bookingId;
-    cs.intentId=result.intentId;
-    cs.clientSecret=result.clientSecret;
-    localStorage.setItem('sg_pending_booking',result.bookingId);
+    cs.dbGymId=dbGymId;
 
     const stripeInstance=window.Stripe(STRIPE_PK);
     cs.stripe=stripeInstance;
 
+    // Calculate current price for deferred Elements initialization
+    const passEl=document.querySelector('.ub-pass.selected');
+    const peakPrice=parseFloat(passEl?.dataset?.price||'5');
+    const offPeakPrice=parseFloat(passEl?.dataset?.offpeak||'3.75');
+    const h=cs.selectedTime==='anytime'?12:parseInt(cs.selectedTime||'10');
+    const isOP=h<10||h>=20;
+    const initPrice=isOP?offPeakPrice:peakPrice;
+
     const userCountry=(()=>{try{const tz=Intl.DateTimeFormat().resolvedOptions().timeZone||'';const map={'Europe/London':'GB','America/New_York':'US','America/Los_Angeles':'US','Asia/Dubai':'AE','Europe/Paris':'FR','Europe/Berlin':'DE','Europe/Madrid':'ES','Australia/Sydney':'AU','Asia/Tokyo':'JP','America/Toronto':'CA'};return map[tz]||'GB';}catch(e){return 'GB';}})();
 
+    // Create Elements in DEFERRED mode — no PaymentIntent created until user confirms
     const elements=stripeInstance.elements({
-      clientSecret:result.clientSecret,
+      mode:'payment',
+      amount:Math.round(initPrice*100),
+      currency:'gbp',
       appearance:{
         theme:'night',
         variables:{colorPrimary:'#22c55e',fontFamily:'-apple-system,BlinkMacSystemFont,Inter,sans-serif',borderRadius:'12px',colorBackground:'#111827'},
@@ -3569,7 +3588,7 @@ async function _initUberPaymentNew(gymId, gym){
       wallets:{applePay:'auto',googlePay:'auto'},
       paymentMethodOrder:['apple_pay','google_pay','card'],
       fields:{billingDetails:{address:{postalCode:'auto',country:'auto'}}},
-      defaultValues:{billingDetails:{address:{country:userCountry},email:email||undefined}},
+      defaultValues:{billingDetails:{address:{country:userCountry}}},
     });
     paymentElement.mount('#ub-stripe-el');
 
