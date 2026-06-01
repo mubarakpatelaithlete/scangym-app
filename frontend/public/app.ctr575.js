@@ -2784,7 +2784,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
     _updateCheckoutAmount(h);
   };
 
-  function _updatePassPrice(){
+  window._updatePassPrice=function(){
     const passCard=document.querySelector('.uc-pass-card.selected');
     if(!passCard)return;
     const h=parseInt(document.getElementById('uc-time')?.value||'10');
