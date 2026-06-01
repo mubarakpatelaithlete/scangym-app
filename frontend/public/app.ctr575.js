@@ -929,7 +929,7 @@ function GymProfilePage(){
 
   return`
   <style>
-    .gym-fs-hero{position:relative;width:100%;height:100vh;height:100dvh;overflow:hidden;background:#0a0a0a}
+    .gym-fs-hero{position:relative;width:100%;height:calc(100vh - 140px);height:calc(100dvh - 140px);overflow:hidden;background:#0a0a0a}
     .gym-fs-hero img.hero-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
     .gym-fs-hero .hero-gradient{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.15) 0%,transparent 30%,transparent 40%,rgba(0,0,0,.85) 100%);pointer-events:none}
     .gym-fs-hero .hero-dots{position:absolute;top:max(env(safe-area-inset-top,12px),12px);left:50%;transform:translateX(-50%);display:flex;gap:6px;padding-top:8px}
@@ -949,11 +949,13 @@ function GymProfilePage(){
     .gym-hero-addr{color:rgba(255,255,255,.7);font-size:14px;margin-bottom:10px}
     .gym-hero-stats{display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap}
     .gym-hero-stat{color:#fff;font-size:14px;font-weight:600}
-    .gym-book-bar{display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.1);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.15);border-radius:16px;padding:12px 16px}
+    .gym-book-bar{display:flex;align-items:center;justify-content:space-between;background:rgba(10,15,20,.95);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.15);border-radius:16px;padding:12px 16px;position:fixed;bottom:calc(64px + env(safe-area-inset-bottom,0) + 8px);left:16px;right:16px;z-index:50;box-shadow:0 -4px 24px rgba(0,0,0,.5)}
     .gym-book-price{color:#fff;font-size:24px;font-weight:800}
     .gym-book-sub{font-size:12px;color:rgba(255,255,255,.5)}
     .gym-book-btn{background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:16px;font-weight:700;padding:14px 28px;border-radius:12px;border:none;box-shadow:0 4px 20px rgba(34,197,94,.4);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .15s}
     .gym-book-btn:active{transform:scale(.96)}
+    @keyframes bounceDown{0%,100%{transform:translate(-50%,0);opacity:.6}50%{transform:translate(-50%,10px);opacity:1}}
+    .gym-scroll-hint{position:absolute;left:50%;bottom:200px;color:rgba(255,255,255,.5);font-size:32px;animation:bounceDown 2s ease-in-out infinite;z-index:5;pointer-events:none;text-shadow:0 2px 8px rgba(0,0,0,.5);filter:drop-shadow(0 0 4px rgba(0,0,0,.3))}
     .gym-card-book-btn{width:100%;margin-top:10px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:13px;font-weight:700;padding:10px 16px;border-radius:10px;border:none;box-shadow:0 2px 12px rgba(34,197,94,.3);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;letter-spacing:.3px}
     .gym-card-book-btn:active{transform:scale(.97);box-shadow:0 1px 6px rgba(34,197,94,.2)}
 
@@ -1018,6 +1020,7 @@ function GymProfilePage(){
       :`<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:80px;background:#1e293b">🏋️</div>`
     }
     <div class="hero-gradient"></div>
+    <div class="gym-scroll-hint">▼</div>
 
     <!-- Photo dots -->
     ${photos.length>1?`
