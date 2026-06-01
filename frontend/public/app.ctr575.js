@@ -2609,8 +2609,8 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
   // Pass options with pricing
   const passes=[
     {id:'day',name:'Day Pass',desc:'1 visit · any time today',price:5.00,offPeak:3.75,icon:'⚡',badge:'Instant',badgeColor:'#2563eb',available:true},
-    {id:'3day',name:'3-Day Pass',desc:'3 visits · valid 7 days',price:12.00,offPeak:12.00,icon:'🔥',badge:'Popular',badgeColor:'#f97316',available:false},
-    {id:'weekly',name:'Weekly Pass',desc:'Unlimited · 7 days',price:20.00,offPeak:20.00,icon:'💪',badge:'Best Value',badgeColor:'#10b981',available:false},
+    {id:'3day',name:'3-Day Pass',desc:'3 visits · valid 7 days',price:12.00,offPeak:9.00,icon:'🔥',badge:'Popular',badgeColor:'#f97316',available:true},
+    {id:'weekly',name:'Weekly Pass',desc:'Unlimited · 7 days',price:20.00,offPeak:15.00,icon:'💪',badge:'Best Value',badgeColor:'#10b981',available:true},
   ];
   const defaultPass=passes[0];
   const defaultPrice=defaultHour<10?defaultPass.offPeak:defaultPass.price;
@@ -2654,7 +2654,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
             </div>
             <div class="text-right flex-shrink-0">
               <span class="text-white font-bold text-base">£${p.price.toFixed(2)}</span>
-              ${p.id==='day'&&defaultHour<10?'<p class="text-green-400 text-[10px]">Off-peak £3.75</p>':''}
+              ${defaultHour<10&&p.offPeak<p.price?`<p class="text-green-400 text-[10px]">Off-peak £${p.offPeak.toFixed(2)}</p>`:''}
             </div>
           </div>`).join('')}
         </div>
@@ -2714,6 +2714,20 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
             <p class="text-slate-500 text-xs">Loading payment methods...</p>
           </div>
         </div>
+
+        <!-- ═══ CASH AT GYM OPTION ═══ -->
+        <div id="uc-cash-option" class="mb-3">
+          <div class="bg-slate-800/60 rounded-xl p-3 flex items-center gap-3 cursor-pointer hover:bg-slate-700/60 transition border-2 border-transparent hover:border-green-500/40" onclick="toggleCashMode()">
+            <div class="w-10 h-10 bg-green-900/40 rounded-xl flex items-center justify-center text-lg flex-shrink-0">💷</div>
+            <div class="flex-1">
+              <p class="text-white text-sm font-semibold">Pay Cash at Gym</p>
+              <p class="text-slate-500 text-[10px]">Reserve online · pay at reception</p>
+            </div>
+            <div id="uc-cash-toggle" class="w-5 h-5 rounded-full border-2 border-slate-600 flex items-center justify-center flex-shrink-0">
+            </div>
+          </div>
+        </div>
+
         <div id="uc-error" class="text-red-400 text-sm mb-2 hidden"></div>
 
         <!-- ═══ CTA + CALENDAR (Uber-style) ═══ -->
@@ -2758,8 +2772,17 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
     
     window._checkoutState.selectedPass=passId;
     _updatePassPrice();
+    if(window._onPassChange)window._onPassChange();
   };
   window._checkoutState.selectedPass='day';
+
+  // When pass changes, update payment intent amount
+  window._onPassChange=async function(){
+    const cs=window._checkoutState;
+    if(!cs.bookingId||!cs.intentId)return;
+    const h=parseInt(document.getElementById('uc-time')?.value||'10');
+    _updateCheckoutAmount(h);
+  };
 
   function _updatePassPrice(){
     const passCard=document.querySelector('.uc-pass-card.selected');
@@ -2822,7 +2845,7 @@ async function _initUberPayment(gymId, gym){
         document.getElementById('uc-card-last4').textContent=card.last4;
         document.getElementById('uc-saved-card').classList.remove('hidden');
         payArea.classList.add('hidden');
-        const h=parseInt(time||'10');const p=h<10?'3.75':'5.00';
+        const h=parseInt(time||'10');const pc=document.querySelector('.uc-pass-card.selected');const p=pc?(h<10?pc.dataset.offpeak:pc.dataset.price):(h<10?'3.75':'5.00');
         btnText.textContent='⚡ Book Now · £'+p;
         payBtn.disabled=false;
         payBtn.dataset.mode='saved';
@@ -2849,7 +2872,7 @@ async function _initUberPayment(gymId, gym){
     const gymInfo=state.currentGym||state.gyms.find(g=>(g.placeId||g.place_id||g.id)==gymId)||{};
     const result=await fetch('/api/payment/instant-checkout',{
       method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
-      body:JSON.stringify({gymId:parseInt(dbGymId),placeId:gymId,date,time,email,gymName:gymInfo.name||'Gym',gymAddress:gymInfo.formatted_address||gymInfo.vicinity||gymInfo.address||''})
+      body:JSON.stringify({gymId:parseInt(dbGymId),placeId:gymId,date,time,email,gymName:gymInfo.name||'Gym',gymAddress:gymInfo.formatted_address||gymInfo.vicinity||gymInfo.address||'',passType:window._checkoutState.selectedPass||'day'})
     }).then(r=>{if(!r.ok)throw new Error('Server error '+r.status);return r.json();});
 
     if(result.error){
@@ -2861,6 +2884,7 @@ async function _initUberPayment(gymId, gym){
     window._checkoutState.bookingId=bookingId;
     window._checkoutState.intentId=result.intentId;
     window._checkoutState.gymId=gymId;
+    window._checkoutState.selectedPass=window._checkoutState.selectedPass||'day';
     localStorage.setItem('sg_pending_booking',bookingId);
 
     const stripeInstance=window.Stripe(STRIPE_PK);
@@ -2889,9 +2913,7 @@ async function _initUberPayment(gymId, gym){
     paymentElement.mount('#uc-stripe-el');
 
     paymentElement.on('ready',()=>{
-      const h=parseInt(document.getElementById('uc-time')?.value||'10');
-      const p=h<10?'3.75':'5.00';
-      btnText.textContent='Confirm & Pay · £'+p;
+      _updatePassPrice();
       payBtn.disabled=false;
     });
 
@@ -2977,6 +2999,8 @@ async function _handleUberPay(bookingId){
   const btnText=document.getElementById('uc-btn-text');
   const errEl=document.getElementById('uc-error');
   if(!btn||btn.disabled)return;
+  // Cash mode → different flow
+  if(btn.dataset?.payMode==='cash'){return _handleCashBooking();}
 
   const email=document.getElementById('uc-email')?.value;
   if(!email||!email.includes('@')){
@@ -3004,7 +3028,7 @@ async function _handleUberPay(bookingId){
     errEl.textContent=error.message;
     errEl.classList.remove('hidden');
     const h=parseInt(document.getElementById('uc-time')?.value||'10');
-    btnText.textContent='Confirm & Pay · £'+(h<10?'3.75':'5.00');
+    const pc=document.querySelector('.uc-pass-card.selected');const ep=pc?(h<10?pc.dataset.offpeak:pc.dataset.price):(h<10?'3.75':'5.00');btnText.textContent='Confirm & Pay · £'+parseFloat(ep).toFixed(2);
     btn.disabled=false;
     return;
   }
@@ -3060,13 +3084,105 @@ async function _handleUberPay(bookingId){
 async function _updateCheckoutAmount(hour){
   const cs=window._checkoutState;
   if(!cs.bookingId)return;
-  const price=hour<10?3.75:5.00;
+  const passCard=document.querySelector('.uc-pass-card.selected');
+  const price=passCard?(hour<10?parseFloat(passCard.dataset.offpeak):parseFloat(passCard.dataset.price)):(hour<10?3.75:5.00);
+  const passType=cs.selectedPass||'day';
   try{
     await fetch('/api/payment/update-intent-amount',{
       method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
-      body:JSON.stringify({paymentIntentId:cs.intentId,amount:price,time:String(hour).padStart(2,'0')+':00',bookingId:cs.bookingId})
+      body:JSON.stringify({paymentIntentId:cs.intentId,amount:price,time:String(hour).padStart(2,'0')+':00',bookingId:cs.bookingId,passType})
     });
   }catch(e){console.warn('Amount update failed:',e);}
+}
+
+
+// ═══ CASH AT GYM: Toggle between card and cash payment ═══
+window.toggleCashMode=function(){
+  const payArea=document.getElementById('uc-payment-area');
+  const cashToggle=document.getElementById('uc-cash-toggle');
+  const btnText=document.getElementById('uc-btn-text');
+  const payBtn=document.getElementById('uc-pay-btn');
+  const isCash=payBtn?.dataset?.payMode==='cash';
+
+  if(isCash){
+    // Switch back to card
+    payArea?.classList.remove('hidden');
+    cashToggle.innerHTML='';
+    cashToggle.className='w-5 h-5 rounded-full border-2 border-slate-600 flex items-center justify-center flex-shrink-0';
+    payBtn.dataset.payMode='card';
+    _updatePassPrice();
+  }else{
+    // Switch to cash
+    payArea?.classList.add('hidden');
+    cashToggle.innerHTML='<div class="w-3 h-3 rounded-full bg-green-400"></div>';
+    cashToggle.className='w-5 h-5 rounded-full border-2 border-green-400 flex items-center justify-center flex-shrink-0';
+    payBtn.dataset.payMode='cash';
+    payBtn.disabled=false;
+    const pc=document.querySelector('.uc-pass-card.selected');
+    const h=parseInt(document.getElementById('uc-time')?.value||'10');
+    const price=pc?(h<10?parseFloat(pc.dataset.offpeak):parseFloat(pc.dataset.price)):5.00;
+    btnText.textContent='Reserve · Pay at Gym · £'+price.toFixed(2);
+  }
+};
+
+// Handle cash booking submission
+async function _handleCashBooking(){
+  const btn=document.getElementById('uc-pay-btn');
+  const btnText=document.getElementById('uc-btn-text');
+  const errEl=document.getElementById('uc-error');
+  if(!btn||btn.disabled)return;
+
+  const email=document.getElementById('uc-email')?.value;
+  if(!email||!email.includes('@')){
+    errEl.textContent='Please enter a valid email for your booking confirmation';
+    errEl.classList.remove('hidden');
+    document.getElementById('uc-email')?.focus();
+    return;
+  }
+  localStorage.setItem('sg_last_email',email);
+
+  btn.disabled=true;
+  btnText.innerHTML='<span class="sg-spinner"></span> Reserving...';
+  errEl.classList.add('hidden');
+
+  try{
+    const cs=window._checkoutState;
+    let gymId=cs.gymId;
+    let dbGymId=gymId;
+    if(isNaN(parseInt(gymId))){
+      const gymInfo=state.currentGym||state.gyms.find(g=>(g.placeId||g.place_id||g.id)==gymId)||{};
+      const ensured=await fetch('/api/live/ensure-gym',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({placeId:gymId})}).then(r=>r.json());
+      if(ensured.error){sgToast(ensured.error);closeBookingSheet();return;}
+      dbGymId=ensured.gymId;
+    }
+
+    const date=document.getElementById('uc-date')?.value;
+    const time=document.getElementById('uc-time')?.value;
+    const passType=cs.selectedPass||'day';
+    const gymInfo=state.currentGym||state.gyms.find(g=>(g.placeId||g.place_id||g.id)==gymId)||{};
+
+    const result=await fetch('/api/payment/cash-booking',{
+      method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
+      body:JSON.stringify({gymId:parseInt(dbGymId),placeId:gymId,date,time,email,passType,gymName:gymInfo.name||'Gym',gymAddress:gymInfo.formatted_address||gymInfo.vicinity||gymInfo.address||''})
+    }).then(r=>r.json());
+
+    if(result.success){
+      state.lastBooking=result.booking;
+      state.lastQR=result.qr;
+      closeBookingSheet();
+      navigate('/booking-success?session_id=cash&booking_id='+result.booking.id);
+      sgToast('💷 Reserved! Pay at the gym reception.','success',5000);
+    }else{
+      errEl.textContent=result.error||'Reservation failed';
+      errEl.classList.remove('hidden');
+      btnText.textContent='Reserve · Pay at Gym';btn.disabled=false;
+    }
+  }catch(e){
+    console.error('Cash booking error:',e);
+    errEl.textContent='Something went wrong. Please try again.';
+    errEl.classList.remove('hidden');
+    btnText.textContent='Reserve · Pay at Gym';btn.disabled=false;
+  }
 }
 
 window.closeBookingSheet=function(){
