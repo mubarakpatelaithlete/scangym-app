@@ -18,6 +18,24 @@ try {
   console.error('Stripe init error:', err.message);
 }
 
+/**
+ * Resolve 'anytime' time to usable values.
+ * - For pricing: anytime = peak pricing (standard rate)
+ * - For DB storage: anytime = null start/end time
+ * - For display: "Visit anytime during opening hours"
+ */
+function resolveTime(time) {
+  const isAnytime = time === 'anytime';
+  const hours = isAnytime ? null : parseInt(time.split(':')[0], 10);
+  return {
+    isAnytime,
+    hours,
+    startTime: isAnytime ? null : time,
+    endTime: isAnytime ? null : time,
+    displayTime: isAnytime ? 'Anytime today' : time,
+  };
+}
+
 let QRCode;
 try {
   QRCode = require('qrcode');
@@ -57,7 +75,7 @@ async function sendConfirmationEmail({ to, gymName, date, time, endTime, price, 
         <div style="background:#1e293b;border-radius:12px;padding:24px;margin-bottom:24px;">
           <h2 style="color:white;margin:0 0 8px;">${gymName}</h2>
           <p style="color:#94a3b8;margin:4px 0;">📅 ${date}</p>
-          <p style="color:#94a3b8;margin:4px 0;">🕐 ${time} — ${endTime}</p>
+          <p style="color:#94a3b8;margin:4px 0;">🕐 ${(!time || time === 'anytime') ? 'Visit anytime today' : `${time} — ${endTime}`}</p>
           <p style="color:#f97316;font-size:20px;font-weight:bold;margin:12px 0 0;">£${price}</p>
         </div>
         ${qrDataUrl ? `
@@ -546,6 +564,7 @@ router.post('/instant-checkout', async (req, res) => {
     if (!date || !time) {
       return res.status(400).json({ error: 'date and time are required' });
     }
+    const resolved = resolveTime(time);
     // Email is optional at init (Stripe Elements mount before user types email)
     // Will be collected before payment confirmation
     const userEmail = (email && email.includes('@')) ? email : null;
@@ -587,14 +606,14 @@ router.post('/instant-checkout', async (req, res) => {
     const g = gym.rows[0];
 
     // Pass-based pricing with off-peak discounts
-    const [hours] = time.split(':').map(Number);
+    // 'anytime' bookings use peak (standard) pricing
     const PASS_PRICES = {
       day:    { peak: 5.00, offPeak: 3.75 },
       '3day': { peak: 12.00, offPeak: 9.00 },
       weekly: { peak: 20.00, offPeak: 15.00 },
     };
     const passPricing = PASS_PRICES[passTypeClean] || PASS_PRICES.day;
-    const price = hours < 10 ? passPricing.offPeak : passPricing.peak;
+    const price = (resolved.isAnytime || resolved.hours >= 10) ? passPricing.peak : passPricing.offPeak;
     const amount = Math.round(price * 100);
 
     // Generate booking codes
@@ -615,7 +634,7 @@ router.post('/instant-checkout', async (req, res) => {
          user_email, user_name, created_at, updated_at)
        VALUES ($1, 'guest', $2, $3, $4, $5, $6, 'instant', $7, $8, 'pending', $9, 'Guest', NOW(), NOW())
        RETURNING *`,
-      [dbGymId, date, time, time, price, price * 0.10, bookingCode, qrCode, userEmail || 'pending@scangym.com']
+      [dbGymId, date, resolved.startTime, resolved.endTime, price, price * 0.10, bookingCode, qrCode, userEmail || 'pending@scangym.com']
     );
     const booking = bookingResult.rows[0];
 
@@ -673,6 +692,7 @@ router.post('/update-intent-amount', async (req, res) => {
 
     // Update booking amount + time if provided
     if (bookingId && time) {
+      const resolved = resolveTime(time);
       const passTypeClean = passType || 'day';
       const PASS_PRICES = {
         day:    { peak: 5.00, offPeak: 3.75 },
@@ -680,11 +700,10 @@ router.post('/update-intent-amount', async (req, res) => {
         weekly: { peak: 20.00, offPeak: 15.00 },
       };
       const pp = PASS_PRICES[passTypeClean] || PASS_PRICES.day;
-      const [hours] = time.split(':').map(Number);
-      const price = hours < 10 ? pp.offPeak : pp.peak;
+      const price = (resolved.isAnytime || resolved.hours >= 10) ? pp.peak : pp.offPeak;
       await pool.query(
         'UPDATE public.bookings SET total_amount = $1, start_time = $2, end_time = $3, platform_fee_amount = $4, updated_at = NOW() WHERE id = $5',
-        [price, time, time, price * 0.10, bookingId]
+        [price, resolved.startTime, resolved.endTime, price * 0.10, bookingId]
       );
     }
 
@@ -706,6 +725,7 @@ router.post('/cash-booking', async (req, res) => {
     const { gymId, placeId, date, time, email, passType, gymName, gymAddress } = req.body;
     if (!date || !time) return res.status(400).json({ error: 'date and time required' });
     if (!email || !email.includes('@')) return res.status(400).json({ error: 'Valid email required' });
+    const resolved = resolveTime(time);
 
     // Resolve gym ID
     let dbGymId = gymId;
@@ -733,7 +753,7 @@ router.post('/cash-booking', async (req, res) => {
     if (gym.rows.length === 0) return res.status(404).json({ error: 'Gym not found' });
     const g = gym.rows[0];
 
-    // Pass-based pricing
+    // Pass-based pricing — 'anytime' uses peak (standard) pricing
     const passTypeClean = passType || 'day';
     const PASS_PRICES = {
       day:    { peak: 5.00, offPeak: 3.75 },
@@ -741,8 +761,7 @@ router.post('/cash-booking', async (req, res) => {
       weekly: { peak: 20.00, offPeak: 15.00 },
     };
     const pp = PASS_PRICES[passTypeClean] || PASS_PRICES.day;
-    const [hours] = time.split(':').map(Number);
-    const price = hours < 10 ? pp.offPeak : pp.peak;
+    const price = (resolved.isAnytime || resolved.hours >= 10) ? pp.peak : pp.offPeak;
 
     // Generate booking codes
     const crypto = require('crypto');
@@ -759,7 +778,7 @@ router.post('/cash-booking', async (req, res) => {
          user_email, user_name, created_at, updated_at)
        VALUES ($1, 'guest', $2, $3, $4, $5, $6, $7, $8, $9, 'reserved_cash', $10, 'Guest', NOW(), NOW())
        RETURNING *`,
-      [dbGymId, date, time, time, price, price * 0.10, passTypeClean + '_cash', bookingCode, qrCode, email]
+      [dbGymId, date, resolved.startTime, resolved.endTime, price, price * 0.10, passTypeClean + '_cash', bookingCode, qrCode, email]
     );
     const booking = bookingResult.rows[0];
 
@@ -962,6 +981,7 @@ router.post('/quick-checkout', async (req, res) => {
 
     const { gymId, date, time, cardId, placeId } = req.body;
     if (!date || !time) return res.status(400).json({ error: 'date and time required' });
+    const resolved = resolveTime(time);
 
     // Get user + Stripe customer
     const userResult = await pool.query(
@@ -1007,9 +1027,8 @@ router.post('/quick-checkout', async (req, res) => {
     if (gym.rows.length === 0) return res.status(404).json({ error: 'Gym not found' });
     const g = gym.rows[0];
 
-    // Pricing
-    const [hours] = time.split(':').map(Number);
-    const price = hours < 10 ? 3.75 : 5.00;
+    // Pricing — 'anytime' uses peak (standard) pricing
+    const price = (resolved.isAnytime || resolved.hours >= 10) ? 5.00 : 3.75;
     const amount = Math.round(price * 100);
 
     // Generate booking codes
@@ -1030,7 +1049,7 @@ router.post('/quick-checkout', async (req, res) => {
          user_email, user_name, created_at, updated_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, 'quick', $8, $9, 'pending', $10, 'User', NOW(), NOW())
        RETURNING *`,
-      [dbGymId, req.session.userId, date, time, time, price, price * 0.10, bookingCode, qrToken, user.email || '']
+      [dbGymId, req.session.userId, date, resolved.startTime, resolved.endTime, price, price * 0.10, bookingCode, qrToken, user.email || '']
     );
     const booking = bookingResult.rows[0];
 
