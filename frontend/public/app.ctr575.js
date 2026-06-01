@@ -917,303 +917,443 @@ function SearchPage(){
 function GymProfilePage(){
   const gym=state.currentGym;
   if(!gym)return`<div class="pt-8 text-center"><div class="animate-spin w-8 h-8 border-2 border-brand border-t-transparent rounded-full mx-auto"></div></div>`;
-  const badges=getRandomBadges(gym,6);
   const mainPhoto=gym.photo_url||gym.photo||(gym.photos_list?.[0]?.url)||'';
   const gymId=gym.place_id||gym.placeId||gym.id;
+  const allPhotos=gym.photos_list||[];
+  const photos=allPhotos.length>0?allPhotos:(mainPhoto?[{url:mainPhoto,thumbnail:mainPhoto}]:[]);
+  const rating=gym.rating||'4.5';
+  const reviewCount=gym.user_ratings_total||gym.totalReviews||47;
+  const isOpen=gym.opening_hours?.isOpen;
+  const price=gym.price_tier||'5';
+
   return`
-  <div class="pt-8 min-h-screen overflow-x-hidden">
-    <!-- Photo/Video Hero Carousel (All Google Places media) -->
-    <div class="h-80 bg-slate-800 relative overflow-hidden gym-hero-carousel" id="hero-carousel">
-      ${(()=>{
-        const allMedia=gym.photos_list||[];
-        if(allMedia.length===0&&!mainPhoto) return '<div class="w-full h-full flex items-center justify-center text-6xl bg-slate-800">🏋️</div>';
-        const photos=allMedia.length>0?allMedia:(mainPhoto?[{url:mainPhoto,thumbnail:mainPhoto}]:[]);
-        return '<div class="flex h-full transition-transform duration-300 ease-out" id="hero-slides" style="width:'+photos.length*100+'%;touch-action:pan-y;">'+photos.map((p,i)=>'<div class="h-full flex-shrink-0" style="width:'+(100/photos.length)+'%"><img src="'+(p.url||p.thumbnail||p)+'" alt="'+gym.name+' photo '+(i+1)+'" class="w-full h-full object-cover" loading="'+(i<2?'eager':'lazy')+'" onerror="this.src=\'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 300%22><rect fill=%22%23334155%22 width=%22400%22 height=%22300%22/><text x=%22200%22 y=%22150%22 text-anchor=%22middle%22 fill=%22%2394a3b8%22 font-size=%2248%22>🏋️</text></svg>\'"></div>').join('')+'</div>'
-        +(photos.length>1?'<div class="absolute top-3 right-3 bg-black/60 text-white text-xs px-2.5 py-1 rounded-full font-medium backdrop-blur-sm"><span id="hero-counter">1</span>/'+photos.length+'</div>':'')
-        +(photos.length>1?'<button onclick="heroSlide(-1)" class="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/40 hover:bg-black/60 text-white rounded-full flex items-center justify-center backdrop-blur-sm transition text-lg">‹</button><button onclick="heroSlide(1)" class="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/40 hover:bg-black/60 text-white rounded-full flex items-center justify-center backdrop-blur-sm transition text-lg">›</button>':'')
-        +(photos.length>1?'<div class="absolute bottom-16 left-1/2 -translate-x-1/2 flex gap-1.5" id="hero-dots">'+photos.map((_,i)=>'<div class="w-1.5 h-1.5 rounded-full '+(i===0?'bg-white':'bg-white/40')+' transition-all"></div>').join('')+'</div>':'');
-      })()}
-      <div class="absolute inset-0 bg-gradient-to-t from-dark via-transparent to-transparent pointer-events-none"></div>
-      <div class="absolute bottom-4 left-4 right-4">
-        <h1 class="font-brand text-3xl font-bold text-white">${gym.name}</h1>
-        <p class="text-slate-300 text-sm mt-1">${gym.formatted_address||gym.vicinity||''}</p>
+  <style>
+    .gym-fs-hero{position:relative;width:100%;height:100vh;height:100dvh;overflow:hidden;background:#0a0a0a}
+    .gym-fs-hero img.hero-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+    .gym-fs-hero .hero-gradient{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.15) 0%,transparent 30%,transparent 40%,rgba(0,0,0,.85) 100%);pointer-events:none}
+    .gym-fs-hero .hero-dots{position:absolute;top:max(env(safe-area-inset-top,12px),12px);left:50%;transform:translateX(-50%);display:flex;gap:6px;padding-top:8px}
+    .gym-fs-hero .hero-dots span{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.4);transition:all .3s}
+    .gym-fs-hero .hero-dots span.active{background:#fff;width:20px;border-radius:4px}
+    .gym-nav-col{position:absolute;right:16px;bottom:240px;display:flex;flex-direction:column;align-items:center;gap:18px;z-index:5}
+    .gym-nav-btn{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+    .gym-nav-btn:active .gym-nav-circle{transform:scale(.9)}
+    .gym-nav-circle{width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,.12);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:22px;transition:transform .15s}
+    .gym-nav-label{color:rgba(255,255,255,.8);font-size:11px;font-weight:600;text-shadow:0 1px 4px rgba(0,0,0,.5)}
+    .gym-hero-bottom{position:absolute;bottom:0;left:0;right:0;padding:0 20px 20px;z-index:4}
+    .gym-hero-badges{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+    .gym-hero-badge{font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+    .gym-hero-badge.gold{background:rgba(250,204,21,.2);border:1px solid rgba(250,204,21,.4);color:#fbbf24}
+    .gym-hero-badge.green{background:rgba(34,197,94,.2);border:1px solid rgba(34,197,94,.4);color:#4ade80}
+    .gym-hero-name{font-family:'Sora',sans-serif;font-size:30px;font-weight:800;color:#fff;line-height:1.1;margin-bottom:4px;text-shadow:0 2px 16px rgba(0,0,0,.5)}
+    .gym-hero-addr{color:rgba(255,255,255,.7);font-size:14px;margin-bottom:10px}
+    .gym-hero-stats{display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap}
+    .gym-hero-stat{color:#fff;font-size:14px;font-weight:600}
+    .gym-book-bar{display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.1);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.15);border-radius:16px;padding:12px 16px}
+    .gym-book-price{color:#fff;font-size:24px;font-weight:800}
+    .gym-book-sub{font-size:12px;color:rgba(255,255,255,.5)}
+    .gym-book-btn{background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:16px;font-weight:700;padding:14px 28px;border-radius:12px;border:none;box-shadow:0 4px 20px rgba(34,197,94,.4);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .15s}
+    .gym-book-btn:active{transform:scale(.96)}
+
+    /* Overlay panel */
+    .gym-overlay{position:fixed;inset:0;z-index:100;opacity:0;pointer-events:none;transition:opacity .3s ease}
+    .gym-overlay.open{opacity:1;pointer-events:all}
+    .gym-overlay-bg{position:absolute;inset:0;background:rgba(0,0,0,.5)}
+    .gym-overlay-panel{position:absolute;left:0;right:0;bottom:0;top:0;background:#0a0f14;transform:translateY(100%);transition:transform .35s cubic-bezier(.32,.72,0,1);display:flex;flex-direction:column;overflow:hidden}
+    .gym-overlay.open .gym-overlay-panel{transform:translateY(0)}
+    .gym-overlay-drag{width:40px;height:4px;border-radius:2px;background:rgba(255,255,255,.2);margin:10px auto 0}
+    .gym-overlay-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0}
+    .gym-overlay-title{color:#fff;font-size:20px;font-weight:700;font-family:'Sora',sans-serif}
+    .gym-overlay-close{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.1);border:none;color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .2s}
+    .gym-overlay-close:hover{background:rgba(255,255,255,.2)}
+    .gym-overlay-body{flex:1;overflow-y:auto;padding:20px;-webkit-overflow-scrolling:touch}
+    .gym-overlay-footer{padding:12px 20px;border-top:1px solid rgba(255,255,255,.08);background:#0a0f14;flex-shrink:0;display:flex;align-items:center;justify-content:space-between}
+
+    /* Rating bars */
+    .rating-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+    .rating-bar-label{color:rgba(255,255,255,.5);font-size:12px;width:14px;text-align:right}
+    .rating-bar-bg{flex:1;height:8px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden}
+    .rating-bar-fill{height:100%;border-radius:4px;background:#fbbf24}
+    .topic-pill{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:8px 14px;color:rgba(255,255,255,.7);font-size:13px;font-weight:500;cursor:pointer;transition:all .2s}
+    .topic-pill.active{background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.4);color:#4ade80}
+    .sort-chip{padding:6px 14px;border-radius:16px;font-size:12px;font-weight:600;background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);border:none;cursor:pointer;transition:all .2s}
+    .sort-chip.active{background:#22c55e;color:#fff}
+
+    /* Review cards */
+    .ov-review{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px;margin-bottom:12px}
+    .ov-review-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+    .ov-review-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#fff;flex-shrink:0}
+    .ov-review-name{color:#fff;font-size:14px;font-weight:600}
+    .ov-review-meta{color:rgba(255,255,255,.3);font-size:11px}
+    .ov-review-stars{margin-left:auto;color:#fbbf24;font-size:13px}
+    .ov-review-text{color:rgba(255,255,255,.6);font-size:13px;line-height:1.6}
+
+    /* Info cards */
+    .ov-card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:20px;margin-bottom:16px}
+    .ov-card h3{color:#fff;font-size:16px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+    .ov-hour-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+    .ov-hour-row:last-child{border-bottom:none}
+    .ov-hour-day{color:rgba(255,255,255,.5);font-size:14px}
+    .ov-hour-time{color:rgba(255,255,255,.7);font-size:14px}
+    .ov-hour-row.today .ov-hour-day,.ov-hour-row.today .ov-hour-time{color:#4ade80;font-weight:600}
+
+    /* Facility / equipment grid */
+    .ov-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+    .ov-grid-item{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:18px 10px;text-align:center;transition:transform .15s}
+    .ov-grid-item:active{transform:scale(.96)}
+    .ov-grid-icon{font-size:30px;margin-bottom:6px;display:block}
+    .ov-grid-name{color:#fff;font-size:12px;font-weight:600}
+    .ov-grid-sub{color:rgba(255,255,255,.35);font-size:10px;margin-top:2px}
+
+    /* Hide bottom tab bar on gym detail */
+    .gym-fs-hero ~ *{} /* doesn't affect tab bar, handled by z-index */
+  </style>
+
+  <div class="gym-fs-hero" id="gym-fs-page">
+    <!-- Full-screen photo background -->
+    ${photos.length>0
+      ?`<img class="hero-bg" src="${photos[0].url||photos[0].thumbnail||photos[0]}" alt="${gym.name}" id="gym-fs-photo" onerror="this.style.display='none'">`
+      :`<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:80px;background:#1e293b">🏋️</div>`
+    }
+    <div class="hero-gradient"></div>
+
+    <!-- Photo dots -->
+    ${photos.length>1?`
+    <div class="hero-dots" id="fs-hero-dots">
+      ${photos.map((_,i)=>`<span class="${i===0?'active':''}"></span>`).join('')}
+    </div>`:''}
+
+    <!-- Right-side nav buttons -->
+    <div class="gym-nav-col">
+      <div class="gym-nav-btn" onclick="openGymOverlay('facilities')">
+        <div class="gym-nav-circle">🏊</div>
+        <span class="gym-nav-label">Facilities</span>
+      </div>
+      <div class="gym-nav-btn" onclick="openGymOverlay('equipment')">
+        <div class="gym-nav-circle">🏋️</div>
+        <span class="gym-nav-label">Equipment</span>
+      </div>
+      <div class="gym-nav-btn" onclick="openGymOverlay('reviews')">
+        <div class="gym-nav-circle">⭐</div>
+        <span class="gym-nav-label">Reviews</span>
+      </div>
+      <div class="gym-nav-btn" onclick="openGymOverlay('hours')">
+        <div class="gym-nav-circle">🕐</div>
+        <span class="gym-nav-label">Hours</span>
       </div>
     </div>
 
-    <div class="max-w-5xl mx-auto px-4 py-8">
-      <div class="grid lg:grid-cols-3 gap-8">
-        <!-- Main Content -->
-        <div class="lg:col-span-2 space-y-6">
-          <!-- Airbnb Guest Favourite badge + Rating -->
-          ${isTopGym(gym)?`<div class="bg-yellow-500/10 border border-yellow-500/30 rounded-xl px-4 py-3 flex items-center gap-3 mb-2">
-            <span class="text-2xl">⭐</span>
-            <div><p class="text-yellow-400 font-bold text-sm">Guest Favourite</p><p class="text-yellow-400/70 text-xs">One of the most-loved gyms on ScanGym based on ratings, reviews, and reliability</p></div>
-          </div>`:``}
+    <!-- Bottom overlay info -->
+    <div class="gym-hero-bottom">
+      <div class="gym-hero-badges">
+        ${isTopGym(gym)?`<span class="gym-hero-badge gold">⭐ Guest Favourite</span>`:''}
+        <span class="gym-hero-badge green">✅ Free Cancel</span>
+      </div>
+      <div class="gym-hero-name">${gym.name}</div>
+      <div class="gym-hero-addr">📍 ${gym.formatted_address||gym.vicinity||gym.address||''}</div>
+      <div class="gym-hero-stats">
+        <span class="gym-hero-stat" style="color:#fbbf24">★ ${rating}</span>
+        <span class="gym-hero-stat" style="color:rgba(255,255,255,.6)">· ${reviewCount} reviews</span>
+        <span class="gym-hero-stat">${isOpen===true?`<span style="color:#4ade80">· <span style="width:6px;height:6px;background:#4ade80;border-radius:50%;display:inline-block;margin-right:4px;animation:pulse 2s infinite"></span>Open Now${closingTime(gym)?' · Closes '+closingTime(gym):''}</span>`:(isOpen===false?'<span style="color:rgba(255,255,255,.5)">· Closed</span>':'')}</span>
+      </div>
 
-          <!-- Rating + Stats + Booking.com urgency -->
-          <div class="flex items-center gap-4 flex-wrap">
-            <span class="text-yellow-400 text-lg font-bold">★ ${gym.rating||'4.5'}</span>
-            <span class="text-slate-400 text-sm">${gym.user_ratings_total||47} reviews</span>
-            <span class="text-slate-600">|</span>
-            <span class="text-accent text-sm font-medium">✅ Free cancellation</span>
-            <span class="text-slate-600">|</span>
-            <span class="text-sm">${gym.opening_hours?.isOpen===true?`<span class="text-green-400 flex items-center gap-1"><span class="w-2 h-2 bg-green-400 rounded-full animate-pulse inline-block"></span> Open Now${closingTime(gym)?' · Closes '+closingTime(gym):''}</span>`:(gym.opening_hours?.isOpen===false?'<span class="text-brand font-medium">📅 Schedule your visit — pick any date</span>':'<span class="text-slate-400">Hours vary</span>')}</span>
-          </div>
-
-          <!-- Conviction signals — Booking.com persuasion (loaded async) -->
-          <div id="conviction-signals" class="space-y-2"></div>
-
-          <!-- Opening Hours (Live from Google) -->
-          ${gym.opening_hours?.weekday?.length?`
-          <div class="bg-card rounded-xl p-5 border border-slate-700">
-            <h3 class="text-white font-semibold mb-3">🕐 Opening Hours</h3>
-            <div class="space-y-1">
-              ${gym.opening_hours.weekday.map(d=>`<p class="text-slate-400 text-sm">${d}</p>`).join('')}
-            </div>
-          </div>`:``}
-
-          <!-- Facilities — Hussle-style icon grid + PureGym equipment counts -->
-          <div class="bg-card rounded-xl p-5 border border-slate-700">
-            <h3 class="text-white font-semibold mb-3">Facilities & Equipment</h3>
-            <div class="grid grid-cols-3 gap-3">
-              ${[
-                {icon:'🏋️',name:'Free Weights',detail:'120+ dumbbells'},
-                {icon:'🚴',name:'Cardio Zone',detail:'30+ machines'},
-                {icon:'💪',name:'Resistance',detail:'25+ machines'},
-                {icon:'🧘',name:'Studio',detail:'Classes daily'},
-                {icon:'🚿',name:'Showers',detail:'Hot water'},
-                {icon:'🔒',name:'Lockers',detail:'Free to use'},
-                {icon:'♨️',name:'Sauna',detail:'Available'},
-                {icon:'🅿️',name:'Parking',detail:'Free on-site'},
-                {icon:'📶',name:'WiFi',detail:'Free'},
-              ].map(f=>`
-                <div class="bg-slate-800 rounded-lg p-3 text-center">
-                  <div class="text-2xl mb-1">${f.icon}</div>
-                  <p class="text-white text-xs font-medium">${f.name}</p>
-                  <p class="text-slate-500 text-[10px]">${f.detail}</p>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-
-          <!-- Photo Gallery (All Google Places Photos) -->
-          ${gym.photos_list?.length>1?`
-          <div class="bg-card rounded-xl p-5 border border-slate-700">
-            <h3 class="text-white font-semibold mb-3">📸 All Photos <span class="text-slate-500 font-normal text-sm">(${gym.photos_list.length})</span></h3>
-            <div class="grid grid-cols-3 gap-2" id="photo-gallery">
-              ${gym.photos_list.map((p,i)=>`
-                <div class="relative group cursor-pointer" onclick="openPhotoViewer(${i})">
-                  <img src="${p.thumbnail||p.url}" class="w-full h-28 object-cover rounded-lg transition group-hover:brightness-75" loading="lazy" onerror="this.parentElement.style.display='none'">
-                  <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
-                    <span class="text-white text-lg">🔍</span>
-                  </div>
-                </div>
-              `).join('')}
-            </div>
-          </div>`:``}
-
-          <!-- Map (Task 23 - Uber style, embedded, no external links) -->
-          <div class="bg-card rounded-xl overflow-hidden border border-slate-700">
-            <h3 class="text-white font-semibold p-5 pb-2">📍 Location & Directions</h3>
-            ${MAPS_KEY?`<div class="h-64">
-              <iframe width="100%" height="100%" frameborder="0" style="border:0"
-                src="https://www.google.com/maps/embed/v1/place?key=${MAPS_KEY}&q=${encodeURIComponent(gym.name+' '+( gym.vicinity||gym.formatted_address||''))}&zoom=15" allowfullscreen></iframe>
-            </div>`:`<div class="h-48 flex items-center justify-center bg-slate-800"><p class="text-slate-400 text-sm">📍 ${gym.formatted_address||gym.vicinity||gym.address||''}</p></div>`}
-            <div class="p-4 flex items-center gap-3 border-t border-slate-700">
-              <span class="text-2xl">🚶</span>
-              <div>
-                <p class="text-white text-sm font-medium">${Math.floor(Math.random()*15+3)} min walk</p>
-                <p class="text-slate-500 text-xs">Directions shown in-app after booking</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Chat with Gym (AI + escalation) -->
-          <div class="bg-card rounded-xl p-5 border border-slate-700" id="gym-chat-section">
-            <h3 class="text-white font-semibold mb-3">💬 Ask a Question</h3>
-            <p class="text-slate-400 text-sm mb-3">AI answers instantly. Need a human? We'll text the gym owner.</p>
-            <div class="flex gap-2 flex-wrap mb-3" id="gym-quick-qs">
-              ${['Is the squat rack free?','What\'s the locker code?','Where\'s the entrance?','Can I bring a guest?','Is it busy right now?'].map(q=>
-                `<button onclick="askGymQuestion(this.textContent,'${gymId}')" class="text-xs bg-slate-800 text-slate-300 px-3 py-1.5 rounded-full hover:bg-brand hover:text-white transition cursor-pointer">${q}</button>`
-              ).join('')}
-            </div>
-            <div id="gym-chat-history" class="space-y-3 mb-3 max-h-64 overflow-y-auto"></div>
-            <div class="flex gap-2">
-              <input type="text" id="gym-chat-input" placeholder="Type your question..." class="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-brand outline-none" onkeydown="if(event.key==='Enter'){askGymQuestion(this.value,'${gymId}');this.value='';}">
-              <button onclick="const inp=document.getElementById('gym-chat-input');askGymQuestion(inp.value,'${gymId}');inp.value='';" class="bg-brand text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-orange-600 transition cursor-pointer">Send</button>
-            </div>
-          </div>
-
-          <!-- Reviews (Amazon-style) -->
-          <div class="bg-card rounded-xl p-5 border border-slate-700">
-            <!-- Overall Rating Summary -->
-            <div class="flex items-start gap-4 mb-5 pb-5 border-b border-slate-700">
-              <div class="text-center flex-shrink-0">
-                <p class="text-5xl font-black text-white">${gym.rating||'4.8'}</p>
-                <div class="text-yellow-400 text-sm mt-1">${'★'.repeat(Math.round(gym.rating||4.8))}${'☆'.repeat(5-Math.round(gym.rating||4.8))}</div>
-                <p class="text-slate-500 text-xs mt-1">${gym.user_ratings_total||gym.totalReviews||147} ratings</p>
-              </div>
-              <div class="flex-1 space-y-1.5">
-                ${[{s:5,p:72},{s:4,p:18},{s:3,p:6},{s:2,p:3},{s:1,p:1}].map(r=>`
-                  <div class="flex items-center gap-2">
-                    <span class="text-xs text-slate-400 w-6">${r.s}★</span>
-                    <div class="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden">
-                      <div class="h-full bg-yellow-400 rounded-full" style="width:${r.p}%"></div>
-                    </div>
-                    <span class="text-xs text-slate-500 w-8">${r.p}%</span>
-                  </div>
-                `).join('')}
-              </div>
-            </div>
-            
-            <!-- Sort bar -->
-            <div class="flex items-center justify-between mb-4">
-              <h3 class="text-white font-semibold">Reviews</h3>
-              <select class="bg-slate-800 text-slate-300 text-xs border border-slate-600 rounded-lg px-2 py-1.5 outline-none">
-                <option>Most recent</option>
-                <option>Most helpful</option>
-                <option>Highest rated</option>
-                <option>Lowest rated</option>
-              </select>
-            </div>
-            
-            <!-- Reviews List -->
-            ${(gym.reviews_data?.google?.length||gym.reviews_data?.scangym?.length)?
-              (gym.reviews_data.google||[]).concat(gym.reviews_data.scangym||[]).slice(0,6).map((r,i)=>`
-              <div class="border-b border-slate-700/50 pb-4 mb-4 last:border-0 last:mb-0 last:pb-0">
-                <div class="flex items-center gap-3 mb-2">
-                  <div class="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0" style="background:${['#ef4444','#f97316','#eab308','#22c55e','#3b82f6','#8b5cf6'][i%6]}">${(r.author||r.name||'A').charAt(0).toUpperCase()}</div>
-                  <div class="flex-1">
-                    <p class="text-white text-sm font-medium">${r.author||r.name||'Anonymous'}</p>
-                    <div class="flex items-center gap-2 flex-wrap">
-                      ${r.source==='google'?'<span class="text-xs bg-blue-900/40 text-blue-400 px-1.5 py-0.5 rounded font-medium">✓ Google Review</span>':'<span class="text-xs bg-emerald-900/40 text-emerald-400 px-1.5 py-0.5 rounded font-medium">✓ Verified Visit</span>'}
-                      <span class="text-slate-500 text-xs">${r.relativeTime||r.time||'Recently'}</span>
-                    </div>
-                  </div>
-                </div>
-                <div class="text-yellow-400 text-xs mb-2">${'★'.repeat(r.rating||5)}${'☆'.repeat(5-(r.rating||5))}</div>
-                <p class="text-slate-300 text-sm leading-relaxed">${r.text||r.comment||''}</p>
-                <div class="flex items-center gap-4 mt-3">
-                  <button class="text-slate-500 text-xs hover:text-slate-300 transition" onclick="this.innerHTML='👍 Thanks for your feedback!'">👍 Helpful (${Math.floor(Math.random()*12)+1})</button>
-                  <span class="text-slate-700">|</span>
-                  <button class="text-slate-500 text-xs hover:text-slate-300 transition">🚩 Report</button>
-                </div>
-              </div>
-            `).join('')
-            :`
-              ${[
-                {name:'Sarah M.',initial:'S',color:'#ef4444',stars:5,title:'Best gym experience in London',text:'Absolutely incredible gym! The equipment is top-notch — they have 4 squat racks, full Olympic platform, and brand new cable machines. Went at 7am on a Tuesday and it wasn\'t crowded at all. The QR scan entry was seamless — literally walked in within 5 seconds. Showers are clean with proper pressure. Will definitely be coming back!',time:'15 May 2026',helpful:18,verified:'Verified Visit',photos:true},
-                {name:'James K.',initial:'J',color:'#3b82f6',stars:4,title:'Great value, solid equipment',text:'Really good value for £5. The cardio section has Technogym treadmills and Concept2 rowers. Free weights area is well-stocked. Only reason for 4 stars instead of 5 is the changing rooms — functional but could use a refresh. Staff were friendly and the no-membership model through ScanGym is genius. Saved me vs my old £45/mo contract.',time:'12 May 2026',helpful:11,verified:'Verified Visit',photos:false},
-                {name:'Priya R.',initial:'P',color:'#8b5cf6',stars:5,title:'Love the no-membership model!',text:'As someone who travels for work, ScanGym is a game-changer. Booked this gym for my London trip and the whole process took 30 seconds. The QR entry worked perfectly — no reception queue, no forms, no ID checks. The gym itself was clean, modern, and had everything I needed for a solid push/pull session. Highly recommend to anyone who hates gym contracts.',time:'8 May 2026',helpful:24,verified:'Verified Visit',photos:false},
-                {name:'Marcus T.',initial:'M',color:'#22c55e',stars:5,title:'My new go-to gym',text:'Been using ScanGym for 3 months now and this is my favourite gym on the platform. Great atmosphere, serious lifters, and the staff actually know what they\'re doing. The sauna after a heavy leg day is *chef\'s kiss*. Pro tip: go before 10am for off-peak pricing — saved me 25%.',time:'3 May 2026',helpful:15,verified:'Verified Visit',photos:true},
-                {name:'Emma L.',initial:'E',color:'#f97316',stars:4,title:'Clean and well-maintained',text:'Nice gym with good variety of equipment. The cable machines were all working (refreshing!) and the dumbbell rack goes up to 50kg. Would love to see more stretching space but otherwise very happy. The ScanGym booking process was easier than ordering an Uber.',time:'28 Apr 2026',helpful:8,verified:'Verified Visit',photos:false},
-              ].map(r=>`
-                <div class="border-b border-slate-700/50 pb-4 mb-4 last:border-0 last:mb-0 last:pb-0">
-                  <div class="flex items-center gap-3 mb-2">
-                    <div class="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0" style="background:${r.color}">${r.initial}</div>
-                    <div class="flex-1">
-                      <p class="text-white text-sm font-medium">${r.name}</p>
-                      <div class="flex items-center gap-2 flex-wrap">
-                        <span class="text-xs bg-emerald-900/40 text-emerald-400 px-1.5 py-0.5 rounded font-medium">✓ ${r.verified}</span>
-                        <span class="text-slate-500 text-xs">Reviewed on ${r.time}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="text-yellow-400 text-xs mb-1">${'★'.repeat(r.stars)}${'☆'.repeat(5-r.stars)}</div>
-                  <p class="text-white text-sm font-bold mb-1">${r.title}</p>
-                  <p class="text-slate-300 text-sm leading-relaxed">${r.text}</p>
-                  ${r.photos?'<div class="flex gap-2 mt-2"><div class="w-16 h-16 bg-slate-700 rounded-lg flex items-center justify-center text-2xl">📸</div><div class="w-16 h-16 bg-slate-700 rounded-lg flex items-center justify-center text-2xl">🏋️</div></div>':''}
-                  <div class="flex items-center gap-1 mt-3">
-                    <span class="text-slate-500 text-xs">${r.helpful} people found this helpful</span>
-                  </div>
-                  <div class="flex items-center gap-4 mt-2">
-                    <button class="text-xs border border-slate-600 text-slate-400 px-3 py-1 rounded-full hover:bg-slate-700 transition" onclick="this.textContent='✓ Helpful';this.classList.add('border-emerald-600','text-emerald-400')">Helpful</button>
-                    <button class="text-slate-600 text-xs hover:text-slate-400 transition">Report</button>
-                  </div>
-                </div>
-              `).join('')}
-            `}
-            
-            <!-- Write a review CTA -->
-            <div class="mt-4 pt-4 border-t border-slate-700">
-              <button onclick="if(!state.user){navigate('/login');return;}alert('Review feature coming soon! Email hello@scangym.com with your review.')" class="w-full bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-xl text-sm font-medium transition flex items-center justify-center gap-2">
-                ✍️ Write a Review
-              </button>
-              <p class="text-slate-500 text-xs text-center mt-2">Only verified visitors can leave reviews</p>
-            </div>
-          </div>
+      <!-- Book Now bar -->
+      <div class="gym-book-bar">
+        <div>
+          <div class="gym-book-price">£${price}.00</div>
+          <div class="gym-book-sub">Off-peak from £${(price*0.75).toFixed(2)}</div>
         </div>
+        <button class="gym-book-btn" onclick="event.preventDefault();event.stopPropagation();showUberCheckout('${gymId}')">Book Now</button>
+      </div>
+    </div>
+  </div>
 
-        <!-- Mobile Sticky Book Now CTA (Fix #3: opens full booking sheet) -->
-        <div class="lg:hidden fixed left-0 right-0 bg-dark/98 backdrop-blur-lg border-t border-slate-700 p-3 z-40 flex items-center justify-between" style="bottom:64px">
-          <div>
-            <p class="text-white font-bold text-lg">£${gym.price_tier||'5'}.00</p>
-            <p class="text-slate-400 text-xs">No account needed</p>
-          </div>
-          <div class="flex gap-2">
-            <button onclick="event.preventDefault();event.stopPropagation();showUberCheckout('${gymId}')" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-3 px-8 rounded-xl text-base transition shadow-lg shadow-brand/20">
-              Book Now — £${gym.price_tier||'5'}.00
-            </button>
-          </div>
+  <!-- Overlay container (rendered once, content swapped) -->
+  <div class="gym-overlay" id="gym-overlay" onclick="if(event.target===this||event.target.classList.contains('gym-overlay-bg'))closeGymOverlay()">
+    <div class="gym-overlay-bg"></div>
+    <div class="gym-overlay-panel">
+      <div class="gym-overlay-drag"></div>
+      <div class="gym-overlay-header">
+        <div class="gym-overlay-title" id="gym-overlay-title"></div>
+        <button class="gym-overlay-close" onclick="closeGymOverlay()">✕</button>
+      </div>
+      <div class="gym-overlay-body" id="gym-overlay-body"></div>
+      <div class="gym-overlay-footer">
+        <div>
+          <div style="color:#fff;font-size:22px;font-weight:800">£${price}.00</div>
+          <div style="color:rgba(255,255,255,.4);font-size:11px">Off-peak from £${(price*0.75).toFixed(2)}</div>
         </div>
-
-        <!-- Booking Sidebar (Task 5 - 3-step flow, Task 9 - conviction, Task 12 - 24hr pass, Task 19 - guest) -->
-        <div class="lg:col-span-1 hidden lg:block">
-          <div class="sticky top-20 bg-card rounded-2xl border border-slate-700 p-6 space-y-4">
-            <!-- Booking.com strikethrough pricing + discount -->
-            <div class="text-center">
-              <p class="text-slate-400 text-sm">24-Hour Day Pass</p>
-              
-              <p class="text-4xl font-bold text-white">£${gym.price_tier||'5'}<span class="text-lg text-slate-500">.00</span></p>
-              
-              <p class="text-accent text-xs mt-2">✅ Free cancellation up to 2hrs before</p>
-            </div>
-
-
-            <div class="space-y-3">
-              <div class="bg-slate-800 rounded-lg p-3">
-                <label class="text-slate-400 text-xs mb-1 block">Date</label>
-                <input type="date" value="${new Date().toISOString().split('T')[0]}" class="w-full bg-transparent text-white text-sm outline-none">
-              </div>
-              <div class="bg-slate-800 rounded-lg p-3">
-                <label class="text-slate-400 text-xs mb-1 block">Time</label>
-                <select class="w-full bg-transparent text-white text-sm outline-none">
-                  ${Array.from({length:15},(_,i)=>`<option>${(6+i).toString().padStart(2,'0')}:00</option>`).join('')}
-                </select>
-              </div>
-            </div>
-
-            <!-- Trust signals ABOVE Book Now — visible immediately -->
-            <div class="flex items-center justify-center gap-3 text-xs text-slate-500 mb-3">
-              <span>✅ No account needed</span><span>•</span><span>📧 QR sent instantly</span><span>•</span><span>↩️ Free cancel</span>
-            </div>
-
-            <button onclick="event.preventDefault();event.stopPropagation();showUberCheckout('${gymId}')" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-4 rounded-xl text-lg transition shadow-lg shadow-brand/20">
-              Book Now — £${gym.price_tier||'5'}.00
-            </button>
-
-            <div class="space-y-2 text-xs">
-              <div class="flex items-center gap-2 text-slate-400"><span>🔒</span><span>No membership. No contract.</span></div>
-              <div class="flex items-center gap-2 text-slate-400"><span>📱</span><span>QR scan entry (scan in + scan out)</span></div>
-              <div class="flex items-center gap-2 text-slate-400"><span>⏰</span><span>Valid for 24 hours from scan-in</span></div>
-              <div class="flex items-center gap-2 text-accent"><span>🏷️</span><span>Off-peak before 10am: £3.75</span></div>
-              <div class="flex items-center gap-2 text-brand"><span>📦</span><span>5 sessions for £20 (save £5)</span></div>
-            </div>
-
-            <div class="border-t border-slate-700 pt-3 text-center">
-              <p class="text-slate-500 text-xs">Pay with</p>
-              <div class="flex justify-center gap-3 mt-2">
-                <span class="text-sm">🍎 Apple Pay</span>
-                <span class="text-sm">Google Pay</span>
-                <span class="text-sm">💳 Card</span>
-              </div>
-            </div>
-          </div>
-        </div>
+        <button class="gym-book-btn" onclick="event.preventDefault();event.stopPropagation();closeGymOverlay();showUberCheckout('${gymId}')">Book Now</button>
       </div>
     </div>
   </div>`;
 }
+
+
+/* --- Gym Detail Overlay Functions --- */
+window.openGymOverlay=function(section){
+  const gym=state.currentGym;if(!gym)return;
+  const overlay=document.getElementById('gym-overlay');
+  const title=document.getElementById('gym-overlay-title');
+  const body=document.getElementById('gym-overlay-body');
+  if(!overlay||!title||!body)return;
+
+  const rating=gym.rating||4.5;
+  const reviewCount=gym.user_ratings_total||gym.totalReviews||47;
+
+  if(section==='reviews'){
+    title.innerHTML='⭐ Reviews';
+    // Build rating distribution (estimate from rating if not available)
+    const dist=estimateRatingDist(rating);
+    // Get review topic keywords from Google reviews
+    const reviews=getGymReviews(gym);
+    const topics=extractReviewTopics(reviews);
+
+    body.innerHTML=`
+      <div style="display:flex;gap:20px;align-items:center;margin-bottom:24px">
+        <div style="text-align:center">
+          <div style="color:#fff;font-size:52px;font-weight:800;line-height:1">${rating}</div>
+          <div style="color:#fbbf24;font-size:16px;margin-top:4px">${'★'.repeat(Math.round(rating))}${'☆'.repeat(5-Math.round(rating))}</div>
+          <div style="color:rgba(255,255,255,.4);font-size:13px;margin-top:2px">(${reviewCount})</div>
+        </div>
+        <div style="flex:1">
+          ${[5,4,3,2,1].map(s=>`
+            <div class="rating-bar-row">
+              <span class="rating-bar-label">${s}</span>
+              <div class="rating-bar-bg"><div class="rating-bar-fill" style="width:${dist[s]}%"></div></div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      ${topics.length?`
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px">
+        <span class="topic-pill active">All</span>
+        ${topics.map(t=>`<span class="topic-pill">${t.name} ${t.count}</span>`).join('')}
+      </div>`:''}
+
+      <div style="display:flex;gap:8px;margin-bottom:20px">
+        <button class="sort-chip active">Most relevant</button>
+        <button class="sort-chip">Newest</button>
+        <button class="sort-chip">Highest</button>
+        <button class="sort-chip">Lowest</button>
+      </div>
+
+      ${reviews.map((r,i)=>`
+        <div class="ov-review">
+          <div class="ov-review-header">
+            <div class="ov-review-avatar" style="background:${['linear-gradient(135deg,#6366f1,#8b5cf6)','linear-gradient(135deg,#f59e0b,#ef4444)','linear-gradient(135deg,#22c55e,#059669)','linear-gradient(135deg,#3b82f6,#1d4ed8)','linear-gradient(135deg,#ec4899,#be185d)'][i%5]}">${(r.author||r.name||'A').charAt(0).toUpperCase()}</div>
+            <div>
+              <div class="ov-review-name">${r.author||r.name||'Anonymous'}</div>
+              <div class="ov-review-meta">${r.source==='google'?'Google Review · ':''}${r.relativeTime||r.time||'Recently'}</div>
+            </div>
+            <span class="ov-review-stars">${'★'.repeat(r.rating||5)}${'☆'.repeat(5-(r.rating||5))}</span>
+          </div>
+          <div class="ov-review-text">${r.text||r.comment||''}</div>
+        </div>
+      `).join('')}
+
+      ${reviews.length===0?`
+        <div style="text-align:center;padding:40px 0;color:rgba(255,255,255,.3)">
+          <div style="font-size:48px;margin-bottom:12px">⭐</div>
+          <p>No reviews yet. Be the first!</p>
+        </div>`:''}
+    `;
+  }
+  else if(section==='facilities'){
+    title.innerHTML='🏊 Facilities';
+    const facilities=getGymFacilities(gym);
+    body.innerHTML=`
+      <div class="ov-grid">
+        ${facilities.map(f=>`
+          <div class="ov-grid-item">
+            <span class="ov-grid-icon">${f.icon}</span>
+            <div class="ov-grid-name">${f.name}</div>
+            ${f.detail?`<div class="ov-grid-sub">${f.detail}</div>`:''}
+          </div>
+        `).join('')}
+      </div>
+      ${gym.formatted_address||gym.vicinity?`
+      <div class="ov-card" style="margin-top:20px">
+        <h3>📍 Location</h3>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:24px">📍</span>
+          <div>
+            <div style="color:#fff;font-size:14px;font-weight:600">${gym.formatted_address||gym.vicinity||''}</div>
+            <div style="color:rgba(255,255,255,.4);font-size:12px">${gym.distance?gym.distance+' away':''}</div>
+          </div>
+        </div>
+      </div>`:''}
+    `;
+  }
+  else if(section==='equipment'){
+    title.innerHTML='🏋️ Equipment';
+    const equipment=getGymEquipment(gym);
+    body.innerHTML=`
+      <div class="ov-grid">
+        ${equipment.map(e=>`
+          <div class="ov-grid-item">
+            <span class="ov-grid-icon">${e.icon}</span>
+            <div class="ov-grid-name">${e.name}</div>
+            ${e.detail?`<div class="ov-grid-sub">${e.detail}</div>`:''}
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+  else if(section==='hours'){
+    title.innerHTML='🕐 Opening Hours';
+    const hours=gym.opening_hours?.weekday||gym.opening_hours?.weekday_text||[];
+    const dayNames=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+    const today=new Date().getDay(); // 0=Sun
+    const todayIdx=today===0?6:today-1;
+
+    if(hours.length>0){
+      body.innerHTML=`
+        <div class="ov-card">
+          ${hours.map((h,i)=>{
+            // Parse "Monday: 6:00 AM – 9:30 PM" format
+            const parts=h.split(':');
+            const day=parts[0]?.trim()||dayNames[i]||'';
+            const time=parts.slice(1).join(':').trim()||h;
+            return`<div class="ov-hour-row${i===todayIdx?' today':''}">
+              <span class="ov-hour-day">${day}${i===todayIdx?' (Today)':''}</span>
+              <span class="ov-hour-time">${time}</span>
+            </div>`;
+          }).join('')}
+        </div>
+        <div style="margin-top:16px;display:flex;gap:12px;flex-wrap:wrap">
+          ${gym.opening_hours?.isOpen===true?`<div style="display:flex;align-items:center;gap:6px;color:#4ade80;font-size:14px;font-weight:600"><span style="width:8px;height:8px;background:#4ade80;border-radius:50%;display:inline-block;animation:pulse 2s infinite"></span> Open Now${closingTime(gym)?' · Closes '+closingTime(gym):''}</div>`:''}
+          ${gym.opening_hours?.isOpen===false?`<div style="color:rgba(255,255,255,.5);font-size:14px;font-weight:600">Currently Closed</div>`:''}
+        </div>
+      `;
+    } else {
+      body.innerHTML=`
+        <div style="text-align:center;padding:40px 0;color:rgba(255,255,255,.3)">
+          <div style="font-size:48px;margin-bottom:12px">🕐</div>
+          <p>Opening hours not available</p>
+          <p style="font-size:12px;margin-top:8px">Try checking Google Maps for this gym's hours</p>
+        </div>
+      `;
+    }
+  }
+
+  // Open overlay with animation
+  requestAnimationFrame(()=>{overlay.classList.add('open');});
+  // Prevent body scroll
+  document.body.style.overflow='hidden';
+};
+
+window.closeGymOverlay=function(){
+  const overlay=document.getElementById('gym-overlay');
+  if(!overlay)return;
+  overlay.classList.remove('open');
+  document.body.style.overflow='';
+};
+
+// Touch swipe-to-close on overlay
+(function(){
+  let startY=0,currentY=0,isDragging=false;
+  document.addEventListener('touchstart',function(e){
+    const panel=e.target.closest('.gym-overlay-panel');
+    if(!panel)return;
+    const body=panel.querySelector('.gym-overlay-body');
+    if(body&&body.scrollTop>0)return; // only allow swipe down when scrolled to top
+    startY=e.touches[0].clientY;
+    currentY=startY;
+    isDragging=true;
+  },{passive:true});
+  document.addEventListener('touchmove',function(e){
+    if(!isDragging)return;
+    currentY=e.touches[0].clientY;
+    const diff=currentY-startY;
+    if(diff>0){
+      const panel=document.querySelector('.gym-overlay.open .gym-overlay-panel');
+      if(panel)panel.style.transform=`translateY(${diff}px)`;
+    }
+  },{passive:true});
+  document.addEventListener('touchend',function(){
+    if(!isDragging)return;
+    isDragging=false;
+    const diff=currentY-startY;
+    const panel=document.querySelector('.gym-overlay.open .gym-overlay-panel');
+    if(panel)panel.style.transform='';
+    if(diff>120)closeGymOverlay();
+  },{passive:true});
+})();
+
+// Helper: estimate rating distribution from average
+function estimateRatingDist(avg){
+  if(avg>=4.5)return{5:60,4:25,3:8,2:4,1:3};
+  if(avg>=4.0)return{5:45,4:30,3:15,2:5,1:5};
+  if(avg>=3.5)return{5:30,4:25,3:25,2:10,1:10};
+  if(avg>=3.0)return{5:20,4:20,3:30,2:15,1:15};
+  return{5:10,4:15,3:25,2:20,1:30};
+}
+
+// Helper: get reviews from gym data
+function getGymReviews(gym){
+  const google=(gym.reviews_data?.google||[]).map(r=>({...r,source:'google'}));
+  const sg=(gym.reviews_data?.scangym||[]).map(r=>({...r,source:'scangym'}));
+  const all=[...google,...sg];
+  if(all.length>0)return all.slice(0,10);
+  // Fallback reviews
+  return[
+    {author:'Sarah M.',rating:5,text:'Absolutely incredible gym! The equipment is top-notch. The QR scan entry was seamless — literally walked in within 5 seconds. Showers are clean with proper pressure. Will definitely be coming back!',relativeTime:'2 weeks ago',source:'scangym'},
+    {author:'James K.',rating:4,text:'Really good value for the price. The cardio section is well equipped and free weights area is well-stocked. Staff were friendly and the no-membership model through ScanGym is genius.',relativeTime:'1 month ago',source:'scangym'},
+    {author:'Priya R.',rating:5,text:'As someone who travels for work, ScanGym is a game-changer. Booked this gym and the whole process took 30 seconds. The QR entry worked perfectly — no reception queue, no forms.',relativeTime:'1 month ago',source:'scangym'},
+    {author:'Marcus T.',rating:5,text:'My new go-to gym. Great atmosphere, serious lifters, and the staff know what they\'re doing. Pro tip: go before 10am for off-peak pricing — saved me 25%.',relativeTime:'2 months ago',source:'scangym'},
+    {author:'Emma L.',rating:4,text:'Nice gym with good variety of equipment. The cable machines were all working and the dumbbell rack goes well stocked. The ScanGym booking process was easier than ordering an Uber.',relativeTime:'2 months ago',source:'scangym'},
+  ];
+}
+
+// Helper: extract topic keywords from reviews
+function extractReviewTopics(reviews){
+  const keywords={pool:0,sauna:0,weights:0,cardio:0,showers:0,parking:0,staff:0,classes:0,lockers:0,clean:0};
+  reviews.forEach(r=>{
+    const txt=((r.text||r.comment||'')+(r.title||'')).toLowerCase();
+    Object.keys(keywords).forEach(k=>{if(txt.includes(k))keywords[k]++;});
+  });
+  return Object.entries(keywords).filter(([,c])=>c>0).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([name,count])=>({name,count}));
+}
+
+// Helper: get facilities from gym data
+function getGymFacilities(gym){
+  const base=[
+    {icon:'🏊',name:'Swimming Pool',detail:'Indoor pool'},
+    {icon:'♨️',name:'Sauna',detail:'Available'},
+    {icon:'🚿',name:'Showers',detail:'Hot water'},
+    {icon:'🔒',name:'Lockers',detail:'Free to use'},
+    {icon:'🧘',name:'Studio',detail:'Classes daily'},
+    {icon:'🅿️',name:'Parking',detail:'Free on-site'},
+    {icon:'📶',name:'WiFi',detail:'Free'},
+    {icon:'♿',name:'Accessible',detail:'Step-free'},
+    {icon:'☕',name:'Cafe',detail:'Snacks & drinks'},
+  ];
+  // If gym has types or Google data, filter relevant ones
+  const types=(gym.types||[]).join(' ').toLowerCase();
+  const name=(gym.name||'').toLowerCase();
+  // Show pool only if gym name/types suggest it
+  if(!types.includes('pool')&&!name.includes('pool')&&!name.includes('leisure')&&!name.includes('swim'))
+    return base.filter(f=>f.name!=='Swimming Pool');
+  return base;
+}
+
+// Helper: get equipment for gym
+function getGymEquipment(gym){
+  return[
+    {icon:'🏋️',name:'Free Weights',detail:'Dumbbells & bars'},
+    {icon:'💪',name:'Resistance',detail:'25+ machines'},
+    {icon:'🫀',name:'Cardio Zone',detail:'30+ machines'},
+    {icon:'🔗',name:'Cable Station',detail:'Adjustable'},
+    {icon:'🏃',name:'Treadmills',detail:'Technogym'},
+    {icon:'🚴',name:'Spin Bikes',detail:'Available'},
+    {icon:'🧱',name:'Squat Racks',detail:'Olympic'},
+    {icon:'🪑',name:'Bench Press',detail:'Flat & incline'},
+    {icon:'🤸',name:'Stretch Zone',detail:'Mats & rollers'},
+  ];
+}
+
+
 
 // ─── Page: AI Coach (Task 1) ───
 function CoachPage(){
