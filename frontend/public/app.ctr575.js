@@ -2740,264 +2740,545 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
   const gym=state.currentGym||state.gyms.find(g=>(g.placeId||g.place_id||g.id)==gymId)||{};
   const gymName=gym.name||'Gym';
   const gymAddr=gym.vicinity||gym.formatted_address||gym.address||'';
+  const gymPhoto=gym.photo_url||gym.photo||(gym.photos_list?.[0]?.url)||'';
   const today=new Date().toISOString().split('T')[0];
   const currentHour=new Date().getHours();
   const defaultTime=prefillTime||`${String(Math.min(currentHour+1,20)).padStart(2,'0')}:00`;
   const defaultHour=parseInt(defaultTime);
   const savedEmail=localStorage.getItem('sg_last_email')||'';
+  const isOffPeak=defaultHour<10;
 
-  // Pass options with pricing
   const passes=[
-    {id:'day',name:'Day Pass',desc:'1 visit · any time today',price:5.00,offPeak:3.75,icon:'⚡',badge:'Instant',badgeColor:'#2563eb',available:true},
-    {id:'3day',name:'3-Day Pass',desc:'3 visits · valid 7 days',price:12.00,offPeak:9.00,icon:'🔥',badge:'Popular',badgeColor:'#f97316',available:true},
-    {id:'weekly',name:'Weekly Pass',desc:'Unlimited · 7 days',price:20.00,offPeak:15.00,icon:'💪',badge:'Best Value',badgeColor:'#10b981',available:true},
+    {id:'day',name:'Day Pass',desc:'1 visit · any time today',price:5.00,offPeak:3.75,icon:'⚡',badge:'Instant',badgeColor:'#2563eb'},
+    {id:'3day',name:'3-Day Pass',desc:'3 visits · valid 7 days',price:12.00,offPeak:9.00,icon:'🔥',badge:'Popular',badgeColor:'#f97316'},
+    {id:'weekly',name:'Weekly Pass',desc:'Unlimited · 7 days',price:20.00,offPeak:15.00,icon:'💪',badge:'Best Value',badgeColor:'#10b981'},
   ];
   const defaultPass=passes[0];
-  const defaultPrice=defaultHour<10?defaultPass.offPeak:defaultPass.price;
+  const defaultPrice=isOffPeak?defaultPass.offPeak:defaultPass.price;
+
+  // Format today nicely
+  const dateObj=prefillDate?new Date(prefillDate+'T12:00:00'):new Date();
+  const dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const monthNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const formattedDate=prefillDate&&prefillDate!==today
+    ?`${dayNames[dateObj.getDay()]}, ${dateObj.getDate()} ${monthNames[dateObj.getMonth()]}`
+    :'Today';
+  const formattedTime=defaultTime;
 
   const sheet=document.createElement('div');
   sheet.id='booking-sheet';
   sheet.innerHTML=`
-  <div class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center" onclick="if(event.target===this)closeBookingSheet()">
-    <div class="uber-checkout bg-slate-900 w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl border-t sm:border border-slate-700 max-h-[92vh] overflow-y-auto animate-slide-up" style="-webkit-overflow-scrolling:touch">
-      
-      <!-- Uber-style header bar -->
-      <div class="sticky top-0 bg-slate-900/95 backdrop-blur-sm z-10 px-5 pt-5 pb-3 border-b border-slate-800">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-brand rounded-xl flex items-center justify-center text-lg">🏋️</div>
-            <div>
-              <p class="text-white font-bold text-base leading-tight">${gymName}</p>
-              <p class="text-slate-500 text-xs">${gymAddr.length>40?gymAddr.substring(0,40)+'...':gymAddr}</p>
-            </div>
-          </div>
-          <button onclick="closeBookingSheet()" class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition">&times;</button>
+  <style>
+    .ub-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:200;display:flex;align-items:flex-end;justify-content:center}
+    .ub-sheet{background:#0a0f14;width:100%;max-width:440px;border-radius:20px 20px 0 0;overflow:hidden;transform:translateY(100%);animation:ubSlideUp .35s cubic-bezier(.32,.72,0,1) forwards}
+    @keyframes ubSlideUp{to{transform:translateY(0)}}
+    .ub-drag{width:40px;height:4px;border-radius:2px;background:rgba(255,255,255,.15);margin:10px auto 0}
+    .ub-gym-row{display:flex;align-items:center;gap:14px;padding:20px 20px 16px}
+    .ub-gym-photo{width:56px;height:56px;border-radius:14px;object-fit:cover;background:#1e293b;flex-shrink:0}
+    .ub-gym-name{color:#fff;font-size:17px;font-weight:700;line-height:1.2}
+    .ub-gym-addr{color:rgba(255,255,255,.4);font-size:12px;margin-top:2px}
+    .ub-divider{height:1px;background:rgba(255,255,255,.06);margin:0 20px}
+    .ub-rows{padding:8px 20px 0}
+    .ub-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;-webkit-tap-highlight-color:transparent}
+    .ub-row:last-child{border-bottom:none}
+    .ub-row:active{opacity:.7}
+    .ub-row-left{display:flex;align-items:center;gap:12px}
+    .ub-row-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+    .ub-row-title{color:#fff;font-size:15px;font-weight:600}
+    .ub-row-sub{color:rgba(255,255,255,.35);font-size:12px;margin-top:1px}
+    .ub-row-right{display:flex;align-items:center;gap:6px}
+    .ub-row-value{color:rgba(255,255,255,.6);font-size:14px;font-weight:500}
+    .ub-row-chevron{color:rgba(255,255,255,.2);font-size:18px}
+    .ub-price-tag{color:#fff;font-size:15px;font-weight:700}
+    .ub-offpeak{color:#4ade80;font-size:11px;font-weight:600}
+    .ub-footer{padding:16px 20px 28px;display:flex;flex-direction:column;gap:10px}
+    .ub-cta{width:100%;padding:18px;border:none;border-radius:16px;font-size:18px;font-weight:700;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:8px}
+    .ub-cta:active{transform:scale(.98)}
+    .ub-cta-primary{background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;box-shadow:0 4px 20px rgba(34,197,94,.3)}
+    .ub-cta-primary:disabled{background:#1e293b;color:rgba(255,255,255,.3);box-shadow:none}
+    .ub-trust{display:flex;align-items:center;justify-content:center;gap:8px;color:rgba(255,255,255,.25);font-size:10px}
+
+    /* Sub-screens */
+    .ub-sub{position:absolute;inset:0;background:#0a0f14;z-index:5;transform:translateX(100%);transition:transform .3s cubic-bezier(.32,.72,0,1);display:flex;flex-direction:column;overflow:hidden}
+    .ub-sub.open{transform:translateX(0)}
+    .ub-sub-header{display:flex;align-items:center;gap:12px;padding:20px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0}
+    .ub-sub-back{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.08);border:none;color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+    .ub-sub-title{color:#fff;font-size:18px;font-weight:700}
+    .ub-sub-body{flex:1;overflow-y:auto;padding:16px 20px;-webkit-overflow-scrolling:touch}
+
+    /* Pass cards in sub-screen */
+    .ub-pass{border:2px solid rgba(255,255,255,.08);border-radius:16px;padding:16px;margin-bottom:10px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent}
+    .ub-pass:active{transform:scale(.98)}
+    .ub-pass.selected{border-color:#22c55e;background:rgba(34,197,94,.08)}
+    .ub-pass-icon{width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+    .ub-pass.selected .ub-pass-icon{background:rgba(34,197,94,.15)}
+    .ub-pass-name{color:#fff;font-size:15px;font-weight:700}
+    .ub-pass-desc{color:rgba(255,255,255,.4);font-size:12px;margin-top:2px}
+    .ub-pass-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;color:#fff;margin-top:4px}
+    .ub-pass-price{color:#fff;font-size:17px;font-weight:800;text-align:right;margin-left:auto;flex-shrink:0}
+    .ub-pass-offpeak{color:#4ade80;font-size:11px;font-weight:500}
+    .ub-check{width:22px;height:22px;border-radius:50%;border:2px solid rgba(255,255,255,.15);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s}
+    .ub-pass.selected .ub-check{background:#22c55e;border-color:#22c55e}
+    .ub-pass.selected .ub-check::after{content:'✓';color:#fff;font-size:12px;font-weight:700}
+
+    /* Time grid */
+    .ub-time-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+    .ub-time-slot{padding:14px 8px;border-radius:12px;border:2px solid rgba(255,255,255,.08);text-align:center;cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent}
+    .ub-time-slot:active{transform:scale(.96)}
+    .ub-time-slot.selected{border-color:#22c55e;background:rgba(34,197,94,.08)}
+    .ub-time-slot .time-val{color:#fff;font-size:15px;font-weight:600}
+    .ub-time-slot .time-label{color:rgba(255,255,255,.3);font-size:10px;margin-top:2px}
+    .ub-time-slot.offpeak .time-label{color:#4ade80}
+
+    /* Payment area */
+    .ub-stripe-wrap{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px;margin-top:12px}
+  </style>
+
+  <div class="ub-overlay" onclick="if(event.target===this)closeBookingSheet()">
+    <div class="ub-sheet" style="position:relative">
+      <div class="ub-drag"></div>
+
+      <!-- Gym header -->
+      <div class="ub-gym-row">
+        ${gymPhoto?`<img class="ub-gym-photo" src="${gymPhoto}" alt="${gymName}" onerror="this.style.display='none'">`
+          :`<div class="ub-gym-photo" style="display:flex;align-items:center;justify-content:center;font-size:24px">🏋️</div>`}
+        <div style="flex:1;min-width:0">
+          <div class="ub-gym-name">${gymName}</div>
+          <div class="ub-gym-addr">📍 ${gymAddr.length>45?gymAddr.substring(0,45)+'…':gymAddr}</div>
         </div>
       </div>
 
-      <div class="px-5 pb-5 pt-4">
+      <div class="ub-divider"></div>
 
-        <!-- ═══ CHOOSE A PASS ═══ -->
-        <h3 class="text-white font-bold text-lg mb-3">Choose a pass</h3>
-        
-        <div id="uc-pass-options" class="mb-4 space-y-2">
+      <!-- Compact summary rows (like Uber ride details) -->
+      <div class="ub-rows">
+        <!-- Pass row -->
+        <div class="ub-row" onclick="ubOpenSub('pass')" id="ub-row-pass">
+          <div class="ub-row-left">
+            <div class="ub-row-icon" style="background:rgba(34,197,94,.12)">⚡</div>
+            <div>
+              <div class="ub-row-title" id="ub-pass-label">Day Pass</div>
+              <div class="ub-row-sub">1 visit · any time today</div>
+            </div>
+          </div>
+          <div class="ub-row-right">
+            <span class="ub-price-tag" id="ub-pass-price">£${defaultPrice.toFixed(2)}</span>
+            ${isOffPeak?`<span class="ub-offpeak">Off-peak</span>`:''}
+            <span class="ub-row-chevron">›</span>
+          </div>
+        </div>
+
+        <!-- Date & Time row -->
+        <div class="ub-row" onclick="ubOpenSub('time')" id="ub-row-time">
+          <div class="ub-row-left">
+            <div class="ub-row-icon" style="background:rgba(59,130,246,.12)">📅</div>
+            <div>
+              <div class="ub-row-title" id="ub-time-label">${formattedDate} · ${formattedTime}</div>
+              <div class="ub-row-sub">Tap to change</div>
+            </div>
+          </div>
+          <div class="ub-row-right">
+            <span class="ub-row-chevron">›</span>
+          </div>
+        </div>
+
+        <!-- Payment row -->
+        <div class="ub-row" onclick="ubOpenSub('payment')" id="ub-row-payment">
+          <div class="ub-row-left">
+            <div class="ub-row-icon" style="background:rgba(249,115,22,.12)">💳</div>
+            <div>
+              <div class="ub-row-title" id="ub-payment-label">Card</div>
+              <div class="ub-row-sub" id="ub-payment-sub">Add payment method</div>
+            </div>
+          </div>
+          <div class="ub-row-right">
+            <span class="ub-row-chevron">›</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="ub-error" class="hidden" style="padding:0 20px;margin-top:8px">
+        <div style="color:#f87171;font-size:13px;text-align:center"></div>
+      </div>
+
+      <!-- CTA footer -->
+      <div class="ub-footer">
+        <button class="ub-cta ub-cta-primary" id="ub-cta-btn" disabled onclick="ubConfirmPay()">
+          <span id="ub-cta-text">Confirm & Pay · £${defaultPrice.toFixed(2)}</span>
+        </button>
+        <div class="ub-trust">
+          <span>🔒 Stripe</span><span>·</span><span>📧 QR instant</span><span>·</span><span>↩️ Free cancel</span>
+        </div>
+      </div>
+
+      <!-- ═══ SUB-SCREEN: Pass Selection ═══ -->
+      <div class="ub-sub" id="ub-sub-pass">
+        <div class="ub-sub-header">
+          <button class="ub-sub-back" onclick="ubCloseSub('pass')">←</button>
+          <div class="ub-sub-title">Choose a pass</div>
+        </div>
+        <div class="ub-sub-body">
           ${passes.map((p,i)=>`
-          <div class="uc-pass-card ${i===0?'selected':''} relative cursor-pointer rounded-xl border-2 ${i===0?'border-brand bg-brand/10':'border-slate-700 bg-slate-800/60'} p-3.5 flex items-center gap-3 transition-all hover:border-brand/60" data-pass="${p.id}" data-price="${p.price}" data-offpeak="${p.offPeak}" data-available="${p.available}" onclick="selectPass('${p.id}')">
-            <div class="w-11 h-11 rounded-xl ${i===0?'bg-brand/20':'bg-slate-700'} flex items-center justify-center text-xl flex-shrink-0">${p.icon}</div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-2">
-                <span class="text-white font-bold text-sm">${p.name}</span>
-                ${!p.available?'<span class="text-[9px] font-bold text-slate-500 bg-slate-700 px-1.5 py-0.5 rounded uppercase">Soon</span>':''}
-              </div>
-              <p class="text-slate-500 text-xs">${p.desc}</p>
-              <span class="inline-block mt-1 text-[10px] font-bold px-2 py-0.5 rounded-md text-white" style="background:${p.badgeColor}">${p.icon} ${p.badge}</span>
+          <div class="ub-pass ${i===0?'selected':''}" data-pass="${p.id}" data-price="${p.price}" data-offpeak="${p.offPeak}" data-name="${p.name}" data-desc="${p.desc}" data-icon="${p.icon}" onclick="ubSelectPass(this)">
+            <div class="ub-pass-icon">${p.icon}</div>
+            <div style="flex:1">
+              <div class="ub-pass-name">${p.name}</div>
+              <div class="ub-pass-desc">${p.desc}</div>
+              <span class="ub-pass-badge" style="background:${p.badgeColor}">${p.badge}</span>
             </div>
-            <div class="text-right flex-shrink-0">
-              <span class="text-white font-bold text-base">£${p.price.toFixed(2)}</span>
-              ${defaultHour<10&&p.offPeak<p.price?`<p class="text-green-400 text-[10px]">Off-peak £${p.offPeak.toFixed(2)}</p>`:''}
+            <div style="text-align:right">
+              <div class="ub-pass-price">£${p.price.toFixed(2)}</div>
+              ${p.offPeak<p.price?`<div class="ub-pass-offpeak">Off-peak £${p.offPeak.toFixed(2)}</div>`:''}
             </div>
+            <div class="ub-check"></div>
           </div>`).join('')}
         </div>
+      </div>
 
-        <!-- ═══ DATE & TIME (compact like Uber) ═══ -->
-        <div class="grid grid-cols-2 gap-2 mb-3">
-          <div class="bg-slate-800/80 rounded-xl p-3">
-            <label class="text-slate-500 text-[10px] uppercase tracking-wider font-bold block mb-1">Date</label>
-            <input type="date" id="uc-date" value="${prefillDate||today}" min="${today}" class="w-full bg-transparent text-white text-sm outline-none font-medium">
-          </div>
-          <div class="bg-slate-800/80 rounded-xl p-3">
-            <label class="text-slate-500 text-[10px] uppercase tracking-wider font-bold block mb-1">Time</label>
-            <select id="uc-time" class="w-full bg-transparent text-white text-sm outline-none font-medium appearance-none">
-              ${Array.from({length:15},(_,i)=>{const h=6+i;const v=String(h).padStart(2,'0')+':00';return`<option value="${v}" ${v===defaultTime?'selected':''}>${v}${h<10?' · Off-peak':''}</option>`;}).join('')}
-            </select>
-          </div>
+      <!-- ═══ SUB-SCREEN: Date & Time ═══ -->
+      <div class="ub-sub" id="ub-sub-time">
+        <div class="ub-sub-header">
+          <button class="ub-sub-back" onclick="ubCloseSub('time')">←</button>
+          <div class="ub-sub-title">Pick date & time</div>
         </div>
-
-        <!-- ═══ EMAIL ═══ -->
-        <div class="bg-slate-800/80 rounded-xl p-3 mb-3" id="uc-email-section">
-          ${savedEmail?`
-          <div id="uc-email-saved" class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <span class="text-sm">📧</span>
-              <span class="text-white text-sm font-medium">${savedEmail}</span>
-            </div>
-            <button onclick="document.getElementById('uc-email-saved').style.display='none';document.getElementById('uc-email-edit').style.display='block';document.getElementById('uc-email').focus()" class="text-brand text-xs font-medium hover:underline">change</button>
+        <div class="ub-sub-body">
+          <div style="margin-bottom:20px">
+            <label style="color:rgba(255,255,255,.4);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:8px">Date</label>
+            <input type="date" id="ub-date-input" value="${prefillDate||today}" min="${today}" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:14px 16px;color:#fff;font-size:16px;font-weight:600;outline:none">
           </div>
-          <div id="uc-email-edit" style="display:none">
-            <label class="text-slate-500 text-[10px] uppercase tracking-wider font-bold block mb-1">Email for QR code</label>
-            <input type="email" id="uc-email" value="${savedEmail}" autocomplete="email" inputmode="email"
-              class="w-full bg-transparent text-white text-sm outline-none font-medium placeholder-slate-600">
+          <label style="color:rgba(255,255,255,.4);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:8px">Time</label>
+          <div class="ub-time-grid">
+            ${Array.from({length:15},(_,i)=>{const h=6+i;const v=String(h).padStart(2,'0')+':00';const op=h<10;return`
+            <div class="ub-time-slot ${op?'offpeak':''} ${v===defaultTime?'selected':''}" data-time="${v}" onclick="ubSelectTime(this)">
+              <div class="time-val">${v}</div>
+              <div class="time-label">${op?'Off-peak':'Standard'}</div>
+            </div>`;}).join('')}
           </div>
-          `:`
-          <label class="text-slate-500 text-[10px] uppercase tracking-wider font-bold block mb-1">Email for QR code</label>
-          <input type="email" id="uc-email" value="" placeholder="your@email.com" autocomplete="email" inputmode="email"
-            class="w-full bg-transparent text-white text-sm outline-none font-medium placeholder-slate-600">
-          `}
-        </div>
-
-        <!-- ═══ SAVED CARD (Uber-style row) ═══ -->
-        <div id="uc-saved-card" class="hidden mb-3">
-          <div class="bg-slate-800/80 rounded-xl p-3 flex items-center gap-3 cursor-pointer hover:bg-slate-700/80 transition" onclick="document.getElementById('uc-saved-card').classList.add('hidden');document.getElementById('uc-payment-area').classList.remove('hidden');document.getElementById('uc-pay-btn').dataset.mode='new'">
-            <div class="w-12 h-8 bg-[#1a1f71] rounded-lg flex items-center justify-center text-[10px] font-extrabold text-white tracking-widest flex-shrink-0" id="uc-card-brand">VISA</div>
-            <div class="flex-1">
-              <p class="text-white text-sm font-semibold">•••• <span id="uc-card-last4">****</span></p>
-              <p class="text-green-400 text-[10px] font-medium">⚡ 1-tap booking enabled</p>
-            </div>
-            <span class="text-slate-500 text-xl">›</span>
-          </div>
-        </div>
-
-        <!-- ═══ STRIPE PAYMENT ELEMENT ═══ -->
-        <div id="uc-payment-area" class="mb-3">
-          <div class="bg-slate-800/60 rounded-xl p-6 text-center">
-            <div class="sg-spinner mx-auto mb-2" style="width:24px;height:24px;border-color:rgba(255,255,255,.15);border-top-color:#f97316"></div>
-            <p class="text-slate-500 text-xs">Loading payment methods...</p>
-          </div>
-        </div>
-
-        <!-- ═══ CASH AT GYM OPTION ═══ -->
-        <div id="uc-cash-option" class="mb-3">
-          <div class="bg-slate-800/60 rounded-xl p-3 flex items-center gap-3 cursor-pointer hover:bg-slate-700/60 transition border-2 border-transparent hover:border-green-500/40" onclick="toggleCashMode()">
-            <div class="w-10 h-10 bg-green-900/40 rounded-xl flex items-center justify-center text-lg flex-shrink-0">💷</div>
-            <div class="flex-1">
-              <p class="text-white text-sm font-semibold">Pay Cash at Gym</p>
-              <p class="text-slate-500 text-[10px]">Reserve online · pay at reception</p>
-            </div>
-            <div id="uc-cash-toggle" class="w-5 h-5 rounded-full border-2 border-slate-600 flex items-center justify-center flex-shrink-0">
-            </div>
-          </div>
-        </div>
-
-        <div id="uc-error" class="text-red-400 text-sm mb-2 hidden"></div>
-
-        <!-- ═══ CTA + CALENDAR (Uber-style) ═══ -->
-        <div class="flex gap-2">
-          <button id="uc-pay-btn" disabled class="flex-1 bg-brand hover:bg-orange-600 disabled:bg-slate-700 disabled:text-slate-500 text-white font-bold py-4 rounded-xl text-lg transition shadow-lg shadow-brand/20 flex items-center justify-center gap-2" data-mode="new">
-            <span id="uc-btn-text">Confirm & Pay</span>
-          </button>
-          <button id="uc-calendar-btn" class="w-14 bg-slate-800 hover:bg-slate-700 text-white rounded-xl flex items-center justify-center text-2xl transition border border-slate-700" onclick="toggleCalendar()">📅</button>
-        </div>
-
-        <!-- Trust footer -->
-        <div class="flex items-center justify-center gap-2 mt-3 text-[10px] text-slate-600">
-          <span>🔒 Powered by Stripe</span><span>·</span><span>📧 QR sent instantly</span><span>·</span><span>↩️ Free cancel</span>
         </div>
       </div>
+
+      <!-- ═══ SUB-SCREEN: Payment ═══ -->
+      <div class="ub-sub" id="ub-sub-payment">
+        <div class="ub-sub-header">
+          <button class="ub-sub-back" onclick="ubCloseSub('payment')">←</button>
+          <div class="ub-sub-title">Payment</div>
+        </div>
+        <div class="ub-sub-body">
+          <!-- Email -->
+          <div style="margin-bottom:16px">
+            <label style="color:rgba(255,255,255,.4);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:8px">Email for QR code</label>
+            <input type="email" id="ub-email" value="${savedEmail}" placeholder="your@email.com" autocomplete="email" inputmode="email" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:14px 16px;color:#fff;font-size:15px;outline:none;box-sizing:border-box">
+          </div>
+
+          <!-- Saved card (if any) -->
+          <div id="ub-saved-card-section" class="hidden" style="margin-bottom:16px">
+            <div style="background:rgba(34,197,94,.08);border:2px solid rgba(34,197,94,.3);border-radius:14px;padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer" onclick="ubUseSavedCard()">
+              <div id="ub-card-brand-box" style="width:48px;height:32px;background:#1a1f71;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:800;letter-spacing:1px;flex-shrink:0">VISA</div>
+              <div style="flex:1">
+                <div style="color:#fff;font-size:14px;font-weight:600">•••• <span id="ub-card-last4">4242</span></div>
+                <div style="color:#4ade80;font-size:11px;font-weight:600">⚡ 1-tap checkout</div>
+              </div>
+              <div class="ub-check" style="background:#22c55e;border-color:#22c55e"><span style="color:#fff;font-size:12px">✓</span></div>
+            </div>
+          </div>
+
+          <!-- Cash option -->
+          <div style="margin-bottom:16px">
+            <div id="ub-cash-row" style="background:rgba(255,255,255,.03);border:2px solid rgba(255,255,255,.08);border-radius:14px;padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .2s" onclick="ubToggleCash()">
+              <div style="width:40px;height:40px;border-radius:12px;background:rgba(34,197,94,.1);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">💷</div>
+              <div style="flex:1">
+                <div style="color:#fff;font-size:14px;font-weight:600">Pay Cash at Gym</div>
+                <div style="color:rgba(255,255,255,.35);font-size:11px">Reserve online · pay at reception</div>
+              </div>
+              <div id="ub-cash-check" style="width:22px;height:22px;border-radius:50%;border:2px solid rgba(255,255,255,.15);flex-shrink:0"></div>
+            </div>
+          </div>
+
+          <!-- Stripe elements area -->
+          <div id="ub-stripe-area">
+            <div class="ub-stripe-wrap">
+              <div style="text-align:center;padding:20px 0">
+                <div class="sg-spinner" style="width:24px;height:24px;border-color:rgba(255,255,255,.15);border-top-color:#f97316;margin:0 auto 8px"></div>
+                <p style="color:rgba(255,255,255,.3);font-size:12px">Loading payment…</p>
+              </div>
+            </div>
+          </div>
+
+          <button class="ub-cta ub-cta-primary" style="margin-top:16px" onclick="ubCloseSub('payment')">Done</button>
+        </div>
+      </div>
+
     </div>
   </div>`;
+
   document.body.appendChild(sheet);
 
-  // ═══ Pass Selection Logic ═══
-  window.selectPass=function(passId){
-    const cards=document.querySelectorAll('.uc-pass-card');
-    const selected=document.querySelector(`.uc-pass-card[data-pass="${passId}"]`);
-    if(!selected)return;
-    
-    const isAvailable=selected.dataset.available==='true';
-    if(!isAvailable){
-      sgToast('Coming soon! Only Day Pass is available right now.','info',2000);
-      return;
-    }
-    
-    cards.forEach(c=>{
-      c.classList.remove('selected','border-brand','bg-brand/10');
-      c.classList.add('border-slate-700','bg-slate-800/60');
-      c.querySelector('.w-11')?.classList.remove('bg-brand/20');
-      c.querySelector('.w-11')?.classList.add('bg-slate-700');
-    });
-    selected.classList.add('selected','border-brand','bg-brand/10');
-    selected.classList.remove('border-slate-700','bg-slate-800/60');
-    selected.querySelector('.w-11')?.classList.add('bg-brand/20');
-    selected.querySelector('.w-11')?.classList.remove('bg-slate-700');
-    
-    window._checkoutState.selectedPass=passId;
-    window._updatePassPrice();
-    if(window._onPassChange)window._onPassChange();
+  // ═══ State ═══
+  window._checkoutState={
+    selectedPass:'day',
+    selectedDate:prefillDate||today,
+    selectedTime:defaultTime,
+    payMode:'card', // card | saved | cash
+    savedCardId:null,
+    bookingId:null,
+    intentId:null,
+    stripe:null,
+    elements:null,
+    gymId:gymId,
+    ready:false,
   };
-  window._checkoutState.selectedPass='day';
 
-  // When pass changes, update payment intent amount
-  window._onPassChange=async function(){
+  // ═══ Sub-screen navigation ═══
+  window.ubOpenSub=function(name){
+    const el=document.getElementById('ub-sub-'+name);
+    if(el)el.classList.add('open');
+  };
+  window.ubCloseSub=function(name){
+    const el=document.getElementById('ub-sub-'+name);
+    if(el)el.classList.remove('open');
+    ubUpdateSummary();
+  };
+
+  // ═══ Pass selection ═══
+  window.ubSelectPass=function(el){
+    document.querySelectorAll('.ub-pass').forEach(p=>p.classList.remove('selected'));
+    el.classList.add('selected');
+    window._checkoutState.selectedPass=el.dataset.pass;
+    ubCloseSub('pass');
+  };
+
+  // ═══ Time selection ═══
+  window.ubSelectTime=function(el){
+    document.querySelectorAll('.ub-time-slot').forEach(s=>s.classList.remove('selected'));
+    el.classList.add('selected');
+    window._checkoutState.selectedTime=el.dataset.time;
+    // Also update checkout amount if intent exists
+    const h=parseInt(el.dataset.time);
+    if(window._checkoutState.bookingId)_updateCheckoutAmount(h);
+  };
+
+  // ═══ Cash toggle ═══
+  window.ubToggleCash=function(){
     const cs=window._checkoutState;
-    if(!cs.bookingId||!cs.intentId)return;
-    const h=parseInt(document.getElementById('uc-time')?.value||'10');
-    _updateCheckoutAmount(h);
+    if(cs.payMode==='cash'){
+      cs.payMode=cs.savedCardId?'saved':'card';
+      document.getElementById('ub-cash-check').innerHTML='';
+      document.getElementById('ub-cash-row').style.borderColor='rgba(255,255,255,.08)';
+      document.getElementById('ub-stripe-area').style.display='';
+    }else{
+      cs.payMode='cash';
+      document.getElementById('ub-cash-check').innerHTML='<span style="color:#fff;font-size:12px">✓</span>';
+      document.getElementById('ub-cash-check').style.background='#22c55e';
+      document.getElementById('ub-cash-check').style.borderColor='#22c55e';
+      document.getElementById('ub-cash-row').style.borderColor='rgba(34,197,94,.4)';
+      document.getElementById('ub-stripe-area').style.display='none';
+    }
+    ubUpdateSummary();
   };
 
-  window._updatePassPrice=function(){
-    const passCard=document.querySelector('.uc-pass-card.selected');
-    if(!passCard)return;
-    const h=parseInt(document.getElementById('uc-time')?.value||'10');
-    const passId=passCard.dataset.pass;
-    const price=h<10?parseFloat(passCard.dataset.offpeak):parseFloat(passCard.dataset.price);
-    const passName=passCard.querySelector('.text-white.font-bold.text-sm')?.textContent||'Pass';
-    
-    const btn=document.getElementById('uc-btn-text');
-    if(btn&&!btn.textContent.includes('Processing')&&!btn.textContent.includes('Booking')&&!btn.textContent.includes('Generating')){
-      const mode=document.getElementById('uc-pay-btn')?.dataset?.mode;
-      if(mode==='saved'){
-        btn.textContent='⚡ Book Now · £'+price.toFixed(2);
+  // ═══ Use saved card ═══
+  window.ubUseSavedCard=function(){
+    window._checkoutState.payMode='saved';
+    ubUpdateSummary();
+  };
+
+  // ═══ Update summary on main screen ═══
+  window.ubUpdateSummary=function(){
+    const cs=window._checkoutState;
+    const passEl=document.querySelector('.ub-pass.selected');
+    const passName=passEl?.dataset?.name||'Day Pass';
+    const passDesc=passEl?.dataset?.desc||'';
+    const passIcon=passEl?.dataset?.icon||'⚡';
+    const price=parseFloat(passEl?.dataset?.price||'5');
+    const offPeak=parseFloat(passEl?.dataset?.offpeak||'3.75');
+    const h=parseInt(cs.selectedTime||'10');
+    const isOP=h<10;
+    const displayPrice=isOP?offPeak:price;
+
+    // Pass row
+    const passLabel=document.getElementById('ub-pass-label');
+    const passPriceEl=document.getElementById('ub-pass-price');
+    const passRowIcon=document.querySelector('#ub-row-pass .ub-row-icon');
+    if(passLabel)passLabel.textContent=passName;
+    if(passPriceEl){
+      passPriceEl.textContent='£'+displayPrice.toFixed(2);
+    }
+    if(passRowIcon)passRowIcon.textContent=passIcon;
+
+    // Time row
+    const dateInput=document.getElementById('ub-date-input');
+    const selDate=dateInput?dateInput.value:cs.selectedDate;
+    cs.selectedDate=selDate;
+    const dObj=new Date(selDate+'T12:00:00');
+    const dStr=selDate===today?'Today':`${dayNames[dObj.getDay()]}, ${dObj.getDate()} ${monthNames[dObj.getMonth()]}`;
+    const timeLabel=document.getElementById('ub-time-label');
+    if(timeLabel)timeLabel.textContent=`${dStr} · ${cs.selectedTime}`;
+
+    // Payment row
+    const payLabel=document.getElementById('ub-payment-label');
+    const paySub=document.getElementById('ub-payment-sub');
+    if(cs.payMode==='cash'){
+      if(payLabel)payLabel.textContent='💷 Cash at Gym';
+      if(paySub)paySub.textContent='Pay at reception';
+    }else if(cs.payMode==='saved'){
+      if(payLabel)payLabel.textContent='💳 Saved Card';
+      if(paySub)paySub.textContent='•••• '+(document.getElementById('ub-card-last4')?.textContent||'****');
+    }else{
+      if(payLabel)payLabel.textContent='💳 Card';
+      if(paySub)paySub.textContent=cs.ready?'Ready':'Add payment method';
+    }
+
+    // CTA
+    const ctaText=document.getElementById('ub-cta-text');
+    if(ctaText&&!ctaText.textContent.includes('Processing')&&!ctaText.textContent.includes('Booking')&&!ctaText.textContent.includes('Generating')){
+      if(cs.payMode==='cash'){
+        ctaText.textContent='Reserve · £'+displayPrice.toFixed(2)+' at gym';
+      }else if(cs.payMode==='saved'){
+        ctaText.textContent='⚡ Confirm · £'+displayPrice.toFixed(2);
       }else{
-        btn.textContent='Confirm & Pay · £'+price.toFixed(2);
+        ctaText.textContent='Confirm & Pay · £'+displayPrice.toFixed(2);
       }
     }
-  }
 
-  // ═══ Calendar Toggle (opens date/time section or scrolls to it) ═══
-  window.toggleCalendar=function(){
-    const dateEl=document.getElementById('uc-date');
-    if(dateEl){
-      dateEl.scrollIntoView({behavior:'smooth',block:'center'});
-      dateEl.focus();
-      dateEl.showPicker?.();
+    // Update _updatePassPrice for compatibility
+    window._updatePassPrice=function(){ubUpdateSummary();};
+  };
+
+  // ═══ Confirm & Pay handler ═══
+  window.ubConfirmPay=async function(){
+    const cs=window._checkoutState;
+    const btn=document.getElementById('ub-cta-btn');
+    const ctaText=document.getElementById('ub-cta-text');
+    const errEl=document.getElementById('ub-error');
+    if(!btn||btn.disabled)return;
+
+    const email=document.getElementById('ub-email')?.value||'';
+    if(!email||!email.includes('@')){
+      errEl?.querySelector('div')&&(errEl.querySelector('div').textContent='Please enter your email for the QR code');
+      errEl?.classList.remove('hidden');
+      ubOpenSub('payment');
+      setTimeout(()=>document.getElementById('ub-email')?.focus(),400);
+      return;
+    }
+    localStorage.setItem('sg_last_email',email);
+    errEl?.classList.add('hidden');
+
+    if(cs.payMode==='cash'){
+      btn.disabled=true;
+      ctaText.innerHTML='<span class="sg-spinner" style="width:18px;height:18px"></span> Reserving…';
+      document.getElementById('uc-pay-btn')&&(document.getElementById('uc-pay-btn').dataset.payMode='cash');
+      // Reuse existing cash booking handler with our state
+      try{
+        await _handleCashBookingUber(gymId, cs);
+      }catch(e){
+        errEl?.querySelector('div')&&(errEl.querySelector('div').textContent='Something went wrong. Try again.');
+        errEl?.classList.remove('hidden');
+        ctaText.textContent='Reserve';btn.disabled=false;
+      }
+      return;
+    }
+
+    if(cs.payMode==='saved'){
+      btn.disabled=true;
+      ctaText.innerHTML='<span class="sg-spinner" style="width:18px;height:18px"></span> Booking instantly…';
+      try{await _handleQuickCheckout(gymId);}catch(e){
+        ctaText.textContent='⚡ Confirm';btn.disabled=false;
+      }
+      return;
+    }
+
+    // Regular card payment
+    btn.disabled=true;
+    ctaText.innerHTML='<span class="sg-spinner" style="width:18px;height:18px"></span> Processing…';
+
+    if(cs.bookingId){
+      await _handleUberPay(cs.bookingId);
+    }else{
+      errEl?.querySelector('div')&&(errEl.querySelector('div').textContent='Payment not ready yet. Try again in a moment.');
+      errEl?.classList.remove('hidden');
+      ctaText.textContent='Confirm & Pay';btn.disabled=false;
     }
   };
 
-  // Bind time change → update price display
-  document.getElementById('uc-time').addEventListener('change',function(){
-    window._updatePassPrice();
-    const h=parseInt(this.value);
-    _updateCheckoutAmount(h);
-  });
+  // ═══ Cash booking (adapted for new flow) ═══
+  window._handleCashBookingUber=async function(gymId, cs){
+    const email=document.getElementById('ub-email')?.value||'';
+    let dbGymId=gymId;
+    if(isNaN(parseInt(gymId))){
+      const ensured=await fetch('/api/live/ensure-gym',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({placeId:gymId})}).then(r=>r.json());
+      if(ensured.error){sgToast(ensured.error);return;}
+      dbGymId=ensured.gymId;
+    }
+    const gymInfo=state.currentGym||state.gyms.find(g=>(g.placeId||g.place_id||g.id)==gymId)||{};
+    const result=await fetch('/api/payment/cash-booking',{
+      method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
+      body:JSON.stringify({gymId:parseInt(dbGymId),placeId:gymId,date:cs.selectedDate,time:cs.selectedTime,email,gymName:gymInfo.name||'Gym',gymAddress:gymInfo.formatted_address||gymInfo.vicinity||gymInfo.address||'',passType:cs.selectedPass||'day'})
+    }).then(r=>r.json());
+    if(result.success){
+      state.lastBooking=result.booking;state.lastQR=result.qr;
+      closeBookingSheet();navigate('/booking-success?session_id=cash&booking_id='+result.booking.id);
+      sgToast('💷 Reserved! Pay at the gym','success',3000);
+    }else{
+      sgToast(result.error||'Reservation failed');
+      const ctaText=document.getElementById('ub-cta-text');
+      const btn=document.getElementById('ub-cta-btn');
+      if(ctaText)ctaText.textContent='Reserve';if(btn)btn.disabled=false;
+    }
+  };
 
-  // Now create the booking + payment intent in ONE server call
-  _initUberPayment(gymId, gym);
+  // ═══ Swipe-to-close on sheet ═══
+  (function(){
+    let sy=0,cy=0,d=false;const sh=sheet.querySelector('.ub-sheet');
+    sh.addEventListener('touchstart',e=>{
+      if(e.target.closest('.ub-sub.open'))return;
+      sy=e.touches[0].clientY;cy=sy;d=true;
+    },{passive:true});
+    sh.addEventListener('touchmove',e=>{
+      if(!d)return;cy=e.touches[0].clientY;const diff=cy-sy;
+      if(diff>0)sh.style.transform=`translateY(${diff}px)`;
+    },{passive:true});
+    sh.addEventListener('touchend',()=>{
+      if(!d)return;d=false;
+      if(cy-sy>120)closeBookingSheet();
+      else sh.style.transform='';
+    },{passive:true});
+  })();
+
+  // ═══ Initialize payment in background ═══
+  _initUberPaymentNew(gymId, gym);
 };
 
-// Create booking + PaymentIntent and mount Stripe Elements
-async function _initUberPayment(gymId, gym){
-  const date=document.getElementById('uc-date')?.value;
-  const time=document.getElementById('uc-time')?.value;
-  const email=document.getElementById('uc-email')?.value||'';
-  const payArea=document.getElementById('uc-payment-area');
-  const payBtn=document.getElementById('uc-pay-btn');
-  const btnText=document.getElementById('uc-btn-text');
+// ═══ Initialize payment (load Stripe, check saved cards) ═══
+async function _initUberPaymentNew(gymId, gym){
+  const cs=window._checkoutState;
+  const stripeArea=document.getElementById('ub-stripe-area');
+  const ctaBtn=document.getElementById('ub-cta-btn');
 
-  // ═══ UBER-STYLE: Check for saved cards (1-tap mode) ═══
+  // Check for saved cards first
   if(state.user){
     try{
       const cardsResp=await fetch('/api/payment/saved-cards',{credentials:'include'}).then(r=>r.json());
       if(cardsResp.cards&&cardsResp.cards.length>0){
         const card=cardsResp.cards.find(c=>c.isDefault)||cardsResp.cards[0];
-        window._checkoutState.savedCardId=card.id;
+        cs.savedCardId=card.id;
+        cs.payMode='saved';
         const brandLabels={visa:'VISA',mastercard:'MC',amex:'AMEX'};
-        document.getElementById('uc-card-brand').textContent=brandLabels[card.brand]||'💳';
-        document.getElementById('uc-card-last4').textContent=card.last4;
-        document.getElementById('uc-saved-card').classList.remove('hidden');
-        payArea.classList.add('hidden');
-        const h=parseInt(time||'10');const pc=document.querySelector('.uc-pass-card.selected');const p=pc?(h<10?pc.dataset.offpeak:pc.dataset.price):(h<10?'3.75':'5.00');
-        btnText.textContent='⚡ Book Now · £'+p;
-        payBtn.disabled=false;
-        payBtn.dataset.mode='saved';
-        payBtn.addEventListener('click',()=>_handleQuickCheckout(gymId));
-        return; // Skip loading Stripe Elements — not needed!
+        document.getElementById('ub-card-brand-box').textContent=brandLabels[card.brand]||'💳';
+        document.getElementById('ub-card-last4').textContent=card.last4;
+        document.getElementById('ub-saved-card-section').classList.remove('hidden');
+        stripeArea.style.display='none';
+        ctaBtn.disabled=false;
+        cs.ready=true;
+        ubUpdateSummary();
+        return;
       }
-    }catch(e){console.log('No saved cards, loading regular checkout');}
+    }catch(e){console.log('No saved cards');}
   }
 
+  // No saved card → load Stripe Elements
   if(!STRIPE_PK||!window.Stripe){
-    payArea.innerHTML='<p class="text-red-400 text-sm text-center">Payment system loading... please wait.</p>';
-    setTimeout(()=>_initUberPayment(gymId,gym),1000);
+    stripeArea.innerHTML='<div class="ub-stripe-wrap"><p style="color:#f87171;font-size:13px;text-align:center">Payment loading… please wait</p></div>';
+    setTimeout(()=>_initUberPaymentNew(gymId,gym),1000);
     return;
   }
 
@@ -3010,25 +3291,26 @@ async function _initUberPayment(gymId, gym){
     }
 
     const gymInfo=state.currentGym||state.gyms.find(g=>(g.placeId||g.place_id||g.id)==gymId)||{};
+    const date=cs.selectedDate;
+    const time=cs.selectedTime;
+    const email=document.getElementById('ub-email')?.value||'';
+
     const result=await fetch('/api/payment/instant-checkout',{
       method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
-      body:JSON.stringify({gymId:parseInt(dbGymId),placeId:gymId,date,time,email,gymName:gymInfo.name||'Gym',gymAddress:gymInfo.formatted_address||gymInfo.vicinity||gymInfo.address||'',passType:window._checkoutState.selectedPass||'day'})
+      body:JSON.stringify({gymId:parseInt(dbGymId),placeId:gymId,date,time,email,gymName:gymInfo.name||'Gym',gymAddress:gymInfo.formatted_address||gymInfo.vicinity||gymInfo.address||'',passType:cs.selectedPass||'day'})
     }).then(r=>{if(!r.ok)throw new Error('Server error '+r.status);return r.json();});
 
     if(result.error){
-      payArea.innerHTML=`<p class="text-red-400 text-sm text-center">${result.error}</p>`;
+      stripeArea.innerHTML=`<div class="ub-stripe-wrap"><p style="color:#f87171;font-size:13px;text-align:center">${result.error}</p></div>`;
       return;
     }
 
-    const bookingId=result.bookingId;
-    window._checkoutState.bookingId=bookingId;
-    window._checkoutState.intentId=result.intentId;
-    window._checkoutState.gymId=gymId;
-    window._checkoutState.selectedPass=window._checkoutState.selectedPass||'day';
-    localStorage.setItem('sg_pending_booking',bookingId);
+    cs.bookingId=result.bookingId;
+    cs.intentId=result.intentId;
+    localStorage.setItem('sg_pending_booking',result.bookingId);
 
     const stripeInstance=window.Stripe(STRIPE_PK);
-    window._checkoutState.stripe=stripeInstance;
+    cs.stripe=stripeInstance;
 
     const userCountry=(()=>{try{const tz=Intl.DateTimeFormat().resolvedOptions().timeZone||'';const map={'Europe/London':'GB','America/New_York':'US','America/Los_Angeles':'US','Asia/Dubai':'AE','Europe/Paris':'FR','Europe/Berlin':'DE','Europe/Madrid':'ES','Australia/Sydney':'AU','Asia/Tokyo':'JP','America/Toronto':'CA'};return map[tz]||'GB';}catch(e){return 'GB';}})();
 
@@ -3036,13 +3318,13 @@ async function _initUberPayment(gymId, gym){
       clientSecret:result.clientSecret,
       appearance:{
         theme:'night',
-        variables:{colorPrimary:'#f97316',fontFamily:'-apple-system,BlinkMacSystemFont,Inter,sans-serif',borderRadius:'10px',colorBackground:'#1e293b'},
-        rules:{'.Input':{border:'1px solid #334155',padding:'12px'},'.Tab':{border:'1px solid #334155'},'.Tab--selected':{borderColor:'#f97316'}}
+        variables:{colorPrimary:'#22c55e',fontFamily:'-apple-system,BlinkMacSystemFont,Inter,sans-serif',borderRadius:'12px',colorBackground:'#111827'},
+        rules:{'.Input':{border:'1px solid rgba(255,255,255,.1)',padding:'14px'},'.Tab':{border:'1px solid rgba(255,255,255,.1)'},'.Tab--selected':{borderColor:'#22c55e'}}
       }
     });
-    window._checkoutState.elements=elements;
+    cs.elements=elements;
 
-    payArea.innerHTML='<div id="uc-stripe-el"></div>';
+    stripeArea.innerHTML='<div class="ub-stripe-wrap"><div id="ub-stripe-el"></div></div>';
     const paymentElement=elements.create('payment',{
       layout:{type:'tabs',defaultCollapsed:false},
       wallets:{applePay:'auto',googlePay:'auto'},
@@ -3050,280 +3332,20 @@ async function _initUberPayment(gymId, gym){
       fields:{billingDetails:{address:{postalCode:'auto',country:'auto'}}},
       defaultValues:{billingDetails:{address:{country:userCountry},email:email||undefined}},
     });
-    paymentElement.mount('#uc-stripe-el');
+    paymentElement.mount('#ub-stripe-el');
 
     paymentElement.on('ready',()=>{
-      window._updatePassPrice();
-      payBtn.disabled=false;
+      cs.ready=true;
+      ctaBtn.disabled=false;
+      ubUpdateSummary();
     });
 
-    payBtn.addEventListener('click',()=>_handleUberPay(bookingId));
-
   }catch(e){
-    console.error('Checkout init error:',e);
-    payArea.innerHTML='<p class="text-red-400 text-sm text-center">Failed to load checkout. Please try again.</p>';
+    console.error('Payment init error:',e);
+    stripeArea.innerHTML='<div class="ub-stripe-wrap"><p style="color:#f87171;font-size:13px;text-align:center">Failed to load. Try again.</p></div>';
   }
 }
 
-// ═══ UBER-STYLE: 1-Tap Quick Checkout with saved card ═══
-async function _handleQuickCheckout(gymId){
-  const btn=document.getElementById('uc-pay-btn');
-  const btnText=document.getElementById('uc-btn-text');
-  const errEl=document.getElementById('uc-error');
-  if(!btn||btn.disabled)return;
-  if(btn.dataset.mode!=='saved')return;
-
-  const email=document.getElementById('uc-email')?.value;
-  if(!email||!email.includes('@')){
-    errEl.textContent='Please enter a valid email for your QR code';
-    errEl.classList.remove('hidden');
-    document.getElementById('uc-email')?.focus();
-    return;
-  }
-  localStorage.setItem('sg_last_email',email);
-
-  btn.disabled=true;
-  btnText.innerHTML='<span class="sg-spinner"></span> Booking instantly...';
-  errEl.classList.add('hidden');
-
-  try{
-    let dbGymId=gymId;
-    if(isNaN(parseInt(gymId))){
-      const ensured=await fetch('/api/live/ensure-gym',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({placeId:gymId})}).then(r=>r.json());
-      if(ensured.error){sgToast(ensured.error);closeBookingSheet();return;}
-      dbGymId=ensured.gymId;
-    }
-
-    const date=document.getElementById('uc-date')?.value;
-    const time=document.getElementById('uc-time')?.value;
-    const cardId=window._checkoutState.savedCardId;
-
-    const result=await fetch('/api/payment/quick-checkout',{
-      method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
-      body:JSON.stringify({gymId:parseInt(dbGymId),placeId:gymId,date,time,cardId})
-    }).then(r=>r.json());
-
-    if(result.requiresAuth){
-      sgToast('Card requires verification. Loading payment form...');
-      document.getElementById('uc-saved-card').classList.add('hidden');
-      document.getElementById('uc-payment-area').classList.remove('hidden');
-      btn.dataset.mode='new';
-      btnText.textContent='Confirm & Pay';btn.disabled=false;
-      _initUberPayment(gymId,{});
-      return;
-    }
-
-    if(result.success){
-      state.lastBooking=result.booking;
-      state.lastQR=result.qr;
-      localStorage.removeItem('sg_pending_booking');
-      closeBookingSheet();
-      navigate('/booking-success?session_id=quick&booking_id='+result.booking.id);
-      sgToast('⚡ Booked instantly!','success',3000);
-    }else{
-      errEl.textContent=result.error||'Quick checkout failed';
-      errEl.classList.remove('hidden');
-      btnText.textContent='⚡ Book Now';btn.disabled=false;
-    }
-  }catch(e){
-    console.error('Quick checkout error:',e);
-    errEl.textContent='Something went wrong. Please try again.';
-    errEl.classList.remove('hidden');
-    btnText.textContent='⚡ Book Now';btn.disabled=false;
-  }
-}
-
-// Handle the single "Confirm & Pay" button
-async function _handleUberPay(bookingId){
-  const btn=document.getElementById('uc-pay-btn');
-  const btnText=document.getElementById('uc-btn-text');
-  const errEl=document.getElementById('uc-error');
-  if(!btn||btn.disabled)return;
-  // Cash mode → different flow
-  if(btn.dataset?.payMode==='cash'){return _handleCashBooking();}
-
-  const email=document.getElementById('uc-email')?.value;
-  if(!email||!email.includes('@')){
-    errEl.textContent='Please enter a valid email for your QR code';
-    errEl.classList.remove('hidden');
-    document.getElementById('uc-email')?.focus();
-    return;
-  }
-  localStorage.setItem('sg_last_email',email);
-
-  btn.disabled=true;
-  btnText.innerHTML='<span class="sg-spinner"></span> Processing...';
-  errEl.classList.add('hidden');
-
-  const {stripe,elements}=window._checkoutState;
-  if(!stripe||!elements){sgToast('Payment not ready. Please try again.');btn.disabled=false;btnText.textContent='Confirm & Pay';return;}
-
-  const {error,paymentIntent}=await stripe.confirmPayment({
-    elements,
-    confirmParams:{return_url:window.location.origin+'/booking-success?booking_id='+bookingId},
-    redirect:'if_required',
-  });
-
-  if(error){
-    errEl.textContent=error.message;
-    errEl.classList.remove('hidden');
-    const h=parseInt(document.getElementById('uc-time')?.value||'10');
-    const pc=document.querySelector('.uc-pass-card.selected');const ep=pc?(h<10?pc.dataset.offpeak:pc.dataset.price):(h<10?'3.75':'5.00');btnText.textContent='Confirm & Pay · £'+parseFloat(ep).toFixed(2);
-    btn.disabled=false;
-    return;
-  }
-
-  if(paymentIntent&&paymentIntent.status==='succeeded'){
-    btnText.innerHTML='<span class="sg-spinner"></span> Generating QR...';
-    try{
-      const confirmEmail=document.getElementById('uc-email')?.value||'';
-      const result=await fetch('/api/payment/confirm-intent',{
-        method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
-        body:JSON.stringify({bookingId,paymentIntentId:paymentIntent.id,email:confirmEmail})
-      }).then(r=>r.json());
-
-      if(result.success){
-        state.lastBooking=result.booking;
-        state.lastQR=result.qr;
-        localStorage.removeItem('sg_pending_booking');
-        closeBookingSheet();
-        navigate('/booking-success?session_id=inline&booking_id='+bookingId);
-        if(state.user&&paymentIntent){
-          fetch('/api/payment/save-card',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({paymentIntentId:paymentIntent.id})})
-            .then(r=>r.json()).then(r=>{if(r.success){localStorage.setItem('sg_has_saved_card','1');console.log('Card saved for 1-tap booking');}}).catch(()=>{});
-        }
-        if(!localStorage.getItem('sg_save_card_dismissed')&&!state.user){
-          setTimeout(()=>{
-            const banner=document.createElement('div');
-            banner.id='save-card-banner';
-            banner.className='fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:max-w-sm bg-slate-800 border border-brand/40 rounded-2xl p-4 z-50 shadow-2xl shadow-brand/10';
-            banner.innerHTML=`
-              <p class="text-white font-bold text-sm mb-1">⚡ Save your card for 1-tap booking?</p>
-              <p class="text-slate-400 text-xs mb-3">Create a free account to skip payment entry next time — like Uber.</p>
-              <div class="flex gap-2">
-                <button onclick="navigate('/login');document.getElementById('save-card-banner')?.remove()" class="flex-1 bg-brand text-white font-bold py-2 rounded-lg text-sm hover:bg-orange-600 transition">Create Account</button>
-                <button onclick="localStorage.setItem('sg_save_card_dismissed','1');document.getElementById('save-card-banner')?.remove()" class="px-3 py-2 text-slate-500 text-sm hover:text-slate-300 transition">Not now</button>
-              </div>`;
-            document.body.appendChild(banner);
-            setTimeout(()=>banner.remove(),15000);
-          },3000);
-        }
-      }else{
-        sgToast(result.error||'Confirmation failed. Contact support.');
-        btnText.textContent='Confirm & Pay';btn.disabled=false;
-      }
-    }catch(e){
-      sgToast('Payment confirmed! QR code will be sent to your email.','success',5000);
-      closeBookingSheet();
-      navigate('/my-bookings');
-    }
-  }
-}
-
-// Update PaymentIntent amount when time changes (off-peak vs standard)
-async function _updateCheckoutAmount(hour){
-  const cs=window._checkoutState;
-  if(!cs.bookingId)return;
-  const passCard=document.querySelector('.uc-pass-card.selected');
-  const price=passCard?(hour<10?parseFloat(passCard.dataset.offpeak):parseFloat(passCard.dataset.price)):(hour<10?3.75:5.00);
-  const passType=cs.selectedPass||'day';
-  try{
-    await fetch('/api/payment/update-intent-amount',{
-      method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
-      body:JSON.stringify({paymentIntentId:cs.intentId,amount:price,time:String(hour).padStart(2,'0')+':00',bookingId:cs.bookingId,passType})
-    });
-  }catch(e){console.warn('Amount update failed:',e);}
-}
-
-
-// ═══ CASH AT GYM: Toggle between card and cash payment ═══
-window.toggleCashMode=function(){
-  const payArea=document.getElementById('uc-payment-area');
-  const cashToggle=document.getElementById('uc-cash-toggle');
-  const btnText=document.getElementById('uc-btn-text');
-  const payBtn=document.getElementById('uc-pay-btn');
-  const isCash=payBtn?.dataset?.payMode==='cash';
-
-  if(isCash){
-    // Switch back to card
-    payArea?.classList.remove('hidden');
-    cashToggle.innerHTML='';
-    cashToggle.className='w-5 h-5 rounded-full border-2 border-slate-600 flex items-center justify-center flex-shrink-0';
-    payBtn.dataset.payMode='card';
-    window._updatePassPrice();
-  }else{
-    // Switch to cash
-    payArea?.classList.add('hidden');
-    cashToggle.innerHTML='<div class="w-3 h-3 rounded-full bg-green-400"></div>';
-    cashToggle.className='w-5 h-5 rounded-full border-2 border-green-400 flex items-center justify-center flex-shrink-0';
-    payBtn.dataset.payMode='cash';
-    payBtn.disabled=false;
-    const pc=document.querySelector('.uc-pass-card.selected');
-    const h=parseInt(document.getElementById('uc-time')?.value||'10');
-    const price=pc?(h<10?parseFloat(pc.dataset.offpeak):parseFloat(pc.dataset.price)):5.00;
-    btnText.textContent='Reserve · Pay at Gym · £'+price.toFixed(2);
-  }
-};
-
-// Handle cash booking submission
-async function _handleCashBooking(){
-  const btn=document.getElementById('uc-pay-btn');
-  const btnText=document.getElementById('uc-btn-text');
-  const errEl=document.getElementById('uc-error');
-  if(!btn||btn.disabled)return;
-
-  const email=document.getElementById('uc-email')?.value;
-  if(!email||!email.includes('@')){
-    errEl.textContent='Please enter a valid email for your booking confirmation';
-    errEl.classList.remove('hidden');
-    document.getElementById('uc-email')?.focus();
-    return;
-  }
-  localStorage.setItem('sg_last_email',email);
-
-  btn.disabled=true;
-  btnText.innerHTML='<span class="sg-spinner"></span> Reserving...';
-  errEl.classList.add('hidden');
-
-  try{
-    const cs=window._checkoutState;
-    let gymId=cs.gymId;
-    let dbGymId=gymId;
-    if(isNaN(parseInt(gymId))){
-      const gymInfo=state.currentGym||state.gyms.find(g=>(g.placeId||g.place_id||g.id)==gymId)||{};
-      const ensured=await fetch('/api/live/ensure-gym',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({placeId:gymId})}).then(r=>r.json());
-      if(ensured.error){sgToast(ensured.error);closeBookingSheet();return;}
-      dbGymId=ensured.gymId;
-    }
-
-    const date=document.getElementById('uc-date')?.value;
-    const time=document.getElementById('uc-time')?.value;
-    const passType=cs.selectedPass||'day';
-    const gymInfo=state.currentGym||state.gyms.find(g=>(g.placeId||g.place_id||g.id)==gymId)||{};
-
-    const result=await fetch('/api/payment/cash-booking',{
-      method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
-      body:JSON.stringify({gymId:parseInt(dbGymId),placeId:gymId,date,time,email,passType,gymName:gymInfo.name||'Gym',gymAddress:gymInfo.formatted_address||gymInfo.vicinity||gymInfo.address||''})
-    }).then(r=>r.json());
-
-    if(result.success){
-      state.lastBooking=result.booking;
-      state.lastQR=result.qr;
-      closeBookingSheet();
-      navigate('/booking-success?session_id=cash&booking_id='+result.booking.id);
-      sgToast('💷 Reserved! Pay at the gym reception.','success',5000);
-    }else{
-      errEl.textContent=result.error||'Reservation failed';
-      errEl.classList.remove('hidden');
-      btnText.textContent='Reserve · Pay at Gym';btn.disabled=false;
-    }
-  }catch(e){
-    console.error('Cash booking error:',e);
-    errEl.textContent='Something went wrong. Please try again.';
-    errEl.classList.remove('hidden');
-    btnText.textContent='Reserve · Pay at Gym';btn.disabled=false;
-  }
-}
 
 window.closeBookingSheet=function(){
   const sheet=document.getElementById('booking-sheet');
