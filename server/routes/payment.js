@@ -594,7 +594,7 @@ router.post('/instant-checkout', async (req, res) => {
       weekly: { peak: 20.00, offPeak: 15.00 },
     };
     const passPricing = PASS_PRICES[passTypeClean] || PASS_PRICES.day;
-    const price = hours < 10 ? passPricing.offPeak : passPricing.peak;
+    const price = (hours < 10 || hours >= 20) ? passPricing.offPeak : passPricing.peak;
     const amount = Math.round(price * 100);
 
     // Generate booking codes
@@ -681,7 +681,7 @@ router.post('/update-intent-amount', async (req, res) => {
       };
       const pp = PASS_PRICES[passTypeClean] || PASS_PRICES.day;
       const [hours] = time.split(':').map(Number);
-      const price = hours < 10 ? pp.offPeak : pp.peak;
+      const price = (hours < 10 || hours >= 20) ? pp.offPeak : pp.peak;
       await pool.query(
         'UPDATE public.bookings SET total_amount = $1, start_time = $2, end_time = $3, platform_fee_amount = $4, updated_at = NOW() WHERE id = $5',
         [price, time, time, price * 0.10, bookingId]
@@ -742,7 +742,7 @@ router.post('/cash-booking', async (req, res) => {
     };
     const pp = PASS_PRICES[passTypeClean] || PASS_PRICES.day;
     const [hours] = time.split(':').map(Number);
-    const price = hours < 10 ? pp.offPeak : pp.peak;
+    const price = (hours < 10 || hours >= 20) ? pp.offPeak : pp.peak;
 
     // Generate booking codes
     const crypto = require('crypto');
@@ -1009,7 +1009,7 @@ router.post('/quick-checkout', async (req, res) => {
 
     // Pricing
     const [hours] = time.split(':').map(Number);
-    const price = hours < 10 ? 3.75 : 5.00;
+    const price = (hours < 10 || hours >= 20) ? 3.75 : 5.00;
     const amount = Math.round(price * 100);
 
     // Generate booking codes
