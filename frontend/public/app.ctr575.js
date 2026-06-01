@@ -2771,7 +2771,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
     selected.querySelector('.w-11')?.classList.remove('bg-slate-700');
     
     window._checkoutState.selectedPass=passId;
-    _updatePassPrice();
+    window._updatePassPrice();
     if(window._onPassChange)window._onPassChange();
   };
   window._checkoutState.selectedPass='day';
@@ -2815,7 +2815,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
 
   // Bind time change → update price display
   document.getElementById('uc-time').addEventListener('change',function(){
-    _updatePassPrice();
+    window._updatePassPrice();
     const h=parseInt(this.value);
     _updateCheckoutAmount(h);
   });
@@ -2913,7 +2913,7 @@ async function _initUberPayment(gymId, gym){
     paymentElement.mount('#uc-stripe-el');
 
     paymentElement.on('ready',()=>{
-      _updatePassPrice();
+      window._updatePassPrice();
       payBtn.disabled=false;
     });
 
@@ -3110,7 +3110,7 @@ window.toggleCashMode=function(){
     cashToggle.innerHTML='';
     cashToggle.className='w-5 h-5 rounded-full border-2 border-slate-600 flex items-center justify-center flex-shrink-0';
     payBtn.dataset.payMode='card';
-    _updatePassPrice();
+    window._updatePassPrice();
   }else{
     // Switch to cash
     payArea?.classList.add('hidden');
