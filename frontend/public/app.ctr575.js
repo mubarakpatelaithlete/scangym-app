@@ -3001,11 +3001,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
         <div class="ub-error-text"></div>
       </div>
 
-      <!-- Bug #8 fix: Email field moved from Payment sub-screen to main checkout -->
-      <div style="padding:0 20px 8px">
-        <label style="color:rgba(255,255,255,.4);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px">📧 Email for QR code</label>
-        <input type="email" id="ub-email" value="${savedEmail}" placeholder="your@email.com" autocomplete="email" inputmode="email" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:14px 16px;color:#fff;font-size:15px;outline:none;box-sizing:border-box">
-      </div>
+      <!-- Bug #8: Email input removed — email comes from localStorage or Stripe receipt_email -->
 
       <!-- Stage 2 CTA -->
       <div class="ub-footer">
@@ -3090,7 +3086,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
           <div class="ub-sub-title">Payment</div>
         </div>
         <div class="ub-sub-body">
-          <!-- Bug #8: Email field moved to main checkout stage — see above -->
+          <!-- Bug #8: Email input removed from checkout -->
 
           <!-- Saved card (populated dynamically) -->
           <div id="ub-saved-card-section" class="hidden">
@@ -3379,16 +3375,8 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
   // ═══ Navigate to Stage 3 ═══
   window.ubGoToStage3=function(){
     const cs=window._checkoutState;
-    const email=document.getElementById('ub-email')?.value||'';
-    // Validate email for non-cash
-    if(cs.payMode!=='cash'&&(!email||!email.includes('@'))){
-      ubOpenSub('payment');
-      setTimeout(()=>{
-        document.getElementById('ub-email')?.focus();
-        sgToast('Please enter your email for the QR code','warning',3000);
-      },400);
-      return;
-    }
+    // Bug #8: Email input removed — use localStorage fallback
+    const email=localStorage.getItem('sg_last_email')||'';
     // Validate payment readiness for card mode
     if(cs.payMode==='card'&&!cs.ready){
       ubOpenSub('payment');
@@ -3414,8 +3402,8 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
     const errEl=document.getElementById('ub-s3-error');
     if(!btn||btn.disabled)return;
 
-    const email=document.getElementById('ub-email')?.value||'';
-    localStorage.setItem('sg_last_email',email);
+    // Bug #8: Email input removed — use localStorage fallback
+    const email=localStorage.getItem('sg_last_email')||'';
     errEl?.classList.add('hidden');
 
     // ─── Cash booking ───
