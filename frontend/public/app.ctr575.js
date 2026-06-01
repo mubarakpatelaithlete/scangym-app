@@ -3367,7 +3367,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
         }
         const result=await fetch('/api/payment/cash-booking',{
           method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
-          body:JSON.stringify({gymId:parseInt(dbGymId),placeId:gymId,date:cs.selectedDate,time:cs.selectedTime==='anytime'?'':cs.selectedTime,email,gymName:gymName,gymAddress:gymAddr,passType:cs.selectedPass||'day'})
+          body:JSON.stringify({gymId:parseInt(dbGymId),placeId:gymId,date:cs.selectedDate,time:cs.selectedTime,email,gymName:gymName,gymAddress:gymAddr,passType:cs.selectedPass||'day'})
         }).then(r=>r.json());
         if(result.success){
           state.lastBooking=result.booking;state.lastQR=result.qr;
@@ -3398,7 +3398,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
         }
         const result=await fetch('/api/payment/quick-checkout',{
           method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
-          body:JSON.stringify({gymId:parseInt(dbGymId),placeId:gymId,date:cs.selectedDate,time:cs.selectedTime==='anytime'?'':cs.selectedTime,email,gymName:gymName,gymAddress:gymAddr,passType:cs.selectedPass||'day',savedCardId:cs.savedCardId})
+          body:JSON.stringify({gymId:parseInt(dbGymId),placeId:gymId,date:cs.selectedDate,time:cs.selectedTime,email,gymName:gymName,gymAddress:gymAddr,passType:cs.selectedPass||'day',savedCardId:cs.savedCardId})
         }).then(r=>r.json());
         if(result.success){
           state.lastBooking=result.booking;state.lastQR=result.qr;
@@ -3440,7 +3440,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
       const gymInfo=state.currentGym||state.gyms.find(g=>(g.placeId||g.place_id||g.id)==gymId)||{};
       const intentResult=await fetch('/api/payment/instant-checkout',{
         method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
-        body:JSON.stringify({gymId:parseInt(cs.dbGymId||gymId),placeId:gymId,date:cs.selectedDate,time:cs.selectedTime==='anytime'?'':cs.selectedTime,email,gymName:gymInfo.name||gymName||'Gym',gymAddress:gymInfo.formatted_address||gymInfo.vicinity||gymInfo.address||gymAddr||'',passType:cs.selectedPass||'day'})
+        body:JSON.stringify({gymId:parseInt(cs.dbGymId||gymId),placeId:gymId,date:cs.selectedDate,time:cs.selectedTime,email,gymName:gymInfo.name||gymName||'Gym',gymAddress:gymInfo.formatted_address||gymInfo.vicinity||gymInfo.address||gymAddr||'',passType:cs.selectedPass||'day'})
       }).then(r=>{if(!r.ok)throw new Error('Server error '+r.status);return r.json();});
 
       if(intentResult.error){
