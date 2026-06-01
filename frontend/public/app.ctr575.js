@@ -2789,7 +2789,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
     if(!passCard)return;
     const h=parseInt(document.getElementById('uc-time')?.value||'10');
     const passId=passCard.dataset.pass;
-    const price=passId==='day'&&h<10?parseFloat(passCard.dataset.offpeak):parseFloat(passCard.dataset.price);
+    const price=h<10?parseFloat(passCard.dataset.offpeak):parseFloat(passCard.dataset.price);
     const passName=passCard.querySelector('.text-white.font-bold.text-sm')?.textContent||'Pass';
     
     const btn=document.getElementById('uc-btn-text');
