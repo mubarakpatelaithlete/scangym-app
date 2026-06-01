@@ -594,6 +594,7 @@ function GymCard(gym){
         <span class="text-xs text-accent font-medium">✅ Free cancellation</span>
         
       </div>
+      <button onclick="event.stopPropagation();showUberCheckout('${gymIdentifier}')" class="gym-card-book-btn">⚡ Book Now · from £${(parseFloat(price)*0.75).toFixed(2)}</button>
     </div>
   </div>`;
 }
@@ -953,6 +954,8 @@ function GymProfilePage(){
     .gym-book-sub{font-size:12px;color:rgba(255,255,255,.5)}
     .gym-book-btn{background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:16px;font-weight:700;padding:14px 28px;border-radius:12px;border:none;box-shadow:0 4px 20px rgba(34,197,94,.4);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .15s}
     .gym-book-btn:active{transform:scale(.96)}
+    .gym-card-book-btn{width:100%;margin-top:10px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:13px;font-weight:700;padding:10px 16px;border-radius:10px;border:none;box-shadow:0 2px 12px rgba(34,197,94,.3);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;letter-spacing:.3px}
+    .gym-card-book-btn:active{transform:scale(.97);box-shadow:0 1px 6px rgba(34,197,94,.2)}
 
     /* Overlay panel */
     .gym-overlay{position:fixed;inset:0;z-index:100;opacity:0;pointer-events:none;transition:opacity .3s ease}
