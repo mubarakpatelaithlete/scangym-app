@@ -2604,8 +2604,16 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
   const currentHour=new Date().getHours();
   const defaultTime=prefillTime||`${String(Math.min(currentHour+1,20)).padStart(2,'0')}:00`;
   const defaultHour=parseInt(defaultTime);
-  const defaultPrice=defaultHour<10?'3.75':'5.00';
   const savedEmail=localStorage.getItem('sg_last_email')||'';
+
+  // Pass options with pricing
+  const passes=[
+    {id:'day',name:'Day Pass',desc:'1 visit · any time today',price:5.00,offPeak:3.75,icon:'⚡',badge:'Instant',badgeColor:'#2563eb',available:true},
+    {id:'3day',name:'3-Day Pass',desc:'3 visits · valid 7 days',price:12.00,offPeak:12.00,icon:'🔥',badge:'Popular',badgeColor:'#f97316',available:false},
+    {id:'weekly',name:'Weekly Pass',desc:'Unlimited · 7 days',price:20.00,offPeak:20.00,icon:'💪',badge:'Best Value',badgeColor:'#10b981',available:false},
+  ];
+  const defaultPass=passes[0];
+  const defaultPrice=defaultHour<10?defaultPass.offPeak:defaultPass.price;
 
   const sheet=document.createElement('div');
   sheet.id='booking-sheet';
@@ -2617,36 +2625,41 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
       <div class="sticky top-0 bg-slate-900/95 backdrop-blur-sm z-10 px-5 pt-5 pb-3 border-b border-slate-800">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-3">
-            <div class="w-9 h-9 bg-brand rounded-lg flex items-center justify-center text-lg">🏋️</div>
+            <div class="w-10 h-10 bg-brand rounded-xl flex items-center justify-center text-lg">🏋️</div>
             <div>
-              <p class="text-white font-bold text-sm leading-tight">${gymName}</p>
-              <p class="text-slate-500 text-xs">${gymAddr.length>35?gymAddr.substring(0,35)+'...':gymAddr}</p>
+              <p class="text-white font-bold text-base leading-tight">${gymName}</p>
+              <p class="text-slate-500 text-xs">${gymAddr.length>40?gymAddr.substring(0,40)+'...':gymAddr}</p>
             </div>
           </div>
           <button onclick="closeBookingSheet()" class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition">&times;</button>
         </div>
       </div>
 
-      <div class="px-5 pb-5 pt-3">
-        <!-- Trust signals — above the fold, visible immediately -->
-        <div class="flex items-center justify-center gap-3 mb-3 text-xs">
-          <span class="text-green-400 font-medium">✅ No account needed</span>
-          <span class="text-slate-600">·</span>
-          <span class="text-green-400 font-medium">↩️ Free cancel</span>
-          <span class="text-slate-600">·</span>
-          <span class="text-slate-400">🔒 Secure</span>
+      <div class="px-5 pb-5 pt-4">
+
+        <!-- ═══ CHOOSE A PASS ═══ -->
+        <h3 class="text-white font-bold text-lg mb-3">Choose a pass</h3>
+        
+        <div id="uc-pass-options" class="mb-4 space-y-2">
+          ${passes.map((p,i)=>`
+          <div class="uc-pass-card ${i===0?'selected':''} relative cursor-pointer rounded-xl border-2 ${i===0?'border-brand bg-brand/10':'border-slate-700 bg-slate-800/60'} p-3.5 flex items-center gap-3 transition-all hover:border-brand/60" data-pass="${p.id}" data-price="${p.price}" data-offpeak="${p.offPeak}" data-available="${p.available}" onclick="selectPass('${p.id}')">
+            <div class="w-11 h-11 rounded-xl ${i===0?'bg-brand/20':'bg-slate-700'} flex items-center justify-center text-xl flex-shrink-0">${p.icon}</div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="text-white font-bold text-sm">${p.name}</span>
+                ${!p.available?'<span class="text-[9px] font-bold text-slate-500 bg-slate-700 px-1.5 py-0.5 rounded uppercase">Soon</span>':''}
+              </div>
+              <p class="text-slate-500 text-xs">${p.desc}</p>
+              <span class="inline-block mt-1 text-[10px] font-bold px-2 py-0.5 rounded-md text-white" style="background:${p.badgeColor}">${p.icon} ${p.badge}</span>
+            </div>
+            <div class="text-right flex-shrink-0">
+              <span class="text-white font-bold text-base">£${p.price.toFixed(2)}</span>
+              ${p.id==='day'&&defaultHour<10?'<p class="text-green-400 text-[10px]">Off-peak £3.75</p>':''}
+            </div>
+          </div>`).join('')}
         </div>
 
-        <!-- Compact price + badge inline -->
-        <div class="flex items-center justify-between mb-3 bg-slate-800/60 rounded-xl px-4 py-2.5">
-          <div class="flex items-center gap-2">
-            <p id="uc-price" class="text-2xl font-bold text-white">£${defaultPrice}</p>
-            <p id="uc-badge" class="text-xs font-medium ${defaultHour<10?'text-green-400':'text-slate-500'}">${defaultHour<10?'🎉 Off-peak':'24hr day pass'}</p>
-          </div>
-          <span class="text-green-500/80 text-xs">✅ Free cancel</span>
-        </div>
-
-        <!-- Booking details — compact horizontal row like Uber -->
+        <!-- ═══ DATE & TIME (compact like Uber) ═══ -->
         <div class="grid grid-cols-2 gap-2 mb-3">
           <div class="bg-slate-800/80 rounded-xl p-3">
             <label class="text-slate-500 text-[10px] uppercase tracking-wider font-bold block mb-1">Date</label>
@@ -2655,12 +2668,12 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
           <div class="bg-slate-800/80 rounded-xl p-3">
             <label class="text-slate-500 text-[10px] uppercase tracking-wider font-bold block mb-1">Time</label>
             <select id="uc-time" class="w-full bg-transparent text-white text-sm outline-none font-medium appearance-none">
-              ${Array.from({length:15},(_,i)=>{const h=6+i;const v=String(h).padStart(2,'0')+':00';return`<option value="${v}" ${v===defaultTime?'selected':''}>${v}${h<10?' · £3.75':''}</option>`;}).join('')}
+              ${Array.from({length:15},(_,i)=>{const h=6+i;const v=String(h).padStart(2,'0')+':00';return`<option value="${v}" ${v===defaultTime?'selected':''}>${v}${h<10?' · Off-peak':''}</option>`;}).join('')}
             </select>
           </div>
         </div>
 
-        <!-- Email — hidden for returning users (Uber-style: 0 fields) -->
+        <!-- ═══ EMAIL ═══ -->
         <div class="bg-slate-800/80 rounded-xl p-3 mb-3" id="uc-email-section">
           ${savedEmail?`
           <div id="uc-email-saved" class="flex items-center justify-between">
@@ -2682,21 +2695,19 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
           `}
         </div>
 
-        <!-- Saved Card (1-tap mode) — hidden by default, shown for logged-in users with saved cards -->
+        <!-- ═══ SAVED CARD (Uber-style row) ═══ -->
         <div id="uc-saved-card" class="hidden mb-3">
-          <div class="bg-slate-800/80 rounded-xl p-3 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-7 bg-slate-700 rounded flex items-center justify-center text-xs font-bold text-white" id="uc-card-brand">💳</div>
-              <div>
-                <p class="text-white text-sm font-medium">•••• <span id="uc-card-last4">****</span></p>
-                <p class="text-green-400 text-[10px] font-medium">⚡ 1-tap booking enabled</p>
-              </div>
+          <div class="bg-slate-800/80 rounded-xl p-3 flex items-center gap-3 cursor-pointer hover:bg-slate-700/80 transition" onclick="document.getElementById('uc-saved-card').classList.add('hidden');document.getElementById('uc-payment-area').classList.remove('hidden');document.getElementById('uc-pay-btn').dataset.mode='new'">
+            <div class="w-12 h-8 bg-[#1a1f71] rounded-lg flex items-center justify-center text-[10px] font-extrabold text-white tracking-widest flex-shrink-0" id="uc-card-brand">VISA</div>
+            <div class="flex-1">
+              <p class="text-white text-sm font-semibold">•••• <span id="uc-card-last4">****</span></p>
+              <p class="text-green-400 text-[10px] font-medium">⚡ 1-tap booking enabled</p>
             </div>
-            <button onclick="document.getElementById('uc-saved-card').classList.add('hidden');document.getElementById('uc-payment-area').classList.remove('hidden');document.getElementById('uc-pay-btn').dataset.mode='new'" class="text-slate-500 text-xs hover:text-white transition">Use different card</button>
+            <span class="text-slate-500 text-xl">›</span>
           </div>
         </div>
 
-        <!-- Stripe Payment Element — loads inline (Apple Pay / Google Pay / Card) -->
+        <!-- ═══ STRIPE PAYMENT ELEMENT ═══ -->
         <div id="uc-payment-area" class="mb-3">
           <div class="bg-slate-800/60 rounded-xl p-6 text-center">
             <div class="sg-spinner mx-auto mb-2" style="width:24px;height:24px;border-color:rgba(255,255,255,.15);border-top-color:#f97316"></div>
@@ -2705,31 +2716,84 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
         </div>
         <div id="uc-error" class="text-red-400 text-sm mb-2 hidden"></div>
 
-        <!-- Single CTA — Uber style -->
-        <button id="uc-pay-btn" disabled class="w-full bg-brand hover:bg-orange-600 disabled:bg-slate-700 disabled:text-slate-500 text-white font-bold py-4 rounded-xl text-lg transition shadow-lg shadow-brand/20 flex items-center justify-center gap-2" data-mode="new">
-          <span id="uc-btn-text">Confirm & Pay</span>
-        </button>
+        <!-- ═══ CTA + CALENDAR (Uber-style) ═══ -->
+        <div class="flex gap-2">
+          <button id="uc-pay-btn" disabled class="flex-1 bg-brand hover:bg-orange-600 disabled:bg-slate-700 disabled:text-slate-500 text-white font-bold py-4 rounded-xl text-lg transition shadow-lg shadow-brand/20 flex items-center justify-center gap-2" data-mode="new">
+            <span id="uc-btn-text">Confirm & Pay</span>
+          </button>
+          <button id="uc-calendar-btn" class="w-14 bg-slate-800 hover:bg-slate-700 text-white rounded-xl flex items-center justify-center text-2xl transition border border-slate-700" onclick="toggleCalendar()">📅</button>
+        </div>
 
-        <!-- Powered by Stripe -->
-        <div class="flex items-center justify-center gap-1 mt-2 text-[10px] text-slate-600">
-          <span>🔒 Powered by Stripe</span><span>·</span><span>📧 QR sent instantly</span>
+        <!-- Trust footer -->
+        <div class="flex items-center justify-center gap-2 mt-3 text-[10px] text-slate-600">
+          <span>🔒 Powered by Stripe</span><span>·</span><span>📧 QR sent instantly</span><span>·</span><span>↩️ Free cancel</span>
         </div>
       </div>
     </div>
   </div>`;
   document.body.appendChild(sheet);
 
+  // ═══ Pass Selection Logic ═══
+  window.selectPass=function(passId){
+    const cards=document.querySelectorAll('.uc-pass-card');
+    const selected=document.querySelector(`.uc-pass-card[data-pass="${passId}"]`);
+    if(!selected)return;
+    
+    const isAvailable=selected.dataset.available==='true';
+    if(!isAvailable){
+      sgToast('Coming soon! Only Day Pass is available right now.','info',2000);
+      return;
+    }
+    
+    cards.forEach(c=>{
+      c.classList.remove('selected','border-brand','bg-brand/10');
+      c.classList.add('border-slate-700','bg-slate-800/60');
+      c.querySelector('.w-11')?.classList.remove('bg-brand/20');
+      c.querySelector('.w-11')?.classList.add('bg-slate-700');
+    });
+    selected.classList.add('selected','border-brand','bg-brand/10');
+    selected.classList.remove('border-slate-700','bg-slate-800/60');
+    selected.querySelector('.w-11')?.classList.add('bg-brand/20');
+    selected.querySelector('.w-11')?.classList.remove('bg-slate-700');
+    
+    window._checkoutState.selectedPass=passId;
+    _updatePassPrice();
+  };
+  window._checkoutState.selectedPass='day';
+
+  function _updatePassPrice(){
+    const passCard=document.querySelector('.uc-pass-card.selected');
+    if(!passCard)return;
+    const h=parseInt(document.getElementById('uc-time')?.value||'10');
+    const passId=passCard.dataset.pass;
+    const price=passId==='day'&&h<10?parseFloat(passCard.dataset.offpeak):parseFloat(passCard.dataset.price);
+    const passName=passCard.querySelector('.text-white.font-bold.text-sm')?.textContent||'Pass';
+    
+    const btn=document.getElementById('uc-btn-text');
+    if(btn&&!btn.textContent.includes('Processing')&&!btn.textContent.includes('Booking')&&!btn.textContent.includes('Generating')){
+      const mode=document.getElementById('uc-pay-btn')?.dataset?.mode;
+      if(mode==='saved'){
+        btn.textContent='⚡ Book Now · £'+price.toFixed(2);
+      }else{
+        btn.textContent='Confirm & Pay · £'+price.toFixed(2);
+      }
+    }
+  }
+
+  // ═══ Calendar Toggle (opens date/time section or scrolls to it) ═══
+  window.toggleCalendar=function(){
+    const dateEl=document.getElementById('uc-date');
+    if(dateEl){
+      dateEl.scrollIntoView({behavior:'smooth',block:'center'});
+      dateEl.focus();
+      dateEl.showPicker?.();
+    }
+  };
+
   // Bind time change → update price display
   document.getElementById('uc-time').addEventListener('change',function(){
+    _updatePassPrice();
     const h=parseInt(this.value);
-    const isOff=h<10;
-    const p=isOff?'3.75':'5.00';
-    document.getElementById('uc-price').textContent='£'+p;
-    document.getElementById('uc-badge').textContent=isOff?'🎉 Off-peak price':'24-hour day pass';
-    document.getElementById('uc-badge').className='text-xs font-medium mt-1 '+(isOff?'text-green-400':'text-slate-500');
-    const btn=document.getElementById('uc-btn-text');
-    if(btn&&!btn.textContent.includes('Processing'))btn.textContent='Confirm & Pay · £'+p;
-    // Update Stripe intent amount if we already have one
     _updateCheckoutAmount(h);
   });
 
@@ -2753,8 +2817,8 @@ async function _initUberPayment(gymId, gym){
       if(cardsResp.cards&&cardsResp.cards.length>0){
         const card=cardsResp.cards.find(c=>c.isDefault)||cardsResp.cards[0];
         window._checkoutState.savedCardId=card.id;
-        const brandIcons={visa:'💳 Visa',mastercard:'💳 MC',amex:'💳 Amex'};
-        document.getElementById('uc-card-brand').textContent=brandIcons[card.brand]||'💳';
+        const brandLabels={visa:'VISA',mastercard:'MC',amex:'AMEX'};
+        document.getElementById('uc-card-brand').textContent=brandLabels[card.brand]||'💳';
         document.getElementById('uc-card-last4').textContent=card.last4;
         document.getElementById('uc-saved-card').classList.remove('hidden');
         payArea.classList.add('hidden');
@@ -2770,13 +2834,11 @@ async function _initUberPayment(gymId, gym){
 
   if(!STRIPE_PK||!window.Stripe){
     payArea.innerHTML='<p class="text-red-400 text-sm text-center">Payment system loading... please wait.</p>';
-    // Retry after Stripe.js loads
     setTimeout(()=>_initUberPayment(gymId,gym),1000);
     return;
   }
 
   try{
-    // Step 1: Ensure gym exists in DB (if Google Place ID)
     let dbGymId=gymId;
     if(isNaN(parseInt(gymId))){
       const ensured=await api.postLive('/ensure-gym',{placeId:gymId});
@@ -2784,10 +2846,6 @@ async function _initUberPayment(gymId, gym){
       dbGymId=ensured.gymId;
     }
 
-    // Email validation moved to pay button click — don't block payment element loading
-    const _emailValid=email&&email.includes('@')&&email.includes('.');
-
-    // Step 2: Create booking + PaymentIntent in ONE call
     const gymInfo=state.currentGym||state.gyms.find(g=>(g.placeId||g.place_id||g.id)==gymId)||{};
     const result=await fetch('/api/payment/instant-checkout',{
       method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
@@ -2799,14 +2857,12 @@ async function _initUberPayment(gymId, gym){
       return;
     }
 
-    // Store checkout state
     const bookingId=result.bookingId;
     window._checkoutState.bookingId=bookingId;
     window._checkoutState.intentId=result.intentId;
     window._checkoutState.gymId=gymId;
     localStorage.setItem('sg_pending_booking',bookingId);
 
-    // Step 3: Mount Stripe Payment Element with Apple Pay + Google Pay
     const stripeInstance=window.Stripe(STRIPE_PK);
     window._checkoutState.stripe=stripeInstance;
 
@@ -2822,7 +2878,6 @@ async function _initUberPayment(gymId, gym){
     });
     window._checkoutState.elements=elements;
 
-    // Replace loading spinner with actual payment element
     payArea.innerHTML='<div id="uc-stripe-el"></div>';
     const paymentElement=elements.create('payment',{
       layout:{type:'tabs',defaultCollapsed:false},
@@ -2833,7 +2888,6 @@ async function _initUberPayment(gymId, gym){
     });
     paymentElement.mount('#uc-stripe-el');
 
-    // Enable the pay button once Stripe is ready
     paymentElement.on('ready',()=>{
       const h=parseInt(document.getElementById('uc-time')?.value||'10');
       const p=h<10?'3.75':'5.00';
@@ -2841,7 +2895,6 @@ async function _initUberPayment(gymId, gym){
       payBtn.disabled=false;
     });
 
-    // Handle pay button click
     payBtn.addEventListener('click',()=>_handleUberPay(bookingId));
 
   }catch(e){
@@ -2856,7 +2909,7 @@ async function _handleQuickCheckout(gymId){
   const btnText=document.getElementById('uc-btn-text');
   const errEl=document.getElementById('uc-error');
   if(!btn||btn.disabled)return;
-  if(btn.dataset.mode!=='saved')return; // Fall through to regular flow
+  if(btn.dataset.mode!=='saved')return;
 
   const email=document.getElementById('uc-email')?.value;
   if(!email||!email.includes('@')){
@@ -2872,7 +2925,6 @@ async function _handleQuickCheckout(gymId){
   errEl.classList.add('hidden');
 
   try{
-    // Resolve gym ID
     let dbGymId=gymId;
     if(isNaN(parseInt(gymId))){
       const ensured=await fetch('/api/live/ensure-gym',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({placeId:gymId})}).then(r=>r.json());
@@ -2890,7 +2942,6 @@ async function _handleQuickCheckout(gymId){
     }).then(r=>r.json());
 
     if(result.requiresAuth){
-      // SCA required — fall back to regular Stripe Elements flow
       sgToast('Card requires verification. Loading payment form...');
       document.getElementById('uc-saved-card').classList.add('hidden');
       document.getElementById('uc-payment-area').classList.remove('hidden');
@@ -2927,7 +2978,6 @@ async function _handleUberPay(bookingId){
   const errEl=document.getElementById('uc-error');
   if(!btn||btn.disabled)return;
 
-  // Update email on booking if changed
   const email=document.getElementById('uc-email')?.value;
   if(!email||!email.includes('@')){
     errEl.textContent='Please enter a valid email for your QR code';
@@ -2944,7 +2994,6 @@ async function _handleUberPay(bookingId){
   const {stripe,elements}=window._checkoutState;
   if(!stripe||!elements){sgToast('Payment not ready. Please try again.');btn.disabled=false;btnText.textContent='Confirm & Pay';return;}
 
-  // Confirm payment with Stripe
   const {error,paymentIntent}=await stripe.confirmPayment({
     elements,
     confirmParams:{return_url:window.location.origin+'/booking-success?booking_id='+bookingId},
@@ -2975,13 +3024,10 @@ async function _handleUberPay(bookingId){
         localStorage.removeItem('sg_pending_booking');
         closeBookingSheet();
         navigate('/booking-success?session_id=inline&booking_id='+bookingId);
-        // Uber-style: Save card after payment for 1-tap future bookings
         if(state.user&&paymentIntent){
-          // Logged-in user: auto-save card silently
           fetch('/api/payment/save-card',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({paymentIntentId:paymentIntent.id})})
             .then(r=>r.json()).then(r=>{if(r.success){localStorage.setItem('sg_has_saved_card','1');console.log('Card saved for 1-tap booking');}}).catch(()=>{});
         }
-        // Post-booking prompt for guests — offer account creation
         if(!localStorage.getItem('sg_save_card_dismissed')&&!state.user){
           setTimeout(()=>{
             const banner=document.createElement('div');
