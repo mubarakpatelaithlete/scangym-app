@@ -200,11 +200,25 @@ router.get('/verify', async (req, res) => {
       return res.status(500).json({ error: 'Payment system not configured' });
     }
 
-    // Verify Stripe session
-    const session = await stripe.checkout.sessions.retrieve(session_id);
-
-    if (session.payment_status !== 'paid') {
-      return res.status(400).json({ error: 'Payment not completed', status: session.payment_status });
+    // Fix: Handle both Checkout Session IDs (cs_xxx) and PaymentIntent IDs (pi_xxx)
+    // The instant-checkout flow passes a PaymentIntent ID, not a Checkout Session ID
+    let isPaid = false;
+    if (session_id.startsWith('pi_')) {
+      const intent = await stripe.paymentIntents.retrieve(session_id);
+      isPaid = intent.status === 'succeeded';
+      if (!isPaid) {
+        return res.status(400).json({ error: 'Payment not completed', status: intent.status });
+      }
+    } else if (session_id === 'cash' || session_id === 'quick') {
+      // Cash bookings and quick-checkout already confirmed — skip Stripe check
+      isPaid = true;
+    } else {
+      // Original Checkout Session flow
+      const session = await stripe.checkout.sessions.retrieve(session_id);
+      isPaid = session.payment_status === 'paid';
+      if (!isPaid) {
+        return res.status(400).json({ error: 'Payment not completed', status: session.payment_status });
+      }
     }
 
     // Get booking
@@ -977,7 +991,8 @@ router.post('/quick-checkout', async (req, res) => {
     if (!stripe) return res.status(500).json({ error: 'Payment not configured' });
     if (!req.session?.userId) return res.status(401).json({ error: 'Login required for 1-tap booking' });
 
-    const { gymId, date, time, cardId, placeId } = req.body;
+    const { gymId, date, time, cardId, savedCardId, placeId, passType } = req.body;
+    // Fix: Frontend sends 'savedCardId' but backend expected 'cardId' — accept both
     if (!date || !time) return res.status(400).json({ error: 'date and time required' });
 
     // Get user + Stripe customer
@@ -993,7 +1008,7 @@ router.post('/quick-checkout', async (req, res) => {
     }
 
     // Get default card or specified card
-    let paymentMethodId = cardId;
+    let paymentMethodId = cardId || savedCardId; // Fix: accept both field names
     if (!paymentMethodId) {
       const customer = await stripe.customers.retrieve(user.stripe_customer_id);
       paymentMethodId = customer.invoice_settings?.default_payment_method;
@@ -1024,9 +1039,16 @@ router.post('/quick-checkout', async (req, res) => {
     if (gym.rows.length === 0) return res.status(404).json({ error: 'Gym not found' });
     const g = gym.rows[0];
 
-    // Pricing — anytime = peak; before 10am or after 8pm = off-peak
+    // Fix: Pass-based pricing (was hardcoded £5 — ignored 3-day and weekly passes)
+    const passTypeClean = passType || 'day';
+    const PASS_PRICES = {
+      day:    { peak: 5.00, offPeak: 3.75 },
+      '3day': { peak: 12.00, offPeak: 9.00 },
+      weekly: { peak: 20.00, offPeak: 15.00 },
+    };
     const resolved = resolveTime(time);
-    const price = resolved.isAnytime ? 5.00 : (resolved.hours < 10 || resolved.hours >= 20) ? 3.75 : 5.00;
+    const pp = PASS_PRICES[passTypeClean] || PASS_PRICES.day;
+    const price = resolved.isAnytime ? pp.peak : (resolved.hours < 10 || resolved.hours >= 20) ? pp.offPeak : pp.peak;
     const amount = Math.round(price * 100);
 
     // Generate booking codes

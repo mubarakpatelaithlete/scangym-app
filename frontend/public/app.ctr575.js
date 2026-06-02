@@ -3966,10 +3966,9 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
         errEl?.classList.remove('hidden');
         btnText.textContent='Confirm and pay';btn.disabled=false;
       }else if(paymentIntent&&(paymentIntent.status==='succeeded'||paymentIntent.status==='requires_capture')){
-        // Send email for QR delivery
-        if(email){
-          try{await fetch('/api/payment/confirm-intent',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({bookingId:cs.bookingId,email})});}catch(e){}
-        }
+        // Fix: ALWAYS call confirm-intent to generate QR + update booking status
+        // Previously only called when email existed — left bookings as 'pending' with no QR
+        try{await fetch('/api/payment/confirm-intent',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({bookingId:cs.bookingId,paymentIntentId:paymentIntent.id,email:email||''})});}catch(e){console.error('confirm-intent error:',e);}
         localStorage.removeItem('sg_pending_booking');
         closeBookingSheet();
         navigate('/booking-success?session_id='+paymentIntent.id+'&booking_id='+(cs.bookingId||''));
