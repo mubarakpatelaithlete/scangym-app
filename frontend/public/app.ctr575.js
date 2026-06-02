@@ -1076,7 +1076,7 @@ function GymProfilePage(){
     .gym-card-book-btn:active{transform:scale(.97);box-shadow:0 1px 6px rgba(34,197,94,.2)}
 
     /* Overlay panel */
-    .gym-overlay{position:fixed;inset:0;z-index:100;opacity:0;pointer-events:none;transition:opacity .3s ease}
+    .gym-overlay{position:fixed;inset:0;z-index:9100;opacity:0;pointer-events:none;transition:opacity .3s ease}
     .gym-overlay.open{opacity:1;pointer-events:all}
     .gym-overlay-bg{position:absolute;inset:0;background:rgba(0,0,0,.5)}
     .gym-overlay-panel{position:absolute;left:0;right:0;bottom:0;top:0;background:#0a0f14;transform:translateY(100%);transition:transform .35s cubic-bezier(.32,.72,0,1);display:flex;flex-direction:column;overflow:hidden}
@@ -1087,7 +1087,7 @@ function GymProfilePage(){
     .gym-overlay-close{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.1);border:none;color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .2s}
     .gym-overlay-close:hover{background:rgba(255,255,255,.2)}
     .gym-overlay-body{flex:1;overflow-y:auto;padding:20px;-webkit-overflow-scrolling:touch}
-    .gym-overlay-footer{padding:12px 20px;border-top:1px solid rgba(255,255,255,.08);background:#0a0f14;flex-shrink:0;display:flex;align-items:center;justify-content:space-between}
+    .gym-overlay-footer{padding:12px 20px calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid rgba(255,255,255,.08);background:#0a0f14;flex-shrink:0;display:flex;align-items:center;justify-content:space-between}
 
     /* Rating bars */
     .rating-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
