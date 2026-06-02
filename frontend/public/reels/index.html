@@ -158,35 +158,7 @@
       .reel-error span{font-size:40px;}
       .reel-error p{font-size:13px;}
 
-      /* ── More menu ── */
-      .more-overlay{
-        position:fixed;top:0;left:0;right:0;bottom:0;z-index:100;
-        background:rgba(0,0,0,.6);backdrop-filter:blur(4px);
-        opacity:0;transition:opacity .2s;pointer-events:none;
-      }
-      .more-overlay.open{opacity:1;pointer-events:auto;}
-      .more-sheet{
-        position:absolute;bottom:0;left:0;right:0;
-        background:#1a1a2e;border-radius:20px 20px 0 0;
-        padding:12px 16px 32px;transform:translateY(100%);
-        transition:transform .25s ease;
-      }
-      .more-overlay.open .more-sheet{transform:translateY(0);}
-      .more-sheet-handle{
-        width:36px;height:4px;background:rgba(255,255,255,.2);
-        border-radius:4px;margin:0 auto 16px;
-      }
-      .more-sheet-item{
-        display:flex;align-items:center;gap:14px;padding:14px 8px;
-        color:#fff;font-size:15px;font-weight:500;cursor:pointer;
-        border-radius:12px;transition:background .15s;text-decoration:none;
-      }
-      .more-sheet-item:hover,.more-sheet-item:active{background:rgba(255,255,255,.08);}
-      .more-sheet-item .mi-icon{
-        width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.08);
-        display:flex;align-items:center;justify-content:center;font-size:18px;
-      }
-      .more-sheet-item .mi-sub{font-size:12px;color:rgba(255,255,255,.45);margin-top:2px;}
+      /* More button navigates to /more tab — no overlay needed */
 
       /* ── Swipe hint (first visit) ── */
       .swipe-hint{
@@ -212,29 +184,7 @@
       <span>Swipe up</span>
     </div>
 
-    <!-- More menu -->
-    <div class="more-overlay" id="more-overlay">
-      <div class="more-sheet" id="more-sheet">
-        <div class="more-sheet-handle"></div>
-        <a class="more-sheet-item" href="/become-creator">
-          <div class="mi-icon">🎥</div>
-          <div><div>Become a Creator</div><div class="mi-sub">Earn money posting gym content</div></div>
-        </a>
-        <div class="more-sheet-item" id="more-report">
-          <div class="mi-icon">🚩</div>
-          <div><div>Report Video</div><div class="mi-sub">Flag inappropriate content</div></div>
-        </div>
-        <div class="more-sheet-item" id="more-not-interested">
-          <div class="mi-icon">🚫</div>
-          <div><div>Not Interested</div><div class="mi-sub">See fewer like this</div></div>
-        </div>
-        <a class="more-sheet-item" href="/">
-          <div class="mi-icon">🏠</div>
-          <div><div>Go to ScanGym Home</div><div class="mi-sub">Find & book gyms near you</div></div>
-        </a>
-        <div class="more-sheet-item" id="more-cancel" style="justify-content:center;color:rgba(255,255,255,.5);">Cancel</div>
-      </div>
-    </div>
+    <!-- More button navigates to /more tab -->
 
     <script>
     (function(){
@@ -404,8 +354,6 @@
           if(currentIndex > 0) snapTo(currentIndex - 1, true);
         } else if(e.key === 'm'){
           toggleMute();
-        } else if(e.key === 'Escape'){
-          closeMoreMenu();
         }
       });
 
@@ -626,7 +574,7 @@
 
             if(action === 'share') handleShare(video);
             else if(action === 'save') handleSave(video, videoUrl);
-            else if(action === 'more') openMoreMenu(video);
+            else if(action === 'more') window.location.href = '/more';
           });
         });
 
@@ -660,37 +608,7 @@
         }
       }
 
-      // ═══════════════════════════════════════════════════════════
-      //  MORE MENU
-      // ═══════════════════════════════════════════════════════════
-
-      var moreOverlay = document.getElementById('more-overlay');
-
-      function openMoreMenu(){ moreOverlay.classList.add('open'); }
-      function closeMoreMenu(){ moreOverlay.classList.remove('open'); }
-
-      moreOverlay.addEventListener('click', function(e){
-        if(e.target === moreOverlay) closeMoreMenu();
-      });
-      document.getElementById('more-cancel').addEventListener('click', closeMoreMenu);
-      document.getElementById('more-report').addEventListener('click', function(){
-        closeMoreMenu();
-        showToast('\uD83D\uDEA9 Video reported \u2014 thanks for the feedback');
-      });
-      document.getElementById('more-not-interested').addEventListener('click', function(){
-        closeMoreMenu();
-        if(currentIndex < renderedCount - 1) snapTo(currentIndex + 1, true);
-        showToast("\uD83D\uDEAB Got it \u2014 we\u2019ll show fewer like this");
-      });
-
-      // Swipe-down to dismiss sheet
-      var sheetStartY = 0;
-      document.getElementById('more-sheet').addEventListener('touchstart', function(e){
-        sheetStartY = e.touches[0].clientY;
-      }, {passive:true});
-      document.getElementById('more-sheet').addEventListener('touchend', function(e){
-        if(e.changedTouches[0].clientY - sheetStartY > 60) closeMoreMenu();
-      }, {passive:true});
+      // More button navigates to /more — no overlay JS needed
 
       // ═══════════════════════════════════════════════════════════
       //  HELPERS
