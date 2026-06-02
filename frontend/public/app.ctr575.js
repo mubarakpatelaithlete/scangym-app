@@ -2836,7 +2836,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
   <style>
     /* ─── Base overlay & sheet ─── */
     .ub-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:200;display:flex;align-items:flex-end;justify-content:center}
-    .ub-sheet{background:#0a0f14;width:100%;max-width:440px;border-radius:24px 24px 0 0;overflow:hidden;transform:translateY(100%);animation:ubSlideUp .35s cubic-bezier(.32,.72,0,1) forwards;position:relative}
+    .ub-sheet{background:#0a0f14;width:100%;max-width:440px;border-radius:24px 24px 0 0;overflow:hidden;transform:translateY(100%);animation:ubSlideUp .35s cubic-bezier(.32,.72,0,1) forwards;position:relative;height:calc(100vh - 64px);height:calc(100dvh - 64px);display:flex;flex-direction:column}
     @keyframes ubSlideUp{to{transform:translateY(0)}}
     .ub-drag{width:36px;height:4px;border-radius:2px;background:rgba(255,255,255,.12);margin:10px auto 0}
 
@@ -2880,6 +2880,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
     .ub-sub-back{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.08);border:none;color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent}
     .ub-sub-title{color:#fff;font-size:18px;font-weight:700}
     .ub-sub-body{flex:1;overflow-y:auto;padding:16px 20px;-webkit-overflow-scrolling:touch}
+    .ub-sub-footer{padding:16px 20px 28px;flex-shrink:0}
 
     /* ─── Pass cards in pass picker ─── */
     .ub-pass{border:2px solid rgba(255,255,255,.08);border-radius:16px;padding:16px;margin-bottom:10px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent}
@@ -2938,7 +2939,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
     .ub-s3-total{display:flex;justify-content:space-between;align-items:baseline;padding:20px;margin-top:auto}
     .ub-s3-total-label{color:rgba(255,255,255,.5);font-size:14px}
     .ub-s3-total-price{color:#fff;font-size:32px;font-weight:800}
-    .ub-s3-footer{padding:0 20px 28px;display:flex;flex-direction:column;gap:10px}
+    .ub-s3-footer{padding:0 20px 28px;display:flex;flex-direction:column;gap:10px;flex-shrink:0}
 
     /* ─── Error area ─── */
     .ub-error{padding:0 20px;margin-top:8px}
@@ -3075,7 +3076,9 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
 
           <div class="ub-cancel-policy">↩️ Free cancellation up to 2 hours before your session</div>
 
-          <button class="ub-cta ub-cta-primary" style="margin-top:16px" onclick="ubCloseSub('time')">Done</button>
+        </div>
+        <div class="ub-sub-footer">
+          <button class="ub-cta ub-cta-primary" onclick="ubCloseSub('time')">Done</button>
         </div>
       </div>
 
@@ -3132,7 +3135,9 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
             </div>
           </div>
 
-          <button class="ub-cta ub-cta-primary" style="margin-top:16px" onclick="ubCloseSub('payment')">Done</button>
+        </div>
+        <div class="ub-sub-footer">
+          <button class="ub-cta ub-cta-primary" onclick="ubCloseSub('payment')">Done</button>
         </div>
       </div>
 
