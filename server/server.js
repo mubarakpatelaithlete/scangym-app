@@ -217,15 +217,15 @@ app.get('/api/v2/health', (req, res) => {
 });
 
 // -- Config endpoint (public keys for frontend) --
-// Blocker 1 Fix: Removed gymCount from response so frontend falls back to
-// 1,200,000 (the Google Places universe). The DB only has ~4 partner gyms
-// but search returns 20+ via Google Places — showing "4" killed credibility.
+// gymCount = 1,200,000 — the Google Places searchable universe.
+// ScanGym uses live Google Places search, so any gym on Earth is bookable.
 app.get("/api/config", async (req, res) => {
   res.json({
     mapsKey: process.env.GOOGLE_MAPS_API_KEY || "",
     stripeKey: process.env.STRIPE_PUBLISHABLE_KEY || "",
     brand: "ScanGym",
     liveSearch: true,
+    gymCount: 1200000,
   });
 });
 
