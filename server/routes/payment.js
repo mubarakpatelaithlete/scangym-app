@@ -722,7 +722,7 @@ router.post('/cash-booking', async (req, res) => {
   try {
     const { gymId, placeId, date, time, email, passType, gymName, gymAddress } = req.body;
     if (!date || !time) return res.status(400).json({ error: 'date and time required' });
-    if (!email || !email.includes('@')) return res.status(400).json({ error: 'Valid email required' });
+    // Email is optional for cash bookings — booking code shown on screen instead
 
     // Resolve gym ID
     let dbGymId = gymId;
