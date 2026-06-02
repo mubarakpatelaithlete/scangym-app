@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>ScanGym Admin — Upload Review</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0a0a16;color:#fff;min-height:100vh}
+    .header{background:linear-gradient(135deg,#111827,#1f2937);padding:20px 24px;border-bottom:1px solid rgba(249,115,22,.2)}
+    .header h1{font-size:22px;font-weight:800;display:flex;align-items:center;gap:8px}
+    .header h1 span{color:#f97316}
+    .header p{color:rgba(255,255,255,.4);font-size:13px;margin-top:4px}
+    .tabs{display:flex;gap:8px;padding:16px 24px;background:rgba(255,255,255,.02)}
+    .tab{padding:8px 18px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;
+      background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.5);transition:.15s}
+    .tab.active{background:rgba(249,115,22,.15);border-color:rgba(249,115,22,.3);color:#f97316}
+    .tab:hover{background:rgba(255,255,255,.08)}
+    .content{padding:16px 24px}
+    .empty{text-align:center;padding:60px 20px;color:rgba(255,255,255,.3)}
+    .empty .icon{font-size:48px;margin-bottom:12px}
+    .card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;
+      padding:16px;margin-bottom:12px;transition:.15s}
+    .card:hover{border-color:rgba(249,115,22,.2);background:rgba(255,255,255,.06)}
+    .card-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px}
+    .card-title{font-size:15px;font-weight:700}
+    .card-meta{font-size:12px;color:rgba(255,255,255,.4)}
+    .card-meta span{margin-right:12px}
+    .badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:8px;text-transform:uppercase;letter-spacing:.5px}
+    .badge.pending{background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid rgba(251,191,36,.2)}
+    .badge.approved{background:rgba(34,197,94,.15);color:#22c55e;border:1px solid rgba(34,197,94,.2)}
+    .badge.rejected{background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.2)}
+    .card-preview{margin:12px 0;border-radius:12px;overflow:hidden;background:#000;max-height:300px}
+    .card-preview video{width:100%;max-height:300px;object-fit:contain}
+    .card-caption{font-size:13px;color:rgba(255,255,255,.6);margin:8px 0;line-height:1.4}
+    .card-actions{display:flex;gap:8px;margin-top:12px}
+    .btn{padding:10px 20px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;border:none;transition:.15s}
+    .btn:active{transform:scale(.95)}
+    .btn-approve{background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;box-shadow:0 2px 12px rgba(34,197,94,.3)}
+    .btn-reject{background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.3)}
+    .btn-reject:hover{background:rgba(239,68,68,.25)}
+    .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px}
+    .stat{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px;text-align:center}
+    .stat .num{font-size:28px;font-weight:800;color:#f97316}
+    .stat .lbl{font-size:11px;color:rgba(255,255,255,.4);margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
+    .toast{position:fixed;top:20px;right:20px;background:#22c55e;color:#fff;padding:12px 20px;border-radius:12px;
+      font-weight:700;font-size:13px;z-index:100;animation:slideIn .3s ease-out;box-shadow:0 4px 20px rgba(0,0,0,.3)}
+    @keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🎬 <span>ScanGym</span> Upload Review</h1>
+    <p>Review and approve creator video uploads for the Reels feed</p>
+  </div>
+  <div class="tabs">
+    <div class="tab active" data-tab="pending">⏳ Pending</div>
+    <div class="tab" data-tab="approved">✅ Approved</div>
+    <div class="tab" data-tab="rejected">❌ Rejected</div>
+  </div>
+  <div class="content">
+    <div class="stats" id="stats"></div>
+    <div id="uploads-list"></div>
+  </div>
+
+  <script>
+  (function(){
+    let currentTab = 'pending';
+    let allUploads = { pending: [], approved: [], rejected: [] };
+
+    // Tab switching
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        currentTab = tab.dataset.tab;
+        renderList();
+      });
+    });
+
+    async function loadUploads() {
+      try {
+        // Fetch all statuses
+        const [pending, approved, rejected] = await Promise.all([
+          fetch('/api/reels/admin/pending').then(r => r.json()),
+          fetch('/api/creators/uploads?status=approved&limit=200').then(r => r.json()),
+          fetch('/api/creators/uploads?status=rejected&limit=200').then(r => r.json()),
+        ]);
+        allUploads.pending = pending.uploads || [];
+        allUploads.approved = approved.uploads || [];
+        allUploads.rejected = rejected.uploads || [];
+        renderStats();
+        renderList();
+      } catch(e) {
+        console.error('Load error:', e);
+        document.getElementById('uploads-list').innerHTML = '<div class="empty"><div class="icon">⚠️</div><p>Failed to load uploads</p></div>';
+      }
+    }
+
+    function renderStats() {
+      document.getElementById('stats').innerHTML = `
+        <div class="stat"><div class="num">${allUploads.pending.length}</div><div class="lbl">Pending</div></div>
+        <div class="stat"><div class="num">${allUploads.approved.length}</div><div class="lbl">Approved</div></div>
+        <div class="stat"><div class="num">${allUploads.rejected.length}</div><div class="lbl">Rejected</div></div>
+        <div class="stat"><div class="num">${allUploads.pending.length + allUploads.approved.length + allUploads.rejected.length}</div><div class="lbl">Total</div></div>
+      `;
+    }
+
+    function renderList() {
+      const list = allUploads[currentTab] || [];
+      if (list.length === 0) {
+        document.getElementById('uploads-list').innerHTML = `
+          <div class="empty">
+            <div class="icon">${currentTab === 'pending' ? '📭' : currentTab === 'approved' ? '✅' : '🗑️'}</div>
+            <p>No ${currentTab} uploads</p>
+          </div>`;
+        return;
+      }
+
+      document.getElementById('uploads-list').innerHTML = list.map(u => `
+        <div class="card" data-id="${u.id}">
+          <div class="card-header">
+            <div>
+              <div class="card-title">${esc(u.file_name || 'Untitled')}</div>
+              <div class="card-meta">
+                <span>👤 ${esc(u.creator_name || u.creator_handle || 'Anonymous')}</span>
+                <span>📁 ${u.category || 'Uncategorized'}</span>
+                <span>📦 ${formatSize(u.file_size)}</span>
+                <span>📅 ${new Date(u.created_at).toLocaleDateString()}</span>
+              </div>
+            </div>
+            <span class="badge ${u.status}">${u.status}</span>
+          </div>
+          ${u.status === 'approved' ? `
+            <div class="card-preview">
+              <video src="/api/reels/video/${u.id}" controls preload="metadata" muted></video>
+            </div>
+          ` : ''}
+          ${u.caption ? `<div class="card-caption">"${esc(u.caption)}"</div>` : ''}
+          ${u.affiliate_link ? `<div class="card-meta">🔗 ${esc(u.affiliate_link)}</div>` : ''}
+          ${currentTab === 'pending' ? `
+            <div class="card-actions">
+              <button class="btn btn-approve" onclick="reviewUpload(${u.id},'approve')">✅ Approve</button>
+              <button class="btn btn-reject" onclick="reviewUpload(${u.id},'reject')">❌ Reject</button>
+            </div>
+          ` : ''}
+        </div>
+      `).join('');
+    }
+
+    window.reviewUpload = async function(id, action) {
+      try {
+        const resp = await fetch(`/api/reels/admin/review/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action })
+        });
+        if (!resp.ok) throw new Error('Review failed');
+        showToast(`${action === 'approve' ? '✅ Approved' : '❌ Rejected'} successfully`);
+        await loadUploads();
+      } catch(e) {
+        showToast('⚠️ Action failed: ' + e.message);
+      }
+    };
+
+    function esc(s) { return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
+    function formatSize(bytes) {
+      if (!bytes) return '—';
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1048576) return (bytes/1024).toFixed(1) + ' KB';
+      return (bytes/1048576).toFixed(1) + ' MB';
+    }
+    function showToast(msg) {
+      const t = document.createElement('div');
+      t.className = 'toast';
+      t.textContent = msg;
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 2500);
+    }
+
+    loadUploads();
+  })();
+  </script>
+</body>
+</html>

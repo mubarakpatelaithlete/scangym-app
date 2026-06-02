@@ -498,15 +498,18 @@ router.get('/naming-research', (req, res) => {
 });
 
 // POST /api/creators/upload — Accept creator video upload
-// Stores metadata; video file is saved to uploads/ for manual review
+// Stores metadata; video file is saved to /data/uploads (Railway persistent volume)
+// Falls back to server/uploads/ for local development
 const multer = require('multer');
 const path = require('path');
+const UPLOAD_DIR = process.env.RAILWAY_ENVIRONMENT
+  ? '/data/uploads'                                     // Railway persistent volume
+  : path.join(__dirname, '..', 'uploads');               // Local dev fallback
 const uploadStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '..', 'uploads');
     const fsNode = require('fs');
-    if (!fsNode.existsSync(uploadDir)) fsNode.mkdirSync(uploadDir, { recursive: true });
-    cb(null, uploadDir);
+    if (!fsNode.existsSync(UPLOAD_DIR)) fsNode.mkdirSync(UPLOAD_DIR, { recursive: true });
+    cb(null, UPLOAD_DIR);
   },
   filename: (req, file, cb) => {
     const ts = Date.now();
