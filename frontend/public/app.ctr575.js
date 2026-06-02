@@ -3125,6 +3125,45 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
             <div class="ub-check" id="ub-pay-cash-check"></div>
           </div>
 
+          <!-- Cash at Gym: How it works panel (hidden by default) -->
+          <div id="ub-cash-info" style="display:none;margin-top:12px">
+            <div style="background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.2);border-radius:16px;padding:16px;margin-bottom:12px">
+              <div style="color:#4ade80;font-size:14px;font-weight:700;margin-bottom:12px">💷 Cash at Gym — How it works</div>
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;align-items:center;gap:10px">
+                  <span style="background:rgba(34,197,94,.15);border-radius:8px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">1️⃣</span>
+                  <span style="color:#fff;font-size:13px">Show your QR pass at reception</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <span style="background:rgba(34,197,94,.15);border-radius:8px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">2️⃣</span>
+                  <span style="color:#fff;font-size:13px">Pay cash at the front desk</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <span style="background:rgba(34,197,94,.15);border-radius:8px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">3️⃣</span>
+                  <span style="color:#fff;font-size:13px">Staff scans your QR to activate</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <span style="background:rgba(34,197,94,.15);border-radius:8px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">4️⃣</span>
+                  <span style="color:#fff;font-size:13px">Enjoy your workout! 💪</span>
+                </div>
+              </div>
+              <div style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(34,197,94,.15);color:rgba(255,255,255,.45);font-size:11px">⏰ Reservation held for 2 hours</div>
+            </div>
+
+            <!-- Email input for QR pass delivery -->
+            <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,127,0,.25);border-radius:14px;padding:14px">
+              <label for="ub-cash-email" style="display:block;color:#f97316;font-size:13px;font-weight:600;margin-bottom:8px">📧 Email for your QR pass</label>
+              <input type="email" id="ub-cash-email" placeholder="your@email.com"
+                value="${savedEmail}"
+                style="width:100%;box-sizing:border-box;padding:12px 14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:#fff;font-size:14px;outline:none"
+                onfocus="this.style.borderColor='#f97316'"
+                onblur="this.style.borderColor='rgba(255,255,255,.1)'"
+              />
+              <div style="color:rgba(255,255,255,.35);font-size:11px;margin-top:6px">Your QR gym pass will be sent to this email</div>
+              <div id="ub-cash-email-error" style="display:none;color:#f87171;font-size:12px;margin-top:4px">Please enter a valid email address</div>
+            </div>
+          </div>
+
           <!-- Stripe elements -->
           <div id="ub-stripe-area">
             <div class="ub-stripe-wrap">
@@ -3279,20 +3318,26 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
       if(row)row.classList.add('selected');
       const ch=row?.querySelector('.ub-check');
       if(ch){ch.style.background='#22c55e';ch.style.borderColor='#22c55e';ch.innerHTML='<span style="color:#fff;font-size:12px">✓</span>';}
-      document.getElementById('ub-stripe-area').style.display='none';
+      const sa1=document.getElementById('ub-stripe-area');
+      if(sa1)sa1.style.display='none';
     }else if(mode==='card'){
       const row=document.getElementById('ub-pay-card-row');
       if(row)row.classList.add('selected');
       const ch=document.getElementById('ub-pay-card-check');
       if(ch){ch.style.background='#22c55e';ch.style.borderColor='#22c55e';ch.innerHTML='<span style="color:#fff;font-size:12px">✓</span>';}
-      document.getElementById('ub-stripe-area').style.display='';
+      const sa2=document.getElementById('ub-stripe-area');
+      if(sa2)sa2.style.display='';
     }else if(mode==='cash'){
       const row=document.getElementById('ub-pay-cash-row');
       if(row)row.classList.add('selected');
       const ch=document.getElementById('ub-pay-cash-check');
       if(ch){ch.style.background='#22c55e';ch.style.borderColor='#22c55e';ch.innerHTML='<span style="color:#fff;font-size:12px">✓</span>';}
-      document.getElementById('ub-stripe-area').style.display='none';
+      const stripeArea=document.getElementById('ub-stripe-area');
+      if(stripeArea)stripeArea.style.display='none';
     }
+    // Show/hide the Cash at Gym info panel based on payment mode
+    const cashInfo=document.getElementById('ub-cash-info');
+    if(cashInfo)cashInfo.style.display=mode==='cash'?'':'none';
     ubUpdateSummary();
   };
 
@@ -3380,13 +3425,24 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
   // ═══ Navigate to Stage 3 ═══
   window.ubGoToStage3=function(){
     const cs=window._checkoutState;
-    // Bug #8: Email input removed — use localStorage fallback
-    const email=localStorage.getItem('sg_last_email')||'';
     // Validate payment readiness for card mode
     if(cs.payMode==='card'&&!cs.ready){
       ubOpenSub('payment');
       sgToast('Please set up your payment method','warning',3000);
       return;
+    }
+    // Validate email for cash mode before proceeding to stage 3
+    if(cs.payMode==='cash'){
+      const cashEmailInput=document.getElementById('ub-cash-email');
+      const cashEmailError=document.getElementById('ub-cash-email-error');
+      const email=(cashEmailInput?cashEmailInput.value.trim():'')||localStorage.getItem('sg_last_email')||'';
+      if(!email||!email.includes('@')||!email.includes('.')){
+        ubOpenSub('payment');
+        if(cashEmailError)cashEmailError.style.display='block';
+        if(cashEmailInput){cashEmailInput.style.borderColor='#f87171';cashEmailInput.focus();}
+        sgToast('Please enter your email for the QR pass','warning',3000);
+        return;
+      }
     }
     ubUpdateSummary();
     const stage3=document.getElementById('ub-stage3');
@@ -3407,12 +3463,30 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
     const errEl=document.getElementById('ub-s3-error');
     if(!btn||btn.disabled)return;
 
-    // Bug #8: Email input removed — use localStorage fallback
-    const email=localStorage.getItem('sg_last_email')||'';
     errEl?.classList.add('hidden');
 
     // ─── Cash booking ───
     if(cs.payMode==='cash'){
+      // Get email from the dedicated cash email input, fall back to localStorage
+      const cashEmailInput=document.getElementById('ub-cash-email');
+      const cashEmailError=document.getElementById('ub-cash-email-error');
+      const email=(cashEmailInput?cashEmailInput.value.trim():'')||localStorage.getItem('sg_last_email')||'';
+
+      // Validate email before sending
+      if(!email||!email.includes('@')||!email.includes('.')){
+        if(cashEmailError){cashEmailError.style.display='block';}
+        if(cashEmailInput){cashEmailInput.style.borderColor='#f87171';cashEmailInput.focus();}
+        // Open payment sub-screen so user can see the email field
+        ubOpenSub('payment');
+        sgToast('Please enter your email for the QR pass','warning',3000);
+        return;
+      }
+      if(cashEmailError)cashEmailError.style.display='none';
+      if(cashEmailInput)cashEmailInput.style.borderColor='rgba(255,255,255,.1)';
+
+      // Save email for future use
+      localStorage.setItem('sg_last_email',email);
+
       btn.disabled=true;
       btnText.innerHTML='<span class="sg-spinner" style="width:18px;height:18px;display:inline-block"></span> Reserving…';
       try{
@@ -3441,6 +3515,9 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
       }
       return;
     }
+
+    // For card/saved modes, get email from localStorage
+    const email=localStorage.getItem('sg_last_email')||'';
 
     // ─── Saved card (quick checkout) ───
     if(cs.payMode==='saved'&&cs.savedCardId){
