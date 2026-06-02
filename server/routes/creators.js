@@ -481,4 +481,78 @@ router.get('/naming-research', (req, res) => {
   });
 });
 
+// POST /api/creators/upload — Accept creator video upload
+// Stores metadata; video file is saved to uploads/ for manual review
+const multer = require('multer');
+const path = require('path');
+const uploadStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, '..', 'uploads');
+    const fsNode = require('fs');
+    if (!fsNode.existsSync(uploadDir)) fsNode.mkdirSync(uploadDir, { recursive: true });
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const ts = Date.now();
+    const safe = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_');
+    cb(null, `${ts}_${safe}`);
+  }
+});
+const upload = multer({
+  storage: uploadStorage,
+  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB max
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('video/')) cb(null, true);
+    else cb(new Error('Only video files are allowed'));
+  }
+});
+
+router.post('/upload', upload.single('video'), async (req, res) => {
+  try {
+    const { caption, category, creatorHandle, creatorName, creatorEmail, affiliateLink } = req.body;
+    const file = req.file;
+
+    if (!file) {
+      return res.status(400).json({ error: 'No video file provided' });
+    }
+
+    // Store upload metadata in DB
+    try {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS creator_uploads (
+          id SERIAL PRIMARY KEY,
+          creator_handle VARCHAR(100),
+          creator_name VARCHAR(200),
+          creator_email VARCHAR(200),
+          caption TEXT,
+          category VARCHAR(100),
+          affiliate_link VARCHAR(500),
+          file_path VARCHAR(500) NOT NULL,
+          file_name VARCHAR(300),
+          file_size BIGINT,
+          status VARCHAR(50) DEFAULT 'pending',
+          created_at TIMESTAMPTZ DEFAULT NOW()
+        )
+      `);
+
+      await pool.query(`
+        INSERT INTO creator_uploads (creator_handle, creator_name, creator_email, caption, category, affiliate_link, file_path, file_name, file_size)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      `, [creatorHandle, creatorName, creatorEmail, caption, category, affiliateLink, file.path, file.originalname, file.size]);
+    } catch (dbErr) {
+      console.error('Upload DB error (non-fatal):', dbErr.message);
+    }
+
+    res.json({
+      success: true,
+      message: 'Video uploaded successfully! It will appear in Reels after review.',
+      fileName: file.originalname,
+      fileSize: file.size
+    });
+  } catch (err) {
+    console.error('Upload error:', err);
+    res.status(500).json({ error: 'Upload failed. Please try again.' });
+  }
+});
+
 module.exports = router;

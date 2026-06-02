@@ -297,6 +297,15 @@ if (fs.existsSync(FRONTEND_DIR)) {
     }
   }));
 
+  // Upload Page — standalone page at /upload
+  app.get('/upload', (req, res) => {
+    res.sendFile(path.join(FRONTEND_DIR, 'upload', 'index.html'));
+  });
+  app.get('/upload/*', (req, res, next) => {
+    if (req.path.includes('.')) return next(); // let static files through
+    res.sendFile(path.join(FRONTEND_DIR, 'upload', 'index.html'));
+  });
+
   // FlexSquad Creator Portal — standalone page at /flexsquad
   app.get('/flexsquad', (req, res) => {
     res.setHeader('Cache-Control', 'no-cache');
