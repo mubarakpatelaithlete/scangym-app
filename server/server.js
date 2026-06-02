@@ -15,6 +15,7 @@ const gymProfileRouter = require('./routes/gymProfile');
 const ownerRouter = require('./routes/owner');
 const statsRouter = require('./routes/stats');
 const creatorsRouter = require('./routes/creators');
+const videoProxyRouter = require('./routes/videoProxy');
 const directionsRouter = require('./routes/directions');
 const qrRouter = require('./routes/qr');
 const convictionRouter = require('./routes/conviction');
@@ -247,6 +248,7 @@ app.use('/api/gym-profile', gymProfileRouter);
 app.use('/api/owner', ownerRouter);
 app.use('/api/stats', statsRouter);
 app.use('/api/creators', creatorsRouter);
+app.use('/api/video-proxy', videoProxyRouter);
 app.use('/api/directions', directionsRouter);
 app.use('/api/qr', qrRouter);
 app.use('/api/conviction', convictionRouter);
@@ -293,6 +295,18 @@ if (fs.existsSync(FRONTEND_DIR)) {
         res.setHeader('Cache-Control', 'public, max-age=2592000, immutable');
       } else if (/\.(woff2?|ttf|otf|eot)$/i.test(filePath)) {
         res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      }
+    }
+  }));
+
+  // Serve creator uploads (approved videos)
+  app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+    maxAge: '7d',
+    setHeaders: (res, filePath) => {
+      if (/\.(mp4|webm|mov)$/i.test(filePath)) {
+        res.setHeader('Content-Type', 'video/mp4');
+        res.setHeader('Accept-Ranges', 'bytes');
+        res.setHeader('Cache-Control', 'public, max-age=604800');
       }
     }
   }));

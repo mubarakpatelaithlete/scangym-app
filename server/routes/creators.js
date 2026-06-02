@@ -63,7 +63,23 @@ const { authenticateUser, optionalAuth } = require('../middleware/auth');
       )
     `);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_creator_slug ON creator_landing_pages(slug)`);
-    console.log('Creator tables ready (ScanGym branding, FlexSquad community)');
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS creator_uploads (
+        id SERIAL PRIMARY KEY,
+        creator_handle VARCHAR(100),
+        creator_name VARCHAR(200),
+        creator_email VARCHAR(200),
+        caption TEXT,
+        category VARCHAR(100),
+        affiliate_link VARCHAR(500),
+        file_path VARCHAR(500) NOT NULL,
+        file_name VARCHAR(300),
+        file_size BIGINT,
+        status VARCHAR(50) DEFAULT 'pending',
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    console.log('Creator tables ready (ScanGym branding, FlexSquad community, uploads)');
   } catch (err) {
     console.error('Creator table creation error:', err.message);
   }
@@ -516,25 +532,8 @@ router.post('/upload', upload.single('video'), async (req, res) => {
       return res.status(400).json({ error: 'No video file provided' });
     }
 
-    // Store upload metadata in DB
+    // Store upload metadata in DB (table created at startup)
     try {
-      await pool.query(`
-        CREATE TABLE IF NOT EXISTS creator_uploads (
-          id SERIAL PRIMARY KEY,
-          creator_handle VARCHAR(100),
-          creator_name VARCHAR(200),
-          creator_email VARCHAR(200),
-          caption TEXT,
-          category VARCHAR(100),
-          affiliate_link VARCHAR(500),
-          file_path VARCHAR(500) NOT NULL,
-          file_name VARCHAR(300),
-          file_size BIGINT,
-          status VARCHAR(50) DEFAULT 'pending',
-          created_at TIMESTAMPTZ DEFAULT NOW()
-        )
-      `);
-
       await pool.query(`
         INSERT INTO creator_uploads (creator_handle, creator_name, creator_email, caption, category, affiliate_link, file_path, file_name, file_size)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
@@ -552,6 +551,52 @@ router.post('/upload', upload.single('video'), async (req, res) => {
   } catch (err) {
     console.error('Upload error:', err);
     res.status(500).json({ error: 'Upload failed. Please try again.' });
+  }
+});
+
+// GET /api/creators/uploads — List approved creator uploads (for reels feed integration)
+router.get('/uploads', async (req, res) => {
+  try {
+    const status = req.query.status || 'approved';
+    const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+    const offset = parseInt(req.query.offset) || 0;
+
+    const result = await pool.query(
+      `SELECT id, creator_handle, creator_name, caption, category, affiliate_link,
+              file_name, file_size, status, created_at
+       FROM creator_uploads
+       WHERE status = $1
+       ORDER BY created_at DESC
+       LIMIT $2 OFFSET $3`,
+      [status, limit, offset]
+    );
+
+    res.json({
+      uploads: result.rows,
+      total: result.rows.length,
+      offset,
+      limit,
+    });
+  } catch (err) {
+    console.error('List uploads error:', err.message);
+    res.status(500).json({ error: 'Failed to list uploads' });
+  }
+});
+
+// PATCH /api/creators/uploads/:id/approve — Approve a creator upload (admin)
+router.patch('/uploads/:id/approve', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query(
+      `UPDATE creator_uploads SET status = 'approved' WHERE id = $1 RETURNING *`,
+      [id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Upload not found' });
+    }
+    res.json({ success: true, upload: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to approve upload' });
   }
 });
 
