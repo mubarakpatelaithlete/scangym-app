@@ -1542,38 +1542,280 @@ function extractReviewTopics(reviews){
 
 // Helper: get facilities from gym data
 function getGymFacilities(gym){
-  const base=[
-    {icon:'🏊',name:'Swimming Pool',detail:'Indoor pool'},
-    {icon:'♨️',name:'Sauna',detail:'Available'},
-    {icon:'🚿',name:'Showers',detail:'Hot water'},
-    {icon:'🔒',name:'Lockers',detail:'Free to use'},
-    {icon:'🧘',name:'Studio',detail:'Classes daily'},
-    {icon:'🅿️',name:'Parking',detail:'Free on-site'},
+  const n=(gym.name||'').toLowerCase();
+  const t=(gym.types||[]).join(' ').toLowerCase();
+  // Common facilities included in most gyms
+  const common=[
+    {icon:'🚿',name:'Showers',detail:'Changing rooms'},
+    {icon:'🔒',name:'Lockers',detail:'Available'},
     {icon:'📶',name:'WiFi',detail:'Free'},
     {icon:'♿',name:'Accessible',detail:'Step-free'},
-    {icon:'☕',name:'Cafe',detail:'Snacks & drinks'},
   ];
-  // If gym has types or Google data, filter relevant ones
-  const types=(gym.types||[]).join(' ').toLowerCase();
-  const name=(gym.name||'').toLowerCase();
-  // Show pool only if gym name/types suggest it
-  if(!types.includes('pool')&&!name.includes('pool')&&!name.includes('leisure')&&!name.includes('swim'))
-    return base.filter(f=>f.name!=='Swimming Pool');
-  return base;
+  // Premium clubs with pools/spas
+  if(n.includes('third space')||n.includes('virgin active')||n.includes('david lloyd')||n.includes('harbour club')||n.includes('nuffield')||n.includes('equinox')){
+    return[
+      {icon:'🏊',name:'Pool',detail:'Indoor swimming'},
+      {icon:'🧖',name:'Spa',detail:'Steam & sauna'},
+      {icon:'🧘',name:'Studios',detail:'Yoga · Pilates'},
+      {icon:'🚿',name:'Showers',detail:'Towels incl.'},
+      {icon:'🔒',name:'Lockers',detail:'Digital lock'},
+      {icon:'🍽️',name:'Restaurant',detail:'Full menu'},
+      {icon:'📶',name:'WiFi',detail:'Free'},
+      {icon:'🅿️',name:'Valet',detail:'Parking avail.'},
+      {icon:'♿',name:'Accessible',detail:'Lift access'},
+    ];
+  }
+  // 1Rebel — boutique premium
+  if(n.includes('1rebel')){
+    return[
+      {icon:'🫀',name:'HIIT Studio',detail:'Signature classes'},
+      {icon:'🚴',name:'Ride Studio',detail:'Spin classes'},
+      {icon:'🥊',name:'Boxing Ring',detail:'Reshape classes'},
+      {icon:'🚿',name:'Showers',detail:'Towels & products'},
+      {icon:'🔒',name:'Lockers',detail:'Digital'},
+      {icon:'📶',name:'WiFi',detail:'Free'},
+      {icon:'♿',name:'Accessible',detail:'Step-free'},
+    ];
+  }
+  // Budget 24h chains
+  if(n.includes('puregym')||n.includes('pure gym')||n.includes('the gym group')||n.includes('the gym ')||n.includes('anytime fitness')||n.includes('jd gyms')||n.includes('jd gym')||n.includes('snap fitness')){
+    return[
+      {icon:'⏰',name:'24/7 Access',detail:'Always open'},
+      {icon:'🏋️',name:'Free Weights',detail:'Full rack'},
+      {icon:'🫀',name:'Cardio Zone',detail:'40+ machines'},
+      {icon:'🚿',name:'Showers',detail:'Changing rooms'},
+      {icon:'🔒',name:'Lockers',detail:'Bring padlock'},
+      {icon:'💪',name:'Machines',detail:'Resistance'},
+      {icon:'📶',name:'WiFi',detail:'Free'},
+      {icon:'🚴',name:'Spin Bikes',detail:'Available'},
+      {icon:'♿',name:'Accessible',detail:'Step-free'},
+    ];
+  }
+  // Mid-range chains with pools
+  if(n.includes('bannatyne')||n.includes('better ')||n.includes('better gym')||n.includes('leisure centre')||n.includes('everyone active')){
+    return[
+      {icon:'🏊',name:'Pool',detail:'Indoor swimming'},
+      {icon:'🏋️',name:'Gym Floor',detail:'Weights & cardio'},
+      {icon:'🧘',name:'Classes',detail:'Group fitness'},
+      {icon:'♨️',name:'Sauna',detail:'Dry & steam'},
+      {icon:'🚿',name:'Showers',detail:'Hot water'},
+      {icon:'🔒',name:'Lockers',detail:'Available'},
+      {icon:'🅿️',name:'Parking',detail:'Free on-site'},
+      {icon:'📶',name:'WiFi',detail:'Free'},
+      {icon:'♿',name:'Accessible',detail:'Step-free'},
+    ];
+  }
+  // Fitness First — mid-range no pool
+  if(n.includes('fitness first')){
+    return[
+      {icon:'🏋️',name:'Free Weights',detail:'Full range'},
+      {icon:'🫀',name:'Cardio',detail:'30+ machines'},
+      {icon:'🧘',name:'Studios',detail:'Classes daily'},
+      {icon:'💪',name:'Machines',detail:'Resistance'},
+      {icon:'🚿',name:'Showers',detail:'Hot water'},
+      {icon:'🔒',name:'Lockers',detail:'Available'},
+      {icon:'📶',name:'WiFi',detail:'Free'},
+      {icon:'♿',name:'Accessible',detail:'Step-free'},
+    ];
+  }
+  // CrossFit boxes
+  if(n.includes('crossfit')){
+    return[
+      {icon:'🏋️',name:'Functional',detail:'Oly lifts & WODs'},
+      {icon:'🫀',name:'HIIT Zone',detail:'MetCon area'},
+      {icon:'👥',name:'Group Classes',detail:'Coach-led'},
+      {icon:'🧱',name:'Squat Racks',detail:'Olympic'},
+      {icon:'🤸',name:'Stretch Zone',detail:'Mats & rollers'},
+      {icon:'🚿',name:'Showers',detail:'Basic'},
+      {icon:'🅿️',name:'Parking',detail:'Available'},
+    ];
+  }
+  // F45, Barry's, Orangetheory — boutique HIIT
+  if(n.includes('f45')||n.includes('barry')||n.includes('orangetheory')){
+    return[
+      {icon:'🫀',name:'HIIT Studio',detail:'Heart-rate tracked'},
+      {icon:'🏋️',name:'Functional',detail:'Strength circuits'},
+      {icon:'👥',name:'Group Classes',detail:'45-min sessions'},
+      {icon:'🚿',name:'Showers',detail:'Changing rooms'},
+      {icon:'🔒',name:'Lockers',detail:'Available'},
+      {icon:'📶',name:'WiFi',detail:'Free'},
+      {icon:'♿',name:'Accessible',detail:'Step-free'},
+    ];
+  }
+  // Yoga / Pilates studios
+  if(n.includes('yoga')||n.includes('pilates')){
+    return[
+      {icon:'🧘',name:'Yoga Studio',detail:'Heated & regular'},
+      {icon:'🧘',name:'Pilates',detail:'Reformer & mat'},
+      {icon:'🧖',name:'Wellness',detail:'Relaxation area'},
+      {icon:'🤸',name:'Stretch Zone',detail:'Mats provided'},
+      {icon:'🚿',name:'Showers',detail:'Changing rooms'},
+      {icon:'🔒',name:'Lockers',detail:'Available'},
+      {icon:'📶',name:'WiFi',detail:'Free'},
+    ];
+  }
+  // Boxing gyms
+  if(n.includes('boxing')||n.includes('box ')){
+    return[
+      {icon:'🥊',name:'Boxing Ring',detail:'Full-size'},
+      {icon:'🫀',name:'HIIT Zone',detail:'Bag work'},
+      {icon:'🏋️',name:'Strength',detail:'Free weights'},
+      {icon:'🤸',name:'Stretch Zone',detail:'Warm-up area'},
+      {icon:'🚿',name:'Showers',detail:'Changing rooms'},
+      {icon:'🔒',name:'Lockers',detail:'Available'},
+      {icon:'♿',name:'Accessible',detail:'Step-free'},
+    ];
+  }
+  // Climbing centres
+  if(n.includes('climb')){
+    return[
+      {icon:'🧗',name:'Climbing Walls',detail:'Boulder & rope'},
+      {icon:'🏋️',name:'Training Area',detail:'Hangboards'},
+      {icon:'🤸',name:'Stretch Zone',detail:'Mats & rollers'},
+      {icon:'🚿',name:'Showers',detail:'Changing rooms'},
+      {icon:'🔒',name:'Lockers',detail:'Available'},
+      {icon:'☕',name:'Cafe',detail:'Snacks & drinks'},
+      {icon:'🅿️',name:'Parking',detail:'Available'},
+    ];
+  }
+  // Swimming / pool / aqua centres
+  if(n.includes('swim')||n.includes('pool')||n.includes('aqua')||n.includes('leisure')){
+    return[
+      {icon:'🏊',name:'Pool',detail:'Indoor swimming'},
+      {icon:'🫀',name:'Cardio',detail:'Machines'},
+      {icon:'🧘',name:'Classes',detail:'Aqua & gym'},
+      {icon:'♨️',name:'Sauna',detail:'Available'},
+      {icon:'🚿',name:'Showers',detail:'Hot water'},
+      {icon:'🔒',name:'Lockers',detail:'Available'},
+      {icon:'🅿️',name:'Parking',detail:'Free on-site'},
+      {icon:'♿',name:'Accessible',detail:'Step-free'},
+    ];
+  }
+  // Google type fallbacks
+  if(t.includes('spa')){
+    return[
+      {icon:'🧖',name:'Spa',detail:'Steam & sauna'},
+      {icon:'🏊',name:'Pool',detail:'Available'},
+      {icon:'🏋️',name:'Gym Floor',detail:'Weights & cardio'},
+      ...common
+    ];
+  }
+  if(t.includes('swimming')){
+    return[
+      {icon:'🏊',name:'Pool',detail:'Indoor swimming'},
+      {icon:'🫀',name:'Cardio',detail:'Machines'},
+      {icon:'🧘',name:'Classes',detail:'Available'},
+      ...common
+    ];
+  }
+  if(t.includes('physiotherapist')||t.includes('doctor')){
+    return[
+      {icon:'🏋️',name:'Rehab Equipment',detail:'Guided'},
+      {icon:'🧘',name:'Stretch Area',detail:'Mats provided'},
+      {icon:'🫀',name:'Cardio',detail:'Low-impact'},
+      ...common
+    ];
+  }
+  // Default — vary by gym ID hash so no two look identical
+  const v=((gym.placeId||gym.place_id||gym.id||'a').charCodeAt(0))%4;
+  if(v===0) return[
+    {icon:'🏋️',name:'Free Weights',detail:'Full range'},
+    {icon:'🫀',name:'Cardio Zone',detail:'30+ machines'},
+    {icon:'🧘',name:'Classes',detail:'Group fitness'},
+    ...common
+  ];
+  if(v===1) return[
+    {icon:'🏋️',name:'Weights',detail:'Dumbbells & bars'},
+    {icon:'💪',name:'Machines',detail:'Resistance'},
+    {icon:'🚴',name:'Spin Bikes',detail:'Available'},
+    ...common
+  ];
+  if(v===2) return[
+    {icon:'🏋️',name:'Free Weights',detail:'Olympic rack'},
+    {icon:'🫀',name:'Cardio',detail:'Treadmills & bikes'},
+    {icon:'🤸',name:'Stretch Zone',detail:'Mats & rollers'},
+    ...common
+  ];
+  return[
+    {icon:'🏋️',name:'Gym Floor',detail:'Full equipment'},
+    {icon:'🫀',name:'Cardio Zone',detail:'Machines'},
+    {icon:'🧘',name:'Studio',detail:'Classes available'},
+    ...common
+  ];
 }
 
-// Helper: get equipment for gym
+// Helper: get equipment for gym (smart per type)
 function getGymEquipment(gym){
-  return[
+  const n=(gym.name||'').toLowerCase();
+  // Premium clubs — more variety
+  if(n.includes('third space')||n.includes('virgin active')||n.includes('david lloyd')||n.includes('equinox')||n.includes('nuffield'))
+    return[
+      {icon:'🏋️',name:'Free Weights',detail:'Olympic & standard'},
+      {icon:'💪',name:'Resistance',detail:'Pin-loaded & plate'},
+      {icon:'🫀',name:'Cardio Zone',detail:'50+ machines'},
+      {icon:'🔗',name:'Cable Station',detail:'Functional trainer'},
+      {icon:'🏃',name:'Treadmills',detail:'Technogym'},
+      {icon:'🚴',name:'Spin Bikes',detail:'Peloton'},
+      {icon:'🧱',name:'Squat Racks',detail:'Olympic platforms'},
+      {icon:'🪑',name:'Bench Press',detail:'Flat, incline, decline'},
+      {icon:'🤸',name:'Stretch Zone',detail:'Rollers & bands'},
+    ];
+  // Budget 24/7 — standard set
+  if(n.includes('puregym')||n.includes('pure gym')||n.includes('the gym group')||n.includes('the gym ')||n.includes('anytime')||n.includes('jd gym'))
+    return[
+      {icon:'🏋️',name:'Free Weights',detail:'Dumbbells to 50kg'},
+      {icon:'💪',name:'Resistance',detail:'20+ machines'},
+      {icon:'🫀',name:'Cardio Zone',detail:'40+ machines'},
+      {icon:'🔗',name:'Cable Station',detail:'Adjustable'},
+      {icon:'🏃',name:'Treadmills',detail:'Standard'},
+      {icon:'🚴',name:'Spin Bikes',detail:'Available'},
+      {icon:'🧱',name:'Squat Racks',detail:'Power racks'},
+      {icon:'🪑',name:'Bench Press',detail:'Flat & incline'},
+      {icon:'🤸',name:'Stretch Zone',detail:'Mats area'},
+    ];
+  // Boutique — minimal traditional equipment
+  if(n.includes('crossfit')||n.includes('f45')||n.includes('barry')||n.includes('orangetheory'))
+    return[
+      {icon:'🏋️',name:'Kettlebells',detail:'Range of weights'},
+      {icon:'💪',name:'Resistance Bands',detail:'Various strengths'},
+      {icon:'🫀',name:'Rowers',detail:'Concept2'},
+      {icon:'🔗',name:'Battle Ropes',detail:'Available'},
+      {icon:'🏃',name:'Treadmills',detail:'Sprint tracks'},
+      {icon:'🧱',name:'Plyo Boxes',detail:'Multiple heights'},
+      {icon:'🤸',name:'TRX',detail:'Suspension trainers'},
+    ];
+  // Yoga/Pilates — no heavy equipment
+  if(n.includes('yoga')||n.includes('pilates'))
+    return[
+      {icon:'🧘',name:'Yoga Mats',detail:'Provided'},
+      {icon:'🧱',name:'Blocks & Straps',detail:'All levels'},
+      {icon:'🤸',name:'Reformers',detail:'Pilates machines'},
+      {icon:'💪',name:'Resistance Bands',detail:'Light'},
+      {icon:'🏋️',name:'Light Weights',detail:'1-5kg'},
+    ];
+  // Default — standard gym
+  const v=((gym.placeId||gym.place_id||gym.id||'a').charCodeAt(0))%2;
+  if(v===0) return[
     {icon:'🏋️',name:'Free Weights',detail:'Dumbbells & bars'},
-    {icon:'💪',name:'Resistance',detail:'25+ machines'},
+    {icon:'💪',name:'Resistance',detail:'Pin-loaded'},
     {icon:'🫀',name:'Cardio Zone',detail:'30+ machines'},
     {icon:'🔗',name:'Cable Station',detail:'Adjustable'},
-    {icon:'🏃',name:'Treadmills',detail:'Technogym'},
+    {icon:'🏃',name:'Treadmills',detail:'Standard'},
     {icon:'🚴',name:'Spin Bikes',detail:'Available'},
     {icon:'🧱',name:'Squat Racks',detail:'Olympic'},
     {icon:'🪑',name:'Bench Press',detail:'Flat & incline'},
     {icon:'🤸',name:'Stretch Zone',detail:'Mats & rollers'},
+  ];
+  return[
+    {icon:'🏋️',name:'Free Weights',detail:'Full range'},
+    {icon:'💪',name:'Machines',detail:'25+ stations'},
+    {icon:'🫀',name:'Cardio',detail:'Treadmills & bikes'},
+    {icon:'🔗',name:'Cable Crossover',detail:'Dual pulley'},
+    {icon:'🏃',name:'Treadmills',detail:'Available'},
+    {icon:'🚴',name:'Exercise Bikes',detail:'Upright & recumbent'},
+    {icon:'🧱',name:'Smith Machine',detail:'Guided bar'},
+    {icon:'🪑',name:'Bench Press',detail:'Flat & incline'},
+    {icon:'🤸',name:'Stretch Zone',detail:'Mats provided'},
   ];
 }
 
