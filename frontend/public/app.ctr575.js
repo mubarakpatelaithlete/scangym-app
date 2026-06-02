@@ -1,7 +1,7 @@
 // ScanGym Frontend v5.3.0 — Uber-grade location accuracy (reverse geocoding, accuracy gate, dynamic radius)
 
 // Inject CSS animations for loading experience
-(function(){const s=document.createElement('style');s.textContent='@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}#fun-fact{transition:opacity 0.2s ease}.gym-card{animation:fadeInUp 0.3s ease-out both}.animate-slide-up{animation:slideUp 0.3s ease-out}@keyframes skeletonPulse{0%,100%{opacity:.6}50%{opacity:.3}}@keyframes locationDot{0%,100%{box-shadow:0 0 0 0 rgba(249,115,22,.4)}50%{box-shadow:0 0 0 8px rgba(249,115,22,0)}}.skel-card{animation:skeletonPulse 1.8s ease-in-out infinite}.loc-dot{animation:locationDot 1.5s ease-in-out infinite}.cards-enter .gym-card{animation:fadeInUp .4s ease-out both}@keyframes toastIn{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes toastOut{from{transform:translateY(0);opacity:1}to{transform:translateY(-100%);opacity:0}}@keyframes spin{to{transform:rotate(360deg)}}.sg-spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}/* ── 3-Tab System ── */.sg-tab-bar{position:fixed;bottom:0;left:0;right:0;height:64px;background:rgba(10,10,22,.97);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:space-around;border-top:1px solid rgba(255,255,255,.08);z-index:9000;padding-bottom:env(safe-area-inset-bottom,0)}.sg-tab-item{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:6px 16px;border-radius:12px;transition:all .2s;-webkit-tap-highlight-color:transparent;user-select:none}.sg-tab-item .sg-tab-icon{font-size:24px;opacity:.45;transition:all .2s}.sg-tab-item .sg-tab-label{font-size:10px;font-weight:600;color:rgba(255,255,255,.4);transition:all .2s}.sg-tab-item.active .sg-tab-icon{opacity:1;transform:scale(1.1)}.sg-tab-item.active .sg-tab-label{color:#f97316}.sg-tab-content{padding-bottom:72px;min-height:100vh}.sg-tab-content.reels-active{padding-bottom:0}.sg-reels-frame{position:fixed;top:0;left:0;right:0;bottom:64px;border:none;width:100%;height:calc(100vh - 64px);z-index:1}.sg-more-hub{padding:20px 16px 100px;max-width:480px;margin:0 auto}.sg-more-section{margin-bottom:20px}.sg-more-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.3);margin-bottom:8px;padding-left:4px}.sg-more-item{display:flex;align-items:center;gap:14px;padding:14px 16px;background:rgba(255,255,255,.04);border-radius:14px;margin-bottom:6px;border:1px solid rgba(255,255,255,.04);cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}.sg-more-item:active{transform:scale(.98);background:rgba(255,255,255,.08)}.sg-more-item .sg-mi-icon{font-size:20px;width:40px;height:40px;background:rgba(255,255,255,.06);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.sg-more-item .sg-mi-text{flex:1}.sg-more-item .sg-mi-text h4{color:#fff;font-size:14px;font-weight:600;margin:0}.sg-more-item .sg-mi-text p{color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0}.sg-more-item .sg-mi-arrow{color:rgba(255,255,255,.2);font-size:16px}.sg-more-profile{display:flex;align-items:center;gap:14px;margin-bottom:28px;padding-top:12px}.sg-more-avatar{width:56px;height:56px;background:linear-gradient(135deg,#f97316,#fb923c);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff;flex-shrink:0}.sg-more-profile-info h3{color:#fff;font-size:18px;font-weight:700;margin:0}.sg-more-profile-info p{color:rgba(255,255,255,.4);font-size:13px;margin:2px 0 0}.sg-more-social{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}.sg-more-social a{display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:rgba(255,255,255,.04);border-radius:12px;border:1px solid rgba(255,255,255,.06);font-size:16px;transition:all .15s;text-decoration:none}.sg-more-social a:active{background:rgba(255,255,255,.1);transform:scale(.95)}.sg-more-back{display:flex;align-items:center;gap:8px;padding:12px 0;cursor:pointer;color:rgba(255,255,255,.6);font-size:14px;font-weight:600;margin-bottom:4px;-webkit-tap-highlight-color:transparent}.sg-more-back:active{color:#f97316}#sg-search-overlay{transition:opacity .2s ease}#sg-search-overlay.active{opacity:1!important}.hide-scrollbar::-webkit-scrollbar{display:none}.sg-dashboard{-webkit-tap-highlight-color:transparent;position:fixed;top:0;left:0;right:0;bottom:64px;z-index:10;overscroll-behavior:none;-webkit-overflow-scrolling:auto}html.sg-home-locked,html.sg-home-locked body{overflow:hidden;overscroll-behavior:none;position:fixed;width:100%;height:100%}';document.head.appendChild(s)})();
+(function(){const s=document.createElement('style');s.textContent='@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}#fun-fact{transition:opacity 0.2s ease}.gym-card{animation:fadeInUp 0.3s ease-out both}.animate-slide-up{animation:slideUp 0.3s ease-out}@keyframes skeletonPulse{0%,100%{opacity:.6}50%{opacity:.3}}@keyframes locationDot{0%,100%{box-shadow:0 0 0 0 rgba(249,115,22,.4)}50%{box-shadow:0 0 0 8px rgba(249,115,22,0)}}.skel-card{animation:skeletonPulse 1.8s ease-in-out infinite}.loc-dot{animation:locationDot 1.5s ease-in-out infinite}.cards-enter .gym-card{animation:fadeInUp .4s ease-out both}@keyframes toastIn{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes toastOut{from{transform:translateY(0);opacity:1}to{transform:translateY(-100%);opacity:0}}@keyframes spin{to{transform:rotate(360deg)}}.sg-spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}/* ── 3-Tab System ── */.sg-tab-bar{position:fixed;bottom:0;left:0;right:0;height:64px;background:rgba(10,10,22,.97);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:space-around;border-top:1px solid rgba(255,255,255,.08);z-index:9000;padding-bottom:env(safe-area-inset-bottom,0)}.sg-tab-item{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:6px 16px;border-radius:12px;transition:all .2s;-webkit-tap-highlight-color:transparent;user-select:none}.sg-tab-item .sg-tab-icon{font-size:24px;opacity:.45;transition:all .2s}.sg-tab-item .sg-tab-label{font-size:10px;font-weight:600;color:rgba(255,255,255,.4);transition:all .2s}.sg-tab-item.active .sg-tab-icon{opacity:1;transform:scale(1.1)}.sg-tab-item.active .sg-tab-label{color:#f97316}.sg-tab-content{position:fixed;top:0;left:0;right:0;bottom:calc(64px + env(safe-area-inset-bottom,0px));overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;scroll-behavior:smooth}.sg-tab-content.reels-active{position:static;padding-bottom:0;overflow:visible}.sg-reels-frame{position:fixed;top:0;left:0;right:0;bottom:64px;border:none;width:100%;height:calc(100vh - 64px);z-index:1}.sg-more-hub{padding:20px 16px 24px;max-width:480px;margin:0 auto}.sg-more-section{margin-bottom:20px}.sg-more-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.3);margin-bottom:8px;padding-left:4px}.sg-more-item{display:flex;align-items:center;gap:14px;padding:14px 16px;background:rgba(255,255,255,.04);border-radius:14px;margin-bottom:6px;border:1px solid rgba(255,255,255,.04);cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}.sg-more-item:active{transform:scale(.98);background:rgba(255,255,255,.08)}.sg-more-item .sg-mi-icon{font-size:20px;width:40px;height:40px;background:rgba(255,255,255,.06);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.sg-more-item .sg-mi-text{flex:1}.sg-more-item .sg-mi-text h4{color:#fff;font-size:14px;font-weight:600;margin:0}.sg-more-item .sg-mi-text p{color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0}.sg-more-item .sg-mi-arrow{color:rgba(255,255,255,.2);font-size:16px}.sg-more-profile{display:flex;align-items:center;gap:14px;margin-bottom:28px;padding-top:12px}.sg-more-avatar{width:56px;height:56px;background:linear-gradient(135deg,#f97316,#fb923c);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff;flex-shrink:0}.sg-more-profile-info h3{color:#fff;font-size:18px;font-weight:700;margin:0}.sg-more-profile-info p{color:rgba(255,255,255,.4);font-size:13px;margin:2px 0 0}.sg-more-social{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}.sg-more-social a{display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:rgba(255,255,255,.04);border-radius:12px;border:1px solid rgba(255,255,255,.06);font-size:16px;transition:all .15s;text-decoration:none}.sg-more-social a:active{background:rgba(255,255,255,.1);transform:scale(.95)}.sg-more-back{display:flex;align-items:center;gap:8px;padding:12px 0;cursor:pointer;color:rgba(255,255,255,.6);font-size:14px;font-weight:600;margin-bottom:4px;-webkit-tap-highlight-color:transparent}.sg-more-back:active{color:#f97316}#sg-search-overlay{transition:opacity .2s ease}#sg-search-overlay.active{opacity:1!important}.hide-scrollbar::-webkit-scrollbar{display:none}.sg-dashboard{-webkit-tap-highlight-color:transparent;position:fixed;top:0;left:0;right:0;bottom:64px;z-index:10;overscroll-behavior:none;-webkit-overflow-scrolling:auto}html,body{height:100%;overflow:hidden;overscroll-behavior:none;position:fixed;width:100%}';document.head.appendChild(s)})();
 
 // ─── Toast Notification System (replaces alert()) ───
 window.sgToast=function(msg, type='error', duration=4000){
@@ -392,7 +392,7 @@ function switchTab(tab){
   else if(tab==='reels'){state.route='/reels';history.pushState(null,'','/reels');}
   else if(tab==='more'){state.route=state._lastMoreRoute||'/more';history.pushState(null,'',state.route);}
   render();
-  window.scrollTo(0,0);
+  var _sc=document.querySelector('.sg-tab-content');if(_sc)_sc.scrollTop=0;
 }
 function navigate(path,pushState=true){
   state.route=path;
@@ -402,7 +402,7 @@ function navigate(path,pushState=true){
   else if(state.activeTab==='more')state._lastMoreRoute=path;
   if(pushState)history.pushState(null,'',path);
   render();
-  window.scrollTo(0,0);
+  var _sc=document.querySelector('.sg-tab-content');if(_sc)_sc.scrollTop=0;
 }
 window.addEventListener('popstate',()=>{state.route=location.pathname;state.activeTab=getTabForRoute(state.route);render();});
 
@@ -896,7 +896,7 @@ function SearchPage(){
   // ═══ UBER PATTERN #2: ALWAYS show full page layout — header, search, filters, sort, grid ═══
   // The page looks "loaded" instantly. Only the card content swaps from skeleton to real.
   return`
-  <div class="pt-8 min-h-screen px-4">
+  <div class="pt-8 min-h-full px-4">
     <div class="max-w-7xl mx-auto">
       <!-- Search Bar — ALWAYS visible -->
       <div class="mb-6">
@@ -1824,7 +1824,7 @@ function getGymEquipment(gym){
 // ─── Page: AI Coach (Task 1) ───
 function CoachPage(){
   return`
-  <div class="pt-8 min-h-screen px-4">
+  <div class="pt-8 min-h-full px-4">
     <div class="max-w-3xl mx-auto py-12">
       <div class="text-center mb-12">
         <div class="text-6xl mb-4">🤖</div>
@@ -2508,7 +2508,7 @@ function CreatorsPage(){
     ];
 
   return`
-  <div class="pt-8 min-h-screen">
+  <div class="pt-8 min-h-full">
 
     <!-- ═══════════════════════════════════════════════════════════ -->
     <!--  HERO — Aspirational headline + stats + dual CTA          -->
@@ -2931,7 +2931,7 @@ window._fsFilter=function(type){
 // ─── Page: Wallet (Task 14) ───
 function WalletPage(){
   return`
-  <div class="pt-8 min-h-screen px-4">
+  <div class="pt-8 min-h-full px-4">
     <div class="max-w-2xl mx-auto py-12">
       <h1 class="font-brand text-3xl font-bold text-white mb-2 text-center">💰 ScanGym Wallet</h1>
       <p class="text-slate-400 text-center mb-8">Top up, save more, pay faster.</p>
@@ -2977,7 +2977,7 @@ function SupplierPage(type){
     ]},
   }[type]||data.vending;
   return`
-  <div class="pt-8 min-h-screen px-4">
+  <div class="pt-8 min-h-full px-4">
     <div class="max-w-3xl mx-auto py-12">
       <a onclick="navigate('/for-gyms')" class="text-brand text-sm cursor-pointer mb-4 block">← Back to Gym Owners</a>
       <h1 class="font-brand text-3xl font-bold text-white mb-3">${data.title}</h1>
@@ -3007,7 +3007,7 @@ function SupplierPage(type){
 // ─── Page: CEO Dashboard (Task 21) ───
 function DashboardPage(){
   return`
-  <div class="pt-8 min-h-screen px-4">
+  <div class="pt-8 min-h-full px-4">
     <div class="max-w-6xl mx-auto py-8">
       <h1 class="font-brand text-2xl font-bold text-white mb-6">📊 CEO Dashboard</h1>
       <div class="grid sm:grid-cols-5 gap-4 mb-8">
@@ -3050,7 +3050,7 @@ function DashboardPage(){
 // ─── Page: Generic Info Pages ───
 function InfoPage(title,content){
   return`
-  <div class="pt-8 min-h-screen px-4">
+  <div class="pt-8 min-h-full px-4">
     <div class="max-w-3xl mx-auto py-12">
       <h1 class="font-brand text-3xl font-bold text-white mb-6">${title}</h1>
       <div class="prose prose-invert text-slate-300 space-y-4">${content}</div>
@@ -3062,7 +3062,7 @@ function InfoPage(title,content){
 function LoginPage(){
   if(state.user){
     return`
-    <div class="pt-8 min-h-screen px-4 flex items-center justify-center">
+    <div class="pt-8 min-h-full px-4 flex items-center justify-center">
       <div class="max-w-md w-full text-center">
         <div class="w-16 h-16 bg-accent rounded-2xl flex items-center justify-center mx-auto mb-4"><span class="text-white font-bold text-2xl">✓</span></div>
         <h1 class="font-brand text-2xl font-bold text-white mb-2">Welcome back!</h1>
@@ -3077,7 +3077,7 @@ function LoginPage(){
   }
   const isCodeStep = state.authStep === 'code';
   return`
-  <div class="pt-8 min-h-screen px-4 flex items-center justify-center">
+  <div class="pt-8 min-h-full px-4 flex items-center justify-center">
     <div class="max-w-md w-full">
       <div class="text-center mb-8">
         <div class="w-16 h-16 bg-brand rounded-2xl flex items-center justify-center mx-auto mb-4"><span class="text-white font-bold text-2xl">S</span></div>
@@ -4174,7 +4174,7 @@ function BookingSuccessPage(){
   const bookingId=params.get('booking_id');
 
   if(!bookingId){
-    return`<div class="pt-8 min-h-screen px-4 text-center"><p class="text-red-400 mt-20">Invalid booking confirmation link.</p></div>`;
+    return`<div class="pt-8 min-h-full px-4 text-center"><p class="text-red-400 mt-20">Invalid booking confirmation link.</p></div>`;
   }
   // Clean up pending booking marker (Fix #8)
   localStorage.removeItem('sg_pending_booking');
@@ -4183,7 +4183,7 @@ function BookingSuccessPage(){
   if(!state.lastQR){
     // For inline Stripe, QR is already set before navigating here
     if(sessionId==='inline'){
-      return`<div class="pt-8 min-h-screen px-4 text-center"><p class="text-white mt-20">Loading...</p></div>`;
+      return`<div class="pt-8 min-h-full px-4 text-center"><p class="text-white mt-20">Loading...</p></div>`;
     }
     setTimeout(async()=>{
       try{
@@ -4201,7 +4201,7 @@ function BookingSuccessPage(){
     },500);
 
     return`
-    <div class="pt-8 min-h-screen px-4 flex items-center justify-center">
+    <div class="pt-8 min-h-full px-4 flex items-center justify-center">
       <div id="booking-result" class="text-center">
         <div class="text-6xl mb-4 animate-pulse">⏳</div>
         <p class="text-white text-xl font-bold">Verifying your payment...</p>
@@ -4229,7 +4229,7 @@ function BookingSuccessPage(){
   const calUrl='https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent('🏋️ ScanGym Session — '+b.gymName)+'&dates='+calDate+'T'+calStart+'/'+calDate+'T'+calEnd+'&details='+encodeURIComponent('QR Code: '+qr.token+'\nShow your QR at the gym entrance. Train for up to 24 hours.\n\nBooking: '+(b.bookingCode||qr.token));
 
   return`
-  <div class="pt-16 min-h-screen px-4 pb-8">
+  <div class="pt-16 min-h-full px-4 pb-8">
     <div class="max-w-lg mx-auto">
 
       <!-- Success Animation -->
@@ -4372,7 +4372,7 @@ window.cancelBooking=async function(bookingId){
 
 function MyBookingsPage(){
   if(!state.user){
-    return`<div class="pt-8 min-h-screen px-4">
+    return`<div class="pt-8 min-h-full px-4">
       <div class="max-w-md mx-auto py-12 text-center">
         <div class="text-6xl mb-6">📋</div>
         <h1 class="font-brand text-3xl font-bold text-white mb-3">My Bookings</h1>
@@ -4394,12 +4394,12 @@ function MyBookingsPage(){
         render();
       }catch(e){}
     },100);
-    return`<div class="pt-8 min-h-screen px-4 text-center"><p class="text-slate-400 mt-20 animate-pulse">Loading bookings...</p></div>`;
+    return`<div class="pt-8 min-h-full px-4 text-center"><p class="text-slate-400 mt-20 animate-pulse">Loading bookings...</p></div>`;
   }
 
   const bookings=state.bookings;
   return`
-  <div class="pt-8 min-h-screen px-4">
+  <div class="pt-8 min-h-full px-4">
     <div class="max-w-2xl mx-auto py-12">
       <h1 class="font-brand text-3xl font-bold text-white mb-6 text-center">📋 My Bookings</h1>
       ${bookings.length===0 ? `
@@ -5432,23 +5432,9 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
   }
 
   document.getElementById('app').innerHTML=html;
-  // ── Fixed-screen lock: homepage = TikTok-style locked viewport ──
-  if(path==='/' && tab==='book'){
-    document.documentElement.classList.add('sg-home-locked');
-    // Prevent iOS rubber-band bounce via touchmove
-    if(!window._sgHomeTouchLock){
-      window._sgHomeTouchLock=function(e){
-        if(document.documentElement.classList.contains('sg-home-locked')){
-          // Allow touches inside search overlay (it has its own scroll)
-          if(e.target.closest&&e.target.closest('#sg-search-overlay')) return;
-          e.preventDefault();
-        }
-      };
-      document.addEventListener('touchmove',window._sgHomeTouchLock,{passive:false});
-    }
-  } else {
-    document.documentElement.classList.remove('sg-home-locked');
-  }
+  // ── App-style fixed viewport: all pages locked, content scrolls inside container ──
+  // Reset scroll position of content container on navigation
+  var _tc=document.querySelector('.sg-tab-content');if(_tc)_tc.scrollTop=0;
   initInteractive();
   // Auto-load gyms when navigating to search page (Fix #1 + #6)
   if(path==='/explore'||path==='/nearby'||path==='/search'){
