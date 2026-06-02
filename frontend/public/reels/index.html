@@ -63,13 +63,14 @@
       
       /* Action buttons (right side) */
       .reel-actions {
-        position:absolute; bottom:100px; right:12px; z-index:20;
-        display:flex; flex-direction:column; align-items:center; gap:18px;
+        position:absolute; bottom:90px; right:12px; z-index:20;
+        display:flex; flex-direction:column; align-items:center; gap:14px;
       }
       .reel-action {
-        display:flex; flex-direction:column; align-items:center; gap:3px;
+        display:flex; flex-direction:column; align-items:center; gap:2px;
         cursor:pointer; -webkit-tap-highlight-color:transparent;
         transition:transform .15s ease;
+        text-decoration:none;
       }
       .reel-action:active { transform:scale(0.85); }
       .reel-action .icon {
@@ -77,14 +78,30 @@
         background:rgba(0,0,0,.45); backdrop-filter:blur(12px);
         border:1.5px solid rgba(255,255,255,.15);
         display:flex; align-items:center; justify-content:center;
-        font-size:20px; box-shadow:0 2px 10px rgba(0,0,0,.3);
+        box-shadow:0 2px 10px rgba(0,0,0,.3);
+      }
+      .reel-action .icon svg {
+        width:22px; height:22px; fill:none; stroke:#fff; stroke-width:2;
+        stroke-linecap:round; stroke-linejoin:round;
       }
       .reel-action .label {
         color:#fff; font-size:10px; font-weight:600;
         text-shadow:0 1px 4px rgba(0,0,0,.8);
       }
+
+      /* Book button highlight */
+      .reel-action[data-action="book"] .icon {
+        background:rgba(249,115,22,.85);
+        border-color:rgba(249,115,22,.9);
+      }
+
+      /* Upload button accent */
+      .reel-action[data-action="upload"] .icon {
+        background:rgba(34,197,94,.7);
+        border-color:rgba(34,197,94,.8);
+      }
       
-      /* Count badge */
+      /* Counter badge */
       .reel-counter {
         position:absolute; top:16px; left:50%; transform:translateX(-50%);
         z-index:20; color:rgba(255,255,255,.5); font-size:12px; font-weight:600;
@@ -122,6 +139,40 @@
         box-shadow:0 4px 20px rgba(34,197,94,.3);
       }
       @keyframes toastIn { from { opacity:0; transform:translateX(-50%) translateY(-10px); } }
+
+      /* More menu bottom sheet */
+      .more-overlay {
+        position:fixed; top:0; left:0; right:0; bottom:0; z-index:100;
+        background:rgba(0,0,0,.6); backdrop-filter:blur(4px);
+        opacity:0; transition:opacity .2s ease;
+        pointer-events:none;
+      }
+      .more-overlay.open { opacity:1; pointer-events:auto; }
+      .more-sheet {
+        position:absolute; bottom:0; left:0; right:0;
+        background:#1a1a2e; border-radius:20px 20px 0 0;
+        padding:12px 16px 32px; transform:translateY(100%);
+        transition:transform .25s ease;
+      }
+      .more-overlay.open .more-sheet { transform:translateY(0); }
+      .more-sheet-handle {
+        width:36px; height:4px; background:rgba(255,255,255,.2);
+        border-radius:4px; margin:0 auto 16px;
+      }
+      .more-sheet-item {
+        display:flex; align-items:center; gap:14px; padding:14px 8px;
+        color:#fff; font-size:15px; font-weight:500; cursor:pointer;
+        border-radius:12px; transition:background .15s;
+        text-decoration:none;
+      }
+      .more-sheet-item:hover, .more-sheet-item:active { background:rgba(255,255,255,.08); }
+      .more-sheet-item .mi-icon {
+        width:40px; height:40px; border-radius:12px;
+        background:rgba(255,255,255,.08);
+        display:flex; align-items:center; justify-content:center; font-size:18px;
+      }
+      .more-sheet-item .mi-text { flex:1; }
+      .more-sheet-item .mi-sub { font-size:12px; color:rgba(255,255,255,.45); margin-top:2px; }
     </style>
   </head>
   <body>
@@ -132,15 +183,52 @@
     <div id="mute-indicator"></div>
     <div id="reels-feed"></div>
 
+    <!-- More menu bottom sheet -->
+    <div class="more-overlay" id="more-overlay">
+      <div class="more-sheet" id="more-sheet">
+        <div class="more-sheet-handle"></div>
+        <a class="more-sheet-item" href="/become-creator" id="more-become-creator">
+          <div class="mi-icon">🎥</div>
+          <div><div class="mi-text">Become a Creator</div><div class="mi-sub">Earn money posting gym content</div></div>
+        </a>
+        <div class="more-sheet-item" id="more-report">
+          <div class="mi-icon">🚩</div>
+          <div><div class="mi-text">Report Video</div><div class="mi-sub">Flag inappropriate content</div></div>
+        </div>
+        <div class="more-sheet-item" id="more-not-interested">
+          <div class="mi-icon">🚫</div>
+          <div><div class="mi-text">Not Interested</div><div class="mi-sub">See fewer like this</div></div>
+        </div>
+        <a class="more-sheet-item" href="/">
+          <div class="mi-icon">🏠</div>
+          <div><div class="mi-text">Go to ScanGym Home</div><div class="mi-sub">Find & book gyms near you</div></div>
+        </a>
+        <div class="more-sheet-item" id="more-cancel" style="justify-content:center;color:rgba(255,255,255,.5);">
+          Cancel
+        </div>
+      </div>
+    </div>
+
     <script>
     (function() {
       'use strict';
 
+      // ── SVG Icons (inline for zero network requests) ──
+      const ICONS = {
+        upload: '<svg viewBox="0 0 24 24"><path d="M12 16V4m0 0L8 8m4-4l4 4"/><path d="M20 16.7V19a2 2 0 01-2 2H6a2 2 0 01-2-2v-2.3"/></svg>',
+        book:   '<svg viewBox="0 0 24 24"><path d="M8 2v4m8-4v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/><path d="M9 16l2 2 4-4"/></svg>',
+        share:  '<svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"/></svg>',
+        save:   '<svg viewBox="0 0 24 24"><path d="M12 4v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>',
+        muted:  '<svg viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>',
+        unmuted:'<svg viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 010 7.07"/><path d="M19.07 4.93a10 10 0 010 14.14"/></svg>',
+        more:   '<svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.5" fill="#fff" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="#fff" stroke="none"/><circle cx="12" cy="19" r="1.5" fill="#fff" stroke="none"/></svg>'
+      };
+
       // ── State ──
       let allVideos = [];
       let currentIndex = 0;
-      let isMuted = true; // Start muted for autoplay policy
-      const BATCH_SIZE = 10; // Render videos in batches for perf
+      let isMuted = true;
+      const BATCH_SIZE = 10;
       let renderedCount = 0;
       const feed = document.getElementById('reels-feed');
 
@@ -157,11 +245,9 @@
             return;
           }
 
-          // Render first batch
           renderBatch();
           document.getElementById('loading').style.display = 'none';
 
-          // Auto-play first video
           setTimeout(() => {
             const firstVideo = feed.querySelector('video');
             if (firstVideo) {
@@ -212,9 +298,9 @@
         vid.addEventListener('click', (e) => {
           e.preventDefault();
           isMuted = !isMuted;
-          // Update all videos
           document.querySelectorAll('.reel video').forEach(v => v.muted = isMuted);
           showMuteIndicator(isMuted);
+          updateSoundButtons();
         });
 
         // Info overlay
@@ -227,21 +313,33 @@
         `;
         div.appendChild(info);
 
-        // Action buttons
+        // Action buttons — Book (top, orange), Upload (green), Share, Save, Mute, More
         const actions = document.createElement('div');
         actions.className = 'reel-actions';
         actions.innerHTML = `
+          <a class="reel-action" data-action="book" href="/" title="Book a gym">
+            <div class="icon">${ICONS.book}</div>
+            <span class="label">Book</span>
+          </a>
+          <a class="reel-action" data-action="upload" href="/upload" title="Upload your reel">
+            <div class="icon">${ICONS.upload}</div>
+            <span class="label">Upload</span>
+          </a>
           <div class="reel-action" data-action="share">
-            <div class="icon">🔗</div>
+            <div class="icon">${ICONS.share}</div>
             <span class="label">Share</span>
           </div>
           <div class="reel-action" data-action="save">
-            <div class="icon">⬇️</div>
+            <div class="icon">${ICONS.save}</div>
             <span class="label">Save</span>
           </div>
           <div class="reel-action" data-action="sound">
-            <div class="icon" id="sound-btn-${index}">${isMuted ? '🔇' : '🔊'}</div>
+            <div class="icon" id="sound-btn-${index}">${isMuted ? ICONS.muted : ICONS.unmuted}</div>
             <span class="label">${isMuted ? 'Unmute' : 'Mute'}</span>
+          </div>
+          <div class="reel-action" data-action="more">
+            <div class="icon">${ICONS.more}</div>
+            <span class="label">More</span>
           </div>
         `;
         div.appendChild(actions);
@@ -249,8 +347,14 @@
         // Action handlers
         actions.querySelectorAll('.reel-action').forEach(btn => {
           btn.addEventListener('click', (e) => {
-            e.stopPropagation();
             const action = btn.dataset.action;
+
+            // Book & Upload are <a> links — let them navigate
+            if (action === 'book' || action === 'upload') return;
+
+            e.preventDefault();
+            e.stopPropagation();
+
             if (action === 'share') handleShare(video);
             else if (action === 'save') handleSave(video, videoUrl);
             else if (action === 'sound') {
@@ -259,11 +363,57 @@
               showMuteIndicator(isMuted);
               updateSoundButtons();
             }
+            else if (action === 'more') openMoreMenu(video);
           });
         });
 
         return div;
       }
+
+      // ── More menu ──
+      const moreOverlay = document.getElementById('more-overlay');
+      const moreSheet = document.getElementById('more-sheet');
+      let moreCurrentVideo = null;
+
+      function openMoreMenu(video) {
+        moreCurrentVideo = video;
+        moreOverlay.classList.add('open');
+      }
+      function closeMoreMenu() {
+        moreOverlay.classList.remove('open');
+        moreCurrentVideo = null;
+      }
+
+      // Close on overlay tap (outside sheet)
+      moreOverlay.addEventListener('click', (e) => {
+        if (e.target === moreOverlay) closeMoreMenu();
+      });
+      document.getElementById('more-cancel').addEventListener('click', closeMoreMenu);
+
+      // Report
+      document.getElementById('more-report').addEventListener('click', () => {
+        closeMoreMenu();
+        showToast('🚩 Video reported — thanks for the feedback');
+      });
+
+      // Not interested
+      document.getElementById('more-not-interested').addEventListener('click', () => {
+        closeMoreMenu();
+        // Skip to next reel
+        const nextReel = feed.children[currentIndex + 1];
+        if (nextReel) nextReel.scrollIntoView({ behavior: 'smooth' });
+        showToast('🚫 Got it — we'll show fewer like this');
+      });
+
+      // Swipe-down to close sheet
+      let sheetStartY = 0;
+      moreSheet.addEventListener('touchstart', (e) => {
+        sheetStartY = e.touches[0].clientY;
+      }, { passive: true });
+      moreSheet.addEventListener('touchend', (e) => {
+        const dy = e.changedTouches[0].clientY - sheetStartY;
+        if (dy > 60) closeMoreMenu();
+      }, { passive: true });
 
       // ── Scroll-snap observer: autoplay visible, pause others ──
       const observer = new IntersectionObserver((entries) => {
@@ -274,7 +424,6 @@
             currentIndex = parseInt(entry.target.dataset.index);
             video.muted = isMuted;
             video.play().catch(() => {});
-            // Load more if near the end
             if (currentIndex >= renderedCount - 3 && renderedCount < allVideos.length) {
               renderBatch();
             }
@@ -285,7 +434,6 @@
         });
       }, { threshold: 0.6 });
 
-      // Observe reels as they're added
       const feedObserver = new MutationObserver((mutations) => {
         mutations.forEach(m => {
           m.addedNodes.forEach(node => {
@@ -312,7 +460,7 @@
 
       function updateSoundButtons() {
         document.querySelectorAll('[id^="sound-btn-"]').forEach(btn => {
-          btn.textContent = isMuted ? '🔇' : '🔊';
+          btn.innerHTML = isMuted ? ICONS.muted : ICONS.unmuted;
           const label = btn.parentElement.nextElementSibling;
           if (label) label.textContent = isMuted ? 'Unmute' : 'Mute';
         });
@@ -370,6 +518,8 @@
           document.querySelectorAll('.reel video').forEach(v => v.muted = isMuted);
           showMuteIndicator(isMuted);
           updateSoundButtons();
+        } else if (e.key === 'Escape') {
+          closeMoreMenu();
         }
       });
 
