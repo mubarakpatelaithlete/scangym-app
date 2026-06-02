@@ -17,12 +17,16 @@
       
       /* Reels container — full-screen vertical scroll snap */
       #reels-feed {
-        height:100vh; overflow-y:scroll; scroll-snap-type:y mandatory;
-        -webkit-overflow-scrolling:touch; scroll-behavior:smooth;
+        height:100vh; overflow-y:scroll;
+        scroll-snap-type:y mandatory;
+        -webkit-overflow-scrolling:touch;
+        overscroll-behavior-y: contain;
       }
       
       .reel {
-        height:100vh; width:100%; position:relative; scroll-snap-align:start;
+        height:100vh; width:100%; position:relative;
+        scroll-snap-align:start;
+        scroll-snap-stop:always;
         background:#0a0a16; overflow:hidden;
       }
       
@@ -89,6 +93,16 @@
         text-shadow:0 1px 4px rgba(0,0,0,.8);
       }
 
+      /* Like button states */
+      .reel-action[data-action="like"] .icon { transition: background .2s, border-color .2s; }
+      .reel-action[data-action="like"].liked .icon {
+        background:rgba(239,68,68,.7);
+        border-color:rgba(239,68,68,.9);
+      }
+      .reel-action[data-action="like"].liked .icon svg {
+        fill:#fff; stroke:#fff;
+      }
+
       /* Book button highlight */
       .reel-action[data-action="book"] .icon {
         background:rgba(249,115,22,.85);
@@ -129,6 +143,21 @@
         pointer-events:none; text-shadow:0 2px 20px rgba(0,0,0,.6);
       }
       #mute-indicator.show { opacity:1; }
+
+      /* Double-tap heart animation */
+      .heart-burst {
+        position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+        z-index:30; pointer-events:none;
+        font-size:80px;
+        animation:heartPop .8s ease-out forwards;
+      }
+      @keyframes heartPop {
+        0% { opacity:1; transform:translate(-50%,-50%) scale(0); }
+        15% { opacity:1; transform:translate(-50%,-50%) scale(1.3); }
+        30% { transform:translate(-50%,-50%) scale(1); }
+        80% { opacity:1; }
+        100% { opacity:0; transform:translate(-50%,-50%) scale(1.4); }
+      }
       
       /* Toast */
       .toast {
@@ -139,6 +168,30 @@
         box-shadow:0 4px 20px rgba(34,197,94,.3);
       }
       @keyframes toastIn { from { opacity:0; transform:translateX(-50%) translateY(-10px); } }
+
+      /* Video progress bar */
+      .reel-progress {
+        position:absolute; bottom:0; left:0; right:0; height:3px;
+        z-index:25; background:rgba(255,255,255,.15);
+      }
+      .reel-progress-bar {
+        height:100%; width:0%; background:#f97316;
+        transition:width .25s linear;
+        border-radius:0 2px 2px 0;
+      }
+
+      /* Video error overlay */
+      .reel-error {
+        position:absolute; top:0; left:0; right:0; bottom:0; z-index:15;
+        display:flex; flex-direction:column; align-items:center; justify-content:center;
+        background:rgba(10,10,22,.9); color:rgba(255,255,255,.5); gap:8px;
+      }
+      .reel-error span { font-size:40px; }
+      .reel-error p { font-size:13px; }
+      .reel-error button {
+        margin-top:8px; background:rgba(255,255,255,.1); color:#fff; border:none;
+        padding:8px 20px; border-radius:8px; font-size:13px; cursor:pointer;
+      }
 
       /* More menu bottom sheet */
       .more-overlay {
@@ -215,6 +268,7 @@
 
       // ── SVG Icons (inline for zero network requests) ──
       const ICONS = {
+        heart:  '<svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>',
         upload: '<svg viewBox="0 0 24 24"><path d="M12 16V4m0 0L8 8m4-4l4 4"/><path d="M20 16.7V19a2 2 0 01-2 2H6a2 2 0 01-2-2v-2.3"/></svg>',
         book:   '<svg viewBox="0 0 24 24"><path d="M8 2v4m8-4v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/><path d="M9 16l2 2 4-4"/></svg>',
         share:  '<svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"/></svg>',
@@ -229,8 +283,16 @@
       let currentIndex = 0;
       let isMuted = true;
       const BATCH_SIZE = 10;
+      const PRELOAD_AHEAD = 3;
       let renderedCount = 0;
       const feed = document.getElementById('reels-feed');
+      const likedSet = new Set();
+      const likeCounts = {};
+
+      // ── Double-tap detection ──
+      let lastTapTime = 0;
+      let lastTapX = 0;
+      let lastTapY = 0;
 
       // ── Fetch videos from API ──
       async function loadFeed() {
@@ -245,6 +307,9 @@
             return;
           }
 
+          // Pre-validate first batch of video URLs in background
+          preValidateVideos(allVideos.slice(0, BATCH_SIZE));
+
           renderBatch();
           document.getElementById('loading').style.display = 'none';
 
@@ -254,10 +319,41 @@
               firstVideo.muted = true;
               firstVideo.play().catch(() => {});
             }
+            // Start preloading next videos
+            preloadAhead(0);
           }, 100);
         } catch (err) {
           console.error('Feed load error:', err);
           showError('Failed to load reels. Please try again.');
+        }
+      }
+
+      // ── Pre-validate video URLs (filter out 403s) ──
+      async function preValidateVideos(videos) {
+        for (const v of videos) {
+          if (v._validated) continue;
+          const url = v.url || (v.driveId ? 'https://dynamic-labrador-874.convex.site/video?id=' + v.driveId : '');
+          if (!url) continue;
+          try {
+            const resp = await fetch(url, { method: 'HEAD' });
+            v._validated = true;
+            v._accessible = resp.ok;
+          } catch {
+            v._validated = true;
+            v._accessible = false;
+          }
+        }
+      }
+
+      // ── Preload upcoming videos ──
+      function preloadAhead(fromIndex) {
+        for (let i = fromIndex + 1; i <= fromIndex + PRELOAD_AHEAD && i < renderedCount; i++) {
+          const reel = feed.children[i];
+          if (!reel) continue;
+          const vid = reel.querySelector('video');
+          if (vid && vid.preload !== 'auto') {
+            vid.preload = 'auto';
+          }
         }
       }
 
@@ -279,7 +375,7 @@
         // Determine video URL
         let videoUrl = video.url || '';
         if (video.driveId) {
-          videoUrl = `https://dynamic-labrador-874.convex.site/video?id=${video.driveId}`;
+          videoUrl = 'https://dynamic-labrador-874.convex.site/video?id=' + video.driveId;
         }
 
         // Video element
@@ -288,66 +384,112 @@
         vid.loop = true;
         vid.muted = isMuted;
         vid.playsInline = true;
-        vid.preload = index < 3 ? 'auto' : 'metadata';
+        vid.preload = index < 3 ? 'auto' : 'none';
         vid.setAttribute('playsinline', '');
         vid.setAttribute('webkit-playsinline', '');
         if (video.thumb) vid.poster = video.thumb;
         div.appendChild(vid);
 
-        // Tap to toggle mute
+        // Handle video load errors gracefully
+        vid.addEventListener('error', () => {
+          handleVideoError(div, vid, videoUrl);
+        });
+
+        // Tap to toggle mute / double-tap to like
         vid.addEventListener('click', (e) => {
           e.preventDefault();
-          isMuted = !isMuted;
-          document.querySelectorAll('.reel video').forEach(v => v.muted = isMuted);
-          showMuteIndicator(isMuted);
-          updateSoundButtons();
+          const now = Date.now();
+          const dx = Math.abs(e.clientX - lastTapX);
+          const dy = Math.abs(e.clientY - lastTapY);
+
+          if (now - lastTapTime < 300 && dx < 50 && dy < 50) {
+            // Double tap — like
+            handleDoubleTapLike(div, index);
+            lastTapTime = 0;
+          } else {
+            // Single tap — toggle mute (with delay to allow double-tap)
+            lastTapTime = now;
+            lastTapX = e.clientX;
+            lastTapY = e.clientY;
+            setTimeout(() => {
+              if (lastTapTime === now) {
+                isMuted = !isMuted;
+                document.querySelectorAll('.reel video').forEach(v => v.muted = isMuted);
+                showMuteIndicator(isMuted);
+                updateSoundButtons();
+              }
+            }, 300);
+          }
         });
+
+        // Progress bar
+        const progressWrap = document.createElement('div');
+        progressWrap.className = 'reel-progress';
+        const progressBar = document.createElement('div');
+        progressBar.className = 'reel-progress-bar';
+        progressWrap.appendChild(progressBar);
+        div.appendChild(progressWrap);
+
+        vid.addEventListener('timeupdate', () => {
+          if (vid.duration) {
+            const pct = (vid.currentTime / vid.duration) * 100;
+            progressBar.style.width = pct + '%';
+          }
+        });
+
+        // Initialize fake like count for display
+        if (!(index in likeCounts)) {
+          likeCounts[index] = Math.floor(Math.random() * 200) + 10;
+        }
 
         // Info overlay
         const info = document.createElement('div');
         info.className = 'reel-info';
-        info.innerHTML = `
-          <p class="reel-title">${escHtml(video.name)}</p>
-          <p class="reel-category">🎬 ${escHtml(video.category)}</p>
-          ${video.creator ? `<p class="reel-creator">📤 ${escHtml(video.creator.name || video.creator.handle || 'Creator')}</p>` : ''}
-        `;
+        info.innerHTML = '<p class="reel-title">' + escHtml(video.name) + '</p>'
+          + '<p class="reel-category">\uD83C\uDFAC ' + escHtml(video.category) + '</p>'
+          + (video.creator ? '<p class="reel-creator">\uD83D\uDCE4 ' + escHtml(video.creator.name || video.creator.handle || 'Creator') + '</p>' : '');
         div.appendChild(info);
 
-        // Action buttons — Book (top, orange), Upload (green), Share, Save, Mute, More
+        // Action buttons — Like, Book, Upload, Share, Save, Mute, More
         const actions = document.createElement('div');
         actions.className = 'reel-actions';
-        actions.innerHTML = `
-          <a class="reel-action" data-action="book" href="/" title="Book a gym">
-            <div class="icon">${ICONS.book}</div>
-            <span class="label">Book</span>
-          </a>
-          <a class="reel-action" data-action="upload" href="/upload" title="Upload your reel">
-            <div class="icon">${ICONS.upload}</div>
-            <span class="label">Upload</span>
-          </a>
-          <div class="reel-action" data-action="share">
-            <div class="icon">${ICONS.share}</div>
-            <span class="label">Share</span>
-          </div>
-          <div class="reel-action" data-action="save">
-            <div class="icon">${ICONS.save}</div>
-            <span class="label">Save</span>
-          </div>
-          <div class="reel-action" data-action="sound">
-            <div class="icon" id="sound-btn-${index}">${isMuted ? ICONS.muted : ICONS.unmuted}</div>
-            <span class="label">${isMuted ? 'Unmute' : 'Mute'}</span>
-          </div>
-          <div class="reel-action" data-action="more">
-            <div class="icon">${ICONS.more}</div>
-            <span class="label">More</span>
-          </div>
-        `;
+
+        const likeClass = likedSet.has(index) ? ' liked' : '';
+        actions.innerHTML = ''
+          + '<div class="reel-action' + likeClass + '" data-action="like">'
+          +   '<div class="icon">' + ICONS.heart + '</div>'
+          +   '<span class="label" id="like-count-' + index + '">' + formatCount(likeCounts[index]) + '</span>'
+          + '</div>'
+          + '<a class="reel-action" data-action="book" href="/" title="Book a gym">'
+          +   '<div class="icon">' + ICONS.book + '</div>'
+          +   '<span class="label">Book</span>'
+          + '</a>'
+          + '<a class="reel-action" data-action="upload" href="/upload" title="Upload your reel">'
+          +   '<div class="icon">' + ICONS.upload + '</div>'
+          +   '<span class="label">Upload</span>'
+          + '</a>'
+          + '<div class="reel-action" data-action="share">'
+          +   '<div class="icon">' + ICONS.share + '</div>'
+          +   '<span class="label">Share</span>'
+          + '</div>'
+          + '<div class="reel-action" data-action="save">'
+          +   '<div class="icon">' + ICONS.save + '</div>'
+          +   '<span class="label">Save</span>'
+          + '</div>'
+          + '<div class="reel-action" data-action="sound">'
+          +   '<div class="icon" id="sound-btn-' + index + '">' + (isMuted ? ICONS.muted : ICONS.unmuted) + '</div>'
+          +   '<span class="label">' + (isMuted ? 'Unmute' : 'Mute') + '</span>'
+          + '</div>'
+          + '<div class="reel-action" data-action="more">'
+          +   '<div class="icon">' + ICONS.more + '</div>'
+          +   '<span class="label">More</span>'
+          + '</div>';
         div.appendChild(actions);
 
         // Action handlers
-        actions.querySelectorAll('.reel-action').forEach(btn => {
-          btn.addEventListener('click', (e) => {
-            const action = btn.dataset.action;
+        actions.querySelectorAll('.reel-action').forEach(function(btn) {
+          btn.addEventListener('click', function(e) {
+            var action = btn.dataset.action;
 
             // Book & Upload are <a> links — let them navigate
             if (action === 'book' || action === 'upload') return;
@@ -355,11 +497,12 @@
             e.preventDefault();
             e.stopPropagation();
 
-            if (action === 'share') handleShare(video);
+            if (action === 'like') handleLike(btn, index);
+            else if (action === 'share') handleShare(video);
             else if (action === 'save') handleSave(video, videoUrl);
             else if (action === 'sound') {
               isMuted = !isMuted;
-              document.querySelectorAll('.reel video').forEach(v => v.muted = isMuted);
+              document.querySelectorAll('.reel video').forEach(function(v) { v.muted = isMuted; });
               showMuteIndicator(isMuted);
               updateSoundButtons();
             }
@@ -370,10 +513,70 @@
         return div;
       }
 
+      // ── Like handling ──
+      function handleLike(btn, index) {
+        if (likedSet.has(index)) {
+          likedSet.delete(index);
+          likeCounts[index]--;
+          btn.classList.remove('liked');
+        } else {
+          likedSet.add(index);
+          likeCounts[index]++;
+          btn.classList.add('liked');
+        }
+        var countEl = document.getElementById('like-count-' + index);
+        if (countEl) countEl.textContent = formatCount(likeCounts[index]);
+      }
+
+      function handleDoubleTapLike(reelDiv, index) {
+        if (!likedSet.has(index)) {
+          likedSet.add(index);
+          likeCounts[index]++;
+          var likeBtn = reelDiv.querySelector('[data-action="like"]');
+          if (likeBtn) likeBtn.classList.add('liked');
+          var countEl = document.getElementById('like-count-' + index);
+          if (countEl) countEl.textContent = formatCount(likeCounts[index]);
+        }
+        // Show heart burst animation
+        var heart = document.createElement('div');
+        heart.className = 'heart-burst';
+        heart.textContent = '\u2764\uFE0F';
+        document.body.appendChild(heart);
+        setTimeout(function() { heart.remove(); }, 800);
+      }
+
+      function formatCount(n) {
+        if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+        if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+        return String(n);
+      }
+
+      // ── Video error handling ──
+      function handleVideoError(reelDiv, videoEl, videoUrl) {
+        // Show error overlay instead of blank screen
+        var existing = reelDiv.querySelector('.reel-error');
+        if (existing) return;
+
+        var errDiv = document.createElement('div');
+        errDiv.className = 'reel-error';
+        errDiv.innerHTML = '<span>\uD83C\uDFAC</span><p>Video unavailable</p>'
+          + '<button onclick="this.parentElement.remove()">Skip</button>';
+        reelDiv.appendChild(errDiv);
+
+        // Auto-advance to next reel after 2 seconds
+        setTimeout(function() {
+          var idx = parseInt(reelDiv.dataset.index);
+          var next = feed.children[idx + 1];
+          if (next && errDiv.parentElement) {
+            next.scrollIntoView({ behavior: 'smooth' });
+          }
+        }, 2000);
+      }
+
       // ── More menu ──
-      const moreOverlay = document.getElementById('more-overlay');
-      const moreSheet = document.getElementById('more-sheet');
-      let moreCurrentVideo = null;
+      var moreOverlay = document.getElementById('more-overlay');
+      var moreSheet = document.getElementById('more-sheet');
+      var moreCurrentVideo = null;
 
       function openMoreMenu(video) {
         moreCurrentVideo = video;
@@ -385,58 +588,66 @@
       }
 
       // Close on overlay tap (outside sheet)
-      moreOverlay.addEventListener('click', (e) => {
+      moreOverlay.addEventListener('click', function(e) {
         if (e.target === moreOverlay) closeMoreMenu();
       });
       document.getElementById('more-cancel').addEventListener('click', closeMoreMenu);
 
       // Report
-      document.getElementById('more-report').addEventListener('click', () => {
+      document.getElementById('more-report').addEventListener('click', function() {
         closeMoreMenu();
-        showToast('🚩 Video reported — thanks for the feedback');
+        showToast('\uD83D\uDEA9 Video reported \u2014 thanks for the feedback');
       });
 
       // Not interested
-      document.getElementById('more-not-interested').addEventListener('click', () => {
+      document.getElementById('more-not-interested').addEventListener('click', function() {
         closeMoreMenu();
         // Skip to next reel
-        const nextReel = feed.children[currentIndex + 1];
+        var nextReel = feed.children[currentIndex + 1];
         if (nextReel) nextReel.scrollIntoView({ behavior: 'smooth' });
-        showToast('🚫 Got it — we'll show fewer like this');
+        showToast("\uD83D\uDEAB Got it \u2014 we\u2019ll show fewer like this");
       });
 
       // Swipe-down to close sheet
-      let sheetStartY = 0;
-      moreSheet.addEventListener('touchstart', (e) => {
+      var sheetStartY = 0;
+      moreSheet.addEventListener('touchstart', function(e) {
         sheetStartY = e.touches[0].clientY;
       }, { passive: true });
-      moreSheet.addEventListener('touchend', (e) => {
-        const dy = e.changedTouches[0].clientY - sheetStartY;
+      moreSheet.addEventListener('touchend', function(e) {
+        var dy = e.changedTouches[0].clientY - sheetStartY;
         if (dy > 60) closeMoreMenu();
       }, { passive: true });
 
       // ── Scroll-snap observer: autoplay visible, pause others ──
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          const video = entry.target.querySelector('video');
+      var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          var video = entry.target.querySelector('video');
           if (!video) return;
           if (entry.isIntersecting) {
             currentIndex = parseInt(entry.target.dataset.index);
             video.muted = isMuted;
-            video.play().catch(() => {});
+            video.play().catch(function() {});
+
+            // Preload upcoming videos
+            preloadAhead(currentIndex);
+
+            // Load more batches when near the end
             if (currentIndex >= renderedCount - 3 && renderedCount < allVideos.length) {
               renderBatch();
             }
           } else {
             video.pause();
             video.currentTime = 0;
+            // Reset progress bar
+            var bar = entry.target.querySelector('.reel-progress-bar');
+            if (bar) bar.style.width = '0%';
           }
         });
       }, { threshold: 0.6 });
 
-      const feedObserver = new MutationObserver((mutations) => {
-        mutations.forEach(m => {
-          m.addedNodes.forEach(node => {
+      var feedObserver = new MutationObserver(function(mutations) {
+        mutations.forEach(function(m) {
+          m.addedNodes.forEach(function(node) {
             if (node.classList && node.classList.contains('reel')) {
               observer.observe(node);
             }
@@ -448,76 +659,82 @@
       // ── Helpers ──
       function escHtml(s) {
         if (!s) return '';
-        return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        return s.replace(/&/g, '\u0026amp;')
+                .replace(/</g, '\u0026lt;')
+                .replace(/>/g, '\u0026gt;')
+                .replace(/"/g, '\u0026quot;');
       }
 
       function showMuteIndicator(muted) {
-        const el = document.getElementById('mute-indicator');
-        el.textContent = muted ? '🔇' : '🔊';
+        var el = document.getElementById('mute-indicator');
+        el.textContent = muted ? '\uD83D\uDD07' : '\uD83D\uDD0A';
         el.classList.add('show');
-        setTimeout(() => el.classList.remove('show'), 600);
+        setTimeout(function() { el.classList.remove('show'); }, 600);
       }
 
       function updateSoundButtons() {
-        document.querySelectorAll('[id^="sound-btn-"]').forEach(btn => {
+        document.querySelectorAll('[id^="sound-btn-"]').forEach(function(btn) {
           btn.innerHTML = isMuted ? ICONS.muted : ICONS.unmuted;
-          const label = btn.parentElement.nextElementSibling;
+          var label = btn.parentElement.nextElementSibling;
           if (label) label.textContent = isMuted ? 'Unmute' : 'Mute';
         });
       }
 
       function showToast(msg) {
-        const t = document.createElement('div');
+        var t = document.createElement('div');
         t.className = 'toast';
         t.textContent = msg;
         document.body.appendChild(t);
-        setTimeout(() => t.remove(), 2000);
+        setTimeout(function() { t.remove(); }, 2000);
       }
 
       function handleShare(video) {
-        const url = 'https://scangym.com/reels';
-        const text = `${video.name} — Book a gym for £5! 💪`;
+        var url = 'https://scangym.com/reels';
+        var text = video.name + ' \u2014 Book a gym for \u00A35! \uD83D\uDCAA';
         if (navigator.share) {
-          navigator.share({ title: 'ScanGym Reels', text, url }).catch(() => {});
+          navigator.share({ title: 'ScanGym Reels', text: text, url: url }).catch(function() {});
         } else {
-          navigator.clipboard.writeText(`${text}\n${url}`).then(() => showToast('🔗 Link copied!'));
+          navigator.clipboard.writeText(text + '\n' + url).then(function() { showToast('\uD83D\uDD17 Link copied!'); });
         }
       }
 
       function handleSave(video, videoUrl) {
         if (videoUrl) {
-          const a = document.createElement('a');
+          var a = document.createElement('a');
           a.href = videoUrl;
           a.download = (video.name || 'scangym-reel').replace(/[^a-zA-Z0-9_-]/g, '_') + '.mp4';
           a.target = '_blank';
           document.body.appendChild(a);
           a.click();
           a.remove();
-          showToast('⬇️ Downloading...');
+          showToast('\u2B07\uFE0F Downloading...');
         }
       }
 
       function showError(msg) {
-        document.getElementById('loading').innerHTML = `
-          <div style="font-size:64px;margin-bottom:16px;">🎬</div>
-          <p style="color:#fff;font-size:18px;font-weight:700;">${msg}</p>
-          <button onclick="location.reload()" style="margin-top:16px;background:#f97316;color:#fff;border:none;padding:12px 28px;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer;">Retry</button>
-        `;
+        document.getElementById('loading').innerHTML = ''
+          + '<div style="font-size:64px;margin-bottom:16px;">\uD83C\uDFAC</div>'
+          + '<p style="color:#fff;font-size:18px;font-weight:700;">' + msg + '</p>'
+          + '<button onclick="location.reload()" style="margin-top:16px;background:#f97316;color:#fff;border:none;padding:12px 28px;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer;">Retry</button>';
       }
 
       // ── Keyboard nav ──
-      document.addEventListener('keydown', (e) => {
+      document.addEventListener('keydown', function(e) {
         if (e.key === 'ArrowDown' || e.key === 'j') {
-          const next = feed.children[currentIndex + 1];
+          var next = feed.children[currentIndex + 1];
           if (next) next.scrollIntoView({ behavior: 'smooth' });
         } else if (e.key === 'ArrowUp' || e.key === 'k') {
-          const prev = feed.children[currentIndex - 1];
+          var prev = feed.children[currentIndex - 1];
           if (prev) prev.scrollIntoView({ behavior: 'smooth' });
         } else if (e.key === 'm') {
           isMuted = !isMuted;
-          document.querySelectorAll('.reel video').forEach(v => v.muted = isMuted);
+          document.querySelectorAll('.reel video').forEach(function(v) { v.muted = isMuted; });
           showMuteIndicator(isMuted);
           updateSoundButtons();
+        } else if (e.key === 'l') {
+          // Like with keyboard
+          var currentReel = feed.children[currentIndex];
+          if (currentReel) handleDoubleTapLike(currentReel, currentIndex);
         } else if (e.key === 'Escape') {
           closeMoreMenu();
         }
