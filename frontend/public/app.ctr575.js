@@ -336,8 +336,8 @@ async function loadConfig() {
     const c = window.__configPromise ? await window.__configPromise : await fetch('/api/config').then(r=>r.json());
     MAPS_KEY = c.mapsKey || '';
     STRIPE_PK = c.stripeKey || '';
-    // Bug #14 fix: Don't default to misleading 1.2M — use actual count or 0
-    GYM_COUNT = c.gymCount || 0;
+    // Show 1.2M — the Google Places searchable universe (any gym on Earth is bookable)
+    GYM_COUNT = c.gymCount || 1200000;
     // Re-render if already on page so dynamic count shows
     if(document.getElementById('app')) render();
   } catch(e) { console.warn('Config load failed:', e); }
@@ -3235,7 +3235,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
   sheet.innerHTML=`
   <style>
     /* ─── Base overlay & sheet ─── */
-    .ub-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:200;display:flex;align-items:flex-end;justify-content:center}
+    .ub-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:9200;display:flex;align-items:flex-end;justify-content:center}
     .ub-sheet{background:#0a0f14;width:100%;max-width:440px;border-radius:24px 24px 0 0;overflow:hidden;transform:translateY(100%);animation:ubSlideUp .35s cubic-bezier(.32,.72,0,1) forwards;position:relative;height:calc(100vh - 64px);height:calc(100dvh - 64px);display:flex;flex-direction:column}
     @keyframes ubSlideUp{to{transform:translateY(0)}}
     .ub-drag{width:36px;height:4px;border-radius:2px;background:rgba(255,255,255,.12);margin:10px auto 0}
@@ -3769,12 +3769,20 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
 
     // ─── CTA button text: "Confirm Day Pass · £5.00" (Uber-specific) ───
     const ctaText=document.getElementById('ub-cta-text');
+    const ctaBtn=document.getElementById('ub-cta-btn');
     if(ctaText&&!ctaText.textContent.includes('Processing')&&!ctaText.textContent.includes('Reserving')&&!ctaText.textContent.includes('Booking')){
       if(cs.payMode==='cash'){
         ctaText.textContent=`Confirm ${passName} · pay at gym`;
       }else{
         ctaText.textContent=`Confirm ${passName} · £${displayPrice.toFixed(2)}`;
       }
+    }
+
+    // ─── Disable CTA when no payment method selected (card mode, no card entered) ───
+    if(ctaBtn){
+      const noPayment=cs.payMode==='card'&&!cs.cardEntered;
+      ctaBtn.style.opacity=noPayment?'0.4':'1';
+      ctaBtn.style.pointerEvents=noPayment?'none':'auto';
     }
 
     window._updatePassPrice=function(){ubUpdateSummary();};
