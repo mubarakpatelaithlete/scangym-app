@@ -38,9 +38,58 @@ function peopleLooking(name){return urgencyNum(name,8)+2;}
 function spotsLeft(name){return urgencyNum(name,6)+2;}
 function bookedToday(name){return urgencyNum(name,40)+10;}
 function closingTime(gym){if(gym.opening_hours?.weekday?.length){const now=new Date().getDay();const todayHours=gym.opening_hours.weekday[now===0?6:now-1]||'';const m=todayHours.match(/(\d{1,2}:\d{2}\s*[AP]M)/gi);if(m&&m.length>1)return m[m.length-1];}return gym.openNow===true?'10:00 PM':null;}
-// Bug #13 fix: Only show "Top Gym" / "Guest Favourite" for gyms with real evidence
-// — rating ≥ 4.7 AND at least 100 reviews (not just any 4.5+ gym)
-function isTopGym(gym){return(gym.rating||0)>=4.7&&(gym.totalReviews||gym.user_ratings_total||0)>=100;}
+// Fix #5: Unique earned badges — each gym gets at most ONE badge, each badge type appears at most ONCE
+// Replaces old isTopGym() which gave "⭐ Top Gym" + "Guest Favourite" to ~40% of results
+function assignUniqueBadges(gyms){
+  if(!gyms||!gyms.length)return;
+  // Clear previous badges
+  gyms.forEach(g=>{g._uniqueBadge=null;});
+  const assigned=new Set();
+  // 1. ⭐ Top Rated — highest rating, break ties by review count (must have ≥4.5 + ≥50 reviews)
+  const ratable=gyms.filter(g=>(g.rating||0)>=4.5&&(g.totalReviews||g.user_ratings_total||0)>=50);
+  if(ratable.length){
+    ratable.sort((a,b)=>(b.rating||0)-(a.rating||0)||((b.totalReviews||b.user_ratings_total||0)-(a.totalReviews||a.user_ratings_total||0)));
+    const winner=ratable[0];
+    const id=winner.placeId||winner.place_id||winner.id;
+    winner._uniqueBadge={icon:'⭐',label:'Top Rated',color:'bg-yellow-500 text-black',inline:'Highest rated nearby',inlineColor:'text-yellow-400'};
+    assigned.add(id);
+  }
+  // 2. 📍 Closest — smallest distance
+  const withDist=gyms.filter(g=>g.distance!=null&&g.distance>0&&!assigned.has(g.placeId||g.place_id||g.id));
+  if(withDist.length){
+    withDist.sort((a,b)=>(a.distance||99)-(b.distance||99));
+    const winner=withDist[0];
+    const id=winner.placeId||winner.place_id||winner.id;
+    const walkMin=Math.round((winner.distance||0)/0.08); // ~5km/h walking
+    winner._uniqueBadge={icon:'📍',label:'Closest',color:'bg-blue-500 text-white',inline:walkMin+' min walk',inlineColor:'text-blue-400'};
+    assigned.add(id);
+  }
+  // 3. 💰 Best Value — lowest price
+  const withPrice=gyms.filter(g=>!assigned.has(g.placeId||g.place_id||g.id));
+  if(withPrice.length){
+    withPrice.sort((a,b)=>(parseFloat(a.dayPassPrice||a.price_tier||5))-(parseFloat(b.dayPassPrice||b.price_tier||5)));
+    const cheapest=withPrice[0];
+    const cheapId=cheapest.placeId||cheapest.place_id||cheapest.id;
+    // Only show if it's actually cheaper than the median
+    const prices=gyms.map(g=>parseFloat(g.dayPassPrice||g.price_tier||5));
+    prices.sort((a,b)=>a-b);
+    const median=prices[Math.floor(prices.length/2)];
+    if(parseFloat(cheapest.dayPassPrice||cheapest.price_tier||5)<=median){
+      cheapest._uniqueBadge={icon:'💰',label:'Best Value',color:'bg-green-600 text-white',inline:'Cheapest nearby',inlineColor:'text-green-400'};
+      assigned.add(cheapId);
+    }
+  }
+  // 4. 🔥 Most Popular — most reviews (must have ≥200 reviews)
+  const popular=gyms.filter(g=>!assigned.has(g.placeId||g.place_id||g.id)&&(g.totalReviews||g.user_ratings_total||0)>=200);
+  if(popular.length){
+    popular.sort((a,b)=>(b.totalReviews||b.user_ratings_total||0)-(a.totalReviews||a.user_ratings_total||0));
+    const winner=popular[0];
+    winner._uniqueBadge={icon:'🔥',label:'Most Popular',color:'bg-orange-500 text-white',inline:(winner.totalReviews||winner.user_ratings_total)+' reviews',inlineColor:'text-orange-400'};
+    assigned.add(winner.placeId||winner.place_id||winner.id);
+  }
+}
+// Keep isTopGym as a fallback for any code that calls it directly
+function isTopGym(gym){return !!(gym._uniqueBadge);}
 function originalPrice(price){return null;}
 function discountPct(price){return 0;}
 // Animated counter on scroll (Booking.com style)
@@ -613,7 +662,8 @@ function GymCard(gym){
   const hasPhoto=!!photo;
   const gymIdentifier=gym.placeId||gym.place_id||gym.id;
   const isLive=!!gym.placeId;
-  const topGym=isTopGym(gym);
+  const ub=gym._uniqueBadge; // Fix #5: unique earned badge (assigned by assignUniqueBadges)
+  const topGym=!!ub;
   const cTime=closingTime(gym);
   // const looking removed - was fake
   const mAgo=minutesAgo(gym.name);
@@ -635,7 +685,7 @@ function GymCard(gym){
       <div class="absolute top-3 right-3 ${_isOPCard?'bg-green-600':'bg-brand'} text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
         £${cardCurrentPrice}${_isOPCard?' 🌙':''}
       </div>
-      ${topGym?`<div class="absolute top-3 left-3 bg-yellow-500 text-black px-2.5 py-1 rounded-full text-xs font-bold shadow-lg">⭐ Top Gym</div>`
+      ${ub?`<div class="absolute top-3 left-3 ${ub.color} px-2.5 py-1 rounded-full text-xs font-bold shadow-lg">${ub.icon} ${ub.label}</div>`
         :gym.openNow===true?`<div class="absolute top-3 left-3 bg-green-600 text-white px-2.5 py-1 rounded-full text-xs font-medium shadow-lg flex items-center gap-1"><span class="w-1.5 h-1.5 bg-green-300 rounded-full animate-pulse"></span> Open${cTime?' until '+cTime:' Now'}</div>`:``}
       <!-- Booking.com urgency badge -->
       
@@ -648,7 +698,7 @@ function GymCard(gym){
       <div class="flex items-center gap-2 mb-2">
         <span class="text-yellow-400 text-sm font-medium">★ ${gym.rating||'New'}</span>
         <span class="text-slate-500 text-xs">(${gym.totalReviews||gym.user_ratings_total||0} reviews)</span>
-        ${topGym?`<span class="text-yellow-400 text-xs font-medium">· Guest Favourite</span>`:''}
+        ${ub?`<span class="${ub.inlineColor} text-xs font-medium">· ${ub.inline}</span>`:''}
       </div>
       <p class="text-slate-500 text-xs mb-2 truncate">${gym.address||gym.vicinity||''}</p>
       <!-- Smart facility tags per gym -->
@@ -872,6 +922,7 @@ async function searchGyms(query, isExplicit, _triggerLayer){
 
 function SearchPage(){
   const gyms=state.gyms||[];
+  if(gyms.length)assignUniqueBadges(gyms); // Fix #5: assign unique badges before rendering cards
   const isLoading=gyms.length===0;
   // Blocker 6 Fix: Strip "gyms"/"gym" from query to avoid "Gyms London gyms" duplication
   const rawLabel=state.searchQuery||'Near You';
