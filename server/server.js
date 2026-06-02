@@ -15,6 +15,7 @@ const gymProfileRouter = require('./routes/gymProfile');
 const ownerRouter = require('./routes/owner');
 const statsRouter = require('./routes/stats');
 const creatorsRouter = require('./routes/creators');
+const reelsRouter = require('./routes/reels');
 const videoProxyRouter = require('./routes/videoProxy');
 const directionsRouter = require('./routes/directions');
 const qrRouter = require('./routes/qr');
@@ -248,6 +249,7 @@ app.use('/api/gym-profile', gymProfileRouter);
 app.use('/api/owner', ownerRouter);
 app.use('/api/stats', statsRouter);
 app.use('/api/creators', creatorsRouter);
+app.use('/api/reels', reelsRouter);
 app.use('/api/video-proxy', videoProxyRouter);
 app.use('/api/directions', directionsRouter);
 app.use('/api/qr', qrRouter);
@@ -332,21 +334,24 @@ if (fs.existsSync(FRONTEND_DIR)) {
     res.sendFile(path.join(FRONTEND_DIR, 'flexsquad', 'index.html'));
   });
 
-  // Reels app — separate React SPA at /reels
-  // Serves reels/index.html for /reels and all sub-routes (e.g. /reels/creator/auth)
+  // Reels app — dynamic API-driven feed (replaces static React bundle)
   app.get('/reels', (req, res) => {
     res.setHeader('Cache-Control', 'no-cache');
     res.sendFile(path.join(FRONTEND_DIR, 'reels', 'index.html'));
   });
   app.get('/reels/*', (req, res, next) => {
-    // Let express.static handle actual files (assets, favicon, etc.)
     const filePath = path.join(FRONTEND_DIR, req.path);
     if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
       return next();
     }
-    // Otherwise serve the reels SPA index.html
     res.setHeader('Cache-Control', 'no-cache');
     res.sendFile(path.join(FRONTEND_DIR, 'reels', 'index.html'));
+  });
+
+  // Admin panel — upload review dashboard
+  app.get('/admin/uploads', (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache');
+    res.sendFile(path.join(FRONTEND_DIR, 'admin', 'uploads', 'index.html'));
   });
 
   // SPA fallback - serve index.html for all non-API routes
