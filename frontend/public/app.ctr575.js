@@ -3211,7 +3211,11 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
   const gymPhoto=gym.photo_url||gym.photo||(gym.photos_list?.[0]?.url)||'';
   const today=new Date().toISOString().split('T')[0];
   const currentHour=new Date().getHours();
-  const defaultTime=prefillTime||`${String(Math.min(currentHour+1,20)).padStart(2,'0')}:00`;
+  // Fix: clamp to available slot range (6-20) using CURRENT hour, not +1.
+  // Previously currentHour+1 shifted into a different pricing tier than what
+  // the gym card/detail page shows — e.g. browsing at 9am (off-peak £3.75)
+  // defaulted checkout to 10:00 (standard £5.00), causing a price bait-and-switch.
+  const defaultTime=prefillTime||`${String(Math.max(6,Math.min(currentHour,20))).padStart(2,'0')}:00`;
   const defaultHour=parseInt(defaultTime);
   const savedEmail=localStorage.getItem('sg_last_email')||'';
   const isOffPeak=defaultHour<10||defaultHour>=20;
