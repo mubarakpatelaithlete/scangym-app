@@ -4978,7 +4978,23 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
         <p style="color:rgba(255,255,255,.45);font-size:14px;margin:0 0 24px;max-width:280px;">Gym workout videos, tips, and inspiration from creators worldwide.</p>
         <button onclick="switchTab('book')" style="background:#f97316;color:#fff;font-weight:700;font-size:15px;padding:14px 32px;border-radius:14px;border:none;cursor:pointer;box-shadow:0 4px 20px rgba(249,115,22,.3);">🏋️ Find a Gym Instead</button>
       </div>
-      <!-- Right-side nav buttons — TikTok-spec: 48dp circles, 16px gap, right-12px, positioned ABOVE iframe's action strip (avatar+share+save at bottom:80px, top ~264px) -->
+      <!-- Right-side nav buttons — TikTok-spec: 48dp circles, 16px gap, right-12px -->
+      <!-- Creator Portal button (top-right, above video actions) -->
+      <div style="position:fixed;top:16px;right:12px;z-index:9100;">
+        <div onclick="window.location.href='/flexsquad/'" style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .15s ease;" ontouchstart="this.style.transform='scale(0.9)'" ontouchend="this.style.transform='scale(1)'">
+          <div style="width:40px;height:40px;background:linear-gradient(135deg,#f97316,#ea580c);border:2px solid rgba(255,255,255,.25);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 2px 16px rgba(249,115,22,.4);">👤</div>
+          <span style="color:#fff;font-size:9px;font-weight:700;text-shadow:0 1px 6px rgba(0,0,0,.9);letter-spacing:0.3px;">FlexSquad</span>
+        </div>
+      </div>
+      <!-- Upload button (top-right, below FlexSquad — only shown for creators) -->
+      <div id="sg-upload-btn" style="position:fixed;top:72px;right:12px;z-index:9100;display:none;">
+        <div onclick="window.location.href='/upload/'" style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .15s ease;" ontouchstart="this.style.transform='scale(0.9)'" ontouchend="this.style.transform='scale(1)'">
+          <div style="width:40px;height:40px;background:linear-gradient(135deg,#22c55e,#16a34a);border:2px solid rgba(255,255,255,.25);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 2px 16px rgba(34,197,94,.4);">📤</div>
+          <span style="color:#fff;font-size:9px;font-weight:700;text-shadow:0 1px 6px rgba(0,0,0,.9);letter-spacing:0.3px;">Upload</span>
+        </div>
+      </div>
+      <script>try{if(localStorage.getItem('flexsquad_pending')){var ub=document.getElementById('sg-upload-btn');if(ub)ub.style.display='block';}}catch(e){}</script>
+      <!-- Nav buttons (Book + More) positioned ABOVE iframe action strip -->
       <div class="sg-reels-nav" style="position:fixed;right:12px;bottom:296px;z-index:9100;display:flex;flex-direction:column;align-items:center;gap:16px;pointer-events:none;">
         <div onclick="switchTab('book')" style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;pointer-events:auto;-webkit-tap-highlight-color:transparent;transition:transform .15s ease;" ontouchstart="this.style.transform='scale(0.9)'" ontouchend="this.style.transform='scale(1)'">
           <div style="width:48px;height:48px;background:rgba(0,0,0,.55);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1.5px solid rgba(255,255,255,.18);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 2px 12px rgba(0,0,0,.4);">🏋️</div>

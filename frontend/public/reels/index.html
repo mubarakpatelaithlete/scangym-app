@@ -28,5 +28,480 @@
   </head>
   <body>
     <div id="root"></div>
+
+    <!-- FlexSquad Creator Bridge — Enhances Save/Share for FlexSquad creators -->
+    <script>
+    (function() {
+      'use strict';
+
+      // ── Caption templates per category ──
+      const CAPTIONS = {
+        'Promo':         '💪 Book a gym ANYWHERE for just £5. No membership. No contract. Walk in & work out!',
+        'AI Cinematic':  '🎬 The future of gym access is here. £5 day passes, 1.2M+ gyms, 50+ countries.',
+        'UGC Videos':    '🔥 Real people, real gyms, real results. Try any gym for £5 — no strings attached!',
+        'Price Compare': '💰 Why pay £50/month when you can pay £5/visit? Do the maths.',
+        'CMO Content':   '🏋️ Stop paying for a gym you barely use. £5 day passes. Anywhere. Anytime.',
+        'Ready-to-Post': '💪 Found an amazing gym today! Book any gym near you for £5 — link in bio 👇',
+        'City Promo Reels': '🏙️ Best gyms in your city for just £5 a visit. No membership needed!',
+        'Viral':         '😱 You won\'t believe how cheap gym access can be. £5. Any gym. Anywhere.',
+        'How It Works City': '📍 Here\'s how to book ANY gym near you in 30 seconds for just £5.',
+        'City Discovery':'🗺️ Discover hidden gem gyms near you. £5 day passes, no sign-up needed!',
+        'Creator Earnings':'💸 I earn money sharing gyms I love. You can too — join FlexSquad!',
+        'Don\'t Join A Gym':'🚫 Don\'t join a gym. Just book one. £5 per visit. No contract. Ever.',
+        'Branded':       '🧡 ScanGym — Book a Gym. Anywhere. £5 day passes across 50+ countries.',
+        'Influencer':    '👀 My secret to trying new gyms without breaking the bank? £5 day passes.',
+        'TikTok-Reels AI':'⚡ POV: You just found out any gym costs £5 with no membership.',
+        'Did You Know':  '🤔 Did you know? You can walk into almost ANY gym for just £5. Here\'s how.',
+        'default':       '💪 Book a gym anywhere for just £5! No membership needed. Try it! 🏋️'
+      };
+
+      const HASHTAGS = '#ScanGym #GymLife #NoPT #FitnessHack #DayPass #NoMembership #Gym';
+
+      // ── Get current reel info from DOM ──
+      function getCurrentReelInfo() {
+        // Find the playing video (or first video)
+        const videos = document.querySelectorAll('video');
+        let currentVideo = null;
+        for (const v of videos) {
+          if (!v.paused && v.currentTime > 0) { currentVideo = v; break; }
+        }
+        if (!currentVideo) {
+          for (const v of videos) {
+            if (!v.paused) { currentVideo = v; break; }
+          }
+        }
+        if (!currentVideo && videos.length > 0) currentVideo = videos[0];
+
+        // Find the currently visible reel's info text
+        // The info area is: .absolute.bottom-0.left-0.right-20.p-4.pb-5.z-20
+        const infoAreas = document.querySelectorAll('.absolute.bottom-0.left-0.right-20');
+        let title = 'ScanGym Reel';
+        let category = '';
+
+        // The visible reel is determined by which video is playing
+        // For each reel, info is in its parent container
+        if (currentVideo) {
+          const reelContainer = currentVideo.closest('[style*="scroll-snap-align"]');
+          if (reelContainer) {
+            const titleEl = reelContainer.querySelector('p.text-\\[13px\\]');
+            const catEl = reelContainer.querySelector('p.text-\\[11px\\]');
+            if (titleEl) title = titleEl.textContent.trim();
+            if (catEl) category = catEl.textContent.replace(/🎬\s*/g, '').trim();
+          }
+        }
+
+        // Fallback: find in any visible info area
+        if (title === 'ScanGym Reel' && infoAreas.length > 0) {
+          for (const area of infoAreas) {
+            const t = area.querySelector('p');
+            if (t && t.textContent.trim()) {
+              title = t.textContent.trim();
+              const c = area.querySelectorAll('p')[1];
+              if (c) category = c.textContent.replace(/🎬\s*/g, '').trim();
+              break;
+            }
+          }
+        }
+
+        const videoUrl = currentVideo?.src || '';
+        const driveId = videoUrl.match(/id=([^&]+)/)?.[1] || '';
+
+        return { title, category, videoUrl, driveId, posterUrl: currentVideo?.poster || '' };
+      }
+
+      // ── Get creator data ──
+      function getCreator() {
+        try {
+          const data = localStorage.getItem('flexsquad_pending');
+          if (!data) return null;
+          return JSON.parse(data);
+        } catch (e) { return null; }
+      }
+
+      // ── Build caption for a reel ──
+      function buildCaption(reel, creator) {
+        const base = CAPTIONS[reel.category] || CAPTIONS['default'];
+        const handle = creator?.handle ? `@${creator.handle.replace('@', '')}` : '';
+        const link = creator?.handle
+          ? `scangym.com/r/${creator.handle.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase()}`
+          : 'scangym.com';
+        return `${base}\n\n🔗 ${link}\n${HASHTAGS}`;
+      }
+
+      // ── Show Download Pack Modal ──
+      function showDownloadPack(reel, creator) {
+        // Remove any existing modal
+        const existing = document.getElementById('fs-download-modal');
+        if (existing) existing.remove();
+
+        const caption = buildCaption(reel, creator);
+        const handle = creator?.handle || '';
+        const link = handle
+          ? `https://scangym.com/r/${handle.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase()}`
+          : 'https://scangym.com';
+
+        const modal = document.createElement('div');
+        modal.id = 'fs-download-modal';
+        modal.innerHTML = `
+          <style>
+            #fs-download-modal {
+              position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+              z-index: 99999; display: flex; align-items: flex-end; justify-content: center;
+              background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
+              animation: fsDmFade 0.2s ease-out;
+            }
+            @keyframes fsDmFade { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes fsDmSlide { from { transform: translateY(100%); } to { transform: translateY(0); } }
+            .fs-dm-sheet {
+              background: #111827; border-radius: 24px 24px 0 0;
+              width: 100%; max-width: 420px; max-height: 85vh; overflow-y: auto;
+              padding: 20px 16px env(safe-area-inset-bottom, 16px);
+              animation: fsDmSlide 0.3s ease-out;
+              border-top: 2px solid rgba(249,115,22,0.3);
+            }
+            .fs-dm-handle { width: 36px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 4px; margin: 0 auto 16px; }
+            .fs-dm-title { color: #fff; font-size: 18px; font-weight: 800; text-align: center; margin-bottom: 4px; }
+            .fs-dm-sub { color: rgba(255,255,255,0.4); font-size: 12px; text-align: center; margin-bottom: 16px; }
+            .fs-dm-section { margin-bottom: 14px; }
+            .fs-dm-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,0.35); margin-bottom: 6px; }
+            .fs-dm-video-row { display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.04); border-radius: 14px; padding: 12px; border: 1px solid rgba(255,255,255,0.06); }
+            .fs-dm-thumb { width: 56px; height: 80px; border-radius: 10px; object-fit: cover; background: #1e293b; flex-shrink: 0; }
+            .fs-dm-video-info { flex: 1; min-width: 0; }
+            .fs-dm-video-title { color: #fff; font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            .fs-dm-video-cat { color: rgba(255,255,255,0.4); font-size: 11px; margin-top: 2px; }
+            .fs-dm-download-btn {
+              background: linear-gradient(135deg, #f97316, #ea580c); color: #fff;
+              font-size: 13px; font-weight: 700; padding: 10px 16px; border-radius: 12px;
+              border: none; cursor: pointer; display: flex; align-items: center; gap: 6px;
+              box-shadow: 0 4px 16px rgba(249,115,22,0.3); white-space: nowrap;
+            }
+            .fs-dm-download-btn:active { transform: scale(0.95); }
+            .fs-dm-caption-box {
+              background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+              border-radius: 12px; padding: 12px; color: rgba(255,255,255,0.75); font-size: 12px;
+              line-height: 1.5; white-space: pre-wrap; word-break: break-word;
+              position: relative; min-height: 80px;
+            }
+            .fs-dm-copy-btn {
+              position: absolute; top: 8px; right: 8px;
+              background: rgba(249,115,22,0.15); border: 1px solid rgba(249,115,22,0.3);
+              color: #f97316; font-size: 10px; font-weight: 700; padding: 4px 10px;
+              border-radius: 8px; cursor: pointer; transition: all 0.15s;
+            }
+            .fs-dm-copy-btn:active { background: rgba(249,115,22,0.3); }
+            .fs-dm-link-row {
+              display: flex; align-items: center; gap: 8px;
+              background: rgba(249,115,22,0.06); border: 1px solid rgba(249,115,22,0.2);
+              border-radius: 12px; padding: 10px 12px;
+            }
+            .fs-dm-link-text { flex: 1; color: #f97316; font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            .fs-dm-link-copy {
+              background: #f97316; color: #000; font-size: 11px; font-weight: 700;
+              padding: 6px 12px; border-radius: 8px; border: none; cursor: pointer;
+              flex-shrink: 0;
+            }
+            .fs-dm-link-copy:active { transform: scale(0.95); }
+            .fs-dm-copyall {
+              width: 100%; padding: 14px; border-radius: 14px; border: 2px solid rgba(249,115,22,0.3);
+              background: rgba(249,115,22,0.08); color: #f97316; font-size: 14px; font-weight: 700;
+              cursor: pointer; text-align: center; margin-top: 4px;
+            }
+            .fs-dm-copyall:active { background: rgba(249,115,22,0.15); }
+            .fs-dm-close {
+              position: absolute; top: 12px; right: 12px;
+              width: 32px; height: 32px; border-radius: 50%;
+              background: rgba(255,255,255,0.1); border: none;
+              color: #fff; font-size: 18px; cursor: pointer;
+              display: flex; align-items: center; justify-content: center;
+            }
+            .fs-dm-toast {
+              position: fixed; top: 60px; left: 50%; transform: translateX(-50%);
+              background: #22c55e; color: #fff; font-size: 13px; font-weight: 700;
+              padding: 8px 20px; border-radius: 12px; z-index: 999999;
+              animation: fsDmFade 0.2s ease-out; pointer-events: none;
+              box-shadow: 0 4px 20px rgba(34,197,94,0.3);
+            }
+          </style>
+          <div class="fs-dm-sheet" onclick="event.stopPropagation()">
+            <div class="fs-dm-handle"></div>
+            <div class="fs-dm-title">⬇️ Creator Download Pack</div>
+            <div class="fs-dm-sub">Video + Caption + Your Affiliate Link</div>
+
+            <div class="fs-dm-section">
+              <div class="fs-dm-label">📹 Video</div>
+              <div class="fs-dm-video-row">
+                <img class="fs-dm-thumb" src="${reel.posterUrl}" alt="" onerror="this.style.display='none'"/>
+                <div class="fs-dm-video-info">
+                  <div class="fs-dm-video-title">${reel.title}</div>
+                  <div class="fs-dm-video-cat">🎬 ${reel.category || 'ScanGym'}</div>
+                </div>
+                <button class="fs-dm-download-btn" id="fs-download-video">⬇️ Save</button>
+              </div>
+            </div>
+
+            <div class="fs-dm-section">
+              <div class="fs-dm-label">📝 Ready-to-Post Caption</div>
+              <div class="fs-dm-caption-box" id="fs-caption-text">
+                <button class="fs-dm-copy-btn" id="fs-copy-caption">Copy</button>
+                ${caption.replace(/</g, '&lt;').replace(/>/g, '&gt;')}
+              </div>
+            </div>
+
+            <div class="fs-dm-section">
+              <div class="fs-dm-label">🔗 Your Affiliate Link</div>
+              <div class="fs-dm-link-row">
+                <span class="fs-dm-link-text" id="fs-link-text">${link}</span>
+                <button class="fs-dm-link-copy" id="fs-copy-link">Copy</button>
+              </div>
+            </div>
+
+            <button class="fs-dm-copyall" id="fs-copy-all">📋 Copy Caption + Link</button>
+          </div>
+        `;
+
+        // Close on backdrop click
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) modal.remove();
+        });
+
+        document.body.appendChild(modal);
+
+        // Toast helper
+        function showToast(msg) {
+          const t = document.createElement('div');
+          t.className = 'fs-dm-toast';
+          t.textContent = msg;
+          document.body.appendChild(t);
+          setTimeout(() => t.remove(), 1800);
+        }
+
+        // Download video
+        document.getElementById('fs-download-video').addEventListener('click', () => {
+          if (reel.videoUrl) {
+            const a = document.createElement('a');
+            a.href = reel.videoUrl;
+            a.download = (reel.title || 'scangym-reel').replace(/[^a-zA-Z0-9_-]/g, '_') + '.mp4';
+            a.target = '_blank';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            showToast('⬇️ Downloading video...');
+          }
+        });
+
+        // Copy caption
+        document.getElementById('fs-copy-caption').addEventListener('click', () => {
+          navigator.clipboard.writeText(caption).then(() => {
+            showToast('📝 Caption copied!');
+            document.getElementById('fs-copy-caption').textContent = '✓ Copied';
+          });
+        });
+
+        // Copy link
+        document.getElementById('fs-copy-link').addEventListener('click', () => {
+          navigator.clipboard.writeText(link).then(() => {
+            showToast('🔗 Link copied!');
+            document.getElementById('fs-copy-link').textContent = '✓';
+            setTimeout(() => { document.getElementById('fs-copy-link').textContent = 'Copy'; }, 2000);
+          });
+        });
+
+        // Copy all
+        document.getElementById('fs-copy-all').addEventListener('click', () => {
+          const all = caption + '\n\n' + link;
+          navigator.clipboard.writeText(all).then(() => {
+            showToast('📋 Caption + Link copied!');
+            document.getElementById('fs-copy-all').textContent = '✅ Copied to Clipboard!';
+            setTimeout(() => { document.getElementById('fs-copy-all').textContent = '📋 Copy Caption + Link'; }, 2000);
+          });
+        });
+      }
+
+      // ── Show Share Modal (Feature 3) ──
+      function showShareModal(reel, creator) {
+        const existing = document.getElementById('fs-share-modal');
+        if (existing) existing.remove();
+
+        const handle = creator?.handle || '';
+        const slug = handle.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+        const link = slug ? `https://scangym.com/r/${slug}` : 'https://scangym.com';
+        const caption = buildCaption(reel, creator);
+        const shareText = `${caption.split('\n')[0]}\n\n🔗 ${link}`;
+
+        const modal = document.createElement('div');
+        modal.id = 'fs-share-modal';
+        modal.innerHTML = `
+          <style>
+            #fs-share-modal {
+              position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+              z-index: 99999; display: flex; align-items: flex-end; justify-content: center;
+              background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
+              animation: fsDmFade 0.2s ease-out;
+            }
+            .fs-share-sheet {
+              background: #111827; border-radius: 24px 24px 0 0;
+              width: 100%; max-width: 420px; max-height: 75vh; overflow-y: auto;
+              padding: 20px 16px env(safe-area-inset-bottom, 16px);
+              animation: fsDmSlide 0.3s ease-out;
+              border-top: 2px solid rgba(249,115,22,0.3);
+            }
+            .fs-share-title { color: #fff; font-size: 18px; font-weight: 800; text-align: center; margin-bottom: 4px; }
+            .fs-share-sub { color: rgba(255,255,255,0.4); font-size: 12px; text-align: center; margin-bottom: 16px; }
+            .fs-share-link-box {
+              background: rgba(249,115,22,0.06); border: 1px solid rgba(249,115,22,0.2);
+              border-radius: 14px; padding: 14px; margin-bottom: 16px; text-align: center;
+            }
+            .fs-share-link-label { color: rgba(255,255,255,0.35); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+            .fs-share-link-val { color: #f97316; font-size: 15px; font-weight: 700; word-break: break-all; }
+            .fs-share-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+            .fs-share-app {
+              display: flex; flex-direction: column; align-items: center; gap: 6px;
+              cursor: pointer; padding: 10px 4px; border-radius: 14px;
+              background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+              transition: all 0.15s;
+            }
+            .fs-share-app:active { background: rgba(255,255,255,0.08); transform: scale(0.95); }
+            .fs-share-app-icon { font-size: 28px; }
+            .fs-share-app-name { color: rgba(255,255,255,0.5); font-size: 10px; font-weight: 600; }
+            .fs-share-copyall {
+              width: 100%; padding: 14px; border-radius: 14px;
+              background: linear-gradient(135deg, #f97316, #ea580c); color: #fff;
+              font-size: 14px; font-weight: 700; border: none; cursor: pointer;
+              box-shadow: 0 4px 16px rgba(249,115,22,0.3);
+            }
+            .fs-share-copyall:active { transform: scale(0.97); }
+          </style>
+          <div class="fs-share-sheet" onclick="event.stopPropagation()">
+            <div class="fs-dm-handle"></div>
+            <div class="fs-share-title">🔗 Share with Your Link</div>
+            <div class="fs-share-sub">Your affiliate link is auto-embedded — you earn on every booking!</div>
+
+            <div class="fs-share-link-box">
+              <div class="fs-share-link-label">Your Affiliate Link</div>
+              <div class="fs-share-link-val">${link}</div>
+            </div>
+
+            <div class="fs-share-grid">
+              <div class="fs-share-app" id="fs-share-whatsapp">
+                <span class="fs-share-app-icon">💬</span>
+                <span class="fs-share-app-name">WhatsApp</span>
+              </div>
+              <div class="fs-share-app" id="fs-share-instagram">
+                <span class="fs-share-app-icon">📸</span>
+                <span class="fs-share-app-name">Instagram</span>
+              </div>
+              <div class="fs-share-app" id="fs-share-tiktok">
+                <span class="fs-share-app-icon">🎵</span>
+                <span class="fs-share-app-name">TikTok</span>
+              </div>
+              <div class="fs-share-app" id="fs-share-twitter">
+                <span class="fs-share-app-icon">🐦</span>
+                <span class="fs-share-app-name">X / Twitter</span>
+              </div>
+              <div class="fs-share-app" id="fs-share-facebook">
+                <span class="fs-share-app-icon">📘</span>
+                <span class="fs-share-app-name">Facebook</span>
+              </div>
+              <div class="fs-share-app" id="fs-share-telegram">
+                <span class="fs-share-app-icon">✈️</span>
+                <span class="fs-share-app-name">Telegram</span>
+              </div>
+              <div class="fs-share-app" id="fs-share-sms">
+                <span class="fs-share-app-icon">💬</span>
+                <span class="fs-share-app-name">SMS</span>
+              </div>
+              <div class="fs-share-app" id="fs-share-native">
+                <span class="fs-share-app-icon">📤</span>
+                <span class="fs-share-app-name">More</span>
+              </div>
+            </div>
+
+            <button class="fs-share-copyall" id="fs-share-copy-all">📋 Copy Caption + Link</button>
+          </div>
+        `;
+
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) modal.remove();
+        });
+
+        document.body.appendChild(modal);
+
+        function showToast(msg) {
+          const t = document.createElement('div');
+          t.className = 'fs-dm-toast';
+          t.textContent = msg;
+          document.body.appendChild(t);
+          setTimeout(() => t.remove(), 1800);
+        }
+
+        const encoded = encodeURIComponent(shareText);
+        const encodedLink = encodeURIComponent(link);
+
+        document.getElementById('fs-share-whatsapp').addEventListener('click', () => {
+          window.open('https://wa.me/?text=' + encoded, '_blank');
+        });
+        document.getElementById('fs-share-instagram').addEventListener('click', () => {
+          navigator.clipboard.writeText(shareText).then(() => {
+            showToast('📝 Copied! Paste in Instagram caption');
+          });
+        });
+        document.getElementById('fs-share-tiktok').addEventListener('click', () => {
+          navigator.clipboard.writeText(shareText).then(() => {
+            showToast('📝 Copied! Paste in TikTok caption');
+          });
+        });
+        document.getElementById('fs-share-twitter').addEventListener('click', () => {
+          window.open('https://twitter.com/intent/tweet?text=' + encoded, '_blank');
+        });
+        document.getElementById('fs-share-facebook').addEventListener('click', () => {
+          window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodedLink, '_blank');
+        });
+        document.getElementById('fs-share-telegram').addEventListener('click', () => {
+          window.open('https://t.me/share/url?url=' + encodedLink + '&text=' + encodeURIComponent(shareText.split('\n')[0]), '_blank');
+        });
+        document.getElementById('fs-share-sms').addEventListener('click', () => {
+          window.open('sms:?body=' + encoded, '_blank');
+        });
+        document.getElementById('fs-share-native').addEventListener('click', () => {
+          if (navigator.share) {
+            navigator.share({ title: 'ScanGym', text: shareText, url: link }).catch(() => {});
+          } else {
+            navigator.clipboard.writeText(shareText).then(() => showToast('📋 Copied!'));
+          }
+        });
+        document.getElementById('fs-share-copy-all').addEventListener('click', () => {
+          navigator.clipboard.writeText(shareText + '\n\n' + link).then(() => {
+            showToast('📋 Copied!');
+            document.getElementById('fs-share-copy-all').textContent = '✅ Copied to Clipboard!';
+            setTimeout(() => { document.getElementById('fs-share-copy-all').textContent = '📋 Copy Caption + Link'; }, 2000);
+          });
+        });
+      }
+
+      // ── Intercept Save/Share button clicks for creators ──
+      document.addEventListener('click', (e) => {
+        const creator = getCreator();
+        if (!creator) return; // Not a FlexSquad creator — let normal behavior happen
+
+        const saveBtn = e.target.closest('button[aria-label="Save"]');
+        const shareBtn = e.target.closest('button[aria-label="Share"]');
+
+        if (saveBtn) {
+          e.stopImmediatePropagation();
+          e.preventDefault();
+          const reel = getCurrentReelInfo();
+          showDownloadPack(reel, creator);
+        }
+
+        if (shareBtn) {
+          e.stopImmediatePropagation();
+          e.preventDefault();
+          const reel = getCurrentReelInfo();
+          showShareModal(reel, creator);
+        }
+      }, true); // capture phase — fires before React handlers
+
+    })();
+    </script>
   </body>
 </html>
