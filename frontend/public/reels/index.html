@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/reels/favicon.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no" />
     <title>ScanGym Reels — Book a Gym. Anywhere.</title>
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="ScanGym" />
@@ -12,209 +12,187 @@
     <meta property="og:image" content="https://scangym.com/reels/og-image.png" />
     <meta name="theme-color" content="#050816" />
     <style>
-      * { margin:0; padding:0; box-sizing:border-box; }
-      html,body { height:100%; overflow:hidden; background:#000; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; }
-      
-      /* Reels container — full-screen vertical scroll snap */
-      #reels-feed {
-        height:100vh; overflow-y:scroll; scroll-snap-type:y mandatory;
-        -webkit-overflow-scrolling:touch; scroll-behavior:smooth;
+      *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+      html,body{
+        height:100%;height:100dvh;
+        overflow:hidden;background:#000;
+        font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+        touch-action:none;
+        overscroll-behavior:none;
+        -webkit-user-select:none;user-select:none;
       }
-      
-      .reel {
-        height:100vh; width:100%; position:relative; scroll-snap-align:start;
-        background:#0a0a16; overflow:hidden;
+
+      /* ── Reel Track (GPU-accelerated vertical strip) ── */
+      #reel-track{
+        position:fixed;top:0;left:0;right:0;
+        will-change:transform;
+        touch-action:none;
       }
-      
-      .reel video {
-        position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
-        min-width:100%; min-height:100%; object-fit:cover;
+      #reel-track.snapping{
+        transition:transform 420ms cubic-bezier(0.23,1,0.32,1);
       }
-      
+
+      /* ── Individual Reel ── */
+      .reel{
+        width:100vw;height:100vh;height:100dvh;
+        position:relative;overflow:hidden;background:#0a0a16;
+      }
+      .reel video{
+        position:absolute;top:0;left:0;width:100%;height:100%;
+        object-fit:cover;
+        pointer-events:none;
+      }
+
       /* Gradient overlays */
-      .reel::before {
-        content:''; position:absolute; top:0; left:0; right:0; height:120px;
-        background:linear-gradient(180deg,rgba(0,0,0,.5) 0%,transparent 100%);
-        z-index:10; pointer-events:none;
+      .reel::before{
+        content:'';position:absolute;top:0;left:0;right:0;height:120px;
+        background:linear-gradient(180deg,rgba(0,0,0,.45) 0%,transparent 100%);
+        z-index:10;pointer-events:none;
       }
-      .reel::after {
-        content:''; position:absolute; bottom:0; left:0; right:0; height:200px;
-        background:linear-gradient(0deg,rgba(0,0,0,.7) 0%,transparent 100%);
-        z-index:10; pointer-events:none;
+      .reel::after{
+        content:'';position:absolute;bottom:0;left:0;right:0;height:200px;
+        background:linear-gradient(0deg,rgba(0,0,0,.65) 0%,transparent 100%);
+        z-index:10;pointer-events:none;
       }
-      
-      /* Video info overlay (bottom-left) */
-      .reel-info {
-        position:absolute; bottom:80px; left:16px; right:72px; z-index:20;
-        padding:0; color:#fff;
+
+      /* ── Video info (bottom-left) ── */
+      .reel-info{
+        position:absolute;bottom:72px;left:16px;right:72px;z-index:20;
+        color:#fff;
       }
-      .reel-info .reel-title {
-        font-size:14px; font-weight:700; line-height:1.3;
+      .reel-info .reel-title{
+        font-size:14px;font-weight:700;line-height:1.35;
         text-shadow:0 1px 8px rgba(0,0,0,.8);
-        display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+        display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
       }
-      .reel-info .reel-category {
-        font-size:11px; color:rgba(255,255,255,.6); margin-top:4px;
-        text-shadow:0 1px 4px rgba(0,0,0,.6);
+      .reel-info .reel-category{
+        font-size:11px;color:rgba(255,255,255,.55);margin-top:4px;
+        text-shadow:0 1px 4px rgba(0,0,0,.5);
       }
-      .reel-info .reel-creator {
-        font-size:12px; color:#f97316; font-weight:600; margin-top:4px;
+      .reel-info .reel-creator{
+        font-size:12px;color:#f97316;font-weight:600;margin-top:3px;
       }
-      
-      /* Action buttons (right side) */
-      .reel-actions {
-        position:absolute; bottom:90px; right:12px; z-index:20;
-        display:flex; flex-direction:column; align-items:center; gap:14px;
+
+      /* ── Action sidebar (right) ── */
+      .reel-actions{
+        position:absolute;bottom:80px;right:10px;z-index:20;
+        display:flex;flex-direction:column;align-items:center;gap:12px;
       }
-      .reel-action {
-        display:flex; flex-direction:column; align-items:center; gap:2px;
-        cursor:pointer; -webkit-tap-highlight-color:transparent;
-        transition:transform .15s ease;
-        text-decoration:none;
+      .reel-action{
+        display:flex;flex-direction:column;align-items:center;gap:2px;
+        cursor:pointer;transition:transform .12s ease;text-decoration:none;
       }
-      .reel-action:active { transform:scale(0.85); }
-      .reel-action .icon {
-        width:44px; height:44px; border-radius:50%;
-        background:rgba(0,0,0,.45); backdrop-filter:blur(12px);
-        border:1.5px solid rgba(255,255,255,.15);
-        display:flex; align-items:center; justify-content:center;
-        box-shadow:0 2px 10px rgba(0,0,0,.3);
+      .reel-action:active{transform:scale(0.82);}
+      .reel-action .icon{
+        width:44px;height:44px;border-radius:50%;
+        background:rgba(0,0,0,.4);backdrop-filter:blur(12px);
+        border:1.5px solid rgba(255,255,255,.12);
+        display:flex;align-items:center;justify-content:center;
+        box-shadow:0 2px 10px rgba(0,0,0,.25);
+        transition:background .2s,border-color .2s;
       }
-      .reel-action .icon svg {
-        width:22px; height:22px; fill:none; stroke:#fff; stroke-width:2;
-        stroke-linecap:round; stroke-linejoin:round;
+      .reel-action .icon svg{
+        width:22px;height:22px;fill:none;stroke:#fff;stroke-width:2;
+        stroke-linecap:round;stroke-linejoin:round;
       }
-      .reel-action .label {
-        color:#fff; font-size:10px; font-weight:600;
+      .reel-action .label{
+        color:#fff;font-size:10px;font-weight:600;
         text-shadow:0 1px 4px rgba(0,0,0,.8);
       }
 
-      /* Book button highlight */
-      .reel-action[data-action="book"] .icon {
-        background:rgba(249,115,22,.85);
-        border-color:rgba(249,115,22,.9);
+      /* Book CTA */
+      .reel-action[data-action="book"] .icon{background:rgba(249,115,22,.85);border-color:rgba(249,115,22,.9);}
+      /* Upload accent */
+      .reel-action[data-action="upload"] .icon{background:rgba(34,197,94,.7);border-color:rgba(34,197,94,.8);}
+
+      /* ── Progress bar ── */
+      .reel-progress{
+        position:absolute;bottom:0;left:0;right:0;height:3px;
+        z-index:25;background:rgba(255,255,255,.12);
+      }
+      .reel-progress-bar{
+        height:100%;width:0%;background:#f97316;
+        transition:width .25s linear;border-radius:0 2px 2px 0;
       }
 
-      /* Upload button accent */
-      .reel-action[data-action="upload"] .icon {
-        background:rgba(34,197,94,.7);
-        border-color:rgba(34,197,94,.8);
+      /* ── Loading screen ── */
+      #loading{
+        position:fixed;top:0;left:0;right:0;bottom:0;z-index:50;
+        background:#0a0a16;display:flex;flex-direction:column;
+        align-items:center;justify-content:center;gap:16px;
       }
-      
-      /* Counter badge */
-      .reel-counter {
-        position:absolute; top:16px; left:50%; transform:translateX(-50%);
-        z-index:20; color:rgba(255,255,255,.5); font-size:12px; font-weight:600;
-        text-shadow:0 1px 6px rgba(0,0,0,.8);
-      }
-      
-      /* Loading spinner */
-      #loading {
-        position:fixed; top:0; left:0; right:0; bottom:0; z-index:50;
-        background:#0a0a16; display:flex; flex-direction:column;
-        align-items:center; justify-content:center; gap:16px;
-      }
-      #loading .spinner {
-        width:40px; height:40px; border:3px solid rgba(249,115,22,.2);
-        border-top-color:#f97316; border-radius:50%;
+      #loading .spinner{
+        width:40px;height:40px;border:3px solid rgba(249,115,22,.2);
+        border-top-color:#f97316;border-radius:50%;
         animation:spin .8s linear infinite;
       }
-      @keyframes spin { to { transform:rotate(360deg); } }
-      #loading p { color:rgba(255,255,255,.5); font-size:13px; }
-      
-      /* Mute indicator */
-      #mute-indicator {
-        position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
-        z-index:30; font-size:48px; opacity:0; transition:opacity .2s;
-        pointer-events:none; text-shadow:0 2px 20px rgba(0,0,0,.6);
+      @keyframes spin{to{transform:rotate(360deg);}}
+      #loading p{color:rgba(255,255,255,.5);font-size:13px;}
+
+      /* ── Mute indicator ── */
+      #mute-indicator{
+        position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+        z-index:30;font-size:48px;opacity:0;transition:opacity .2s;
+        pointer-events:none;text-shadow:0 2px 20px rgba(0,0,0,.6);
       }
-      #mute-indicator.show { opacity:1; }
-      
-      /* Toast */
-      .toast {
-        position:fixed; top:60px; left:50%; transform:translateX(-50%);
-        background:#22c55e; color:#fff; font-size:13px; font-weight:700;
-        padding:8px 20px; border-radius:12px; z-index:999;
-        animation:toastIn .2s ease-out; pointer-events:none;
+      #mute-indicator.show{opacity:1;}
+
+      /* heart-burst removed */
+
+      /* ── Toast ── */
+      .toast{
+        position:fixed;top:60px;left:50%;transform:translateX(-50%);
+        background:#22c55e;color:#fff;font-size:13px;font-weight:700;
+        padding:8px 20px;border-radius:12px;z-index:999;
+        animation:toastIn .2s ease-out;pointer-events:none;
         box-shadow:0 4px 20px rgba(34,197,94,.3);
       }
-      @keyframes toastIn { from { opacity:0; transform:translateX(-50%) translateY(-10px); } }
+      @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(-10px);}}
 
-      /* More menu bottom sheet */
-      .more-overlay {
-        position:fixed; top:0; left:0; right:0; bottom:0; z-index:100;
-        background:rgba(0,0,0,.6); backdrop-filter:blur(4px);
-        opacity:0; transition:opacity .2s ease;
-        pointer-events:none;
+      /* ── Video error overlay ── */
+      .reel-error{
+        position:absolute;top:0;left:0;right:0;bottom:0;z-index:15;
+        display:flex;flex-direction:column;align-items:center;justify-content:center;
+        background:rgba(10,10,22,.9);color:rgba(255,255,255,.5);gap:8px;
       }
-      .more-overlay.open { opacity:1; pointer-events:auto; }
-      .more-sheet {
-        position:absolute; bottom:0; left:0; right:0;
-        background:#1a1a2e; border-radius:20px 20px 0 0;
-        padding:12px 16px 32px; transform:translateY(100%);
-        transition:transform .25s ease;
+      .reel-error span{font-size:40px;}
+      .reel-error p{font-size:13px;}
+
+      /* More button navigates to /more tab — no overlay needed */
+
+      /* ── Swipe hint (first visit) ── */
+      .swipe-hint{
+        position:fixed;bottom:40px;left:50%;transform:translateX(-50%);
+        z-index:35;display:flex;flex-direction:column;align-items:center;
+        gap:4px;pointer-events:none;
+        animation:hintBounce 1.8s ease-in-out infinite;
       }
-      .more-overlay.open .more-sheet { transform:translateY(0); }
-      .more-sheet-handle {
-        width:36px; height:4px; background:rgba(255,255,255,.2);
-        border-radius:4px; margin:0 auto 16px;
+      .swipe-hint svg{width:28px;height:28px;stroke:#fff;stroke-width:2;fill:none;opacity:.6;}
+      .swipe-hint span{color:rgba(255,255,255,.5);font-size:11px;font-weight:600;}
+      @keyframes hintBounce{
+        0%,100%{transform:translateX(-50%) translateY(0);}
+        50%{transform:translateX(-50%) translateY(-12px);}
       }
-      .more-sheet-item {
-        display:flex; align-items:center; gap:14px; padding:14px 8px;
-        color:#fff; font-size:15px; font-weight:500; cursor:pointer;
-        border-radius:12px; transition:background .15s;
-        text-decoration:none;
-      }
-      .more-sheet-item:hover, .more-sheet-item:active { background:rgba(255,255,255,.08); }
-      .more-sheet-item .mi-icon {
-        width:40px; height:40px; border-radius:12px;
-        background:rgba(255,255,255,.08);
-        display:flex; align-items:center; justify-content:center; font-size:18px;
-      }
-      .more-sheet-item .mi-text { flex:1; }
-      .more-sheet-item .mi-sub { font-size:12px; color:rgba(255,255,255,.45); margin-top:2px; }
     </style>
   </head>
   <body>
-    <div id="loading">
-      <div class="spinner"></div>
-      <p>Loading reels...</p>
-    </div>
+    <div id="loading"><div class="spinner"></div><p>Loading reels...</p></div>
     <div id="mute-indicator"></div>
-    <div id="reels-feed"></div>
-
-    <!-- More menu bottom sheet -->
-    <div class="more-overlay" id="more-overlay">
-      <div class="more-sheet" id="more-sheet">
-        <div class="more-sheet-handle"></div>
-        <a class="more-sheet-item" href="/become-creator" id="more-become-creator">
-          <div class="mi-icon">🎥</div>
-          <div><div class="mi-text">Become a Creator</div><div class="mi-sub">Earn money posting gym content</div></div>
-        </a>
-        <div class="more-sheet-item" id="more-report">
-          <div class="mi-icon">🚩</div>
-          <div><div class="mi-text">Report Video</div><div class="mi-sub">Flag inappropriate content</div></div>
-        </div>
-        <div class="more-sheet-item" id="more-not-interested">
-          <div class="mi-icon">🚫</div>
-          <div><div class="mi-text">Not Interested</div><div class="mi-sub">See fewer like this</div></div>
-        </div>
-        <a class="more-sheet-item" href="/">
-          <div class="mi-icon">🏠</div>
-          <div><div class="mi-text">Go to ScanGym Home</div><div class="mi-sub">Find & book gyms near you</div></div>
-        </a>
-        <div class="more-sheet-item" id="more-cancel" style="justify-content:center;color:rgba(255,255,255,.5);">
-          Cancel
-        </div>
-      </div>
+    <div id="reel-track"></div>
+    <div class="swipe-hint" id="swipe-hint">
+      <svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+      <span>Swipe up</span>
     </div>
+
+    <!-- More button navigates to /more tab -->
 
     <script>
-    (function() {
+    (function(){
       'use strict';
 
-      // ── SVG Icons (inline for zero network requests) ──
-      const ICONS = {
+      // ── SVG Icons ──
+      var ICONS = {
+        heart:  '<svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>',
         upload: '<svg viewBox="0 0 24 24"><path d="M12 16V4m0 0L8 8m4-4l4 4"/><path d="M20 16.7V19a2 2 0 01-2 2H6a2 2 0 01-2-2v-2.3"/></svg>',
         book:   '<svg viewBox="0 0 24 24"><path d="M8 2v4m8-4v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/><path d="M9 16l2 2 4-4"/></svg>',
         share:  '<svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"/></svg>',
@@ -224,304 +202,453 @@
         more:   '<svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.5" fill="#fff" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="#fff" stroke="none"/><circle cx="12" cy="19" r="1.5" fill="#fff" stroke="none"/></svg>'
       };
 
+      // ── Constants ──
+      var SNAP_VELOCITY  = 0.3;   // px/ms — minimum flick speed to trigger snap
+      var SNAP_THRESHOLD = 0.2;   // fraction of screen height to trigger snap
+      var SNAP_DURATION  = 420;   // ms — snap animation time
+      var RUBBER_BAND    = 0.3;   // overscroll dampening factor
+      var PRELOAD_AHEAD  = 3;     // preload next N videos
+      var BATCH_SIZE     = 10;
+
       // ── State ──
-      let allVideos = [];
-      let currentIndex = 0;
-      let isMuted = true;
-      const BATCH_SIZE = 10;
-      let renderedCount = 0;
-      const feed = document.getElementById('reels-feed');
+      var allVideos     = [];
+      var currentIndex  = 0;
+      var renderedCount = 0;
+      var isMuted       = true;
+      var screenH       = window.innerHeight;
+      var trackOffset   = 0;      // current translateY offset
+      // like/unmute buttons removed per user request
 
-      // ── Fetch videos from API ──
-      async function loadFeed() {
-        try {
-          const resp = await fetch('/api/reels/feed?limit=200&shuffle=true');
-          if (!resp.ok) throw new Error('Feed API error');
-          const data = await resp.json();
-          allVideos = data.videos || [];
-          
-          if (allVideos.length === 0) {
-            showError('No reels available yet');
-            return;
+      var track   = document.getElementById('reel-track');
+      var loading = document.getElementById('loading');
+      var hint    = document.getElementById('swipe-hint');
+
+      // ── Touch state ──
+      var touchStartY   = 0;
+      var touchStartT   = 0;
+      var touchLastY    = 0;
+      var touchLastT    = 0;
+      var isDragging    = false;
+      var dragDelta     = 0;
+
+      // (double-tap removed)
+
+      // ── Recalculate screen height on resize ──
+      window.addEventListener('resize', function(){
+        screenH = window.innerHeight;
+        // Reposition to current reel
+        snapTo(currentIndex, false);
+        // Update reel heights
+        var reels = track.children;
+        for(var i = 0; i < reels.length; i++){
+          reels[i].style.height = screenH + 'px';
+        }
+      });
+
+      // ═══════════════════════════════════════════════════════════
+      //  TOUCH HANDLING — TikTok-style physics
+      // ═══════════════════════════════════════════════════════════
+
+      track.addEventListener('touchstart', function(e){
+        // Kill any running snap animation
+        track.classList.remove('snapping');
+
+        var t = e.touches[0];
+        touchStartY = t.clientY;
+        touchStartT = Date.now();
+        touchLastY  = t.clientY;
+        touchLastT  = touchStartT;
+        isDragging  = true;
+        dragDelta   = 0;
+      }, {passive: true});
+
+      track.addEventListener('touchmove', function(e){
+        if(!isDragging) return;
+        e.preventDefault(); // prevent browser scroll/pull-to-refresh
+
+        var t   = e.touches[0];
+        var now = Date.now();
+        var dy  = t.clientY - touchStartY;
+
+        touchLastY = t.clientY;
+        touchLastT = now;
+
+        // Apply rubber-band at edges
+        var targetOffset = -(currentIndex * screenH) + dy;
+        var maxOffset    = 0;
+        var minOffset    = -((renderedCount - 1) * screenH);
+
+        if(targetOffset > maxOffset){
+          // Overscrolling at top
+          var over = targetOffset - maxOffset;
+          targetOffset = maxOffset + over * RUBBER_BAND;
+        } else if(targetOffset < minOffset){
+          // Overscrolling at bottom
+          var over = minOffset - targetOffset;
+          targetOffset = minOffset - over * RUBBER_BAND;
+        }
+
+        trackOffset = targetOffset;
+        dragDelta   = dy;
+        setTrackPosition(trackOffset);
+      }, {passive: false});
+
+      track.addEventListener('touchend', function(e){
+        if(!isDragging) return;
+        isDragging = false;
+
+        // Calculate velocity (px/ms)
+        var now      = Date.now();
+        var dt       = now - touchLastT || 1;
+        var velocity = (touchLastY - touchStartY) / (now - touchStartT);
+
+        var absD = Math.abs(dragDelta);
+        var absV = Math.abs(velocity);
+        var next = currentIndex;
+
+        if(absD > screenH * SNAP_THRESHOLD || absV > SNAP_VELOCITY){
+          if(dragDelta < 0 && currentIndex < renderedCount - 1){
+            next = currentIndex + 1; // swiped up → next
+          } else if(dragDelta > 0 && currentIndex > 0){
+            next = currentIndex - 1; // swiped down → prev
           }
+        }
 
+        snapTo(next, true);
+
+        // Hide swipe hint after first swipe
+        if(hint){
+          var h = hint;
+          hint = null;
+          h.style.opacity = '0';
+          h.style.transition = 'opacity .3s';
+          setTimeout(function(){ if(h.parentNode) h.parentNode.removeChild(h); }, 400);
+        }
+      }, {passive: true});
+
+      // Prevent default touch on body to stop pull-to-refresh
+      document.body.addEventListener('touchmove', function(e){
+        if(isDragging) e.preventDefault();
+      }, {passive: false});
+
+      // ── Mouse/wheel for desktop ──
+      var wheelLock = false;
+      window.addEventListener('wheel', function(e){
+        e.preventDefault();
+        if(wheelLock) return;
+        wheelLock = true;
+        setTimeout(function(){ wheelLock = false; }, SNAP_DURATION + 50);
+
+        if(e.deltaY > 30 && currentIndex < renderedCount - 1){
+          snapTo(currentIndex + 1, true);
+        } else if(e.deltaY < -30 && currentIndex > 0){
+          snapTo(currentIndex - 1, true);
+        }
+      }, {passive: false});
+
+      // ── Keyboard nav ──
+      document.addEventListener('keydown', function(e){
+        if(e.key === 'ArrowDown' || e.key === 'j'){
+          if(currentIndex < renderedCount - 1) snapTo(currentIndex + 1, true);
+        } else if(e.key === 'ArrowUp' || e.key === 'k'){
+          if(currentIndex > 0) snapTo(currentIndex - 1, true);
+        } else if(e.key === 'm'){
+          toggleMute();
+        }
+      });
+
+      // ═══════════════════════════════════════════════════════════
+      //  SNAP ENGINE
+      // ═══════════════════════════════════════════════════════════
+
+      function setTrackPosition(y){
+        track.style.transform = 'translate3d(0,' + y + 'px,0)';
+      }
+
+      function snapTo(index, animate){
+        var prevIndex = currentIndex;
+        currentIndex  = index;
+        trackOffset   = -(index * screenH);
+
+        if(animate){
+          track.classList.add('snapping');
+          // Remove class after transition
+          setTimeout(function(){ track.classList.remove('snapping'); }, SNAP_DURATION + 10);
+        }
+        setTrackPosition(trackOffset);
+
+        // Manage video playback
+        if(prevIndex !== index){
+          pauseVideo(prevIndex);
+          playVideo(index);
+          preloadAhead(index);
+        }
+
+        // Load more when near end
+        if(index >= renderedCount - 3 && renderedCount < allVideos.length){
           renderBatch();
-          document.getElementById('loading').style.display = 'none';
-
-          setTimeout(() => {
-            const firstVideo = feed.querySelector('video');
-            if (firstVideo) {
-              firstVideo.muted = true;
-              firstVideo.play().catch(() => {});
-            }
-          }, 100);
-        } catch (err) {
-          console.error('Feed load error:', err);
-          showError('Failed to load reels. Please try again.');
         }
       }
 
-      // ── Render a batch of reels ──
-      function renderBatch() {
-        const end = Math.min(renderedCount + BATCH_SIZE, allVideos.length);
-        for (let i = renderedCount; i < end; i++) {
-          feed.appendChild(createReel(allVideos[i], i));
+      // ═══════════════════════════════════════════════════════════
+      //  VIDEO MANAGEMENT
+      // ═══════════════════════════════════════════════════════════
+
+      function playVideo(i){
+        var reel = track.children[i];
+        if(!reel) return;
+        var vid = reel.querySelector('video');
+        if(!vid) return;
+        vid.muted = isMuted;
+        vid.play().catch(function(){});
+      }
+
+      function pauseVideo(i){
+        var reel = track.children[i];
+        if(!reel) return;
+        var vid = reel.querySelector('video');
+        if(!vid) return;
+        vid.pause();
+        vid.currentTime = 0;
+        // Reset progress
+        var bar = reel.querySelector('.reel-progress-bar');
+        if(bar) bar.style.width = '0%';
+      }
+
+      function preloadAhead(from){
+        for(var i = from + 1; i <= from + PRELOAD_AHEAD && i < renderedCount; i++){
+          var reel = track.children[i];
+          if(!reel) continue;
+          var vid = reel.querySelector('video');
+          if(vid && vid.preload !== 'auto'){
+            vid.preload = 'auto';
+          }
+        }
+      }
+
+      // ═══════════════════════════════════════════════════════════
+      //  FEED LOADING & RENDERING
+      // ═══════════════════════════════════════════════════════════
+
+      function loadFeed(){
+        fetch('/api/reels/feed?limit=200&shuffle=true')
+          .then(function(r){
+            if(!r.ok) throw new Error('Feed error');
+            return r.json();
+          })
+          .then(function(data){
+            allVideos = data.videos || [];
+            if(allVideos.length === 0){
+              showFatalError('No reels available yet');
+              return;
+            }
+            renderBatch();
+            loading.style.display = 'none';
+
+            // Start first video
+            setTimeout(function(){ playVideo(0); preloadAhead(0); }, 150);
+          })
+          .catch(function(err){
+            console.error('Feed load error:', err);
+            showFatalError('Failed to load reels. Please try again.');
+          });
+      }
+
+      function renderBatch(){
+        var end = Math.min(renderedCount + BATCH_SIZE, allVideos.length);
+        for(var i = renderedCount; i < end; i++){
+          track.appendChild(createReel(allVideos[i], i));
         }
         renderedCount = end;
       }
 
-      // ── Create a single reel element ──
-      function createReel(video, index) {
-        const div = document.createElement('div');
+      function createReel(video, index){
+        var div = document.createElement('div');
         div.className = 'reel';
+        div.style.height = screenH + 'px';
         div.dataset.index = index;
 
-        // Determine video URL
-        let videoUrl = video.url || '';
-        if (video.driveId) {
-          videoUrl = `https://dynamic-labrador-874.convex.site/video?id=${video.driveId}`;
+        // Video URL
+        var videoUrl = video.url || '';
+        if(video.driveId){
+          videoUrl = 'https://dynamic-labrador-874.convex.site/video?id=' + video.driveId;
         }
 
         // Video element
-        const vid = document.createElement('video');
+        var vid = document.createElement('video');
         vid.src = videoUrl;
         vid.loop = true;
         vid.muted = isMuted;
         vid.playsInline = true;
-        vid.preload = index < 3 ? 'auto' : 'metadata';
+        vid.preload = index < 3 ? 'auto' : 'none';
         vid.setAttribute('playsinline', '');
         vid.setAttribute('webkit-playsinline', '');
-        if (video.thumb) vid.poster = video.thumb;
+        if(video.thumb) vid.poster = video.thumb;
         div.appendChild(vid);
 
-        // Tap to toggle mute
-        vid.addEventListener('click', (e) => {
-          e.preventDefault();
-          isMuted = !isMuted;
-          document.querySelectorAll('.reel video').forEach(v => v.muted = isMuted);
-          showMuteIndicator(isMuted);
-          updateSoundButtons();
+        // Handle errors — show overlay, auto-advance
+        vid.addEventListener('error', function(){
+          if(div.querySelector('.reel-error')) return;
+          var errDiv = document.createElement('div');
+          errDiv.className = 'reel-error';
+          errDiv.innerHTML = '<span>\uD83C\uDFAC</span><p>Video unavailable</p>';
+          div.appendChild(errDiv);
+          // Auto-advance after 1.5s
+          setTimeout(function(){
+            if(parseInt(div.dataset.index) === currentIndex && currentIndex < renderedCount - 1){
+              snapTo(currentIndex + 1, true);
+            }
+          }, 1500);
+        });
+
+        // Progress bar
+        var progressWrap = document.createElement('div');
+        progressWrap.className = 'reel-progress';
+        var progressBar = document.createElement('div');
+        progressBar.className = 'reel-progress-bar';
+        progressWrap.appendChild(progressBar);
+        div.appendChild(progressWrap);
+
+        vid.addEventListener('timeupdate', function(){
+          if(vid.duration){
+            progressBar.style.width = (vid.currentTime / vid.duration * 100) + '%';
+          }
         });
 
         // Info overlay
-        const info = document.createElement('div');
+        var info = document.createElement('div');
         info.className = 'reel-info';
-        info.innerHTML = `
-          <p class="reel-title">${escHtml(video.name)}</p>
-          <p class="reel-category">🎬 ${escHtml(video.category)}</p>
-          ${video.creator ? `<p class="reel-creator">📤 ${escHtml(video.creator.name || video.creator.handle || 'Creator')}</p>` : ''}
-        `;
+        var creatorHtml = video.creator
+          ? '<p class="reel-creator">\uD83D\uDCE4 ' + escHtml(video.creator.name || video.creator.handle || 'Creator') + '</p>'
+          : '';
+        info.innerHTML = '<p class="reel-title">' + escHtml(video.name) + '</p>'
+          + '<p class="reel-category">\uD83C\uDFAC ' + escHtml(video.category) + '</p>'
+          + creatorHtml;
         div.appendChild(info);
 
-        // Action buttons — Book (top, orange), Upload (green), Share, Save, Mute, More
-        const actions = document.createElement('div');
+        // Action sidebar
+        var actions = document.createElement('div');
         actions.className = 'reel-actions';
-        actions.innerHTML = `
-          <a class="reel-action" data-action="book" href="/" title="Book a gym">
-            <div class="icon">${ICONS.book}</div>
-            <span class="label">Book</span>
-          </a>
-          <a class="reel-action" data-action="upload" href="/upload" title="Upload your reel">
-            <div class="icon">${ICONS.upload}</div>
-            <span class="label">Upload</span>
-          </a>
-          <div class="reel-action" data-action="share">
-            <div class="icon">${ICONS.share}</div>
-            <span class="label">Share</span>
-          </div>
-          <div class="reel-action" data-action="save">
-            <div class="icon">${ICONS.save}</div>
-            <span class="label">Save</span>
-          </div>
-          <div class="reel-action" data-action="sound">
-            <div class="icon" id="sound-btn-${index}">${isMuted ? ICONS.muted : ICONS.unmuted}</div>
-            <span class="label">${isMuted ? 'Unmute' : 'Mute'}</span>
-          </div>
-          <div class="reel-action" data-action="more">
-            <div class="icon">${ICONS.more}</div>
-            <span class="label">More</span>
-          </div>
-        `;
+
+        actions.innerHTML = ''
+          + '<a class="reel-action" data-action="book" href="/">'
+          +   '<div class="icon">' + ICONS.book + '</div>'
+          +   '<span class="label">Book</span>'
+          + '</a>'
+          + '<a class="reel-action" data-action="upload" href="/upload">'
+          +   '<div class="icon">' + ICONS.upload + '</div>'
+          +   '<span class="label">Upload</span>'
+          + '</a>'
+          + '<div class="reel-action" data-action="share">'
+          +   '<div class="icon">' + ICONS.share + '</div>'
+          +   '<span class="label">Share</span>'
+          + '</div>'
+          + '<div class="reel-action" data-action="save">'
+          +   '<div class="icon">' + ICONS.save + '</div>'
+          +   '<span class="label">Save</span>'
+          + '</div>'
+          + '<div class="reel-action" data-action="more">'
+          +   '<div class="icon">' + ICONS.more + '</div>'
+          +   '<span class="label">More</span>'
+          + '</div>';
         div.appendChild(actions);
 
-        // Action handlers
-        actions.querySelectorAll('.reel-action').forEach(btn => {
-          btn.addEventListener('click', (e) => {
-            const action = btn.dataset.action;
+        // Click handler for taps on video area (mute toggle / double-tap like)
+        div.addEventListener('click', function(e){
+          // Ignore if tap was on an action button
+          if(e.target.closest('.reel-actions') || e.target.closest('.reel-info')) return;
+          // Ignore if was dragging
+          if(Math.abs(dragDelta) > 10) return;
 
-            // Book & Upload are <a> links — let them navigate
-            if (action === 'book' || action === 'upload') return;
+          // Single tap → toggle mute
+          toggleMute();
+        });
 
+        // Action button handlers
+        actions.querySelectorAll('.reel-action').forEach(function(btn){
+          btn.addEventListener('click', function(e){
+            var action = btn.dataset.action;
+            if(action === 'book' || action === 'upload') return; // <a> links
             e.preventDefault();
             e.stopPropagation();
 
-            if (action === 'share') handleShare(video);
-            else if (action === 'save') handleSave(video, videoUrl);
-            else if (action === 'sound') {
-              isMuted = !isMuted;
-              document.querySelectorAll('.reel video').forEach(v => v.muted = isMuted);
-              showMuteIndicator(isMuted);
-              updateSoundButtons();
-            }
-            else if (action === 'more') openMoreMenu(video);
+            if(action === 'share') handleShare(video);
+            else if(action === 'save') handleSave(video, videoUrl);
+            else if(action === 'more') window.location.href = '/more';
           });
         });
 
         return div;
       }
 
-      // ── More menu ──
-      const moreOverlay = document.getElementById('more-overlay');
-      const moreSheet = document.getElementById('more-sheet');
-      let moreCurrentVideo = null;
+      // ═══════════════════════════════════════════════════════════
+      //  ENGAGEMENT: Like, Share, Save
+      // ═══════════════════════════════════════════════════════════
 
-      function openMoreMenu(video) {
-        moreCurrentVideo = video;
-        moreOverlay.classList.add('open');
-      }
-      function closeMoreMenu() {
-        moreOverlay.classList.remove('open');
-        moreCurrentVideo = null;
-      }
-
-      // Close on overlay tap (outside sheet)
-      moreOverlay.addEventListener('click', (e) => {
-        if (e.target === moreOverlay) closeMoreMenu();
-      });
-      document.getElementById('more-cancel').addEventListener('click', closeMoreMenu);
-
-      // Report
-      document.getElementById('more-report').addEventListener('click', () => {
-        closeMoreMenu();
-        showToast('🚩 Video reported — thanks for the feedback');
-      });
-
-      // Not interested
-      document.getElementById('more-not-interested').addEventListener('click', () => {
-        closeMoreMenu();
-        // Skip to next reel
-        const nextReel = feed.children[currentIndex + 1];
-        if (nextReel) nextReel.scrollIntoView({ behavior: 'smooth' });
-        showToast('🚫 Got it — we'll show fewer like this');
-      });
-
-      // Swipe-down to close sheet
-      let sheetStartY = 0;
-      moreSheet.addEventListener('touchstart', (e) => {
-        sheetStartY = e.touches[0].clientY;
-      }, { passive: true });
-      moreSheet.addEventListener('touchend', (e) => {
-        const dy = e.changedTouches[0].clientY - sheetStartY;
-        if (dy > 60) closeMoreMenu();
-      }, { passive: true });
-
-      // ── Scroll-snap observer: autoplay visible, pause others ──
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          const video = entry.target.querySelector('video');
-          if (!video) return;
-          if (entry.isIntersecting) {
-            currentIndex = parseInt(entry.target.dataset.index);
-            video.muted = isMuted;
-            video.play().catch(() => {});
-            if (currentIndex >= renderedCount - 3 && renderedCount < allVideos.length) {
-              renderBatch();
-            }
-          } else {
-            video.pause();
-            video.currentTime = 0;
-          }
-        });
-      }, { threshold: 0.6 });
-
-      const feedObserver = new MutationObserver((mutations) => {
-        mutations.forEach(m => {
-          m.addedNodes.forEach(node => {
-            if (node.classList && node.classList.contains('reel')) {
-              observer.observe(node);
-            }
-          });
-        });
-      });
-      feedObserver.observe(feed, { childList: true });
-
-      // ── Helpers ──
-      function escHtml(s) {
-        if (!s) return '';
-        return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-      }
-
-      function showMuteIndicator(muted) {
-        const el = document.getElementById('mute-indicator');
-        el.textContent = muted ? '🔇' : '🔊';
-        el.classList.add('show');
-        setTimeout(() => el.classList.remove('show'), 600);
-      }
-
-      function updateSoundButtons() {
-        document.querySelectorAll('[id^="sound-btn-"]').forEach(btn => {
-          btn.innerHTML = isMuted ? ICONS.muted : ICONS.unmuted;
-          const label = btn.parentElement.nextElementSibling;
-          if (label) label.textContent = isMuted ? 'Unmute' : 'Mute';
-        });
-      }
-
-      function showToast(msg) {
-        const t = document.createElement('div');
-        t.className = 'toast';
-        t.textContent = msg;
-        document.body.appendChild(t);
-        setTimeout(() => t.remove(), 2000);
-      }
-
-      function handleShare(video) {
-        const url = 'https://scangym.com/reels';
-        const text = `${video.name} — Book a gym for £5! 💪`;
-        if (navigator.share) {
-          navigator.share({ title: 'ScanGym Reels', text, url }).catch(() => {});
+      function handleShare(video){
+        var url = 'https://scangym.com/reels';
+        var text = (video.name || 'ScanGym Reels') + ' \u2014 Book a gym for \u00A35! \uD83D\uDCAA';
+        if(navigator.share){
+          navigator.share({title:'ScanGym Reels',text:text,url:url}).catch(function(){});
         } else {
-          navigator.clipboard.writeText(`${text}\n${url}`).then(() => showToast('🔗 Link copied!'));
+          navigator.clipboard.writeText(text + '\n' + url).then(function(){ showToast('\uD83D\uDD17 Link copied!'); });
         }
       }
 
-      function handleSave(video, videoUrl) {
-        if (videoUrl) {
-          const a = document.createElement('a');
-          a.href = videoUrl;
+      function handleSave(video, url){
+        if(url){
+          var a = document.createElement('a');
+          a.href = url;
           a.download = (video.name || 'scangym-reel').replace(/[^a-zA-Z0-9_-]/g, '_') + '.mp4';
           a.target = '_blank';
           document.body.appendChild(a);
           a.click();
           a.remove();
-          showToast('⬇️ Downloading...');
+          showToast('\u2B07\uFE0F Downloading...');
         }
       }
 
-      function showError(msg) {
-        document.getElementById('loading').innerHTML = `
-          <div style="font-size:64px;margin-bottom:16px;">🎬</div>
-          <p style="color:#fff;font-size:18px;font-weight:700;">${msg}</p>
-          <button onclick="location.reload()" style="margin-top:16px;background:#f97316;color:#fff;border:none;padding:12px 28px;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer;">Retry</button>
-        `;
+      // More button navigates to /more — no overlay JS needed
+
+      // ═══════════════════════════════════════════════════════════
+      //  HELPERS
+      // ═══════════════════════════════════════════════════════════
+
+      function toggleMute(){
+        isMuted = !isMuted;
+        var vids = document.querySelectorAll('.reel video');
+        for(var i = 0; i < vids.length; i++) vids[i].muted = isMuted;
+        showMuteIndicator(isMuted);
+        updateSoundButtons();
       }
 
-      // ── Keyboard nav ──
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'ArrowDown' || e.key === 'j') {
-          const next = feed.children[currentIndex + 1];
-          if (next) next.scrollIntoView({ behavior: 'smooth' });
-        } else if (e.key === 'ArrowUp' || e.key === 'k') {
-          const prev = feed.children[currentIndex - 1];
-          if (prev) prev.scrollIntoView({ behavior: 'smooth' });
-        } else if (e.key === 'm') {
-          isMuted = !isMuted;
-          document.querySelectorAll('.reel video').forEach(v => v.muted = isMuted);
-          showMuteIndicator(isMuted);
-          updateSoundButtons();
-        } else if (e.key === 'Escape') {
-          closeMoreMenu();
-        }
-      });
+      function showMuteIndicator(muted){
+        var el = document.getElementById('mute-indicator');
+        el.textContent = muted ? '\uD83D\uDD07' : '\uD83D\uDD0A';
+        el.classList.add('show');
+        setTimeout(function(){ el.classList.remove('show'); }, 600);
+      }
+
+      function updateSoundButtons(){ /* sound buttons removed — mute via tap on video */ }
+
+      function escHtml(s){
+        if(!s) return '';
+        return s.replace(/&/g,'\u0026amp;').replace(/</g,'\u0026lt;').replace(/>/g,'\u0026gt;').replace(/"/g,'\u0026quot;');
+      }
+
+      function showToast(msg){
+        var t = document.createElement('div');
+        t.className = 'toast';
+        t.textContent = msg;
+        document.body.appendChild(t);
+        setTimeout(function(){ t.remove(); }, 2000);
+      }
+
+      function showFatalError(msg){
+        loading.innerHTML = '<div style="font-size:64px;margin-bottom:16px">\uD83C\uDFAC</div>'
+          + '<p style="color:#fff;font-size:18px;font-weight:700">' + msg + '</p>'
+          + '<button onclick="location.reload()" style="margin-top:16px;background:#f97316;color:#fff;border:none;padding:12px 28px;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer">Retry</button>';
+      }
 
       // ── Init ──
       loadFeed();
