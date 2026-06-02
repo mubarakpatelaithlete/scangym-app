@@ -19,6 +19,46 @@ try {
 }
 
 /**
+ * ═══════════════════════════════════════════════════════════════
+ * RESILIENT BOOKING INSERT — Fix #8
+ * Ensures bookings table has all required columns before INSERT.
+ * Auto-creates missing columns (e.g., platform_fee_amount) on first call.
+ * ═══════════════════════════════════════════════════════════════
+ */
+let _bookingColumnsVerified = false;
+async function ensureBookingColumns() {
+  if (_bookingColumnsVerified) return;
+  try {
+    const colResult = await pool.query(
+      `SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'bookings'`
+    );
+    const existingCols = new Set(colResult.rows.map(r => r.column_name));
+
+    const requiredCols = [
+      { name: 'platform_fee_amount', type: 'NUMERIC DEFAULT 0' },
+      { name: 'booking_type', type: "TEXT DEFAULT 'instant'" },
+      { name: 'booking_code', type: 'VARCHAR(50)' },
+      { name: 'qr_code', type: 'VARCHAR(100)' },
+      { name: 'qr_code_url', type: 'TEXT' },
+      { name: 'user_email', type: 'VARCHAR(255)' },
+      { name: 'user_name', type: "VARCHAR(255) DEFAULT 'Guest'" },
+    ];
+
+    for (const col of requiredCols) {
+      if (!existingCols.has(col.name)) {
+        console.log(`[Schema Fix] Adding missing column: bookings.${col.name}`);
+        await pool.query(`ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS ${col.name} ${col.type}`);
+      }
+    }
+    _bookingColumnsVerified = true;
+    console.log('[Schema] Booking columns verified ✓');
+  } catch (err) {
+    // Non-fatal — log and continue, the INSERT will fail with a clearer error
+    console.error('[Schema Check] Warning:', err.message);
+  }
+}
+
+/**
  * Resolve 'anytime' time strings into a consistent object.
  * When a user picks "Anytime today", the frontend sends 'anytime' —
  * this helper normalises it so every endpoint handles it safely.
@@ -558,6 +598,8 @@ router.post('/confirm-intent', async (req, res) => {
 router.post('/instant-checkout', async (req, res) => {
   try {
     if (!stripe) return res.status(500).json({ error: 'Payment not configured' });
+    // Fix #8: Ensure booking columns exist before INSERT
+    await ensureBookingColumns();
 
     const { gymId, date, time, email, placeId, passType } = req.body;
     if (!date || !time) {
@@ -720,6 +762,9 @@ router.post('/update-intent-amount', async (req, res) => {
  */
 router.post('/cash-booking', async (req, res) => {
   try {
+    // Fix #8: Ensure booking columns exist before INSERT
+    await ensureBookingColumns();
+
     const { gymId, placeId, date, time, email, passType, gymName, gymAddress } = req.body;
     if (!date || !time) return res.status(400).json({ error: 'date and time required' });
     // Email is optional for cash bookings — booking code shown on screen instead
@@ -809,8 +854,25 @@ router.post('/cash-booking', async (req, res) => {
 
     console.log('[Cash Booking] Reserved:', bookingCode, 'at', g.name, '£' + price, passTypeClean);
   } catch (err) {
-    console.error('Cash booking error:', err);
-    res.status(500).json({ error: 'Failed to create reservation' });
+    // Fix #8: Structured error logging with PostgreSQL diagnostics
+    const diagnostic = {
+      endpoint: 'cash-booking',
+      message: err.message,
+      code: err.code,         // PostgreSQL error code (e.g., '42703' = undefined_column)
+      detail: err.detail,
+      table: err.table,
+      column: err.column,
+      constraint: err.constraint,
+    };
+    console.error('[Cash Booking ERROR]', JSON.stringify(diagnostic));
+
+    // If it's a missing column error, reset verification flag so next request retries
+    if (err.code === '42703') {
+      _bookingColumnsVerified = false;
+      console.error('[Cash Booking] Undefined column detected — schema will be re-verified on next request');
+    }
+
+    res.status(500).json({ error: 'Failed to create reservation', code: err.code || 'UNKNOWN' });
   }
 });
 
@@ -976,6 +1038,8 @@ router.post('/quick-checkout', async (req, res) => {
   try {
     if (!stripe) return res.status(500).json({ error: 'Payment not configured' });
     if (!req.session?.userId) return res.status(401).json({ error: 'Login required for 1-tap booking' });
+    // Fix #8: Ensure booking columns exist before INSERT
+    await ensureBookingColumns();
 
     const { gymId, date, time, cardId, placeId } = req.body;
     if (!date || !time) return res.status(400).json({ error: 'date and time required' });
