@@ -3194,10 +3194,9 @@ window.handleBookNow=async function(gymId){
 
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  3-STAGE UBER FLOW — Search → Choose → Confirm & Pay
-//  Stage 1: Search (already exists)
-//  Stage 2: Choose a pass (3 icon buttons + sub-screens)
-//  Stage 3: Confirm & Pay (summary + final button)
+//  UBER-STYLE SINGLE-SCREEN CHECKOUT — No separate confirm stage
+//  Payment method bar at bottom (like Uber ride confirm screen)
+//  Card entry forced in Payment sub-screen before allowing confirm
 // ═══════════════════════════════════════════════════════════════════════════
 
 window._checkoutState={stripe:null,elements:null,bookingId:null,intentId:null,gymId:null};
@@ -3322,25 +3321,23 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
     .ub-stripe-wrap{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px;margin-top:12px}
     .ub-pay-section-title{color:rgba(255,255,255,.4);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin:16px 0 8px}
 
-    /* ─── Stage 3: Confirm & Pay ─── */
-    .ub-stage3{position:absolute;inset:0;background:#0a0f14;z-index:10;transform:translateX(100%);transition:transform .3s cubic-bezier(.32,.72,0,1);display:flex;flex-direction:column;overflow:hidden}
-    .ub-stage3.open{transform:translateX(0)}
-    .ub-s3-header{display:flex;align-items:center;gap:12px;padding:20px;flex-shrink:0}
-    .ub-s3-gym{display:flex;align-items:center;gap:14px;padding:0 20px 16px}
-    .ub-s3-photo{width:60px;height:60px;border-radius:14px;object-fit:cover;background:#1e293b;flex-shrink:0}
-    .ub-s3-name{color:#fff;font-size:17px;font-weight:700}
-    .ub-s3-addr{color:rgba(255,255,255,.4);font-size:12px;margin-top:2px}
-    .ub-s3-rows{padding:0 20px}
-    .ub-s3-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.06)}
-    .ub-s3-row:last-child{border-bottom:none}
-    .ub-s3-row-left{display:flex;align-items:center;gap:10px}
-    .ub-s3-row-icon{font-size:16px}
-    .ub-s3-row-label{color:rgba(255,255,255,.5);font-size:13px}
-    .ub-s3-row-value{color:#fff;font-size:14px;font-weight:600}
-    .ub-s3-total{display:flex;justify-content:space-between;align-items:baseline;padding:20px;margin-top:auto}
-    .ub-s3-total-label{color:rgba(255,255,255,.5);font-size:14px}
-    .ub-s3-total-price{color:#fff;font-size:32px;font-weight:800}
-    .ub-s3-footer{padding:0 20px 28px;display:flex;flex-direction:column;gap:10px;flex-shrink:0}
+    /* ─── Uber-style payment bar ─── */
+    .ub-pay-bar{display:flex;align-items:center;gap:12px;padding:14px 16px;margin:0 20px 0;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent}
+    .ub-pay-bar:active{transform:scale(.98);background:rgba(255,255,255,.06)}
+    .ub-pay-bar-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px}
+    .ub-pay-bar-info{flex:1;min-width:0}
+    .ub-pay-bar-title{color:#fff;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .ub-pay-bar-sub{color:rgba(255,255,255,.35);font-size:11px;margin-top:1px}
+    .ub-pay-bar-action{color:#4ade80;font-size:13px;font-weight:600;flex-shrink:0}
+    .ub-pay-bar.no-card{border-color:rgba(249,115,22,.3);background:rgba(249,115,22,.06)}
+    .ub-pay-bar.no-card .ub-pay-bar-action{color:#f97316}
+    .ub-pay-bar-divider{padding:0 20px;margin:12px 0 4px}
+    .ub-pay-bar-divider-line{border-top:1px solid rgba(255,255,255,.06)}
+
+    /* ─── Total + CTA section (bottom of single screen) ─── */
+    .ub-total-section{padding:12px 20px 4px;display:flex;justify-content:space-between;align-items:baseline}
+    .ub-total-label{color:rgba(255,255,255,.45);font-size:13px}
+    .ub-total-price{color:#fff;font-size:28px;font-weight:800}
 
     /* ─── Error area ─── */
     .ub-error{padding:0 20px;margin-top:8px}
@@ -3369,19 +3366,13 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
         <div style="color:#fff;font-size:18px;font-weight:700">Choose a pass</div>
       </div>
 
-      <!-- 3 Icon Buttons -->
+      <!-- 2 Icon Buttons (Pass + Time) — Uber-style: payment bar below -->
       <div class="ub-icons-row">
         <!-- Pass button -->
         <div class="ub-icon-btn" onclick="ubOpenSub('pass')" id="ub-btn-pass">
           <div class="ub-icon-emoji">⚡</div>
           <div class="ub-icon-label">Pass</div>
           <div class="ub-icon-value" id="ub-val-pass">Day Pass</div>
-        </div>
-        <!-- Payment button -->
-        <div class="ub-icon-btn" onclick="ubOpenSub('payment')" id="ub-btn-payment">
-          <div class="ub-icon-emoji">💳</div>
-          <div class="ub-icon-label">Payment</div>
-          <div class="ub-icon-value" id="ub-val-payment">Card</div>
         </div>
         <!-- Time button -->
         <div class="ub-icon-btn" onclick="ubOpenSub('time')" id="ub-btn-time">
@@ -3398,18 +3389,37 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
         <div class="ub-promo-badge">-25%</div>
       </div>
 
+      <!-- ─── Uber-style payment method bar ─── -->
+      <div class="ub-pay-bar-divider"><div class="ub-pay-bar-divider-line"></div></div>
+      <div class="ub-pay-bar no-card" id="ub-pay-bar" onclick="ubOpenSub('payment')">
+        <div class="ub-pay-bar-icon" id="ub-pay-bar-icon" style="background:rgba(249,115,22,.12)">💳</div>
+        <div class="ub-pay-bar-info">
+          <div class="ub-pay-bar-title" id="ub-pay-bar-title">Add payment method</div>
+          <div class="ub-pay-bar-sub" id="ub-pay-bar-sub">Required to confirm booking</div>
+        </div>
+        <div class="ub-pay-bar-action" id="ub-pay-bar-action">Add →</div>
+      </div>
+
       <!-- Error area -->
       <div class="ub-error hidden" id="ub-error">
         <div class="ub-error-text"></div>
       </div>
 
-      <!-- Bug #8: Email input removed — email comes from localStorage or Stripe receipt_email -->
-
-      <!-- Stage 2 CTA -->
+      <!-- ─── Total + Confirm CTA (single screen — no Stage 3) ─── -->
+      <div class="ub-total-section">
+        <div class="ub-total-label">Total</div>
+        <div class="ub-total-price" id="ub-total-price">£${defaultPrice.toFixed(2)}</div>
+      </div>
       <div class="ub-footer">
-        <button class="ub-cta ub-cta-primary" id="ub-cta-btn" onclick="ubGoToStage3()">
-          <span id="ub-cta-text">Choose Day Pass · £${defaultPrice.toFixed(2)}</span>
+        <div class="ub-error hidden" id="ub-confirm-error">
+          <div class="ub-error-text"></div>
+        </div>
+        <button class="ub-cta ub-cta-primary" id="ub-cta-btn" onclick="ubConfirmPay()">
+          <span id="ub-cta-text">Confirm Day Pass · £${defaultPrice.toFixed(2)}</span>
         </button>
+        <div class="ub-trust">
+          <span>🔒 Stripe secure</span><span>·</span><span>📧 QR instant</span><span>·</span><span>↩️ Free cancel</span>
+        </div>
       </div>
 
       <!-- ═══ SUB-SCREEN: Pass Picker ═══ -->
@@ -3570,70 +3580,6 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
         </div>
       </div>
 
-      <!-- ═══════════ STAGE 3: Confirm & Pay ═══════════ -->
-      <div class="ub-stage3" id="ub-stage3">
-        <div class="ub-s3-header">
-          <button class="ub-sub-back" onclick="ubBackToStage2()">←</button>
-          <div class="ub-sub-title">Confirm and pay</div>
-        </div>
-
-        <!-- Gym info -->
-        <div class="ub-s3-gym">
-          ${gymPhoto?`<img class="ub-s3-photo" src="${gymPhoto}" alt="${gymName}" onerror="this.style.display='none'">`
-            :`<div class="ub-s3-photo" style="display:flex;align-items:center;justify-content:center;font-size:24px">🏋️</div>`}
-          <div style="flex:1;min-width:0">
-            <div class="ub-s3-name">${gymName}</div>
-            <div class="ub-s3-addr">📍 ${gymAddr.length>40?gymAddr.substring(0,40)+'…':gymAddr}</div>
-          </div>
-        </div>
-
-        <div class="ub-divider"></div>
-
-        <!-- Summary rows -->
-        <div class="ub-s3-rows">
-          <div class="ub-s3-row">
-            <div class="ub-s3-row-left">
-              <div class="ub-s3-row-icon">⚡</div>
-              <div class="ub-s3-row-label">Pass</div>
-            </div>
-            <div class="ub-s3-row-value" id="ub-s3-pass">Day Pass</div>
-          </div>
-          <div class="ub-s3-row">
-            <div class="ub-s3-row-left">
-              <div class="ub-s3-row-icon">📅</div>
-              <div class="ub-s3-row-label">Time</div>
-            </div>
-            <div class="ub-s3-row-value" id="ub-s3-time">${formattedDate} · ${defaultTime}</div>
-          </div>
-          <div class="ub-s3-row">
-            <div class="ub-s3-row-left">
-              <div class="ub-s3-row-icon">💳</div>
-              <div class="ub-s3-row-label">Payment</div>
-            </div>
-            <div class="ub-s3-row-value" id="ub-s3-payment">Card</div>
-          </div>
-        </div>
-
-        <!-- Total -->
-        <div class="ub-s3-total">
-          <div class="ub-s3-total-label">Total</div>
-          <div class="ub-s3-total-price" id="ub-s3-price">£${defaultPrice.toFixed(2)}</div>
-        </div>
-
-        <!-- Stage 3 CTA -->
-        <div class="ub-s3-footer">
-          <div class="ub-error hidden" id="ub-s3-error">
-            <div class="ub-error-text"></div>
-          </div>
-          <button class="ub-cta ub-cta-primary" id="ub-s3-btn" onclick="ubConfirmPay()">
-            <span id="ub-s3-btn-text">Confirm and pay</span>
-          </button>
-          <div class="ub-trust">
-            <span>🔒 Stripe secure</span><span>·</span><span>📧 QR instant</span><span>·</span><span>↩️ Free cancel</span>
-          </div>
-        </div>
-      </div>
-
     </div>
   </div>`;
 
@@ -3731,7 +3677,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
     ubUpdateSummary();
   };
 
-  // ═══ Update all summary displays ═══
+  // ═══ Update all summary displays (Uber single-screen) ═══
   window.ubUpdateSummary=function(){
     const cs=window._checkoutState;
     const passEl=document.querySelector('.ub-pass.selected');
@@ -3750,7 +3696,6 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
 
     // Icon button values
     const valPass=document.getElementById('ub-val-pass');
-    const valPayment=document.getElementById('ub-val-payment');
     const valTime=document.getElementById('ub-val-time');
     if(valPass)valPass.textContent=passName;
 
@@ -3763,83 +3708,87 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
     const timeStr=cs.selectedTime==='anytime'?'Anytime':cs.selectedTime;
     if(valTime)valTime.textContent=cs.selectedTime==='anytime'?'Anytime':`${dStr}`;
 
-    // Payment display
-    if(cs.payMode==='cash'){
-      if(valPayment)valPayment.textContent='Cash';
-    }else if(cs.payMode==='saved'){
-      const last4=document.getElementById('ub-card-last4')?.textContent||'****';
-      if(valPayment)valPayment.textContent='··'+last4;
-    }else{
-      if(valPayment)valPayment.textContent='Card';
-    }
-
     // Off-peak promo
     const promo=document.getElementById('ub-promo');
     if(promo)promo.style.display=isOP?'':'none';
 
-    // Stage 2 CTA
-    const ctaText=document.getElementById('ub-cta-text');
-    if(ctaText){
-      ctaText.textContent=`Choose ${passName} · £${displayPrice.toFixed(2)}`;
-    }
+    // ─── Uber-style payment bar update ───
+    const payBar=document.getElementById('ub-pay-bar');
+    const payBarIcon=document.getElementById('ub-pay-bar-icon');
+    const payBarTitle=document.getElementById('ub-pay-bar-title');
+    const payBarSub=document.getElementById('ub-pay-bar-sub');
+    const payBarAction=document.getElementById('ub-pay-bar-action');
 
-    // Stage 3 summary
-    const s3pass=document.getElementById('ub-s3-pass');
-    const s3time=document.getElementById('ub-s3-time');
-    const s3payment=document.getElementById('ub-s3-payment');
-    const s3price=document.getElementById('ub-s3-price');
-    if(s3pass)s3pass.textContent=passName;
-    if(s3time)s3time.textContent=`${dStr} · ${timeStr}`;
-    if(cs.payMode==='cash'){
-      if(s3payment)s3payment.textContent='💷 Cash at gym';
-    }else if(cs.payMode==='saved'){
-      if(s3payment)s3payment.textContent='💳 ····'+(document.getElementById('ub-card-last4')?.textContent||'****');
-    }else{
-      if(s3payment)s3payment.textContent='💳 Card';
-    }
-    if(s3price)s3price.textContent='£'+displayPrice.toFixed(2);
-
-    // Stage 3 button text
-    const s3btn=document.getElementById('ub-s3-btn-text');
-    if(s3btn&&!s3btn.textContent.includes('Processing')&&!s3btn.textContent.includes('Reserving')&&!s3btn.textContent.includes('Booking')){
+    if(payBar){
       if(cs.payMode==='cash'){
-        s3btn.textContent='Reserve · pay at gym';
+        payBar.classList.remove('no-card');
+        payBarIcon.style.background='rgba(34,197,94,.12)';
+        payBarIcon.innerHTML='💷';
+        payBarTitle.textContent='Cash at gym';
+        payBarSub.textContent='Pay at reception on arrival';
+        payBarAction.textContent='Change →';
+      }else if(cs.payMode==='saved'&&cs.savedCardId){
+        payBar.classList.remove('no-card');
+        payBarIcon.style.background='#1a1f71';
+        const brand=document.getElementById('ub-card-last4')?.dataset?.brand||'visa';
+        const brandLabels={visa:'VISA',mastercard:'MC',amex:'AMEX'};
+        payBarIcon.innerHTML='<span style="color:#fff;font-size:10px;font-weight:800;letter-spacing:1px">'+(brandLabels[brand]||'💳')+'</span>';
+        const last4=document.getElementById('ub-card-last4')?.textContent||'****';
+        payBarTitle.textContent='····'+last4;
+        payBarSub.textContent='⚡ 1-tap checkout';
+        payBarAction.textContent='Choose →';
+      }else if(cs.ready){
+        payBar.classList.remove('no-card');
+        payBarIcon.style.background='rgba(34,197,94,.12)';
+        payBarIcon.innerHTML='💳';
+        payBarTitle.textContent='Card ready';
+        payBarSub.textContent='Enter details on confirm';
+        payBarAction.textContent='Choose →';
       }else{
-        s3btn.textContent='Confirm and pay';
+        payBar.classList.add('no-card');
+        payBarIcon.style.background='rgba(249,115,22,.12)';
+        payBarIcon.innerHTML='💳';
+        payBarTitle.textContent='Add payment method';
+        payBarSub.textContent='Required to confirm booking';
+        payBarAction.textContent='Add →';
+      }
+    }
+
+    // ─── Total price display ───
+    const totalPrice=document.getElementById('ub-total-price');
+    if(totalPrice)totalPrice.textContent='£'+displayPrice.toFixed(2);
+
+    // ─── CTA button text: "Confirm Day Pass · £5.00" (Uber-specific) ───
+    const ctaText=document.getElementById('ub-cta-text');
+    if(ctaText&&!ctaText.textContent.includes('Processing')&&!ctaText.textContent.includes('Reserving')&&!ctaText.textContent.includes('Booking')){
+      if(cs.payMode==='cash'){
+        ctaText.textContent=`Confirm ${passName} · pay at gym`;
+      }else{
+        ctaText.textContent=`Confirm ${passName} · £${displayPrice.toFixed(2)}`;
       }
     }
 
     window._updatePassPrice=function(){ubUpdateSummary();};
   };
 
-  // ═══ Navigate to Stage 3 ═══
-  window.ubGoToStage3=function(){
-    const cs=window._checkoutState;
-    // Validate payment readiness for card mode
-    if(cs.payMode==='card'&&!cs.ready){
-      ubOpenSub('payment');
-      sgToast('Please set up your payment method','warning',3000);
-      return;
-    }
-    // Cash mode: no email validation needed — booking code shown on screen
-    ubUpdateSummary();
-    const stage3=document.getElementById('ub-stage3');
-    if(stage3)stage3.classList.add('open');
-  };
+  // ═══ No Stage 3 — Uber single-screen (ubGoToStage3 kept as no-op for compat) ═══
+  window.ubGoToStage3=function(){ ubConfirmPay(); };
+  window.ubBackToStage2=function(){ /* no-op — single screen */ };
 
-  // ═══ Back to Stage 2 ═══
-  window.ubBackToStage2=function(){
-    const stage3=document.getElementById('ub-stage3');
-    if(stage3)stage3.classList.remove('open');
-  };
-
-  // ═══ Confirm & Pay (Stage 3 action) ═══
+  // ═══ Confirm & Pay (Uber single-screen — no Stage 3) ═══
   window.ubConfirmPay=async function(){
     const cs=window._checkoutState;
-    const btn=document.getElementById('ub-s3-btn');
-    const btnText=document.getElementById('ub-s3-btn-text');
-    const errEl=document.getElementById('ub-s3-error');
+    const btn=document.getElementById('ub-cta-btn');
+    const btnText=document.getElementById('ub-cta-text');
+    const errEl=document.getElementById('ub-confirm-error');
     if(!btn||btn.disabled)return;
+
+    // Force payment setup if no method selected (Uber: can't proceed without payment)
+    if(cs.payMode==='card'&&!cs.ready){
+      ubOpenSub('payment');
+      sgToast('Please add a payment method first','warning',3000);
+      return;
+    }
 
     errEl?.classList.add('hidden');
 
@@ -3854,7 +3803,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
         let dbGymId=gymId;
         if(isNaN(parseInt(gymId))){
           const ensured=await fetch('/api/live/ensure-gym',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({placeId:gymId})}).then(r=>r.json());
-          if(ensured.error){sgToast(ensured.error);btn.disabled=false;btnText.textContent='Reserve · pay at gym';return;}
+          if(ensured.error){sgToast(ensured.error);btn.disabled=false;ubUpdateSummary();return;}
           dbGymId=ensured.gymId;
         }
         const result=await fetch('/api/payment/cash-booking',{
@@ -3867,12 +3816,12 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
           sgToast('💷 Reserved! Pay at the gym','success',3000);
         }else{
           sgToast(result.error||'Reservation failed');
-          btnText.textContent='Reserve · pay at gym';btn.disabled=false;
+          btn.disabled=false;ubUpdateSummary();
         }
       }catch(e){
         console.error('Cash booking error:',e);
         sgToast('Something went wrong');
-        btnText.textContent='Reserve · pay at gym';btn.disabled=false;
+        btn.disabled=false;ubUpdateSummary();
       }
       return;
     }
@@ -3883,12 +3832,12 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
     // ─── Saved card (quick checkout) ───
     if(cs.payMode==='saved'&&cs.savedCardId){
       btn.disabled=true;
-      btnText.innerHTML='<span class="sg-spinner" style="width:18px;height:18px;display:inline-block"></span> Booking instantly…';
+      btnText.innerHTML='<span class="sg-spinner" style="width:18px;height:18px;display:inline-block"></span> Booking…';
       try{
         let dbGymId=gymId;
         if(isNaN(parseInt(gymId))){
           const ensured=await fetch('/api/live/ensure-gym',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({placeId:gymId})}).then(r=>r.json());
-          if(ensured.error){sgToast(ensured.error);btn.disabled=false;btnText.textContent='Confirm and pay';return;}
+          if(ensured.error){sgToast(ensured.error);btn.disabled=false;ubUpdateSummary();return;}
           dbGymId=ensured.gymId;
         }
         const result=await fetch('/api/payment/quick-checkout',{
@@ -3901,12 +3850,12 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
           sgToast('⚡ Booked instantly!','success',3000);
         }else{
           sgToast(result.error||'Quick checkout failed');
-          btnText.textContent='Confirm and pay';btn.disabled=false;
+          btn.disabled=false;ubUpdateSummary();
         }
       }catch(e){
         console.error('Quick checkout error:',e);
         sgToast('Something went wrong');
-        btnText.textContent='Confirm and pay';btn.disabled=false;
+        btn.disabled=false;ubUpdateSummary();
       }
       return;
     }
@@ -3919,7 +3868,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
     }
 
     btn.disabled=true;
-    btnText.innerHTML='<span class="sg-spinner" style="width:18px;height:18px;display:inline-block"></span> Processing payment…';
+    btnText.innerHTML='<span class="sg-spinner" style="width:18px;height:18px;display:inline-block"></span> Processing…';
 
     try{
       // Submit Stripe Elements form first (validates card details)
@@ -3927,7 +3876,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
       if(submitResult.error){
         errEl?.querySelector('.ub-error-text')&&(errEl.querySelector('.ub-error-text').textContent=submitResult.error.message||'Payment details incomplete');
         errEl?.classList.remove('hidden');
-        btnText.textContent='Confirm and pay';btn.disabled=false;
+        btn.disabled=false;ubUpdateSummary();
         return;
       }
 
@@ -3941,7 +3890,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
       if(intentResult.error){
         errEl?.querySelector('.ub-error-text')&&(errEl.querySelector('.ub-error-text').textContent=intentResult.error||'Failed to create booking');
         errEl?.classList.remove('hidden');
-        btnText.textContent='Confirm and pay';btn.disabled=false;
+        btn.disabled=false;ubUpdateSummary();
         return;
       }
 
@@ -3964,7 +3913,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
       if(error){
         errEl?.querySelector('.ub-error-text')&&(errEl.querySelector('.ub-error-text').textContent=error.message||'Payment failed');
         errEl?.classList.remove('hidden');
-        btnText.textContent='Confirm and pay';btn.disabled=false;
+        btn.disabled=false;ubUpdateSummary();
       }else if(paymentIntent&&(paymentIntent.status==='succeeded'||paymentIntent.status==='requires_capture')){
         // Send email for QR delivery
         if(email){
@@ -3976,13 +3925,13 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
         sgToast('✅ Booking confirmed!','success',3000);
       }else{
         // Redirect happened or other status
-        btnText.textContent='Confirm and pay';btn.disabled=false;
+        btn.disabled=false;ubUpdateSummary();
       }
     }catch(e){
       console.error('Payment error:',e);
       errEl?.querySelector('.ub-error-text')&&(errEl.querySelector('.ub-error-text').textContent='Payment failed. Please try again.');
       errEl?.classList.remove('hidden');
-      btnText.textContent='Confirm and pay';btn.disabled=false;
+      btn.disabled=false;ubUpdateSummary();
     }
   };
 
@@ -3990,7 +3939,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
   (function(){
     let sy=0,cy=0,d=false;const sh=sheet.querySelector('.ub-sheet');
     sh.addEventListener('touchstart',e=>{
-      if(e.target.closest('.ub-sub.open')||e.target.closest('.ub-stage3.open'))return;
+      if(e.target.closest('.ub-sub.open'))return;
       sy=e.touches[0].clientY;cy=sy;d=true;
     },{passive:true});
     sh.addEventListener('touchmove',e=>{
@@ -4016,7 +3965,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
 async function _initUberPaymentNew(gymId, gym){
   const cs=window._checkoutState;
   const stripeArea=document.getElementById('ub-stripe-area');
-  const s3btn=document.getElementById('ub-s3-btn');
+  const s3btn=document.getElementById('ub-cta-btn');
 
   // Check for saved cards first
   if(state.user){
@@ -4030,6 +3979,9 @@ async function _initUberPaymentNew(gymId, gym){
         document.getElementById('ub-card-brand-box').innerHTML='<span style="color:#fff;font-size:10px;font-weight:800;letter-spacing:1px">'+(brandLabels[card.brand]||'💳')+'</span>';
         document.getElementById('ub-card-last4').textContent=card.last4;
         document.getElementById('ub-saved-card-section').classList.remove('hidden');
+        // Store brand info on the element for the payment bar
+        const last4El=document.getElementById('ub-card-last4');
+        if(last4El)last4El.dataset.brand=card.brand||'visa';
         ubPaySelect('saved');
         cs.ready=true;
         ubUpdateSummary();
