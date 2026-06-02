@@ -3566,7 +3566,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
 
         </div>
         <div class="ub-sub-footer">
-          <button class="ub-cta ub-cta-primary" onclick="ubCloseSub('payment')">Done</button>
+          <button class="ub-cta ub-cta-primary" id="ub-pay-done-btn" style="opacity:0.4" disabled onclick="ubPaymentDone()">Continue to confirm →</button>
         </div>
       </div>
 
@@ -3653,6 +3653,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
     elements:null,
     gymId:gymId,
     ready:false,
+    cardComplete:false,
   };
 
   // ═══ Sub-screen navigation ═══
@@ -3815,14 +3816,29 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
   // ═══ Navigate to Stage 3 ═══
   window.ubGoToStage3=function(){
     const cs=window._checkoutState;
-    // Validate payment readiness for card mode
-    if(cs.payMode==='card'&&!cs.ready){
+    // Validate payment readiness for card mode — require card details to be COMPLETE, not just Stripe loaded
+    if(cs.payMode==='card'&&!cs.cardComplete){
       ubOpenSub('payment');
-      sgToast('Please set up your payment method','warning',3000);
+      sgToast('Please enter your card details','warning',3000);
       return;
     }
     // Cash mode: no email validation needed — booking code shown on screen
     ubUpdateSummary();
+    const stage3=document.getElementById('ub-stage3');
+    if(stage3)stage3.classList.add('open');
+  };
+
+  // ═══ Payment done — go straight to confirm ═══
+  window.ubPaymentDone=function(){
+    const cs=window._checkoutState;
+    if(cs.payMode==='card'&&!cs.cardComplete){
+      sgToast('Please fill in your card details','warning',2000);
+      return;
+    }
+    ubUpdateSummary();
+    // Close payment sub-panel and open Stage 3 in one motion
+    const payPanel=document.getElementById('ub-sub-payment');
+    if(payPanel)payPanel.classList.remove('open');
     const stage3=document.getElementById('ub-stage3');
     if(stage3)stage3.classList.add('open');
   };
@@ -4032,6 +4048,7 @@ async function _initUberPaymentNew(gymId, gym){
         document.getElementById('ub-saved-card-section').classList.remove('hidden');
         ubPaySelect('saved');
         cs.ready=true;
+        cs.cardComplete=true; // saved card is pre-filled, counts as complete
         ubUpdateSummary();
       }
     }catch(e){console.log('No saved cards');}
@@ -4093,6 +4110,17 @@ async function _initUberPaymentNew(gymId, gym){
     paymentElement.on('ready',()=>{
       cs.ready=true;
       ubUpdateSummary();
+    });
+
+    // Track when card details are actually filled in (not just loaded)
+    paymentElement.on('change',(event)=>{
+      cs.cardComplete=event.complete;
+      // Enable/disable the payment sub-panel "Done" button
+      const payDoneBtn=document.getElementById('ub-pay-done-btn');
+      if(payDoneBtn){
+        payDoneBtn.disabled=!event.complete;
+        payDoneBtn.style.opacity=event.complete?'1':'0.4';
+      }
     });
 
   }catch(e){
