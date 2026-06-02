@@ -599,6 +599,12 @@ function GymCard(gym){
   const price=gym.dayPassPrice||gym.price_tier||'5.00';
   const origPrice=originalPrice(price);
   const discount=0;
+  // Fix #4: Smart price badge — reads current time, shows off-peak or peak price
+  const _hCard=new Date().getHours();
+  const _isOPCard=_hCard<10||_hCard>=20;
+  const cardPeakPrice=parseFloat(price).toFixed(2);
+  const cardOffPeakPrice=(parseFloat(price)*0.75).toFixed(2);
+  const cardCurrentPrice=_isOPCard?cardOffPeakPrice:cardPeakPrice;
   const dist=gym.distanceText||(gym.distance?`${gym.distance.toFixed(1)} km`:'Nearby');
   const photo=gym.photo||gym.photo_url||
     (gym.photoReference?`https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${gym.photoReference}&key=${MAPS_KEY}`:
@@ -625,10 +631,9 @@ function GymCard(gym){
   <div class="gym-card group bg-card rounded-2xl overflow-hidden border border-slate-700 hover:border-brand/50 cursor-pointer transition-all hover:shadow-lg hover:shadow-brand/10 hover:-translate-y-1" onclick="openGym('${gymIdentifier}',${isLive})">
     <div class="relative h-48 bg-slate-700">
       ${carouselHTML}
-      <!-- Booking.com strikethrough pricing -->
-      <div class="absolute top-3 right-3 bg-brand text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
-        £${price}
-        
+      <!-- Fix #4: Smart price badge — shows current time-aware price -->
+      <div class="absolute top-3 right-3 ${_isOPCard?'bg-green-600':'bg-brand'} text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
+        £${cardCurrentPrice}${_isOPCard?' 🌙':''}
       </div>
       ${topGym?`<div class="absolute top-3 left-3 bg-yellow-500 text-black px-2.5 py-1 rounded-full text-xs font-bold shadow-lg">⭐ Top Gym</div>`
         :gym.openNow===true?`<div class="absolute top-3 left-3 bg-green-600 text-white px-2.5 py-1 rounded-full text-xs font-medium shadow-lg flex items-center gap-1"><span class="w-1.5 h-1.5 bg-green-300 rounded-full animate-pulse"></span> Open${cTime?' until '+cTime:' Now'}</div>`:``}
@@ -654,7 +659,7 @@ function GymCard(gym){
         <span class="text-xs text-accent font-medium">✅ Free cancellation</span>
         
       </div>
-      <button onclick="event.stopPropagation();showUberCheckout('${gymIdentifier}')" class="gym-card-book-btn">⚡ Book Now · from £${(parseFloat(price)*0.75).toFixed(2)}</button>
+      <button onclick="event.stopPropagation();showUberCheckout('${gymIdentifier}')" class="gym-card-book-btn">⚡ Book Now · £${cardCurrentPrice}${_isOPCard?' (off-peak)':''}</button>
     </div>
   </div>`;
 }
@@ -698,12 +703,12 @@ function HomePage(){
       <span style="color:rgba(255,255,255,.15);font-size:18px;">›</span>
     </div>
 
-    <!-- Promo card (like Uber yellow card) -->
-    <div onclick="navigate('/explore')" style="background:linear-gradient(135deg,#f97316,#fb923c);border-radius:16px;padding:18px 20px;display:flex;align-items:center;gap:14px;cursor:pointer;flex-shrink:0;margin-bottom:14px;position:relative;overflow:hidden;">
+    <!-- Fix #4: Smart promo card — shows current time-aware price -->
+    <div onclick="navigate('/explore')" style="background:linear-gradient(135deg,${hour<10||hour>=20?'#16a34a,#22c55e':'#f97316,#fb923c'});border-radius:16px;padding:18px 20px;display:flex;align-items:center;gap:14px;cursor:pointer;flex-shrink:0;margin-bottom:14px;position:relative;overflow:hidden;">
       <div style="position:absolute;top:-20px;right:-10px;font-size:60px;opacity:.15;transform:rotate(15deg);">🏋️</div>
       <div style="flex:1;position:relative;z-index:1;">
-        <p style="color:#fff;font-weight:800;font-size:16px;margin:0;">£5 Day Pass</p>
-        <p style="color:rgba(255,255,255,.85);font-size:12px;margin:4px 0 0;">No membership · Free cancellation · QR entry</p>
+        <p style="color:#fff;font-weight:800;font-size:16px;margin:0;">${hour<10||hour>=20?'£3.75 Day Pass · 25% Off 🌙':'From £5 Day Pass'}</p>
+        <p style="color:rgba(255,255,255,.85);font-size:12px;margin:4px 0 0;">${hour<10||hour>=20?'Off-peak pricing active now · No membership · QR entry':'No membership · Free cancellation · QR entry'}</p>
       </div>
       <span style="color:rgba(255,255,255,.7);font-size:20px;position:relative;z-index:1;">→</span>
     </div>
