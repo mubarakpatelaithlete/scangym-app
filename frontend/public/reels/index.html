@@ -503,5 +503,198 @@
 
     })();
     </script>
+
+    <!-- Feature: Upload FAB on Reels Tab for FlexSquad Creators -->
+    <script>
+    (function() {
+      'use strict';
+
+      function isCreator() {
+        try { return !!localStorage.getItem('flexsquad_pending'); } catch(e) { return false; }
+      }
+
+      function injectUploadFAB() {
+        if (document.getElementById('fs-upload-fab')) return;
+
+        const fab = document.createElement('div');
+        fab.id = 'fs-upload-fab';
+        fab.innerHTML = `
+          <style>
+            #fs-upload-fab {
+              position: fixed;
+              bottom: 90px;
+              right: 16px;
+              z-index: 9999;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              gap: 6px;
+              animation: fsFabIn 0.4s ease-out;
+            }
+            @keyframes fsFabIn {
+              from { opacity: 0; transform: scale(0.5) translateY(20px); }
+              to   { opacity: 1; transform: scale(1) translateY(0); }
+            }
+            .fs-fab-btn {
+              width: 56px; height: 56px; border-radius: 50%;
+              background: linear-gradient(135deg, #f97316, #ea580c);
+              border: 2px solid rgba(255,255,255,0.15);
+              box-shadow: 0 4px 24px rgba(249,115,22,0.4), 0 2px 8px rgba(0,0,0,0.3);
+              display: flex; align-items: center; justify-content: center;
+              cursor: pointer; transition: all 0.15s;
+              -webkit-tap-highlight-color: transparent;
+            }
+            .fs-fab-btn:active { transform: scale(0.9); }
+            .fs-fab-btn svg {
+              width: 28px; height: 28px; fill: none; stroke: #fff;
+              stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round;
+            }
+            .fs-fab-label {
+              font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.7);
+              text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+              letter-spacing: 0.3px;
+            }
+            /* Pulse ring */
+            .fs-fab-btn::before {
+              content: ''; position: absolute; inset: -4px;
+              border-radius: 50%; border: 2px solid rgba(249,115,22,0.4);
+              animation: fsFabPulse 2s ease-out infinite;
+            }
+            @keyframes fsFabPulse {
+              0%   { transform: scale(1); opacity: 0.6; }
+              100% { transform: scale(1.4); opacity: 0; }
+            }
+          </style>
+          <div class="fs-fab-btn" id="fs-fab-btn" title="Upload Your Reel">
+            <svg viewBox="0 0 24 24">
+              <path d="M12 5v14M5 12l7-7 7 7"/>
+            </svg>
+          </div>
+          <span class="fs-fab-label">Upload</span>
+        `;
+        document.body.appendChild(fab);
+
+        document.getElementById('fs-fab-btn').addEventListener('click', () => {
+          window.location.href = '/upload';
+        });
+      }
+
+      // Inject when DOM is ready
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => { if (isCreator()) injectUploadFAB(); });
+      } else {
+        // Also delay slightly to let React render first
+        setTimeout(() => { if (isCreator()) injectUploadFAB(); }, 500);
+      }
+
+      // Re-check on storage changes (e.g. user joins FlexSquad in another tab)
+      window.addEventListener('storage', (e) => {
+        if (e.key === 'flexsquad_pending' && e.newValue) injectUploadFAB();
+      });
+    })();
+    </script>
+
+    <!-- Feature: Video Loading Fix — Fallback proxy + retry enhancement -->
+    <script>
+    (function() {
+      'use strict';
+
+      const PROXY_BASE = '/api/video-proxy?url=';
+      const CONVEX_SITE = 'dynamic-labrador-874.convex.site';
+      const DRIVE_PATTERN = /drive\.google\.com/;
+      const MAX_RETRIES = 3;
+      const RETRY_DELAY = 800;
+      const tracked = new WeakSet();
+
+      function getProxyUrl(originalUrl) {
+        return PROXY_BASE + encodeURIComponent(originalUrl);
+      }
+
+      function getDriveFallbackUrl(originalUrl) {
+        // Extract Google Drive ID from various URL patterns
+        let driveId = null;
+        const convexMatch = originalUrl.match(/[?&]id=([^&]+)/);
+        const driveMatch = originalUrl.match(/\/d\/([^/=?]+)/);
+        const ucMatch = originalUrl.match(/id=([a-zA-Z0-9_-]{20,})/);
+
+        if (convexMatch) driveId = convexMatch[1];
+        else if (driveMatch) driveId = driveMatch[1];
+        else if (ucMatch) driveId = ucMatch[1];
+
+        if (driveId) {
+          return `https://drive.google.com/uc?export=download&id=${driveId}`;
+        }
+        return null;
+      }
+
+      function handleVideoError(video) {
+        if (tracked.has(video)) return;
+        tracked.add(video);
+
+        let retries = 0;
+        const originalSrc = video.src;
+
+        video.addEventListener('error', function onErr() {
+          retries++;
+          if (retries > MAX_RETRIES) return;
+
+          setTimeout(() => {
+            if (retries === 1 && originalSrc.includes(CONVEX_SITE)) {
+              // First retry: try Google Drive direct
+              const driveFb = getDriveFallbackUrl(originalSrc);
+              if (driveFb) {
+                video.src = driveFb;
+                video.load();
+                return;
+              }
+            }
+            if (retries <= 2) {
+              // Second retry: try server proxy
+              const proxied = getProxyUrl(originalSrc);
+              video.src = proxied;
+              video.load();
+              return;
+            }
+            // Third retry: original with cache-bust
+            video.src = originalSrc + (originalSrc.includes('?') ? '&' : '?') + '_r=' + Date.now();
+            video.load();
+          }, RETRY_DELAY * retries);
+        });
+
+        // Also handle stall events (video stuck loading)
+        let stallTimer = null;
+        video.addEventListener('loadstart', () => {
+          clearTimeout(stallTimer);
+          stallTimer = setTimeout(() => {
+            // If still not enough data after 8s, treat as stall
+            if (video.readyState < 2 && !video.paused) {
+              video.dispatchEvent(new Event('error'));
+            }
+          }, 8000);
+        });
+        video.addEventListener('canplay', () => clearTimeout(stallTimer));
+        video.addEventListener('loadeddata', () => clearTimeout(stallTimer));
+      }
+
+      // Observe DOM for new video elements
+      const observer = new MutationObserver((mutations) => {
+        for (const m of mutations) {
+          for (const node of m.addedNodes) {
+            if (node.nodeType !== 1) continue;
+            if (node.tagName === 'VIDEO') handleVideoError(node);
+            const vids = node.querySelectorAll?.('video');
+            if (vids) vids.forEach(handleVideoError);
+          }
+        }
+      });
+
+      observer.observe(document.body || document.documentElement, { childList: true, subtree: true });
+
+      // Also handle existing videos
+      setTimeout(() => {
+        document.querySelectorAll('video').forEach(handleVideoError);
+      }, 1000);
+    })();
+    </script>
   </body>
 </html>
