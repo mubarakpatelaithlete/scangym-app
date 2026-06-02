@@ -3609,6 +3609,13 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
   window.ubCloseSub=function(name){
     const el=document.getElementById('ub-sub-'+name);
     if(el)el.classList.remove('open');
+    // When closing payment sub-screen with card/saved selected, mark card as entered
+    if(name==='payment'){
+      const cs=window._checkoutState;
+      if(cs.payMode==='card'&&cs.stripeReady){cs.cardEntered=true;cs.ready=true;}
+      if(cs.payMode==='saved'&&cs.savedCardId){cs.ready=true;}
+      if(cs.payMode==='cash'){cs.ready=true;}
+    }
     ubUpdateSummary();
   };
 
@@ -3737,14 +3744,16 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
         payBarTitle.textContent='····'+last4;
         payBarSub.textContent='⚡ 1-tap checkout';
         payBarAction.textContent='Choose →';
-      }else if(cs.ready){
+      }else if(cs.cardEntered){
+        // User visited payment sub-screen and entered card details
         payBar.classList.remove('no-card');
         payBarIcon.style.background='rgba(34,197,94,.12)';
         payBarIcon.innerHTML='💳';
-        payBarTitle.textContent='Card ready';
-        payBarSub.textContent='Enter details on confirm';
-        payBarAction.textContent='Choose →';
+        payBarTitle.textContent='Card added';
+        payBarSub.textContent='Ready to pay';
+        payBarAction.textContent='Change →';
       }else{
+        // No saved card, no card entered yet — Uber "Add payment" state
         payBar.classList.add('no-card');
         payBarIcon.style.background='rgba(249,115,22,.12)';
         payBarIcon.innerHTML='💳';
@@ -3784,7 +3793,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
     if(!btn||btn.disabled)return;
 
     // Force payment setup if no method selected (Uber: can't proceed without payment)
-    if(cs.payMode==='card'&&!cs.ready){
+    if(cs.payMode==='card'&&!cs.cardEntered){
       ubOpenSub('payment');
       sgToast('Please add a payment method first','warning',3000);
       return;
@@ -4043,7 +4052,9 @@ async function _initUberPaymentNew(gymId, gym){
     paymentElement.mount('#ub-stripe-el');
 
     paymentElement.on('ready',()=>{
-      cs.ready=true;
+      cs.stripeReady=true;
+      // Don't set cs.ready here — that's only for saved cards
+      // For new card users, ready=true after they visit the payment sub-screen
       ubUpdateSummary();
     });
 
