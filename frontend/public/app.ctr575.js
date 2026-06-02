@@ -3150,18 +3150,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
               <div style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(34,197,94,.15);color:rgba(255,255,255,.45);font-size:11px">⏰ Reservation held for 2 hours</div>
             </div>
 
-            <!-- Email input for QR pass delivery -->
-            <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,127,0,.25);border-radius:14px;padding:14px">
-              <label for="ub-cash-email" style="display:block;color:#f97316;font-size:13px;font-weight:600;margin-bottom:8px">📧 Email for your QR pass</label>
-              <input type="email" id="ub-cash-email" placeholder="your@email.com"
-                value="${savedEmail}"
-                style="width:100%;box-sizing:border-box;padding:12px 14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:#fff;font-size:14px;outline:none"
-                onfocus="this.style.borderColor='#f97316'"
-                onblur="this.style.borderColor='rgba(255,255,255,.1)'"
-              />
-              <div style="color:rgba(255,255,255,.35);font-size:11px;margin-top:6px">Your QR gym pass will be sent to this email</div>
-              <div id="ub-cash-email-error" style="display:none;color:#f87171;font-size:12px;margin-top:4px">Please enter a valid email address</div>
-            </div>
+            <!-- Email removed per owner request — booking code shown on screen instead -->
           </div>
 
           <!-- Stripe elements -->
@@ -3431,19 +3420,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
       sgToast('Please set up your payment method','warning',3000);
       return;
     }
-    // Validate email for cash mode before proceeding to stage 3
-    if(cs.payMode==='cash'){
-      const cashEmailInput=document.getElementById('ub-cash-email');
-      const cashEmailError=document.getElementById('ub-cash-email-error');
-      const email=(cashEmailInput?cashEmailInput.value.trim():'')||localStorage.getItem('sg_last_email')||'';
-      if(!email||!email.includes('@')||!email.includes('.')){
-        ubOpenSub('payment');
-        if(cashEmailError)cashEmailError.style.display='block';
-        if(cashEmailInput){cashEmailInput.style.borderColor='#f87171';cashEmailInput.focus();}
-        sgToast('Please enter your email for the QR pass','warning',3000);
-        return;
-      }
-    }
+    // Cash mode: no email validation needed — booking code shown on screen
     ubUpdateSummary();
     const stage3=document.getElementById('ub-stage3');
     if(stage3)stage3.classList.add('open');
@@ -3467,25 +3444,8 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
 
     // ─── Cash booking ───
     if(cs.payMode==='cash'){
-      // Get email from the dedicated cash email input, fall back to localStorage
-      const cashEmailInput=document.getElementById('ub-cash-email');
-      const cashEmailError=document.getElementById('ub-cash-email-error');
-      const email=(cashEmailInput?cashEmailInput.value.trim():'')||localStorage.getItem('sg_last_email')||'';
-
-      // Validate email before sending
-      if(!email||!email.includes('@')||!email.includes('.')){
-        if(cashEmailError){cashEmailError.style.display='block';}
-        if(cashEmailInput){cashEmailInput.style.borderColor='#f87171';cashEmailInput.focus();}
-        // Open payment sub-screen so user can see the email field
-        ubOpenSub('payment');
-        sgToast('Please enter your email for the QR pass','warning',3000);
-        return;
-      }
-      if(cashEmailError)cashEmailError.style.display='none';
-      if(cashEmailInput)cashEmailInput.style.borderColor='rgba(255,255,255,.1)';
-
-      // Save email for future use
-      localStorage.setItem('sg_last_email',email);
+      // Email optional — use localStorage if available, otherwise empty (server handles it)
+      const email=localStorage.getItem('sg_last_email')||'';
 
       btn.disabled=true;
       btnText.innerHTML='<span class="sg-spinner" style="width:18px;height:18px;display:inline-block"></span> Reserving…';
@@ -3916,7 +3876,7 @@ function BookingSuccessPage(){
           </div>
         </div>
         <h1 class="font-brand text-3xl font-bold text-white mb-1">Booking Confirmed!</h1>
-        <p class="text-green-400 font-medium">✅ Payment received · QR code ready</p>
+        <p class="text-green-400 font-medium">${b.paymentMethod==='cash'?'✅ Reserved · Show QR & pay at gym':'✅ Payment received · QR code ready'}</p>
       </div>
 
       <!-- Booking Summary Card -->
@@ -3931,7 +3891,7 @@ function BookingSuccessPage(){
             </div>
             <div class="text-right">
               <p class="text-brand font-bold text-xl">£${b.price.toFixed(2)}</p>
-              <p class="text-green-400 text-xs font-medium">PAID ✓</p>
+              <p class="text-green-400 text-xs font-medium">${b.paymentMethod==='cash'?'RESERVED ⏳':'PAID ✓'}</p>
             </div>
           </div>
         </div>
@@ -3971,8 +3931,8 @@ function BookingSuccessPage(){
           <div class="flex gap-3">
             <div class="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center flex-shrink-0"><span class="text-green-400 text-sm font-bold">1</span></div>
             <div>
-              <p class="text-white font-medium text-sm">Check your email</p>
-              <p class="text-slate-400 text-xs">QR code + booking details sent to your inbox</p>
+              <p class="text-white font-medium text-sm">${b.paymentMethod==='cash'?'Screenshot your QR code':'Check your email'}</p>
+              <p class="text-slate-400 text-xs">${b.paymentMethod==='cash'?'Save it — you\'ll show this at reception + pay cash':'QR code + booking details sent to your inbox'}</p>
             </div>
             <span class="text-green-400 ml-auto">✓</span>
           </div>
