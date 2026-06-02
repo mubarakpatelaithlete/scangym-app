@@ -999,18 +999,64 @@ function GymProfilePage(){
 
   return`
   <style>
-    .gym-fs-hero{position:relative;width:100%;height:calc(100vh - 140px);height:calc(100dvh - 140px);overflow:hidden;background:#0a0a0a}
-    .gym-fs-hero img.hero-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-    .gym-fs-hero .hero-gradient{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.15) 0%,transparent 30%,transparent 40%,rgba(0,0,0,.85) 100%);pointer-events:none}
-    .gym-fs-hero .hero-dots{position:absolute;top:max(env(safe-area-inset-top,12px),12px);left:50%;transform:translateX(-50%);display:flex;gap:6px;padding-top:8px}
-    .gym-fs-hero .hero-dots span{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.4);transition:all .3s}
-    .gym-fs-hero .hero-dots span.active{background:#fff;width:20px;border-radius:4px}
-    .gym-nav-col{position:absolute;right:16px;bottom:240px;display:flex;flex-direction:column;align-items:center;gap:18px;z-index:5}
+    /* ═══ Fix #5: Zero-scroll gym detail with Instagram carousel ═══ */
+    .gym-fs-hero{position:relative;width:100%;height:calc(100vh - 64px);height:calc(100dvh - 64px);overflow:hidden;background:#0a0a0a;display:flex;flex-direction:column}
+    /* Photo carousel area (~38% of viewport) */
+    .gym-carousel-wrap{position:relative;width:100%;height:38vh;height:38dvh;overflow:hidden;background:#0a0a0a;flex-shrink:0}
+    .gym-carousel-track{display:flex;height:100%;transition:transform .3s cubic-bezier(.4,0,.2,1);will-change:transform}
+    .gym-carousel-track.dragging{transition:none}
+    .gym-carousel-slide{flex:0 0 100%;width:100%;height:100%;position:relative}
+    .gym-carousel-slide img{width:100%;height:100%;object-fit:cover}
+    .gym-carousel-slide .no-photo{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:64px;background:#1e293b}
+    /* Instagram-style counter badge "1/4" — top right */
+    .gym-carousel-counter{position:absolute;top:12px;right:12px;background:rgba(0,0,0,.7);color:#fff;font-size:13px;font-weight:600;padding:4px 10px;border-radius:12px;z-index:6;letter-spacing:.5px;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+    /* Back button — top left */
+    .gym-carousel-back{position:absolute;top:12px;left:12px;width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);border:none;color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:6;transition:background .2s}
+    .gym-carousel-back:active{background:rgba(0,0,0,.7)}
+    /* Dot indicators — bottom of photo area, Instagram style */
+    .gym-carousel-dots{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:5px;z-index:6}
+    .gym-carousel-dots span{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.35);transition:all .3s}
+    .gym-carousel-dots span.active{background:#fff;width:18px;border-radius:3px}
+    /* Edge peek shadow hint */
+    .gym-carousel-wrap::after{content:'';position:absolute;top:0;right:0;bottom:0;width:20px;background:linear-gradient(90deg,transparent,rgba(0,0,0,.15));pointer-events:none;z-index:3;opacity:0;transition:opacity .3s}
+    .gym-carousel-wrap.has-next::after{opacity:1}
+    /* Price badge on photo */
+    .gym-carousel-price{position:absolute;bottom:10px;right:12px;background:#22c55e;color:#fff;font-size:14px;font-weight:800;padding:4px 10px;border-radius:10px;z-index:6;box-shadow:0 2px 8px rgba(34,197,94,.4)}
+    /* Info section below photos */
+    .gym-info-section{flex:1;display:flex;flex-direction:column;padding:12px 16px 0;overflow:hidden;background:#0a0f14}
+    /* Gym name + details card */
+    .gym-info-card{margin-bottom:8px}
+    .gym-info-name{font-family:'Sora',sans-serif;font-size:22px;font-weight:800;color:#fff;line-height:1.15;margin-bottom:2px}
+    .gym-info-addr{color:rgba(255,255,255,.55);font-size:13px;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .gym-info-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+    .gym-info-meta span{font-size:13px;font-weight:600}
+    /* Quick actions row (3 buttons: Facilities, Reviews, Hours) */
+    .gym-quick-actions{display:flex;gap:8px;margin-bottom:10px}
+    .gym-qa-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:10px 0;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;color:rgba(255,255,255,.8);font-size:12px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s}
+    .gym-qa-btn:active{transform:scale(.95);background:rgba(255,255,255,.1)}
+    .gym-qa-icon{font-size:16px}
+    /* Pass selection pills */
+    .gym-pass-row{display:flex;gap:8px;margin-bottom:10px}
+    .gym-pass-pill{flex:1;text-align:center;padding:8px 4px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent}
+    .gym-pass-pill.selected{border-color:rgba(34,197,94,.5);background:rgba(34,197,94,.1)}
+    .gym-pass-pill:active{transform:scale(.96)}
+    .gym-pass-name{font-size:11px;color:rgba(255,255,255,.5);font-weight:600;margin-bottom:2px}
+    .gym-pass-pill.selected .gym-pass-name{color:rgba(255,255,255,.8)}
+    .gym-pass-price{font-size:16px;font-weight:800;color:rgba(255,255,255,.4)}
+    .gym-pass-pill.selected .gym-pass-price{color:#22c55e}
+    /* Big Book Now CTA */
+    .gym-book-cta{width:100%;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:17px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(34,197,94,.35);-webkit-tap-highlight-color:transparent;transition:transform .15s;letter-spacing:.3px;margin-bottom:6px}
+    .gym-book-cta:active{transform:scale(.97)}
+    /* Trust signals row */
+    .gym-trust-row{display:flex;justify-content:center;gap:16px;padding-bottom:4px}
+    .gym-trust-item{font-size:11px;color:rgba(255,255,255,.35);font-weight:500}
+    /* Legacy compatibility */
+    .gym-nav-col{display:none}
     .gym-nav-btn{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;-webkit-tap-highlight-color:transparent}
     .gym-nav-btn:active .gym-nav-circle{transform:scale(.9)}
     .gym-nav-circle{width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,.12);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:22px;transition:transform .15s}
     .gym-nav-label{color:rgba(255,255,255,.8);font-size:11px;font-weight:600;text-shadow:0 1px 4px rgba(0,0,0,.5)}
-    .gym-hero-bottom{position:absolute;bottom:0;left:0;right:0;padding:0 20px 20px;z-index:4}
+    .gym-hero-bottom{display:none}
     .gym-hero-badges{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
     .gym-hero-badge{font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
     .gym-hero-badge.gold{background:rgba(250,204,21,.2);border:1px solid rgba(250,204,21,.4);color:#fbbf24}
@@ -1019,13 +1065,13 @@ function GymProfilePage(){
     .gym-hero-addr{color:rgba(255,255,255,.7);font-size:14px;margin-bottom:10px}
     .gym-hero-stats{display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap}
     .gym-hero-stat{color:#fff;font-size:14px;font-weight:600}
-    .gym-book-bar{display:flex;align-items:center;justify-content:space-between;background:rgba(10,15,20,.95);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.15);border-radius:16px;padding:12px 16px;position:fixed;bottom:calc(64px + env(safe-area-inset-bottom,0) + 8px);left:16px;right:16px;z-index:50;box-shadow:0 -4px 24px rgba(0,0,0,.5)}
+    .gym-book-bar{display:none}
     .gym-book-price{color:#fff;font-size:24px;font-weight:800}
     .gym-book-sub{font-size:12px;color:rgba(255,255,255,.5)}
     .gym-book-btn{background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:16px;font-weight:700;padding:14px 28px;border-radius:12px;border:none;box-shadow:0 4px 20px rgba(34,197,94,.4);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .15s}
     .gym-book-btn:active{transform:scale(.96)}
     @keyframes bounceDown{0%,100%{transform:translate(-50%,0);opacity:.6}50%{transform:translate(-50%,10px);opacity:1}}
-    .gym-scroll-hint{position:absolute;left:50%;bottom:200px;color:rgba(255,255,255,.5);font-size:32px;animation:bounceDown 2s ease-in-out infinite;z-index:5;pointer-events:none;text-shadow:0 2px 8px rgba(0,0,0,.5);filter:drop-shadow(0 0 4px rgba(0,0,0,.3))}
+    .gym-scroll-hint{display:none}
     .gym-card-book-btn{width:100%;margin-top:10px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:13px;font-weight:700;padding:10px 16px;border-radius:10px;border:none;box-shadow:0 2px 12px rgba(34,197,94,.3);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;letter-spacing:.3px}
     .gym-card-book-btn:active{transform:scale(.97);box-shadow:0 1px 6px rgba(34,197,94,.2)}
 
@@ -1084,61 +1130,68 @@ function GymProfilePage(){
   </style>
 
   <div class="gym-fs-hero" id="gym-fs-page">
-    <!-- Full-screen photo background -->
-    ${photos.length>0
-      ?`<img class="hero-bg" src="${photos[0].url||photos[0].thumbnail||photos[0]}" alt="${gym.name}" id="gym-fs-photo" onerror="this.style.display='none'">`
-      :`<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:80px;background:#1e293b">🏋️</div>`
-    }
-    <div class="hero-gradient"></div>
-    <div class="gym-scroll-hint">▼</div>
-
-    <!-- Photo dots -->
-    ${photos.length>1?`
-    <div class="hero-dots" id="fs-hero-dots">
-      ${photos.map((_,i)=>`<span class="${i===0?'active':''}"></span>`).join('')}
-    </div>`:''}
-
-    <!-- Right-side nav buttons -->
-    <div class="gym-nav-col">
-      <div class="gym-nav-btn" onclick="openGymOverlay('facilities')">
-        <div class="gym-nav-circle">🏊</div>
-        <span class="gym-nav-label">Facilities</span>
+    <!-- ═══ Instagram-style photo carousel (Fix #5) ═══ -->
+    <div class="gym-carousel-wrap${photos.length>1?' has-next':''}" id="gym-carousel-wrap">
+      <div class="gym-carousel-track" id="gym-carousel-track">
+        ${photos.length>0
+          ?photos.slice(0,4).map((p,i)=>`<div class="gym-carousel-slide"><img src="${p.url||p.thumbnail||p}" alt="${gym.name} photo ${i+1}" onerror="this.parentElement.innerHTML='<div class=\\'no-photo\\'>🏋️</div>'"></div>`).join('')
+          :`<div class="gym-carousel-slide"><div class="no-photo">🏋️</div></div>`
+        }
       </div>
-      <div class="gym-nav-btn" onclick="openGymOverlay('equipment')">
-        <div class="gym-nav-circle">🏋️</div>
-        <span class="gym-nav-label">Equipment</span>
-      </div>
-      <div class="gym-nav-btn" onclick="openGymOverlay('reviews')">
-        <div class="gym-nav-circle">⭐</div>
-        <span class="gym-nav-label">Reviews</span>
-      </div>
-      <div class="gym-nav-btn" onclick="openGymOverlay('hours')">
-        <div class="gym-nav-circle">🕐</div>
-        <span class="gym-nav-label">Hours</span>
-      </div>
+      <!-- Back button -->
+      <button class="gym-carousel-back" onclick="history.back()" aria-label="Go back">←</button>
+      <!-- Instagram counter "1/4" -->
+      ${photos.length>1?`<div class="gym-carousel-counter" id="gym-carousel-counter">1/${Math.min(photos.length,4)}</div>`:''}
+      <!-- Dot indicators (Instagram style) -->
+      ${photos.length>1?`<div class="gym-carousel-dots" id="gym-carousel-dots">${photos.slice(0,4).map((_,i)=>`<span class="${i===0?'active':''}"></span>`).join('')}</div>`:''}
+      <!-- Price badge -->
+      <div class="gym-carousel-price">£${currentPrice}</div>
     </div>
 
-    <!-- Bottom overlay info -->
-    <div class="gym-hero-bottom">
-      <div class="gym-hero-badges">
-        ${isTopGym(gym)?`<span class="gym-hero-badge gold">⭐ Guest Favourite</span>`:''}
-        <span class="gym-hero-badge green">✅ Free Cancel</span>
-      </div>
-      <div class="gym-hero-name">${gym.name}</div>
-      <div class="gym-hero-addr">📍 ${gym.formatted_address||gym.vicinity||gym.address||''}</div>
-      <div class="gym-hero-stats">
-        <span class="gym-hero-stat" style="color:#fbbf24">★ ${rating}</span>
-        <span class="gym-hero-stat" style="color:rgba(255,255,255,.6)">· ${reviewCount} reviews</span>
-        <span class="gym-hero-stat">${isOpen===true?`<span style="color:#4ade80">· <span style="width:6px;height:6px;background:#4ade80;border-radius:50%;display:inline-block;margin-right:4px;animation:pulse 2s infinite"></span>Open Now${closingTime(gym)?' · Closes '+closingTime(gym):''}</span>`:(isOpen===false?'<span style="color:rgba(255,255,255,.5)">· Closed</span>':'')}</span>
+    <!-- ═══ Info section (zero-scroll, below photos) ═══ -->
+    <div class="gym-info-section">
+      <!-- Gym info card -->
+      <div class="gym-info-card">
+        <div class="gym-info-name">${gym.name}</div>
+        <div class="gym-info-addr">📍 ${gym.formatted_address||gym.vicinity||gym.address||''}</div>
+        <div class="gym-info-meta">
+          <span style="color:#fbbf24">★ ${rating}</span>
+          <span style="color:rgba(255,255,255,.5)">· ${reviewCount} reviews</span>
+          ${isOpen===true?`<span style="color:#4ade80">· <span style="width:6px;height:6px;background:#4ade80;border-radius:50%;display:inline-block;margin-right:2px"></span>Open${closingTime(gym)?' til '+closingTime(gym):''}</span>`:(isOpen===false?'<span style="color:rgba(255,255,255,.4)">· Closed</span>':'')}
+        </div>
       </div>
 
-      <!-- Book Now bar — Bug #10 fix: shows current time-aware price -->
-      <div class="gym-book-bar">
-        <div>
-          <div class="gym-book-price">£${currentPrice}</div>
-          <div class="gym-book-sub">${_isOP10?'🌙 Off-peak price active':'Off-peak from £'+offPeakPrice}</div>
+      <!-- Quick actions: 3 buttons (Facilities, Reviews, Hours) — NO Photos -->
+      <div class="gym-quick-actions">
+        <div class="gym-qa-btn" onclick="openGymOverlay('facilities')"><span class="gym-qa-icon">🏊</span> Facilities</div>
+        <div class="gym-qa-btn" onclick="openGymOverlay('reviews')"><span class="gym-qa-icon">⭐</span> Reviews</div>
+        <div class="gym-qa-btn" onclick="openGymOverlay('hours')"><span class="gym-qa-icon">🕐</span> Hours</div>
+      </div>
+
+      <!-- Pass selection (inline) -->
+      <div class="gym-pass-row" id="gym-pass-row">
+        <div class="gym-pass-pill selected" onclick="selectGymPass(this,0,'${gymId}')" data-pass="day">
+          <div class="gym-pass-name">⚡ Day Pass</div>
+          <div class="gym-pass-price">£${currentPrice}</div>
         </div>
-        <button class="gym-book-btn" onclick="event.preventDefault();event.stopPropagation();showUberCheckout('${gymId}')">Book Now</button>
+        <div class="gym-pass-pill" onclick="selectGymPass(this,1,'${gymId}')" data-pass="3day">
+          <div class="gym-pass-name">🔥 3-Day</div>
+          <div class="gym-pass-price">£${(parseFloat(currentPrice)*2.4).toFixed(2)}</div>
+        </div>
+        <div class="gym-pass-pill" onclick="selectGymPass(this,2,'${gymId}')" data-pass="week">
+          <div class="gym-pass-name">💪 Weekly</div>
+          <div class="gym-pass-price">£${(parseFloat(currentPrice)*4).toFixed(2)}</div>
+        </div>
+      </div>
+
+      <!-- Big CTA -->
+      <button class="gym-book-cta" onclick="event.preventDefault();event.stopPropagation();showUberCheckout('${gymId}')">⚡ Book Now · £${currentPrice}</button>
+
+      <!-- Trust signals -->
+      <div class="gym-trust-row">
+        <span class="gym-trust-item">✅ Free Cancel</span>
+        <span class="gym-trust-item">🔒 Secure Pay</span>
+        <span class="gym-trust-item">⚡ Instant QR</span>
       </div>
     </div>
   </div>
@@ -1355,6 +1408,107 @@ window.closeGymOverlay=function(){
     if(panel)panel.style.transform='';
     if(diff>120)closeGymOverlay();
   },{passive:true});
+})();
+
+// ─── Fix #5: Instagram Carousel Swipe + Pass Selection ───
+window._gymCarouselIdx=0;
+window._gymCarouselMax=1;
+
+// Initialize carousel after render
+window.initGymCarousel=function(){
+  const track=document.getElementById('gym-carousel-track');
+  const wrap=document.getElementById('gym-carousel-wrap');
+  if(!track||!wrap)return;
+  const slides=track.querySelectorAll('.gym-carousel-slide');
+  window._gymCarouselMax=slides.length;
+  window._gymCarouselIdx=0;
+  if(slides.length<=1){wrap.classList.remove('has-next');return;}
+
+  let startX=0,startY=0,currentX=0,isDragging=false,moved=false;
+
+  wrap.addEventListener('touchstart',function(e){
+    startX=e.touches[0].clientX;
+    startY=e.touches[0].clientY;
+    currentX=startX;
+    isDragging=true;moved=false;
+    track.classList.add('dragging');
+  },{passive:true});
+
+  wrap.addEventListener('touchmove',function(e){
+    if(!isDragging)return;
+    currentX=e.touches[0].clientX;
+    const dx=currentX-startX;
+    const dy=e.touches[0].clientY-startY;
+    // Only track horizontal swipes
+    if(Math.abs(dx)>10)moved=true;
+    if(Math.abs(dx)>Math.abs(dy)&&moved){
+      const offset=-(window._gymCarouselIdx*100/window._gymCarouselMax)+(dx/(wrap.offsetWidth)*100/window._gymCarouselMax);
+      track.style.transform='translateX('+offset+'%)';
+    }
+  },{passive:true});
+
+  wrap.addEventListener('touchend',function(){
+    if(!isDragging)return;
+    isDragging=false;
+    track.classList.remove('dragging');
+    const dx=currentX-startX;
+    if(Math.abs(dx)>50&&moved){
+      if(dx<0&&window._gymCarouselIdx<window._gymCarouselMax-1){
+        window._gymCarouselIdx++;
+      }else if(dx>0&&window._gymCarouselIdx>0){
+        window._gymCarouselIdx--;
+      }
+    }
+    _updateGymCarousel();
+  },{passive:true});
+};
+
+function _updateGymCarousel(){
+  const track=document.getElementById('gym-carousel-track');
+  const counter=document.getElementById('gym-carousel-counter');
+  const dots=document.getElementById('gym-carousel-dots');
+  const wrap=document.getElementById('gym-carousel-wrap');
+  if(!track)return;
+  const idx=window._gymCarouselIdx;
+  const max=window._gymCarouselMax;
+  track.style.transform='translateX(-'+(idx*100/max)+'%)';
+  if(counter)counter.textContent=(idx+1)+'/'+max;
+  if(dots){
+    Array.from(dots.children).forEach(function(d,i){
+      if(i===idx){d.classList.add('active');}else{d.classList.remove('active');}
+    });
+  }
+  // Edge peek hint
+  if(wrap){
+    if(idx<max-1)wrap.classList.add('has-next');
+    else wrap.classList.remove('has-next');
+  }
+}
+
+// Pass selection
+window.selectGymPass=function(el,idx,gymId){
+  document.querySelectorAll('.gym-pass-pill').forEach(function(p){p.classList.remove('selected');});
+  el.classList.add('selected');
+  const price=el.querySelector('.gym-pass-price');
+  if(price){
+    const btn=document.querySelector('.gym-book-cta');
+    if(btn)btn.textContent='⚡ Book Now · '+price.textContent;
+  }
+};
+
+// Auto-init carousel when gym page renders
+(function(){
+  const _origRender=window.render;
+  if(_origRender){
+    window.render=function(){
+      _origRender.apply(this,arguments);
+      setTimeout(initGymCarousel,50);
+    };
+  }
+  // Also init on DOMContentLoaded in case render already happened
+  document.addEventListener('DOMContentLoaded',function(){setTimeout(initGymCarousel,100);});
+  // Fallback: try after short delay
+  setTimeout(initGymCarousel,200);
 })();
 
 // Helper: estimate rating distribution from average
