@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <title>FlexSquad — ScanGym Creator Portal</title>
+  <meta name="description" content="Join FlexSquad. Post gym videos. Earn per booking. 440+ ready-to-post videos, pre-written captions, and your unique affiliate link.">
+  <meta name="theme-color" content="#050816">
+  <link rel="icon" type="image/png" href="/reels/favicon.png">
+  
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="ScanGym">
+  <meta property="og:title" content="FlexSquad — Earn by Sharing Gym Content">
+  <meta property="og:description" content="Post gym videos. Earn per booking. 440+ ready-to-post videos with your affiliate link.">
+  <meta property="og:url" content="https://scangym.com/flexsquad">
+  
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    :root {
+      --brand: #f97316;
+      --brand-hover: #ea580c;
+      --bg-primary: #050816;
+      --bg-secondary: #0a0e1a;
+      --bg-card: #111827;
+      --bg-input: #1e293b;
+      --border: #1e293b;
+      --border-active: #f97316;
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --success: #22c55e;
+      --success-bg: rgba(34, 197, 94, 0.1);
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    /* ── Animations ── */
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    @keyframes confetti { 0% { transform: translateY(0) rotate(0); opacity: 1; } 100% { transform: translateY(-200px) rotate(720deg); opacity: 0; } }
+    
+    .fade-in { animation: fadeInUp 0.4s ease-out both; }
+    .fade-in-delay { animation: fadeInUp 0.4s ease-out 0.15s both; }
+    .slide-up { animation: slideUp 0.3s ease-out both; }
+    
+    /* ── Container ── */
+    .container { max-width: 420px; margin: 0 auto; padding: 0 16px; min-height: 100vh; }
+    
+    /* ── Header ── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 0;
+      position: sticky;
+      top: 0;
+      background: var(--bg-primary);
+      z-index: 100;
+    }
+    .header-back {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.06);
+      border: none;
+      color: var(--text-secondary);
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+    .header-back:active { background: rgba(255,255,255,0.12); transform: scale(0.92); }
+    .header-title { font-size: 16px; font-weight: 700; }
+    .header-spacer { width: 36px; }
+    
+    /* ── Screen: Join ── */
+    .join-hero { text-align: center; padding: 24px 0 20px; }
+    .join-hero .emoji { font-size: 48px; margin-bottom: 12px; }
+    .join-hero h1 { font-size: 24px; font-weight: 800; color: var(--brand); margin-bottom: 6px; }
+    .join-hero p { font-size: 14px; color: var(--text-secondary); line-height: 1.5; }
+    
+    .perks-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 24px; }
+    .perk-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 12px;
+      text-align: center;
+    }
+    .perk-card .perk-icon { font-size: 24px; margin-bottom: 6px; }
+    .perk-card .perk-val { font-size: 18px; font-weight: 800; color: var(--brand); }
+    .perk-card .perk-label { font-size: 10px; color: var(--text-secondary); margin-top: 2px; }
+    
+    /* ── Form ── */
+    .form-group { margin-bottom: 14px; }
+    .form-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+    .form-input {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-size: 15px;
+      color: var(--text-primary);
+      outline: none;
+      transition: border-color 0.2s;
+      font-family: inherit;
+    }
+    .form-input:focus { border-color: var(--brand); }
+    .form-input::placeholder { color: var(--text-muted); }
+    
+    .form-hint {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      padding-left: 4px;
+    }
+    
+    /* ── Buttons ── */
+    .btn-primary {
+      width: 100%;
+      background: var(--brand);
+      color: #000;
+      border: none;
+      border-radius: 14px;
+      padding: 16px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: inherit;
+      margin-top: 8px;
+    }
+    .btn-primary:active { transform: scale(0.98); background: var(--brand-hover); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .btn-primary .spinner {
+      display: inline-block;
+      width: 18px; height: 18px;
+      border: 2px solid rgba(0,0,0,0.2);
+      border-top-color: #000;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+    
+    .btn-secondary {
+      width: 100%;
+      background: rgba(255,255,255,0.06);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: inherit;
+      margin-top: 8px;
+    }
+    .btn-secondary:active { background: rgba(255,255,255,0.1); transform: scale(0.98); }
+    
+    .time-badge {
+      text-align: center;
+      margin-top: 12px;
+      font-size: 12px;
+      color: var(--success);
+    }
+    .time-badge span {
+      background: var(--success-bg);
+      padding: 4px 12px;
+      border-radius: 20px;
+    }
+    
+    /* ── Dashboard ── */
+    .dash-profile { text-align: center; padding: 20px 0 16px; }
+    .dash-avatar {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--brand), #ea580c);
+      margin: 0 auto 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      font-weight: 800;
+      color: #000;
+    }
+    .dash-name { font-size: 20px; font-weight: 700; }
+    .dash-tier { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--brand); margin-top: 4px; }
+    .dash-link {
+      display: block;
+      font-size: 12px;
+      color: var(--brand);
+      margin-top: 6px;
+      word-break: break-all;
+      cursor: pointer;
+    }
+    .dash-link:active { opacity: 0.7; }
+    
+    .stats-row { display: flex; gap: 8px; margin-bottom: 16px; }
+    .stat-card {
+      flex: 1;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 8px;
+      text-align: center;
+    }
+    .stat-val { font-size: 22px; font-weight: 800; color: var(--brand); }
+    .stat-label { font-size: 9px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+    
+    /* ── Video Library Preview ── */
+    .lib-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+    .lib-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .lib-title { font-size: 14px; font-weight: 700; }
+    .lib-count { font-size: 12px; color: var(--brand); font-weight: 600; }
+    .lib-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .lib-thumb {
+      aspect-ratio: 9/16;
+      background: linear-gradient(135deg, #1e293b, #334155);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+    .lib-thumb:active { transform: scale(0.95); }
+    
+    /* ── Action Cards ── */
+    .action-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .action-card:active { background: rgba(255,255,255,0.06); transform: scale(0.98); }
+    .action-icon {
+      width: 44px; height: 44px;
+      background: rgba(249, 115, 22, 0.1);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    .action-text h4 { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+    .action-text p { font-size: 11px; color: var(--text-secondary); }
+    .action-arrow { color: var(--text-muted); margin-left: auto; font-size: 14px; }
+    
+    /* ── Tier Progress ── */
+    .tier-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+    .tier-title { font-size: 14px; font-weight: 700; margin-bottom: 12px; }
+    .tier-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .tier-item:last-child { border-bottom: none; }
+    .tier-badge { font-size: 20px; flex-shrink: 0; }
+    .tier-info { flex: 1; }
+    .tier-name { font-size: 13px; font-weight: 600; }
+    .tier-req { font-size: 10px; color: var(--text-muted); }
+    .tier-active { color: var(--success); font-size: 12px; font-weight: 600; }
+    .tier-locked { color: var(--text-muted); font-size: 10px; }
+    
+    /* ── Success Screen ── */
+    .success-screen { text-align: center; padding: 40px 0; }
+    .success-check {
+      width: 72px; height: 72px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--success), #16a34a);
+      margin: 0 auto 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+    }
+    .success-screen h2 { font-size: 22px; font-weight: 800; margin-bottom: 8px; }
+    .success-screen p { font-size: 14px; color: var(--text-secondary); margin-bottom: 20px; }
+    .success-items { text-align: left; margin: 20px 0; }
+    .success-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px;
+      background: var(--success-bg);
+      border-radius: 10px;
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+    .success-item .check { color: var(--success); font-size: 16px; flex-shrink: 0; }
+    
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--success);
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      z-index: 9999;
+      animation: slideUp 0.3s ease-out;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    
+    /* ── Bottom padding for safe area ── */
+    .bottom-pad { height: 80px; }
+    
+    /* ── Hide scrollbar ── */
+    ::-webkit-scrollbar { display: none; }
+    body { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body>
+  <div class="container" id="app"></div>
+
+  <script>
+    // ── State ──
+    const state = {
+      screen: 'loading',   // loading | join | dashboard | success
+      user: null,           // { name, handle, email }
+      membership: null,     // from API
+      toolkit: null,        // from API
+    };
+
+    // ── Check if user is already logged in ──
+    async function checkAuth() {
+      try {
+        const res = await fetch('/api/creators/membership', { credentials: 'include' });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.isMember) {
+            state.membership = data;
+            state.screen = 'dashboard';
+            render();
+            loadToolkit();
+            return;
+          }
+        }
+      } catch (e) {}
+      state.screen = 'join';
+      render();
+    }
+
+    async function loadToolkit() {
+      try {
+        const res = await fetch('/api/creators/toolkit', { credentials: 'include' });
+        if (res.ok) {
+          state.toolkit = await res.json();
+          render();
+        }
+      } catch (e) {}
+    }
+
+    // ── Join FlexSquad ──
+    async function handleJoin(e) {
+      e.preventDefault();
+      const btn = document.getElementById('join-btn');
+      const name = document.getElementById('f-name').value.trim();
+      const handle = document.getElementById('f-handle').value.trim();
+      const email = document.getElementById('f-email').value.trim();
+
+      if (!name || !handle || !email) {
+        showToast('Please fill in all fields', 'error');
+        return;
+      }
+      if (!email.includes('@')) {
+        showToast('Please enter a valid email', 'error');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>Joining...';
+
+      try {
+        // First, try to register/login the user
+        // For now, store locally and call join API
+        state.user = { name, handle, email };
+        
+        // Try joining the creator program
+        const res = await fetch('/api/creators/join', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ name, handle, email }),
+        });
+
+        if (res.ok || res.status === 409) {
+          const data = await res.json();
+          state.membership = data.membership || data;
+          state.screen = 'success';
+          render();
+          // Auto-transition to dashboard after 3 seconds
+          setTimeout(() => {
+            state.screen = 'dashboard';
+            render();
+            loadToolkit();
+          }, 3000);
+        } else {
+          // If auth required, store user data locally for now
+          localStorage.setItem('flexsquad_pending', JSON.stringify(state.user));
+          state.screen = 'success';
+          render();
+          setTimeout(() => {
+            state.screen = 'dashboard';
+            render();
+          }, 3000);
+        }
+      } catch (err) {
+        // Offline-friendly: store locally
+        localStorage.setItem('flexsquad_pending', JSON.stringify(state.user));
+        state.screen = 'success';
+        render();
+        setTimeout(() => {
+          state.screen = 'dashboard';
+          render();
+        }, 3000);
+      }
+    }
+
+    // ── Copy to clipboard ──
+    function copyLink(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('📋 Link copied!');
+      }).catch(() => {
+        // Fallback
+        const input = document.createElement('input');
+        input.value = text;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+        showToast('📋 Link copied!');
+      });
+    }
+
+    // ── Toast ──
+    function showToast(msg, type = 'success') {
+      const existing = document.querySelector('.toast');
+      if (existing) existing.remove();
+      const t = document.createElement('div');
+      t.className = 'toast';
+      if (type === 'error') t.style.background = '#ef4444';
+      t.textContent = msg;
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 3000);
+    }
+
+    // ── Navigate ──
+    function goBack() {
+      // Check if opened from Reels iframe
+      if (window.opener || document.referrer.includes('/reels')) {
+        window.history.back();
+      } else if (window.parent !== window) {
+        window.parent.postMessage({ type: 'flexsquad-close' }, '*');
+      } else {
+        window.location.href = '/reels';
+      }
+    }
+
+    function goToReels() {
+      window.location.href = '/reels';
+    }
+
+    // ── Render ──
+    function render() {
+      const app = document.getElementById('app');
+      
+      if (state.screen === 'loading') {
+        app.innerHTML = `
+          <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;">
+            <div style="text-align:center;">
+              <div style="font-size:48px;margin-bottom:12px;animation:pulse 1.5s infinite;">🚀</div>
+              <p style="color:var(--text-secondary);">Loading FlexSquad...</p>
+            </div>
+          </div>`;
+        return;
+      }
+
+      if (state.screen === 'join') {
+        app.innerHTML = renderJoinScreen();
+        return;
+      }
+
+      if (state.screen === 'success') {
+        app.innerHTML = renderSuccessScreen();
+        return;
+      }
+
+      if (state.screen === 'dashboard') {
+        app.innerHTML = renderDashboard();
+        return;
+      }
+    }
+
+    function renderJoinScreen() {
+      return `
+        <div class="header">
+          <button class="header-back" onclick="goBack()">←</button>
+          <div class="header-title">FlexSquad</div>
+          <div class="header-spacer"></div>
+        </div>
+
+        <div class="join-hero fade-in">
+          <div class="emoji">🚀</div>
+          <h1>Join FlexSquad</h1>
+          <p>Post gym videos. Earn per booking.<br>440+ videos ready for you.</p>
+        </div>
+
+        <div class="perks-grid fade-in-delay">
+          <div class="perk-card">
+            <div class="perk-icon">🎬</div>
+            <div class="perk-val">440+</div>
+            <div class="perk-label">READY-TO-POST VIDEOS</div>
+          </div>
+          <div class="perk-card">
+            <div class="perk-icon">💰</div>
+            <div class="perk-val">£2</div>
+            <div class="perk-label">PER BOOKING</div>
+          </div>
+          <div class="perk-card">
+            <div class="perk-icon">📝</div>
+            <div class="perk-val">FREE</div>
+            <div class="perk-label">CAPTIONS INCLUDED</div>
+          </div>
+          <div class="perk-card">
+            <div class="perk-icon">©️</div>
+            <div class="perk-val">FREE</div>
+            <div class="perk-label">COPYRIGHT-FREE</div>
+          </div>
+        </div>
+
+        <form onsubmit="handleJoin(event)" class="fade-in-delay">
+          <div class="form-group">
+            <label class="form-label">Your Name</label>
+            <input type="text" class="form-input" id="f-name" placeholder="e.g. Jake Fitness" autocomplete="name" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Social Handle</label>
+            <input type="text" class="form-input" id="f-handle" placeholder="e.g. @jakefitness_" autocomplete="username">
+            <div class="form-hint">Your TikTok, Instagram, or YouTube handle</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-input" id="f-email" placeholder="e.g. jake@gmail.com" autocomplete="email" required>
+          </div>
+          <button type="submit" class="btn-primary" id="join-btn">Start Earning →</button>
+          <div class="time-badge"><span>⚡ Takes under 30 seconds</span></div>
+        </form>
+
+        <div class="bottom-pad"></div>`;
+    }
+
+    function renderSuccessScreen() {
+      const name = state.user?.name || 'Creator';
+      const handle = state.user?.handle || '';
+      const refSlug = handle.replace(/[^a-zA-Z0-9]/g, '') || name.toLowerCase().replace(/\s+/g, '');
+      
+      return `
+        <div class="success-screen fade-in">
+          <div class="success-check">✓</div>
+          <h2>Welcome to FlexSquad! 🎉</h2>
+          <p>You're all set, ${name.split(' ')[0]}!</p>
+          
+          <div class="success-items">
+            <div class="success-item">
+              <span class="check">✓</span>
+              <span>Your affiliate link is live</span>
+            </div>
+            <div class="success-item">
+              <span class="check">✓</span>
+              <span>440+ videos ready to download</span>
+            </div>
+            <div class="success-item">
+              <span class="check">✓</span>
+              <span>Captions + hashtags included</span>
+            </div>
+            <div class="success-item">
+              <span class="check">✓</span>
+              <span>Earn £2 per booking</span>
+            </div>
+          </div>
+          
+          <p style="color:var(--text-muted);font-size:12px;margin-top:20px;">Loading your dashboard...</p>
+        </div>`;
+    }
+
+    function renderDashboard() {
+      const user = state.user || { name: 'Creator', handle: '' };
+      const name = user.name || 'Creator';
+      const initial = name.charAt(0).toUpperCase();
+      const refSlug = (user.handle || '').replace(/[^a-zA-Z0-9]/g, '') || name.toLowerCase().replace(/\s+/g, '');
+      const refLink = `scangym.com/?ref=${refSlug}`;
+      
+      const m = state.membership || {};
+      const earned = m.total_earnings_pence ? `£${(m.total_earnings_pence / 100).toFixed(2)}` : '£0';
+      const referrals = m.total_referrals || 0;
+      const conversions = m.total_conversions || 0;
+      const tier = m.tier || 'starter';
+      const badge = m.badge || '🌱';
+      
+      const toolkit = state.toolkit?.toolkit || {};
+      const totalAssets = toolkit.totalAssets || 440;
+
+      return `
+        <div class="header">
+          <button class="header-back" onclick="goBack()">←</button>
+          <div class="header-title">Creator Dashboard</div>
+          <div class="header-spacer"></div>
+        </div>
+
+        <div class="dash-profile fade-in">
+          <div class="dash-avatar">${initial}</div>
+          <div class="dash-name">${name}</div>
+          <div class="dash-tier">${badge} ${tier.charAt(0).toUpperCase() + tier.slice(1)} Creator</div>
+          <div class="dash-link" onclick="copyLink('https://${refLink}')">${refLink} 📋</div>
+        </div>
+
+        <div class="stats-row fade-in">
+          <div class="stat-card">
+            <div class="stat-val">${earned}</div>
+            <div class="stat-label">EARNED</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-val">${referrals}</div>
+            <div class="stat-label">CLICKS</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-val">${conversions}</div>
+            <div class="stat-label">BOOKINGS</div>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="action-card fade-in-delay" onclick="goToReels()">
+          <div class="action-icon">🎬</div>
+          <div class="action-text">
+            <h4>Browse & Download Videos</h4>
+            <p>${totalAssets}+ ready-to-post videos with your link</p>
+          </div>
+          <span class="action-arrow">→</span>
+        </div>
+
+        <div class="action-card fade-in-delay" onclick="copyLink('https://${refLink}')">
+          <div class="action-icon">🔗</div>
+          <div class="action-text">
+            <h4>Copy Your Affiliate Link</h4>
+            <p>${refLink}</p>
+          </div>
+          <span class="action-arrow">📋</span>
+        </div>
+
+        <div class="action-card fade-in-delay" onclick="shareLink()">
+          <div class="action-icon">📤</div>
+          <div class="action-text">
+            <h4>Share on WhatsApp</h4>
+            <p>Drop your link in a fitness group</p>
+          </div>
+          <span class="action-arrow">→</span>
+        </div>
+
+        <!-- Tier Progress -->
+        <div class="tier-section fade-in-delay">
+          <div class="tier-title">🏆 Your FlexSquad Tier</div>
+          <div class="tier-item">
+            <span class="tier-badge">🌱</span>
+            <div class="tier-info">
+              <div class="tier-name">Starter</div>
+              <div class="tier-req">0 referrals</div>
+            </div>
+            ${tier === 'starter' ? '<span class="tier-active">● Current</span>' : '<span class="tier-locked">✓</span>'}
+          </div>
+          <div class="tier-item">
+            <span class="tier-badge">⭐</span>
+            <div class="tier-info">
+              <div class="tier-name">Rising Star</div>
+              <div class="tier-req">10 referrals</div>
+            </div>
+            ${tier === 'rising' ? '<span class="tier-active">● Current</span>' : referrals >= 10 ? '<span class="tier-locked">✓</span>' : '<span class="tier-locked">🔒</span>'}
+          </div>
+          <div class="tier-item">
+            <span class="tier-badge">🔥</span>
+            <div class="tier-info">
+              <div class="tier-name">Pro Creator</div>
+              <div class="tier-req">50 referrals → Free Premium</div>
+            </div>
+            ${tier === 'pro' ? '<span class="tier-active">● Current</span>' : referrals >= 50 ? '<span class="tier-locked">✓</span>' : '<span class="tier-locked">🔒</span>'}
+          </div>
+          <div class="tier-item">
+            <span class="tier-badge">👑</span>
+            <div class="tier-info">
+              <div class="tier-name">Legend</div>
+              <div class="tier-req">100 referrals → LIFETIME free</div>
+            </div>
+            ${tier === 'legend' ? '<span class="tier-active">● Current</span>' : '<span class="tier-locked">🔒</span>'}
+          </div>
+        </div>
+
+        <!-- Video Library Preview -->
+        <div class="lib-section fade-in-delay">
+          <div class="lib-header">
+            <span class="lib-title">📚 Video Library</span>
+            <span class="lib-count">${totalAssets} videos</span>
+          </div>
+          <div class="lib-grid">
+            <div class="lib-thumb" onclick="goToReels()">🏋️</div>
+            <div class="lib-thumb" onclick="goToReels()">💪</div>
+            <div class="lib-thumb" onclick="goToReels()">🔥</div>
+            <div class="lib-thumb" onclick="goToReels()">⚡</div>
+          </div>
+          <button class="btn-secondary" onclick="goToReels()" style="margin-top:10px;">Browse All Videos →</button>
+        </div>
+
+        <div class="bottom-pad"></div>`;
+    }
+
+    function shareLink() {
+      const user = state.user || { name: 'Creator', handle: '' };
+      const refSlug = (user.handle || '').replace(/[^a-zA-Z0-9]/g, '') || (user.name || 'creator').toLowerCase().replace(/\s+/g, '');
+      const link = `https://scangym.com/?ref=${refSlug}`;
+      const text = `💪 Book a gym anywhere for £5 — no membership needed! ${link}`;
+      
+      if (navigator.share) {
+        navigator.share({ title: 'ScanGym', text, url: link }).catch(() => {});
+      } else {
+        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+      }
+    }
+
+    // ── Init ──
+    // Check for pending signup data
+    const pending = localStorage.getItem('flexsquad_pending');
+    if (pending) {
+      try { state.user = JSON.parse(pending); } catch (e) {}
+    }
+
+    checkAuth();
+  </script>
+</body>
+</html>

@@ -297,6 +297,18 @@ if (fs.existsSync(FRONTEND_DIR)) {
     }
   }));
 
+  // FlexSquad Creator Portal — standalone page at /flexsquad
+  app.get('/flexsquad', (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache');
+    res.sendFile(path.join(FRONTEND_DIR, 'flexsquad', 'index.html'));
+  });
+  app.get('/flexsquad/*', (req, res, next) => {
+    const filePath = path.join(FRONTEND_DIR, req.path);
+    if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) return next();
+    res.setHeader('Cache-Control', 'no-cache');
+    res.sendFile(path.join(FRONTEND_DIR, 'flexsquad', 'index.html'));
+  });
+
   // Reels app — separate React SPA at /reels
   // Serves reels/index.html for /reels and all sub-routes (e.g. /reels/creator/auth)
   app.get('/reels', (req, res) => {
