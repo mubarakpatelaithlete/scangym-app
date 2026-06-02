@@ -3236,7 +3236,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
   <style>
     /* ─── Base overlay & sheet ─── */
     .ub-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:9200;display:flex;align-items:flex-end;justify-content:center}
-    .ub-sheet{background:#0a0f14;width:100%;max-width:440px;border-radius:24px 24px 0 0;overflow:hidden;transform:translateY(100%);animation:ubSlideUp .35s cubic-bezier(.32,.72,0,1) forwards;position:relative;height:calc(100vh - 64px);height:calc(100dvh - 64px);display:flex;flex-direction:column}
+    .ub-sheet{background:#0a0f14;width:100%;max-width:440px;border-radius:24px 24px 0 0;overflow:hidden;transform:translateY(100%);animation:ubSlideUp .35s cubic-bezier(.32,.72,0,1) forwards;position:relative;height:100vh;height:100dvh;display:flex;flex-direction:column}
     @keyframes ubSlideUp{to{transform:translateY(0)}}
     .ub-drag{width:36px;height:4px;border-radius:2px;background:rgba(255,255,255,.12);margin:10px auto 0}
 
@@ -3266,7 +3266,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
     .ub-divider{height:1px;background:rgba(255,255,255,.06);margin:0 20px}
 
     /* ─── CTA footer ─── */
-    .ub-footer{padding:16px 20px 28px;display:flex;flex-direction:column;gap:10px}
+    .ub-footer{padding:16px 20px calc(28px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:10px}
     .ub-cta{width:100%;padding:18px;border:none;border-radius:16px;font-size:18px;font-weight:700;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:8px;-webkit-tap-highlight-color:transparent}
     .ub-cta:active{transform:scale(.98)}
     .ub-cta-primary{background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;box-shadow:0 4px 20px rgba(34,197,94,.3)}
@@ -3280,7 +3280,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
     .ub-sub-back{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.08);border:none;color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent}
     .ub-sub-title{color:#fff;font-size:18px;font-weight:700}
     .ub-sub-body{flex:1;overflow-y:auto;padding:16px 20px;-webkit-overflow-scrolling:touch}
-    .ub-sub-footer{padding:16px 20px 28px;flex-shrink:0}
+    .ub-sub-footer{padding:16px 20px calc(28px + env(safe-area-inset-bottom,0px));flex-shrink:0}
 
     /* ─── Pass cards in pass picker ─── */
     .ub-pass{border:2px solid rgba(255,255,255,.08);border-radius:16px;padding:16px;margin-bottom:10px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent}
