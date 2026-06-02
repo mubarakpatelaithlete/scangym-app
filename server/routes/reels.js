@@ -138,14 +138,22 @@ router.get('/video/:id', async (req, res) => {
 
     const { file_path: filePath, file_name: fileName } = result.rows[0];
 
-    // Check file exists
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ error: 'Video file not found on disk' });
+    // Check file exists (try persistent volume first, then original path)
+    let resolvedPath = filePath;
+    if (!fs.existsSync(resolvedPath)) {
+      // Try Railway persistent volume path
+      const basename = path.basename(filePath);
+      const volumePath = path.join('/data/uploads', basename);
+      if (fs.existsSync(volumePath)) {
+        resolvedPath = volumePath;
+      } else {
+        return res.status(404).json({ error: 'Video file not found on disk' });
+      }
     }
 
-    const stat = fs.statSync(filePath);
+    const stat = fs.statSync(resolvedPath);
     const fileSize = stat.size;
-    const ext = path.extname(fileName || filePath).toLowerCase();
+    const ext = path.extname(fileName || resolvedPath).toLowerCase();
     const mimeType = ext === '.webm' ? 'video/webm' : ext === '.mov' ? 'video/quicktime' : 'video/mp4';
 
     // Support range requests for video seeking
@@ -163,7 +171,7 @@ router.get('/video/:id', async (req, res) => {
         'Content-Type': mimeType,
         'Cache-Control': 'public, max-age=604800',
       });
-      fs.createReadStream(filePath, { start, end }).pipe(res);
+      fs.createReadStream(resolvedPath, { start, end }).pipe(res);
     } else {
       res.writeHead(200, {
         'Content-Length': fileSize,
@@ -171,7 +179,7 @@ router.get('/video/:id', async (req, res) => {
         'Accept-Ranges': 'bytes',
         'Cache-Control': 'public, max-age=604800',
       });
-      fs.createReadStream(filePath).pipe(res);
+      fs.createReadStream(resolvedPath).pipe(res);
     }
   } catch (err) {
     console.error('Video stream error:', err);
