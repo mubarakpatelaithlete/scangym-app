@@ -11,6 +11,10 @@
     <meta property="og:description" content="Discover gyms near you. £5 day passes, no membership needed. Swipe through real gym content from creators worldwide." />
     <meta property="og:image" content="https://scangym.com/reels/og-image.png" />
     <meta name="theme-color" content="#050816" />
+    <!-- Phase 3: standalone mode — no iframe dependency -->
+    <link rel="manifest" href="/reels/manifest.json" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <style>
       *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
       html,body{
@@ -44,6 +48,13 @@
         object-fit:cover;
         pointer-events:none;
       }
+
+      /* Phase 2: Canvas pre-render overlay (shows poster during swipe) */
+      .reel canvas.frame-preview{
+        position:absolute;top:0;left:0;width:100%;height:100%;
+        object-fit:cover;pointer-events:none;z-index:1;
+      }
+      .reel video.has-frame{z-index:2;}
 
       /* Gradient overlays */
       .reel::before{
@@ -151,7 +162,6 @@
         position:absolute;bottom:0;left:0;right:0;height:3px;
         z-index:25;background:rgba(255,255,255,.12);
       }
-      /* v3 FIX: buffered range indicator */
       .reel-progress-buffered{
         position:absolute;top:0;left:0;height:100%;width:0%;
         background:rgba(255,255,255,.18);
@@ -161,10 +171,9 @@
         position:absolute;top:0;left:0;height:100%;width:0%;
         background:#f97316;
         border-radius:0 2px 2px 0;
-        /* v3: removed CSS transition — now driven by rAF for 120fps */
       }
 
-      /* ── v3 FIX: Shimmer loading (replaces spinner) ── */
+      /* ── Shimmer loading ── */
       #loading{
         position:fixed;top:0;left:0;right:0;bottom:0;z-index:50;
         background:#0a0a16;display:flex;flex-direction:column;
@@ -210,7 +219,6 @@
         100%{background-position:-200% 0;}
       }
       #loading p{color:rgba(255,255,255,.3);font-size:12px;position:absolute;bottom:40px;left:50%;transform:translateX(-50%);}
-      /* fallback if fatal error needs spinner */
       .spinner{
         width:40px;height:40px;border:3px solid rgba(249,115,22,.2);
         border-top-color:#f97316;border-radius:50%;
@@ -226,7 +234,7 @@
       }
       #mute-indicator.show{opacity:1;}
 
-      /* ── v3: Tap-for-sound indicator ── */
+      /* ── Tap-for-sound indicator ── */
       #sound-hint{
         position:fixed;top:16px;right:16px;z-index:35;
         display:flex;align-items:center;gap:6px;
@@ -244,7 +252,7 @@
         50%{opacity:1;transform:scale(1.04);}
       }
 
-      /* ── v3: Double-tap like animation ── */
+      /* ── Double-tap like animation ── */
       .like-burst{
         position:fixed;z-index:999;pointer-events:none;
         font-size:80px;
@@ -300,7 +308,7 @@
     </style>
   </head>
   <body>
-    <!-- v3: Shimmer skeleton loading (not spinner) -->
+    <!-- Shimmer skeleton loading -->
     <div id="loading">
       <div class="shimmer-container">
         <div class="shimmer-content">
@@ -319,7 +327,7 @@
       <p>ScanGym</p>
     </div>
     <div id="mute-indicator"></div>
-    <!-- v3: Tap-for-sound indicator -->
+    <!-- Tap-for-sound indicator -->
     <div id="sound-hint">
       <svg viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
       Tap for sound
@@ -339,23 +347,21 @@
 
     <script>
     /**
-     * ScanGym Reels v3 — TikTok-grade performance (Research-Backed)
-     * ───────────────────────────────────────────────────────────────
-     * Built from 51-query deep research across TikTok, Instagram Reels,
-     * YouTube Shorts architecture, scroll physics, and engagement psychology.
+     * ScanGym Reels v4 — Native-Grade + Infrastructure
+     * ──────────────────────────────────────────────────
+     * Phase 2 (Native-Grade Polish):
+     *   ⑮ Video element pool  — 3 recycled <video> elements, zero DOM create/destroy
+     *   ⑯ Audio crossfade     — 150ms volume fade between reels
+     *   ⑰ Canvas pre-render   — decoded first-frame drawn during swipe
+     *   ⑱ Desktop refinements — trackpad momentum, smoother wheel handling
      *
-     * v3 Fixes (on top of v2):
-     *   ⑥ Smart preloading    — current=auto, next=2s range, rest=metadata only
-     *   ⑦ Real poster frames  — Canvas-captured first frame, cached in memory
-     *   ⑧ Gesture prediction  — start preloading next video mid-swipe
-     *   ⑨ Paginated feed      — 20 items first, infinite scroll at N-3
-     *   ⑩ rAF progress bar    — 120fps smooth progress + buffered range
-     *   ⑪ Shimmer loading     — skeleton shimmer replaces spinner
-     *   ⑫ Double-tap like     — TikTok-style heart burst + haptic
-     *   ⑬ Tap-for-sound hint  — pulsing indicator, 40%+ higher unmute rate
-     *   ⑭ Improved velocity   — last 100ms sample for accurate snap direction
+     * Phase 3 (Infrastructure):
+     *   ⑲ Service worker      — stale-while-revalidate feed, cache-first videos
+     *   ⑳ CDN abstraction     — video URL resolver for future CDN migration
+     *   ㉑ BlurHash placeholders — 4×3 decoded gradient from compact hash
+     *   ㉒ Standalone mode     — no iframe dependency, PWA-ready meta tags
      *
-     * Retained from v2: ①–⑤ (virtual DOM window, prefetch, poster, spring snap, rAF drag)
+     * Retained: all v2 (①–⑤) and v3 (⑥–⑭) optimizations
      */
     (function(){
       'use strict';
@@ -369,14 +375,16 @@
       };
 
       // ── Constants ──
-      var SNAP_VELOCITY  = 0.3;
-      var SNAP_THRESHOLD = 0.2;
-      var SNAP_DURATION  = 280;
-      var RUBBER_BAND    = 0.3;
-      var RENDER_WINDOW  = 2;     // ① ±2 around current = max 5 DOM elements
-      var PREFETCH_AHEAD = 5;     // ② prefetch next 5 video URLs
-      var PAGE_SIZE      = 20;    // ⑨ load 20 at a time
-      var LOAD_MORE_AT   = 3;     // ⑨ fetch next page when 3 from end
+      var SNAP_VELOCITY    = 0.3;
+      var SNAP_THRESHOLD   = 0.2;
+      var SNAP_DURATION    = 280;
+      var RUBBER_BAND      = 0.3;
+      var RENDER_WINDOW    = 2;
+      var PREFETCH_AHEAD   = 5;
+      var PAGE_SIZE        = 20;
+      var LOAD_MORE_AT     = 3;
+      var POOL_SIZE        = 3;      // ⑮ video element pool size
+      var CROSSFADE_MS     = 150;    // ⑯ audio crossfade duration
 
       // ── Placeholder poster (SVG) ──
       var PLACEHOLDER_POSTER = 'data:image/svg+xml,' + encodeURIComponent(
@@ -397,14 +405,14 @@
       var isMuted        = true;
       var screenH        = window.innerHeight;
       var trackOffset    = 0;
-      var renderedReels  = {};    // index → DOM element
-      var prefetchedUrls = {};    // url → true
-      var posterCache    = {};    // ⑦ index → data URL of captured first frame
-      var progressRafId  = null;  // ⑩ rAF id for progress loop
-      var feedHasMore    = true;  // ⑨ pagination state
-      var feedOffset     = 0;     // ⑨ current offset
-      var feedLoading    = false; // ⑨ prevent duplicate fetches
-      var soundHintShown = false; // ⑬ only show once
+      var renderedReels  = {};
+      var prefetchedUrls = {};
+      var posterCache    = {};
+      var progressRafId  = null;
+      var feedHasMore    = true;
+      var feedOffset     = 0;
+      var feedLoading    = false;
+      var soundHintShown = false;
 
       var track   = document.getElementById('reel-track');
       var loading = document.getElementById('loading');
@@ -417,16 +425,287 @@
       var touchLastT    = 0;
       var isDragging    = false;
       var dragDelta     = 0;
-
-      // ⑭ Touch history for last-100ms velocity
-      var touchHistory  = [];     // [{y, t}, ...]
-
-      // ── rAF drag state ──
+      var touchHistory  = [];
       var pendingDragY  = null;
       var dragRafId     = null;
-
-      // ⑧ Gesture prediction state
       var gesturePreloaded = false;
+
+      // ═══════════════════════════════════════════════════════════
+      //  ⑮ VIDEO ELEMENT POOL — 3 recycled elements
+      // ═══════════════════════════════════════════════════════════
+      //  Instead of creating/destroying <video> elements (expensive:
+      //  browser must allocate decoder pipeline each time), we maintain
+      //  a pool of 3 elements and reassign src. This matches how
+      //  TikTok uses 3 ExoPlayer instances on Android.
+
+      var videoPool = [];                // Array of {element, assignedIndex}
+      var videoPoolMap = {};             // index → pool entry
+
+      function initVideoPool(){
+        for(var i = 0; i < POOL_SIZE; i++){
+          var vid = document.createElement('video');
+          vid.loop = true;
+          vid.muted = isMuted;
+          vid.playsInline = true;
+          vid.setAttribute('playsinline', '');
+          vid.setAttribute('webkit-playsinline', '');
+          vid.preload = 'metadata';
+          vid.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;pointer-events:none;';
+          videoPool.push({ element: vid, assignedIndex: -1, inUse: false });
+        }
+      }
+
+      function acquireVideo(index){
+        // If already assigned to this index, return it
+        if(videoPoolMap[index]){
+          return videoPoolMap[index].element;
+        }
+
+        // Find a free pool entry
+        var entry = null;
+        for(var i = 0; i < videoPool.length; i++){
+          if(!videoPool[i].inUse){
+            entry = videoPool[i];
+            break;
+          }
+        }
+
+        // If no free entry, evict the one farthest from current index
+        if(!entry){
+          var maxDist = -1;
+          for(var i = 0; i < videoPool.length; i++){
+            var dist = Math.abs(videoPool[i].assignedIndex - currentIndex);
+            if(dist > maxDist){
+              maxDist = dist;
+              entry = videoPool[i];
+            }
+          }
+          // Release the old assignment
+          if(entry.assignedIndex >= 0){
+            releaseVideo(entry.assignedIndex);
+          }
+        }
+
+        entry.inUse = true;
+        entry.assignedIndex = index;
+        videoPoolMap[index] = entry;
+        return entry.element;
+      }
+
+      function releaseVideo(index){
+        var entry = videoPoolMap[index];
+        if(!entry) return;
+        var vid = entry.element;
+        vid.pause();
+        vid.removeAttribute('src');
+        vid.load(); // Reset internal state
+        // Remove from parent if attached
+        if(vid.parentNode) vid.parentNode.removeChild(vid);
+        entry.inUse = false;
+        entry.assignedIndex = -1;
+        delete videoPoolMap[index];
+      }
+
+      // ═══════════════════════════════════════════════════════════
+      //  ⑯ AUDIO CROSSFADE — 150ms volume fade between reels
+      // ═══════════════════════════════════════════════════════════
+
+      var fadeIntervals = [];
+
+      function fadeVolume(vid, from, to, duration, callback){
+        var steps = 8;
+        var stepDur = duration / steps;
+        var stepVal = (to - from) / steps;
+        var current = from;
+        var i = 0;
+        vid.volume = Math.max(0, Math.min(1, from));
+        var interval = setInterval(function(){
+          i++;
+          current += stepVal;
+          vid.volume = Math.max(0, Math.min(1, current));
+          if(i >= steps){
+            clearInterval(interval);
+            vid.volume = Math.max(0, Math.min(1, to));
+            if(callback) callback();
+          }
+        }, stepDur);
+        fadeIntervals.push(interval);
+        return interval;
+      }
+
+      function clearAllFades(){
+        for(var i = 0; i < fadeIntervals.length; i++){
+          clearInterval(fadeIntervals[i]);
+        }
+        fadeIntervals = [];
+      }
+
+      // ═══════════════════════════════════════════════════════════
+      //  ⑰ CANVAS PRE-RENDER — show decoded frame during swipe
+      // ═══════════════════════════════════════════════════════════
+      //  During a swipe, the next reel might not have its video
+      //  ready yet. By drawing the captured poster frame onto a
+      //  <canvas>, the user sees content instead of a black void.
+
+      function drawFramePreview(reel, index){
+        if(!posterCache[index]) return;
+        var existing = reel.querySelector('canvas.frame-preview');
+        if(existing) return; // Already drawn
+
+        var canvas = document.createElement('canvas');
+        canvas.className = 'frame-preview';
+        canvas.width = 360;
+        canvas.height = 640;
+
+        var img = new Image();
+        img.onload = function(){
+          var ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, 360, 640);
+          // Insert before video so video overlays it when ready
+          var vid = reel.querySelector('video');
+          if(vid){
+            reel.insertBefore(canvas, vid);
+          } else {
+            reel.insertBefore(canvas, reel.firstChild);
+          }
+        };
+        img.src = posterCache[index];
+      }
+
+      function removeFramePreview(reel){
+        var canvas = reel.querySelector('canvas.frame-preview');
+        if(canvas) canvas.remove();
+      }
+
+      // ═══════════════════════════════════════════════════════════
+      //  ㉑ BLURHASH PLACEHOLDERS — compact gradient decoder
+      // ═══════════════════════════════════════════════════════════
+      //  If the feed provides a `blurhash` field, decode it into
+      //  a tiny blurry image for instant placeholder display.
+      //  Falls back to SVG gradient if no blurhash available.
+
+      var blurHashChars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz#$%*+,-.:;=?@[]^_{|}~';
+
+      function decodeBlurHash(hash, width, height){
+        if(!hash || hash.length < 6) return null;
+        try{
+          var sizeFlag = blurHashChars.indexOf(hash[0]);
+          var numY = Math.floor(sizeFlag / 9) + 1;
+          var numX = (sizeFlag % 9) + 1;
+          var quantMaxVal = blurHashChars.indexOf(hash[1]);
+          var realMaxVal = (quantMaxVal + 1) / 166;
+
+          var colors = [];
+          // DC component
+          var dcVal = (blurHashChars.indexOf(hash[2]) * 4096) + (blurHashChars.indexOf(hash[3]) * 64) + blurHashChars.indexOf(hash[4]);
+          colors.push(decodeDC(dcVal));
+
+          // AC components
+          for(var i = 1; i < numX * numY; i++){
+            var acIdx = 4 + i * 2;
+            if(acIdx + 1 >= hash.length) break;
+            var acVal = blurHashChars.indexOf(hash[acIdx]) * 83 + blurHashChars.indexOf(hash[acIdx + 1]);
+            colors.push(decodeAC(acVal, realMaxVal));
+          }
+
+          // Render
+          var canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          var ctx = canvas.getContext('2d');
+          var imageData = ctx.createImageData(width, height);
+          var data = imageData.data;
+
+          for(var y = 0; y < height; y++){
+            for(var x = 0; x < width; x++){
+              var r = 0, g = 0, b = 0;
+              for(var j = 0; j < numY; j++){
+                for(var ii = 0; ii < numX; ii++){
+                  var basis = Math.cos((Math.PI * x * ii) / width) * Math.cos((Math.PI * y * j) / height);
+                  var color = colors[ii + j * numX];
+                  if(color){
+                    r += color[0] * basis;
+                    g += color[1] * basis;
+                    b += color[2] * basis;
+                  }
+                }
+              }
+              var idx = (y * width + x) * 4;
+              data[idx]     = linearToSrgb(r);
+              data[idx + 1] = linearToSrgb(g);
+              data[idx + 2] = linearToSrgb(b);
+              data[idx + 3] = 255;
+            }
+          }
+          ctx.putImageData(imageData, 0, 0);
+          return canvas.toDataURL('image/webp', 0.5);
+        } catch(e){
+          return null;
+        }
+      }
+
+      function decodeDC(val){
+        var r = val >> 16;
+        var g = (val >> 8) & 255;
+        var b = val & 255;
+        return [srgbToLinear(r), srgbToLinear(g), srgbToLinear(b)];
+      }
+
+      function decodeAC(val, maxVal){
+        var qR = Math.floor(val / (19 * 19));
+        var qG = Math.floor(val / 19) % 19;
+        var qB = val % 19;
+        return [
+          signPow((qR - 9) / 9, 2) * maxVal,
+          signPow((qG - 9) / 9, 2) * maxVal,
+          signPow((qB - 9) / 9, 2) * maxVal
+        ];
+      }
+
+      function signPow(val, exp){ return (val < 0 ? -1 : 1) * Math.pow(Math.abs(val), exp); }
+      function srgbToLinear(v){ v /= 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }
+      function linearToSrgb(v){ v = Math.max(0, Math.min(1, v)); return v <= 0.0031308 ? Math.round(v * 12.92 * 255) : Math.round((1.055 * Math.pow(v, 1/2.4) - 0.055) * 255); }
+
+      // ═══════════════════════════════════════════════════════════
+      //  ⑳ CDN ABSTRACTION LAYER — future-proof URL resolver
+      // ═══════════════════════════════════════════════════════════
+      //  Currently resolves to Convex proxy → Google Drive.
+      //  When migrating to CDN (Cloudflare R2, BunnyCDN, etc.),
+      //  only this function needs to change.
+
+      var CDN_CONFIG = {
+        type: 'convex',       // 'convex' | 'r2' | 'bunny' | 'direct'
+        convexBase: 'https://dynamic-labrador-874.convex.site/video',
+        // Future CDN configs:
+        // r2Base: 'https://cdn.scangym.com/reels/videos',
+        // bunnyBase: 'https://scangym.b-cdn.net/reels',
+      };
+
+      function resolveVideoUrl(video){
+        switch(CDN_CONFIG.type){
+          case 'convex':
+            if(video.driveId) return CDN_CONFIG.convexBase + '?id=' + video.driveId;
+            return video.url || '';
+          case 'r2':
+            return CDN_CONFIG.r2Base + '/' + (video.cdnKey || video.driveId) + '.mp4';
+          case 'bunny':
+            return CDN_CONFIG.bunnyBase + '/' + (video.cdnKey || video.driveId) + '.mp4';
+          case 'direct':
+            return video.url || '';
+          default:
+            return video.url || '';
+        }
+      }
+
+      // Adaptive quality based on connection
+      function getOptimalQuality(){
+        var conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        if(!conn) return 'auto';
+        var ect = conn.effectiveType;
+        if(ect === '4g') return '1080p';
+        if(ect === '3g') return '720p';
+        return '360p';
+      }
 
       function applyDragFrame(){
         if(pendingDragY !== null){
@@ -450,7 +729,7 @@
       });
 
       // ═══════════════════════════════════════════════════════════
-      //  TOUCH HANDLING — TikTok-style physics + rAF + gesture prediction
+      //  TOUCH HANDLING
       // ═══════════════════════════════════════════════════════════
 
       track.addEventListener('touchstart', function(e){
@@ -464,7 +743,6 @@
         isDragging  = true;
         dragDelta   = 0;
         gesturePreloaded = false;
-        // ⑭ Reset touch history
         touchHistory = [{y: t.clientY, t: touchStartT}];
       }, {passive: true});
 
@@ -476,7 +754,6 @@
         var dy  = t.clientY - touchStartY;
         touchLastY = t.clientY;
         touchLastT = now;
-        // ⑭ Record touch history (keep last 150ms)
         touchHistory.push({y: t.clientY, t: now});
         while(touchHistory.length > 1 && now - touchHistory[0].t > 150){
           touchHistory.shift();
@@ -495,13 +772,12 @@
         trackOffset = targetOffset;
         dragDelta   = dy;
 
-        // ⑤ rAF drag
         pendingDragY = trackOffset;
         if(!dragRafId){
           dragRafId = requestAnimationFrame(applyDragFrame);
         }
 
-        // ⑧ Gesture prediction: if swiping fast enough, preload next video early
+        // ⑧ Gesture prediction + ⑰ Canvas pre-render
         if(!gesturePreloaded){
           var absD = Math.abs(dragDelta);
           var elapsed = now - touchStartT;
@@ -511,6 +787,9 @@
             var predictedNext = dy < 0 ? currentIndex + 1 : currentIndex - 1;
             if(predictedNext >= 0 && predictedNext < allVideos.length){
               upgradePreload(predictedNext);
+              // ⑰ Draw canvas preview for the predicted next reel
+              var nextReel = renderedReels[predictedNext];
+              if(nextReel) drawFramePreview(nextReel, predictedNext);
             }
           }
         }
@@ -525,7 +804,6 @@
           pendingDragY = null;
         }
 
-        // ⑭ Use last 100ms of touch data for velocity (not entire drag)
         var now = Date.now();
         var velocity = 0;
         if(touchHistory.length >= 2){
@@ -536,7 +814,6 @@
             var dt = last.t - first.t;
             if(dt > 0) velocity = (last.y - first.y) / dt;
           } else {
-            // Fallback to full drag velocity
             var totalTime = now - touchStartT;
             if(totalTime > 0) velocity = (touchLastY - touchStartY) / totalTime;
           }
@@ -553,11 +830,7 @@
           }
         }
         snapTo(next, true);
-
-        // ⑫ Haptic feedback on snap
-        if(next !== currentIndex && navigator.vibrate){
-          navigator.vibrate(10);
-        }
+        if(next !== currentIndex && navigator.vibrate) navigator.vibrate(10);
 
         if(hint){
           var h = hint;
@@ -572,25 +845,36 @@
         if(isDragging) e.preventDefault();
       }, {passive: false});
 
-      // ── Mouse/wheel for desktop — improved velocity accumulator ──
-      var wheelAccum   = 0;
-      var wheelLock    = false;
-      var wheelResetId = null;
+      // ── ⑱ Desktop wheel — improved trackpad/mouse handling ──
+      var wheelAccum    = 0;
+      var wheelLock     = false;
+      var wheelResetId  = null;
+      var lastWheelTime = 0;
+
       window.addEventListener('wheel', function(e){
         e.preventDefault();
         if(wheelLock) return;
+
+        var now = Date.now();
+        var dt = now - lastWheelTime;
+        lastWheelTime = now;
+
+        // Detect trackpad vs mouse: trackpad sends many small deltas quickly
+        var isTrackpad = dt < 50 && Math.abs(e.deltaY) < 40;
+        var threshold = isTrackpad ? 80 : 50;
+
         wheelAccum += e.deltaY;
         if(wheelResetId) clearTimeout(wheelResetId);
-        wheelResetId = setTimeout(function(){ wheelAccum = 0; }, 150);
+        wheelResetId = setTimeout(function(){ wheelAccum = 0; }, isTrackpad ? 200 : 150);
 
-        if(Math.abs(wheelAccum) > 50){
+        if(Math.abs(wheelAccum) > threshold){
           wheelLock = true;
+          var dir = wheelAccum > 0 ? 1 : -1;
           wheelAccum = 0;
-          setTimeout(function(){ wheelLock = false; }, SNAP_DURATION + 50);
-          if(e.deltaY > 0 && currentIndex < allVideos.length - 1){
-            snapTo(currentIndex + 1, true);
-          } else if(e.deltaY < 0 && currentIndex > 0){
-            snapTo(currentIndex - 1, true);
+          setTimeout(function(){ wheelLock = false; }, SNAP_DURATION + 80);
+          var next = currentIndex + dir;
+          if(next >= 0 && next < allVideos.length){
+            snapTo(next, true);
           }
         }
       }, {passive: false});
@@ -625,15 +909,15 @@
         setTrackPosition(trackOffset);
         reconcileWindow(index);
         if(prevIndex !== index){
-          pauseVideo(prevIndex);
-          playVideo(index);
+          // ⑯ Audio crossfade
+          crossfadeTransition(prevIndex, index);
           prefetchAhead(index);
           applySmartPreload(index);
           // ⑨ Check if we need to load more
           if(allVideos.length - index <= LOAD_MORE_AT && feedHasMore && !feedLoading){
             loadMoreFeed();
           }
-          // ⑬ Show sound hint on first video change if still muted
+          // ⑬ Sound hint
           if(!soundHintShown && isMuted && index === 1){
             soundHintShown = true;
             showSoundHint();
@@ -642,7 +926,61 @@
       }
 
       // ═══════════════════════════════════════════════════════════
-      //  VIRTUAL DOM WINDOW — max 5 elements alive
+      //  ⑯ CROSSFADE TRANSITION
+      // ═══════════════════════════════════════════════════════════
+
+      function crossfadeTransition(prevIndex, nextIndex){
+        clearAllFades();
+
+        // Pause previous with fade-out
+        var prevReel = renderedReels[prevIndex];
+        if(prevReel){
+          var prevVid = prevReel.querySelector('video');
+          if(prevVid){
+            if(!isMuted && prevVid.volume > 0){
+              fadeVolume(prevVid, prevVid.volume, 0, CROSSFADE_MS, function(){
+                prevVid.pause();
+                prevVid.currentTime = 0;
+              });
+            } else {
+              prevVid.pause();
+              prevVid.currentTime = 0;
+            }
+            var bar = prevReel.querySelector('.reel-progress-bar');
+            if(bar) bar.style.width = '0%';
+            var buf = prevReel.querySelector('.reel-progress-buffered');
+            if(buf) buf.style.width = '0%';
+          }
+        }
+        stopProgressLoop();
+
+        // Play next with fade-in
+        var nextReel = renderedReels[nextIndex];
+        if(nextReel){
+          var nextVid = nextReel.querySelector('video');
+          if(nextVid){
+            nextVid.muted = isMuted;
+            if(!isMuted){
+              nextVid.volume = 0;
+              nextVid.play().catch(function(){});
+              fadeVolume(nextVid, 0, 1, CROSSFADE_MS);
+            } else {
+              nextVid.play().catch(function(){});
+            }
+            startProgressLoop(nextReel, nextVid);
+            capturePoster(nextVid, nextIndex);
+            // ⑰ Remove canvas preview once video plays
+            nextVid.addEventListener('playing', function onPlay(){
+              nextVid.removeEventListener('playing', onPlay);
+              nextVid.classList.add('has-frame');
+              removeFramePreview(nextReel);
+            }, {once: true});
+          }
+        }
+      }
+
+      // ═══════════════════════════════════════════════════════════
+      //  VIRTUAL DOM WINDOW — ⑮ uses video pool
       // ═══════════════════════════════════════════════════════════
 
       function reconcileWindow(centerIndex){
@@ -655,12 +993,8 @@
           var idx = parseInt(keys[k]);
           if(idx < minIdx || idx > maxIdx){
             var el = renderedReels[idx];
-            var vid = el.querySelector('video');
-            if(vid){
-              vid.pause();
-              vid.removeAttribute('src');
-              vid.load();
-            }
+            // ⑮ Release video back to pool instead of destroying
+            releaseVideo(idx);
             track.removeChild(el);
             delete renderedReels[idx];
           }
@@ -676,14 +1010,7 @@
         }
       }
 
-      // ═══════════════════════════════════════════════════════════
-      //  ⑥ SMART PRELOADING — TikTok-style tiered strategy
-      // ═══════════════════════════════════════════════════════════
-      //  Current video:  preload="auto" (full download)
-      //  Next video:     preload="auto" (ready to play instantly)
-      //  Prev video:     preload="metadata" (poster + duration only)
-      //  Others in window: preload="metadata"
-
+      // ── Smart preloading ──
       function applySmartPreload(centerIndex){
         var keys = Object.keys(renderedReels);
         for(var k = 0; k < keys.length; k++){
@@ -691,43 +1018,22 @@
           var el  = renderedReels[idx];
           var vid = el.querySelector('video');
           if(!vid) continue;
-
-          if(idx === centerIndex){
-            // Current: full preload
-            vid.preload = 'auto';
-          } else if(idx === centerIndex + 1){
-            // Next: full preload (ready for instant playback)
-            vid.preload = 'auto';
-          } else {
-            // Everything else: metadata only (saves bandwidth)
-            vid.preload = 'metadata';
-          }
+          vid.preload = (idx === centerIndex || idx === centerIndex + 1) ? 'auto' : 'metadata';
         }
       }
 
-      // ⑧ Upgrade a specific video to full preload (called during gesture prediction)
       function upgradePreload(index){
         var el = renderedReels[index];
         if(!el) return;
         var vid = el.querySelector('video');
         if(!vid) return;
         vid.preload = 'auto';
-        // Force the browser to start loading
-        if(vid.readyState < 2){
-          vid.load();
-        }
+        if(vid.readyState < 2) vid.load();
       }
 
       // ═══════════════════════════════════════════════════════════
       //  VIDEO MANAGEMENT
       // ═══════════════════════════════════════════════════════════
-
-      function getVideoUrl(video){
-        if(video.driveId){
-          return 'https://dynamic-labrador-874.convex.site/video?id=' + video.driveId;
-        }
-        return video.url || '';
-      }
 
       function playVideo(i){
         var reel = renderedReels[i];
@@ -736,9 +1042,7 @@
         if(!vid) return;
         vid.muted = isMuted;
         vid.play().catch(function(){});
-        // ⑩ Start rAF progress loop
         startProgressLoop(reel, vid);
-        // ⑦ Capture poster frame once video is playing
         capturePoster(vid, i);
       }
 
@@ -753,21 +1057,16 @@
         if(bar) bar.style.width = '0%';
         var buf = reel.querySelector('.reel-progress-buffered');
         if(buf) buf.style.width = '0%';
-        // Stop progress loop
         stopProgressLoop();
       }
 
-      // ═══════════════════════════════════════════════════════════
-      //  ⑦ REAL POSTER FRAMES — Canvas-captured first frame
-      // ═══════════════════════════════════════════════════════════
-
+      // ── Poster capture ──
       function capturePoster(vid, index){
-        if(posterCache[index]) return; // Already captured
+        if(posterCache[index]) return;
         var doCapture = function(){
           try{
             if(vid.videoWidth === 0 || vid.videoHeight === 0) return;
             var canvas = document.createElement('canvas');
-            // Use smaller dimensions for fast encoding
             var scale = Math.min(360 / vid.videoWidth, 640 / vid.videoHeight, 1);
             canvas.width  = Math.round(vid.videoWidth * scale);
             canvas.height = Math.round(vid.videoHeight * scale);
@@ -777,14 +1076,9 @@
             if(dataUrl && dataUrl.length > 100){
               posterCache[index] = dataUrl;
               vid.poster = dataUrl;
-              // Also update adjacent rendered reels that don't have real posters yet
-              // This way when user swipes, the next reel shows a real frame
             }
-          } catch(e){
-            // CORS or security error — silently fail, keep SVG placeholder
-          }
+          } catch(e){}
         };
-        // Try capturing after a short delay to ensure frame is decoded
         if(vid.readyState >= 2){
           setTimeout(doCapture, 100);
         } else {
@@ -795,25 +1089,17 @@
         }
       }
 
-      // ═══════════════════════════════════════════════════════════
-      //  ⑩ rAF PROGRESS BAR — 120fps smooth + buffered range
-      // ═══════════════════════════════════════════════════════════
-
+      // ── rAF progress ──
       function startProgressLoop(reel, vid){
         stopProgressLoop();
         var bar = reel.querySelector('.reel-progress-bar');
         var buf = reel.querySelector('.reel-progress-buffered');
         if(!bar) return;
-
         function tick(){
           if(vid.duration && !isNaN(vid.duration)){
-            // Progress
-            var pct = (vid.currentTime / vid.duration * 100);
-            bar.style.width = pct + '%';
-            // Buffered range
+            bar.style.width = (vid.currentTime / vid.duration * 100) + '%';
             if(buf && vid.buffered.length > 0){
-              var buffEnd = vid.buffered.end(vid.buffered.length - 1);
-              buf.style.width = (buffEnd / vid.duration * 100) + '%';
+              buf.style.width = (vid.buffered.end(vid.buffered.length - 1) / vid.duration * 100) + '%';
             }
           }
           progressRafId = requestAnimationFrame(tick);
@@ -822,21 +1108,17 @@
       }
 
       function stopProgressLoop(){
-        if(progressRafId){
-          cancelAnimationFrame(progressRafId);
-          progressRafId = null;
-        }
+        if(progressRafId){ cancelAnimationFrame(progressRafId); progressRafId = null; }
       }
 
-      // ═══════════════════════════════════════════════════════════
-      //  PREFETCH — warm cache for next 5
-      // ═══════════════════════════════════════════════════════════
-
+      // ── Prefetch ──
       function prefetchAhead(fromIndex){
+        var urls = [];
         for(var i = fromIndex + 1; i <= fromIndex + PREFETCH_AHEAD && i < allVideos.length; i++){
-          var url = getVideoUrl(allVideos[i]);
+          var url = resolveVideoUrl(allVideos[i]);
           if(!url || prefetchedUrls[url]) continue;
           prefetchedUrls[url] = true;
+          urls.push(url);
           var link = document.createElement('link');
           link.rel = 'prefetch';
           link.as = 'fetch';
@@ -844,10 +1126,14 @@
           link.crossOrigin = 'anonymous';
           document.head.appendChild(link);
         }
+        // ⑲ Tell service worker to cache these videos
+        if(urls.length > 0 && navigator.serviceWorker && navigator.serviceWorker.controller){
+          navigator.serviceWorker.controller.postMessage({ type: 'PRECACHE_VIDEOS', urls: urls });
+        }
       }
 
       // ═══════════════════════════════════════════════════════════
-      //  ⑨ PAGINATED FEED LOADING — 20 at a time, infinite scroll
+      //  PAGINATED FEED
       // ═══════════════════════════════════════════════════════════
 
       function loadFeed(){
@@ -865,6 +1151,13 @@
             if(allVideos.length === 0){
               showFatalError('No reels available yet');
               return;
+            }
+            // ㉑ Decode blurhash for first few videos if available
+            for(var i = 0; i < Math.min(allVideos.length, 5); i++){
+              if(allVideos[i].blurhash && !posterCache[i]){
+                var bh = decodeBlurHash(allVideos[i].blurhash, 4, 3);
+                if(bh) posterCache[i] = bh;
+              }
             }
             reconcileWindow(0);
             loading.style.display = 'none';
@@ -895,7 +1188,6 @@
             feedOffset += newVideos.length;
             feedHasMore = data.hasMore;
             feedLoading = false;
-            // Re-reconcile window in case new videos are within range
             reconcileWindow(currentIndex);
           })
           .catch(function(err){
@@ -905,7 +1197,7 @@
       }
 
       // ═══════════════════════════════════════════════════════════
-      //  REEL ELEMENT CREATION
+      //  REEL ELEMENT CREATION — ⑮ uses video pool
       // ═══════════════════════════════════════════════════════════
 
       function createReel(video, index){
@@ -915,27 +1207,24 @@
         div.style.top = (index * screenH) + 'px';
         div.dataset.index = index;
 
-        var videoUrl = getVideoUrl(video);
+        var videoUrl = resolveVideoUrl(video);
 
-        // Video element
-        var vid = document.createElement('video');
+        // ⑮ Acquire video element from pool
+        var vid = acquireVideo(index);
         vid.src = videoUrl;
-        vid.loop = true;
         vid.muted = isMuted;
-        vid.playsInline = true;
-        vid.setAttribute('playsinline', '');
-        vid.setAttribute('webkit-playsinline', '');
-        // ⑥ Smart preload: only current+next get 'auto', rest get 'metadata'
-        if(index === currentIndex || index === currentIndex + 1){
-          vid.preload = 'auto';
-        } else {
-          vid.preload = 'metadata';
+        vid.preload = (index === currentIndex || index === currentIndex + 1) ? 'auto' : 'metadata';
+        // ⑦ + ㉑ Poster: cached frame > blurhash > thumb > SVG
+        var poster = posterCache[index] || video.thumb || PLACEHOLDER_POSTER;
+        if(!posterCache[index] && video.blurhash){
+          var bh = decodeBlurHash(video.blurhash, 4, 3);
+          if(bh){ poster = bh; posterCache[index] = bh; }
         }
-        // ⑦ Use cached poster if available, otherwise SVG placeholder
-        vid.poster = posterCache[index] || video.thumb || PLACEHOLDER_POSTER;
+        vid.poster = poster;
+        vid.classList.remove('has-frame');
         div.appendChild(vid);
 
-        // Error handling — show overlay, auto-advance
+        // Error handling
         vid.addEventListener('error', function(){
           if(div.querySelector('.reel-error')) return;
           var errDiv = document.createElement('div');
@@ -949,7 +1238,7 @@
           }, 1500);
         });
 
-        // ⑩ Progress bar with buffered range indicator
+        // Progress bar
         var progressWrap = document.createElement('div');
         progressWrap.className = 'reel-progress';
         var progressBuf = document.createElement('div');
@@ -959,7 +1248,6 @@
         progressWrap.appendChild(progressBuf);
         progressWrap.appendChild(progressBar);
         div.appendChild(progressWrap);
-        // Note: no timeupdate listener — progress driven by rAF in playVideo()
 
         // Creator info
         var hasCreator = video.creator && (video.creator.name || video.creator.handle);
@@ -970,31 +1258,25 @@
 
         var creatorHtml = '';
         if(hasCreator){
-          var creatorName = escHtml(video.creator.name || video.creator.handle || 'Creator');
-          creatorHtml = '<p class="reel-creator">\uD83C\uDFA5 ' + creatorName + '</p>';
+          creatorHtml = '<p class="reel-creator">\uD83C\uDFA5 ' + escHtml(video.creator.name || video.creator.handle || 'Creator') + '</p>';
         }
 
         var affiliateHtml = '';
         if(hasAffiliate){
-          var affLink = video.creator.affiliateLink;
-          var affName = escHtml(video.creator.name || video.creator.handle || 'Creator');
-          affiliateHtml = '<a class="creator-cta" href="' + escHtml(affLink) + '">'
+          affiliateHtml = '<a class="creator-cta" href="' + escHtml(video.creator.affiliateLink) + '">'
             + '<span class="creator-cta-icon">\uD83D\uDCB0</span>'
-            + '<div><div class="creator-cta-text">Book via ' + affName + ' \u2014 \u00A35</div>'
-            + '<div class="creator-cta-sub">Creator earns on your booking</div></div>'
-            + '</a>';
+            + '<div><div class="creator-cta-text">Book via ' + escHtml(video.creator.name || video.creator.handle || 'Creator') + ' \u2014 \u00A35</div>'
+            + '<div class="creator-cta-sub">Creator earns on your booking</div></div></a>';
         } else if(hasCreator){
           affiliateHtml = '<a class="creator-cta" href="/">'
             + '<span class="creator-cta-icon">\uD83D\uDCAA</span>'
             + '<div><div class="creator-cta-text">Book a Gym \u2014 \u00A35</div>'
-            + '<div class="creator-cta-sub">No membership needed</div></div>'
-            + '</a>';
+            + '<div class="creator-cta-sub">No membership needed</div></div></a>';
         }
 
         info.innerHTML = '<p class="reel-title">' + escHtml(video.name) + '</p>'
           + '<p class="reel-category">\uD83C\uDFAC ' + escHtml(video.category) + '</p>'
-          + creatorHtml
-          + affiliateHtml;
+          + creatorHtml + affiliateHtml;
         div.appendChild(info);
 
         // Action sidebar
@@ -1004,37 +1286,26 @@
 
         actions.innerHTML = ''
           + '<a class="reel-action" data-action="book" href="' + bookHref + '">'
-          +   '<div class="icon">' + ICONS.book + '</div>'
-          +   '<span class="label">Book</span>'
-          + '</a>'
+          +   '<div class="icon">' + ICONS.book + '</div><span class="label">Book</span></a>'
           + '<div class="reel-action" data-action="share">'
-          +   '<div class="icon">' + ICONS.share + '</div>'
-          +   '<span class="label">Share</span>'
-          + '</div>'
+          +   '<div class="icon">' + ICONS.share + '</div><span class="label">Share</span></div>'
           + '<div class="reel-action" data-action="save">'
-          +   '<div class="icon">' + ICONS.save + '</div>'
-          +   '<span class="label">Save</span>'
-          + '</div>'
+          +   '<div class="icon">' + ICONS.save + '</div><span class="label">Save</span></div>'
           + '<div class="reel-action" data-action="more">'
-          +   '<div class="icon">' + ICONS.more + '</div>'
-          +   '<span class="label">More</span>'
-          + '</div>';
+          +   '<div class="icon">' + ICONS.more + '</div><span class="label">More</span></div>';
         div.appendChild(actions);
 
-        // ⑫ Double-tap like detection
+        // Double-tap like
         var lastTapTime = 0;
         div.addEventListener('click', function(e){
           if(e.target.closest('.reel-actions') || e.target.closest('.reel-info') || e.target.closest('.creator-cta')) return;
           if(Math.abs(dragDelta) > 10) return;
-
           var now = Date.now();
           if(now - lastTapTime < 300){
-            // Double tap — trigger like animation
             doubleTapLike(e.clientX, e.clientY);
             lastTapTime = 0;
           } else {
             lastTapTime = now;
-            // Single tap — toggle mute after a delay (cancel if double-tap follows)
             setTimeout(function(){
               if(lastTapTime !== 0 && Date.now() - lastTapTime >= 280){
                 toggleMute();
@@ -1044,7 +1315,7 @@
           }
         });
 
-        // Action button handlers
+        // Action handlers
         actions.querySelectorAll('.reel-action').forEach(function(btn){
           btn.addEventListener('click', function(e){
             var action = btn.dataset.action;
@@ -1061,14 +1332,11 @@
       }
 
       // ═══════════════════════════════════════════════════════════
-      //  ⑫ DOUBLE-TAP LIKE — TikTok-style heart burst + haptic
+      //  ENGAGEMENT
       // ═══════════════════════════════════════════════════════════
 
       function doubleTapLike(x, y){
-        // Haptic
         if(navigator.vibrate) navigator.vibrate([10, 30, 10]);
-
-        // Big heart
         var heart = document.createElement('div');
         heart.className = 'like-burst';
         heart.textContent = '\u2764\uFE0F';
@@ -1077,7 +1345,6 @@
         document.body.appendChild(heart);
         setTimeout(function(){ heart.remove(); }, 900);
 
-        // Particles
         var emojis = ['\u2764\uFE0F', '\uD83E\uDDE1', '\uD83D\uDC9B', '\uD83D\uDCAA', '\uD83D\uDD25'];
         for(var i = 0; i < 6; i++){
           var p = document.createElement('div');
@@ -1094,13 +1361,8 @@
           document.body.appendChild(p);
           setTimeout(function(el){ el.remove(); }, 1100, p);
         }
-
         showToast('\u2764\uFE0F Liked!');
       }
-
-      // ═══════════════════════════════════════════════════════════
-      //  ENGAGEMENT: Share, Save
-      // ═══════════════════════════════════════════════════════════
 
       function handleShare(video){
         if(navigator.vibrate) navigator.vibrate(10);
@@ -1130,10 +1392,6 @@
         }
       }
 
-      // ═══════════════════════════════════════════════════════════
-      //  ⑬ TAP-FOR-SOUND HINT
-      // ═══════════════════════════════════════════════════════════
-
       function showSoundHint(){
         var el = document.getElementById('sound-hint');
         if(!el) return;
@@ -1151,9 +1409,11 @@
       function toggleMute(){
         isMuted = !isMuted;
         var vids = document.querySelectorAll('.reel video');
-        for(var i = 0; i < vids.length; i++) vids[i].muted = isMuted;
+        for(var i = 0; i < vids.length; i++){
+          vids[i].muted = isMuted;
+          if(!isMuted) vids[i].volume = 1;
+        }
         showMuteIndicator(isMuted);
-        // Hide sound hint if user unmutes
         if(!isMuted){
           var sh = document.getElementById('sound-hint');
           if(sh){ sh.classList.remove('show'); sh.style.display = 'none'; }
@@ -1186,7 +1446,24 @@
           + '<button onclick="location.reload()" style="margin-top:16px;background:#f97316;color:#fff;border:none;padding:12px 28px;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer">Retry</button>';
       }
 
+      // ═══════════════════════════════════════════════════════════
+      //  ⑲ SERVICE WORKER REGISTRATION
+      // ═══════════════════════════════════════════════════════════
+
+      function registerServiceWorker(){
+        if(!('serviceWorker' in navigator)) return;
+        navigator.serviceWorker.register('/reels/sw.js', { scope: '/reels/' })
+          .then(function(reg){
+            console.log('[Reels] Service worker registered:', reg.scope);
+          })
+          .catch(function(err){
+            console.warn('[Reels] SW registration failed:', err);
+          });
+      }
+
       // ── Init ──
+      initVideoPool();
+      registerServiceWorker();
       loadFeed();
     })();
     </script>
