@@ -414,6 +414,7 @@ router.post('/ensure-gym', optionalAuth, async (req, res) => {
       VALUES ('system', $1, $2, $3, $4, $5, $6, '', $7, 'United Kingdom', $8, $9,
               5.00, 5.00, '{}'::text[], '{}'::text[], '{}'::text[],
               $10, $11, $12, false, true, NOW(), NOW())
+      ON CONFLICT (place_id) DO UPDATE SET updated_at = NOW()
       RETURNING id, name
     `, [
       placeId, slug, p.name,
