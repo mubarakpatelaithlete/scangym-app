@@ -3329,7 +3329,11 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
   const passInfo=passes[selPass]||passes.day;
   const h=selTime==='anytime'?12:parseInt(selTime||'10');
   const isOffPeak=h<10||h>=20;
-  const displayPrice=isOffPeak?passInfo.offPeak:passInfo.price;
+  let displayPrice=isOffPeak?passInfo.offPeak:passInfo.price;
+  // ═══ REFERRAL DISCOUNT: Apply £2 off if referral code is active ═══
+  let _sgRefActive=null;try{const _r=JSON.parse(localStorage.getItem('sg_referral')||'null');if(_r&&_r.handle&&_r.expiry>Date.now())_sgRefActive=_r.handle;}catch(e){}
+  const _sgOrigPrice=displayPrice;
+  if(_sgRefActive){displayPrice=Math.max(displayPrice-2,1);}
 
   // Format date for display
   const dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -3426,9 +3430,15 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
         </div>
       </div>
 
+      <!-- Referral Discount Banner -->
+      ${_sgRefActive?`<div style="background:linear-gradient(135deg,rgba(249,115,22,.15),rgba(249,115,22,.05));border:1px solid rgba(249,115,22,.3);border-radius:12px;padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">🎉</span><div><div style="color:#fb923c;font-size:13px;font-weight:700">Referral discount applied!</div><div style="color:rgba(255,255,255,.5);font-size:11px">via ${decodeURIComponent(_sgRefActive)}</div></div></div>
+        <div style="color:#4ade80;font-weight:800;font-size:16px">-£2.00</div>
+      </div>`:''}
+
       <!-- Total -->
       <div class="ub-total-section">
-        <div class="ub-total-label">Total</div>
+        <div class="ub-total-label">Total${_sgRefActive?' <span style="text-decoration:line-through;color:rgba(255,255,255,.3);font-weight:400;font-size:13px">£'+_sgOrigPrice.toFixed(2)+'</span>':''}</div>
         <div class="ub-total-price" id="ub-total-price">£${displayPrice.toFixed(2)}</div>
       </div>
 
@@ -3584,9 +3594,11 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
 
       const email=localStorage.getItem('sg_last_email')||'';
       const gymInfo=state.currentGym||state.gyms.find(g=>(g.placeId||g.place_id||g.id)==gymId)||{};
+      // ═══ REFERRAL: Read stored referral code from localStorage ═══
+      let _sgRef=null;try{const _r=JSON.parse(localStorage.getItem('sg_referral')||'null');if(_r&&_r.handle&&_r.expiry>Date.now())_sgRef=_r.handle;}catch(e){}
       const intentResult=await fetch('/api/payment/instant-checkout',{
         method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
-        body:JSON.stringify({gymId:parseInt(cs.dbGymId||gymId),placeId:gymId,date:cs.selectedDate,time:cs.selectedTime,email,gymName:gymInfo.name||gymName||'Gym',gymAddress:gymInfo.formatted_address||gymInfo.vicinity||gymInfo.address||gymAddr||'',passType:cs.selectedPass||'day'})
+        body:JSON.stringify({gymId:parseInt(cs.dbGymId||gymId),placeId:gymId,date:cs.selectedDate,time:cs.selectedTime,email,gymName:gymInfo.name||gymName||'Gym',gymAddress:gymInfo.formatted_address||gymInfo.vicinity||gymInfo.address||gymAddr||'',passType:cs.selectedPass||'day',...(_sgRef?{referralCode:_sgRef}:{})})
       }).then(r=>{if(!r.ok)throw new Error('Server error '+r.status);return r.json();});
 
       if(intentResult.error){
@@ -4624,6 +4636,7 @@ function MoreHubPage(){
       <div class="sg-more-section-title">Activity</div>
       ${moreItem('📋','My Bookings','Upcoming & past visits','/bookings')}
       ${moreItem('💰','ScanGym Wallet','Balance & credits','/wallet')}
+      ${moreItem('📊','Creator Earnings','Track commissions & clicks','/creator-earnings')}
       ${moreItem('🎟️','Refer & Earn','Invite friends, get £2','/refer')}
     </div>
 
@@ -4711,6 +4724,112 @@ function MoreHubPage(){
   </div>`;
 }
 
+// ═══════════════════════════════════════════════════════════════════
+//  CREATOR EARNINGS DASHBOARD
+//  Shows real-time earnings, clicks, conversions for FlexSquad creators
+// ═══════════════════════════════════════════════════════════════════
+function CreatorEarningsPage(){
+  // Get creator handle from localStorage (set during creator signup)
+  const creatorData=JSON.parse(localStorage.getItem('sg_creator')||'null');
+  const handle=creatorData?.handle||creatorData?.slug||'';
+  
+  if(!handle){
+    return `<div class="max-w-md mx-auto mt-20 text-center px-4">
+      <p class="text-5xl mb-4">💰</p>
+      <h1 class="text-2xl font-bold text-white mb-3">Creator Earnings</h1>
+      <p class="text-slate-400 mb-6">Sign up as a FlexSquad creator to track your earnings.</p>
+      <button onclick="navigate('/upload')" class="bg-brand hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-xl transition">Join FlexSquad →</button>
+    </div>`;
+  }
+
+  // Load earnings data async
+  setTimeout(function(){_loadCreatorEarnings(handle);},100);
+
+  return `<div class="max-w-lg mx-auto px-4 pt-6 pb-24" id="creator-earnings-root">
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-2xl font-bold text-white">Your Earnings</h1>
+        <p class="text-slate-400 text-sm">scangym.com/r/${handle}</p>
+      </div>
+      <button onclick="navigator.clipboard.writeText('https://scangym.com/r/${handle}');sgToast('Link copied!','success',2000)" class="bg-slate-800 hover:bg-slate-700 text-white px-3 py-2 rounded-lg text-sm transition">📋 Copy Link</button>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-3 gap-3 mb-6">
+      <div class="bg-slate-800/80 rounded-xl p-4 text-center border border-slate-700/50">
+        <p class="text-2xl font-black text-white" id="ce-earnings">—</p>
+        <p class="text-slate-400 text-xs mt-1">Total Earned</p>
+      </div>
+      <div class="bg-slate-800/80 rounded-xl p-4 text-center border border-slate-700/50">
+        <p class="text-2xl font-black text-white" id="ce-conversions">—</p>
+        <p class="text-slate-400 text-xs mt-1">Bookings</p>
+      </div>
+      <div class="bg-slate-800/80 rounded-xl p-4 text-center border border-slate-700/50">
+        <p class="text-2xl font-black text-white" id="ce-clicks">—</p>
+        <p class="text-slate-400 text-xs mt-1">Link Clicks</p>
+      </div>
+    </div>
+
+    <!-- Conversion Rate -->
+    <div class="bg-gradient-to-r from-brand/10 to-emerald-500/10 border border-brand/20 rounded-xl p-4 mb-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-white font-bold">Conversion Rate</p>
+          <p class="text-slate-400 text-xs">Clicks → Bookings</p>
+        </div>
+        <p class="text-3xl font-black text-brand" id="ce-rate">—%</p>
+      </div>
+    </div>
+
+    <!-- Commission Info -->
+    <div class="bg-slate-800/60 rounded-xl p-4 mb-6 border border-slate-700/30">
+      <p class="text-white font-bold mb-2">💰 How you earn</p>
+      <div class="space-y-2 text-sm text-slate-300">
+        <div class="flex justify-between"><span>Commission per booking</span><span class="text-brand font-bold">£1.25</span></div>
+        <div class="flex justify-between"><span>Customer discount</span><span class="text-emerald-400 font-bold">£2.00 off</span></div>
+        <div class="flex justify-between"><span>Cookie duration</span><span class="text-slate-400">30 days</span></div>
+      </div>
+    </div>
+
+    <!-- Recent Conversions -->
+    <div class="mb-6">
+      <p class="text-white font-bold mb-3">Recent Bookings</p>
+      <div id="ce-recent" class="space-y-2">
+        <div class="bg-slate-800/40 rounded-lg p-4 text-center text-slate-500 text-sm">Loading...</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+async function _loadCreatorEarnings(handle){
+  try{
+    const res=await fetch('/api/referrals/earnings/'+encodeURIComponent(handle));
+    const data=await res.json();
+    if(!data.success)return;
+    
+    const el=function(id){return document.getElementById(id);};
+    if(el('ce-earnings'))el('ce-earnings').textContent='£'+data.totalEarnings;
+    if(el('ce-conversions'))el('ce-conversions').textContent=data.totalConversions;
+    if(el('ce-clicks'))el('ce-clicks').textContent=data.totalClicks;
+    if(el('ce-rate'))el('ce-rate').textContent=data.conversionRate+'%';
+    
+    const recentEl=el('ce-recent');
+    if(recentEl){
+      if(data.recentConversions.length===0){
+        recentEl.innerHTML='<div class="bg-slate-800/40 rounded-lg p-4 text-center text-slate-500 text-sm">No bookings yet. Share your link to start earning!</div>';
+      }else{
+        recentEl.innerHTML=data.recentConversions.map(function(c){
+          const d=new Date(c.convertedAt);
+          const dateStr=d.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+          return '<div class="bg-slate-800/60 rounded-lg p-3 flex items-center justify-between border border-slate-700/30"><div><p class="text-white text-sm font-medium">'+c.gymName+'</p><p class="text-slate-500 text-xs">'+dateStr+'</p></div><p class="text-brand font-bold">+£'+c.commission+'</p></div>';
+        }).join('');
+      }
+    }
+  }catch(e){
+    console.error('[Earnings] Load failed:',e);
+  }
+}
+
 function render(){
   const path=state.route;
   let page='';
@@ -4718,10 +4837,20 @@ function render(){
   if(path==='/'||path==='')page=HomePage();
   else if(path==='/explore'||path==='/nearby'||path==='/search')page=SearchPage();
   else if(path.startsWith('/gym/'))page=GymProfilePage();
-  else if(path.startsWith('/r/')){const creator=path.split('/r/')[1]||'';page=InfoPage('Welcome to ScanGym',`<div class="text-center mb-8"><p class="text-5xl mb-4">🏋️</p><p class="text-xl text-white font-bold">You were referred by <span class="text-brand">${decodeURIComponent(creator)}</span></p><p class="text-slate-300 mt-2">Book your first gym session and you both earn £2 credit!</p></div><div class="max-w-md mx-auto"><div class="bg-brand/10 border border-brand/30 rounded-xl p-6 mb-6 text-center"><p class="text-3xl font-bold text-white mb-1">£2 OFF</p><p class="text-brand font-medium">Your first session</p><p class="text-slate-400 text-sm mt-2">Applied automatically at checkout</p></div><div class="space-y-3"><button onclick="navigate('/explore')" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-4 rounded-xl text-lg transition shadow-lg shadow-brand/20">Find a Gym Near You →</button><button onclick="navigate('/login')" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 py-3 rounded-xl text-sm transition">Sign Up to Claim Your £2</button></div><div class="mt-6 text-center"><p class="text-slate-500 text-xs">By booking, you agree to our <a onclick="navigate('/terms')" class="text-brand cursor-pointer">Terms</a> and <a onclick="navigate('/privacy')" class="text-brand cursor-pointer">Privacy Policy</a></p></div></div>`);}
+  else if(path.startsWith('/r/')){const creator=path.split('/r/')[1]||'';
+    // ═══ REFERRAL TRACKING: Store creator handle in localStorage + cookie (30-day expiry) ═══
+    if(creator){
+      const expiry=Date.now()+(30*24*60*60*1000);
+      localStorage.setItem('sg_referral',JSON.stringify({handle:creator,expiry:expiry}));
+      document.cookie='sg_referral='+encodeURIComponent(creator)+';path=/;max-age='+(30*24*60*60)+';SameSite=Lax';
+      // Track the click server-side
+      try{fetch('/api/referrals/track',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({creatorHandle:creator,visitorSession:Date.now().toString(36)})}).catch(function(){});}catch(e){}
+    }
+    page=InfoPage('Welcome to ScanGym',`<div class="text-center mb-8"><p class="text-5xl mb-4">🏋️</p><p class="text-xl text-white font-bold">You were referred by <span class="text-brand">${decodeURIComponent(creator)}</span></p><p class="text-slate-300 mt-2">Book your first gym session and you both earn £2 credit!</p></div><div class="max-w-md mx-auto"><div class="bg-brand/10 border border-brand/30 rounded-xl p-6 mb-6 text-center"><p class="text-3xl font-bold text-white mb-1">£2 OFF</p><p class="text-brand font-medium">Your first session</p><p class="text-slate-400 text-sm mt-2">Applied automatically at checkout</p></div><div class="space-y-3"><button onclick="navigate('/explore')" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-4 rounded-xl text-lg transition shadow-lg shadow-brand/20">Find a Gym Near You →</button><button onclick="navigate('/login')" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 py-3 rounded-xl text-sm transition">Sign Up to Claim Your £2</button></div><div class="mt-6 text-center"><p class="text-slate-500 text-xs">By booking, you agree to our <a onclick="navigate('/terms')" class="text-brand cursor-pointer">Terms</a> and <a onclick="navigate('/privacy')" class="text-brand cursor-pointer">Privacy Policy</a></p></div></div>`);}
 
   else if(path==='/coach')page=CoachPage();
   else if(path==='/creators')page=CreatorsPage();
+  else if(path==='/creator-earnings')page=CreatorEarningsPage();
   else if(path==='/wallet')page=WalletPage();
   else if(path==='/dashboard'||path==='/admin'){const tk=localStorage.getItem('sg_token');if(!tk){page=`<div class="max-w-md mx-auto mt-20 text-center"><p class="text-2xl mb-4">🔒</p><p class="text-white font-bold text-xl mb-2">Dashboard Access Required</p><p class="text-slate-400 mb-4">Please log in with your admin account to view the dashboard.</p><button onclick="navigate(\'/login\')" class="bg-brand text-white px-6 py-3 rounded-lg font-bold">Log In →</button></div>`;}else{page=DashboardPage();}}
   else if(path==='/suppliers/vending')page=SupplierPage('vending');
