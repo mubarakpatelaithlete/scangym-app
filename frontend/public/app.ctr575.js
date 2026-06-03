@@ -4742,8 +4742,8 @@ function CreatorEarningsPage(){
     </div>`;
   }
 
-  // Load earnings data async
-  setTimeout(function(){_loadCreatorEarnings(handle);},100);
+  // Load earnings + withdrawal data async
+  setTimeout(function(){_loadCreatorEarnings(handle);_loadWithdrawalData(handle);},100);
 
   return `<div class="max-w-lg mx-auto px-4 pt-6 pb-24" id="creator-earnings-root">
     <div class="flex items-center justify-between mb-6">
@@ -4791,6 +4791,49 @@ function CreatorEarningsPage(){
       </div>
     </div>
 
+    <!-- Withdrawal Section -->
+    <div class="mb-6">
+      <div class="flex items-center justify-between mb-3">
+        <p class="text-white font-bold">💸 Withdraw Earnings</p>
+      </div>
+      <div id="ce-withdraw-section" class="bg-slate-800/60 rounded-xl p-4 border border-slate-700/30">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <p class="text-slate-400 text-xs">Available to withdraw</p>
+            <p class="text-2xl font-black text-white" id="ce-available">—</p>
+          </div>
+          <button id="ce-withdraw-btn" onclick="_requestWithdrawal('${handle}')" disabled class="bg-brand/20 text-brand/50 font-bold py-2 px-5 rounded-xl text-sm cursor-not-allowed transition">Withdraw</button>
+        </div>
+        <div class="flex gap-3 text-xs text-slate-500">
+          <span>Min: £5.00</span><span>·</span><span>Pending: <span id="ce-pending">£0.00</span></span><span>·</span><span>Withdrawn: <span id="ce-withdrawn">£0.00</span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payment Details (shown when withdrawing) -->
+    <div id="ce-payment-form" class="mb-6 hidden">
+      <div class="bg-slate-800/60 rounded-xl p-4 border border-brand/30">
+        <p class="text-white font-bold mb-3">Bank Details for Payout</p>
+        <div class="space-y-3">
+          <input id="ce-bank-name" type="text" placeholder="Account holder name" class="w-full bg-slate-900/60 border border-slate-700/50 rounded-lg px-3 py-2.5 text-white text-sm placeholder:text-slate-600 focus:border-brand/50 focus:outline-none">
+          <input id="ce-bank-sort" type="text" placeholder="Sort code (XX-XX-XX)" class="w-full bg-slate-900/60 border border-slate-700/50 rounded-lg px-3 py-2.5 text-white text-sm placeholder:text-slate-600 focus:border-brand/50 focus:outline-none" maxlength="8">
+          <input id="ce-bank-acct" type="text" placeholder="Account number" class="w-full bg-slate-900/60 border border-slate-700/50 rounded-lg px-3 py-2.5 text-white text-sm placeholder:text-slate-600 focus:border-brand/50 focus:outline-none" maxlength="8">
+          <div class="flex gap-2">
+            <button onclick="_submitWithdrawal('${handle}')" class="flex-1 bg-brand hover:bg-orange-600 text-white font-bold py-2.5 rounded-xl text-sm transition">Confirm Withdrawal</button>
+            <button onclick="document.getElementById('ce-payment-form').classList.add('hidden')" class="bg-slate-800 hover:bg-slate-700 text-slate-400 font-bold py-2.5 px-4 rounded-xl text-sm transition">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Withdrawal History -->
+    <div class="mb-6">
+      <p class="text-white font-bold mb-3">Withdrawal History</p>
+      <div id="ce-withdraw-history" class="space-y-2">
+        <div class="bg-slate-800/40 rounded-lg p-3 text-center text-slate-500 text-sm">No withdrawals yet</div>
+      </div>
+    </div>
+
     <!-- Recent Conversions -->
     <div class="mb-6">
       <p class="text-white font-bold mb-3">Recent Bookings</p>
@@ -4799,6 +4842,84 @@ function CreatorEarningsPage(){
       </div>
     </div>
   </div>`;
+}
+
+// ═══ WITHDRAWAL FUNCTIONS ═══
+function _requestWithdrawal(handle){
+  var form=document.getElementById('ce-payment-form');
+  if(form)form.classList.remove('hidden');
+}
+
+async function _submitWithdrawal(handle){
+  var nameEl=document.getElementById('ce-bank-name');
+  var sortEl=document.getElementById('ce-bank-sort');
+  var acctEl=document.getElementById('ce-bank-acct');
+  if(!nameEl||!sortEl||!acctEl)return;
+  var name=nameEl.value.trim();
+  var sort=sortEl.value.trim();
+  var acct=acctEl.value.trim();
+  if(!name||!sort||!acct){sgToast('Please fill in all bank details','error');return;}
+
+  try{
+    var res=await fetch('/api/referrals/withdraw',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({creatorHandle:handle,paymentMethod:'bank_transfer',paymentDetails:{accountName:name,sortCode:sort,accountNumber:acct}})
+    });
+    var data=await res.json();
+    if(data.success){
+      sgToast('Withdrawal requested! '+data.withdrawal.amountDisplay+' pending review.','success',4000);
+      document.getElementById('ce-payment-form').classList.add('hidden');
+      nameEl.value='';sortEl.value='';acctEl.value='';
+      // Refresh data
+      _loadCreatorEarnings(handle);
+      _loadWithdrawalData(handle);
+    }else{
+      sgToast(data.error||'Withdrawal failed','error');
+    }
+  }catch(e){
+    sgToast('Network error — try again','error');
+  }
+}
+
+async function _loadWithdrawalData(handle){
+  try{
+    // Load balance
+    var balRes=await fetch('/api/referrals/balance/'+encodeURIComponent(handle));
+    var bal=await balRes.json();
+    if(bal.success){
+      var el=function(id){return document.getElementById(id);};
+      if(el('ce-available'))el('ce-available').textContent=bal.availableDisplay;
+      if(el('ce-pending'))el('ce-pending').textContent='£'+(bal.totalPendingPence/100).toFixed(2);
+      if(el('ce-withdrawn'))el('ce-withdrawn').textContent='£'+(bal.totalWithdrawnPence/100).toFixed(2);
+      // Enable/disable withdraw button
+      var btn=el('ce-withdraw-btn');
+      if(btn){
+        if(bal.canWithdraw){
+          btn.disabled=false;btn.className='bg-brand hover:bg-orange-600 text-white font-bold py-2 px-5 rounded-xl text-sm transition';
+        }else{
+          btn.disabled=true;btn.className='bg-brand/20 text-brand/50 font-bold py-2 px-5 rounded-xl text-sm cursor-not-allowed transition';
+        }
+      }
+    }
+    // Load history
+    var histRes=await fetch('/api/referrals/withdrawals/'+encodeURIComponent(handle));
+    var hist=await histRes.json();
+    var histEl=document.getElementById('ce-withdraw-history');
+    if(histEl&&hist.success){
+      if(hist.withdrawals.length===0){
+        histEl.innerHTML='<div class="bg-slate-800/40 rounded-lg p-3 text-center text-slate-500 text-sm">No withdrawals yet</div>';
+      }else{
+        histEl.innerHTML=hist.withdrawals.map(function(w){
+          var statusColor=w.status==='approved'||w.status==='paid'?'text-emerald-400':w.status==='pending'?'text-yellow-400':'text-red-400';
+          var statusIcon=w.status==='approved'||w.status==='paid'?'✅':w.status==='pending'?'⏳':'❌';
+          var d=new Date(w.requestedAt);var dateStr=d.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+          return '<div class="bg-slate-800/60 rounded-lg p-3 flex items-center justify-between border border-slate-700/30"><div class="flex items-center gap-2"><span>'+statusIcon+'</span><div><p class="text-white text-sm font-medium">'+w.amountDisplay+'</p><p class="text-slate-500 text-xs">'+dateStr+' · '+w.method.replace('_',' ')+'</p></div></div><span class="'+statusColor+' text-xs font-bold uppercase">'+w.status+'</span></div>';
+        }).join('');
+      }
+    }
+  }catch(e){
+    console.error('[Withdrawal] Load failed:',e);
+  }
 }
 
 async function _loadCreatorEarnings(handle){
