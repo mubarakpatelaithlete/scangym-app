@@ -449,6 +449,8 @@
 
       // Save to localStorage
       localStorage.setItem('flexsquad_pending', JSON.stringify(state.creator));
+      // Store creator handle for earnings dashboard
+      localStorage.setItem('sg_creator', JSON.stringify({handle: handle, slug: handle, email: email}));
 
       // Try to register with backend (non-blocking)
       try {

@@ -520,6 +520,48 @@ router.post('/confirm-intent', async (req, res) => {
       [qrToken, qrDataUrl, paymentIntentId, booking.id]
     );
 
+    // Credit creator commission if this was a referred booking
+    if (booking.referral_code) {
+      try {
+        // Credit creator commission (£1.25 = 125 pence)
+        const commissionPence = 125;
+        await pool.query(
+          `UPDATE creator_referrals
+           SET status = 'converted', booking_id = $1, commission_pence = $2, converted_at = NOW()
+           WHERE id = (
+             SELECT id FROM creator_referrals
+             WHERE creator_handle = $3 AND status = 'clicked'
+             ORDER BY created_at DESC LIMIT 1
+           )`,
+          [booking.id, commissionPence, booking.referral_code]
+        );
+        // If no matching click, create conversion record directly
+        const updated = await pool.query(
+          `SELECT id FROM creator_referrals WHERE booking_id = $1 AND status = 'converted'`,
+          [booking.id]
+        );
+        if (updated.rows.length === 0) {
+          await pool.query(
+            `INSERT INTO creator_referrals (creator_handle, booking_id, commission_pence, status, converted_at)
+             VALUES ($1, $2, $3, 'converted', NOW())`,
+            [booking.referral_code, booking.id, commissionPence]
+          );
+        }
+        // Update creator_memberships totals
+        await pool.query(
+          `UPDATE creator_memberships
+           SET total_earnings_pence = total_earnings_pence + $1,
+               total_conversions = total_conversions + 1
+           WHERE user_id = (SELECT creator_user_id FROM creator_landing_pages WHERE slug = $2 LIMIT 1)`,
+          [commissionPence, booking.referral_code]
+        );
+        console.log(`[Payment] Credited £1.25 commission to creator "${booking.referral_code}" for booking ${booking.id}`);
+      } catch (commErr) {
+        console.error('[Payment] Commission credit failed (non-blocking):', commErr.message);
+        // Non-blocking — booking still succeeds even if commission fails
+      }
+    }
+
     const gym = await pool.query('SELECT name FROM public.gyms WHERE id = $1', [booking.gym_id]);
     const gymName = gym.rows[0]?.name || 'Gym';
     const bookingDate = new Date(booking.booking_date).toLocaleDateString('en-GB');
@@ -559,7 +601,7 @@ router.post('/instant-checkout', async (req, res) => {
   try {
     if (!stripe) return res.status(500).json({ error: 'Payment not configured' });
 
-    const { gymId, date, time, email, placeId, passType } = req.body;
+    const { gymId, date, time, email, placeId, passType, referralCode } = req.body;
     if (!date || !time) {
       return res.status(400).json({ error: 'date and time are required' });
     }
@@ -569,6 +611,24 @@ router.post('/instant-checkout', async (req, res) => {
     
     // Pass type pricing
     const passTypeClean = passType || 'day';
+
+    // Validate referral code if provided
+    let validReferral = null;
+    if (referralCode) {
+      try {
+        const refCheck = await pool.query(
+          `SELECT lp.slug, lp.creator_name FROM creator_landing_pages lp
+           WHERE lp.slug = $1 AND lp.is_active = true LIMIT 1`,
+          [referralCode]
+        );
+        if (refCheck.rows.length > 0) {
+          validReferral = refCheck.rows[0];
+          console.log(`[Payment] Valid referral from creator: ${validReferral.creator_name} (${referralCode})`);
+        }
+      } catch (e) {
+        // Non-critical — proceed without discount
+      }
+    }
 
     // Resolve gym ID (Google Place ID → DB ID)
     let dbGymId = gymId;
@@ -611,7 +671,14 @@ router.post('/instant-checkout', async (req, res) => {
       weekly: { peak: 20.00, offPeak: 15.00 },
     };
     const passPricing = PASS_PRICES[passTypeClean] || PASS_PRICES.day;
-    const price = resolved.isAnytime ? passPricing.peak : (resolved.hours < 10 || resolved.hours >= 20) ? passPricing.offPeak : passPricing.peak;
+    let price = resolved.isAnytime ? passPricing.peak : (resolved.hours < 10 || resolved.hours >= 20) ? passPricing.offPeak : passPricing.peak;
+    
+    // Apply £2 referral discount if valid referral code
+    const referralDiscount = validReferral ? 2.00 : 0;
+    if (validReferral) {
+      price = Math.max(price - referralDiscount, 1.00); // Minimum £1.00
+      console.log(`[Payment] Applied £2 referral discount. Price: £${price.toFixed(2)} (was £${(price + referralDiscount).toFixed(2)})`);
+    }
     const amount = Math.round(price * 100);
 
     // Generate booking codes
@@ -629,10 +696,10 @@ router.post('/instant-checkout', async (req, res) => {
       `INSERT INTO public.bookings 
         (gym_id, user_id, booking_date, start_time, end_time, total_amount, 
          platform_fee_amount, booking_type, booking_code, qr_code, status,
-         user_email, user_name, created_at, updated_at)
-       VALUES ($1, 'guest', $2, $3, $4, $5, $6, 'instant', $7, $8, 'pending', $9, 'Guest', NOW(), NOW())
+         user_email, user_name, referral_code, created_at, updated_at)
+       VALUES ($1, 'guest', $2, $3, $4, $5, $6, 'instant', $7, $8, 'pending', $9, 'Guest', $10, NOW(), NOW())
        RETURNING *`,
-      [dbGymId, date, resolved.startTime, resolved.endTime, price, price * 0.10, bookingCode, qrCode, userEmail || 'pending@scangym.com']
+      [dbGymId, date, resolved.startTime, resolved.endTime, price, price * 0.10, bookingCode, qrCode, userEmail || 'pending@scangym.com', validReferral ? referralCode : null]
     );
     const booking = bookingResult.rows[0];
 
@@ -641,7 +708,7 @@ router.post('/instant-checkout', async (req, res) => {
       amount,
       currency: 'gbp',
       automatic_payment_methods: { enabled: true },
-      metadata: { bookingId: String(booking.id), gymName: g.name, passType: passTypeClean },
+      metadata: { bookingId: String(booking.id), gymName: g.name, passType: passTypeClean, ...(validReferral ? { referralCode, referralCreator: validReferral.creator_name } : {}) },
       ...(userEmail ? { receipt_email: userEmail } : {}),
     });
 
@@ -665,6 +732,7 @@ router.post('/instant-checkout', async (req, res) => {
       amount: price,
       gymName: g.name,
       bookingCode,
+      ...(validReferral ? { referralApplied: true, referralDiscount: referralDiscount, originalPrice: price + referralDiscount, referralCreator: validReferral.creator_name } : {}),
     });
   } catch (err) {
     console.error('Instant checkout error:', err);

@@ -25,6 +25,7 @@ const bookingRouter = require('./routes/booking');
 const paymentRouter = require('./routes/payment');
 const liveSearchRouter = require('./routes/liveSearch');
 const geolocationRouter = require('./routes/geolocation');
+const referralsRouter = require('./routes/referrals');
 const analyticsMiddleware = require('./middleware/analytics');
 
 const app = express();
@@ -317,6 +318,7 @@ app.use('/api/bookings', bookingRouter);
 app.use('/api/payment', paymentRouter);
 app.use('/api/live', liveSearchRouter);
 app.use('/api/geolocation', geolocationRouter);
+app.use('/api/referrals', referralsRouter);
 
 // -- Serve Frontend --
 // Digital Asset Links for Android TWA verification
