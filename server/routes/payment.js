@@ -10,6 +10,34 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../middleware/db');
 
+// ─── Global Pricing Engine (PPP + Surge) ────────────────────────────────────
+const pricing = require('../lib/pricing-engine');
+const surge = require('../lib/surge-pricing');
+
+/**
+ * Extract geolocation from request (Cloudflare headers → geoip-lite → default GB)
+ */
+function getGeoFromRequest(req) {
+  // 1. Cloudflare edge headers (fastest)
+  const cfCountry = req.headers['cf-ipcountry'];
+  const cfCity = req.headers['cf-ipcity'];
+  if (cfCountry && cfCountry !== 'XX') {
+    return { country: cfCountry.toUpperCase(), city: cfCity || '' };
+  }
+  // 2. geoip-lite fallback
+  try {
+    const geoip = require('geoip-lite');
+    const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.ip;
+    const geo = geoip ? geoip.lookup(ip) : null;
+    if (geo && geo.country) return { country: geo.country, city: geo.city || '' };
+  } catch (e) {}
+  // 3. Request body/query override (frontend can send geo hint)
+  if (req.body?.countryCode) return { country: req.body.countryCode.toUpperCase(), city: req.body.city || '' };
+  if (req.query?.country) return { country: req.query.country.toUpperCase(), city: req.query.city || '' };
+  // Default: UK
+  return { country: 'GB', city: '' };
+}
+
 const STRIPE_SECRET = process.env.STRIPE_SECRET_KEY;
 let stripe;
 try {
@@ -142,15 +170,17 @@ router.post('/checkout', async (req, res) => {
       return res.status(400).json({ error: 'Booking already paid' });
     }
 
-    const amount = Math.round(parseFloat(booking.total_amount) * 100); // pence
+    const geo = getGeoFromRequest(req);
+    const { currency } = pricing.resolveCurrency(geo);
+    const amount = Math.round(parseFloat(booking.total_amount) * 100); // smallest currency unit
 
-    // Create Stripe Checkout Session
+    // Create Stripe Checkout Session with localized currency
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'payment',
       line_items: [{
         price_data: {
-          currency: 'gbp',
+          currency: currency,
           product_data: {
             name: `ScanGym Session — ${booking.gym_name || 'Gym'}`,
             description: `${booking.start_time} - ${booking.end_time} on ${new Date(booking.booking_date).toLocaleDateString('en-GB')}`,
@@ -336,7 +366,7 @@ router.get('/resume', async (req, res) => {
     const sessionConfig = {
       payment_method_types: ['card'],
       mode: 'payment',
-      line_items: [{ price_data: { currency: 'gbp', product_data: { name: `ScanGym Session — ${booking.gym_name || 'Gym'}`, description: `${booking.start_time} - ${booking.end_time} on ${new Date(booking.booking_date).toLocaleDateString('en-GB')}` }, unit_amount: amount }, quantity: 1 }],
+      line_items: [{ price_data: { currency: pricing.resolveCurrency(getGeoFromRequest(req)).currency, product_data: { name: `ScanGym Session — ${booking.gym_name || 'Gym'}`, description: `${booking.start_time} - ${booking.end_time} on ${new Date(booking.booking_date).toLocaleDateString('en-GB')}` }, unit_amount: amount }, quantity: 1 }],
       metadata: { bookingId: String(booking.id), guest: isGuest ? 'true' : 'false' },
       success_url: `${baseUrl}/booking-success?session_id={CHECKOUT_SESSION_ID}&booking_id=${booking.id}`,
       cancel_url: `${baseUrl}/gym/${booking.gym_id}`,
@@ -397,7 +427,7 @@ router.post('/guest-checkout', async (req, res) => {
       customer_email: email || booking.user_email,
       line_items: [{
         price_data: {
-          currency: 'gbp',
+          currency: pricing.resolveCurrency(getGeoFromRequest(req)).currency,
           product_data: {
             name: `ScanGym Session — ${booking.gym_name || 'Gym'}`,
             description: `${booking.start_time} - ${booking.end_time} on ${new Date(booking.booking_date).toLocaleDateString('en-GB')}`,
@@ -449,7 +479,7 @@ router.post('/create-intent', async (req, res) => {
     // "Save my info" email+phone fields that look required but aren't)
     const intent = await stripe.paymentIntents.create({
       amount,
-      currency: 'gbp',
+      currency: pricing.resolveCurrency(getGeoFromRequest(req)).currency,
       metadata: { bookingId: String(booking.id), gymName: booking.gym_name || '' },
       receipt_email: email || booking.user_email || undefined,
       payment_method_types: ['card', 'amazon_pay', 'revolut_pay'],
@@ -663,23 +693,28 @@ router.post('/instant-checkout', async (req, res) => {
     }
     const g = gym.rows[0];
 
-    // Pass-based pricing with off-peak discounts
+    // Dynamic pricing — PPP-adjusted, city-tiered, time-aware, surge-enabled
     const resolved = resolveTime(time);
-    const PASS_PRICES = {
-      day:    { peak: 5.00, offPeak: 3.75 },
-      '3day': { peak: 12.00, offPeak: 9.00 },
-      weekly: { peak: 20.00, offPeak: 15.00 },
-    };
-    const passPricing = PASS_PRICES[passTypeClean] || PASS_PRICES.day;
-    let price = resolved.isAnytime ? passPricing.peak : (resolved.hours < 10 || resolved.hours >= 20) ? passPricing.offPeak : passPricing.peak;
+    const geo = getGeoFromRequest(req);
+    const demandFactor = surge.getDemandFactor(dbGymId);
+    const pricingResult = pricing.calculatePrice({
+      countryCode: geo.country,
+      city: geo.city,
+      time: time,
+      date: date,
+      passType: passTypeClean,
+      demandFactor,
+    });
+    let price = pricingResult.amount;
+    const pricingCurrency = pricingResult.currency;
     
-    // Apply £2 referral discount if valid referral code
-    const referralDiscount = validReferral ? 2.00 : 0;
+    // Apply referral discount (converted to local currency equivalent)
+    const referralDiscount = validReferral ? Math.min(price * 0.15, price - 0.50) : 0; // 15% off, min 0.50 final
     if (validReferral) {
-      price = Math.max(price - referralDiscount, 1.00); // Minimum £1.00
-      console.log(`[Payment] Applied £2 referral discount. Price: £${price.toFixed(2)} (was £${(price + referralDiscount).toFixed(2)})`);
+      price = Math.max(price - referralDiscount, 0.50);
+      console.log(`[Payment] Applied referral discount: ${pricingResult.symbol}${referralDiscount.toFixed(2)}. Price: ${pricingResult.symbol}${price.toFixed(2)}`);
     }
-    const amount = Math.round(price * 100);
+    const amount = pricingResult.stripeAmount;
 
     // Generate booking codes
     const crypto = require('crypto');
@@ -703,12 +738,15 @@ router.post('/instant-checkout', async (req, res) => {
     );
     const booking = bookingResult.rows[0];
 
-    // Create PaymentIntent with automatic payment methods (enables Apple Pay, Google Pay, cards, etc.)
+    // Track booking for surge pricing
+    surge.recordBooking(dbGymId, geo.country);
+
+    // Create PaymentIntent with localized currency
     const intent = await stripe.paymentIntents.create({
       amount,
-      currency: 'gbp',
+      currency: pricingCurrency,
       automatic_payment_methods: { enabled: true },
-      metadata: { bookingId: String(booking.id), gymName: g.name, passType: passTypeClean, ...(validReferral ? { referralCode, referralCreator: validReferral.creator_name } : {}) },
+      metadata: { bookingId: String(booking.id), gymName: g.name, passType: passTypeClean, country: geo.country, surge: demandFactor.toFixed(2), ...(validReferral ? { referralCode, referralCreator: validReferral.creator_name } : {}) },
       ...(userEmail ? { receipt_email: userEmail } : {}),
     });
 
@@ -756,17 +794,18 @@ router.post('/update-intent-amount', async (req, res) => {
       amount: Math.round(amount * 100),
     });
 
-    // Update booking amount + time if provided
+    // Update booking amount + time if provided (use pricing engine)
     if (bookingId && time) {
       const passTypeClean = passType || 'day';
-      const PASS_PRICES = {
-        day:    { peak: 5.00, offPeak: 3.75 },
-        '3day': { peak: 12.00, offPeak: 9.00 },
-        weekly: { peak: 20.00, offPeak: 15.00 },
-      };
-      const pp = PASS_PRICES[passTypeClean] || PASS_PRICES.day;
+      const geo = getGeoFromRequest(req);
       const resolved = resolveTime(time);
-      const price = resolved.isAnytime ? pp.peak : (resolved.hours < 10 || resolved.hours >= 20) ? pp.offPeak : pp.peak;
+      const pricingResult = pricing.calculatePrice({
+        countryCode: geo.country,
+        city: geo.city,
+        time: time,
+        passType: passTypeClean,
+      });
+      const price = pricingResult.amount;
       await pool.query(
         'UPDATE public.bookings SET total_amount = $1, start_time = $2, end_time = $3, platform_fee_amount = $4, updated_at = NOW() WHERE id = $5',
         [price, resolved.startTime, resolved.endTime, price * 0.10, bookingId]
@@ -818,16 +857,18 @@ router.post('/cash-booking', async (req, res) => {
     if (gym.rows.length === 0) return res.status(404).json({ error: 'Gym not found' });
     const g = gym.rows[0];
 
-    // Pass-based pricing
+    // Dynamic pricing (same engine as card payments)
     const passTypeClean = passType || 'day';
-    const PASS_PRICES = {
-      day:    { peak: 5.00, offPeak: 3.75 },
-      '3day': { peak: 12.00, offPeak: 9.00 },
-      weekly: { peak: 20.00, offPeak: 15.00 },
-    };
-    const pp = PASS_PRICES[passTypeClean] || PASS_PRICES.day;
+    const geo = getGeoFromRequest(req);
     const resolved = resolveTime(time);
-    const price = resolved.isAnytime ? pp.peak : (resolved.hours < 10 || resolved.hours >= 20) ? pp.offPeak : pp.peak;
+    const pricingResult = pricing.calculatePrice({
+      countryCode: geo.country,
+      city: geo.city,
+      time: time,
+      date: date,
+      passType: passTypeClean,
+    });
+    const price = pricingResult.amount;
 
     // Generate booking codes
     const crypto = require('crypto');
@@ -1092,10 +1133,19 @@ router.post('/quick-checkout', async (req, res) => {
     if (gym.rows.length === 0) return res.status(404).json({ error: 'Gym not found' });
     const g = gym.rows[0];
 
-    // Pricing — anytime = peak; before 10am or after 8pm = off-peak
+    // Dynamic pricing via pricing engine
     const resolved = resolveTime(time);
-    const price = resolved.isAnytime ? 5.00 : (resolved.hours < 10 || resolved.hours >= 20) ? 3.75 : 5.00;
-    const amount = Math.round(price * 100);
+    const geo = getGeoFromRequest(req);
+    const pricingResult = pricing.calculatePrice({
+      countryCode: geo.country,
+      city: geo.city,
+      time: time,
+      date: date,
+      passType: 'day',
+      demandFactor: surge.getDemandFactor(dbGymId),
+    });
+    const price = pricingResult.amount;
+    const amount = pricingResult.stripeAmount;
 
     // Generate booking codes
     const crypto = require('crypto');
@@ -1120,14 +1170,15 @@ router.post('/quick-checkout', async (req, res) => {
     const booking = bookingResult.rows[0];
 
     // Charge the saved card — instant, no user interaction!
+    surge.recordBooking(dbGymId, geo.country);
     const intent = await stripe.paymentIntents.create({
       amount,
-      currency: 'gbp',
+      currency: pricingResult.currency,
       customer: user.stripe_customer_id,
       payment_method: paymentMethodId,
       off_session: true,
       confirm: true, // ← Charge immediately!
-      metadata: { bookingId: String(booking.id), gymName: g.name, quickCheckout: 'true' },
+      metadata: { bookingId: String(booking.id), gymName: g.name, quickCheckout: 'true', country: geo.country },
       receipt_email: user.email || undefined,
     });
 

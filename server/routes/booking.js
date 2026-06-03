@@ -20,6 +20,22 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../middleware/db');
 const crypto = require('crypto');
+const pricing = require('../lib/pricing-engine');
+
+// Extract geo from request (mirrors payment.js helper)
+function getGeoFromRequest(req) {
+  const cfCountry = req.headers['cf-ipcountry'];
+  const cfCity = req.headers['cf-ipcity'];
+  if (cfCountry && cfCountry !== 'XX') return { country: cfCountry.toUpperCase(), city: cfCity || '' };
+  try {
+    const geoip = require('geoip-lite');
+    const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.ip;
+    const geo = geoip ? geoip.lookup(ip) : null;
+    if (geo && geo.country) return { country: geo.country, city: geo.city || '' };
+  } catch (e) {}
+  if (req.body?.countryCode) return { country: req.body.countryCode.toUpperCase(), city: req.body.city || '' };
+  return { country: 'GB', city: '' };
+}
 
 // Generate human-readable booking code (e.g., 5WCB-8VDY)
 function generateBookingCode() {
@@ -64,8 +80,16 @@ router.post('/create', async (req, res) => {
     const [hours, mins] = time.split(':').map(Number);
     const endTime = time; // Same time next day (24hr access)
 
-    // Pricing: before 10am = £3.75 (off-peak), otherwise £5.00
-    const price = hours < 10 ? 3.75 : 5.00;
+    // Dynamic pricing via pricing engine (PPP-adjusted, time-aware)
+    const geo = getGeoFromRequest(req);
+    const pricingResult = pricing.calculatePrice({
+      countryCode: geo.country,
+      city: geo.city,
+      time: time,
+      date: date,
+      passType: 'day',
+    });
+    const price = pricingResult.amount;
 
     const bookingCode = generateBookingCode();
     const qrCode = generateQRCode();
@@ -218,8 +242,16 @@ router.post('/guest-create', async (req, res) => {
     const [hours, mins] = time.split(':').map(Number);
     const endTime = time; // Same time next day (24hr access)
 
-    // Pricing: before 10am = £3.75 (off-peak), otherwise £5.00
-    const price = hours < 10 ? 3.75 : 5.00;
+    // Dynamic pricing via pricing engine (PPP-adjusted, time-aware)
+    const geo = getGeoFromRequest(req);
+    const pricingResult = pricing.calculatePrice({
+      countryCode: geo.country,
+      city: geo.city,
+      time: time,
+      date: date,
+      passType: 'day',
+    });
+    const price = pricingResult.amount;
 
     const bookingCode = generateBookingCode();
     const qrCode = generateQRCode();
@@ -352,7 +384,7 @@ router.post('/cancel', async (req, res) => {
       success: true,
       refunded,
       message: refunded
-        ? `Booking cancelled. £${parseFloat(booking.total_amount).toFixed(2)} refund issued to your card (3-5 business days).`
+        ? `Booking cancelled. ${parseFloat(booking.total_amount).toFixed(2)} refund issued to your card (3-5 business days).`
         : 'Booking cancelled successfully.',
     });
   } catch (err) {
