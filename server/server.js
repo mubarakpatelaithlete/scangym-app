@@ -35,7 +35,63 @@ const PORT = process.env.PORT || 5000;
 const FRONTEND_DIR = path.join(__dirname, 'public');
 
 // -- Middleware --
-// Gzip/deflate compression — reduces transfer size by 60-80%
+// Serve pre-compressed Brotli (.br) and gzip (.gz) files when available
+// Generated at build time (build.js) with max compression (Brotli quality 11).
+// Falls back to on-the-fly gzip for dynamic responses (API JSON, etc.)
+app.use((req, res, next) => {
+  // Only handle GET requests for static files
+  if (req.method !== 'GET') return next();
+  
+  // Skip API routes and SPA fallback (handled separately)
+  if (req.path.startsWith('/api/') || req.path === '/') return next();
+  
+  const acceptEncoding = req.headers['accept-encoding'] || '';
+  const filePath = path.join(FRONTEND_DIR, req.path);
+  
+  // Content type map
+  const TYPES = { '.js': 'application/javascript', '.css': 'text/css', '.html': 'text/html', '.json': 'application/json', '.svg': 'image/svg+xml', '.xml': 'application/xml' };
+  
+  // Cache headers based on file type (match express.static logic)
+  function setCacheHeaders(res, reqPath) {
+    if (reqPath.endsWith('.html') || reqPath.endsWith('sw.js')) {
+      res.setHeader('Cache-Control', 'no-cache');
+    } else if (reqPath.endsWith('app.js') || /app\.[a-z0-9]+\.js$/.test(reqPath) || reqPath.endsWith('robust-location.js')) {
+      res.setHeader('Cache-Control', 'no-cache');
+    } else if (reqPath.endsWith('.js') || reqPath.endsWith('.css')) {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    }
+  }
+  
+  // Try Brotli first (15-25% better than gzip)
+  if (acceptEncoding.includes('br')) {
+    const brPath = filePath + '.br';
+    if (fs.existsSync(brPath)) {
+      res.setHeader('Content-Encoding', 'br');
+      res.setHeader('Vary', 'Accept-Encoding');
+      const ext = path.extname(req.path);
+      if (TYPES[ext]) res.setHeader('Content-Type', TYPES[ext] + '; charset=utf-8');
+      setCacheHeaders(res, req.path);
+      return res.sendFile(brPath);
+    }
+  }
+  
+  // Try gzip
+  if (acceptEncoding.includes('gzip')) {
+    const gzPath = filePath + '.gz';
+    if (fs.existsSync(gzPath)) {
+      res.setHeader('Content-Encoding', 'gzip');
+      res.setHeader('Vary', 'Accept-Encoding');
+      const ext = path.extname(req.path);
+      if (TYPES[ext]) res.setHeader('Content-Type', TYPES[ext] + '; charset=utf-8');
+      setCacheHeaders(res, req.path);
+      return res.sendFile(gzPath);
+    }
+  }
+  
+  next();
+});
+
+// On-the-fly gzip for dynamic responses (API JSON, server-rendered HTML)
 app.use(compression({ level: 6, threshold: 256 }));
 // CORS — locked to known origins (was: origin: true — accepted everything)
 const ALLOWED_ORIGINS = [
@@ -209,7 +265,7 @@ apiPaths.forEach(p => app.use(p, express.json()));
 // -- Health check --
 app.get('/api/v2/health', (req, res) => {
   res.json({
-    status: 'ok', version: 'v4.1.0', brand: 'ScanGym',
+    status: 'ok', version: 'v4.4.0', brand: 'ScanGym',
     ts: new Date().toISOString(),
     features: 18, tasks: '24/24 + auth + booking + payment + live-search', ok: true,
     frontend: fs.existsSync(path.join(FRONTEND_DIR, 'index.html')) ? 'v3' : 'none',
@@ -385,8 +441,9 @@ if (fs.existsSync(FRONTEND_DIR)) {
       } catch (e) {}
     }
 
-    // Inject geo hint script right before </head>
-    const html = _indexHtmlCache.replace('</head>', `<script>window.__geoHint=${geoHint};</script>\n</head>`);
+    // Inject geo hint + performance hints right before </head>
+    const perfHints = `<script>window.__geoHint=${geoHint};</script>\n`;
+    const html = _indexHtmlCache.replace('</head>', perfHints + '</head>');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.send(html);
@@ -403,5 +460,5 @@ app.use((err, req, res, next) => {
 
 // -- Start --
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`ScanGym v4.3.0 on :${PORT} | Frontend: ${fs.existsSync(FRONTEND_DIR+'/index.html')?'v3':'proxy'} | Auth: local session`);
+  console.log(`ScanGym v4.4.0 on :${PORT} | Frontend: ${fs.existsSync(FRONTEND_DIR+'/index.html')?'v3':'proxy'} | Auth: local session | Brotli+gzip pre-compressed`);
 });
