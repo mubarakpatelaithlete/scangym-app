@@ -3,6 +3,78 @@
 // Inject CSS animations for loading experience
 (function(){const s=document.createElement('style');s.textContent='@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}#fun-fact{transition:opacity 0.2s ease}.gym-card{animation:fadeInUp 0.3s ease-out both}.animate-slide-up{animation:slideUp 0.3s ease-out}@keyframes skeletonPulse{0%,100%{opacity:.6}50%{opacity:.3}}@keyframes locationDot{0%,100%{box-shadow:0 0 0 0 rgba(249,115,22,.4)}50%{box-shadow:0 0 0 8px rgba(249,115,22,0)}}.skel-card{animation:skeletonPulse 1.8s ease-in-out infinite}.loc-dot{animation:locationDot 1.5s ease-in-out infinite}.cards-enter .gym-card{animation:fadeInUp .4s ease-out both}@keyframes toastIn{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes toastOut{from{transform:translateY(0);opacity:1}to{transform:translateY(-100%);opacity:0}}@keyframes spin{to{transform:rotate(360deg)}}.sg-spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}/* ── 3-Tab System ── */.sg-tab-bar{position:fixed;bottom:0;left:0;right:0;height:64px;background:rgba(10,10,22,.97);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:space-around;border-top:1px solid rgba(255,255,255,.08);z-index:9000;padding-bottom:env(safe-area-inset-bottom,0)}.sg-tab-item{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:6px 16px;border-radius:12px;transition:all .2s;-webkit-tap-highlight-color:transparent;user-select:none}.sg-tab-item .sg-tab-icon{font-size:24px;opacity:.45;transition:all .2s}.sg-tab-item .sg-tab-label{font-size:10px;font-weight:600;color:rgba(255,255,255,.4);transition:all .2s}.sg-tab-item.active .sg-tab-icon{opacity:1;transform:scale(1.1)}.sg-tab-item.active .sg-tab-label{color:#f97316}.sg-tab-content{position:fixed;top:0;left:0;right:0;bottom:calc(64px + env(safe-area-inset-bottom,0px));overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;scroll-behavior:smooth}.sg-tab-content.reels-active{position:static;padding-bottom:0;overflow:visible}.sg-reels-frame{position:fixed;top:0;left:0;right:0;bottom:64px;border:none;width:100%;height:calc(100vh - 64px);z-index:1}.sg-more-hub{padding:20px 16px 24px;max-width:480px;margin:0 auto}.sg-more-section{margin-bottom:20px}.sg-more-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.3);margin-bottom:8px;padding-left:4px}.sg-more-item{display:flex;align-items:center;gap:14px;padding:14px 16px;background:rgba(255,255,255,.04);border-radius:14px;margin-bottom:6px;border:1px solid rgba(255,255,255,.04);cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}.sg-more-item:active{transform:scale(.98);background:rgba(255,255,255,.08)}.sg-more-item .sg-mi-icon{font-size:20px;width:40px;height:40px;background:rgba(255,255,255,.06);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.sg-more-item .sg-mi-text{flex:1}.sg-more-item .sg-mi-text h4{color:#fff;font-size:14px;font-weight:600;margin:0}.sg-more-item .sg-mi-text p{color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0}.sg-more-item .sg-mi-arrow{color:rgba(255,255,255,.2);font-size:16px}.sg-more-profile{display:flex;align-items:center;gap:14px;margin-bottom:28px;padding-top:12px}.sg-more-avatar{width:56px;height:56px;background:linear-gradient(135deg,#f97316,#fb923c);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff;flex-shrink:0}.sg-more-profile-info h3{color:#fff;font-size:18px;font-weight:700;margin:0}.sg-more-profile-info p{color:rgba(255,255,255,.4);font-size:13px;margin:2px 0 0}.sg-more-social{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}.sg-more-social a{display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:rgba(255,255,255,.04);border-radius:12px;border:1px solid rgba(255,255,255,.06);font-size:16px;transition:all .15s;text-decoration:none}.sg-more-social a:active{background:rgba(255,255,255,.1);transform:scale(.95)}.sg-more-back{display:flex;align-items:center;gap:8px;padding:12px 0;cursor:pointer;color:rgba(255,255,255,.6);font-size:14px;font-weight:600;margin-bottom:4px;-webkit-tap-highlight-color:transparent}.sg-more-back:active{color:#f97316}#sg-search-overlay{transition:opacity .2s ease}#sg-search-overlay.active{opacity:1!important}.hide-scrollbar::-webkit-scrollbar{display:none}.sg-dashboard{-webkit-tap-highlight-color:transparent;position:fixed;top:0;left:0;right:0;bottom:64px;z-index:10;overscroll-behavior:none;-webkit-overflow-scrolling:auto}html,body{height:100%;overflow:hidden;overscroll-behavior:none;position:fixed;width:100%}';document.head.appendChild(s)})();
 
+// ─── Dynamic Pricing Service — fetches localized prices from /api/pricing/prices ───
+window.__sgPricing = null;
+window.__sgPricingReady = false;
+window.__sgPricingCallbacks = [];
+
+// Fetch localized prices on page load
+(function initPricingService() {
+  const geo = window.__geoHint || {};
+  const params = new URLSearchParams();
+  if (geo.country) params.set('country', geo.country);
+  if (geo.city) params.set('city', geo.city);
+  
+  fetch('/api/pricing/prices?' + params.toString())
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        window.__sgPricing = data;
+        window.__sgPricingReady = true;
+        // Fire any queued callbacks
+        window.__sgPricingCallbacks.forEach(cb => { try { cb(data); } catch(e) {} });
+        window.__sgPricingCallbacks = [];
+        // Re-render price elements if already on page
+        document.querySelectorAll('[data-sg-price]').forEach(el => {
+          const pt = el.getAttribute('data-sg-price');
+          const p = data.prices[pt];
+          if (p) el.textContent = p.display;
+        });
+      }
+    })
+    .catch(() => {
+      // Fallback: use GBP defaults
+      window.__sgPricing = {
+        location: { currency: 'gbp', symbol: '£' },
+        prices: {
+          day: { amount: 2.99, display: '£2.99', stripeAmount: 299 },
+          '3day': { amount: 7.99, display: '£7.99', stripeAmount: 799 },
+          weekly: { amount: 14.99, display: '£14.99', stripeAmount: 1499 },
+          monthly: { amount: 29.99, display: '£29.99', stripeAmount: 2999 },
+        },
+        surge: { factor: 1, label: 'Normal' },
+      };
+      window.__sgPricingReady = true;
+    });
+})();
+
+/**
+ * Get current price for a pass type. Returns { amount, display, symbol, currency }
+ * Falls back to GBP if pricing hasn't loaded yet.
+ */
+function sgPrice(passType) {
+  const p = window.__sgPricing;
+  if (p && p.prices && p.prices[passType]) {
+    const pr = p.prices[passType];
+    return {
+      amount: pr.amount,
+      display: pr.display,
+      symbol: p.location?.symbol || '£',
+      currency: p.location?.currency || 'gbp',
+      stripeAmount: pr.stripeAmount,
+    };
+  }
+  // Fallback defaults (GBP)
+  const defaults = { day: 2.99, '3day': 7.99, weekly: 14.99, monthly: 29.99 };
+  const amt = defaults[passType] || 2.99;
+  return { amount: amt, display: '£' + amt.toFixed(2), symbol: '£', currency: 'gbp', stripeAmount: Math.round(amt * 100) };
+}
+
+/** Get the user's currency symbol */
+function sgSymbol() {
+  return window.__sgPricing?.location?.symbol || '£';
+}
+
 // ─── Toast Notification System (replaces alert()) ───
 window.sgToast=function(msg, type='error', duration=4000){
   const existing=document.getElementById('sg-toast');
@@ -119,7 +191,7 @@ function askGymQuestion(question, gymId) {
     } else if (q.includes('entrance') || q.includes('where') || q.includes('find') || q.includes('location') || q.includes('address')) {
       answer = `${gym.name || 'This gym'} is located at ${gym.vicinity || gym.formatted_address || 'the address shown on the map above'}. Look for the ScanGym QR scanner at the entrance — scan your booking QR code and you're in! No reception needed. 📍`;
     } else if (q.includes('guest') || q.includes('friend') || q.includes('bring')) {
-      answer = `Yes! With the Elite tier (£18 base), you can bring 1 guest for free. Otherwise, your friend can book their own session through ScanGym — it's pay-per-visit, no membership needed. Share your referral link and you both save £2! 👫`;
+      answer = `Yes! With the Elite tier, you can bring 1 guest for free. Otherwise, your friend can book their own session through ScanGym — it's pay-per-visit, no membership needed. Share your referral link and you both save 15%! 👫`;
     } else if (q.includes('busy') || q.includes('crowded') || q.includes('quiet') || q.includes('peak')) {
       answer = `${gym.name || 'This gym'} is typically busiest 5-7pm on weekdays. Quietest times: 6-9am, 2-4pm, and after 9pm. Weekends are generally quieter. Book an off-peak slot to save 25% AND avoid crowds! 📊`;
     } else if (q.includes('shower') || q.includes('changing')) {
@@ -129,7 +201,7 @@ function askGymQuestion(question, gymId) {
     } else if (q.includes('cancel') || q.includes('refund')) {
       answer = `Free cancellation up to 2 hours before your session! Refund goes instantly to your ScanGym Wallet, or back to your card in 5-10 days. No questions asked. ✅`;
     } else if (q.includes('price') || q.includes('cost') || q.includes('how much') || q.includes('pay')) {
-      answer = `${gym.name || 'This gym'} offers 4 tiers: Basic from £3.75 (off-peak) to £5, Standard from £5.63 to £7.50, Premium from £9 to £12, and Elite from £13.50 to £18. Prices change by time of day — check our pricing page for live rates! 💰`;
+      answer = `${gym.name || 'This gym'} offers flexible passes: Day Pass from ${sgPrice('day').display}, 3-Day Pass from ${sgPrice('3day').display}, and Weekly Pass from ${sgPrice('weekly').display}. Prices vary by location, time of day, and demand — localized to your currency! 💰`;
     } else if (q.includes('equipment') || q.includes('machine') || q.includes('weights') || q.includes('dumbbell')) {
       answer = `${gym.name || 'This gym'} has a full range of equipment. Check the facilities section above for specific equipment lists. Most ScanGym partner gyms have free weights, cardio machines, and cable stations. 💪`;
     } else if (q.includes('wifi') || q.includes('internet')) {
@@ -147,15 +219,15 @@ function askGymQuestion(question, gymId) {
     } else if (q.includes('safe') || q.includes('security') || q.includes('steal') || q.includes('theft') || q.includes('cctv')) {
       answer = `${gym.name || 'This gym'} has 24/7 CCTV, secure lockers, and QR-verified entry — only paying customers can enter. Your belongings are safe! 🔐`;
     } else if (q.includes('first time') || q.includes('beginner') || q.includes('never been') || q.includes('new to')) {
-      answer = `Welcome! 🎉 First visit guide: 1) Book a Basic session (just £5) to try it. 2) Arrive 5 mins early. 3) Scan QR at entry. 4) Staff can give you a tour — just ask! 5) Free cancellation if you change your mind. No pressure!`;
+      answer = `Welcome! 🎉 First visit guide: 1) Book a Day Pass (from ${sgPrice('day').display}) to try it. 2) Arrive 5 mins early. 3) Scan QR at entry. 4) Staff can give you a tour — just ask! 5) Free cancellation if you change your mind. No pressure!`;
     } else if (q.includes('membership') || q.includes('subscribe') || q.includes('monthly') || q.includes('contract')) {
-      answer = `ScanGym is 100% pay-per-visit — no memberships, no contracts, no monthly fees! Buy a 5-session pack (£20, save £5) or just pay per visit. The average gym-goer saves £340/year vs traditional memberships. 💰`;
+      answer = `ScanGym is 100% pay-per-visit — no memberships, no contracts, no monthly fees! Day passes from ${sgPrice('day').display}, or get a Weekly Pass from ${sgPrice('weekly').display} for the best value. Save big vs traditional memberships. 💰`;
     } else if (q.includes('personal trainer') || q.includes('pt ') || q.includes('coach') || q.includes('training plan')) {
       answer = `Personal trainers are available at most ScanGym partner gyms. After booking, check the gym's PT board or ask at reception. Pro tip: many PTs offer a free 15-min intro session for first-timers! 💪`;
     } else if (q.includes('protein') || q.includes('shake') || q.includes('nutrition') || q.includes('food') || q.includes('cafe') || q.includes('vending')) {
       answer = `Most ScanGym partner gyms have a vending area or shake bar. Check the amenities section above for food/drink options. Pro tip: bring a protein shake for post-workout — lockers keep them cool! 🥤`;
     } else if (q.includes('pool') || q.includes('swim') || q.includes('sauna') || q.includes('steam') || q.includes('spa') || q.includes('jacuzzi')) {
-      answer = `Pool, sauna, and spa access varies by gym. Check the facilities section above for specific amenities. These are typically included with Premium (£12) or Elite (£18) tier bookings. 🏊`;
+      answer = `Pool, sauna, and spa access varies by gym. Check the facilities section above for specific amenities. These are typically included with Premium or Elite tier bookings. 🏊`;
     } else if (q.includes('accessible') || q.includes('wheelchair') || q.includes('disabled') || q.includes('disability')) {
       answer = `Accessibility is important to us. Most ScanGym partner gyms have step-free access, accessible changing rooms, and adapted equipment. For specific accessibility info, we recommend calling the gym directly. ♿`;
     } else if (q.includes('child') || q.includes('kid') || q.includes('creche') || q.includes('baby')) {
@@ -269,7 +341,7 @@ const LOADING_STAGES=[
 ];
 const FUN_FACTS=[
   'ScanGym has access to 1.2 million gyms across 190+ countries',
-  'The average ScanGym user saves £340/year vs gym memberships',
+  'The average ScanGym user saves 60%+/year vs gym memberships',
   'Over 67% of gym memberships go unused — that\'s why we\'re pay-per-visit',
   'The most popular gym time worldwide? 6-7pm on Mondays',
   'London has 4,200+ gyms — more than any other European city',
@@ -297,40 +369,43 @@ window.stopLoadingAnimation=function(){
   clearInterval(window._loadingInterval);
 };
 
-// ─── Dynamic Pricing Logic ───
+// ─── Dynamic Pricing Logic (uses /api/pricing/prices) ───
 function initDynamicPricing(){
   if(!document.getElementById('pricing-live-price'))return;
   const hour=new Date().getHours();
   const min=new Date().getMinutes();
   
-  let multiplier=1.0, label='';
-  if(hour<6){multiplier=0.75;label='🟢 Off-peak · Late night';}
-  else if(hour<10){multiplier=0.75;label='🟢 Off-peak · Early bird';}
-  else if(hour<12){multiplier=1.0;label='🟡 Standard · Morning';}
-  else if(hour<16){multiplier=0.85;label='🟢 Midday quiet';}
-  else if(hour<18){multiplier=1.0;label='🟡 Standard · Afternoon';}
-  else if(hour<20){multiplier=1.15;label='🔴 Rush hour · Peak demand';}
-  else{multiplier=0.75;label='🟢 Off-peak · Evening';}
+  let label='';
+  if(hour<6){label='🟢 Off-peak · Late night';}
+  else if(hour<10){label='🟢 Off-peak · Early bird';}
+  else if(hour<12){label='🟡 Standard · Morning';}
+  else if(hour<16){label='🟢 Midday quiet';}
+  else if(hour<18){label='🟡 Standard · Afternoon';}
+  else if(hour<20){label='🔴 Rush hour · Peak demand';}
+  else{label='🟢 Off-peak · Evening';}
   
-  const bases={basic:5,standard:7.50,premium:12,elite:18};
-  
+  const dayPrice=sgPrice('day');
   const liveEl=document.getElementById('pricing-live-price');
   const labelEl=document.getElementById('pricing-time-label');
-  if(liveEl)liveEl.textContent='£'+(bases.basic*multiplier).toFixed(2);
+  if(liveEl)liveEl.textContent=dayPrice.display;
   if(labelEl)labelEl.textContent=label;
   
+  // Update tier prices using API data
+  const tierMap={basic:'day',standard:'day',premium:'weekly',elite:'monthly'};
   document.querySelectorAll('[data-tier-price]').forEach(el=>{
     const tier=el.getAttribute('data-tier-price');
-    const price=(bases[tier]*multiplier).toFixed(2);
-    el.textContent='£'+price;
+    const pt=tierMap[tier]||'day';
+    const p=sgPrice(pt);
+    el.textContent=p.display;
     const discEl=el.parentElement.querySelector('.text-emerald-400,.text-red-400,.text-slate-500');
+    const surge=window.__sgPricing?.surge;
     if(discEl){
-      if(multiplier<1){
-        discEl.textContent=Math.round((1-multiplier)*100)+'% off now';
-        discEl.className='text-emerald-400 text-xs font-medium';
-      }else if(multiplier>1){
+      if(surge&&surge.factor>1.2){
         discEl.textContent='⚡ High demand';
         discEl.className='text-red-400 text-xs font-medium';
+      }else if(hour<10||hour>=20){
+        discEl.textContent='Off-peak rate';
+        discEl.className='text-emerald-400 text-xs font-medium';
       }else{
         discEl.textContent='Standard rate';
         discEl.className='text-slate-500 text-xs font-medium';
@@ -614,15 +689,11 @@ function getCardFacilities(gym){
 
 function GymCard(gym){
   const badges=getRandomBadges(gym,3);
-  const price=gym.dayPassPrice||gym.price_tier||'5.00';
-  const origPrice=originalPrice(price);
-  const discount=0;
-  // Fix #4: Smart price badge — reads current time, shows off-peak or peak price
+  // Dynamic pricing from API
+  const dayP=sgPrice('day');
   const _hCard=new Date().getHours();
   const _isOPCard=_hCard<10||_hCard>=20;
-  const cardPeakPrice=parseFloat(price).toFixed(2);
-  const cardOffPeakPrice=(parseFloat(price)*0.75).toFixed(2);
-  const cardCurrentPrice=_isOPCard?cardOffPeakPrice:cardPeakPrice;
+  const cardCurrentPrice=dayP.display;
   const dist=gym.distanceText||(gym.distance?`${gym.distance.toFixed(1)} km`:'Nearby');
   const photo=gym.photo||gym.photo_url||
     (gym.photoReference?`https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${gym.photoReference}&key=${MAPS_KEY}`:
@@ -651,7 +722,7 @@ function GymCard(gym){
       ${carouselHTML}
       <!-- Fix #4: Smart price badge — shows current time-aware price -->
       <div class="absolute top-3 right-3 ${_isOPCard?'bg-green-600':'bg-brand'} text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
-        £${cardCurrentPrice}${_isOPCard?' 🌙':''}
+        ${cardCurrentPrice}${_isOPCard?' 🌙':''}
       </div>
       ${topGym?`<div class="absolute top-3 left-3 bg-yellow-500 text-black px-2.5 py-1 rounded-full text-xs font-bold shadow-lg">⭐ Top Gym</div>`
         :gym.openNow===true?`<div class="absolute top-3 left-3 bg-green-600 text-white px-2.5 py-1 rounded-full text-xs font-medium shadow-lg flex items-center gap-1"><span class="w-1.5 h-1.5 bg-green-300 rounded-full animate-pulse"></span> Open${cTime?' until '+cTime:' Now'}</div>`:``}
@@ -677,7 +748,7 @@ function GymCard(gym){
         <span class="text-xs text-accent font-medium">✅ Free cancellation</span>
         
       </div>
-      <button onclick="event.stopPropagation();showUberCheckout('${gymIdentifier}')" class="gym-card-book-btn">⚡ Book Now · £${cardCurrentPrice}${_isOPCard?' (off-peak)':''}</button>
+      <button onclick="event.stopPropagation();showUberCheckout('${gymIdentifier}')" class="gym-card-book-btn">⚡ Book Now · ${cardCurrentPrice}${_isOPCard?' (off-peak)':''}</button>
     </div>
   </div>`;
 }
@@ -725,7 +796,7 @@ function HomePage(){
     <div onclick="navigate('/explore')" style="background:linear-gradient(135deg,${hour<10||hour>=20?'#16a34a,#22c55e':'#f97316,#fb923c'});border-radius:16px;padding:18px 20px;display:flex;align-items:center;gap:14px;cursor:pointer;flex-shrink:0;margin-bottom:14px;position:relative;overflow:hidden;">
       <div style="position:absolute;top:-20px;right:-10px;font-size:60px;opacity:.15;transform:rotate(15deg);">🏋️</div>
       <div style="flex:1;position:relative;z-index:1;">
-        <p style="color:#fff;font-weight:800;font-size:16px;margin:0;">${hour<10||hour>=20?'£3.75 Day Pass · 25% Off 🌙':'From £5 Day Pass'}</p>
+        <p style="color:#fff;font-weight:800;font-size:16px;margin:0;">${hour<10||hour>=20?''+sgPrice('day').display+' Day Pass · Off-Peak 🌙':'From '+sgPrice('day').display+' Day Pass'}</p>
         <p style="color:rgba(255,255,255,.85);font-size:12px;margin:4px 0 0;">${hour<10||hour>=20?'Off-peak pricing active now · No membership · QR entry':'No membership · Free cancellation · QR entry'}</p>
       </div>
       <span style="color:rgba(255,255,255,.7);font-size:20px;position:relative;z-index:1;">→</span>
@@ -1008,12 +1079,15 @@ function GymProfilePage(){
   const rating=gym.rating||'4.5';
   const reviewCount=gym.user_ratings_total||gym.totalReviews||47;
   const isOpen=gym.opening_hours?.isOpen;
-  const price=gym.price_tier||'5';
-  // Bug #10 fix: Show time-aware price on gym detail page
+  // Dynamic pricing from API
   const _h10=new Date().getHours();
   const _isOP10=_h10<10||_h10>=20;
-  const offPeakPrice=(parseFloat(price)*0.75).toFixed(2);
-  const currentPrice=_isOP10?offPeakPrice:parseFloat(price).toFixed(2);
+  const _dayP=sgPrice('day');
+  const _3dayP=sgPrice('3day');
+  const _weekP=sgPrice('weekly');
+  const currentPrice=_dayP.display;
+  const threeDayPrice=_3dayP.display;
+  const weeklyPrice=_weekP.display;
 
   return`
   <style>
@@ -1053,33 +1127,86 @@ function GymProfilePage(){
     .gym-qa-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:10px 0;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;color:rgba(255,255,255,.8);font-size:12px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s}
     .gym-qa-btn:active{transform:scale(.95);background:rgba(255,255,255,.1)}
     .gym-qa-icon{font-size:16px}
-    /* Pass selection pills */
-    .gym-pass-row{display:flex;gap:8px;margin-bottom:10px}
-    .gym-pass-pill{flex:1;text-align:center;padding:8px 4px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent}
-    .gym-pass-pill.selected{border-color:rgba(34,197,94,.5);background:rgba(34,197,94,.1)}
-    .gym-pass-pill:active{transform:scale(.96)}
+    /* ═══ Uber-style pass cards ═══ */
+    .gym-pass-header{color:#fff;font-size:18px;font-weight:800;text-align:center;padding:4px 0 8px;font-family:'Sora',sans-serif}
+    .gym-pass-cards{display:flex;flex-direction:column;gap:8px;margin-bottom:10px;padding-bottom:140px}
+    .gym-pass-card{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:14px;border:2px solid rgba(255,255,255,.08);background:transparent;cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent;position:relative}
+    .gym-pass-card.selected{border-color:#fff;background:rgba(255,255,255,.04)}
+    .gym-pass-card:active{transform:scale(.98)}
+    .gym-pass-card-icon{width:52px;height:52px;border-radius:12px;background:linear-gradient(135deg,rgba(34,197,94,.15),rgba(34,197,94,.05));display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0}
+    .gym-pass-card-info{flex:1;min-width:0}
+    .gym-pass-card-name{color:#fff;font-size:16px;font-weight:700}
+    .gym-pass-card-sub{color:rgba(255,255,255,.4);font-size:12px;margin-top:1px}
+    .gym-pass-card-badge{display:inline-block;background:#3b82f6;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;margin-top:4px;letter-spacing:.3px}
+    .gym-pass-card .gym-pass-price{color:#fff;font-size:18px;font-weight:800;flex-shrink:0}
+
+    /* ═══ Sticky bottom bar (Uber-style) ═══ */
+    .gym-sticky-bar{position:absolute;bottom:0;left:0;right:0;z-index:50;background:#0a0f14;border-top:1px solid rgba(255,255,255,.08);padding-bottom:env(safe-area-inset-bottom,0px)}
+    .gym-sticky-pay{display:flex;align-items:center;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .15s}
+    .gym-sticky-pay:active{background:rgba(255,255,255,.04)}
+    .gym-sticky-pay-icon{width:36px;height:36px;border-radius:8px;background:#000;border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;margin-right:12px}
+    .gym-sticky-pay-icon.visa{background:linear-gradient(135deg,#1a1f71,#2d2f8e)}
+    .gym-sticky-pay-icon.cash{background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.3)}
+    .gym-sticky-pay-label{flex:1;color:#fff;font-size:14px;font-weight:600}
+    .gym-sticky-pay-chevron{color:rgba(255,255,255,.3);font-size:22px;font-weight:300;margin-left:8px}
+    .gym-sticky-cta{display:flex;gap:10px;padding:12px 16px;align-items:center}
+    .gym-sticky-book{flex:1;padding:16px;border-radius:12px;border:none;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 4px 20px rgba(34,197,94,.35);-webkit-tap-highlight-color:transparent;transition:transform .15s;letter-spacing:.3px;text-align:center}
+    .gym-sticky-book:active{transform:scale(.97)}
+    .gym-sticky-cal{width:52px;height:52px;border-radius:12px;border:none;background:#1e293b;color:rgba(255,255,255,.6);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;transition:all .15s;flex-shrink:0;gap:1px}
+    .gym-sticky-cal:active{transform:scale(.95);background:#263548}
+    .gym-sticky-cal-icon{font-size:18px;line-height:1}
+    .gym-sticky-cal-time{font-size:10px;color:rgba(255,255,255,.35);font-weight:600;line-height:1}
+
+    /* Payment sheet overlay */
+    .gym-pay-sheet{position:fixed;inset:0;z-index:9200;opacity:0;pointer-events:none;transition:opacity .25s}
+    .gym-pay-sheet.open{opacity:1;pointer-events:all}
+    .gym-pay-sheet-bg{position:absolute;inset:0;background:rgba(0,0,0,.5)}
+    .gym-pay-sheet-panel{position:absolute;left:0;right:0;bottom:0;background:#111827;border-radius:20px 20px 0 0;transform:translateY(100%);transition:transform .35s cubic-bezier(.32,.72,0,1);max-height:70vh;overflow-y:auto;padding-bottom:env(safe-area-inset-bottom,0px)}
+    .gym-pay-sheet.open .gym-pay-sheet-panel{transform:translateY(0)}
+    .gym-pay-sheet-drag{width:40px;height:4px;border-radius:2px;background:rgba(255,255,255,.2);margin:10px auto 0}
+    .gym-pay-sheet-title{color:#fff;font-size:18px;font-weight:700;padding:16px 20px 12px}
+    .gym-pay-option{display:flex;align-items:center;gap:12px;padding:14px 20px;cursor:pointer;transition:background .15s;-webkit-tap-highlight-color:transparent}
+    .gym-pay-option:active{background:rgba(255,255,255,.04)}
+    .gym-pay-option.selected{background:rgba(34,197,94,.08)}
+    .gym-pay-option-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+    .gym-pay-option-label{flex:1;color:#fff;font-size:14px;font-weight:600}
+    .gym-pay-option-sub{color:rgba(255,255,255,.4);font-size:11px}
+    .gym-pay-option-check{width:22px;height:22px;border-radius:50%;border:2px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px}
+    .gym-pay-option.selected .gym-pay-option-check{background:#22c55e;border-color:#22c55e;color:#fff}
+
+    /* Date picker sheet */
+    .gym-date-sheet{position:fixed;inset:0;z-index:9200;opacity:0;pointer-events:none;transition:opacity .25s}
+    .gym-date-sheet.open{opacity:1;pointer-events:all}
+    .gym-date-sheet-bg{position:absolute;inset:0;background:rgba(0,0,0,.5)}
+    .gym-date-sheet-panel{position:absolute;left:0;right:0;bottom:0;background:#111827;border-radius:20px 20px 0 0;transform:translateY(100%);transition:transform .35s cubic-bezier(.32,.72,0,1);padding-bottom:env(safe-area-inset-bottom,0px)}
+    .gym-date-sheet.open .gym-date-sheet-panel{transform:translateY(0)}
+    .gym-date-sheet-drag{width:40px;height:4px;border-radius:2px;background:rgba(255,255,255,.2);margin:10px auto 0}
+    .gym-date-sheet-title{color:#fff;font-size:18px;font-weight:700;padding:16px 20px 8px}
+    .gym-date-quick{display:flex;gap:8px;padding:0 20px 12px}
+    .gym-date-quick-btn{flex:1;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:rgba(255,255,255,.6);font-size:13px;font-weight:600;text-align:center;cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent}
+    .gym-date-quick-btn.selected{border-color:rgba(34,197,94,.5);background:rgba(34,197,94,.1);color:#4ade80}
+    .gym-date-quick-btn:active{transform:scale(.96)}
+    .gym-date-custom-wrap{padding:0 20px 16px}
+    .gym-date-custom-input{width:100%;padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#fff;font-size:14px;font-weight:600;-webkit-appearance:none;cursor:pointer}
+    .gym-date-custom-input::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.5;cursor:pointer}
+    .gym-date-sheet-done{margin:0 20px 16px;padding:14px;border-radius:12px;border:none;background:#22c55e;color:#fff;font-size:16px;font-weight:700;width:calc(100% - 40px);cursor:pointer}
+
+    /* Legacy pill styles kept for backward compat */
+    .gym-pass-row{display:none}
+    .gym-pass-pill{display:none}
     .gym-pass-name{font-size:11px;color:rgba(255,255,255,.5);font-weight:600;margin-bottom:2px}
-    .gym-pass-pill.selected .gym-pass-name{color:rgba(255,255,255,.8)}
     .gym-pass-price{font-size:16px;font-weight:800;color:rgba(255,255,255,.4)}
-    .gym-pass-pill.selected .gym-pass-price{color:#22c55e}
-    /* Big Book Now CTA */
-    .gym-book-cta{width:100%;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:17px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(34,197,94,.35);-webkit-tap-highlight-color:transparent;transition:transform .15s;letter-spacing:.3px;margin-bottom:6px}
-    .gym-book-cta:active{transform:scale(.97)}
-    /* Trust signals row */
-    .gym-trust-row{display:flex;justify-content:center;gap:16px;padding-bottom:4px}
+    /* Big Book Now CTA — hidden, replaced by sticky bar */
+    .gym-book-cta{display:none}
+    /* Trust signals row — now inside sticky area */
+    .gym-trust-row{display:none}
     .gym-trust-item{font-size:11px;color:rgba(255,255,255,.35);font-weight:500}
-    /* ─── Date & Payment selectors on gym detail ─── */
-    .gym-section-label{color:rgba(255,255,255,.45);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
-    .gym-date-row{display:flex;gap:8px;margin-bottom:10px}
-    .gym-date-btn{flex:1;text-align:center;padding:10px 4px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent;color:rgba(255,255,255,.5);font-size:13px;font-weight:600}
-    .gym-date-btn.selected{border-color:rgba(34,197,94,.5);background:rgba(34,197,94,.1);color:#4ade80}
-    .gym-date-btn:active{transform:scale(.96)}
-    .gym-date-btn input[type=date]{width:100%;background:transparent;border:none;color:inherit;font-size:12px;font-weight:600;text-align:center;outline:none;padding:0;-webkit-appearance:none;cursor:pointer}
-    .gym-date-btn input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.5;cursor:pointer}
-    .gym-pay-row{display:flex;gap:8px;margin-bottom:10px}
-    .gym-pay-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 4px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent;color:rgba(255,255,255,.5);font-size:13px;font-weight:600}
-    .gym-pay-btn.selected{border-color:rgba(34,197,94,.5);background:rgba(34,197,94,.1);color:#4ade80}
-    .gym-pay-btn:active{transform:scale(.96)}
+    /* Legacy selectors hidden */
+    .gym-section-label{display:none}
+    .gym-date-row{display:none}
+    .gym-date-btn{display:none}
+    .gym-pay-row{display:none}
+    .gym-pay-btn{display:none}
     /* Legacy compatibility */
     .gym-nav-col{display:none}
     .gym-nav-btn{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;-webkit-tap-highlight-color:transparent}
@@ -1175,7 +1302,7 @@ function GymProfilePage(){
       <!-- Dot indicators (Instagram style) -->
       ${photos.length>1?`<div class="gym-carousel-dots" id="gym-carousel-dots">${photos.slice(0,4).map((_,i)=>`<span class="${i===0?'active':''}"></span>`).join('')}</div>`:''}
       <!-- Price badge -->
-      <div class="gym-carousel-price">£${currentPrice}</div>
+      <div class="gym-carousel-price">${currentPrice}</div>
     </div>
 
     <!-- ═══ Info section (zero-scroll, below photos) ═══ -->
@@ -1198,49 +1325,143 @@ function GymProfilePage(){
         <div class="gym-qa-btn" onclick="openGymOverlay('hours')"><span class="gym-qa-icon">🕐</span> Hours</div>
       </div>
 
-      <!-- Pass selection (inline) -->
-      <div class="gym-pass-row" id="gym-pass-row">
-        <div class="gym-pass-pill selected" onclick="selectGymPass(this,0,'${gymId}')" data-pass="day">
-          <div class="gym-pass-name">⚡ Day Pass</div>
-          <div class="gym-pass-price">£${currentPrice}</div>
+      <!-- ═══ Uber-style "Choose a pass" cards ═══ -->
+      <div class="gym-pass-header">Choose a pass</div>
+      <div class="gym-pass-cards" id="gym-pass-cards">
+        <div class="gym-pass-card selected" onclick="selectGymPassCard(this,0,'${gymId}')" data-pass="day">
+          <div class="gym-pass-card-icon">⚡</div>
+          <div class="gym-pass-card-info">
+            <div class="gym-pass-card-name">Day Pass</div>
+            <div class="gym-pass-card-sub">24h access · Any time</div>
+            <div class="gym-pass-card-badge">⚡ Most popular</div>
+          </div>
+          <div class="gym-pass-price">${currentPrice}</div>
         </div>
-        <div class="gym-pass-pill" onclick="selectGymPass(this,1,'${gymId}')" data-pass="3day">
-          <div class="gym-pass-name">🔥 3-Day</div>
-          <div class="gym-pass-price">£${(parseFloat(currentPrice)*2.4).toFixed(2)}</div>
+        <div class="gym-pass-card" onclick="selectGymPassCard(this,1,'${gymId}')" data-pass="3day">
+          <div class="gym-pass-card-icon">🔥</div>
+          <div class="gym-pass-card-info">
+            <div class="gym-pass-card-name">3-Day Pass</div>
+            <div class="gym-pass-card-sub">3 consecutive days · Save 8%</div>
+          </div>
+          <div class="gym-pass-price">${threeDayPrice}</div>
         </div>
-        <div class="gym-pass-pill" onclick="selectGymPass(this,2,'${gymId}')" data-pass="week">
-          <div class="gym-pass-name">💪 Weekly</div>
-          <div class="gym-pass-price">£${(parseFloat(currentPrice)*4).toFixed(2)}</div>
+        <div class="gym-pass-card" onclick="selectGymPassCard(this,2,'${gymId}')" data-pass="weekly">
+          <div class="gym-pass-card-icon">💪</div>
+          <div class="gym-pass-card-info">
+            <div class="gym-pass-card-name">Weekly Pass</div>
+            <div class="gym-pass-card-sub">7 days unlimited · Save 28%</div>
+          </div>
+          <div class="gym-pass-price">${weeklyPrice}</div>
+        </div>
+        <div class="gym-pass-card" onclick="selectGymPassCard(this,3,'${gymId}')" data-pass="monthly">
+          <div class="gym-pass-card-icon" style="background:linear-gradient(135deg,rgba(139,92,246,.15),rgba(139,92,246,.05))">👑</div>
+          <div class="gym-pass-card-info">
+            <div class="gym-pass-card-name">Monthly Pass</div>
+            <div class="gym-pass-card-sub">30 days · Best value</div>
+          </div>
+          <div class="gym-pass-price">${sgPrice('monthly').display}</div>
         </div>
       </div>
 
-      <!-- Date Selection -->
-      <div style="margin-bottom:2px">
-        <div class="gym-section-label">📅 Date</div>
-        <div class="gym-date-row" id="gym-date-row">
-          <div class="gym-date-btn selected" onclick="selectGymDate(this,'today')" data-date="today">Today</div>
-          <div class="gym-date-btn" onclick="selectGymDate(this,'tomorrow')" data-date="tomorrow">Tomorrow</div>
-          <div class="gym-date-btn" onclick="document.getElementById('gym-date-custom').showPicker?.()" data-date="custom" id="gym-date-custom-btn">Pick date<input type="date" id="gym-date-custom" min="${new Date().toISOString().split('T')[0]}" onchange="selectGymDateCustom(this)" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none"></div>
+    </div><!-- /gym-info-section -->
+
+    <!-- ═══ STICKY BOTTOM BAR (Uber-style) — outside scroll container ═══ -->
+    <div class="gym-sticky-bar" id="gym-sticky-bar">
+        <!-- Payment method row -->
+        <div class="gym-sticky-pay" id="gym-sticky-pay" onclick="openPaySheet()">
+          <div class="gym-sticky-pay-icon" id="gym-pay-icon">
+            <svg width="16" height="20" viewBox="0 0 16 20" fill="white"><path d="M12.58 9.88c-.03-2.45 2-3.63 2.09-3.69-1.14-1.67-2.91-1.89-3.54-1.92-1.51-.15-2.95.89-3.71.89s-1.95-.87-3.2-.84c-1.64.03-3.16.95-4.01 2.43-1.71 2.96-.44 7.35 1.23 9.76.81 1.18 1.79 2.5 3.06 2.45 1.23-.05 1.69-.79 3.18-.79s1.91.79 3.21.77c1.33-.03 2.17-1.2 2.97-2.38.94-1.37 1.33-2.69 1.35-2.76-.03-.01-2.59-.99-2.62-3.94z"/></svg>
+          </div>
+          <div class="gym-sticky-pay-label" id="gym-pay-label"> Pay</div>
+          <div class="gym-sticky-pay-chevron">›</div>
+        </div>
+
+        <!-- CTA + Calendar row -->
+        <div class="gym-sticky-cta">
+          <button class="gym-sticky-book" id="gym-sticky-book" onclick="event.preventDefault();event.stopPropagation();showUberCheckout('${gymId}')">⚡ Book Day Pass · ${currentPrice}</button>
+          <button class="gym-sticky-cal" id="gym-sticky-cal" onclick="openDateSheet()">
+            <span class="gym-sticky-cal-icon">📅</span>
+            <span class="gym-sticky-cal-time" id="gym-sticky-cal-time">${String(Math.min(new Date().getHours()+1,23)).padStart(2,'0')}:00</span>
+          </button>
+        </div>
+
+        <!-- Trust row -->
+        <div style="display:flex;justify-content:center;gap:14px;padding:4px 0 6px">
+          <span style="font-size:10px;color:rgba(255,255,255,.3)">✅ Free Cancel</span>
+          <span style="font-size:10px;color:rgba(255,255,255,.3)">🔒 Secure</span>
+          <span style="font-size:10px;color:rgba(255,255,255,.3)">⚡ Instant QR</span>
         </div>
       </div>
 
-      <!-- Payment Method -->
-      <div style="margin-bottom:2px">
-        <div class="gym-section-label">💳 Payment</div>
-        <div class="gym-pay-row" id="gym-pay-row">
-          <div class="gym-pay-btn selected" onclick="selectGymPayment(this,'card')" data-method="card">💳 Card</div>
-          <div class="gym-pay-btn" onclick="selectGymPayment(this,'cash')" data-method="cash">💷 Cash at Gym</div>
+    <!-- ═══ Payment method sheet ═══ -->
+    <div class="gym-pay-sheet" id="gym-pay-sheet" onclick="if(event.target===this||event.target.classList.contains('gym-pay-sheet-bg'))closePaySheet()">
+      <div class="gym-pay-sheet-bg"></div>
+      <div class="gym-pay-sheet-panel">
+        <div class="gym-pay-sheet-drag"></div>
+        <div class="gym-pay-sheet-title">Payment method</div>
+        <div id="gym-pay-options">
+          <div class="gym-pay-option selected" onclick="selectPayMethod(this,'apple_pay')" data-method="apple_pay">
+            <div class="gym-pay-option-icon" style="background:#000;border:1px solid rgba(255,255,255,.15);border-radius:10px">
+              <svg width="14" height="18" viewBox="0 0 16 20" fill="white"><path d="M12.58 9.88c-.03-2.45 2-3.63 2.09-3.69-1.14-1.67-2.91-1.89-3.54-1.92-1.51-.15-2.95.89-3.71.89s-1.95-.87-3.2-.84c-1.64.03-3.16.95-4.01 2.43-1.71 2.96-.44 7.35 1.23 9.76.81 1.18 1.79 2.5 3.06 2.45 1.23-.05 1.69-.79 3.18-.79s1.91.79 3.21.77c1.33-.03 2.17-1.2 2.97-2.38.94-1.37 1.33-2.69 1.35-2.76-.03-.01-2.59-.99-2.62-3.94z"/></svg>
+            </div>
+            <div>
+              <div class="gym-pay-option-label"> Pay</div>
+              <div class="gym-pay-option-sub">Default</div>
+            </div>
+            <div class="gym-pay-option-check">✓</div>
+          </div>
+          <div class="gym-pay-option" onclick="selectPayMethod(this,'google_pay')" data-method="google_pay">
+            <div class="gym-pay-option-icon" style="background:#fff;border-radius:10px">
+              <span style="font-size:18px">G</span>
+            </div>
+            <div>
+              <div class="gym-pay-option-label">Google Pay</div>
+            </div>
+            <div class="gym-pay-option-check"></div>
+          </div>
+          <div class="gym-pay-option" onclick="selectPayMethod(this,'card')" data-method="card">
+            <div class="gym-pay-option-icon" style="background:linear-gradient(135deg,#1a1f71,#2d2f8e);border-radius:10px">
+              <span style="color:#fff;font-size:12px;font-weight:800">VISA</span>
+            </div>
+            <div>
+              <div class="gym-pay-option-label">•••• 4242</div>
+              <div class="gym-pay-option-sub">Visa debit</div>
+            </div>
+            <div class="gym-pay-option-check"></div>
+          </div>
+          <div class="gym-pay-option" onclick="selectPayMethod(this,'cash')" data-method="cash">
+            <div class="gym-pay-option-icon" style="background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);border-radius:10px">
+              <span style="font-size:18px">💷</span>
+            </div>
+            <div>
+              <div class="gym-pay-option-label">Cash at Gym</div>
+              <div class="gym-pay-option-sub">Pay at reception</div>
+            </div>
+            <div class="gym-pay-option-check"></div>
+          </div>
         </div>
       </div>
+    </div>
 
-      <!-- Big CTA -->
-      <button class="gym-book-cta" id="gym-book-cta" onclick="event.preventDefault();event.stopPropagation();showUberCheckout('${gymId}')">⚡ Book Now · £${currentPrice}</button>
-
-      <!-- Trust signals -->
-      <div class="gym-trust-row">
-        <span class="gym-trust-item">✅ Free Cancel</span>
-        <span class="gym-trust-item">🔒 Secure Pay</span>
-        <span class="gym-trust-item">⚡ Instant QR</span>
+    <!-- ═══ Date/time picker sheet ═══ -->
+    <div class="gym-date-sheet" id="gym-date-sheet" onclick="if(event.target===this||event.target.classList.contains('gym-date-sheet-bg'))closeDateSheet()">
+      <div class="gym-date-sheet-bg"></div>
+      <div class="gym-date-sheet-panel">
+        <div class="gym-date-sheet-drag"></div>
+        <div class="gym-date-sheet-title">When do you want to go?</div>
+        <div class="gym-date-quick" id="gym-date-quick">
+          <div class="gym-date-quick-btn selected" onclick="selectDateQuick(this,'today')">Today</div>
+          <div class="gym-date-quick-btn" onclick="selectDateQuick(this,'tomorrow')">Tomorrow</div>
+        </div>
+        <div class="gym-date-custom-wrap">
+          <input type="date" class="gym-date-custom-input" id="gym-date-sheet-input" min="${new Date().toISOString().split('T')[0]}" onchange="selectDateCustom(this)">
+        </div>
+        <div style="padding:0 20px 8px"><div style="color:rgba(255,255,255,.45);font-size:12px;font-weight:600;margin-bottom:6px">Time (default: next hour)</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap" id="gym-time-grid">
+            ${Array.from({length:15},(_,i)=>{const h=6+i;const t=String(h).padStart(2,"0")+":00";const now=new Date().getHours();const def=(now+1<=23)?now+1:23;const isSel=h===def;return '<div class="gym-date-quick-btn'+(isSel?' selected':'')+'" onclick="selectTimeSlot(this,&apos;'+t+'&apos;)" style="flex:0 0 calc(33.3% - 6px);padding:10px 4px;font-size:12px">'+t+'</div>';}).join("")}
+          </div>
+        </div>
+        <button class="gym-date-sheet-done" onclick="closeDateSheet()">Done</button>
       </div>
     </div>
   </div>
@@ -1257,8 +1478,8 @@ function GymProfilePage(){
       <div class="gym-overlay-body" id="gym-overlay-body"></div>
       <div class="gym-overlay-footer">
         <div>
-          <div style="color:#fff;font-size:22px;font-weight:800">£${currentPrice}</div>
-          <div style="color:rgba(255,255,255,.4);font-size:11px">${_isOP10?'🌙 Off-peak price active':'Off-peak from £'+offPeakPrice}</div>
+          <div style="color:#fff;font-size:22px;font-weight:800">${currentPrice}</div>
+          <div style="color:rgba(255,255,255,.4);font-size:11px">${_isOP10?'🌙 Off-peak price active':'Off-peak pricing available'}</div>
         </div>
         <button class="gym-book-btn" onclick="event.preventDefault();event.stopPropagation();closeGymOverlay();showUberCheckout('${gymId}')">Book Now</button>
       </div>
@@ -1592,6 +1813,100 @@ window.selectGymPayment=function(el,method){
   document.querySelectorAll('.gym-pay-btn').forEach(function(b){b.classList.remove('selected');});
   el.classList.add('selected');
   window._gymBookingState.paymentMethod=method;
+};
+
+// ═══ Uber-style pass card selection ═══
+window.selectGymPassCard=function(el,idx,gymId){
+  document.querySelectorAll('.gym-pass-card').forEach(function(c){c.classList.remove('selected');});
+  el.classList.add('selected');
+  const passMap=['day','3day','weekly','monthly'];
+  const nameMap=['Day Pass','3-Day Pass','Weekly Pass','Monthly Pass'];
+  const iconMap=['⚡','🔥','💪','👑'];
+  window._gymBookingState.selectedPass=passMap[idx]||'day';
+  window._gymBookingState.passName=nameMap[idx]||'Day Pass';
+  window._gymBookingState.passIcon=iconMap[idx]||'⚡';
+  const price=el.querySelector('.gym-pass-price');
+  if(price){
+    // Update sticky CTA button
+    const btn=document.getElementById('gym-sticky-book');
+    if(btn)btn.textContent=iconMap[idx]+' Book '+nameMap[idx]+' · '+price.textContent;
+    // Also update old CTA for compat
+    const oldBtn=document.querySelector('.gym-book-cta');
+    if(oldBtn)oldBtn.textContent='⚡ Book Now · '+price.textContent;
+  }
+};
+
+// ═══ Payment method sheet ═══
+window.openPaySheet=function(){
+  const sheet=document.getElementById('gym-pay-sheet');
+  if(sheet)sheet.classList.add('open');
+};
+window.closePaySheet=function(){
+  const sheet=document.getElementById('gym-pay-sheet');
+  if(sheet)sheet.classList.remove('open');
+};
+window.selectPayMethod=function(el,method){
+  document.querySelectorAll('.gym-pay-option').forEach(function(o){o.classList.remove('selected');o.querySelector('.gym-pay-option-check').textContent='';});
+  el.classList.add('selected');
+  el.querySelector('.gym-pay-option-check').textContent='✓';
+  window._gymBookingState.paymentMethod=method;
+  // Update sticky bar icon + label
+  const iconEl=document.getElementById('gym-pay-icon');
+  const labelEl=document.getElementById('gym-pay-label');
+  if(method==='apple_pay'){
+    if(iconEl){iconEl.className='gym-sticky-pay-icon';iconEl.innerHTML='<svg width="16" height="20" viewBox="0 0 16 20" fill="white"><path d="M12.58 9.88c-.03-2.45 2-3.63 2.09-3.69-1.14-1.67-2.91-1.89-3.54-1.92-1.51-.15-2.95.89-3.71.89s-1.95-.87-3.2-.84c-1.64.03-3.16.95-4.01 2.43-1.71 2.96-.44 7.35 1.23 9.76.81 1.18 1.79 2.5 3.06 2.45 1.23-.05 1.69-.79 3.18-.79s1.91.79 3.21.77c1.33-.03 2.17-1.2 2.97-2.38.94-1.37 1.33-2.69 1.35-2.76-.03-.01-2.59-.99-2.62-3.94z"/></svg>';}
+    if(labelEl)labelEl.textContent='\uF8FF Pay';
+  }else if(method==='google_pay'){
+    if(iconEl){iconEl.className='gym-sticky-pay-icon';iconEl.style.background='#fff';iconEl.innerHTML='<span style="font-size:18px;color:#4285F4;font-weight:700">G</span>';}
+    if(labelEl)labelEl.textContent='Google Pay';
+  }else if(method==='card'){
+    if(iconEl){iconEl.className='gym-sticky-pay-icon visa';iconEl.innerHTML='<span style="color:#fff;font-size:10px;font-weight:800">VISA</span>';}
+    if(labelEl)labelEl.textContent='•••• 4242';
+  }else if(method==='cash'){
+    if(iconEl){iconEl.className='gym-sticky-pay-icon cash';iconEl.innerHTML='💷';}
+    if(labelEl)labelEl.textContent='Cash at Gym';
+  }
+  closePaySheet();
+};
+
+// ═══ Date/time picker sheet ═══
+window._gymSelectedTime=null;
+window.openDateSheet=function(){
+  const sheet=document.getElementById('gym-date-sheet');
+  if(sheet)sheet.classList.add('open');
+};
+window.closeDateSheet=function(){
+  const sheet=document.getElementById('gym-date-sheet');
+  if(sheet)sheet.classList.remove('open');
+  // Update calendar time display
+  const timeEl=document.getElementById('gym-sticky-cal-time');
+  if(timeEl && window._gymSelectedTime)timeEl.textContent=window._gymSelectedTime;
+};
+window.selectDateQuick=function(el,which){
+  document.querySelectorAll('#gym-date-quick .gym-date-quick-btn').forEach(function(b){b.classList.remove('selected');});
+  el.classList.add('selected');
+  const today=new Date();
+  if(which==='today'){
+    window._gymBookingState.selectedDate=today.toISOString().split('T')[0];
+  }else if(which==='tomorrow'){
+    const tom=new Date(today);tom.setDate(tom.getDate()+1);
+    window._gymBookingState.selectedDate=tom.toISOString().split('T')[0];
+  }
+  // Clear custom input
+  const inp=document.getElementById('gym-date-sheet-input');
+  if(inp)inp.value='';
+};
+window.selectDateCustom=function(input){
+  if(!input.value)return;
+  window._gymBookingState.selectedDate=input.value;
+  document.querySelectorAll('#gym-date-quick .gym-date-quick-btn').forEach(function(b){b.classList.remove('selected');});
+};
+window.selectTimeSlot=function(el,time){
+  document.querySelectorAll('#gym-time-grid .gym-date-quick-btn').forEach(function(b){b.classList.remove('selected');});
+  el.classList.add('selected');
+  window._gymSelectedTime=time;
+  const timeEl=document.getElementById('gym-sticky-cal-time');
+  if(timeEl)timeEl.textContent=time;
 };
 
 // Auto-init carousel when gym page renders
@@ -3035,14 +3350,14 @@ function WalletPage(){
       <p class="text-slate-400 text-center mb-8">Top up, save more, pay faster.</p>
       <div class="bg-card rounded-2xl border border-slate-700 p-8 text-center mb-6">
         <p class="text-slate-400 text-sm">Current Balance</p>
-        <p class="text-5xl font-bold text-white mt-2">£0.00</p>
+        <p class="text-5xl font-bold text-white mt-2">${sgSymbol()}0.00</p>
         <p class="text-accent text-xs mt-2">Auto-applied at checkout</p>
       </div>
       <div class="grid sm:grid-cols-3 gap-4 mb-8">
-        ${[{amount:10,bonus:'+ £1 free',total:'£11'},{amount:20,bonus:'+ £2 free (10%)',total:'£22',popular:true},{amount:50,bonus:'+ £7.50 free (15%)',total:'£57.50'}].map(p=>`
+        ${[{amount:10,bonus:'+ 10% free',total:'11'},{amount:20,bonus:'+ 10% free',total:'22',popular:true},{amount:50,bonus:'+ 15% free',total:'57.50'}].map(p=>`
           <button class="bg-card rounded-xl border ${p.popular?'border-brand':'border-slate-700'} p-5 text-center hover:border-brand transition relative">
             ${p.popular?'<span class="absolute -top-2 left-1/2 -translate-x-1/2 bg-brand text-white text-xs px-2 py-0.5 rounded-full">Popular</span>':''}
-            <p class="text-2xl font-bold text-white">£${p.amount}</p>
+            <p class="text-2xl font-bold text-white">${sgSymbol()}${p.amount}</p>
             <p class="text-accent text-xs mt-1">${p.bonus}</p>
             <p class="text-slate-400 text-xs mt-1">Get ${p.total}</p>
           </button>
@@ -3319,21 +3634,21 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
   const selPassName=gbs.passName||'Day Pass';
   const selPassIcon=gbs.passIcon||'⚡';
 
-  // Price calculation
-  const passes={
-    day:{name:'Day Pass',price:5.00,offPeak:3.75,icon:'⚡'},
-    '3day':{name:'3-Day Pass',price:12.00,offPeak:9.00,icon:'🔥'},
-    week:{name:'Weekly Pass',price:20.00,offPeak:15.00,icon:'💪'},
-    weekly:{name:'Weekly Pass',price:20.00,offPeak:15.00,icon:'💪'}
-  };
-  const passInfo=passes[selPass]||passes.day;
+  // Price calculation — dynamic from API
+  const _passKey=selPass==='week'?'weekly':selPass;
+  const _priceInfo=sgPrice(_passKey);
+  const _sym=sgSymbol();
+  const passInfo={name:selPassName,icon:selPassIcon,amount:_priceInfo.amount,display:_priceInfo.display};
   const h=selTime==='anytime'?12:parseInt(selTime||'10');
   const isOffPeak=h<10||h>=20;
-  let displayPrice=isOffPeak?passInfo.offPeak:passInfo.price;
+  let displayPrice=_priceInfo.amount;
+  let displayPriceStr=_priceInfo.display;
   // ═══ REFERRAL DISCOUNT: Apply £2 off if referral code is active ═══
   let _sgRefActive=null;try{const _r=JSON.parse(localStorage.getItem('sg_referral')||'null');if(_r&&_r.handle&&_r.expiry>Date.now())_sgRefActive=_r.handle;}catch(e){}
   const _sgOrigPrice=displayPrice;
-  if(_sgRefActive){displayPrice=Math.max(displayPrice-2,1);}
+  const _sgOrigPriceStr=displayPriceStr;
+  const _refDiscount=Math.round(displayPrice*0.15*100)/100; // 15% referral discount
+  if(_sgRefActive){displayPrice=Math.max(displayPrice-_refDiscount,0.5);displayPriceStr=_sym+(displayPrice>=1000?Math.round(displayPrice).toLocaleString():displayPrice.toFixed(2));}
 
   // Format date for display
   const dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -3433,13 +3748,13 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
       <!-- Referral Discount Banner -->
       ${_sgRefActive?`<div style="background:linear-gradient(135deg,rgba(249,115,22,.15),rgba(249,115,22,.05));border:1px solid rgba(249,115,22,.3);border-radius:12px;padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
         <div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">🎉</span><div><div style="color:#fb923c;font-size:13px;font-weight:700">Referral discount applied!</div><div style="color:rgba(255,255,255,.5);font-size:11px">via ${decodeURIComponent(_sgRefActive)}</div></div></div>
-        <div style="color:#4ade80;font-weight:800;font-size:16px">-£2.00</div>
+        <div style="color:#4ade80;font-weight:800;font-size:16px">-${_sym}${_refDiscount>=1000?Math.round(_refDiscount).toLocaleString():_refDiscount.toFixed(2)}</div>
       </div>`:''}
 
       <!-- Total -->
       <div class="ub-total-section">
-        <div class="ub-total-label">Total${_sgRefActive?' <span style="text-decoration:line-through;color:rgba(255,255,255,.3);font-weight:400;font-size:13px">£'+_sgOrigPrice.toFixed(2)+'</span>':''}</div>
-        <div class="ub-total-price" id="ub-total-price">£${displayPrice.toFixed(2)}</div>
+        <div class="ub-total-label">Total${_sgRefActive?' <span style="text-decoration:line-through;color:rgba(255,255,255,.3);font-weight:400;font-size:13px">'+_sgOrigPriceStr+'</span>':''}</div>
+        <div class="ub-total-price" id="ub-total-price">${displayPriceStr}</div>
       </div>
 
       <!-- Error area -->
@@ -3450,7 +3765,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
       <!-- Confirm CTA -->
       <div class="ub-footer">
         <button class="ub-cta ub-cta-primary" id="ub-cta-btn" onclick="ubConfirmPay()" ${isCash?'':'style="opacity:0.4;pointer-events:none"'}>
-          <span id="ub-cta-text">${isCash?'Confirm · pay at gym':'Confirm and pay · £'+displayPrice.toFixed(2)}</span>
+          <span id="ub-cta-text">${isCash?'Confirm · pay at gym':'Confirm and pay · '+displayPriceStr}</span>
         </button>
         <div class="ub-trust">
           <span>🔒 Stripe secure</span><span>·</span><span>📧 QR instant</span><span>·</span><span>↩️ Free cancel</span>
@@ -3548,7 +3863,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
         let dbGymId=gymId;
         if(isNaN(parseInt(gymId))){
           const ensured=await fetch('/api/live/ensure-gym',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({placeId:gymId})}).then(r=>r.json());
-          if(ensured.error){sgToast(ensured.error);btn.disabled=false;btnText.textContent='Confirm and pay · £'+displayPrice.toFixed(2);return;}
+          if(ensured.error){sgToast(ensured.error);btn.disabled=false;btnText.textContent='Confirm and pay · '+displayPriceStr;return;}
           dbGymId=ensured.gymId;
         }
         const result=await fetch('/api/payment/quick-checkout',{
@@ -3561,12 +3876,12 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
           sgToast('⚡ Booked instantly!','success',3000);
         }else{
           sgToast(result.error||'Quick checkout failed');
-          btn.disabled=false;btnText.textContent='Confirm and pay · £'+displayPrice.toFixed(2);
+          btn.disabled=false;btnText.textContent='Confirm and pay · '+displayPriceStr;
         }
       }catch(e){
         console.error('Quick checkout error:',e);
         sgToast('Something went wrong');
-        btn.disabled=false;btnText.textContent='Confirm and pay · £'+displayPrice.toFixed(2);
+        btn.disabled=false;btnText.textContent='Confirm and pay · '+displayPriceStr;
       }
       return;
     }
@@ -3588,7 +3903,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
         const et=errEl?.querySelector('.ub-error-text');
         if(et)et.textContent=submitResult.error.message||'Payment details incomplete';
         errEl?.classList.remove('hidden');
-        btn.disabled=false;btnText.textContent='Confirm and pay · £'+displayPrice.toFixed(2);
+        btn.disabled=false;btnText.textContent='Confirm and pay · '+displayPriceStr;
         return;
       }
 
@@ -3605,7 +3920,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
         const et=errEl?.querySelector('.ub-error-text');
         if(et)et.textContent=intentResult.error||'Failed to create booking';
         errEl?.classList.remove('hidden');
-        btn.disabled=false;btnText.textContent='Confirm and pay · £'+displayPrice.toFixed(2);
+        btn.disabled=false;btnText.textContent='Confirm and pay · '+displayPriceStr;
         return;
       }
 
@@ -3628,7 +3943,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
         const et=errEl?.querySelector('.ub-error-text');
         if(et)et.textContent=error.message||'Payment failed';
         errEl?.classList.remove('hidden');
-        btn.disabled=false;btnText.textContent='Confirm and pay · £'+displayPrice.toFixed(2);
+        btn.disabled=false;btnText.textContent='Confirm and pay · '+displayPriceStr;
       }else if(paymentIntent&&(paymentIntent.status==='succeeded'||paymentIntent.status==='requires_capture')){
         if(email){
           try{await fetch('/api/payment/confirm-intent',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({bookingId:cs.bookingId,email})});}catch(e){}
@@ -3638,14 +3953,14 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
         navigate('/booking-success?session_id='+paymentIntent.id+'&booking_id='+(cs.bookingId||''));
         sgToast('✅ Booking confirmed!','success',3000);
       }else{
-        btn.disabled=false;btnText.textContent='Confirm and pay · £'+displayPrice.toFixed(2);
+        btn.disabled=false;btnText.textContent='Confirm and pay · '+displayPriceStr;
       }
     }catch(e){
       console.error('Payment error:',e);
       const et=errEl?.querySelector('.ub-error-text');
       if(et)et.textContent='Payment failed. Please try again.';
       errEl?.classList.remove('hidden');
-      btn.disabled=false;btnText.textContent='Confirm and pay · £'+displayPrice.toFixed(2);
+      btn.disabled=false;btnText.textContent='Confirm and pay · '+displayPriceStr;
     }
   };
 
@@ -4637,7 +4952,7 @@ function MoreHubPage(){
       ${moreItem('📋','My Bookings','Upcoming & past visits','/bookings')}
       ${moreItem('💰','ScanGym Wallet','Balance & credits','/wallet')}
       ${moreItem('📊','Creator Earnings','Track commissions & clicks','/creator-earnings')}
-      ${moreItem('🎟️','Refer & Earn','Invite friends, get £2','/refer')}
+      ${moreItem('🎟️','Refer & Earn','Invite friends, earn 15%','/refer')}
     </div>
 
     <!-- Explore -->
@@ -4786,7 +5101,7 @@ function CreatorEarningsPage(){
       <p class="text-white font-bold mb-2">💰 How you earn</p>
       <div class="space-y-2 text-sm text-slate-300">
         <div class="flex justify-between"><span>Commission per booking</span><span class="text-brand font-bold">£1.25</span></div>
-        <div class="flex justify-between"><span>Customer discount</span><span class="text-emerald-400 font-bold">£2.00 off</span></div>
+        <div class="flex justify-between"><span>Customer discount</span><span class="text-emerald-400 font-bold">15% off</span></div>
         <div class="flex justify-between"><span>Cookie duration</span><span class="text-slate-400">30 days</span></div>
       </div>
     </div>
@@ -4805,7 +5120,7 @@ function CreatorEarningsPage(){
           <button id="ce-withdraw-btn" onclick="_requestWithdrawal('${handle}')" disabled class="bg-brand/20 text-brand/50 font-bold py-2 px-5 rounded-xl text-sm cursor-not-allowed transition">Withdraw</button>
         </div>
         <div class="flex gap-3 text-xs text-slate-500">
-          <span>Min: £5.00</span><span>·</span><span>Pending: <span id="ce-pending">£0.00</span></span><span>·</span><span>Withdrawn: <span id="ce-withdrawn">£0.00</span></span>
+          <span>Min: ${sgSymbol()}5.00</span><span>·</span><span>Pending: <span id="ce-pending">${sgSymbol()}0.00</span></span><span>·</span><span>Withdrawn: <span id="ce-withdrawn">${sgSymbol()}0.00</span></span>
         </div>
       </div>
     </div>
@@ -4889,8 +5204,8 @@ async function _loadWithdrawalData(handle){
     if(bal.success){
       var el=function(id){return document.getElementById(id);};
       if(el('ce-available'))el('ce-available').textContent=bal.availableDisplay;
-      if(el('ce-pending'))el('ce-pending').textContent='£'+(bal.totalPendingPence/100).toFixed(2);
-      if(el('ce-withdrawn'))el('ce-withdrawn').textContent='£'+(bal.totalWithdrawnPence/100).toFixed(2);
+      if(el('ce-pending'))el('ce-pending').textContent=sgSymbol()+(bal.totalPendingPence/100).toFixed(2);
+      if(el('ce-withdrawn'))el('ce-withdrawn').textContent=sgSymbol()+(bal.totalWithdrawnPence/100).toFixed(2);
       // Enable/disable withdraw button
       var btn=el('ce-withdraw-btn');
       if(btn){
@@ -4929,7 +5244,7 @@ async function _loadCreatorEarnings(handle){
     if(!data.success)return;
     
     const el=function(id){return document.getElementById(id);};
-    if(el('ce-earnings'))el('ce-earnings').textContent='£'+data.totalEarnings;
+    if(el('ce-earnings'))el('ce-earnings').textContent=sgSymbol()+data.totalEarnings;
     if(el('ce-conversions'))el('ce-conversions').textContent=data.totalConversions;
     if(el('ce-clicks'))el('ce-clicks').textContent=data.totalClicks;
     if(el('ce-rate'))el('ce-rate').textContent=data.conversionRate+'%';
@@ -4978,7 +5293,7 @@ function render(){
   else if(path==='/suppliers/qr')page=SupplierPage('qr');
   else if(path==='/suppliers/loans')page=SupplierPage('loans');
   else if(path==='/login'||path==='/signup'||path==='/register')page=LoginPage();
-  else if(path==='/how-it-works')page=InfoPage('How It Works',`<p>1. Find a gym near you using GPS or search</p><p>2. Book a 24-hour day pass from £5</p><p>3. Pay with Apple Pay, Google Pay, or card (guest checkout available)</p><p>4. Get your QR code — scan in at the gym, scan out when done</p><p>5. Rate your session and earn rewards</p>`);
+  else if(path==='/how-it-works')page=InfoPage('How It Works',`<p>1. Find a gym near you using GPS or search</p><p>2. Book a 24-hour day pass — localized pricing worldwide</p><p>3. Pay with Apple Pay, Google Pay, or card (guest checkout available)</p><p>4. Get your QR code — scan in at the gym, scan out when done</p><p>5. Rate your session and earn rewards</p>`);
   else if(path==='/pricing')page=InfoPage('Pricing',`
 <!-- Uber-style Hero -->
 <div class="text-center mb-10">
@@ -4995,7 +5310,7 @@ function render(){
       <p class="text-slate-400 text-sm" id="pricing-time-label">Checking time...</p>
     </div>
     <div class="text-right">
-      <p class="text-4xl font-black text-white" id="pricing-live-price">£—</p>
+      <p class="text-4xl font-black text-white" id="pricing-live-price">${sgSymbol()}—</p>
       <p class="text-slate-500 text-xs">per session</p>
     </div>
   </div>
@@ -5006,12 +5321,12 @@ function render(){
       <span>6am</span><span>10am</span><span>2pm</span><span>6pm</span><span>10pm</span>
     </div>
     <div class="h-8 rounded-full overflow-hidden flex">
-      <div class="bg-emerald-500/80 flex-[4]" title="Off-peak £3.75"></div>
-      <div class="bg-yellow-500/80 flex-[2]" title="Standard £5"></div>
-      <div class="bg-emerald-500/60 flex-[4]" title="Off-peak £3.75"></div>
-      <div class="bg-orange-500/80 flex-[2]" title="Peak £5"></div>
-      <div class="bg-red-500/70 flex-[2]" title="Rush £6.50"></div>
-      <div class="bg-orange-500/60 flex-[2]" title="Peak £5"></div>
+      <div class="bg-emerald-500/80 flex-[4]" title="Off-peak"></div>
+      <div class="bg-yellow-500/80 flex-[2]" title="Standard"></div>
+      <div class="bg-emerald-500/60 flex-[4]" title="Off-peak"></div>
+      <div class="bg-orange-500/80 flex-[2]" title="Peak"></div>
+      <div class="bg-red-500/70 flex-[2]" title="Rush hour"></div>
+      <div class="bg-orange-500/60 flex-[2]" title="Peak"></div>
     </div>
     <!-- Current time marker -->
     <div id="pricing-time-marker" class="absolute top-5 w-0.5 h-10 bg-white shadow-lg shadow-white/50 transition-all" style="left:50%">
@@ -5040,7 +5355,7 @@ function render(){
         </div>
       </div>
       <div class="text-right">
-        <p class="text-white font-bold text-xl" data-tier-price="basic">£3.75</p>
+        <p class="text-white font-bold text-xl" data-tier-price="basic">${sgPrice('day').display}</p>
         <p class="text-emerald-400 text-xs font-medium">25% off now</p>
       </div>
     </div>
@@ -5063,7 +5378,7 @@ function render(){
         </div>
       </div>
       <div class="text-right">
-        <p class="text-white font-bold text-xl" data-tier-price="standard">£5.60</p>
+        <p class="text-white font-bold text-xl" data-tier-price="standard">${sgPrice('day').display}</p>
         <p class="text-emerald-400 text-xs font-medium">25% off now</p>
       </div>
     </div>
@@ -5086,7 +5401,7 @@ function render(){
         </div>
       </div>
       <div class="text-right">
-        <p class="text-white font-bold text-xl" data-tier-price="premium">£9.00</p>
+        <p class="text-white font-bold text-xl" data-tier-price="premium">${sgPrice('weekly').display}</p>
         <p class="text-emerald-400 text-xs font-medium">25% off now</p>
       </div>
     </div>
@@ -5109,7 +5424,7 @@ function render(){
         </div>
       </div>
       <div class="text-right">
-        <p class="text-white font-bold text-xl" data-tier-price="elite">£13.50</p>
+        <p class="text-white font-bold text-xl" data-tier-price="elite">${sgPrice('monthly').display}</p>
         <p class="text-emerald-400 text-xs font-medium">25% off now</p>
       </div>
     </div>
@@ -5159,7 +5474,7 @@ function render(){
   <div class="space-y-3">
     <div class="flex justify-between items-center py-2 border-b border-slate-700/30">
       <span class="text-slate-300">Session fee</span>
-      <span class="text-white font-bold">from £3.75</span>
+      <span class="text-white font-bold">from ${sgPrice('day').display}</span>
     </div>
     <div class="flex justify-between items-center py-2 border-b border-slate-700/30">
       <span class="text-slate-300">Booking fee</span>
@@ -5191,7 +5506,7 @@ function render(){
     </div>
     <div class="bg-gradient-to-br from-blue-900/30 to-slate-800/50 rounded-xl p-5 border border-blue-800/30">
       <p class="text-blue-400 font-bold text-lg mb-1">💰 Wallet top-up</p>
-      <p class="text-white text-2xl font-black">Add £20 → Get £22</p>
+      <p class="text-white text-2xl font-black">Top up & get 10% bonus!</p>
       <p class="text-slate-400 text-sm mt-1">10% bonus credit when you top up your wallet.</p>
     </div>
     <div class="bg-gradient-to-br from-purple-900/30 to-slate-800/50 rounded-xl p-5 border border-purple-800/30">
