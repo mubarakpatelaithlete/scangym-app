@@ -1041,7 +1041,7 @@ function GymProfilePage(){
     /* Price badge on photo */
     .gym-carousel-price{position:absolute;bottom:10px;right:12px;background:#22c55e;color:#fff;font-size:14px;font-weight:800;padding:4px 10px;border-radius:10px;z-index:6;box-shadow:0 2px 8px rgba(34,197,94,.4)}
     /* Info section below photos */
-    .gym-info-section{flex:1;display:flex;flex-direction:column;padding:12px 16px 0;overflow-y:auto;-webkit-overflow-scrolling:touch;background:#0a0f14}
+    .gym-info-section{flex:1;display:flex;flex-direction:column;padding:12px 16px 8px;overflow-y:auto;-webkit-overflow-scrolling:touch;background:#0a0f14}
     /* Gym name + details card */
     .gym-info-card{margin-bottom:8px}
     .gym-info-name{font-family:'Sora',sans-serif;font-size:22px;font-weight:800;color:#fff;line-height:1.15;margin-bottom:2px}
@@ -1080,6 +1080,73 @@ function GymProfilePage(){
     .gym-pay-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 4px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent;color:rgba(255,255,255,.5);font-size:13px;font-weight:600}
     .gym-pay-btn.selected{border-color:rgba(34,197,94,.5);background:rgba(34,197,94,.1);color:#4ade80}
     .gym-pay-btn:active{transform:scale(.96)}
+    /* ─── Sticky Footer (Uber-style) ─── */
+    .gym-sticky-footer{background:#0a0f14;border-top:1px solid rgba(255,255,255,.08);padding:10px 16px calc(8px + env(safe-area-inset-bottom,0px));flex-shrink:0;z-index:20}
+    .gym-sticky-pay-row{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;margin-bottom:8px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .15s}
+    .gym-sticky-pay-row:active{background:rgba(255,255,255,.08)}
+    .gym-sticky-pay-left{display:flex;align-items:center;gap:8px;color:#fff;font-size:14px;font-weight:600}
+    .gym-sticky-pay-icon{font-size:18px}
+    .gym-sticky-pay-arrow{color:rgba(255,255,255,.35);font-size:18px;font-weight:700}
+    .gym-sticky-cta-row{display:flex;gap:8px;align-items:stretch}
+    .gym-sticky-cta{flex:1;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(34,197,94,.35);-webkit-tap-highlight-color:transparent;transition:transform .15s;letter-spacing:.3px;display:flex;align-items:center;justify-content:center;gap:6px}
+    .gym-sticky-cta:active{transform:scale(.97)}
+    .gym-sticky-cal-btn{width:52px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:rgba(255,255,255,.6);font-size:22px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;flex-shrink:0;position:relative}
+    .gym-sticky-cal-btn:active{transform:scale(.95);background:rgba(255,255,255,.1)}
+    .gym-sticky-cal-btn input[type=date]{position:absolute;inset:0;opacity:0;cursor:pointer;-webkit-appearance:none;font-size:16px}
+    .gym-sticky-trust{display:flex;justify-content:center;gap:14px;padding-top:4px}
+    .gym-sticky-trust span{font-size:10px;color:rgba(255,255,255,.3);font-weight:500}
+    .gym-sticky-date-badge{font-size:10px;color:rgba(255,255,255,.4);font-weight:500;margin-top:4px;text-align:center}
+
+    /* ─── Pay With Overlay (Uber-style full screen) ─── */
+    .pay-overlay{position:fixed;inset:0;z-index:9300;background:#0a0f14;transform:translateX(100%);transition:transform .3s cubic-bezier(.32,.72,0,1);display:flex;flex-direction:column;overflow:hidden}
+    .pay-overlay.open{transform:translateX(0)}
+    .pay-overlay-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;flex-shrink:0}
+    .pay-overlay-close{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.08);border:none;color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .2s}
+    .pay-overlay-close:active{background:rgba(255,255,255,.15)}
+    .pay-overlay-add-btn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:#fff;font-size:13px;font-weight:600;padding:8px 14px;border-radius:10px;cursor:pointer;display:flex;align-items:center;gap:4px;-webkit-tap-highlight-color:transparent}
+    .pay-overlay-add-btn:active{background:rgba(255,255,255,.12)}
+    .pay-overlay-title{color:#fff;font-size:26px;font-weight:800;font-family:'Sora',sans-serif;padding:0 20px 16px}
+    .pay-overlay-body{flex:1;overflow-y:auto;padding:0 20px;-webkit-overflow-scrolling:touch}
+    .pay-section-label{color:rgba(255,255,255,.4);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;margin-top:20px}
+    .pay-section-label:first-child{margin-top:0}
+    .pay-method-item{display:flex;align-items:center;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .15s}
+    .pay-method-item:active{background:rgba(255,255,255,.03)}
+    .pay-method-item:last-child{border-bottom:none}
+    .pay-method-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-right:12px;flex-shrink:0}
+    .pay-method-icon.cash{background:rgba(34,197,94,.12)}
+    .pay-method-icon.card{background:rgba(99,102,241,.12)}
+    .pay-method-icon.credits{background:rgba(250,204,21,.12)}
+    .pay-method-text{flex:1}
+    .pay-method-name{color:#fff;font-size:15px;font-weight:600}
+    .pay-method-sub{color:rgba(255,255,255,.4);font-size:12px;margin-top:1px}
+    .pay-method-check{width:24px;height:24px;border-radius:50%;border:2px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s}
+    .pay-method-check.active{border-color:#22c55e;background:rgba(34,197,94,.15)}
+    .pay-method-check.active::after{content:'✓';color:#22c55e;font-size:14px;font-weight:700}
+    .pay-other-item{display:flex;align-items:center;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;-webkit-tap-highlight-color:transparent}
+    .pay-other-item:active{background:rgba(255,255,255,.03)}
+    .pay-other-item:last-child{border-bottom:none}
+    .pay-other-icon{font-size:20px;margin-right:12px;width:24px;text-align:center}
+    .pay-other-text{flex:1;color:#fff;font-size:15px;font-weight:500}
+    .pay-other-arrow{color:rgba(255,255,255,.25);font-size:18px}
+
+    /* ─── Add Payment Options (sub-screen) ─── */
+    .pay-add-overlay{position:fixed;inset:0;z-index:9400;background:#0a0f14;transform:translateX(100%);transition:transform .3s cubic-bezier(.32,.72,0,1);display:flex;flex-direction:column;overflow:hidden}
+    .pay-add-overlay.open{transform:translateX(0)}
+    .pay-add-header{display:flex;align-items:center;gap:12px;padding:16px 20px;flex-shrink:0}
+    .pay-add-header-title{color:#fff;font-size:18px;font-weight:700;font-family:'Sora',sans-serif}
+    .pay-add-body{flex:1;overflow-y:auto;padding:20px;-webkit-overflow-scrolling:touch}
+    .pay-add-tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px}
+    .pay-add-tile{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:24px 16px;text-align:center;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s}
+    .pay-add-tile:active{transform:scale(.96);background:rgba(255,255,255,.08)}
+    .pay-add-tile-icon{font-size:36px;margin-bottom:8px}
+    .pay-add-tile-label{color:#fff;font-size:14px;font-weight:600}
+    .pay-add-tile-sub{color:rgba(255,255,255,.35);font-size:11px;margin-top:2px}
+
+    /* ─── Stripe form inside Add Payment ─── */
+    .pay-add-stripe-wrap{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px;margin-top:16px}
+    .pay-add-stripe-title{color:#fff;font-size:15px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+    .pay-add-stripe-close{margin-left:auto;color:rgba(255,255,255,.4);cursor:pointer;font-size:14px}
+
     /* Legacy compatibility */
     .gym-nav-col{display:none}
     .gym-nav-btn{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;-webkit-tap-highlight-color:transparent}
@@ -1214,38 +1281,143 @@ function GymProfilePage(){
         </div>
       </div>
 
-      <!-- Date Selection -->
-      <div style="margin-bottom:2px">
-        <div class="gym-section-label">📅 Date</div>
-        <div class="gym-date-row" id="gym-date-row">
-          <div class="gym-date-btn selected" onclick="selectGymDate(this,'today')" data-date="today">Today</div>
-          <div class="gym-date-btn" onclick="selectGymDate(this,'tomorrow')" data-date="tomorrow">Tomorrow</div>
-          <div class="gym-date-btn" onclick="document.getElementById('gym-date-custom').showPicker?.()" data-date="custom" id="gym-date-custom-btn">Pick date<input type="date" id="gym-date-custom" min="${new Date().toISOString().split('T')[0]}" onchange="selectGymDateCustom(this)" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none"></div>
+    </div>
+
+    <!-- ═══ Sticky Footer (Uber-style — always visible) ═══ -->
+    <div class="gym-sticky-footer">
+      <!-- Payment method row (tappable → opens Pay With overlay) -->
+      <div class="gym-sticky-pay-row" id="gym-sticky-pay-row" onclick="openPayWithOverlay()">
+        <div class="gym-sticky-pay-left">
+          <span class="gym-sticky-pay-icon" id="gym-pay-icon">💳</span>
+          <span id="gym-pay-label">Card</span>
         </div>
+        <span class="gym-sticky-pay-arrow">›</span>
       </div>
 
-      <!-- Payment Method -->
-      <div style="margin-bottom:2px">
-        <div class="gym-section-label">💳 Payment</div>
-        <div class="gym-pay-row" id="gym-pay-row">
-          <div class="gym-pay-btn selected" onclick="selectGymPayment(this,'card')" data-method="card">💳 Card</div>
-          <div class="gym-pay-btn" onclick="selectGymPayment(this,'cash')" data-method="cash">💷 Cash at Gym</div>
+      <!-- CTA + Calendar row -->
+      <div class="gym-sticky-cta-row">
+        <button class="gym-sticky-cta" id="gym-sticky-cta" onclick="event.preventDefault();event.stopPropagation();showUberCheckout('${gymId}')">
+          ⚡ Book Day Pass · £${currentPrice}
+        </button>
+        <div class="gym-sticky-cal-btn" id="gym-sticky-cal-btn">
+          📅
+          <input type="date" id="gym-date-sticky" min="${new Date().toISOString().split('T')[0]}" onchange="selectStickyDate(this)">
         </div>
       </div>
-
-      <!-- Big CTA -->
-      <button class="gym-book-cta" id="gym-book-cta" onclick="event.preventDefault();event.stopPropagation();showUberCheckout('${gymId}')">⚡ Book Now · £${currentPrice}</button>
 
       <!-- Trust signals -->
-      <div class="gym-trust-row">
-        <span class="gym-trust-item">✅ Free Cancel</span>
-        <span class="gym-trust-item">🔒 Secure Pay</span>
-        <span class="gym-trust-item">⚡ Instant QR</span>
+      <div class="gym-sticky-trust">
+        <span>✅ Free Cancel</span>
+        <span>🔒 Secure Pay</span>
+        <span>⚡ Instant QR</span>
       </div>
+      <div class="gym-sticky-date-badge" id="gym-sticky-date-label">📅 Today</div>
     </div>
   </div>
 
-  <!-- Overlay container (rendered once, content swapped) -->
+
+  <!-- ═══ Pay With Overlay (Uber-style full screen) ═══ -->
+  <div class="pay-overlay" id="pay-overlay">
+    <div class="pay-overlay-header">
+      <button class="pay-overlay-close" onclick="closePayWithOverlay()">✕</button>
+      <button class="pay-overlay-add-btn" onclick="openAddPaymentOverlay()">+ Add</button>
+    </div>
+    <div class="pay-overlay-title">Pay with</div>
+    <div class="pay-overlay-body">
+
+      <div class="pay-section-label">ScanGym Credits</div>
+      <div class="pay-method-item" onclick="selectPayMethod('credits')" data-method="credits">
+        <div class="pay-method-icon credits">🏋️</div>
+        <div class="pay-method-text">
+          <div class="pay-method-name">ScanGym Credits</div>
+          <div class="pay-method-sub">£0.00</div>
+        </div>
+        <div class="pay-method-check" id="pay-check-credits"></div>
+      </div>
+
+      <div class="pay-section-label">Payment methods</div>
+      <div id="pay-methods-list">
+        <div class="pay-method-item" onclick="selectPayMethod('cash')" data-method="cash">
+          <div class="pay-method-icon cash">💷</div>
+          <div class="pay-method-text">
+            <div class="pay-method-name">Cash at Gym</div>
+            <div class="pay-method-sub">Pay at reception</div>
+          </div>
+          <div class="pay-method-check active" id="pay-check-cash"></div>
+        </div>
+        <div class="pay-method-item" onclick="selectPayMethod('card')" data-method="card" id="pay-saved-card-row" style="display:none">
+          <div class="pay-method-icon card">💳</div>
+          <div class="pay-method-text">
+            <div class="pay-method-name" id="pay-saved-card-name">Visa ····4242</div>
+            <div class="pay-method-sub">Saved card</div>
+          </div>
+          <div class="pay-method-check" id="pay-check-card"></div>
+        </div>
+      </div>
+
+      <div class="pay-section-label">Other options</div>
+      <div class="pay-other-item" onclick="openAddPaymentOverlay('gift')">
+        <span class="pay-other-icon">🎁</span>
+        <span class="pay-other-text">Gift card</span>
+        <span class="pay-other-arrow">›</span>
+      </div>
+      <div class="pay-other-item" onclick="openAddPaymentOverlay('voucher')">
+        <span class="pay-other-icon">🎟️</span>
+        <span class="pay-other-text">Voucher</span>
+        <span class="pay-other-arrow">›</span>
+      </div>
+      <div class="pay-other-item" onclick="openAddPaymentOverlay('business')">
+        <span class="pay-other-icon">💼</span>
+        <span class="pay-other-text">Business profile</span>
+        <span class="pay-other-arrow">›</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══ Add Payment Options Overlay ═══ -->
+  <div class="pay-add-overlay" id="pay-add-overlay">
+    <div class="pay-add-header">
+      <button class="pay-overlay-close" onclick="closeAddPaymentOverlay()">✕</button>
+      <span class="pay-add-header-title">Add payment options</span>
+    </div>
+    <div class="pay-add-body">
+      <div class="pay-add-tiles">
+        <div class="pay-add-tile" onclick="addPaymentCard()">
+          <div class="pay-add-tile-icon">💳</div>
+          <div class="pay-add-tile-label">Cards</div>
+          <div class="pay-add-tile-sub">Visa, Mastercard, Amex</div>
+        </div>
+        <div class="pay-add-tile" onclick="sgToast('PayPal coming soon!')">
+          <div class="pay-add-tile-icon" style="font-size:28px;color:#0070ba;font-weight:900;font-family:sans-serif">P</div>
+          <div class="pay-add-tile-label">PayPal</div>
+          <div class="pay-add-tile-sub">Coming soon</div>
+        </div>
+      </div>
+
+      <div class="pay-section-label">Other options</div>
+      <div class="pay-other-item" onclick="sgToast('Business profiles coming soon!')">
+        <span class="pay-other-icon">💼</span>
+        <span class="pay-other-text">Business profile</span>
+        <span class="pay-other-arrow">›</span>
+      </div>
+      <div class="pay-other-item" onclick="sgToast('Gift cards coming soon!')">
+        <span class="pay-other-icon">🎁</span>
+        <span class="pay-other-text">Gift card</span>
+        <span class="pay-other-arrow">›</span>
+      </div>
+      <div class="pay-other-item" onclick="sgToast('Vouchers coming soon!')">
+        <span class="pay-other-icon">🎟️</span>
+        <span class="pay-other-text">Voucher</span>
+        <span class="pay-other-arrow">›</span>
+      </div>
+
+      <!-- Stripe form appears here when "Cards" is tapped -->
+      <div id="pay-add-stripe-container"></div>
+    </div>
+  </div>
+
+    <!-- Overlay container (rendered once, content swapped) -->
   <div class="gym-overlay" id="gym-overlay" onclick="if(event.target===this||event.target.classList.contains('gym-overlay-bg'))closeGymOverlay()">
     <div class="gym-overlay-bg"></div>
     <div class="gym-overlay-panel">
@@ -1541,10 +1713,13 @@ window._gymBookingState={
   selectedTime:'anytime',
   paymentMethod:'card',
   passName:'Day Pass',
-  passIcon:'⚡'
+  passIcon:'⚡',
+  savedCardLast4:null,
+  savedCardBrand:null,
+  savedCardId:null
 };
 
-// Pass selection
+// Pass selection — updates sticky CTA text
 window.selectGymPass=function(el,idx,gymId){
   document.querySelectorAll('.gym-pass-pill').forEach(function(p){p.classList.remove('selected');});
   el.classList.add('selected');
@@ -1556,15 +1731,267 @@ window.selectGymPass=function(el,idx,gymId){
   window._gymBookingState.passIcon=iconMap[idx]||'⚡';
   const price=el.querySelector('.gym-pass-price');
   if(price){
-    const btn=document.querySelector('.gym-book-cta');
-    if(btn)btn.textContent='⚡ Book Now · '+price.textContent;
+    updateStickyCTA();
   }
 };
 
-// Date selection
+// Update sticky CTA button text with current pass name + price
+window.updateStickyCTA=function(){
+  const gbs=window._gymBookingState;
+  const btn=document.getElementById('gym-sticky-cta');
+  if(!btn)return;
+  const selPill=document.querySelector('.gym-pass-pill.selected .gym-pass-price');
+  const priceText=selPill?selPill.textContent:'£5.00';
+  btn.textContent=gbs.passIcon+' Book '+gbs.passName+' · '+priceText;
+};
+
+// Sticky date picker (calendar icon in footer)
+window.selectStickyDate=function(input){
+  if(!input.value)return;
+  window._gymBookingState.selectedDate=input.value;
+  const label=document.getElementById('gym-sticky-date-label');
+  if(label){
+    const today=new Date().toISOString().split('T')[0];
+    const tom=new Date();tom.setDate(tom.getDate()+1);
+    const tomStr=tom.toISOString().split('T')[0];
+    if(input.value===today){
+      label.textContent='📅 Today';
+    }else if(input.value===tomStr){
+      label.textContent='📅 Tomorrow';
+    }else{
+      const d=new Date(input.value+'T12:00:00');
+      const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+      const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      label.textContent='📅 '+days[d.getDay()]+' '+d.getDate()+' '+months[d.getMonth()];
+    }
+  }
+};
+
+// ═══ Pay With Overlay ═══
+window.openPayWithOverlay=function(){
+  const overlay=document.getElementById('pay-overlay');
+  if(!overlay)return;
+  // Update checkmarks based on current selection
+  updatePayMethodChecks();
+  // Check for saved cards
+  loadSavedCardsForPayOverlay();
+  requestAnimationFrame(()=>overlay.classList.add('open'));
+};
+window.closePayWithOverlay=function(){
+  const overlay=document.getElementById('pay-overlay');
+  if(overlay)overlay.classList.remove('open');
+};
+
+// Select payment method from Pay With overlay
+window.selectPayMethod=function(method){
+  const gbs=window._gymBookingState;
+  if(method==='credits'){
+    sgToast('ScanGym Credits coming soon!');
+    return;
+  }
+  gbs.paymentMethod=method==='card'&&gbs.savedCardId?'card':'cash';
+  if(method==='card'&&!gbs.savedCardId){
+    // No saved card — open add card
+    closePayWithOverlay();
+    openAddPaymentOverlay();
+    return;
+  }
+  if(method==='card') gbs.paymentMethod='card';
+  if(method==='cash') gbs.paymentMethod='cash';
+  updatePayMethodChecks();
+  updateStickyPayRow();
+  // Auto-close after selecting
+  setTimeout(()=>closePayWithOverlay(),250);
+};
+
+window.updatePayMethodChecks=function(){
+  const gbs=window._gymBookingState;
+  document.querySelectorAll('.pay-method-check').forEach(c=>c.classList.remove('active'));
+  const activeId=gbs.paymentMethod==='cash'?'pay-check-cash':'pay-check-card';
+  const el=document.getElementById(activeId);
+  if(el)el.classList.add('active');
+};
+
+window.updateStickyPayRow=function(){
+  const gbs=window._gymBookingState;
+  const icon=document.getElementById('gym-pay-icon');
+  const label=document.getElementById('gym-pay-label');
+  if(!icon||!label)return;
+  if(gbs.paymentMethod==='cash'){
+    icon.textContent='💷';
+    label.textContent='Cash at Gym';
+  }else if(gbs.savedCardLast4){
+    icon.textContent='💳';
+    label.textContent=((gbs.savedCardBrand||'Card')+' ····'+gbs.savedCardLast4);
+  }else{
+    icon.textContent='💳';
+    label.textContent='Card';
+  }
+};
+
+// Load saved cards and show them in Pay With overlay
+window.loadSavedCardsForPayOverlay=async function(){
+  try{
+    if(!state.user)return;
+    const resp=await fetch('/api/payment/saved-cards',{credentials:'include'}).then(r=>r.json());
+    if(resp.cards&&resp.cards.length>0){
+      const card=resp.cards.find(c=>c.isDefault)||resp.cards[0];
+      const gbs=window._gymBookingState;
+      gbs.savedCardLast4=card.last4;
+      gbs.savedCardBrand=(card.brand||'Visa').charAt(0).toUpperCase()+(card.brand||'visa').slice(1);
+      gbs.savedCardId=card.id;
+      // Show saved card row in Pay With overlay
+      const row=document.getElementById('pay-saved-card-row');
+      if(row){
+        row.style.display='flex';
+        const nameEl=document.getElementById('pay-saved-card-name');
+        if(nameEl)nameEl.textContent=gbs.savedCardBrand+' ····'+gbs.savedCardLast4;
+      }
+      updateStickyPayRow();
+    }
+  }catch(e){console.log('Could not load saved cards',e);}
+};
+
+// ═══ Add Payment Options Overlay ═══
+window.openAddPaymentOverlay=function(section){
+  const overlay=document.getElementById('pay-add-overlay');
+  if(!overlay)return;
+  requestAnimationFrame(()=>overlay.classList.add('open'));
+  if(section==='gift'){sgToast('Gift cards coming soon!');}
+  else if(section==='voucher'){sgToast('Vouchers coming soon!');}
+  else if(section==='business'){sgToast('Business profiles coming soon!');}
+};
+window.closeAddPaymentOverlay=function(){
+  const overlay=document.getElementById('pay-add-overlay');
+  if(overlay)overlay.classList.remove('open');
+  // Also remove any inline stripe form
+  const container=document.getElementById('pay-add-stripe-container');
+  if(container)container.innerHTML='';
+};
+
+// Add new card via Stripe
+window.addPaymentCard=function(){
+  const container=document.getElementById('pay-add-stripe-container');
+  if(!container)return;
+  container.innerHTML=`
+    <div class="pay-add-stripe-wrap">
+      <div class="pay-add-stripe-title">
+        💳 Add a card
+        <span class="pay-add-stripe-close" onclick="document.getElementById('pay-add-stripe-container').innerHTML=''">✕ Cancel</span>
+      </div>
+      <div id="pay-add-stripe-el">
+        <div style="text-align:center;padding:20px 0">
+          <div class="sg-spinner" style="width:24px;height:24px;border-color:rgba(255,255,255,.15);border-top-color:#f97316;margin:0 auto 8px"></div>
+          <p style="color:rgba(255,255,255,.3);font-size:12px">Loading secure form…</p>
+        </div>
+      </div>
+      <button class="gym-book-cta" id="pay-add-save-btn" style="margin-top:12px;opacity:0.4;pointer-events:none" onclick="saveNewCard()">Save Card</button>
+    </div>
+  `;
+  // Initialize Stripe Elements for SetupIntent
+  initAddCardStripe();
+};
+
+// Initialize Stripe for adding a new card
+window._addCardState={};
+window.initAddCardStripe=async function(){
+  try{
+    await ensureStripeLoaded();
+    if(!STRIPE_PK||!window.Stripe)return;
+    const stripeInstance=window.Stripe(STRIPE_PK);
+    window._addCardState.stripe=stripeInstance;
+
+    const userCountry=(()=>{try{const tz=Intl.DateTimeFormat().resolvedOptions().timeZone||'';const map={'Europe/London':'GB','America/New_York':'US','America/Los_Angeles':'US','Asia/Dubai':'AE','Europe/Paris':'FR','Europe/Berlin':'DE','Europe/Madrid':'ES','Australia/Sydney':'AU','Asia/Tokyo':'JP','America/Toronto':'CA'};return map[tz]||'GB';}catch(e){return 'GB';}})();
+
+    const elements=stripeInstance.elements({
+      mode:'setup',
+      currency:'gbp',
+      appearance:{
+        theme:'night',
+        variables:{colorPrimary:'#22c55e',fontFamily:'-apple-system,BlinkMacSystemFont,Inter,sans-serif',borderRadius:'12px',colorBackground:'#111827'},
+        rules:{'.Input':{border:'1px solid rgba(255,255,255,.1)',padding:'14px'},'.Tab':{border:'1px solid rgba(255,255,255,.1)'},'.Tab--selected':{borderColor:'#22c55e'}}
+      }
+    });
+    window._addCardState.elements=elements;
+
+    const paymentElement=elements.create('payment',{
+      layout:{type:'tabs',defaultCollapsed:false},
+      paymentMethodOrder:['card'],
+      fields:{billingDetails:{address:{postalCode:'auto',country:'auto'}}},
+      defaultValues:{billingDetails:{address:{country:userCountry}}},
+    });
+    paymentElement.mount('#pay-add-stripe-el');
+
+    paymentElement.on('ready',()=>{
+      const btn=document.getElementById('pay-add-save-btn');
+      if(btn){btn.style.opacity='1';btn.style.pointerEvents='auto';}
+    });
+  }catch(e){
+    console.error('Add card init error:',e);
+    const container=document.getElementById('pay-add-stripe-container');
+    if(container)container.innerHTML='<p style="color:#f87171;padding:16px;text-align:center">Failed to load card form. Try again.</p>';
+  }
+};
+
+// Save the new card
+window.saveNewCard=async function(){
+  const acs=window._addCardState;
+  if(!acs.stripe||!acs.elements)return;
+  const btn=document.getElementById('pay-add-save-btn');
+  if(btn){btn.disabled=true;btn.textContent='Saving…';}
+
+  try{
+    // Create SetupIntent on server
+    const setupResp=await fetch('/api/payment/setup-intent',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include'}).then(r=>r.json());
+    if(setupResp.error){sgToast(setupResp.error);if(btn){btn.disabled=false;btn.textContent='Save Card';}return;}
+
+    const submitResult=await acs.elements.submit();
+    if(submitResult.error){sgToast(submitResult.error.message||'Card details incomplete');if(btn){btn.disabled=false;btn.textContent='Save Card';}return;}
+
+    const {error,setupIntent}=await acs.stripe.confirmSetup({
+      elements:acs.elements,
+      clientSecret:setupResp.clientSecret,
+      confirmParams:{return_url:window.location.origin+'/'},
+      redirect:'if_required'
+    });
+
+    if(error){sgToast(error.message||'Failed to save card');if(btn){btn.disabled=false;btn.textContent='Save Card';}return;}
+
+    if(setupIntent&&setupIntent.status==='succeeded'){
+      sgToast('✅ Card saved!','success',2000);
+      // Update state
+      const pm=setupIntent.payment_method;
+      if(typeof pm==='string'){
+        // Fetch card details
+        try{
+          const cardResp=await fetch('/api/payment/saved-cards',{credentials:'include'}).then(r=>r.json());
+          if(cardResp.cards&&cardResp.cards.length>0){
+            const c=cardResp.cards[0];
+            window._gymBookingState.savedCardLast4=c.last4;
+            window._gymBookingState.savedCardBrand=(c.brand||'Visa').charAt(0).toUpperCase()+(c.brand||'visa').slice(1);
+            window._gymBookingState.savedCardId=c.id;
+            window._gymBookingState.paymentMethod='card';
+            updateStickyPayRow();
+          }
+        }catch(e){}
+      }
+      closeAddPaymentOverlay();
+      closePayWithOverlay();
+    }
+  }catch(e){
+    console.error('Save card error:',e);
+    sgToast('Failed to save card');
+    if(btn){btn.disabled=false;btn.textContent='Save Card';}
+  }
+};
+
+// Payment method selection (legacy compat)
+window.selectGymPayment=function(el,method){
+  window._gymBookingState.paymentMethod=method;
+  updateStickyPayRow();
+};
+// Legacy date functions (compat)
 window.selectGymDate=function(el,which){
-  document.querySelectorAll('.gym-date-btn').forEach(function(b){b.classList.remove('selected');});
-  el.classList.add('selected');
   const today=new Date();
   if(which==='today'){
     window._gymBookingState.selectedDate=today.toISOString().split('T')[0];
@@ -1576,22 +2003,6 @@ window.selectGymDate=function(el,which){
 window.selectGymDateCustom=function(input){
   if(!input.value)return;
   window._gymBookingState.selectedDate=input.value;
-  document.querySelectorAll('.gym-date-btn').forEach(function(b){b.classList.remove('selected');});
-  const customBtn=document.getElementById('gym-date-custom-btn');
-  if(customBtn){
-    customBtn.classList.add('selected');
-    const d=new Date(input.value+'T12:00:00');
-    const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-    const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    customBtn.childNodes[0].textContent=days[d.getDay()]+' '+d.getDate()+' '+months[d.getMonth()];
-  }
-};
-
-// Payment method selection
-window.selectGymPayment=function(el,method){
-  document.querySelectorAll('.gym-pay-btn').forEach(function(b){b.classList.remove('selected');});
-  el.classList.add('selected');
-  window._gymBookingState.paymentMethod=method;
 };
 
 // Auto-init carousel when gym page renders
@@ -1601,6 +2012,8 @@ window.selectGymPayment=function(el,method){
     window.render=function(){
       _origRender.apply(this,arguments);
       setTimeout(initGymCarousel,50);
+      // Load saved cards for sticky footer pay row
+      setTimeout(function(){if(document.getElementById('gym-sticky-pay-row'))loadSavedCardsForPayOverlay();},200);
     };
   }
   // Also init on DOMContentLoaded in case render already happened
