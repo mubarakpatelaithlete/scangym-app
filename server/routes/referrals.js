@@ -248,4 +248,316 @@ router.get('/discount/:handle', async (req, res) => {
   }
 });
 
+// ═══════════════════════════════════════════════════════════════════
+//  WITHDRAWAL / PAYOUT SYSTEM
+//  Creators request payouts when they hit the minimum threshold (£5)
+// ═══════════════════════════════════════════════════════════════════
+
+// Create withdrawals table on startup
+(async () => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS creator_withdrawals (
+        id SERIAL PRIMARY KEY,
+        creator_handle VARCHAR(100) NOT NULL,
+        creator_email VARCHAR(200),
+        amount_pence INTEGER NOT NULL,
+        payment_method VARCHAR(50) DEFAULT 'bank_transfer',
+        payment_details JSONB DEFAULT '{}',
+        status VARCHAR(30) DEFAULT 'pending',
+        admin_notes TEXT,
+        requested_at TIMESTAMPTZ DEFAULT NOW(),
+        processed_at TIMESTAMPTZ,
+        rejected_at TIMESTAMPTZ
+      )
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_creator_withdrawals_handle
+      ON creator_withdrawals(creator_handle)
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_creator_withdrawals_status
+      ON creator_withdrawals(status)
+    `);
+    // Add withdrawn_pence to creator_memberships if not present
+    await pool.query(`
+      ALTER TABLE creator_memberships
+      ADD COLUMN IF NOT EXISTS total_withdrawn_pence INTEGER DEFAULT 0
+    `);
+    console.log('[Withdrawals] Tables ready');
+  } catch (err) {
+    console.error('[Withdrawals] Table init error:', err.message);
+  }
+})();
+
+const MINIMUM_WITHDRAWAL_PENCE = 500; // £5 minimum
+
+// ─────────────────────────────────────────────────────────────────
+//  GET /api/referrals/balance/:handle
+//  Returns available balance (earned - withdrawn - pending)
+// ─────────────────────────────────────────────────────────────────
+router.get('/balance/:handle', async (req, res) => {
+  try {
+    const { handle } = req.params;
+    if (!handle) return res.status(400).json({ error: 'handle required' });
+
+    // Total earned from referrals
+    const earned = await pool.query(
+      `SELECT COALESCE(SUM(commission_pence), 0) as total_earned
+       FROM creator_referrals WHERE creator_handle = $1 AND status = 'converted'`,
+      [handle]
+    );
+    const totalEarnedPence = parseInt(earned.rows[0].total_earned);
+
+    // Total withdrawn (approved) + pending
+    const withdrawn = await pool.query(
+      `SELECT
+         COALESCE(SUM(amount_pence) FILTER (WHERE status = 'approved' OR status = 'paid'), 0) as total_withdrawn,
+         COALESCE(SUM(amount_pence) FILTER (WHERE status = 'pending'), 0) as total_pending
+       FROM creator_withdrawals WHERE creator_handle = $1`,
+      [handle]
+    );
+    const totalWithdrawnPence = parseInt(withdrawn.rows[0].total_withdrawn);
+    const totalPendingPence = parseInt(withdrawn.rows[0].total_pending);
+    const availablePence = totalEarnedPence - totalWithdrawnPence - totalPendingPence;
+
+    res.json({
+      success: true,
+      totalEarnedPence,
+      totalWithdrawnPence,
+      totalPendingPence,
+      availablePence,
+      availableDisplay: '£' + (availablePence / 100).toFixed(2),
+      canWithdraw: availablePence >= MINIMUM_WITHDRAWAL_PENCE,
+      minimumPence: MINIMUM_WITHDRAWAL_PENCE,
+      minimumDisplay: '£' + (MINIMUM_WITHDRAWAL_PENCE / 100).toFixed(2),
+    });
+  } catch (err) {
+    console.error('[Withdrawals] Balance error:', err.message);
+    res.status(500).json({ error: 'Failed to get balance' });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────
+//  POST /api/referrals/withdraw
+//  Creator requests a withdrawal
+// ─────────────────────────────────────────────────────────────────
+router.post('/withdraw', async (req, res) => {
+  try {
+    const { creatorHandle, amountPence, paymentMethod, paymentDetails } = req.body;
+    if (!creatorHandle) return res.status(400).json({ error: 'creatorHandle required' });
+
+    // Check available balance
+    const earned = await pool.query(
+      `SELECT COALESCE(SUM(commission_pence), 0) as total_earned
+       FROM creator_referrals WHERE creator_handle = $1 AND status = 'converted'`,
+      [creatorHandle]
+    );
+    const withdrawn = await pool.query(
+      `SELECT COALESCE(SUM(amount_pence) FILTER (WHERE status IN ('approved','paid','pending')), 0) as total_used
+       FROM creator_withdrawals WHERE creator_handle = $1`,
+      [creatorHandle]
+    );
+    const available = parseInt(earned.rows[0].total_earned) - parseInt(withdrawn.rows[0].total_used);
+    const requestAmount = amountPence || available;
+
+    if (requestAmount < MINIMUM_WITHDRAWAL_PENCE) {
+      return res.status(400).json({
+        error: `Minimum withdrawal is £${(MINIMUM_WITHDRAWAL_PENCE/100).toFixed(2)}. Available: £${(available/100).toFixed(2)}`,
+        availablePence: available,
+        minimumPence: MINIMUM_WITHDRAWAL_PENCE,
+      });
+    }
+    if (requestAmount > available) {
+      return res.status(400).json({
+        error: `Insufficient balance. Available: £${(available/100).toFixed(2)}`,
+        availablePence: available,
+      });
+    }
+
+    // Look up creator email
+    let email = null;
+    try {
+      const lp = await pool.query(
+        `SELECT cm.user_id FROM creator_landing_pages lp
+         JOIN creator_memberships cm ON lp.creator_user_id = cm.user_id
+         WHERE lp.slug = $1 LIMIT 1`,
+        [creatorHandle]
+      );
+      if (lp.rows.length > 0) {
+        const user = await pool.query('SELECT email FROM public.users WHERE id = $1', [lp.rows[0].user_id]);
+        if (user.rows.length > 0) email = user.rows[0].email;
+      }
+    } catch (e) {}
+
+    // Create withdrawal request
+    const result = await pool.query(
+      `INSERT INTO creator_withdrawals
+         (creator_handle, creator_email, amount_pence, payment_method, payment_details, status)
+       VALUES ($1, $2, $3, $4, $5, 'pending')
+       RETURNING *`,
+      [creatorHandle, email, requestAmount, paymentMethod || 'bank_transfer', JSON.stringify(paymentDetails || {})]
+    );
+
+    console.log(`[Withdrawals] New request: £${(requestAmount/100).toFixed(2)} by ${creatorHandle}`);
+
+    res.json({
+      success: true,
+      withdrawal: {
+        id: result.rows[0].id,
+        amountPence: requestAmount,
+        amountDisplay: '£' + (requestAmount / 100).toFixed(2),
+        status: 'pending',
+        requestedAt: result.rows[0].requested_at,
+      },
+    });
+  } catch (err) {
+    console.error('[Withdrawals] Request error:', err.message);
+    res.status(500).json({ error: 'Failed to request withdrawal' });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────
+//  GET /api/referrals/withdrawals/:handle
+//  Returns withdrawal history for a creator
+// ─────────────────────────────────────────────────────────────────
+router.get('/withdrawals/:handle', async (req, res) => {
+  try {
+    const { handle } = req.params;
+    if (!handle) return res.status(400).json({ error: 'handle required' });
+
+    const result = await pool.query(
+      `SELECT id, amount_pence, payment_method, status, requested_at, processed_at
+       FROM creator_withdrawals
+       WHERE creator_handle = $1
+       ORDER BY requested_at DESC LIMIT 50`,
+      [handle]
+    );
+
+    res.json({
+      success: true,
+      withdrawals: result.rows.map(w => ({
+        id: w.id,
+        amountPence: w.amount_pence,
+        amountDisplay: '£' + (w.amount_pence / 100).toFixed(2),
+        method: w.payment_method,
+        status: w.status,
+        requestedAt: w.requested_at,
+        processedAt: w.processed_at,
+      })),
+    });
+  } catch (err) {
+    console.error('[Withdrawals] History error:', err.message);
+    res.status(500).json({ error: 'Failed to load withdrawals' });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────
+//  Admin: GET /api/referrals/admin/withdrawals
+//  Lists all pending withdrawal requests (for admin dashboard)
+// ─────────────────────────────────────────────────────────────────
+router.get('/admin/withdrawals', async (req, res) => {
+  try {
+    const { status } = req.query;
+    const filter = status ? `WHERE status = $1` : '';
+    const params = status ? [status] : [];
+
+    const result = await pool.query(
+      `SELECT id, creator_handle, creator_email, amount_pence, payment_method,
+              payment_details, status, requested_at, processed_at
+       FROM creator_withdrawals
+       ${filter}
+       ORDER BY requested_at DESC LIMIT 100`,
+      params
+    );
+
+    res.json({
+      success: true,
+      withdrawals: result.rows.map(w => ({
+        id: w.id,
+        handle: w.creator_handle,
+        email: w.creator_email,
+        amountPence: w.amount_pence,
+        amountDisplay: '£' + (w.amount_pence / 100).toFixed(2),
+        method: w.payment_method,
+        details: w.payment_details,
+        status: w.status,
+        requestedAt: w.requested_at,
+        processedAt: w.processed_at,
+      })),
+    });
+  } catch (err) {
+    console.error('[Withdrawals] Admin list error:', err.message);
+    res.status(500).json({ error: 'Failed to load withdrawals' });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────
+//  Admin: POST /api/referrals/admin/withdrawals/:id/approve
+//  Approve a withdrawal request
+// ─────────────────────────────────────────────────────────────────
+router.post('/admin/withdrawals/:id/approve', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { adminNotes } = req.body;
+
+    const result = await pool.query(
+      `UPDATE creator_withdrawals
+       SET status = 'approved', admin_notes = $1, processed_at = NOW()
+       WHERE id = $2 AND status = 'pending'
+       RETURNING *`,
+      [adminNotes || 'Approved', id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Withdrawal not found or already processed' });
+    }
+
+    // Update creator_memberships withdrawn total
+    const w = result.rows[0];
+    try {
+      await pool.query(
+        `UPDATE creator_memberships
+         SET total_withdrawn_pence = total_withdrawn_pence + $1
+         WHERE user_id = (SELECT creator_user_id FROM creator_landing_pages WHERE slug = $2 LIMIT 1)`,
+        [w.amount_pence, w.creator_handle]
+      );
+    } catch (e) {}
+
+    console.log(`[Withdrawals] Approved: £${(w.amount_pence/100).toFixed(2)} for ${w.creator_handle}`);
+    res.json({ success: true, withdrawal: w });
+  } catch (err) {
+    console.error('[Withdrawals] Approve error:', err.message);
+    res.status(500).json({ error: 'Failed to approve withdrawal' });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────
+//  Admin: POST /api/referrals/admin/withdrawals/:id/reject
+// ─────────────────────────────────────────────────────────────────
+router.post('/admin/withdrawals/:id/reject', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+
+    const result = await pool.query(
+      `UPDATE creator_withdrawals
+       SET status = 'rejected', admin_notes = $1, rejected_at = NOW()
+       WHERE id = $2 AND status = 'pending'
+       RETURNING *`,
+      [reason || 'Rejected', id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Withdrawal not found or already processed' });
+    }
+
+    console.log(`[Withdrawals] Rejected: #${id} for ${result.rows[0].creator_handle}`);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[Withdrawals] Reject error:', err.message);
+    res.status(500).json({ error: 'Failed to reject withdrawal' });
+  }
+});
+
 module.exports = router;
