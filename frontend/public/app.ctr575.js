@@ -1127,33 +1127,86 @@ function GymProfilePage(){
     .gym-qa-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:10px 0;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;color:rgba(255,255,255,.8);font-size:12px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s}
     .gym-qa-btn:active{transform:scale(.95);background:rgba(255,255,255,.1)}
     .gym-qa-icon{font-size:16px}
-    /* Pass selection pills */
-    .gym-pass-row{display:flex;gap:8px;margin-bottom:10px}
-    .gym-pass-pill{flex:1;text-align:center;padding:8px 4px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent}
-    .gym-pass-pill.selected{border-color:rgba(34,197,94,.5);background:rgba(34,197,94,.1)}
-    .gym-pass-pill:active{transform:scale(.96)}
+    /* ═══ Uber-style pass cards ═══ */
+    .gym-pass-header{color:#fff;font-size:18px;font-weight:800;text-align:center;padding:4px 0 8px;font-family:'Sora',sans-serif}
+    .gym-pass-cards{display:flex;flex-direction:column;gap:8px;margin-bottom:10px;padding-bottom:140px}
+    .gym-pass-card{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:14px;border:2px solid rgba(255,255,255,.08);background:transparent;cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent;position:relative}
+    .gym-pass-card.selected{border-color:#fff;background:rgba(255,255,255,.04)}
+    .gym-pass-card:active{transform:scale(.98)}
+    .gym-pass-card-icon{width:52px;height:52px;border-radius:12px;background:linear-gradient(135deg,rgba(34,197,94,.15),rgba(34,197,94,.05));display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0}
+    .gym-pass-card-info{flex:1;min-width:0}
+    .gym-pass-card-name{color:#fff;font-size:16px;font-weight:700}
+    .gym-pass-card-sub{color:rgba(255,255,255,.4);font-size:12px;margin-top:1px}
+    .gym-pass-card-badge{display:inline-block;background:#3b82f6;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;margin-top:4px;letter-spacing:.3px}
+    .gym-pass-card .gym-pass-price{color:#fff;font-size:18px;font-weight:800;flex-shrink:0}
+
+    /* ═══ Sticky bottom bar (Uber-style) ═══ */
+    .gym-sticky-bar{position:absolute;bottom:0;left:0;right:0;z-index:50;background:#0a0f14;border-top:1px solid rgba(255,255,255,.08);padding-bottom:env(safe-area-inset-bottom,0px)}
+    .gym-sticky-pay{display:flex;align-items:center;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .15s}
+    .gym-sticky-pay:active{background:rgba(255,255,255,.04)}
+    .gym-sticky-pay-icon{width:36px;height:36px;border-radius:8px;background:#000;border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;margin-right:12px}
+    .gym-sticky-pay-icon.visa{background:linear-gradient(135deg,#1a1f71,#2d2f8e)}
+    .gym-sticky-pay-icon.cash{background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.3)}
+    .gym-sticky-pay-label{flex:1;color:#fff;font-size:14px;font-weight:600}
+    .gym-sticky-pay-chevron{color:rgba(255,255,255,.3);font-size:22px;font-weight:300;margin-left:8px}
+    .gym-sticky-cta{display:flex;gap:10px;padding:12px 16px;align-items:center}
+    .gym-sticky-book{flex:1;padding:16px;border-radius:12px;border:none;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 4px 20px rgba(34,197,94,.35);-webkit-tap-highlight-color:transparent;transition:transform .15s;letter-spacing:.3px;text-align:center}
+    .gym-sticky-book:active{transform:scale(.97)}
+    .gym-sticky-cal{width:52px;height:52px;border-radius:12px;border:none;background:#1e293b;color:rgba(255,255,255,.6);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;transition:all .15s;flex-shrink:0;gap:1px}
+    .gym-sticky-cal:active{transform:scale(.95);background:#263548}
+    .gym-sticky-cal-icon{font-size:18px;line-height:1}
+    .gym-sticky-cal-time{font-size:10px;color:rgba(255,255,255,.35);font-weight:600;line-height:1}
+
+    /* Payment sheet overlay */
+    .gym-pay-sheet{position:fixed;inset:0;z-index:9200;opacity:0;pointer-events:none;transition:opacity .25s}
+    .gym-pay-sheet.open{opacity:1;pointer-events:all}
+    .gym-pay-sheet-bg{position:absolute;inset:0;background:rgba(0,0,0,.5)}
+    .gym-pay-sheet-panel{position:absolute;left:0;right:0;bottom:0;background:#111827;border-radius:20px 20px 0 0;transform:translateY(100%);transition:transform .35s cubic-bezier(.32,.72,0,1);max-height:70vh;overflow-y:auto;padding-bottom:env(safe-area-inset-bottom,0px)}
+    .gym-pay-sheet.open .gym-pay-sheet-panel{transform:translateY(0)}
+    .gym-pay-sheet-drag{width:40px;height:4px;border-radius:2px;background:rgba(255,255,255,.2);margin:10px auto 0}
+    .gym-pay-sheet-title{color:#fff;font-size:18px;font-weight:700;padding:16px 20px 12px}
+    .gym-pay-option{display:flex;align-items:center;gap:12px;padding:14px 20px;cursor:pointer;transition:background .15s;-webkit-tap-highlight-color:transparent}
+    .gym-pay-option:active{background:rgba(255,255,255,.04)}
+    .gym-pay-option.selected{background:rgba(34,197,94,.08)}
+    .gym-pay-option-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+    .gym-pay-option-label{flex:1;color:#fff;font-size:14px;font-weight:600}
+    .gym-pay-option-sub{color:rgba(255,255,255,.4);font-size:11px}
+    .gym-pay-option-check{width:22px;height:22px;border-radius:50%;border:2px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px}
+    .gym-pay-option.selected .gym-pay-option-check{background:#22c55e;border-color:#22c55e;color:#fff}
+
+    /* Date picker sheet */
+    .gym-date-sheet{position:fixed;inset:0;z-index:9200;opacity:0;pointer-events:none;transition:opacity .25s}
+    .gym-date-sheet.open{opacity:1;pointer-events:all}
+    .gym-date-sheet-bg{position:absolute;inset:0;background:rgba(0,0,0,.5)}
+    .gym-date-sheet-panel{position:absolute;left:0;right:0;bottom:0;background:#111827;border-radius:20px 20px 0 0;transform:translateY(100%);transition:transform .35s cubic-bezier(.32,.72,0,1);padding-bottom:env(safe-area-inset-bottom,0px)}
+    .gym-date-sheet.open .gym-date-sheet-panel{transform:translateY(0)}
+    .gym-date-sheet-drag{width:40px;height:4px;border-radius:2px;background:rgba(255,255,255,.2);margin:10px auto 0}
+    .gym-date-sheet-title{color:#fff;font-size:18px;font-weight:700;padding:16px 20px 8px}
+    .gym-date-quick{display:flex;gap:8px;padding:0 20px 12px}
+    .gym-date-quick-btn{flex:1;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:rgba(255,255,255,.6);font-size:13px;font-weight:600;text-align:center;cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent}
+    .gym-date-quick-btn.selected{border-color:rgba(34,197,94,.5);background:rgba(34,197,94,.1);color:#4ade80}
+    .gym-date-quick-btn:active{transform:scale(.96)}
+    .gym-date-custom-wrap{padding:0 20px 16px}
+    .gym-date-custom-input{width:100%;padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#fff;font-size:14px;font-weight:600;-webkit-appearance:none;cursor:pointer}
+    .gym-date-custom-input::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.5;cursor:pointer}
+    .gym-date-sheet-done{margin:0 20px 16px;padding:14px;border-radius:12px;border:none;background:#22c55e;color:#fff;font-size:16px;font-weight:700;width:calc(100% - 40px);cursor:pointer}
+
+    /* Legacy pill styles kept for backward compat */
+    .gym-pass-row{display:none}
+    .gym-pass-pill{display:none}
     .gym-pass-name{font-size:11px;color:rgba(255,255,255,.5);font-weight:600;margin-bottom:2px}
-    .gym-pass-pill.selected .gym-pass-name{color:rgba(255,255,255,.8)}
     .gym-pass-price{font-size:16px;font-weight:800;color:rgba(255,255,255,.4)}
-    .gym-pass-pill.selected .gym-pass-price{color:#22c55e}
-    /* Big Book Now CTA */
-    .gym-book-cta{width:100%;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:17px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(34,197,94,.35);-webkit-tap-highlight-color:transparent;transition:transform .15s;letter-spacing:.3px;margin-bottom:6px}
-    .gym-book-cta:active{transform:scale(.97)}
-    /* Trust signals row */
-    .gym-trust-row{display:flex;justify-content:center;gap:16px;padding-bottom:4px}
+    /* Big Book Now CTA — hidden, replaced by sticky bar */
+    .gym-book-cta{display:none}
+    /* Trust signals row — now inside sticky area */
+    .gym-trust-row{display:none}
     .gym-trust-item{font-size:11px;color:rgba(255,255,255,.35);font-weight:500}
-    /* ─── Date & Payment selectors on gym detail ─── */
-    .gym-section-label{color:rgba(255,255,255,.45);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
-    .gym-date-row{display:flex;gap:8px;margin-bottom:10px}
-    .gym-date-btn{flex:1;text-align:center;padding:10px 4px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent;color:rgba(255,255,255,.5);font-size:13px;font-weight:600}
-    .gym-date-btn.selected{border-color:rgba(34,197,94,.5);background:rgba(34,197,94,.1);color:#4ade80}
-    .gym-date-btn:active{transform:scale(.96)}
-    .gym-date-btn input[type=date]{width:100%;background:transparent;border:none;color:inherit;font-size:12px;font-weight:600;text-align:center;outline:none;padding:0;-webkit-appearance:none;cursor:pointer}
-    .gym-date-btn input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.5;cursor:pointer}
-    .gym-pay-row{display:flex;gap:8px;margin-bottom:10px}
-    .gym-pay-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 4px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent;color:rgba(255,255,255,.5);font-size:13px;font-weight:600}
-    .gym-pay-btn.selected{border-color:rgba(34,197,94,.5);background:rgba(34,197,94,.1);color:#4ade80}
-    .gym-pay-btn:active{transform:scale(.96)}
+    /* Legacy selectors hidden */
+    .gym-section-label{display:none}
+    .gym-date-row{display:none}
+    .gym-date-btn{display:none}
+    .gym-pay-row{display:none}
+    .gym-pay-btn{display:none}
     /* Legacy compatibility */
     .gym-nav-col{display:none}
     .gym-nav-btn{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;-webkit-tap-highlight-color:transparent}
@@ -1272,49 +1325,143 @@ function GymProfilePage(){
         <div class="gym-qa-btn" onclick="openGymOverlay('hours')"><span class="gym-qa-icon">🕐</span> Hours</div>
       </div>
 
-      <!-- Pass selection (inline) -->
-      <div class="gym-pass-row" id="gym-pass-row">
-        <div class="gym-pass-pill selected" onclick="selectGymPass(this,0,'${gymId}')" data-pass="day">
-          <div class="gym-pass-name">⚡ Day Pass</div>
+      <!-- ═══ Uber-style "Choose a pass" cards ═══ -->
+      <div class="gym-pass-header">Choose a pass</div>
+      <div class="gym-pass-cards" id="gym-pass-cards">
+        <div class="gym-pass-card selected" onclick="selectGymPassCard(this,0,'${gymId}')" data-pass="day">
+          <div class="gym-pass-card-icon">⚡</div>
+          <div class="gym-pass-card-info">
+            <div class="gym-pass-card-name">Day Pass</div>
+            <div class="gym-pass-card-sub">24h access · Any time</div>
+            <div class="gym-pass-card-badge">⚡ Most popular</div>
+          </div>
           <div class="gym-pass-price">${currentPrice}</div>
         </div>
-        <div class="gym-pass-pill" onclick="selectGymPass(this,1,'${gymId}')" data-pass="3day">
-          <div class="gym-pass-name">🔥 3-Day</div>
+        <div class="gym-pass-card" onclick="selectGymPassCard(this,1,'${gymId}')" data-pass="3day">
+          <div class="gym-pass-card-icon">🔥</div>
+          <div class="gym-pass-card-info">
+            <div class="gym-pass-card-name">3-Day Pass</div>
+            <div class="gym-pass-card-sub">3 consecutive days · Save 8%</div>
+          </div>
           <div class="gym-pass-price">${threeDayPrice}</div>
         </div>
-        <div class="gym-pass-pill" onclick="selectGymPass(this,2,'${gymId}')" data-pass="week">
-          <div class="gym-pass-name">💪 Weekly</div>
+        <div class="gym-pass-card" onclick="selectGymPassCard(this,2,'${gymId}')" data-pass="weekly">
+          <div class="gym-pass-card-icon">💪</div>
+          <div class="gym-pass-card-info">
+            <div class="gym-pass-card-name">Weekly Pass</div>
+            <div class="gym-pass-card-sub">7 days unlimited · Save 28%</div>
+          </div>
           <div class="gym-pass-price">${weeklyPrice}</div>
         </div>
-      </div>
-
-      <!-- Date Selection -->
-      <div style="margin-bottom:2px">
-        <div class="gym-section-label">📅 Date</div>
-        <div class="gym-date-row" id="gym-date-row">
-          <div class="gym-date-btn selected" onclick="selectGymDate(this,'today')" data-date="today">Today</div>
-          <div class="gym-date-btn" onclick="selectGymDate(this,'tomorrow')" data-date="tomorrow">Tomorrow</div>
-          <div class="gym-date-btn" onclick="document.getElementById('gym-date-custom').showPicker?.()" data-date="custom" id="gym-date-custom-btn">Pick date<input type="date" id="gym-date-custom" min="${new Date().toISOString().split('T')[0]}" onchange="selectGymDateCustom(this)" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none"></div>
+        <div class="gym-pass-card" onclick="selectGymPassCard(this,3,'${gymId}')" data-pass="monthly">
+          <div class="gym-pass-card-icon" style="background:linear-gradient(135deg,rgba(139,92,246,.15),rgba(139,92,246,.05))">👑</div>
+          <div class="gym-pass-card-info">
+            <div class="gym-pass-card-name">Monthly Pass</div>
+            <div class="gym-pass-card-sub">30 days · Best value</div>
+          </div>
+          <div class="gym-pass-price">${sgPrice('monthly').display}</div>
         </div>
       </div>
 
-      <!-- Payment Method -->
-      <div style="margin-bottom:2px">
-        <div class="gym-section-label">💳 Payment</div>
-        <div class="gym-pay-row" id="gym-pay-row">
-          <div class="gym-pay-btn selected" onclick="selectGymPayment(this,'card')" data-method="card">💳 Card</div>
-          <div class="gym-pay-btn" onclick="selectGymPayment(this,'cash')" data-method="cash">💷 Cash at Gym</div>
+    </div><!-- /gym-info-section -->
+
+    <!-- ═══ STICKY BOTTOM BAR (Uber-style) — outside scroll container ═══ -->
+    <div class="gym-sticky-bar" id="gym-sticky-bar">
+        <!-- Payment method row -->
+        <div class="gym-sticky-pay" id="gym-sticky-pay" onclick="openPaySheet()">
+          <div class="gym-sticky-pay-icon" id="gym-pay-icon">
+            <svg width="16" height="20" viewBox="0 0 16 20" fill="white"><path d="M12.58 9.88c-.03-2.45 2-3.63 2.09-3.69-1.14-1.67-2.91-1.89-3.54-1.92-1.51-.15-2.95.89-3.71.89s-1.95-.87-3.2-.84c-1.64.03-3.16.95-4.01 2.43-1.71 2.96-.44 7.35 1.23 9.76.81 1.18 1.79 2.5 3.06 2.45 1.23-.05 1.69-.79 3.18-.79s1.91.79 3.21.77c1.33-.03 2.17-1.2 2.97-2.38.94-1.37 1.33-2.69 1.35-2.76-.03-.01-2.59-.99-2.62-3.94z"/></svg>
+          </div>
+          <div class="gym-sticky-pay-label" id="gym-pay-label"> Pay</div>
+          <div class="gym-sticky-pay-chevron">›</div>
+        </div>
+
+        <!-- CTA + Calendar row -->
+        <div class="gym-sticky-cta">
+          <button class="gym-sticky-book" id="gym-sticky-book" onclick="event.preventDefault();event.stopPropagation();showUberCheckout('${gymId}')">⚡ Book Day Pass · ${currentPrice}</button>
+          <button class="gym-sticky-cal" id="gym-sticky-cal" onclick="openDateSheet()">
+            <span class="gym-sticky-cal-icon">📅</span>
+            <span class="gym-sticky-cal-time" id="gym-sticky-cal-time">${String(Math.min(new Date().getHours()+1,23)).padStart(2,'0')}:00</span>
+          </button>
+        </div>
+
+        <!-- Trust row -->
+        <div style="display:flex;justify-content:center;gap:14px;padding:4px 0 6px">
+          <span style="font-size:10px;color:rgba(255,255,255,.3)">✅ Free Cancel</span>
+          <span style="font-size:10px;color:rgba(255,255,255,.3)">🔒 Secure</span>
+          <span style="font-size:10px;color:rgba(255,255,255,.3)">⚡ Instant QR</span>
         </div>
       </div>
 
-      <!-- Big CTA -->
-      <button class="gym-book-cta" id="gym-book-cta" onclick="event.preventDefault();event.stopPropagation();showUberCheckout('${gymId}')">⚡ Book Now · ${currentPrice}</button>
+    <!-- ═══ Payment method sheet ═══ -->
+    <div class="gym-pay-sheet" id="gym-pay-sheet" onclick="if(event.target===this||event.target.classList.contains('gym-pay-sheet-bg'))closePaySheet()">
+      <div class="gym-pay-sheet-bg"></div>
+      <div class="gym-pay-sheet-panel">
+        <div class="gym-pay-sheet-drag"></div>
+        <div class="gym-pay-sheet-title">Payment method</div>
+        <div id="gym-pay-options">
+          <div class="gym-pay-option selected" onclick="selectPayMethod(this,'apple_pay')" data-method="apple_pay">
+            <div class="gym-pay-option-icon" style="background:#000;border:1px solid rgba(255,255,255,.15);border-radius:10px">
+              <svg width="14" height="18" viewBox="0 0 16 20" fill="white"><path d="M12.58 9.88c-.03-2.45 2-3.63 2.09-3.69-1.14-1.67-2.91-1.89-3.54-1.92-1.51-.15-2.95.89-3.71.89s-1.95-.87-3.2-.84c-1.64.03-3.16.95-4.01 2.43-1.71 2.96-.44 7.35 1.23 9.76.81 1.18 1.79 2.5 3.06 2.45 1.23-.05 1.69-.79 3.18-.79s1.91.79 3.21.77c1.33-.03 2.17-1.2 2.97-2.38.94-1.37 1.33-2.69 1.35-2.76-.03-.01-2.59-.99-2.62-3.94z"/></svg>
+            </div>
+            <div>
+              <div class="gym-pay-option-label"> Pay</div>
+              <div class="gym-pay-option-sub">Default</div>
+            </div>
+            <div class="gym-pay-option-check">✓</div>
+          </div>
+          <div class="gym-pay-option" onclick="selectPayMethod(this,'google_pay')" data-method="google_pay">
+            <div class="gym-pay-option-icon" style="background:#fff;border-radius:10px">
+              <span style="font-size:18px">G</span>
+            </div>
+            <div>
+              <div class="gym-pay-option-label">Google Pay</div>
+            </div>
+            <div class="gym-pay-option-check"></div>
+          </div>
+          <div class="gym-pay-option" onclick="selectPayMethod(this,'card')" data-method="card">
+            <div class="gym-pay-option-icon" style="background:linear-gradient(135deg,#1a1f71,#2d2f8e);border-radius:10px">
+              <span style="color:#fff;font-size:12px;font-weight:800">VISA</span>
+            </div>
+            <div>
+              <div class="gym-pay-option-label">•••• 4242</div>
+              <div class="gym-pay-option-sub">Visa debit</div>
+            </div>
+            <div class="gym-pay-option-check"></div>
+          </div>
+          <div class="gym-pay-option" onclick="selectPayMethod(this,'cash')" data-method="cash">
+            <div class="gym-pay-option-icon" style="background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);border-radius:10px">
+              <span style="font-size:18px">💷</span>
+            </div>
+            <div>
+              <div class="gym-pay-option-label">Cash at Gym</div>
+              <div class="gym-pay-option-sub">Pay at reception</div>
+            </div>
+            <div class="gym-pay-option-check"></div>
+          </div>
+        </div>
+      </div>
+    </div>
 
-      <!-- Trust signals -->
-      <div class="gym-trust-row">
-        <span class="gym-trust-item">✅ Free Cancel</span>
-        <span class="gym-trust-item">🔒 Secure Pay</span>
-        <span class="gym-trust-item">⚡ Instant QR</span>
+    <!-- ═══ Date/time picker sheet ═══ -->
+    <div class="gym-date-sheet" id="gym-date-sheet" onclick="if(event.target===this||event.target.classList.contains('gym-date-sheet-bg'))closeDateSheet()">
+      <div class="gym-date-sheet-bg"></div>
+      <div class="gym-date-sheet-panel">
+        <div class="gym-date-sheet-drag"></div>
+        <div class="gym-date-sheet-title">When do you want to go?</div>
+        <div class="gym-date-quick" id="gym-date-quick">
+          <div class="gym-date-quick-btn selected" onclick="selectDateQuick(this,'today')">Today</div>
+          <div class="gym-date-quick-btn" onclick="selectDateQuick(this,'tomorrow')">Tomorrow</div>
+        </div>
+        <div class="gym-date-custom-wrap">
+          <input type="date" class="gym-date-custom-input" id="gym-date-sheet-input" min="${new Date().toISOString().split('T')[0]}" onchange="selectDateCustom(this)">
+        </div>
+        <div style="padding:0 20px 8px"><div style="color:rgba(255,255,255,.45);font-size:12px;font-weight:600;margin-bottom:6px">Time (default: next hour)</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap" id="gym-time-grid">
+            ${Array.from({length:15},(_,i)=>{const h=6+i;const t=String(h).padStart(2,"0")+":00";const now=new Date().getHours();const def=(now+1<=23)?now+1:23;const isSel=h===def;return '<div class="gym-date-quick-btn'+(isSel?' selected':'')+'" onclick="selectTimeSlot(this,&apos;'+t+'&apos;)" style="flex:0 0 calc(33.3% - 6px);padding:10px 4px;font-size:12px">'+t+'</div>';}).join("")}
+          </div>
+        </div>
+        <button class="gym-date-sheet-done" onclick="closeDateSheet()">Done</button>
       </div>
     </div>
   </div>
@@ -1666,6 +1813,100 @@ window.selectGymPayment=function(el,method){
   document.querySelectorAll('.gym-pay-btn').forEach(function(b){b.classList.remove('selected');});
   el.classList.add('selected');
   window._gymBookingState.paymentMethod=method;
+};
+
+// ═══ Uber-style pass card selection ═══
+window.selectGymPassCard=function(el,idx,gymId){
+  document.querySelectorAll('.gym-pass-card').forEach(function(c){c.classList.remove('selected');});
+  el.classList.add('selected');
+  const passMap=['day','3day','weekly','monthly'];
+  const nameMap=['Day Pass','3-Day Pass','Weekly Pass','Monthly Pass'];
+  const iconMap=['⚡','🔥','💪','👑'];
+  window._gymBookingState.selectedPass=passMap[idx]||'day';
+  window._gymBookingState.passName=nameMap[idx]||'Day Pass';
+  window._gymBookingState.passIcon=iconMap[idx]||'⚡';
+  const price=el.querySelector('.gym-pass-price');
+  if(price){
+    // Update sticky CTA button
+    const btn=document.getElementById('gym-sticky-book');
+    if(btn)btn.textContent=iconMap[idx]+' Book '+nameMap[idx]+' · '+price.textContent;
+    // Also update old CTA for compat
+    const oldBtn=document.querySelector('.gym-book-cta');
+    if(oldBtn)oldBtn.textContent='⚡ Book Now · '+price.textContent;
+  }
+};
+
+// ═══ Payment method sheet ═══
+window.openPaySheet=function(){
+  const sheet=document.getElementById('gym-pay-sheet');
+  if(sheet)sheet.classList.add('open');
+};
+window.closePaySheet=function(){
+  const sheet=document.getElementById('gym-pay-sheet');
+  if(sheet)sheet.classList.remove('open');
+};
+window.selectPayMethod=function(el,method){
+  document.querySelectorAll('.gym-pay-option').forEach(function(o){o.classList.remove('selected');o.querySelector('.gym-pay-option-check').textContent='';});
+  el.classList.add('selected');
+  el.querySelector('.gym-pay-option-check').textContent='✓';
+  window._gymBookingState.paymentMethod=method;
+  // Update sticky bar icon + label
+  const iconEl=document.getElementById('gym-pay-icon');
+  const labelEl=document.getElementById('gym-pay-label');
+  if(method==='apple_pay'){
+    if(iconEl){iconEl.className='gym-sticky-pay-icon';iconEl.innerHTML='<svg width="16" height="20" viewBox="0 0 16 20" fill="white"><path d="M12.58 9.88c-.03-2.45 2-3.63 2.09-3.69-1.14-1.67-2.91-1.89-3.54-1.92-1.51-.15-2.95.89-3.71.89s-1.95-.87-3.2-.84c-1.64.03-3.16.95-4.01 2.43-1.71 2.96-.44 7.35 1.23 9.76.81 1.18 1.79 2.5 3.06 2.45 1.23-.05 1.69-.79 3.18-.79s1.91.79 3.21.77c1.33-.03 2.17-1.2 2.97-2.38.94-1.37 1.33-2.69 1.35-2.76-.03-.01-2.59-.99-2.62-3.94z"/></svg>';}
+    if(labelEl)labelEl.textContent='\uF8FF Pay';
+  }else if(method==='google_pay'){
+    if(iconEl){iconEl.className='gym-sticky-pay-icon';iconEl.style.background='#fff';iconEl.innerHTML='<span style="font-size:18px;color:#4285F4;font-weight:700">G</span>';}
+    if(labelEl)labelEl.textContent='Google Pay';
+  }else if(method==='card'){
+    if(iconEl){iconEl.className='gym-sticky-pay-icon visa';iconEl.innerHTML='<span style="color:#fff;font-size:10px;font-weight:800">VISA</span>';}
+    if(labelEl)labelEl.textContent='•••• 4242';
+  }else if(method==='cash'){
+    if(iconEl){iconEl.className='gym-sticky-pay-icon cash';iconEl.innerHTML='💷';}
+    if(labelEl)labelEl.textContent='Cash at Gym';
+  }
+  closePaySheet();
+};
+
+// ═══ Date/time picker sheet ═══
+window._gymSelectedTime=null;
+window.openDateSheet=function(){
+  const sheet=document.getElementById('gym-date-sheet');
+  if(sheet)sheet.classList.add('open');
+};
+window.closeDateSheet=function(){
+  const sheet=document.getElementById('gym-date-sheet');
+  if(sheet)sheet.classList.remove('open');
+  // Update calendar time display
+  const timeEl=document.getElementById('gym-sticky-cal-time');
+  if(timeEl && window._gymSelectedTime)timeEl.textContent=window._gymSelectedTime;
+};
+window.selectDateQuick=function(el,which){
+  document.querySelectorAll('#gym-date-quick .gym-date-quick-btn').forEach(function(b){b.classList.remove('selected');});
+  el.classList.add('selected');
+  const today=new Date();
+  if(which==='today'){
+    window._gymBookingState.selectedDate=today.toISOString().split('T')[0];
+  }else if(which==='tomorrow'){
+    const tom=new Date(today);tom.setDate(tom.getDate()+1);
+    window._gymBookingState.selectedDate=tom.toISOString().split('T')[0];
+  }
+  // Clear custom input
+  const inp=document.getElementById('gym-date-sheet-input');
+  if(inp)inp.value='';
+};
+window.selectDateCustom=function(input){
+  if(!input.value)return;
+  window._gymBookingState.selectedDate=input.value;
+  document.querySelectorAll('#gym-date-quick .gym-date-quick-btn').forEach(function(b){b.classList.remove('selected');});
+};
+window.selectTimeSlot=function(el,time){
+  document.querySelectorAll('#gym-time-grid .gym-date-quick-btn').forEach(function(b){b.classList.remove('selected');});
+  el.classList.add('selected');
+  window._gymSelectedTime=time;
+  const timeEl=document.getElementById('gym-sticky-cal-time');
+  if(timeEl)timeEl.textContent=time;
 };
 
 // Auto-init carousel when gym page renders
