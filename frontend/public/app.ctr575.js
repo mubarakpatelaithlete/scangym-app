@@ -37,10 +37,10 @@ window.__sgPricingCallbacks = [];
       window.__sgPricing = {
         location: { currency: 'gbp', symbol: '£' },
         prices: {
-          day: { amount: 2.99, display: '£2.99', stripeAmount: 299 },
-          '3day': { amount: 7.99, display: '£7.99', stripeAmount: 799 },
-          weekly: { amount: 14.99, display: '£14.99', stripeAmount: 1499 },
-          monthly: { amount: 29.99, display: '£29.99', stripeAmount: 2999 },
+          day: { amount: 2.49, display: '£2.49', stripeAmount: 249 },
+          '3day': { amount: 5.99, display: '£5.99', stripeAmount: 599 },
+          weekly: { amount: 9.99, display: '£9.99', stripeAmount: 999 },
+          monthly: { amount: 24.99, display: '£24.99', stripeAmount: 2499 },
         },
         surge: { factor: 1, label: 'Normal' },
       };
@@ -65,7 +65,7 @@ function sgPrice(passType) {
     };
   }
   // Fallback defaults (GBP)
-  const defaults = { day: 2.99, '3day': 7.99, weekly: 14.99, monthly: 29.99 };
+  const defaults = { day: 2.49, '3day': 5.99, weekly: 9.99, monthly: 24.99 };
   const amt = defaults[passType] || 2.99;
   return { amount: amt, display: '£' + amt.toFixed(2), symbol: '£', currency: 'gbp', stripeAmount: Math.round(amt * 100) };
 }
@@ -1129,16 +1129,19 @@ function GymProfilePage(){
     .gym-qa-icon{font-size:16px}
     /* ═══ Uber-style pass cards ═══ */
     .gym-pass-header{color:#fff;font-size:18px;font-weight:800;text-align:center;padding:4px 0 8px;font-family:'Sora',sans-serif}
-    .gym-pass-cards{display:flex;flex-direction:column;gap:8px;margin-bottom:10px;padding-bottom:140px}
-    .gym-pass-card{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:14px;border:2px solid rgba(255,255,255,.08);background:transparent;cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent;position:relative}
-    .gym-pass-card.selected{border-color:#fff;background:rgba(255,255,255,.04)}
+    .gym-pass-cards{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;padding-bottom:140px}
+    .gym-pass-card{display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px;padding:12px 8px 10px;border-radius:14px;border:2px solid rgba(255,255,255,.08);background:transparent;cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent;position:relative}
+    .gym-pass-card.selected{border-color:#22c55e;background:rgba(34,197,94,.04)}
     .gym-pass-card:active{transform:scale(.98)}
-    .gym-pass-card-icon{width:52px;height:52px;border-radius:12px;background:linear-gradient(135deg,rgba(34,197,94,.15),rgba(34,197,94,.05));display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0}
+    .gym-pass-card-icon{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,rgba(34,197,94,.15),rgba(34,197,94,.05));display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+    .gym-pass-card-top{display:flex;align-items:center;gap:6px}
     .gym-pass-card-info{flex:1;min-width:0}
-    .gym-pass-card-name{color:#fff;font-size:16px;font-weight:700}
-    .gym-pass-card-sub{color:rgba(255,255,255,.4);font-size:12px;margin-top:1px}
-    .gym-pass-card-badge{display:inline-block;background:#3b82f6;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;margin-top:4px;letter-spacing:.3px}
-    .gym-pass-card .gym-pass-price{color:#fff;font-size:18px;font-weight:800;flex-shrink:0}
+    .gym-pass-card-name{color:#fff;font-size:13px;font-weight:700}
+    .gym-pass-card-sub{color:rgba(255,255,255,.4);font-size:10px;margin-top:1px}
+    .gym-pass-card-badge{display:inline-block;background:#22c55e;color:#fff;font-size:8px;font-weight:700;padding:2px 7px;border-radius:5px;position:absolute;top:-8px;left:50%;transform:translateX(-50%);white-space:nowrap;letter-spacing:.3px}
+    .gym-pass-card .gym-pass-price{color:#fff;font-size:20px;font-weight:900;margin:2px 0 1px}
+    .gym-pass-card .gym-pass-perday{color:rgba(255,255,255,.4);font-size:10px}
+    .gym-pass-card .gym-pass-save{font-size:9px;font-weight:700;color:#22c55e;background:rgba(34,197,94,.1);padding:2px 6px;border-radius:4px;margin-top:3px}
 
     /* ═══ Sticky bottom bar (Uber-style) ═══ */
     .gym-sticky-bar{position:absolute;bottom:0;left:0;right:0;z-index:50;background:#0a0f14;border-top:1px solid rgba(255,255,255,.08);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -1325,41 +1328,33 @@ function GymProfilePage(){
         <div class="gym-qa-btn" onclick="openGymOverlay('hours')"><span class="gym-qa-icon">🕐</span> Hours</div>
       </div>
 
-      <!-- ═══ Uber-style "Choose a pass" cards ═══ -->
+      <!-- ═══ 2×2 Grid "Choose a pass" cards (Kotler pricing) ═══ -->
       <div class="gym-pass-header">Choose a pass</div>
       <div class="gym-pass-cards" id="gym-pass-cards">
         <div class="gym-pass-card selected" onclick="selectGymPassCard(this,0,'${gymId}')" data-pass="day">
-          <div class="gym-pass-card-icon">⚡</div>
-          <div class="gym-pass-card-info">
-            <div class="gym-pass-card-name">Day Pass</div>
-            <div class="gym-pass-card-sub">24h access · Any time</div>
-            <div class="gym-pass-card-badge">⚡ Most popular</div>
-          </div>
+          <div class="gym-pass-card-badge">⚡ MOST POPULAR</div>
+          <div class="gym-pass-card-top"><div class="gym-pass-card-icon">⚡</div><span class="gym-pass-card-name">Day Pass</span></div>
           <div class="gym-pass-price">${currentPrice}</div>
+          <div class="gym-pass-perday">24h access</div>
         </div>
         <div class="gym-pass-card" onclick="selectGymPassCard(this,1,'${gymId}')" data-pass="3day">
-          <div class="gym-pass-card-icon">🔥</div>
-          <div class="gym-pass-card-info">
-            <div class="gym-pass-card-name">3-Day Pass</div>
-            <div class="gym-pass-card-sub">3 consecutive days · Save 8%</div>
-          </div>
+          <div class="gym-pass-card-top"><div class="gym-pass-card-icon">🔥</div><span class="gym-pass-card-name">3-Day Pass</span></div>
           <div class="gym-pass-price">${threeDayPrice}</div>
+          <div class="gym-pass-perday">${sgSymbol()}${(sgPrice('3day').amount/3).toFixed(2)}/day</div>
+          <div class="gym-pass-save">Save 20%</div>
         </div>
         <div class="gym-pass-card" onclick="selectGymPassCard(this,2,'${gymId}')" data-pass="weekly">
-          <div class="gym-pass-card-icon">💪</div>
-          <div class="gym-pass-card-info">
-            <div class="gym-pass-card-name">Weekly Pass</div>
-            <div class="gym-pass-card-sub">7 days unlimited · Save 28%</div>
-          </div>
+          <div class="gym-pass-card-top"><div class="gym-pass-card-icon">📅</div><span class="gym-pass-card-name">Weekly</span></div>
           <div class="gym-pass-price">${weeklyPrice}</div>
+          <div class="gym-pass-perday">${sgSymbol()}${(sgPrice('weekly').amount/7).toFixed(2)}/day</div>
+          <div class="gym-pass-save">Save 43%</div>
         </div>
         <div class="gym-pass-card" onclick="selectGymPassCard(this,3,'${gymId}')" data-pass="monthly">
-          <div class="gym-pass-card-icon" style="background:linear-gradient(135deg,rgba(139,92,246,.15),rgba(139,92,246,.05))">👑</div>
-          <div class="gym-pass-card-info">
-            <div class="gym-pass-card-name">Monthly Pass</div>
-            <div class="gym-pass-card-sub">30 days · Best value</div>
-          </div>
+          <div class="gym-pass-card-badge" style="background:#f59e0b">👑 BEST VALUE</div>
+          <div class="gym-pass-card-top"><div class="gym-pass-card-icon">🏆</div><span class="gym-pass-card-name">Monthly</span></div>
           <div class="gym-pass-price">${sgPrice('monthly').display}</div>
+          <div class="gym-pass-perday">${sgSymbol()}${(sgPrice('monthly').amount/30).toFixed(2)}/day</div>
+          <div class="gym-pass-save">Save 67%</div>
         </div>
       </div>
 
@@ -1424,8 +1419,36 @@ function GymProfilePage(){
               <span style="color:#fff;font-size:12px;font-weight:800">VISA</span>
             </div>
             <div>
-              <div class="gym-pay-option-label">•••• 4242</div>
-              <div class="gym-pay-option-sub">Visa debit</div>
+              <div class="gym-pay-option-label">Credit / Debit Card</div>
+              <div class="gym-pay-option-sub">Visa, Mastercard, Amex</div>
+            </div>
+            <div class="gym-pay-option-check"></div>
+          </div>
+          <div class="gym-pay-option" onclick="selectPayMethod(this,'paypal')" data-method="paypal">
+            <div class="gym-pay-option-icon" style="background:#003087;border-radius:10px">
+              <span style="color:#fff;font-size:11px;font-weight:800">P</span>
+            </div>
+            <div>
+              <div class="gym-pay-option-label">PayPal</div>
+            </div>
+            <div class="gym-pay-option-check"></div>
+          </div>
+          <div class="gym-pay-option" onclick="selectPayMethod(this,'klarna')" data-method="klarna">
+            <div class="gym-pay-option-icon" style="background:#FFB3C7;border-radius:10px">
+              <span style="color:#0A0B09;font-size:10px;font-weight:900">K.</span>
+            </div>
+            <div>
+              <div class="gym-pay-option-label">Klarna</div>
+              <div class="gym-pay-option-sub">Pay later · 3 instalments</div>
+            </div>
+            <div class="gym-pay-option-check"></div>
+          </div>
+          <div class="gym-pay-option" onclick="selectPayMethod(this,'amazon_pay')" data-method="amazon_pay">
+            <div class="gym-pay-option-icon" style="background:#FF9900;border-radius:10px">
+              <span style="color:#232F3E;font-size:11px;font-weight:800">a</span>
+            </div>
+            <div>
+              <div class="gym-pay-option-label">Amazon Pay</div>
             </div>
             <div class="gym-pay-option-check"></div>
           </div>
@@ -1861,7 +1884,16 @@ window.selectPayMethod=function(el,method){
     if(labelEl)labelEl.textContent='Google Pay';
   }else if(method==='card'){
     if(iconEl){iconEl.className='gym-sticky-pay-icon visa';iconEl.innerHTML='<span style="color:#fff;font-size:10px;font-weight:800">VISA</span>';}
-    if(labelEl)labelEl.textContent='•••• 4242';
+    if(labelEl)labelEl.textContent='Credit / Debit Card';
+  }else if(method==='paypal'){
+    if(iconEl){iconEl.className='gym-sticky-pay-icon';iconEl.style.background='#003087';iconEl.innerHTML='<span style="color:#fff;font-size:11px;font-weight:800">P</span>';}
+    if(labelEl)labelEl.textContent='PayPal';
+  }else if(method==='klarna'){
+    if(iconEl){iconEl.className='gym-sticky-pay-icon';iconEl.style.background='#FFB3C7';iconEl.innerHTML='<span style="color:#0A0B09;font-size:10px;font-weight:900">K.</span>';}
+    if(labelEl)labelEl.textContent='Klarna';
+  }else if(method==='amazon_pay'){
+    if(iconEl){iconEl.className='gym-sticky-pay-icon';iconEl.style.background='#FF9900';iconEl.innerHTML='<span style="color:#232F3E;font-size:11px;font-weight:800">a</span>';}
+    if(labelEl)labelEl.textContent='Amazon Pay';
   }else if(method==='cash'){
     if(iconEl){iconEl.className='gym-sticky-pay-icon cash';iconEl.innerHTML='💷';}
     if(labelEl)labelEl.textContent='Cash at Gym';
@@ -4011,9 +4043,19 @@ async function _initUberPaymentNew(gymId, gym){
   }
 
   // Load Stripe Elements for card payment (DEFERRED — no PaymentIntent yet)
+  // FIX: Await Stripe.js load before checking — prevents "Loading payment system..." infinite loop
+  stripeArea.innerHTML='<div class="ub-stripe-wrap"><p style="color:rgba(255,255,255,.35);font-size:12px;text-align:center">Loading payment system…</p></div>';
+  try{
+    await ensureStripeLoaded();
+  }catch(e){
+    console.warn('Stripe load error:',e);
+    stripeArea.innerHTML='<div class="ub-stripe-wrap"><p style="color:#f87171;font-size:13px;text-align:center">Could not load payment system. Tap to retry.</p></div>';
+    stripeArea.style.cursor='pointer';
+    stripeArea.onclick=()=>{stripeArea.onclick=null;_initUberPaymentNew(gymId,gym);};
+    return;
+  }
   if(!STRIPE_PK||!window.Stripe){
-    stripeArea.innerHTML='<div class="ub-stripe-wrap"><p style="color:rgba(255,255,255,.35);font-size:12px;text-align:center">Loading payment system…</p></div>';
-    setTimeout(()=>_initUberPaymentNew(gymId,gym),1000);
+    stripeArea.innerHTML='<div class="ub-stripe-wrap"><p style="color:#f87171;font-size:13px;text-align:center">Payment configuration missing. Please refresh.</p></div>';
     return;
   }
 

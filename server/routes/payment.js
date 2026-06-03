@@ -176,7 +176,7 @@ router.post('/checkout', async (req, res) => {
 
     // Create Stripe Checkout Session with localized currency
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
+      payment_method_types: ['card', 'paypal', 'klarna', 'amazon_pay'],
       mode: 'payment',
       line_items: [{
         price_data: {
@@ -364,7 +364,7 @@ router.get('/resume', async (req, res) => {
     const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
 
     const sessionConfig = {
-      payment_method_types: ['card'],
+      payment_method_types: ['card', 'paypal', 'klarna', 'amazon_pay'],
       mode: 'payment',
       line_items: [{ price_data: { currency: pricing.resolveCurrency(getGeoFromRequest(req)).currency, product_data: { name: `ScanGym Session — ${booking.gym_name || 'Gym'}`, description: `${booking.start_time} - ${booking.end_time} on ${new Date(booking.booking_date).toLocaleDateString('en-GB')}` }, unit_amount: amount }, quantity: 1 }],
       metadata: { bookingId: String(booking.id), guest: isGuest ? 'true' : 'false' },
@@ -422,7 +422,7 @@ router.post('/guest-checkout', async (req, res) => {
     const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
 
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
+      payment_method_types: ['card', 'paypal', 'klarna', 'amazon_pay'],
       mode: 'payment',
       customer_email: email || booking.user_email,
       line_items: [{
@@ -482,7 +482,7 @@ router.post('/create-intent', async (req, res) => {
       currency: pricing.resolveCurrency(getGeoFromRequest(req)).currency,
       metadata: { bookingId: String(booking.id), gymName: booking.gym_name || '' },
       receipt_email: email || booking.user_email || undefined,
-      payment_method_types: ['card', 'amazon_pay', 'revolut_pay'],
+      automatic_payment_methods: { enabled: true },
     });
 
     // Store payment intent ID on booking

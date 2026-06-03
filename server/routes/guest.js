@@ -91,21 +91,26 @@ router.get('/gyms', async (req, res) => {
 router.get('/gym/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const gym = await pool.query('SELECT * FROM gyms WHERE id = $1', [parseInt(id)]);
+    // Support both numeric DB IDs and Google Place IDs (e.g. "ChIJ...")
+    const isPlaceId = isNaN(parseInt(id));
+    const gym = isPlaceId
+      ? await pool.query('SELECT * FROM gyms WHERE place_id = $1', [id])
+      : await pool.query('SELECT * FROM gyms WHERE id = $1', [parseInt(id)]);
     if (gym.rows.length === 0) {
       return res.status(404).json({ error: 'Gym not found' });
     }
 
+    const dbId = gym.rows[0].id;
     const reviewStats = await pool.query(`
       SELECT COUNT(*) as total, COALESCE(AVG(rating), 0) as avg_rating
       FROM reviews WHERE gym_id = $1
-    `, [parseInt(id)]);
+    `, [dbId]);
 
     const latestReviews = await pool.query(`
       SELECT rating, comment, created_at
       FROM reviews WHERE gym_id = $1
       ORDER BY created_at DESC LIMIT 3
-    `, [parseInt(id)]);
+    `, [dbId]);
 
     const g = gym.rows[0];
     res.json({
