@@ -18,7 +18,25 @@ window.sgToast=function(msg, type='error', duration=4000){
   setTimeout(()=>{toast.style.animation='toastOut .3s ease-in forwards';setTimeout(()=>toast.remove(),300)},duration);
 };
 // Load Stripe.js for inline payment (Fix #5)
-(function(){const s=document.createElement('script');s.src='https://js.stripe.com/v3/';s.async=true;document.head.appendChild(s)})();
+// Lazy-load Stripe.js only when needed (saves ~40KB on initial load)
+let _stripeLoadPromise=null;
+function ensureStripeLoaded(){
+  if(window.Stripe)return Promise.resolve();
+  if(_stripeLoadPromise)return _stripeLoadPromise;
+  _stripeLoadPromise=new Promise((resolve,reject)=>{
+    const s=document.createElement('script');
+    s.src='https://js.stripe.com/v3/';
+    s.async=true;
+    s.onload=resolve;
+    s.onerror=reject;
+    document.head.appendChild(s);
+  });
+  return _stripeLoadPromise;
+}
+// Preconnect to Stripe immediately (DNS+TCP+TLS while page loads)
+if(!document.querySelector('link[href*="js.stripe.com"]')){
+  const l=document.createElement('link');l.rel='preconnect';l.href='https://js.stripe.com';l.crossOrigin='anonymous';document.head.appendChild(l);
+}
 const API='/api/v2';
 // UTM helper for creator links
 function addUTM(url,src,med,camp){const u=new URL(url,location.origin);u.searchParams.set('utm_source',src);u.searchParams.set('utm_medium',med);u.searchParams.set('utm_campaign',camp);return u.toString();}
@@ -226,7 +244,7 @@ window.openPhotoViewer=function(idx){
     const p=photos[current];
     overlay.innerHTML='<button onclick="document.getElementById(\'photo-viewer-overlay\').remove()" class="absolute top-4 right-4 text-white text-2xl z-10 w-10 h-10 flex items-center justify-center bg-black/40 rounded-full hover:bg-black/60">✕</button>'
       +'<button onclick="viewerNav(-1)" class="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/40 hover:bg-black/60 text-white rounded-full flex items-center justify-center text-xl z-10">‹</button>'
-      +'<img src="'+(p.url||p.thumbnail||p)+'" class="max-w-full max-h-[85vh] object-contain rounded-lg" />'
+      +'<img src="'+(p.url||p.thumbnail||p)+'" class="max-w-full max-h-[85vh] object-contain rounded-lg" decoding="async" />'
       +'<button onclick="viewerNav(1)" class="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/40 hover:bg-black/60 text-white rounded-full flex items-center justify-center text-xl z-10">›</button>'
       +'<div class="absolute bottom-4 left-1/2 -translate-x-1/2 text-white text-sm bg-black/50 px-3 py-1 rounded-full">'+(current+1)+' / '+photos.length+'</div>';
   }
@@ -621,7 +639,7 @@ function GymCard(gym){
   const allPhotos=photos.length>1?photos.slice(0,5).map(p=>p.thumbnail||p.url||photo):[photo];
   const carouselHTML=hasPhoto&&allPhotos.length>1?`
     <div class="gym-carousel relative w-full h-full overflow-hidden">
-      ${allPhotos.map((p,i)=>`<img src="${p}" alt="${gym.name}" class="carousel-img absolute inset-0 w-full h-full object-cover transition-transform duration-300" style="transform:translateX(${i*100}%)" loading="lazy" onerror="this.style.display='none'">`).join('')}
+      ${allPhotos.map((p,i)=>`<img src="${p}" alt="${gym.name}" class="carousel-img absolute inset-0 w-full h-full object-cover transition-transform duration-300" style="transform:translateX(${i*100}%)" loading="lazy" decoding="async" onerror="this.style.display='none'">`).join('')}
       <button class="carousel-prev absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 bg-white/80 rounded-full text-black text-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition z-10">‹</button>
       <button class="carousel-next absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 bg-white/80 rounded-full text-black text-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition z-10">›</button>
       <div class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 z-10">${allPhotos.map((p,i)=>`<span class="carousel-dot w-2 h-2 rounded-full ${i===0?'bg-white':'bg-white/40'}"></span>`).join('')}</div>
@@ -1134,7 +1152,7 @@ function GymProfilePage(){
     <div class="gym-carousel-wrap${photos.length>1?' has-next':''}" id="gym-carousel-wrap">
       <div class="gym-carousel-track" id="gym-carousel-track">
         ${photos.length>0
-          ?photos.slice(0,4).map((p,i)=>`<div class="gym-carousel-slide"><img src="${p.url||p.thumbnail||p}" alt="${gym.name} photo ${i+1}" onerror="this.parentElement.innerHTML='<div class=\\'no-photo\\'>🏋️</div>'"></div>`).join('')
+          ?photos.slice(0,4).map((p,i)=>`<div class="gym-carousel-slide"><img src="${p.url||p.thumbnail||p}" alt="${gym.name} photo ${i+1}" loading="lazy" decoding="async" onerror="this.parentElement.innerHTML='<div class=\\'no-photo\\'>🏋️</div>'"></div>`).join('')
           :`<div class="gym-carousel-slide"><div class="no-photo">🏋️</div></div>`
         }
       </div>
@@ -3352,7 +3370,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
 
       <!-- Map / Hero -->
       <div class="ub-map">
-        ${gymPhoto?`<img class="ub-map-img" src="${gymPhoto}" alt="${gymName}" onerror="this.style.display='none'">`
+        ${gymPhoto?`<img class="ub-map-img" src="${gymPhoto}" alt="${gymName}" loading="lazy" decoding="async" onerror="this.style.display='none'">`
           :`<div style="width:100%;height:100%;background:linear-gradient(135deg,#111827,#1e293b)"></div>`}
         <div class="ub-map-pin">📍</div>
         <div class="ub-map-label">
@@ -4023,6 +4041,7 @@ async function _initUberPaymentNew(gymId, gym){
     }
     cs.dbGymId=dbGymId;
 
+    await ensureStripeLoaded();
     const stripeInstance=window.Stripe(STRIPE_PK);
     cs.stripe=stripeInstance;
 
@@ -4429,7 +4448,7 @@ function MyBookingsPage(){
             <div class="mt-4 pt-4 border-t border-slate-700">
               <div class="flex items-center gap-4">
                 <div class="bg-white rounded-xl p-3 flex-shrink-0">
-                  <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(b.qr.token)}" alt="QR Code" class="w-24 h-24">
+                  <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(b.qr.token)}" alt="QR Code" class="w-24 h-24" loading="lazy" decoding="async" width="120" height="120">
                 </div>
                 <div>
                   <p class="text-white font-semibold text-sm">Show this at reception</p>

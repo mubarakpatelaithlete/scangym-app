@@ -9,10 +9,19 @@
 <!-- Preconnect to critical origins (eliminate DNS+TCP+TLS latency) -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://js.stripe.com" crossorigin>
+<link rel="preconnect" href="https://maps.googleapis.com">
+<link rel="preconnect" href="https://maps.gstatic.com" crossorigin>
 
-<!-- Preload critical resources (browser fetches immediately) -->
+<!-- DNS prefetch for secondary domains (resolve DNS in parallel) -->
+<link rel="dns-prefetch" href="https://api.stripe.com">
+<link rel="dns-prefetch" href="https://lh3.googleusercontent.com">
+<link rel="dns-prefetch" href="https://streetviewpixels-pa.googleapis.com">
+<link rel="dns-prefetch" href="https://places.googleapis.com">
+
+<!-- Preload critical resources (browser fetches immediately, high priority) -->
 <link rel="preload" href="/styles.css" as="style">
-<link rel="preload" href="/app.ctr575.js" as="script">
+<link rel="preload" href="/app.ctr575.js" as="script" fetchpriority="high">
 
 <!-- Pre-compiled Tailwind CSS (replaces CDN runtime — 5KB gzip vs 100KB JS) -->
 <link rel="stylesheet" href="/styles.css">
