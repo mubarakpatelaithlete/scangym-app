@@ -1,6 +1,6 @@
 // ScanGym Service Worker v3.0 — App Shell + Stale-While-Revalidate
 // Instant first paint on repeat visits via cached shell + background refresh
-const CACHE_NAME = 'scangym-v3';
+const CACHE_NAME = 'scangym-v4';
 const APP_SHELL = [
   '/',
   '/styles.css',
