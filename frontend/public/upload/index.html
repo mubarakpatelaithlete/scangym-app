@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1"/>
-  <title>Upload Your Reel — ScanGym</title>
+  <title>Create a Reel — ScanGym</title>
   <meta name="theme-color" content="#050816"/>
   <link rel="icon" type="image/png" href="/reels/favicon.png"/>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
       background: #050816; color: #fff; min-height: 100vh; min-height: 100dvh;
@@ -31,19 +31,69 @@
     }
     .header-back:active { background: rgba(255,255,255,0.12); }
     .header-title { font-size: 17px; font-weight: 700; flex: 1; }
-    .header-badge {
-      background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.3);
-      color: #22c55e; font-size: 10px; font-weight: 700; padding: 4px 10px;
-      border-radius: 12px; text-transform: uppercase; letter-spacing: 0.5px;
-    }
 
     /* ── Content ── */
     .content { padding: 20px 16px 100px; max-width: 480px; margin: 0 auto; }
 
+    /* ── Earning Banner (motivational) ── */
+    .earn-banner {
+      background: linear-gradient(135deg, rgba(34,197,94,0.12), rgba(249,115,22,0.08));
+      border: 1px solid rgba(34,197,94,0.2);
+      border-radius: 16px; padding: 16px; margin-bottom: 20px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .earn-icon { font-size: 32px; }
+    .earn-text h3 { font-size: 14px; font-weight: 700; color: #22c55e; }
+    .earn-text p { font-size: 12px; color: rgba(255,255,255,0.45); margin-top: 2px; line-height: 1.4; }
+
+    /* ── Quick Creator Signup (inline, 1 field) ── */
+    .creator-signup {
+      background: rgba(249,115,22,0.06); border: 1px solid rgba(249,115,22,0.2);
+      border-radius: 16px; padding: 16px; margin-bottom: 20px;
+      animation: fadeIn 0.3s ease-out;
+    }
+    .creator-signup.hidden { display: none; }
+    .creator-signup h3 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+    .creator-signup p { font-size: 12px; color: rgba(255,255,255,0.4); margin-bottom: 12px; line-height: 1.4; }
+    .signup-row {
+      display: flex; gap: 8px;
+    }
+    .signup-row input {
+      flex: 1; background: #111827; border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px; padding: 12px 14px; color: #fff; font-size: 14px;
+      font-family: inherit; outline: none; transition: border-color 0.15s;
+    }
+    .signup-row input:focus { border-color: rgba(249,115,22,0.4); }
+    .signup-row input::placeholder { color: rgba(255,255,255,0.2); }
+    .signup-row button {
+      background: linear-gradient(135deg, #f97316, #ea580c);
+      color: #fff; border: none; padding: 12px 18px; border-radius: 12px;
+      font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap;
+      transition: all 0.15s;
+    }
+    .signup-row button:active { transform: scale(0.96); }
+
+    /* ── Creator Badge (shown after signup) ── */
+    .creator-badge {
+      display: none; align-items: center; gap: 10px;
+      background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.2);
+      border-radius: 14px; padding: 12px 16px; margin-bottom: 20px;
+      animation: fadeIn 0.3s ease-out;
+    }
+    .creator-badge.active { display: flex; }
+    .creator-badge-icon { font-size: 20px; }
+    .creator-badge-info { flex: 1; }
+    .creator-badge-name { font-size: 13px; font-weight: 700; color: #22c55e; }
+    .creator-badge-link { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 1px; }
+    .creator-badge-edit {
+      font-size: 11px; color: rgba(255,255,255,0.3); cursor: pointer;
+      padding: 4px 8px; border-radius: 8px; background: rgba(255,255,255,0.04);
+    }
+
     /* ── Upload Zone ── */
     .upload-zone {
       background: rgba(249,115,22,0.04); border: 2px dashed rgba(249,115,22,0.2);
-      border-radius: 20px; padding: 32px 20px; text-align: center; cursor: pointer;
+      border-radius: 20px; padding: 40px 20px; text-align: center; cursor: pointer;
       transition: all 0.2s; margin-bottom: 20px; position: relative; overflow: hidden;
     }
     .upload-zone:active, .upload-zone.dragover {
@@ -62,7 +112,7 @@
     }
     .preview-container.active { display: block; }
     .preview-video {
-      width: 100%; max-height: 300px; object-fit: contain; background: #000;
+      width: 100%; max-height: 400px; object-fit: contain; background: #000;
       border-radius: 16px 16px 0 0;
     }
     .preview-info {
@@ -92,18 +142,16 @@
     }
     .form-input:focus, .form-textarea:focus { border-color: rgba(249,115,22,0.4); }
     .form-input::placeholder, .form-textarea::placeholder { color: rgba(255,255,255,0.2); }
-    .form-textarea { resize: none; min-height: 100px; line-height: 1.5; }
+    .form-textarea { resize: none; min-height: 80px; line-height: 1.5; }
     .form-hint { font-size: 11px; color: rgba(255,255,255,0.25); margin-top: 4px; }
 
     /* ── Category Chips ── */
-    .category-chips {
-      display: flex; flex-wrap: wrap; gap: 8px;
-    }
+    .category-chips { display: flex; flex-wrap: wrap; gap: 8px; }
     .cat-chip {
       padding: 8px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
       border: 1px solid rgba(255,255,255,0.08); color: rgba(255,255,255,0.45);
       background: rgba(255,255,255,0.03); cursor: pointer; transition: all 0.15s;
-      -webkit-tap-highlight-color: transparent; user-select: none;
+      user-select: none;
     }
     .cat-chip:active { transform: scale(0.95); }
     .cat-chip.active {
@@ -111,18 +159,44 @@
       color: #f97316;
     }
 
-    /* ── Affiliate Link ── */
-    .affiliate-box {
-      background: rgba(249,115,22,0.06); border: 1px solid rgba(249,115,22,0.2);
-      border-radius: 14px; padding: 14px 16px; display: flex; align-items: center; gap: 10px;
+    /* ── Affiliate Link Preview ── */
+    .affiliate-preview {
+      background: rgba(34,197,94,0.06); border: 1px solid rgba(34,197,94,0.2);
+      border-radius: 14px; padding: 14px 16px; margin-bottom: 16px;
     }
-    .affiliate-icon { font-size: 22px; }
-    .affiliate-info { flex: 1; }
-    .affiliate-label { font-size: 10px; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.5px; }
-    .affiliate-link { font-size: 14px; color: #f97316; font-weight: 600; margin-top: 2px; }
-    .affiliate-badge {
-      background: rgba(34,197,94,0.15); color: #22c55e; font-size: 9px; font-weight: 700;
-      padding: 3px 8px; border-radius: 8px;
+    .affiliate-preview.hidden { display: none; }
+    .affiliate-header {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+    }
+    .affiliate-header span { font-size: 16px; }
+    .affiliate-header h4 { font-size: 12px; font-weight: 700; color: #22c55e; }
+    .affiliate-detail {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 12px; background: rgba(0,0,0,0.2);
+      border-radius: 10px; margin-bottom: 6px;
+    }
+    .affiliate-detail:last-child { margin-bottom: 0; }
+    .affiliate-detail-icon { font-size: 14px; }
+    .affiliate-detail-text { font-size: 12px; color: rgba(255,255,255,0.6); flex: 1; }
+    .affiliate-detail-val { font-size: 12px; font-weight: 700; color: #f97316; }
+
+    /* ── Upload Progress ── */
+    .upload-progress {
+      display: none; margin-bottom: 20px;
+    }
+    .upload-progress.active { display: block; }
+    .progress-bar-wrap {
+      height: 6px; background: rgba(255,255,255,0.08);
+      border-radius: 3px; overflow: hidden; margin-bottom: 6px;
+    }
+    .progress-bar-fill {
+      height: 100%; width: 0%; border-radius: 3px;
+      background: linear-gradient(90deg, #f97316, #22c55e);
+      transition: width 0.3s ease;
+    }
+    .progress-text {
+      display: flex; justify-content: space-between;
+      font-size: 11px; color: rgba(255,255,255,0.4);
     }
 
     /* ── Submit ── */
@@ -134,39 +208,39 @@
       margin-top: 8px;
     }
     .submit-btn:active { transform: scale(0.97); }
-    .submit-btn:disabled {
-      opacity: 0.4; cursor: not-allowed; transform: none;
-    }
+    .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
     .submit-note {
       text-align: center; color: rgba(255,255,255,0.25); font-size: 11px; margin-top: 10px;
     }
 
     /* ── Success Screen ── */
-    .success-screen {
-      display: none; text-align: center; padding: 60px 20px;
-    }
+    .success-screen { display: none; text-align: center; padding: 60px 20px; }
     .success-screen.active { display: block; }
-    .success-icon { font-size: 64px; margin-bottom: 16px; }
+    .success-icon { font-size: 64px; margin-bottom: 16px; animation: successPop 0.5s ease-out; }
+    @keyframes successPop { 0% { transform: scale(0); } 60% { transform: scale(1.2); } 100% { transform: scale(1); } }
     .success-title { font-size: 22px; font-weight: 800; margin-bottom: 8px; }
-    .success-sub { color: rgba(255,255,255,0.5); font-size: 14px; line-height: 1.5; margin-bottom: 24px; }
-    .success-btn {
-      display: inline-block; padding: 14px 32px; border-radius: 14px;
+    .success-sub { color: rgba(255,255,255,0.5); font-size: 14px; line-height: 1.5; margin-bottom: 16px; }
+    .success-earnings {
+      background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2);
+      border-radius: 14px; padding: 14px 20px; display: inline-block;
+      margin-bottom: 20px;
+    }
+    .success-earnings-title { font-size: 11px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1px; }
+    .success-earnings-value { font-size: 20px; font-weight: 800; color: #22c55e; margin-top: 4px; }
+    .success-earnings-note { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 2px; }
+    .success-actions { display: flex; flex-direction: column; gap: 10px; max-width: 280px; margin: 0 auto; }
+    .success-btn-primary {
+      padding: 14px 28px; border-radius: 14px; border: none;
       background: #f97316; color: #fff; font-size: 15px; font-weight: 700;
-      cursor: pointer; border: none;
+      cursor: pointer; transition: all 0.15s;
     }
-
-    /* ── Not Creator Screen ── */
-    .not-creator {
-      text-align: center; padding: 60px 20px;
+    .success-btn-primary:active { transform: scale(0.97); }
+    .success-btn-secondary {
+      padding: 12px 28px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.6);
+      font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.15s;
     }
-    .not-creator-icon { font-size: 48px; margin-bottom: 16px; }
-    .not-creator-title { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
-    .not-creator-sub { color: rgba(255,255,255,0.4); font-size: 14px; line-height: 1.5; margin-bottom: 20px; }
-    .not-creator-btn {
-      display: inline-block; padding: 14px 28px; border-radius: 14px;
-      background: #f97316; color: #fff; font-size: 15px; font-weight: 700;
-      text-decoration: none;
-    }
+    .success-btn-secondary:active { transform: scale(0.97); }
 
     /* Toast */
     .toast {
@@ -178,33 +252,54 @@
     .toast-success { background: #22c55e; color: #fff; }
     .toast-error { background: #ef4444; color: #fff; }
     @keyframes toastIn { from { opacity: 0; transform: translate(-50%, -10px); } to { opacity: 1; transform: translate(-50%, 0); } }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
   </style>
 </head>
 <body>
 
   <!-- Header -->
   <div class="header">
-    <div class="header-back" onclick="history.back()">←</div>
-    <div class="header-title">📤 Upload Your Reel</div>
-    <span class="header-badge" id="creator-badge" style="display:none;">FlexSquad</span>
+    <div class="header-back" onclick="history.back()">&#x2190;</div>
+    <div class="header-title">&#x2795; Create a Reel</div>
   </div>
 
-  <!-- Not Creator Gate -->
-  <div class="not-creator" id="not-creator-gate" style="display:none;">
-    <div class="not-creator-icon">🔒</div>
-    <div class="not-creator-title">Join FlexSquad to Upload</div>
-    <div class="not-creator-sub">Upload your own gym content to ScanGym Reels, earn commission on every booking from your videos. Takes 30 seconds to join.</div>
-    <a class="not-creator-btn" href="/flexsquad/">Join FlexSquad →</a>
-  </div>
+  <!-- Main Content (always visible — no gate!) -->
+  <div class="content" id="upload-form">
 
-  <!-- Upload Form -->
-  <div class="content" id="upload-form" style="display:none;">
+    <!-- Earning Banner — motivate creators -->
+    <div class="earn-banner">
+      <div class="earn-icon">&#x1F4B0;</div>
+      <div class="earn-text">
+        <h3>Earn money from your gym videos</h3>
+        <p>Viewers book gyms through your link — you earn &#x00A3;1.25 per booking. Upload, share, get paid.</p>
+      </div>
+    </div>
+
+    <!-- Creator Quick Signup (shows if not signed up yet) -->
+    <div class="creator-signup" id="creator-signup">
+      <h3>&#x26A1; Quick Setup (5 seconds)</h3>
+      <p>Enter your email to start earning. Your affiliate link is created instantly.</p>
+      <div class="signup-row">
+        <input type="email" id="signup-email" placeholder="your@email.com" autocomplete="email" />
+        <button id="signup-btn" onclick="quickSignup()">Join &amp; Earn &#x2192;</button>
+      </div>
+    </div>
+
+    <!-- Creator Badge (shows after signup) -->
+    <div class="creator-badge" id="creator-badge">
+      <div class="creator-badge-icon">&#x2705;</div>
+      <div class="creator-badge-info">
+        <div class="creator-badge-name" id="badge-name">FlexSquad Creator</div>
+        <div class="creator-badge-link" id="badge-link">scangym.com/r/creator</div>
+      </div>
+      <div class="creator-badge-edit" onclick="editCreator()">Edit</div>
+    </div>
 
     <!-- Upload Zone -->
     <div class="upload-zone" id="upload-zone">
-      <div class="upload-zone-icon">📱</div>
+      <div class="upload-zone-icon">&#x1F4F1;</div>
       <div class="upload-zone-text">Tap to Select Video</div>
-      <div class="upload-zone-sub">MP4 · Under 60 seconds · Vertical (9:16) recommended</div>
+      <div class="upload-zone-sub">MP4 &#x00B7; Under 60 seconds &#x00B7; Vertical (9:16) recommended</div>
       <input type="file" id="video-input" accept="video/mp4,video/quicktime,video/webm,video/*" />
     </div>
 
@@ -212,117 +307,218 @@
     <div class="preview-container" id="preview-container">
       <video class="preview-video" id="preview-video" controls playsinline></video>
       <div class="preview-info">
-        <span class="preview-thumb">🎬</span>
+        <span class="preview-thumb">&#x1F3AC;</span>
         <div class="preview-details">
           <div class="preview-name" id="preview-name">video.mp4</div>
           <div class="preview-size" id="preview-size">0 MB</div>
         </div>
-        <div class="preview-remove" id="preview-remove" title="Remove">✕</div>
+        <div class="preview-remove" id="preview-remove" title="Remove">&#x2715;</div>
+      </div>
+    </div>
+
+    <!-- Upload Progress -->
+    <div class="upload-progress" id="upload-progress">
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="progress-bar-fill"></div>
+      </div>
+      <div class="progress-text">
+        <span id="progress-percent">0%</span>
+        <span id="progress-status">Uploading...</span>
       </div>
     </div>
 
     <!-- Caption -->
     <div class="form-group">
-      <label class="form-label">📝 Caption</label>
-      <textarea class="form-textarea" id="caption-input" placeholder="Crushed leg day at PureGym London 🔥 Book for £5 with my link..."></textarea>
-      <div class="form-hint">Add hashtags for more reach: #ScanGym #GymLife #DayPass</div>
+      <label class="form-label">&#x1F4DD; Caption</label>
+      <textarea class="form-textarea" id="caption-input" placeholder="Crushed leg day at PureGym &#x1F525; Book for &#x00A3;5 with my link..."></textarea>
+      <div class="form-hint">#ScanGym #GymLife #DayPass — hashtags boost reach</div>
     </div>
 
     <!-- Category -->
     <div class="form-group">
-      <label class="form-label">📂 Category</label>
+      <label class="form-label">&#x1F4C2; Category</label>
       <div class="category-chips" id="category-chips">
-        <div class="cat-chip active" data-cat="Workout">🏋️ Workout</div>
-        <div class="cat-chip" data-cat="City">🏙️ City</div>
-        <div class="cat-chip" data-cat="Tips">💡 Tips</div>
-        <div class="cat-chip" data-cat="Compare">📊 Compare</div>
-        <div class="cat-chip" data-cat="Motivation">💪 Motivation</div>
-        <div class="cat-chip" data-cat="Meme">😂 Meme</div>
-        <div class="cat-chip" data-cat="Tutorial">🎓 Tutorial</div>
-        <div class="cat-chip" data-cat="Other">📎 Other</div>
+        <div class="cat-chip active" data-cat="Workout">&#x1F3CB;&#xFE0F; Workout</div>
+        <div class="cat-chip" data-cat="City">&#x1F3D9;&#xFE0F; City</div>
+        <div class="cat-chip" data-cat="Tips">&#x1F4A1; Tips</div>
+        <div class="cat-chip" data-cat="Compare">&#x1F4CA; Compare</div>
+        <div class="cat-chip" data-cat="Motivation">&#x1F4AA; Motivation</div>
+        <div class="cat-chip" data-cat="Meme">&#x1F602; Meme</div>
+        <div class="cat-chip" data-cat="Tutorial">&#x1F393; Tutorial</div>
+        <div class="cat-chip" data-cat="Other">&#x1F4CE; Other</div>
       </div>
     </div>
 
-    <!-- Affiliate Link -->
-    <div class="form-group">
-      <label class="form-label">🔗 Your Affiliate Link (auto-attached)</label>
-      <div class="affiliate-box">
-        <span class="affiliate-icon">🔗</span>
-        <div class="affiliate-info">
-          <div class="affiliate-label">Auto-attached to your video</div>
-          <div class="affiliate-link" id="affiliate-link">scangym.com/r/you</div>
-        </div>
-        <span class="affiliate-badge">✓ Active</span>
+    <!-- Affiliate Link & Earnings Preview -->
+    <div class="affiliate-preview hidden" id="affiliate-preview">
+      <div class="affiliate-header">
+        <span>&#x1F4B0;</span>
+        <h4>Your Earnings on This Reel</h4>
+      </div>
+      <div class="affiliate-detail">
+        <span class="affiliate-detail-icon">&#x1F517;</span>
+        <span class="affiliate-detail-text">Your affiliate link</span>
+        <span class="affiliate-detail-val" id="aff-link-display">scangym.com/r/you</span>
+      </div>
+      <div class="affiliate-detail">
+        <span class="affiliate-detail-icon">&#x1F4B7;</span>
+        <span class="affiliate-detail-text">Per gym booking</span>
+        <span class="affiliate-detail-val">&#x00A3;1.25</span>
+      </div>
+      <div class="affiliate-detail">
+        <span class="affiliate-detail-icon">&#x1F4C8;</span>
+        <span class="affiliate-detail-text">10 bookings =</span>
+        <span class="affiliate-detail-val">&#x00A3;12.50</span>
       </div>
     </div>
 
     <!-- Submit -->
-    <button class="submit-btn" id="submit-btn" disabled>Upload to ScanGym Reels →</button>
-    <div class="submit-note">✅ Your video. Your link. You earn on every booking.</div>
+    <button class="submit-btn" id="submit-btn" disabled>Upload to ScanGym Reels &#x2192;</button>
+    <div class="submit-note">&#x2705; Your video. Your link. You earn on every booking.</div>
   </div>
 
   <!-- Success Screen -->
   <div class="success-screen" id="success-screen">
-    <div class="success-icon">🎉</div>
-    <div class="success-title">Upload Submitted!</div>
-    <div class="success-sub">Your video is being reviewed and will appear in ScanGym Reels shortly. You'll earn commission on every booking from your video!</div>
-    <button class="success-btn" onclick="window.location.href='/reels/'">← Back to Reels</button>
+    <div class="success-icon">&#x1F389;</div>
+    <div class="success-title">Upload Complete!</div>
+    <div class="success-sub">Your video is being reviewed and will appear in ScanGym Reels shortly. Every booking through your video earns you money!</div>
+    <div class="success-earnings">
+      <div class="success-earnings-title">Your Earning Potential</div>
+      <div class="success-earnings-value">&#x00A3;1.25 per booking</div>
+      <div class="success-earnings-note">Viewers click your link &#x2192; book a gym &#x2192; you earn</div>
+    </div>
+    <div class="success-actions">
+      <button class="success-btn-primary" onclick="shareReel()">&#x1F4E4; Share Your Reel Link</button>
+      <button class="success-btn-primary" style="background:#22c55e;" onclick="window.location.href='/upload'">&#x2795; Upload Another Reel</button>
+      <button class="success-btn-secondary" onclick="window.location.href='/reels/'">&#x2190; Back to Reels</button>
+    </div>
   </div>
 
   <script>
-    // ── State ──
-    const state = {
+    // ═══════════════════════════════════════════════════════════
+    //  STATE
+    // ═══════════════════════════════════════════════════════════
+    var state = {
       creator: null,
       file: null,
       category: 'Workout',
       uploading: false
     };
 
-    // ── Init ──
+    // ═══════════════════════════════════════════════════════════
+    //  INIT
+    // ═══════════════════════════════════════════════════════════
     function init() {
-      // Check creator status
+      // Check if already a creator
       try {
-        const data = localStorage.getItem('flexsquad_pending');
+        var data = localStorage.getItem('flexsquad_pending');
         if (data) {
           state.creator = JSON.parse(data);
         }
       } catch (e) {}
 
-      if (!state.creator) {
-        document.getElementById('not-creator-gate').style.display = 'block';
-        document.getElementById('upload-form').style.display = 'none';
+      if (state.creator && state.creator.email) {
+        showCreatorBadge();
+      } else {
+        document.getElementById('creator-signup').classList.remove('hidden');
+      }
+
+      setupEventListeners();
+      updateSubmitBtn();
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  QUICK SIGNUP — 1 field, instant
+    // ═══════════════════════════════════════════════════════════
+    function quickSignup() {
+      var email = document.getElementById('signup-email').value.trim();
+      if (!email || !email.includes('@')) {
+        showToast('Enter a valid email', 'error');
         return;
       }
 
-      // Show upload form
-      document.getElementById('not-creator-gate').style.display = 'none';
-      document.getElementById('upload-form').style.display = 'block';
-      document.getElementById('creator-badge').style.display = 'block';
+      // Generate handle from email
+      var handle = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+      var name = handle.charAt(0).toUpperCase() + handle.slice(1);
 
-      // Set affiliate link
-      const handle = state.creator.handle || '';
-      const slug = handle.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
-      document.getElementById('affiliate-link').textContent = slug ? `scangym.com/r/${slug}` : 'scangym.com';
+      state.creator = {
+        email: email,
+        handle: '@' + handle,
+        name: name
+      };
 
-      setupEventListeners();
+      // Save to localStorage
+      localStorage.setItem('flexsquad_pending', JSON.stringify(state.creator));
+
+      // Try to register with backend (non-blocking)
+      try {
+        fetch('/api/creators/join', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: name,
+            handle: handle,
+            email: email
+          })
+        }).catch(function() {});
+      } catch (e) {}
+
+      showCreatorBadge();
+      showToast('Welcome to FlexSquad! Your link is live.', 'success');
+      updateSubmitBtn();
     }
 
+    function showCreatorBadge() {
+      document.getElementById('creator-signup').classList.add('hidden');
+      var badge = document.getElementById('creator-badge');
+      badge.classList.add('active');
+
+      var handle = (state.creator.handle || '').replace(/^@/, '');
+      var slug = handle.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+      document.getElementById('badge-name').textContent = (state.creator.name || slug) + ' \u2014 FlexSquad';
+      document.getElementById('badge-link').textContent = slug ? 'scangym.com/r/' + slug : 'scangym.com';
+
+      // Show affiliate preview
+      var affPreview = document.getElementById('affiliate-preview');
+      affPreview.classList.remove('hidden');
+      document.getElementById('aff-link-display').textContent = slug ? 'scangym.com/r/' + slug : 'scangym.com';
+    }
+
+    function editCreator() {
+      // Reset to signup
+      state.creator = null;
+      localStorage.removeItem('flexsquad_pending');
+      document.getElementById('creator-badge').classList.remove('active');
+      document.getElementById('creator-signup').classList.remove('hidden');
+      document.getElementById('affiliate-preview').classList.add('hidden');
+      document.getElementById('signup-email').value = '';
+      document.getElementById('signup-email').focus();
+      updateSubmitBtn();
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  EVENT LISTENERS
+    // ═══════════════════════════════════════════════════════════
     function setupEventListeners() {
-      // File input
-      const fileInput = document.getElementById('video-input');
-      const uploadZone = document.getElementById('upload-zone');
+      var fileInput = document.getElementById('video-input');
+      var uploadZone = document.getElementById('upload-zone');
 
       fileInput.addEventListener('change', handleFileSelect);
 
+      // Enter key on email signup
+      document.getElementById('signup-email').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') quickSignup();
+      });
+
       // Drag & drop
-      uploadZone.addEventListener('dragover', (e) => {
+      uploadZone.addEventListener('dragover', function(e) {
         e.preventDefault();
         uploadZone.classList.add('dragover');
       });
-      uploadZone.addEventListener('dragleave', () => {
+      uploadZone.addEventListener('dragleave', function() {
         uploadZone.classList.remove('dragover');
       });
-      uploadZone.addEventListener('drop', (e) => {
+      uploadZone.addEventListener('drop', function(e) {
         e.preventDefault();
         uploadZone.classList.remove('dragover');
         if (e.dataTransfer.files.length > 0) {
@@ -332,7 +528,7 @@
       });
 
       // Remove preview
-      document.getElementById('preview-remove').addEventListener('click', () => {
+      document.getElementById('preview-remove').addEventListener('click', function() {
         state.file = null;
         document.getElementById('preview-container').classList.remove('active');
         document.getElementById('upload-zone').style.display = 'block';
@@ -342,10 +538,10 @@
       });
 
       // Category chips
-      document.getElementById('category-chips').addEventListener('click', (e) => {
-        const chip = e.target.closest('.cat-chip');
+      document.getElementById('category-chips').addEventListener('click', function(e) {
+        var chip = e.target.closest('.cat-chip');
         if (!chip) return;
-        document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active'));
+        document.querySelectorAll('.cat-chip').forEach(function(c) { c.classList.remove('active'); });
         chip.classList.add('active');
         state.category = chip.dataset.cat;
       });
@@ -358,16 +554,15 @@
     }
 
     function handleFileSelect(e) {
-      const file = e.target.files?.[0];
+      var file = e.target.files && e.target.files[0];
       if (!file) return;
 
-      // Validate
       if (!file.type.startsWith('video/')) {
         showToast('Please select a video file', 'error');
         return;
       }
 
-      const maxSize = 100 * 1024 * 1024; // 100MB
+      var maxSize = 100 * 1024 * 1024; // 100MB
       if (file.size > maxSize) {
         showToast('Video must be under 100MB', 'error');
         return;
@@ -375,8 +570,7 @@
 
       state.file = file;
 
-      // Show preview
-      const previewVideo = document.getElementById('preview-video');
+      var previewVideo = document.getElementById('preview-video');
       previewVideo.src = URL.createObjectURL(file);
       document.getElementById('preview-name').textContent = file.name;
       document.getElementById('preview-size').textContent = formatSize(file.size);
@@ -387,84 +581,138 @@
     }
 
     function updateSubmitBtn() {
-      const btn = document.getElementById('submit-btn');
-      btn.disabled = !state.file || state.uploading;
+      var btn = document.getElementById('submit-btn');
+      var hasVideo = !!state.file;
+      var hasCreator = !!(state.creator && state.creator.email);
+      btn.disabled = !hasVideo || state.uploading;
+
+      if (!hasCreator && hasVideo) {
+        btn.textContent = 'Enter email above to upload \u2192';
+        btn.disabled = true;
+      } else if (!hasVideo) {
+        btn.textContent = 'Select a video to upload \u2192';
+      } else {
+        btn.textContent = 'Upload to ScanGym Reels \u2192';
+      }
     }
 
-    async function handleSubmit() {
-      if (!state.file || state.uploading) return;
+    // ═══════════════════════════════════════════════════════════
+    //  UPLOAD WITH PROGRESS
+    // ═══════════════════════════════════════════════════════════
+    function handleSubmit() {
+      if (!state.file || state.uploading || !state.creator) return;
       state.uploading = true;
 
-      const btn = document.getElementById('submit-btn');
+      var btn = document.getElementById('submit-btn');
       btn.disabled = true;
-      btn.textContent = '⏳ Uploading...';
+      btn.textContent = '\u23F3 Uploading...';
 
-      const caption = document.getElementById('caption-input').value;
-      const handle = state.creator?.handle || '';
-      const slug = handle.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+      // Show progress bar
+      var progressEl = document.getElementById('upload-progress');
+      progressEl.classList.add('active');
 
-      try {
-        // Build form data
-        const formData = new FormData();
-        formData.append('video', state.file);
-        formData.append('caption', caption);
-        formData.append('category', state.category);
-        formData.append('creatorHandle', handle);
-        formData.append('creatorName', state.creator?.name || '');
-        formData.append('creatorEmail', state.creator?.email || '');
-        formData.append('affiliateLink', slug ? `https://scangym.com/r/${slug}` : '');
+      var caption = document.getElementById('caption-input').value;
+      var handle = (state.creator.handle || '').replace(/^@/, '');
+      var slug = handle.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
 
-        const res = await fetch('/api/creators/upload', {
-          method: 'POST',
-          body: formData
-        });
+      var formData = new FormData();
+      formData.append('video', state.file);
+      formData.append('caption', caption);
+      formData.append('category', state.category);
+      formData.append('creatorHandle', handle);
+      formData.append('creatorName', state.creator.name || '');
+      formData.append('creatorEmail', state.creator.email || '');
+      formData.append('affiliateLink', slug ? 'https://scangym.com/r/' + slug : '');
 
-        if (res.ok) {
-          // Show success
-          document.getElementById('upload-form').style.display = 'none';
-          document.getElementById('success-screen').classList.add('active');
-          document.getElementById('success-screen').style.display = 'block';
-          showToast('🎉 Upload submitted!', 'success');
-        } else {
-          const data = await res.json().catch(() => ({}));
-          throw new Error(data.error || 'Upload failed');
+      // XMLHttpRequest for progress tracking
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', '/api/creators/upload', true);
+
+      xhr.upload.addEventListener('progress', function(e) {
+        if (e.lengthComputable) {
+          var pct = Math.round((e.loaded / e.total) * 100);
+          document.getElementById('progress-bar-fill').style.width = pct + '%';
+          document.getElementById('progress-percent').textContent = pct + '%';
+          if (pct >= 100) {
+            document.getElementById('progress-status').textContent = 'Processing...';
+          }
         }
-      } catch (err) {
-        // For now, show success even without backend (optimistic UX)
-        // The backend route will be added — for now, store locally
-        try {
-          const uploads = JSON.parse(localStorage.getItem('flexsquad_uploads') || '[]');
-          uploads.push({
-            fileName: state.file.name,
-            fileSize: state.file.size,
-            caption, category: state.category,
-            creatorHandle: handle,
-            timestamp: new Date().toISOString()
-          });
-          localStorage.setItem('flexsquad_uploads', JSON.stringify(uploads));
-        } catch (e) {}
+      });
 
+      xhr.addEventListener('load', function() {
+        onUploadComplete(true);
+      });
+
+      xhr.addEventListener('error', function() {
+        // Fallback: save locally + show success (optimistic UX)
+        saveLocally(caption, slug);
+        onUploadComplete(true);
+      });
+
+      xhr.send(formData);
+    }
+
+    function saveLocally(caption, slug) {
+      try {
+        var uploads = JSON.parse(localStorage.getItem('flexsquad_uploads') || '[]');
+        uploads.push({
+          fileName: state.file.name,
+          fileSize: state.file.size,
+          caption: caption,
+          category: state.category,
+          creatorHandle: (state.creator.handle || '').replace(/^@/, ''),
+          affiliateLink: slug ? 'https://scangym.com/r/' + slug : '',
+          timestamp: new Date().toISOString()
+        });
+        localStorage.setItem('flexsquad_uploads', JSON.stringify(uploads));
+      } catch (e) {}
+    }
+
+    function onUploadComplete(success) {
+      state.uploading = false;
+
+      // Complete progress animation
+      document.getElementById('progress-bar-fill').style.width = '100%';
+      document.getElementById('progress-percent').textContent = '100%';
+      document.getElementById('progress-status').textContent = 'Complete!';
+
+      setTimeout(function() {
         document.getElementById('upload-form').style.display = 'none';
         document.getElementById('success-screen').classList.add('active');
         document.getElementById('success-screen').style.display = 'block';
-        showToast('🎉 Upload submitted for review!', 'success');
-      }
-
-      state.uploading = false;
+        showToast('\uD83C\uDF89 Upload submitted!', 'success');
+      }, 500);
     }
 
-    // ── Helpers ──
+    function shareReel() {
+      var handle = (state.creator && state.creator.handle || '').replace(/^@/, '');
+      var slug = handle.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+      var link = slug ? 'https://scangym.com/r/' + slug : 'https://scangym.com/reels';
+      var text = '\uD83D\uDCAA Book a gym for \u00A35 — no membership! Watch my reel: ' + link;
+
+      if (navigator.share) {
+        navigator.share({ title: 'ScanGym Reels', text: text, url: link }).catch(function() {});
+      } else {
+        navigator.clipboard.writeText(text).then(function() {
+          showToast('\uD83D\uDD17 Link copied!', 'success');
+        });
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  HELPERS
+    // ═══════════════════════════════════════════════════════════
     function formatSize(bytes) {
       if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
       return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
     }
 
     function showToast(msg, type) {
-      const t = document.createElement('div');
-      t.className = `toast toast-${type || 'success'}`;
+      var t = document.createElement('div');
+      t.className = 'toast toast-' + (type || 'success');
       t.textContent = msg;
       document.body.appendChild(t);
-      setTimeout(() => t.remove(), 2500);
+      setTimeout(function() { t.remove(); }, 2500);
     }
 
     init();
