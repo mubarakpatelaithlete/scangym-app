@@ -28,14 +28,17 @@
         will-change:transform;
         touch-action:none;
       }
+      /* ⚡ FIX #4: 280ms snap with spring overshoot (was 420ms flat ease) */
       #reel-track.snapping{
-        transition:transform 420ms cubic-bezier(0.23,1,0.32,1);
+        transition:transform 280ms cubic-bezier(0.34,1.56,0.64,1);
       }
 
       /* ── Individual Reel ── */
+      /* ⚡ FIX #1: Absolute positioning for virtual DOM window */
       .reel{
+        position:absolute;left:0;top:0;
         width:100vw;height:100vh;height:100dvh;
-        position:relative;overflow:hidden;background:#0a0a16;
+        overflow:hidden;background:#0a0a16;
       }
       .reel video{
         position:absolute;top:0;left:0;width:100%;height:100%;
@@ -229,6 +232,16 @@
     </a>
 
     <script>
+    /**
+     * ScanGym Reels v2 — TikTok-grade performance upgrade
+     * ────────────────────────────────────────────────────
+     * 5 Tier-1 fixes applied:
+     *   ① Virtual DOM window  — max 5 <video> elements alive (current ±2)
+     *   ② Aggressive prefetch — <link rel="prefetch"> for next 5 videos
+     *   ③ Mandatory poster    — every reel shows instant visual (no black flash)
+     *   ④ 280ms spring snap   — faster snap with overshoot bounce
+     *   ⑤ rAF-driven drag     — requestAnimationFrame for 120Hz smoothness
+     */
     (function(){
       'use strict';
 
@@ -243,18 +256,32 @@
       // ── Constants ──
       var SNAP_VELOCITY  = 0.3;
       var SNAP_THRESHOLD = 0.2;
-      var SNAP_DURATION  = 420;
+      var SNAP_DURATION  = 280;   // ④ was 420
       var RUBBER_BAND    = 0.3;
-      var PRELOAD_AHEAD  = 3;
-      var BATCH_SIZE     = 10;
+      var RENDER_WINDOW  = 2;     // ① ±2 around current = max 5 DOM elements
+      var PREFETCH_AHEAD = 5;     // ② prefetch next 5 video URLs
+
+      // ── FIX #3: Placeholder poster — dark gradient SVG, ~200 bytes ──
+      var PLACEHOLDER_POSTER = 'data:image/svg+xml,' + encodeURIComponent(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="360" height="640">'
+        + '<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">'
+        + '<stop offset="0%" stop-color="#16162a"/>'
+        + '<stop offset="100%" stop-color="#0a0a16"/>'
+        + '</linearGradient></defs>'
+        + '<rect width="360" height="640" fill="url(#g)"/>'
+        + '<circle cx="180" cy="300" r="32" fill="none" stroke="rgba(249,115,22,0.2)" stroke-width="3"/>'
+        + '<polygon points="172,286 172,314 196,300" fill="rgba(249,115,22,0.25)"/>'
+        + '</svg>'
+      );
 
       // ── State ──
-      var allVideos     = [];
-      var currentIndex  = 0;
-      var renderedCount = 0;
-      var isMuted       = true;
-      var screenH       = window.innerHeight;
-      var trackOffset   = 0;
+      var allVideos      = [];
+      var currentIndex   = 0;
+      var isMuted        = true;
+      var screenH        = window.innerHeight;
+      var trackOffset    = 0;
+      var renderedReels  = {};    // ① index → DOM element
+      var prefetchedUrls = {};    // ② url → true
 
       var track   = document.getElementById('reel-track');
       var loading = document.getElementById('loading');
@@ -268,22 +295,39 @@
       var isDragging    = false;
       var dragDelta     = 0;
 
+      // ── FIX #5: rAF state ──
+      var pendingDragY  = null;
+      var dragRafId     = null;
+
+      function applyDragFrame(){
+        if(pendingDragY !== null){
+          setTrackPosition(pendingDragY);
+          pendingDragY = null;
+        }
+        dragRafId = null;
+      }
+
       // ── Recalculate screen height on resize ──
       window.addEventListener('resize', function(){
         screenH = window.innerHeight;
-        snapTo(currentIndex, false);
-        var reels = track.children;
-        for(var i = 0; i < reels.length; i++){
-          reels[i].style.height = screenH + 'px';
+        // Update position and height of all rendered reels
+        var keys = Object.keys(renderedReels);
+        for(var k = 0; k < keys.length; k++){
+          var idx = parseInt(keys[k]);
+          var el = renderedReels[idx];
+          el.style.height = screenH + 'px';
+          el.style.top = (idx * screenH) + 'px';
         }
+        snapTo(currentIndex, false);
       });
 
       // ═══════════════════════════════════════════════════════════
-      //  TOUCH HANDLING — TikTok-style physics
+      //  TOUCH HANDLING — TikTok-style physics + rAF (Fix #5)
       // ═══════════════════════════════════════════════════════════
 
       track.addEventListener('touchstart', function(e){
         track.classList.remove('snapping');
+        if(dragRafId){ cancelAnimationFrame(dragRafId); dragRafId = null; }
         var t = e.touches[0];
         touchStartY = t.clientY;
         touchStartT = Date.now();
@@ -303,7 +347,7 @@
         touchLastT = now;
         var targetOffset = -(currentIndex * screenH) + dy;
         var maxOffset    = 0;
-        var minOffset    = -((renderedCount - 1) * screenH);
+        var minOffset    = -((allVideos.length - 1) * screenH);
         if(targetOffset > maxOffset){
           var over = targetOffset - maxOffset;
           targetOffset = maxOffset + over * RUBBER_BAND;
@@ -313,19 +357,29 @@
         }
         trackOffset = targetOffset;
         dragDelta   = dy;
-        setTrackPosition(trackOffset);
+        // ⑤ Schedule via rAF instead of immediate DOM write
+        pendingDragY = trackOffset;
+        if(!dragRafId){
+          dragRafId = requestAnimationFrame(applyDragFrame);
+        }
       }, {passive: false});
 
       track.addEventListener('touchend', function(e){
         if(!isDragging) return;
         isDragging = false;
+        if(dragRafId){ cancelAnimationFrame(dragRafId); dragRafId = null; }
+        // Flush any pending drag position
+        if(pendingDragY !== null){
+          setTrackPosition(pendingDragY);
+          pendingDragY = null;
+        }
         var now      = Date.now();
         var velocity = (touchLastY - touchStartY) / (now - touchStartT);
         var absD = Math.abs(dragDelta);
         var absV = Math.abs(velocity);
         var next = currentIndex;
         if(absD > screenH * SNAP_THRESHOLD || absV > SNAP_VELOCITY){
-          if(dragDelta < 0 && currentIndex < renderedCount - 1){
+          if(dragDelta < 0 && currentIndex < allVideos.length - 1){
             next = currentIndex + 1;
           } else if(dragDelta > 0 && currentIndex > 0){
             next = currentIndex - 1;
@@ -352,7 +406,7 @@
         if(wheelLock) return;
         wheelLock = true;
         setTimeout(function(){ wheelLock = false; }, SNAP_DURATION + 50);
-        if(e.deltaY > 30 && currentIndex < renderedCount - 1){
+        if(e.deltaY > 30 && currentIndex < allVideos.length - 1){
           snapTo(currentIndex + 1, true);
         } else if(e.deltaY < -30 && currentIndex > 0){
           snapTo(currentIndex - 1, true);
@@ -362,7 +416,7 @@
       // ── Keyboard nav ──
       document.addEventListener('keydown', function(e){
         if(e.key === 'ArrowDown' || e.key === 'j'){
-          if(currentIndex < renderedCount - 1) snapTo(currentIndex + 1, true);
+          if(currentIndex < allVideos.length - 1) snapTo(currentIndex + 1, true);
         } else if(e.key === 'ArrowUp' || e.key === 'k'){
           if(currentIndex > 0) snapTo(currentIndex - 1, true);
         } else if(e.key === 'm'){
@@ -387,13 +441,47 @@
           setTimeout(function(){ track.classList.remove('snapping'); }, SNAP_DURATION + 10);
         }
         setTrackPosition(trackOffset);
+        // ① Reconcile virtual DOM window around new index
+        reconcileWindow(index);
         if(prevIndex !== index){
           pauseVideo(prevIndex);
           playVideo(index);
-          preloadAhead(index);
+          prefetchAhead(index);
         }
-        if(index >= renderedCount - 3 && renderedCount < allVideos.length){
-          renderBatch();
+      }
+
+      // ═══════════════════════════════════════════════════════════
+      //  FIX #1: VIRTUAL DOM WINDOW — max 5 elements alive
+      // ═══════════════════════════════════════════════════════════
+
+      function reconcileWindow(centerIndex){
+        var minIdx = Math.max(0, centerIndex - RENDER_WINDOW);
+        var maxIdx = Math.min(allVideos.length - 1, centerIndex + RENDER_WINDOW);
+
+        // Remove elements outside window
+        var keys = Object.keys(renderedReels);
+        for(var k = 0; k < keys.length; k++){
+          var idx = parseInt(keys[k]);
+          if(idx < minIdx || idx > maxIdx){
+            var el = renderedReels[idx];
+            var vid = el.querySelector('video');
+            if(vid){
+              vid.pause();
+              vid.removeAttribute('src');
+              vid.load(); // Release network connection & decoded buffers
+            }
+            track.removeChild(el);
+            delete renderedReels[idx];
+          }
+        }
+
+        // Add missing elements within window
+        for(var i = minIdx; i <= maxIdx; i++){
+          if(!renderedReels[i]){
+            var reel = createReel(allVideos[i], i);
+            track.appendChild(reel);
+            renderedReels[i] = reel;
+          }
         }
       }
 
@@ -401,8 +489,15 @@
       //  VIDEO MANAGEMENT
       // ═══════════════════════════════════════════════════════════
 
+      function getVideoUrl(video){
+        if(video.driveId){
+          return 'https://dynamic-labrador-874.convex.site/video?id=' + video.driveId;
+        }
+        return video.url || '';
+      }
+
       function playVideo(i){
-        var reel = track.children[i];
+        var reel = renderedReels[i];
         if(!reel) return;
         var vid = reel.querySelector('video');
         if(!vid) return;
@@ -411,7 +506,7 @@
       }
 
       function pauseVideo(i){
-        var reel = track.children[i];
+        var reel = renderedReels[i];
         if(!reel) return;
         var vid = reel.querySelector('video');
         if(!vid) return;
@@ -421,17 +516,26 @@
         if(bar) bar.style.width = '0%';
       }
 
-      function preloadAhead(from){
-        for(var i = from + 1; i <= from + PRELOAD_AHEAD && i < renderedCount; i++){
-          var reel = track.children[i];
-          if(!reel) continue;
-          var vid = reel.querySelector('video');
-          if(vid && vid.preload !== 'auto') vid.preload = 'auto';
+      // ═══════════════════════════════════════════════════════════
+      //  FIX #2: AGGRESSIVE PREFETCH — warm cache for next 5
+      // ═══════════════════════════════════════════════════════════
+
+      function prefetchAhead(fromIndex){
+        for(var i = fromIndex + 1; i <= fromIndex + PREFETCH_AHEAD && i < allVideos.length; i++){
+          var url = getVideoUrl(allVideos[i]);
+          if(!url || prefetchedUrls[url]) continue;
+          prefetchedUrls[url] = true;
+          var link = document.createElement('link');
+          link.rel = 'prefetch';
+          link.as = 'fetch';
+          link.href = url;
+          link.crossOrigin = 'anonymous';
+          document.head.appendChild(link);
         }
       }
 
       // ═══════════════════════════════════════════════════════════
-      //  FEED LOADING & RENDERING
+      //  FEED LOADING
       // ═══════════════════════════════════════════════════════════
 
       function loadFeed(){
@@ -446,9 +550,10 @@
               showFatalError('No reels available yet');
               return;
             }
-            renderBatch();
+            // ① Render initial window around index 0
+            reconcileWindow(0);
             loading.style.display = 'none';
-            setTimeout(function(){ playVideo(0); preloadAhead(0); }, 150);
+            setTimeout(function(){ playVideo(0); prefetchAhead(0); }, 150);
           })
           .catch(function(err){
             console.error('Feed load error:', err);
@@ -456,25 +561,19 @@
           });
       }
 
-      function renderBatch(){
-        var end = Math.min(renderedCount + BATCH_SIZE, allVideos.length);
-        for(var i = renderedCount; i < end; i++){
-          track.appendChild(createReel(allVideos[i], i));
-        }
-        renderedCount = end;
-      }
+      // ═══════════════════════════════════════════════════════════
+      //  REEL ELEMENT CREATION
+      // ═══════════════════════════════════════════════════════════
 
       function createReel(video, index){
         var div = document.createElement('div');
         div.className = 'reel';
         div.style.height = screenH + 'px';
+        div.style.top = (index * screenH) + 'px'; // ① Absolute position
         div.dataset.index = index;
 
         // Video URL
-        var videoUrl = video.url || '';
-        if(video.driveId){
-          videoUrl = 'https://dynamic-labrador-874.convex.site/video?id=' + video.driveId;
-        }
+        var videoUrl = getVideoUrl(video);
 
         // Video element
         var vid = document.createElement('video');
@@ -482,10 +581,11 @@
         vid.loop = true;
         vid.muted = isMuted;
         vid.playsInline = true;
-        vid.preload = index < 3 ? 'auto' : 'none';
+        vid.preload = 'auto'; // All windowed videos preload
         vid.setAttribute('playsinline', '');
         vid.setAttribute('webkit-playsinline', '');
-        if(video.thumb) vid.poster = video.thumb;
+        // ③ Mandatory poster — always show something instantly
+        vid.poster = video.thumb || PLACEHOLDER_POSTER;
         div.appendChild(vid);
 
         // Handle errors — show overlay, auto-advance
@@ -496,7 +596,7 @@
           errDiv.innerHTML = '<span>\uD83C\uDFAC</span><p>Video unavailable</p>';
           div.appendChild(errDiv);
           setTimeout(function(){
-            if(parseInt(div.dataset.index) === currentIndex && currentIndex < renderedCount - 1){
+            if(parseInt(div.dataset.index) === currentIndex && currentIndex < allVideos.length - 1){
               snapTo(currentIndex + 1, true);
             }
           }, 1500);
@@ -541,7 +641,6 @@
             + '<div class="creator-cta-sub">Creator earns on your booking</div></div>'
             + '</a>';
         } else if(hasCreator){
-          // Creator reel but no affiliate — link to homepage
           affiliateHtml = '<a class="creator-cta" href="/">'
             + '<span class="creator-cta-icon">\uD83D\uDCAA</span>'
             + '<div><div class="creator-cta-text">Book a Gym — \u00A35</div>'
@@ -555,11 +654,10 @@
           + affiliateHtml;
         div.appendChild(info);
 
-        // Action sidebar — Book + Share + Save + More (Upload moved to FAB)
+        // Action sidebar — Book + Share + Save + More
         var actions = document.createElement('div');
         actions.className = 'reel-actions';
 
-        // If creator has affiliate, the Book button uses their link
         var bookHref = hasAffiliate ? escHtml(video.creator.affiliateLink) : '/';
 
         actions.innerHTML = ''
@@ -609,7 +707,6 @@
       // ═══════════════════════════════════════════════════════════
 
       function handleShare(video){
-        // If creator video with affiliate, share the affiliate link
         var url = (video.creator && video.creator.affiliateLink) || 'https://scangym.com/reels';
         var text = (video.name || 'ScanGym Reels') + ' \u2014 Book a gym for \u00A35! \uD83D\uDCAA';
         if(video.creator && video.creator.name){
