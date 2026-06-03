@@ -71,7 +71,23 @@
       }
       .reel-info .reel-creator{
         font-size:12px;color:#f97316;font-weight:600;margin-top:3px;
+        text-shadow:0 1px 4px rgba(0,0,0,.5);
       }
+
+      /* ── Creator affiliate CTA (bottom overlay for creator reels) ── */
+      .creator-cta{
+        display:flex;align-items:center;gap:8px;
+        margin-top:8px;padding:8px 12px;
+        background:rgba(249,115,22,.15);border:1px solid rgba(249,115,22,.3);
+        border-radius:12px;cursor:pointer;
+        backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+        transition:all .15s;max-width:fit-content;
+        text-decoration:none;
+      }
+      .creator-cta:active{transform:scale(0.96);background:rgba(249,115,22,.25);}
+      .creator-cta-icon{font-size:16px;}
+      .creator-cta-text{font-size:12px;font-weight:700;color:#f97316;line-height:1.2;}
+      .creator-cta-sub{font-size:10px;color:rgba(255,255,255,.5);font-weight:500;}
 
       /* ── Action sidebar (right) ── */
       .reel-actions{
@@ -102,8 +118,33 @@
 
       /* Book CTA */
       .reel-action[data-action="book"] .icon{background:rgba(249,115,22,.85);border-color:rgba(249,115,22,.9);}
-      /* Upload accent */
-      .reel-action[data-action="upload"] .icon{background:rgba(34,197,94,.7);border-color:rgba(34,197,94,.8);}
+
+      /* ── Floating Create FAB (TikTok-style) ── */
+      #create-fab{
+        position:fixed;bottom:28px;left:50%;transform:translateX(-50%);
+        z-index:40;display:flex;align-items:center;gap:6px;
+        padding:12px 24px;
+        background:linear-gradient(135deg,#22c55e 0%,#16a34a 100%);
+        border:2px solid rgba(255,255,255,.2);
+        border-radius:28px;
+        color:#fff;font-size:15px;font-weight:800;
+        cursor:pointer;text-decoration:none;
+        box-shadow:0 4px 24px rgba(34,197,94,.4),0 0 0 0 rgba(34,197,94,.3);
+        transition:all .15s ease;
+        animation:fabPulse 3s ease-in-out infinite;
+        letter-spacing:0.3px;
+      }
+      #create-fab:active{transform:translateX(-50%) scale(0.92);box-shadow:0 2px 12px rgba(34,197,94,.3);}
+      #create-fab svg{width:20px;height:20px;fill:none;stroke:#fff;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;}
+      @keyframes fabPulse{
+        0%,100%{box-shadow:0 4px 24px rgba(34,197,94,.4),0 0 0 0 rgba(34,197,94,.3);}
+        50%{box-shadow:0 4px 24px rgba(34,197,94,.5),0 0 0 8px rgba(34,197,94,0);}
+      }
+      #create-fab .fab-earn{
+        font-size:10px;font-weight:600;color:rgba(255,255,255,.8);
+        background:rgba(0,0,0,.2);padding:2px 8px;border-radius:10px;
+        margin-left:2px;
+      }
 
       /* ── Progress bar ── */
       .reel-progress{
@@ -137,8 +178,6 @@
       }
       #mute-indicator.show{opacity:1;}
 
-      /* heart-burst removed */
-
       /* ── Toast ── */
       .toast{
         position:fixed;top:60px;left:50%;transform:translateX(-50%);
@@ -158,11 +197,9 @@
       .reel-error span{font-size:40px;}
       .reel-error p{font-size:13px;}
 
-      /* More button navigates to /more tab — no overlay needed */
-
       /* ── Swipe hint (first visit) ── */
       .swipe-hint{
-        position:fixed;bottom:40px;left:50%;transform:translateX(-50%);
+        position:fixed;bottom:90px;left:50%;transform:translateX(-50%);
         z-index:35;display:flex;flex-direction:column;align-items:center;
         gap:4px;pointer-events:none;
         animation:hintBounce 1.8s ease-in-out infinite;
@@ -184,7 +221,12 @@
       <span>Swipe up</span>
     </div>
 
-    <!-- More button navigates to /more tab -->
+    <!-- TikTok-style Create FAB — always visible, center bottom -->
+    <a id="create-fab" href="/upload">
+      <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Create
+      <span class="fab-earn">Earn £</span>
+    </a>
 
     <script>
     (function(){
@@ -192,22 +234,18 @@
 
       // ── SVG Icons ──
       var ICONS = {
-        heart:  '<svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>',
-        upload: '<svg viewBox="0 0 24 24"><path d="M12 16V4m0 0L8 8m4-4l4 4"/><path d="M20 16.7V19a2 2 0 01-2 2H6a2 2 0 01-2-2v-2.3"/></svg>',
         book:   '<svg viewBox="0 0 24 24"><path d="M8 2v4m8-4v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/><path d="M9 16l2 2 4-4"/></svg>',
         share:  '<svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"/></svg>',
         save:   '<svg viewBox="0 0 24 24"><path d="M12 4v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>',
-        muted:  '<svg viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>',
-        unmuted:'<svg viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 010 7.07"/><path d="M19.07 4.93a10 10 0 010 14.14"/></svg>',
         more:   '<svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.5" fill="#fff" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="#fff" stroke="none"/><circle cx="12" cy="19" r="1.5" fill="#fff" stroke="none"/></svg>'
       };
 
       // ── Constants ──
-      var SNAP_VELOCITY  = 0.3;   // px/ms — minimum flick speed to trigger snap
-      var SNAP_THRESHOLD = 0.2;   // fraction of screen height to trigger snap
-      var SNAP_DURATION  = 420;   // ms — snap animation time
-      var RUBBER_BAND    = 0.3;   // overscroll dampening factor
-      var PRELOAD_AHEAD  = 3;     // preload next N videos
+      var SNAP_VELOCITY  = 0.3;
+      var SNAP_THRESHOLD = 0.2;
+      var SNAP_DURATION  = 420;
+      var RUBBER_BAND    = 0.3;
+      var PRELOAD_AHEAD  = 3;
       var BATCH_SIZE     = 10;
 
       // ── State ──
@@ -216,8 +254,7 @@
       var renderedCount = 0;
       var isMuted       = true;
       var screenH       = window.innerHeight;
-      var trackOffset   = 0;      // current translateY offset
-      // like/unmute buttons removed per user request
+      var trackOffset   = 0;
 
       var track   = document.getElementById('reel-track');
       var loading = document.getElementById('loading');
@@ -231,14 +268,10 @@
       var isDragging    = false;
       var dragDelta     = 0;
 
-      // (double-tap removed)
-
       // ── Recalculate screen height on resize ──
       window.addEventListener('resize', function(){
         screenH = window.innerHeight;
-        // Reposition to current reel
         snapTo(currentIndex, false);
-        // Update reel heights
         var reels = track.children;
         for(var i = 0; i < reels.length; i++){
           reels[i].style.height = screenH + 'px';
@@ -250,9 +283,7 @@
       // ═══════════════════════════════════════════════════════════
 
       track.addEventListener('touchstart', function(e){
-        // Kill any running snap animation
         track.classList.remove('snapping');
-
         var t = e.touches[0];
         touchStartY = t.clientY;
         touchStartT = Date.now();
@@ -264,30 +295,22 @@
 
       track.addEventListener('touchmove', function(e){
         if(!isDragging) return;
-        e.preventDefault(); // prevent browser scroll/pull-to-refresh
-
+        e.preventDefault();
         var t   = e.touches[0];
         var now = Date.now();
         var dy  = t.clientY - touchStartY;
-
         touchLastY = t.clientY;
         touchLastT = now;
-
-        // Apply rubber-band at edges
         var targetOffset = -(currentIndex * screenH) + dy;
         var maxOffset    = 0;
         var minOffset    = -((renderedCount - 1) * screenH);
-
         if(targetOffset > maxOffset){
-          // Overscrolling at top
           var over = targetOffset - maxOffset;
           targetOffset = maxOffset + over * RUBBER_BAND;
         } else if(targetOffset < minOffset){
-          // Overscrolling at bottom
           var over = minOffset - targetOffset;
           targetOffset = minOffset - over * RUBBER_BAND;
         }
-
         trackOffset = targetOffset;
         dragDelta   = dy;
         setTrackPosition(trackOffset);
@@ -296,27 +319,19 @@
       track.addEventListener('touchend', function(e){
         if(!isDragging) return;
         isDragging = false;
-
-        // Calculate velocity (px/ms)
         var now      = Date.now();
-        var dt       = now - touchLastT || 1;
         var velocity = (touchLastY - touchStartY) / (now - touchStartT);
-
         var absD = Math.abs(dragDelta);
         var absV = Math.abs(velocity);
         var next = currentIndex;
-
         if(absD > screenH * SNAP_THRESHOLD || absV > SNAP_VELOCITY){
           if(dragDelta < 0 && currentIndex < renderedCount - 1){
-            next = currentIndex + 1; // swiped up → next
+            next = currentIndex + 1;
           } else if(dragDelta > 0 && currentIndex > 0){
-            next = currentIndex - 1; // swiped down → prev
+            next = currentIndex - 1;
           }
         }
-
         snapTo(next, true);
-
-        // Hide swipe hint after first swipe
         if(hint){
           var h = hint;
           hint = null;
@@ -326,7 +341,6 @@
         }
       }, {passive: true});
 
-      // Prevent default touch on body to stop pull-to-refresh
       document.body.addEventListener('touchmove', function(e){
         if(isDragging) e.preventDefault();
       }, {passive: false});
@@ -338,7 +352,6 @@
         if(wheelLock) return;
         wheelLock = true;
         setTimeout(function(){ wheelLock = false; }, SNAP_DURATION + 50);
-
         if(e.deltaY > 30 && currentIndex < renderedCount - 1){
           snapTo(currentIndex + 1, true);
         } else if(e.deltaY < -30 && currentIndex > 0){
@@ -369,22 +382,16 @@
         var prevIndex = currentIndex;
         currentIndex  = index;
         trackOffset   = -(index * screenH);
-
         if(animate){
           track.classList.add('snapping');
-          // Remove class after transition
           setTimeout(function(){ track.classList.remove('snapping'); }, SNAP_DURATION + 10);
         }
         setTrackPosition(trackOffset);
-
-        // Manage video playback
         if(prevIndex !== index){
           pauseVideo(prevIndex);
           playVideo(index);
           preloadAhead(index);
         }
-
-        // Load more when near end
         if(index >= renderedCount - 3 && renderedCount < allVideos.length){
           renderBatch();
         }
@@ -410,7 +417,6 @@
         if(!vid) return;
         vid.pause();
         vid.currentTime = 0;
-        // Reset progress
         var bar = reel.querySelector('.reel-progress-bar');
         if(bar) bar.style.width = '0%';
       }
@@ -420,9 +426,7 @@
           var reel = track.children[i];
           if(!reel) continue;
           var vid = reel.querySelector('video');
-          if(vid && vid.preload !== 'auto'){
-            vid.preload = 'auto';
-          }
+          if(vid && vid.preload !== 'auto') vid.preload = 'auto';
         }
       }
 
@@ -444,8 +448,6 @@
             }
             renderBatch();
             loading.style.display = 'none';
-
-            // Start first video
             setTimeout(function(){ playVideo(0); preloadAhead(0); }, 150);
           })
           .catch(function(err){
@@ -493,7 +495,6 @@
           errDiv.className = 'reel-error';
           errDiv.innerHTML = '<span>\uD83C\uDFAC</span><p>Video unavailable</p>';
           div.appendChild(errDiv);
-          // Auto-advance after 1.5s
           setTimeout(function(){
             if(parseInt(div.dataset.index) === currentIndex && currentIndex < renderedCount - 1){
               snapTo(currentIndex + 1, true);
@@ -515,29 +516,56 @@
           }
         });
 
+        // Check if this is a creator reel with affiliate link
+        var hasCreator = video.creator && (video.creator.name || video.creator.handle);
+        var hasAffiliate = video.creator && video.creator.affiliateLink;
+
         // Info overlay
         var info = document.createElement('div');
         info.className = 'reel-info';
-        var creatorHtml = video.creator
-          ? '<p class="reel-creator">\uD83D\uDCE4 ' + escHtml(video.creator.name || video.creator.handle || 'Creator') + '</p>'
-          : '';
+
+        var creatorHtml = '';
+        if(hasCreator){
+          var creatorName = escHtml(video.creator.name || video.creator.handle || 'Creator');
+          creatorHtml = '<p class="reel-creator">\uD83C\uDFA5 ' + creatorName + '</p>';
+        }
+
+        // Affiliate CTA — the money-making button
+        var affiliateHtml = '';
+        if(hasAffiliate){
+          var affLink = video.creator.affiliateLink;
+          var affName = escHtml(video.creator.name || video.creator.handle || 'Creator');
+          affiliateHtml = '<a class="creator-cta" href="' + escHtml(affLink) + '">'
+            + '<span class="creator-cta-icon">\uD83D\uDCB0</span>'
+            + '<div><div class="creator-cta-text">Book via ' + affName + ' — \u00A35</div>'
+            + '<div class="creator-cta-sub">Creator earns on your booking</div></div>'
+            + '</a>';
+        } else if(hasCreator){
+          // Creator reel but no affiliate — link to homepage
+          affiliateHtml = '<a class="creator-cta" href="/">'
+            + '<span class="creator-cta-icon">\uD83D\uDCAA</span>'
+            + '<div><div class="creator-cta-text">Book a Gym — \u00A35</div>'
+            + '<div class="creator-cta-sub">No membership needed</div></div>'
+            + '</a>';
+        }
+
         info.innerHTML = '<p class="reel-title">' + escHtml(video.name) + '</p>'
           + '<p class="reel-category">\uD83C\uDFAC ' + escHtml(video.category) + '</p>'
-          + creatorHtml;
+          + creatorHtml
+          + affiliateHtml;
         div.appendChild(info);
 
-        // Action sidebar
+        // Action sidebar — Book + Share + Save + More (Upload moved to FAB)
         var actions = document.createElement('div');
         actions.className = 'reel-actions';
 
+        // If creator has affiliate, the Book button uses their link
+        var bookHref = hasAffiliate ? escHtml(video.creator.affiliateLink) : '/';
+
         actions.innerHTML = ''
-          + '<a class="reel-action" data-action="book" href="/">'
+          + '<a class="reel-action" data-action="book" href="' + bookHref + '">'
           +   '<div class="icon">' + ICONS.book + '</div>'
           +   '<span class="label">Book</span>'
-          + '</a>'
-          + '<a class="reel-action" data-action="upload" href="/upload">'
-          +   '<div class="icon">' + ICONS.upload + '</div>'
-          +   '<span class="label">Upload</span>'
           + '</a>'
           + '<div class="reel-action" data-action="share">'
           +   '<div class="icon">' + ICONS.share + '</div>'
@@ -553,14 +581,10 @@
           + '</div>';
         div.appendChild(actions);
 
-        // Click handler for taps on video area (mute toggle / double-tap like)
+        // Click handler for taps on video area (mute toggle)
         div.addEventListener('click', function(e){
-          // Ignore if tap was on an action button
           if(e.target.closest('.reel-actions') || e.target.closest('.reel-info')) return;
-          // Ignore if was dragging
           if(Math.abs(dragDelta) > 10) return;
-
-          // Single tap → toggle mute
           toggleMute();
         });
 
@@ -568,10 +592,9 @@
         actions.querySelectorAll('.reel-action').forEach(function(btn){
           btn.addEventListener('click', function(e){
             var action = btn.dataset.action;
-            if(action === 'book' || action === 'upload') return; // <a> links
+            if(action === 'book') return; // <a> link
             e.preventDefault();
             e.stopPropagation();
-
             if(action === 'share') handleShare(video);
             else if(action === 'save') handleSave(video, videoUrl);
             else if(action === 'more') window.location.href = '/more';
@@ -582,12 +605,16 @@
       }
 
       // ═══════════════════════════════════════════════════════════
-      //  ENGAGEMENT: Like, Share, Save
+      //  ENGAGEMENT: Share, Save
       // ═══════════════════════════════════════════════════════════
 
       function handleShare(video){
-        var url = 'https://scangym.com/reels';
+        // If creator video with affiliate, share the affiliate link
+        var url = (video.creator && video.creator.affiliateLink) || 'https://scangym.com/reels';
         var text = (video.name || 'ScanGym Reels') + ' \u2014 Book a gym for \u00A35! \uD83D\uDCAA';
+        if(video.creator && video.creator.name){
+          text = (video.name || 'ScanGym Reels') + ' by ' + video.creator.name + ' \u2014 Book for \u00A35! \uD83D\uDCAA';
+        }
         if(navigator.share){
           navigator.share({title:'ScanGym Reels',text:text,url:url}).catch(function(){});
         } else {
@@ -608,8 +635,6 @@
         }
       }
 
-      // More button navigates to /more — no overlay JS needed
-
       // ═══════════════════════════════════════════════════════════
       //  HELPERS
       // ═══════════════════════════════════════════════════════════
@@ -619,7 +644,6 @@
         var vids = document.querySelectorAll('.reel video');
         for(var i = 0; i < vids.length; i++) vids[i].muted = isMuted;
         showMuteIndicator(isMuted);
-        updateSoundButtons();
       }
 
       function showMuteIndicator(muted){
@@ -629,11 +653,9 @@
         setTimeout(function(){ el.classList.remove('show'); }, 600);
       }
 
-      function updateSoundButtons(){ /* sound buttons removed — mute via tap on video */ }
-
       function escHtml(s){
         if(!s) return '';
-        return s.replace(/&/g,'\u0026amp;').replace(/</g,'\u0026lt;').replace(/>/g,'\u0026gt;').replace(/"/g,'\u0026quot;');
+        return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
       }
 
       function showToast(msg){
