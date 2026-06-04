@@ -1122,11 +1122,12 @@ function GymProfilePage(){
     .gym-info-addr{color:rgba(255,255,255,.55);font-size:13px;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .gym-info-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
     .gym-info-meta span{font-size:13px;font-weight:600}
-    /* Quick actions row (3 buttons: Facilities, Reviews, Hours) */
-    .gym-quick-actions{display:flex;gap:8px;margin-bottom:10px}
-    .gym-qa-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:10px 0;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;color:rgba(255,255,255,.8);font-size:12px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s}
-    .gym-qa-btn:active{transform:scale(.95);background:rgba(255,255,255,.1)}
-    .gym-qa-icon{font-size:16px}
+    /* Quick actions row (5 icon-button tabs — all fit in 1 row) */
+    .gym-quick-actions{display:flex;gap:6px;margin-bottom:10px}
+    .gym-qa-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:0;padding:12px 0;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:14px;color:rgba(255,255,255,.75);font-size:12px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;min-width:0;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+    .gym-qa-btn:active{transform:scale(.95);background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2)}
+    .gym-qa-btn.has-label{gap:5px;flex:1.4}
+    .gym-qa-icon{font-size:20px;line-height:1}
     /* ═══ Uber-style pass cards ═══ */
     .gym-pass-header{color:#fff;font-size:18px;font-weight:800;text-align:center;padding:4px 0 8px;font-family:'Sora',sans-serif}
     .gym-pass-cards{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;padding-bottom:140px}
@@ -1321,11 +1322,13 @@ function GymProfilePage(){
         </div>
       </div>
 
-      <!-- Quick actions: 3 buttons (Facilities, Reviews, Hours) — NO Photos -->
+      <!-- Quick actions: 5 icon-button tabs (Passes has text label) -->
       <div class="gym-quick-actions">
-        <div class="gym-qa-btn" onclick="openGymOverlay('facilities')"><span class="gym-qa-icon">🏊</span> Facilities</div>
-        <div class="gym-qa-btn" onclick="openGymOverlay('reviews')"><span class="gym-qa-icon">⭐</span> Reviews</div>
-        <div class="gym-qa-btn" onclick="openGymOverlay('hours')"><span class="gym-qa-icon">🕐</span> Hours</div>
+        <div class="gym-qa-btn" onclick="openGymOverlay('facilities')" title="Facilities"><span class="gym-qa-icon">🏊</span></div>
+        <div class="gym-qa-btn" onclick="openGymOverlay('reviews')" title="Reviews"><span class="gym-qa-icon">⭐</span></div>
+        <div class="gym-qa-btn" onclick="openGymOverlay('hours')" title="Hours"><span class="gym-qa-icon">🕐</span></div>
+        <div class="gym-qa-btn" onclick="openGymOverlay('equipment')" title="Equipment"><span class="gym-qa-icon">🏋️</span></div>
+        <div class="gym-qa-btn has-label" onclick="scrollToPasses()" title="Passes"><span class="gym-qa-icon">🎟️</span> Passes</div>
       </div>
 
       <!-- ═══ 2×2 Grid "Choose a pass" cards (Kotler pricing) ═══ -->
@@ -1514,6 +1517,24 @@ function GymProfilePage(){
 
 
 /* --- Gym Detail Overlay Functions --- */
+/* Scroll to passes section with pulse highlight */
+window.scrollToPasses=function(){
+  const passHeader=document.querySelector('.gym-pass-header');
+  const passCards=document.getElementById('gym-pass-cards');
+  const scrollContainer=document.querySelector('.sg-tab-content');
+  if(passHeader&&scrollContainer){
+    const headerTop=passHeader.offsetTop-12;
+    scrollContainer.scrollTo({top:headerTop,behavior:'smooth'});
+    /* Pulse highlight the pass cards */
+    if(passCards){
+      passCards.style.transition='box-shadow .3s ease';
+      passCards.style.boxShadow='0 0 0 2px rgba(34,197,94,.5),0 0 20px rgba(34,197,94,.15)';
+      passCards.style.borderRadius='16px';
+      setTimeout(function(){passCards.style.boxShadow='none';},1500);
+    }
+  }
+};
+
 window.openGymOverlay=function(section){
   const gym=state.currentGym;if(!gym)return;
   const overlay=document.getElementById('gym-overlay');
