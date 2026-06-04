@@ -5,7 +5,8 @@
     "category": "Promo",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/02_gen_z_day_pass_journey.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/02_gen_z_day_pass_journey.webp"
+    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/02_gen_z_day_pass_journey.webp",
+    "cdnKey": "02_gen_z_day_pass_journey"
   },
   {
     "id": 2,
@@ -13,7 +14,8 @@
     "category": "Promo",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/03_five_pound_challenge.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/03_five_pound_challenge.webp"
+    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/03_five_pound_challenge.webp",
+    "cdnKey": "03_five_pound_challenge"
   },
   {
     "id": 3,
@@ -21,7 +23,8 @@
     "category": "Promo",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/04_gym_hopper_youtube_16x9.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/04_gym_hopper_youtube_16x9.webp"
+    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/04_gym_hopper_youtube_16x9.webp",
+    "cdnKey": "04_gym_hopper_youtube_16x9"
   },
   {
     "id": 4,
@@ -29,7 +32,8 @@
     "category": "Promo",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/05_stop_paying_imperative.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/05_stop_paying_imperative.webp"
+    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/05_stop_paying_imperative.webp",
+    "cdnKey": "05_stop_paying_imperative"
   },
   {
     "id": 5,
@@ -37,7 +41,8 @@
     "category": "Promo",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/06_travelling_gym_finder.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/06_travelling_gym_finder.webp"
+    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/06_travelling_gym_finder.webp",
+    "cdnKey": "06_travelling_gym_finder"
   },
   {
     "id": 6,
@@ -45,7 +50,8 @@
     "category": "Promo",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/07_gym_membership_trap.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/07_gym_membership_trap.webp"
+    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/07_gym_membership_trap.webp",
+    "cdnKey": "07_gym_membership_trap"
   },
   {
     "id": 7,
@@ -53,7 +59,8 @@
     "category": "Promo",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/08_five_pound_gym_tour_london.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/08_five_pound_gym_tour_london.webp"
+    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/08_five_pound_gym_tour_london.webp",
+    "cdnKey": "08_five_pound_gym_tour_london"
   },
   {
     "id": 8,
@@ -61,7 +68,8 @@
     "category": "Promo",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/09_before_after_gym_hopper.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/09_before_after_gym_hopper.webp"
+    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/09_before_after_gym_hopper.webp",
+    "cdnKey": "09_before_after_gym_hopper"
   },
   {
     "id": 9,
@@ -69,7 +77,8 @@
     "category": "Promo",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/10_scangym_app_demo.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/10_scangym_app_demo.webp"
+    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/10_scangym_app_demo.webp",
+    "cdnKey": "10_scangym_app_demo"
   },
   {
     "id": 10,
@@ -77,7 +86,8 @@
     "category": "Promo",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/11_crossfit_box_hop.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/11_crossfit_box_hop.webp"
+    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/11_crossfit_box_hop.webp",
+    "cdnKey": "11_crossfit_box_hop"
   },
   {
     "id": 11,
@@ -85,7 +95,8 @@
     "category": "Promo",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/12_manchester_gym_scene.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/12_manchester_gym_scene.webp"
+    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/12_manchester_gym_scene.webp",
+    "cdnKey": "12_manchester_gym_scene"
   },
   {
     "id": 12,
@@ -93,7 +104,8 @@
     "category": "Promo",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/13_birmingham_gym_discovery.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/13_birmingham_gym_discovery.webp"
+    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/13_birmingham_gym_discovery.webp",
+    "cdnKey": "13_birmingham_gym_discovery"
   },
   {
     "id": 13,
@@ -101,7 +113,8 @@
     "category": "Promo",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/14_student_gym_hack.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/14_student_gym_hack.webp"
+    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/14_student_gym_hack.webp",
+    "cdnKey": "14_student_gym_hack"
   },
   {
     "id": 14,
@@ -109,7 +122,8 @@
     "category": "Promo",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/15_yoga_studio_hop.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/15_yoga_studio_hop.webp"
+    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/15_yoga_studio_hop.webp",
+    "cdnKey": "15_yoga_studio_hop"
   },
   {
     "id": 15,
@@ -117,7 +131,8 @@
     "category": "Promo",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/16_fifty_vs_five_comparison.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/16_fifty_vs_five_comparison.webp"
+    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/16_fifty_vs_five_comparison.webp",
+    "cdnKey": "16_fifty_vs_five_comparison"
   },
   {
     "id": 16,
@@ -125,7 +140,8 @@
     "category": "Promo",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/17_edinburgh_fitness_scene.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/17_edinburgh_fitness_scene.webp"
+    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/17_edinburgh_fitness_scene.webp",
+    "cdnKey": "17_edinburgh_fitness_scene"
   },
   {
     "id": 17,
@@ -133,7 +149,8 @@
     "category": "Promo",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/18_morning_routine_scangym.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/18_morning_routine_scangym.webp"
+    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/18_morning_routine_scangym.webp",
+    "cdnKey": "18_morning_routine_scangym"
   },
   {
     "id": 18,
@@ -141,7 +158,8 @@
     "category": "Promo",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/19_leeds_gym_crawl.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/19_leeds_gym_crawl.webp"
+    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/19_leeds_gym_crawl.webp",
+    "cdnKey": "19_leeds_gym_crawl"
   },
   {
     "id": 19,
@@ -149,7 +167,8 @@
     "category": "Promo",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/20_couples_gym_date.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/20_couples_gym_date.webp"
+    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/20_couples_gym_date.webp",
+    "cdnKey": "20_couples_gym_date"
   },
   {
     "id": 20,
@@ -157,7 +176,8 @@
     "category": "Promo",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/21_late_night_gym_finder.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/21_late_night_gym_finder.webp"
+    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/21_late_night_gym_finder.webp",
+    "cdnKey": "21_late_night_gym_finder"
   },
   {
     "id": 21,
@@ -165,7 +185,8 @@
     "category": "Promo",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/22_glasgow_gym_culture.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/22_glasgow_gym_culture.webp"
+    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/22_glasgow_gym_culture.webp",
+    "cdnKey": "22_glasgow_gym_culture"
   },
   {
     "id": 22,
@@ -173,7 +194,8 @@
     "category": "Promo",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/23_bodybuilder_budget_gyms.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/23_bodybuilder_budget_gyms.webp"
+    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/23_bodybuilder_budget_gyms.webp",
+    "cdnKey": "23_bodybuilder_budget_gyms"
   },
   {
     "id": 23,
@@ -181,7 +203,8 @@
     "category": "Promo",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/24_save_money_calculator.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/24_save_money_calculator.webp"
+    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/24_save_money_calculator.webp",
+    "cdnKey": "24_save_money_calculator"
   },
   {
     "id": 24,
@@ -189,7 +212,8 @@
     "category": "CMO Content",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/ScanGym-CMO-V10-ReactionDuet-Vertical.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-V10-ReactionDuet-Vertical.webp"
+    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-V10-ReactionDuet-Vertical.webp",
+    "cdnKey": "ScanGym-CMO-V10-ReactionDuet-Vertical"
   },
   {
     "id": 25,
@@ -197,7 +221,8 @@
     "category": "CMO Content",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/ScanGym-CMO-V11-RecoveryTrend-Vertical.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-V11-RecoveryTrend-Vertical.webp"
+    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-V11-RecoveryTrend-Vertical.webp",
+    "cdnKey": "ScanGym-CMO-V11-RecoveryTrend-Vertical"
   },
   {
     "id": 26,
@@ -205,7 +230,8 @@
     "category": "CMO Content",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/ScanGym-CMO-V12-FormCheck-Vertical.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-V12-FormCheck-Vertical.webp"
+    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-V12-FormCheck-Vertical.webp",
+    "cdnKey": "ScanGym-CMO-V12-FormCheck-Vertical"
   },
   {
     "id": 27,
@@ -213,7 +239,8 @@
     "category": "CMO Content",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/ScanGym-CMO-V13-CoupleGoals-Horizontal.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-V13-CoupleGoals-Horizontal.webp"
+    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-V13-CoupleGoals-Horizontal.webp",
+    "cdnKey": "ScanGym-CMO-V13-CoupleGoals-Horizontal"
   },
   {
     "id": 28,
@@ -221,7 +248,8 @@
     "category": "CMO Content",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/ScanGym-CMO-V14-POVFirstGym-Vertical.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-V14-POVFirstGym-Vertical.webp"
+    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-V14-POVFirstGym-Vertical.webp",
+    "cdnKey": "ScanGym-CMO-V14-POVFirstGym-Vertical"
   },
   {
     "id": 29,
@@ -229,7 +257,8 @@
     "category": "CMO Content",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/ScanGym-CMO-V15-TravelFitness-Vertical.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-V15-TravelFitness-Vertical.webp"
+    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-V15-TravelFitness-Vertical.webp",
+    "cdnKey": "ScanGym-CMO-V15-TravelFitness-Vertical"
   },
   {
     "id": 30,
@@ -237,7 +266,8 @@
     "category": "CMO Content",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/ScanGym-CMO-V16-GRWM-Vertical.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-V16-GRWM-Vertical.webp"
+    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-V16-GRWM-Vertical.webp",
+    "cdnKey": "ScanGym-CMO-V16-GRWM-Vertical"
   },
   {
     "id": 31,
@@ -245,7 +275,8 @@
     "category": "CMO Content",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/ScanGym-CMO-V17-Storytime-Vertical.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-V17-Storytime-Vertical.webp"
+    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-V17-Storytime-Vertical.webp",
+    "cdnKey": "ScanGym-CMO-V17-Storytime-Vertical"
   },
   {
     "id": 32,
@@ -253,7 +284,8 @@
     "category": "CMO Content",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/ScanGym-CMO-V18-GymTour-Horizontal.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-V18-GymTour-Horizontal.webp"
+    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-V18-GymTour-Horizontal.webp",
+    "cdnKey": "ScanGym-CMO-V18-GymTour-Horizontal"
   },
   {
     "id": 33,
@@ -261,7 +293,8 @@
     "category": "CMO Content",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/ScanGym-CMO-V4-ExpertExplainer-Vertical.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-V4-ExpertExplainer-Vertical.webp"
+    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-V4-ExpertExplainer-Vertical.webp",
+    "cdnKey": "ScanGym-CMO-V4-ExpertExplainer-Vertical"
   },
   {
     "id": 34,
@@ -269,7 +302,8 @@
     "category": "CMO Content",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/ScanGym-CMO-V5-WalkAndTalk-Vertical.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-V5-WalkAndTalk-Vertical.webp"
+    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-V5-WalkAndTalk-Vertical.webp",
+    "cdnKey": "ScanGym-CMO-V5-WalkAndTalk-Vertical"
   },
   {
     "id": 35,
@@ -277,7 +311,8 @@
     "category": "CMO Content",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/ScanGym-CMO-V6-SpecificNumber-Vertical.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-V6-SpecificNumber-Vertical.webp"
+    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-V6-SpecificNumber-Vertical.webp",
+    "cdnKey": "ScanGym-CMO-V6-SpecificNumber-Vertical"
   },
   {
     "id": 36,
@@ -285,7 +320,8 @@
     "category": "CMO Content",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/ScanGym-CMO-V7-DeskToDumbbell-Vertical.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-V7-DeskToDumbbell-Vertical.webp"
+    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-V7-DeskToDumbbell-Vertical.webp",
+    "cdnKey": "ScanGym-CMO-V7-DeskToDumbbell-Vertical"
   },
   {
     "id": 37,
@@ -293,7 +329,8 @@
     "category": "CMO Content",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/ScanGym-CMO-V8-MythBust-Horizontal.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-V8-MythBust-Horizontal.webp"
+    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-V8-MythBust-Horizontal.webp",
+    "cdnKey": "ScanGym-CMO-V8-MythBust-Horizontal"
   },
   {
     "id": 38,
@@ -301,7 +338,8 @@
     "category": "CMO Content",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/ScanGym-CMO-V9-ImperativeCommand-Vertical.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-V9-ImperativeCommand-Vertical.webp"
+    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-V9-ImperativeCommand-Vertical.webp",
+    "cdnKey": "ScanGym-CMO-V9-ImperativeCommand-Vertical"
   },
   {
     "id": 39,
@@ -309,7 +347,8 @@
     "category": "CMO Content",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/ScanGym-CMO-Video1-ContrarianHook-Vertical.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-Video1-ContrarianHook-Vertical.webp"
+    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-Video1-ContrarianHook-Vertical.webp",
+    "cdnKey": "ScanGym-CMO-Video1-ContrarianHook-Vertical"
   },
   {
     "id": 40,
@@ -317,7 +356,8 @@
     "category": "CMO Content",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/ScanGym-CMO-Video2-OutcomeShowcase-Vertical.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-Video2-OutcomeShowcase-Vertical.webp"
+    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-Video2-OutcomeShowcase-Vertical.webp",
+    "cdnKey": "ScanGym-CMO-Video2-OutcomeShowcase-Vertical"
   },
   {
     "id": 41,
@@ -325,7 +365,8 @@
     "category": "CMO Content",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/ScanGym-CMO-Video3-BrandStory-Horizontal.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-Video3-BrandStory-Horizontal.webp"
+    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-Video3-BrandStory-Horizontal.webp",
+    "cdnKey": "ScanGym-CMO-Video3-BrandStory-Horizontal"
   },
   {
     "id": 42,
@@ -333,7 +374,9 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/AffiliateEarnings_v1.webp",
-    "driveId": "1JMfgsU-DVxBo4vMM8Fx8o-FjnP8Yr2mw"
+    "driveId": "1JMfgsU-DVxBo4vMM8Fx8o-FjnP8Yr2mw",
+    "url": "https://cdn.scangym.com/videos/affiliateearnings_v1.mp4",
+    "cdnKey": "affiliateearnings_v1"
   },
   {
     "id": 43,
@@ -341,7 +384,9 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/BA-NinetyDays.webp",
-    "driveId": "14qGrzVq8kvTliPnSQoaiUIjm0Hw0P_Nn"
+    "driveId": "14qGrzVq8kvTliPnSQoaiUIjm0Hw0P_Nn",
+    "url": "https://cdn.scangym.com/videos/ba_ninetydays.mp4",
+    "cdnKey": "ba_ninetydays"
   },
   {
     "id": 44,
@@ -349,7 +394,9 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/BA-TheConfidence.webp",
-    "driveId": "1XHulXapWoA1XuFoBvBsyQBemPnfpr0B-"
+    "driveId": "1XHulXapWoA1XuFoBvBsyQBemPnfpr0B-",
+    "url": "https://cdn.scangym.com/videos/ba_theconfidence.mp4",
+    "cdnKey": "ba_theconfidence"
   },
   {
     "id": 45,
@@ -357,7 +404,9 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/BA-TheHoodie.webp",
-    "driveId": "1rQOVfHT5Dy-PGQbno7fuR0gWipQ2qhQK"
+    "driveId": "1rQOVfHT5Dy-PGQbno7fuR0gWipQ2qhQK",
+    "url": "https://cdn.scangym.com/videos/ba_thehoodie.mp4",
+    "cdnKey": "ba_thehoodie"
   },
   {
     "id": 46,
@@ -365,7 +414,9 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/BA-ThePhoto.webp",
-    "driveId": "1P90bsAdELVh7h3cNAtSQN5iI4_2ODxrk"
+    "driveId": "1P90bsAdELVh7h3cNAtSQN5iI4_2ODxrk",
+    "url": "https://cdn.scangym.com/videos/ba_thephoto.mp4",
+    "cdnKey": "ba_thephoto"
   },
   {
     "id": 47,
@@ -373,7 +424,9 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/BA-TwoVersions.webp",
-    "driveId": "1tRAhop-c9Ui3af5YT6WsjGhF0QWJadds"
+    "driveId": "1tRAhop-c9Ui3af5YT6WsjGhF0QWJadds",
+    "url": "https://cdn.scangym.com/videos/ba_twoversions.mp4",
+    "cdnKey": "ba_twoversions"
   },
   {
     "id": 48,
@@ -381,7 +434,9 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/BK-MembershipTrap.webp",
-    "driveId": "10TneS_GV9F0CODrsiojCEKM9TAQbnzDY"
+    "driveId": "10TneS_GV9F0CODrsiojCEKM9TAQbnzDY",
+    "url": "https://cdn.scangym.com/videos/bk_membershiptrap.mp4",
+    "cdnKey": "bk_membershiptrap"
   },
   {
     "id": 49,
@@ -389,7 +444,9 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/BK-SixtyGyms.webp",
-    "driveId": "175vNYNv-Wu58w57L95wc4dtJm-JZWJp4"
+    "driveId": "175vNYNv-Wu58w57L95wc4dtJm-JZWJp4",
+    "url": "https://cdn.scangym.com/videos/bk_sixtygyms.mp4",
+    "cdnKey": "bk_sixtygyms"
   },
   {
     "id": 50,
@@ -397,7 +454,9 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/BK-TheFlex.webp",
-    "driveId": "1mIMKcvTr24KA4cx5lTlo-vuCDRVzTKAA"
+    "driveId": "1mIMKcvTr24KA4cx5lTlo-vuCDRVzTKAA",
+    "url": "https://cdn.scangym.com/videos/bk_theflex.mp4",
+    "cdnKey": "bk_theflex"
   },
   {
     "id": 51,
@@ -405,7 +464,9 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/BK-TheSecret.webp",
-    "driveId": "1oHr9W4rOKv4LPmngaB39oCv4iIRdQy_7"
+    "driveId": "1oHr9W4rOKv4LPmngaB39oCv4iIRdQy_7",
+    "url": "https://cdn.scangym.com/videos/bk_thesecret.mp4",
+    "cdnKey": "bk_thesecret"
   },
   {
     "id": 52,
@@ -413,7 +474,9 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/BK-TheVisitors.webp",
-    "driveId": "15uWummktfl3h1j1QqUCbZO7QfJNwHLWh"
+    "driveId": "15uWummktfl3h1j1QqUCbZO7QfJNwHLWh",
+    "url": "https://cdn.scangym.com/videos/bk_thevisitors.mp4",
+    "cdnKey": "bk_thevisitors"
   },
   {
     "id": 53,
@@ -421,7 +484,9 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/BS-SummerComing.webp",
-    "driveId": "1NaJjtVW1-sXC-za7xDGwgWxhlDARiKQk"
+    "driveId": "1NaJjtVW1-sXC-za7xDGwgWxhlDARiKQk",
+    "url": "https://cdn.scangym.com/videos/bs_summercoming.mp4",
+    "cdnKey": "bs_summercoming"
   },
   {
     "id": 54,
@@ -429,7 +494,9 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/BS-TheStandard.webp",
-    "driveId": "1FXBQSCRvfbPMzbYc2YHk7wt_2Y0shHy1"
+    "driveId": "1FXBQSCRvfbPMzbYc2YHk7wt_2Y0shHy1",
+    "url": "https://cdn.scangym.com/videos/bs_thestandard.mp4",
+    "cdnKey": "bs_thestandard"
   },
   {
     "id": 55,
@@ -437,7 +504,9 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/BeforeAfter_Freedom_v1.webp",
-    "driveId": "1OcD5sScpPjX4Cg8xbRkH1Tb6Qxne3pHM"
+    "driveId": "1OcD5sScpPjX4Cg8xbRkH1Tb6Qxne3pHM",
+    "url": "https://cdn.scangym.com/videos/beforeafter_freedom_v1.mp4",
+    "cdnKey": "beforeafter_freedom_v1"
   },
   {
     "id": 56,
@@ -445,7 +514,9 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/BeforeAfter_Wallet_v2.webp",
-    "driveId": "1hxhKrDnEygynFHIV9voJo_pZdfhfnWVq"
+    "driveId": "1hxhKrDnEygynFHIV9voJo_pZdfhfnWVq",
+    "url": "https://cdn.scangym.com/videos/beforeafter_wallet_v2.mp4",
+    "cdnKey": "beforeafter_wallet_v2"
   },
   {
     "id": 57,
@@ -453,7 +524,9 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/C01_Huberman_Clip.webp",
-    "driveId": "1rr25WANPegwL6fV_Lm9F0e8sINLgxd7J"
+    "driveId": "1rr25WANPegwL6fV_Lm9F0e8sINLgxd7J",
+    "url": "https://cdn.scangym.com/videos/c01_huberman_clip.mp4",
+    "cdnKey": "c01_huberman_clip"
   },
   {
     "id": 58,
@@ -461,7 +534,9 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/CQ-TheFeeling.webp",
-    "driveId": "1_6E-fDKBsqc1E0CyQ4D_JUA-9UtF1pdL"
+    "driveId": "1_6E-fDKBsqc1E0CyQ4D_JUA-9UtF1pdL",
+    "url": "https://cdn.scangym.com/videos/cq_thefeeling.mp4",
+    "cdnKey": "cq_thefeeling"
   },
   {
     "id": 59,
@@ -469,7 +544,9 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/CQ-TheMirror.webp",
-    "driveId": "1Obb1Jgh-nqHwSyJSKl1N1438PbZ0t1sM"
+    "driveId": "1Obb1Jgh-nqHwSyJSKl1N1438PbZ0t1sM",
+    "url": "https://cdn.scangym.com/videos/cq_themirror.mp4",
+    "cdnKey": "cq_themirror"
   },
   {
     "id": 60,
@@ -477,7 +554,9 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/CQ-TheRestart.webp",
-    "driveId": "1bkrAk3jbBumfXI6UKgvot0nceKTqlgNo"
+    "driveId": "1bkrAk3jbBumfXI6UKgvot0nceKTqlgNo",
+    "url": "https://cdn.scangym.com/videos/cq_therestart.mp4",
+    "cdnKey": "cq_therestart"
   },
   {
     "id": 61,
@@ -485,7 +564,9 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/CQ-TheVersion.webp",
-    "driveId": "1kkBb4NNwPWWtuCZuEH89TkHwKExuVeoO"
+    "driveId": "1kkBb4NNwPWWtuCZuEH89TkHwKExuVeoO",
+    "url": "https://cdn.scangym.com/videos/cq_theversion.mp4",
+    "cdnKey": "cq_theversion"
   },
   {
     "id": 62,
@@ -493,7 +574,9 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/CQ-TwoWeeks.webp",
-    "driveId": "1VpIn-WPggkwWCnoMQHtFkxK9fVqnDbqX"
+    "driveId": "1VpIn-WPggkwWCnoMQHtFkxK9fVqnDbqX",
+    "url": "https://cdn.scangym.com/videos/cq_twoweeks.mp4",
+    "cdnKey": "cq_twoweeks"
   },
   {
     "id": 63,
@@ -501,7 +584,9 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/CW-Hemsworth.webp",
-    "driveId": "1lI0O5YIM6CiuyKo5SmgjjSVAjA1duFrn"
+    "driveId": "1lI0O5YIM6CiuyKo5SmgjjSVAjA1duFrn",
+    "url": "https://cdn.scangym.com/videos/cw_hemsworth.mp4",
+    "cdnKey": "cw_hemsworth"
   },
   {
     "id": 64,
@@ -509,7 +594,9 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/CW-Ronaldo.webp",
-    "driveId": "1hLspfbjMfJzPqFQNh5IGqirzHrD1jZhE"
+    "driveId": "1hLspfbjMfJzPqFQNh5IGqirzHrD1jZhE",
+    "url": "https://cdn.scangym.com/videos/cw_ronaldo.mp4",
+    "cdnKey": "cw_ronaldo"
   },
   {
     "id": 65,
@@ -517,7 +604,9 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/CW-TheRock.webp",
-    "driveId": "1GOgSfb1r1dZeW0XI1xTWgd7OUJQ7RpmX"
+    "driveId": "1GOgSfb1r1dZeW0XI1xTWgd7OUJQ7RpmX",
+    "url": "https://cdn.scangym.com/videos/cw_therock.mp4",
+    "cdnKey": "cw_therock"
   },
   {
     "id": 66,
@@ -525,7 +614,9 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/CW-Tyson.webp",
-    "driveId": "1SNDb_EI0T0yxJi-ZdJUFlMM_ubAzjcrO"
+    "driveId": "1SNDb_EI0T0yxJi-ZdJUFlMM_ubAzjcrO",
+    "url": "https://cdn.scangym.com/videos/cw_tyson.mp4",
+    "cdnKey": "cw_tyson"
   },
   {
     "id": 67,
@@ -533,7 +624,9 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/CW-Zyzz.webp",
-    "driveId": "19HsD1KGWQn8dHZ7skt0IKObWnkE3rEn-"
+    "driveId": "19HsD1KGWQn8dHZ7skt0IKObWnkE3rEn-",
+    "url": "https://cdn.scangym.com/videos/cw_zyzz.mp4",
+    "cdnKey": "cw_zyzz"
   },
   {
     "id": 68,
@@ -541,7 +634,9 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/FC-TheBet.webp",
-    "driveId": "1qc9rSB2UbFbmu-Yty0qRAmaFVoWuQiyu"
+    "driveId": "1qc9rSB2UbFbmu-Yty0qRAmaFVoWuQiyu",
+    "url": "https://cdn.scangym.com/videos/fc_thebet.mp4",
+    "cdnKey": "fc_thebet"
   },
   {
     "id": 69,
@@ -549,7 +644,9 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/FC-TheDare.webp",
-    "driveId": "1IyjCFP4bFrdx6ZnBI1htTBE21aH08Rui"
+    "driveId": "1IyjCFP4bFrdx6ZnBI1htTBE21aH08Rui",
+    "url": "https://cdn.scangym.com/videos/fc_thedare.mp4",
+    "cdnKey": "fc_thedare"
   },
   {
     "id": 70,
@@ -557,7 +654,9 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/FC-TheExcuses.webp",
-    "driveId": "1rnX4nvhbJmiHZl6qDGB1PY3L3ICznt9W"
+    "driveId": "1rnX4nvhbJmiHZl6qDGB1PY3L3ICznt9W",
+    "url": "https://cdn.scangym.com/videos/fc_theexcuses.mp4",
+    "cdnKey": "fc_theexcuses"
   },
   {
     "id": 71,
@@ -565,7 +664,9 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/FC-TheExperiment.webp",
-    "driveId": "1vWGSY2GfCIJA6VhpbxGD6ancxVBrcdPz"
+    "driveId": "1vWGSY2GfCIJA6VhpbxGD6ancxVBrcdPz",
+    "url": "https://cdn.scangym.com/videos/fc_theexperiment.mp4",
+    "cdnKey": "fc_theexperiment"
   },
   {
     "id": 72,
@@ -573,7 +674,9 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/FC-TheTag.webp",
-    "driveId": "1b2rbmczWzHZE3rLWjELeG_HlD6jPiV-V"
+    "driveId": "1b2rbmczWzHZE3rLWjELeG_HlD6jPiV-V",
+    "url": "https://cdn.scangym.com/videos/fc_thetag.mp4",
+    "cdnKey": "fc_thetag"
   },
   {
     "id": 73,
@@ -581,7 +684,9 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/FS-SixMonths.webp",
-    "driveId": "1aCOtZYsPQ_72n_9PXew4-_bXL2zTQIAb"
+    "driveId": "1aCOtZYsPQ_72n_9PXew4-_bXL2zTQIAb",
+    "url": "https://cdn.scangym.com/videos/fs_sixmonths.mp4",
+    "cdnKey": "fs_sixmonths"
   },
   {
     "id": 74,
@@ -589,7 +694,9 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/FS-TheDecision.webp",
-    "driveId": "1UNJguCSENdyX9-vrmGtPvFW22mCSEIex"
+    "driveId": "1UNJguCSENdyX9-vrmGtPvFW22mCSEIex",
+    "url": "https://cdn.scangym.com/videos/fs_thedecision.mp4",
+    "cdnKey": "fs_thedecision"
   },
   {
     "id": 75,
@@ -597,7 +704,9 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/FS-TheLetter.webp",
-    "driveId": "1ZDNOtD5nDac8knNzo21oMskgWcKq_mvv"
+    "driveId": "1ZDNOtD5nDac8knNzo21oMskgWcKq_mvv",
+    "url": "https://cdn.scangym.com/videos/fs_theletter.mp4",
+    "cdnKey": "fs_theletter"
   },
   {
     "id": 76,
@@ -605,7 +714,9 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/FS-ThePromise.webp",
-    "driveId": "1JJest9YBq0Rk_TVd_CrwhYniH3KOCWQV"
+    "driveId": "1JJest9YBq0Rk_TVd_CrwhYniH3KOCWQV",
+    "url": "https://cdn.scangym.com/videos/fs_thepromise.mp4",
+    "cdnKey": "fs_thepromise"
   },
   {
     "id": 77,
@@ -613,7 +724,9 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/FS-TheThankYou.webp",
-    "driveId": "1lnUPljdQrp9i87prbL6I-s-mFdnP_3hZ"
+    "driveId": "1lnUPljdQrp9i87prbL6I-s-mFdnP_3hZ",
+    "url": "https://cdn.scangym.com/videos/fs_thethankyou.mp4",
+    "cdnKey": "fs_thethankyou"
   },
   {
     "id": 78,
@@ -621,7 +734,9 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/GH-Atmosphere.webp",
-    "driveId": "1oWh8GZA2tek2xb2QjOTd7K_dz0w8Iuse"
+    "driveId": "1oWh8GZA2tek2xb2QjOTd7K_dz0w8Iuse",
+    "url": "https://cdn.scangym.com/videos/gh_atmosphere.mp4",
+    "cdnKey": "gh_atmosphere"
   },
   {
     "id": 79,
@@ -629,7 +744,9 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/GH-Discipline.webp",
-    "driveId": "1bXEoEeVJZx7n4CZnxryFniklvYXISENq"
+    "driveId": "1bXEoEeVJZx7n4CZnxryFniklvYXISENq",
+    "url": "https://cdn.scangym.com/videos/gh_discipline.mp4",
+    "cdnKey": "gh_discipline"
   },
   {
     "id": 80,
@@ -637,7 +754,9 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/GH-Equipment.webp",
-    "driveId": "1P7272qMHB0qhV5V36fTfCoG6K1lsmkff"
+    "driveId": "1P7272qMHB0qhV5V36fTfCoG6K1lsmkff",
+    "url": "https://cdn.scangym.com/videos/gh_equipment.mp4",
+    "cdnKey": "gh_equipment"
   },
   {
     "id": 81,
@@ -645,7 +764,9 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/GH-Results.webp",
-    "driveId": "1DaD9boo2Aip06ZXzrKSRJJYWB7IaEIaN"
+    "driveId": "1DaD9boo2Aip06ZXzrKSRJJYWB7IaEIaN",
+    "url": "https://cdn.scangym.com/videos/gh_results.mp4",
+    "cdnKey": "gh_results"
   },
   {
     "id": 82,
@@ -653,7 +774,9 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/GH-TheTruth.webp",
-    "driveId": "14eLe5H8dVOl_ziYKr7Zpzl8jB482WOO-"
+    "driveId": "14eLe5H8dVOl_ziYKr7Zpzl8jB482WOO-",
+    "url": "https://cdn.scangym.com/videos/gh_thetruth.mp4",
+    "cdnKey": "gh_thetruth"
   },
   {
     "id": 83,
@@ -661,7 +784,9 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/GS-TheAnxiety.webp",
-    "driveId": "1UjHqcgjw6Kp_PEK2IuFc5z7F2f9Mdpfr"
+    "driveId": "1UjHqcgjw6Kp_PEK2IuFc5z7F2f9Mdpfr",
+    "url": "https://cdn.scangym.com/videos/gs_theanxiety.mp4",
+    "cdnKey": "gs_theanxiety"
   },
   {
     "id": 84,
@@ -669,7 +794,9 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/GS-TheBreakup.webp",
-    "driveId": "15Ni2KAojPjfZeK6MLbZkjlLDTrtCvlJs"
+    "driveId": "15Ni2KAojPjfZeK6MLbZkjlLDTrtCvlJs",
+    "url": "https://cdn.scangym.com/videos/gs_thebreakup.mp4",
+    "cdnKey": "gs_thebreakup"
   },
   {
     "id": 85,
@@ -677,7 +804,9 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/GS-TheConfidence.webp",
-    "driveId": "1TW9OXqywKLmFqHTnOb4xzpp1o-3tPbj9"
+    "driveId": "1TW9OXqywKLmFqHTnOb4xzpp1o-3tPbj9",
+    "url": "https://cdn.scangym.com/videos/gs_theconfidence.mp4",
+    "cdnKey": "gs_theconfidence"
   },
   {
     "id": 86,
@@ -685,7 +814,9 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/GS-TheDarkPlace.webp",
-    "driveId": "1lGkKA7ED2YiX5YAFqc0CYbD28xp1C4Ro"
+    "driveId": "1lGkKA7ED2YiX5YAFqc0CYbD28xp1C4Ro",
+    "url": "https://cdn.scangym.com/videos/gs_thedarkplace.mp4",
+    "cdnKey": "gs_thedarkplace"
   },
   {
     "id": 87,
@@ -693,182 +824,234 @@
     "category": "AI Cinematic",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/GS-TheDiscipline.webp",
-    "driveId": "1pNa6kXaA1bj5L5ejH2-LdKepYNiMvGYY"
+    "driveId": "1pNa6kXaA1bj5L5ejH2-LdKepYNiMvGYY",
+    "url": "https://cdn.scangym.com/videos/gs_thediscipline.mp4",
+    "cdnKey": "gs_thediscipline"
   },
   {
     "id": 88,
     "name": "Aberdeen",
     "category": "City Promo Reels",
     "source": "direct",
-    "driveId": "1URhD9IwlQKssnYxOekQvrtHqnx-yFFRD"
+    "driveId": "1URhD9IwlQKssnYxOekQvrtHqnx-yFFRD",
+    "url": "https://cdn.scangym.com/videos/aberdeen.mp4",
+    "cdnKey": "aberdeen"
   },
   {
     "id": 89,
     "name": "Bath",
     "category": "City Promo Reels",
     "source": "direct",
-    "driveId": "18r4Qkmkg4LZexxeiCIXS7uStiDUr2-lG"
+    "driveId": "18r4Qkmkg4LZexxeiCIXS7uStiDUr2-lG",
+    "url": "https://cdn.scangym.com/videos/bath.mp4",
+    "cdnKey": "bath"
   },
   {
     "id": 90,
     "name": "Brighton",
     "category": "City Promo Reels",
     "source": "direct",
-    "driveId": "12znCMuuwT9bP0AyBVbPVQS79XS4d2ZA2"
+    "driveId": "12znCMuuwT9bP0AyBVbPVQS79XS4d2ZA2",
+    "url": "https://cdn.scangym.com/videos/brighton.mp4",
+    "cdnKey": "brighton"
   },
   {
     "id": 91,
     "name": "Cambridge",
     "category": "City Promo Reels",
     "source": "direct",
-    "driveId": "12YvPdDUuX48R-WdAhTIZqTFfEc3eZhG6"
+    "driveId": "12YvPdDUuX48R-WdAhTIZqTFfEc3eZhG6",
+    "url": "https://cdn.scangym.com/videos/cambridge.mp4",
+    "cdnKey": "cambridge"
   },
   {
     "id": 92,
     "name": "Cardiff",
     "category": "City Promo Reels",
     "source": "direct",
-    "driveId": "1mrl1zTdua8SZAhMMVWLrLZDHmCZFJezC"
+    "driveId": "1mrl1zTdua8SZAhMMVWLrLZDHmCZFJezC",
+    "url": "https://cdn.scangym.com/videos/cardiff.mp4",
+    "cdnKey": "cardiff"
   },
   {
     "id": 93,
     "name": "Coventry",
     "category": "City Promo Reels",
     "source": "direct",
-    "driveId": "1hA7rv6k8YK9FtTQf-0dz1xrzlPqKdiPZ"
+    "driveId": "1hA7rv6k8YK9FtTQf-0dz1xrzlPqKdiPZ",
+    "url": "https://cdn.scangym.com/videos/coventry.mp4",
+    "cdnKey": "coventry"
   },
   {
     "id": 94,
     "name": "Derby",
     "category": "City Promo Reels",
     "source": "direct",
-    "driveId": "1QbkYHAI63p1xccEWhsS3OlNJdRO3qOH7"
+    "driveId": "1QbkYHAI63p1xccEWhsS3OlNJdRO3qOH7",
+    "url": "https://cdn.scangym.com/videos/derby.mp4",
+    "cdnKey": "derby"
   },
   {
     "id": 95,
     "name": "Edinburgh",
     "category": "City Promo Reels",
     "source": "direct",
-    "driveId": "1ZzsBU6waaUpzgRTSWGYpQ82blwIAfUtb"
+    "driveId": "1ZzsBU6waaUpzgRTSWGYpQ82blwIAfUtb",
+    "url": "https://cdn.scangym.com/videos/edinburgh.mp4",
+    "cdnKey": "edinburgh"
   },
   {
     "id": 96,
     "name": "Leicester",
     "category": "City Promo Reels",
     "source": "direct",
-    "driveId": "1_L1voCOKk9GdxSQaFQWFJvGehdYFVeUk"
+    "driveId": "1_L1voCOKk9GdxSQaFQWFJvGehdYFVeUk",
+    "url": "https://cdn.scangym.com/videos/leicester.mp4",
+    "cdnKey": "leicester"
   },
   {
     "id": 97,
     "name": "Nottingham",
     "category": "City Promo Reels",
     "source": "direct",
-    "driveId": "1rLYsLCQ7h07M6IqYo7KSgcBWiu3pKu7v"
+    "driveId": "1rLYsLCQ7h07M6IqYo7KSgcBWiu3pKu7v",
+    "url": "https://cdn.scangym.com/videos/nottingham.mp4",
+    "cdnKey": "nottingham"
   },
   {
     "id": 98,
     "name": "Oxford",
     "category": "City Promo Reels",
     "source": "direct",
-    "driveId": "1_QW0JfGrf9xM1i-T9sawEyGtiO5uROm3"
+    "driveId": "1_QW0JfGrf9xM1i-T9sawEyGtiO5uROm3",
+    "url": "https://cdn.scangym.com/videos/oxford.mp4",
+    "cdnKey": "oxford"
   },
   {
     "id": 99,
     "name": "Plymouth",
     "category": "City Promo Reels",
     "source": "direct",
-    "driveId": "10HiYXq6ClBZz5a0-OSZkcJyO7fkp70Jp"
+    "driveId": "10HiYXq6ClBZz5a0-OSZkcJyO7fkp70Jp",
+    "url": "https://cdn.scangym.com/videos/plymouth.mp4",
+    "cdnKey": "plymouth"
   },
   {
     "id": 100,
     "name": "Reading",
     "category": "City Promo Reels",
     "source": "direct",
-    "driveId": "19s7RiYp7nwjPVKrb1eC_ORyrR1y-6ngC"
+    "driveId": "19s7RiYp7nwjPVKrb1eC_ORyrR1y-6ngC",
+    "url": "https://cdn.scangym.com/videos/reading.mp4",
+    "cdnKey": "reading"
   },
   {
     "id": 101,
     "name": "Southampton",
     "category": "City Promo Reels",
     "source": "direct",
-    "driveId": "1yrDSBxIYVVrnA6Q_fIBYea9mV8tYpwgI"
+    "driveId": "1yrDSBxIYVVrnA6Q_fIBYea9mV8tYpwgI",
+    "url": "https://cdn.scangym.com/videos/southampton.mp4",
+    "cdnKey": "southampton"
   },
   {
     "id": 102,
     "name": "York",
     "category": "City Promo Reels",
     "source": "direct",
-    "driveId": "1P7Iv5pwcceky4QILmkLyG2655h22PY0c"
+    "driveId": "1P7Iv5pwcceky4QILmkLyG2655h22PY0c",
+    "url": "https://cdn.scangym.com/videos/york.mp4",
+    "cdnKey": "york"
   },
   {
     "id": 103,
     "name": "Birmingham",
     "category": "City Promo Square",
     "source": "direct",
-    "driveId": "1BHgjQPKHze1XhatWKZjGPEvR7E0g-EYi"
+    "driveId": "1BHgjQPKHze1XhatWKZjGPEvR7E0g-EYi",
+    "url": "https://cdn.scangym.com/videos/birmingham.mp4",
+    "cdnKey": "birmingham"
   },
   {
     "id": 104,
     "name": "Bolton",
     "category": "City Promo Square",
     "source": "direct",
-    "driveId": "1sqou-YOcC63JKm5azih29wzpfBZFiFGY"
+    "driveId": "1sqou-YOcC63JKm5azih29wzpfBZFiFGY",
+    "url": "https://cdn.scangym.com/videos/bolton.mp4",
+    "cdnKey": "bolton"
   },
   {
     "id": 105,
     "name": "Bristol",
     "category": "City Promo Square",
     "source": "direct",
-    "driveId": "1tmJgeHfn0770-HSe-K3ezMgqNdx6kxa9"
+    "driveId": "1tmJgeHfn0770-HSe-K3ezMgqNdx6kxa9",
+    "url": "https://cdn.scangym.com/videos/bristol.mp4",
+    "cdnKey": "bristol"
   },
   {
     "id": 106,
     "name": "Glasgow",
     "category": "City Promo Square",
     "source": "direct",
-    "driveId": "1AkrS9QR-EPkgbzWbOkIWbjqlWGSQAnjp"
+    "driveId": "1AkrS9QR-EPkgbzWbOkIWbjqlWGSQAnjp",
+    "url": "https://cdn.scangym.com/videos/glasgow.mp4",
+    "cdnKey": "glasgow"
   },
   {
     "id": 107,
     "name": "Leeds",
     "category": "City Promo Square",
     "source": "direct",
-    "driveId": "1O5H-2TcOWdhJfv_F6L7p42_7tidgfY_a"
+    "driveId": "1O5H-2TcOWdhJfv_F6L7p42_7tidgfY_a",
+    "url": "https://cdn.scangym.com/videos/leeds.mp4",
+    "cdnKey": "leeds"
   },
   {
     "id": 108,
     "name": "Liverpool",
     "category": "City Promo Square",
     "source": "direct",
-    "driveId": "1TWJLCehaTnAWlfkNDIANQu-MNhj3cL01"
+    "driveId": "1TWJLCehaTnAWlfkNDIANQu-MNhj3cL01",
+    "url": "https://cdn.scangym.com/videos/liverpool.mp4",
+    "cdnKey": "liverpool"
   },
   {
     "id": 109,
     "name": "London",
     "category": "City Promo Square",
     "source": "direct",
-    "driveId": "1M9Cta-MFMYNgX92vyIiSYrG6ovePRMXb"
+    "driveId": "1M9Cta-MFMYNgX92vyIiSYrG6ovePRMXb",
+    "url": "https://cdn.scangym.com/videos/london.mp4",
+    "cdnKey": "london"
   },
   {
     "id": 110,
     "name": "Manchester",
     "category": "City Promo Square",
     "source": "direct",
-    "driveId": "1qC1_8yzouxIOoNMeCVCYldgBXd5m8-No"
+    "driveId": "1qC1_8yzouxIOoNMeCVCYldgBXd5m8-No",
+    "url": "https://cdn.scangym.com/videos/manchester.mp4",
+    "cdnKey": "manchester"
   },
   {
     "id": 111,
     "name": "Newcastle",
     "category": "City Promo Square",
     "source": "direct",
-    "driveId": "15_AxMYLKYfkOSmdfeBptVsA7E6lJtIdc"
+    "driveId": "15_AxMYLKYfkOSmdfeBptVsA7E6lJtIdc",
+    "url": "https://cdn.scangym.com/videos/newcastle.mp4",
+    "cdnKey": "newcastle"
   },
   {
     "id": 112,
     "name": "Sheffield",
     "category": "City Promo Square",
     "source": "direct",
-    "driveId": "1msdOr3V2NzucZPaXfZ6Gf40CiIPR7Q7n"
+    "driveId": "1msdOr3V2NzucZPaXfZ6Gf40CiIPR7Q7n",
+    "url": "https://cdn.scangym.com/videos/sheffield.mp4",
+    "cdnKey": "sheffield"
   },
   {
     "id": 113,
@@ -876,7 +1059,9 @@
     "category": "Did You Know Videos",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/did_you_know/fact_01.webp",
-    "driveId": "1MLc-tAvDPDbjgecyPBnNKiEUK6dyjVtt"
+    "driveId": "1MLc-tAvDPDbjgecyPBnNKiEUK6dyjVtt",
+    "url": "https://cdn.scangym.com/videos/fact_01.mp4",
+    "cdnKey": "fact_01"
   },
   {
     "id": 114,
@@ -884,7 +1069,9 @@
     "category": "Did You Know Videos",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/did_you_know/fact_02.webp",
-    "driveId": "1biiI7HBewph3jCVrgZAocQzag9jV8mta"
+    "driveId": "1biiI7HBewph3jCVrgZAocQzag9jV8mta",
+    "url": "https://cdn.scangym.com/videos/fact_02.mp4",
+    "cdnKey": "fact_02"
   },
   {
     "id": 115,
@@ -892,7 +1079,9 @@
     "category": "Did You Know Videos",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/did_you_know/fact_03.webp",
-    "driveId": "1-wS_KqPhqV6qE10vYSGivLUFtO5VqETf"
+    "driveId": "1-wS_KqPhqV6qE10vYSGivLUFtO5VqETf",
+    "url": "https://cdn.scangym.com/videos/fact_03.mp4",
+    "cdnKey": "fact_03"
   },
   {
     "id": 116,
@@ -900,7 +1089,9 @@
     "category": "Did You Know Videos",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/did_you_know/fact_04.webp",
-    "driveId": "1E5a2TntgtrFV5Eh3vzbHOEUt9IQLuYLR"
+    "driveId": "1E5a2TntgtrFV5Eh3vzbHOEUt9IQLuYLR",
+    "url": "https://cdn.scangym.com/videos/fact_04.mp4",
+    "cdnKey": "fact_04"
   },
   {
     "id": 117,
@@ -908,7 +1099,9 @@
     "category": "Did You Know Videos",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/did_you_know/fact_05.webp",
-    "driveId": "1GGHvFiwTYk9a1xBZ-IB5_eRojiIVWNc2"
+    "driveId": "1GGHvFiwTYk9a1xBZ-IB5_eRojiIVWNc2",
+    "url": "https://cdn.scangym.com/videos/fact_05.mp4",
+    "cdnKey": "fact_05"
   },
   {
     "id": 118,
@@ -916,7 +1109,9 @@
     "category": "Did You Know Videos",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/did_you_know/fact_06.webp",
-    "driveId": "1yn2rWsqOSknWb8ov4Kobg7ceg7qn94hf"
+    "driveId": "1yn2rWsqOSknWb8ov4Kobg7ceg7qn94hf",
+    "url": "https://cdn.scangym.com/videos/fact_06.mp4",
+    "cdnKey": "fact_06"
   },
   {
     "id": 119,
@@ -924,7 +1119,9 @@
     "category": "Did You Know Videos",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/did_you_know/fact_07.webp",
-    "driveId": "1x1DeY2MVXqPC1R-WUkByliHs-CAali-6"
+    "driveId": "1x1DeY2MVXqPC1R-WUkByliHs-CAali-6",
+    "url": "https://cdn.scangym.com/videos/fact_07.mp4",
+    "cdnKey": "fact_07"
   },
   {
     "id": 120,
@@ -932,140 +1129,180 @@
     "category": "Did You Know Videos",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/did_you_know/fact_08.webp",
-    "driveId": "1vBTnrgJ_kxxWbt4SQa_bqir5BjHEuMAe"
+    "driveId": "1vBTnrgJ_kxxWbt4SQa_bqir5BjHEuMAe",
+    "url": "https://cdn.scangym.com/videos/fact_08.mp4",
+    "cdnKey": "fact_08"
   },
   {
     "id": 121,
     "name": "01 Tiktok Hook Vertical",
     "category": "General",
     "source": "direct",
-    "driveId": "14RCOl8H16PppoIKZazIswuB1oQcAIKHZ"
+    "driveId": "14RCOl8H16PppoIKZazIswuB1oQcAIKHZ",
+    "url": "https://cdn.scangym.com/videos/01_tiktok_hook_vertical.mp4",
+    "cdnKey": "01_tiktok_hook_vertical"
   },
   {
     "id": 122,
     "name": "02 Gym Lifestyle Vertical",
     "category": "General",
     "source": "direct",
-    "driveId": "1wPEvZDkpoe-wU49-VwoG7vevhTBMC5cU"
+    "driveId": "1wPEvZDkpoe-wU49-VwoG7vevhTBMC5cU",
+    "url": "https://cdn.scangym.com/videos/02_gym_lifestyle_vertical.mp4",
+    "cdnKey": "02_gym_lifestyle_vertical"
   },
   {
     "id": 123,
     "name": "03 Youtube Ad Horizontal",
     "category": "General",
     "source": "direct",
-    "driveId": "1coHwPHWQMEQ3jjf3wqbZHLLqbsuthefm"
+    "driveId": "1coHwPHWQMEQ3jjf3wqbZHLLqbsuthefm",
+    "url": "https://cdn.scangym.com/videos/03_youtube_ad_horizontal.mp4",
+    "cdnKey": "03_youtube_ad_horizontal"
   },
   {
     "id": 124,
     "name": "01 Gym Entry Vertical",
     "category": "General",
     "source": "direct",
-    "driveId": "18jbjZeDDv7B7jhnNctn9IvxrZM-5lP4l"
+    "driveId": "18jbjZeDDv7B7jhnNctn9IvxrZM-5lP4l",
+    "url": "https://cdn.scangym.com/videos/01_gym_entry_vertical.mp4",
+    "cdnKey": "01_gym_entry_vertical"
   },
   {
     "id": 125,
     "name": "02 Phone Tap Vertical",
     "category": "General",
     "source": "direct",
-    "driveId": "1T49IUEJ_UNnKxBvrRAdMZPfHnYR4V3AB"
+    "driveId": "1T49IUEJ_UNnKxBvrRAdMZPfHnYR4V3AB",
+    "url": "https://cdn.scangym.com/videos/02_phone_tap_vertical.mp4",
+    "cdnKey": "02_phone_tap_vertical"
   },
   {
     "id": 126,
     "name": "03 Workout Montage Horizontal",
     "category": "General",
     "source": "direct",
-    "driveId": "1DO0PMxd_0P17t32a8FBiRExVtaP1ryTL"
+    "driveId": "1DO0PMxd_0P17t32a8FBiRExVtaP1ryTL",
+    "url": "https://cdn.scangym.com/videos/03_workout_montage_horizontal.mp4",
+    "cdnKey": "03_workout_montage_horizontal"
   },
   {
     "id": 127,
     "name": "S01 Huberman",
     "category": "Influencer",
     "source": "direct",
-    "driveId": "1XgbNCq9Ux2DGwLWxcxkQ4IJtlweYJh7C"
+    "driveId": "1XgbNCq9Ux2DGwLWxcxkQ4IJtlweYJh7C",
+    "url": "https://cdn.scangym.com/videos/s01_huberman.mp4",
+    "cdnKey": "s01_huberman"
   },
   {
     "id": 128,
     "name": "S06 Goggins",
     "category": "Influencer",
     "source": "direct",
-    "driveId": "1UyrNXS_1w16mqOwpUdyskfuSV4-fKZ27"
+    "driveId": "1UyrNXS_1w16mqOwpUdyskfuSV4-fKZ27",
+    "url": "https://cdn.scangym.com/videos/s06_goggins.mp4",
+    "cdnKey": "s06_goggins"
   },
   {
     "id": 129,
     "name": "S11 Hormozi",
     "category": "Influencer",
     "source": "direct",
-    "driveId": "1kYbL5WLUdM00AeUE9pllLH_zO3tGyPwv"
+    "driveId": "1kYbL5WLUdM00AeUE9pllLH_zO3tGyPwv",
+    "url": "https://cdn.scangym.com/videos/s11_hormozi.mp4",
+    "cdnKey": "s11_hormozi"
   },
   {
     "id": 130,
     "name": "S17 Ksi",
     "category": "Influencer",
     "source": "direct",
-    "driveId": "13TudgUqZ9VWqgcfdhPh9cvnjut_ksAJK"
+    "driveId": "13TudgUqZ9VWqgcfdhPh9cvnjut_ksAJK",
+    "url": "https://cdn.scangym.com/videos/s17_ksi.mp4",
+    "cdnKey": "s17_ksi"
   },
   {
     "id": 131,
     "name": "S25 Genz",
     "category": "Influencer",
     "source": "direct",
-    "driveId": "1QLVxRiggc_XPok1IDs8VVPG_LAy5JVt8"
+    "driveId": "1QLVxRiggc_XPok1IDs8VVPG_LAy5JVt8",
+    "url": "https://cdn.scangym.com/videos/s25_genz.mp4",
+    "cdnKey": "s25_genz"
   },
   {
     "id": 132,
     "name": "Vs Anytime Fitness",
     "category": "Price Compare",
     "source": "direct",
-    "driveId": "1XXQCzdLKRZEVosHajm9Rz_SJiVkR7iy4"
+    "driveId": "1XXQCzdLKRZEVosHajm9Rz_SJiVkR7iy4",
+    "url": "https://cdn.scangym.com/videos/vs_anytime_fitness.mp4",
+    "cdnKey": "vs_anytime_fitness"
   },
   {
     "id": 133,
     "name": "Vs David Lloyd",
     "category": "Price Compare",
     "source": "direct",
-    "driveId": "15G66jW8V8zUw5-U-3qyYixWXnsGQjUg3"
+    "driveId": "15G66jW8V8zUw5-U-3qyYixWXnsGQjUg3",
+    "url": "https://cdn.scangym.com/videos/vs_david_lloyd.mp4",
+    "cdnKey": "vs_david_lloyd"
   },
   {
     "id": 134,
     "name": "Vs Fitness First",
     "category": "Price Compare",
     "source": "direct",
-    "driveId": "1jVzGetv483zUhuUhLShOkV4jTL8x7-kk"
+    "driveId": "1jVzGetv483zUhuUhLShOkV4jTL8x7-kk",
+    "url": "https://cdn.scangym.com/videos/vs_fitness_first.mp4",
+    "cdnKey": "vs_fitness_first"
   },
   {
     "id": 135,
     "name": "Vs Jd Gyms",
     "category": "Price Compare",
     "source": "direct",
-    "driveId": "1PGrx6EZw1CGX79y3iSNhmgotWpDlfaD2"
+    "driveId": "1PGrx6EZw1CGX79y3iSNhmgotWpDlfaD2",
+    "url": "https://cdn.scangym.com/videos/vs_jd_gyms.mp4",
+    "cdnKey": "vs_jd_gyms"
   },
   {
     "id": 136,
     "name": "Vs Nuffield Health",
     "category": "Price Compare",
     "source": "direct",
-    "driveId": "19DMkUDMtBhR1xbsOn8uxrSTlxihHOvg-"
+    "driveId": "19DMkUDMtBhR1xbsOn8uxrSTlxihHOvg-",
+    "url": "https://cdn.scangym.com/videos/vs_nuffield_health.mp4",
+    "cdnKey": "vs_nuffield_health"
   },
   {
     "id": 137,
     "name": "Vs Puregym",
     "category": "Price Compare",
     "source": "direct",
-    "driveId": "1wRzENroo-sjiMOllL4dgS5N7HOwwjWDP"
+    "driveId": "1wRzENroo-sjiMOllL4dgS5N7HOwwjWDP",
+    "url": "https://cdn.scangym.com/videos/vs_puregym.mp4",
+    "cdnKey": "vs_puregym"
   },
   {
     "id": 138,
     "name": "Vs The Gym Group",
     "category": "Price Compare",
     "source": "direct",
-    "driveId": "1BLI5vpteZqH6rSi9Ec9Gvka5dzZuP_Yr"
+    "driveId": "1BLI5vpteZqH6rSi9Ec9Gvka5dzZuP_Yr",
+    "url": "https://cdn.scangym.com/videos/vs_the_gym_group.mp4",
+    "cdnKey": "vs_the_gym_group"
   },
   {
     "id": 139,
     "name": "Vs Virgin Active",
     "category": "Price Compare",
     "source": "direct",
-    "driveId": "1S-zKCKK4z7f0Gvi16EgLEm_QxEs9x0cf"
+    "driveId": "1S-zKCKK4z7f0Gvi16EgLEm_QxEs9x0cf",
+    "url": "https://cdn.scangym.com/videos/vs_virgin_active.mp4",
+    "cdnKey": "vs_virgin_active"
   },
   {
     "id": 140,
@@ -1073,7 +1310,9 @@
     "category": "Ready-to-Post",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ready_to_post/CityDiscovery_Birmingham_h0.webp",
-    "driveId": "1TYDWdC-AO5g5RrETv1rI1VMcaGElNo6y"
+    "driveId": "1TYDWdC-AO5g5RrETv1rI1VMcaGElNo6y",
+    "url": "https://cdn.scangym.com/videos/citydiscovery_birmingham_h0.mp4",
+    "cdnKey": "citydiscovery_birmingham_h0"
   },
   {
     "id": 141,
@@ -1081,7 +1320,9 @@
     "category": "Ready-to-Post",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ready_to_post/CityDiscovery_Birmingham_h1.webp",
-    "driveId": "1S2q26MbZ4V2MjMlA0WfWvPj_OwDH9gyL"
+    "driveId": "1S2q26MbZ4V2MjMlA0WfWvPj_OwDH9gyL",
+    "url": "https://cdn.scangym.com/videos/citydiscovery_birmingham_h1.mp4",
+    "cdnKey": "citydiscovery_birmingham_h1"
   },
   {
     "id": 142,
@@ -1089,7 +1330,9 @@
     "category": "Ready-to-Post",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ready_to_post/CityDiscovery_Birmingham_h2.webp",
-    "driveId": "1xIj3hF-tjVtqGOfbvQrp88Vs3tGR0Rrd"
+    "driveId": "1xIj3hF-tjVtqGOfbvQrp88Vs3tGR0Rrd",
+    "url": "https://cdn.scangym.com/videos/citydiscovery_birmingham_h2.mp4",
+    "cdnKey": "citydiscovery_birmingham_h2"
   },
   {
     "id": 143,
@@ -1097,7 +1340,9 @@
     "category": "Ready-to-Post",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ready_to_post/CityDiscovery_Bolton_h0.webp",
-    "driveId": "1PCZ01I_aPbOU_VjBpkG9Jggr93k6Zc9b"
+    "driveId": "1PCZ01I_aPbOU_VjBpkG9Jggr93k6Zc9b",
+    "url": "https://cdn.scangym.com/videos/citydiscovery_bolton_h0.mp4",
+    "cdnKey": "citydiscovery_bolton_h0"
   },
   {
     "id": 144,
@@ -1105,7 +1350,9 @@
     "category": "Ready-to-Post",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ready_to_post/CityDiscovery_Bolton_h1.webp",
-    "driveId": "1pNhWuorJf49x_4d3-VOHZHZy0uVLKJoh"
+    "driveId": "1pNhWuorJf49x_4d3-VOHZHZy0uVLKJoh",
+    "url": "https://cdn.scangym.com/videos/citydiscovery_bolton_h1.mp4",
+    "cdnKey": "citydiscovery_bolton_h1"
   },
   {
     "id": 145,
@@ -1113,7 +1360,9 @@
     "category": "Ready-to-Post",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ready_to_post/CityDiscovery_Bolton_h2.webp",
-    "driveId": "19gsr4rJpY2_f-aIymso_jKR_UFmhX-Cy"
+    "driveId": "19gsr4rJpY2_f-aIymso_jKR_UFmhX-Cy",
+    "url": "https://cdn.scangym.com/videos/citydiscovery_bolton_h2.mp4",
+    "cdnKey": "citydiscovery_bolton_h2"
   },
   {
     "id": 146,
@@ -1121,7 +1370,9 @@
     "category": "Ready-to-Post",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ready_to_post/CreatorEarnings_Birmingham_h0.webp",
-    "driveId": "1nXziWa431cadQhckeerVCQWJrXpGwYkm"
+    "driveId": "1nXziWa431cadQhckeerVCQWJrXpGwYkm",
+    "url": "https://cdn.scangym.com/videos/creatorearnings_birmingham_h0.mp4",
+    "cdnKey": "creatorearnings_birmingham_h0"
   },
   {
     "id": 147,
@@ -1129,7 +1380,9 @@
     "category": "Ready-to-Post",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ready_to_post/CreatorEarnings_Birmingham_h1.webp",
-    "driveId": "1KjAVfnr78mYOZJ83qgu8OqKuHERi8XUh"
+    "driveId": "1KjAVfnr78mYOZJ83qgu8OqKuHERi8XUh",
+    "url": "https://cdn.scangym.com/videos/creatorearnings_birmingham_h1.mp4",
+    "cdnKey": "creatorearnings_birmingham_h1"
   },
   {
     "id": 148,
@@ -1137,7 +1390,9 @@
     "category": "Ready-to-Post",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ready_to_post/CreatorEarnings_Birmingham_h2.webp",
-    "driveId": "18m9fPHQynrqBbSNers6iUpeF0yD7ahBt"
+    "driveId": "18m9fPHQynrqBbSNers6iUpeF0yD7ahBt",
+    "url": "https://cdn.scangym.com/videos/creatorearnings_birmingham_h2.mp4",
+    "cdnKey": "creatorearnings_birmingham_h2"
   },
   {
     "id": 149,
@@ -1145,7 +1400,9 @@
     "category": "Ready-to-Post",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ready_to_post/CreatorEarnings_Bolton_h0.webp",
-    "driveId": "14bud3irhtBOW-htKjmziImga_zkFbCu6"
+    "driveId": "14bud3irhtBOW-htKjmziImga_zkFbCu6",
+    "url": "https://cdn.scangym.com/videos/creatorearnings_bolton_h0.mp4",
+    "cdnKey": "creatorearnings_bolton_h0"
   },
   {
     "id": 150,
@@ -1153,7 +1410,9 @@
     "category": "Ready-to-Post",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ready_to_post/CreatorEarnings_Bolton_h1.webp",
-    "driveId": "1Nu-hkhIR1DsboTNOtvkmr-4x_sIw1bOX"
+    "driveId": "1Nu-hkhIR1DsboTNOtvkmr-4x_sIw1bOX",
+    "url": "https://cdn.scangym.com/videos/creatorearnings_bolton_h1.mp4",
+    "cdnKey": "creatorearnings_bolton_h1"
   },
   {
     "id": 151,
@@ -1161,7 +1420,9 @@
     "category": "Ready-to-Post",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ready_to_post/CreatorEarnings_Bolton_h2.webp",
-    "driveId": "1Ce5r-cTvyBr-tht1FLjNWhSicrzueE6z"
+    "driveId": "1Ce5r-cTvyBr-tht1FLjNWhSicrzueE6z",
+    "url": "https://cdn.scangym.com/videos/creatorearnings_bolton_h2.mp4",
+    "cdnKey": "creatorearnings_bolton_h2"
   },
   {
     "id": 152,
@@ -1169,7 +1430,9 @@
     "category": "Ready-to-Post",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ready_to_post/DontJoinAGym_Birmingham_GBP10.webp",
-    "driveId": "1a3HlIpokiBChBB9jpN4Ie6VU-5vHE0P3"
+    "driveId": "1a3HlIpokiBChBB9jpN4Ie6VU-5vHE0P3",
+    "url": "https://cdn.scangym.com/videos/dontjoinagym_birmingham_gbp10.mp4",
+    "cdnKey": "dontjoinagym_birmingham_gbp10"
   },
   {
     "id": 153,
@@ -1177,7 +1440,9 @@
     "category": "Ready-to-Post",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ready_to_post/DontJoinAGym_Birmingham_GBP5.webp",
-    "driveId": "1ITxbJc9w6R4oF_87UNh3xvxbyoyiE5sy"
+    "driveId": "1ITxbJc9w6R4oF_87UNh3xvxbyoyiE5sy",
+    "url": "https://cdn.scangym.com/videos/dontjoinagym_birmingham_gbp5.mp4",
+    "cdnKey": "dontjoinagym_birmingham_gbp5"
   },
   {
     "id": 154,
@@ -1185,7 +1450,9 @@
     "category": "Ready-to-Post",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ready_to_post/DontJoinAGym_Birmingham_GBP7.webp",
-    "driveId": "1FTXykzJFSbzv7WQAgsCNNL2THNunARLk"
+    "driveId": "1FTXykzJFSbzv7WQAgsCNNL2THNunARLk",
+    "url": "https://cdn.scangym.com/videos/dontjoinagym_birmingham_gbp7.mp4",
+    "cdnKey": "dontjoinagym_birmingham_gbp7"
   },
   {
     "id": 155,
@@ -1193,7 +1460,9 @@
     "category": "Ready-to-Post",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ready_to_post/DontJoinAGym_Bolton_GBP10.webp",
-    "driveId": "1N00LuuVIbWFtQsTckQClCeiYunfXWIwx"
+    "driveId": "1N00LuuVIbWFtQsTckQClCeiYunfXWIwx",
+    "url": "https://cdn.scangym.com/videos/dontjoinagym_bolton_gbp10.mp4",
+    "cdnKey": "dontjoinagym_bolton_gbp10"
   },
   {
     "id": 156,
@@ -1201,7 +1470,9 @@
     "category": "Ready-to-Post",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ready_to_post/DontJoinAGym_Bolton_GBP5.webp",
-    "driveId": "1VwPMqVF5YCmtACOSlyV4eCLdjB9iLhC2"
+    "driveId": "1VwPMqVF5YCmtACOSlyV4eCLdjB9iLhC2",
+    "url": "https://cdn.scangym.com/videos/dontjoinagym_bolton_gbp5.mp4",
+    "cdnKey": "dontjoinagym_bolton_gbp5"
   },
   {
     "id": 157,
@@ -1209,7 +1480,9 @@
     "category": "Ready-to-Post",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ready_to_post/DontJoinAGym_Bolton_GBP7.webp",
-    "driveId": "1EgSzjN6W3DQ-2UZhrEnOhYlQnqUOfis5"
+    "driveId": "1EgSzjN6W3DQ-2UZhrEnOhYlQnqUOfis5",
+    "url": "https://cdn.scangym.com/videos/dontjoinagym_bolton_gbp7.mp4",
+    "cdnKey": "dontjoinagym_bolton_gbp7"
   },
   {
     "id": 158,
@@ -1217,7 +1490,9 @@
     "category": "Ready-to-Post",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ready_to_post/HowItWorks_Birmingham_h0.webp",
-    "driveId": "15LxZWnKz53kmxi3SfCi3smKTfOKCteXM"
+    "driveId": "15LxZWnKz53kmxi3SfCi3smKTfOKCteXM",
+    "url": "https://cdn.scangym.com/videos/howitworks_birmingham_h0.mp4",
+    "cdnKey": "howitworks_birmingham_h0"
   },
   {
     "id": 159,
@@ -1225,7 +1500,9 @@
     "category": "Ready-to-Post",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ready_to_post/HowItWorks_Birmingham_h1.webp",
-    "driveId": "1j4lB0ZXfP_2ycCx6VYJgT1ixoMg_hlhl"
+    "driveId": "1j4lB0ZXfP_2ycCx6VYJgT1ixoMg_hlhl",
+    "url": "https://cdn.scangym.com/videos/howitworks_birmingham_h1.mp4",
+    "cdnKey": "howitworks_birmingham_h1"
   },
   {
     "id": 160,
@@ -1233,7 +1510,9 @@
     "category": "Ready-to-Post",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ready_to_post/HowItWorks_Birmingham_h2.webp",
-    "driveId": "1vm3Rk-YgkQ2gFOLngVe73g4bupSOuGDq"
+    "driveId": "1vm3Rk-YgkQ2gFOLngVe73g4bupSOuGDq",
+    "url": "https://cdn.scangym.com/videos/howitworks_birmingham_h2.mp4",
+    "cdnKey": "howitworks_birmingham_h2"
   },
   {
     "id": 161,
@@ -1241,7 +1520,9 @@
     "category": "Ready-to-Post",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ready_to_post/PriceCompare_Birmingham_h0.webp",
-    "driveId": "1hcDYJt2N-TLCsEbzmtX-2M1O4CpUsgRU"
+    "driveId": "1hcDYJt2N-TLCsEbzmtX-2M1O4CpUsgRU",
+    "url": "https://cdn.scangym.com/videos/pricecompare_birmingham_h0.mp4",
+    "cdnKey": "pricecompare_birmingham_h0"
   },
   {
     "id": 162,
@@ -1249,7 +1530,9 @@
     "category": "Ready-to-Post",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ready_to_post/PriceCompare_Birmingham_h1.webp",
-    "driveId": "14sPHzXnJJNpLDmwcHYnJ0tRlh_lyDK4r"
+    "driveId": "14sPHzXnJJNpLDmwcHYnJ0tRlh_lyDK4r",
+    "url": "https://cdn.scangym.com/videos/pricecompare_birmingham_h1.mp4",
+    "cdnKey": "pricecompare_birmingham_h1"
   },
   {
     "id": 163,
@@ -1257,7 +1540,9 @@
     "category": "Ready-to-Post",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ready_to_post/PriceCompare_Birmingham_h2.webp",
-    "driveId": "1MSpCXQy7Haj63Gu1fSkTJ4qAYeda5dRr"
+    "driveId": "1MSpCXQy7Haj63Gu1fSkTJ4qAYeda5dRr",
+    "url": "https://cdn.scangym.com/videos/pricecompare_birmingham_h2.mp4",
+    "cdnKey": "pricecompare_birmingham_h2"
   },
   {
     "id": 164,
@@ -1265,7 +1550,9 @@
     "category": "TikTok-Reels AI",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/tiktok_reels_ai/reel_morning_routine.webp",
-    "driveId": "1hJcBQ8AQr4LC0225XCCv7E3015lsI0rs"
+    "driveId": "1hJcBQ8AQr4LC0225XCCv7E3015lsI0rs",
+    "url": "https://cdn.scangym.com/videos/reel_morning_routine.mp4",
+    "cdnKey": "reel_morning_routine"
   },
   {
     "id": 165,
@@ -1273,7 +1560,9 @@
     "category": "TikTok-Reels AI",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/tiktok_reels_ai/tiktok_5_pound.webp",
-    "driveId": "10YquVXQam1pkUWSibMr3VpK4rtUfadgX"
+    "driveId": "10YquVXQam1pkUWSibMr3VpK4rtUfadgX",
+    "url": "https://cdn.scangym.com/videos/tiktok_5_pound.mp4",
+    "cdnKey": "tiktok_5_pound"
   },
   {
     "id": 166,
@@ -1281,7 +1570,9 @@
     "category": "TikTok-Reels AI",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/tiktok_reels_ai/tiktok_affiliate_earn.webp",
-    "driveId": "15CPW0MjnqxggPGSiwe85YFXU0182hUri"
+    "driveId": "15CPW0MjnqxggPGSiwe85YFXU0182hUri",
+    "url": "https://cdn.scangym.com/videos/tiktok_affiliate_earn.mp4",
+    "cdnKey": "tiktok_affiliate_earn"
   },
   {
     "id": 167,
@@ -1289,7 +1580,9 @@
     "category": "TikTok-Reels AI",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/tiktok_reels_ai/tiktok_any_gym.webp",
-    "driveId": "1lmvm3XdCNubu2863fR3Mobc8OldO_0P2"
+    "driveId": "1lmvm3XdCNubu2863fR3Mobc8OldO_0P2",
+    "url": "https://cdn.scangym.com/videos/tiktok_any_gym.mp4",
+    "cdnKey": "tiktok_any_gym"
   },
   {
     "id": 168,
@@ -1297,7 +1590,9 @@
     "category": "TikTok-Reels AI",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/tiktok_reels_ai/tiktok_gym_hopping.webp",
-    "driveId": "1E_i7-F7Q4r2D675yS7xuBsia0CJI0abd"
+    "driveId": "1E_i7-F7Q4r2D675yS7xuBsia0CJI0abd",
+    "url": "https://cdn.scangym.com/videos/tiktok_gym_hopping.mp4",
+    "cdnKey": "tiktok_gym_hopping"
   },
   {
     "id": 169,
@@ -1305,7 +1600,9 @@
     "category": "TikTok-Reels AI",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/tiktok_reels_ai/tiktok_membership_rip.webp",
-    "driveId": "1SCMTTxaVfjuZYYoMNGcjbVAuJ3gNcd86"
+    "driveId": "1SCMTTxaVfjuZYYoMNGcjbVAuJ3gNcd86",
+    "url": "https://cdn.scangym.com/videos/tiktok_membership_rip.mp4",
+    "cdnKey": "tiktok_membership_rip"
   },
   {
     "id": 170,
@@ -1313,7 +1610,9 @@
     "category": "TikTok-Reels AI",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/tiktok_reels_ai/tiktok_student_hack.webp",
-    "driveId": "1UQ4GU9iGVjE6o4U9xJ5xwNWXFvcVexjC"
+    "driveId": "1UQ4GU9iGVjE6o4U9xJ5xwNWXFvcVexjC",
+    "url": "https://cdn.scangym.com/videos/tiktok_student_hack.mp4",
+    "cdnKey": "tiktok_student_hack"
   },
   {
     "id": 171,
@@ -1321,448 +1620,576 @@
     "category": "TikTok-Reels AI",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/tiktok_reels_ai/tiktok_walk_in.webp",
-    "driveId": "159Pw9sES2q7a4Q-e8jf7A8Zv8g8ah2ts"
+    "driveId": "159Pw9sES2q7a4Q-e8jf7A8Zv8g8ah2ts",
+    "url": "https://cdn.scangym.com/videos/tiktok_walk_in.mp4",
+    "cdnKey": "tiktok_walk_in"
   },
   {
     "id": 172,
     "name": "02152304Fbea45A4A5396C23Ba827Be9 B860C0646994925E9",
     "category": "UGC Videos",
     "source": "direct",
-    "driveId": "1R6lz_Quk2D_Tb2f3thfXXHl_Ukq5K87p"
+    "driveId": "1R6lz_Quk2D_Tb2f3thfXXHl_Ukq5K87p",
+    "url": "https://cdn.scangym.com/videos/02152304fbea45a4a5396c23ba827be9_b860c0646994925e9.mp4",
+    "cdnKey": "02152304fbea45a4a5396c23ba827be9_b860c0646994925e9"
   },
   {
     "id": 173,
     "name": "1",
     "category": "UGC Videos",
     "source": "direct",
-    "driveId": "1PIvkq78ofHIowoxPx0s4liomXenDqM4g"
+    "driveId": "1PIvkq78ofHIowoxPx0s4liomXenDqM4g",
+    "url": "https://cdn.scangym.com/videos/1.mp4",
+    "cdnKey": "1"
   },
   {
     "id": 174,
     "name": "1.Mp4 30B9911B2A2B71Efbfc94531859C0102",
     "category": "UGC Videos",
     "source": "direct",
-    "driveId": "1kdbzLcZS2zqiY7_lL56i3Y-jtJzG0iXM"
+    "driveId": "1kdbzLcZS2zqiY7_lL56i3Y-jtJzG0iXM",
+    "url": "https://cdn.scangym.com/videos/1mp4_30b9911b2a2b71efbfc94531859c0102.mp4",
+    "cdnKey": "1mp4_30b9911b2a2b71efbfc94531859c0102"
   },
   {
     "id": 175,
     "name": "1.Mp4 40636Cc8D47671Eeba924531958D0102",
     "category": "UGC Videos",
     "source": "direct",
-    "driveId": "1zMewTxJtYrbvTwSpRj1YIO3z06op-H24"
+    "driveId": "1zMewTxJtYrbvTwSpRj1YIO3z06op-H24",
+    "url": "https://cdn.scangym.com/videos/1mp4_40636cc8d47671eeba924531958d0102.mp4",
+    "cdnKey": "1mp4_40636cc8d47671eeba924531958d0102"
   },
   {
     "id": 176,
     "name": "1.Mp4 60A4A203Cb8A71Eeb5824531959C0102",
     "category": "UGC Videos",
     "source": "direct",
-    "driveId": "14wvhhd-5DFzWvoagnRXMKVXDvhzuPSmg"
+    "driveId": "14wvhhd-5DFzWvoagnRXMKVXDvhzuPSmg",
+    "url": "https://cdn.scangym.com/videos/1mp4_60a4a203cb8a71eeb5824531959c0102.mp4",
+    "cdnKey": "1mp4_60a4a203cb8a71eeb5824531959c0102"
   },
   {
     "id": 177,
     "name": "1.Mp4 709D7460Cae971Eeae8E4531958C0102",
     "category": "UGC Videos",
     "source": "direct",
-    "driveId": "1WC91--h3hx1-p69L5U9i7xf7zESwv2lx"
+    "driveId": "1WC91--h3hx1-p69L5U9i7xf7zESwv2lx",
+    "url": "https://cdn.scangym.com/videos/1mp4_709d7460cae971eeae8e4531958c0102.mp4",
+    "cdnKey": "1mp4_709d7460cae971eeae8e4531958c0102"
   },
   {
     "id": 178,
     "name": "1.Mp4 80B164782A2B71Efbfc94531859C0102",
     "category": "UGC Videos",
     "source": "direct",
-    "driveId": "1GmS3mdPUR4refjg2PoEX5tcfUse9sxBE"
+    "driveId": "1GmS3mdPUR4refjg2PoEX5tcfUse9sxBE",
+    "url": "https://cdn.scangym.com/videos/1mp4_80b164782a2b71efbfc94531859c0102.mp4",
+    "cdnKey": "1mp4_80b164782a2b71efbfc94531859c0102"
   },
   {
     "id": 179,
     "name": "1.Mp4 901Fcb4Ee45271Eebfc34531959D0102",
     "category": "UGC Videos",
     "source": "direct",
-    "driveId": "1AMUxnBolu7Ao0iKKbZbVxL1MYCiokvms"
+    "driveId": "1AMUxnBolu7Ao0iKKbZbVxL1MYCiokvms",
+    "url": "https://cdn.scangym.com/videos/1mp4_901fcb4ee45271eebfc34531959d0102.mp4",
+    "cdnKey": "1mp4_901fcb4ee45271eebfc34531959d0102"
   },
   {
     "id": 180,
     "name": "1.Mp4 A00Cec70Caea71Eebfc45017F1F80102",
     "category": "UGC Videos",
     "source": "direct",
-    "driveId": "1SPFLgI3c8trMGFODFFtoF_FofjMBwzRI"
+    "driveId": "1SPFLgI3c8trMGFODFFtoF_FofjMBwzRI",
+    "url": "https://cdn.scangym.com/videos/1mp4_a00cec70caea71eebfc45017f1f80102.mp4",
+    "cdnKey": "1mp4_a00cec70caea71eebfc45017f1f80102"
   },
   {
     "id": 181,
     "name": "1.Mp4 A06Ec86Fd47671Eea8645017F0E80102",
     "category": "UGC Videos",
     "source": "direct",
-    "driveId": "1mpiH7CGWzFyTwNoLTBc9RrZOaAlAX826"
+    "driveId": "1mpiH7CGWzFyTwNoLTBc9RrZOaAlAX826",
+    "url": "https://cdn.scangym.com/videos/1mp4_a06ec86fd47671eea8645017f0e80102.mp4",
+    "cdnKey": "1mp4_a06ec86fd47671eea8645017f0e80102"
   },
   {
     "id": 182,
     "name": "1.Mp4 B05D6Aabe45271Eebc5C5420848D0102",
     "category": "UGC Videos",
     "source": "direct",
-    "driveId": "1dxlPxNrUPby_v3RazYkbTsQQ22Z0P8f9"
+    "driveId": "1dxlPxNrUPby_v3RazYkbTsQQ22Z0P8f9",
+    "url": "https://cdn.scangym.com/videos/1mp4_b05d6aabe45271eebc5c5420848d0102.mp4",
+    "cdnKey": "1mp4_b05d6aabe45271eebc5c5420848d0102"
   },
   {
     "id": 183,
     "name": "1.Mp4 C0B80D70Cb2571Eebfc35017F0E80102",
     "category": "UGC Videos",
     "source": "direct",
-    "driveId": "1IrEd5fdFwiHk8ArfeRmU87o3hhhWGVf-"
+    "driveId": "1IrEd5fdFwiHk8ArfeRmU87o3hhhWGVf-",
+    "url": "https://cdn.scangym.com/videos/1mp4_c0b80d70cb2571eebfc35017f0e80102.mp4",
+    "cdnKey": "1mp4_c0b80d70cb2571eebfc35017f0e80102"
   },
   {
     "id": 184,
     "name": "10 Mubarak Pvc Sp100 S50 Sb75 V3 Processed",
     "category": "UGC Videos",
     "source": "direct",
-    "driveId": "1SHxFWf7S9HziPwsxBwqKtCs6eJ10A9TD"
+    "driveId": "1SHxFWf7S9HziPwsxBwqKtCs6eJ10A9TD",
+    "url": "https://cdn.scangym.com/videos/10_mubarak_pvc_sp100_s50_sb75_v3_processed.mp4",
+    "cdnKey": "10_mubarak_pvc_sp100_s50_sb75_v3_processed"
   },
   {
     "id": 185,
     "name": "12",
     "category": "UGC Videos",
     "source": "direct",
-    "driveId": "1OFt8q7V5i2hkcNviTRK0Cmvd2EfMERjO"
+    "driveId": "1OFt8q7V5i2hkcNviTRK0Cmvd2EfMERjO",
+    "url": "https://cdn.scangym.com/videos/12.mp4",
+    "cdnKey": "12"
   },
   {
     "id": 186,
     "name": "1 0Ab3D480673171Ee80116732B68E0102",
     "category": "UGC Videos",
     "source": "direct",
-    "driveId": "1nvKUEmKLD-DHz8etTTZOmVKfJCEDJA8A"
+    "driveId": "1nvKUEmKLD-DHz8etTTZOmVKfJCEDJA8A",
+    "url": "https://cdn.scangym.com/videos/1_0ab3d480673171ee80116732b68e0102.mp4",
+    "cdnKey": "1_0ab3d480673171ee80116732b68e0102"
   },
   {
     "id": 187,
     "name": "1 122B9Ca068C871Ee80170764A3Fd0102",
     "category": "UGC Videos",
     "source": "direct",
-    "driveId": "1_-T1SE-LriMCyrp2wcyrDMg-HuLiaW1-"
+    "driveId": "1_-T1SE-LriMCyrp2wcyrDMg-HuLiaW1-",
+    "url": "https://cdn.scangym.com/videos/1_122b9ca068c871ee80170764a3fd0102.mp4",
+    "cdnKey": "1_122b9ca068c871ee80170764a3fd0102"
   },
   {
     "id": 188,
     "name": "1 1Edd9Fa0Ee1871Edbffe0764A0Ec0102",
     "category": "UGC Videos",
     "source": "direct",
-    "driveId": "1eSdP-0ldfsShjnXH1i2WBp1kyZ-ExxRJ"
+    "driveId": "1eSdP-0ldfsShjnXH1i2WBp1kyZ-ExxRJ",
+    "url": "https://cdn.scangym.com/videos/1_1edd9fa0ee1871edbffe0764a0ec0102.mp4",
+    "cdnKey": "1_1edd9fa0ee1871edbffe0764a0ec0102"
   },
   {
     "id": 189,
     "name": "1 22E2Dec0Ee1971Ed80540764A0Fd0102",
     "category": "UGC Videos",
     "source": "direct",
-    "driveId": "1OYMGsCouBRMcaHaI-6joanWzbmetqa39"
+    "driveId": "1OYMGsCouBRMcaHaI-6joanWzbmetqa39",
+    "url": "https://cdn.scangym.com/videos/1_22e2dec0ee1971ed80540764a0fd0102.mp4",
+    "cdnKey": "1_22e2dec0ee1971ed80540764a0fd0102"
   },
   {
     "id": 190,
     "name": "1 2Cb095E0673271Ee80116732B68E0102",
     "category": "UGC Videos",
     "source": "direct",
-    "driveId": "1u0kq5WNW4jqSJ_55GhxMiwv0E6l7uBXh"
+    "driveId": "1u0kq5WNW4jqSJ_55GhxMiwv0E6l7uBXh",
+    "url": "https://cdn.scangym.com/videos/1_2cb095e0673271ee80116732b68e0102.mp4",
+    "cdnKey": "1_2cb095e0673271ee80116732b68e0102"
   },
   {
     "id": 191,
     "name": "1 3Cd66C50Ee1671Ed80546633B79F0102",
     "category": "UGC Videos",
     "source": "direct",
-    "driveId": "1vqIrcxEM8GOScnyMc9LLGhCAWSSuQDYf"
+    "driveId": "1vqIrcxEM8GOScnyMc9LLGhCAWSSuQDYf",
+    "url": "https://cdn.scangym.com/videos/1_3cd66c50ee1671ed80546633b79f0102.mp4",
+    "cdnKey": "1_3cd66c50ee1671ed80546633b79f0102"
   },
   {
     "id": 192,
     "name": "1 3Dcff1D068C871Ee80406723B78E0102",
     "category": "UGC Videos",
     "source": "direct",
-    "driveId": "1RTEz3IoDkdI07nHTHk4w6I8DTFBnS_iW"
+    "driveId": "1RTEz3IoDkdI07nHTHk4w6I8DTFBnS_iW",
+    "url": "https://cdn.scangym.com/videos/1_3dcff1d068c871ee80406723b78e0102.mp4",
+    "cdnKey": "1_3dcff1d068c871ee80406723b78e0102"
   },
   {
     "id": 193,
     "name": "1 43392Bb0673271Ee988F5017F0E80102",
     "category": "UGC Videos",
     "source": "direct",
-    "driveId": "1vu-4OBAps2pmHk0vVekmY_cht5fAAppX"
+    "driveId": "1vu-4OBAps2pmHk0vVekmY_cht5fAAppX",
+    "url": "https://cdn.scangym.com/videos/1_43392bb0673271ee988f5017f0e80102.mp4",
+    "cdnKey": "1_43392bb0673271ee988f5017f0e80102"
   },
   {
     "id": 194,
     "name": "1 47Fefe80B72571Edbfd10764B3Ec0102",
     "category": "UGC Videos",
     "source": "direct",
-    "driveId": "1NybWh1NzVyGot7iCOKlecJe3ZbCNDvsb"
+    "driveId": "1NybWh1NzVyGot7iCOKlecJe3ZbCNDvsb",
+    "url": "https://cdn.scangym.com/videos/1_47fefe80b72571edbfd10764b3ec0102.mp4",
+    "cdnKey": "1_47fefe80b72571edbfd10764b3ec0102"
   },
   {
     "id": 195,
     "name": "1 570B24C0Ee1771Edbffa6732B68E0102",
     "category": "UGC Videos",
     "source": "direct",
-    "driveId": "1GPrpvm42w9prh7LGO_TW6O5DKFrY8ocp"
+    "driveId": "1GPrpvm42w9prh7LGO_TW6O5DKFrY8ocp",
+    "url": "https://cdn.scangym.com/videos/1_570b24c0ee1771edbffa6732b68e0102.mp4",
+    "cdnKey": "1_570b24c0ee1771edbffa6732b68e0102"
   },
   {
     "id": 196,
     "name": "1 57Df3310Ee1671Edbfec0764A3Fd0102",
     "category": "UGC Videos",
     "source": "direct",
-    "driveId": "1BMJUy8nu8gwcLT6rXik36ZIa0_GUMMKn"
+    "driveId": "1BMJUy8nu8gwcLT6rXik36ZIa0_GUMMKn",
+    "url": "https://cdn.scangym.com/videos/1_57df3310ee1671edbfec0764a3fd0102.mp4",
+    "cdnKey": "1_57df3310ee1671edbfec0764a3fd0102"
   },
   {
     "id": 197,
     "name": "1 60Be1850Ee1871Ed80540764A0Fd0102",
     "category": "UGC Videos",
     "source": "direct",
-    "driveId": "1ENqICIOCQ4EF_ttZ5Y2H8vr3VvePovSS"
+    "driveId": "1ENqICIOCQ4EF_ttZ5Y2H8vr3VvePovSS",
+    "url": "https://cdn.scangym.com/videos/1_60be1850ee1871ed80540764a0fd0102.mp4",
+    "cdnKey": "1_60be1850ee1871ed80540764a0fd0102"
   },
   {
     "id": 198,
     "name": "1 6972B220932971Ed805D6633B79F0102",
     "category": "UGC Videos",
     "source": "direct",
-    "driveId": "1pAosRNUhCZSHsVkH_wzZrCCaQnRbDFAc"
+    "driveId": "1pAosRNUhCZSHsVkH_wzZrCCaQnRbDFAc",
+    "url": "https://cdn.scangym.com/videos/1_6972b220932971ed805d6633b79f0102.mp4",
+    "cdnKey": "1_6972b220932971ed805d6633b79f0102"
   },
   {
     "id": 199,
     "name": "1 6C8Ac4A0B72571Edbffe0764A3Fc0102",
     "category": "UGC Videos",
     "source": "direct",
-    "driveId": "1R7LKe2lNYEmq0IUYp4DvArqzEADCBHZ3"
+    "driveId": "1R7LKe2lNYEmq0IUYp4DvArqzEADCBHZ3",
+    "url": "https://cdn.scangym.com/videos/1_6c8ac4a0b72571edbffe0764a3fc0102.mp4",
+    "cdnKey": "1_6c8ac4a0b72571edbffe0764a3fc0102"
   },
   {
     "id": 200,
     "name": "1 80F9Fcc8Abb071Eea4386723A78F0102",
     "category": "UGC Videos",
     "source": "direct",
-    "driveId": "1TIi1ai6tqhQn3s2wb66xUYf7Spkdkifk"
+    "driveId": "1TIi1ai6tqhQn3s2wb66xUYf7Spkdkifk",
+    "url": "https://cdn.scangym.com/videos/1_80f9fcc8abb071eea4386723a78f0102.mp4",
+    "cdnKey": "1_80f9fcc8abb071eea4386723a78f0102"
   },
   {
     "id": 201,
     "name": "1 85F19020Ee1871Edbfed0764A3Fd0102",
     "category": "UGC Videos",
     "source": "direct",
-    "driveId": "1xEuGfLnc9apmzNy0t_VedZaN4RRiYmd7"
+    "driveId": "1xEuGfLnc9apmzNy0t_VedZaN4RRiYmd7",
+    "url": "https://cdn.scangym.com/videos/1_85f19020ee1871edbfed0764a3fd0102.mp4",
+    "cdnKey": "1_85f19020ee1871edbfed0764a3fd0102"
   },
   {
     "id": 202,
     "name": "1 86A94Ec0Ee1571Edbffe0764A0Ec0102",
     "category": "UGC Videos",
     "source": "direct",
-    "driveId": "1cJNPL2qkcGHEex3lqfO-xb_kYnsx4RPV"
+    "driveId": "1cJNPL2qkcGHEex3lqfO-xb_kYnsx4RPV",
+    "url": "https://cdn.scangym.com/videos/1_86a94ec0ee1571edbffe0764a0ec0102.mp4",
+    "cdnKey": "1_86a94ec0ee1571edbffe0764a0ec0102"
   },
   {
     "id": 203,
     "name": "1 9D386Ce0Ee1871Ed80546633B79F0102",
     "category": "UGC Videos",
     "source": "direct",
-    "driveId": "1X-Veil57e5JdB-e1DQtOSpANMXl5cdXD"
+    "driveId": "1X-Veil57e5JdB-e1DQtOSpANMXl5cdXD",
+    "url": "https://cdn.scangym.com/videos/1_9d386ce0ee1871ed80546633b79f0102.mp4",
+    "cdnKey": "1_9d386ce0ee1871ed80546633b79f0102"
   },
   {
     "id": 204,
     "name": "1 9Ea06B30Bbed71Ed80580674A2Ce0102",
     "category": "UGC Videos",
     "source": "direct",
-    "driveId": "1XcqNI114eh25zsExezq6ave0X563KHQY"
+    "driveId": "1XcqNI114eh25zsExezq6ave0X563KHQY",
+    "url": "https://cdn.scangym.com/videos/1_9ea06b30bbed71ed80580674a2ce0102.mp4",
+    "cdnKey": "1_9ea06b30bbed71ed80580674a2ce0102"
   },
   {
     "id": 205,
     "name": "1 A001E1E0C40F71Eebfdb5017F1E80102",
     "category": "UGC Videos",
     "source": "direct",
-    "driveId": "1M6gbvAxoQSGuUYitm5cH7su3qkWet4g8"
+    "driveId": "1M6gbvAxoQSGuUYitm5cH7su3qkWet4g8",
+    "url": "https://cdn.scangym.com/videos/1_a001e1e0c40f71eebfdb5017f1e80102.mp4",
+    "cdnKey": "1_a001e1e0c40f71eebfdb5017f1e80102"
   },
   {
     "id": 206,
     "name": "1 A840Dda0Bbed71Edbfee6732B68F0102",
     "category": "UGC Videos",
     "source": "direct",
-    "driveId": "1QOL9xFU7QxVn-tSbScMlg0V1lh5ZIoXj"
+    "driveId": "1QOL9xFU7QxVn-tSbScMlg0V1lh5ZIoXj",
+    "url": "https://cdn.scangym.com/videos/1_a840dda0bbed71edbfee6732b68f0102.mp4",
+    "cdnKey": "1_a840dda0bbed71edbfee6732b68f0102"
   },
   {
     "id": 207,
     "name": "1 B08F5220Ee1571Edb0910674A2Ce0102",
     "category": "UGC Videos",
     "source": "direct",
-    "driveId": "10B_vNNvSnUcg_Gc31NbuXfek2jpLK6I9"
+    "driveId": "10B_vNNvSnUcg_Gc31NbuXfek2jpLK6I9",
+    "url": "https://cdn.scangym.com/videos/1_b08f5220ee1571edb0910674a2ce0102.mp4",
+    "cdnKey": "1_b08f5220ee1571edb0910674a2ce0102"
   },
   {
     "id": 208,
     "name": "1 B0E7Bfe8D12571Ee9Feb6732B68F0102",
     "category": "UGC Videos",
     "source": "direct",
-    "driveId": "1WrbGbBe53qsYnnFgRZ-_KUgwhTtAkP0W"
+    "driveId": "1WrbGbBe53qsYnnFgRZ-_KUgwhTtAkP0W",
+    "url": "https://cdn.scangym.com/videos/1_b0e7bfe8d12571ee9feb6732b68f0102.mp4",
+    "cdnKey": "1_b0e7bfe8d12571ee9feb6732b68f0102"
   },
   {
     "id": 209,
     "name": "Faketweet V01",
     "category": "Viral",
     "source": "direct",
-    "driveId": "1YnD3lIKn0P8XgfAwLy4aR10nYa9VDEdy"
+    "driveId": "1YnD3lIKn0P8XgfAwLy4aR10nYa9VDEdy",
+    "url": "https://cdn.scangym.com/videos/faketweet_v01.mp4",
+    "cdnKey": "faketweet_v01"
   },
   {
     "id": 210,
     "name": "Faketweet V02",
     "category": "Viral",
     "source": "direct",
-    "driveId": "1IjRVSpF9ML_8lm7uhxHUlOE5XSC4_HCO"
+    "driveId": "1IjRVSpF9ML_8lm7uhxHUlOE5XSC4_HCO",
+    "url": "https://cdn.scangym.com/videos/faketweet_v02.mp4",
+    "cdnKey": "faketweet_v02"
   },
   {
     "id": 211,
     "name": "Faketweet V03",
     "category": "Viral",
     "source": "direct",
-    "driveId": "1OufSCzwJUrdBThD8fs9smoBmdS5kIxcX"
+    "driveId": "1OufSCzwJUrdBThD8fs9smoBmdS5kIxcX",
+    "url": "https://cdn.scangym.com/videos/faketweet_v03.mp4",
+    "cdnKey": "faketweet_v03"
   },
   {
     "id": 212,
     "name": "Faketweet V04",
     "category": "Viral",
     "source": "direct",
-    "driveId": "1l0e6_jWkTY4NHAQRMDIObGDsAOI3gLKK"
+    "driveId": "1l0e6_jWkTY4NHAQRMDIObGDsAOI3gLKK",
+    "url": "https://cdn.scangym.com/videos/faketweet_v04.mp4",
+    "cdnKey": "faketweet_v04"
   },
   {
     "id": 213,
     "name": "Faketweet V05",
     "category": "Viral",
     "source": "direct",
-    "driveId": "1hPSGIpwKIvNnOyzF1_a3RH-b-1RLSrN3"
+    "driveId": "1hPSGIpwKIvNnOyzF1_a3RH-b-1RLSrN3",
+    "url": "https://cdn.scangym.com/videos/faketweet_v05.mp4",
+    "cdnKey": "faketweet_v05"
   },
   {
     "id": 214,
     "name": "Faketweet V06",
     "category": "Viral",
     "source": "direct",
-    "driveId": "12npQMp6NbcXGNRO5GxQRtlHzkpQF2qTI"
+    "driveId": "12npQMp6NbcXGNRO5GxQRtlHzkpQF2qTI",
+    "url": "https://cdn.scangym.com/videos/faketweet_v06.mp4",
+    "cdnKey": "faketweet_v06"
   },
   {
     "id": 215,
     "name": "Faketweet V07",
     "category": "Viral",
     "source": "direct",
-    "driveId": "17iPqQh7lmAgbZ22QnkCNg7K4rYpKg1L8"
+    "driveId": "17iPqQh7lmAgbZ22QnkCNg7K4rYpKg1L8",
+    "url": "https://cdn.scangym.com/videos/faketweet_v07.mp4",
+    "cdnKey": "faketweet_v07"
   },
   {
     "id": 216,
     "name": "Faketweet V08",
     "category": "Viral",
     "source": "direct",
-    "driveId": "1M9c8GUYSxk9DK1vUqZf3YB17GFEh9zJG"
+    "driveId": "1M9c8GUYSxk9DK1vUqZf3YB17GFEh9zJG",
+    "url": "https://cdn.scangym.com/videos/faketweet_v08.mp4",
+    "cdnKey": "faketweet_v08"
   },
   {
     "id": 217,
     "name": "Faketweet V09",
     "category": "Viral",
     "source": "direct",
-    "driveId": "1Yg01Cb3cCpoF-UJDBVKBRZ-j8FTFCJlO"
+    "driveId": "1Yg01Cb3cCpoF-UJDBVKBRZ-j8FTFCJlO",
+    "url": "https://cdn.scangym.com/videos/faketweet_v09.mp4",
+    "cdnKey": "faketweet_v09"
   },
   {
     "id": 218,
     "name": "Faketweet V10",
     "category": "Viral",
     "source": "direct",
-    "driveId": "1d9TDJmgzf0lFjwda7SlzXbrE1LjdNKxR"
+    "driveId": "1d9TDJmgzf0lFjwda7SlzXbrE1LjdNKxR",
+    "url": "https://cdn.scangym.com/videos/faketweet_v10.mp4",
+    "cdnKey": "faketweet_v10"
   },
   {
     "id": 219,
     "name": "Hottake V01",
     "category": "Viral",
     "source": "direct",
-    "driveId": "1h8BrDZNL3dsP9utFkYmiNPAdsFWFwzx3"
+    "driveId": "1h8BrDZNL3dsP9utFkYmiNPAdsFWFwzx3",
+    "url": "https://cdn.scangym.com/videos/hottake_v01.mp4",
+    "cdnKey": "hottake_v01"
   },
   {
     "id": 220,
     "name": "Hottake V02",
     "category": "Viral",
     "source": "direct",
-    "driveId": "1K6HWSwDEwXF9bN-XDRXEWWsmw9H7wBjY"
+    "driveId": "1K6HWSwDEwXF9bN-XDRXEWWsmw9H7wBjY",
+    "url": "https://cdn.scangym.com/videos/hottake_v02.mp4",
+    "cdnKey": "hottake_v02"
   },
   {
     "id": 221,
     "name": "Hottake V03",
     "category": "Viral",
     "source": "direct",
-    "driveId": "1bem2DWMeUjB8n2eqekVp4l11Yt68pK7b"
+    "driveId": "1bem2DWMeUjB8n2eqekVp4l11Yt68pK7b",
+    "url": "https://cdn.scangym.com/videos/hottake_v03.mp4",
+    "cdnKey": "hottake_v03"
   },
   {
     "id": 222,
     "name": "Hottake V04",
     "category": "Viral",
     "source": "direct",
-    "driveId": "1i7_fklmSjadFModxFhkOVJamVYaEQ735"
+    "driveId": "1i7_fklmSjadFModxFhkOVJamVYaEQ735",
+    "url": "https://cdn.scangym.com/videos/hottake_v04.mp4",
+    "cdnKey": "hottake_v04"
   },
   {
     "id": 223,
     "name": "Hottake V05",
     "category": "Viral",
     "source": "direct",
-    "driveId": "1C63mjzB19QxbbTx4pVTcc3n6FMe6nw1H"
+    "driveId": "1C63mjzB19QxbbTx4pVTcc3n6FMe6nw1H",
+    "url": "https://cdn.scangym.com/videos/hottake_v05.mp4",
+    "cdnKey": "hottake_v05"
   },
   {
     "id": 224,
     "name": "Hottake V06",
     "category": "Viral",
     "source": "direct",
-    "driveId": "1Tm9hQop8xMpF13ge6JmW-GdbRBi9amJb"
+    "driveId": "1Tm9hQop8xMpF13ge6JmW-GdbRBi9amJb",
+    "url": "https://cdn.scangym.com/videos/hottake_v06.mp4",
+    "cdnKey": "hottake_v06"
   },
   {
     "id": 225,
     "name": "Hottake V07",
     "category": "Viral",
     "source": "direct",
-    "driveId": "1dQc8tL8fCArSUAekX4NoOpi4E9BwluxG"
+    "driveId": "1dQc8tL8fCArSUAekX4NoOpi4E9BwluxG",
+    "url": "https://cdn.scangym.com/videos/hottake_v07.mp4",
+    "cdnKey": "hottake_v07"
   },
   {
     "id": 226,
     "name": "Hottake V08",
     "category": "Viral",
     "source": "direct",
-    "driveId": "1UUgh4KeD0CKxCTSl5JKKbUmo5sJVPImF"
+    "driveId": "1UUgh4KeD0CKxCTSl5JKKbUmo5sJVPImF",
+    "url": "https://cdn.scangym.com/videos/hottake_v08.mp4",
+    "cdnKey": "hottake_v08"
   },
   {
     "id": 227,
     "name": "Hottake V09",
     "category": "Viral",
     "source": "direct",
-    "driveId": "1OT63oaJx8oppyTZg-fN28FmgW1eCR4XR"
+    "driveId": "1OT63oaJx8oppyTZg-fN28FmgW1eCR4XR",
+    "url": "https://cdn.scangym.com/videos/hottake_v09.mp4",
+    "cdnKey": "hottake_v09"
   },
   {
     "id": 228,
     "name": "Hottake V10",
     "category": "Viral",
     "source": "direct",
-    "driveId": "197dgMX6mJikLRxsVGU-6P9A5iKkV8zqb"
+    "driveId": "197dgMX6mJikLRxsVGU-6P9A5iKkV8zqb",
+    "url": "https://cdn.scangym.com/videos/hottake_v10.mp4",
+    "cdnKey": "hottake_v10"
   },
   {
     "id": 229,
     "name": "Identityhook V01",
     "category": "Viral",
     "source": "direct",
-    "driveId": "1-6xtPyps-XdeCooEdIXWdd6RhvsZQfWY"
+    "driveId": "1-6xtPyps-XdeCooEdIXWdd6RhvsZQfWY",
+    "url": "https://cdn.scangym.com/videos/identityhook_v01.mp4",
+    "cdnKey": "identityhook_v01"
   },
   {
     "id": 230,
     "name": "Identityhook V02",
     "category": "Viral",
     "source": "direct",
-    "driveId": "1mjUTU8cUjuAPpN-jtU3HkpgAkLCHqSfB"
+    "driveId": "1mjUTU8cUjuAPpN-jtU3HkpgAkLCHqSfB",
+    "url": "https://cdn.scangym.com/videos/identityhook_v02.mp4",
+    "cdnKey": "identityhook_v02"
   },
   {
     "id": 231,
     "name": "Identityhook V03",
     "category": "Viral",
     "source": "direct",
-    "driveId": "1Lf_T_UNIlKCvWPp32LRSJhf7LLhklkiv"
+    "driveId": "1Lf_T_UNIlKCvWPp32LRSJhf7LLhklkiv",
+    "url": "https://cdn.scangym.com/videos/identityhook_v03.mp4",
+    "cdnKey": "identityhook_v03"
   },
   {
     "id": 232,
     "name": "Identityhook V04",
     "category": "Viral",
     "source": "direct",
-    "driveId": "1IIWF0gcFZt5oenOZxRBTEx73PgiMWeJZ"
+    "driveId": "1IIWF0gcFZt5oenOZxRBTEx73PgiMWeJZ",
+    "url": "https://cdn.scangym.com/videos/identityhook_v04.mp4",
+    "cdnKey": "identityhook_v04"
   },
   {
     "id": 233,
     "name": "Identityhook V05",
     "category": "Viral",
     "source": "direct",
-    "driveId": "1eh1ZWF9POqte9p_-xu1JSKZg2DzDil4X"
+    "driveId": "1eh1ZWF9POqte9p_-xu1JSKZg2DzDil4X",
+    "url": "https://cdn.scangym.com/videos/identityhook_v05.mp4",
+    "cdnKey": "identityhook_v05"
   },
   {
     "id": 234,
     "name": "Identityhook V06",
     "category": "Viral",
     "source": "direct",
-    "driveId": "1ix2Ql6YJ_Lx9cbyEJHKJA8KkJ0ObzeFS"
+    "driveId": "1ix2Ql6YJ_Lx9cbyEJHKJA8KkJ0ObzeFS",
+    "url": "https://cdn.scangym.com/videos/identityhook_v06.mp4",
+    "cdnKey": "identityhook_v06"
   },
   {
     "id": 235,
@@ -1770,7 +2197,9 @@
     "category": "YouTube AI",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/youtube_ai/yt_affiliate_explained.webp",
-    "driveId": "13EgwbOI5Vfrks3Y2eRtUcYjBJfv_ErqM"
+    "driveId": "13EgwbOI5Vfrks3Y2eRtUcYjBJfv_ErqM",
+    "url": "https://cdn.scangym.com/videos/yt_affiliate_explained.mp4",
+    "cdnKey": "yt_affiliate_explained"
   },
   {
     "id": 236,
@@ -1778,7 +2207,9 @@
     "category": "YouTube AI",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/youtube_ai/yt_every_gym_tested.webp",
-    "driveId": "1m4p5xpQY6DgRKemiRmJpgqCs4H6449GR"
+    "driveId": "1m4p5xpQY6DgRKemiRmJpgqCs4H6449GR",
+    "url": "https://cdn.scangym.com/videos/yt_every_gym_tested.mp4",
+    "cdnKey": "yt_every_gym_tested"
   },
   {
     "id": 237,
@@ -1786,7 +2217,9 @@
     "category": "YouTube AI",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/youtube_ai/yt_no_membership.webp",
-    "driveId": "1Y2CCTszoUFj0xcPNIx3FOb1iibZ-i81I"
+    "driveId": "1Y2CCTszoUFj0xcPNIx3FOb1iibZ-i81I",
+    "url": "https://cdn.scangym.com/videos/yt_no_membership.mp4",
+    "cdnKey": "yt_no_membership"
   },
   {
     "id": 238,
@@ -1794,1413 +2227,1655 @@
     "category": "YouTube AI",
     "source": "direct",
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/youtube_ai/yt_price_reveal.webp",
-    "driveId": "1HfNGiW4AOiXgOrAazy10OpaaZm2JjAO3"
+    "driveId": "1HfNGiW4AOiXgOrAazy10OpaaZm2JjAO3",
+    "url": "https://cdn.scangym.com/videos/yt_price_reveal.mp4",
+    "cdnKey": "yt_price_reveal"
   },
   {
     "id": 239,
     "name": "1 db80df20a5f571ed801b0764a3fc0102",
     "category": "Other",
     "source": "direct",
-    "driveId": "1Mzzz_-LTLQO24u9p2U1oVvcnQNVxQJkr"
+    "driveId": "1Mzzz_-LTLQO24u9p2U1oVvcnQNVxQJkr",
+    "url": "https://cdn.scangym.com/videos/1_db80df20a5f571ed801b0764a3fc0102.mp4",
+    "cdnKey": "1_db80df20a5f571ed801b0764a3fc0102"
   },
   {
     "id": 240,
     "name": "1 fcdd1fa0ee1471ed80000764a3fc0102",
     "category": "Other",
     "source": "direct",
-    "driveId": "1N4lZhEZDdBBYWzCw-gS4dTskbQEZLoAQ"
+    "driveId": "1N4lZhEZDdBBYWzCw-gS4dTskbQEZLoAQ",
+    "url": "https://cdn.scangym.com/videos/1_fcdd1fa0ee1471ed80000764a3fc0102.mp4",
+    "cdnKey": "1_fcdd1fa0ee1471ed80000764a3fc0102"
   },
   {
     "id": 241,
     "name": "3a1e9ed369b34a07a62a66de6fc49886 dfe8347b70c03f6576d315249d2caf19 ld",
     "category": "Other",
     "source": "direct",
-    "driveId": "1a75VrJSznA43jFH3rohW3aSqNjjA3JX_"
+    "driveId": "1a75VrJSznA43jFH3rohW3aSqNjjA3JX_",
+    "url": "https://cdn.scangym.com/videos/3a1e9ed369b34a07a62a66de6fc49886_dfe8347b70c03f6576d315249d2caf19_ld.mp4",
+    "cdnKey": "3a1e9ed369b34a07a62a66de6fc49886_dfe8347b70c03f6576d315249d2caf19_ld"
   },
   {
     "id": 242,
     "name": "3f88fb2245c0489f9679a49b12b9243c 3d6a04c1738f5b4be7b58ce87f6fc826 ld",
     "category": "Other",
     "source": "direct",
-    "driveId": "1TRuxty8S-WkfojnQLy9I5HaxEk4MKVk0"
+    "driveId": "1TRuxty8S-WkfojnQLy9I5HaxEk4MKVk0",
+    "url": "https://cdn.scangym.com/videos/3f88fb2245c0489f9679a49b12b9243c_3d6a04c1738f5b4be7b58ce87f6fc826_ld.mp4",
+    "cdnKey": "3f88fb2245c0489f9679a49b12b9243c_3d6a04c1738f5b4be7b58ce87f6fc826_ld"
   },
   {
     "id": 243,
     "name": "CityDiscovery Bristol h0",
     "category": "City Discovery",
     "source": "direct",
-    "driveId": "1r-LxJ2cbW62_S6eQgaCbVi3-C8bC3qLN"
+    "driveId": "1r-LxJ2cbW62_S6eQgaCbVi3-C8bC3qLN",
+    "url": "https://cdn.scangym.com/videos/citydiscovery_bristol_h0.mp4",
+    "cdnKey": "citydiscovery_bristol_h0"
   },
   {
     "id": 244,
     "name": "CityDiscovery Bristol h1",
     "category": "City Discovery",
     "source": "direct",
-    "driveId": "1Qy3zSe_hAnmMWJ7LRELBfg64e8YnPZoE"
+    "driveId": "1Qy3zSe_hAnmMWJ7LRELBfg64e8YnPZoE",
+    "url": "https://cdn.scangym.com/videos/citydiscovery_bristol_h1.mp4",
+    "cdnKey": "citydiscovery_bristol_h1"
   },
   {
     "id": 245,
     "name": "CityDiscovery Bristol h2",
     "category": "City Discovery",
     "source": "direct",
-    "driveId": "10PG4FjRSBy5wO-8wKhUfYilUcfvRRMl2"
+    "driveId": "10PG4FjRSBy5wO-8wKhUfYilUcfvRRMl2",
+    "url": "https://cdn.scangym.com/videos/citydiscovery_bristol_h2.mp4",
+    "cdnKey": "citydiscovery_bristol_h2"
   },
   {
     "id": 246,
     "name": "CityDiscovery Edinburgh h0",
     "category": "City Discovery",
     "source": "direct",
-    "driveId": "1bQKa2yA7xdtGU_JhYvhId5TsuGuVZstt"
+    "driveId": "1bQKa2yA7xdtGU_JhYvhId5TsuGuVZstt",
+    "url": "https://cdn.scangym.com/videos/citydiscovery_edinburgh_h0.mp4",
+    "cdnKey": "citydiscovery_edinburgh_h0"
   },
   {
     "id": 247,
     "name": "CityDiscovery Edinburgh h1",
     "category": "City Discovery",
     "source": "direct",
-    "driveId": "1LeKEoURyX3sqGh-CzMb0js7N0LhaEwFA"
+    "driveId": "1LeKEoURyX3sqGh-CzMb0js7N0LhaEwFA",
+    "url": "https://cdn.scangym.com/videos/citydiscovery_edinburgh_h1.mp4",
+    "cdnKey": "citydiscovery_edinburgh_h1"
   },
   {
     "id": 248,
     "name": "CityDiscovery Edinburgh h2",
     "category": "City Discovery",
     "source": "direct",
-    "driveId": "1hafvj6B_tR4kCv1BLSEMROXaE5xvGq8e"
+    "driveId": "1hafvj6B_tR4kCv1BLSEMROXaE5xvGq8e",
+    "url": "https://cdn.scangym.com/videos/citydiscovery_edinburgh_h2.mp4",
+    "cdnKey": "citydiscovery_edinburgh_h2"
   },
   {
     "id": 249,
     "name": "CityDiscovery Glasgow h0",
     "category": "City Discovery",
     "source": "direct",
-    "driveId": "1VnAXtXKRfkWaILqtXT9l9_faV8CjPMO-"
+    "driveId": "1VnAXtXKRfkWaILqtXT9l9_faV8CjPMO-",
+    "url": "https://cdn.scangym.com/videos/citydiscovery_glasgow_h0.mp4",
+    "cdnKey": "citydiscovery_glasgow_h0"
   },
   {
     "id": 250,
     "name": "CityDiscovery Glasgow h1",
     "category": "City Discovery",
     "source": "direct",
-    "driveId": "19ajy72IdWP2ftVlpDajNrV8mrkpxesOr"
+    "driveId": "19ajy72IdWP2ftVlpDajNrV8mrkpxesOr",
+    "url": "https://cdn.scangym.com/videos/citydiscovery_glasgow_h1.mp4",
+    "cdnKey": "citydiscovery_glasgow_h1"
   },
   {
     "id": 251,
     "name": "CityDiscovery Glasgow h2",
     "category": "City Discovery",
     "source": "direct",
-    "driveId": "1g1gpeGh0aCEer59S1mGZeiRQUY3-TXX8"
+    "driveId": "1g1gpeGh0aCEer59S1mGZeiRQUY3-TXX8",
+    "url": "https://cdn.scangym.com/videos/citydiscovery_glasgow_h2.mp4",
+    "cdnKey": "citydiscovery_glasgow_h2"
   },
   {
     "id": 252,
     "name": "CityDiscovery Leeds h0",
     "category": "City Discovery",
     "source": "direct",
-    "driveId": "13aXcfFfpq2gxB_6H48325J45Wznr342q"
+    "driveId": "13aXcfFfpq2gxB_6H48325J45Wznr342q",
+    "url": "https://cdn.scangym.com/videos/citydiscovery_leeds_h0.mp4",
+    "cdnKey": "citydiscovery_leeds_h0"
   },
   {
     "id": 253,
     "name": "CityDiscovery Leeds h1",
     "category": "City Discovery",
     "source": "direct",
-    "driveId": "1Yaw8ojKGDs_V4MUTIMaRkXeWUzUFUpco"
+    "driveId": "1Yaw8ojKGDs_V4MUTIMaRkXeWUzUFUpco",
+    "url": "https://cdn.scangym.com/videos/citydiscovery_leeds_h1.mp4",
+    "cdnKey": "citydiscovery_leeds_h1"
   },
   {
     "id": 254,
     "name": "CityDiscovery Leeds h2",
     "category": "City Discovery",
     "source": "direct",
-    "driveId": "1RvmbMUIGqKfK0q62zPCGznk29q_5Yb7v"
+    "driveId": "1RvmbMUIGqKfK0q62zPCGznk29q_5Yb7v",
+    "url": "https://cdn.scangym.com/videos/citydiscovery_leeds_h2.mp4",
+    "cdnKey": "citydiscovery_leeds_h2"
   },
   {
     "id": 255,
     "name": "CityDiscovery Liverpool h0",
     "category": "City Discovery",
     "source": "direct",
-    "driveId": "1tNTUX8HR7sxCA91gO34mdxBpCSbAyh0q"
+    "driveId": "1tNTUX8HR7sxCA91gO34mdxBpCSbAyh0q",
+    "url": "https://cdn.scangym.com/videos/citydiscovery_liverpool_h0.mp4",
+    "cdnKey": "citydiscovery_liverpool_h0"
   },
   {
     "id": 256,
     "name": "CityDiscovery Liverpool h1",
     "category": "City Discovery",
     "source": "direct",
-    "driveId": "14YVukN6Bj2UFSMCBKCMAWN4Fc0De32uS"
+    "driveId": "14YVukN6Bj2UFSMCBKCMAWN4Fc0De32uS",
+    "url": "https://cdn.scangym.com/videos/citydiscovery_liverpool_h1.mp4",
+    "cdnKey": "citydiscovery_liverpool_h1"
   },
   {
     "id": 257,
     "name": "CityDiscovery Liverpool h2",
     "category": "City Discovery",
     "source": "direct",
-    "driveId": "1J44L4-IJxhQuNP85tjnxMtgKrZG-bG1f"
+    "driveId": "1J44L4-IJxhQuNP85tjnxMtgKrZG-bG1f",
+    "url": "https://cdn.scangym.com/videos/citydiscovery_liverpool_h2.mp4",
+    "cdnKey": "citydiscovery_liverpool_h2"
   },
   {
     "id": 258,
     "name": "CityDiscovery London h0",
     "category": "City Discovery",
     "source": "direct",
-    "driveId": "1AdjKZcqIWPKs6x3-RHpVy9wqFbFDelSN"
+    "driveId": "1AdjKZcqIWPKs6x3-RHpVy9wqFbFDelSN",
+    "url": "https://cdn.scangym.com/videos/citydiscovery_london_h0.mp4",
+    "cdnKey": "citydiscovery_london_h0"
   },
   {
     "id": 259,
     "name": "CityDiscovery London h1",
     "category": "City Discovery",
     "source": "direct",
-    "driveId": "1UZ_t8q8kHaX0taDHsCSnLNNAu-iC2BUt"
+    "driveId": "1UZ_t8q8kHaX0taDHsCSnLNNAu-iC2BUt",
+    "url": "https://cdn.scangym.com/videos/citydiscovery_london_h1.mp4",
+    "cdnKey": "citydiscovery_london_h1"
   },
   {
     "id": 260,
     "name": "CityDiscovery London h2",
     "category": "City Discovery",
     "source": "direct",
-    "driveId": "16FewJfNeasOIsvGr61j8lmzhFdOQOeuO"
+    "driveId": "16FewJfNeasOIsvGr61j8lmzhFdOQOeuO",
+    "url": "https://cdn.scangym.com/videos/citydiscovery_london_h2.mp4",
+    "cdnKey": "citydiscovery_london_h2"
   },
   {
     "id": 261,
     "name": "CityDiscovery Manchester h0",
     "category": "City Discovery",
     "source": "direct",
-    "driveId": "16NgOljRwcALKzMuIioqvyppQPTm030s3"
+    "driveId": "16NgOljRwcALKzMuIioqvyppQPTm030s3",
+    "url": "https://cdn.scangym.com/videos/citydiscovery_manchester_h0.mp4",
+    "cdnKey": "citydiscovery_manchester_h0"
   },
   {
     "id": 262,
     "name": "CityDiscovery Manchester h1",
     "category": "City Discovery",
     "source": "direct",
-    "driveId": "1fRE2PHv3lIIvZ983Fr1A-SBu42TO61zE"
+    "driveId": "1fRE2PHv3lIIvZ983Fr1A-SBu42TO61zE",
+    "url": "https://cdn.scangym.com/videos/citydiscovery_manchester_h1.mp4",
+    "cdnKey": "citydiscovery_manchester_h1"
   },
   {
     "id": 263,
     "name": "CityDiscovery Manchester h2",
     "category": "City Discovery",
     "source": "direct",
-    "driveId": "1y3YYLMTYGgeYIWEqIwjjNfCuEhiYIi3j"
+    "driveId": "1y3YYLMTYGgeYIWEqIwjjNfCuEhiYIi3j",
+    "url": "https://cdn.scangym.com/videos/citydiscovery_manchester_h2.mp4",
+    "cdnKey": "citydiscovery_manchester_h2"
   },
   {
     "id": 264,
     "name": "CityDiscovery Sheffield h0",
     "category": "City Discovery",
     "source": "direct",
-    "driveId": "1_TFuTT3hg59TAPPtaGuNcs5ijA3G0lt4"
+    "driveId": "1_TFuTT3hg59TAPPtaGuNcs5ijA3G0lt4",
+    "url": "https://cdn.scangym.com/videos/citydiscovery_sheffield_h0.mp4",
+    "cdnKey": "citydiscovery_sheffield_h0"
   },
   {
     "id": 265,
     "name": "CityDiscovery Sheffield h1",
     "category": "City Discovery",
     "source": "direct",
-    "driveId": "1U7EfNBVriZ9O9sVQWif5fYaVKoymedgX"
+    "driveId": "1U7EfNBVriZ9O9sVQWif5fYaVKoymedgX",
+    "url": "https://cdn.scangym.com/videos/citydiscovery_sheffield_h1.mp4",
+    "cdnKey": "citydiscovery_sheffield_h1"
   },
   {
     "id": 266,
     "name": "CityDiscovery Sheffield h2",
     "category": "City Discovery",
     "source": "direct",
-    "driveId": "1Ak6t9HZJXiy8xThbxlDiZks01fEJ4T3E"
+    "driveId": "1Ak6t9HZJXiy8xThbxlDiZks01fEJ4T3E",
+    "url": "https://cdn.scangym.com/videos/citydiscovery_sheffield_h2.mp4",
+    "cdnKey": "citydiscovery_sheffield_h2"
   },
   {
     "id": 267,
     "name": "CreatorEarnings Bristol h0",
     "category": "Creator Earnings",
     "source": "direct",
-    "driveId": "1SQf022kyYqxSa2PMb4s3eSN8OmmTMIdv"
+    "driveId": "1SQf022kyYqxSa2PMb4s3eSN8OmmTMIdv",
+    "url": "https://cdn.scangym.com/videos/creatorearnings_bristol_h0.mp4",
+    "cdnKey": "creatorearnings_bristol_h0"
   },
   {
     "id": 268,
     "name": "CreatorEarnings Bristol h1",
     "category": "Creator Earnings",
     "source": "direct",
-    "driveId": "1Yqc2A8dm9BqSApBlm92md_deAVzkgbJE"
+    "driveId": "1Yqc2A8dm9BqSApBlm92md_deAVzkgbJE",
+    "url": "https://cdn.scangym.com/videos/creatorearnings_bristol_h1.mp4",
+    "cdnKey": "creatorearnings_bristol_h1"
   },
   {
     "id": 269,
     "name": "CreatorEarnings Bristol h2",
     "category": "Creator Earnings",
     "source": "direct",
-    "driveId": "1YRwdKjqKAbQg1jAPaI45rsxzQyThpKVp"
+    "driveId": "1YRwdKjqKAbQg1jAPaI45rsxzQyThpKVp",
+    "url": "https://cdn.scangym.com/videos/creatorearnings_bristol_h2.mp4",
+    "cdnKey": "creatorearnings_bristol_h2"
   },
   {
     "id": 270,
     "name": "CreatorEarnings Edinburgh h0",
     "category": "Creator Earnings",
     "source": "direct",
-    "driveId": "1JPef8dZSJ1E4KTi2wwEWqa2vwsVzUHXT"
+    "driveId": "1JPef8dZSJ1E4KTi2wwEWqa2vwsVzUHXT",
+    "url": "https://cdn.scangym.com/videos/creatorearnings_edinburgh_h0.mp4",
+    "cdnKey": "creatorearnings_edinburgh_h0"
   },
   {
     "id": 271,
     "name": "CreatorEarnings Edinburgh h1",
     "category": "Creator Earnings",
     "source": "direct",
-    "driveId": "1FcQDK8EegnrWfUpJGSUZ4oQG1VPfIuFI"
+    "driveId": "1FcQDK8EegnrWfUpJGSUZ4oQG1VPfIuFI",
+    "url": "https://cdn.scangym.com/videos/creatorearnings_edinburgh_h1.mp4",
+    "cdnKey": "creatorearnings_edinburgh_h1"
   },
   {
     "id": 272,
     "name": "CreatorEarnings Edinburgh h2",
     "category": "Creator Earnings",
     "source": "direct",
-    "driveId": "1SO7bout2C62_0GXzrOMvhMT1WqLbjIDM"
+    "driveId": "1SO7bout2C62_0GXzrOMvhMT1WqLbjIDM",
+    "url": "https://cdn.scangym.com/videos/creatorearnings_edinburgh_h2.mp4",
+    "cdnKey": "creatorearnings_edinburgh_h2"
   },
   {
     "id": 273,
     "name": "CreatorEarnings Glasgow h0",
     "category": "Creator Earnings",
     "source": "direct",
-    "driveId": "1y5tXwr0eVWZIS5IenWLySDWLTOdu22sb"
+    "driveId": "1y5tXwr0eVWZIS5IenWLySDWLTOdu22sb",
+    "url": "https://cdn.scangym.com/videos/creatorearnings_glasgow_h0.mp4",
+    "cdnKey": "creatorearnings_glasgow_h0"
   },
   {
     "id": 274,
     "name": "CreatorEarnings Glasgow h1",
     "category": "Creator Earnings",
     "source": "direct",
-    "driveId": "1piZtqyeHBuqytI3ZOxRgEWIuBUbkPk6S"
+    "driveId": "1piZtqyeHBuqytI3ZOxRgEWIuBUbkPk6S",
+    "url": "https://cdn.scangym.com/videos/creatorearnings_glasgow_h1.mp4",
+    "cdnKey": "creatorearnings_glasgow_h1"
   },
   {
     "id": 275,
     "name": "CreatorEarnings Glasgow h2",
     "category": "Creator Earnings",
     "source": "direct",
-    "driveId": "1fQPioZx13mNKCXRgjl8_NJuo50zIzJls"
+    "driveId": "1fQPioZx13mNKCXRgjl8_NJuo50zIzJls",
+    "url": "https://cdn.scangym.com/videos/creatorearnings_glasgow_h2.mp4",
+    "cdnKey": "creatorearnings_glasgow_h2"
   },
   {
     "id": 276,
     "name": "CreatorEarnings Leeds h0",
     "category": "Creator Earnings",
     "source": "direct",
-    "driveId": "1gVvHEc076hRKx1bq49AsSZhaM81QfVlT"
+    "driveId": "1gVvHEc076hRKx1bq49AsSZhaM81QfVlT",
+    "url": "https://cdn.scangym.com/videos/creatorearnings_leeds_h0.mp4",
+    "cdnKey": "creatorearnings_leeds_h0"
   },
   {
     "id": 277,
     "name": "CreatorEarnings Leeds h1",
     "category": "Creator Earnings",
     "source": "direct",
-    "driveId": "1kJ7fuGSSL3ylhL_MrJAZucLaAZkSc_mb"
+    "driveId": "1kJ7fuGSSL3ylhL_MrJAZucLaAZkSc_mb",
+    "url": "https://cdn.scangym.com/videos/creatorearnings_leeds_h1.mp4",
+    "cdnKey": "creatorearnings_leeds_h1"
   },
   {
     "id": 278,
     "name": "CreatorEarnings Leeds h2",
     "category": "Creator Earnings",
     "source": "direct",
-    "driveId": "1Tnxv1CdIi0RBVKWadn_Qbjkz9PkpRhvq"
+    "driveId": "1Tnxv1CdIi0RBVKWadn_Qbjkz9PkpRhvq",
+    "url": "https://cdn.scangym.com/videos/creatorearnings_leeds_h2.mp4",
+    "cdnKey": "creatorearnings_leeds_h2"
   },
   {
     "id": 279,
     "name": "CreatorEarnings Liverpool h0",
     "category": "Creator Earnings",
     "source": "direct",
-    "driveId": "1VrLtL6EIH3zO7BTkRnE2kKtuQ7goY_p8"
+    "driveId": "1VrLtL6EIH3zO7BTkRnE2kKtuQ7goY_p8",
+    "url": "https://cdn.scangym.com/videos/creatorearnings_liverpool_h0.mp4",
+    "cdnKey": "creatorearnings_liverpool_h0"
   },
   {
     "id": 280,
     "name": "CreatorEarnings Liverpool h1",
     "category": "Creator Earnings",
     "source": "direct",
-    "driveId": "1qeG8-qMH-GD9XGeCuOqpEoiJqasHl473"
+    "driveId": "1qeG8-qMH-GD9XGeCuOqpEoiJqasHl473",
+    "url": "https://cdn.scangym.com/videos/creatorearnings_liverpool_h1.mp4",
+    "cdnKey": "creatorearnings_liverpool_h1"
   },
   {
     "id": 281,
     "name": "CreatorEarnings Liverpool h2",
     "category": "Creator Earnings",
     "source": "direct",
-    "driveId": "1thH5_Pe3hpFBENUIuOH2tG9V7z8-GsbD"
+    "driveId": "1thH5_Pe3hpFBENUIuOH2tG9V7z8-GsbD",
+    "url": "https://cdn.scangym.com/videos/creatorearnings_liverpool_h2.mp4",
+    "cdnKey": "creatorearnings_liverpool_h2"
   },
   {
     "id": 282,
     "name": "CreatorEarnings London h0",
     "category": "Creator Earnings",
     "source": "direct",
-    "driveId": "1nt1co26qA-CmDWO919z1PeDZfgwSt6Sk"
+    "driveId": "1nt1co26qA-CmDWO919z1PeDZfgwSt6Sk",
+    "url": "https://cdn.scangym.com/videos/creatorearnings_london_h0.mp4",
+    "cdnKey": "creatorearnings_london_h0"
   },
   {
     "id": 283,
     "name": "CreatorEarnings London h1",
     "category": "Creator Earnings",
     "source": "direct",
-    "driveId": "19zkNGSVhpUhVfYZ2cZKJyaUoddhHS-Lq"
+    "driveId": "19zkNGSVhpUhVfYZ2cZKJyaUoddhHS-Lq",
+    "url": "https://cdn.scangym.com/videos/creatorearnings_london_h1.mp4",
+    "cdnKey": "creatorearnings_london_h1"
   },
   {
     "id": 284,
     "name": "CreatorEarnings London h2",
     "category": "Creator Earnings",
     "source": "direct",
-    "driveId": "1EDb1ixYU60PRao59GOg5zBfOLjp5BAaX"
+    "driveId": "1EDb1ixYU60PRao59GOg5zBfOLjp5BAaX",
+    "url": "https://cdn.scangym.com/videos/creatorearnings_london_h2.mp4",
+    "cdnKey": "creatorearnings_london_h2"
   },
   {
     "id": 285,
     "name": "CreatorEarnings Manchester h0",
     "category": "Creator Earnings",
     "source": "direct",
-    "driveId": "1RWY6kLS379sayP0SMeiaT7xIrzvgyAh6"
+    "driveId": "1RWY6kLS379sayP0SMeiaT7xIrzvgyAh6",
+    "url": "https://cdn.scangym.com/videos/creatorearnings_manchester_h0.mp4",
+    "cdnKey": "creatorearnings_manchester_h0"
   },
   {
     "id": 286,
     "name": "CreatorEarnings Manchester h1",
     "category": "Creator Earnings",
     "source": "direct",
-    "driveId": "1mePNmr9ArheJ0bZemXfB60-rSw1PWafb"
+    "driveId": "1mePNmr9ArheJ0bZemXfB60-rSw1PWafb",
+    "url": "https://cdn.scangym.com/videos/creatorearnings_manchester_h1.mp4",
+    "cdnKey": "creatorearnings_manchester_h1"
   },
   {
     "id": 287,
     "name": "CreatorEarnings Manchester h2",
     "category": "Creator Earnings",
     "source": "direct",
-    "driveId": "13pK9PKlfazmxGJyzniWa5BRTh6Xa5_jd"
+    "driveId": "13pK9PKlfazmxGJyzniWa5BRTh6Xa5_jd",
+    "url": "https://cdn.scangym.com/videos/creatorearnings_manchester_h2.mp4",
+    "cdnKey": "creatorearnings_manchester_h2"
   },
   {
     "id": 288,
     "name": "CreatorEarnings Sheffield h0",
     "category": "Creator Earnings",
     "source": "direct",
-    "driveId": "19lL67cOCFHtaFetkKe9epObvU-T1ZYFB"
+    "driveId": "19lL67cOCFHtaFetkKe9epObvU-T1ZYFB",
+    "url": "https://cdn.scangym.com/videos/creatorearnings_sheffield_h0.mp4",
+    "cdnKey": "creatorearnings_sheffield_h0"
   },
   {
     "id": 289,
     "name": "CreatorEarnings Sheffield h1",
     "category": "Creator Earnings",
     "source": "direct",
-    "driveId": "1dhHNJLjCdhGViob2avjhN3hlTKAVv7Ps"
+    "driveId": "1dhHNJLjCdhGViob2avjhN3hlTKAVv7Ps",
+    "url": "https://cdn.scangym.com/videos/creatorearnings_sheffield_h1.mp4",
+    "cdnKey": "creatorearnings_sheffield_h1"
   },
   {
     "id": 290,
     "name": "CreatorEarnings Sheffield h2",
     "category": "Creator Earnings",
     "source": "direct",
-    "driveId": "1Tq4936mpyH0cY92IV6-vZhdSobkF7mV_"
+    "driveId": "1Tq4936mpyH0cY92IV6-vZhdSobkF7mV_",
+    "url": "https://cdn.scangym.com/videos/creatorearnings_sheffield_h2.mp4",
+    "cdnKey": "creatorearnings_sheffield_h2"
   },
   {
     "id": 291,
     "name": "DontJoinAGym Bristol GBP10",
     "category": "Don't Join A Gym",
     "source": "direct",
-    "driveId": "1UX_YJ1RkzdCko6g3kpuGxFXi9ni5MDRB"
+    "driveId": "1UX_YJ1RkzdCko6g3kpuGxFXi9ni5MDRB",
+    "url": "https://cdn.scangym.com/videos/dontjoinagym_bristol_gbp10.mp4",
+    "cdnKey": "dontjoinagym_bristol_gbp10"
   },
   {
     "id": 292,
     "name": "DontJoinAGym Bristol GBP5",
     "category": "Don't Join A Gym",
     "source": "direct",
-    "driveId": "1lIvKcLub0E79NLn02o-gYhorIlC9mtYW"
+    "driveId": "1lIvKcLub0E79NLn02o-gYhorIlC9mtYW",
+    "url": "https://cdn.scangym.com/videos/dontjoinagym_bristol_gbp5.mp4",
+    "cdnKey": "dontjoinagym_bristol_gbp5"
   },
   {
     "id": 293,
     "name": "DontJoinAGym Bristol GBP7",
     "category": "Don't Join A Gym",
     "source": "direct",
-    "driveId": "1H1QVRRmgFwtSmVPfYHHkOKxoO-bhrBfg"
+    "driveId": "1H1QVRRmgFwtSmVPfYHHkOKxoO-bhrBfg",
+    "url": "https://cdn.scangym.com/videos/dontjoinagym_bristol_gbp7.mp4",
+    "cdnKey": "dontjoinagym_bristol_gbp7"
   },
   {
     "id": 294,
     "name": "DontJoinAGym Edinburgh GBP10",
     "category": "Don't Join A Gym",
     "source": "direct",
-    "driveId": "1VPMXRtQA9h6j6pdUcRVzJxt2Rq9N4VEa"
+    "driveId": "1VPMXRtQA9h6j6pdUcRVzJxt2Rq9N4VEa",
+    "url": "https://cdn.scangym.com/videos/dontjoinagym_edinburgh_gbp10.mp4",
+    "cdnKey": "dontjoinagym_edinburgh_gbp10"
   },
   {
     "id": 295,
     "name": "DontJoinAGym Edinburgh GBP5",
     "category": "Don't Join A Gym",
     "source": "direct",
-    "driveId": "1szqevDhqaK5gDoeSGbtor4UgLZWphRy7"
+    "driveId": "1szqevDhqaK5gDoeSGbtor4UgLZWphRy7",
+    "url": "https://cdn.scangym.com/videos/dontjoinagym_edinburgh_gbp5.mp4",
+    "cdnKey": "dontjoinagym_edinburgh_gbp5"
   },
   {
     "id": 296,
     "name": "DontJoinAGym Edinburgh GBP7",
     "category": "Don't Join A Gym",
     "source": "direct",
-    "driveId": "1fVF4Ui_0ftckM9uFnwnUMav7jV3KTnsg"
+    "driveId": "1fVF4Ui_0ftckM9uFnwnUMav7jV3KTnsg",
+    "url": "https://cdn.scangym.com/videos/dontjoinagym_edinburgh_gbp7.mp4",
+    "cdnKey": "dontjoinagym_edinburgh_gbp7"
   },
   {
     "id": 297,
     "name": "DontJoinAGym Glasgow GBP10",
     "category": "Don't Join A Gym",
     "source": "direct",
-    "driveId": "1__Ny5o5rQCWQ809XFUDUlu7ct5TIvolE"
+    "driveId": "1__Ny5o5rQCWQ809XFUDUlu7ct5TIvolE",
+    "url": "https://cdn.scangym.com/videos/dontjoinagym_glasgow_gbp10.mp4",
+    "cdnKey": "dontjoinagym_glasgow_gbp10"
   },
   {
     "id": 298,
     "name": "DontJoinAGym Glasgow GBP5",
     "category": "Don't Join A Gym",
     "source": "direct",
-    "driveId": "1Ez8iIbaP6144hky-PNcuE8n8S4U_UJJe"
+    "driveId": "1Ez8iIbaP6144hky-PNcuE8n8S4U_UJJe",
+    "url": "https://cdn.scangym.com/videos/dontjoinagym_glasgow_gbp5.mp4",
+    "cdnKey": "dontjoinagym_glasgow_gbp5"
   },
   {
     "id": 299,
     "name": "DontJoinAGym Glasgow GBP7",
     "category": "Don't Join A Gym",
     "source": "direct",
-    "driveId": "1EgEaLyB-cq8WuEcdnz6N1GswUjLJiJp3"
+    "driveId": "1EgEaLyB-cq8WuEcdnz6N1GswUjLJiJp3",
+    "url": "https://cdn.scangym.com/videos/dontjoinagym_glasgow_gbp7.mp4",
+    "cdnKey": "dontjoinagym_glasgow_gbp7"
   },
   {
     "id": 300,
     "name": "DontJoinAGym Leeds GBP10",
     "category": "Don't Join A Gym",
     "source": "direct",
-    "driveId": "159-DwTKRsuftpeKG6EyI4lp_OM-nE3tQ"
+    "driveId": "159-DwTKRsuftpeKG6EyI4lp_OM-nE3tQ",
+    "url": "https://cdn.scangym.com/videos/dontjoinagym_leeds_gbp10.mp4",
+    "cdnKey": "dontjoinagym_leeds_gbp10"
   },
   {
     "id": 301,
     "name": "DontJoinAGym Leeds GBP5",
     "category": "Don't Join A Gym",
     "source": "direct",
-    "driveId": "1jmQWcH-8GaXkqZsUQhpoPHPiLpOBT3Z2"
+    "driveId": "1jmQWcH-8GaXkqZsUQhpoPHPiLpOBT3Z2",
+    "url": "https://cdn.scangym.com/videos/dontjoinagym_leeds_gbp5.mp4",
+    "cdnKey": "dontjoinagym_leeds_gbp5"
   },
   {
     "id": 302,
     "name": "DontJoinAGym Leeds GBP7",
     "category": "Don't Join A Gym",
     "source": "direct",
-    "driveId": "1Rhj2OkjQ5R82WlixdOerKf_Lt3zbbDCv"
+    "driveId": "1Rhj2OkjQ5R82WlixdOerKf_Lt3zbbDCv",
+    "url": "https://cdn.scangym.com/videos/dontjoinagym_leeds_gbp7.mp4",
+    "cdnKey": "dontjoinagym_leeds_gbp7"
   },
   {
     "id": 303,
     "name": "DontJoinAGym Liverpool GBP10",
     "category": "Don't Join A Gym",
     "source": "direct",
-    "driveId": "1X0DfjqXqCupjYd8vT-pWVFjask7YNgsz"
+    "driveId": "1X0DfjqXqCupjYd8vT-pWVFjask7YNgsz",
+    "url": "https://cdn.scangym.com/videos/dontjoinagym_liverpool_gbp10.mp4",
+    "cdnKey": "dontjoinagym_liverpool_gbp10"
   },
   {
     "id": 304,
     "name": "DontJoinAGym Liverpool GBP5",
     "category": "Don't Join A Gym",
     "source": "direct",
-    "driveId": "16mT6V0giidDDpiejEjTRW6lTRSIiB1CC"
+    "driveId": "16mT6V0giidDDpiejEjTRW6lTRSIiB1CC",
+    "url": "https://cdn.scangym.com/videos/dontjoinagym_liverpool_gbp5.mp4",
+    "cdnKey": "dontjoinagym_liverpool_gbp5"
   },
   {
     "id": 305,
     "name": "DontJoinAGym Liverpool GBP7",
     "category": "Don't Join A Gym",
     "source": "direct",
-    "driveId": "1XL7LUKF8YcqdIVWXdaJC2UHvTYZRsV0B"
+    "driveId": "1XL7LUKF8YcqdIVWXdaJC2UHvTYZRsV0B",
+    "url": "https://cdn.scangym.com/videos/dontjoinagym_liverpool_gbp7.mp4",
+    "cdnKey": "dontjoinagym_liverpool_gbp7"
   },
   {
     "id": 306,
     "name": "DontJoinAGym London GBP10",
     "category": "Don't Join A Gym",
     "source": "direct",
-    "driveId": "11D5-QUrxeXreRYMsSoypYB5ShlXD2qwd"
+    "driveId": "11D5-QUrxeXreRYMsSoypYB5ShlXD2qwd",
+    "url": "https://cdn.scangym.com/videos/dontjoinagym_london_gbp10.mp4",
+    "cdnKey": "dontjoinagym_london_gbp10"
   },
   {
     "id": 307,
     "name": "DontJoinAGym London GBP5",
     "category": "Don't Join A Gym",
     "source": "direct",
-    "driveId": "1TL_UQylztXKchxt3GvzVs9ti0go7Cwbv"
+    "driveId": "1TL_UQylztXKchxt3GvzVs9ti0go7Cwbv",
+    "url": "https://cdn.scangym.com/videos/dontjoinagym_london_gbp5.mp4",
+    "cdnKey": "dontjoinagym_london_gbp5"
   },
   {
     "id": 308,
     "name": "DontJoinAGym London GBP7",
     "category": "Don't Join A Gym",
     "source": "direct",
-    "driveId": "16mz20gcGr9WBGOsvxEi_Oaenf3sY3jkK"
+    "driveId": "16mz20gcGr9WBGOsvxEi_Oaenf3sY3jkK",
+    "url": "https://cdn.scangym.com/videos/dontjoinagym_london_gbp7.mp4",
+    "cdnKey": "dontjoinagym_london_gbp7"
   },
   {
     "id": 309,
     "name": "DontJoinAGym Manchester GBP10",
     "category": "Don't Join A Gym",
     "source": "direct",
-    "driveId": "1rgmLEkWRHh7mE3SjdtjehQgEgR389MbP"
+    "driveId": "1rgmLEkWRHh7mE3SjdtjehQgEgR389MbP",
+    "url": "https://cdn.scangym.com/videos/dontjoinagym_manchester_gbp10.mp4",
+    "cdnKey": "dontjoinagym_manchester_gbp10"
   },
   {
     "id": 310,
     "name": "DontJoinAGym Manchester GBP5",
     "category": "Don't Join A Gym",
     "source": "direct",
-    "driveId": "1H2Mpw33BlzRO2hh_p-zFhjIL4RJPnO0p"
+    "driveId": "1H2Mpw33BlzRO2hh_p-zFhjIL4RJPnO0p",
+    "url": "https://cdn.scangym.com/videos/dontjoinagym_manchester_gbp5.mp4",
+    "cdnKey": "dontjoinagym_manchester_gbp5"
   },
   {
     "id": 311,
     "name": "DontJoinAGym Manchester GBP7",
     "category": "Don't Join A Gym",
     "source": "direct",
-    "driveId": "1tn9KGxz469rhSXqlK7acz7CZcf-xtxsC"
+    "driveId": "1tn9KGxz469rhSXqlK7acz7CZcf-xtxsC",
+    "url": "https://cdn.scangym.com/videos/dontjoinagym_manchester_gbp7.mp4",
+    "cdnKey": "dontjoinagym_manchester_gbp7"
   },
   {
     "id": 312,
     "name": "DontJoinAGym Sheffield GBP10",
     "category": "Don't Join A Gym",
     "source": "direct",
-    "driveId": "166qqi-VtTNnIWqJzjNbwcXbIQtFvzPQr"
+    "driveId": "166qqi-VtTNnIWqJzjNbwcXbIQtFvzPQr",
+    "url": "https://cdn.scangym.com/videos/dontjoinagym_sheffield_gbp10.mp4",
+    "cdnKey": "dontjoinagym_sheffield_gbp10"
   },
   {
     "id": 313,
     "name": "DontJoinAGym Sheffield GBP5",
     "category": "Don't Join A Gym",
     "source": "direct",
-    "driveId": "1m6ejBI_lIEk3dU3jW0qyTirX5_rcTuFI"
+    "driveId": "1m6ejBI_lIEk3dU3jW0qyTirX5_rcTuFI",
+    "url": "https://cdn.scangym.com/videos/dontjoinagym_sheffield_gbp5.mp4",
+    "cdnKey": "dontjoinagym_sheffield_gbp5"
   },
   {
     "id": 314,
     "name": "DontJoinAGym Sheffield GBP7",
     "category": "Don't Join A Gym",
     "source": "direct",
-    "driveId": "1J4DlFaW7WDFDCrDuW90SN1CO-0Jylb6O"
+    "driveId": "1J4DlFaW7WDFDCrDuW90SN1CO-0Jylb6O",
+    "url": "https://cdn.scangym.com/videos/dontjoinagym_sheffield_gbp7.mp4",
+    "cdnKey": "dontjoinagym_sheffield_gbp7"
   },
   {
     "id": 315,
     "name": "GymTour Premium v1",
     "category": "General",
     "source": "direct",
-    "driveId": "11ISWO1mZiCS9KoF3ski7SzHeNv7iO_fi"
+    "driveId": "11ISWO1mZiCS9KoF3ski7SzHeNv7iO_fi",
+    "url": "https://cdn.scangym.com/videos/gymtour_premium_v1.mp4",
+    "cdnKey": "gymtour_premium_v1"
   },
   {
     "id": 316,
     "name": "HowItWorks Bolton h0",
     "category": "How It Works (City)",
     "source": "direct",
-    "driveId": "13VxzKXnUYwVXuUwZI43_rhUrh_0wuoub"
+    "driveId": "13VxzKXnUYwVXuUwZI43_rhUrh_0wuoub",
+    "url": "https://cdn.scangym.com/videos/howitworks_bolton_h0.mp4",
+    "cdnKey": "howitworks_bolton_h0"
   },
   {
     "id": 317,
     "name": "HowItWorks Bolton h1",
     "category": "How It Works (City)",
     "source": "direct",
-    "driveId": "1czT0CJsia4GtRIZn0XtQuhSNa0bffyV2"
+    "driveId": "1czT0CJsia4GtRIZn0XtQuhSNa0bffyV2",
+    "url": "https://cdn.scangym.com/videos/howitworks_bolton_h1.mp4",
+    "cdnKey": "howitworks_bolton_h1"
   },
   {
     "id": 318,
     "name": "HowItWorks Bolton h2",
     "category": "How It Works (City)",
     "source": "direct",
-    "driveId": "1Dw2VS5rzBEWsqb0GbQWPg7jhL9SVlB-P"
+    "driveId": "1Dw2VS5rzBEWsqb0GbQWPg7jhL9SVlB-P",
+    "url": "https://cdn.scangym.com/videos/howitworks_bolton_h2.mp4",
+    "cdnKey": "howitworks_bolton_h2"
   },
   {
     "id": 319,
     "name": "HowItWorks Bristol h0",
     "category": "How It Works (City)",
     "source": "direct",
-    "driveId": "1kkEG0kZS3Rz3bNhz87Q1aCdgXSGX48k7"
+    "driveId": "1kkEG0kZS3Rz3bNhz87Q1aCdgXSGX48k7",
+    "url": "https://cdn.scangym.com/videos/howitworks_bristol_h0.mp4",
+    "cdnKey": "howitworks_bristol_h0"
   },
   {
     "id": 320,
     "name": "HowItWorks Bristol h1",
     "category": "How It Works (City)",
     "source": "direct",
-    "driveId": "1YffMGbVUFXOeHvQlIyCJQfJGtz-BaCma"
+    "driveId": "1YffMGbVUFXOeHvQlIyCJQfJGtz-BaCma",
+    "url": "https://cdn.scangym.com/videos/howitworks_bristol_h1.mp4",
+    "cdnKey": "howitworks_bristol_h1"
   },
   {
     "id": 321,
     "name": "HowItWorks Bristol h2",
     "category": "How It Works (City)",
     "source": "direct",
-    "driveId": "12WKaLr89vvVtaLqm_3Yl2zdYeKIFs1Dp"
+    "driveId": "12WKaLr89vvVtaLqm_3Yl2zdYeKIFs1Dp",
+    "url": "https://cdn.scangym.com/videos/howitworks_bristol_h2.mp4",
+    "cdnKey": "howitworks_bristol_h2"
   },
   {
     "id": 322,
     "name": "HowItWorks Edinburgh h0",
     "category": "How It Works (City)",
     "source": "direct",
-    "driveId": "1sIm_bJHjLFGGKrcPqYnQre--oGSwnFIJ"
+    "driveId": "1sIm_bJHjLFGGKrcPqYnQre--oGSwnFIJ",
+    "url": "https://cdn.scangym.com/videos/howitworks_edinburgh_h0.mp4",
+    "cdnKey": "howitworks_edinburgh_h0"
   },
   {
     "id": 323,
     "name": "HowItWorks Edinburgh h1",
     "category": "How It Works (City)",
     "source": "direct",
-    "driveId": "1K2Vh9rzjD4yNS1pCdXrYxEowWA9HnvbL"
+    "driveId": "1K2Vh9rzjD4yNS1pCdXrYxEowWA9HnvbL",
+    "url": "https://cdn.scangym.com/videos/howitworks_edinburgh_h1.mp4",
+    "cdnKey": "howitworks_edinburgh_h1"
   },
   {
     "id": 324,
     "name": "HowItWorks Edinburgh h2",
     "category": "How It Works (City)",
     "source": "direct",
-    "driveId": "1XAvY3243FIDOQJk8Jup_Du-P1Yajh-sM"
+    "driveId": "1XAvY3243FIDOQJk8Jup_Du-P1Yajh-sM",
+    "url": "https://cdn.scangym.com/videos/howitworks_edinburgh_h2.mp4",
+    "cdnKey": "howitworks_edinburgh_h2"
   },
   {
     "id": 325,
     "name": "HowItWorks Glasgow h0",
     "category": "How It Works (City)",
     "source": "direct",
-    "driveId": "1t3co9JOvJhca4bFtdEE86ZqvUBiV8p_b"
+    "driveId": "1t3co9JOvJhca4bFtdEE86ZqvUBiV8p_b",
+    "url": "https://cdn.scangym.com/videos/howitworks_glasgow_h0.mp4",
+    "cdnKey": "howitworks_glasgow_h0"
   },
   {
     "id": 326,
     "name": "HowItWorks Glasgow h1",
     "category": "How It Works (City)",
     "source": "direct",
-    "driveId": "1v4lYcamsHCAiKx7_7UBn68mW7HZRE6Mh"
+    "driveId": "1v4lYcamsHCAiKx7_7UBn68mW7HZRE6Mh",
+    "url": "https://cdn.scangym.com/videos/howitworks_glasgow_h1.mp4",
+    "cdnKey": "howitworks_glasgow_h1"
   },
   {
     "id": 327,
     "name": "HowItWorks Glasgow h2",
     "category": "How It Works (City)",
     "source": "direct",
-    "driveId": "1ieUZ6Wi1IkzNYRiO-N1XIfmtTrMzYnul"
+    "driveId": "1ieUZ6Wi1IkzNYRiO-N1XIfmtTrMzYnul",
+    "url": "https://cdn.scangym.com/videos/howitworks_glasgow_h2.mp4",
+    "cdnKey": "howitworks_glasgow_h2"
   },
   {
     "id": 328,
     "name": "HowItWorks Leeds h0",
     "category": "How It Works (City)",
     "source": "direct",
-    "driveId": "1RiMWeRhbSu9i2_f5eohI5K70746L_Qli"
+    "driveId": "1RiMWeRhbSu9i2_f5eohI5K70746L_Qli",
+    "url": "https://cdn.scangym.com/videos/howitworks_leeds_h0.mp4",
+    "cdnKey": "howitworks_leeds_h0"
   },
   {
     "id": 329,
     "name": "HowItWorks Leeds h1",
     "category": "How It Works (City)",
     "source": "direct",
-    "driveId": "1LFPQK0Lxg-5h1QERfMjZgWC5ySlThz6p"
+    "driveId": "1LFPQK0Lxg-5h1QERfMjZgWC5ySlThz6p",
+    "url": "https://cdn.scangym.com/videos/howitworks_leeds_h1.mp4",
+    "cdnKey": "howitworks_leeds_h1"
   },
   {
     "id": 330,
     "name": "HowItWorks Leeds h2",
     "category": "How It Works (City)",
     "source": "direct",
-    "driveId": "1y9dpK6nO8hVJD65o8xAM24DsNFLTE5dG"
+    "driveId": "1y9dpK6nO8hVJD65o8xAM24DsNFLTE5dG",
+    "url": "https://cdn.scangym.com/videos/howitworks_leeds_h2.mp4",
+    "cdnKey": "howitworks_leeds_h2"
   },
   {
     "id": 331,
     "name": "HowItWorks Liverpool h0",
     "category": "How It Works (City)",
     "source": "direct",
-    "driveId": "10Ukm5jPnbZCwsVTSyraQztXpiIdLoQmd"
+    "driveId": "10Ukm5jPnbZCwsVTSyraQztXpiIdLoQmd",
+    "url": "https://cdn.scangym.com/videos/howitworks_liverpool_h0.mp4",
+    "cdnKey": "howitworks_liverpool_h0"
   },
   {
     "id": 332,
     "name": "HowItWorks Liverpool h1",
     "category": "How It Works (City)",
     "source": "direct",
-    "driveId": "1Z0IzPIz9UzDoztulozTpzQEkybmENYa5"
+    "driveId": "1Z0IzPIz9UzDoztulozTpzQEkybmENYa5",
+    "url": "https://cdn.scangym.com/videos/howitworks_liverpool_h1.mp4",
+    "cdnKey": "howitworks_liverpool_h1"
   },
   {
     "id": 333,
     "name": "HowItWorks Liverpool h2",
     "category": "How It Works (City)",
     "source": "direct",
-    "driveId": "1iGCoAPeTb1Cnhp6fGfMzVkg_jBNLH5y0"
+    "driveId": "1iGCoAPeTb1Cnhp6fGfMzVkg_jBNLH5y0",
+    "url": "https://cdn.scangym.com/videos/howitworks_liverpool_h2.mp4",
+    "cdnKey": "howitworks_liverpool_h2"
   },
   {
     "id": 334,
     "name": "HowItWorks London h0",
     "category": "How It Works (City)",
     "source": "direct",
-    "driveId": "1y2S7Z3leIad7qJ_mFuvezHXMwdUD2Sge"
+    "driveId": "1y2S7Z3leIad7qJ_mFuvezHXMwdUD2Sge",
+    "url": "https://cdn.scangym.com/videos/howitworks_london_h0.mp4",
+    "cdnKey": "howitworks_london_h0"
   },
   {
     "id": 335,
     "name": "HowItWorks London h1",
     "category": "How It Works (City)",
     "source": "direct",
-    "driveId": "18PVtAwVfI2EhVb3yFUWUQwqQb1PFy6-r"
+    "driveId": "18PVtAwVfI2EhVb3yFUWUQwqQb1PFy6-r",
+    "url": "https://cdn.scangym.com/videos/howitworks_london_h1.mp4",
+    "cdnKey": "howitworks_london_h1"
   },
   {
     "id": 336,
     "name": "HowItWorks London h2",
     "category": "How It Works (City)",
     "source": "direct",
-    "driveId": "1VV1XZIR9CZvtqO0Fi8XLbr0BojySbyrr"
+    "driveId": "1VV1XZIR9CZvtqO0Fi8XLbr0BojySbyrr",
+    "url": "https://cdn.scangym.com/videos/howitworks_london_h2.mp4",
+    "cdnKey": "howitworks_london_h2"
   },
   {
     "id": 337,
     "name": "HowItWorks Manchester h0",
     "category": "How It Works (City)",
     "source": "direct",
-    "driveId": "1gT5glWrEESV0YM4s9fHlBq-IkfrUWz3D"
+    "driveId": "1gT5glWrEESV0YM4s9fHlBq-IkfrUWz3D",
+    "url": "https://cdn.scangym.com/videos/howitworks_manchester_h0.mp4",
+    "cdnKey": "howitworks_manchester_h0"
   },
   {
     "id": 338,
     "name": "HowItWorks Manchester h1",
     "category": "How It Works (City)",
     "source": "direct",
-    "driveId": "1Sle1czXvaeb5mp0xAZxjSagFTyRXfXTs"
+    "driveId": "1Sle1czXvaeb5mp0xAZxjSagFTyRXfXTs",
+    "url": "https://cdn.scangym.com/videos/howitworks_manchester_h1.mp4",
+    "cdnKey": "howitworks_manchester_h1"
   },
   {
     "id": 339,
     "name": "HowItWorks Manchester h2",
     "category": "How It Works (City)",
     "source": "direct",
-    "driveId": "1cCwg7zffqM_EcwWgwuwog9nuKUiyXmVk"
+    "driveId": "1cCwg7zffqM_EcwWgwuwog9nuKUiyXmVk",
+    "url": "https://cdn.scangym.com/videos/howitworks_manchester_h2.mp4",
+    "cdnKey": "howitworks_manchester_h2"
   },
   {
     "id": 340,
     "name": "HowItWorks Sheffield h0",
     "category": "How It Works (City)",
     "source": "direct",
-    "driveId": "1XBj9jc_-1uDDGrAX0aUNcixviOzdgyJd"
+    "driveId": "1XBj9jc_-1uDDGrAX0aUNcixviOzdgyJd",
+    "url": "https://cdn.scangym.com/videos/howitworks_sheffield_h0.mp4",
+    "cdnKey": "howitworks_sheffield_h0"
   },
   {
     "id": 341,
     "name": "HowItWorks Sheffield h1",
     "category": "How It Works (City)",
     "source": "direct",
-    "driveId": "15Ga6VDK1thz7V-5H2nRYtdbnU8xt4Blq"
+    "driveId": "15Ga6VDK1thz7V-5H2nRYtdbnU8xt4Blq",
+    "url": "https://cdn.scangym.com/videos/howitworks_sheffield_h1.mp4",
+    "cdnKey": "howitworks_sheffield_h1"
   },
   {
     "id": 342,
     "name": "HowItWorks Sheffield h2",
     "category": "How It Works (City)",
     "source": "direct",
-    "driveId": "1uba0eLJ_r3Trv-lfIPCLFV7eZi2bivET"
+    "driveId": "1uba0eLJ_r3Trv-lfIPCLFV7eZi2bivET",
+    "url": "https://cdn.scangym.com/videos/howitworks_sheffield_h2.mp4",
+    "cdnKey": "howitworks_sheffield_h2"
   },
   {
     "id": 343,
     "name": "IStoppedPaying v1",
     "category": "Viral",
     "source": "direct",
-    "driveId": "1k8D8x73K310GzKxKA22vWRmAM4NXSZJA"
+    "driveId": "1k8D8x73K310GzKxKA22vWRmAM4NXSZJA",
+    "url": "https://cdn.scangym.com/videos/istoppedpaying_v1.mp4",
+    "cdnKey": "istoppedpaying_v1"
   },
   {
     "id": 344,
     "name": "IStoppedPaying v2",
     "category": "Viral",
     "source": "direct",
-    "driveId": "1Rd57E-QJnyCmCLBfwzZeB274YSnTQ7ee"
+    "driveId": "1Rd57E-QJnyCmCLBfwzZeB274YSnTQ7ee",
+    "url": "https://cdn.scangym.com/videos/istoppedpaying_v2.mp4",
+    "cdnKey": "istoppedpaying_v2"
   },
   {
     "id": 345,
     "name": "IdentityHook v07",
     "category": "Viral",
     "source": "direct",
-    "driveId": "1sE2kf0KEJswMCbeewxgVIFqRVo7ue4E6"
+    "driveId": "1sE2kf0KEJswMCbeewxgVIFqRVo7ue4E6",
+    "url": "https://cdn.scangym.com/videos/identityhook_v07.mp4",
+    "cdnKey": "identityhook_v07"
   },
   {
     "id": 346,
     "name": "IdentityHook v08",
     "category": "Viral",
     "source": "direct",
-    "driveId": "1rO5n1sxBqstDSFxwj4sRgQMwYWmj9lah"
+    "driveId": "1rO5n1sxBqstDSFxwj4sRgQMwYWmj9lah",
+    "url": "https://cdn.scangym.com/videos/identityhook_v08.mp4",
+    "cdnKey": "identityhook_v08"
   },
   {
     "id": 347,
     "name": "IdentityHook v09",
     "category": "Viral",
     "source": "direct",
-    "driveId": "1P1hKsZgkflUX_tNpzIhWAMpeHP-0hw3u"
+    "driveId": "1P1hKsZgkflUX_tNpzIhWAMpeHP-0hw3u",
+    "url": "https://cdn.scangym.com/videos/identityhook_v09.mp4",
+    "cdnKey": "identityhook_v09"
   },
   {
     "id": 348,
     "name": "IdentityHook v10",
     "category": "Viral",
     "source": "direct",
-    "driveId": "1uTapi__sCJpIbyHATxx_sToj3CeFVp9l"
+    "driveId": "1uTapi__sCJpIbyHATxx_sToj3CeFVp9l",
+    "url": "https://cdn.scangym.com/videos/identityhook_v10.mp4",
+    "cdnKey": "identityhook_v10"
   },
   {
     "id": 349,
     "name": "MoneyMath v1",
     "category": "Viral",
     "source": "direct",
-    "driveId": "1e0ejKDhqJwUN_DLpyQbWSLMZtZEXsQVm"
+    "driveId": "1e0ejKDhqJwUN_DLpyQbWSLMZtZEXsQVm",
+    "url": "https://cdn.scangym.com/videos/moneymath_v1.mp4",
+    "cdnKey": "moneymath_v1"
   },
   {
     "id": 350,
     "name": "POV GymHopping v2",
     "category": "Viral",
     "source": "direct",
-    "driveId": "1fGbLnuskfJJ2y1vn4oRZKzERCFNGQ-6i"
+    "driveId": "1fGbLnuskfJJ2y1vn4oRZKzERCFNGQ-6i",
+    "url": "https://cdn.scangym.com/videos/pov_gymhopping_v2.mp4",
+    "cdnKey": "pov_gymhopping_v2"
   },
   {
     "id": 351,
     "name": "POV NoContract v1",
     "category": "Viral",
     "source": "direct",
-    "driveId": "1OEUbgWYFOqA99IOZQsp8VKC5oflSjkrE"
+    "driveId": "1OEUbgWYFOqA99IOZQsp8VKC5oflSjkrE",
+    "url": "https://cdn.scangym.com/videos/pov_nocontract_v1.mp4",
+    "cdnKey": "pov_nocontract_v1"
   },
   {
     "id": 352,
     "name": "PriceCompare Bolton h0",
     "category": "Price Compare",
     "source": "direct",
-    "driveId": "1IV0kVw-ro2i5oW5ZI8sSeuA0sknNxkWl"
+    "driveId": "1IV0kVw-ro2i5oW5ZI8sSeuA0sknNxkWl",
+    "url": "https://cdn.scangym.com/videos/pricecompare_bolton_h0.mp4",
+    "cdnKey": "pricecompare_bolton_h0"
   },
   {
     "id": 353,
     "name": "PriceCompare Bolton h1",
     "category": "Price Compare",
     "source": "direct",
-    "driveId": "1OdKqf3LWAGE8R5-k0ixutscqPN5X9IVS"
+    "driveId": "1OdKqf3LWAGE8R5-k0ixutscqPN5X9IVS",
+    "url": "https://cdn.scangym.com/videos/pricecompare_bolton_h1.mp4",
+    "cdnKey": "pricecompare_bolton_h1"
   },
   {
     "id": 354,
     "name": "PriceCompare Bolton h2",
     "category": "Price Compare",
     "source": "direct",
-    "driveId": "110QA5ZFvNk8JockbadybZWBKyynNB9fx"
+    "driveId": "110QA5ZFvNk8JockbadybZWBKyynNB9fx",
+    "url": "https://cdn.scangym.com/videos/pricecompare_bolton_h2.mp4",
+    "cdnKey": "pricecompare_bolton_h2"
   },
   {
     "id": 355,
     "name": "PriceCompare Bristol h0",
     "category": "Price Compare",
     "source": "direct",
-    "driveId": "1cVFYzKTTBLH_azpaoVP6Ry0hpKROJ2xS"
+    "driveId": "1cVFYzKTTBLH_azpaoVP6Ry0hpKROJ2xS",
+    "url": "https://cdn.scangym.com/videos/pricecompare_bristol_h0.mp4",
+    "cdnKey": "pricecompare_bristol_h0"
   },
   {
     "id": 356,
     "name": "PriceCompare Bristol h1",
     "category": "Price Compare",
     "source": "direct",
-    "driveId": "1K2NajaamEr90cD_NLtRSRJz9E31RjhIB"
+    "driveId": "1K2NajaamEr90cD_NLtRSRJz9E31RjhIB",
+    "url": "https://cdn.scangym.com/videos/pricecompare_bristol_h1.mp4",
+    "cdnKey": "pricecompare_bristol_h1"
   },
   {
     "id": 357,
     "name": "PriceCompare Bristol h2",
     "category": "Price Compare",
     "source": "direct",
-    "driveId": "10GQQNDeA3xz5hu2D6DG-pbChcm44Uojg"
+    "driveId": "10GQQNDeA3xz5hu2D6DG-pbChcm44Uojg",
+    "url": "https://cdn.scangym.com/videos/pricecompare_bristol_h2.mp4",
+    "cdnKey": "pricecompare_bristol_h2"
   },
   {
     "id": 358,
     "name": "PriceCompare Edinburgh h0",
     "category": "Price Compare",
     "source": "direct",
-    "driveId": "1QBA-v_udr_I3w5PKU78CFOQedWpZSQbn"
+    "driveId": "1QBA-v_udr_I3w5PKU78CFOQedWpZSQbn",
+    "url": "https://cdn.scangym.com/videos/pricecompare_edinburgh_h0.mp4",
+    "cdnKey": "pricecompare_edinburgh_h0"
   },
   {
     "id": 359,
     "name": "PriceCompare Edinburgh h1",
     "category": "Price Compare",
     "source": "direct",
-    "driveId": "17Byw29Q81ySG2NDDPO2VSGIOnuEptH7t"
+    "driveId": "17Byw29Q81ySG2NDDPO2VSGIOnuEptH7t",
+    "url": "https://cdn.scangym.com/videos/pricecompare_edinburgh_h1.mp4",
+    "cdnKey": "pricecompare_edinburgh_h1"
   },
   {
     "id": 360,
     "name": "PriceCompare Edinburgh h2",
     "category": "Price Compare",
     "source": "direct",
-    "driveId": "1nfGAmjkROWK7d8NK5jDZKxOiKR0poF_d"
+    "driveId": "1nfGAmjkROWK7d8NK5jDZKxOiKR0poF_d",
+    "url": "https://cdn.scangym.com/videos/pricecompare_edinburgh_h2.mp4",
+    "cdnKey": "pricecompare_edinburgh_h2"
   },
   {
     "id": 361,
     "name": "PriceCompare Glasgow h0",
     "category": "Price Compare",
     "source": "direct",
-    "driveId": "1LvBS3PJ-8uswNZUlz6sFGOFFW6GMGbMR"
+    "driveId": "1LvBS3PJ-8uswNZUlz6sFGOFFW6GMGbMR",
+    "url": "https://cdn.scangym.com/videos/pricecompare_glasgow_h0.mp4",
+    "cdnKey": "pricecompare_glasgow_h0"
   },
   {
     "id": 362,
     "name": "PriceCompare Glasgow h1",
     "category": "Price Compare",
     "source": "direct",
-    "driveId": "1IRpx1MEVsQ1RQwIXN6nko7VFuQl5QpWZ"
+    "driveId": "1IRpx1MEVsQ1RQwIXN6nko7VFuQl5QpWZ",
+    "url": "https://cdn.scangym.com/videos/pricecompare_glasgow_h1.mp4",
+    "cdnKey": "pricecompare_glasgow_h1"
   },
   {
     "id": 363,
     "name": "PriceCompare Glasgow h2",
     "category": "Price Compare",
     "source": "direct",
-    "driveId": "1xz1oMtPxCBJARYO0zMPPab7mbGAYLz6n"
+    "driveId": "1xz1oMtPxCBJARYO0zMPPab7mbGAYLz6n",
+    "url": "https://cdn.scangym.com/videos/pricecompare_glasgow_h2.mp4",
+    "cdnKey": "pricecompare_glasgow_h2"
   },
   {
     "id": 364,
     "name": "PriceCompare Leeds h0",
     "category": "Price Compare",
     "source": "direct",
-    "driveId": "1DYgMh_VBOOU3SkyZnbtqM6FvhWoK1gOv"
+    "driveId": "1DYgMh_VBOOU3SkyZnbtqM6FvhWoK1gOv",
+    "url": "https://cdn.scangym.com/videos/pricecompare_leeds_h0.mp4",
+    "cdnKey": "pricecompare_leeds_h0"
   },
   {
     "id": 365,
     "name": "PriceCompare Leeds h1",
     "category": "Price Compare",
     "source": "direct",
-    "driveId": "1Sp4pWRz0GUSTpFhPIrpWrKiZLx6zo1SI"
+    "driveId": "1Sp4pWRz0GUSTpFhPIrpWrKiZLx6zo1SI",
+    "url": "https://cdn.scangym.com/videos/pricecompare_leeds_h1.mp4",
+    "cdnKey": "pricecompare_leeds_h1"
   },
   {
     "id": 366,
     "name": "PriceCompare Leeds h2",
     "category": "Price Compare",
     "source": "direct",
-    "driveId": "134x8sB_bfKOu7Ues7LZqZ-5gytWCMtJt"
+    "driveId": "134x8sB_bfKOu7Ues7LZqZ-5gytWCMtJt",
+    "url": "https://cdn.scangym.com/videos/pricecompare_leeds_h2.mp4",
+    "cdnKey": "pricecompare_leeds_h2"
   },
   {
     "id": 367,
     "name": "PriceCompare Liverpool h0",
     "category": "Price Compare",
     "source": "direct",
-    "driveId": "1TvXP5XxzwmdrcamlwAinPY2NWMrFcCRI"
+    "driveId": "1TvXP5XxzwmdrcamlwAinPY2NWMrFcCRI",
+    "url": "https://cdn.scangym.com/videos/pricecompare_liverpool_h0.mp4",
+    "cdnKey": "pricecompare_liverpool_h0"
   },
   {
     "id": 368,
     "name": "PriceCompare Liverpool h1",
     "category": "Price Compare",
     "source": "direct",
-    "driveId": "1KaPYkI3bhan8wtnw4_L6zIYTq7zTE9UL"
+    "driveId": "1KaPYkI3bhan8wtnw4_L6zIYTq7zTE9UL",
+    "url": "https://cdn.scangym.com/videos/pricecompare_liverpool_h1.mp4",
+    "cdnKey": "pricecompare_liverpool_h1"
   },
   {
     "id": 369,
     "name": "PriceCompare Liverpool h2",
     "category": "Price Compare",
     "source": "direct",
-    "driveId": "1TEQcvj3kk6Adqk51BmsARd5QCo13RKav"
+    "driveId": "1TEQcvj3kk6Adqk51BmsARd5QCo13RKav",
+    "url": "https://cdn.scangym.com/videos/pricecompare_liverpool_h2.mp4",
+    "cdnKey": "pricecompare_liverpool_h2"
   },
   {
     "id": 370,
     "name": "PriceCompare London h0",
     "category": "Price Compare",
     "source": "direct",
-    "driveId": "1zW-IDkta9A1Sz4N4IhCucj0STaQIJCF7"
+    "driveId": "1zW-IDkta9A1Sz4N4IhCucj0STaQIJCF7",
+    "url": "https://cdn.scangym.com/videos/pricecompare_london_h0.mp4",
+    "cdnKey": "pricecompare_london_h0"
   },
   {
     "id": 371,
     "name": "PriceCompare London h1",
     "category": "Price Compare",
     "source": "direct",
-    "driveId": "1a_xmU55DKgE_ydxeM8HsOLLxWHc9i0RG"
+    "driveId": "1a_xmU55DKgE_ydxeM8HsOLLxWHc9i0RG",
+    "url": "https://cdn.scangym.com/videos/pricecompare_london_h1.mp4",
+    "cdnKey": "pricecompare_london_h1"
   },
   {
     "id": 372,
     "name": "PriceCompare London h2",
     "category": "Price Compare",
     "source": "direct",
-    "driveId": "19VGC1FIZtQRcuz0okHTs1m0o0E3cKLau"
+    "driveId": "19VGC1FIZtQRcuz0okHTs1m0o0E3cKLau",
+    "url": "https://cdn.scangym.com/videos/pricecompare_london_h2.mp4",
+    "cdnKey": "pricecompare_london_h2"
   },
   {
     "id": 373,
     "name": "PriceCompare Manchester h0",
     "category": "Price Compare",
     "source": "direct",
-    "driveId": "1XZogiJaMf01-ShI2F5Erj_J8rprbcJ_t"
+    "driveId": "1XZogiJaMf01-ShI2F5Erj_J8rprbcJ_t",
+    "url": "https://cdn.scangym.com/videos/pricecompare_manchester_h0.mp4",
+    "cdnKey": "pricecompare_manchester_h0"
   },
   {
     "id": 374,
     "name": "PriceCompare Manchester h1",
     "category": "Price Compare",
     "source": "direct",
-    "driveId": "1QPATX-cwrGDL84BK4u4zSRBmbY8AcRw-"
+    "driveId": "1QPATX-cwrGDL84BK4u4zSRBmbY8AcRw-",
+    "url": "https://cdn.scangym.com/videos/pricecompare_manchester_h1.mp4",
+    "cdnKey": "pricecompare_manchester_h1"
   },
   {
     "id": 375,
     "name": "PriceCompare Manchester h2",
     "category": "Price Compare",
     "source": "direct",
-    "driveId": "1oEIb9HDfcJrxeZRXe4DGXuHcnkPnoD7K"
+    "driveId": "1oEIb9HDfcJrxeZRXe4DGXuHcnkPnoD7K",
+    "url": "https://cdn.scangym.com/videos/pricecompare_manchester_h2.mp4",
+    "cdnKey": "pricecompare_manchester_h2"
   },
   {
     "id": 376,
     "name": "PriceCompare Sheffield h0",
     "category": "Price Compare",
     "source": "direct",
-    "driveId": "14mUIi_IlO1dntYRd5ycOl-hphIuHSicy"
+    "driveId": "14mUIi_IlO1dntYRd5ycOl-hphIuHSicy",
+    "url": "https://cdn.scangym.com/videos/pricecompare_sheffield_h0.mp4",
+    "cdnKey": "pricecompare_sheffield_h0"
   },
   {
     "id": 377,
     "name": "PriceCompare Sheffield h1",
     "category": "Price Compare",
     "source": "direct",
-    "driveId": "1UHbzCUMk_5waSJkL_xXKMddf0gOzT3WA"
+    "driveId": "1UHbzCUMk_5waSJkL_xXKMddf0gOzT3WA",
+    "url": "https://cdn.scangym.com/videos/pricecompare_sheffield_h1.mp4",
+    "cdnKey": "pricecompare_sheffield_h1"
   },
   {
     "id": 378,
     "name": "PriceCompare Sheffield h2",
     "category": "Price Compare",
     "source": "direct",
-    "driveId": "1cN0HTxpc_1vqXMLtMcARnFfPER1Y-3ak"
-  },
-  {
-    "id": 379,
-    "name": "Branded Reels Influencer Vertical",
-    "category": "Branded",
-    "source": "direct",
-    "driveId": "1WRNRQC7s7wcL6YDh0SlKKEfYe74bn9Jd"
-  },
-  {
-    "id": 380,
-    "name": "Branded TikTok Hook Vertical",
-    "category": "Branded",
-    "source": "direct",
-    "driveId": "1XnjjW1eRJ2e2epKox5xE1LPFBhnwPlVt"
+    "driveId": "1cN0HTxpc_1vqXMLtMcARnFfPER1Y-3ak",
+    "url": "https://cdn.scangym.com/videos/pricecompare_sheffield_h2.mp4",
+    "cdnKey": "pricecompare_sheffield_h2"
   },
   {
     "id": 381,
     "name": "Branded V1 TikTok",
     "category": "Branded",
     "source": "direct",
-    "driveId": "1TICtbG9S6b25HWSP3K0xkMnQ2TXvcI_B"
+    "driveId": "1TICtbG9S6b25HWSP3K0xkMnQ2TXvcI_B",
+    "url": "https://cdn.scangym.com/videos/1.mp4",
+    "cdnKey": "1"
   },
   {
     "id": 382,
     "name": "Branded V10 Gym Tour Reaction",
     "category": "Branded",
     "source": "direct",
-    "driveId": "1a59RLsIZ2kOv7khgMmEKx_o48EkcTbWt"
+    "driveId": "1a59RLsIZ2kOv7khgMmEKx_o48EkcTbWt",
+    "url": "https://cdn.scangym.com/videos/1.mp4",
+    "cdnKey": "1"
   },
   {
     "id": 383,
     "name": "Branded V11 Lads Night Gym",
     "category": "Branded",
     "source": "direct",
-    "driveId": "1cy_cK67Qyv2P_P7V7awSb2vhg7mq3UW0"
+    "driveId": "1cy_cK67Qyv2P_P7V7awSb2vhg7mq3UW0",
+    "url": "https://cdn.scangym.com/videos/1.mp4",
+    "cdnKey": "1"
   },
   {
     "id": 384,
     "name": "Branded V12 Maths Breakdown",
     "category": "Branded",
     "source": "direct",
-    "driveId": "1iNpJmwvz9_UlHrKsSe6tP5rL_B6w0frl"
+    "driveId": "1iNpJmwvz9_UlHrKsSe6tP5rL_B6w0frl",
+    "url": "https://cdn.scangym.com/videos/1.mp4",
+    "cdnKey": "1"
   },
   {
     "id": 385,
     "name": "Branded V13 Sunrise Session",
     "category": "Branded",
     "source": "direct",
-    "driveId": "1PPuxbNAYt4pJDrFqDaJclW7teBA9Ybul"
+    "driveId": "1PPuxbNAYt4pJDrFqDaJclW7teBA9Ybul",
+    "url": "https://cdn.scangym.com/videos/1.mp4",
+    "cdnKey": "1"
   },
   {
     "id": 386,
     "name": "Branded V14 PT Studio Steal",
     "category": "Branded",
     "source": "direct",
-    "driveId": "1ccETo55FxZP2_ql6n_dSHH_UJOjY9afV"
+    "driveId": "1ccETo55FxZP2_ql6n_dSHH_UJOjY9afV",
+    "url": "https://cdn.scangym.com/videos/1.mp4",
+    "cdnKey": "1"
   },
   {
     "id": 387,
     "name": "Branded V15 Student Budget",
     "category": "Branded",
     "source": "direct",
-    "driveId": "1gdUEbHzm76hIIWnCFQlEv_a7SzAAWWpR"
+    "driveId": "1gdUEbHzm76hIIWnCFQlEv_a7SzAAWWpR",
+    "url": "https://cdn.scangym.com/videos/1.mp4",
+    "cdnKey": "1"
   },
   {
     "id": 388,
     "name": "Branded V16 POV Discovery",
     "category": "Branded",
     "source": "direct",
-    "driveId": "1YJq8zRBNhxmG1rjSUPb34Qmwyf-0x9gC"
+    "driveId": "1YJq8zRBNhxmG1rjSUPb34Qmwyf-0x9gC",
+    "url": "https://cdn.scangym.com/videos/1.mp4",
+    "cdnKey": "1"
   },
   {
     "id": 389,
     "name": "Branded V17 Tested Every App",
     "category": "Branded",
     "source": "direct",
-    "driveId": "1VmC05gEtqNuRi0ADQjXeOgsz5N-RCK9y"
+    "driveId": "1VmC05gEtqNuRi0ADQjXeOgsz5N-RCK9y",
+    "url": "https://cdn.scangym.com/videos/1.mp4",
+    "cdnKey": "1"
   },
   {
     "id": 390,
     "name": "Branded V18 Stop Scrolling",
     "category": "Branded",
     "source": "direct",
-    "driveId": "1eKydnW2vzpEe_Cx-6pj8xVTbpWpkF9do"
-  },
-  {
-    "id": 391,
-    "name": "Branded V2 Reels",
-    "category": "Branded",
-    "source": "direct",
-    "driveId": "1U0iF0HU6XT0zU-VBF92sg-AtTQKcdlcV"
-  },
-  {
-    "id": 392,
-    "name": "Branded V3 YouTube",
-    "category": "Branded",
-    "source": "direct",
-    "driveId": "1NyPW92SyuXj57A8PtNCbsmUqoAmyP7bl"
-  },
-  {
-    "id": 393,
-    "name": "Branded V4 Male Hook",
-    "category": "Branded",
-    "source": "direct",
-    "driveId": "1BaUfhlkRYTA2bw2YDCKm1FIdGrZ7Patd"
-  },
-  {
-    "id": 394,
-    "name": "Branded V5 Rooftop Duo",
-    "category": "Branded",
-    "source": "direct",
-    "driveId": "1SMJBcvPWdSp86x-rvs1G1-cLHaCvdV8r"
-  },
-  {
-    "id": 395,
-    "name": "Branded V6 Split Screen",
-    "category": "Branded",
-    "source": "direct",
-    "driveId": "1WDhCtjWLW1DKiu7EfXBGzC9JJb1IP7hh"
-  },
-  {
-    "id": 396,
-    "name": "Branded V7 Hotel Traveller",
-    "category": "Branded",
-    "source": "direct",
-    "driveId": "14neWWd1kod-P-aSYp9iEOd5G1nlWYzvv"
-  },
-  {
-    "id": 397,
-    "name": "Branded V8 Couples Workout",
-    "category": "Branded",
-    "source": "direct",
-    "driveId": "1CL3NLJuIovpumN6vyqGwJS_ev0R_6aRQ"
-  },
-  {
-    "id": 398,
-    "name": "Branded V9 Secret Finder",
-    "category": "Branded",
-    "source": "direct",
-    "driveId": "1UG4xw23x-LBBHM4ccauxZtIlBOs_N7bz"
-  },
-  {
-    "id": 399,
-    "name": "Branded YouTube Cinematic Horizontal",
-    "category": "Branded",
-    "source": "direct",
-    "driveId": "1H3VVGKJQOM0tNRlqDobazBVyQPtrRfn5"
+    "driveId": "1eKydnW2vzpEe_Cx-6pj8xVTbpWpkF9do",
+    "url": "https://cdn.scangym.com/videos/1.mp4",
+    "cdnKey": "1"
   },
   {
     "id": 400,
     "name": "CMO V26 LiverpoolCityPromo Vertical",
     "category": "CMO Content",
     "source": "direct",
-    "driveId": "1whngFSW0-50fV-q6bUchZFKRjXlD0G5I"
+    "driveId": "1whngFSW0-50fV-q6bUchZFKRjXlD0G5I",
+    "url": "https://cdn.scangym.com/videos/cmo_v26_liverpoolcitypromo_vertical.mp4",
+    "cdnKey": "cmo_v26_liverpoolcitypromo_vertical"
   },
   {
     "id": 401,
     "name": "CMO V32 StudentSaveMoney Vertical",
     "category": "CMO Content",
     "source": "direct",
-    "driveId": "1D_7eB-WjzfWSH-NdBaPOpuMn3dun9fDZ"
+    "driveId": "1D_7eB-WjzfWSH-NdBaPOpuMn3dun9fDZ",
+    "url": "https://cdn.scangym.com/videos/cmo_v32_studentsavemoney_vertical.mp4",
+    "cdnKey": "cmo_v32_studentsavemoney_vertical"
   },
   {
     "id": 402,
     "name": "CMO V35 SilhouetteWorkout Vertical",
     "category": "CMO Content",
     "source": "direct",
-    "driveId": "12MQmrOsbYzxDi_quilg-0A1EPlteDeon"
+    "driveId": "12MQmrOsbYzxDi_quilg-0A1EPlteDeon",
+    "url": "https://cdn.scangym.com/videos/cmo_v35_silhouetteworkout_vertical.mp4",
+    "cdnKey": "cmo_v35_silhouetteworkout_vertical"
   },
   {
     "id": 403,
     "name": "CMO V36 PhoneBookingPOV Vertical",
     "category": "CMO Content",
     "source": "direct",
-    "driveId": "1NzK8m3FN8ZcAPoUJaL2xai10E3ChuoZy"
+    "driveId": "1NzK8m3FN8ZcAPoUJaL2xai10E3ChuoZy",
+    "url": "https://cdn.scangym.com/videos/cmo_v36_phonebookingpov_vertical.mp4",
+    "cdnKey": "cmo_v36_phonebookingpov_vertical"
   },
   {
     "id": 404,
     "name": "CMO V37 CityTimelapseToGym Vertical",
     "category": "CMO Content",
     "source": "direct",
-    "driveId": "1uA1ZP1wxssB1U7Ks2GFuTaLUHtx7LsRi"
+    "driveId": "1uA1ZP1wxssB1U7Ks2GFuTaLUHtx7LsRi",
+    "url": "https://cdn.scangym.com/videos/cmo_v37_citytimelapsetogym_vertical.mp4",
+    "cdnKey": "cmo_v37_citytimelapsetogym_vertical"
   },
   {
     "id": 405,
     "name": "CMO V38 EquipmentMacro Vertical",
     "category": "CMO Content",
     "source": "direct",
-    "driveId": "1FCZrbKP6YZXcy-CDbeEw_F1tV7fcXZMU"
+    "driveId": "1FCZrbKP6YZXcy-CDbeEw_F1tV7fcXZMU",
+    "url": "https://cdn.scangym.com/videos/cmo_v38_equipmentmacro_vertical.mp4",
+    "cdnKey": "cmo_v38_equipmentmacro_vertical"
   },
   {
     "id": 406,
     "name": "CMO V39 UKCityAerial Horizontal",
     "category": "CMO Content",
     "source": "direct",
-    "driveId": "1xoMhok7ynWuDQCDUuVPg6wCgfY03B-Jc"
+    "driveId": "1xoMhok7ynWuDQCDUuVPg6wCgfY03B-Jc",
+    "url": "https://cdn.scangym.com/videos/cmo_v39_ukcityaerial_horizontal.mp4",
+    "cdnKey": "cmo_v39_ukcityaerial_horizontal"
   },
   {
     "id": 407,
     "name": "CMO V40 QRScanMoment Vertical",
     "category": "CMO Content",
     "source": "direct",
-    "driveId": "1X3KGKx8v-Rokjz4mudE74wPUJXXGuaQu"
+    "driveId": "1X3KGKx8v-Rokjz4mudE74wPUJXXGuaQu",
+    "url": "https://cdn.scangym.com/videos/cmo_v40_qrscanmoment_vertical.mp4",
+    "cdnKey": "cmo_v40_qrscanmoment_vertical"
   },
   {
     "id": 408,
     "name": "CMO V41 RooftopGymGoldenHour Vertical",
     "category": "CMO Content",
     "source": "direct",
-    "driveId": "1kQYZwzTxsqKbkWXRzpOK6JUUuGOKbNS-"
+    "driveId": "1kQYZwzTxsqKbkWXRzpOK6JUUuGOKbNS-",
+    "url": "https://cdn.scangym.com/videos/cmo_v41_rooftopgymgoldenhour_vertical.mp4",
+    "cdnKey": "cmo_v41_rooftopgymgoldenhour_vertical"
   },
   {
     "id": 409,
     "name": "CMO V42 MorningRoutinePOV Vertical",
     "category": "CMO Content",
     "source": "direct",
-    "driveId": "1JjxDMnlHciXhqgciHY0LBSE5s53rg89f"
+    "driveId": "1JjxDMnlHciXhqgciHY0LBSE5s53rg89f",
+    "url": "https://cdn.scangym.com/videos/cmo_v42_morningroutinepov_vertical.mp4",
+    "cdnKey": "cmo_v42_morningroutinepov_vertical"
   },
   {
     "id": 410,
     "name": "CMO V43 MoneyComparison Vertical",
     "category": "CMO Content",
     "source": "direct",
-    "driveId": "1ex1gDsPwu5NiN_mVHnnUozSsY2OwQjnB"
+    "driveId": "1ex1gDsPwu5NiN_mVHnnUozSsY2OwQjnB",
+    "url": "https://cdn.scangym.com/videos/cmo_v43_moneycomparison_vertical.mp4",
+    "cdnKey": "cmo_v43_moneycomparison_vertical"
   },
   {
     "id": 411,
     "name": "CMO V44 PoolUnderwater Vertical",
     "category": "CMO Content",
     "source": "direct",
-    "driveId": "1I6vRvZgs6hcIoYAwXohs0DC5VnSB-dev"
+    "driveId": "1I6vRvZgs6hcIoYAwXohs0DC5VnSB-dev",
+    "url": "https://cdn.scangym.com/videos/cmo_v44_poolunderwater_vertical.mp4",
+    "cdnKey": "cmo_v44_poolunderwater_vertical"
   },
   {
     "id": 412,
     "name": "CMO V45 WeightsASMR Vertical",
     "category": "CMO Content",
     "source": "direct",
-    "driveId": "1ZLzxQFd6s6x2CmJiAveaDa8NyWgUXIrd"
+    "driveId": "1ZLzxQFd6s6x2CmJiAveaDa8NyWgUXIrd",
+    "url": "https://cdn.scangym.com/videos/cmo_v45_weightsasmr_vertical.mp4",
+    "cdnKey": "cmo_v45_weightsasmr_vertical"
   },
   {
     "id": 413,
     "name": "CMO V46 RainGymWindow Vertical",
     "category": "CMO Content",
     "source": "direct",
-    "driveId": "1wwrbPzOklkOKDee-Yc1vuYn3D-7aFp80"
+    "driveId": "1wwrbPzOklkOKDee-Yc1vuYn3D-7aFp80",
+    "url": "https://cdn.scangym.com/videos/cmo_v46_raingymwindow_vertical.mp4",
+    "cdnKey": "cmo_v46_raingymwindow_vertical"
   },
   {
     "id": 414,
     "name": "CMO V50 ContrarianHook Vertical",
     "category": "CMO Content",
     "source": "direct",
-    "driveId": "11BmU91VcwplBqe-lXrRQPgU1xJ7DJv2D"
+    "driveId": "11BmU91VcwplBqe-lXrRQPgU1xJ7DJv2D",
+    "url": "https://cdn.scangym.com/videos/cmo_v50_contrarianhook_vertical.mp4",
+    "cdnKey": "cmo_v50_contrarianhook_vertical"
   },
   {
     "id": 415,
     "name": "CMO V51 WomanWalksIntoGym Vertical",
     "category": "CMO Content",
     "source": "direct",
-    "driveId": "1VpTPhgpUaTxBXumzkF1UDPv-e9D4Kn0v"
+    "driveId": "1VpTPhgpUaTxBXumzkF1UDPv-e9D4Kn0v",
+    "url": "https://cdn.scangym.com/videos/cmo_v51_womanwalksintogym_vertical.mp4",
+    "cdnKey": "cmo_v51_womanwalksintogym_vertical"
   },
   {
     "id": 416,
     "name": "CMO V52 StudentPriceShock Vertical",
     "category": "CMO Content",
     "source": "direct",
-    "driveId": "17qltuNAGoYjfZasUnnDWSXBzRe8m0NUG"
+    "driveId": "17qltuNAGoYjfZasUnnDWSXBzRe8m0NUG",
+    "url": "https://cdn.scangym.com/videos/cmo_v52_studentpriceshock_vertical.mp4",
+    "cdnKey": "cmo_v52_studentpriceshock_vertical"
   },
   {
     "id": 417,
     "name": "CMO V53 GymFloorEnergy Vertical",
     "category": "CMO Content",
     "source": "direct",
-    "driveId": "1abrjqKNaw1rJh3yCNmpHGSTB9ByFXuaE"
+    "driveId": "1abrjqKNaw1rJh3yCNmpHGSTB9ByFXuaE",
+    "url": "https://cdn.scangym.com/videos/cmo_v53_gymfloorenergy_vertical.mp4",
+    "cdnKey": "cmo_v53_gymfloorenergy_vertical"
   },
   {
     "id": 418,
     "name": "CMO V54 MuscleUpScrollStopper Vertical",
     "category": "CMO Content",
     "source": "direct",
-    "driveId": "1g_AXH7ddJH9K3Jo5y76Y99aojci5Iu8r"
+    "driveId": "1g_AXH7ddJH9K3Jo5y76Y99aojci5Iu8r",
+    "url": "https://cdn.scangym.com/videos/cmo_v54_muscleupscrollstopper_vertical.mp4",
+    "cdnKey": "cmo_v54_muscleupscrollstopper_vertical"
   },
   {
     "id": 419,
     "name": "CMO V55 SplitScreenFreedom Vertical",
     "category": "CMO Content",
     "source": "direct",
-    "driveId": "1_R8ku4fyl11H9YjbBOATFdBlmqZVK4in"
+    "driveId": "1_R8ku4fyl11H9YjbBOATFdBlmqZVK4in",
+    "url": "https://cdn.scangym.com/videos/cmo_v55_splitscreenfreedom_vertical.mp4",
+    "cdnKey": "cmo_v55_splitscreenfreedom_vertical"
   },
   {
     "id": 420,
     "name": "CMO V56 JogToGym Vertical",
     "category": "CMO Content",
     "source": "direct",
-    "driveId": "1eQTRSxZnAgPElm6E_4LTi7QI2XQoqGO5"
-  },
-  {
-    "id": 421,
-    "name": "CMO V57 BrandAnthem Horizontal",
-    "category": "CMO Content",
-    "source": "direct",
-    "driveId": "1sl6dsz7TBpq43bqnKaRgLLRSg1o5igyb"
+    "driveId": "1eQTRSxZnAgPElm6E_4LTi7QI2XQoqGO5",
+    "url": "https://cdn.scangym.com/videos/cmo_v56_jogtogym_vertical.mp4",
+    "cdnKey": "cmo_v56_jogtogym_vertical"
   },
   {
     "id": 422,
     "name": "V2 Goggins",
     "category": "Influencer",
     "source": "direct",
-    "driveId": "1LkQZbPMw7zt-KQr_fiZDwOcBDlVWsRve"
+    "driveId": "1LkQZbPMw7zt-KQr_fiZDwOcBDlVWsRve",
+    "url": "https://cdn.scangym.com/videos/v2_goggins.mp4",
+    "cdnKey": "v2_goggins"
   },
   {
     "id": 423,
     "name": "V2 Hormozi",
     "category": "Influencer",
     "source": "direct",
-    "driveId": "1HXS8fxbUTXRUoIOO-kwmfLGjarrVaD-Z"
+    "driveId": "1HXS8fxbUTXRUoIOO-kwmfLGjarrVaD-Z",
+    "url": "https://cdn.scangym.com/videos/v2_hormozi.mp4",
+    "cdnKey": "v2_hormozi"
   },
   {
     "id": 424,
     "name": "V2 Huberman",
     "category": "Influencer",
     "source": "direct",
-    "driveId": "1I_ATYst_gcJV7S2cio65EBZtzbrh3wkK"
+    "driveId": "1I_ATYst_gcJV7S2cio65EBZtzbrh3wkK",
+    "url": "https://cdn.scangym.com/videos/v2_huberman.mp4",
+    "cdnKey": "v2_huberman"
   },
   {
     "id": 425,
     "name": "V2 KSI",
     "category": "Influencer",
     "source": "direct",
-    "driveId": "1KxmhBMQv-vrQ6Z6qPw-044S84QF7XeB5"
+    "driveId": "1KxmhBMQv-vrQ6Z6qPw-044S84QF7XeB5",
+    "url": "https://cdn.scangym.com/videos/v2_ksi.mp4",
+    "cdnKey": "v2_ksi"
   },
   {
     "id": 426,
     "name": "V2 SamSulek",
     "category": "Influencer",
     "source": "direct",
-    "driveId": "1uNL9nq-aWVuA04S9Q9lr5xHCpiROY-Ti"
+    "driveId": "1uNL9nq-aWVuA04S9Q9lr5xHCpiROY-Ti",
+    "url": "https://cdn.scangym.com/videos/v2_samsulek.mp4",
+    "cdnKey": "v2_samsulek"
   },
   {
     "id": 427,
     "name": "WorkoutMontage v2",
     "category": "General",
     "source": "direct",
-    "driveId": "1_OvDTf7hJ4nj5myvJ1TgIWQaq1sZcR_E"
+    "driveId": "1_OvDTf7hJ4nj5myvJ1TgIWQaq1sZcR_E",
+    "url": "https://cdn.scangym.com/videos/workoutmontage_v2.mp4",
+    "cdnKey": "workoutmontage_v2"
   },
   {
     "id": 428,
     "name": "affiliate 01",
     "category": "Promo",
     "source": "direct",
-    "driveId": "1ZA32jakrXHJOIF27r-rnw6z1aBRYKfxh"
+    "driveId": "1ZA32jakrXHJOIF27r-rnw6z1aBRYKfxh",
+    "url": "https://cdn.scangym.com/videos/affiliate_01.mp4",
+    "cdnKey": "affiliate_01"
   },
   {
     "id": 429,
     "name": "affiliate 02",
     "category": "Promo",
     "source": "direct",
-    "driveId": "1m77-MCq1Li6kJQWwbuoFEvPJJR74qfSY"
+    "driveId": "1m77-MCq1Li6kJQWwbuoFEvPJJR74qfSY",
+    "url": "https://cdn.scangym.com/videos/affiliate_02.mp4",
+    "cdnKey": "affiliate_02"
   },
   {
     "id": 430,
     "name": "affiliate 03",
     "category": "Promo",
     "source": "direct",
-    "driveId": "1hjZ5da0m36MG-9PeH6cnn4HKLNJRM4dI"
+    "driveId": "1hjZ5da0m36MG-9PeH6cnn4HKLNJRM4dI",
+    "url": "https://cdn.scangym.com/videos/affiliate_03.mp4",
+    "cdnKey": "affiliate_03"
   },
   {
     "id": 431,
     "name": "affiliate 04",
     "category": "Promo",
     "source": "direct",
-    "driveId": "1UlhC4KxYcsaodpvcZ-eypMlWkQbB1bq9"
+    "driveId": "1UlhC4KxYcsaodpvcZ-eypMlWkQbB1bq9",
+    "url": "https://cdn.scangym.com/videos/affiliate_04.mp4",
+    "cdnKey": "affiliate_04"
   },
   {
     "id": 432,
     "name": "b409909ac46e43c2a2ac707204207b1d 35ba1539d94404578a75107e391c2767 ld",
     "category": "Other",
     "source": "direct",
-    "driveId": "1MIBwwyHCx6shi3tgHVYrX7emwrGJ6aZR"
+    "driveId": "1MIBwwyHCx6shi3tgHVYrX7emwrGJ6aZR",
+    "url": "https://cdn.scangym.com/videos/b409909ac46e43c2a2ac707204207b1d_35ba1539d94404578a75107e391c2767_ld.mp4",
+    "cdnKey": "b409909ac46e43c2a2ac707204207b1d_35ba1539d94404578a75107e391c2767_ld"
   },
   {
     "id": 433,
     "name": "c5ab59d3dcdb49c38f8756fd06da9c88 16fe9c3a398f9ed53a85a4304fc8cc19 ld",
     "category": "Other",
     "source": "direct",
-    "driveId": "1AiQTOsBKSQ11PYVdQI-hZriyYHioipjC"
-  },
-  {
-    "id": 434,
-    "name": "scangym promo",
-    "category": "Promo",
-    "source": "direct",
-    "driveId": "1MEliWvS-D2bMAW2_o0ZK7Hfmm_u_RyBR"
-  },
-  {
-    "id": 435,
-    "name": "scangym promo v2",
-    "category": "Promo",
-    "source": "direct",
-    "driveId": "1bVo-K0AxCbGEgEts4fNZ_80GBUFgsIeL"
-  },
-  {
-    "id": 436,
-    "name": "scangym promo v3",
-    "category": "Promo",
-    "source": "direct",
-    "driveId": "1X3yIb7mwgnsG4NS5Zwm6VX3ZPq4GSV_B"
-  },
-  {
-    "id": 437,
-    "name": "scangym promo v4",
-    "category": "Promo",
-    "source": "direct",
-    "driveId": "1ohofmQrqDgHDsiC3jG6PJtWh1DYjIB0b"
-  },
-  {
-    "id": 438,
-    "name": "scangym promo v5 (2)",
-    "category": "Promo",
-    "source": "direct",
-    "driveId": "1ALEnfhBhFjM_Q7TtHqxW3XfpAiKKcVB-"
-  },
-  {
-    "id": 439,
-    "name": "scangym promo v5",
-    "category": "Promo",
-    "source": "direct",
-    "driveId": "1BoSdAnIVCvws2hDuLyG2y9tqWG7_wz02"
+    "driveId": "1AiQTOsBKSQ11PYVdQI-hZriyYHioipjC",
+    "url": "https://cdn.scangym.com/videos/c5ab59d3dcdb49c38f8756fd06da9c88_16fe9c3a398f9ed53a85a4304fc8cc19_ld.mp4",
+    "cdnKey": "c5ab59d3dcdb49c38f8756fd06da9c88_16fe9c3a398f9ed53a85a4304fc8cc19_ld"
   }
 ]
