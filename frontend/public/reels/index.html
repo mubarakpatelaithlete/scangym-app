@@ -674,10 +674,9 @@
       //  only this function needs to change.
 
       var CDN_CONFIG = {
-        type: 'convex',       // 'convex' | 'r2' | 'bunny' | 'direct'
+        type: 'r2',           // 'convex' | 'r2' | 'bunny' | 'direct'
         convexBase: 'https://dynamic-labrador-874.convex.site/video',
-        // Future CDN configs:
-        // r2Base: 'https://cdn.scangym.com/reels/videos',
+        r2Base: 'https://cdn.scangym.com/videos',
         // bunnyBase: 'https://scangym.b-cdn.net/reels',
       };
 
@@ -687,7 +686,9 @@
             if(video.driveId) return CDN_CONFIG.convexBase + '?id=' + video.driveId;
             return video.url || '';
           case 'r2':
-            return CDN_CONFIG.r2Base + '/' + (video.cdnKey || video.driveId) + '.mp4';
+            if(video.cdnKey) return CDN_CONFIG.r2Base + '/' + video.cdnKey + '.mp4';
+            // Fallback: use direct url (already points to cdn.scangym.com for migrated videos)
+            return video.url || '';
           case 'bunny':
             return CDN_CONFIG.bunnyBase + '/' + (video.cdnKey || video.driveId) + '.mp4';
           case 'direct':
