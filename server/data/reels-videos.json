@@ -3877,5 +3877,32 @@
     "driveId": "1AiQTOsBKSQ11PYVdQI-hZriyYHioipjC",
     "url": "https://cdn.scangym.com/videos/c5ab59d3dcdb49c38f8756fd06da9c88_16fe9c3a398f9ed53a85a4304fc8cc19_ld.mp4",
     "cdnKey": "c5ab59d3dcdb49c38f8756fd06da9c88_16fe9c3a398f9ed53a85a4304fc8cc19_ld"
+  },
+  {
+    "id": 434,
+    "name": "DON'T Join A Gym - AI Generated",
+    "category": "Don't Join A Gym",
+    "source": "direct",
+    "url": "https://cdn.scangym.com/videos/ai_dontjoingym_kling_v1.mp4",
+    "thumb": "",
+    "cdnKey": "ai_dontjoingym_kling_v1"
+  },
+  {
+    "id": 435,
+    "name": "Price Compare - AI Generated",
+    "category": "Price Compare",
+    "source": "direct",
+    "url": "https://cdn.scangym.com/videos/ai_pricecompare_veo31_v1.mp4",
+    "thumb": "",
+    "cdnKey": "ai_pricecompare_veo31_v1"
+  },
+  {
+    "id": 436,
+    "name": "Student Hack UGC - AI Generated",
+    "category": "TikTok-Reels AI",
+    "source": "direct",
+    "url": "https://cdn.scangym.com/videos/ai_studenthack_kling_v1.mp4",
+    "thumb": "",
+    "cdnKey": "ai_studenthack_kling_v1"
   }
 ]
