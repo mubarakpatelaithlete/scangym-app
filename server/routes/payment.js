@@ -53,13 +53,21 @@ try {
  */
 function resolveTime(time) {
   const isAnytime = !time || time === 'anytime';
-  const hours = isAnytime ? null : parseInt(time.split(':')[0], 10);
+  // When "anytime", default to next hour (or 09:00 if outside 6-20 range)
+  // This prevents NOT NULL constraint violations on start_time/end_time
+  let effectiveTime = time;
+  if (isAnytime) {
+    const now = new Date();
+    const nextHour = Math.min(Math.max(now.getUTCHours() + 1, 6), 20);
+    effectiveTime = String(nextHour).padStart(2, '0') + ':00';
+  }
+  const hours = parseInt(effectiveTime.split(':')[0], 10);
   return {
     isAnytime,
     hours,
-    startTime: isAnytime ? null : time,
-    endTime: isAnytime ? null : time,
-    displayTime: isAnytime ? 'Anytime today' : time,
+    startTime: effectiveTime,
+    endTime: effectiveTime,
+    displayTime: isAnytime ? 'Anytime today' : effectiveTime,
   };
 }
 
