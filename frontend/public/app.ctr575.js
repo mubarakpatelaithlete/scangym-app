@@ -4492,6 +4492,110 @@ window.cancelBooking=async function(bookingId){
   }
 };
 
+// ─── Page: QR Scan Verify (gym staff scans customer QR) ───
+function QRScanVerifyPage(token){
+  if(!token){
+    return`<div class="pt-8 min-h-full px-4 text-center"><p class="text-red-400 mt-20">Invalid QR code link.</p></div>`;
+  }
+
+  // Trigger scan API call on first render
+  if(!state._scanResult||state._scanToken!==token){
+    state._scanToken=token;
+    state._scanResult=null;
+    state._scanLoading=true;
+    setTimeout(async()=>{
+      try{
+        const r=await fetch('/api/qr/scan',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          credentials:'include',
+          body:JSON.stringify({token:token})
+        }).then(r=>r.json());
+        state._scanResult=r;
+        state._scanLoading=false;
+        render();
+      }catch(e){
+        state._scanResult={success:false,error:'Network error. Please try again.'};
+        state._scanLoading=false;
+        render();
+      }
+    },300);
+  }
+
+  if(state._scanLoading){
+    return`
+    <div class="pt-8 min-h-full px-4 flex items-center justify-center">
+      <div class="text-center">
+        <div class="text-6xl mb-4 animate-pulse">📱</div>
+        <p class="text-white text-xl font-bold">Verifying QR Code...</p>
+        <p class="text-slate-400 mt-2">Checking booking status</p>
+      </div>
+    </div>`;
+  }
+
+  const r=state._scanResult;
+  if(!r)return'';
+
+  // Success — entry or exit (API returns `valid: true`)
+  if(r.valid){
+    const isEntry=r.scanType==='entry';
+    const isExit=r.scanType==='exit';
+    return`
+    <div class="pt-8 min-h-full px-4 pb-8">
+      <div class="max-w-md mx-auto py-8">
+        <div class="text-center mb-6">
+          <div class="w-24 h-24 ${isEntry?'bg-green-500':'bg-blue-500'} rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg ${isEntry?'shadow-green-500/30':'shadow-blue-500/30'}" style="animation:scaleIn .5s cubic-bezier(.17,.67,.29,1.33)">
+            <span class="text-4xl">${isEntry?'✅':'👋'}</span>
+          </div>
+          <h1 class="font-brand text-3xl font-bold text-white mb-2">${isEntry?'Entry Confirmed':'Checked Out'}</h1>
+          <p class="${isEntry?'text-green-400':'text-blue-400'} font-medium text-lg">${isEntry?'Welcome! Enjoy your session.':'Thanks for visiting!'}</p>
+        </div>
+
+        <div class="bg-card rounded-2xl border border-slate-700 p-5 mb-4">
+          <div class="space-y-3">
+            ${r.gymName?`<div class="flex justify-between"><span class="text-slate-400">Gym</span><span class="text-white font-semibold">${r.gymName}</span></div>`:''}
+            ${r.userName&&r.userName!=='Member'?`<div class="flex justify-between"><span class="text-slate-400">Member</span><span class="text-white">${r.userName}</span></div>`:''}
+            <div class="flex justify-between"><span class="text-slate-400">Scan</span><span class="text-white">${r.scanNumber||0} of 2</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">Remaining</span><span class="text-white">${r.scansRemaining||0} scan${r.scansRemaining!==1?'s':''}</span></div>
+            ${r.expiresAt?`<div class="flex justify-between"><span class="text-slate-400">Valid until</span><span class="text-white">${new Date(r.expiresAt).toLocaleString('en-GB',{dateStyle:'medium',timeStyle:'short'})}</span></div>`:''}
+          </div>
+        </div>
+
+        ${isEntry?`<div class="bg-green-900/20 border border-green-800/30 rounded-xl p-4 text-center">
+          <p class="text-green-400 font-medium">🏋️ Your 24-hour pass is now active</p>
+          <p class="text-green-400/70 text-sm mt-1">Scan again when you leave to check out</p>
+        </div>`:`<div class="bg-blue-900/20 border border-blue-800/30 rounded-xl p-4 text-center">
+          <p class="text-blue-400 font-medium">Session complete</p>
+          <p class="text-blue-400/70 text-sm mt-1">We hope you enjoyed your workout!</p>
+        </div>`}
+      </div>
+    </div>
+    <style>@keyframes scaleIn{0%{transform:scale(0)}60%{transform:scale(1.2)}100%{transform:scale(1)}}</style>`;
+  }
+
+  // Error states
+  const errorMsg=r.error||'Invalid QR code';
+  const isExpired=errorMsg.toLowerCase().includes('expired');
+  const isUsed=errorMsg.toLowerCase().includes('used')||errorMsg.toLowerCase().includes('max');
+  return`
+  <div class="pt-8 min-h-full px-4 pb-8">
+    <div class="max-w-md mx-auto py-8">
+      <div class="text-center mb-6">
+        <div class="w-24 h-24 ${isExpired?'bg-yellow-500':'bg-red-500'} rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+          <span class="text-4xl">${isExpired?'⏰':isUsed?'🚫':'❌'}</span>
+        </div>
+        <h1 class="font-brand text-2xl font-bold text-white mb-2">${isExpired?'QR Code Expired':isUsed?'Already Used':'Invalid QR Code'}</h1>
+        <p class="text-slate-400">${errorMsg}</p>
+      </div>
+      <div class="space-y-3">
+        <button onclick="navigate('/explore')" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-3 rounded-xl transition">Book a New Session</button>
+        <button onclick="navigate('/my-bookings')" class="w-full bg-slate-800 hover:bg-slate-700 text-white py-3 rounded-xl transition">View My Bookings</button>
+      </div>
+      <p class="text-center text-slate-500 text-xs mt-6">Need help? 📧 hello@scangym.com</p>
+    </div>
+  </div>`;
+}
+
 function MyBookingsPage(){
   if(!state.user){
     return`<div class="pt-8 min-h-full px-4">
@@ -5720,6 +5824,7 @@ function render(){
   else if(path==='/careers')page=InfoPage('Careers at ScanGym',`<p class="text-xl text-white font-bold">Join the Team</p><p>We\'re building the future of gym access in the UK. Currently a lean team based in Manchester.</p><p>Interested in working with us? Send your CV to:</p><p>📧 <strong>hello@scangym.com</strong></p>`);
   else if(path==='/help')page=InfoPage('Help Center',`<p class="text-xl text-white font-bold">How Can We Help?</p><p><strong>How do I book a gym?</strong><br>Search for a gym → Pick your date/time → Pay → Get your QR code.</p><p><strong>How do I cancel?</strong><br>Free cancellation up to 2 hours before your session from your bookings page.</p><p><strong>I can\'t scan my QR code</strong><br>Make sure your screen brightness is at max. If it still doesn\'t work, show the booking confirmation to staff.</p><p><strong>How do I get a refund?</strong><br>Cancelled bookings are refunded to your ScanGym Wallet instantly, or to your card within 5-10 days.</p><p>📧 Still stuck? Email <strong>hello@scangym.com</strong></p>`);
   else if(path==='/staff/scan')page=InfoPage('Staff QR Scanner',`<div class="text-center mb-8"><p class="text-xl text-white font-bold">📱 Scan Customer QR Codes</p><p class="text-slate-300">Verify customer entry and check-out</p></div><div class="max-w-md mx-auto"><div class="bg-card rounded-2xl border border-slate-700 p-8 text-center"><div class="w-48 h-48 bg-slate-800 rounded-2xl mx-auto mb-6 flex items-center justify-center border-2 border-dashed border-slate-600"><div class="text-center"><p class="text-4xl mb-2">📷</p><p class="text-slate-400 text-sm">Camera viewfinder</p></div></div><button onclick="if(state.user){alert('QR scanner activated. Point camera at customer QR code.')}else{navigate('/login')}" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-4 rounded-xl text-lg transition mb-3">Start Scanning</button><button onclick="navigate('/login')" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 py-3 rounded-xl text-sm transition">Staff Log In</button></div><div class="mt-6 space-y-3"><div class="bg-card rounded-xl p-4 border border-slate-700"><h4 class="text-white font-semibold mb-2">How it works</h4><div class="space-y-2 text-sm text-slate-400"><p>1. Log in with your staff account</p><p>2. Point your camera at the customer&apos;s QR code</p><p>3. The system confirms their booking and checks them in</p><p>4. When they leave, scan again to check them out</p></div></div><div class="bg-green-900/20 border border-green-800/30 rounded-xl p-4"><p class="text-green-400 text-sm font-medium">✅ Works on any smartphone or tablet</p><p class="text-green-400 text-sm font-medium">✅ No special hardware needed</p><p class="text-green-400 text-sm font-medium">✅ Automatic booking validation</p></div></div></div>`);
+  else if(path.startsWith('/scan/')&&path.split('/').length===3)page=QRScanVerifyPage(path.split('/')[2]);
   else if(path==='/scan')page=InfoPage('QR Scan Entry',`<p class="text-xl text-white font-bold">📱 How QR Entry Works</p><p>1. Book a gym session on ScanGym</p><p>2. Get your unique QR code instantly</p><p>3. Scan at the gym entrance to check in</p><p>4. Scan again when you leave to check out</p><p>Your 24-hour day pass is valid from the moment you scan in. No staff interaction needed — it\'s completely contactless.</p><p><a onclick="navigate(\'/explore\')" class="text-brand cursor-pointer">Find a gym to try it →</a></p>`);
   else if(path==='/top-creators')page=InfoPage('Top Creators',`<div class="text-center mb-8"><p class="text-xl text-white font-bold">🏆 FlexSquad Leaderboard</p><p class="text-slate-300">Our top-performing creators this month</p></div><div class="space-y-4">${[{rank:1,name:'Coming Soon',handle:'@your-name-here',bookings:'-',earned:'-',badge:'🥇'},{rank:2,name:'Coming Soon',handle:'@your-name-here',bookings:'-',earned:'-',badge:'🥈'},{rank:3,name:'Coming Soon',handle:'@your-name-here',bookings:'-',earned:'-',badge:'🥉'}].map(c=>`<div class="bg-slate-800 rounded-xl p-4 flex items-center gap-4 border border-slate-700"><span class="text-3xl">\${c.badge}</span><div class="flex-1"><p class="text-white font-bold">\${c.name}</p><p class="text-slate-400 text-sm">\${c.handle}</p></div><div class="text-right"><p class="text-brand font-bold">\${c.earned}</p><p class="text-slate-500 text-xs">\${c.bookings} bookings</p></div></div>`).join("")}</div><div class="mt-8 bg-brand/10 border border-brand/30 rounded-xl p-6 text-center"><p class="text-white font-bold mb-2">Want to see your name here?</p><p class="text-slate-300 text-sm mb-4">Join FlexSquad and start earning 25% commission on every referred booking.</p><div class="flex gap-3 justify-center flex-wrap"><a onclick="navigate('/become-a-creator')" class="bg-brand hover:bg-orange-600 text-white font-bold px-6 py-3 rounded-xl cursor-pointer transition inline-block">Become a Creator →</a><a onclick="navigate('/creators')" class="border border-brand text-brand hover:bg-brand hover:text-white font-bold px-6 py-3 rounded-xl cursor-pointer transition inline-block">Browse Assets →</a></div></div>`);
 else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class="text-center mb-8"><h2 class="text-2xl text-white font-bold">ScanGym FlexSquad vs The Rest</h2><p class="text-slate-400">See why creators choose ScanGym</p></div><div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="border-b border-slate-700"><th class="text-left py-3 px-4 text-slate-400">Feature</th><th class="py-3 px-4 text-brand font-bold">ScanGym</th><th class="py-3 px-4 text-slate-400">ClassPass</th><th class="py-3 px-4 text-slate-400">Gymshark</th></tr></thead><tbody><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Commission</td><td class="py-3 px-4 text-brand font-semibold">25% recurring</td><td class="py-3 px-4 text-slate-400">5-10% one-time</td><td class="py-3 px-4 text-slate-400">Free products</td></tr><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Cookie Duration</td><td class="py-3 px-4 text-brand font-semibold">30 days</td><td class="py-3 px-4 text-slate-400">7 days</td><td class="py-3 px-4 text-slate-400">N/A</td></tr><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Min Followers</td><td class="py-3 px-4 text-brand font-semibold">None</td><td class="py-3 px-4 text-slate-400">10K+</td><td class="py-3 px-4 text-slate-400">50K+</td></tr><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Ready Assets</td><td class="py-3 px-4 text-brand font-semibold">388+</td><td class="py-3 px-4 text-slate-400">Banners only</td><td class="py-3 px-4 text-slate-400">PDF guide</td></tr><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Monthly (10K)</td><td class="py-3 px-4 text-brand font-semibold">\u00a3609/mo</td><td class="py-3 px-4 text-slate-400">\u00a350-100/mo</td><td class="py-3 px-4 text-slate-400">\u00a30</td></tr><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Payouts</td><td class="py-3 px-4 text-brand font-semibold">Weekly</td><td class="py-3 px-4 text-slate-400">Monthly (60d delay)</td><td class="py-3 px-4 text-slate-400">Quarterly</td></tr><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Free Gym Access</td><td class="py-3 px-4 text-brand font-semibold">Yes (25+/mo)</td><td class="py-3 px-4 text-slate-400">No</td><td class="py-3 px-4 text-slate-400">No</td></tr><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Onboarding</td><td class="py-3 px-4 text-brand font-semibold">Instant</td><td class="py-3 px-4 text-slate-400">2-week wait</td><td class="py-3 px-4 text-slate-400">Invite only</td></tr></tbody></table></div><div class="mt-8 text-center"><a onclick="navigate(\'/become-a-creator\')" class="bg-brand hover:bg-orange-600 text-white font-bold px-8 py-4 rounded-xl cursor-pointer transition inline-block">Join FlexSquad \u2014 It\'s Free \u2192</a></div>`);
