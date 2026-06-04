@@ -28,6 +28,8 @@ const ALLOWED_HOSTS = [
   'storage.googleapis.com',
   'dynamic-labrador-874.convex.site',
   'dynamic-labrador-874.convex.cloud',
+  'cdn.scangym.com',                            // Cloudflare R2 CDN
+  'pub-5fcaadfab82d4268990c5e7699430118.r2.dev', // R2 public dev URL
 ];
 
 // Simple in-memory cache for resolved redirect URLs (Google Drive redirects a lot)
