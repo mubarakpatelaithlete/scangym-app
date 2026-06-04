@@ -1331,9 +1331,9 @@ function GymProfilePage(){
         <div class="gym-qa-btn has-label" onclick="scrollToPasses()" title="Passes"><span class="gym-qa-icon">🎟️</span> Passes</div>
       </div>
 
-      <!-- ═══ 2×2 Grid "Choose a pass" cards (Kotler pricing) ═══ -->
-      <div class="gym-pass-header">Choose a pass</div>
-      <div class="gym-pass-cards" id="gym-pass-cards">
+      <!-- ═══ 2×2 Grid "Choose a pass" cards (Kotler pricing) — hidden by default, shown via Passes button ═══ -->
+      <div class="gym-pass-header" id="gym-pass-header" style="display:none;">Choose a pass</div>
+      <div class="gym-pass-cards" id="gym-pass-cards" style="display:none;">
         <div class="gym-pass-card selected" onclick="selectGymPassCard(this,0,'${gymId}')" data-pass="day">
           <div class="gym-pass-card-badge">⚡ MOST POPULAR</div>
           <div class="gym-pass-card-top"><div class="gym-pass-card-icon">⚡</div><span class="gym-pass-card-name">Day Pass</span></div>
@@ -1519,19 +1519,30 @@ function GymProfilePage(){
 /* --- Gym Detail Overlay Functions --- */
 /* Scroll to passes section with pulse highlight */
 window.scrollToPasses=function(){
-  const passHeader=document.querySelector('.gym-pass-header');
+  const passHeader=document.getElementById('gym-pass-header');
   const passCards=document.getElementById('gym-pass-cards');
   const scrollContainer=document.querySelector('.sg-tab-content');
-  if(passHeader&&scrollContainer){
-    const headerTop=passHeader.offsetTop-12;
-    scrollContainer.scrollTo({top:headerTop,behavior:'smooth'});
-    /* Pulse highlight the pass cards */
-    if(passCards){
-      passCards.style.transition='box-shadow .3s ease';
-      passCards.style.boxShadow='0 0 0 2px rgba(34,197,94,.5),0 0 20px rgba(34,197,94,.15)';
-      passCards.style.borderRadius='16px';
-      setTimeout(function(){passCards.style.boxShadow='none';},1500);
+  if(!passHeader||!passCards)return;
+  // Toggle pass picker visibility
+  const isHidden=passCards.style.display==='none';
+  if(isHidden){
+    passHeader.style.display='';
+    passCards.style.display='';
+    // Smooth scroll to pass cards
+    if(scrollContainer){
+      setTimeout(function(){
+        const headerTop=passHeader.offsetTop-12;
+        scrollContainer.scrollTo({top:headerTop,behavior:'smooth'});
+      },50);
     }
+    // Pulse highlight
+    passCards.style.transition='box-shadow .3s ease';
+    passCards.style.boxShadow='0 0 0 2px rgba(34,197,94,.5),0 0 20px rgba(34,197,94,.15)';
+    passCards.style.borderRadius='16px';
+    setTimeout(function(){passCards.style.boxShadow='none';},1500);
+  }else{
+    passHeader.style.display='none';
+    passCards.style.display='none';
   }
 };
 
@@ -5740,17 +5751,7 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
         </div>
       </div>
       <script>try{if(localStorage.getItem('flexsquad_pending')){var ub=document.getElementById('sg-upload-btn');if(ub)ub.style.display='block';}}catch(e){}</script>
-      <!-- Nav buttons (Book + More) positioned ABOVE iframe action strip -->
-      <div class="sg-reels-nav" style="position:fixed;right:12px;bottom:296px;z-index:9100;display:flex;flex-direction:column;align-items:center;gap:16px;pointer-events:none;">
-        <div onclick="switchTab('book')" style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;pointer-events:auto;-webkit-tap-highlight-color:transparent;transition:transform .15s ease;" ontouchstart="this.style.transform='scale(0.9)'" ontouchend="this.style.transform='scale(1)'">
-          <div style="width:48px;height:48px;background:rgba(0,0,0,.55);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1.5px solid rgba(255,255,255,.18);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 2px 12px rgba(0,0,0,.4);">🏋️</div>
-          <span style="color:#fff;font-size:11px;font-weight:600;text-shadow:0 1px 6px rgba(0,0,0,.9);letter-spacing:0.2px;">Book</span>
-        </div>
-        <div onclick="switchTab('more')" style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;pointer-events:auto;-webkit-tap-highlight-color:transparent;transition:transform .15s ease;" ontouchstart="this.style.transform='scale(0.9)'" ontouchend="this.style.transform='scale(1)'">
-          <div style="width:48px;height:48px;background:rgba(0,0,0,.55);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1.5px solid rgba(255,255,255,.18);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 2px 12px rgba(0,0,0,.4);">☰</div>
-          <span style="color:#fff;font-size:11px;font-weight:600;text-shadow:0 1px 6px rgba(0,0,0,.9);letter-spacing:0.2px;">More</span>
-        </div>
-      </div>
+      <!-- Layer 2 floating Book/More nav removed — redundant with bottom tab bar + reel sidebar -->
     </div>`;
   } else if(tab==='more' && (path==='/more'||path==='/more/')){
     // More hub page
@@ -5779,8 +5780,98 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
   // Auto-load gyms when navigating to search page (Fix #1 + #6)
   if(path==='/explore'||path==='/nearby'||path==='/search'){
     autoLoadGyms();
+    // ━━━ FORCEFUL LOCATION OVERLAY: Show until user enables GPS or searches manually ━━━
+    _showLocationOverlayIfNeeded();
   }
 }
+
+// ━━━ Forceful "Enable Location" overlay on Book/Explore tab ━━━
+function _showLocationOverlayIfNeeded(){
+  // Don't show if user already granted GPS or explicitly searched
+  if(window._gpsGranted||state.userExplicitSearch) return;
+  // Remove any existing overlay first
+  var existing=document.getElementById('sg-location-overlay');
+  if(existing)existing.remove();
+  // Check permission state
+  if(navigator.permissions&&navigator.permissions.query){
+    navigator.permissions.query({name:'geolocation'}).then(function(status){
+      if(status.state==='granted'){
+        window._gpsGranted=true;
+        return; // Already have permission
+      }
+      _injectLocationOverlay(status.state);
+      // Listen for permission changes
+      status.onchange=function(){
+        if(this.state==='granted'){
+          window._gpsGranted=true;
+          var ov=document.getElementById('sg-location-overlay');
+          if(ov)ov.remove();
+          findGyms();
+        }
+      };
+    }).catch(function(){
+      // Permissions API not supported — show overlay anyway
+      if(!window._gpsGranted)_injectLocationOverlay('prompt');
+    });
+  }else{
+    if(!window._gpsGranted)_injectLocationOverlay('prompt');
+  }
+}
+
+function _injectLocationOverlay(permState){
+  var isDenied=permState==='denied';
+  var main=document.querySelector('main');
+  if(!main)return;
+  var overlay=document.createElement('div');
+  overlay.id='sg-location-overlay';
+  overlay.style.cssText='position:absolute;top:0;left:0;right:0;bottom:0;z-index:100;background:rgba(5,8,22,.92);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;';
+  overlay.innerHTML='<div style="max-width:340px;">'
+    +'<div style="width:80px;height:80px;background:linear-gradient(135deg,#f97316,#ea580c);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto 20px;box-shadow:0 8px 32px rgba(249,115,22,.4);">📍</div>'
+    +'<h2 style="color:#fff;font-size:22px;font-weight:800;margin:0 0 8px;font-family:Sora,sans-serif;">Enable Location to Find Gyms</h2>'
+    +'<p style="color:rgba(255,255,255,.55);font-size:14px;line-height:1.5;margin:0 0 24px;">'
+    +(isDenied
+      ?'Location access is blocked. Go to your browser settings to enable it, or search for a city below.'
+      :'We need your location to show the nearest gyms and local pricing. It\\'s only used while you browse.')
+    +'</p>'
+    +(isDenied
+      ?''
+      :'<button onclick="_requestLocationFromOverlay()" style="width:100%;padding:16px;background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;font-size:16px;font-weight:800;border:none;border-radius:14px;cursor:pointer;margin-bottom:12px;box-shadow:0 4px 20px rgba(249,115,22,.35);letter-spacing:0.3px;-webkit-tap-highlight-color:transparent;">Enable Location</button>')
+    +'<div onclick="_dismissLocationOverlay()" style="color:rgba(255,255,255,.4);font-size:13px;cursor:pointer;padding:8px;-webkit-tap-highlight-color:transparent;text-decoration:underline;">Search manually instead</div>'
+    +'</div>';
+  main.style.position='relative';
+  main.appendChild(overlay);
+}
+
+window._requestLocationFromOverlay=function(){
+  // Trigger the browser permission prompt
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(
+      function(pos){
+        window._gpsGranted=true;
+        var ov=document.getElementById('sg-location-overlay');
+        if(ov)ov.remove();
+        state.searchLat=pos.coords.latitude;
+        state.searchLng=pos.coords.longitude;
+        findGyms();
+      },
+      function(err){
+        // User denied — update overlay to show denied state
+        var ov=document.getElementById('sg-location-overlay');
+        if(ov)ov.remove();
+        _injectLocationOverlay('denied');
+      },
+      {enableHighAccuracy:true,timeout:10000,maximumAge:60000}
+    );
+  }
+};
+
+window._dismissLocationOverlay=function(){
+  var ov=document.getElementById('sg-location-overlay');
+  if(ov)ov.remove();
+  // Focus the search input so user can type
+  var inp=document.getElementById('gym-search-input');
+  if(inp)inp.focus();
+};
 
 // ─── Init ───
 state.route=location.pathname;
