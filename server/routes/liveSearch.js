@@ -419,7 +419,7 @@ router.post('/ensure-gym', optionalAuth, async (req, res) => {
     res.json({ gymId: result.rows[0].id, name: result.rows[0].name, created: true });
   } catch (err) {
     console.error('Ensure gym error:', err);
-    res.status(500).json({ error: 'Failed to create gym record' });
+    res.status(500).json({ error: 'Failed to create gym record', detail: err.message });
   }
 });
 
