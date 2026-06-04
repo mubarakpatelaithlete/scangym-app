@@ -84,6 +84,36 @@ router.get('/feed', async (req, res) => {
       }
     }
 
+    // 2b. Add auto-generated reels from manifest
+    try {
+      const autoManifestPath = require('path').join(__dirname, '..', 'uploads', 'auto-reels', 'manifest.json');
+      const volumeManifestPath = '/data/uploads/auto-reels/manifest.json';
+      const manifestPath = require('fs').existsSync(volumeManifestPath) ? volumeManifestPath : autoManifestPath;
+
+      if (require('fs').existsSync(manifestPath)) {
+        const autoManifest = JSON.parse(require('fs').readFileSync(manifestPath, 'utf8'));
+        if (autoManifest.videos && autoManifest.videos.length > 0) {
+          const autoVideos = autoManifest.videos.map(v => ({
+            ...v,
+            type: 'auto-generated',
+          }));
+          // Interleave auto-generated reels: 1 auto reel per 5 regular reels
+          const autoInterval = 5;
+          let autoIdx = 0;
+          for (let i = autoInterval; i < feed.length && autoIdx < autoVideos.length; i += autoInterval + 1) {
+            feed.splice(i, 0, autoVideos[autoIdx++]);
+          }
+          // Append any remaining auto reels
+          while (autoIdx < autoVideos.length) {
+            feed.push(autoVideos[autoIdx++]);
+          }
+        }
+      }
+    } catch (autoErr) {
+      // Auto-reels are optional, don't break the feed
+      console.error('Auto-reels merge failed:', autoErr.message);
+    }
+
     // 3. Filter by category if requested
     if (category) {
       feed = feed.filter(v =>

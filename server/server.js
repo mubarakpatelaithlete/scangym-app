@@ -16,6 +16,7 @@ const ownerRouter = require('./routes/owner');
 const statsRouter = require('./routes/stats');
 const creatorsRouter = require('./routes/creators');
 const reelsRouter = require('./routes/reels');
+const autoReelsRouter = require('./routes/autoReels');
 const videoProxyRouter = require('./routes/videoProxy');
 const directionsRouter = require('./routes/directions');
 const qrRouter = require('./routes/qr');
@@ -264,6 +265,9 @@ const apiPaths = [
 ];
 apiPaths.forEach(p => app.use(p, express.json()));
 
+// Auto-reel upload needs larger body limit (base64 videos up to 10MB)
+app.use('/api/reels/auto-upload', express.json({ limit: '15mb' }));
+
 // -- Health check --
 app.get('/api/v2/health', (req, res) => {
   res.json({
@@ -308,6 +312,7 @@ app.use('/api/owner', ownerRouter);
 app.use('/api/stats', statsRouter);
 app.use('/api/creators', creatorsRouter);
 app.use('/api/reels', reelsRouter);
+app.use('/api/reels', autoReelsRouter);
 app.use('/api/video-proxy', videoProxyRouter);
 app.use('/api/directions', directionsRouter);
 app.use('/api/qr', qrRouter);
