@@ -1427,16 +1427,7 @@ function GymProfilePage(){
             </div>
             <div class="gym-pay-option-check"></div>
           </div>
-          <div class="gym-pay-option" onclick="selectPayMethod(this,'paypal')" data-method="paypal">
-            <div class="gym-pay-option-icon" style="background:#003087;border-radius:10px">
-              <span style="color:#fff;font-size:11px;font-weight:800">PP</span>
-            </div>
-            <div>
-              <div class="gym-pay-option-label">PayPal</div>
-              <div class="gym-pay-option-sub">Pay with PayPal balance</div>
-            </div>
-            <div class="gym-pay-option-check"></div>
-          </div>
+          <!-- PayPal removed — not activated in Stripe account -->
           <div class="gym-pay-option" onclick="selectPayMethod(this,'klarna')" data-method="klarna">
             <div class="gym-pay-option-icon" style="background:#FFB3C7;border-radius:10px">
               <span style="color:#0A0B09;font-size:11px;font-weight:900">K</span>
@@ -1919,9 +1910,6 @@ window.selectPayMethod=function(el,method){
   }else if(method==='card'){
     if(iconEl){iconEl.className='gym-sticky-pay-icon';iconEl.style.background='linear-gradient(135deg,#1a1f71,#2d2f8e)';iconEl.innerHTML='<span style="color:#fff;font-size:11px;font-weight:800">💳</span>';}
     if(labelEl)labelEl.textContent='Card';
-  }else if(method==='paypal'){
-    if(iconEl){iconEl.className='gym-sticky-pay-icon';iconEl.style.background='#003087';iconEl.innerHTML='<span style="color:#fff;font-size:11px;font-weight:800">PP</span>';}
-    if(labelEl)labelEl.textContent='PayPal';
   }else if(method==='klarna'){
     if(iconEl){iconEl.className='gym-sticky-pay-icon';iconEl.style.background='#FFB3C7';iconEl.innerHTML='<span style="color:#0A0B09;font-size:11px;font-weight:900">K</span>';}
     if(labelEl)labelEl.textContent='Klarna';
@@ -3782,7 +3770,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
       <div class="ub-confirm-summary">
         <div class="ub-confirm-chip">${passInfo.icon} ${passInfo.name}</div>
         <div class="ub-confirm-chip">📅 ${dateDisplay}</div>
-        <div class="ub-confirm-chip">${isCash?'💷 Cash':selPayMethod==='paypal'?'PP PayPal':selPayMethod==='klarna'?'K Klarna':selPayMethod==='amazon_pay'?'a Amazon Pay':'💳 Card'}</div>
+        <div class="ub-confirm-chip">${isCash?'💷 Cash':selPayMethod==='klarna'?'K Klarna':selPayMethod==='amazon_pay'?'a Amazon Pay':'💳 Card'}</div>
         ${isOffPeak?'<div class="ub-confirm-chip" style="color:#4ade80;border-color:rgba(34,197,94,.3)">🌙 Off-peak -25%</div>':''}
       </div>
 
@@ -3848,7 +3836,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
     selectedPass:selPass,
     selectedDate:selDate,
     selectedTime:selTime,
-    payMode:isCash?'cash':(selPayMethod==='paypal'||selPayMethod==='klarna'||selPayMethod==='amazon_pay'?selPayMethod:'card'),
+    payMode:isCash?'cash':(selPayMethod==='klarna'||selPayMethod==='amazon_pay'?selPayMethod:'card'),
     savedCardId:null,
     bookingId:null,
     intentId:null,
@@ -3964,25 +3952,38 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
     btnText.innerHTML='<span class="sg-spinner" style="width:18px;height:18px;display:inline-block"></span> Processing…';
 
     try{
+      console.log('[ScanGym] Step 1: elements.submit()');
       const submitResult=await cs.elements.submit();
       if(submitResult.error){
+        console.error('[ScanGym] elements.submit() error:',submitResult.error);
         const et=errEl?.querySelector('.ub-error-text');
         if(et)et.textContent=submitResult.error.message||'Payment details incomplete';
         errEl?.classList.remove('hidden');
         btn.disabled=false;btnText.textContent='Confirm and pay · '+displayPriceStr;
         return;
       }
+      console.log('[ScanGym] Step 1 OK — submit passed');
 
       const email=localStorage.getItem('sg_last_email')||'';
       const gymInfo=state.currentGym||state.gyms.find(g=>(g.placeId||g.place_id||g.id)==gymId)||{};
       // ═══ REFERRAL: Read stored referral code from localStorage ═══
       let _sgRef=null;try{const _r=JSON.parse(localStorage.getItem('sg_referral')||'null');if(_r&&_r.handle&&_r.expiry>Date.now())_sgRef=_r.handle;}catch(e){}
-      const intentResult=await fetch('/api/payment/instant-checkout',{
+      const _checkoutBody={gymId:parseInt(cs.dbGymId||gymId),placeId:gymId,date:cs.selectedDate,time:cs.selectedTime,email,gymName:gymInfo.name||gymName||'Gym',gymAddress:gymInfo.formatted_address||gymInfo.vicinity||gymInfo.address||gymAddr||'',passType:cs.selectedPass||'day',...(_sgRef?{referralCode:_sgRef}:{})};
+      console.log('[ScanGym] Step 2: fetch /api/payment/instant-checkout',JSON.stringify(_checkoutBody));
+      const intentResp=await fetch('/api/payment/instant-checkout',{
         method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
-        body:JSON.stringify({gymId:parseInt(cs.dbGymId||gymId),placeId:gymId,date:cs.selectedDate,time:cs.selectedTime,email,gymName:gymInfo.name||gymName||'Gym',gymAddress:gymInfo.formatted_address||gymInfo.vicinity||gymInfo.address||gymAddr||'',passType:cs.selectedPass||'day',...(_sgRef?{referralCode:_sgRef}:{})})
-      }).then(r=>{if(!r.ok)throw new Error('Server error '+r.status);return r.json();});
+        body:JSON.stringify(_checkoutBody)
+      });
+      if(!intentResp.ok){
+        const errBody=await intentResp.text().catch(()=>'');
+        console.error('[ScanGym] Server error',intentResp.status,errBody);
+        throw new Error('Server error '+intentResp.status+': '+(errBody||'').slice(0,200));
+      }
+      const intentResult=await intentResp.json();
+      console.log('[ScanGym] Step 2 OK — intent created',intentResult.intentId);
 
       if(intentResult.error){
+        console.error('[ScanGym] Backend returned error:',intentResult.error);
         const et=errEl?.querySelector('.ub-error-text');
         if(et)et.textContent=intentResult.error||'Failed to create booking';
         errEl?.classList.remove('hidden');
@@ -3995,6 +3996,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
       cs.clientSecret=intentResult.clientSecret;
       localStorage.setItem('sg_pending_booking',intentResult.bookingId);
 
+      console.log('[ScanGym] Step 3: confirmPayment (redirect:if_required)');
       const {error,paymentIntent}=await cs.stripe.confirmPayment({
         elements:cs.elements,
         clientSecret:intentResult.clientSecret,
@@ -4006,6 +4008,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
       });
 
       if(error){
+        console.error('[ScanGym] confirmPayment error:',error.type,error.message,error);
         const et=errEl?.querySelector('.ub-error-text');
         if(et)et.textContent=error.message||'Payment failed';
         errEl?.classList.remove('hidden');
@@ -4022,9 +4025,16 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
         btn.disabled=false;btnText.textContent='Confirm and pay · '+displayPriceStr;
       }
     }catch(e){
-      console.error('Payment error:',e);
+      console.error('[ScanGym] Payment error:',e?.message||e,e);
       const et=errEl?.querySelector('.ub-error-text');
-      if(et)et.textContent='Payment failed. Please try again.';
+      const msg=e?.message||'';
+      if(msg.includes('Server error')){
+        if(et)et.textContent='Booking server error — please try again in a moment.';
+      }else if(msg.includes('Failed to fetch')||msg.includes('NetworkError')||msg.includes('Load failed')){
+        if(et)et.textContent='Network error — check your connection and try again.';
+      }else{
+        if(et)et.textContent=msg||'Payment failed. Please try again.';
+      }
       errEl?.classList.remove('hidden');
       btn.disabled=false;btnText.textContent='Confirm and pay · '+displayPriceStr;
     }
@@ -4138,13 +4148,17 @@ async function _initUberPaymentNew(gymId, gym){
     const paymentElement=elements.create('payment',{
       layout:{type:'tabs',defaultCollapsed:false},
       wallets:{applePay:'auto',googlePay:'auto'},
-      paymentMethodOrder:['apple_pay','google_pay','card','paypal','klarna','amazon_pay'],
+      paymentMethodOrder:['apple_pay','google_pay','card','klarna','amazon_pay'],
       fields:{billingDetails:{address:{postalCode:'auto',country:'auto'}}},
       defaultValues:{billingDetails:{address:{country:userCountry}}},
     });
     paymentElement.mount('#ub-stripe-el');
 
+    paymentElement.on('loaderror',(event)=>{
+      console.error('[ScanGym] Payment Element load error:',event);
+    });
     paymentElement.on('ready',()=>{
+      console.log('[ScanGym] Payment Element ready');
       cs.stripeReady=true;
       cs.cardEntered=true;
       cs.ready=true;
