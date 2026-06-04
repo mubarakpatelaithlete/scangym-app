@@ -451,7 +451,7 @@ checkAuth();
 
 
 // ─── State ───
-let state={user:null,gyms:[],currentGym:null,searchLat:null,searchLng:null,route:'/',bookings:[],wallet:{balance:0},authPhone:'',authStep:'phone',lastBooking:null,lastQR:null,userExplicitSearch:false,activeTab:'book'};
+let state={user:null,gyms:[],currentGym:null,searchLat:null,searchLng:null,route:'/',bookings:[],wallet:{balance:0},authPhone:'',authStep:'phone',lastBooking:null,lastQR:null,userExplicitSearch:false,activeTab:'reels'};
 
 // ─── API Client ───
 const api={
@@ -475,14 +475,14 @@ async function submitCreatorApp(){var d={first_name:document.getElementById('cs-
 async function generateReferLink(){var em=document.getElementById('refer-email').value;if(!em||!em.includes('@')){document.getElementById('refer-email').style.borderColor='#ef4444';return;}var handle=em.split('@')[0].replace(/[^a-z0-9]/gi,'').toLowerCase();try{await fetch('/api/v2/refer-signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:em})});}catch(e){}document.getElementById('refer-generated-link').textContent='scangym.com/r/'+handle;document.getElementById('refer-email-form').classList.add('hidden');document.getElementById('refer-link-result').classList.remove('hidden');if(typeof gtag==='function')gtag('event','generate_lead',{event_category:'referral_signup'});}
 // ─── 3-Tab Navigation System ───
 function getTabForRoute(path){
-  if(path==='/'||path===''||path==='/explore'||path==='/nearby'||path==='/search'||path.startsWith('/gym/')||path==='/booking-success'||path.startsWith('/r/'))return 'book';
-  if(path==='/reels')return 'reels';
+  if(path==='/'||path===''||path==='/reels')return 'reels';
+  if(path==='/explore'||path==='/nearby'||path==='/search'||path.startsWith('/gym/')||path==='/booking-success'||path.startsWith('/r/'))return 'book';
   return 'more';
 }
 function switchTab(tab){
   state.activeTab=tab;
-  if(tab==='book'){state.route=state._lastBookRoute||'/';history.pushState(null,'',state.route);}
-  else if(tab==='reels'){state.route='/reels';history.pushState(null,'','/reels');}
+  if(tab==='reels'){state.route='/';history.pushState(null,'','/');}
+  else if(tab==='book'){state.route=state._lastBookRoute||'/explore';history.pushState(null,'',state.route);}
   else if(tab==='more'){state.route=state._lastMoreRoute||'/more';history.pushState(null,'',state.route);}
   render();
   var _sc=document.querySelector('.sg-tab-content');if(_sc)_sc.scrollTop=0;
@@ -3783,7 +3783,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
           <div class="ub-stripe-wrap">
             <div style="text-align:center;padding:20px 0">
               <div class="sg-spinner" style="width:24px;height:24px;border-color:rgba(255,255,255,.15);border-top-color:#f97316;margin:0 auto 8px"></div>
-              <p style="color:rgba(255,255,255,.3);font-size:12px">Loading secure payment…</p>
+              <p style="color:rgba(255,255,255,.3);font-size:12px" id="ub-stripe-loading-msg">Loading secure payment…</p>
             </div>
           </div>
         </div>
@@ -4137,10 +4137,18 @@ async function _initUberPaymentNew(gymId, gym){
       cs.stripeReady=true;
       cs.cardEntered=true;
       cs.ready=true;
+      cs._stripeLoadedOk=true;
       // Enable the CTA button now that Stripe is loaded
       const ctaBtn=document.getElementById('ub-cta-btn');
       if(ctaBtn){ctaBtn.style.opacity='1';ctaBtn.style.pointerEvents='auto';}
     });
+    // Timeout: if Stripe doesn't load in 12s show retry
+    setTimeout(()=>{
+      if(!cs._stripeLoadedOk){
+        const loadMsg=document.getElementById('ub-stripe-loading-msg');
+        if(loadMsg)loadMsg.innerHTML='Taking longer than usual… <span style="text-decoration:underline;cursor:pointer;color:#f97316" onclick="_initUberPaymentNew(\''+gymId+'\')">Tap to retry</span>';
+      }
+    },12000);
 
   }catch(e){
     console.error('Payment init error:',e);
@@ -4985,13 +4993,13 @@ window.doSearch=function(){
 function BottomTabBar(){
   const t=state.activeTab;
   return`<div class="sg-tab-bar">
-    <div class="sg-tab-item ${t==='book'?'active':''}" onclick="switchTab('book')">
-      <span class="sg-tab-icon">🏋️</span>
-      <span class="sg-tab-label">Book</span>
-    </div>
     <div class="sg-tab-item ${t==='reels'?'active':''}" onclick="switchTab('reels')">
       <span class="sg-tab-icon">🎬</span>
       <span class="sg-tab-label">Reels</span>
+    </div>
+    <div class="sg-tab-item ${t==='book'?'active':''}" onclick="switchTab('book')">
+      <span class="sg-tab-icon">🏋️</span>
+      <span class="sg-tab-label">Book</span>
     </div>
     <div class="sg-tab-item ${t==='more'?'active':''}" onclick="switchTab('more')">
       <span class="sg-tab-icon">☰</span>
@@ -5755,7 +5763,7 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
       </div>
       ${page}
     </main>`+BottomTabBar();
-  } else if(path==='/' && tab==='book') {
+  } else if((path==='/explore'||path==='/nearby'||path==='/search') && tab==='book') {
     // Book tab home — Uber dashboard, no padding, no scroll
     html=`<main class="fade-in" style="overflow:hidden;">${page}</main>`+BottomTabBar();
   } else {
