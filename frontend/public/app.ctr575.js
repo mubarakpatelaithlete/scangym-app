@@ -5765,8 +5765,8 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
       ${page}
     </main>`+BottomTabBar();
   } else if((path==='/explore'||path==='/nearby'||path==='/search') && tab==='book') {
-    // Book tab home — Uber dashboard, no padding, no scroll
-    html=`<main class="fade-in" style="overflow:hidden;">${page}</main>`+BottomTabBar();
+    // Book tab home — scrollable so gym cards below the map are visible
+    html=`<main class="sg-tab-content fade-in">${page}</main>`+BottomTabBar();
   } else {
     // Book tab sub-pages (explore, gym detail, etc)
     html=`<main class="sg-tab-content fade-in">${page}</main>`+BottomTabBar();
