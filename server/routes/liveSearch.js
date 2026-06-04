@@ -408,22 +408,13 @@ router.post('/ensure-gym', optionalAuth, async (req, res) => {
 
     const result = await pool.query(`
       INSERT INTO gyms 
-      (owner_id, place_id, slug, name, description, address, city, state, zip_code, country,
-       latitude, longitude, hourly_rate, day_pass_price, amenities, equipment, photos,
-       phone, average_rating, total_reviews, is_claimed, is_active, created_at, updated_at)
-      VALUES ('system', $1, $2, $3, $4, $5, $6, '', $7, 'United Kingdom', $8, $9,
-              5.00, 5.00, '{}'::text[], '{}'::text[], '{}'::text[],
-              $10, $11, $12, false, true, NOW(), NOW())
-      ON CONFLICT (place_id) DO UPDATE SET updated_at = NOW()
+      (name, address, place_id, day_pass_price, owner_id, slug, is_active, created_at, updated_at)
+      VALUES ($1, $2, $3, 5.00, 'system', $4, true, NOW(), NOW())
+      ON CONFLICT (place_id) DO UPDATE SET name = EXCLUDED.name, updated_at = NOW()
       RETURNING id, name
     `, [
-      placeId, slug, p.name,
-      `${p.name} located at ${p.formatted_address}.`,
-      p.formatted_address, city, zipCode,
-      geo.lat, geo.lng,
-      p.formatted_phone_number || null,
-      p.rating || 0,
-      p.user_ratings_total || 0,
+      p.name,
+      p.formatted_address, placeId, slug,
     ]);
 
     res.json({ gymId: result.rows[0].id, name: result.rows[0].name, created: true });

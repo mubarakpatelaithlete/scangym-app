@@ -3884,9 +3884,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
       try{
         let dbGymId=gymId;
         if(isNaN(parseInt(gymId))){
-          const ensured=await fetch('/api/live/ensure-gym',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({placeId:gymId})}).then(r=>r.json());
-          if(ensured.error){sgToast(ensured.error);btn.disabled=false;btnText.textContent='Confirm · pay at gym';return;}
-          dbGymId=ensured.gymId;
+          try{const ensured=await fetch('/api/live/ensure-gym',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({placeId:gymId})}).then(r=>r.json());if(ensured.gymId)dbGymId=ensured.gymId;}catch(e){}
         }
         const result=await fetch('/api/payment/cash-booking',{
           method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
@@ -3916,9 +3914,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
       try{
         let dbGymId=gymId;
         if(isNaN(parseInt(gymId))){
-          const ensured=await fetch('/api/live/ensure-gym',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({placeId:gymId})}).then(r=>r.json());
-          if(ensured.error){sgToast(ensured.error);btn.disabled=false;btnText.textContent='Confirm and pay · '+displayPriceStr;return;}
-          dbGymId=ensured.gymId;
+          try{const ensured=await fetch('/api/live/ensure-gym',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({placeId:gymId})}).then(r=>r.json());if(ensured.gymId)dbGymId=ensured.gymId;}catch(e){}
         }
         const result=await fetch('/api/payment/quick-checkout',{
           method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
@@ -4111,12 +4107,13 @@ async function _initUberPaymentNew(gymId, gym){
   }
 
   try{
-    // Resolve gym DB ID for later use at confirm time
+    // Resolve gym DB ID — skip ensure-gym (payment endpoint handles placeId resolution)
     let dbGymId=gymId;
     if(isNaN(parseInt(gymId))){
-      const ensured=await api.postLive('/ensure-gym',{placeId:gymId});
-      if(ensured.error){sgToast(ensured.error);closeBookingSheet();return;}
-      dbGymId=ensured.gymId;
+      try{
+        const ensured=await api.postLive('/ensure-gym',{placeId:gymId});
+        if(ensured.gymId)dbGymId=ensured.gymId;
+      }catch(e){console.log('[ScanGym] ensure-gym skipped, payment will resolve placeId');}
     }
     cs.dbGymId=dbGymId;
 
@@ -4258,11 +4255,9 @@ window.processGuestBooking=async function(gymId,email){
   try{
     let dbGymId=gymId;
     
-    // If Google Place ID, ensure gym exists in DB
+    // If Google Place ID, try ensure gym in DB (non-fatal — backend handles placeId resolution)
     if(isNaN(parseInt(gymId))){
-      const ensured=await api.postLive('/ensure-gym',{placeId:gymId});
-      if(ensured.error){sgToast(ensured.error);if(guestBtn){guestBtn.textContent='Book Now';guestBtn.disabled=false;}return;}
-      dbGymId=ensured.gymId;
+      try{const ensured=await api.postLive('/ensure-gym',{placeId:gymId});if(ensured.gymId)dbGymId=ensured.gymId;}catch(e){}
     }
 
     // Step 1: Create guest booking
