@@ -5845,7 +5845,7 @@ function _injectLocationOverlay(permState){
     +'<p style="color:rgba(255,255,255,.55);font-size:14px;line-height:1.5;margin:0 0 24px;">'
     +(isDenied
       ?'Location access is blocked. Go to your browser settings to enable it, or search for a city below.'
-      :'We need your location to show the nearest gyms and local pricing. It\\'s only used while you browse.')
+      :'We need your location to show the nearest gyms and local pricing. It\'s only used while you browse.')
     +'</p>'
     +(isDenied
       ?''
