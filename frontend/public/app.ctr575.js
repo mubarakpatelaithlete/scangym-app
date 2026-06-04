@@ -5894,95 +5894,112 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
   // Auto-load gyms when navigating to search page (Fix #1 + #6)
   if(path==='/explore'||path==='/nearby'||path==='/search'){
     autoLoadGyms();
-    // ━━━ FORCEFUL LOCATION OVERLAY: Show until user enables GPS or searches manually ━━━
-    _showLocationOverlayIfNeeded();
+    // ━━━ UBER-STYLE BANNER: Gentle nudge to enable GPS, never blocks interaction ━━━
+    _showLocationBannerIfNeeded();
   }
 }
 
-// ━━━ Forceful "Enable Location" overlay on Book/Explore tab ━━━
-function _showLocationOverlayIfNeeded(){
-  // Don't show if user already granted GPS or explicitly searched
-  if(window._gpsGranted||state.userExplicitSearch) return;
-  // Remove any existing overlay first
+// ━━━ UBER-STYLE BANNER: Non-blocking location nudge (replaces old full-screen overlay) ━━━
+// Like Uber: small top banner, everything underneath stays clickable and functional.
+function _showLocationBannerIfNeeded(){
+  // Don't show if user already granted GPS, dismissed banner, or explicitly searched
+  if(window._gpsGranted||window._locationBannerDismissed||state.userExplicitSearch) return;
+  // Remove any old overlay/banner first
   var existing=document.getElementById('sg-location-overlay');
   if(existing)existing.remove();
+  existing=document.getElementById('sg-location-banner');
+  if(existing)existing.remove();
+
   // Check permission state
   if(navigator.permissions&&navigator.permissions.query){
     navigator.permissions.query({name:'geolocation'}).then(function(status){
       if(status.state==='granted'){
         window._gpsGranted=true;
-        return; // Already have permission
+        return;
       }
-      _injectLocationOverlay(status.state);
-      // Listen for permission changes
+      _injectLocationBanner(status.state);
       status.onchange=function(){
         if(this.state==='granted'){
           window._gpsGranted=true;
-          var ov=document.getElementById('sg-location-overlay');
-          if(ov)ov.remove();
+          var b=document.getElementById('sg-location-banner');
+          if(b)b.remove();
           findGyms();
         }
       };
     }).catch(function(){
-      // Permissions API not supported — show overlay anyway
-      if(!window._gpsGranted)_injectLocationOverlay('prompt');
+      if(!window._gpsGranted)_injectLocationBanner('prompt');
     });
   }else{
-    if(!window._gpsGranted)_injectLocationOverlay('prompt');
+    if(!window._gpsGranted)_injectLocationBanner('prompt');
   }
 }
 
-function _injectLocationOverlay(permState){
+function _injectLocationBanner(permState){
   var isDenied=permState==='denied';
-  var main=document.querySelector('main');
-  if(!main)return;
-  var overlay=document.createElement('div');
-  overlay.id='sg-location-overlay';
-  overlay.style.cssText='position:absolute;top:0;left:0;right:0;bottom:0;z-index:100;background:rgba(5,8,22,.92);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;';
-  overlay.innerHTML='<div style="max-width:340px;">'
-    +'<div style="width:80px;height:80px;background:linear-gradient(135deg,#f97316,#ea580c);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto 20px;box-shadow:0 8px 32px rgba(249,115,22,.4);">📍</div>'
-    +'<h2 style="color:#fff;font-size:22px;font-weight:800;margin:0 0 8px;font-family:Sora,sans-serif;">Enable Location to Find Gyms</h2>'
-    +'<p style="color:rgba(255,255,255,.55);font-size:14px;line-height:1.5;margin:0 0 24px;">'
-    +(isDenied
-      ?'Location access is blocked. Go to your browser settings to enable it, or search for a city below.'
-      :'We need your location to show the nearest gyms and local pricing. It\'s only used while you browse.')
-    +'</p>'
-    +(isDenied
-      ?''
-      :'<button onclick="_requestLocationFromOverlay()" style="width:100%;padding:16px;background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;font-size:16px;font-weight:800;border:none;border-radius:14px;cursor:pointer;margin-bottom:12px;box-shadow:0 4px 20px rgba(249,115,22,.35);letter-spacing:0.3px;-webkit-tap-highlight-color:transparent;">Enable Location</button>')
-    +'<div onclick="_dismissLocationOverlay()" style="color:rgba(255,255,255,.4);font-size:13px;cursor:pointer;padding:8px;-webkit-tap-highlight-color:transparent;text-decoration:underline;">Search manually instead</div>'
-    +'</div>';
-  main.style.position='relative';
-  main.appendChild(overlay);
+  // Insert banner ABOVE the search results, not over them
+  var searchContainer=document.getElementById('gym-search-input');
+  var insertTarget=searchContainer?searchContainer.closest('.sg-tab-content')||document.querySelector('main'):document.querySelector('main');
+  if(!insertTarget)return;
+
+  var banner=document.createElement('div');
+  banner.id='sg-location-banner';
+  // Uber-style: small golden/amber banner at top, dismissible, never blocks content
+  banner.style.cssText='position:relative;z-index:10;margin:0 0 0 0;padding:10px 16px;display:flex;align-items:center;gap:10px;cursor:pointer;-webkit-tap-highlight-color:transparent;'
+    +'background:linear-gradient(135deg,#78350f,#92400e);border-bottom:1px solid rgba(251,191,36,.2);';
+
+  if(isDenied){
+    // GPS blocked — show info banner with search hint
+    banner.innerHTML=''
+      +'<span style="font-size:18px;flex-shrink:0;">📍</span>'
+      +'<div style="flex:1;min-width:0;">'
+      +'<p style="color:#fbbf24;font-size:13px;font-weight:700;margin:0;line-height:1.3;">Location sharing disabled</p>'
+      +'<p style="color:rgba(253,230,138,.7);font-size:11px;margin:2px 0 0;line-height:1.3;">Search for a city below to find gyms near you</p>'
+      +'</div>'
+      +'<span onclick="event.stopPropagation();_dismissLocationBanner()" style="color:rgba(253,230,138,.5);font-size:18px;padding:4px 2px;cursor:pointer;flex-shrink:0;">✕</span>';
+    banner.onclick=function(){ var inp=document.getElementById('gym-search-input'); if(inp)inp.focus(); };
+  }else{
+    // GPS available but not granted — show enable button
+    banner.innerHTML=''
+      +'<span style="font-size:18px;flex-shrink:0;">📍</span>'
+      +'<div style="flex:1;min-width:0;">'
+      +'<p style="color:#fbbf24;font-size:13px;font-weight:700;margin:0;line-height:1.3;">Enable location for better results</p>'
+      +'<p style="color:rgba(253,230,138,.7);font-size:11px;margin:2px 0 0;line-height:1.3;">Tap to find the nearest gyms to you</p>'
+      +'</div>'
+      +'<span onclick="event.stopPropagation();_dismissLocationBanner()" style="color:rgba(253,230,138,.5);font-size:18px;padding:4px 2px;cursor:pointer;flex-shrink:0;">✕</span>';
+    banner.onclick=function(e){ if(e.target.tagName!=='SPAN')_requestLocationFromBanner(); };
+  }
+
+  // Insert at the very top of the content area
+  insertTarget.insertBefore(banner,insertTarget.firstChild);
 }
 
-window._requestLocationFromOverlay=function(){
-  // Trigger the browser permission prompt
+window._requestLocationFromBanner=function(){
   if(navigator.geolocation){
     navigator.geolocation.getCurrentPosition(
       function(pos){
         window._gpsGranted=true;
-        var ov=document.getElementById('sg-location-overlay');
-        if(ov)ov.remove();
+        var b=document.getElementById('sg-location-banner');
+        if(b)b.remove();
         state.searchLat=pos.coords.latitude;
         state.searchLng=pos.coords.longitude;
         findGyms();
       },
       function(err){
-        // User denied — update overlay to show denied state
-        var ov=document.getElementById('sg-location-overlay');
-        if(ov)ov.remove();
-        _injectLocationOverlay('denied');
+        // User denied — update banner to denied state
+        var b=document.getElementById('sg-location-banner');
+        if(b)b.remove();
+        _injectLocationBanner('denied');
       },
       {enableHighAccuracy:true,timeout:10000,maximumAge:60000}
     );
   }
 };
 
-window._dismissLocationOverlay=function(){
-  var ov=document.getElementById('sg-location-overlay');
-  if(ov)ov.remove();
-  // Focus the search input so user can type
+window._dismissLocationBanner=function(){
+  window._locationBannerDismissed=true;
+  var b=document.getElementById('sg-location-banner');
+  if(b)b.remove();
+  // Focus the search input so user can type immediately
   var inp=document.getElementById('gym-search-input');
   if(inp)inp.focus();
 };
