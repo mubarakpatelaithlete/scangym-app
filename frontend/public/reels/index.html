@@ -687,7 +687,8 @@
             return video.url || '';
           case 'r2':
             if(video.cdnKey) return CDN_CONFIG.r2Base + '/' + video.cdnKey + '.mp4';
-            // Fallback: use direct url (already points to cdn.scangym.com for migrated videos)
+            // Fallback: use Convex proxy for Google Drive videos not yet migrated to R2
+            if(video.driveId) return CDN_CONFIG.convexBase + '?id=' + video.driveId;
             return video.url || '';
           case 'bunny':
             return CDN_CONFIG.bunnyBase + '/' + (video.cdnKey || video.driveId) + '.mp4';
