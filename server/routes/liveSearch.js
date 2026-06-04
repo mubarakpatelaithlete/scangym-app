@@ -410,7 +410,6 @@ router.post('/ensure-gym', optionalAuth, async (req, res) => {
       INSERT INTO gyms 
       (name, address, place_id, day_pass_price, owner_id, slug, is_active, created_at, updated_at)
       VALUES ($1, $2, $3, 5.00, 'system', $4, true, NOW(), NOW())
-      ON CONFLICT (place_id) DO UPDATE SET name = EXCLUDED.name, updated_at = NOW()
       RETURNING id, name
     `, [
       p.name,
