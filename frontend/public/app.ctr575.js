@@ -5901,3 +5901,4 @@ if(state.route.startsWith('/gym/')){
   const gymId=state.route.split('/gym/')[1];
   if(gymId)openGym(gymId,isNaN(parseInt(gymId)));
 }
+
