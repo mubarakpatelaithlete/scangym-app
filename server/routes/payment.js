@@ -70,6 +70,72 @@ try {
   console.error('QRCode module not found, QR generation will be skipped');
 }
 
+/**
+ * Generate a 2-scan QR code (JD Gym model) for a confirmed booking.
+ * Creates a record in booking_qr_codes and returns a scannable URL QR.
+ * Reuses existing active QR if one already exists for this booking.
+ */
+async function generate2ScanQR(bookingId, userId, gymId) {
+  // Check for existing active QR
+  const existing = await pool.query(
+    'SELECT * FROM booking_qr_codes WHERE booking_id = $1 AND status = $2 AND expires_at > NOW()',
+    [bookingId, 'active']
+  );
+  if (existing.rows.length > 0) {
+    const qr = existing.rows[0];
+    const scanUrl = 'https://scangym.com/scan/' + qr.qr_token;
+    let dataUrl = null;
+    if (QRCode) {
+      try { dataUrl = await QRCode.toDataURL(scanUrl, { width: 400, margin: 2, errorCorrectionLevel: 'H' }); } catch (e) {}
+    }
+    return {
+      token: qr.qr_token,
+      scanUrl,
+      dataUrl,
+      maxScans: qr.max_scans,
+      scanCount: qr.scan_count,
+      scansRemaining: qr.max_scans - qr.scan_count,
+      status: qr.status,
+      expiresAt: qr.expires_at,
+    };
+  }
+
+  // Generate new token
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  const segments = [];
+  for (let s = 0; s < 4; s++) {
+    let seg = '';
+    for (let i = 0; i < 6; i++) seg += chars.charAt(Math.floor(Math.random() * chars.length));
+    segments.push(seg);
+  }
+  const qrToken = 'SG-' + segments.join('-');
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+  await pool.query(
+    `INSERT INTO booking_qr_codes (booking_id, user_id, gym_id, qr_token, max_scans, expires_at)
+     VALUES ($1, $2, $3, $4, 2, $5)
+     ON CONFLICT DO NOTHING`,
+    [bookingId, userId || 'guest', gymId, qrToken, expiresAt]
+  );
+
+  const scanUrl = 'https://scangym.com/scan/' + qrToken;
+  let dataUrl = null;
+  if (QRCode) {
+    try { dataUrl = await QRCode.toDataURL(scanUrl, { width: 400, margin: 2, errorCorrectionLevel: 'H' }); } catch (e) {}
+  }
+
+  return {
+    token: qrToken,
+    scanUrl,
+    dataUrl,
+    maxScans: 2,
+    scanCount: 0,
+    scansRemaining: 2,
+    status: 'active',
+    expiresAt: expiresAt.toISOString(),
+  };
+}
+
 let nodemailer;
 try {
   nodemailer = require('nodemailer');
@@ -245,23 +311,8 @@ router.get('/verify', async (req, res) => {
 
     const booking = result.rows[0];
 
-    // Generate QR code data URL
-    let qrDataUrl = null;
-    const qrToken = booking.qr_code || 'BOOK_' + require('crypto').randomBytes(8).toString('hex').toUpperCase();
-    const qrPayload = JSON.stringify({
-      type: 'scangym_entry',
-      bookingId: booking.id,
-      token: qrToken,
-      gymId: booking.gym_id,
-    });
-
-    if (QRCode) {
-      try {
-        qrDataUrl = await QRCode.toDataURL(qrPayload, { width: 400, margin: 2 });
-      } catch (qrErr) {
-        console.error('QR generation error:', qrErr);
-      }
-    }
+    // Generate 2-scan QR code (JD Gym model) — scannable URL format
+    const qr = await generate2ScanQR(booking.id, booking.user_id, booking.gym_id);
 
     // Update booking: confirmed + QR + payment info
     await pool.query(
@@ -273,7 +324,7 @@ router.get('/verify', async (req, res) => {
            stripe_payment_status = 'paid',
            updated_at = NOW()
        WHERE id = $4`,
-      [qrToken, qrDataUrl, session.payment_intent, booking.id]
+      [qr.token, qr.dataUrl, session.payment_intent, booking.id]
     );
 
     // Get gym name
@@ -292,7 +343,7 @@ router.get('/verify', async (req, res) => {
         endTime: booking.end_time,
         price: parseFloat(booking.total_amount).toFixed(2),
         bookingCode: booking.booking_code,
-        qrDataUrl,
+        qrDataUrl: qr.dataUrl,
       }).catch(err => console.error('[Email] Background send failed:', err.message));
     }
 
@@ -309,8 +360,12 @@ router.get('/verify', async (req, res) => {
         status: 'confirmed',
       },
       qr: {
-        token: qrToken,
-        dataUrl: qrDataUrl,
+        token: qr.token,
+        scanUrl: qr.scanUrl,
+        dataUrl: qr.dataUrl,
+        maxScans: qr.maxScans,
+        scansRemaining: qr.scansRemaining,
+        expiresAt: qr.expiresAt,
       },
     });
   } catch (err) {
@@ -534,20 +589,15 @@ router.post('/confirm-intent', async (req, res) => {
       try { await stripe.paymentIntents.update(paymentIntentId, { receipt_email: email }); } catch(e) {}
     }
 
-    // Generate QR
-    const qrToken = booking.qr_code || 'BOOK_' + require('crypto').randomBytes(8).toString('hex').toUpperCase();
-    const qrPayload = JSON.stringify({ type: 'scangym_entry', bookingId: booking.id, token: qrToken, gymId: booking.gym_id });
-    let qrDataUrl = null;
-    if (QRCode) {
-      try { qrDataUrl = await QRCode.toDataURL(qrPayload, { width: 400, margin: 2 }); } catch (e) {}
-    }
+    // Generate 2-scan QR code (JD Gym model) — scannable URL format
+    const qr = await generate2ScanQR(booking.id, booking.user_id, booking.gym_id);
 
     // Update booking
     await pool.query(
       `UPDATE public.bookings SET status = 'confirmed', qr_code = $1, qr_code_url = $2,
        stripe_payment_intent_id = $3, stripe_payment_status = 'paid', updated_at = NOW()
        WHERE id = $4`,
-      [qrToken, qrDataUrl, paymentIntentId, booking.id]
+      [qr.token, qr.dataUrl, paymentIntentId, booking.id]
     );
 
     // Credit creator commission if this was a referred booking
@@ -607,14 +657,14 @@ router.post('/confirm-intent', async (req, res) => {
         endTime: booking.end_time,
         price: parseFloat(booking.total_amount).toFixed(2),
         bookingCode: booking.booking_code,
-        qrDataUrl,
+        qrDataUrl: qr.dataUrl,
       }).catch(err => console.error('[Email] Send failed:', err.message));
     }
 
     res.json({
       success: true,
       booking: { id: booking.id, gymName, date: bookingDate, time: booking.start_time, endTime: booking.end_time, price: parseFloat(booking.total_amount), bookingCode: booking.booking_code, status: 'confirmed' },
-      qr: { token: qrToken, dataUrl: qrDataUrl },
+      qr: { token: qr.token, scanUrl: qr.scanUrl, dataUrl: qr.dataUrl, maxScans: qr.maxScans, scansRemaining: qr.scansRemaining, expiresAt: qr.expiresAt },
     });
   } catch (err) {
     console.error('Confirm intent error:', err);
@@ -889,17 +939,11 @@ router.post('/cash-booking', async (req, res) => {
     );
     const booking = bookingResult.rows[0];
 
-    // Generate QR
-    let qrDataUrl = null;
-    if (QRCode) {
-      const qrPayload = JSON.stringify({ type: 'scangym_cash', bookingId: booking.id, token: qrCode, gymId: dbGymId, payAtGym: true });
-      try { qrDataUrl = await QRCode.toDataURL(qrPayload, { width: 400, margin: 2 }); } catch(e) {}
-    }
+    // Generate 2-scan QR code (JD Gym model) — scannable URL format
+    const qr = await generate2ScanQR(booking.id, 'guest', dbGymId);
 
-    // Update QR URL
-    if (qrDataUrl) {
-      await pool.query('UPDATE public.bookings SET qr_code_url = $1, updated_at = NOW() WHERE id = $2', [qrDataUrl, booking.id]);
-    }
+    // Update QR on booking record
+    await pool.query('UPDATE public.bookings SET qr_code = $1, qr_code_url = $2, updated_at = NOW() WHERE id = $3', [qr.token, qr.dataUrl, booking.id]);
 
     const bookingDate = new Date(booking.booking_date).toLocaleDateString('en-GB');
 
@@ -907,13 +951,13 @@ router.post('/cash-booking', async (req, res) => {
     sendConfirmationEmail({
       to: email, gymName: g.name, date: bookingDate,
       time: booking.start_time, endTime: booking.end_time,
-      price: price.toFixed(2), bookingCode, qrDataUrl,
+      price: price.toFixed(2), bookingCode, qrDataUrl: qr.dataUrl,
     }).catch(err => console.error('[Cash email] Send failed:', err.message));
 
     res.json({
       success: true,
       booking: { id: booking.id, gymName: g.name, date: bookingDate, time: booking.start_time, price, bookingCode, status: 'reserved_cash', paymentMethod: 'cash' },
-      qr: { token: qrCode, dataUrl: qrDataUrl },
+      qr: { token: qr.token, scanUrl: qr.scanUrl, dataUrl: qr.dataUrl, maxScans: qr.maxScans, scansRemaining: qr.scansRemaining, expiresAt: qr.expiresAt },
     });
 
     console.log('[Cash Booking] Reserved:', bookingCode, 'at', g.name, '£' + price, passTypeClean);
@@ -1188,19 +1232,15 @@ router.post('/quick-checkout', async (req, res) => {
       return res.status(400).json({ error: 'Payment failed. Your card may have been declined.', status: intent.status });
     }
 
-    // Generate QR code
-    let qrDataUrl = null;
-    const qrPayload = JSON.stringify({ type: 'scangym_entry', bookingId: booking.id, token: qrToken, gymId: dbGymId });
-    if (QRCode) {
-      try { qrDataUrl = await QRCode.toDataURL(qrPayload, { width: 400, margin: 2 }); } catch (e) {}
-    }
+    // Generate 2-scan QR code (JD Gym model) — scannable URL format
+    const qr = await generate2ScanQR(booking.id, req.session.userId, dbGymId);
 
     // Confirm booking
     await pool.query(
-      `UPDATE public.bookings SET status = 'confirmed', qr_code_url = $1,
-       stripe_payment_intent_id = $2, stripe_payment_status = 'paid', updated_at = NOW()
-       WHERE id = $3`,
-      [qrDataUrl, intent.id, booking.id]
+      `UPDATE public.bookings SET status = 'confirmed', qr_code = $1, qr_code_url = $2,
+       stripe_payment_intent_id = $3, stripe_payment_status = 'paid', updated_at = NOW()
+       WHERE id = $4`,
+      [qr.token, qr.dataUrl, intent.id, booking.id]
     );
 
     // Send confirmation email (non-blocking)
@@ -1214,7 +1254,7 @@ router.post('/quick-checkout', async (req, res) => {
         endTime: booking.end_time,
         price: price.toFixed(2),
         bookingCode,
-        qrDataUrl,
+        qrDataUrl: qr.dataUrl,
       }).catch(err => console.error('[Email] Send failed:', err.message));
     }
 
@@ -1230,7 +1270,7 @@ router.post('/quick-checkout', async (req, res) => {
         bookingCode,
         status: 'confirmed',
       },
-      qr: { token: qrToken, dataUrl: qrDataUrl },
+      qr: { token: qr.token, scanUrl: qr.scanUrl, dataUrl: qr.dataUrl, maxScans: qr.maxScans, scansRemaining: qr.scansRemaining, expiresAt: qr.expiresAt },
       message: '⚡ Booked instantly with your saved card!',
     });
   } catch (err) {
