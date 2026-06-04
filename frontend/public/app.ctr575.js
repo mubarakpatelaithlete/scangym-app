@@ -964,7 +964,7 @@ function SearchPage(){
   const isLoading=gyms.length===0;
   // Blocker 6 Fix: Strip "gyms"/"gym" from query to avoid "Gyms London gyms" duplication
   const rawLabel=state.searchQuery||'Near You';
-  const searchLabel=rawLabel.replace(/\bgyms?\b/gi,'').trim()||rawLabel;
+  const searchLabel=rawLabel.replace(/\bgyms?\s*(in|near|around)?\b/gi,'').trim()||rawLabel;
 
   // ═══ UBER PATTERN #1: Skeleton cards (shown inline in same grid as real cards) ═══
   const skeletonCards=[0,1,2,3,4,5].map((n)=>`
@@ -1051,14 +1051,17 @@ function SearchPage(){
         </div>
       `:''}
 
-      <!-- Map — skeleton when loading, real when data exists -->
-      ${(!isLoading&&MAPS_KEY&&gyms[0])?`<div class="mb-6 rounded-2xl overflow-hidden border border-slate-700 h-64">
+      <!-- Map — hidden by default, toggle button to show -->
+      ${(!isLoading&&MAPS_KEY&&gyms[0])?`<div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+        <button onclick="toggleExploreMap()" id="sg-map-toggle-btn" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.6);font-size:12px;font-weight:600;padding:6px 14px;border-radius:20px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s">
+          <span>📍</span> Map view
+        </button>
+      </div>
+      <div id="sg-explore-map" style="display:none;margin-bottom:12px;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.1);height:240px">
         <iframe width="100%" height="100%" frameborder="0" style="border:0"
-          src="https://www.google.com/maps/embed/v1/search?key=${MAPS_KEY}&q=${encodeURIComponent(state.searchQuery||'gyms near me')}&zoom=13${gyms[0].latitude?'&center='+gyms[0].latitude+','+gyms[0].longitude:''}" allowfullscreen></iframe>
-      </div>`:(isLoading?`<div class="mb-6 rounded-2xl border border-slate-700 h-48 bg-slate-800 relative overflow-hidden skel-card">
-        <div class="absolute inset-0 bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800" style="animation:shimmer 2s ease-in-out infinite"></div>
-        <div class="absolute inset-0 flex items-center justify-center"><p class="text-slate-500 text-sm">\u{1F5FA}\uFE0F Map loading\u2026</p></div>
-      </div>`:'')}
+          src="https://www.google.com/maps/embed/v1/search?key=${MAPS_KEY}&q=${encodeURIComponent(state.searchQuery||'gyms near me')}&zoom=13${gyms[0].latitude?'&center='+gyms[0].latitude+','+gyms[0].longitude:''}" allowfullscreen loading="lazy"></iframe>
+      </div>`:''}
+
 
       <!-- ═══ PATTERN #1 + #2: Same grid layout — skeleton OR real cards, seamless swap ═══ -->
       <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 pb-20${!isLoading?' cards-enter':''}">
@@ -1328,7 +1331,7 @@ function GymProfilePage(){
         <div class="gym-qa-btn" onclick="openGymOverlay('reviews')" title="Reviews"><span class="gym-qa-icon">⭐</span></div>
         <div class="gym-qa-btn" onclick="openGymOverlay('hours')" title="Hours"><span class="gym-qa-icon">🕐</span></div>
         <div class="gym-qa-btn" onclick="openGymOverlay('equipment')" title="Equipment"><span class="gym-qa-icon">🏋️</span></div>
-        <div class="gym-qa-btn has-label" onclick="scrollToPasses()" title="Passes"><span class="gym-qa-icon">🎟️</span> Passes</div>
+        <div class="gym-qa-btn has-label" onclick="openGymOverlay('passes')" title="Passes"><span class="gym-qa-icon">🎟️</span> Passes</div>
       </div>
 
       <!-- ═══ 2×2 Grid "Choose a pass" cards (Kotler pricing) — hidden by default, shown via Passes button ═══ -->
@@ -1683,6 +1686,58 @@ window.openGymOverlay=function(section){
       `;
     }
   }
+  else if(section==='passes'){
+    title.innerHTML='🎟️ Passes';
+    const _sym=sgSymbol();
+    const dayP=sgPrice('day');
+    const threeDayP=sgPrice('3day');
+    const weeklyP=sgPrice('weekly');
+    const monthlyP=sgPrice('monthly');
+    const gymId=gym.placeId||gym.place_id||gym.id;
+    body.innerHTML=`
+      <div style="margin-bottom:20px;text-align:center">
+        <p style="color:rgba(255,255,255,.6);font-size:14px;margin:0">Choose the pass that works for you</p>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px">
+        <div class="ov-pass-card selected" onclick="overlaySelectPass(this,0,'${gymId}')" style="background:linear-gradient(135deg,rgba(34,197,94,.15),rgba(34,197,94,.05));border:2px solid #22c55e;border-radius:16px;padding:16px;text-align:center;cursor:pointer;position:relative">
+          <div style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:#22c55e;color:#000;font-size:10px;font-weight:800;padding:2px 10px;border-radius:20px;">⚡ MOST POPULAR</div>
+          <div style="font-size:28px;margin:8px 0 4px">⚡</div>
+          <div style="color:#fff;font-size:15px;font-weight:700">Day Pass</div>
+          <div style="color:#22c55e;font-size:24px;font-weight:800;margin:8px 0 4px">${dayP.display}</div>
+          <div style="color:rgba(255,255,255,.4);font-size:12px">24h access</div>
+        </div>
+        <div class="ov-pass-card" onclick="overlaySelectPass(this,1,'${gymId}')" style="background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.1);border-radius:16px;padding:16px;text-align:center;cursor:pointer">
+          <div style="font-size:28px;margin:8px 0 4px">🔥</div>
+          <div style="color:#fff;font-size:15px;font-weight:700">3-Day Pass</div>
+          <div style="color:#fff;font-size:24px;font-weight:800;margin:8px 0 4px">${threeDayP.display}</div>
+          <div style="color:rgba(255,255,255,.4);font-size:12px">${_sym}${(threeDayP.amount/3).toFixed(2)}/day</div>
+          <div style="color:#22c55e;font-size:11px;font-weight:700;margin-top:4px">Save 20%</div>
+        </div>
+        <div class="ov-pass-card" onclick="overlaySelectPass(this,2,'${gymId}')" style="background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.1);border-radius:16px;padding:16px;text-align:center;cursor:pointer">
+          <div style="font-size:28px;margin:8px 0 4px">📅</div>
+          <div style="color:#fff;font-size:15px;font-weight:700">Weekly</div>
+          <div style="color:#fff;font-size:24px;font-weight:800;margin:8px 0 4px">${weeklyP.display}</div>
+          <div style="color:rgba(255,255,255,.4);font-size:12px">${_sym}${(weeklyP.amount/7).toFixed(2)}/day</div>
+          <div style="color:#22c55e;font-size:11px;font-weight:700;margin-top:4px">Save 43%</div>
+        </div>
+        <div class="ov-pass-card" onclick="overlaySelectPass(this,3,'${gymId}')" style="background:linear-gradient(135deg,rgba(245,158,11,.15),rgba(245,158,11,.05));border:2px solid rgba(245,158,11,.3);border-radius:16px;padding:16px;text-align:center;cursor:pointer;position:relative">
+          <div style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:#f59e0b;color:#000;font-size:10px;font-weight:800;padding:2px 10px;border-radius:20px;">👑 BEST VALUE</div>
+          <div style="font-size:28px;margin:8px 0 4px">🏆</div>
+          <div style="color:#fff;font-size:15px;font-weight:700">Monthly</div>
+          <div style="color:#f59e0b;font-size:24px;font-weight:800;margin:8px 0 4px">${monthlyP.display}</div>
+          <div style="color:rgba(255,255,255,.4);font-size:12px">${_sym}${(monthlyP.amount/30).toFixed(2)}/day</div>
+          <div style="color:#22c55e;font-size:11px;font-weight:700;margin-top:4px">Save 67%</div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="display:flex;justify-content:center;gap:16px;color:rgba(255,255,255,.4);font-size:12px">
+          <span>✅ Free Cancel</span>
+          <span>🔒 Secure</span>
+          <span>⚡ Instant QR</span>
+        </div>
+      </div>
+    `;
+  }
 
   // Open overlay with animation
   requestAnimationFrame(()=>{overlay.classList.add('open');});
@@ -1695,6 +1750,29 @@ window.closeGymOverlay=function(){
   if(!overlay)return;
   overlay.classList.remove('open');
   document.body.style.overflow='';
+};
+
+// Select pass from the overlay and update booking state + sticky bar
+window.overlaySelectPass=function(el,idx,gymId){
+  document.querySelectorAll('.ov-pass-card').forEach(function(c){
+    c.classList.remove('selected');
+    c.style.border='2px solid rgba(255,255,255,.1)';
+    c.style.background='rgba(255,255,255,.05)';
+  });
+  el.classList.add('selected');
+  const passMap=['day','3day','weekly','monthly'];
+  const passNames=['Day Pass','3-Day Pass','Weekly','Monthly'];
+  const passIcons=['⚡','🔥','📅','🏆'];
+  const sel=passMap[idx]||'day';
+  el.style.border='2px solid #22c55e';
+  el.style.background='linear-gradient(135deg,rgba(34,197,94,.15),rgba(34,197,94,.05))';
+  window._gymBookingState.selectedPass=sel;
+  window._gymBookingState.passName=passNames[idx]||'Day Pass';
+  window._gymBookingState.passIcon=passIcons[idx]||'⚡';
+  // Update sticky book button text
+  const price=sgPrice(sel==='week'?'weekly':sel);
+  const stickyBtn=document.getElementById('gym-sticky-book');
+  if(stickyBtn)stickyBtn.textContent=passIcons[idx]+' Book '+passNames[idx]+' · '+price.display;
 };
 
 // Touch swipe-to-close on overlay
@@ -5956,7 +6034,7 @@ function _injectLocationBanner(permState){
       +'<p style="color:rgba(253,230,138,.7);font-size:11px;margin:2px 0 0;line-height:1.3;">Search for a city below to find gyms near you</p>'
       +'</div>'
       +'<span onclick="event.stopPropagation();_dismissLocationBanner()" style="color:rgba(253,230,138,.5);font-size:18px;padding:4px 2px;cursor:pointer;flex-shrink:0;">✕</span>';
-    banner.onclick=function(){ var inp=document.getElementById('gym-search-input'); if(inp)inp.focus(); };
+    banner.onclick=function(e){ if(e.target.tagName!=='SPAN')_showLocationPopup(); };
   }else{
     // GPS available but not granted — show enable button
     banner.innerHTML=''
@@ -6002,6 +6080,77 @@ window._dismissLocationBanner=function(){
   // Focus the search input so user can type immediately
   var inp=document.getElementById('gym-search-input');
   if(inp)inp.focus();
+};
+
+// ═══ Map view toggle on explore page ═══
+window.toggleExploreMap=function(){
+  var mapDiv=document.getElementById('sg-explore-map');
+  var btn=document.getElementById('sg-map-toggle-btn');
+  if(!mapDiv)return;
+  var isHidden=mapDiv.style.display==='none';
+  mapDiv.style.display=isHidden?'block':'none';
+  if(btn){
+    btn.style.background=isHidden?'rgba(34,197,94,.15)':'rgba(255,255,255,.08)';
+    btn.style.borderColor=isHidden?'rgba(34,197,94,.3)':'rgba(255,255,255,.12)';
+    btn.style.color=isHidden?'#22c55e':'rgba(255,255,255,.6)';
+  }
+};
+
+// ═══ Uber-style location popup ═══
+window._showLocationPopup=function(){
+  // Remove existing popup if any
+  var existing=document.getElementById('sg-location-popup');
+  if(existing)existing.remove();
+
+  var isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
+  var isAndroid=/android/i.test(navigator.userAgent);
+
+  var steps='';
+  if(isIOS){
+    steps='<div style="text-align:left;margin:16px 0">'
+      +'<p style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;margin:0 0 10px;letter-spacing:1px">Steps to enable</p>'
+      +'<div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px"><span style="background:#f59e0b;color:#000;font-size:11px;font-weight:800;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</span><span style="color:#fff;font-size:13px">Open <strong>Settings</strong> on your iPhone</span></div>'
+      +'<div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px"><span style="background:#f59e0b;color:#000;font-size:11px;font-weight:800;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</span><span style="color:#fff;font-size:13px">Scroll down and tap <strong>Safari</strong> (or your browser)</span></div>'
+      +'<div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px"><span style="background:#f59e0b;color:#000;font-size:11px;font-weight:800;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</span><span style="color:#fff;font-size:13px">Tap <strong>Location</strong> → select <strong>Allow</strong></span></div>'
+      +'<div style="display:flex;gap:10px;align-items:flex-start"><span style="background:#f59e0b;color:#000;font-size:11px;font-weight:800;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">4</span><span style="color:#fff;font-size:13px">Come back here and <strong>refresh the page</strong></span></div>'
+      +'</div>';
+  } else if(isAndroid){
+    steps='<div style="text-align:left;margin:16px 0">'
+      +'<p style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;margin:0 0 10px;letter-spacing:1px">Steps to enable</p>'
+      +'<div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px"><span style="background:#f59e0b;color:#000;font-size:11px;font-weight:800;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</span><span style="color:#fff;font-size:13px">Tap the <strong>🔒 lock icon</strong> in your browser address bar</span></div>'
+      +'<div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px"><span style="background:#f59e0b;color:#000;font-size:11px;font-weight:800;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</span><span style="color:#fff;font-size:13px">Tap <strong>Permissions</strong> or <strong>Site settings</strong></span></div>'
+      +'<div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px"><span style="background:#f59e0b;color:#000;font-size:11px;font-weight:800;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</span><span style="color:#fff;font-size:13px">Set <strong>Location</strong> to <strong>Allow</strong></span></div>'
+      +'<div style="display:flex;gap:10px;align-items:flex-start"><span style="background:#f59e0b;color:#000;font-size:11px;font-weight:800;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">4</span><span style="color:#fff;font-size:13px"><strong>Refresh the page</strong></span></div>'
+      +'</div>';
+  } else {
+    steps='<div style="text-align:left;margin:16px 0">'
+      +'<p style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;margin:0 0 10px;letter-spacing:1px">Steps to enable</p>'
+      +'<div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px"><span style="background:#f59e0b;color:#000;font-size:11px;font-weight:800;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</span><span style="color:#fff;font-size:13px">Click the <strong>🔒 lock icon</strong> in your browser address bar</span></div>'
+      +'<div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px"><span style="background:#f59e0b;color:#000;font-size:11px;font-weight:800;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</span><span style="color:#fff;font-size:13px">Find <strong>Location</strong> and set to <strong>Allow</strong></span></div>'
+      +'<div style="display:flex;gap:10px;align-items:flex-start"><span style="background:#f59e0b;color:#000;font-size:11px;font-weight:800;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</span><span style="color:#fff;font-size:13px"><strong>Refresh the page</strong></span></div>'
+      +'</div>';
+  }
+
+  var popup=document.createElement('div');
+  popup.id='sg-location-popup';
+  popup.style.cssText='position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;';
+  popup.innerHTML=''
+    +'<div onclick="_closeLocationPopup()" style="position:absolute;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px)"></div>'
+    +'<div style="position:relative;background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:28px 24px;max-width:340px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.5)">'
+    +'<button onclick="_closeLocationPopup()" style="position:absolute;top:12px;right:16px;background:none;border:none;color:rgba(255,255,255,.4);font-size:22px;cursor:pointer;padding:4px">✕</button>'
+    +'<div style="text-align:center;margin-bottom:4px"><div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#d97706);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:28px">📍</div>'
+    +'<h2 style="color:#fff;font-size:18px;font-weight:800;margin:0">Turn on location</h2>'
+    +'<p style="color:rgba(255,255,255,.5);font-size:13px;margin:6px 0 0">So we can find the best gyms near you</p></div>'
+    +steps
+    +'<button onclick="_closeLocationPopup();location.reload();" style="width:100%;background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;font-size:14px;font-weight:800;padding:14px;border:none;border-radius:12px;cursor:pointer;margin-top:8px">Refresh Page</button>'
+    +'<p onclick="_closeLocationPopup();var inp=document.getElementById(\'gym-search-input\');if(inp)inp.focus();" style="text-align:center;color:rgba(255,255,255,.4);font-size:12px;margin:12px 0 0;cursor:pointer;text-decoration:underline">Or search for a city instead</p>'
+    +'</div>';
+  document.body.appendChild(popup);
+};
+
+window._closeLocationPopup=function(){
+  var p=document.getElementById('sg-location-popup');
+  if(p)p.remove();
 };
 
 // ─── Init ───
