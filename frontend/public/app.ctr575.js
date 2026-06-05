@@ -128,6 +128,8 @@ function peopleLooking(name){return urgencyNum(name,8)+2;}
 function spotsLeft(name){return urgencyNum(name,6)+2;}
 function bookedToday(name){return urgencyNum(name,40)+10;}
 function closingTime(gym){if(gym.opening_hours?.weekday?.length){const now=new Date().getDay();const todayHours=gym.opening_hours.weekday[now===0?6:now-1]||'';const m=todayHours.match(/(\d{1,2}:\d{2}\s*[AP]M)/gi);if(m&&m.length>1)return m[m.length-1];}return gym.openNow===true?'10:00 PM':null;}
+
+function openingTime(gym){if(gym.opening_hours?.weekday?.length){const now=new Date().getDay();const todayHours=gym.opening_hours.weekday[now===0?6:now-1]||'';const m=todayHours.match(/(\d{1,2}:\d{2}\s*[AP]M)/gi);if(m&&m.length>=1)return m[0];}return '6:00 AM';}
 // Bug #13 fix: Only show "Top Gym" / "Guest Favourite" for gyms with real evidence
 // — rating ≥ 4.7 AND at least 100 reviews (not just any 4.5+ gym)
 function isTopGym(gym){return(gym.rating||0)>=4.7&&(gym.totalReviews||gym.user_ratings_total||0)>=100;}
@@ -1060,8 +1062,8 @@ function SearchPage(){
           var addr=gym.address||gym.vicinity||'';
           var isOpen=gym.openNow!==false;
           var cTime=closingTime(gym);
-          var openText=isOpen?(cTime?'Open \u00b7 Closes '+cTime:'Open now'):'Closed';
-          var openTag=isOpen?'\u25cf Open':'\u25cf Closed';
+          var openText=isOpen?(cTime?'Open \u00b7 Closes '+cTime:'Open now'):'Opens at '+openingTime(gym);
+          var openTag=isOpen?'\u25cf Open':'\u{1F319} Closed';
           var openClass=isOpen?'bm-tag-open':'bm-tag-closed';
           var isPop=isTopGym(gym);
           var price=dayP.display;
@@ -1070,6 +1072,7 @@ function SearchPage(){
           var equipList=['Free weights','Cardio','Machines'].filter(function(_,j){return((gym.name||'').charCodeAt(0)+j)%3!==0;}).join(', ')||'Machines, Cardio';
           return{id:id,gym:gym,photo:photo,allPhotos:allPhotos,photoCount:photoCount,distMin:distMin,facs:facs,facList:facList,equipList:equipList,rating:rating,reviews:reviews,addr:addr,isOpen:isOpen,openText:openText,openTag:openTag,openClass:openClass,isPop:isPop,price:price,pos:pos,name:gym.name||'Gym',i:i};
         });
+        _cards.sort(function(a,b){return (a.isOpen===b.isOpen)?0:(a.isOpen?-1:1);});
         var totalC=_cards.length;
         var logoColors=['#f97316,#ea580c','#8b5cf6,#6d28d9','#ef4444,#b91c1c','#3b82f6,#1d4ed8','#eab308,#a16207','#22c55e,#15803d','#ec4899,#be185d','#14b8a6,#0f766e'];
         var logoEmojis=['\u{1F3CB}\uFE0F','\u{1F4AA}','\u{1F94A}','\u{1F3CA}','\u26A1','\u{1F49A}','\u{1F525}','\u{1F9D8}'];
@@ -1094,6 +1097,8 @@ function SearchPage(){
         html+='.bm-carousel{display:flex;gap:0;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scroll-behavior:smooth}';
         html+='.bm-carousel::-webkit-scrollbar{display:none}';
         html+='.bm-card{min-width:100%;max-width:100%;scroll-snap-align:start;display:flex;flex-direction:column;padding:0}';
+        html+='.bm-card.bm-closed{opacity:0.45;filter:grayscale(30%)}';
+        html+='.bm-card.bm-closed .bm-continue-btn{background:#6b7280;box-shadow:0 4px 16px rgba(107,114,128,.25)}';
         html+='.bm-photo{height:175px;position:relative;margin:12px 16px 0;border-radius:14px;overflow:hidden;flex-shrink:0}';
         html+='.bm-photo-img{position:absolute;inset:0;background-size:cover;background-position:center}';
         html+='.bm-photo-grad{position:absolute;inset:0;background:linear-gradient(transparent 40%,rgba(0,0,0,.7))}';
@@ -1148,7 +1153,7 @@ function SearchPage(){
           var logoGrad=logoColors[i%8];
           var logoEmoji=logoEmojis[i%8];
           var reviewsRow=c.rating+' \u00b7 '+c.reviews+' reviews';
-          html+='<div class="bm-card" data-gym-id="'+c.id+'" data-idx="'+i+'">';
+          html+='<div class="bm-card'+(c.isOpen?'':' bm-closed')+'" data-gym-id="'+c.id+'" data-idx="'+i+'">';
           html+='<div class="bm-photo">';
           html+=c.photo?'<div class="bm-photo-img" style="background-image:url(\''+c.photo+'\')"></div>':'<div class="bm-photo-img" style="background:#1a1f2e;display:flex;align-items:center;justify-content:center"><span style="font-size:48px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)">\u{1F3CB}\uFE0F</span></div>';
           html+='<div class="bm-photo-grad"></div>';
