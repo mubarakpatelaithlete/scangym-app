@@ -2140,16 +2140,20 @@ window._ovPaySelectCard=function(cardId,brand,last4){
   const brandName=brandNames[brand]||brand||'Card';
   window._gymBookingState.paymentMethod='saved';
   window._gymBookingState.savedCard={id:cardId,brand:brand,last4:last4};
-  // Update sticky bar indicator
   const iconEl=document.getElementById('gym-pay-icon');
   const labelEl=document.getElementById('gym-pay-label');
   if(iconEl){iconEl.innerHTML='<span style="font-size:16px">💳</span>';}
   if(labelEl)labelEl.textContent=brandName+' ····'+last4;
-  // Uncheck cash
   const cashCheck=document.getElementById('ov-pay-cash-check');
   if(cashCheck)cashCheck.textContent='';
-  // Reload cards to show selection
   _ovPayLoadCards();
+  // ═══ UBER: If booking was pending, auto-continue with this card ═══
+  if(window._pendingCheckout){
+    const pc=window._pendingCheckout;
+    window._pendingCheckout=null;
+    closeGymOverlay();
+    setTimeout(()=>showUberCheckout(pc.gymId,pc.prefillDate,pc.prefillTime),400);
+  }
 };
 
 window._ovPaySelectCash=function(){
@@ -2161,8 +2165,14 @@ window._ovPaySelectCash=function(){
   if(labelEl)labelEl.textContent='Cash at Gym';
   const cashCheck=document.getElementById('ov-pay-cash-check');
   if(cashCheck)cashCheck.textContent='✓';
-  // Reload cards to clear selection
   _ovPayLoadCards();
+  // ═══ UBER: Auto-continue to checkout if booking was pending ═══
+  if(window._pendingCheckout){
+    const pc=window._pendingCheckout;
+    window._pendingCheckout=null;
+    closeGymOverlay();
+    setTimeout(()=>showUberCheckout(pc.gymId,pc.prefillDate,pc.prefillTime),400);
+  }
 };
 
 window._ovPayAddCard=function(){
@@ -2222,7 +2232,24 @@ window._ovPaySaveCard=async function(){
     _ovPayCloseCardForm();
     if(window._ovPayCardElement)window._ovPayCardElement.clear();
     _showToast('💳 Card saved successfully!');
-    _ovPayLoadCards();
+    await _ovPayLoadCards();
+    // ═══ UBER: Auto-continue to checkout if booking was pending ═══
+    if(window._pendingCheckout){
+      const pc=window._pendingCheckout;
+      window._pendingCheckout=null;
+      try{
+        const freshCards=await fetch('/api/payment/saved-cards',{credentials:'include'}).then(r=>r.json());
+        if(freshCards.cards&&freshCards.cards.length>0){
+          const defCard=freshCards.cards.find(c=>c.isDefault)||freshCards.cards[0];
+          window._gymBookingState=window._gymBookingState||{};
+          window._gymBookingState.paymentMethod='saved';
+          window._gymBookingState.savedCard={id:defCard.id,brand:defCard.brand,last4:defCard.last4};
+        }
+      }catch(e){}
+      closeGymOverlay();
+      setTimeout(()=>showUberCheckout(pc.gymId,pc.prefillDate,pc.prefillTime),400);
+      return;
+    }
   }catch(err){
     if(errEl){errEl.textContent=err.message;errEl.style.display='block';}
   }finally{
@@ -4425,6 +4452,14 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
   const finalIsSaved=finalPayMethod==='saved'&&gbs.savedCard;
   const finalHasPayment=finalIsCash||finalIsSaved;
 
+  // ═══ UBER GATE: Require payment method before showing confirm ═══
+  if(!finalHasPayment){
+    window._pendingCheckout={gymId, prefillDate:selDate, prefillTime:selTime};
+    openGymOverlay('payment');
+    sgToast('💳 Add a payment method to book','info',3000);
+    return;
+  }
+
   sheet.innerHTML=`
   <style>
     .ub-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9200;display:flex;align-items:flex-end;justify-content:center}
@@ -4480,8 +4515,8 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
 
       <!-- Confirm CTA — Uber style: white button -->
       <div class="ub-footer">
-        <button class="ub-cta ${finalHasPayment?'ub-cta-primary':'ub-cta-disabled'}" id="ub-cta-btn" onclick="ubConfirmPay()">
-          <span id="ub-cta-text">${finalHasPayment?'Confirm and pay':'Add a payment method'}</span>
+        <button class="ub-cta ub-cta-primary" id="ub-cta-btn" onclick="ubConfirmPay()">
+          <span id="ub-cta-text">Confirm and pay</span>
         </button>
         <div class="ub-trust">
           <span>\u{1F512} Stripe secure</span><span>\u{00B7}</span><span>\u{1F4E7} QR instant</span><span>\u{00B7}</span><span>\u21A9\uFE0F Free cancel</span>
