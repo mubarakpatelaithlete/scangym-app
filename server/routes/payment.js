@@ -898,40 +898,41 @@ router.post('/cash-booking', async (req, res) => {
     });
     const price = pricingResult.amount;
 
-    // ── Step 3: Generate booking code ──
-    const crypto = require('crypto');
+    // ── Step 3: Generate booking code (same XXXX-XXXX format as Stripe path, fits VARCHAR(9)) ──
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let bookingCode = 'CASH-';
-    for (let i = 0; i < 6; i++) bookingCode += chars[Math.floor(Math.random() * chars.length)];
-    const qrCode = 'CASH_' + crypto.randomBytes(8).toString('hex').toUpperCase();
+    let bookingCode = '';
+    for (let i = 0; i < 8; i++) {
+      bookingCode += chars[Math.floor(Math.random() * chars.length)];
+      if (i === 3) bookingCode += '-';
+    }
 
-    // ── Step 4: Insert booking ──
+    // ── Step 4: Insert booking (no qr_code — added via UPDATE after generate2ScanQR) ──
     let booking;
     try {
       const bookingResult = await pool.query(
         `INSERT INTO public.bookings
           (gym_id, user_id, booking_date, start_time, end_time, total_amount,
-           platform_fee_amount, booking_type, booking_code, qr_code, status,
+           platform_fee_amount, booking_type, booking_code, status,
            user_email, user_name, created_at, updated_at)
-         VALUES ($1, 'guest', $2, $3, $4, $5, $6, $7, $8, $9, 'reserved', $10, 'Guest', NOW(), NOW())
+         VALUES ($1, 'guest', $2, $3, $4, $5, $6, $7, $8, 'reserved', $9, 'Guest', NOW(), NOW())
          RETURNING *`,
         [dbGymId, date, resolved.startTime, resolved.endTime, price, price * 0.10,
-         passTypeClean + '_cash', bookingCode, qrCode, email]
+         passTypeClean + '_cash', bookingCode, email]
       );
       booking = bookingResult.rows[0];
     } catch (insertErr) {
       console.error('[Cash Booking] INSERT failed:', insertErr.message, '| code:', insertErr.code, '| detail:', insertErr.detail);
-      // Retry with minimal columns if the first insert fails (column mismatch)
+      // Retry without platform_fee_amount if column doesn't exist
       try {
         const bookingResult = await pool.query(
           `INSERT INTO public.bookings
             (gym_id, user_id, booking_date, start_time, end_time, total_amount,
-             booking_type, booking_code, qr_code, status,
+             booking_type, booking_code, status,
              user_email, user_name, created_at, updated_at)
-           VALUES ($1, 'guest', $2, $3, $4, $5, $6, $7, $8, 'reserved', $9, 'Guest', NOW(), NOW())
+           VALUES ($1, 'guest', $2, $3, $4, $5, $6, $7, 'reserved', $8, 'Guest', NOW(), NOW())
            RETURNING *`,
           [dbGymId, date, resolved.startTime, resolved.endTime, price,
-           passTypeClean + '_cash', bookingCode, qrCode, email]
+           passTypeClean + '_cash', bookingCode, email]
         );
         booking = bookingResult.rows[0];
         console.log('[Cash Booking] Retry without platform_fee_amount succeeded');
@@ -942,7 +943,7 @@ router.post('/cash-booking', async (req, res) => {
     }
 
     // ── Step 5: Generate QR code (non-blocking — don't fail the booking) ──
-    let qr = { token: qrCode, scanUrl: '', dataUrl: '', maxScans: 2, scansRemaining: 2, expiresAt: null };
+    let qr = { token: bookingCode, scanUrl: '', dataUrl: '', maxScans: 2, scansRemaining: 2, expiresAt: null };
     try {
       qr = await generate2ScanQR(booking.id, 'guest', dbGymId);
       await pool.query(
