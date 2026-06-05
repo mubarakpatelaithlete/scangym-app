@@ -3904,5 +3904,23 @@
     "url": "https://cdn.scangym.com/videos/ai_studenthack_kling_v1.mp4",
     "thumb": "",
     "cdnKey": "ai_studenthack_kling_v1"
+  },
+  {
+    "id": 437,
+    "name": "AI Gym Tour \u2013 Golden Hour Entry",
+    "category": "AI Cinematic",
+    "source": "direct",
+    "url": "https://cdn.scangym.com/videos/ai_gym_tour_veo31.mp4",
+    "thumb": null,
+    "cdnKey": "ai_gym_tour_veo31"
+  },
+  {
+    "id": 438,
+    "name": "AI Contract Rip \u2013 Don't Join A Gym",
+    "category": "Don't Join A Gym",
+    "source": "direct",
+    "url": "https://cdn.scangym.com/videos/ai_contract_rip_seedance.mp4",
+    "thumb": null,
+    "cdnKey": "ai_contract_rip_seedance"
   }
 ]
