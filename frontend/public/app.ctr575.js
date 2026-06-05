@@ -4462,67 +4462,91 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
 
   sheet.innerHTML=`
   <style>
-    .ub-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9200;display:flex;align-items:flex-end;justify-content:center}
-    .ub-sheet{background:#000;width:100%;max-width:440px;border-radius:20px 20px 0 0;overflow:hidden;transform:translateY(100%);animation:ubSlideUp .35s cubic-bezier(.32,.72,0,1) forwards;position:relative;display:flex;flex-direction:column}
-    @keyframes ubSlideUp{to{transform:translateY(0)}}
-    .ub-drag{width:36px;height:4px;border-radius:2px;background:rgba(255,255,255,.12);margin:10px auto 0}
-    .ub-confirm-title{padding:24px 20px 8px}
-    .ub-confirm-title h2{color:#fff;font-size:22px;font-weight:800;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;margin:0}
-    .ub-confirm-divider{height:1px;background:rgba(255,255,255,.08);margin:0 20px}
-    .ub-confirm-info{padding:16px 20px}
-    .ub-confirm-gym-name{color:#fff;font-size:17px;font-weight:700;margin-bottom:4px}
-    .ub-confirm-gym-addr{color:rgba(255,255,255,.5);font-size:13px;line-height:1.4}
-    .ub-confirm-summary{padding:0 20px 16px;display:flex;flex-wrap:wrap;gap:8px}
-    .ub-confirm-chip{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:6px 12px;color:rgba(255,255,255,.6);font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:4px}
-    .ub-footer{padding:16px 20px calc(20px + env(safe-area-inset-bottom,0px))}
-    .ub-cta{width:100%;padding:18px;border:none;border-radius:12px;font-size:17px;font-weight:700;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+    .ub-overlay{position:fixed;inset:0;background:#000;z-index:9200;display:flex;flex-direction:column}
+    /* ── Map area (top ~60%) ── */
+    .ub-map{flex:1;background:#1c2333;position:relative;overflow:hidden}
+    .ub-map-road{position:absolute;background:#2a3349}
+    .ub-map-road-1{width:250%;height:26px;top:32%;left:-30%;transform:rotate(-35deg)}
+    .ub-map-road-2{width:24px;height:250%;top:-30%;left:58%;transform:rotate(10deg)}
+    .ub-map-road-3{width:250%;height:22px;top:72%;left:-20%;transform:rotate(-8deg)}
+    .ub-map-road-4{width:20px;height:120px;top:38%;left:42%;transform:rotate(5deg)}
+    .ub-map-label{position:absolute;font-size:10px;font-weight:700;color:rgba(255,255,255,.2);letter-spacing:3px;text-transform:uppercase;white-space:nowrap}
+    .ub-map-num{position:absolute;font-size:13px;font-weight:500;color:rgba(255,255,255,.18)}
+    .ub-back{position:absolute;top:calc(env(safe-area-inset-top,0px) + 12px);left:16px;width:44px;height:44px;background:rgba(0,0,0,.6);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;z-index:2;border:none;color:#fff}
+    .ub-back-arrow{width:16px;height:16px;border-left:2.5px solid #fff;border-bottom:2.5px solid #fff;transform:rotate(45deg);margin-left:4px}
+    /* Pin group */
+    .ub-pin{position:absolute;top:34%;left:50%;transform:translateX(-50%);z-index:3;display:flex;flex-direction:column;align-items:center}
+    .ub-pin-bubble{background:rgba(235,235,235,.92);color:#111;border-radius:20px;padding:8px 18px;font-size:14px;font-weight:600;white-space:nowrap;box-shadow:0 2px 12px rgba(0,0,0,.35)}
+    .ub-pin-stem{width:2px;height:20px;background:linear-gradient(to bottom,rgba(100,160,255,.5),rgba(59,130,246,.9));margin-top:2px}
+    .ub-pin-dot-wrap{width:28px;height:28px;background:rgba(59,130,246,.18);border-radius:50%;display:flex;align-items:center;justify-content:center;position:relative}
+    .ub-pin-dot{width:14px;height:14px;background:#3b82f6;border:3px solid #fff;border-radius:50%;box-shadow:0 0 8px rgba(59,130,246,.4);z-index:1}
+    @keyframes ubPulse{0%{transform:scale(1);opacity:.5}100%{transform:scale(2);opacity:0}}
+    .ub-pin-pulse{position:absolute;width:28px;height:28px;background:rgba(59,130,246,.12);border-radius:50%;animation:ubPulse 2s infinite}
+    /* ── Bottom sheet (black, minimal) ── */
+    .ub-sheet{background:#000;flex-shrink:0;display:flex;flex-direction:column}
+    .ub-sheet-title-row{display:flex;align-items:center;justify-content:space-between;padding:22px 24px 16px}
+    .ub-sheet-title{color:#fff;font-size:22px;font-weight:700;letter-spacing:-.3px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+    .ub-sheet-search{width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:20px;color:rgba(255,255,255,.6);cursor:pointer}
+    .ub-sheet-divider{height:1px;background:rgba(255,255,255,.1);margin:0 24px}
+    .ub-sheet-info{padding:16px 24px 18px}
+    .ub-sheet-gym-name{color:#fff;font-size:19px;font-weight:700;margin-bottom:4px}
+    .ub-sheet-gym-addr{color:rgba(255,255,255,.4);font-size:14px;line-height:1.4}
+    .ub-sheet-detail{color:rgba(255,255,255,.35);font-size:14px;margin-top:8px}
+    .ub-accent{height:2px;margin:0 24px;background:linear-gradient(90deg,#f97316 0%,#f59e0b 50%,rgba(245,158,11,.15) 100%);border-radius:1px}
+    .ub-footer{padding:14px 24px calc(20px + env(safe-area-inset-bottom,0px))}
+    .ub-cta{width:100%;padding:18px;border:none;border-radius:14px;font-size:17px;font-weight:700;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
     .ub-cta:active{transform:scale(.98)}
-    .ub-cta-primary{background:#fff;color:#000}
+    .ub-cta-primary{background:#e0e0e0;color:#111}
     .ub-cta-disabled{background:rgba(255,255,255,.12);color:rgba(255,255,255,.3)}
-    .ub-trust{display:flex;align-items:center;justify-content:center;gap:8px;color:rgba(255,255,255,.25);font-size:10px;margin-top:10px}
-    .ub-error{padding:0 20px;margin-top:8px}
+    .ub-error{padding:0 24px;margin-top:8px}
     .ub-error-text{color:#f87171;font-size:13px;text-align:center}
   </style>
 
-  <div class="ub-overlay" onclick="if(event.target===this)closeBookingSheet()">
+  <div class="ub-overlay">
+    <!-- ═══ Map area ═══ -->
+    <div class="ub-map">
+      <div class="ub-map-road ub-map-road-1"></div>
+      <div class="ub-map-road ub-map-road-2"></div>
+      <div class="ub-map-road ub-map-road-3"></div>
+      <div class="ub-map-road ub-map-road-4"></div>
+      <div class="ub-map-label" style="top:22%;left:8%;transform:rotate(-35deg)">Gym Road</div>
+      <div class="ub-map-label" style="top:18%;left:60%;transform:rotate(10deg)">High St</div>
+      <div class="ub-map-label" style="top:68%;left:10%;transform:rotate(-8deg)">Station Road</div>
+      <button class="ub-back" onclick="closeBookingSheet()"><div class="ub-back-arrow"></div></button>
+      <!-- Pin -->
+      <div class="ub-pin">
+        <div class="ub-pin-bubble">Book at ${gymName}</div>
+        <div class="ub-pin-stem"></div>
+        <div class="ub-pin-dot-wrap"><div class="ub-pin-pulse"></div><div class="ub-pin-dot"></div></div>
+      </div>
+    </div>
+
+    <!-- ═══ Confirm sheet ═══ -->
     <div class="ub-sheet">
-      <div class="ub-drag"></div>
+      <div class="ub-sheet-title-row">
+        <div class="ub-sheet-title">Confirm your booking</div>
+        <div class="ub-sheet-search">🔍</div>
+      </div>
+      <div class="ub-sheet-divider"></div>
 
-      <!-- Title -->
-      <div class="ub-confirm-title">
-        <h2>Confirm and pay</h2>
+      <div class="ub-sheet-info">
+        <div class="ub-sheet-gym-name">${gymName}</div>
+        <div class="ub-sheet-gym-addr">📍 ${gymAddr}</div>
+        <div class="ub-sheet-detail">${passInfo.name} · ${dateDisplay}${selTime!=='anytime'?' · '+selTime:''} · ${displayPriceStr}</div>
       </div>
 
-      <div class="ub-confirm-divider"></div>
-
-      <!-- Gym Info -->
-      <div class="ub-confirm-info">
-        <div class="ub-confirm-gym-name">${gymName}</div>
-        <div class="ub-confirm-gym-addr">\u{1F4CD} ${gymAddr}</div>
-      </div>
-
-      <!-- Booking summary chips -->
-      <div class="ub-confirm-summary">
-        <div class="ub-confirm-chip">${passInfo.icon} ${passInfo.name}</div>
-        <div class="ub-confirm-chip">\u{1F4C5} ${dateDisplay}</div>
-        ${isOffPeak?'<div class="ub-confirm-chip" style="color:#4ade80;border-color:rgba(34,197,94,.3)">\u{1F319} Off-peak</div>':''}
-      </div>
+      <div class="ub-accent"></div>
 
       <!-- Error area -->
       <div class="ub-error hidden" id="ub-confirm-error">
         <div class="ub-error-text"></div>
       </div>
 
-      <!-- Confirm CTA — Uber style: white button -->
       <div class="ub-footer">
         <button class="ub-cta ub-cta-primary" id="ub-cta-btn" onclick="ubConfirmPay()">
           <span id="ub-cta-text">Confirm and pay</span>
         </button>
-        <div class="ub-trust">
-          <span>\u{1F512} Stripe secure</span><span>\u{00B7}</span><span>\u{1F4E7} QR instant</span><span>\u{00B7}</span><span>\u21A9\uFE0F Free cancel</span>
-        </div>
       </div>
-
     </div>
   </div>`;
 
@@ -4544,9 +4568,10 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
     ready:finalHasPayment,
   };
 
-  // ═══ Swipe-to-close on sheet ═══
+  // ═══ Swipe-down-to-close on bottom sheet ═══
   (function(){
     let sy=0,cy=0,d=false;const sh=sheet.querySelector('.ub-sheet');
+    if(!sh)return;
     sh.addEventListener('touchstart',e=>{
       sy=e.touches[0].clientY;cy=sy;d=true;
     },{passive:true});
@@ -4794,11 +4819,10 @@ async function _initUberPaymentNew(gymId, gym){
 window.closeBookingSheet=function(){
   const sheet=document.getElementById('booking-sheet');
   if(sheet){
-    // Animate out then remove
-    const inner=sheet.querySelector('.ub-sheet');
-    if(inner){
-      inner.style.transition='transform .25s ease-in';
-      inner.style.transform='translateY(100%)';
+    const overlay=sheet.querySelector('.ub-overlay');
+    if(overlay){
+      overlay.style.transition='opacity .25s ease-out';
+      overlay.style.opacity='0';
       setTimeout(()=>sheet.remove(),260);
     }else{
       sheet.remove();
