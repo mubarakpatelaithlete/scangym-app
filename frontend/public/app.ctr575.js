@@ -5438,7 +5438,7 @@ function QRScanVerifyPage(token){
           <p class="text-blue-400/70 text-sm mt-1">We hope you enjoyed your workout!</p>
         </div>`}
 
-        ${isExit?`<div class="mt-4 text-center"><button onclick="sgRecordAndShare()" style="background:linear-gradient(135deg,#f97316,#d97706);color:#fff;font-weight:700;padding:12px 24px;border:none;border-radius:12px;font-size:14px;cursor:pointer">🔥 View Workout Card & Share</button></div>`:''}
+        ${isExit?`<div class="mt-4 text-center"><button onclick="sgRecordAndShare()" style="background:linear-gradient(135deg,#f97316,#d97706);color:#fff;font-weight:700;padding:12px 24px;border:none;border-radius:12px;font-size:14px;cursor:pointer">🔥 View Workout Card & Share</button></div>`:''}`
       </div>
     </div>
     <style>@keyframes scaleIn{0%{transform:scale(0)}60%{transform:scale(1.2)}100%{transform:scale(1)}}</style>`;
@@ -7143,6 +7143,1000 @@ window.sgFlashDeal=function(){
   });
   observer.observe(document.body,{childList:true,subtree:true});
 })();
+
+
+// ╔══════════════════════════════════════════════════════════════════════════════╗
+// ║  ADDICTION MECHANICS V2 — FULL SCIENCE IMPLEMENTATION                       ║
+// ║  Covering ALL 25 mechanics from the research                                ║
+// ║  TikTok + Instagram + Duolingo + Tinder + Snapchat + YouTube + Netflix +    ║
+// ║  Spotify + Candy Crush + Pinterest + BeReal + Robinhood                     ║
+// ╚══════════════════════════════════════════════════════════════════════════════╝
+
+// ─── 7. SOCIAL PROOF COUNTERS (Instagram likes + Booking.com) ───
+// Mechanic #5 Social Validation + #15 Social Proof Counters
+// "12 people booked today" triggers herd behaviour
+(function(){
+  const style=document.createElement('style');
+  style.textContent=`
+    .sg-social-proof{display:flex;align-items:center;gap:4px;font-size:10px;color:rgba(255,255,255,.55);margin-top:4px}
+    .sg-social-proof .sg-sp-dot{width:5px;height:5px;background:#22c55e;border-radius:50%;animation:locationDot 1.5s ease-in-out infinite}
+    .sg-social-proof-toast{position:fixed;bottom:80px;left:16px;right:16px;background:rgba(20,20,35,.95);border:1px solid rgba(249,115,22,.2);border-radius:14px;padding:12px 16px;display:flex;align-items:center;gap:10px;z-index:8500;animation:slideUp .4s ease-out;backdrop-filter:blur(12px)}
+    .sg-social-proof-toast .sg-spt-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#f97316,#fb923c);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+    .sg-social-proof-toast .sg-spt-text{flex:1;color:rgba(255,255,255,.8);font-size:12px;line-height:1.3}
+    .sg-social-proof-toast .sg-spt-text strong{color:#fff;font-weight:600}
+    .sg-social-proof-toast .sg-spt-time{color:rgba(255,255,255,.35);font-size:10px;white-space:nowrap}
+    @keyframes spToastOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(20px)}}
+  `;
+  document.head.appendChild(style);
+
+  // Live social proof toast notifications (Booking.com "someone just booked" style)
+  const firstNames=['James','Sophie','Omar','Emily','Liam','Chloe','Dev','Hannah','Marcus','Zara','Tom','Priya','Jack','Mia','Ali'];
+  const cities=['Bolton','Manchester','Leeds','Liverpool','London','Birmingham','Bristol','Sheffield'];
+  const actions=[
+    (n,c)=>`<strong>${n}</strong> from ${c} just booked a day pass`,
+    (n,c)=>`<strong>${n}</strong> scanned in at a gym near you`,
+    (n,c)=>`<strong>${n}</strong> is on a <strong>🔥 ${Math.floor(Math.random()*12)+3}-day streak</strong>`,
+    (n,c)=>`<strong>${Math.floor(Math.random()*8)+3} people</strong> are viewing gyms in ${c} right now`,
+    (n,c)=>`<strong>${n}</strong> just earned the "${['First Sweat','On Fire','Week Warrior','Gym Explorer'][Math.floor(Math.random()*4)]}" badge`,
+  ];
+  const timeLabels=['just now','1 min ago','2 min ago','3 min ago'];
+
+  window.sgSocialProofToast=function(){
+    // Remove existing
+    document.querySelectorAll('.sg-social-proof-toast').forEach(el=>el.remove());
+    const name=firstNames[Math.floor(Math.random()*firstNames.length)];
+    const city=cities[Math.floor(Math.random()*cities.length)];
+    const action=actions[Math.floor(Math.random()*actions.length)];
+    const time=timeLabels[Math.floor(Math.random()*timeLabels.length)];
+    const emojis=['🏋️','💪','🔥','⚡','🎯'];
+    const toast=document.createElement('div');
+    toast.className='sg-social-proof-toast';
+    toast.innerHTML=`
+      <div class="sg-spt-avatar">${emojis[Math.floor(Math.random()*emojis.length)]}</div>
+      <div class="sg-spt-text">${action(name,city)}</div>
+      <div class="sg-spt-time">${time}</div>
+    `;
+    toast.onclick=function(){toast.style.animation='spToastOut .3s ease-out forwards';setTimeout(()=>toast.remove(),300)};
+    document.body.appendChild(toast);
+    // Auto-dismiss after 4s
+    setTimeout(()=>{
+      if(toast.parentNode){toast.style.animation='spToastOut .3s ease-out forwards';setTimeout(()=>toast.remove(),300)}
+    },4000);
+  };
+
+  // Show a social proof toast every 25-45 seconds (variable interval = more addictive)
+  function scheduleNext(){
+    const delay=25000+Math.random()*20000; // 25-45s
+    setTimeout(()=>{
+      // Only show if user is on explore or gym detail page
+      const route=window.location.pathname;
+      if(route==='/'||route==='/explore'||route.startsWith('/gym/')||route==='/nearby'){
+        sgSocialProofToast();
+      }
+      scheduleNext();
+    },delay);
+  }
+  // Start after 8 seconds (give user time to orient)
+  setTimeout(scheduleNext,8000);
+})();
+
+// ─── 8. SUNK COST DISPLAY (mechanic #17) ───
+// Show users how much they've "invested" in ScanGym — makes them feel it's too valuable to leave
+window.sgSunkCostBanner=function(container){
+  // Fetch user stats and show sunk cost
+  fetch('/api/streaks',{credentials:'include'}).then(r=>r.json()).then(d=>{
+    if(!d.success||!d.totalWorkouts)return;
+    const workouts=d.totalWorkouts||0;
+    const avgDuration=45; // minutes
+    const totalMinutes=workouts*avgDuration;
+    const totalHours=Math.floor(totalMinutes/60);
+    const membershipCost=30; // £30/mo avg gym membership
+    const monthsActive=Math.max(1,Math.ceil(workouts/8)); // assume 2x/week
+    const savedVsMembership=membershipCost*monthsActive;
+    const spent=workouts*5; // £5 per visit
+    const netSaved=savedVsMembership-spent;
+
+    if(container&&workouts>0){
+      container.innerHTML=`
+        <div style="background:linear-gradient(135deg,rgba(249,115,22,.08),rgba(249,115,22,.02));border:1px solid rgba(249,115,22,.15);border-radius:16px;padding:16px;margin-bottom:16px">
+          <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Your ScanGym Journey</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">
+            <div>
+              <div style="font-size:22px;font-weight:800;color:#f97316">${workouts}</div>
+              <div style="font-size:10px;color:rgba(255,255,255,.4)">Workouts</div>
+            </div>
+            <div>
+              <div style="font-size:22px;font-weight:800;color:#22c55e">${totalHours}h</div>
+              <div style="font-size:10px;color:rgba(255,255,255,.4)">Training Time</div>
+            </div>
+            <div>
+              <div style="font-size:22px;font-weight:800;color:#3b82f6">£${netSaved>0?netSaved:0}</div>
+              <div style="font-size:10px;color:rgba(255,255,255,.4)">Saved vs Membership</div>
+            </div>
+          </div>
+          <div style="margin-top:10px;font-size:11px;color:rgba(255,255,255,.5);text-align:center">
+            💡 A gym membership would've cost you <strong style="color:#fff">£${savedVsMembership}</strong> — you paid <strong style="color:#f97316">£${spent}</strong>
+          </div>
+        </div>
+      `;
+    }
+  }).catch(()=>{});
+};
+
+// ─── 9. TINDER-STYLE SWIPE DISCOVERY (mechanic #8 + #1) ───
+// Swipe right = save gym, swipe left = skip, variable reward = occasional flash deal
+window.sgSwipeDiscovery=function(){
+  if(document.getElementById('sg-swipe-overlay'))return;
+  const gyms=(window.state&&state.gyms)||[];
+  if(gyms.length<2)return;
+
+  const shuffled=[...gyms].sort(()=>Math.random()-0.5);
+  let idx=0;
+  let startX=0,currentX=0,isDragging=false;
+
+  const overlay=document.createElement('div');
+  overlay.id='sg-swipe-overlay';
+  overlay.style.cssText='position:fixed;top:0;left:0;right:0;bottom:56px;background:rgba(8,8,18,.98);z-index:8000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px';
+
+  function renderCard(){
+    if(idx>=shuffled.length){
+      overlay.innerHTML='<div style="text-align:center;color:#fff"><div style="font-size:48px;margin-bottom:16px">🎉</div><p style="font-size:18px;font-weight:700">You\'ve seen all gyms!</p><p style="font-size:13px;color:rgba(255,255,255,.5);margin-top:8px">Check back for new additions</p><button onclick="document.getElementById(\'sg-swipe-overlay\').remove()" style="margin-top:20px;background:#f97316;color:#fff;border:none;padding:12px 32px;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer">Done</button></div>';
+      return;
+    }
+    const g=shuffled[idx];
+    const photo=g.photo||g.photo_url||(g.photoReference?'https://maps.googleapis.com/maps/api/place/photo?maxwidth=600&photo_reference='+g.photoReference+'&key='+window.MAPS_KEY:'');
+    const isFlashDeal=Math.random()<0.15; // 15% chance = variable reward!
+    const flashPrice=isFlashDeal?'£2.99':'';
+
+    overlay.innerHTML=`
+      <div style="position:absolute;top:16px;right:16px;z-index:10">
+        <button onclick="document.getElementById('sg-swipe-overlay').remove()" style="background:rgba(255,255,255,.1);border:none;color:#fff;width:36px;height:36px;border-radius:50%;font-size:18px;cursor:pointer">✕</button>
+      </div>
+      <div style="position:absolute;top:16px;left:16px;z-index:10;color:rgba(255,255,255,.4);font-size:12px;font-weight:600">
+        ${idx+1}/${shuffled.length}
+      </div>
+      <div id="sg-swipe-card" style="width:100%;max-width:360px;background:rgba(255,255,255,.05);border-radius:24px;overflow:hidden;border:1px solid rgba(255,255,255,.08);touch-action:none;user-select:none;transition:transform .1s ease-out">
+        <div style="height:320px;background:rgba(255,255,255,.03);position:relative">
+          ${photo?'<img src="'+photo+'" style="width:100%;height:100%;object-fit:cover" loading="eager" onerror="this.style.display=\'none\'">':'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:64px">🏋️</div>'}
+          ${isFlashDeal?'<div style="position:absolute;top:12px;left:12px;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:800;animation:pulse 1s infinite">⚡ FLASH DEAL '+flashPrice+'</div>':''}
+          <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.8));padding:20px 16px 16px">
+            <div style="font-size:18px;font-weight:800;color:#fff">${g.name}</div>
+            <div style="font-size:12px;color:rgba(255,255,255,.6);margin-top:2px">📍 ${g.vicinity||g.formatted_address||g.address||''}</div>
+          </div>
+        </div>
+        <div style="padding:16px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+            <span style="color:#facc15;font-size:14px;font-weight:600">★ ${g.rating||'New'}</span>
+            <span style="color:rgba(255,255,255,.35);font-size:11px">(${g.totalReviews||g.user_ratings_total||0})</span>
+            <span style="color:rgba(255,255,255,.35);font-size:11px">· ${g.distanceText||'Nearby'}</span>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button id="sg-swipe-left" style="flex:1;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#ef4444;padding:12px;border-radius:12px;font-size:20px;cursor:pointer;transition:all .15s">✕</button>
+            <button id="sg-swipe-save" style="flex:1;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.2);color:#3b82f6;padding:12px;border-radius:12px;font-size:20px;cursor:pointer;transition:all .15s">🏷️</button>
+            <button id="sg-swipe-right" style="flex:1;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);color:#22c55e;padding:12px;border-radius:12px;font-size:20px;cursor:pointer;transition:all .15s">⚡ Book</button>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:24px;margin-top:16px;color:rgba(255,255,255,.3);font-size:11px">
+        <span>← Skip</span><span>Save 🏷️</span><span>Book →</span>
+      </div>
+    `;
+
+    // Swipe handlers
+    const card=document.getElementById('sg-swipe-card');
+    card.addEventListener('touchstart',e=>{startX=e.touches[0].clientX;isDragging=true},{passive:true});
+    card.addEventListener('touchmove',e=>{
+      if(!isDragging)return;
+      currentX=e.touches[0].clientX-startX;
+      card.style.transform='translateX('+currentX+'px) rotate('+(currentX*0.05)+'deg)';
+      card.style.transition='none';
+    },{passive:true});
+    card.addEventListener('touchend',()=>{
+      isDragging=false;
+      card.style.transition='transform .3s ease-out';
+      if(currentX>80){
+        // Swiped right = book
+        card.style.transform='translateX(400px) rotate(20deg)';
+        setTimeout(()=>{
+          const gid=g.placeId||g.place_id||g.id;
+          overlay.remove();
+          if(typeof showUberCheckout==='function')showUberCheckout(gid);
+        },200);
+      }else if(currentX<-80){
+        // Swiped left = skip
+        card.style.transform='translateX(-400px) rotate(-20deg)';
+        setTimeout(()=>{idx++;renderCard()},200);
+      }else{
+        card.style.transform='';
+      }
+      currentX=0;
+    });
+
+    // Button handlers
+    document.getElementById('sg-swipe-left').onclick=()=>{
+      card.style.transition='transform .3s ease-out';
+      card.style.transform='translateX(-400px) rotate(-20deg)';
+      setTimeout(()=>{idx++;renderCard()},250);
+    };
+    document.getElementById('sg-swipe-right').onclick=()=>{
+      card.style.transition='transform .3s ease-out';
+      card.style.transform='translateX(400px) rotate(20deg)';
+      setTimeout(()=>{
+        const gid=g.placeId||g.place_id||g.id;
+        overlay.remove();
+        if(typeof showUberCheckout==='function')showUberCheckout(gid);
+      },200);
+    };
+    document.getElementById('sg-swipe-save').onclick=()=>{
+      // Save to favourites (endowment effect)
+      let favs=JSON.parse(localStorage.getItem('sg_favourites')||'[]');
+      const gid=g.placeId||g.place_id||g.id;
+      if(!favs.includes(gid)){favs.push(gid);localStorage.setItem('sg_favourites',JSON.stringify(favs))}
+      if(typeof sgToast==='function')sgToast('🏷️ Saved to your gyms!');
+      card.style.transition='transform .3s ease-out';
+      card.style.transform='translateY(-400px)';
+      setTimeout(()=>{idx++;renderCard()},250);
+    };
+  }
+
+  document.body.appendChild(overlay);
+  renderCard();
+};
+
+// ─── 10. NETFLIX AUTOPLAY NEXT GYM (mechanic #3 + #25 default to continue) ───
+// After booking, show countdown to "next recommended gym" — stopping requires active effort
+window.sgAutoplayNextGym=function(currentGymId){
+  const gyms=(window.state&&state.gyms)||[];
+  const others=gyms.filter(g=>(g.placeId||g.place_id||g.id)!==currentGymId);
+  if(others.length===0)return;
+  const next=others[Math.floor(Math.random()*others.length)];
+  const nextId=next.placeId||next.place_id||next.id;
+  const photo=next.photo||next.photo_url||'';
+  let countdown=10;
+
+  const bar=document.createElement('div');
+  bar.id='sg-autoplay-next';
+  bar.style.cssText='position:fixed;bottom:64px;left:8px;right:8px;background:rgba(20,20,35,.97);border:1px solid rgba(249,115,22,.2);border-radius:16px;padding:12px 14px;z-index:8600;display:flex;align-items:center;gap:10px;backdrop-filter:blur(12px);animation:slideUp .4s ease-out';
+  bar.innerHTML=`
+    <div style="width:48px;height:48px;border-radius:10px;background:rgba(255,255,255,.05);overflow:hidden;flex-shrink:0">
+      ${photo?'<img src="'+photo+'" style="width:100%;height:100%;object-fit:cover">':'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:24px">🏋️</div>'}
+    </div>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:10px;color:rgba(255,255,255,.4);font-weight:600">UP NEXT</div>
+      <div style="font-size:13px;color:#fff;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${next.name}</div>
+      <div style="font-size:10px;color:rgba(255,255,255,.35)">${next.distanceText||'Nearby'} · ★ ${next.rating||'New'}</div>
+    </div>
+    <div style="text-align:center;flex-shrink:0">
+      <div id="sg-ap-count" style="font-size:20px;font-weight:800;color:#f97316">${countdown}</div>
+      <div style="font-size:9px;color:rgba(255,255,255,.35)">seconds</div>
+    </div>
+    <button id="sg-ap-cancel" style="background:rgba(255,255,255,.08);border:none;color:rgba(255,255,255,.5);width:28px;height:28px;border-radius:50%;font-size:14px;cursor:pointer;flex-shrink:0">✕</button>
+  `;
+  document.body.appendChild(bar);
+
+  // Progress bar at bottom of the card
+  const progress=document.createElement('div');
+  progress.style.cssText='position:absolute;bottom:0;left:0;height:3px;background:linear-gradient(90deg,#f97316,#fb923c);border-radius:0 0 16px 16px;transition:width 1s linear;width:100%';
+  bar.style.position='relative';
+  bar.style.overflow='hidden';
+  bar.appendChild(progress);
+
+  const timer=setInterval(()=>{
+    countdown--;
+    const el=document.getElementById('sg-ap-count');
+    if(el)el.textContent=countdown;
+    progress.style.width=(countdown/10*100)+'%';
+    if(countdown<=0){
+      clearInterval(timer);
+      bar.remove();
+      // Navigate to the next gym (Netflix autoplay behavior)
+      if(typeof openGym==='function')openGym(nextId,isNaN(parseInt(nextId)));
+    }
+  },1000);
+
+  // Cancel button
+  document.getElementById('sg-ap-cancel').onclick=()=>{clearInterval(timer);bar.style.animation='spToastOut .3s ease-out forwards';setTimeout(()=>bar.remove(),300)};
+
+  // Clicking the card navigates immediately
+  bar.onclick=function(e){
+    if(e.target.id==='sg-ap-cancel')return;
+    clearInterval(timer);bar.remove();
+    if(typeof openGym==='function')openGym(nextId,isNaN(parseInt(nextId)));
+  };
+};
+
+// ─── 11. EPHEMERAL FLASH DEALS (BeReal + Snapchat mechanic #7 + #19) ───
+// Time-limited deals that create FOMO urgency
+window.sgFlashDealPopup=function(){
+  if(document.getElementById('sg-flash-deal-popup'))return;
+  const gyms=(window.state&&state.gyms)||[];
+  if(gyms.length===0)return;
+  const gym=gyms[Math.floor(Math.random()*gyms.length)];
+  const prices=['£1.99','£2.49','£2.99','£3.49'];
+  const price=prices[Math.floor(Math.random()*prices.length)];
+  let timeLeft=120; // 2 minutes (BeReal-style urgency)
+
+  const popup=document.createElement('div');
+  popup.id='sg-flash-deal-popup';
+  popup.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeInUp .3s ease-out';
+  popup.innerHTML=`
+    <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:2px solid rgba(239,68,68,.3);border-radius:24px;padding:24px;max-width:340px;width:100%;text-align:center;position:relative">
+      <div style="position:absolute;top:-16px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;padding:6px 16px;border-radius:20px;font-size:12px;font-weight:800;white-space:nowrap">⚡ FLASH DEAL — EXPIRES SOON</div>
+      <div style="margin-top:16px;font-size:40px">🔥</div>
+      <div style="font-size:20px;font-weight:800;color:#fff;margin-top:8px">${gym.name||'Partner Gym'}</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:4px">${gym.vicinity||gym.address||'Near you'}</div>
+      <div style="margin-top:16px;display:flex;align-items:baseline;justify-content:center;gap:8px">
+        <span style="font-size:14px;color:rgba(255,255,255,.4);text-decoration:line-through">£5.00</span>
+        <span style="font-size:36px;font-weight:900;color:#22c55e">${price}</span>
+      </div>
+      <div style="margin-top:12px;display:flex;align-items:center;justify-content:center;gap:6px">
+        <div style="width:8px;height:8px;background:#ef4444;border-radius:50%;animation:locationDot 1s infinite"></div>
+        <span id="sg-fd-timer" style="font-size:14px;font-weight:700;color:#ef4444;font-variant-numeric:tabular-nums">2:00</span>
+        <span style="font-size:11px;color:rgba(255,255,255,.4)">remaining</span>
+      </div>
+      <button onclick="document.getElementById('sg-flash-deal-popup').remove();const gid='${gym.placeId||gym.place_id||gym.id}';if(typeof showUberCheckout==='function')showUberCheckout(gid)" style="margin-top:16px;width:100%;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:16px;font-weight:800;padding:14px;border:none;border-radius:14px;cursor:pointer;box-shadow:0 4px 20px rgba(34,197,94,.3)">🎯 Grab This Deal</button>
+      <button onclick="document.getElementById('sg-flash-deal-popup').remove()" style="margin-top:8px;background:none;border:none;color:rgba(255,255,255,.3);font-size:12px;cursor:pointer">No thanks</button>
+      <div style="margin-top:12px;font-size:10px;color:rgba(255,255,255,.3)">🔒 Only ${Math.floor(Math.random()*5)+2} left at this price</div>
+    </div>
+  `;
+  document.body.appendChild(popup);
+
+  const fdTimer=setInterval(()=>{
+    timeLeft--;
+    const mins=Math.floor(timeLeft/60);
+    const secs=timeLeft%60;
+    const el=document.getElementById('sg-fd-timer');
+    if(el)el.textContent=mins+':'+(secs<10?'0':'')+secs;
+    if(timeLeft<=0){clearInterval(fdTimer);popup.remove()}
+  },1000);
+};
+
+// Schedule flash deals — random interval (variable ratio = more addictive)
+(function(){
+  function maybeShowFlash(){
+    // Show a flash deal 1-2 times per session, after user has browsed a bit
+    const shown=parseInt(sessionStorage.getItem('sg_flash_shown')||'0');
+    if(shown>=2)return;
+    const route=window.location.pathname;
+    if(route==='/'||route==='/explore'||route==='/nearby'){
+      sgFlashDealPopup();
+      sessionStorage.setItem('sg_flash_shown',String(shown+1));
+    }
+    // Schedule next one 2-4 minutes later
+    setTimeout(maybeShowFlash,120000+Math.random()*120000);
+  }
+  // First flash deal after 45-90 seconds
+  setTimeout(maybeShowFlash,45000+Math.random()*45000);
+})();
+
+// ─── 12. PULL TO REFRESH (mechanic #9 — slot machine lever pull) ───
+// Every pull = "spin the slot machine" — variable reward: sometimes new gyms appear
+(function(){
+  let pullStartY=0,pulling=false;
+  const pullIndicator=document.createElement('div');
+  pullIndicator.id='sg-pull-refresh';
+  pullIndicator.style.cssText='position:fixed;top:-50px;left:50%;transform:translateX(-50%);background:rgba(249,115,22,.9);color:#fff;padding:8px 20px;border-radius:0 0 14px 14px;font-size:12px;font-weight:700;z-index:8000;transition:top .2s ease-out;display:flex;align-items:center;gap:6px';
+  pullIndicator.innerHTML='<span class="sg-spinner" style="width:14px;height:14px;border-width:2px;margin:0"></span> Finding new gyms...';
+  document.body.appendChild(pullIndicator);
+
+  document.addEventListener('touchstart',function(e){
+    const scrollable=document.querySelector('.sg-tab-content');
+    if(scrollable&&scrollable.scrollTop<=0){
+      pullStartY=e.touches[0].clientY;
+      pulling=true;
+    }
+  },{passive:true});
+
+  document.addEventListener('touchmove',function(e){
+    if(!pulling)return;
+    const diff=e.touches[0].clientY-pullStartY;
+    if(diff>50){
+      pullIndicator.style.top='0px';
+    }
+  },{passive:true});
+
+  document.addEventListener('touchend',function(){
+    if(!pulling)return;
+    pulling=false;
+    if(pullIndicator.style.top==='0px'){
+      // Trigger refresh
+      if(typeof autoLoadGyms==='function'){
+        autoLoadGyms();
+        // Variable reward: sometimes show a special message
+        const rewards=['💪 Fresh gyms loaded!','🎯 New deals found!','⚡ Updated!','🔥 Hot gyms nearby!'];
+        const reward=rewards[Math.floor(Math.random()*rewards.length)];
+        pullIndicator.innerHTML=reward;
+        setTimeout(()=>{
+          pullIndicator.style.top='-50px';
+          pullIndicator.innerHTML='<span class="sg-spinner" style="width:14px;height:14px;border-width:2px;margin:0"></span> Finding new gyms...';
+        },1500);
+      }else{
+        pullIndicator.style.top='-50px';
+      }
+    }
+  });
+})();
+
+// ─── 13. IDENTITY HOOKS IN UI (Strava "I'm a runner" mechanic #21) ───
+// Show personalised identity labels that make users feel like "gym people"
+window.sgIdentityBanner=function(container){
+  fetch('/api/streaks',{credentials:'include'}).then(r=>r.json()).then(d=>{
+    if(!d.success)return;
+    const streak=d.currentStreak||0;
+    const workouts=d.totalWorkouts||0;
+    let identity='',emoji='',subtitle='';
+
+    if(workouts>=50){identity='Gym Legend';emoji='👑';subtitle='Top 1% of ScanGym users'}
+    else if(workouts>=20){identity='Fitness Warrior';emoji='⚔️';subtitle='You\'re unstoppable'}
+    else if(workouts>=10){identity='Gym Regular';emoji='💪';subtitle='Fitness is part of who you are'}
+    else if(workouts>=5){identity='Rising Athlete';emoji='🚀';subtitle='Building a powerful habit'}
+    else if(workouts>=1){identity='Gym Goer';emoji='🏋️';subtitle='Every rep counts'}
+    else return;
+
+    if(container){
+      container.innerHTML=`
+        <div style="background:linear-gradient(135deg,rgba(249,115,22,.1),rgba(251,146,60,.05));border:1px solid rgba(249,115,22,.15);border-radius:14px;padding:14px;margin-bottom:12px;display:flex;align-items:center;gap:12px">
+          <div style="font-size:28px">${emoji}</div>
+          <div style="flex:1">
+            <div style="font-size:15px;font-weight:800;color:#f97316">${identity}</div>
+            <div style="font-size:11px;color:rgba(255,255,255,.45)">${subtitle}</div>
+          </div>
+          ${streak>0?'<div style="text-align:center"><div style="font-size:18px;font-weight:800;color:#fff">🔥 '+streak+'</div><div style="font-size:9px;color:rgba(255,255,255,.3)">streak</div></div>':''}
+        </div>
+      `;
+    }
+  }).catch(()=>{});
+};
+
+// ─── 14. BOOKING PROGRESS BAR (mechanic #11 endowed progress + Zeigarnik) ───
+// During checkout, show a progress bar that's already 25% complete (endowed progress)
+// Users HATE leaving things incomplete — Zeigarnik effect
+window.sgBookingProgress=function(step){
+  // Steps: 1=Select Pass, 2=Choose Time, 3=Enter Details, 4=Confirm Payment
+  const steps=['Pass','Time','Details','Pay'];
+  const pct=Math.round((step/4)*100);
+  return`
+    <div style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        ${steps.map((s,i)=>`<div style="font-size:10px;font-weight:${i<step?'700':'500'};color:${i<step?'#f97316':'rgba(255,255,255,.3)'}">${i<step?'✓':''} ${s}</div>`).join('')}
+      </div>
+      <div style="height:4px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,#f97316,#fb923c);border-radius:4px;transition:width .4s ease-out"></div>
+      </div>
+    </div>
+  `;
+};
+
+// ─── 15. SOUND EFFECTS (mechanic #20 — bypasses conscious attention) ───
+// Subtle audio cues on key interactions
+window.sgSound=function(type){
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    const osc=ctx.createOscillator();
+    const gain=ctx.createGain();
+    osc.connect(gain);gain.connect(ctx.destination);
+    gain.gain.value=0.08; // Very subtle
+
+    switch(type){
+      case 'success':
+        osc.frequency.setValueAtTime(523,ctx.currentTime); // C5
+        osc.frequency.setValueAtTime(659,ctx.currentTime+0.1); // E5
+        osc.frequency.setValueAtTime(784,ctx.currentTime+0.2); // G5
+        gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.4);
+        osc.start(ctx.currentTime);osc.stop(ctx.currentTime+0.4);
+        break;
+      case 'scan':
+        osc.frequency.setValueAtTime(880,ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1760,ctx.currentTime+0.15);
+        gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.2);
+        osc.start(ctx.currentTime);osc.stop(ctx.currentTime+0.2);
+        break;
+      case 'reward':
+        osc.frequency.setValueAtTime(440,ctx.currentTime);
+        osc.frequency.setValueAtTime(554,ctx.currentTime+0.08);
+        osc.frequency.setValueAtTime(659,ctx.currentTime+0.16);
+        osc.frequency.setValueAtTime(880,ctx.currentTime+0.24);
+        gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.5);
+        osc.start(ctx.currentTime);osc.stop(ctx.currentTime+0.5);
+        break;
+      case 'streak':
+        osc.frequency.setValueAtTime(392,ctx.currentTime);
+        osc.frequency.setValueAtTime(523,ctx.currentTime+0.12);
+        osc.frequency.setValueAtTime(784,ctx.currentTime+0.24);
+        gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.45);
+        osc.start(ctx.currentTime);osc.stop(ctx.currentTime+0.45);
+        break;
+      case 'swipe':
+        osc.type='sine';
+        osc.frequency.setValueAtTime(600,ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(400,ctx.currentTime+0.08);
+        gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.1);
+        osc.start(ctx.currentTime);osc.stop(ctx.currentTime+0.1);
+        break;
+    }
+  }catch(e){}
+};
+
+// ─── 16. WORDLE-STYLE WORKOUT HISTORY GRID (shareable) ───
+// Visual 7x4 grid showing last 28 days of workouts — shareable like Wordle results
+window.sgWorkoutGrid=function(container){
+  fetch('/api/streaks',{credentials:'include'}).then(r=>r.json()).then(d=>{
+    if(!d.success)return;
+    const workoutDays=new Set((d.recentWorkouts||[]).map(w=>w.date||w.workout_date));
+    const today=new Date();
+    const dayNames=['M','T','W','T','F','S','S'];
+    let gridEmoji='';
+    let html='<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px;margin-bottom:12px">';
+    html+='<div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Last 28 Days</div>';
+    html+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center">';
+
+    // Day headers
+    dayNames.forEach(d=>{html+='<div style="font-size:9px;color:rgba(255,255,255,.25);font-weight:600;margin-bottom:2px">'+d+'</div>'});
+
+    // Last 28 days
+    for(let i=27;i>=0;i--){
+      const day=new Date(today);
+      day.setDate(day.getDate()-i);
+      const dateStr=day.toISOString().split('T')[0];
+      const isToday=i===0;
+      const worked=workoutDays.has(dateStr);
+      const color=worked?'background:linear-gradient(135deg,#22c55e,#16a34a)':'background:rgba(255,255,255,.04)';
+      const border=isToday?';border:2px solid #f97316':'';
+      gridEmoji+=worked?'🟩':'⬛';
+      if((28-i)%7===0)gridEmoji+='\n';
+      html+='<div style="width:100%;aspect-ratio:1;border-radius:6px;'+color+border+';display:flex;align-items:center;justify-content:center;font-size:10px;color:rgba(255,255,255,.6)">'+(worked?'💪':'')+'</div>';
+    }
+    html+='</div>';
+    html+='<button onclick="sgShareGrid()" style="margin-top:12px;width:100%;background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.2);color:#f97316;padding:8px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer">📤 Share Workout Grid</button>';
+    html+='</div>';
+
+    if(container)container.innerHTML=html;
+
+    // Store grid for sharing
+    window._sgGridEmoji=gridEmoji;
+  }).catch(()=>{});
+};
+window.sgShareGrid=function(){
+  const grid=window._sgGridEmoji||'';
+  const text='My ScanGym Workout Grid 💪🔥\n\n'+grid+'\n\n#ScanGym #GymStreak';
+  if(navigator.share){navigator.share({text:text}).catch(()=>{})}
+  else{navigator.clipboard.writeText(text).then(()=>{if(typeof sgToast==='function')sgToast('📋 Copied to clipboard!')})}
+};
+
+// ─── 17. SPIN-TO-WIN MYSTERY REWARD (Candy Crush + Robinhood mechanic #1 + #14 + #24) ───
+// On first wallet top-up, show a slot machine reveal for bonus amount
+window.sgSpinToWin=function(){
+  if(document.getElementById('sg-spin-overlay'))return;
+  const prizes=['10%','15%','20%','25%','30%','50%'];
+  const weights=[30,25,20,15,7,3]; // Weighted — bigger prizes are rarer (variable ratio)
+  let total=0;weights.forEach(w=>total+=w);
+  let rand=Math.random()*total,cumulative=0,selectedIdx=0;
+  for(let i=0;i<weights.length;i++){cumulative+=weights[i];if(rand<=cumulative){selectedIdx=i;break}}
+  const prize=prizes[selectedIdx];
+
+  const overlay=document.createElement('div');
+  overlay.id='sg-spin-overlay';
+  overlay.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.85);z-index:9800;display:flex;align-items:center;justify-content:center;padding:20px';
+
+  overlay.innerHTML=`
+    <div style="text-align:center;max-width:320px">
+      <div style="font-size:14px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px">✨ Mystery Bonus</div>
+      <div id="sg-spin-slots" style="display:flex;justify-content:center;gap:8px;margin-bottom:20px">
+        <div class="sg-slot" style="width:60px;height:80px;background:rgba(255,255,255,.05);border:2px solid rgba(249,115,22,.3);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900;color:#f97316;overflow:hidden">?</div>
+        <div class="sg-slot" style="width:60px;height:80px;background:rgba(255,255,255,.05);border:2px solid rgba(249,115,22,.3);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900;color:#f97316;overflow:hidden">?</div>
+        <div class="sg-slot" style="width:60px;height:80px;background:rgba(255,255,255,.05);border:2px solid rgba(249,115,22,.3);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900;color:#f97316;overflow:hidden">?</div>
+      </div>
+      <button id="sg-spin-btn" style="background:linear-gradient(135deg,#f97316,#d97706);color:#fff;border:none;padding:14px 40px;border-radius:14px;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 4px 20px rgba(249,115,22,.3)">🎰 SPIN!</button>
+      <div id="sg-spin-result" style="display:none;margin-top:20px">
+        <div style="font-size:48px;font-weight:900;color:#22c55e">${prize} BONUS!</div>
+        <div style="font-size:14px;color:rgba(255,255,255,.6);margin-top:8px">Added to your next wallet top-up 🎉</div>
+        <button onclick="document.getElementById('sg-spin-overlay').remove();if(typeof sgConfetti==='function')sgConfetti();if(typeof sgSound==='function')sgSound('reward')" style="margin-top:16px;background:#22c55e;color:#fff;border:none;padding:12px 32px;border-radius:12px;font-weight:700;cursor:pointer">🎉 Claim Bonus</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  document.getElementById('sg-spin-btn').onclick=function(){
+    this.style.display='none';
+    const slots=document.querySelectorAll('.sg-slot');
+    const chars=prize.split('');
+    // Animate each slot
+    let resolved=0;
+    slots.forEach((slot,i)=>{
+      let spins=0;
+      const maxSpins=10+i*5;
+      const spinInterval=setInterval(()=>{
+        slot.textContent=['🔥','💪','⚡','💰','🎯','🏋️','🎲','✨'][Math.floor(Math.random()*8)];
+        spins++;
+        if(spins>=maxSpins){
+          clearInterval(spinInterval);
+          slot.textContent=i<chars.length?chars[i]:'🎉';
+          slot.style.borderColor='#22c55e';
+          slot.style.background='rgba(34,197,94,.1)';
+          if(typeof navigator.vibrate==='function')navigator.vibrate(50);
+          resolved++;
+          if(resolved===3){
+            setTimeout(()=>{
+              document.getElementById('sg-spin-result').style.display='block';
+              if(typeof sgConfetti==='function')sgConfetti();
+              if(typeof sgSound==='function')sgSound('reward');
+            },300);
+          }
+        }
+      },80);
+    });
+  };
+};
+
+// ─── 18. STREAK EARN-BACK (Duolingo-style) ───
+// If streak was broken, give a 24-hour window to do an extra workout and recover it
+window.sgStreakEarnBack=function(){
+  fetch('/api/streaks',{credentials:'include'}).then(r=>r.json()).then(d=>{
+    if(!d.success)return;
+    if(d.streakBroken&&d.previousStreak>2){
+      // Show earn-back popup
+      const popup=document.createElement('div');
+      popup.id='sg-earn-back';
+      popup.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.8);z-index:9600;display:flex;align-items:center;justify-content:center;padding:20px';
+      popup.innerHTML=`
+        <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:2px solid rgba(239,68,68,.3);border-radius:24px;padding:28px;max-width:340px;width:100%;text-align:center">
+          <div style="font-size:48px;margin-bottom:8px">😢</div>
+          <div style="font-size:20px;font-weight:800;color:#fff">Your ${d.previousStreak}-Day Streak Broke!</div>
+          <div style="font-size:13px;color:rgba(255,255,255,.5);margin-top:8px;line-height:1.4">But you can earn it back! Work out in the next <strong style="color:#ef4444">24 hours</strong> to restore your streak.</div>
+          <div style="margin-top:16px;font-size:36px;font-weight:900;color:#f97316">🔥 ${d.previousStreak}</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.35)">days of progress at stake</div>
+          <button onclick="document.getElementById('sg-earn-back').remove();navigate('/explore')" style="margin-top:20px;width:100%;background:linear-gradient(135deg,#f97316,#d97706);color:#fff;font-size:15px;font-weight:800;padding:14px;border:none;border-radius:14px;cursor:pointer">💪 Book a Gym Now — Save My Streak</button>
+          <button onclick="document.getElementById('sg-earn-back').remove()" style="margin-top:8px;background:none;border:none;color:rgba(255,255,255,.3);font-size:12px;cursor:pointer">Let it go...</button>
+        </div>
+      `;
+      document.body.appendChild(popup);
+    }
+  }).catch(()=>{});
+};
+
+// ─── 19. ANTICIPATORY DOPAMINE — NEXT WORKOUT COUNTDOWN (mechanic #6) ───
+// Show a countdown to user's next scheduled/typical workout time
+window.sgNextWorkoutCountdown=function(container){
+  // Determine typical workout time based on last bookings
+  const typicalHour=parseInt(localStorage.getItem('sg_typical_hour')||'18');
+  const now=new Date();
+  const next=new Date();
+  next.setHours(typicalHour,0,0,0);
+  if(next<=now)next.setDate(next.getDate()+1);
+
+  const diff=next-now;
+  const hours=Math.floor(diff/3600000);
+  const mins=Math.floor((diff%3600000)/60000);
+
+  if(container){
+    container.innerHTML=`
+      <div style="background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.12);border-radius:14px;padding:14px;margin-bottom:12px;display:flex;align-items:center;gap:12px">
+        <div style="font-size:28px">⏱️</div>
+        <div style="flex:1">
+          <div style="font-size:11px;color:rgba(255,255,255,.4);font-weight:600">NEXT WORKOUT</div>
+          <div style="font-size:18px;font-weight:800;color:#3b82f6">${hours}h ${mins}m</div>
+        </div>
+        <button onclick="navigate('/explore')" style="background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.2);color:#3b82f6;padding:8px 14px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer">Book Now</button>
+      </div>
+    `;
+  }
+};
+
+// ─── 20. "X PEOPLE VIEWING" LIVE COUNTER (mechanic #15 + #7) ───
+// FOMO-inducing live counter on gym detail pages
+window.sgLiveViewers=function(gymName){
+  const base=3+Math.floor(Math.random()*8);
+  const el=document.createElement('div');
+  el.style.cssText='display:flex;align-items:center;gap:6px;font-size:12px;color:rgba(255,255,255,.6);padding:6px 12px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.1);border-radius:8px;margin:8px 0';
+  el.innerHTML=`<div style="width:6px;height:6px;background:#ef4444;border-radius:50%;animation:locationDot 1s infinite"></div><span id="sg-live-count">${base}</span> people viewing this gym right now`;
+  // Fluctuate the number every 5-15 seconds (variable)
+  setInterval(()=>{
+    const current=parseInt(document.getElementById('sg-live-count')?.textContent||base);
+    const change=Math.random()>0.5?1:-1;
+    const newCount=Math.max(2,Math.min(15,current+change));
+    const countEl=document.getElementById('sg-live-count');
+    if(countEl)countEl.textContent=newCount;
+  },5000+Math.random()*10000);
+  return el;
+};
+
+// ─── 21. FOMO TRIGGERS — "Only X spots left" (mechanic #13 artificial scarcity) ───
+window.sgFomoSpots=function(gymName){
+  const spots=Math.floor(Math.random()*5)+2;
+  return`<div style="display:flex;align-items:center;gap:4px;font-size:11px;color:#ef4444;font-weight:600;margin-top:6px">
+    <span style="animation:pulse 2s infinite">⚠️</span> Only ${spots} off-peak spots left today
+  </div>`;
+};
+
+// ─── 22. COMMITMENT DEVICE — Pre-commit to workouts (mechanic #4) ───
+window.sgCommitWorkout=function(){
+  const days=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  const committed=JSON.parse(localStorage.getItem('sg_committed_days')||'[]');
+
+  const overlay=document.createElement('div');
+  overlay.id='sg-commit-overlay';
+  overlay.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.8);z-index:9600;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML=`
+    <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:24px;padding:24px;max-width:360px;width:100%;text-align:center">
+      <div style="font-size:40px;margin-bottom:8px">🎯</div>
+      <div style="font-size:18px;font-weight:800;color:#fff">Commit to Your Week</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:4px;line-height:1.4">Select your workout days. We'll remind you and protect your streak.</div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:20px" id="sg-commit-days">
+        ${days.map((d,i)=>`<button class="sg-commit-day" data-day="${i}" style="padding:10px 4px;border-radius:10px;border:1px solid ${committed.includes(i)?'#f97316':'rgba(255,255,255,.1)'};background:${committed.includes(i)?'rgba(249,115,22,.15)':'transparent'};color:${committed.includes(i)?'#f97316':'rgba(255,255,255,.5)'};font-size:10px;font-weight:700;cursor:pointer">${d.substr(0,3)}</button>`).join('')}
+      </div>
+      <div style="margin-top:16px;font-size:12px;color:rgba(255,255,255,.35)">🔥 Users who pre-commit work out <strong style="color:#22c55e">3.2x more</strong></div>
+      <button id="sg-commit-save" style="margin-top:16px;width:100%;background:linear-gradient(135deg,#f97316,#d97706);color:#fff;font-size:14px;font-weight:800;padding:12px;border:none;border-radius:12px;cursor:pointer">✅ Commit to ${committed.length||0} Days</button>
+      <button onclick="document.getElementById('sg-commit-overlay').remove()" style="margin-top:8px;background:none;border:none;color:rgba(255,255,255,.3);font-size:12px;cursor:pointer">Skip for now</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  // Toggle day selection
+  document.querySelectorAll('.sg-commit-day').forEach(btn=>{
+    btn.onclick=function(){
+      const day=parseInt(this.dataset.day);
+      let sel=JSON.parse(localStorage.getItem('sg_committed_days')||'[]');
+      if(sel.includes(day))sel=sel.filter(d=>d!==day);
+      else sel.push(day);
+      localStorage.setItem('sg_committed_days',JSON.stringify(sel));
+      this.style.borderColor=sel.includes(day)?'#f97316':'rgba(255,255,255,.1)';
+      this.style.background=sel.includes(day)?'rgba(249,115,22,.15)':'transparent';
+      this.style.color=sel.includes(day)?'#f97316':'rgba(255,255,255,.5)';
+      document.getElementById('sg-commit-save').textContent='✅ Commit to '+sel.length+' Days';
+    };
+  });
+
+  document.getElementById('sg-commit-save').onclick=function(){
+    const sel=JSON.parse(localStorage.getItem('sg_committed_days')||'[]');
+    document.getElementById('sg-commit-overlay').remove();
+    if(sel.length>0){
+      if(typeof sgToast==='function')sgToast('💪 Committed to '+sel.length+' days/week! You got this.');
+      if(typeof sgConfetti==='function')sgConfetti();
+    }
+  };
+};
+
+// ─── 23. PROFILE COMPLETION BAR (LinkedIn mechanic #11) ───
+window.sgProfileCompletion=function(container){
+  let score=0,total=6,items=[];
+  if(localStorage.getItem('sg_last_email')){score++;items.push({done:true,label:'Email added'})}
+  else items.push({done:false,label:'Add email',action:"navigate('/more/profile')"});
+  if(localStorage.getItem('sg_user_name')){score++;items.push({done:true,label:'Name set'})}
+  else items.push({done:false,label:'Set your name',action:"navigate('/more/profile')"});
+  if(localStorage.getItem('sg_favourites')&&JSON.parse(localStorage.getItem('sg_favourites')).length>0){score++;items.push({done:true,label:'Saved a gym'})}
+  else items.push({done:false,label:'Save a gym ❤️',action:"navigate('/explore')"});
+  if(localStorage.getItem('sg_committed_days')&&JSON.parse(localStorage.getItem('sg_committed_days')).length>0){score++;items.push({done:true,label:'Set workout days'})}
+  else items.push({done:false,label:'Set workout days',action:'sgCommitWorkout()'});
+  if(parseInt(localStorage.getItem('sg_total_bookings')||'0')>0){score++;items.push({done:true,label:'First booking'})}
+  else items.push({done:false,label:'Book your first gym',action:"navigate('/explore')"});
+  if(localStorage.getItem('sg_referred_someone')){score++;items.push({done:true,label:'Referred a friend'})}
+  else items.push({done:false,label:'Refer a friend',action:"navigate('/more/refer')"});
+
+  const pct=Math.round((score/total)*100);
+  if(container&&score<total){
+    container.innerHTML=`
+      <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px;margin-bottom:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="font-size:13px;font-weight:700;color:#fff">Complete Your Profile</div>
+          <div style="font-size:12px;font-weight:700;color:#f97316">${pct}%</div>
+        </div>
+        <div style="height:6px;background:rgba(255,255,255,.08);border-radius:6px;overflow:hidden;margin-bottom:12px">
+          <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,#f97316,#fb923c);border-radius:6px;transition:width .4s"></div>
+        </div>
+        ${items.filter(i=>!i.done).slice(0,2).map(i=>`
+          <div onclick="${i.action}" style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:rgba(249,115,22,.06);border:1px solid rgba(249,115,22,.1);border-radius:10px;margin-bottom:6px;cursor:pointer">
+            <div style="width:20px;height:20px;border:2px solid rgba(249,115,22,.3);border-radius:50%;flex-shrink:0"></div>
+            <div style="font-size:12px;color:rgba(255,255,255,.6)">${i.label}</div>
+            <div style="margin-left:auto;font-size:12px;color:rgba(249,115,22,.5)">→</div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+};
+
+// ─── 24. BEGINNER'S LUCK (Candy Crush mechanic #24) ───
+// First-time users get an irresistible deal — creates false sense of "I'm getting special treatment"
+(function(){
+  const hasBooked=localStorage.getItem('sg_total_bookings');
+  const hasSeenBL=sessionStorage.getItem('sg_beginners_luck');
+  if(!hasBooked&&!hasSeenBL){
+    // Show beginner's luck popup after 15 seconds
+    setTimeout(()=>{
+      if(document.getElementById('sg-beginners-luck'))return;
+      sessionStorage.setItem('sg_beginners_luck','1');
+      const popup=document.createElement('div');
+      popup.id='sg-beginners-luck';
+      popup.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.8);z-index:9700;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeInUp .4s ease-out';
+      popup.innerHTML=`
+        <div style="background:linear-gradient(135deg,#1a1a2e,#0f172a);border:2px solid rgba(34,197,94,.3);border-radius:24px;padding:28px;max-width:340px;width:100%;text-align:center;position:relative">
+          <div style="position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;padding:5px 16px;border-radius:20px;font-size:11px;font-weight:800;white-space:nowrap">🎉 WELCOME GIFT</div>
+          <div style="font-size:48px;margin-top:12px">🎁</div>
+          <div style="font-size:22px;font-weight:900;color:#fff;margin-top:8px">Your First Gym Visit</div>
+          <div style="margin-top:12px;display:flex;align-items:baseline;justify-content:center;gap:8px">
+            <span style="font-size:14px;color:rgba(255,255,255,.4);text-decoration:line-through">£5.00</span>
+            <span style="font-size:42px;font-weight:900;color:#22c55e">FREE</span>
+          </div>
+          <div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:8px">Use code <strong style="color:#22c55e">FIRSTSCAN</strong> at checkout</div>
+          <button onclick="document.getElementById('sg-beginners-luck').remove();navigate('/explore')" style="margin-top:20px;width:100%;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:16px;font-weight:800;padding:14px;border:none;border-radius:14px;cursor:pointer;box-shadow:0 4px 20px rgba(34,197,94,.3)">Find a Gym Near Me</button>
+          <div style="margin-top:10px;font-size:10px;color:rgba(255,255,255,.3)">🔥 ${Math.floor(Math.random()*50)+150} people claimed this today</div>
+        </div>
+      `;
+      document.body.appendChild(popup);
+    },15000);
+  }
+})();
+
+// ─── 25. PINTEREST MASONRY GYM GRID (mechanic #2 + visual dopamine) ───
+window.sgMasonryGrid=function(gyms,containerId){
+  const container=document.getElementById(containerId);
+  if(!container||!gyms||gyms.length===0)return;
+
+  const style=document.createElement('style');
+  style.textContent=`
+    .sg-masonry{columns:2;column-gap:8px;padding:0 8px}
+    .sg-masonry-item{break-inside:avoid;margin-bottom:8px;border-radius:14px;overflow:hidden;position:relative;cursor:pointer;transition:transform .15s}
+    .sg-masonry-item:active{transform:scale(.98)}
+    .sg-masonry-item img{width:100%;display:block;object-fit:cover}
+    .sg-masonry-overlay{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.8));padding:10px 10px 8px}
+    .sg-masonry-name{font-size:12px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .sg-masonry-meta{font-size:10px;color:rgba(255,255,255,.5);display:flex;align-items:center;gap:4px;margin-top:2px}
+  `;
+  if(!document.querySelector('style[data-sg-masonry]')){style.dataset.sgMasonry='1';document.head.appendChild(style)}
+
+  let html='<div class="sg-masonry">';
+  gyms.forEach((g,i)=>{
+    const photo=g.photo||g.photo_url||(g.photoReference?'https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference='+g.photoReference+'&key='+window.MAPS_KEY:'');
+    const heights=[140,180,160,200,150,170]; // Variable heights for visual interest
+    const h=heights[i%heights.length];
+    const gid=g.placeId||g.place_id||g.id;
+    html+=`
+      <div class="sg-masonry-item" onclick="openGym('${gid}',${!!g.placeId})" style="height:${h}px;background:rgba(255,255,255,.03)">
+        ${photo?'<img src="'+photo+'" style="height:100%" loading="lazy" onerror="this.style.display=\'none\'">':'<div style="height:100%;display:flex;align-items:center;justify-content:center;font-size:32px">🏋️</div>'}
+        <div class="sg-masonry-overlay">
+          <div class="sg-masonry-name">${g.name}</div>
+          <div class="sg-masonry-meta">
+            <span style="color:#facc15">★ ${g.rating||'New'}</span>
+            <span>·</span>
+            <span>${g.distanceText||'Nearby'}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+  html+='</div>';
+  container.innerHTML=html;
+};
+
+// ─── INJECT ALL V2 WIDGETS INTO MORE HUB ───
+(function(){
+  const injectV2=function(){
+    const hub=document.querySelector('.sg-more-hub');
+    if(!hub)return;
+
+    // Identity banner
+    if(!document.getElementById('sg-identity-banner')){
+      const ib=document.createElement('div');ib.id='sg-identity-banner';
+      const streakW=document.getElementById('sg-streak-widget');
+      if(streakW)streakW.before(ib);
+      else hub.insertBefore(ib,hub.firstChild);
+      sgIdentityBanner(ib);
+    }
+
+    // Sunk cost banner
+    if(!document.getElementById('sg-sunk-cost')){
+      const sc=document.createElement('div');sc.id='sg-sunk-cost';
+      const wp=document.getElementById('sg-wallet-progress');
+      if(wp)wp.after(sc);
+      else hub.appendChild(sc);
+      sgSunkCostBanner(sc);
+    }
+
+    // Workout grid
+    if(!document.getElementById('sg-workout-grid')){
+      const wg=document.createElement('div');wg.id='sg-workout-grid';
+      const sc=document.getElementById('sg-sunk-cost');
+      if(sc)sc.after(wg);
+      else hub.appendChild(wg);
+      sgWorkoutGrid(wg);
+    }
+
+    // Next workout countdown
+    if(!document.getElementById('sg-next-workout')){
+      const nw=document.createElement('div');nw.id='sg-next-workout';
+      hub.insertBefore(nw,hub.firstChild);
+      sgNextWorkoutCountdown(nw);
+    }
+
+    // Profile completion
+    if(!document.getElementById('sg-profile-completion')){
+      const pc=document.createElement('div');pc.id='sg-profile-completion';
+      hub.appendChild(pc);
+      sgProfileCompletion(pc);
+    }
+
+    // Swipe discovery button
+    if(!document.getElementById('sg-swipe-btn')){
+      const sb=document.createElement('div');sb.id='sg-swipe-btn';
+      sb.innerHTML=`
+        <div onclick="sgSwipeDiscovery()" style="background:linear-gradient(135deg,rgba(249,115,22,.1),rgba(251,146,60,.05));border:1px solid rgba(249,115,22,.15);border-radius:14px;padding:14px;margin-bottom:12px;display:flex;align-items:center;gap:12px;cursor:pointer">
+          <div style="font-size:24px">🔥</div>
+          <div style="flex:1">
+            <div style="font-size:14px;font-weight:700;color:#fff">Discover Gyms</div>
+            <div style="font-size:11px;color:rgba(255,255,255,.4)">Tinder-style swipe to find your next gym</div>
+          </div>
+          <div style="color:rgba(255,255,255,.3)">→</div>
+        </div>
+      `;
+      const idBanner=document.getElementById('sg-identity-banner');
+      if(idBanner)idBanner.after(sb);
+      else hub.insertBefore(sb,hub.firstChild);
+    }
+
+    // Commit button
+    if(!document.getElementById('sg-commit-btn')){
+      const cb=document.createElement('div');cb.id='sg-commit-btn';
+      const committed=JSON.parse(localStorage.getItem('sg_committed_days')||'[]');
+      cb.innerHTML=`
+        <div onclick="sgCommitWorkout()" style="background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.1);border-radius:14px;padding:14px;margin-bottom:12px;display:flex;align-items:center;gap:12px;cursor:pointer">
+          <div style="font-size:24px">🎯</div>
+          <div style="flex:1">
+            <div style="font-size:14px;font-weight:700;color:#fff">Weekly Commitment</div>
+            <div style="font-size:11px;color:rgba(255,255,255,.4)">${committed.length>0?committed.length+' days/week committed':'Set your workout schedule'}</div>
+          </div>
+          <div style="color:rgba(255,255,255,.3)">→</div>
+        </div>
+      `;
+      const grid=document.getElementById('sg-workout-grid');
+      if(grid)grid.after(cb);
+      else hub.appendChild(cb);
+    }
+  };
+
+  const observer2=new MutationObserver(()=>{
+    if(document.querySelector('.sg-more-hub'))injectV2();
+  });
+  observer2.observe(document.body,{childList:true,subtree:true});
+})();
+
+// ─── HOOK INTO EXISTING FLOWS ───
+// Add sound effects to confetti
+(function(){
+  const origConfetti=window.sgConfetti;
+  if(origConfetti){
+    window.sgConfetti=function(){
+      origConfetti();
+      sgSound('success');
+    };
+  }
+})();
+
+// Show autoplay next gym after booking success
+(function(){
+  // Watch for route changes to booking success
+  let lastRoute='';
+  setInterval(()=>{
+    const route=window.location.pathname;
+    if(route.startsWith('/booking/success')&&lastRoute!==route){
+      lastRoute=route;
+      // Show autoplay next gym after 3 seconds
+      setTimeout(()=>{
+        const params=new URLSearchParams(window.location.search);
+        const gymId=params.get('gym_id')||'';
+        sgAutoplayNextGym(gymId);
+      },3000);
+    }else{
+      lastRoute=route;
+    }
+  },500);
+})();
+
+// Check for broken streaks on app load
+(function(){
+  setTimeout(sgStreakEarnBack,2000);
+})();
+
 
 // ─── Init ───
 state.route=location.pathname;
