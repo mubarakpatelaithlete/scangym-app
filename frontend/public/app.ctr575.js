@@ -1162,10 +1162,10 @@ function SearchPage(){
           html+='<div class="bm-header"><div class="bm-name">'+c.name+'</div><div class="bm-rating">\u2B50 '+c.rating+'</div></div>';
           html+='<div class="bm-addr">\u{1F4CD} '+(c.addr||'Nearby')+'</div>';
           html+='<div class="bm-rows">';
-          html+='<div class="bm-row" onclick="event.stopPropagation();openGym(\''+c.id+'\',true)"><div class="bm-row-icon">\u2B50</div><div class="bm-row-text"><div class="bm-row-main">'+reviewsRow+'</div></div>'+(c.isPop?'<div class="bm-tag bm-tag-pop">\u26A1 Popular</div>':'')+'<div class="bm-row-chev">\u203a</div></div>';
-          html+='<div class="bm-row" onclick="event.stopPropagation();openGym(\''+c.id+'\',true)"><div class="bm-row-icon">\u{1F550}</div><div class="bm-row-text"><div class="bm-row-main">'+c.openText+'</div></div><div class="bm-tag '+c.openClass+'">'+c.openTag+'</div><div class="bm-row-chev">\u203a</div></div>';
-          html+='<div class="bm-row" onclick="event.stopPropagation();openGym(\''+c.id+'\',true)"><div class="bm-row-icon">'+(c.facs[0]?c.facs[0].split(' ')[0]:'\u{1F3CA}')+'</div><div class="bm-row-text"><div class="bm-row-main">'+c.facList+'</div></div><div class="bm-row-chev">\u203a</div></div>';
-          html+='<div class="bm-row" onclick="event.stopPropagation();openGym(\''+c.id+'\',true)"><div class="bm-row-icon">\u{1F3CB}\uFE0F</div><div class="bm-row-text"><div class="bm-row-main">'+c.equipList+'</div></div><div class="bm-row-chev">\u203a</div></div>';
+          html+='<div class="bm-row" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'reviews\')"><div class="bm-row-icon">\u2B50</div><div class="bm-row-text"><div class="bm-row-main">'+reviewsRow+'</div></div>'+(c.isPop?'<div class="bm-tag bm-tag-pop">\u26A1 Popular</div>':'')+'<div class="bm-row-chev">\u203a</div></div>';
+          html+='<div class="bm-row" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'hours\')"><div class="bm-row-icon">\u{1F550}</div><div class="bm-row-text"><div class="bm-row-main">'+c.openText+'</div></div><div class="bm-tag '+c.openClass+'">'+c.openTag+'</div><div class="bm-row-chev">\u203a</div></div>';
+          html+='<div class="bm-row" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'facilities\')"><div class="bm-row-icon">'+(c.facs[0]?c.facs[0].split(' ')[0]:'\u{1F3CA}')+'</div><div class="bm-row-text"><div class="bm-row-main">'+c.facList+'</div></div><div class="bm-row-chev">\u203a</div></div>';
+          html+='<div class="bm-row" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'equipment\')"><div class="bm-row-icon">\u{1F3CB}\uFE0F</div><div class="bm-row-text"><div class="bm-row-main">'+c.equipList+'</div></div><div class="bm-row-chev">\u203a</div></div>';
           html+='</div></div>';
         });
         html+='</div>';
@@ -1873,11 +1873,25 @@ window.openGymOverlay=function(section){
   document.body.style.overflow='hidden';
 };
 
+window._directOverlayReturn=null;
 window.closeGymOverlay=function(){
   const overlay=document.getElementById('gym-overlay');
   if(!overlay)return;
   overlay.classList.remove('open');
   document.body.style.overflow='';
+  // If opened directly from explore card row, navigate back to explore
+  if(window._directOverlayReturn){
+    const returnRoute=window._directOverlayReturn;
+    window._directOverlayReturn=null;
+    setTimeout(function(){navigate(returnRoute);},350);
+  }
+};
+
+// Open gym overlay directly from explore card rows without showing gym profile first
+window.openGymDirectOverlay=async function(id,isLive,section){
+  window._directOverlayReturn=state.route||'/explore';
+  await openGym(id,isLive);
+  setTimeout(function(){openGymOverlay(section);},150);
 };
 
 // Select pass from the overlay and update booking state + sticky bar
@@ -6892,8 +6906,8 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
   let html='';
 
   if(tab==='reels'){
-    // Full-screen Reels with nav buttons on right side (like Share/Download but for navigation)
-    html=`<div style="position:fixed;top:0;left:0;right:0;bottom:0;z-index:1;background:#000;">
+    // Full-screen Reels with bottom tab bar visible
+    html=`<div style="position:fixed;top:0;left:0;right:0;bottom:56px;z-index:1;background:#000;">
       <iframe id="sg-reels-iframe" src="/reels/" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;z-index:1;" allow="autoplay; fullscreen" loading="lazy" onload="this.style.opacity='1'" onerror="document.getElementById('sg-reels-fallback').style.display='flex'"></iframe>
       <!-- Fallback placeholder if iframe fails -->
       <div id="sg-reels-fallback" style="display:none;position:absolute;top:0;left:0;right:0;bottom:0;z-index:2;background:linear-gradient(180deg,#0a0a16 0%,#111127 100%);flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;">
@@ -6903,7 +6917,7 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
         <button onclick="switchTab('book')" style="background:#f97316;color:#fff;font-weight:700;font-size:15px;padding:14px 32px;border-radius:14px;border:none;cursor:pointer;box-shadow:0 4px 20px rgba(249,115,22,.3);">🏋️ Find a Gym Instead</button>
       </div>
       <!-- FlexSquad + Upload buttons removed — accessible via More > Creators instead -->
-    </div>`;
+    </div>`+BottomTabBar();
   } else if(tab==='more' && (path==='/more'||path==='/more/')){
     // More hub page
     html=`<main class="sg-tab-content fade-in">${MoreHubPage()}</main>`+BottomTabBar();
