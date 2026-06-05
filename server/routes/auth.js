@@ -16,6 +16,45 @@ const TWILIO_SID = process.env.TWILIO_ACCOUNT_SID;
 const TWILIO_TOKEN = process.env.TWILIO_AUTH_TOKEN;
 const TWILIO_VERIFY_SID = process.env.TWILIO_VERIFY_SERVICE_SID;
 
+// Stripe — create Customer at signup like Uber
+const stripe = process.env.STRIPE_SECRET_KEY
+  ? require('stripe')(process.env.STRIPE_SECRET_KEY)
+  : null;
+
+/**
+ * Ensure user has a Stripe Customer (Uber creates one at signup).
+ * Safe to call repeatedly — skips if already set.
+ */
+async function ensureStripeCustomer(userId, phone, email) {
+  if (!stripe) return null;
+  try {
+    const user = await pool.query(
+      'SELECT stripe_customer_id, email, phone_number FROM public.users WHERE id = $1',
+      [userId]
+    );
+    if (user.rows.length === 0) return null;
+    const u = user.rows[0];
+    if (u.stripe_customer_id) return u.stripe_customer_id;
+
+    const customer = await stripe.customers.create({
+      phone: phone || u.phone_number || undefined,
+      email: email || u.email || undefined,
+      metadata: { userId, source: 'scangym', created_at_signup: 'true' },
+    });
+
+    await pool.query(
+      'UPDATE public.users SET stripe_customer_id = $1, updated_at = NOW() WHERE id = $2',
+      [customer.id, userId]
+    );
+    console.log(`[Auth] Created Stripe Customer ${customer.id} at signup for user ${userId}`);
+    return customer.id;
+  } catch (err) {
+    // Non-fatal — payment will create Customer later as fallback
+    console.error('[Auth] Stripe Customer creation failed (non-fatal):', err.message);
+    return null;
+  }
+}
+
 /**
  * POST /api/auth/send-code
  * Send OTP via Twilio Verify
@@ -119,6 +158,10 @@ router.post('/verify', async (req, res) => {
 
     const u = user.rows[0];
 
+    // Uber-style: ensure Stripe Customer exists at signup/login
+    // For new users this creates it immediately; for existing users it backfills
+    const stripeCustomerId = await ensureStripeCustomer(u.id, normalizedPhone, u.email);
+
     // Set session
     req.session.userId = u.id;
     req.session.phone = u.phone_number;
@@ -130,6 +173,7 @@ router.post('/verify', async (req, res) => {
         phone: u.phone_number,
         name: [u.first_name, u.last_name].filter(Boolean).join(' ') || null,
         email: u.email,
+        hasStripeCustomer: !!stripeCustomerId,
       },
       message: 'Logged in successfully',
     });
