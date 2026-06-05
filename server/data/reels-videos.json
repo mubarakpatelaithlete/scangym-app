@@ -55,15 +55,6 @@
   },
   {
     "id": 7,
-    "name": "\\u00a35 Gym Tour London",
-    "category": "Promo",
-    "source": "direct",
-    "url": "https://cdn.scangym.com/videos/08_five_pound_gym_tour_london.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/08_five_pound_gym_tour_london.webp",
-    "cdnKey": "08_five_pound_gym_tour_london"
-  },
-  {
-    "id": 8,
     "name": "Before & After Gym Hopper",
     "category": "Promo",
     "source": "direct",
@@ -72,7 +63,7 @@
     "cdnKey": "09_before_after_gym_hopper"
   },
   {
-    "id": 9,
+    "id": 8,
     "name": "ScanGym App Demo",
     "category": "Promo",
     "source": "direct",
@@ -81,7 +72,7 @@
     "cdnKey": "10_scangym_app_demo"
   },
   {
-    "id": 10,
+    "id": 9,
     "name": "CrossFit Box Hop",
     "category": "Promo",
     "source": "direct",
@@ -90,25 +81,7 @@
     "cdnKey": "11_crossfit_box_hop"
   },
   {
-    "id": 11,
-    "name": "Manchester Gym Scene",
-    "category": "Promo",
-    "source": "direct",
-    "url": "https://cdn.scangym.com/videos/12_manchester_gym_scene.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/12_manchester_gym_scene.webp",
-    "cdnKey": "12_manchester_gym_scene"
-  },
-  {
-    "id": 12,
-    "name": "Birmingham Gym Discovery",
-    "category": "Promo",
-    "source": "direct",
-    "url": "https://cdn.scangym.com/videos/13_birmingham_gym_discovery.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/13_birmingham_gym_discovery.webp",
-    "cdnKey": "13_birmingham_gym_discovery"
-  },
-  {
-    "id": 13,
+    "id": 10,
     "name": "Student Gym Hack",
     "category": "Promo",
     "source": "direct",
@@ -117,7 +90,7 @@
     "cdnKey": "14_student_gym_hack"
   },
   {
-    "id": 14,
+    "id": 11,
     "name": "Yoga Studio Hop",
     "category": "Promo",
     "source": "direct",
@@ -126,7 +99,7 @@
     "cdnKey": "15_yoga_studio_hop"
   },
   {
-    "id": 15,
+    "id": 12,
     "name": "\\u00a350 vs \\u00a35 Comparison",
     "category": "Promo",
     "source": "direct",
@@ -135,16 +108,7 @@
     "cdnKey": "16_fifty_vs_five_comparison"
   },
   {
-    "id": 16,
-    "name": "Edinburgh Fitness Scene",
-    "category": "Promo",
-    "source": "direct",
-    "url": "https://cdn.scangym.com/videos/17_edinburgh_fitness_scene.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/17_edinburgh_fitness_scene.webp",
-    "cdnKey": "17_edinburgh_fitness_scene"
-  },
-  {
-    "id": 17,
+    "id": 13,
     "name": "Morning Routine w/ ScanGym",
     "category": "Promo",
     "source": "direct",
@@ -153,16 +117,7 @@
     "cdnKey": "18_morning_routine_scangym"
   },
   {
-    "id": 18,
-    "name": "Leeds Gym Crawl",
-    "category": "Promo",
-    "source": "direct",
-    "url": "https://cdn.scangym.com/videos/19_leeds_gym_crawl.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/19_leeds_gym_crawl.webp",
-    "cdnKey": "19_leeds_gym_crawl"
-  },
-  {
-    "id": 19,
+    "id": 14,
     "name": "Couples Gym Date",
     "category": "Promo",
     "source": "direct",
@@ -171,7 +126,7 @@
     "cdnKey": "20_couples_gym_date"
   },
   {
-    "id": 20,
+    "id": 15,
     "name": "Late Night Gym Finder",
     "category": "Promo",
     "source": "direct",
@@ -180,7 +135,7 @@
     "cdnKey": "21_late_night_gym_finder"
   },
   {
-    "id": 21,
+    "id": 16,
     "name": "Bodybuilder Budget Gyms",
     "category": "Promo",
     "source": "direct",
@@ -189,7 +144,7 @@
     "cdnKey": "23_bodybuilder_budget_gyms"
   },
   {
-    "id": 22,
+    "id": 17,
     "name": "Save Money Calculator",
     "category": "Promo",
     "source": "direct",
@@ -198,7 +153,7 @@
     "cdnKey": "24_save_money_calculator"
   },
   {
-    "id": 23,
+    "id": 18,
     "name": "Reaction Duet",
     "category": "CMO Content",
     "source": "direct",
@@ -207,7 +162,7 @@
     "cdnKey": "ScanGym-CMO-V10-ReactionDuet-Vertical"
   },
   {
-    "id": 24,
+    "id": 19,
     "name": "Recovery Trend",
     "category": "CMO Content",
     "source": "direct",
@@ -216,7 +171,7 @@
     "cdnKey": "ScanGym-CMO-V11-RecoveryTrend-Vertical"
   },
   {
-    "id": 25,
+    "id": 20,
     "name": "Form Check",
     "category": "CMO Content",
     "source": "direct",
@@ -225,7 +180,7 @@
     "cdnKey": "ScanGym-CMO-V12-FormCheck-Vertical"
   },
   {
-    "id": 26,
+    "id": 21,
     "name": "Couple Goals",
     "category": "CMO Content",
     "source": "direct",
@@ -234,7 +189,7 @@
     "cdnKey": "ScanGym-CMO-V13-CoupleGoals-Horizontal"
   },
   {
-    "id": 27,
+    "id": 22,
     "name": "POV: First Gym Visit",
     "category": "CMO Content",
     "source": "direct",
@@ -243,7 +198,7 @@
     "cdnKey": "ScanGym-CMO-V14-POVFirstGym-Vertical"
   },
   {
-    "id": 28,
+    "id": 23,
     "name": "Travel Fitness",
     "category": "CMO Content",
     "source": "direct",
@@ -252,7 +207,7 @@
     "cdnKey": "ScanGym-CMO-V15-TravelFitness-Vertical"
   },
   {
-    "id": 29,
+    "id": 24,
     "name": "GRWM Gym Edition",
     "category": "CMO Content",
     "source": "direct",
@@ -261,7 +216,7 @@
     "cdnKey": "ScanGym-CMO-V16-GRWM-Vertical"
   },
   {
-    "id": 30,
+    "id": 25,
     "name": "Storytime: Gym Discovery",
     "category": "CMO Content",
     "source": "direct",
@@ -270,7 +225,7 @@
     "cdnKey": "ScanGym-CMO-V17-Storytime-Vertical"
   },
   {
-    "id": 31,
+    "id": 26,
     "name": "Gym Tour Walkthrough",
     "category": "CMO Content",
     "source": "direct",
@@ -279,7 +234,7 @@
     "cdnKey": "ScanGym-CMO-V18-GymTour-Horizontal"
   },
   {
-    "id": 32,
+    "id": 27,
     "name": "Expert Explainer",
     "category": "CMO Content",
     "source": "direct",
@@ -288,7 +243,7 @@
     "cdnKey": "ScanGym-CMO-V4-ExpertExplainer-Vertical"
   },
   {
-    "id": 33,
+    "id": 28,
     "name": "Walk & Talk",
     "category": "CMO Content",
     "source": "direct",
@@ -297,7 +252,7 @@
     "cdnKey": "ScanGym-CMO-V5-WalkAndTalk-Vertical"
   },
   {
-    "id": 34,
+    "id": 29,
     "name": "Specific Number Hook",
     "category": "CMO Content",
     "source": "direct",
@@ -306,7 +261,7 @@
     "cdnKey": "ScanGym-CMO-V6-SpecificNumber-Vertical"
   },
   {
-    "id": 35,
+    "id": 30,
     "name": "Desk to Dumbbell",
     "category": "CMO Content",
     "source": "direct",
@@ -315,7 +270,7 @@
     "cdnKey": "ScanGym-CMO-V7-DeskToDumbbell-Vertical"
   },
   {
-    "id": 36,
+    "id": 31,
     "name": "Myth Bust",
     "category": "CMO Content",
     "source": "direct",
@@ -324,7 +279,7 @@
     "cdnKey": "ScanGym-CMO-V8-MythBust-Horizontal"
   },
   {
-    "id": 37,
+    "id": 32,
     "name": "Imperative Command",
     "category": "CMO Content",
     "source": "direct",
@@ -333,7 +288,7 @@
     "cdnKey": "ScanGym-CMO-V9-ImperativeCommand-Vertical"
   },
   {
-    "id": 38,
+    "id": 33,
     "name": "Contrarian Hook",
     "category": "CMO Content",
     "source": "direct",
@@ -342,7 +297,7 @@
     "cdnKey": "ScanGym-CMO-Video1-ContrarianHook-Vertical"
   },
   {
-    "id": 39,
+    "id": 34,
     "name": "Outcome Showcase",
     "category": "CMO Content",
     "source": "direct",
@@ -351,7 +306,7 @@
     "cdnKey": "ScanGym-CMO-Video2-OutcomeShowcase-Vertical"
   },
   {
-    "id": 40,
+    "id": 35,
     "name": "Brand Story",
     "category": "CMO Content",
     "source": "direct",
@@ -360,7 +315,7 @@
     "cdnKey": "ScanGym-CMO-Video3-BrandStory-Horizontal"
   },
   {
-    "id": 41,
+    "id": 36,
     "name": "Affiliateearnings V1",
     "category": "AI Cinematic",
     "source": "direct",
@@ -370,7 +325,7 @@
     "cdnKey": "affiliateearnings_v1"
   },
   {
-    "id": 42,
+    "id": 37,
     "name": "Beforeafter Freedom V1",
     "category": "AI Cinematic",
     "source": "direct",
@@ -380,7 +335,7 @@
     "cdnKey": "beforeafter_freedom_v1"
   },
   {
-    "id": 43,
+    "id": 38,
     "name": "Beforeafter Wallet V2",
     "category": "AI Cinematic",
     "source": "direct",
@@ -390,7 +345,7 @@
     "cdnKey": "beforeafter_wallet_v2"
   },
   {
-    "id": 44,
+    "id": 39,
     "name": "Fc Thedare",
     "category": "AI Cinematic",
     "source": "direct",
@@ -400,133 +355,7 @@
     "cdnKey": "fc_thedare"
   },
   {
-    "id": 45,
-    "name": "Aberdeen",
-    "category": "City Promo Reels",
-    "source": "direct",
-    "driveId": "1URhD9IwlQKssnYxOekQvrtHqnx-yFFRD",
-    "url": "https://cdn.scangym.com/videos/aberdeen.mp4",
-    "cdnKey": "aberdeen"
-  },
-  {
-    "id": 46,
-    "name": "Bath",
-    "category": "City Promo Reels",
-    "source": "direct",
-    "driveId": "18r4Qkmkg4LZexxeiCIXS7uStiDUr2-lG",
-    "url": "https://cdn.scangym.com/videos/bath.mp4",
-    "cdnKey": "bath"
-  },
-  {
-    "id": 47,
-    "name": "Brighton",
-    "category": "City Promo Reels",
-    "source": "direct",
-    "driveId": "12znCMuuwT9bP0AyBVbPVQS79XS4d2ZA2",
-    "url": "https://cdn.scangym.com/videos/brighton.mp4",
-    "cdnKey": "brighton"
-  },
-  {
-    "id": 48,
-    "name": "Cambridge",
-    "category": "City Promo Reels",
-    "source": "direct",
-    "driveId": "12YvPdDUuX48R-WdAhTIZqTFfEc3eZhG6",
-    "url": "https://cdn.scangym.com/videos/cambridge.mp4",
-    "cdnKey": "cambridge"
-  },
-  {
-    "id": 49,
-    "name": "Cardiff",
-    "category": "City Promo Reels",
-    "source": "direct",
-    "driveId": "1mrl1zTdua8SZAhMMVWLrLZDHmCZFJezC",
-    "url": "https://cdn.scangym.com/videos/cardiff.mp4",
-    "cdnKey": "cardiff"
-  },
-  {
-    "id": 50,
-    "name": "Coventry",
-    "category": "City Promo Reels",
-    "source": "direct",
-    "driveId": "1hA7rv6k8YK9FtTQf-0dz1xrzlPqKdiPZ",
-    "url": "https://cdn.scangym.com/videos/coventry.mp4",
-    "cdnKey": "coventry"
-  },
-  {
-    "id": 51,
-    "name": "Derby",
-    "category": "City Promo Reels",
-    "source": "direct",
-    "driveId": "1QbkYHAI63p1xccEWhsS3OlNJdRO3qOH7",
-    "url": "https://cdn.scangym.com/videos/derby.mp4",
-    "cdnKey": "derby"
-  },
-  {
-    "id": 52,
-    "name": "Leicester",
-    "category": "City Promo Reels",
-    "source": "direct",
-    "driveId": "1_L1voCOKk9GdxSQaFQWFJvGehdYFVeUk",
-    "url": "https://cdn.scangym.com/videos/leicester.mp4",
-    "cdnKey": "leicester"
-  },
-  {
-    "id": 53,
-    "name": "Nottingham",
-    "category": "City Promo Reels",
-    "source": "direct",
-    "driveId": "1rLYsLCQ7h07M6IqYo7KSgcBWiu3pKu7v",
-    "url": "https://cdn.scangym.com/videos/nottingham.mp4",
-    "cdnKey": "nottingham"
-  },
-  {
-    "id": 54,
-    "name": "Oxford",
-    "category": "City Promo Reels",
-    "source": "direct",
-    "driveId": "1_QW0JfGrf9xM1i-T9sawEyGtiO5uROm3",
-    "url": "https://cdn.scangym.com/videos/oxford.mp4",
-    "cdnKey": "oxford"
-  },
-  {
-    "id": 55,
-    "name": "Plymouth",
-    "category": "City Promo Reels",
-    "source": "direct",
-    "driveId": "10HiYXq6ClBZz5a0-OSZkcJyO7fkp70Jp",
-    "url": "https://cdn.scangym.com/videos/plymouth.mp4",
-    "cdnKey": "plymouth"
-  },
-  {
-    "id": 56,
-    "name": "Reading",
-    "category": "City Promo Reels",
-    "source": "direct",
-    "driveId": "19s7RiYp7nwjPVKrb1eC_ORyrR1y-6ngC",
-    "url": "https://cdn.scangym.com/videos/reading.mp4",
-    "cdnKey": "reading"
-  },
-  {
-    "id": 57,
-    "name": "Southampton",
-    "category": "City Promo Reels",
-    "source": "direct",
-    "driveId": "1yrDSBxIYVVrnA6Q_fIBYea9mV8tYpwgI",
-    "url": "https://cdn.scangym.com/videos/southampton.mp4",
-    "cdnKey": "southampton"
-  },
-  {
-    "id": 58,
-    "name": "York",
-    "category": "City Promo Reels",
-    "source": "direct",
-    "driveId": "1P7Iv5pwcceky4QILmkLyG2655h22PY0c",
-    "url": "https://cdn.scangym.com/videos/york.mp4",
-    "cdnKey": "york"
-  },
-  {
-    "id": 59,
+    "id": 40,
     "name": "Bolton",
     "category": "City Promo Square",
     "source": "direct",
@@ -535,16 +364,7 @@
     "cdnKey": "bolton"
   },
   {
-    "id": 60,
-    "name": "Newcastle",
-    "category": "City Promo Square",
-    "source": "direct",
-    "driveId": "15_AxMYLKYfkOSmdfeBptVsA7E6lJtIdc",
-    "url": "https://cdn.scangym.com/videos/newcastle.mp4",
-    "cdnKey": "newcastle"
-  },
-  {
-    "id": 61,
+    "id": 41,
     "name": "Fact 01",
     "category": "Did You Know Videos",
     "source": "direct",
@@ -554,7 +374,7 @@
     "cdnKey": "fact_01"
   },
   {
-    "id": 62,
+    "id": 42,
     "name": "Fact 02",
     "category": "Did You Know Videos",
     "source": "direct",
@@ -564,7 +384,7 @@
     "cdnKey": "fact_02"
   },
   {
-    "id": 63,
+    "id": 43,
     "name": "Fact 03",
     "category": "Did You Know Videos",
     "source": "direct",
@@ -574,7 +394,7 @@
     "cdnKey": "fact_03"
   },
   {
-    "id": 64,
+    "id": 44,
     "name": "Fact 04",
     "category": "Did You Know Videos",
     "source": "direct",
@@ -584,7 +404,7 @@
     "cdnKey": "fact_04"
   },
   {
-    "id": 65,
+    "id": 45,
     "name": "Fact 05",
     "category": "Did You Know Videos",
     "source": "direct",
@@ -594,7 +414,7 @@
     "cdnKey": "fact_05"
   },
   {
-    "id": 66,
+    "id": 46,
     "name": "Fact 06",
     "category": "Did You Know Videos",
     "source": "direct",
@@ -604,7 +424,7 @@
     "cdnKey": "fact_06"
   },
   {
-    "id": 67,
+    "id": 47,
     "name": "Fact 07",
     "category": "Did You Know Videos",
     "source": "direct",
@@ -614,7 +434,7 @@
     "cdnKey": "fact_07"
   },
   {
-    "id": 68,
+    "id": 48,
     "name": "Fact 08",
     "category": "Did You Know Videos",
     "source": "direct",
@@ -624,7 +444,7 @@
     "cdnKey": "fact_08"
   },
   {
-    "id": 69,
+    "id": 49,
     "name": "01 Tiktok Hook Vertical",
     "category": "General",
     "source": "direct",
@@ -633,7 +453,7 @@
     "cdnKey": "01_tiktok_hook_vertical"
   },
   {
-    "id": 70,
+    "id": 50,
     "name": "02 Gym Lifestyle Vertical",
     "category": "General",
     "source": "direct",
@@ -642,7 +462,7 @@
     "cdnKey": "02_gym_lifestyle_vertical"
   },
   {
-    "id": 71,
+    "id": 51,
     "name": "03 Youtube Ad Horizontal",
     "category": "General",
     "source": "direct",
@@ -651,7 +471,7 @@
     "cdnKey": "03_youtube_ad_horizontal"
   },
   {
-    "id": 72,
+    "id": 52,
     "name": "01 Gym Entry Vertical",
     "category": "General",
     "source": "direct",
@@ -660,7 +480,7 @@
     "cdnKey": "01_gym_entry_vertical"
   },
   {
-    "id": 73,
+    "id": 53,
     "name": "02 Phone Tap Vertical",
     "category": "General",
     "source": "direct",
@@ -669,7 +489,7 @@
     "cdnKey": "02_phone_tap_vertical"
   },
   {
-    "id": 74,
+    "id": 54,
     "name": "03 Workout Montage Horizontal",
     "category": "General",
     "source": "direct",
@@ -678,7 +498,7 @@
     "cdnKey": "03_workout_montage_horizontal"
   },
   {
-    "id": 75,
+    "id": 55,
     "name": "Vs Anytime Fitness",
     "category": "Price Compare",
     "source": "direct",
@@ -687,7 +507,7 @@
     "cdnKey": "vs_anytime_fitness"
   },
   {
-    "id": 76,
+    "id": 56,
     "name": "Vs David Lloyd",
     "category": "Price Compare",
     "source": "direct",
@@ -696,7 +516,7 @@
     "cdnKey": "vs_david_lloyd"
   },
   {
-    "id": 77,
+    "id": 57,
     "name": "Vs Fitness First",
     "category": "Price Compare",
     "source": "direct",
@@ -705,7 +525,7 @@
     "cdnKey": "vs_fitness_first"
   },
   {
-    "id": 78,
+    "id": 58,
     "name": "Vs Jd Gyms",
     "category": "Price Compare",
     "source": "direct",
@@ -714,7 +534,7 @@
     "cdnKey": "vs_jd_gyms"
   },
   {
-    "id": 79,
+    "id": 59,
     "name": "Vs Nuffield Health",
     "category": "Price Compare",
     "source": "direct",
@@ -723,7 +543,7 @@
     "cdnKey": "vs_nuffield_health"
   },
   {
-    "id": 80,
+    "id": 60,
     "name": "Vs Puregym",
     "category": "Price Compare",
     "source": "direct",
@@ -732,7 +552,7 @@
     "cdnKey": "vs_puregym"
   },
   {
-    "id": 81,
+    "id": 61,
     "name": "Vs The Gym Group",
     "category": "Price Compare",
     "source": "direct",
@@ -741,7 +561,7 @@
     "cdnKey": "vs_the_gym_group"
   },
   {
-    "id": 82,
+    "id": 62,
     "name": "Vs Virgin Active",
     "category": "Price Compare",
     "source": "direct",
@@ -750,7 +570,7 @@
     "cdnKey": "vs_virgin_active"
   },
   {
-    "id": 83,
+    "id": 63,
     "name": "Citydiscovery Bolton H0",
     "category": "Ready-to-Post",
     "source": "direct",
@@ -760,7 +580,7 @@
     "cdnKey": "citydiscovery_bolton_h0"
   },
   {
-    "id": 84,
+    "id": 64,
     "name": "Citydiscovery Bolton H1",
     "category": "Ready-to-Post",
     "source": "direct",
@@ -770,7 +590,7 @@
     "cdnKey": "citydiscovery_bolton_h1"
   },
   {
-    "id": 85,
+    "id": 65,
     "name": "Citydiscovery Bolton H2",
     "category": "Ready-to-Post",
     "source": "direct",
@@ -780,7 +600,7 @@
     "cdnKey": "citydiscovery_bolton_h2"
   },
   {
-    "id": 86,
+    "id": 66,
     "name": "Creatorearnings Bolton H0",
     "category": "Ready-to-Post",
     "source": "direct",
@@ -790,7 +610,7 @@
     "cdnKey": "creatorearnings_bolton_h0"
   },
   {
-    "id": 87,
+    "id": 67,
     "name": "Creatorearnings Bolton H1",
     "category": "Ready-to-Post",
     "source": "direct",
@@ -800,7 +620,7 @@
     "cdnKey": "creatorearnings_bolton_h1"
   },
   {
-    "id": 88,
+    "id": 68,
     "name": "Creatorearnings Bolton H2",
     "category": "Ready-to-Post",
     "source": "direct",
@@ -810,7 +630,7 @@
     "cdnKey": "creatorearnings_bolton_h2"
   },
   {
-    "id": 89,
+    "id": 69,
     "name": "Dontjoinagym Bolton Gbp10",
     "category": "Ready-to-Post",
     "source": "direct",
@@ -820,7 +640,7 @@
     "cdnKey": "dontjoinagym_bolton_gbp10"
   },
   {
-    "id": 90,
+    "id": 70,
     "name": "Dontjoinagym Bolton Gbp5",
     "category": "Ready-to-Post",
     "source": "direct",
@@ -830,7 +650,7 @@
     "cdnKey": "dontjoinagym_bolton_gbp5"
   },
   {
-    "id": 91,
+    "id": 71,
     "name": "Dontjoinagym Bolton Gbp7",
     "category": "Ready-to-Post",
     "source": "direct",
@@ -840,7 +660,7 @@
     "cdnKey": "dontjoinagym_bolton_gbp7"
   },
   {
-    "id": 92,
+    "id": 72,
     "name": "Reel Morning Routine",
     "category": "TikTok-Reels AI",
     "source": "direct",
@@ -850,7 +670,7 @@
     "cdnKey": "reel_morning_routine"
   },
   {
-    "id": 93,
+    "id": 73,
     "name": "Tiktok 5 Pound",
     "category": "TikTok-Reels AI",
     "source": "direct",
@@ -860,7 +680,7 @@
     "cdnKey": "tiktok_5_pound"
   },
   {
-    "id": 94,
+    "id": 74,
     "name": "Tiktok Affiliate Earn",
     "category": "TikTok-Reels AI",
     "source": "direct",
@@ -870,7 +690,7 @@
     "cdnKey": "tiktok_affiliate_earn"
   },
   {
-    "id": 95,
+    "id": 75,
     "name": "Tiktok Gym Hopping",
     "category": "TikTok-Reels AI",
     "source": "direct",
@@ -880,7 +700,7 @@
     "cdnKey": "tiktok_gym_hopping"
   },
   {
-    "id": 96,
+    "id": 76,
     "name": "Tiktok Membership Rip",
     "category": "TikTok-Reels AI",
     "source": "direct",
@@ -890,7 +710,7 @@
     "cdnKey": "tiktok_membership_rip"
   },
   {
-    "id": 97,
+    "id": 77,
     "name": "Tiktok Student Hack",
     "category": "TikTok-Reels AI",
     "source": "direct",
@@ -900,7 +720,7 @@
     "cdnKey": "tiktok_student_hack"
   },
   {
-    "id": 98,
+    "id": 78,
     "name": "Tiktok Walk In",
     "category": "TikTok-Reels AI",
     "source": "direct",
@@ -910,7 +730,7 @@
     "cdnKey": "tiktok_walk_in"
   },
   {
-    "id": 99,
+    "id": 79,
     "name": "1",
     "category": "UGC Videos",
     "source": "direct",
@@ -919,7 +739,7 @@
     "cdnKey": "1"
   },
   {
-    "id": 100,
+    "id": 80,
     "name": "1.Mp4 30B9911B2A2B71Efbfc94531859C0102",
     "category": "UGC Videos",
     "source": "direct",
@@ -928,7 +748,7 @@
     "cdnKey": "1mp4_30b9911b2a2b71efbfc94531859c0102"
   },
   {
-    "id": 101,
+    "id": 81,
     "name": "1.Mp4 40636Cc8D47671Eeba924531958D0102",
     "category": "UGC Videos",
     "source": "direct",
@@ -937,7 +757,7 @@
     "cdnKey": "1mp4_40636cc8d47671eeba924531958d0102"
   },
   {
-    "id": 102,
+    "id": 82,
     "name": "1.Mp4 60A4A203Cb8A71Eeb5824531959C0102",
     "category": "UGC Videos",
     "source": "direct",
@@ -946,7 +766,7 @@
     "cdnKey": "1mp4_60a4a203cb8a71eeb5824531959c0102"
   },
   {
-    "id": 103,
+    "id": 83,
     "name": "1.Mp4 709D7460Cae971Eeae8E4531958C0102",
     "category": "UGC Videos",
     "source": "direct",
@@ -955,7 +775,7 @@
     "cdnKey": "1mp4_709d7460cae971eeae8e4531958c0102"
   },
   {
-    "id": 104,
+    "id": 84,
     "name": "1.Mp4 80B164782A2B71Efbfc94531859C0102",
     "category": "UGC Videos",
     "source": "direct",
@@ -964,7 +784,7 @@
     "cdnKey": "1mp4_80b164782a2b71efbfc94531859c0102"
   },
   {
-    "id": 105,
+    "id": 85,
     "name": "1.Mp4 901Fcb4Ee45271Eebfc34531959D0102",
     "category": "UGC Videos",
     "source": "direct",
@@ -973,7 +793,7 @@
     "cdnKey": "1mp4_901fcb4ee45271eebfc34531959d0102"
   },
   {
-    "id": 106,
+    "id": 86,
     "name": "1.Mp4 A00Cec70Caea71Eebfc45017F1F80102",
     "category": "UGC Videos",
     "source": "direct",
@@ -982,7 +802,7 @@
     "cdnKey": "1mp4_a00cec70caea71eebfc45017f1f80102"
   },
   {
-    "id": 107,
+    "id": 87,
     "name": "1.Mp4 A06Ec86Fd47671Eea8645017F0E80102",
     "category": "UGC Videos",
     "source": "direct",
@@ -991,7 +811,7 @@
     "cdnKey": "1mp4_a06ec86fd47671eea8645017f0e80102"
   },
   {
-    "id": 108,
+    "id": 88,
     "name": "1.Mp4 B05D6Aabe45271Eebc5C5420848D0102",
     "category": "UGC Videos",
     "source": "direct",
@@ -1000,7 +820,7 @@
     "cdnKey": "1mp4_b05d6aabe45271eebc5c5420848d0102"
   },
   {
-    "id": 109,
+    "id": 89,
     "name": "1.Mp4 C0B80D70Cb2571Eebfc35017F0E80102",
     "category": "UGC Videos",
     "source": "direct",
@@ -1009,7 +829,7 @@
     "cdnKey": "1mp4_c0b80d70cb2571eebfc35017f0e80102"
   },
   {
-    "id": 110,
+    "id": 90,
     "name": "10 Mubarak Pvc Sp100 S50 Sb75 V3 Processed",
     "category": "UGC Videos",
     "source": "direct",
@@ -1018,7 +838,7 @@
     "cdnKey": "10_mubarak_pvc_sp100_s50_sb75_v3_processed"
   },
   {
-    "id": 111,
+    "id": 91,
     "name": "12",
     "category": "UGC Videos",
     "source": "direct",
@@ -1027,7 +847,7 @@
     "cdnKey": "12"
   },
   {
-    "id": 112,
+    "id": 92,
     "name": "Faketweet V01",
     "category": "Viral",
     "source": "direct",
@@ -1036,7 +856,7 @@
     "cdnKey": "faketweet_v01"
   },
   {
-    "id": 113,
+    "id": 93,
     "name": "Faketweet V02",
     "category": "Viral",
     "source": "direct",
@@ -1045,7 +865,7 @@
     "cdnKey": "faketweet_v02"
   },
   {
-    "id": 114,
+    "id": 94,
     "name": "Faketweet V03",
     "category": "Viral",
     "source": "direct",
@@ -1054,7 +874,7 @@
     "cdnKey": "faketweet_v03"
   },
   {
-    "id": 115,
+    "id": 95,
     "name": "Faketweet V04",
     "category": "Viral",
     "source": "direct",
@@ -1063,7 +883,7 @@
     "cdnKey": "faketweet_v04"
   },
   {
-    "id": 116,
+    "id": 96,
     "name": "Faketweet V05",
     "category": "Viral",
     "source": "direct",
@@ -1072,7 +892,7 @@
     "cdnKey": "faketweet_v05"
   },
   {
-    "id": 117,
+    "id": 97,
     "name": "Faketweet V06",
     "category": "Viral",
     "source": "direct",
@@ -1081,7 +901,7 @@
     "cdnKey": "faketweet_v06"
   },
   {
-    "id": 118,
+    "id": 98,
     "name": "Faketweet V07",
     "category": "Viral",
     "source": "direct",
@@ -1090,7 +910,7 @@
     "cdnKey": "faketweet_v07"
   },
   {
-    "id": 119,
+    "id": 99,
     "name": "Faketweet V08",
     "category": "Viral",
     "source": "direct",
@@ -1099,7 +919,7 @@
     "cdnKey": "faketweet_v08"
   },
   {
-    "id": 120,
+    "id": 100,
     "name": "Faketweet V09",
     "category": "Viral",
     "source": "direct",
@@ -1108,7 +928,7 @@
     "cdnKey": "faketweet_v09"
   },
   {
-    "id": 121,
+    "id": 101,
     "name": "Faketweet V10",
     "category": "Viral",
     "source": "direct",
@@ -1117,7 +937,7 @@
     "cdnKey": "faketweet_v10"
   },
   {
-    "id": 122,
+    "id": 102,
     "name": "Hottake V01",
     "category": "Viral",
     "source": "direct",
@@ -1126,7 +946,7 @@
     "cdnKey": "hottake_v01"
   },
   {
-    "id": 123,
+    "id": 103,
     "name": "Hottake V02",
     "category": "Viral",
     "source": "direct",
@@ -1135,7 +955,7 @@
     "cdnKey": "hottake_v02"
   },
   {
-    "id": 124,
+    "id": 104,
     "name": "Hottake V03",
     "category": "Viral",
     "source": "direct",
@@ -1144,7 +964,7 @@
     "cdnKey": "hottake_v03"
   },
   {
-    "id": 125,
+    "id": 105,
     "name": "Hottake V04",
     "category": "Viral",
     "source": "direct",
@@ -1153,7 +973,7 @@
     "cdnKey": "hottake_v04"
   },
   {
-    "id": 126,
+    "id": 106,
     "name": "Hottake V05",
     "category": "Viral",
     "source": "direct",
@@ -1162,7 +982,7 @@
     "cdnKey": "hottake_v05"
   },
   {
-    "id": 127,
+    "id": 107,
     "name": "Hottake V06",
     "category": "Viral",
     "source": "direct",
@@ -1171,7 +991,7 @@
     "cdnKey": "hottake_v06"
   },
   {
-    "id": 128,
+    "id": 108,
     "name": "Hottake V07",
     "category": "Viral",
     "source": "direct",
@@ -1180,7 +1000,7 @@
     "cdnKey": "hottake_v07"
   },
   {
-    "id": 129,
+    "id": 109,
     "name": "Hottake V08",
     "category": "Viral",
     "source": "direct",
@@ -1189,7 +1009,7 @@
     "cdnKey": "hottake_v08"
   },
   {
-    "id": 130,
+    "id": 110,
     "name": "Hottake V09",
     "category": "Viral",
     "source": "direct",
@@ -1198,7 +1018,7 @@
     "cdnKey": "hottake_v09"
   },
   {
-    "id": 131,
+    "id": 111,
     "name": "Hottake V10",
     "category": "Viral",
     "source": "direct",
@@ -1207,7 +1027,7 @@
     "cdnKey": "hottake_v10"
   },
   {
-    "id": 132,
+    "id": 112,
     "name": "Identityhook V01",
     "category": "Viral",
     "source": "direct",
@@ -1216,7 +1036,7 @@
     "cdnKey": "identityhook_v01"
   },
   {
-    "id": 133,
+    "id": 113,
     "name": "Identityhook V02",
     "category": "Viral",
     "source": "direct",
@@ -1225,7 +1045,7 @@
     "cdnKey": "identityhook_v02"
   },
   {
-    "id": 134,
+    "id": 114,
     "name": "Identityhook V03",
     "category": "Viral",
     "source": "direct",
@@ -1234,7 +1054,7 @@
     "cdnKey": "identityhook_v03"
   },
   {
-    "id": 135,
+    "id": 115,
     "name": "Identityhook V04",
     "category": "Viral",
     "source": "direct",
@@ -1243,7 +1063,7 @@
     "cdnKey": "identityhook_v04"
   },
   {
-    "id": 136,
+    "id": 116,
     "name": "Identityhook V05",
     "category": "Viral",
     "source": "direct",
@@ -1252,7 +1072,7 @@
     "cdnKey": "identityhook_v05"
   },
   {
-    "id": 137,
+    "id": 117,
     "name": "Identityhook V06",
     "category": "Viral",
     "source": "direct",
@@ -1261,7 +1081,7 @@
     "cdnKey": "identityhook_v06"
   },
   {
-    "id": 138,
+    "id": 118,
     "name": "Yt Affiliate Explained",
     "category": "YouTube AI",
     "source": "direct",
@@ -1271,7 +1091,7 @@
     "cdnKey": "yt_affiliate_explained"
   },
   {
-    "id": 139,
+    "id": 119,
     "name": "Yt Every Gym Tested",
     "category": "YouTube AI",
     "source": "direct",
@@ -1281,7 +1101,7 @@
     "cdnKey": "yt_every_gym_tested"
   },
   {
-    "id": 140,
+    "id": 120,
     "name": "Yt No Membership",
     "category": "YouTube AI",
     "source": "direct",
@@ -1291,7 +1111,7 @@
     "cdnKey": "yt_no_membership"
   },
   {
-    "id": 141,
+    "id": 121,
     "name": "Yt Price Reveal",
     "category": "YouTube AI",
     "source": "direct",
@@ -1301,7 +1121,7 @@
     "cdnKey": "yt_price_reveal"
   },
   {
-    "id": 142,
+    "id": 122,
     "name": "GymTour Premium v1",
     "category": "General",
     "source": "direct",
@@ -1310,7 +1130,7 @@
     "cdnKey": "gymtour_premium_v1"
   },
   {
-    "id": 143,
+    "id": 123,
     "name": "HowItWorks Bolton h0",
     "category": "How It Works (City)",
     "source": "direct",
@@ -1319,7 +1139,7 @@
     "cdnKey": "howitworks_bolton_h0"
   },
   {
-    "id": 144,
+    "id": 124,
     "name": "HowItWorks Bolton h1",
     "category": "How It Works (City)",
     "source": "direct",
@@ -1328,7 +1148,7 @@
     "cdnKey": "howitworks_bolton_h1"
   },
   {
-    "id": 145,
+    "id": 125,
     "name": "HowItWorks Bolton h2",
     "category": "How It Works (City)",
     "source": "direct",
@@ -1337,7 +1157,7 @@
     "cdnKey": "howitworks_bolton_h2"
   },
   {
-    "id": 146,
+    "id": 126,
     "name": "IStoppedPaying v1",
     "category": "Viral",
     "source": "direct",
@@ -1346,7 +1166,7 @@
     "cdnKey": "istoppedpaying_v1"
   },
   {
-    "id": 147,
+    "id": 127,
     "name": "IStoppedPaying v2",
     "category": "Viral",
     "source": "direct",
@@ -1355,7 +1175,7 @@
     "cdnKey": "istoppedpaying_v2"
   },
   {
-    "id": 148,
+    "id": 128,
     "name": "IdentityHook v07",
     "category": "Viral",
     "source": "direct",
@@ -1364,7 +1184,7 @@
     "cdnKey": "identityhook_v07"
   },
   {
-    "id": 149,
+    "id": 129,
     "name": "IdentityHook v08",
     "category": "Viral",
     "source": "direct",
@@ -1373,7 +1193,7 @@
     "cdnKey": "identityhook_v08"
   },
   {
-    "id": 150,
+    "id": 130,
     "name": "IdentityHook v09",
     "category": "Viral",
     "source": "direct",
@@ -1382,7 +1202,7 @@
     "cdnKey": "identityhook_v09"
   },
   {
-    "id": 151,
+    "id": 131,
     "name": "IdentityHook v10",
     "category": "Viral",
     "source": "direct",
@@ -1391,7 +1211,7 @@
     "cdnKey": "identityhook_v10"
   },
   {
-    "id": 152,
+    "id": 132,
     "name": "MoneyMath v1",
     "category": "Viral",
     "source": "direct",
@@ -1400,7 +1220,7 @@
     "cdnKey": "moneymath_v1"
   },
   {
-    "id": 153,
+    "id": 133,
     "name": "POV GymHopping v2",
     "category": "Viral",
     "source": "direct",
@@ -1409,7 +1229,7 @@
     "cdnKey": "pov_gymhopping_v2"
   },
   {
-    "id": 154,
+    "id": 134,
     "name": "POV NoContract v1",
     "category": "Viral",
     "source": "direct",
@@ -1418,7 +1238,7 @@
     "cdnKey": "pov_nocontract_v1"
   },
   {
-    "id": 155,
+    "id": 135,
     "name": "PriceCompare Bolton h0",
     "category": "Price Compare",
     "source": "direct",
@@ -1427,7 +1247,7 @@
     "cdnKey": "pricecompare_bolton_h0"
   },
   {
-    "id": 156,
+    "id": 136,
     "name": "PriceCompare Bolton h1",
     "category": "Price Compare",
     "source": "direct",
@@ -1436,7 +1256,7 @@
     "cdnKey": "pricecompare_bolton_h1"
   },
   {
-    "id": 157,
+    "id": 137,
     "name": "PriceCompare Bolton h2",
     "category": "Price Compare",
     "source": "direct",
@@ -1445,7 +1265,7 @@
     "cdnKey": "pricecompare_bolton_h2"
   },
   {
-    "id": 158,
+    "id": 138,
     "name": "CMO V26 LiverpoolCityPromo Vertical",
     "category": "CMO Content",
     "source": "direct",
@@ -1454,7 +1274,7 @@
     "cdnKey": "cmo_v26_liverpoolcitypromo_vertical"
   },
   {
-    "id": 159,
+    "id": 139,
     "name": "CMO V32 StudentSaveMoney Vertical",
     "category": "CMO Content",
     "source": "direct",
@@ -1463,7 +1283,7 @@
     "cdnKey": "cmo_v32_studentsavemoney_vertical"
   },
   {
-    "id": 160,
+    "id": 140,
     "name": "CMO V35 SilhouetteWorkout Vertical",
     "category": "CMO Content",
     "source": "direct",
@@ -1472,7 +1292,7 @@
     "cdnKey": "cmo_v35_silhouetteworkout_vertical"
   },
   {
-    "id": 161,
+    "id": 141,
     "name": "CMO V36 PhoneBookingPOV Vertical",
     "category": "CMO Content",
     "source": "direct",
@@ -1481,7 +1301,7 @@
     "cdnKey": "cmo_v36_phonebookingpov_vertical"
   },
   {
-    "id": 162,
+    "id": 142,
     "name": "CMO V37 CityTimelapseToGym Vertical",
     "category": "CMO Content",
     "source": "direct",
@@ -1490,7 +1310,7 @@
     "cdnKey": "cmo_v37_citytimelapsetogym_vertical"
   },
   {
-    "id": 163,
+    "id": 143,
     "name": "CMO V38 EquipmentMacro Vertical",
     "category": "CMO Content",
     "source": "direct",
@@ -1499,7 +1319,7 @@
     "cdnKey": "cmo_v38_equipmentmacro_vertical"
   },
   {
-    "id": 164,
+    "id": 144,
     "name": "CMO V39 UKCityAerial Horizontal",
     "category": "CMO Content",
     "source": "direct",
@@ -1508,7 +1328,7 @@
     "cdnKey": "cmo_v39_ukcityaerial_horizontal"
   },
   {
-    "id": 165,
+    "id": 145,
     "name": "CMO V40 QRScanMoment Vertical",
     "category": "CMO Content",
     "source": "direct",
@@ -1517,7 +1337,7 @@
     "cdnKey": "cmo_v40_qrscanmoment_vertical"
   },
   {
-    "id": 166,
+    "id": 146,
     "name": "CMO V41 RooftopGymGoldenHour Vertical",
     "category": "CMO Content",
     "source": "direct",
@@ -1526,7 +1346,7 @@
     "cdnKey": "cmo_v41_rooftopgymgoldenhour_vertical"
   },
   {
-    "id": 167,
+    "id": 147,
     "name": "CMO V42 MorningRoutinePOV Vertical",
     "category": "CMO Content",
     "source": "direct",
@@ -1535,7 +1355,7 @@
     "cdnKey": "cmo_v42_morningroutinepov_vertical"
   },
   {
-    "id": 168,
+    "id": 148,
     "name": "CMO V44 PoolUnderwater Vertical",
     "category": "CMO Content",
     "source": "direct",
@@ -1544,7 +1364,7 @@
     "cdnKey": "cmo_v44_poolunderwater_vertical"
   },
   {
-    "id": 169,
+    "id": 149,
     "name": "CMO V45 WeightsASMR Vertical",
     "category": "CMO Content",
     "source": "direct",
@@ -1553,7 +1373,7 @@
     "cdnKey": "cmo_v45_weightsasmr_vertical"
   },
   {
-    "id": 170,
+    "id": 150,
     "name": "CMO V46 RainGymWindow Vertical",
     "category": "CMO Content",
     "source": "direct",
@@ -1562,7 +1382,7 @@
     "cdnKey": "cmo_v46_raingymwindow_vertical"
   },
   {
-    "id": 171,
+    "id": 151,
     "name": "CMO V50 ContrarianHook Vertical",
     "category": "CMO Content",
     "source": "direct",
@@ -1571,7 +1391,7 @@
     "cdnKey": "cmo_v50_contrarianhook_vertical"
   },
   {
-    "id": 172,
+    "id": 152,
     "name": "CMO V52 StudentPriceShock Vertical",
     "category": "CMO Content",
     "source": "direct",
@@ -1580,7 +1400,7 @@
     "cdnKey": "cmo_v52_studentpriceshock_vertical"
   },
   {
-    "id": 173,
+    "id": 153,
     "name": "CMO V53 GymFloorEnergy Vertical",
     "category": "CMO Content",
     "source": "direct",
@@ -1589,7 +1409,7 @@
     "cdnKey": "cmo_v53_gymfloorenergy_vertical"
   },
   {
-    "id": 174,
+    "id": 154,
     "name": "CMO V54 MuscleUpScrollStopper Vertical",
     "category": "CMO Content",
     "source": "direct",
@@ -1598,7 +1418,7 @@
     "cdnKey": "cmo_v54_muscleupscrollstopper_vertical"
   },
   {
-    "id": 175,
+    "id": 155,
     "name": "CMO V55 SplitScreenFreedom Vertical",
     "category": "CMO Content",
     "source": "direct",
@@ -1607,7 +1427,7 @@
     "cdnKey": "cmo_v55_splitscreenfreedom_vertical"
   },
   {
-    "id": 176,
+    "id": 156,
     "name": "CMO V56 JogToGym Vertical",
     "category": "CMO Content",
     "source": "direct",
@@ -1616,7 +1436,7 @@
     "cdnKey": "cmo_v56_jogtogym_vertical"
   },
   {
-    "id": 177,
+    "id": 157,
     "name": "WorkoutMontage v2",
     "category": "General",
     "source": "direct",
@@ -1625,7 +1445,7 @@
     "cdnKey": "workoutmontage_v2"
   },
   {
-    "id": 178,
+    "id": 158,
     "name": "affiliate 01",
     "category": "Promo",
     "source": "direct",
@@ -1634,7 +1454,7 @@
     "cdnKey": "affiliate_01"
   },
   {
-    "id": 179,
+    "id": 159,
     "name": "affiliate 02",
     "category": "Promo",
     "source": "direct",
@@ -1643,7 +1463,7 @@
     "cdnKey": "affiliate_02"
   },
   {
-    "id": 180,
+    "id": 160,
     "name": "affiliate 03",
     "category": "Promo",
     "source": "direct",
@@ -1652,7 +1472,7 @@
     "cdnKey": "affiliate_03"
   },
   {
-    "id": 181,
+    "id": 161,
     "name": "affiliate 04",
     "category": "Promo",
     "source": "direct",
@@ -1661,7 +1481,7 @@
     "cdnKey": "affiliate_04"
   },
   {
-    "id": 182,
+    "id": 162,
     "name": "DON'T Join A Gym - AI Generated",
     "category": "Don't Join A Gym",
     "source": "direct",
@@ -1670,7 +1490,7 @@
     "cdnKey": "ai_dontjoingym_kling_v1"
   },
   {
-    "id": 183,
+    "id": 163,
     "name": "Price Compare - AI Generated",
     "category": "Price Compare",
     "source": "direct",
@@ -1679,7 +1499,7 @@
     "cdnKey": "ai_pricecompare_veo31_v1"
   },
   {
-    "id": 184,
+    "id": 164,
     "name": "Student Hack UGC - AI Generated",
     "category": "TikTok-Reels AI",
     "source": "direct",
@@ -1688,7 +1508,7 @@
     "cdnKey": "ai_studenthack_kling_v1"
   },
   {
-    "id": 185,
+    "id": 165,
     "name": "AI Gym Tour \u2013 Golden Hour Entry",
     "category": "AI Cinematic",
     "source": "direct",
@@ -1697,7 +1517,7 @@
     "cdnKey": "ai_gym_tour_veo31"
   },
   {
-    "id": 186,
+    "id": 166,
     "name": "AI Contract Rip \u2013 Don't Join A Gym",
     "category": "Don't Join A Gym",
     "source": "direct",
