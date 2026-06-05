@@ -28,6 +28,7 @@ const pricingRouter = require('./routes/pricing');
 const liveSearchRouter = require('./routes/liveSearch');
 const geolocationRouter = require('./routes/geolocation');
 const referralsRouter = require('./routes/referrals');
+const streaksRouter = require('./routes/streaks');
 const analyticsMiddleware = require('./middleware/analytics');
 
 const app = express();
@@ -240,6 +241,7 @@ const apiPaths = [
   '/api/creators', '/api/directions', '/api/qr', '/api/conviction',
   '/api/auth', '/api/bookings', '/api/payment', '/api/live',
   '/api/geolocation',
+  '/api/streaks',
 ];
 apiPaths.forEach(p => app.use(p, express.json()));
 
@@ -304,6 +306,7 @@ app.use('/api/pricing', pricingRouter);
 app.use('/api/live', liveSearchRouter);
 app.use('/api/geolocation', geolocationRouter);
 app.use('/api/referrals', referralsRouter);
+app.use('/api/streaks', streaksRouter);
 
 // -- Serve Frontend --
 // Digital Asset Links for Android TWA verification
