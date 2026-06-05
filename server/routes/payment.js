@@ -1,10 +1,29 @@
 /**
- * Payment Routes — Stripe Checkout + QR code generation
- * 
- * Flow:
- * 1. POST /api/payment/checkout → Creates Stripe Checkout Session, returns checkout URL
- * 2. Stripe redirects to /booking-success?session_id=...&booking_id=...
- * 3. GET /api/payment/verify → Verifies payment, generates QR, updates booking
+ * Payment Routes — Uber-Style Payment Flow
+ *
+ * Architecture (identical to Uber):
+ * ┌──────────────────────────────────────────────────────────────────────┐
+ * │ CARD SAVED ONCE → every future booking is 1-tap                    │
+ * │                                                                    │
+ * │ First time:  POST /setup-card  →  SetupIntent  →  card saved      │
+ * │      — OR —  POST /create-intent  →  pay  →  card auto-saved      │
+ * │                                                                    │
+ * │ Every time after:                                                  │
+ * │   GET /saved-cards  →  show "Visa ••4242" on booking screen        │
+ * │   POST /quick-checkout  →  charge saved card  →  QR  →  done      │
+ * │                                                                    │
+ * │ Cash: POST /cash-booking  →  reserve  →  pay at gym               │
+ * └──────────────────────────────────────────────────────────────────────┘
+ *
+ * Endpoints:
+ *   POST /setup-card         — Save card WITHOUT paying (Uber onboarding)
+ *   POST /confirm-setup      — After SetupIntent confirmed on frontend
+ *   GET  /saved-cards        — List saved payment methods
+ *   DELETE /saved-cards/:id  — Remove a saved card
+ *   POST /quick-checkout     — 1-tap checkout with saved card (THE main flow)
+ *   POST /create-intent      — Fallback: Stripe Elements for first payment
+ *   POST /confirm-intent     — After Elements payment → auto-save card
+ *   POST /cash-booking       — Cash at gym (no card needed)
  */
 const express = require('express');
 const router = express.Router();
@@ -18,23 +37,19 @@ const surge = require('../lib/surge-pricing');
  * Extract geolocation from request (Cloudflare headers → geoip-lite → default GB)
  */
 function getGeoFromRequest(req) {
-  // 1. Cloudflare edge headers (fastest)
   const cfCountry = req.headers['cf-ipcountry'];
   const cfCity = req.headers['cf-ipcity'];
   if (cfCountry && cfCountry !== 'XX') {
     return { country: cfCountry.toUpperCase(), city: cfCity || '' };
   }
-  // 2. geoip-lite fallback
   try {
     const geoip = require('geoip-lite');
     const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.ip;
     const geo = geoip ? geoip.lookup(ip) : null;
     if (geo && geo.country) return { country: geo.country, city: geo.city || '' };
   } catch (e) {}
-  // 3. Request body/query override (frontend can send geo hint)
   if (req.body?.countryCode) return { country: req.body.countryCode.toUpperCase(), city: req.body.city || '' };
   if (req.query?.country) return { country: req.query.country.toUpperCase(), city: req.query.city || '' };
-  // Default: UK
   return { country: 'GB', city: '' };
 }
 
@@ -48,13 +63,9 @@ try {
 
 /**
  * Resolve 'anytime' time strings into a consistent object.
- * When a user picks "Anytime today", the frontend sends 'anytime' —
- * this helper normalises it so every endpoint handles it safely.
  */
 function resolveTime(time) {
   const isAnytime = !time || time === 'anytime';
-  // When "anytime", default to next hour (or 09:00 if outside 6-20 range)
-  // This prevents NOT NULL constraint violations on start_time/end_time
   let effectiveTime = time;
   if (isAnytime) {
     const now = new Date();
@@ -79,12 +90,11 @@ try {
 }
 
 /**
- * Generate a 2-scan QR code (JD Gym model) for a confirmed booking.
+ * Generate a 2-scan QR code for a confirmed booking.
  * Creates a record in booking_qr_codes and returns a scannable URL QR.
  * Reuses existing active QR if one already exists for this booking.
  */
 async function generate2ScanQR(bookingId, userId, gymId) {
-  // Check for existing active QR
   const existing = await pool.query(
     'SELECT * FROM booking_qr_codes WHERE booking_id = $1 AND status = $2 AND expires_at > NOW()',
     [bookingId, 'active']
@@ -97,18 +107,13 @@ async function generate2ScanQR(bookingId, userId, gymId) {
       try { dataUrl = await QRCode.toDataURL(scanUrl, { width: 400, margin: 2, errorCorrectionLevel: 'H' }); } catch (e) {}
     }
     return {
-      token: qr.qr_token,
-      scanUrl,
-      dataUrl,
-      maxScans: qr.max_scans,
-      scanCount: qr.scan_count,
+      token: qr.qr_token, scanUrl, dataUrl,
+      maxScans: qr.max_scans, scanCount: qr.scan_count,
       scansRemaining: qr.max_scans - qr.scan_count,
-      status: qr.status,
-      expiresAt: qr.expires_at,
+      status: qr.status, expiresAt: qr.expires_at,
     };
   }
 
-  // Generate new token
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
   const segments = [];
   for (let s = 0; s < 4; s++) {
@@ -117,7 +122,7 @@ async function generate2ScanQR(bookingId, userId, gymId) {
     segments.push(seg);
   }
   const qrToken = 'SG-' + segments.join('-');
-  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
   await pool.query(
     `INSERT INTO booking_qr_codes (booking_id, user_id, gym_id, qr_token, max_scans, expires_at)
@@ -133,14 +138,9 @@ async function generate2ScanQR(bookingId, userId, gymId) {
   }
 
   return {
-    token: qrToken,
-    scanUrl,
-    dataUrl,
-    maxScans: 2,
-    scanCount: 0,
-    scansRemaining: 2,
-    status: 'active',
-    expiresAt: expiresAt.toISOString(),
+    token: qrToken, scanUrl, dataUrl,
+    maxScans: 2, scanCount: 0, scansRemaining: 2,
+    status: 'active', expiresAt: expiresAt.toISOString(),
   };
 }
 
@@ -153,7 +153,6 @@ try {
 
 /**
  * Send booking confirmation email with QR code
- * Uses SendGrid SMTP (already configured in env)
  */
 async function sendConfirmationEmail({ to, gymName, date, time, endTime, price, bookingCode, qrDataUrl }) {
   if (!nodemailer || !process.env.SENDGRID_API_KEY && !process.env.SMTP_HOST) {
@@ -208,794 +207,22 @@ async function sendConfirmationEmail({ to, gymName, date, time, endTime, price, 
   }
 }
 
-/**
- * POST /api/payment/checkout
- * Create a Stripe Checkout Session for a booking
- */
-router.post('/checkout', async (req, res) => {
-  try {
-    if (!req.session || !req.session.userId) {
-      return res.status(401).json({ error: 'Not authenticated' });
-    }
 
-    if (!stripe) {
-      return res.status(500).json({ error: 'Payment system not configured' });
-    }
-
-    const { bookingId } = req.body;
-    if (!bookingId) return res.status(400).json({ error: 'bookingId is required' });
-
-    // Get booking
-    const result = await pool.query(
-      `SELECT b.*, g.name as gym_name 
-       FROM public.bookings b 
-       LEFT JOIN public.gyms g ON b.gym_id = g.id
-       WHERE b.id = $1 AND b.user_id = $2`,
-      [bookingId, req.session.userId]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Booking not found' });
-    }
-
-    const booking = result.rows[0];
-
-    if (booking.status === 'confirmed') {
-      return res.status(400).json({ error: 'Booking already paid' });
-    }
-
-    const geo = getGeoFromRequest(req);
-    const { currency } = pricing.resolveCurrency(geo);
-    const amount = Math.round(parseFloat(booking.total_amount) * 100); // smallest currency unit
-
-    // Create Stripe Checkout Session with localized currency
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      mode: 'payment',
-      line_items: [{
-        price_data: {
-          currency: currency,
-          product_data: {
-            name: `ScanGym Session — ${booking.gym_name || 'Gym'}`,
-            description: `${booking.start_time} - ${booking.end_time} on ${new Date(booking.booking_date).toLocaleDateString('en-GB')}`,
-          },
-          unit_amount: amount,
-        },
-        quantity: 1,
-      }],
-      success_url: `${process.env.BASE_URL || 'https://scangym.com'}/booking-success?session_id={CHECKOUT_SESSION_ID}&booking_id=${booking.id}`,
-      cancel_url: `${process.env.BASE_URL || 'https://scangym.com'}/gym/${booking.gym_id}`,
-      metadata: {
-        bookingId: booking.id.toString(),
-        userId: req.session.userId,
-        gymName: booking.gym_name,
-      },
-    });
-
-    // Store checkout session ID
-    await pool.query(
-      'UPDATE public.bookings SET stripe_checkout_session_id = $1, updated_at = NOW() WHERE id = $2',
-      [session.id, booking.id]
-    );
-
-    res.json({
-      success: true,
-      checkoutUrl: session.url,
-      sessionId: session.id,
-    });
-  } catch (err) {
-    console.error('Checkout error:', err);
-    res.status(500).json({ error: 'Failed to create payment session', detail: err.message });
-  }
-});
+// ═══════════════════════════════════════════════════════════════════════════
+//  STRIPE CUSTOMER — Like Uber, every user gets a Stripe Customer object
+// ═══════════════════════════════════════════════════════════════════════════
 
 /**
- * GET /api/payment/verify
- * Verify Stripe payment and generate QR code
- */
-router.get('/verify', async (req, res) => {
-  try {
-    const { session_id, booking_id } = req.query;
-    if (!session_id || !booking_id) {
-      return res.status(400).json({ error: 'session_id and booking_id are required' });
-    }
-
-    if (!stripe) {
-      return res.status(500).json({ error: 'Payment system not configured' });
-    }
-
-    // Verify Stripe session
-    const session = await stripe.checkout.sessions.retrieve(session_id);
-
-    if (session.payment_status !== 'paid') {
-      return res.status(400).json({ error: 'Payment not completed', status: session.payment_status });
-    }
-
-    // Get booking
-    const result = await pool.query('SELECT * FROM public.bookings WHERE id = $1', [booking_id]);
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Booking not found' });
-    }
-
-    const booking = result.rows[0];
-
-    // Generate 2-scan QR code (JD Gym model) — scannable URL format
-    const qr = await generate2ScanQR(booking.id, booking.user_id, booking.gym_id);
-
-    // Update booking: confirmed + QR + payment info
-    await pool.query(
-      `UPDATE public.bookings 
-       SET status = 'confirmed', 
-           qr_code = $1, 
-           qr_code_url = $2, 
-           stripe_payment_intent_id = $3,
-           stripe_payment_status = 'paid',
-           updated_at = NOW()
-       WHERE id = $4`,
-      [qr.token, qr.dataUrl, session.payment_intent, booking.id]
-    );
-
-    // Get gym name
-    const gym = await pool.query('SELECT name FROM public.gyms WHERE id = $1', [booking.gym_id]);
-    const gymName = gym.rows[0]?.name || 'Gym';
-    const bookingDate = new Date(booking.booking_date).toLocaleDateString('en-GB');
-
-    // Send confirmation email (non-blocking)
-    const recipientEmail = booking.user_email || session.customer_details?.email;
-    if (recipientEmail) {
-      sendConfirmationEmail({
-        to: recipientEmail,
-        gymName,
-        date: bookingDate,
-        time: booking.start_time,
-        endTime: booking.end_time,
-        price: parseFloat(booking.total_amount).toFixed(2),
-        bookingCode: booking.booking_code,
-        qrDataUrl: qr.dataUrl,
-      }).catch(err => console.error('[Email] Background send failed:', err.message));
-    }
-
-    res.json({
-      success: true,
-      booking: {
-        id: booking.id,
-        gymName,
-        date: bookingDate,
-        time: booking.start_time,
-        endTime: booking.end_time,
-        price: parseFloat(booking.total_amount),
-        bookingCode: booking.booking_code,
-        status: 'confirmed',
-      },
-      qr: {
-        token: qr.token,
-        scanUrl: qr.scanUrl,
-        dataUrl: qr.dataUrl,
-        maxScans: qr.maxScans,
-        scansRemaining: qr.scansRemaining,
-        expiresAt: qr.expiresAt,
-      },
-    });
-  } catch (err) {
-    console.error('Payment verify error:', err);
-    res.status(500).json({ error: 'Failed to verify payment', detail: err.message });
-  }
-});
-
-
-
-/**
- * GET /api/payment/resume
- * Resume an abandoned checkout — finds the most recent pending booking
- * and returns/recreates a Stripe checkout session.
- */
-router.get('/resume', async (req, res) => {
-  try {
-    if (!stripe) return res.status(500).json({ error: 'Payment not configured' });
-
-    const { booking_id } = req.query;
-    if (!booking_id) return res.status(400).json({ error: 'booking_id required' });
-
-    // Find the pending booking
-    const result = await pool.query(
-      `SELECT b.*, g.name as gym_name
-       FROM public.bookings b
-       LEFT JOIN public.gyms g ON b.gym_id = g.id
-       WHERE b.id = $1 AND b.status = 'pending'`,
-      [booking_id]
-    );
-
-    if (result.rows.length === 0) {
-      return res.json({ error: 'No pending booking found', canResume: false });
-    }
-
-    const booking = result.rows[0];
-
-    // Check if the existing Stripe session is still valid
-    if (booking.stripe_checkout_session_id) {
-      try {
-        const existingSession = await stripe.checkout.sessions.retrieve(booking.stripe_checkout_session_id);
-        if (existingSession.status === 'open' && existingSession.url) {
-          return res.json({ success: true, canResume: true, checkoutUrl: existingSession.url, booking: { id: booking.id, gymName: booking.gym_name } });
-        }
-      } catch (e) { /* session expired, create new one */ }
-    }
-
-    // Create a new checkout session
-    const amount = Math.round(parseFloat(booking.total_amount) * 100);
-    const isGuest = booking.user_id === 'guest';
-    const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
-
-    const sessionConfig = {
-      payment_method_types: ['card'],
-      mode: 'payment',
-      line_items: [{ price_data: { currency: pricing.resolveCurrency(getGeoFromRequest(req)).currency, product_data: { name: `ScanGym Session — ${booking.gym_name || 'Gym'}`, description: `${booking.start_time} - ${booking.end_time} on ${new Date(booking.booking_date).toLocaleDateString('en-GB')}` }, unit_amount: amount }, quantity: 1 }],
-      metadata: { bookingId: String(booking.id), guest: isGuest ? 'true' : 'false' },
-      success_url: `${baseUrl}/booking-success?session_id={CHECKOUT_SESSION_ID}&booking_id=${booking.id}`,
-      cancel_url: `${baseUrl}/gym/${booking.gym_id}`,
-    };
-    if (booking.user_email) sessionConfig.customer_email = booking.user_email;
-
-    const session = await stripe.checkout.sessions.create(sessionConfig);
-
-    await pool.query(
-      'UPDATE public.bookings SET stripe_checkout_session_id = $1, updated_at = NOW() WHERE id = $2',
-      [session.id, booking.id]
-    );
-
-    res.json({ success: true, canResume: true, checkoutUrl: session.url, booking: { id: booking.id, gymName: booking.gym_name } });
-  } catch (err) {
-    console.error('Resume checkout error:', err);
-    res.status(500).json({ error: 'Failed to resume checkout' });
-  }
-});
-
-/**
- * POST /api/payment/guest-checkout
- * Create Stripe Checkout for a guest booking (no auth required, uses session guestBookingId)
- */
-router.post('/guest-checkout', async (req, res) => {
-  try {
-    if (!stripe) {
-      return res.status(500).json({ error: 'Payment system not configured' });
-    }
-
-    const { bookingId, email } = req.body;
-    if (!bookingId) return res.status(400).json({ error: 'bookingId is required' });
-
-    // Get booking (guest bookings have user_id = 'guest')
-    const result = await pool.query(
-      `SELECT b.*, g.name as gym_name 
-       FROM public.bookings b 
-       LEFT JOIN public.gyms g ON b.gym_id = g.id
-       WHERE b.id = $1 AND b.user_id = 'guest'`,
-      [bookingId]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Booking not found' });
-    }
-
-    const booking = result.rows[0];
-    if (booking.status === 'confirmed') {
-      return res.status(400).json({ error: 'Booking already paid' });
-    }
-
-    const amount = Math.round(parseFloat(booking.total_amount) * 100);
-    const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
-
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      mode: 'payment',
-      customer_email: email || booking.user_email,
-      line_items: [{
-        price_data: {
-          currency: pricing.resolveCurrency(getGeoFromRequest(req)).currency,
-          product_data: {
-            name: `ScanGym Session — ${booking.gym_name || 'Gym'}`,
-            description: `${booking.start_time} - ${booking.end_time} on ${new Date(booking.booking_date).toLocaleDateString('en-GB')}`,
-          },
-          unit_amount: amount,
-        },
-        quantity: 1,
-      }],
-      metadata: { bookingId: String(booking.id), guest: 'true' },
-      success_url: `${baseUrl}/booking-success?session_id={CHECKOUT_SESSION_ID}&booking_id=${booking.id}`,
-      cancel_url: `${baseUrl}/gym/${booking.gym_id}`,
-    });
-
-    res.json({ success: true, checkoutUrl: session.url });
-  } catch (err) {
-    console.error('Guest checkout error:', err);
-    res.status(500).json({ error: 'Failed to create checkout', detail: err.message });
-  }
-});
-
-/**
- * POST /api/payment/create-intent
- * Create a Stripe Payment Intent for embedded checkout (Stripe Elements).
- * Returns clientSecret for the frontend to render inline payment form.
- */
-router.post('/create-intent', async (req, res) => {
-  try {
-    if (!stripe) return res.status(500).json({ error: 'Payment not configured' });
-
-    const { bookingId, email } = req.body;
-    if (!bookingId) return res.status(400).json({ error: 'bookingId required' });
-
-    // Get booking (works for both auth + guest)
-    const result = await pool.query(
-      `SELECT b.*, g.name as gym_name
-       FROM public.bookings b
-       LEFT JOIN public.gyms g ON b.gym_id = g.id
-       WHERE b.id = $1`,
-      [bookingId]
-    );
-
-    if (result.rows.length === 0) return res.status(404).json({ error: 'Booking not found' });
-    const booking = result.rows[0];
-    if (booking.status === 'confirmed') return res.status(400).json({ error: 'Already paid' });
-
-    const amount = Math.round(parseFloat(booking.total_amount) * 100);
-
-    // Uber-style: explicit payment methods, no Stripe Link (which adds confusing
-    // "Save my info" email+phone fields that look required but aren't)
-    const intent = await stripe.paymentIntents.create({
-      amount,
-      currency: pricing.resolveCurrency(getGeoFromRequest(req)).currency,
-      metadata: { bookingId: String(booking.id), gymName: booking.gym_name || '' },
-      receipt_email: email || booking.user_email || undefined,
-      payment_method_types: ['card', 'amazon_pay', 'revolut_pay'],
-    });
-
-    // Store payment intent ID on booking
-    await pool.query(
-      'UPDATE public.bookings SET stripe_payment_intent_id = $1, updated_at = NOW() WHERE id = $2',
-      [intent.id, booking.id]
-    );
-
-    res.json({
-      success: true,
-      clientSecret: intent.client_secret,
-      amount: parseFloat(booking.total_amount),
-      gymName: booking.gym_name,
-    });
-  } catch (err) {
-    console.error('Create intent error:', err);
-    res.status(500).json({ error: 'Failed to create payment' });
-  }
-});
-
-/**
- * POST /api/payment/confirm-intent
- * Called after Stripe Elements confirms payment on frontend.
- * Generates QR, confirms booking, sends email.
- */
-router.post('/confirm-intent', async (req, res) => {
-  try {
-    if (!stripe) return res.status(500).json({ error: 'Payment not configured' });
-
-    const { bookingId, paymentIntentId, email } = req.body;
-    if (!bookingId || !paymentIntentId) return res.status(400).json({ error: 'bookingId and paymentIntentId required' });
-
-    // Verify the payment intent is actually paid
-    const intent = await stripe.paymentIntents.retrieve(paymentIntentId);
-    if (intent.status !== 'succeeded') {
-      return res.status(400).json({ error: 'Payment not completed', status: intent.status });
-    }
-
-    // Get booking
-    const result = await pool.query('SELECT * FROM public.bookings WHERE id = $1', [bookingId]);
-    if (result.rows.length === 0) return res.status(404).json({ error: 'Booking not found' });
-    const booking = result.rows[0];
-
-    // Update email if provided (collected at payment confirmation time)
-    if (email && email.includes('@')) {
-      await pool.query('UPDATE public.bookings SET user_email = $1, updated_at = NOW() WHERE id = $2', [email, bookingId]);
-      booking.user_email = email;
-      // Also update Stripe receipt_email
-      try { await stripe.paymentIntents.update(paymentIntentId, { receipt_email: email }); } catch(e) {}
-    }
-
-    // Generate 2-scan QR code (JD Gym model) — scannable URL format
-    const qr = await generate2ScanQR(booking.id, booking.user_id, booking.gym_id);
-
-    // Update booking
-    await pool.query(
-      `UPDATE public.bookings SET status = 'confirmed', qr_code = $1, qr_code_url = $2,
-       stripe_payment_intent_id = $3, stripe_payment_status = 'paid', updated_at = NOW()
-       WHERE id = $4`,
-      [qr.token, qr.dataUrl, paymentIntentId, booking.id]
-    );
-
-    // Credit creator commission if this was a referred booking
-    if (booking.referral_code) {
-      try {
-        // Credit creator commission (£1.25 = 125 pence)
-        const commissionPence = 125;
-        await pool.query(
-          `UPDATE creator_referrals
-           SET status = 'converted', booking_id = $1, commission_pence = $2, converted_at = NOW()
-           WHERE id = (
-             SELECT id FROM creator_referrals
-             WHERE creator_handle = $3 AND status = 'clicked'
-             ORDER BY created_at DESC LIMIT 1
-           )`,
-          [booking.id, commissionPence, booking.referral_code]
-        );
-        // If no matching click, create conversion record directly
-        const updated = await pool.query(
-          `SELECT id FROM creator_referrals WHERE booking_id = $1 AND status = 'converted'`,
-          [booking.id]
-        );
-        if (updated.rows.length === 0) {
-          await pool.query(
-            `INSERT INTO creator_referrals (creator_handle, booking_id, commission_pence, status, converted_at)
-             VALUES ($1, $2, $3, 'converted', NOW())`,
-            [booking.referral_code, booking.id, commissionPence]
-          );
-        }
-        // Update creator_memberships totals
-        await pool.query(
-          `UPDATE creator_memberships
-           SET total_earnings_pence = total_earnings_pence + $1,
-               total_conversions = total_conversions + 1
-           WHERE user_id = (SELECT creator_user_id FROM creator_landing_pages WHERE slug = $2 LIMIT 1)`,
-          [commissionPence, booking.referral_code]
-        );
-        console.log(`[Payment] Credited £1.25 commission to creator "${booking.referral_code}" for booking ${booking.id}`);
-      } catch (commErr) {
-        console.error('[Payment] Commission credit failed (non-blocking):', commErr.message);
-        // Non-blocking — booking still succeeds even if commission fails
-      }
-    }
-
-    const gym = await pool.query('SELECT name FROM public.gyms WHERE id = $1', [booking.gym_id]);
-    const gymName = gym.rows[0]?.name || 'Gym';
-    const bookingDate = new Date(booking.booking_date).toLocaleDateString('en-GB');
-
-    // Send email
-    const recipientEmail = booking.user_email || intent.receipt_email;
-    if (recipientEmail) {
-      sendConfirmationEmail({
-        to: recipientEmail,
-        gymName,
-        date: bookingDate,
-        time: booking.start_time,
-        endTime: booking.end_time,
-        price: parseFloat(booking.total_amount).toFixed(2),
-        bookingCode: booking.booking_code,
-        qrDataUrl: qr.dataUrl,
-      }).catch(err => console.error('[Email] Send failed:', err.message));
-    }
-
-    res.json({
-      success: true,
-      booking: { id: booking.id, gymName, date: bookingDate, time: booking.start_time, endTime: booking.end_time, price: parseFloat(booking.total_amount), bookingCode: booking.booking_code, status: 'confirmed' },
-      qr: { token: qr.token, scanUrl: qr.scanUrl, dataUrl: qr.dataUrl, maxScans: qr.maxScans, scansRemaining: qr.scansRemaining, expiresAt: qr.expiresAt },
-    });
-  } catch (err) {
-    console.error('Confirm intent error:', err);
-    res.status(500).json({ error: 'Failed to confirm payment' });
-  }
-});
-
-/**
- * POST /api/payment/instant-checkout
- * Uber-level: Creates booking + payment intent in ONE call.
- * Frontend shows single checkout sheet with Stripe Elements immediately.
- */
-router.post('/instant-checkout', async (req, res) => {
-  try {
-    if (!stripe) return res.status(500).json({ error: 'Payment not configured' });
-
-    const { gymId, date, time, email, placeId, passType, referralCode } = req.body;
-    if (!date || !time) {
-      return res.status(400).json({ error: 'date and time are required' });
-    }
-    // Email is optional at init (Stripe Elements mount before user types email)
-    // Will be collected before payment confirmation
-    const userEmail = (email && email.includes('@')) ? email : null;
-    
-    // Pass type pricing
-    const passTypeClean = passType || 'day';
-
-    // Validate referral code if provided
-    let validReferral = null;
-    if (referralCode) {
-      try {
-        const refCheck = await pool.query(
-          `SELECT lp.slug, lp.creator_name FROM creator_landing_pages lp
-           WHERE lp.slug = $1 AND lp.is_active = true LIMIT 1`,
-          [referralCode]
-        );
-        if (refCheck.rows.length > 0) {
-          validReferral = refCheck.rows[0];
-          console.log(`[Payment] Valid referral from creator: ${validReferral.creator_name} (${referralCode})`);
-        }
-      } catch (e) {
-        // Non-critical — proceed without discount
-      }
-    }
-
-    // Resolve gym ID (Google Place ID → DB ID)
-    let dbGymId = gymId;
-    if (placeId && isNaN(parseInt(gymId))) {
-      // Ensure gym exists in DB — auto-create if not found (upsert pattern)
-      const ensureResult = await pool.query('SELECT id FROM public.gyms WHERE place_id = $1', [placeId]);
-      if (ensureResult.rows.length > 0) {
-        dbGymId = ensureResult.rows[0].id;
-      } else {
-        // Fix: Auto-create gym record instead of failing — user found it via Google Places
-        try {
-          const gymName = req.body.gymName || 'Gym';
-          const gymAddress = req.body.gymAddress || '';
-          const insertResult = await pool.query(
-            `INSERT INTO public.gyms (name, address, place_id, day_pass_price, owner_id, slug, is_active, created_at, updated_at)
-             VALUES ($1, $2, $3, 5.00, 'system', $4, true, NOW(), NOW()) RETURNING id`,
-            [gymName, gymAddress, placeId, gymName.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 100)]
-          );
-          dbGymId = insertResult.rows[0].id;
-          console.log(`[Payment] Auto-created gym "${gymName}" (DB id: ${dbGymId}) from Place ID: ${placeId}`);
-        } catch (insertErr) {
-          console.error('[Payment] Failed to auto-create gym:', insertErr.message);
-          return res.status(400).json({ error: 'Gym not found. Please search again.' });
-        }
-      }
-    }
-
-    // Get gym info
-    const gym = await pool.query('SELECT id, name, address FROM gyms WHERE id = $1', [dbGymId]);
-    if (gym.rows.length === 0) {
-      return res.status(404).json({ error: 'Gym not found' });
-    }
-    const g = gym.rows[0];
-
-    // Dynamic pricing — PPP-adjusted, city-tiered, time-aware, surge-enabled
-    const resolved = resolveTime(time);
-    const geo = getGeoFromRequest(req);
-    const demandFactor = surge.getDemandFactor(dbGymId);
-    const pricingResult = pricing.calculatePrice({
-      countryCode: geo.country,
-      city: geo.city,
-      time: time,
-      date: date,
-      passType: passTypeClean,
-      demandFactor,
-    });
-    let price = pricingResult.amount;
-    const pricingCurrency = pricingResult.currency;
-    
-    // Apply referral discount (converted to local currency equivalent)
-    const referralDiscount = validReferral ? Math.min(price * 0.15, price - 0.50) : 0; // 15% off, min 0.50 final
-    if (validReferral) {
-      price = Math.max(price - referralDiscount, 0.50);
-      console.log(`[Payment] Applied referral discount: ${pricingResult.symbol}${referralDiscount.toFixed(2)}. Price: ${pricingResult.symbol}${price.toFixed(2)}`);
-    }
-    const amount = pricingResult.stripeAmount;
-
-    // Generate booking codes
-    const crypto = require('crypto');
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let bookingCode = '';
-    for (let i = 0; i < 8; i++) {
-      bookingCode += chars[Math.floor(Math.random() * chars.length)];
-      if (i === 3) bookingCode += '-';
-    }
-    const qrCode = 'BOOK_' + crypto.randomBytes(8).toString('hex').toUpperCase();
-
-    // Create booking
-    const bookingResult = await pool.query(
-      `INSERT INTO public.bookings 
-        (gym_id, user_id, booking_date, start_time, end_time, total_amount, 
-         platform_fee_amount, booking_type, booking_code, qr_code, status,
-         user_email, user_name, referral_code, created_at, updated_at)
-       VALUES ($1, 'guest', $2, $3, $4, $5, $6, 'instant', $7, $8, 'pending', $9, 'Guest', $10, NOW(), NOW())
-       RETURNING *`,
-      [dbGymId, date, resolved.startTime, resolved.endTime, price, price * 0.10, bookingCode, qrCode, userEmail || 'pending@scangym.com', validReferral ? referralCode : null]
-    );
-    const booking = bookingResult.rows[0];
-
-    // Track booking for surge pricing
-    surge.recordBooking(dbGymId, geo.country);
-
-    // Create PaymentIntent with localized currency
-    const intent = await stripe.paymentIntents.create({
-      amount,
-      currency: pricingCurrency,
-      automatic_payment_methods: { enabled: true },
-      metadata: { bookingId: String(booking.id), gymName: g.name, passType: passTypeClean, country: geo.country, surge: demandFactor.toFixed(2), ...(validReferral ? { referralCode, referralCreator: validReferral.creator_name } : {}) },
-      ...(userEmail ? { receipt_email: userEmail } : {}),
-    });
-
-    // Link intent to booking
-    await pool.query(
-      'UPDATE public.bookings SET stripe_payment_intent_id = $1, updated_at = NOW() WHERE id = $2',
-      [intent.id, booking.id]
-    );
-
-    // Store in session
-    if (req.session) {
-      req.session.guestBookingId = booking.id;
-      req.session.guestEmail = userEmail;
-    }
-
-    res.json({
-      success: true,
-      bookingId: booking.id,
-      intentId: intent.id,
-      clientSecret: intent.client_secret,
-      amount: price,
-      gymName: g.name,
-      bookingCode,
-      ...(validReferral ? { referralApplied: true, referralDiscount: referralDiscount, originalPrice: price + referralDiscount, referralCreator: validReferral.creator_name } : {}),
-    });
-  } catch (err) {
-    console.error('Instant checkout error:', err);
-    res.status(500).json({ error: 'Failed to create checkout', detail: err.message });
-  }
-});
-
-/**
- * POST /api/payment/update-intent-amount
- * Updates a PaymentIntent amount when user changes time (off-peak vs standard)
- */
-router.post('/update-intent-amount', async (req, res) => {
-  try {
-    if (!stripe) return res.status(500).json({ error: 'Payment not configured' });
-
-    const { paymentIntentId, amount, time, bookingId, passType } = req.body;
-    if (!paymentIntentId || !amount) return res.status(400).json({ error: 'paymentIntentId and amount required' });
-
-    // Update Stripe PaymentIntent
-    await stripe.paymentIntents.update(paymentIntentId, {
-      amount: Math.round(amount * 100),
-    });
-
-    // Update booking amount + time if provided (use pricing engine)
-    if (bookingId && time) {
-      const passTypeClean = passType || 'day';
-      const geo = getGeoFromRequest(req);
-      const resolved = resolveTime(time);
-      const pricingResult = pricing.calculatePrice({
-        countryCode: geo.country,
-        city: geo.city,
-        time: time,
-        passType: passTypeClean,
-      });
-      const price = pricingResult.amount;
-      await pool.query(
-        'UPDATE public.bookings SET total_amount = $1, start_time = $2, end_time = $3, platform_fee_amount = $4, updated_at = NOW() WHERE id = $5',
-        [price, resolved.startTime, resolved.endTime, price * 0.10, bookingId]
-      );
-    }
-
-    res.json({ success: true });
-  } catch (err) {
-    console.error('Update intent error:', err);
-    res.status(500).json({ error: 'Failed to update payment' });
-  }
-});
-
-
-/**
- * POST /api/payment/cash-booking
- * Reserve a booking to pay cash at the gym reception.
- * No Stripe involved — booking created with status 'reserved_cash'.
- */
-router.post('/cash-booking', async (req, res) => {
-  try {
-    const { gymId, placeId, date, time, email, passType, gymName, gymAddress } = req.body;
-    if (!date || !time) return res.status(400).json({ error: 'date and time required' });
-    // Email is optional for cash bookings — booking code shown on screen instead
-
-    // Resolve gym ID
-    let dbGymId = gymId;
-    if (placeId && isNaN(parseInt(gymId))) {
-      const ensureResult = await pool.query('SELECT id FROM public.gyms WHERE place_id = $1', [placeId]);
-      if (ensureResult.rows.length > 0) {
-        dbGymId = ensureResult.rows[0].id;
-      } else {
-        try {
-          const gn = gymName || 'Gym';
-          const insertResult = await pool.query(
-            `INSERT INTO public.gyms (name, address, place_id, day_pass_price, owner_id, slug, is_active, created_at, updated_at)
-             VALUES ($1, $2, $3, 5.00, 'system', $4, true, NOW(), NOW()) RETURNING id`,
-            [gn, gymAddress || '', placeId, gn.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 100)]
-          );
-          dbGymId = insertResult.rows[0].id;
-        } catch (e) {
-          return res.status(400).json({ error: 'Gym not found' });
-        }
-      }
-    }
-
-    // Get gym info
-    const gym = await pool.query('SELECT id, name FROM gyms WHERE id = $1', [dbGymId]);
-    if (gym.rows.length === 0) return res.status(404).json({ error: 'Gym not found' });
-    const g = gym.rows[0];
-
-    // Dynamic pricing (same engine as card payments)
-    const passTypeClean = passType || 'day';
-    const geo = getGeoFromRequest(req);
-    const resolved = resolveTime(time);
-    const pricingResult = pricing.calculatePrice({
-      countryCode: geo.country,
-      city: geo.city,
-      time: time,
-      date: date,
-      passType: passTypeClean,
-    });
-    const price = pricingResult.amount;
-
-    // Generate booking codes
-    const crypto = require('crypto');
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let bookingCode = 'CASH-';
-    for (let i = 0; i < 6; i++) bookingCode += chars[Math.floor(Math.random() * chars.length)];
-    const qrCode = 'CASH_' + crypto.randomBytes(8).toString('hex').toUpperCase();
-
-    // Create booking with cash status
-    const bookingResult = await pool.query(
-      `INSERT INTO public.bookings
-        (gym_id, user_id, booking_date, start_time, end_time, total_amount,
-         platform_fee_amount, booking_type, booking_code, qr_code, status,
-         user_email, user_name, created_at, updated_at)
-       VALUES ($1, 'guest', $2, $3, $4, $5, $6, $7, $8, $9, 'reserved_cash', $10, 'Guest', NOW(), NOW())
-       RETURNING *`,
-      [dbGymId, date, resolved.startTime, resolved.endTime, price, price * 0.10, passTypeClean + '_cash', bookingCode, qrCode, email]
-    );
-    const booking = bookingResult.rows[0];
-
-    // Generate 2-scan QR code (JD Gym model) — scannable URL format
-    const qr = await generate2ScanQR(booking.id, 'guest', dbGymId);
-
-    // Update QR on booking record
-    await pool.query('UPDATE public.bookings SET qr_code = $1, qr_code_url = $2, updated_at = NOW() WHERE id = $3', [qr.token, qr.dataUrl, booking.id]);
-
-    const bookingDate = new Date(booking.booking_date).toLocaleDateString('en-GB');
-
-    // Send confirmation email (if email transport configured)
-    sendConfirmationEmail({
-      to: email, gymName: g.name, date: bookingDate,
-      time: booking.start_time, endTime: booking.end_time,
-      price: price.toFixed(2), bookingCode, qrDataUrl: qr.dataUrl,
-    }).catch(err => console.error('[Cash email] Send failed:', err.message));
-
-    res.json({
-      success: true,
-      booking: { id: booking.id, gymName: g.name, date: bookingDate, time: booking.start_time, price, bookingCode, status: 'reserved_cash', paymentMethod: 'cash' },
-      qr: { token: qr.token, scanUrl: qr.scanUrl, dataUrl: qr.dataUrl, maxScans: qr.maxScans, scansRemaining: qr.scansRemaining, expiresAt: qr.expiresAt },
-    });
-
-    console.log('[Cash Booking] Reserved:', bookingCode, 'at', g.name, '£' + price, passTypeClean);
-  } catch (err) {
-    console.error('Cash booking error:', err);
-    res.status(500).json({ error: 'Failed to create reservation' });
-  }
-});
-
-/**
- * ═══════════════════════════════════════════════════════════════
- * UBER-STYLE "PAYMENT ON FILE" — Saved Cards + 1-Tap Checkout
- * ═══════════════════════════════════════════════════════════════
- * 
- * Flow:
- * 1. User pays first time → we create a Stripe Customer + save card
- * 2. GET /saved-cards → returns saved payment methods
- * 3. POST /quick-checkout → 1-tap checkout with saved card (no payment form)
- * 4. POST /save-card → save a new card to account
- * 5. DELETE /saved-cards/:id → remove a saved card
- */
-
-/**
- * Helper: Get or create Stripe Customer for a user
+ * Get or create a Stripe Customer for a user.
+ * Uber creates a Customer at signup — we create on first payment interaction.
  */
 async function getOrCreateStripeCustomer(userId, email, phone) {
   if (!stripe) throw new Error('Stripe not configured');
 
-  // Check if user already has a Stripe customer ID
-  const user = await pool.query('SELECT id, stripe_customer_id, email, phone_number FROM public.users WHERE id = $1', [userId]);
+  const user = await pool.query(
+    'SELECT id, stripe_customer_id, email, phone_number FROM public.users WHERE id = $1',
+    [userId]
+  );
   if (user.rows.length === 0) throw new Error('User not found');
 
   const u = user.rows[0];
@@ -1004,43 +231,43 @@ async function getOrCreateStripeCustomer(userId, email, phone) {
     return u.stripe_customer_id;
   }
 
-  // Create Stripe Customer
+  // Create Stripe Customer (like Uber does at signup)
   const customer = await stripe.customers.create({
     email: email || u.email || undefined,
     phone: phone || u.phone_number || undefined,
     metadata: { userId, source: 'scangym' },
   });
 
-  // Save to DB
   await pool.query(
     'UPDATE public.users SET stripe_customer_id = $1, updated_at = NOW() WHERE id = $2',
     [customer.id, userId]
   );
 
+  console.log(`[Stripe] Created Customer ${customer.id} for user ${userId}`);
   return customer.id;
 }
 
 /**
- * POST /api/payment/save-card
- * After a successful payment, save the card for future 1-tap bookings.
- * Called from frontend after first checkout completes.
+ * Auto-save a payment method from a PaymentIntent to the Customer.
+ * Called after first successful card payment — makes all future bookings 1-tap.
+ * This is the KEY missing piece that Uber does automatically.
  */
-router.post('/save-card', async (req, res) => {
+async function autoSaveCardFromIntent(userId, paymentIntentId) {
   try {
-    if (!stripe) return res.status(500).json({ error: 'Payment not configured' });
-    if (!req.session?.userId) return res.status(401).json({ error: 'Login required to save cards' });
-
-    const { paymentIntentId } = req.body;
-    if (!paymentIntentId) return res.status(400).json({ error: 'paymentIntentId required' });
-
-    // Get the PaymentIntent to find the payment method
     const intent = await stripe.paymentIntents.retrieve(paymentIntentId);
-    if (!intent.payment_method) {
-      return res.status(400).json({ error: 'No payment method found on this payment' });
-    }
+    if (!intent.payment_method) return null;
 
-    // Get or create Stripe Customer
-    const customerId = await getOrCreateStripeCustomer(req.session.userId, null, req.session.phone);
+    const customerId = await getOrCreateStripeCustomer(userId);
+
+    // Check if this payment method is already attached
+    const pm = await stripe.paymentMethods.retrieve(intent.payment_method);
+    if (pm.customer === customerId) {
+      // Already attached — just ensure it's the default
+      await stripe.customers.update(customerId, {
+        invoice_settings: { default_payment_method: intent.payment_method },
+      });
+      return pm;
+    }
 
     // Attach the payment method to the customer
     await stripe.paymentMethods.attach(intent.payment_method, { customer: customerId });
@@ -1050,8 +277,117 @@ router.post('/save-card', async (req, res) => {
       invoice_settings: { default_payment_method: intent.payment_method },
     });
 
-    // Get card details for response
-    const pm = await stripe.paymentMethods.retrieve(intent.payment_method);
+    console.log(`[Stripe] Auto-saved card ${pm.card?.brand} ••${pm.card?.last4} for user ${userId}`);
+    return pm;
+  } catch (err) {
+    // Non-blocking — booking still succeeds even if card save fails
+    console.error('[Stripe] Auto-save card failed (non-blocking):', err.message);
+    return null;
+  }
+}
+
+/**
+ * Credit creator commission for referred bookings (shared helper)
+ */
+async function creditCreatorCommission(booking) {
+  if (!booking.referral_code) return;
+  try {
+    const commissionPence = 125;
+    await pool.query(
+      `UPDATE creator_referrals
+       SET status = 'converted', booking_id = $1, commission_pence = $2, converted_at = NOW()
+       WHERE id = (
+         SELECT id FROM creator_referrals
+         WHERE creator_handle = $3 AND status = 'clicked'
+         ORDER BY created_at DESC LIMIT 1
+       )`,
+      [booking.id, commissionPence, booking.referral_code]
+    );
+    const updated = await pool.query(
+      `SELECT id FROM creator_referrals WHERE booking_id = $1 AND status = 'converted'`,
+      [booking.id]
+    );
+    if (updated.rows.length === 0) {
+      await pool.query(
+        `INSERT INTO creator_referrals (creator_handle, booking_id, commission_pence, status, converted_at)
+         VALUES ($1, $2, $3, 'converted', NOW())`,
+        [booking.referral_code, booking.id, commissionPence]
+      );
+    }
+    await pool.query(
+      `UPDATE creator_memberships
+       SET total_earnings_pence = total_earnings_pence + $1,
+           total_conversions = total_conversions + 1
+       WHERE user_id = (SELECT creator_user_id FROM creator_landing_pages WHERE slug = $2 LIMIT 1)`,
+      [commissionPence, booking.referral_code]
+    );
+    console.log(`[Payment] Credited £1.25 commission to creator "${booking.referral_code}" for booking ${booking.id}`);
+  } catch (commErr) {
+    console.error('[Payment] Commission credit failed (non-blocking):', commErr.message);
+  }
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  1. SETUP CARD — Save card WITHOUT paying (Uber onboarding style)
+//     User adds card in payment settings or before first booking.
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * POST /api/payment/setup-card
+ * Create a SetupIntent to save a card without making a payment.
+ * Uber does this at signup — user adds card in Wallet before first ride.
+ */
+router.post('/setup-card', async (req, res) => {
+  try {
+    if (!stripe) return res.status(500).json({ error: 'Payment not configured' });
+    if (!req.session?.userId) return res.status(401).json({ error: 'Login required' });
+
+    const customerId = await getOrCreateStripeCustomer(req.session.userId);
+
+    const setupIntent = await stripe.setupIntents.create({
+      customer: customerId,
+      payment_method_types: ['card'],
+      usage: 'off_session', // Will be used for future off-session payments (like Uber)
+    });
+
+    res.json({
+      success: true,
+      clientSecret: setupIntent.client_secret,
+    });
+  } catch (err) {
+    console.error('Setup card error:', err);
+    res.status(500).json({ error: 'Failed to set up card saving' });
+  }
+});
+
+/**
+ * POST /api/payment/confirm-setup
+ * Called after the frontend confirms a SetupIntent.
+ * Ensures the card is attached and set as default.
+ */
+router.post('/confirm-setup', async (req, res) => {
+  try {
+    if (!stripe) return res.status(500).json({ error: 'Payment not configured' });
+    if (!req.session?.userId) return res.status(401).json({ error: 'Login required' });
+
+    const { setupIntentId } = req.body;
+    if (!setupIntentId) return res.status(400).json({ error: 'setupIntentId required' });
+
+    const setupIntent = await stripe.setupIntents.retrieve(setupIntentId);
+    if (setupIntent.status !== 'succeeded') {
+      return res.status(400).json({ error: 'Setup not completed', status: setupIntent.status });
+    }
+
+    const pmId = setupIntent.payment_method;
+    const customerId = await getOrCreateStripeCustomer(req.session.userId);
+
+    // Set as default
+    await stripe.customers.update(customerId, {
+      invoice_settings: { default_payment_method: pmId },
+    });
+
+    const pm = await stripe.paymentMethods.retrieve(pmId);
 
     res.json({
       success: true,
@@ -1065,23 +401,30 @@ router.post('/save-card', async (req, res) => {
       message: '💳 Card saved! Future bookings will be 1-tap.',
     });
   } catch (err) {
-    console.error('Save card error:', err);
-    // Don't fail hard — card saving is optional
-    res.status(400).json({ error: err.message || 'Failed to save card' });
+    console.error('Confirm setup error:', err);
+    res.status(500).json({ error: 'Failed to confirm card setup' });
   }
 });
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  2. SAVED CARDS — List / Remove (Uber Wallet screen)
+// ═══════════════════════════════════════════════════════════════════════════
 
 /**
  * GET /api/payment/saved-cards
  * List saved payment methods for the logged-in user.
- * Uber shows this as "Payment" with card icons.
+ * Uber shows this as "Payment" with card icons on the ride screen.
  */
 router.get('/saved-cards', async (req, res) => {
   try {
     if (!stripe) return res.status(500).json({ error: 'Payment not configured' });
     if (!req.session?.userId) return res.json({ cards: [], message: 'Login to see saved cards' });
 
-    const user = await pool.query('SELECT stripe_customer_id FROM public.users WHERE id = $1', [req.session.userId]);
+    const user = await pool.query(
+      'SELECT stripe_customer_id FROM public.users WHERE id = $1',
+      [req.session.userId]
+    );
     if (user.rows.length === 0 || !user.rows[0].stripe_customer_id) {
       return res.json({ cards: [] });
     }
@@ -1111,7 +454,7 @@ router.get('/saved-cards', async (req, res) => {
 
 /**
  * DELETE /api/payment/saved-cards/:id
- * Remove a saved card.
+ * Remove a saved card. Uber lets you delete cards from Wallet.
  */
 router.delete('/saved-cards/:id', async (req, res) => {
   try {
@@ -1127,10 +470,40 @@ router.delete('/saved-cards/:id', async (req, res) => {
 });
 
 /**
+ * POST /api/payment/set-default-card
+ * Set a saved card as the default payment method.
+ */
+router.post('/set-default-card', async (req, res) => {
+  try {
+    if (!stripe) return res.status(500).json({ error: 'Payment not configured' });
+    if (!req.session?.userId) return res.status(401).json({ error: 'Login required' });
+
+    const { cardId } = req.body;
+    if (!cardId) return res.status(400).json({ error: 'cardId required' });
+
+    const customerId = await getOrCreateStripeCustomer(req.session.userId);
+    await stripe.customers.update(customerId, {
+      invoice_settings: { default_payment_method: cardId },
+    });
+
+    res.json({ success: true, message: 'Default card updated' });
+  } catch (err) {
+    console.error('Set default card error:', err);
+    res.status(400).json({ error: 'Failed to set default card' });
+  }
+});
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  3. QUICK CHECKOUT — 1-tap booking with saved card (THE UBER FLOW)
+//     This is the primary payment path. Saved card → instant charge → QR.
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
  * POST /api/payment/quick-checkout
  * UBER-STYLE 1-TAP CHECKOUT — Uses saved card, no payment form needed.
  * Creates booking + charges saved card + generates QR in ONE call.
- * 
+ *
  * This is the magic: user taps "Book Now" → booking confirmed instantly.
  */
 router.post('/quick-checkout', async (req, res) => {
@@ -1138,7 +511,8 @@ router.post('/quick-checkout', async (req, res) => {
     if (!stripe) return res.status(500).json({ error: 'Payment not configured' });
     if (!req.session?.userId) return res.status(401).json({ error: 'Login required for 1-tap booking' });
 
-    const { gymId, date, time, cardId, placeId } = req.body;
+    const { gymId, date, time, cardId, savedCardId, placeId, passType, gymName: reqGymName, gymAddress: reqGymAddr } = req.body;
+    const effectiveCardId = cardId || savedCardId; // Frontend sends savedCardId
     if (!date || !time) return res.status(400).json({ error: 'date and time required' });
 
     // Get user + Stripe customer
@@ -1150,17 +524,18 @@ router.post('/quick-checkout', async (req, res) => {
     const user = userResult.rows[0];
 
     if (!user.stripe_customer_id) {
-      return res.status(400).json({ error: 'No saved payment method. Please complete a regular checkout first.' });
+      return res.status(400).json({ error: 'No saved payment method. Please add a card first.' });
     }
 
     // Get default card or specified card
-    let paymentMethodId = cardId;
+    let paymentMethodId = effectiveCardId;
     if (!paymentMethodId) {
       const customer = await stripe.customers.retrieve(user.stripe_customer_id);
       paymentMethodId = customer.invoice_settings?.default_payment_method;
       if (!paymentMethodId) {
-        // Try to get first saved card
-        const methods = await stripe.paymentMethods.list({ customer: user.stripe_customer_id, type: 'card', limit: 1 });
+        const methods = await stripe.paymentMethods.list({
+          customer: user.stripe_customer_id, type: 'card', limit: 1,
+        });
         paymentMethodId = methods.data[0]?.id;
       }
     }
@@ -1185,15 +560,16 @@ router.post('/quick-checkout', async (req, res) => {
     if (gym.rows.length === 0) return res.status(404).json({ error: 'Gym not found' });
     const g = gym.rows[0];
 
-    // Dynamic pricing via pricing engine
+    // Dynamic pricing
     const resolved = resolveTime(time);
     const geo = getGeoFromRequest(req);
+    const passTypeClean = passType || 'day';
     const pricingResult = pricing.calculatePrice({
       countryCode: geo.country,
       city: geo.city,
       time: time,
       date: date,
-      passType: 'day',
+      passType: passTypeClean,
       demandFactor: surge.getDemandFactor(dbGymId),
     });
     const price = pricingResult.amount;
@@ -1207,21 +583,21 @@ router.post('/quick-checkout', async (req, res) => {
       bookingCode += chars[Math.floor(Math.random() * chars.length)];
       if (i === 3) bookingCode += '-';
     }
-    const qrToken = 'BOOK_' + crypto.randomBytes(8).toString('hex').toUpperCase();
 
     // Create booking
     const bookingResult = await pool.query(
-      `INSERT INTO public.bookings 
-        (gym_id, user_id, booking_date, start_time, end_time, total_amount, 
-         platform_fee_amount, booking_type, booking_code, qr_code, status,
+      `INSERT INTO public.bookings
+        (gym_id, user_id, booking_date, start_time, end_time, total_amount,
+         platform_fee_amount, booking_type, booking_code, status,
          user_email, user_name, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 'quick', $8, $9, 'pending', $10, 'User', NOW(), NOW())
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'quick', $8, 'pending', $9, 'User', NOW(), NOW())
        RETURNING *`,
-      [dbGymId, req.session.userId, date, resolved.startTime, resolved.endTime, price, price * 0.10, bookingCode, qrToken, user.email || '']
+      [dbGymId, req.session.userId, date, resolved.startTime, resolved.endTime,
+       price, price * 0.10, bookingCode, user.email || '']
     );
     const booking = bookingResult.rows[0];
 
-    // Charge the saved card — instant, no user interaction!
+    // Charge the saved card — instant, no user interaction! (Like Uber)
     surge.recordBooking(dbGymId, geo.country);
     const intent = await stripe.paymentIntents.create({
       amount,
@@ -1230,17 +606,27 @@ router.post('/quick-checkout', async (req, res) => {
       payment_method: paymentMethodId,
       off_session: true,
       confirm: true, // ← Charge immediately!
-      metadata: { bookingId: String(booking.id), gymName: g.name, quickCheckout: 'true', country: geo.country },
+      metadata: {
+        bookingId: String(booking.id),
+        gymName: g.name,
+        quickCheckout: 'true',
+        country: geo.country,
+      },
       receipt_email: user.email || undefined,
     });
 
     if (intent.status !== 'succeeded') {
-      // Payment failed — clean up
-      await pool.query('UPDATE public.bookings SET status = $1, updated_at = NOW() WHERE id = $2', ['failed', booking.id]);
-      return res.status(400).json({ error: 'Payment failed. Your card may have been declined.', status: intent.status });
+      await pool.query(
+        'UPDATE public.bookings SET status = $1, updated_at = NOW() WHERE id = $2',
+        ['failed', booking.id]
+      );
+      return res.status(400).json({
+        error: 'Payment failed. Your card may have been declined.',
+        status: intent.status,
+      });
     }
 
-    // Generate 2-scan QR code (JD Gym model) — scannable URL format
+    // Generate 2-scan QR code
     const qr = await generate2ScanQR(booking.id, req.session.userId, dbGymId);
 
     // Confirm booking
@@ -1251,18 +637,16 @@ router.post('/quick-checkout', async (req, res) => {
       [qr.token, qr.dataUrl, intent.id, booking.id]
     );
 
+    // Credit creator commission
+    await creditCreatorCommission(booking);
+
     // Send confirmation email (non-blocking)
     const bookingDate = new Date(booking.booking_date).toLocaleDateString('en-GB');
     if (user.email) {
       sendConfirmationEmail({
-        to: user.email,
-        gymName: g.name,
-        date: bookingDate,
-        time: booking.start_time,
-        endTime: booking.end_time,
-        price: price.toFixed(2),
-        bookingCode,
-        qrDataUrl: qr.dataUrl,
+        to: user.email, gymName: g.name, date: bookingDate,
+        time: booking.start_time, endTime: booking.end_time,
+        price: price.toFixed(2), bookingCode, qrDataUrl: qr.dataUrl,
       }).catch(err => console.error('[Email] Send failed:', err.message));
     }
 
@@ -1270,15 +654,14 @@ router.post('/quick-checkout', async (req, res) => {
       success: true,
       quickCheckout: true,
       booking: {
-        id: booking.id,
-        gymName: g.name,
-        date: bookingDate,
-        time: booking.start_time,
-        price,
-        bookingCode,
-        status: 'confirmed',
+        id: booking.id, gymName: g.name, date: bookingDate,
+        time: booking.start_time, price, bookingCode, status: 'confirmed',
       },
-      qr: { token: qr.token, scanUrl: qr.scanUrl, dataUrl: qr.dataUrl, maxScans: qr.maxScans, scansRemaining: qr.scansRemaining, expiresAt: qr.expiresAt },
+      qr: {
+        token: qr.token, scanUrl: qr.scanUrl, dataUrl: qr.dataUrl,
+        maxScans: qr.maxScans, scansRemaining: qr.scansRemaining,
+        expiresAt: qr.expiresAt,
+      },
       message: '⚡ Booked instantly with your saved card!',
     });
   } catch (err) {
@@ -1295,31 +678,274 @@ router.post('/quick-checkout', async (req, res) => {
   }
 });
 
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  4. FIRST-TIME CARD PAYMENT — Stripe Elements (fallback for new users)
+//     After this payment, card is AUTO-SAVED for future 1-tap bookings.
+// ═══════════════════════════════════════════════════════════════════════════
+
 /**
- * POST /api/payment/setup-card
- * Create a SetupIntent to save a card WITHOUT making a payment.
- * Uber-style: user adds card in profile/settings.
+ * POST /api/payment/create-intent
+ * Create a Stripe PaymentIntent with a Customer attached.
+ * The Customer attachment is critical — it allows auto-saving the card after payment.
  */
-router.post('/setup-card', async (req, res) => {
+router.post('/create-intent', async (req, res) => {
   try {
     if (!stripe) return res.status(500).json({ error: 'Payment not configured' });
-    if (!req.session?.userId) return res.status(401).json({ error: 'Login required' });
 
-    const customerId = await getOrCreateStripeCustomer(req.session.userId);
+    const { bookingId, email } = req.body;
+    if (!bookingId) return res.status(400).json({ error: 'bookingId required' });
 
-    const setupIntent = await stripe.setupIntents.create({
-      customer: customerId,
-      payment_method_types: ['card'],
-      usage: 'off_session', // Will be used for future off-session payments
-    });
+    const result = await pool.query(
+      `SELECT b.*, g.name as gym_name
+       FROM public.bookings b
+       LEFT JOIN public.gyms g ON b.gym_id = g.id
+       WHERE b.id = $1`,
+      [bookingId]
+    );
+
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Booking not found' });
+    const booking = result.rows[0];
+    if (booking.status === 'confirmed') return res.status(400).json({ error: 'Already paid' });
+
+    const amount = Math.round(parseFloat(booking.total_amount) * 100);
+
+    // Uber-style: attach Customer to PaymentIntent so we can save the card after
+    const intentConfig = {
+      amount,
+      currency: pricing.resolveCurrency(getGeoFromRequest(req)).currency,
+      metadata: { bookingId: String(booking.id), gymName: booking.gym_name || '' },
+      receipt_email: email || booking.user_email || undefined,
+      payment_method_types: ['card', 'amazon_pay', 'revolut_pay'],
+    };
+
+    // If logged in, attach Stripe Customer → enables auto-save after payment
+    if (req.session?.userId) {
+      try {
+        const customerId = await getOrCreateStripeCustomer(
+          req.session.userId,
+          email || booking.user_email
+        );
+        intentConfig.customer = customerId;
+        // setup_future_usage tells Stripe to prepare this card for future charges
+        intentConfig.setup_future_usage = 'off_session';
+      } catch (e) {
+        console.log('[Payment] Could not attach customer (non-blocking):', e.message);
+      }
+    }
+
+    const intent = await stripe.paymentIntents.create(intentConfig);
+
+    await pool.query(
+      'UPDATE public.bookings SET stripe_payment_intent_id = $1, updated_at = NOW() WHERE id = $2',
+      [intent.id, booking.id]
+    );
 
     res.json({
       success: true,
-      clientSecret: setupIntent.client_secret,
+      clientSecret: intent.client_secret,
+      amount: parseFloat(booking.total_amount),
+      gymName: booking.gym_name,
     });
   } catch (err) {
-    console.error('Setup card error:', err);
-    res.status(500).json({ error: 'Failed to set up card saving' });
+    console.error('Create intent error:', err);
+    res.status(500).json({ error: 'Failed to create payment' });
+  }
+});
+
+/**
+ * POST /api/payment/confirm-intent
+ * Called after Stripe Elements confirms payment on frontend.
+ * AUTO-SAVES the card for future 1-tap bookings (the Uber magic).
+ * Generates QR, confirms booking, sends email.
+ */
+router.post('/confirm-intent', async (req, res) => {
+  try {
+    if (!stripe) return res.status(500).json({ error: 'Payment not configured' });
+
+    const { bookingId, paymentIntentId, email } = req.body;
+    if (!bookingId || !paymentIntentId) {
+      return res.status(400).json({ error: 'bookingId and paymentIntentId required' });
+    }
+
+    // Verify the payment intent is actually paid
+    const intent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    if (intent.status !== 'succeeded') {
+      return res.status(400).json({ error: 'Payment not completed', status: intent.status });
+    }
+
+    // Get booking
+    const result = await pool.query('SELECT * FROM public.bookings WHERE id = $1', [bookingId]);
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Booking not found' });
+    const booking = result.rows[0];
+
+    // Update email if provided
+    if (email && email.includes('@')) {
+      await pool.query(
+        'UPDATE public.bookings SET user_email = $1, updated_at = NOW() WHERE id = $2',
+        [email, bookingId]
+      );
+      booking.user_email = email;
+      try { await stripe.paymentIntents.update(paymentIntentId, { receipt_email: email }); } catch(e) {}
+    }
+
+    // ═══ UBER-STYLE AUTO-SAVE: Save the card for future 1-tap bookings ═══
+    let savedCard = null;
+    if (req.session?.userId) {
+      savedCard = await autoSaveCardFromIntent(req.session.userId, paymentIntentId);
+    }
+
+    // Generate 2-scan QR code
+    const qr = await generate2ScanQR(booking.id, booking.user_id, booking.gym_id);
+
+    // Update booking
+    await pool.query(
+      `UPDATE public.bookings SET status = 'confirmed', qr_code = $1, qr_code_url = $2,
+       stripe_payment_intent_id = $3, stripe_payment_status = 'paid', updated_at = NOW()
+       WHERE id = $4`,
+      [qr.token, qr.dataUrl, paymentIntentId, booking.id]
+    );
+
+    // Credit creator commission
+    await creditCreatorCommission(booking);
+
+    const gym = await pool.query('SELECT name FROM public.gyms WHERE id = $1', [booking.gym_id]);
+    const gymName = gym.rows[0]?.name || 'Gym';
+    const bookingDate = new Date(booking.booking_date).toLocaleDateString('en-GB');
+
+    // Send email
+    const recipientEmail = booking.user_email || intent.receipt_email;
+    if (recipientEmail) {
+      sendConfirmationEmail({
+        to: recipientEmail, gymName, date: bookingDate,
+        time: booking.start_time, endTime: booking.end_time,
+        price: parseFloat(booking.total_amount).toFixed(2),
+        bookingCode: booking.booking_code, qrDataUrl: qr.dataUrl,
+      }).catch(err => console.error('[Email] Send failed:', err.message));
+    }
+
+    res.json({
+      success: true,
+      booking: {
+        id: booking.id, gymName, date: bookingDate,
+        time: booking.start_time, endTime: booking.end_time,
+        price: parseFloat(booking.total_amount),
+        bookingCode: booking.booking_code, status: 'confirmed',
+      },
+      qr: {
+        token: qr.token, scanUrl: qr.scanUrl, dataUrl: qr.dataUrl,
+        maxScans: qr.maxScans, scansRemaining: qr.scansRemaining,
+        expiresAt: qr.expiresAt,
+      },
+      // Tell frontend the card was saved — show "Visa ••4242" next time
+      cardSaved: savedCard ? {
+        brand: savedCard.card?.brand || 'card',
+        last4: savedCard.card?.last4 || '****',
+      } : null,
+    });
+  } catch (err) {
+    console.error('Confirm intent error:', err);
+    res.status(500).json({ error: 'Failed to confirm payment' });
+  }
+});
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  5. CASH BOOKING — Reserve spot, pay at reception
+// ═══════════════════════════════════════════════════════════════════════════
+
+router.post('/cash-booking', async (req, res) => {
+  try {
+    const { gymId, placeId, date, time, email, passType, gymName, gymAddress } = req.body;
+    if (!date || !time) return res.status(400).json({ error: 'date and time required' });
+
+    let dbGymId = gymId;
+    if (placeId && isNaN(parseInt(gymId))) {
+      const ensureResult = await pool.query('SELECT id FROM public.gyms WHERE place_id = $1', [placeId]);
+      if (ensureResult.rows.length > 0) {
+        dbGymId = ensureResult.rows[0].id;
+      } else {
+        try {
+          const gn = gymName || 'Gym';
+          const insertResult = await pool.query(
+            `INSERT INTO public.gyms (name, address, place_id, day_pass_price, owner_id, slug, is_active, created_at, updated_at)
+             VALUES ($1, $2, $3, 5.00, 'system', $4, true, NOW(), NOW()) RETURNING id`,
+            [gn, gymAddress || '', placeId, gn.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 100)]
+          );
+          dbGymId = insertResult.rows[0].id;
+        } catch (e) {
+          return res.status(400).json({ error: 'Gym not found' });
+        }
+      }
+    }
+
+    const gym = await pool.query('SELECT id, name FROM gyms WHERE id = $1', [dbGymId]);
+    if (gym.rows.length === 0) return res.status(404).json({ error: 'Gym not found' });
+    const g = gym.rows[0];
+
+    const passTypeClean = passType || 'day';
+    const geo = getGeoFromRequest(req);
+    const resolved = resolveTime(time);
+    const pricingResult = pricing.calculatePrice({
+      countryCode: geo.country,
+      city: geo.city,
+      time: time,
+      date: date,
+      passType: passTypeClean,
+    });
+    const price = pricingResult.amount;
+
+    const crypto = require('crypto');
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let bookingCode = 'CASH-';
+    for (let i = 0; i < 6; i++) bookingCode += chars[Math.floor(Math.random() * chars.length)];
+    const qrCode = 'CASH_' + crypto.randomBytes(8).toString('hex').toUpperCase();
+
+    const bookingResult = await pool.query(
+      `INSERT INTO public.bookings
+        (gym_id, user_id, booking_date, start_time, end_time, total_amount,
+         platform_fee_amount, booking_type, booking_code, qr_code, status,
+         user_email, user_name, created_at, updated_at)
+       VALUES ($1, 'guest', $2, $3, $4, $5, $6, $7, $8, $9, 'reserved_cash', $10, 'Guest', NOW(), NOW())
+       RETURNING *`,
+      [dbGymId, date, resolved.startTime, resolved.endTime, price, price * 0.10,
+       passTypeClean + '_cash', bookingCode, qrCode, email]
+    );
+    const booking = bookingResult.rows[0];
+
+    const qr = await generate2ScanQR(booking.id, 'guest', dbGymId);
+
+    await pool.query(
+      'UPDATE public.bookings SET qr_code = $1, qr_code_url = $2, updated_at = NOW() WHERE id = $3',
+      [qr.token, qr.dataUrl, booking.id]
+    );
+
+    const bookingDate = new Date(booking.booking_date).toLocaleDateString('en-GB');
+
+    sendConfirmationEmail({
+      to: email, gymName: g.name, date: bookingDate,
+      time: booking.start_time, endTime: booking.end_time,
+      price: price.toFixed(2), bookingCode, qrDataUrl: qr.dataUrl,
+    }).catch(err => console.error('[Cash email] Send failed:', err.message));
+
+    res.json({
+      success: true,
+      booking: {
+        id: booking.id, gymName: g.name, date: bookingDate,
+        time: booking.start_time, price, bookingCode,
+        status: 'reserved_cash', paymentMethod: 'cash',
+      },
+      qr: {
+        token: qr.token, scanUrl: qr.scanUrl, dataUrl: qr.dataUrl,
+        maxScans: qr.maxScans, scansRemaining: qr.scansRemaining,
+        expiresAt: qr.expiresAt,
+      },
+    });
+
+    console.log('[Cash Booking] Reserved:', bookingCode, 'at', g.name, '£' + price, passTypeClean);
+  } catch (err) {
+    console.error('Cash booking error:', err);
+    res.status(500).json({ error: 'Failed to create reservation' });
   }
 });
 

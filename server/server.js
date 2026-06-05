@@ -195,33 +195,11 @@ app.post('/api/payment/webhook', express.raw({ type: 'application/json' }), asyn
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  if (event.type === 'checkout.session.completed') {
-    const session = event.data.object;
-    if (session.payment_status === 'paid' && session.metadata?.bookingId) {
-      const bookingId = parseInt(session.metadata.bookingId);
-      try {
-        // Generate QR code token
-        const qrToken = 'BOOK_' + require('crypto').randomBytes(8).toString('hex').toUpperCase();
-        await pool.query(
-          `UPDATE public.bookings
-           SET status = 'confirmed',
-               qr_code = $1,
-               stripe_payment_intent_id = $2,
-               stripe_payment_status = 'paid',
-               updated_at = NOW()
-           WHERE id = $3 AND status != 'confirmed'`,
-          [qrToken, session.payment_intent, bookingId]
-        );
-        console.log(`✅ Webhook: Booking #${bookingId} confirmed via Stripe (checkout.session.completed)`);
-      } catch (dbErr) {
-        console.error('Webhook DB error:', dbErr.message);
-      }
-    }
-  }
+  // NOTE: checkout.session.completed handler removed — we no longer use Stripe Checkout Sessions.
+  // All payments now go through PaymentIntents (Stripe Elements) or saved card (quick-checkout).
 
-  // Blocker 2 Fix: Handle payment_intent.succeeded as a safety net for the
-  // inline Stripe Elements flow. The frontend calls /confirm-intent directly,
-  // but this webhook catches any edge cases (network drop after payment, etc.)
+  // Safety net: Handle payment_intent.succeeded for edge cases
+  // (network drop after payment, user closes tab before /confirm-intent completes, etc.)
   if (event.type === 'payment_intent.succeeded') {
     const intent = event.data.object;
     const bookingId = intent.metadata?.bookingId ? parseInt(intent.metadata.bookingId) : null;
