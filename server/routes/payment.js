@@ -913,7 +913,7 @@ router.post('/cash-booking', async (req, res) => {
           (gym_id, user_id, booking_date, start_time, end_time, total_amount,
            platform_fee_amount, booking_type, booking_code, qr_code, status,
            user_email, user_name, created_at, updated_at)
-         VALUES ($1, 'guest', $2, $3, $4, $5, $6, $7, $8, $9, 'reserved_cash', $10, 'Guest', NOW(), NOW())
+         VALUES ($1, 'guest', $2, $3, $4, $5, $6, $7, $8, $9, 'reserved', $10, 'Guest', NOW(), NOW())
          RETURNING *`,
         [dbGymId, date, resolved.startTime, resolved.endTime, price, price * 0.10,
          passTypeClean + '_cash', bookingCode, qrCode, email]
@@ -928,7 +928,7 @@ router.post('/cash-booking', async (req, res) => {
             (gym_id, user_id, booking_date, start_time, end_time, total_amount,
              booking_type, booking_code, qr_code, status,
              user_email, user_name, created_at, updated_at)
-           VALUES ($1, 'guest', $2, $3, $4, $5, $6, $7, $8, 'reserved_cash', $9, 'Guest', NOW(), NOW())
+           VALUES ($1, 'guest', $2, $3, $4, $5, $6, $7, $8, 'reserved', $9, 'Guest', NOW(), NOW())
            RETURNING *`,
           [dbGymId, date, resolved.startTime, resolved.endTime, price,
            passTypeClean + '_cash', bookingCode, qrCode, email]
@@ -966,7 +966,7 @@ router.post('/cash-booking', async (req, res) => {
       booking: {
         id: booking.id, gymName: g.name, date: bookingDate,
         time: booking.start_time, price, bookingCode,
-        status: 'reserved_cash', paymentMethod: 'cash',
+        status: 'reserved', paymentMethod: 'cash',
       },
       qr: {
         token: qr.token, scanUrl: qr.scanUrl, dataUrl: qr.dataUrl,
