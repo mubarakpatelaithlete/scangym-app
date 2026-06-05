@@ -580,7 +580,7 @@ function Footer(){
           <a onclick="navigate('/refer')" class="block text-slate-400 hover:text-brand cursor-pointer">Refer & Earn</a>
           <a onclick="navigate('/bookings')" class="block text-slate-400 hover:text-brand cursor-pointer">My Bookings</a>
           <a onclick="navigate('/coach')" class="block text-brand hover:text-orange-400 cursor-pointer font-medium">✨ Your AI Coach</a>
-          <a onclick="navigate('/wallet')" class="block text-brand hover:text-orange-400 cursor-pointer font-medium">💰 ScanGym Wallet</a>
+          <a onclick="navigate('/wallet')" class="block text-brand hover:text-orange-400 cursor-pointer font-medium">💳 Payment</a>
         </div>
       </div>
       <div>
@@ -3524,33 +3524,280 @@ window._fsFilter=function(type){
   });
 };
 
-// ─── Page: Wallet (Task 14) ───
+// ─── Page: Wallet (Uber-style payment wallet) ───
 function WalletPage(){
-  return`
-  <div class="pt-8 min-h-full px-4">
-    <div class="max-w-2xl mx-auto py-12">
-      <h1 class="font-brand text-3xl font-bold text-white mb-2 text-center">💰 ScanGym Wallet</h1>
-      <p class="text-slate-400 text-center mb-8">Top up, save more, pay faster.</p>
-      <div class="bg-card rounded-2xl border border-slate-700 p-8 text-center mb-6">
-        <p class="text-slate-400 text-sm">Current Balance</p>
-        <p class="text-5xl font-bold text-white mt-2">${sgSymbol()}0.00</p>
-        <p class="text-accent text-xs mt-2">Auto-applied at checkout</p>
+  if(!state.user){
+    return`<div class="pt-8 min-h-full px-4"><div class="max-w-md mx-auto py-20 text-center">
+      <div style="font-size:64px;margin-bottom:16px">💳</div>
+      <h1 class="font-brand text-2xl font-bold text-white mb-3">Payment</h1>
+      <p class="text-slate-400 mb-8">Sign in to manage your payment methods and ScanGym balance.</p>
+      <button onclick="navigate('/login')" class="bg-brand hover:bg-orange-600 text-white font-bold py-4 px-8 rounded-xl transition text-lg">Sign In</button>
+    </div></div>`;
+  }
+
+  // Load wallet + saved cards on render
+  setTimeout(()=>_loadWalletScreen(),50);
+
+  return`<div class="pt-8 min-h-full px-4 pb-28">
+    <div class="max-w-md mx-auto py-6">
+      <!-- Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
+        <button onclick="navigate('/more')" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;padding:8px">←</button>
+        <h1 class="font-brand text-xl font-bold text-white">Payment</h1>
+        <div style="width:38px"></div>
       </div>
-      <div class="grid sm:grid-cols-3 gap-4 mb-8">
-        ${[{amount:10,bonus:'+ 10% free',total:'11'},{amount:20,bonus:'+ 10% free',total:'22',popular:true},{amount:50,bonus:'+ 15% free',total:'57.50'}].map(p=>`
-          <button class="bg-card rounded-xl border ${p.popular?'border-brand':'border-slate-700'} p-5 text-center hover:border-brand transition relative">
-            ${p.popular?'<span class="absolute -top-2 left-1/2 -translate-x-1/2 bg-brand text-white text-xs px-2 py-0.5 rounded-full">Popular</span>':''}
-            <p class="text-2xl font-bold text-white">${sgSymbol()}${p.amount}</p>
-            <p class="text-accent text-xs mt-1">${p.bonus}</p>
-            <p class="text-slate-400 text-xs mt-1">Get ${p.total}</p>
-          </button>
-        `).join('')}
+
+      <!-- ScanGym Balance Card -->
+      <div id="wallet-balance-card" style="background:linear-gradient(135deg,#f97316,#ea580c);border-radius:16px;padding:24px;margin-bottom:24px;position:relative;overflow:hidden">
+        <div style="position:absolute;top:-20px;right:-20px;width:100px;height:100px;background:rgba(255,255,255,.1);border-radius:50%"></div>
+        <div style="position:absolute;bottom:-30px;left:-10px;width:80px;height:80px;background:rgba(255,255,255,.06);border-radius:50%"></div>
+        <p style="color:rgba(255,255,255,.7);font-size:13px;font-weight:500;margin-bottom:4px">ScanGym Balance</p>
+        <p id="wallet-balance-amount" style="color:#fff;font-size:36px;font-weight:800;letter-spacing:-1px">£0.00</p>
+        <p style="color:rgba(255,255,255,.5);font-size:11px;margin-top:8px">Auto-applied at checkout</p>
       </div>
-      <button onclick="navigate('/login')" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-4 rounded-xl transition">
-        Log In to Top Up
+
+      <!-- Payment Methods Section -->
+      <div style="margin-bottom:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:0 4px">
+          <h2 style="color:#fff;font-size:15px;font-weight:700">Payment methods</h2>
+        </div>
+        <div id="wallet-cards-list" style="background:rgba(30,41,59,.6);border-radius:16px;border:1px solid rgba(255,255,255,.06);overflow:hidden">
+          <div style="padding:20px;text-align:center;color:rgba(255,255,255,.3);font-size:13px">Loading…</div>
+        </div>
+      </div>
+
+      <!-- Add Payment Method -->
+      <button onclick="_walletAddCard()" id="wallet-add-card-btn" style="width:100%;display:flex;align-items:center;gap:14px;padding:16px 20px;margin-top:4px;background:rgba(30,41,59,.6);border:1px dashed rgba(255,255,255,.15);border-radius:16px;cursor:pointer;transition:all .2s">
+        <div style="width:44px;height:30px;background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.3);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;color:#f97316">+</div>
+        <div style="text-align:left">
+          <div style="color:#fff;font-size:14px;font-weight:600">Add payment method</div>
+          <div style="color:rgba(255,255,255,.4);font-size:11px;margin-top:1px">Visa, Mastercard, Amex</div>
+        </div>
       </button>
+
+      <!-- Add Card Form (hidden until tapped) -->
+      <div id="wallet-add-card-form" style="display:none;margin-top:16px;background:rgba(30,41,59,.6);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <h3 style="color:#fff;font-size:15px;font-weight:700">Add card</h3>
+          <button onclick="_walletCloseCardForm()" style="background:none;border:none;color:rgba(255,255,255,.4);font-size:18px;cursor:pointer">✕</button>
+        </div>
+        <div id="wallet-card-element" style="background:rgba(15,23,42,.6);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:14px 16px;margin-bottom:16px"></div>
+        <button id="wallet-save-card-btn" onclick="_walletSaveCard()" style="width:100%;background:#f97316;color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;opacity:.5;pointer-events:none;transition:all .2s">Save Card</button>
+        <p id="wallet-card-error" style="color:#ef4444;font-size:12px;margin-top:8px;display:none"></p>
+      </div>
+
+      <!-- Top-up Section -->
+      <div style="margin-top:24px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:0 4px">
+          <h2 style="color:#fff;font-size:15px;font-weight:700">Top up balance</h2>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+          ${[{amount:10,bonus:'10%'},{amount:20,bonus:'10%',pop:true},{amount:50,bonus:'15%'}].map(p=>`
+            <button onclick="_walletTopUp(${p.amount})" style="background:rgba(30,41,59,.6);border:1px solid ${p.pop?'rgba(249,115,22,.4)':'rgba(255,255,255,.08)'};border-radius:14px;padding:16px 8px;text-align:center;cursor:pointer;position:relative;transition:all .2s">
+              ${p.pop?'<span style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:#f97316;color:#fff;font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap">POPULAR</span>':''}
+              <p style="color:#fff;font-size:22px;font-weight:800">£${p.amount}</p>
+              <p style="color:#22c55e;font-size:11px;font-weight:600;margin-top:4px">+${p.bonus} free</p>
+            </button>
+          `).join('')}
+        </div>
+      </div>
+
+      <!-- Recent Transactions -->
+      <div style="margin-top:24px">
+        <div style="margin-bottom:12px;padding:0 4px">
+          <h2 style="color:#fff;font-size:15px;font-weight:700">Recent activity</h2>
+        </div>
+        <div id="wallet-transactions" style="background:rgba(30,41,59,.6);border-radius:16px;border:1px solid rgba(255,255,255,.06);overflow:hidden">
+          <div style="padding:20px;text-align:center;color:rgba(255,255,255,.3);font-size:13px">Loading…</div>
+        </div>
+      </div>
     </div>
   </div>`;
+}
+
+// ─── Wallet screen logic ───
+window._walletStripeElements=null;
+window._walletCardElement=null;
+
+window._loadWalletScreen=async function(){
+  // Load balance, cards, transactions in parallel
+  const [balResp,cardsResp,txResp]=await Promise.all([
+    fetch('/api/wallet',{credentials:'include'}).then(r=>r.ok?r.json():null).catch(()=>null),
+    fetch('/api/payment/saved-cards',{credentials:'include'}).then(r=>r.ok?r.json():null).catch(()=>null),
+    fetch('/api/wallet/transactions?limit=5',{credentials:'include'}).then(r=>r.ok?r.json():null).catch(()=>null),
+  ]);
+
+  // Balance
+  const balEl=document.getElementById('wallet-balance-amount');
+  if(balEl&&balResp){balEl.textContent='£'+(balResp.balance||0).toFixed(2);}
+
+  // Cards
+  const cardsEl=document.getElementById('wallet-cards-list');
+  if(cardsEl){
+    if(!cardsResp||!cardsResp.cards||cardsResp.cards.length===0){
+      cardsEl.innerHTML='<div style="padding:24px 20px;text-align:center"><div style="font-size:32px;margin-bottom:8px;opacity:.3">💳</div><p style="color:rgba(255,255,255,.3);font-size:13px">No saved cards yet</p><p style="color:rgba(255,255,255,.2);font-size:11px;margin-top:4px">Add a card to enable 1-tap booking</p></div>';
+    }else{
+      let html='';
+      cardsResp.cards.forEach((card,i)=>{
+        const brandNames={visa:'Visa',mastercard:'Mastercard',amex:'Amex',discover:'Discover'};
+        const brandName=brandNames[card.brand]||card.brand||'Card';
+        const brandColors={visa:'#1a1f71',mastercard:'#eb001b',amex:'#006fcf',discover:'#ff6000'};
+        const bgColor=brandColors[card.brand]||'#334155';
+        const isLast=i===cardsResp.cards.length-1;
+        html+=`<div style="display:flex;align-items:center;gap:14px;padding:16px 20px;${isLast?'':'border-bottom:1px solid rgba(255,255,255,.06);'}cursor:pointer;transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,.03)'" onmouseout="this.style.background='transparent'">
+          <div style="width:44px;height:30px;background:linear-gradient(135deg,${bgColor},${bgColor}dd);border-radius:6px;display:flex;align-items:center;justify-content:center">
+            <span style="color:#fff;font-size:10px;font-weight:800;text-transform:uppercase">${brandName.slice(0,4)}</span>
+          </div>
+          <div style="flex:1">
+            <div style="color:#fff;font-size:14px;font-weight:600">${brandName} ····${card.last4}</div>
+            <div style="color:rgba(255,255,255,.35);font-size:11px;margin-top:1px">${card.isDefault?'Default • ':''}Expires ${card.expMonth}/${card.expYear}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            ${card.isDefault?'<span style="background:rgba(249,115,22,.15);color:#f97316;font-size:9px;font-weight:700;padding:3px 8px;border-radius:6px">DEFAULT</span>':'<button onclick="event.stopPropagation();_walletSetDefault(\''+card.id+'\')" style="background:none;border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.4);font-size:10px;padding:3px 8px;border-radius:6px;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor=\'rgba(249,115,22,.4)\';this.style.color=\'#f97316\'" onmouseout="this.style.borderColor=\'rgba(255,255,255,.12)\';this.style.color=\'rgba(255,255,255,.4)\'">Set default</button>'}
+            <button onclick="event.stopPropagation();_walletDeleteCard('${card.id}','${brandName} ····${card.last4}')" style="background:none;border:none;color:rgba(255,255,255,.2);font-size:16px;cursor:pointer;padding:4px;transition:color .15s" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='rgba(255,255,255,.2)'">×</button>
+          </div>
+        </div>`;
+      });
+      cardsEl.innerHTML=html;
+    }
+  }
+
+  // Transactions
+  const txEl=document.getElementById('wallet-transactions');
+  if(txEl){
+    if(!txResp||!txResp.transactions||txResp.transactions.length===0){
+      txEl.innerHTML='<div style="padding:20px;text-align:center;color:rgba(255,255,255,.3);font-size:13px">No transactions yet</div>';
+    }else{
+      let html='';
+      txResp.transactions.forEach((tx,i)=>{
+        const isLast=i===txResp.transactions.length-1;
+        const isCredit=tx.type==='top_up'||tx.type==='reward'||tx.type==='refund';
+        const icons={top_up:'💰',payment:'💳',reward:'🎁',refund:'↩️'};
+        const d=new Date(tx.created_at);
+        const dateStr=d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' · '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+        html+=`<div style="display:flex;align-items:center;gap:14px;padding:14px 20px;${isLast?'':'border-bottom:1px solid rgba(255,255,255,.06)'}">
+          <div style="font-size:18px">${icons[tx.type]||'📝'}</div>
+          <div style="flex:1">
+            <div style="color:#fff;font-size:13px;font-weight:500">${tx.description||tx.type}</div>
+            <div style="color:rgba(255,255,255,.3);font-size:11px;margin-top:2px">${dateStr}</div>
+          </div>
+          <div style="color:${isCredit?'#22c55e':'#fff'};font-size:14px;font-weight:700">${isCredit?'+':'-'}£${Math.abs(tx.amount).toFixed(2)}</div>
+        </div>`;
+      });
+      txEl.innerHTML=html;
+    }
+  }
+};
+
+window._walletAddCard=function(){
+  const form=document.getElementById('wallet-add-card-form');
+  const btn=document.getElementById('wallet-add-card-btn');
+  if(!form)return;
+  form.style.display='block';
+  if(btn)btn.style.display='none';
+
+  // Mount Stripe Elements card input
+  if(!window._walletStripeElements&&window.Stripe){
+    const stripeKey=window._stripePublicKey||'pk_live_51Ss8P0DPbSptA7HKnQFKelVtYGIWnxhOC8MuZIQdqTYHCJRgI5x8GZ2TlE2DVKK0pLXLJWF9AYNK4RbAEhTk8BN00YoI3Xwjf';
+    const stripeInstance=Stripe(stripeKey);
+    window._walletStripeElements=stripeInstance.elements({
+      appearance:{theme:'night',variables:{colorPrimary:'#f97316',colorBackground:'#0f172a',colorText:'#fff',colorTextPlaceholder:'rgba(255,255,255,.3)',borderRadius:'10px'}},
+    });
+    window._walletCardElement=window._walletStripeElements.create('card',{
+      style:{base:{fontSize:'16px',color:'#fff','::placeholder':{color:'rgba(255,255,255,.3)'}},invalid:{color:'#ef4444'}},
+      hidePostalCode:true,
+    });
+    window._walletCardElement.mount('#wallet-card-element');
+    window._walletCardElement.on('change',function(ev){
+      const saveBtn=document.getElementById('wallet-save-card-btn');
+      const errEl=document.getElementById('wallet-card-error');
+      if(saveBtn){
+        if(ev.complete){saveBtn.style.opacity='1';saveBtn.style.pointerEvents='auto';}
+        else{saveBtn.style.opacity='.5';saveBtn.style.pointerEvents='none';}
+      }
+      if(errEl){
+        if(ev.error){errEl.textContent=ev.error.message;errEl.style.display='block';}
+        else{errEl.style.display='none';}
+      }
+    });
+    window._walletStripeInstance=stripeInstance;
+  }
+};
+
+window._walletCloseCardForm=function(){
+  const form=document.getElementById('wallet-add-card-form');
+  const btn=document.getElementById('wallet-add-card-btn');
+  if(form)form.style.display='none';
+  if(btn)btn.style.display='flex';
+};
+
+window._walletSaveCard=async function(){
+  const saveBtn=document.getElementById('wallet-save-card-btn');
+  const errEl=document.getElementById('wallet-card-error');
+  if(!window._walletStripeInstance||!window._walletCardElement)return;
+  if(saveBtn){saveBtn.textContent='Saving…';saveBtn.style.opacity='.6';saveBtn.style.pointerEvents='none';}
+
+  try{
+    // Create SetupIntent on backend
+    const siResp=await fetch('/api/payment/setup-card',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'}});
+    const siData=await siResp.json();
+    if(!siData.clientSecret)throw new Error(siData.error||'Failed to create setup');
+
+    // Confirm with Stripe
+    const{setupIntent,error}=await window._walletStripeInstance.confirmCardSetup(siData.clientSecret,{
+      payment_method:{card:window._walletCardElement},
+    });
+    if(error)throw new Error(error.message);
+
+    // Confirm on backend to save
+    await fetch('/api/payment/confirm-setup',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({setupIntentId:setupIntent.id})});
+
+    // Success — reload
+    _walletCloseCardForm();
+    if(window._walletCardElement){window._walletCardElement.clear();}
+    _showToast('💳 Card saved successfully!');
+    _loadWalletScreen();
+  }catch(err){
+    if(errEl){errEl.textContent=err.message;errEl.style.display='block';}
+  }finally{
+    if(saveBtn){saveBtn.textContent='Save Card';saveBtn.style.opacity='1';saveBtn.style.pointerEvents='auto';}
+  }
+};
+
+window._walletSetDefault=async function(cardId){
+  try{
+    await fetch('/api/payment/set-default-card',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({cardId})});
+    _showToast('✅ Default card updated');
+    _loadWalletScreen();
+  }catch(err){
+    _showToast('Failed to update default card');
+  }
+};
+
+window._walletDeleteCard=async function(cardId,label){
+  if(!confirm('Remove '+label+'?'))return;
+  try{
+    await fetch('/api/payment/saved-cards/'+cardId,{method:'DELETE',credentials:'include'});
+    _showToast('Card removed');
+    _loadWalletScreen();
+  }catch(err){
+    _showToast('Failed to remove card');
+  }
+};
+
+window._walletTopUp=function(amount){
+  _showToast('Top-up coming soon — use balance at checkout');
+};
+
+// Toast helper (if not already defined)
+if(!window._showToast){
+  window._showToast=function(msg){
+    const t=document.createElement('div');
+    t.textContent=msg;
+    t.style.cssText='position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;padding:12px 24px;border-radius:12px;font-size:14px;font-weight:600;z-index:99999;border:1px solid rgba(255,255,255,.1);box-shadow:0 8px 32px rgba(0,0,0,.4);animation:fadeInUp .3s ease';
+    document.body.appendChild(t);
+    setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(()=>t.remove(),300);},2500);
+  };
 }
 
 // ─── Page: Suppliers (Task 24) ───
@@ -5297,7 +5544,7 @@ function MoreHubPage(){
     <div class="sg-more-section">
       <div class="sg-more-section-title">Activity</div>
       ${moreItem('📋','My Bookings','Upcoming & past visits','/bookings')}
-      ${moreItem('💰','ScanGym Wallet','Balance & credits','/wallet')}
+      ${moreItem('💳','Payment','Cards, balance & methods','/wallet')}
       ${moreItem('📊','Creator Earnings','Track commissions & clicks','/creator-earnings')}
       ${moreItem('🎟️','Refer & Earn','Invite friends, earn 15%','/refer')}
     </div>
