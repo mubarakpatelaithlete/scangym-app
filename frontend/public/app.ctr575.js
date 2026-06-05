@@ -4572,7 +4572,7 @@ window.showGymDiscovery=function(){
               </div>
             </div>
             <div class="gd-bottom">
-              <button class="gd-cta" onclick="event.stopPropagation();closeGymDiscovery();showUberCheckout('${c.id}')">Continue</button>
+              <button class="gd-cta" onclick="event.stopPropagation();closeGymDiscovery();openGym('${c.id}',true)">Continue</button>
             </div>
           </div>`;
         }).join('')}
