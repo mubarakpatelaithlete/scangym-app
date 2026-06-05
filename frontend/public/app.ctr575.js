@@ -2106,20 +2106,20 @@ window._ovPayLoadCards=async function(){
       const bgColor=brandColors[card.brand]||'#334155';
       const isSelected=gbs.paymentMethod==='saved'&&gbs.savedCard&&gbs.savedCard.id===card.id;
       const isLast=i===resp.cards.length-1;
-      html+=\`<div onclick="_ovPaySelectCard('\${card.id}','\${card.brand}','\${card.last4}')" style="display:flex;align-items:center;gap:14px;padding:16px 20px;\${isLast?'':'border-bottom:1px solid rgba(255,255,255,.06);'}cursor:pointer;transition:background .15s;\${isSelected?'background:rgba(34,197,94,.08)':''}" onmouseover="this.style.background='rgba(255,255,255,.03)'" onmouseout="this.style.background='\${isSelected?'rgba(34,197,94,.08)':'transparent'}'">
-        <div style="width:44px;height:30px;background:linear-gradient(135deg,\${bgColor},\${bgColor}dd);border-radius:6px;display:flex;align-items:center;justify-content:center">
-          <span style="color:#fff;font-size:10px;font-weight:800;text-transform:uppercase">\${brandName.slice(0,4)}</span>
+      html+=`<div onclick="_ovPaySelectCard('${card.id}','${card.brand}','${card.last4}')" style="display:flex;align-items:center;gap:14px;padding:16px 20px;${isLast?'':'border-bottom:1px solid rgba(255,255,255,.06);'}cursor:pointer;transition:background .15s;${isSelected?'background:rgba(34,197,94,.08)':''}" onmouseover="this.style.background='rgba(255,255,255,.03)'" onmouseout="this.style.background='${isSelected?'rgba(34,197,94,.08)':'transparent'}'">
+        <div style="width:44px;height:30px;background:linear-gradient(135deg,${bgColor},${bgColor}dd);border-radius:6px;display:flex;align-items:center;justify-content:center">
+          <span style="color:#fff;font-size:10px;font-weight:800;text-transform:uppercase">${brandName.slice(0,4)}</span>
         </div>
         <div style="flex:1">
-          <div style="color:#fff;font-size:14px;font-weight:600">\${brandName} ····\${card.last4}</div>
-          <div style="color:rgba(255,255,255,.35);font-size:11px;margin-top:1px">\${card.isDefault?'Default · ':''}Expires \${card.expMonth}/\${card.expYear}</div>
+          <div style="color:#fff;font-size:14px;font-weight:600">${brandName} ····${card.last4}</div>
+          <div style="color:rgba(255,255,255,.35);font-size:11px;margin-top:1px">${card.isDefault?'Default · ':''}Expires ${card.expMonth}/${card.expYear}</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
-          \${card.isDefault?'<span style="background:rgba(34,197,94,.15);color:#22c55e;font-size:9px;font-weight:700;padding:3px 8px;border-radius:6px">DEFAULT</span>':'<button onclick="event.stopPropagation();_ovPaySetDefault(\\''+card.id+'\\');return false;" style="background:none;border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.4);font-size:10px;padding:3px 8px;border-radius:6px;cursor:pointer">Set default</button>'}
-          <button onclick="event.stopPropagation();_ovPayDeleteCard('\${card.id}','\${brandName} ····\${card.last4}');return false;" style="background:none;border:none;color:rgba(255,255,255,.2);font-size:16px;cursor:pointer;padding:4px;transition:color .15s" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='rgba(255,255,255,.2)'">×</button>
-          \${isSelected?'<span style="color:#22c55e;font-size:16px;font-weight:700">✓</span>':''}
+          ${card.isDefault?'<span style="background:rgba(34,197,94,.15);color:#22c55e;font-size:9px;font-weight:700;padding:3px 8px;border-radius:6px">DEFAULT</span>':'<button onclick="event.stopPropagation();_ovPaySetDefault(\''+card.id+'\');return false;" style="background:none;border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.4);font-size:10px;padding:3px 8px;border-radius:6px;cursor:pointer">Set default</button>'}
+          <button onclick="event.stopPropagation();_ovPayDeleteCard('${card.id}','${brandName} ····${card.last4}');return false;" style="background:none;border:none;color:rgba(255,255,255,.2);font-size:16px;cursor:pointer;padding:4px;transition:color .15s" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='rgba(255,255,255,.2)'">×</button>
+          ${isSelected?'<span style="color:#22c55e;font-size:16px;font-weight:700">✓</span>':''}
         </div>
-      </div>\`;
+      </div>`;
     });
     cardsEl.innerHTML=html;
 
