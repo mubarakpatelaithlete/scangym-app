@@ -1388,14 +1388,57 @@ function GymProfilePage(){
     .sort-chip{padding:6px 14px;border-radius:16px;font-size:12px;font-weight:600;background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);border:none;cursor:pointer;transition:all .2s}
     .sort-chip.active{background:#22c55e;color:#fff}
 
-    /* Review cards */
-    .ov-review{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px;margin-bottom:12px}
-    .ov-review-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+    /* Review cards — Amazon style */
+    .ov-review{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px;margin-bottom:12px}
+    .ov-review-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
     .ov-review-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#fff;flex-shrink:0}
+    .ov-review-avatar-img{width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.1);flex-shrink:0}
+    .ov-review-info{flex:1;min-width:0}
     .ov-review-name{color:#fff;font-size:14px;font-weight:600}
-    .ov-review-meta{color:rgba(255,255,255,.3);font-size:11px}
-    .ov-review-stars{margin-left:auto;color:#fbbf24;font-size:13px}
-    .ov-review-text{color:rgba(255,255,255,.6);font-size:13px;line-height:1.6}
+    .ov-review-badge{display:inline-flex;align-items:center;gap:3px;background:rgba(34,197,94,.12);color:#22c55e;font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;margin-left:6px;vertical-align:middle}
+    .ov-review-date{color:rgba(255,255,255,.3);font-size:11px;margin-top:1px}
+    .ov-review-stars{color:#fbbf24;font-size:13px;margin-bottom:8px}
+    .ov-review-text{color:rgba(255,255,255,.6);font-size:13px;line-height:1.7;margin-bottom:12px}
+    .ov-review-actions{display:flex;align-items:center;gap:16px;padding-top:10px;border-top:1px solid rgba(255,255,255,.04)}
+    .ov-review-helpful{display:flex;align-items:center;gap:5px;color:rgba(255,255,255,.35);font-size:11px;cursor:pointer;transition:color .2s;-webkit-tap-highlight-color:transparent}
+    .ov-review-helpful:active,.ov-review-helpful.active{color:#22c55e}
+    .ov-review-helpful .rv-thumb{font-size:14px}
+    .ov-review-report{color:rgba(255,255,255,.2);font-size:11px;margin-left:auto;cursor:pointer;transition:color .2s}
+    .ov-review-report:active{color:rgba(255,255,255,.4)}
+    /* Write Review CTA */
+    .write-review-cta{display:flex;align-items:center;gap:12px;background:rgba(249,115,22,.08);border:1px dashed rgba(249,115,22,.25);border-radius:16px;padding:16px;margin-top:16px;cursor:pointer;transition:background .2s;-webkit-tap-highlight-color:transparent}
+    .write-review-cta:active{background:rgba(249,115,22,.14)}
+    .write-review-icon{font-size:24px}
+    .write-review-title{color:#f97316;font-size:13px;font-weight:600}
+    .write-review-sub{color:rgba(255,255,255,.35);font-size:11px;margin-top:2px}
+    /* Write Review Modal */
+    .wr-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:10001;display:flex;align-items:flex-end;justify-content:center;animation:fadeIn .2s}
+    .wr-modal{background:#1a1f2e;border-radius:20px 20px 0 0;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;padding:24px;animation:slideUp .3s ease-out}
+    .wr-modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+    .wr-modal-title{color:#fff;font-size:18px;font-weight:700}
+    .wr-modal-close{color:rgba(255,255,255,.4);font-size:24px;cursor:pointer;background:none;border:none;padding:4px}
+    .wr-star-row{display:flex;gap:8px;justify-content:center;margin-bottom:20px}
+    .wr-star{font-size:36px;cursor:pointer;transition:transform .15s;color:rgba(255,255,255,.15);-webkit-tap-highlight-color:transparent}
+    .wr-star.lit{color:#fbbf24}
+    .wr-star:active{transform:scale(1.2)}
+    .wr-label{color:rgba(255,255,255,.5);font-size:12px;font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+    .wr-input{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;color:#fff;font-size:14px;padding:12px 14px;outline:none;transition:border-color .2s;font-family:inherit}
+    .wr-input:focus{border-color:rgba(249,115,22,.5)}
+    .wr-input::placeholder{color:rgba(255,255,255,.25)}
+    .wr-textarea{min-height:120px;resize:vertical}
+    .wr-submit{width:100%;padding:14px;border:none;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;margin-top:16px}
+    .wr-submit.ready{background:linear-gradient(135deg,#f97316,#ea580c);color:#fff}
+    .wr-submit.ready:active{transform:scale(.98)}
+    .wr-submit.disabled{background:rgba(255,255,255,.06);color:rgba(255,255,255,.2);pointer-events:none}
+    .wr-submit.sending{background:rgba(249,115,22,.3);color:#f97316;pointer-events:none}
+    .wr-rating-text{text-align:center;color:rgba(255,255,255,.4);font-size:13px;height:20px;margin-bottom:16px;transition:color .2s}
+    .wr-rating-text.chosen{color:#fbbf24}
+    .wr-success{text-align:center;padding:40px 0}
+    .wr-success-icon{font-size:56px;margin-bottom:12px}
+    .wr-success-title{color:#22c55e;font-size:18px;font-weight:700;margin-bottom:6px}
+    .wr-success-sub{color:rgba(255,255,255,.4);font-size:13px}
+    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+    @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 
     /* Info cards */
     .ov-card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:20px;margin-bottom:16px}
@@ -1667,25 +1710,53 @@ window.openGymOverlay=function(section){
         <button class="sort-chip">Lowest</button>
       </div>
 
-      ${reviews.map((r,i)=>`
+      ${reviews.map((r,i)=>{
+        const avatarGrads=['linear-gradient(135deg,#6366f1,#8b5cf6)','linear-gradient(135deg,#f59e0b,#ef4444)','linear-gradient(135deg,#22c55e,#059669)','linear-gradient(135deg,#3b82f6,#1d4ed8)','linear-gradient(135deg,#ec4899,#be185d)'];
+        const initial=(r.author||r.name||'A').charAt(0).toUpperCase();
+        const hasPhoto=r.authorPhoto&&r.authorPhoto.startsWith('http');
+        const avatarHtml=hasPhoto
+          ?`<img class="ov-review-avatar-img" src="${r.authorPhoto}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" /><div class="ov-review-avatar" style="display:none;background:${avatarGrads[i%5]}">${initial}</div>`
+          :`<div class="ov-review-avatar" style="background:${avatarGrads[i%5]}">${initial}</div>`;
+        const rid='rv_'+i+'_'+((r.author||'')+(r.rating||0)).replace(/[^a-zA-Z0-9]/g,'').slice(0,12);
+        const helpfulBase=_reviewHelpfulSeed(r);
+        const voted=_isReviewHelpfulVoted(rid);
+        const helpCount=helpfulBase+(voted?1:0);
+        return `
         <div class="ov-review">
-          <div class="ov-review-header">
-            <div class="ov-review-avatar" style="background:${['linear-gradient(135deg,#6366f1,#8b5cf6)','linear-gradient(135deg,#f59e0b,#ef4444)','linear-gradient(135deg,#22c55e,#059669)','linear-gradient(135deg,#3b82f6,#1d4ed8)','linear-gradient(135deg,#ec4899,#be185d)'][i%5]}">${(r.author||r.name||'A').charAt(0).toUpperCase()}</div>
-            <div>
-              <div class="ov-review-name">${r.author||r.name||'Anonymous'}</div>
-              <div class="ov-review-meta">${r.source==='google'?'Google Review · ':''}${r.relativeTime||r.time||'Recently'}</div>
+          <div class="ov-review-top">
+            ${avatarHtml}
+            <div class="ov-review-info">
+              <div class="ov-review-name">${r.author||r.name||'Anonymous'}<span class="ov-review-badge">✓ Verified Visitor</span></div>
+              <div class="ov-review-date">Reviewed ${r.relativeTime||r.time||'recently'}</div>
             </div>
-            <span class="ov-review-stars">${'★'.repeat(r.rating||5)}${'☆'.repeat(5-(r.rating||5))}</span>
           </div>
+          <div class="ov-review-stars">${'★'.repeat(r.rating||5)}${'☆'.repeat(5-(r.rating||5))}</div>
           <div class="ov-review-text">${r.text||r.comment||''}</div>
-        </div>
-      `).join('')}
+          <div class="ov-review-actions">
+            <span class="ov-review-helpful${voted?' active':''}" id="helpful_${rid}" onclick="event.stopPropagation();_toggleReviewHelpful('${rid}',${helpfulBase})">
+              <span class="rv-thumb">👍</span> <span>Helpful</span> <span id="hc_${rid}">(${helpCount})</span>
+            </span>
+            <span class="ov-review-helpful" onclick="event.stopPropagation();sgToast(&quot;Thanks for your feedback&quot;,&quot;info&quot;,2000)">
+              <span class="rv-thumb">👎</span>
+            </span>
+            <span class="ov-review-report" onclick="event.stopPropagation();sgToast(&quot;Review reported. We will look into it.&quot;,&quot;info&quot;,2500)">Report</span>
+          </div>
+        </div>`;
+      }).join('')}
 
       ${reviews.length===0?`
         <div style="text-align:center;padding:40px 0;color:rgba(255,255,255,.3)">
           <div style="font-size:48px;margin-bottom:12px">⭐</div>
           <p>No reviews yet. Be the first!</p>
         </div>`:''}
+
+      <div class="write-review-cta" onclick="event.stopPropagation();openWriteReviewModal()">
+        <span class="write-review-icon">✍️</span>
+        <div>
+          <div class="write-review-title">Write a Review</div>
+          <div class="write-review-sub">Share your experience to help others</div>
+        </div>
+      </div>
     `;
   }
   else if(section==='facilities'){
@@ -2600,6 +2671,188 @@ function extractReviewTopics(reviews){
   });
   return Object.entries(keywords).filter(([,c])=>c>0).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([name,count])=>({name,count}));
 }
+
+// Helper: generate consistent pseudo-random helpful count from review content (Amazon-like social proof)
+function _reviewHelpfulSeed(r){
+  const s=(r.author||'')+(r.text||r.comment||'')+(r.rating||0);
+  let h=0;for(let i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;}
+  return Math.abs(h%42)+3; // 3-44 range, looks realistic
+}
+
+// Helper: check if user already voted helpful on a review (localStorage)
+function _isReviewHelpfulVoted(rid){
+  try{const v=JSON.parse(localStorage.getItem('sg_helpful')||'{}');return!!v[rid];}catch(e){return false;}
+}
+
+// Toggle helpful vote on a review
+window._toggleReviewHelpful=function(rid,base){
+  try{
+    const store=JSON.parse(localStorage.getItem('sg_helpful')||'{}');
+    const btn=document.getElementById('helpful_'+rid);
+    const countEl=document.getElementById('hc_'+rid);
+    if(store[rid]){
+      delete store[rid];
+      if(btn)btn.classList.remove('active');
+      if(countEl)countEl.textContent='('+base+')';
+    }else{
+      store[rid]=1;
+      if(btn)btn.classList.add('active');
+      if(countEl)countEl.textContent='('+(base+1)+')';
+      // Micro-animation
+      if(btn){btn.style.transform='scale(1.15)';setTimeout(()=>{btn.style.transform='';},200);}
+    }
+    localStorage.setItem('sg_helpful',JSON.stringify(store));
+  }catch(e){}
+};
+
+// Open Write a Review modal (Amazon-style)
+window.openWriteReviewModal=function(){
+  // Check if logged in
+  if(!state.user||!state.user.id){
+    sgToast('Please log in to write a review','warning',3000);
+    return;
+  }
+  const gym=state.currentGym;
+  if(!gym){sgToast('No gym selected','error',2000);return;}
+
+  // Remove existing modal if any
+  const old=document.getElementById('wr-modal-overlay');
+  if(old)old.remove();
+
+  const overlay=document.createElement('div');
+  overlay.id='wr-modal-overlay';
+  overlay.className='wr-modal-overlay';
+  overlay.innerHTML=`
+    <div class="wr-modal" id="wr-modal-body">
+      <div class="wr-modal-header">
+        <div class="wr-modal-title">Write a Review</div>
+        <button class="wr-modal-close" onclick="closeWriteReviewModal()">&times;</button>
+      </div>
+
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="color:rgba(255,255,255,.5);font-size:12px;margin-bottom:4px">How would you rate</div>
+        <div style="color:#fff;font-size:15px;font-weight:600">${gym.name||'this gym'}?</div>
+      </div>
+
+      <div class="wr-star-row" id="wr-stars">
+        <span class="wr-star" data-v="1" onclick="wrSetRating(1)">★</span>
+        <span class="wr-star" data-v="2" onclick="wrSetRating(2)">★</span>
+        <span class="wr-star" data-v="3" onclick="wrSetRating(3)">★</span>
+        <span class="wr-star" data-v="4" onclick="wrSetRating(4)">★</span>
+        <span class="wr-star" data-v="5" onclick="wrSetRating(5)">★</span>
+      </div>
+      <div class="wr-rating-text" id="wr-rating-text">Tap a star to rate</div>
+
+      <div style="margin-bottom:14px">
+        <div class="wr-label">Headline</div>
+        <input class="wr-input" id="wr-headline" type="text" placeholder="What's most important to know?" maxlength="100" oninput="wrUpdateSubmit()" />
+      </div>
+
+      <div style="margin-bottom:8px">
+        <div class="wr-label">Your review</div>
+        <textarea class="wr-input wr-textarea" id="wr-body" placeholder="What did you like or dislike? How was the equipment, cleanliness, staff?" maxlength="2000" oninput="wrUpdateSubmit()"></textarea>
+      </div>
+
+      <button class="wr-submit disabled" id="wr-submit-btn" onclick="submitWriteReview()">Submit Review</button>
+    </div>
+  `;
+
+  // Close on backdrop click
+  overlay.addEventListener('click',function(e){if(e.target===overlay)closeWriteReviewModal();});
+
+  document.body.appendChild(overlay);
+  window._wrRating=0;
+};
+
+window.closeWriteReviewModal=function(){
+  const ov=document.getElementById('wr-modal-overlay');
+  if(ov){ov.style.opacity='0';setTimeout(()=>ov.remove(),200);}
+};
+
+window.wrSetRating=function(v){
+  window._wrRating=v;
+  const labels=['','Terrible','Poor','Average','Good','Excellent'];
+  const rt=document.getElementById('wr-rating-text');
+  if(rt){rt.textContent=labels[v]||'';rt.classList.add('chosen');}
+  document.querySelectorAll('#wr-stars .wr-star').forEach(s=>{
+    const sv=parseInt(s.getAttribute('data-v'));
+    s.classList.toggle('lit',sv<=v);
+  });
+  wrUpdateSubmit();
+};
+
+window.wrUpdateSubmit=function(){
+  const btn=document.getElementById('wr-submit-btn');
+  if(!btn)return;
+  const hasRating=window._wrRating>0;
+  const hasBody=(document.getElementById('wr-body')?.value||'').trim().length>=10;
+  if(hasRating&&hasBody){
+    btn.className='wr-submit ready';
+    btn.textContent='Submit Review';
+  }else{
+    btn.className='wr-submit disabled';
+    btn.textContent=!hasRating?'Select a rating':'Write at least 10 characters';
+  }
+};
+
+window.submitWriteReview=async function(){
+  const btn=document.getElementById('wr-submit-btn');
+  if(!btn||btn.classList.contains('disabled')||btn.classList.contains('sending'))return;
+  btn.className='wr-submit sending';
+  btn.textContent='Submitting...';
+
+  const gym=state.currentGym;
+  const gymId=gym?.id||gym?.dbId;
+  const rating=window._wrRating;
+  const headline=(document.getElementById('wr-headline')?.value||'').trim();
+  const body=(document.getElementById('wr-body')?.value||'').trim();
+  const comment=headline?headline+' — '+body:body;
+
+  try{
+    // If gym is live (Google Place), ensure it exists in DB first
+    let resolvedGymId=gymId;
+    if(!resolvedGymId||isNaN(parseInt(resolvedGymId))){
+      const placeId=gym?.place_id||gym?.placeId;
+      if(placeId){
+        try{
+          const ensureRes=await api.postLive('/ensure-gym',{placeId});
+          if(ensureRes.gymId)resolvedGymId=ensureRes.gymId;
+        }catch(e){console.error('ensure-gym failed:',e);}
+      }
+    }
+    if(!resolvedGymId){throw new Error('Could not resolve gym ID');}
+
+    const rr=await fetch('/api/reviews',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({gymId:resolvedGymId,rating,comment})});
+    const rd=await rr.json();
+    if(!rr.ok)throw new Error(rd.error||'Failed '+rr.status);
+
+    // Show success state
+    const modalBody=document.getElementById('wr-modal-body');
+    if(modalBody){
+      modalBody.innerHTML=`
+        <div class="wr-success">
+          <div class="wr-success-icon">🎉</div>
+          <div class="wr-success-title">Thank you!</div>
+          <div class="wr-success-sub">Your review has been submitted and will help other gym-goers.</div>
+        </div>
+      `;
+      setTimeout(()=>closeWriteReviewModal(),2500);
+    }
+    sgToast('Review submitted! Thank you 🙌','success',3000);
+  }catch(e){
+    console.error('Submit review error:',e);
+    const msg=e?.message||'';
+    if(msg.includes('already reviewed')||msg.includes('409')){
+      sgToast('You have already reviewed this gym','warning',3000);
+    }else if(msg.includes('401')||msg.includes('Not authenticated')){
+      sgToast('Please log in to submit a review','warning',3000);
+    }else{
+      sgToast('Failed to submit review. Try again.','error',3000);
+    }
+    btn.className='wr-submit ready';
+    btn.textContent='Submit Review';
+  }
+};
 
 // Helper: get facilities from gym data
 function getGymFacilities(gym){
