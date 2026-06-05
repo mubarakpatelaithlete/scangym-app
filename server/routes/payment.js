@@ -859,6 +859,7 @@ router.post('/cash-booking', async (req, res) => {
     const { gymId, placeId, date, time, email, passType, gymName, gymAddress } = req.body;
     if (!date || !time) return res.status(400).json({ error: 'date and time required' });
 
+    // ── Step 1: Resolve gym ID ──
     let dbGymId = gymId;
     if (placeId && isNaN(parseInt(gymId))) {
       const ensureResult = await pool.query('SELECT id FROM public.gyms WHERE place_id = $1', [placeId]);
@@ -874,6 +875,7 @@ router.post('/cash-booking', async (req, res) => {
           );
           dbGymId = insertResult.rows[0].id;
         } catch (e) {
+          console.error('[Cash Booking] Gym insert error:', e.message);
           return res.status(400).json({ error: 'Gym not found' });
         }
       }
@@ -883,6 +885,7 @@ router.post('/cash-booking', async (req, res) => {
     if (gym.rows.length === 0) return res.status(404).json({ error: 'Gym not found' });
     const g = gym.rows[0];
 
+    // ── Step 2: Calculate pricing ──
     const passTypeClean = passType || 'day';
     const geo = getGeoFromRequest(req);
     const resolved = resolveTime(time);
@@ -895,30 +898,60 @@ router.post('/cash-booking', async (req, res) => {
     });
     const price = pricingResult.amount;
 
+    // ── Step 3: Generate booking code ──
     const crypto = require('crypto');
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let bookingCode = 'CASH-';
     for (let i = 0; i < 6; i++) bookingCode += chars[Math.floor(Math.random() * chars.length)];
     const qrCode = 'CASH_' + crypto.randomBytes(8).toString('hex').toUpperCase();
 
-    const bookingResult = await pool.query(
-      `INSERT INTO public.bookings
-        (gym_id, user_id, booking_date, start_time, end_time, total_amount,
-         platform_fee_amount, booking_type, booking_code, qr_code, status,
-         user_email, user_name, created_at, updated_at)
-       VALUES ($1, 'guest', $2, $3, $4, $5, $6, $7, $8, $9, 'reserved_cash', $10, 'Guest', NOW(), NOW())
-       RETURNING *`,
-      [dbGymId, date, resolved.startTime, resolved.endTime, price, price * 0.10,
-       passTypeClean + '_cash', bookingCode, qrCode, email]
-    );
-    const booking = bookingResult.rows[0];
+    // ── Step 4: Insert booking ──
+    let booking;
+    try {
+      const bookingResult = await pool.query(
+        `INSERT INTO public.bookings
+          (gym_id, user_id, booking_date, start_time, end_time, total_amount,
+           platform_fee_amount, booking_type, booking_code, qr_code, status,
+           user_email, user_name, created_at, updated_at)
+         VALUES ($1, 'guest', $2, $3, $4, $5, $6, $7, $8, $9, 'reserved_cash', $10, 'Guest', NOW(), NOW())
+         RETURNING *`,
+        [dbGymId, date, resolved.startTime, resolved.endTime, price, price * 0.10,
+         passTypeClean + '_cash', bookingCode, qrCode, email]
+      );
+      booking = bookingResult.rows[0];
+    } catch (insertErr) {
+      console.error('[Cash Booking] INSERT failed:', insertErr.message, '| code:', insertErr.code, '| detail:', insertErr.detail);
+      // Retry with minimal columns if the first insert fails (column mismatch)
+      try {
+        const bookingResult = await pool.query(
+          `INSERT INTO public.bookings
+            (gym_id, user_id, booking_date, start_time, end_time, total_amount,
+             booking_type, booking_code, qr_code, status,
+             user_email, user_name, created_at, updated_at)
+           VALUES ($1, 'guest', $2, $3, $4, $5, $6, $7, $8, 'reserved_cash', $9, 'Guest', NOW(), NOW())
+           RETURNING *`,
+          [dbGymId, date, resolved.startTime, resolved.endTime, price,
+           passTypeClean + '_cash', bookingCode, qrCode, email]
+        );
+        booking = bookingResult.rows[0];
+        console.log('[Cash Booking] Retry without platform_fee_amount succeeded');
+      } catch (retryErr) {
+        console.error('[Cash Booking] Retry INSERT also failed:', retryErr.message, '| code:', retryErr.code, '| detail:', retryErr.detail);
+        return res.status(500).json({ error: 'Failed to create reservation', detail: retryErr.message });
+      }
+    }
 
-    const qr = await generate2ScanQR(booking.id, 'guest', dbGymId);
-
-    await pool.query(
-      'UPDATE public.bookings SET qr_code = $1, qr_code_url = $2, updated_at = NOW() WHERE id = $3',
-      [qr.token, qr.dataUrl, booking.id]
-    );
+    // ── Step 5: Generate QR code (non-blocking — don't fail the booking) ──
+    let qr = { token: qrCode, scanUrl: '', dataUrl: '', maxScans: 2, scansRemaining: 2, expiresAt: null };
+    try {
+      qr = await generate2ScanQR(booking.id, 'guest', dbGymId);
+      await pool.query(
+        'UPDATE public.bookings SET qr_code = $1, qr_code_url = $2, updated_at = NOW() WHERE id = $3',
+        [qr.token, qr.dataUrl, booking.id]
+      );
+    } catch (qrErr) {
+      console.error('[Cash Booking] QR generation failed (non-fatal):', qrErr.message);
+    }
 
     const bookingDate = new Date(booking.booking_date).toLocaleDateString('en-GB');
 
@@ -944,8 +977,8 @@ router.post('/cash-booking', async (req, res) => {
 
     console.log('[Cash Booking] Reserved:', bookingCode, 'at', g.name, '£' + price, passTypeClean);
   } catch (err) {
-    console.error('Cash booking error:', err);
-    res.status(500).json({ error: 'Failed to create reservation' });
+    console.error('[Cash Booking] Unhandled error:', err.message, err.stack);
+    res.status(500).json({ error: 'Failed to create reservation', detail: err.message });
   }
 });
 

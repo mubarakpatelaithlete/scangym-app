@@ -2285,7 +2285,7 @@ window._ovPayLoadCards=async function(){
   const cardsEl=document.getElementById('ov-pay-cards');
   if(!cardsEl)return;
   if(!state.user){
-    cardsEl.innerHTML='<div style="padding:24px 20px;text-align:center"><p style="color:rgba(255,255,255,.3);font-size:13px">Sign in to manage payment methods</p></div>';
+    cardsEl.innerHTML='';
     return;
   }
   try{
@@ -2373,6 +2373,11 @@ window._ovPaySelectCash=function(){
 };
 
 window._ovPayAddCard=function(){
+  if(!state.user){
+    _showToast('Please sign in first to save a card');
+    setTimeout(function(){navigate('/login');},1200);
+    return;
+  }
   const form=document.getElementById('ov-pay-card-form');
   const btn=document.getElementById('ov-pay-add-btn');
   if(!form)return;
@@ -4251,8 +4256,8 @@ function WalletPage(){
     return`<div class="pt-8 min-h-full px-4"><div class="max-w-md mx-auto py-20 text-center">
       <div style="font-size:64px;margin-bottom:16px">💳</div>
       <h1 class="font-brand text-2xl font-bold text-white mb-3">Payment</h1>
-      <p class="text-slate-400 mb-8">Sign in to manage your payment methods and ScanGym balance.</p>
-      <button onclick="navigate('/login')" class="bg-brand hover:bg-orange-600 text-white font-bold py-4 px-8 rounded-xl transition text-lg">Sign In</button>
+      <p class="text-slate-400 mb-8">Create an account to save cards for 1-tap booking.</p>
+      <button onclick="navigate('/login')" class="bg-brand hover:bg-orange-600 text-white font-bold py-4 px-8 rounded-xl transition text-lg">Get Started</button>
     </div></div>`;
   }
 
@@ -7205,6 +7210,21 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
     autoLoadGyms();
     // ━━━ UBER-STYLE BANNER: Gentle nudge to enable GPS, never blocks interaction ━━━
     _showLocationBannerIfNeeded();
+    // ━━━ AUTO-PROMPT: Request location on first explore visit (like Uber) ━━━
+    if(!window._gpsGranted&&!window._gpsAutoPrompted&&navigator.geolocation){
+      window._gpsAutoPrompted=true;
+      navigator.geolocation.getCurrentPosition(
+        function(pos){
+          window._gpsGranted=true;
+          state.searchLat=pos.coords.latitude;
+          state.searchLng=pos.coords.longitude;
+          var b=document.getElementById('sg-location-banner');if(b)b.remove();
+          findGyms();
+        },
+        function(){/* user denied — banner stays */},
+        {enableHighAccuracy:false,timeout:8000,maximumAge:300000}
+      );
+    }
   }
 }
 
