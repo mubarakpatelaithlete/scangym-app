@@ -2088,7 +2088,7 @@ window._ovPayLoadCards=async function(){
   const cardsEl=document.getElementById('ov-pay-cards');
   if(!cardsEl)return;
   if(!state.user){
-    cardsEl.innerHTML='<div style="padding:24px 20px;text-align:center"><p style="color:rgba(255,255,255,.3);font-size:13px">Sign in to manage payment methods</p></div>';
+    cardsEl.innerHTML='';
     return;
   }
   try{
@@ -2175,12 +2175,16 @@ window._ovPaySelectCash=function(){
   }
 };
 
-window._ovPayAddCard=function(){
+window._ovPayAddCard=async function(){
   const form=document.getElementById('ov-pay-card-form');
   const btn=document.getElementById('ov-pay-add-btn');
   if(!form)return;
   form.style.display='block';
   if(btn)btn.style.display='none';
+  // Ensure Stripe JS is loaded before trying to create Elements
+  if(!window.Stripe){
+    try{await ensureStripeLoaded();}catch(e){console.error('Failed to load Stripe.js',e);}
+  }
   if(!window._ovPayStripeElements&&window.Stripe){
     const stripeKey=window._stripePublicKey||STRIPE_PK||'pk_live_51Ss8P0DPbSptA7HKnQFKelVtYGIWnxhOC8MuZIQdqTYHCJRgI5x8GZ2TlE2DVKK0pLXLJWF9AYNK4RbAEhTk8BN00YoI3Xwjf';
     const si=Stripe(stripeKey);
@@ -3872,8 +3876,7 @@ function WalletPage(){
     return`<div class="pt-8 min-h-full px-4"><div class="max-w-md mx-auto py-20 text-center">
       <div style="font-size:64px;margin-bottom:16px">💳</div>
       <h1 class="font-brand text-2xl font-bold text-white mb-3">Payment</h1>
-      <p class="text-slate-400 mb-8">Sign in to manage your payment methods and ScanGym balance.</p>
-      <button onclick="navigate('/login')" class="bg-brand hover:bg-orange-600 text-white font-bold py-4 px-8 rounded-xl transition text-lg">Sign In</button>
+      <p class="text-slate-400 mb-8">Add a payment method to speed up your bookings.</p>
     </div></div>`;
   }
 
@@ -4031,13 +4034,17 @@ window._loadWalletScreen=async function(){
   }
 };
 
-window._walletAddCard=function(){
+window._walletAddCard=async function(){
   const form=document.getElementById('wallet-add-card-form');
   const btn=document.getElementById('wallet-add-card-btn');
   if(!form)return;
   form.style.display='block';
   if(btn)btn.style.display='none';
 
+  // Ensure Stripe JS is loaded before trying to create Elements
+  if(!window.Stripe){
+    try{await ensureStripeLoaded();}catch(e){console.error('Failed to load Stripe.js',e);}
+  }
   // Mount Stripe Elements card input
   if(!window._walletStripeElements&&window.Stripe){
     const stripeKey=window._stripePublicKey||'pk_live_51Ss8P0DPbSptA7HKnQFKelVtYGIWnxhOC8MuZIQdqTYHCJRgI5x8GZ2TlE2DVKK0pLXLJWF9AYNK4RbAEhTk8BN00YoI3Xwjf';
@@ -4587,23 +4594,34 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
       try{
         let dbGymId=gymId;
         if(isNaN(parseInt(gymId))){
-          try{const ensured=await fetch('/api/live/ensure-gym',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({placeId:gymId})}).then(r=>r.json());if(ensured.gymId)dbGymId=ensured.gymId;}catch(e){}
+          try{
+            const ensured=await fetch('/api/live/ensure-gym',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({placeId:gymId,name:gymName,address:gymAddr})}).then(r=>r.json());
+            if(ensured.gymId)dbGymId=ensured.gymId;
+          }catch(e){console.error('ensure-gym failed:',e);}
         }
-        const result=await fetch('/api/payment/cash-booking',{
+        const resp=await fetch('/api/payment/cash-booking',{
           method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
-          body:JSON.stringify({gymId:parseInt(dbGymId),placeId:gymId,date:cs.selectedDate,time:cs.selectedTime,email,gymName:gymName,gymAddress:gymAddr,passType:cs.selectedPass||'day'})
-        }).then(r=>r.json());
+          body:JSON.stringify({gymId:parseInt(dbGymId)||null,placeId:gymId,date:cs.selectedDate,time:cs.selectedTime,email,gymName:gymName,gymAddress:gymAddr,passType:cs.selectedPass||'day'})
+        });
+        if(!resp.ok){
+          const errText=await resp.text();
+          console.error('Cash booking HTTP error:',resp.status,errText);
+          sgToast('Booking failed — please try again','error');
+          btn.disabled=false;btnText.textContent='Confirm · pay at gym';
+          return;
+        }
+        const result=await resp.json();
         if(result.success){
           state.lastBooking=result.booking;state.lastQR=result.qr;
           closeBookingSheet();navigate('/booking-success?session_id=cash&booking_id='+result.booking.id);
           sgToast('💷 Reserved! Pay at the gym','success',3000);
         }else{
-          sgToast(result.error||'Reservation failed');
+          sgToast(result.error||'Reservation failed','error');
           btn.disabled=false;btnText.textContent='Confirm · pay at gym';
         }
       }catch(e){
         console.error('Cash booking error:',e);
-        sgToast('Something went wrong');
+        sgToast('Something went wrong — check your connection','error');
         btn.disabled=false;btnText.textContent='Confirm · pay at gym';
       }
       return;
@@ -6459,22 +6477,7 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
         <p style="color:rgba(255,255,255,.45);font-size:14px;margin:0 0 24px;max-width:280px;">Gym workout videos, tips, and inspiration from creators worldwide.</p>
         <button onclick="switchTab('book')" style="background:#f97316;color:#fff;font-weight:700;font-size:15px;padding:14px 32px;border-radius:14px;border:none;cursor:pointer;box-shadow:0 4px 20px rgba(249,115,22,.3);">🏋️ Find a Gym Instead</button>
       </div>
-      <!-- Right-side nav buttons — TikTok-spec: 48dp circles, 16px gap, right-12px -->
-      <!-- Creator Portal button (top-right, above video actions) -->
-      <div style="position:fixed;top:16px;right:12px;z-index:9100;">
-        <div onclick="window.location.href='/flexsquad/'" style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .15s ease;" ontouchstart="this.style.transform='scale(0.9)'" ontouchend="this.style.transform='scale(1)'">
-          <div style="width:40px;height:40px;background:linear-gradient(135deg,#f97316,#ea580c);border:2px solid rgba(255,255,255,.25);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 2px 16px rgba(249,115,22,.4);">👤</div>
-          <span style="color:#fff;font-size:9px;font-weight:700;text-shadow:0 1px 6px rgba(0,0,0,.9);letter-spacing:0.3px;">FlexSquad</span>
-        </div>
-      </div>
-      <!-- Upload button (top-right, below FlexSquad — only shown for creators) -->
-      <div id="sg-upload-btn" style="position:fixed;top:72px;right:12px;z-index:9100;display:none;">
-        <div onclick="window.location.href='/upload/'" style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .15s ease;" ontouchstart="this.style.transform='scale(0.9)'" ontouchend="this.style.transform='scale(1)'">
-          <div style="width:40px;height:40px;background:linear-gradient(135deg,#22c55e,#16a34a);border:2px solid rgba(255,255,255,.25);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 2px 16px rgba(34,197,94,.4);">📤</div>
-          <span style="color:#fff;font-size:9px;font-weight:700;text-shadow:0 1px 6px rgba(0,0,0,.9);letter-spacing:0.3px;">Upload</span>
-        </div>
-      </div>
-      <script>try{if(localStorage.getItem('flexsquad_pending')){var ub=document.getElementById('sg-upload-btn');if(ub)ub.style.display='block';}}catch(e){}</script>
+      <!-- FlexSquad + Upload buttons removed — accessible via More tab instead -->
       <!-- Layer 2 floating Book/More nav removed — redundant with bottom tab bar + reel sidebar -->
     </div>`;
   } else if(tab==='more' && (path==='/more'||path==='/more/')){
