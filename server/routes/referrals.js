@@ -109,7 +109,10 @@ router.post('/convert', async (req, res) => {
       return res.status(400).json({ error: 'creatorHandle and bookingId required' });
     }
 
-    const commission = commissionPence || 125; // Default £1.25 = 125 pence
+    // Variable reward (Skinner box): Random commission creates excitement
+    // Amounts weighted toward lower values (more frequent small wins, rare big wins)
+    const VARIABLE_COMMISSIONS = [100, 100, 125, 125, 125, 150, 150, 200, 250, 500]; // pence
+    const commission = commissionPence || VARIABLE_COMMISSIONS[Math.floor(Math.random() * VARIABLE_COMMISSIONS.length)];
 
     // Update the most recent 'clicked' referral for this creator to 'converted'
     const updated = await pool.query(

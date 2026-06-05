@@ -5437,6 +5437,8 @@ function QRScanVerifyPage(token){
           <p class="text-blue-400 font-medium">Session complete</p>
           <p class="text-blue-400/70 text-sm mt-1">We hope you enjoyed your workout!</p>
         </div>`}
+
+        ${isExit?`<div class="mt-4 text-center"><button onclick="sgRecordAndShare()" style="background:linear-gradient(135deg,#f97316,#d97706);color:#fff;font-weight:700;padding:12px 24px;border:none;border-radius:12px;font-size:14px;cursor:pointer">🔥 View Workout Card & Share</button></div>`:''}`
       </div>
     </div>
     <style>@keyframes scaleIn{0%{transform:scale(0)}60%{transform:scale(1.2)}100%{transform:scale(1)}}</style>`;
@@ -6931,6 +6933,216 @@ window._closeLocationPopup=function(){
   var p=document.getElementById('sg-location-popup');
   if(p)p.remove();
 };
+
+// ═══════════════════════════════════════════════════════════════
+// ADDICTION MECHANICS — Confetti, Streaks, Share Cards, Wallet Progress, Flash Deals
+// Psychology: Dopamine (variable rewards), Loss Aversion (streaks), 
+// Social Proof (leaderboard), Zeigarnik (progress bars), Celebration (confetti)
+// ═══════════════════════════════════════════════════════════════
+
+// ─── 1. CONFETTI SYSTEM (Robinhood-style celebration) ───
+window.sgConfetti=function(opts={}){
+  const duration=opts.duration||3000;
+  const colors=opts.colors||['#f97316','#fb923c','#fbbf24','#34d399','#60a5fa','#a78bfa','#f472b6','#fff'];
+  const canvas=document.createElement('canvas');
+  canvas.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:99999';
+  document.body.appendChild(canvas);
+  const ctx=canvas.getContext('2d');
+  canvas.width=window.innerWidth;canvas.height=window.innerHeight;
+  const particles=[];
+  for(let i=0;i<150;i++){
+    particles.push({
+      x:canvas.width*Math.random(),y:-20-Math.random()*canvas.height*0.5,
+      w:Math.random()*10+5,h:Math.random()*6+3,
+      color:colors[Math.floor(Math.random()*colors.length)],
+      vx:(Math.random()-0.5)*4,vy:Math.random()*3+2,
+      rotation:Math.random()*360,rotSpeed:(Math.random()-0.5)*10,
+      opacity:1,
+    });
+  }
+  const start=Date.now();
+  function animate(){
+    const elapsed=Date.now()-start;
+    if(elapsed>duration){canvas.remove();return;}
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const fade=elapsed>duration*0.7?1-(elapsed-duration*0.7)/(duration*0.3):1;
+    particles.forEach(p=>{
+      p.x+=p.vx;p.y+=p.vy;p.vy+=0.05;p.rotation+=p.rotSpeed;
+      ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rotation*Math.PI/180);
+      ctx.globalAlpha=p.opacity*fade;ctx.fillStyle=p.color;
+      ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);ctx.restore();
+    });
+    requestAnimationFrame(animate);
+  }
+  animate();
+  // Haptic feedback
+  if(navigator.vibrate)navigator.vibrate([100,50,100]);
+};
+
+// ─── 2. POST-WORKOUT SHARE CARD ───
+window.sgShowWorkoutCard=function(data){
+  const card=document.createElement('div');
+  card.id='sg-workout-card';
+  card.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:center;animation:fadeIn .3s ease';
+  const streakEmoji=data.streak>=30?'👑':data.streak>=14?'🚀':data.streak>=7?'⚔️':data.streak>=3?'🔥':'💪';
+  const badgeHtml=(data.newBadges||[]).map(b=>`<div style="display:inline-flex;align-items:center;gap:6px;background:rgba(249,115,22,.15);border:1px solid rgba(249,115,22,.3);border-radius:20px;padding:6px 12px;font-size:13px"><span>${b.emoji}</span><span style="color:#fb923c;font-weight:600">${b.name}</span></div>`).join(' ');
+  const bonusHtml=data.bonusReward?`<div style="margin-top:12px;background:linear-gradient(135deg,rgba(52,211,153,.15),rgba(52,211,153,.05));border:1px solid rgba(52,211,153,.3);border-radius:12px;padding:12px;text-align:center"><p style="color:#34d399;font-size:14px;font-weight:700;margin:0">🎰 Bonus Reward! +${data.bonusReward.display}</p><p style="color:rgba(255,255,255,.5);font-size:11px;margin:4px 0 0">Added to your ScanGym Wallet</p></div>`:'';
+  card.innerHTML=`
+  <div style="width:90%;max-width:360px;background:linear-gradient(160deg,#1a1a2e,#16213e);border-radius:24px;border:1px solid rgba(249,115,22,.2);padding:32px 24px;text-align:center;position:relative;overflow:hidden">
+    <div style="position:absolute;top:-30px;right:-30px;width:120px;height:120px;background:radial-gradient(circle,rgba(249,115,22,.15),transparent);border-radius:50%"></div>
+    <div style="font-size:56px;margin-bottom:8px">${streakEmoji}</div>
+    <h2 style="color:#fff;font-size:28px;font-weight:900;margin:0">${data.streak}-Day Streak!</h2>
+    <p style="color:rgba(255,255,255,.5);font-size:14px;margin:4px 0 16px">Workout #${data.totalWorkouts} complete</p>
+    <div style="display:flex;justify-content:center;gap:20px;margin:16px 0">
+      <div><p style="color:#f97316;font-size:22px;font-weight:800;margin:0">${data.duration||45}</p><p style="color:rgba(255,255,255,.4);font-size:11px;margin:0">minutes</p></div>
+      <div style="width:1px;background:rgba(255,255,255,.1)"></div>
+      <div><p style="color:#f97316;font-size:22px;font-weight:800;margin:0">${data.streak}</p><p style="color:rgba(255,255,255,.4);font-size:11px;margin:0">day streak</p></div>
+      <div style="width:1px;background:rgba(255,255,255,.1)"></div>
+      <div><p style="color:#f97316;font-size:22px;font-weight:800;margin:0">${data.totalWorkouts}</p><p style="color:rgba(255,255,255,.4);font-size:11px;margin:0">total</p></div>
+    </div>
+    ${badgeHtml?`<div style="margin:12px 0;display:flex;flex-wrap:wrap;justify-content:center;gap:6px">${badgeHtml}</div>`:''}
+    ${bonusHtml}
+    <div style="margin-top:20px;display:flex;gap:8px">
+      <button onclick="sgShareWorkout('${data.shareText||''}')" style="flex:1;background:#f97316;color:#fff;font-weight:700;padding:12px;border:none;border-radius:12px;font-size:14px;cursor:pointer">📤 Share</button>
+      <button onclick="document.getElementById('sg-workout-card').remove()" style="flex:1;background:rgba(255,255,255,.08);color:#fff;font-weight:600;padding:12px;border:1px solid rgba(255,255,255,.1);border-radius:12px;font-size:14px;cursor:pointer">Done</button>
+    </div>
+    <p style="color:rgba(255,255,255,.25);font-size:10px;margin:12px 0 0">scangym.com</p>
+  </div>`;
+  document.body.appendChild(card);
+  sgConfetti({duration:4000});
+};
+
+window.sgShareWorkout=function(text){
+  if(navigator.share){navigator.share({title:'ScanGym Workout',text:text,url:'https://scangym.com'}).catch(()=>{});}
+  else{navigator.clipboard.writeText(text).then(()=>sgToast('Copied to clipboard!','success'));}
+};
+
+// ─── 3. STREAK WIDGET (shown on home page) ───
+window.sgStreakWidget=function(container){
+  fetch('/api/streaks',{credentials:'include'}).then(r=>r.json()).then(data=>{
+    if(!data.streak)return;
+    const s=data.streak;
+    const progress=s.nextMilestone?((s.current/(s.nextMilestone))*100):100;
+    const streakEmoji=s.current>=30?'👑':s.current>=14?'🚀':s.current>=7?'⚔️':s.current>=3?'🔥':'💪';
+    const earnedBadges=data.badges.earned.slice(-3).map(b=>`<span title="${b.name}">${b.emoji}</span>`).join('');
+    
+    container.innerHTML=`
+    <div style="background:linear-gradient(135deg,rgba(249,115,22,.1),rgba(249,115,22,.03));border:1px solid rgba(249,115,22,.15);border-radius:16px;padding:16px;margin:12px 0">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:28px">${streakEmoji}</span>
+          <div>
+            <p style="color:#fff;font-size:18px;font-weight:800;margin:0">${s.current}-day streak</p>
+            <p style="color:rgba(255,255,255,.4);font-size:11px;margin:0">${s.totalWorkouts} total workouts</p>
+          </div>
+        </div>
+        <div style="text-align:right">
+          ${earnedBadges?`<div style="font-size:18px">${earnedBadges}</div>`:''}
+          <p style="color:rgba(255,255,255,.3);font-size:10px;margin:2px 0 0">${data.badges.earnedCount}/${data.badges.total} badges</p>
+        </div>
+      </div>
+      ${s.nextMilestone?`
+      <div style="background:rgba(255,255,255,.06);border-radius:8px;height:8px;overflow:hidden;margin-bottom:6px">
+        <div style="background:linear-gradient(90deg,#f97316,#fb923c);height:100%;width:${Math.min(progress,100)}%;border-radius:8px;transition:width .5s ease"></div>
+      </div>
+      <p style="color:rgba(255,255,255,.35);font-size:11px;margin:0">${s.daysToMilestone} days to ${s.nextMilestone}-day milestone</p>
+      `:'<p style="color:#34d399;font-size:12px;font-weight:600;margin:0">🏆 Max streak achieved!</p>'}
+      ${s.freezesRemaining>0?`<p style="color:rgba(255,255,255,.3);font-size:10px;margin:4px 0 0">❄️ ${s.freezesRemaining} streak freeze${s.freezesRemaining>1?'s':''} available</p>`:''}
+    </div>`;
+  }).catch(()=>{});
+};
+
+// ─── 4. WALLET PROGRESS BAR (Zeigarnik effect) ───
+window.sgWalletProgress=function(container){
+  fetch('/api/wallet',{credentials:'include'}).then(r=>r.json()).then(data=>{
+    if(!data.balancePence&&data.balancePence!==0)return;
+    const bal=data.balancePence;
+    let target,bonus,label;
+    if(bal<2000){target=2000;bonus='10%';label=`£${((2000-bal)/100).toFixed(2)} to unlock 10% top-up bonus`;}
+    else if(bal<5000){target=5000;bonus='15%';label=`£${((5000-bal)/100).toFixed(2)} to unlock 15% top-up bonus`;}
+    else{container.innerHTML='';return;}
+    const pct=Math.min((bal/target)*100,100);
+    container.innerHTML=`
+    <div onclick="navigate('/wallet')" style="background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.15);border-radius:12px;padding:12px 14px;margin:8px 0;cursor:pointer">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <p style="color:rgba(255,255,255,.6);font-size:12px;font-weight:600;margin:0">💰 Wallet: £${(bal/100).toFixed(2)}</p>
+        <p style="color:#34d399;font-size:11px;font-weight:700;margin:0">${bonus} bonus →</p>
+      </div>
+      <div style="background:rgba(255,255,255,.06);border-radius:6px;height:6px;overflow:hidden">
+        <div style="background:linear-gradient(90deg,#34d399,#6ee7b7);height:100%;width:${pct}%;border-radius:6px;transition:width .5s ease"></div>
+      </div>
+      <p style="color:rgba(255,255,255,.3);font-size:10px;margin:4px 0 0">${label}</p>
+    </div>`;
+  }).catch(()=>{});
+};
+
+// ─── 5. VARIABLE REFERRAL REWARD ───
+window.sgVariableReferral=function(){
+  // Replaces fixed "Give £5 Get £5" with mystery reward
+  const amounts=['£1','£2','£3','£5','£5','£5','£10','£25'];
+  return amounts[Math.floor(Math.random()*amounts.length)];
+};
+
+// ─── 5b. RECORD WORKOUT & SHOW CARD (called on QR exit scan) ───
+window.sgRecordAndShare=function(){
+  fetch('/api/streaks/record-workout',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({durationMinutes:45})}).then(function(r){return r.json()}).then(function(d){if(d.success&&typeof sgShowWorkoutCard==='function')sgShowWorkoutCard(d);else if(d.alreadyRecorded)sgShowWorkoutCard({streak:d.streak||1,totalWorkouts:0,duration:45,newBadges:[],bonusReward:null,shareText:'Just finished a workout with @ScanGym! 💪'});}).catch(function(e){console.error('Record workout error:',e);});
+};
+
+// ─── 6. FLASH DEAL INJECTION (for reels feed) ───
+window.sgFlashDeal=function(){
+  const deals=[
+    {title:'⚡ Flash Deal',desc:'Day pass for just £1.99',price:'£1.99',orig:'£2.99',timer:'23:47'},
+    {title:'🎰 Lucky Dip',desc:'Random gym, mystery price',price:'£0.99',orig:'£2.99',timer:'11:22'},
+    {title:'🔥 Hot Deal',desc:'2-for-1 day passes today',price:'£2.99',orig:'£5.98',timer:'07:15'},
+    {title:'⏰ Happy Hour',desc:'Off-peak pass, crazy price',price:'£1.49',orig:'£2.99',timer:'02:30'},
+  ];
+  return deals[Math.floor(Math.random()*deals.length)];
+};
+
+// ─── 7. TRIGGER CONFETTI ON BOOKING SUCCESS ───
+(function(){
+  const origRender=window.render;
+  if(typeof origRender==='function'){
+    let lastRoute='';
+    const _checkConfetti=()=>{
+      const route=state.route||location.pathname;
+      if(route.includes('/booking-success')&&lastRoute!==route){
+        setTimeout(()=>sgConfetti({duration:5000}),800);
+      }
+      lastRoute=route;
+    };
+    // Check periodically for route changes
+    setInterval(_checkConfetti,500);
+  }
+})();
+
+// ─── 8. INJECT STREAK & WALLET WIDGETS INTO MORE HUB ───
+(function(){
+  const origRender=window.render;
+  const injectWidgets=()=>{
+    // Inject streak widget into More hub
+    const moreHub=document.querySelector('.sg-more-hub');
+    if(moreHub&&!document.getElementById('sg-streak-widget')){
+      const w=document.createElement('div');w.id='sg-streak-widget';
+      moreHub.insertBefore(w,moreHub.firstChild);
+      sgStreakWidget(w);
+    }
+    // Inject wallet progress
+    const walletSection=document.querySelector('.sg-more-hub');
+    if(walletSection&&!document.getElementById('sg-wallet-progress')){
+      const wp=document.createElement('div');wp.id='sg-wallet-progress';
+      const streakW=document.getElementById('sg-streak-widget');
+      if(streakW)streakW.after(wp);
+      else walletSection.insertBefore(wp,walletSection.firstChild);
+      sgWalletProgress(wp);
+    }
+  };
+  // Run after render
+  const observer=new MutationObserver(()=>{
+    if(document.querySelector('.sg-more-hub'))injectWidgets();
+  });
+  observer.observe(document.body,{childList:true,subtree:true});
+})();
 
 // ─── Init ───
 state.route=location.pathname;
