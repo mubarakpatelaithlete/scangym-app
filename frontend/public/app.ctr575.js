@@ -1181,22 +1181,37 @@ function GymProfilePage(){
     .gym-pay-option-check{width:22px;height:22px;border-radius:50%;border:2px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px}
     .gym-pay-option.selected .gym-pay-option-check{background:#22c55e;border-color:#22c55e;color:#fff}
 
-    /* Date picker sheet */
+    /* ═══ Uber-style Date/Time picker sheet ═══ */
     .gym-date-sheet{position:fixed;inset:0;z-index:9200;opacity:0;pointer-events:none;transition:opacity .25s}
     .gym-date-sheet.open{opacity:1;pointer-events:all}
     .gym-date-sheet-bg{position:absolute;inset:0;background:rgba(0,0,0,.5)}
-    .gym-date-sheet-panel{position:absolute;left:0;right:0;bottom:0;background:#111827;border-radius:20px 20px 0 0;transform:translateY(100%);transition:transform .35s cubic-bezier(.32,.72,0,1);padding-bottom:env(safe-area-inset-bottom,0px)}
+    .gym-date-sheet-panel{position:absolute;left:0;right:0;bottom:0;background:#000;border-radius:16px 16px 0 0;transform:translateY(100%);transition:transform .35s cubic-bezier(.32,.72,0,1);padding-bottom:env(safe-area-inset-bottom,0px);max-height:85vh;display:flex;flex-direction:column}
     .gym-date-sheet.open .gym-date-sheet-panel{transform:translateY(0)}
-    .gym-date-sheet-drag{width:40px;height:4px;border-radius:2px;background:rgba(255,255,255,.2);margin:10px auto 0}
-    .gym-date-sheet-title{color:#fff;font-size:18px;font-weight:700;padding:16px 20px 8px}
-    .gym-date-quick{display:flex;gap:8px;padding:0 20px 12px}
-    .gym-date-quick-btn{flex:1;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:rgba(255,255,255,.6);font-size:13px;font-weight:600;text-align:center;cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent}
-    .gym-date-quick-btn.selected{border-color:rgba(34,197,94,.5);background:rgba(34,197,94,.1);color:#4ade80}
-    .gym-date-quick-btn:active{transform:scale(.96)}
-    .gym-date-custom-wrap{padding:0 20px 16px}
-    .gym-date-custom-input{width:100%;padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#fff;font-size:14px;font-weight:600;-webkit-appearance:none;cursor:pointer}
-    .gym-date-custom-input::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.5;cursor:pointer}
-    .gym-date-sheet-done{margin:0 20px 16px;padding:14px;border-radius:12px;border:none;background:#22c55e;color:#fff;font-size:16px;font-weight:700;width:calc(100% - 40px);cursor:pointer}
+    .gym-date-sheet-drag{width:36px;height:4px;border-radius:2px;background:rgba(255,255,255,.25);margin:8px auto 0}
+    .gym-date-sheet-title{color:#fff;font-size:20px;font-weight:700;padding:16px 20px 14px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+    /* Horizontal date strip */
+    .uber-date-strip{display:flex;gap:0;padding:0 0 0 16px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none;flex-shrink:0}
+    .uber-date-strip::-webkit-scrollbar{display:none}
+    .uber-date-pill{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:56px;height:72px;padding:8px 4px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;flex-shrink:0;border-radius:28px;margin:0 3px}
+    .uber-date-pill .uber-date-day{font-size:12px;font-weight:600;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.5px;line-height:1;margin-bottom:4px}
+    .uber-date-pill .uber-date-num{font-size:20px;font-weight:700;color:#fff;line-height:1}
+    .uber-date-pill.selected{background:#fff}
+    .uber-date-pill.selected .uber-date-day{color:#000}
+    .uber-date-pill.selected .uber-date-num{color:#000}
+    .uber-date-pill:active{transform:scale(.95)}
+    /* Divider */
+    .uber-date-divider{height:1px;background:rgba(255,255,255,.08);margin:12px 0 0}
+    /* Vertical time list */
+    .uber-time-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0;max-height:320px;scrollbar-width:none;-ms-overflow-style:none}
+    .uber-time-list::-webkit-scrollbar{display:none}
+    .uber-time-item{padding:16px 20px;font-size:16px;font-weight:500;color:rgba(255,255,255,.5);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;display:flex;align-items:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+    .uber-time-item:active{background:rgba(255,255,255,.04)}
+    .uber-time-item.selected{color:#fff;background:rgba(255,255,255,.08);font-weight:600}
+    .uber-time-item.past{color:rgba(255,255,255,.15);pointer-events:none}
+    /* CTA */
+    .uber-date-cta{margin:12px 16px 16px;padding:16px;border-radius:8px;border:none;background:#fff;color:#000;font-size:16px;font-weight:700;width:calc(100% - 32px);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;flex-shrink:0}
+    .uber-date-cta:active{transform:scale(.98);opacity:.9}
+    .uber-date-cta:disabled{opacity:.4;pointer-events:none}
 
     /* Legacy pill styles kept for backward compat */
     .gym-pass-row{display:none}
@@ -1448,25 +1463,16 @@ function GymProfilePage(){
       </div>
     </div>
 
-    <!-- ═══ Date/time picker sheet ═══ -->
+    <!-- ═══ Uber-style Date/time picker sheet ═══ -->
     <div class="gym-date-sheet" id="gym-date-sheet" onclick="if(event.target===this||event.target.classList.contains('gym-date-sheet-bg'))closeDateSheet()">
       <div class="gym-date-sheet-bg"></div>
       <div class="gym-date-sheet-panel">
         <div class="gym-date-sheet-drag"></div>
         <div class="gym-date-sheet-title">When do you want to go?</div>
-        <div class="gym-date-quick" id="gym-date-quick">
-          <div class="gym-date-quick-btn selected" onclick="selectDateQuick(this,'today')">Today</div>
-          <div class="gym-date-quick-btn" onclick="selectDateQuick(this,'tomorrow')">Tomorrow</div>
-        </div>
-        <div class="gym-date-custom-wrap">
-          <input type="date" class="gym-date-custom-input" id="gym-date-sheet-input" min="${new Date().toISOString().split('T')[0]}" onchange="selectDateCustom(this)">
-        </div>
-        <div style="padding:0 20px 8px"><div style="color:rgba(255,255,255,.45);font-size:12px;font-weight:600;margin-bottom:6px">Time (default: next hour)</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap" id="gym-time-grid">
-            ${Array.from({length:15},(_,i)=>{const h=6+i;const t=String(h).padStart(2,"0")+":00";const now=new Date().getHours();const def=(now+1<=23)?now+1:23;const isSel=h===def;return '<div class="gym-date-quick-btn'+(isSel?' selected':'')+'" onclick="selectTimeSlot(this,&apos;'+t+'&apos;)" style="flex:0 0 calc(33.3% - 6px);padding:10px 4px;font-size:12px">'+t+'</div>';}).join("")}
-          </div>
-        </div>
-        <button class="gym-date-sheet-done" onclick="closeDateSheet()">Done</button>
+        <div class="uber-date-strip" id="uber-date-strip"></div>
+        <div class="uber-date-divider"></div>
+        <div class="uber-time-list" id="uber-time-list"></div>
+        <button class="uber-date-cta" id="uber-date-cta" onclick="confirmDateSheet()">Confirm time</button>
       </div>
     </div>
   </div>
@@ -2053,44 +2059,164 @@ window.selectPayMethod=function(el,method){
 };
 
 // ═══ Date/time picker sheet ═══
+// ═══ Uber-style Date/Time Picker ═══
 window._gymSelectedTime=null;
+window._uberDatePickerState={selectedDateIdx:0,selectedTime:null};
+
+// Build date strip (30 days, Uber-style)
+window._buildUberDateStrip=function(){
+  const strip=document.getElementById('uber-date-strip');
+  if(!strip)return;
+  const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const now=new Date();
+  let html='';
+  for(let i=0;i<30;i++){
+    const d=new Date(now);d.setDate(d.getDate()+i);
+    const dayName=i===0?'Today':i===1?'Tmrw':days[d.getDay()];
+    const dateNum=d.getDate();
+    const sel=i===0?' selected':'';
+    html+='<div class="uber-date-pill'+sel+'" data-idx="'+i+'" onclick="window._selectUberDate('+i+')">';
+    html+='<span class="uber-date-day">'+dayName+'</span>';
+    html+='<span class="uber-date-num">'+dateNum+'</span>';
+    html+='</div>';
+  }
+  strip.innerHTML=html;
+};
+
+// Build time list (5-min intervals, Uber-style)
+window._buildUberTimeList=function(dateIdx){
+  const list=document.getElementById('uber-time-list');
+  if(!list)return;
+  const now=new Date();
+  const isToday=dateIdx===0;
+  const currentMinutes=now.getHours()*60+now.getMinutes();
+  // Gym hours: 06:00 - 22:00 in 5-min intervals
+  let html='';
+  let firstAvailable=null;
+  for(let m=6*60;m<=22*60;m+=5){
+    const hh=String(Math.floor(m/60)).padStart(2,'0');
+    const mm=String(m%60).padStart(2,'0');
+    const timeStr=hh+':'+mm;
+    const isPast=isToday&&m<=currentMinutes;
+    // Format: "6:00 AM" style like Uber
+    const hour12=Math.floor(m/60)%12||12;
+    const ampm=Math.floor(m/60)<12?'AM':'PM';
+    const displayTime=hour12+':'+mm+' '+ampm;
+    if(isPast){
+      // Don't render past times (Uber hides them entirely)
+      continue;
+    }
+    if(firstAvailable===null)firstAvailable=timeStr;
+    const sel=(window._uberDatePickerState.selectedTime===timeStr)?' selected':'';
+    html+='<div class="uber-time-item'+sel+'" data-time="'+timeStr+'" onclick="window._selectUberTime(this,\''+timeStr+'\')">'+displayTime+'</div>';
+  }
+  list.innerHTML=html;
+  // Auto-select first available if no selection or selection is past
+  if(!window._uberDatePickerState.selectedTime||
+     (isToday&&parseInt(window._uberDatePickerState.selectedTime.split(':')[0])*60+parseInt(window._uberDatePickerState.selectedTime.split(':')[1])<=currentMinutes)){
+    if(firstAvailable){
+      window._uberDatePickerState.selectedTime=firstAvailable;
+      const firstEl=list.querySelector('[data-time="'+firstAvailable+'"]');
+      if(firstEl)firstEl.classList.add('selected');
+    }
+  }
+  // Scroll selected into view
+  setTimeout(function(){
+    const selEl=list.querySelector('.uber-time-item.selected');
+    if(selEl)selEl.scrollIntoView({block:'center',behavior:'smooth'});
+  },50);
+  // Update CTA
+  window._updateUberCTA();
+};
+
+window._selectUberDate=function(idx){
+  window._uberDatePickerState.selectedDateIdx=idx;
+  // Update pills
+  document.querySelectorAll('.uber-date-pill').forEach(function(p){p.classList.remove('selected');});
+  const pill=document.querySelector('.uber-date-pill[data-idx="'+idx+'"]');
+  if(pill){
+    pill.classList.add('selected');
+    // Scroll pill into center of strip
+    pill.scrollIntoView({inline:'center',behavior:'smooth'});
+  }
+  // Update date in booking state
+  const d=new Date();d.setDate(d.getDate()+idx);
+  window._gymBookingState.selectedDate=d.toISOString().split('T')[0];
+  // Reset time selection and rebuild time list
+  window._uberDatePickerState.selectedTime=null;
+  window._buildUberTimeList(idx);
+};
+
+window._selectUberTime=function(el,time){
+  document.querySelectorAll('.uber-time-item').forEach(function(t){t.classList.remove('selected');});
+  el.classList.add('selected');
+  window._uberDatePickerState.selectedTime=time;
+  window._gymSelectedTime=time;
+  window._updateUberCTA();
+};
+
+window._updateUberCTA=function(){
+  const cta=document.getElementById('uber-date-cta');
+  if(!cta)return;
+  const time=window._uberDatePickerState.selectedTime;
+  const idx=window._uberDatePickerState.selectedDateIdx;
+  if(time){
+    // Format display like Uber: "Today at 6:00 PM" or "Mon, Jun 5 at 6:00 PM"
+    const d=new Date();d.setDate(d.getDate()+idx);
+    const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const hh=parseInt(time.split(':')[0]);
+    const mm=time.split(':')[1];
+    const hour12=hh%12||12;
+    const ampm=hh<12?'AM':'PM';
+    const timeDisplay=hour12+':'+mm+' '+ampm;
+    let dateDisplay;
+    if(idx===0)dateDisplay='Today';
+    else if(idx===1)dateDisplay='Tomorrow';
+    else dateDisplay=days[d.getDay()]+', '+months[d.getMonth()]+' '+d.getDate();
+    cta.textContent='Confirm · '+dateDisplay+' at '+timeDisplay;
+    cta.disabled=false;
+  }else{
+    cta.textContent='Select a time';
+    cta.disabled=true;
+  }
+};
+
 window.openDateSheet=function(){
   const sheet=document.getElementById('gym-date-sheet');
-  if(sheet)sheet.classList.add('open');
+  if(!sheet)return;
+  // Reset state
+  window._uberDatePickerState.selectedDateIdx=0;
+  window._uberDatePickerState.selectedTime=null;
+  // Set today's date
+  window._gymBookingState.selectedDate=new Date().toISOString().split('T')[0];
+  // Build UI
+  window._buildUberDateStrip();
+  window._buildUberTimeList(0);
+  // Open
+  sheet.classList.add('open');
 };
+
 window.closeDateSheet=function(){
   const sheet=document.getElementById('gym-date-sheet');
   if(sheet)sheet.classList.remove('open');
-  // Update calendar time display
-  const timeEl=document.getElementById('gym-sticky-cal-time');
-  if(timeEl && window._gymSelectedTime)timeEl.textContent=window._gymSelectedTime;
 };
-window.selectDateQuick=function(el,which){
-  document.querySelectorAll('#gym-date-quick .gym-date-quick-btn').forEach(function(b){b.classList.remove('selected');});
-  el.classList.add('selected');
-  const today=new Date();
-  if(which==='today'){
-    window._gymBookingState.selectedDate=today.toISOString().split('T')[0];
-  }else if(which==='tomorrow'){
-    const tom=new Date(today);tom.setDate(tom.getDate()+1);
-    window._gymBookingState.selectedDate=tom.toISOString().split('T')[0];
-  }
-  // Clear custom input
-  const inp=document.getElementById('gym-date-sheet-input');
-  if(inp)inp.value='';
-};
-window.selectDateCustom=function(input){
-  if(!input.value)return;
-  window._gymBookingState.selectedDate=input.value;
-  document.querySelectorAll('#gym-date-quick .gym-date-quick-btn').forEach(function(b){b.classList.remove('selected');});
-};
-window.selectTimeSlot=function(el,time){
-  document.querySelectorAll('#gym-time-grid .gym-date-quick-btn').forEach(function(b){b.classList.remove('selected');});
-  el.classList.add('selected');
+
+window.confirmDateSheet=function(){
+  const time=window._uberDatePickerState.selectedTime;
+  if(!time)return;
   window._gymSelectedTime=time;
+  // Update calendar button display
   const timeEl=document.getElementById('gym-sticky-cal-time');
   if(timeEl)timeEl.textContent=time;
+  // Close sheet
+  window.closeDateSheet();
 };
+
+// Legacy compat stubs
+window.selectDateQuick=function(){};
+window.selectDateCustom=function(){};
+window.selectTimeSlot=function(){};
 
 // Auto-init carousel when gym page renders
 (function(){
