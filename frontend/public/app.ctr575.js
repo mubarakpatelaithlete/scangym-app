@@ -1185,7 +1185,7 @@ function GymProfilePage(){
     .gym-date-sheet{position:fixed;inset:0;z-index:9200;opacity:0;pointer-events:none;transition:opacity .25s}
     .gym-date-sheet.open{opacity:1;pointer-events:all}
     .gym-date-sheet-bg{position:absolute;inset:0;background:rgba(0,0,0,.5)}
-    .gym-date-sheet-panel{position:absolute;left:0;right:0;bottom:0;background:#000;border-radius:16px 16px 0 0;transform:translateY(100%);transition:transform .35s cubic-bezier(.32,.72,0,1);padding-bottom:env(safe-area-inset-bottom,0px);max-height:85vh;display:flex;flex-direction:column}
+    .gym-date-sheet-panel{position:absolute;left:0;right:0;bottom:0;background:#000;border-radius:16px 16px 0 0;transform:translateY(100%);transition:transform .35s cubic-bezier(.32,.72,0,1);padding-bottom:env(safe-area-inset-bottom,0px);max-height:85vh;display:flex;flex-direction:column;overflow:hidden}
     .gym-date-sheet.open .gym-date-sheet-panel{transform:translateY(0)}
     .gym-date-sheet-drag{width:36px;height:4px;border-radius:2px;background:rgba(255,255,255,.25);margin:8px auto 0}
     .gym-date-sheet-title{color:#fff;font-size:20px;font-weight:700;padding:16px 20px 14px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
@@ -1202,14 +1202,15 @@ function GymProfilePage(){
     /* Divider */
     .uber-date-divider{height:1px;background:rgba(255,255,255,.08);margin:12px 0 0}
     /* Vertical time list */
-    .uber-time-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0;max-height:320px;scrollbar-width:none;-ms-overflow-style:none}
+    .uber-time-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0;min-height:0;scrollbar-width:none;-ms-overflow-style:none}
     .uber-time-list::-webkit-scrollbar{display:none}
     .uber-time-item{padding:16px 20px;font-size:16px;font-weight:500;color:rgba(255,255,255,.5);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;display:flex;align-items:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
     .uber-time-item:active{background:rgba(255,255,255,.04)}
     .uber-time-item.selected{color:#fff;background:rgba(255,255,255,.08);font-weight:600}
     .uber-time-item.past{color:rgba(255,255,255,.15);pointer-events:none}
     /* CTA */
-    .uber-date-cta{margin:12px 16px 16px;padding:16px;border-radius:8px;border:none;background:#fff;color:#000;font-size:16px;font-weight:700;width:calc(100% - 32px);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;flex-shrink:0}
+    .uber-date-cta-wrap{flex-shrink:0;background:#000;padding:12px 16px calc(16px + env(safe-area-inset-bottom,0px));border-top:1px solid rgba(255,255,255,.06)}
+    .uber-date-cta{padding:16px;border-radius:8px;border:none;background:#fff;color:#000;font-size:16px;font-weight:700;width:100%;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
     .uber-date-cta:active{transform:scale(.98);opacity:.9}
     .uber-date-cta:disabled{opacity:.4;pointer-events:none}
 
@@ -1384,7 +1385,7 @@ function GymProfilePage(){
     <!-- ═══ STICKY BOTTOM BAR (Uber-style) — outside scroll container ═══ -->
     <div class="gym-sticky-bar" id="gym-sticky-bar">
         <!-- Payment method row — Uber-style: shows saved card or "Add payment" -->
-        <div class="gym-sticky-pay" id="gym-sticky-pay" onclick="openPaySheet()">
+        <div class="gym-sticky-pay" id="gym-sticky-pay" onclick="openGymOverlay('payment')">
           <div class="gym-sticky-pay-icon" id="gym-pay-icon">
             <span style="font-size:16px">💳</span>
           </div>
@@ -1428,27 +1429,7 @@ function GymProfilePage(){
             </div>
             <div class="gym-pay-option-check"></div>
           </div>
-          <!-- PayPal/Google Pay removed — Uber-style: saved cards + card entry only -->
-          <div class="gym-pay-option" onclick="selectPayMethod(this,'klarna')" data-method="klarna">
-            <div class="gym-pay-option-icon" style="background:#FFB3C7;border-radius:10px">
-              <span style="color:#0A0B09;font-size:11px;font-weight:900">K</span>
-            </div>
-            <div>
-              <div class="gym-pay-option-label">Klarna</div>
-              <div class="gym-pay-option-sub">Pay later or in instalments</div>
-            </div>
-            <div class="gym-pay-option-check"></div>
-          </div>
-          <div class="gym-pay-option" onclick="selectPayMethod(this,'amazon_pay')" data-method="amazon_pay">
-            <div class="gym-pay-option-icon" style="background:#FF9900;border-radius:10px">
-              <span style="color:#232F3E;font-size:11px;font-weight:900">a</span>
-            </div>
-            <div>
-              <div class="gym-pay-option-label">Amazon Pay</div>
-              <div class="gym-pay-option-sub">Use your Amazon account</div>
-            </div>
-            <div class="gym-pay-option-check"></div>
-          </div>
+          <!-- Klarna & Amazon Pay removed — only saveable 1-tap methods kept -->
           <div class="gym-pay-option" onclick="selectPayMethod(this,'cash')" data-method="cash">
             <div class="gym-pay-option-icon" style="background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);border-radius:10px">
               <span style="font-size:18px">💷</span>
@@ -1472,7 +1453,7 @@ function GymProfilePage(){
         <div class="uber-date-strip" id="uber-date-strip"></div>
         <div class="uber-date-divider"></div>
         <div class="uber-time-list" id="uber-time-list"></div>
-        <button class="uber-date-cta" id="uber-date-cta" onclick="confirmDateSheet()">Confirm time</button>
+        <div class="uber-date-cta-wrap"><button class="uber-date-cta" id="uber-date-cta" onclick="confirmDateSheet()">Confirm time</button></div>
       </div>
     </div>
   </div>
@@ -1726,6 +1707,55 @@ window.openGymOverlay=function(section){
         </div>
       </div>
     `;
+  }
+  else if(section==='payment'){
+    title.innerHTML='💳 Payment';
+    body.innerHTML=`
+      <div style="padding:4px 0">
+        <!-- Saved Cards -->
+        <div style="margin-bottom:16px">
+          <div style="color:rgba(255,255,255,.5);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Saved cards</div>
+          <div id="ov-pay-cards" style="background:rgba(30,41,59,.6);border-radius:16px;border:1px solid rgba(255,255,255,.06);overflow:hidden">
+            <div style="padding:20px;text-align:center;color:rgba(255,255,255,.3);font-size:13px">Loading…</div>
+          </div>
+        </div>
+
+        <!-- Add Payment Method -->
+        <button onclick="_ovPayAddCard()" id="ov-pay-add-btn" style="width:100%;display:flex;align-items:center;gap:14px;padding:16px 20px;background:rgba(30,41,59,.6);border:1px dashed rgba(255,255,255,.15);border-radius:16px;cursor:pointer;transition:all .2s">
+          <div style="width:44px;height:30px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;color:#22c55e">+</div>
+          <div style="text-align:left">
+            <div style="color:#fff;font-size:14px;font-weight:600">Add payment method</div>
+            <div style="color:rgba(255,255,255,.4);font-size:11px;margin-top:1px">Visa, Mastercard, Amex</div>
+          </div>
+        </button>
+
+        <!-- Add Card Form (hidden) -->
+        <div id="ov-pay-card-form" style="display:none;margin-top:16px;background:rgba(30,41,59,.6);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:20px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <h3 style="color:#fff;font-size:15px;font-weight:700;margin:0">Add card</h3>
+            <button onclick="_ovPayCloseCardForm()" style="background:none;border:none;color:rgba(255,255,255,.4);font-size:18px;cursor:pointer">✕</button>
+          </div>
+          <div id="ov-pay-card-element" style="background:rgba(15,23,42,.6);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:14px 16px;margin-bottom:16px"></div>
+          <button id="ov-pay-save-btn" onclick="_ovPaySaveCard()" style="width:100%;background:#22c55e;color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;opacity:.5;pointer-events:none;transition:all .2s">Save Card</button>
+          <p id="ov-pay-card-error" style="color:#ef4444;font-size:12px;margin-top:8px;display:none"></p>
+        </div>
+
+        <!-- Cash Option -->
+        <div style="margin-top:16px">
+          <div style="color:rgba(255,255,255,.5);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Other</div>
+          <div id="ov-pay-cash" onclick="_ovPaySelectCash()" style="display:flex;align-items:center;gap:14px;padding:16px 20px;background:rgba(30,41,59,.6);border:1px solid rgba(255,255,255,.06);border-radius:16px;cursor:pointer;transition:all .15s">
+            <div style="width:44px;height:30px;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px">💷</div>
+            <div style="flex:1">
+              <div style="color:#fff;font-size:14px;font-weight:600">Cash at Gym</div>
+              <div style="color:rgba(255,255,255,.4);font-size:11px;margin-top:1px">Pay in person when you arrive</div>
+            </div>
+            <div id="ov-pay-cash-check" style="color:#22c55e;font-size:18px;font-weight:700"></div>
+          </div>
+        </div>
+      </div>
+    `;
+    // Load saved cards
+    _ovPayLoadCards();
   }
 
   // Open overlay with animation
@@ -2042,20 +2072,179 @@ window.selectPayMethod=function(el,method){
   window._gymBookingState.savedCard=null;
   const iconEl=document.getElementById('gym-pay-icon');
   const labelEl=document.getElementById('gym-pay-label');
-  if(method==='card'){
-    if(iconEl){iconEl.className='gym-sticky-pay-icon';iconEl.style.background='linear-gradient(135deg,#1a1f71,#2d2f8e)';iconEl.innerHTML='<span style="color:#fff;font-size:11px;font-weight:800">💳</span>';}
-    if(labelEl)labelEl.textContent='New Card';
-  }else if(method==='klarna'){
-    if(iconEl){iconEl.className='gym-sticky-pay-icon';iconEl.style.background='#FFB3C7';iconEl.innerHTML='<span style="color:#0A0B09;font-size:11px;font-weight:900">K</span>';}
-    if(labelEl)labelEl.textContent='Klarna';
-  }else if(method==='amazon_pay'){
-    if(iconEl){iconEl.className='gym-sticky-pay-icon';iconEl.style.background='#FF9900';iconEl.innerHTML='<span style="color:#232F3E;font-size:11px;font-weight:900">a</span>';}
-    if(labelEl)labelEl.textContent='Amazon Pay';
-  }else if(method==='cash'){
+  if(method==='cash'){
     if(iconEl){iconEl.className='gym-sticky-pay-icon cash';iconEl.innerHTML='💷';}
     if(labelEl)labelEl.textContent='Cash at Gym';
   }
   closePaySheet();
+};
+
+// ═══ Payment Overlay Functions (Uber-style full-screen wallet) ═══
+window._ovPayStripeElements=null;
+window._ovPayCardElement=null;
+window._ovPayStripeInstance=null;
+
+window._ovPayLoadCards=async function(){
+  const cardsEl=document.getElementById('ov-pay-cards');
+  if(!cardsEl)return;
+  if(!state.user){
+    cardsEl.innerHTML='<div style="padding:24px 20px;text-align:center"><p style="color:rgba(255,255,255,.3);font-size:13px">Sign in to manage payment methods</p></div>';
+    return;
+  }
+  try{
+    const resp=await fetch('/api/payment/saved-cards',{credentials:'include'}).then(r=>r.json());
+    if(!resp.cards||resp.cards.length===0){
+      cardsEl.innerHTML='<div style="padding:24px 20px;text-align:center"><div style="font-size:32px;margin-bottom:8px;opacity:.3">💳</div><p style="color:rgba(255,255,255,.3);font-size:13px">No saved cards yet</p><p style="color:rgba(255,255,255,.2);font-size:11px;margin-top:4px">Add a card to enable 1-tap booking</p></div>';
+      return;
+    }
+    const gbs=window._gymBookingState;
+    let html='';
+    resp.cards.forEach((card,i)=>{
+      const brandNames={visa:'Visa',mastercard:'Mastercard',amex:'Amex',discover:'Discover'};
+      const brandName=brandNames[card.brand]||card.brand||'Card';
+      const brandColors={visa:'#1a1f71',mastercard:'#eb001b',amex:'#006fcf',discover:'#ff6000'};
+      const bgColor=brandColors[card.brand]||'#334155';
+      const isSelected=gbs.paymentMethod==='saved'&&gbs.savedCard&&gbs.savedCard.id===card.id;
+      const isLast=i===resp.cards.length-1;
+      html+=\`<div onclick="_ovPaySelectCard('\${card.id}','\${card.brand}','\${card.last4}')" style="display:flex;align-items:center;gap:14px;padding:16px 20px;\${isLast?'':'border-bottom:1px solid rgba(255,255,255,.06);'}cursor:pointer;transition:background .15s;\${isSelected?'background:rgba(34,197,94,.08)':''}" onmouseover="this.style.background='rgba(255,255,255,.03)'" onmouseout="this.style.background='\${isSelected?'rgba(34,197,94,.08)':'transparent'}'">
+        <div style="width:44px;height:30px;background:linear-gradient(135deg,\${bgColor},\${bgColor}dd);border-radius:6px;display:flex;align-items:center;justify-content:center">
+          <span style="color:#fff;font-size:10px;font-weight:800;text-transform:uppercase">\${brandName.slice(0,4)}</span>
+        </div>
+        <div style="flex:1">
+          <div style="color:#fff;font-size:14px;font-weight:600">\${brandName} ····\${card.last4}</div>
+          <div style="color:rgba(255,255,255,.35);font-size:11px;margin-top:1px">\${card.isDefault?'Default · ':''}Expires \${card.expMonth}/\${card.expYear}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          \${card.isDefault?'<span style="background:rgba(34,197,94,.15);color:#22c55e;font-size:9px;font-weight:700;padding:3px 8px;border-radius:6px">DEFAULT</span>':'<button onclick="event.stopPropagation();_ovPaySetDefault(\\''+card.id+'\\');return false;" style="background:none;border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.4);font-size:10px;padding:3px 8px;border-radius:6px;cursor:pointer">Set default</button>'}
+          <button onclick="event.stopPropagation();_ovPayDeleteCard('\${card.id}','\${brandName} ····\${card.last4}');return false;" style="background:none;border:none;color:rgba(255,255,255,.2);font-size:16px;cursor:pointer;padding:4px;transition:color .15s" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='rgba(255,255,255,.2)'">×</button>
+          \${isSelected?'<span style="color:#22c55e;font-size:16px;font-weight:700">✓</span>':''}
+        </div>
+      </div>\`;
+    });
+    cardsEl.innerHTML=html;
+
+    // Auto-select default card if none selected
+    if(gbs.paymentMethod!=='saved'&&gbs.paymentMethod!=='cash'){
+      const defCard=resp.cards.find(c=>c.isDefault)||resp.cards[0];
+      if(defCard){
+        _ovPaySelectCard(defCard.id,defCard.brand,defCard.last4);
+      }
+    }
+  }catch(e){
+    cardsEl.innerHTML='<div style="padding:20px;text-align:center;color:rgba(255,255,255,.3);font-size:13px">Failed to load cards</div>';
+  }
+};
+
+window._ovPaySelectCard=function(cardId,brand,last4){
+  const brandNames={visa:'Visa',mastercard:'Mastercard',amex:'Amex',discover:'Discover'};
+  const brandName=brandNames[brand]||brand||'Card';
+  window._gymBookingState.paymentMethod='saved';
+  window._gymBookingState.savedCard={id:cardId,brand:brand,last4:last4};
+  // Update sticky bar indicator
+  const iconEl=document.getElementById('gym-pay-icon');
+  const labelEl=document.getElementById('gym-pay-label');
+  if(iconEl){iconEl.innerHTML='<span style="font-size:16px">💳</span>';}
+  if(labelEl)labelEl.textContent=brandName+' ····'+last4;
+  // Uncheck cash
+  const cashCheck=document.getElementById('ov-pay-cash-check');
+  if(cashCheck)cashCheck.textContent='';
+  // Reload cards to show selection
+  _ovPayLoadCards();
+};
+
+window._ovPaySelectCash=function(){
+  window._gymBookingState.paymentMethod='cash';
+  window._gymBookingState.savedCard=null;
+  const iconEl=document.getElementById('gym-pay-icon');
+  const labelEl=document.getElementById('gym-pay-label');
+  if(iconEl){iconEl.className='gym-sticky-pay-icon cash';iconEl.innerHTML='💷';}
+  if(labelEl)labelEl.textContent='Cash at Gym';
+  const cashCheck=document.getElementById('ov-pay-cash-check');
+  if(cashCheck)cashCheck.textContent='✓';
+  // Reload cards to clear selection
+  _ovPayLoadCards();
+};
+
+window._ovPayAddCard=function(){
+  const form=document.getElementById('ov-pay-card-form');
+  const btn=document.getElementById('ov-pay-add-btn');
+  if(!form)return;
+  form.style.display='block';
+  if(btn)btn.style.display='none';
+  if(!window._ovPayStripeElements&&window.Stripe){
+    const stripeKey=window._stripePublicKey||STRIPE_PK||'pk_live_51Ss8P0DPbSptA7HKnQFKelVtYGIWnxhOC8MuZIQdqTYHCJRgI5x8GZ2TlE2DVKK0pLXLJWF9AYNK4RbAEhTk8BN00YoI3Xwjf';
+    const si=Stripe(stripeKey);
+    window._ovPayStripeInstance=si;
+    window._ovPayStripeElements=si.elements({
+      appearance:{theme:'night',variables:{colorPrimary:'#22c55e',colorBackground:'#0f172a',colorText:'#fff',colorTextPlaceholder:'rgba(255,255,255,.3)',borderRadius:'10px'}},
+    });
+    window._ovPayCardElement=window._ovPayStripeElements.create('card',{
+      style:{base:{fontSize:'16px',color:'#fff','::placeholder':{color:'rgba(255,255,255,.3)'}},invalid:{color:'#ef4444'}},
+      hidePostalCode:true,
+    });
+    window._ovPayCardElement.mount('#ov-pay-card-element');
+    window._ovPayCardElement.on('change',function(ev){
+      const saveBtn=document.getElementById('ov-pay-save-btn');
+      const errEl=document.getElementById('ov-pay-card-error');
+      if(saveBtn){
+        if(ev.complete){saveBtn.style.opacity='1';saveBtn.style.pointerEvents='auto';}
+        else{saveBtn.style.opacity='.5';saveBtn.style.pointerEvents='none';}
+      }
+      if(errEl){
+        if(ev.error){errEl.textContent=ev.error.message;errEl.style.display='block';}
+        else{errEl.style.display='none';}
+      }
+    });
+  }
+};
+
+window._ovPayCloseCardForm=function(){
+  const form=document.getElementById('ov-pay-card-form');
+  const btn=document.getElementById('ov-pay-add-btn');
+  if(form)form.style.display='none';
+  if(btn)btn.style.display='flex';
+};
+
+window._ovPaySaveCard=async function(){
+  const saveBtn=document.getElementById('ov-pay-save-btn');
+  const errEl=document.getElementById('ov-pay-card-error');
+  if(!window._ovPayStripeInstance||!window._ovPayCardElement)return;
+  if(saveBtn){saveBtn.textContent='Saving…';saveBtn.style.opacity='.6';saveBtn.style.pointerEvents='none';}
+  try{
+    const siResp=await fetch('/api/payment/setup-card',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'}});
+    const siData=await siResp.json();
+    if(!siData.clientSecret)throw new Error(siData.error||'Failed to create setup');
+    const{setupIntent,error}=await window._ovPayStripeInstance.confirmCardSetup(siData.clientSecret,{
+      payment_method:{card:window._ovPayCardElement},
+    });
+    if(error)throw new Error(error.message);
+    await fetch('/api/payment/confirm-setup',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({setupIntentId:setupIntent.id})});
+    _ovPayCloseCardForm();
+    if(window._ovPayCardElement)window._ovPayCardElement.clear();
+    _showToast('💳 Card saved successfully!');
+    _ovPayLoadCards();
+  }catch(err){
+    if(errEl){errEl.textContent=err.message;errEl.style.display='block';}
+  }finally{
+    if(saveBtn){saveBtn.textContent='Save Card';saveBtn.style.opacity='1';saveBtn.style.pointerEvents='auto';}
+  }
+};
+
+window._ovPaySetDefault=async function(cardId){
+  try{
+    await fetch('/api/payment/set-default-card',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({cardId})});
+    _showToast('✅ Default card updated');
+    _ovPayLoadCards();
+  }catch(err){_showToast('Failed to update default card');}
+};
+
+window._ovPayDeleteCard=async function(cardId,label){
+  if(!confirm('Remove '+label+'?'))return;
+  try{
+    await fetch('/api/payment/saved-cards/'+cardId,{method:'DELETE',credentials:'include'});
+    _showToast('Card removed');
+    _ovPayLoadCards();
+  }catch(err){_showToast('Failed to remove card');}
 };
 
 // ═══ Date/time picker sheet ═══
@@ -4218,39 +4407,46 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
 
   const sheet=document.createElement('div');
   sheet.id='booking-sheet';
+  // ═══ Auto-detect payment: fetch saved cards if not already selected ═══
+  if(!isCash&&!isSaved&&state.user){
+    try{
+      const cardsResp=await fetch('/api/payment/saved-cards',{credentials:'include'}).then(r=>r.json());
+      if(cardsResp.cards&&cardsResp.cards.length>0){
+        const defCard=cardsResp.cards.find(c=>c.isDefault)||cardsResp.cards[0];
+        gbs.paymentMethod='saved';
+        gbs.savedCard={id:defCard.id,brand:defCard.brand,last4:defCard.last4};
+      }
+    }catch(e){}
+  }
+
+  // Re-read after auto-detect
+  const finalPayMethod=gbs.paymentMethod||'none';
+  const finalIsCash=finalPayMethod==='cash';
+  const finalIsSaved=finalPayMethod==='saved'&&gbs.savedCard;
+  const finalHasPayment=finalIsCash||finalIsSaved;
+
   sheet.innerHTML=`
   <style>
-    .ub-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:9200;display:flex;align-items:flex-end;justify-content:center}
-    .ub-sheet{background:#0a0f14;width:100%;max-width:440px;border-radius:24px 24px 0 0;overflow:hidden;transform:translateY(100%);animation:ubSlideUp .35s cubic-bezier(.32,.72,0,1) forwards;position:relative;display:flex;flex-direction:column}
+    .ub-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9200;display:flex;align-items:flex-end;justify-content:center}
+    .ub-sheet{background:#000;width:100%;max-width:440px;border-radius:20px 20px 0 0;overflow:hidden;transform:translateY(100%);animation:ubSlideUp .35s cubic-bezier(.32,.72,0,1) forwards;position:relative;display:flex;flex-direction:column}
     @keyframes ubSlideUp{to{transform:translateY(0)}}
     .ub-drag{width:36px;height:4px;border-radius:2px;background:rgba(255,255,255,.12);margin:10px auto 0}
-    .ub-confirm-title{padding:24px 20px 4px;text-align:center}
-    .ub-confirm-title h2{color:#fff;font-size:22px;font-weight:800;font-family:'Sora',sans-serif;margin:0}
-    .ub-confirm-divider{height:1px;background:rgba(255,255,255,.06);margin:16px 20px}
-    .ub-confirm-info{padding:0 20px}
+    .ub-confirm-title{padding:24px 20px 8px}
+    .ub-confirm-title h2{color:#fff;font-size:22px;font-weight:800;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;margin:0}
+    .ub-confirm-divider{height:1px;background:rgba(255,255,255,.08);margin:0 20px}
+    .ub-confirm-info{padding:16px 20px}
     .ub-confirm-gym-name{color:#fff;font-size:17px;font-weight:700;margin-bottom:4px}
     .ub-confirm-gym-addr{color:rgba(255,255,255,.5);font-size:13px;line-height:1.4}
-    .ub-confirm-summary{padding:12px 20px 0;display:flex;flex-wrap:wrap;gap:8px}
+    .ub-confirm-summary{padding:0 20px 16px;display:flex;flex-wrap:wrap;gap:8px}
     .ub-confirm-chip{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:6px 12px;color:rgba(255,255,255,.6);font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:4px}
-    .ub-footer{padding:16px 20px calc(28px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:10px}
-    .ub-cta{width:100%;padding:18px;border:none;border-radius:16px;font-size:18px;font-weight:700;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:8px;-webkit-tap-highlight-color:transparent}
+    .ub-footer{padding:16px 20px calc(20px + env(safe-area-inset-bottom,0px))}
+    .ub-cta{width:100%;padding:18px;border:none;border-radius:12px;font-size:17px;font-weight:700;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
     .ub-cta:active{transform:scale(.98)}
-    .ub-cta-primary{background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;box-shadow:0 4px 20px rgba(34,197,94,.3)}
-    .ub-cta-primary:disabled{background:#1e293b;color:rgba(255,255,255,.3);box-shadow:none}
-    .ub-trust{display:flex;align-items:center;justify-content:center;gap:8px;color:rgba(255,255,255,.25);font-size:10px}
+    .ub-cta-primary{background:#fff;color:#000}
+    .ub-cta-disabled{background:rgba(255,255,255,.12);color:rgba(255,255,255,.3)}
+    .ub-trust{display:flex;align-items:center;justify-content:center;gap:8px;color:rgba(255,255,255,.25);font-size:10px;margin-top:10px}
     .ub-error{padding:0 20px;margin-top:8px}
     .ub-error-text{color:#f87171;font-size:13px;text-align:center}
-    .ub-stripe-section{padding:0 20px 8px}
-    .ub-stripe-wrap{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px;margin-top:4px}
-    .ub-cash-info{padding:0 20px 8px}
-    .ub-cash-panel{background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.2);border-radius:14px;padding:14px}
-    .ub-cash-step{display:flex;align-items:center;gap:10px;margin-bottom:8px}
-    .ub-cash-step:last-child{margin-bottom:0}
-    .ub-cash-num{background:rgba(34,197,94,.15);border-radius:8px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;color:#4ade80;font-weight:700}
-    .ub-cash-text{color:#fff;font-size:12px}
-    .ub-total-section{padding:12px 20px 4px;display:flex;justify-content:space-between;align-items:baseline}
-    .ub-total-label{color:rgba(255,255,255,.45);font-size:13px}
-    .ub-total-price{color:#fff;font-size:28px;font-weight:800}
   </style>
 
   <div class="ub-overlay" onclick="if(event.target===this)closeBookingSheet()">
@@ -4267,52 +4463,14 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
       <!-- Gym Info -->
       <div class="ub-confirm-info">
         <div class="ub-confirm-gym-name">${gymName}</div>
-        <div class="ub-confirm-gym-addr">📍 ${gymAddr}</div>
+        <div class="ub-confirm-gym-addr">\u{1F4CD} ${gymAddr}</div>
       </div>
 
       <!-- Booking summary chips -->
       <div class="ub-confirm-summary">
         <div class="ub-confirm-chip">${passInfo.icon} ${passInfo.name}</div>
-        <div class="ub-confirm-chip">📅 ${dateDisplay}</div>
-        <div class="ub-confirm-chip">${isCash?'💷 Cash':isSaved?'💳 '+savedCardLabel:selPayMethod==='klarna'?'K Klarna':selPayMethod==='amazon_pay'?'a Amazon Pay':'💳 Card'}</div>
-        ${isOffPeak?'<div class="ub-confirm-chip" style="color:#4ade80;border-color:rgba(34,197,94,.3)">🌙 Off-peak -25%</div>':''}
-      </div>
-
-      <div class="ub-confirm-divider"></div>
-
-      <!-- Card payment: Stripe Elements (hidden when using saved card) -->
-      <div class="ub-stripe-section" id="ub-stripe-section" style="${isCash||isSaved?'display:none':''}">
-        <div id="ub-stripe-area">
-          <div class="ub-stripe-wrap">
-            <div style="text-align:center;padding:20px 0">
-              <div class="sg-spinner" style="width:24px;height:24px;border-color:rgba(255,255,255,.15);border-top-color:#f97316;margin:0 auto 8px"></div>
-              <p style="color:rgba(255,255,255,.3);font-size:12px" id="ub-stripe-loading-msg">Loading secure payment…</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Cash payment info -->
-      <div class="ub-cash-info" id="ub-cash-info" style="${isCash?'':'display:none'}">
-        <div class="ub-cash-panel">
-          <div style="color:#4ade80;font-size:13px;font-weight:700;margin-bottom:10px">💷 How it works</div>
-          <div class="ub-cash-step"><div class="ub-cash-num">1</div><div class="ub-cash-text">Show your QR pass at reception</div></div>
-          <div class="ub-cash-step"><div class="ub-cash-num">2</div><div class="ub-cash-text">Pay cash at the front desk</div></div>
-          <div class="ub-cash-step"><div class="ub-cash-num">3</div><div class="ub-cash-text">Staff scans your QR to activate</div></div>
-          <div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(34,197,94,.15);color:rgba(255,255,255,.4);font-size:11px">⏰ Reservation held for 2 hours</div>
-        </div>
-      </div>
-
-      <!-- Referral Discount Banner -->
-      ${_sgRefActive?`<div style="background:linear-gradient(135deg,rgba(249,115,22,.15),rgba(249,115,22,.05));border:1px solid rgba(249,115,22,.3);border-radius:12px;padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
-        <div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">🎉</span><div><div style="color:#fb923c;font-size:13px;font-weight:700">Referral discount applied!</div><div style="color:rgba(255,255,255,.5);font-size:11px">via ${decodeURIComponent(_sgRefActive)}</div></div></div>
-        <div style="color:#4ade80;font-weight:800;font-size:16px">-${_sym}${_refDiscount>=1000?Math.round(_refDiscount).toLocaleString():_refDiscount.toFixed(2)}</div>
-      </div>`:''}
-
-      <!-- Total -->
-      <div class="ub-total-section">
-        <div class="ub-total-label">Total${_sgRefActive?' <span style="text-decoration:line-through;color:rgba(255,255,255,.3);font-weight:400;font-size:13px">'+_sgOrigPriceStr+'</span>':''}</div>
-        <div class="ub-total-price" id="ub-total-price">${displayPriceStr}</div>
+        <div class="ub-confirm-chip">\u{1F4C5} ${dateDisplay}</div>
+        ${isOffPeak?'<div class="ub-confirm-chip" style="color:#4ade80;border-color:rgba(34,197,94,.3)">\u{1F319} Off-peak</div>':''}
       </div>
 
       <!-- Error area -->
@@ -4320,13 +4478,13 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
         <div class="ub-error-text"></div>
       </div>
 
-      <!-- Confirm CTA -->
+      <!-- Confirm CTA — Uber style: white button -->
       <div class="ub-footer">
-        <button class="ub-cta ub-cta-primary" id="ub-cta-btn" onclick="ubConfirmPay()" ${isCash||isSaved?'':'style="opacity:0.4;pointer-events:none"'}>
-          <span id="ub-cta-text">${isCash?'Confirm · pay at gym':isSaved?'Confirm and pay · '+savedCardLabel:'Confirm and pay · '+displayPriceStr}</span>
+        <button class="ub-cta ${finalHasPayment?'ub-cta-primary':'ub-cta-disabled'}" id="ub-cta-btn" onclick="ubConfirmPay()">
+          <span id="ub-cta-text">${finalHasPayment?'Confirm and pay':'Add a payment method'}</span>
         </button>
         <div class="ub-trust">
-          <span>🔒 Stripe secure</span><span>·</span><span>📧 QR instant</span><span>·</span><span>↩️ Free cancel</span>
+          <span>\u{1F512} Stripe secure</span><span>\u{00B7}</span><span>\u{1F4E7} QR instant</span><span>\u{00B7}</span><span>\u21A9\uFE0F Free cancel</span>
         </div>
       </div>
 
@@ -4340,17 +4498,15 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
     selectedPass:selPass,
     selectedDate:selDate,
     selectedTime:selTime,
-    payMode:isCash?'cash':isSaved?'saved':(selPayMethod==='klarna'||selPayMethod==='amazon_pay'?selPayMethod:'card'),
-    savedCardId:isSaved?gbs.savedCard.id:null,
+    payMode:finalIsCash?'cash':finalIsSaved?'saved':'none',
+    savedCardId:finalIsSaved?gbs.savedCard.id:null,
     bookingId:null,
     intentId:null,
     clientSecret:null,
     stripe:null,
     elements:null,
     gymId:gymId,
-    ready:isCash||isSaved,
-    cardEntered:false,
-    stripeReady:false,
+    ready:finalHasPayment,
   };
 
   // ═══ Swipe-to-close on sheet ═══
@@ -4379,6 +4535,14 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
     if(!btn||btn.disabled)return;
 
     errEl?.classList.add('hidden');
+
+    // ─── No payment method → open wallet overlay ───
+    if(cs.payMode==='none'||(!cs.payMode)){
+      closeBookingSheet();
+      setTimeout(()=>openGymOverlay('payment'),300);
+      sgToast('💳 Add a payment method first','info',3000);
+      return;
+    }
 
     // ─── Cash booking ───
     if(cs.payMode==='cash'){
@@ -4440,109 +4604,10 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
       return;
     }
 
-    // ─── Card payment via Stripe ───
-    if(!cs.elements||!cs.stripe){
-      const et=errEl?.querySelector('.ub-error-text');
-      if(et)et.textContent='Payment not ready yet — try again in a moment';
-      errEl?.classList.remove('hidden');
-      return;
-    }
-
-    btn.disabled=true;
-    btnText.innerHTML='<span class="sg-spinner" style="width:18px;height:18px;display:inline-block"></span> Processing…';
-
-    try{
-      console.log('[ScanGym] Step 1: elements.submit()');
-      const submitResult=await cs.elements.submit();
-      if(submitResult.error){
-        console.error('[ScanGym] elements.submit() error:',submitResult.error);
-        const et=errEl?.querySelector('.ub-error-text');
-        if(et)et.textContent=submitResult.error.message||'Payment details incomplete';
-        errEl?.classList.remove('hidden');
-        btn.disabled=false;btnText.textContent='Confirm and pay · '+displayPriceStr;
-        return;
-      }
-      console.log('[ScanGym] Step 1 OK — submit passed');
-
-      const email=localStorage.getItem('sg_last_email')||'';
-      const gymInfo=state.currentGym||state.gyms.find(g=>(g.placeId||g.place_id||g.id)==gymId)||{};
-      // ═══ REFERRAL: Read stored referral code from localStorage ═══
-      let _sgRef=null;try{const _r=JSON.parse(localStorage.getItem('sg_referral')||'null');if(_r&&_r.handle&&_r.expiry>Date.now())_sgRef=_r.handle;}catch(e){}
-      const _checkoutBody={gymId:parseInt(cs.dbGymId||gymId),placeId:gymId,date:cs.selectedDate,time:cs.selectedTime,email,gymName:gymInfo.name||gymName||'Gym',gymAddress:gymInfo.formatted_address||gymInfo.vicinity||gymInfo.address||gymAddr||'',passType:cs.selectedPass||'day',...(_sgRef?{referralCode:_sgRef}:{})};
-      console.log('[ScanGym] Step 2: fetch /api/payment/instant-checkout',JSON.stringify(_checkoutBody));
-      const intentResp=await fetch('/api/payment/instant-checkout',{
-        method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
-        body:JSON.stringify(_checkoutBody)
-      });
-      if(!intentResp.ok){
-        const errBody=await intentResp.text().catch(()=>'');
-        console.error('[ScanGym] Server error',intentResp.status,errBody);
-        throw new Error('Server error '+intentResp.status+': '+(errBody||'').slice(0,200));
-      }
-      const intentResult=await intentResp.json();
-      console.log('[ScanGym] Step 2 OK — intent created',intentResult.intentId);
-
-      if(intentResult.error){
-        console.error('[ScanGym] Backend returned error:',intentResult.error);
-        const et=errEl?.querySelector('.ub-error-text');
-        if(et)et.textContent=intentResult.error||'Failed to create booking';
-        errEl?.classList.remove('hidden');
-        btn.disabled=false;btnText.textContent='Confirm and pay · '+displayPriceStr;
-        return;
-      }
-
-      cs.bookingId=intentResult.bookingId;
-      cs.intentId=intentResult.intentId;
-      cs.clientSecret=intentResult.clientSecret;
-      localStorage.setItem('sg_pending_booking',intentResult.bookingId);
-
-      console.log('[ScanGym] Step 3: confirmPayment (redirect:if_required)');
-      const {error,paymentIntent}=await cs.stripe.confirmPayment({
-        elements:cs.elements,
-        clientSecret:intentResult.clientSecret,
-        confirmParams:{
-          return_url:window.location.origin+'/booking-success?booking_id='+(cs.bookingId||''),
-          receipt_email:email||undefined,
-        },
-        redirect:'if_required',
-      });
-
-      if(error){
-        console.error('[ScanGym] confirmPayment error:',error.type,error.message,error);
-        const et=errEl?.querySelector('.ub-error-text');
-        if(et)et.textContent=error.message||'Payment failed';
-        errEl?.classList.remove('hidden');
-        btn.disabled=false;btnText.textContent='Confirm and pay · '+displayPriceStr;
-      }else if(paymentIntent&&(paymentIntent.status==='succeeded'||paymentIntent.status==='requires_capture')){
-        // ═══ UBER-STYLE: confirm-intent now auto-saves card server-side ═══
-        try{
-          const confirmResp=await fetch('/api/payment/confirm-intent',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({bookingId:cs.bookingId,paymentIntentId:paymentIntent.id,email})}).then(r=>r.json());
-          // Show card-saved toast if this was the first card save
-          if(confirmResp.cardSaved){
-            setTimeout(()=>sgToast('💳 Card saved — future bookings are 1-tap!','success',4000),2000);
-          }
-        }catch(e){console.log('confirm-intent call failed (non-blocking):',e);}
-        localStorage.removeItem('sg_pending_booking');
-        closeBookingSheet();
-        navigate('/booking-success?session_id='+paymentIntent.id+'&booking_id='+(cs.bookingId||''));
-        sgToast('✅ Booking confirmed!','success',3000);
-      }else{
-        btn.disabled=false;btnText.textContent='Confirm and pay · '+displayPriceStr;
-      }
-    }catch(e){
-      console.error('[ScanGym] Payment error:',e?.message||e,e);
-      const et=errEl?.querySelector('.ub-error-text');
-      const msg=e?.message||'';
-      if(msg.includes('Server error')){
-        if(et)et.textContent='Booking server error — please try again in a moment.';
-      }else if(msg.includes('Failed to fetch')||msg.includes('NetworkError')||msg.includes('Load failed')){
-        if(et)et.textContent='Network error — check your connection and try again.';
-      }else{
-        if(et)et.textContent=msg||'Payment failed. Please try again.';
-      }
-      errEl?.classList.remove('hidden');
-      btn.disabled=false;btnText.textContent='Confirm and pay · '+displayPriceStr;
-    }
+    // ─── Fallback: no valid payment method ───
+    closeBookingSheet();
+    setTimeout(()=>openGymOverlay('payment'),300);
+    sgToast('💳 Add a payment method first','info',3000);
   };
 
   // ═══ No-op compatibility stubs ═══
@@ -4556,9 +4621,10 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
   window.ubOnDateChange=function(){};
   window.ubPaySelect=function(){};
 
-  // ═══ Initialize payment (card mode only, skip if saved card ready) ═══
-  if(!isCash&&!isSaved){
-    _initUberPaymentNew(gymId, gym);
+  // ═══ No Stripe Elements on confirm — payment is via saved cards or cash ═══
+  // If no payment method, tapping the button will redirect to wallet overlay
+  if(!finalHasPayment){
+    // Button says "Add a payment method" — handled in ubConfirmPay
   }
 };
 
