@@ -1124,6 +1124,9 @@ function SearchPage(){
         html+='.bm-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.06);transition:all .3s ease}';
         html+='.bm-dot.act{background:#f97316;width:14px;border-radius:3px}';
         html+='.bm-hint{text-align:center;font-size:8px;color:rgba(255,255,255,.08);padding:2px 0 4px}';
+        html+='.bm-continue{padding:12px 16px 4px}';
+        html+='.bm-continue-btn{width:100%;padding:13px 0;border:none;border-radius:12px;background:#f97316;color:#fff;font-size:15px;font-weight:700;letter-spacing:.3px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;box-shadow:0 4px 16px rgba(249,115,22,.35)}';
+        html+='.bm-continue-btn:active{transform:scale(.97);box-shadow:0 2px 8px rgba(249,115,22,.25)}';
         html+='</style>';
         html+='<div class="bm-map" id="bm-map">';
         html+='<div class="bm-road" style="width:300%;height:16px;top:30%;left:-20%;transform:rotate(-12deg)"></div>';
@@ -1161,7 +1164,7 @@ function SearchPage(){
           html+='<div class="bm-row" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'hours\')"><div class="bm-row-icon">\u{1F550}</div><div class="bm-row-text"><div class="bm-row-main">'+c.openText+'</div></div><div class="bm-tag '+c.openClass+'">'+c.openTag+'</div><div class="bm-row-chev">\u203a</div></div>';
           html+='<div class="bm-row" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'facilities\')"><div class="bm-row-icon">'+(c.facs[0]?c.facs[0].split(' ')[0]:'\u{1F3CA}')+'</div><div class="bm-row-text"><div class="bm-row-main">'+c.facList+'</div></div><div class="bm-row-chev">\u203a</div></div>';
           html+='<div class="bm-row" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'equipment\')"><div class="bm-row-icon">\u{1F3CB}\uFE0F</div><div class="bm-row-text"><div class="bm-row-main">'+c.equipList+'</div></div><div class="bm-row-chev">\u203a</div></div>';
-          html+='</div></div>';
+          html+='</div><div class="bm-continue"><button class="bm-continue-btn" onclick="event.stopPropagation();openGym(\''+c.id+'\',true)">Continue \u{1F7E0}</button></div></div>';
         });
         html+='</div>';
         html+='<div class="bm-dots" id="bm-dots">'+_cards.map(function(c,i){return '<div class="bm-dot'+(i===0?' act':'')+'" id="bm-dot-'+i+'"></div>';}).join('')+'</div>';
