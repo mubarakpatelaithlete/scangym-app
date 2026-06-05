@@ -1052,10 +1052,13 @@ function SearchPage(){
       `:''}
 
       <!-- Map — hidden by default, toggle button to show -->
-      ${(!isLoading&&MAPS_KEY&&gyms[0])?`<div style="display:flex;justify-content:flex-end;margin-bottom:8px">
-        <button onclick="toggleExploreMap()" id="sg-map-toggle-btn" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.6);font-size:12px;font-weight:600;padding:6px 14px;border-radius:20px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s">
-          <span>📍</span> Map view
+      ${(!isLoading&&gyms[0])?`<div style="display:flex;justify-content:flex-end;margin-bottom:8px;gap:8px">
+        <button onclick="showGymDiscovery()" style="background:linear-gradient(135deg,#f97316,#ea580c);border:none;color:#fff;font-size:12px;font-weight:700;padding:6px 14px;border-radius:20px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s;-webkit-tap-highlight-color:transparent;box-shadow:0 2px 12px rgba(249,115,22,.3)">
+          <span>🗺️</span> Browse Gyms
         </button>
+        ${MAPS_KEY?`<button onclick="toggleExploreMap()" id="sg-map-toggle-btn" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.6);font-size:12px;font-weight:600;padding:6px 14px;border-radius:20px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s">
+          <span>📍</span> Map view
+        </button>`:''}
       </div>
       <div id="sg-explore-map" style="display:none;margin-bottom:12px;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.1);height:240px">
         <iframe width="100%" height="100%" frameborder="0" style="border:0"
@@ -4382,6 +4385,254 @@ window.handleBookNow=async function(gymId){
 //  UBER-STYLE SINGLE-SCREEN CHECKOUT — No separate confirm stage
 //  Payment method bar at bottom (like Uber ride confirm screen)
 //  Card entry forced in Payment sub-screen before allowing confirm
+// ═══════════════════════════════════════════════════════════════════════════
+// ── GYM DISCOVERY CAROUSEL (Uber-style horizontal swipe) ──
+// ═══════════════════════════════════════════════════════════════════════════
+
+window.showGymDiscovery=function(){
+  document.getElementById('gym-discovery')?.remove();
+  const gyms=state.gyms||[];
+  if(gyms.length===0){sgToast('No gyms found — try searching first','info',3000);return;}
+
+  const dayP=sgPrice('day');
+  const _h=new Date().getHours();
+  const _isOP=_h<10||_h>=20;
+
+  // Build pin position data for each gym (deterministic from name hash)
+  function pinPos(i,total){
+    const angles=[40,28,58,22,65,48,35,72,18,55,42,32,68,25,52,38,62,30,45,70];
+    const xAngles=[50,30,65,72,25,82,15,60,38,75,45,55,20,68,42,78,35,58,28,70];
+    return{top:angles[i%20],left:xAngles[i%20]};
+  }
+
+  // Build gym info for each card
+  const cards=gyms.slice(0,20).map((gym,i)=>{
+    const id=gym.placeId||gym.place_id||gym.id;
+    const photo=gym.photo||gym.photo_url||
+      (gym.photoReference?`https://maps.googleapis.com/maps/api/place/photo?maxwidth=600&photo_reference=${gym.photoReference}&key=${MAPS_KEY}`:
+      (gym.photo_reference?`https://maps.googleapis.com/maps/api/place/photo?maxwidth=600&photo_reference=${gym.photo_reference}&key=${MAPS_KEY}`:''));
+    const photos=gym.photos_list||[];
+    const allPhotos=photos.length>1?photos.slice(0,5).map(p=>p.thumbnail||p.url||photo):[photo];
+    const photoCount=photos.length||1;
+    const dist=gym.distanceText||(gym.distance?`${gym.distance.toFixed(1)} km`:'Nearby');
+    const distMin=gym.distance?Math.max(2,Math.round(gym.distance*3))+'min':((i*3+5)+'min');
+    const facs=getCardFacilities(gym);
+    const rating=gym.rating||'New';
+    const reviews=gym.totalReviews||gym.user_ratings_total||0;
+    const addr=gym.address||gym.vicinity||'';
+    const isOpen=gym.openNow!==false;
+    const cTime=closingTime(gym);
+    const openText=isOpen?(cTime?'Open · Closes '+cTime:'Open now'):'Closed';
+    const openTag=isOpen?(cTime?'● Open':'● Open'):'● Closed';
+    const openClass=isOpen?'gd-tag-open':'gd-tag-closed';
+    const isPop=isTopGym(gym);
+    const price=dayP.display;
+    const pos=pinPos(i,gyms.length);
+    return{id,gym,photo,allPhotos,photoCount,dist,distMin,facs,rating,reviews,addr,isOpen,openText,openTag,openClass,isPop,price,pos,name:gym.name||'Gym',i};
+  });
+
+  const totalCards=cards.length;
+
+  const el=document.createElement('div');
+  el.id='gym-discovery';
+  el.innerHTML=`
+  <style>
+    .gd-overlay{position:fixed;inset:0;background:#0a0f14;z-index:9100;display:flex;flex-direction:column;opacity:0;transition:opacity .25s ease}
+    .gd-overlay.active{opacity:1}
+    /* Map */
+    .gd-map{height:28%;min-height:180px;background:#1a2030;position:relative;overflow:hidden;flex-shrink:0}
+    .gd-road{position:absolute;background:rgba(255,255,255,.045)}
+    .gd-st{position:absolute;font-size:7px;font-weight:600;color:rgba(255,255,255,.06);letter-spacing:2px;text-transform:uppercase;white-space:nowrap}
+    .gd-back{position:absolute;top:calc(env(safe-area-inset-top,0px) + 12px);left:16px;width:40px;height:40px;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:10;border:none;color:#fff;font-size:16px;-webkit-tap-highlight-color:transparent}
+    .gd-profile{position:absolute;top:calc(env(safe-area-inset-top,0px) + 12px);right:16px;width:40px;height:40px;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;z-index:10}
+    .gd-pills{position:absolute;bottom:10px;left:14px;display:flex;gap:6px;z-index:10}
+    .gd-pill{background:rgba(0,0,0,.7);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:6px 10px;display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:rgba(255,255,255,.7);white-space:nowrap}
+    .gd-pill-dist{background:#f97316;color:#fff;border-radius:5px;padding:1px 5px;font-size:9px;font-weight:800}
+    .gd-pill-chev{font-size:10px;color:rgba(255,255,255,.3)}
+    .gd-pin{position:absolute;z-index:5;display:flex;flex-direction:column;align-items:center;transition:all .3s ease}
+    .gd-pin-d{width:8px;height:8px;background:#f97316;border-radius:50%;border:2px solid rgba(255,255,255,.6);transition:all .3s ease}
+    .gd-pin-l{background:rgba(0,0,0,.7);padding:1px 5px;border-radius:3px;font-size:6px;font-weight:700;margin-top:1px;color:rgba(255,255,255,.5);white-space:nowrap;transition:all .3s ease;max-width:0;overflow:hidden;opacity:0}
+    .gd-pin.active .gd-pin-d{width:14px;height:14px;background:#fff;border:3px solid #f97316;box-shadow:0 0 16px rgba(249,115,22,.5)}
+    .gd-pin.active .gd-pin-l{background:#f97316;color:#fff;font-size:7px;padding:2px 7px;max-width:200px;opacity:1}
+    .gd-pin-pulse{position:absolute;width:28px;height:28px;border-radius:50%;border:2px solid rgba(249,115,22,.15);top:50%;left:50%;transform:translate(-50%,-50%);animation:pulse 2s infinite;display:none}
+    .gd-pin.active .gd-pin-pulse{display:block}
+    @keyframes pulse{0%{opacity:.5;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(2.5)}}
+    /* Sheet */
+    .gd-sheet{flex:1;background:#111318;border-radius:18px 18px 0 0;margin-top:-14px;position:relative;z-index:10;display:flex;flex-direction:column;overflow:hidden}
+    .gd-handle{width:36px;height:4px;background:rgba(255,255,255,.12);border-radius:2px;margin:10px auto 0;flex-shrink:0}
+    /* Carousel */
+    .gd-carousel{display:flex;gap:0;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;flex:1;scroll-behavior:smooth}
+    .gd-carousel::-webkit-scrollbar{display:none}
+    /* Card */
+    .gd-card{min-width:100%;max-width:100%;scroll-snap-align:start;display:flex;flex-direction:column;overflow-y:auto;padding:0}
+    .gd-card::-webkit-scrollbar{display:none}
+    .gd-photo{height:175px;position:relative;margin:12px 16px 0;border-radius:14px;overflow:hidden;flex-shrink:0}
+    .gd-photo-img{position:absolute;inset:0;background-size:cover;background-position:center}
+    .gd-photo-grad{position:absolute;inset:0;background:linear-gradient(transparent 40%,rgba(0,0,0,.7))}
+    .gd-badge{position:absolute;z-index:5;border-radius:8px;padding:4px 8px;font-size:10px;font-weight:700;backdrop-filter:blur(6px)}
+    .gd-vid{top:10px;right:10px;background:rgba(0,0,0,.55);color:#fff;display:flex;align-items:center;gap:4px}
+    .gd-vid-play{width:0;height:0;border-left:7px solid #fff;border-top:4px solid transparent;border-bottom:4px solid transparent}
+    .gd-photos-ct{bottom:10px;right:10px;background:rgba(0,0,0,.5);color:rgba(255,255,255,.8);display:flex;align-items:center;gap:3px}
+    .gd-photo-dots{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:3px;z-index:5}
+    .gd-pdot{width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.25)}
+    .gd-pdot.act{background:#fff;width:14px;border-radius:2px}
+    .gd-logo{position:absolute;bottom:10px;left:12px;width:40px;height:40px;border-radius:10px;border:2px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:20px;z-index:5;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+    /* Header */
+    .gd-header{padding:12px 16px 0;display:flex;align-items:flex-start;justify-content:space-between}
+    .gd-name{font-size:18px;font-weight:700;color:#fff;line-height:1.2}
+    .gd-rating{display:flex;align-items:center;gap:3px;font-size:14px;font-weight:800;color:#fbbf24;flex-shrink:0}
+    .gd-addr{padding:2px 16px 8px;font-size:11px;color:rgba(255,255,255,.3)}
+    /* Info rows */
+    .gd-rows{padding:0 16px}
+    .gd-row{display:flex;align-items:center;padding:11px 0;border-top:1px solid rgba(255,255,255,.04);cursor:pointer;-webkit-tap-highlight-color:transparent}
+    .gd-row:active{background:rgba(255,255,255,.03)}
+    .gd-row-icon{width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+    .gd-row-text{flex:1;margin-left:8px}
+    .gd-row-main{font-size:13px;font-weight:600;color:rgba(255,255,255,.8)}
+    .gd-row-chev{font-size:14px;color:rgba(255,255,255,.15);flex-shrink:0}
+    .gd-tag{font-size:9px;font-weight:600;padding:2px 7px;border-radius:4px;margin-left:6px;flex-shrink:0}
+    .gd-tag-open{background:rgba(74,222,128,.1);color:#4ade80}
+    .gd-tag-closed{background:rgba(239,68,68,.1);color:#ef4444}
+    .gd-tag-pop{background:rgba(249,115,22,.1);color:#f97316}
+    /* Bottom CTA */
+    .gd-bottom{padding:10px 16px 14px;margin-top:auto;flex-shrink:0;border-top:1px solid rgba(255,255,255,.04)}
+    .gd-cta{width:100%;background:rgba(255,255,255,.08);border:none;border-radius:12px;padding:15px;font-size:15px;font-weight:700;color:rgba(255,255,255,.6);text-align:center;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+    .gd-cta:active{transform:scale(.98);background:rgba(255,255,255,.12)}
+    /* Dots bar */
+    .gd-dots{display:flex;justify-content:center;gap:3px;padding:6px 0 2px;flex-shrink:0;flex-wrap:wrap;max-width:280px;margin:0 auto}
+    .gd-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.06);transition:all .3s ease}
+    .gd-dot.act{background:#f97316;width:14px;border-radius:3px}
+    .gd-hint{text-align:center;font-size:8px;color:rgba(255,255,255,.08);padding:0 0 calc(4px + env(safe-area-inset-bottom,0px))}
+  </style>
+  <div class="gd-overlay" id="gd-overlay">
+    <div class="gd-map" id="gd-map">
+      <div class="gd-road" style="width:300%;height:16px;top:30%;left:-20%;transform:rotate(-12deg)"></div>
+      <div class="gd-road" style="width:16px;height:250%;top:-30%;left:42%;transform:rotate(8deg)"></div>
+      <div class="gd-road" style="width:250%;height:12px;top:55%;left:-10%;transform:rotate(5deg)"></div>
+      <div class="gd-road" style="width:12px;height:200%;top:-10%;left:72%;transform:rotate(-6deg)"></div>
+      <div class="gd-st" style="top:27%;left:10%;transform:rotate(-12deg)">High Street</div>
+      <div class="gd-st" style="top:52%;left:46%;transform:rotate(5deg)">Station Road</div>
+      <button class="gd-back" onclick="closeGymDiscovery()">←</button>
+      <div class="gd-profile">👤</div>
+      ${cards.map((c,i)=>`<div class="gd-pin${i===0?' active':''}" id="gd-pin-${i}" style="top:${c.pos.top}%;left:${c.pos.left}%" onclick="scrollToGymCard(${i})"><div class="gd-pin-pulse"></div><div class="gd-pin-d"></div><div class="gd-pin-l">${c.name.length>14?c.name.slice(0,14)+'…':c.name}${i===0?' · '+c.price:''}</div></div>`).join('')}
+      <div class="gd-pills" id="gd-pills">
+        <div class="gd-pill"><div class="gd-pill-dist">${cards[0].distMin}</div> ${cards[0].name.length>12?cards[0].name.slice(0,12)+'…':cards[0].name} <span class="gd-pill-chev">›</span></div>
+        <div class="gd-pill">Day Pass · ${cards[0].price} <span class="gd-pill-chev">›</span></div>
+      </div>
+    </div>
+    <div class="gd-sheet">
+      <div class="gd-handle"></div>
+      <div class="gd-carousel" id="gd-carousel">
+        ${cards.map((c,i)=>{
+          const logoColors=['#f97316,#ea580c','#8b5cf6,#6d28d9','#ef4444,#b91c1c','#3b82f6,#1d4ed8','#eab308,#a16207','#22c55e,#15803d','#ec4899,#be185d','#14b8a6,#0f766e'];
+          const logoEmojis=['🏋️','💪','🥊','🏊','⚡','💚','🔥','🧘'];
+          const logoGrad=logoColors[i%8];
+          const logoEmoji=logoEmojis[i%8];
+          const facIcons=['⭐','🕐','🏊','🏋️'];
+          const facLabels=['reviews','hours','facilities','equipment'];
+          // Build 4 info rows
+          const reviewsRow=`${c.rating} · ${c.reviews} reviews`;
+          const hoursRow=c.openText;
+          // Parse facilities for display
+          const facList=c.facs.map(f=>f.replace(/^[^\s]+\s/,'')).join(', ');
+          const equipList=['Free weights','Cardio','Machines'].filter((_,j)=>((c.name||'').charCodeAt(0)+j)%3!==0).join(', ')||'Machines, Cardio';
+          return`<div class="gd-card" data-gym-id="${c.id}" data-idx="${i}">
+            <div class="gd-photo">
+              ${c.photo?`<div class="gd-photo-img" style="background-image:url('${c.photo}')"></div>`:`<div class="gd-photo-img" style="background:#1a1f2e;display:flex;align-items:center;justify-content:center"><span style="font-size:48px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)">🏋️</span></div>`}
+              <div class="gd-photo-grad"></div>
+              <div class="gd-badge gd-vid"><div class="gd-vid-play"></div> Gym Tour</div>
+              ${c.photoCount>1?`<div class="gd-badge gd-photos-ct">📷 ${c.photoCount}</div>`:''}
+              <div class="gd-photo-dots">${c.allPhotos.slice(0,5).map((p,j)=>`<div class="gd-pdot${j===0?' act':''}"></div>`).join('')}</div>
+              <div class="gd-logo" style="background:linear-gradient(135deg,${logoGrad})">${logoEmoji}</div>
+            </div>
+            <div class="gd-header"><div class="gd-name">${c.name}</div><div class="gd-rating">⭐ ${c.rating}</div></div>
+            <div class="gd-addr">📍 ${c.addr||'Nearby'}</div>
+            <div class="gd-rows">
+              <div class="gd-row" onclick="event.stopPropagation();openGym('${c.id}',true)">
+                <div class="gd-row-icon">⭐</div>
+                <div class="gd-row-text"><div class="gd-row-main">${reviewsRow}</div></div>
+                ${c.isPop?'<div class="gd-tag gd-tag-pop">⚡ Popular</div>':''}
+                <div class="gd-row-chev">›</div>
+              </div>
+              <div class="gd-row" onclick="event.stopPropagation();openGym('${c.id}',true)">
+                <div class="gd-row-icon">🕐</div>
+                <div class="gd-row-text"><div class="gd-row-main">${hoursRow}</div></div>
+                <div class="gd-tag ${c.openClass}">${c.openTag}</div>
+                <div class="gd-row-chev">›</div>
+              </div>
+              <div class="gd-row" onclick="event.stopPropagation();openGym('${c.id}',true)">
+                <div class="gd-row-icon">${c.facs[0]?c.facs[0].split(' ')[0]:'🏊'}</div>
+                <div class="gd-row-text"><div class="gd-row-main">${facList}</div></div>
+                <div class="gd-row-chev">›</div>
+              </div>
+              <div class="gd-row" onclick="event.stopPropagation();openGym('${c.id}',true)">
+                <div class="gd-row-icon">🏋️</div>
+                <div class="gd-row-text"><div class="gd-row-main">${equipList}</div></div>
+                <div class="gd-row-chev">›</div>
+              </div>
+            </div>
+            <div class="gd-bottom">
+              <button class="gd-cta" onclick="event.stopPropagation();closeGymDiscovery();showUberCheckout('${c.id}')">Continue</button>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div class="gd-dots" id="gd-dots">
+        ${cards.map((c,i)=>`<div class="gd-dot${i===0?' act':''}" id="gd-dot-${i}"></div>`).join('')}
+      </div>
+      <div class="gd-hint" id="gd-hint">← Swipe for more gyms · 1 of ${totalCards} →</div>
+    </div>
+  </div>`;
+
+  document.body.appendChild(el);
+  requestAnimationFrame(()=>document.getElementById('gd-overlay')?.classList.add('active'));
+
+  // ── Scroll-snap listener: update map pins, pills, dots on swipe ──
+  let _gdCurrent=0;
+  const carousel=document.getElementById('gd-carousel');
+  if(carousel){
+    carousel.addEventListener('scroll',function(){
+      const w=carousel.offsetWidth;
+      if(w===0)return;
+      const idx=Math.round(carousel.scrollLeft/w);
+      if(idx===_gdCurrent||idx<0||idx>=totalCards)return;
+      _gdCurrent=idx;
+      const c=cards[idx];
+      // Update pins
+      document.querySelectorAll('.gd-pin').forEach((p,j)=>{
+        if(j===idx){p.classList.add('active');p.querySelector('.gd-pin-l').textContent=c.name.length>14?c.name.slice(0,14)+'…'+' · '+c.price:c.name+' · '+c.price;}
+        else{p.classList.remove('active');const card=cards[j];p.querySelector('.gd-pin-l').textContent=card?card.name.length>14?card.name.slice(0,14)+'…':card.name:'';}
+      });
+      // Update pills
+      const pills=document.getElementById('gd-pills');
+      if(pills)pills.innerHTML=`<div class="gd-pill"><div class="gd-pill-dist">${c.distMin}</div> ${c.name.length>12?c.name.slice(0,12)+'…':c.name} <span class="gd-pill-chev">›</span></div><div class="gd-pill">Day Pass · ${c.price} <span class="gd-pill-chev">›</span></div>`;
+      // Update dots
+      document.querySelectorAll('.gd-dot').forEach((d,j)=>{if(j===idx)d.classList.add('act');else d.classList.remove('act');});
+      // Update hint
+      const hint=document.getElementById('gd-hint');
+      if(hint)hint.textContent='← Swipe for more gyms · '+(idx+1)+' of '+totalCards+' →';
+    },{passive:true});
+  }
+};
+
+// Scroll carousel to a specific gym card (e.g. when tapping a map pin)
+window.scrollToGymCard=function(idx){
+  const carousel=document.getElementById('gd-carousel');
+  if(carousel)carousel.scrollTo({left:idx*carousel.offsetWidth,behavior:'smooth'});
+};
+
+window.closeGymDiscovery=function(){
+  const el=document.getElementById('gym-discovery');
+  if(el){
+    const overlay=el.querySelector('.gd-overlay');
+    if(overlay){
+      overlay.style.transition='opacity .25s ease-out';
+      overlay.style.opacity='0';
+      setTimeout(()=>el.remove(),260);
+    }else{el.remove();}
+  }
+};
+
 // ═══════════════════════════════════════════════════════════════════════════
 
 window._checkoutState={stripe:null,elements:null,bookingId:null,intentId:null,gymId:null};
