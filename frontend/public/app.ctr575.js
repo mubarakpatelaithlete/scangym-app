@@ -1016,11 +1016,6 @@ function SearchPage(){
             `}
           </div>
         </div>
-        <div class="flex gap-1 bg-slate-800 rounded-lg p-1">
-          <button onclick="state.gyms.sort((a,b)=>(parseFloat(a.price_tier||5)-parseFloat(b.price_tier||5)));render()" class="px-3 py-1.5 rounded-md text-xs text-slate-300 hover:bg-brand hover:text-white transition">\u{1F4B0} Cheapest</button>
-          <button onclick="state.gyms.sort((a,b)=>(b.rating||0)-(a.rating||0));render()" class="px-3 py-1.5 rounded-md text-xs text-slate-300 hover:bg-brand hover:text-white transition">\u2B50 Best Rated</button>
-          <button onclick="state.gyms.sort((a,b)=>(a.distance||99)-(b.distance||99));render()" class="px-3 py-1.5 rounded-md text-xs text-slate-300 hover:bg-brand hover:text-white transition">\u{1F4CD} Nearest</button>
-        </div>
       </div>
 
       <!-- Filters removed — clean Browse Gyms view with sort pills only -->
