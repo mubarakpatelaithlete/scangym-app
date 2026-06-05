@@ -5438,7 +5438,7 @@ function QRScanVerifyPage(token){
           <p class="text-blue-400/70 text-sm mt-1">We hope you enjoyed your workout!</p>
         </div>`}
 
-        ${isExit?`<div class="mt-4 text-center"><button onclick="sgRecordAndShare()" style="background:linear-gradient(135deg,#f97316,#d97706);color:#fff;font-weight:700;padding:12px 24px;border:none;border-radius:12px;font-size:14px;cursor:pointer">🔥 View Workout Card & Share</button></div>`:''}`
+        ${isExit?`<div class="mt-4 text-center"><button onclick="sgRecordAndShare()" style="background:linear-gradient(135deg,#f97316,#d97706);color:#fff;font-weight:700;padding:12px 24px;border:none;border-radius:12px;font-size:14px;cursor:pointer">🔥 View Workout Card & Share</button></div>`:''}
       </div>
     </div>
     <style>@keyframes scaleIn{0%{transform:scale(0)}60%{transform:scale(1.2)}100%{transform:scale(1)}}</style>`;
