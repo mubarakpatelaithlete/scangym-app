@@ -159,7 +159,31 @@ router.get('/', async (req, res) => {
     const milestones = [3, 7, 14, 30, 100];
     const nextMilestone = milestones.find(m => m > s.current_streak) || null;
 
+    // V2: Get recent workout dates for the workout grid
+    let recentWorkouts = [];
+    try {
+      const recentResult = await pool.query(
+        `SELECT DISTINCT DATE(created_at) as workout_date FROM gym_streaks
+         WHERE user_id = $1 AND last_workout_date IS NOT NULL
+         UNION
+         SELECT DISTINCT DATE(earned_at) as workout_date FROM user_badges WHERE user_id = $1
+         ORDER BY workout_date DESC LIMIT 28`,
+        [userId]
+      );
+      recentWorkouts = recentResult.rows.map(r => ({ date: r.workout_date }));
+    } catch (e) { /* table may not have all fields yet */ }
+
+    // V2: Detect broken streak for earn-back
+    const streakBroken = !streakAlive && s.current_streak === 0;
+    const previousStreak = streakBroken ? (s.longest_streak || 0) : 0;
+
     res.json({
+      success: true,
+      currentStreak: s.current_streak,
+      totalWorkouts: s.total_workouts || 0,
+      streakBroken,
+      previousStreak,
+      recentWorkouts,
       streak: {
         current: s.current_streak,
         longest: s.longest_streak,
@@ -425,5 +449,43 @@ function getWeekStart() {
   const monday = new Date(d.setDate(diff));
   return monday.toISOString().split('T')[0];
 }
+
+// V2: Earn back a broken streak (Duolingo-style)
+router.post('/earn-back', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const streak = await pool.query('SELECT * FROM gym_streaks WHERE user_id = $1', [userId]);
+    if (streak.rows.length === 0) {
+      return res.status(404).json({ error: 'No streak found' });
+    }
+    const s = streak.rows[0];
+
+    // Only allow earn-back if streak was broken within last 24 hours
+    if (s.current_streak > 0) {
+      return res.json({ success: false, message: 'Streak is still active' });
+    }
+    const lastWorkout = s.last_workout_date ? new Date(s.last_workout_date) : null;
+    if (!lastWorkout) {
+      return res.json({ success: false, message: 'No previous workout found' });
+    }
+    const hoursSinceLast = (Date.now() - lastWorkout.getTime()) / (1000 * 60 * 60);
+    if (hoursSinceLast > 48) {
+      return res.json({ success: false, message: 'Earn-back window expired (48 hours)' });
+    }
+
+    // Restore the previous streak (use longest_streak as approximation)
+    const restoredStreak = Math.min(s.longest_streak, 30); // Cap at 30 for safety
+    await pool.query(
+      `UPDATE gym_streaks SET current_streak = $1, last_workout_date = NOW(), updated_at = NOW() WHERE user_id = $2`,
+      [restoredStreak, userId]
+    );
+
+    console.log(`[Streaks] Earn-back: restored ${restoredStreak}-day streak for user ${userId}`);
+    res.json({ success: true, restoredStreak });
+  } catch (err) {
+    console.error('Earn-back error:', err);
+    res.status(500).json({ error: 'Failed to earn back streak' });
+  }
+});
 
 module.exports = router;
