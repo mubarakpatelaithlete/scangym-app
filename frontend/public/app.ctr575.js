@@ -1023,16 +1023,7 @@ function SearchPage(){
         </div>
       </div>
 
-      <!-- Filters — ALWAYS visible -->
-      <div class="flex gap-2 mb-6 flex-wrap" id="gym-filters">
-        <button onclick="filterGyms('free weights')" class="filter-btn px-3 py-1.5 bg-card border border-slate-600 rounded-full text-xs text-slate-300 hover:border-brand hover:text-brand transition">\u{1F3CB}\uFE0F Free Weights</button>
-        <button onclick="filterGyms('yoga')" class="filter-btn px-3 py-1.5 bg-card border border-slate-600 rounded-full text-xs text-slate-300 hover:border-brand hover:text-brand transition">\u{1F9D8} Yoga</button>
-        <button onclick="filterGyms('boxing')" class="filter-btn px-3 py-1.5 bg-card border border-slate-600 rounded-full text-xs text-slate-300 hover:border-brand hover:text-brand transition">\u{1F94A} Boxing</button>
-        <button onclick="filterGyms('swimming')" class="filter-btn px-3 py-1.5 bg-card border border-slate-600 rounded-full text-xs text-slate-300 hover:border-brand hover:text-brand transition">\u{1F3CA} Swimming</button>
-        <button onclick="filterGyms('crossfit')" class="filter-btn px-3 py-1.5 bg-card border border-slate-600 rounded-full text-xs text-slate-300 hover:border-brand hover:text-brand transition">\u{1F4AA} CrossFit</button>
-        <button onclick="filterGyms('24 hour')" class="filter-btn px-3 py-1.5 bg-card border border-slate-600 rounded-full text-xs text-slate-300 hover:border-brand hover:text-brand transition">\u{1F550} Open Now</button>
-        <button class="px-3 py-1.5 bg-accent/20 border border-accent/50 rounded-full text-xs text-accent font-medium">\u2705 Free Cancellation</button>
-      </div>
+      <!-- Filters removed — clean Browse Gyms view with sort pills only -->
 
       ${isLoading?`
         <!-- PATTERN #5: Anticipation — city shortcuts + fun facts while skeletons load -->
@@ -1051,18 +1042,11 @@ function SearchPage(){
         </div>
       `:''}
 
-      <!-- Map — hidden by default, toggle button to show -->
-      ${(!isLoading&&gyms[0])?`<div style="display:flex;justify-content:flex-end;margin-bottom:8px;gap:8px">
+      <!-- Browse Gyms button only — Map view removed -->
+      ${(!isLoading&&gyms[0])?`<div style="display:flex;justify-content:center;margin-bottom:8px;gap:8px">
         <button onclick="showGymDiscovery()" style="background:linear-gradient(135deg,#f97316,#ea580c);border:none;color:#fff;font-size:12px;font-weight:700;padding:6px 14px;border-radius:20px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s;-webkit-tap-highlight-color:transparent;box-shadow:0 2px 12px rgba(249,115,22,.3)">
           <span>🗺️</span> Browse Gyms
         </button>
-        ${MAPS_KEY?`<button onclick="toggleExploreMap()" id="sg-map-toggle-btn" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.6);font-size:12px;font-weight:600;padding:6px 14px;border-radius:20px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s">
-          <span>📍</span> Map view
-        </button>`:''}
-      </div>
-      <div id="sg-explore-map" style="display:none;margin-bottom:12px;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.1);height:240px">
-        <iframe width="100%" height="100%" frameborder="0" style="border:0"
-          src="https://www.google.com/maps/embed/v1/search?key=${MAPS_KEY}&q=${encodeURIComponent(state.searchQuery||'gyms near me')}&zoom=13${gyms[0].latitude?'&center='+gyms[0].latitude+','+gyms[0].longitude:''}" allowfullscreen loading="lazy"></iframe>
       </div>`:''}
 
 
