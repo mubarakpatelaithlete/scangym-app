@@ -191,7 +191,7 @@ router.post('/:id/respond', authenticateUser, async (req, res) => {
     }
 
     const gym = await pool.query(
-      'SELECT id FROM gyms WHERE id = $1 AND claimed_by = $2',
+      'SELECT id FROM gyms WHERE id = $1 AND claimed_by::text = $2::text',
       [review.rows[0].gym_id, userId]
     );
     if (gym.rows.length === 0) {
