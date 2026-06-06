@@ -1073,7 +1073,7 @@ function SearchPage(){
         html+='.tt-photo-placeholder{position:absolute;inset:0;background:#1a1f2e;display:flex;align-items:center;justify-content:center}';
         html+='.tt-photo-placeholder::after{content:"\\u{1F3CB}\\uFE0F";font-size:56px;opacity:.15}';
         /* Gradient overlay for readability */
-        html+='.tt-gradient{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.35) 0%,transparent 25%,transparent 40%,rgba(0,0,0,.75) 100%);pointer-events:none;z-index:1}';
+        html+='.tt-gradient{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.4) 0%,transparent 20%,transparent 35%,rgba(0,0,0,.85) 100%);pointer-events:none;z-index:1}';
         /* Search bar - frosted glass overlay */
         html+='.tt-search{position:absolute;top:0;left:0;right:0;z-index:20;display:flex;gap:8px;padding:8px 12px;padding-top:calc(env(safe-area-inset-top,8px) + 4px)}';
         html+='.tt-search-input{flex:1;background:rgba(0,0,0,.45);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px 14px;color:rgba(255,255,255,.7);font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px;cursor:pointer}';
@@ -1083,13 +1083,13 @@ function SearchPage(){
         html+='.tt-tour-badge{position:absolute;top:60px;right:12px;background:rgba(0,0,0,.5);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);color:#fff;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:700;z-index:10;display:flex;align-items:center;gap:5px}';
         html+='.tt-tour-play{width:0;height:0;border-left:7px solid #fff;border-top:4px solid transparent;border-bottom:4px solid transparent}';
         /* Action buttons (right side, TikTok style) */
-        html+='.tt-actions{position:absolute;right:10px;bottom:calc(200px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px;z-index:15;align-items:center}';
+        html+='.tt-actions{position:absolute;right:10px;bottom:200px;display:flex;flex-direction:column;gap:14px;z-index:15;align-items:center}';
         html+='.tt-action{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;-webkit-tap-highlight-color:transparent}';
         html+='.tt-action-btn{width:42px;height:42px;background:rgba(255,255,255,.12);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;border:1px solid rgba(255,255,255,.08);transition:all .15s}';
         html+='.tt-action-btn:active{transform:scale(.9);background:rgba(255,255,255,.2)}';
         html+='.tt-action-label{color:rgba(255,255,255,.65);font-size:9px;font-weight:600}';
         /* Bottom info overlay */
-        html+='.tt-info{position:absolute;bottom:0;left:0;right:60px;padding:0 14px 10px;z-index:15;pointer-events:none}';
+        html+='.tt-info{position:absolute;bottom:56px;left:0;right:60px;padding:0 14px 0;z-index:15;pointer-events:none}';
         html+='.tt-info>*{pointer-events:auto}';
         /* Dots */
         html+='.tt-dots{display:flex;gap:3px;margin-bottom:4px;flex-wrap:wrap;max-width:280px}';
@@ -1105,7 +1105,7 @@ function SearchPage(){
         html+='.tt-chips{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}';
         html+='.tt-chip{display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.12);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-radius:8px;padding:5px 10px;font-size:11px;color:rgba(255,255,255,.9);font-weight:600}';
         /* CTA */
-        html+='.tt-cta{position:absolute;bottom:0;left:0;right:0;padding:0 14px 10px;z-index:16;padding-bottom:calc(env(safe-area-inset-bottom,6px) + 8px)}';
+        html+='.tt-cta{position:absolute;bottom:0;left:0;right:0;padding:8px 14px;z-index:16}';
         html+='.tt-cta-btn{width:100%;padding:12px 0;border:none;border-radius:12px;background:#f97316;color:#fff;font-size:15px;font-weight:700;letter-spacing:.3px;cursor:pointer;-webkit-tap-highlight-color:transparent;box-shadow:0 4px 20px rgba(249,115,22,.4);transition:all .15s}';
         html+='.tt-cta-btn:active{transform:scale(.97);box-shadow:0 2px 10px rgba(249,115,22,.3)}';
         /* Filter sheet */
