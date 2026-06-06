@@ -112,3 +112,35 @@ body {
   border-color: #f97316 !important;
   box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2) !important;
 }
+
+/* ═══ Search Filter Pills ═══ */
+.sg-filter-pill {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.6);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.sg-filter-pill:hover {
+  border-color: rgba(249,115,22,0.3);
+  color: rgba(255,255,255,0.8);
+}
+.sg-filter-pill.active {
+  background: rgba(249,115,22,0.15);
+  border-color: #f97316;
+  color: #f97316;
+  font-weight: 600;
+}
+
+/* ═══ QR Scanner ═══ */
+@keyframes scanline {
+  0%,100% { top: 0; opacity: 0; }
+  10% { opacity: 1; }
+  50% { top: 100%; opacity: 1; }
+  60% { opacity: 0; }
+}

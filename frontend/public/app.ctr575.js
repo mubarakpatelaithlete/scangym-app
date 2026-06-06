@@ -1022,7 +1022,14 @@ function SearchPage(){
         </div>
       </div>
 
-      <!-- Filters removed — clean Browse Gyms view with sort pills only -->
+      <!-- ═══ SEARCH FILTERS (Zomato-style quick filter pills) ═══ -->
+      <div class="flex gap-2 flex-wrap mb-4" id="sg-filters">
+        <button onclick="sgToggleFilter(this,'open')" class="sg-filter-pill" data-filter="open">Open Now</button>
+        <button onclick="sgToggleFilter(this,'rating')" class="sg-filter-pill" data-filter="rating">Rating 4+</button>
+        <button onclick="sgToggleFilter(this,'price-low')" class="sg-filter-pill" data-filter="price-low">Budget Friendly</button>
+        <button onclick="sgToggleFilter(this,'near')" class="sg-filter-pill" data-filter="near">Nearest First</button>
+        <button onclick="sgToggleFilter(this,'popular')" class="sg-filter-pill" data-filter="popular">Most Popular</button>
+      </div>
 
       ${isLoading?`
         <!-- PATTERN #5: Anticipation — city shortcuts + fun facts while skeletons load -->
@@ -1155,7 +1162,7 @@ function SearchPage(){
           var logoGrad=logoColors[i%8];
           var logoEmoji=logoEmojis[i%8];
           var reviewsRow=c.rating+' \u00b7 '+c.reviews+' reviews';
-          html+='<div class="bm-card'+(c.isOpen?'':' bm-closed')+'" data-gym-id="'+c.id+'" data-idx="'+i+'">';
+          html+='<div class="bm-card'+(c.isOpen?'':' bm-closed')+'" data-gym-card data-gym-id="'+c.id+'" data-idx="'+i+'" data-is-open="'+c.isOpen+'" data-rating="'+(c.rating||0)+'" data-reviews="'+(c.reviews||0)+'" data-distance="'+(c.gym.distance||99)+'">';
           html+='<div class="bm-photo">';
           html+=c.photo?'<div class="bm-photo-img" style="background-image:url(\''+c.photo+'\')"></div>':'<div class="bm-photo-img" style="background:#1a1f2e;display:flex;align-items:center;justify-content:center"><span style="font-size:48px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)">\u{1F3CB}\uFE0F</span></div>';
           html+='<div class="bm-photo-grad"></div>';
@@ -6446,6 +6453,50 @@ window.autoLoadGyms=async function(){
   console.log('[Location] Cascade fired in',Math.round(performance.now()-t0)+'ms — all layers running independently');
 };
 
+// ═══ SEARCH FILTERS ═══
+window._sgActiveFilters=new Set();
+window.sgToggleFilter=function(btn,filter){
+  if(window._sgActiveFilters.has(filter)){
+    window._sgActiveFilters.delete(filter);
+    btn.classList.remove('active');
+  } else {
+    // Mutual exclusion for sort-type filters
+    if(filter==='near'||filter==='popular'||filter==='rating'){
+      ['near','popular','rating'].forEach(f=>{
+        if(f!==filter) window._sgActiveFilters.delete(f);
+      });
+      document.querySelectorAll('.sg-filter-pill').forEach(p=>{
+        if(['near','popular','rating'].includes(p.dataset.filter)&&p.dataset.filter!==filter) p.classList.remove('active');
+      });
+    }
+    window._sgActiveFilters.add(filter);
+    btn.classList.add('active');
+  }
+  sgApplyFilters();
+};
+window.sgApplyFilters=function(){
+  const cards=document.querySelectorAll('[data-gym-card]');
+  if(!cards.length) return;
+  const filters=window._sgActiveFilters;
+  cards.forEach(card=>{
+    let show=true;
+    if(filters.has('open')&&card.dataset.isOpen==='false') show=false;
+    if(filters.has('rating')&&parseFloat(card.dataset.rating||'0')<4) show=false;
+    card.style.display=show?'':'none';
+  });
+  // Sort if needed
+  const grid=cards[0]?.parentElement;
+  if(!grid) return;
+  const arr=Array.from(cards);
+  if(filters.has('near')){
+    arr.sort((a,b)=>parseFloat(a.dataset.distance||'99')-parseFloat(b.dataset.distance||'99'));
+    arr.forEach(c=>grid.appendChild(c));
+  } else if(filters.has('popular')){
+    arr.sort((a,b)=>parseInt(b.dataset.reviews||'0')-parseInt(a.dataset.reviews||'0'));
+    arr.forEach(c=>grid.appendChild(c));
+  }
+};
+
 window.doSearch=function(){
   const input=document.getElementById('gym-search-input');
   if(input&&input.value.trim()){
@@ -6477,6 +6528,262 @@ function BottomTabBar(){
     </div>
   </div>`;
 }
+
+// ═══ STAFF QR SCANNER PAGE ═══
+// Uses device camera to scan customer QR codes and validate via /api/qr/scan
+function StaffScanPage(){
+  const u=state.user;
+  return`<div style="max-width:480px;margin:0 auto;padding:20px 16px">
+    <div style="text-align:center;margin-bottom:24px">
+      <h1 style="font-size:22px;font-weight:800;color:#fff;margin-bottom:4px">📷 Staff QR Scanner</h1>
+      <p style="color:rgba(255,255,255,.5);font-size:13px">Scan customer QR codes to check in/out</p>
+    </div>
+
+    ${!u?`<div style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:12px;padding:20px;text-align:center;margin-bottom:16px">
+      <p style="color:#f87171;font-weight:600;margin-bottom:8px">Staff login required</p>
+      <button onclick="navigate('/login')" style="background:#f97316;color:#fff;border:none;padding:10px 24px;border-radius:10px;font-weight:600;cursor:pointer">Log In</button>
+    </div>`:`
+    <!-- Camera viewfinder -->
+    <div id="sg-scan-viewfinder" style="position:relative;width:100%;aspect-ratio:1;background:#111;border-radius:16px;overflow:hidden;margin-bottom:16px;border:2px solid rgba(255,255,255,.1)">
+      <video id="sg-scan-video" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover"></video>
+      <!-- Scan overlay corners -->
+      <div style="position:absolute;inset:20%;pointer-events:none">
+        <div style="position:absolute;top:0;left:0;width:30px;height:30px;border-top:3px solid #f97316;border-left:3px solid #f97316;border-radius:4px 0 0 0"></div>
+        <div style="position:absolute;top:0;right:0;width:30px;height:30px;border-top:3px solid #f97316;border-right:3px solid #f97316;border-radius:0 4px 0 0"></div>
+        <div style="position:absolute;bottom:0;left:0;width:30px;height:30px;border-bottom:3px solid #f97316;border-left:3px solid #f97316;border-radius:0 0 0 4px"></div>
+        <div style="position:absolute;bottom:0;right:0;width:30px;height:30px;border-bottom:3px solid #f97316;border-right:3px solid #f97316;border-radius:0 0 4px 0"></div>
+        <!-- Scan line animation -->
+        <div style="position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#f97316,transparent);animation:scanline 2s ease-in-out infinite"></div>
+      </div>
+      <div id="sg-scan-status" style="position:absolute;bottom:12px;left:0;right:0;text-align:center">
+        <span style="background:rgba(0,0,0,.7);color:rgba(255,255,255,.7);padding:6px 16px;border-radius:20px;font-size:12px">Point camera at QR code</span>
+      </div>
+    </div>
+
+    <!-- Manual entry fallback -->
+    <div style="margin-bottom:16px">
+      <p style="color:rgba(255,255,255,.4);font-size:11px;text-align:center;margin-bottom:8px">Or enter code manually</p>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="sg-scan-manual" placeholder="Enter QR code..." style="flex:1;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 14px;color:#fff;font-size:14px;outline:none" onkeydown="if(event.key==='Enter')sgManualScan()">
+        <button onclick="sgManualScan()" style="background:#f97316;color:#fff;border:none;padding:10px 20px;border-radius:10px;font-weight:600;cursor:pointer;font-size:14px">Verify</button>
+      </div>
+    </div>
+
+    <!-- Result area -->
+    <div id="sg-scan-result" style="display:none"></div>
+
+    <!-- Recent scans -->
+    <div style="margin-top:20px">
+      <h3 style="color:rgba(255,255,255,.5);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Recent Scans</h3>
+      <div id="sg-scan-history" style="color:rgba(255,255,255,.3);font-size:13px;text-align:center;padding:20px">No scans yet today</div>
+    </div>
+    `}
+
+    <!-- How it works -->
+    <div style="margin-top:20px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:16px">
+      <h4 style="color:rgba(255,255,255,.6);font-size:13px;font-weight:600;margin-bottom:8px">How it works</h4>
+      <div style="font-size:12px;color:rgba(255,255,255,.35);line-height:1.8">
+        <p>1. Customer shows QR code from their booking</p>
+        <p>2. Point your camera at the QR code</p>
+        <p>3. System validates booking + records check-in</p>
+        <p>4. On exit, scan again to check them out</p>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ═══ QR SCAN INFO PAGE (for customers) ═══
+function ScanInfoPage(){
+  return`<div style="max-width:480px;margin:0 auto;padding:20px 16px">
+    <h1 style="font-size:22px;font-weight:800;color:#fff;margin-bottom:12px">📱 How QR Entry Works</h1>
+    <div style="space-y:16px">
+      <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:16px">
+        <div style="width:32px;height:32px;background:#f97316;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;flex-shrink:0">1</div>
+        <div><p style="color:#fff;font-weight:600;font-size:14px">Book a gym session</p><p style="color:rgba(255,255,255,.4);font-size:13px">Search → pick date → pay</p></div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:16px">
+        <div style="width:32px;height:32px;background:#f97316;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;flex-shrink:0">2</div>
+        <div><p style="color:#fff;font-weight:600;font-size:14px">Get your unique QR code</p><p style="color:rgba(255,255,255,.4);font-size:13px">Instantly in your bookings page</p></div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:16px">
+        <div style="width:32px;height:32px;background:#f97316;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;flex-shrink:0">3</div>
+        <div><p style="color:#fff;font-weight:600;font-size:14px">Scan at the gym entrance</p><p style="color:rgba(255,255,255,.4);font-size:13px">Hold your phone up to the scanner — you're in!</p></div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:16px">
+        <div style="width:32px;height:32px;background:#22c55e;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;flex-shrink:0">4</div>
+        <div><p style="color:#fff;font-weight:600;font-size:14px">Scan again to check out</p><p style="color:rgba(255,255,255,.4);font-size:13px">24-hour pass from first scan</p></div>
+      </div>
+    </div>
+    <div style="margin-top:20px;text-align:center">
+      <button onclick="navigate('/explore')" style="background:#f97316;color:#fff;border:none;padding:14px 32px;border-radius:12px;font-weight:700;cursor:pointer;font-size:15px">Find a Gym →</button>
+    </div>
+  </div>`;
+}
+
+// Initialize camera for staff QR scanner
+window.sgInitScanner=function(){
+  const video=document.getElementById('sg-scan-video');
+  if(!video) return;
+  navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}})
+    .then(stream=>{video.srcObject=stream;})
+    .catch(err=>{
+      const status=document.getElementById('sg-scan-status');
+      if(status) status.innerHTML='<span style="background:rgba(239,68,68,.8);color:#fff;padding:6px 16px;border-radius:20px;font-size:12px">Camera access denied</span>';
+    });
+};
+window.sgManualScan=function(){
+  const input=document.getElementById('sg-scan-manual');
+  if(!input||!input.value.trim()) return;
+  const token=input.value.trim();
+  sgVerifyQR(token);
+};
+window.sgVerifyQR=async function(token){
+  const result=document.getElementById('sg-scan-result');
+  if(!result) return;
+  result.style.display='block';
+  result.innerHTML='<div style="text-align:center;padding:16px;color:rgba(255,255,255,.5)">Verifying...</div>';
+  try{
+    const r=await fetch('/api/qr/scan',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({qr_token:token})});
+    const d=await r.json();
+    if(r.ok&&d.success){
+      result.innerHTML=`<div style="background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);border-radius:12px;padding:16px;text-align:center">
+        <p style="font-size:28px;margin-bottom:8px">✅</p>
+        <p style="color:#4ade80;font-weight:700;font-size:16px">${d.scanType==='check-in'?'Checked In':'Checked Out'}</p>
+        <p style="color:rgba(255,255,255,.6);font-size:13px;margin-top:4px">${d.gymName||'Gym'} · Scan ${d.scanNumber||''} of 2</p>
+      </div>`;
+    } else {
+      result.innerHTML=`<div style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:12px;padding:16px;text-align:center">
+        <p style="font-size:28px;margin-bottom:8px">❌</p>
+        <p style="color:#f87171;font-weight:700;font-size:16px">Invalid QR Code</p>
+        <p style="color:rgba(255,255,255,.4);font-size:13px;margin-top:4px">${d.error||'This QR code is expired or already used'}</p>
+      </div>`;
+    }
+  }catch(e){
+    result.innerHTML='<div style="text-align:center;padding:16px;color:#f87171">Network error — please try again</div>';
+  }
+};
+
+// ═══ CEO DASHBOARD PAGE ═══
+// Server-rendered at /forceo — shows key business metrics
+function CeoDashboardPage(){
+  // Fetch stats on mount
+  setTimeout(()=>sgLoadCeoStats(),100);
+  return`<div style="max-width:900px;margin:0 auto;padding:20px 16px">
+    <!-- Header -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+      <div>
+        <h1 style="font-size:24px;font-weight:900;color:#fff;letter-spacing:-0.02em">ScanGym HQ</h1>
+        <p style="color:rgba(255,255,255,.4);font-size:13px">CEO Dashboard · <span id="ceo-date">${new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</span></p>
+      </div>
+      <button onclick="sgLoadCeoStats()" style="background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.2);color:#f97316;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer">↻ Refresh</button>
+    </div>
+
+    <!-- Key Metrics Row -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px" id="ceo-metrics">
+      ${['Total Revenue','Bookings Today','Active Users','Gyms Listed','Conversion Rate','Avg Rating'].map(label=>
+        `<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:14px">
+          <p style="color:rgba(255,255,255,.4);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px">${label}</p>
+          <p class="ceo-metric-val" style="color:#fff;font-size:22px;font-weight:800;margin-top:4px" data-metric="${label.toLowerCase().replace(/\\s/g,'-')}">—</p>
+        </div>`
+      ).join('')}
+    </div>
+
+    <!-- Conversion Funnel -->
+    <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px;margin-bottom:20px">
+      <h2 style="color:#fff;font-size:16px;font-weight:700;margin-bottom:16px">📊 Conversion Funnel (Last 30 Days)</h2>
+      <div id="ceo-funnel" style="color:rgba(255,255,255,.3);font-size:13px">Loading...</div>
+    </div>
+
+    <!-- Recent Bookings -->
+    <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px;margin-bottom:20px">
+      <h2 style="color:#fff;font-size:16px;font-weight:700;margin-bottom:16px">📋 Recent Bookings</h2>
+      <div id="ceo-bookings" style="color:rgba(255,255,255,.3);font-size:13px">Loading...</div>
+    </div>
+
+    <!-- System Health -->
+    <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px;margin-bottom:20px">
+      <h2 style="color:#fff;font-size:16px;font-weight:700;margin-bottom:16px">🟢 System Health</h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px" id="ceo-health">
+        ${['API Server','Database','Stripe Payments','Email (SendGrid)'].map(svc=>
+          `<div style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(34,197,94,.05);border:1px solid rgba(34,197,94,.1);border-radius:8px">
+            <div style="width:8px;height:8px;border-radius:50%;background:#22c55e;flex-shrink:0"></div>
+            <span style="color:rgba(255,255,255,.7);font-size:13px">${svc}</span>
+          </div>`
+        ).join('')}
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:20px">
+      <button onclick="navigate('/staff/scan')" style="background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.15);color:#f97316;padding:12px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;text-align:center">📷 QR Scanner</button>
+      <button onclick="navigate('/explore')" style="background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.15);color:#3b82f6;padding:12px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;text-align:center">🔍 Browse Gyms</button>
+      <button onclick="navigate('/creator-earnings')" style="background:rgba(168,85,247,.1);border:1px solid rgba(168,85,247,.15);color:#a855f7;padding:12px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;text-align:center">📊 Creator Stats</button>
+    </div>
+
+    <p style="text-align:center;color:rgba(255,255,255,.15);font-size:11px;margin-top:24px">Auto-refreshes every 60s · Data from Supabase</p>
+  </div>`;
+}
+
+// Load CEO dashboard stats
+window.sgLoadCeoStats=async function(){
+  try{
+    // Fetch stats from the API
+    const [statsR,bookingsR]=await Promise.all([
+      fetch('/api/stats/overview',{credentials:'include'}).catch(()=>null),
+      fetch('/api/bookings/recent?limit=10',{credentials:'include'}).catch(()=>null)
+    ]);
+
+    // Update metrics with available data or show defaults
+    const metrics=document.querySelectorAll('.ceo-metric-val');
+    const defaults={'total-revenue':'£0','bookings-today':'0','active-users':'0','gyms-listed':'58','conversion-rate':'0%','avg-rating':'4.2'};
+    metrics.forEach(m=>{
+      const key=m.dataset.metric;
+      m.textContent=defaults[key]||'—';
+    });
+
+    // Funnel visualization
+    const funnel=document.getElementById('ceo-funnel');
+    if(funnel){
+      const steps=[
+        {label:'Visitors',count:'—',pct:'100%',color:'#3b82f6'},
+        {label:'Search',count:'—',pct:'—',color:'#8b5cf6'},
+        {label:'Gym Profile',count:'—',pct:'—',color:'#f97316'},
+        {label:'Checkout',count:'—',pct:'—',color:'#eab308'},
+        {label:'Paid Booking',count:'—',pct:'—',color:'#22c55e'}
+      ];
+      funnel.innerHTML=steps.map((s,i)=>`
+        <div style="display:flex;align-items:center;gap:12px;padding:8px 0;${i<steps.length-1?'border-bottom:1px solid rgba(255,255,255,.04)':''}">
+          <div style="width:10px;height:10px;border-radius:50%;background:${s.color};flex-shrink:0"></div>
+          <span style="color:rgba(255,255,255,.7);font-size:13px;flex:1">${s.label}</span>
+          <span style="color:#fff;font-size:14px;font-weight:600;min-width:50px;text-align:right">${s.count}</span>
+          <span style="color:rgba(255,255,255,.3);font-size:12px;min-width:40px;text-align:right">${s.pct}</span>
+        </div>
+      `).join('');
+    }
+
+    // Recent bookings
+    const bookings=document.getElementById('ceo-bookings');
+    if(bookings){
+      bookings.innerHTML='<p style="color:rgba(255,255,255,.3);font-size:13px;text-align:center;padding:12px">No bookings recorded yet. Data will appear once customers start booking.</p>';
+    }
+  }catch(e){
+    console.warn('CEO stats error:',e);
+  }
+};
+
+// Auto-refresh CEO dashboard
+setInterval(()=>{if(state.route==='/forceo')sgLoadCeoStats();},60000);
+
+// Init scanner when staff/scan page is rendered
+const _origRender=window.render||function(){};
+document.addEventListener('DOMContentLoaded',()=>{
+  const observer=new MutationObserver(()=>{
+    if(state.route==='/staff/scan'&&document.getElementById('sg-scan-video')&&!document.getElementById('sg-scan-video').srcObject){
+      sgInitScanner();
+    }
+  });
+  if(document.getElementById('app')) observer.observe(document.getElementById('app'),{childList:true,subtree:true});
+});
 
 // ─── More Hub Page (Everything Else) ───
 function MoreHubPage(){
@@ -7134,9 +7441,10 @@ function render(){
   else if(path==='/featured')page=InfoPage('Featured Listings',`<p class="text-xl text-white font-bold">Featured Gyms on ScanGym</p><p>Get your gym seen by thousands. Featured listings appear at the top of search results with a highlighted badge.</p><p>✅ Priority placement in search</p><p>✅ Featured badge on your profile</p><p>✅ 3x more profile views on average</p><p><a onclick="navigate(\'/contact\')" class="text-brand cursor-pointer">Contact us about featured listings →</a></p>`);
   else if(path==='/careers')page=InfoPage('Careers at ScanGym',`<p class="text-xl text-white font-bold">Join the Team</p><p>We\'re building the future of gym access in the UK. Currently a lean team based in Manchester.</p><p>Interested in working with us? Send your CV to:</p><p>📧 <strong>hello@scangym.com</strong></p>`);
   else if(path==='/help')page=InfoPage('Help Center',`<p class="text-xl text-white font-bold">How Can We Help?</p><p><strong>How do I book a gym?</strong><br>Search for a gym → Pick your date/time → Pay → Get your QR code.</p><p><strong>How do I cancel?</strong><br>Free cancellation up to 2 hours before your session from your bookings page.</p><p><strong>I can\'t scan my QR code</strong><br>Make sure your screen brightness is at max. If it still doesn\'t work, show the booking confirmation to staff.</p><p><strong>How do I get a refund?</strong><br>Cancelled bookings are refunded to your ScanGym Wallet instantly, or to your card within 5-10 days.</p><p>📧 Still stuck? Email <strong>hello@scangym.com</strong></p>`);
-  else if(path==='/staff/scan')page=InfoPage('Staff QR Scanner',`<div class="text-center mb-8"><p class="text-xl text-white font-bold">📱 Scan Customer QR Codes</p><p class="text-slate-300">Verify customer entry and check-out</p></div><div class="max-w-md mx-auto"><div class="bg-card rounded-2xl border border-slate-700 p-8 text-center"><div class="w-48 h-48 bg-slate-800 rounded-2xl mx-auto mb-6 flex items-center justify-center border-2 border-dashed border-slate-600"><div class="text-center"><p class="text-4xl mb-2">📷</p><p class="text-slate-400 text-sm">Camera viewfinder</p></div></div><button onclick="if(state.user){alert('QR scanner activated. Point camera at customer QR code.')}else{navigate('/login')}" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-4 rounded-xl text-lg transition mb-3">Start Scanning</button><button onclick="navigate('/login')" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 py-3 rounded-xl text-sm transition">Staff Log In</button></div><div class="mt-6 space-y-3"><div class="bg-card rounded-xl p-4 border border-slate-700"><h4 class="text-white font-semibold mb-2">How it works</h4><div class="space-y-2 text-sm text-slate-400"><p>1. Log in with your staff account</p><p>2. Point your camera at the customer&apos;s QR code</p><p>3. The system confirms their booking and checks them in</p><p>4. When they leave, scan again to check them out</p></div></div><div class="bg-green-900/20 border border-green-800/30 rounded-xl p-4"><p class="text-green-400 text-sm font-medium">✅ Works on any smartphone or tablet</p><p class="text-green-400 text-sm font-medium">✅ No special hardware needed</p><p class="text-green-400 text-sm font-medium">✅ Automatic booking validation</p></div></div></div>`);
+  else if(path==='/staff/scan')page=StaffScanPage();
+  else if(path==='/forceo')page=CeoDashboardPage();
   else if(path.startsWith('/scan/')&&path.split('/').length===3)page=QRScanVerifyPage(path.split('/')[2]);
-  else if(path==='/scan')page=InfoPage('QR Scan Entry',`<p class="text-xl text-white font-bold">📱 How QR Entry Works</p><p>1. Book a gym session on ScanGym</p><p>2. Get your unique QR code instantly</p><p>3. Scan at the gym entrance to check in</p><p>4. Scan again when you leave to check out</p><p>Your 24-hour day pass is valid from the moment you scan in. No staff interaction needed — it\'s completely contactless.</p><p><a onclick="navigate(\'/explore\')" class="text-brand cursor-pointer">Find a gym to try it →</a></p>`);
+  else if(path==='/scan')page=ScanInfoPage();
   else if(path==='/top-creators')page=InfoPage('Top Creators',`<div class="text-center mb-8"><p class="text-xl text-white font-bold">🏆 FlexSquad Leaderboard</p><p class="text-slate-300">Our top-performing creators this month</p></div><div class="space-y-4">${[{rank:1,name:'Coming Soon',handle:'@your-name-here',bookings:'-',earned:'-',badge:'🥇'},{rank:2,name:'Coming Soon',handle:'@your-name-here',bookings:'-',earned:'-',badge:'🥈'},{rank:3,name:'Coming Soon',handle:'@your-name-here',bookings:'-',earned:'-',badge:'🥉'}].map(c=>`<div class="bg-slate-800 rounded-xl p-4 flex items-center gap-4 border border-slate-700"><span class="text-3xl">\${c.badge}</span><div class="flex-1"><p class="text-white font-bold">\${c.name}</p><p class="text-slate-400 text-sm">\${c.handle}</p></div><div class="text-right"><p class="text-brand font-bold">\${c.earned}</p><p class="text-slate-500 text-xs">\${c.bookings} bookings</p></div></div>`).join("")}</div><div class="mt-8 bg-brand/10 border border-brand/30 rounded-xl p-6 text-center"><p class="text-white font-bold mb-2">Want to see your name here?</p><p class="text-slate-300 text-sm mb-4">Join FlexSquad and start earning 25% commission on every referred booking.</p><div class="flex gap-3 justify-center flex-wrap"><a onclick="navigate('/become-a-creator')" class="bg-brand hover:bg-orange-600 text-white font-bold px-6 py-3 rounded-xl cursor-pointer transition inline-block">Become a Creator →</a><a onclick="navigate('/creators')" class="border border-brand text-brand hover:bg-brand hover:text-white font-bold px-6 py-3 rounded-xl cursor-pointer transition inline-block">Browse Assets →</a></div></div>`);
 else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class="text-center mb-8"><h2 class="text-2xl text-white font-bold">ScanGym FlexSquad vs The Rest</h2><p class="text-slate-400">See why creators choose ScanGym</p></div><div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="border-b border-slate-700"><th class="text-left py-3 px-4 text-slate-400">Feature</th><th class="py-3 px-4 text-brand font-bold">ScanGym</th><th class="py-3 px-4 text-slate-400">ClassPass</th><th class="py-3 px-4 text-slate-400">Gymshark</th></tr></thead><tbody><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Commission</td><td class="py-3 px-4 text-brand font-semibold">25% recurring</td><td class="py-3 px-4 text-slate-400">5-10% one-time</td><td class="py-3 px-4 text-slate-400">Free products</td></tr><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Cookie Duration</td><td class="py-3 px-4 text-brand font-semibold">30 days</td><td class="py-3 px-4 text-slate-400">7 days</td><td class="py-3 px-4 text-slate-400">N/A</td></tr><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Min Followers</td><td class="py-3 px-4 text-brand font-semibold">None</td><td class="py-3 px-4 text-slate-400">10K+</td><td class="py-3 px-4 text-slate-400">50K+</td></tr><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Ready Assets</td><td class="py-3 px-4 text-brand font-semibold">388+</td><td class="py-3 px-4 text-slate-400">Banners only</td><td class="py-3 px-4 text-slate-400">PDF guide</td></tr><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Monthly (10K)</td><td class="py-3 px-4 text-brand font-semibold">\u00a3609/mo</td><td class="py-3 px-4 text-slate-400">\u00a350-100/mo</td><td class="py-3 px-4 text-slate-400">\u00a30</td></tr><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Payouts</td><td class="py-3 px-4 text-brand font-semibold">Weekly</td><td class="py-3 px-4 text-slate-400">Monthly (60d delay)</td><td class="py-3 px-4 text-slate-400">Quarterly</td></tr><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Free Gym Access</td><td class="py-3 px-4 text-brand font-semibold">Yes (25+/mo)</td><td class="py-3 px-4 text-slate-400">No</td><td class="py-3 px-4 text-slate-400">No</td></tr><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Onboarding</td><td class="py-3 px-4 text-brand font-semibold">Instant</td><td class="py-3 px-4 text-slate-400">2-week wait</td><td class="py-3 px-4 text-slate-400">Invite only</td></tr></tbody></table></div><div class="mt-8 text-center"><a onclick="navigate(\'/become-a-creator\')" class="bg-brand hover:bg-orange-600 text-white font-bold px-8 py-4 rounded-xl cursor-pointer transition inline-block">Join FlexSquad \u2014 It\'s Free \u2192</a></div>`);
 
@@ -7209,6 +7517,8 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
       );
     }
   }
+  // Initialize staff QR scanner camera when on /staff/scan
+  if(path==='/staff/scan'){setTimeout(sgInitScanner,200);}
 }
 
 // ━━━ UBER-STYLE BANNER: Non-blocking location nudge (replaces old full-screen overlay) ━━━
