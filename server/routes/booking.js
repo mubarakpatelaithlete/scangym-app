@@ -393,4 +393,32 @@ router.post('/cancel', async (req, res) => {
   }
 });
 
+// ═══ PHASE 4: Post-booking feedback ═══
+router.post('/feedback', async (req, res) => {
+  try {
+    const { bookingId, type, detail } = req.body;
+    if (!bookingId || !type) return res.status(400).json({ error: 'bookingId and type required' });
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS booking_feedback (
+        id SERIAL PRIMARY KEY,
+        booking_id INTEGER NOT NULL,
+        feedback_type VARCHAR(20) NOT NULL,
+        detail TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    await pool.query(
+      'INSERT INTO booking_feedback (booking_id, feedback_type, detail) VALUES ($1, $2, $3)',
+      [bookingId, type, detail || null]
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Feedback error:', err.message);
+    res.status(500).json({ error: 'Failed to save feedback' });
+  }
+});
+
 module.exports = router;
