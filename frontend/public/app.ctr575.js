@@ -6460,7 +6460,7 @@ function BottomTabBar(){
   // SVG icons — crisp at any resolution, no emoji rendering differences
   const reelsIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="4"/><line x1="2" y1="8" x2="22" y2="8"/><line x1="10" y1="2" x2="10" y2="8"/><polygon points="10 13 16 16 10 19" fill="${t==='reels'?'#f97316':'rgba(255,255,255,.35)'}" stroke="none"/></svg>`;
   const bookIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/><circle cx="11" cy="11" r="2.5" fill="${t==='book'?'#f97316':'rgba(255,255,255,.3)'}" stroke="none"/></svg>`;
-  const moreIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>`;
+  const moreIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
   return`<div class="sg-tab-bar">
     <div class="sg-tab-item ${t==='reels'?'active':''}" onclick="switchTab('reels')">
       ${reelsIcon}
@@ -6472,7 +6472,7 @@ function BottomTabBar(){
     </div>
     <div class="sg-tab-item ${t==='more'?'active':''}" onclick="switchTab('more')">
       ${moreIcon}
-      <span class="sg-tab-label">More</span>
+      <span class="sg-tab-label">Profile</span>
     </div>
   </div>`;
 }
@@ -6493,7 +6493,7 @@ function MoreHubPage(){
   }
 
   return`<div class="sg-more-hub">
-    <!-- Profile -->
+    <!-- Profile Header -->
     <div class="sg-more-profile" onclick="navigate('${u?'/bookings':'/login'}')">
       <div class="sg-more-avatar">${avatar}</div>
       <div class="sg-more-profile-info">
@@ -6502,98 +6502,63 @@ function MoreHubPage(){
       </div>
     </div>
 
-    <!-- Activity -->
+    <!-- Your Activity -->
     <div class="sg-more-section">
-      <div class="sg-more-section-title">Activity</div>
-      ${moreItem('📋','My Bookings','Upcoming & past visits','/bookings')}
-      ${moreItem('💳','Payment','Cards, balance & methods','/wallet')}
-      ${moreItem('📊','Creator Earnings','Track commissions & clicks','/creator-earnings')}
-      ${moreItem('🎟️','Refer & Earn','Invite friends, earn 15%','/refer')}
+      <div class="sg-more-section-title">Your Activity</div>
+      ${moreItem('\u{1F4CB}','My Bookings','Upcoming & past visits','/bookings')}
+      ${moreItem('\u{1F4B3}','Payment & Wallet','Cards, balance & methods','/wallet')}
+      ${moreItem('\u{1F39F}\uFE0F','Refer & Earn','Invite friends, earn 15%','/refer')}
     </div>
 
-    <!-- Explore -->
+    <!-- Help & Support -->
     <div class="sg-more-section">
-      <div class="sg-more-section-title">Explore</div>
-      ${moreItem('✨','AI Coach','Personalized workout plans','/coach')}
-      ${moreItem('📍','Discover Nearby','Find gyms around you','/explore')}
-      ${moreItem('🎨','Creators','FlexSquad community','/creators')}
-      ${moreItem('🏆','Top Creators','Leaderboard & earnings','/top-creators')}
-      ${moreItem('📝','Blog & Transformations','Stories & inspiration','/blog')}
-    </div>
-
-    <!-- How ScanGym Works -->
-    <div class="sg-more-section">
-      <div class="sg-more-section-title">Learn</div>
-      ${moreItem('❓','How It Works','3 taps to book a gym','/how-it-works')}
-      ${moreItem('⚡','Pricing','Day pass rates & tiers','/pricing')}
-      ${moreItem('💬','FAQ','Common questions','/faq')}
-      ${moreItem('🆘','Help Center','Get support','/help')}
+      <div class="sg-more-section-title">Help & Support</div>
+      ${moreItem('\u{1F198}','Help Center','FAQ, guides & support','/help')}
+      ${moreItem('\u2709\uFE0F','Contact Us','Get in touch','/contact')}
     </div>
 
     <!-- For Gym Owners -->
     <div class="sg-more-section">
       <div class="sg-more-section-title">For Gym Owners</div>
-      ${moreItem('🏢','List Your Gym','It\'s free — start earning','/list-your-gym')}
-      ${moreItem('📊','Owner Benefits','Revenue & analytics','/owner-benefits')}
-      ${moreItem('⭐','Featured Listings','Get more visibility','/featured')}
-      ${moreItem('🥤','Free Vending Machines','For your gym','/suppliers/vending')}
-      ${moreItem('📱','Free QR Scanners','Entry system','/suppliers/qr')}
-      ${moreItem('🏦','Gym Opening Loans','Funding options','/suppliers/loans')}
-      ${moreItem('📷','Staff QR Scanner','Check-in system','/staff/scan')}
-      ${moreItem('📈','Dashboard','Admin panel','/dashboard')}
-    </div>
-
-    <!-- For Businesses -->
-    <div class="sg-more-section">
-      <div class="sg-more-section-title">For Businesses</div>
-      ${moreItem('🏢','Corporate Wellness','Gym access for teams','/for-corporates')}
-      ${moreItem('🤝','Become a Creator','Join FlexSquad','/become-a-creator')}
-      ${moreItem('🔗','Creator Comparison','ScanGym vs others','/compare')}
-    </div>
-
-    <!-- Company -->
-    <div class="sg-more-section">
-      <div class="sg-more-section-title">Company</div>
-      ${moreItem('ℹ️','About Us','Our mission','/about')}
-      ${moreItem('💼','Careers','Join the team','/careers')}
-      ${moreItem('✉️','Contact','Get in touch','/contact')}
+      ${moreItem('\u{1F3E2}','List Your Gym','It\\\'s free \u2014 start earning','/list-your-gym')}
+      ${moreItem('\u{1F4C8}','Owner Dashboard','Manage your gym','/dashboard')}
     </div>
 
     <!-- Account -->
     <div class="sg-more-section">
       <div class="sg-more-section-title">Account</div>
-      ${moreItem(u?'👤':'🔑',u?'My Profile':'Log In',u?(u.name||u.phone):'Sign in or create account','/login')}
+      ${moreItem(u?'\u{1F464}':'\u{1F511}',u?'My Profile':'Log In',u?(u.name||u.phone):'Sign in or create account','/login')}
     </div>
 
-    <!-- Legal -->
+    <!-- Legal (compact inline links) -->
     <div class="sg-more-section">
       <div class="sg-more-section-title">Legal</div>
-      ${moreItem('🔒','Privacy Policy','Your data rights','/privacy')}
-      ${moreItem('🍪','Cookie Policy','How we use cookies','/cookies')}
-      ${moreItem('📄','Terms of Service','Usage terms','/terms')}
+      <div style="display:flex;flex-wrap:wrap;gap:6px;padding:0 4px">
+        <a onclick="navigate('/privacy')" style="color:rgba(255,255,255,.35);font-size:12px;cursor:pointer">Privacy</a>
+        <span style="color:rgba(255,255,255,.15)">\u00B7</span>
+        <a onclick="navigate('/terms')" style="color:rgba(255,255,255,.35);font-size:12px;cursor:pointer">Terms</a>
+        <span style="color:rgba(255,255,255,.15)">\u00B7</span>
+        <a onclick="navigate('/cookies')" style="color:rgba(255,255,255,.35);font-size:12px;cursor:pointer">Cookies</a>
+      </div>
     </div>
 
     <!-- Social -->
     <div class="sg-more-section">
-      <div class="sg-more-section-title">Follow Us</div>
       <div class="sg-more-social">
-        <a href="https://instagram.com/scangym" target="_blank" rel="noopener">📸</a>
-        <a href="https://x.com/scangym" target="_blank" rel="noopener">𝕏</a>
-        <a href="https://tiktok.com/@scangym" target="_blank" rel="noopener">🎵</a>
-        <a href="https://facebook.com/scangym" target="_blank" rel="noopener">📘</a>
-        <a href="https://pinterest.com/scangym" target="_blank" rel="noopener">📌</a>
-        <a href="https://threads.net/@scangym" target="_blank" rel="noopener">🧵</a>
-        <a href="https://chat.whatsapp.com/scangym-creators" target="_blank" rel="noopener">💬</a>
+        <a href="https://instagram.com/scangym" target="_blank" rel="noopener">\u{1F4F8}</a>
+        <a href="https://x.com/scangym" target="_blank" rel="noopener">\u{1D54F}</a>
+        <a href="https://tiktok.com/@scangym" target="_blank" rel="noopener">\u{1F3B5}</a>
+        <a href="https://facebook.com/scangym" target="_blank" rel="noopener">\u{1F4D8}</a>
       </div>
     </div>
 
     <!-- Footer -->
-    <div style="text-align:center;padding:20px 0 8px;border-top:1px solid rgba(255,255,255,.06);margin-top:12px">
-      <p style="color:rgba(255,255,255,.2);font-size:11px">© 2026 ScanGym · Manchester, UK</p>
-      <p style="color:rgba(255,255,255,.15);font-size:10px;margin-top:4px">${GYM_COUNT>=1000?fmtCount(GYM_COUNT)+' gyms':'Gyms'} and growing 🚀</p>
+    <div style="text-align:center;padding:16px 0 8px;border-top:1px solid rgba(255,255,255,.06);margin-top:8px">
+      <p style="color:rgba(255,255,255,.2);font-size:11px">\u00A9 2026 ScanGym \u00B7 Manchester, UK</p>
     </div>
   </div>`;
 }
+
 
 // ═══════════════════════════════════════════════════════════════════
 //  CREATOR EARNINGS DASHBOARD
