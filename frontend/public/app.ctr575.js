@@ -1021,10 +1021,10 @@ function SearchPage(){
   // ═══ UBER PATTERN #2: ALWAYS show full page layout — header, search, filters, sort, grid ═══
   // The page looks "loaded" instantly. Only the card content swaps from skeleton to real.
   return`
-  <div class="pt-8 min-h-full px-4">
-    <div class="max-w-7xl mx-auto">
+  <div class="px-4" style="display:flex;flex-direction:column;height:100%;overflow:hidden;padding-top:env(safe-area-inset-top,12px);">
+    <div class="max-w-7xl mx-auto" style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;width:100%;">
       <!-- Search Bar — ALWAYS visible -->
-      <div class="mb-6">
+      <div class="mb-3" style="flex-shrink:0;">
         <div class="flex gap-2">
           <div class="flex-1 relative">
             <input type="text" id="gym-search-input" placeholder="Search gyms anywhere — London, Dubai, New York..." 
@@ -1039,9 +1039,9 @@ function SearchPage(){
       </div>
 
       <!-- Header + Sort — ALWAYS visible (Uber: page looks complete from frame 1) -->
-      <div class="flex items-center justify-between mb-4 flex-wrap gap-4">
+      <div class="flex items-center justify-between mb-2 flex-wrap gap-2" style="flex-shrink:0;">
         <div>
-          <h1 class="font-brand text-2xl font-bold text-white">${isLoading?'Finding gyms...':'Gyms in '+searchLabel}</h1>
+          <h1 class="font-brand text-xl font-bold text-white" style="margin:0;">${isLoading?'Finding gyms...':'Gyms in '+searchLabel}</h1>
           <div class="flex items-center gap-2 mt-1">
             ${isLoading?`
               <!-- PATTERN #5: Anticipation — pulsing location dot, NOT a spinner -->
@@ -1055,7 +1055,7 @@ function SearchPage(){
       </div>
 
       <!-- ═══ SEARCH FILTERS (Zomato-style quick filter pills) ═══ -->
-      <div class="flex gap-2 flex-wrap mb-4" id="sg-filters">
+      <div class="flex gap-2 mb-3 hide-scrollbar" id="sg-filters" style="flex-shrink:0;overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;scrollbar-width:none;">
         <button onclick="sgToggleFilter(this,'open')" class="sg-filter-pill" data-filter="open">Open Now</button>
         <button onclick="sgToggleFilter(this,'rating')" class="sg-filter-pill" data-filter="rating">Rating 4+</button>
         <button onclick="sgToggleFilter(this,'price-low')" class="sg-filter-pill" data-filter="price-low">Budget Friendly</button>
@@ -1119,7 +1119,8 @@ function SearchPage(){
         var logoEmojis=['\u{1F3CB}\uFE0F','\u{1F4AA}','\u{1F94A}','\u{1F3CA}','\u26A1','\u{1F49A}','\u{1F525}','\u{1F9D8}'];
         var html='<div id="book-map-view">';
         html+='<style>';
-        html+='.bm-map{height:220px;background:#1a2030;position:relative;overflow:hidden;border-radius:14px;margin-bottom:0}';
+        html+='#book-map-view{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden}';
+        html+='.bm-map{display:none}';
         html+='.bm-road{position:absolute;background:rgba(255,255,255,.045)}';
         html+='.bm-st{position:absolute;font-size:7px;font-weight:600;color:rgba(255,255,255,.06);letter-spacing:2px;text-transform:uppercase;white-space:nowrap}';
         html+='.bm-pin{position:absolute;z-index:5;display:flex;flex-direction:column;align-items:center;transition:all .3s ease;cursor:pointer}';
@@ -1133,14 +1134,14 @@ function SearchPage(){
         html+='.bm-pills{position:absolute;bottom:10px;left:14px;display:flex;gap:6px;z-index:10}';
         html+='.bm-pill{background:rgba(0,0,0,.7);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:6px 10px;display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:rgba(255,255,255,.7);white-space:nowrap}';
         html+='.bm-pill-dist{background:#f97316;color:#fff;border-radius:5px;padding:1px 5px;font-size:9px;font-weight:800}';
-        html+='.bm-sheet{background:#111318;border-radius:18px 18px 0 0;margin-top:-14px;position:relative;z-index:10;padding-bottom:20px}';
-        html+='.bm-handle{width:36px;height:4px;background:rgba(255,255,255,.12);border-radius:2px;margin:10px auto 0}';
-        html+='.bm-carousel{display:flex;gap:0;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scroll-behavior:smooth}';
+        html+='.bm-sheet{background:#111318;border-radius:0;margin-top:0;position:relative;z-index:10;padding-bottom:0;flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden}';
+        html+='.bm-handle{display:none}';
+        html+='.bm-carousel{display:flex;gap:0;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;flex:1;min-height:0}';
         html+='.bm-carousel::-webkit-scrollbar{display:none}';
-        html+='.bm-card{min-width:100%;max-width:100%;scroll-snap-align:start;display:flex;flex-direction:column;padding:0}';
+        html+='.bm-card{min-width:100%;max-width:100%;scroll-snap-align:start;display:flex;flex-direction:column;padding:0;height:100%;overflow:hidden}';
         html+='.bm-card.bm-closed{opacity:0.45;filter:grayscale(30%)}';
         html+='.bm-card.bm-closed .bm-continue-btn{background:#6b7280;box-shadow:0 4px 16px rgba(107,114,128,.25)}';
-        html+='.bm-photo{height:175px;position:relative;margin:12px 16px 0;border-radius:14px;overflow:hidden;flex-shrink:0}';
+        html+='.bm-photo{position:relative;margin:8px 16px 0;border-radius:14px;overflow:hidden;flex:1;min-height:80px}';
         html+='.bm-photo-img{position:absolute;inset:0;background-size:cover;background-position:center}';
         html+='.bm-photo-grad{position:absolute;inset:0;background:linear-gradient(transparent 40%,rgba(0,0,0,.7))}';
         html+='.bm-badge{position:absolute;z-index:5;border-radius:8px;padding:4px 8px;font-size:10px;font-weight:700;backdrop-filter:blur(6px)}';
@@ -1151,12 +1152,12 @@ function SearchPage(){
         html+='.bm-pdot{width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.25)}';
         html+='.bm-pdot.act{background:#fff;width:14px;border-radius:2px}';
         html+='.bm-logo{position:absolute;bottom:10px;left:12px;width:40px;height:40px;border-radius:10px;border:2px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:20px;z-index:5;box-shadow:0 2px 8px rgba(0,0,0,.3)}';
-        html+='.bm-header{padding:12px 16px 0;display:flex;align-items:flex-start;justify-content:space-between}';
+        html+='.bm-header{padding:8px 16px 0;display:flex;align-items:flex-start;justify-content:space-between;flex-shrink:0}';
         html+='.bm-name{font-size:18px;font-weight:700;color:#fff;line-height:1.2}';
         html+='.bm-rating{display:flex;align-items:center;gap:3px;font-size:14px;font-weight:800;color:#fbbf24;flex-shrink:0}';
-        html+='.bm-addr{padding:2px 16px 8px;font-size:11px;color:rgba(255,255,255,.3)}';
-        html+='.bm-rows{padding:0 16px}';
-        html+='.bm-row{display:flex;align-items:center;padding:11px 0;border-top:1px solid rgba(255,255,255,.04);cursor:pointer;-webkit-tap-highlight-color:transparent}';
+        html+='.bm-addr{padding:1px 16px 4px;font-size:11px;color:rgba(255,255,255,.3);flex-shrink:0}';
+        html+='.bm-rows{padding:0 16px;flex-shrink:0}';
+        html+='.bm-row{display:flex;align-items:center;padding:8px 0;border-top:1px solid rgba(255,255,255,.04);cursor:pointer;-webkit-tap-highlight-color:transparent}';
         html+='.bm-row:active{background:rgba(255,255,255,.03)}';
         html+='.bm-row-icon{width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}';
         html+='.bm-row-text{flex:1;margin-left:8px}';
@@ -1166,12 +1167,12 @@ function SearchPage(){
         html+='.bm-tag-open{background:rgba(74,222,128,.1);color:#4ade80}';
         html+='.bm-tag-closed{background:rgba(239,68,68,.1);color:#ef4444}';
         html+='.bm-tag-pop{background:rgba(249,115,22,.1);color:#f97316}';
-        html+='.bm-dots{display:flex;justify-content:center;gap:4px;padding:10px 0 4px;flex-wrap:wrap;max-width:320px;margin:0 auto}';
+        html+='.bm-dots{display:flex;justify-content:center;gap:4px;padding:6px 0 2px;flex-wrap:wrap;max-width:320px;margin:0 auto;flex-shrink:0}';
         html+='.bm-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.2);transition:all .3s ease}';
         html+='.bm-dot.act{background:#f97316;width:22px;border-radius:4px}';
-        html+='.bm-hint{text-align:center;font-size:12px;color:rgba(255,255,255,.4);padding:4px 0 8px;font-weight:500}';
-        html+='.bm-continue{padding:12px 16px 4px}';
-        html+='.bm-continue-btn{width:100%;padding:13px 0;border:none;border-radius:12px;background:#f97316;color:#fff;font-size:15px;font-weight:700;letter-spacing:.3px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;box-shadow:0 4px 16px rgba(249,115,22,.35)}';
+        html+='.bm-hint{text-align:center;font-size:11px;color:rgba(255,255,255,.4);padding:2px 0 4px;font-weight:500;flex-shrink:0}';
+        html+='.bm-continue{padding:8px 16px 2px;flex-shrink:0}';
+        html+='.bm-continue-btn{width:100%;padding:11px 0;border:none;border-radius:12px;background:#f97316;color:#fff;font-size:15px;font-weight:700;letter-spacing:.3px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;box-shadow:0 4px 16px rgba(249,115,22,.35)}';
         html+='.bm-continue-btn:active{transform:scale(.97);box-shadow:0 2px 8px rgba(249,115,22,.25)}';
         html+='</style>';
         html+='<div class="bm-map" id="bm-map">';
@@ -1209,8 +1210,8 @@ function SearchPage(){
           html+='<div class="bm-addr">\u{1F4CD} '+(c.addr||'Nearby')+'</div>';
           // ═══ PHASE 4: Social proof badge ═══
           var _spCount=Math.max(2,((c.name||'').charCodeAt(0)%8)+1);
-          if(c.isOpen&&c.isPop) html+='<div style="color:#f97316;font-size:11px;font-weight:600;padding:0 16px 4px;display:flex;align-items:center;gap:4px">\u{1F525} '+_spCount+' booked today</div>';
-          else if(c.isOpen) html+='<div style="color:rgba(255,255,255,.3);font-size:11px;padding:0 16px 4px">\u{2728} Recently viewed</div>';
+          if(c.isOpen&&c.isPop) html+='<div style="color:#f97316;font-size:11px;font-weight:600;padding:0 16px 2px;display:flex;align-items:center;gap:4px;flex-shrink:0">\u{1F525} '+_spCount+' booked today</div>';
+          else if(c.isOpen) html+='<div style="color:rgba(255,255,255,.3);font-size:11px;padding:0 16px 2px;flex-shrink:0">\u{2728} Recently viewed</div>';
           html+='<div class="bm-continue"><button class="bm-continue-btn" onclick="event.stopPropagation();openGym(\''+c.id+'\',true)">Continue \u{1F7E0}</button></div>';
           html+='<div class="bm-rows">';
           html+='<div class="bm-row" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'reviews\')"><div class="bm-row-icon">\u2B50</div><div class="bm-row-text"><div class="bm-row-main">'+reviewsRow+'</div></div>'+(c.isPop?'<div class="bm-tag bm-tag-pop">\u26A1 Popular</div>':'')+'<div class="bm-row-chev">\u203a</div></div>';

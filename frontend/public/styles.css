@@ -125,6 +125,8 @@ body {
   cursor: pointer;
   transition: all 0.15s ease;
   -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 .sg-filter-pill:hover {
   border-color: rgba(249,115,22,0.3);
