@@ -1582,9 +1582,13 @@ function GymProfilePage(){
           <div class="gym-sticky-pay-chevron">›</div>
         </div>
 
-        <!-- CTA + Calendar row -->
+        <!-- CTA + Passes + Calendar row -->
         <div class="gym-sticky-cta">
           <button class="gym-sticky-book" id="gym-sticky-book" onclick="event.preventDefault();event.stopPropagation();showUberCheckout('${gymId}')">⚡ Book Day Pass · ${currentPrice}</button>
+          <button class="gym-sticky-cal" onclick="openGymOverlay('passes')" title="Passes">
+            <span class="gym-sticky-cal-icon">🎟️</span>
+            <span class="gym-sticky-cal-time">Passes</span>
+          </button>
           <button class="gym-sticky-cal" id="gym-sticky-cal" onclick="openDateSheet()">
             <span class="gym-sticky-cal-icon">📅</span>
             <span class="gym-sticky-cal-time" id="gym-sticky-cal-time">${String(Math.min(new Date().getHours()+1,23)).padStart(2,'0')}:00</span>
