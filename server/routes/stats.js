@@ -485,4 +485,66 @@ router.get('/suppliers', async (req, res) => {
   });
 });
 
+// GET /api/stats/ceo/creators — Creator affiliate breakdown for CEO dashboard
+router.get('/ceo/creators', authenticateUser, async (req, res) => {
+  try {
+    const { period = '7d' } = req.query;
+    const interval = period === '30d' ? '30 days' : period === '24h' ? '1 day' : '7 days';
+
+    // Total creators
+    let totalCreators = 0, totalReferrals = 0, totalEarnings = 0, totalConversions = 0;
+    let creators = [];
+    try {
+      const totals = await pool.query(`
+        SELECT COUNT(*) as total,
+               COALESCE(SUM(total_referrals), 0) as referrals,
+               COALESCE(SUM(total_earnings_pence), 0) as earnings,
+               COALESCE(SUM(total_conversions), 0) as conversions
+        FROM creator_memberships
+      `);
+      totalCreators = parseInt(totals.rows[0].total);
+      totalReferrals = parseInt(totals.rows[0].referrals);
+      totalEarnings = parseInt(totals.rows[0].earnings);
+      totalConversions = parseInt(totals.rows[0].conversions);
+    } catch (e) {}
+
+    // Per-creator breakdown
+    try {
+      const perCreator = await pool.query(`
+        SELECT cm.id, cm.user_id, cm.tier, cm.badge, cm.total_referrals as referrals,
+               cm.total_earnings_pence as earnings_pence, cm.total_conversions as conversions,
+               cm.joined_at,
+               COALESCE(u.first_name || ' ' || u.last_name, 'Creator #' || cm.id) as name,
+               clp.slug as handle
+        FROM creator_memberships cm
+        LEFT JOIN users u ON u.id::text = cm.user_id::text
+        LEFT JOIN creator_landing_pages clp ON clp.creator_user_id = cm.user_id
+        ORDER BY cm.total_referrals DESC
+        LIMIT 50
+      `);
+      creators = perCreator.rows;
+    } catch (e) {}
+
+    // New creators in period
+    let newCreators = 0;
+    try {
+      const nc = await pool.query(`
+        SELECT COUNT(*) FROM creator_memberships WHERE joined_at > NOW() - INTERVAL '${interval}'
+      `);
+      newCreators = parseInt(nc.rows[0].count);
+    } catch (e) {}
+
+    res.json({
+      totalCreators,
+      newCreators,
+      totalReferrals,
+      totalCreatorRevenue: `£${(totalEarnings / 100).toFixed(2)}`,
+      totalConversions,
+      creators,
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch creator stats' });
+  }
+});
+
 module.exports = router;

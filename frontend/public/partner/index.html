@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>ScanGym — Gym Partner Dashboard</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0a0a16;color:#fff;min-height:100vh}
+    .header{background:linear-gradient(135deg,#111827,#1f2937);padding:20px 24px;border-bottom:1px solid rgba(249,115,22,.2)}
+    .header h1{font-size:22px;font-weight:800;display:flex;align-items:center;gap:8px}
+    .header h1 span{color:#f97316}
+    .header p{color:rgba(255,255,255,.4);font-size:13px;margin-top:4px}
+    .content{padding:16px 24px;max-width:900px;margin:0 auto}
+    .section-title{font-size:16px;font-weight:800;margin:24px 0 12px;display:flex;align-items:center;gap:8px}
+    .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:8px}
+    .stat{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px;text-align:center;transition:.15s}
+    .stat:hover{border-color:rgba(249,115,22,.2)}
+    .stat .num{font-size:26px;font-weight:800;color:#f97316}
+    .stat .lbl{font-size:11px;color:rgba(255,255,255,.4);margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
+
+    /* Gym selector */
+    .gym-selector{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:20px;margin-bottom:16px}
+    .gym-selector select{width:100%;padding:12px 16px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:#1a1a2e;color:#fff;font-size:14px;font-weight:600;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23f97316' stroke-width='2' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 16px center}
+
+    /* Toggle switch — Zomato style */
+    .toggle-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:20px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+    .toggle-info h3{font-size:15px;font-weight:700}
+    .toggle-info p{font-size:12px;color:rgba(255,255,255,.4);margin-top:2px}
+    .toggle-switch{position:relative;width:64px;height:34px;flex-shrink:0}
+    .toggle-switch input{opacity:0;width:0;height:0}
+    .toggle-slider{position:absolute;cursor:pointer;inset:0;background:rgba(239,68,68,.3);border-radius:34px;transition:.3s;border:2px solid rgba(239,68,68,.4)}
+    .toggle-slider:before{position:absolute;content:"";height:26px;width:26px;left:2px;bottom:2px;background:#fff;border-radius:50%;transition:.3s;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+    .toggle-switch input:checked + .toggle-slider{background:rgba(34,197,94,.3);border-color:rgba(34,197,94,.5)}
+    .toggle-switch input:checked + .toggle-slider:before{transform:translateX(30px)}
+    .toggle-status{font-size:13px;font-weight:700;padding:4px 12px;border-radius:8px}
+    .toggle-status.online{background:rgba(34,197,94,.15);color:#22c55e}
+    .toggle-status.offline{background:rgba(239,68,68,.15);color:#ef4444}
+
+    /* Pricing card — Zomato style */
+    .pricing-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:20px;margin-bottom:16px}
+    .pricing-card h3{font-size:15px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+    .price-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+    .price-row:last-child{border:none}
+    .price-label{font-size:14px;font-weight:600;color:rgba(255,255,255,.7)}
+    .price-label small{display:block;font-size:11px;font-weight:400;color:rgba(255,255,255,.35);margin-top:2px}
+    .price-input-wrap{display:flex;align-items:center;gap:4px}
+    .price-currency{font-size:16px;font-weight:800;color:#f97316}
+    .price-input{width:80px;padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#fff;font-size:16px;font-weight:700;text-align:right}
+    .price-input:focus{outline:none;border-color:#f97316;box-shadow:0 0 0 3px rgba(249,115,22,.15)}
+    .discount-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+    .discount-label{flex:1;font-size:13px;color:rgba(255,255,255,.6)}
+    .discount-input{width:60px;padding:6px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#fff;font-size:13px;font-weight:600;text-align:right}
+    .btn{padding:10px 24px;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;border:none;transition:.15s}
+    .btn:active{transform:scale(.96)}
+    .btn-primary{background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;box-shadow:0 4px 16px rgba(249,115,22,.3);width:100%;margin-top:16px}
+    .btn-primary:disabled{opacity:.5;cursor:not-allowed}
+
+    /* Chart */
+    .chart-container{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:20px;margin-bottom:8px}
+    .chart-bars{display:flex;align-items:flex-end;gap:3px;height:100px;padding-top:8px}
+    .chart-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;height:100%}
+    .chart-bar{width:100%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,#f97316,#ea580c);min-height:2px;transition:height .4s;margin-top:auto}
+    .chart-bar-label{font-size:8px;color:rgba(255,255,255,.25);margin-top:3px;white-space:nowrap}
+    .chart-bar-val{font-size:8px;color:#f97316;font-weight:700;margin-bottom:1px}
+
+    /* Peak hours */
+    .peak-list{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+    .peak-chip{padding:8px 14px;border-radius:10px;font-size:12px;font-weight:700;background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.2);color:#f97316}
+
+    /* Reviews */
+    .review-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+    .review-stars{width:50px;font-size:13px;font-weight:700;text-align:right}
+    .review-bar-bg{flex:1;height:10px;background:rgba(255,255,255,.06);border-radius:5px;overflow:hidden}
+    .review-bar-fill{height:100%;border-radius:5px;background:linear-gradient(90deg,#f97316,#fbbf24)}
+    .review-count{width:30px;font-size:12px;color:rgba(255,255,255,.4)}
+
+    .loading{text-align:center;padding:60px;color:rgba(255,255,255,.3)}
+    .loading .spinner{width:32px;height:32px;border:3px solid rgba(255,255,255,.1);border-top-color:#f97316;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .toast{position:fixed;top:20px;right:20px;padding:12px 20px;border-radius:12px;font-weight:700;font-size:13px;z-index:100;animation:slideIn .3s;box-shadow:0 4px 20px rgba(0,0,0,.3)}
+    .toast.success{background:#22c55e;color:#fff}
+    .toast.error{background:#ef4444;color:#fff}
+    @keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+    @media(max-width:600px){.stats{grid-template-columns:repeat(2,1fr)}.toggle-card{flex-wrap:wrap}}
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🏋️ <span>ScanGym</span> Gym Partner Dashboard</h1>
+    <p>Manage your gym, set prices, track performance</p>
+  </div>
+
+  <div class="content" id="main">
+    <div class="loading"><div class="spinner"></div>Loading your gyms…</div>
+  </div>
+
+  <script>
+  (function(){
+    let gyms = [];
+    let selectedGymId = null;
+    let gymStats = null;
+    let gymPricing = null;
+
+    async function init() {
+      try {
+        const res = await fetch('/api/owner/gyms');
+        if (!res.ok) throw new Error('Not authenticated');
+        const data = await res.json();
+        gyms = data.gyms || [];
+        if (gyms.length === 0) {
+          document.getElementById('main').innerHTML = '<div class="loading">You don\'t have any gyms yet.<br><br><a href="/" style="color:#f97316">← Back to ScanGym</a></div>';
+          return;
+        }
+        selectedGymId = gyms[0].id;
+        renderGymSelector();
+        loadGymData();
+      } catch (e) {
+        document.getElementById('main').innerHTML = '<div class="loading">⚠️ Please log in to access your partner dashboard.<br><br><a href="/login" style="color:#f97316">→ Login</a></div>';
+      }
+    }
+
+    function renderGymSelector() {
+      const sel = gyms.length > 1 ? `<div class="gym-selector"><select id="gym-select" onchange="window.__selectGym(this.value)">${gyms.map(g => `<option value="${g.id}" ${g.id === selectedGymId ? 'selected' : ''}>${esc(g.name)}</option>`).join('')}</select></div>` : '';
+      const main = document.getElementById('main');
+      // preserve selector at top
+      main.innerHTML = sel + '<div id="gym-content"><div class="loading"><div class="spinner"></div>Loading gym data…</div></div>';
+    }
+
+    window.__selectGym = function(id) {
+      selectedGymId = parseInt(id);
+      loadGymData();
+    };
+
+    async function loadGymData() {
+      const content = document.getElementById('gym-content');
+      content.innerHTML = '<div class="loading"><div class="spinner"></div>Loading…</div>';
+
+      try {
+        const [statsRes, pricingRes] = await Promise.all([
+          fetch(`/api/stats/owner/${selectedGymId}`).then(r => r.json()),
+          fetch(`/api/owner/pricing/${selectedGymId}`).then(r => r.json()).catch(() => null)
+        ]);
+        gymStats = statsRes;
+        gymPricing = pricingRes?.pricing || {};
+
+        const gym = gyms.find(g => g.id === selectedGymId) || {};
+        const isOpen = gym.is_accepting_bookings !== false;
+
+        let html = '';
+
+        // === TOGGLE ON/OFF — Zomato style ===
+        html += `<div class="toggle-card">
+          <div class="toggle-info">
+            <h3>${esc(gym.name || gymStats.gymName || 'Your Gym')}</h3>
+            <p id="toggle-desc">${isOpen ? 'Accepting bookings from customers' : 'Gym is hidden from search & bookings'}</p>
+          </div>
+          <span class="toggle-status ${isOpen ? 'online' : 'offline'}" id="toggle-label">${isOpen ? '● ONLINE' : '● OFFLINE'}</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="gym-toggle" ${isOpen ? 'checked' : ''} onchange="window.__toggleGym(this.checked)">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>`;
+
+        // === OVERVIEW STATS ===
+        const ov = gymStats.overview || {};
+        html += '<div class="section-title">📈 Overview</div>';
+        html += '<div class="stats">';
+        html += statCard(fmt(ov.totalBookings), 'Total Bookings');
+        html += statCard(fmt(ov.paidBookings), 'Paid Bookings');
+        html += statCard(ov.estimatedRevenue || '£0', 'Your Revenue (75%)');
+        html += statCard(fmt(ov.uniqueVisitors), 'Unique Visitors');
+        html += statCard(ov.returnRate || '0%', 'Return Rate');
+        html += statCard(ov.scanGymCommission || '25%', 'ScanGym Cut');
+        html += '</div>';
+
+        // === PRICING — Zomato style ===
+        html += '<div class="section-title">💷 Set Prices</div>';
+        const dayPrice = gymPricing.dayPassPrice || gymPricing.day_pass_pence ? (gymPricing.day_pass_pence / 100).toFixed(2) : gymPricing.dayPassPrice || gym.day_pass_price || '5.00';
+        html += `<div class="pricing-card">
+          <h3>🎫 Pricing Controls</h3>
+          <div class="price-row">
+            <div class="price-label">24-Hour Day Pass<small>Full 24h access from check-in</small></div>
+            <div class="price-input-wrap">
+              <span class="price-currency">£</span>
+              <input type="number" class="price-input" id="dayPassPrice" value="${parseFloat(dayPrice).toFixed(2)}" step="0.50" min="0.50" max="100">
+            </div>
+          </div>
+          <div style="margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,.06)">
+            <div style="font-size:13px;font-weight:600;margin-bottom:12px;color:rgba(255,255,255,.5)">Discounts</div>
+            <div class="discount-row">
+              <div class="discount-label">🎓 Student Discount</div>
+              <div class="price-input-wrap"><input type="number" class="discount-input" id="studentDiscount" value="${gymPricing.studentDiscountPct || gymPricing.student_discount_pct || 0}" min="0" max="100"><span style="font-size:12px;color:rgba(255,255,255,.3);margin-left:4px">%</span></div>
+            </div>
+            <div class="discount-row">
+              <div class="discount-label">🆕 First Visit Discount</div>
+              <div class="price-input-wrap"><input type="number" class="discount-input" id="firstVisitDiscount" value="${gymPricing.firstVisitDiscountPct || gymPricing.first_visit_discount_pct || 50}" min="0" max="100"><span style="font-size:12px;color:rgba(255,255,255,.3);margin-left:4px">%</span></div>
+            </div>
+            <div class="discount-row">
+              <div class="discount-label">🌙 Off-Peak Discount</div>
+              <div class="price-input-wrap"><input type="number" class="discount-input" id="offPeakDiscount" value="${gymPricing.offPeakDiscountPct || gymPricing.off_peak_discount_pct || 0}" min="0" max="100"><span style="font-size:12px;color:rgba(255,255,255,.3);margin-left:4px">%</span></div>
+            </div>
+          </div>
+          <button class="btn btn-primary" id="savePriceBtn" onclick="window.__savePricing()">💾 Save Prices</button>
+        </div>`;
+
+        // === BOOKING TREND ===
+        if (gymStats.bookingTrend?.length) {
+          html += '<div class="section-title">📊 Booking Trend (30 days)</div>';
+          html += '<div class="chart-container"><div class="chart-bars">';
+          const maxB = Math.max(...gymStats.bookingTrend.map(t => parseInt(t.bookings) || 0), 1);
+          gymStats.bookingTrend.forEach(t => {
+            const val = parseInt(t.bookings) || 0;
+            const h = Math.max((val / maxB) * 100, 3);
+            const day = new Date(t.date).toLocaleDateString('en-GB', {day:'numeric', month:'short'});
+            html += `<div class="chart-bar-wrap"><div class="chart-bar-val">${val}</div><div class="chart-bar" style="height:${h}%"></div><div class="chart-bar-label">${day}</div></div>`;
+          });
+          html += '</div></div>';
+        }
+
+        // === PEAK HOURS ===
+        if (gymStats.peakHours?.length) {
+          html += '<div class="section-title">⏰ Peak Hours</div>';
+          html += '<div class="peak-list">';
+          gymStats.peakHours.forEach(p => {
+            const hr = parseInt(p.hour);
+            const label = hr < 12 ? `${hr || 12}am` : hr === 12 ? '12pm' : `${hr - 12}pm`;
+            html += `<div class="peak-chip">${label} — ${p.bookings} bookings</div>`;
+          });
+          html += '</div>';
+        }
+
+        // === REVIEWS ===
+        if (gymStats.reviewDistribution?.length) {
+          html += '<div class="section-title">⭐ Reviews</div>';
+          html += '<div class="pricing-card" style="padding:16px">';
+          const totalReviews = gymStats.reviewDistribution.reduce((s, r) => s + parseInt(r.count), 0) || 1;
+          for (let star = 5; star >= 1; star--) {
+            const row = gymStats.reviewDistribution.find(r => parseInt(r.rating) === star);
+            const count = row ? parseInt(row.count) : 0;
+            const pct = (count / totalReviews) * 100;
+            html += `<div class="review-bar-row">
+              <div class="review-stars">${star} ★</div>
+              <div class="review-bar-bg"><div class="review-bar-fill" style="width:${pct}%"></div></div>
+              <div class="review-count">${count}</div>
+            </div>`;
+          }
+          html += '</div>';
+        }
+
+        content.innerHTML = html;
+      } catch (e) {
+        content.innerHTML = '<div class="loading">⚠️ Failed to load gym data: ' + esc(e.message) + '</div>';
+      }
+    }
+
+    // Toggle gym on/off — Zomato style
+    window.__toggleGym = async function(isOpen) {
+      try {
+        const res = await fetch(`/api/owner/toggle/${selectedGymId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ isOpen })
+        });
+        if (!res.ok) { const err = await res.json(); throw new Error(err.error || 'Toggle failed'); }
+        const data = await res.json();
+
+        // Update UI
+        const label = document.getElementById('toggle-label');
+        const desc = document.getElementById('toggle-desc');
+        if (isOpen) {
+          label.className = 'toggle-status online';
+          label.textContent = '● ONLINE';
+          desc.textContent = 'Accepting bookings from customers';
+        } else {
+          label.className = 'toggle-status offline';
+          label.textContent = '● OFFLINE';
+          desc.textContent = 'Gym is hidden from search & bookings';
+        }
+        // Update local gym data
+        const gym = gyms.find(g => g.id === selectedGymId);
+        if (gym) gym.is_accepting_bookings = isOpen;
+
+        showToast(isOpen ? '✅ Gym is now ONLINE' : '🔴 Gym is now OFFLINE', 'success');
+
+        if (data.warning) showToast('⚠️ ' + data.warning, 'error');
+      } catch (e) {
+        // Revert toggle
+        document.getElementById('gym-toggle').checked = !isOpen;
+        showToast('❌ ' + e.message, 'error');
+      }
+    };
+
+    // Save pricing — Zomato style
+    window.__savePricing = async function() {
+      const btn = document.getElementById('savePriceBtn');
+      btn.disabled = true;
+      btn.textContent = 'Saving…';
+
+      try {
+        const res = await fetch(`/api/owner/pricing/${selectedGymId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            gymId: selectedGymId,
+            dayPassPrice: parseFloat(document.getElementById('dayPassPrice').value),
+            studentDiscountPct: parseInt(document.getElementById('studentDiscount').value) || 0,
+            firstVisitDiscountPct: parseInt(document.getElementById('firstVisitDiscount').value) || 0,
+            offPeakDiscountPct: parseInt(document.getElementById('offPeakDiscount').value) || 0,
+          })
+        });
+        if (!res.ok) { const err = await res.json(); throw new Error(err.error || 'Save failed'); }
+        showToast('✅ Prices saved!', 'success');
+      } catch (e) {
+        showToast('❌ ' + e.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '💾 Save Prices';
+      }
+    };
+
+    function statCard(num, label) {
+      return `<div class="stat"><div class="num">${num || '0'}</div><div class="lbl">${label}</div></div>`;
+    }
+    function fmt(n) { return n != null ? Number(n).toLocaleString() : '0'; }
+    function esc(s) { return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
+    function showToast(msg, type) {
+      const t = document.createElement('div');
+      t.className = 'toast ' + type;
+      t.textContent = msg;
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 3000);
+    }
+
+    init();
+  })();
+  </script>
+</body>
+</html>

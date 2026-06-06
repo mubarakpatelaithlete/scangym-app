@@ -603,4 +603,48 @@ router.patch('/uploads/:id/approve', async (req, res) => {
   }
 });
 
+// GET /api/creators/me — Current creator's membership + stats
+router.get('/me', authenticateUser, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const membership = await pool.query('SELECT * FROM creator_memberships WHERE user_id = $1', [userId]);
+    if (membership.rows.length === 0) {
+      return res.status(404).json({ error: 'Not a FlexSquad member', joinUrl: '/flexsquad' });
+    }
+    const m = membership.rows[0];
+    const tier = m.tier || 'starter';
+
+    // Get perks for current tier
+    const tierPerks = {
+      starter: ['25% commission', 'Creator toolkit access', '242+ ready-to-post assets'],
+      rising: ['25% commission', 'Priority support', 'Early feature access', 'Custom referral link'],
+      pro: ['25% commission', 'Free Premium membership', 'Custom branding', 'Analytics dashboard'],
+      legend: ['25% commission', 'LIFETIME free Premium', 'Revenue share increase', 'Personal account manager', 'Co-branded content'],
+    };
+
+    res.json({
+      membership: {
+        ...m,
+        perks: tierPerks[tier] || tierPerks.starter,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch creator profile' });
+  }
+});
+
+// GET /api/creators/landing-pages — Current creator's landing pages
+router.get('/landing-pages', authenticateUser, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const pages = await pool.query(
+      'SELECT * FROM creator_landing_pages WHERE creator_user_id = $1 ORDER BY views DESC',
+      [userId]
+    );
+    res.json({ pages: pages.rows });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch landing pages' });
+  }
+});
+
 module.exports = router;

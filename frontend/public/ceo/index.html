@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>ScanGym — CEO Dashboard</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0a0a16;color:#fff;min-height:100vh}
+    .header{background:linear-gradient(135deg,#111827,#1f2937);padding:20px 24px;border-bottom:1px solid rgba(249,115,22,.2);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+    .header h1{font-size:22px;font-weight:800;display:flex;align-items:center;gap:8px}
+    .header h1 span{color:#f97316}
+    .header p{color:rgba(255,255,255,.4);font-size:13px;margin-top:4px}
+    .period-btns{display:flex;gap:6px}
+    .period-btn{padding:7px 16px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.5);transition:.15s}
+    .period-btn.active{background:rgba(249,115,22,.15);border-color:rgba(249,115,22,.3);color:#f97316}
+    .period-btn:hover{background:rgba(255,255,255,.08)}
+    .content{padding:16px 24px;max-width:1200px;margin:0 auto}
+    .section-title{font-size:16px;font-weight:800;margin:24px 0 12px;display:flex;align-items:center;gap:8px}
+    .section-title:first-child{margin-top:8px}
+    .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:8px}
+    .stat{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px;text-align:center;transition:.15s}
+    .stat:hover{border-color:rgba(249,115,22,.2)}
+    .stat .num{font-size:26px;font-weight:800;color:#f97316}
+    .stat .lbl{font-size:11px;color:rgba(255,255,255,.4);margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
+    .stat .sub{font-size:11px;color:rgba(255,255,255,.25);margin-top:2px}
+    .funnel{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:20px;margin-bottom:8px}
+    .funnel-steps{display:flex;flex-direction:column;gap:8px}
+    .funnel-step{display:flex;align-items:center;gap:12px}
+    .funnel-bar-wrap{flex:1;background:rgba(255,255,255,.06);border-radius:8px;height:32px;overflow:hidden;position:relative}
+    .funnel-bar{height:100%;border-radius:8px;transition:width .6s ease;display:flex;align-items:center;padding:0 12px;font-size:12px;font-weight:700;min-width:40px}
+    .funnel-label{width:130px;font-size:13px;font-weight:600;color:rgba(255,255,255,.7);flex-shrink:0}
+    .funnel-count{width:60px;text-align:right;font-size:13px;font-weight:700;color:#f97316;flex-shrink:0}
+    .funnel-pct{width:50px;text-align:right;font-size:12px;color:rgba(255,255,255,.4);flex-shrink:0}
+    .chart-container{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:20px;margin-bottom:8px}
+    .chart-bars{display:flex;align-items:flex-end;gap:4px;height:120px;padding-top:8px}
+    .chart-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;height:100%}
+    .chart-bar{width:100%;border-radius:4px 4px 0 0;background:linear-gradient(180deg,#f97316,#ea580c);min-height:2px;transition:height .4s ease;margin-top:auto}
+    .chart-bar-label{font-size:9px;color:rgba(255,255,255,.3);margin-top:4px;white-space:nowrap}
+    .chart-bar-val{font-size:9px;color:#f97316;font-weight:700;margin-bottom:2px}
+    .table-wrap{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;overflow:hidden;margin-bottom:8px}
+    table{width:100%;border-collapse:collapse}
+    th{text-align:left;padding:12px 16px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:rgba(255,255,255,.4);background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.06)}
+    td{padding:10px 16px;font-size:13px;border-bottom:1px solid rgba(255,255,255,.04)}
+    tr:hover td{background:rgba(255,255,255,.02)}
+    .source-bar{height:6px;border-radius:3px;background:linear-gradient(90deg,#f97316,#fb923c);display:inline-block;vertical-align:middle;margin-left:8px}
+    .login-gate{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;text-align:center;padding:24px}
+    .login-gate h2{font-size:24px;font-weight:800;margin-bottom:8px}
+    .login-gate p{color:rgba(255,255,255,.4);margin-bottom:20px}
+    .login-gate .btn{padding:12px 32px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;border:none;background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;box-shadow:0 4px 20px rgba(249,115,22,.3)}
+    .badge-pill{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700}
+    .loading{text-align:center;padding:60px;color:rgba(255,255,255,.3)}
+    .loading .spinner{width:32px;height:32px;border:3px solid rgba(255,255,255,.1);border-top-color:#f97316;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    @media(max-width:600px){.stats{grid-template-columns:repeat(2,1fr)}.funnel-label{width:90px;font-size:11px}.header{flex-direction:column;align-items:flex-start}}
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1>📊 <span>ScanGym</span> CEO Dashboard</h1>
+      <p>One screen: traffic in, money out</p>
+    </div>
+    <div class="period-btns">
+      <button class="period-btn" data-period="24h">24h</button>
+      <button class="period-btn active" data-period="7d">7 days</button>
+      <button class="period-btn" data-period="30d">30 days</button>
+    </div>
+  </div>
+
+  <div class="content" id="main">
+    <div class="loading"><div class="spinner"></div>Loading dashboard…</div>
+  </div>
+
+  <script>
+  (function(){
+    let period = '7d';
+
+    document.querySelectorAll('.period-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        period = btn.dataset.period;
+        loadDashboard();
+      });
+    });
+
+    async function loadDashboard() {
+      const main = document.getElementById('main');
+      main.innerHTML = '<div class="loading"><div class="spinner"></div>Loading dashboard…</div>';
+
+      try {
+        const [ceoRes, creatorsRes] = await Promise.all([
+          fetch(`/api/stats/ceo?period=${period}`).then(r => r.json()),
+          fetch(`/api/stats/ceo/creators?period=${period}`).then(r => r.json()).catch(() => null)
+        ]);
+
+        const d = ceoRes;
+        const cr = creatorsRes;
+
+        // Build HTML
+        let html = '';
+
+        // === TRAFFIC IN ===
+        html += '<div class="section-title">🚀 Traffic In</div>';
+        html += '<div class="stats">';
+        html += statCard(fmt(d.trafficIn?.totalHits), 'Total Hits');
+        html += statCard(fmt(d.trafficIn?.uniqueVisitors), 'Unique Visitors');
+        html += statCard(fmt(d.trafficIn?.pageViews), 'Page Views');
+        html += '</div>';
+
+        // Daily trend chart
+        if (d.trafficIn?.dailyTrend?.length) {
+          html += '<div class="chart-container">';
+          html += '<div style="font-size:13px;font-weight:700;margin-bottom:12px;color:rgba(255,255,255,.6)">Daily Traffic</div>';
+          html += '<div class="chart-bars">';
+          const maxVal = Math.max(...d.trafficIn.dailyTrend.map(t => t.total || t.unique_visitors || 0), 1);
+          d.trafficIn.dailyTrend.forEach(t => {
+            const val = t.total || t.unique_visitors || 0;
+            const h = Math.max((val / maxVal) * 100, 2);
+            const day = new Date(t.date).toLocaleDateString('en-GB', {day:'numeric',month:'short'});
+            html += `<div class="chart-bar-wrap"><div class="chart-bar-val">${fmt(val)}</div><div class="chart-bar" style="height:${h}%"></div><div class="chart-bar-label">${day}</div></div>`;
+          });
+          html += '</div></div>';
+        }
+
+        // Traffic sources
+        if (d.trafficIn?.sources?.length) {
+          html += '<div class="table-wrap"><table><thead><tr><th>Source</th><th>Visits</th><th>Unique</th><th></th></tr></thead><tbody>';
+          const maxS = Math.max(...d.trafficIn.sources.map(s => parseInt(s.visits) || 0), 1);
+          d.trafficIn.sources.forEach(s => {
+            const w = Math.max(((parseInt(s.visits) || 0) / maxS) * 80, 4);
+            html += `<tr><td style="font-weight:600">${esc(s.source)}</td><td>${fmt(s.visits)}</td><td>${fmt(s.unique_visitors)}</td><td><span class="source-bar" style="width:${w}px"></span></td></tr>`;
+          });
+          html += '</tbody></table></div>';
+        }
+
+        // === CONVERSION FUNNEL ===
+        html += '<div class="section-title">🎯 Conversion Funnel</div>';
+        if (d.conversionFunnel?.funnel) {
+          const f = d.conversionFunnel.funnel;
+          const steps = [
+            { label: 'Visitors', val: f['1_visitors'] || 0, color: '#3b82f6' },
+            { label: 'Searched', val: f['2_searched'] || 0, color: '#8b5cf6' },
+            { label: 'Viewed Gym', val: f['3_viewed_profile'] || 0, color: '#ec4899' },
+            { label: 'Checkout', val: f['4_started_checkout'] || 0, color: '#f97316' },
+            { label: 'Paid Booking', val: f['5_paid_booking'] || 0, color: '#22c55e' },
+          ];
+          const maxF = Math.max(steps[0].val, 1);
+          html += '<div class="funnel"><div class="funnel-steps">';
+          steps.forEach((s, i) => {
+            const pct = ((s.val / maxF) * 100).toFixed(0);
+            const stepPct = i > 0 && steps[i-1].val > 0 ? ((s.val / steps[i-1].val) * 100).toFixed(0) + '%' : '—';
+            html += `<div class="funnel-step"><div class="funnel-label">${s.label}</div><div class="funnel-bar-wrap"><div class="funnel-bar" style="width:${Math.max(pct,3)}%;background:${s.color}">${fmt(s.val)}</div></div><div class="funnel-pct">${stepPct}</div></div>`;
+          });
+          html += '</div>';
+          html += `<div style="text-align:center;margin-top:16px;font-size:14px;font-weight:700">Overall Conversion: <span style="color:#22c55e">${d.conversionFunnel.overallConversion || '0%'}</span></div>`;
+          html += '</div>';
+        }
+
+        // === MONEY OUT ===
+        html += '<div class="section-title">💰 Money Out (Revenue)</div>';
+        html += '<div class="stats">';
+        if (d.moneyOut) {
+          html += statCard(d.moneyOut.totalRevenue || '£0', 'Total Revenue');
+          html += statCard(d.moneyOut.avgBookingValue || '£0', 'Avg Booking Value');
+          html += statCard(fmt(d.moneyOut.totalPaidBookings), 'Paid Bookings');
+          html += statCard(d.moneyOut.mrr || '£0', 'MRR Estimate');
+        }
+        html += '</div>';
+
+        // === PLATFORM ===
+        html += '<div class="section-title">🏢 Platform</div>';
+        html += '<div class="stats">';
+        if (d.platform) {
+          html += statCard(fmt(d.platform.totalGyms || d.platform.gyms), 'Gyms');
+          html += statCard(fmt(d.platform.totalUsers || d.platform.users), 'Users');
+          html += statCard(fmt(d.platform.totalBookings || d.platform.bookings), 'Total Bookings');
+          html += statCard(fmt(d.platform.cities), 'Cities');
+        }
+        html += '</div>';
+
+        // === CREATORS / AFFILIATE ===
+        html += '<div class="section-title">🎬 Creator Affiliate Program</div>';
+        html += '<div class="stats">';
+        if (cr) {
+          html += statCard(fmt(cr.totalCreators), 'Creators Joined');
+          html += statCard(fmt(cr.totalReferrals), 'Total Referrals');
+          html += statCard(cr.totalCreatorRevenue || '£0', 'Creator Revenue');
+          html += statCard(fmt(cr.totalConversions), 'Conversions');
+        } else {
+          html += statCard('—', 'Creators Joined');
+          html += statCard('—', 'Creator data unavailable', '');
+        }
+        html += '</div>';
+
+        // Per-creator breakdown table
+        if (cr?.creators?.length) {
+          html += '<div class="table-wrap"><table><thead><tr><th>Creator</th><th>Tier</th><th>Referrals</th><th>Conversions</th><th>Earnings</th></tr></thead><tbody>';
+          cr.creators.forEach(c => {
+            const tierColors = { starter:'rgba(34,197,94,.15)', rising:'rgba(251,191,36,.15)', pro:'rgba(249,115,22,.15)', legend:'rgba(168,85,247,.15)' };
+            const tierBg = tierColors[c.tier] || 'rgba(255,255,255,.06)';
+            html += `<tr>
+              <td style="font-weight:600">${esc(c.name || c.handle || 'Creator #' + c.id)}</td>
+              <td><span class="badge-pill" style="background:${tierBg}">${c.badge || ''} ${esc(c.tier || 'starter')}</span></td>
+              <td>${fmt(c.referrals)}</td>
+              <td>${fmt(c.conversions)}</td>
+              <td style="color:#22c55e;font-weight:700">£${((c.earnings_pence || 0) / 100).toFixed(2)}</td>
+            </tr>`;
+          });
+          html += '</tbody></table></div>';
+        }
+
+        // === TOP PAGES ===
+        if (d.topPages?.length) {
+          html += '<div class="section-title">📄 Top Pages</div>';
+          html += '<div class="table-wrap"><table><thead><tr><th>Page</th><th>Hits</th></tr></thead><tbody>';
+          d.topPages.forEach(p => {
+            html += `<tr><td style="font-family:monospace;font-size:12px">${esc(p.path)}</td><td style="font-weight:700;color:#f97316">${fmt(p.hits)}</td></tr>`;
+          });
+          html += '</tbody></table></div>';
+        }
+
+        main.innerHTML = html;
+      } catch (e) {
+        main.innerHTML = '<div class="loading">⚠️ Failed to load dashboard. Make sure you\'re logged in as admin.<br><br><a href="/login" style="color:#f97316">→ Login</a></div>';
+      }
+    }
+
+    function statCard(num, label, sub) {
+      return `<div class="stat"><div class="num">${num || '0'}</div><div class="lbl">${label}</div>${sub ? `<div class="sub">${sub}</div>` : ''}</div>`;
+    }
+    function fmt(n) { return n != null ? Number(n).toLocaleString() : '0'; }
+    function esc(s) { return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
+
+    loadDashboard();
+  })();
+  </script>
+</body>
+</html>
