@@ -1667,7 +1667,7 @@ function GymProfilePage(){
       <div class="gym-overlay-footer">
         <div>
           <div style="color:#fff;font-size:22px;font-weight:800">${currentPrice}</div>
-          <div style="color:rgba(255,255,255,.4);font-size:11px">${_isOP10?'🌙 Off-peak price active':'Off-peak pricing available'}</div>
+          <div style="color:rgba(255,255,255,.4);font-size:11px">${_isOP10?'🌙 Off-peak price active':'Your ScanGym pass works here ✓'}</div>
         </div>
         <button class="gym-book-btn" onclick="event.preventDefault();event.stopPropagation();closeGymOverlay();showUberCheckout('${gymId}')">Book Now</button>
       </div>
@@ -4796,7 +4796,7 @@ function LoginPage(){
       <div class="text-center mb-8">
         <div class="w-16 h-16 bg-brand rounded-2xl flex items-center justify-center mx-auto mb-4"><span class="text-white font-bold text-2xl">S</span></div>
         <h1 class="font-brand text-2xl font-bold text-white">Welcome to ScanGym</h1>
-        <p class="text-slate-400 text-sm mt-1">${isCodeStep ? 'Enter the code we sent to '+state.authPhone : 'Enter your phone number to get started'}</p>
+        <p class="text-slate-400 text-sm mt-1">${isCodeStep ? 'Enter the code we sent to '+state.authPhone : 'One account. 1.2M+ gyms worldwide.'}</p>
       </div>
       <div class="bg-card rounded-2xl border border-slate-700 p-6 space-y-4">
         <div id="auth-error" class="hidden bg-red-900/50 border border-red-500 text-red-300 text-sm rounded-lg p-3"></div>
@@ -5866,6 +5866,7 @@ function BookingSuccessPage(){
         </div>
         <h1 class="font-brand text-3xl font-bold text-white mb-1">Booking Confirmed!</h1>
         <p class="text-green-400 font-medium">${b.paymentMethod==='cash'?'✅ Reserved · Show QR & pay at gym':'✅ Payment received · QR code ready'}</p>
+        <p class="text-slate-500 text-xs mt-2">🌍 Your ScanGym profile is now accepted at 1.2M+ gyms worldwide</p>
       </div>
 
       <!-- Booking Summary Card -->
@@ -7087,6 +7088,161 @@ window.sgOwnerUpdatePrice=async function(){
   }
 };
 
+// ═══════════════════════════════════════════════════════════════════
+//  UNIVERSAL SCANGYM PROFILE — "One signup. 1.2M+ gyms worldwide."
+// ═══════════════════════════════════════════════════════════════════
+
+// ── ScanGym ID Card (QR-based universal pass) ──
+function ScanGymIDCard(u){
+  if(!u)return'';
+  const name=u.name||u.phone||'Member';
+  const initial=(name).charAt(0).toUpperCase();
+  const since=u.member_since?new Date(u.member_since).toLocaleDateString('en-GB',{month:'short',year:'numeric'}):'2026';
+  const verified=u.profile_complete;
+  const qrData=encodeURIComponent('https://scangym.com/member/'+u.id);
+  const qrUrl='https://api.qrserver.com/v1/create-qr-code/?size=120x120&bgcolor=0d0d1a&color=f97316&data='+qrData;
+  return`<div style="background:linear-gradient(135deg,rgba(249,115,22,.12),rgba(249,115,22,.04));border:1px solid rgba(249,115,22,.2);border-radius:20px;padding:20px;margin-bottom:20px;position:relative;overflow:hidden">
+    <div style="position:absolute;top:-30px;right:-30px;width:120px;height:120px;background:radial-gradient(circle,rgba(249,115,22,.08),transparent);border-radius:50%"></div>
+    <div style="display:flex;align-items:center;gap:16px">
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <span style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:rgba(249,115,22,.7)">ScanGym ID</span>
+          ${verified?'<span style="background:rgba(74,222,128,.15);color:#4ade80;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;display:inline-flex;align-items:center;gap:3px">✓ Verified</span>':'<span style="background:rgba(251,191,36,.1);color:#fbbf24;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px">Complete profile</span>'}
+        </div>
+        <div style="color:#fff;font-size:18px;font-weight:800;margin-bottom:2px">${name}</div>
+        <div style="color:rgba(255,255,255,.4);font-size:12px">Member since ${since}</div>
+        <div style="margin-top:8px;display:flex;align-items:center;gap:6px">
+          <span style="width:6px;height:6px;background:#4ade80;border-radius:50%;display:inline-block"></span>
+          <span style="color:rgba(255,255,255,.5);font-size:11px;font-weight:600">Accepted at 1.2M+ gyms worldwide</span>
+        </div>
+      </div>
+      <div style="flex-shrink:0;width:80px;height:80px;background:rgba(0,0,0,.3);border-radius:14px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(249,115,22,.15)">
+        <img src="${qrUrl}" width="64" height="64" style="border-radius:8px" alt="QR">
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── Profile Edit Page ──
+function ProfilePage(){
+  const u=state.user;
+  if(!u)return`<div style="text-align:center;padding:80px 20px"><p style="font-size:40px;margin-bottom:16px">🔒</p><p style="color:#fff;font-size:18px;font-weight:700;margin-bottom:8px">Log in to view your profile</p><p style="color:rgba(255,255,255,.4);margin-bottom:24px">Your ScanGym profile works at 1.2M+ gyms</p><button onclick="navigate('/login')" style="background:#f97316;color:#fff;border:none;padding:14px 32px;border-radius:12px;font-weight:700;font-size:16px;cursor:pointer">Log In →</button></div>`;
+  return`<div style="padding:16px;max-width:480px;margin:0 auto">
+    <div onclick="navigate('/more')" style="display:flex;align-items:center;gap:8px;padding:12px 0;cursor:pointer;color:rgba(255,255,255,.6);font-size:14px;font-weight:600;margin-bottom:4px">← Back</div>
+    <h2 style="color:#fff;font-size:22px;font-weight:800;margin:0 0 4px">My Profile</h2>
+    <p style="color:rgba(255,255,255,.4);font-size:13px;margin:0 0 20px">Your universal ScanGym identity</p>
+
+    ${ScanGymIDCard(u)}
+
+    <div id="profile-msg" style="display:none;padding:12px;border-radius:12px;margin-bottom:16px;font-size:13px;font-weight:600"></div>
+
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:10px">
+        <div style="flex:1">
+          <label style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">First Name</label>
+          <input id="pf-fname" type="text" value="${u.first_name||''}" placeholder="Your first name" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px 14px;color:#fff;font-size:14px;outline:none;box-sizing:border-box" onfocus="this.style.borderColor='rgba(249,115,22,.5)'" onblur="this.style.borderColor='rgba(255,255,255,.1)'">
+        </div>
+        <div style="flex:1">
+          <label style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Last Name</label>
+          <input id="pf-lname" type="text" value="${u.last_name||''}" placeholder="Your last name" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px 14px;color:#fff;font-size:14px;outline:none;box-sizing:border-box" onfocus="this.style.borderColor='rgba(249,115,22,.5)'" onblur="this.style.borderColor='rgba(255,255,255,.1)'">
+        </div>
+      </div>
+
+      <div>
+        <label style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Email</label>
+        <input id="pf-email" type="email" value="${u.email||''}" placeholder="your@email.com" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px 14px;color:#fff;font-size:14px;outline:none;box-sizing:border-box" onfocus="this.style.borderColor='rgba(249,115,22,.5)'" onblur="this.style.borderColor='rgba(255,255,255,.1)'">
+      </div>
+
+      <div>
+        <label style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Phone</label>
+        <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:12px 14px;color:rgba(255,255,255,.4);font-size:14px;display:flex;align-items:center;gap:8px">
+          <span style="color:#4ade80;font-size:12px">✓</span> ${u.phone||'Not set'} <span style="margin-left:auto;font-size:11px;color:rgba(255,255,255,.3)">Verified</span>
+        </div>
+      </div>
+
+      <div>
+        <label style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Fitness Level</label>
+        <select id="pf-fitness" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px 14px;color:#fff;font-size:14px;outline:none;-webkit-appearance:none;box-sizing:border-box">
+          <option value="" style="background:#1a1a2e" ${!u.fitness_level?'selected':''}>Select level</option>
+          <option value="beginner" style="background:#1a1a2e" ${u.fitness_level==='beginner'?'selected':''}>🌱 Beginner</option>
+          <option value="intermediate" style="background:#1a1a2e" ${u.fitness_level==='intermediate'?'selected':''}>💪 Intermediate</option>
+          <option value="advanced" style="background:#1a1a2e" ${u.fitness_level==='advanced'?'selected':''}>🔥 Advanced</option>
+          <option value="athlete" style="background:#1a1a2e" ${u.fitness_level==='athlete'?'selected':''}>🏆 Athlete</option>
+        </select>
+      </div>
+
+      <div>
+        <label style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Emergency Contact</label>
+        <input id="pf-emergency" type="tel" value="${u.emergency_contact||''}" placeholder="+44 7XXX XXXXXX" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px 14px;color:#fff;font-size:14px;outline:none;box-sizing:border-box" onfocus="this.style.borderColor='rgba(249,115,22,.5)'" onblur="this.style.borderColor='rgba(255,255,255,.1)'">
+        <p style="color:rgba(255,255,255,.3);font-size:11px;margin:4px 0 0 2px">Shared with gym staff in emergencies only</p>
+      </div>
+    </div>
+
+    <button id="pf-save-btn" onclick="saveProfile()" style="width:100%;margin-top:20px;background:#f97316;color:#fff;border:none;padding:16px;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent">Save Profile</button>
+
+    <div style="margin-top:24px;text-align:center">
+      <p style="color:rgba(255,255,255,.3);font-size:12px;line-height:1.6">🌍 Your ScanGym profile is your universal gym pass.<br>Accepted at <strong style="color:rgba(255,255,255,.5)">1.2M+ gyms</strong> in 190+ countries.</p>
+    </div>
+  </div>`;
+}
+
+// ── Save Profile Handler ──
+window.saveProfile=async function(){
+  var btn=document.getElementById('pf-save-btn');
+  var msg=document.getElementById('profile-msg');
+  if(!btn)return;
+  btn.textContent='Saving...';btn.style.opacity='0.7';
+  try{
+    var body={
+      first_name:document.getElementById('pf-fname')?.value?.trim()||'',
+      last_name:document.getElementById('pf-lname')?.value?.trim()||'',
+      email:document.getElementById('pf-email')?.value?.trim()||'',
+      fitness_level:document.getElementById('pf-fitness')?.value||'',
+      emergency_contact:document.getElementById('pf-emergency')?.value?.trim()||'',
+    };
+    var r=await fetch('/api/auth/profile',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    var data=await r.json();
+    if(data.success&&data.user){
+      // Update app state
+      state.user=Object.assign(state.user||{},data.user);
+      // Also sync to localStorage for offline compat
+      if(body.first_name)localStorage.setItem('sg_user_name',body.first_name);
+      if(body.email)localStorage.setItem('sg_last_email',body.email);
+      // Show success
+      msg.style.display='block';msg.style.background='rgba(74,222,128,.1)';msg.style.color='#4ade80';msg.style.border='1px solid rgba(74,222,128,.2)';
+      msg.textContent='✓ Profile saved — your universal pass is updated';
+      btn.textContent='Saved ✓';btn.style.opacity='1';
+      setTimeout(function(){btn.textContent='Save Profile';},2000);
+      setTimeout(function(){msg.style.display='none';},4000);
+    }else{
+      throw new Error(data.error||'Failed');
+    }
+  }catch(e){
+    msg.style.display='block';msg.style.background='rgba(248,113,113,.1)';msg.style.color='#f87171';msg.style.border='1px solid rgba(248,113,113,.2)';
+    msg.textContent='Failed to save: '+(e.message||'Network error');
+    btn.textContent='Save Profile';btn.style.opacity='1';
+  }
+};
+
+// ── Load Full Profile (called when navigating to /more/profile) ──
+window.loadFullProfile=async function(){
+  try{
+    var r=await fetch('/api/auth/profile');
+    if(!r.ok)return;
+    var data=await r.json();
+    if(data.id){
+      state.user=Object.assign(state.user||{},{
+        first_name:data.first_name,last_name:data.last_name,
+        email:data.email,fitness_level:data.fitness_level,
+        emergency_contact:data.emergency_contact,
+        profile_complete:data.profile_complete,
+        member_since:data.member_since,
+        name:data.name,stats:data.stats,
+      });
+    }
+  }catch(e){}
+};
+
 // ─── More Hub Page (Everything Else) ───
 function MoreHubPage(){
   const u=state.user;
@@ -7103,14 +7259,17 @@ function MoreHubPage(){
   }
 
   return`<div class="sg-more-hub">
-    <!-- Profile Header -->
-    <div class="sg-more-profile" onclick="navigate('${u?'/bookings':'/login'}')">
+    <!-- Profile Header — tap goes to profile edit -->
+    <div class="sg-more-profile" onclick="navigate('${u?'/more/profile':'/login'}')">
       <div class="sg-more-avatar">${avatar}</div>
       <div class="sg-more-profile-info">
         <h3>${displayName}</h3>
-        <p>${u?(email||'Tap to view bookings'):'Tap to sign in'}</p>
+        <p>${u?(email||'Tap to edit profile'):'Tap to sign in'}</p>
       </div>
     </div>
+
+    <!-- Universal ScanGym ID Card -->
+    ${u?ScanGymIDCard(u):'<div onclick="navigate(\\'/login\\')" style="background:rgba(249,115,22,.06);border:1px dashed rgba(249,115,22,.2);border-radius:16px;padding:20px;text-align:center;cursor:pointer;margin-bottom:20px"><p style="font-size:24px;margin-bottom:8px">🌍</p><p style="color:#fff;font-weight:700;font-size:15px;margin-bottom:4px">Get your Universal Gym Pass</p><p style="color:rgba(255,255,255,.4);font-size:12px">Sign up once. Accepted at 1.2M+ gyms worldwide.</p></div>'}
 
     <!-- Your Activity -->
     <div class="sg-more-section">
@@ -7138,7 +7297,7 @@ function MoreHubPage(){
     <!-- Account -->
     <div class="sg-more-section">
       <div class="sg-more-section-title">Account</div>
-      ${moreItem(u?'\u{1F464}':'\u{1F511}',u?'My Profile':'Log In',u?(u.name||u.phone):'Sign in or create account','/login')}
+      ${moreItem(u?'\u{1F464}':'\u{1F511}',u?'My Profile':'Log In',u?'Edit your universal gym pass':'Sign in or create account',u?'/more/profile':'/login')}
     </div>
 
     <!-- Legal (compact inline links) -->
@@ -7424,6 +7583,7 @@ function render(){
   else if(path==='/suppliers/vending')page=SupplierPage('vending');
   else if(path==='/suppliers/qr')page=SupplierPage('qr');
   else if(path==='/suppliers/loans')page=SupplierPage('loans');
+  else if(path==='/more/profile'){loadFullProfile();page=ProfilePage();}
   else if(path==='/login'||path==='/signup'||path==='/register')page=LoginPage();
   else if(path==='/how-it-works')page=InfoPage('How It Works',`<p>1. Find a gym near you using GPS or search</p><p>2. Book a 24-hour day pass — localized pricing worldwide</p><p>3. Pay with Apple Pay, Google Pay, or card (guest checkout available)</p><p>4. Get your QR code — scan in at the gym, scan out when done</p><p>5. Rate your session and earn rewards</p>`);
   else if(path==='/pricing')page=InfoPage('Pricing',`
