@@ -1089,7 +1089,7 @@ function SearchPage(){
         html+='.tt-action-btn:active{transform:scale(.9);background:rgba(255,255,255,.2)}';
         html+='.tt-action-label{color:rgba(255,255,255,.65);font-size:9px;font-weight:600}';
         /* Bottom info overlay */
-        html+='.tt-info{position:absolute;bottom:50px;left:0;right:60px;padding:0 14px 0;z-index:15;pointer-events:none}';
+        html+='.tt-info{position:absolute;bottom:0;left:0;right:0;padding:0 14px 8px;z-index:15;pointer-events:none}';
         html+='.tt-info>*{pointer-events:auto}';
         /* Dots */
         html+='.tt-dots{display:flex;gap:3px;margin-bottom:4px;flex-wrap:wrap;max-width:280px}';
@@ -1180,10 +1180,9 @@ function SearchPage(){
           html+='<div class="tt-chip">\u{1F4B0} '+c.price+'/day</div>';
           html+='<div class="tt-chip">\u2B50 '+c.rating+(c.reviews?' ('+c.reviews+')':'')+'</div>';
           html+='</div>';
+          /* CTA inside info */
+          html+='<div style="padding-right:50px;margin-top:8px;pointer-events:auto"><button class="tt-cta-btn" onclick="event.stopPropagation();openGym(\''+c.id+'\',true)">Continue \u2014 Day Pass '+c.price+' \u{1F7E0}</button></div>';
           html+='</div>';
-
-          /* CTA */
-          html+='<div class="tt-cta"><button class="tt-cta-btn" onclick="event.stopPropagation();openGym(\''+c.id+'\',true)">Continue \u2014 Day Pass '+c.price+' \u{1F7E0}</button></div>';
 
           html+='</div>';
         });
