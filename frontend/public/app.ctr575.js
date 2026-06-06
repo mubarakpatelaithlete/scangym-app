@@ -7259,7 +7259,7 @@ function MoreHubPage(){
     </div>
 
     <!-- Universal ScanGym ID Card -->
-    ${u?ScanGymIDCard(u):'<div onclick="navigate(\\'/login\\')" style="background:rgba(249,115,22,.06);border:1px dashed rgba(249,115,22,.2);border-radius:16px;padding:20px;text-align:center;cursor:pointer;margin-bottom:20px"><p style="font-size:24px;margin-bottom:8px">🌍</p><p style="color:#fff;font-weight:700;font-size:15px;margin-bottom:4px">Get your Universal Gym Pass</p><p style="color:rgba(255,255,255,.4);font-size:12px">Sign up once. Accepted at 1.2M+ gyms worldwide.</p></div>'}
+    ${u?ScanGymIDCard(u):'<div onclick="navigate(\'/login\')" style="background:rgba(249,115,22,.06);border:1px dashed rgba(249,115,22,.2);border-radius:16px;padding:20px;text-align:center;cursor:pointer;margin-bottom:20px"><p style="font-size:24px;margin-bottom:8px">🌍</p><p style="color:#fff;font-weight:700;font-size:15px;margin-bottom:4px">Get your Universal Gym Pass</p><p style="color:rgba(255,255,255,.4);font-size:12px">Sign up once. Accepted at 1.2M+ gyms worldwide.</p></div>'}
 
     <!-- Your Activity -->
     <div class="sg-more-section">
@@ -7279,7 +7279,7 @@ function MoreHubPage(){
     <!-- For Gym Owners -->
     <div class="sg-more-section">
       <div class="sg-more-section-title">For Gym Owners</div>
-      ${moreItem('\u{1F3E2}','List Your Gym','It\\\'s free \u2014 start earning','/list-your-gym')}
+      ${moreItem('\u{1F3E2}','List Your Gym','It\'s free \u2014 start earning','/list-your-gym')}
       ${moreItem('\u2699\uFE0F','Owner Controls','Open/close toggle, pricing','/owner/controls')}
       ${moreItem('\u{1F4C8}','CEO Dashboard','Revenue, bookings, funnel','/forceo')}
     </div>
