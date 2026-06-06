@@ -1189,6 +1189,8 @@ function SearchPage(){
         html+='<div class="bm-pill">Day Pass \u00b7 '+_cards[0].price+' <span style="font-size:10px;color:rgba(255,255,255,.3)">\u203a</span></div>';
         html+='</div></div>';
         html+='<div class="bm-sheet"><div class="bm-handle"></div>';
+        html+='<div class="bm-dots" id="bm-dots">'+_cards.map(function(c,i){return '<div class="bm-dot'+(i===0?' act':'')+'" id="bm-dot-'+i+'"></div>';}).join('')+'</div>';
+        html+='<div class="bm-hint" id="bm-hint">\u2190 Swipe for more gyms \u00b7 1 of '+totalC+' \u2192</div>';
         html+='<div class="bm-carousel" id="bm-carousel">';
         _cards.forEach(function(c,i){
           var logoGrad=logoColors[i%8];
@@ -1209,11 +1211,14 @@ function SearchPage(){
           var _spCount=Math.max(2,((c.name||'').charCodeAt(0)%8)+1);
           if(c.isOpen&&c.isPop) html+='<div style="color:#f97316;font-size:11px;font-weight:600;padding:0 16px 4px;display:flex;align-items:center;gap:4px">\u{1F525} '+_spCount+' booked today</div>';
           else if(c.isOpen) html+='<div style="color:rgba(255,255,255,.3);font-size:11px;padding:0 16px 4px">\u{2728} Recently viewed</div>';
-          html+='<div class="bm-continue" style="padding-top:16px"><button class="bm-continue-btn" onclick="event.stopPropagation();openGym(\''+c.id+'\',true)">Continue \u{1F7E0}</button></div></div>';
+          html+='<div class="bm-rows">';
+          html+='<div class="bm-row" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'reviews\')"><div class="bm-row-icon">\u2B50</div><div class="bm-row-text"><div class="bm-row-main">'+reviewsRow+'</div></div>'+(c.isPop?'<div class="bm-tag bm-tag-pop">\u26A1 Popular</div>':'')+'<div class="bm-row-chev">\u203a</div></div>';
+          html+='<div class="bm-row" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'hours\')"><div class="bm-row-icon">\u{1F550}</div><div class="bm-row-text"><div class="bm-row-main">'+c.openText+'</div></div><div class="bm-tag '+c.openClass+'">'+c.openTag+'</div><div class="bm-row-chev">\u203a</div></div>';
+          html+='<div class="bm-row" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'facilities\')"><div class="bm-row-icon">'+(c.facs[0]?c.facs[0].split(' ')[0]:'\u{1F3CA}')+'</div><div class="bm-row-text"><div class="bm-row-main">'+c.facList+'</div></div><div class="bm-row-chev">\u203a</div></div>';
+          html+='<div class="bm-row" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'equipment\')"><div class="bm-row-icon">\u{1F3CB}\uFE0F</div><div class="bm-row-text"><div class="bm-row-main">'+c.equipList+'</div></div><div class="bm-row-chev">\u203a</div></div>';
+          html+='</div><div class="bm-continue"><button class="bm-continue-btn" onclick="event.stopPropagation();openGym(\''+c.id+'\',true)">Continue \u{1F7E0}</button></div></div>';
         });
         html+='</div>';
-        html+='<div class="bm-dots" id="bm-dots">'+_cards.map(function(c,i){return '<div class="bm-dot'+(i===0?' act':'')+'" id="bm-dot-'+i+'"></div>';}).join('')+'</div>';
-        html+='<div class="bm-hint" id="bm-hint">\u2190 Swipe for more gyms \u00b7 1 of '+totalC+' \u2192</div>';
         html+='</div></div>';
         return html;
       })():''}
