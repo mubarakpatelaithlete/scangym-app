@@ -98,6 +98,12 @@
         const d = ceoRes;
         const cr = creatorsRes;
 
+        // Handle auth errors — show login prompt instead of zeros
+        if (d.error) {
+          main.innerHTML = '<div class="loading">⚠️ ' + esc(d.message || d.error) + '<br><br><a href="/login" style="color:#f97316">→ Login</a></div>';
+          return;
+        }
+
         // Build HTML
         let html = '';
 
@@ -162,10 +168,10 @@
         html += '<div class="section-title">💰 Money Out (Revenue)</div>';
         html += '<div class="stats">';
         if (d.moneyOut) {
-          html += statCard(d.moneyOut.totalRevenue || '£0', 'Total Revenue');
+          html += statCard(d.moneyOut.estimatedRevenue || d.moneyOut.totalRevenue || '£0', 'Total Revenue');
           html += statCard(d.moneyOut.avgBookingValue || '£0', 'Avg Booking Value');
-          html += statCard(fmt(d.moneyOut.totalPaidBookings), 'Paid Bookings');
-          html += statCard(d.moneyOut.mrr || '£0', 'MRR Estimate');
+          html += statCard(fmt(d.moneyOut.totalBookings || d.moneyOut.totalPaidBookings), 'Paid Bookings');
+          html += statCard(d.moneyOut.scanGymShare || '£0', 'ScanGym Share (25%)');
         }
         html += '</div>';
 
