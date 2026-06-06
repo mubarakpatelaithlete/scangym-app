@@ -858,6 +858,10 @@ router.post('/cash-booking', async (req, res) => {
   try {
     const { gymId, placeId, date, time, email, passType, gymName, gymAddress } = req.body;
     if (!date || !time) return res.status(400).json({ error: 'date and time required' });
+    if (!gymId && !placeId) return res.status(400).json({ error: 'gymId or placeId required' });
+
+    // Sanitize email — prevent null/undefined from crashing INSERT
+    const safeEmail = (email && typeof email === 'string' && email.includes('@')) ? email.trim() : '';
 
     // ── Step 1: Resolve gym ID ──
     let dbGymId = gymId;
@@ -917,7 +921,7 @@ router.post('/cash-booking', async (req, res) => {
          VALUES ($1, 'guest', $2, $3, $4, $5, $6, $7, $8, 'reserved', $9, 'Guest', NOW(), NOW())
          RETURNING *`,
         [dbGymId, date, resolved.startTime, resolved.endTime, price, price * 0.10,
-         passTypeClean + '_cash', bookingCode, email]
+         passTypeClean + '_cash', bookingCode, safeEmail]
       );
       booking = bookingResult.rows[0];
     } catch (insertErr) {
@@ -932,7 +936,7 @@ router.post('/cash-booking', async (req, res) => {
            VALUES ($1, 'guest', $2, $3, $4, $5, $6, $7, 'reserved', $8, 'Guest', NOW(), NOW())
            RETURNING *`,
           [dbGymId, date, resolved.startTime, resolved.endTime, price,
-           passTypeClean + '_cash', bookingCode, email]
+           passTypeClean + '_cash', bookingCode, safeEmail]
         );
         booking = bookingResult.rows[0];
         console.log('[Cash Booking] Retry without platform_fee_amount succeeded');
@@ -956,11 +960,13 @@ router.post('/cash-booking', async (req, res) => {
 
     const bookingDate = new Date(booking.booking_date).toLocaleDateString('en-GB');
 
-    sendConfirmationEmail({
-      to: email, gymName: g.name, date: bookingDate,
-      time: booking.start_time, endTime: booking.end_time,
-      price: price.toFixed(2), bookingCode, qrDataUrl: qr.dataUrl,
-    }).catch(err => console.error('[Cash email] Send failed:', err.message));
+    if (safeEmail) {
+      sendConfirmationEmail({
+        to: safeEmail, gymName: g.name, date: bookingDate,
+        time: booking.start_time, endTime: booking.end_time,
+        price: price.toFixed(2), bookingCode, qrDataUrl: qr.dataUrl,
+      }).catch(err => console.error('[Cash email] Send failed:', err.message));
+    }
 
     res.json({
       success: true,

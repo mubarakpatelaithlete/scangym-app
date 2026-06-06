@@ -453,7 +453,7 @@ checkAuth();
 
 
 // ─── State ───
-let state={user:null,gyms:[],currentGym:null,searchLat:null,searchLng:null,route:'/',bookings:[],wallet:{balance:0},authPhone:'',authStep:'phone',lastBooking:null,lastQR:null,userExplicitSearch:false,activeTab:'reels'};
+let state={user:null,gyms:[],currentGym:null,searchLat:null,searchLng:null,route:'/',bookings:[],wallet:{balance:0},authPhone:'',authStep:'phone',lastBooking:null,lastQR:null,userExplicitSearch:false,activeTab:'book'};
 
 // ─── API Client ───
 const api={
@@ -477,7 +477,8 @@ async function submitCreatorApp(){var d={first_name:document.getElementById('cs-
 async function generateReferLink(){var em=document.getElementById('refer-email').value;if(!em||!em.includes('@')){document.getElementById('refer-email').style.borderColor='#ef4444';return;}var handle=em.split('@')[0].replace(/[^a-z0-9]/gi,'').toLowerCase();try{await fetch('/api/v2/refer-signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:em})});}catch(e){}document.getElementById('refer-generated-link').textContent='scangym.com/r/'+handle;document.getElementById('refer-email-form').classList.add('hidden');document.getElementById('refer-link-result').classList.remove('hidden');if(typeof gtag==='function')gtag('event','generate_lead',{event_category:'referral_signup'});}
 // ─── 3-Tab Navigation System ───
 function getTabForRoute(path){
-  if(path==='/'||path===''||path==='/reels')return 'reels';
+  if(path==='/'||path===''||path==='/explore')return 'book';
+  if(path==='/reels')return 'reels';
   if(path==='/explore'||path==='/nearby'||path==='/search'||path.startsWith('/gym/')||path==='/booking-success'||path.startsWith('/r/'))return 'book';
   return 'more';
 }
@@ -1918,7 +1919,7 @@ window.openGymOverlay=function(section){
             <h3 style="color:#fff;font-size:15px;font-weight:700;margin:0">Add card</h3>
             <button onclick="_ovPayCloseCardForm()" style="background:none;border:none;color:rgba(255,255,255,.4);font-size:18px;cursor:pointer">✕</button>
           </div>
-          <div id="ov-pay-card-element" style="background:rgba(15,23,42,.6);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:14px 16px;margin-bottom:16px"></div>
+          <div id="ov-pay-card-element" style="background:rgba(15,23,42,.6);border:1px solid rgba(255,255,255,.25);border-radius:12px;padding:14px 16px;margin-bottom:16px;color:#fff;font-size:16px;min-height:48px"></div>
           <button id="ov-pay-save-btn" onclick="_ovPaySaveCard()" style="width:100%;background:#22c55e;color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;opacity:.5;pointer-events:none;transition:all .2s">Save Card</button>
           <p id="ov-pay-card-error" style="color:#ef4444;font-size:12px;margin-top:8px;display:none"></p>
         </div>
@@ -4307,7 +4308,7 @@ function WalletPage(){
           <h3 style="color:#fff;font-size:15px;font-weight:700">Add card</h3>
           <button onclick="_walletCloseCardForm()" style="background:none;border:none;color:rgba(255,255,255,.4);font-size:18px;cursor:pointer">✕</button>
         </div>
-        <div id="wallet-card-element" style="background:rgba(15,23,42,.6);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:14px 16px;margin-bottom:16px"></div>
+        <div id="wallet-card-element" style="background:rgba(15,23,42,.6);border:1px solid rgba(255,255,255,.25);border-radius:12px;padding:14px 16px;margin-bottom:16px;color:#fff;font-size:16px;min-height:48px"></div>
         <button id="wallet-save-card-btn" onclick="_walletSaveCard()" style="width:100%;background:#f97316;color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;opacity:.5;pointer-events:none;transition:all .2s">Save Card</button>
         <p id="wallet-card-error" style="color:#ef4444;font-size:12px;margin-top:8px;display:none"></p>
       </div>
@@ -5220,7 +5221,23 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
       <div class="ub-sheet-info">
         <div class="ub-sheet-gym-name">${gymName}</div>
         <div class="ub-sheet-gym-addr">📍 ${gymAddr}</div>
-        <div class="ub-sheet-detail">${passInfo.name} · ${dateDisplay}${selTime!=='anytime'?' · '+selTime:''} · ${displayPriceStr}</div>
+        <div class="ub-sheet-detail">${passInfo.name} · ${dateDisplay}${selTime!=='anytime'?' · '+selTime:''}</div>
+      </div>
+
+      <!-- ═══ Price breakdown (Zomato-style) ═══ -->
+      <div style="padding:12px 24px;border-top:1px solid rgba(255,255,255,.06)">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+          <span style="color:rgba(255,255,255,.5);font-size:13px">${passInfo.name}</span>
+          <span style="color:rgba(255,255,255,.7);font-size:13px">${_sgOrigPriceStr||displayPriceStr}</span>
+        </div>
+        ${_sgRefActive?`<div style="display:flex;justify-content:space-between;margin-bottom:6px">
+          <span style="color:#4ade80;font-size:13px">🎉 Referral discount (15%)</span>
+          <span style="color:#4ade80;font-size:13px">-${_sym}${_refDiscount.toFixed(2)}</span>
+        </div>`:''}
+        <div style="display:flex;justify-content:space-between;padding-top:8px;border-top:1px solid rgba(255,255,255,.08)">
+          <span style="color:#fff;font-size:15px;font-weight:700">Total</span>
+          <span style="color:#fff;font-size:15px;font-weight:700">${displayPriceStr}</span>
+        </div>
       </div>
 
       <div class="ub-accent"></div>
@@ -6809,8 +6826,7 @@ function render(){
   const path=state.route;
   let page='';
 
-  if(path==='/'||path==='')page=HomePage();
-  else if(path==='/explore'||path==='/nearby'||path==='/search')page=SearchPage();
+  if(path==='/'||path===''||path==='/explore'||path==='/nearby'||path==='/search')page=SearchPage();
   else if(path.startsWith('/gym/'))page=GymProfilePage();
   else if(path.startsWith('/r/')){const creator=path.split('/r/')[1]||'';
     // ═══ REFERRAL TRACKING: Store creator handle in localStorage + cookie (30-day expiry) ═══
@@ -7190,7 +7206,7 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
       </div>
       ${page}
     </main>`+BottomTabBar();
-  } else if((path==='/explore'||path==='/nearby'||path==='/search') && tab==='book') {
+  } else if((path==='/'||path===''||path==='/explore'||path==='/nearby'||path==='/search') && tab==='book') {
     // Book tab home — scrollable so gym cards below the map are visible
     html=`<main class="sg-tab-content fade-in">${page}</main>`+BottomTabBar();
   } else {
@@ -7206,7 +7222,7 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
   // ── Initialize inline Book-tab map carousel scroll listeners ──
   if(typeof _initBookMapCarousel==='function')_initBookMapCarousel();
   // Auto-load gyms when navigating to search page (Fix #1 + #6)
-  if(path==='/explore'||path==='/nearby'||path==='/search'){
+  if(path==='/'||path===''||path==='/explore'||path==='/nearby'||path==='/search'){
     autoLoadGyms();
     // ━━━ UBER-STYLE BANNER: Gentle nudge to enable GPS, never blocks interaction ━━━
     _showLocationBannerIfNeeded();
