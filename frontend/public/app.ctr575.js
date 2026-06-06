@@ -453,7 +453,7 @@ checkAuth();
 
 
 // ─── State ───
-let state={user:null,gyms:[],currentGym:null,searchLat:null,searchLng:null,route:'/',bookings:[],wallet:{balance:0},authPhone:'',authStep:'phone',lastBooking:null,lastQR:null,userExplicitSearch:false,activeTab:'book'};
+let state={user:null,gyms:[],currentGym:null,searchLat:null,searchLng:null,route:'/',bookings:[],wallet:{balance:0},authPhone:'',authStep:'phone',lastBooking:null,lastQR:null,userExplicitSearch:false,activeTab:'reels'};
 
 // ─── API Client ───
 const api={
@@ -477,7 +477,8 @@ async function submitCreatorApp(){var d={first_name:document.getElementById('cs-
 async function generateReferLink(){var em=document.getElementById('refer-email').value;if(!em||!em.includes('@')){document.getElementById('refer-email').style.borderColor='#ef4444';return;}var handle=em.split('@')[0].replace(/[^a-z0-9]/gi,'').toLowerCase();try{await fetch('/api/v2/refer-signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:em})});}catch(e){}document.getElementById('refer-generated-link').textContent='scangym.com/r/'+handle;document.getElementById('refer-email-form').classList.add('hidden');document.getElementById('refer-link-result').classList.remove('hidden');if(typeof gtag==='function')gtag('event','generate_lead',{event_category:'referral_signup'});}
 // ─── 3-Tab Navigation System ───
 function getTabForRoute(path){
-  if(path==='/'||path===''||path==='/explore')return 'book';
+  if(path==='/'||path==='')return 'reels';
+  if(path==='/explore')return 'book';
   if(path==='/reels')return 'reels';
   if(path==='/explore'||path==='/nearby'||path==='/search'||path.startsWith('/gym/')||path==='/booking-success'||path.startsWith('/r/'))return 'book';
   return 'more';
@@ -6791,7 +6792,8 @@ function render(){
   const path=state.route;
   let page='';
 
-  if(path==='/'||path===''||path==='/explore'||path==='/nearby'||path==='/search')page=SearchPage();
+  if(path==='/'||path==='')page=HomePage();
+  else if(path==='/explore'||path==='/nearby'||path==='/search')page=SearchPage();
   else if(path.startsWith('/gym/'))page=GymProfilePage();
   else if(path.startsWith('/r/')){const creator=path.split('/r/')[1]||'';
     // ═══ REFERRAL TRACKING: Store creator handle in localStorage + cookie (30-day expiry) ═══
@@ -7171,7 +7173,7 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
       </div>
       ${page}
     </main>`+BottomTabBar();
-  } else if((path==='/'||path===''||path==='/explore'||path==='/nearby'||path==='/search') && tab==='book') {
+  } else if((path==='/explore'||path==='/nearby'||path==='/search') && tab==='book') {
     // Book tab home — scrollable so gym cards below the map are visible
     html=`<main class="sg-tab-content fade-in">${page}</main>`+BottomTabBar();
   } else {
@@ -7187,7 +7189,7 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
   // ── Initialize inline Book-tab map carousel scroll listeners ──
   if(typeof _initBookMapCarousel==='function')_initBookMapCarousel();
   // Auto-load gyms when navigating to search page (Fix #1 + #6)
-  if(path==='/'||path===''||path==='/explore'||path==='/nearby'||path==='/search'){
+  if(path==='/explore'||path==='/nearby'||path==='/search'){
     autoLoadGyms();
     // ━━━ UBER-STYLE BANNER: Gentle nudge to enable GPS, never blocks interaction ━━━
     _showLocationBannerIfNeeded();
