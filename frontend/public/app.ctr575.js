@@ -519,17 +519,21 @@ function _syncReelsVisibility(){
   }
 }
 function navigate(path,pushState=true){
-  state.route=path;
-  state.activeTab=getTabForRoute(path);
+  // Fix: separate pathname from query string so route matching works
+  var qIdx=path.indexOf('?');
+  var pathname=qIdx>=0?path.substring(0,qIdx):path;
+  state.route=pathname;
+  state.routeQuery=qIdx>=0?path.substring(qIdx):'';
+  state.activeTab=getTabForRoute(pathname);
   // Remember last route per tab for back-navigation
   if(state.activeTab==='book')state._lastBookRoute=path;
   else if(state.activeTab==='more')state._lastMoreRoute=path;
-  if(pushState)history.pushState(null,'',path);
+  if(pushState)history.pushState(null,'',pathname+(state.routeQuery||''));
   render();
   _syncReelsVisibility();
   var _sc=document.querySelector('.sg-tab-content');if(_sc)_sc.scrollTop=0;
 }
-window.addEventListener('popstate',()=>{state.route=location.pathname;state.activeTab=getTabForRoute(state.route);render();_syncReelsVisibility();});
+window.addEventListener('popstate',()=>{state.route=location.pathname;state.routeQuery=location.search||'';state.activeTab=getTabForRoute(state.route);render();_syncReelsVisibility();});
 
 // ─── Geolocation ───
 // 5-layer waterfall GPS loaded from robust-location.js
@@ -1162,10 +1166,10 @@ function SearchPage(){
         html+='.bm-tag-open{background:rgba(74,222,128,.1);color:#4ade80}';
         html+='.bm-tag-closed{background:rgba(239,68,68,.1);color:#ef4444}';
         html+='.bm-tag-pop{background:rgba(249,115,22,.1);color:#f97316}';
-        html+='.bm-dots{display:flex;justify-content:center;gap:3px;padding:6px 0 2px;flex-wrap:wrap;max-width:280px;margin:0 auto}';
-        html+='.bm-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.06);transition:all .3s ease}';
-        html+='.bm-dot.act{background:#f97316;width:14px;border-radius:3px}';
-        html+='.bm-hint{text-align:center;font-size:8px;color:rgba(255,255,255,.08);padding:2px 0 4px}';
+        html+='.bm-dots{display:flex;justify-content:center;gap:4px;padding:10px 0 4px;flex-wrap:wrap;max-width:320px;margin:0 auto}';
+        html+='.bm-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.2);transition:all .3s ease}';
+        html+='.bm-dot.act{background:#f97316;width:22px;border-radius:4px}';
+        html+='.bm-hint{text-align:center;font-size:12px;color:rgba(255,255,255,.4);padding:4px 0 8px;font-weight:500}';
         html+='.bm-continue{padding:12px 16px 4px}';
         html+='.bm-continue-btn{width:100%;padding:13px 0;border:none;border-radius:12px;background:#f97316;color:#fff;font-size:15px;font-weight:700;letter-spacing:.3px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;box-shadow:0 4px 16px rgba(249,115,22,.35)}';
         html+='.bm-continue-btn:active{transform:scale(.97);box-shadow:0 2px 8px rgba(249,115,22,.25)}';
@@ -1205,12 +1209,7 @@ function SearchPage(){
           var _spCount=Math.max(2,((c.name||'').charCodeAt(0)%8)+1);
           if(c.isOpen&&c.isPop) html+='<div style="color:#f97316;font-size:11px;font-weight:600;padding:0 16px 4px;display:flex;align-items:center;gap:4px">\u{1F525} '+_spCount+' booked today</div>';
           else if(c.isOpen) html+='<div style="color:rgba(255,255,255,.3);font-size:11px;padding:0 16px 4px">\u{2728} Recently viewed</div>';
-          html+='<div class="bm-rows">';
-          html+='<div class="bm-row" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'reviews\')"><div class="bm-row-icon">\u2B50</div><div class="bm-row-text"><div class="bm-row-main">'+reviewsRow+'</div></div>'+(c.isPop?'<div class="bm-tag bm-tag-pop">\u26A1 Popular</div>':'')+'<div class="bm-row-chev">\u203a</div></div>';
-          html+='<div class="bm-row" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'hours\')"><div class="bm-row-icon">\u{1F550}</div><div class="bm-row-text"><div class="bm-row-main">'+c.openText+'</div></div><div class="bm-tag '+c.openClass+'">'+c.openTag+'</div><div class="bm-row-chev">\u203a</div></div>';
-          html+='<div class="bm-row" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'facilities\')"><div class="bm-row-icon">'+(c.facs[0]?c.facs[0].split(' ')[0]:'\u{1F3CA}')+'</div><div class="bm-row-text"><div class="bm-row-main">'+c.facList+'</div></div><div class="bm-row-chev">\u203a</div></div>';
-          html+='<div class="bm-row" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'equipment\')"><div class="bm-row-icon">\u{1F3CB}\uFE0F</div><div class="bm-row-text"><div class="bm-row-main">'+c.equipList+'</div></div><div class="bm-row-chev">\u203a</div></div>';
-          html+='</div><div class="bm-continue"><button class="bm-continue-btn" onclick="event.stopPropagation();openGym(\''+c.id+'\',true)">Continue \u{1F7E0}</button></div></div>';
+          html+='<div class="bm-continue" style="padding-top:16px"><button class="bm-continue-btn" onclick="event.stopPropagation();openGym(\''+c.id+'\',true)">Continue \u{1F7E0}</button></div></div>';
         });
         html+='</div>';
         html+='<div class="bm-dots" id="bm-dots">'+_cards.map(function(c,i){return '<div class="bm-dot'+(i===0?' act':'')+'" id="bm-dot-'+i+'"></div>';}).join('')+'</div>';
@@ -1530,21 +1529,9 @@ function GymProfilePage(){
       <div class="gym-info-card">
         <div class="gym-info-name">${gym.name}</div>
         <div class="gym-info-addr">📍 ${gym.formatted_address||gym.vicinity||gym.address||''}</div>
-        <div class="gym-info-meta">
-          <span style="color:#fbbf24">★ ${rating}</span>
-          <span style="color:rgba(255,255,255,.5)">· ${reviewCount} reviews</span>
-          ${isOpen===true?`<span style="color:#4ade80">· <span style="width:6px;height:6px;background:#4ade80;border-radius:50%;display:inline-block;margin-right:2px"></span>Open${closingTime(gym)?' til '+closingTime(gym):''}</span>`:(isOpen===false?'<span style="color:rgba(255,255,255,.4)">· Closed</span>':'')}
-        </div>
       </div>
 
-      <!-- Quick actions: 5 icon-button tabs (Passes has text label) -->
-      <div class="gym-quick-actions">
-        <div class="gym-qa-btn" onclick="openGymOverlay('facilities')" title="Facilities"><span class="gym-qa-icon">🏊</span></div>
-        <div class="gym-qa-btn" onclick="openGymOverlay('reviews')" title="Reviews"><span class="gym-qa-icon">⭐</span></div>
-        <div class="gym-qa-btn" onclick="openGymOverlay('hours')" title="Hours"><span class="gym-qa-icon">🕐</span></div>
-        <div class="gym-qa-btn" onclick="openGymOverlay('equipment')" title="Equipment"><span class="gym-qa-icon">🏋️</span></div>
-        <div class="gym-qa-btn has-label" onclick="openGymOverlay('passes')" title="Passes"><span class="gym-qa-icon">🎟️</span> Passes</div>
-      </div>
+      <!-- Quick actions removed: reviews, hours, facilities, equipment, passes -->
 
       <!-- ═══ 2×2 Grid "Choose a pass" cards (Kotler pricing) — hidden by default, shown via Passes button ═══ -->
       <div class="gym-pass-header" id="gym-pass-header" style="display:none;">Choose a pass</div>
@@ -2434,7 +2421,7 @@ window._ovPaySelectCash=function(){
   }
 };
 
-window._ovPayAddCard=function(){
+window._ovPayAddCard=async function(){
   if(!state.user){
     _showToast('Please sign in first to save a card');
     setTimeout(function(){navigate('/login');},1200);
@@ -2445,6 +2432,8 @@ window._ovPayAddCard=function(){
   if(!form)return;
   form.style.display='block';
   if(btn)btn.style.display='none';
+  // Ensure Stripe.js is loaded before mounting elements
+  await ensureStripeLoaded();
   if(!window._ovPayStripeElements&&window.Stripe){
     const stripeKey=window._stripePublicKey||STRIPE_PK||'pk_live_51Ss8P0DPbSptA7HKnQFKelVtYGIWnxhOC8MuZIQdqTYHCJRgI5x8GZ2TlE2DVKK0pLXLJWF9AYNK4RbAEhTk8BN00YoI3Xwjf';
     const si=Stripe(stripeKey);
@@ -4877,7 +4866,8 @@ window.handleVerifyCode=async function(){
         navigate('/gym/'+state.pendingBookGym);
         state.pendingBookGym=null;
       }else{
-        navigate('/');
+        // After login, go to Book tab (explore) instead of Reels
+        navigate('/explore');
       }
     }else{
       errDiv.textContent=r.error||'Invalid code';errDiv.classList.remove('hidden');
