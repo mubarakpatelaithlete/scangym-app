@@ -732,8 +732,8 @@ function GymCard(gym){
   const cardCurrentPrice=dayP.display;
   const dist=gym.distanceText||(gym.distance?`${gym.distance.toFixed(1)} km`:'Nearby');
   const photo=gym.photo||gym.photo_url||
-    (gym.photoReference?`https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${gym.photoReference}&key=${MAPS_KEY}`:
-    (gym.photo_reference?`https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${gym.photo_reference}&key=${MAPS_KEY}`:''));
+    (gym.photoReference?`https://maps.googleapis.com/maps/api/place/photo?maxwidth=1200&photo_reference=${gym.photoReference}&key=${MAPS_KEY}`:
+    (gym.photo_reference?`https://maps.googleapis.com/maps/api/place/photo?maxwidth=1200&photo_reference=${gym.photo_reference}&key=${MAPS_KEY}`:''));
   const photos=gym.photos_list||[];
   const hasPhoto=!!photo;
   const gymIdentifier=gym.placeId||gym.place_id||gym.id;
@@ -1033,8 +1033,8 @@ function SearchPage(){
         var _cards=gyms.slice(0,20).map(function(gym,i){
           var id=gym.placeId||gym.place_id||gym.id;
           var photo=gym.photo||gym.photo_url||
-            (gym.photoReference?'https://maps.googleapis.com/maps/api/place/photo?maxwidth=600&photo_reference='+gym.photoReference+'&key='+MAPS_KEY:
-            (gym.photo_reference?'https://maps.googleapis.com/maps/api/place/photo?maxwidth=600&photo_reference='+gym.photo_reference+'&key='+MAPS_KEY:''));
+            (gym.photoReference?'https://maps.googleapis.com/maps/api/place/photo?maxwidth=1200&photo_reference='+gym.photoReference+'&key='+MAPS_KEY:
+            (gym.photo_reference?'https://maps.googleapis.com/maps/api/place/photo?maxwidth=1200&photo_reference='+gym.photo_reference+'&key='+MAPS_KEY:''));
           var photos=gym.photos_list||[];
           var allPhotos=photos.length>1?photos.slice(0,5).map(function(p){return p.thumbnail||p.url||photo;}):[photo];
           var photoCount=photos.length||1;
@@ -1071,7 +1071,7 @@ function SearchPage(){
         /* Full-bleed photo */
         html+='.tt-photo{position:absolute;inset:0;background-size:cover;background-position:center}';
         html+='.tt-photo-placeholder{position:absolute;inset:0;background:#1a1f2e;display:flex;align-items:center;justify-content:center}';
-        html+='.tt-photo-placeholder::after{content:"\\u{1F3CB}\\uFE0F";font-size:56px;opacity:.15}';
+        html+='.tt-photo-placeholder::after{content:"🏋️";font-size:56px;opacity:.15}';
         /* Gradient overlay for readability */
         html+='.tt-gradient{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.35) 0%,transparent 22%,transparent 55%,rgba(0,0,0,.55) 75%,rgba(0,0,0,.82) 100%);pointer-events:none;z-index:1}';
         /* Search bar - frosted glass overlay */
@@ -1083,7 +1083,7 @@ function SearchPage(){
         html+='.tt-tour-badge{position:absolute;top:60px;right:12px;background:rgba(0,0,0,.5);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);color:#fff;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:700;z-index:10;display:flex;align-items:center;gap:5px}';
         html+='.tt-tour-play{width:0;height:0;border-left:7px solid #fff;border-top:4px solid transparent;border-bottom:4px solid transparent}';
         /* Action buttons (right side, TikTok style) */
-        html+='.tt-actions{position:absolute;right:10px;bottom:220px;display:flex;flex-direction:column;gap:14px;z-index:15;align-items:center}';
+        html+='.tt-actions{position:absolute;right:10px;top:65px;display:flex;flex-direction:column;gap:14px;z-index:15;align-items:center}';
         html+='.tt-action{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;-webkit-tap-highlight-color:transparent}';
         html+='.tt-action-btn{width:52px;height:52px;background:rgba(255,255,255,.15);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;border:1px solid rgba(255,255,255,.1);transition:all .15s}';
         html+='.tt-action-btn:active{transform:scale(.9);background:rgba(255,255,255,.2)}';
@@ -4918,8 +4918,8 @@ window.showGymDiscovery=function(){
   const cards=gyms.slice(0,20).map((gym,i)=>{
     const id=gym.placeId||gym.place_id||gym.id;
     const photo=gym.photo||gym.photo_url||
-      (gym.photoReference?`https://maps.googleapis.com/maps/api/place/photo?maxwidth=600&photo_reference=${gym.photoReference}&key=${MAPS_KEY}`:
-      (gym.photo_reference?`https://maps.googleapis.com/maps/api/place/photo?maxwidth=600&photo_reference=${gym.photo_reference}&key=${MAPS_KEY}`:''));
+      (gym.photoReference?`https://maps.googleapis.com/maps/api/place/photo?maxwidth=1200&photo_reference=${gym.photoReference}&key=${MAPS_KEY}`:
+      (gym.photo_reference?`https://maps.googleapis.com/maps/api/place/photo?maxwidth=1200&photo_reference=${gym.photo_reference}&key=${MAPS_KEY}`:''));
     const photos=gym.photos_list||[];
     const allPhotos=photos.length>1?photos.slice(0,5).map(p=>p.thumbnail||p.url||photo):[photo];
     const photoCount=photos.length||1;
@@ -8485,7 +8485,7 @@ window.sgSwipeDiscovery=function(){
       return;
     }
     const g=shuffled[idx];
-    const photo=g.photo||g.photo_url||(g.photoReference?'https://maps.googleapis.com/maps/api/place/photo?maxwidth=600&photo_reference='+g.photoReference+'&key='+window.MAPS_KEY:'');
+    const photo=g.photo||g.photo_url||(g.photoReference?'https://maps.googleapis.com/maps/api/place/photo?maxwidth=1200&photo_reference='+g.photoReference+'&key='+window.MAPS_KEY:'');
     const isFlashDeal=Math.random()<0.15; // 15% chance = variable reward!
     const flashPrice=isFlashDeal?'£2.99':'';
 
@@ -9188,7 +9188,7 @@ window.sgMasonryGrid=function(gyms,containerId){
 
   let html='<div class="sg-masonry">';
   gyms.forEach((g,i)=>{
-    const photo=g.photo||g.photo_url||(g.photoReference?'https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference='+g.photoReference+'&key='+window.MAPS_KEY:'');
+    const photo=g.photo||g.photo_url||(g.photoReference?'https://maps.googleapis.com/maps/api/place/photo?maxwidth=1200&photo_reference='+g.photoReference+'&key='+window.MAPS_KEY:'');
     const heights=[140,180,160,200,150,170]; // Variable heights for visual interest
     const h=heights[i%heights.length];
     const gid=g.placeId||g.place_id||g.id;

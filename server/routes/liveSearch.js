@@ -42,7 +42,7 @@ function setCache(key, data) {
 }
 
 // ─── Helper: Build photo URL from photo_reference ────────────
-function photoUrl(photoRef, maxWidth = 400) {
+function photoUrl(photoRef, maxWidth = 1200) {
   return `https://maps.googleapis.com/maps/api/place/photo?maxwidth=${maxWidth}&photo_reference=${photoRef}&key=${GOOGLE_MAPS_API_KEY}`;
 }
 
