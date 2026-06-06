@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>ScanGym — ScanSquad Dashboard</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0a0a16;color:#fff;min-height:100vh}
+    .header{background:linear-gradient(135deg,#111827,#1f2937);padding:20px 24px;border-bottom:1px solid rgba(249,115,22,.2)}
+    .header h1{font-size:22px;font-weight:800;display:flex;align-items:center;gap:8px}
+    .header h1 span{color:#f97316}
+    .header p{color:rgba(255,255,255,.4);font-size:13px;margin-top:4px}
+    .content{padding:16px 24px;max-width:900px;margin:0 auto}
+    .section-title{font-size:16px;font-weight:800;margin:24px 0 12px;display:flex;align-items:center;gap:8px}
+    .section-title:first-child{margin-top:8px}
+
+    /* Tier card */
+    .tier-card{border-radius:20px;padding:24px;margin-bottom:16px;position:relative;overflow:hidden}
+    .tier-card.starter{background:linear-gradient(135deg,rgba(34,197,94,.1),rgba(34,197,94,.03));border:1px solid rgba(34,197,94,.2)}
+    .tier-card.rising{background:linear-gradient(135deg,rgba(251,191,36,.1),rgba(251,191,36,.03));border:1px solid rgba(251,191,36,.2)}
+    .tier-card.pro{background:linear-gradient(135deg,rgba(249,115,22,.1),rgba(249,115,22,.03));border:1px solid rgba(249,115,22,.2)}
+    .tier-card.legend{background:linear-gradient(135deg,rgba(168,85,247,.15),rgba(168,85,247,.03));border:1px solid rgba(168,85,247,.3)}
+    .tier-badge{font-size:48px;margin-bottom:8px}
+    .tier-name{font-size:20px;font-weight:800}
+    .tier-level{font-size:12px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+
+    /* Progress bar */
+    .progress-wrap{margin:16px 0}
+    .progress-label{display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,.5);margin-bottom:6px}
+    .progress-bar{height:10px;background:rgba(255,255,255,.08);border-radius:5px;overflow:hidden}
+    .progress-fill{height:100%;border-radius:5px;background:linear-gradient(90deg,#f97316,#fbbf24);transition:width .6s ease}
+
+    /* Stats */
+    .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:8px}
+    .stat{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px;text-align:center;transition:.15s}
+    .stat:hover{border-color:rgba(249,115,22,.2)}
+    .stat .num{font-size:26px;font-weight:800;color:#f97316}
+    .stat .lbl{font-size:11px;color:rgba(255,255,255,.4);margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
+
+    /* Perks */
+    .perks-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:16px}
+    .perk{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:12px 16px;font-size:13px;display:flex;align-items:center;gap:8px}
+    .perk .check{color:#22c55e;font-weight:800}
+
+    /* Uploads table */
+    .table-wrap{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;overflow:hidden;margin-bottom:8px}
+    table{width:100%;border-collapse:collapse}
+    th{text-align:left;padding:12px 16px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:rgba(255,255,255,.4);background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.06)}
+    td{padding:10px 16px;font-size:13px;border-bottom:1px solid rgba(255,255,255,.04)}
+    tr:hover td{background:rgba(255,255,255,.02)}
+    .badge-pill{display:inline-block;padding:3px 10px;border-radius:8px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+    .badge-pending{background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid rgba(251,191,36,.2)}
+    .badge-approved{background:rgba(34,197,94,.15);color:#22c55e;border:1px solid rgba(34,197,94,.2)}
+    .badge-rejected{background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.2)}
+
+    /* Landing page stats */
+    .landing-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .landing-url{font-family:monospace;font-size:13px;color:#f97316;word-break:break-all}
+    .landing-stats{display:flex;gap:16px}
+    .landing-stat{text-align:center}
+    .landing-stat .num{font-size:18px;font-weight:800;color:#fff}
+    .landing-stat .lbl{font-size:10px;color:rgba(255,255,255,.4);text-transform:uppercase}
+
+    /* CTA */
+    .cta-card{background:linear-gradient(135deg,rgba(249,115,22,.15),rgba(249,115,22,.05));border:1px solid rgba(249,115,22,.3);border-radius:16px;padding:24px;text-align:center;margin-top:16px}
+    .cta-card h3{font-size:16px;font-weight:800;margin-bottom:8px}
+    .cta-card p{font-size:13px;color:rgba(255,255,255,.5);margin-bottom:16px}
+    .btn{padding:12px 32px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;border:none;transition:.15s;display:inline-block;text-decoration:none}
+    .btn:active{transform:scale(.96)}
+    .btn-primary{background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;box-shadow:0 4px 16px rgba(249,115,22,.3)}
+
+    .loading{text-align:center;padding:60px;color:rgba(255,255,255,.3)}
+    .loading .spinner{width:32px;height:32px;border:3px solid rgba(255,255,255,.1);border-top-color:#f97316;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    @media(max-width:600px){.stats{grid-template-columns:repeat(2,1fr)}.landing-card{flex-direction:column;align-items:flex-start}}
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🎬 <span>ScanSquad</span> Dashboard</h1>
+    <p>Track your referrals, earnings, and content performance</p>
+  </div>
+
+  <div class="content" id="main">
+    <div class="loading"><div class="spinner"></div>Loading your creator profile…</div>
+  </div>
+
+  <script>
+  (function(){
+    const TIERS = {
+      starter: { name: 'Starter', badge: '🌱', next: 'rising', nextReq: 10, color: '#22c55e' },
+      rising: { name: 'Rising Star', badge: '⭐', next: 'pro', nextReq: 50, color: '#fbbf24' },
+      pro: { name: 'Pro Creator', badge: '🔥', next: 'legend', nextReq: 100, color: '#f97316' },
+      legend: { name: 'Legend', badge: '👑', next: null, nextReq: null, color: '#a855f7' },
+    };
+
+    async function init() {
+      try {
+        const [memberRes, uploadsRes, landingRes] = await Promise.all([
+          fetch('/api/creators/me').then(r => r.json()),
+          fetch('/api/creators/uploads?limit=50').then(r => r.json()).catch(() => ({ uploads: [] })),
+          fetch('/api/creators/landing-pages').then(r => r.json()).catch(() => ({ pages: [] })),
+        ]);
+
+        const m = memberRes.membership || memberRes;
+        const tier = m.tier || 'starter';
+        const t = TIERS[tier] || TIERS.starter;
+        const referrals = m.total_referrals || 0;
+        const earnings = m.total_earnings_pence || 0;
+        const conversions = m.total_conversions || 0;
+        const uploads = uploadsRes.uploads || [];
+        const pages = landingRes.pages || landingRes.landingPages || [];
+
+        let html = '';
+
+        // === TIER CARD ===
+        html += `<div class="tier-card ${tier}">
+          <div class="tier-badge">${t.badge}</div>
+          <div class="tier-name">${t.name}</div>
+          <div class="tier-level">FlexSquad ${tier.toUpperCase()}</div>`;
+
+        // Progress to next tier
+        if (t.next) {
+          const prevReq = tier === 'starter' ? 0 : tier === 'rising' ? 10 : 50;
+          const progress = Math.min(((referrals - prevReq) / (t.nextReq - prevReq)) * 100, 100);
+          const nextTier = TIERS[t.next];
+          html += `<div class="progress-wrap">
+            <div class="progress-label"><span>${referrals} referrals</span><span>${nextTier.badge} ${nextTier.name} at ${t.nextReq}</span></div>
+            <div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>
+          </div>`;
+        } else {
+          html += '<div style="font-size:13px;color:rgba(255,255,255,.5);margin-top:8px">🏆 You\'ve reached the highest tier!</div>';
+        }
+        html += '</div>';
+
+        // === STATS ===
+        html += '<div class="section-title">📊 Your Stats</div>';
+        html += '<div class="stats">';
+        html += statCard(fmt(referrals), 'Referrals');
+        html += statCard(fmt(conversions), 'Conversions');
+        html += statCard(`£${(earnings / 100).toFixed(2)}`, 'Earnings');
+        html += statCard('25%', 'Commission Rate');
+        html += '</div>';
+
+        // === PERKS ===
+        html += '<div class="section-title">🎁 Your Perks</div>';
+        const perks = m.perks || (TIERS[tier]?.perks || ['25% commission', 'Creator toolkit access', '242+ ready-to-post assets']);
+        html += '<div class="perks-grid">';
+        (Array.isArray(perks) ? perks : []).forEach(p => {
+          html += `<div class="perk"><span class="check">✓</span> ${esc(p)}</div>`;
+        });
+        html += '</div>';
+
+        // === LANDING PAGES ===
+        if (pages.length) {
+          html += '<div class="section-title">🔗 Your Landing Pages</div>';
+          pages.forEach(p => {
+            html += `<div class="landing-card">
+              <div>
+                <div class="landing-url">scangym.com/r/${esc(p.slug)}</div>
+                <div style="font-size:12px;color:rgba(255,255,255,.4);margin-top:4px">${esc(p.headline || '')}</div>
+              </div>
+              <div class="landing-stats">
+                <div class="landing-stat"><div class="num">${fmt(p.views)}</div><div class="lbl">Views</div></div>
+                <div class="landing-stat"><div class="num">${fmt(p.conversions)}</div><div class="lbl">Bookings</div></div>
+                <div class="landing-stat"><div class="num">${p.views > 0 ? ((p.conversions / p.views) * 100).toFixed(1) : '0'}%</div><div class="lbl">Conv Rate</div></div>
+              </div>
+            </div>`;
+          });
+        }
+
+        // === UPLOADS ===
+        html += '<div class="section-title">🎥 Your Uploads</div>';
+        if (uploads.length) {
+          html += '<div class="table-wrap"><table><thead><tr><th>Video</th><th>Category</th><th>Status</th><th>Date</th></tr></thead><tbody>';
+          uploads.forEach(u => {
+            const statusClass = u.status === 'approved' ? 'badge-approved' : u.status === 'rejected' ? 'badge-rejected' : 'badge-pending';
+            html += `<tr>
+              <td style="font-weight:600;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(u.file_name || u.caption || 'Untitled')}</td>
+              <td>${esc(u.category || '—')}</td>
+              <td><span class="badge-pill ${statusClass}">${u.status || 'pending'}</span></td>
+              <td style="color:rgba(255,255,255,.4)">${u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}</td>
+            </tr>`;
+          });
+          html += '</tbody></table></div>';
+        } else {
+          html += '<div style="text-align:center;padding:32px;background:rgba(255,255,255,.03);border-radius:16px;color:rgba(255,255,255,.3)">No uploads yet</div>';
+        }
+
+        // === CTA ===
+        html += `<div class="cta-card">
+          <h3>📤 Upload New Content</h3>
+          <p>Create a reel and earn £1.25 for every booking through your content</p>
+          <a href="/upload" class="btn btn-primary">Create a Reel</a>
+        </div>`;
+
+        document.getElementById('main').innerHTML = html;
+      } catch (e) {
+        // Not a creator yet — show join CTA
+        document.getElementById('main').innerHTML = `
+          <div style="text-align:center;padding:60px 24px">
+            <div style="font-size:64px;margin-bottom:16px">🎬</div>
+            <h2 style="font-size:24px;font-weight:800;margin-bottom:8px">Join FlexSquad</h2>
+            <p style="color:rgba(255,255,255,.5);margin-bottom:24px;max-width:400px;margin-left:auto;margin-right:auto">Earn 25% commission on every booking through your content. 242+ ready-to-post assets, £5K+ top earnings/month.</p>
+            <a href="/flexsquad" class="btn btn-primary">Join FlexSquad →</a>
+            <br><br>
+            <a href="/login" style="color:rgba(255,255,255,.4);font-size:13px">Already a member? Login first →</a>
+          </div>`;
+      }
+    }
+
+    function statCard(num, label) {
+      return `<div class="stat"><div class="num">${num || '0'}</div><div class="lbl">${label}</div></div>`;
+    }
+    function fmt(n) { return n != null ? Number(n).toLocaleString() : '0'; }
+    function esc(s) { return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
+
+    init();
+  })();
+  </script>
+</body>
+</html>
