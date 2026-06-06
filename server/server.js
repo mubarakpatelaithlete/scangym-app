@@ -395,21 +395,21 @@ if (fs.existsSync(FRONTEND_DIR)) {
   });
 
   // CEO Dashboard
-  app.get('/ceo', (req, res) => {
+  app.get('/ceo-dashboard', (req, res) => {
     res.setHeader('Cache-Control', 'no-cache');
-    res.sendFile(path.join(FRONTEND_DIR, 'ceo', 'index.html'));
+    res.sendFile(path.join(FRONTEND_DIR, 'ceo-dashboard', 'index.html'));
   });
 
-  // Gym Partner Dashboard
-  app.get('/partner', (req, res) => {
+  // Gym Partners Dashboard
+  app.get('/gympartners-dashboard', (req, res) => {
     res.setHeader('Cache-Control', 'no-cache');
-    res.sendFile(path.join(FRONTEND_DIR, 'partner', 'index.html'));
+    res.sendFile(path.join(FRONTEND_DIR, 'gympartners-dashboard', 'index.html'));
   });
 
-  // FlexSquad Creator Dashboard
-  app.get('/creator-dashboard', (req, res) => {
+  // ScanSquad Creator Dashboard
+  app.get('/scansquad-dashboard', (req, res) => {
     res.setHeader('Cache-Control', 'no-cache');
-    res.sendFile(path.join(FRONTEND_DIR, 'creator-dashboard', 'index.html'));
+    res.sendFile(path.join(FRONTEND_DIR, 'scansquad-dashboard', 'index.html'));
   });
 
   // Admin panel — upload review dashboard
