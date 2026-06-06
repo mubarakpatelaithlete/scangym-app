@@ -1,7 +1,7 @@
 // ScanGym Frontend v5.3.0 — Uber-grade location accuracy (reverse geocoding, accuracy gate, dynamic radius)
 
 // Inject CSS animations for loading experience
-(function(){const s=document.createElement('style');s.textContent='@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}#fun-fact{transition:opacity 0.2s ease}.gym-card{animation:fadeInUp 0.3s ease-out both}.animate-slide-up{animation:slideUp 0.3s ease-out}@keyframes skeletonPulse{0%,100%{opacity:.6}50%{opacity:.3}}@keyframes locationDot{0%,100%{box-shadow:0 0 0 0 rgba(249,115,22,.4)}50%{box-shadow:0 0 0 8px rgba(249,115,22,0)}}.skel-card{animation:skeletonPulse 1.8s ease-in-out infinite}.loc-dot{animation:locationDot 1.5s ease-in-out infinite}.cards-enter .gym-card{animation:fadeInUp .4s ease-out both}@keyframes toastIn{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes toastOut{from{transform:translateY(0);opacity:1}to{transform:translateY(-100%);opacity:0}}@keyframes spin{to{transform:rotate(360deg)}}.sg-spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}/* ── 3-Tab System (Polished) ── */.sg-tab-bar{position:fixed;bottom:0;left:0;right:0;height:56px;background:rgba(8,8,18,.98);backdrop-filter:blur(24px) saturate(1.8);-webkit-backdrop-filter:blur(24px) saturate(1.8);display:flex;align-items:center;justify-content:space-around;border-top:1px solid rgba(255,255,255,.06);z-index:9000;padding-bottom:env(safe-area-inset-bottom,0)}.sg-tab-item{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:6px 20px;border-radius:0;transition:all .25s cubic-bezier(.4,0,.2,1);-webkit-tap-highlight-color:transparent;user-select:none;position:relative}.sg-tab-item svg{width:26px;height:26px;stroke:rgba(255,255,255,.4);fill:none;stroke-width:1.8;transition:all .25s cubic-bezier(.4,0,.2,1)}.sg-tab-item .sg-tab-label{font-size:10px;font-weight:600;letter-spacing:.2px;color:rgba(255,255,255,.4);transition:all .25s cubic-bezier(.4,0,.2,1)}.sg-tab-item.active svg{stroke:#f97316;filter:drop-shadow(0 0 6px rgba(249,115,22,.35))}.sg-tab-item.active .sg-tab-label{color:#f97316}.sg-tab-item:active{transform:scale(.92)}.sg-tab-content{position:fixed;top:0;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom,0px));overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;scroll-behavior:smooth}.sg-tab-content.reels-active{position:static;padding-bottom:0;overflow:visible}.sg-reels-frame{position:fixed;top:0;left:0;right:0;bottom:56px;border:none;width:100%;height:calc(100vh - 56px);z-index:1}.sg-more-hub{padding:20px 16px 24px;max-width:480px;margin:0 auto}.sg-more-section{margin-bottom:20px}.sg-more-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.3);margin-bottom:8px;padding-left:4px}.sg-more-item{display:flex;align-items:center;gap:14px;padding:14px 16px;background:rgba(255,255,255,.04);border-radius:14px;margin-bottom:6px;border:1px solid rgba(255,255,255,.04);cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}.sg-more-item:active{transform:scale(.98);background:rgba(255,255,255,.08)}.sg-more-item .sg-mi-icon{font-size:20px;width:40px;height:40px;background:rgba(255,255,255,.06);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.sg-more-item .sg-mi-text{flex:1}.sg-more-item .sg-mi-text h4{color:#fff;font-size:14px;font-weight:600;margin:0}.sg-more-item .sg-mi-text p{color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0}.sg-more-item .sg-mi-arrow{color:rgba(255,255,255,.2);font-size:16px}.sg-more-profile{display:flex;align-items:center;gap:14px;margin-bottom:28px;padding-top:12px}.sg-more-avatar{width:56px;height:56px;background:linear-gradient(135deg,#f97316,#fb923c);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff;flex-shrink:0}.sg-more-profile-info h3{color:#fff;font-size:18px;font-weight:700;margin:0}.sg-more-profile-info p{color:rgba(255,255,255,.4);font-size:13px;margin:2px 0 0}.sg-more-social{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}.sg-more-social a{display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:rgba(255,255,255,.04);border-radius:12px;border:1px solid rgba(255,255,255,.06);font-size:16px;transition:all .15s;text-decoration:none}.sg-more-social a:active{background:rgba(255,255,255,.1);transform:scale(.95)}.sg-more-back{display:flex;align-items:center;gap:8px;padding:12px 0;cursor:pointer;color:rgba(255,255,255,.6);font-size:14px;font-weight:600;margin-bottom:4px;-webkit-tap-highlight-color:transparent}.sg-more-back:active{color:#f97316}#sg-search-overlay{transition:opacity .2s ease}#sg-search-overlay.active{opacity:1!important}.hide-scrollbar::-webkit-scrollbar{display:none}.sg-dashboard{-webkit-tap-highlight-color:transparent;position:fixed;top:0;left:0;right:0;bottom:56px;z-index:10;overscroll-behavior:none;-webkit-overflow-scrolling:auto}html,body{height:100%;overflow:hidden;overscroll-behavior:none;position:fixed;width:100%}';document.head.appendChild(s)})();
+(function(){const s=document.createElement('style');s.textContent='@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}#fun-fact{transition:opacity 0.2s ease}.gym-card{animation:fadeInUp 0.3s ease-out both}.animate-slide-up{animation:slideUp 0.3s ease-out}@keyframes skeletonPulse{0%,100%{opacity:.6}50%{opacity:.3}}@keyframes locationDot{0%,100%{box-shadow:0 0 0 0 rgba(249,115,22,.4)}50%{box-shadow:0 0 0 8px rgba(249,115,22,0)}}.skel-card{animation:skeletonPulse 1.8s ease-in-out infinite}.loc-dot{animation:locationDot 1.5s ease-in-out infinite}.cards-enter .gym-card{animation:fadeInUp .4s ease-out both}@keyframes toastIn{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes toastOut{from{transform:translateY(0);opacity:1}to{transform:translateY(-100%);opacity:0}}@keyframes spin{to{transform:rotate(360deg)}}.sg-spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}/* ── 3-Tab System (Polished) ── */.sg-tab-bar{position:fixed;bottom:0;left:0;right:0;height:56px;background:rgba(8,8,18,.98);backdrop-filter:blur(24px) saturate(1.8);-webkit-backdrop-filter:blur(24px) saturate(1.8);display:flex;align-items:center;justify-content:space-around;border-top:1px solid rgba(255,255,255,.06);z-index:9000;padding-bottom:env(safe-area-inset-bottom,0)}.sg-tab-item{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:6px 20px;border-radius:0;transition:all .25s cubic-bezier(.4,0,.2,1);-webkit-tap-highlight-color:transparent;user-select:none;position:relative}.sg-tab-item svg{width:26px;height:26px;stroke:rgba(255,255,255,.4);fill:none;stroke-width:1.8;transition:all .25s cubic-bezier(.4,0,.2,1)}.sg-tab-item .sg-tab-label{font-size:10px;font-weight:600;letter-spacing:.2px;color:rgba(255,255,255,.4);transition:all .25s cubic-bezier(.4,0,.2,1)}.sg-tab-item.active svg{stroke:#f97316;filter:drop-shadow(0 0 6px rgba(249,115,22,.35))}.sg-tab-item.active .sg-tab-label{color:#f97316}.sg-tab-item:active{transform:scale(.92)}.sg-tab-content{position:fixed;top:0;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom,0px));overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;scroll-behavior:smooth}.sg-tab-content.reels-active{position:static;padding-bottom:0;overflow:visible}.sg-reels-frame{position:fixed;top:0;left:0;right:0;bottom:56px;border:none;width:100%;height:calc(100vh - 56px);z-index:1}.sg-more-hub{padding:20px 16px 24px;max-width:480px;margin:0 auto}.sg-more-section{margin-bottom:20px}.sg-more-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.3);margin-bottom:8px;padding-left:4px}.sg-more-item{display:flex;align-items:center;gap:14px;padding:14px 16px;background:rgba(255,255,255,.04);border-radius:14px;margin-bottom:6px;border:1px solid rgba(255,255,255,.04);cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}.sg-more-item:active{transform:scale(.98);background:rgba(255,255,255,.08)}.sg-more-item .sg-mi-icon{font-size:20px;width:40px;height:40px;background:rgba(255,255,255,.06);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.sg-more-item .sg-mi-text{flex:1}.sg-more-item .sg-mi-text h4{color:#fff;font-size:14px;font-weight:600;margin:0}.sg-more-item .sg-mi-text p{color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0}.sg-more-item .sg-mi-arrow{color:rgba(255,255,255,.2);font-size:16px}.sg-more-profile{display:flex;align-items:center;gap:14px;margin-bottom:28px;padding-top:12px}.sg-more-avatar{width:56px;height:56px;background:linear-gradient(135deg,#f97316,#fb923c);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff;flex-shrink:0}.sg-more-profile-info h3{color:#fff;font-size:18px;font-weight:700;margin:0}.sg-more-profile-info p{color:rgba(255,255,255,.4);font-size:13px;margin:2px 0 0}.sg-more-social{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}.sg-more-social a{display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:rgba(255,255,255,.04);border-radius:12px;border:1px solid rgba(255,255,255,.06);font-size:16px;transition:all .15s;text-decoration:none}.sg-more-social a:active{background:rgba(255,255,255,.1);transform:scale(.95)}.sg-more-back{display:flex;align-items:center;gap:8px;padding:12px 0;cursor:pointer;color:rgba(255,255,255,.6);font-size:14px;font-weight:600;margin-bottom:4px;-webkit-tap-highlight-color:transparent}.sg-more-back:active{color:#f97316}#sg-search-overlay{transition:opacity .2s ease}#sg-search-overlay.active{opacity:1!important}.hide-scrollbar::-webkit-scrollbar{display:none}.sg-dashboard{-webkit-tap-highlight-color:transparent;position:fixed;top:0;left:0;right:0;bottom:56px;z-index:10;overscroll-behavior:none;-webkit-overflow-scrolling:auto}html,body{height:100%;overflow:hidden;overscroll-behavior:none;position:fixed;width:100%}.sg-tab-bar.hidden{display:none!important}';document.head.appendChild(s)})();
 
 // ─── Dynamic Pricing Service — fetches localized prices from /api/pricing/prices ───
 window.__sgPricing = null;
@@ -1681,6 +1681,8 @@ window.scrollToPasses=function(){
 window.openGymOverlay=function(section){
   const gym=state.currentGym;if(!gym)return;
   const overlay=document.getElementById('gym-overlay');
+  // Fix 4: Hide tab bar when overlay is open
+  const tabBar=document.querySelector('.sg-tab-bar');if(tabBar)tabBar.classList.add('hidden');
   const title=document.getElementById('gym-overlay-title');
   const body=document.getElementById('gym-overlay-body');
   if(!overlay||!title||!body)return;
@@ -1925,13 +1927,31 @@ window.openGymOverlay=function(section){
           </div>
         </button>
 
-        <!-- Add Card Form (hidden) -->
-        <div id="ov-pay-card-form" style="display:none;margin-top:16px;background:rgba(30,41,59,.6);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:20px">
+        <!-- Add Card Form (Uber-style separate fields) -->
+        <div id="ov-pay-card-form" style="display:none;margin-top:16px;background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:20px">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-            <h3 style="color:#fff;font-size:15px;font-weight:700;margin:0">Add card</h3>
-            <button onclick="_ovPayCloseCardForm()" style="background:none;border:none;color:rgba(255,255,255,.4);font-size:18px;cursor:pointer">✕</button>
+            <h3 style="color:#1a1a2e;font-size:16px;font-weight:700;margin:0">Add card</h3>
+            <button onclick="_ovPayCloseCardForm()" style="background:none;border:none;color:#94a3b8;font-size:20px;cursor:pointer;padding:4px">✕</button>
           </div>
-          <div id="ov-pay-card-element" style="background:rgba(15,23,42,.6);border:1px solid rgba(255,255,255,.25);border-radius:12px;padding:14px 16px;margin-bottom:16px;color:#fff;font-size:16px;min-height:48px"></div>
+          <!-- Card brand icon -->
+          <div id="ov-pay-brand-icon" style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+            <span style="font-size:13px;color:#64748b;font-weight:500">Card details</span>
+            <span id="ov-pay-brand-badge" style="font-size:12px;font-weight:700;padding:2px 8px;border-radius:4px;background:#f1f5f9;color:#64748b"></span>
+          </div>
+          <!-- Card Number -->
+          <label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Card number</label>
+          <div id="ov-pay-card-number" style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:14px 16px;margin-bottom:14px;min-height:48px;transition:border-color .2s"></div>
+          <!-- Expiry + CVC row -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+            <div>
+              <label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Expiry</label>
+              <div id="ov-pay-card-expiry" style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:14px 16px;min-height:48px;transition:border-color .2s"></div>
+            </div>
+            <div>
+              <label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">CVC</label>
+              <div id="ov-pay-card-cvc" style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:14px 16px;min-height:48px;transition:border-color .2s"></div>
+            </div>
+          </div>
           <button id="ov-pay-save-btn" onclick="_ovPaySaveCard()" style="width:100%;background:#22c55e;color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;opacity:.5;pointer-events:none;transition:all .2s">Save Card</button>
           <p id="ov-pay-card-error" style="color:#ef4444;font-size:12px;margin-top:8px;display:none"></p>
         </div>
@@ -1966,6 +1986,8 @@ window.closeGymOverlay=function(){
   if(!overlay)return;
   overlay.classList.remove('open');
   document.body.style.overflow='';
+  // Fix 4: Show tab bar again
+  const tabBar=document.querySelector('.sg-tab-bar');if(tabBar)tabBar.classList.remove('hidden');
   // If opened directly from explore card row, navigate back to explore
   if(window._directOverlayReturn){
     const returnRoute=window._directOverlayReturn;
@@ -2304,7 +2326,9 @@ window._ovPayLoadCards=async function(){
   try{
     const resp=await fetch('/api/payment/saved-cards',{credentials:'include'}).then(r=>r.json());
     if(!resp.cards||resp.cards.length===0){
-      cardsEl.innerHTML='<div style="padding:24px 20px;text-align:center"><div style="font-size:32px;margin-bottom:8px;opacity:.3">💳</div><p style="color:rgba(255,255,255,.3);font-size:13px">No saved cards yet</p><p style="color:rgba(255,255,255,.2);font-size:11px;margin-top:4px">Add a card to enable 1-tap booking</p></div>';
+      cardsEl.innerHTML='';
+      // Fix 3: Auto-expand card form when no saved cards
+      setTimeout(function(){_ovPayAddCard();},100);
       return;
     }
     const gbs=window._gymBookingState;
@@ -2400,26 +2424,54 @@ window._ovPayAddCard=function(){
     const stripeKey=window._stripePublicKey||STRIPE_PK||'pk_live_51Ss8P0DPbSptA7HKnQFKelVtYGIWnxhOC8MuZIQdqTYHCJRgI5x8GZ2TlE2DVKK0pLXLJWF9AYNK4RbAEhTk8BN00YoI3Xwjf';
     const si=Stripe(stripeKey);
     window._ovPayStripeInstance=si;
+    const elStyle={base:{fontSize:'16px',color:'#1a1a2e',fontFamily:'-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif','::placeholder':{color:'#94a3b8'}},invalid:{color:'#ef4444'}};
     window._ovPayStripeElements=si.elements({
-      appearance:{theme:'night',variables:{colorPrimary:'#22c55e',colorBackground:'#0f172a',colorText:'#fff',colorTextPlaceholder:'rgba(255,255,255,.3)',borderRadius:'10px'}},
+      appearance:{theme:'flat',variables:{colorPrimary:'#22c55e',colorBackground:'#f8fafc',colorText:'#1a1a2e',colorTextPlaceholder:'#94a3b8',borderRadius:'10px',colorDanger:'#ef4444'}},
     });
-    window._ovPayCardElement=window._ovPayStripeElements.create('card',{
-      style:{base:{fontSize:'16px',color:'#fff','::placeholder':{color:'rgba(255,255,255,.3)'}},invalid:{color:'#ef4444'}},
-      hidePostalCode:true,
-    });
-    window._ovPayCardElement.mount('#ov-pay-card-element');
-    window._ovPayCardElement.on('change',function(ev){
+    // Separate fields for Uber-style layout
+    window._ovPayCardNumber=window._ovPayStripeElements.create('cardNumber',{style:elStyle,showIcon:true});
+    window._ovPayCardExpiry=window._ovPayStripeElements.create('cardExpiry',{style:elStyle});
+    window._ovPayCardCvc=window._ovPayStripeElements.create('cardCvc',{style:elStyle});
+    window._ovPayCardNumber.mount('#ov-pay-card-number');
+    window._ovPayCardExpiry.mount('#ov-pay-card-expiry');
+    window._ovPayCardCvc.mount('#ov-pay-card-cvc');
+    // Track completion of all 3 fields
+    window._ovPayFieldState={number:false,expiry:false,cvc:false};
+    function _ovPayCheckComplete(){
+      const fs=window._ovPayFieldState;
       const saveBtn=document.getElementById('ov-pay-save-btn');
-      const errEl=document.getElementById('ov-pay-card-error');
       if(saveBtn){
-        if(ev.complete){saveBtn.style.opacity='1';saveBtn.style.pointerEvents='auto';}
+        if(fs.number&&fs.expiry&&fs.cvc){saveBtn.style.opacity='1';saveBtn.style.pointerEvents='auto';}
         else{saveBtn.style.opacity='.5';saveBtn.style.pointerEvents='none';}
       }
+    }
+    function _ovPayHandleErr(ev){
+      const errEl=document.getElementById('ov-pay-card-error');
       if(errEl){
         if(ev.error){errEl.textContent=ev.error.message;errEl.style.display='block';}
         else{errEl.style.display='none';}
       }
+    }
+    // Fix 5: Card brand detection icon
+    window._ovPayCardNumber.on('change',function(ev){
+      window._ovPayFieldState.number=ev.complete;_ovPayCheckComplete();_ovPayHandleErr(ev);
+      const badge=document.getElementById('ov-pay-brand-badge');
+      if(badge){
+        const brandMap={visa:'Visa',mastercard:'Mastercard',amex:'Amex',discover:'Discover',diners:'Diners',jcb:'JCB',unionpay:'UnionPay'};
+        const brandColors={visa:'#1a1f71',mastercard:'#eb001b',amex:'#006fcf',discover:'#ff6000'};
+        if(ev.brand&&ev.brand!=='unknown'){
+          badge.textContent=brandMap[ev.brand]||ev.brand;
+          badge.style.background=brandColors[ev.brand]||'#334155';
+          badge.style.color='#fff';
+        }else{
+          badge.textContent='';badge.style.background='#f1f5f9';badge.style.color='#64748b';
+        }
+      }
     });
+    window._ovPayCardExpiry.on('change',function(ev){window._ovPayFieldState.expiry=ev.complete;_ovPayCheckComplete();_ovPayHandleErr(ev);});
+    window._ovPayCardCvc.on('change',function(ev){window._ovPayFieldState.cvc=ev.complete;_ovPayCheckComplete();_ovPayHandleErr(ev);});
+    // Reference for confirmCardSetup — use cardNumber element
+    window._ovPayCardElement=window._ovPayCardNumber;
   }
 };
 
@@ -2445,7 +2497,7 @@ window._ovPaySaveCard=async function(){
     if(error)throw new Error(error.message);
     await fetch('/api/payment/confirm-setup',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({setupIntentId:setupIntent.id})});
     _ovPayCloseCardForm();
-    if(window._ovPayCardElement)window._ovPayCardElement.clear();
+    if(window._ovPayCardNumber){window._ovPayCardNumber.clear();window._ovPayCardExpiry.clear();window._ovPayCardCvc.clear();}
     _showToast('💳 Card saved successfully!');
     await _ovPayLoadCards();
     // ═══ UBER: Auto-continue to checkout if booking was pending ═══
@@ -4314,13 +4366,31 @@ function WalletPage(){
         </div>
       </button>
 
-      <!-- Add Card Form (hidden until tapped) -->
-      <div id="wallet-add-card-form" style="display:none;margin-top:16px;background:rgba(30,41,59,.6);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:20px">
+      <!-- Add Card Form (Uber-style separate fields) -->
+      <div id="wallet-add-card-form" style="display:none;margin-top:16px;background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:20px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-          <h3 style="color:#fff;font-size:15px;font-weight:700">Add card</h3>
-          <button onclick="_walletCloseCardForm()" style="background:none;border:none;color:rgba(255,255,255,.4);font-size:18px;cursor:pointer">✕</button>
+          <h3 style="color:#1a1a2e;font-size:16px;font-weight:700">Add card</h3>
+          <button onclick="_walletCloseCardForm()" style="background:none;border:none;color:#94a3b8;font-size:20px;cursor:pointer;padding:4px">✕</button>
         </div>
-        <div id="wallet-card-element" style="background:rgba(15,23,42,.6);border:1px solid rgba(255,255,255,.25);border-radius:12px;padding:14px 16px;margin-bottom:16px;color:#fff;font-size:16px;min-height:48px"></div>
+        <!-- Card brand icon -->
+        <div id="wallet-brand-icon" style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+          <span style="font-size:13px;color:#64748b;font-weight:500">Card details</span>
+          <span id="wallet-brand-badge" style="font-size:12px;font-weight:700;padding:2px 8px;border-radius:4px;background:#f1f5f9;color:#64748b"></span>
+        </div>
+        <!-- Card Number -->
+        <label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Card number</label>
+        <div id="wallet-card-number" style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:14px 16px;margin-bottom:14px;min-height:48px;transition:border-color .2s"></div>
+        <!-- Expiry + CVC row -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+          <div>
+            <label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Expiry</label>
+            <div id="wallet-card-expiry" style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:14px 16px;min-height:48px;transition:border-color .2s"></div>
+          </div>
+          <div>
+            <label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">CVC</label>
+            <div id="wallet-card-cvc" style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:14px 16px;min-height:48px;transition:border-color .2s"></div>
+          </div>
+        </div>
         <button id="wallet-save-card-btn" onclick="_walletSaveCard()" style="width:100%;background:#f97316;color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;opacity:.5;pointer-events:none;transition:all .2s">Save Card</button>
         <p id="wallet-card-error" style="color:#ef4444;font-size:12px;margin-top:8px;display:none"></p>
       </div>
@@ -4374,7 +4444,9 @@ window._loadWalletScreen=async function(){
   const cardsEl=document.getElementById('wallet-cards-list');
   if(cardsEl){
     if(!cardsResp||!cardsResp.cards||cardsResp.cards.length===0){
-      cardsEl.innerHTML='<div style="padding:24px 20px;text-align:center"><div style="font-size:32px;margin-bottom:8px;opacity:.3">💳</div><p style="color:rgba(255,255,255,.3);font-size:13px">No saved cards yet</p><p style="color:rgba(255,255,255,.2);font-size:11px;margin-top:4px">Add a card to enable 1-tap booking</p></div>';
+      cardsEl.innerHTML='<div style="padding:12px 20px;text-align:center"><p style="color:rgba(255,255,255,.4);font-size:13px">Add your first card below</p></div>';
+      // Fix 3: Auto-expand card form when no saved cards
+      setTimeout(function(){_walletAddCard();},100);
     }else{
       let html='';
       cardsResp.cards.forEach((card,i)=>{
@@ -4435,30 +4507,58 @@ window._walletAddCard=function(){
   form.style.display='block';
   if(btn)btn.style.display='none';
 
-  // Mount Stripe Elements card input
+  // Mount Stripe Elements — separate fields (Uber-style)
   if(!window._walletStripeElements&&window.Stripe){
     const stripeKey=window._stripePublicKey||'pk_live_51Ss8P0DPbSptA7HKnQFKelVtYGIWnxhOC8MuZIQdqTYHCJRgI5x8GZ2TlE2DVKK0pLXLJWF9AYNK4RbAEhTk8BN00YoI3Xwjf';
     const stripeInstance=Stripe(stripeKey);
+    const elStyle={base:{fontSize:'16px',color:'#1a1a2e',fontFamily:'-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif','::placeholder':{color:'#94a3b8'}},invalid:{color:'#ef4444'}};
     window._walletStripeElements=stripeInstance.elements({
-      appearance:{theme:'night',variables:{colorPrimary:'#f97316',colorBackground:'#0f172a',colorText:'#fff',colorTextPlaceholder:'rgba(255,255,255,.3)',borderRadius:'10px'}},
+      appearance:{theme:'flat',variables:{colorPrimary:'#f97316',colorBackground:'#f8fafc',colorText:'#1a1a2e',colorTextPlaceholder:'#94a3b8',borderRadius:'10px',colorDanger:'#ef4444'}},
     });
-    window._walletCardElement=window._walletStripeElements.create('card',{
-      style:{base:{fontSize:'16px',color:'#fff','::placeholder':{color:'rgba(255,255,255,.3)'}},invalid:{color:'#ef4444'}},
-      hidePostalCode:true,
-    });
-    window._walletCardElement.mount('#wallet-card-element');
-    window._walletCardElement.on('change',function(ev){
+    // Separate fields
+    window._walletCardNumber=window._walletStripeElements.create('cardNumber',{style:elStyle,showIcon:true});
+    window._walletCardExpiry=window._walletStripeElements.create('cardExpiry',{style:elStyle});
+    window._walletCardCvc=window._walletStripeElements.create('cardCvc',{style:elStyle});
+    window._walletCardNumber.mount('#wallet-card-number');
+    window._walletCardExpiry.mount('#wallet-card-expiry');
+    window._walletCardCvc.mount('#wallet-card-cvc');
+    // Track completion
+    window._walletFieldState={number:false,expiry:false,cvc:false};
+    function _walletCheckComplete(){
+      const fs=window._walletFieldState;
       const saveBtn=document.getElementById('wallet-save-card-btn');
-      const errEl=document.getElementById('wallet-card-error');
       if(saveBtn){
-        if(ev.complete){saveBtn.style.opacity='1';saveBtn.style.pointerEvents='auto';}
+        if(fs.number&&fs.expiry&&fs.cvc){saveBtn.style.opacity='1';saveBtn.style.pointerEvents='auto';}
         else{saveBtn.style.opacity='.5';saveBtn.style.pointerEvents='none';}
       }
+    }
+    function _walletHandleErr(ev){
+      const errEl=document.getElementById('wallet-card-error');
       if(errEl){
         if(ev.error){errEl.textContent=ev.error.message;errEl.style.display='block';}
         else{errEl.style.display='none';}
       }
+    }
+    // Fix 5: Card brand detection
+    window._walletCardNumber.on('change',function(ev){
+      window._walletFieldState.number=ev.complete;_walletCheckComplete();_walletHandleErr(ev);
+      const badge=document.getElementById('wallet-brand-badge');
+      if(badge){
+        const brandMap={visa:'Visa',mastercard:'Mastercard',amex:'Amex',discover:'Discover',diners:'Diners',jcb:'JCB',unionpay:'UnionPay'};
+        const brandColors={visa:'#1a1f71',mastercard:'#eb001b',amex:'#006fcf',discover:'#ff6000'};
+        if(ev.brand&&ev.brand!=='unknown'){
+          badge.textContent=brandMap[ev.brand]||ev.brand;
+          badge.style.background=brandColors[ev.brand]||'#334155';
+          badge.style.color='#fff';
+        }else{
+          badge.textContent='';badge.style.background='#f1f5f9';badge.style.color='#64748b';
+        }
+      }
     });
+    window._walletCardExpiry.on('change',function(ev){window._walletFieldState.expiry=ev.complete;_walletCheckComplete();_walletHandleErr(ev);});
+    window._walletCardCvc.on('change',function(ev){window._walletFieldState.cvc=ev.complete;_walletCheckComplete();_walletHandleErr(ev);});
+    // Reference for confirmCardSetup — use cardNumber element
+    window._walletCardElement=window._walletCardNumber;
     window._walletStripeInstance=stripeInstance;
   }
 };
@@ -4493,7 +4593,7 @@ window._walletSaveCard=async function(){
 
     // Success — reload
     _walletCloseCardForm();
-    if(window._walletCardElement){window._walletCardElement.clear();}
+    if(window._walletCardNumber){window._walletCardNumber.clear();window._walletCardExpiry.clear();window._walletCardCvc.clear();}
     _showToast('💳 Card saved successfully!');
     _loadWalletScreen();
   }catch(err){
