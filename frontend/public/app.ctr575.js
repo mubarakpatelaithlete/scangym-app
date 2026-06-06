@@ -1073,7 +1073,7 @@ function SearchPage(){
         html+='.tt-photo-placeholder{position:absolute;inset:0;background:#1a1f2e;display:flex;align-items:center;justify-content:center}';
         html+='.tt-photo-placeholder::after{content:"\\u{1F3CB}\\uFE0F";font-size:56px;opacity:.15}';
         /* Gradient overlay for readability */
-        html+='.tt-gradient{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.4) 0%,transparent 20%,transparent 35%,rgba(0,0,0,.85) 100%);pointer-events:none;z-index:1}';
+        html+='.tt-gradient{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.35) 0%,transparent 22%,transparent 55%,rgba(0,0,0,.55) 75%,rgba(0,0,0,.82) 100%);pointer-events:none;z-index:1}';
         /* Search bar - frosted glass overlay */
         html+='.tt-search{position:absolute;top:0;left:0;right:0;z-index:20;display:flex;gap:8px;padding:8px 12px;padding-top:calc(env(safe-area-inset-top,8px) + 4px)}';
         html+='.tt-search-input{flex:1;background:rgba(0,0,0,.45);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px 14px;color:rgba(255,255,255,.7);font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px;cursor:pointer}';
@@ -1085,9 +1085,9 @@ function SearchPage(){
         /* Action buttons (right side, TikTok style) */
         html+='.tt-actions{position:absolute;right:10px;bottom:220px;display:flex;flex-direction:column;gap:14px;z-index:15;align-items:center}';
         html+='.tt-action{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;-webkit-tap-highlight-color:transparent}';
-        html+='.tt-action-btn{width:42px;height:42px;background:rgba(255,255,255,.12);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;border:1px solid rgba(255,255,255,.08);transition:all .15s}';
+        html+='.tt-action-btn{width:52px;height:52px;background:rgba(255,255,255,.15);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;border:1px solid rgba(255,255,255,.1);transition:all .15s}';
         html+='.tt-action-btn:active{transform:scale(.9);background:rgba(255,255,255,.2)}';
-        html+='.tt-action-label{color:rgba(255,255,255,.65);font-size:9px;font-weight:600}';
+        html+='.tt-action-label{color:rgba(255,255,255,.75);font-size:10px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.5)}';
         /* Bottom info overlay */
         html+='.tt-info{position:absolute;bottom:0;left:0;right:0;padding:0 14px 8px;z-index:15;pointer-events:none}';
         html+='.tt-info>*{pointer-events:auto}';
@@ -1097,13 +1097,13 @@ function SearchPage(){
         html+='.tt-dot.act{background:#f97316;width:18px;border-radius:3px}';
         html+='.tt-counter{font-size:10px;color:rgba(255,255,255,.4);margin-bottom:4px;font-weight:500}';
         /* Gym info */
-        html+='.tt-gym-name{color:#fff;font-size:22px;font-weight:900;text-shadow:0 2px 8px rgba(0,0,0,.5);line-height:1.2;margin-bottom:3px}';
-        html+='.tt-gym-addr{color:rgba(255,255,255,.65);font-size:11px;margin-bottom:6px;text-shadow:0 1px 4px rgba(0,0,0,.5);display:flex;align-items:center;gap:4px;flex-wrap:wrap}';
+        html+='.tt-gym-name{color:#fff;font-size:28px;font-weight:900;text-shadow:0 2px 10px rgba(0,0,0,.6);line-height:1.15;margin-bottom:4px;letter-spacing:-.3px}';
+        html+='.tt-gym-addr{color:rgba(255,255,255,.7);font-size:12px;margin-bottom:6px;text-shadow:0 1px 4px rgba(0,0,0,.5);display:flex;align-items:center;gap:4px;flex-wrap:wrap}';
         html+='.tt-tag-open{color:#4ade80}';
         html+='.tt-tag-closed{color:#f87171}';
         /* Chips */
         html+='.tt-chips{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}';
-        html+='.tt-chip{display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.12);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-radius:8px;padding:5px 10px;font-size:11px;color:rgba(255,255,255,.9);font-weight:600}';
+        html+='.tt-chip{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.14);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-radius:10px;padding:6px 12px;font-size:12px;color:rgba(255,255,255,.92);font-weight:700}';
         /* CTA */
         html+='.tt-cta{position:absolute;bottom:0;left:0;right:0;padding:8px 14px;z-index:16}';
         html+='.tt-cta-btn{width:100%;padding:12px 0;border:none;border-radius:12px;background:#f97316;color:#fff;font-size:15px;font-weight:700;letter-spacing:.3px;cursor:pointer;-webkit-tap-highlight-color:transparent;box-shadow:0 4px 20px rgba(249,115,22,.4);transition:all .15s}';
@@ -1140,7 +1140,6 @@ function SearchPage(){
             html+='<div class="tt-search" id="tt-search">';
             html+='<div class="tt-search-input" onclick="document.getElementById(\'tt-search-real\').style.display=\'flex\';this.style.display=\'none\';document.getElementById(\'tt-search-real-input\').focus()">\u{1F4CD} '+(searchLabel||'Nearby')+' \u00b7 '+totalC+' gyms</div>';
             html+='<div class="tt-search-input" id="tt-search-real" style="display:none;flex:1"><input type="text" id="tt-search-real-input" placeholder="Search gyms anywhere\u2026" style="background:transparent;border:none;outline:none;color:#fff;font-size:13px;width:100%" value="'+(state.searchQuery||'')+'" onkeydown="if(event.key===\'Enter\'){window.doSearch()}"></div>';
-            html+='<div class="tt-search-filter" onclick="var s=document.getElementById(\'tt-filter-sheet\');s.classList.toggle(\'open\')">\u{1F50D}</div>';
             html+='<div class="tt-search-gps" onclick="findGyms()">\u{1F4CD}</div>';
             html+='</div>';
             /* Filter sheet */
@@ -1181,7 +1180,7 @@ function SearchPage(){
           html+='<div class="tt-chip">\u2B50 '+c.rating+(c.reviews?' ('+c.reviews+')':'')+'</div>';
           html+='</div>';
           /* CTA inside info */
-          html+='<div style="padding-right:50px;margin-top:8px;pointer-events:auto"><button class="tt-cta-btn" onclick="event.stopPropagation();openGym(\''+c.id+'\',true)">Continue \u2014 Day Pass '+c.price+' \u{1F7E0}</button></div>';
+          html+='<div style="padding-right:50px;margin-top:8px;pointer-events:auto"><button class="tt-cta-btn" onclick="event.stopPropagation();openGym(\''+c.id+'\',true)">Continue \u{1F7E0}</button></div>';
           html+='</div>';
 
           html+='</div>';
