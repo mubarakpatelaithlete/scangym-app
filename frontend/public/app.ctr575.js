@@ -989,7 +989,7 @@ async function searchGyms(query, isExplicit, _triggerLayer){
       if(sub)sub.textContent='Check your connection and try a city name';
       const bar=document.getElementById('loading-bar');
       if(bar)bar.style.width='100%';
-      const input=document.getElementById('gym-search-input');
+      const input=document.getElementById('tt-search-real-input')||document.getElementById('sg-search-input');
       if(input){input.focus();input.placeholder='Type a city, area, or gym name...';}
     },100);
   }
@@ -6681,7 +6681,7 @@ window.sgApplyFilters=function(){
 };
 
 window.doSearch=function(){
-  const input=document.getElementById('gym-search-input');
+  const input=document.getElementById('tt-search-real-input')||document.getElementById('sg-search-input')||document.getElementById('gym-search-input');
   if(input&&input.value.trim()){
     navigate('/explore');
     searchGyms(input.value.trim(),true);
@@ -7997,7 +7997,7 @@ function _showLocationBannerIfNeeded(){
 function _injectLocationBanner(permState){
   var isDenied=permState==='denied';
   // Insert banner ABOVE the search results, not over them
-  var searchContainer=document.getElementById('gym-search-input');
+  var searchContainer=document.getElementById('tt-search-real-input')||document.getElementById('sg-search-input');
   var insertTarget=searchContainer?searchContainer.closest('.sg-tab-content')||document.querySelector('main'):document.querySelector('main');
   if(!insertTarget)return;
 
@@ -8060,7 +8060,7 @@ window._dismissLocationBanner=function(){
   var b=document.getElementById('sg-location-banner');
   if(b)b.remove();
   // Focus the search input so user can type immediately
-  var inp=document.getElementById('gym-search-input');
+  var inp=document.getElementById('tt-search-real-input')||document.getElementById('sg-search-input');
   if(inp)inp.focus();
 };
 
@@ -8125,7 +8125,7 @@ window._showLocationPopup=function(){
     +'<p style="color:rgba(255,255,255,.5);font-size:13px;margin:6px 0 0">So we can find the best gyms near you</p></div>'
     +steps
     +'<button onclick="_closeLocationPopup();location.reload();" style="width:100%;background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;font-size:14px;font-weight:800;padding:14px;border:none;border-radius:12px;cursor:pointer;margin-top:8px">Refresh Page</button>'
-    +'<p onclick="_closeLocationPopup();var inp=document.getElementById(\'gym-search-input\');if(inp)inp.focus();" style="text-align:center;color:rgba(255,255,255,.4);font-size:12px;margin:12px 0 0;cursor:pointer;text-decoration:underline">Or search for a city instead</p>'
+    +'<p onclick="_closeLocationPopup();var inp=document.getElementById(\'tt-search-real-input\')||document.getElementById(\'sg-search-input\');if(inp)inp.focus();" style="text-align:center;color:rgba(255,255,255,.4);font-size:12px;margin:12px 0 0;cursor:pointer;text-decoration:underline">Or search for a city instead</p>'
     +'</div>';
   document.body.appendChild(popup);
 };

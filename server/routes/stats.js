@@ -64,7 +64,7 @@ router.get('/owner/:gymId', authenticateUser, async (req, res) => {
     const gymId = parseInt(req.params.gymId);
     const userId = req.user.id;
 
-    const gym = await pool.query('SELECT * FROM gyms WHERE id = $1 AND claimed_by = $2', [gymId, userId]);
+    const gym = await pool.query('SELECT * FROM gyms WHERE id = $1 AND claimed_by::text = $2::text', [gymId, userId]);
     if (gym.rows.length === 0) return res.status(403).json({ error: 'You do not own this gym' });
 
     const bookingTrend = await pool.query(`

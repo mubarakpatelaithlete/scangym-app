@@ -26,7 +26,7 @@ const { authenticateUser, optionalAuth } = require('../middleware/auth');
     await pool.query(`
       CREATE TABLE IF NOT EXISTS creator_memberships (
         id SERIAL PRIMARY KEY,
-        user_id INTEGER UNIQUE NOT NULL,
+        user_id TEXT UNIQUE NOT NULL,
         tier VARCHAR(30) DEFAULT 'starter',
         is_lifetime_free BOOLEAN DEFAULT false,
         total_referrals INTEGER DEFAULT 0,
@@ -42,7 +42,7 @@ const { authenticateUser, optionalAuth } = require('../middleware/auth');
     await pool.query(`
       CREATE TABLE IF NOT EXISTS creator_landing_pages (
         id SERIAL PRIMARY KEY,
-        creator_user_id INTEGER NOT NULL,
+        creator_user_id TEXT NOT NULL,
         slug VARCHAR(100) UNIQUE NOT NULL,
         creator_name VARCHAR(200) NOT NULL,
         creator_handle VARCHAR(200),
@@ -124,7 +124,7 @@ function calculateTier(referrals) {
 router.post('/join', authenticateUser, async (req, res) => {
   try {
     const userId = req.user.id;
-    const existing = await pool.query('SELECT * FROM creator_memberships WHERE user_id = $1', [userId]);
+    const existing = await pool.query('SELECT * FROM creator_memberships WHERE user_id::text = $1::text', [userId]);
     if (existing.rows.length > 0) {
       return res.status(409).json({ error: 'Already a FlexSquad member', membership: existing.rows[0] });
     }
@@ -157,7 +157,7 @@ router.post('/join', authenticateUser, async (req, res) => {
 // GET /api/creators/membership
 router.get('/membership', authenticateUser, async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM creator_memberships WHERE user_id = $1', [req.user.id]);
+    const result = await pool.query('SELECT * FROM creator_memberships WHERE user_id::text = $1::text', [req.user.id]);
     if (result.rows.length === 0) return res.json({ isMember: false, joinUrl: '/creators' });
 
     const m = result.rows[0];
@@ -263,7 +263,7 @@ router.post('/landing-page', authenticateUser, async (req, res) => {
     } = req.body;
 
     // Validate creator membership
-    const membership = await pool.query('SELECT * FROM creator_memberships WHERE user_id = $1', [userId]);
+    const membership = await pool.query('SELECT * FROM creator_memberships WHERE user_id::text = $1::text', [userId]);
     if (membership.rows.length === 0) {
       return res.status(403).json({ error: 'Must be a FlexSquad member to create landing pages' });
     }
@@ -330,7 +330,7 @@ router.get('/r/:slug', async (req, res) => {
     // Get creator stats
     let creatorStats = { referrals: 0, tier: 'starter', badge: '🌱' };
     try {
-      const membership = await pool.query('SELECT * FROM creator_memberships WHERE user_id = $1', [p.creator_user_id]);
+      const membership = await pool.query('SELECT * FROM creator_memberships WHERE user_id::text = $1::text', [p.creator_user_id]);
       if (membership.rows[0]) {
         creatorStats = {
           referrals: membership.rows[0].total_referrals,
@@ -607,7 +607,7 @@ router.patch('/uploads/:id/approve', async (req, res) => {
 router.get('/me', authenticateUser, async (req, res) => {
   try {
     const userId = req.user.id;
-    const membership = await pool.query('SELECT * FROM creator_memberships WHERE user_id = $1', [userId]);
+    const membership = await pool.query('SELECT * FROM creator_memberships WHERE user_id::text = $1::text', [userId]);
     if (membership.rows.length === 0) {
       return res.status(404).json({ error: 'Not a FlexSquad member', joinUrl: '/flexsquad' });
     }
@@ -638,7 +638,7 @@ router.get('/landing-pages', authenticateUser, async (req, res) => {
   try {
     const userId = req.user.id;
     const pages = await pool.query(
-      'SELECT * FROM creator_landing_pages WHERE creator_user_id = $1 ORDER BY views DESC',
+      'SELECT * FROM creator_landing_pages WHERE creator_user_id::text = $1::text ORDER BY views DESC',
       [userId]
     );
     res.json({ pages: pages.rows });
