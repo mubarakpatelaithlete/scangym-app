@@ -1083,13 +1083,13 @@ function SearchPage(){
         html+='.tt-tour-badge{position:absolute;top:60px;right:12px;background:rgba(0,0,0,.5);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);color:#fff;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:700;z-index:10;display:flex;align-items:center;gap:5px}';
         html+='.tt-tour-play{width:0;height:0;border-left:7px solid #fff;border-top:4px solid transparent;border-bottom:4px solid transparent}';
         /* Action buttons (right side, TikTok style) */
-        html+='.tt-actions{position:absolute;right:10px;bottom:200px;display:flex;flex-direction:column;gap:14px;z-index:15;align-items:center}';
+        html+='.tt-actions{position:absolute;right:10px;bottom:260px;display:flex;flex-direction:column;gap:14px;z-index:15;align-items:center}';
         html+='.tt-action{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;-webkit-tap-highlight-color:transparent}';
         html+='.tt-action-btn{width:42px;height:42px;background:rgba(255,255,255,.12);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;border:1px solid rgba(255,255,255,.08);transition:all .15s}';
         html+='.tt-action-btn:active{transform:scale(.9);background:rgba(255,255,255,.2)}';
         html+='.tt-action-label{color:rgba(255,255,255,.65);font-size:9px;font-weight:600}';
         /* Bottom info overlay */
-        html+='.tt-info{position:absolute;bottom:0;left:0;right:0;padding:0 14px 8px;z-index:15;pointer-events:none}';
+        html+='.tt-info{position:absolute;bottom:60px;left:0;right:0;padding:0 14px 8px;z-index:15;pointer-events:none}';
         html+='.tt-info>*{pointer-events:auto}';
         /* Dots */
         html+='.tt-dots{display:flex;gap:3px;margin-bottom:4px;flex-wrap:wrap;max-width:280px}';
