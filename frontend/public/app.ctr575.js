@@ -1065,7 +1065,7 @@ function SearchPage(){
         html+='.tt-carousel{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;flex:1;min-height:0}';
         html+='.tt-carousel::-webkit-scrollbar{display:none}';
         /* Each card fills the full viewport */
-        html+='.tt-card{min-width:100%;max-width:100%;scroll-snap-align:start;position:relative;display:flex;flex-direction:column;overflow:hidden}';
+        html+='.tt-card{min-width:100%;max-width:100%;height:100%;scroll-snap-align:start;position:relative;display:flex;flex-direction:column;overflow:hidden}';
         html+='.tt-card.tt-closed{opacity:0.5;filter:grayscale(25%)}';
         html+='.tt-card.tt-closed .tt-cta-btn{background:#6b7280;box-shadow:none}';
         /* Full-bleed photo */
@@ -1089,7 +1089,7 @@ function SearchPage(){
         html+='.tt-action-btn:active{transform:scale(.9);background:rgba(255,255,255,.2)}';
         html+='.tt-action-label{color:rgba(255,255,255,.65);font-size:9px;font-weight:600}';
         /* Bottom info overlay */
-        html+='.tt-info{position:absolute;bottom:56px;left:0;right:60px;padding:0 14px 0;z-index:15;pointer-events:none}';
+        html+='.tt-info{position:absolute;bottom:50px;left:0;right:60px;padding:0 14px 0;z-index:15;pointer-events:none}';
         html+='.tt-info>*{pointer-events:auto}';
         /* Dots */
         html+='.tt-dots{display:flex;gap:3px;margin-bottom:4px;flex-wrap:wrap;max-width:280px}';
