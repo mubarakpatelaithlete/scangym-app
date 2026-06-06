@@ -2013,8 +2013,8 @@ window.closeGymOverlay=function(){
 // Open gym overlay directly from explore card rows without showing gym profile first
 window.openGymDirectOverlay=async function(id,isLive,section){
   window._directOverlayReturn=state.route||'/explore';
+  state._pendingOverlay=section;
   await openGym(id,isLive);
-  setTimeout(function(){openGymOverlay(section);},150);
 };
 
 // Select pass from the overlay and update booking state + sticky bar
@@ -6269,12 +6269,15 @@ window.openGym=async function(id,isLive){
       state.currentGym=data.gym||data;
     }
     render();
+    // If a direct overlay was requested, open it immediately (no flash)
+    if(state._pendingOverlay){var _po=state._pendingOverlay;state._pendingOverlay=null;openGymOverlay(_po);}
     // Load conviction signals (Booking.com persuasion techniques) async
     _loadConvictionSignals(id);
   }catch(e){
     console.error('Failed to load gym:',e);
     state.currentGym=state.gyms.find(g=>(g.placeId||g.id)==id)||{name:'Loading...',id};
     render();
+    if(state._pendingOverlay){var _po2=state._pendingOverlay;state._pendingOverlay=null;openGymOverlay(_po2);}
   }
 };
 
