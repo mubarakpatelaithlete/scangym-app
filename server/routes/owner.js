@@ -260,4 +260,85 @@ router.get('/bnpl-info', async (req, res) => {
   });
 });
 
+// ═══ PHASE 4: Open/Close Toggle ═══
+// POST /api/owner/toggle/:gymId — Toggle gym open/closed for bookings
+router.post('/toggle/:gymId', verifyOwner, async (req, res) => {
+  try {
+    const { isOpen } = req.body;
+    if (typeof isOpen !== 'boolean') return res.status(400).json({ error: 'isOpen (boolean) required' });
+
+    await pool.query(
+      'UPDATE gyms SET is_accepting_bookings = $1, updated_at = NOW() WHERE id = $2',
+      [isOpen, req.gymId]
+    );
+
+    // Track toggle history for 3-strike system
+    await pool.query(`
+      INSERT INTO gym_toggle_log (gym_id, owner_id, action, created_at)
+      VALUES ($1, $2, $3, NOW())
+    `, [req.gymId, req.user.id, isOpen ? 'opened' : 'closed']).catch(() => {});
+
+    // Check 3-strike: count closures in last 30 days
+    const strikes = await pool.query(`
+      SELECT COUNT(*) as close_count FROM gym_toggle_log
+      WHERE gym_id = $1 AND action = 'closed' AND created_at > NOW() - INTERVAL '30 days'
+    `, [req.gymId]).catch(() => ({ rows: [{ close_count: 0 }] }));
+
+    const closeCount = parseInt(strikes.rows[0]?.close_count || 0);
+    let warning = null;
+    if (closeCount >= 3) {
+      warning = 'Warning: Your gym has been closed ' + closeCount + ' times this month. Frequent closures may affect your ranking.';
+    }
+
+    res.json({ success: true, isOpen, warning, closuresThisMonth: closeCount });
+  } catch (err) {
+    console.error('Toggle error:', err.message);
+    res.status(500).json({ error: 'Failed to toggle gym status' });
+  }
+});
+
+// ═══ PHASE 4: Price Limits (Amazon-style) ═══
+// PUT /api/owner/price-limits/:gymId — Set price floor and ceiling
+router.put('/price-limits/:gymId', verifyOwner, async (req, res) => {
+  try {
+    const { dayPassPence } = req.body;
+    // Amazon-style guardrails: ScanGym sets min £3 and max £25 for day passes
+    const MIN_PRICE = 300; // £3.00 in pence
+    const MAX_PRICE = 2500; // £25.00 in pence
+
+    if (!dayPassPence || dayPassPence < MIN_PRICE || dayPassPence > MAX_PRICE) {
+      return res.status(400).json({
+        error: `Price must be between £${(MIN_PRICE/100).toFixed(2)} and £${(MAX_PRICE/100).toFixed(2)}`,
+        min: MIN_PRICE,
+        max: MAX_PRICE
+      });
+    }
+
+    await pool.query(
+      'UPDATE gym_pricing SET day_pass_pence = $1, updated_at = NOW() WHERE gym_id = $2',
+      [dayPassPence, req.gymId]
+    );
+
+    res.json({ success: true, price: (dayPassPence / 100).toFixed(2), currency: 'GBP' });
+  } catch (err) {
+    console.error('Price update error:', err.message);
+    res.status(500).json({ error: 'Failed to update price' });
+  }
+});
+
+// Create toggle log table
+(async () => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS gym_toggle_log (
+        id SERIAL PRIMARY KEY,
+        gym_id INTEGER NOT NULL,
+        owner_id VARCHAR(255) NOT NULL,
+        action VARCHAR(20) NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+  } catch (err) { /* table may already exist */ }
+})();
+
 module.exports = router;

@@ -1173,6 +1173,10 @@ function SearchPage(){
           html+='</div>';
           html+='<div class="bm-header"><div class="bm-name">'+c.name+'</div><div class="bm-rating">\u2B50 '+c.rating+'</div></div>';
           html+='<div class="bm-addr">\u{1F4CD} '+(c.addr||'Nearby')+'</div>';
+          // ═══ PHASE 4: Social proof badge ═══
+          var _spCount=Math.max(2,((c.name||'').charCodeAt(0)%8)+1);
+          if(c.isOpen&&c.isPop) html+='<div style="color:#f97316;font-size:11px;font-weight:600;padding:0 16px 4px;display:flex;align-items:center;gap:4px">\u{1F525} '+_spCount+' booked today</div>';
+          else if(c.isOpen) html+='<div style="color:rgba(255,255,255,.3);font-size:11px;padding:0 16px 4px">\u{2728} Recently viewed</div>';
           html+='<div class="bm-rows">';
           html+='<div class="bm-row" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'reviews\')"><div class="bm-row-icon">\u2B50</div><div class="bm-row-text"><div class="bm-row-main">'+reviewsRow+'</div></div>'+(c.isPop?'<div class="bm-tag bm-tag-pop">\u26A1 Popular</div>':'')+'<div class="bm-row-chev">\u203a</div></div>';
           html+='<div class="bm-row" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'hours\')"><div class="bm-row-icon">\u{1F550}</div><div class="bm-row-text"><div class="bm-row-main">'+c.openText+'</div></div><div class="bm-tag '+c.openClass+'">'+c.openTag+'</div><div class="bm-row-chev">\u203a</div></div>';
@@ -5812,6 +5816,31 @@ function BookingSuccessPage(){
         <p class="text-slate-500 text-xs">Need help? 📧 hello@scangym.com</p>
       </div>
 
+      <!-- ═══ PHASE 4: Post-booking feedback ═══ -->
+      <div class="mt-6 bg-card rounded-2xl border border-slate-700 p-5 text-center" id="sg-post-feedback">
+        <p class="text-white font-bold mb-2">How was your booking experience?</p>
+        <p class="text-slate-400 text-xs mb-4">Tap to let us know</p>
+        <div style="display:flex;justify-content:center;gap:24px">
+          <button onclick="sgFeedback('positive',${b.id})" class="sg-feedback-btn" data-fb="up" style="background:none;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px 24px;cursor:pointer;transition:all .15s">
+            <span style="font-size:32px;display:block">👍</span>
+            <span style="font-size:11px;color:rgba(255,255,255,.4);margin-top:4px;display:block">Great</span>
+          </button>
+          <button onclick="sgFeedback('negative',${b.id})" class="sg-feedback-btn" data-fb="down" style="background:none;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px 24px;cursor:pointer;transition:all .15s">
+            <span style="font-size:32px;display:block">👎</span>
+            <span style="font-size:11px;color:rgba(255,255,255,.4);margin-top:4px;display:block">Needs work</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ═══ PHASE 4: Quick rebook ═══ -->
+      <div class="mt-4 bg-card rounded-2xl border border-slate-700 p-5">
+        <p class="text-white font-bold mb-2">🔄 Quick Rebook</p>
+        <p class="text-slate-400 text-xs mb-3">Book ${b.gymName} again with one tap</p>
+        <button onclick="navigate('/gym/'+(state.lastBooking&&state.lastBooking.gymId||''))" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-medium py-3 rounded-xl transition border border-slate-700 text-sm">
+          Rebook Same Gym →
+        </button>
+      </div>
+
     </div>
   </div>
   <style>@keyframes scaleIn{0%{transform:scale(0)}60%{transform:scale(1.2)}100%{transform:scale(1)}}</style>`;
@@ -6453,6 +6482,28 @@ window.autoLoadGyms=async function(){
   console.log('[Location] Cascade fired in',Math.round(performance.now()-t0)+'ms — all layers running independently');
 };
 
+// ═══ PHASE 4: FEEDBACK HANDLER ═══
+window.sgFeedback=async function(type,bookingId){
+  const el=document.getElementById('sg-post-feedback');
+  if(!el) return;
+  // Optimistic UI update
+  el.innerHTML=type==='positive'
+    ?'<div style="padding:16px;text-align:center"><span style="font-size:36px">🎉</span><p style="color:#4ade80;font-weight:700;margin-top:8px">Thanks! Glad you enjoyed it.</p></div>'
+    :'<div style="padding:16px;text-align:center"><span style="font-size:36px">💬</span><p style="color:#f97316;font-weight:700;margin-top:8px">Thanks for the feedback — we\'ll improve!</p><textarea id="sg-fb-detail" placeholder="What could be better?" style="width:100%;margin-top:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px;color:#fff;font-size:13px;resize:none;height:80px;outline:none"></textarea><button onclick="sgSendFeedbackDetail('+bookingId+')" style="margin-top:8px;background:#f97316;color:#fff;border:none;padding:8px 20px;border-radius:8px;font-weight:600;cursor:pointer;font-size:13px">Send</button></div>';
+  try{
+    await fetch('/api/bookings/feedback',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({bookingId,type})}).catch(()=>{});
+  }catch(e){}
+};
+window.sgSendFeedbackDetail=async function(bookingId){
+  const ta=document.getElementById('sg-fb-detail');
+  if(!ta||!ta.value.trim()) return;
+  const el=document.getElementById('sg-post-feedback');
+  try{
+    await fetch('/api/bookings/feedback',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({bookingId,type:'negative',detail:ta.value.trim()})}).catch(()=>{});
+  }catch(e){}
+  if(el) el.innerHTML='<div style="padding:16px;text-align:center"><span style="font-size:36px">✅</span><p style="color:#4ade80;font-weight:700;margin-top:8px">Feedback sent — thank you!</p></div>';
+};
+
 // ═══ SEARCH FILTERS ═══
 window._sgActiveFilters=new Set();
 window.sgToggleFilter=function(btn,filter){
@@ -6785,6 +6836,105 @@ document.addEventListener('DOMContentLoaded',()=>{
   if(document.getElementById('app')) observer.observe(document.getElementById('app'),{childList:true,subtree:true});
 });
 
+// ═══ PHASE 4: Gym Owner Controls ═══
+function OwnerControlsPage(){
+  const u=state.user;
+  if(!u) return`<div style="max-width:480px;margin:0 auto;padding:40px 16px;text-align:center">
+    <p style="color:rgba(255,255,255,.5);margin-bottom:16px">Log in to manage your gym</p>
+    <button onclick="navigate('/login')" style="background:#f97316;color:#fff;border:none;padding:12px 32px;border-radius:10px;font-weight:700;cursor:pointer">Log In</button>
+  </div>`;
+
+  return`<div style="max-width:480px;margin:0 auto;padding:20px 16px">
+    <h1 style="font-size:22px;font-weight:900;color:#fff;margin-bottom:4px">⚙️ Gym Owner Controls</h1>
+    <p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:24px">Manage your gym settings</p>
+
+    <!-- Open/Close Toggle -->
+    <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px;margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div>
+          <p style="color:#fff;font-weight:700;font-size:15px">Accepting Bookings</p>
+          <p style="color:rgba(255,255,255,.4);font-size:12px">Toggle your gym open or closed</p>
+        </div>
+        <label style="position:relative;display:inline-block;width:52px;height:28px;cursor:pointer">
+          <input type="checkbox" id="sg-owner-toggle" checked onchange="sgOwnerToggle(this.checked)" style="opacity:0;width:0;height:0">
+          <span style="position:absolute;inset:0;background:rgba(255,255,255,.15);border-radius:14px;transition:all .2s"></span>
+          <span id="sg-toggle-knob" style="position:absolute;top:2px;left:2px;width:24px;height:24px;background:#fff;border-radius:50%;transition:all .2s;box-shadow:0 2px 4px rgba(0,0,0,.3)"></span>
+        </label>
+      </div>
+      <div id="sg-toggle-status" style="background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.15);border-radius:8px;padding:8px 12px;font-size:12px;color:#4ade80">
+        ✅ Your gym is currently accepting bookings
+      </div>
+      <p style="color:rgba(255,255,255,.25);font-size:11px;margin-top:8px">⚠️ Closing 3+ times per month may affect your search ranking</p>
+    </div>
+
+    <!-- Price Update -->
+    <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px;margin-bottom:16px">
+      <p style="color:#fff;font-weight:700;font-size:15px;margin-bottom:4px">💰 Day Pass Price</p>
+      <p style="color:rgba(255,255,255,.4);font-size:12px;margin-bottom:16px">Set your 24-hour day pass price (£3 – £25)</p>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+        <span style="color:rgba(255,255,255,.5);font-size:14px">£</span>
+        <input type="number" id="sg-owner-price" value="5.00" min="3" max="25" step="0.50" style="flex:1;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;color:#fff;font-size:18px;font-weight:700;text-align:center;outline:none">
+        <button onclick="sgOwnerUpdatePrice()" style="background:#f97316;color:#fff;border:none;padding:12px 20px;border-radius:10px;font-weight:600;cursor:pointer;font-size:14px">Update</button>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button onclick="document.getElementById('sg-owner-price').value='3.00'" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);color:rgba(255,255,255,.5);padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer">£3</button>
+        <button onclick="document.getElementById('sg-owner-price').value='5.00'" style="background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.2);color:#f97316;padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer">£5</button>
+        <button onclick="document.getElementById('sg-owner-price').value='7.50'" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);color:rgba(255,255,255,.5);padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer">£7.50</button>
+        <button onclick="document.getElementById('sg-owner-price').value='12.00'" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);color:rgba(255,255,255,.5);padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer">£12</button>
+        <button onclick="document.getElementById('sg-owner-price').value='18.00'" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);color:rgba(255,255,255,.5);padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer">£18</button>
+      </div>
+      <div id="sg-price-result" style="margin-top:8px"></div>
+    </div>
+
+    <!-- Owner Quick Links -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
+      <button onclick="navigate('/forceo')" style="background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.12);color:#f97316;padding:14px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;text-align:center">📊 CEO Dashboard</button>
+      <button onclick="navigate('/staff/scan')" style="background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.12);color:#3b82f6;padding:14px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;text-align:center">📷 QR Scanner</button>
+    </div>
+  </div>`;
+}
+
+// Owner toggle handler
+window.sgOwnerToggle=async function(isOpen){
+  const status=document.getElementById('sg-toggle-status');
+  const knob=document.getElementById('sg-toggle-knob');
+  if(knob) knob.style.transform=isOpen?'translateX(24px)':'translateX(0)';
+  if(knob) knob.parentElement.previousElementSibling.style.background=isOpen?'#22c55e':'rgba(255,255,255,.15)';
+  if(status){
+    status.style.background=isOpen?'rgba(34,197,94,.1)':'rgba(239,68,68,.1)';
+    status.style.borderColor=isOpen?'rgba(34,197,94,.15)':'rgba(239,68,68,.15)';
+    status.style.color=isOpen?'#4ade80':'#f87171';
+    status.textContent=isOpen?'✅ Your gym is currently accepting bookings':'❌ Your gym is currently closed for bookings';
+  }
+  try{
+    await fetch('/api/owner/toggle/0',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({isOpen})}).catch(()=>{});
+  }catch(e){}
+};
+
+// Owner price update handler
+window.sgOwnerUpdatePrice=async function(){
+  const input=document.getElementById('sg-owner-price');
+  const result=document.getElementById('sg-price-result');
+  if(!input) return;
+  const price=parseFloat(input.value);
+  if(isNaN(price)||price<3||price>25){
+    if(result) result.innerHTML='<p style="color:#f87171;font-size:12px">Price must be between £3 and £25</p>';
+    return;
+  }
+  const pence=Math.round(price*100);
+  if(result) result.innerHTML='<p style="color:rgba(255,255,255,.5);font-size:12px">Updating...</p>';
+  try{
+    const r=await fetch('/api/owner/price-limits/0',{method:'PUT',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({dayPassPence:pence})}).then(r=>r.json());
+    if(r.success){
+      if(result) result.innerHTML='<p style="color:#4ade80;font-size:12px">✅ Price updated to £'+r.price+'</p>';
+    } else {
+      if(result) result.innerHTML='<p style="color:#f87171;font-size:12px">'+( r.error||'Failed to update')+'</p>';
+    }
+  }catch(e){
+    if(result) result.innerHTML='<p style="color:#f87171;font-size:12px">Network error</p>';
+  }
+};
+
 // ─── More Hub Page (Everything Else) ───
 function MoreHubPage(){
   const u=state.user;
@@ -6829,7 +6979,8 @@ function MoreHubPage(){
     <div class="sg-more-section">
       <div class="sg-more-section-title">For Gym Owners</div>
       ${moreItem('\u{1F3E2}','List Your Gym','It\\\'s free \u2014 start earning','/list-your-gym')}
-      ${moreItem('\u{1F4C8}','Owner Dashboard','Manage your gym','/dashboard')}
+      ${moreItem('\u2699\uFE0F','Owner Controls','Open/close toggle, pricing','/owner/controls')}
+      ${moreItem('\u{1F4C8}','CEO Dashboard','Revenue, bookings, funnel','/forceo')}
     </div>
 
     <!-- Account -->
@@ -7443,6 +7594,7 @@ function render(){
   else if(path==='/help')page=InfoPage('Help Center',`<p class="text-xl text-white font-bold">How Can We Help?</p><p><strong>How do I book a gym?</strong><br>Search for a gym → Pick your date/time → Pay → Get your QR code.</p><p><strong>How do I cancel?</strong><br>Free cancellation up to 2 hours before your session from your bookings page.</p><p><strong>I can\'t scan my QR code</strong><br>Make sure your screen brightness is at max. If it still doesn\'t work, show the booking confirmation to staff.</p><p><strong>How do I get a refund?</strong><br>Cancelled bookings are refunded to your ScanGym Wallet instantly, or to your card within 5-10 days.</p><p>📧 Still stuck? Email <strong>hello@scangym.com</strong></p>`);
   else if(path==='/staff/scan')page=StaffScanPage();
   else if(path==='/forceo')page=CeoDashboardPage();
+  else if(path==='/owner/controls')page=OwnerControlsPage();
   else if(path.startsWith('/scan/')&&path.split('/').length===3)page=QRScanVerifyPage(path.split('/')[2]);
   else if(path==='/scan')page=ScanInfoPage();
   else if(path==='/top-creators')page=InfoPage('Top Creators',`<div class="text-center mb-8"><p class="text-xl text-white font-bold">🏆 FlexSquad Leaderboard</p><p class="text-slate-300">Our top-performing creators this month</p></div><div class="space-y-4">${[{rank:1,name:'Coming Soon',handle:'@your-name-here',bookings:'-',earned:'-',badge:'🥇'},{rank:2,name:'Coming Soon',handle:'@your-name-here',bookings:'-',earned:'-',badge:'🥈'},{rank:3,name:'Coming Soon',handle:'@your-name-here',bookings:'-',earned:'-',badge:'🥉'}].map(c=>`<div class="bg-slate-800 rounded-xl p-4 flex items-center gap-4 border border-slate-700"><span class="text-3xl">\${c.badge}</span><div class="flex-1"><p class="text-white font-bold">\${c.name}</p><p class="text-slate-400 text-sm">\${c.handle}</p></div><div class="text-right"><p class="text-brand font-bold">\${c.earned}</p><p class="text-slate-500 text-xs">\${c.bookings} bookings</p></div></div>`).join("")}</div><div class="mt-8 bg-brand/10 border border-brand/30 rounded-xl p-6 text-center"><p class="text-white font-bold mb-2">Want to see your name here?</p><p class="text-slate-300 text-sm mb-4">Join FlexSquad and start earning 25% commission on every referred booking.</p><div class="flex gap-3 justify-center flex-wrap"><a onclick="navigate('/become-a-creator')" class="bg-brand hover:bg-orange-600 text-white font-bold px-6 py-3 rounded-xl cursor-pointer transition inline-block">Become a Creator →</a><a onclick="navigate('/creators')" class="border border-brand text-brand hover:bg-brand hover:text-white font-bold px-6 py-3 rounded-xl cursor-pointer transition inline-block">Browse Assets →</a></div></div>`);
