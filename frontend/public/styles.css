@@ -35,3 +35,27 @@ body {
   font-display: swap;
   text-rendering: optimizeSpeed;
 }
+
+/* ═══ Phase 1 Fix #1: Stripe card input visibility on mobile ═══ */
+/* Stripe Elements render inside an iframe; ensure the container is visible */
+#ov-pay-card-element,
+#wallet-card-element {
+  background: rgba(15, 23, 42, 0.8) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  border-radius: 12px !important;
+  padding: 14px 16px !important;
+  min-height: 48px !important;
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+  font-size: 16px !important; /* prevents iOS zoom on focus */
+}
+#ov-pay-card-element iframe,
+#wallet-card-element iframe {
+  min-height: 20px !important;
+}
+/* Focus state for card inputs */
+#ov-pay-card-element:focus-within,
+#wallet-card-element:focus-within {
+  border-color: #f97316 !important;
+  box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2) !important;
+}
