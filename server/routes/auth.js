@@ -193,10 +193,22 @@ router.get('/user', async (req, res) => {
       return res.status(401).json({ error: 'Not authenticated', message: 'Please log in first' });
     }
 
-    const user = await pool.query(
-      'SELECT id, phone_number, first_name, last_name, email, created_at FROM public.users WHERE id = $1',
-      [req.session.userId]
-    );
+    // Try with extended fields; fall back if columns don't exist yet
+    let user;
+    try {
+      user = await pool.query(
+        `SELECT id, phone_number, first_name, last_name, email, created_at,
+                fitness_level, emergency_contact, profile_complete
+         FROM public.users WHERE id = $1`,
+        [req.session.userId]
+      );
+    } catch (e) {
+      // Extended columns may not exist yet
+      user = await pool.query(
+        'SELECT id, phone_number, first_name, last_name, email, created_at FROM public.users WHERE id = $1',
+        [req.session.userId]
+      );
+    }
 
     if (user.rows.length === 0) {
       req.session.destroy();
@@ -208,12 +220,157 @@ router.get('/user', async (req, res) => {
       id: u.id,
       phone: u.phone_number,
       name: [u.first_name, u.last_name].filter(Boolean).join(' ') || null,
+      first_name: u.first_name || '',
+      last_name: u.last_name || '',
       email: u.email,
-      created_at: u.created_at,
+      fitness_level: u.fitness_level || '',
+      emergency_contact: u.emergency_contact || '',
+      profile_complete: u.profile_complete || false,
+      member_since: u.created_at,
     });
   } catch (err) {
     console.error('Get user error:', err);
     res.status(500).json({ error: 'Failed to get user' });
+  }
+});
+
+/**
+ * PUT /api/auth/profile
+ * Update user profile — name, email, fitness level, emergency contact
+ * Server-side storage so profile syncs across devices (replaces localStorage)
+ */
+router.put('/profile', async (req, res) => {
+  try {
+    if (!req.session || !req.session.userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const { first_name, last_name, email, fitness_level, emergency_contact } = req.body;
+    const userId = req.session.userId;
+
+    // Ensure profile columns exist (idempotent)
+    await pool.query(`
+      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS fitness_level VARCHAR(50);
+      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS emergency_contact VARCHAR(255);
+      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS profile_complete BOOLEAN DEFAULT false;
+    `);
+
+    // Build dynamic update
+    const fields = [];
+    const values = [];
+    let idx = 1;
+
+    if (first_name !== undefined) { fields.push(`first_name = $${idx++}`); values.push(first_name); }
+    if (last_name !== undefined) { fields.push(`last_name = $${idx++}`); values.push(last_name); }
+    if (email !== undefined) { fields.push(`email = $${idx++}`); values.push(email); }
+    if (fitness_level !== undefined) { fields.push(`fitness_level = $${idx++}`); values.push(fitness_level); }
+    if (emergency_contact !== undefined) { fields.push(`emergency_contact = $${idx++}`); values.push(emergency_contact); }
+
+    if (fields.length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+
+    // Check profile completeness
+    fields.push(`profile_complete = (
+      COALESCE(${first_name !== undefined ? `$${values.indexOf(first_name) + 1}` : 'first_name'}, '') != '' AND
+      COALESCE(${email !== undefined ? `$${values.indexOf(email) + 1}` : 'email'}, '') != '' AND
+      phone_number IS NOT NULL
+    )`);
+    fields.push(`updated_at = NOW()`);
+
+    values.push(userId);
+    const query = `UPDATE public.users SET ${fields.join(', ')} WHERE id = $${idx} RETURNING id, first_name, last_name, email, phone_number, fitness_level, emergency_contact, profile_complete, created_at`;
+
+    const result = await pool.query(query, values);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const u = result.rows[0];
+    res.json({
+      success: true,
+      user: {
+        id: u.id,
+        phone: u.phone_number,
+        name: [u.first_name, u.last_name].filter(Boolean).join(' ') || null,
+        first_name: u.first_name,
+        last_name: u.last_name,
+        email: u.email,
+        fitness_level: u.fitness_level,
+        emergency_contact: u.emergency_contact,
+        profile_complete: u.profile_complete,
+        member_since: u.created_at,
+      },
+    });
+  } catch (err) {
+    console.error('Profile update error:', err);
+    res.status(500).json({ error: 'Failed to update profile', detail: err.message });
+  }
+});
+
+/**
+ * GET /api/auth/profile
+ * Get full profile with all fields (extended version of /user)
+ */
+router.get('/profile', async (req, res) => {
+  try {
+    if (!req.session || !req.session.userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    // Ensure columns exist
+    await pool.query(`
+      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS fitness_level VARCHAR(50);
+      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS emergency_contact VARCHAR(255);
+      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS profile_complete BOOLEAN DEFAULT false;
+    `);
+
+    const result = await pool.query(
+      `SELECT id, phone_number, first_name, last_name, email, fitness_level, emergency_contact, 
+              profile_complete, stripe_customer_id, created_at
+       FROM public.users WHERE id = $1`,
+      [req.session.userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const u = result.rows[0];
+
+    // Count bookings for stats
+    let totalBookings = 0;
+    let gymsVisited = 0;
+    try {
+      const bookingStats = await pool.query(
+        `SELECT COUNT(*) as total, COUNT(DISTINCT gym_id) as gyms FROM bookings WHERE user_id = $1`,
+        [req.session.userId]
+      );
+      totalBookings = parseInt(bookingStats.rows[0]?.total || 0);
+      gymsVisited = parseInt(bookingStats.rows[0]?.gyms || 0);
+    } catch (e) { /* bookings table may not exist yet */ }
+
+    res.json({
+      id: u.id,
+      phone: u.phone_number,
+      name: [u.first_name, u.last_name].filter(Boolean).join(' ') || null,
+      first_name: u.first_name || '',
+      last_name: u.last_name || '',
+      email: u.email || '',
+      fitness_level: u.fitness_level || '',
+      emergency_contact: u.emergency_contact || '',
+      profile_complete: u.profile_complete || false,
+      has_payment: !!u.stripe_customer_id,
+      member_since: u.created_at,
+      stats: {
+        total_bookings: totalBookings,
+        gyms_visited: gymsVisited,
+      },
+    });
+  } catch (err) {
+    console.error('Get profile error:', err);
+    res.status(500).json({ error: 'Failed to get profile' });
   }
 });
 
