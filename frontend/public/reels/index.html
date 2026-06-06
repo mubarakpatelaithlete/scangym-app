@@ -225,6 +225,11 @@
         animation:spin .8s linear infinite;
       }
       @keyframes spin{to{transform:rotate(360deg);}}
+      .reel-buffering{
+        position:absolute;top:0;left:0;right:0;bottom:0;
+        display:flex;align-items:center;justify-content:center;
+        z-index:15;pointer-events:none;
+      }
 
       /* ── Mute indicator ── */
       #mute-indicator{
@@ -375,11 +380,11 @@
       var SNAP_THRESHOLD   = 0.2;
       var SNAP_DURATION    = 280;
       var RUBBER_BAND      = 0.3;
-      var RENDER_WINDOW    = 2;
-      var PREFETCH_AHEAD   = 5;
+      var RENDER_WINDOW    = 3;       // Keep 3 reels above + below rendered
+      var PREFETCH_AHEAD   = 8;      // Prefetch next 8 videos
       var PAGE_SIZE        = 20;
-      var LOAD_MORE_AT     = 3;
-      var POOL_SIZE        = 3;      // ⑮ video element pool size
+      var LOAD_MORE_AT     = 5;      // Start loading more earlier
+      var POOL_SIZE        = 5;      // ⑮ video element pool — 5 for smoother fast scrolling
       var CROSSFADE_MS     = 150;    // ⑯ audio crossfade duration
 
       // ── Placeholder poster (SVG) ──
@@ -1008,7 +1013,7 @@
         }
       }
 
-      // ── Smart preloading ──
+      // ── Smart preloading — preload current + next 2 fully ──
       function applySmartPreload(centerIndex){
         var keys = Object.keys(renderedReels);
         for(var k = 0; k < keys.length; k++){
@@ -1016,7 +1021,8 @@
           var el  = renderedReels[idx];
           var vid = el.querySelector('video');
           if(!vid) continue;
-          vid.preload = (idx === centerIndex || idx === centerIndex + 1) ? 'auto' : 'metadata';
+          // Preload current + next 2 videos fully, rest metadata only
+          vid.preload = (idx >= centerIndex && idx <= centerIndex + 2) ? 'auto' : 'metadata';
         }
       }
 
@@ -1027,6 +1033,12 @@
         if(!vid) return;
         vid.preload = 'auto';
         if(vid.readyState < 2) vid.load();
+        // Also upgrade the one after
+        var el2 = renderedReels[index + 1];
+        if(el2){
+          var vid2 = el2.querySelector('video');
+          if(vid2){ vid2.preload = 'auto'; if(vid2.readyState < 2) vid2.load(); }
+        }
       }
 
       // ═══════════════════════════════════════════════════════════
@@ -1109,7 +1121,7 @@
         if(progressRafId){ cancelAnimationFrame(progressRafId); progressRafId = null; }
       }
 
-      // ── Prefetch ──
+      // ── Prefetch — use fetch() + Cache API for real pre-download ──
       function prefetchAhead(fromIndex){
         var urls = [];
         for(var i = fromIndex + 1; i <= fromIndex + PREFETCH_AHEAD && i < allVideos.length; i++){
@@ -1117,15 +1129,29 @@
           if(!url || prefetchedUrls[url]) continue;
           prefetchedUrls[url] = true;
           urls.push(url);
-          var link = document.createElement('link');
-          link.rel = 'prefetch';
-          link.as = 'fetch';
-          link.href = url;
-          link.crossOrigin = 'anonymous';
-          document.head.appendChild(link);
         }
-        // ⑲ Tell service worker to cache these videos
-        if(urls.length > 0 && navigator.serviceWorker && navigator.serviceWorker.controller){
+        if(urls.length === 0) return;
+
+        // Use Cache API directly for reliable pre-caching (faster than link prefetch)
+        if(window.caches){
+          caches.open('reels-v4-video').then(function(cache){
+            urls.forEach(function(url, idx){
+              // Stagger fetches to avoid bandwidth contention: first 3 immediate, rest delayed
+              setTimeout(function(){
+                cache.match(url).then(function(existing){
+                  if(!existing){
+                    fetch(url, { mode: 'cors', credentials: 'omit' }).then(function(resp){
+                      if(resp.ok) cache.put(url, resp);
+                    }).catch(function(){});
+                  }
+                });
+              }, idx < 3 ? 0 : idx * 500);
+            });
+          });
+        }
+
+        // Also tell service worker to cache these videos
+        if(navigator.serviceWorker && navigator.serviceWorker.controller){
           navigator.serviceWorker.controller.postMessage({ type: 'PRECACHE_VIDEOS', urls: urls });
         }
       }
@@ -1211,7 +1237,8 @@
         var vid = acquireVideo(index);
         vid.src = videoUrl;
         vid.muted = isMuted;
-        vid.preload = (index === currentIndex || index === currentIndex + 1) ? 'auto' : 'metadata';
+        // Preload current + next 2 fully, rest metadata only
+        vid.preload = (index >= currentIndex && index <= currentIndex + 2) ? 'auto' : 'metadata';
         // ⑦ + ㉑ Poster: cached frame > blurhash > thumb > SVG
         var poster = posterCache[index] || video.thumb || PLACEHOLDER_POSTER;
         if(!posterCache[index] && video.blurhash){
@@ -1235,6 +1262,17 @@
             }
           }, 1500);
         });
+
+        // Buffering spinner — show when video is waiting for data
+        var bufSpinner = document.createElement('div');
+        bufSpinner.className = 'reel-buffering';
+        bufSpinner.innerHTML = '<div class="spinner"></div>';
+        bufSpinner.style.display = 'none';
+        div.appendChild(bufSpinner);
+
+        vid.addEventListener('waiting', function(){ bufSpinner.style.display = 'flex'; });
+        vid.addEventListener('canplay', function(){ bufSpinner.style.display = 'none'; });
+        vid.addEventListener('playing', function(){ bufSpinner.style.display = 'none'; });
 
         // Progress bar
         var progressWrap = document.createElement('div');

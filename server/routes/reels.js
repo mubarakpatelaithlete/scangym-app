@@ -133,6 +133,8 @@ router.get('/feed', async (req, res) => {
     const total = feed.length;
     feed = feed.slice(offset, offset + limit);
 
+    // Cache feed for 5 min (CDN) / 2 min (browser) — shuffled feeds are still fresh enough
+    res.set('Cache-Control', 'public, max-age=120, s-maxage=300');
     res.json({
       videos: feed,
       total,
