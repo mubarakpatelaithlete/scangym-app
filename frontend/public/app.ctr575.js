@@ -489,7 +489,34 @@ function switchTab(tab){
   else if(tab==='book'){state.route=state._lastBookRoute||'/explore';history.pushState(null,'',state.route);}
   else if(tab==='more'){state.route=state._lastMoreRoute||'/more';history.pushState(null,'',state.route);}
   render();
+  // ── Bug Fix: Toggle persistent reels iframe visibility ──
+  _syncReelsVisibility();
   var _sc=document.querySelector('.sg-tab-content');if(_sc)_sc.scrollTop=0;
+}
+// ── Persistent Reels Iframe: keep alive outside #app, toggle display ──
+function _ensureReelsIframe(){
+  if(document.getElementById('sg-reels-persistent'))return;
+  var wrap=document.createElement('div');
+  wrap.id='sg-reels-persistent';
+  wrap.style.cssText='position:fixed;top:0;left:0;right:0;bottom:56px;z-index:1;background:#000;display:none;';
+  wrap.innerHTML='<iframe id="sg-reels-iframe" src="/reels/" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;z-index:1;" allow="autoplay; fullscreen" loading="lazy"></iframe>'
+    +'<div id="sg-reels-fallback" style="display:none;position:absolute;top:0;left:0;right:0;bottom:0;z-index:2;background:linear-gradient(180deg,#0a0a16 0%,#111127 100%);flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;">'
+    +'<div style="font-size:64px;margin-bottom:16px;">🎬</div>'
+    +'<p style="color:#fff;font-size:22px;font-weight:800;margin:0 0 8px;">Reels Coming Soon</p>'
+    +'<p style="color:rgba(255,255,255,.45);font-size:14px;margin:0 0 24px;max-width:280px;">Gym workout videos, tips, and inspiration from creators worldwide.</p>'
+    +'<button onclick="switchTab(\'book\')" style="background:#f97316;color:#fff;font-weight:700;font-size:15px;padding:14px 32px;border-radius:14px;border:none;cursor:pointer;box-shadow:0 4px 20px rgba(249,115,22,.3);">🏋️ Find a Gym Instead</button>'
+    +'</div>';
+  document.body.appendChild(wrap);
+}
+function _syncReelsVisibility(){
+  var wrap=document.getElementById('sg-reels-persistent');
+  if(state.activeTab==='reels'){
+    if(!wrap)_ensureReelsIframe();
+    wrap=document.getElementById('sg-reels-persistent');
+    if(wrap)wrap.style.display='block';
+  }else{
+    if(wrap)wrap.style.display='none';
+  }
 }
 function navigate(path,pushState=true){
   state.route=path;
@@ -499,9 +526,10 @@ function navigate(path,pushState=true){
   else if(state.activeTab==='more')state._lastMoreRoute=path;
   if(pushState)history.pushState(null,'',path);
   render();
+  _syncReelsVisibility();
   var _sc=document.querySelector('.sg-tab-content');if(_sc)_sc.scrollTop=0;
 }
-window.addEventListener('popstate',()=>{state.route=location.pathname;state.activeTab=getTabForRoute(state.route);render();});
+window.addEventListener('popstate',()=>{state.route=location.pathname;state.activeTab=getTabForRoute(state.route);render();_syncReelsVisibility();});
 
 // ─── Geolocation ───
 // 5-layer waterfall GPS loaded from robust-location.js
@@ -1307,7 +1335,7 @@ function GymProfilePage(){
     .gym-pay-option.selected .gym-pay-option-check{background:#22c55e;border-color:#22c55e;color:#fff}
 
     /* ═══ Uber-style Date/Time picker sheet ═══ */
-    .gym-date-sheet{position:fixed;inset:0;z-index:9200;opacity:0;pointer-events:none;transition:opacity .25s}
+    .gym-date-sheet{position:fixed;top:0;left:0;right:0;bottom:0;z-index:9200;opacity:0;pointer-events:none;transition:opacity .25s}
     .gym-date-sheet.open{opacity:1;pointer-events:all}
     .gym-date-sheet-bg{position:absolute;inset:0;background:rgba(0,0,0,.5)}
     .gym-date-sheet-panel{position:absolute;left:0;right:0;bottom:0;background:#000;border-radius:16px 16px 0 0;transform:translateY(100%);transition:transform .35s cubic-bezier(.32,.72,0,1);padding-bottom:env(safe-area-inset-bottom,0px);max-height:85vh;display:flex;flex-direction:column;overflow:hidden}
@@ -1334,7 +1362,7 @@ function GymProfilePage(){
     .uber-time-item.selected{color:#fff;background:rgba(255,255,255,.08);font-weight:600}
     .uber-time-item.past{color:rgba(255,255,255,.15);pointer-events:none}
     /* CTA */
-    .uber-date-cta-wrap{flex-shrink:0;background:#000;padding:12px 16px calc(16px + env(safe-area-inset-bottom,0px));border-top:1px solid rgba(255,255,255,.06)}
+    .uber-date-cta-wrap{flex-shrink:0;background:#000;padding:12px 16px calc(20px + env(safe-area-inset-bottom,0px));border-top:1px solid rgba(255,255,255,.06)}
     .uber-date-cta{padding:16px;border-radius:8px;border:none;background:#fff;color:#000;font-size:16px;font-weight:700;width:100%;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
     .uber-date-cta:active{transform:scale(.98);opacity:.9}
     .uber-date-cta:disabled{opacity:.4;pointer-events:none}
@@ -2269,10 +2297,14 @@ window.openPaySheet=function(){
     }).catch(()=>{savedArea.innerHTML='';});
   }
   sheet.classList.add('open');
+  // ── Bug Fix #3: Hide tab bar so it can't cover pay sheet CTAs ──
+  var _psTabBar=document.querySelector('.sg-tab-bar');if(_psTabBar)_psTabBar.classList.add('hidden');
 };
 window.closePaySheet=function(){
   const sheet=document.getElementById('gym-pay-sheet');
   if(sheet)sheet.classList.remove('open');
+  // ── Bug Fix #3: Restore tab bar ──
+  var _psTabBar=document.querySelector('.sg-tab-bar');if(_psTabBar)_psTabBar.classList.remove('hidden');
 };
 // Select a SAVED card as payment method (Uber-style)
 window.selectPayMethodSaved=function(el,cardId,brand,last4){
@@ -2671,11 +2703,25 @@ window.openDateSheet=function(){
   window._buildUberTimeList(0);
   // Open
   sheet.classList.add('open');
+  // ── Bug Fix #3: Hide tab bar so it can't cover the CTA ──
+  var _dtTabBar=document.querySelector('.sg-tab-bar');if(_dtTabBar)_dtTabBar.classList.add('hidden');
+  // ── Bug Fix #3: Explicit touch handler on Confirm time button for mobile ──
+  var _dtCta=document.getElementById('uber-date-cta');
+  if(_dtCta&&!_dtCta._touchFixed){
+    _dtCta._touchFixed=true;
+    var _dtTapStart=0;
+    _dtCta.addEventListener('touchstart',function(){_dtTapStart=Date.now();},{passive:true});
+    _dtCta.addEventListener('touchend',function(e){
+      if(Date.now()-_dtTapStart<300){e.preventDefault();confirmDateSheet();}
+    },{passive:false});
+  }
 };
 
 window.closeDateSheet=function(){
   const sheet=document.getElementById('gym-date-sheet');
   if(sheet)sheet.classList.remove('open');
+  // ── Bug Fix #3: Restore tab bar ──
+  var _dtTabBar=document.querySelector('.sg-tab-bar');if(_dtTabBar)_dtTabBar.classList.remove('hidden');
 };
 
 window.confirmDateSheet=function(){
@@ -5347,13 +5393,16 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
 
       <div class="ub-footer">
         <button class="ub-cta ub-cta-primary" id="ub-cta-btn" onclick="ubConfirmPay()">
-          <span id="ub-cta-text">Confirm and pay</span>
+          <span id="ub-cta-text">${finalIsCash?'Confirm · pay at gym':'Confirm and pay'}</span>
         </button>
       </div>
     </div>
   </div>`;
 
   document.body.appendChild(sheet);
+
+  // ── Bug Fix #2: Hide tab bar when booking sheet is open (prevent z-index/touch conflicts) ──
+  var _ubTabBar=document.querySelector('.sg-tab-bar');if(_ubTabBar)_ubTabBar.classList.add('hidden');
 
   // ═══ State ═══
   window._checkoutState={
@@ -5373,13 +5422,13 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
 
   // ═══ Swipe-down-to-close on bottom sheet ═══
   (function(){
-    let sy=0,cy=0,d=false;const sh=sheet.querySelector('.ub-sheet');
+    let sy=0,cy=0,d=false,moved=false;const sh=sheet.querySelector('.ub-sheet');
     if(!sh)return;
     sh.addEventListener('touchstart',e=>{
-      sy=e.touches[0].clientY;cy=sy;d=true;
+      sy=e.touches[0].clientY;cy=sy;d=true;moved=false;
     },{passive:true});
     sh.addEventListener('touchmove',e=>{
-      if(!d)return;cy=e.touches[0].clientY;const diff=cy-sy;
+      if(!d)return;cy=e.touches[0].clientY;moved=true;const diff=cy-sy;
       if(diff>0)sh.style.transform=`translateY(${diff}px)`;
     },{passive:true});
     sh.addEventListener('touchend',()=>{
@@ -5387,6 +5436,21 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
       if(cy-sy>120)closeBookingSheet();
       else sh.style.transform='';
     },{passive:true});
+  })();
+
+  // ── Bug Fix #2: Explicit touch handler on CTA button for mobile Safari ──
+  (function(){
+    var ctaBtn=document.getElementById('ub-cta-btn');
+    if(!ctaBtn)return;
+    var _tapStartTime=0;
+    ctaBtn.addEventListener('touchstart',function(e){_tapStartTime=Date.now();},{passive:true});
+    ctaBtn.addEventListener('touchend',function(e){
+      // Only fire on quick taps (< 300ms), not swipe gestures
+      if(Date.now()-_tapStartTime<300){
+        e.preventDefault();
+        ubConfirmPay();
+      }
+    },{passive:false});
   })();
 
   // ═══ Confirm & Pay handler ═══
@@ -5632,6 +5696,8 @@ window.closeBookingSheet=function(){
     }
   }
   window._checkoutState={stripe:null,elements:null,bookingId:null,intentId:null,gymId:null};
+  // ── Bug Fix #2: Restore tab bar after booking sheet closes ──
+  var _ubTabBar=document.querySelector('.sg-tab-bar');if(_ubTabBar)_ubTabBar.classList.remove('hidden');
 };
 
 
@@ -7696,18 +7762,9 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
   let html='';
 
   if(tab==='reels'){
-    // Full-screen Reels with bottom tab bar visible
-    html=`<div style="position:fixed;top:0;left:0;right:0;bottom:56px;z-index:1;background:#000;">
-      <iframe id="sg-reels-iframe" src="/reels/" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;z-index:1;" allow="autoplay; fullscreen" loading="lazy" onload="this.style.opacity='1'" onerror="document.getElementById('sg-reels-fallback').style.display='flex'"></iframe>
-      <!-- Fallback placeholder if iframe fails -->
-      <div id="sg-reels-fallback" style="display:none;position:absolute;top:0;left:0;right:0;bottom:0;z-index:2;background:linear-gradient(180deg,#0a0a16 0%,#111127 100%);flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;">
-        <div style="font-size:64px;margin-bottom:16px;">🎬</div>
-        <p style="color:#fff;font-size:22px;font-weight:800;margin:0 0 8px;">Reels Coming Soon</p>
-        <p style="color:rgba(255,255,255,.45);font-size:14px;margin:0 0 24px;max-width:280px;">Gym workout videos, tips, and inspiration from creators worldwide.</p>
-        <button onclick="switchTab('book')" style="background:#f97316;color:#fff;font-weight:700;font-size:15px;padding:14px 32px;border-radius:14px;border:none;cursor:pointer;box-shadow:0 4px 20px rgba(249,115,22,.3);">🏋️ Find a Gym Instead</button>
-      </div>
-      <!-- FlexSquad + Upload buttons removed — accessible via More > Creators instead -->
-    </div>`+BottomTabBar();
+    // ── Bug Fix #1: Persistent Reels iframe (lives outside #app, toggled via _syncReelsVisibility) ──
+    _ensureReelsIframe();
+    html=BottomTabBar();
   } else if(tab==='more' && (path==='/more'||path==='/more/')){
     // More hub page
     html=`<main class="sg-tab-content fade-in">${MoreHubPage()}</main>`+BottomTabBar();
