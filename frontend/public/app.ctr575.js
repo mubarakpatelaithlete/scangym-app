@@ -1927,33 +1927,26 @@ window.openGymOverlay=function(section){
           </div>
         </button>
 
-        <!-- Add Card Form (Uber-style separate fields) -->
-        <div id="ov-pay-card-form" style="display:none;margin-top:16px;background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:20px">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-            <h3 style="color:#1a1a2e;font-size:16px;font-weight:700;margin:0">Add card</h3>
-            <button onclick="_ovPayCloseCardForm()" style="background:none;border:none;color:#94a3b8;font-size:20px;cursor:pointer;padding:4px">✕</button>
-          </div>
-          <!-- Card brand icon -->
-          <div id="ov-pay-brand-icon" style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
-            <span style="font-size:13px;color:#64748b;font-weight:500">Card details</span>
-            <span id="ov-pay-brand-badge" style="font-size:12px;font-weight:700;padding:2px 8px;border-radius:4px;background:#f1f5f9;color:#64748b"></span>
-          </div>
-          <!-- Card Number -->
-          <label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Card number</label>
-          <div id="ov-pay-card-number" style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:14px 16px;margin-bottom:14px;min-height:48px;transition:border-color .2s"></div>
-          <!-- Expiry + CVC row -->
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
-            <div>
-              <label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Expiry</label>
-              <div id="ov-pay-card-expiry" style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:14px 16px;min-height:48px;transition:border-color .2s"></div>
+        <!-- Add Card Form (Uber unified container) -->
+        <div id="ov-pay-card-form" style="display:none;margin-top:16px">
+          <!-- Unified card container -->
+          <div style="background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb">
+            <!-- Card number row -->
+            <div style="display:flex;align-items:center;padding:0 16px">
+              <div id="ov-pay-card-number" style="flex:1;padding:16px 0;min-height:48px"></div>
+              <span id="ov-pay-brand-badge" style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;background:transparent;color:#64748b;margin-left:8px;white-space:nowrap"></span>
             </div>
-            <div>
-              <label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">CVC</label>
-              <div id="ov-pay-card-cvc" style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:14px 16px;min-height:48px;transition:border-color .2s"></div>
+            <!-- Divider -->
+            <div style="height:1px;background:#e5e7eb;margin:0"></div>
+            <!-- Expiry + CVC row -->
+            <div style="display:flex">
+              <div id="ov-pay-card-expiry" style="flex:1;padding:16px;min-height:48px"></div>
+              <div style="width:1px;background:#e5e7eb"></div>
+              <div id="ov-pay-card-cvc" style="flex:1;padding:16px;min-height:48px"></div>
             </div>
           </div>
-          <button id="ov-pay-save-btn" onclick="_ovPaySaveCard()" style="width:100%;background:#22c55e;color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;opacity:.5;pointer-events:none;transition:all .2s">Save Card</button>
-          <p id="ov-pay-card-error" style="color:#ef4444;font-size:12px;margin-top:8px;display:none"></p>
+          <button id="ov-pay-save-btn" onclick="_ovPaySaveCard()" style="width:100%;background:#22c55e;color:#fff;border:none;border-radius:12px;padding:16px;font-size:16px;font-weight:700;cursor:pointer;opacity:.5;pointer-events:none;transition:all .2s;margin-top:16px">Save Card</button>
+          <p id="ov-pay-card-error" style="color:#ef4444;font-size:13px;margin-top:8px;display:none"></p>
         </div>
 
         <!-- Cash Option -->
@@ -2424,9 +2417,9 @@ window._ovPayAddCard=function(){
     const stripeKey=window._stripePublicKey||STRIPE_PK||'pk_live_51Ss8P0DPbSptA7HKnQFKelVtYGIWnxhOC8MuZIQdqTYHCJRgI5x8GZ2TlE2DVKK0pLXLJWF9AYNK4RbAEhTk8BN00YoI3Xwjf';
     const si=Stripe(stripeKey);
     window._ovPayStripeInstance=si;
-    const elStyle={base:{fontSize:'16px',color:'#1a1a2e',fontFamily:'-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif','::placeholder':{color:'#94a3b8'}},invalid:{color:'#ef4444'}};
+    const elStyle={base:{fontSize:'16px',color:'#1a1a2e',fontWeight:'400',fontFamily:'-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif','::placeholder':{color:'#9ca3af'}},invalid:{color:'#ef4444'}};
     window._ovPayStripeElements=si.elements({
-      appearance:{theme:'flat',variables:{colorPrimary:'#22c55e',colorBackground:'#f8fafc',colorText:'#1a1a2e',colorTextPlaceholder:'#94a3b8',borderRadius:'10px',colorDanger:'#ef4444'}},
+      appearance:{theme:'flat',variables:{colorPrimary:'#22c55e',colorBackground:'#ffffff',colorText:'#1a1a2e',colorTextPlaceholder:'#9ca3af',borderRadius:'0px',colorDanger:'#ef4444'}},
     });
     // Separate fields for Uber-style layout
     window._ovPayCardNumber=window._ovPayStripeElements.create('cardNumber',{style:elStyle,showIcon:true});
@@ -4366,33 +4359,26 @@ function WalletPage(){
         </div>
       </button>
 
-      <!-- Add Card Form (Uber-style separate fields) -->
-      <div id="wallet-add-card-form" style="display:none;margin-top:16px;background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:20px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-          <h3 style="color:#1a1a2e;font-size:16px;font-weight:700">Add card</h3>
-          <button onclick="_walletCloseCardForm()" style="background:none;border:none;color:#94a3b8;font-size:20px;cursor:pointer;padding:4px">✕</button>
-        </div>
-        <!-- Card brand icon -->
-        <div id="wallet-brand-icon" style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
-          <span style="font-size:13px;color:#64748b;font-weight:500">Card details</span>
-          <span id="wallet-brand-badge" style="font-size:12px;font-weight:700;padding:2px 8px;border-radius:4px;background:#f1f5f9;color:#64748b"></span>
-        </div>
-        <!-- Card Number -->
-        <label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Card number</label>
-        <div id="wallet-card-number" style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:14px 16px;margin-bottom:14px;min-height:48px;transition:border-color .2s"></div>
-        <!-- Expiry + CVC row -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
-          <div>
-            <label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Expiry</label>
-            <div id="wallet-card-expiry" style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:14px 16px;min-height:48px;transition:border-color .2s"></div>
+      <!-- Add Card Form (Uber unified container) -->
+      <div id="wallet-add-card-form" style="display:none;margin-top:16px">
+        <!-- Unified card container -->
+        <div style="background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb">
+          <!-- Card number row -->
+          <div style="display:flex;align-items:center;padding:0 16px">
+            <div id="wallet-card-number" style="flex:1;padding:16px 0;min-height:48px"></div>
+            <span id="wallet-brand-badge" style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;background:transparent;color:#64748b;margin-left:8px;white-space:nowrap"></span>
           </div>
-          <div>
-            <label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">CVC</label>
-            <div id="wallet-card-cvc" style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:14px 16px;min-height:48px;transition:border-color .2s"></div>
+          <!-- Divider -->
+          <div style="height:1px;background:#e5e7eb;margin:0"></div>
+          <!-- Expiry + CVC row -->
+          <div style="display:flex">
+            <div id="wallet-card-expiry" style="flex:1;padding:16px;min-height:48px"></div>
+            <div style="width:1px;background:#e5e7eb"></div>
+            <div id="wallet-card-cvc" style="flex:1;padding:16px;min-height:48px"></div>
           </div>
         </div>
-        <button id="wallet-save-card-btn" onclick="_walletSaveCard()" style="width:100%;background:#f97316;color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;opacity:.5;pointer-events:none;transition:all .2s">Save Card</button>
-        <p id="wallet-card-error" style="color:#ef4444;font-size:12px;margin-top:8px;display:none"></p>
+        <button id="wallet-save-card-btn" onclick="_walletSaveCard()" style="width:100%;background:#f97316;color:#fff;border:none;border-radius:12px;padding:16px;font-size:16px;font-weight:700;cursor:pointer;opacity:.5;pointer-events:none;transition:all .2s;margin-top:16px">Save Card</button>
+        <p id="wallet-card-error" style="color:#ef4444;font-size:13px;margin-top:8px;display:none"></p>
       </div>
 
       <!-- Top-up Section -->
@@ -4511,9 +4497,9 @@ window._walletAddCard=function(){
   if(!window._walletStripeElements&&window.Stripe){
     const stripeKey=window._stripePublicKey||'pk_live_51Ss8P0DPbSptA7HKnQFKelVtYGIWnxhOC8MuZIQdqTYHCJRgI5x8GZ2TlE2DVKK0pLXLJWF9AYNK4RbAEhTk8BN00YoI3Xwjf';
     const stripeInstance=Stripe(stripeKey);
-    const elStyle={base:{fontSize:'16px',color:'#1a1a2e',fontFamily:'-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif','::placeholder':{color:'#94a3b8'}},invalid:{color:'#ef4444'}};
+    const elStyle={base:{fontSize:'16px',color:'#1a1a2e',fontWeight:'400',fontFamily:'-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif','::placeholder':{color:'#9ca3af'}},invalid:{color:'#ef4444'}};
     window._walletStripeElements=stripeInstance.elements({
-      appearance:{theme:'flat',variables:{colorPrimary:'#f97316',colorBackground:'#f8fafc',colorText:'#1a1a2e',colorTextPlaceholder:'#94a3b8',borderRadius:'10px',colorDanger:'#ef4444'}},
+      appearance:{theme:'flat',variables:{colorPrimary:'#f97316',colorBackground:'#ffffff',colorText:'#1a1a2e',colorTextPlaceholder:'#9ca3af',borderRadius:'0px',colorDanger:'#ef4444'}},
     });
     // Separate fields
     window._walletCardNumber=window._walletStripeElements.create('cardNumber',{style:elStyle,showIcon:true});
