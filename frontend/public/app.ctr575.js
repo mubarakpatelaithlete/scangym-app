@@ -1135,13 +1135,14 @@ function SearchPage(){
           /* Tour badge */
           html+='<div class="tt-tour-badge"><div class="tt-tour-play"></div> Gym Tour</div>';
 
-          /* Search bar (only on first card, shared) */
+          /* Search bar (only on first card, shared) — taps open Uber-style search overlay */
           if(i===0){
-            html+='<div class="tt-search" id="tt-search">';
-            html+='<div class="tt-search-input" onclick="document.getElementById(\'tt-search-real\').style.display=\'flex\';this.style.display=\'none\';document.getElementById(\'tt-search-real-input\').focus()">\u{1F4CD} '+(searchLabel||'Nearby')+' \u00b7 '+totalC+' gyms</div>';
-            html+='<div class="tt-search-input" id="tt-search-real" style="display:none;flex:1"><input type="text" id="tt-search-real-input" placeholder="Search gyms anywhere\u2026" style="background:transparent;border:none;outline:none;color:#fff;font-size:13px;width:100%" value="'+(state.searchQuery||'')+'" onkeydown="if(event.key===\'Enter\'){window.doSearch()}"></div>';
-            html+='<div class="tt-search-gps" onclick="findGyms()">\u{1F4CD}</div>';
+            html+='<div class="tt-search" id="tt-search" onclick="window._openSearchOverlay()">';
+            html+='<div class="tt-search-input">\u{1F50D} '+(state.searchQuery||(searchLabel||'Nearby')+' \u00b7 '+totalC+' gyms')+'</div>';
+            html+='<div class="tt-search-gps" onclick="event.stopPropagation();findGyms()">\u{1F4CD}</div>';
             html+='</div>';
+            /* Hidden input for backwards compat — doSearch still reads it */
+            html+='<input type="hidden" id="tt-search-real-input" value="'+(state.searchQuery||'')+'">';
             /* Filter sheet */
             html+='<div class="tt-filter-sheet" id="tt-filter-sheet">';
             html+='<button onclick="sgToggleFilter(this,\'open\')" class="sg-filter-pill" data-filter="open">Open Now</button>';
@@ -5186,9 +5187,182 @@ window.closeGymDiscovery=function(){
   }
 };
 
-// TikTok explore: map button opens gym discovery overlay
+// ═══════════════════════════════════════════════════════════════
+// MAP OVERLAY — Real Google Map with gym pins (Option A)
+// ═══════════════════════════════════════════════════════════════
 window._ttShowMap=function(){
-  if(typeof showGymDiscovery==='function') showGymDiscovery();
+  document.getElementById('sg-map-overlay')?.remove();
+  const gyms=state.gyms||[];
+  if(gyms.length===0){sgToast('No gyms found — try searching first','info',3000);return;}
+
+  // Find center point (average of all gym coordinates, or user location)
+  let cLat=state.searchLat||0, cLng=state.searchLng||0;
+  const withCoords=gyms.filter(g=>g.latitude&&g.longitude);
+  if(!cLat&&withCoords.length>0){
+    cLat=withCoords.reduce((s,g)=>s+g.latitude,0)/withCoords.length;
+    cLng=withCoords.reduce((s,g)=>s+g.longitude,0)/withCoords.length;
+  }
+  if(!cLat){cLat=51.5;cLng=-0.12;} // fallback London
+
+  const el=document.createElement('div');
+  el.id='sg-map-overlay';
+  el.innerHTML=`
+  <style>
+    .sgm-overlay{position:fixed;inset:0;background:#0a0f14;z-index:9200;display:flex;flex-direction:column;opacity:0;transition:opacity .2s ease}
+    .sgm-overlay.active{opacity:1}
+    .sgm-header{position:absolute;top:0;left:0;right:0;z-index:10;padding:calc(env(safe-area-inset-top,0px) + 12px) 16px 10px;display:flex;align-items:center;gap:12px;background:linear-gradient(180deg,rgba(10,15,20,.95) 0%,rgba(10,15,20,.7) 70%,transparent 100%)}
+    .sgm-back{width:40px;height:40px;background:rgba(255,255,255,.12);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;color:#fff;font-size:18px;flex-shrink:0;-webkit-tap-highlight-color:transparent}
+    .sgm-back:active{background:rgba(255,255,255,.2);transform:scale(.93)}
+    .sgm-title{color:#fff;font-size:16px;font-weight:700;flex:1}
+    .sgm-count{color:rgba(255,255,255,.5);font-size:12px;font-weight:600}
+    .sgm-map{flex:1;width:100%}
+    .sgm-map iframe{width:100%;height:100%;border:none}
+    .sgm-cards{position:absolute;bottom:0;left:0;right:0;z-index:10;padding:0 12px calc(env(safe-area-inset-bottom,0px) + 16px);overflow-x:auto;display:flex;gap:10px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+    .sgm-cards::-webkit-scrollbar{display:none}
+    .sgm-card{flex-shrink:0;width:280px;background:rgba(17,19,24,.92);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:12px;display:flex;gap:10px;cursor:pointer;scroll-snap-align:start;-webkit-tap-highlight-color:transparent;transition:transform .15s}
+    .sgm-card:active{transform:scale(.97)}
+    .sgm-card-photo{width:64px;height:64px;border-radius:12px;background-size:cover;background-position:center;flex-shrink:0;background-color:rgba(255,255,255,.06)}
+    .sgm-card-info{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center}
+    .sgm-card-name{color:#fff;font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .sgm-card-addr{color:rgba(255,255,255,.5);font-size:11px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .sgm-card-meta{display:flex;gap:8px;margin-top:5px;align-items:center}
+    .sgm-card-tag{font-size:11px;font-weight:700;padding:2px 7px;border-radius:6px}
+    .sgm-card-rating{background:rgba(249,115,22,.15);color:#f97316}
+    .sgm-card-open{background:rgba(34,197,94,.15);color:#4ade80}
+    .sgm-card-closed{background:rgba(248,113,113,.15);color:#f87171}
+  </style>
+  <div class="sgm-overlay" id="sgm-overlay-inner">
+    <div class="sgm-header">
+      <button class="sgm-back" onclick="document.getElementById('sg-map-overlay').remove()">←</button>
+      <span class="sgm-title">Gyms Near You</span>
+      <span class="sgm-count">${withCoords.length} gyms</span>
+    </div>
+    <div class="sgm-map" id="sgm-map-container"></div>
+    <div class="sgm-cards" id="sgm-cards"></div>
+  </div>`;
+  document.body.appendChild(el);
+
+  // Load Google Maps with markers
+  const mapContainer=document.getElementById('sgm-map-container');
+  const cardsContainer=document.getElementById('sgm-cards');
+
+  // Build cards
+  const dayP=sgPrice('day');
+  withCoords.forEach(function(gym,i){
+    const id=gym.placeId||gym.place_id||gym.id;
+    const photo=gym.photo||gym.photo_url||
+      (gym.photoReference?'https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference='+gym.photoReference+'&key='+MAPS_KEY:'');
+    const isOpen=gym.openNow!==false;
+    const addr=(gym.address||gym.vicinity||'').split(',')[0];
+    const card=document.createElement('div');
+    card.className='sgm-card';
+    card.onclick=function(){document.getElementById('sg-map-overlay').remove();openGym(id,true);};
+    card.innerHTML=
+      '<div class="sgm-card-photo" style="'+(photo?'background-image:url('+photo+')':'')+'"></div>'
+      +'<div class="sgm-card-info">'
+      +'<div class="sgm-card-name">'+( gym.name||'Gym')+'</div>'
+      +'<div class="sgm-card-addr">📍 '+addr+'</div>'
+      +'<div class="sgm-card-meta">'
+      +(gym.rating?'<span class="sgm-card-tag sgm-card-rating">⭐ '+gym.rating+'</span>':'')
+      +'<span class="sgm-card-tag '+(isOpen?'sgm-card-open':'sgm-card-closed')+'">'+(isOpen?'Open':'Closed')+'</span>'
+      +'<span style="color:rgba(255,255,255,.4);font-size:11px;font-weight:600">'+dayP.display+'/day</span>'
+      +'</div></div>';
+    cardsContainer.appendChild(card);
+  });
+
+  // Use Google Maps JavaScript API if available, otherwise embed
+  if(window.google&&window.google.maps){
+    _initSgMap(mapContainer,withCoords,cLat,cLng);
+  } else {
+    // Load Google Maps JS API
+    const script=document.createElement('script');
+    script.src='https://maps.googleapis.com/maps/api/js?key='+MAPS_KEY+'&callback=_sgMapReady';
+    window._sgMapReadyData={container:mapContainer,gyms:withCoords,lat:cLat,lng:cLng};
+    window._sgMapReady=function(){_initSgMap(window._sgMapReadyData.container,window._sgMapReadyData.gyms,window._sgMapReadyData.lat,window._sgMapReadyData.lng);};
+    document.head.appendChild(script);
+  }
+
+  // Animate in
+  requestAnimationFrame(function(){
+    requestAnimationFrame(function(){
+      document.getElementById('sgm-overlay-inner')?.classList.add('active');
+    });
+  });
+};
+
+// Initialize Google Map with gym markers
+window._initSgMap=function(container,gyms,cLat,cLng){
+  const map=new google.maps.Map(container,{
+    center:{lat:cLat,lng:cLng},
+    zoom:13,
+    disableDefaultUI:true,
+    zoomControl:true,
+    styles:[
+      {elementType:'geometry',stylers:[{color:'#1a1a2e'}]},
+      {elementType:'labels.text.stroke',stylers:[{color:'#1a1a2e'}]},
+      {elementType:'labels.text.fill',stylers:[{color:'#746855'}]},
+      {featureType:'road',elementType:'geometry',stylers:[{color:'#2c2c44'}]},
+      {featureType:'road',elementType:'labels.text.fill',stylers:[{color:'#9ca5b3'}]},
+      {featureType:'water',elementType:'geometry',stylers:[{color:'#17263c'}]},
+      {featureType:'poi',stylers:[{visibility:'off'}]},
+      {featureType:'transit',stylers:[{visibility:'off'}]}
+    ]
+  });
+
+  const bounds=new google.maps.LatLngBounds();
+  const infoWindow=new google.maps.InfoWindow();
+
+  gyms.forEach(function(gym,i){
+    const pos={lat:gym.latitude,lng:gym.longitude};
+    bounds.extend(pos);
+    const marker=new google.maps.Marker({
+      position:pos,
+      map:map,
+      title:gym.name||'Gym',
+      icon:{
+        path:google.maps.SymbolPath.CIRCLE,
+        scale:10,
+        fillColor:'#f97316',
+        fillOpacity:1,
+        strokeColor:'#fff',
+        strokeWeight:2
+      }
+    });
+    marker.addListener('click',function(){
+      const isOpen=gym.openNow!==false;
+      infoWindow.setContent(
+        '<div style="padding:4px;min-width:160px;font-family:system-ui">'
+        +'<strong style="font-size:14px">'+(gym.name||'Gym')+'</strong><br>'
+        +'<span style="color:#666;font-size:12px">'+(gym.address||'').split(',')[0]+'</span><br>'
+        +(gym.rating?'<span style="color:#f97316;font-weight:700">⭐ '+gym.rating+'</span> · ':'')
+        +'<span style="color:'+(isOpen?'#22c55e':'#ef4444')+'">●</span> '+(isOpen?'Open':'Closed')
+        +'</div>'
+      );
+      infoWindow.open(map,marker);
+      // Scroll card into view
+      const cards=document.getElementById('sgm-cards');
+      if(cards&&cards.children[i]){cards.children[i].scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});}
+    });
+  });
+
+  // Add user location marker if available
+  if(state.searchLat&&state.searchLng){
+    new google.maps.Marker({
+      position:{lat:state.searchLat,lng:state.searchLng},
+      map:map,
+      title:'You',
+      icon:{
+        path:google.maps.SymbolPath.CIRCLE,
+        scale:8,
+        fillColor:'#3b82f6',
+        fillOpacity:1,
+        strokeColor:'#fff',
+        strokeWeight:3
+      }
+    });
+  }
+
+  if(gyms.length>1)map.fitBounds(bounds,{top:80,bottom:140,left:20,right:20});
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -6680,11 +6854,266 @@ window.sgApplyFilters=function(){
   }
 };
 
-window.doSearch=function(){
-  const input=document.getElementById('tt-search-real-input')||document.getElementById('sg-search-input')||document.getElementById('gym-search-input');
-  if(input&&input.value.trim()){
+window.doSearch=function(query){
+  const q=query||(function(){var inp=document.getElementById('tt-search-real-input')||document.getElementById('sg-search-input');return inp?inp.value.trim():''})();
+  if(q){
+    // Save to recent searches
+    _saveRecentSearch(q);
     navigate('/explore');
-    searchGyms(input.value.trim(),true);
+    searchGyms(q,true);
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════
+// UBER-STYLE SEARCH OVERLAY
+// Full-screen overlay with recent searches, popular cities, autocomplete
+// ═══════════════════════════════════════════════════════════════
+
+// Recent searches — stored in localStorage
+function _getRecentSearches(){
+  try{return JSON.parse(localStorage.getItem('sg_recent_searches')||'[]').slice(0,8);}catch(e){return[];}
+}
+function _saveRecentSearch(q){
+  if(!q||q.length<2)return;
+  try{
+    var arr=_getRecentSearches().filter(function(s){return s.toLowerCase()!==q.toLowerCase();});
+    arr.unshift(q);
+    localStorage.setItem('sg_recent_searches',JSON.stringify(arr.slice(0,8)));
+  }catch(e){}
+}
+function _removeRecentSearch(q){
+  try{
+    var arr=_getRecentSearches().filter(function(s){return s!==q;});
+    localStorage.setItem('sg_recent_searches',JSON.stringify(arr));
+  }catch(e){}
+}
+
+// Popular UK cities for quick access
+var _popularCities=[
+  {name:'London',emoji:'🏙️',query:'gyms in London'},
+  {name:'Manchester',emoji:'🐝',query:'gyms in Manchester'},
+  {name:'Birmingham',emoji:'🔵',query:'gyms in Birmingham'},
+  {name:'Leeds',emoji:'🌹',query:'gyms in Leeds'},
+  {name:'Liverpool',emoji:'⚽',query:'gyms in Liverpool'},
+  {name:'Bristol',emoji:'🌉',query:'gyms in Bristol'},
+  {name:'Edinburgh',emoji:'🏰',query:'gyms in Edinburgh'},
+  {name:'Glasgow',emoji:'🏴',query:'gyms in Glasgow'},
+  {name:'Cardiff',emoji:'🏴',query:'gyms in Cardiff'},
+  {name:'Newcastle',emoji:'⚫',query:'gyms in Newcastle'},
+  {name:'Sheffield',emoji:'⚔️',query:'gyms in Sheffield'},
+  {name:'Nottingham',emoji:'🏹',query:'gyms in Nottingham'}
+];
+
+window._openSearchOverlay=function(){
+  document.getElementById('sg-search-overlay-v2')?.remove();
+
+  var recent=_getRecentSearches();
+  var currentQuery=state.searchQuery||'';
+
+  var el=document.createElement('div');
+  el.id='sg-search-overlay-v2';
+  el.innerHTML=''
+    +'<style>'
+    +'.sso-overlay{position:fixed;inset:0;background:#0a0f14;z-index:9300;display:flex;flex-direction:column;opacity:0;transition:opacity .2s ease}'
+    +'.sso-overlay.active{opacity:1}'
+    +'.sso-header{padding:calc(env(safe-area-inset-top,0px) + 12px) 16px 0;flex-shrink:0}'
+    +'.sso-search-row{display:flex;align-items:center;gap:10px}'
+    +'.sso-back{width:40px;height:40px;background:rgba(255,255,255,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;color:#fff;font-size:18px;flex-shrink:0;-webkit-tap-highlight-color:transparent}'
+    +'.sso-back:active{background:rgba(255,255,255,.15);transform:scale(.93)}'
+    +'.sso-input-wrap{flex:1;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:0 14px;display:flex;align-items:center;gap:8px;height:48px;transition:border-color .15s}'
+    +'.sso-input-wrap:focus-within{border-color:rgba(249,115,22,.5);background:rgba(255,255,255,.1)}'
+    +'.sso-input-icon{color:rgba(255,255,255,.4);font-size:16px;flex-shrink:0}'
+    +'.sso-input{flex:1;background:none;border:none;outline:none;color:#fff;font-size:15px;font-weight:500}'
+    +'.sso-input::placeholder{color:rgba(255,255,255,.35)}'
+    +'.sso-clear{width:28px;height:28px;background:rgba(255,255,255,.1);border-radius:50%;display:none;align-items:center;justify-content:center;cursor:pointer;border:none;color:rgba(255,255,255,.5);font-size:14px;flex-shrink:0;-webkit-tap-highlight-color:transparent}'
+    +'.sso-clear.show{display:flex}'
+    +'.sso-body{flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch}'
+    +'.sso-section{margin-bottom:20px}'
+    +'.sso-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.3);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}'
+    +'.sso-section-clear{font-size:11px;font-weight:600;color:rgba(249,115,22,.7);cursor:pointer;text-transform:none;letter-spacing:0}'
+    +'.sso-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.04);border-radius:14px;margin-bottom:6px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s}'
+    +'.sso-item:active{background:rgba(255,255,255,.08);transform:scale(.98)}'
+    +'.sso-item-icon{width:40px;height:40px;background:rgba(255,255,255,.06);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}'
+    +'.sso-item-text{flex:1;min-width:0}'
+    +'.sso-item-name{color:#fff;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
+    +'.sso-item-sub{color:rgba(255,255,255,.35);font-size:11px;margin-top:1px}'
+    +'.sso-item-arrow{color:rgba(255,255,255,.15);font-size:14px;flex-shrink:0}'
+    +'.sso-item-remove{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;cursor:pointer;color:rgba(255,255,255,.3);font-size:12px;flex-shrink:0;border:none;-webkit-tap-highlight-color:transparent}'
+    +'.sso-item-remove:active{background:rgba(255,255,255,.12)}'
+    +'.sso-cities{display:flex;flex-wrap:wrap;gap:8px}'
+    +'.sso-city{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:10px 14px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;display:flex;align-items:center;gap:6px}'
+    +'.sso-city:active{background:rgba(249,115,22,.15);border-color:rgba(249,115,22,.3);transform:scale(.96)}'
+    +'.sso-city-emoji{font-size:16px}'
+    +'.sso-city-name{color:rgba(255,255,255,.8);font-size:13px;font-weight:600}'
+    +'.sso-autocomplete{margin-top:4px}'
+    +'.sso-ac-item{display:flex;align-items:center;gap:12px;padding:14px;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;-webkit-tap-highlight-color:transparent}'
+    +'.sso-ac-item:active{background:rgba(255,255,255,.06)}'
+    +'.sso-ac-icon{color:rgba(255,255,255,.3);font-size:16px;flex-shrink:0}'
+    +'.sso-ac-text{color:#fff;font-size:14px;font-weight:500;flex:1}'
+    +'.sso-ac-text em{font-style:normal;color:#f97316;font-weight:700}'
+    +'.sso-gps-btn{display:flex;align-items:center;gap:12px;padding:14px;background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.15);border-radius:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;margin-bottom:16px}'
+    +'.sso-gps-btn:active{background:rgba(249,115,22,.15)}'
+    +'.sso-gps-icon{width:40px;height:40px;background:rgba(249,115,22,.15);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}'
+    +'.sso-gps-text{color:#fff;font-size:14px;font-weight:600}'
+    +'.sso-gps-sub{color:rgba(255,255,255,.4);font-size:11px;margin-top:1px}'
+    +'</style>'
+    +'<div class="sso-overlay" id="sso-inner">'
+    +'<div class="sso-header">'
+    +'<div class="sso-search-row">'
+    +'<button class="sso-back" onclick="window._closeSearchOverlay()">←</button>'
+    +'<div class="sso-input-wrap">'
+    +'<span class="sso-input-icon">🔍</span>'
+    +'<input class="sso-input" id="sso-search-input" type="text" placeholder="Search city, area, or gym name…" value="'+currentQuery+'" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">'
+    +'<button class="sso-clear'+(currentQuery?' show':'')+'" id="sso-clear-btn" onclick="document.getElementById(\'sso-search-input\').value=\'\';document.getElementById(\'sso-clear-btn\').classList.remove(\'show\');window._ssoShowDefault()">✕</button>'
+    +'</div>'
+    +'</div>'
+    +'</div>'
+    +'<div class="sso-body" id="sso-body">'
+    +'</div>'
+    +'</div>';
+
+  document.body.appendChild(el);
+
+  // Show default content (recent + cities)
+  window._ssoShowDefault=function(){
+    var body=document.getElementById('sso-body');
+    if(!body)return;
+    var html='';
+
+    // GPS button
+    html+='<div class="sso-gps-btn" onclick="window._closeSearchOverlay();findGyms()">'
+      +'<div class="sso-gps-icon">📍</div>'
+      +'<div><div class="sso-gps-text">Use current location</div>'
+      +'<div class="sso-gps-sub">Find gyms near you automatically</div></div>'
+      +'</div>';
+
+    // Recent searches
+    var rec=_getRecentSearches();
+    if(rec.length>0){
+      html+='<div class="sso-section">'
+        +'<div class="sso-section-title">Recent Searches <span class="sso-section-clear" onclick="localStorage.removeItem(\'sg_recent_searches\');window._ssoShowDefault()">Clear all</span></div>';
+      rec.forEach(function(s){
+        html+='<div class="sso-item" onclick="window._ssoSelectSearch(\''+s.replace(/'/g,"\\'")+'\');">'
+          +'<div class="sso-item-icon">🕐</div>'
+          +'<div class="sso-item-text"><div class="sso-item-name">'+s+'</div></div>'
+          +'<button class="sso-item-remove" onclick="event.stopPropagation();_removeRecentSearch(\''+s.replace(/'/g,"\\'")+'\');window._ssoShowDefault()">✕</button>'
+          +'</div>';
+      });
+      html+='</div>';
+    }
+
+    // Popular cities
+    html+='<div class="sso-section">'
+      +'<div class="sso-section-title">Popular Cities</div>'
+      +'<div class="sso-cities">';
+    _popularCities.forEach(function(c){
+      html+='<div class="sso-city" onclick="window._ssoSelectSearch(\''+c.query+'\')">'
+        +'<span class="sso-city-emoji">'+c.emoji+'</span>'
+        +'<span class="sso-city-name">'+c.name+'</span>'
+        +'</div>';
+    });
+    html+='</div></div>';
+
+    body.innerHTML=html;
+  };
+
+  // Show autocomplete results
+  window._ssoShowAutocomplete=function(query){
+    var body=document.getElementById('sso-body');
+    if(!body)return;
+    var q=query.toLowerCase();
+    var html='';
+
+    // Match against popular cities
+    var matched=_popularCities.filter(function(c){return c.name.toLowerCase().indexOf(q)!==-1||c.query.toLowerCase().indexOf(q)!==-1;});
+
+    // Match against current gyms
+    var gymMatches=(state.gyms||[]).filter(function(g){
+      return (g.name||'').toLowerCase().indexOf(q)!==-1||(g.address||g.vicinity||'').toLowerCase().indexOf(q)!==-1;
+    }).slice(0,5);
+
+    // Always show "search for" at top
+    html+='<div class="sso-autocomplete">';
+    html+='<div class="sso-ac-item" onclick="window._ssoSelectSearch(\''+query.replace(/'/g,"\\'")+'\')">'
+      +'<span class="sso-ac-icon">🔍</span>'
+      +'<span class="sso-ac-text">Search for <em>'+query+'</em></span>'
+      +'</div>';
+
+    // City matches
+    matched.forEach(function(c){
+      var highlighted=c.name.replace(new RegExp('('+q.replace(/[-\/\\^$*+?.()|[\]{}]/g,'\\$&')+')','gi'),'<em>$1</em>');
+      html+='<div class="sso-ac-item" onclick="window._ssoSelectSearch(\''+c.query+'\')">'
+        +'<span class="sso-ac-icon">'+c.emoji+'</span>'
+        +'<span class="sso-ac-text">Gyms in '+highlighted+'</span>'
+        +'</div>';
+    });
+
+    // Gym name matches
+    gymMatches.forEach(function(g){
+      var highlighted=(g.name||'Gym').replace(new RegExp('('+q.replace(/[-\/\\^$*+?.()|[\]{}]/g,'\\$&')+')','gi'),'<em>$1</em>');
+      html+='<div class="sso-ac-item" onclick="window._closeSearchOverlay();openGym(\''+( g.placeId||g.place_id||g.id)+'\',true)">'
+        +'<span class="sso-ac-icon">🏋️</span>'
+        +'<span class="sso-ac-text">'+highlighted+'</span>'
+        +'</div>';
+    });
+
+    // Recent that match
+    var recMatches=_getRecentSearches().filter(function(s){return s.toLowerCase().indexOf(q)!==-1&&s.toLowerCase()!==q;});
+    recMatches.forEach(function(s){
+      html+='<div class="sso-ac-item" onclick="window._ssoSelectSearch(\''+s.replace(/'/g,"\\'")+'\')">'
+        +'<span class="sso-ac-icon">🕐</span>'
+        +'<span class="sso-ac-text">'+s+'</span>'
+        +'</div>';
+    });
+
+    html+='</div>';
+    body.innerHTML=html;
+  };
+
+  // Select a search
+  window._ssoSelectSearch=function(query){
+    window._closeSearchOverlay();
+    doSearch(query);
+  };
+
+  // Show default content
+  _ssoShowDefault();
+
+  // Animate in
+  requestAnimationFrame(function(){requestAnimationFrame(function(){
+    document.getElementById('sso-inner')?.classList.add('active');
+    // Focus input after animation
+    setTimeout(function(){document.getElementById('sso-search-input')?.focus();},200);
+  });});
+
+  // Input event listener for autocomplete
+  var inputEl=document.getElementById('sso-search-input');
+  var debounceTimer;
+  inputEl?.addEventListener('input',function(){
+    var v=this.value.trim();
+    var clearBtn=document.getElementById('sso-clear-btn');
+    if(clearBtn){clearBtn.classList.toggle('show',v.length>0);}
+    clearTimeout(debounceTimer);
+    debounceTimer=setTimeout(function(){
+      if(v.length>=2){_ssoShowAutocomplete(v);}
+      else{_ssoShowDefault();}
+    },150);
+  });
+
+  // Enter key to search
+  inputEl?.addEventListener('keydown',function(e){
+    if(e.key==='Enter'&&this.value.trim()){
+      window._ssoSelectSearch(this.value.trim());
+    }
+  });
+};
+
+window._closeSearchOverlay=function(){
+  var el=document.getElementById('sg-search-overlay-v2');
+  if(el){
+    var inner=document.getElementById('sso-inner');
+    if(inner){inner.classList.remove('active');setTimeout(function(){el.remove();},200);}
+    else{el.remove();}
   }
 };
 
