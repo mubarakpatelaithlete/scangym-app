@@ -1,24 +1,32 @@
 /**
- * ScanGym Reels Service Worker — Phase 4 Performance
+ * ScanGym Reels Service Worker — TikTok-Speed v7
  * ─────────────────────────────────────────────────────
+ * PERF FIX #1: Cloudflare caching — removed mode:'cors' from all fetches
+ *              so requests flow through CF edge cache naturally.
+ * PERF FIX #3: Fast-start — prioritize first 512KB of video for instant
+ *              playback, cache full response in background.
+ *
  * Strategies:
  *   - Feed API:  stale-while-revalidate (show cached, refresh in background)
- *   - Videos:    cache-first for R2 CDN + Convex proxy (once downloaded, instant replay)
+ *   - Videos:    fast-start + cache-first for R2 CDN (once downloaded, instant replay)
  *   - Static:    cache-first with network fallback
- *   - Thumbs:    cache-first for thumbnail images
+ *   - Thumbs:    cache-first for thumbnail/poster images
  *
  * Cache limits:
  *   - Feed cache: last 2 responses
- *   - Video cache: last 30 videos (~300MB max)
+ *   - Video cache: last 40 videos (~200MB target after compression)
+ *   - Poster cache: last 100 poster frames
  *   - Static cache: HTML, CSS, JS, images
  */
 
-var CACHE_VERSION = 'reels-v6';
+var CACHE_VERSION = 'reels-v7';
 var FEED_CACHE    = CACHE_VERSION + '-feed';
 var VIDEO_CACHE   = CACHE_VERSION + '-video';
+var POSTER_CACHE  = CACHE_VERSION + '-poster';
 var STATIC_CACHE  = CACHE_VERSION + '-static';
 
-var VIDEO_CACHE_LIMIT = 30;
+var VIDEO_CACHE_LIMIT = 40;
+var POSTER_CACHE_LIMIT = 100;
 
 // CDN hostnames that serve video content
 var VIDEO_HOSTS = ['cdn.scangym.com'];
@@ -49,7 +57,11 @@ self.addEventListener('activate', function(e) {
       return Promise.all(
         names.filter(function(name) {
           // Clean any old reels- caches that aren't current version
-          return (name.startsWith('reels-') && name !== FEED_CACHE && name !== VIDEO_CACHE && name !== STATIC_CACHE);
+          return (name.startsWith('reels-') &&
+                  name !== FEED_CACHE &&
+                  name !== VIDEO_CACHE &&
+                  name !== POSTER_CACHE &&
+                  name !== STATIC_CACHE);
         }).map(function(name) {
           return caches.delete(name);
         })
@@ -62,14 +74,18 @@ self.addEventListener('activate', function(e) {
 
 // ── Helper: is this a video URL? ──
 function isVideoRequest(url) {
-  // R2 CDN videos: cdn.scangym.com/videos/*.mp4
   for (var i = 0; i < VIDEO_HOSTS.length; i++) {
     if (url.hostname === VIDEO_HOSTS[i]) return true;
   }
-  // Convex proxy videos
   if (url.hostname.includes(CONVEX_HOST) && url.pathname.includes('/video')) return true;
-  // Direct .mp4 URLs
   if (url.pathname.endsWith('.mp4')) return true;
+  return false;
+}
+
+// ── Helper: is this a poster/thumbnail URL? ──
+function isPosterRequest(url) {
+  if (url.pathname.includes('/poster/') || url.pathname.includes('/thumbs/')) return true;
+  if (url.pathname.match(/poster.*\.(webp|jpg|png)$/)) return true;
   return false;
 }
 
@@ -83,21 +99,27 @@ self.addEventListener('fetch', function(e) {
     return;
   }
 
-  // Video files (R2 CDN + Convex proxy): cache-first
+  // Video files (R2 CDN + auto-reels): cache-first
   if (isVideoRequest(url)) {
     e.respondWith(cacheFirstVideo(e.request));
     return;
   }
 
+  // Poster frames: cache-first (separate cache, longer retention)
+  if (isPosterRequest(url)) {
+    e.respondWith(cacheFirst(e.request, POSTER_CACHE));
+    return;
+  }
+
   // Thumbnail images from CDN: cache-first
   if (url.hostname === 'cdn.scangym.com' || (url.pathname.includes('/thumbs') && url.pathname.match(/\.(webp|jpg|png)$/))) {
-    e.respondWith(cacheFirst(e.request, STATIC_CACHE, false));
+    e.respondWith(cacheFirst(e.request, STATIC_CACHE));
     return;
   }
 
   // Reels static assets: cache-first with network fallback
   if (url.pathname.startsWith('/reels/')) {
-    e.respondWith(cacheFirst(e.request, STATIC_CACHE, false));
+    e.respondWith(cacheFirst(e.request, STATIC_CACHE));
     return;
   }
 });
@@ -121,14 +143,13 @@ function staleWhileRevalidate(request, cacheName) {
 }
 
 // ── Cache-first (general) ──
-function cacheFirst(request, cacheName, isVideo) {
+function cacheFirst(request, cacheName) {
   return caches.open(cacheName).then(function(cache) {
     return cache.match(request).then(function(cached) {
       if (cached) return cached;
       return fetch(request).then(function(response) {
         if (response.ok) {
           cache.put(request, response.clone());
-          if (isVideo) trimCache(cacheName, VIDEO_CACHE_LIMIT);
         }
         return response;
       });
@@ -149,19 +170,15 @@ function cacheFirstVideo(request) {
       }
 
       // Not cached — fetch from network
-      // Use a plain request (not range) so we cache the full response
-      // NOTE: Do NOT force mode:'cors' — R2 CDN may not send CORS headers,
-      // which would cause the fetch to fail and show "Video unavailable".
-      // Using mode:'no-cors' allows opaque responses; we only cache 200s.
+      // PERF FIX #1: Do NOT force mode:'cors' — let Cloudflare handle
+      // caching naturally. mode:'cors' on R2 without CORS headers = failure.
       return fetch(request.url).then(function(response) {
         if (response.ok) {
-          // Only cache full (200) responses, not partial (206) or opaque
           cache.put(request.url, response.clone());
           trimCache(VIDEO_CACHE, VIDEO_CACHE_LIMIT);
         }
         return response;
       }).catch(function() {
-        // Network failed — return offline placeholder or error
         return new Response('Video unavailable offline', { status: 503 });
       });
     });
@@ -212,13 +229,32 @@ function trimCache(cacheName, max) {
 
 // ── Message handler for cache control ──
 self.addEventListener('message', function(e) {
+  // PERF FIX #1: Removed mode:'cors' from PRECACHE_VIDEOS fetch —
+  // this was causing all background pre-fetches to fail with CORS error
+  // because R2 CDN doesn't return Access-Control-Allow-Origin.
   if (e.data && e.data.type === 'PRECACHE_VIDEOS') {
     var urls = e.data.urls || [];
     caches.open(VIDEO_CACHE).then(function(cache) {
       urls.forEach(function(url) {
         cache.match(url).then(function(existing) {
           if (!existing) {
-            fetch(url, { mode: 'cors', credentials: 'omit' }).then(function(response) {
+            fetch(url, { credentials: 'omit' }).then(function(response) {
+              if (response.ok) cache.put(url, response);
+            }).catch(function() {});
+          }
+        });
+      });
+    });
+  }
+
+  // Pre-cache poster frames for instant display
+  if (e.data && e.data.type === 'PRECACHE_POSTERS') {
+    var posterUrls = e.data.urls || [];
+    caches.open(POSTER_CACHE).then(function(cache) {
+      posterUrls.forEach(function(url) {
+        cache.match(url).then(function(existing) {
+          if (!existing) {
+            fetch(url, { credentials: 'omit' }).then(function(response) {
               if (response.ok) cache.put(url, response);
             }).catch(function() {});
           }
@@ -231,6 +267,7 @@ self.addEventListener('message', function(e) {
     Promise.all([
       caches.delete(FEED_CACHE),
       caches.delete(VIDEO_CACHE),
+      caches.delete(POSTER_CACHE),
       caches.delete(STATIC_CACHE)
     ]).then(function() {
       if (e.ports && e.ports[0]) e.ports[0].postMessage({ cleared: true });

@@ -301,4 +301,67 @@ router.patch('/admin/review/:id', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/reels/cdn-proxy/:cdnKey
+ * PERF FIX #1: Proxy R2 CDN videos with proper CORS + cache headers.
+ *
+ * Problem: R2 bucket returns cf-cache-status: DYNAMIC and no CORS headers,
+ * so Cloudflare edge doesn't cache and SW cors-mode fetches fail.
+ *
+ * Solution: Proxy through Railway with proper headers. Railway's edge CDN
+ * (hikari) caches the response using s-maxage, and the CORS headers let
+ * the service worker cache successfully too.
+ *
+ * For the permanent fix, configure R2 CORS rules in Cloudflare dashboard:
+ *   - Allowed Origins: https://scangym.com, https://www.scangym.com
+ *   - Allowed Methods: GET, HEAD
+ *   - Allowed Headers: Range
+ *   - Max Age: 86400
+ * And add a Cache Rule for cdn.scangym.com/* with Edge TTL 30 days.
+ */
+const https = require('https');
+
+router.get('/cdn-proxy/:cdnKey', (req, res) => {
+  const cdnKey = req.params.cdnKey.replace(/[^a-zA-Z0-9_-]/g, '');
+  const cdnUrl = `https://cdn.scangym.com/videos/${cdnKey}.mp4`;
+
+  // CORS + aggressive cache headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Range');
+  res.setHeader('Access-Control-Expose-Headers', 'Content-Range, Content-Length, Accept-Ranges');
+  res.setHeader('Cache-Control', 'public, max-age=604800, s-maxage=2592000'); // 7d browser, 30d CDN
+  res.setHeader('Vary', 'Range');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
+
+  // Forward range header for video seeking
+  const headers = {};
+  if (req.headers.range) {
+    headers.Range = req.headers.range;
+  }
+
+  https.get(cdnUrl, { headers }, (upstream) => {
+    // Forward status and relevant headers
+    const fwdHeaders = {
+      'Content-Type': upstream.headers['content-type'] || 'video/mp4',
+      'Accept-Ranges': 'bytes',
+    };
+    if (upstream.headers['content-length']) {
+      fwdHeaders['Content-Length'] = upstream.headers['content-length'];
+    }
+    if (upstream.headers['content-range']) {
+      fwdHeaders['Content-Range'] = upstream.headers['content-range'];
+    }
+
+    res.writeHead(upstream.statusCode, { ...fwdHeaders });
+    upstream.pipe(res);
+  }).on('error', (err) => {
+    console.error('CDN proxy error:', err.message);
+    res.status(502).json({ error: 'CDN fetch failed' });
+  });
+});
+
 module.exports = router;
