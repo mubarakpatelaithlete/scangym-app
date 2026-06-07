@@ -5441,6 +5441,13 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
   const finalIsSaved=finalPayMethod==='saved'&&gbs.savedCard;
   const finalHasPayment=finalIsCash||finalIsSaved;
 
+  // ═══ LOGIN GATE: Guest users must sign in before booking ═══
+  if(!state.user){
+    window._pendingCheckout={gymId, prefillDate:selDate, prefillTime:selTime};
+    sgToast('🔑 Sign in to book your gym session','info',3000);
+    navigate('/login');
+    return;
+  }
   // ═══ UBER GATE: Require payment method before showing confirm ═══
   if(!finalHasPayment){
     window._pendingCheckout={gymId, prefillDate:selDate, prefillTime:selTime};
@@ -9599,7 +9606,7 @@ window.sgProfileCompletion=function(container){
           </div>
           <div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:8px">Use code <strong style="color:#22c55e">FIRSTSCAN</strong> at checkout</div>
           <button onclick="document.getElementById('sg-beginners-luck').remove();navigate('/explore')" style="margin-top:20px;width:100%;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:16px;font-weight:800;padding:14px;border:none;border-radius:14px;cursor:pointer;box-shadow:0 4px 20px rgba(34,197,94,.3)">Find a Gym Near Me</button>
-          <div style="margin-top:10px;font-size:10px;color:rgba(255,255,255,.3)">🔥 ${Math.floor(Math.random()*50)+150} people claimed this today</div>
+          <div style="margin-top:10px;font-size:10px;color:rgba(255,255,255,.3)">🔥 Limited time offer · Ends soon</div>
         </div>
       `;
       // Dismiss popup when clicking the dark backdrop (outside the card)
