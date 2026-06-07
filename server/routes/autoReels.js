@@ -194,6 +194,9 @@ router.get('/auto-feed', (req, res) => {
 /**
  * GET /api/reels/auto-video/:filename
  * Stream an auto-generated video with range request support.
+ * PERF FIX #4: Added CORS headers + aggressive caching so Railway CDN
+ * and Cloudflare proxy can cache these at the edge instead of hitting
+ * the Railway origin server every time.
  */
 router.get('/auto-video/:filename', (req, res) => {
   try {
@@ -208,6 +211,20 @@ router.get('/auto-video/:filename', (req, res) => {
     const fileSize = stat.size;
     const range = req.headers.range;
 
+    // PERF FIX #4: CORS + long cache headers for edge caching
+    const corsHeaders = {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+      'Access-Control-Allow-Headers': 'Range',
+      'Access-Control-Expose-Headers': 'Content-Range, Content-Length, Accept-Ranges',
+      'Cache-Control': 'public, max-age=604800, s-maxage=2592000', // 7d browser, 30d CDN
+      'Vary': 'Range',
+    };
+
+    if (req.method === 'OPTIONS') {
+      return res.writeHead(204, corsHeaders).end();
+    }
+
     if (range) {
       const parts = range.replace(/bytes=/, '').split('-');
       const start = parseInt(parts[0], 10);
@@ -215,19 +232,19 @@ router.get('/auto-video/:filename', (req, res) => {
       const chunkSize = end - start + 1;
 
       res.writeHead(206, {
+        ...corsHeaders,
         'Content-Range': `bytes ${start}-${end}/${fileSize}`,
         'Accept-Ranges': 'bytes',
         'Content-Length': chunkSize,
         'Content-Type': 'video/mp4',
-        'Cache-Control': 'public, max-age=3600',
       });
       fs.createReadStream(filePath, { start, end }).pipe(res);
     } else {
       res.writeHead(200, {
+        ...corsHeaders,
         'Content-Length': fileSize,
         'Content-Type': 'video/mp4',
         'Accept-Ranges': 'bytes',
-        'Cache-Control': 'public, max-age=3600',
       });
       fs.createReadStream(filePath).pipe(res);
     }
