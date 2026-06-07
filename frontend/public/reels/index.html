@@ -1626,6 +1626,10 @@
         s = s.replace(/_/g, ' ');
         // Remove leading numbers/indices (e.g. "03 ", "01 ")
         s = s.replace(/^\d{1,3}\s+/, '');
+        // Strip internal source prefixes (Yt, YT, IG, FB, CMO, Auto-Reel, etc.)
+        s = s.replace(/^(TikTok-Reels?\s*AI|Auto-Reel|YouTube\s*AI|AI\s*Cinematic|CMO|Yt|YT|IG|FB)\s*[-:]?\s*/i, '');
+        // Remove "No Membership" scraping artifact
+        s = s.replace(/\bNo\s+Membership\b/gi, '').trim();
         // Remove orientation tags
         s = s.replace(/\b(horizontal|vertical)\b/gi, '');
         // Remove technical suffixes (v1, v2, processed, sp100, s50, sb75, etc.)
@@ -1636,7 +1640,7 @@
         if(s === s.toLowerCase()){
           s = s.replace(/\b\w/g, function(c){ return c.toUpperCase(); });
         }
-        return s || name;
+        return s || 'Gym Workout';
       }
 
       function humanizeCategory(cat){
@@ -1655,7 +1659,12 @@
           'gym tour': 'Gym Tour',
           'workout': 'Workout',
           'tips': 'Tips',
-          'challenge': 'Challenge'
+          'challenge': 'Challenge',
+          'auto-reel': 'Workout',
+          'ai cinematic': 'Cinematic',
+          'youtube ai': 'Fitness',
+          'general': 'General',
+          'content': 'Fitness'
         };
         var lower = s.toLowerCase().trim();
         if(categoryMap[lower]) return categoryMap[lower];

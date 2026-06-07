@@ -154,9 +154,9 @@ router.get('/', async (req, res) => {
       price: parseFloat(b.total_amount || 0),
       bookingCode: b.booking_code,
       status: b.status,
-      qr: b.qr_code_url ? {
+      qr: (b.qr_code && b.status === 'confirmed') ? {
         token: b.qr_code,
-        dataUrl: b.qr_code_url,
+        dataUrl: b.qr_code_url || null,
         scanCount: b.checked_in_at ? 1 : 0,
         status: b.checked_in_at ? 'used' : 'active',
       } : null,
@@ -418,6 +418,38 @@ router.post('/feedback', async (req, res) => {
   } catch (err) {
     console.error('Feedback error:', err.message);
     res.status(500).json({ error: 'Failed to save feedback' });
+  }
+});
+
+
+/**
+ * GET /api/bookings/recent
+ * Recent bookings for CEO dashboard
+ */
+router.get('/recent', async (req, res) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit) || 10, 50);
+    const result = await pool.query(
+      `SELECT b.*, g.name as gym_name 
+       FROM public.bookings b 
+       LEFT JOIN public.gyms g ON b.gym_id = g.id
+       ORDER BY b.created_at DESC
+       LIMIT $1`,
+      [limit]
+    );
+    const bookings = result.rows.map(b => ({
+      id: b.id,
+      gymName: b.gym_name || 'Gym',
+      date: b.booking_date,
+      time: b.start_time,
+      price: parseFloat(b.total_amount || 0),
+      status: b.status,
+      createdAt: b.created_at,
+    }));
+    res.json({ success: true, bookings });
+  } catch (err) {
+    console.error('Recent bookings error:', err);
+    res.json({ success: true, bookings: [] });
   }
 });
 
