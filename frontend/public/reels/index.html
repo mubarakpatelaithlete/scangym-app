@@ -48,6 +48,13 @@
         object-fit:cover;
         pointer-events:none;
       }
+      /* Letterbox horizontal (landscape) videos instead of cropping */
+      .reel.landscape video{
+        object-fit:contain !important;
+      }
+      .reel.landscape{
+        background:#000;
+      }
 
       /* Phase 2: Canvas pre-render overlay (shows poster during swipe) */
       .reel canvas.frame-preview{
@@ -1331,6 +1338,18 @@
         vid.classList.remove('has-frame');
         div.appendChild(vid);
 
+        // Detect horizontal (landscape) videos and apply letterboxing
+        // Also check filename hint for known horizontal content
+        var cdnKey = (video.cdnKey || video.url || '').toLowerCase();
+        if(cdnKey.indexOf('horizontal') !== -1){
+          div.classList.add('landscape');
+        }
+        vid.addEventListener('loadedmetadata', function(){
+          if(vid.videoWidth > vid.videoHeight * 1.2){
+            div.classList.add('landscape');
+          }
+        });
+
         // Error handling — retry with CDN proxy before showing error
         // FIX: Added _retrying flag to prevent race condition where
         // removeAttribute('src')+load() fires a synchronous error event
@@ -1426,7 +1445,7 @@
             + '<div class="creator-cta-sub">No membership needed</div></div></a>';
         }
 
-        info.innerHTML = '<p class="reel-title">' + escHtml(video.name) + '</p>'
+        info.innerHTML = '<p class="reel-title">' + escHtml(humanizeTitle(video.name)) + '</p>'
           + '<p class="reel-category">\uD83C\uDFAC ' + escHtml(video.category) + '</p>'
           + creatorHtml + affiliateHtml;
         div.appendChild(info);
@@ -1522,9 +1541,10 @@
       function handleShare(video){
         if(navigator.vibrate) navigator.vibrate(10);
         var url = (video.creator && video.creator.affiliateLink) || 'https://scangym.com/reels';
-        var text = (video.name || 'ScanGym Reels') + ' \u2014 Book a gym for \u00A35! \uD83D\uDCAA';
+        var displayName = humanizeTitle(video.name);
+        var text = (displayName || 'ScanGym Reels') + ' \u2014 Book a gym for \u00A35! \uD83D\uDCAA';
         if(video.creator && video.creator.name){
-          text = (video.name || 'ScanGym Reels') + ' by ' + video.creator.name + ' \u2014 Book for \u00A35! \uD83D\uDCAA';
+          text = (displayName || 'ScanGym Reels') + ' by ' + video.creator.name + ' \u2014 Book for \u00A35! \uD83D\uDCAA';
         }
         if(navigator.share){
           navigator.share({title:'ScanGym Reels',text:text,url:url}).catch(function(){});
@@ -1585,6 +1605,31 @@
       function escHtml(s){
         if(!s) return '';
         return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      }
+
+      // Humanize raw filenames into display titles
+      // "03_workout_montage_horizontal" → "Workout Montage"
+      // "10 Mubarak Pvc Sp100 S50 Sb75 V3 Processed" → "Mubarak"
+      function humanizeTitle(name){
+        if(!name) return 'ScanGym Reels';
+        var s = name;
+        // Strip file extensions
+        s = s.replace(/\.(mp4|webm|mov)$/i, '');
+        // Replace underscores with spaces
+        s = s.replace(/_/g, ' ');
+        // Remove leading numbers/indices (e.g. "03 ", "01 ")
+        s = s.replace(/^\d{1,3}\s+/, '');
+        // Remove orientation tags
+        s = s.replace(/\b(horizontal|vertical)\b/gi, '');
+        // Remove technical suffixes (v1, v2, processed, sp100, s50, sb75, etc.)
+        s = s.replace(/\b(v\d+|processed|sp\d+|s\d+|sb\d+|pvc)\b/gi, '');
+        // Clean up extra whitespace
+        s = s.replace(/\s{2,}/g, ' ').trim();
+        // Title case if all lowercase
+        if(s === s.toLowerCase()){
+          s = s.replace(/\b\w/g, function(c){ return c.toUpperCase(); });
+        }
+        return s || name;
       }
 
       function showToast(msg){

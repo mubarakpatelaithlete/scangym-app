@@ -1,0 +1,22 @@
+{
+  "name": "ScanGym Reels",
+  "short_name": "ScanGym",
+  "description": "Book a gym anywhere — day, weekly, and monthly passes at partner gyms",
+  "start_url": "/reels/",
+  "display": "standalone",
+  "background_color": "#0a0a16",
+  "theme_color": "#f97316",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/reels/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/reels/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
