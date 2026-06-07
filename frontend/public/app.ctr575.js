@@ -1063,14 +1063,21 @@ function SearchPage(){
         /* ═══ TikTok Immersive Layout Styles ═══ */
         html+='.tt-view{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;position:relative}';
         /* Carousel - horizontal snap scroll, each card is 100% width */
-        html+='.tt-carousel{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;flex:1;min-height:0}';
+        html+='.tt-carousel{display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;flex:1;min-height:0}';
         html+='.tt-carousel::-webkit-scrollbar{display:none}';
         /* Each card fills the full viewport */
-        html+='.tt-card{min-width:100%;max-width:100%;height:100%;scroll-snap-align:start;position:relative;display:flex;flex-direction:column;overflow:hidden}';
+        html+='.tt-card{width:100%;min-height:100%;max-height:100%;scroll-snap-align:start;position:relative;display:flex;flex-direction:column;overflow:hidden}';
         html+='.tt-card.tt-closed{opacity:0.5;filter:grayscale(25%)}';
         html+='.tt-card.tt-closed .tt-cta-btn{background:#6b7280;box-shadow:none}';
         /* Full-bleed photo */
         html+='.tt-photo{position:absolute;inset:0;background-size:cover;background-position:center}';
+        /* Photo carousel within each card (swipe right for more photos) */
+        html+='.tt-photo-carousel{position:absolute;inset:0;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;display:flex;z-index:0}';
+        html+='.tt-photo-carousel::-webkit-scrollbar{display:none}';
+        html+='.tt-photo-slide{flex:0 0 100%;width:100%;height:100%;scroll-snap-align:start;background-size:cover;background-position:center}';
+        html+='.tt-photo-dots{position:absolute;bottom:0;left:14px;display:flex;gap:4px;z-index:12}';
+        html+='.tt-photo-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.3);transition:all .3s}';
+        html+='.tt-photo-dot.act{background:#f97316;width:18px;border-radius:3px}';
         html+='.tt-photo-placeholder{position:absolute;inset:0;background:#1a1f2e;display:flex;align-items:center;justify-content:center}';
         html+='.tt-photo-placeholder::after{content:"🏋️";font-size:56px;opacity:.15}';
         /* Gradient overlay for readability */
@@ -1130,7 +1137,16 @@ function SearchPage(){
           html+='<div class="tt-card'+(c.isOpen?'':' tt-closed')+'" data-gym-card data-gym-id="'+c.id+'" data-idx="'+i+'" data-is-open="'+c.isOpen+'" data-rating="'+(c.rating||0)+'" data-reviews="'+(c.reviews||0)+'" data-distance="'+(c.gym.distance||99)+'">';
 
           /* Photo */
-          html+=c.photo?'<div class="tt-photo" style="background-image:url(\''+c.photo+'\')"></div>':'<div class="tt-photo-placeholder"></div>';
+          /* Photo carousel — swipe right for more photos */
+          if(c.allPhotos&&c.allPhotos.length>1){
+            html+='<div class="tt-photo-carousel" id="tt-pcarousel-'+i+'" data-card-idx="'+i+'">';
+            c.allPhotos.forEach(function(p,pi){
+              html+='<div class="tt-photo-slide" style="background-image:url(\''+p+'\')"></div>';
+            });
+            html+='</div>';
+          } else {
+            html+=c.photo?'<div class="tt-photo" style="background-image:url(\''+c.photo+'\')"></div>':'<div class="tt-photo-placeholder"></div>';
+          }
           html+='<div class="tt-gradient"></div>';
 
           /* Tour badge */
@@ -1168,6 +1184,11 @@ function SearchPage(){
           /* Logo */
           html+='<div style="margin-bottom:6px"><div class="tt-logo" style="position:relative;background:linear-gradient(135deg,'+logoGrad+')">'+logoEmoji+'</div></div>';
           /* Dots */
+          /* Photo dots (show which photo of this gym) */
+          if(c.allPhotos&&c.allPhotos.length>1){
+            html+='<div class="tt-photo-dots" id="tt-pdots-'+i+'">'+c.allPhotos.map(function(p,pi){return '<div class="tt-photo-dot'+(pi===0?' act':'')+'" id="tt-pdot-'+i+'-'+pi+'"></div>';}).join('')+'</div>';
+          }
+          /* Gym dots (show which gym in the list) */
           html+='<div class="tt-dots" id="tt-dots-'+i+'">'+_cards.map(function(d,j){return '<div class="tt-dot'+(j===i?' act':'')+'" id="tt-dot-'+i+'-'+j+'"></div>';}).join('')+'</div>';
           html+='<div class="tt-counter">\u2190 '+(i+1)+' of '+totalC+' \u2192</div>';
           /* Name */
@@ -1261,11 +1282,17 @@ function GymProfilePage(){
     /* Price badge on photo */
     .gym-carousel-price{position:absolute;bottom:10px;right:12px;background:#22c55e;color:#fff;font-size:14px;font-weight:800;padding:4px 10px;border-radius:10px;z-index:6;box-shadow:0 2px 8px rgba(34,197,94,.4)}
     /* Info section below photos */
-    .gym-info-section{flex:1;display:flex;flex-direction:column;padding:12px 16px 0;overflow-y:auto;-webkit-overflow-scrolling:touch;background:#0a0f14}
+    .gym-info-section{flex:1;display:flex;flex-direction:column;padding:12px 16px 0;overflow-y:auto;-webkit-overflow-scrolling:touch;background:#0a0f14;position:relative}
     /* Gym name + details card */
     .gym-info-card{margin-bottom:8px}
     .gym-info-name{font-family:'Sora',sans-serif;font-size:22px;font-weight:800;color:#fff;line-height:1.15;margin-bottom:2px}
     .gym-info-addr{color:rgba(255,255,255,.55);font-size:13px;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    /* ═══ TikTok-style right side action icons (Pay, Passes, Calendar) ═══ */
+    .gym-tt-actions{position:absolute;right:14px;top:16px;display:flex;flex-direction:column;gap:16px;z-index:5}
+    .gym-tt-item{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+    .gym-tt-circle{width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.1);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 2px 8px rgba(0,0,0,.3);transition:transform .15s}
+    .gym-tt-circle:active{transform:scale(.9);background:rgba(255,255,255,.18)}
+    .gym-tt-text{font-size:10px;color:rgba(255,255,255,.65);font-weight:600}
     .gym-info-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
     .gym-info-meta span{font-size:13px;font-weight:600}
     /* Quick actions row (5 icon-button tabs — all fit in 1 row) */
@@ -1522,7 +1549,21 @@ function GymProfilePage(){
         <div class="gym-info-addr">📍 ${gym.formatted_address||gym.vicinity||gym.address||''}</div>
       </div>
 
-      <!-- Quick actions removed: reviews, hours, facilities, equipment, passes -->
+      <!-- ═══ TikTok-style right side icons: Pay, Passes, Calendar ═══ -->
+      <div class="gym-tt-actions">
+        <div class="gym-tt-item" onclick="openGymOverlay('payment')">
+          <div class="gym-tt-circle" id="gym-pay-icon">💳</div>
+          <div class="gym-tt-text" id="gym-pay-label">Pay</div>
+        </div>
+        <div class="gym-tt-item" onclick="openGymOverlay('passes')">
+          <div class="gym-tt-circle">🎟️</div>
+          <div class="gym-tt-text">Passes</div>
+        </div>
+        <div class="gym-tt-item" onclick="openDateSheet()">
+          <div class="gym-tt-circle">📅</div>
+          <div class="gym-tt-text" id="gym-sticky-cal-time">${String(Math.min(new Date().getHours()+1,23)).padStart(2,'0')}:00</div>
+        </div>
+      </div>
 
       <!-- ═══ 2×2 Grid "Choose a pass" cards (Kotler pricing) — hidden by default, shown via Passes button ═══ -->
       <div class="gym-pass-header" id="gym-pass-header" style="display:none;">Choose a pass</div>
@@ -1556,32 +1597,15 @@ function GymProfilePage(){
 
     </div><!-- /gym-info-section -->
 
-    <!-- ═══ STICKY BOTTOM BAR (Uber-style) — outside scroll container ═══ -->
+    <!-- ═══ STICKY BOTTOM BAR — Full-width Book CTA + trust (Pay/Passes/Calendar moved to right-side TikTok icons) ═══ -->
     <div class="gym-sticky-bar" id="gym-sticky-bar">
-        <!-- Payment method row — Uber-style: shows saved card or "Add payment" -->
-        <div class="gym-sticky-pay" id="gym-sticky-pay" onclick="openGymOverlay('payment')">
-          <div class="gym-sticky-pay-icon" id="gym-pay-icon">
-            <span style="font-size:16px">💳</span>
-          </div>
-          <div class="gym-sticky-pay-label" id="gym-pay-label">Pay</div>
-          <div class="gym-sticky-pay-chevron">›</div>
-        </div>
-
-        <!-- CTA + Passes + Calendar row -->
-        <div class="gym-sticky-cta">
-          <button class="gym-sticky-book" id="gym-sticky-book" onclick="event.preventDefault();event.stopPropagation();showUberCheckout('${gymId}')">⚡ Book Day Pass · ${currentPrice}</button>
-          <button class="gym-sticky-cal" onclick="openGymOverlay('passes')" title="Passes">
-            <span class="gym-sticky-cal-icon">🎟️</span>
-            <span class="gym-sticky-cal-time">Passes</span>
-          </button>
-          <button class="gym-sticky-cal" id="gym-sticky-cal" onclick="openDateSheet()">
-            <span class="gym-sticky-cal-icon">📅</span>
-            <span class="gym-sticky-cal-time" id="gym-sticky-cal-time">${String(Math.min(new Date().getHours()+1,23)).padStart(2,'0')}:00</span>
-          </button>
+        <!-- Full-width Book CTA -->
+        <div style="padding:12px 16px 0">
+          <button class="gym-sticky-book" id="gym-sticky-book" style="width:100%" onclick="event.preventDefault();event.stopPropagation();showUberCheckout('${gymId}')">⚡ Book Day Pass · ${currentPrice}</button>
         </div>
 
         <!-- Trust row -->
-        <div style="display:flex;justify-content:center;gap:14px;padding:4px 0 6px">
+        <div style="display:flex;justify-content:center;gap:14px;padding:8px 0 6px">
           <span style="font-size:10px;color:rgba(255,255,255,.3)">✅ Free Cancel</span>
           <span style="font-size:10px;color:rgba(255,255,255,.3)">🔒 Secure</span>
           <span style="font-size:10px;color:rgba(255,255,255,.3)">⚡ Instant QR</span>
@@ -5140,7 +5164,7 @@ window.scrollToGymCard=function(idx){
 // ── Inline Book-tab map carousel: scroll to card + update pins/pills/dots ──
 window.scrollToBookCard=function(idx){
   const carousel=document.getElementById('bm-carousel');
-  if(carousel)carousel.scrollTo({left:idx*carousel.offsetWidth,behavior:'smooth'});
+  if(carousel)carousel.scrollTo({top:idx*carousel.offsetHeight,behavior:'smooth'});
 };
 
 // Initialize Book-tab carousel scroll listener (called after render)
@@ -5149,19 +5173,14 @@ window._initBookMapCarousel=function(){
   if(!carousel||carousel._bmInit)return;
   carousel._bmInit=true;
   let _bmCurrent=0;
+  /* ═══ VERTICAL scroll between gyms (swipe up/down) ═══ */
   carousel.addEventListener('scroll',function(){
-    const w=carousel.offsetWidth;
-    if(w===0)return;
-    const idx=Math.round(carousel.scrollLeft/w);
+    const h=carousel.offsetHeight;
+    if(h===0)return;
+    const idx=Math.round(carousel.scrollTop/h);
     if(idx===_bmCurrent||idx<0)return;
     const cards=carousel.querySelectorAll('.tt-card');
-    if(!cards.length){
-      // Fallback for old layout
-      const oldCards=carousel.querySelectorAll('.bm-card');
-      if(idx>=oldCards.length)return;
-      _bmCurrent=idx;
-      return;
-    }
+    if(!cards.length)return;
     if(idx>=cards.length)return;
     _bmCurrent=idx;
     // Update dots in all cards — each card has its own dot set
@@ -5179,6 +5198,17 @@ window._initBookMapCarousel=function(){
       if(filterSheet)cards[idx].appendChild(filterSheet);
     }
   },{passive:true});
+  /* ═══ PHOTO CAROUSEL scroll listeners (swipe right for more photos) ═══ */
+  carousel.querySelectorAll('.tt-photo-carousel').forEach(function(pc){
+    var cardIdx=pc.getAttribute('data-card-idx');
+    pc.addEventListener('scroll',function(){
+      var pw=pc.offsetWidth;
+      if(pw===0)return;
+      var pi=Math.round(pc.scrollLeft/pw);
+      var dots=document.querySelectorAll('#tt-pdots-'+cardIdx+' .tt-photo-dot');
+      dots.forEach(function(d,j){if(j===pi)d.classList.add('act');else d.classList.remove('act');});
+    },{passive:true});
+  });
 };
 
 window.closeGymDiscovery=function(){
