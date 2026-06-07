@@ -16,16 +16,15 @@ const surge = require('../lib/surge-pricing');
  * Extract geo from request (same as payment.js)
  */
 function getGeoFromRequest(req) {
+  // UK-only launch: all gyms are in the UK, Stripe account is GBP.
+  // Always return GB to ensure prices display in £. When expanding
+  // internationally, revisit this to use geo-detection again.
+  // Priority: query params > Cloudflare headers > geoip > default GB
+  if (req.query?.country) return { country: req.query.country.toUpperCase(), city: req.query.city || '' };
   const cfCountry = req.headers['cf-ipcountry'];
   const cfCity = req.headers['cf-ipcity'];
   if (cfCountry && cfCountry !== 'XX') return { country: cfCountry.toUpperCase(), city: cfCity || '' };
-  try {
-    const geoip = require('geoip-lite');
-    const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.ip;
-    const geo = geoip ? geoip.lookup(ip) : null;
-    if (geo && geo.country) return { country: geo.country, city: geo.city || '' };
-  } catch (e) {}
-  if (req.query?.country) return { country: req.query.country.toUpperCase(), city: req.query.city || '' };
+  // Default to GB for UK-only launch (geoip can misdetect VPN/proxy users)
   return { country: 'GB', city: '' };
 }
 

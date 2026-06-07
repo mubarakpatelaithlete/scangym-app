@@ -135,24 +135,33 @@ router.get('/search', async (req, res) => {
     }
 
     // Google Places pagetoken requires ~2-3s delay before it becomes valid.
-    // Retry up to 3 times with increasing backoff for INVALID_REQUEST on pagination.
+    // Retry up to 5 times with increasing backoff for INVALID_REQUEST on pagination.
     let data;
-    const maxRetries = pagetoken ? 3 : 0;
+    const maxRetries = pagetoken ? 5 : 0;
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      if (attempt > 0) await new Promise(r => setTimeout(r, 2000 + attempt * 1000));
-      const response = await fetch(url);
-      data = await response.json();
+      if (attempt > 0) await new Promise(r => setTimeout(r, 2000 + attempt * 1500));
+      try {
+        const response = await fetch(url);
+        data = await response.json();
+      } catch (fetchErr) {
+        console.error('Google Places fetch error (attempt', attempt + 1, '):', fetchErr.message);
+        if (attempt === maxRetries) {
+          return res.json({ gyms: [], total: 0, nextPageToken: null, query: searchQuery, source: 'google_places_live', error: 'Search temporarily unavailable' });
+        }
+        continue;
+      }
       if (data.status !== 'INVALID_REQUEST' || !pagetoken) break;
     }
 
-    if (data.status === 'ZERO_RESULTS') {
+    if (!data || data.status === 'ZERO_RESULTS') {
       const result = { gyms: [], total: 0, nextPageToken: null, query: searchQuery, source: 'google_places_live' };
       return res.json(result);
     }
 
     if (data.status !== 'OK') {
       console.error('Google Places Text Search error:', data.status, data.error_message);
-      return res.status(502).json({ error: 'Search service error', details: data.status });
+      // Return empty results instead of 502 so the frontend doesn't break
+      return res.json({ gyms: [], total: 0, nextPageToken: null, query: searchQuery, source: 'google_places_live', error: data.status });
     }
 
     const gyms = (data.results || [])
