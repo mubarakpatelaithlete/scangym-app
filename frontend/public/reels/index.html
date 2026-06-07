@@ -1453,7 +1453,7 @@
         }
 
         info.innerHTML = '<p class="reel-title">' + escHtml(humanizeTitle(video.name)) + '</p>'
-          + '<p class="reel-category">\uD83C\uDFAC ' + escHtml(video.category) + '</p>'
+          + '<p class="reel-category">\uD83C\uDFAC ' + escHtml(humanizeCategory(video.category)) + '</p>'
           + creatorHtml + affiliateHtml;
         div.appendChild(info);
 
@@ -1637,6 +1637,35 @@
           s = s.replace(/\b\w/g, function(c){ return c.toUpperCase(); });
         }
         return s || name;
+      }
+
+      function humanizeCategory(cat){
+        if(!cat) return 'Fitness';
+        var s = cat;
+        // Strip internal prefixes: "TikTok-Reels AI", "CMO", "Yt", etc.
+        s = s.replace(/^(TikTok-Reels?\s*AI|CMO|Yt|YT|IG|FB)\s*[-:]?\s*/i, '');
+        // Strip "No Membership" suffix if it's a prefix artifact
+        s = s.replace(/\bNo\s+Membership\b/gi, '').trim();
+        // Map known internal categories to clean display names
+        var categoryMap = {
+          'viral': 'Viral',
+          'motivation': 'Motivation',
+          'transformation': 'Transformation',
+          'tutorial': 'Tutorial',
+          'gym tour': 'Gym Tour',
+          'workout': 'Workout',
+          'tips': 'Tips',
+          'challenge': 'Challenge'
+        };
+        var lower = s.toLowerCase().trim();
+        if(categoryMap[lower]) return categoryMap[lower];
+        // Clean up and title case
+        s = s.replace(/\s{2,}/g, ' ').trim();
+        if(!s) return 'Fitness';
+        if(s === s.toLowerCase()){
+          s = s.replace(/\b\w/g, function(c){ return c.toUpperCase(); });
+        }
+        return s;
       }
 
       function showToast(msg){

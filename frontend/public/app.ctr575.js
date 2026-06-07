@@ -12,7 +12,8 @@ window.__sgPricingCallbacks = [];
 (function initPricingService() {
   const geo = window.__geoHint || {};
   const params = new URLSearchParams();
-  if (geo.country) params.set('country', geo.country);
+  // UK-only launch: always send GB to ensure GBP pricing
+  params.set('country', geo.country || 'GB');
   if (geo.city) params.set('city', geo.city);
   
   fetch('/api/pricing/prices?' + params.toString())
@@ -1504,7 +1505,7 @@ function GymProfilePage(){
         }
       </div>
       <!-- Back button -->
-      <button class="gym-carousel-back" onclick="history.back()" aria-label="Go back">←</button>
+      <button class="gym-carousel-back" onclick="navigate('/explore')" aria-label="Go back">←</button>
       <!-- Instagram counter "1/4" -->
       ${photos.length>1?`<div class="gym-carousel-counter" id="gym-carousel-counter">1/${Math.min(photos.length,4)}</div>`:''}
       <!-- Dot indicators (Instagram style) -->
@@ -7703,8 +7704,8 @@ function MoreHubPage(){
     <div class="sg-more-section">
       <div class="sg-more-section-title">For Gym Owners</div>
       ${moreItem('\u{1F3E2}','List Your Gym','It\'s free \u2014 start earning','/list-your-gym')}
-      ${moreItem('\u2699\uFE0F','Owner Controls','Open/close toggle, pricing','/owner/controls')}
-      ${moreItem('\u{1F4C8}','CEO Dashboard','Revenue, bookings, funnel','/forceo')}
+      ${u?moreItem('\u2699\uFE0F','Owner Controls','Open/close toggle, pricing','/owner/controls'):''}
+      ${u?moreItem('\u{1F4C8}','CEO Dashboard','Revenue, bookings, funnel','/forceo'):''}
     </div>
 
     <!-- Account -->
@@ -9588,6 +9589,7 @@ window.sgProfileCompletion=function(container){
       popup.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.8);z-index:9700;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeInUp .4s ease-out';
       popup.innerHTML=`
         <div style="background:linear-gradient(135deg,#1a1a2e,#0f172a);border:2px solid rgba(34,197,94,.3);border-radius:24px;padding:28px;max-width:340px;width:100%;text-align:center;position:relative">
+          <button onclick="document.getElementById('sg-beginners-luck').remove()" style="position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.1);border:none;color:rgba(255,255,255,.6);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:1;transition:background .2s" onmouseover="this.style.background='rgba(255,255,255,.2)'" onmouseout="this.style.background='rgba(255,255,255,.1)'">✕</button>
           <div style="position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;padding:5px 16px;border-radius:20px;font-size:11px;font-weight:800;white-space:nowrap">🎉 WELCOME GIFT</div>
           <div style="font-size:48px;margin-top:12px">🎁</div>
           <div style="font-size:22px;font-weight:900;color:#fff;margin-top:8px">Your First Gym Visit</div>
@@ -9600,6 +9602,8 @@ window.sgProfileCompletion=function(container){
           <div style="margin-top:10px;font-size:10px;color:rgba(255,255,255,.3)">🔥 ${Math.floor(Math.random()*50)+150} people claimed this today</div>
         </div>
       `;
+      // Dismiss popup when clicking the dark backdrop (outside the card)
+      popup.addEventListener('click',function(e){if(e.target===popup)popup.remove();});
       document.body.appendChild(popup);
     },15000);
   }
