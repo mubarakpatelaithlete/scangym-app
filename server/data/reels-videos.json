@@ -881,22 +881,6 @@
     "dopamineTier": 3
   },
   {
-    "id": 58,
-    "name": "03 Workout Montage Horizontal",
-    "category": "Promo",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/03_workout_montage_horizontal.mp4",
-    "thumb": null,
-    "cdnKey": "03_workout_montage_horizontal",
-    "driveId": null,
-    "fileSize": 3058162,
-    "blurhash": true,
-    "orientation": "horizontal",
-    "width": 1280,
-    "height": 720,
-    "dopamineTier": 3
-  },
-  {
     "id": 59,
     "name": "Aberdeen",
     "category": "City Promo",
@@ -1301,22 +1285,6 @@
     "dopamineTier": 3
   },
   {
-    "id": 85,
-    "name": "CrossFit Box Hop",
-    "category": "Promo",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/11_crossfit_box_hop.mp4",
-    "thumb": null,
-    "cdnKey": "11_crossfit_box_hop",
-    "driveId": null,
-    "fileSize": 15147864,
-    "blurhash": true,
-    "orientation": "horizontal",
-    "width": 1920,
-    "height": 1080,
-    "dopamineTier": 3
-  },
-  {
     "id": 86,
     "name": "Derby",
     "category": "City Promo",
@@ -1500,22 +1468,6 @@
     "orientation": "vertical",
     "width": 720,
     "height": 1280,
-    "dopamineTier": 3
-  },
-  {
-    "id": 98,
-    "name": "Gym Hopper (YouTube 16:9)",
-    "category": "Promo",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/04_gym_hopper_youtube_16x9.mp4",
-    "thumb": null,
-    "cdnKey": "04_gym_hopper_youtube_16x9",
-    "driveId": null,
-    "fileSize": 10554659,
-    "blurhash": true,
-    "orientation": "horizontal",
-    "width": 1920,
-    "height": 1080,
     "dopamineTier": 3
   },
   {
@@ -2073,22 +2025,6 @@
     "dopamineTier": 4
   },
   {
-    "id": 134,
-    "name": "03 Youtube Ad Horizontal",
-    "category": "General",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/03_youtube_ad_horizontal.mp4",
-    "thumb": null,
-    "cdnKey": "03_youtube_ad_horizontal",
-    "driveId": null,
-    "fileSize": 2818461,
-    "blurhash": true,
-    "orientation": "horizontal",
-    "width": 1280,
-    "height": 720,
-    "dopamineTier": 4
-  },
-  {
     "id": 135,
     "name": "Affiliateearnings V1",
     "category": "AI Cinematic",
@@ -2284,22 +2220,6 @@
     "dopamineTier": 4
   },
   {
-    "id": 148,
-    "name": "Brand Story",
-    "category": "CMO Content",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/ScanGym-CMO-Video3-BrandStory-Horizontal.mp4",
-    "thumb": null,
-    "cdnKey": "ScanGym-CMO-Video3-BrandStory-Horizontal",
-    "driveId": null,
-    "fileSize": 12889159,
-    "blurhash": true,
-    "orientation": "horizontal",
-    "width": 1920,
-    "height": 1080,
-    "dopamineTier": 4
-  },
-  {
     "id": 149,
     "name": "Bs Summercoming",
     "category": "AI Cinematic",
@@ -2358,22 +2278,6 @@
     "orientation": "vertical",
     "width": 1080,
     "height": 1920,
-    "dopamineTier": 4
-  },
-  {
-    "id": 153,
-    "name": "Couple Goals",
-    "category": "CMO Content",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/ScanGym-CMO-V13-CoupleGoals-Horizontal.mp4",
-    "thumb": null,
-    "cdnKey": "ScanGym-CMO-V13-CoupleGoals-Horizontal",
-    "driveId": null,
-    "fileSize": 5278582,
-    "blurhash": true,
-    "orientation": "horizontal",
-    "width": 1280,
-    "height": 720,
     "dopamineTier": 4
   },
   {
@@ -2891,22 +2795,6 @@
     "dopamineTier": 4
   },
   {
-    "id": 188,
-    "name": "Gym Tour Walkthrough",
-    "category": "CMO Content",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/ScanGym-CMO-V18-GymTour-Horizontal.mp4",
-    "thumb": null,
-    "cdnKey": "ScanGym-CMO-V18-GymTour-Horizontal",
-    "driveId": null,
-    "fileSize": 5098043,
-    "blurhash": true,
-    "orientation": "horizontal",
-    "width": 1280,
-    "height": 720,
-    "dopamineTier": 4
-  },
-  {
     "id": 189,
     "name": "Imperative Command",
     "category": "CMO Content",
@@ -2920,22 +2808,6 @@
     "orientation": "vertical",
     "width": 1080,
     "height": 1920,
-    "dopamineTier": 4
-  },
-  {
-    "id": 190,
-    "name": "Myth Bust",
-    "category": "CMO Content",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/ScanGym-CMO-V8-MythBust-Horizontal.mp4",
-    "thumb": null,
-    "cdnKey": "ScanGym-CMO-V8-MythBust-Horizontal",
-    "driveId": null,
-    "fileSize": 5153846,
-    "blurhash": true,
-    "orientation": "horizontal",
-    "width": 1920,
-    "height": 1080,
     "dopamineTier": 4
   },
   {
@@ -3064,54 +2936,6 @@
     "orientation": "vertical",
     "width": 720,
     "height": 1280,
-    "dopamineTier": 4
-  },
-  {
-    "id": 199,
-    "name": "Yt Affiliate Explained",
-    "category": "YouTube AI",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/yt_affiliate_explained.mp4",
-    "thumb": null,
-    "cdnKey": "yt_affiliate_explained",
-    "driveId": null,
-    "fileSize": 1912072,
-    "blurhash": true,
-    "orientation": "horizontal",
-    "width": 1280,
-    "height": 720,
-    "dopamineTier": 4
-  },
-  {
-    "id": 200,
-    "name": "Yt Every Gym Tested",
-    "category": "YouTube AI",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/yt_every_gym_tested.mp4",
-    "thumb": null,
-    "cdnKey": "yt_every_gym_tested",
-    "driveId": null,
-    "fileSize": 3155641,
-    "blurhash": true,
-    "orientation": "horizontal",
-    "width": 1280,
-    "height": 720,
-    "dopamineTier": 4
-  },
-  {
-    "id": 201,
-    "name": "Yt No Membership",
-    "category": "YouTube AI",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/yt_no_membership.mp4",
-    "thumb": null,
-    "cdnKey": "yt_no_membership",
-    "driveId": null,
-    "fileSize": 4110378,
-    "blurhash": true,
-    "orientation": "horizontal",
-    "width": 1280,
-    "height": 720,
     "dopamineTier": 4
   },
   {

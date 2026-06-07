@@ -268,7 +268,7 @@ app.get("/api/config", async (req, res) => {
     stripeKey: process.env.STRIPE_PUBLISHABLE_KEY || "",
     brand: "ScanGym",
     liveSearch: true,
-    gymCount: 1200000,
+    gymCount: 1200000, // Google Places searchable gyms worldwide
   });
 });
 

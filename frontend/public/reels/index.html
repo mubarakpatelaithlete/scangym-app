@@ -307,6 +307,15 @@
       .reel-error p{font-size:13px;}
 
       /* ── Swipe hint ── */
+      
+      .reel-counter{
+        position:fixed;top:12px;right:16px;z-index:9999;
+        background:rgba(0,0,0,.55);backdrop-filter:blur(8px);
+        color:#fff;font-size:13px;font-weight:600;
+        padding:6px 14px;border-radius:20px;
+        letter-spacing:.5px;pointer-events:none;
+        font-variant-numeric:tabular-nums;
+      }
       .swipe-hint{
         position:fixed;bottom:90px;left:50%;transform:translateX(-50%);
         z-index:35;display:flex;flex-direction:column;align-items:center;
@@ -347,6 +356,7 @@
       Tap for sound
     </div>
     <div id="reel-track"></div>
+        <div class="reel-counter" id="reel-counter">1 / —</div>
     <div class="swipe-hint" id="swipe-hint">
       <svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
       <span>Swipe up</span>
@@ -426,6 +436,14 @@
 
       var track   = document.getElementById('reel-track');
       var loading = document.getElementById('loading');
+      
+      // ── Update reel counter ──
+      function updateReelCounter(){
+        var el = document.getElementById('reel-counter');
+        if(el && allVideos.length > 0){
+          el.textContent = (currentIndex + 1) + ' / ' + allVideos.length;
+        }
+      }
       var hint    = document.getElementById('swipe-hint');
 
       // ── Touch state ──
@@ -1775,6 +1793,7 @@
           });
       }
 
+      updateReelCounter();
       // ── Auto-dismiss swipe hint after 3 seconds ──
       setTimeout(function(){
         if(hint){
