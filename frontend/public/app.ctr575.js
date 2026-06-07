@@ -513,9 +513,9 @@ function _syncReelsVisibility(){
   if(state.activeTab==='reels'){
     if(!wrap)_ensureReelsIframe();
     wrap=document.getElementById('sg-reels-persistent');
-    if(wrap)wrap.style.display='block';
+    if(wrap){wrap.style.display='block';wrap.style.zIndex='1';}
   }else{
-    if(wrap)wrap.style.display='none';
+    if(wrap){wrap.style.display='none';wrap.style.zIndex='-1';}
   }
 }
 function navigate(path,pushState=true){
@@ -2802,9 +2802,14 @@ window._toggleReviewHelpful=function(rid,base){
 
 // Open Write a Review modal (Amazon-style)
 window.openWriteReviewModal=function(){
-  // Check if logged in
+  // Check if logged in — if not, close reviews overlay and navigate to login
   if(!state.user||!state.user.id){
-    sgToast('Please log in to write a review','warning',3000);
+    // Close the reviews overlay first so user can see the login screen
+    var _gOvr=document.getElementById('gym-overlay');
+    if(_gOvr)_gOvr.classList.remove('open');
+    var _tb=document.querySelector('.sg-tab-bar');if(_tb)_tb.classList.remove('hidden');
+    sgToast('Please log in first to write a review','warning',3000);
+    setTimeout(function(){navigate('/login');},400);
     return;
   }
   const gym=state.currentGym;
@@ -8356,7 +8361,9 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
   // ── Remove skeleton tab bar (persists if service-worker serves stale index.html) ──
   var _skelBar=document.getElementById('skeleton-tab-bar');if(_skelBar)_skelBar.remove();
   // ── Deduplicate: ensure only one .sg-tab-bar exists ──
-  var _allBars=document.querySelectorAll('.sg-tab-bar');for(var _bi=0;_bi<_allBars.length-1;_bi++)_allBars[_bi].remove();
+  // Remove ALL tab bars outside #app first (stale duplicates), then keep only the last one inside #app
+  document.querySelectorAll('.sg-tab-bar').forEach(function(bar){if(!bar.closest('#app'))bar.remove();});
+  var _allBars=document.querySelectorAll('#app .sg-tab-bar');for(var _bi=0;_bi<_allBars.length-1;_bi++)_allBars[_bi].remove();
   // ── App-style fixed viewport: all pages locked, content scrolls inside container ──
   // Reset scroll position of content container on navigation
   var _tc=document.querySelector('.sg-tab-content');if(_tc)_tc.scrollTop=0;
