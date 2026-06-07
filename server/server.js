@@ -248,10 +248,11 @@ apiPaths.forEach(p => app.use(p, express.json()));
 // Auto-reel upload needs larger body limit (base64 videos up to 10MB)
 app.use('/api/reels/auto-upload', express.json({ limit: '15mb' }));
 
-// -- Health check --
+// -- Health check (Railway uses this for deploy validation) --
+app.get('/health', (req, res) => res.status(200).send('ok'));
 app.get('/api/v2/health', (req, res) => {
   res.json({
-    status: 'ok', version: 'v4.5.0', brand: 'ScanGym',
+    status: 'ok', version: 'v4.6.0', brand: 'ScanGym',
     ts: new Date().toISOString(),
     features: 18, tasks: '24/24 + auth + booking + payment + live-search', ok: true,
     frontend: fs.existsSync(path.join(FRONTEND_DIR, 'index.html')) ? 'v3' : 'none',
