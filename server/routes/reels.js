@@ -144,15 +144,118 @@ router.get('/feed', async (req, res) => {
       );
     }
 
-    // 4. Seeded shuffle — deterministic per seed so pagination stays consistent
+    // 4. Dopamine-optimised ordering
+    // Neuroscience: the brain needs novelty between each reel to maintain the
+    // reward-seeking loop. Pattern: Shock → Viral → Convert → Relate → Shock.
+    // Never two similar categories in a row (habituation kills dopamine).
+    //
+    // Tier 1 (max dopamine): Don't Join A Gym, Viral, Price Compare
+    // Tier 2 (strong):       TikTok-Reels AI, Influencer, Creator uploads
+    // Tier 3 (filler):       Promo, CMO Content, AI Cinematic, General, etc.
     if (shuffle) {
       // Simple mulberry32 PRNG seeded from query param
       let s = seed | 0;
       const rand = () => { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t ^= t + Math.imul(t ^ t >>> 7, 61 | t); return ((t ^ t >>> 14) >>> 0) / 4294967296; };
-      for (let i = feed.length - 1; i > 0; i--) {
-        const j = Math.floor(rand() * (i + 1));
-        [feed[i], feed[j]] = [feed[j], feed[i]];
+
+      // Assign dopamine tier to each video
+      const TIER_MAP = {
+        "don't join a gym": 1,
+        "viral":            1,
+        "price compare":    1,
+        "tiktok-reels ai":  2,
+        "influencer":       2,
+        "creator":          2,
+        "promo":            3,
+        "cmo content":      4,
+        "ai cinematic":     4,
+        "general":          4,
+        "youtube ai":       4,
+        "ugc videos":       5,
+        "auto-reel":        5,
+      };
+
+      function getTier(v) {
+        const cat = (v.category || '').toLowerCase();
+        return TIER_MAP[cat] || 3;
       }
+
+      // Bucket videos by tier, shuffle within each bucket
+      const buckets = { 1: [], 2: [], 3: [], 4: [], 5: [] };
+      for (const v of feed) {
+        const t = getTier(v);
+        buckets[t] = buckets[t] || [];
+        buckets[t].push(v);
+      }
+      // Shuffle each bucket
+      for (const tier of Object.values(buckets)) {
+        for (let i = tier.length - 1; i > 0; i--) {
+          const j = Math.floor(rand() * (i + 1));
+          [tier[i], tier[j]] = [tier[j], tier[i]];
+        }
+      }
+
+      // Interleave: dopamine rotation pattern
+      // Every 5 slots: Tier1, Tier2, Tier1, Tier3, Tier2 — then repeat
+      // This ensures max-dopamine content leads, with variety between each
+      const rotationPattern = [1, 2, 1, 3, 2, 1, 3, 2, 4, 3];
+      const ordered = [];
+      const bucketIdx = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+      let lastCategory = '';
+      let patternPos = 0;
+
+      while (ordered.length < feed.length) {
+        // Try the preferred tier from the rotation pattern
+        const preferredTier = rotationPattern[patternPos % rotationPattern.length];
+        let placed = false;
+
+        // Try preferred tier first, then adjacent tiers
+        const tierOrder = [preferredTier, ...([1,2,3,4,5].filter(t => t !== preferredTier))];
+        for (const tier of tierOrder) {
+          const bucket = buckets[tier];
+          if (!bucket) continue;
+          // Find a video from this tier that isn't the same category as last
+          let startIdx = bucketIdx[tier] || 0;
+          for (let attempt = 0; attempt < bucket.length; attempt++) {
+            const idx = (startIdx + attempt) % bucket.length;
+            if (idx < startIdx && attempt > 0) break; // wrapped around
+            const v = bucket[idx];
+            if (!v || v._used) continue;
+            const cat = (v.category || '').toLowerCase();
+            if (cat === lastCategory && ordered.length > 0) continue; // no same category twice
+            // Place this video
+            ordered.push(v);
+            v._used = true;
+            bucketIdx[tier] = idx + 1;
+            lastCategory = cat;
+            placed = true;
+            break;
+          }
+          if (placed) break;
+        }
+
+        // Fallback: place any unused video
+        if (!placed) {
+          for (const tier of [1,2,3,4,5]) {
+            const bucket = buckets[tier];
+            if (!bucket) continue;
+            for (let i = 0; i < bucket.length; i++) {
+              if (!bucket[i]._used) {
+                ordered.push(bucket[i]);
+                bucket[i]._used = true;
+                placed = true;
+                break;
+              }
+            }
+            if (placed) break;
+          }
+        }
+        if (!placed) break; // All videos placed
+        patternPos++;
+      }
+
+      // Clean up temp flag
+      for (const v of ordered) { delete v._used; }
+      feed = ordered;
     }
 
     // 5. Paginate
@@ -417,6 +520,61 @@ router.post('/admin/enrich', async (req, res) => {
   } catch (err) {
     console.error('Manual enrichment error:', err);
     res.status(500).json({ error: 'Enrichment failed: ' + err.message });
+  }
+});
+
+/**
+ * POST /api/reels/analytics
+ * Receive view analytics from the frontend.
+ * Stores in DB for feed ranking improvements.
+ * Body: { views: [{ id, cat, dur, pct, ts }] }
+ */
+router.post('/analytics', express.json(), async (req, res) => {
+  try {
+    const { views } = req.body;
+    if (!Array.isArray(views) || views.length === 0) {
+      return res.status(204).end();
+    }
+
+    // Batch insert — max 50 views per request to prevent abuse
+    const batch = views.slice(0, 50);
+    const values = [];
+    const placeholders = [];
+    let idx = 1;
+    for (const v of batch) {
+      placeholders.push(`($${idx}, $${idx+1}, $${idx+2}, $${idx+3})`);
+      values.push(
+        String(v.id || '').slice(0, 50),
+        String(v.cat || '').slice(0, 50),
+        Math.min(Math.max(parseInt(v.dur) || 0, 0), 300000), // max 5min
+        Math.min(Math.max(parseInt(v.pct) || 0, 0), 100)
+      );
+      idx += 4;
+    }
+
+    // Create table if not exists (idempotent)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS reel_views (
+        id SERIAL PRIMARY KEY,
+        video_id VARCHAR(50),
+        category VARCHAR(50),
+        duration_ms INTEGER,
+        watch_percent INTEGER,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+
+    await pool.query(
+      `INSERT INTO reel_views (video_id, category, duration_ms, watch_percent)
+       VALUES ${placeholders.join(', ')}`,
+      values
+    );
+
+    res.status(204).end();
+  } catch (err) {
+    // Analytics should never break the UX — swallow errors
+    console.error('Analytics error:', err.message);
+    res.status(204).end();
   }
 });
 

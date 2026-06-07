@@ -48,9 +48,11 @@
         object-fit:cover;
         pointer-events:none;
       }
-      /* Letterbox horizontal (landscape) videos instead of cropping */
+      /* Zoom-crop horizontal (landscape) videos to fill screen — TikTok style.
+         Letterboxing kills immersion. Cropping loses some sides but keeps
+         the dopamine-critical full-bleed visual. */
       .reel.landscape video{
-        object-fit:contain !important;
+        object-fit:cover !important;
       }
       .reel.landscape{
         background:#000;
@@ -388,10 +390,10 @@
       var SNAP_DURATION    = 280;
       var RUBBER_BAND      = 0.3;
       var RENDER_WINDOW    = 3;       // Keep 3 reels above + below rendered
-      var PREFETCH_AHEAD   = 8;      // Prefetch next 8 videos
+      var PREFETCH_AHEAD   = 5;      // Prefetch next 5 videos (was 8 — reduced to avoid bandwidth competition)
       var PAGE_SIZE        = 20;
       var LOAD_MORE_AT     = 5;      // Start loading more earlier
-      var POOL_SIZE        = 5;      // ⑮ video element pool — 5 for smoother fast scrolling
+      var POOL_SIZE        = 9;      // ⑮ video pool — MUST be >= RENDER_WINDOW*2+1 (7) or reels go dead
       var CROSSFADE_MS     = 150;    // ⑯ audio crossfade duration
 
       // ── Placeholder poster (SVG) ──
@@ -505,8 +507,15 @@
         if(!entry) return;
         var vid = entry.element;
         vid.pause();
+        // FIX: Use blob URL trick to avoid 416 Range errors.
+        // removeAttribute('src') + load() causes the browser to send stale
+        // Range headers to the old URL, producing HTTP 416 floods.
+        // Setting src to empty blob cleanly resets the decoder pipeline.
+        vid._retryCount = 0;
+        vid._retrying = true; // Suppress error events during reset
+        vid.src = 'about:blank';
         vid.removeAttribute('src');
-        vid.load(); // Reset internal state
+        vid._retrying = false;
         // Remove from parent if attached
         if(vid.parentNode) vid.parentNode.removeChild(vid);
         entry.inUse = false;
@@ -946,8 +955,54 @@
       //  ⑯ CROSSFADE TRANSITION
       // ═══════════════════════════════════════════════════════════
 
+      // ═══════════════════════════════════════════════════════════
+      //  ENGAGEMENT ANALYTICS — lightweight view tracking
+      // ═══════════════════════════════════════════════════════════
+      var viewBuffer = []; // batch analytics to reduce network calls
+      var ANALYTICS_FLUSH_INTERVAL = 10000; // flush every 10s
+
+      function trackView(index, durationMs, watchPercent){
+        if(index < 0 || index >= allVideos.length) return;
+        var video = allVideos[index];
+        viewBuffer.push({
+          id: video.id || index,
+          cat: video.category || '',
+          dur: Math.round(durationMs),
+          pct: Math.round(watchPercent * 100),
+          ts: Date.now(),
+        });
+      }
+
+      function flushAnalytics(){
+        if(viewBuffer.length === 0) return;
+        var batch = viewBuffer.splice(0, viewBuffer.length);
+        navigator.sendBeacon('/api/reels/analytics', JSON.stringify({ views: batch }));
+      }
+
+      setInterval(flushAnalytics, ANALYTICS_FLUSH_INTERVAL);
+      document.addEventListener('visibilitychange', function(){
+        if(document.visibilityState === 'hidden') flushAnalytics();
+      });
+
+      // Track time spent on each reel
+      var viewStartTime = Date.now();
+      var viewStartIndex = 0;
+
+      function onReelChange(prevIndex, nextIndex){
+        var now = Date.now();
+        var elapsed = now - viewStartTime;
+        if(prevIndex >= 0 && prevIndex < allVideos.length){
+          var vid = renderedReels[prevIndex] ? renderedReels[prevIndex].querySelector('video') : null;
+          var watchPct = (vid && vid.duration && !isNaN(vid.duration)) ? vid.currentTime / vid.duration : 0;
+          trackView(prevIndex, elapsed, watchPct);
+        }
+        viewStartTime = now;
+        viewStartIndex = nextIndex;
+      }
+
       function crossfadeTransition(prevIndex, nextIndex){
         clearAllFades();
+        onReelChange(prevIndex, nextIndex);
 
         // Pause previous with fade-out
         var prevReel = renderedReels[prevIndex];
@@ -1470,7 +1525,7 @@
           + '<div class="reel-action" data-action="save">'
           +   '<div class="icon">' + ICONS.save + '</div><span class="label">Save</span></div>'
           + '<a class="reel-action" data-action="create" href="/upload">'
-          +   '<div class="icon" style="background:rgba(34,197,94,.85);border-color:rgba(34,197,94,.9)">' + ICONS.create + '</div><span class="label">Create</span></a>'
+          +   '<div class="icon" style="background:rgba(34,197,94,.85);border-color:rgba(34,197,94,.9)">' + ICONS.create + '</div><span class="label">Earn</span></a>'
           + '<div class="reel-action" data-action="more">'
           +   '<div class="icon">' + ICONS.more + '</div><span class="label">More</span></div>';
         div.appendChild(actions);
@@ -1626,16 +1681,22 @@
         s = s.replace(/_/g, ' ');
         // Remove leading numbers/indices (e.g. "03 ", "01 ")
         s = s.replace(/^\d{1,3}\s+/, '');
-        // Strip internal source prefixes (Yt, YT, IG, FB, CMO, Auto-Reel, etc.)
+        // Strip internal source prefixes
         s = s.replace(/^(TikTok-Reels?\s*AI|Auto-Reel|YouTube\s*AI|AI\s*Cinematic|CMO|Yt|YT|IG|FB)\s*[-:]?\s*/i, '');
         // Remove "No Membership" scraping artifact
         s = s.replace(/\bNo\s+Membership\b/gi, '').trim();
         // Remove orientation tags
         s = s.replace(/\b(horizontal|vertical)\b/gi, '');
+        // Remove CMO-style version prefixes (V14, V32, V44, V52, V56, etc.)
+        s = s.replace(/\bV\d{1,3}\b\s*/g, '');
+        // Remove ScanGym- prefix from internal naming
+        s = s.replace(/^ScanGym[-\s]*/i, '');
         // Remove technical suffixes (v1, v2, processed, sp100, s50, sb75, etc.)
         s = s.replace(/\b(v\d+|processed|sp\d+|s\d+|sb\d+|pvc)\b/gi, '');
-        // Clean up extra whitespace
-        s = s.replace(/\s{2,}/g, ' ').trim();
+        // Insert spaces before capitals in CamelCase (JogToGym → Jog To Gym)
+        s = s.replace(/([a-z])([A-Z])/g, '$1 $2');
+        // Clean up extra whitespace and dashes
+        s = s.replace(/[-]{2,}/g, ' ').replace(/\s{2,}/g, ' ').trim();
         // Title case if all lowercase
         if(s === s.toLowerCase()){
           s = s.replace(/\b\w/g, function(c){ return c.toUpperCase(); });
@@ -1705,6 +1766,15 @@
             console.warn('[Reels] SW registration failed:', err);
           });
       }
+
+      // ── Auto-dismiss swipe hint after 3 seconds ──
+      setTimeout(function(){
+        if(hint){
+          hint.style.opacity = '0';
+          hint.style.transition = 'opacity .5s';
+          setTimeout(function(){ if(hint && hint.parentNode) hint.parentNode.removeChild(hint); hint = null; }, 600);
+        }
+      }, 3000);
 
       // ── Init ──
       initVideoPool();
