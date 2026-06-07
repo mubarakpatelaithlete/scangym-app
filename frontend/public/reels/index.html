@@ -461,6 +461,10 @@
           vid.setAttribute('webkit-playsinline', '');
           vid.preload = 'metadata';
           vid.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;pointer-events:none;';
+          // Suppress console errors for 416/network failures during pool recycling
+          vid.addEventListener('error', function(e){
+            if(this._retrying) { e.stopImmediatePropagation(); return; }
+          });
           videoPool.push({ element: vid, assignedIndex: -1, inUse: false });
         }
       }
@@ -502,19 +506,23 @@
         return entry.element;
       }
 
+      // Minimal empty MP4 (ftyp + moov atoms) for clean decoder reset
+      var EMPTY_MP4 = 'data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAAIZnJlZQAAAAhtZGF0AAAA0m1vb3YAAABsbXZoZAAAAADc39yd3N/cnQAAA+gAAAPoAAEAAAEAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAABidWR0YQAAAFptZXRhAAAAIWhkbHIAAAAAAAAAAG1kaXIAAAAAAAAAAAAAAAAAAAAAK2lsc3QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAE3RyYWs=';
+
       function releaseVideo(index){
         var entry = videoPoolMap[index];
         if(!entry) return;
         var vid = entry.element;
         vid.pause();
-        // FIX: Use blob URL trick to avoid 416 Range errors.
-        // removeAttribute('src') + load() causes the browser to send stale
-        // Range headers to the old URL, producing HTTP 416 floods.
-        // Setting src to empty blob cleanly resets the decoder pipeline.
+        // FIX: Assign a minimal empty MP4 to cleanly reset the decoder.
+        // The old approach (removeAttribute('src') + load()) sends stale
+        // Range headers to the old CDN URL → HTTP 416 floods.
+        // An empty data-URI MP4 gives the decoder a valid source to replace
+        // the old one, flushing all buffered byte ranges.
         vid._retryCount = 0;
-        vid._retrying = true; // Suppress error events during reset
-        vid.src = 'about:blank';
-        vid.removeAttribute('src');
+        vid._retrying = true;
+        vid.preload = 'none';
+        vid.src = EMPTY_MP4;
         vid._retrying = false;
         // Remove from parent if attached
         if(vid.parentNode) vid.parentNode.removeChild(vid);
