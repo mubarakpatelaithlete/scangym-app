@@ -30,17 +30,19 @@ try {
  * Returns the combined video feed: static catalog + approved creator uploads.
  * Query params:
  *   - category: filter by category (optional)
- *   - limit: max videos to return (default 50, max 200)
+ *   - limit: max videos to return (default 200, max 200)
  *   - offset: pagination offset (default 0)
  *   - shuffle: "true" to randomize order (default true)
+ *   - seed: numeric seed for deterministic shuffle (auto-generated if omitted)
  *   - include_uploads: "true" to include approved creator uploads (default true)
  */
 router.get('/feed', async (req, res) => {
   try {
     const category = req.query.category || null;
-    const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+    const limit = Math.min(parseInt(req.query.limit) || 200, 200);
     const offset = parseInt(req.query.offset) || 0;
     const shuffle = req.query.shuffle !== 'false';
+    const seed = parseInt(req.query.seed) || Math.floor(Math.random() * 2147483647);
     const includeUploads = req.query.include_uploads !== 'false';
 
     // 1. Start with static videos
@@ -121,10 +123,13 @@ router.get('/feed', async (req, res) => {
       );
     }
 
-    // 4. Shuffle if requested (Fisher-Yates)
+    // 4. Seeded shuffle — deterministic per seed so pagination stays consistent
     if (shuffle) {
+      // Simple mulberry32 PRNG seeded from query param
+      let s = seed | 0;
+      const rand = () => { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t ^= t + Math.imul(t ^ t >>> 7, 61 | t); return ((t ^ t >>> 14) >>> 0) / 4294967296; };
       for (let i = feed.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
+        const j = Math.floor(rand() * (i + 1));
         [feed[i], feed[j]] = [feed[j], feed[i]];
       }
     }
@@ -141,6 +146,7 @@ router.get('/feed', async (req, res) => {
       offset,
       limit,
       hasMore: offset + limit < total,
+      seed,
       categories: [...new Set(staticVideos.map(v => v.category))].sort(),
     });
   } catch (err) {

@@ -1227,6 +1227,8 @@
       //  PAGINATED FEED
       // ═══════════════════════════════════════════════════════════
 
+      var feedSeed = null; // seeded shuffle for consistent pagination
+
       function loadFeed(){
         feedLoading = true;
         fetch('/api/reels/feed?limit=' + PAGE_SIZE + '&offset=0&shuffle=true')
@@ -1238,6 +1240,7 @@
             allVideos = data.videos || [];
             feedOffset = allVideos.length;
             feedHasMore = data.hasMore;
+            feedSeed = data.seed; // save seed for consistent pagination
             feedLoading = false;
             if(allVideos.length === 0){
               showFatalError('No reels available yet');
@@ -1277,7 +1280,7 @@
       function loadMoreFeed(){
         if(feedLoading || !feedHasMore) return;
         feedLoading = true;
-        fetch('/api/reels/feed?limit=' + PAGE_SIZE + '&offset=' + feedOffset + '&shuffle=true')
+        fetch('/api/reels/feed?limit=' + PAGE_SIZE + '&offset=' + feedOffset + '&shuffle=true' + (feedSeed ? '&seed=' + feedSeed : ''))
           .then(function(r){
             if(!r.ok) throw new Error('Feed error');
             return r.json();
@@ -1339,10 +1342,14 @@
         div.appendChild(vid);
 
         // Detect horizontal (landscape) videos and apply letterboxing
-        // Also check filename hint for known horizontal content
-        var cdnKey = (video.cdnKey || video.url || '').toLowerCase();
-        if(cdnKey.indexOf('horizontal') !== -1){
+        // Use server-side orientation field first, then fall back to hints/runtime
+        if(video.orientation === 'horizontal'){
           div.classList.add('landscape');
+        } else if(!video.orientation){
+          var cdnKey = (video.cdnKey || video.url || '').toLowerCase();
+          if(cdnKey.indexOf('horizontal') !== -1){
+            div.classList.add('landscape');
+          }
         }
         vid.addEventListener('loadedmetadata', function(){
           if(vid.videoWidth > vid.videoHeight * 1.2){

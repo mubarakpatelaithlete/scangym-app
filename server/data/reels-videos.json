@@ -5,8 +5,13 @@
     "category": "Promo",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/02_gen_z_day_pass_journey.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/02_gen_z_day_pass_journey.webp",
-    "cdnKey": "02_gen_z_day_pass_journey"
+    "thumb": null,
+    "cdnKey": "02_gen_z_day_pass_journey",
+    "fileSize": 3966836,
+    "blurhash": "LMK1tK-;.8t7m~e,WsRiD~D*R5bH",
+    "orientation": "vertical",
+    "width": 720,
+    "height": 1280
   },
   {
     "id": 2,
@@ -14,8 +19,13 @@
     "category": "Promo",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/03_five_pound_challenge.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/03_five_pound_challenge.webp",
-    "cdnKey": "03_five_pound_challenge"
+    "thumb": null,
+    "cdnKey": "03_five_pound_challenge",
+    "fileSize": 2979147,
+    "blurhash": "LSG]ge]-qatQ[t%gcse90Kt6-;of",
+    "orientation": "vertical",
+    "width": 720,
+    "height": 1280
   },
   {
     "id": 3,
@@ -23,8 +33,13 @@
     "category": "Promo",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/04_gym_hopper_youtube_16x9.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/04_gym_hopper_youtube_16x9.webp",
-    "cdnKey": "04_gym_hopper_youtube_16x9"
+    "thumb": null,
+    "cdnKey": "04_gym_hopper_youtube_16x9",
+    "fileSize": 10554659,
+    "orientation": "horizontal",
+    "blurhash": "LkGRevRRoIj]~UI[ofja=|Rkt7oL",
+    "width": 1920,
+    "height": 1080
   },
   {
     "id": 4,
@@ -32,8 +47,13 @@
     "category": "Promo",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/05_stop_paying_imperative.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/05_stop_paying_imperative.webp",
-    "cdnKey": "05_stop_paying_imperative"
+    "thumb": null,
+    "cdnKey": "05_stop_paying_imperative",
+    "fileSize": 12882412,
+    "blurhash": "L44.9:of9Fof%Mj[Rjj[00WB-;ay",
+    "orientation": "vertical",
+    "width": 1080,
+    "height": 1920
   },
   {
     "id": 5,
@@ -41,8 +61,13 @@
     "category": "Promo",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/06_travelling_gym_finder.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/06_travelling_gym_finder.webp",
-    "cdnKey": "06_travelling_gym_finder"
+    "thumb": null,
+    "cdnKey": "06_travelling_gym_finder",
+    "fileSize": 4544358,
+    "blurhash": "LXDT3KxZWTR.?woIRONHxvofV?WD",
+    "orientation": "vertical",
+    "width": 720,
+    "height": 1280
   },
   {
     "id": 6,
@@ -50,8 +75,13 @@
     "category": "Promo",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/07_gym_membership_trap.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/07_gym_membership_trap.webp",
-    "cdnKey": "07_gym_membership_trap"
+    "thumb": null,
+    "cdnKey": "07_gym_membership_trap",
+    "fileSize": 12096355,
+    "blurhash": "LUJjrJWAXSoL8wx]ozs.T{IVWBV@",
+    "orientation": "vertical",
+    "width": 1080,
+    "height": 1920
   },
   {
     "id": 7,
@@ -59,8 +89,13 @@
     "category": "Promo",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/09_before_after_gym_hopper.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/09_before_after_gym_hopper.webp",
-    "cdnKey": "09_before_after_gym_hopper"
+    "thumb": null,
+    "cdnKey": "09_before_after_gym_hopper",
+    "fileSize": 2677754,
+    "blurhash": "LJCsHut+9twK~qo|s.RjOGad$$Ip",
+    "orientation": "vertical",
+    "width": 720,
+    "height": 1280
   },
   {
     "id": 8,
@@ -68,8 +103,13 @@
     "category": "Promo",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/10_scangym_app_demo.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/10_scangym_app_demo.webp",
-    "cdnKey": "10_scangym_app_demo"
+    "thumb": null,
+    "cdnKey": "10_scangym_app_demo",
+    "fileSize": 10324089,
+    "blurhash": "LTH_obMx?H-;?vM{xut7_NIoE1fk",
+    "orientation": "vertical",
+    "width": 1080,
+    "height": 1920
   },
   {
     "id": 9,
@@ -77,8 +117,13 @@
     "category": "Promo",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/11_crossfit_box_hop.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/11_crossfit_box_hop.webp",
-    "cdnKey": "11_crossfit_box_hop"
+    "thumb": null,
+    "cdnKey": "11_crossfit_box_hop",
+    "fileSize": 15147864,
+    "blurhash": "LUFY$3IVDiae4Tay%Mog9FxakCRj",
+    "orientation": "horizontal",
+    "width": 1920,
+    "height": 1080
   },
   {
     "id": 10,
@@ -86,8 +131,13 @@
     "category": "Promo",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/14_student_gym_hack.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/14_student_gym_hack.webp",
-    "cdnKey": "14_student_gym_hack"
+    "thumb": null,
+    "cdnKey": "14_student_gym_hack",
+    "fileSize": 15314747,
+    "blurhash": "LUHn{V~p-:?GtR-=oeoz?boztRWB",
+    "orientation": "vertical",
+    "width": 1080,
+    "height": 1920
   },
   {
     "id": 11,
@@ -95,8 +145,13 @@
     "category": "Promo",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/15_yoga_studio_hop.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/15_yoga_studio_hop.webp",
-    "cdnKey": "15_yoga_studio_hop"
+    "thumb": null,
+    "cdnKey": "15_yoga_studio_hop",
+    "fileSize": 4806789,
+    "blurhash": "LrLpy?00SitStmITozog%Ln$NGof",
+    "orientation": "vertical",
+    "width": 1080,
+    "height": 1920
   },
   {
     "id": 12,
@@ -104,8 +159,13 @@
     "category": "Promo",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/16_fifty_vs_five_comparison.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/16_fifty_vs_five_comparison.webp",
-    "cdnKey": "16_fifty_vs_five_comparison"
+    "thumb": null,
+    "cdnKey": "16_fifty_vs_five_comparison",
+    "fileSize": 9646952,
+    "blurhash": "LGLXV#IURjNF~q%LofWB.7IUay-;",
+    "orientation": "vertical",
+    "width": 1080,
+    "height": 1920
   },
   {
     "id": 13,
@@ -113,8 +173,13 @@
     "category": "Promo",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/18_morning_routine_scangym.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/18_morning_routine_scangym.webp",
-    "cdnKey": "18_morning_routine_scangym"
+    "thumb": null,
+    "cdnKey": "18_morning_routine_scangym",
+    "fileSize": 9876717,
+    "blurhash": "L65E$[fQ9Ft7xuayWBof00j[-;Rj",
+    "orientation": "vertical",
+    "width": 1080,
+    "height": 1920
   },
   {
     "id": 14,
@@ -122,8 +187,13 @@
     "category": "Promo",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/20_couples_gym_date.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/20_couples_gym_date.webp",
-    "cdnKey": "20_couples_gym_date"
+    "thumb": null,
+    "cdnKey": "20_couples_gym_date",
+    "fileSize": 10000964,
+    "blurhash": "LGHnc{~VWUH=zm%0xptSWBROtRyD",
+    "orientation": "vertical",
+    "width": 1080,
+    "height": 1920
   },
   {
     "id": 15,
@@ -131,8 +201,13 @@
     "category": "Promo",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/21_late_night_gym_finder.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/21_late_night_gym_finder.webp",
-    "cdnKey": "21_late_night_gym_finder"
+    "thumb": null,
+    "cdnKey": "21_late_night_gym_finder",
+    "fileSize": 6615036,
+    "blurhash": "LCAAalxI4TJ7.8NFI9o}%gRP9EkW",
+    "orientation": "vertical",
+    "width": 1080,
+    "height": 1920
   },
   {
     "id": 16,
@@ -140,8 +215,13 @@
     "category": "Promo",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/23_bodybuilder_budget_gyms.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/23_bodybuilder_budget_gyms.webp",
-    "cdnKey": "23_bodybuilder_budget_gyms"
+    "thumb": null,
+    "cdnKey": "23_bodybuilder_budget_gyms",
+    "fileSize": 18188620,
+    "blurhash": "LOH2H1ad-=xu~ps;t7t6o}jaD%kC",
+    "orientation": "vertical",
+    "width": 1080,
+    "height": 1920
   },
   {
     "id": 17,
@@ -149,8 +229,13 @@
     "category": "Promo",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/24_save_money_calculator.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/promo/24_save_money_calculator.webp",
-    "cdnKey": "24_save_money_calculator"
+    "thumb": null,
+    "cdnKey": "24_save_money_calculator",
+    "fileSize": 1399301,
+    "blurhash": "LIPZr%-;xu-;~qxut7of9FayM{WB",
+    "orientation": "vertical",
+    "width": 720,
+    "height": 1280
   },
   {
     "id": 18,
@@ -158,8 +243,13 @@
     "category": "CMO Content",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/ScanGym-CMO-V10-ReactionDuet-Vertical.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-V10-ReactionDuet-Vertical.webp",
-    "cdnKey": "ScanGym-CMO-V10-ReactionDuet-Vertical"
+    "thumb": null,
+    "cdnKey": "ScanGym-CMO-V10-ReactionDuet-Vertical",
+    "fileSize": 2200946,
+    "orientation": "vertical",
+    "blurhash": "LYHC1V*0n%RP-;9ZNG%1D$4naexu",
+    "width": 720,
+    "height": 1280
   },
   {
     "id": 19,
@@ -167,8 +257,13 @@
     "category": "CMO Content",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/ScanGym-CMO-V11-RecoveryTrend-Vertical.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-V11-RecoveryTrend-Vertical.webp",
-    "cdnKey": "ScanGym-CMO-V11-RecoveryTrend-Vertical"
+    "thumb": null,
+    "cdnKey": "ScanGym-CMO-V11-RecoveryTrend-Vertical",
+    "fileSize": 12375802,
+    "orientation": "vertical",
+    "blurhash": "LIIhBEM{xuIU~Vt7t7Ri4.j]Rjof",
+    "width": 1080,
+    "height": 1920
   },
   {
     "id": 20,
@@ -176,8 +271,13 @@
     "category": "CMO Content",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/ScanGym-CMO-V12-FormCheck-Vertical.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-V12-FormCheck-Vertical.webp",
-    "cdnKey": "ScanGym-CMO-V12-FormCheck-Vertical"
+    "thumb": null,
+    "cdnKey": "ScanGym-CMO-V12-FormCheck-Vertical",
+    "fileSize": 8202788,
+    "orientation": "vertical",
+    "blurhash": "LLDlvP0L%MjE4:^+IUM{s*E2s:t6",
+    "width": 1080,
+    "height": 1920
   },
   {
     "id": 21,
@@ -185,8 +285,13 @@
     "category": "CMO Content",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/ScanGym-CMO-V13-CoupleGoals-Horizontal.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-V13-CoupleGoals-Horizontal.webp",
-    "cdnKey": "ScanGym-CMO-V13-CoupleGoals-Horizontal"
+    "thumb": null,
+    "cdnKey": "ScanGym-CMO-V13-CoupleGoals-Horizontal",
+    "fileSize": 5278582,
+    "orientation": "horizontal",
+    "blurhash": "LFB{ov?a%g-pIoayo0WC0LIUIURj",
+    "width": 1280,
+    "height": 720
   },
   {
     "id": 22,
@@ -194,8 +299,13 @@
     "category": "CMO Content",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/ScanGym-CMO-V14-POVFirstGym-Vertical.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-V14-POVFirstGym-Vertical.webp",
-    "cdnKey": "ScanGym-CMO-V14-POVFirstGym-Vertical"
+    "thumb": null,
+    "cdnKey": "ScanGym-CMO-V14-POVFirstGym-Vertical",
+    "fileSize": 11544752,
+    "orientation": "vertical",
+    "blurhash": "LLF=dZ5S9E-=5k^jtms.4TNx?HRj",
+    "width": 1080,
+    "height": 1920
   },
   {
     "id": 23,
@@ -203,8 +313,13 @@
     "category": "CMO Content",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/ScanGym-CMO-V15-TravelFitness-Vertical.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-V15-TravelFitness-Vertical.webp",
-    "cdnKey": "ScanGym-CMO-V15-TravelFitness-Vertical"
+    "thumb": null,
+    "cdnKey": "ScanGym-CMO-V15-TravelFitness-Vertical",
+    "fileSize": 4124223,
+    "orientation": "vertical",
+    "blurhash": "LYEM8$xuI;Rk_NWXs.xa-;t6t6bb",
+    "width": 720,
+    "height": 1280
   },
   {
     "id": 24,
@@ -212,8 +327,13 @@
     "category": "CMO Content",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/ScanGym-CMO-V16-GRWM-Vertical.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-V16-GRWM-Vertical.webp",
-    "cdnKey": "ScanGym-CMO-V16-GRWM-Vertical"
+    "thumb": null,
+    "cdnKey": "ScanGym-CMO-V16-GRWM-Vertical",
+    "fileSize": 13582568,
+    "orientation": "vertical",
+    "blurhash": "LQHny+_N?HD%?aM_RioLx^soRkbb",
+    "width": 1080,
+    "height": 1920
   },
   {
     "id": 25,
@@ -221,8 +341,13 @@
     "category": "CMO Content",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/ScanGym-CMO-V17-Storytime-Vertical.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-V17-Storytime-Vertical.webp",
-    "cdnKey": "ScanGym-CMO-V17-Storytime-Vertical"
+    "thumb": null,
+    "cdnKey": "ScanGym-CMO-V17-Storytime-Vertical",
+    "fileSize": 11544752,
+    "orientation": "vertical",
+    "blurhash": "LLF=dZ5S9E-=5k^jtms.4TNx?HRj",
+    "width": 1080,
+    "height": 1920
   },
   {
     "id": 26,
@@ -230,8 +355,13 @@
     "category": "CMO Content",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/ScanGym-CMO-V18-GymTour-Horizontal.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-V18-GymTour-Horizontal.webp",
-    "cdnKey": "ScanGym-CMO-V18-GymTour-Horizontal"
+    "thumb": null,
+    "cdnKey": "ScanGym-CMO-V18-GymTour-Horizontal",
+    "fileSize": 5098043,
+    "orientation": "horizontal",
+    "blurhash": "LACrl+E*BV^*?Gj@oft60gsms.R+",
+    "width": 1280,
+    "height": 720
   },
   {
     "id": 27,
@@ -239,8 +369,13 @@
     "category": "CMO Content",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/ScanGym-CMO-V4-ExpertExplainer-Vertical.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-V4-ExpertExplainer-Vertical.webp",
-    "cdnKey": "ScanGym-CMO-V4-ExpertExplainer-Vertical"
+    "thumb": null,
+    "cdnKey": "ScanGym-CMO-V4-ExpertExplainer-Vertical",
+    "fileSize": 5199102,
+    "orientation": "vertical",
+    "blurhash": "LUFr-Roe?wt7?ajYW-ax4:tRRQf+",
+    "width": 1080,
+    "height": 1920
   },
   {
     "id": 28,
@@ -248,8 +383,13 @@
     "category": "CMO Content",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/ScanGym-CMO-V5-WalkAndTalk-Vertical.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-V5-WalkAndTalk-Vertical.webp",
-    "cdnKey": "ScanGym-CMO-V5-WalkAndTalk-Vertical"
+    "thumb": null,
+    "cdnKey": "ScanGym-CMO-V5-WalkAndTalk-Vertical",
+    "fileSize": 5270517,
+    "orientation": "vertical",
+    "blurhash": "LFF}[;0x?ag4GHDN9v-oT|wa-Atl",
+    "width": 720,
+    "height": 1280
   },
   {
     "id": 29,
@@ -257,8 +397,13 @@
     "category": "CMO Content",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/ScanGym-CMO-V6-SpecificNumber-Vertical.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-V6-SpecificNumber-Vertical.webp",
-    "cdnKey": "ScanGym-CMO-V6-SpecificNumber-Vertical"
+    "thumb": null,
+    "cdnKey": "ScanGym-CMO-V6-SpecificNumber-Vertical",
+    "fileSize": 11225824,
+    "orientation": "vertical",
+    "blurhash": "L22~ZTkcoiohs:j]j]jvWBazj?ay",
+    "width": 1080,
+    "height": 1920
   },
   {
     "id": 30,
@@ -266,8 +411,13 @@
     "category": "CMO Content",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/ScanGym-CMO-V7-DeskToDumbbell-Vertical.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-V7-DeskToDumbbell-Vertical.webp",
-    "cdnKey": "ScanGym-CMO-V7-DeskToDumbbell-Vertical"
+    "thumb": null,
+    "cdnKey": "ScanGym-CMO-V7-DeskToDumbbell-Vertical",
+    "fileSize": 4595684,
+    "orientation": "vertical",
+    "blurhash": "LXE.z@~WV@D%NeNHt6xZaJbEkDbc",
+    "width": 720,
+    "height": 1280
   },
   {
     "id": 31,
@@ -275,8 +425,13 @@
     "category": "CMO Content",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/ScanGym-CMO-V8-MythBust-Horizontal.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-V8-MythBust-Horizontal.webp",
-    "cdnKey": "ScanGym-CMO-V8-MythBust-Horizontal"
+    "thumb": null,
+    "cdnKey": "ScanGym-CMO-V8-MythBust-Horizontal",
+    "fileSize": 5153846,
+    "orientation": "horizontal",
+    "blurhash": "LGD][LIpu6I_G1o##iRQ_NNIn2xG",
+    "width": 1920,
+    "height": 1080
   },
   {
     "id": 32,
@@ -284,8 +439,13 @@
     "category": "CMO Content",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/ScanGym-CMO-V9-ImperativeCommand-Vertical.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-V9-ImperativeCommand-Vertical.webp",
-    "cdnKey": "ScanGym-CMO-V9-ImperativeCommand-Vertical"
+    "thumb": null,
+    "cdnKey": "ScanGym-CMO-V9-ImperativeCommand-Vertical",
+    "fileSize": 5619470,
+    "orientation": "vertical",
+    "blurhash": "LgLgU=yD~q%2~qt7S$ay.TRPX8WB",
+    "width": 1080,
+    "height": 1920
   },
   {
     "id": 33,
@@ -293,8 +453,13 @@
     "category": "CMO Content",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/ScanGym-CMO-Video1-ContrarianHook-Vertical.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-Video1-ContrarianHook-Vertical.webp",
-    "cdnKey": "ScanGym-CMO-Video1-ContrarianHook-Vertical"
+    "thumb": null,
+    "cdnKey": "ScanGym-CMO-Video1-ContrarianHook-Vertical",
+    "fileSize": 7029002,
+    "orientation": "vertical",
+    "blurhash": "L%I$H1xuxvay~Xt7x]Rjs=f8t7WB",
+    "width": 1080,
+    "height": 1920
   },
   {
     "id": 34,
@@ -302,8 +467,13 @@
     "category": "CMO Content",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/ScanGym-CMO-Video2-OutcomeShowcase-Vertical.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-Video2-OutcomeShowcase-Vertical.webp",
-    "cdnKey": "ScanGym-CMO-Video2-OutcomeShowcase-Vertical"
+    "thumb": null,
+    "cdnKey": "ScanGym-CMO-Video2-OutcomeShowcase-Vertical",
+    "fileSize": 3318406,
+    "orientation": "vertical",
+    "blurhash": "L58El2InksaJn28w-p%g]%I]%0V?",
+    "width": 720,
+    "height": 1280
   },
   {
     "id": 35,
@@ -311,8 +481,13 @@
     "category": "CMO Content",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/ScanGym-CMO-Video3-BrandStory-Horizontal.mp4",
-    "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/content/ScanGym-CMO-Video3-BrandStory-Horizontal.webp",
-    "cdnKey": "ScanGym-CMO-Video3-BrandStory-Horizontal"
+    "thumb": null,
+    "cdnKey": "ScanGym-CMO-Video3-BrandStory-Horizontal",
+    "fileSize": 12889159,
+    "orientation": "horizontal",
+    "blurhash": "L=I}R{R*oej[~pWBayj[%gjYWVoe",
+    "width": 1920,
+    "height": 1080
   },
   {
     "id": 36,
@@ -322,7 +497,12 @@
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/AffiliateEarnings_v1.webp",
     "driveId": "1JMfgsU-DVxBo4vMM8Fx8o-FjnP8Yr2mw",
     "url": "https://cdn.scangym.com/videos/affiliateearnings_v1.mp4",
-    "cdnKey": "affiliateearnings_v1"
+    "cdnKey": "affiliateearnings_v1",
+    "fileSize": 5273487,
+    "blurhash": "LIE{5}4T?aoLOtenS4xuV=f6n$t7",
+    "orientation": "vertical",
+    "width": 720,
+    "height": 1280
   },
   {
     "id": 37,
@@ -332,7 +512,12 @@
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/BeforeAfter_Freedom_v1.webp",
     "driveId": "1OcD5sScpPjX4Cg8xbRkH1Tb6Qxne3pHM",
     "url": "https://cdn.scangym.com/videos/beforeafter_freedom_v1.mp4",
-    "cdnKey": "beforeafter_freedom_v1"
+    "cdnKey": "beforeafter_freedom_v1",
+    "fileSize": 4178372,
+    "blurhash": "LE4W0EeSNHROb{aJo$adH;bHxvt8",
+    "orientation": "vertical",
+    "width": 720,
+    "height": 1280
   },
   {
     "id": 38,
@@ -342,7 +527,12 @@
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/BeforeAfter_Wallet_v2.webp",
     "driveId": "1hxhKrDnEygynFHIV9voJo_pZdfhfnWVq",
     "url": "https://cdn.scangym.com/videos/beforeafter_wallet_v2.mp4",
-    "cdnKey": "beforeafter_wallet_v2"
+    "cdnKey": "beforeafter_wallet_v2",
+    "fileSize": 8558192,
+    "blurhash": "LCFh^ySO4o%1E*r?%3tR0fbvf$Rj",
+    "orientation": "vertical",
+    "width": 720,
+    "height": 1280
   },
   {
     "id": 39,
@@ -352,7 +542,12 @@
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/ai_cinematic/FC-TheDare.webp",
     "driveId": "1IyjCFP4bFrdx6ZnBI1htTBE21aH08Rui",
     "url": "https://cdn.scangym.com/videos/fc_thedare.mp4",
-    "cdnKey": "fc_thedare"
+    "cdnKey": "fc_thedare",
+    "fileSize": 5460307,
+    "blurhash": "L00c7cwwoLaybHayofayJ8R*j[ay",
+    "orientation": "vertical",
+    "width": 1080,
+    "height": 1920
   },
   {
     "id": 49,
@@ -361,7 +556,12 @@
     "source": "direct",
     "driveId": "14RCOl8H16PppoIKZazIswuB1oQcAIKHZ",
     "url": "https://cdn.scangym.com/videos/01_tiktok_hook_vertical.mp4",
-    "cdnKey": "01_tiktok_hook_vertical"
+    "cdnKey": "01_tiktok_hook_vertical",
+    "fileSize": 3160218,
+    "orientation": "vertical",
+    "blurhash": "L23cFXLglAx].Tpxt,pIE0%gx]Xm",
+    "width": 720,
+    "height": 1280
   },
   {
     "id": 50,
@@ -370,7 +570,12 @@
     "source": "direct",
     "driveId": "1wPEvZDkpoe-wU49-VwoG7vevhTBMC5cU",
     "url": "https://cdn.scangym.com/videos/02_gym_lifestyle_vertical.mp4",
-    "cdnKey": "02_gym_lifestyle_vertical"
+    "cdnKey": "02_gym_lifestyle_vertical",
+    "fileSize": 2646056,
+    "orientation": "vertical",
+    "blurhash": "L66a;iyD-;.8TdniM{WB0LMdMJIA",
+    "width": 720,
+    "height": 1280
   },
   {
     "id": 51,
@@ -379,7 +584,12 @@
     "source": "direct",
     "driveId": "1coHwPHWQMEQ3jjf3wqbZHLLqbsuthefm",
     "url": "https://cdn.scangym.com/videos/03_youtube_ad_horizontal.mp4",
-    "cdnKey": "03_youtube_ad_horizontal"
+    "cdnKey": "03_youtube_ad_horizontal",
+    "fileSize": 2818461,
+    "orientation": "horizontal",
+    "blurhash": "L55#z|rWRkvz^Pbvw]$hQROZ-U%M",
+    "width": 1280,
+    "height": 720
   },
   {
     "id": 52,
@@ -388,7 +598,12 @@
     "source": "direct",
     "driveId": "18jbjZeDDv7B7jhnNctn9IvxrZM-5lP4l",
     "url": "https://cdn.scangym.com/videos/01_gym_entry_vertical.mp4",
-    "cdnKey": "01_gym_entry_vertical"
+    "cdnKey": "01_gym_entry_vertical",
+    "fileSize": 2931232,
+    "orientation": "vertical",
+    "blurhash": "LdHw_Q~U^%kW?GWCR+xaxtRjWVt7",
+    "width": 720,
+    "height": 1280
   },
   {
     "id": 53,
@@ -397,7 +612,12 @@
     "source": "direct",
     "driveId": "1T49IUEJ_UNnKxBvrRAdMZPfHnYR4V3AB",
     "url": "https://cdn.scangym.com/videos/02_phone_tap_vertical.mp4",
-    "cdnKey": "02_phone_tap_vertical"
+    "cdnKey": "02_phone_tap_vertical",
+    "fileSize": 1651965,
+    "orientation": "vertical",
+    "blurhash": "LdNdOB?c%1t7_NaKxua}xvoJIpWB",
+    "width": 720,
+    "height": 1280
   },
   {
     "id": 54,
@@ -406,7 +626,12 @@
     "source": "direct",
     "driveId": "1DO0PMxd_0P17t32a8FBiRExVtaP1ryTL",
     "url": "https://cdn.scangym.com/videos/03_workout_montage_horizontal.mp4",
-    "cdnKey": "03_workout_montage_horizontal"
+    "cdnKey": "03_workout_montage_horizontal",
+    "fileSize": 3058162,
+    "orientation": "horizontal",
+    "blurhash": "LDDS%g.TrWM_tl-;_4R*S~=wtmxu",
+    "width": 1280,
+    "height": 720
   },
   {
     "id": 72,
@@ -416,7 +641,12 @@
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/tiktok_reels_ai/reel_morning_routine.webp",
     "driveId": "1hJcBQ8AQr4LC0225XCCv7E3015lsI0rs",
     "url": "https://cdn.scangym.com/videos/reel_morning_routine.mp4",
-    "cdnKey": "reel_morning_routine"
+    "cdnKey": "reel_morning_routine",
+    "fileSize": 2577584,
+    "blurhash": "L21fuW%%t.kru6t-tmo~NHWCoLog",
+    "orientation": "vertical",
+    "width": 720,
+    "height": 1280
   },
   {
     "id": 73,
@@ -426,7 +656,12 @@
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/tiktok_reels_ai/tiktok_5_pound.webp",
     "driveId": "10YquVXQam1pkUWSibMr3VpK4rtUfadgX",
     "url": "https://cdn.scangym.com/videos/tiktok_5_pound.mp4",
-    "cdnKey": "tiktok_5_pound"
+    "cdnKey": "tiktok_5_pound",
+    "fileSize": 3675481,
+    "blurhash": "LD9aT[-UjFoeuPS2kCn$0fI:xZjF",
+    "orientation": "vertical",
+    "width": 720,
+    "height": 1280
   },
   {
     "id": 74,
@@ -436,7 +671,12 @@
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/tiktok_reels_ai/tiktok_affiliate_earn.webp",
     "driveId": "15CPW0MjnqxggPGSiwe85YFXU0182hUri",
     "url": "https://cdn.scangym.com/videos/tiktok_affiliate_earn.mp4",
-    "cdnKey": "tiktok_affiliate_earn"
+    "cdnKey": "tiktok_affiliate_earn",
+    "fileSize": 3434413,
+    "blurhash": "LD8:^vbv57Rjt7W;WBxE0fof=|e-",
+    "orientation": "vertical",
+    "width": 720,
+    "height": 1280
   },
   {
     "id": 75,
@@ -446,7 +686,12 @@
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/tiktok_reels_ai/tiktok_gym_hopping.webp",
     "driveId": "1E_i7-F7Q4r2D675yS7xuBsia0CJI0abd",
     "url": "https://cdn.scangym.com/videos/tiktok_gym_hopping.mp4",
-    "cdnKey": "tiktok_gym_hopping"
+    "cdnKey": "tiktok_gym_hopping",
+    "fileSize": 2532417,
+    "blurhash": "LCA7e@SLFa,t|_sVW;W;,ssUsoSM",
+    "orientation": "vertical",
+    "width": 720,
+    "height": 1280
   },
   {
     "id": 76,
@@ -456,7 +701,12 @@
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/tiktok_reels_ai/tiktok_membership_rip.webp",
     "driveId": "1SCMTTxaVfjuZYYoMNGcjbVAuJ3gNcd86",
     "url": "https://cdn.scangym.com/videos/tiktok_membership_rip.mp4",
-    "cdnKey": "tiktok_membership_rip"
+    "cdnKey": "tiktok_membership_rip",
+    "fileSize": 2813310,
+    "blurhash": "LMDJkrxuDiWBtRMxWBV@00RQozRj",
+    "orientation": "vertical",
+    "width": 720,
+    "height": 1280
   },
   {
     "id": 77,
@@ -466,7 +716,12 @@
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/tiktok_reels_ai/tiktok_student_hack.webp",
     "driveId": "1UQ4GU9iGVjE6o4U9xJ5xwNWXFvcVexjC",
     "url": "https://cdn.scangym.com/videos/tiktok_student_hack.mp4",
-    "cdnKey": "tiktok_student_hack"
+    "cdnKey": "tiktok_student_hack",
+    "fileSize": 2962745,
+    "blurhash": "LB5jQ]uOZ#i_*JlTX9n4Y*TyV@m,",
+    "orientation": "vertical",
+    "width": 720,
+    "height": 1280
   },
   {
     "id": 78,
@@ -476,7 +731,12 @@
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/tiktok_reels_ai/tiktok_walk_in.webp",
     "driveId": "159Pw9sES2q7a4Q-e8jf7A8Zv8g8ah2ts",
     "url": "https://cdn.scangym.com/videos/tiktok_walk_in.mp4",
-    "cdnKey": "tiktok_walk_in"
+    "cdnKey": "tiktok_walk_in",
+    "fileSize": 1797188,
+    "blurhash": "L92tepUupdVrpxbHjtadX9b_a0jF",
+    "orientation": "vertical",
+    "width": 720,
+    "height": 1280
   },
   {
     "id": 90,
@@ -485,7 +745,12 @@
     "source": "direct",
     "driveId": "1SHxFWf7S9HziPwsxBwqKtCs6eJ10A9TD",
     "url": "https://cdn.scangym.com/videos/10_mubarak_pvc_sp100_s50_sb75_v3_processed.mp4",
-    "cdnKey": "10_mubarak_pvc_sp100_s50_sb75_v3_processed"
+    "cdnKey": "10_mubarak_pvc_sp100_s50_sb75_v3_processed",
+    "fileSize": 15419969,
+    "blurhash": "LbHwu.smIAt7}Sxa?HM{?HR*ROt7",
+    "orientation": "vertical",
+    "width": 720,
+    "height": 1280
   },
   {
     "id": 91,
@@ -494,7 +759,12 @@
     "source": "direct",
     "driveId": "1OFt8q7V5i2hkcNviTRK0Cmvd2EfMERjO",
     "url": "https://cdn.scangym.com/videos/12.mp4",
-    "cdnKey": "12"
+    "cdnKey": "12",
+    "fileSize": 21142992,
+    "blurhash": "LGB4IMPXE1Mv%jtSiaM_IRVonNbY",
+    "orientation": "vertical",
+    "width": 1080,
+    "height": 1920
   },
   {
     "id": 118,
@@ -504,7 +774,12 @@
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/youtube_ai/yt_affiliate_explained.webp",
     "driveId": "13EgwbOI5Vfrks3Y2eRtUcYjBJfv_ErqM",
     "url": "https://cdn.scangym.com/videos/yt_affiliate_explained.mp4",
-    "cdnKey": "yt_affiliate_explained"
+    "cdnKey": "yt_affiliate_explained",
+    "fileSize": 1912072,
+    "blurhash": "LNAKHyf+bvoz00WBV@ae?bt7ofRj",
+    "orientation": "horizontal",
+    "width": 1280,
+    "height": 720
   },
   {
     "id": 119,
@@ -514,7 +789,12 @@
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/youtube_ai/yt_every_gym_tested.webp",
     "driveId": "1m4p5xpQY6DgRKemiRmJpgqCs4H6449GR",
     "url": "https://cdn.scangym.com/videos/yt_every_gym_tested.mp4",
-    "cdnKey": "yt_every_gym_tested"
+    "cdnKey": "yt_every_gym_tested",
+    "fileSize": 3155641,
+    "blurhash": "L98g{ax]00IoMdjYITM{%gV@Rixu",
+    "orientation": "horizontal",
+    "width": 1280,
+    "height": 720
   },
   {
     "id": 120,
@@ -524,7 +804,12 @@
     "thumb": "https://scangym.com/assets/flexsquad/thumbs_ctr/youtube_ai/yt_no_membership.webp",
     "driveId": "1Y2CCTszoUFj0xcPNIx3FOb1iibZ-i81I",
     "url": "https://cdn.scangym.com/videos/yt_no_membership.mp4",
-    "cdnKey": "yt_no_membership"
+    "cdnKey": "yt_no_membership",
+    "fileSize": 4110378,
+    "blurhash": "LFCGMlyEtl~qpItlOYtl9ax]%MR,",
+    "orientation": "horizontal",
+    "width": 1280,
+    "height": 720
   },
   {
     "id": 126,
@@ -533,7 +818,12 @@
     "source": "direct",
     "driveId": "1k8D8x73K310GzKxKA22vWRmAM4NXSZJA",
     "url": "https://cdn.scangym.com/videos/istoppedpaying_v1.mp4",
-    "cdnKey": "istoppedpaying_v1"
+    "cdnKey": "istoppedpaying_v1",
+    "fileSize": 3191399,
+    "blurhash": "LBC$.eV?ELR*WAof_3s.0Mo#8_o0",
+    "orientation": "vertical",
+    "width": 720,
+    "height": 1280
   },
   {
     "id": 127,
@@ -542,7 +832,12 @@
     "source": "direct",
     "driveId": "1Rd57E-QJnyCmCLBfwzZeB274YSnTQ7ee",
     "url": "https://cdn.scangym.com/videos/istoppedpaying_v2.mp4",
-    "cdnKey": "istoppedpaying_v2"
+    "cdnKey": "istoppedpaying_v2",
+    "fileSize": 2817577,
+    "blurhash": "LAC#}G?GS4$g?^KOI:RPcso}xGjF",
+    "orientation": "vertical",
+    "width": 720,
+    "height": 1280
   },
   {
     "id": 132,
@@ -551,7 +846,12 @@
     "source": "direct",
     "driveId": "1e0ejKDhqJwUN_DLpyQbWSLMZtZEXsQVm",
     "url": "https://cdn.scangym.com/videos/moneymath_v1.mp4",
-    "cdnKey": "moneymath_v1"
+    "cdnKey": "moneymath_v1",
+    "fileSize": 6707492,
+    "blurhash": "LHIE-D%M%NjZT0RjRPWX4TtRxuV@",
+    "orientation": "vertical",
+    "width": 720,
+    "height": 1280
   },
   {
     "id": 133,
@@ -560,7 +860,12 @@
     "source": "direct",
     "driveId": "1fGbLnuskfJJ2y1vn4oRZKzERCFNGQ-6i",
     "url": "https://cdn.scangym.com/videos/pov_gymhopping_v2.mp4",
-    "cdnKey": "pov_gymhopping_v2"
+    "cdnKey": "pov_gymhopping_v2",
+    "fileSize": 3649904,
+    "blurhash": "LOLgX|vy8_~q_NIVIUR+9a9ZM|t8",
+    "orientation": "vertical",
+    "width": 720,
+    "height": 1280
   },
   {
     "id": 134,
@@ -569,7 +874,12 @@
     "source": "direct",
     "driveId": "1OEUbgWYFOqA99IOZQsp8VKC5oflSjkrE",
     "url": "https://cdn.scangym.com/videos/pov_nocontract_v1.mp4",
-    "cdnKey": "pov_nocontract_v1"
+    "cdnKey": "pov_nocontract_v1",
+    "fileSize": 3365755,
+    "blurhash": "LRD+Vm0KtSn#R-RkayRjt5bbjExZ",
+    "orientation": "vertical",
+    "width": 720,
+    "height": 1280
   },
   {
     "id": 139,
@@ -578,7 +888,12 @@
     "source": "direct",
     "driveId": "1D_7eB-WjzfWSH-NdBaPOpuMn3dun9fDZ",
     "url": "https://cdn.scangym.com/videos/cmo_v32_studentsavemoney_vertical.mp4",
-    "cdnKey": "cmo_v32_studentsavemoney_vertical"
+    "cdnKey": "cmo_v32_studentsavemoney_vertical",
+    "fileSize": 13142553,
+    "orientation": "vertical",
+    "blurhash": "LDDSq5-qkX-p00M{?HV@E0t7D%%M",
+    "width": 1080,
+    "height": 1920
   },
   {
     "id": 140,
@@ -587,7 +902,12 @@
     "source": "direct",
     "driveId": "12MQmrOsbYzxDi_quilg-0A1EPlteDeon",
     "url": "https://cdn.scangym.com/videos/cmo_v35_silhouetteworkout_vertical.mp4",
-    "cdnKey": "cmo_v35_silhouetteworkout_vertical"
+    "cdnKey": "cmo_v35_silhouetteworkout_vertical",
+    "fileSize": 1306585,
+    "orientation": "vertical",
+    "blurhash": "LE7n2iofE1fkkCj[f5az0KWV%Lf6",
+    "width": 720,
+    "height": 1280
   },
   {
     "id": 141,
@@ -596,7 +916,12 @@
     "source": "direct",
     "driveId": "1NzK8m3FN8ZcAPoUJaL2xai10E3ChuoZy",
     "url": "https://cdn.scangym.com/videos/cmo_v36_phonebookingpov_vertical.mp4",
-    "cdnKey": "cmo_v36_phonebookingpov_vertical"
+    "cdnKey": "cmo_v36_phonebookingpov_vertical",
+    "fileSize": 11162131,
+    "orientation": "vertical",
+    "blurhash": "L9D+[1-=_3Y6IAo}%io$_MxZELt7",
+    "width": 1080,
+    "height": 1920
   },
   {
     "id": 145,
@@ -605,7 +930,12 @@
     "source": "direct",
     "driveId": "1X3KGKx8v-Rokjz4mudE74wPUJXXGuaQu",
     "url": "https://cdn.scangym.com/videos/cmo_v40_qrscanmoment_vertical.mp4",
-    "cdnKey": "cmo_v40_qrscanmoment_vertical"
+    "cdnKey": "cmo_v40_qrscanmoment_vertical",
+    "fileSize": 7094262,
+    "orientation": "vertical",
+    "blurhash": "LB9@CX9G-o~V4;WWt6D+Dj%MD*IV",
+    "width": 1080,
+    "height": 1920
   },
   {
     "id": 146,
@@ -614,7 +944,12 @@
     "source": "direct",
     "driveId": "1kQYZwzTxsqKbkWXRzpOK6JUUuGOKbNS-",
     "url": "https://cdn.scangym.com/videos/cmo_v41_rooftopgymgoldenhour_vertical.mp4",
-    "cdnKey": "cmo_v41_rooftopgymgoldenhour_vertical"
+    "cdnKey": "cmo_v41_rooftopgymgoldenhour_vertical",
+    "fileSize": 7979956,
+    "orientation": "vertical",
+    "blurhash": "LJC$o|Rkofof?caef6ay0hjsRjWB",
+    "width": 1080,
+    "height": 1920
   },
   {
     "id": 147,
@@ -623,7 +958,12 @@
     "source": "direct",
     "driveId": "1JjxDMnlHciXhqgciHY0LBSE5s53rg89f",
     "url": "https://cdn.scangym.com/videos/cmo_v42_morningroutinepov_vertical.mp4",
-    "cdnKey": "cmo_v42_morningroutinepov_vertical"
+    "cdnKey": "cmo_v42_morningroutinepov_vertical",
+    "fileSize": 10410142,
+    "orientation": "vertical",
+    "blurhash": "LB4_-2oJMHR.V@f6t7ofH;WEyFs+",
+    "width": 1080,
+    "height": 1920
   },
   {
     "id": 148,
@@ -632,7 +972,12 @@
     "source": "direct",
     "driveId": "1I6vRvZgs6hcIoYAwXohs0DC5VnSB-dev",
     "url": "https://cdn.scangym.com/videos/cmo_v44_poolunderwater_vertical.mp4",
-    "cdnKey": "cmo_v44_poolunderwater_vertical"
+    "cdnKey": "cmo_v44_poolunderwater_vertical",
+    "fileSize": 31279030,
+    "orientation": "vertical",
+    "blurhash": "LY8ac:RPW;kV?aRjWBjZ?^RkWBja",
+    "width": 1080,
+    "height": 1920
   },
   {
     "id": 151,
@@ -641,7 +986,12 @@
     "source": "direct",
     "driveId": "11BmU91VcwplBqe-lXrRQPgU1xJ7DJv2D",
     "url": "https://cdn.scangym.com/videos/cmo_v50_contrarianhook_vertical.mp4",
-    "cdnKey": "cmo_v50_contrarianhook_vertical"
+    "cdnKey": "cmo_v50_contrarianhook_vertical",
+    "fileSize": 10770784,
+    "orientation": "vertical",
+    "blurhash": "LwH_Y,~V-:xu%NX9WXt7RkM|Rjj[",
+    "width": 1080,
+    "height": 1920
   },
   {
     "id": 152,
@@ -650,7 +1000,12 @@
     "source": "direct",
     "driveId": "17qltuNAGoYjfZasUnnDWSXBzRe8m0NUG",
     "url": "https://cdn.scangym.com/videos/cmo_v52_studentpriceshock_vertical.mp4",
-    "cdnKey": "cmo_v52_studentpriceshock_vertical"
+    "cdnKey": "cmo_v52_studentpriceshock_vertical",
+    "fileSize": 9382984,
+    "orientation": "vertical",
+    "blurhash": "LLEB]O^%-:%1}?={bbn*D%IVE2NH",
+    "width": 1080,
+    "height": 1920
   },
   {
     "id": 153,
@@ -659,7 +1014,12 @@
     "source": "direct",
     "driveId": "1abrjqKNaw1rJh3yCNmpHGSTB9ByFXuaE",
     "url": "https://cdn.scangym.com/videos/cmo_v53_gymfloorenergy_vertical.mp4",
-    "cdnKey": "cmo_v53_gymfloorenergy_vertical"
+    "cdnKey": "cmo_v53_gymfloorenergy_vertical",
+    "fileSize": 3205536,
+    "orientation": "vertical",
+    "blurhash": "L5BMSo^*o}Eh0PxtRjRj14E2MxwI",
+    "width": 720,
+    "height": 1280
   },
   {
     "id": 154,
@@ -668,7 +1028,12 @@
     "source": "direct",
     "driveId": "1g_AXH7ddJH9K3Jo5y76Y99aojci5Iu8r",
     "url": "https://cdn.scangym.com/videos/cmo_v54_muscleupscrollstopper_vertical.mp4",
-    "cdnKey": "cmo_v54_muscleupscrollstopper_vertical"
+    "cdnKey": "cmo_v54_muscleupscrollstopper_vertical",
+    "fileSize": 12599556,
+    "orientation": "horizontal",
+    "blurhash": "LHBD4r9F~BtR~V4o-oRkxaE2%1Rj",
+    "width": 1920,
+    "height": 1080
   },
   {
     "id": 155,
@@ -677,7 +1042,12 @@
     "source": "direct",
     "driveId": "1_R8ku4fyl11H9YjbBOATFdBlmqZVK4in",
     "url": "https://cdn.scangym.com/videos/cmo_v55_splitscreenfreedom_vertical.mp4",
-    "cdnKey": "cmo_v55_splitscreenfreedom_vertical"
+    "cdnKey": "cmo_v55_splitscreenfreedom_vertical",
+    "fileSize": 3965783,
+    "orientation": "vertical",
+    "blurhash": "LJD9xGD%IU.8nzR-kCV@4Txut7M{",
+    "width": 1080,
+    "height": 1920
   },
   {
     "id": 156,
@@ -686,7 +1056,12 @@
     "source": "direct",
     "driveId": "1eQTRSxZnAgPElm6E_4LTi7QI2XQoqGO5",
     "url": "https://cdn.scangym.com/videos/cmo_v56_jogtogym_vertical.mp4",
-    "cdnKey": "cmo_v56_jogtogym_vertical"
+    "cdnKey": "cmo_v56_jogtogym_vertical",
+    "fileSize": 10770784,
+    "orientation": "vertical",
+    "blurhash": "LwH_Y,~V-:xu%NX9WXt7RkM|Rjj[",
+    "width": 1080,
+    "height": 1920
   },
   {
     "id": 157,
@@ -695,7 +1070,12 @@
     "source": "direct",
     "driveId": "1_OvDTf7hJ4nj5myvJ1TgIWQaq1sZcR_E",
     "url": "https://cdn.scangym.com/videos/workoutmontage_v2.mp4",
-    "cdnKey": "workoutmontage_v2"
+    "cdnKey": "workoutmontage_v2",
+    "fileSize": 3065008,
+    "blurhash": "LI97;RI9ayay?wMwkBayx]RjoffP",
+    "orientation": "vertical",
+    "width": 720,
+    "height": 1280
   },
   {
     "id": 163,
@@ -704,7 +1084,12 @@
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/ai_pricecompare_veo31_v1.mp4",
     "thumb": "",
-    "cdnKey": "ai_pricecompare_veo31_v1"
+    "cdnKey": "ai_pricecompare_veo31_v1",
+    "fileSize": 5135644,
+    "blurhash": "LaO|U.bHD%-;~q-ptRtRt7-;IUM{",
+    "orientation": "vertical",
+    "width": 1080,
+    "height": 1920
   },
   {
     "id": 164,
@@ -713,24 +1098,39 @@
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/ai_studenthack_kling_v1.mp4",
     "thumb": "",
-    "cdnKey": "ai_studenthack_kling_v1"
+    "cdnKey": "ai_studenthack_kling_v1",
+    "fileSize": 18872242,
+    "blurhash": "LhLN#.~qofax.8?HWCRjt8t7ayRj",
+    "orientation": "vertical",
+    "width": 1080,
+    "height": 1920
   },
   {
     "id": 165,
-    "name": "AI Gym Tour \u2013 Golden Hour Entry",
+    "name": "AI Gym Tour – Golden Hour Entry",
     "category": "AI Cinematic",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/ai_gym_tour_veo31.mp4",
     "thumb": null,
-    "cdnKey": "ai_gym_tour_veo31"
+    "cdnKey": "ai_gym_tour_veo31",
+    "fileSize": 8315022,
+    "blurhash": "LKH_GFDh4:9G-q$exsoJ0KxuWCS5",
+    "orientation": "vertical",
+    "width": 1080,
+    "height": 1920
   },
   {
     "id": 166,
-    "name": "AI Contract Rip \u2013 Don't Join A Gym",
+    "name": "AI Contract Rip – Don't Join A Gym",
     "category": "Don't Join A Gym",
     "source": "direct",
     "url": "https://cdn.scangym.com/videos/ai_contract_rip_seedance.mp4",
     "thumb": null,
-    "cdnKey": "ai_contract_rip_seedance"
+    "cdnKey": "ai_contract_rip_seedance",
+    "fileSize": 3970468,
+    "blurhash": "LICsv~R*IUt7DhfktRf64Tj[ozWB",
+    "orientation": "vertical",
+    "width": 720,
+    "height": 1280
   }
 ]
