@@ -1,5 +1,8 @@
 FROM node:20-slim
 
+# Install ffmpeg for video frame extraction (used by auto-enrichment pipeline)
+RUN apt-get update -qq && apt-get install -y --no-install-recommends ffmpeg && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 # Copy server deps & install (production + terser for build step)
