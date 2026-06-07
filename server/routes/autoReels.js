@@ -15,6 +15,7 @@ const router = express.Router();
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
+const { compressVideo } = require('../lib/video-compress');
 
 // Storage paths — try Railway volume first, then local
 const UPLOAD_DIR = fs.existsSync('/data/uploads')
@@ -167,6 +168,22 @@ router.post('/auto-upload', requireAuth, (req, res) => {
       success: true,
       entry,
       totalAutoReels: manifest.videos.length,
+    });
+
+    // Auto-compress in background (after response sent)
+    compressVideo(videoPath).then(result => {
+      if (result.compressed) {
+        console.log(`Auto-reel compressed: ${name} — saved ${result.savedMB}MB`);
+        // Update fileSize in manifest
+        const m = loadManifest();
+        const v = m.videos.find(v => v.id === entry.id);
+        if (v) {
+          v.fileSize = result.newSize;
+          saveManifest(m);
+        }
+      }
+    }).catch(err => {
+      console.error(`Auto-reel compression failed (non-fatal): ${err.message}`);
     });
   } catch (err) {
     console.error('Auto-reel upload error:', err);

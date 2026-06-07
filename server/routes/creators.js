@@ -500,8 +500,10 @@ router.get('/naming-research', (req, res) => {
 // POST /api/creators/upload — Accept creator video upload
 // Stores metadata; video file is saved to /data/uploads (Railway persistent volume)
 // Falls back to server/uploads/ for local development
+// Post-upload: auto-compresses to 720p/CRF28 via ffmpeg (runs async after response)
 const multer = require('multer');
 const path = require('path');
+const { compressVideo } = require('../lib/video-compress');
 const UPLOAD_DIR = process.env.RAILWAY_ENVIRONMENT
   ? '/data/uploads'                                     // Railway persistent volume
   : path.join(__dirname, '..', 'uploads');               // Local dev fallback
@@ -550,6 +552,20 @@ router.post('/upload', upload.single('video'), async (req, res) => {
       message: 'Video uploaded successfully! It will appear in Reels after review.',
       fileName: file.originalname,
       fileSize: file.size
+    });
+
+    // Auto-compress in background (after response sent to user)
+    compressVideo(file.path).then(result => {
+      if (result.compressed) {
+        console.log(`Creator upload compressed: ${file.originalname} — saved ${result.savedMB}MB`);
+        // Update file_size in DB to reflect compressed size
+        pool.query(
+          `UPDATE creator_uploads SET file_size = $1 WHERE file_path = $2`,
+          [result.newSize, file.path]
+        ).catch(e => console.error('Compress DB update error:', e.message));
+      }
+    }).catch(err => {
+      console.error(`Creator upload compression failed (non-fatal): ${err.message}`);
     });
   } catch (err) {
     console.error('Upload error:', err);
