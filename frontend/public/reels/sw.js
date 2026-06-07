@@ -170,10 +170,13 @@ function cacheFirstVideo(request) {
       }
 
       // Not cached — fetch from network
-      // PERF FIX #1: Do NOT force mode:'cors' — let Cloudflare handle
-      // caching naturally. mode:'cors' on R2 without CORS headers = failure.
-      return fetch(request.url).then(function(response) {
-        if (response.ok) {
+      // FIX: Use the original request object (preserves no-cors mode from <video>)
+      // instead of fetch(request.url) which creates a new cors-mode request.
+      // R2 CDN has no CORS headers, so cors-mode fetches always fail.
+      var fetchReq = new Request(request.url, { mode: 'no-cors', credentials: 'omit' });
+      return fetch(fetchReq).then(function(response) {
+        // no-cors responses are opaque (ok=false, status=0) but still playable by <video>
+        if (response.ok || response.type === 'opaque') {
           cache.put(request.url, response.clone());
           trimCache(VIDEO_CACHE, VIDEO_CACHE_LIMIT);
         }

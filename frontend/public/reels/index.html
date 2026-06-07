@@ -1332,27 +1332,39 @@
         div.appendChild(vid);
 
         // Error handling — retry with CDN proxy before showing error
-        // PERF FIX #1: First retry uses server-side proxy (adds CORS + cache headers)
-        // which permanently fixes the "Video unavailable" issue for R2 CDN videos
+        // FIX: Added _retrying flag to prevent race condition where
+        // removeAttribute('src')+load() fires a synchronous error event
+        // that increments _retryCount before the actual retry URL is set.
         vid._retryCount = 0;
+        vid._retrying = false;
         vid.addEventListener('error', function(){
+          // Guard: ignore errors fired during source reset
+          if(vid._retrying) return;
           var idx = parseInt(div.dataset.index);
           if(vid._retryCount === 0 && idx < allVideos.length){
             vid._retryCount++;
+            vid._retrying = true;
             // First retry: try the CORS proxy instead of direct CDN
             var proxyUrl = resolveVideoProxyUrl(allVideos[idx]);
-            vid.removeAttribute('src');
-            vid.load();
-            setTimeout(function(){ vid.src = proxyUrl; vid.load(); }, 300);
+            setTimeout(function(){
+              vid.removeAttribute('src');
+              vid.src = proxyUrl;
+              vid._retrying = false;
+              vid.load();
+            }, 100);
             return;
           }
           if(vid._retryCount === 1){
             vid._retryCount++;
+            vid._retrying = true;
             // Second retry: cache-bust the original URL
             var origUrl = resolveVideoUrl(allVideos[idx]);
-            vid.removeAttribute('src');
-            vid.load();
-            setTimeout(function(){ vid.src = origUrl + (origUrl.indexOf('?') === -1 ? '?' : '&') + '_r=' + Date.now(); vid.load(); }, 500);
+            setTimeout(function(){
+              vid.removeAttribute('src');
+              vid.src = origUrl + (origUrl.indexOf('?') === -1 ? '?' : '&') + '_r=' + Date.now();
+              vid._retrying = false;
+              vid.load();
+            }, 200);
             return;
           }
           if(div.querySelector('.reel-error')) return;

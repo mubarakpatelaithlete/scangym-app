@@ -9779,6 +9779,9 @@ window.sgMasonryGrid=function(gyms,containerId){
 state.route=location.pathname;
 state.activeTab=getTabForRoute(state.route);
 render();
+// FIX: Sync reels visibility on initial load — without this, #sg-reels-persistent
+// stays display:none because _syncReelsVisibility() was only called inside switchTab/navigate
+_syncReelsVisibility();
 
 // Auto-load data based on initial route (uses Uber-style IP+GPS parallel detection)
 if(state.route==='/explore'||state.route==='/nearby'||state.route==='/search'){
