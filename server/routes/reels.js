@@ -25,6 +25,19 @@ try {
   console.error('Reels: Failed to load static video catalog:', err.message);
 }
 
+// Load enrichment cache (auto-filled metadata: fileSize, blurhash, orientation, etc.)
+let enrichmentCache = {};
+try {
+  const { loadCache, applyCachedMetadata } = require('../lib/video-enrichment');
+  enrichmentCache = loadCache();
+  if (Object.keys(enrichmentCache).length > 0) {
+    applyCachedMetadata(staticVideos, enrichmentCache);
+    console.log(`Reels: Applied ${Object.keys(enrichmentCache).length} cached metadata entries`);
+  }
+} catch (e) {
+  // Enrichment module optional — catalog may already have metadata baked in
+}
+
 /**
  * GET /api/reels/feed
  * Returns the combined video feed: static catalog + approved creator uploads.
@@ -114,6 +127,14 @@ router.get('/feed', async (req, res) => {
     } catch (autoErr) {
       // Auto-reels are optional, don't break the feed
       console.error('Auto-reels merge failed:', autoErr.message);
+    }
+
+    // 2c. Apply enrichment cache to any feed entries still missing metadata
+    if (Object.keys(enrichmentCache).length > 0) {
+      try {
+        const { applyCachedMetadata } = require('../lib/video-enrichment');
+        applyCachedMetadata(feed, enrichmentCache);
+      } catch {}
     }
 
     // 3. Filter by category if requested
@@ -368,6 +389,35 @@ router.get('/cdn-proxy/:cdnKey', (req, res) => {
     console.error('CDN proxy error:', err.message);
     res.status(502).json({ error: 'CDN fetch failed' });
   });
+});
+
+/**
+ * POST /api/reels/admin/enrich
+ * Manually trigger video enrichment (fills missing metadata).
+ * Returns enrichment results.
+ */
+router.post('/admin/enrich', async (req, res) => {
+  try {
+    const { runEnrichment, loadCache } = require('../lib/video-enrichment');
+
+    const autoManifestPath = require('fs').existsSync('/data/uploads/auto-reels/manifest.json')
+      ? '/data/uploads/auto-reels/manifest.json'
+      : require('path').join(__dirname, '..', 'uploads', 'auto-reels', 'manifest.json');
+    let autoVideos = [];
+    try { autoVideos = JSON.parse(require('fs').readFileSync(autoManifestPath, 'utf8')).videos || []; } catch {}
+
+    const cache = await runEnrichment(staticVideos, autoVideos);
+    enrichmentCache = cache; // update in-memory cache
+
+    res.json({
+      success: true,
+      cached: Object.keys(cache).length,
+      message: 'Enrichment complete. Metadata cache updated.',
+    });
+  } catch (err) {
+    console.error('Manual enrichment error:', err);
+    res.status(500).json({ error: 'Enrichment failed: ' + err.message });
+  }
 });
 
 module.exports = router;
