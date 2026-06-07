@@ -1072,7 +1072,7 @@ function SearchPage(){
         /* Full-bleed photo */
         html+='.tt-photo{position:absolute;inset:0;background-size:cover;background-position:center}';
         /* Photo carousel within each card (swipe right for more photos) */
-        html+='.tt-photo-carousel{position:absolute;inset:0;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;display:flex;z-index:0}';
+        html+='.tt-photo-carousel{position:absolute;inset:0;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;display:flex;z-index:0;touch-action:pan-x}';
         html+='.tt-photo-carousel::-webkit-scrollbar{display:none}';
         html+='.tt-photo-slide{flex:0 0 100%;width:100%;height:100%;scroll-snap-align:start;background-size:cover;background-position:center}';
         html+='.tt-photo-dots{position:absolute;bottom:0;left:14px;display:flex;gap:4px;z-index:12}';

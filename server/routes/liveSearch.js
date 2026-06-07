@@ -51,6 +51,12 @@ function parseSearchResult(place) {
   const geo = place.geometry?.location || {};
   const photoRef = place.photos?.[0]?.photo_reference || null;
 
+  // Include ALL photo references for multi-photo carousel (Google returns up to 10)
+  const photos_list = (place.photos || []).map(p => ({
+    url: photoUrl(p.photo_reference, 1200),
+    thumbnail: photoUrl(p.photo_reference, 400),
+  }));
+
   return {
     // Use place_id as the universal ID
     id: place.place_id,
@@ -64,6 +70,7 @@ function parseSearchResult(place) {
     totalReviews: place.user_ratings_total || 0,
     photo: photoRef ? photoUrl(photoRef) : null,
     photoReference: photoRef,
+    photos_list,
     types: place.types || [],
     businessStatus: place.business_status || 'OPERATIONAL',
     openNow: place.opening_hours?.open_now ?? null,
