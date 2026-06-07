@@ -166,6 +166,8 @@ router.get('/feed', async (req, res) => {
         "influencer":       2,
         "creator":          2,
         "promo":            3,
+        "city promo":       3,
+        "ready-to-post":    3,
         "cmo content":      4,
         "ai cinematic":     4,
         "general":          4,

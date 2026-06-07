@@ -712,8 +712,8 @@
             return video.url || '';
           case 'r2':
             if(video.cdnKey) return CDN_CONFIG.r2Base + '/' + video.cdnKey + '.mp4';
-            // Fallback: use Convex proxy for Google Drive videos not yet migrated to R2
-            if(video.driveId) return CDN_CONFIG.convexBase + '?id=' + video.driveId;
+            // Fallback: use server video proxy for Google Drive videos not yet on R2
+            if(video.driveId) return '/api/video-proxy?url=' + encodeURIComponent('https://drive.google.com/uc?export=download&id=' + video.driveId);
             return video.url || '';
           case 'bunny':
             return CDN_CONFIG.bunnyBase + '/' + (video.cdnKey || video.driveId) + '.mp4';
