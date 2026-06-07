@@ -1057,6 +1057,7 @@ function SearchPage(){
           return{id:id,gym:gym,photo:photo,allPhotos:allPhotos,photoCount:photoCount,distMin:distMin,facs:facs,facList:facList,equipList:equipList,rating:rating,reviews:reviews,addr:addr,isOpen:isOpen,openText:openText,openTag:openTag,openClass:openClass,isPop:isPop,price:price,pos:pos,name:gym.name||'Gym',i:i};
         });
         _cards.sort(function(a,b){return (a.isOpen===b.isOpen)?0:(a.isOpen?-1:1);});
+        window._ttCards=_cards;
         var totalC=_cards.length;
         var html='<div id="book-map-view" class="tt-view">';
         html+='<style>';
@@ -5209,6 +5210,83 @@ window._initBookMapCarousel=function(){
       dots.forEach(function(d,j){if(j===pi)d.classList.add('act');else d.classList.remove('act');});
     },{passive:true});
   });
+  /* ═══ LAZY PHOTO LOADING: Fetch place details for visible gym to get multiple photos ═══ */
+  var _photoCache={};
+  function _loadPhotosForCard(idx){
+    if(!window._ttCards||!window._ttCards[idx])return;
+    var card=window._ttCards[idx];
+    var placeId=card.id;
+    if(!placeId||_photoCache[placeId])return;
+    _photoCache[placeId]=true;
+    fetch('/api/live/place/'+placeId).then(function(r){return r.json();}).then(function(data){
+      var photos=(data.photos||[]).slice(0,10);
+      if(photos.length<=1)return;
+      var cardEl=carousel.querySelectorAll('.tt-card')[idx];
+      if(!cardEl)return;
+      // Find or create the photo carousel container
+      var pc=document.getElementById('tt-pcarousel-'+idx);
+      if(!pc){
+        // Replace the static tt-photo div with a carousel
+        var oldPhoto=cardEl.querySelector('.tt-photo');
+        if(oldPhoto){oldPhoto.remove();}
+        pc=document.createElement('div');
+        pc.className='tt-photo-carousel';
+        pc.id='tt-pcarousel-'+idx;
+        pc.setAttribute('data-card-idx',idx);
+        // Insert before gradient overlay
+        var gradient=cardEl.querySelector('.tt-gradient');
+        if(gradient){cardEl.insertBefore(pc,gradient);}else{cardEl.prepend(pc);}
+        // Add scroll listener for dots
+        pc.addEventListener('scroll',function(){
+          var pw=pc.offsetWidth;
+          if(pw===0)return;
+          var pi=Math.round(pc.scrollLeft/pw);
+          var dots=document.querySelectorAll('#tt-pdots-'+idx+' .tt-photo-dot');
+          dots.forEach(function(d,j){if(j===pi)d.classList.add('act');else d.classList.remove('act');});
+        },{passive:true});
+      }
+      // Fill carousel with photo slides
+      pc.innerHTML='';
+      photos.forEach(function(p){
+        var slide=document.createElement('div');
+        slide.className='tt-photo-slide';
+        slide.style.backgroundImage='url('+(p.thumbnail||p.url)+')';
+        pc.appendChild(slide);
+      });
+      // Create or rebuild dots
+      var dotsContainer=document.getElementById('tt-pdots-'+idx);
+      if(!dotsContainer){
+        dotsContainer=document.createElement('div');
+        dotsContainer.className='tt-photo-dots';
+        dotsContainer.id='tt-pdots-'+idx;
+        // Insert after photo carousel, before gradient
+        var gradient2=cardEl.querySelector('.tt-gradient');
+        if(gradient2){cardEl.insertBefore(dotsContainer,gradient2);}else{cardEl.appendChild(dotsContainer);}
+      }
+      dotsContainer.innerHTML='';
+      photos.forEach(function(p,pi){
+        var dot=document.createElement('div');
+        dot.className='tt-photo-dot'+(pi===0?' act':'');
+        dot.id='tt-pdot-'+idx+'-'+pi;
+        dotsContainer.appendChild(dot);
+      });
+    }).catch(function(){});
+  }
+  // Load photos for first visible card immediately
+  _loadPhotosForCard(0);
+  // Load photos when scrolling to a new gym card
+  var _origCurrent=0;
+  carousel.addEventListener('scroll',function(){
+    var h=carousel.offsetHeight;
+    if(h===0)return;
+    var idx=Math.round(carousel.scrollTop/h);
+    if(idx!==_origCurrent){
+      _origCurrent=idx;
+      _loadPhotosForCard(idx);
+      // Also preload next card
+      _loadPhotosForCard(idx+1);
+    }
+  },{passive:true});
 };
 
 window.closeGymDiscovery=function(){
