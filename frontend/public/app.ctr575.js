@@ -7354,27 +7354,31 @@ window.sgLoadCeoStats=async function(){
   try{
     // Fetch stats from the API
     const [statsR,bookingsR]=await Promise.all([
-      fetch('/api/stats/overview',{credentials:'include'}).catch(()=>null),
+      fetch('/api/stats/ceo',{credentials:'include'}).catch(()=>null),
       fetch('/api/bookings/recent?limit=10',{credentials:'include'}).catch(()=>null)
     ]);
 
-    // Update metrics with available data or show defaults
+    // Parse real stats from API
+    const statsData=statsR&&statsR.ok?await statsR.json().catch(()=>null):null;
+    const bookingsData=bookingsR&&bookingsR.ok?await bookingsR.json().catch(()=>null):null;
     const metrics=document.querySelectorAll('.ceo-metric-val');
-    const defaults={'total-revenue':'£0','bookings-today':'0','active-users':'0','gyms-listed':'58','conversion-rate':'0%','avg-rating':'4.2'};
-    metrics.forEach(m=>{
-      const key=m.dataset.metric;
-      m.textContent=defaults[key]||'—';
-    });
+    const sd=statsData||{};
+    const rev=sd.revenue||sd.totalRevenue||sd.total_revenue;
+    const defaults={'total-revenue':rev!=null?'\u00A3'+parseFloat(rev).toFixed(2):'\u00A30','bookings-today':''+(sd.bookingsToday||sd.bookings_today||0),'active-users':''+(sd.activeUsers||sd.active_users||sd.traffic?.uniqueVisitors||0),'gyms-listed':''+(sd.gymsListed||sd.gyms_listed||58),'conversion-rate':(sd.conversionRate||sd.conversion_rate||sd.funnel?.conversionRate||'0%'),'avg-rating':''+(sd.avgRating||sd.avg_rating||'4.2')};
+    metrics.forEach(m=>{const key=m.dataset.metric;m.textContent=defaults[key]||'\u2014';});
 
-    // Funnel visualization
+    // Funnel with real data
     const funnel=document.getElementById('ceo-funnel');
     if(funnel){
+      const f=sd.funnel||{};
+      const vis=f.visitors||0;
+      function fPct(n){return vis>0?Math.round(n/vis*100)+'%':'\u2014';}
       const steps=[
-        {label:'Visitors',count:'—',pct:'100%',color:'#3b82f6'},
-        {label:'Search',count:'—',pct:'—',color:'#8b5cf6'},
-        {label:'Gym Profile',count:'—',pct:'—',color:'#f97316'},
-        {label:'Checkout',count:'—',pct:'—',color:'#eab308'},
-        {label:'Paid Booking',count:'—',pct:'—',color:'#22c55e'}
+        {label:'Visitors',count:vis||'\u2014',pct:vis?'100%':'\u2014',color:'#3b82f6'},
+        {label:'Search',count:f.searched||'\u2014',pct:fPct(f.searched||0),color:'#8b5cf6'},
+        {label:'Gym Profile',count:f.viewedProfile||'\u2014',pct:fPct(f.viewedProfile||0),color:'#f97316'},
+        {label:'Checkout',count:f.startedCheckout||'\u2014',pct:fPct(f.startedCheckout||0),color:'#eab308'},
+        {label:'Paid Booking',count:f.paidBooking||f.completedBooking||'\u2014',pct:fPct(f.paidBooking||f.completedBooking||0),color:'#22c55e'}
       ];
       funnel.innerHTML=steps.map((s,i)=>`
         <div style="display:flex;align-items:center;gap:12px;padding:8px 0;${i<steps.length-1?'border-bottom:1px solid rgba(255,255,255,.04)':''}">
@@ -7386,10 +7390,15 @@ window.sgLoadCeoStats=async function(){
       `).join('');
     }
 
-    // Recent bookings
+    // Recent bookings with real data
     const bookings=document.getElementById('ceo-bookings');
     if(bookings){
-      bookings.innerHTML='<p style="color:rgba(255,255,255,.3);font-size:13px;text-align:center;padding:12px">No bookings recorded yet. Data will appear once customers start booking.</p>';
+      const bks=bookingsData?.bookings||[];
+      if(bks.length===0){
+        bookings.innerHTML='<p style="color:rgba(255,255,255,.3);font-size:13px;text-align:center;padding:12px">No bookings recorded yet. Data will appear once customers start booking.</p>';
+      }else{
+        bookings.innerHTML=bks.slice(0,10).map(b=>'<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)"><div><span style="color:#fff;font-size:13px;font-weight:600">'+(b.gymName||'Gym')+'</span><br><span style="color:rgba(255,255,255,.35);font-size:11px">'+(b.date?new Date(b.date).toLocaleDateString(\'en-GB\',{day:\'numeric\',month:\'short\'}):\'\')+(b.time?\' \'+b.time:\'\')+'</span></div><div style="text-align:right"><span style="color:#f97316;font-weight:700;font-size:13px">\u00A3'+(b.price||0).toFixed(2)+'</span><br><span style="font-size:10px;padding:2px 6px;border-radius:8px;'+(b.status===\'confirmed\'?\'background:rgba(34,197,94,.15);color:#22c55e\':\'background:rgba(234,179,8,.15);color:#eab308\')+'">'+(b.status||'')+'</span></div></div>').join('');
+      }
     }
   }catch(e){
     console.warn('CEO stats error:',e);
@@ -7665,6 +7674,7 @@ window.loadFullProfile=async function(){
 };
 
 // ─── More Hub Page (Everything Else) ───
+function _isAdmin(u){return u&&['8111c9b2-552a-442c-aeff-0580c60ba75e'].indexOf(u.id)>=0;}
 function MoreHubPage(){
   const u=state.user;
   const avatar=u?(u.name||u.phone||'U').charAt(0).toUpperCase():'?';
@@ -7712,13 +7722,14 @@ function MoreHubPage(){
       <div class="sg-more-section-title">For Gym Owners</div>
       ${moreItem('\u{1F3E2}','List Your Gym','It\'s free \u2014 start earning','/list-your-gym')}
       ${u?moreItem('\u2699\uFE0F','Owner Controls','Open/close toggle, pricing','/owner/controls'):''}
-      ${u?moreItem('\u{1F4C8}','CEO Dashboard','Revenue, bookings, funnel','/forceo'):''}
+      ${_isAdmin(u)?moreItem('\u{1F4C8}','CEO Dashboard','Revenue, bookings, funnel','/forceo'):''}
     </div>
 
     <!-- Account -->
     <div class="sg-more-section">
       <div class="sg-more-section-title">Account</div>
       ${moreItem(u?'\u{1F464}':'\u{1F511}',u?'My Profile':'Log In',u?'Edit your universal gym pass':'Sign in or create account',u?'/more/profile':'/login')}
+      ${u?'<div class="sg-more-item" onclick="handleLogout()" style="border:1px solid rgba(239,68,68,.15)"><div class="sg-mi-icon" style="background:rgba(239,68,68,.08)">\u{1F6AA}</div><div class="sg-mi-text"><h4 style="color:#ef4444">Log Out</h4><p>Sign out of your account</p></div><span class="sg-mi-arrow">\u203A</span></div>':''}
     </div>
 
     <!-- Legal (compact inline links) -->
