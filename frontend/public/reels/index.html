@@ -1249,8 +1249,18 @@
         vid.classList.remove('has-frame');
         div.appendChild(vid);
 
-        // Error handling
+        // Error handling — retry once before showing error
+        vid._retryCount = 0;
         vid.addEventListener('error', function(){
+          if(vid._retryCount < 1){
+            vid._retryCount++;
+            // Retry: clear src, re-set after a tick (bypasses stale SW cache)
+            var oldSrc = vid.src;
+            vid.removeAttribute('src');
+            vid.load();
+            setTimeout(function(){ vid.src = oldSrc + (oldSrc.indexOf('?') === -1 ? '?' : '&') + '_r=' + Date.now(); vid.load(); }, 500);
+            return;
+          }
           if(div.querySelector('.reel-error')) return;
           var errDiv = document.createElement('div');
           errDiv.className = 'reel-error';

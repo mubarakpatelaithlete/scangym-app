@@ -13,7 +13,7 @@
  *   - Static cache: HTML, CSS, JS, images
  */
 
-var CACHE_VERSION = 'reels-v5';
+var CACHE_VERSION = 'reels-v6';
 var FEED_CACHE    = CACHE_VERSION + '-feed';
 var VIDEO_CACHE   = CACHE_VERSION + '-video';
 var STATIC_CACHE  = CACHE_VERSION + '-static';
@@ -150,14 +150,14 @@ function cacheFirstVideo(request) {
 
       // Not cached — fetch from network
       // Use a plain request (not range) so we cache the full response
-      var plainReq = new Request(request.url, { mode: 'cors', credentials: 'omit' });
-      return fetch(plainReq).then(function(response) {
-        if (response.ok || response.status === 206) {
-          // Only cache full (200) responses, not partial (206)
-          if (response.status === 200) {
-            cache.put(request.url, response.clone());
-            trimCache(VIDEO_CACHE, VIDEO_CACHE_LIMIT);
-          }
+      // NOTE: Do NOT force mode:'cors' — R2 CDN may not send CORS headers,
+      // which would cause the fetch to fail and show "Video unavailable".
+      // Using mode:'no-cors' allows opaque responses; we only cache 200s.
+      return fetch(request.url).then(function(response) {
+        if (response.ok) {
+          // Only cache full (200) responses, not partial (206) or opaque
+          cache.put(request.url, response.clone());
+          trimCache(VIDEO_CACHE, VIDEO_CACHE_LIMIT);
         }
         return response;
       }).catch(function() {
