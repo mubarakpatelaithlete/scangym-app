@@ -33,6 +33,7 @@ const analyticsMiddleware = require('./middleware/analytics');
 
 const app = express();
 app.set('trust proxy', 1); // Trust Railway's reverse proxy (needed for secure cookies + IP detection)
+app.disable('x-powered-by'); // Don't leak server technology
 const PORT = process.env.PORT || 5000;
 
 // Frontend directory (Dockerfile copies it to ./public/)
@@ -59,10 +60,13 @@ app.use((req, res, next) => {
   function setCacheHeaders(res, reqPath) {
     if (reqPath.endsWith('.html') || reqPath.endsWith('sw.js')) {
       res.setHeader('Cache-Control', 'no-cache');
-    } else if (reqPath.endsWith('app.js') || /app\.[a-z0-9]+\.js$/.test(reqPath) || reqPath.endsWith('robust-location.js')) {
-      res.setHeader('Cache-Control', 'no-cache');
     } else if (reqPath.endsWith('.js') || reqPath.endsWith('.css')) {
-      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      // Content-hashed files (app.ctr575.js) get long cache; plain files get short cache
+      if (/\.[a-z0-9]{3,8}\.js$/.test(reqPath) || /\.[a-z0-9]{3,8}\.css$/.test(reqPath)) {
+        res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
+      } else {
+        res.setHeader('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400');
+      }
     }
   }
   
@@ -95,8 +99,21 @@ app.use((req, res, next) => {
   next();
 });
 
-// On-the-fly gzip for dynamic responses (API JSON, server-rendered HTML)
-app.use(compression({ level: 6, threshold: 256 }));
+// On-the-fly gzip for ALL responses (static + API JSON + server-rendered HTML)
+// The filter ensures text-based content types are always compressed
+app.use(compression({
+  level: 6,
+  threshold: 256,
+  filter: (req, res) => {
+    // Always compress if Accept-Encoding is present
+    if (req.headers['accept-encoding']) {
+      const type = res.getHeader('Content-Type') || '';
+      // Compress all text-based content types
+      if (/text|javascript|json|xml|svg|css|html|font/.test(type)) return true;
+    }
+    return compression.filter(req, res);
+  }
+}));
 // CORS — locked to known origins (was: origin: true — accepted everything)
 const ALLOWED_ORIGINS = [
   'https://scangym.com',
@@ -336,10 +353,13 @@ if (fs.existsSync(FRONTEND_DIR)) {
         res.setHeader('Cache-Control', 'no-cache');
       } else if (filePath.endsWith('sw.js')) {
         res.setHeader('Cache-Control', 'no-cache');
-      } else if (filePath.endsWith('app.js') || /app\.[a-z0-9]+\.js$/.test(filePath) || filePath.endsWith('robust-location.js')) {
-        res.setHeader('Cache-Control', 'no-cache');
       } else if (filePath.endsWith('.js') || filePath.endsWith('.css')) {
-        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        // Hashed filenames get 1-day cache + stale-while-revalidate; unhashed get 1h
+        if (/\.[a-z0-9]{3,8}\.(js|css)$/i.test(filePath)) {
+          res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
+        } else {
+          res.setHeader('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400');
+        }
       } else if (/\.(webp|jpg|jpeg|png|gif|svg|ico)$/i.test(filePath)) {
         res.setHeader('Cache-Control', 'public, max-age=2592000, immutable');
       } else if (/\.(woff2?|ttf|otf|eot)$/i.test(filePath)) {

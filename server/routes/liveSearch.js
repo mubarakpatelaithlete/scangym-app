@@ -184,6 +184,7 @@ router.get('/search', async (req, res) => {
     };
 
     setCache(cacheKey, result);
+    res.set('Cache-Control', 'public, max-age=300, s-maxage=300, stale-while-revalidate=600');
     res.json(result);
   } catch (err) {
     console.error('Live search error:', err);
