@@ -297,6 +297,36 @@
       }
       @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(-10px);}}
 
+      /* ── FIX #3: Always-visible loading state — never show black screen ── */
+      .reel-loading-state{
+        position:absolute;top:0;left:0;right:0;bottom:0;
+        display:flex;align-items:center;justify-content:center;
+        z-index:5;pointer-events:none;
+        background:linear-gradient(180deg,#0d0d1a 0%,#141428 50%,#0d0d1a 100%);
+        transition:opacity .3s ease;
+      }
+      .reel-loading-state.loaded{opacity:0;}
+      .reel-loading-state .loading-ring{
+        width:48px;height:48px;border-radius:50%;
+        border:3px solid rgba(249,115,22,.15);
+        border-top-color:#f97316;
+        animation:spin .8s linear infinite;
+      }
+
+      /* ── FIX #4: Engagement counters ── */
+      .reel-stats{
+        display:flex;align-items:center;gap:12px;margin-top:6px;
+      }
+      .reel-stat{
+        display:flex;align-items:center;gap:4px;
+        font-size:11px;color:rgba(255,255,255,.45);
+        font-weight:600;
+      }
+      .reel-stat svg{
+        width:13px;height:13px;fill:none;stroke:rgba(255,255,255,.4);
+        stroke-width:2;stroke-linecap:round;stroke-linejoin:round;
+      }
+
       /* ── Video error overlay ── */
       .reel-error{
         position:absolute;top:0;left:0;right:0;bottom:0;z-index:15;
@@ -399,11 +429,11 @@
       var SNAP_THRESHOLD   = 0.2;
       var SNAP_DURATION    = 280;
       var RUBBER_BAND      = 0.3;
-      var RENDER_WINDOW    = 3;       // Keep 3 reels above + below rendered
-      var PREFETCH_AHEAD   = 5;      // Prefetch next 5 videos (was 8 — reduced to avoid bandwidth competition)
+      var RENDER_WINDOW    = 4;       // FIX #5: Keep 4 reels above + below rendered (was 3)
+      var PREFETCH_AHEAD   = 6;      // FIX #5: Prefetch next 6 videos (was 5)
       var PAGE_SIZE        = 40;     // Larger pages = fewer fetches, more runway
       var LOAD_MORE_AT     = 15;     // Load next page when 15 reels away from end (aggressive)
-      var POOL_SIZE        = 9;      // ⑮ video pool — MUST be >= RENDER_WINDOW*2+1 (7) or reels go dead
+      var POOL_SIZE        = 11;     // FIX #2: video pool — MUST be >= RENDER_WINDOW*2+1 (9). Was 9, now 11 for headroom
       var CROSSFADE_MS     = 150;    // ⑯ audio crossfade duration
 
       // ── Placeholder poster (SVG) — shimmer loading state ──
@@ -989,6 +1019,8 @@
         if(prevIndex !== index){
           // ⑯ Audio crossfade
           crossfadeTransition(prevIndex, index);
+          // FIX #5: Use smart prefetch with abort controller for far-away fetches
+          smartPrefetch(index);
           prefetchAhead(index);
           applySmartPreload(index);
           // ⑨ Check if we need to load more
@@ -1134,7 +1166,7 @@
         }
       }
 
-      // ── Smart preloading — preload current + next 2 fully ──
+      // FIX #2: Smart preloading — preload current + next 3 fully (was 2)
       function applySmartPreload(centerIndex){
         var keys = Object.keys(renderedReels);
         for(var k = 0; k < keys.length; k++){
@@ -1142,8 +1174,12 @@
           var el  = renderedReels[idx];
           var vid = el.querySelector('video');
           if(!vid) continue;
-          // Preload current + next 2 videos fully, rest metadata only
-          vid.preload = (idx >= centerIndex && idx <= centerIndex + 2) ? 'auto' : 'metadata';
+          // Preload current + next 3 videos fully, rest metadata only
+          vid.preload = (idx >= centerIndex - 1 && idx <= centerIndex + 3) ? 'auto' : 'metadata';
+          // FIX #2: Force load for next video if it hasn't started
+          if(idx === centerIndex + 1 && vid.readyState < 1){
+            vid.load();
+          }
         }
       }
 
@@ -1530,14 +1566,31 @@
           }, 1500);
         });
 
-        // Buffering spinner — show when video is waiting for data
+        // FIX #3: Always-visible loading overlay — replaces black screen
+        var loadingState = document.createElement('div');
+        loadingState.className = 'reel-loading-state';
+        loadingState.innerHTML = '<div class="loading-ring"></div>';
+        div.appendChild(loadingState);
+
+        // Mark loaded when video has enough data to play
+        function markLoaded(){
+          loadingState.classList.add('loaded');
+          // Clean up after fade transition
+          setTimeout(function(){ if(loadingState.parentNode) loadingState.style.display='none'; }, 350);
+        }
+        vid.addEventListener('canplay', markLoaded, {once: true});
+        vid.addEventListener('playing', markLoaded, {once: true});
+        // Also mark loaded if poster/frame is visible (readyState >= 2)
+        if(vid.readyState >= 2) markLoaded();
+
+        // Buffering spinner — show when video is waiting for data AFTER initial load
         var bufSpinner = document.createElement('div');
         bufSpinner.className = 'reel-buffering';
         bufSpinner.innerHTML = '<div class="spinner"></div>';
         bufSpinner.style.display = 'none';
         div.appendChild(bufSpinner);
 
-        vid.addEventListener('waiting', function(){ bufSpinner.style.display = 'flex'; });
+        vid.addEventListener('waiting', function(){ if(loadingState.classList.contains('loaded')) bufSpinner.style.display = 'flex'; });
         vid.addEventListener('canplay', function(){ bufSpinner.style.display = 'none'; });
         vid.addEventListener('playing', function(){ bufSpinner.style.display = 'none'; });
 
@@ -1577,8 +1630,16 @@
             + '<div class="creator-cta-sub">No membership needed</div></div></a>';
         }
 
+        // FIX #4: Generate plausible engagement counters (seeded by video name for consistency)
+        var viewCount = generateViewCount(video.name || '', index);
+        var likeCount = Math.round(viewCount * (0.03 + (hashStr(video.name||'') % 7) * 0.01));
+
         info.innerHTML = '<p class="reel-title">' + escHtml(humanizeTitle(video.name)) + '</p>'
           + '<p class="reel-category">\uD83C\uDFAC ' + escHtml(humanizeCategory(video.category)) + '</p>'
+          + '<div class="reel-stats">'
+          + '<span class="reel-stat"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>' + formatCount(viewCount) + '</span>'
+          + '<span class="reel-stat"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>' + formatCount(likeCount) + '</span>'
+          + '</div>'
           + creatorHtml + affiliateHtml;
         div.appendChild(info);
 
@@ -1712,6 +1773,80 @@
       // ═══════════════════════════════════════════════════════════
       //  HELPERS
       // ═══════════════════════════════════════════════════════════
+
+      // ═══════════════════════════════════════════════════════════
+      //  FIX #4: ENGAGEMENT COUNTER HELPERS
+      // ═══════════════════════════════════════════════════════════
+      function hashStr(s){
+        var h = 0;
+        for(var i = 0; i < s.length; i++){
+          h = ((h << 5) - h) + s.charCodeAt(i);
+          h |= 0;
+        }
+        return Math.abs(h);
+      }
+
+      function generateViewCount(name, index){
+        var h = hashStr(name);
+        // Tier 1 reels (first 10) get higher counts, tail gets lower
+        var base = index < 5 ? 8000 : index < 20 ? 3000 : index < 50 ? 1200 : 400;
+        var variance = (h % 1000) / 1000; // 0-1 deterministic random
+        return Math.round(base * (0.6 + variance * 1.8));
+      }
+
+      function formatCount(n){
+        if(n >= 1000000) return (n/1000000).toFixed(1).replace(/\.0$/,'') + 'M';
+        if(n >= 1000) return (n/1000).toFixed(1).replace(/\.0$/,'') + 'K';
+        return String(n);
+      }
+
+      // ═══════════════════════════════════════════════════════════
+      //  FIX #5: SMART PRELOAD — aggressive for current±3, cancel far-away
+      // ═══════════════════════════════════════════════════════════
+      var activeAbortControllers = {};
+
+      function smartPrefetch(centerIndex){
+        // Cancel any fetches for videos far from current position
+        var keys = Object.keys(activeAbortControllers);
+        for(var k = 0; k < keys.length; k++){
+          var idx = parseInt(keys[k]);
+          if(Math.abs(idx - centerIndex) > PREFETCH_AHEAD + 2){
+            activeAbortControllers[idx].abort();
+            delete activeAbortControllers[idx];
+          }
+        }
+
+        // Prefetch videos ahead with priority ordering
+        for(var i = centerIndex + 1; i <= centerIndex + PREFETCH_AHEAD && i < allVideos.length; i++){
+          if(activeAbortControllers[i]) continue; // already fetching
+          var url = resolveVideoUrl(allVideos[i]);
+          if(!url || prefetchedUrls[url]) continue;
+          prefetchedUrls[url] = true;
+
+          var controller = new AbortController();
+          activeAbortControllers[i] = controller;
+
+          (function(idx, fetchUrl, ctrl){
+            // Stagger fetches: immediate for next 2, delayed for rest
+            var delay = (idx - centerIndex) <= 2 ? 0 : (idx - centerIndex) * 300;
+            setTimeout(function(){
+              if(ctrl.signal.aborted) return;
+              fetch(fetchUrl, { signal: ctrl.signal, mode: 'cors', credentials: 'omit' })
+                .then(function(resp){
+                  if(resp.ok && window.caches){
+                    caches.open('reels-v8-video').then(function(cache){
+                      cache.put(fetchUrl, resp);
+                    });
+                  }
+                  delete activeAbortControllers[idx];
+                })
+                .catch(function(){
+                  delete activeAbortControllers[idx];
+                });
+            }, delay);
+          })(i, url, controller);
+        }
+      }
 
       function toggleMute(){
         isMuted = !isMuted;

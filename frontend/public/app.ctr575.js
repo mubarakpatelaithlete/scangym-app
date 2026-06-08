@@ -514,9 +514,18 @@ function _syncReelsVisibility(){
   if(state.activeTab==='reels'){
     if(!wrap)_ensureReelsIframe();
     wrap=document.getElementById('sg-reels-persistent');
-    if(wrap){wrap.style.display='block';wrap.style.zIndex='1';}
+    if(wrap){wrap.style.display='block';wrap.style.zIndex='8000';}
+    // FIX #1: Make #app transparent to touch events when reels are active
+    // so touches pass through to the reels iframe underneath. The tab bar
+    // (z-index:9000) stays above and keeps pointer-events.
+    var appEl=document.getElementById('app');
+    if(appEl)appEl.style.pointerEvents='none';
+    var tabBar=document.querySelector('.sg-tab-bar');
+    if(tabBar)tabBar.style.pointerEvents='auto';
   }else{
     if(wrap){wrap.style.display='none';wrap.style.zIndex='-1';}
+    var appEl=document.getElementById('app');
+    if(appEl)appEl.style.pointerEvents='';
   }
 }
 function navigate(path,pushState=true){
