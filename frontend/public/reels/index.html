@@ -966,6 +966,12 @@
       }
 
       function snapTo(index, animate){
+        if(index < 0) return;
+        // Wall-hit: if user tries to go past loaded reels, trigger load-more but stay put
+        if(index >= allVideos.length){
+          if(feedHasMore && !feedLoading) loadMoreFeed();
+          return;
+        }
         var prevIndex = currentIndex;
         currentIndex  = index;
         trackOffset   = -(index * screenH);
@@ -1004,12 +1010,7 @@
       var ANALYTICS_FLUSH_INTERVAL = 10000; // flush every 10s
 
       function trackView(index, durationMs, watchPercent){
-        if(index < 0) return;
-        if(index >= allVideos.length){
-          // Hit the wall — trigger load-more if possible, retry when data arrives
-          if(feedHasMore && !feedLoading) loadMoreFeed();
-          return;
-        }
+        if(index < 0 || index >= allVideos.length) return;
         var video = allVideos[index];
         viewBuffer.push({
           id: video.id || index,
