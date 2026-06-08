@@ -402,7 +402,7 @@
       var RENDER_WINDOW    = 3;       // Keep 3 reels above + below rendered
       var PREFETCH_AHEAD   = 5;      // Prefetch next 5 videos (was 8 — reduced to avoid bandwidth competition)
       var PAGE_SIZE        = 20;
-      var LOAD_MORE_AT     = 5;      // Start loading more earlier
+      var LOAD_MORE_AT     = 10;     // Load next page when 10 reels away from end
       var POOL_SIZE        = 9;      // ⑮ video pool — MUST be >= RENDER_WINDOW*2+1 (7) or reels go dead
       var CROSSFADE_MS     = 150;    // ⑯ audio crossfade duration
 
@@ -445,6 +445,7 @@
       var feedHasMore    = true;
       var feedOffset     = 0;
       var feedLoading    = false;
+      var feedServerTotal = 0;  // total reels from API (for counter)
       var soundHintShown = false;
 
       var track   = document.getElementById('reel-track');
@@ -454,7 +455,8 @@
       function updateReelCounter(){
         var el = document.getElementById('reel-counter');
         if(el && allVideos.length > 0){
-          el.textContent = (currentIndex + 1) + ' / ' + allVideos.length;
+          var total = feedServerTotal || allVideos.length;
+          el.textContent = (currentIndex + 1) + ' / ' + total;
         }
       }
       var hint    = document.getElementById('swipe-hint');
@@ -1334,6 +1336,7 @@
             feedOffset = allVideos.length;
             feedHasMore = data.hasMore;
             feedSeed = data.seed; // save seed for consistent pagination
+            feedServerTotal = data.total || allVideos.length;
             feedLoading = false;
             if(allVideos.length === 0){
               showFatalError('No reels available yet');

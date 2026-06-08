@@ -178,6 +178,13 @@ router.get('/feed', async (req, res) => {
 
       function getTier(v) {
         const cat = (v.category || '').toLowerCase();
+        const key = (v.cdnKey || '').toLowerCase();
+
+        // Deprioritize text-on-black / overlay reels regardless of category
+        // These look terrible in a visual feed (just text on solid backgrounds)
+        const TEXT_PATTERNS = ['faketweet', 'hottake', 'identityhook', 'fact_'];
+        if (TEXT_PATTERNS.some(p => key.includes(p))) return 5;
+
         return TIER_MAP[cat] || 3;
       }
 
