@@ -642,67 +642,6 @@
   },
   {
     "id": 42,
-    "name": "Creatorearnings Bolton H1",
-    "category": "Ready-to-Post",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/CreatorEarnings_Bolton_h1.mp4",
-    "thumb": null,
-    "cdnKey": "CreatorEarnings_Bolton_h1",
-    "fileSize": 1292753,
-    "blurhash": null,
-    "orientation": "vertical",
-    "width": 720,
-    "height": 1280,
-    "dopamineTier": 3
-  },
-  {
-    "id": 43,
-    "name": "Creatorearnings Bolton H2",
-    "category": "Ready-to-Post",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/CreatorEarnings_Bolton_h2.mp4",
-    "thumb": null,
-    "cdnKey": "CreatorEarnings_Bolton_h2",
-    "fileSize": 1279186,
-    "blurhash": null,
-    "orientation": "vertical",
-    "width": 720,
-    "height": 1280,
-    "dopamineTier": 3
-  },
-  {
-    "id": 44,
-    "name": "Derby",
-    "category": "City Promo",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/derby.mp4",
-    "thumb": null,
-    "cdnKey": "derby",
-    "driveId": null,
-    "fileSize": 1011767,
-    "blurhash": null,
-    "orientation": "vertical",
-    "width": 720,
-    "height": 1280,
-    "dopamineTier": 3
-  },
-  {
-    "id": 45,
-    "name": "Dontjoinagym Birmingham Gbp10",
-    "category": "Ready-to-Post",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/DontJoinAGym_Birmingham_GBP10.mp4",
-    "thumb": null,
-    "cdnKey": "DontJoinAGym_Birmingham_GBP10",
-    "fileSize": 1038481,
-    "blurhash": null,
-    "orientation": "vertical",
-    "width": 720,
-    "height": 1280,
-    "dopamineTier": 3
-  },
-  {
-    "id": 46,
     "name": "Dontjoinagym Birmingham Gbp5",
     "category": "Ready-to-Post",
     "source": "cdn",
@@ -717,7 +656,7 @@
     "dopamineTier": 3
   },
   {
-    "id": 47,
+    "id": 43,
     "name": "Dontjoinagym Birmingham Gbp7",
     "category": "Ready-to-Post",
     "source": "cdn",
@@ -732,132 +671,7 @@
     "dopamineTier": 3
   },
   {
-    "id": 48,
-    "name": "Dontjoinagym Bolton Gbp10",
-    "category": "Ready-to-Post",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/DontJoinAGym_Bolton_GBP10.mp4",
-    "thumb": null,
-    "cdnKey": "DontJoinAGym_Bolton_GBP10",
-    "fileSize": 1036198,
-    "blurhash": null,
-    "orientation": "vertical",
-    "width": 720,
-    "height": 1280,
-    "dopamineTier": 3
-  },
-  {
-    "id": 49,
-    "name": "Dontjoinagym Bolton Gbp5",
-    "category": "Ready-to-Post",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/DontJoinAGym_Bolton_GBP5.mp4",
-    "thumb": null,
-    "cdnKey": "DontJoinAGym_Bolton_GBP5",
-    "fileSize": 1021018,
-    "blurhash": null,
-    "orientation": "vertical",
-    "width": 720,
-    "height": 1280,
-    "dopamineTier": 3
-  },
-  {
-    "id": 50,
-    "name": "Dontjoinagym Bolton Gbp7",
-    "category": "Ready-to-Post",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/DontJoinAGym_Bolton_GBP7.mp4",
-    "thumb": null,
-    "cdnKey": "DontJoinAGym_Bolton_GBP7",
-    "fileSize": 1009359,
-    "blurhash": null,
-    "orientation": "vertical",
-    "width": 720,
-    "height": 1280,
-    "dopamineTier": 3
-  },
-  {
-    "id": 51,
-    "name": "Edinburgh",
-    "category": "City Promo",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/edinburgh.mp4",
-    "thumb": null,
-    "cdnKey": "edinburgh",
-    "driveId": null,
-    "fileSize": 1059909,
-    "blurhash": null,
-    "orientation": "vertical",
-    "width": 720,
-    "height": 1280,
-    "dopamineTier": 3
-  },
-  {
-    "id": 52,
-    "name": "Edinburgh Fitness Scene",
-    "category": "Promo",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/17_edinburgh_fitness_scene.mp4",
-    "thumb": null,
-    "cdnKey": "17_edinburgh_fitness_scene",
-    "driveId": null,
-    "fileSize": 5460289,
-    "blurhash": null,
-    "orientation": "vertical",
-    "width": 720,
-    "height": 1280,
-    "dopamineTier": 3
-  },
-  {
-    "id": 53,
-    "name": "Gen Z Day Pass Journey",
-    "category": "Promo",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/02_gen_z_day_pass_journey.mp4",
-    "thumb": null,
-    "cdnKey": "02_gen_z_day_pass_journey",
-    "driveId": null,
-    "fileSize": 3966836,
-    "blurhash": true,
-    "orientation": "vertical",
-    "width": 720,
-    "height": 1280,
-    "dopamineTier": 3
-  },
-  {
-    "id": 54,
-    "name": "Glasgow",
-    "category": "City Promo",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/glasgow.mp4",
-    "thumb": null,
-    "cdnKey": "glasgow",
-    "driveId": null,
-    "fileSize": 930561,
-    "blurhash": null,
-    "orientation": "square",
-    "width": 1080,
-    "height": 1080,
-    "dopamineTier": 3
-  },
-  {
-    "id": 55,
-    "name": "Glasgow Gym Culture",
-    "category": "Promo",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/22_glasgow_gym_culture.mp4",
-    "thumb": null,
-    "cdnKey": "22_glasgow_gym_culture",
-    "driveId": null,
-    "fileSize": 5317920,
-    "blurhash": null,
-    "orientation": "vertical",
-    "width": 720,
-    "height": 1280,
-    "dopamineTier": 3
-  },
-  {
-    "id": 56,
+    "id": 44,
     "name": "Gym Membership Trap",
     "category": "Promo",
     "source": "cdn",
@@ -873,7 +687,7 @@
     "dopamineTier": 3
   },
   {
-    "id": 57,
+    "id": 45,
     "name": "Howitworks Birmingham H0",
     "category": "Ready-to-Post",
     "source": "cdn",
@@ -888,37 +702,7 @@
     "dopamineTier": 3
   },
   {
-    "id": 58,
-    "name": "Howitworks Birmingham H1",
-    "category": "Ready-to-Post",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/HowItWorks_Birmingham_h1.mp4",
-    "thumb": null,
-    "cdnKey": "HowItWorks_Birmingham_h1",
-    "fileSize": 1181427,
-    "blurhash": null,
-    "orientation": "vertical",
-    "width": 720,
-    "height": 1280,
-    "dopamineTier": 3
-  },
-  {
-    "id": 59,
-    "name": "Howitworks Birmingham H2",
-    "category": "Ready-to-Post",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/HowItWorks_Birmingham_h2.mp4",
-    "thumb": null,
-    "cdnKey": "HowItWorks_Birmingham_h2",
-    "fileSize": 1173250,
-    "blurhash": null,
-    "orientation": "vertical",
-    "width": 720,
-    "height": 1280,
-    "dopamineTier": 3
-  },
-  {
-    "id": 60,
+    "id": 46,
     "name": "Late Night Gym Finder",
     "category": "Promo",
     "source": "cdn",
@@ -934,7 +718,7 @@
     "dopamineTier": 3
   },
   {
-    "id": 61,
+    "id": 47,
     "name": "Leeds",
     "category": "City Promo",
     "source": "cdn",
@@ -950,7 +734,7 @@
     "dopamineTier": 3
   },
   {
-    "id": 62,
+    "id": 48,
     "name": "Leeds Gym Crawl",
     "category": "Promo",
     "source": "cdn",
@@ -966,7 +750,7 @@
     "dopamineTier": 3
   },
   {
-    "id": 63,
+    "id": 49,
     "name": "Leicester",
     "category": "City Promo",
     "source": "cdn",
@@ -982,7 +766,7 @@
     "dopamineTier": 3
   },
   {
-    "id": 64,
+    "id": 50,
     "name": "Liverpool",
     "category": "City Promo",
     "source": "cdn",
@@ -998,7 +782,7 @@
     "dopamineTier": 3
   },
   {
-    "id": 65,
+    "id": 51,
     "name": "London",
     "category": "City Promo",
     "source": "cdn",
@@ -1014,7 +798,7 @@
     "dopamineTier": 3
   },
   {
-    "id": 66,
+    "id": 52,
     "name": "Manchester",
     "category": "City Promo",
     "source": "cdn",
@@ -1030,7 +814,7 @@
     "dopamineTier": 3
   },
   {
-    "id": 67,
+    "id": 53,
     "name": "Manchester Gym Scene",
     "category": "Promo",
     "source": "cdn",
@@ -1046,7 +830,7 @@
     "dopamineTier": 3
   },
   {
-    "id": 68,
+    "id": 54,
     "name": "Morning Routine w/ ScanGym",
     "category": "Promo",
     "source": "cdn",
@@ -1062,7 +846,7 @@
     "dopamineTier": 3
   },
   {
-    "id": 69,
+    "id": 55,
     "name": "Newcastle",
     "category": "City Promo",
     "source": "cdn",
@@ -1078,7 +862,7 @@
     "dopamineTier": 3
   },
   {
-    "id": 70,
+    "id": 56,
     "name": "Nottingham",
     "category": "City Promo",
     "source": "cdn",
@@ -1094,7 +878,7 @@
     "dopamineTier": 3
   },
   {
-    "id": 71,
+    "id": 57,
     "name": "Oxford",
     "category": "City Promo",
     "source": "cdn",
@@ -1110,7 +894,7 @@
     "dopamineTier": 3
   },
   {
-    "id": 72,
+    "id": 58,
     "name": "Plymouth",
     "category": "City Promo",
     "source": "cdn",
@@ -1126,7 +910,7 @@
     "dopamineTier": 3
   },
   {
-    "id": 73,
+    "id": 59,
     "name": "Pricecompare Birmingham H0",
     "category": "Ready-to-Post",
     "source": "cdn",
@@ -1141,7 +925,7 @@
     "dopamineTier": 3
   },
   {
-    "id": 74,
+    "id": 60,
     "name": "Pricecompare Birmingham H1",
     "category": "Ready-to-Post",
     "source": "cdn",
@@ -1156,7 +940,7 @@
     "dopamineTier": 3
   },
   {
-    "id": 75,
+    "id": 61,
     "name": "Pricecompare Birmingham H2",
     "category": "Ready-to-Post",
     "source": "cdn",
@@ -1171,7 +955,7 @@
     "dopamineTier": 3
   },
   {
-    "id": 76,
+    "id": 62,
     "name": "Reading",
     "category": "City Promo",
     "source": "cdn",
@@ -1187,7 +971,7 @@
     "dopamineTier": 3
   },
   {
-    "id": 77,
+    "id": 63,
     "name": "Save Money Calculator",
     "category": "Promo",
     "source": "cdn",
@@ -1203,7 +987,7 @@
     "dopamineTier": 3
   },
   {
-    "id": 78,
+    "id": 64,
     "name": "ScanGym App Demo",
     "category": "Promo",
     "source": "cdn",
@@ -1219,7 +1003,7 @@
     "dopamineTier": 3
   },
   {
-    "id": 79,
+    "id": 65,
     "name": "Sheffield",
     "category": "City Promo",
     "source": "cdn",
@@ -1235,7 +1019,7 @@
     "dopamineTier": 3
   },
   {
-    "id": 80,
+    "id": 66,
     "name": "Southampton",
     "category": "City Promo",
     "source": "cdn",
@@ -1251,7 +1035,7 @@
     "dopamineTier": 3
   },
   {
-    "id": 81,
+    "id": 67,
     "name": "Stop Paying Full Price",
     "category": "Promo",
     "source": "cdn",
@@ -1267,7 +1051,7 @@
     "dopamineTier": 3
   },
   {
-    "id": 82,
+    "id": 68,
     "name": "Student Gym Hack",
     "category": "Promo",
     "source": "cdn",
@@ -1283,7 +1067,7 @@
     "dopamineTier": 3
   },
   {
-    "id": 83,
+    "id": 69,
     "name": "Travelling? Find a Gym",
     "category": "Promo",
     "source": "cdn",
@@ -1299,7 +1083,7 @@
     "dopamineTier": 3
   },
   {
-    "id": 84,
+    "id": 70,
     "name": "Yoga Studio Hop",
     "category": "Promo",
     "source": "cdn",
@@ -1315,7 +1099,7 @@
     "dopamineTier": 3
   },
   {
-    "id": 85,
+    "id": 71,
     "name": "York",
     "category": "City Promo",
     "source": "cdn",
@@ -1331,7 +1115,7 @@
     "dopamineTier": 3
   },
   {
-    "id": 86,
+    "id": 72,
     "name": "\u00a35 Gym Challenge",
     "category": "Promo",
     "source": "cdn",
@@ -1347,7 +1131,7 @@
     "dopamineTier": 3
   },
   {
-    "id": 87,
+    "id": 73,
     "name": "\u00a35 Gym Tour London",
     "category": "Promo",
     "source": "cdn",
@@ -1363,7 +1147,7 @@
     "dopamineTier": 3
   },
   {
-    "id": 88,
+    "id": 74,
     "name": "\u00a350 vs \u00a35 Comparison",
     "category": "Promo",
     "source": "cdn",
@@ -1379,7 +1163,7 @@
     "dopamineTier": 3
   },
   {
-    "id": 89,
+    "id": 75,
     "name": "01 Tiktok Hook Vertical",
     "category": "General",
     "source": "cdn",
@@ -1395,7 +1179,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 90,
+    "id": 76,
     "name": "02 Gym Lifestyle Vertical",
     "category": "General",
     "source": "cdn",
@@ -1411,7 +1195,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 91,
+    "id": 77,
     "name": "Affiliateearnings V1",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1426,7 +1210,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 92,
+    "id": 78,
     "name": "Ba Ninetydays",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1441,7 +1225,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 93,
+    "id": 79,
     "name": "Ba Theconfidence",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1456,7 +1240,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 94,
+    "id": 80,
     "name": "Ba Thehoodie",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1471,7 +1255,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 95,
+    "id": 81,
     "name": "Ba Thephoto",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1486,7 +1270,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 96,
+    "id": 82,
     "name": "Ba Twoversions",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1501,7 +1285,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 97,
+    "id": 83,
     "name": "Beforeafter Freedom V1",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1516,7 +1300,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 98,
+    "id": 84,
     "name": "Beforeafter Wallet V2",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1531,7 +1315,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 99,
+    "id": 85,
     "name": "Bk Membershiptrap",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1546,7 +1330,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 100,
+    "id": 86,
     "name": "Bk Sixtygyms",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1561,7 +1345,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 101,
+    "id": 87,
     "name": "Bk Theflex",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1576,7 +1360,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 102,
+    "id": 88,
     "name": "Bk Thesecret",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1591,7 +1375,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 103,
+    "id": 89,
     "name": "Bk Thevisitors",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1606,7 +1390,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 104,
+    "id": 90,
     "name": "Bs Summercoming",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1621,7 +1405,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 105,
+    "id": 91,
     "name": "Bs Thestandard",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1636,7 +1420,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 106,
+    "id": 92,
     "name": "C01 Huberman Clip",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1651,7 +1435,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 107,
+    "id": 93,
     "name": "Contrarian Hook",
     "category": "CMO Content",
     "source": "cdn",
@@ -1667,7 +1451,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 108,
+    "id": 94,
     "name": "Cq Thefeeling",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1682,7 +1466,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 109,
+    "id": 95,
     "name": "Cq Themirror",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1697,7 +1481,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 110,
+    "id": 96,
     "name": "Cq Therestart",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1712,7 +1496,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 111,
+    "id": 97,
     "name": "Cq Theversion",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1727,7 +1511,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 112,
+    "id": 98,
     "name": "Cq Twoweeks",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1742,7 +1526,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 113,
+    "id": 99,
     "name": "Cw Hemsworth",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1757,7 +1541,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 114,
+    "id": 100,
     "name": "Cw Ronaldo",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1772,7 +1556,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 115,
+    "id": 101,
     "name": "Cw Therock",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1787,7 +1571,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 116,
+    "id": 102,
     "name": "Cw Tyson",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1802,7 +1586,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 117,
+    "id": 103,
     "name": "Cw Zyzz",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1817,7 +1601,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 118,
+    "id": 104,
     "name": "Desk to Dumbbell",
     "category": "CMO Content",
     "source": "cdn",
@@ -1833,7 +1617,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 119,
+    "id": 105,
     "name": "Expert Explainer",
     "category": "CMO Content",
     "source": "cdn",
@@ -1849,7 +1633,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 120,
+    "id": 106,
     "name": "Fc Thebet",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1864,7 +1648,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 121,
+    "id": 107,
     "name": "Fc Thedare",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1879,7 +1663,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 122,
+    "id": 108,
     "name": "Fc Theexcuses",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1894,7 +1678,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 123,
+    "id": 109,
     "name": "Fc Theexperiment",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1909,7 +1693,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 124,
+    "id": 110,
     "name": "Fc Thetag",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1924,7 +1708,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 125,
+    "id": 111,
     "name": "Form Check",
     "category": "CMO Content",
     "source": "cdn",
@@ -1940,7 +1724,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 126,
+    "id": 112,
     "name": "Fs Sixmonths",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1955,7 +1739,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 127,
+    "id": 113,
     "name": "Fs Thedecision",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1970,7 +1754,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 128,
+    "id": 114,
     "name": "Fs Theletter",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1985,7 +1769,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 129,
+    "id": 115,
     "name": "Fs Thepromise",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -2000,7 +1784,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 130,
+    "id": 116,
     "name": "Fs Thethankyou",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -2015,7 +1799,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 131,
+    "id": 117,
     "name": "GRWM Gym Edition",
     "category": "CMO Content",
     "source": "cdn",
@@ -2031,7 +1815,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 132,
+    "id": 118,
     "name": "Gh Atmosphere",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -2046,7 +1830,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 133,
+    "id": 119,
     "name": "Gh Discipline",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -2061,7 +1845,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 134,
+    "id": 120,
     "name": "Gh Equipment",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -2076,7 +1860,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 135,
+    "id": 121,
     "name": "Gh Results",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -2091,7 +1875,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 136,
+    "id": 122,
     "name": "Gh Thetruth",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -2106,7 +1890,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 137,
+    "id": 123,
     "name": "Gs Theanxiety",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -2121,7 +1905,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 138,
+    "id": 124,
     "name": "Gs Thebreakup",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -2136,7 +1920,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 139,
+    "id": 125,
     "name": "Gs Theconfidence",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -2151,7 +1935,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 140,
+    "id": 126,
     "name": "Gs Thedarkplace",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -2166,7 +1950,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 141,
+    "id": 127,
     "name": "Gs Thediscipline",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -2181,7 +1965,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 142,
+    "id": 128,
     "name": "Imperative Command",
     "category": "CMO Content",
     "source": "cdn",
@@ -2197,7 +1981,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 143,
+    "id": 129,
     "name": "Outcome Showcase",
     "category": "CMO Content",
     "source": "cdn",
@@ -2213,7 +1997,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 144,
+    "id": 130,
     "name": "POV: First Gym Visit",
     "category": "CMO Content",
     "source": "cdn",
@@ -2229,7 +2013,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 145,
+    "id": 131,
     "name": "Reaction Duet",
     "category": "CMO Content",
     "source": "cdn",
@@ -2245,7 +2029,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 146,
+    "id": 132,
     "name": "Recovery Trend",
     "category": "CMO Content",
     "source": "cdn",
@@ -2261,7 +2045,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 147,
+    "id": 133,
     "name": "Specific Number Hook",
     "category": "CMO Content",
     "source": "cdn",
@@ -2277,7 +2061,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 148,
+    "id": 134,
     "name": "Storytime: Gym Discovery",
     "category": "CMO Content",
     "source": "cdn",
@@ -2293,7 +2077,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 149,
+    "id": 135,
     "name": "Travel Fitness",
     "category": "CMO Content",
     "source": "cdn",
@@ -2309,7 +2093,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 150,
+    "id": 136,
     "name": "Walk & Talk",
     "category": "CMO Content",
     "source": "cdn",
@@ -2325,7 +2109,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 151,
+    "id": 137,
     "name": "Yt Price Reveal",
     "category": "YouTube AI",
     "source": "cdn",
@@ -2341,7 +2125,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 152,
+    "id": 138,
     "name": "02152304Fbea45A4A5396C23Ba827Be9 B860C0646994925E9",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2356,7 +2140,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 153,
+    "id": 139,
     "name": "1",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2372,7 +2156,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 154,
+    "id": 140,
     "name": "1.Mp4 30B9911B2A2B71Efbfc94531859C0102",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2387,7 +2171,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 155,
+    "id": 141,
     "name": "1.Mp4 40636Cc8D47671Eeba924531958D0102",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2402,7 +2186,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 156,
+    "id": 142,
     "name": "1.Mp4 60A4A203Cb8A71Eeb5824531959C0102",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2417,7 +2201,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 157,
+    "id": 143,
     "name": "1.Mp4 709D7460Cae971Eeae8E4531958C0102",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2432,7 +2216,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 158,
+    "id": 144,
     "name": "1.Mp4 80B164782A2B71Efbfc94531859C0102",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2447,7 +2231,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 159,
+    "id": 145,
     "name": "1.Mp4 901Fcb4Ee45271Eebfc34531959D0102",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2462,7 +2246,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 160,
+    "id": 146,
     "name": "1.Mp4 A00Cec70Caea71Eebfc45017F1F80102",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2477,7 +2261,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 161,
+    "id": 147,
     "name": "1.Mp4 A06Ec86Fd47671Eea8645017F0E80102",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2492,7 +2276,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 162,
+    "id": 148,
     "name": "1.Mp4 B05D6Aabe45271Eebc5C5420848D0102",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2507,7 +2291,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 163,
+    "id": 149,
     "name": "1.Mp4 C0B80D70Cb2571Eebfc35017F0E80102",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2522,7 +2306,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 164,
+    "id": 150,
     "name": "10 Mubarak Pvc Sp100 S50 Sb75 V3 Processed",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2537,7 +2321,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 165,
+    "id": 151,
     "name": "12",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2553,7 +2337,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 166,
+    "id": 152,
     "name": "Community Clip #01",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2569,7 +2353,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 167,
+    "id": 153,
     "name": "Community Clip #02",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2585,7 +2369,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 168,
+    "id": 154,
     "name": "Community Clip #03",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2601,7 +2385,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 169,
+    "id": 155,
     "name": "Community Clip #04",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2617,7 +2401,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 170,
+    "id": 156,
     "name": "Community Clip #05",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2633,7 +2417,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 171,
+    "id": 157,
     "name": "Community Clip #06",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2649,7 +2433,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 172,
+    "id": 158,
     "name": "Community Clip #07",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2665,7 +2449,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 173,
+    "id": 159,
     "name": "Community Clip #08",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2681,7 +2465,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 174,
+    "id": 160,
     "name": "Community Clip #09",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2697,7 +2481,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 175,
+    "id": 161,
     "name": "Community Clip #10",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2713,7 +2497,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 176,
+    "id": 162,
     "name": "Community Clip #11",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2729,7 +2513,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 177,
+    "id": 163,
     "name": "Community Clip #12",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2745,7 +2529,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 178,
+    "id": 164,
     "name": "Community Clip #13",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2761,7 +2545,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 179,
+    "id": 165,
     "name": "Community Clip #14",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2777,7 +2561,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 180,
+    "id": 166,
     "name": "Community Clip #15",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2793,7 +2577,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 181,
+    "id": 167,
     "name": "Community Clip #16",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2809,7 +2593,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 182,
+    "id": 168,
     "name": "Community Clip #17",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2825,7 +2609,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 183,
+    "id": 169,
     "name": "Community Clip #18",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2841,7 +2625,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 184,
+    "id": 170,
     "name": "Community Clip #19",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2857,7 +2641,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 185,
+    "id": 171,
     "name": "Community Clip #20",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2873,7 +2657,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 186,
+    "id": 172,
     "name": "Community Clip #21",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2889,7 +2673,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 187,
+    "id": 173,
     "name": "Community Clip #22",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2905,7 +2689,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 188,
+    "id": 174,
     "name": "Community Clip #23",
     "category": "UGC Videos",
     "source": "cdn",
