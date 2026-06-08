@@ -356,7 +356,7 @@
       Tap for sound
     </div>
     <div id="reel-track"></div>
-        <div class="reel-counter" id="reel-counter">1 / —</div>
+        <div class="reel-counter" id="reel-counter">Loading…</div>
     <div class="swipe-hint" id="swipe-hint">
       <svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
       <span>Swipe up</span>
@@ -406,16 +406,29 @@
       var POOL_SIZE        = 9;      // ⑮ video pool — MUST be >= RENDER_WINDOW*2+1 (7) or reels go dead
       var CROSSFADE_MS     = 150;    // ⑯ audio crossfade duration
 
-      // ── Placeholder poster (SVG) ──
+      // ── Placeholder poster (SVG) — shimmer loading state ──
       var PLACEHOLDER_POSTER = 'data:image/svg+xml,' + encodeURIComponent(
         '<svg xmlns="http://www.w3.org/2000/svg" width="360" height="640">'
-        + '<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">'
-        + '<stop offset="0%" stop-color="#16162a"/>'
-        + '<stop offset="100%" stop-color="#0a0a16"/>'
-        + '</linearGradient></defs>'
-        + '<rect width="360" height="640" fill="url(#g)"/>'
-        + '<circle cx="180" cy="300" r="32" fill="none" stroke="rgba(249,115,22,0.2)" stroke-width="3"/>'
-        + '<polygon points="172,286 172,314 196,300" fill="rgba(249,115,22,0.25)"/>'
+        + '<defs>'
+        + '<linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">'
+        + '<stop offset="0%" stop-color="#1a1a2e"/>'
+        + '<stop offset="100%" stop-color="#0f0f1a"/>'
+        + '</linearGradient>'
+        + '<linearGradient id="shimmer" x1="0" y1="0" x2="1" y2="1">'
+        + '<stop offset="0%" stop-color="rgba(255,255,255,0)"/>'
+        + '<stop offset="50%" stop-color="rgba(255,255,255,0.03)"/>'
+        + '<stop offset="100%" stop-color="rgba(255,255,255,0)"/>'
+        + '<animate attributeName="x1" values="-1;2" dur="1.5s" repeatCount="indefinite"/>'
+        + '<animate attributeName="x2" values="0;3" dur="1.5s" repeatCount="indefinite"/>'
+        + '</linearGradient>'
+        + '</defs>'
+        + '<rect width="360" height="640" fill="url(#bg)"/>'
+        + '<rect width="360" height="640" fill="url(#shimmer)"/>'
+        + '<circle cx="180" cy="300" r="28" fill="none" stroke="rgba(249,115,22,0.3)" stroke-width="2.5">'
+        + '<animate attributeName="r" values="28;32;28" dur="1.2s" repeatCount="indefinite"/>'
+        + '<animate attributeName="opacity" values="0.3;0.6;0.3" dur="1.2s" repeatCount="indefinite"/>'
+        + '</circle>'
+        + '<polygon points="174,288 174,312 194,300" fill="rgba(249,115,22,0.35)"/>'
         + '</svg>'
       );
 
@@ -960,6 +973,7 @@
         }
         setTrackPosition(trackOffset);
         reconcileWindow(index);
+        updateReelCounter(); // FIX: update counter on every navigation
         if(prevIndex !== index){
           // ⑯ Audio crossfade
           crossfadeTransition(prevIndex, index);
@@ -1279,16 +1293,14 @@
         }
         if(urls.length === 0) return;
 
-        // PERF FIX #1: Removed mode:'cors' — R2 CDN doesn't send CORS headers,
-        // so cors mode was causing EVERY prefetch to fail silently.
-        // Without mode:'cors', the browser uses default mode which works fine.
+        // CORS headers now enabled on cdn.scangym.com — safe to use cors mode
         if(window.caches){
-          caches.open('reels-v7-video').then(function(cache){
+          caches.open('reels-v8-video').then(function(cache){
             urls.forEach(function(url, idx){
               setTimeout(function(){
                 cache.match(url).then(function(existing){
                   if(!existing){
-                    fetch(url, { credentials: 'omit' }).then(function(resp){
+                    fetch(url, { mode: 'cors', credentials: 'omit' }).then(function(resp){
                       if(resp.ok) cache.put(url, resp);
                     }).catch(function(){});
                   }
@@ -1343,6 +1355,7 @@
             }
             reconcileWindow(0);
             loading.style.display = 'none';
+            updateReelCounter(); // FIX: update counter after feed loads
             // PERF FIX #3: Start playback immediately (was 100ms delay)
             playVideo(0);
             // Defer prefetch to avoid competing with first video load
@@ -1373,6 +1386,7 @@
             feedHasMore = data.hasMore;
             feedLoading = false;
             reconcileWindow(currentIndex);
+            updateReelCounter(); // FIX: update total when more reels load
           })
           .catch(function(err){
             console.error('Feed load more error:', err);
@@ -1412,11 +1426,17 @@
         // PERF FIX #5: Poster priority: persisted frame > cached frame > blurhash > placeholder SVG
         // (thumb URLs from reels-videos.json are broken — point to non-existent paths)
         var persisted = getPersistedPoster(video);
-        var poster = posterCache[index] || persisted || PLACEHOLDER_POSTER;
-        if(!posterCache[index] && !persisted && video.blurhash){
+        // Priority: cached frame > persisted frame > server poster > blurhash > placeholder
+        var poster = posterCache[index] || persisted || null;
+        if(!poster && video.cdnKey){
+          // Use server-generated poster frame (pre-extracted JPEG)
+          poster = '/api/reels/poster/' + video.cdnKey;
+        }
+        if(!poster && video.blurhash){
           var bh = decodeBlurHash(video.blurhash, 4, 3);
           if(bh){ poster = bh; posterCache[index] = bh; }
         }
+        if(!poster) poster = PLACEHOLDER_POSTER;
         if(persisted && !posterCache[index]) posterCache[index] = persisted;
         vid.poster = poster;
         vid.classList.remove('has-frame');

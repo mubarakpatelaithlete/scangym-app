@@ -260,6 +260,20 @@ router.get('/feed', async (req, res) => {
       feed = ordered;
     }
 
+    // 4b. Pin hero reel at position 0 (always show best visual first)
+    // Visually engaging action videos > text-based or static content
+    const HERO_REEL_KEYS = ['tiktok_gym_hopping', '01_gym_entry_vertical', '09_before_after_gym_hopper'];
+    if (offset === 0 && feed.length > 0) {
+      for (const heroKey of HERO_REEL_KEYS) {
+        const heroIdx = feed.findIndex(v => v.cdnKey === heroKey);
+        if (heroIdx > 0) {
+          const [hero] = feed.splice(heroIdx, 1);
+          feed.unshift(hero);
+          break;
+        }
+      }
+    }
+
     // 5. Paginate
     const total = feed.length;
     feed = feed.slice(offset, offset + limit);
@@ -579,5 +593,44 @@ router.post('/analytics', express.json(), async (req, res) => {
     res.status(204).end();
   }
 });
+
+// ═══════════════════════════════════════════════════════════
+//  POSTER FRAME ENDPOINT + STARTUP GENERATION
+// ═══════════════════════════════════════════════════════════
+
+const { getPosterPath, generateAllPosters, POSTER_DIR } = require('../lib/poster-gen');
+
+/**
+ * GET /api/reels/poster/:cdnKey
+ * Serves a pre-generated poster JPEG for a video.
+ * Returns 404 if poster not yet generated.
+ */
+router.get('/poster/:cdnKey', (req, res) => {
+  const cdnKey = req.params.cdnKey.replace(/\.jpg$/, '');
+  const posterPath = getPosterPath(cdnKey);
+  if (!posterPath) {
+    return res.status(404).json({ error: 'Poster not generated yet' });
+  }
+  res.set('Content-Type', 'image/jpeg');
+  res.set('Cache-Control', 'public, max-age=86400, s-maxage=604800'); // 1d browser, 7d CDN
+  res.sendFile(posterPath);
+});
+
+// Start poster generation in background after server starts
+// (non-blocking — doesn't slow down boot)
+setTimeout(() => {
+  try {
+    const catalog = JSON.parse(
+      require('fs').readFileSync(
+        require('path').join(__dirname, '..', 'data', 'reels-videos.json'), 'utf8'
+      )
+    );
+    generateAllPosters(catalog).catch(err => {
+      console.error('[Posters] Background generation failed:', err.message);
+    });
+  } catch (err) {
+    console.error('[Posters] Could not load catalog:', err.message);
+  }
+}, 5000); // Start 5s after boot to let the server warm up first
 
 module.exports = router;
