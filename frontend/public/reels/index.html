@@ -402,7 +402,7 @@
       var RENDER_WINDOW    = 3;       // Keep 3 reels above + below rendered
       var PREFETCH_AHEAD   = 5;      // Prefetch next 5 videos (was 8 — reduced to avoid bandwidth competition)
       var PAGE_SIZE        = 20;
-      var LOAD_MORE_AT     = 10;     // Load next page when 10 reels away from end
+      var LOAD_MORE_AT     = 15;     // Load next page when 15 reels away from end (aggressive)
       var POOL_SIZE        = 9;      // ⑮ video pool — MUST be >= RENDER_WINDOW*2+1 (7) or reels go dead
       var CROSSFADE_MS     = 150;    // ⑯ audio crossfade duration
 
@@ -890,8 +890,8 @@
         var absV = Math.abs(velocity);
         var next = currentIndex;
         if(absD > screenH * SNAP_THRESHOLD || absV > SNAP_VELOCITY){
-          if(dragDelta < 0 && currentIndex < allVideos.length - 1){
-            next = currentIndex + 1;
+          if(dragDelta < 0){
+            next = currentIndex + 1; // snapTo handles bounds + load-more
           } else if(dragDelta > 0 && currentIndex > 0){
             next = currentIndex - 1;
           }
@@ -949,7 +949,7 @@
       // ── Keyboard nav ──
       document.addEventListener('keydown', function(e){
         if(e.key === 'ArrowDown' || e.key === 'j'){
-          if(currentIndex < allVideos.length - 1) snapTo(currentIndex + 1, true);
+          snapTo(currentIndex + 1, true); // snapTo handles bounds + load-more
         } else if(e.key === 'ArrowUp' || e.key === 'k'){
           if(currentIndex > 0) snapTo(currentIndex - 1, true);
         } else if(e.key === 'm'){
@@ -1004,7 +1004,12 @@
       var ANALYTICS_FLUSH_INTERVAL = 10000; // flush every 10s
 
       function trackView(index, durationMs, watchPercent){
-        if(index < 0 || index >= allVideos.length) return;
+        if(index < 0) return;
+        if(index >= allVideos.length){
+          // Hit the wall — trigger load-more if possible, retry when data arrives
+          if(feedHasMore && !feedLoading) loadMoreFeed();
+          return;
+        }
         var video = allVideos[index];
         viewBuffer.push({
           id: video.id || index,
@@ -1503,8 +1508,8 @@
           errDiv.innerHTML = '<span>\uD83C\uDFAC</span><p>Video unavailable</p>';
           div.appendChild(errDiv);
           setTimeout(function(){
-            if(parseInt(div.dataset.index) === currentIndex && currentIndex < allVideos.length - 1){
-              snapTo(currentIndex + 1, true);
+            if(parseInt(div.dataset.index) === currentIndex){
+              snapTo(currentIndex + 1, true); // snapTo handles bounds
             }
           }, 1500);
         });
