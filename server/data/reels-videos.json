@@ -939,21 +939,6 @@
   },
   {
     "id": 61,
-    "name": "Ba Twoversions",
-    "category": "AI Cinematic",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/BA-TwoVersions.mp4",
-    "thumb": null,
-    "cdnKey": "BA-TwoVersions",
-    "fileSize": 4196788,
-    "blurhash": null,
-    "orientation": "vertical",
-    "width": 720,
-    "height": 1280,
-    "dopamineTier": 4
-  },
-  {
-    "id": 62,
     "name": "Beforeafter Freedom V1",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -968,7 +953,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 63,
+    "id": 62,
     "name": "Beforeafter Wallet V2",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -983,112 +968,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 64,
-    "name": "Bk Membershiptrap",
-    "category": "AI Cinematic",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/BK-MembershipTrap.mp4",
-    "thumb": null,
-    "cdnKey": "BK-MembershipTrap",
-    "fileSize": 4815215,
-    "blurhash": null,
-    "orientation": "vertical",
-    "width": 720,
-    "height": 1280,
-    "dopamineTier": 4
-  },
-  {
-    "id": 65,
-    "name": "Bk Sixtygyms",
-    "category": "AI Cinematic",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/BK-SixtyGyms.mp4",
-    "thumb": null,
-    "cdnKey": "BK-SixtyGyms",
-    "fileSize": 5604669,
-    "blurhash": null,
-    "orientation": "vertical",
-    "width": 720,
-    "height": 1280,
-    "dopamineTier": 4
-  },
-  {
-    "id": 66,
-    "name": "Bk Theflex",
-    "category": "AI Cinematic",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/BK-TheFlex.mp4",
-    "thumb": null,
-    "cdnKey": "BK-TheFlex",
-    "fileSize": 5534625,
-    "blurhash": null,
-    "orientation": "vertical",
-    "width": 720,
-    "height": 1280,
-    "dopamineTier": 4
-  },
-  {
-    "id": 67,
-    "name": "Bk Thesecret",
-    "category": "AI Cinematic",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/BK-TheSecret.mp4",
-    "thumb": null,
-    "cdnKey": "BK-TheSecret",
-    "fileSize": 3841114,
-    "blurhash": null,
-    "orientation": "vertical",
-    "width": 720,
-    "height": 1280,
-    "dopamineTier": 4
-  },
-  {
-    "id": 68,
-    "name": "Bk Thevisitors",
-    "category": "AI Cinematic",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/BK-TheVisitors.mp4",
-    "thumb": null,
-    "cdnKey": "BK-TheVisitors",
-    "fileSize": 4087768,
-    "blurhash": null,
-    "orientation": "vertical",
-    "width": 720,
-    "height": 1280,
-    "dopamineTier": 4
-  },
-  {
-    "id": 69,
-    "name": "Bs Summercoming",
-    "category": "AI Cinematic",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/BS-SummerComing.mp4",
-    "thumb": null,
-    "cdnKey": "BS-SummerComing",
-    "fileSize": 1864652,
-    "blurhash": null,
-    "orientation": "vertical",
-    "width": 720,
-    "height": 1280,
-    "dopamineTier": 4
-  },
-  {
-    "id": 70,
-    "name": "Bs Thestandard",
-    "category": "AI Cinematic",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/BS-TheStandard.mp4",
-    "thumb": null,
-    "cdnKey": "BS-TheStandard",
-    "fileSize": 1874381,
-    "blurhash": null,
-    "orientation": "vertical",
-    "width": 720,
-    "height": 1280,
-    "dopamineTier": 4
-  },
-  {
-    "id": 71,
+    "id": 63,
     "name": "C01 Huberman Clip",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1103,7 +983,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 72,
+    "id": 64,
     "name": "Contrarian Hook",
     "category": "CMO Content",
     "source": "cdn",
@@ -1119,127 +999,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 73,
-    "name": "Cq Thefeeling",
-    "category": "AI Cinematic",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/CQ-TheFeeling.mp4",
-    "thumb": null,
-    "cdnKey": "CQ-TheFeeling",
-    "fileSize": 4569198,
-    "blurhash": null,
-    "orientation": "vertical",
-    "width": 720,
-    "height": 1280,
-    "dopamineTier": 4
-  },
-  {
-    "id": 74,
-    "name": "Cq Themirror",
-    "category": "AI Cinematic",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/CQ-TheMirror.mp4",
-    "thumb": null,
-    "cdnKey": "CQ-TheMirror",
-    "fileSize": 4714607,
-    "blurhash": null,
-    "orientation": "vertical",
-    "width": 720,
-    "height": 1280,
-    "dopamineTier": 4
-  },
-  {
-    "id": 75,
-    "name": "Cq Therestart",
-    "category": "AI Cinematic",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/CQ-TheRestart.mp4",
-    "thumb": null,
-    "cdnKey": "CQ-TheRestart",
-    "fileSize": 4844554,
-    "blurhash": null,
-    "orientation": "vertical",
-    "width": 720,
-    "height": 1280,
-    "dopamineTier": 4
-  },
-  {
-    "id": 76,
-    "name": "Cq Theversion",
-    "category": "AI Cinematic",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/CQ-TheVersion.mp4",
-    "thumb": null,
-    "cdnKey": "CQ-TheVersion",
-    "fileSize": 4637855,
-    "blurhash": null,
-    "orientation": "vertical",
-    "width": 720,
-    "height": 1280,
-    "dopamineTier": 4
-  },
-  {
-    "id": 77,
-    "name": "Cq Twoweeks",
-    "category": "AI Cinematic",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/CQ-TwoWeeks.mp4",
-    "thumb": null,
-    "cdnKey": "CQ-TwoWeeks",
-    "fileSize": 4844961,
-    "blurhash": null,
-    "orientation": "vertical",
-    "width": 720,
-    "height": 1280,
-    "dopamineTier": 4
-  },
-  {
-    "id": 78,
-    "name": "Cw Hemsworth",
-    "category": "AI Cinematic",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/CW-Hemsworth.mp4",
-    "thumb": null,
-    "cdnKey": "CW-Hemsworth",
-    "fileSize": 4214108,
-    "blurhash": null,
-    "orientation": "vertical",
-    "width": 720,
-    "height": 1280,
-    "dopamineTier": 4
-  },
-  {
-    "id": 79,
-    "name": "Cw Ronaldo",
-    "category": "AI Cinematic",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/CW-Ronaldo.mp4",
-    "thumb": null,
-    "cdnKey": "CW-Ronaldo",
-    "fileSize": 4527415,
-    "blurhash": null,
-    "orientation": "vertical",
-    "width": 720,
-    "height": 1280,
-    "dopamineTier": 4
-  },
-  {
-    "id": 80,
-    "name": "Cw Therock",
-    "category": "AI Cinematic",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/CW-TheRock.mp4",
-    "thumb": null,
-    "cdnKey": "CW-TheRock",
-    "fileSize": 4820392,
-    "blurhash": null,
-    "orientation": "vertical",
-    "width": 720,
-    "height": 1280,
-    "dopamineTier": 4
-  },
-  {
-    "id": 81,
+    "id": 65,
     "name": "Cw Tyson",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1254,7 +1014,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 82,
+    "id": 66,
     "name": "Cw Zyzz",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1269,7 +1029,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 83,
+    "id": 67,
     "name": "Desk to Dumbbell",
     "category": "CMO Content",
     "source": "cdn",
@@ -1285,7 +1045,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 84,
+    "id": 68,
     "name": "Expert Explainer",
     "category": "CMO Content",
     "source": "cdn",
@@ -1301,7 +1061,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 85,
+    "id": 69,
     "name": "Fc Thebet",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1316,7 +1076,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 86,
+    "id": 70,
     "name": "Fc Thedare",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1331,7 +1091,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 87,
+    "id": 71,
     "name": "Fc Theexcuses",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1346,7 +1106,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 88,
+    "id": 72,
     "name": "Fc Theexperiment",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1361,7 +1121,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 89,
+    "id": 73,
     "name": "Fc Thetag",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1376,7 +1136,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 90,
+    "id": 74,
     "name": "Form Check",
     "category": "CMO Content",
     "source": "cdn",
@@ -1392,7 +1152,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 91,
+    "id": 75,
     "name": "Fs Sixmonths",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1407,7 +1167,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 92,
+    "id": 76,
     "name": "Fs Thedecision",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1422,7 +1182,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 93,
+    "id": 77,
     "name": "Fs Theletter",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1437,7 +1197,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 94,
+    "id": 78,
     "name": "Fs Thepromise",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1452,7 +1212,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 95,
+    "id": 79,
     "name": "Fs Thethankyou",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1467,7 +1227,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 96,
+    "id": 80,
     "name": "GRWM Gym Edition",
     "category": "CMO Content",
     "source": "cdn",
@@ -1483,112 +1243,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 97,
-    "name": "Gh Atmosphere",
-    "category": "AI Cinematic",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/GH-Atmosphere.mp4",
-    "thumb": null,
-    "cdnKey": "GH-Atmosphere",
-    "fileSize": 5062170,
-    "blurhash": null,
-    "orientation": "vertical",
-    "width": 720,
-    "height": 1280,
-    "dopamineTier": 4
-  },
-  {
-    "id": 98,
-    "name": "Gh Discipline",
-    "category": "AI Cinematic",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/GH-Discipline.mp4",
-    "thumb": null,
-    "cdnKey": "GH-Discipline",
-    "fileSize": 4621067,
-    "blurhash": null,
-    "orientation": "vertical",
-    "width": 720,
-    "height": 1280,
-    "dopamineTier": 4
-  },
-  {
-    "id": 99,
-    "name": "Gh Equipment",
-    "category": "AI Cinematic",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/GH-Equipment.mp4",
-    "thumb": null,
-    "cdnKey": "GH-Equipment",
-    "fileSize": 4083809,
-    "blurhash": null,
-    "orientation": "vertical",
-    "width": 720,
-    "height": 1280,
-    "dopamineTier": 4
-  },
-  {
-    "id": 100,
-    "name": "Gh Results",
-    "category": "AI Cinematic",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/GH-Results.mp4",
-    "thumb": null,
-    "cdnKey": "GH-Results",
-    "fileSize": 5411691,
-    "blurhash": null,
-    "orientation": "vertical",
-    "width": 720,
-    "height": 1280,
-    "dopamineTier": 4
-  },
-  {
-    "id": 101,
-    "name": "Gh Thetruth",
-    "category": "AI Cinematic",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/GH-TheTruth.mp4",
-    "thumb": null,
-    "cdnKey": "GH-TheTruth",
-    "fileSize": 5379064,
-    "blurhash": null,
-    "orientation": "vertical",
-    "width": 720,
-    "height": 1280,
-    "dopamineTier": 4
-  },
-  {
-    "id": 102,
-    "name": "Gs Theanxiety",
-    "category": "AI Cinematic",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/GS-TheAnxiety.mp4",
-    "thumb": null,
-    "cdnKey": "GS-TheAnxiety",
-    "fileSize": 4886429,
-    "blurhash": null,
-    "orientation": "vertical",
-    "width": 720,
-    "height": 1280,
-    "dopamineTier": 4
-  },
-  {
-    "id": 103,
-    "name": "Gs Thebreakup",
-    "category": "AI Cinematic",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/GS-TheBreakup.mp4",
-    "thumb": null,
-    "cdnKey": "GS-TheBreakup",
-    "fileSize": 4107416,
-    "blurhash": null,
-    "orientation": "vertical",
-    "width": 720,
-    "height": 1280,
-    "dopamineTier": 4
-  },
-  {
-    "id": 104,
+    "id": 88,
     "name": "Gs Theconfidence",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1603,7 +1258,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 105,
+    "id": 89,
     "name": "Gs Thedarkplace",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1618,7 +1273,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 106,
+    "id": 90,
     "name": "Gs Thediscipline",
     "category": "AI Cinematic",
     "source": "cdn",
@@ -1633,7 +1288,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 107,
+    "id": 91,
     "name": "Imperative Command",
     "category": "CMO Content",
     "source": "cdn",
@@ -1649,7 +1304,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 108,
+    "id": 92,
     "name": "Outcome Showcase",
     "category": "CMO Content",
     "source": "cdn",
@@ -1665,7 +1320,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 109,
+    "id": 93,
     "name": "POV: First Gym Visit",
     "category": "CMO Content",
     "source": "cdn",
@@ -1681,7 +1336,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 110,
+    "id": 94,
     "name": "Reaction Duet",
     "category": "CMO Content",
     "source": "cdn",
@@ -1697,7 +1352,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 111,
+    "id": 95,
     "name": "Recovery Trend",
     "category": "CMO Content",
     "source": "cdn",
@@ -1713,23 +1368,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 112,
-    "name": "Specific Number Hook",
-    "category": "CMO Content",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/ScanGym-CMO-V6-SpecificNumber-Vertical.mp4",
-    "thumb": null,
-    "cdnKey": "ScanGym-CMO-V6-SpecificNumber-Vertical",
-    "driveId": null,
-    "fileSize": 544773,
-    "blurhash": true,
-    "orientation": "vertical",
-    "width": 1080,
-    "height": 1920,
-    "dopamineTier": 4
-  },
-  {
-    "id": 113,
+    "id": 97,
     "name": "Storytime: Gym Discovery",
     "category": "CMO Content",
     "source": "cdn",
@@ -1745,7 +1384,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 114,
+    "id": 98,
     "name": "Travel Fitness",
     "category": "CMO Content",
     "source": "cdn",
@@ -1761,7 +1400,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 115,
+    "id": 99,
     "name": "Walk & Talk",
     "category": "CMO Content",
     "source": "cdn",
@@ -1777,23 +1416,7 @@
     "dopamineTier": 4
   },
   {
-    "id": 116,
-    "name": "Yt Price Reveal",
-    "category": "YouTube AI",
-    "source": "cdn",
-    "url": "https://cdn.scangym.com/videos/yt_price_reveal.mp4",
-    "thumb": null,
-    "cdnKey": "yt_price_reveal",
-    "driveId": null,
-    "fileSize": 3553356,
-    "blurhash": null,
-    "orientation": "vertical",
-    "width": 720,
-    "height": 1280,
-    "dopamineTier": 4
-  },
-  {
-    "id": 117,
+    "id": 101,
     "name": "02152304Fbea45A4A5396C23Ba827Be9 B860C0646994925E9",
     "category": "UGC Videos",
     "source": "cdn",
@@ -1808,7 +1431,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 118,
+    "id": 102,
     "name": "1",
     "category": "UGC Videos",
     "source": "cdn",
@@ -1824,7 +1447,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 119,
+    "id": 103,
     "name": "1.Mp4 30B9911B2A2B71Efbfc94531859C0102",
     "category": "UGC Videos",
     "source": "cdn",
@@ -1839,7 +1462,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 120,
+    "id": 104,
     "name": "1.Mp4 40636Cc8D47671Eeba924531958D0102",
     "category": "UGC Videos",
     "source": "cdn",
@@ -1854,7 +1477,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 121,
+    "id": 105,
     "name": "1.Mp4 60A4A203Cb8A71Eeb5824531959C0102",
     "category": "UGC Videos",
     "source": "cdn",
@@ -1869,7 +1492,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 122,
+    "id": 106,
     "name": "1.Mp4 709D7460Cae971Eeae8E4531958C0102",
     "category": "UGC Videos",
     "source": "cdn",
@@ -1884,7 +1507,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 123,
+    "id": 107,
     "name": "1.Mp4 80B164782A2B71Efbfc94531859C0102",
     "category": "UGC Videos",
     "source": "cdn",
@@ -1899,7 +1522,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 124,
+    "id": 108,
     "name": "1.Mp4 901Fcb4Ee45271Eebfc34531959D0102",
     "category": "UGC Videos",
     "source": "cdn",
@@ -1914,7 +1537,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 125,
+    "id": 109,
     "name": "1.Mp4 A00Cec70Caea71Eebfc45017F1F80102",
     "category": "UGC Videos",
     "source": "cdn",
@@ -1929,7 +1552,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 126,
+    "id": 110,
     "name": "1.Mp4 A06Ec86Fd47671Eea8645017F0E80102",
     "category": "UGC Videos",
     "source": "cdn",
@@ -1944,7 +1567,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 127,
+    "id": 111,
     "name": "1.Mp4 B05D6Aabe45271Eebc5C5420848D0102",
     "category": "UGC Videos",
     "source": "cdn",
@@ -1959,7 +1582,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 128,
+    "id": 112,
     "name": "1.Mp4 C0B80D70Cb2571Eebfc35017F0E80102",
     "category": "UGC Videos",
     "source": "cdn",
@@ -1974,7 +1597,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 129,
+    "id": 113,
     "name": "10 Mubarak Pvc Sp100 S50 Sb75 V3 Processed",
     "category": "UGC Videos",
     "source": "cdn",
@@ -1989,7 +1612,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 130,
+    "id": 114,
     "name": "12",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2005,7 +1628,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 131,
+    "id": 115,
     "name": "Community Clip #01",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2021,7 +1644,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 132,
+    "id": 116,
     "name": "Community Clip #02",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2037,7 +1660,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 133,
+    "id": 117,
     "name": "Community Clip #03",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2053,7 +1676,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 134,
+    "id": 118,
     "name": "Community Clip #04",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2069,7 +1692,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 135,
+    "id": 119,
     "name": "Community Clip #05",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2085,7 +1708,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 136,
+    "id": 120,
     "name": "Community Clip #06",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2101,7 +1724,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 137,
+    "id": 121,
     "name": "Community Clip #07",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2117,7 +1740,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 138,
+    "id": 122,
     "name": "Community Clip #08",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2133,7 +1756,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 139,
+    "id": 123,
     "name": "Community Clip #09",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2149,7 +1772,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 140,
+    "id": 124,
     "name": "Community Clip #10",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2165,7 +1788,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 141,
+    "id": 125,
     "name": "Community Clip #11",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2181,7 +1804,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 142,
+    "id": 126,
     "name": "Community Clip #12",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2197,7 +1820,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 143,
+    "id": 127,
     "name": "Community Clip #13",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2213,7 +1836,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 144,
+    "id": 128,
     "name": "Community Clip #14",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2229,7 +1852,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 145,
+    "id": 129,
     "name": "Community Clip #15",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2245,7 +1868,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 146,
+    "id": 130,
     "name": "Community Clip #16",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2261,7 +1884,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 147,
+    "id": 131,
     "name": "Community Clip #17",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2277,7 +1900,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 148,
+    "id": 132,
     "name": "Community Clip #18",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2293,7 +1916,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 149,
+    "id": 133,
     "name": "Community Clip #19",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2309,7 +1932,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 150,
+    "id": 134,
     "name": "Community Clip #20",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2325,7 +1948,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 151,
+    "id": 135,
     "name": "Community Clip #21",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2341,7 +1964,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 152,
+    "id": 136,
     "name": "Community Clip #22",
     "category": "UGC Videos",
     "source": "cdn",
@@ -2357,7 +1980,7 @@
     "dopamineTier": 5
   },
   {
-    "id": 153,
+    "id": 137,
     "name": "Community Clip #23",
     "category": "UGC Videos",
     "source": "cdn",
