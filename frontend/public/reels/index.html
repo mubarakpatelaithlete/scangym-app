@@ -401,7 +401,7 @@
       var RUBBER_BAND      = 0.3;
       var RENDER_WINDOW    = 3;       // Keep 3 reels above + below rendered
       var PREFETCH_AHEAD   = 5;      // Prefetch next 5 videos (was 8 — reduced to avoid bandwidth competition)
-      var PAGE_SIZE        = 20;
+      var PAGE_SIZE        = 40;     // Larger pages = fewer fetches, more runway
       var LOAD_MORE_AT     = 15;     // Load next page when 15 reels away from end (aggressive)
       var POOL_SIZE        = 9;      // ⑮ video pool — MUST be >= RENDER_WINDOW*2+1 (7) or reels go dead
       var CROSSFADE_MS     = 150;    // ⑯ audio crossfade duration
@@ -446,6 +446,7 @@
       var feedOffset     = 0;
       var feedLoading    = false;
       var feedServerTotal = 0;  // total reels from API (for counter)
+      var pendingAdvance = false; // true when user hit the wall while loading
       var soundHintShown = false;
 
       var track   = document.getElementById('reel-track');
@@ -969,7 +970,10 @@
         if(index < 0) return;
         // Wall-hit: if user tries to go past loaded reels, trigger load-more but stay put
         if(index >= allVideos.length){
-          if(feedHasMore && !feedLoading) loadMoreFeed();
+          if(feedHasMore){
+            pendingAdvance = true; // auto-advance when data arrives
+            if(!feedLoading) loadMoreFeed();
+          }
           return;
         }
         var prevIndex = currentIndex;
@@ -1396,6 +1400,11 @@
             feedLoading = false;
             reconcileWindow(currentIndex);
             updateReelCounter(); // FIX: update total when more reels load
+            // Auto-advance if user was waiting at the wall
+            if(pendingAdvance && currentIndex < allVideos.length - 1){
+              pendingAdvance = false;
+              snapTo(currentIndex + 1, true);
+            }
           })
           .catch(function(err){
             console.error('Feed load more error:', err);
