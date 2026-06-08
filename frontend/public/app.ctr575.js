@@ -493,6 +493,8 @@ function switchTab(tab){
   // ── Bug Fix: Toggle persistent reels iframe visibility ──
   _syncReelsVisibility();
   var _sc=document.querySelector('.sg-tab-content');if(_sc)_sc.scrollTop=0;
+  // Show welcome gift popup only when leaving Reels (never on Reels tab)
+  if(tab!=='reels'&&typeof _sgShowBeginnersLuck==='function'){setTimeout(_sgShowBeginnersLuck,2000);}
 }
 // ── Persistent Reels Iframe: keep alive outside #app, toggle display ──
 function _ensureReelsIframe(){
@@ -9713,37 +9715,41 @@ window.sgProfileCompletion=function(container){
 
 // ─── 24. BEGINNER'S LUCK (Candy Crush mechanic #24) ───
 // First-time users get an irresistible deal — creates false sense of "I'm getting special treatment"
+// PERMANENTLY DISABLED ON REELS TAB — popup blocks full-screen video experience.
+// Instead shows 2s after user first navigates to Book or Profile tab.
 (function(){
-  const hasBooked=localStorage.getItem('sg_total_bookings');
-  const hasSeenBL=sessionStorage.getItem('sg_beginners_luck');
-  if(!hasBooked&&!hasSeenBL){
-    // Show beginner's luck popup after 15 seconds
-    setTimeout(()=>{
-      if(document.getElementById('sg-beginners-luck'))return;
-      sessionStorage.setItem('sg_beginners_luck','1');
-      const popup=document.createElement('div');
-      popup.id='sg-beginners-luck';
-      popup.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.8);z-index:9700;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeInUp .4s ease-out';
-      popup.innerHTML=`
-        <div style="background:linear-gradient(135deg,#1a1a2e,#0f172a);border:2px solid rgba(34,197,94,.3);border-radius:24px;padding:28px;max-width:340px;width:100%;text-align:center;position:relative">
-          <button onclick="document.getElementById('sg-beginners-luck').remove()" style="position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.1);border:none;color:rgba(255,255,255,.6);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:1;transition:background .2s" onmouseover="this.style.background='rgba(255,255,255,.2)'" onmouseout="this.style.background='rgba(255,255,255,.1)'">✕</button>
-          <div style="position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;padding:5px 16px;border-radius:20px;font-size:11px;font-weight:800;white-space:nowrap">🎉 WELCOME GIFT</div>
-          <div style="font-size:48px;margin-top:12px">🎁</div>
-          <div style="font-size:22px;font-weight:900;color:#fff;margin-top:8px">Your First Gym Visit</div>
-          <div style="margin-top:12px;display:flex;align-items:baseline;justify-content:center;gap:8px">
-            <span style="font-size:14px;color:rgba(255,255,255,.4);text-decoration:line-through">£5.00</span>
-            <span style="font-size:42px;font-weight:900;color:#22c55e">FREE</span>
-          </div>
-          <div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:8px">Use code <strong style="color:#22c55e">FIRSTSCAN</strong> at checkout</div>
-          <button onclick="document.getElementById('sg-beginners-luck').remove();navigate('/explore')" style="margin-top:20px;width:100%;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:16px;font-weight:800;padding:14px;border:none;border-radius:14px;cursor:pointer;box-shadow:0 4px 20px rgba(34,197,94,.3)">Find a Gym Near Me</button>
-          <div style="margin-top:10px;font-size:10px;color:rgba(255,255,255,.3)">🔥 Limited time offer · Ends soon</div>
+  var _blShown=false;
+  window._sgShowBeginnersLuck=function(){
+    if(_blShown)return;
+    if(document.getElementById('sg-beginners-luck'))return;
+    // NEVER show on Reels tab
+    if(typeof state!=='undefined'&&state.activeTab==='reels')return;
+    var hasBooked=localStorage.getItem('sg_total_bookings');
+    var hasSeenBL=sessionStorage.getItem('sg_beginners_luck');
+    if(hasBooked||hasSeenBL)return;
+    _blShown=true;
+    sessionStorage.setItem('sg_beginners_luck','1');
+    var popup=document.createElement('div');
+    popup.id='sg-beginners-luck';
+    popup.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.8);z-index:9700;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeInUp .4s ease-out';
+    popup.innerHTML=`
+      <div style="background:linear-gradient(135deg,#1a1a2e,#0f172a);border:2px solid rgba(34,197,94,.3);border-radius:24px;padding:28px;max-width:340px;width:100%;text-align:center;position:relative">
+        <button onclick="document.getElementById('sg-beginners-luck').remove()" style="position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.1);border:none;color:rgba(255,255,255,.6);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:1;transition:background .2s" onmouseover="this.style.background='rgba(255,255,255,.2)'" onmouseout="this.style.background='rgba(255,255,255,.1)'">✕</button>
+        <div style="position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;padding:5px 16px;border-radius:20px;font-size:11px;font-weight:800;white-space:nowrap">🎉 WELCOME GIFT</div>
+        <div style="font-size:48px;margin-top:12px">🎁</div>
+        <div style="font-size:22px;font-weight:900;color:#fff;margin-top:8px">Your First Gym Visit</div>
+        <div style="margin-top:12px;display:flex;align-items:baseline;justify-content:center;gap:8px">
+          <span style="font-size:14px;color:rgba(255,255,255,.4);text-decoration:line-through">£5.00</span>
+          <span style="font-size:42px;font-weight:900;color:#22c55e">FREE</span>
         </div>
-      `;
-      // Dismiss popup when clicking the dark backdrop (outside the card)
-      popup.addEventListener('click',function(e){if(e.target===popup)popup.remove();});
-      document.body.appendChild(popup);
-    },15000);
-  }
+        <div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:8px">Use code <strong style="color:#22c55e">FIRSTSCAN</strong> at checkout</div>
+        <button onclick="document.getElementById('sg-beginners-luck').remove();navigate('/explore')" style="margin-top:20px;width:100%;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:16px;font-weight:800;padding:14px;border:none;border-radius:14px;cursor:pointer;box-shadow:0 4px 20px rgba(34,197,94,.3)">Find a Gym Near Me</button>
+        <div style="margin-top:10px;font-size:10px;color:rgba(255,255,255,.3)">🔥 Limited time offer · Ends soon</div>
+      </div>
+    `;
+    popup.addEventListener('click',function(e){if(e.target===popup)popup.remove();});
+    document.body.appendChild(popup);
+  };
 })();
 
 // ─── 25. PINTEREST MASONRY GYM GRID (mechanic #2 + visual dopamine) ───
