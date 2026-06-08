@@ -1409,6 +1409,12 @@
           .catch(function(err){
             console.error('Feed load more error:', err);
             feedLoading = false;
+            // Retry after 2s if user is still waiting at the wall
+            if(feedHasMore){
+              setTimeout(function(){
+                if(!feedLoading && currentIndex >= allVideos.length - 2) loadMoreFeed();
+              }, 2000);
+            }
           });
       }
 
