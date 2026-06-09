@@ -491,26 +491,28 @@ app.use((err, req, res, next) => {
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`ScanGym v4.4.0 on :${PORT} | Frontend: ${fs.existsSync(FRONTEND_DIR+'/index.html')?'v3':'proxy'} | Auth: local session | Brotli+gzip pre-compressed`);
 
-  // Video enrichment — runs in background after server is up
-  // Scans catalog for videos missing metadata and auto-fills fileSize, blurhash, orientation
-  try {
-    const { runEnrichment } = require('./lib/video-enrichment');
-    const catalogPath = path.join(__dirname, 'data', 'reels-videos.json');
-    let staticVideos = [];
-    try { staticVideos = JSON.parse(fs.readFileSync(catalogPath, 'utf8')); } catch {}
+  // Video enrichment — runs in background AFTER server is fully warmed up
+  // Deferred 30s to prevent CPU spike during health check window (Fix: 502 on deploy)
+  setTimeout(() => {
+    try {
+      const { runEnrichment } = require('./lib/video-enrichment');
+      const catalogPath = path.join(__dirname, 'data', 'reels-videos.json');
+      let staticVideos = [];
+      try { staticVideos = JSON.parse(fs.readFileSync(catalogPath, 'utf8')); } catch {}
 
-    const autoManifestPath = fs.existsSync('/data/uploads/auto-reels/manifest.json')
-      ? '/data/uploads/auto-reels/manifest.json'
-      : path.join(__dirname, 'uploads', 'auto-reels', 'manifest.json');
-    let autoVideos = [];
-    try { autoVideos = JSON.parse(fs.readFileSync(autoManifestPath, 'utf8')).videos || []; } catch {}
+      const autoManifestPath = fs.existsSync('/data/uploads/auto-reels/manifest.json')
+        ? '/data/uploads/auto-reels/manifest.json'
+        : path.join(__dirname, 'uploads', 'auto-reels', 'manifest.json');
+      let autoVideos = [];
+      try { autoVideos = JSON.parse(fs.readFileSync(autoManifestPath, 'utf8')).videos || []; } catch {}
 
-    // Run async in background — doesn't block server
-    runEnrichment(staticVideos, autoVideos).catch(err => {
-      console.error('video-enrichment: startup run failed:', err.message);
-    });
-  } catch (e) {
-    console.warn('video-enrichment: module not available:', e.message);
-  }
+      // Run async in background — doesn't block server
+      runEnrichment(staticVideos, autoVideos).catch(err => {
+        console.error('video-enrichment: startup run failed:', err.message);
+      });
+    } catch (e) {
+      console.warn('video-enrichment: module not available:', e.message);
+    }
+  }, 30000); // 30s delay — let Railway health check pass first
 });
 

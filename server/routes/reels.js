@@ -638,6 +638,6 @@ setTimeout(() => {
   } catch (err) {
     console.error('[Posters] Could not load catalog:', err.message);
   }
-}, 5000); // Start 5s after boot to let the server warm up first
+}, 30000); // Start 30s after boot — let Railway health check pass first (Fix: 502 on deploy)
 
 module.exports = router;
