@@ -28,7 +28,7 @@
 
       /* ── Reel Track (GPU-accelerated vertical strip) ── */
       #reel-track{
-        position:fixed;top:0;left:0;right:0;
+        position:fixed;top:0;left:0;right:0;bottom:0;
         will-change:transform;
         touch-action:none;
       }
@@ -425,8 +425,8 @@
       };
 
       // ── Constants ──
-      var SNAP_VELOCITY    = 0.3;
-      var SNAP_THRESHOLD   = 0.2;
+      var SNAP_VELOCITY    = 0.15;   // FIX C5: was 0.3 — too strict, missed quick flicks
+      var SNAP_THRESHOLD   = 0.12;   // FIX C5: was 0.2 — TikTok uses ~10-12%
       var SNAP_DURATION    = 280;
       var RUBBER_BAND      = 0.3;
       var RENDER_WINDOW    = 4;       // FIX #5: Keep 4 reels above + below rendered (was 3)
@@ -502,6 +502,7 @@
       var touchHistory  = [];
       var pendingDragY  = null;
       var dragRafId     = null;
+      var peakVelocity  = 0;        // FIX C5: track peak velocity during gesture
       var gesturePreloaded = false;
 
       // ═══════════════════════════════════════════════════════════
@@ -842,6 +843,7 @@
         touchLastT  = touchStartT;
         isDragging  = true;
         dragDelta   = 0;
+        peakVelocity = 0;  // FIX C5: reset peak velocity for new gesture
         gesturePreloaded = false;
         touchHistory = [{y: t.clientY, t: touchStartT}];
       }, {passive: true});
@@ -857,6 +859,15 @@
         touchHistory.push({y: t.clientY, t: now});
         while(touchHistory.length > 1 && now - touchHistory[0].t > 150){
           touchHistory.shift();
+        }
+        // FIX C5: Track peak velocity — use highest speed seen during gesture
+        if(touchHistory.length >= 2){
+          var ph = touchHistory[touchHistory.length - 2];
+          var pdt = now - ph.t;
+          if(pdt > 0){
+            var pv = Math.abs(t.clientY - ph.y) / pdt;
+            if(pv > peakVelocity) peakVelocity = pv;
+          }
         }
 
         var targetOffset = -(currentIndex * screenH) + dy;
@@ -920,7 +931,8 @@
         }
 
         var absD = Math.abs(dragDelta);
-        var absV = Math.abs(velocity);
+        // FIX C5: Use the higher of final velocity and peak velocity
+        var absV = Math.max(Math.abs(velocity), peakVelocity);
         var next = currentIndex;
         if(absD > screenH * SNAP_THRESHOLD || absV > SNAP_VELOCITY){
           if(dragDelta < 0){
