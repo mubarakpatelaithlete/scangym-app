@@ -1901,16 +1901,27 @@
 
       function handleSave(video, url){
         if(navigator.vibrate) navigator.vibrate(10);
-        if(url){
+        if(!url) return;
+        var fname = (video.name || 'scangym-reel').replace(/[^a-zA-Z0-9_-]/g, '_') + '.mp4';
+        showToast('\u2B07\uFE0F Downloading...');
+        fetch(url).then(function(res){
+          if(!res.ok) throw new Error('Download failed');
+          return res.blob();
+        }).then(function(blob){
+          var blobUrl = URL.createObjectURL(blob);
           var a = document.createElement('a');
-          a.href = url;
-          a.download = (video.name || 'scangym-reel').replace(/[^a-zA-Z0-9_-]/g, '_') + '.mp4';
-          a.target = '_blank';
+          a.href = blobUrl;
+          a.download = fname;
           document.body.appendChild(a);
           a.click();
           a.remove();
-          showToast('\u2B07\uFE0F Downloading...');
-        }
+          setTimeout(function(){ URL.revokeObjectURL(blobUrl); }, 1000);
+          showToast('\u2705 Saved!');
+        }).catch(function(){
+          // Fallback: open in new tab if fetch fails (e.g. CORS)
+          window.open(url, '_blank');
+          showToast('\u2197\uFE0F Opened in new tab');
+        });
       }
 
       function showSoundHint(){
