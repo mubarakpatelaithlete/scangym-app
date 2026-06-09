@@ -34,23 +34,14 @@ const pricing = require('../lib/pricing-engine');
 const surge = require('../lib/surge-pricing');
 
 /**
- * Extract geolocation from request (Cloudflare headers → geoip-lite → default GB)
+ * C7 fix: Currency based on GYM location, not visitor IP.
+ * All gyms are in the UK → always GB/GBP.
+ * When expanding internationally, look up the gym's country from DB instead.
  */
 function getGeoFromRequest(req) {
-  const cfCountry = req.headers['cf-ipcountry'];
-  const cfCity = req.headers['cf-ipcity'];
-  if (cfCountry && cfCountry !== 'XX') {
-    return { country: cfCountry.toUpperCase(), city: cfCity || '' };
-  }
-  try {
-    const geoip = require('geoip-lite');
-    const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.ip;
-    const geo = geoip ? geoip.lookup(ip) : null;
-    if (geo && geo.country) return { country: geo.country, city: geo.city || '' };
-  } catch (e) {}
-  if (req.body?.countryCode) return { country: req.body.countryCode.toUpperCase(), city: req.body.city || '' };
-  if (req.query?.country) return { country: req.query.country.toUpperCase(), city: req.query.city || '' };
-  return { country: 'GB', city: '' };
+  // Future: look up gym's country from DB using gymId in req.body/query
+  // For now, all gyms are in Bolton, UK
+  return { country: 'GB', city: 'Bolton' };
 }
 
 const STRIPE_SECRET = process.env.STRIPE_SECRET_KEY;

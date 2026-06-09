@@ -22,19 +22,10 @@ const pool = require('../middleware/db');
 const crypto = require('crypto');
 const pricing = require('../lib/pricing-engine');
 
-// Extract geo from request (mirrors payment.js helper)
+// C7 fix: Currency based on GYM location, not visitor IP.
+// All gyms are in the UK → always GB/GBP.
 function getGeoFromRequest(req) {
-  const cfCountry = req.headers['cf-ipcountry'];
-  const cfCity = req.headers['cf-ipcity'];
-  if (cfCountry && cfCountry !== 'XX') return { country: cfCountry.toUpperCase(), city: cfCity || '' };
-  try {
-    const geoip = require('geoip-lite');
-    const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.ip;
-    const geo = geoip ? geoip.lookup(ip) : null;
-    if (geo && geo.country) return { country: geo.country, city: geo.city || '' };
-  } catch (e) {}
-  if (req.body?.countryCode) return { country: req.body.countryCode.toUpperCase(), city: req.body.city || '' };
-  return { country: 'GB', city: '' };
+  return { country: 'GB', city: 'Bolton' };
 }
 
 // Generate human-readable booking code (e.g., 5WCB-8VDY)
