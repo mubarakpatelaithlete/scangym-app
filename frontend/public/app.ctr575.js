@@ -6046,6 +6046,75 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
       return;
     }
 
+    // ─── C3 fix: Stripe Elements (new card) — deferred PaymentIntent flow ───
+    if(cs.payMode==='stripe_elements'&&cs.elements&&cs.stripe){
+      btn.disabled=true;
+      btnText.innerHTML='<span class="sg-spinner" style="width:18px;height:18px;display:inline-block"></span> Processing…';
+      try{
+        // 1. Validate the card details entered in Elements
+        const{error:submitError}=await cs.elements.submit();
+        if(submitError){
+          sgToast(submitError.message||'Please check your card details');
+          btn.disabled=false;btnText.textContent='Confirm and pay · '+displayPriceStr;
+          return;
+        }
+        // 2. Create a pending booking on the server
+        let dbGymId=cs.dbGymId||gymId;
+        if(isNaN(parseInt(dbGymId))){
+          try{const ensured=await fetch('/api/live/ensure-gym',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({placeId:gymId})}).then(r=>r.json());if(ensured.gymId)dbGymId=ensured.gymId;}catch(e){}
+        }
+        const email=localStorage.getItem('sg_last_email')||'';
+        const bookingEndpoint=state.user?'/api/bookings/create':'/api/bookings/guest-create';
+        const bookingPayload={gymId:parseInt(dbGymId),placeId:gymId,date:cs.selectedDate,time:cs.selectedTime,email,gymName:gymName,gymAddress:gymAddr,passType:cs.selectedPass||'day'};
+        if(!state.user)bookingPayload.name='Guest';
+        const bookingResp=await fetch(bookingEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(bookingPayload)}).then(r=>r.json());
+        if(!bookingResp.success){
+          sgToast(bookingResp.error||'Failed to create booking');
+          btn.disabled=false;btnText.textContent='Confirm and pay · '+displayPriceStr;
+          return;
+        }
+        const bookingId=bookingResp.booking.id;
+        cs.bookingId=bookingId;
+        // 3. Create PaymentIntent on server (deferred — only now, not on open)
+        const intentResp=await fetch('/api/payment/create-intent',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({bookingId,email})}).then(r=>r.json());
+        if(!intentResp.success||!intentResp.clientSecret){
+          sgToast(intentResp.error||'Payment setup failed');
+          btn.disabled=false;btnText.textContent='Confirm and pay · '+displayPriceStr;
+          return;
+        }
+        cs.clientSecret=intentResp.clientSecret;
+        // 4. Confirm the payment with Stripe
+        btnText.innerHTML='<span class="sg-spinner" style="width:18px;height:18px;display:inline-block"></span> Confirming payment…';
+        const{error:confirmError,paymentIntent}=await cs.stripe.confirmPayment({
+          elements:cs.elements,
+          clientSecret:cs.clientSecret,
+          confirmParams:{return_url:window.location.origin+'/booking-success?booking_id='+bookingId},
+          redirect:'if_required'
+        });
+        if(confirmError){
+          sgToast(confirmError.message||'Payment failed');
+          btn.disabled=false;btnText.textContent='Confirm and pay · '+displayPriceStr;
+          return;
+        }
+        // 5. Confirm on backend (save card, generate QR, send email)
+        const confirmResp=await fetch('/api/payment/confirm-intent',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({bookingId,paymentIntentId:paymentIntent.id,email})}).then(r=>r.json());
+        if(confirmResp.success){
+          state.lastBooking=confirmResp.booking;state.lastQR=confirmResp.qr;
+          if(confirmResp.cardSaved)sgToast('💳 Card saved for 1-tap next time','success',3000);
+          closeBookingSheet();navigate('/booking-success?session_id=intent&booking_id='+bookingId);
+          sgToast('✅ Booked & paid!','success',3000);
+        }else{
+          sgToast(confirmResp.error||'Booking confirmation failed');
+          btn.disabled=false;btnText.textContent='Confirm and pay · '+displayPriceStr;
+        }
+      }catch(e){
+        console.error('Stripe Elements payment error:',e);
+        sgToast('Something went wrong with payment');
+        btn.disabled=false;btnText.textContent='Confirm and pay · '+displayPriceStr;
+      }
+      return;
+    }
+
     // ─── Fallback: no valid payment method ───
     closeBookingSheet();
     setTimeout(()=>openGymOverlay('payment'),300);
@@ -6177,6 +6246,8 @@ async function _initUberPaymentNew(gymId, gym){
       cs.cardEntered=true;
       cs.ready=true;
       cs._stripeLoadedOk=true;
+      // C3 fix: Set payMode so ubConfirmPay uses the Stripe Elements path
+      if(cs.payMode==='none'||!cs.payMode) cs.payMode='stripe_elements';
       // Enable the CTA button now that Stripe is loaded
       const ctaBtn=document.getElementById('ub-cta-btn');
       if(ctaBtn){ctaBtn.style.opacity='1';ctaBtn.style.pointerEvents='auto';}
