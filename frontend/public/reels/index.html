@@ -519,10 +519,12 @@
         for(var i = 0; i < POOL_SIZE; i++){
           var vid = document.createElement('video');
           vid.loop = true;
-          vid.muted = isMuted;
+          vid.muted = true;
           vid.playsInline = true;
+          vid.autoplay = false; // controlled per-reel via play()
           vid.setAttribute('playsinline', '');
           vid.setAttribute('webkit-playsinline', '');
+          vid.setAttribute('muted', '');
           vid.preload = 'metadata';
           vid.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;pointer-events:none;';
           // Suppress console errors for 416/network failures during pool recycling
@@ -1118,10 +1120,25 @@
             nextVid.muted = isMuted;
             if(!isMuted){
               nextVid.volume = 0;
-              nextVid.play().catch(function(){});
+              nextVid.play().then(function(){
+                removeTapOverlay(nextReel);
+              }).catch(function(){
+                // Fallback: force muted play
+                nextVid.muted = true;
+                isMuted = true;
+                nextVid.play().then(function(){
+                  removeTapOverlay(nextReel);
+                }).catch(function(){
+                  showTapToPlay(nextReel, nextVid, nextIndex);
+                });
+              });
               fadeVolume(nextVid, 0, 1, CROSSFADE_MS);
             } else {
-              nextVid.play().catch(function(){});
+              nextVid.play().then(function(){
+                removeTapOverlay(nextReel);
+              }).catch(function(){
+                showTapToPlay(nextReel, nextVid, nextIndex);
+              });
             }
             startProgressLoop(nextReel, nextVid);
             capturePoster(nextVid, nextIndex);
@@ -1208,9 +1225,60 @@
         var vid = reel.querySelector('video');
         if(!vid) return;
         vid.muted = isMuted;
-        vid.play().catch(function(){});
+        var playAttempt = vid.play();
+        if(playAttempt && typeof playAttempt.then === 'function'){
+          playAttempt.then(function(){
+            // Autoplay succeeded — remove any tap-to-play overlay
+            removeTapOverlay(reel);
+          }).catch(function(err){
+            // Autoplay blocked — retry muted first (covers edge case where
+            // isMuted was false but browser requires muted autoplay)
+            vid.muted = true;
+            isMuted = true;
+            var retry = vid.play();
+            if(retry && typeof retry.then === 'function'){
+              retry.then(function(){
+                removeTapOverlay(reel);
+                showSoundHint(); // let user know they can unmute
+              }).catch(function(){
+                // Autoplay truly blocked — show tap-to-play overlay
+                showTapToPlay(reel, vid, i);
+              });
+            }
+          });
+        }
         startProgressLoop(reel, vid);
         capturePoster(vid, i);
+      }
+
+      // ── Tap-to-play fallback when autoplay is blocked ──
+      function showTapToPlay(reel, vid, index){
+        if(reel.querySelector('.tap-to-play')) return;
+        var overlay = document.createElement('div');
+        overlay.className = 'tap-to-play';
+        overlay.style.cssText = 'position:absolute;top:0;left:0;right:0;bottom:0;z-index:16;'
+          + 'display:flex;flex-direction:column;align-items:center;justify-content:center;'
+          + 'cursor:pointer;background:rgba(0,0,0,0.3);';
+        overlay.innerHTML = '<div style="width:72px;height:72px;border-radius:50%;'
+          + 'background:rgba(249,115,22,0.9);display:flex;align-items:center;justify-content:center;'
+          + 'box-shadow:0 4px 24px rgba(249,115,22,0.4);">'
+          + '<svg width="32" height="32" viewBox="0 0 24 24" fill="#fff" stroke="none">'
+          + '<polygon points="6,3 20,12 6,21"/></svg></div>'
+          + '<p style="color:#fff;font-size:14px;font-weight:600;margin-top:12px;'
+          + 'text-shadow:0 1px 8px rgba(0,0,0,.8);">Tap to play</p>';
+        overlay.addEventListener('click', function(){
+          vid.muted = true;
+          isMuted = true;
+          vid.play().then(function(){
+            removeTapOverlay(reel);
+          }).catch(function(){});
+        }, {once: true});
+        reel.appendChild(overlay);
+      }
+
+      function removeTapOverlay(reel){
+        var o = reel.querySelector('.tap-to-play');
+        if(o) o.remove();
       }
 
       function pauseVideo(i){
@@ -1405,8 +1473,20 @@
             reconcileWindow(0);
             loading.style.display = 'none';
             updateReelCounter(); // FIX: update counter after feed loads
-            // PERF FIX #3: Start playback immediately (was 100ms delay)
+            // FIX C1: Try play immediately, and also retry once video has data
             playVideo(0);
+            var firstReel = renderedReels[0];
+            if(firstReel){
+              var firstVid = firstReel.querySelector('video');
+              if(firstVid && firstVid.paused){
+                firstVid.addEventListener('canplay', function onCanPlay(){
+                  firstVid.removeEventListener('canplay', onCanPlay);
+                  if(firstVid.paused && currentIndex === 0){
+                    playVideo(0);
+                  }
+                });
+              }
+            }
             // Defer prefetch to avoid competing with first video load
             setTimeout(function(){
               prefetchAhead(0);

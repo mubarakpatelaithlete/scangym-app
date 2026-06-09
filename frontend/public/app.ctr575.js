@@ -501,8 +501,9 @@ function _ensureReelsIframe(){
   if(document.getElementById('sg-reels-persistent'))return;
   var wrap=document.createElement('div');
   wrap.id='sg-reels-persistent';
-  wrap.style.cssText='position:fixed;top:0;left:0;right:0;bottom:56px;z-index:1;background:#000;display:none;';
-  wrap.innerHTML='<iframe id="sg-reels-iframe" src="/reels/" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;z-index:1;" allow="autoplay; fullscreen" loading="lazy"></iframe>'
+  var showNow=state.activeTab==='reels';
+  wrap.style.cssText='position:fixed;top:0;left:0;right:0;bottom:56px;z-index:'+(showNow?'8000':'1')+';background:#000;display:'+(showNow?'block':'none')+';';
+  wrap.innerHTML='<iframe id="sg-reels-iframe" src="/reels/" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;z-index:1;" allow="autoplay; fullscreen"></iframe>'
     +'<div id="sg-reels-fallback" style="display:none;position:absolute;top:0;left:0;right:0;bottom:0;z-index:2;background:linear-gradient(180deg,#0a0a16 0%,#111127 100%);flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;">'
     +'<div style="font-size:64px;margin-bottom:16px;">🎬</div>'
     +'<p style="color:#fff;font-size:22px;font-weight:800;margin:0 0 8px;">Reels Coming Soon</p>'
