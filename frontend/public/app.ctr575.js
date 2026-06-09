@@ -525,7 +525,11 @@ function _syncReelsVisibility(){
     if(appEl)appEl.style.pointerEvents='none';
     var tabBar=document.querySelector('.sg-tab-bar');
     if(tabBar)tabBar.style.pointerEvents='auto';
+    // FIX C2: Tell reels iframe to resume playback
+    _sendToReels({type:'sg-reels-visibility',visible:true});
   }else{
+    // FIX C2: Tell reels iframe to pause before hiding
+    _sendToReels({type:'sg-reels-visibility',visible:false});
     if(wrap){wrap.style.display='none';wrap.style.zIndex='-1';}
     var appEl=document.getElementById('app');
     if(appEl)appEl.style.pointerEvents='';
@@ -548,10 +552,35 @@ function navigate(path,pushState=true){
 }
 window.addEventListener('popstate',()=>{state.route=location.pathname;state.routeQuery=location.search||'';state.activeTab=getTabForRoute(state.route);render();_syncReelsVisibility();});
 
-// ─── Listen for navigation from reels iframe (Fix #1C: floating CTA) ───
+// ═══════════════════════════════════════════════════════════════
+//  FIX C2: Two-way iframe ↔ parent communication bridge
+// ═══════════════════════════════════════════════════════════════
+
+// Helper: send a command to the reels iframe
+function _sendToReels(msg){
+  var iframe=document.getElementById('sg-reels-iframe');
+  if(iframe&&iframe.contentWindow){
+    try{iframe.contentWindow.postMessage(msg,'*');}catch(e){}
+  }
+}
+
+// Listen for messages FROM the reels iframe
 window.addEventListener('message',function(e){
-  if(e.data&&e.data.type==='sg-navigate'&&e.data.path){
-    navigate(e.data.path);
+  if(!e.data||!e.data.type) return;
+  switch(e.data.type){
+    case 'sg-navigate':
+      // Existing: CTA navigation
+      if(e.data.path) navigate(e.data.path);
+      break;
+    case 'sg-reels-status':
+      // Reels player sends status updates (current reel, playing state)
+      // Store for analytics / UI sync
+      if(typeof state!=='undefined') state._reelsStatus=e.data;
+      break;
+    case 'sg-reels-ready':
+      // Reels player finished loading — send initial state
+      _sendToReels({type:'sg-reels-visibility',visible:state.activeTab==='reels'});
+      break;
   }
 });
 
