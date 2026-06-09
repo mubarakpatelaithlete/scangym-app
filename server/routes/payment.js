@@ -560,25 +560,16 @@ router.post('/quick-checkout', async (req, res) => {
       }
     }
 
-    // Get gym info
-    const gym = await pool.query('SELECT id, name, address FROM gyms WHERE id = $1', [dbGymId]);
+    // Get gym info (C6 fix: include day_pass_price)
+    const gym = await pool.query('SELECT id, name, address, day_pass_price FROM gyms WHERE id = $1', [dbGymId]);
     if (gym.rows.length === 0) return res.status(404).json({ error: 'Gym not found' });
     const g = gym.rows[0];
 
-    // Dynamic pricing
+    // C6 fix: Use gym's own price instead of PPP engine
     const resolved = resolveTime(time);
     const geo = getGeoFromRequest(req);
-    const passTypeClean = passType || 'day';
-    const pricingResult = pricing.calculatePrice({
-      countryCode: geo.country,
-      city: geo.city,
-      time: time,
-      date: date,
-      passType: passTypeClean,
-      demandFactor: surge.getDemandFactor(dbGymId),
-    });
-    const price = pricingResult.amount;
-    const amount = pricingResult.stripeAmount;
+    const price = parseFloat(g.day_pass_price) || 4.99;
+    const amount = Math.round(price * 100);
 
     // Generate booking codes
     const crypto = require('crypto');
@@ -606,7 +597,7 @@ router.post('/quick-checkout', async (req, res) => {
     surge.recordBooking(dbGymId, geo.country);
     const intent = await stripe.paymentIntents.create({
       amount,
-      currency: pricingResult.currency,
+      currency: 'gbp', // C6 fix: Always GBP (Bolton-only launch)
       customer: user.stripe_customer_id,
       payment_method: paymentMethodId,
       off_session: true,
@@ -718,7 +709,7 @@ router.post('/create-intent', async (req, res) => {
     // Uber-style: attach Customer to PaymentIntent so we can save the card after
     const intentConfig = {
       amount,
-      currency: pricing.resolveCurrency(getGeoFromRequest(req)).currency,
+      currency: 'gbp', // C6 fix: Always GBP (Bolton-only launch)
       metadata: { bookingId: String(booking.id), gymName: booking.gym_name || '' },
       receipt_email: email || booking.user_email || undefined,
       payment_method_types: ['card', 'amazon_pay', 'revolut_pay'],
@@ -895,22 +886,14 @@ router.post('/cash-booking', async (req, res) => {
       }
     }
 
-    const gym = await pool.query('SELECT id, name FROM gyms WHERE id = $1', [dbGymId]);
+    const gym = await pool.query('SELECT id, name, day_pass_price FROM gyms WHERE id = $1', [dbGymId]);
     if (gym.rows.length === 0) return res.status(404).json({ error: 'Gym not found' });
     const g = gym.rows[0];
 
-    // ── Step 2: Calculate pricing ──
+    // ── Step 2: C6 fix — Use gym's own price instead of PPP engine ──
     const passTypeClean = passType || 'day';
-    const geo = getGeoFromRequest(req);
     const resolved = resolveTime(time);
-    const pricingResult = pricing.calculatePrice({
-      countryCode: geo.country,
-      city: geo.city,
-      time: time,
-      date: date,
-      passType: passTypeClean,
-    });
-    const price = pricingResult.amount;
+    const price = parseFloat(g.day_pass_price) || 4.99;
 
     // ── Step 3: Generate booking code (same XXXX-XXXX format as Stripe path, fits VARCHAR(9)) ──
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';

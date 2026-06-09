@@ -65,9 +65,9 @@ function sgPrice(passType) {
       stripeAmount: pr.stripeAmount,
     };
   }
-  // Fallback defaults (GBP)
-  const defaults = { day: 2.99, '3day': 7.99, weekly: 14.99, monthly: 29.99 };
-  const amt = defaults[passType] || 2.99;
+  // C6 fix: Fallback defaults (GBP, based on £4.99 base day pass)
+  const defaults = { day: 4.99, '3day': 12.99, weekly: 24.99, monthly: 44.99 };
+  const amt = defaults[passType] || 4.99;
   return { amount: amt, display: '£' + amt.toFixed(2), symbol: '£', currency: 'gbp', stripeAmount: Math.round(amt * 100) };
 }
 
@@ -773,8 +773,9 @@ function getCardFacilities(gym){
 
 function GymCard(gym){
   const badges=getRandomBadges(gym,3);
-  // Dynamic pricing from API
-  const dayP=sgPrice('day');
+  // C6 fix: Use per-gym price from Google priceLevel
+  const _gymCardPrice=parseFloat(gym.dayPassPrice||gym.day_pass_price)||0;
+  const dayP=_gymCardPrice>0?{amount:_gymCardPrice,display:'£'+_gymCardPrice.toFixed(2)}:sgPrice('day');
   const _hCard=new Date().getHours();
   const _isOPCard=_hCard<10||_hCard>=20;
   const cardCurrentPrice=dayP.display;
@@ -1097,7 +1098,8 @@ function SearchPage(){
           var openTag=isOpen?'\u25cf Open':'\u{1F319} Closed';
           var openClass=isOpen?'tt-tag-open':'tt-tag-closed';
           var isPop=isTopGym(gym);
-          var price=dayP.display;
+          // C6 fix: Use per-gym price from Google priceLevel instead of global PPP price
+          var price=gym.dayPassPrice?('£'+parseFloat(gym.dayPassPrice).toFixed(2)):dayP.display;
           var pos=_pinPos(i);
           var facList=facs.map(function(f){return f.replace(/^[^\s]+\s/,'');}).join(', ');
           var equipList=['Free weights','Cardio','Machines'].filter(function(_,j){return((gym.name||'').charCodeAt(0)+j)%3!==0;}).join(', ')||'Machines, Cardio';
@@ -1294,12 +1296,14 @@ function GymProfilePage(){
   const rating=gym.rating||'4.5';
   const reviewCount=gym.user_ratings_total||gym.totalReviews||47;
   const isOpen=gym.opening_hours?.isOpen;
-  // Dynamic pricing from API
+  // C6 fix: Use gym-specific price from Google priceLevel
   const _h10=new Date().getHours();
   const _isOP10=_h10<10||_h10>=20;
-  const _dayP=sgPrice('day');
-  const _3dayP=sgPrice('3day');
-  const _weekP=sgPrice('weekly');
+  const _gymDP=parseFloat(gym.dayPassPrice||gym.day_pass_price||gym.pricing?.dayPassPrice)||0;
+  const _dayBase=_gymDP>0?_gymDP:sgPrice('day').amount;
+  const _dayP={amount:_dayBase,display:'£'+_dayBase.toFixed(2)};
+  const _3dayP={amount:Math.round(_dayBase*2.67*100)/100,display:'£'+(Math.round(_dayBase*2.67*100)/100).toFixed(2)};
+  const _weekP={amount:Math.round(_dayBase*5*100)/100,display:'£'+(Math.round(_dayBase*5*100)/100).toFixed(2)};
   const currentPrice=_dayP.display;
   const threeDayPrice=_3dayP.display;
   const weeklyPrice=_weekP.display;
@@ -5205,7 +5209,9 @@ window.showGymDiscovery=function(){
     const openTag=isOpen?(cTime?'● Open':'● Open'):'● Closed';
     const openClass=isOpen?'gd-tag-open':'gd-tag-closed';
     const isPop=isTopGym(gym);
-    const price=dayP.display;
+    // C6 fix: Per-gym price from Google priceLevel
+    const _gp=parseFloat(gym.dayPassPrice||gym.day_pass_price)||0;
+    const price=_gp>0?('£'+_gp.toFixed(2)):dayP.display;
     const pos=pinPos(i,gyms.length);
     return{id,gym,photo,allPhotos,photoCount,dist,distMin,facs,rating,reviews,addr,isOpen,openText,openTag,openClass,isPop,price,pos,name:gym.name||'Gym',i};
   });
@@ -5741,15 +5747,19 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
   const selPassName=gbs.passName||'Day Pass';
   const selPassIcon=gbs.passIcon||'⚡';
 
-  // Price calculation — dynamic from API
+  // C6 fix: Price calculation — prefer per-gym price from Google priceLevel
   const _passKey=selPass==='week'?'weekly':selPass;
   const _priceInfo=sgPrice(_passKey);
-  const _sym=sgSymbol();
-  const passInfo={name:selPassName,icon:selPassIcon,amount:_priceInfo.amount,display:_priceInfo.display};
+  const _sym='£'; // C6 fix: Always GBP for Bolton launch
+  // Use gym's own dayPassPrice if available, else fall back to global pricing
+  const _gymDayPrice=parseFloat(gym.dayPassPrice||gym.day_pass_price||gym.pricing?.dayPassPrice)||0;
+  const _useGymPrice=_gymDayPrice>0;
+  const _baseAmount=_useGymPrice?_gymDayPrice:_priceInfo.amount;
+  const passInfo={name:selPassName,icon:selPassIcon,amount:_baseAmount,display:'£'+_baseAmount.toFixed(2)};
   const h=selTime==='anytime'?12:parseInt(selTime||'10');
   const isOffPeak=h<10||h>=20;
-  let displayPrice=_priceInfo.amount;
-  let displayPriceStr=_priceInfo.display;
+  let displayPrice=_baseAmount;
+  let displayPriceStr='£'+_baseAmount.toFixed(2);
   // ═══ REFERRAL DISCOUNT: Apply £2 off if referral code is active ═══
   let _sgRefActive=null;try{const _r=JSON.parse(localStorage.getItem('sg_referral')||'null');if(_r&&_r.handle&&_r.expiry>Date.now())_sgRefActive=_r.handle;}catch(e){}
   const _sgOrigPrice=displayPrice;

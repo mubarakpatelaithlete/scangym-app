@@ -74,8 +74,8 @@ router.post('/create', async (req, res) => {
       time = String(nextH).padStart(2, '0') + ':00';
     }
 
-    // Get gym info
-    const gym = await pool.query('SELECT id, name, address FROM gyms WHERE id = $1', [gymId]);
+    // Get gym info (C6 fix: include day_pass_price)
+    const gym = await pool.query('SELECT id, name, address, day_pass_price FROM gyms WHERE id = $1', [gymId]);
     if (gym.rows.length === 0) {
       return res.status(404).json({ error: 'Gym not found' });
     }
@@ -86,16 +86,9 @@ router.post('/create', async (req, res) => {
     const [hours, mins] = time.split(':').map(Number);
     const endTime = time; // Same time next day (24hr access)
 
-    // Dynamic pricing via pricing engine (PPP-adjusted, time-aware)
-    const geo = getGeoFromRequest(req);
-    const pricingResult = pricing.calculatePrice({
-      countryCode: geo.country,
-      city: geo.city,
-      time: time,
-      date: date,
-      passType: 'day',
-    });
-    const price = pricingResult.amount;
+    // C6 fix: Use the gym's own day_pass_price (set from Google priceLevel)
+    // instead of PPP engine which gave all gyms the same price
+    const price = parseFloat(g.day_pass_price) || 4.99;
 
     const bookingCode = generateBookingCode();
     const qrCode = generateQRCode();
@@ -242,8 +235,8 @@ router.post('/guest-create', async (req, res) => {
       return res.status(400).json({ error: 'Please enter a valid email address' });
     }
 
-    // Get gym info
-    const gym = await pool.query('SELECT id, name, address FROM gyms WHERE id = $1', [gymId]);
+    // Get gym info (C6 fix: include day_pass_price)
+    const gym = await pool.query('SELECT id, name, address, day_pass_price FROM gyms WHERE id = $1', [gymId]);
     if (gym.rows.length === 0) {
       return res.status(404).json({ error: 'Gym not found' });
     }
@@ -254,16 +247,8 @@ router.post('/guest-create', async (req, res) => {
     const [hours, mins] = time.split(':').map(Number);
     const endTime = time; // Same time next day (24hr access)
 
-    // Dynamic pricing via pricing engine (PPP-adjusted, time-aware)
-    const geo = getGeoFromRequest(req);
-    const pricingResult = pricing.calculatePrice({
-      countryCode: geo.country,
-      city: geo.city,
-      time: time,
-      date: date,
-      passType: 'day',
-    });
-    const price = pricingResult.amount;
+    // C6 fix: Use the gym's own day_pass_price
+    const price = parseFloat(g.day_pass_price) || 4.99;
 
     const bookingCode = generateBookingCode();
     const qrCode = generateQRCode();

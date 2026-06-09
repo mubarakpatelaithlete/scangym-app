@@ -47,6 +47,18 @@ function photoUrl(photoRef, maxWidth = 1200) {
 }
 
 // ─── Helper: Parse a Text/Nearby Search result into ScanGym gym format ───
+// ─── Map Google's priceLevel (0-4) to ScanGym day pass price (GBP) ───
+function priceLevelToPrice(level) {
+  const map = {
+    0: 4.99,  // Free/unknown → standard
+    1: 3.99,  // Budget gyms
+    2: 4.99,  // Moderate
+    3: 6.99,  // Premium
+    4: 8.99,  // Luxury
+  };
+  return map[level] ?? 4.99; // Default for null/undefined
+}
+
 function parseSearchResult(place) {
   const geo = place.geometry?.location || {};
   const photoRef = place.photos?.[0]?.photo_reference || null;
@@ -56,6 +68,8 @@ function parseSearchResult(place) {
     url: photoUrl(p.photo_reference, 1200),
     thumbnail: photoUrl(p.photo_reference, 400),
   }));
+
+  const priceLevel = place.price_level ?? null;
 
   return {
     // Use place_id as the universal ID
@@ -74,9 +88,9 @@ function parseSearchResult(place) {
     types: place.types || [],
     businessStatus: place.business_status || 'OPERATIONAL',
     openNow: place.opening_hours?.open_now ?? null,
-    priceLevel: place.price_level ?? null,
-    // ScanGym defaults
-    dayPassPrice: 5.00,
+    priceLevel,
+    // C6 fix: Per-gym price based on Google's priceLevel
+    dayPassPrice: priceLevelToPrice(priceLevel),
     source: 'google_places_live',
   };
 }
@@ -334,7 +348,8 @@ router.get('/place/:placeId', optionalAuth, async (req, res) => {
         isClaimed: dbGym?.is_claimed || false,
       },
       pricing: {
-        dayPassPrice: dbGym?.day_pass_price || 5.00,
+        // C6 fix: Use DB price if available, else derive from Google's priceLevel
+        dayPassPrice: dbGym?.day_pass_price || priceLevelToPrice(p.price_level),
         hourlyRate: dbGym?.hourly_rate || 5.00,
         currency: 'GBP',
       },
@@ -398,8 +413,8 @@ router.post('/ensure-gym', optionalAuth, async (req, res) => {
       return res.json({ gymId: existing.rows[0].id, name: existing.rows[0].name, created: false });
     }
 
-    // Fetch from Google Places to get full details
-    const fields = 'name,formatted_address,formatted_phone_number,geometry,rating,user_ratings_total,types,website';
+    // Fetch from Google Places to get full details (C6 fix: include price_level)
+    const fields = 'name,formatted_address,formatted_phone_number,geometry,rating,user_ratings_total,types,website,price_level';
     const url = `${BASE_URL}/details/json?place_id=${placeId}&fields=${fields}&key=${GOOGLE_MAPS_API_KEY}`;
     const response = await fetch(url);
     const data = await response.json();
@@ -411,6 +426,9 @@ router.post('/ensure-gym', optionalAuth, async (req, res) => {
     const p = data.result;
     const geo = p.geometry?.location || {};
     const city = extractCity(p.formatted_address);
+
+    // C6 fix: Use Google's priceLevel to set the day pass price
+    const gymPrice = priceLevelToPrice(p.price_level);
 
     // Create slug
     const slug = (p.name || 'gym').toLowerCase()
@@ -426,11 +444,11 @@ router.post('/ensure-gym', optionalAuth, async (req, res) => {
     const result = await pool.query(`
       INSERT INTO gyms 
       (name, address, place_id, day_pass_price, owner_id, slug, is_active, created_at, updated_at)
-      VALUES ($1, $2, $3, 5.00, 'system', $4, true, NOW(), NOW())
+      VALUES ($1, $2, $3, $4, 'system', $5, true, NOW(), NOW())
       RETURNING id, name
     `, [
       p.name,
-      p.formatted_address, placeId, slug,
+      p.formatted_address, placeId, gymPrice, slug,
     ]);
 
     res.json({ gymId: result.rows[0].id, name: result.rows[0].name, created: true });
