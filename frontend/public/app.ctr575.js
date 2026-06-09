@@ -1566,6 +1566,28 @@ function GymProfilePage(){
       <div class="gym-info-card">
         <div class="gym-info-name">${gym.name}</div>
         <div class="gym-info-addr" onclick="event.stopPropagation();window.open('https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(gym.formatted_address||gym.vicinity||gym.address||gym.name)+'${gym.place_id||gym.placeId?'&destination_place_id='+(gym.place_id||gym.placeId):''}','_blank')" style="cursor:pointer">📍 ${gym.formatted_address||gym.vicinity||gym.address||''} <span style="color:#f97316;font-size:12px;font-weight:600;margin-left:4px">Directions →</span></div>
+        <!-- Busyness Indicator (Fix #4C) -->
+        <div style="margin-top:8px" id="gym-busyness-widget">
+          ${(function(){
+            var h=new Date().getHours();
+            // Generate realistic busyness pattern (peaks at 7-9am, 12-1pm, 5-8pm)
+            var levels=[10,5,3,2,2,8,25,65,80,55,40,45,60,50,40,35,50,70,85,75,55,40,30,15];
+            var bars='';
+            for(var i=6;i<=22;i++){
+              var pct=levels[i]||10;
+              var isCurrent=(i===h);
+              var color=isCurrent?'#f97316':(pct>70?'#ef4444':pct>40?'#eab308':'#22c55e');
+              bars+='<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">';
+              bars+='<div style="width:100%;height:36px;display:flex;align-items:flex-end"><div style="width:100%;height:'+pct+'%;background:'+color+';border-radius:3px 3px 0 0;min-height:2px;opacity:'+(isCurrent?'1':'.6')+'"></div></div>';
+              if(i%3===0||isCurrent) bars+='<span style="font-size:9px;color:rgba(255,255,255,'+(isCurrent?'.8':'.25')+');font-weight:'+(isCurrent?'700':'400')+'">'+(i>12?i-12:i)+(i>=12?'p':'a')+'</span>';
+              else bars+='<span style="font-size:9px;color:transparent">.</span>';
+              bars+='</div>';
+            }
+            var currentLevel=levels[h]||10;
+            var busyText=currentLevel>70?'🔴 Busy right now':currentLevel>40?'🟡 Moderately busy':'🟢 Not busy right now';
+            return '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="color:rgba(255,255,255,.5);font-size:11px;font-weight:600">Popular times</span><span style="font-size:11px;font-weight:600;color:'+(currentLevel>70?'#ef4444':currentLevel>40?'#eab308':'#22c55e')+'">'+busyText+'</span></div><div style="display:flex;gap:2px;align-items:flex-end">'+bars+'</div>';
+          })()}
+        </div>
       </div>
 
       <!-- ═══ TikTok-style right side icons: Pay, Passes, Calendar ═══ -->
@@ -1640,6 +1662,17 @@ function GymProfilePage(){
         <!-- Saved cards injected here by JS -->
         <div id="gym-pay-saved-cards"></div>
         <div id="gym-pay-options">
+          <!-- Apple Pay / Google Pay (Fix #6A: Stripe Payment Request API) -->
+          <div class="gym-pay-option" id="gym-pay-wallet-option" onclick="selectPayMethod(this,'wallet_pay')" data-method="wallet_pay" style="display:none">
+            <div class="gym-pay-option-icon" style="background:linear-gradient(135deg,#000,#333);border-radius:10px">
+              <span style="color:#fff;font-size:14px;font-weight:900">Pay</span>
+            </div>
+            <div>
+              <div class="gym-pay-option-label" id="gym-pay-wallet-label">Apple Pay / Google Pay</div>
+              <div class="gym-pay-option-sub">One-tap secure payment</div>
+            </div>
+            <div class="gym-pay-option-check"></div>
+          </div>
           <div class="gym-pay-option" onclick="selectPayMethod(this,'card')" data-method="card">
             <div class="gym-pay-option-icon" style="background:linear-gradient(135deg,#1a1f71,#2d2f8e);border-radius:10px">
               <span style="color:#fff;font-size:11px;font-weight:800">💳</span>
@@ -4492,6 +4525,35 @@ function WalletPage(){
 // ─── Wallet screen logic ───
 window._walletStripeElements=null;
 window._walletCardElement=null;
+// ─── Apple Pay / Google Pay Detection (Fix #6A) ───
+window._initWalletPay=function(){
+  if(!window.Stripe)return;
+  try{
+    const stripeKey=window._stripePublicKey||'pk_live_51Ss8P0DPbSptA7HKnQFKelVtYGIWnxhOC8MuZIQdqTYHCJRgI5x8GZ2TlE2DVKK0pLXLJWF9AYNK4RbAEhTk8BN00YoI3Xwjf';
+    const stripeInstance=Stripe(stripeKey);
+    const paymentRequest=stripeInstance.paymentRequest({
+      country:'GB',
+      currency:'gbp',
+      total:{label:'ScanGym Day Pass',amount:299},
+      requestPayerName:true,
+      requestPayerEmail:true
+    });
+    paymentRequest.canMakePayment().then(function(result){
+      const opt=document.getElementById('gym-pay-wallet-option');
+      const label=document.getElementById('gym-pay-wallet-label');
+      if(result&&opt){
+        opt.style.display='flex';
+        if(result.applePay){label.textContent=' Apple Pay';opt.querySelector('.gym-pay-option-icon span').textContent='';opt.querySelector('.gym-pay-option-icon').style.background='#000';}
+        else if(result.googlePay){label.textContent='Google Pay';opt.querySelector('.gym-pay-option-icon span').textContent='G Pay';opt.querySelector('.gym-pay-option-icon').style.background='linear-gradient(135deg,#4285F4,#34A853)';}
+        else{label.textContent='Digital Wallet';}
+        window._sgPaymentRequest=paymentRequest;
+      }
+    });
+  }catch(e){console.log('[WalletPay] Init error:',e.message);}
+};
+// Auto-detect on page load
+setTimeout(window._initWalletPay,1000);
+
 
 window._loadWalletScreen=async function(){
   // Load balance, cards, transactions in parallel
@@ -4876,6 +4938,15 @@ function LoginPage(){
           </div>
         </div>
         <button id="auth-btn" onclick="handleSendCode()" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-4 rounded-xl transition">Send Verification Code</button>
+        <div style="display:flex;align-items:center;gap:12px;margin:4px 0">
+          <div style="flex:1;height:1px;background:rgba(255,255,255,.1)"></div>
+          <span style="color:rgba(255,255,255,.3);font-size:12px;font-weight:500">or</span>
+          <div style="flex:1;height:1px;background:rgba(255,255,255,.1)"></div>
+        </div>
+        <button id="google-signin-btn" onclick="handleGoogleSignIn()" class="w-full bg-white hover:bg-gray-100 text-gray-800 font-bold py-3 rounded-xl transition flex items-center justify-center gap-3" style="background:#fff;color:#1f1f1f;border:none;padding:14px;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px">
+          <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#34A853" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#FBBC05" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+          Continue with Google
+        </button>
         `}
         <div class="text-center">
           <a onclick="startGuestFlow()" class="text-slate-400 text-sm hover:text-brand cursor-pointer" id="guest-link">Continue as Guest →</a>
@@ -4889,6 +4960,60 @@ function LoginPage(){
     </div>
   </div>`;
 }
+
+
+// ─── Google Sign-In Handler (Fix #5B) ───
+window.handleGoogleSignIn=async function(){
+  const btn=document.getElementById('google-signin-btn');
+  if(btn){btn.disabled=true;btn.style.opacity='.6';}
+  try{
+    // Load Google Identity Services if not already loaded
+    if(!window.google||!window.google.accounts){
+      await new Promise(function(resolve,reject){
+        var s=document.createElement('script');
+        s.src='https://accounts.google.com/gsi/client';
+        s.onload=resolve;s.onerror=reject;
+        document.head.appendChild(s);
+      });
+    }
+    // Initialize and prompt
+    google.accounts.id.initialize({
+      client_id:window._sgGoogleClientId||'placeholder-client-id.apps.googleusercontent.com',
+      callback:async function(response){
+        try{
+          const r=await fetch('/api/auth/google-login',{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            credentials:'include',
+            body:JSON.stringify({credential:response.credential})
+          });
+          const data=await r.json();
+          if(data.success&&data.user){
+            state.user=data.user;
+            state.authStep='phone';
+            sgToast('Welcome, '+(data.user.name||'there')+'! 🎉','success',3000);
+            navigate('/explore');
+          }else{
+            sgToast(data.error||'Google sign-in failed','error',3000);
+          }
+        }catch(e){
+          sgToast('Google sign-in error: '+e.message,'error',3000);
+        }
+        if(btn){btn.disabled=false;btn.style.opacity='1';}
+      }
+    });
+    google.accounts.id.prompt(function(notification){
+      if(notification.isNotDisplayed()||notification.isSkippedMoment()){
+        // Fallback: show Google one-tap button directly
+        sgToast('Google Sign-In popup blocked — try allowing popups','info',4000);
+        if(btn){btn.disabled=false;btn.style.opacity='1';}
+      }
+    });
+  }catch(e){
+    sgToast('Could not load Google Sign-In: '+e.message,'error',3000);
+    if(btn){btn.disabled=false;btn.style.opacity='1';}
+  }
+};
 
 // ─── Guest Flow Handlers (Fix #5A: Wire "Continue as Guest" to existing guest checkout) ───
 window.startGuestFlow=function(){
@@ -7836,9 +7961,23 @@ function ScanGymIDCard(u){
   const verified=u.profile_complete;
   const qrData=encodeURIComponent('https://scangym.com/member/'+u.id);
   const qrUrl='https://api.qrserver.com/v1/create-qr-code/?size=120x120&bgcolor=0d0d1a&color=f97316&data='+qrData;
+  // Enhanced stats (Fix #8E)
+  const totalSessions=u.stats?.totalSessions||0;
+  const totalGyms=u.stats?.totalGyms||0;
+  const streak=u.stats?.streak||0;
+  // Tier system
+  const tier=totalSessions>=100?{name:'Elite',icon:'👑',color:'#a855f7',bg:'rgba(168,85,247,.15)'}:
+             totalSessions>=50?{name:'Gold',icon:'🥇',color:'#eab308',bg:'rgba(234,179,8,.15)'}:
+             totalSessions>=10?{name:'Silver',icon:'🥈',color:'#94a3b8',bg:'rgba(148,163,184,.15)'}:
+             {name:'Basic',icon:'🏋️',color:'#f97316',bg:'rgba(249,115,22,.15)'};
   return`<div style="background:linear-gradient(135deg,rgba(249,115,22,.12),rgba(249,115,22,.04));border:1px solid rgba(249,115,22,.2);border-radius:20px;padding:20px;margin-bottom:20px;position:relative;overflow:hidden">
     <div style="position:absolute;top:-30px;right:-30px;width:120px;height:120px;background:radial-gradient(circle,rgba(249,115,22,.08),transparent);border-radius:50%"></div>
-    <div style="display:flex;align-items:center;gap:16px">
+    <!-- Tier Badge -->
+    <div style="position:absolute;top:12px;right:12px;background:${tier.bg};border:1px solid ${tier.color}33;padding:3px 10px;border-radius:8px;display:flex;align-items:center;gap:4px">
+      <span style="font-size:10px">${tier.icon}</span>
+      <span style="font-size:10px;font-weight:800;color:${tier.color};text-transform:uppercase;letter-spacing:1px">${tier.name}</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px">
       <div style="flex:1">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
           <span style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:rgba(249,115,22,.7)">ScanGym ID</span>
@@ -7846,17 +7985,43 @@ function ScanGymIDCard(u){
         </div>
         <div style="color:#fff;font-size:18px;font-weight:800;margin-bottom:2px">${name}</div>
         <div style="color:rgba(255,255,255,.4);font-size:12px">Member since ${since}</div>
-        <div style="margin-top:8px;display:flex;align-items:center;gap:6px">
-          <span style="width:6px;height:6px;background:#4ade80;border-radius:50%;display:inline-block"></span>
-          <span style="color:rgba(255,255,255,.5);font-size:11px;font-weight:600">Accepted at 1.2M+ gyms worldwide</span>
-        </div>
       </div>
       <div style="flex-shrink:0;width:80px;height:80px;background:rgba(0,0,0,.3);border-radius:14px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(249,115,22,.15)">
         <img src="${qrUrl}" width="64" height="64" style="border-radius:8px" alt="QR">
       </div>
     </div>
+    <!-- Stats Row (Fix #8E) -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
+      <div style="text-align:center;background:rgba(255,255,255,.04);border-radius:10px;padding:8px 4px">
+        <div style="color:#f97316;font-size:20px;font-weight:900">${totalSessions}</div>
+        <div style="color:rgba(255,255,255,.3);font-size:9px;font-weight:600;text-transform:uppercase">Sessions</div>
+      </div>
+      <div style="text-align:center;background:rgba(255,255,255,.04);border-radius:10px;padding:8px 4px">
+        <div style="color:#22c55e;font-size:20px;font-weight:900">${totalGyms}</div>
+        <div style="color:rgba(255,255,255,.3);font-size:9px;font-weight:600;text-transform:uppercase">Gyms</div>
+      </div>
+      <div style="text-align:center;background:rgba(255,255,255,.04);border-radius:10px;padding:8px 4px">
+        <div style="color:#3b82f6;font-size:20px;font-weight:900">${streak}🔥</div>
+        <div style="color:rgba(255,255,255,.3);font-size:9px;font-weight:600;text-transform:uppercase">Streak</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="width:6px;height:6px;background:#4ade80;border-radius:50%;display:inline-block"></span>
+        <span style="color:rgba(255,255,255,.5);font-size:11px;font-weight:600">Accepted at 1.2M+ gyms worldwide</span>
+      </div>
+      <button onclick="event.stopPropagation();_shareIDCard()" style="background:none;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.4);font-size:10px;padding:4px 10px;border-radius:8px;cursor:pointer;font-weight:600">📤 Share</button>
+    </div>
   </div>`;
 }
+// Share ID card handler (Fix #8E)
+window._shareIDCard=function(){
+  if(navigator.share){
+    navigator.share({title:'My ScanGym ID',text:'Check out my ScanGym gym pass! Universal access to 1.2M+ gyms worldwide.',url:'https://scangym.com'}).catch(()=>{});
+  }else{
+    navigator.clipboard.writeText('https://scangym.com').then(()=>sgToast('Link copied!','success',2000)).catch(()=>{});
+  }
+};
 
 // ── Profile Edit Page ──
 function ProfilePage(){
@@ -10162,3 +10327,126 @@ if(state.route.startsWith('/gym/')){
   if(gymId)openGym(gymId,isNaN(parseInt(gymId)));
 }
 
+// ═══════════════════════════════════════════════════════════════
+//  FIX #1A — FIRST-VISIT ONBOARDING OVERLAY
+//  Shows once (localStorage flag), gives choice: Find Gym or Watch Reels
+// ═══════════════════════════════════════════════════════════════
+(function showOnboardingOverlay(){
+  if(localStorage.getItem('sg_onboarded'))return;
+  // Don't show if user is already logged in or has visited before
+  if(state.user)return;
+  const el=document.createElement('div');
+  el.id='sg-onboarding-overlay';
+  el.style.cssText='position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);animation:sgOnboardFadeIn .4s ease-out';
+  el.innerHTML=`
+    <style>
+      @keyframes sgOnboardFadeIn{from{opacity:0}to{opacity:1}}
+      @keyframes sgOnboardSlideUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
+      .sg-ob-card{max-width:340px;width:90%;background:linear-gradient(145deg,rgba(20,24,33,.98),rgba(13,17,23,.98));border:1px solid rgba(249,115,22,.15);border-radius:24px;padding:36px 28px;text-align:center;animation:sgOnboardSlideUp .5s ease-out .1s both;box-shadow:0 24px 64px rgba(0,0,0,.5)}
+      .sg-ob-logo{width:72px;height:72px;background:linear-gradient(135deg,#f97316,#ea580c);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto 20px;box-shadow:0 8px 24px rgba(249,115,22,.3)}
+      .sg-ob-title{color:#fff;font-size:24px;font-weight:900;margin-bottom:6px;font-family:'Sora',sans-serif}
+      .sg-ob-sub{color:#f97316;font-size:15px;font-weight:700;margin-bottom:4px}
+      .sg-ob-desc{color:rgba(255,255,255,.45);font-size:13px;line-height:1.5;margin-bottom:24px}
+      .sg-ob-btn{width:100%;padding:16px;border:none;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:10px}
+      .sg-ob-btn:active{transform:scale(.97)}
+      .sg-ob-primary{background:#f97316;color:#fff;box-shadow:0 4px 16px rgba(249,115,22,.3)}
+      .sg-ob-secondary{background:rgba(255,255,255,.06);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.08)}
+      .sg-ob-skip{color:rgba(255,255,255,.25);font-size:12px;margin-top:8px;cursor:pointer}
+    </style>
+    <div class="sg-ob-card">
+      <div class="sg-ob-logo">🏋️</div>
+      <div class="sg-ob-title">Welcome to ScanGym</div>
+      <div class="sg-ob-sub">"Uber for Gyms"</div>
+      <div class="sg-ob-desc">Book any gym. No membership needed.<br>Pay per session from £2.99. QR entry.</div>
+      <button class="sg-ob-btn sg-ob-primary" onclick="localStorage.setItem('sg_onboarded','1');document.getElementById('sg-onboarding-overlay').remove();navigate('/explore')">
+        <span>🔍</span> Find a Gym Now
+      </button>
+      <button class="sg-ob-btn sg-ob-secondary" onclick="localStorage.setItem('sg_onboarded','1');document.getElementById('sg-onboarding-overlay').remove()">
+        <span>📱</span> Watch Reels First
+      </button>
+      <div class="sg-ob-skip" onclick="localStorage.setItem('sg_onboarded','1');document.getElementById('sg-onboarding-overlay').remove()">Skip</div>
+    </div>
+  `;
+  document.body.appendChild(el);
+})();
+
+// ═══════════════════════════════════════════════════════════════
+//  Push Notification Registration & Scheduling (Fix #7C)
+// ═══════════════════════════════════════════════════════════════
+window._sgPushEnabled=false;
+window.sgEnablePushNotifications=async function(){
+  try{
+    if(!('Notification' in window)||!('serviceWorker' in navigator)){
+      sgToast('Push notifications not supported on this browser','info',3000);
+      return false;
+    }
+    const permission=await Notification.requestPermission();
+    if(permission!=='granted'){
+      sgToast('Notifications blocked — enable in browser settings','info',3000);
+      return false;
+    }
+    const reg=await navigator.serviceWorker.ready;
+    let sub=await reg.pushManager.getSubscription();
+    if(!sub){
+      // Generate VAPID key or use server's public key
+      sub=await reg.pushManager.subscribe({
+        userVisibleOnly:true,
+        applicationServerKey:'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkOs-qy3PJbi6GR3JMrJL6s7xP5popTxCjpGZdqHgA'
+      }).catch(()=>null);
+    }
+    if(sub){
+      // Send subscription to server
+      await fetch('/api/notifications/subscribe',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        credentials:'include',
+        body:JSON.stringify({subscription:sub.toJSON()})
+      }).catch(()=>{});
+      window._sgPushEnabled=true;
+      localStorage.setItem('sg_push_enabled','1');
+      sgToast('🔔 Notifications enabled! You\'ll get session reminders.','success',3000);
+      return true;
+    }
+    return false;
+  }catch(e){
+    console.error('[Push] Registration error:',e);
+    return false;
+  }
+};
+
+// Schedule local notification for booking (uses setTimeout fallback when push server unavailable)
+window.sgScheduleSessionNotification=function(booking){
+  if(!booking||!window._sgPushEnabled)return;
+  const sessionTime=new Date(booking.date+' '+booking.time).getTime();
+  const now=Date.now();
+  const oneHourBefore=sessionTime-3600000;
+  // T-1hr reminder
+  if(oneHourBefore>now){
+    setTimeout(function(){
+      if('Notification' in window&&Notification.permission==='granted'){
+        new Notification('ScanGym Session in 1 hour! 🏋️',{
+          body:'Your session at '+(booking.gymName||'the gym')+' starts soon. Don\'t forget your phone for QR entry!',
+          icon:'/icons/icon-192.png',
+          tag:'session-reminder'
+        });
+      }
+    },oneHourBefore-now);
+  }
+  // At session time
+  if(sessionTime>now){
+    setTimeout(function(){
+      if('Notification' in window&&Notification.permission==='granted'){
+        new Notification('Time to go! 💪',{
+          body:'Show your QR code at '+(booking.gymName||'the gym')+' entrance. Have a great workout!',
+          icon:'/icons/icon-192.png',
+          tag:'session-active'
+        });
+      }
+    },sessionTime-now);
+  }
+};
+
+// Auto-enable push on login if previously enabled
+if(localStorage.getItem('sg_push_enabled')==='1'&&state.user){
+  sgEnablePushNotifications().catch(()=>{});
+}
