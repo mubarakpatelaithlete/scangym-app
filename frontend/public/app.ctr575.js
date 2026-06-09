@@ -10399,46 +10399,44 @@ if(state.route.startsWith('/gym/')){
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  FIX #1A — FIRST-VISIT ONBOARDING OVERLAY
-//  Shows once (localStorage flag), gives choice: Find Gym or Watch Reels
+//  FIX #1A — FIRST-VISIT WELCOME (C4 fix: non-blocking bottom sheet)
+//  Shows once (localStorage flag). Does NOT block the screen — user can
+//  explore gyms immediately. Auto-dismisses after 8s or on interaction.
 // ═══════════════════════════════════════════════════════════════
-(function showOnboardingOverlay(){
+(function showWelcomeSheet(){
   if(localStorage.getItem('sg_onboarded'))return;
-  // Don't show if user is already logged in or has visited before
   if(state.user)return;
   const el=document.createElement('div');
   el.id='sg-onboarding-overlay';
-  el.style.cssText='position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);animation:sgOnboardFadeIn .4s ease-out';
+  // Non-blocking: sits at bottom, no full-screen backdrop, user can still interact with app
+  el.style.cssText='position:fixed;bottom:0;left:0;right:0;z-index:1000;padding:0 12px 12px;pointer-events:none;animation:sgWelcomeSlideUp .4s ease-out';
+  function dismiss(){ localStorage.setItem('sg_onboarded','1');el.style.transition='transform .3s ease-in,opacity .3s ease-in';el.style.transform='translateY(100%)';el.style.opacity='0';setTimeout(()=>el.remove(),300); }
   el.innerHTML=`
     <style>
-      @keyframes sgOnboardFadeIn{from{opacity:0}to{opacity:1}}
-      @keyframes sgOnboardSlideUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
-      .sg-ob-card{max-width:340px;width:90%;background:linear-gradient(145deg,rgba(20,24,33,.98),rgba(13,17,23,.98));border:1px solid rgba(249,115,22,.15);border-radius:24px;padding:36px 28px;text-align:center;animation:sgOnboardSlideUp .5s ease-out .1s both;box-shadow:0 24px 64px rgba(0,0,0,.5)}
-      .sg-ob-logo{width:72px;height:72px;background:linear-gradient(135deg,#f97316,#ea580c);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto 20px;box-shadow:0 8px 24px rgba(249,115,22,.3)}
-      .sg-ob-title{color:#fff;font-size:24px;font-weight:900;margin-bottom:6px;font-family:'Sora',sans-serif}
-      .sg-ob-sub{color:#f97316;font-size:15px;font-weight:700;margin-bottom:4px}
-      .sg-ob-desc{color:rgba(255,255,255,.45);font-size:13px;line-height:1.5;margin-bottom:24px}
-      .sg-ob-btn{width:100%;padding:16px;border:none;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:10px}
-      .sg-ob-btn:active{transform:scale(.97)}
-      .sg-ob-primary{background:#f97316;color:#fff;box-shadow:0 4px 16px rgba(249,115,22,.3)}
-      .sg-ob-secondary{background:rgba(255,255,255,.06);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.08)}
-      .sg-ob-skip{color:rgba(255,255,255,.25);font-size:12px;margin-top:8px;cursor:pointer}
+      @keyframes sgWelcomeSlideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}
     </style>
-    <div class="sg-ob-card">
-      <div class="sg-ob-logo">🏋️</div>
-      <div class="sg-ob-title">Welcome to ScanGym</div>
-      <div class="sg-ob-sub">"Uber for Gyms"</div>
-      <div class="sg-ob-desc">Book any gym. No membership needed.<br>Pay per session from £2.99. QR entry.</div>
-      <button class="sg-ob-btn sg-ob-primary" onclick="localStorage.setItem('sg_onboarded','1');document.getElementById('sg-onboarding-overlay').remove();navigate('/explore')">
-        <span>🔍</span> Find a Gym Now
-      </button>
-      <button class="sg-ob-btn sg-ob-secondary" onclick="localStorage.setItem('sg_onboarded','1');document.getElementById('sg-onboarding-overlay').remove()">
-        <span>📱</span> Watch Reels First
-      </button>
-      <div class="sg-ob-skip" onclick="localStorage.setItem('sg_onboarded','1');document.getElementById('sg-onboarding-overlay').remove()">Skip</div>
+    <div style="pointer-events:auto;max-width:400px;margin:0 auto;background:linear-gradient(145deg,rgba(20,24,33,.97),rgba(13,17,23,.97));border:1px solid rgba(249,115,22,.2);border-radius:20px;padding:20px;text-align:center;box-shadow:0 -8px 40px rgba(0,0,0,.4);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)">
+      <button onclick="this.closest('#sg-onboarding-overlay')._dismiss()" style="position:absolute;top:10px;right:16px;background:none;border:none;color:rgba(255,255,255,.4);font-size:20px;cursor:pointer;padding:4px">✕</button>
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
+        <div style="width:48px;height:48px;background:linear-gradient(135deg,#f97316,#ea580c);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;box-shadow:0 4px 12px rgba(249,115,22,.3)">🏋️</div>
+        <div style="text-align:left">
+          <div style="color:#fff;font-size:17px;font-weight:800">Welcome to ScanGym</div>
+          <div style="color:rgba(255,255,255,.5);font-size:12px;margin-top:2px">Book any gym · No membership · £5 day pass · QR entry</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button id="sg-ob-find" style="flex:1;padding:12px;background:#f97316;color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">🔍 Find a Gym</button>
+        <button id="sg-ob-reels" style="flex:1;padding:12px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.08);border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">📱 Watch Reels</button>
+      </div>
     </div>
   `;
+  el._dismiss=dismiss;
   document.body.appendChild(el);
+  // Button handlers
+  document.getElementById('sg-ob-find').onclick=function(){ dismiss(); navigate('/explore'); };
+  document.getElementById('sg-ob-reels').onclick=function(){ dismiss(); };
+  // Auto-dismiss after 8 seconds so it doesn't linger
+  setTimeout(()=>{ if(document.getElementById('sg-onboarding-overlay')) dismiss(); },8000);
 })();
 
 // ═══════════════════════════════════════════════════════════════
