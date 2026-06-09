@@ -63,9 +63,15 @@ router.post('/create', async (req, res) => {
       return res.status(401).json({ error: 'Not authenticated', message: 'Please log in first' });
     }
 
-    const { gymId, date, time } = req.body;
-    if (!gymId || !date || !time) {
-      return res.status(400).json({ error: 'gymId, date, and time are required' });
+    let { gymId, date, time } = req.body;
+    if (!gymId || !date) {
+      return res.status(400).json({ error: 'gymId and date are required' });
+    }
+
+    // C2 fix: Resolve 'anytime' / empty time to a sensible default
+    if (!time || time === 'anytime') {
+      const nextH = Math.min(new Date().getHours() + 1, 22);
+      time = String(nextH).padStart(2, '0') + ':00';
     }
 
     // Get gym info
@@ -220,9 +226,15 @@ router.get('/:id', async (req, res) => {
  */
 router.post('/guest-create', async (req, res) => {
   try {
-    const { gymId, date, time, email, name } = req.body;
-    if (!gymId || !date || !time || !email) {
-      return res.status(400).json({ error: 'gymId, date, time, and email are required' });
+    let { gymId, date, time, email, name } = req.body;
+    if (!gymId || !date || !email) {
+      return res.status(400).json({ error: 'gymId, date, and email are required' });
+    }
+
+    // C2 fix: Resolve 'anytime' / empty time to a sensible default
+    if (!time || time === 'anytime') {
+      const nextH = Math.min(new Date().getHours() + 1, 22);
+      time = String(nextH).padStart(2, '0') + ':00';
     }
 
     // Validate email

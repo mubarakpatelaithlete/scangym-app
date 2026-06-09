@@ -5914,10 +5914,16 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
   var _ubTabBar=document.querySelector('.sg-tab-bar');if(_ubTabBar)_ubTabBar.classList.add('hidden');
 
   // ═══ State ═══
+  // C2 fix: Resolve 'anytime' to a real time so backend doesn't get an empty/invalid value
+  var resolvedTime=selTime;
+  if(!selTime||selTime==='anytime'){
+    var nextH=new Date().getHours()+1;
+    resolvedTime=String(Math.min(nextH,22)).padStart(2,'0')+':00';
+  }
   window._checkoutState={
     selectedPass:selPass,
     selectedDate:selDate,
-    selectedTime:selTime,
+    selectedTime:resolvedTime,
     payMode:finalIsCash?'cash':finalIsSaved?'saved':'none',
     savedCardId:finalIsSaved?gbs.savedCard.id:null,
     bookingId:null,
