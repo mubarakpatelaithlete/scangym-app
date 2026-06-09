@@ -374,6 +374,78 @@ router.get('/profile', async (req, res) => {
   }
 });
 
+
+/**
+ * POST /api/auth/google-login (Fix #5B — Google Sign-In)
+ * Verify Google ID token and create/find user
+ */
+router.post('/google-login', async (req, res) => {
+  try {
+    const { credential } = req.body;
+    if (!credential) return res.status(400).json({ error: 'Missing Google credential' });
+
+    // Decode the JWT payload (Google ID token is a JWT)
+    // For production, verify with Google's tokeninfo endpoint
+    const tokenInfoResp = await fetch('https://oauth2.googleapis.com/tokeninfo?id_token=' + credential);
+    if (!tokenInfoResp.ok) {
+      return res.status(401).json({ error: 'Invalid Google token' });
+    }
+    const tokenInfo = await tokenInfoResp.json();
+
+    const email = tokenInfo.email;
+    const name = tokenInfo.name || '';
+    const firstName = tokenInfo.given_name || name.split(' ')[0] || '';
+    const lastName = tokenInfo.family_name || name.split(' ').slice(1).join(' ') || '';
+
+    if (!email) return res.status(400).json({ error: 'No email in Google token' });
+
+    // Find or create user by email
+    let user = await pool.query('SELECT * FROM public.users WHERE email = $1', [email]);
+
+    if (user.rows.length === 0) {
+      // Create new user with Google info
+      user = await pool.query(
+        `INSERT INTO public.users (id, email, first_name, last_name, created_at, updated_at)
+         VALUES (gen_random_uuid(), $1, $2, $3, NOW(), NOW()) RETURNING *`,
+        [email, firstName, lastName]
+      );
+      console.log('Created new user via Google:', email);
+    } else {
+      // Update name if empty
+      const u = user.rows[0];
+      if (!u.first_name && firstName) {
+        await pool.query('UPDATE public.users SET first_name=$1, last_name=$2, updated_at=NOW() WHERE id=$3',
+          [firstName, lastName, u.id]);
+      }
+      console.log('Existing user Google login:', email);
+    }
+
+    const u = user.rows[0];
+
+    // Ensure Stripe Customer
+    const stripeCustomerId = await ensureStripeCustomer(u.id, u.phone_number, email);
+
+    // Set session
+    req.session.userId = u.id;
+    req.session.phone = u.phone_number;
+
+    res.json({
+      success: true,
+      user: {
+        id: u.id,
+        phone: u.phone_number,
+        name: [firstName || u.first_name, lastName || u.last_name].filter(Boolean).join(' ') || null,
+        email: email,
+        hasStripeCustomer: !!stripeCustomerId,
+      },
+      message: 'Logged in with Google',
+    });
+  } catch (err) {
+    console.error('Google login error:', err);
+    res.status(500).json({ error: 'Google login failed', detail: err.message });
+  }
+});
+
 /**
  * POST /api/auth/logout
  */

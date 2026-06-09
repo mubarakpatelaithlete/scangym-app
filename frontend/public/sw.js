@@ -84,3 +84,85 @@ self.addEventListener('fetch', event => {
     })
   );
 });
+
+
+// ═══════════════════════════════════════════════════════════════
+//  Push Notifications (Fix #7C — Session reminders & updates)
+// ═══════════════════════════════════════════════════════════════
+
+// Handle push events
+self.addEventListener('push', event => {
+  let data = { title: 'ScanGym', body: 'You have a notification', icon: '/icons/icon-192.png' };
+  
+  try {
+    if (event.data) {
+      const payload = event.data.json();
+      data = {
+        title: payload.title || 'ScanGym',
+        body: payload.body || '',
+        icon: payload.icon || '/icons/icon-192.png',
+        badge: '/icons/badge-72.png',
+        tag: payload.tag || 'scangym-notification',
+        data: payload.data || {},
+        actions: payload.actions || [],
+        vibrate: [200, 100, 200],
+        requireInteraction: payload.requireInteraction || false
+      };
+    }
+  } catch (e) {
+    // If not JSON, use text
+    data.body = event.data ? event.data.text() : 'New notification';
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: data.icon,
+      badge: data.badge,
+      tag: data.tag,
+      data: data.data,
+      actions: data.actions,
+      vibrate: data.vibrate,
+      requireInteraction: data.requireInteraction
+    })
+  );
+});
+
+// Handle notification click
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  
+  const urlMap = {
+    'session-reminder': '/explore',
+    'session-active': '/session',
+    'session-complete': '/bookings',
+    'booking-confirmed': '/bookings'
+  };
+  
+  const tag = event.notification.tag || '';
+  const targetUrl = urlMap[tag] || '/';
+  
+  // Handle action buttons
+  if (event.action === 'view-session') {
+    event.waitUntil(clients.openWindow('/session'));
+    return;
+  }
+  if (event.action === 'rate') {
+    event.waitUntil(clients.openWindow('/bookings'));
+    return;
+  }
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
+      // Focus existing window if available
+      for (const client of windowClients) {
+        if (client.url.includes('scangym.com') && 'focus' in client) {
+          client.navigate(targetUrl);
+          return client.focus();
+        }
+      }
+      // Open new window
+      return clients.openWindow(targetUrl);
+    })
+  );
+});
