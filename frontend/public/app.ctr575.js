@@ -204,7 +204,7 @@ function askGymQuestion(question, gymId) {
     } else if (q.includes('cancel') || q.includes('refund')) {
       answer = `Free cancellation up to 2 hours before your session! Refund goes instantly to your ScanGym Wallet, or back to your card in 5-10 days. No questions asked. ✅`;
     } else if (q.includes('price') || q.includes('cost') || q.includes('how much') || q.includes('pay')) {
-      answer = `${gym.name || 'This gym'} offers flexible passes: Day Pass from ${sgPrice('day').display}, 3-Day Pass from ${sgPrice('3day').display}, and Weekly Pass from ${sgPrice('weekly').display}. Prices vary by location, time of day, and demand — localized to your currency! 💰`;
+      answer = `${gym.name || 'This gym'} offers flexible passes: Day Pass from ${sgPrice('day').display}, 3-Day Pass from ${sgPrice('3day').display}, and Weekly Pass from ${sgPrice('weekly').display}. Prices vary by gym and time of day. No membership needed! 💰`;
     } else if (q.includes('equipment') || q.includes('machine') || q.includes('weights') || q.includes('dumbbell')) {
       answer = `${gym.name || 'This gym'} has a full range of equipment. Check the facilities section above for specific equipment lists. Most ScanGym partner gyms have free weights, cardio machines, and cable stations. 💪`;
     } else if (q.includes('wifi') || q.includes('internet')) {
