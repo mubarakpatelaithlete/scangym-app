@@ -547,6 +547,13 @@ function navigate(path,pushState=true){
 }
 window.addEventListener('popstate',()=>{state.route=location.pathname;state.routeQuery=location.search||'';state.activeTab=getTabForRoute(state.route);render();_syncReelsVisibility();});
 
+// ─── Listen for navigation from reels iframe (Fix #1C: floating CTA) ───
+window.addEventListener('message',function(e){
+  if(e.data&&e.data.type==='sg-navigate'&&e.data.path){
+    navigate(e.data.path);
+  }
+});
+
 // ─── Geolocation ───
 // 5-layer waterfall GPS loaded from robust-location.js
 // getLocation() is now defined globally by that script
@@ -1558,7 +1565,7 @@ function GymProfilePage(){
       <!-- Gym info card -->
       <div class="gym-info-card">
         <div class="gym-info-name">${gym.name}</div>
-        <div class="gym-info-addr">📍 ${gym.formatted_address||gym.vicinity||gym.address||''}</div>
+        <div class="gym-info-addr" onclick="event.stopPropagation();window.open('https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(gym.formatted_address||gym.vicinity||gym.address||gym.name)+'${gym.place_id||gym.placeId?'&destination_place_id='+(gym.place_id||gym.placeId):''}','_blank')" style="cursor:pointer">📍 ${gym.formatted_address||gym.vicinity||gym.address||''} <span style="color:#f97316;font-size:12px;font-weight:600;margin-left:4px">Directions →</span></div>
       </div>
 
       <!-- ═══ TikTok-style right side icons: Pay, Passes, Calendar ═══ -->
@@ -1841,10 +1848,11 @@ window.openGymOverlay=function(section){
         <h3>📍 Location</h3>
         <div style="display:flex;align-items:center;gap:10px">
           <span style="font-size:24px">📍</span>
-          <div>
+          <div style="flex:1">
             <div style="color:#fff;font-size:14px;font-weight:600">${gym.formatted_address||gym.vicinity||''}</div>
             <div style="color:rgba(255,255,255,.4);font-size:12px">${gym.distance?gym.distance+' away':''}</div>
           </div>
+          <button onclick="window.open('https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent('${(gym.formatted_address||gym.vicinity||gym.name||'').replace(/'/g,"\\'")}')+'${gym.place_id||gym.placeId?'&destination_place_id='+(gym.place_id||gym.placeId):''}','_blank')" style="background:#f97316;color:#fff;border:none;padding:8px 14px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">Directions →</button>
         </div>
       </div>`:''}
     `;
@@ -4798,6 +4806,31 @@ function InfoPage(title,content){
 }
 
 // ─── Page: Login ───
+// ─── Country Code Auto-Detect (Fix #5C) ───
+function _getCountryCodeOptions(){
+  const codes=[
+    {code:'+44',flag:'🇬🇧',country:'GB'},{code:'+1',flag:'🇺🇸',country:'US'},
+    {code:'+91',flag:'🇮🇳',country:'IN'},{code:'+971',flag:'🇦🇪',country:'AE'},
+    {code:'+61',flag:'🇦🇺',country:'AU'},{code:'+49',flag:'🇩🇪',country:'DE'},
+    {code:'+33',flag:'🇫🇷',country:'FR'},{code:'+34',flag:'🇪🇸',country:'ES'},
+    {code:'+39',flag:'🇮🇹',country:'IT'},{code:'+81',flag:'🇯🇵',country:'JP'},
+    {code:'+86',flag:'🇨🇳',country:'CN'},{code:'+82',flag:'🇰🇷',country:'KR'},
+    {code:'+55',flag:'🇧🇷',country:'BR'},{code:'+52',flag:'🇲🇽',country:'MX'},
+    {code:'+7',flag:'🇷🇺',country:'RU'},{code:'+27',flag:'🇿🇦',country:'ZA'},
+    {code:'+234',flag:'🇳🇬',country:'NG'},{code:'+254',flag:'🇰🇪',country:'KE'},
+    {code:'+966',flag:'🇸🇦',country:'SA'},{code:'+65',flag:'🇸🇬',country:'SG'},
+    {code:'+353',flag:'🇮🇪',country:'IE'},{code:'+31',flag:'🇳🇱',country:'NL'},
+    {code:'+46',flag:'🇸🇪',country:'SE'},{code:'+47',flag:'🇳🇴',country:'NO'},
+    {code:'+48',flag:'🇵🇱',country:'PL'},{code:'+90',flag:'🇹🇷',country:'TR'},
+    {code:'+62',flag:'🇮🇩',country:'ID'},{code:'+63',flag:'🇵🇭',country:'PH'},
+    {code:'+60',flag:'🇲🇾',country:'MY'},{code:'+66',flag:'🇹🇭',country:'TH'},
+  ];
+  // Auto-detect from geoHint
+  const geo=window.__geoHint||{};
+  const detectedCountry=(geo.country||'GB').toUpperCase();
+  return codes.map(c=>`<option value="${c.code}" ${c.country===detectedCountry?'selected':''}>${c.flag} ${c.code}</option>`).join('');
+}
+
 function LoginPage(){
   if(state.user){
     return`
@@ -4838,19 +4871,58 @@ function LoginPage(){
         <div>
           <label class="text-slate-400 text-xs mb-1 block">Phone Number</label>
           <div class="flex gap-2">
-            <span class="bg-slate-800 border border-slate-600 rounded-lg px-3 py-3 text-white text-sm">+44</span>
+            <select id="auth-country-code" class="bg-slate-800 border border-slate-600 rounded-lg px-2 py-3 text-white text-sm outline-none" style="min-width:72px">${_getCountryCodeOptions()}</select>
             <input id="auth-phone" type="tel" placeholder="7XXX XXXXXX" class="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-3 py-3 text-white text-sm placeholder-slate-500 outline-none focus:border-brand">
           </div>
         </div>
         <button id="auth-btn" onclick="handleSendCode()" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-4 rounded-xl transition">Send Verification Code</button>
         `}
         <div class="text-center">
-          <a onclick="navigate('/explore')" class="text-slate-400 text-sm hover:text-brand cursor-pointer">Continue as Guest →</a>
+          <a onclick="startGuestFlow()" class="text-slate-400 text-sm hover:text-brand cursor-pointer" id="guest-link">Continue as Guest →</a>
+          <div id="guest-email-form" style="display:none;margin-top:12px">
+            <label class="text-slate-400 text-xs mb-1 block">Email for guest checkout</label>
+            <input id="guest-email-input" type="email" placeholder="your@email.com" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-3 text-white text-sm placeholder-slate-500 outline-none focus:border-brand mb-3">
+            <button onclick="confirmGuestFlow()" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-xl transition text-sm">Continue as Guest →</button>
+          </div>
         </div>
       </div>
     </div>
   </div>`;
 }
+
+// ─── Guest Flow Handlers (Fix #5A: Wire "Continue as Guest" to existing guest checkout) ───
+window.startGuestFlow=function(){
+  const form=document.getElementById('guest-email-form');
+  const link=document.getElementById('guest-link');
+  if(form){
+    form.style.display=form.style.display==='none'?'block':'none';
+    if(link)link.style.display=form.style.display==='none'?'':'none';
+    setTimeout(()=>{const inp=document.getElementById('guest-email-input');if(inp)inp.focus();},100);
+  }
+};
+window.confirmGuestFlow=function(){
+  const emailInput=document.getElementById('guest-email-input');
+  if(!emailInput)return;
+  const email=emailInput.value.trim();
+  if(!email||!email.includes('@')){sgToast('Please enter a valid email','warning');return;}
+  // Store guest email for checkout
+  localStorage.setItem('sg_guest_email',email);
+  state.guestEmail=email;
+  // If there's a pending checkout (user was trying to book before being sent to login)
+  if(window._pendingCheckout&&window._pendingCheckout.gymId){
+    const pc=window._pendingCheckout;
+    sgToast('Welcome! Redirecting to your booking...','success',2000);
+    navigate('/gym/'+pc.gymId);
+    // After gym loads, trigger guest booking
+    setTimeout(()=>{
+      if(typeof handleGuestBook==='function')handleGuestBook(pc.gymId);
+    },1500);
+  }else{
+    // No pending booking — go to explore
+    sgToast('Welcome! Browse gyms and book as guest 🏋️','success',2500);
+    navigate('/explore');
+  }
+};
 
 // ─── Auth Handlers ───
 window.handleSendCode=async function(){
@@ -4865,7 +4937,8 @@ window.handleSendCode=async function(){
   btn.textContent='Sending...';btn.disabled=true;
   errDiv.classList.add('hidden');
   try{
-    const fullPhone=phone.startsWith('+') ? phone : '+44'+phone.replace(/^0/,'');
+    const countryCode=document.getElementById('auth-country-code')?.value||'+44';
+    const fullPhone=phone.startsWith('+') ? phone : countryCode+phone.replace(/^0/,'');
     const r=await api.authPost('/send-code',{phone:fullPhone});
     if(r.success){
       state.authPhone=r.phone||fullPhone;
@@ -6075,6 +6148,119 @@ window.processGuestBooking=async function(gymId,email){
 };
 
 // ─── Page: Booking Success ───
+// ═══════════════════════════════════════════════════════════════════════════
+//  ACTIVE SESSION PAGE — "Uber In-Ride" equivalent (Fix #7A)
+//  Shows: Live timer, gym info, QR code, session progress, end session CTA
+// ═══════════════════════════════════════════════════════════════════════════
+function ActiveSessionPage(){
+  const b=state.lastBooking||state.activeSession;
+  if(!b)return`<div style="padding:40px 20px;text-align:center">
+    <p style="font-size:48px;margin-bottom:16px">🏋️</p>
+    <p style="color:#fff;font-size:18px;font-weight:700;margin-bottom:8px">No Active Session</p>
+    <p style="color:rgba(255,255,255,.4);margin-bottom:24px">Book a gym to start your session</p>
+    <button onclick="navigate('/explore')" style="background:#f97316;color:#fff;border:none;padding:14px 32px;border-radius:12px;font-weight:700;font-size:16px;cursor:pointer">Find a Gym →</button>
+  </div>`;
+  const qr=state.lastQR;
+  const startTime=b.checkinTime||b.created_at||Date.now();
+  const elapsed=Math.floor((Date.now()-new Date(startTime).getTime())/1000);
+  const hours=Math.floor(elapsed/3600);
+  const mins=Math.floor((elapsed%3600)/60);
+  const secs=elapsed%60;
+  const pad=n=>String(n).padStart(2,'0');
+  const maxHours=24;
+  const progress=Math.min((elapsed/(maxHours*3600))*100,100);
+  // Progress stages (like Uber ride states)
+  const stages=[
+    {name:'Checked In',icon:'✅',at:0},
+    {name:'Warming Up',icon:'🔥',at:10},
+    {name:'Training',icon:'💪',at:30},
+    {name:'Cool Down',icon:'🧊',at:80},
+    {name:'Session Complete',icon:'🏆',at:100}
+  ];
+  const currentStage=stages.filter(s=>progress>=s.at).pop()||stages[0];
+  return`
+  <div style="min-height:100%;background:linear-gradient(180deg,#0a0f14 0%,#0d1117 100%);padding:20px 16px;padding-top:calc(env(safe-area-inset-top,12px) + 12px)">
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <button onclick="navigate('/explore')" style="background:rgba(255,255,255,.08);border:none;color:#fff;width:36px;height:36px;border-radius:50%;font-size:18px;cursor:pointer">←</button>
+      <div style="color:#22c55e;font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px">
+        <span style="width:8px;height:8px;background:#22c55e;border-radius:50%;display:inline-block;animation:locationDot 1.5s ease-in-out infinite"></span>
+        Session Active
+      </div>
+      <div style="width:36px"></div>
+    </div>
+
+    <!-- Gym Info Card -->
+    <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:20px;padding:20px;margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+        <div style="width:52px;height:52px;background:linear-gradient(135deg,#f97316,#fb923c);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:24px">🏋️</div>
+        <div style="flex:1">
+          <div style="color:#fff;font-size:18px;font-weight:800">${b.gymName||'Gym Session'}</div>
+          <div style="color:rgba(255,255,255,.4);font-size:13px">${b.passType||'Day Pass'} · ${b.date||'Today'}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="color:#22c55e;font-size:14px;font-weight:700">£${(b.price||2.99).toFixed(2)}</div>
+          <div style="color:rgba(255,255,255,.3);font-size:11px">PAID ✓</div>
+        </div>
+      </div>
+      <!-- Live Timer (hero) -->
+      <div style="text-align:center;padding:20px 0">
+        <div style="color:rgba(255,255,255,.4);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:2px;margin-bottom:8px">Session Duration</div>
+        <div id="session-timer" style="color:#fff;font-size:48px;font-weight:900;font-variant-numeric:tabular-nums;letter-spacing:2px">${pad(hours)}:${pad(mins)}:${pad(secs)}</div>
+        <div style="color:rgba(255,255,255,.3);font-size:12px;margin-top:4px">of 24h access</div>
+      </div>
+      <!-- Progress Bar -->
+      <div style="margin-bottom:12px">
+        <div style="background:rgba(255,255,255,.06);border-radius:8px;height:8px;overflow:hidden">
+          <div style="background:linear-gradient(90deg,#22c55e,#f97316);height:100%;border-radius:8px;width:${progress}%;transition:width 1s linear"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:6px">
+          <span style="color:rgba(255,255,255,.3);font-size:11px">Check-in</span>
+          <span style="color:#f97316;font-size:11px;font-weight:600">${currentStage.icon} ${currentStage.name}</span>
+          <span style="color:rgba(255,255,255,.3);font-size:11px">24h</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- QR Code (show/re-scan) -->
+    ${qr?`
+    <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:20px;padding:20px;margin-bottom:16px;text-align:center">
+      <div style="color:rgba(255,255,255,.5);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Your QR Code</div>
+      <div style="display:inline-block;background:#fff;padding:16px;border-radius:16px;margin-bottom:8px">
+        <img src="${qr.url||'data:image/svg+xml,<svg/>'}" alt="QR Code" style="width:160px;height:160px;display:block">
+      </div>
+      <div style="color:rgba(255,255,255,.35);font-size:11px">Show to staff if asked</div>
+    </div>`:``}
+
+    <!-- Quick Actions -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+      <div onclick="window.open('https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent('${(b.gymName||'').replace(/'/g,"\\'")}'),'_blank')" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px;text-align:center;cursor:pointer">
+        <div style="font-size:24px;margin-bottom:6px">📍</div>
+        <div style="color:#fff;font-size:13px;font-weight:600">Directions</div>
+      </div>
+      <div onclick="sgToast('Staff has been notified','success',2500)" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px;text-align:center;cursor:pointer">
+        <div style="font-size:24px;margin-bottom:6px">🆘</div>
+        <div style="color:#fff;font-size:13px;font-weight:600">Need Help</div>
+      </div>
+    </div>
+
+    <!-- End Session Button -->
+    <button onclick="if(confirm('End your session?')){navigate('/explore');sgToast('Session ended! Thanks for training 💪','success',3000)}" style="width:100%;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#f87171;padding:16px;border-radius:16px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:24px">End Session Early</button>
+  </div>`;
+}
+// Live timer updater
+setInterval(function(){
+  const el=document.getElementById('session-timer');
+  if(!el)return;
+  const b=state.lastBooking||state.activeSession;
+  if(!b)return;
+  const startTime=b.checkinTime||b.created_at||Date.now();
+  const elapsed=Math.floor((Date.now()-new Date(startTime).getTime())/1000);
+  const h=Math.floor(elapsed/3600),m=Math.floor((elapsed%3600)/60),s=elapsed%60;
+  const pad=n=>String(n).padStart(2,'0');
+  el.textContent=pad(h)+':'+pad(m)+':'+pad(s);
+},1000);
+
 function BookingSuccessPage(){
   const params=new URLSearchParams(window.location.search);
   const sessionId=params.get('session_id');
@@ -7729,6 +7915,33 @@ function ProfilePage(){
 
     <button id="pf-save-btn" onclick="saveProfile()" style="width:100%;margin-top:20px;background:#f97316;color:#fff;border:none;padding:16px;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent">Save Profile</button>
 
+    <!-- Stats Dashboard (Fix #8A) -->
+    <div style="margin-top:24px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:20px;padding:20px">
+      <div style="color:rgba(255,255,255,.4);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px">📊 Your Stats</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">
+        <div style="text-align:center;padding:12px 0">
+          <div style="color:#f97316;font-size:28px;font-weight:900">${u.stats?.totalSessions||0}</div>
+          <div style="color:rgba(255,255,255,.35);font-size:11px">Sessions</div>
+        </div>
+        <div style="text-align:center;padding:12px 0">
+          <div style="color:#22c55e;font-size:28px;font-weight:900">${u.stats?.totalGyms||0}</div>
+          <div style="color:rgba(255,255,255,.35);font-size:11px">Gyms Visited</div>
+        </div>
+        <div style="text-align:center;padding:12px 0">
+          <div style="color:#3b82f6;font-size:28px;font-weight:900">${u.stats?.streak||0}</div>
+          <div style="color:rgba(255,255,255,.35);font-size:11px">Day Streak 🔥</div>
+        </div>
+      </div>
+      <!-- Achievement Badges (Gamification Fix #8B) -->
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+        ${(u.stats?.totalSessions||0)>=1?'<div style="background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.2);border-radius:10px;padding:6px 12px;font-size:12px;color:#fb923c;font-weight:600">🏋️ First Session</div>':''}
+        ${(u.stats?.totalGyms||0)>=3?'<div style="background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);border-radius:10px;padding:6px 12px;font-size:12px;color:#4ade80;font-weight:600">🌍 Explorer</div>':''}
+        ${(u.stats?.streak||0)>=7?'<div style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:6px 12px;font-size:12px;color:#f87171;font-weight:600">🔥 7-Day Streak</div>':''}
+        ${(u.stats?.totalSessions||0)>=10?'<div style="background:rgba(168,85,247,.1);border:1px solid rgba(168,85,247,.2);border-radius:10px;padding:6px 12px;font-size:12px;color:#c084fc;font-weight:600">💪 10 Sessions</div>':''}
+        ${(u.stats?.totalSessions||0)<1?'<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:6px 12px;font-size:12px;color:rgba(255,255,255,.3)">Book your first gym to earn badges!</div>':''}
+      </div>
+    </div>
+
     <div style="margin-top:24px;text-align:center">
       <p style="color:rgba(255,255,255,.3);font-size:12px;line-height:1.6">🌍 Your ScanGym profile is your universal gym pass.<br>Accepted at <strong style="color:rgba(255,255,255,.5)">1.2M+ gyms</strong> in 190+ countries.</p>
     </div>
@@ -7824,6 +8037,7 @@ function MoreHubPage(){
     <!-- Your Activity -->
     <div class="sg-more-section">
       <div class="sg-more-section-title">Your Activity</div>
+      ${(state.lastBooking||state.activeSession)?moreItem('\u{1F3CB}\uFE0F','Active Session','Live session in progress →','/session'):''}
       ${moreItem('\u{1F4CB}','My Bookings','Upcoming & past visits','/bookings')}
       ${moreItem('\u{1F4B3}','Payment & Wallet','Cards, balance & methods','/wallet')}
       ${moreItem('\u{1F39F}\uFE0F','Refer & Earn','Invite friends, earn 15%','/refer')}
@@ -8109,6 +8323,13 @@ async function _loadCreatorEarnings(handle){
 }
 
 function render(){
+  try{ _renderInner(); }catch(err){
+    console.error('[Render] Error rendering page:',err);
+    const app=document.getElementById('app');
+    if(app)app.innerHTML='<div style="padding:40px 20px;text-align:center"><p style="font-size:40px;margin-bottom:16px">⚠️</p><p style="color:#fff;font-size:18px;font-weight:700;margin-bottom:8px">Something went wrong</p><p style="color:rgba(255,255,255,.4);margin-bottom:24px">'+err.message+'</p><button onclick="navigate(\'/explore\')" style="background:#f97316;color:#fff;border:none;padding:14px 32px;border-radius:12px;font-weight:700;font-size:16px;cursor:pointer">Go to Explore →</button></div>'+BottomTabBar();
+  }
+}
+function _renderInner(){
   const path=state.route;
   let page='';
 
@@ -8452,6 +8673,7 @@ function render(){
   else if(path==='/cookies')page=InfoPage('Cookie Policy',`<p>We use essential cookies for authentication and preferences. Analytics cookies help us understand usage patterns. You can disable non-essential cookies in your browser settings.</p>`);
   else if(path==='/bookings'||path==='/my-bookings')page=MyBookingsPage();
   else if(path==='/booking-success')page=BookingSuccessPage();
+  else if(path==='/session'||path==='/active-session')page=ActiveSessionPage();
   else if(path==='/featured')page=InfoPage('Featured Listings',`<p class="text-xl text-white font-bold">Featured Gyms on ScanGym</p><p>Get your gym seen by thousands. Featured listings appear at the top of search results with a highlighted badge.</p><p>✅ Priority placement in search</p><p>✅ Featured badge on your profile</p><p>✅ 3x more profile views on average</p><p><a onclick="navigate(\'/contact\')" class="text-brand cursor-pointer">Contact us about featured listings →</a></p>`);
   else if(path==='/careers')page=InfoPage('Careers at ScanGym',`<p class="text-xl text-white font-bold">Join the Team</p><p>We\'re building the future of gym access in the UK. Currently a lean team based in Manchester.</p><p>Interested in working with us? Send your CV to:</p><p>📧 <strong>hello@scangym.com</strong></p>`);
   else if(path==='/help')page=InfoPage('Help Center',`<p class="text-xl text-white font-bold">How Can We Help?</p><p><strong>How do I book a gym?</strong><br>Search for a gym → Pick your date/time → Pay → Get your QR code.</p><p><strong>How do I cancel?</strong><br>Free cancellation up to 2 hours before your session from your bookings page.</p><p><strong>I can\'t scan my QR code</strong><br>Make sure your screen brightness is at max. If it still doesn\'t work, show the booking confirmation to staff.</p><p><strong>How do I get a refund?</strong><br>Cancelled bookings are refunded to your ScanGym Wallet instantly, or to your card within 5-10 days.</p><p>📧 Still stuck? Email <strong>hello@scangym.com</strong></p>`);

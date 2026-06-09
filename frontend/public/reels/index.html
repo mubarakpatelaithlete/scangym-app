@@ -1986,6 +1986,30 @@
       initVideoPool();
       registerServiceWorker();
       loadFeed();
+
+      // ── Floating Book CTA (Fix #1C) — persistent bottom banner on reels ──
+      (function addFloatingCTA(){
+        var cta=document.createElement('div');
+        cta.id='sg-float-cta';
+        cta.style.cssText='position:fixed;bottom:16px;left:16px;right:16px;z-index:9999;display:flex;align-items:center;gap:12px;background:rgba(249,115,22,.95);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:16px;padding:12px 18px;cursor:pointer;box-shadow:0 8px 32px rgba(249,115,22,.4);-webkit-tap-highlight-color:transparent;animation:floatUp .5s ease-out .8s both';
+        cta.innerHTML='<span style="font-size:24px">🏋️</span><div style="flex:1"><div style="color:#fff;font-size:15px;font-weight:800">Book a Gym — No Membership</div><div style="color:rgba(255,255,255,.8);font-size:12px">From £2.99 · QR entry · Free cancellation</div></div><span style="color:#fff;font-size:20px;font-weight:700">→</span>';
+        cta.onclick=function(){
+          if(window.parent&&window.parent!==window){window.parent.postMessage({type:'sg-navigate',path:'/explore'},'*');}
+          else{window.location.href='/explore';}
+        };
+        // Add animation keyframes
+        var style=document.createElement('style');
+        style.textContent='@keyframes floatUp{from{transform:translateY(100px);opacity:0}to{transform:translateY(0);opacity:1}}';
+        document.head.appendChild(style);
+        document.body.appendChild(cta);
+        // Auto-hide after 8s, re-show on reel swipe
+        var hideTimer=setTimeout(function(){cta.style.transition='opacity .3s,transform .3s';cta.style.opacity='0';cta.style.transform='translateY(20px)';cta.style.pointerEvents='none';},8000);
+        document.getElementById('reel-track').addEventListener('touchend',function(){
+          clearTimeout(hideTimer);
+          cta.style.opacity='1';cta.style.transform='translateY(0)';cta.style.pointerEvents='auto';
+          hideTimer=setTimeout(function(){cta.style.opacity='0';cta.style.transform='translateY(20px)';cta.style.pointerEvents='none';},5000);
+        });
+      })();
     })();
     </script>
   </body>
