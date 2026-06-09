@@ -1070,6 +1070,77 @@
         if(document.visibilityState === 'hidden') flushAnalytics();
       });
 
+      // ═══════════════════════════════════════════════════════════
+      //  FIX C2: Listen for commands from parent app
+      // ═══════════════════════════════════════════════════════════
+      var _reelsWasPaused = false; // track if we were paused by parent
+
+      window.addEventListener('message', function(e){
+        if(!e.data || !e.data.type) return;
+        switch(e.data.type){
+          case 'sg-reels-visibility':
+            if(e.data.visible){
+              // Tab switched TO reels — resume playback
+              if(_reelsWasPaused){
+                _reelsWasPaused = false;
+                playVideo(currentIndex);
+              }
+            } else {
+              // Tab switched AWAY from reels — pause to save battery/data
+              var reel = renderedReels[currentIndex];
+              if(reel){
+                var vid = reel.querySelector('video');
+                if(vid && !vid.paused){
+                  _reelsWasPaused = true;
+                  vid.pause();
+                  stopProgressLoop();
+                }
+              }
+              flushAnalytics();
+            }
+            break;
+          case 'sg-reels-mute':
+            // Parent wants to sync mute state
+            if(typeof e.data.muted === 'boolean'){
+              isMuted = e.data.muted;
+              var reel = renderedReels[currentIndex];
+              if(reel){
+                var vid = reel.querySelector('video');
+                if(vid) vid.muted = isMuted;
+              }
+              var btn = document.querySelector('.mute-btn');
+              if(btn) btn.textContent = isMuted ? '\uD83D\uDD07' : '\uD83D\uDD0A';
+            }
+            break;
+          case 'sg-reels-get-status':
+            // Parent requesting current status
+            _sendStatusToParent();
+            break;
+        }
+      });
+
+      function _sendStatusToParent(){
+        if(window.parent && window.parent !== window){
+          var vid = renderedReels[currentIndex] ? renderedReels[currentIndex].querySelector('video') : null;
+          window.parent.postMessage({
+            type: 'sg-reels-status',
+            index: currentIndex,
+            total: allVideos.length,
+            playing: vid ? !vid.paused : false,
+            muted: isMuted,
+            video: currentIndex < allVideos.length ? {
+              name: allVideos[currentIndex].name || '',
+              category: allVideos[currentIndex].category || ''
+            } : null
+          }, '*');
+        }
+      }
+
+      // Notify parent that reels player is ready
+      if(window.parent && window.parent !== window){
+        window.parent.postMessage({type:'sg-reels-ready'}, '*');
+      }
+
       // Track time spent on each reel
       var viewStartTime = Date.now();
       var viewStartIndex = 0;
@@ -1084,6 +1155,8 @@
         }
         viewStartTime = now;
         viewStartIndex = nextIndex;
+        // FIX C2: Notify parent of reel change
+        _sendStatusToParent();
       }
 
       function crossfadeTransition(prevIndex, nextIndex){
