@@ -29,8 +29,8 @@ const UK_BASE_OFFPEAK_GBP = 1.99;
 // TIME-OF-DAY MULTIPLIERS
 // ============================================================================
 const TIME_FACTORS = {
-  peak: 1.0,         // 6-9am, 5-9pm weekdays
-  offpeak: 0.667,    // 9am-5pm, 9pm-6am weekdays  
+  peak: 1.0,         // 6-9am, 5-8pm weekdays
+  offpeak: 0.667,    // 9am-5pm, 8pm-6am weekdays  
   weekend_am: 0.85,  // Saturday/Sunday mornings
   weekend_pm: 1.0,   // Saturday/Sunday evenings
 };
@@ -432,7 +432,8 @@ function getTimeSlot(date = null) {
   if (day === 0 || day === 6) {
     return hour < 14 ? 'weekend_am' : 'weekend_pm';
   }
-  if ((hour >= 6 && hour < 9) || (hour >= 17 && hour < 21)) return 'peak';
+  // Peak: 6-9am, 5-8pm weekdays (matches frontend isOffPeak = h<10||h>=20)
+  if ((hour >= 6 && hour < 9) || (hour >= 17 && hour < 20)) return 'peak';
   return 'offpeak';
 }
 
@@ -452,7 +453,8 @@ function resolveTimeSlot(timeStr, dateStr) {
     }
   }
   
-  if ((hour >= 6 && hour < 9) || (hour >= 17 && hour < 21)) return 'peak';
+  // Peak: 6-9am, 5-8pm weekdays (matches frontend isOffPeak = h<10||h>=20)
+  if ((hour >= 6 && hour < 9) || (hour >= 17 && hour < 20)) return 'peak';
   return 'offpeak';
 }
 
