@@ -511,9 +511,14 @@ router.post('/quick-checkout', async (req, res) => {
     if (!stripe) return res.status(500).json({ error: 'Payment not configured' });
     if (!req.session?.userId) return res.status(401).json({ error: 'Login required for 1-tap booking' });
 
-    const { gymId, date, time, cardId, savedCardId, placeId, passType, gymName: reqGymName, gymAddress: reqGymAddr } = req.body;
+    let { gymId, date, time, cardId, savedCardId, placeId, passType, gymName: reqGymName, gymAddress: reqGymAddr } = req.body;
     const effectiveCardId = cardId || savedCardId; // Frontend sends savedCardId
-    if (!date || !time) return res.status(400).json({ error: 'date and time required' });
+    if (!date) return res.status(400).json({ error: 'date required' });
+    // C2 fix: Resolve 'anytime' / empty time to a sensible default
+    if (!time || time === 'anytime') {
+      const nextH = Math.min(new Date().getHours() + 1, 22);
+      time = String(nextH).padStart(2, '0') + ':00';
+    }
 
     // Get user + Stripe customer
     const userResult = await pool.query(
@@ -856,8 +861,13 @@ router.post('/confirm-intent', async (req, res) => {
 
 router.post('/cash-booking', async (req, res) => {
   try {
-    const { gymId, placeId, date, time, email, passType, gymName, gymAddress } = req.body;
-    if (!date || !time) return res.status(400).json({ error: 'date and time required' });
+    let { gymId, placeId, date, time, email, passType, gymName, gymAddress } = req.body;
+    if (!date) return res.status(400).json({ error: 'date required' });
+    // C2 fix: Resolve 'anytime' / empty time to a sensible default
+    if (!time || time === 'anytime') {
+      const nextH = Math.min(new Date().getHours() + 1, 22);
+      time = String(nextH).padStart(2, '0') + ':00';
+    }
     if (!gymId && !placeId) return res.status(400).json({ error: 'gymId or placeId required' });
 
     // Sanitize email — prevent null/undefined from crashing INSERT
