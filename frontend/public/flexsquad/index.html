@@ -562,8 +562,8 @@
           </div>
           <div class="perk-card">
             <div class="perk-icon">💰</div>
-            <div class="perk-val">£2</div>
-            <div class="perk-label">PER BOOKING</div>
+            <div class="perk-val">25%</div>
+            <div class="perk-label">COMMISSION PER BOOKING</div>
           </div>
           <div class="perk-card">
             <div class="perk-icon">📝</div>
@@ -624,7 +624,7 @@
             </div>
             <div class="success-item">
               <span class="check">✓</span>
-              <span>Earn £2 per booking</span>
+              <span>Earn 25% commission per booking</span>
             </div>
           </div>
           
@@ -765,7 +765,7 @@
       const user = state.user || { name: 'Creator', handle: '' };
       const refSlug = (user.handle || '').replace(/[^a-zA-Z0-9]/g, '') || (user.name || 'creator').toLowerCase().replace(/\s+/g, '');
       const link = `https://scangym.com/?ref=${refSlug}`;
-      const text = `💪 Book a gym anywhere for £5 — no membership needed! ${link}`;
+      const text = `💪 Book a gym anywhere from £4.49 — no membership needed! ${link}`;
       
       if (navigator.share) {
         navigator.share({ title: 'ScanGym', text, url: link }).catch(() => {});
