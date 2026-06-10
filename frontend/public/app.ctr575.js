@@ -34,14 +34,14 @@ window.__sgPricingCallbacks = [];
       }
     })
     .catch(() => {
-      // Fallback: use GBP defaults
+      // H10 fix: Fallback prices aligned to £5.00 base day pass (consistent everywhere)
       window.__sgPricing = {
         location: { currency: 'gbp', symbol: '£' },
         prices: {
-          day: { amount: 2.99, display: '£2.99', stripeAmount: 299 },
-          '3day': { amount: 7.99, display: '£7.99', stripeAmount: 799 },
-          weekly: { amount: 14.99, display: '£14.99', stripeAmount: 1499 },
-          monthly: { amount: 29.99, display: '£29.99', stripeAmount: 2999 },
+          day: { amount: 5.00, display: '£5.00', stripeAmount: 500 },
+          '3day': { amount: 12.99, display: '£12.99', stripeAmount: 1299 },
+          weekly: { amount: 24.99, display: '£24.99', stripeAmount: 2499 },
+          monthly: { amount: 44.99, display: '£44.99', stripeAmount: 4499 },
         },
         surge: { factor: 1, label: 'Normal' },
       };
@@ -65,8 +65,8 @@ function sgPrice(passType) {
       stripeAmount: pr.stripeAmount,
     };
   }
-  // C6 fix: Fallback defaults (GBP, based on £4.99 base day pass)
-  const defaults = { day: 4.99, '3day': 12.99, weekly: 24.99, monthly: 44.99 };
+  // H10 fix: Fallback defaults aligned to £5.00 base day pass
+  const defaults = { day: 5.00, '3day': 12.99, weekly: 24.99, monthly: 44.99 };
   const amt = defaults[passType] || 4.99;
   return { amount: amt, display: '£' + amt.toFixed(2), symbol: '£', currency: 'gbp', stripeAmount: Math.round(amt * 100) };
 }
@@ -591,7 +591,6 @@ window.addEventListener('message',function(e){
 const BADGES=[
   {icon:'✅',text:'Free cancellation',type:'risk'},
   {icon:'🔒',text:'No membership needed',type:'risk'},
-  {icon:'📍',text:'{n} min walk',type:'proximity'},
 ];
 
 function getRandomBadges(gym,count=4){
@@ -1181,7 +1180,7 @@ function SearchPage(){
         /* ═══ CAROUSEL ═══ */
         html+='<div class="tt-carousel" id="bm-carousel">';
         _cards.forEach(function(c,i){
-          var _spCount=Math.max(2,((c.name||'').charCodeAt(0)%8)+1);
+          // H14 fix: Removed fake "X booked today" count (was charCode-based, not real data)
           var logoColors=['#f97316,#ea580c','#8b5cf6,#6d28d9','#ef4444,#b91c1c','#3b82f6,#1d4ed8','#eab308,#a16207','#22c55e,#15803d','#ec4899,#be185d','#14b8a6,#0f766e'];
           var logoEmojis=['\u{1F3CB}\uFE0F','\u{1F4AA}','\u{1F94A}','\u{1F3CA}','\u26A1','\u{1F49A}','\u{1F525}','\u{1F9D8}'];
           var logoGrad=logoColors[i%8];
@@ -1250,8 +1249,7 @@ function SearchPage(){
           html+='<div class="tt-gym-addr">\u{1F4CD} '+(c.addr?c.addr.split(',')[0]:'Nearby')+' \u00b7 '+c.distMin+' walk \u00b7 <span class="'+c.openClass+'">'+c.openTag+'</span></div>';
           /* Chips */
           html+='<div class="tt-chips">';
-          if(c.isPop&&c.isOpen) html+='<div class="tt-chip">\u{1F525} '+_spCount+' booked today</div>';
-          else if(c.isPop) html+='<div class="tt-chip">\u{1F525} Popular</div>';
+          if(c.isPop) html+='<div class="tt-chip">\u{1F525} Popular</div>';
           html+='<div class="tt-chip">\u{1F4B0} '+c.price+'/day</div>';
           html+='<div class="tt-chip">\u2B50 '+c.rating+(c.reviews?' ('+c.reviews+')':'')+'</div>';
           html+='</div>';
@@ -9483,71 +9481,10 @@ window.sgFlashDeal=function(){
 
 // ─── 7. SOCIAL PROOF COUNTERS (Instagram likes + Booking.com) ───
 // Mechanic #5 Social Validation + #15 Social Proof Counters
-// "12 people booked today" triggers herd behaviour
-(function(){
-  const style=document.createElement('style');
-  style.textContent=`
-    .sg-social-proof{display:flex;align-items:center;gap:4px;font-size:10px;color:rgba(255,255,255,.55);margin-top:4px}
-    .sg-social-proof .sg-sp-dot{width:5px;height:5px;background:#22c55e;border-radius:50%;animation:locationDot 1.5s ease-in-out infinite}
-    .sg-social-proof-toast{position:fixed;bottom:80px;left:16px;right:16px;background:rgba(20,20,35,.95);border:1px solid rgba(249,115,22,.2);border-radius:14px;padding:12px 16px;display:flex;align-items:center;gap:10px;z-index:8500;animation:slideUp .4s ease-out;backdrop-filter:blur(12px)}
-    .sg-social-proof-toast .sg-spt-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#f97316,#fb923c);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
-    .sg-social-proof-toast .sg-spt-text{flex:1;color:rgba(255,255,255,.8);font-size:12px;line-height:1.3}
-    .sg-social-proof-toast .sg-spt-text strong{color:#fff;font-weight:600}
-    .sg-social-proof-toast .sg-spt-time{color:rgba(255,255,255,.35);font-size:10px;white-space:nowrap}
-    @keyframes spToastOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(20px)}}
-  `;
-  document.head.appendChild(style);
-
-  // Live social proof toast notifications (Booking.com "someone just booked" style)
-  const firstNames=['James','Sophie','Omar','Emily','Liam','Chloe','Dev','Hannah','Marcus','Zara','Tom','Priya','Jack','Mia','Ali'];
-  const cities=['Bolton','Manchester','Leeds','Liverpool','London','Birmingham','Bristol','Sheffield'];
-  const actions=[
-    (n,c)=>`<strong>${n}</strong> from ${c} just booked a day pass`,
-    (n,c)=>`<strong>${n}</strong> scanned in at a gym near you`,
-    (n,c)=>`<strong>${n}</strong> is on a <strong>🔥 ${Math.floor(Math.random()*12)+3}-day streak</strong>`,
-    (n,c)=>`<strong>${Math.floor(Math.random()*8)+3} people</strong> are viewing gyms in ${c} right now`,
-    (n,c)=>`<strong>${n}</strong> just earned the "${['First Sweat','On Fire','Week Warrior','Gym Explorer'][Math.floor(Math.random()*4)]}" badge`,
-  ];
-  const timeLabels=['just now','1 min ago','2 min ago','3 min ago'];
-
-  window.sgSocialProofToast=function(){
-    // Remove existing
-    document.querySelectorAll('.sg-social-proof-toast').forEach(el=>el.remove());
-    const name=firstNames[Math.floor(Math.random()*firstNames.length)];
-    const city=cities[Math.floor(Math.random()*cities.length)];
-    const action=actions[Math.floor(Math.random()*actions.length)];
-    const time=timeLabels[Math.floor(Math.random()*timeLabels.length)];
-    const emojis=['🏋️','💪','🔥','⚡','🎯'];
-    const toast=document.createElement('div');
-    toast.className='sg-social-proof-toast';
-    toast.innerHTML=`
-      <div class="sg-spt-avatar">${emojis[Math.floor(Math.random()*emojis.length)]}</div>
-      <div class="sg-spt-text">${action(name,city)}</div>
-      <div class="sg-spt-time">${time}</div>
-    `;
-    toast.onclick=function(){toast.style.animation='spToastOut .3s ease-out forwards';setTimeout(()=>toast.remove(),300)};
-    document.body.appendChild(toast);
-    // Auto-dismiss after 4s
-    setTimeout(()=>{
-      if(toast.parentNode){toast.style.animation='spToastOut .3s ease-out forwards';setTimeout(()=>toast.remove(),300)}
-    },4000);
-  };
-
-  // Show a social proof toast every 25-45 seconds (variable interval = more addictive)
-  function scheduleNext(){
-    const delay=25000+Math.random()*20000; // 25-45s
-    setTimeout(()=>{
-      // Only show if user is on explore or gym detail page
-      const route=window.location.pathname;
-      if(route==='/'||route==='/explore'||route.startsWith('/gym/')||route==='/nearby'){
-        sgSocialProofToast();
-      }
-      scheduleNext();
-    },delay);
-  }
-  // Start after 8 seconds (give user time to orient)
-  setTimeout(scheduleNext,8000);
-})();
+// H7 fix: Removed fake social proof toasts — "someone just booked" notifications
+// were using hardcoded names with 0 real users. Will be replaced with real activity
+// feed once there are actual bookings.
+window.sgSocialProofToast=function(){}; // no-op stub
 
 // ─── 8. SUNK COST DISPLAY (mechanic #17) ───
 // Show users how much they've "invested" in ScanGym — makes them feel it's too valuable to leave
@@ -9774,69 +9711,10 @@ window.sgAutoplayNextGym=function(currentGymId){
   };
 };
 
-// ─── 11. EPHEMERAL FLASH DEALS (BeReal + Snapchat mechanic #7 + #19) ───
-// Time-limited deals that create FOMO urgency
-window.sgFlashDealPopup=function(){
-  if(document.getElementById('sg-flash-deal-popup'))return;
-  const gyms=(window.state&&state.gyms)||[];
-  if(gyms.length===0)return;
-  const gym=gyms[Math.floor(Math.random()*gyms.length)];
-  const prices=['£1.99','£2.49','£2.99','£3.49'];
-  const price=prices[Math.floor(Math.random()*prices.length)];
-  let timeLeft=120; // 2 minutes (BeReal-style urgency)
-
-  const popup=document.createElement('div');
-  popup.id='sg-flash-deal-popup';
-  popup.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeInUp .3s ease-out';
-  popup.innerHTML=`
-    <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:2px solid rgba(239,68,68,.3);border-radius:24px;padding:24px;max-width:340px;width:100%;text-align:center;position:relative">
-      <div style="position:absolute;top:-16px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;padding:6px 16px;border-radius:20px;font-size:12px;font-weight:800;white-space:nowrap">⚡ FLASH DEAL — EXPIRES SOON</div>
-      <div style="margin-top:16px;font-size:40px">🔥</div>
-      <div style="font-size:20px;font-weight:800;color:#fff;margin-top:8px">${gym.name||'Partner Gym'}</div>
-      <div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:4px">${gym.vicinity||gym.address||'Near you'}</div>
-      <div style="margin-top:16px;display:flex;align-items:baseline;justify-content:center;gap:8px">
-        <span style="font-size:14px;color:rgba(255,255,255,.4);text-decoration:line-through">£5.00</span>
-        <span style="font-size:36px;font-weight:900;color:#22c55e">${price}</span>
-      </div>
-      <div style="margin-top:12px;display:flex;align-items:center;justify-content:center;gap:6px">
-        <div style="width:8px;height:8px;background:#ef4444;border-radius:50%;animation:locationDot 1s infinite"></div>
-        <span id="sg-fd-timer" style="font-size:14px;font-weight:700;color:#ef4444;font-variant-numeric:tabular-nums">2:00</span>
-        <span style="font-size:11px;color:rgba(255,255,255,.4)">remaining</span>
-      </div>
-      <button onclick="document.getElementById('sg-flash-deal-popup').remove();const gid='${gym.placeId||gym.place_id||gym.id}';if(typeof showUberCheckout==='function')showUberCheckout(gid)" style="margin-top:16px;width:100%;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:16px;font-weight:800;padding:14px;border:none;border-radius:14px;cursor:pointer;box-shadow:0 4px 20px rgba(34,197,94,.3)">🎯 Grab This Deal</button>
-      <button onclick="document.getElementById('sg-flash-deal-popup').remove()" style="margin-top:8px;background:none;border:none;color:rgba(255,255,255,.3);font-size:12px;cursor:pointer">No thanks</button>
-      <div style="margin-top:12px;font-size:10px;color:rgba(255,255,255,.3)">🔒 Only ${Math.floor(Math.random()*5)+2} left at this price</div>
-    </div>
-  `;
-  document.body.appendChild(popup);
-
-  const fdTimer=setInterval(()=>{
-    timeLeft--;
-    const mins=Math.floor(timeLeft/60);
-    const secs=timeLeft%60;
-    const el=document.getElementById('sg-fd-timer');
-    if(el)el.textContent=mins+':'+(secs<10?'0':'')+secs;
-    if(timeLeft<=0){clearInterval(fdTimer);popup.remove()}
-  },1000);
-};
-
-// Schedule flash deals — random interval (variable ratio = more addictive)
-(function(){
-  function maybeShowFlash(){
-    // Show a flash deal 1-2 times per session, after user has browsed a bit
-    const shown=parseInt(sessionStorage.getItem('sg_flash_shown')||'0');
-    if(shown>=2)return;
-    const route=window.location.pathname;
-    if(route==='/'||route==='/explore'||route==='/nearby'){
-      sgFlashDealPopup();
-      sessionStorage.setItem('sg_flash_shown',String(shown+1));
-    }
-    // Schedule next one 2-4 minutes later
-    setTimeout(maybeShowFlash,120000+Math.random()*120000);
-  }
-  // First flash deal after 45-90 seconds
-  setTimeout(maybeShowFlash,45000+Math.random()*45000);
-})();
+// H11 fix: Removed fake flash deal popup — was showing random prices (£1.99-£3.49)
+// with a fake 2-minute countdown. Bait-and-switch: the "deal" price was never honoured
+// at checkout. Will be replaced with real promotions when owner discount system is built.
+window.sgFlashDealPopup=function(){}; // no-op stub
 
 // ─── 12. PULL TO REFRESH (mechanic #9 — slot machine lever pull) ───
 // Every pull = "spin the slot machine" — variable reward: sometimes new gyms appear

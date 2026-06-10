@@ -12,6 +12,10 @@ const router = express.Router();
 const pricing = require('../lib/pricing-engine');
 const surge = require('../lib/surge-pricing');
 
+// H16 fix: Pool for DB lookups (owner price floor)
+let pool;
+try { pool = require('../middleware/db'); } catch(e) { pool = null; }
+
 /**
  * C7 fix: Currency based on GYM's physical country, not visitor IP.
  * Supports 1.2M+ gyms across 99 countries.
@@ -31,7 +35,7 @@ function getGymGeo(req) {
  * Query params (optional overrides):
  *   ?country=IN&city=Mumbai&time=14:00&date=2026-06-03&gymId=123
  */
-router.get('/prices', (req, res) => {
+router.get('/prices', async (req, res) => {
   try {
     const geo = getGymGeo(req);
     const gymId = req.query.gymId;
@@ -47,6 +51,33 @@ router.get('/prices', (req, res) => {
     
     const prices = pricing.getAllPassPrices(params);
     const surgeDisplay = surge.getSurgeDisplay(demandFactor);
+
+    // H16 fix: Respect owner-set price floor
+    // If the gym owner has set a minimum day pass price, ensure PPP/dynamic
+    // pricing never drops below it. Owner floor stored in pence in gym_pricing.
+    let ownerFloorPence = 0;
+    if (gymId && pool) {
+      try {
+        const r = await pool.query(
+          'SELECT day_pass_pence FROM gym_pricing WHERE gym_id = $1',
+          [gymId]
+        );
+        if (r.rows.length > 0 && r.rows[0].day_pass_pence) {
+          ownerFloorPence = parseInt(r.rows[0].day_pass_pence) || 0;
+        }
+      } catch (e) { /* table may not exist yet — ignore */ }
+    }
+
+    // Clamp day pass price to owner floor (if set)
+    if (ownerFloorPence > 0) {
+      const floorAmount = ownerFloorPence / 100;
+      const sym = prices.day.symbol || '£';
+      if (prices.day.amount < floorAmount) {
+        prices.day.amount = floorAmount;
+        prices.day.display = sym + floorAmount.toFixed(2);
+        prices.day.stripeAmount = ownerFloorPence;
+      }
+    }
     
     res.json({
       success: true,
