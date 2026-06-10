@@ -3169,6 +3169,359 @@ function getGymFacilities(gym){
       {icon:'♿',name:'Accessible',detail:'Step-free'},
     ];
   }
+  // Planet Fitness — budget US chain (2,500 locations)
+  if(n.includes('planet fitness')){
+    return[
+      {icon:'🏋️',name:'Free Weights',detail:'Up to 80lb DBs'},
+      {icon:'🫀',name:'Cardio Zone',detail:'Treadmills & bikes'},
+      {icon:'💪',name:'Machines',detail:'30+ stations'},
+      {icon:'☀️',name:'Tanning',detail:'UV beds'},
+      {icon:'💆',name:'Massage Chairs',detail:'HydroMassage'},
+      {icon:'🚿',name:'Showers',detail:'Changing rooms'},
+      {icon:'🔒',name:'Lockers',detail:'Available'},
+      {icon:'📶',name:'WiFi',detail:'Free'},
+      {icon:'♿',name:'Accessible',detail:'Step-free'},
+    ];
+  }
+  // YMCA / YWCA — community centres (2,700 locations, 120 countries)
+  if(n.includes('ymca')||n.includes('ywca')){
+    return[
+      {icon:'🏊',name:'Pool',detail:'Indoor swimming'},
+      {icon:'🏋️',name:'Gym Floor',detail:'Weights & cardio'},
+      {icon:'🏀',name:'Courts',detail:'Basketball & racquet'},
+      {icon:'🧘',name:'Classes',detail:'Group fitness'},
+      {icon:'👶',name:'Childcare',detail:'Kids zone'},
+      {icon:'🚿',name:'Showers',detail:'Family changing'},
+      {icon:'🔒',name:'Lockers',detail:'Available'},
+      {icon:'🅿️',name:'Parking',detail:'Free on-site'},
+      {icon:'♿',name:'Accessible',detail:'Lift access'},
+    ];
+  }
+  // Gold's Gym — iconic mid-range (700 locations, 30 countries)
+  if(n.includes('gold\'s gym')||n.includes('golds gym')||n.includes('gold gym')){
+    return[
+      {icon:'🏋️',name:'Free Weights',detail:'Olympic & standard'},
+      {icon:'💪',name:'Machines',detail:'Hammer Strength'},
+      {icon:'🫀',name:'Cardio Zone',detail:'40+ machines'},
+      {icon:'🧘',name:'Group Classes',detail:'Spin, yoga, HIIT'},
+      {icon:'🥊',name:'Boxing Area',detail:'Bags & ring'},
+      {icon:'🚿',name:'Showers',detail:'Full amenities'},
+      {icon:'🔒',name:'Lockers',detail:'Available'},
+      {icon:'📶',name:'WiFi',detail:'Free'},
+      {icon:'♿',name:'Accessible',detail:'Step-free'},
+    ];
+  }
+  // LA Fitness / Esporta — mid-range US (700 locations)
+  if(n.includes('la fitness')||n.includes('esporta')){
+    return[
+      {icon:'🏊',name:'Pool',detail:'Indoor lap pool'},
+      {icon:'🏋️',name:'Free Weights',detail:'Full range'},
+      {icon:'🫀',name:'Cardio Zone',detail:'40+ machines'},
+      {icon:'🏀',name:'Courts',detail:'Basketball & racquetball'},
+      {icon:'🧘',name:'Group Classes',detail:'Cycling, yoga'},
+      {icon:'🚿',name:'Showers',detail:'Full amenities'},
+      {icon:'🔒',name:'Lockers',detail:'Available'},
+      {icon:'🅿️',name:'Parking',detail:'Free on-site'},
+      {icon:'♿',name:'Accessible',detail:'Step-free'},
+    ];
+  }
+  // Basic-Fit — budget Europe (1,400 locations, 6 countries)
+  if(n.includes('basic-fit')||n.includes('basic fit')){
+    return[
+      {icon:'⏰',name:'24/7 Access',detail:'Always open'},
+      {icon:'🏋️',name:'Free Weights',detail:'Full range'},
+      {icon:'🫀',name:'Cardio Zone',detail:'50+ machines'},
+      {icon:'💪',name:'Machines',detail:'Resistance'},
+      {icon:'📱',name:'Virtual Classes',detail:'On-demand GXR'},
+      {icon:'🚿',name:'Showers',detail:'Changing rooms'},
+      {icon:'🔒',name:'Lockers',detail:'Bring padlock'},
+      {icon:'📶',name:'WiFi',detail:'Free'},
+      {icon:'♿',name:'Accessible',detail:'Step-free'},
+    ];
+  }
+  // Smart Fit — budget Latin America (1,300 locations, 15 countries)
+  if(n.includes('smart fit')){
+    return[
+      {icon:'⏰',name:'24/7 Access',detail:'Always open'},
+      {icon:'🏋️',name:'Free Weights',detail:'Dumbbells & bars'},
+      {icon:'🫀',name:'Cardio Zone',detail:'30+ machines'},
+      {icon:'💪',name:'Machines',detail:'Resistance'},
+      {icon:'🚿',name:'Showers',detail:'Changing rooms'},
+      {icon:'🔒',name:'Lockers',detail:'Available'},
+      {icon:'📶',name:'WiFi',detail:'Free'},
+      {icon:'♿',name:'Accessible',detail:'Step-free'},
+    ];
+  }
+  // McFit / RSG Group — budget Europe (900 locations, 5 countries)
+  if(n.includes('mcfit')||n.includes('mc fit')||n.includes('john reed')){
+    return[
+      {icon:'⏰',name:'24/7 Access',detail:'Always open'},
+      {icon:'🏋️',name:'Free Weights',detail:'Heavy range'},
+      {icon:'🫀',name:'Cardio Zone',detail:'40+ machines'},
+      {icon:'💪',name:'Machines',detail:'Full circuit'},
+      {icon:'🚿',name:'Showers',detail:'Changing rooms'},
+      {icon:'🔒',name:'Lockers',detail:'Available'},
+      {icon:'📶',name:'WiFi',detail:'Free'},
+    ];
+  }
+  // Crunch Fitness — mid-range US (450 locations)
+  if(n.includes('crunch fitness')||n.includes('crunch gym')){
+    return[
+      {icon:'🏋️',name:'Free Weights',detail:'Full range'},
+      {icon:'🫀',name:'Cardio Zone',detail:'40+ machines'},
+      {icon:'💪',name:'Machines',detail:'Resistance'},
+      {icon:'🧘',name:'Group Classes',detail:'Spin, yoga, Zumba'},
+      {icon:'☀️',name:'Tanning',detail:'UV beds'},
+      {icon:'🚿',name:'Showers',detail:'Full amenities'},
+      {icon:'🔒',name:'Lockers',detail:'Available'},
+      {icon:'📶',name:'WiFi',detail:'Free'},
+      {icon:'♿',name:'Accessible',detail:'Step-free'},
+    ];
+  }
+  // 24 Hour Fitness — mid-range US (400 locations)
+  if(n.includes('24 hour fitness')||n.includes('24hour')){
+    return[
+      {icon:'⏰',name:'24/7 Access',detail:'Always open'},
+      {icon:'🏊',name:'Pool',detail:'Indoor (select clubs)'},
+      {icon:'🏋️',name:'Free Weights',detail:'Full range'},
+      {icon:'🫀',name:'Cardio Zone',detail:'50+ machines'},
+      {icon:'🏀',name:'Courts',detail:'Basketball'},
+      {icon:'🧘',name:'Group Classes',detail:'100+ weekly'},
+      {icon:'🚿',name:'Showers',detail:'Full amenities'},
+      {icon:'🔒',name:'Lockers',detail:'Available'},
+      {icon:'♿',name:'Accessible',detail:'Step-free'},
+    ];
+  }
+  // Goodlife Fitness — mid-range Canada (440 locations)
+  if(n.includes('goodlife')||n.includes('good life fitness')){
+    return[
+      {icon:'🏋️',name:'Free Weights',detail:'Full range'},
+      {icon:'🫀',name:'Cardio Zone',detail:'40+ machines'},
+      {icon:'💪',name:'Machines',detail:'Resistance'},
+      {icon:'🧘',name:'Group Classes',detail:'Spin, yoga, HIIT'},
+      {icon:'👶',name:'Childcare',detail:'Kids area'},
+      {icon:'🚿',name:'Showers',detail:'Full amenities'},
+      {icon:'🔒',name:'Lockers',detail:'Available'},
+      {icon:'📶',name:'WiFi',detail:'Free'},
+      {icon:'♿',name:'Accessible',detail:'Step-free'},
+    ];
+  }
+  // Life Time Fitness — premium US (170 locations)
+  if(n.includes('life time')||n.includes('lifetime fitness')){
+    return[
+      {icon:'🏊',name:'Pool',detail:'Indoor & outdoor'},
+      {icon:'🧖',name:'Spa',detail:'Full-service'},
+      {icon:'🎾',name:'Tennis Courts',detail:'Indoor & outdoor'},
+      {icon:'🏋️',name:'Free Weights',detail:'Olympic range'},
+      {icon:'🫀',name:'Cardio Zone',detail:'100+ machines'},
+      {icon:'🧘',name:'Studios',detail:'Yoga, Pilates, cycle'},
+      {icon:'👶',name:'Kids Academy',detail:'Childcare & classes'},
+      {icon:'🍽️',name:'LifeCafe',detail:'Healthy dining'},
+      {icon:'🅿️',name:'Parking',detail:'Free on-site'},
+    ];
+  }
+  // World Gym — mid-range global (350 locations, 20 countries)
+  if(n.includes('world gym')){
+    return[
+      {icon:'🏋️',name:'Free Weights',detail:'Full Olympic range'},
+      {icon:'💪',name:'Machines',detail:'30+ stations'},
+      {icon:'🫀',name:'Cardio Zone',detail:'Treadmills & bikes'},
+      {icon:'🧘',name:'Group Classes',detail:'Available'},
+      {icon:'🚿',name:'Showers',detail:'Changing rooms'},
+      {icon:'🔒',name:'Lockers',detail:'Available'},
+      {icon:'📶',name:'WiFi',detail:'Free'},
+      {icon:'♿',name:'Accessible',detail:'Step-free'},
+    ];
+  }
+  // Curves — women-only circuit (1,500 locations, 40 countries)
+  if(n.includes('curves ')||n.includes('curves fitness')){
+    return[
+      {icon:'💪',name:'Circuit Training',detail:'30-min circuit'},
+      {icon:'🫀',name:'Cardio',detail:'Recovery stations'},
+      {icon:'👩',name:'Women Only',detail:'Safe space'},
+      {icon:'👥',name:'Coaching',detail:'Staff-guided'},
+      {icon:'🚿',name:'Showers',detail:'Changing rooms'},
+      {icon:'🔒',name:'Lockers',detail:'Available'},
+      {icon:'♿',name:'Accessible',detail:'Step-free'},
+    ];
+  }
+  // Jazzercise — dance fitness (7,000 locations)
+  if(n.includes('jazzercise')){
+    return[
+      {icon:'💃',name:'Dance Studio',detail:'Main floor'},
+      {icon:'🫀',name:'HIIT',detail:'Dance cardio'},
+      {icon:'💪',name:'Strength',detail:'Light weights'},
+      {icon:'🤸',name:'Stretch Zone',detail:'Cool-down area'},
+      {icon:'🚿',name:'Showers',detail:'Basic'},
+      {icon:'🔒',name:'Lockers',detail:'Available'},
+    ];
+  }
+  // Club Pilates / Xponential (800 locations)
+  if(n.includes('club pilates')){
+    return[
+      {icon:'🧘',name:'Reformers',detail:'EXO & Allegro'},
+      {icon:'🤸',name:'Mat Area',detail:'Pilates mats'},
+      {icon:'💪',name:'Springboards',detail:'Wall-mounted'},
+      {icon:'🏋️',name:'Light Weights',detail:'Barre & bands'},
+      {icon:'🚿',name:'Showers',detail:'Changing rooms'},
+      {icon:'🔒',name:'Lockers',detail:'Available'},
+      {icon:'📶',name:'WiFi',detail:'Free'},
+    ];
+  }
+  // SoulCycle — boutique cycling (90 locations)
+  if(n.includes('soulcycle')||n.includes('soul cycle')){
+    return[
+      {icon:'🚴',name:'Spin Studio',detail:'49-bike studio'},
+      {icon:'🫀',name:'Cardio Ride',detail:'45-min classes'},
+      {icon:'🏋️',name:'Light Weights',detail:'1-3lb arm series'},
+      {icon:'🚿',name:'Showers',detail:'Premium amenities'},
+      {icon:'🔒',name:'Lockers',detail:'Shoe clips provided'},
+      {icon:'📶',name:'WiFi',detail:'Free'},
+    ];
+  }
+  // UFC Gym — MMA/fitness (150 locations, 10 countries)
+  if(n.includes('ufc gym')){
+    return[
+      {icon:'🥊',name:'MMA Zone',detail:'Octagon & bags'},
+      {icon:'🤼',name:'Brazilian Jiu-Jitsu',detail:'Mat area'},
+      {icon:'🏋️',name:'Free Weights',detail:'Full range'},
+      {icon:'🫀',name:'Cardio Zone',detail:'30+ machines'},
+      {icon:'👥',name:'Group Classes',detail:'DUT, boxing, kickbox'},
+      {icon:'🚿',name:'Showers',detail:'Full amenities'},
+      {icon:'🔒',name:'Lockers',detail:'Available'},
+      {icon:'📶',name:'WiFi',detail:'Free'},
+      {icon:'♿',name:'Accessible',detail:'Step-free'},
+    ];
+  }
+  // énergie Fitness — budget UK (100 locations)
+  if(n.includes('energie')||n.includes('énergie')){
+    return[
+      {icon:'⏰',name:'24/7 Access',detail:'Always open'},
+      {icon:'🏋️',name:'Free Weights',detail:'Full range'},
+      {icon:'🫀',name:'Cardio Zone',detail:'30+ machines'},
+      {icon:'💪',name:'Machines',detail:'Resistance'},
+      {icon:'🧘',name:'Classes',detail:'Group fitness'},
+      {icon:'🚿',name:'Showers',detail:'Changing rooms'},
+      {icon:'🔒',name:'Lockers',detail:'Available'},
+      {icon:'📶',name:'WiFi',detail:'Free'},
+      {icon:'♿',name:'Accessible',detail:'Step-free'},
+    ];
+  }
+  // DW Fitness — budget UK (75 locations)
+  if(n.includes('dw fitness')||n.includes('dw sports')){
+    return[
+      {icon:'🏋️',name:'Free Weights',detail:'Full range'},
+      {icon:'🫀',name:'Cardio Zone',detail:'30+ machines'},
+      {icon:'💪',name:'Machines',detail:'Resistance'},
+      {icon:'🏊',name:'Pool',detail:'Select clubs'},
+      {icon:'🚿',name:'Showers',detail:'Changing rooms'},
+      {icon:'🔒',name:'Lockers',detail:'Available'},
+      {icon:'🅿️',name:'Parking',detail:'Free on-site'},
+      {icon:'♿',name:'Accessible',detail:'Step-free'},
+    ];
+  }
+  // Fitness Park — budget France (250 locations)
+  if(n.includes('fitness park')){
+    return[
+      {icon:'🏋️',name:'Free Weights',detail:'Full range'},
+      {icon:'🫀',name:'Cardio Zone',detail:'40+ machines'},
+      {icon:'💪',name:'Machines',detail:'Resistance'},
+      {icon:'🥊',name:'Boxing Area',detail:'Bags'},
+      {icon:'🚿',name:'Showers',detail:'Changing rooms'},
+      {icon:'🔒',name:'Lockers',detail:'Available'},
+      {icon:'📶',name:'WiFi',detail:'Free'},
+    ];
+  }
+  // Cult.fit — boutique India (300 locations)
+  if(n.includes('cult.fit')||n.includes('cultfit')||n.includes('cult fit')){
+    return[
+      {icon:'🫀',name:'HIIT Studio',detail:'Functional training'},
+      {icon:'🧘',name:'Yoga Studio',detail:'Multiple styles'},
+      {icon:'🥊',name:'Boxing',detail:'Bags & sparring'},
+      {icon:'💃',name:'Dance Fitness',detail:'Zumba & more'},
+      {icon:'🚿',name:'Showers',detail:'Changing rooms'},
+      {icon:'🔒',name:'Lockers',detail:'Available'},
+      {icon:'📶',name:'WiFi',detail:'Free'},
+    ];
+  }
+  // Talwalkars — mid-range India (200 locations)
+  if(n.includes('talwalkar')){
+    return[
+      {icon:'🏋️',name:'Free Weights',detail:'Full range'},
+      {icon:'🫀',name:'Cardio Zone',detail:'30+ machines'},
+      {icon:'💪',name:'Machines',detail:'Resistance'},
+      {icon:'🧘',name:'Group Classes',detail:'Aerobics & yoga'},
+      {icon:'♨️',name:'Steam Room',detail:'Available'},
+      {icon:'🚿',name:'Showers',detail:'Changing rooms'},
+      {icon:'🔒',name:'Lockers',detail:'Available'},
+      {icon:'📶',name:'WiFi',detail:'Free'},
+    ];
+  }
+  // Celebrity Fitness — mid-range Asia (150 locations)
+  if(n.includes('celebrity fitness')){
+    return[
+      {icon:'🏋️',name:'Free Weights',detail:'Full range'},
+      {icon:'🫀',name:'Cardio Zone',detail:'40+ machines'},
+      {icon:'💪',name:'Machines',detail:'Resistance'},
+      {icon:'🧘',name:'Group Classes',detail:'200+ monthly'},
+      {icon:'💃',name:'Dance Studio',detail:'Zumba & more'},
+      {icon:'🚿',name:'Showers',detail:'Full amenities'},
+      {icon:'🔒',name:'Lockers',detail:'Available'},
+      {icon:'📶',name:'WiFi',detail:'Free'},
+    ];
+  }
+  // Bodytech — mid-range Latin America (200 locations)
+  if(n.includes('bodytech')){
+    return[
+      {icon:'🏊',name:'Pool',detail:'Indoor swimming'},
+      {icon:'🏋️',name:'Free Weights',detail:'Full range'},
+      {icon:'🫀',name:'Cardio Zone',detail:'40+ machines'},
+      {icon:'🧘',name:'Group Classes',detail:'Spinning & yoga'},
+      {icon:'🧖',name:'Spa',detail:'Sauna & steam'},
+      {icon:'🚿',name:'Showers',detail:'Full amenities'},
+      {icon:'🔒',name:'Lockers',detail:'Available'},
+      {icon:'🅿️',name:'Parking',detail:'Available'},
+    ];
+  }
+  // Snap Fitness already matched above — adding Gym Nation (AU, 30 locations)
+  if(n.includes('gym nation')){
+    return[
+      {icon:'⏰',name:'24/7 Access',detail:'Always open'},
+      {icon:'🏋️',name:'Free Weights',detail:'Full range'},
+      {icon:'🫀',name:'Cardio Zone',detail:'30+ machines'},
+      {icon:'💪',name:'Machines',detail:'Resistance'},
+      {icon:'🚿',name:'Showers',detail:'Changing rooms'},
+      {icon:'🔒',name:'Lockers',detail:'Available'},
+      {icon:'📶',name:'WiFi',detail:'Free'},
+    ];
+  }
+  // CycleBar / StretchLab / Row House (Xponential brands)
+  if(n.includes('cyclebar')||n.includes('cycle bar')){
+    return[
+      {icon:'🚴',name:'Spin Studio',detail:'Premium bikes'},
+      {icon:'🫀',name:'Cardio Ride',detail:'50-min classes'},
+      {icon:'🚿',name:'Showers',detail:'Premium amenities'},
+      {icon:'🔒',name:'Lockers',detail:'Available'},
+      {icon:'📶',name:'WiFi',detail:'Free'},
+    ];
+  }
+  if(n.includes('stretchlab')||n.includes('stretch lab')){
+    return[
+      {icon:'🤸',name:'Assisted Stretch',detail:'1-on-1 sessions'},
+      {icon:'🧘',name:'Flexibility',detail:'Group stretch'},
+      {icon:'📶',name:'WiFi',detail:'Free'},
+      {icon:'♿',name:'Accessible',detail:'Step-free'},
+    ];
+  }
+  if(n.includes('row house')){
+    return[
+      {icon:'🚣',name:'Rowing Studio',detail:'Water rowers'},
+      {icon:'🏋️',name:'Floor Work',detail:'Strength circuits'},
+      {icon:'🫀',name:'Cardio',detail:'Full-body'},
+      {icon:'🚿',name:'Showers',detail:'Changing rooms'},
+      {icon:'🔒',name:'Lockers',detail:'Available'},
+    ];
+  }
   // Yoga / Pilates studios
   if(n.includes('yoga')||n.includes('pilates')){
     return[
@@ -3310,6 +3663,148 @@ function getGymEquipment(gym){
       {icon:'🏃',name:'Treadmills',detail:'Sprint tracks'},
       {icon:'🧱',name:'Plyo Boxes',detail:'Multiple heights'},
       {icon:'🤸',name:'TRX',detail:'Suspension trainers'},
+    ];
+  // Planet Fitness — lighter weights, cardio focus
+  if(n.includes('planet fitness'))
+    return[
+      {icon:'🏋️',name:'Free Weights',detail:'Up to 80lb dumbbells'},
+      {icon:'💪',name:'Machines',detail:'30+ circuit'},
+      {icon:'🫀',name:'Cardio Zone',detail:'Treadmills, ellipticals'},
+      {icon:'🏃',name:'Treadmills',detail:'Standard'},
+      {icon:'🚴',name:'Exercise Bikes',detail:'Upright & recumbent'},
+      {icon:'🔗',name:'Cable Station',detail:'Adjustable'},
+      {icon:'🧱',name:'Smith Machine',detail:'Guided bar'},
+      {icon:'🪑',name:'Bench Press',detail:'Flat & incline'},
+    ];
+  // YMCA — community equipment mix
+  if(n.includes('ymca')||n.includes('ywca'))
+    return[
+      {icon:'🏋️',name:'Free Weights',detail:'Dumbbells & bars'},
+      {icon:'💪',name:'Machines',detail:'20+ stations'},
+      {icon:'🫀',name:'Cardio',detail:'Treadmills & bikes'},
+      {icon:'🔗',name:'Cable Station',detail:'Adjustable'},
+      {icon:'🏃',name:'Treadmills',detail:'Standard'},
+      {icon:'🚴',name:'Exercise Bikes',detail:'Available'},
+      {icon:'🧱',name:'Smith Machine',detail:'Available'},
+      {icon:'🤸',name:'Stretch Zone',detail:'Mats & bands'},
+    ];
+  // Gold's Gym — heavy lifting emphasis
+  if(n.includes('gold\'s gym')||n.includes('golds gym')||n.includes('gold gym'))
+    return[
+      {icon:'🏋️',name:'Free Weights',detail:'Olympic & heavy'},
+      {icon:'💪',name:'Hammer Strength',detail:'Plate-loaded'},
+      {icon:'🫀',name:'Cardio Zone',detail:'40+ machines'},
+      {icon:'🔗',name:'Cable Crossover',detail:'Dual pulley'},
+      {icon:'🏃',name:'Treadmills',detail:'Woodway & standard'},
+      {icon:'🧱',name:'Squat Racks',detail:'Power cages'},
+      {icon:'🪑',name:'Bench Press',detail:'Flat, incline, decline'},
+      {icon:'🤸',name:'Stretch Zone',detail:'Rollers & mats'},
+    ];
+  // LA Fitness / Basic-Fit / Smart Fit / McFit — standard gym equipment
+  if(n.includes('la fitness')||n.includes('esporta')||n.includes('basic-fit')||n.includes('basic fit')||n.includes('smart fit')||n.includes('mcfit')||n.includes('mc fit'))
+    return[
+      {icon:'🏋️',name:'Free Weights',detail:'Dumbbells & bars'},
+      {icon:'💪',name:'Resistance',detail:'25+ machines'},
+      {icon:'🫀',name:'Cardio Zone',detail:'40+ machines'},
+      {icon:'🔗',name:'Cable Station',detail:'Adjustable'},
+      {icon:'🏃',name:'Treadmills',detail:'Standard'},
+      {icon:'🚴',name:'Spin Bikes',detail:'Available'},
+      {icon:'🧱',name:'Squat Racks',detail:'Power racks'},
+      {icon:'🪑',name:'Bench Press',detail:'Flat & incline'},
+      {icon:'🤸',name:'Stretch Zone',detail:'Mats & rollers'},
+    ];
+  // Crunch / 24 Hour / Goodlife / World Gym — mid-range equipment
+  if(n.includes('crunch')||n.includes('24 hour')||n.includes('goodlife')||n.includes('world gym'))
+    return[
+      {icon:'🏋️',name:'Free Weights',detail:'Full range'},
+      {icon:'💪',name:'Machines',detail:'30+ stations'},
+      {icon:'🫀',name:'Cardio Zone',detail:'40+ machines'},
+      {icon:'🔗',name:'Cable Crossover',detail:'Dual pulley'},
+      {icon:'🏃',name:'Treadmills',detail:'Standard'},
+      {icon:'🚴',name:'Spin Bikes',detail:'Available'},
+      {icon:'🧱',name:'Squat Racks',detail:'Olympic'},
+      {icon:'🪑',name:'Bench Press',detail:'Flat, incline, decline'},
+      {icon:'🤸',name:'Stretch Zone',detail:'Mats & rollers'},
+    ];
+  // Life Time Fitness — premium equipment
+  if(n.includes('life time')||n.includes('lifetime'))
+    return[
+      {icon:'🏋️',name:'Free Weights',detail:'Olympic platforms'},
+      {icon:'💪',name:'Resistance',detail:'Technogym & Life Fitness'},
+      {icon:'🫀',name:'Cardio Zone',detail:'100+ machines'},
+      {icon:'🔗',name:'Cable Station',detail:'Functional trainer'},
+      {icon:'🏃',name:'Treadmills',detail:'Woodway'},
+      {icon:'🚴',name:'Spin Bikes',detail:'Peloton'},
+      {icon:'🧱',name:'Squat Racks',detail:'8+ cages'},
+      {icon:'🪑',name:'Bench Press',detail:'All angles'},
+      {icon:'🤸',name:'Stretch Zone',detail:'TRX & rollers'},
+    ];
+  // UFC Gym — MMA equipment
+  if(n.includes('ufc gym'))
+    return[
+      {icon:'🥊',name:'Heavy Bags',detail:'Boxing & kickboxing'},
+      {icon:'🤼',name:'MMA Mat',detail:'Grappling area'},
+      {icon:'🏋️',name:'Free Weights',detail:'Full range'},
+      {icon:'💪',name:'Machines',detail:'Resistance'},
+      {icon:'🫀',name:'Cardio Zone',detail:'30+ machines'},
+      {icon:'🔗',name:'Battle Ropes',detail:'Functional'},
+      {icon:'🧱',name:'Squat Racks',detail:'Olympic'},
+      {icon:'🤸',name:'TRX',detail:'Suspension trainers'},
+    ];
+  // Curves — women-only circuit machines
+  if(n.includes('curves ')||n.includes('curves fitness'))
+    return[
+      {icon:'💪',name:'Circuit Machines',detail:'Hydraulic resistance'},
+      {icon:'🫀',name:'Recovery Stations',detail:'Step boards'},
+      {icon:'🤸',name:'Stretch Zone',detail:'Guided stretching'},
+    ];
+  // Club Pilates — reformer equipment
+  if(n.includes('club pilates'))
+    return[
+      {icon:'🧘',name:'EXO Reformers',detail:'Balanced Body'},
+      {icon:'🤸',name:'Springboards',detail:'Wall-mounted'},
+      {icon:'🏋️',name:'Light Weights',detail:'Barre weights'},
+      {icon:'💪',name:'Resistance Bands',detail:'TheraBand'},
+      {icon:'🧱',name:'Pilates Chairs',detail:'Wunda chair'},
+    ];
+  // SoulCycle — spin bikes only
+  if(n.includes('soulcycle')||n.includes('soul cycle'))
+    return[
+      {icon:'🚴',name:'Spin Bikes',detail:'Custom SoulCycle'},
+      {icon:'🏋️',name:'Hand Weights',detail:'1-3lb arm series'},
+      {icon:'🫀',name:'Cardio Ride',detail:'45-min sessions'},
+    ];
+  // énergie / DW Fitness / Fitness Park / Gym Nation — budget standard
+  if(n.includes('energie')||n.includes('énergie')||n.includes('dw fitness')||n.includes('fitness park')||n.includes('gym nation'))
+    return[
+      {icon:'🏋️',name:'Free Weights',detail:'Dumbbells & bars'},
+      {icon:'💪',name:'Resistance',detail:'20+ machines'},
+      {icon:'🫀',name:'Cardio Zone',detail:'30+ machines'},
+      {icon:'🔗',name:'Cable Station',detail:'Adjustable'},
+      {icon:'🏃',name:'Treadmills',detail:'Standard'},
+      {icon:'🚴',name:'Exercise Bikes',detail:'Available'},
+      {icon:'🧱',name:'Squat Racks',detail:'Power racks'},
+      {icon:'🪑',name:'Bench Press',detail:'Flat & incline'},
+      {icon:'🤸',name:'Stretch Zone',detail:'Mats area'},
+    ];
+  // Cult.fit / Talwalkars / Celebrity Fitness / Bodytech — regional chains
+  if(n.includes('cult.fit')||n.includes('cultfit')||n.includes('talwalkar')||n.includes('celebrity fitness')||n.includes('bodytech'))
+    return[
+      {icon:'🏋️',name:'Free Weights',detail:'Full range'},
+      {icon:'💪',name:'Machines',detail:'25+ stations'},
+      {icon:'🫀',name:'Cardio Zone',detail:'30+ machines'},
+      {icon:'🔗',name:'Cable Station',detail:'Adjustable'},
+      {icon:'🏃',name:'Treadmills',detail:'Standard'},
+      {icon:'🚴',name:'Exercise Bikes',detail:'Available'},
+      {icon:'🧱',name:'Squat Racks',detail:'Available'},
+      {icon:'🤸',name:'Stretch Zone',detail:'Mats & rollers'},
+    ];
+  // Jazzercise — minimal equipment
+  if(n.includes('jazzercise'))
+    return[
+      {icon:'🏋️',name:'Hand Weights',detail:'2-8lb'},
+      {icon:'💪',name:'Resistance Bands',detail:'Various strengths'},
+      {icon:'🤸',name:'Exercise Mats',detail:'Provided'},
     ];
   // Yoga/Pilates — no heavy equipment
   if(n.includes('yoga')||n.includes('pilates'))
