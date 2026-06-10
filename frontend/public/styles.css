@@ -146,3 +146,8 @@ body {
   50% { top: 100%; opacity: 1; }
   60% { opacity: 0; }
 }
+
+/* H9: Brand circle utility classes */
+.sg-brand-dot{width:28px;height:28px;background:#FF6D00;border-radius:50%;box-shadow:0 0 10px rgba(255,109,0,.4);}
+.sg-brand-dot-sm{width:20px;height:20px;background:#FF6D00;border-radius:50%;box-shadow:0 0 8px rgba(255,109,0,.35);}
+.sg-brand-dot-lg{width:36px;height:36px;background:#FF6D00;border-radius:50%;box-shadow:0 0 12px rgba(255,109,0,.45);}
