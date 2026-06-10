@@ -971,8 +971,11 @@ async function loadGyms(lat,lng){
     // LIVE Google Places API — searches every gym on Earth
     const data=await api.getLive(`/nearby?lat=${lat}&lng=${lng}&radius=10000`);
     state.gyms=data.gyms||[];
+    state.searchResults=data.gyms||[];
     state.nextPageToken=data.nextPageToken||null;
     render();
+    // Fetch real travel times if we have user's GPS
+    if(lat&&lng){window._travelTimesLoaded=false;fetchRealTravelTimes(lat,lng);}
     // If we have more pages, load them in background
     if(data.nextPageToken){
       setTimeout(async()=>{
@@ -1088,7 +1091,7 @@ function SearchPage(){
           var photos=gym.photos_list||[];
           var allPhotos=photos.length>1?photos.slice(0,5).map(function(p){return p.thumbnail||p.url||photo;}):[photo];
           var photoCount=photos.length||1;
-          var distMin=gym.distance?Math.max(2,Math.round(gym.distance*3))+'min':((i*3+5)+'min');
+          var distMin=gym._realTravelLabel||(gym.distance?Math.max(2,Math.round(gym.distance*3))+'min walk':'Nearby');
           var facs=getCardFacilities(gym);
           var rating=gym.rating||'New';
           var reviews=gym.totalReviews||gym.user_ratings_total||0;
@@ -1246,7 +1249,7 @@ function SearchPage(){
           /* Name */
           html+='<div class="tt-gym-name">'+c.name+'</div>';
           /* Address */
-          html+='<div class="tt-gym-addr">\u{1F4CD} '+(c.addr?c.addr.split(',')[0]:'Nearby')+' \u00b7 '+c.distMin+' walk \u00b7 <span class="'+c.openClass+'">'+c.openTag+'</span></div>';
+          html+='<div class="tt-gym-addr">\u{1F4CD} '+(c.addr?c.addr.split(',')[0]:'Nearby')+' \u00b7 <span class="tt-travel-label" data-gym-travel-id="'+c.id+'">'+c.distMin+'</span> \u00b7 <span class="'+c.openClass+'">'+c.openTag+'</span></div>';
           /* Chips */
           html+='<div class="tt-chips">';
           if(c.isPop) html+='<div class="tt-chip">\u{1F525} Popular</div>';
@@ -5699,7 +5702,7 @@ window.showGymDiscovery=function(){
     const allPhotos=photos.length>1?photos.slice(0,5).map(p=>p.thumbnail||p.url||photo):[photo];
     const photoCount=photos.length||1;
     const dist=gym.distanceText||(gym.distance?`${gym.distance.toFixed(1)} km`:'Nearby');
-    const distMin=gym.distance?Math.max(2,Math.round(gym.distance*3))+'min':((i*3+5)+'min');
+    const distMin=gym._realTravelLabel||(gym.distance?Math.max(2,Math.round(gym.distance*3))+'min walk':'Nearby');
     const facs=getCardFacilities(gym);
     const rating=gym.rating||'New';
     const reviews=gym.totalReviews||gym.user_ratings_total||0;
@@ -7765,8 +7768,11 @@ function _startGPSWatch(highAccuracy){
             window._locationLayer=5;
             state.gyms=mergedGyms;
             state.searchQuery=locationName;
+            state.searchResults=mergedGyms;
             render();
             console.log('[GPS] Upgraded to GPS results: H3:',h3Gyms.length,'Live:',liveGyms.length,'Merged:',mergedGyms.length,'radius:',searchRadius+'m','location:',locationName);
+            // Fetch real travel times from Google Distance Matrix
+            fetchRealTravelTimes(gps.lat,gps.lng);
           }
         }catch(e){
           console.warn('[GPS] Nearby search error:',e.message);
@@ -7798,6 +7804,64 @@ function _startGPSWatch(highAccuracy){
       console.log('[GPS] Watch auto-cleared after 15s safety timeout');
     }
   },15000);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  REAL TRAVEL TIMES — Google Distance Matrix API
+// ═══════════════════════════════════════════════════════════════════
+// Fetches real walk/drive times from user's GPS to each gym.
+// Called after cards render + GPS acquired. Updates cards in-place.
+// Smart: walking ≤3km, driving >3km. Cached server-side 15 min.
+// ═══════════════════════════════════════════════════════════════════
+window._travelTimesLoaded=false;
+async function fetchRealTravelTimes(userLat,userLng){
+  if(window._travelTimesLoaded) return;
+  // Collect all gym cards with coordinates
+  const gyms=(window.state&&window.state.searchResults)||[];
+  if(!gyms.length) return;
+  const destinations=[];
+  gyms.forEach(function(g){
+    const lat=g.latitude||g.lat;
+    const lng=g.longitude||g.lng;
+    const id=g.placeId||g.place_id||g.id;
+    if(lat&&lng&&id) destinations.push({id:String(id),lat:parseFloat(lat),lng:parseFloat(lng)});
+  });
+  if(!destinations.length) return;
+  try{
+    const resp=await fetch('/api/directions/travel-times',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      credentials:'include',
+      body:JSON.stringify({
+        origin:{lat:userLat,lng:userLng},
+        destinations:destinations.slice(0,25)
+      })
+    });
+    if(!resp.ok) return;
+    const data=await resp.json();
+    if(!data.results) return;
+    // Update card labels in the DOM
+    Object.keys(data.results).forEach(function(gymId){
+      var r=data.results[gymId];
+      // Update all matching travel label spans
+      var spans=document.querySelectorAll('[data-gym-travel-id="'+gymId+'"]');
+      spans.forEach(function(span){
+        span.textContent=r.label||r.duration;
+        span.title=r.distance+(r.estimated?' (estimated)':' via Google Maps');
+      });
+      // Also store on gym object for re-renders
+      gyms.forEach(function(g){
+        var gid=g.placeId||g.place_id||g.id;
+        if(String(gid)===String(gymId)){
+          g._realTravelLabel=r.label||r.duration;
+        }
+      });
+    });
+    window._travelTimesLoaded=true;
+    console.log('[ScanGym] Real travel times loaded:',Object.keys(data.results).length,'gyms, cached:',data.meta?.cached||0);
+  }catch(e){
+    console.warn('[ScanGym] Travel times fetch failed:',e.message);
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════

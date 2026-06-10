@@ -277,4 +277,152 @@ router.get('/booking/:bookingId', authenticateUser, async (req, res) => {
   }
 });
 
+// ─── Distance Matrix: Batch travel times for gym listing cards ───────────────
+// POST /api/directions/travel-times
+// Body: { origin: {lat, lng}, destinations: [{id, lat, lng}, ...] }
+// Returns real walk/drive times from Google Distance Matrix API.
+// Smart mode: walking for ≤3 km (haversine), driving for >3 km.
+// In-memory cache: 15 min TTL keyed on rounded origin + destination coords.
+
+const travelTimeCache = new Map();
+const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
+const MAX_DESTINATIONS = 25; // Google limit per request
+
+function roundCoord(v) { return Math.round(v * 1000) / 1000; } // ~111m precision
+
+function haversineDist(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function cleanCache() {
+  const now = Date.now();
+  for (const [k, v] of travelTimeCache) {
+    if (now - v.ts > CACHE_TTL_MS) travelTimeCache.delete(k);
+  }
+}
+
+router.post('/travel-times', async (req, res) => {
+  try {
+    const { origin, destinations } = req.body;
+    if (!origin?.lat || !origin?.lng || !Array.isArray(destinations) || destinations.length === 0) {
+      return res.status(400).json({ error: 'origin {lat,lng} and destinations[] required' });
+    }
+
+    if (!GOOGLE_MAPS_API_KEY) {
+      return res.status(503).json({ error: 'Google Maps API key not configured' });
+    }
+
+    // Periodic cache cleanup
+    if (travelTimeCache.size > 5000) cleanCache();
+
+    const oLat = parseFloat(origin.lat);
+    const oLng = parseFloat(origin.lng);
+    const results = {};
+
+    // Split destinations into walk (≤3km) and drive (>3km) groups
+    const walkGroup = [];
+    const driveGroup = [];
+    const cached = [];
+
+    for (const d of destinations.slice(0, MAX_DESTINATIONS)) {
+      const dLat = parseFloat(d.lat);
+      const dLng = parseFloat(d.lng);
+      if (!dLat || !dLng || !d.id) continue;
+
+      const cacheKey = `${roundCoord(oLat)},${roundCoord(oLng)}->${roundCoord(dLat)},${roundCoord(dLng)}`;
+      const hit = travelTimeCache.get(cacheKey);
+      if (hit && Date.now() - hit.ts < CACHE_TTL_MS) {
+        results[d.id] = hit.data;
+        cached.push(d.id);
+        continue;
+      }
+
+      const straightLine = haversineDist(oLat, oLng, dLat, dLng);
+      const entry = { id: d.id, lat: dLat, lng: dLng, straightLine, cacheKey };
+
+      if (straightLine <= 3) {
+        walkGroup.push(entry);
+      } else {
+        driveGroup.push(entry);
+      }
+    }
+
+    // Helper: call Distance Matrix API for a group
+    async function fetchMatrix(group, mode) {
+      if (group.length === 0) return;
+      const destStr = group.map(g => `${g.lat},${g.lng}`).join('|');
+      const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${oLat},${oLng}&destinations=${destStr}&mode=${mode}&units=metric&key=${GOOGLE_MAPS_API_KEY}`;
+
+      const resp = await fetch(url);
+      const data = await resp.json();
+
+      if (data.status !== 'OK' || !data.rows?.[0]?.elements) return;
+
+      const elements = data.rows[0].elements;
+      for (let i = 0; i < group.length; i++) {
+        const el = elements[i];
+        const g = group[i];
+        if (el.status === 'OK') {
+          const result = {
+            mode,
+            duration: el.duration.text,
+            durationSeconds: el.duration.value,
+            distance: el.distance.text,
+            distanceMeters: el.distance.value,
+            icon: mode === 'walking' ? '🚶' : '🚗',
+            label: mode === 'walking'
+              ? `${el.duration.text} walk`
+              : `${el.duration.text} drive`,
+          };
+          results[g.id] = result;
+          travelTimeCache.set(g.cacheKey, { ts: Date.now(), data: result });
+        } else {
+          // Fallback to haversine estimate
+          const estMin = mode === 'walking'
+            ? Math.max(1, Math.round(g.straightLine * 12)) // ~5 km/h walking
+            : Math.max(1, Math.round(g.straightLine * 1.5)); // ~40 km/h city driving
+          const result = {
+            mode,
+            duration: `${estMin} min`,
+            durationSeconds: estMin * 60,
+            distance: g.straightLine < 1
+              ? `${Math.round(g.straightLine * 1000)} m`
+              : `${g.straightLine.toFixed(1)} km`,
+            distanceMeters: Math.round(g.straightLine * 1000),
+            icon: mode === 'walking' ? '🚶' : '🚗',
+            label: mode === 'walking' ? `~${estMin} min walk` : `~${estMin} min drive`,
+            estimated: true,
+          };
+          results[g.id] = result;
+        }
+      }
+    }
+
+    // Fetch both groups in parallel
+    await Promise.all([
+      fetchMatrix(walkGroup, 'walking'),
+      fetchMatrix(driveGroup, 'driving'),
+    ]);
+
+    res.json({
+      results,
+      meta: {
+        total: Object.keys(results).length,
+        cached: cached.length,
+        walkApiCalls: walkGroup.length > 0 ? 1 : 0,
+        driveApiCalls: driveGroup.length > 0 ? 1 : 0,
+      },
+    });
+  } catch (err) {
+    console.error('Travel times error:', err);
+    res.status(500).json({ error: 'Failed to fetch travel times' });
+  }
+});
+
 module.exports = router;
