@@ -1879,6 +1879,7 @@
         showToast('\u2764\uFE0F Liked!');
       }
 
+      // H6 fix: Share now always gives feedback — toast on success, clipboard fallback, never silent.
       function handleShare(video){
         if(navigator.vibrate) navigator.vibrate(10);
         var url = (video.creator && video.creator.affiliateLink) || 'https://scangym.com/reels';
@@ -1887,10 +1888,50 @@
         if(video.creator && video.creator.name){
           text = (displayName || 'ScanGym Reels') + ' by ' + video.creator.name + ' \u2014 Book for \u00A35! \uD83D\uDCAA';
         }
+        var sharePayload = text + '\n' + url;
+
+        // Try native share sheet first (mobile)
         if(navigator.share){
-          navigator.share({title:'ScanGym Reels',text:text,url:url}).catch(function(){});
+          navigator.share({title:'ScanGym Reels',text:text,url:url})
+            .then(function(){ showToast('\u2705 Shared!'); })
+            .catch(function(err){
+              // User cancelled the share sheet — not an error, but still give feedback
+              if(err && err.name === 'AbortError'){
+                // User cancelled — no toast needed
+                return;
+              }
+              // Share API failed — fall back to clipboard
+              copyToClipboard(sharePayload);
+            });
         } else {
-          navigator.clipboard.writeText(text + '\n' + url).then(function(){ showToast('\uD83D\uDD17 Link copied!'); });
+          // Desktop / no share API — copy to clipboard
+          copyToClipboard(sharePayload);
+        }
+      }
+
+      function copyToClipboard(text){
+        if(navigator.clipboard && navigator.clipboard.writeText){
+          navigator.clipboard.writeText(text)
+            .then(function(){ showToast('\uD83D\uDD17 Link copied to clipboard!'); })
+            .catch(function(){ manualCopyFallback(text); });
+        } else {
+          manualCopyFallback(text);
+        }
+      }
+
+      // Last resort: select+copy from a temporary textarea
+      function manualCopyFallback(text){
+        try {
+          var ta = document.createElement('textarea');
+          ta.value = text;
+          ta.style.cssText = 'position:fixed;opacity:0;left:-9999px';
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          ta.remove();
+          showToast('\uD83D\uDD17 Link copied!');
+        } catch(e){
+          showToast('\uD83D\uDCCB scangym.com/reels');
         }
       }
 
