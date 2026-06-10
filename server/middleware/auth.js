@@ -66,4 +66,33 @@ async function optionalAuth(req, res, next) {
   next();
 }
 
-module.exports = { authenticateUser, optionalAuth };
+/**
+ * requireAdmin — must be chained AFTER authenticateUser.
+ * Checks req.user against ADMIN_EMAILS env var (comma-separated list).
+ * Falls back to ADMIN_USER_IDS if email-based lookup isn't configured.
+ *
+ * Set in Railway env:  ADMIN_EMAILS=you@example.com,co-founder@example.com
+ */
+function requireAdmin(req, res, next) {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+
+  // Check by email
+  const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
+  if (adminEmails.length > 0 && req.user.email && adminEmails.includes(req.user.email.toLowerCase())) {
+    return next();
+  }
+
+  // Check by user ID
+  const adminIds = (process.env.ADMIN_USER_IDS || '').split(',').map(id => id.trim()).filter(Boolean);
+  if (adminIds.length > 0 && adminIds.includes(req.user.id)) {
+    return next();
+  }
+
+  // If no admin env vars are set at all, deny everyone (secure by default)
+  console.warn(`Admin access denied for user ${req.user.id} (${req.user.email})`);
+  return res.status(403).json({ error: 'Admin access required' });
+}
+
+module.exports = { authenticateUser, optionalAuth, requireAdmin };

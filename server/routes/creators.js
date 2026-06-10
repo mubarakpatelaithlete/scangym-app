@@ -18,7 +18,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../middleware/db');
-const { authenticateUser, optionalAuth } = require('../middleware/auth');
+const { authenticateUser, optionalAuth, requireAdmin } = require('../middleware/auth');
 
 // Ensure creator tables exist
 (async () => {
@@ -528,7 +528,7 @@ const upload = multer({
   }
 });
 
-router.post('/upload', upload.single('video'), async (req, res) => {
+router.post('/upload', authenticateUser, upload.single('video'), async (req, res) => {
   try {
     const { caption, category, creatorHandle, creatorName, creatorEmail, affiliateLink } = req.body;
     const file = req.file;
@@ -573,10 +573,20 @@ router.post('/upload', upload.single('video'), async (req, res) => {
   }
 });
 
-// GET /api/creators/uploads — List approved creator uploads (for reels feed integration)
-router.get('/uploads', async (req, res) => {
+// GET /api/creators/uploads — List creator uploads
+// Public access for approved uploads (used by reels feed); admin-only for pending/rejected
+router.get('/uploads', optionalAuth, async (req, res) => {
   try {
     const status = req.query.status || 'approved';
+    // Non-approved statuses require admin
+    if (status !== 'approved') {
+      if (!req.user) return res.status(401).json({ error: 'Not authenticated' });
+      const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
+      const adminIds = (process.env.ADMIN_USER_IDS || '').split(',').map(id => id.trim()).filter(Boolean);
+      const isAdmin = (adminEmails.length > 0 && req.user.email && adminEmails.includes(req.user.email.toLowerCase()))
+                   || (adminIds.length > 0 && adminIds.includes(req.user.id));
+      if (!isAdmin) return res.status(403).json({ error: 'Admin access required' });
+    }
     const limit = Math.min(parseInt(req.query.limit) || 50, 200);
     const offset = parseInt(req.query.offset) || 0;
 
@@ -603,7 +613,7 @@ router.get('/uploads', async (req, res) => {
 });
 
 // PATCH /api/creators/uploads/:id/approve — Approve a creator upload (admin)
-router.patch('/uploads/:id/approve', async (req, res) => {
+router.patch('/uploads/:id/approve', authenticateUser, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const result = await pool.query(
