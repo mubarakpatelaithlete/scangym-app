@@ -357,6 +357,7 @@
     ::-webkit-scrollbar { display: none; }
     body { -ms-overflow-style: none; scrollbar-width: none; }
   </style>
+  <script src="/pricing.js"></script>
 </head>
 <body>
   <div class="container" id="app"></div>
@@ -765,7 +766,7 @@
       const user = state.user || { name: 'Creator', handle: '' };
       const refSlug = (user.handle || '').replace(/[^a-zA-Z0-9]/g, '') || (user.name || 'creator').toLowerCase().replace(/\s+/g, '');
       const link = `https://scangym.com/?ref=${refSlug}`;
-      const text = `💪 Book a gym anywhere from £4.49 — no membership needed! ${link}`;
+      const text = `💪 Book a gym anywhere from ${sgPrice('day').display} — no membership needed! ${link}`;
       
       if (navigator.share) {
         navigator.share({ title: 'ScanGym', text, url: link }).catch(() => {});
