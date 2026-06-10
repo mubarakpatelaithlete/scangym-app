@@ -1783,16 +1783,11 @@
             + '<div class="creator-cta-sub">No membership needed</div></div></a>';
         }
 
-        // FIX #4: Generate plausible engagement counters (seeded by video name for consistency)
-        var viewCount = generateViewCount(video.name || '', index);
-        var likeCount = Math.round(viewCount * (0.03 + (hashStr(video.name||'') % 7) * 0.01));
+        // H5 fix: Removed fake view/like counts — no real analytics backend exists yet.
+        // Show category + creator info only. Double-tap like still works (saved locally).
 
         info.innerHTML = '<p class="reel-title">' + escHtml(humanizeTitle(video.name)) + '</p>'
           + '<p class="reel-category">\uD83C\uDFAC ' + escHtml(humanizeCategory(video.category)) + '</p>'
-          + '<div class="reel-stats">'
-          + '<span class="reel-stat"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>' + formatCount(viewCount) + '</span>'
-          + '<span class="reel-stat"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>' + formatCount(likeCount) + '</span>'
-          + '</div>'
           + creatorHtml + affiliateHtml;
         div.appendChild(info);
 
@@ -1938,31 +1933,8 @@
       //  HELPERS
       // ═══════════════════════════════════════════════════════════
 
-      // ═══════════════════════════════════════════════════════════
-      //  FIX #4: ENGAGEMENT COUNTER HELPERS
-      // ═══════════════════════════════════════════════════════════
-      function hashStr(s){
-        var h = 0;
-        for(var i = 0; i < s.length; i++){
-          h = ((h << 5) - h) + s.charCodeAt(i);
-          h |= 0;
-        }
-        return Math.abs(h);
-      }
-
-      function generateViewCount(name, index){
-        var h = hashStr(name);
-        // Tier 1 reels (first 10) get higher counts, tail gets lower
-        var base = index < 5 ? 8000 : index < 20 ? 3000 : index < 50 ? 1200 : 400;
-        var variance = (h % 1000) / 1000; // 0-1 deterministic random
-        return Math.round(base * (0.6 + variance * 1.8));
-      }
-
-      function formatCount(n){
-        if(n >= 1000000) return (n/1000000).toFixed(1).replace(/\.0$/,'') + 'M';
-        if(n >= 1000) return (n/1000).toFixed(1).replace(/\.0$/,'') + 'K';
-        return String(n);
-      }
+      // H5 fix: Removed fake engagement counter helpers (hashStr, generateViewCount, formatCount).
+      // View/like counts were entirely fabricated from video filenames — no real data behind them.
 
       // ═══════════════════════════════════════════════════════════
       //  FIX #5: SMART PRELOAD — aggressive for current±3, cancel far-away
