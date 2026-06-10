@@ -16,7 +16,7 @@ const router = express.Router();
 const pool = require('../middleware/db');
 const { optionalAuth, authenticateUser } = require('../middleware/auth');
 
-const { getCurrencyForCountry } = require('../lib/pricing-engine');
+const { getCurrencyForCountry, getDayPassPrice } = require('../lib/pricing-engine');
 
 const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
 const BASE_URL = 'https://maps.googleapis.com/maps/api/place';
@@ -98,17 +98,7 @@ function photoUrl(photoRef, maxWidth = 1200) {
 }
 
 // ─── Helper: Parse a Text/Nearby Search result into ScanGym gym format ───
-// ─── Map Google's priceLevel (0-4) to ScanGym day pass price (GBP) ───
-function priceLevelToPrice(level) {
-  const map = {
-    0: 4.99,  // Free/unknown → standard
-    1: 3.99,  // Budget gyms
-    2: 4.99,  // Moderate
-    3: 6.99,  // Premium
-    4: 8.99,  // Luxury
-  };
-  return map[level] ?? 4.99; // Default for null/undefined
-}
+// v4.0: priceLevelToPrice removed — all gyms use £4.49 base (PPP + currency by country)
 
 function parseSearchResult(place) {
   const geo = place.geometry?.location || {};
@@ -120,15 +110,13 @@ function parseSearchResult(place) {
     thumbnail: photoUrl(p.photo_reference, 400),
   }));
 
-  const priceLevel = place.price_level ?? null;
-
-  // C7 fix: Extract country from gym's address, derive currency
+  // v4.0: Currency + price from gym's physical country (PPP-adjusted £4.49 base)
   const addr = place.formatted_address || place.vicinity || '';
   const gymCountry = extractCountryCode(addr);
   const gymCurrency = getCurrencyForCountry(gymCountry);
+  const gymPrice = getDayPassPrice(gymCountry);
 
   return {
-    // Use place_id as the universal ID
     id: place.place_id,
     placeId: place.place_id,
     name: place.name || 'Unknown Gym',
@@ -145,10 +133,8 @@ function parseSearchResult(place) {
     types: place.types || [],
     businessStatus: place.business_status || 'OPERATIONAL',
     openNow: place.opening_hours?.open_now ?? null,
-    priceLevel,
-    // C6 fix: Per-gym price based on Google's priceLevel
-    dayPassPrice: priceLevelToPrice(priceLevel),
-    // C7 fix: Currency based on gym's physical country
+    priceLevel: place.price_level ?? null,
+    dayPassPrice: gymPrice.amount,
     currency: gymCurrency.currency,
     currencySymbol: gymCurrency.symbol,
     source: 'google_places_live',
@@ -413,10 +399,8 @@ router.get('/place/:placeId', optionalAuth, async (req, res) => {
         isClaimed: dbGym?.is_claimed || false,
       },
       pricing: {
-        // C6 fix: Use DB price if available, else derive from Google's priceLevel
-        dayPassPrice: dbGym?.day_pass_price || priceLevelToPrice(p.price_level),
-        hourlyRate: dbGym?.hourly_rate || 5.00,
-        // C7 fix: Currency based on gym's physical country
+        // v4.0: Flat £4.49 base, PPP + currency by gym country
+        dayPassPrice: getDayPassPrice(gymCountry).amount,
         currency: gymCurrency.currency.toUpperCase(),
         currencySymbol: gymCurrency.symbol,
       },
@@ -504,8 +488,8 @@ router.post('/ensure-gym', optionalAuth, async (req, res) => {
     }
     const gymCurrency = getCurrencyForCountry(gymCountry);
 
-    // C6 fix: Use Google's priceLevel to set the day pass price
-    const gymPrice = priceLevelToPrice(p.price_level);
+    // v4.0: Flat £4.49 base, PPP-adjusted by gym country
+    const gymPrice = getDayPassPrice(gymCountry).amount;
 
     // Create slug
     const slug = (p.name || 'gym').toLowerCase()

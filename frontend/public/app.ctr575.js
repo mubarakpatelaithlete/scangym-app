@@ -34,16 +34,16 @@ window.__sgPricingCallbacks = [];
       }
     })
     .catch(() => {
-      // H10 fix: Fallback prices aligned to £5.00 base day pass (consistent everywhere)
+      // v4.0: Fallback prices — flat £4.49 base day pass
       window.__sgPricing = {
         location: { currency: 'gbp', symbol: '£' },
         prices: {
-          day: { amount: 5.00, display: '£5.00', stripeAmount: 500 },
-          '3day': { amount: 12.99, display: '£12.99', stripeAmount: 1299 },
-          weekly: { amount: 24.99, display: '£24.99', stripeAmount: 2499 },
+          day: { amount: 4.49, display: '£4.49', stripeAmount: 449 },
+          '3day': { amount: 11.99, display: '£11.99', stripeAmount: 1199 },
+          weekly: { amount: 22.49, display: '£22.49', stripeAmount: 2249 },
           monthly: { amount: 44.99, display: '£44.99', stripeAmount: 4499 },
         },
-        surge: { factor: 1, label: 'Normal' },
+        // v4.0: Surge removed — flat pricing
       };
       window.__sgPricingReady = true;
     });
@@ -65,9 +65,9 @@ function sgPrice(passType) {
       stripeAmount: pr.stripeAmount,
     };
   }
-  // H10 fix: Fallback defaults aligned to £5.00 base day pass
-  const defaults = { day: 5.00, '3day': 12.99, weekly: 24.99, monthly: 44.99 };
-  const amt = defaults[passType] || 4.99;
+  // v4.0: Fallback defaults — flat £4.49 base
+  const defaults = { day: 4.49, '3day': 11.99, weekly: 22.49, monthly: 44.99 };
+  const amt = defaults[passType] || 4.49;
   return { amount: amt, display: '£' + amt.toFixed(2), symbol: '£', currency: 'gbp', stripeAmount: Math.round(amt * 100) };
 }
 
@@ -401,18 +401,10 @@ function initDynamicPricing(){
     const p=sgPrice(pt);
     el.textContent=p.display;
     const discEl=el.parentElement.querySelector('.text-emerald-400,.text-red-400,.text-slate-500');
-    const surge=window.__sgPricing?.surge;
+    // v4.0: No surge, no peak/off-peak — flat pricing
     if(discEl){
-      if(surge&&surge.factor>1.2){
-        discEl.textContent='⚡ High demand';
-        discEl.className='text-red-400 text-xs font-medium';
-      }else if(hour<10||hour>=20){
-        discEl.textContent='Off-peak rate';
-        discEl.className='text-emerald-400 text-xs font-medium';
-      }else{
-        discEl.textContent='Standard rate';
-        discEl.className='text-slate-500 text-xs font-medium';
-      }
+      discEl.textContent='Flat rate';
+      discEl.className='text-emerald-400 text-xs font-medium';
     }
   });
   
@@ -807,8 +799,8 @@ function GymCard(gym){
     <div class="relative h-48 bg-slate-700">
       ${carouselHTML}
       <!-- Fix #4: Smart price badge — shows current time-aware price -->
-      <div class="absolute top-3 right-3 ${_isOPCard?'bg-green-600':'bg-brand'} text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
-        ${cardCurrentPrice}${_isOPCard?' 🌙':''}
+      <div class="absolute top-3 right-3 bg-brand text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
+        ${cardCurrentPrice}
       </div>
       ${topGym?`<div class="absolute top-3 left-3 bg-yellow-500 text-black px-2.5 py-1 rounded-full text-xs font-bold shadow-lg">⭐ Top Gym</div>`
         :gym.openNow===true?`<div class="absolute top-3 left-3 bg-green-600 text-white px-2.5 py-1 rounded-full text-xs font-medium shadow-lg flex items-center gap-1"><span class="w-1.5 h-1.5 bg-green-300 rounded-full animate-pulse"></span> Open${cTime?' until '+cTime:' Now'}</div>`:``}
@@ -834,7 +826,7 @@ function GymCard(gym){
         <span class="text-xs text-accent font-medium">✅ Free cancellation</span>
         
       </div>
-      <button onclick="event.stopPropagation();showUberCheckout('${gymIdentifier}')" class="gym-card-book-btn">⚡ Book Now · ${cardCurrentPrice}${_isOPCard?' (off-peak)':''}</button>
+      <button onclick="event.stopPropagation();showUberCheckout('${gymIdentifier}')" class="gym-card-book-btn">⚡ Book Now · ${cardCurrentPrice}</button>
     </div>
   </div>`;
 }
@@ -882,7 +874,7 @@ function HomePage(){
     <div onclick="navigate('/explore')" style="background:linear-gradient(135deg,${hour<10||hour>=20?'#16a34a,#22c55e':'#f97316,#fb923c'});border-radius:16px;padding:18px 20px;display:flex;align-items:center;gap:14px;cursor:pointer;flex-shrink:0;margin-bottom:14px;position:relative;overflow:hidden;">
       <div style="position:absolute;top:-20px;right:-10px;font-size:60px;opacity:.15;transform:rotate(15deg);">🏋️</div>
       <div style="flex:1;position:relative;z-index:1;">
-        <p style="color:#fff;font-weight:800;font-size:16px;margin:0;">${hour<10||hour>=20?''+sgPrice('day').display+' Day Pass · Off-Peak 🌙':'From '+sgPrice('day').display+' Day Pass'}</p>
+        <p style="color:#fff;font-weight:800;font-size:16px;margin:0;">From ${sgPrice('day').display} Day Pass</p>
         <p style="color:rgba(255,255,255,.85);font-size:12px;margin:4px 0 0;">${hour<10||hour>=20?'Off-peak pricing active now · No membership · QR entry':'No membership · Free cancellation · QR entry'}</p>
       </div>
       <span style="color:rgba(255,255,255,.7);font-size:20px;position:relative;z-index:1;">→</span>
@@ -1767,7 +1759,7 @@ function GymProfilePage(){
       <div class="gym-overlay-footer">
         <div>
           <div style="color:#fff;font-size:22px;font-weight:800">${currentPrice}</div>
-          <div style="color:rgba(255,255,255,.4);font-size:11px">${_isOP10?'🌙 Off-peak price active':'Your ScanGym pass works here ✓'}</div>
+          <div style="color:rgba(255,255,255,.4);font-size:11px">Your ScanGym pass works here ✓</div>
         </div>
         <button class="gym-book-btn" onclick="event.preventDefault();event.stopPropagation();closeGymOverlay();showUberCheckout('${gymId}')">Book Now</button>
       </div>
@@ -9978,16 +9970,8 @@ window.sgRecordAndShare=function(){
   fetch('/api/streaks/record-workout',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({durationMinutes:45})}).then(function(r){return r.json()}).then(function(d){if(d.success&&typeof sgShowWorkoutCard==='function')sgShowWorkoutCard(d);else if(d.alreadyRecorded)sgShowWorkoutCard({streak:d.streak||1,totalWorkouts:0,duration:45,newBadges:[],bonusReward:null,shareText:'Just finished a workout with @ScanGym! 💪'});}).catch(function(e){console.error('Record workout error:',e);});
 };
 
-// ─── 6. FLASH DEAL INJECTION (for reels feed) ───
-// H3 fix: Flash deal prices aligned to £5.00 base — no more random sub-£5 prices
-window.sgFlashDeal=function(){
-  const deals=[
-    {title:'⚡ Flash Deal',desc:'Day pass — limited time',price:'£3.75',orig:'£5.00',timer:'23:47'},
-    {title:'🔥 Hot Deal',desc:'2-for-1 day passes today',price:'£5.00',orig:'£10.00',timer:'07:15'},
-    {title:'⏰ Off-Peak',desc:'Off-peak pass, save 25%',price:'£3.75',orig:'£5.00',timer:'02:30'},
-  ];
-  return deals[Math.floor(Math.random()*deals.length)];
-};
+// v4.0: Flash deals removed — flat £4.49 pricing
+window.sgFlashDeal=function(){ return null; };
 
 // ─── 7. TRIGGER CONFETTI ON BOOKING SUCCESS ───
 (function(){
@@ -10263,8 +10247,9 @@ window.sgSwipeDiscovery=function(){
     }
     const g=shuffled[idx];
     const photo=g.photo||g.photo_url||(g.photoReference?'https://maps.googleapis.com/maps/api/place/photo?maxwidth=1200&photo_reference='+g.photoReference+'&key='+window.MAPS_KEY:'');
-    const isFlashDeal=Math.random()<0.15; // 15% chance = variable reward!
-    const flashPrice=isFlashDeal?'£3.75':'';
+    // v4.0: Flash deals removed — flat pricing
+    const isFlashDeal=false;
+    const flashPrice='';
 
     overlay.innerHTML=`
       <div style="position:absolute;top:16px;right:16px;z-index:10">

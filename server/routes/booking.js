@@ -22,13 +22,6 @@ const pool = require('../middleware/db');
 const crypto = require('crypto');
 const pricing = require('../lib/pricing-engine');
 
-// C7 fix: Currency based on GYM's physical country, not visitor IP.
-// Supports 1.2M+ gyms across 99 countries.
-function getGymGeo(req) {
-  const gymCountry = (req.body?.gymCountry || req.query?.gymCountry || 'GB').toUpperCase();
-  return { country: gymCountry, city: '' };
-}
-
 // Generate human-readable booking code (e.g., 5WCB-8VDY)
 function generateBookingCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -66,26 +59,25 @@ router.post('/create', async (req, res) => {
       time = String(nextH).padStart(2, '0') + ':00';
     }
 
-    // Get gym info (C6 fix: include day_pass_price)
-    const gym = await pool.query('SELECT id, name, address, day_pass_price FROM gyms WHERE id = $1', [gymId]);
+    // Get gym info
+    const gym = await pool.query('SELECT id, name, address, country FROM gyms WHERE id = $1', [gymId]);
     if (gym.rows.length === 0) {
       return res.status(404).json({ error: 'Gym not found' });
     }
 
     const g = gym.rows[0];
 
-    // 24-hour day pass: access starts at selected time, ends 24hrs later
+    // 24-hour day pass
     const [hours, mins] = time.split(':').map(Number);
-    const endTime = time; // Same time next day (24hr access)
+    const endTime = time;
 
-    // C6 fix: Use the gym's own day_pass_price (set from Google priceLevel)
-    // instead of PPP engine which gave all gyms the same price
-    const price = parseFloat(g.day_pass_price) || 4.99;
+    // v4.0: Flat £4.49 base, PPP + currency by gym's country
+    const dayPrice = pricing.getDayPassPrice(g.country || 'GB');
+    const price = dayPrice.amount;
 
     const bookingCode = generateBookingCode();
     const qrCode = generateQRCode();
 
-    // Create booking in existing table
     const result = await pool.query(
       `INSERT INTO public.bookings 
         (gym_id, user_id, booking_date, start_time, end_time, total_amount, 
@@ -227,20 +219,21 @@ router.post('/guest-create', async (req, res) => {
       return res.status(400).json({ error: 'Please enter a valid email address' });
     }
 
-    // Get gym info (C6 fix: include day_pass_price)
-    const gym = await pool.query('SELECT id, name, address, day_pass_price FROM gyms WHERE id = $1', [gymId]);
+    // Get gym info
+    const gym = await pool.query('SELECT id, name, address, country FROM gyms WHERE id = $1', [gymId]);
     if (gym.rows.length === 0) {
       return res.status(404).json({ error: 'Gym not found' });
     }
 
     const g = gym.rows[0];
 
-    // 24-hour day pass: access starts at selected time, ends 24hrs later
+    // 24-hour day pass
     const [hours, mins] = time.split(':').map(Number);
-    const endTime = time; // Same time next day (24hr access)
+    const endTime = time;
 
-    // C6 fix: Use the gym's own day_pass_price
-    const price = parseFloat(g.day_pass_price) || 4.99;
+    // v4.0: Flat £4.49 base, PPP + currency by gym's country
+    const dayPrice = pricing.getDayPassPrice(g.country || 'GB');
+    const price = dayPrice.amount;
 
     const bookingCode = generateBookingCode();
     const qrCode = generateQRCode();
