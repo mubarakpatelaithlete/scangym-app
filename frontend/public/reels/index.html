@@ -8,7 +8,7 @@
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="ScanGym" />
     <meta property="og:title" content="ScanGym Reels — Book a Gym. Anywhere." />
-    <meta property="og:description" content="Discover gyms near you. £5 day passes, no membership needed. Swipe through real gym content from creators worldwide." />
+    <meta property="og:description" content="Discover gyms near you. Day passes from £4.49, no membership needed. Swipe through real gym content from creators worldwide." />
     <meta property="og:image" content="https://scangym.com/reels/og-image.png" />
     <meta name="theme-color" content="#050816" />
     <!-- Phase 3: standalone mode — no iframe dependency -->
@@ -416,6 +416,25 @@
      */
     (function(){
       'use strict';
+
+      // ── Dynamic Day-Pass Price (single source of truth: pricing API) ──
+      var _reelsDayPrice = '£4.49'; // fallback — matches pricing-engine BASE_PRICE_GBP
+      (function fetchPrice() {
+        try {
+          var x = new XMLHttpRequest();
+          x.open('GET', '/api/pricing/prices?country=GB', true);
+          x.timeout = 3000;
+          x.onload = function() {
+            try {
+              var d = JSON.parse(x.responseText);
+              if (d && d.prices && d.prices.day && d.prices.day.display) {
+                _reelsDayPrice = d.prices.day.display;
+              }
+            } catch(e) {}
+          };
+          x.send();
+        } catch(e) {}
+      })();
 
       // ── SVG Icons ──
       var ICONS = {
@@ -1782,12 +1801,12 @@
         if(hasAffiliate){
           affiliateHtml = '<a class="creator-cta" href="' + escHtml(video.creator.affiliateLink) + '">'
             + '<span class="creator-cta-icon">\uD83D\uDCB0</span>'
-            + '<div><div class="creator-cta-text">Book via ' + escHtml(video.creator.name || video.creator.handle || 'Creator') + ' \u2014 \u00A35</div>'
+            + '<div><div class="creator-cta-text">Book via ' + escHtml(video.creator.name || video.creator.handle || 'Creator') + ' \u2014 ' + _reelsDayPrice + '</div>'
             + '<div class="creator-cta-sub">Creator earns on your booking</div></div></a>';
         } else if(hasCreator){
           affiliateHtml = '<a class="creator-cta" href="/">'
             + '<span class="creator-cta-icon">\uD83D\uDCAA</span>'
-            + '<div><div class="creator-cta-text">Book a Gym \u2014 \u00A35</div>'
+            + '<div><div class="creator-cta-text">Book a Gym \u2014 ' + _reelsDayPrice + '</div>'
             + '<div class="creator-cta-sub">No membership needed</div></div></a>';
         }
 
@@ -1892,9 +1911,9 @@
         if(navigator.vibrate) navigator.vibrate(10);
         var url = (video.creator && video.creator.affiliateLink) || 'https://scangym.com/reels';
         var displayName = humanizeTitle(video.name);
-        var text = (displayName || 'ScanGym Reels') + ' \u2014 Book a gym for \u00A35! \uD83D\uDCAA';
+        var text = (displayName || 'ScanGym Reels') + ' \u2014 Book a gym from ' + _reelsDayPrice + '! \uD83D\uDCAA';
         if(video.creator && video.creator.name){
-          text = (displayName || 'ScanGym Reels') + ' by ' + video.creator.name + ' \u2014 Book for \u00A35! \uD83D\uDCAA';
+          text = (displayName || 'ScanGym Reels') + ' by ' + video.creator.name + ' \u2014 Book from ' + _reelsDayPrice + '! \uD83D\uDCAA';
         }
         var sharePayload = text + '\n' + url;
 
