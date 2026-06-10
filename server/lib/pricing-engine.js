@@ -680,6 +680,24 @@ function buildStripeLineItem({ passType, currency, stripeAmount, gymName, descri
 
 // ============================================================================
 // EXPORTS
+/**
+ * C7 fix: Get currency info from a gym's country code.
+ * Currency follows the GYM's physical location, not the visitor's IP.
+ * Supports all 99 countries in COUNTRY_PRICING (1.2M+ gyms worldwide).
+ *
+ * @param {string} countryCode — ISO 3166-1 alpha-2 (e.g. 'GB', 'US', 'JP')
+ * @returns {{ currency: string, symbol: string, countryCode: string }}
+ */
+function getCurrencyForCountry(countryCode) {
+  const cc = (countryCode || 'GB').toUpperCase();
+  const country = COUNTRY_PRICING[cc] || COUNTRY_PRICING.GB;
+  return {
+    countryCode: cc,
+    currency: country.currencyCode,
+    symbol: country.symbol,
+  };
+}
+
 // ============================================================================
 module.exports = {
   calculatePrice,
@@ -692,6 +710,7 @@ module.exports = {
   getCityTier,
   charmPrice,
   toStripeAmount,
+  getCurrencyForCountry,
   COUNTRY_PRICING,
   STRIPE_PRICE_MAP,
   TIME_FACTORS,

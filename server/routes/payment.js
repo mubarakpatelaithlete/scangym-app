@@ -34,14 +34,13 @@ const pricing = require('../lib/pricing-engine');
 const surge = require('../lib/surge-pricing');
 
 /**
- * C7 fix: Currency based on GYM location, not visitor IP.
- * All gyms are in the UK → always GB/GBP.
- * When expanding internationally, look up the gym's country from DB instead.
+ * C7 fix: Currency based on GYM's physical country, not visitor IP.
+ * Looks up gym's country from the request body/query (set by frontend from gym data).
+ * Supports 1.2M+ gyms across 99 countries.
  */
-function getGeoFromRequest(req) {
-  // Future: look up gym's country from DB using gymId in req.body/query
-  // For now, all gyms are in Bolton, UK
-  return { country: 'GB', city: 'Bolton' };
+function getGymGeo(req) {
+  const gymCountry = (req.body?.gymCountry || req.query?.gymCountry || 'GB').toUpperCase();
+  return { country: gymCountry, city: '' };
 }
 
 const STRIPE_SECRET = process.env.STRIPE_SECRET_KEY;
@@ -551,14 +550,17 @@ router.post('/quick-checkout', async (req, res) => {
       }
     }
 
-    // Get gym info (C6 fix: include day_pass_price)
-    const gym = await pool.query('SELECT id, name, address, day_pass_price FROM gyms WHERE id = $1', [dbGymId]);
+    // Get gym info (C6: day_pass_price, C7: currency/country)
+    const gym = await pool.query('SELECT id, name, address, day_pass_price, currency, country FROM gyms WHERE id = $1', [dbGymId]);
     if (gym.rows.length === 0) return res.status(404).json({ error: 'Gym not found' });
     const g = gym.rows[0];
 
+    // C7 fix: Use gym's currency from DB (based on gym's physical country)
+    const gymCurrency = (g.currency || 'GBP').toLowerCase();
+
     // C6 fix: Use gym's own price instead of PPP engine
     const resolved = resolveTime(time);
-    const geo = getGeoFromRequest(req);
+    const geo = getGymGeo(req);
     const price = parseFloat(g.day_pass_price) || 4.99;
     const amount = Math.round(price * 100);
 
@@ -588,7 +590,7 @@ router.post('/quick-checkout', async (req, res) => {
     surge.recordBooking(dbGymId, geo.country);
     const intent = await stripe.paymentIntents.create({
       amount,
-      currency: 'gbp', // C6 fix: Always GBP (Bolton-only launch)
+      currency: gymCurrency, // C7 fix: Currency from gym's physical country
       customer: user.stripe_customer_id,
       payment_method: paymentMethodId,
       off_session: true,
@@ -684,7 +686,7 @@ router.post('/create-intent', async (req, res) => {
     if (!bookingId) return res.status(400).json({ error: 'bookingId required' });
 
     const result = await pool.query(
-      `SELECT b.*, g.name as gym_name
+      `SELECT b.*, g.name as gym_name, g.currency as gym_currency, g.country as gym_country
        FROM public.bookings b
        LEFT JOIN public.gyms g ON b.gym_id = g.id
        WHERE b.id = $1`,
@@ -700,7 +702,7 @@ router.post('/create-intent', async (req, res) => {
     // Uber-style: attach Customer to PaymentIntent so we can save the card after
     const intentConfig = {
       amount,
-      currency: 'gbp', // C6 fix: Always GBP (Bolton-only launch)
+      currency: (booking.gym_currency || 'GBP').toLowerCase(), // C7 fix: Currency from gym's physical country
       metadata: { bookingId: String(booking.id), gymName: booking.gym_name || '' },
       receipt_email: email || booking.user_email || undefined,
       payment_method_types: ['card', 'amazon_pay', 'revolut_pay'],
@@ -877,11 +879,11 @@ router.post('/cash-booking', async (req, res) => {
       }
     }
 
-    const gym = await pool.query('SELECT id, name, day_pass_price FROM gyms WHERE id = $1', [dbGymId]);
+    const gym = await pool.query('SELECT id, name, day_pass_price, currency, country FROM gyms WHERE id = $1', [dbGymId]);
     if (gym.rows.length === 0) return res.status(404).json({ error: 'Gym not found' });
     const g = gym.rows[0];
 
-    // ── Step 2: C6 fix — Use gym's own price instead of PPP engine ──
+    // ── Step 2: C6 fix — Use gym's own price; C7: gym's own currency ──
     const passTypeClean = passType || 'day';
     const resolved = resolveTime(time);
     const price = parseFloat(g.day_pass_price) || 4.99;

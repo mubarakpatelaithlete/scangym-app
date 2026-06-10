@@ -22,10 +22,11 @@ const pool = require('../middleware/db');
 const crypto = require('crypto');
 const pricing = require('../lib/pricing-engine');
 
-// C7 fix: Currency based on GYM location, not visitor IP.
-// All gyms are in the UK → always GB/GBP.
-function getGeoFromRequest(req) {
-  return { country: 'GB', city: 'Bolton' };
+// C7 fix: Currency based on GYM's physical country, not visitor IP.
+// Supports 1.2M+ gyms across 99 countries.
+function getGymGeo(req) {
+  const gymCountry = (req.body?.gymCountry || req.query?.gymCountry || 'GB').toUpperCase();
+  return { country: gymCountry, city: '' };
 }
 
 // Generate human-readable booking code (e.g., 5WCB-8VDY)

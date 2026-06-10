@@ -774,8 +774,10 @@ function getCardFacilities(gym){
 function GymCard(gym){
   const badges=getRandomBadges(gym,3);
   // C6 fix: Use per-gym price from Google priceLevel
+  // C7 fix: Use gym's currency symbol (based on gym's physical country)
   const _gymCardPrice=parseFloat(gym.dayPassPrice||gym.day_pass_price)||0;
-  const dayP=_gymCardPrice>0?{amount:_gymCardPrice,display:'£'+_gymCardPrice.toFixed(2)}:sgPrice('day');
+  const _gymSym=gym.currencySymbol||'£';
+  const dayP=_gymCardPrice>0?{amount:_gymCardPrice,display:_gymSym+_gymCardPrice.toFixed(2)}:sgPrice('day');
   const _hCard=new Date().getHours();
   const _isOPCard=_hCard<10||_hCard>=20;
   const cardCurrentPrice=dayP.display;
@@ -1098,8 +1100,9 @@ function SearchPage(){
           var openTag=isOpen?'\u25cf Open':'\u{1F319} Closed';
           var openClass=isOpen?'tt-tag-open':'tt-tag-closed';
           var isPop=isTopGym(gym);
-          // C6 fix: Use per-gym price from Google priceLevel instead of global PPP price
-          var price=gym.dayPassPrice?('£'+parseFloat(gym.dayPassPrice).toFixed(2)):dayP.display;
+          // C6 fix: Use per-gym price; C7: gym's currency symbol
+          var _sym=gym.currencySymbol||'£';
+          var price=gym.dayPassPrice?(_sym+parseFloat(gym.dayPassPrice).toFixed(2)):dayP.display;
           var pos=_pinPos(i);
           var facList=facs.map(function(f){return f.replace(/^[^\s]+\s/,'');}).join(', ');
           var equipList=['Free weights','Cardio','Machines'].filter(function(_,j){return((gym.name||'').charCodeAt(0)+j)%3!==0;}).join(', ')||'Machines, Cardio';
@@ -1296,14 +1299,15 @@ function GymProfilePage(){
   const rating=gym.rating||'4.5';
   const reviewCount=gym.user_ratings_total||gym.totalReviews||47;
   const isOpen=gym.opening_hours?.isOpen;
-  // C6 fix: Use gym-specific price from Google priceLevel
+  // C6 fix: Use gym-specific price; C7: gym's currency symbol
   const _h10=new Date().getHours();
   const _isOP10=_h10<10||_h10>=20;
   const _gymDP=parseFloat(gym.dayPassPrice||gym.day_pass_price||gym.pricing?.dayPassPrice)||0;
   const _dayBase=_gymDP>0?_gymDP:sgPrice('day').amount;
-  const _dayP={amount:_dayBase,display:'£'+_dayBase.toFixed(2)};
-  const _3dayP={amount:Math.round(_dayBase*2.67*100)/100,display:'£'+(Math.round(_dayBase*2.67*100)/100).toFixed(2)};
-  const _weekP={amount:Math.round(_dayBase*5*100)/100,display:'£'+(Math.round(_dayBase*5*100)/100).toFixed(2)};
+  const _gSym=gym.currencySymbol||gym.pricing?.currencySymbol||'£';
+  const _dayP={amount:_dayBase,display:_gSym+_dayBase.toFixed(2)};
+  const _3dayP={amount:Math.round(_dayBase*2.67*100)/100,display:_gSym+(Math.round(_dayBase*2.67*100)/100).toFixed(2)};
+  const _weekP={amount:Math.round(_dayBase*5*100)/100,display:_gSym+(Math.round(_dayBase*5*100)/100).toFixed(2)};
   const currentPrice=_dayP.display;
   const threeDayPrice=_3dayP.display;
   const weeklyPrice=_weekP.display;
@@ -4564,9 +4568,13 @@ window._initWalletPay=function(){
   try{
     const stripeKey=window._stripePublicKey||'pk_live_51Ss8P0DPbSptA7HKnQFKelVtYGIWnxhOC8MuZIQdqTYHCJRgI5x8GZ2TlE2DVKK0pLXLJWF9AYNK4RbAEhTk8BN00YoI3Xwjf';
     const stripeInstance=Stripe(stripeKey);
+    // C7 fix: Use gym's country/currency for Apple Pay / Google Pay
+    const _wpGym=window._checkoutState?.gym||{};
+    const _wpCountry=_wpGym.country||'GB';
+    const _wpCurrency=(_wpGym.currency||_wpGym.pricing?.currency||'gbp').toLowerCase();
     const paymentRequest=stripeInstance.paymentRequest({
-      country:'GB',
-      currency:'gbp',
+      country:_wpCountry,
+      currency:_wpCurrency,
       total:{label:'ScanGym Day Pass',amount:299},
       requestPayerName:true,
       requestPayerEmail:true
@@ -5209,9 +5217,10 @@ window.showGymDiscovery=function(){
     const openTag=isOpen?(cTime?'● Open':'● Open'):'● Closed';
     const openClass=isOpen?'gd-tag-open':'gd-tag-closed';
     const isPop=isTopGym(gym);
-    // C6 fix: Per-gym price from Google priceLevel
+    // C6 fix: Per-gym price; C7: gym's currency symbol
     const _gp=parseFloat(gym.dayPassPrice||gym.day_pass_price)||0;
-    const price=_gp>0?('£'+_gp.toFixed(2)):dayP.display;
+    const _gpSym=gym.currencySymbol||'£';
+    const price=_gp>0?(_gpSym+_gp.toFixed(2)):dayP.display;
     const pos=pinPos(i,gyms.length);
     return{id,gym,photo,allPhotos,photoCount,dist,distMin,facs,rating,reviews,addr,isOpen,openText,openTag,openClass,isPop,price,pos,name:gym.name||'Gym',i};
   });
@@ -5748,18 +5757,20 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
   const selPassIcon=gbs.passIcon||'⚡';
 
   // C6 fix: Price calculation — prefer per-gym price from Google priceLevel
+  // C7 fix: Currency symbol from gym's physical country
   const _passKey=selPass==='week'?'weekly':selPass;
   const _priceInfo=sgPrice(_passKey);
-  const _sym='£'; // C6 fix: Always GBP for Bolton launch
+  const _sym=gym.currencySymbol||gym.pricing?.currencySymbol||'£';
+  const _gymCur=gym.currency||gym.pricing?.currency||'gbp';
   // Use gym's own dayPassPrice if available, else fall back to global pricing
   const _gymDayPrice=parseFloat(gym.dayPassPrice||gym.day_pass_price||gym.pricing?.dayPassPrice)||0;
   const _useGymPrice=_gymDayPrice>0;
   const _baseAmount=_useGymPrice?_gymDayPrice:_priceInfo.amount;
-  const passInfo={name:selPassName,icon:selPassIcon,amount:_baseAmount,display:'£'+_baseAmount.toFixed(2)};
+  const passInfo={name:selPassName,icon:selPassIcon,amount:_baseAmount,display:_sym+_baseAmount.toFixed(2)};
   const h=selTime==='anytime'?12:parseInt(selTime||'10');
   const isOffPeak=h<10||h>=20;
   let displayPrice=_baseAmount;
-  let displayPriceStr='£'+_baseAmount.toFixed(2);
+  let displayPriceStr=_sym+_baseAmount.toFixed(2);
   // ═══ REFERRAL DISCOUNT: Apply £2 off if referral code is active ═══
   let _sgRefActive=null;try{const _r=JSON.parse(localStorage.getItem('sg_referral')||'null');if(_r&&_r.handle&&_r.expiry>Date.now())_sgRefActive=_r.handle;}catch(e){}
   const _sgOrigPrice=displayPrice;
@@ -6217,12 +6228,13 @@ async function _initUberPaymentNew(gymId, gym){
     const stripeInstance=window.Stripe(STRIPE_PK);
     cs.stripe=stripeInstance;
 
-    // Calculate current price for deferred Elements initialization
+    // C7 fix: Use gym's currency for Stripe Elements (based on gym's physical country)
     const _priceForInit=sgPrice(cs.selectedPass||'day');
     const initPrice=_priceForInit.amount;
-    const initCurrency=_priceForInit.currency||'gbp';
+    const initCurrency=cs.gym?.currency||cs.gym?.pricing?.currency||_priceForInit.currency||'gbp';
 
-    const userCountry=(()=>{try{const tz=Intl.DateTimeFormat().resolvedOptions().timeZone||'';const map={'Europe/London':'GB','America/New_York':'US','America/Los_Angeles':'US','Asia/Dubai':'AE','Europe/Paris':'FR','Europe/Berlin':'DE','Europe/Madrid':'ES','Australia/Sydney':'AU','Asia/Tokyo':'JP','America/Toronto':'CA'};return map[tz]||'GB';}catch(e){return 'GB';}})();
+    // C7 fix: Use gym's country for Stripe default country, not visitor's timezone
+    const userCountry=cs.gym?.country||'GB';
 
     // Create Elements in DEFERRED mode — no PaymentIntent created until user confirms
     const elements=stripeInstance.elements({

@@ -16,8 +16,59 @@ const router = express.Router();
 const pool = require('../middleware/db');
 const { optionalAuth, authenticateUser } = require('../middleware/auth');
 
+const { getCurrencyForCountry } = require('../lib/pricing-engine');
+
 const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
 const BASE_URL = 'https://maps.googleapis.com/maps/api/place';
+
+// ─── C7 fix: Map of common country names/suffixes → ISO 3166-1 alpha-2 codes ──
+// Google Places formatted_address ends with the country name.
+// This covers all 99 countries in the pricing engine + common variants.
+const COUNTRY_NAME_TO_CODE = {
+  'uk': 'GB', 'united kingdom': 'GB', 'england': 'GB', 'scotland': 'GB', 'wales': 'GB',
+  'usa': 'US', 'united states': 'US', 'us': 'US',
+  'canada': 'CA', 'australia': 'AU', 'new zealand': 'NZ',
+  'germany': 'DE', 'france': 'FR', 'spain': 'ES', 'italy': 'IT',
+  'netherlands': 'NL', 'belgium': 'BE', 'austria': 'AT', 'portugal': 'PT',
+  'ireland': 'IE', 'greece': 'GR', 'finland': 'FI', 'croatia': 'HR',
+  'estonia': 'EE', 'lithuania': 'LT', 'latvia': 'LV', 'slovakia': 'SK',
+  'slovenia': 'SI', 'cyprus': 'CY', 'malta': 'MT', 'luxembourg': 'LU',
+  'switzerland': 'CH', 'sweden': 'SE', 'norway': 'NO', 'denmark': 'DK',
+  'poland': 'PL', 'czech republic': 'CZ', 'czechia': 'CZ',
+  'romania': 'RO', 'hungary': 'HU', 'bulgaria': 'BG', 'iceland': 'IS',
+  'serbia': 'RS', 'ukraine': 'UA', 'georgia': 'GE',
+  'united arab emirates': 'AE', 'uae': 'AE', 'saudi arabia': 'SA',
+  'qatar': 'QA', 'kuwait': 'KW', 'bahrain': 'BH', 'oman': 'OM',
+  'israel': 'IL', 'turkey': 'TR', 'türkiye': 'TR', 'jordan': 'JO',
+  'japan': 'JP', 'south korea': 'KR', 'korea': 'KR', 'india': 'IN',
+  'singapore': 'SG', 'hong kong': 'HK', 'thailand': 'TH', 'malaysia': 'MY',
+  'philippines': 'PH', 'vietnam': 'VN', 'indonesia': 'ID', 'china': 'CN',
+  'taiwan': 'TW', 'pakistan': 'PK', 'bangladesh': 'BD', 'sri lanka': 'LK',
+  'nepal': 'NP', 'myanmar': 'MM', 'cambodia': 'KH',
+  'mexico': 'MX', 'brazil': 'BR', 'argentina': 'AR', 'colombia': 'CO',
+  'chile': 'CL', 'peru': 'PE', 'costa rica': 'CR', 'panama': 'PA',
+  'ecuador': 'EC', 'dominican republic': 'DO', 'uruguay': 'UY',
+  'trinidad and tobago': 'TT', 'jamaica': 'JM', 'guatemala': 'GT', 'honduras': 'HN',
+  'south africa': 'ZA', 'nigeria': 'NG', 'egypt': 'EG', 'kenya': 'KE',
+  'morocco': 'MA', 'ghana': 'GH', 'tanzania': 'TZ', 'ethiopia': 'ET',
+  'uganda': 'UG', 'rwanda': 'RW', 'senegal': 'SN', 'ivory coast': 'CI',
+  "côte d'ivoire": 'CI', 'cameroon': 'CM', 'tunisia': 'TN', 'mauritius': 'MU',
+  'kazakhstan': 'KZ', 'uzbekistan': 'UZ', 'azerbaijan': 'AZ', 'fiji': 'FJ',
+};
+
+/**
+ * C7 fix: Extract country code from Google Places formatted_address.
+ * e.g. "24 Bolton Rd, Bolton BL1 1AA, UK" → "GB"
+ *      "123 5th Ave, New York, NY 10001, USA" → "US"
+ *      "渋谷, Tokyo 150-0002, Japan" → "JP"
+ */
+function extractCountryCode(formattedAddress) {
+  if (!formattedAddress) return 'GB';
+  const parts = formattedAddress.split(',').map(p => p.trim());
+  // Last part is usually the country
+  const lastPart = (parts[parts.length - 1] || '').toLowerCase().trim();
+  return COUNTRY_NAME_TO_CODE[lastPart] || 'GB';
+}
 
 // ─── Simple in-memory cache (5 min TTL) ─────────────────────
 const cache = new Map();
@@ -71,13 +122,19 @@ function parseSearchResult(place) {
 
   const priceLevel = place.price_level ?? null;
 
+  // C7 fix: Extract country from gym's address, derive currency
+  const addr = place.formatted_address || place.vicinity || '';
+  const gymCountry = extractCountryCode(addr);
+  const gymCurrency = getCurrencyForCountry(gymCountry);
+
   return {
     // Use place_id as the universal ID
     id: place.place_id,
     placeId: place.place_id,
     name: place.name || 'Unknown Gym',
-    address: place.formatted_address || place.vicinity || '',
-    city: extractCity(place.formatted_address || place.vicinity || ''),
+    address: addr,
+    city: extractCity(addr),
+    country: gymCountry,
     latitude: geo.lat || null,
     longitude: geo.lng || null,
     rating: place.rating || null,
@@ -91,6 +148,9 @@ function parseSearchResult(place) {
     priceLevel,
     // C6 fix: Per-gym price based on Google's priceLevel
     dayPassPrice: priceLevelToPrice(priceLevel),
+    // C7 fix: Currency based on gym's physical country
+    currency: gymCurrency.currency,
+    currencySymbol: gymCurrency.symbol,
     source: 'google_places_live',
   };
 }
@@ -330,6 +390,10 @@ router.get('/place/:placeId', optionalAuth, async (req, res) => {
       } catch (e) {}
     }
 
+    // C7 fix: Currency from gym's physical country
+    const gymCountry = extractCountryCode(p.formatted_address);
+    const gymCurrency = getCurrencyForCountry(gymCountry);
+
     const result = {
       gym: {
         placeId,
@@ -337,6 +401,7 @@ router.get('/place/:placeId', optionalAuth, async (req, res) => {
         name: p.name,
         address: p.formatted_address,
         city: extractCity(p.formatted_address),
+        country: gymCountry,
         phone: p.formatted_phone_number || null,
         website: p.website || null,
         googleMapsUrl: p.url || null,
@@ -351,7 +416,9 @@ router.get('/place/:placeId', optionalAuth, async (req, res) => {
         // C6 fix: Use DB price if available, else derive from Google's priceLevel
         dayPassPrice: dbGym?.day_pass_price || priceLevelToPrice(p.price_level),
         hourlyRate: dbGym?.hourly_rate || 5.00,
-        currency: 'GBP',
+        // C7 fix: Currency based on gym's physical country
+        currency: gymCurrency.currency.toUpperCase(),
+        currencySymbol: gymCurrency.symbol,
       },
       rating: {
         google: p.rating || null,
@@ -413,8 +480,8 @@ router.post('/ensure-gym', optionalAuth, async (req, res) => {
       return res.json({ gymId: existing.rows[0].id, name: existing.rows[0].name, created: false });
     }
 
-    // Fetch from Google Places to get full details (C6 fix: include price_level)
-    const fields = 'name,formatted_address,formatted_phone_number,geometry,rating,user_ratings_total,types,website,price_level';
+    // Fetch from Google Places to get full details (C6: price_level, C7: address_components for country)
+    const fields = 'name,formatted_address,formatted_phone_number,geometry,rating,user_ratings_total,types,website,price_level,address_components';
     const url = `${BASE_URL}/details/json?place_id=${placeId}&fields=${fields}&key=${GOOGLE_MAPS_API_KEY}`;
     const response = await fetch(url);
     const data = await response.json();
@@ -426,6 +493,16 @@ router.post('/ensure-gym', optionalAuth, async (req, res) => {
     const p = data.result;
     const geo = p.geometry?.location || {};
     const city = extractCity(p.formatted_address);
+
+    // C7 fix: Extract country from address_components (most reliable) or formatted_address
+    let gymCountry = 'GB';
+    const countryComponent = (p.address_components || []).find(c => (c.types || []).includes('country'));
+    if (countryComponent && countryComponent.short_name) {
+      gymCountry = countryComponent.short_name.toUpperCase();
+    } else {
+      gymCountry = extractCountryCode(p.formatted_address);
+    }
+    const gymCurrency = getCurrencyForCountry(gymCountry);
 
     // C6 fix: Use Google's priceLevel to set the day pass price
     const gymPrice = priceLevelToPrice(p.price_level);
@@ -443,15 +520,16 @@ router.post('/ensure-gym', optionalAuth, async (req, res) => {
 
     const result = await pool.query(`
       INSERT INTO gyms 
-      (name, address, place_id, day_pass_price, owner_id, slug, is_active, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, 'system', $5, true, NOW(), NOW())
+      (name, address, place_id, day_pass_price, currency, country, owner_id, slug, is_active, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, 'system', $7, true, NOW(), NOW())
       RETURNING id, name
     `, [
       p.name,
-      p.formatted_address, placeId, gymPrice, slug,
+      p.formatted_address, placeId, gymPrice,
+      gymCurrency.currency.toUpperCase(), gymCountry, slug,
     ]);
 
-    res.json({ gymId: result.rows[0].id, name: result.rows[0].name, created: true });
+    res.json({ gymId: result.rows[0].id, name: result.rows[0].name, country: gymCountry, currency: gymCurrency.currency.toUpperCase(), created: true });
   } catch (err) {
     console.error('Ensure gym error:', err);
     res.status(500).json({ error: 'Failed to create gym record', detail: err.message });

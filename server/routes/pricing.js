@@ -13,14 +13,15 @@ const pricing = require('../lib/pricing-engine');
 const surge = require('../lib/surge-pricing');
 
 /**
- * C7 fix: Currency based on GYM location, not visitor IP.
- * All gyms are in the UK → always GB/GBP.
- * When expanding internationally, look up the gym's country from DB instead.
+ * C7 fix: Currency based on GYM's physical country, not visitor IP.
+ * Supports 1.2M+ gyms across 99 countries.
+ * Frontend passes ?gymCountry=GB (or US, JP, etc.) derived from gym address.
  */
 function getGymGeo(req) {
-  // Future: if req.query.gymId, look up gym's country from DB
-  // For now, all gyms are in Bolton, UK
-  return { country: 'GB', city: 'Bolton' };
+  // Use the gym's country if provided, otherwise default to GB
+  const gymCountry = (req.query?.gymCountry || req.query?.country || 'GB').toUpperCase();
+  const city = req.query?.city || '';
+  return { country: gymCountry, city };
 }
 
 /**
