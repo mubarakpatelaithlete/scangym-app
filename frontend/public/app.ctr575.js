@@ -3,78 +3,8 @@
 // Inject CSS animations for loading experience
 (function(){const s=document.createElement('style');s.textContent='@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}#fun-fact{transition:opacity 0.2s ease}.gym-card{animation:fadeInUp 0.3s ease-out both}.animate-slide-up{animation:slideUp 0.3s ease-out}@keyframes skeletonPulse{0%,100%{opacity:.6}50%{opacity:.3}}@keyframes locationDot{0%,100%{box-shadow:0 0 0 0 rgba(255,109,0,.4)}50%{box-shadow:0 0 0 8px rgba(255,109,0,0)}}.skel-card{animation:skeletonPulse 1.8s ease-in-out infinite}.loc-dot{animation:locationDot 1.5s ease-in-out infinite}.cards-enter .gym-card{animation:fadeInUp .4s ease-out both}@keyframes toastIn{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes toastOut{from{transform:translateY(0);opacity:1}to{transform:translateY(-100%);opacity:0}}@keyframes spin{to{transform:rotate(360deg)}}.sg-spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}/* ── 3-Tab System (Polished) ── */.sg-tab-bar{position:fixed;bottom:0;left:0;right:0;height:56px;background:rgba(8,8,18,.98);backdrop-filter:blur(24px) saturate(1.8);-webkit-backdrop-filter:blur(24px) saturate(1.8);display:flex;align-items:center;justify-content:space-around;border-top:1px solid rgba(255,255,255,.06);z-index:9000;padding-bottom:env(safe-area-inset-bottom,0);pointer-events:auto!important}.sg-tab-item{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:6px 20px;border-radius:0;transition:all .25s cubic-bezier(.4,0,.2,1);-webkit-tap-highlight-color:transparent;user-select:none;position:relative;touch-action:manipulation}.sg-tab-item svg{width:26px;height:26px;stroke:rgba(255,255,255,.4);fill:none;stroke-width:1.8;transition:all .25s cubic-bezier(.4,0,.2,1)}.sg-tab-item .sg-tab-label{font-size:10px;font-weight:600;letter-spacing:.2px;color:rgba(255,255,255,.4);transition:all .25s cubic-bezier(.4,0,.2,1)}.sg-tab-item.active svg{stroke:#FF6D00;filter:drop-shadow(0 0 6px rgba(255,109,0,.35))}.sg-tab-item.active .sg-tab-label{color:#FF6D00}.sg-tab-item:active{transform:scale(.92)}.sg-tab-content{position:fixed;top:0;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom,0px));overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;scroll-behavior:smooth;display:flex;flex-direction:column}.sg-tab-content.reels-active{position:static;padding-bottom:0;overflow:visible}.sg-reels-frame{position:fixed;top:0;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom,0px));border:none;width:100%;height:calc(100vh - 56px - env(safe-area-inset-bottom,0px));z-index:1}.sg-more-hub{padding:20px 16px 24px;max-width:480px;margin:0 auto}.sg-more-section{margin-bottom:20px}.sg-more-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.3);margin-bottom:8px;padding-left:4px}.sg-more-item{display:flex;align-items:center;gap:14px;padding:14px 16px;background:rgba(255,255,255,.04);border-radius:14px;margin-bottom:6px;border:1px solid rgba(255,255,255,.04);cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}.sg-more-item:active{transform:scale(.98);background:rgba(255,255,255,.08)}.sg-more-item .sg-mi-icon{font-size:20px;width:40px;height:40px;background:rgba(255,255,255,.06);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.sg-more-item .sg-mi-text{flex:1}.sg-more-item .sg-mi-text h4{color:#fff;font-size:14px;font-weight:600;margin:0}.sg-more-item .sg-mi-text p{color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0}.sg-more-item .sg-mi-arrow{color:rgba(255,255,255,.2);font-size:16px}.sg-more-profile{display:flex;align-items:center;gap:14px;margin-bottom:28px;padding-top:12px}.sg-more-avatar{width:56px;height:56px;background:linear-gradient(135deg,#FF6D00,#fb923c);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff;flex-shrink:0}.sg-more-profile-info h3{color:#fff;font-size:18px;font-weight:700;margin:0}.sg-more-profile-info p{color:rgba(255,255,255,.4);font-size:13px;margin:2px 0 0}.sg-more-social{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}.sg-more-social a{display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:rgba(255,255,255,.04);border-radius:12px;border:1px solid rgba(255,255,255,.06);font-size:16px;transition:all .15s;text-decoration:none}.sg-more-social a:active{background:rgba(255,255,255,.1);transform:scale(.95)}.sg-more-back{display:flex;align-items:center;gap:8px;padding:12px 0;cursor:pointer;color:rgba(255,255,255,.6);font-size:14px;font-weight:600;margin-bottom:4px;-webkit-tap-highlight-color:transparent}.sg-more-back:active{color:#FF6D00}#sg-search-overlay{transition:opacity .2s ease}#sg-search-overlay.active{opacity:1!important}.hide-scrollbar::-webkit-scrollbar{display:none}.sg-dashboard{-webkit-tap-highlight-color:transparent;position:fixed;top:0;left:0;right:0;bottom:56px;z-index:10;overscroll-behavior:none;-webkit-overflow-scrolling:auto}html,body{height:100%;overflow:hidden;overscroll-behavior:none;position:fixed;width:100%}.sg-tab-bar.hidden{display:none!important}';document.head.appendChild(s)})();
 
-// ─── Dynamic Pricing Service — fetches localized prices from /api/pricing/prices ───
-window.__sgPricing = null;
-window.__sgPricingReady = false;
-window.__sgPricingCallbacks = [];
-
-// Fetch localized prices on page load
-(function initPricingService() {
-  const geo = window.__geoHint || {};
-  const params = new URLSearchParams();
-  // UK-only launch: always send GB to ensure GBP pricing
-  params.set('country', geo.country || 'GB');
-  if (geo.city) params.set('city', geo.city);
-  
-  fetch('/api/pricing/prices?' + params.toString())
-    .then(r => r.json())
-    .then(data => {
-      if (data.success) {
-        window.__sgPricing = data;
-        window.__sgPricingReady = true;
-        // Fire any queued callbacks
-        window.__sgPricingCallbacks.forEach(cb => { try { cb(data); } catch(e) {} });
-        window.__sgPricingCallbacks = [];
-        // Re-render price elements if already on page
-        document.querySelectorAll('[data-sg-price]').forEach(el => {
-          const pt = el.getAttribute('data-sg-price');
-          const p = data.prices[pt];
-          if (p) el.textContent = p.display;
-        });
-      }
-    })
-    .catch(() => {
-      // v4.0: Fallback prices — flat £4.49 base day pass
-      window.__sgPricing = {
-        location: { currency: 'gbp', symbol: '£' },
-        prices: {
-          day: { amount: 4.49, display: '£4.49', stripeAmount: 449 },
-          '3day': { amount: 11.99, display: '£11.99', stripeAmount: 1199 },
-          weekly: { amount: 22.49, display: '£22.49', stripeAmount: 2249 },
-          monthly: { amount: 44.99, display: '£44.99', stripeAmount: 4499 },
-        },
-        // v4.0: Surge removed — flat pricing
-      };
-      window.__sgPricingReady = true;
-    });
-})();
-
-/**
- * Get current price for a pass type. Returns { amount, display, symbol, currency }
- * Falls back to GBP if pricing hasn't loaded yet.
- */
-function sgPrice(passType) {
-  const p = window.__sgPricing;
-  if (p && p.prices && p.prices[passType]) {
-    const pr = p.prices[passType];
-    return {
-      amount: pr.amount,
-      display: pr.display,
-      symbol: p.location?.symbol || '£',
-      currency: p.location?.currency || 'gbp',
-      stripeAmount: pr.stripeAmount,
-    };
-  }
-  // v4.0: Fallback defaults — flat £4.49 base
-  const defaults = { day: 4.49, '3day': 11.99, weekly: 22.49, monthly: 44.99 };
-  const amt = defaults[passType] || 4.49;
-  return { amount: amt, display: '£' + amt.toFixed(2), symbol: '£', currency: 'gbp', stripeAmount: Math.round(amt * 100) };
-}
-
-/** Get the user's currency symbol */
-function sgSymbol() {
-  return window.__sgPricing?.location?.symbol || '£';
-}
+// ─── Pricing: loaded from /pricing.js (shared across all pages) ───
+// sgPrice(), sgSymbol(), sgCommissionRange() are global — see pricing.js
 
 // ─── Toast Notification System (replaces alert()) ───
 window.sgToast=function(msg, type='error', duration=4000){
@@ -4604,7 +4534,7 @@ function CreatorsPage(){
           ${[
             {step:'01',title:'Sign Up & Get Your Link',desc:'Create your free FlexSquad account. Instantly receive your personal referral page at <strong class="text-brand">scangym.com/r/yourname</strong>.',icon:'🔗'},
             {step:'02',title:'Share Gyms You Love',desc:'Post gym content, share your link, and use our <strong class="text-white">388+ ready-made assets</strong> — stories, reels, posts, videos. All free.',icon:'📤'},
-            {step:'03',title:'Earn On Every Booking',desc:'When someone books through your link you earn <strong class="text-brand">25% commission</strong> (~£1–£11 per booking). Paid weekly. No caps.',icon:'💰'},
+            {step:'03',title:'Earn On Every Booking',desc:'When someone books through your link you earn <strong class="text-brand">25% commission</strong> (${sgCommissionRange()} per booking). Paid weekly. No caps.',icon:'💰'},
           ].map(s=>`
             <div class="bg-card rounded-2xl p-8 border border-slate-700/50 hover:border-brand/20 transition h-full">
               <div class="flex items-center gap-4 mb-4">
@@ -4628,7 +4558,7 @@ function CreatorsPage(){
         <div class="grid md:grid-cols-2 gap-8 items-center">
           <div class="bg-card rounded-2xl p-8 border border-slate-700/50">
             <h3 class="text-white font-bold text-lg mb-2">Referrals per month</h3>
-            <p class="text-slate-400 text-sm mb-6">Earn <strong class="text-brand">25% commission</strong> (~£1–£11) per booking</p>
+            <p class="text-slate-400 text-sm mb-6">Earn <strong class="text-brand">25% commission</strong> (${sgCommissionRange()}) per booking</p>
             <div class="flex items-center gap-4 mb-4">
               <span id="calc-val" class="bg-slate-800 text-white text-3xl font-bold px-6 py-3 rounded-xl min-w-[100px] text-center">10</span>
               <span class="text-slate-500">bookings</span>
@@ -4881,7 +4811,7 @@ function CreatorsPage(){
         <div class="space-y-3">
           ${[
             {q:'How much does it cost to join FlexSquad?',a:'Nothing. Zero. FlexSquad is completely free to join. Sign up, get your link, start earning immediately.'},
-            {q:'How much can I realistically earn?',a:'Explorers typically earn £50-150/mo, Ambassadors £200-500/mo, Elite Creators £500-1,200/mo, and Legends £1,200-5,000+/mo. Commission is 25% of every booking (~£1–£11 each).'},
+            {q:'How much can I realistically earn?',a:'Explorers typically earn £50-150/mo, Ambassadors £200-500/mo, Elite Creators £500-1,200/mo, and Legends £1,200-5,000+/mo. Commission is 25% of every booking ('+sgCommissionRange()+' each).'},
             {q:'Do I need a minimum number of followers?',a:'No! We have no follower requirements. Some of our top earners started with small, highly engaged audiences. Quality over quantity.'},
             {q:'How and when do I get paid?',a:'Earnings are paid weekly via direct bank transfer. No minimum payout threshold — even £5 gets sent.'},
             {q:'What content should I post?',a:'Anything gym-related! Gym tours, workout clips, reviews, booking walkthroughs, money-saving tips. We provide 388+ ready-made assets and a creator playbook with caption templates.'},
@@ -8616,7 +8546,7 @@ function OwnerControlsPage(){
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
         <button onclick="document.getElementById('sg-owner-price').value='3.00'" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);color:rgba(255,255,255,.5);padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer">£3</button>
-        <button onclick="document.getElementById('sg-owner-price').value='4.49'" style="background:rgba(255,109,0,.1);border:1px solid rgba(255,109,0,.2);color:#FF6D00;padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer">£4.49</button>
+        <button onclick="document.getElementById('sg-owner-price').value='${sgPrice('day').amount.toFixed(2)}'" style="background:rgba(255,109,0,.1);border:1px solid rgba(255,109,0,.2);color:#FF6D00;padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer">${sgPrice('day').display}</button>
         <button onclick="document.getElementById('sg-owner-price').value='7.50'" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);color:rgba(255,255,255,.5);padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer">£7.50</button>
         <button onclick="document.getElementById('sg-owner-price').value='12.00'" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);color:rgba(255,255,255,.5);padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer">£12</button>
         <button onclick="document.getElementById('sg-owner-price').value='18.00'" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);color:rgba(255,255,255,.5);padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer">£18</button>
