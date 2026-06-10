@@ -976,6 +976,8 @@ async function loadGyms(lat,lng){
     render();
     // Fetch real travel times if we have user's GPS
     if(lat&&lng){window._travelTimesLoaded=false;fetchRealTravelTimes(lat,lng);}
+    // Start real social proof toasts (uses loaded gym data)
+    if(window.sgSocialProofToast) window.sgSocialProofToast();
     // If we have more pages, load them in background
     if(data.nextPageToken){
       setTimeout(async()=>{
@@ -1019,6 +1021,8 @@ async function searchGyms(query, isExplicit, _triggerLayer){
     state.gyms=data.gyms||[];
     state.nextPageToken=data.nextPageToken||null;
     render();
+    // Start real social proof toasts
+    if(window.sgSocialProofToast) window.sgSocialProofToast();
     // Load more pages
     if(data.nextPageToken){
       setTimeout(async()=>{
@@ -10040,10 +10044,159 @@ window.sgFlashDeal=function(){
 
 // ─── 7. SOCIAL PROOF COUNTERS (Instagram likes + Booking.com) ───
 // Mechanic #5 Social Validation + #15 Social Proof Counters
-// H7 fix: Removed fake social proof toasts — "someone just booked" notifications
-// were using hardcoded names with 0 real users. Will be replaced with real activity
-// feed once there are actual bookings.
-window.sgSocialProofToast=function(){}; // no-op stub
+// H7 fix: REAL social proof toasts — 5 principles of authentic social proof:
+// 1. Specificity — real gym names, real ratings, real review counts
+// 2. Imperfection — real numbers (4.3 not 5.0), odd counts
+// 3. Verifiability — all data from Google Places API, user can check
+// 4. Recency + timestamps — varied intervals, no clockwork timing
+// 5. Variety — different toast types, different gyms, never repetitive
+(function(){
+  var _toastQueue=[];
+  var _toastShown=0;
+  var _maxToasts=5; // max per session — don't annoy
+  var _toastActive=false;
+  var _toastTimer=null;
+  var _lastGymUsed={};
+
+  // Build toast messages from REAL data in state.gyms
+  function _buildRealToasts(){
+    var gyms=(window.state&&window.state.gyms)||[];
+    if(!gyms.length) return [];
+    var toasts=[];
+    var city=(window.state&&window.state.searchQuery)||'your area';
+
+    // Type 1: Real Google review data — "PureGym Bolton has 4.3★ from 847 reviews"
+    gyms.forEach(function(g){
+      if(g.rating&&g.totalReviews&&g.totalReviews>10&&!_lastGymUsed[g.id+'_review']){
+        toasts.push({
+          icon:'⭐',
+          text:''+(g.name||'A gym nearby')+' has '+g.rating+'★ from '+(g.totalReviews||0)+' reviews',
+          type:'review',
+          gymId:g.id
+        });
+      }
+    });
+
+    // Type 2: Open right now — "3 gyms near you are open right now"
+    var openCount=gyms.filter(function(g){return g.openNow!==false;}).length;
+    if(openCount>0){
+      toasts.push({
+        icon:'🟢',
+        text:openCount+' gym'+(openCount>1?'s':'')+' near '+city+' '+(openCount>1?'are':'is')+' open right now',
+        type:'open'
+      });
+    }
+
+    // Type 3: High-rated gems — "⭐ 4.7★ gym found nearby — [name]"
+    var topRated=gyms.filter(function(g){return g.rating&&g.rating>=4.5&&g.totalReviews>20;});
+    topRated.forEach(function(g){
+      if(!_lastGymUsed[g.id+'_top']){
+        toasts.push({
+          icon:'💎',
+          text:g.rating+'★ gym with '+(g.totalReviews||0)+' reviews — '+(g.name||'Nearby'),
+          type:'toprated',
+          gymId:g.id
+        });
+      }
+    });
+
+    // Type 4: Gym count in area — "12 gyms available in Bolton"
+    if(gyms.length>2){
+      toasts.push({
+        icon:'📍',
+        text:gyms.length+' gyms available in '+city,
+        type:'count'
+      });
+    }
+
+    // Type 5: Recently reviewed — "[Gym] got a new review recently"
+    gyms.forEach(function(g){
+      if(g.totalReviews&&g.totalReviews>50&&!_lastGymUsed[g.id+'_active']){
+        toasts.push({
+          icon:'💬',
+          text:(g.name||'A gym nearby')+' — '+g.totalReviews+' reviews and counting',
+          type:'active',
+          gymId:g.id
+        });
+      }
+    });
+
+    // Shuffle for variety (Fisher-Yates)
+    for(var i=toasts.length-1;i>0;i--){
+      var j=Math.floor(Math.random()*(i+1));
+      var tmp=toasts[i];toasts[i]=toasts[j];toasts[j]=tmp;
+    }
+    return toasts;
+  }
+
+  function _showToast(t){
+    if(_toastActive||_toastShown>=_maxToasts) return;
+    _toastActive=true;
+    _toastShown++;
+    if(t.gymId) _lastGymUsed[t.gymId+'_'+t.type]=true;
+
+    var el=document.createElement('div');
+    el.className='sg-social-toast';
+    el.style.cssText='position:fixed;bottom:70px;left:12px;right:12px;max-width:380px;margin:0 auto;'+
+      'background:rgba(15,15,25,0.92);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);'+
+      'border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:12px 16px;'+
+      'display:flex;align-items:center;gap:10px;z-index:8500;'+
+      'box-shadow:0 8px 32px rgba(0,0,0,0.4);'+
+      'animation:toastIn .35s cubic-bezier(.4,0,.2,1);cursor:pointer;'+
+      'font-size:13px;color:rgba(255,255,255,0.85);line-height:1.4';
+    el.innerHTML='<span style="font-size:18px;flex-shrink:0">'+t.icon+'</span>'+
+      '<span style="flex:1">'+t.text+'</span>'+
+      '<span style="color:rgba(255,255,255,0.25);font-size:11px;flex-shrink:0">just now</span>';
+
+    // Dismiss on tap
+    el.onclick=function(){_dismissToast(el);};
+    document.body.appendChild(el);
+
+    // Auto-dismiss after 4s
+    setTimeout(function(){_dismissToast(el);},4000);
+  }
+
+  function _dismissToast(el){
+    if(!el||!el.parentNode) return;
+    el.style.animation='toastOut .3s ease-in forwards';
+    setTimeout(function(){
+      if(el.parentNode) el.parentNode.removeChild(el);
+      _toastActive=false;
+    },300);
+  }
+
+  function _scheduleNext(){
+    if(_toastShown>=_maxToasts||!_toastQueue.length) return;
+    // Principle 4: VARIED timing — 15-45s random (not clockwork)
+    var delay=15000+Math.floor(Math.random()*30000);
+    _toastTimer=setTimeout(function(){
+      if(_toastQueue.length){
+        _showToast(_toastQueue.shift());
+      }
+      _scheduleNext();
+    },delay);
+  }
+
+  // Public: start real social proof (called after gyms load)
+  window.sgSocialProofToast=function(){
+    if(_toastShown>=_maxToasts) return;
+    _toastQueue=_buildRealToasts();
+    if(!_toastQueue.length) return;
+    // Principle 4: First toast after 8-15s delay (not instant)
+    var firstDelay=8000+Math.floor(Math.random()*7000);
+    if(_toastTimer) clearTimeout(_toastTimer);
+    _toastTimer=setTimeout(function(){
+      if(_toastQueue.length) _showToast(_toastQueue.shift());
+      _scheduleNext();
+    },firstDelay);
+  };
+
+  // Stop toasts (e.g. when navigating away)
+  window.sgSocialProofStop=function(){
+    if(_toastTimer) clearTimeout(_toastTimer);
+    _toastQueue=[];
+  };
+})();
 
 // ─── 8. SUNK COST DISPLAY (mechanic #17) ───
 // Show users how much they've "invested" in ScanGym — makes them feel it's too valuable to leave
