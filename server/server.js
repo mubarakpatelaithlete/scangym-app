@@ -277,15 +277,20 @@ app.get('/api/v2/health', (req, res) => {
 });
 
 // -- Config endpoint (public keys for frontend) --
-// gymCount = 1,200,000 — the Google Places searchable universe.
-// ScanGym uses live Google Places search, so any gym on Earth is bookable.
+// gymCount — real number from the database (honest metric)
 app.get("/api/config", async (req, res) => {
+  let gymCount = 0;
+  try {
+    const pool = require('./middleware/db');
+    const result = await pool.query('SELECT COUNT(*) FROM gyms');
+    gymCount = parseInt(result.rows[0].count, 10) || 0;
+  } catch (e) { /* DB unavailable — show 0 */ }
   res.json({
     mapsKey: process.env.GOOGLE_MAPS_API_KEY || "",
     stripeKey: process.env.STRIPE_PUBLISHABLE_KEY || "",
     brand: "ScanGym",
     liveSearch: true,
-    gymCount: 1200000, // Google Places searchable gyms worldwide
+    gymCount,
   });
 });
 
