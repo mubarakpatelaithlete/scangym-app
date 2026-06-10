@@ -1984,6 +1984,10 @@
         }
       }
 
+      // M5 fix: iOS-compatible save — uses navigator.share (file) on iOS,
+      // <a download> on Android/desktop, long-press hint as last resort.
+      var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
       function handleSave(video, url){
         if(navigator.vibrate) navigator.vibrate(10);
         if(!url) return;
@@ -1993,6 +1997,21 @@
           if(!res.ok) throw new Error('Download failed');
           return res.blob();
         }).then(function(blob){
+          // iOS path: use Web Share API with the video file
+          if(isIOS && navigator.canShare){
+            var file = new File([blob], fname, { type: 'video/mp4' });
+            var shareData = { files: [file] };
+            if(navigator.canShare(shareData)){
+              return navigator.share(shareData).then(function(){
+                showToast('\u2705 Saved!');
+              }).catch(function(err){
+                if(err && err.name === 'AbortError') return; // user cancelled
+                // canShare said yes but share failed — try long-press hint
+                iosLongPressHint(url);
+              });
+            }
+          }
+          // Android / desktop path: invisible link click
           var blobUrl = URL.createObjectURL(blob);
           var a = document.createElement('a');
           a.href = blobUrl;
@@ -2003,10 +2022,20 @@
           setTimeout(function(){ URL.revokeObjectURL(blobUrl); }, 1000);
           showToast('\u2705 Saved!');
         }).catch(function(){
-          // Fallback: open in new tab if fetch fails (e.g. CORS)
-          window.open(url, '_blank');
-          showToast('\u2197\uFE0F Opened in new tab');
+          if(isIOS){
+            iosLongPressHint(url);
+          } else {
+            // Desktop/Android fallback: open in new tab
+            window.open(url, '_blank');
+            showToast('\u2197\uFE0F Opened in new tab');
+          }
         });
+      }
+
+      // Last-resort iOS fallback: open video and tell user to long-press → Save
+      function iosLongPressHint(url){
+        window.open(url, '_blank');
+        showToast('\uD83D\uDC46 Long-press the video \u2192 Save to Photos');
       }
 
       function showSoundHint(){
