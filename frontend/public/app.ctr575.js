@@ -5808,20 +5808,16 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
   const finalIsSaved=finalPayMethod==='saved'&&gbs.savedCard;
   const finalHasPayment=finalIsCash||finalIsSaved;
 
-  // ═══ LOGIN GATE: Guest users must sign in before booking ═══
-  if(!state.user){
-    window._pendingCheckout={gymId, prefillDate:selDate, prefillTime:selTime};
-    sgToast('🔑 Sign in to book your gym session','info',3000);
-    navigate('/login');
-    return;
-  }
-  // ═══ UBER GATE: Require payment method before showing confirm ═══
-  if(!finalHasPayment){
+  // ═══ C8 FIX: No login gate — guests can book with email + card ═══
+  const _isGuest=!state.user;
+  // For logged-in users with no payment method, open payment overlay
+  if(!_isGuest&&!finalHasPayment){
     window._pendingCheckout={gymId, prefillDate:selDate, prefillTime:selTime};
     openGymOverlay('payment');
     sgToast('💳 Add a payment method to book','info',3000);
     return;
   }
+  // Guests always proceed — they'll enter email + card inline
 
   sheet.innerHTML=`
   <style>
@@ -5916,14 +5912,36 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
 
       <div class="ub-accent"></div>
 
+      <!-- C8 fix: Guest email + inline Stripe Elements (no login required) -->
+      ${_isGuest?`
+      <div style="padding:14px 24px 0">
+        <div style="color:rgba(255,255,255,.5);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">📧 Your email (for receipt & QR code)</div>
+        <input type="email" id="ub-guest-email" placeholder="your@email.com" value="${savedEmail}" autocomplete="email" inputmode="email"
+          style="width:100%;box-sizing:border-box;background:#111827;border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:14px 16px;color:#fff;font-size:15px;outline:none;font-family:-apple-system,BlinkMacSystemFont,sans-serif;transition:border-color .2s"
+          onfocus="this.style.borderColor='#22c55e'" onblur="this.style.borderColor='rgba(255,255,255,.15)'"
+          oninput="localStorage.setItem('sg_last_email',this.value.trim())">
+      </div>
+      <div style="padding:10px 24px 0">
+        <div style="color:rgba(255,255,255,.5);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">💳 Payment</div>
+        <div id="ub-stripe-area">
+          <div style="padding:16px;text-align:center;color:rgba(255,255,255,.3);font-size:13px" id="ub-stripe-loading-msg">Loading payment…</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:10px;cursor:pointer;padding:10px 0" onclick="window._checkoutState.payMode='cash';document.getElementById('ub-cta-text').textContent='Confirm · pay at gym';document.getElementById('ub-cash-check').textContent='✓';sgToast('💷 Cash at gym selected','info',2000)">
+          <span style="font-size:18px">💷</span>
+          <span style="color:rgba(255,255,255,.6);font-size:13px;flex:1">Or pay cash at the gym</span>
+          <span id="ub-cash-check" style="color:#22c55e;font-size:16px;font-weight:700"></span>
+        </div>
+      </div>
+      `:''}
+
       <!-- Error area -->
       <div class="ub-error hidden" id="ub-confirm-error">
         <div class="ub-error-text"></div>
       </div>
 
       <div class="ub-footer">
-        <button class="ub-cta ub-cta-primary" id="ub-cta-btn" onclick="ubConfirmPay()">
-          <span id="ub-cta-text">${finalIsCash?'Confirm · pay at gym':'Confirm and pay'}</span>
+        <button class="ub-cta ${_isGuest?'ub-cta-disabled':'ub-cta-primary'}" id="ub-cta-btn" onclick="ubConfirmPay()" ${_isGuest?'style="opacity:.5;pointer-events:none"':''}>
+          <span id="ub-cta-text">${_isGuest?'Enter email & card to book':finalIsCash?'Confirm · pay at gym':'Confirm and pay'}</span>
         </button>
       </div>
     </div>
@@ -5945,7 +5963,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
     selectedPass:selPass,
     selectedDate:selDate,
     selectedTime:resolvedTime,
-    payMode:finalIsCash?'cash':finalIsSaved?'saved':'none',
+    payMode:_isGuest?'none':finalIsCash?'cash':finalIsSaved?'saved':'none',
     savedCardId:finalIsSaved?gbs.savedCard.id:null,
     bookingId:null,
     intentId:null,
@@ -5953,8 +5971,15 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
     stripe:null,
     elements:null,
     gymId:gymId,
-    ready:finalHasPayment,
+    gym:gym,
+    isGuest:_isGuest,
+    ready:_isGuest?false:finalHasPayment,
   };
+
+  // C8 fix: For guests, initialize Stripe Elements inline (no login needed)
+  if(_isGuest){
+    _initUberPaymentNew(gymId,gym);
+  }
 
   // ═══ Swipe-down-to-close on bottom sheet ═══
   (function(){
@@ -5999,8 +6024,20 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
 
     errEl?.classList.add('hidden');
 
-    // ─── No payment method → open wallet overlay ───
-    if(cs.payMode==='none'||(!cs.payMode)){
+    // ─── C8 fix: For guests, validate email before any payment path ───
+    if(cs.isGuest){
+      const guestEmailEl=document.getElementById('ub-guest-email');
+      const guestEmail=(guestEmailEl?.value||'').trim();
+      if(!guestEmail||!guestEmail.includes('@')||!guestEmail.includes('.')){
+        sgToast('📧 Please enter a valid email address','info',3000);
+        if(guestEmailEl)guestEmailEl.focus();
+        return;
+      }
+      localStorage.setItem('sg_last_email',guestEmail);
+    }
+
+    // ─── No payment method → open wallet overlay (logged-in users only) ───
+    if((cs.payMode==='none'||(!cs.payMode))&&!cs.isGuest){
       closeBookingSheet();
       setTimeout(()=>openGymOverlay('payment'),300);
       sgToast('💳 Add a payment method first','info',3000);
