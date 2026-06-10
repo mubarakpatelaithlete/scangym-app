@@ -7,21 +7,21 @@
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0a0a16;color:#fff;min-height:100vh}
-    .header{background:linear-gradient(135deg,#111827,#1f2937);padding:20px 24px;border-bottom:1px solid rgba(249,115,22,.2);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+    .header{background:linear-gradient(135deg,#111827,#1f2937);padding:20px 24px;border-bottom:1px solid rgba(255,109,0,.2);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
     .header h1{font-size:22px;font-weight:800;display:flex;align-items:center;gap:8px}
-    .header h1 span{color:#f97316}
+    .header h1 span{color:#FF6D00}
     .header p{color:rgba(255,255,255,.4);font-size:13px;margin-top:4px}
     .period-btns{display:flex;gap:6px}
     .period-btn{padding:7px 16px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.5);transition:.15s}
-    .period-btn.active{background:rgba(249,115,22,.15);border-color:rgba(249,115,22,.3);color:#f97316}
+    .period-btn.active{background:rgba(255,109,0,.15);border-color:rgba(255,109,0,.3);color:#FF6D00}
     .period-btn:hover{background:rgba(255,255,255,.08)}
     .content{padding:16px 24px;max-width:1200px;margin:0 auto}
     .section-title{font-size:16px;font-weight:800;margin:24px 0 12px;display:flex;align-items:center;gap:8px}
     .section-title:first-child{margin-top:8px}
     .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:8px}
     .stat{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px;text-align:center;transition:.15s}
-    .stat:hover{border-color:rgba(249,115,22,.2)}
-    .stat .num{font-size:26px;font-weight:800;color:#f97316}
+    .stat:hover{border-color:rgba(255,109,0,.2)}
+    .stat .num{font-size:26px;font-weight:800;color:#FF6D00}
     .stat .lbl{font-size:11px;color:rgba(255,255,255,.4);margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
     .stat .sub{font-size:11px;color:rgba(255,255,255,.25);margin-top:2px}
     .funnel{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:20px;margin-bottom:8px}
@@ -30,27 +30,27 @@
     .funnel-bar-wrap{flex:1;background:rgba(255,255,255,.06);border-radius:8px;height:32px;overflow:hidden;position:relative}
     .funnel-bar{height:100%;border-radius:8px;transition:width .6s ease;display:flex;align-items:center;padding:0 12px;font-size:12px;font-weight:700;min-width:40px}
     .funnel-label{width:130px;font-size:13px;font-weight:600;color:rgba(255,255,255,.7);flex-shrink:0}
-    .funnel-count{width:60px;text-align:right;font-size:13px;font-weight:700;color:#f97316;flex-shrink:0}
+    .funnel-count{width:60px;text-align:right;font-size:13px;font-weight:700;color:#FF6D00;flex-shrink:0}
     .funnel-pct{width:50px;text-align:right;font-size:12px;color:rgba(255,255,255,.4);flex-shrink:0}
     .chart-container{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:20px;margin-bottom:8px}
     .chart-bars{display:flex;align-items:flex-end;gap:4px;height:120px;padding-top:8px}
     .chart-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;height:100%}
-    .chart-bar{width:100%;border-radius:4px 4px 0 0;background:linear-gradient(180deg,#f97316,#ea580c);min-height:2px;transition:height .4s ease;margin-top:auto}
+    .chart-bar{width:100%;border-radius:4px 4px 0 0;background:linear-gradient(180deg,#FF6D00,#E66200);min-height:2px;transition:height .4s ease;margin-top:auto}
     .chart-bar-label{font-size:9px;color:rgba(255,255,255,.3);margin-top:4px;white-space:nowrap}
-    .chart-bar-val{font-size:9px;color:#f97316;font-weight:700;margin-bottom:2px}
+    .chart-bar-val{font-size:9px;color:#FF6D00;font-weight:700;margin-bottom:2px}
     .table-wrap{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;overflow:hidden;margin-bottom:8px}
     table{width:100%;border-collapse:collapse}
     th{text-align:left;padding:12px 16px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:rgba(255,255,255,.4);background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.06)}
     td{padding:10px 16px;font-size:13px;border-bottom:1px solid rgba(255,255,255,.04)}
     tr:hover td{background:rgba(255,255,255,.02)}
-    .source-bar{height:6px;border-radius:3px;background:linear-gradient(90deg,#f97316,#fb923c);display:inline-block;vertical-align:middle;margin-left:8px}
+    .source-bar{height:6px;border-radius:3px;background:linear-gradient(90deg,#FF6D00,#fb923c);display:inline-block;vertical-align:middle;margin-left:8px}
     .login-gate{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;text-align:center;padding:24px}
     .login-gate h2{font-size:24px;font-weight:800;margin-bottom:8px}
     .login-gate p{color:rgba(255,255,255,.4);margin-bottom:20px}
-    .login-gate .btn{padding:12px 32px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;border:none;background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;box-shadow:0 4px 20px rgba(249,115,22,.3)}
+    .login-gate .btn{padding:12px 32px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;border:none;background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff;box-shadow:0 4px 20px rgba(255,109,0,.3)}
     .badge-pill{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700}
     .loading{text-align:center;padding:60px;color:rgba(255,255,255,.3)}
-    .loading .spinner{width:32px;height:32px;border:3px solid rgba(255,255,255,.1);border-top-color:#f97316;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+    .loading .spinner{width:32px;height:32px;border:3px solid rgba(255,255,255,.1);border-top-color:#FF6D00;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
     @keyframes spin{to{transform:rotate(360deg)}}
     @media(max-width:600px){.stats{grid-template-columns:repeat(2,1fr)}.funnel-label{width:90px;font-size:11px}.header{flex-direction:column;align-items:flex-start}}
   </style>
@@ -100,7 +100,7 @@
 
         // Handle auth errors — show login prompt instead of zeros
         if (d.error) {
-          main.innerHTML = '<div class="loading">⚠️ ' + esc(d.message || d.error) + '<br><br><a href="/login" style="color:#f97316">→ Login</a></div>';
+          main.innerHTML = '<div class="loading">⚠️ ' + esc(d.message || d.error) + '<br><br><a href="/login" style="color:#FF6D00">→ Login</a></div>';
           return;
         }
 
@@ -149,7 +149,7 @@
             { label: 'Visitors', val: f['1_visitors'] || 0, color: '#3b82f6' },
             { label: 'Searched', val: f['2_searched'] || 0, color: '#8b5cf6' },
             { label: 'Viewed Gym', val: f['3_viewed_profile'] || 0, color: '#ec4899' },
-            { label: 'Checkout', val: f['4_started_checkout'] || 0, color: '#f97316' },
+            { label: 'Checkout', val: f['4_started_checkout'] || 0, color: '#FF6D00' },
             { label: 'Paid Booking', val: f['5_paid_booking'] || 0, color: '#22c55e' },
           ];
           const maxF = Math.max(steps[0].val, 1);
@@ -204,7 +204,7 @@
         if (cr?.creators?.length) {
           html += '<div class="table-wrap"><table><thead><tr><th>Creator</th><th>Tier</th><th>Referrals</th><th>Conversions</th><th>Earnings</th></tr></thead><tbody>';
           cr.creators.forEach(c => {
-            const tierColors = { starter:'rgba(34,197,94,.15)', rising:'rgba(251,191,36,.15)', pro:'rgba(249,115,22,.15)', legend:'rgba(168,85,247,.15)' };
+            const tierColors = { starter:'rgba(34,197,94,.15)', rising:'rgba(251,191,36,.15)', pro:'rgba(255,109,0,.15)', legend:'rgba(168,85,247,.15)' };
             const tierBg = tierColors[c.tier] || 'rgba(255,255,255,.06)';
             html += `<tr>
               <td style="font-weight:600">${esc(c.name || c.handle || 'Creator #' + c.id)}</td>
@@ -222,14 +222,14 @@
           html += '<div class="section-title">📄 Top Pages</div>';
           html += '<div class="table-wrap"><table><thead><tr><th>Page</th><th>Hits</th></tr></thead><tbody>';
           d.topPages.forEach(p => {
-            html += `<tr><td style="font-family:monospace;font-size:12px">${esc(p.path)}</td><td style="font-weight:700;color:#f97316">${fmt(p.hits)}</td></tr>`;
+            html += `<tr><td style="font-family:monospace;font-size:12px">${esc(p.path)}</td><td style="font-weight:700;color:#FF6D00">${fmt(p.hits)}</td></tr>`;
           });
           html += '</tbody></table></div>';
         }
 
         main.innerHTML = html;
       } catch (e) {
-        main.innerHTML = '<div class="loading">⚠️ Failed to load dashboard. Make sure you\'re logged in as admin.<br><br><a href="/login" style="color:#f97316">→ Login</a></div>';
+        main.innerHTML = '<div class="loading">⚠️ Failed to load dashboard. Make sure you\'re logged in as admin.<br><br><a href="/login" style="color:#FF6D00">→ Login</a></div>';
       }
     }
 

@@ -1,7 +1,7 @@
 // ScanGym Frontend v5.3.0 — Uber-grade location accuracy (reverse geocoding, accuracy gate, dynamic radius)
 
 // Inject CSS animations for loading experience
-(function(){const s=document.createElement('style');s.textContent='@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}#fun-fact{transition:opacity 0.2s ease}.gym-card{animation:fadeInUp 0.3s ease-out both}.animate-slide-up{animation:slideUp 0.3s ease-out}@keyframes skeletonPulse{0%,100%{opacity:.6}50%{opacity:.3}}@keyframes locationDot{0%,100%{box-shadow:0 0 0 0 rgba(249,115,22,.4)}50%{box-shadow:0 0 0 8px rgba(249,115,22,0)}}.skel-card{animation:skeletonPulse 1.8s ease-in-out infinite}.loc-dot{animation:locationDot 1.5s ease-in-out infinite}.cards-enter .gym-card{animation:fadeInUp .4s ease-out both}@keyframes toastIn{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes toastOut{from{transform:translateY(0);opacity:1}to{transform:translateY(-100%);opacity:0}}@keyframes spin{to{transform:rotate(360deg)}}.sg-spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}/* ── 3-Tab System (Polished) ── */.sg-tab-bar{position:fixed;bottom:0;left:0;right:0;height:56px;background:rgba(8,8,18,.98);backdrop-filter:blur(24px) saturate(1.8);-webkit-backdrop-filter:blur(24px) saturate(1.8);display:flex;align-items:center;justify-content:space-around;border-top:1px solid rgba(255,255,255,.06);z-index:9000;padding-bottom:env(safe-area-inset-bottom,0);pointer-events:auto!important}.sg-tab-item{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:6px 20px;border-radius:0;transition:all .25s cubic-bezier(.4,0,.2,1);-webkit-tap-highlight-color:transparent;user-select:none;position:relative;touch-action:manipulation}.sg-tab-item svg{width:26px;height:26px;stroke:rgba(255,255,255,.4);fill:none;stroke-width:1.8;transition:all .25s cubic-bezier(.4,0,.2,1)}.sg-tab-item .sg-tab-label{font-size:10px;font-weight:600;letter-spacing:.2px;color:rgba(255,255,255,.4);transition:all .25s cubic-bezier(.4,0,.2,1)}.sg-tab-item.active svg{stroke:#f97316;filter:drop-shadow(0 0 6px rgba(249,115,22,.35))}.sg-tab-item.active .sg-tab-label{color:#f97316}.sg-tab-item:active{transform:scale(.92)}.sg-tab-content{position:fixed;top:0;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom,0px));overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;scroll-behavior:smooth;display:flex;flex-direction:column}.sg-tab-content.reels-active{position:static;padding-bottom:0;overflow:visible}.sg-reels-frame{position:fixed;top:0;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom,0px));border:none;width:100%;height:calc(100vh - 56px - env(safe-area-inset-bottom,0px));z-index:1}.sg-more-hub{padding:20px 16px 24px;max-width:480px;margin:0 auto}.sg-more-section{margin-bottom:20px}.sg-more-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.3);margin-bottom:8px;padding-left:4px}.sg-more-item{display:flex;align-items:center;gap:14px;padding:14px 16px;background:rgba(255,255,255,.04);border-radius:14px;margin-bottom:6px;border:1px solid rgba(255,255,255,.04);cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}.sg-more-item:active{transform:scale(.98);background:rgba(255,255,255,.08)}.sg-more-item .sg-mi-icon{font-size:20px;width:40px;height:40px;background:rgba(255,255,255,.06);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.sg-more-item .sg-mi-text{flex:1}.sg-more-item .sg-mi-text h4{color:#fff;font-size:14px;font-weight:600;margin:0}.sg-more-item .sg-mi-text p{color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0}.sg-more-item .sg-mi-arrow{color:rgba(255,255,255,.2);font-size:16px}.sg-more-profile{display:flex;align-items:center;gap:14px;margin-bottom:28px;padding-top:12px}.sg-more-avatar{width:56px;height:56px;background:linear-gradient(135deg,#f97316,#fb923c);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff;flex-shrink:0}.sg-more-profile-info h3{color:#fff;font-size:18px;font-weight:700;margin:0}.sg-more-profile-info p{color:rgba(255,255,255,.4);font-size:13px;margin:2px 0 0}.sg-more-social{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}.sg-more-social a{display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:rgba(255,255,255,.04);border-radius:12px;border:1px solid rgba(255,255,255,.06);font-size:16px;transition:all .15s;text-decoration:none}.sg-more-social a:active{background:rgba(255,255,255,.1);transform:scale(.95)}.sg-more-back{display:flex;align-items:center;gap:8px;padding:12px 0;cursor:pointer;color:rgba(255,255,255,.6);font-size:14px;font-weight:600;margin-bottom:4px;-webkit-tap-highlight-color:transparent}.sg-more-back:active{color:#f97316}#sg-search-overlay{transition:opacity .2s ease}#sg-search-overlay.active{opacity:1!important}.hide-scrollbar::-webkit-scrollbar{display:none}.sg-dashboard{-webkit-tap-highlight-color:transparent;position:fixed;top:0;left:0;right:0;bottom:56px;z-index:10;overscroll-behavior:none;-webkit-overflow-scrolling:auto}html,body{height:100%;overflow:hidden;overscroll-behavior:none;position:fixed;width:100%}.sg-tab-bar.hidden{display:none!important}';document.head.appendChild(s)})();
+(function(){const s=document.createElement('style');s.textContent='@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}#fun-fact{transition:opacity 0.2s ease}.gym-card{animation:fadeInUp 0.3s ease-out both}.animate-slide-up{animation:slideUp 0.3s ease-out}@keyframes skeletonPulse{0%,100%{opacity:.6}50%{opacity:.3}}@keyframes locationDot{0%,100%{box-shadow:0 0 0 0 rgba(255,109,0,.4)}50%{box-shadow:0 0 0 8px rgba(255,109,0,0)}}.skel-card{animation:skeletonPulse 1.8s ease-in-out infinite}.loc-dot{animation:locationDot 1.5s ease-in-out infinite}.cards-enter .gym-card{animation:fadeInUp .4s ease-out both}@keyframes toastIn{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes toastOut{from{transform:translateY(0);opacity:1}to{transform:translateY(-100%);opacity:0}}@keyframes spin{to{transform:rotate(360deg)}}.sg-spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}/* ── 3-Tab System (Polished) ── */.sg-tab-bar{position:fixed;bottom:0;left:0;right:0;height:56px;background:rgba(8,8,18,.98);backdrop-filter:blur(24px) saturate(1.8);-webkit-backdrop-filter:blur(24px) saturate(1.8);display:flex;align-items:center;justify-content:space-around;border-top:1px solid rgba(255,255,255,.06);z-index:9000;padding-bottom:env(safe-area-inset-bottom,0);pointer-events:auto!important}.sg-tab-item{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:6px 20px;border-radius:0;transition:all .25s cubic-bezier(.4,0,.2,1);-webkit-tap-highlight-color:transparent;user-select:none;position:relative;touch-action:manipulation}.sg-tab-item svg{width:26px;height:26px;stroke:rgba(255,255,255,.4);fill:none;stroke-width:1.8;transition:all .25s cubic-bezier(.4,0,.2,1)}.sg-tab-item .sg-tab-label{font-size:10px;font-weight:600;letter-spacing:.2px;color:rgba(255,255,255,.4);transition:all .25s cubic-bezier(.4,0,.2,1)}.sg-tab-item.active svg{stroke:#FF6D00;filter:drop-shadow(0 0 6px rgba(255,109,0,.35))}.sg-tab-item.active .sg-tab-label{color:#FF6D00}.sg-tab-item:active{transform:scale(.92)}.sg-tab-content{position:fixed;top:0;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom,0px));overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;scroll-behavior:smooth;display:flex;flex-direction:column}.sg-tab-content.reels-active{position:static;padding-bottom:0;overflow:visible}.sg-reels-frame{position:fixed;top:0;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom,0px));border:none;width:100%;height:calc(100vh - 56px - env(safe-area-inset-bottom,0px));z-index:1}.sg-more-hub{padding:20px 16px 24px;max-width:480px;margin:0 auto}.sg-more-section{margin-bottom:20px}.sg-more-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.3);margin-bottom:8px;padding-left:4px}.sg-more-item{display:flex;align-items:center;gap:14px;padding:14px 16px;background:rgba(255,255,255,.04);border-radius:14px;margin-bottom:6px;border:1px solid rgba(255,255,255,.04);cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}.sg-more-item:active{transform:scale(.98);background:rgba(255,255,255,.08)}.sg-more-item .sg-mi-icon{font-size:20px;width:40px;height:40px;background:rgba(255,255,255,.06);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.sg-more-item .sg-mi-text{flex:1}.sg-more-item .sg-mi-text h4{color:#fff;font-size:14px;font-weight:600;margin:0}.sg-more-item .sg-mi-text p{color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0}.sg-more-item .sg-mi-arrow{color:rgba(255,255,255,.2);font-size:16px}.sg-more-profile{display:flex;align-items:center;gap:14px;margin-bottom:28px;padding-top:12px}.sg-more-avatar{width:56px;height:56px;background:linear-gradient(135deg,#FF6D00,#fb923c);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff;flex-shrink:0}.sg-more-profile-info h3{color:#fff;font-size:18px;font-weight:700;margin:0}.sg-more-profile-info p{color:rgba(255,255,255,.4);font-size:13px;margin:2px 0 0}.sg-more-social{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}.sg-more-social a{display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:rgba(255,255,255,.04);border-radius:12px;border:1px solid rgba(255,255,255,.06);font-size:16px;transition:all .15s;text-decoration:none}.sg-more-social a:active{background:rgba(255,255,255,.1);transform:scale(.95)}.sg-more-back{display:flex;align-items:center;gap:8px;padding:12px 0;cursor:pointer;color:rgba(255,255,255,.6);font-size:14px;font-weight:600;margin-bottom:4px;-webkit-tap-highlight-color:transparent}.sg-more-back:active{color:#FF6D00}#sg-search-overlay{transition:opacity .2s ease}#sg-search-overlay.active{opacity:1!important}.hide-scrollbar::-webkit-scrollbar{display:none}.sg-dashboard{-webkit-tap-highlight-color:transparent;position:fixed;top:0;left:0;right:0;bottom:56px;z-index:10;overscroll-behavior:none;-webkit-overflow-scrolling:auto}html,body{height:100%;overflow:hidden;overscroll-behavior:none;position:fixed;width:100%}.sg-tab-bar.hidden{display:none!important}';document.head.appendChild(s)})();
 
 // ─── Dynamic Pricing Service — fetches localized prices from /api/pricing/prices ───
 window.__sgPricing = null;
@@ -499,7 +499,7 @@ function _ensureReelsIframe(){
     +'<div style="font-size:64px;margin-bottom:16px;">🎬</div>'
     +'<p style="color:#fff;font-size:22px;font-weight:800;margin:0 0 8px;">Reels Coming Soon</p>'
     +'<p style="color:rgba(255,255,255,.45);font-size:14px;margin:0 0 24px;max-width:280px;">Gym workout videos, tips, and inspiration from creators worldwide.</p>'
-    +'<button onclick="switchTab(\'book\')" style="background:#f97316;color:#fff;font-weight:700;font-size:15px;padding:14px 32px;border-radius:14px;border:none;cursor:pointer;box-shadow:0 4px 20px rgba(249,115,22,.3);">🏋️ Find a Gym Instead</button>'
+    +'<button onclick="switchTab(\'book\')" style="background:#FF6D00;color:#fff;font-weight:700;font-size:15px;padding:14px 32px;border-radius:14px;border:none;cursor:pointer;box-shadow:0 4px 20px rgba(255,109,0,.3);">🏋️ Find a Gym Instead</button>'
     +'</div>';
   document.body.appendChild(wrap);
 }
@@ -843,10 +843,10 @@ function HomePage(){
     <!-- Logo + Greeting -->
     <div style="padding:16px 0 12px;flex-shrink:0;">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-        <div style="width:36px;height:36px;background:#f97316;border-radius:12px;display:flex;align-items:center;justify-content:center;">
+        <div style="width:36px;height:36px;background:#FF6D00;border-radius:12px;display:flex;align-items:center;justify-content:center;">
           <span style="color:#fff;font-weight:900;font-size:18px;">S</span>
         </div>
-        <span class="font-brand" style="font-size:20px;"><span style="color:#f97316;">Scan</span><span style="color:#fff;">Gym</span></span>
+        <span class="font-brand" style="font-size:20px;"><span style="color:#FF6D00;">Scan</span><span style="color:#fff;">Gym</span></span>
       </div>
       <p style="color:rgba(255,255,255,.5);font-size:14px;margin:0;">${greeting}</p>
     </div>
@@ -860,7 +860,7 @@ function HomePage(){
 
     <!-- GPS button (like Uber recent address) -->
     <div onclick="findGyms()" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;flex-shrink:0;margin-bottom:14px;-webkit-tap-highlight-color:transparent;" ontouchstart="this.style.background='rgba(255,255,255,.08)'" ontouchend="this.style.background='rgba(255,255,255,.04)'">
-      <div style="width:40px;height:40px;background:rgba(249,115,22,.12);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+      <div style="width:40px;height:40px;background:rgba(255,109,0,.12);border-radius:12px;display:flex;align-items:center;justify-content:center;">
         <span style="font-size:18px;">📍</span>
       </div>
       <div style="flex:1;">
@@ -871,7 +871,7 @@ function HomePage(){
     </div>
 
     <!-- Fix #4: Smart promo card — shows current time-aware price -->
-    <div onclick="navigate('/explore')" style="background:linear-gradient(135deg,${hour<10||hour>=20?'#16a34a,#22c55e':'#f97316,#fb923c'});border-radius:16px;padding:18px 20px;display:flex;align-items:center;gap:14px;cursor:pointer;flex-shrink:0;margin-bottom:14px;position:relative;overflow:hidden;">
+    <div onclick="navigate('/explore')" style="background:linear-gradient(135deg,${hour<10||hour>=20?'#16a34a,#22c55e':'#FF6D00,#fb923c'});border-radius:16px;padding:18px 20px;display:flex;align-items:center;gap:14px;cursor:pointer;flex-shrink:0;margin-bottom:14px;position:relative;overflow:hidden;">
       <div style="position:absolute;top:-20px;right:-10px;font-size:60px;opacity:.15;transform:rotate(15deg);">🏋️</div>
       <div style="flex:1;position:relative;z-index:1;">
         <p style="color:#fff;font-weight:800;font-size:16px;margin:0;">From ${sgPrice('day').display} Day Pass</p>
@@ -886,7 +886,7 @@ function HomePage(){
       <div style="display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;padding-bottom:4px;" class="hide-scrollbar">
         ${trendingCities.map(c=>{
           const city=c.split(' ').slice(1).join(' ');
-          return`<button onclick="event.stopPropagation();searchGyms('`+city+` gyms',true);navigate('/explore')" style="flex-shrink:0;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:10px 16px;color:rgba(255,255,255,.7);font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px;-webkit-tap-highlight-color:transparent;white-space:nowrap;" ontouchstart="this.style.background='rgba(249,115,22,.15)';this.style.borderColor='rgba(249,115,22,.3)'" ontouchend="this.style.background='rgba(255,255,255,.06)';this.style.borderColor='rgba(255,255,255,.08)'">`+c+`</button>`;
+          return`<button onclick="event.stopPropagation();searchGyms('`+city+` gyms',true);navigate('/explore')" style="flex-shrink:0;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:10px 16px;color:rgba(255,255,255,.7);font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px;-webkit-tap-highlight-color:transparent;white-space:nowrap;" ontouchstart="this.style.background='rgba(255,109,0,.15)';this.style.borderColor='rgba(255,109,0,.3)'" ontouchend="this.style.background='rgba(255,255,255,.06)';this.style.borderColor='rgba(255,255,255,.08)'">`+c+`</button>`;
         }).join('')}
       </div>
     </div>
@@ -898,7 +898,7 @@ function HomePage(){
         <p style="font-size:11px;color:rgba(255,255,255,.3);margin:4px 0 0;">Gyms worldwide</p>
       </div>
       <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;justify-content:center;">
-        <p style="font-size:22px;font-weight:800;color:#f97316;margin:0;">UK</p>
+        <p style="font-size:22px;font-weight:800;color:#FF6D00;margin:0;">UK</p>
         <p style="font-size:11px;color:rgba(255,255,255,.3);margin:4px 0 0;">Based</p>
       </div>
       <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;justify-content:center;">
@@ -930,7 +930,7 @@ function HomePage(){
 
     <!-- GPS option -->
     <div onclick="findGyms();document.getElementById('sg-search-overlay').classList.remove('active');setTimeout(()=>document.getElementById('sg-search-overlay').style.display='none',200)" style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:rgba(255,255,255,.04);border-radius:14px;cursor:pointer;margin-bottom:16px;flex-shrink:0;">
-      <div style="width:40px;height:40px;background:rgba(249,115,22,.12);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+      <div style="width:40px;height:40px;background:rgba(255,109,0,.12);border-radius:12px;display:flex;align-items:center;justify-content:center;">
         <span style="font-size:18px;">📍</span>
       </div>
       <div>
@@ -1128,7 +1128,7 @@ function SearchPage(){
         html+='.tt-photo-slide{flex:0 0 100%;width:100%;height:100%;scroll-snap-align:start;background-size:cover;background-position:center}';
         html+='.tt-photo-dots{position:absolute;bottom:0;left:14px;display:flex;gap:4px;z-index:12}';
         html+='.tt-photo-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.3);transition:all .3s}';
-        html+='.tt-photo-dot.act{background:#f97316;width:18px;border-radius:3px}';
+        html+='.tt-photo-dot.act{background:#FF6D00;width:18px;border-radius:3px}';
         html+='.tt-photo-placeholder{position:absolute;inset:0;background:#1a1f2e;display:flex;align-items:center;justify-content:center}';
         html+='.tt-photo-placeholder::after{content:"🏋️";font-size:56px;opacity:.15}';
         /* Gradient overlay for readability */
@@ -1153,7 +1153,7 @@ function SearchPage(){
         /* Dots */
         html+='.tt-dots{display:flex;gap:3px;margin-bottom:4px;flex-wrap:wrap;max-width:280px}';
         html+='.tt-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.25);transition:all .3s}';
-        html+='.tt-dot.act{background:#f97316;width:18px;border-radius:3px}';
+        html+='.tt-dot.act{background:#FF6D00;width:18px;border-radius:3px}';
         html+='.tt-counter{font-size:10px;color:rgba(255,255,255,.4);margin-bottom:4px;font-weight:500}';
         /* Gym info */
         html+='.tt-gym-name{color:#fff;font-size:28px;font-weight:900;text-shadow:0 2px 10px rgba(0,0,0,.6);line-height:1.15;margin-bottom:4px;letter-spacing:-.3px}';
@@ -1165,13 +1165,13 @@ function SearchPage(){
         html+='.tt-chip{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.14);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-radius:10px;padding:6px 12px;font-size:12px;color:rgba(255,255,255,.92);font-weight:700}';
         /* CTA */
         html+='.tt-cta{position:absolute;bottom:0;left:0;right:0;padding:8px 14px;z-index:16}';
-        html+='.tt-cta-btn{width:100%;padding:12px 0;border:none;border-radius:12px;background:#f97316;color:#fff;font-size:15px;font-weight:700;letter-spacing:.3px;cursor:pointer;-webkit-tap-highlight-color:transparent;box-shadow:0 4px 20px rgba(249,115,22,.4);transition:all .15s}';
-        html+='.tt-cta-btn:active{transform:scale(.97);box-shadow:0 2px 10px rgba(249,115,22,.3)}';
+        html+='.tt-cta-btn{width:100%;padding:12px 0;border:none;border-radius:12px;background:#FF6D00;color:#fff;font-size:15px;font-weight:700;letter-spacing:.3px;cursor:pointer;-webkit-tap-highlight-color:transparent;box-shadow:0 4px 20px rgba(255,109,0,.4);transition:all .15s}';
+        html+='.tt-cta-btn:active{transform:scale(.97);box-shadow:0 2px 10px rgba(255,109,0,.3)}';
         /* Filter sheet */
         html+='.tt-filter-sheet{display:none;position:absolute;top:52px;left:12px;right:12px;background:rgba(17,19,24,.96);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px;z-index:25;flex-wrap:wrap;gap:8px}';
         html+='.tt-filter-sheet.open{display:flex}';
         html+='.sg-filter-pill{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:7px 14px;color:rgba(255,255,255,.6);font-size:12px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;white-space:nowrap}';
-        html+='.sg-filter-pill.active{background:rgba(249,115,22,.15);border-color:rgba(249,115,22,.4);color:#f97316}';
+        html+='.sg-filter-pill.active{background:rgba(255,109,0,.15);border-color:rgba(255,109,0,.4);color:#FF6D00}';
         /* Logo */
         html+='.tt-logo{position:absolute;left:14px;bottom:0;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;z-index:15;border:2px solid rgba(255,255,255,.15);box-shadow:0 2px 8px rgba(0,0,0,.3)}';
         html+='</style>';
@@ -1180,7 +1180,7 @@ function SearchPage(){
         html+='<div class="tt-carousel" id="bm-carousel">';
         _cards.forEach(function(c,i){
           // H14 fix: Removed fake "X booked today" count (was charCode-based, not real data)
-          var logoColors=['#f97316,#ea580c','#8b5cf6,#6d28d9','#ef4444,#b91c1c','#3b82f6,#1d4ed8','#eab308,#a16207','#22c55e,#15803d','#ec4899,#be185d','#14b8a6,#0f766e'];
+          var logoColors=['#FF6D00,#E66200','#8b5cf6,#6d28d9','#ef4444,#b91c1c','#3b82f6,#1d4ed8','#eab308,#a16207','#22c55e,#15803d','#ec4899,#be185d','#14b8a6,#0f766e'];
           var logoEmojis=['\u{1F3CB}\uFE0F','\u{1F4AA}','\u{1F94A}','\u{1F3CA}','\u26A1','\u{1F49A}','\u{1F525}','\u{1F9D8}'];
           var logoGrad=logoColors[i%8];
           var logoEmoji=logoEmojis[i%8];
@@ -1275,7 +1275,7 @@ function SearchPage(){
             <div style="position:absolute;bottom:0;left:0;right:0;padding:16px;">
               <div style="height:24px;background:rgba(255,255,255,.08);border-radius:8px;width:60%;margin-bottom:8px"></div>
               <div style="height:14px;background:rgba(255,255,255,.06);border-radius:6px;width:80%;margin-bottom:12px"></div>
-              <div style="height:48px;background:rgba(249,115,22,.3);border-radius:12px"></div>
+              <div style="height:48px;background:rgba(255,109,0,.3);border-radius:12px"></div>
             </div>
           </div>
         </div>
@@ -1520,10 +1520,10 @@ function GymProfilePage(){
     .ov-review-report{color:rgba(255,255,255,.2);font-size:11px;margin-left:auto;cursor:pointer;transition:color .2s}
     .ov-review-report:active{color:rgba(255,255,255,.4)}
     /* Write Review CTA */
-    .write-review-cta{display:flex;align-items:center;gap:12px;background:rgba(249,115,22,.08);border:1px dashed rgba(249,115,22,.25);border-radius:16px;padding:16px;margin-top:16px;cursor:pointer;transition:background .2s;-webkit-tap-highlight-color:transparent}
-    .write-review-cta:active{background:rgba(249,115,22,.14)}
+    .write-review-cta{display:flex;align-items:center;gap:12px;background:rgba(255,109,0,.08);border:1px dashed rgba(255,109,0,.25);border-radius:16px;padding:16px;margin-top:16px;cursor:pointer;transition:background .2s;-webkit-tap-highlight-color:transparent}
+    .write-review-cta:active{background:rgba(255,109,0,.14)}
     .write-review-icon{font-size:24px}
-    .write-review-title{color:#f97316;font-size:13px;font-weight:600}
+    .write-review-title{color:#FF6D00;font-size:13px;font-weight:600}
     .write-review-sub{color:rgba(255,255,255,.35);font-size:11px;margin-top:2px}
     /* Write Review Modal */
     .wr-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:10001;display:flex;align-items:flex-end;justify-content:center;animation:fadeIn .2s}
@@ -1537,14 +1537,14 @@ function GymProfilePage(){
     .wr-star:active{transform:scale(1.2)}
     .wr-label{color:rgba(255,255,255,.5);font-size:12px;font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
     .wr-input{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;color:#fff;font-size:14px;padding:12px 14px;outline:none;transition:border-color .2s;font-family:inherit}
-    .wr-input:focus{border-color:rgba(249,115,22,.5)}
+    .wr-input:focus{border-color:rgba(255,109,0,.5)}
     .wr-input::placeholder{color:rgba(255,255,255,.25)}
     .wr-textarea{min-height:120px;resize:vertical}
     .wr-submit{width:100%;padding:14px;border:none;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;margin-top:16px}
-    .wr-submit.ready{background:linear-gradient(135deg,#f97316,#ea580c);color:#fff}
+    .wr-submit.ready{background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff}
     .wr-submit.ready:active{transform:scale(.98)}
     .wr-submit.disabled{background:rgba(255,255,255,.06);color:rgba(255,255,255,.2);pointer-events:none}
-    .wr-submit.sending{background:rgba(249,115,22,.3);color:#f97316;pointer-events:none}
+    .wr-submit.sending{background:rgba(255,109,0,.3);color:#FF6D00;pointer-events:none}
     .wr-rating-text{text-align:center;color:rgba(255,255,255,.4);font-size:13px;height:20px;margin-bottom:16px;transition:color .2s}
     .wr-rating-text.chosen{color:#fbbf24}
     .wr-success{text-align:center;padding:40px 0}
@@ -1599,7 +1599,7 @@ function GymProfilePage(){
       <!-- Gym info card -->
       <div class="gym-info-card">
         <div class="gym-info-name">${gym.name}</div>
-        <div class="gym-info-addr" onclick="event.stopPropagation();window.open('https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(gym.formatted_address||gym.vicinity||gym.address||gym.name)+'${gym.place_id||gym.placeId?'&destination_place_id='+(gym.place_id||gym.placeId):''}','_blank')" style="cursor:pointer">📍 ${gym.formatted_address||gym.vicinity||gym.address||''} <span style="color:#f97316;font-size:12px;font-weight:600;margin-left:4px">Directions →</span></div>
+        <div class="gym-info-addr" onclick="event.stopPropagation();window.open('https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(gym.formatted_address||gym.vicinity||gym.address||gym.name)+'${gym.place_id||gym.placeId?'&destination_place_id='+(gym.place_id||gym.placeId):''}','_blank')" style="cursor:pointer">📍 ${gym.formatted_address||gym.vicinity||gym.address||''} <span style="color:#FF6D00;font-size:12px;font-weight:600;margin-left:4px">Directions →</span></div>
         <!-- Busyness Indicator (Fix #4C) -->
         <div style="margin-top:8px" id="gym-busyness-widget">
           ${(function(){
@@ -1610,7 +1610,7 @@ function GymProfilePage(){
             for(var i=6;i<=22;i++){
               var pct=levels[i]||10;
               var isCurrent=(i===h);
-              var color=isCurrent?'#f97316':(pct>70?'#ef4444':pct>40?'#eab308':'#22c55e');
+              var color=isCurrent?'#FF6D00':(pct>70?'#ef4444':pct>40?'#eab308':'#22c55e');
               bars+='<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">';
               bars+='<div style="width:100%;height:36px;display:flex;align-items:flex-end"><div style="width:100%;height:'+pct+'%;background:'+color+';border-radius:3px 3px 0 0;min-height:2px;opacity:'+(isCurrent?'1':'.6')+'"></div></div>';
               if(i%3===0||isCurrent) bars+='<span style="font-size:9px;color:rgba(255,255,255,'+(isCurrent?'.8':'.25')+');font-weight:'+(isCurrent?'700':'400')+'">'+(i>12?i-12:i)+(i>=12?'p':'a')+'</span>';
@@ -1919,7 +1919,7 @@ window.openGymOverlay=function(section){
             <div style="color:#fff;font-size:14px;font-weight:600">${gym.formatted_address||gym.vicinity||''}</div>
             <div style="color:rgba(255,255,255,.4);font-size:12px">${gym.distance?gym.distance+' away':''}</div>
           </div>
-          <button onclick="window.open('https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent('${(gym.formatted_address||gym.vicinity||gym.name||'').replace(/'/g,"\\'")}')+'${gym.place_id||gym.placeId?'&destination_place_id='+(gym.place_id||gym.placeId):''}','_blank')" style="background:#f97316;color:#fff;border:none;padding:8px 14px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">Directions →</button>
+          <button onclick="window.open('https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent('${(gym.formatted_address||gym.vicinity||gym.name||'').replace(/'/g,"\\'")}')+'${gym.place_id||gym.placeId?'&destination_place_id='+(gym.place_id||gym.placeId):''}','_blank')" style="background:#FF6D00;color:#fff;border:none;padding:8px 14px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">Directions →</button>
         </div>
       </div>`:''}
     `;
@@ -4973,7 +4973,7 @@ function WalletPage(){
       </div>
 
       <!-- ScanGym Balance Card -->
-      <div id="wallet-balance-card" style="background:linear-gradient(135deg,#f97316,#ea580c);border-radius:16px;padding:24px;margin-bottom:24px;position:relative;overflow:hidden">
+      <div id="wallet-balance-card" style="background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:16px;padding:24px;margin-bottom:24px;position:relative;overflow:hidden">
         <div style="position:absolute;top:-20px;right:-20px;width:100px;height:100px;background:rgba(255,255,255,.1);border-radius:50%"></div>
         <div style="position:absolute;bottom:-30px;left:-10px;width:80px;height:80px;background:rgba(255,255,255,.06);border-radius:50%"></div>
         <p style="color:rgba(255,255,255,.7);font-size:13px;font-weight:500;margin-bottom:4px">ScanGym Balance</p>
@@ -4993,7 +4993,7 @@ function WalletPage(){
 
       <!-- Add Payment Method -->
       <button onclick="_walletAddCard()" id="wallet-add-card-btn" style="width:100%;display:flex;align-items:center;gap:14px;padding:16px 20px;margin-top:4px;background:rgba(30,41,59,.6);border:1px dashed rgba(255,255,255,.15);border-radius:16px;cursor:pointer;transition:all .2s">
-        <div style="width:44px;height:30px;background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.3);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;color:#f97316">+</div>
+        <div style="width:44px;height:30px;background:rgba(255,109,0,.1);border:1px solid rgba(255,109,0,.3);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;color:#FF6D00">+</div>
         <div style="text-align:left">
           <div style="color:#fff;font-size:14px;font-weight:600">Add payment method</div>
           <div style="color:rgba(255,255,255,.4);font-size:11px;margin-top:1px">Visa, Mastercard, Amex</div>
@@ -5018,7 +5018,7 @@ function WalletPage(){
             <div id="wallet-card-cvc" style="flex:1;padding:16px;min-height:48px"></div>
           </div>
         </div>
-        <button id="wallet-save-card-btn" onclick="_walletSaveCard()" style="width:100%;background:#f97316;color:#fff;border:none;border-radius:12px;padding:16px;font-size:16px;font-weight:700;cursor:pointer;opacity:.5;pointer-events:none;transition:all .2s;margin-top:16px">Save Card</button>
+        <button id="wallet-save-card-btn" onclick="_walletSaveCard()" style="width:100%;background:#FF6D00;color:#fff;border:none;border-radius:12px;padding:16px;font-size:16px;font-weight:700;cursor:pointer;opacity:.5;pointer-events:none;transition:all .2s;margin-top:16px">Save Card</button>
         <p id="wallet-card-error" style="color:#ef4444;font-size:13px;margin-top:8px;display:none"></p>
       </div>
 
@@ -5029,8 +5029,8 @@ function WalletPage(){
         </div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
           ${[{amount:10,bonus:'10%'},{amount:20,bonus:'10%',pop:true},{amount:50,bonus:'15%'}].map(p=>`
-            <button onclick="_walletTopUp(${p.amount})" style="background:rgba(30,41,59,.6);border:1px solid ${p.pop?'rgba(249,115,22,.4)':'rgba(255,255,255,.08)'};border-radius:14px;padding:16px 8px;text-align:center;cursor:pointer;position:relative;transition:all .2s">
-              ${p.pop?'<span style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:#f97316;color:#fff;font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap">POPULAR</span>':''}
+            <button onclick="_walletTopUp(${p.amount})" style="background:rgba(30,41,59,.6);border:1px solid ${p.pop?'rgba(255,109,0,.4)':'rgba(255,255,255,.08)'};border-radius:14px;padding:16px 8px;text-align:center;cursor:pointer;position:relative;transition:all .2s">
+              ${p.pop?'<span style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:#FF6D00;color:#fff;font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap">POPULAR</span>':''}
               <p style="color:#fff;font-size:22px;font-weight:800">£${p.amount}</p>
               <p style="color:#22c55e;font-size:11px;font-weight:600;margin-top:4px">+${p.bonus} free</p>
             </button>
@@ -5124,7 +5124,7 @@ window._loadWalletScreen=async function(){
             <div style="color:rgba(255,255,255,.35);font-size:11px;margin-top:1px">${card.isDefault?'Default • ':''}Expires ${card.expMonth}/${card.expYear}</div>
           </div>
           <div style="display:flex;align-items:center;gap:8px">
-            ${card.isDefault?'<span style="background:rgba(249,115,22,.15);color:#f97316;font-size:9px;font-weight:700;padding:3px 8px;border-radius:6px">DEFAULT</span>':'<button onclick="event.stopPropagation();_walletSetDefault(\''+card.id+'\')" style="background:none;border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.4);font-size:10px;padding:3px 8px;border-radius:6px;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor=\'rgba(249,115,22,.4)\';this.style.color=\'#f97316\'" onmouseout="this.style.borderColor=\'rgba(255,255,255,.12)\';this.style.color=\'rgba(255,255,255,.4)\'">Set default</button>'}
+            ${card.isDefault?'<span style="background:rgba(255,109,0,.15);color:#FF6D00;font-size:9px;font-weight:700;padding:3px 8px;border-radius:6px">DEFAULT</span>':'<button onclick="event.stopPropagation();_walletSetDefault(\''+card.id+'\')" style="background:none;border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.4);font-size:10px;padding:3px 8px;border-radius:6px;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor=\'rgba(255,109,0,.4)\';this.style.color=\'#FF6D00\'" onmouseout="this.style.borderColor=\'rgba(255,255,255,.12)\';this.style.color=\'rgba(255,255,255,.4)\'">Set default</button>'}
             <button onclick="event.stopPropagation();_walletDeleteCard('${card.id}','${brandName} ····${card.last4}')" style="background:none;border:none;color:rgba(255,255,255,.2);font-size:16px;cursor:pointer;padding:4px;transition:color .15s" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='rgba(255,255,255,.2)'">×</button>
           </div>
         </div>`;
@@ -5173,7 +5173,7 @@ window._walletAddCard=function(){
     const stripeInstance=Stripe(stripeKey);
     const elStyle={base:{fontSize:'16px',color:'#1a1a2e',fontWeight:'400',fontFamily:'-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif','::placeholder':{color:'#9ca3af'}},invalid:{color:'#ef4444'}};
     window._walletStripeElements=stripeInstance.elements({
-      appearance:{theme:'flat',variables:{colorPrimary:'#f97316',colorBackground:'#ffffff',colorText:'#1a1a2e',colorTextPlaceholder:'#9ca3af',borderRadius:'0px',colorDanger:'#ef4444'}},
+      appearance:{theme:'flat',variables:{colorPrimary:'#FF6D00',colorBackground:'#ffffff',colorText:'#1a1a2e',colorTextPlaceholder:'#9ca3af',borderRadius:'0px',colorDanger:'#ef4444'}},
     });
     // Separate fields
     window._walletCardNumber=window._walletStripeElements.create('cardNumber',{style:elStyle,showIcon:true});
@@ -5733,14 +5733,14 @@ window.showGymDiscovery=function(){
     .gd-profile{position:absolute;top:calc(env(safe-area-inset-top,0px) + 12px);right:16px;width:40px;height:40px;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;z-index:10}
     .gd-pills{position:absolute;bottom:10px;left:14px;display:flex;gap:6px;z-index:10}
     .gd-pill{background:rgba(0,0,0,.7);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:6px 10px;display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:rgba(255,255,255,.7);white-space:nowrap}
-    .gd-pill-dist{background:#f97316;color:#fff;border-radius:5px;padding:1px 5px;font-size:9px;font-weight:800}
+    .gd-pill-dist{background:#FF6D00;color:#fff;border-radius:5px;padding:1px 5px;font-size:9px;font-weight:800}
     .gd-pill-chev{font-size:10px;color:rgba(255,255,255,.3)}
     .gd-pin{position:absolute;z-index:5;display:flex;flex-direction:column;align-items:center;transition:all .3s ease}
-    .gd-pin-d{width:8px;height:8px;background:#f97316;border-radius:50%;border:2px solid rgba(255,255,255,.6);transition:all .3s ease}
+    .gd-pin-d{width:8px;height:8px;background:#FF6D00;border-radius:50%;border:2px solid rgba(255,255,255,.6);transition:all .3s ease}
     .gd-pin-l{background:rgba(0,0,0,.7);padding:1px 5px;border-radius:3px;font-size:6px;font-weight:700;margin-top:1px;color:rgba(255,255,255,.5);white-space:nowrap;transition:all .3s ease;max-width:0;overflow:hidden;opacity:0}
-    .gd-pin.active .gd-pin-d{width:14px;height:14px;background:#fff;border:3px solid #f97316;box-shadow:0 0 16px rgba(249,115,22,.5)}
-    .gd-pin.active .gd-pin-l{background:#f97316;color:#fff;font-size:7px;padding:2px 7px;max-width:200px;opacity:1}
-    .gd-pin-pulse{position:absolute;width:28px;height:28px;border-radius:50%;border:2px solid rgba(249,115,22,.15);top:50%;left:50%;transform:translate(-50%,-50%);animation:pulse 2s infinite;display:none}
+    .gd-pin.active .gd-pin-d{width:14px;height:14px;background:#fff;border:3px solid #FF6D00;box-shadow:0 0 16px rgba(255,109,0,.5)}
+    .gd-pin.active .gd-pin-l{background:#FF6D00;color:#fff;font-size:7px;padding:2px 7px;max-width:200px;opacity:1}
+    .gd-pin-pulse{position:absolute;width:28px;height:28px;border-radius:50%;border:2px solid rgba(255,109,0,.15);top:50%;left:50%;transform:translate(-50%,-50%);animation:pulse 2s infinite;display:none}
     .gd-pin.active .gd-pin-pulse{display:block}
     @keyframes pulse{0%{opacity:.5;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(2.5)}}
     /* Sheet */
@@ -5779,7 +5779,7 @@ window.showGymDiscovery=function(){
     .gd-tag{font-size:9px;font-weight:600;padding:2px 7px;border-radius:4px;margin-left:6px;flex-shrink:0}
     .gd-tag-open{background:rgba(74,222,128,.1);color:#4ade80}
     .gd-tag-closed{background:rgba(239,68,68,.1);color:#ef4444}
-    .gd-tag-pop{background:rgba(249,115,22,.1);color:#f97316}
+    .gd-tag-pop{background:rgba(255,109,0,.1);color:#FF6D00}
     /* Bottom CTA */
     .gd-bottom{padding:10px 16px 14px;margin-top:auto;flex-shrink:0;border-top:1px solid rgba(255,255,255,.04)}
     .gd-cta{width:100%;background:rgba(255,255,255,.08);border:none;border-radius:12px;padding:15px;font-size:15px;font-weight:700;color:rgba(255,255,255,.6);text-align:center;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
@@ -5787,7 +5787,7 @@ window.showGymDiscovery=function(){
     /* Dots bar */
     .gd-dots{display:flex;justify-content:center;gap:3px;padding:6px 0 2px;flex-shrink:0;flex-wrap:wrap;max-width:280px;margin:0 auto}
     .gd-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.06);transition:all .3s ease}
-    .gd-dot.act{background:#f97316;width:14px;border-radius:3px}
+    .gd-dot.act{background:#FF6D00;width:14px;border-radius:3px}
     .gd-hint{text-align:center;font-size:8px;color:rgba(255,255,255,.08);padding:0 0 calc(4px + env(safe-area-inset-bottom,0px))}
   </style>
   <div class="gd-overlay" id="gd-overlay">
@@ -5810,7 +5810,7 @@ window.showGymDiscovery=function(){
       <div class="gd-handle"></div>
       <div class="gd-carousel" id="gd-carousel">
         ${cards.map((c,i)=>{
-          const logoColors=['#f97316,#ea580c','#8b5cf6,#6d28d9','#ef4444,#b91c1c','#3b82f6,#1d4ed8','#eab308,#a16207','#22c55e,#15803d','#ec4899,#be185d','#14b8a6,#0f766e'];
+          const logoColors=['#FF6D00,#E66200','#8b5cf6,#6d28d9','#ef4444,#b91c1c','#3b82f6,#1d4ed8','#eab308,#a16207','#22c55e,#15803d','#ec4899,#be185d','#14b8a6,#0f766e'];
           const logoEmojis=['🏋️','💪','🥊','🏊','⚡','💚','🔥','🧘'];
           const logoGrad=logoColors[i%8];
           const logoEmoji=logoEmojis[i%8];
@@ -6086,7 +6086,7 @@ window._ttShowMap=function(){
     .sgm-card-addr{color:rgba(255,255,255,.5);font-size:11px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .sgm-card-meta{display:flex;gap:8px;margin-top:5px;align-items:center}
     .sgm-card-tag{font-size:11px;font-weight:700;padding:2px 7px;border-radius:6px}
-    .sgm-card-rating{background:rgba(249,115,22,.15);color:#f97316}
+    .sgm-card-rating{background:rgba(255,109,0,.15);color:#FF6D00}
     .sgm-card-open{background:rgba(34,197,94,.15);color:#4ade80}
     .sgm-card-closed{background:rgba(248,113,113,.15);color:#f87171}
   </style>
@@ -6181,7 +6181,7 @@ window._initSgMap=function(container,gyms,cLat,cLng){
       icon:{
         path:google.maps.SymbolPath.CIRCLE,
         scale:10,
-        fillColor:'#f97316',
+        fillColor:'#FF6D00',
         fillOpacity:1,
         strokeColor:'#fff',
         strokeWeight:2
@@ -6193,7 +6193,7 @@ window._initSgMap=function(container,gyms,cLat,cLng){
         '<div style="padding:4px;min-width:160px;font-family:system-ui">'
         +'<strong style="font-size:14px">'+(gym.name||'Gym')+'</strong><br>'
         +'<span style="color:#666;font-size:12px">'+(gym.address||'').split(',')[0]+'</span><br>'
-        +(gym.rating?'<span style="color:#f97316;font-weight:700">⭐ '+gym.rating+'</span> · ':'')
+        +(gym.rating?'<span style="color:#FF6D00;font-weight:700">⭐ '+gym.rating+'</span> · ':'')
         +'<span style="color:'+(isOpen?'#22c55e':'#ef4444')+'">●</span> '+(isOpen?'Open':'Closed')
         +'</div>'
       );
@@ -6343,7 +6343,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
     .ub-sheet-gym-name{color:#fff;font-size:19px;font-weight:700;margin-bottom:4px}
     .ub-sheet-gym-addr{color:rgba(255,255,255,.4);font-size:14px;line-height:1.4}
     .ub-sheet-detail{color:rgba(255,255,255,.35);font-size:14px;margin-top:8px}
-    .ub-accent{height:2px;margin:0 24px;background:linear-gradient(90deg,#f97316 0%,#f59e0b 50%,rgba(245,158,11,.15) 100%);border-radius:1px}
+    .ub-accent{height:2px;margin:0 24px;background:linear-gradient(90deg,#FF6D00 0%,#f59e0b 50%,rgba(245,158,11,.15) 100%);border-radius:1px}
     .ub-footer{padding:14px 24px calc(20px + env(safe-area-inset-bottom,0px))}
     .ub-cta{width:100%;padding:18px;border:none;border-radius:14px;font-size:17px;font-weight:700;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
     .ub-cta:active{transform:scale(.98)}
@@ -6807,7 +6807,7 @@ async function _initUberPaymentNew(gymId, gym){
     setTimeout(()=>{
       if(!cs._stripeLoadedOk){
         const loadMsg=document.getElementById('ub-stripe-loading-msg');
-        if(loadMsg)loadMsg.innerHTML='Taking longer than usual… <span style="text-decoration:underline;cursor:pointer;color:#f97316" onclick="_initUberPaymentNew(\''+gymId+'\')">Tap to retry</span>';
+        if(loadMsg)loadMsg.innerHTML='Taking longer than usual… <span style="text-decoration:underline;cursor:pointer;color:#FF6D00" onclick="_initUberPaymentNew(\''+gymId+'\')">Tap to retry</span>';
       }
     },12000);
 
@@ -6940,7 +6940,7 @@ function ActiveSessionPage(){
     <p style="font-size:48px;margin-bottom:16px">🏋️</p>
     <p style="color:#fff;font-size:18px;font-weight:700;margin-bottom:8px">No Active Session</p>
     <p style="color:rgba(255,255,255,.4);margin-bottom:24px">Book a gym to start your session</p>
-    <button onclick="navigate('/explore')" style="background:#f97316;color:#fff;border:none;padding:14px 32px;border-radius:12px;font-weight:700;font-size:16px;cursor:pointer">Find a Gym →</button>
+    <button onclick="navigate('/explore')" style="background:#FF6D00;color:#fff;border:none;padding:14px 32px;border-radius:12px;font-weight:700;font-size:16px;cursor:pointer">Find a Gym →</button>
   </div>`;
   const qr=state.lastQR;
   const startTime=b.checkinTime||b.created_at||Date.now();
@@ -6975,7 +6975,7 @@ function ActiveSessionPage(){
     <!-- Gym Info Card -->
     <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:20px;padding:20px;margin-bottom:16px">
       <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
-        <div style="width:52px;height:52px;background:linear-gradient(135deg,#f97316,#fb923c);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:24px">🏋️</div>
+        <div style="width:52px;height:52px;background:linear-gradient(135deg,#FF6D00,#fb923c);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:24px">🏋️</div>
         <div style="flex:1">
           <div style="color:#fff;font-size:18px;font-weight:800">${b.gymName||'Gym Session'}</div>
           <div style="color:rgba(255,255,255,.4);font-size:13px">${b.passType||'Day Pass'} · ${b.date||'Today'}</div>
@@ -6994,11 +6994,11 @@ function ActiveSessionPage(){
       <!-- Progress Bar -->
       <div style="margin-bottom:12px">
         <div style="background:rgba(255,255,255,.06);border-radius:8px;height:8px;overflow:hidden">
-          <div style="background:linear-gradient(90deg,#22c55e,#f97316);height:100%;border-radius:8px;width:${progress}%;transition:width 1s linear"></div>
+          <div style="background:linear-gradient(90deg,#22c55e,#FF6D00);height:100%;border-radius:8px;width:${progress}%;transition:width 1s linear"></div>
         </div>
         <div style="display:flex;justify-content:space-between;margin-top:6px">
           <span style="color:rgba(255,255,255,.3);font-size:11px">Check-in</span>
-          <span style="color:#f97316;font-size:11px;font-weight:600">${currentStage.icon} ${currentStage.name}</span>
+          <span style="color:#FF6D00;font-size:11px;font-weight:600">${currentStage.icon} ${currentStage.name}</span>
           <span style="color:rgba(255,255,255,.3);font-size:11px">24h</span>
         </div>
       </div>
@@ -7353,7 +7353,7 @@ function QRScanVerifyPage(token){
           <p class="text-blue-400/70 text-sm mt-1">We hope you enjoyed your workout!</p>
         </div>`}
 
-        ${isExit?`<div class="mt-4 text-center"><button onclick="sgRecordAndShare()" style="background:linear-gradient(135deg,#f97316,#d97706);color:#fff;font-weight:700;padding:12px 24px;border:none;border-radius:12px;font-size:14px;cursor:pointer">🔥 View Workout Card & Share</button></div>`:''}
+        ${isExit?`<div class="mt-4 text-center"><button onclick="sgRecordAndShare()" style="background:linear-gradient(135deg,#FF6D00,#d97706);color:#fff;font-weight:700;padding:12px 24px;border:none;border-radius:12px;font-size:14px;cursor:pointer">🔥 View Workout Card & Share</button></div>`:''}
       </div>
     </div>
     <style>@keyframes scaleIn{0%{transform:scale(0)}60%{transform:scale(1.2)}100%{transform:scale(1)}}</style>`;
@@ -7961,7 +7961,7 @@ window.sgFeedback=async function(type,bookingId){
   // Optimistic UI update
   el.innerHTML=type==='positive'
     ?'<div style="padding:16px;text-align:center"><span style="font-size:36px">🎉</span><p style="color:#4ade80;font-weight:700;margin-top:8px">Thanks! Glad you enjoyed it.</p></div>'
-    :'<div style="padding:16px;text-align:center"><span style="font-size:36px">💬</span><p style="color:#f97316;font-weight:700;margin-top:8px">Thanks for the feedback — we\'ll improve!</p><textarea id="sg-fb-detail" placeholder="What could be better?" style="width:100%;margin-top:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px;color:#fff;font-size:13px;resize:none;height:80px;outline:none"></textarea><button onclick="sgSendFeedbackDetail('+bookingId+')" style="margin-top:8px;background:#f97316;color:#fff;border:none;padding:8px 20px;border-radius:8px;font-weight:600;cursor:pointer;font-size:13px">Send</button></div>';
+    :'<div style="padding:16px;text-align:center"><span style="font-size:36px">💬</span><p style="color:#FF6D00;font-weight:700;margin-top:8px">Thanks for the feedback — we\'ll improve!</p><textarea id="sg-fb-detail" placeholder="What could be better?" style="width:100%;margin-top:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px;color:#fff;font-size:13px;resize:none;height:80px;outline:none"></textarea><button onclick="sgSendFeedbackDetail('+bookingId+')" style="margin-top:8px;background:#FF6D00;color:#fff;border:none;padding:8px 20px;border-radius:8px;font-weight:600;cursor:pointer;font-size:13px">Send</button></div>';
   try{
     await fetch('/api/bookings/feedback',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({bookingId,type})}).catch(()=>{});
   }catch(e){}
@@ -8087,7 +8087,7 @@ window._openSearchOverlay=function(){
     +'.sso-back{width:40px;height:40px;background:rgba(255,255,255,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;color:#fff;font-size:18px;flex-shrink:0;-webkit-tap-highlight-color:transparent}'
     +'.sso-back:active{background:rgba(255,255,255,.15);transform:scale(.93)}'
     +'.sso-input-wrap{flex:1;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:0 14px;display:flex;align-items:center;gap:8px;height:48px;transition:border-color .15s}'
-    +'.sso-input-wrap:focus-within{border-color:rgba(249,115,22,.5);background:rgba(255,255,255,.1)}'
+    +'.sso-input-wrap:focus-within{border-color:rgba(255,109,0,.5);background:rgba(255,255,255,.1)}'
     +'.sso-input-icon{color:rgba(255,255,255,.4);font-size:16px;flex-shrink:0}'
     +'.sso-input{flex:1;background:none;border:none;outline:none;color:#fff;font-size:15px;font-weight:500}'
     +'.sso-input::placeholder{color:rgba(255,255,255,.35)}'
@@ -8096,7 +8096,7 @@ window._openSearchOverlay=function(){
     +'.sso-body{flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch}'
     +'.sso-section{margin-bottom:20px}'
     +'.sso-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.3);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}'
-    +'.sso-section-clear{font-size:11px;font-weight:600;color:rgba(249,115,22,.7);cursor:pointer;text-transform:none;letter-spacing:0}'
+    +'.sso-section-clear{font-size:11px;font-weight:600;color:rgba(255,109,0,.7);cursor:pointer;text-transform:none;letter-spacing:0}'
     +'.sso-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.04);border-radius:14px;margin-bottom:6px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s}'
     +'.sso-item:active{background:rgba(255,255,255,.08);transform:scale(.98)}'
     +'.sso-item-icon{width:40px;height:40px;background:rgba(255,255,255,.06);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}'
@@ -8108,7 +8108,7 @@ window._openSearchOverlay=function(){
     +'.sso-item-remove:active{background:rgba(255,255,255,.12)}'
     +'.sso-cities{display:flex;flex-wrap:wrap;gap:8px}'
     +'.sso-city{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:10px 14px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;display:flex;align-items:center;gap:6px}'
-    +'.sso-city:active{background:rgba(249,115,22,.15);border-color:rgba(249,115,22,.3);transform:scale(.96)}'
+    +'.sso-city:active{background:rgba(255,109,0,.15);border-color:rgba(255,109,0,.3);transform:scale(.96)}'
     +'.sso-city-emoji{font-size:16px}'
     +'.sso-city-name{color:rgba(255,255,255,.8);font-size:13px;font-weight:600}'
     +'.sso-autocomplete{margin-top:4px}'
@@ -8116,10 +8116,10 @@ window._openSearchOverlay=function(){
     +'.sso-ac-item:active{background:rgba(255,255,255,.06)}'
     +'.sso-ac-icon{color:rgba(255,255,255,.3);font-size:16px;flex-shrink:0}'
     +'.sso-ac-text{color:#fff;font-size:14px;font-weight:500;flex:1}'
-    +'.sso-ac-text em{font-style:normal;color:#f97316;font-weight:700}'
-    +'.sso-gps-btn{display:flex;align-items:center;gap:12px;padding:14px;background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.15);border-radius:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;margin-bottom:16px}'
-    +'.sso-gps-btn:active{background:rgba(249,115,22,.15)}'
-    +'.sso-gps-icon{width:40px;height:40px;background:rgba(249,115,22,.15);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}'
+    +'.sso-ac-text em{font-style:normal;color:#FF6D00;font-weight:700}'
+    +'.sso-gps-btn{display:flex;align-items:center;gap:12px;padding:14px;background:rgba(255,109,0,.08);border:1px solid rgba(255,109,0,.15);border-radius:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;margin-bottom:16px}'
+    +'.sso-gps-btn:active{background:rgba(255,109,0,.15)}'
+    +'.sso-gps-icon{width:40px;height:40px;background:rgba(255,109,0,.15);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}'
     +'.sso-gps-text{color:#fff;font-size:14px;font-weight:600}'
     +'.sso-gps-sub{color:rgba(255,255,255,.4);font-size:11px;margin-top:1px}'
     +'</style>'
@@ -8288,8 +8288,8 @@ window._closeSearchOverlay=function(){
 function BottomTabBar(){
   const t=state.activeTab;
   // SVG icons — crisp at any resolution, no emoji rendering differences
-  const reelsIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="4"/><line x1="2" y1="8" x2="22" y2="8"/><line x1="10" y1="2" x2="10" y2="8"/><polygon points="10 13 16 16 10 19" fill="${t==='reels'?'#f97316':'rgba(255,255,255,.35)'}" stroke="none"/></svg>`;
-  const bookIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/><circle cx="11" cy="11" r="2.5" fill="${t==='book'?'#f97316':'rgba(255,255,255,.3)'}" stroke="none"/></svg>`;
+  const reelsIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="4"/><line x1="2" y1="8" x2="22" y2="8"/><line x1="10" y1="2" x2="10" y2="8"/><polygon points="10 13 16 16 10 19" fill="${t==='reels'?'#FF6D00':'rgba(255,255,255,.35)'}" stroke="none"/></svg>`;
+  const bookIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/><circle cx="11" cy="11" r="2.5" fill="${t==='book'?'#FF6D00':'rgba(255,255,255,.3)'}" stroke="none"/></svg>`;
   const moreIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
   return`<div class="sg-tab-bar">
     <div class="sg-tab-item ${t==='reels'?'active':''}" onclick="switchTab('reels')">
@@ -8319,19 +8319,19 @@ function StaffScanPage(){
 
     ${!u?`<div style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:12px;padding:20px;text-align:center;margin-bottom:16px">
       <p style="color:#f87171;font-weight:600;margin-bottom:8px">Staff login required</p>
-      <button onclick="navigate('/login')" style="background:#f97316;color:#fff;border:none;padding:10px 24px;border-radius:10px;font-weight:600;cursor:pointer">Log In</button>
+      <button onclick="navigate('/login')" style="background:#FF6D00;color:#fff;border:none;padding:10px 24px;border-radius:10px;font-weight:600;cursor:pointer">Log In</button>
     </div>`:`
     <!-- Camera viewfinder -->
     <div id="sg-scan-viewfinder" style="position:relative;width:100%;aspect-ratio:1;background:#111;border-radius:16px;overflow:hidden;margin-bottom:16px;border:2px solid rgba(255,255,255,.1)">
       <video id="sg-scan-video" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover"></video>
       <!-- Scan overlay corners -->
       <div style="position:absolute;inset:20%;pointer-events:none">
-        <div style="position:absolute;top:0;left:0;width:30px;height:30px;border-top:3px solid #f97316;border-left:3px solid #f97316;border-radius:4px 0 0 0"></div>
-        <div style="position:absolute;top:0;right:0;width:30px;height:30px;border-top:3px solid #f97316;border-right:3px solid #f97316;border-radius:0 4px 0 0"></div>
-        <div style="position:absolute;bottom:0;left:0;width:30px;height:30px;border-bottom:3px solid #f97316;border-left:3px solid #f97316;border-radius:0 0 0 4px"></div>
-        <div style="position:absolute;bottom:0;right:0;width:30px;height:30px;border-bottom:3px solid #f97316;border-right:3px solid #f97316;border-radius:0 0 4px 0"></div>
+        <div style="position:absolute;top:0;left:0;width:30px;height:30px;border-top:3px solid #FF6D00;border-left:3px solid #FF6D00;border-radius:4px 0 0 0"></div>
+        <div style="position:absolute;top:0;right:0;width:30px;height:30px;border-top:3px solid #FF6D00;border-right:3px solid #FF6D00;border-radius:0 4px 0 0"></div>
+        <div style="position:absolute;bottom:0;left:0;width:30px;height:30px;border-bottom:3px solid #FF6D00;border-left:3px solid #FF6D00;border-radius:0 0 0 4px"></div>
+        <div style="position:absolute;bottom:0;right:0;width:30px;height:30px;border-bottom:3px solid #FF6D00;border-right:3px solid #FF6D00;border-radius:0 0 4px 0"></div>
         <!-- Scan line animation -->
-        <div style="position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#f97316,transparent);animation:scanline 2s ease-in-out infinite"></div>
+        <div style="position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#FF6D00,transparent);animation:scanline 2s ease-in-out infinite"></div>
       </div>
       <div id="sg-scan-status" style="position:absolute;bottom:12px;left:0;right:0;text-align:center">
         <span style="background:rgba(0,0,0,.7);color:rgba(255,255,255,.7);padding:6px 16px;border-radius:20px;font-size:12px">Point camera at QR code</span>
@@ -8343,7 +8343,7 @@ function StaffScanPage(){
       <p style="color:rgba(255,255,255,.4);font-size:11px;text-align:center;margin-bottom:8px">Or enter code manually</p>
       <div style="display:flex;gap:8px">
         <input type="text" id="sg-scan-manual" placeholder="Enter QR code..." style="flex:1;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 14px;color:#fff;font-size:14px;outline:none" onkeydown="if(event.key==='Enter')sgManualScan()">
-        <button onclick="sgManualScan()" style="background:#f97316;color:#fff;border:none;padding:10px 20px;border-radius:10px;font-weight:600;cursor:pointer;font-size:14px">Verify</button>
+        <button onclick="sgManualScan()" style="background:#FF6D00;color:#fff;border:none;padding:10px 20px;border-radius:10px;font-weight:600;cursor:pointer;font-size:14px">Verify</button>
       </div>
     </div>
 
@@ -8376,15 +8376,15 @@ function ScanInfoPage(){
     <h1 style="font-size:22px;font-weight:800;color:#fff;margin-bottom:12px">📱 How QR Entry Works</h1>
     <div style="space-y:16px">
       <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:16px">
-        <div style="width:32px;height:32px;background:#f97316;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;flex-shrink:0">1</div>
+        <div style="width:32px;height:32px;background:#FF6D00;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;flex-shrink:0">1</div>
         <div><p style="color:#fff;font-weight:600;font-size:14px">Book a gym session</p><p style="color:rgba(255,255,255,.4);font-size:13px">Search → pick date → pay</p></div>
       </div>
       <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:16px">
-        <div style="width:32px;height:32px;background:#f97316;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;flex-shrink:0">2</div>
+        <div style="width:32px;height:32px;background:#FF6D00;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;flex-shrink:0">2</div>
         <div><p style="color:#fff;font-weight:600;font-size:14px">Get your unique QR code</p><p style="color:rgba(255,255,255,.4);font-size:13px">Instantly in your bookings page</p></div>
       </div>
       <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:16px">
-        <div style="width:32px;height:32px;background:#f97316;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;flex-shrink:0">3</div>
+        <div style="width:32px;height:32px;background:#FF6D00;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;flex-shrink:0">3</div>
         <div><p style="color:#fff;font-weight:600;font-size:14px">Scan at the gym entrance</p><p style="color:rgba(255,255,255,.4);font-size:13px">Hold your phone up to the scanner — you're in!</p></div>
       </div>
       <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:16px">
@@ -8393,7 +8393,7 @@ function ScanInfoPage(){
       </div>
     </div>
     <div style="margin-top:20px;text-align:center">
-      <button onclick="navigate('/explore')" style="background:#f97316;color:#fff;border:none;padding:14px 32px;border-radius:12px;font-weight:700;cursor:pointer;font-size:15px">Find a Gym →</button>
+      <button onclick="navigate('/explore')" style="background:#FF6D00;color:#fff;border:none;padding:14px 32px;border-radius:12px;font-weight:700;cursor:pointer;font-size:15px">Find a Gym →</button>
     </div>
   </div>`;
 }
@@ -8453,7 +8453,7 @@ function CeoDashboardPage(){
         <h1 style="font-size:24px;font-weight:900;color:#fff;letter-spacing:-0.02em">ScanGym HQ</h1>
         <p style="color:rgba(255,255,255,.4);font-size:13px">CEO Dashboard · <span id="ceo-date">${new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</span></p>
       </div>
-      <button onclick="sgLoadCeoStats()" style="background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.2);color:#f97316;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer">↻ Refresh</button>
+      <button onclick="sgLoadCeoStats()" style="background:rgba(255,109,0,.1);border:1px solid rgba(255,109,0,.2);color:#FF6D00;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer">↻ Refresh</button>
     </div>
 
     <!-- Key Metrics Row -->
@@ -8493,7 +8493,7 @@ function CeoDashboardPage(){
 
     <!-- Quick Actions -->
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:20px">
-      <button onclick="navigate('/staff/scan')" style="background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.15);color:#f97316;padding:12px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;text-align:center">📷 QR Scanner</button>
+      <button onclick="navigate('/staff/scan')" style="background:rgba(255,109,0,.1);border:1px solid rgba(255,109,0,.15);color:#FF6D00;padding:12px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;text-align:center">📷 QR Scanner</button>
       <button onclick="navigate('/explore')" style="background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.15);color:#3b82f6;padding:12px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;text-align:center">🔍 Browse Gyms</button>
       <button onclick="navigate('/creator-earnings')" style="background:rgba(168,85,247,.1);border:1px solid rgba(168,85,247,.15);color:#a855f7;padding:12px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;text-align:center">📊 Creator Stats</button>
     </div>
@@ -8529,7 +8529,7 @@ window.sgLoadCeoStats=async function(){
       const steps=[
         {label:'Visitors',count:vis||'\u2014',pct:vis?'100%':'\u2014',color:'#3b82f6'},
         {label:'Search',count:f.searched||'\u2014',pct:fPct(f.searched||0),color:'#8b5cf6'},
-        {label:'Gym Profile',count:f.viewedProfile||'\u2014',pct:fPct(f.viewedProfile||0),color:'#f97316'},
+        {label:'Gym Profile',count:f.viewedProfile||'\u2014',pct:fPct(f.viewedProfile||0),color:'#FF6D00'},
         {label:'Checkout',count:f.startedCheckout||'\u2014',pct:fPct(f.startedCheckout||0),color:'#eab308'},
         {label:'Paid Booking',count:f.paidBooking||f.completedBooking||'\u2014',pct:fPct(f.paidBooking||f.completedBooking||0),color:'#22c55e'}
       ];
@@ -8550,7 +8550,7 @@ window.sgLoadCeoStats=async function(){
       if(bks.length===0){
         bookings.innerHTML='<p style="color:rgba(255,255,255,.3);font-size:13px;text-align:center;padding:12px">No bookings recorded yet. Data will appear once customers start booking.</p>';
       }else{
-        bookings.innerHTML=bks.slice(0,10).map(b=>'<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)"><div><span style="color:#fff;font-size:13px;font-weight:600">'+(b.gymName||'Gym')+'</span><br><span style="color:rgba(255,255,255,.35);font-size:11px">'+(b.date?new Date(b.date).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'')+(b.time?' '+b.time:'')+'</span></div><div style="text-align:right"><span style="color:#f97316;font-weight:700;font-size:13px">£'+(b.price||0).toFixed(2)+'</span><br><span style="font-size:10px;padding:2px 6px;border-radius:8px;'+(b.status==='confirmed'?'background:rgba(34,197,94,.15);color:#22c55e':'background:rgba(234,179,8,.15);color:#eab308')+'">'+(b.status||'')+'</span></div></div>').join('');
+        bookings.innerHTML=bks.slice(0,10).map(b=>'<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)"><div><span style="color:#fff;font-size:13px;font-weight:600">'+(b.gymName||'Gym')+'</span><br><span style="color:rgba(255,255,255,.35);font-size:11px">'+(b.date?new Date(b.date).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'')+(b.time?' '+b.time:'')+'</span></div><div style="text-align:right"><span style="color:#FF6D00;font-weight:700;font-size:13px">£'+(b.price||0).toFixed(2)+'</span><br><span style="font-size:10px;padding:2px 6px;border-radius:8px;'+(b.status==='confirmed'?'background:rgba(34,197,94,.15);color:#22c55e':'background:rgba(234,179,8,.15);color:#eab308')+'">'+(b.status||'')+'</span></div></div>').join('');
       }
     }
   }catch(e){
@@ -8577,7 +8577,7 @@ function OwnerControlsPage(){
   const u=state.user;
   if(!u) return`<div style="max-width:480px;margin:0 auto;padding:40px 16px;text-align:center">
     <p style="color:rgba(255,255,255,.5);margin-bottom:16px">Log in to manage your gym</p>
-    <button onclick="navigate('/login')" style="background:#f97316;color:#fff;border:none;padding:12px 32px;border-radius:10px;font-weight:700;cursor:pointer">Log In</button>
+    <button onclick="navigate('/login')" style="background:#FF6D00;color:#fff;border:none;padding:12px 32px;border-radius:10px;font-weight:700;cursor:pointer">Log In</button>
   </div>`;
 
   return`<div style="max-width:480px;margin:0 auto;padding:20px 16px">
@@ -8610,11 +8610,11 @@ function OwnerControlsPage(){
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
         <span style="color:rgba(255,255,255,.5);font-size:14px">£</span>
         <input type="number" id="sg-owner-price" value="5.00" min="3" max="25" step="0.50" style="flex:1;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;color:#fff;font-size:18px;font-weight:700;text-align:center;outline:none">
-        <button onclick="sgOwnerUpdatePrice()" style="background:#f97316;color:#fff;border:none;padding:12px 20px;border-radius:10px;font-weight:600;cursor:pointer;font-size:14px">Update</button>
+        <button onclick="sgOwnerUpdatePrice()" style="background:#FF6D00;color:#fff;border:none;padding:12px 20px;border-radius:10px;font-weight:600;cursor:pointer;font-size:14px">Update</button>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
         <button onclick="document.getElementById('sg-owner-price').value='3.00'" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);color:rgba(255,255,255,.5);padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer">£3</button>
-        <button onclick="document.getElementById('sg-owner-price').value='5.00'" style="background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.2);color:#f97316;padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer">£5</button>
+        <button onclick="document.getElementById('sg-owner-price').value='5.00'" style="background:rgba(255,109,0,.1);border:1px solid rgba(255,109,0,.2);color:#FF6D00;padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer">£5</button>
         <button onclick="document.getElementById('sg-owner-price').value='7.50'" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);color:rgba(255,255,255,.5);padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer">£7.50</button>
         <button onclick="document.getElementById('sg-owner-price').value='12.00'" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);color:rgba(255,255,255,.5);padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer">£12</button>
         <button onclick="document.getElementById('sg-owner-price').value='18.00'" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);color:rgba(255,255,255,.5);padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer">£18</button>
@@ -8624,7 +8624,7 @@ function OwnerControlsPage(){
 
     <!-- Owner Quick Links -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
-      <button onclick="navigate('/forceo')" style="background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.12);color:#f97316;padding:14px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;text-align:center">📊 CEO Dashboard</button>
+      <button onclick="navigate('/forceo')" style="background:rgba(255,109,0,.08);border:1px solid rgba(255,109,0,.12);color:#FF6D00;padding:14px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;text-align:center">📊 CEO Dashboard</button>
       <button onclick="navigate('/staff/scan')" style="background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.12);color:#3b82f6;padding:14px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;text-align:center">📷 QR Scanner</button>
     </div>
   </div>`;
@@ -8683,7 +8683,7 @@ function ScanGymIDCard(u){
   const since=u.member_since?new Date(u.member_since).toLocaleDateString('en-GB',{month:'short',year:'numeric'}):'2026';
   const verified=u.profile_complete;
   const qrData=encodeURIComponent('https://scangym.com/member/'+u.id);
-  const qrUrl='https://api.qrserver.com/v1/create-qr-code/?size=120x120&bgcolor=0d0d1a&color=f97316&data='+qrData;
+  const qrUrl='https://api.qrserver.com/v1/create-qr-code/?size=120x120&bgcolor=0d0d1a&color=FF6D00&data='+qrData;
   // Enhanced stats (Fix #8E)
   const totalSessions=u.stats?.totalSessions||0;
   const totalGyms=u.stats?.totalGyms||0;
@@ -8692,9 +8692,9 @@ function ScanGymIDCard(u){
   const tier=totalSessions>=100?{name:'Elite',icon:'👑',color:'#a855f7',bg:'rgba(168,85,247,.15)'}:
              totalSessions>=50?{name:'Gold',icon:'🥇',color:'#eab308',bg:'rgba(234,179,8,.15)'}:
              totalSessions>=10?{name:'Silver',icon:'🥈',color:'#94a3b8',bg:'rgba(148,163,184,.15)'}:
-             {name:'Basic',icon:'🏋️',color:'#f97316',bg:'rgba(249,115,22,.15)'};
-  return`<div style="background:linear-gradient(135deg,rgba(249,115,22,.12),rgba(249,115,22,.04));border:1px solid rgba(249,115,22,.2);border-radius:20px;padding:20px;margin-bottom:20px;position:relative;overflow:hidden">
-    <div style="position:absolute;top:-30px;right:-30px;width:120px;height:120px;background:radial-gradient(circle,rgba(249,115,22,.08),transparent);border-radius:50%"></div>
+             {name:'Basic',icon:'🏋️',color:'#FF6D00',bg:'rgba(255,109,0,.15)'};
+  return`<div style="background:linear-gradient(135deg,rgba(255,109,0,.12),rgba(255,109,0,.04));border:1px solid rgba(255,109,0,.2);border-radius:20px;padding:20px;margin-bottom:20px;position:relative;overflow:hidden">
+    <div style="position:absolute;top:-30px;right:-30px;width:120px;height:120px;background:radial-gradient(circle,rgba(255,109,0,.08),transparent);border-radius:50%"></div>
     <!-- Tier Badge -->
     <div style="position:absolute;top:12px;right:12px;background:${tier.bg};border:1px solid ${tier.color}33;padding:3px 10px;border-radius:8px;display:flex;align-items:center;gap:4px">
       <span style="font-size:10px">${tier.icon}</span>
@@ -8703,20 +8703,20 @@ function ScanGymIDCard(u){
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px">
       <div style="flex:1">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-          <span style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:rgba(249,115,22,.7)">ScanGym ID</span>
+          <span style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:rgba(255,109,0,.7)">ScanGym ID</span>
           ${verified?'<span style="background:rgba(74,222,128,.15);color:#4ade80;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;display:inline-flex;align-items:center;gap:3px">✓ Verified</span>':'<span style="background:rgba(251,191,36,.1);color:#fbbf24;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px">Complete profile</span>'}
         </div>
         <div style="color:#fff;font-size:18px;font-weight:800;margin-bottom:2px">${name}</div>
         <div style="color:rgba(255,255,255,.4);font-size:12px">Member since ${since}</div>
       </div>
-      <div style="flex-shrink:0;width:80px;height:80px;background:rgba(0,0,0,.3);border-radius:14px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(249,115,22,.15)">
+      <div style="flex-shrink:0;width:80px;height:80px;background:rgba(0,0,0,.3);border-radius:14px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,109,0,.15)">
         <img src="${qrUrl}" width="64" height="64" style="border-radius:8px" alt="QR">
       </div>
     </div>
     <!-- Stats Row (Fix #8E) -->
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
       <div style="text-align:center;background:rgba(255,255,255,.04);border-radius:10px;padding:8px 4px">
-        <div style="color:#f97316;font-size:20px;font-weight:900">${totalSessions}</div>
+        <div style="color:#FF6D00;font-size:20px;font-weight:900">${totalSessions}</div>
         <div style="color:rgba(255,255,255,.3);font-size:9px;font-weight:600;text-transform:uppercase">Sessions</div>
       </div>
       <div style="text-align:center;background:rgba(255,255,255,.04);border-radius:10px;padding:8px 4px">
@@ -8749,7 +8749,7 @@ window._shareIDCard=function(){
 // ── Profile Edit Page ──
 function ProfilePage(){
   const u=state.user;
-  if(!u)return`<div style="text-align:center;padding:80px 20px"><p style="font-size:40px;margin-bottom:16px">🔒</p><p style="color:#fff;font-size:18px;font-weight:700;margin-bottom:8px">Log in to view your profile</p><p style="color:rgba(255,255,255,.4);margin-bottom:24px">Your ScanGym profile works at 1.2M+ gyms</p><button onclick="navigate('/login')" style="background:#f97316;color:#fff;border:none;padding:14px 32px;border-radius:12px;font-weight:700;font-size:16px;cursor:pointer">Log In →</button></div>`;
+  if(!u)return`<div style="text-align:center;padding:80px 20px"><p style="font-size:40px;margin-bottom:16px">🔒</p><p style="color:#fff;font-size:18px;font-weight:700;margin-bottom:8px">Log in to view your profile</p><p style="color:rgba(255,255,255,.4);margin-bottom:24px">Your ScanGym profile works at 1.2M+ gyms</p><button onclick="navigate('/login')" style="background:#FF6D00;color:#fff;border:none;padding:14px 32px;border-radius:12px;font-weight:700;font-size:16px;cursor:pointer">Log In →</button></div>`;
   return`<div style="padding:16px;max-width:480px;margin:0 auto">
     <div onclick="navigate('/more')" style="display:flex;align-items:center;gap:8px;padding:12px 0;cursor:pointer;color:rgba(255,255,255,.6);font-size:14px;font-weight:600;margin-bottom:4px">← Back</div>
     <h2 style="color:#fff;font-size:22px;font-weight:800;margin:0 0 4px">My Profile</h2>
@@ -8763,17 +8763,17 @@ function ProfilePage(){
       <div style="display:flex;gap:10px">
         <div style="flex:1">
           <label style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">First Name</label>
-          <input id="pf-fname" type="text" value="${u.first_name||''}" placeholder="Your first name" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px 14px;color:#fff;font-size:14px;outline:none;box-sizing:border-box" onfocus="this.style.borderColor='rgba(249,115,22,.5)'" onblur="this.style.borderColor='rgba(255,255,255,.1)'">
+          <input id="pf-fname" type="text" value="${u.first_name||''}" placeholder="Your first name" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px 14px;color:#fff;font-size:14px;outline:none;box-sizing:border-box" onfocus="this.style.borderColor='rgba(255,109,0,.5)'" onblur="this.style.borderColor='rgba(255,255,255,.1)'">
         </div>
         <div style="flex:1">
           <label style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Last Name</label>
-          <input id="pf-lname" type="text" value="${u.last_name||''}" placeholder="Your last name" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px 14px;color:#fff;font-size:14px;outline:none;box-sizing:border-box" onfocus="this.style.borderColor='rgba(249,115,22,.5)'" onblur="this.style.borderColor='rgba(255,255,255,.1)'">
+          <input id="pf-lname" type="text" value="${u.last_name||''}" placeholder="Your last name" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px 14px;color:#fff;font-size:14px;outline:none;box-sizing:border-box" onfocus="this.style.borderColor='rgba(255,109,0,.5)'" onblur="this.style.borderColor='rgba(255,255,255,.1)'">
         </div>
       </div>
 
       <div>
         <label style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Email</label>
-        <input id="pf-email" type="email" value="${u.email||''}" placeholder="your@email.com" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px 14px;color:#fff;font-size:14px;outline:none;box-sizing:border-box" onfocus="this.style.borderColor='rgba(249,115,22,.5)'" onblur="this.style.borderColor='rgba(255,255,255,.1)'">
+        <input id="pf-email" type="email" value="${u.email||''}" placeholder="your@email.com" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px 14px;color:#fff;font-size:14px;outline:none;box-sizing:border-box" onfocus="this.style.borderColor='rgba(255,109,0,.5)'" onblur="this.style.borderColor='rgba(255,255,255,.1)'">
       </div>
 
       <div>
@@ -8796,19 +8796,19 @@ function ProfilePage(){
 
       <div>
         <label style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Emergency Contact</label>
-        <input id="pf-emergency" type="tel" value="${u.emergency_contact||''}" placeholder="+44 7XXX XXXXXX" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px 14px;color:#fff;font-size:14px;outline:none;box-sizing:border-box" onfocus="this.style.borderColor='rgba(249,115,22,.5)'" onblur="this.style.borderColor='rgba(255,255,255,.1)'">
+        <input id="pf-emergency" type="tel" value="${u.emergency_contact||''}" placeholder="+44 7XXX XXXXXX" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px 14px;color:#fff;font-size:14px;outline:none;box-sizing:border-box" onfocus="this.style.borderColor='rgba(255,109,0,.5)'" onblur="this.style.borderColor='rgba(255,255,255,.1)'">
         <p style="color:rgba(255,255,255,.3);font-size:11px;margin:4px 0 0 2px">Shared with gym staff in emergencies only</p>
       </div>
     </div>
 
-    <button id="pf-save-btn" onclick="saveProfile()" style="width:100%;margin-top:20px;background:#f97316;color:#fff;border:none;padding:16px;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent">Save Profile</button>
+    <button id="pf-save-btn" onclick="saveProfile()" style="width:100%;margin-top:20px;background:#FF6D00;color:#fff;border:none;padding:16px;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent">Save Profile</button>
 
     <!-- Stats Dashboard (Fix #8A) -->
     <div style="margin-top:24px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:20px;padding:20px">
       <div style="color:rgba(255,255,255,.4);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px">📊 Your Stats</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">
         <div style="text-align:center;padding:12px 0">
-          <div style="color:#f97316;font-size:28px;font-weight:900">${u.stats?.totalSessions||0}</div>
+          <div style="color:#FF6D00;font-size:28px;font-weight:900">${u.stats?.totalSessions||0}</div>
           <div style="color:rgba(255,255,255,.35);font-size:11px">Sessions</div>
         </div>
         <div style="text-align:center;padding:12px 0">
@@ -8822,7 +8822,7 @@ function ProfilePage(){
       </div>
       <!-- Achievement Badges (Gamification Fix #8B) -->
       <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
-        ${(u.stats?.totalSessions||0)>=1?'<div style="background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.2);border-radius:10px;padding:6px 12px;font-size:12px;color:#fb923c;font-weight:600">🏋️ First Session</div>':''}
+        ${(u.stats?.totalSessions||0)>=1?'<div style="background:rgba(255,109,0,.1);border:1px solid rgba(255,109,0,.2);border-radius:10px;padding:6px 12px;font-size:12px;color:#fb923c;font-weight:600">🏋️ First Session</div>':''}
         ${(u.stats?.totalGyms||0)>=3?'<div style="background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);border-radius:10px;padding:6px 12px;font-size:12px;color:#4ade80;font-weight:600">🌍 Explorer</div>':''}
         ${(u.stats?.streak||0)>=7?'<div style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:6px 12px;font-size:12px;color:#f87171;font-weight:600">🔥 7-Day Streak</div>':''}
         ${(u.stats?.totalSessions||0)>=10?'<div style="background:rgba(168,85,247,.1);border:1px solid rgba(168,85,247,.2);border-radius:10px;padding:6px 12px;font-size:12px;color:#c084fc;font-weight:600">💪 10 Sessions</div>':''}
@@ -8920,7 +8920,7 @@ function MoreHubPage(){
     </div>
 
     <!-- Universal ScanGym ID Card -->
-    ${u?ScanGymIDCard(u):'<div onclick="navigate(\'/login\')" style="background:rgba(249,115,22,.06);border:1px dashed rgba(249,115,22,.2);border-radius:16px;padding:20px;text-align:center;cursor:pointer;margin-bottom:20px"><p style="font-size:24px;margin-bottom:8px">🌍</p><p style="color:#fff;font-weight:700;font-size:15px;margin-bottom:4px">Get your Universal Gym Pass</p><p style="color:rgba(255,255,255,.4);font-size:12px">Sign up once. Accepted at 1.2M+ gyms worldwide.</p></div>'}
+    ${u?ScanGymIDCard(u):'<div onclick="navigate(\'/login\')" style="background:rgba(255,109,0,.06);border:1px dashed rgba(255,109,0,.2);border-radius:16px;padding:20px;text-align:center;cursor:pointer;margin-bottom:20px"><p style="font-size:24px;margin-bottom:8px">🌍</p><p style="color:#fff;font-weight:700;font-size:15px;margin-bottom:4px">Get your Universal Gym Pass</p><p style="color:rgba(255,255,255,.4);font-size:12px">Sign up once. Accepted at 1.2M+ gyms worldwide.</p></div>'}
 
     <!-- Your Activity -->
     <div class="sg-more-section">
@@ -9214,7 +9214,7 @@ function render(){
   try{ _renderInner(); }catch(err){
     console.error('[Render] Error rendering page:',err);
     const app=document.getElementById('app');
-    if(app)app.innerHTML='<div style="padding:40px 20px;text-align:center"><p style="font-size:40px;margin-bottom:16px">⚠️</p><p style="color:#fff;font-size:18px;font-weight:700;margin-bottom:8px">Something went wrong</p><p style="color:rgba(255,255,255,.4);margin-bottom:24px">'+err.message+'</p><button onclick="navigate(\'/explore\')" style="background:#f97316;color:#fff;border:none;padding:14px 32px;border-radius:12px;font-weight:700;font-size:16px;cursor:pointer">Go to Explore →</button></div>'+BottomTabBar();
+    if(app)app.innerHTML='<div style="padding:40px 20px;text-align:center"><p style="font-size:40px;margin-bottom:16px">⚠️</p><p style="color:#fff;font-size:18px;font-weight:700;margin-bottom:8px">Something went wrong</p><p style="color:rgba(255,255,255,.4);margin-bottom:24px">'+err.message+'</p><button onclick="navigate(\'/explore\')" style="background:#FF6D00;color:#fff;border:none;padding:14px 32px;border-radius:12px;font-weight:700;font-size:16px;cursor:pointer">Go to Explore →</button></div>'+BottomTabBar();
   }
 }
 function _renderInner(){
@@ -9830,7 +9830,7 @@ window._closeLocationPopup=function(){
 // ─── 1. CONFETTI SYSTEM (Robinhood-style celebration) ───
 window.sgConfetti=function(opts={}){
   const duration=opts.duration||3000;
-  const colors=opts.colors||['#f97316','#fb923c','#fbbf24','#34d399','#60a5fa','#a78bfa','#f472b6','#fff'];
+  const colors=opts.colors||['#FF6D00','#fb923c','#fbbf24','#34d399','#60a5fa','#a78bfa','#f472b6','#fff'];
   const canvas=document.createElement('canvas');
   canvas.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:99999';
   document.body.appendChild(canvas);
@@ -9872,25 +9872,25 @@ window.sgShowWorkoutCard=function(data){
   card.id='sg-workout-card';
   card.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:center;animation:fadeIn .3s ease';
   const streakEmoji=data.streak>=30?'👑':data.streak>=14?'🚀':data.streak>=7?'⚔️':data.streak>=3?'🔥':'💪';
-  const badgeHtml=(data.newBadges||[]).map(b=>`<div style="display:inline-flex;align-items:center;gap:6px;background:rgba(249,115,22,.15);border:1px solid rgba(249,115,22,.3);border-radius:20px;padding:6px 12px;font-size:13px"><span>${b.emoji}</span><span style="color:#fb923c;font-weight:600">${b.name}</span></div>`).join(' ');
+  const badgeHtml=(data.newBadges||[]).map(b=>`<div style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,109,0,.15);border:1px solid rgba(255,109,0,.3);border-radius:20px;padding:6px 12px;font-size:13px"><span>${b.emoji}</span><span style="color:#fb923c;font-weight:600">${b.name}</span></div>`).join(' ');
   const bonusHtml=data.bonusReward?`<div style="margin-top:12px;background:linear-gradient(135deg,rgba(52,211,153,.15),rgba(52,211,153,.05));border:1px solid rgba(52,211,153,.3);border-radius:12px;padding:12px;text-align:center"><p style="color:#34d399;font-size:14px;font-weight:700;margin:0">🎰 Bonus Reward! +${data.bonusReward.display}</p><p style="color:rgba(255,255,255,.5);font-size:11px;margin:4px 0 0">Added to your ScanGym Wallet</p></div>`:'';
   card.innerHTML=`
-  <div style="width:90%;max-width:360px;background:linear-gradient(160deg,#1a1a2e,#16213e);border-radius:24px;border:1px solid rgba(249,115,22,.2);padding:32px 24px;text-align:center;position:relative;overflow:hidden">
-    <div style="position:absolute;top:-30px;right:-30px;width:120px;height:120px;background:radial-gradient(circle,rgba(249,115,22,.15),transparent);border-radius:50%"></div>
+  <div style="width:90%;max-width:360px;background:linear-gradient(160deg,#1a1a2e,#16213e);border-radius:24px;border:1px solid rgba(255,109,0,.2);padding:32px 24px;text-align:center;position:relative;overflow:hidden">
+    <div style="position:absolute;top:-30px;right:-30px;width:120px;height:120px;background:radial-gradient(circle,rgba(255,109,0,.15),transparent);border-radius:50%"></div>
     <div style="font-size:56px;margin-bottom:8px">${streakEmoji}</div>
     <h2 style="color:#fff;font-size:28px;font-weight:900;margin:0">${data.streak}-Day Streak!</h2>
     <p style="color:rgba(255,255,255,.5);font-size:14px;margin:4px 0 16px">Workout #${data.totalWorkouts} complete</p>
     <div style="display:flex;justify-content:center;gap:20px;margin:16px 0">
-      <div><p style="color:#f97316;font-size:22px;font-weight:800;margin:0">${data.duration||45}</p><p style="color:rgba(255,255,255,.4);font-size:11px;margin:0">minutes</p></div>
+      <div><p style="color:#FF6D00;font-size:22px;font-weight:800;margin:0">${data.duration||45}</p><p style="color:rgba(255,255,255,.4);font-size:11px;margin:0">minutes</p></div>
       <div style="width:1px;background:rgba(255,255,255,.1)"></div>
-      <div><p style="color:#f97316;font-size:22px;font-weight:800;margin:0">${data.streak}</p><p style="color:rgba(255,255,255,.4);font-size:11px;margin:0">day streak</p></div>
+      <div><p style="color:#FF6D00;font-size:22px;font-weight:800;margin:0">${data.streak}</p><p style="color:rgba(255,255,255,.4);font-size:11px;margin:0">day streak</p></div>
       <div style="width:1px;background:rgba(255,255,255,.1)"></div>
-      <div><p style="color:#f97316;font-size:22px;font-weight:800;margin:0">${data.totalWorkouts}</p><p style="color:rgba(255,255,255,.4);font-size:11px;margin:0">total</p></div>
+      <div><p style="color:#FF6D00;font-size:22px;font-weight:800;margin:0">${data.totalWorkouts}</p><p style="color:rgba(255,255,255,.4);font-size:11px;margin:0">total</p></div>
     </div>
     ${badgeHtml?`<div style="margin:12px 0;display:flex;flex-wrap:wrap;justify-content:center;gap:6px">${badgeHtml}</div>`:''}
     ${bonusHtml}
     <div style="margin-top:20px;display:flex;gap:8px">
-      <button onclick="sgShareWorkout('${data.shareText||''}')" style="flex:1;background:#f97316;color:#fff;font-weight:700;padding:12px;border:none;border-radius:12px;font-size:14px;cursor:pointer">📤 Share</button>
+      <button onclick="sgShareWorkout('${data.shareText||''}')" style="flex:1;background:#FF6D00;color:#fff;font-weight:700;padding:12px;border:none;border-radius:12px;font-size:14px;cursor:pointer">📤 Share</button>
       <button onclick="document.getElementById('sg-workout-card').remove()" style="flex:1;background:rgba(255,255,255,.08);color:#fff;font-weight:600;padding:12px;border:1px solid rgba(255,255,255,.1);border-radius:12px;font-size:14px;cursor:pointer">Done</button>
     </div>
     <p style="color:rgba(255,255,255,.25);font-size:10px;margin:12px 0 0">scangym.com</p>
@@ -9914,7 +9914,7 @@ window.sgStreakWidget=function(container){
     const earnedBadges=data.badges.earned.slice(-3).map(b=>`<span title="${b.name}">${b.emoji}</span>`).join('');
     
     container.innerHTML=`
-    <div style="background:linear-gradient(135deg,rgba(249,115,22,.1),rgba(249,115,22,.03));border:1px solid rgba(249,115,22,.15);border-radius:16px;padding:16px;margin:12px 0">
+    <div style="background:linear-gradient(135deg,rgba(255,109,0,.1),rgba(255,109,0,.03));border:1px solid rgba(255,109,0,.15);border-radius:16px;padding:16px;margin:12px 0">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <div style="display:flex;align-items:center;gap:8px">
           <span style="font-size:28px">${streakEmoji}</span>
@@ -9930,7 +9930,7 @@ window.sgStreakWidget=function(container){
       </div>
       ${s.nextMilestone?`
       <div style="background:rgba(255,255,255,.06);border-radius:8px;height:8px;overflow:hidden;margin-bottom:6px">
-        <div style="background:linear-gradient(90deg,#f97316,#fb923c);height:100%;width:${Math.min(progress,100)}%;border-radius:8px;transition:width .5s ease"></div>
+        <div style="background:linear-gradient(90deg,#FF6D00,#fb923c);height:100%;width:${Math.min(progress,100)}%;border-radius:8px;transition:width .5s ease"></div>
       </div>
       <p style="color:rgba(255,255,255,.35);font-size:11px;margin:0">${s.daysToMilestone} days to ${s.nextMilestone}-day milestone</p>
       `:'<p style="color:#34d399;font-size:12px;font-weight:600;margin:0">🏆 Max streak achieved!</p>'}
@@ -10205,11 +10205,11 @@ window.sgSunkCostBanner=function(container){
 
     if(container&&workouts>0){
       container.innerHTML=`
-        <div style="background:linear-gradient(135deg,rgba(249,115,22,.08),rgba(249,115,22,.02));border:1px solid rgba(249,115,22,.15);border-radius:16px;padding:16px;margin-bottom:16px">
+        <div style="background:linear-gradient(135deg,rgba(255,109,0,.08),rgba(255,109,0,.02));border:1px solid rgba(255,109,0,.15);border-radius:16px;padding:16px;margin-bottom:16px">
           <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Your ScanGym Journey</div>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">
             <div>
-              <div style="font-size:22px;font-weight:800;color:#f97316">${workouts}</div>
+              <div style="font-size:22px;font-weight:800;color:#FF6D00">${workouts}</div>
               <div style="font-size:10px;color:rgba(255,255,255,.4)">Workouts</div>
             </div>
             <div>
@@ -10222,7 +10222,7 @@ window.sgSunkCostBanner=function(container){
             </div>
           </div>
           <div style="margin-top:10px;font-size:11px;color:rgba(255,255,255,.5);text-align:center">
-            💡 A gym membership would've cost you <strong style="color:#fff">£${savedVsMembership}</strong> — you paid <strong style="color:#f97316">£${spent}</strong>
+            💡 A gym membership would've cost you <strong style="color:#fff">£${savedVsMembership}</strong> — you paid <strong style="color:#FF6D00">£${spent}</strong>
           </div>
         </div>
       `;
@@ -10247,7 +10247,7 @@ window.sgSwipeDiscovery=function(){
 
   function renderCard(){
     if(idx>=shuffled.length){
-      overlay.innerHTML='<div style="text-align:center;color:#fff"><div style="font-size:48px;margin-bottom:16px">🎉</div><p style="font-size:18px;font-weight:700">You\'ve seen all gyms!</p><p style="font-size:13px;color:rgba(255,255,255,.5);margin-top:8px">Check back for new additions</p><button onclick="document.getElementById(\'sg-swipe-overlay\').remove()" style="margin-top:20px;background:#f97316;color:#fff;border:none;padding:12px 32px;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer">Done</button></div>';
+      overlay.innerHTML='<div style="text-align:center;color:#fff"><div style="font-size:48px;margin-bottom:16px">🎉</div><p style="font-size:18px;font-weight:700">You\'ve seen all gyms!</p><p style="font-size:13px;color:rgba(255,255,255,.5);margin-top:8px">Check back for new additions</p><button onclick="document.getElementById(\'sg-swipe-overlay\').remove()" style="margin-top:20px;background:#FF6D00;color:#fff;border:none;padding:12px 32px;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer">Done</button></div>';
       return;
     }
     const g=shuffled[idx];
@@ -10364,7 +10364,7 @@ window.sgAutoplayNextGym=function(currentGymId){
 
   const bar=document.createElement('div');
   bar.id='sg-autoplay-next';
-  bar.style.cssText='position:fixed;bottom:64px;left:8px;right:8px;background:rgba(20,20,35,.97);border:1px solid rgba(249,115,22,.2);border-radius:16px;padding:12px 14px;z-index:8600;display:flex;align-items:center;gap:10px;backdrop-filter:blur(12px);animation:slideUp .4s ease-out';
+  bar.style.cssText='position:fixed;bottom:64px;left:8px;right:8px;background:rgba(20,20,35,.97);border:1px solid rgba(255,109,0,.2);border-radius:16px;padding:12px 14px;z-index:8600;display:flex;align-items:center;gap:10px;backdrop-filter:blur(12px);animation:slideUp .4s ease-out';
   bar.innerHTML=`
     <div style="width:48px;height:48px;border-radius:10px;background:rgba(255,255,255,.05);overflow:hidden;flex-shrink:0">
       ${photo?'<img src="'+photo+'" style="width:100%;height:100%;object-fit:cover">':'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:24px">🏋️</div>'}
@@ -10375,7 +10375,7 @@ window.sgAutoplayNextGym=function(currentGymId){
       <div style="font-size:10px;color:rgba(255,255,255,.35)">${next.distanceText||'Nearby'} · ★ ${next.rating||'New'}</div>
     </div>
     <div style="text-align:center;flex-shrink:0">
-      <div id="sg-ap-count" style="font-size:20px;font-weight:800;color:#f97316">${countdown}</div>
+      <div id="sg-ap-count" style="font-size:20px;font-weight:800;color:#FF6D00">${countdown}</div>
       <div style="font-size:9px;color:rgba(255,255,255,.35)">seconds</div>
     </div>
     <button id="sg-ap-cancel" style="background:rgba(255,255,255,.08);border:none;color:rgba(255,255,255,.5);width:28px;height:28px;border-radius:50%;font-size:14px;cursor:pointer;flex-shrink:0">✕</button>
@@ -10384,7 +10384,7 @@ window.sgAutoplayNextGym=function(currentGymId){
 
   // Progress bar at bottom of the card
   const progress=document.createElement('div');
-  progress.style.cssText='position:absolute;bottom:0;left:0;height:3px;background:linear-gradient(90deg,#f97316,#fb923c);border-radius:0 0 16px 16px;transition:width 1s linear;width:100%';
+  progress.style.cssText='position:absolute;bottom:0;left:0;height:3px;background:linear-gradient(90deg,#FF6D00,#fb923c);border-radius:0 0 16px 16px;transition:width 1s linear;width:100%';
   bar.style.position='relative';
   bar.style.overflow='hidden';
   bar.appendChild(progress);
@@ -10424,7 +10424,7 @@ window.sgFlashDealPopup=function(){}; // no-op stub
   let pullStartY=0,pulling=false;
   const pullIndicator=document.createElement('div');
   pullIndicator.id='sg-pull-refresh';
-  pullIndicator.style.cssText='position:fixed;top:-50px;left:50%;transform:translateX(-50%);background:rgba(249,115,22,.9);color:#fff;padding:8px 20px;border-radius:0 0 14px 14px;font-size:12px;font-weight:700;z-index:8000;transition:top .2s ease-out;display:flex;align-items:center;gap:6px';
+  pullIndicator.style.cssText='position:fixed;top:-50px;left:50%;transform:translateX(-50%);background:rgba(255,109,0,.9);color:#fff;padding:8px 20px;border-radius:0 0 14px 14px;font-size:12px;font-weight:700;z-index:8000;transition:top .2s ease-out;display:flex;align-items:center;gap:6px';
   pullIndicator.innerHTML='<span class="sg-spinner" style="width:14px;height:14px;border-width:2px;margin:0"></span> Finding new gyms...';
   document.body.appendChild(pullIndicator);
 
@@ -10484,10 +10484,10 @@ window.sgIdentityBanner=function(container){
 
     if(container){
       container.innerHTML=`
-        <div style="background:linear-gradient(135deg,rgba(249,115,22,.1),rgba(251,146,60,.05));border:1px solid rgba(249,115,22,.15);border-radius:14px;padding:14px;margin-bottom:12px;display:flex;align-items:center;gap:12px">
+        <div style="background:linear-gradient(135deg,rgba(255,109,0,.1),rgba(251,146,60,.05));border:1px solid rgba(255,109,0,.15);border-radius:14px;padding:14px;margin-bottom:12px;display:flex;align-items:center;gap:12px">
           <div style="font-size:28px">${emoji}</div>
           <div style="flex:1">
-            <div style="font-size:15px;font-weight:800;color:#f97316">${identity}</div>
+            <div style="font-size:15px;font-weight:800;color:#FF6D00">${identity}</div>
             <div style="font-size:11px;color:rgba(255,255,255,.45)">${subtitle}</div>
           </div>
           ${streak>0?'<div style="text-align:center"><div style="font-size:18px;font-weight:800;color:#fff">🔥 '+streak+'</div><div style="font-size:9px;color:rgba(255,255,255,.3)">streak</div></div>':''}
@@ -10507,10 +10507,10 @@ window.sgBookingProgress=function(step){
   return`
     <div style="margin-bottom:16px">
       <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-        ${steps.map((s,i)=>`<div style="font-size:10px;font-weight:${i<step?'700':'500'};color:${i<step?'#f97316':'rgba(255,255,255,.3)'}">${i<step?'✓':''} ${s}</div>`).join('')}
+        ${steps.map((s,i)=>`<div style="font-size:10px;font-weight:${i<step?'700':'500'};color:${i<step?'#FF6D00':'rgba(255,255,255,.3)'}">${i<step?'✓':''} ${s}</div>`).join('')}
       </div>
       <div style="height:4px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden">
-        <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,#f97316,#fb923c);border-radius:4px;transition:width .4s ease-out"></div>
+        <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,#FF6D00,#fb923c);border-radius:4px;transition:width .4s ease-out"></div>
       </div>
     </div>
   `;
@@ -10590,13 +10590,13 @@ window.sgWorkoutGrid=function(container){
       const isToday=i===0;
       const worked=workoutDays.has(dateStr);
       const color=worked?'background:linear-gradient(135deg,#22c55e,#16a34a)':'background:rgba(255,255,255,.04)';
-      const border=isToday?';border:2px solid #f97316':'';
+      const border=isToday?';border:2px solid #FF6D00':'';
       gridEmoji+=worked?'🟩':'⬛';
       if((28-i)%7===0)gridEmoji+='\n';
       html+='<div style="width:100%;aspect-ratio:1;border-radius:6px;'+color+border+';display:flex;align-items:center;justify-content:center;font-size:10px;color:rgba(255,255,255,.6)">'+(worked?'💪':'')+'</div>';
     }
     html+='</div>';
-    html+='<button onclick="sgShareGrid()" style="margin-top:12px;width:100%;background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.2);color:#f97316;padding:8px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer">📤 Share Workout Grid</button>';
+    html+='<button onclick="sgShareGrid()" style="margin-top:12px;width:100%;background:rgba(255,109,0,.1);border:1px solid rgba(255,109,0,.2);color:#FF6D00;padding:8px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer">📤 Share Workout Grid</button>';
     html+='</div>';
 
     if(container)container.innerHTML=html;
@@ -10631,11 +10631,11 @@ window.sgSpinToWin=function(){
     <div style="text-align:center;max-width:320px">
       <div style="font-size:14px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px">✨ Mystery Bonus</div>
       <div id="sg-spin-slots" style="display:flex;justify-content:center;gap:8px;margin-bottom:20px">
-        <div class="sg-slot" style="width:60px;height:80px;background:rgba(255,255,255,.05);border:2px solid rgba(249,115,22,.3);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900;color:#f97316;overflow:hidden">?</div>
-        <div class="sg-slot" style="width:60px;height:80px;background:rgba(255,255,255,.05);border:2px solid rgba(249,115,22,.3);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900;color:#f97316;overflow:hidden">?</div>
-        <div class="sg-slot" style="width:60px;height:80px;background:rgba(255,255,255,.05);border:2px solid rgba(249,115,22,.3);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900;color:#f97316;overflow:hidden">?</div>
+        <div class="sg-slot" style="width:60px;height:80px;background:rgba(255,255,255,.05);border:2px solid rgba(255,109,0,.3);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900;color:#FF6D00;overflow:hidden">?</div>
+        <div class="sg-slot" style="width:60px;height:80px;background:rgba(255,255,255,.05);border:2px solid rgba(255,109,0,.3);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900;color:#FF6D00;overflow:hidden">?</div>
+        <div class="sg-slot" style="width:60px;height:80px;background:rgba(255,255,255,.05);border:2px solid rgba(255,109,0,.3);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900;color:#FF6D00;overflow:hidden">?</div>
       </div>
-      <button id="sg-spin-btn" style="background:linear-gradient(135deg,#f97316,#d97706);color:#fff;border:none;padding:14px 40px;border-radius:14px;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 4px 20px rgba(249,115,22,.3)">🎰 SPIN!</button>
+      <button id="sg-spin-btn" style="background:linear-gradient(135deg,#FF6D00,#d97706);color:#fff;border:none;padding:14px 40px;border-radius:14px;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 4px 20px rgba(255,109,0,.3)">🎰 SPIN!</button>
       <div id="sg-spin-result" style="display:none;margin-top:20px">
         <div style="font-size:48px;font-weight:900;color:#22c55e">${prize} BONUS!</div>
         <div style="font-size:14px;color:rgba(255,255,255,.6);margin-top:8px">Added to your next wallet top-up 🎉</div>
@@ -10693,9 +10693,9 @@ window.sgStreakEarnBack=function(){
           <div style="font-size:48px;margin-bottom:8px">😢</div>
           <div style="font-size:20px;font-weight:800;color:#fff">Your ${d.previousStreak}-Day Streak Broke!</div>
           <div style="font-size:13px;color:rgba(255,255,255,.5);margin-top:8px;line-height:1.4">But you can earn it back! Work out in the next <strong style="color:#ef4444">24 hours</strong> to restore your streak.</div>
-          <div style="margin-top:16px;font-size:36px;font-weight:900;color:#f97316">🔥 ${d.previousStreak}</div>
+          <div style="margin-top:16px;font-size:36px;font-weight:900;color:#FF6D00">🔥 ${d.previousStreak}</div>
           <div style="font-size:11px;color:rgba(255,255,255,.35)">days of progress at stake</div>
-          <button onclick="document.getElementById('sg-earn-back').remove();navigate('/explore')" style="margin-top:20px;width:100%;background:linear-gradient(135deg,#f97316,#d97706);color:#fff;font-size:15px;font-weight:800;padding:14px;border:none;border-radius:14px;cursor:pointer">💪 Book a Gym Now — Save My Streak</button>
+          <button onclick="document.getElementById('sg-earn-back').remove();navigate('/explore')" style="margin-top:20px;width:100%;background:linear-gradient(135deg,#FF6D00,#d97706);color:#fff;font-size:15px;font-weight:800;padding:14px;border:none;border-radius:14px;cursor:pointer">💪 Book a Gym Now — Save My Streak</button>
           <button onclick="document.getElementById('sg-earn-back').remove()" style="margin-top:8px;background:none;border:none;color:rgba(255,255,255,.3);font-size:12px;cursor:pointer">Let it go...</button>
         </div>
       `;
@@ -10779,10 +10779,10 @@ window.sgCommitWorkout=function(){
       <div style="font-size:18px;font-weight:800;color:#fff">Commit to Your Week</div>
       <div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:4px;line-height:1.4">Select your workout days. We'll remind you and protect your streak.</div>
       <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:20px" id="sg-commit-days">
-        ${days.map((d,i)=>`<button class="sg-commit-day" data-day="${i}" style="padding:10px 4px;border-radius:10px;border:1px solid ${committed.includes(i)?'#f97316':'rgba(255,255,255,.1)'};background:${committed.includes(i)?'rgba(249,115,22,.15)':'transparent'};color:${committed.includes(i)?'#f97316':'rgba(255,255,255,.5)'};font-size:10px;font-weight:700;cursor:pointer">${d.substr(0,3)}</button>`).join('')}
+        ${days.map((d,i)=>`<button class="sg-commit-day" data-day="${i}" style="padding:10px 4px;border-radius:10px;border:1px solid ${committed.includes(i)?'#FF6D00':'rgba(255,255,255,.1)'};background:${committed.includes(i)?'rgba(255,109,0,.15)':'transparent'};color:${committed.includes(i)?'#FF6D00':'rgba(255,255,255,.5)'};font-size:10px;font-weight:700;cursor:pointer">${d.substr(0,3)}</button>`).join('')}
       </div>
       <div style="margin-top:16px;font-size:12px;color:rgba(255,255,255,.35)">🔥 Users who pre-commit work out <strong style="color:#22c55e">3.2x more</strong></div>
-      <button id="sg-commit-save" style="margin-top:16px;width:100%;background:linear-gradient(135deg,#f97316,#d97706);color:#fff;font-size:14px;font-weight:800;padding:12px;border:none;border-radius:12px;cursor:pointer">✅ Commit to ${committed.length||0} Days</button>
+      <button id="sg-commit-save" style="margin-top:16px;width:100%;background:linear-gradient(135deg,#FF6D00,#d97706);color:#fff;font-size:14px;font-weight:800;padding:12px;border:none;border-radius:12px;cursor:pointer">✅ Commit to ${committed.length||0} Days</button>
       <button onclick="document.getElementById('sg-commit-overlay').remove()" style="margin-top:8px;background:none;border:none;color:rgba(255,255,255,.3);font-size:12px;cursor:pointer">Skip for now</button>
     </div>
   `;
@@ -10796,9 +10796,9 @@ window.sgCommitWorkout=function(){
       if(sel.includes(day))sel=sel.filter(d=>d!==day);
       else sel.push(day);
       localStorage.setItem('sg_committed_days',JSON.stringify(sel));
-      this.style.borderColor=sel.includes(day)?'#f97316':'rgba(255,255,255,.1)';
-      this.style.background=sel.includes(day)?'rgba(249,115,22,.15)':'transparent';
-      this.style.color=sel.includes(day)?'#f97316':'rgba(255,255,255,.5)';
+      this.style.borderColor=sel.includes(day)?'#FF6D00':'rgba(255,255,255,.1)';
+      this.style.background=sel.includes(day)?'rgba(255,109,0,.15)':'transparent';
+      this.style.color=sel.includes(day)?'#FF6D00':'rgba(255,255,255,.5)';
       document.getElementById('sg-commit-save').textContent='✅ Commit to '+sel.length+' Days';
     };
   });
@@ -10835,16 +10835,16 @@ window.sgProfileCompletion=function(container){
       <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px;margin-bottom:12px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
           <div style="font-size:13px;font-weight:700;color:#fff">Complete Your Profile</div>
-          <div style="font-size:12px;font-weight:700;color:#f97316">${pct}%</div>
+          <div style="font-size:12px;font-weight:700;color:#FF6D00">${pct}%</div>
         </div>
         <div style="height:6px;background:rgba(255,255,255,.08);border-radius:6px;overflow:hidden;margin-bottom:12px">
-          <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,#f97316,#fb923c);border-radius:6px;transition:width .4s"></div>
+          <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,#FF6D00,#fb923c);border-radius:6px;transition:width .4s"></div>
         </div>
         ${items.filter(i=>!i.done).slice(0,2).map(i=>`
-          <div onclick="${i.action}" style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:rgba(249,115,22,.06);border:1px solid rgba(249,115,22,.1);border-radius:10px;margin-bottom:6px;cursor:pointer">
-            <div style="width:20px;height:20px;border:2px solid rgba(249,115,22,.3);border-radius:50%;flex-shrink:0"></div>
+          <div onclick="${i.action}" style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:rgba(255,109,0,.06);border:1px solid rgba(255,109,0,.1);border-radius:10px;margin-bottom:6px;cursor:pointer">
+            <div style="width:20px;height:20px;border:2px solid rgba(255,109,0,.3);border-radius:50%;flex-shrink:0"></div>
             <div style="font-size:12px;color:rgba(255,255,255,.6)">${i.label}</div>
-            <div style="margin-left:auto;font-size:12px;color:rgba(249,115,22,.5)">→</div>
+            <div style="margin-left:auto;font-size:12px;color:rgba(255,109,0,.5)">→</div>
           </div>
         `).join('')}
       </div>
@@ -10948,7 +10948,7 @@ window.sgMasonryGrid=function(gyms,containerId){
     if(!document.getElementById('sg-swipe-btn')){
       const sb=document.createElement('div');sb.id='sg-swipe-btn';
       sb.innerHTML=`
-        <div onclick="sgSwipeDiscovery()" style="background:linear-gradient(135deg,rgba(249,115,22,.1),rgba(251,146,60,.05));border:1px solid rgba(249,115,22,.15);border-radius:14px;padding:14px;margin-bottom:12px;display:flex;align-items:center;gap:12px;cursor:pointer">
+        <div onclick="sgSwipeDiscovery()" style="background:linear-gradient(135deg,rgba(255,109,0,.1),rgba(251,146,60,.05));border:1px solid rgba(255,109,0,.15);border-radius:14px;padding:14px;margin-bottom:12px;display:flex;align-items:center;gap:12px;cursor:pointer">
           <div style="font-size:24px">🔥</div>
           <div style="flex:1">
             <div style="font-size:14px;font-weight:700;color:#fff">Discover Gyms</div>
@@ -11061,17 +11061,17 @@ if(state.route.startsWith('/gym/')){
     <style>
       @keyframes sgWelcomeSlideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}
     </style>
-    <div style="pointer-events:auto;max-width:400px;margin:0 auto;background:linear-gradient(145deg,rgba(20,24,33,.97),rgba(13,17,23,.97));border:1px solid rgba(249,115,22,.2);border-radius:20px;padding:20px;text-align:center;box-shadow:0 -8px 40px rgba(0,0,0,.4);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)">
+    <div style="pointer-events:auto;max-width:400px;margin:0 auto;background:linear-gradient(145deg,rgba(20,24,33,.97),rgba(13,17,23,.97));border:1px solid rgba(255,109,0,.2);border-radius:20px;padding:20px;text-align:center;box-shadow:0 -8px 40px rgba(0,0,0,.4);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)">
       <button onclick="this.closest('#sg-onboarding-overlay')._dismiss()" style="position:absolute;top:10px;right:16px;background:none;border:none;color:rgba(255,255,255,.4);font-size:20px;cursor:pointer;padding:4px">✕</button>
       <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
-        <div style="width:48px;height:48px;background:linear-gradient(135deg,#f97316,#ea580c);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;box-shadow:0 4px 12px rgba(249,115,22,.3)">🏋️</div>
+        <div style="width:48px;height:48px;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;box-shadow:0 4px 12px rgba(255,109,0,.3)">🏋️</div>
         <div style="text-align:left">
           <div style="color:#fff;font-size:17px;font-weight:800">Welcome to ScanGym</div>
           <div style="color:rgba(255,255,255,.5);font-size:12px;margin-top:2px">Book any gym · No membership · £5 day pass · QR entry</div>
         </div>
       </div>
       <div style="display:flex;gap:8px">
-        <button id="sg-ob-find" style="flex:1;padding:12px;background:#f97316;color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">🔍 Find a Gym</button>
+        <button id="sg-ob-find" style="flex:1;padding:12px;background:#FF6D00;color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">🔍 Find a Gym</button>
         <button id="sg-ob-reels" style="flex:1;padding:12px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.08);border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">📱 Watch Reels</button>
       </div>
     </div>
