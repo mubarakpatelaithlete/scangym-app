@@ -1048,8 +1048,8 @@
           if(allVideos.length - index <= LOAD_MORE_AT && feedHasMore && !feedLoading){
             loadMoreFeed();
           }
-          // ⑬ Sound hint
-          if(!soundHintShown && isMuted && index === 1){
+          // ⑬ Sound hint — show on the FIRST reel (index 0), not the second
+          if(!soundHintShown && isMuted && index === 0){
             soundHintShown = true;
             showSoundHint();
           }
