@@ -7054,6 +7054,11 @@ function BookingSuccessPage(){
   // Clean up pending booking marker (Fix #8)
   localStorage.removeItem('sg_pending_booking');
 
+  // H4 fix: Mark user as having a real booking (enables Next Workout countdown)
+  localStorage.setItem('sg_has_booked','1');
+  const bookHour=new Date().getHours();
+  localStorage.setItem('sg_typical_hour',String(bookHour));
+
   // Verify payment and get QR (async — will update DOM)
   if(!state.lastQR){
     // For inline Stripe, QR is already set before navigating here
@@ -10699,10 +10704,19 @@ window.sgStreakEarnBack=function(){
   }).catch(()=>{});
 };
 
-// ─── 19. ANTICIPATORY DOPAMINE — NEXT WORKOUT COUNTDOWN (mechanic #6) ───
-// Show a countdown to user's next scheduled/typical workout time
+// ─── 19. NEXT WORKOUT COUNTDOWN ───
+// H4 fix: Only show if the user has a real upcoming booking or past workout history.
+// Guest users / users with zero bookings see nothing (no fake countdowns).
 window.sgNextWorkoutCountdown=function(container){
-  // Determine typical workout time based on last bookings
+  if(!container) return;
+
+  // Only show for logged-in users who have actual workout history
+  const hasBookings = localStorage.getItem('sg_typical_hour') && localStorage.getItem('sg_has_booked');
+  if(!hasBookings){
+    container.innerHTML='';
+    return;
+  }
+
   const typicalHour=parseInt(localStorage.getItem('sg_typical_hour')||'18');
   const now=new Date();
   const next=new Date();
@@ -10713,18 +10727,16 @@ window.sgNextWorkoutCountdown=function(container){
   const hours=Math.floor(diff/3600000);
   const mins=Math.floor((diff%3600000)/60000);
 
-  if(container){
-    container.innerHTML=`
-      <div style="background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.12);border-radius:14px;padding:14px;margin-bottom:12px;display:flex;align-items:center;gap:12px">
-        <div style="font-size:28px">⏱️</div>
-        <div style="flex:1">
-          <div style="font-size:11px;color:rgba(255,255,255,.4);font-weight:600">NEXT WORKOUT</div>
-          <div style="font-size:18px;font-weight:800;color:#3b82f6">${hours}h ${mins}m</div>
-        </div>
-        <button onclick="navigate('/explore')" style="background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.2);color:#3b82f6;padding:8px 14px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer">Book Now</button>
+  container.innerHTML=`
+    <div style="background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.12);border-radius:14px;padding:14px;margin-bottom:12px;display:flex;align-items:center;gap:12px">
+      <div style="font-size:28px">⏱️</div>
+      <div style="flex:1">
+        <div style="font-size:11px;color:rgba(255,255,255,.4);font-weight:600">NEXT WORKOUT</div>
+        <div style="font-size:18px;font-weight:800;color:#3b82f6">${hours}h ${mins}m</div>
       </div>
-    `;
-  }
+      <button onclick="navigate('/explore')" style="background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.2);color:#3b82f6;padding:8px 14px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer">Book Now</button>
+    </div>
+  `;
 };
 
 // ─── 20. "X PEOPLE VIEWING" LIVE COUNTER (mechanic #15 + #7) ───
