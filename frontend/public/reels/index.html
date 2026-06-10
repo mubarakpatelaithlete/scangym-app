@@ -1038,6 +1038,14 @@
         reconcileWindow(index);
         updateReelCounter(); // FIX: update counter on every navigation
         if(prevIndex !== index){
+          // M4 fix: Update URL to reflect current reel (enables sharing from address bar)
+          try {
+            var vid = allVideos[index];
+            if(vid && vid.id){
+              var newUrl = window.location.pathname + '?v=' + encodeURIComponent(vid.id);
+              window.history.replaceState(null, '', newUrl);
+            }
+          } catch(e){}
           // ⑯ Audio crossfade
           crossfadeTransition(prevIndex, index);
           // FIX #5: Use smart prefetch with abort controller for far-away fetches
@@ -1553,27 +1561,48 @@
                 if(pp) posterCache[i] = pp;
               }
             }
-            reconcileWindow(0);
+            // M4 fix: Deep-link support — if URL has ?v=ID, start at that reel
+            var startIndex = 0;
+            try {
+              var urlParams = new URLSearchParams(window.location.search);
+              var deepLinkId = urlParams.get('v');
+              if(deepLinkId){
+                for(var di = 0; di < allVideos.length; di++){
+                  if(String(allVideos[di].id) === String(deepLinkId)){
+                    startIndex = di;
+                    break;
+                  }
+                }
+              }
+            } catch(e){ /* URLSearchParams not supported — start at 0 */ }
+
+            reconcileWindow(startIndex);
             loading.style.display = 'none';
             updateReelCounter(); // FIX: update counter after feed loads
             // FIX C1: Try play immediately, and also retry once video has data
-            playVideo(0);
-            var firstReel = renderedReels[0];
+            playVideo(startIndex);
+            var firstReel = renderedReels[startIndex];
             if(firstReel){
               var firstVid = firstReel.querySelector('video');
               if(firstVid && firstVid.paused){
                 firstVid.addEventListener('canplay', function onCanPlay(){
                   firstVid.removeEventListener('canplay', onCanPlay);
-                  if(firstVid.paused && currentIndex === 0){
-                    playVideo(0);
+                  if(firstVid.paused && currentIndex === startIndex){
+                    playVideo(startIndex);
                   }
                 });
               }
             }
+            // If deep-linked, snap to the correct position
+            if(startIndex > 0){
+              currentIndex = startIndex;
+              trackOffset = -(startIndex * screenH);
+              setTrackPosition(trackOffset);
+            }
             // Defer prefetch to avoid competing with first video load
             setTimeout(function(){
-              prefetchAhead(0);
-              applySmartPreload(0);
+              prefetchAhead(startIndex);
+              applySmartPreload(startIndex);
             }, 500);
           })
           .catch(function(err){
@@ -1895,9 +1924,14 @@
       }
 
       // H6 fix: Share now always gives feedback — toast on success, clipboard fallback, never silent.
+      // M4 fix: Share reel-specific URL (scangym.com/reels?v=ID) instead of generic page URL.
       function handleShare(video){
         if(navigator.vibrate) navigator.vibrate(10);
-        var url = (video.creator && video.creator.affiliateLink) || 'https://scangym.com/reels';
+        // Build reel-specific deep link — falls back to affiliate link if present, then generic
+        var reelUrl = video.id
+          ? (window.location.origin + '/reels?v=' + encodeURIComponent(video.id))
+          : ((video.creator && video.creator.affiliateLink) || 'https://scangym.com/reels');
+        var url = reelUrl;
         var displayName = humanizeTitle(video.name);
         var text = (displayName || 'ScanGym Reels') + ' \u2014 Book a gym from ' + sgPrice('day').display + '! \uD83D\uDCAA';
         if(video.creator && video.creator.name){
