@@ -31,7 +31,7 @@ const pool = require('../middleware/db');
 
 // ─── Global Pricing Engine (PPP + Surge) ────────────────────────────────────
 const pricing = require('../lib/pricing-engine');
-const surge = require('../lib/surge-pricing');
+// v4.0: Surge pricing removed — flat £4.49 base everywhere
 
 /**
  * C7 fix: Currency based on GYM's physical country, not visitor IP.
@@ -550,19 +550,17 @@ router.post('/quick-checkout', async (req, res) => {
       }
     }
 
-    // Get gym info (C6: day_pass_price, C7: currency/country)
-    const gym = await pool.query('SELECT id, name, address, day_pass_price, currency, country FROM gyms WHERE id = $1', [dbGymId]);
+    // Get gym info
+    const gym = await pool.query('SELECT id, name, address, country FROM gyms WHERE id = $1', [dbGymId]);
     if (gym.rows.length === 0) return res.status(404).json({ error: 'Gym not found' });
     const g = gym.rows[0];
 
-    // C7 fix: Use gym's currency from DB (based on gym's physical country)
-    const gymCurrency = (g.currency || 'GBP').toLowerCase();
-
-    // C6 fix: Use gym's own price instead of PPP engine
+    // v4.0: Flat £4.49 base, PPP + currency by gym's physical country
+    const dayPrice = pricing.getDayPassPrice(g.country || 'GB');
+    const gymCurrency = dayPrice.currency;
     const resolved = resolveTime(time);
-    const geo = getGymGeo(req);
-    const price = parseFloat(g.day_pass_price) || 4.99;
-    const amount = Math.round(price * 100);
+    const price = dayPrice.amount;
+    const amount = dayPrice.stripeAmount;
 
     // Generate booking codes
     const crypto = require('crypto');
@@ -587,7 +585,7 @@ router.post('/quick-checkout', async (req, res) => {
     const booking = bookingResult.rows[0];
 
     // Charge the saved card — instant, no user interaction! (Like Uber)
-    surge.recordBooking(dbGymId, geo.country);
+    // v4.0: Surge pricing removed
     const intent = await stripe.paymentIntents.create({
       amount,
       currency: gymCurrency, // C7 fix: Currency from gym's physical country
@@ -599,7 +597,7 @@ router.post('/quick-checkout', async (req, res) => {
         bookingId: String(booking.id),
         gymName: g.name,
         quickCheckout: 'true',
-        country: geo.country,
+        country: g.country || 'GB',
       },
       receipt_email: user.email || undefined,
     });
@@ -868,7 +866,7 @@ router.post('/cash-booking', async (req, res) => {
           const gn = gymName || 'Gym';
           const insertResult = await pool.query(
             `INSERT INTO public.gyms (name, address, place_id, day_pass_price, owner_id, slug, is_active, created_at, updated_at)
-             VALUES ($1, $2, $3, 5.00, 'system', $4, true, NOW(), NOW()) RETURNING id`,
+             VALUES ($1, $2, $3, 4.49, 'system', $4, true, NOW(), NOW()) RETURNING id`,
             [gn, gymAddress || '', placeId, gn.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 100)]
           );
           dbGymId = insertResult.rows[0].id;
@@ -879,14 +877,15 @@ router.post('/cash-booking', async (req, res) => {
       }
     }
 
-    const gym = await pool.query('SELECT id, name, day_pass_price, currency, country FROM gyms WHERE id = $1', [dbGymId]);
+    const gym = await pool.query('SELECT id, name, country FROM gyms WHERE id = $1', [dbGymId]);
     if (gym.rows.length === 0) return res.status(404).json({ error: 'Gym not found' });
     const g = gym.rows[0];
 
-    // ── Step 2: C6 fix — Use gym's own price; C7: gym's own currency ──
+    // v4.0: Flat £4.49 base, PPP + currency by gym's country
     const passTypeClean = passType || 'day';
     const resolved = resolveTime(time);
-    const price = parseFloat(g.day_pass_price) || 4.99;
+    const dayPrice = pricing.getDayPassPrice(g.country || 'GB');
+    const price = dayPrice.amount;
 
     // ── Step 3: Generate booking code (same XXXX-XXXX format as Stripe path, fits VARCHAR(9)) ──
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
