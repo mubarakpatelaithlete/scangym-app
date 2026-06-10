@@ -6989,7 +6989,7 @@ function ActiveSessionPage(){
           <div style="color:rgba(255,255,255,.4);font-size:13px">${b.passType||'Day Pass'} · ${b.date||'Today'}</div>
         </div>
         <div style="text-align:right">
-          <div style="color:#22c55e;font-size:14px;font-weight:700">£${(b.price||2.99).toFixed(2)}</div>
+          <div style="color:#22c55e;font-size:14px;font-weight:700">£${(b.price||5.00).toFixed(2)}</div>
           <div style="color:rgba(255,255,255,.3);font-size:11px">PAID ✓</div>
         </div>
       </div>
@@ -9979,12 +9979,12 @@ window.sgRecordAndShare=function(){
 };
 
 // ─── 6. FLASH DEAL INJECTION (for reels feed) ───
+// H3 fix: Flash deal prices aligned to £5.00 base — no more random sub-£5 prices
 window.sgFlashDeal=function(){
   const deals=[
-    {title:'⚡ Flash Deal',desc:'Day pass for just £1.99',price:'£1.99',orig:'£2.99',timer:'23:47'},
-    {title:'🎰 Lucky Dip',desc:'Random gym, mystery price',price:'£0.99',orig:'£2.99',timer:'11:22'},
-    {title:'🔥 Hot Deal',desc:'2-for-1 day passes today',price:'£2.99',orig:'£5.98',timer:'07:15'},
-    {title:'⏰ Happy Hour',desc:'Off-peak pass, crazy price',price:'£1.49',orig:'£2.99',timer:'02:30'},
+    {title:'⚡ Flash Deal',desc:'Day pass — limited time',price:'£3.75',orig:'£5.00',timer:'23:47'},
+    {title:'🔥 Hot Deal',desc:'2-for-1 day passes today',price:'£5.00',orig:'£10.00',timer:'07:15'},
+    {title:'⏰ Off-Peak',desc:'Off-peak pass, save 25%',price:'£3.75',orig:'£5.00',timer:'02:30'},
   ];
   return deals[Math.floor(Math.random()*deals.length)];
 };
@@ -10264,7 +10264,7 @@ window.sgSwipeDiscovery=function(){
     const g=shuffled[idx];
     const photo=g.photo||g.photo_url||(g.photoReference?'https://maps.googleapis.com/maps/api/place/photo?maxwidth=1200&photo_reference='+g.photoReference+'&key='+window.MAPS_KEY:'');
     const isFlashDeal=Math.random()<0.15; // 15% chance = variable reward!
-    const flashPrice=isFlashDeal?'£2.99':'';
+    const flashPrice=isFlashDeal?'£3.75':'';
 
     overlay.innerHTML=`
       <div style="position:absolute;top:16px;right:16px;z-index:10">
