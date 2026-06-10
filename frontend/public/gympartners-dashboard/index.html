@@ -7,21 +7,21 @@
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0a0a16;color:#fff;min-height:100vh}
-    .header{background:linear-gradient(135deg,#111827,#1f2937);padding:20px 24px;border-bottom:1px solid rgba(249,115,22,.2)}
+    .header{background:linear-gradient(135deg,#111827,#1f2937);padding:20px 24px;border-bottom:1px solid rgba(255,109,0,.2)}
     .header h1{font-size:22px;font-weight:800;display:flex;align-items:center;gap:8px}
-    .header h1 span{color:#f97316}
+    .header h1 span{color:#FF6D00}
     .header p{color:rgba(255,255,255,.4);font-size:13px;margin-top:4px}
     .content{padding:16px 24px;max-width:900px;margin:0 auto}
     .section-title{font-size:16px;font-weight:800;margin:24px 0 12px;display:flex;align-items:center;gap:8px}
     .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:8px}
     .stat{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px;text-align:center;transition:.15s}
-    .stat:hover{border-color:rgba(249,115,22,.2)}
-    .stat .num{font-size:26px;font-weight:800;color:#f97316}
+    .stat:hover{border-color:rgba(255,109,0,.2)}
+    .stat .num{font-size:26px;font-weight:800;color:#FF6D00}
     .stat .lbl{font-size:11px;color:rgba(255,255,255,.4);margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
 
     /* Gym selector */
     .gym-selector{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:20px;margin-bottom:16px}
-    .gym-selector select{width:100%;padding:12px 16px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:#1a1a2e;color:#fff;font-size:14px;font-weight:600;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23f97316' stroke-width='2' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 16px center}
+    .gym-selector select{width:100%;padding:12px 16px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:#1a1a2e;color:#fff;font-size:14px;font-weight:600;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23FF6D00' stroke-width='2' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 16px center}
 
     /* Toggle switch — Zomato style */
     .toggle-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:20px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:16px}
@@ -45,38 +45,38 @@
     .price-label{font-size:14px;font-weight:600;color:rgba(255,255,255,.7)}
     .price-label small{display:block;font-size:11px;font-weight:400;color:rgba(255,255,255,.35);margin-top:2px}
     .price-input-wrap{display:flex;align-items:center;gap:4px}
-    .price-currency{font-size:16px;font-weight:800;color:#f97316}
+    .price-currency{font-size:16px;font-weight:800;color:#FF6D00}
     .price-input{width:80px;padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#fff;font-size:16px;font-weight:700;text-align:right}
-    .price-input:focus{outline:none;border-color:#f97316;box-shadow:0 0 0 3px rgba(249,115,22,.15)}
+    .price-input:focus{outline:none;border-color:#FF6D00;box-shadow:0 0 0 3px rgba(255,109,0,.15)}
     .discount-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04)}
     .discount-label{flex:1;font-size:13px;color:rgba(255,255,255,.6)}
     .discount-input{width:60px;padding:6px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#fff;font-size:13px;font-weight:600;text-align:right}
     .btn{padding:10px 24px;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;border:none;transition:.15s}
     .btn:active{transform:scale(.96)}
-    .btn-primary{background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;box-shadow:0 4px 16px rgba(249,115,22,.3);width:100%;margin-top:16px}
+    .btn-primary{background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff;box-shadow:0 4px 16px rgba(255,109,0,.3);width:100%;margin-top:16px}
     .btn-primary:disabled{opacity:.5;cursor:not-allowed}
 
     /* Chart */
     .chart-container{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:20px;margin-bottom:8px}
     .chart-bars{display:flex;align-items:flex-end;gap:3px;height:100px;padding-top:8px}
     .chart-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;height:100%}
-    .chart-bar{width:100%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,#f97316,#ea580c);min-height:2px;transition:height .4s;margin-top:auto}
+    .chart-bar{width:100%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,#FF6D00,#E66200);min-height:2px;transition:height .4s;margin-top:auto}
     .chart-bar-label{font-size:8px;color:rgba(255,255,255,.25);margin-top:3px;white-space:nowrap}
-    .chart-bar-val{font-size:8px;color:#f97316;font-weight:700;margin-bottom:1px}
+    .chart-bar-val{font-size:8px;color:#FF6D00;font-weight:700;margin-bottom:1px}
 
     /* Peak hours */
     .peak-list{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
-    .peak-chip{padding:8px 14px;border-radius:10px;font-size:12px;font-weight:700;background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.2);color:#f97316}
+    .peak-chip{padding:8px 14px;border-radius:10px;font-size:12px;font-weight:700;background:rgba(255,109,0,.1);border:1px solid rgba(255,109,0,.2);color:#FF6D00}
 
     /* Reviews */
     .review-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
     .review-stars{width:50px;font-size:13px;font-weight:700;text-align:right}
     .review-bar-bg{flex:1;height:10px;background:rgba(255,255,255,.06);border-radius:5px;overflow:hidden}
-    .review-bar-fill{height:100%;border-radius:5px;background:linear-gradient(90deg,#f97316,#fbbf24)}
+    .review-bar-fill{height:100%;border-radius:5px;background:linear-gradient(90deg,#FF6D00,#fbbf24)}
     .review-count{width:30px;font-size:12px;color:rgba(255,255,255,.4)}
 
     .loading{text-align:center;padding:60px;color:rgba(255,255,255,.3)}
-    .loading .spinner{width:32px;height:32px;border:3px solid rgba(255,255,255,.1);border-top-color:#f97316;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+    .loading .spinner{width:32px;height:32px;border:3px solid rgba(255,255,255,.1);border-top-color:#FF6D00;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
     @keyframes spin{to{transform:rotate(360deg)}}
     .toast{position:fixed;top:20px;right:20px;padding:12px 20px;border-radius:12px;font-weight:700;font-size:13px;z-index:100;animation:slideIn .3s;box-shadow:0 4px 20px rgba(0,0,0,.3)}
     .toast.success{background:#22c55e;color:#fff}
@@ -109,14 +109,14 @@
         const data = await res.json();
         gyms = data.gyms || [];
         if (gyms.length === 0) {
-          document.getElementById('main').innerHTML = '<div class="loading">You don\'t have any gyms yet.<br><br><a href="/" style="color:#f97316">← Back to ScanGym</a></div>';
+          document.getElementById('main').innerHTML = '<div class="loading">You don\'t have any gyms yet.<br><br><a href="/" style="color:#FF6D00">← Back to ScanGym</a></div>';
           return;
         }
         selectedGymId = gyms[0].id;
         renderGymSelector();
         loadGymData();
       } catch (e) {
-        document.getElementById('main').innerHTML = '<div class="loading">⚠️ Please log in to access your partner dashboard.<br><br><a href="/login" style="color:#f97316">→ Login</a></div>';
+        document.getElementById('main').innerHTML = '<div class="loading">⚠️ Please log in to access your partner dashboard.<br><br><a href="/login" style="color:#FF6D00">→ Login</a></div>';
       }
     }
 

@@ -92,7 +92,7 @@
         text-shadow:0 1px 4px rgba(0,0,0,.5);
       }
       .reel-info .reel-creator{
-        font-size:12px;color:#f97316;font-weight:600;margin-top:3px;
+        font-size:12px;color:#FF6D00;font-weight:600;margin-top:3px;
         text-shadow:0 1px 4px rgba(0,0,0,.5);
       }
 
@@ -100,15 +100,15 @@
       .creator-cta{
         display:flex;align-items:center;gap:8px;
         margin-top:8px;padding:8px 12px;
-        background:rgba(249,115,22,.15);border:1px solid rgba(249,115,22,.3);
+        background:rgba(255,109,0,.15);border:1px solid rgba(255,109,0,.3);
         border-radius:12px;cursor:pointer;
         backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
         transition:all .15s;max-width:fit-content;
         text-decoration:none;
       }
-      .creator-cta:active{transform:scale(0.96);background:rgba(249,115,22,.25);}
+      .creator-cta:active{transform:scale(0.96);background:rgba(255,109,0,.25);}
       .creator-cta-icon{font-size:16px;}
-      .creator-cta-text{font-size:12px;font-weight:700;color:#f97316;line-height:1.2;}
+      .creator-cta-text{font-size:12px;font-weight:700;color:#FF6D00;line-height:1.2;}
       .creator-cta-sub{font-size:10px;color:rgba(255,255,255,.5);font-weight:500;}
 
       /* ── Action sidebar (right) ── */
@@ -137,7 +137,7 @@
         color:#fff;font-size:10px;font-weight:600;
         text-shadow:0 1px 4px rgba(0,0,0,.8);
       }
-      .reel-action[data-action="book"] .icon{background:rgba(249,115,22,.85);border-color:rgba(249,115,22,.9);}
+      .reel-action[data-action="book"] .icon{background:rgba(255,109,0,.85);border-color:rgba(255,109,0,.9);}
 
       /* ── Floating Create FAB ── */
       #create-fab{
@@ -178,7 +178,7 @@
       }
       .reel-progress-bar{
         position:absolute;top:0;left:0;height:100%;width:0%;
-        background:#f97316;
+        background:#FF6D00;
         border-radius:0 2px 2px 0;
       }
 
@@ -219,7 +219,7 @@
       .shimmer-circle:nth-child(4){animation-delay:.45s;}
       .shimmer-progress{
         position:absolute;bottom:0;left:0;right:0;height:3px;
-        background:linear-gradient(90deg,rgba(249,115,22,.1) 25%,rgba(249,115,22,.25) 50%,rgba(249,115,22,.1) 75%);
+        background:linear-gradient(90deg,rgba(255,109,0,.1) 25%,rgba(255,109,0,.25) 50%,rgba(255,109,0,.1) 75%);
         background-size:200% 100%;
         animation:shimmer 1.5s ease-in-out infinite;
       }
@@ -229,8 +229,8 @@
       }
       #loading p{color:rgba(255,255,255,.3);font-size:12px;position:absolute;bottom:40px;left:50%;transform:translateX(-50%);}
       .spinner{
-        width:40px;height:40px;border:3px solid rgba(249,115,22,.2);
-        border-top-color:#f97316;border-radius:50%;
+        width:40px;height:40px;border:3px solid rgba(255,109,0,.2);
+        border-top-color:#FF6D00;border-radius:50%;
         animation:spin .8s linear infinite;
       }
       @keyframes spin{to{transform:rotate(360deg);}}
@@ -308,8 +308,8 @@
       .reel-loading-state.loaded{opacity:0;}
       .reel-loading-state .loading-ring{
         width:48px;height:48px;border-radius:50%;
-        border:3px solid rgba(249,115,22,.15);
-        border-top-color:#f97316;
+        border:3px solid rgba(255,109,0,.15);
+        border-top-color:#FF6D00;
         animation:spin .8s linear infinite;
       }
 
@@ -454,11 +454,11 @@
         + '</defs>'
         + '<rect width="360" height="640" fill="url(#bg)"/>'
         + '<rect width="360" height="640" fill="url(#shimmer)"/>'
-        + '<circle cx="180" cy="300" r="28" fill="none" stroke="rgba(249,115,22,0.3)" stroke-width="2.5">'
+        + '<circle cx="180" cy="300" r="28" fill="none" stroke="rgba(255,109,0,0.3)" stroke-width="2.5">'
         + '<animate attributeName="r" values="28;32;28" dur="1.2s" repeatCount="indefinite"/>'
         + '<animate attributeName="opacity" values="0.3;0.6;0.3" dur="1.2s" repeatCount="indefinite"/>'
         + '</circle>'
-        + '<polygon points="174,288 174,312 194,300" fill="rgba(249,115,22,0.35)"/>'
+        + '<polygon points="174,288 174,312 194,300" fill="rgba(255,109,0,0.35)"/>'
         + '</svg>'
       );
 
@@ -1345,8 +1345,8 @@
           + 'display:flex;flex-direction:column;align-items:center;justify-content:center;'
           + 'cursor:pointer;background:rgba(0,0,0,0.3);';
         overlay.innerHTML = '<div style="width:72px;height:72px;border-radius:50%;'
-          + 'background:rgba(249,115,22,0.9);display:flex;align-items:center;justify-content:center;'
-          + 'box-shadow:0 4px 24px rgba(249,115,22,0.4);">'
+          + 'background:rgba(255,109,0,0.9);display:flex;align-items:center;justify-content:center;'
+          + 'box-shadow:0 4px 24px rgba(255,109,0,0.4);">'
           + '<svg width="32" height="32" viewBox="0 0 24 24" fill="#fff" stroke="none">'
           + '<polygon points="6,3 20,12 6,21"/></svg></div>'
           + '<p style="color:#fff;font-size:14px;font-weight:600;margin-top:12px;'
@@ -2131,7 +2131,7 @@
       function showFatalError(msg){
         loading.innerHTML = '<div class="spinner"></div>'
           + '<p style="color:#fff;font-size:18px;font-weight:700;position:static;transform:none;margin-top:16px">' + msg + '</p>'
-          + '<button onclick="location.reload()" style="margin-top:16px;background:#f97316;color:#fff;border:none;padding:12px 28px;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer">Retry</button>';
+          + '<button onclick="location.reload()" style="margin-top:16px;background:#FF6D00;color:#fff;border:none;padding:12px 28px;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer">Retry</button>';
       }
 
       // ═══════════════════════════════════════════════════════════
