@@ -472,7 +472,7 @@
       // ── State ──
       var allVideos      = [];
       var currentIndex   = 0;
-      var isMuted        = true;
+      var isMuted        = (function(){ try { var v = localStorage.getItem('sg_muted'); return v === null ? true : v === '1'; } catch(e){ return true; } })();
       var screenH        = window.innerHeight;
       var trackOffset    = 0;
       var renderedReels  = {};
@@ -1122,6 +1122,7 @@
             // Parent wants to sync mute state
             if(typeof e.data.muted === 'boolean'){
               isMuted = e.data.muted;
+              try { localStorage.setItem('sg_muted', isMuted ? '1' : '0'); } catch(e2){}
               var reel = renderedReels[currentIndex];
               if(reel){
                 var vid = reel.querySelector('video');
@@ -1215,11 +1216,11 @@
               nextVid.play().then(function(){
                 removeTapOverlay(nextReel);
               }).catch(function(){
-                // Fallback: force muted play
+                // Fallback: force muted play — but keep user preference intact
                 nextVid.muted = true;
-                isMuted = true;
                 nextVid.play().then(function(){
                   removeTapOverlay(nextReel);
+                  if(!isMuted) showSoundHint();
                 }).catch(function(){
                   showTapToPlay(nextReel, nextVid, nextIndex);
                 });
@@ -1323,15 +1324,14 @@
             // Autoplay succeeded — remove any tap-to-play overlay
             removeTapOverlay(reel);
           }).catch(function(err){
-            // Autoplay blocked — retry muted first (covers edge case where
-            // isMuted was false but browser requires muted autoplay)
+            // Autoplay blocked — retry muted but DON'T overwrite user's
+            // stored preference. Just mute this playback attempt.
             vid.muted = true;
-            isMuted = true;
             var retry = vid.play();
             if(retry && typeof retry.then === 'function'){
               retry.then(function(){
                 removeTapOverlay(reel);
-                showSoundHint(); // let user know they can unmute
+                if(!isMuted) showSoundHint(); // user wanted sound — show hint to tap
               }).catch(function(){
                 // Autoplay truly blocked — show tap-to-play overlay
                 showTapToPlay(reel, vid, i);
@@ -1359,10 +1359,13 @@
           + '<p style="color:#fff;font-size:14px;font-weight:600;margin-top:12px;'
           + 'text-shadow:0 1px 8px rgba(0,0,0,.8);">Tap to play</p>';
         overlay.addEventListener('click', function(){
+          // Start muted to guarantee playback, then restore user preference
           vid.muted = true;
-          isMuted = true;
           vid.play().then(function(){
             removeTapOverlay(reel);
+            // Restore user's saved mute preference after playback starts
+            vid.muted = isMuted;
+            if(!isMuted) vid.volume = 1;
           }).catch(function(){});
         }, {once: true});
         reel.appendChild(overlay);
@@ -2039,6 +2042,7 @@
 
       function toggleMute(){
         isMuted = !isMuted;
+        try { localStorage.setItem('sg_muted', isMuted ? '1' : '0'); } catch(e){}
         var vids = document.querySelectorAll('.reel video');
         for(var i = 0; i < vids.length; i++){
           vids[i].muted = isMuted;
