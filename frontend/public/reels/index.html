@@ -588,6 +588,9 @@
         if(!entry) return;
         var vid = entry.element;
         vid.pause();
+        // M7 FIX: Abort all event listeners from the previous createReel call
+        // before recycling. Prevents stale closures from overwriting src.
+        if(vid._abortCtrl){ vid._abortCtrl.abort(); vid._abortCtrl = null; }
         // FIX: Assign a minimal empty MP4 to cleanly reset the decoder.
         // The old approach (removeAttribute('src') + load()) sends stale
         // Range headers to the old CDN URL → HTTP 416 floods.
@@ -1661,6 +1664,13 @@
 
         // ⑮ Acquire video element from pool
         var vid = acquireVideo(index);
+        // M7 FIX: Set up AbortController to clean up ALL event listeners
+        // when this element is recycled. Prevents stale closures from
+        // accumulated addEventListener calls overwriting video src.
+        if(vid._abortCtrl) vid._abortCtrl.abort();
+        vid._abortCtrl = new AbortController();
+        var poolSignal = vid._abortCtrl.signal;
+        vid._reelIndex = index; // Track current index on element itself
         vid.src = videoUrl;
         vid.muted = isMuted;
 
@@ -1713,19 +1723,21 @@
           if(vid.videoWidth > vid.videoHeight * 1.2){
             div.classList.add('landscape');
           }
-        });
+        }, {signal: poolSignal});
 
         // Error handling — retry with CDN proxy before showing error
-        // FIX: Added _retrying flag to prevent race condition where
-        // removeAttribute('src')+load() fires a synchronous error event
-        // that increments _retryCount before the actual retry URL is set.
+        // M7 FIX: Uses poolSignal (AbortController) so stale handlers are
+        // automatically removed when this pool element is recycled.
+        // Uses vid._reelIndex instead of div.dataset.index to avoid
+        // stale closure reads from accumulated addEventListener calls.
         vid._retryCount = 0;
         vid._retrying = false;
         vid.addEventListener('error', function(){
           // Guard: ignore errors fired during source reset
           if(vid._retrying) return;
-          var idx = parseInt(div.dataset.index);
-          if(vid._retryCount === 0 && idx < allVideos.length){
+          var idx = vid._reelIndex;
+          if(typeof idx !== 'number' || idx < 0 || idx >= allVideos.length) return;
+          if(vid._retryCount === 0){
             vid._retryCount++;
             vid._retrying = true;
             // First retry: try the CORS proxy instead of direct CDN
@@ -1757,11 +1769,11 @@
           errDiv.innerHTML = '<span>\uD83C\uDFAC</span><p>Video unavailable</p>';
           div.appendChild(errDiv);
           setTimeout(function(){
-            if(parseInt(div.dataset.index) === currentIndex){
+            if(vid._reelIndex === currentIndex){
               snapTo(currentIndex + 1, true); // snapTo handles bounds
             }
           }, 1500);
-        });
+        }, {signal: poolSignal});
 
         // FIX #3: Always-visible loading overlay — replaces black screen
         var loadingState = document.createElement('div');
@@ -1775,8 +1787,8 @@
           // Clean up after fade transition
           setTimeout(function(){ if(loadingState.parentNode) loadingState.style.display='none'; }, 350);
         }
-        vid.addEventListener('canplay', markLoaded, {once: true});
-        vid.addEventListener('playing', markLoaded, {once: true});
+        vid.addEventListener('canplay', markLoaded, {once: true, signal: poolSignal});
+        vid.addEventListener('playing', markLoaded, {once: true, signal: poolSignal});
         // Also mark loaded if poster/frame is visible (readyState >= 2)
         if(vid.readyState >= 2) markLoaded();
 
@@ -1787,9 +1799,9 @@
         bufSpinner.style.display = 'none';
         div.appendChild(bufSpinner);
 
-        vid.addEventListener('waiting', function(){ if(loadingState.classList.contains('loaded')) bufSpinner.style.display = 'flex'; });
-        vid.addEventListener('canplay', function(){ bufSpinner.style.display = 'none'; });
-        vid.addEventListener('playing', function(){ bufSpinner.style.display = 'none'; });
+        vid.addEventListener('waiting', function(){ if(loadingState.classList.contains('loaded')) bufSpinner.style.display = 'flex'; }, {signal: poolSignal});
+        vid.addEventListener('canplay', function(){ bufSpinner.style.display = 'none'; }, {signal: poolSignal});
+        vid.addEventListener('playing', function(){ bufSpinner.style.display = 'none'; }, {signal: poolSignal});
 
         // Progress bar
         var progressWrap = document.createElement('div');
