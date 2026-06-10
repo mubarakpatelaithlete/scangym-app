@@ -14,6 +14,7 @@ const router = express.Router();
 const path = require('path');
 const fs = require('fs');
 const pool = require('../middleware/db');
+const { authenticateUser, requireAdmin } = require('../middleware/auth');
 
 // Load static video catalog (extracted from the original React bundle)
 const STATIC_VIDEOS_PATH = path.join(__dirname, '..', 'data', 'reels-videos.json');
@@ -409,7 +410,7 @@ router.get('/categories', async (req, res) => {
  * GET /api/reels/admin/pending
  * List pending uploads for admin review.
  */
-router.get('/admin/pending', async (req, res) => {
+router.get('/admin/pending', authenticateUser, requireAdmin, async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT id, creator_handle, creator_name, creator_email, caption, category,
@@ -429,7 +430,7 @@ router.get('/admin/pending', async (req, res) => {
  * Approve or reject a pending upload.
  * Body: { action: "approve" | "reject" }
  */
-router.patch('/admin/review/:id', async (req, res) => {
+router.patch('/admin/review/:id', authenticateUser, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { action } = req.body;
@@ -522,7 +523,7 @@ router.get('/cdn-proxy/:cdnKey', (req, res) => {
  * Manually trigger video enrichment (fills missing metadata).
  * Returns enrichment results.
  */
-router.post('/admin/enrich', async (req, res) => {
+router.post('/admin/enrich', authenticateUser, requireAdmin, async (req, res) => {
   try {
     const { runEnrichment, loadCache } = require('../lib/video-enrichment');
 
