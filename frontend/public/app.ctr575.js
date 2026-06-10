@@ -804,6 +804,7 @@ function GymCard(gym){
       </div>
       ${topGym?`<div class="absolute top-3 left-3 bg-yellow-500 text-black px-2.5 py-1 rounded-full text-xs font-bold shadow-lg">⭐ Top Gym</div>`
         :gym.openNow===true?`<div class="absolute top-3 left-3 bg-green-600 text-white px-2.5 py-1 rounded-full text-xs font-medium shadow-lg flex items-center gap-1"><span class="w-1.5 h-1.5 bg-green-300 rounded-full animate-pulse"></span> Open${cTime?' until '+cTime:' Now'}</div>`:``}
+      <div class="absolute bottom-3 left-3 w-6 h-6 bg-brand rounded-full shadow-lg opacity-80" style="box-shadow:0 0 8px rgba(255,109,0,.5);"></div>
       <!-- Booking.com urgency badge -->
       
     </div>
@@ -843,7 +844,7 @@ function HomePage(){
     <!-- Logo + Greeting -->
     <div style="padding:16px 0 12px;flex-shrink:0;">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-        <div style="width:36px;height:36px;background:#FF6D00;border-radius:12px;display:flex;align-items:center;justify-content:center;">
+        <div style="width:36px;height:36px;background:#FF6D00;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 0 12px rgba(255,109,0,.4);">
           <span style="color:#fff;font-weight:900;font-size:18px;">S</span>
         </div>
         <span class="font-brand" style="font-size:20px;"><span style="color:#FF6D00;">Scan</span><span style="color:#fff;">Gym</span></span>
@@ -918,6 +919,7 @@ function HomePage(){
     <!-- Header -->
     <div style="display:flex;align-items:center;gap:12px;padding:16px 0 12px;flex-shrink:0;">
       <button onclick="event.stopPropagation();document.getElementById('sg-search-overlay').classList.remove('active');setTimeout(()=>document.getElementById('sg-search-overlay').style.display='none',200)" style="width:36px;height:36px;background:rgba(255,255,255,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;color:#fff;font-size:18px;">←</button>
+      <div style="width:28px;height:28px;background:#FF6D00;border-radius:50%;box-shadow:0 0 8px rgba(255,109,0,.4);flex-shrink:0;"></div>
       <p style="color:#fff;font-size:18px;font-weight:700;margin:0;">Find a Gym</p>
     </div>
 
@@ -1752,7 +1754,7 @@ function GymProfilePage(){
     <div class="gym-overlay-panel">
       <div class="gym-overlay-drag"></div>
       <div class="gym-overlay-header">
-        <div class="gym-overlay-title" id="gym-overlay-title"></div>
+        <div style="display:flex;align-items:center;gap:10px;"><div style="width:24px;height:24px;background:#FF6D00;border-radius:50%;flex-shrink:0;box-shadow:0 0 8px rgba(255,109,0,.4);"></div><div class="gym-overlay-title" id="gym-overlay-title"></div></div>
         <button class="gym-overlay-close" onclick="closeGymOverlay()">✕</button>
       </div>
       <div class="gym-overlay-body" id="gym-overlay-body"></div>
@@ -5394,7 +5396,7 @@ function InfoPage(title,content){
   return`
   <div class="pt-8 min-h-full px-4">
     <div class="max-w-3xl mx-auto py-12">
-      <h1 class="font-brand text-3xl font-bold text-white mb-6">${title}</h1>
+      <h1 class="font-brand text-3xl font-bold text-white mb-6 flex items-center gap-3"><div class="sg-brand-dot flex-shrink-0"></div>${title}</h1>
       <div class="prose prose-invert text-slate-300 space-y-4">${content}</div>
     </div>
   </div>`;
