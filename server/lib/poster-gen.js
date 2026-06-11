@@ -42,26 +42,37 @@ async function generatePoster(cdnKey) {
     return posterPath;
   }
 
-  // Download first 3 MB from R2 (enough for first frame extraction)
+  // Download partial video from R2 — try 3 MB first, retry with full file on failure
   const { downloadFromR2, cdnKeyToR2Key } = require('./r2-download');
   const r2Key = cdnKeyToR2Key(cdnKey);
   const tmpVideo = path.join(POSTER_DIR, `_tmp_${cdnKey}.mp4`);
 
-  try {
-    await downloadFromR2(r2Key, tmpVideo, { rangeBytes: 3 * 1024 * 1024 });
-  } catch (err) {
-    // Clean up partial download
-    try { fs.unlinkSync(tmpVideo); } catch {}
-    throw new Error(`R2 download failed for ${cdnKey}: ${err.message}`);
+  const downloadSizes = [3 * 1024 * 1024, null]; // 3 MB partial, then full file
+  let extracted = false;
+
+  for (const rangeBytes of downloadSizes) {
+    try {
+      await downloadFromR2(r2Key, tmpVideo, rangeBytes ? { rangeBytes } : {});
+    } catch (err) {
+      try { fs.unlinkSync(tmpVideo); } catch {}
+      if (!rangeBytes) throw new Error(`R2 download failed for ${cdnKey}: ${err.message}`);
+      continue; // try full download
+    }
+
+    try {
+      await extractFrameFromFile(tmpVideo, posterPath);
+      extracted = true;
+      break; // success!
+    } catch {
+      // Partial wasn't enough — clean up and try full download
+      try { fs.unlinkSync(tmpVideo); } catch {}
+      if (!rangeBytes) throw new Error(`ffmpeg failed for ${cdnKey} even with full file`);
+    }
   }
 
-  // Extract first frame with ffmpeg
-  try {
-    await extractFrameFromFile(tmpVideo, posterPath);
-  } finally {
-    // Always clean up temp video
-    try { fs.unlinkSync(tmpVideo); } catch {}
-  }
+  // Always clean up temp video
+  try { fs.unlinkSync(tmpVideo); } catch {}
+  if (!extracted) throw new Error(`Could not generate poster for ${cdnKey}`);
 
   return posterPath;
 }
