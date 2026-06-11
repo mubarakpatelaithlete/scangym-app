@@ -1153,7 +1153,7 @@
           window.parent.postMessage({
             type: 'sg-reels-status',
             index: currentIndex,
-            total: allVideos.length,
+            total: feedServerTotal || allVideos.length, // G3 fix: use server total for consistent count
             playing: vid ? !vid.paused : false,
             muted: isMuted,
             video: currentIndex < allVideos.length ? {
