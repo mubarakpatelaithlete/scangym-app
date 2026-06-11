@@ -5710,7 +5710,7 @@ window.showGymDiscovery=function(){
     .gd-dots{display:flex;justify-content:center;gap:3px;padding:6px 0 2px;flex-shrink:0;flex-wrap:wrap;max-width:280px;margin:0 auto}
     .gd-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.06);transition:all .3s ease}
     .gd-dot.act{background:#FF6D00;width:14px;border-radius:3px}
-    .gd-hint{text-align:center;font-size:8px;color:rgba(255,255,255,.08);padding:0 0 calc(4px + env(safe-area-inset-bottom,0px))}
+    .gd-hint{text-align:center;font-size:8px;color:rgba(255,255,255,.08);padding:0 0 calc(4px + env(safe-area-inset-bottom,0px));transition:opacity .5s ease}
   </style>
   <div class="gd-overlay" id="gd-overlay">
     <div class="gd-map" id="gd-map">
@@ -5795,6 +5795,16 @@ window.showGymDiscovery=function(){
   document.body.appendChild(el);
   requestAnimationFrame(()=>document.getElementById('gd-overlay')?.classList.add('active'));
 
+  // ── G2 fix: Auto-dismiss swipe hint after 4 seconds (matches reels pattern) ──
+  const _gdHintEl=document.getElementById('gd-hint');
+  let _gdHintDismissed=false;
+  function _dismissGdHint(){
+    if(_gdHintDismissed)return;
+    _gdHintDismissed=true;
+    if(_gdHintEl){_gdHintEl.style.opacity='0';setTimeout(function(){if(_gdHintEl&&_gdHintEl.parentNode)_gdHintEl.parentNode.removeChild(_gdHintEl);},600);}
+  }
+  setTimeout(_dismissGdHint,4000);
+
   // ── Scroll-snap listener: update map pins, pills, dots on swipe ──
   let _gdCurrent=0;
   const carousel=document.getElementById('gd-carousel');
@@ -5816,9 +5826,8 @@ window.showGymDiscovery=function(){
       if(pills)pills.innerHTML=`<div class="gd-pill"><div class="gd-pill-dist">${c.distMin}</div> ${c.name.length>12?c.name.slice(0,12)+'…':c.name} <span class="gd-pill-chev">›</span></div><div class="gd-pill">Day Pass · ${c.price} <span class="gd-pill-chev">›</span></div>`;
       // Update dots
       document.querySelectorAll('.gd-dot').forEach((d,j)=>{if(j===idx)d.classList.add('act');else d.classList.remove('act');});
-      // Update hint
-      const hint=document.getElementById('gd-hint');
-      if(hint)hint.textContent='← Swipe for more gyms · '+(idx+1)+' of '+totalCards+' →';
+      // G2 fix: dismiss hint on first swipe instead of updating it
+      _dismissGdHint();
     },{passive:true});
   }
 };
