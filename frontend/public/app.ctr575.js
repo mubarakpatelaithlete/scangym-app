@@ -6182,11 +6182,9 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
   let displayPrice=_baseAmount;
   let displayPriceStr=_sym+_baseAmount.toFixed(2);
   // ═══ REFERRAL DISCOUNT: Apply £2 off if referral code is active ═══
+  // Referral tracking — attribute booking to creator (no fake discount shown)
+  // Backend does NOT apply any discount, so frontend must not display one
   let _sgRefActive=null;try{const _r=JSON.parse(localStorage.getItem('sg_referral')||'null');if(_r&&_r.handle&&_r.expiry>Date.now())_sgRefActive=_r.handle;}catch(e){}
-  const _sgOrigPrice=displayPrice;
-  const _sgOrigPriceStr=displayPriceStr;
-  const _refDiscount=Math.round(displayPrice*0.15*100)/100; // 15% referral discount
-  if(_sgRefActive){displayPrice=Math.max(displayPrice-_refDiscount,0.5);displayPriceStr=_sym+(displayPrice>=1000?Math.round(displayPrice).toLocaleString():displayPrice.toFixed(2));}
 
   // Format date for display
   const dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -6308,12 +6306,8 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
       <div style="padding:12px 24px;border-top:1px solid rgba(255,255,255,.06)">
         <div style="display:flex;justify-content:space-between;margin-bottom:6px">
           <span style="color:rgba(255,255,255,.5);font-size:13px">${passInfo.name}</span>
-          <span style="color:rgba(255,255,255,.7);font-size:13px">${_sgOrigPriceStr||displayPriceStr}</span>
+          <span style="color:rgba(255,255,255,.7);font-size:13px">${displayPriceStr}</span>
         </div>
-        ${_sgRefActive?`<div style="display:flex;justify-content:space-between;margin-bottom:6px">
-          <span style="color:#4ade80;font-size:13px">🎉 Referral discount (15%)</span>
-          <span style="color:#4ade80;font-size:13px">-${_sym}${_refDiscount.toFixed(2)}</span>
-        </div>`:''}
         <div style="display:flex;justify-content:space-between;padding-top:8px;border-top:1px solid rgba(255,255,255,.08)">
           <span style="color:#fff;font-size:15px;font-weight:700">Total</span>
           <span style="color:#fff;font-size:15px;font-weight:700">${displayPriceStr}</span>
