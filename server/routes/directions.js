@@ -7,7 +7,7 @@
  * User NEVER leaves ScanGym. No external Google Maps, Apple Maps, or Waze links.
  *
  * Task 9: Conviction model (all 33 techniques in separate routes/conviction.js)
- * Task 10: Upsells — off-peak pricing must use 100% real-time live data
+ * Task 10: Upsells (off-peak removed — flat pricing v4.1)
  */
 const express = require('express');
 const router = express.Router();
@@ -187,50 +187,7 @@ router.get('/booking/:bookingId', authenticateUser, async (req, res) => {
       }
     } catch (e) {}
 
-    // Upsell 2: Off-Peak — CORRECTION: 100% real-time live data
-    try {
-      // Get REAL current booking count to determine if it's peak or off-peak RIGHT NOW
-      const currentHour = new Date().getHours();
-      const dayOfWeek = new Date().getDay();
-
-      // Real-time: count bookings in the last 2 hours at this gym
-      const recentActivity = await pool.query(`
-        SELECT COUNT(*) as active_count FROM bookings
-        WHERE gym_id = $1
-          AND created_at > NOW() - INTERVAL '2 hours'
-          AND status IN ('confirmed', 'active', 'completed')
-      `, [b.gym_id]);
-
-      const currentLoad = parseInt(recentActivity.rows[0].active_count);
-
-      // Determine peak/off-peak from REAL data
-      const isPeak = (currentHour >= 6 && currentHour <= 9) || (currentHour >= 17 && currentHour <= 20);
-      const isOffPeak = !isPeak;
-
-      if (isOffPeak && b.day_pass_price) {
-        // Real-time off-peak discount based on actual current gym load
-        const discountPct = currentLoad <= 2 ? 20 : currentLoad <= 5 ? 15 : 10;
-        const discountedPrice = (b.day_pass_price * (100 - discountPct) / 100).toFixed(2);
-
-        upsells.push({
-          type: 'off_peak_discount',
-          title: `🕐 Off-Peak Right Now — ${discountPct}% Off`,
-          description: `It's quiet at ${b.gym_name} right now (${currentLoad} active visitors). Book another session at £${discountedPrice} instead of £${b.day_pass_price}`,
-          cta: `Book Off-Peak — £${discountedPrice}`,
-          link: `/book/${b.gym_id}?offpeak=true`,
-          realTimeData: {
-            currentHour,
-            currentLoad,
-            isPeak: false,
-            discountPercent: discountPct,
-            originalPrice: b.day_pass_price,
-            discountedPrice: parseFloat(discountedPrice),
-            dataSource: 'live_booking_count',
-            timestamp: new Date().toISOString(),
-          },
-        });
-      }
-    } catch (e) {}
+    // v4.1: Off-peak discount removed — flat pricing at all times
 
     // Checklist
     const checklist = [

@@ -196,10 +196,8 @@
               <div class="discount-label">🆕 First Visit Discount</div>
               <div class="price-input-wrap"><input type="number" class="discount-input" id="firstVisitDiscount" value="${gymPricing.firstVisitDiscountPct || gymPricing.first_visit_discount_pct || 50}" min="0" max="100"><span style="font-size:12px;color:rgba(255,255,255,.3);margin-left:4px">%</span></div>
             </div>
-            <div class="discount-row">
-              <div class="discount-label">🌙 Off-Peak Discount</div>
-              <div class="price-input-wrap"><input type="number" class="discount-input" id="offPeakDiscount" value="${gymPricing.offPeakDiscountPct || gymPricing.off_peak_discount_pct || 0}" min="0" max="100"><span style="font-size:12px;color:rgba(255,255,255,.3);margin-left:4px">%</span></div>
-            </div>
+            <!-- Off-peak discount removed — flat pricing v4.1 -->
+            <input type="hidden" id="offPeakDiscount" value="0">
           </div>
           <button class="btn btn-primary" id="savePriceBtn" onclick="window.__savePricing()">💾 Save Prices</button>
         </div>`;
