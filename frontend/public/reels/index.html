@@ -1625,6 +1625,8 @@
             allVideos = allVideos.concat(newVideos);
             feedOffset += newVideos.length;
             feedHasMore = data.hasMore;
+            // G3 FIX: Update the server total so counter stays consistent
+            if(data.total) feedServerTotal = data.total;
             feedLoading = false;
             reconcileWindow(currentIndex);
             updateReelCounter(); // FIX: update total when more reels load

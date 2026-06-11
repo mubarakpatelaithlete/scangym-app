@@ -385,7 +385,8 @@ function assembleFeed(buckets, feedLength, rand, sessionPrefs) {
       if (placed) break;
     }
 
-    // Safety valve: if nothing fits the diversity rules, place anything unused
+    // G3 FIX: Safety valve — if diversity rules blocked all options, drain ALL
+    // remaining unplaced videos so the total always matches the input count.
     if (!placed) {
       for (const tierName of ['top', 'strong', 'mid', 'explore']) {
         const tier = buckets[tierName];
@@ -397,14 +398,12 @@ function assembleFeed(buckets, feedLength, rand, sessionPrefs) {
             lastLastCategory = lastCategory;
             lastCategory = (tier[i].category || '').toLowerCase();
             placed = true;
-            break;
           }
         }
-        if (placed) break;
       }
     }
 
-    if (!placed) break; // All videos placed
+    if (!placed) break; // Truly all videos placed
     patternPos++;
   }
 

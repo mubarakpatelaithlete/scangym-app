@@ -298,12 +298,15 @@ router.get('/feed', async (req, res) => {
     //   - Cold start for new videos (guaranteed explore exposure)
     //   - Background aggregation every 5 min (the algorithm learns over time)
     // See lib/reels-algorithm.js for full documentation.
+    // G3 FIX: Capture the true total BEFORE ranking, so the count is always
+    // consistent regardless of algorithm behaviour.
+    const total = feed.length;
+
     if (shuffle) {
       feed = await rankFeed(feed, { seed, sessionId, offset });
     }
 
     // 5. Paginate
-    const total = feed.length;
     feed = feed.slice(offset, offset + limit);
 
     // Build categories from the catalog videos we already loaded
