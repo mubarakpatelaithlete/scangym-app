@@ -782,18 +782,15 @@
         // bunnyBase: 'https://scangym.b-cdn.net/reels',
       };
 
+      // M12 FIX: Simplified — all videos are on R2 CDN now, no Drive proxy needed
       function resolveVideoUrl(video){
         switch(CDN_CONFIG.type){
-          case 'convex':
-            if(video.driveId) return CDN_CONFIG.convexBase + '?id=' + video.driveId;
-            return video.url || '';
           case 'r2':
             if(video.cdnKey) return CDN_CONFIG.r2Base + '/' + video.cdnKey + '.mp4';
-            // Fallback: use server video proxy for Google Drive videos not yet on R2
-            if(video.driveId) return '/api/video-proxy?url=' + encodeURIComponent('https://drive.google.com/uc?export=download&id=' + video.driveId);
             return video.url || '';
           case 'bunny':
-            return CDN_CONFIG.bunnyBase + '/' + (video.cdnKey || video.driveId) + '.mp4';
+            if(video.cdnKey) return CDN_CONFIG.bunnyBase + '/' + video.cdnKey + '.mp4';
+            return video.url || '';
           case 'direct':
             return video.url || '';
           default:
