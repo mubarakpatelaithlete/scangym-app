@@ -194,10 +194,30 @@ router.get('/search', async (req, res) => {
         url += `&location=${lat},${lng}&radius=${r}`;
       }
       // ━━━ REGION BIAS: Hint Google to prefer results in this country ━━━
-      // Detect region from query or default to UK (primary market)
-      const regionMatch = searchQuery.match(/\b(uk|gb|us|ae|in|au|ca|de|fr|es|it)\b/i);
-      if (regionMatch) {
-        url += `&region=${regionMatch[1].toLowerCase()}`;
+      // Fix #6: Also detect country names (e.g. "United Kingdom", "UAE", "United States")
+      const regionMap = {
+        'united kingdom': 'gb', 'uk': 'gb', 'gb': 'gb', 'england': 'gb', 'scotland': 'gb', 'wales': 'gb',
+        'united states': 'us', 'us': 'us', 'usa': 'us',
+        'uae': 'ae', 'ae': 'ae', 'dubai': 'ae',
+        'india': 'in', 'in': 'in',
+        'australia': 'au', 'au': 'au',
+        'canada': 'ca', 'ca': 'ca',
+        'germany': 'de', 'de': 'de',
+        'france': 'fr', 'fr': 'fr',
+        'spain': 'es', 'es': 'es',
+        'italy': 'it', 'it': 'it',
+        'netherlands': 'nl', 'nl': 'nl'
+      };
+      const qLower = searchQuery.toLowerCase();
+      let detectedRegion = null;
+      for (const [keyword, code] of Object.entries(regionMap)) {
+        if (qLower.includes(keyword)) { detectedRegion = code; break; }
+      }
+      if (detectedRegion) {
+        url += `&region=${detectedRegion}`;
+      } else if (!lat && !lng) {
+        // No region detected AND no coordinates — default to UK (ScanGym primary market)
+        url += '&region=gb';
       }
     }
 

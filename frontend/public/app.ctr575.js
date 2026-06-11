@@ -765,7 +765,17 @@ function HomePage(){
   // Uber-style single-screen dashboard — everything fits in one viewport, no scroll
   const hour=new Date().getHours();
   const greeting=hour<12?'Good morning ☀️':hour<17?'Good afternoon 💪':'Good evening 🌙';
-  const trendingCities=['🇬🇧 London','🇬🇧 Manchester','🇬🇧 Birmingham','🇬🇧 Bolton','🇦🇪 Dubai','🇺🇸 New York','🇪🇸 Barcelona','🇩🇪 Berlin'];
+  // Fix #6: Include country code so Google Places returns correct region (Bolton UK, not Bolton Canada)
+  const trendingCities=[
+    {label:'🇬🇧 London',query:'London, UK'},
+    {label:'🇬🇧 Manchester',query:'Manchester, UK'},
+    {label:'🇬🇧 Birmingham',query:'Birmingham, UK'},
+    {label:'🇬🇧 Bolton',query:'Bolton, UK'},
+    {label:'🇦🇪 Dubai',query:'Dubai, UAE'},
+    {label:'🇺🇸 New York',query:'New York, US'},
+    {label:'🇪🇸 Barcelona',query:'Barcelona, Spain'},
+    {label:'🇩🇪 Berlin',query:'Berlin, Germany'}
+  ];
   return`
   <div class="sg-dashboard" style="display:flex;flex-direction:column;overflow:hidden;padding:0 16px;padding-top:env(safe-area-inset-top,16px);">
 
@@ -814,8 +824,7 @@ function HomePage(){
       <p style="color:rgba(255,255,255,.35);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin:0 0 8px 2px;">🔥 Trending Cities</p>
       <div style="display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;padding-bottom:4px;" class="hide-scrollbar">
         ${trendingCities.map(c=>{
-          const city=c.split(' ').slice(1).join(' ');
-          return`<button onclick="event.stopPropagation();searchGyms('`+city+` gyms',true);navigate('/explore')" style="flex-shrink:0;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:10px 16px;color:rgba(255,255,255,.7);font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px;-webkit-tap-highlight-color:transparent;white-space:nowrap;" ontouchstart="this.style.background='rgba(255,109,0,.15)';this.style.borderColor='rgba(255,109,0,.3)'" ontouchend="this.style.background='rgba(255,255,255,.06)';this.style.borderColor='rgba(255,255,255,.08)'">`+c+`</button>`;
+          return`<button onclick="event.stopPropagation();searchGyms('`+c.query+` gyms',true);navigate('/explore')" style="flex-shrink:0;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:10px 16px;color:rgba(255,255,255,.7);font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px;-webkit-tap-highlight-color:transparent;white-space:nowrap;" ontouchstart="this.style.background='rgba(255,109,0,.15)';this.style.borderColor='rgba(255,109,0,.3)'" ontouchend="this.style.background='rgba(255,255,255,.06)';this.style.borderColor='rgba(255,255,255,.08)'">`+c.label+`</button>`;
         }).join('')}
       </div>
     </div>
@@ -874,7 +883,7 @@ function HomePage(){
     <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;">
       ${['London, United Kingdom','Manchester, United Kingdom','Birmingham, United Kingdom','Bolton, United Kingdom','Dubai, UAE','New York, United States','Barcelona, Spain','Berlin, Germany','Paris, France','Amsterdam, Netherlands','Sydney, Australia','Los Angeles, United States'].map((city,i)=>{
         const name=city.split(',')[0];
-        return`<div onclick="searchGyms('`+name+` gyms',true);navigate('/explore');document.getElementById('sg-search-overlay').classList.remove('active');setTimeout(()=>document.getElementById('sg-search-overlay').style.display='none',200)" style="display:flex;align-items:center;gap:14px;padding:13px 16px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.04);-webkit-tap-highlight-color:transparent;">
+        return`<div onclick="searchGyms('`+city+` gyms',true);navigate('/explore');document.getElementById('sg-search-overlay').classList.remove('active');setTimeout(()=>document.getElementById('sg-search-overlay').style.display='none',200)" style="display:flex;align-items:center;gap:14px;padding:13px 16px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.04);-webkit-tap-highlight-color:transparent;">
           <span style="font-size:16px;opacity:.4;">📍</span>
           <div style="flex:1;">
             <p style="color:#fff;font-size:14px;font-weight:500;margin:0;">`+name+`</p>
@@ -6167,7 +6176,11 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
   const gymAddr=gym.vicinity||gym.formatted_address||gym.address||'';
   const today=new Date().toISOString().split('T')[0];
   const currentHour=new Date().getHours();
-  const defaultTime=prefillTime||`${String(Math.min(currentHour+1,20)).padStart(2,'0')}:00`;
+  // Fix: clamp to available slot range (6-20) using CURRENT hour, not +1.
+  // Previously currentHour+1 shifted into a different pricing tier than what
+  // the gym card/detail page shows — e.g. browsing at 9am (off-peak £3.75)
+  // defaulted checkout to 10:00 (standard £5.00), causing a price bait-and-switch.
+  const defaultTime=prefillTime||`${String(Math.max(6,Math.min(currentHour,20))).padStart(2,'0')}:00`;
   const savedEmail=localStorage.getItem('sg_last_email')||'';
 
   // Read selections from gym detail page
