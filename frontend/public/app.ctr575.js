@@ -2044,20 +2044,64 @@ window.closeGymOverlay=function(){
   document.body.style.overflow='';
   // Fix 4: Show tab bar again
   const tabBar=document.querySelector('.sg-tab-bar');if(tabBar)tabBar.classList.remove('hidden');
-  // If opened directly from explore card row, navigate back to explore
+  // If opened directly from explore card row (Screen 3 removed), clean up standalone overlay and stay on reels
   if(window._directOverlayReturn){
     const returnRoute=window._directOverlayReturn;
     window._directOverlayReturn=null;
-    setTimeout(function(){navigate(returnRoute);},350);
+    // Remove standalone overlay from DOM after animation completes
+    setTimeout(function(){
+      if(overlay.parentNode===document.body)overlay.remove();
+      // Only navigate if we somehow left the reels view
+      if(state.route&&state.route!=='/explore'&&state.route!=='/'){
+        navigate(returnRoute);
+      }
+    },350);
   }
 };
 
 // Open gym overlay directly from explore card rows without showing gym profile first
+// Screen 3 removed: load gym data silently and show overlay as standalone modal
 window.openGymDirectOverlay=async function(id,isLive,section){
   window._directOverlayReturn=state.route||'/explore';
-  state._pendingOverlay=section;
-  await openGym(id,isLive);
+  // Load gym data silently (no navigate, no render)
+  const isPlaceId=isLive||isNaN(parseInt(id));
+  try{
+    if(isPlaceId){
+      const data=await api.getLive('/place/'+id);
+      if(data.gym){
+        state.currentGym={...data.gym,id:data.gym.dbId||data.gym.placeId,place_id:data.gym.placeId,photo_url:data.photos?.[0]?.url||null,photos_list:data.photos||[],rating:data.rating?.google||null,user_ratings_total:data.rating?.googleTotal||0,formatted_address:data.gym.address,vicinity:data.gym.address,opening_hours:data.openingHours,reviews_data:data.reviews,pricing:data.pricing,map:data.map,source:'live'};
+      }
+    }else{
+      const data=await api.getGuest('/gym/'+id);
+      state.currentGym=data.gym||data;
+    }
+  }catch(e){
+    console.error('Failed to load gym data for overlay:',e);
+    state.currentGym=state.gyms.find(g=>(g.placeId||g.id)==id)||{name:'Loading...',id};
+  }
+  // Ensure standalone overlay container exists in DOM
+  _ensureStandaloneOverlay(id);
+  // Open the overlay section directly
+  openGymOverlay(section);
 };
+
+// Inject standalone overlay container for use without gym detail page
+function _ensureStandaloneOverlay(gymId){
+  if(document.getElementById('gym-overlay'))return;
+  // Inject overlay CSS if not present
+  if(!document.getElementById('sg-overlay-css')){
+    var css=document.createElement('style');
+    css.id='sg-overlay-css';
+    css.textContent='.gym-overlay{position:fixed;inset:0;z-index:9100;opacity:0;pointer-events:none;transition:opacity .3s ease}.gym-overlay.open{opacity:1;pointer-events:all}.gym-overlay-bg{position:absolute;inset:0;background:rgba(0,0,0,.5)}.gym-overlay-panel{position:absolute;left:0;right:0;bottom:0;top:0;background:#0a0f14;transform:translateY(100%);transition:transform .35s cubic-bezier(.32,.72,0,1);display:flex;flex-direction:column;overflow:hidden}.gym-overlay.open .gym-overlay-panel{transform:translateY(0)}.gym-overlay-drag{width:40px;height:4px;border-radius:2px;background:rgba(255,255,255,.2);margin:10px auto 0}.gym-overlay-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0}.gym-overlay-title{color:#fff;font-size:20px;font-weight:700;font-family:"Sora",sans-serif}.gym-overlay-close{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.1);border:none;color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .2s}.gym-overlay-close:hover{background:rgba(255,255,255,.2)}.gym-overlay-body{flex:1;overflow-y:auto;padding:20px;-webkit-overflow-scrolling:touch}.gym-overlay-footer{padding:12px 20px calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid rgba(255,255,255,.08);background:#0a0f14;flex-shrink:0;display:flex;align-items:center;justify-content:space-between}.rating-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}.rating-bar-label{color:rgba(255,255,255,.5);font-size:12px;width:14px;text-align:right}.rating-bar-bg{flex:1;height:8px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden}.rating-bar-fill{height:100%;border-radius:4px;background:#fbbf24}.topic-pill{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:8px 14px;color:rgba(255,255,255,.7);font-size:13px;font-weight:500;cursor:pointer;transition:all .2s}.topic-pill.active{background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.4);color:#4ade80}.sort-chip{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:7px 14px;color:rgba(255,255,255,.5);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s}.sort-chip.active{background:rgba(255,109,0,.15);border-color:rgba(255,109,0,.4);color:#FF6D00}.ov-pass-card{background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.1);border-radius:16px;padding:20px;cursor:pointer;transition:all .2s}.ov-pass-card:hover{border-color:rgba(255,255,255,.2);background:rgba(255,255,255,.08)}.gym-book-btn{background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:16px;font-weight:700;padding:14px 28px;border-radius:12px;border:none;box-shadow:0 4px 20px rgba(34,197,94,.4);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .15s}.gym-book-btn:active{transform:scale(.96)}';
+    document.head.appendChild(css);
+  }
+  // Inject overlay HTML container
+  var gym=state.currentGym||{};
+  var currentPrice=(gym.pricing?.display)||(gym.dayPassPrice?((gym.currencySymbol||'£')+gym.dayPassPrice.toFixed(2)):'£5.00');
+  var div=document.createElement('div');
+  div.innerHTML='<div class="gym-overlay" id="gym-overlay" onclick="if(event.target===this||event.target.classList.contains(\'gym-overlay-bg\'))closeGymOverlay()"><div class="gym-overlay-bg"></div><div class="gym-overlay-panel"><div class="gym-overlay-drag"></div><div class="gym-overlay-header"><div style="display:flex;align-items:center;gap:10px;"><div style="width:24px;height:24px;background:#FF6D00;border-radius:50%;flex-shrink:0;box-shadow:0 0 8px rgba(255,109,0,.4);"></div><div class="gym-overlay-title" id="gym-overlay-title"></div></div><button class="gym-overlay-close" onclick="closeGymOverlay()">✕</button></div><div class="gym-overlay-body" id="gym-overlay-body"></div><div class="gym-overlay-footer"><div><div style="color:#fff;font-size:22px;font-weight:800">'+currentPrice+'</div><div style="color:rgba(255,255,255,.4);font-size:11px">Your ScanGym pass works here ✓</div></div><button class="gym-book-btn" onclick="event.preventDefault();event.stopPropagation();closeGymOverlay();showUberCheckout(\''+gymId+'\')">Book Now</button></div></div></div>';
+  document.body.appendChild(div.firstChild);
+}
 
 // Select pass from the overlay and update booking state + sticky bar
 window.overlaySelectPass=function(el,idx,gymId){
@@ -7448,6 +7492,9 @@ window.findGyms=function(){
   _fireGPS(true); // true = high accuracy (user explicitly asked for GPS)
 };
 window.openGym=async function(id,isLive){
+  // Screen 3 removed: go straight to checkout instead of gym detail page
+  showUberCheckout(id);
+  return;
   navigate('/gym/'+id);
   // Check if this is a Google Place ID (starts with "ChI" or similar) or numeric DB id
   const isPlaceId=isLive||isNaN(parseInt(id));
