@@ -1147,6 +1147,15 @@
         }
       });
 
+      // G5 fix: Navigate via parent postMessage when inside iframe, else direct
+      function _ctaNavigate(path){
+        if(window.parent && window.parent !== window){
+          window.parent.postMessage({type:'sg-navigate', path: path}, '*');
+        } else {
+          window.location.href = path;
+        }
+      }
+
       function _sendStatusToParent(){
         if(window.parent && window.parent !== window){
           var vid = renderedReels[currentIndex] ? renderedReels[currentIndex].querySelector('video') : null;
@@ -1827,12 +1836,15 @@
 
         var affiliateHtml = '';
         if(hasAffiliate){
-          affiliateHtml = '<a class="creator-cta" href="' + escHtml(video.creator.affiliateLink) + '">'
+          // G5 fix: use onclick + postMessage so CTA navigates the parent app, not the iframe
+          var affLink = escHtml(video.creator.affiliateLink);
+          affiliateHtml = '<a class="creator-cta" href="' + affLink + '" onclick="event.preventDefault();_ctaNavigate(\'' + affLink + '\')">'
             + '<span class="creator-cta-icon">\uD83D\uDCB0</span>'
             + '<div><div class="creator-cta-text">Book via ' + escHtml(video.creator.name || video.creator.handle || 'Creator') + ' \u2014 ' + sgPrice('day').display + '</div>'
             + '<div class="creator-cta-sub">Creator earns on your booking</div></div></a>';
         } else if(hasCreator){
-          affiliateHtml = '<a class="creator-cta" href="/">'
+          // G5 fix: navigate to /explore (not /) so users reach the gym search page
+          affiliateHtml = '<a class="creator-cta" href="/explore" onclick="event.preventDefault();_ctaNavigate(\'/explore\')">'
             + '<span class="creator-cta-icon">\uD83D\uDCAA</span>'
             + '<div><div class="creator-cta-text">Book a Gym \u2014 ' + sgPrice('day').display + '</div>'
             + '<div class="creator-cta-sub">No membership needed</div></div></a>';
