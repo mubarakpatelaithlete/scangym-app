@@ -99,7 +99,7 @@ self.addEventListener('fetch', function(e) {
     return;
   }
 
-  // Video files (R2 CDN + auto-reels): cache-first
+  // Video files (R2 CDN): cache-first
   if (isVideoRequest(url)) {
     e.respondWith(cacheFirstVideo(e.request));
     return;
