@@ -6548,6 +6548,8 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
         const email=localStorage.getItem('sg_last_email')||'';
         const bookingEndpoint=state.user?'/api/bookings/create':'/api/bookings/guest-create';
         const bookingPayload={gymId:parseInt(dbGymId),placeId:gymId,date:cs.selectedDate,time:cs.selectedTime,email,gymName:gymName,gymAddress:gymAddr,passType:cs.selectedPass||'day'};
+        // G4 FIX: Include referral code so creators earn commission
+        if(_sgRefActive) bookingPayload.referral_code = _sgRefActive;
         if(!state.user)bookingPayload.name='Guest';
         const bookingResp=await fetch(bookingEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(bookingPayload)}).then(r=>r.json());
         if(!bookingResp.success){

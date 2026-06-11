@@ -48,7 +48,7 @@ router.post('/create', async (req, res) => {
       return res.status(401).json({ error: 'Not authenticated', message: 'Please log in first' });
     }
 
-    let { gymId, date, time } = req.body;
+    let { gymId, date, time, referral_code } = req.body;
     if (!gymId || !date) {
       return res.status(400).json({ error: 'gymId and date are required' });
     }
@@ -73,18 +73,26 @@ router.post('/create', async (req, res) => {
 
     // v4.0: Flat £4.49 base, PPP + currency by gym's country
     const dayPrice = pricing.getDayPassPrice(g.country || 'GB');
-    const price = dayPrice.amount;
+    let price = dayPrice.amount;
+
+    // G4 FIX: Apply 15% referral discount (matches frontend display)
+    if (referral_code) {
+      const discount = Math.round(price * 0.15 * 100) / 100;
+      price = Math.max(price - discount, 0.50); // minimum £0.50
+      console.log(`[Booking] Referral discount applied: -£${discount.toFixed(2)} for creator "${referral_code}"`);
+    }
 
     const bookingCode = generateBookingCode();
     const qrCode = generateQRCode();
 
+    // G4 FIX: Include referral_code so creator commission pipeline works end-to-end
     const result = await pool.query(
       `INSERT INTO public.bookings 
         (gym_id, user_id, booking_date, start_time, end_time, total_amount, 
-         platform_fee_amount, booking_type, booking_code, qr_code, status, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 'instant', $8, $9, 'pending', NOW(), NOW())
+         platform_fee_amount, booking_type, booking_code, qr_code, status, referral_code, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'instant', $8, $9, 'pending', $10, NOW(), NOW())
        RETURNING *`,
-      [gymId, req.session.userId, date, time, endTime, price, price * 0.10, bookingCode, qrCode]
+      [gymId, req.session.userId, date, time, endTime, price, price * 0.10, bookingCode, qrCode, referral_code || null]
     );
 
     const booking = result.rows[0];
@@ -203,7 +211,7 @@ router.get('/:id', async (req, res) => {
  */
 router.post('/guest-create', async (req, res) => {
   try {
-    let { gymId, date, time, email, name } = req.body;
+    let { gymId, date, time, email, name, referral_code } = req.body;
     if (!gymId || !date || !email) {
       return res.status(400).json({ error: 'gymId, date, and email are required' });
     }
@@ -233,20 +241,28 @@ router.post('/guest-create', async (req, res) => {
 
     // v4.0: Flat £4.49 base, PPP + currency by gym's country
     const dayPrice = pricing.getDayPassPrice(g.country || 'GB');
-    const price = dayPrice.amount;
+    let price = dayPrice.amount;
+
+    // G4 FIX: Apply 15% referral discount for guests too
+    if (referral_code) {
+      const discount = Math.round(price * 0.15 * 100) / 100;
+      price = Math.max(price - discount, 0.50);
+      console.log(`[Booking] Guest referral discount: -£${discount.toFixed(2)} for creator "${referral_code}"`);
+    }
 
     const bookingCode = generateBookingCode();
     const qrCode = generateQRCode();
 
     // Create guest booking with email (user_id = 'guest')
+    // G4 FIX: Include referral_code so creator commission pipeline works for guests too
     const result = await pool.query(
       `INSERT INTO public.bookings 
         (gym_id, user_id, booking_date, start_time, end_time, total_amount, 
          platform_fee_amount, booking_type, booking_code, qr_code, status,
-         user_email, user_name, created_at, updated_at)
-       VALUES ($1, 'guest', $2, $3, $4, $5, $6, 'instant', $7, $8, 'pending', $9, $10, NOW(), NOW())
+         user_email, user_name, referral_code, created_at, updated_at)
+       VALUES ($1, 'guest', $2, $3, $4, $5, $6, 'instant', $7, $8, 'pending', $9, $10, $11, NOW(), NOW())
        RETURNING *`,
-      [gymId, date, time, endTime, price, price * 0.10, bookingCode, qrCode, email, name || 'Guest']
+      [gymId, date, time, endTime, price, price * 0.10, bookingCode, qrCode, email, name || 'Guest', referral_code || null]
     );
 
     const booking = result.rows[0];
