@@ -295,6 +295,12 @@ if (process.env.DATABASE_URL) {
     CREATE INDEX IF NOT EXISTS idx_users_stripe_customer ON public.users (stripe_customer_id) WHERE stripe_customer_id IS NOT NULL;
   `).then(() => console.log('✅ DB migration: stripe_customer_id ready'))
     .catch(err => console.error('DB migration error:', err.message));
+
+  // M11 FIX: Add duration column to video_catalog (stores video length in seconds)
+  _migrationPool.query(`
+    ALTER TABLE video_catalog ADD COLUMN IF NOT EXISTS duration REAL;
+  `).then(() => console.log('✅ DB migration: video_catalog.duration ready'))
+    .catch(err => console.error('DB migration (duration):', err.message));
 }
 
 // -- Feature Routes (Tasks 1-24 with CEO corrections) --
