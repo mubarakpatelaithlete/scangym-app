@@ -550,13 +550,17 @@ router.post('/quick-checkout', async (req, res) => {
       }
     }
 
-    // Get gym info
-    const gym = await pool.query('SELECT id, name, address, country FROM gyms WHERE id = $1', [dbGymId]);
+    // Get gym info (C6 fix: include day_pass_price for owner-set pricing)
+    const gym = await pool.query('SELECT id, name, address, country, day_pass_price FROM gyms WHERE id = $1', [dbGymId]);
     if (gym.rows.length === 0) return res.status(404).json({ error: 'Gym not found' });
     const g = gym.rows[0];
 
-    // v4.0: Flat £4.49 base, PPP + currency by gym's physical country
-    const dayPrice = pricing.getDayPassPrice(g.country || 'GB');
+    // C6 fix: Use owner-set price if available, otherwise PPP default
+    const dayPrice = pricing.calculateGymPrice({
+      gymDayPassPrice: g.day_pass_price,
+      countryCode: g.country || 'GB',
+      passType: 'day',
+    });
     const gymCurrency = dayPrice.currency;
     const resolved = resolveTime(time);
     const price = dayPrice.amount;
@@ -877,14 +881,19 @@ router.post('/cash-booking', async (req, res) => {
       }
     }
 
-    const gym = await pool.query('SELECT id, name, country FROM gyms WHERE id = $1', [dbGymId]);
+    // C6 fix: include day_pass_price for owner-set pricing
+    const gym = await pool.query('SELECT id, name, country, day_pass_price FROM gyms WHERE id = $1', [dbGymId]);
     if (gym.rows.length === 0) return res.status(404).json({ error: 'Gym not found' });
     const g = gym.rows[0];
 
-    // v4.0: Flat £4.49 base, PPP + currency by gym's country
+    // C6 fix: Use owner-set price if available, otherwise PPP default
     const passTypeClean = passType || 'day';
     const resolved = resolveTime(time);
-    const dayPrice = pricing.getDayPassPrice(g.country || 'GB');
+    const dayPrice = pricing.calculateGymPrice({
+      gymDayPassPrice: g.day_pass_price,
+      countryCode: g.country || 'GB',
+      passType: 'day',
+    });
     const price = dayPrice.amount;
 
     // ── Step 3: Generate booking code (same XXXX-XXXX format as Stripe path, fits VARCHAR(9)) ──
