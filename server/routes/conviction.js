@@ -38,7 +38,7 @@ const TECHNIQUE_DEFINITIONS = [
   { id: 10, name: 'first_visit_discount', category: 'scarcity', label: 'First Visit Deal',
     generate: (d) => d.firstVisitDiscount > 0 && !d.hasVisited ? `🎁 First visit: ${d.firstVisitDiscount}% off — only for new visitors` : null },
   { id: 11, name: 'off_peak_deal', category: 'scarcity', label: 'Off-Peak Deal',
-    generate: (d) => d.isOffPeak && d.offPeakDiscount > 0 ? `🕐 Off-peak right now — ${d.offPeakDiscount}% off if you book in the next hour` : null },
+    generate: () => null }, // v4.1: Off-peak discount removed — flat pricing
   { id: 12, name: 'wallet_bonus', category: 'scarcity', label: 'Wallet Bonus',
     generate: (d) => d.hasWallet === false ? `💰 Top up £20+ and get 10% bonus credits for this booking` : null },
   { id: 13, name: 'popular_time', category: 'scarcity', label: 'Popular Time',
@@ -50,7 +50,7 @@ const TECHNIQUE_DEFINITIONS = [
   { id: 15, name: 'closing_soon', category: 'urgency', label: 'Closing Time',
     generate: (d) => d.hoursUntilClose && d.hoursUntilClose <= 3 ? `⏰ Gym closes in ${d.hoursUntilClose}h — book now for today` : null },
   { id: 16, name: 'price_rising', category: 'urgency', label: 'Price Alert',
-    generate: (d) => d.isPeakHour === false ? `Price is lowest right now — peak hours cost more` : null },
+    generate: () => null }, // v4.1: No peak/off-peak price difference
   { id: 17, name: 'day_pass_timer', category: 'urgency', label: '24hr Timer',
     generate: () => `⏱️ 24hr day pass — full access from the moment you scan in` },
   { id: 18, name: 'weekend_rush', category: 'urgency', label: 'Weekend Rush',
