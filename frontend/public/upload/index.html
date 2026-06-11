@@ -290,7 +290,7 @@
     <div class="creator-badge" id="creator-badge">
       <div class="creator-badge-icon">&#x2705;</div>
       <div class="creator-badge-info">
-        <div class="creator-badge-name" id="badge-name">FlexSquad Creator</div>
+        <div class="creator-badge-name" id="badge-name">ScanSquad Creator</div>
         <div class="creator-badge-link" id="badge-link">scangym.com/r/creator</div>
       </div>
       <div class="creator-badge-edit" onclick="editCreator()">Edit</div>
@@ -412,7 +412,7 @@
     function init() {
       // Check if already a creator
       try {
-        var data = localStorage.getItem('flexsquad_pending');
+        var data = localStorage.getItem('scansquad_pending');
         if (data) {
           state.creator = JSON.parse(data);
         }
@@ -449,7 +449,7 @@
       };
 
       // Save to localStorage
-      localStorage.setItem('flexsquad_pending', JSON.stringify(state.creator));
+      localStorage.setItem('scansquad_pending', JSON.stringify(state.creator));
       // Store creator handle for earnings dashboard
       localStorage.setItem('sg_creator', JSON.stringify({handle: handle, slug: handle, email: email}));
 
@@ -467,7 +467,7 @@
       } catch (e) {}
 
       showCreatorBadge();
-      showToast('Welcome to FlexSquad! Your link is live.', 'success');
+      showToast('Welcome to ScanSquad! Your link is live.', 'success');
       updateSubmitBtn();
     }
 
@@ -478,7 +478,7 @@
 
       var handle = (state.creator.handle || '').replace(/^@/, '');
       var slug = handle.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
-      document.getElementById('badge-name').textContent = (state.creator.name || slug) + ' \u2014 FlexSquad';
+      document.getElementById('badge-name').textContent = (state.creator.name || slug) + ' \u2014 ScanSquad';
       document.getElementById('badge-link').textContent = slug ? 'scangym.com/r/' + slug : 'scangym.com';
 
       // Show affiliate preview
@@ -490,7 +490,7 @@
     function editCreator() {
       // Reset to signup
       state.creator = null;
-      localStorage.removeItem('flexsquad_pending');
+      localStorage.removeItem('scansquad_pending');
       document.getElementById('creator-badge').classList.remove('active');
       document.getElementById('creator-signup').classList.remove('hidden');
       document.getElementById('affiliate-preview').classList.add('hidden');
@@ -657,7 +657,7 @@
 
     function saveLocally(caption, slug) {
       try {
-        var uploads = JSON.parse(localStorage.getItem('flexsquad_uploads') || '[]');
+        var uploads = JSON.parse(localStorage.getItem('scansquad_uploads') || '[]');
         uploads.push({
           fileName: state.file.name,
           fileSize: state.file.size,
@@ -667,7 +667,7 @@
           affiliateLink: slug ? 'https://scangym.com/r/' + slug : '',
           timestamp: new Date().toISOString()
         });
-        localStorage.setItem('flexsquad_uploads', JSON.stringify(uploads));
+        localStorage.setItem('scansquad_uploads', JSON.stringify(uploads));
       } catch (e) {}
     }
 

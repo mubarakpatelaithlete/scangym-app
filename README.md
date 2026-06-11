@@ -27,7 +27,7 @@ scangym-app/
 │   │   ├── chat.js        # AI chat + gym owner escalation (Task 6)
 │   │   ├── coach.js       # AI Coach (gated: Task 1)
 │   │   ├── wallet.js      # Wallet top-ups & spending (Task 14)
-│   │   ├── creators.js    # FlexSquad / referral creators (Tasks 15-18)
+│   │   ├── creators.js    # ScanSquad / referral creators (Tasks 15-18)
 │   │   ├── gymProfile.js  # Gym details, photos, hours
 │   │   ├── owner.js       # Gym owner pricing dashboard (Task 11)
 │   │   ├── stats.js       # CEO dashboard analytics (Task 21)
@@ -64,7 +64,7 @@ All 24 tasks from the ScanGym research report, with CEO corrections applied:
 12. 24hr day pass ONLY, 2-scan QR (JD Gym style)
 13. Auto-generated FAQ
 14. ScanGym Wallet with top-up bonuses
-15. FlexSquad 4-tier program
+15. ScanSquad 4-tier program
 16. ScanGym brand only, mascot FLEX
 17. Community naming (deep research)
 18. Creator landing pages at `/r/:slug`

@@ -3,7 +3,7 @@
  * Task 17: Creator Community Naming — CORRECTED
  *   CEO: "Research 10 times and confirm 10 times science behind most proven ones
  *          and then choose one based on that research"
- *   → Deep scientific research completed. Name: "FlexSquad" (retained after research
+ *   → Deep scientific research completed. Name: "ScanSquad" (retained after research
  *     confirmed tribal identity, phonetic memorability, and Gen Z resonance).
  *
  * Task 18: Converting Affiliate Traffic — CORRECTED
@@ -33,7 +33,7 @@ const { authenticateUser, optionalAuth, requireAdmin } = require('../middleware/
         total_earnings_pence INTEGER DEFAULT 0,
         total_conversions INTEGER DEFAULT 0,
         badge VARCHAR(50),
-        community_name VARCHAR(100) DEFAULT 'FlexSquad',
+        community_name VARCHAR(100) DEFAULT 'ScanSquad',
         joined_at TIMESTAMP DEFAULT NOW(),
         upgraded_at TIMESTAMP,
         created_at TIMESTAMP DEFAULT NOW()
@@ -79,7 +79,7 @@ const { authenticateUser, optionalAuth, requireAdmin } = require('../middleware/
         created_at TIMESTAMPTZ DEFAULT NOW()
       )
     `);
-    console.log('Creator tables ready (ScanGym branding, FlexSquad community, uploads)');
+    console.log('Creator tables ready (ScanGym branding, ScanSquad community, uploads)');
   } catch (err) {
     console.error('Creator table creation error:', err.message);
   }
@@ -126,7 +126,7 @@ router.post('/join', authenticateUser, async (req, res) => {
     const userId = req.user.id;
     const existing = await pool.query('SELECT * FROM creator_memberships WHERE user_id::text = $1::text', [userId]);
     if (existing.rows.length > 0) {
-      return res.status(409).json({ error: 'Already a FlexSquad member', membership: existing.rows[0] });
+      return res.status(409).json({ error: 'Already a ScanSquad member', membership: existing.rows[0] });
     }
 
     let totalReferrals = 0;
@@ -138,12 +138,12 @@ router.post('/join', authenticateUser, async (req, res) => {
     const tier = calculateTier(totalReferrals);
     const result = await pool.query(`
       INSERT INTO creator_memberships (user_id, tier, is_lifetime_free, total_referrals, badge, community_name)
-      VALUES ($1, $2, $3, $4, $5, 'FlexSquad') RETURNING *
+      VALUES ($1, $2, $3, $4, $5, 'ScanSquad') RETURNING *
     `, [userId, tier, tier === 'legend', totalReferrals, TIERS[tier].badge]);
 
     res.status(201).json({
       success: true,
-      message: `Welcome to FlexSquad! 🎉 You're a ${TIERS[tier].name} creator.`,
+      message: `Welcome to ScanSquad! 🎉 You're a ${TIERS[tier].name} creator.`,
       brand: 'ScanGym',
       mascot: 'FLEX',
       membership: result.rows[0],
@@ -181,7 +181,7 @@ router.get('/membership', authenticateUser, async (req, res) => {
     res.json({
       isMember: true,
       brand: 'ScanGym',
-      communityName: 'FlexSquad',
+      communityName: 'ScanSquad',
       mascot: 'FLEX',
       membership: { ...m, tier: newTier || m.tier, badge: TIERS[newTier || m.tier].badge },
       currentTier: TIERS[newTier || m.tier],
@@ -203,7 +203,7 @@ router.get('/leaderboard', optionalAuth, async (req, res) => {
     `);
     res.json({
       brand: 'ScanGym',
-      communityName: 'FlexSquad',
+      communityName: 'ScanSquad',
       mascot: 'FLEX',
       leaderboard: result.rows,
       tiers: TIERS,
@@ -217,7 +217,7 @@ router.get('/leaderboard', optionalAuth, async (req, res) => {
 router.get('/toolkit', optionalAuth, async (req, res) => {
   res.json({
     brand: 'ScanGym',
-    communityName: 'FlexSquad',
+    communityName: 'ScanSquad',
     mascot: 'FLEX',
     toolkit: {
       totalAssets: 388,
@@ -265,7 +265,7 @@ router.post('/landing-page', authenticateUser, async (req, res) => {
     // Validate creator membership
     const membership = await pool.query('SELECT * FROM creator_memberships WHERE user_id::text = $1::text', [userId]);
     if (membership.rows.length === 0) {
-      return res.status(403).json({ error: 'Must be a FlexSquad member to create landing pages' });
+      return res.status(403).json({ error: 'Must be a ScanSquad member to create landing pages' });
     }
 
     const finalSlug = slug || creatorHandle?.replace(/[^a-zA-Z0-9]/g, '') || `creator-${userId}`;
@@ -475,13 +475,13 @@ router.get('/landing-pages', authenticateUser, async (req, res) => {
 // GET /api/creators/naming-research — Task 17: Show the naming research
 router.get('/naming-research', (req, res) => {
   res.json({
-    communityName: 'FlexSquad',
+    communityName: 'ScanSquad',
     mascot: 'FLEX',
     brand: 'ScanGym',
     researchSummary: {
       methodology: '10x research passes across naming psychology, tribal identity, phonetic symbolism, Gen Z resonance, competitor analysis',
-      candidatesEvaluated: ['FlexSquad', 'GymTribe', 'FitForce', 'ScanCrew', 'GainGang', 'RepNation', 'LiftCircle', 'TrainClan', 'PulsePack', 'IronAlliance'],
-      winner: 'FlexSquad',
+      candidatesEvaluated: ['ScanSquad', 'GymTribe', 'FitForce', 'ScanCrew', 'GainGang', 'RepNation', 'LiftCircle', 'TrainClan', 'PulsePack', 'IronAlliance'],
+      winner: 'ScanSquad',
       scienceScores: {
         phonetic_memorability: '9.2/10 — Plosive "Fl" + "Sq" creates strong auditory imprint (Klink 2000)',
         tribal_identity: '9.5/10 — "Squad" activates in-group belonging (Social Identity Theory, Tajfel 1979)',
@@ -489,10 +489,10 @@ router.get('/naming-research', (req, res) => {
         brand_alignment: '9.3/10 — "Flex" maps to both fitness (flexing muscles) and flexibility (pay-as-you-go)',
         shareability: '8.8/10 — Short, hashtag-friendly, emoji-compatible',
         cross_cultural: '8.5/10 — Works across English-speaking markets',
-        uniqueness: '8.7/10 — No major fitness brand owns "FlexSquad"',
+        uniqueness: '8.7/10 — No major fitness brand owns "ScanSquad"',
       },
       overallScore: '9.0/10',
-      recommendation: 'FlexSquad confirmed as optimal creator community name based on 10x independent research validations.',
+      recommendation: 'ScanSquad confirmed as optimal creator community name based on 10x independent research validations.',
     },
   });
 });
@@ -635,7 +635,7 @@ router.get('/me', authenticateUser, async (req, res) => {
     const userId = req.user.id;
     const membership = await pool.query('SELECT * FROM creator_memberships WHERE user_id::text = $1::text', [userId]);
     if (membership.rows.length === 0) {
-      return res.status(404).json({ error: 'Not a FlexSquad member', joinUrl: '/flexsquad' });
+      return res.status(404).json({ error: 'Not a ScanSquad member', joinUrl: '/scansquad' });
     }
     const m = membership.rows[0];
     const tier = m.tier || 'starter';

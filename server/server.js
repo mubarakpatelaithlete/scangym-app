@@ -393,16 +393,20 @@ if (fs.existsSync(FRONTEND_DIR)) {
     res.sendFile(path.join(FRONTEND_DIR, 'upload', 'index.html'));
   });
 
-  // FlexSquad Creator Portal — standalone page at /flexsquad
-  app.get('/flexsquad', (req, res) => {
+  // G1 FIX: Redirect old /flexsquad URLs to /scansquad (so existing links don't break)
+  app.get('/flexsquad', (req, res) => res.redirect(301, '/scansquad'));
+  app.get('/flexsquad/*', (req, res) => res.redirect(301, req.url.replace('/flexsquad', '/scansquad')));
+
+  // ScanSquad Creator Portal — standalone page at /scansquad
+  app.get('/scansquad', (req, res) => {
     res.setHeader('Cache-Control', 'no-cache');
-    res.sendFile(path.join(FRONTEND_DIR, 'flexsquad', 'index.html'));
+    res.sendFile(path.join(FRONTEND_DIR, 'scansquad', 'index.html'));
   });
-  app.get('/flexsquad/*', (req, res, next) => {
+  app.get('/scansquad/*', (req, res, next) => {
     const filePath = path.join(FRONTEND_DIR, req.path);
     if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) return next();
     res.setHeader('Cache-Control', 'no-cache');
-    res.sendFile(path.join(FRONTEND_DIR, 'flexsquad', 'index.html'));
+    res.sendFile(path.join(FRONTEND_DIR, 'scansquad', 'index.html'));
   });
 
   // Reels app — dynamic API-driven feed (replaces static React bundle)
