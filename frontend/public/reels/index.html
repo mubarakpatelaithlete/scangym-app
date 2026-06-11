@@ -1069,27 +1069,57 @@
       // ═══════════════════════════════════════════════════════════
 
       // ═══════════════════════════════════════════════════════════
-      //  ENGAGEMENT ANALYTICS — lightweight view tracking
+      //  G7 FIX: FULL ANALYTICS — views, likes, shares, saves, CTA clicks
+      //  Sends to POST /api/reels/analytics with session_id + new event format
+      //  so data populates reel_views, reel_interactions, AND video_performance
       // ═══════════════════════════════════════════════════════════
-      var viewBuffer = []; // batch analytics to reduce network calls
+      var _sgSessionId = (function(){
+        try {
+          var key = 'sg_analytics_sid';
+          var sid = sessionStorage.getItem(key);
+          if(!sid){
+            sid = Date.now().toString(36) + Math.random().toString(36).slice(2,10);
+            sessionStorage.setItem(key, sid);
+          }
+          return sid;
+        } catch(e){ return 'anon_' + Math.random().toString(36).slice(2,10); }
+      })();
+
+      var eventBuffer = []; // batch all analytics events
       var ANALYTICS_FLUSH_INTERVAL = 10000; // flush every 10s
 
-      function trackView(index, durationMs, watchPercent){
+      function trackEvent(action, index, extras){
         if(index < 0 || index >= allVideos.length) return;
         var video = allVideos[index];
-        viewBuffer.push({
-          id: video.id || index,
-          cat: video.category || '',
-          dur: Math.round(durationMs),
-          pct: Math.round(watchPercent * 100),
-          ts: Date.now(),
-        });
+        var evt = {
+          video_id: video.id || String(index),
+          category: video.category || '',
+          action: action
+        };
+        if(extras){
+          if(extras.watch_ms !== undefined) evt.watch_ms = Math.round(extras.watch_ms);
+          if(extras.watch_pct !== undefined) evt.watch_pct = Math.round(extras.watch_pct);
+        }
+        eventBuffer.push(evt);
+      }
+
+      // Backward-compat wrapper — existing onReelChange calls this
+      function trackView(index, durationMs, watchPercent){
+        var watchPct = Math.round((watchPercent || 0) * 100);
+        var action = (durationMs < 1500 && watchPct < 15) ? 'skip' : 'view';
+        trackEvent(action, index, { watch_ms: durationMs, watch_pct: watchPct });
       }
 
       function flushAnalytics(){
-        if(viewBuffer.length === 0) return;
-        var batch = viewBuffer.splice(0, viewBuffer.length);
-        navigator.sendBeacon('/api/reels/analytics', JSON.stringify({ views: batch }));
+        if(eventBuffer.length === 0) return;
+        var batch = eventBuffer.splice(0, eventBuffer.length);
+        var payload = JSON.stringify({ session_id: _sgSessionId, events: batch });
+        // Prefer sendBeacon (works on tab close), fall back to fetch
+        if(navigator.sendBeacon){
+          navigator.sendBeacon('/api/reels/analytics', new Blob([payload], {type:'application/json'}));
+        } else {
+          fetch('/api/reels/analytics', {method:'POST', headers:{'Content-Type':'application/json'}, body:payload}).catch(function(){});
+        }
       }
 
       setInterval(flushAnalytics, ANALYTICS_FLUSH_INTERVAL);
@@ -1149,6 +1179,8 @@
 
       // G5 fix: Navigate via parent postMessage when inside iframe, else direct
       function _ctaNavigate(path){
+        trackEvent('cta_click', currentIndex); // G7 fix: track CTA clicks
+        flushAnalytics(); // flush before navigating away
         if(window.parent && window.parent !== window){
           window.parent.postMessage({type:'sg-navigate', path: path}, '*');
         } else {
@@ -1918,6 +1950,7 @@
       // ═══════════════════════════════════════════════════════════
 
       function doubleTapLike(x, y){
+        trackEvent('like', currentIndex); // G7 fix: track likes
         if(navigator.vibrate) navigator.vibrate([10, 30, 10]);
         var heart = document.createElement('div');
         heart.className = 'like-burst';
@@ -1949,6 +1982,7 @@
       // H6 fix: Share now always gives feedback — toast on success, clipboard fallback, never silent.
       // M4 fix: Share reel-specific URL (scangym.com/reels?v=ID) instead of generic page URL.
       function handleShare(video){
+        trackEvent('share', currentIndex); // G7 fix: track shares
         if(navigator.vibrate) navigator.vibrate(10);
         // Build reel-specific deep link — falls back to affiliate link if present, then generic
         var reelUrl = video.id
@@ -2012,6 +2046,7 @@
       var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
       function handleSave(video, url){
+        trackEvent('save', currentIndex); // G7 fix: track saves
         if(navigator.vibrate) navigator.vibrate(10);
         if(!url) return;
         var fname = (video.name || 'scangym-reel').replace(/[^a-zA-Z0-9_-]/g, '_') + '.mp4';
