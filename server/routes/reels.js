@@ -27,6 +27,18 @@ const pool = require('../middleware/db');
 const { authenticateUser, requireAdmin } = require('../middleware/auth');
 
 // ═══════════════════════════════════════════════════════════
+//  M10 UPGRADE: TikTok/Instagram-grade feed algorithm
+//  Replaces static category-based tier rotation with dynamic
+//  engagement-driven ranking. See lib/reels-algorithm.js for details.
+// ═══════════════════════════════════════════════════════════
+const {
+  initPerformanceTables,
+  rankFeed,
+  processAnalytics,
+  startBackgroundJobs,
+} = require('../lib/reels-algorithm');
+
+// ═══════════════════════════════════════════════════════════
 //  M8 FIX: DATABASE CATALOG — replaces static JSON file
 // ═══════════════════════════════════════════════════════════
 
@@ -112,6 +124,8 @@ async function initCatalog() {
 
 // Run at module load (non-blocking)
 initCatalog();
+initPerformanceTables();
+startBackgroundJobs();
 
 // Load enrichment cache (auto-filled metadata: fileSize, blurhash, orientation, etc.)
 let enrichmentCache = {};
@@ -165,6 +179,7 @@ async function loadCatalogFromDB() {
  *   - shuffle: "true" to randomize order (default true)
  *   - seed: numeric seed for deterministic shuffle (auto-generated if omitted)
  *   - include_uploads: "true" to include approved creator uploads (default true)
+ *   - session_id: session identifier for within-session adaptation (optional)
  */
 router.get('/feed', async (req, res) => {
   try {
@@ -174,6 +189,8 @@ router.get('/feed', async (req, res) => {
     const shuffle = req.query.shuffle !== 'false';
     const seed = parseInt(req.query.seed) || Math.floor(Math.random() * 2147483647);
     const includeUploads = req.query.include_uploads !== 'false';
+    // M10 UPGRADE: Session ID for within-session adaptation (TikTok-style)
+    const sessionId = req.query.session_id || req.headers['x-session-id'] || null;
 
     // 1. M8 FIX: Load catalog from database instead of static JSON
     let catalogVideos;
@@ -273,133 +290,16 @@ router.get('/feed', async (req, res) => {
       );
     }
 
-    // 4. Dopamine-optimised ordering
-    // Neuroscience: the brain needs novelty between each reel to maintain the
-    // reward-seeking loop. Pattern: Shock → Viral → Convert → Relate → Shock.
-    // Never two similar categories in a row (habituation kills dopamine).
-    //
-    // Tier 1 (max dopamine): Don't Join A Gym, Viral, Price Compare
-    // Tier 2 (strong):       TikTok-Reels AI, Influencer, Creator uploads
-    // Tier 3 (filler):       Promo, CMO Content, AI Cinematic, General, etc.
+    // 4. M10 UPGRADE: TikTok/Instagram-grade dynamic ranking
+    // Replaces the old static dopamine-tier rotation with a data-driven algorithm:
+    //   - Videos earn their tier from real engagement data (watch time, completion, shares)
+    //   - Variable reward pattern (slot machine psychology) instead of fixed rotation
+    //   - Session-level adaptation (feeds what the user is engaging with)
+    //   - Cold start for new videos (guaranteed explore exposure)
+    //   - Background aggregation every 5 min (the algorithm learns over time)
+    // See lib/reels-algorithm.js for full documentation.
     if (shuffle) {
-      // Simple mulberry32 PRNG seeded from query param
-      let s = seed | 0;
-      const rand = () => { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t ^= t + Math.imul(t ^ t >>> 7, 61 | t); return ((t ^ t >>> 14) >>> 0) / 4294967296; };
-
-      // Assign dopamine tier to each video
-      const TIER_MAP = {
-        "don't join a gym": 1,
-        "viral":            1,
-        "price compare":    1,
-        "tiktok-reels ai":  2,
-        "influencer":       2,
-        "creator":          2,
-        "promo":            3,
-        "city promo":       3,
-        "ready-to-post":    3,
-        "cmo content":      4,
-        "ai cinematic":     4,
-        "general":          4,
-        "youtube ai":       4,
-        "ugc videos":       5,
-        "auto-reel":        5,
-      };
-
-      function getTier(v) {
-        const cat = (v.category || '').toLowerCase();
-        const key = (v.cdnKey || '').toLowerCase();
-
-        // Deprioritize text-on-black / overlay reels regardless of category
-        const TEXT_PATTERNS = ['faketweet', 'hottake', 'identityhook', 'fact_'];
-        if (TEXT_PATTERNS.some(p => key.includes(p))) return 5;
-
-        // Use per-video dopamineTier if set, otherwise fall back to category map
-        if (v.dopamineTier && v.dopamineTier >= 1 && v.dopamineTier <= 5) return v.dopamineTier;
-        return TIER_MAP[cat] || 3;
-      }
-
-      // Bucket videos by tier, shuffle within each bucket
-      const buckets = { 1: [], 2: [], 3: [], 4: [], 5: [] };
-      for (const v of feed) {
-        const t = getTier(v);
-        buckets[t] = buckets[t] || [];
-        buckets[t].push(v);
-      }
-      // Shuffle each bucket
-      for (const tier of Object.values(buckets)) {
-        for (let i = tier.length - 1; i > 0; i--) {
-          const j = Math.floor(rand() * (i + 1));
-          [tier[i], tier[j]] = [tier[j], tier[i]];
-        }
-      }
-
-      // Interleave: dopamine rotation pattern
-      const rotationPattern = [1, 2, 1, 3, 2, 1, 3, 2, 4, 3];
-      const ordered = [];
-      const bucketIdx = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-      let lastCategory = '';
-      let patternPos = 0;
-
-      while (ordered.length < feed.length) {
-        const preferredTier = rotationPattern[patternPos % rotationPattern.length];
-        let placed = false;
-
-        const tierOrder = [preferredTier, ...([1,2,3,4,5].filter(t => t !== preferredTier))];
-        for (const tier of tierOrder) {
-          const bucket = buckets[tier];
-          if (!bucket) continue;
-          let startIdx = bucketIdx[tier] || 0;
-          for (let attempt = 0; attempt < bucket.length; attempt++) {
-            const idx = (startIdx + attempt) % bucket.length;
-            if (idx < startIdx && attempt > 0) break;
-            const v = bucket[idx];
-            if (!v || v._used) continue;
-            const cat = (v.category || '').toLowerCase();
-            if (cat === lastCategory && ordered.length > 0) continue;
-            ordered.push(v);
-            v._used = true;
-            bucketIdx[tier] = idx + 1;
-            lastCategory = cat;
-            placed = true;
-            break;
-          }
-          if (placed) break;
-        }
-
-        if (!placed) {
-          for (const tier of [1,2,3,4,5]) {
-            const bucket = buckets[tier];
-            if (!bucket) continue;
-            for (let i = 0; i < bucket.length; i++) {
-              if (!bucket[i]._used) {
-                ordered.push(bucket[i]);
-                bucket[i]._used = true;
-                placed = true;
-                break;
-              }
-            }
-            if (placed) break;
-          }
-        }
-        if (!placed) break;
-        patternPos++;
-      }
-
-      for (const v of ordered) { delete v._used; }
-      feed = ordered;
-    }
-
-    // 4b. Pin hero reel at position 0 (always show best visual first)
-    const HERO_REEL_KEYS = ['tiktok_gym_hopping', '01_gym_entry_vertical', '09_before_after_gym_hopper'];
-    if (offset === 0 && feed.length > 0) {
-      for (const heroKey of HERO_REEL_KEYS) {
-        const heroIdx = feed.findIndex(v => v.cdnKey === heroKey);
-        if (heroIdx > 0) {
-          const [hero] = feed.splice(heroIdx, 1);
-          feed.unshift(hero);
-          break;
-        }
-      }
+      feed = await rankFeed(feed, { seed, sessionId, offset });
     }
 
     // 5. Paginate
@@ -733,31 +633,23 @@ router.post('/admin/enrich', authenticateUser, requireAdmin, async (req, res) =>
 
 /**
  * POST /api/reels/analytics
- * Receive view analytics from the frontend.
- * Body: { views: [{ id, cat, dur, pct, ts }] }
+ * M10 UPGRADE: Enhanced analytics — tracks views, skips, likes, shares, saves.
+ * Supports both old format { views: [...] } and new { session_id, events: [...] }
+ *
+ * The reel_views table is still created here for backward compat, but the new
+ * algorithm also writes to video_performance and reel_interactions tables
+ * (see lib/reels-algorithm.js).
  */
 router.post('/analytics', express.json(), async (req, res) => {
   try {
-    const { views } = req.body;
-    if (!Array.isArray(views) || views.length === 0) {
+    const sessionId = req.body.session_id || req.headers['x-session-id'] || null;
+    const events = req.body.events || req.body.views || [];
+
+    if (!Array.isArray(events) || events.length === 0) {
       return res.status(204).end();
     }
 
-    const batch = views.slice(0, 50);
-    const values = [];
-    const placeholders = [];
-    let idx = 1;
-    for (const v of batch) {
-      placeholders.push(`($${idx}, $${idx+1}, $${idx+2}, $${idx+3})`);
-      values.push(
-        String(v.id || '').slice(0, 50),
-        String(v.cat || '').slice(0, 50),
-        Math.min(Math.max(parseInt(v.dur) || 0, 0), 300000),
-        Math.min(Math.max(parseInt(v.pct) || 0, 0), 100)
-      );
-      idx += 4;
-    }
-
+    // Ensure reel_views table exists (backward compat — first-time setup)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS reel_views (
         id SERIAL PRIMARY KEY,
@@ -769,16 +661,22 @@ router.post('/analytics', express.json(), async (req, res) => {
       )
     `);
 
-    await pool.query(
-      `INSERT INTO reel_views (video_id, category, duration_ms, watch_percent)
-       VALUES ${placeholders.join(', ')}`,
-      values
-    );
+    // Normalise old format { id, cat, dur, pct } to new format { video_id, action, ... }
+    const normalised = events.map(e => ({
+      video_id:  e.video_id || e.id,
+      category:  e.category || e.cat,
+      action:    e.action || 'view',
+      watch_ms:  e.watch_ms || e.dur || 0,
+      watch_pct: e.watch_pct || e.pct || 0,
+    }));
+
+    // Process through the algorithm's enhanced analytics pipeline
+    await processAnalytics(sessionId, normalised);
 
     res.status(204).end();
   } catch (err) {
     console.error('Analytics error:', err.message);
-    res.status(204).end();
+    res.status(204).end(); // Never break the client
   }
 });
 
