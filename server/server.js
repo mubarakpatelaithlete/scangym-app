@@ -498,7 +498,7 @@ app.use((err, req, res, next) => {
 
 // -- Start --
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`ScanGym v4.4.0 on :${PORT} | Frontend: ${fs.existsSync(FRONTEND_DIR+'/index.html')?'v3':'proxy'} | Auth: local session | Brotli+gzip pre-compressed`);
+  console.log(`ScanGym v4.5.0 on :${PORT} | Frontend: ${fs.existsSync(FRONTEND_DIR+'/index.html')?'v3':'proxy'} | Auth: local session | Brotli+gzip pre-compressed`);
 
   // Video enrichment — runs in background AFTER server is fully warmed up
   // Deferred 30s to prevent CPU spike during health check window (Fix: 502 on deploy)
