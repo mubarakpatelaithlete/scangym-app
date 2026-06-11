@@ -169,3 +169,4 @@ function getPosterPath(cdnKey) {
 }
 
 module.exports = { generatePoster, generateAllPosters, getPosterPath, POSTER_DIR };
+// v4.5.1 — ffmpeg via npm
