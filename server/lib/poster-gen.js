@@ -12,6 +12,10 @@ const { execFile } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
+// ── ffmpeg binary: prefer npm-installed static binary, fallback to system ──
+let FFMPEG_PATH = 'ffmpeg';
+try { FFMPEG_PATH = require('@ffmpeg-installer/ffmpeg').path; } catch { /* use system ffmpeg */ }
+
 // ── Storage: persistent volume first, fallback to in-container ──
 const POSTER_DIR = fs.existsSync('/data')
   ? '/data/posters'
@@ -77,7 +81,7 @@ function extractFrameFromFile(videoPath, outputPath) {
       outputPath,
     ];
 
-    execFile('ffmpeg', args, { timeout: 15000 }, (err) => {
+    execFile(FFMPEG_PATH, args, { timeout: 15000 }, (err) => {
       if (err) {
         // Retry at 0.1s (short video might not have 0.5s)
         const args2 = [
@@ -89,7 +93,7 @@ function extractFrameFromFile(videoPath, outputPath) {
           '-y',
           outputPath,
         ];
-        execFile('ffmpeg', args2, { timeout: 15000 }, (err2) => {
+        execFile(FFMPEG_PATH, args2, { timeout: 15000 }, (err2) => {
           if (err2) return reject(err2);
           if (!fs.existsSync(outputPath) || fs.statSync(outputPath).size < 100) {
             return reject(new Error('ffmpeg produced empty output'));

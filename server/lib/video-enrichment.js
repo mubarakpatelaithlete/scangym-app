@@ -18,6 +18,12 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
+// ── ffmpeg/ffprobe binaries: prefer npm-installed static binaries ──
+let FFMPEG_PATH = 'ffmpeg';
+let FFPROBE_PATH = 'ffprobe';
+try { FFMPEG_PATH = require('@ffmpeg-installer/ffmpeg').path; } catch { /* fallback to system */ }
+try { FFPROBE_PATH = require('@ffprobe-installer/ffprobe').path; } catch { /* fallback to system */ }
+
 // Lazy-load optional deps (installed in package.json)
 let sharp, blurhashEncode;
 try { sharp = require('sharp'); } catch(e) { console.warn('video-enrichment: sharp not available'); }
@@ -151,10 +157,21 @@ let _ffmpegAvailable = null;
 function hasFfmpeg() {
   if (_ffmpegAvailable === null) {
     try {
-      execSync('which ffmpeg', { stdio: 'pipe' });
+      execSync(`"${FFMPEG_PATH}" -version`, { stdio: 'pipe' });
       _ffmpegAvailable = true;
+      console.log(`[Enrichment] ffmpeg found at: ${FFMPEG_PATH}`);
     } catch {
-      _ffmpegAvailable = false;
+      // Also try system ffmpeg
+      try {
+        execSync('which ffmpeg', { stdio: 'pipe' });
+        FFMPEG_PATH = 'ffmpeg';
+        FFPROBE_PATH = 'ffprobe';
+        _ffmpegAvailable = true;
+        console.log('[Enrichment] ffmpeg found at: system path');
+      } catch {
+        _ffmpegAvailable = false;
+        console.warn('[Enrichment] ⚠️ ffmpeg NOT available — blurhash, duration, dimensions will be skipped');
+      }
     }
   }
   return _ffmpegAvailable;
@@ -164,7 +181,7 @@ function hasFfmpeg() {
 function extractFrame(videoPath, framePath) {
   try {
     execSync(
-      `ffmpeg -y -i "${videoPath}" -vframes 1 -f image2 "${framePath}" 2>/dev/null`,
+      `"${FFMPEG_PATH}" -y -i "${videoPath}" -vframes 1 -f image2 "${framePath}" 2>/dev/null`,
       { timeout: 15000, stdio: 'pipe' }
     );
     return fs.existsSync(framePath) && fs.statSync(framePath).size > 100;
@@ -193,7 +210,7 @@ async function generateBlurhash(imagePath) {
 function getVideoDimensions(videoPath) {
   try {
     const out = execSync(
-      `ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=p=0 "${videoPath}" 2>/dev/null`,
+      `"${FFPROBE_PATH}" -v error -select_streams v:0 -show_entries stream=width,height -of csv=p=0 "${videoPath}" 2>/dev/null`,
       { timeout: 10000, stdio: ['pipe', 'pipe', 'pipe'] }
     ).toString().trim();
     const [w, h] = out.split(',').map(Number);
@@ -209,7 +226,7 @@ function getVideoDimensions(videoPath) {
 function getVideoDuration(videoPath) {
   try {
     const out = execSync(
-      `ffprobe -v error -show_entries format=duration -of csv=p=0 "${videoPath}" 2>/dev/null`,
+      `"${FFPROBE_PATH}" -v error -show_entries format=duration -of csv=p=0 "${videoPath}" 2>/dev/null`,
       { timeout: 10000, stdio: ['pipe', 'pipe', 'pipe'] }
     ).toString().trim();
     const dur = parseFloat(out);
