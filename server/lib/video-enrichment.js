@@ -352,18 +352,25 @@ async function runEnrichment(staticVideos) {
     // Merge cached data into video for checking
     const merged = { ...video, ...(cache[cacheKey] || {}) };
 
-    // Skip if already fully enriched (now includes duration check)
-    if (merged.fileSize && merged.blurhash && merged.orientation && merged.width && merged.duration) {
+    // Only skip if the DB ITSELF has all fields (don't trust cache alone)
+    const dbComplete = video.fileSize && video.blurhash && video.orientation && video.width && video.duration;
+    if (dbComplete) {
       if (!cache[cacheKey]) {
         cache[cacheKey] = {
-          fileSize: merged.fileSize,
-          blurhash: merged.blurhash,
-          orientation: merged.orientation,
-          width: merged.width,
-          height: merged.height,
-          duration: merged.duration,
+          fileSize: video.fileSize,
+          blurhash: video.blurhash,
+          orientation: video.orientation,
+          width: video.width,
+          height: video.height,
+          duration: video.duration,
         };
       }
+      skipped++;
+      continue;
+    }
+
+    // Also skip if cache has all fields (will be written to DB by pipeline)
+    if (merged.fileSize && merged.blurhash && merged.orientation && merged.width && merged.duration) {
       skipped++;
       continue;
     }
