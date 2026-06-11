@@ -20,11 +20,11 @@
 <link rel="dns-prefetch" href="https://places.googleapis.com">
 
 <!-- Preload critical resources (browser fetches immediately, high priority) -->
-<link rel="preload" href="/styles.css" as="style">
-<link rel="preload" href="/app.ctr575.js" as="script" fetchpriority="high">
+<link rel="preload" href="/styles.css?v=5.0.0" as="style">
+<link rel="preload" href="/app.ctr575.js?v=5.0.0" as="script" fetchpriority="high">
 
 <!-- Pre-compiled Tailwind CSS (replaces CDN runtime — 5KB gzip vs 100KB JS) -->
-<link rel="stylesheet" href="/styles.css">
+<link rel="stylesheet" href="/styles.css?v=5.0.0">
 
 <!-- Fonts: reduced to 3 weights (400, 600, 700) with display=swap -->
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Sora:wght@600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
@@ -95,6 +95,6 @@ if('serviceWorker' in navigator){
 
 <script src="/robust-location.js" defer></script>
 <script src="/pricing.js"></script>
-<script src="/app.ctr575.js" defer></script>
+<script src="/app.ctr575.js?v=5.0.0" defer></script>
 </body>
 </html>
