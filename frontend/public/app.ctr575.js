@@ -1193,8 +1193,9 @@ function SearchPage(){
           html+='<div class="tt-chip">\u{1F4B0} '+c.price+'/day</div>';
           html+='<div class="tt-chip">\u2B50 '+c.rating+(c.reviews?' ('+c.reviews+')':'')+'</div>';
           html+='</div>';
-          /* CTA inside info */
-          html+='<div style="padding-right:50px;margin-top:8px;pointer-events:auto"><button class="tt-cta-btn" onclick="event.stopPropagation();openGym(\''+c.id+'\',true)">Continue \u{1F7E0}</button></div>';
+          /* CTA inside info — Book directly from reels (no Screen 3 navigation) */
+          html+='<div style="padding-right:50px;margin-top:8px;pointer-events:auto"><button class="tt-cta-btn" onclick="event.stopPropagation();showUberCheckout(\''+c.id+'\')">⚡ Book Day Pass · '+c.price+'</button></div>';
+          html+='<div style="display:flex;gap:12px;margin-top:5px;padding-right:50px"><span style="font-size:10px;color:rgba(255,255,255,.35);font-weight:600">✅ Free Cancel</span><span style="font-size:10px;color:rgba(255,255,255,.35);font-weight:600">🔒 Secure</span><span style="font-size:10px;color:rgba(255,255,255,.35);font-weight:600">⚡ Instant QR</span></div>';
           html+='</div>';
 
           html+='</div>';
