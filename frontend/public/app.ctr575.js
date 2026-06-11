@@ -1080,11 +1080,11 @@ function SearchPage(){
         html+='.tt-tour-badge{position:absolute;top:60px;right:12px;background:rgba(0,0,0,.5);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);color:#fff;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:700;z-index:10;display:flex;align-items:center;gap:5px}';
         html+='.tt-tour-play{width:0;height:0;border-left:7px solid #fff;border-top:4px solid transparent;border-bottom:4px solid transparent}';
         /* Action buttons (right side, TikTok style) */
-        html+='.tt-actions{position:absolute;right:10px;top:65px;display:flex;flex-direction:column;gap:14px;z-index:15;align-items:center}';
+        html+='.tt-actions{position:absolute;right:10px;top:65px;display:flex;flex-direction:column;gap:6px;z-index:15;align-items:center}';
         html+='.tt-action{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;-webkit-tap-highlight-color:transparent}';
-        html+='.tt-action-btn{width:52px;height:52px;background:rgba(255,255,255,.15);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;border:1px solid rgba(255,255,255,.1);transition:all .15s}';
-        html+='.tt-action-btn:active{transform:scale(.9);background:rgba(255,255,255,.2)}';
-        html+='.tt-action-label{color:rgba(255,255,255,.75);font-size:10px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.5)}';
+        html+='.tt-action-btn{width:44px;height:44px;background:transparent;border:none;border-radius:0;display:flex;align-items:center;justify-content:center;font-size:24px;transition:all .15s;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5))}';
+        html+='.tt-action-btn:active{transform:scale(.85)}';
+        html+='.tt-action-label{display:none}';
         /* Bottom info overlay */
         html+='.tt-info{position:absolute;bottom:0;left:0;right:0;padding:0 14px 8px;z-index:15;pointer-events:none}';
         html+='.tt-info>*{pointer-events:auto}';
@@ -1161,11 +1161,14 @@ function SearchPage(){
 
           /* Action buttons (right side) */
           html+='<div class="tt-actions">';
-          html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'reviews\')"><div class="tt-action-btn">\u2B50</div><div class="tt-action-label">'+c.rating+'</div></div>';
-          html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'hours\')"><div class="tt-action-btn">\u{1F550}</div><div class="tt-action-label">'+(c.isOpen?'Open':'Closed')+'</div></div>';
-          html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'facilities\')"><div class="tt-action-btn">\u{1F3CA}</div><div class="tt-action-label">Facilities</div></div>';
-          html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'equipment\')"><div class="tt-action-btn">\u{1F3CB}\uFE0F</div><div class="tt-action-label">Equipment</div></div>';
-          html+='<div class="tt-action" onclick="event.stopPropagation();window._ttShowMap&&window._ttShowMap()"><div class="tt-action-btn">\u{1F5FA}\uFE0F</div><div class="tt-action-label">Map</div></div>';
+          html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'reviews\')"><div class="tt-action-btn">\u2B50</div></div>';
+          html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'hours\')"><div class="tt-action-btn">\u{1F550}</div></div>';
+          html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'payment\')"><div class="tt-action-btn">\u{1F4B3}</div></div>';
+          html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'passes\')"><div class="tt-action-btn">\u{1F39F}\uFE0F</div></div>';
+          html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'hours\')"><div class="tt-action-btn">\u{1F4C5}</div></div>';
+          html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'facilities\')"><div class="tt-action-btn">\u{1F3CA}</div></div>';
+          html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'equipment\')"><div class="tt-action-btn">\u{1F3CB}\uFE0F</div></div>';
+          html+='<div class="tt-action" onclick="event.stopPropagation();window._ttShowMap&&window._ttShowMap()"><div class="tt-action-btn">\u{1F5FA}\uFE0F</div></div>';
           html+='</div>';
 
           /* Bottom info */
@@ -1276,9 +1279,9 @@ function GymProfilePage(){
     /* ═══ TikTok-style right side action icons (Pay, Passes, Calendar) ═══ */
     .gym-tt-actions{position:absolute;right:14px;top:16px;display:flex;flex-direction:column;gap:16px;z-index:5}
     .gym-tt-item{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;-webkit-tap-highlight-color:transparent}
-    .gym-tt-circle{width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.1);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 2px 8px rgba(0,0,0,.3);transition:transform .15s}
-    .gym-tt-circle:active{transform:scale(.9);background:rgba(255,255,255,.18)}
-    .gym-tt-text{font-size:10px;color:rgba(255,255,255,.65);font-weight:600}
+    .gym-tt-circle{width:44px;height:44px;border-radius:0;background:transparent;border:none;display:flex;align-items:center;justify-content:center;font-size:22px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.4));transition:transform .15s}
+    .gym-tt-circle:active{transform:scale(.85)}
+    .gym-tt-text{display:none}
     .gym-info-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
     .gym-info-meta span{font-size:13px;font-weight:600}
     /* Quick actions row (5 icon-button tabs — all fit in 1 row) */
