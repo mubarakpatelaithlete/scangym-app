@@ -3,17 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
-  <title>FlexSquad — ScanGym Creator Portal</title>
-  <meta name="description" content="Join FlexSquad. Post gym videos. Earn per booking. 440+ ready-to-post videos, pre-written captions, and your unique affiliate link.">
+  <title>ScanSquad — ScanGym Creator Portal</title>
+  <meta name="description" content="Join ScanSquad. Post gym videos. Earn per booking. 440+ ready-to-post videos, pre-written captions, and your unique affiliate link.">
   <meta name="theme-color" content="#050816">
   <link rel="icon" type="image/png" href="/reels/favicon.png">
   
   <!-- Open Graph -->
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="ScanGym">
-  <meta property="og:title" content="FlexSquad — Earn by Sharing Gym Content">
+  <meta property="og:title" content="ScanSquad — Earn by Sharing Gym Content">
   <meta property="og:description" content="Post gym videos. Earn per booking. 440+ ready-to-post videos with your affiliate link.">
-  <meta property="og:url" content="https://scangym.com/flexsquad">
+  <meta property="og:url" content="https://scangym.com/scansquad">
   
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
@@ -400,7 +400,7 @@
       } catch (e) {}
     }
 
-    // ── Join FlexSquad ──
+    // ── Join ScanSquad ──
     async function handleJoin(e) {
       e.preventDefault();
       const btn = document.getElementById('join-btn');
@@ -446,7 +446,7 @@
           }, 3000);
         } else {
           // If auth required, store user data locally for now
-          localStorage.setItem('flexsquad_pending', JSON.stringify(state.user));
+          localStorage.setItem('scansquad_pending', JSON.stringify(state.user));
           state.screen = 'success';
           render();
           setTimeout(() => {
@@ -456,7 +456,7 @@
         }
       } catch (err) {
         // Offline-friendly: store locally
-        localStorage.setItem('flexsquad_pending', JSON.stringify(state.user));
+        localStorage.setItem('scansquad_pending', JSON.stringify(state.user));
         state.screen = 'success';
         render();
         setTimeout(() => {
@@ -500,7 +500,7 @@
       if (window.opener || document.referrer.includes('/reels')) {
         window.history.back();
       } else if (window.parent !== window) {
-        window.parent.postMessage({ type: 'flexsquad-close' }, '*');
+        window.parent.postMessage({ type: 'scansquad-close' }, '*');
       } else {
         window.location.href = '/reels';
       }
@@ -519,7 +519,7 @@
           <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;">
             <div style="text-align:center;">
               <div style="font-size:48px;margin-bottom:12px;animation:pulse 1.5s infinite;">🚀</div>
-              <p style="color:var(--text-secondary);">Loading FlexSquad...</p>
+              <p style="color:var(--text-secondary);">Loading ScanSquad...</p>
             </div>
           </div>`;
         return;
@@ -545,13 +545,13 @@
       return `
         <div class="header">
           <button class="header-back" onclick="goBack()">←</button>
-          <div class="header-title">FlexSquad</div>
+          <div class="header-title">ScanSquad</div>
           <div class="header-spacer"></div>
         </div>
 
         <div class="join-hero fade-in">
           <div style="width:40px;height:40px;background:#FF6D00;border-radius:50%;box-shadow:0 0 14px rgba(255,109,0,.5);margin:0 auto 12px;"></div>
-          <h1>Join FlexSquad</h1>
+          <h1>Join ScanSquad</h1>
           <p>Post gym videos. Earn per booking.<br>440+ videos ready for you.</p>
         </div>
 
@@ -607,7 +607,7 @@
       return `
         <div class="success-screen fade-in">
           <div class="success-check">✓</div>
-          <h2>Welcome to FlexSquad! 🎉</h2>
+          <h2>Welcome to ScanSquad! 🎉</h2>
           <p>You're all set, ${name.split(' ')[0]}!</p>
           
           <div class="success-items">
@@ -709,7 +709,7 @@
 
         <!-- Tier Progress -->
         <div class="tier-section fade-in-delay">
-          <div class="tier-title">🏆 Your FlexSquad Tier</div>
+          <div class="tier-title">🏆 Your ScanSquad Tier</div>
           <div class="tier-item">
             <span class="tier-badge">🌱</span>
             <div class="tier-info">
@@ -777,7 +777,7 @@
 
     // ── Init ──
     // Check for pending signup data
-    const pending = localStorage.getItem('flexsquad_pending');
+    const pending = localStorage.getItem('scansquad_pending');
     if (pending) {
       try { state.user = JSON.parse(pending); } catch (e) {}
     }

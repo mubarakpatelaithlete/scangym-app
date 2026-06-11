@@ -1,7 +1,7 @@
 /**
  * ScanGym Shared Pricing Service
  * ═══════════════════════════════
- * Single source of truth for ALL pages (main app, reels, flexsquad, scansquad-dashboard).
+ * Single source of truth for ALL pages (main app, reels, scansquad, scansquad-dashboard).
  * Fetches localized prices from /api/pricing/prices with GBP fallback.
  *
  * Exposes:
