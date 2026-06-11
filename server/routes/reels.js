@@ -146,7 +146,7 @@ try {
 async function loadCatalogFromDB() {
   const result = await pool.query(
     `SELECT id, name, category, source, url, thumb, cdn_key, drive_id,
-            file_size, blurhash, orientation, width, height, dopamine_tier
+            file_size, blurhash, orientation, width, height, dopamine_tier, duration
      FROM video_catalog
      WHERE active = true
      ORDER BY id ASC`
@@ -166,6 +166,7 @@ async function loadCatalogFromDB() {
     width: row.width || 720,
     height: row.height || 1280,
     dopamineTier: row.dopamine_tier || 3,
+    duration: row.duration || null,
   }));
 }
 
@@ -251,6 +252,16 @@ router.get('/feed', async (req, res) => {
         const { applyCachedMetadata } = require('../lib/video-enrichment');
         applyCachedMetadata(feed, enrichmentCache);
       } catch {}
+    }
+
+    // 2c. M11 FIX: Inject poster URLs for videos that have generated posters
+    for (const v of feed) {
+      if (!v.posterUrl && v.cdnKey) {
+        const posterFile = getPosterPath(v.cdnKey);
+        if (posterFile) {
+          v.posterUrl = `/api/reels/poster/${v.cdnKey}`;
+        }
+      }
     }
 
     // 3. Filter by category if requested
@@ -668,23 +679,62 @@ router.get('/poster/:cdnKey', (req, res) => {
   res.sendFile(posterPath);
 });
 
-// M8 FIX: Poster generation now reads from DB catalog at startup
+// ═══════════════════════════════════════════════════════════
+//  M11 FIX: Combined startup pipeline — enrichment + posters
+//  Runs 30s after startup to let DB stabilize. Uses R2 API
+//  directly (bypasses CDN block). Writes metadata back to DB.
+// ═══════════════════════════════════════════════════════════
 setTimeout(async () => {
   try {
     const catalog = await loadCatalogFromDB();
-    generateAllPosters(catalog).catch(err => {
-      console.error('[Posters] Background generation failed:', err.message);
-    });
-  } catch (err) {
-    // Fallback to JSON if DB not ready yet
+    console.log(`[Startup Pipeline] ${catalog.length} videos in catalog`);
+
+    // Phase 1: Enrichment (fills fileSize, blurhash, orientation, duration)
     try {
-      const catalog = JSON.parse(
-        fs.readFileSync(path.join(__dirname, '..', 'data', 'reels-videos.json'), 'utf8')
-      );
-      generateAllPosters(catalog).catch(() => {});
-    } catch (e) {
-      console.error('[Posters] Could not load catalog:', e.message);
+      const { runEnrichment, loadCache } = require('../lib/video-enrichment');
+      const cache = await runEnrichment(catalog);
+      enrichmentCache = cache;
+
+      // Write enriched metadata back to DB for persistence
+      for (const video of catalog) {
+        const key = String(video.id || video.cdnKey || video.url);
+        const cached = cache[key];
+        if (!cached) continue;
+
+        const updates = [];
+        const values = [];
+        let idx = 1;
+
+        if (cached.fileSize && !video.fileSize) { updates.push(`file_size = $${idx++}`); values.push(cached.fileSize); }
+        if (cached.blurhash && !video.blurhash) { updates.push(`blurhash = $${idx++}`); values.push(cached.blurhash); }
+        if (cached.orientation && !video.orientation) { updates.push(`orientation = $${idx++}`); values.push(cached.orientation); }
+        if (cached.width && (!video.width || video.width === 720)) { updates.push(`width = $${idx++}`); values.push(cached.width); }
+        if (cached.height && (!video.height || video.height === 1280)) { updates.push(`height = $${idx++}`); values.push(cached.height); }
+        if (cached.duration && !video.duration) { updates.push(`duration = $${idx++}`); values.push(cached.duration); }
+
+        if (updates.length > 0 && video.id) {
+          values.push(video.id);
+          await pool.query(
+            `UPDATE video_catalog SET ${updates.join(', ')} WHERE id = $${idx}`,
+            values
+          ).catch(() => {});
+        }
+      }
+      console.log('[Startup Pipeline] Enrichment complete, DB updated');
+    } catch (err) {
+      console.error('[Startup Pipeline] Enrichment error:', err.message);
     }
+
+    // Phase 2: Poster generation (extracts first frame as JPEG via R2)
+    try {
+      await generateAllPosters(catalog);
+    } catch (err) {
+      console.error('[Startup Pipeline] Poster generation error:', err.message);
+    }
+
+    console.log('[Startup Pipeline] Complete ✅');
+  } catch (err) {
+    console.error('[Startup Pipeline] Failed to load catalog:', err.message);
   }
 }, 30000);
 

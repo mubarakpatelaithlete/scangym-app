@@ -1,19 +1,24 @@
 /**
- * Poster frame generator — extracts first frame from CDN videos as JPEG thumbnails.
- * Runs at startup to pre-generate poster frames for all catalog videos.
- * Stores poster JPEGs in server/data/posters/ directory.
- * Serves poster frames via /api/reels/poster/:cdnKey endpoint.
+ * Poster frame generator — extracts first frame from R2 videos as JPEG thumbnails.
+ *
+ * M11 FIX: Rewritten to use R2 API directly (S3 GetObjectCommand) instead of
+ * fetching from cdn.scangym.com which is inaccessible from Railway containers.
+ * Posters now stored on Railway persistent volume (/data/posters/) so they
+ * survive container redeploys.
+ *
+ * Flow:  R2 (first 3 MB) → local temp → ffmpeg extract frame → JPEG poster
  */
 const { execFile } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const https = require('https');
-const http = require('http');
 
-const POSTER_DIR = path.join(__dirname, '..', 'data', 'posters');
-const CDN_BASE = 'https://cdn.scangym.com/videos';
-const POSTER_WIDTH = 360; // enough for blur-up effect
-const POSTER_QUALITY = 60; // JPEG quality — small file size
+// ── Storage: persistent volume first, fallback to in-container ──
+const POSTER_DIR = fs.existsSync('/data')
+  ? '/data/posters'
+  : path.join(__dirname, '..', 'data', 'posters');
+
+const POSTER_WIDTH = 360;   // enough for blur-up effect
+const POSTER_QUALITY = 60;  // JPEG quality — small file size
 
 // Ensure poster directory exists
 if (!fs.existsSync(POSTER_DIR)) {
@@ -21,62 +26,88 @@ if (!fs.existsSync(POSTER_DIR)) {
 }
 
 /**
- * Generate a poster frame for a single video
+ * Generate a poster frame for a single video via R2 download.
  * @param {string} cdnKey - The CDN key (filename without .mp4)
  * @returns {Promise<string>} Path to generated poster JPEG
  */
-function generatePoster(cdnKey) {
-  return new Promise((resolve, reject) => {
-    const posterPath = path.join(POSTER_DIR, cdnKey + '.jpg');
-    
-    // Skip if already generated
-    if (fs.existsSync(posterPath)) {
-      return resolve(posterPath);
-    }
+async function generatePoster(cdnKey) {
+  const posterPath = path.join(POSTER_DIR, cdnKey + '.jpg');
 
-    const videoUrl = `${CDN_BASE}/${cdnKey}.mp4`;
-    
-    // Use ffmpeg to extract first frame from remote URL
-    // -ss 0.5 = seek to 0.5s (skip black intro frames)
-    // -vframes 1 = extract 1 frame
-    // -vf scale = resize to poster width
-    // -q:v = JPEG quality (2-31, lower=better, 5 is good balance)
+  // Skip if already generated
+  if (fs.existsSync(posterPath) && fs.statSync(posterPath).size > 100) {
+    return posterPath;
+  }
+
+  // Download first 3 MB from R2 (enough for first frame extraction)
+  const { downloadFromR2, cdnKeyToR2Key } = require('./r2-download');
+  const r2Key = cdnKeyToR2Key(cdnKey);
+  const tmpVideo = path.join(POSTER_DIR, `_tmp_${cdnKey}.mp4`);
+
+  try {
+    await downloadFromR2(r2Key, tmpVideo, { rangeBytes: 3 * 1024 * 1024 });
+  } catch (err) {
+    // Clean up partial download
+    try { fs.unlinkSync(tmpVideo); } catch {}
+    throw new Error(`R2 download failed for ${cdnKey}: ${err.message}`);
+  }
+
+  // Extract first frame with ffmpeg
+  try {
+    await extractFrameFromFile(tmpVideo, posterPath);
+  } finally {
+    // Always clean up temp video
+    try { fs.unlinkSync(tmpVideo); } catch {}
+  }
+
+  return posterPath;
+}
+
+/**
+ * Run ffmpeg to extract a frame from a local video file.
+ */
+function extractFrameFromFile(videoPath, outputPath) {
+  return new Promise((resolve, reject) => {
     const args = [
       '-ss', '0.5',
-      '-i', videoUrl,
+      '-i', videoPath,
       '-vframes', '1',
       '-vf', `scale=${POSTER_WIDTH}:-1`,
       '-q:v', '5',
       '-y',
-      posterPath
+      outputPath,
     ];
 
-    execFile('ffmpeg', args, { timeout: 15000 }, (err, stdout, stderr) => {
+    execFile('ffmpeg', args, { timeout: 15000 }, (err) => {
       if (err) {
-        // Try at 0.1s if 0.5s fails (short video)
+        // Retry at 0.1s (short video might not have 0.5s)
         const args2 = [
           '-ss', '0.1',
-          '-i', videoUrl,
+          '-i', videoPath,
           '-vframes', '1',
           '-vf', `scale=${POSTER_WIDTH}:-1`,
           '-q:v', '5',
           '-y',
-          posterPath
+          outputPath,
         ];
         execFile('ffmpeg', args2, { timeout: 15000 }, (err2) => {
           if (err2) return reject(err2);
-          resolve(posterPath);
+          if (!fs.existsSync(outputPath) || fs.statSync(outputPath).size < 100) {
+            return reject(new Error('ffmpeg produced empty output'));
+          }
+          resolve(outputPath);
         });
         return;
       }
-      resolve(posterPath);
+      if (!fs.existsSync(outputPath) || fs.statSync(outputPath).size < 100) {
+        return reject(new Error('ffmpeg produced empty output'));
+      }
+      resolve(outputPath);
     });
   });
 }
 
 /**
- * Generate poster frames for all videos in batch
- * Runs concurrently with limited parallelism to avoid overload
+ * Generate poster frames for all videos in batch.
  * @param {Array} videos - Array of video objects with cdnKey field
  */
 async function generateAllPosters(videos) {
@@ -85,43 +116,52 @@ async function generateAllPosters(videos) {
     .map(v => v.cdnKey);
 
   // Count existing
-  const existing = cdnKeys.filter(k => fs.existsSync(path.join(POSTER_DIR, k + '.jpg')));
-  const needed = cdnKeys.filter(k => !fs.existsSync(path.join(POSTER_DIR, k + '.jpg')));
-  
-  console.log(`[Posters] ${existing.length} already exist, ${needed.length} to generate`);
-  
+  const existing = cdnKeys.filter(k =>
+    fs.existsSync(path.join(POSTER_DIR, k + '.jpg')) &&
+    fs.statSync(path.join(POSTER_DIR, k + '.jpg')).size > 100
+  );
+  const needed = cdnKeys.filter(k =>
+    !fs.existsSync(path.join(POSTER_DIR, k + '.jpg')) ||
+    fs.statSync(path.join(POSTER_DIR, k + '.jpg')).size < 100
+  );
+
+  console.log(`[Posters] ${existing.length} already exist, ${needed.length} to generate (stored in ${POSTER_DIR})`);
+
   if (needed.length === 0) return;
 
-  // Process in batches of 5 (don't overload ffmpeg)
-  const BATCH_SIZE = 5;
+  // Process in batches of 3 (R2 downloads + ffmpeg — don't overload)
+  const BATCH_SIZE = 3;
   let done = 0;
   let failed = 0;
-  
+
   for (let i = 0; i < needed.length; i += BATCH_SIZE) {
     const batch = needed.slice(i, i + BATCH_SIZE);
     const results = await Promise.allSettled(
       batch.map(key => generatePoster(key))
     );
-    
+
     for (const r of results) {
       if (r.status === 'fulfilled') done++;
-      else { failed++; }
+      else {
+        failed++;
+        console.warn(`[Posters] Failed: ${r.reason?.message || 'unknown'}`);
+      }
     }
-    
-    if ((done + failed) % 25 === 0 || i + BATCH_SIZE >= needed.length) {
+
+    if ((done + failed) % 15 === 0 || i + BATCH_SIZE >= needed.length) {
       console.log(`[Posters] Progress: ${done}/${needed.length} generated (${failed} failed)`);
     }
   }
-  
+
   console.log(`[Posters] Complete: ${done} generated, ${failed} failed`);
 }
 
 /**
- * Get poster path for a cdnKey (returns null if not generated yet)
+ * Get poster path for a cdnKey (returns null if not generated yet).
  */
 function getPosterPath(cdnKey) {
   const p = path.join(POSTER_DIR, cdnKey + '.jpg');
-  return fs.existsSync(p) ? p : null;
+  return (fs.existsSync(p) && fs.statSync(p).size > 100) ? p : null;
 }
 
 module.exports = { generatePoster, generateAllPosters, getPosterPath, POSTER_DIR };
