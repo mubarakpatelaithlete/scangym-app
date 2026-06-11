@@ -1,10 +1,10 @@
 # Exclude large media files from Docker build (serve from CDN later)
 # Videos: 326MB — too large for Railway container
-frontend/public/assets/flexsquad/videos/
+frontend/public/assets/scansquad/videos/
 
 # Large image directories (keep creator_assets + thumbs which are used on-page)
-frontend/public/assets/flexsquad/images/city_promos/
-frontend/public/assets/flexsquad/images/story_templates/
+frontend/public/assets/scansquad/images/city_promos/
+frontend/public/assets/scansquad/images/story_templates/
 
 # Git and misc
 .git
