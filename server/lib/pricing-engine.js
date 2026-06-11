@@ -404,10 +404,76 @@ function getDayPassPrice(countryCode) {
   return calculatePrice({ countryCode, passType: 'day' });
 }
 
+/**
+ * C6 FIX: Calculate price respecting owner-set gym prices.
+ *
+ * If the gym owner has set a custom day_pass_price (stored in GBP in the DB),
+ * use that as the base instead of £4.49. Currency conversion still applies
+ * (GBP → local via FX), but PPP is skipped since the owner chose the price.
+ *
+ * @param {Object} params
+ * @param {number|null} params.gymDayPassPrice - Owner-set price in GBP (from gyms.day_pass_price), or null/0 for default
+ * @param {string}      params.countryCode     - Gym's country (ISO alpha-2)
+ * @param {string}      [params.passType]      - 'day' | '3day' | 'weekly' | 'monthly'
+ * @returns {Object} { amount, currency, symbol, display, stripeAmount, countryCode, passType, source }
+ */
+function calculateGymPrice({ gymDayPassPrice, countryCode = 'GB', passType = 'day' } = {}) {
+  // No owner price → standard PPP calculation
+  if (!gymDayPassPrice || gymDayPassPrice <= 0) {
+    const result = calculatePrice({ countryCode, passType });
+    result.source = 'ppp_default';
+    return result;
+  }
+
+  // Owner set a price — use it as the GBP base
+  const cc = (countryCode || 'GB').toUpperCase();
+  const country = COUNTRY_PRICING[cc] || COUNTRY_PRICING.GB;
+  const passMultiplier = PASS_MULTIPLIERS[passType] || 1.0;
+
+  // Convert owner's GBP price to local currency (skip PPP — owner chose this price)
+  const baseInUSD = gymDayPassPrice / COUNTRY_PRICING.GB.fxRate;
+  const rawPrice = baseInUSD * country.fxRate * passMultiplier;
+
+  const finalPrice = charmPrice(rawPrice, country.currencyCode);
+  const stripeAmount = toStripeAmount(finalPrice, country.currencyCode);
+
+  let displayPrice;
+  if (ZERO_DECIMAL_CURRENCIES.has(country.currencyCode) || finalPrice >= 1000) {
+    displayPrice = `${country.symbol}${Math.round(finalPrice).toLocaleString()}`;
+  } else {
+    displayPrice = `${country.symbol}${finalPrice.toFixed(2)}`;
+  }
+
+  return {
+    amount: finalPrice,
+    currency: country.currencyCode,
+    symbol: country.symbol,
+    display: displayPrice,
+    stripeAmount,
+    countryCode: cc,
+    passType,
+    source: 'owner_price',
+  };
+}
+
+/**
+ * C6 FIX: Get all pass prices respecting owner-set gym price.
+ */
+function getAllGymPassPrices({ gymDayPassPrice, countryCode = 'GB' } = {}) {
+  const passTypes = ['day', '3day', 'weekly', 'monthly'];
+  const result = {};
+  for (const pt of passTypes) {
+    result[pt] = calculateGymPrice({ gymDayPassPrice, countryCode, passType: pt });
+  }
+  return result;
+}
+
 // ============================================================================
 module.exports = {
   calculatePrice,
+  calculateGymPrice,
   getAllPassPrices,
+  getAllGymPassPrices,
   getStripePriceId,
   buildStripeLineItem,
   getCurrencyForCountry,

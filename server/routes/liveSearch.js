@@ -16,7 +16,7 @@ const router = express.Router();
 const pool = require('../middleware/db');
 const { optionalAuth, authenticateUser } = require('../middleware/auth');
 
-const { getCurrencyForCountry, getDayPassPrice } = require('../lib/pricing-engine');
+const { getCurrencyForCountry, getDayPassPrice, calculateGymPrice } = require('../lib/pricing-engine');
 
 const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
 const BASE_URL = 'https://maps.googleapis.com/maps/api/place';
@@ -151,6 +151,49 @@ function extractCity(address) {
   return parts[0] || '';
 }
 
+// ─── C6 fix: Enrich Google Places gyms with owner-set DB prices ──────────
+// Batch-lookup place_ids against our DB. If a gym owner has set a custom
+// day_pass_price, override the default PPP price in the API response.
+async function enrichGymsWithDbPrices(gyms) {
+  if (!gyms || gyms.length === 0) return gyms;
+  try {
+    const placeIds = gyms.map(g => g.placeId || g.id).filter(Boolean);
+    if (placeIds.length === 0) return gyms;
+
+    const result = await pool.query(
+      'SELECT place_id, day_pass_price FROM gyms WHERE place_id = ANY($1) AND day_pass_price IS NOT NULL AND day_pass_price > 0',
+      [placeIds]
+    );
+
+    if (result.rows.length === 0) return gyms;
+
+    // Build lookup map
+    const priceMap = {};
+    for (const row of result.rows) {
+      priceMap[row.place_id] = parseFloat(row.day_pass_price);
+    }
+
+    // Override prices for gyms with owner-set pricing
+    for (const gym of gyms) {
+      const pid = gym.placeId || gym.id;
+      const ownerPrice = priceMap[pid];
+      if (ownerPrice && ownerPrice > 0) {
+        const gymPrice = calculateGymPrice({
+          gymDayPassPrice: ownerPrice,
+          countryCode: gym.country || 'GB',
+          passType: 'day',
+        });
+        gym.dayPassPrice = gymPrice.amount;
+        gym.priceSource = 'owner_price';
+      }
+    }
+  } catch (e) {
+    // DB lookup failed — keep default PPP prices (non-critical)
+    console.error('[C6 enrichGymsWithDbPrices] DB lookup error:', e.message);
+  }
+  return gyms;
+}
+
 // ═══════════════════════════════════════════════════════════════
 // GET /api/live/search — Live Text Search via Google Places
 // Query: ?q=gym+in+London&pagetoken=xxx
@@ -255,6 +298,9 @@ router.get('/search', async (req, res) => {
       .filter(p => p.business_status !== 'CLOSED_PERMANENTLY')
       .map(parseSearchResult);
 
+    // C6 fix: Enrich with owner-set DB prices
+    await enrichGymsWithDbPrices(gyms);
+
     const result = {
       gyms,
       total: gyms.length,
@@ -314,6 +360,9 @@ router.get('/nearby', async (req, res) => {
     const gyms = (data.results || [])
       .filter(p => p.business_status !== 'CLOSED_PERMANENTLY')
       .map(parseSearchResult);
+
+    // C6 fix: Enrich with owner-set DB prices
+    await enrichGymsWithDbPrices(gyms);
 
     // Calculate distance from search point
     if (lat && lng) {
@@ -419,10 +468,15 @@ router.get('/place/:placeId', optionalAuth, async (req, res) => {
         isClaimed: dbGym?.is_claimed || false,
       },
       pricing: {
-        // v4.0: Flat £4.49 base, PPP + currency by gym country
-        dayPassPrice: getDayPassPrice(gymCountry).amount,
+        // C6 fix: Use owner-set price if available, otherwise PPP default
+        dayPassPrice: calculateGymPrice({
+          gymDayPassPrice: dbGym?.day_pass_price,
+          countryCode: gymCountry,
+          passType: 'day',
+        }).amount,
         currency: gymCurrency.currency.toUpperCase(),
         currencySymbol: gymCurrency.symbol,
+        source: (dbGym?.day_pass_price > 0) ? 'owner_price' : 'ppp_default',
       },
       rating: {
         google: p.rating || null,
