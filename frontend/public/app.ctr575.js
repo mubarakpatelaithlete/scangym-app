@@ -1238,12 +1238,12 @@ function GymProfilePage(){
   const rating=gym.rating||'4.5';
   const reviewCount=gym.user_ratings_total||gym.totalReviews||47;
   const isOpen=gym.opening_hours?.isOpen;
-  // C6 fix: Use gym-specific price if owner set one, otherwise global PPP
-  const _gymOwnerPrice=(gym.pricing&&gym.pricing.dayPassPrice>0&&gym.pricing.source==='owner_price')?gym.pricing.dayPassPrice:((gym.dayPassPrice&&gym.dayPassPrice>0&&gym.priceSource==='owner_price')?gym.dayPassPrice:null);
+  // C7 fix: Always use gym's currency/price (from gym's country), never visitor's
+  const _gymPrice=(gym.pricing&&gym.pricing.dayPassPrice>0)?gym.pricing.dayPassPrice:((gym.dayPassPrice&&gym.dayPassPrice>0)?gym.dayPassPrice:null);
   const _sym=(gym.pricing&&gym.pricing.currencySymbol)||gym.currencySymbol||sgSymbol();
-  const _dayP=_gymOwnerPrice?{amount:_gymOwnerPrice,display:_sym+_gymOwnerPrice.toFixed(2)}:sgPrice('day');
-  const _3dayP=_gymOwnerPrice?{amount:parseFloat((_gymOwnerPrice*2.67).toFixed(2)),display:_sym+(_gymOwnerPrice*2.67).toFixed(2)}:sgPrice('3day');
-  const _weekP=_gymOwnerPrice?{amount:parseFloat((_gymOwnerPrice*5).toFixed(2)),display:_sym+(_gymOwnerPrice*5).toFixed(2)}:sgPrice('weekly');
+  const _dayP=_gymPrice?{amount:_gymPrice,display:_sym+_gymPrice.toFixed(2)}:sgPrice('day');
+  const _3dayP=_gymPrice?{amount:parseFloat((_gymPrice*2.67).toFixed(2)),display:_sym+(_gymPrice*2.67).toFixed(2)}:sgPrice('3day');
+  const _weekP=_gymPrice?{amount:parseFloat((_gymPrice*5).toFixed(2)),display:_sym+(_gymPrice*5).toFixed(2)}:sgPrice('weekly');
   const currentPrice=_dayP.display;
   const threeDayPrice=_3dayP.display;
   const weeklyPrice=_weekP.display;
@@ -1603,8 +1603,8 @@ function GymProfilePage(){
         <div class="gym-pass-card" onclick="selectGymPassCard(this,3,'${gymId}')" data-pass="monthly">
           <div class="gym-pass-card-badge" style="background:#f59e0b">👑 BEST VALUE</div>
           <div class="gym-pass-card-top"><div class="gym-pass-card-icon">🏆</div><span class="gym-pass-card-name">Monthly</span></div>
-          <div class="gym-pass-price">${_gymOwnerPrice?_sym+(_gymOwnerPrice*10).toFixed(2):sgPrice('monthly').display}</div>
-          <div class="gym-pass-perday">${_sym}${(_gymOwnerPrice?(_gymOwnerPrice*10/30):sgPrice('monthly').amount/30).toFixed(2)}/day</div>
+          <div class="gym-pass-price">${_gymPrice?_sym+(_gymPrice*10).toFixed(2):sgPrice('monthly').display}</div>
+          <div class="gym-pass-perday">${_sym}${(_gymPrice?(_gymPrice*10/30):sgPrice('monthly').amount/30).toFixed(2)}/day</div>
           <div class="gym-pass-save">Save 67%</div>
         </div>
       </div>
@@ -1916,14 +1916,14 @@ window.openGymOverlay=function(section){
   }
   else if(section==='passes'){
     title.innerHTML='🎟️ Passes';
-    // C6 fix: Use gym-specific pricing if available
+    // C7 fix: Always use gym's currency/price, never visitor's
     const _ovGym=state.currentGym;
-    const _ovOwnerP=(_ovGym&&_ovGym.pricing&&_ovGym.pricing.source==='owner_price')?_ovGym.pricing.dayPassPrice:((_ovGym&&_ovGym.priceSource==='owner_price')?_ovGym.dayPassPrice:null);
+    const _ovGymP=(_ovGym&&_ovGym.pricing&&_ovGym.pricing.dayPassPrice>0)?_ovGym.pricing.dayPassPrice:((_ovGym&&_ovGym.dayPassPrice&&_ovGym.dayPassPrice>0)?_ovGym.dayPassPrice:null);
     const _sym=(_ovGym&&_ovGym.pricing&&_ovGym.pricing.currencySymbol)||(_ovGym&&_ovGym.currencySymbol)||sgSymbol();
-    const dayP=_ovOwnerP?{amount:_ovOwnerP,display:_sym+_ovOwnerP.toFixed(2)}:sgPrice('day');
-    const threeDayP=_ovOwnerP?{amount:parseFloat((_ovOwnerP*2.67).toFixed(2)),display:_sym+(_ovOwnerP*2.67).toFixed(2)}:sgPrice('3day');
-    const weeklyP=_ovOwnerP?{amount:parseFloat((_ovOwnerP*5).toFixed(2)),display:_sym+(_ovOwnerP*5).toFixed(2)}:sgPrice('weekly');
-    const monthlyP=_ovOwnerP?{amount:parseFloat((_ovOwnerP*10).toFixed(2)),display:_sym+(_ovOwnerP*10).toFixed(2)}:sgPrice('monthly');
+    const dayP=_ovGymP?{amount:_ovGymP,display:_sym+_ovGymP.toFixed(2)}:sgPrice('day');
+    const threeDayP=_ovGymP?{amount:parseFloat((_ovGymP*2.67).toFixed(2)),display:_sym+(_ovGymP*2.67).toFixed(2)}:sgPrice('3day');
+    const weeklyP=_ovGymP?{amount:parseFloat((_ovGymP*5).toFixed(2)),display:_sym+(_ovGymP*5).toFixed(2)}:sgPrice('weekly');
+    const monthlyP=_ovGymP?{amount:parseFloat((_ovGymP*10).toFixed(2)),display:_sym+(_ovGymP*10).toFixed(2)}:sgPrice('monthly');
     const gymId=gym.placeId||gym.place_id||gym.id;
     body.innerHTML=`
       <div style="margin-bottom:20px;text-align:center">
@@ -2076,13 +2076,13 @@ window.overlaySelectPass=function(el,idx,gymId){
   window._gymBookingState.selectedPass=sel;
   window._gymBookingState.passName=passNames[idx]||'Day Pass';
   window._gymBookingState.passIcon=passIcons[idx]||'⚡';
-  // C6 fix: Use gym-specific price for sticky button if owner set one
+  // C7 fix: Always use gym's currency/price for sticky button
   const _passKey=sel==='week'?'weekly':sel;
   const _cGym=state.currentGym;
-  const _ownerP=(_cGym&&_cGym.pricing&&_cGym.pricing.source==='owner_price')?_cGym.pricing.dayPassPrice:((_cGym&&_cGym.priceSource==='owner_price')?_cGym.dayPassPrice:null);
+  const _sGymP=(_cGym&&_cGym.pricing&&_cGym.pricing.dayPassPrice>0)?_cGym.pricing.dayPassPrice:((_cGym&&_cGym.dayPassPrice&&_cGym.dayPassPrice>0)?_cGym.dayPassPrice:null);
   const _mults={day:1,'3day':2.67,weekly:5,monthly:10};
   const _gSym=(_cGym&&_cGym.pricing&&_cGym.pricing.currencySymbol)||(_cGym&&_cGym.currencySymbol)||sgSymbol();
-  const price=_ownerP?{display:_gSym+(_ownerP*(_mults[_passKey]||1)).toFixed(2)}:sgPrice(_passKey);
+  const price=_sGymP?{display:_gSym+(_sGymP*(_mults[_passKey]||1)).toFixed(2)}:sgPrice(_passKey);
   const stickyBtn=document.getElementById('gym-sticky-book');
   if(stickyBtn)stickyBtn.textContent=passIcons[idx]+' Book '+passNames[idx]+' · '+price.display;
 };
@@ -5656,8 +5656,8 @@ window.showGymDiscovery=function(){
     const openTag=isOpen?(cTime?'● Open':'● Open'):'● Closed';
     const openClass=isOpen?'gd-tag-open':'gd-tag-closed';
     const isPop=isTopGym(gym);
-    // C6 fix: Use gym-specific price if owner set one, otherwise PPP default
-    const price=(gym.dayPassPrice&&gym.dayPassPrice>0&&gym.priceSource==='owner_price')?(gym.currencySymbol||sgSymbol())+gym.dayPassPrice.toFixed(2):dayP.display;
+    // C7 fix: Always use gym's currency/price (from gym's country), never visitor's
+    const price=(gym.dayPassPrice&&gym.dayPassPrice>0)?(gym.currencySymbol||sgSymbol())+gym.dayPassPrice.toFixed(2):dayP.display;
     const pos=pinPos(i,gyms.length);
     return{id,gym,photo,allPhotos,photoCount,dist,distMin,facs,rating,reviews,addr,isOpen,openText,openTag,openClass,isPop,price,pos,name:gym.name||'Gym',i};
   });
