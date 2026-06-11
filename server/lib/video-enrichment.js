@@ -53,7 +53,8 @@ async function downloadVideoForEnrichment(video, outputPath, bytes) {
   if (r2Download && video.cdnKey) {
     try {
       const r2Key = r2Download.cdnKeyToR2Key(video.cdnKey);
-      await r2Download.downloadFromR2(r2Key, outputPath, { rangeBytes: bytes });
+      const opts = bytes ? { rangeBytes: bytes } : {};
+      await r2Download.downloadFromR2(r2Key, outputPath, opts);
       return true;
     } catch (err) {
       // Fall through to HTTP
@@ -62,7 +63,7 @@ async function downloadVideoForEnrichment(video, outputPath, bytes) {
 
   // Strategy 2: HTTP download (fallback for non-CDN videos)
   if (video.url) {
-    return downloadRangeHTTP(video.url, outputPath, bytes);
+    return downloadRangeHTTP(video.url, outputPath, bytes || 0);
   }
 
   return false;
@@ -76,9 +77,10 @@ function downloadRangeHTTP(url, outputPath, bytes = 3 * 1024 * 1024) {
   const http = require('http');
   return new Promise((resolve) => {
     const mod = url.startsWith('https') ? https : http;
+    const headers = bytes > 0 ? { Range: `bytes=0-${bytes - 1}` } : {};
     const req = mod.get(url, {
-      headers: { Range: `bytes=0-${bytes - 1}` },
-      timeout: 30000,
+      headers,
+      timeout: 60000,
     }, (res) => {
       const ws = fs.createWriteStream(outputPath);
       res.pipe(ws);
@@ -250,17 +252,24 @@ async function enrichVideo(video, index) {
     if (size) meta.fileSize = size;
   }
 
-  // 2. Download partial video for ffmpeg analysis
+  // 2. Download video for ffmpeg analysis — try 4 MB partial, retry full on failure
   const needsMediaAnalysis = !video.blurhash || !video.width || !video.duration;
   if (needsMediaAnalysis && hasFfmpeg()) {
     const tmpVideo = path.join(TEMP_DIR, `enrich_${index}.mp4`);
     const tmpFrame = path.join(TEMP_DIR, `enrich_${index}.png`);
 
-    try {
-      const downloaded = await downloadVideoForEnrichment(video, tmpVideo, 4 * 1024 * 1024);
-      if (downloaded) {
+    const downloadSizes = [4 * 1024 * 1024, null]; // 4 MB partial, then full file
+
+    for (const bytes of downloadSizes) {
+      try { fs.unlinkSync(tmpVideo); } catch {}
+      try { fs.unlinkSync(tmpFrame); } catch {}
+
+      try {
+        const downloaded = await downloadVideoForEnrichment(video, tmpVideo, bytes);
+        if (!downloaded) break;
+
         // Get dimensions
-        if (!video.width) {
+        if (!video.width && !meta.width) {
           const dims = getVideoDimensions(tmpVideo);
           if (dims) {
             meta.width = dims.width;
@@ -270,25 +279,37 @@ async function enrichVideo(video, index) {
           }
         }
 
-        // M11 FIX: Extract duration (new — was missing for all 115 videos)
-        if (!video.duration) {
+        // Extract duration
+        if (!video.duration && !meta.duration) {
           const dur = getVideoDuration(tmpVideo);
           if (dur) meta.duration = dur;
         }
 
         // Generate blurhash
-        if (!video.blurhash) {
+        if (!video.blurhash && !meta.blurhash) {
           const extracted = extractFrame(tmpVideo, tmpFrame);
           if (extracted) {
             const bh = await generateBlurhash(tmpFrame);
             if (bh) meta.blurhash = bh;
           }
         }
+
+        // If we got everything we need, stop
+        const gotAll = (video.width || meta.width)
+          && (video.duration || meta.duration)
+          && (video.blurhash || meta.blurhash);
+        if (gotAll) break;
+
+        // If partial download and still missing data, retry with full file
+        if (bytes !== null) continue;
+      } catch {
+        if (bytes !== null) continue; // try full download
       }
-    } finally {
-      try { fs.unlinkSync(tmpVideo); } catch {}
-      try { fs.unlinkSync(tmpFrame); } catch {}
     }
+
+    // Clean up
+    try { fs.unlinkSync(tmpVideo); } catch {}
+    try { fs.unlinkSync(tmpFrame); } catch {}
   }
 
   // 3. Orientation from existing dimensions or filename hints
