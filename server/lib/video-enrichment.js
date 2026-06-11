@@ -1,7 +1,7 @@
 /**
  * Video Enrichment — Permanent auto-enrichment pipeline
  * 
- * On server startup, scans the static video catalog and auto-generated reels
+ * On server startup, scans the static video catalog
  * for any entries missing metadata (fileSize, blurhash, orientation, width, height).
  * 
  * Enriched data is cached in /data/reels-metadata-cache.json (persistent volume)
@@ -221,7 +221,7 @@ async function enrichVideo(video, index) {
  * Main enrichment runner. Call on server startup.
  * Scans videos, enriches missing metadata, caches results.
  */
-async function runEnrichment(staticVideos, autoVideos = []) {
+async function runEnrichment(staticVideos) {
   console.log('video-enrichment: starting...');
   
   // Ensure temp dir
@@ -237,7 +237,6 @@ async function runEnrichment(staticVideos, autoVideos = []) {
 
   const allVideos = [
     ...staticVideos.map(v => ({ ...v, _source: 'static' })),
-    ...autoVideos.map(v => ({ ...v, _source: 'auto' })),
   ];
 
   for (let i = 0; i < allVideos.length; i++) {

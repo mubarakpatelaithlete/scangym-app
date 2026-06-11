@@ -16,7 +16,6 @@ const ownerRouter = require('./routes/owner');
 const statsRouter = require('./routes/stats');
 const creatorsRouter = require('./routes/creators');
 const reelsRouter = require('./routes/reels');
-const autoReelsRouter = require('./routes/autoReels');
 const ingestRouter = require('./routes/ingest');
 // M12 FIX: videoProxy.js removed — all 115 videos now use CDN directly, zero Drive videos remain
 // const videoProxyRouter = require('./routes/videoProxy');
@@ -264,9 +263,6 @@ const apiPaths = [
 ];
 apiPaths.forEach(p => app.use(p, express.json()));
 
-// Auto-reel upload needs larger body limit (base64 videos up to 10MB)
-app.use('/api/reels/auto-upload', express.json({ limit: '15mb' }));
-
 // -- Health check (Railway uses this for deploy validation) --
 app.get('/health', (req, res) => res.status(200).send('ok'));
 app.get('/api/v2/health', (req, res) => {
@@ -312,7 +308,6 @@ app.use('/api/owner', ownerRouter);
 app.use('/api/stats', statsRouter);
 app.use('/api/creators', creatorsRouter);
 app.use('/api/reels', reelsRouter);
-app.use('/api/reels', autoReelsRouter);
 app.use('/api/reels/admin/ingest', ingestRouter);
 // M12 FIX: video proxy removed — CDN serves directly, no middleman needed
 // app.use('/api/video-proxy', videoProxyRouter);
@@ -508,14 +503,8 @@ app.listen(PORT, '0.0.0.0', () => {
       let staticVideos = [];
       try { staticVideos = JSON.parse(fs.readFileSync(catalogPath, 'utf8')); } catch {}
 
-      const autoManifestPath = fs.existsSync('/data/uploads/auto-reels/manifest.json')
-        ? '/data/uploads/auto-reels/manifest.json'
-        : path.join(__dirname, 'uploads', 'auto-reels', 'manifest.json');
-      let autoVideos = [];
-      try { autoVideos = JSON.parse(fs.readFileSync(autoManifestPath, 'utf8')).videos || []; } catch {}
-
       // Run async in background — doesn't block server
-      runEnrichment(staticVideos, autoVideos).catch(err => {
+      runEnrichment(staticVideos).catch(err => {
         console.error('video-enrichment: startup run failed:', err.message);
       });
     } catch (e) {
