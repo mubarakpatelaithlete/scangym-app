@@ -282,6 +282,9 @@ app.get('/api/v2/health', (req, res) => {
 // -- Config endpoint (public keys for frontend) --
 // gymCount = 1,200,000 — the Google Places searchable universe.
 // ScanGym uses live Google Places search, so any gym on Earth is bookable.
+// C2-C4 fix: mapsKey is ONLY for Google Maps JS API (requires client-side key).
+// Photo URLs now proxy through /api/photo — key never appears in photo/embed URLs.
+// NOTE: Restrict this key in Google Cloud Console → HTTP referrer to your domain only.
 app.get("/api/config", async (req, res) => {
   res.json({
     mapsKey: process.env.GOOGLE_MAPS_API_KEY || "",
@@ -290,6 +293,55 @@ app.get("/api/config", async (req, res) => {
     liveSearch: true,
     gymCount: 1200000, // Google Places searchable gyms worldwide
   });
+});
+
+// ── C2-C4 fix: Photo proxy — keeps Google API key server-side ──
+// Frontend calls /api/photo?ref=PHOTO_REF&maxwidth=1200 instead of hitting Google directly.
+// Supports both legacy photo_reference (ref=) and new Places API (name=).
+app.get("/api/photo", async (req, res) => {
+  try {
+    const { ref, name, maxwidth = '1200', maxheight } = req.query;
+    const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+    if (!apiKey) return res.status(500).json({ error: 'Maps API key not configured' });
+
+    let googleUrl;
+    if (name) {
+      // New Places API format: /v1/places/PLACE_ID/photos/PHOTO_REF/media
+      googleUrl = `https://places.googleapis.com/v1/${name}/media?maxWidthPx=${maxwidth}${maxheight ? `&maxHeightPx=${maxheight}` : ''}&key=${apiKey}`;
+    } else if (ref) {
+      // Legacy format: photo_reference
+      googleUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=${maxwidth}&photo_reference=${ref}&key=${apiKey}`;
+    } else {
+      return res.status(400).json({ error: 'Missing ref or name parameter' });
+    }
+
+    // Fetch from Google (native fetch, Node 18+) — follows redirects automatically
+    const response = await fetch(googleUrl, { redirect: 'follow' });
+    if (!response.ok) return res.status(response.status).send('Photo not found');
+
+    // Forward content-type and cache aggressively (photos don't change)
+    const contentType = response.headers.get('content-type');
+    if (contentType) res.setHeader('Content-Type', contentType);
+    res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=604800'); // 1d client, 7d CDN
+
+    // Stream the image bytes to client
+    const arrayBuf = await response.arrayBuffer();
+    res.send(Buffer.from(arrayBuf));
+  } catch (err) {
+    console.error('Photo proxy error:', err.message);
+    res.status(502).json({ error: 'Failed to fetch photo' });
+  }
+});
+
+// ── C3 fix: Map embed proxy — keeps Google API key server-side ──
+app.get("/api/map-embed", (req, res) => {
+  const { place_id } = req.query;
+  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+  if (!place_id || !apiKey) return res.status(400).send('Missing place_id');
+  // Return an HTML page with the embedded map — key stays in server-generated HTML, not in API responses
+  res.setHeader('Content-Type', 'text/html');
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+  res.send(`<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width"><style>*{margin:0;padding:0}iframe{width:100%;height:100vh;border:none}</style></head><body><iframe src="https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=place_id:${place_id}" allowfullscreen></iframe></body></html>`);
 });
 
 // -- DB Migrations (idempotent — safe to run every startup) --

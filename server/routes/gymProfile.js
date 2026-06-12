@@ -78,11 +78,12 @@ async function fetchGooglePlaceDetailsLegacy(placeId) {
 function buildPhotoUrls(photos, maxPhotos = 10) {
   if (!photos || !Array.isArray(photos)) return [];
 
+  // C4 fix: proxy through /api/photo so the Google API key is never exposed to clients
   return photos.slice(0, maxPhotos).map((photo, idx) => {
     // New API format
     if (photo.name) {
       return {
-        url: `https://places.googleapis.com/v1/${photo.name}/media?maxHeightPx=800&maxWidthPx=1200&key=${GOOGLE_MAPS_API_KEY}`,
+        url: `/api/photo?name=${encodeURIComponent(photo.name)}&maxwidth=1200&maxheight=800`,
         attribution: photo.authorAttributions?.[0]?.displayName || null,
         width: photo.widthPx || null,
         height: photo.heightPx || null,
@@ -91,7 +92,7 @@ function buildPhotoUrls(photos, maxPhotos = 10) {
     // Legacy format
     if (photo.photo_reference) {
       return {
-        url: `https://maps.googleapis.com/maps/api/place/photo?maxwidth=1200&photo_reference=${photo.photo_reference}&key=${GOOGLE_MAPS_API_KEY}`,
+        url: `/api/photo?ref=${encodeURIComponent(photo.photo_reference)}&maxwidth=1200`,
         attribution: photo.html_attributions?.[0] || null,
         width: photo.width || null,
         height: photo.height || null,
@@ -266,15 +267,15 @@ router.get('/:gymId', optionalAuth, async (req, res) => {
       bookingStats,
 
       // Embedded map data (Task 23: Uber-style, no external links)
+      // C4 fix: removed raw apiKey — frontend uses Google Maps JS API (loaded via /api/maps-loader)
       embeddedMap: {
-        apiKey: GOOGLE_MAPS_API_KEY,
         center: {
           lat: placeDetails?.location?.latitude || placeDetails?.geometry?.location?.lat || gym.latitude,
           lng: placeDetails?.location?.longitude || placeDetails?.geometry?.location?.lng || gym.longitude,
         },
         placeId: gym.place_id,
         embedUrl: gym.place_id
-          ? `https://www.google.com/maps/embed/v1/place?key=${GOOGLE_MAPS_API_KEY}&q=place_id:${gym.place_id}`
+          ? `/api/map-embed?place_id=${encodeURIComponent(gym.place_id)}`
           : null,
       },
     };
