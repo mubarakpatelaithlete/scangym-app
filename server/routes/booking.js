@@ -377,7 +377,13 @@ router.post('/cancel', async (req, res) => {
     }
 
     // Check 2-hour cancellation policy
-    const bookingStart = new Date(`${booking.booking_date.toISOString().split('T')[0]}T${booking.start_time}:00`);
+    // C5 FIX: Use explicit UTC 'Z' suffix so both sides compare in the same timezone.
+    // booking_date from PostgreSQL may shift via toISOString() near midnight — extract safely.
+    const bDate = booking.booking_date;
+    const dateStr = bDate instanceof Date
+      ? bDate.toISOString().split('T')[0]
+      : String(bDate).split('T')[0];
+    const bookingStart = new Date(`${dateStr}T${booking.start_time}:00Z`);
     const hoursUntilStart = (bookingStart - new Date()) / (1000 * 60 * 60);
 
     if (hoursUntilStart < 2) {
