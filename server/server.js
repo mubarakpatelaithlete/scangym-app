@@ -62,7 +62,7 @@ app.use((req, res, next) => {
     if (reqPath.endsWith('.html') || reqPath.endsWith('sw.js')) {
       res.setHeader('Cache-Control', 'no-cache');
     } else if (reqPath.endsWith('.js') || reqPath.endsWith('.css')) {
-      // Content-hashed files (app.ctr575.js) get long cache; plain files get short cache
+      // Content-hashed files (app.ctr576.js) get long cache; plain files get short cache
       if (/\.[a-z0-9]{3,8}\.js$/.test(reqPath) || /\.[a-z0-9]{3,8}\.css$/.test(reqPath)) {
         res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
       } else {
