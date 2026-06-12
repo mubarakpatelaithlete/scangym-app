@@ -64,11 +64,14 @@ function resolveTime(time) {
     effectiveTime = String(nextHour).padStart(2, '0') + ':00';
   }
   const hours = parseInt(effectiveTime.split(':')[0], 10);
+  // C3 FIX: endTime = startTime + 1 hour (day pass is a 1-hour session window)
+  const endHour = Math.min(hours + 1, 23);
+  const endTime = String(endHour).padStart(2, '0') + ':' + effectiveTime.split(':')[1];
   return {
     isAnytime,
     hours,
     startTime: effectiveTime,
-    endTime: effectiveTime,
+    endTime,
     displayTime: isAnytime ? 'Anytime today' : effectiveTime,
   };
 }

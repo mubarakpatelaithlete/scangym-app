@@ -67,9 +67,10 @@ router.post('/create', async (req, res) => {
 
     const g = gym.rows[0];
 
-    // 24-hour day pass
+    // C3 FIX: endTime = startTime + 1 hour (not same as startTime)
     const [hours, mins] = time.split(':').map(Number);
-    const endTime = time;
+    const endHour = Math.min(hours + 1, 23);
+    const endTime = String(endHour).padStart(2, '0') + ':' + String(mins).padStart(2, '0');
 
     // v4.0: Flat £4.49 base, PPP + currency by gym's country
     const dayPrice = pricing.getDayPassPrice(g.country || 'GB');
@@ -235,9 +236,10 @@ router.post('/guest-create', async (req, res) => {
 
     const g = gym.rows[0];
 
-    // 24-hour day pass
+    // C3 FIX: endTime = startTime + 1 hour (not same as startTime)
     const [hours, mins] = time.split(':').map(Number);
-    const endTime = time;
+    const endHour = Math.min(hours + 1, 23);
+    const endTime = String(endHour).padStart(2, '0') + ':' + String(mins).padStart(2, '0');
 
     // v4.0: Flat £4.49 base, PPP + currency by gym's country
     const dayPrice = pricing.getDayPassPrice(g.country || 'GB');
