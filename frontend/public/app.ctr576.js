@@ -1094,7 +1094,8 @@ function SearchPage(){
           var photos=gym.photos_list||[];
           var allPhotos=photos.length>1?photos.slice(0,5).map(function(p){return p.thumbnail||p.url||photo;}):[photo];
           var photoCount=photos.length||1;
-          var distMin=gym._realTravelLabel||(gym.distance?Math.max(2,Math.round(gym.distance*3))+'min walk':'Nearby');
+          // H6 fix: show honest distance label — real Google travel time if loaded, otherwise straight-line km/m
+          var distMin=gym._realTravelLabel||(gym.distanceText?gym.distanceText:(gym.distance?gym.distance<1?Math.round(gym.distance*1000)+'m':gym.distance.toFixed(1)+'km':'Nearby'));
           var facs=getCardFacilities(gym);
           var rating=gym.rating||'New';
           var reviews=gym.totalReviews||gym.user_ratings_total||0;
@@ -5795,7 +5796,8 @@ window.showGymDiscovery=function(){
     const allPhotos=photos.length>1?photos.slice(0,5).map(p=>p.thumbnail||p.url||photo):[photo];
     const photoCount=photos.length||1;
     const dist=gym.distanceText||(gym.distance?`${gym.distance.toFixed(1)} km`:'Nearby');
-    const distMin=gym._realTravelLabel||(gym.distance?Math.max(2,Math.round(gym.distance*3))+'min walk':'Nearby');
+    // H6 fix: show honest distance label — real Google travel time if loaded, otherwise straight-line km/m
+    const distMin=gym._realTravelLabel||(gym.distanceText?gym.distanceText:(gym.distance?gym.distance<1?Math.round(gym.distance*1000)+'m':gym.distance.toFixed(1)+'km':'Nearby'));
     const facs=getCardFacilities(gym);
     const rating=gym.rating||'New';
     const reviews=gym.totalReviews||gym.user_ratings_total||0;
