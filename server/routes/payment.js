@@ -31,6 +31,7 @@ const pool = require('../middleware/db');
 
 // ─── Global Pricing Engine (PPP + Surge) ────────────────────────────────────
 const pricing = require('../lib/pricing-engine');
+const { getAccessService, isAccessControlEnabled } = require('../lib/access-control');
 // v4.0: Surge pricing removed — flat £4.49 base everywhere
 
 /**
@@ -132,6 +133,64 @@ async function generate2ScanQR(bookingId, userId, gymId) {
     maxScans: 2, scanCount: 0, scansRemaining: 2,
     status: 'active', expiresAt: expiresAt.toISOString(),
   };
+}
+
+/**
+ * Provision access control credentials for a booking (Tier 2: 24/7 gym integration)
+ * Non-blocking — if access provisioning fails, the booking still succeeds with standard QR.
+ */
+async function provisionAccessControl(bookingId, gymId, userId, userEmail, userName) {
+  try {
+    if (!isAccessControlEnabled()) return null;
+
+    // Check if gym has access control configured
+    const gymResult = await pool.query(
+      'SELECT access_system, access_system_id, access_group_id, access_type, access_api_key, access_verified, name FROM gyms WHERE id = $1',
+      [gymId]
+    );
+    if (gymResult.rows.length === 0) return null;
+    
+    const gym = { id: gymId, ...gymResult.rows[0] };
+    if (!gym.access_system || gym.access_system === 'manual' || !gym.access_verified) return null;
+
+    const bookingResult = await pool.query(
+      'SELECT booking_date, start_time, end_time FROM public.bookings WHERE id = $1',
+      [bookingId]
+    );
+    if (bookingResult.rows.length === 0) return null;
+
+    const booking = bookingResult.rows[0];
+    const user = { email: userEmail, name: userName || userEmail };
+
+    const service = getAccessService();
+    const credential = await service.provisionAccess(gym, booking, user);
+
+    if (!credential || credential.fallback === 'manual') return null;
+
+    // Store in DB
+    await pool.query(`
+      INSERT INTO booking_access_credentials
+        (booking_id, gym_id, user_id, credential_type, provider,
+         access_link_id, seam_user_id, seam_credential_id,
+         access_url, access_qr_url, pin, mobile_key, instructions,
+         starts_at, ends_at, status)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 'active')
+    `, [
+      bookingId, gymId, userId,
+      credential.type, credential.provider,
+      credential.access_link_id || null, credential.seam_user_id || null,
+      credential.seam_credential_id || null, credential.access_url || null,
+      credential.access_qr_url || null, credential.pin || null,
+      credential.mobile_key || false, credential.instructions || null,
+      credential.starts_at, credential.ends_at,
+    ]);
+
+    console.log(`[Access] Provisioned ${credential.type} for booking ${bookingId} at gym ${gymId}`);
+    return credential;
+  } catch (err) {
+    console.error(`[Access] Provisioning failed for booking ${bookingId} (non-fatal):`, err.message);
+    return null; // Never block the booking
+  }
 }
 
 let nodemailer;
@@ -631,6 +690,11 @@ router.post('/quick-checkout', async (req, res) => {
     // Credit creator commission
     await creditCreatorCommission(booking);
 
+    // Tier 2: Provision access control (non-blocking — Kisi/Seam door unlock)
+    const accessCredential = await provisionAccessControl(
+      booking.id, dbGymId, req.session.userId, user.email, user.name
+    );
+
     // Send confirmation email (non-blocking)
     const bookingDate = new Date(booking.booking_date).toLocaleDateString('en-GB');
     if (user.email) {
@@ -653,7 +717,20 @@ router.post('/quick-checkout', async (req, res) => {
         maxScans: qr.maxScans, scansRemaining: qr.scansRemaining,
         expiresAt: qr.expiresAt,
       },
-      message: '⚡ Booked instantly with your saved card!',
+      // Tier 2: Access control credentials (Kisi QR unlock, Seam PIN, etc.)
+      access: accessCredential ? {
+        type: accessCredential.type,
+        provider: accessCredential.provider,
+        access_url: accessCredential.access_url,
+        access_qr_url: accessCredential.access_qr_url,
+        pin: accessCredential.pin,
+        instructions: accessCredential.instructions,
+        starts_at: accessCredential.starts_at,
+        ends_at: accessCredential.ends_at,
+      } : null,
+      message: accessCredential
+        ? '⚡ Booked! Door access provisioned — ' + accessCredential.instructions
+        : '⚡ Booked instantly with your saved card!',
     });
   } catch (err) {
     console.error('Quick checkout error:', err);
@@ -800,6 +877,12 @@ router.post('/confirm-intent', async (req, res) => {
     // Credit creator commission
     await creditCreatorCommission(booking);
 
+    // Tier 2: Provision access control (non-blocking)
+    const accessCredential = await provisionAccessControl(
+      booking.id, booking.gym_id, booking.user_id,
+      booking.user_email || intent.receipt_email, booking.user_name
+    );
+
     const gym = await pool.query('SELECT name FROM public.gyms WHERE id = $1', [booking.gym_id]);
     const gymName = gym.rows[0]?.name || 'Gym';
     const bookingDate = new Date(booking.booking_date).toLocaleDateString('en-GB');
@@ -828,6 +911,15 @@ router.post('/confirm-intent', async (req, res) => {
         maxScans: qr.maxScans, scansRemaining: qr.scansRemaining,
         expiresAt: qr.expiresAt,
       },
+      // Tier 2: Access control credentials
+      access: accessCredential ? {
+        type: accessCredential.type,
+        provider: accessCredential.provider,
+        access_url: accessCredential.access_url,
+        access_qr_url: accessCredential.access_qr_url,
+        pin: accessCredential.pin,
+        instructions: accessCredential.instructions,
+      } : null,
       // Tell frontend the card was saved — show "Visa ••4242" next time
       cardSaved: savedCard ? {
         brand: savedCard.card?.brand || 'card',
@@ -954,6 +1046,11 @@ router.post('/cash-booking', async (req, res) => {
 
     const bookingDate = new Date(booking.booking_date).toLocaleDateString('en-GB');
 
+    // Tier 2: Provision access control for cash bookings too (non-blocking)
+    const accessCredential = await provisionAccessControl(
+      booking.id, dbGymId, booking.user_id || 'guest', safeEmail, safeName
+    );
+
     if (safeEmail) {
       sendConfirmationEmail({
         to: safeEmail, gymName: g.name, date: bookingDate,
@@ -974,6 +1071,14 @@ router.post('/cash-booking', async (req, res) => {
         maxScans: qr.maxScans, scansRemaining: qr.scansRemaining,
         expiresAt: qr.expiresAt,
       },
+      // Tier 2: Access control
+      access: accessCredential ? {
+        type: accessCredential.type,
+        provider: accessCredential.provider,
+        access_url: accessCredential.access_url,
+        pin: accessCredential.pin,
+        instructions: accessCredential.instructions,
+      } : null,
     });
 
     console.log('[Cash Booking] Reserved:', bookingCode, 'at', g.name, '£' + price, passTypeClean);

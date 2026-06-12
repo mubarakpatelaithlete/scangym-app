@@ -30,6 +30,7 @@ const liveSearchRouter = require('./routes/liveSearch');
 const geolocationRouter = require('./routes/geolocation');
 const referralsRouter = require('./routes/referrals');
 const streaksRouter = require('./routes/streaks');
+const accessRouter = require('./routes/access');
 const analyticsMiddleware = require('./middleware/analytics');
 
 const app = express();
@@ -337,6 +338,7 @@ app.use('/api/live', liveSearchRouter);
 app.use('/api/geolocation', geolocationRouter);
 app.use('/api/referrals', referralsRouter);
 app.use('/api/streaks', streaksRouter);
+app.use('/api/access', accessRouter);
 
 // -- Serve Frontend --
 // Digital Asset Links for Android TWA verification
@@ -539,7 +541,8 @@ if (fs.existsSync(FRONTEND_DIR)) {
     }
 
     // Inject geo hint + performance hints right before </head>
-    const perfHints = `<script>window.__geoHint=${geoHint};</script>\n`;
+    const googleClientId = process.env.GOOGLE_CLIENT_ID || '';
+    const perfHints = `<script>window.__geoHint=${geoHint};window._sgGoogleClientId="${googleClientId}";</script>\n`;
     const html = _indexHtmlCache.replace('</head>', perfHints + '</head>');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
