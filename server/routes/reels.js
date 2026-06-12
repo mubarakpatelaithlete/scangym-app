@@ -39,6 +39,18 @@ const {
 } = require('../lib/reels-algorithm');
 
 // ═══════════════════════════════════════════════════════════
+//  VIDEO VARIANTS — Multi-resolution adaptive bitrate
+// ═══════════════════════════════════════════════════════════
+const {
+  initVariantsTable,
+  getVariantsForFeed,
+  processAllVariants,
+} = require('../lib/video-variants');
+
+// Init variants table alongside catalog
+initVariantsTable();
+
+// ═══════════════════════════════════════════════════════════
 //  M8 FIX: DATABASE CATALOG — replaces static JSON file
 // ═══════════════════════════════════════════════════════════
 
@@ -146,7 +158,8 @@ try {
 async function loadCatalogFromDB() {
   const result = await pool.query(
     `SELECT id, name, category, source, url, thumb, cdn_key, drive_id,
-            file_size, blurhash, orientation, width, height, dopamine_tier, duration
+            file_size, blurhash, orientation, width, height, dopamine_tier, duration,
+            has_faststart, variants_ready
      FROM video_catalog
      WHERE active = true
      ORDER BY id ASC`
@@ -167,6 +180,8 @@ async function loadCatalogFromDB() {
     height: row.height || 1280,
     dopamineTier: row.dopamine_tier || 3,
     duration: row.duration || null,
+    hasFaststart: row.has_faststart || false,
+    variantsReady: row.variants_ready || false,
   }));
 }
 
@@ -254,7 +269,24 @@ router.get('/feed', async (req, res) => {
       } catch {}
     }
 
-    // 2c. M11 FIX: Inject poster URLs for videos that have generated posters
+    // 2c. VARIANT URLS: Inject multi-resolution variant URLs into feed
+    // This lets the frontend player select quality based on connection speed
+    try {
+      const cdnKeys = feed.map(v => v.cdnKey).filter(Boolean);
+      if (cdnKeys.length > 0) {
+        const variantsMap = await getVariantsForFeed(cdnKeys);
+        for (const v of feed) {
+          if (v.cdnKey && variantsMap[v.cdnKey]) {
+            v.variants = variantsMap[v.cdnKey];
+          }
+        }
+      }
+    } catch (varErr) {
+      // Non-fatal — feed works without variants
+      console.warn('Feed: variant lookup failed:', varErr.message);
+    }
+
+    // 2d. M11 FIX: Inject poster URLs for videos that have generated posters
     for (const v of feed) {
       if (!v.posterUrl && v.cdnKey) {
         const posterFile = getPosterPath(v.cdnKey);
@@ -730,6 +762,20 @@ setTimeout(async () => {
       await generateAllPosters(catalog);
     } catch (err) {
       console.error('[Startup Pipeline] Poster generation error:', err.message);
+    }
+
+    // Phase 3: Multi-resolution variant encoding (adaptive bitrate)
+    // Processes up to 5 videos per startup to avoid timeout.
+    // Remaining videos processed on subsequent restarts.
+    try {
+      const { processAllVariants } = require('../lib/video-variants');
+      const variantResult = await processAllVariants(catalog, {
+        maxVideos: 15,
+        delayMs: 1500,
+      });
+      console.log(`[Startup Pipeline] Variants: ${variantResult.processed} processed, ${variantResult.remaining} remaining`);
+    } catch (err) {
+      console.error('[Startup Pipeline] Variant encoding error:', err.message);
     }
 
     console.log('[Startup Pipeline] Complete ✅');

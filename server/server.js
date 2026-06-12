@@ -301,6 +301,13 @@ if (process.env.DATABASE_URL) {
     ALTER TABLE video_catalog ADD COLUMN IF NOT EXISTS duration REAL;
   `).then(() => console.log('✅ DB migration: video_catalog.duration ready'))
     .catch(err => console.error('DB migration (duration):', err.message));
+
+  // VIDEO OPTIMIZATIONS: Add variant tracking columns
+  _migrationPool.query(`
+    ALTER TABLE video_catalog ADD COLUMN IF NOT EXISTS has_faststart BOOLEAN DEFAULT false;
+    ALTER TABLE video_catalog ADD COLUMN IF NOT EXISTS variants_ready BOOLEAN DEFAULT false;
+  `).then(() => console.log('✅ DB migration: video variants columns ready'))
+    .catch(err => console.error('DB migration (variants):', err.message));
 }
 
 // -- Feature Routes (Tasks 1-24 with CEO corrections) --
@@ -500,22 +507,8 @@ app.use((err, req, res, next) => {
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`ScanGym v4.5.0 on :${PORT} | Frontend: ${fs.existsSync(FRONTEND_DIR+'/index.html')?'v3':'proxy'} | Auth: local session | Brotli+gzip pre-compressed`);
 
-  // Video enrichment — runs in background AFTER server is fully warmed up
-  // Deferred 30s to prevent CPU spike during health check window (Fix: 502 on deploy)
-  setTimeout(() => {
-    try {
-      const { runEnrichment } = require('./lib/video-enrichment');
-      const catalogPath = path.join(__dirname, 'data', 'reels-videos.json');
-      let staticVideos = [];
-      try { staticVideos = JSON.parse(fs.readFileSync(catalogPath, 'utf8')); } catch {}
-
-      // Run async in background — doesn't block server
-      runEnrichment(staticVideos).catch(err => {
-        console.error('video-enrichment: startup run failed:', err.message);
-      });
-    } catch (e) {
-      console.warn('video-enrichment: module not available:', e.message);
-    }
-  }, 30000); // 30s delay — let Railway health check pass first
+  // Video enrichment + variants + posters now handled by the combined startup
+  // pipeline in routes/reels.js (runs 30s after startup from DB catalog).
+  // Removed duplicate JSON-based enrichment that was stale and wasted CPU.
 });
 

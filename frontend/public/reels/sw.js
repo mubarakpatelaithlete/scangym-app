@@ -19,7 +19,7 @@
  *   - Static cache: HTML, CSS, JS, images
  */
 
-var CACHE_VERSION = 'reels-v7';
+var CACHE_VERSION = 'reels-v8';
 var FEED_CACHE    = CACHE_VERSION + '-feed';
 var VIDEO_CACHE   = CACHE_VERSION + '-video';
 var POSTER_CACHE  = CACHE_VERSION + '-poster';
