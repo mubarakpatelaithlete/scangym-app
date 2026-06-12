@@ -134,7 +134,7 @@ function preCompress() {
 
 // ─── Step 3: Log final sizes ──────────────────────────────────────────
 function logSummary() {
-  const keyFiles = ['app.ctr575.js', 'styles.css', 'robust-location.js', 'sw.js', 'index.html'];
+  const keyFiles = ['app.ctr576.js', 'styles.css', 'robust-location.js', 'sw.js', 'index.html'];
   
   console.log('📊 Final asset sizes:');
   console.log('  File                    Original   Brotli     Gzip');
