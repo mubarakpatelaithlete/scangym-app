@@ -395,7 +395,65 @@ const api={
 // ─── Router ───
 
 // Creator signup form
-async function submitCreatorApp(){var d={first_name:document.getElementById('cs-fname').value,last_name:document.getElementById('cs-lname').value,email:document.getElementById('cs-email').value,instagram:document.getElementById('cs-ig').value,tiktok:document.getElementById('cs-tt').value,youtube:document.getElementById('cs-yt').value,followers:document.getElementById('cs-followers').value,why:document.getElementById('cs-why').value};try{await fetch('/api/v2/creator-apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});}catch(e){}document.getElementById('creator-signup-form').classList.add('hidden');document.getElementById('creator-signup-success').classList.remove('hidden');if(typeof fbq==='function')fbq('track','Lead');if(typeof ttq==='object')ttq.track('SubmitForm');if(typeof gtag==='function')gtag('event','generate_lead',{event_category:'creator_signup'});}
+async function submitCreatorApp(){
+  // Simplified creator signup: Google One Tap fills name+email, only IG handle is manual
+  var igEl=document.getElementById('cs-ig');
+  var emailEl=document.getElementById('cs-email');
+  var fnameEl=document.getElementById('cs-fname');
+  var lnameEl=document.getElementById('cs-lname');
+  var d={
+    first_name:fnameEl?fnameEl.value:'',
+    last_name:lnameEl?lnameEl.value:'',
+    email:emailEl?emailEl.value:'',
+    instagram:igEl?igEl.value.replace(/^@/,''):'',
+    tiktok:'',youtube:'',followers:'',why:'quick-signup'
+  };
+  // If logged in via Google, auto-fill from state
+  if(state.user){
+    if(!d.email&&state.user.email)d.email=state.user.email;
+    if(!d.first_name&&state.user.name)d.first_name=state.user.name.split(' ')[0]||'';
+    if(!d.last_name&&state.user.name)d.last_name=state.user.name.split(' ').slice(1).join(' ')||'';
+  }
+  if(!d.email){sgToast('Please sign in with Google or enter your email','error');return;}
+  try{
+    var res=await fetch('/api/v2/creator-apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});
+    var data=await res.json();
+    // Generate instant referral handle from email
+    var handle=d.instagram||d.email.split('@')[0].replace(/[^a-z0-9]/gi,'').toLowerCase();
+    localStorage.setItem('sg_creator',JSON.stringify({handle:handle,email:d.email,name:d.first_name}));
+  }catch(e){}
+  document.getElementById('creator-signup-form').classList.add('hidden');
+  document.getElementById('creator-signup-success').classList.remove('hidden');
+  // Show referral link immediately
+  var linkEl=document.getElementById('cs-instant-link');
+  if(linkEl){
+    var h=d.instagram||d.email.split('@')[0].replace(/[^a-z0-9]/gi,'').toLowerCase();
+    linkEl.textContent='scangym.com/r/'+h;
+  }
+  if(typeof fbq==='function')fbq('track','Lead');
+  if(typeof ttq==='object')ttq.track('SubmitForm');
+  if(typeof gtag==='function')gtag('event','generate_lead',{event_category:'creator_signup'});
+}
+// Handle creator signup via Google One Tap
+function _handleCreatorGoogleSignup(user){
+  var emailEl=document.getElementById('cs-email');
+  var fnameEl=document.getElementById('cs-fname');
+  var lnameEl=document.getElementById('cs-lname');
+  if(emailEl)emailEl.value=user.email||'';
+  if(fnameEl)fnameEl.value=(user.name||'').split(' ')[0]||'';
+  if(lnameEl)lnameEl.value=(user.name||'').split(' ').slice(1).join(' ')||'';
+  // Auto-fill visible fields
+  var nameDisplay=document.getElementById('cs-google-name');
+  if(nameDisplay)nameDisplay.textContent='Signed in as '+(user.name||user.email);
+  var googleSection=document.getElementById('cs-google-section');
+  if(googleSection)googleSection.classList.remove('hidden');
+  var manualSection=document.getElementById('cs-manual-section');
+  if(manualSection)manualSection.classList.add('hidden');
+}
+window.handleCreatorGoogleSignIn=async function(){
+  window._sgOneTapCreatorMode=true;
+  window.handleGoogleSignIn();
+}
 // Referral link without login
 async function generateReferLink(){var em=document.getElementById('refer-email').value;if(!em||!em.includes('@')){document.getElementById('refer-email').style.borderColor='#ef4444';return;}var handle=em.split('@')[0].replace(/[^a-z0-9]/gi,'').toLowerCase();try{await fetch('/api/v2/refer-signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:em})});}catch(e){}document.getElementById('refer-generated-link').textContent='scangym.com/r/'+handle;document.getElementById('refer-email-form').classList.add('hidden');document.getElementById('refer-link-result').classList.remove('hidden');if(typeof gtag==='function')gtag('event','generate_lead',{event_category:'referral_signup'});}
 // ─── 3-Tab Navigation System ───
@@ -1490,7 +1548,7 @@ function GymProfilePage(){
     .wr-success-icon{font-size:56px;margin-bottom:12px}
     .wr-success-title{color:#22c55e;font-size:18px;font-weight:700;margin-bottom:6px}
     .wr-success-sub{color:rgba(255,255,255,.4);font-size:13px}
-    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+    @keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes scaleIn{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}
     @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 
     /* Info cards */
@@ -5481,57 +5539,90 @@ function LoginPage(){
 }
 
 
-// ─── Google Sign-In Handler (Fix #5B) ───
+// ─── Google One Tap + Sign-In Handler (upgraded from Fix #5B) ───
+// Shared callback for both One Tap auto-prompt and manual button click
+window._sgGoogleCallback=async function(response){
+  try{
+    const r=await fetch('/api/auth/google-login',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      credentials:'include',
+      body:JSON.stringify({credential:response.credential})
+    });
+    const data=await r.json();
+    if(data.success&&data.user){
+      state.user=data.user;
+      state.authStep='phone';
+      sgToast('Welcome, '+(data.user.name||'there')+'! 🎉','success',3000);
+      if(window._pendingCheckout&&window._pendingCheckout.gymId){
+        const pc=window._pendingCheckout;
+        window._pendingCheckout=null;
+        navigate('/explore');
+        setTimeout(()=>showUberCheckout(pc.gymId,pc.prefillDate,pc.prefillTime),600);
+      }else if(window._sgOneTapCreatorMode){
+        window._sgOneTapCreatorMode=false;
+        _handleCreatorGoogleSignup(data.user);
+      }else{
+        navigate('/explore');
+      }
+    }else{
+      sgToast(data.error||'Google sign-in failed','error',3000);
+    }
+  }catch(e){
+    sgToast('Google sign-in error: '+e.message,'error',3000);
+  }
+  const btn=document.getElementById('google-signin-btn');
+  if(btn){btn.disabled=false;btn.style.opacity='1';}
+};
+
+// Load Google Identity Services library once
+window._sgLoadGIS=function(){
+  return new Promise(function(resolve,reject){
+    if(window.google&&window.google.accounts){resolve();return;}
+    if(window._sgGISLoading){window._sgGISLoading.then(resolve).catch(reject);return;}
+    window._sgGISLoading=new Promise(function(res,rej){
+      var s=document.createElement('script');
+      s.src='https://accounts.google.com/gsi/client';
+      s.onload=function(){res();resolve();};
+      s.onerror=function(){rej();reject();};
+      document.head.appendChild(s);
+    });
+  });
+};
+
+// Initialize Google One Tap (auto-prompts on any page if user is not logged in)
+window._sgInitOneTap=async function(){
+  if(state.user)return; // already logged in
+  try{
+    await window._sgLoadGIS();
+    google.accounts.id.initialize({
+      client_id:window._sgGoogleClientId||'placeholder-client-id.apps.googleusercontent.com',
+      callback:window._sgGoogleCallback,
+      auto_select:true,
+      cancel_on_tap_outside:false,
+      itp_support:true
+    });
+    google.accounts.id.prompt(); // Show One Tap overlay automatically
+  }catch(e){
+    console.log('[OneTap] Could not initialize:',e.message);
+  }
+};
+
+// Auto-trigger One Tap after 1.5s on page load (non-blocking)
+setTimeout(function(){window._sgInitOneTap();},1500);
+
+// Manual Google Sign-In button handler (fallback if One Tap dismissed)
 window.handleGoogleSignIn=async function(){
   const btn=document.getElementById('google-signin-btn');
   if(btn){btn.disabled=true;btn.style.opacity='.6';}
   try{
-    // Load Google Identity Services if not already loaded
-    if(!window.google||!window.google.accounts){
-      await new Promise(function(resolve,reject){
-        var s=document.createElement('script');
-        s.src='https://accounts.google.com/gsi/client';
-        s.onload=resolve;s.onerror=reject;
-        document.head.appendChild(s);
-      });
-    }
-    // Initialize and prompt
+    await window._sgLoadGIS();
     google.accounts.id.initialize({
       client_id:window._sgGoogleClientId||'placeholder-client-id.apps.googleusercontent.com',
-      callback:async function(response){
-        try{
-          const r=await fetch('/api/auth/google-login',{
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
-            credentials:'include',
-            body:JSON.stringify({credential:response.credential})
-          });
-          const data=await r.json();
-          if(data.success&&data.user){
-            state.user=data.user;
-            state.authStep='phone';
-            sgToast('Welcome, '+(data.user.name||'there')+'! 🎉','success',3000);
-            // Resume pending booking if user was trying to book before login
-            if(window._pendingCheckout&&window._pendingCheckout.gymId){
-              const pc=window._pendingCheckout;
-              window._pendingCheckout=null;
-              navigate('/explore');
-              setTimeout(()=>showUberCheckout(pc.gymId,pc.prefillDate,pc.prefillTime),600);
-            }else{
-              navigate('/explore');
-            }
-          }else{
-            sgToast(data.error||'Google sign-in failed','error',3000);
-          }
-        }catch(e){
-          sgToast('Google sign-in error: '+e.message,'error',3000);
-        }
-        if(btn){btn.disabled=false;btn.style.opacity='1';}
-      }
+      callback:window._sgGoogleCallback
     });
     google.accounts.id.prompt(function(notification){
       if(notification.isNotDisplayed()||notification.isSkippedMoment()){
-        // Fallback: show Google one-tap button directly
         sgToast('Google Sign-In popup blocked — try allowing popups','info',4000);
         if(btn){btn.disabled=false;btn.style.opacity='1';}
       }
@@ -8983,20 +9074,75 @@ function CreatorEarningsPage(){
     </div>`;
   }
 
-  // Load earnings + withdrawal data async
+  // Load earnings + withdrawal data async, then update dashboard extras
   setTimeout(function(){_loadCreatorEarnings(handle);_loadWithdrawalData(handle);},100);
 
+  // Creator level system
+  const levels=[
+    {name:'Starter',emoji:'🌱',min:0,color:'#94a3b8'},
+    {name:'Rising Star',emoji:'⚡',min:5,color:'#38bdf8'},
+    {name:'Hot Creator',emoji:'🔥',min:25,color:'#f97316'},
+    {name:'Elite',emoji:'💎',min:100,color:'#a855f7'},
+    {name:'Legend',emoji:'🏆',min:500,color:'#eab308'}
+  ];
+
   return `<div class="max-w-lg mx-auto px-4 pt-6 pb-24" id="creator-earnings-root">
-    <div class="flex items-center justify-between mb-6">
+    <div class="flex items-center justify-between mb-4">
       <div>
-        <h1 class="text-2xl font-bold text-white">Your Earnings</h1>
+        <h1 class="text-2xl font-bold text-white">Your Dashboard</h1>
         <p class="text-slate-400 text-sm">scangym.com/r/${handle}</p>
       </div>
       <button onclick="navigator.clipboard.writeText('https://scangym.com/r/${handle}');sgToast('Link copied!','success',2000)" class="bg-slate-800 hover:bg-slate-700 text-white px-3 py-2 rounded-lg text-sm transition">📋 Copy Link</button>
     </div>
 
+    <!-- ═══ CREATOR LEVEL BADGE ═══ -->
+    <div id="ce-level-badge" class="bg-gradient-to-r from-slate-800 to-slate-800/60 rounded-xl p-4 mb-4 border border-slate-700/50">
+      <div class="flex items-center gap-3">
+        <span class="text-3xl" id="ce-level-emoji">🌱</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2">
+            <p class="text-white font-bold" id="ce-level-name">Starter</p>
+            <span class="text-xs px-2 py-0.5 rounded-full font-medium" id="ce-level-pill" style="background:rgba(148,163,184,.15);color:#94a3b8">Level 1</span>
+          </div>
+          <p class="text-slate-400 text-xs mt-0.5" id="ce-level-next">5 bookings to reach ⚡ Rising Star</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ EARNINGS GOAL BAR (Uber-style) ═══ -->
+    <div id="ce-goal-bar" class="bg-slate-800/80 rounded-xl p-4 mb-4 border border-slate-700/50">
+      <div class="flex items-center justify-between mb-2">
+        <p class="text-white font-bold text-sm">🎯 Earnings Goal</p>
+        <p class="text-brand font-bold text-sm" id="ce-goal-text">${sgSymbol()}0 / ${sgSymbol()}10</p>
+      </div>
+      <div class="w-full bg-slate-700/50 rounded-full h-3 overflow-hidden">
+        <div id="ce-goal-fill" class="h-full rounded-full transition-all duration-1000 ease-out" style="width:0%;background:linear-gradient(90deg,#FF6D00,#FF9100)"></div>
+      </div>
+      <p class="text-slate-400 text-xs mt-2" id="ce-goal-nudge">Share your link to start earning!</p>
+    </div>
+
+    <!-- ═══ STREAK TRACKER ═══ -->
+    <div id="ce-streak" class="bg-slate-800/80 rounded-xl p-3 mb-4 border border-slate-700/50 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="text-xl">🔥</span>
+        <div>
+          <p class="text-white font-bold text-sm"><span id="ce-streak-count">0</span>-day streak</p>
+          <p class="text-slate-500 text-xs" id="ce-streak-msg">Share your link daily to build a streak!</p>
+        </div>
+      </div>
+      <div class="flex gap-1" id="ce-streak-dots">
+        <div class="w-2 h-2 rounded-full bg-slate-600"></div>
+        <div class="w-2 h-2 rounded-full bg-slate-600"></div>
+        <div class="w-2 h-2 rounded-full bg-slate-600"></div>
+        <div class="w-2 h-2 rounded-full bg-slate-600"></div>
+        <div class="w-2 h-2 rounded-full bg-slate-600"></div>
+        <div class="w-2 h-2 rounded-full bg-slate-600"></div>
+        <div class="w-2 h-2 rounded-full bg-slate-600"></div>
+      </div>
+    </div>
+
     <!-- Stats Cards -->
-    <div class="grid grid-cols-3 gap-3 mb-6">
+    <div class="grid grid-cols-3 gap-3 mb-4">
       <div class="bg-slate-800/80 rounded-xl p-4 text-center border border-slate-700/50">
         <p class="text-2xl font-black text-white" id="ce-earnings">—</p>
         <p class="text-slate-400 text-xs mt-1">Total Earned</p>
@@ -9012,7 +9158,7 @@ function CreatorEarningsPage(){
     </div>
 
     <!-- Conversion Rate -->
-    <div class="bg-gradient-to-r from-brand/10 to-emerald-500/10 border border-brand/20 rounded-xl p-4 mb-6">
+    <div class="bg-gradient-to-r from-brand/10 to-emerald-500/10 border border-brand/20 rounded-xl p-4 mb-4">
       <div class="flex items-center justify-between">
         <div>
           <p class="text-white font-bold">Conversion Rate</p>
@@ -9022,18 +9168,42 @@ function CreatorEarningsPage(){
       </div>
     </div>
 
+    <!-- ═══ NEXT ACTION NUDGE (Uber-style) ═══ -->
+    <div id="ce-nudge" class="bg-gradient-to-r from-brand/20 to-orange-600/10 border border-brand/30 rounded-xl p-4 mb-4">
+      <div class="flex items-center gap-3">
+        <span class="text-2xl">💡</span>
+        <div class="flex-1">
+          <p class="text-white font-bold text-sm" id="ce-nudge-title">Share your link!</p>
+          <p class="text-slate-300 text-xs" id="ce-nudge-text">Post your creator link on Instagram Stories to get your first booking.</p>
+        </div>
+        <button onclick="navigator.clipboard.writeText('https://scangym.com/r/${handle}');sgToast('Link copied! Now share it 🚀','success',2000)" class="bg-brand/30 hover:bg-brand/40 text-brand font-bold px-3 py-2 rounded-lg text-xs transition whitespace-nowrap">Copy Link</button>
+      </div>
+    </div>
+
     <!-- Commission Info -->
-    <div class="bg-slate-800/60 rounded-xl p-4 mb-6 border border-slate-700/30">
+    <div class="bg-slate-800/60 rounded-xl p-4 mb-4 border border-slate-700/30">
       <p class="text-white font-bold mb-2">💰 How you earn</p>
       <div class="space-y-2 text-sm text-slate-300">
         <div class="flex justify-between"><span>Commission per booking</span><span class="text-brand font-bold">£1.25</span></div>
         <div class="flex justify-between"><span>Customer discount</span><span class="text-emerald-400 font-bold">15% off</span></div>
         <div class="flex justify-between"><span>Cookie duration</span><span class="text-slate-400">30 days</span></div>
+        <div class="flex justify-between"><span>Clearing period</span><span class="text-slate-400">7 days</span></div>
+        <div class="flex justify-between"><span>Payout methods</span><span class="text-slate-400">Bank · Stripe · Payoneer</span></div>
+      </div>
+    </div>
+
+    <!-- ═══ CREATOR LEVEL PROGRESS ═══ -->
+    <div class="bg-slate-800/60 rounded-xl p-4 mb-4 border border-slate-700/30">
+      <p class="text-white font-bold mb-3">🏆 Creator Levels</p>
+      <div class="space-y-3" id="ce-levels-list">
+        ${levels.map(function(lv,i){
+          return '<div class="flex items-center gap-3"><span class="text-lg">'+lv.emoji+'</span><div class="flex-1"><div class="flex items-center justify-between"><p class="text-white text-sm font-medium">'+lv.name+'</p><p class="text-slate-500 text-xs">'+lv.min+'+ bookings</p></div></div><span class="text-xs" id="ce-level-check-'+i+'" style="color:'+lv.color+'">○</span></div>';
+        }).join('')}
       </div>
     </div>
 
     <!-- Withdrawal Section -->
-    <div class="mb-6">
+    <div class="mb-4">
       <div class="flex items-center justify-between mb-3">
         <p class="text-white font-bold">💸 Withdraw Earnings</p>
       </div>
@@ -9051,18 +9221,43 @@ function CreatorEarningsPage(){
       </div>
     </div>
 
-    <!-- Payment Details (shown when withdrawing) -->
-    <div id="ce-payment-form" class="mb-6 hidden">
+    <!-- Payment Details (shown when withdrawing) — now with multiple payout options -->
+    <div id="ce-payment-form" class="mb-4 hidden">
       <div class="bg-slate-800/60 rounded-xl p-4 border border-brand/30">
-        <p class="text-white font-bold mb-3">Bank Details for Payout</p>
-        <div class="space-y-3">
+        <p class="text-white font-bold mb-3">Choose Payout Method</p>
+        <!-- Payout method tabs -->
+        <div class="flex gap-2 mb-4">
+          <button onclick="_selectPayoutMethod('bank')" id="ce-payout-tab-bank" class="flex-1 bg-brand/20 text-brand font-bold py-2 rounded-lg text-xs transition border border-brand/30">🏦 Bank</button>
+          <button onclick="_selectPayoutMethod('stripe')" id="ce-payout-tab-stripe" class="flex-1 bg-slate-700/50 text-slate-400 font-bold py-2 rounded-lg text-xs transition border border-transparent">⚡ Stripe</button>
+          <button onclick="_selectPayoutMethod('payoneer')" id="ce-payout-tab-payoneer" class="flex-1 bg-slate-700/50 text-slate-400 font-bold py-2 rounded-lg text-xs transition border border-transparent">🌍 Payoneer</button>
+        </div>
+        <!-- Bank transfer fields -->
+        <div id="ce-payout-bank" class="space-y-3">
           <input id="ce-bank-name" type="text" placeholder="Account holder name" class="w-full bg-slate-900/60 border border-slate-700/50 rounded-lg px-3 py-2.5 text-white text-sm placeholder:text-slate-600 focus:border-brand/50 focus:outline-none">
           <input id="ce-bank-sort" type="text" placeholder="Sort code (XX-XX-XX)" class="w-full bg-slate-900/60 border border-slate-700/50 rounded-lg px-3 py-2.5 text-white text-sm placeholder:text-slate-600 focus:border-brand/50 focus:outline-none" maxlength="8">
           <input id="ce-bank-acct" type="text" placeholder="Account number" class="w-full bg-slate-900/60 border border-slate-700/50 rounded-lg px-3 py-2.5 text-white text-sm placeholder:text-slate-600 focus:border-brand/50 focus:outline-none" maxlength="8">
-          <div class="flex gap-2">
-            <button onclick="_submitWithdrawal('${handle}')" class="flex-1 bg-brand hover:bg-orange-600 text-white font-bold py-2.5 rounded-xl text-sm transition">Confirm Withdrawal</button>
-            <button onclick="document.getElementById('ce-payment-form').classList.add('hidden')" class="bg-slate-800 hover:bg-slate-700 text-slate-400 font-bold py-2.5 px-4 rounded-xl text-sm transition">Cancel</button>
+          <p class="text-slate-500 text-xs">⏱ Arrives in 1-3 business days · £1 fee</p>
+        </div>
+        <!-- Stripe Connect fields -->
+        <div id="ce-payout-stripe" class="space-y-3 hidden">
+          <div class="bg-blue-900/20 border border-blue-700/30 rounded-lg p-3 text-center">
+            <p class="text-white text-sm font-bold mb-1">⚡ Instant Payouts via Stripe</p>
+            <p class="text-slate-400 text-xs mb-3">Connect your Stripe account for instant or weekly payouts. Best for UK creators.</p>
+            <button onclick="_startStripeConnect('${handle}')" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 py-2.5 rounded-xl text-sm transition">Connect Stripe Account</button>
           </div>
+          <p class="text-slate-500 text-xs">⚡ Instant to bank · Fees: 1% + £0.10 per payout</p>
+        </div>
+        <!-- Payoneer fields -->
+        <div id="ce-payout-payoneer" class="space-y-3 hidden">
+          <input id="ce-payoneer-email" type="email" placeholder="Your Payoneer email" class="w-full bg-slate-900/60 border border-slate-700/50 rounded-lg px-3 py-2.5 text-white text-sm placeholder:text-slate-600 focus:border-brand/50 focus:outline-none">
+          <div class="bg-emerald-900/20 border border-emerald-700/30 rounded-lg p-3">
+            <p class="text-slate-300 text-xs">🌍 Available worldwide including Pakistan, India, Bangladesh. <a href="https://www.payoneer.com/signup" target="_blank" class="text-brand hover:underline">Create Payoneer account →</a></p>
+          </div>
+          <p class="text-slate-500 text-xs">⏱ 1-3 business days · $3 fee · Works in 190+ countries</p>
+        </div>
+        <div class="flex gap-2 mt-4">
+          <button onclick="_submitWithdrawal('${handle}')" class="flex-1 bg-brand hover:bg-orange-600 text-white font-bold py-2.5 rounded-xl text-sm transition">Confirm Withdrawal</button>
+          <button onclick="document.getElementById('ce-payment-form').classList.add('hidden')" class="bg-slate-800 hover:bg-slate-700 text-slate-400 font-bold py-2.5 px-4 rounded-xl text-sm transition">Cancel</button>
         </div>
       </div>
     </div>
@@ -9175,6 +9370,86 @@ async function _loadCreatorEarnings(handle){
     if(el('ce-clicks'))el('ce-clicks').textContent=data.totalClicks;
     if(el('ce-rate'))el('ce-rate').textContent=data.conversionRate+'%';
     
+    // ═══ UPDATE DASHBOARD EXTRAS ═══
+    var bookings=parseInt(data.totalConversions)||0;
+    var earnings=parseFloat(data.totalEarnings)||0;
+    
+    // --- Creator Level ---
+    var levels=[
+      {name:'Starter',emoji:'🌱',min:0,color:'#94a3b8'},
+      {name:'Rising Star',emoji:'⚡',min:5,color:'#38bdf8'},
+      {name:'Hot Creator',emoji:'🔥',min:25,color:'#f97316'},
+      {name:'Elite',emoji:'💎',min:100,color:'#a855f7'},
+      {name:'Legend',emoji:'🏆',min:500,color:'#eab308'}
+    ];
+    var currentLevel=0;
+    for(var li=levels.length-1;li>=0;li--){if(bookings>=levels[li].min){currentLevel=li;break;}}
+    var lv=levels[currentLevel];
+    if(el('ce-level-emoji'))el('ce-level-emoji').textContent=lv.emoji;
+    if(el('ce-level-name'))el('ce-level-name').textContent=lv.name;
+    if(el('ce-level-pill')){
+      el('ce-level-pill').textContent='Level '+(currentLevel+1);
+      el('ce-level-pill').style.background='rgba('+_hexToRgb(lv.color)+',.15)';
+      el('ce-level-pill').style.color=lv.color;
+    }
+    if(el('ce-level-next')){
+      if(currentLevel<levels.length-1){
+        var next=levels[currentLevel+1];
+        var remaining=next.min-bookings;
+        el('ce-level-next').textContent=remaining+' more booking'+(remaining!==1?'s':'')+' to reach '+next.emoji+' '+next.name;
+      }else{
+        el('ce-level-next').textContent='You reached the highest level! 👑';
+      }
+    }
+    // Update level checklist
+    for(var ci=0;ci<levels.length;ci++){
+      var checkEl=el('ce-level-check-'+ci);
+      if(checkEl)checkEl.textContent=ci<=currentLevel?'✓':'○';
+    }
+    
+    // --- Earnings Goal Bar (Uber-style) ---
+    var goalTiers=[10,25,50,100,250,500,1000,2500,5000];
+    var currentGoal=goalTiers[0];
+    for(var gi=0;gi<goalTiers.length;gi++){if(earnings<goalTiers[gi]){currentGoal=goalTiers[gi];break;}}
+    if(earnings>=goalTiers[goalTiers.length-1])currentGoal=goalTiers[goalTiers.length-1];
+    var prevGoal=0;
+    for(var pi=goalTiers.indexOf(currentGoal)-1;pi>=0;pi--){if(earnings>=goalTiers[pi]){prevGoal=goalTiers[pi];break;}}
+    var goalPct=Math.min(100,Math.round(((earnings-prevGoal)/(currentGoal-prevGoal))*100))||0;
+    if(el('ce-goal-text'))el('ce-goal-text').textContent=sgSymbol()+earnings.toFixed(0)+' / '+sgSymbol()+currentGoal;
+    if(el('ce-goal-fill'))el('ce-goal-fill').style.width=goalPct+'%';
+    var remaining2=(currentGoal-earnings).toFixed(2);
+    if(el('ce-goal-nudge')){
+      if(earnings===0)el('ce-goal-nudge').textContent='Share your link to start earning!';
+      else if(goalPct>=80)el('ce-goal-nudge').textContent='🔥 Almost there! Just '+sgSymbol()+remaining2+' to reach '+sgSymbol()+currentGoal+'!';
+      else el('ce-goal-nudge').textContent=sgSymbol()+remaining2+' more to reach '+sgSymbol()+currentGoal;
+    }
+    
+    // --- Next Action Nudge ---
+    if(el('ce-nudge-title')&&el('ce-nudge-text')){
+      if(bookings===0){
+        el('ce-nudge-title').textContent='Get your first booking!';
+        el('ce-nudge-text').textContent='Post your creator link on Instagram Stories — most creators get their first booking within 24 hours.';
+      }else if(currentLevel<levels.length-1){
+        var nxt=levels[currentLevel+1];
+        var rem=nxt.min-bookings;
+        el('ce-nudge-title').textContent='Unlock '+nxt.emoji+' '+nxt.name+'!';
+        el('ce-nudge-text').textContent='Just '+rem+' more booking'+(rem!==1?'s':'')+' to level up. Share your link in a TikTok bio or YouTube description.';
+      }else{
+        el('ce-nudge-title').textContent='You\'re a Legend! 🏆';
+        el('ce-nudge-text').textContent='Keep sharing — you\'re in the top tier of ScanGym creators worldwide.';
+      }
+    }
+    
+    // --- Milestone Celebration (confetti on level up) ---
+    var storedLevel=parseInt(localStorage.getItem('sg_creator_level')||'0');
+    if(currentLevel>storedLevel&&bookings>0){
+      localStorage.setItem('sg_creator_level',String(currentLevel));
+      _celebrateMilestone(lv.name,lv.emoji);
+    }else if(storedLevel===0&&bookings===0){
+      localStorage.setItem('sg_creator_level','0');
+    }
+    
+    // Recent bookings
     const recentEl=el('ce-recent');
     if(recentEl){
       if(data.recentConversions.length===0){
@@ -9189,6 +9464,71 @@ async function _loadCreatorEarnings(handle){
     }
   }catch(e){
     console.error('[Earnings] Load failed:',e);
+  }
+}
+
+// ═══ MILESTONE CELEBRATION (confetti animation) ═══
+function _celebrateMilestone(levelName,emoji){
+  // Show celebration overlay
+  var overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.7);animation:fadeIn .3s ease';
+  overlay.innerHTML='<div style="text-align:center;animation:scaleIn .5s ease"><p style="font-size:80px;margin-bottom:16px">'+emoji+'</p><h2 style="color:#fff;font-size:28px;font-weight:900;margin-bottom:8px">Level Up!</h2><p style="color:#FF6D00;font-size:20px;font-weight:700;margin-bottom:4px">'+levelName+'</p><p style="color:rgba(255,255,255,.5);font-size:14px;margin-bottom:24px">Congratulations! Keep going!</p><button onclick="this.parentElement.parentElement.remove()" style="background:#FF6D00;color:#fff;border:none;padding:12px 32px;border-radius:12px;font-weight:700;font-size:16px;cursor:pointer">Awesome! 🎉</button></div>';
+  document.body.appendChild(overlay);
+  // Confetti particles
+  for(var i=0;i<50;i++){
+    var p=document.createElement('div');
+    var colors=['#FF6D00','#FF9100','#FFD600','#00E676','#2979FF','#D500F9','#FF1744'];
+    p.style.cssText='position:fixed;z-index:10000;width:'+Math.random()*10+'px;height:'+Math.random()*10+'px;background:'+colors[Math.floor(Math.random()*colors.length)]+';left:'+Math.random()*100+'vw;top:-10px;border-radius:'+(Math.random()>.5?'50%':'0')+';pointer-events:none';
+    document.body.appendChild(p);
+    var dur=Math.random()*2+1;
+    p.animate([{transform:'translateY(0) rotate(0deg)',opacity:1},{transform:'translateY(100vh) rotate('+Math.random()*720+'deg)',opacity:0}],{duration:dur*1000,easing:'cubic-bezier(.25,.46,.45,.94)'});
+    setTimeout(function(el){el.remove();},dur*1000+100,p);
+  }
+  // Auto-dismiss after 5s
+  setTimeout(function(){if(overlay.parentElement)overlay.remove();},5000);
+}
+
+// Helper: hex to rgb string
+function _hexToRgb(hex){
+  var r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return r+','+g+','+b;
+}
+
+// ═══ PAYOUT METHOD SELECTOR ═══
+window._sgSelectedPayout='bank';
+function _selectPayoutMethod(method){
+  window._sgSelectedPayout=method;
+  ['bank','stripe','payoneer'].forEach(function(m){
+    var tab=document.getElementById('ce-payout-tab-'+m);
+    var panel=document.getElementById('ce-payout-'+m);
+    if(tab){
+      if(m===method){tab.className='flex-1 bg-brand/20 text-brand font-bold py-2 rounded-lg text-xs transition border border-brand/30';}
+      else{tab.className='flex-1 bg-slate-700/50 text-slate-400 font-bold py-2 rounded-lg text-xs transition border border-transparent';}
+    }
+    if(panel){
+      if(m===method)panel.classList.remove('hidden');
+      else panel.classList.add('hidden');
+    }
+  });
+}
+
+// ═══ STRIPE CONNECT ONBOARDING ═══
+async function _startStripeConnect(handle){
+  try{
+    sgToast('Setting up Stripe Connect...','info',3000);
+    var res=await fetch('/api/referrals/stripe-connect',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({creatorHandle:handle})
+    });
+    var data=await res.json();
+    if(data.success&&data.onboardingUrl){
+      window.location.href=data.onboardingUrl;
+    }else{
+      sgToast(data.error||'Stripe Connect setup failed. Contact support.','error',4000);
+    }
+  }catch(e){
+    sgToast('Could not connect Stripe: '+e.message,'error',3000);
   }
 }
 
@@ -9512,30 +9852,55 @@ function _renderInner(){
           <span class="bg-blue-900/30 text-blue-400 text-xs px-3 py-1 rounded-full font-medium">\ud83d\udce6 388+ Assets</span>
         </div>
       </div>
-      <form id="creator-signup-form" class="bg-card rounded-2xl border border-slate-700 p-8 space-y-6" onsubmit="event.preventDefault();submitCreatorApp();">
-        <div class="grid sm:grid-cols-2 gap-4">
-          <div><label class="block text-slate-400 text-sm mb-1">First Name *</label><input type="text" id="cs-fname" required class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white focus:border-brand focus:outline-none" placeholder="Sarah"></div>
-          <div><label class="block text-slate-400 text-sm mb-1">Last Name *</label><input type="text" id="cs-lname" required class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white focus:border-brand focus:outline-none" placeholder="Johnson"></div>
+      <form id="creator-signup-form" class="bg-card rounded-2xl border border-slate-700 p-8 space-y-5" onsubmit="event.preventDefault();submitCreatorApp();">
+        <input type="hidden" id="cs-fname" value="">
+        <input type="hidden" id="cs-lname" value="">
+        <input type="hidden" id="cs-email" value="">
+        <div class="text-center mb-2">
+          <p class="text-white font-bold text-lg mb-1">\u26a1 Join in 10 seconds</p>
+          <p class="text-slate-400 text-sm">Sign in with Google, add your handle, done.</p>
         </div>
-        <div><label class="block text-slate-400 text-sm mb-1">Email *</label><input type="email" id="cs-email" required class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white focus:border-brand focus:outline-none" placeholder="sarah@example.com"></div>
-        <div class="grid sm:grid-cols-2 gap-4">
-          <div><label class="block text-slate-400 text-sm mb-1">Instagram Handle</label><input type="text" id="cs-ig" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white focus:border-brand focus:outline-none" placeholder="@yourhandle"></div>
-          <div><label class="block text-slate-400 text-sm mb-1">TikTok Handle</label><input type="text" id="cs-tt" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white focus:border-brand focus:outline-none" placeholder="@yourhandle"></div>
+        <!-- Google One Tap for creator signup -->
+        <div id="cs-manual-section">
+          <button type="button" onclick="handleCreatorGoogleSignIn()" class="w-full bg-white hover:bg-gray-100 text-gray-800 font-bold py-3 rounded-xl transition flex items-center justify-center gap-3" style="background:#fff;color:#1f1f1f;border:none;padding:14px;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px">
+            <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#34A853" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#FBBC05" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+            Continue with Google
+          </button>
+          <div style="display:flex;align-items:center;gap:12px;margin:12px 0">
+            <div style="flex:1;height:1px;background:rgba(255,255,255,.1)"></div>
+            <span style="color:rgba(255,255,255,.3);font-size:12px">or enter email</span>
+            <div style="flex:1;height:1px;background:rgba(255,255,255,.1)"></div>
+          </div>
+          <input type="email" id="cs-email-visible" placeholder="your@email.com" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white focus:border-brand focus:outline-none" oninput="document.getElementById('cs-email').value=this.value">
         </div>
-        <div><label class="block text-slate-400 text-sm mb-1">YouTube Channel (optional)</label><input type="text" id="cs-yt" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white focus:border-brand focus:outline-none" placeholder="youtube.com/@channel"></div>
-        <div><label class="block text-slate-400 text-sm mb-1">Total Follower Count *</label>
-          <select id="cs-followers" required class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white focus:border-brand focus:outline-none">
-            <option value="">Select range</option><option value="0-1k">0 \u2013 1,000</option><option value="1k-5k">1,000 \u2013 5,000</option><option value="5k-10k">5,000 \u2013 10,000</option><option value="10k-25k">10,000 \u2013 25,000</option><option value="25k-50k">25,000 \u2013 50,000</option><option value="50k-100k">50,000 \u2013 100,000</option><option value="100k+">100,000+</option>
-          </select></div>
-        <div><label class="block text-slate-400 text-sm mb-1">Why do you want to join ScanSquad?</label><textarea id="cs-why" rows="3" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white focus:border-brand focus:outline-none resize-none" placeholder="Tell us about your content style and audience..."></textarea></div>
-        <button type="submit" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-4 rounded-xl transition text-lg">Apply to Join ScanSquad \u2192</button>
-        <p class="text-slate-500 text-xs text-center">Free to join \u00b7 No commitment \u00b7 Start earning immediately</p>
+        <!-- Google signed-in state -->
+        <div id="cs-google-section" class="hidden">
+          <div class="bg-green-900/30 border border-green-700/50 rounded-xl p-3 flex items-center gap-3">
+            <span class="text-2xl">\u2705</span>
+            <div>
+              <p class="text-white font-bold text-sm" id="cs-google-name">Signed in</p>
+              <p class="text-slate-400 text-xs">Name & email auto-filled</p>
+            </div>
+          </div>
+        </div>
+        <!-- Only 1 optional field -->
+        <div>
+          <label class="block text-slate-400 text-sm mb-1">Instagram Handle <span class="text-slate-600">(optional)</span></label>
+          <input type="text" id="cs-ig" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white focus:border-brand focus:outline-none" placeholder="@yourhandle">
+        </div>
+        <button type="submit" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-4 rounded-xl transition text-lg">Get My Creator Link \u2192</button>
+        <p class="text-slate-500 text-xs text-center">Free to join \u00b7 No commitment \u00b7 Start earning in 60 seconds</p>
       </form>
       <div id="creator-signup-success" class="hidden bg-card rounded-2xl border border-green-700 p-8 text-center">
         <div class="text-5xl mb-4">\ud83c\udf89</div>
-        <h2 class="text-white font-bold text-2xl mb-2">Application Received!</h2>
-        <p class="text-slate-300 mb-4">We'll review your application and email you within 24 hours with your personal creator link.</p>
-        <a onclick="navigate('/creators')" class="bg-brand hover:bg-orange-600 text-white font-bold px-8 py-3 rounded-xl cursor-pointer transition inline-block">Browse Creator Assets \u2192</a>
+        <h2 class="text-white font-bold text-2xl mb-2">You're In!</h2>
+        <p class="text-slate-300 mb-2">Your personal creator link:</p>
+        <div class="bg-slate-900 rounded-xl p-4 mb-4 border border-brand/30">
+          <p class="text-brand font-bold text-lg" id="cs-instant-link">scangym.com/r/you</p>
+          <button onclick="navigator.clipboard.writeText('https://'+document.getElementById('cs-instant-link').textContent);sgToast('Link copied!','success',2000)" class="mt-2 bg-brand/20 hover:bg-brand/30 text-brand font-bold px-4 py-2 rounded-lg text-sm transition">\ud83d\udccb Copy Link</button>
+        </div>
+        <p class="text-slate-400 text-sm mb-4">Share it anywhere. Earn \u00a31.25 for every booking.</p>
+        <a onclick="navigate('/creator-earnings')" class="bg-brand hover:bg-orange-600 text-white font-bold px-8 py-3 rounded-xl cursor-pointer transition inline-block">View My Dashboard \u2192</a>
       </div>
     </div>`;
   else if(path==='/privacy')page=InfoPage('Privacy Policy',`<p>Last updated: May 2026</p><p>ScanGym ("we", "us") respects your privacy. We collect only what\'s needed to process bookings: name, email, phone number, payment details, and location data.</p><p>We use Stripe for payments (PCI compliant), Twilio for OTP verification, and Google Maps for gym locations.</p><p>We never sell your data. Contact: hello@scangym.com</p>`);

@@ -563,4 +563,79 @@ router.post('/admin/withdrawals/:id/reject', async (req, res) => {
   }
 });
 
+// ─────────────────────────────────────────────────────────────────
+//  POST /api/referrals/stripe-connect
+//  Create Stripe Connect Express account for creator payouts
+// ─────────────────────────────────────────────────────────────────
+router.post('/stripe-connect', async (req, res) => {
+  try {
+    const { creatorHandle } = req.body;
+    if (!creatorHandle) return res.status(400).json({ error: 'Missing creatorHandle' });
+
+    const stripe = process.env.STRIPE_SECRET_KEY
+      ? require('stripe')(process.env.STRIPE_SECRET_KEY)
+      : null;
+
+    if (!stripe) {
+      return res.status(500).json({ error: 'Stripe not configured' });
+    }
+
+    // Find creator by handle
+    const creator = await pool.query(
+      'SELECT * FROM creator_landing_pages WHERE slug = $1 LIMIT 1',
+      [creatorHandle]
+    );
+
+    if (creator.rows.length === 0) {
+      return res.status(404).json({ error: 'Creator not found' });
+    }
+
+    const c = creator.rows[0];
+    let stripeAccountId = c.stripe_connect_id;
+
+    // Create Connect Express account if not exists
+    if (!stripeAccountId) {
+      const account = await stripe.accounts.create({
+        type: 'express',
+        country: 'GB',
+        email: c.email || undefined,
+        capabilities: {
+          transfers: { requested: true },
+        },
+        business_type: 'individual',
+        metadata: {
+          creatorHandle: creatorHandle,
+          source: 'scangym_creator'
+        }
+      });
+      stripeAccountId = account.id;
+
+      // Save to DB (add column if needed, or store in metadata)
+      try {
+        await pool.query(
+          'UPDATE creator_landing_pages SET stripe_connect_id = $1 WHERE slug = $2',
+          [stripeAccountId, creatorHandle]
+        );
+      } catch (e) {
+        // Column might not exist yet — store in localStorage as fallback
+        console.log('[StripeConnect] Could not save to DB (column may not exist):', e.message);
+      }
+    }
+
+    // Create onboarding link
+    const accountLink = await stripe.accountLinks.create({
+      account: stripeAccountId,
+      refresh_url: `${req.protocol}://${req.get('host')}/creator-earnings?stripe_refresh=1`,
+      return_url: `${req.protocol}://${req.get('host')}/creator-earnings?stripe_connected=1`,
+      type: 'account_onboarding',
+    });
+
+    console.log(`[StripeConnect] Onboarding link created for ${creatorHandle}: ${stripeAccountId}`);
+    res.json({ success: true, onboardingUrl: accountLink.url, accountId: stripeAccountId });
+  } catch (err) {
+    console.error('[StripeConnect] Error:', err.message);
+    res.status(500).json({ error: 'Stripe Connect setup failed', detail: err.message });
+  }
+});
+
 module.exports = router;
