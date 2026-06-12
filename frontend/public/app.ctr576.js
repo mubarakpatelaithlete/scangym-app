@@ -11028,45 +11028,11 @@ if(state.route.startsWith('/gym/')){
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  FIX #1A — FIRST-VISIT WELCOME (C4 fix: non-blocking bottom sheet)
-//  Shows once (localStorage flag). Does NOT block the screen — user can
-//  explore gyms immediately. Auto-dismisses after 8s or on interaction.
+//  C7 fix: Welcome popup REMOVED permanently.
+//  Was blocking interactions on first visit. Removed by request.
+//  Mark all visitors as onboarded so any leftover checks pass.
 // ═══════════════════════════════════════════════════════════════
-(function showWelcomeSheet(){
-  if(localStorage.getItem('sg_onboarded'))return;
-  if(state.user)return;
-  const el=document.createElement('div');
-  el.id='sg-onboarding-overlay';
-  // Non-blocking: sits at bottom, no full-screen backdrop, user can still interact with app
-  el.style.cssText='position:fixed;bottom:0;left:0;right:0;z-index:1000;padding:0 12px 12px;pointer-events:none;animation:sgWelcomeSlideUp .4s ease-out';
-  function dismiss(){ localStorage.setItem('sg_onboarded','1');el.style.transition='transform .3s ease-in,opacity .3s ease-in';el.style.transform='translateY(100%)';el.style.opacity='0';setTimeout(()=>el.remove(),300); }
-  el.innerHTML=`
-    <style>
-      @keyframes sgWelcomeSlideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}
-    </style>
-    <div style="pointer-events:auto;max-width:400px;margin:0 auto;background:linear-gradient(145deg,rgba(20,24,33,.97),rgba(13,17,23,.97));border:1px solid rgba(255,109,0,.2);border-radius:20px;padding:20px;text-align:center;box-shadow:0 -8px 40px rgba(0,0,0,.4);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)">
-      <button onclick="this.closest('#sg-onboarding-overlay')._dismiss()" style="position:absolute;top:10px;right:16px;background:none;border:none;color:rgba(255,255,255,.4);font-size:20px;cursor:pointer;padding:4px">✕</button>
-      <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
-        <div style="width:48px;height:48px;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;box-shadow:0 4px 12px rgba(255,109,0,.3)">🏋️</div>
-        <div style="text-align:left">
-          <div style="color:#fff;font-size:17px;font-weight:800">Welcome to ScanGym</div>
-          <div style="color:rgba(255,255,255,.5);font-size:12px;margin-top:2px">Book any gym · No membership · ${sgPrice('day').display} day pass · QR entry</div>
-        </div>
-      </div>
-      <div style="display:flex;gap:8px">
-        <button id="sg-ob-find" style="flex:1;padding:12px;background:#FF6D00;color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">🔍 Find a Gym</button>
-        <button id="sg-ob-reels" style="flex:1;padding:12px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.08);border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">📱 Watch Reels</button>
-      </div>
-    </div>
-  `;
-  el._dismiss=dismiss;
-  document.body.appendChild(el);
-  // Button handlers
-  document.getElementById('sg-ob-find').onclick=function(){ dismiss(); navigate('/explore'); };
-  document.getElementById('sg-ob-reels').onclick=function(){ dismiss(); };
-  // Auto-dismiss after 8 seconds so it doesn't linger
-  setTimeout(()=>{ if(document.getElementById('sg-onboarding-overlay')) dismiss(); },8000);
-})();
+(function(){ try { localStorage.setItem('sg_onboarded','1'); } catch(e){} })();
 
 // ═══════════════════════════════════════════════════════════════
 //  Push Notification Registration & Scheduling (Fix #7C)
