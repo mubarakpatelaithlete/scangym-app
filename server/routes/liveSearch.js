@@ -315,6 +315,11 @@ router.get('/search', async (req, res) => {
     // C6 fix: Enrich with owner-set DB prices
     await enrichGymsWithDbPrices(gyms);
 
+    // Amazon-style ranking: sort by composite score instead of Google's default order
+    const userLat = lat ? parseFloat(lat) : null;
+    const userLng = lng ? parseFloat(lng) : null;
+    rankGyms(gyms, userLat, userLng);
+
     const result = {
       gyms,
       total: gyms.length,
@@ -378,18 +383,12 @@ router.get('/nearby', async (req, res) => {
     // C6 fix: Enrich with owner-set DB prices
     await enrichGymsWithDbPrices(gyms);
 
-    // Calculate distance from search point
-    if (lat && lng) {
-      const searchLat = parseFloat(lat);
-      const searchLng = parseFloat(lng);
-      gyms.forEach(g => {
-        if (g.latitude && g.longitude) {
-          g.distance = haversineDistance(searchLat, searchLng, g.latitude, g.longitude);
-          g.distanceText = g.distance < 1 ? `${Math.round(g.distance * 1000)}m` : `${g.distance.toFixed(1)}km`;
-        }
-      });
-      gyms.sort((a, b) => (a.distance || 999) - (b.distance || 999));
-    }
+    // Amazon-style ranking: composite score replaces simple distance sort.
+    // rankGyms() computes distance + distanceText internally, then sorts by
+    // Score = Distance(40%) + Price(25%) + Reviews(25%) + Availability(10%)
+    const searchLat = lat ? parseFloat(lat) : null;
+    const searchLng = lng ? parseFloat(lng) : null;
+    rankGyms(gyms, searchLat, searchLng);
 
     const result = {
       gyms,
@@ -620,6 +619,127 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
             Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
             Math.sin(dLon / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// AMAZON-STYLE COMPOSITE RANKING ALGORITHM
+// ═══════════════════════════════════════════════════════════════
+//
+// Inspired by Amazon A9/A10: "Which gym is the user most likely to book?"
+//
+// Score = (Distance × 40%) + (Price × 25%) + (Reviews × 25%) + (Availability × 10%)
+//
+// Each factor is normalized to 0–100 within the current result set,
+// then weighted and combined into a single rankingScore.
+//
+// Why these weights?
+//   • Distance (40%) — Like Amazon's "relevance", the #1 predictor of
+//     gym booking is proximity. Users book the closest gym.
+//   • Price (25%) — Cheaper gyms convert better, just like Amazon's
+//     conversion-rate signal. Lower price = higher score.
+//   • Reviews (25%) — Trust signal. Amazon found 4.5★ with 200 reviews
+//     beats 5.0★ with 1 review. We use rating × log2(count + 1).
+//   • Availability (10%) — Amazon penalizes out-of-stock products.
+//     Gyms that are open right now get a bonus.
+//
+// When user coordinates are unavailable (text search without location),
+// distance is excluded and remaining weights are redistributed:
+//   Price 36%, Reviews 36%, Availability 28%.
+// ═══════════════════════════════════════════════════════════════
+
+function rankGyms(gyms, userLat, userLng) {
+  if (!gyms || gyms.length === 0) return gyms;
+
+  const hasCoords = userLat != null && userLng != null;
+
+  // ── Step 1: Compute distance for every gym if user coords are available ──
+  if (hasCoords) {
+    for (const gym of gyms) {
+      if (gym.latitude != null && gym.longitude != null && gym.distance == null) {
+        gym.distance = haversineDistance(userLat, userLng, gym.latitude, gym.longitude);
+        gym.distanceText = gym.distance < 1
+          ? `${Math.round(gym.distance * 1000)}m`
+          : `${gym.distance.toFixed(1)}km`;
+      }
+    }
+  }
+
+  // If only 1 gym, give it max score and return
+  if (gyms.length === 1) {
+    gyms[0].rankingScore = 100;
+    return gyms;
+  }
+
+  // ── Step 2: Collect values for min-max normalization ──
+  const distances = gyms.filter(g => g.distance != null).map(g => g.distance);
+  const prices    = gyms.filter(g => g.dayPassPrice != null && g.dayPassPrice > 0).map(g => g.dayPassPrice);
+
+  const minDist  = distances.length ? Math.min(...distances) : 0;
+  const maxDist  = distances.length ? Math.max(...distances) : 0;
+  const minPrice = prices.length    ? Math.min(...prices)    : 0;
+  const maxPrice = prices.length    ? Math.max(...prices)    : 0;
+
+  // Review signal: rating × log2(reviewCount + 1)
+  // This means 4.5★ with 200 reviews (4.5 × 7.65 = 34.4) beats
+  //            5.0★ with 1 review   (5.0 × 1.00 =  5.0)
+  const reviewSignals = gyms.map(g => {
+    const rating = g.rating || 0;
+    const count  = g.totalReviews || 0;
+    return rating * Math.log2(count + 1);
+  });
+  const minReview = Math.min(...reviewSignals);
+  const maxReview = Math.max(...reviewSignals);
+
+  // ── Step 3: Weights — redistribute if distance is unavailable ──
+  let wDist, wPrice, wReview, wAvail;
+  if (hasCoords && distances.length > 0) {
+    wDist = 0.40; wPrice = 0.25; wReview = 0.25; wAvail = 0.10;
+  } else {
+    // No distance data — redistribute 40% across the others
+    wDist = 0; wPrice = 0.36; wReview = 0.36; wAvail = 0.28;
+  }
+
+  // ── Step 4: Score each gym ──
+  gyms.forEach((gym, i) => {
+    let score = 0;
+
+    // Distance: closest = 100, farthest = 0
+    if (wDist > 0 && gym.distance != null) {
+      const norm = (maxDist > minDist)
+        ? 1 - (gym.distance - minDist) / (maxDist - minDist)
+        : 1; // All same distance → all get max
+      score += norm * 100 * wDist;
+    }
+
+    // Price: cheapest = 100, most expensive = 0
+    if (gym.dayPassPrice != null && gym.dayPassPrice > 0) {
+      const norm = (maxPrice > minPrice)
+        ? 1 - (gym.dayPassPrice - minPrice) / (maxPrice - minPrice)
+        : 1;
+      score += norm * 100 * wPrice;
+    }
+
+    // Reviews: highest signal = 100, lowest = 0
+    const reviewSig = reviewSignals[i];
+    if (maxReview > minReview) {
+      const norm = (reviewSig - minReview) / (maxReview - minReview);
+      score += norm * 100 * wReview;
+    } else if (maxReview > 0) {
+      score += 100 * wReview; // All same → all get max
+    }
+
+    // Availability: open now = full bonus
+    if (gym.openNow === true) {
+      score += 100 * wAvail;
+    }
+
+    gym.rankingScore = Math.round(score * 10) / 10; // 1 decimal place
+  });
+
+  // ── Step 5: Sort by ranking score (highest first) ──
+  gyms.sort((a, b) => (b.rankingScore || 0) - (a.rankingScore || 0));
+
+  return gyms;
 }
 
 module.exports = router;
