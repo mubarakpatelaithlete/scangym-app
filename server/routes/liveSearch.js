@@ -93,8 +93,9 @@ function setCache(key, data) {
 }
 
 // ─── Helper: Build photo URL from photo_reference ────────────
+// C2/C3 fix: proxy through /api/photo so the Google API key is never exposed to clients
 function photoUrl(photoRef, maxWidth = 1200) {
-  return `https://maps.googleapis.com/maps/api/place/photo?maxwidth=${maxWidth}&photo_reference=${photoRef}&key=${GOOGLE_MAPS_API_KEY}`;
+  return `/api/photo?ref=${encodeURIComponent(photoRef)}&maxwidth=${maxWidth}`;
 }
 
 // ─── Helper: Parse a Text/Nearby Search result into ScanGym gym format ───
@@ -523,7 +524,7 @@ router.get('/place/:placeId', optionalAuth, async (req, res) => {
         scangym: scangymReviews,
       },
       map: {
-        embedUrl: `https://www.google.com/maps/embed/v1/place?key=${GOOGLE_MAPS_API_KEY}&q=place_id:${placeId}`,
+        embedUrl: `/api/map-embed?place_id=${encodeURIComponent(placeId)}`,
         directionsUrl: geo.lat && geo.lng
           ? `https://www.google.com/maps/dir/?api=1&destination=${geo.lat},${geo.lng}&destination_place_id=${placeId}`
           : null,

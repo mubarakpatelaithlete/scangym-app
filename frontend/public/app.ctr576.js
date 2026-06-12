@@ -770,8 +770,8 @@ function GymCard(gym){
   const cardCurrentPrice=dayP.display;
   const dist=gym.distanceText||(gym.distance?`${gym.distance.toFixed(1)} km`:'Nearby');
   const photo=gym.photo||gym.photo_url||
-    (gym.photoReference?`https://maps.googleapis.com/maps/api/place/photo?maxwidth=1200&photo_reference=${gym.photoReference}&key=${MAPS_KEY}`:
-    (gym.photo_reference?`https://maps.googleapis.com/maps/api/place/photo?maxwidth=1200&photo_reference=${gym.photo_reference}&key=${MAPS_KEY}`:''));
+    (gym.photoReference?`/api/photo?ref=${encodeURIComponent(gym.photoReference)}&maxwidth=1200`:
+    (gym.photo_reference?`/api/photo?ref=${encodeURIComponent(gym.photo_reference)}&maxwidth=1200`:''));
   const photos=gym.photos_list||[];
   const hasPhoto=!!photo;
   const gymIdentifier=gym.placeId||gym.place_id||gym.id;
@@ -1089,8 +1089,8 @@ function SearchPage(){
         var _cards=gyms.slice(0,20).map(function(gym,i){
           var id=gym.placeId||gym.place_id||gym.id;
           var photo=gym.photo||gym.photo_url||
-            (gym.photoReference?'https://maps.googleapis.com/maps/api/place/photo?maxwidth=1200&photo_reference='+gym.photoReference+'&key='+MAPS_KEY:
-            (gym.photo_reference?'https://maps.googleapis.com/maps/api/place/photo?maxwidth=1200&photo_reference='+gym.photo_reference+'&key='+MAPS_KEY:''));
+            (gym.photoReference?'/api/photo?ref='+encodeURIComponent(gym.photoReference)+'&maxwidth=1200':
+            (gym.photo_reference?'/api/photo?ref='+encodeURIComponent(gym.photo_reference)+'&maxwidth=1200':''));
           var photos=gym.photos_list||[];
           var allPhotos=photos.length>1?photos.slice(0,5).map(function(p){return p.thumbnail||p.url||photo;}):[photo];
           var photoCount=photos.length||1;
@@ -2955,11 +2955,9 @@ function extractReviewTopics(reviews){
   return Object.entries(keywords).filter(([,c])=>c>0).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([name,count])=>({name,count}));
 }
 
-// Helper: generate consistent pseudo-random helpful count from review content (Amazon-like social proof)
+// H2 fix: removed fake helpful seed — counts start at 0 and only reflect real user votes
 function _reviewHelpfulSeed(r){
-  const s=(r.author||'')+(r.text||r.comment||'')+(r.rating||0);
-  let h=0;for(let i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;}
-  return Math.abs(h%42)+3; // 3-44 range, looks realistic
+  return 0;
 }
 
 // Helper: check if user already voted helpful on a review (localStorage)
@@ -5787,8 +5785,8 @@ window.showGymDiscovery=function(){
   const cards=gyms.slice(0,20).map((gym,i)=>{
     const id=gym.placeId||gym.place_id||gym.id;
     const photo=gym.photo||gym.photo_url||
-      (gym.photoReference?`https://maps.googleapis.com/maps/api/place/photo?maxwidth=1200&photo_reference=${gym.photoReference}&key=${MAPS_KEY}`:
-      (gym.photo_reference?`https://maps.googleapis.com/maps/api/place/photo?maxwidth=1200&photo_reference=${gym.photo_reference}&key=${MAPS_KEY}`:''));
+      (gym.photoReference?`/api/photo?ref=${encodeURIComponent(gym.photoReference)}&maxwidth=1200`:
+      (gym.photo_reference?`/api/photo?ref=${encodeURIComponent(gym.photo_reference)}&maxwidth=1200`:''));
     const photos=gym.photos_list||[];
     const allPhotos=photos.length>1?photos.slice(0,5).map(p=>p.thumbnail||p.url||photo):[photo];
     const photoCount=photos.length||1;
@@ -6213,7 +6211,7 @@ window._ttShowMap=function(){
   withCoords.forEach(function(gym,i){
     const id=gym.placeId||gym.place_id||gym.id;
     const photo=gym.photo||gym.photo_url||
-      (gym.photoReference?'https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference='+gym.photoReference+'&key='+MAPS_KEY:'');
+      (gym.photoReference?'/api/photo?ref='+encodeURIComponent(gym.photoReference)+'&maxwidth=400':'');
     const isOpen=gym.openNow!==false;
     const addr=(gym.address||gym.vicinity||'').split(',')[0];
     const card=document.createElement('div');
@@ -10682,7 +10680,7 @@ window.sgSwipeDiscovery=function(){
       return;
     }
     const g=shuffled[idx];
-    const photo=g.photo||g.photo_url||(g.photoReference?'https://maps.googleapis.com/maps/api/place/photo?maxwidth=1200&photo_reference='+g.photoReference+'&key='+window.MAPS_KEY:'');
+    const photo=g.photo||g.photo_url||(g.photoReference?'/api/photo?ref='+encodeURIComponent(g.photoReference)+'&maxwidth=1200':'');
     // v4.0: Flash deals removed — flat pricing
     const isFlashDeal=false;
     const flashPrice='';
@@ -11306,7 +11304,7 @@ window.sgMasonryGrid=function(gyms,containerId){
 
   let html='<div class="sg-masonry">';
   gyms.forEach((g,i)=>{
-    const photo=g.photo||g.photo_url||(g.photoReference?'https://maps.googleapis.com/maps/api/place/photo?maxwidth=1200&photo_reference='+g.photoReference+'&key='+window.MAPS_KEY:'');
+    const photo=g.photo||g.photo_url||(g.photoReference?'/api/photo?ref='+encodeURIComponent(g.photoReference)+'&maxwidth=1200':'');
     const heights=[140,180,160,200,150,170]; // Variable heights for visual interest
     const h=heights[i%heights.length];
     const gid=g.placeId||g.place_id||g.id;
