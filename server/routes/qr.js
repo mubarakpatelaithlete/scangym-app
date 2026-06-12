@@ -174,8 +174,20 @@ router.post('/generate', authenticateUser, async (req, res) => {
 });
 
 // POST /api/qr/scan — Gym scans user's QR (called by gym's scanner hardware)
+// C13 FIX: Require authentication so random visitors can't burn QR scans.
+// Accepts either a logged-in session (authenticateUser) or a gym API key header.
 router.post('/scan', async (req, res) => {
   try {
+    // Check for gym API key (for hardware scanners) or logged-in session
+    const gymApiKey = req.headers['x-gym-api-key'];
+    const hasSession = req.session?.userId;
+    if (!gymApiKey && !hasSession) {
+      return res.status(401).json({
+        error: 'Authentication required',
+        message: 'QR scanning requires a logged-in session or gym API key.',
+      });
+    }
+
     const { token } = req.body;
     if (!token) return res.status(400).json({ error: 'QR token is required' });
 
