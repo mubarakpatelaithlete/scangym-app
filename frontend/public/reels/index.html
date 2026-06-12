@@ -593,7 +593,7 @@
         if(vid._abortCtrl){ vid._abortCtrl.abort(); vid._abortCtrl = null; }
         // FIX: Assign a minimal empty MP4 to cleanly reset the decoder.
         // The old approach (removeAttribute('src') + load()) sends stale
-        // Range headers to the old CDN URL → HTTP 416 floods.
+        // Range Headers to the old CDN URL → HTTP 416 floods.
         // An empty data-URI MP4 gives the decoder a valid source to replace
         // the old one, flushing all buffered byte ranges.
         vid._retryCount = 0;
@@ -601,6 +601,9 @@
         vid.preload = 'none';
         vid.src = EMPTY_MP4;
         vid._retrying = false;
+        // OPTIMIZATION #4: Aggressively clear buffered data references
+        vid._quality = null;
+        vid.poster = '';
         // Remove from parent if attached
         if(vid.parentNode) vid.parentNode.removeChild(vid);
         entry.inUse = false;
@@ -782,8 +785,74 @@
         // bunnyBase: 'https://scangym.b-cdn.net/reels',
       };
 
-      // M12 FIX: Simplified — all videos are on R2 CDN now, no Drive proxy needed
-      function resolveVideoUrl(video){
+      // ═══════════════════════════════════════════════════════════
+      //  OPTIMIZATION #1: ADAPTIVE BITRATE — Select quality variant
+      //  based on connection speed. Variants: 360p, 480p, 720p, 1080p
+      //  The feed API returns a `variants` object per video.
+      // ═══════════════════════════════════════════════════════════
+      var currentQuality = 'auto'; // current selected quality tier
+      var qualityHistory = [];     // track quality selections for adaptation
+      var bufferHealthLog = [];    // track buffer health for quality adaptation
+
+      // OPTIMIZATION #2b: Detect H.265/HEVC support — ~50% smaller at same quality
+      // Safari/iOS, Chrome Android (hardware), Edge support HEVC. Firefox does not.
+      var _hevcSupported = null;
+      function supportsHevc(){
+        if(_hevcSupported !== null) return _hevcSupported;
+        try {
+          var vid = document.createElement('video');
+          // Check for HEVC (hvc1 tag used for Safari compatibility)
+          _hevcSupported = vid.canPlayType('video/mp4; codecs="hvc1"') === 'probably'
+                        || vid.canPlayType('video/mp4; codecs="hev1"') === 'probably'
+                        || vid.canPlayType('video/mp4; codecs="hvc1.1.6.L93.B0"') === 'probably';
+        } catch(e) { _hevcSupported = false; }
+        return _hevcSupported;
+      }
+
+      // OPTIMIZATION #2: Detect connection type for optimal quality
+      function getOptimalQuality(){
+        var conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        if(!conn) return '720p'; // Safe default
+        var ect = conn.effectiveType;
+        var downlink = conn.downlink || 10; // Mbps
+
+        // OPTIMIZATION #3: Connection-aware quality selection
+        if(ect === 'slow-2g' || ect === '2g' || downlink < 0.5) return '360p';
+        if(ect === '3g' || downlink < 2)   return '480p';
+        if(downlink < 5)                    return '720p';
+        return '1080p'; // 4G/WiFi with good bandwidth
+      }
+
+      // Resolve video URL with adaptive quality variant selection
+      // Prefers H.265/HEVC variants when device supports them (50% smaller files)
+      function resolveVideoUrl(video, forceQuality){
+        var quality = forceQuality || getOptimalQuality();
+        currentQuality = quality;
+
+        // If video has quality variants from API, use them
+        if(video.variants){
+          // OPTIMIZATION #2b: Try HEVC variant first (50% smaller) if supported
+          var useHevc = supportsHevc();
+          if(useHevc){
+            // Map quality to HEVC variant name, then fallback to H.264
+            var hevcMap = { '1080p': '720p_hevc', '720p': '720p_hevc', '480p': '480p_hevc', '360p': '480p_hevc' };
+            var hevcKey = hevcMap[quality];
+            if(hevcKey && video.variants[hevcKey] && video.variants[hevcKey].url){
+              return video.variants[hevcKey].url;
+            }
+          }
+
+          // Fallback: H.264 variants — try requested quality, then fall back to next lower
+          var fallbackOrder = { '1080p': ['1080p','720p','480p','360p'], '720p': ['720p','480p','360p'], '480p': ['480p','360p','720p'], '360p': ['360p','480p'] };
+          var order = fallbackOrder[quality] || ['720p','480p','360p'];
+          for(var i = 0; i < order.length; i++){
+            if(video.variants[order[i]] && video.variants[order[i]].url){
+              return video.variants[order[i]].url;
+            }
+          }
+        }
+
+        // Fallback: original video (no variants available yet)
         switch(CDN_CONFIG.type){
           case 'r2':
             if(video.cdnKey) return CDN_CONFIG.r2Base + '/' + video.cdnKey + '.mp4';
@@ -805,14 +874,216 @@
         return resolveVideoUrl(video); // no proxy available for non-CDN videos
       }
 
-      // Adaptive quality based on connection
-      function getOptimalQuality(){
+      // ═══════════════════════════════════════════════════════════
+      //  OPTIMIZATION #1b: RUNTIME QUALITY ADAPTATION
+      //  Monitor buffer health during playback. If buffering stalls,
+      //  downgrade quality. If buffer is healthy, upgrade.
+      // ═══════════════════════════════════════════════════════════
+      var qualityAdaptTimer = null;
+      var stallCount = 0;
+      var lastQualityChange = 0;
+      var QUALITY_TIERS = ['360p', '480p', '720p', '1080p'];
+
+      function startQualityAdaptation(vid, index){
+        stopQualityAdaptation();
+        stallCount = 0;
+        var checkInterval = 3000; // Check every 3s
+
+        vid.addEventListener('waiting', function onWaiting(){
+          stallCount++;
+          // If stalling repeatedly, downgrade quality
+          if(stallCount >= 2 && Date.now() - lastQualityChange > 5000){
+            downgradeQuality(index);
+          }
+        }, {signal: vid._abortCtrl ? vid._abortCtrl.signal : undefined});
+
+        qualityAdaptTimer = setInterval(function(){
+          if(!vid || vid.paused) return;
+          // Check buffer health
+          var buffered = 0;
+          if(vid.buffered.length > 0){
+            buffered = vid.buffered.end(vid.buffered.length - 1) - vid.currentTime;
+          }
+          bufferHealthLog.push(buffered);
+          if(bufferHealthLog.length > 10) bufferHealthLog.shift();
+
+          // Average buffer seconds over last 10 checks
+          var avgBuffer = bufferHealthLog.reduce(function(a,b){ return a+b; }, 0) / bufferHealthLog.length;
+
+          // If buffer is consistently healthy (>5s ahead), try upgrading
+          if(avgBuffer > 5 && stallCount === 0 && Date.now() - lastQualityChange > 10000){
+            upgradeQuality(index);
+          }
+        }, checkInterval);
+      }
+
+      function stopQualityAdaptation(){
+        if(qualityAdaptTimer){ clearInterval(qualityAdaptTimer); qualityAdaptTimer = null; }
+        bufferHealthLog = [];
+      }
+
+      function downgradeQuality(index){
+        var currentTierIdx = QUALITY_TIERS.indexOf(currentQuality);
+        if(currentTierIdx <= 0) return; // Already at lowest
+
+        var newQuality = QUALITY_TIERS[currentTierIdx - 1];
+        var video = allVideos[index];
+        if(!video || !video.variants || !video.variants[newQuality]) return;
+
+        lastQualityChange = Date.now();
+        currentQuality = newQuality;
+        stallCount = 0;
+
+        // Switch source on current video
+        var reel = renderedReels[index];
+        if(reel){
+          var vid = reel.querySelector('video');
+          if(vid){
+            var currentTime = vid.currentTime;
+            vid.src = video.variants[newQuality].url;
+            vid.currentTime = currentTime;
+            vid.play().catch(function(){});
+          }
+        }
+      }
+
+      function upgradeQuality(index){
+        var currentTierIdx = QUALITY_TIERS.indexOf(currentQuality);
+        if(currentTierIdx >= QUALITY_TIERS.length - 1) return; // Already at highest
+
+        var optimalQ = getOptimalQuality();
+        var optimalIdx = QUALITY_TIERS.indexOf(optimalQ);
+        if(currentTierIdx >= optimalIdx) return; // Already at or above optimal
+
+        var newQuality = QUALITY_TIERS[Math.min(currentTierIdx + 1, optimalIdx)];
+        var video = allVideos[index];
+        if(!video || !video.variants || !video.variants[newQuality]) return;
+
+        lastQualityChange = Date.now();
+        currentQuality = newQuality;
+
+        // Don't switch current video source (disruptive) — just set for next videos
+      }
+
+      // ═══════════════════════════════════════════════════════════
+      //  OPTIMIZATION #4: AGGRESSIVE MEMORY MANAGEMENT
+      //  Free video data for reels far from current view.
+      //  Monitor memory pressure via performance.memory API.
+      // ═══════════════════════════════════════════════════════════
+      var MEMORY_CHECK_INTERVAL = 5000; // 5s
+      var memoryWarning = false;
+
+      function startMemoryManagement(){
+        setInterval(function(){
+          // Check memory pressure (Chrome-only API)
+          if(performance.memory){
+            var usedMB = performance.memory.usedJSHeapSize / (1024 * 1024);
+            var limitMB = performance.memory.jsHeapSizeLimit / (1024 * 1024);
+            var usage = usedMB / limitMB;
+
+            if(usage > 0.7){
+              memoryWarning = true;
+              // Aggressive cleanup: shrink render window
+              aggressiveCleanup();
+            } else {
+              memoryWarning = false;
+            }
+          }
+
+          // Always clean up far-away prefetched data
+          cleanupFarPrefetch();
+        }, MEMORY_CHECK_INTERVAL);
+      }
+
+      function aggressiveCleanup(){
+        // Release videos more than 2 positions away (normally 4)
+        var keys = Object.keys(renderedReels);
+        for(var k = 0; k < keys.length; k++){
+          var idx = parseInt(keys[k]);
+          if(Math.abs(idx - currentIndex) > 2){
+            var el = renderedReels[idx];
+            releaseVideo(idx);
+            if(el && el.parentNode) el.parentNode.removeChild(el);
+            delete renderedReels[idx];
+          }
+        }
+        // Clear old poster cache entries
+        var posterKeys = Object.keys(posterCache);
+        for(var p = 0; p < posterKeys.length; p++){
+          var pi = parseInt(posterKeys[p]);
+          if(Math.abs(pi - currentIndex) > 10){
+            delete posterCache[pi];
+          }
+        }
+      }
+
+      function cleanupFarPrefetch(){
+        // Revoke blob URLs and abort fetches for videos far from current
+        var keys = Object.keys(activeAbortControllers);
+        for(var k = 0; k < keys.length; k++){
+          var idx = parseInt(keys[k]);
+          if(Math.abs(idx - currentIndex) > PREFETCH_AHEAD + 4){
+            activeAbortControllers[idx].abort();
+            delete activeAbortControllers[idx];
+          }
+        }
+
+        // Clear Cache API entries for very old videos
+        if(window.caches){
+          caches.open('reels-v8-video').then(function(cache){
+            cache.keys().then(function(requests){
+              requests.forEach(function(request){
+                // Check if this cached URL corresponds to a far-away video
+                var url = request.url;
+                var isFarAway = true;
+                for(var i = Math.max(0, currentIndex - 3); i <= Math.min(allVideos.length - 1, currentIndex + PREFETCH_AHEAD + 2); i++){
+                  var vUrl = resolveVideoUrl(allVideos[i]);
+                  if(url.indexOf(vUrl) !== -1 || vUrl.indexOf(url) !== -1){
+                    isFarAway = false;
+                    break;
+                  }
+                }
+                if(isFarAway){
+                  cache.delete(request).catch(function(){});
+                  // Also remove from prefetched tracking
+                  delete prefetchedUrls[url];
+                }
+              });
+            }).catch(function(){});
+          }).catch(function(){});
+        }
+      }
+
+      // ═══════════════════════════════════════════════════════════
+      //  OPTIMIZATION #3b: CONNECTION-AWARE POSTER HOLDING
+      //  On slow connections, show the poster/blurhash longer and
+      //  delay video playback until enough is buffered.
+      // ═══════════════════════════════════════════════════════════
+      function getBufferThreshold(){
         var conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-        if(!conn) return 'auto';
+        if(!conn) return 0; // Play immediately
         var ect = conn.effectiveType;
-        if(ect === '4g') return '1080p';
-        if(ect === '3g') return '720p';
-        return '360p';
+        if(ect === 'slow-2g' || ect === '2g') return 3; // Wait for 3s buffered
+        if(ect === '3g') return 1.5; // Wait for 1.5s buffered
+        return 0; // 4G/WiFi — play immediately
+      }
+
+      function waitForBuffer(vid, threshold, callback){
+        if(threshold <= 0){ callback(); return; }
+        var checkId = setInterval(function(){
+          if(vid.buffered.length > 0){
+            var buffered = vid.buffered.end(0);
+            if(buffered >= threshold){
+              clearInterval(checkId);
+              callback();
+            }
+          }
+        }, 200);
+        // Timeout: play anyway after 5s
+        setTimeout(function(){
+          clearInterval(checkId);
+          callback();
+        }, 5000);
       }
 
       function applyDragFrame(){
@@ -1230,6 +1501,7 @@
 
       function crossfadeTransition(prevIndex, nextIndex){
         clearAllFades();
+        stopQualityAdaptation(); // Stop adaptation for previous video
         onReelChange(prevIndex, nextIndex);
 
         // Pause previous with fade-out
@@ -1299,8 +1571,10 @@
       // ═══════════════════════════════════════════════════════════
 
       function reconcileWindow(centerIndex){
-        var minIdx = Math.max(0, centerIndex - RENDER_WINDOW);
-        var maxIdx = Math.min(allVideos.length - 1, centerIndex + RENDER_WINDOW);
+        // OPTIMIZATION #4: Shrink render window under memory pressure
+        var renderWin = memoryWarning ? 2 : RENDER_WINDOW;
+        var minIdx = Math.max(0, centerIndex - renderWin);
+        var maxIdx = Math.min(allVideos.length - 1, centerIndex + renderWin);
 
         // Remove elements outside window
         var keys = Object.keys(renderedReels);
@@ -1367,27 +1641,45 @@
         var vid = reel.querySelector('video');
         if(!vid) return;
         vid.muted = isMuted;
-        var playAttempt = vid.play();
-        if(playAttempt && typeof playAttempt.then === 'function'){
-          playAttempt.then(function(){
-            // Autoplay succeeded — remove any tap-to-play overlay
-            removeTapOverlay(reel);
-          }).catch(function(err){
-            // Autoplay blocked — retry muted but DON'T overwrite user's
-            // stored preference. Just mute this playback attempt.
-            vid.muted = true;
-            var retry = vid.play();
-            if(retry && typeof retry.then === 'function'){
-              retry.then(function(){
-                removeTapOverlay(reel);
-                if(!isMuted) showSoundHint(); // user wanted sound — show hint to tap
-              }).catch(function(){
-                // Autoplay truly blocked — show tap-to-play overlay
-                showTapToPlay(reel, vid, i);
-              });
-            }
-          });
+
+        // OPTIMIZATION #3b: Connection-aware poster holding
+        // On slow connections, wait for enough buffer before playing
+        var bufThreshold = getBufferThreshold();
+        function doPlay(){
+          var playAttempt = vid.play();
+          if(playAttempt && typeof playAttempt.then === 'function'){
+            playAttempt.then(function(){
+              // Autoplay succeeded — remove any tap-to-play overlay
+              removeTapOverlay(reel);
+            }).catch(function(err){
+              // Autoplay blocked — retry muted but DON'T overwrite user's
+              // stored preference. Just mute this playback attempt.
+              vid.muted = true;
+              var retry = vid.play();
+              if(retry && typeof retry.then === 'function'){
+                retry.then(function(){
+                  removeTapOverlay(reel);
+                  if(!isMuted) showSoundHint(); // user wanted sound — show hint to tap
+                }).catch(function(){
+                  // Autoplay truly blocked — show tap-to-play overlay
+                  showTapToPlay(reel, vid, i);
+                });
+              }
+            });
+          }
+          // OPTIMIZATION #1b: Start quality adaptation for current video
+          startQualityAdaptation(vid, i);
         }
+
+        if(bufThreshold > 0){
+          // Wait for buffer before playing (shows poster/blurhash longer)
+          vid.preload = 'auto';
+          vid.load();
+          waitForBuffer(vid, bufThreshold, doPlay);
+        } else {
+          doPlay();
+        }
+
         startProgressLoop(reel, vid);
         capturePoster(vid, i);
       }
@@ -1534,6 +1826,7 @@
 
         var urls = [];
         for(var i = fromIndex + 1; i <= fromIndex + prefetchCount && i < allVideos.length; i++){
+          // OPTIMIZATION #1: Prefetch the quality variant matching current connection
           var url = resolveVideoUrl(allVideos[i]);
           if(!url || prefetchedUrls[url]) continue;
           prefetchedUrls[url] = true;
@@ -1640,6 +1933,26 @@
               trackOffset = -(startIndex * screenH);
               setTrackPosition(trackOffset);
             }
+            // OPTIMIZATION #4: Start memory management loop
+            startMemoryManagement();
+
+            // OPTIMIZATION #5: Prefetch poster frames via SW for instant display
+            // Poster frames are tiny (~10-30KB JPEG) — prefetch next 15 for zero-delay poster rendering
+            if(navigator.serviceWorker && navigator.serviceWorker.controller){
+              var posterUrls = [];
+              for(var pi = 0; pi < Math.min(allVideos.length, 15); pi++){
+                if(allVideos[pi].cdnKey){
+                  posterUrls.push('/api/reels/poster/' + allVideos[pi].cdnKey);
+                }
+                if(allVideos[pi].posterUrl){
+                  posterUrls.push(allVideos[pi].posterUrl);
+                }
+              }
+              if(posterUrls.length > 0){
+                navigator.serviceWorker.controller.postMessage({ type: 'PRECACHE_POSTERS', urls: posterUrls });
+              }
+            }
+
             // Defer prefetch to avoid competing with first video load
             setTimeout(function(){
               prefetchAhead(startIndex);
@@ -1700,6 +2013,7 @@
         div.style.top = (index * screenH) + 'px';
         div.dataset.index = index;
 
+        // OPTIMIZATION #1: Select quality variant based on connection
         var videoUrl = resolveVideoUrl(video);
 
         // ⑮ Acquire video element from pool
@@ -1711,6 +2025,7 @@
         vid._abortCtrl = new AbortController();
         var poolSignal = vid._abortCtrl.signal;
         vid._reelIndex = index; // Track current index on element itself
+        vid._quality = currentQuality; // Track which quality we loaded
         vid.src = videoUrl;
         vid.muted = isMuted;
 
