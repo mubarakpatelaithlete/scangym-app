@@ -794,6 +794,21 @@
       var qualityHistory = [];     // track quality selections for adaptation
       var bufferHealthLog = [];    // track buffer health for quality adaptation
 
+      // OPTIMIZATION #2b: Detect H.265/HEVC support — ~50% smaller at same quality
+      // Safari/iOS, Chrome Android (hardware), Edge support HEVC. Firefox does not.
+      var _hevcSupported = null;
+      function supportsHevc(){
+        if(_hevcSupported !== null) return _hevcSupported;
+        try {
+          var vid = document.createElement('video');
+          // Check for HEVC (hvc1 tag used for Safari compatibility)
+          _hevcSupported = vid.canPlayType('video/mp4; codecs="hvc1"') === 'probably'
+                        || vid.canPlayType('video/mp4; codecs="hev1"') === 'probably'
+                        || vid.canPlayType('video/mp4; codecs="hvc1.1.6.L93.B0"') === 'probably';
+        } catch(e) { _hevcSupported = false; }
+        return _hevcSupported;
+      }
+
       // OPTIMIZATION #2: Detect connection type for optimal quality
       function getOptimalQuality(){
         var conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
@@ -809,13 +824,25 @@
       }
 
       // Resolve video URL with adaptive quality variant selection
+      // Prefers H.265/HEVC variants when device supports them (50% smaller files)
       function resolveVideoUrl(video, forceQuality){
         var quality = forceQuality || getOptimalQuality();
         currentQuality = quality;
 
         // If video has quality variants from API, use them
         if(video.variants){
-          // Try requested quality, then fall back to next lower
+          // OPTIMIZATION #2b: Try HEVC variant first (50% smaller) if supported
+          var useHevc = supportsHevc();
+          if(useHevc){
+            // Map quality to HEVC variant name, then fallback to H.264
+            var hevcMap = { '1080p': '720p_hevc', '720p': '720p_hevc', '480p': '480p_hevc', '360p': '480p_hevc' };
+            var hevcKey = hevcMap[quality];
+            if(hevcKey && video.variants[hevcKey] && video.variants[hevcKey].url){
+              return video.variants[hevcKey].url;
+            }
+          }
+
+          // Fallback: H.264 variants — try requested quality, then fall back to next lower
           var fallbackOrder = { '1080p': ['1080p','720p','480p','360p'], '720p': ['720p','480p','360p'], '480p': ['480p','360p','720p'], '360p': ['360p','480p'] };
           var order = fallbackOrder[quality] || ['720p','480p','360p'];
           for(var i = 0; i < order.length; i++){
@@ -1908,6 +1935,23 @@
             }
             // OPTIMIZATION #4: Start memory management loop
             startMemoryManagement();
+
+            // OPTIMIZATION #5: Prefetch poster frames via SW for instant display
+            // Poster frames are tiny (~10-30KB JPEG) — prefetch next 15 for zero-delay poster rendering
+            if(navigator.serviceWorker && navigator.serviceWorker.controller){
+              var posterUrls = [];
+              for(var pi = 0; pi < Math.min(allVideos.length, 15); pi++){
+                if(allVideos[pi].cdnKey){
+                  posterUrls.push('/api/reels/poster/' + allVideos[pi].cdnKey);
+                }
+                if(allVideos[pi].posterUrl){
+                  posterUrls.push(allVideos[pi].posterUrl);
+                }
+              }
+              if(posterUrls.length > 0){
+                navigator.serviceWorker.controller.postMessage({ type: 'PRECACHE_POSTERS', urls: posterUrls });
+              }
+            }
 
             // Defer prefetch to avoid competing with first video load
             setTimeout(function(){

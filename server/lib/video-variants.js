@@ -31,16 +31,44 @@ try { FFPROBE_PATH = require('@ffprobe-installer/ffprobe').path; } catch { /* sy
 const TEMP_DIR = '/tmp/video-variants';
 const VARIANT_DIR = '/data/video-variants'; // persistent volume
 
+// Check if libx265 (HEVC encoder) is available in ffmpeg
+let _hevcAvailable = null;
+function isHevcAvailable() {
+  if (_hevcAvailable !== null) return _hevcAvailable;
+  try {
+    const { execSync } = require('child_process');
+    const out = execSync(`"${FFMPEG_PATH}" -encoders 2>&1 | grep libx265`, {
+      stdio: ['pipe', 'pipe', 'pipe'], timeout: 5000
+    }).toString();
+    _hevcAvailable = out.includes('libx265');
+  } catch {
+    _hevcAvailable = false;
+  }
+  console.log(`[VideoVariants] libx265 ${_hevcAvailable ? 'available — HEVC variants enabled' : 'not available — HEVC variants will be skipped'}`);
+  return _hevcAvailable;
+}
+
 // ═══════════════════════════════════════════════════════════
 //  VARIANT DEFINITIONS
 // ═══════════════════════════════════════════════════════════
 
 const VARIANTS = [
-  { name: '360p',  maxHeight: 360,  crf: 28, audioBitrate: '64k',  preset: 'fast' },
-  { name: '480p',  maxHeight: 480,  crf: 26, audioBitrate: '96k',  preset: 'fast' },
-  { name: '720p',  maxHeight: 720,  crf: 24, audioBitrate: '128k', preset: 'fast' },
-  { name: '1080p', maxHeight: 1080, crf: 23, audioBitrate: '128k', preset: 'fast' },
+  { name: '360p',  maxHeight: 360,  crf: 28, audioBitrate: '64k',  preset: 'fast', codec: 'h264' },
+  { name: '480p',  maxHeight: 480,  crf: 26, audioBitrate: '96k',  preset: 'fast', codec: 'h264' },
+  { name: '720p',  maxHeight: 720,  crf: 24, audioBitrate: '128k', preset: 'fast', codec: 'h264' },
+  { name: '1080p', maxHeight: 1080, crf: 23, audioBitrate: '128k', preset: 'fast', codec: 'h264' },
 ];
+
+// H.265/HEVC variants — ~50% smaller at same quality.
+// Supported by Safari/iOS (since iOS 11), Chrome Android (hardware-dependent).
+// Served only to devices that support HEVC; H.264 remains the universal fallback.
+const HEVC_VARIANTS = [
+  { name: '480p_hevc', maxHeight: 480, crf: 28, audioBitrate: '96k',  preset: 'fast', codec: 'hevc' },
+  { name: '720p_hevc', maxHeight: 720, crf: 26, audioBitrate: '128k', preset: 'fast', codec: 'hevc' },
+];
+
+// Combined list for processing
+const ALL_VARIANTS = [...VARIANTS, ...HEVC_VARIANTS];
 
 // ═══════════════════════════════════════════════════════════
 //  DB SETUP
@@ -176,7 +204,7 @@ function encodeVariant(inputPath, outputPath, variant, probe) {
     const sourceMax = Math.max(probe.width, probe.height);
 
     // Determine scaling: scale to maxHeight while preserving aspect ratio
-    // -2 ensures even dimensions (required by H.264)
+    // -2 ensures even dimensions (required by H.264/H.265)
     let scaleFilter;
     if (probe.height >= probe.width) {
       // Vertical/portrait video: scale height
@@ -194,14 +222,20 @@ function encodeVariant(inputPath, outputPath, variant, probe) {
       }
     }
 
+    // Select codec: H.265/HEVC for ~50% smaller files, H.264 as universal fallback
+    const isHevc = variant.codec === 'hevc';
+    const videoCodec = isHevc ? 'libx265' : 'libx264';
+    const codecArgs = isHevc
+      ? ['-c:v', videoCodec, '-preset', variant.preset, '-crf', String(variant.crf),
+         '-tag:v', 'hvc1',         // Required for Safari/iOS HEVC playback
+         '-x265-params', 'log-level=error']  // Suppress x265 verbose output
+      : ['-c:v', videoCodec, '-preset', variant.preset, '-crf', String(variant.crf),
+         '-profile:v', 'high', '-level', '4.1'];
+
     const args = [
       '-y', '-i', inputPath,
       ...(scaleFilter ? ['-vf', scaleFilter] : []),
-      '-c:v', 'libx264',
-      '-preset', variant.preset,
-      '-crf', String(variant.crf),
-      '-profile:v', 'high',      // Better compatibility + quality
-      '-level', '4.1',
+      ...codecArgs,
       '-pix_fmt', 'yuv420p',     // Universal compatibility
       ...(probe.hasAudio ? ['-c:a', 'aac', '-b:a', variant.audioBitrate] : ['-an']),
       '-movflags', '+faststart',  // CRITICAL: moov atom at start for instant playback
@@ -282,7 +316,7 @@ async function processVideoVariants(video) {
   const existingQualities = new Set(existing.rows.map(r => r.quality));
 
   // Determine which variants are needed
-  const needed = VARIANTS.filter(v => !existingQualities.has(v.name));
+  const needed = ALL_VARIANTS.filter(v => !existingQualities.has(v.name));
   if (needed.length === 0) {
     return { variants: [], skipped: true, reason: 'all variants exist' };
   }
@@ -341,6 +375,9 @@ async function processVideoVariants(video) {
 
   // Encode each needed variant
   for (const variant of needed) {
+    // Skip HEVC variants if libx265 is not available
+    if (variant.codec === 'hevc' && !isHevcAvailable()) continue;
+
     // Skip variants larger than or equal to source
     if (variant.maxHeight >= Math.max(probe.width, probe.height) && variant.name !== '720p') {
       // Don't upscale, but always create 720p as the "standard" quality
@@ -416,7 +453,7 @@ async function processAllVariants(catalogVideos, opts = {}) {
       'SELECT COUNT(*) FROM video_variants WHERE cdn_key = $1',
       [video.cdnKey]
     );
-    if (parseInt(existing.rows[0].count) < VARIANTS.length) {
+    if (parseInt(existing.rows[0].count) < ALL_VARIANTS.length) {
       needsProcessing.push(video);
     }
   }
@@ -468,12 +505,14 @@ async function getVariantsForFeed(cdnKeys) {
     const map = {};
     for (const row of result.rows) {
       if (!map[row.cdn_key]) map[row.cdn_key] = {};
+      const isHevc = row.quality.includes('hevc');
       map[row.cdn_key][row.quality] = {
         url: `https://cdn.scangym.com/${row.r2_key}`,
         width: row.width,
         height: row.height,
         fileSize: row.file_size,
         bitrate: row.bitrate,
+        codec: isHevc ? 'hevc' : 'h264',
       };
     }
     return map;
@@ -508,7 +547,9 @@ async function processUploadVariants(localPath, cdnKey, videoId) {
 
   const results = [];
 
-  for (const variant of VARIANTS) {
+  for (const variant of ALL_VARIANTS) {
+    // Skip HEVC variants if libx265 is not available
+    if (variant.codec === 'hevc' && !isHevcAvailable()) continue;
     // Skip if variant would be larger than source
     if (variant.maxHeight > Math.max(probe.width, probe.height)) continue;
 
@@ -565,4 +606,6 @@ module.exports = {
   checkFaststart,
   probeVideo,
   VARIANTS,
+  HEVC_VARIANTS,
+  ALL_VARIANTS,
 };

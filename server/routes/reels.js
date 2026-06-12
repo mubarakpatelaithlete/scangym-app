@@ -770,8 +770,8 @@ setTimeout(async () => {
     try {
       const { processAllVariants } = require('../lib/video-variants');
       const variantResult = await processAllVariants(catalog, {
-        maxVideos: 5,
-        delayMs: 2000,
+        maxVideos: 15,
+        delayMs: 1500,
       });
       console.log(`[Startup Pipeline] Variants: ${variantResult.processed} processed, ${variantResult.remaining} remaining`);
     } catch (err) {

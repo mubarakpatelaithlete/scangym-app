@@ -22,6 +22,7 @@ const pool = require('../middleware/db');
 const { authenticateUser, requireAdmin } = require('../middleware/auth');
 const { compressVideo } = require('../lib/video-compress');
 const { uploadToR2, existsInR2 } = require('../lib/r2-upload');
+const { processVideoVariants } = require('../lib/video-variants');
 
 // ═══════════════════════════════════════════════════════════
 //  STORAGE SETUP
@@ -192,6 +193,19 @@ async function processVideo(inputPath, originalName, options = {}) {
   );
 
   const entry = dbResult.rows[0];
+
+  // Step 4: Generate multi-resolution variants (adaptive bitrate)
+  // Runs in background after response — downloads from R2 (file-safe even after temp cleanup),
+  // encodes 360p/480p/720p/1080p variants, uploads back to R2.
+  processVideoVariants({ id: entry.id, cdnKey, url: uploadResult.url })
+    .then(result => {
+      if (!result.skipped && result.variants.length > 0) {
+        console.log(`Ingest: Generated ${result.variants.length} quality variants for ${cdnKey}`);
+      }
+    })
+    .catch(err => {
+      console.error(`Ingest: Variant encoding failed for ${cdnKey} (non-fatal):`, err.message);
+    });
 
   return {
     skipped: false,
