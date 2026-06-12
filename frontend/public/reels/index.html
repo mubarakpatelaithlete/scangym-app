@@ -509,6 +509,7 @@
       var touchLastY    = 0;
       var touchLastT    = 0;
       var isDragging    = false;
+      var autoScrollTimer = null; // Auto-scroll: timer for delayed advance
       var dragDelta     = 0;
       var touchHistory  = [];
       var pendingDragY  = null;
@@ -530,7 +531,7 @@
       function initVideoPool(){
         for(var i = 0; i < POOL_SIZE; i++){
           var vid = document.createElement('video');
-          vid.loop = true;
+          vid.loop = false; // Auto-scroll: don't loop — advance to next reel on ended
           vid.muted = true;
           vid.playsInline = true;
           vid.autoplay = false; // controlled per-reel via play()
@@ -1118,6 +1119,8 @@
       track.addEventListener('touchstart', function(e){
         track.classList.remove('snapping');
         if(dragRafId){ cancelAnimationFrame(dragRafId); dragRafId = null; }
+        // Cancel pending auto-scroll when user starts swiping
+        if(autoScrollTimer){ clearTimeout(autoScrollTimer); autoScrollTimer = null; }
         var t = e.touches[0];
         touchStartY = t.clientY;
         touchStartT = Date.now();
@@ -1507,6 +1510,7 @@
 
       function crossfadeTransition(prevIndex, nextIndex){
         clearAllFades();
+        if(autoScrollTimer){ clearTimeout(autoScrollTimer); autoScrollTimer = null; }
         stopQualityAdaptation(); // Stop adaptation for previous video
         onReelChange(prevIndex, nextIndex);
 
@@ -1567,6 +1571,17 @@
               nextVid.removeEventListener('playing', onPlay);
               nextVid.classList.add('has-frame');
               removeFramePreview(nextReel);
+            }, {once: true});
+
+            // ── AUTO-SCROLL: advance to next reel when video ends ──
+            nextVid.addEventListener('ended', function onEnded(){
+              nextVid.removeEventListener('ended', onEnded);
+              // Small pause (800ms) before auto-advancing for a smooth feel
+              autoScrollTimer = setTimeout(function(){
+                if(currentIndex === nextIndex && !isDragging){
+                  snapTo(currentIndex + 1, true);
+                }
+              }, 800);
             }, {once: true});
           }
         }
@@ -1688,6 +1703,16 @@
 
         startProgressLoop(reel, vid);
         capturePoster(vid, i);
+
+        // ── AUTO-SCROLL: advance to next reel when video ends ──
+        vid.addEventListener('ended', function onEnded(){
+          vid.removeEventListener('ended', onEnded);
+          autoScrollTimer = setTimeout(function(){
+            if(currentIndex === i && !isDragging){
+              snapTo(currentIndex + 1, true);
+            }
+          }, 800);
+        }, {once: true});
       }
 
       // ── Tap-to-play fallback when autoplay is blocked ──
