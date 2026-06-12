@@ -1304,6 +1304,8 @@
         }
         var prevIndex = currentIndex;
         currentIndex  = index;
+        // H7 FIX: Persist reel position so it survives tab-switches & reloads
+        try { sessionStorage.setItem('sg_reel_idx', String(index)); } catch(e){}
         trackOffset   = -(index * screenH);
         if(animate){
           track.classList.add('snapping');
@@ -1938,6 +1940,16 @@
                 }
               }
             } catch(e){ /* URLSearchParams not supported — start at 0 */ }
+
+            // H7 FIX: Restore saved reel position (only if no deep-link override)
+            if(startIndex === 0){
+              try {
+                var saved = parseInt(sessionStorage.getItem('sg_reel_idx'), 10);
+                if(!isNaN(saved) && saved > 0 && saved < allVideos.length){
+                  startIndex = saved;
+                }
+              } catch(e){}
+            }
 
             reconcileWindow(startIndex);
             loading.style.display = 'none';
