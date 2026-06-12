@@ -606,6 +606,153 @@ function formatCredentialForClient(cred) {
   };
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// SEAM CONNECT WEBVIEW — Drop-in OAuth-style flow for gym owners
+// Gym owner clicks "Connect Lock System" → Seam handles all the auth
+// ═══════════════════════════════════════════════════════════════════
+
+// POST /api/access/owner/create-connect-webview — Create a Seam Connect Webview
+router.post('/owner/create-connect-webview', authenticateUser, async (req, res) => {
+  try {
+    const { gymId } = req.body;
+
+    // Verify ownership
+    const gym = await pool.query(
+      'SELECT * FROM gyms WHERE id = $1 AND claimed_by::text = $2::text',
+      [gymId, req.user.id]
+    );
+    if (gym.rows.length === 0) return res.status(403).json({ error: 'Not your gym' });
+
+    const seam = new SeamClient();
+    const webview = await seam.createConnectWebview({
+      accepted_providers: [
+        'kisi', 'salto_ks', 'brivo', 'august', 'yale', 'schlage',
+        'kwikset', 'nuki', 'dormakaba_oracode', 'latch',
+        'assa_abloy_credential_service', 'pti_storlogix'
+      ],
+      custom_redirect_url: `${req.protocol}://${req.get('host')}/gympartners-dashboard/connect-access?status=complete&gym_id=${gymId}`,
+      custom_redirect_failure_url: `${req.protocol}://${req.get('host')}/gympartners-dashboard/connect-access?status=failed&gym_id=${gymId}`,
+      custom_metadata: { gym_id: String(gymId), owner_id: String(req.user.id) },
+      wait_for_device_creation: true,
+    });
+
+    res.json({
+      connect_webview_id: webview.connect_webview.connect_webview_id,
+      url: webview.connect_webview.url,
+      status: webview.connect_webview.status,
+    });
+  } catch (err) {
+    console.error('Create connect webview error:', err);
+    res.status(500).json({ error: 'Failed to create connection flow' });
+  }
+});
+
+// POST /api/access/owner/complete-connect — Finalize after Seam Connect Webview
+router.post('/owner/complete-connect', authenticateUser, async (req, res) => {
+  try {
+    const { gymId, connectWebviewId } = req.body;
+
+    // Verify ownership
+    const gym = await pool.query(
+      'SELECT * FROM gyms WHERE id = $1 AND claimed_by::text = $2::text',
+      [gymId, req.user.id]
+    );
+    if (gym.rows.length === 0) return res.status(403).json({ error: 'Not your gym' });
+
+    const seam = new SeamClient();
+
+    // Get the webview status
+    const wv = await seam.getConnectWebview(connectWebviewId);
+    if (!wv.connect_webview.login_successful) {
+      return res.status(400).json({ error: 'Connection not completed yet', status: wv.connect_webview.status });
+    }
+
+    const connectedAccountId = wv.connect_webview.connected_account_id;
+    if (!connectedAccountId) {
+      return res.status(400).json({ error: 'No connected account found' });
+    }
+
+    // List devices from the connected account
+    const devices = await seam.listDevices(connectedAccountId);
+    const locks = (devices.devices || []).filter(d =>
+      d.device_type?.includes('lock') ||
+      d.capabilities?.includes('lock') ||
+      d.properties?.locked !== undefined
+    );
+
+    // List ACS systems from the connected account
+    let acsSystems = [];
+    try {
+      acsSystems = await seam.listAcsSystems(connectedAccountId);
+    } catch (e) {
+      // Not all providers have ACS systems
+    }
+
+    // Determine provider name
+    const provider = wv.connect_webview.selected_provider || 'seam';
+    const accessType = (provider.includes('kisi') || provider.includes('salto')) ? 'qr_unlock' : 'code';
+
+    // Store first ACS system ID if available
+    const acsSystemId = acsSystems.length > 0 ? acsSystems[0].acs_system_id : null;
+
+    // Update gym record
+    await pool.query(`
+      UPDATE gyms SET
+        access_system = $1,
+        access_system_id = $2,
+        access_type = $3,
+        access_verified = true,
+        access_api_key = $4,
+        updated_at = NOW()
+      WHERE id = $5
+    `, [
+      provider,
+      acsSystemId || connectedAccountId,
+      accessType,
+      connectedAccountId,  /* store connected_account_id for future API calls */
+      gymId,
+    ]);
+
+    res.json({
+      connected: true,
+      provider,
+      connected_account_id: connectedAccountId,
+      locks_found: locks.length,
+      acs_systems: acsSystems.length,
+      access_type: accessType,
+      message: `${provider} connected! Your members will automatically receive door access when they book a day pass.`,
+    });
+  } catch (err) {
+    console.error('Complete connect error:', err);
+    res.status(500).json({ error: 'Failed to finalize connection' });
+  }
+});
+
+// GET /api/access/owner/connection-status/:gymId — Check connection status
+router.get('/owner/connection-status/:gymId', authenticateUser, async (req, res) => {
+  try {
+    const { gymId } = req.params;
+    const gym = await pool.query(
+      `SELECT id, name, access_system, access_system_id, access_type, access_verified
+       FROM gyms WHERE id = $1 AND claimed_by::text = $2::text`,
+      [gymId, req.user.id]
+    );
+    if (gym.rows.length === 0) return res.status(403).json({ error: 'Not your gym' });
+
+    const g = gym.rows[0];
+    res.json({
+      connected: !!g.access_system && g.access_verified,
+      system: g.access_system,
+      system_id: g.access_system_id,
+      access_type: g.access_type,
+      verified: g.access_verified,
+    });
+  } catch (err) {
+    console.error('Connection status error:', err);
+    res.status(500).json({ error: 'Failed to check status' });
+  }
+});
+
 function getAccessLabel(system, type) {
   const labels = {
     kisi: '🔓 QR code unlocks the door — no app needed',
