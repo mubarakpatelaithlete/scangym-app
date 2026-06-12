@@ -425,7 +425,7 @@ if (fs.existsSync(FRONTEND_DIR)) {
     dotfiles: 'allow',
     etag: true,
     lastModified: true,
-    // index.html for /reels/ is handled by SSR routes above; other dirs (ceo-dashboard, etc.) still need auto-index
+    index: false, // Disable auto index.html so SPA catch-all can inject runtime config (geoHint, Google Client ID)
     setHeaders: (res, filePath) => {
       if (filePath.endsWith('.html')) {
         res.setHeader('Cache-Control', 'no-cache');
