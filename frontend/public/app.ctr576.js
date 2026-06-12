@@ -2119,24 +2119,39 @@ window.closeGymOverlay=function(){
 
 // Open gym overlay directly from explore card rows without showing gym profile first
 // Screen 3 removed: load gym data silently and show overlay as standalone modal
+// ── Gym data cache: avoids re-fetching when tapping multiple overlay buttons ──
+// Each entry expires after 5 minutes so data stays fresh.
+window._gymDataCache=window._gymDataCache||{};
+const GYM_CACHE_TTL=5*60*1000; // 5 minutes
+
 window.openGymDirectOverlay=async function(id,isLive,section){
   window._directOverlayReturn=state.route||'/explore';
-  // Load gym data silently (no navigate, no render)
-  const isPlaceId=isLive||isNaN(parseInt(id));
-  try{
-    if(isPlaceId){
-      const data=await api.getLive('/place/'+id);
-      if(data.gym){
-        state.currentGym={...data.gym,id:data.gym.dbId||data.gym.placeId,place_id:data.gym.placeId,photo_url:data.photos?.[0]?.url||null,photos_list:data.photos||[],rating:data.rating?.google||null,user_ratings_total:data.rating?.googleTotal||0,formatted_address:data.gym.address,vicinity:data.gym.address,opening_hours:data.openingHours,reviews_data:data.reviews,pricing:data.pricing,map:data.map,source:'live'};
+
+  // Check cache first — skip server call if we loaded this gym recently
+  const cached=window._gymDataCache[id];
+  if(cached&&(Date.now()-cached.ts)<GYM_CACHE_TTL){
+    state.currentGym=cached.data;
+  }else{
+    // Load gym data silently (no navigate, no render)
+    const isPlaceId=isLive||isNaN(parseInt(id));
+    try{
+      if(isPlaceId){
+        const data=await api.getLive('/place/'+id);
+        if(data.gym){
+          state.currentGym={...data.gym,id:data.gym.dbId||data.gym.placeId,place_id:data.gym.placeId,photo_url:data.photos?.[0]?.url||null,photos_list:data.photos||[],rating:data.rating?.google||null,user_ratings_total:data.rating?.googleTotal||0,formatted_address:data.gym.address,vicinity:data.gym.address,opening_hours:data.openingHours,reviews_data:data.reviews,pricing:data.pricing,map:data.map,source:'live'};
+        }
+      }else{
+        const data=await api.getGuest('/gym/'+id);
+        state.currentGym=data.gym||data;
       }
-    }else{
-      const data=await api.getGuest('/gym/'+id);
-      state.currentGym=data.gym||data;
+    }catch(e){
+      console.error('Failed to load gym data for overlay:',e);
+      state.currentGym=state.gyms.find(g=>(g.placeId||g.id)==id)||{name:'Loading...',id};
     }
-  }catch(e){
-    console.error('Failed to load gym data for overlay:',e);
-    state.currentGym=state.gyms.find(g=>(g.placeId||g.id)==id)||{name:'Loading...',id};
+    // Save to cache
+    window._gymDataCache[id]={data:state.currentGym,ts:Date.now()};
   }
+
   // Ensure standalone overlay container exists in DOM
   _ensureStandaloneOverlay(id);
   // Open the overlay section directly
