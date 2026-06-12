@@ -1,0 +1,373 @@
+/**
+ * Universal Message Handler — The "kitchen" that all channels use.
+ * 
+ * Takes a natural language message like "Book a gym in Bolton for tomorrow"
+ * and turns it into ScanGym API calls. Works the same whether the message
+ * comes from Telegram, WhatsApp, SMS, Discord, or any other channel.
+ * 
+ * Architecture (like Uber):
+ *   User message → Channel Adapter → THIS HANDLER → ScanGym API → Response
+ *   
+ * The channel adapters (telegram.js, whatsapp.js, etc.) are thin wrappers
+ * that receive messages in their format and pass plain text here.
+ */
+
+const SCANGYM_API = (process.env.SCANGYM_API_URL || process.env.RAILWAY_PUBLIC_DOMAIN 
+  ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` 
+  : 'http://localhost:5000').replace(/\/+$/, '');
+
+// ─── Intent Detection (keyword-based, no AI dependency) ─────
+// Simple but effective — works offline, zero latency, zero cost.
+// Can upgrade to OpenAI/Claude later for complex queries.
+
+const INTENTS = {
+  SEARCH: 'search',
+  BOOK: 'book', 
+  CANCEL: 'cancel',
+  HELP: 'help',
+  STATUS: 'status',
+  UNKNOWN: 'unknown',
+};
+
+function detectIntent(text) {
+  const lower = text.toLowerCase().trim();
+  
+  // Cancel
+  if (/\bcancel\b/.test(lower)) return INTENTS.CANCEL;
+  
+  // Book
+  if (/\b(book|reserve|schedule)\b/.test(lower)) return INTENTS.BOOK;
+  
+  // Status / my bookings
+  if (/\b(status|my booking|my session|booking code)\b/.test(lower)) return INTENTS.STATUS;
+  
+  // Search / find
+  if (/\b(find|search|show|list|near|nearby|gym|gyms|where)\b/.test(lower)) return INTENTS.SEARCH;
+  
+  // Help
+  if (/\b(help|start|hello|hi|hey|menu|commands)\b/.test(lower)) return INTENTS.HELP;
+  
+  // Default: try search (most common intent)
+  return INTENTS.SEARCH;
+}
+
+// ─── Entity Extraction ──────────────────────────────────────
+// Pull out location, date, time, email from the message.
+
+function extractEntities(text) {
+  const entities = {};
+  const lower = text.toLowerCase();
+  
+  // Email
+  const emailMatch = text.match(/[\w.-]+@[\w.-]+\.\w+/);
+  if (emailMatch) entities.email = emailMatch[0];
+  
+  // Date: "tomorrow", "today", "Monday", "2025-01-15", "15 Jan", "next Tuesday"
+  if (/\btomorrow\b/.test(lower)) {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    entities.date = d.toISOString().split('T')[0];
+  } else if (/\btoday\b/.test(lower)) {
+    entities.date = new Date().toISOString().split('T')[0];
+  } else {
+    const dateMatch = text.match(/\d{4}-\d{2}-\d{2}/);
+    if (dateMatch) entities.date = dateMatch[0];
+  }
+  
+  // Time: "at 3pm", "at 15:00", "at 3:30pm", "morning", "evening"
+  const timeMatch = text.match(/\bat?\s*(\d{1,2})[:\.]?(\d{2})?\s*(am|pm)?\b/i);
+  if (timeMatch) {
+    let hours = parseInt(timeMatch[1]);
+    const mins = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
+    const ampm = (timeMatch[3] || '').toLowerCase();
+    if (ampm === 'pm' && hours < 12) hours += 12;
+    if (ampm === 'am' && hours === 12) hours = 0;
+    if (hours >= 0 && hours <= 23) {
+      entities.time = `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+    }
+  } else if (/\bmorning\b/.test(lower)) {
+    entities.time = '09:00';
+  } else if (/\bevening\b/.test(lower)) {
+    entities.time = '18:00';
+  } else if (/\bafternoon\b/.test(lower)) {
+    entities.time = '14:00';
+  }
+  
+  // Location: everything after "in", "near", "at" (excluding known keywords)
+  const locMatch = lower.match(/(?:in|near|at|around)\s+(.+?)(?:\s+(?:for|on|at|tomorrow|today|\d)|\s*$)/);
+  if (locMatch) {
+    const loc = locMatch[1].replace(/\b(gym|gyms|fitness|a|the)\b/g, '').trim();
+    if (loc.length > 1) entities.location = loc;
+  }
+  
+  // Booking ID for cancel/status
+  const idMatch = text.match(/\b(\d{3,})\b/);
+  if (idMatch) entities.bookingId = parseInt(idMatch[1]);
+  
+  // Booking code (e.g., 5WCB-8VDY)
+  const codeMatch = text.match(/\b([A-Z0-9]{4}-[A-Z0-9]{4})\b/);
+  if (codeMatch) entities.bookingCode = codeMatch[1];
+  
+  return entities;
+}
+
+// ─── API Calls ──────────────────────────────────────────────
+
+async function callApi(path, options = {}) {
+  const url = `${SCANGYM_API}${path}`;
+  try {
+    const resp = await fetch(url, {
+      headers: { 'Content-Type': 'application/json', ...options.headers },
+      ...options,
+    });
+    return await resp.json();
+  } catch (err) {
+    return { error: `Connection failed: ${err.message}` };
+  }
+}
+
+// ─── Response Formatters ────────────────────────────────────
+// Returns plain text (channels convert to their own format if needed)
+
+function formatGymList(gyms) {
+  if (!gyms || gyms.length === 0) {
+    return "😕 No gyms found. Try a different location?\n\nExample: \"Find gyms in London\"";
+  }
+  
+  let text = `🏋️ Found ${gyms.length} gyms:\n\n`;
+  gyms.slice(0, 5).forEach((g, i) => {
+    const distance = g.distanceText ? ` (${g.distanceText})` : '';
+    const rating = g.rating ? ` ⭐${g.rating}` : '';
+    const price = `${g.currencySymbol || '£'}${g.dayPassPrice}`;
+    const open = g.openNow === true ? ' ✅Open' : g.openNow === false ? ' 🔴Closed' : '';
+    text += `${i + 1}. *${g.name}*${distance}\n`;
+    text += `   ${price} day pass${rating}${open}\n`;
+    text += `   📍 ${g.address}\n\n`;
+  });
+  
+  text += `\n💡 To book, say: "Book gym 1 for tomorrow"\n`;
+  text += `Or: "Book [gym name] for [date] at [time]"`;
+  
+  return text;
+}
+
+function formatBookingConfirmation(booking, gymName) {
+  return `✅ *Booking Confirmed!*\n\n` +
+    `🏋️ ${gymName}\n` +
+    `📅 ${booking.date}\n` +
+    `⏰ ${booking.time}\n` +
+    `💰 £${booking.price}\n` +
+    `🔖 Code: ${booking.bookingCode}\n\n` +
+    `Complete payment to get your QR entry code.\n` +
+    `Free cancellation up to 2 hours before.\n\n` +
+    `To cancel: "Cancel booking ${booking.id}"`;
+}
+
+// ─── Session Store (per-user conversation state) ─────────────
+// Tracks last search results so user can say "Book gym 2"
+const sessions = new Map();
+const SESSION_TTL = 30 * 60 * 1000; // 30 minutes
+
+function getSession(userId) {
+  const s = sessions.get(userId);
+  if (s && Date.now() - s.lastActive < SESSION_TTL) {
+    s.lastActive = Date.now();
+    return s;
+  }
+  const newSession = { lastActive: Date.now(), lastResults: [], pendingBooking: null };
+  sessions.set(userId, newSession);
+  // Cleanup old sessions
+  if (sessions.size > 10000) {
+    const now = Date.now();
+    for (const [k, v] of sessions) {
+      if (now - v.lastActive > SESSION_TTL) sessions.delete(k);
+    }
+  }
+  return newSession;
+}
+
+// ─── Main Handler ───────────────────────────────────────────
+/**
+ * Process a user message and return a response.
+ * 
+ * @param {string} userId - Unique user ID (platform-specific, e.g. telegram:12345)
+ * @param {string} text - The user's message text
+ * @param {object} meta - Optional metadata (userName, platform, etc.)
+ * @returns {Promise<{text: string, data?: object}>} Response to send back
+ */
+async function handleMessage(userId, text, meta = {}) {
+  if (!text || !text.trim()) {
+    return { text: getHelpText() };
+  }
+  
+  const intent = detectIntent(text);
+  const entities = extractEntities(text);
+  const session = getSession(userId);
+  
+  try {
+    switch (intent) {
+      case INTENTS.HELP:
+        return { text: getHelpText() };
+        
+      case INTENTS.SEARCH:
+        return await handleSearch(session, text, entities);
+        
+      case INTENTS.BOOK:
+        return await handleBook(session, text, entities, meta);
+        
+      case INTENTS.CANCEL:
+        return await handleCancel(entities);
+        
+      case INTENTS.STATUS:
+        return { text: "📋 To check your booking, visit scangym.com or tell me your booking code." };
+        
+      default:
+        return await handleSearch(session, text, entities);
+    }
+  } catch (err) {
+    console.error('[MessageHandler] Error:', err);
+    return { text: "😕 Something went wrong. Please try again or visit scangym.com directly." };
+  }
+}
+
+async function handleSearch(session, text, entities) {
+  const query = entities.location || text.replace(/\b(find|search|show|list|gym|gyms|near|nearby|me|a|the|in)\b/gi, '').trim() || text;
+  
+  const params = new URLSearchParams({ q: `gym in ${query}` });
+  const data = await callApi(`/api/live/search?${params}`);
+  
+  if (data.error) {
+    return { text: `😕 Search failed: ${data.error}\n\nTry: "Find gyms in Bolton"` };
+  }
+  
+  // Store results in session for "Book gym 2" follow-ups
+  session.lastResults = data.gyms || [];
+  
+  return { text: formatGymList(data.gyms), data: { gyms: data.gyms } };
+}
+
+async function handleBook(session, text, entities, meta) {
+  // Check if user said "Book gym 2" (referencing last search)
+  const numMatch = text.match(/\bgym\s*(\d+)\b/i);
+  let targetGym = null;
+  
+  if (numMatch && session.lastResults.length > 0) {
+    const idx = parseInt(numMatch[1]) - 1;
+    if (idx >= 0 && idx < session.lastResults.length) {
+      targetGym = session.lastResults[idx];
+    }
+  }
+  
+  // If no gym selected by number, search for it
+  if (!targetGym && entities.location) {
+    const params = new URLSearchParams({ q: `gym in ${entities.location}` });
+    const data = await callApi(`/api/live/search?${params}`);
+    if (data.gyms && data.gyms.length > 0) {
+      targetGym = data.gyms[0]; // Take the top-ranked result
+      session.lastResults = data.gyms;
+    }
+  }
+  
+  if (!targetGym) {
+    return { 
+      text: "🤔 Which gym would you like to book?\n\n" +
+        "Try: \"Find gyms in Bolton\" first, then \"Book gym 1 for tomorrow\"\n" +
+        "Or: \"Book a gym in Manchester for tomorrow at 3pm\""
+    };
+  }
+  
+  // Need a date
+  if (!entities.date) {
+    session.pendingBooking = { gym: targetGym };
+    return { 
+      text: `📅 When would you like to visit *${targetGym.name}*?\n\n` +
+        `Say "tomorrow", "today", or a date like "2025-01-15"`
+    };
+  }
+  
+  // Need an email
+  if (!entities.email) {
+    session.pendingBooking = { gym: targetGym, date: entities.date, time: entities.time };
+    return { 
+      text: `📧 Almost there! Please share your email to complete the booking at *${targetGym.name}*.\n\n` +
+        `Your email is used for the booking confirmation only.`
+    };
+  }
+  
+  // We have everything — make the booking!
+  const placeId = targetGym.placeId || targetGym.id;
+  
+  // Step 1: Ensure gym exists in DB
+  const ensureResult = await callApi('/api/live/ensure-gym', {
+    method: 'POST',
+    body: JSON.stringify({ placeId }),
+  });
+  
+  if (ensureResult.error) {
+    return { text: `😕 Couldn't find that gym. Please try again.` };
+  }
+  
+  // Step 2: Create guest booking
+  const bookingResult = await callApi('/api/bookings/guest-create', {
+    method: 'POST',
+    body: JSON.stringify({
+      gymId: ensureResult.gymId,
+      date: entities.date,
+      time: entities.time || 'anytime',
+      email: entities.email,
+      name: meta.userName || 'Chat Booking',
+    }),
+  });
+  
+  if (!bookingResult.success) {
+    return { text: `😕 Booking failed: ${bookingResult.error || 'Unknown error'}` };
+  }
+  
+  session.pendingBooking = null;
+  return { 
+    text: formatBookingConfirmation(bookingResult.booking, targetGym.name),
+    data: { booking: bookingResult.booking },
+  };
+}
+
+async function handleCancel(entities) {
+  if (!entities.bookingId && !entities.bookingCode) {
+    return { text: "🔖 Please tell me your booking ID to cancel.\n\nExample: \"Cancel booking 123\"" };
+  }
+  
+  if (!entities.email) {
+    return { text: "📧 Please include your email for verification.\n\nExample: \"Cancel booking 123 email@example.com\"" };
+  }
+  
+  const result = await callApi('/api/bookings/cancel', {
+    method: 'POST',
+    body: JSON.stringify({
+      bookingId: entities.bookingId,
+      email: entities.email,
+    }),
+  });
+  
+  if (result.error) {
+    return { text: `😕 ${result.error}\n${result.message || ''}` };
+  }
+  
+  return { 
+    text: `✅ Booking cancelled.\n${result.message || ''}\n\n${result.refunded ? '💰 Refund will appear in 3-5 business days.' : ''}`
+  };
+}
+
+function getHelpText() {
+  return `👋 *Welcome to ScanGym!*\n\n` +
+    `Book a gym session from right here. Here's what I can do:\n\n` +
+    `🔍 *Find gyms:*\n` +
+    `"Find gyms in Bolton"\n` +
+    `"Gyms near Manchester"\n\n` +
+    `📅 *Book a session:*\n` +
+    `"Book a gym in London for tomorrow at 3pm"\n` +
+    `"Book gym 1 for today" (after searching)\n\n` +
+    `❌ *Cancel:*\n` +
+    `"Cancel booking 123 my@email.com"\n\n` +
+    `💡 Just type a city name to start searching!`;
+}
+
+module.exports = { handleMessage, detectIntent, extractEntities, INTENTS };
