@@ -303,6 +303,50 @@
       }
       @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(-10px);}}
 
+      /* ── Creative Commons download notice modal ── */
+      .cc-modal-overlay{
+        position:fixed;top:0;left:0;right:0;bottom:0;
+        background:rgba(0,0,0,.75);z-index:1000;
+        display:flex;align-items:center;justify-content:center;
+        animation:ccFadeIn .2s ease-out;
+      }
+      @keyframes ccFadeIn{from{opacity:0;}}
+      .cc-modal{
+        background:#1a1a2e;border-radius:16px;max-width:340px;width:90%;
+        padding:24px 20px;text-align:center;
+        box-shadow:0 12px 40px rgba(0,0,0,.5);
+      }
+      .cc-modal .cc-icon{
+        font-size:36px;margin-bottom:12px;
+      }
+      .cc-modal h3{
+        color:#fff;font-size:16px;font-weight:700;margin:0 0 8px;
+      }
+      .cc-modal p{
+        color:rgba(255,255,255,.7);font-size:13px;line-height:1.5;margin:0 0 6px;
+      }
+      .cc-modal .cc-license-badge{
+        display:inline-flex;align-items:center;gap:6px;
+        background:rgba(255,255,255,.1);border-radius:8px;
+        padding:6px 12px;margin:10px 0 16px;font-size:12px;color:rgba(255,255,255,.6);
+      }
+      .cc-modal .cc-license-badge img{
+        height:20px;
+      }
+      .cc-modal .cc-buttons{
+        display:flex;gap:10px;
+      }
+      .cc-modal .cc-btn{
+        flex:1;border:none;border-radius:10px;padding:12px 0;
+        font-size:14px;font-weight:700;cursor:pointer;
+      }
+      .cc-modal .cc-btn-cancel{
+        background:rgba(255,255,255,.1);color:#fff;
+      }
+      .cc-modal .cc-btn-download{
+        background:#FF6D00;color:#fff;
+      }
+
       /* ── FIX #3: Always-visible loading state — never show black screen ── */
       .reel-loading-state{
         position:absolute;top:0;left:0;right:0;bottom:0;
@@ -509,6 +553,7 @@
       var touchLastY    = 0;
       var touchLastT    = 0;
       var isDragging    = false;
+      var autoScrollTimer = null; // Auto-scroll: timer for delayed advance
       var dragDelta     = 0;
       var touchHistory  = [];
       var pendingDragY  = null;
@@ -530,7 +575,7 @@
       function initVideoPool(){
         for(var i = 0; i < POOL_SIZE; i++){
           var vid = document.createElement('video');
-          vid.loop = true;
+          vid.loop = false; // Auto-scroll: don't loop — advance to next reel on ended
           vid.muted = true;
           vid.playsInline = true;
           vid.autoplay = false; // controlled per-reel via play()
@@ -1118,6 +1163,8 @@
       track.addEventListener('touchstart', function(e){
         track.classList.remove('snapping');
         if(dragRafId){ cancelAnimationFrame(dragRafId); dragRafId = null; }
+        // Cancel pending auto-scroll when user starts swiping
+        if(autoScrollTimer){ clearTimeout(autoScrollTimer); autoScrollTimer = null; }
         var t = e.touches[0];
         touchStartY = t.clientY;
         touchStartT = Date.now();
@@ -1507,6 +1554,7 @@
 
       function crossfadeTransition(prevIndex, nextIndex){
         clearAllFades();
+        if(autoScrollTimer){ clearTimeout(autoScrollTimer); autoScrollTimer = null; }
         stopQualityAdaptation(); // Stop adaptation for previous video
         onReelChange(prevIndex, nextIndex);
 
@@ -1567,6 +1615,17 @@
               nextVid.removeEventListener('playing', onPlay);
               nextVid.classList.add('has-frame');
               removeFramePreview(nextReel);
+            }, {once: true});
+
+            // ── AUTO-SCROLL: advance to next reel when video ends ──
+            nextVid.addEventListener('ended', function onEnded(){
+              nextVid.removeEventListener('ended', onEnded);
+              // Small pause (800ms) before auto-advancing for a smooth feel
+              autoScrollTimer = setTimeout(function(){
+                if(currentIndex === nextIndex && !isDragging){
+                  snapTo(currentIndex + 1, true);
+                }
+              }, 800);
             }, {once: true});
           }
         }
@@ -1688,6 +1747,16 @@
 
         startProgressLoop(reel, vid);
         capturePoster(vid, i);
+
+        // ── AUTO-SCROLL: advance to next reel when video ends ──
+        vid.addEventListener('ended', function onEnded(){
+          vid.removeEventListener('ended', onEnded);
+          autoScrollTimer = setTimeout(function(){
+            if(currentIndex === i && !isDragging){
+              snapTo(currentIndex + 1, true);
+            }
+          }, 800);
+        }, {once: true});
       }
 
       // ── Tap-to-play fallback when autoplay is blocked ──
@@ -2404,10 +2473,51 @@
       // <a download> on Android/desktop, long-press hint as last resort.
       var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
+      // ── Creative Commons free-to-use notice before download ──
+      function showCCNotice(video, url, onConfirm){
+        var overlay = document.createElement('div');
+        overlay.className = 'cc-modal-overlay';
+        var creatorName = (video.creator && video.creator.name) ? video.creator.name : 'the creator';
+        overlay.innerHTML = '<div class="cc-modal">'
+          + '<div class="cc-icon">🎉</div>'
+          + '<h3>Free to Use</h3>'
+          + '<p>This video by <strong>' + creatorName + '</strong> is <strong>100% free to use</strong> under Creative Commons.</p>'
+          + '<p>You can download, share, repost, and use this content however you like — no restrictions, no permission needed.</p>'
+          + '<div class="cc-license-badge">'
+          +   '<img src="https://mirrors.creativecommons.org/presskit/buttons/80x15/svg/cc-zero.svg" alt="CC0">'
+          +   '<span>Creative Commons — Free to Use</span>'
+          + '</div>'
+          + '<div class="cc-buttons">'
+          +   '<button class="cc-btn cc-btn-cancel">Cancel</button>'
+          +   '<button class="cc-btn cc-btn-download">Download</button>'
+          + '</div>'
+          + '</div>';
+        document.body.appendChild(overlay);
+
+        overlay.querySelector('.cc-btn-cancel').addEventListener('click', function(){
+          overlay.remove();
+        });
+        overlay.querySelector('.cc-btn-download').addEventListener('click', function(){
+          overlay.remove();
+          onConfirm();
+        });
+        overlay.addEventListener('click', function(e){
+          if(e.target === overlay) overlay.remove();
+        });
+      }
+
       function handleSave(video, url){
         trackEvent('save', currentIndex); // G7 fix: track saves
         if(navigator.vibrate) navigator.vibrate(10);
         if(!url) return;
+
+        // Show Creative Commons notice first — download only after user agrees
+        showCCNotice(video, url, function(){
+          doDownload(video, url);
+        });
+      }
+
+      function doDownload(video, url){
         var fname = (video.name || 'scangym-reel').replace(/[^a-zA-Z0-9_-]/g, '_');
         showToast('\u2B07\uFE0F Downloading...');
 
