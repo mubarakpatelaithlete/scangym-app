@@ -2148,7 +2148,11 @@ window.openGymDirectOverlay=async function(id,isLive,section){
       if(isPlaceId){
         const data=await api.getLive('/place/'+id);
         if(data.gym){
-          state.currentGym={...data.gym,id:data.gym.dbId||data.gym.placeId,place_id:data.gym.placeId,photo_url:data.photos?.[0]?.url||null,photos_list:data.photos||[],rating:data.rating?.google||null,user_ratings_total:data.rating?.googleTotal||0,formatted_address:data.gym.address,vicinity:data.gym.address,opening_hours:data.openingHours,reviews_data:data.reviews,pricing:data.pricing,map:data.map,source:'live'};
+          // H15 fix: if owner set open/closed override, apply it over Google's data
+          const _oh=data.openingHours||{};
+          if(data.gym.ownerIsOpen===true) _oh.isOpen=true;
+          else if(data.gym.ownerIsOpen===false) _oh.isOpen=false;
+          state.currentGym={...data.gym,id:data.gym.dbId||data.gym.placeId,place_id:data.gym.placeId,photo_url:data.photos?.[0]?.url||null,photos_list:data.photos||[],rating:data.rating?.google||null,user_ratings_total:data.rating?.googleTotal||0,formatted_address:data.gym.address,vicinity:data.gym.address,opening_hours:_oh,openNow:_oh.isOpen??null,reviews_data:data.reviews,pricing:data.pricing,map:data.map,source:'live'};
         }
       }else{
         const data=await api.getGuest('/gym/'+id);
