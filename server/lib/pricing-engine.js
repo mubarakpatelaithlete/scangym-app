@@ -22,6 +22,10 @@
 // ============================================================================
 const BASE_PRICE_GBP = 4.49;
 
+// M20 FIX: Minimum price floor in USD — prevents discounts/PPP from stacking
+// to absurdly low prices. Converted to local currency via FX rates.
+const MIN_PRICE_USD = 0.50; // ~£0.40 / €0.46 — absolute floor for any booking
+
 // ============================================================================
 // PASS MULTIPLIERS (relative to single day pass)
 // ============================================================================
@@ -317,7 +321,11 @@ function calculatePrice({ countryCode = 'GB', passType = 'day' } = {}) {
   const baseInUSD = BASE_PRICE_GBP / (COUNTRY_PRICING.GB.fxRate); // ~$5.68
   const rawPrice = baseInUSD * country.pppFactor * country.fxRate * passMultiplier;
 
-  const finalPrice = charmPrice(rawPrice, country.currencyCode);
+  // M20 FIX: Enforce minimum price floor (prevents PPP/discounts stacking to near-zero)
+  const minLocal = MIN_PRICE_USD * country.fxRate * passMultiplier;
+  const flooredPrice = Math.max(rawPrice, minLocal);
+
+  const finalPrice = charmPrice(flooredPrice, country.currencyCode);
   const stripeAmount = toStripeAmount(finalPrice, country.currencyCode);
 
   // Format display
@@ -434,7 +442,11 @@ function calculateGymPrice({ gymDayPassPrice, countryCode = 'GB', passType = 'da
   const baseInUSD = gymDayPassPrice / COUNTRY_PRICING.GB.fxRate;
   const rawPrice = baseInUSD * country.fxRate * passMultiplier;
 
-  const finalPrice = charmPrice(rawPrice, country.currencyCode);
+  // M20 FIX: Enforce minimum price floor
+  const minLocal = MIN_PRICE_USD * country.fxRate * passMultiplier;
+  const flooredPrice = Math.max(rawPrice, minLocal);
+
+  const finalPrice = charmPrice(flooredPrice, country.currencyCode);
   const stripeAmount = toStripeAmount(finalPrice, country.currencyCode);
 
   let displayPrice;
@@ -485,4 +497,5 @@ module.exports = {
   ZERO_DECIMAL_CURRENCIES,
   PASS_MULTIPLIERS,
   BASE_PRICE_GBP,
+  MIN_PRICE_USD,
 };
