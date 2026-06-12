@@ -162,6 +162,19 @@
           </label>
         </div>`;
 
+        // === ACCESS CONTROL BANNER ===
+        const hasAccess = gym.access_system && gym.access_verified;
+        html += `<div class="toggle-card" style="cursor:pointer;${hasAccess ? 'border-color:rgba(34,197,94,.2)' : 'border-color:rgba(255,109,0,.25);background:rgba(255,109,0,.03)'}" onclick="window.location.href='/gympartners-dashboard/connect-access'">
+          <div class="toggle-info">
+            <h3>${hasAccess ? '🔓 Lock System Connected' : '🔐 Connect Your Lock System'}</h3>
+            <p>${hasAccess
+              ? (gym.access_system || '').replace(/_/g,' ') + ' — visitors get auto door access'
+              : 'Let day-pass visitors unlock your door with QR/PIN — zero staff needed'
+            }</p>
+          </div>
+          <span class="toggle-status ${hasAccess ? 'online' : 'offline'}" style="cursor:pointer">${hasAccess ? '● CONNECTED' : 'SET UP →'}</span>
+        </div>`;
+
         // === OVERVIEW STATS ===
         const ov = gymStats.overview || {};
         html += '<div class="section-title">📈 Overview</div>';

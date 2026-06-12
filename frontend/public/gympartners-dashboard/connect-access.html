@@ -1,0 +1,490 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>ScanGym — Connect Your Lock System</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0a0a16;color:#fff;min-height:100vh}
+
+    /* Header */
+    .header{background:linear-gradient(135deg,#111827,#1f2937);padding:20px 24px;border-bottom:1px solid rgba(255,109,0,.2)}
+    .header-inner{max-width:720px;margin:0 auto;display:flex;align-items:center;gap:12px}
+    .back-btn{width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;font-size:18px;text-decoration:none;transition:.15s}
+    .back-btn:hover{background:rgba(255,109,0,.15);border-color:rgba(255,109,0,.3)}
+    .header h1{font-size:20px;font-weight:800;display:flex;align-items:center;gap:8px}
+    .header h1 span{color:#FF6D00}
+    .header p{color:rgba(255,255,255,.4);font-size:12px;margin-top:2px}
+
+    /* Content */
+    .content{max-width:720px;margin:0 auto;padding:24px 16px}
+
+    /* Status Banner */
+    .status-banner{border-radius:16px;padding:20px;margin-bottom:24px;display:flex;align-items:center;gap:16px}
+    .status-banner.connected{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2)}
+    .status-banner.disconnected{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08)}
+    .status-icon{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+    .status-icon.on{background:rgba(34,197,94,.15)}
+    .status-icon.off{background:rgba(255,255,255,.06)}
+    .status-text h3{font-size:15px;font-weight:700}
+    .status-text p{font-size:12px;color:rgba(255,255,255,.4);margin-top:2px}
+    .status-badge{padding:4px 12px;border-radius:8px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;margin-left:auto;flex-shrink:0}
+    .status-badge.live{background:rgba(34,197,94,.15);color:#22c55e}
+    .status-badge.none{background:rgba(255,255,255,.06);color:rgba(255,255,255,.3)}
+
+    /* Step indicator */
+    .steps{display:flex;gap:8px;margin-bottom:24px}
+    .step{flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.08);transition:.3s}
+    .step.active{background:#FF6D00}
+    .step.done{background:#22c55e}
+
+    /* Cards */
+    .card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:24px;margin-bottom:16px;transition:.15s}
+    .card:hover{border-color:rgba(255,255,255,.12)}
+    .card h2{font-size:17px;font-weight:800;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+    .card .subtitle{font-size:13px;color:rgba(255,255,255,.4);margin-bottom:20px}
+
+    /* Provider cards */
+    .providers{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+    @media(max-width:500px){.providers{grid-template-columns:1fr}}
+    .provider{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px;cursor:pointer;transition:.2s;position:relative}
+    .provider:hover{border-color:rgba(255,109,0,.3);background:rgba(255,109,0,.04)}
+    .provider.selected{border-color:#FF6D00;background:rgba(255,109,0,.08);box-shadow:0 0 0 2px rgba(255,109,0,.2)}
+    .provider-logo{font-size:28px;margin-bottom:8px}
+    .provider-name{font-size:14px;font-weight:700}
+    .provider-desc{font-size:11px;color:rgba(255,255,255,.4);margin-top:2px;line-height:1.4}
+    .provider-tag{position:absolute;top:10px;right:10px;font-size:9px;padding:2px 8px;border-radius:6px;font-weight:700;text-transform:uppercase}
+    .provider-tag.popular{background:rgba(255,109,0,.15);color:#FF6D00}
+    .provider-tag.via-seam{background:rgba(59,130,246,.15);color:#60a5fa}
+
+    /* Feature chips */
+    .features{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+    .feature{font-size:10px;padding:3px 8px;border-radius:6px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.5)}
+
+    /* How it works */
+    .how-it-works{display:flex;flex-direction:column;gap:12px;margin:16px 0}
+    .hiw-step{display:flex;gap:12px;align-items:flex-start}
+    .hiw-num{width:28px;height:28px;border-radius:50%;background:rgba(255,109,0,.15);color:#FF6D00;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .hiw-text{font-size:13px;color:rgba(255,255,255,.7);line-height:1.5}
+    .hiw-text strong{color:#fff}
+
+    /* Buttons */
+    .btn{padding:14px 28px;border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;border:none;transition:.2s;width:100%;text-align:center;display:inline-block}
+    .btn:active{transform:scale(.97)}
+    .btn-primary{background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff;box-shadow:0 4px 20px rgba(255,109,0,.3)}
+    .btn-primary:disabled{opacity:.4;cursor:not-allowed;transform:none}
+    .btn-secondary{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#fff}
+    .btn-danger{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.2);color:#ef4444}
+
+    /* Seam webview embed */
+    .webview-frame{width:100%;min-height:500px;border:none;border-radius:14px;background:#fff;margin:16px 0}
+
+    /* Loading/spinner */
+    .spinner{width:24px;height:24px;border:3px solid rgba(255,255,255,.1);border-top-color:#FF6D00;border-radius:50%;animation:spin .7s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* Success animation */
+    .success-card{text-align:center;padding:40px 24px}
+    .success-icon{width:72px;height:72px;border-radius:50%;background:rgba(34,197,94,.15);display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto 16px;animation:pop .4s cubic-bezier(.17,.67,.21,1.28)}
+    @keyframes pop{0%{transform:scale(0)}100%{transform:scale(1)}}
+    .success-card h2{font-size:22px;font-weight:800;margin-bottom:8px}
+    .success-card p{font-size:14px;color:rgba(255,255,255,.5);line-height:1.6}
+    .success-details{margin-top:20px;text-align:left;background:rgba(255,255,255,.04);border-radius:12px;padding:16px}
+    .success-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:13px}
+    .success-row:last-child{border:none}
+    .success-row .label{color:rgba(255,255,255,.4)}
+    .success-row .value{font-weight:700;color:#22c55e}
+
+    /* Gym selector */
+    .gym-select{width:100%;padding:12px 16px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:#1a1a2e;color:#fff;font-size:14px;font-weight:600;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23FF6D00' stroke-width='2' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 16px center;margin-bottom:16px}
+
+    /* Toast */
+    .toast{position:fixed;top:20px;right:20px;padding:14px 22px;border-radius:14px;font-weight:700;font-size:13px;z-index:100;animation:slideIn .3s;box-shadow:0 4px 24px rgba(0,0,0,.4)}
+    .toast.success{background:#22c55e;color:#fff}
+    .toast.error{background:#ef4444;color:#fff}
+    @keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+
+    .hidden{display:none}
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-inner">
+      <a href="/gympartners-dashboard" class="back-btn">←</a>
+      <div>
+        <h1>🔐 Connect <span>Lock System</span></h1>
+        <p>Let day-pass visitors unlock your door automatically</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="content">
+    <!-- Step indicator -->
+    <div class="steps" id="steps">
+      <div class="step active" data-step="1"></div>
+      <div class="step" data-step="2"></div>
+      <div class="step" data-step="3"></div>
+    </div>
+
+    <!-- STEP 1: Select gym -->
+    <div id="step1">
+      <div class="card">
+        <h2>🏢 Select Your Gym</h2>
+        <p class="subtitle">Choose which gym to connect a lock system to</p>
+        <select id="gymSelect" class="gym-select">
+          <option value="">Loading your gyms…</option>
+        </select>
+
+        <!-- Current status -->
+        <div id="currentStatus" class="hidden"></div>
+      </div>
+
+      <div class="card">
+        <h2>⚡ How It Works</h2>
+        <p class="subtitle">3 minutes to set up. Zero hardware changes.</p>
+        <div class="how-it-works">
+          <div class="hiw-step">
+            <div class="hiw-num">1</div>
+            <div class="hiw-text"><strong>Select your lock provider</strong> below — Kisi, Salto, Brivo, or any of 30+ brands</div>
+          </div>
+          <div class="hiw-step">
+            <div class="hiw-num">2</div>
+            <div class="hiw-text"><strong>Log in to your provider</strong> — secure connection handled by Seam (industry-standard)</div>
+          </div>
+          <div class="hiw-step">
+            <div class="hiw-num">3</div>
+            <div class="hiw-text"><strong>Done!</strong> Every day-pass booking auto-generates a QR code, PIN, or mobile key that works only during their booked time</div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" id="btnNext1" disabled onclick="goStep2()">
+        Select a gym to continue →
+      </button>
+    </div>
+
+    <!-- STEP 2: Connect via Seam -->
+    <div id="step2" class="hidden">
+      <div class="card">
+        <h2>🔗 Connect Your Lock System</h2>
+        <p class="subtitle">Log in to your access control provider below. Your credentials are securely handled by <a href="https://seam.co" target="_blank" style="color:#60a5fa">Seam</a> — ScanGym never sees your password.</p>
+
+        <div id="connectLoading" class="hidden" style="text-align:center;padding:24px">
+          <div class="spinner"></div>
+          <span style="color:rgba(255,255,255,.5)">Starting secure connection…</span>
+        </div>
+
+        <iframe id="seamFrame" class="webview-frame hidden" allow="clipboard-write"></iframe>
+
+        <div id="connectError" class="hidden" style="text-align:center;padding:24px;color:#ef4444">
+          <p style="font-size:48px;margin-bottom:12px">⚠️</p>
+          <p style="font-weight:700">Connection failed</p>
+          <p style="font-size:13px;color:rgba(255,255,255,.4);margin-top:4px" id="connectErrorMsg"></p>
+          <button class="btn btn-secondary" style="margin-top:16px;width:auto;display:inline-block" onclick="startConnect()">Try again</button>
+        </div>
+      </div>
+
+      <button class="btn btn-secondary" onclick="goStep1()">← Back</button>
+    </div>
+
+    <!-- STEP 3: Success -->
+    <div id="step3" class="hidden">
+      <div class="card success-card">
+        <div class="success-icon">✅</div>
+        <h2>Lock System Connected!</h2>
+        <p>Your gym is now set up for automatic door access. Every day-pass booking will generate a time-limited credential for the visitor.</p>
+
+        <div class="success-details" id="successDetails">
+          <!-- Filled dynamically -->
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>🎯 What Happens Next</h2>
+        <div class="how-it-works">
+          <div class="hiw-step">
+            <div class="hiw-num">✓</div>
+            <div class="hiw-text"><strong>Customer books a day pass</strong> → ScanGym automatically generates a door credential</div>
+          </div>
+          <div class="hiw-step">
+            <div class="hiw-num">✓</div>
+            <div class="hiw-text"><strong>Customer arrives</strong> → Scans QR code or enters PIN at the door</div>
+          </div>
+          <div class="hiw-step">
+            <div class="hiw-num">✓</div>
+            <div class="hiw-text"><strong>Access expires</strong> → Credential auto-revokes after the booking window</div>
+          </div>
+          <div class="hiw-step">
+            <div class="hiw-num">✓</div>
+            <div class="hiw-text"><strong>Zero staff work</strong> → No reception needed. Fully self-service 24/7.</div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" onclick="window.location.href='/gympartners-dashboard'">
+        ← Back to Dashboard
+      </button>
+    </div>
+  </div>
+
+  <script>
+  (function(){
+    // State
+    let gyms = [];
+    let selectedGymId = null;
+    let connectWebviewId = null;
+    let currentStep = 1;
+    const API = '';
+
+    // Check URL params for redirect-back from Seam
+    const params = new URLSearchParams(window.location.search);
+    const redirectStatus = params.get('status');
+    const redirectGymId = params.get('gym_id');
+
+    // ── Auth ───────────────────────────────────────────────────────
+    function getToken() {
+      try {
+        const st = JSON.parse(localStorage.getItem('scangym_state') || '{}');
+        return st.token || localStorage.getItem('token') || '';
+      } catch { return localStorage.getItem('token') || ''; }
+    }
+
+    function authHeaders() {
+      return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` };
+    }
+
+    // ── Load gyms ─────────────────────────────────────────────────
+    async function loadGyms() {
+      try {
+        const res = await fetch(API + '/api/owner/my-gyms', { headers: authHeaders() });
+        if (!res.ok) throw new Error('Not authorized');
+        const data = await res.json();
+        gyms = data.gyms || [];
+        renderGymSelect();
+
+        // If redirected back from Seam, auto-select gym and finalize
+        if (redirectStatus === 'complete' && redirectGymId) {
+          selectedGymId = parseInt(redirectGymId);
+          document.getElementById('gymSelect').value = selectedGymId;
+          finalizeConnection();
+        }
+      } catch (err) {
+        document.getElementById('gymSelect').innerHTML = '<option>Error loading gyms — please log in</option>';
+      }
+    }
+
+    function renderGymSelect() {
+      const sel = document.getElementById('gymSelect');
+      if (gyms.length === 0) {
+        sel.innerHTML = '<option value="">No gyms found — claim your gym first</option>';
+        return;
+      }
+      sel.innerHTML = '<option value="">Choose a gym…</option>' +
+        gyms.map(g => `<option value="${g.id}">${g.name || 'Gym #' + g.id}${g.access_system ? ' ✅' : ''}</option>`).join('');
+    }
+
+    document.getElementById('gymSelect').addEventListener('change', function() {
+      selectedGymId = this.value ? parseInt(this.value) : null;
+      const btn = document.getElementById('btnNext1');
+      if (selectedGymId) {
+        btn.disabled = false;
+        btn.textContent = 'Connect Lock System →';
+        showGymStatus(selectedGymId);
+      } else {
+        btn.disabled = true;
+        btn.textContent = 'Select a gym to continue →';
+        document.getElementById('currentStatus').classList.add('hidden');
+      }
+    });
+
+    async function showGymStatus(gymId) {
+      try {
+        const res = await fetch(API + `/api/access/owner/connection-status/${gymId}`, { headers: authHeaders() });
+        const data = await res.json();
+        const el = document.getElementById('currentStatus');
+        el.classList.remove('hidden');
+
+        if (data.connected) {
+          el.innerHTML = `
+            <div class="status-banner connected">
+              <div class="status-icon on">🔓</div>
+              <div class="status-text">
+                <h3>${(data.system || 'Lock System').replace(/_/g,' ')}</h3>
+                <p>Connected • ${data.access_type === 'qr_unlock' ? 'QR Code Access' : data.access_type === 'code' ? 'PIN Code Access' : 'Mobile Key Access'}</p>
+              </div>
+              <div class="status-badge live">LIVE</div>
+            </div>`;
+          document.getElementById('btnNext1').textContent = 'Reconnect / Change System →';
+        } else {
+          el.innerHTML = `
+            <div class="status-banner disconnected">
+              <div class="status-icon off">🔒</div>
+              <div class="status-text">
+                <h3>No Lock System Connected</h3>
+                <p>Staff verification is used as fallback</p>
+              </div>
+              <div class="status-badge none">MANUAL</div>
+            </div>`;
+        }
+      } catch {
+        document.getElementById('currentStatus').classList.add('hidden');
+      }
+    }
+
+    // ── Step Navigation ───────────────────────────────────────────
+    function setStep(n) {
+      currentStep = n;
+      [1,2,3].forEach(i => {
+        document.getElementById('step' + i).classList.toggle('hidden', i !== n);
+        const stepDot = document.querySelector(`.step[data-step="${i}"]`);
+        stepDot.classList.toggle('active', i === n);
+        stepDot.classList.toggle('done', i < n);
+      });
+    }
+
+    window.goStep1 = function() { setStep(1); };
+
+    window.goStep2 = async function() {
+      if (!selectedGymId) return;
+      setStep(2);
+      startConnect();
+    };
+
+    // ── Seam Connect ──────────────────────────────────────────────
+    async function startConnect() {
+      const loading = document.getElementById('connectLoading');
+      const frame = document.getElementById('seamFrame');
+      const error = document.getElementById('connectError');
+
+      loading.classList.remove('hidden');
+      frame.classList.add('hidden');
+      error.classList.add('hidden');
+
+      try {
+        const res = await fetch(API + '/api/access/owner/create-connect-webview', {
+          method: 'POST',
+          headers: authHeaders(),
+          body: JSON.stringify({ gymId: selectedGymId }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed');
+
+        connectWebviewId = data.connect_webview_id;
+        frame.src = data.url;
+        frame.classList.remove('hidden');
+        loading.classList.add('hidden');
+
+        // Poll for completion
+        pollConnection();
+      } catch (err) {
+        loading.classList.add('hidden');
+        error.classList.remove('hidden');
+        document.getElementById('connectErrorMsg').textContent = err.message;
+      }
+    }
+
+    async function pollConnection() {
+      if (currentStep !== 2) return;
+
+      // Check Seam webview status via our backend
+      try {
+        // Use a simple interval — the redirect callback will also trigger step 3
+        const check = setInterval(async () => {
+          if (currentStep !== 2) { clearInterval(check); return; }
+
+          try {
+            const res = await fetch(API + '/api/access/owner/complete-connect', {
+              method: 'POST',
+              headers: authHeaders(),
+              body: JSON.stringify({ gymId: selectedGymId, connectWebviewId }),
+            });
+            const data = await res.json();
+            if (data.connected) {
+              clearInterval(check);
+              showSuccess(data);
+            }
+          } catch {}
+        }, 3000);  // Poll every 3 seconds
+      } catch {}
+    }
+
+    async function finalizeConnection() {
+      // Called after redirect back from Seam
+      setStep(2);
+      const loading = document.getElementById('connectLoading');
+      loading.classList.remove('hidden');
+      loading.querySelector('span').textContent = 'Finalizing connection…';
+
+      // The connect webview ID might be stored - try to get it from session
+      const storedWvId = sessionStorage.getItem('seam_connect_wv_' + selectedGymId);
+      if (storedWvId) {
+        try {
+          const res = await fetch(API + '/api/access/owner/complete-connect', {
+            method: 'POST',
+            headers: authHeaders(),
+            body: JSON.stringify({ gymId: selectedGymId, connectWebviewId: storedWvId }),
+          });
+          const data = await res.json();
+          if (data.connected) {
+            showSuccess(data);
+            return;
+          }
+        } catch {}
+      }
+
+      // Fallback: Check if gym is already connected
+      try {
+        const res = await fetch(API + `/api/access/owner/connection-status/${selectedGymId}`, { headers: authHeaders() });
+        const data = await res.json();
+        if (data.connected) {
+          showSuccess({
+            provider: data.system,
+            access_type: data.access_type,
+            locks_found: 0,
+            message: 'Connection verified!',
+          });
+          return;
+        }
+      } catch {}
+
+      // Still not connected — go back to step 2
+      loading.classList.add('hidden');
+      startConnect();
+    }
+
+    function showSuccess(data) {
+      setStep(3);
+      const details = document.getElementById('successDetails');
+      const providerName = (data.provider || 'Lock System').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
+      details.innerHTML = `
+        <div class="success-row"><span class="label">Provider</span><span class="value">${providerName}</span></div>
+        <div class="success-row"><span class="label">Access Type</span><span class="value">${
+          data.access_type === 'qr_unlock' ? '📱 QR Code Unlock' :
+          data.access_type === 'code' ? '🔢 PIN Code' :
+          '📱 Mobile Key'
+        }</span></div>
+        ${data.locks_found ? `<div class="success-row"><span class="label">Locks Found</span><span class="value">${data.locks_found} door(s)</span></div>` : ''}
+        <div class="success-row"><span class="label">Status</span><span class="value">✅ Active</span></div>
+      `;
+
+      // Show toast
+      showToast('Lock system connected successfully!', 'success');
+    }
+
+    // ── Toasts ────────────────────────────────────────────────────
+    function showToast(msg, type) {
+      const t = document.createElement('div');
+      t.className = `toast ${type}`;
+      t.textContent = msg;
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 4000);
+    }
+
+    // ── Init ──────────────────────────────────────────────────────
+    loadGyms();
+  })();
+  </script>
+</body>
+</html>

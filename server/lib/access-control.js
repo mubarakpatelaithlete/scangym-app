@@ -118,8 +118,36 @@ class SeamClient {
   }
 
   // List connected devices (doors/locks)
-  async listDevices() {
-    return this._request('POST', '/devices/list');
+  async listDevices(connectedAccountId) {
+    const body = connectedAccountId ? { connected_account_id: connectedAccountId } : {};
+    return this._request('POST', '/devices/list', body);
+  }
+
+  // ─── Connect Webview (OAuth-style gym owner onboarding) ────────
+  // Creates an embeddable/redirect flow where gym owners log into
+  // their lock provider (Kisi, Salto, Brivo, etc). Seam handles auth.
+
+  async createConnectWebview(opts = {}) {
+    return this._request('POST', '/connect_webviews/create', {
+      accepted_providers: opts.accepted_providers || [],
+      custom_redirect_url: opts.custom_redirect_url || null,
+      custom_redirect_failure_url: opts.custom_redirect_failure_url || null,
+      custom_metadata: opts.custom_metadata || {},
+      wait_for_device_creation: opts.wait_for_device_creation || false,
+    });
+  }
+
+  async getConnectWebview(connectWebviewId) {
+    return this._request('POST', '/connect_webviews/get', {
+      connect_webview_id: connectWebviewId,
+    });
+  }
+
+  // List ACS systems for a connected account
+  async listAcsSystems(connectedAccountId) {
+    return this._request('POST', '/acs/systems/list', {
+      connected_account_id: connectedAccountId,
+    });
   }
 }
 
