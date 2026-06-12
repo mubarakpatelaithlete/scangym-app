@@ -2396,31 +2396,62 @@
         trackEvent('save', currentIndex); // G7 fix: track saves
         if(navigator.vibrate) navigator.vibrate(10);
         if(!url) return;
-        var fname = (video.name || 'scangym-reel').replace(/[^a-zA-Z0-9_-]/g, '_') + '.mp4';
+        var fname = (video.name || 'scangym-reel').replace(/[^a-zA-Z0-9_-]/g, '_');
         showToast('\u2B07\uFE0F Downloading...');
+
+        // M5 FIX: Use server-side download endpoint for reliable iOS support.
+        // The server sets Content-Disposition: attachment, which forces download
+        // even on iOS Safari where <a download> is ignored for cross-origin URLs.
+        if(video.cdnKey){
+          var downloadUrl = '/api/reels/download/' + encodeURIComponent(video.cdnKey)
+            + '?name=' + encodeURIComponent(fname);
+          // iOS: try Web Share API first (saves to Photos)
+          if(isIOS && navigator.canShare){
+            fetch(downloadUrl).then(function(res){
+              if(!res.ok) throw new Error('Download failed');
+              return res.blob();
+            }).then(function(blob){
+              var file = new File([blob], fname + '.mp4', { type: 'video/mp4' });
+              var shareData = { files: [file] };
+              if(navigator.canShare(shareData)){
+                return navigator.share(shareData).then(function(){
+                  showToast('\u2705 Saved!');
+                }).catch(function(err){
+                  if(err && err.name === 'AbortError') return;
+                  // Share failed — open download URL directly
+                  window.location.href = downloadUrl;
+                  showToast('\u2705 Downloading...');
+                });
+              } else {
+                window.location.href = downloadUrl;
+                showToast('\u2705 Downloading...');
+              }
+            }).catch(function(){
+              window.location.href = downloadUrl;
+              showToast('\u2705 Downloading...');
+            });
+          } else {
+            // Android / desktop: navigate to download endpoint (Content-Disposition forces save)
+            var a = document.createElement('a');
+            a.href = downloadUrl;
+            a.download = fname + '.mp4';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            showToast('\u2705 Saved!');
+          }
+          return;
+        }
+
+        // Fallback for non-CDN videos (uploads etc.)
         fetch(url).then(function(res){
           if(!res.ok) throw new Error('Download failed');
           return res.blob();
         }).then(function(blob){
-          // iOS path: use Web Share API with the video file
-          if(isIOS && navigator.canShare){
-            var file = new File([blob], fname, { type: 'video/mp4' });
-            var shareData = { files: [file] };
-            if(navigator.canShare(shareData)){
-              return navigator.share(shareData).then(function(){
-                showToast('\u2705 Saved!');
-              }).catch(function(err){
-                if(err && err.name === 'AbortError') return; // user cancelled
-                // canShare said yes but share failed — try long-press hint
-                iosLongPressHint(url);
-              });
-            }
-          }
-          // Android / desktop path: invisible link click
           var blobUrl = URL.createObjectURL(blob);
           var a = document.createElement('a');
           a.href = blobUrl;
-          a.download = fname;
+          a.download = fname + '.mp4';
           document.body.appendChild(a);
           a.click();
           a.remove();
@@ -2430,7 +2461,6 @@
           if(isIOS){
             iosLongPressHint(url);
           } else {
-            // Desktop/Android fallback: open in new tab
             window.open(url, '_blank');
             showToast('\u2197\uFE0F Opened in new tab');
           }
