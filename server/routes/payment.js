@@ -939,7 +939,7 @@ router.post('/confirm-intent', async (req, res) => {
 
 router.post('/cash-booking', async (req, res) => {
   try {
-    let { gymId, placeId, date, time, email, passType, gymName, gymAddress } = req.body;
+    let { gymId, placeId, date, time, email, passType, gymName, gymAddress, referral_code } = req.body;
     if (!date) return res.status(400).json({ error: 'date required' });
     // C2 fix: Resolve 'anytime' / empty time to a sensible default
     if (!time || time === 'anytime') {
@@ -1030,6 +1030,12 @@ router.post('/cash-booking', async (req, res) => {
         console.error('[Cash Booking] Retry INSERT also failed:', retryErr.message, '| code:', retryErr.code, '| detail:', retryErr.detail);
         return res.status(500).json({ error: 'Failed to create reservation', detail: retryErr.message });
       }
+    }
+
+    // H12 FIX: Credit creator commission for cash bookings too
+    if (referral_code) {
+      booking.referral_code = referral_code;
+      await creditCreatorCommission(booking);
     }
 
     // ── Step 5: Generate QR code (non-blocking — don't fail the booking) ──
