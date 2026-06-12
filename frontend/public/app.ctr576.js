@@ -694,36 +694,47 @@ function Footer(){
   </footer>`;
 }
 
-// Smart facility tags — derives relevant badges from gym name + Google types
+// Smart facility tags — derives badges from Google Places types + gym name
+// H3 fix: prioritise real Google types data over hardcoded name guesses
 function getCardFacilities(gym){
   const n=(gym.name||'').toLowerCase();
-  const t=(gym.types||[]).join(' ').toLowerCase();
-  // Premium clubs with pools/spas
+  const types=(gym.types||[]).map(t=>t.toLowerCase());
+  const t=types.join(' ');
+
+  // ── Step 1: Build tags from real Google Places types ──
+  const typeMap={
+    'swimming_pool':  '🏊 Pool',
+    'spa':            '🧖 Spa',
+    'yoga_studio':    '🧘 Yoga',
+    'pilates_studio': '🧘 Pilates',
+    'boxing_gym':     '🥊 Boxing',
+    'martial_arts_school':'🥋 Martial Arts',
+    'stadium':        '🏟️ Stadium',
+    'sports_complex': '🏟️ Sports Complex',
+    'sports_club':    '⚽ Sports Club',
+    'physiotherapist': '🏋️ Rehab',
+    'dance_school':   '💃 Dance',
+  };
+  const tags=[];
+  for(const [gType,label] of Object.entries(typeMap)){
+    if(types.includes(gType)) tags.push(label);
+  }
+  // If Google gave us enough real data, use it (pad with Gym default)
+  if(tags.length>=2) return tags.slice(0,3);
+
+  // ── Step 2: Name-based hints for well-known chains ──
   if(n.includes('third space')||n.includes('virgin active')||n.includes('david lloyd')||n.includes('harbour club')||n.includes('nuffield'))
     return['🏊 Pool','🧖 Spa','🧘 Studio'];
   if(n.includes('equinox')||n.includes('1rebel'))
     return['🏊 Pool','🧘 Studio','🏋️ Weights'];
-  // Budget 24h chains
-  if(n.includes('puregym')||n.includes('pure gym'))
+  if(n.includes('puregym')||n.includes('pure gym')||n.includes('the gym group')||n.includes('the gym ')||n.includes('anytime fitness')||n.includes('jd gym')||n.includes('snap fitness'))
     return['🏋️ Weights','🚴 Cardio','⏰ 24/7'];
-  if(n.includes('the gym group')||n.includes('the gym '))
-    return['🏋️ Weights','🚴 Cardio','⏰ 24/7'];
-  if(n.includes('anytime fitness'))
-    return['🏋️ Weights','🚴 Cardio','⏰ 24/7'];
-  if(n.includes('jd gyms')||n.includes('jd gym'))
-    return['🏋️ Weights','🚴 Cardio','⏰ 24/7'];
-  // Mid-range chains
   if(n.includes('fitness first'))
     return['🏋️ Weights','🚴 Cardio','🧘 Classes'];
   if(n.includes('bannatyne'))
     return['🏊 Pool','🧖 Spa','🏋️ Weights'];
-  if(n.includes('snap fitness'))
-    return['🏋️ Weights','🚴 Cardio','⏰ 24/7'];
-  if(n.includes('better ')||n.includes('better gym')||n.includes('leisure centre'))
+  if(n.includes('better ')||n.includes('better gym')||n.includes('leisure centre')||n.includes('everyone active'))
     return['🏊 Pool','🏋️ Weights','🧘 Classes'];
-  if(n.includes('everyone active'))
-    return['🏊 Pool','🏋️ Weights','🚴 Cardio'];
-  // Boutique / specialty
   if(n.includes('crossfit'))
     return['🏋️ Functional','🫀 HIIT','👥 Group'];
   if(n.includes('f45')||n.includes('barry')||n.includes('orangetheory'))
@@ -736,18 +747,17 @@ function getCardFacilities(gym){
     return['🧗 Climbing','🏋️ Strength','🚴 Cardio'];
   if(n.includes('swim')||n.includes('pool')||n.includes('aqua'))
     return['🏊 Pool','🚴 Cardio','🧘 Classes'];
-  // Google type fallbacks
-  if(t.includes('spa'))
-    return['🏋️ Weights','🏊 Pool','🧖 Spa'];
-  if(t.includes('swimming'))
-    return['🏊 Pool','🚴 Cardio','🧘 Classes'];
-  if(t.includes('physiotherapist')||t.includes('doctor'))
-    return['🏋️ Rehab','🧘 Stretch','🚴 Cardio'];
-  // Default — vary by first char of place_id for visual diversity
-  const v=((gym.placeId||gym.place_id||gym.id||'a').charCodeAt(0))%3;
-  if(v===0) return['🏋️ Weights','🚴 Cardio','🧘 Classes'];
-  if(v===1) return['🏋️ Weights','🫀 Cardio','💪 Machines'];
-  return['🏋️ Free Weights','🚴 Cardio','🧘 Studio'];
+
+  // ── Step 3: If we got 1 tag from Google, pad it with generic gym tags ──
+  if(tags.length===1){tags.push('🏋️ Weights','🚴 Cardio');return tags.slice(0,3);}
+
+  // ── Step 4: Generic type fallbacks ──
+  if(t.includes('spa')) return['🏋️ Weights','🏊 Pool','🧖 Spa'];
+  if(t.includes('swimming')) return['🏊 Pool','🚴 Cardio','🧘 Classes'];
+  if(t.includes('physiotherapist')||t.includes('doctor')) return['🏋️ Rehab','🧘 Stretch','🚴 Cardio'];
+
+  // ── Default: honest generic label instead of fake specific facilities ──
+  return['🏋️ Gym','🚴 Cardio','💪 Fitness'];
 }
 
 function GymCard(gym){
