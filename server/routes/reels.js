@@ -647,6 +647,37 @@ router.get('/cdn-proxy/:cdnKey', (req, res) => {
 });
 
 /**
+ * GET /api/reels/download/:cdnKey
+ * M5 FIX: Server-side download endpoint for iOS compatibility.
+ * iOS Safari blocks <a download> on cross-origin URLs and sometimes on blob URLs.
+ * This endpoint proxies the CDN video with Content-Disposition: attachment,
+ * which forces the browser to download rather than play inline.
+ */
+router.get('/download/:cdnKey', (req, res) => {
+  const cdnKey = req.params.cdnKey.replace(/[^a-zA-Z0-9_-]/g, '');
+  const filename = (req.query.name || 'scangym-reel').replace(/[^a-zA-Z0-9_-]/g, '_') + '.mp4';
+  const cdnUrl = `https://cdn.scangym.com/videos/${cdnKey}.mp4`;
+
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.setHeader('Content-Type', 'video/mp4');
+  res.setHeader('Cache-Control', 'no-cache');
+
+  https.get(cdnUrl, (upstream) => {
+    if (upstream.statusCode >= 400) {
+      return res.status(upstream.statusCode).json({ error: 'Video not found' });
+    }
+    if (upstream.headers['content-length']) {
+      res.setHeader('Content-Length', upstream.headers['content-length']);
+    }
+    upstream.pipe(res);
+  }).on('error', (err) => {
+    console.error('Download proxy error:', err.message);
+    res.status(502).json({ error: 'Download failed' });
+  });
+});
+
+/**
  * POST /api/reels/admin/enrich
  * Manually trigger video enrichment (fills missing metadata).
  * M8 FIX: Now enriches from DB catalog instead of in-memory array.
