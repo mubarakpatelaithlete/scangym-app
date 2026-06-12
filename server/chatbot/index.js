@@ -4,15 +4,12 @@
  * Architecture:
  *   /api/chatbot/telegram/*   → Telegram bot
  *   /api/chatbot/twilio/*     → WhatsApp + SMS via Twilio
+ *   /api/chatbot/discord/*    → Discord bot (WebSocket + status routes)
+ *   /api/chatbot/email/*      → Email booking via SendGrid
  *   /api/chatbot/test         → Test endpoint (for development)
  * 
  * Each adapter is a thin Express router that receives messages
  * in the channel's format and passes them to message-handler.js.
- * 
- * To add a new channel (e.g., Discord, Messenger):
- *   1. Create server/chatbot/discord.js with an Express router
- *   2. Import and mount it here
- *   3. Set webhook URL in the platform's settings
  */
 
 const express = require('express');
@@ -28,6 +25,18 @@ router.use('/telegram', telegramRouter);
 // Twilio: WhatsApp + SMS (uses existing Twilio account)
 const twilioRouter = require('./twilio');
 router.use('/twilio', twilioRouter);
+
+// Discord (free, connects via WebSocket Gateway)
+const { router: discordRouter, startDiscordBot } = require('./discord');
+router.use('/discord', discordRouter);
+
+// Email booking (inbound via SendGrid Parse, replies via SMTP)
+const emailRouter = require('./email');
+router.use('/email', emailRouter);
+
+// ─── Start Discord Bot (connects on server boot) ────────────
+// Call this after Express is listening
+startDiscordBot();
 
 // ─── Test Endpoint (for development) ────────────────────────
 // POST /api/chatbot/test { "message": "Find gyms in Bolton", "userId": "test123" }
@@ -49,6 +58,8 @@ router.get('/health', (req, res) => {
     telegram: !!process.env.TELEGRAM_BOT_TOKEN,
     whatsapp: !!process.env.TWILIO_ACCOUNT_SID,
     sms: !!process.env.TWILIO_ACCOUNT_SID,
+    discord: !!process.env.DISCORD_BOT_TOKEN,
+    email: !!process.env.SENDGRID_API_KEY,
   };
 
   res.json({
