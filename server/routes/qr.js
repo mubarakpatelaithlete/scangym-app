@@ -216,10 +216,47 @@ router.post('/scan', async (req, res) => {
       });
     }
 
+    // ── M18 FIX: Cash booking verification ──
+    // For cash bookings, first entry scan requires staff to confirm cash was received
+    const bookingRow = await pool.query(
+      'SELECT status, booking_type, total_amount FROM bookings WHERE id = $1',
+      [qr.booking_id]
+    );
+    const booking = bookingRow.rows[0] || {};
+    const isCashBooking = (booking.booking_type || '').includes('cash');
+
     // Determine scan type
     const newScanCount = qr.scan_count + 1;
     const scanType = newScanCount === 1 ? 'entry' : 'exit';
     const newStatus = newScanCount >= qr.max_scans ? 'expired' : 'active';
+
+    // Get user + gym info for display
+    let userName = 'Member';
+    let gymName = 'Gym';
+    try {
+      const user = await pool.query('SELECT first_name, last_name, phone_number FROM users WHERE id = $1', [qr.user_id]);
+      if (user.rows[0]) userName = [user.rows[0].first_name, user.rows[0].last_name].filter(Boolean).join(' ') || 'Member';
+      const gym = await pool.query('SELECT name FROM gyms WHERE id = $1', [qr.gym_id]);
+      if (gym.rows[0]) gymName = gym.rows[0].name;
+    } catch (e) {}
+
+    // If cash booking + entry scan + not yet confirmed → ask staff to confirm cash first
+    if (isCashBooking && scanType === 'entry' && booking.status === 'reserved') {
+      const amount = booking.total_amount || 0;
+      return res.json({
+        valid: true,
+        cashPaymentRequired: true,
+        message: `💰 Cash payment required: ${amount.toFixed(2)}. Please collect cash from ${userName} before granting entry.`,
+        amountDue: amount,
+        bookingId: qr.booking_id,
+        qrToken: token,
+        gymId: qr.gym_id,
+        userId: qr.user_id,
+        userName,
+        gymName,
+        instruction: 'Collect cash, then tap "Confirm Cash Received" to grant entry.',
+      });
+    }
 
     // Record the scan
     await pool.query(`
@@ -231,16 +268,6 @@ router.post('/scan', async (req, res) => {
     await pool.query(`
       UPDATE booking_qr_codes SET scan_count = $1, status = $2 WHERE id = $3
     `, [newScanCount, newStatus, qr.id]);
-
-    // Get user + gym info for display
-    let userName = 'Member';
-    let gymName = 'Gym';
-    try {
-      const user = await pool.query('SELECT first_name, last_name, phone_number FROM users WHERE id = $1', [qr.user_id]);
-      if (user.rows[0]) userName = [user.rows[0].first_name, user.rows[0].last_name].filter(Boolean).join(' ') || 'Member';
-      const gym = await pool.query('SELECT name FROM gyms WHERE id = $1', [qr.gym_id]);
-      if (gym.rows[0]) gymName = gym.rows[0].name;
-    } catch (e) {}
 
     res.json({
       valid: true,
@@ -310,6 +337,88 @@ router.get('/status/:bookingId', authenticateUser, async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ error: 'Failed to check QR status' });
+  }
+});
+
+// ── M18 FIX: POST /api/qr/confirm-cash — Staff confirms cash was received ──
+// Called after scanning a cash booking QR. Confirms payment + records entry scan.
+router.post('/confirm-cash', async (req, res) => {
+  try {
+    const { token } = req.body;
+    if (!token) return res.status(400).json({ error: 'QR token is required' });
+
+    // Find the QR code
+    const qrResult = await pool.query(
+      'SELECT * FROM booking_qr_codes WHERE qr_token = $1', [token]
+    );
+    if (qrResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Invalid QR code' });
+    }
+    const qr = qrResult.rows[0];
+
+    // Verify it's a cash booking still in 'reserved' status
+    const bookingRow = await pool.query(
+      'SELECT id, status, booking_type, total_amount FROM bookings WHERE id = $1',
+      [qr.booking_id]
+    );
+    if (bookingRow.rows.length === 0) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+    const booking = bookingRow.rows[0];
+    if (!(booking.booking_type || '').includes('cash')) {
+      return res.status(400).json({ error: 'Not a cash booking' });
+    }
+    if (booking.status !== 'reserved') {
+      return res.status(400).json({ error: 'Cash already confirmed or booking cancelled' });
+    }
+
+    // ── Confirm: update booking status to 'confirmed' ──
+    await pool.query(
+      "UPDATE bookings SET status = 'confirmed', updated_at = NOW() WHERE id = $1",
+      [booking.id]
+    );
+
+    // ── Record entry scan (scan 1) ──
+    const newScanCount = qr.scan_count + 1;
+    const newStatus = newScanCount >= qr.max_scans ? 'expired' : 'active';
+
+    await pool.query(`
+      INSERT INTO booking_checkins (booking_id, qr_code_id, gym_id, user_id, scan_type, scan_number)
+      VALUES ($1, $2, $3, $4, 'entry', $5)
+    `, [qr.booking_id, qr.id, qr.gym_id, qr.user_id, newScanCount]);
+
+    await pool.query(
+      'UPDATE booking_qr_codes SET scan_count = $1, status = $2 WHERE id = $3',
+      [newScanCount, newStatus, qr.id]
+    );
+
+    // Get names for response
+    let userName = 'Member';
+    let gymName = 'Gym';
+    try {
+      const user = await pool.query('SELECT first_name, last_name FROM users WHERE id = $1', [qr.user_id]);
+      if (user.rows[0]) userName = [user.rows[0].first_name, user.rows[0].last_name].filter(Boolean).join(' ') || 'Member';
+      const gym = await pool.query('SELECT name FROM gyms WHERE id = $1', [qr.gym_id]);
+      if (gym.rows[0]) gymName = gym.rows[0].name;
+    } catch (e) {}
+
+    res.json({
+      valid: true,
+      cashConfirmed: true,
+      scanType: 'entry',
+      scanNumber: newScanCount,
+      scansRemaining: qr.max_scans - newScanCount,
+      status: newStatus,
+      message: `✅ Cash received! Welcome ${userName}! Entry recorded at ${gymName}. (1 exit scan remaining)`,
+      bookingId: qr.booking_id,
+      gymId: qr.gym_id,
+      userName,
+      gymName,
+      aiCoachUnlocked: true,
+    });
+  } catch (err) {
+    console.error('Confirm cash error:', err);
+    res.status(500).json({ error: 'Failed to confirm cash payment' });
   }
 });
 

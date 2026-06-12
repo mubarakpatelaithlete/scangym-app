@@ -7421,6 +7421,37 @@ function QRScanVerifyPage(token){
   const r=state._scanResult;
   if(!r)return'';
 
+  // M18 FIX: Cash payment required — staff must confirm cash before entry
+  if(r.valid&&r.cashPaymentRequired){
+    return`
+    <div class="pt-8 min-h-full px-4 pb-8">
+      <div class="max-w-md mx-auto py-8">
+        <div class="text-center mb-6">
+          <div class="w-24 h-24 bg-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-yellow-500/30" style="animation:scaleIn .5s cubic-bezier(.17,.67,.29,1.33)">
+            <span class="text-4xl">💰</span>
+          </div>
+          <h1 class="font-brand text-3xl font-bold text-white mb-2">Cash Payment Required</h1>
+          <p class="text-yellow-400 font-medium text-lg">Collect cash before granting entry</p>
+        </div>
+
+        <div class="bg-card rounded-2xl border border-slate-700 p-5 mb-4">
+          <div class="space-y-3">
+            ${r.gymName?`<div class="flex justify-between"><span class="text-slate-400">Gym</span><span class="text-white font-semibold">${r.gymName}</span></div>`:''}
+            ${r.userName&&r.userName!=='Member'?`<div class="flex justify-between"><span class="text-slate-400">Customer</span><span class="text-white">${r.userName}</span></div>`:''}
+            <div class="flex justify-between"><span class="text-slate-400">Amount Due</span><span class="text-white font-bold text-xl">£${(r.amountDue||0).toFixed(2)}</span></div>
+          </div>
+        </div>
+
+        <div class="bg-yellow-900/20 border border-yellow-800/30 rounded-xl p-4 text-center mb-4">
+          <p class="text-yellow-400 font-medium">⚠️ Do NOT grant entry until cash is collected</p>
+        </div>
+
+        <button id="sg-confirm-cash-btn" onclick="sgConfirmCashPayment('${r.qrToken}')" style="width:100%;padding:16px;border:none;border-radius:14px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(34,197,94,.3)">✅ Confirm Cash Received — Grant Entry</button>
+      </div>
+    </div>
+    <style>@keyframes scaleIn{0%{transform:scale(0)}60%{transform:scale(1.2)}100%{transform:scale(1)}}</style>`;
+  }
+
   // Success — entry or exit (API returns `valid: true`)
   if(r.valid){
     const isEntry=r.scanType==='entry';
@@ -8503,6 +8534,30 @@ function ScanInfoPage(){
 }
 
 // Initialize camera for staff QR scanner
+// M18 FIX: Confirm cash payment for cash bookings
+window.sgConfirmCashPayment=async function(qrToken){
+  const btn=document.getElementById('sg-confirm-cash-btn');
+  if(btn){btn.textContent='Confirming...';btn.style.opacity='0.6';btn.disabled=true;}
+  try{
+    const r=await fetch('/api/qr/confirm-cash',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      credentials:'include',
+      body:JSON.stringify({token:qrToken})
+    }).then(r=>r.json());
+    if(r.valid&&r.cashConfirmed){
+      // Update state and re-render with the entry confirmed view
+      state._scanResult=r;
+      state._scanResult.scanType='entry';
+      render();
+    }else{
+      if(btn){btn.textContent='❌ '+(r.error||'Failed — try again');btn.style.opacity='1';btn.disabled=false;btn.style.background='#ef4444';}
+    }
+  }catch(e){
+    if(btn){btn.textContent='❌ Network error — try again';btn.style.opacity='1';btn.disabled=false;btn.style.background='#ef4444';}
+  }
+};
+
 window.sgInitScanner=function(){
   const video=document.getElementById('sg-scan-video');
   if(!video) return;
