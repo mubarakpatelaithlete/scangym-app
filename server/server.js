@@ -409,8 +409,8 @@ if (fs.existsSync(FRONTEND_DIR)) {
     res.sendFile(reelsHtmlPath);
   }
 
-  app.get('/reels', (req, res) => res.redirect(301, '/reels/'));
-  app.get('/reels/', serveReelsWithPrefetch);
+  // Handle /reels and /reels/ — serve SSR-injected HTML for both
+  app.get('/reels', serveReelsWithPrefetch);
   app.get('/reels/*', (req, res, next) => {
     // Static files (.js, .css, images, etc.) fall through to express.static
     if (req.path.includes('.')) return next();
