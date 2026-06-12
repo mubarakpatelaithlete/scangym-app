@@ -154,6 +154,7 @@ function extractCity(address) {
 // ─── C6 fix: Enrich Google Places gyms with owner-set DB prices ──────────
 // Batch-lookup place_ids against our DB. If a gym owner has set a custom
 // day_pass_price, override the default PPP price in the API response.
+// H15 fix: also fetch is_accepting_bookings for owner open/closed override.
 async function enrichGymsWithDbPrices(gyms) {
   if (!gyms || gyms.length === 0) return gyms;
   try {
@@ -161,22 +162,26 @@ async function enrichGymsWithDbPrices(gyms) {
     if (placeIds.length === 0) return gyms;
 
     const result = await pool.query(
-      'SELECT place_id, day_pass_price FROM gyms WHERE place_id = ANY($1) AND day_pass_price IS NOT NULL AND day_pass_price > 0',
+      'SELECT place_id, day_pass_price, is_accepting_bookings FROM gyms WHERE place_id = ANY($1)',
       [placeIds]
     );
 
     if (result.rows.length === 0) return gyms;
 
-    // Build lookup map
-    const priceMap = {};
+    // Build lookup maps
+    const dbMap = {};
     for (const row of result.rows) {
-      priceMap[row.place_id] = parseFloat(row.day_pass_price);
+      dbMap[row.place_id] = row;
     }
 
-    // Override prices for gyms with owner-set pricing
+    // Override prices and open/closed for gyms with owner data
     for (const gym of gyms) {
       const pid = gym.placeId || gym.id;
-      const ownerPrice = priceMap[pid];
+      const dbRow = dbMap[pid];
+      if (!dbRow) continue;
+
+      // C6: owner price override
+      const ownerPrice = dbRow.day_pass_price ? parseFloat(dbRow.day_pass_price) : null;
       if (ownerPrice && ownerPrice > 0) {
         const gymPrice = calculateGymPrice({
           gymDayPassPrice: ownerPrice,
@@ -186,10 +191,19 @@ async function enrichGymsWithDbPrices(gyms) {
         gym.dayPassPrice = gymPrice.amount;
         gym.priceSource = 'owner_price';
       }
+
+      // H15: owner open/closed override — if owner set it, override Google
+      if (dbRow.is_accepting_bookings === true) {
+        gym.openNow = true;
+        gym.ownerIsOpen = true;
+      } else if (dbRow.is_accepting_bookings === false) {
+        gym.openNow = false;
+        gym.ownerIsOpen = false;
+      }
     }
   } catch (e) {
-    // DB lookup failed — keep default PPP prices (non-critical)
-    console.error('[C6 enrichGymsWithDbPrices] DB lookup error:', e.message);
+    // DB lookup failed — keep defaults (non-critical)
+    console.error('[enrichGymsWithDbPrices] DB lookup error:', e.message);
   }
   return gyms;
 }
@@ -424,7 +438,8 @@ router.get('/place/:placeId', optionalAuth, async (req, res) => {
     // Check if this gym exists in our DB
     let dbGym = null;
     try {
-      const dbResult = await pool.query('SELECT id, day_pass_price, hourly_rate, is_claimed FROM gyms WHERE place_id = $1', [placeId]);
+      // H15 fix: also fetch is_accepting_bookings so owner override beats Google open/closed
+      const dbResult = await pool.query('SELECT id, day_pass_price, hourly_rate, is_claimed, is_accepting_bookings FROM gyms WHERE place_id = $1', [placeId]);
       if (dbResult.rows.length > 0) dbGym = dbResult.rows[0];
     } catch (e) {}
 
@@ -466,6 +481,8 @@ router.get('/place/:placeId', optionalAuth, async (req, res) => {
         types: p.types || [],
         priceLevel: p.price_level ?? null,
         isClaimed: dbGym?.is_claimed || false,
+        // H15 fix: owner open/closed override — null means "use Google", true/false = owner override
+        ownerIsOpen: dbGym?.is_accepting_bookings ?? null,
       },
       pricing: {
         // C6 fix: Use owner-set price if available, otherwise PPP default
