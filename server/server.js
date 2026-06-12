@@ -301,6 +301,13 @@ if (process.env.DATABASE_URL) {
     ALTER TABLE video_catalog ADD COLUMN IF NOT EXISTS duration REAL;
   `).then(() => console.log('✅ DB migration: video_catalog.duration ready'))
     .catch(err => console.error('DB migration (duration):', err.message));
+
+  // VIDEO OPTIMIZATIONS: Add variant tracking columns
+  _migrationPool.query(`
+    ALTER TABLE video_catalog ADD COLUMN IF NOT EXISTS has_faststart BOOLEAN DEFAULT false;
+    ALTER TABLE video_catalog ADD COLUMN IF NOT EXISTS variants_ready BOOLEAN DEFAULT false;
+  `).then(() => console.log('✅ DB migration: video variants columns ready'))
+    .catch(err => console.error('DB migration (variants):', err.message));
 }
 
 // -- Feature Routes (Tasks 1-24 with CEO corrections) --
