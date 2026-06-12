@@ -151,6 +151,21 @@ try {
   // Enrichment module optional
 }
 
+// ═══════════════════════════════════════════════════════════
+//  PERF: In-memory feed cache — avoids 700ms DB hit per request
+//  The catalog + variants rarely change (only on upload/enrich).
+//  Cache the assembled base feed for 60s; each request still gets
+//  its own shuffle/ranking/pagination on top of the cached data.
+// ═══════════════════════════════════════════════════════════
+let _feedCache = null;
+let _feedCacheTime = 0;
+const FEED_CACHE_TTL = 60_000; // 60 seconds
+
+function invalidateFeedCache() {
+  _feedCache = null;
+  _feedCacheTime = 0;
+}
+
 /**
  * Load catalog videos from the database.
  * Returns array of video objects matching the old JSON shape for backward compat.
@@ -208,8 +223,17 @@ router.get('/feed', async (req, res) => {
     // M10 UPGRADE: Session ID for within-session adaptation (TikTok-style)
     const sessionId = req.query.session_id || req.headers['x-session-id'] || null;
 
+    // ── PERF: Use cached base feed if fresh (skips ~700ms of DB queries) ──
+    let feed, catalogVideos;
+    const now = Date.now();
+    if (_feedCache && (now - _feedCacheTime) < FEED_CACHE_TTL) {
+      // Cache hit — deep-copy so ranking/filtering doesn't mutate cache
+      feed = _feedCache.map(v => ({ ...v, variants: v.variants ? { ...v.variants } : undefined }));
+      catalogVideos = feed.filter(v => v.type === 'catalog');
+    } else {
+      // Cache miss — run the full DB pipeline
+
     // 1. M8 FIX: Load catalog from database instead of static JSON
-    let catalogVideos;
     try {
       catalogVideos = await loadCatalogFromDB();
     } catch (dbErr) {
@@ -221,7 +245,7 @@ router.get('/feed', async (req, res) => {
       } catch { catalogVideos = []; }
     }
 
-    let feed = catalogVideos.map(v => ({
+    feed = catalogVideos.map(v => ({
       ...v,
       type: 'catalog',
     }));
@@ -295,6 +319,11 @@ router.get('/feed', async (req, res) => {
         }
       }
     }
+
+    // ── Store in cache (before category filter/ranking) ──
+    _feedCache = feed.map(v => ({ ...v, variants: v.variants ? { ...v.variants } : undefined }));
+    _feedCacheTime = now;
+    } // end cache-miss block
 
     // 3. Filter by category if requested
     if (category) {
@@ -488,6 +517,7 @@ router.post('/admin/catalog', authenticateUser, requireAdmin, express.json(), as
       if (result.rows[0]) inserted.push(result.rows[0]);
     }
 
+    invalidateFeedCache(); // new videos → bust cache
     res.json({
       success: true,
       added: inserted.length,
@@ -514,6 +544,7 @@ router.delete('/admin/catalog/:id', authenticateUser, requireAdmin, async (req, 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Video not found' });
     }
+    invalidateFeedCache(); // removed video → bust cache
     res.json({ success: true, removed: result.rows[0] });
   } catch (err) {
     res.status(500).json({ error: 'Failed to remove video' });
@@ -629,6 +660,7 @@ router.post('/admin/enrich', authenticateUser, requireAdmin, async (req, res) =>
 
     const cache = await runEnrichment(catalogVideos);
     enrichmentCache = cache;
+    invalidateFeedCache(); // metadata changed → bust cache
 
     res.json({
       success: true,
@@ -778,6 +810,7 @@ setTimeout(async () => {
       console.error('[Startup Pipeline] Variant encoding error:', err.message);
     }
 
+    invalidateFeedCache(); // startup pipeline updated data → bust cache
     console.log('[Startup Pipeline] Complete ✅');
   } catch (err) {
     console.error('[Startup Pipeline] Failed to load catalog:', err.message);
@@ -785,3 +818,4 @@ setTimeout(async () => {
 }, 30000);
 
 module.exports = router;
+module.exports.invalidateFeedCache = invalidateFeedCache;

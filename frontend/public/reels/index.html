@@ -11,6 +11,11 @@
     <meta property="og:description" content="Discover gyms near you. Day passes, no membership needed. Swipe through real gym content from creators worldwide." />
     <meta property="og:image" content="https://scangym.com/reels/og-image.png" />
     <meta name="theme-color" content="#050816" />
+    <!-- PERF: Preconnect to CDN — starts DNS+TCP+TLS 200ms before first video request -->
+    <link rel="preconnect" href="https://cdn.scangym.com" crossorigin />
+    <link rel="dns-prefetch" href="https://cdn.scangym.com" />
+    <!-- PERF: Prefetch feed API while HTML is still parsing -->
+    <link rel="prefetch" href="/api/reels/feed?limit=200&offset=0&shuffle=true" as="fetch" crossorigin="anonymous" />
     <!-- Phase 3: standalone mode — no iframe dependency -->
     <link rel="manifest" href="/reels/manifest.json" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -1865,11 +1870,21 @@
 
       function loadFeed(){
         feedLoading = true;
-        fetch('/api/reels/feed?limit=' + PAGE_SIZE + '&offset=0&shuffle=true')
-          .then(function(r){
-            if(!r.ok) throw new Error('Feed error');
-            return r.json();
-          })
+
+        // PERF: Use server-injected prefetched feed if available (skips ~800ms API call)
+        var prefetchedPromise;
+        if (window.__PREFETCHED_FEED) {
+          prefetchedPromise = Promise.resolve(window.__PREFETCHED_FEED);
+          window.__PREFETCHED_FEED = null; // free memory
+        } else {
+          prefetchedPromise = fetch('/api/reels/feed?limit=' + PAGE_SIZE + '&offset=0&shuffle=true')
+            .then(function(r){
+              if(!r.ok) throw new Error('Feed error');
+              return r.json();
+            });
+        }
+
+        prefetchedPromise
           .then(function(data){
             allVideos = data.videos || [];
             feedOffset = allVideos.length;

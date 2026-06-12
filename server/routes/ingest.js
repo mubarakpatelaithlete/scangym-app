@@ -23,6 +23,7 @@ const { authenticateUser, requireAdmin } = require('../middleware/auth');
 const { compressVideo } = require('../lib/video-compress');
 const { uploadToR2, existsInR2 } = require('../lib/r2-upload');
 const { processVideoVariants } = require('../lib/video-variants');
+const { invalidateFeedCache } = require('./reels');
 
 // ═══════════════════════════════════════════════════════════
 //  STORAGE SETUP
@@ -193,6 +194,7 @@ async function processVideo(inputPath, originalName, options = {}) {
   );
 
   const entry = dbResult.rows[0];
+  invalidateFeedCache(); // new video ingested → bust cache
 
   // Step 4: Generate multi-resolution variants (adaptive bitrate)
   // Runs in background after response — downloads from R2 (file-safe even after temp cleanup),
