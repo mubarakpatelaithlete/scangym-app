@@ -373,13 +373,39 @@ if (fs.existsSync(FRONTEND_DIR)) {
   // Bust HTML template cache on file change (dev mode)
   try { fs.watchFile(reelsHtmlPath, () => { _reelsHtmlTemplate = null; }); } catch {}
 
+  /**
+   * Slim a feed payload down to only fields the player needs on first paint.
+   * Strips ~40% of JSON bytes (fileSize, driveId, source, thumb, width, height,
+   * dopamineTier, duration, hasFaststart, variantsReady, type, uploadedAt).
+   */
+  function slimFeedForSSR(feedData) {
+    if (!feedData || !feedData.videos) return feedData;
+    feedData.videos = feedData.videos.map(v => {
+      const slim = {
+        id: v.id,
+        name: v.name,
+        category: v.category,
+        cdnKey: v.cdnKey,
+        url: v.url,
+        blurhash: v.blurhash,
+        orientation: v.orientation,
+      };
+      if (v.variants) slim.variants = v.variants;
+      if (v.creator) slim.creator = v.creator;
+      if (v.posterUrl) slim.posterUrl = v.posterUrl;
+      return slim;
+    });
+    return feedData;
+  }
+
   async function serveReelsWithPrefetch(req, res) {
-    res.setHeader('Cache-Control', 'no-cache');
+    // Allow browser to serve stale HTML while revalidating in background
+    res.setHeader('Cache-Control', 'no-cache, stale-while-revalidate=30');
     res.setHeader('Content-Type', 'text/html; charset=UTF-8');
 
     try {
-      // PERF: Only inject first 15 videos (5-8KB) instead of all 115 (102KB).
-      // Client loads the rest lazily after first paint — saves ~95KB of HTML transfer.
+      // PERF: Only inject first 15 videos (~4-6KB slimmed) instead of all 115.
+      // Client loads the rest lazily after first paint.
       const feedUrl = `http://127.0.0.1:${PORT}/api/reels/feed?limit=15&offset=0&shuffle=true`;
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 400);
@@ -387,20 +413,42 @@ if (fs.existsSync(FRONTEND_DIR)) {
       clearTimeout(timeout);
 
       if (feedRes.ok) {
-        const feedJson = await feedRes.text();
+        const feedData = JSON.parse(await feedRes.text());
         let html = getReelsHtml();
 
-        // Parse feed to get first video's poster URL for <link rel="preload">
-        let posterPreload = '';
-        try {
-          const feedData = JSON.parse(feedJson);
-          if (feedData.videos && feedData.videos[0] && feedData.videos[0].cdnKey) {
-            posterPreload = `<link rel="preload" href="/api/reels/poster/${feedData.videos[0].cdnKey}" as="image" />\n    `;
-          }
-        } catch {}
+        // PERF: Slim feed — strip fields the player doesn't need (saves ~40% JSON)
+        slimFeedForSSR(feedData);
+        const feedJson = JSON.stringify(feedData);
 
-        // Inject: feed JSON + poster preload right before </head>
-        const injection = `${posterPreload}<script>window.__PREFETCHED_FEED=${feedJson};</script>`;
+        // Build preload hints for the first video (poster + video source)
+        let preloadHints = '';
+        const firstVideo = feedData.videos && feedData.videos[0];
+        if (firstVideo) {
+          // Poster preload
+          if (firstVideo.cdnKey) {
+            preloadHints += `<link rel="preload" href="/api/reels/poster/${firstVideo.cdnKey}" as="image" />\n    `;
+          }
+          // Video source preload — starts downloading actual video during HTML parse
+          // Use the smallest suitable variant (480p) for fast first-frame, or original
+          let videoPreloadUrl = '';
+          if (firstVideo.variants) {
+            // Prefer 480p (good quality/size tradeoff for first load)
+            const vk = firstVideo.variants['480p'] || firstVideo.variants['360p'] || firstVideo.variants['720p'];
+            if (vk && vk.url) videoPreloadUrl = vk.url;
+          }
+          if (!videoPreloadUrl && firstVideo.cdnKey) {
+            videoPreloadUrl = `https://cdn.scangym.com/videos/${firstVideo.cdnKey}.mp4`;
+          }
+          if (videoPreloadUrl) {
+            preloadHints += `<link rel="preload" href="${videoPreloadUrl}" as="video" type="video/mp4" crossorigin />\n    `;
+          }
+        }
+
+        // PERF: Remove the static prefetch hint for /api/reels/feed — SSR already injected it
+        html = html.replace(/<link\s+rel="prefetch"\s+href="\/api\/reels\/feed[^"]*"[^>]*\/?>/i, '');
+
+        // Inject: preload hints + feed JSON right before </head>
+        const injection = `${preloadHints}<script>window.__PREFETCHED_FEED=${feedJson};</script>`;
         html = html.replace('</head>', injection + '\n</head>');
         return res.send(html);
       }
@@ -495,6 +543,12 @@ if (fs.existsSync(FRONTEND_DIR)) {
   app.get('/gympartners-dashboard', (req, res) => {
     res.setHeader('Cache-Control', 'no-cache');
     res.sendFile(path.join(FRONTEND_DIR, 'gympartners-dashboard', 'index.html'));
+  });
+
+  // Gym Owner — Connect Access Control System
+  app.get('/gympartners-dashboard/connect-access', (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache');
+    res.sendFile(path.join(FRONTEND_DIR, 'gympartners-dashboard', 'connect-access.html'));
   });
 
   // ScanSquad Creator Dashboard
