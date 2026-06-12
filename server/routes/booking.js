@@ -83,6 +83,22 @@ router.post('/create', async (req, res) => {
       console.log(`[Booking] Referral discount applied: -£${discount.toFixed(2)} for creator "${referral_code}"`);
     }
 
+    // C8 FIX: Prevent duplicate bookings (same user + gym + date + time)
+    const existingBooking = await pool.query(
+      `SELECT id FROM public.bookings
+       WHERE gym_id = $1 AND user_id = $2 AND booking_date = $3 AND start_time = $4
+       AND status NOT IN ('cancelled')
+       LIMIT 1`,
+      [gymId, req.session.userId, date, time]
+    );
+    if (existingBooking.rows.length > 0) {
+      return res.status(409).json({
+        error: 'Duplicate booking',
+        message: 'You already have a booking at this gym for this date and time.',
+        existingBookingId: existingBooking.rows[0].id,
+      });
+    }
+
     const bookingCode = generateBookingCode();
     const qrCode = generateQRCode();
 
@@ -250,6 +266,22 @@ router.post('/guest-create', async (req, res) => {
       const discount = Math.round(price * 0.15 * 100) / 100;
       price = Math.max(price - discount, 0.50);
       console.log(`[Booking] Guest referral discount: -£${discount.toFixed(2)} for creator "${referral_code}"`);
+    }
+
+    // C8 FIX: Prevent duplicate guest bookings (same email + gym + date + time)
+    const existingGuest = await pool.query(
+      `SELECT id FROM public.bookings
+       WHERE gym_id = $1 AND user_email = $2 AND booking_date = $3 AND start_time = $4
+       AND status NOT IN ('cancelled')
+       LIMIT 1`,
+      [gymId, email, date, time]
+    );
+    if (existingGuest.rows.length > 0) {
+      return res.status(409).json({
+        error: 'Duplicate booking',
+        message: 'A booking already exists at this gym for this date and time.',
+        existingBookingId: existingGuest.rows[0].id,
+      });
     }
 
     const bookingCode = generateBookingCode();

@@ -628,6 +628,22 @@ router.post('/quick-checkout', async (req, res) => {
     const price = dayPrice.amount;
     const amount = dayPrice.stripeAmount;
 
+    // C8 FIX: Prevent duplicate bookings (same user + gym + date + time)
+    const existingBooking = await pool.query(
+      `SELECT id, status FROM public.bookings
+       WHERE gym_id = $1 AND user_id = $2 AND booking_date = $3 AND start_time = $4
+       AND status NOT IN ('cancelled')
+       LIMIT 1`,
+      [dbGymId, req.session.userId, date, resolved.startTime]
+    );
+    if (existingBooking.rows.length > 0) {
+      return res.status(409).json({
+        error: 'Duplicate booking',
+        message: 'You already have a booking at this gym for this date and time.',
+        existingBookingId: existingBooking.rows[0].id,
+      });
+    }
+
     // Generate booking codes
     const crypto = require('crypto');
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -990,6 +1006,24 @@ router.post('/cash-booking', async (req, res) => {
       passType: 'day',
     });
     const price = dayPrice.amount;
+
+    // C8 FIX: Prevent duplicate cash bookings (same email + gym + date + time)
+    if (safeEmail) {
+      const existingCash = await pool.query(
+        `SELECT id, status FROM public.bookings
+         WHERE gym_id = $1 AND user_email = $2 AND booking_date = $3 AND start_time = $4
+         AND status NOT IN ('cancelled')
+         LIMIT 1`,
+        [dbGymId, safeEmail, date, resolved.startTime]
+      );
+      if (existingCash.rows.length > 0) {
+        return res.status(409).json({
+          error: 'Duplicate booking',
+          message: 'A booking already exists at this gym for this date and time.',
+          existingBookingId: existingCash.rows[0].id,
+        });
+      }
+    }
 
     // ── Step 3: Generate booking code (same XXXX-XXXX format as Stripe path, fits VARCHAR(9)) ──
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
