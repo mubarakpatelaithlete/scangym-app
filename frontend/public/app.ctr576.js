@@ -1145,9 +1145,7 @@ function SearchPage(){
         html+='.tt-search-input{flex:1;background:rgba(0,0,0,.45);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px 14px;color:rgba(255,255,255,.7);font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px;cursor:pointer}';
         html+='.tt-search-gps{background:rgba(0,0,0,.45);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.1);border-radius:12px;width:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;-webkit-tap-highlight-color:transparent}';
         html+='.tt-search-filter{background:rgba(0,0,0,.45);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.1);border-radius:12px;width:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;-webkit-tap-highlight-color:transparent}';
-        /* Gym Tour badge */
-        html+='.tt-tour-badge{position:absolute;top:60px;right:12px;background:rgba(0,0,0,.5);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);color:#fff;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:700;z-index:10;display:flex;align-items:center;gap:5px}';
-        html+='.tt-tour-play{width:0;height:0;border-left:7px solid #fff;border-top:4px solid transparent;border-bottom:4px solid transparent}';
+        /* M8 fix: Removed fake "Gym Tour" badge — no actual tour videos exist */
         /* Action buttons (right side, TikTok style) */
         html+='.tt-actions{position:absolute;right:10px;top:65px;display:flex;flex-direction:column;gap:6px;z-index:15;align-items:center}';
         html+='.tt-action{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;-webkit-tap-highlight-color:transparent}';
@@ -1207,8 +1205,7 @@ function SearchPage(){
           }
           html+='<div class="tt-gradient"></div>';
 
-          /* Tour badge */
-          html+='<div class="tt-tour-badge"><div class="tt-tour-play"></div> Gym Tour</div>';
+          /* M8 fix: Removed fake "Gym Tour" badge */
 
           /* Search bar (only on first card, shared) — taps open Uber-style search overlay */
           if(i===0){
@@ -5923,7 +5920,7 @@ window.showGymDiscovery=function(){
             <div class="gd-photo">
               ${c.photo?`<div class="gd-photo-img" style="background-image:url('${c.photo}')"></div>`:`<div class="gd-photo-img" style="background:#1a1f2e;display:flex;align-items:center;justify-content:center"><span style="font-size:48px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)">🏋️</span></div>`}
               <div class="gd-photo-grad"></div>
-              <div class="gd-badge gd-vid"><div class="gd-vid-play"></div> Gym Tour</div>
+              <!-- M8 fix: Removed fake "Gym Tour" badge -->
               ${c.photoCount>1?`<div class="gd-badge gd-photos-ct">📷 ${c.photoCount}</div>`:''}
               <div class="gd-photo-dots">${c.allPhotos.slice(0,5).map((p,j)=>`<div class="gd-pdot${j===0?' act':''}"></div>`).join('')}</div>
               <div class="gd-logo" style="background:linear-gradient(135deg,${logoGrad})">${logoEmoji}</div>
