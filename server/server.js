@@ -194,7 +194,9 @@ app.use(session({
 app.use(analyticsMiddleware);
 
 // Stripe webhook needs raw body BEFORE json parsing
-app.post('/api/payment/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+// H13 fix: Also listen on /api/owner/stripe-webhook — Stripe was configured
+// to send events there but the route didn't exist (71 failures since June 4).
+const _stripeWebhookHandler = async (req, res) => {
   const pool = require('./middleware/db');
   const STRIPE_SECRET = process.env.STRIPE_SECRET_KEY;
   const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
@@ -251,7 +253,9 @@ app.post('/api/payment/webhook', express.raw({ type: 'application/json' }), asyn
   }
 
   res.json({ received: true });
-});
+};
+app.post('/api/payment/webhook', express.raw({ type: 'application/json' }), _stripeWebhookHandler);
+app.post('/api/owner/stripe-webhook', express.raw({ type: 'application/json' }), _stripeWebhookHandler);
 
 // Parse JSON for API routes
 const apiPaths = [
