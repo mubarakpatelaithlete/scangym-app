@@ -355,11 +355,75 @@ if (fs.existsSync(FRONTEND_DIR)) {
     next();
   });
 
+  // PERF FIX: Reels SSR route MUST be registered BEFORE express.static
+  // so express.static doesn't intercept /reels/ and serve the raw index.html.
+  // This enables server-side feed injection (eliminates ~800ms client-side API call).
+  const reelsHtmlPath = path.join(FRONTEND_DIR, 'reels', 'index.html');
+  let _reelsHtmlTemplate = null;
+
+  function getReelsHtml() {
+    if (!_reelsHtmlTemplate) {
+      _reelsHtmlTemplate = fs.readFileSync(reelsHtmlPath, 'utf8');
+    }
+    return _reelsHtmlTemplate;
+  }
+
+  // Bust HTML template cache on file change (dev mode)
+  try { fs.watchFile(reelsHtmlPath, () => { _reelsHtmlTemplate = null; }); } catch {}
+
+  async function serveReelsWithPrefetch(req, res) {
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Content-Type', 'text/html; charset=UTF-8');
+
+    try {
+      // PERF: Only inject first 15 videos (5-8KB) instead of all 115 (102KB).
+      // Client loads the rest lazily after first paint — saves ~95KB of HTML transfer.
+      const feedUrl = `http://127.0.0.1:${PORT}/api/reels/feed?limit=15&offset=0&shuffle=true`;
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 400);
+      const feedRes = await fetch(feedUrl, { signal: controller.signal });
+      clearTimeout(timeout);
+
+      if (feedRes.ok) {
+        const feedJson = await feedRes.text();
+        let html = getReelsHtml();
+
+        // Parse feed to get first video's poster URL for <link rel="preload">
+        let posterPreload = '';
+        try {
+          const feedData = JSON.parse(feedJson);
+          if (feedData.videos && feedData.videos[0] && feedData.videos[0].cdnKey) {
+            posterPreload = `<link rel="preload" href="/api/reels/poster/${feedData.videos[0].cdnKey}" as="image" />\n    `;
+          }
+        } catch {}
+
+        // Inject: feed JSON + poster preload right before </head>
+        const injection = `${posterPreload}<script>window.__PREFETCHED_FEED=${feedJson};</script>`;
+        html = html.replace('</head>', injection + '\n</head>');
+        return res.send(html);
+      }
+    } catch {
+      // Feed fetch failed or timed out — serve vanilla HTML (client will fetch normally)
+    }
+
+    res.sendFile(reelsHtmlPath);
+  }
+
+  app.get('/reels', (req, res) => res.redirect(301, '/reels/'));
+  app.get('/reels/', serveReelsWithPrefetch);
+  app.get('/reels/*', (req, res, next) => {
+    // Static files (.js, .css, images, etc.) fall through to express.static
+    if (req.path.includes('.')) return next();
+    // SPA routes (no file extension) get SSR-injected HTML
+    serveReelsWithPrefetch(req, res);
+  });
+
   app.use(express.static(FRONTEND_DIR, {
     maxAge: '7d',
     dotfiles: 'allow',
     etag: true,
     lastModified: true,
+    // index.html for /reels/ is handled by SSR routes above; other dirs (ceo-dashboard, etc.) still need auto-index
     setHeaders: (res, filePath) => {
       if (filePath.endsWith('.html')) {
         res.setHeader('Cache-Control', 'no-cache');
@@ -417,57 +481,7 @@ if (fs.existsSync(FRONTEND_DIR)) {
     res.sendFile(path.join(FRONTEND_DIR, 'scansquad', 'index.html'));
   });
 
-  // Reels app — SSR-injected feed for instant first paint
-  // Instead of: HTML loads → JS runs → fetch('/api/reels/feed') → render
-  // Now:        HTML loads with __PREFETCHED_FEED → JS renders immediately (0ms API wait)
-  const reelsHtmlPath = path.join(FRONTEND_DIR, 'reels', 'index.html');
-  let _reelsHtmlTemplate = null;
-
-  function getReelsHtml() {
-    if (!_reelsHtmlTemplate) {
-      _reelsHtmlTemplate = fs.readFileSync(reelsHtmlPath, 'utf8');
-    }
-    return _reelsHtmlTemplate;
-  }
-
-  // Bust HTML template cache on file change (dev mode)
-  try { fs.watchFile(reelsHtmlPath, () => { _reelsHtmlTemplate = null; }); } catch {}
-
-  async function serveReelsWithPrefetch(req, res) {
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Content-Type', 'text/html; charset=UTF-8');
-
-    // Try to inject prefetched feed data into the HTML
-    try {
-      const feedUrl = `http://127.0.0.1:${PORT}/api/reels/feed?limit=200&offset=0&shuffle=true`;
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 400); // 400ms max — don't slow HTML down
-      const feedRes = await fetch(feedUrl, { signal: controller.signal });
-      clearTimeout(timeout);
-
-      if (feedRes.ok) {
-        const feedJson = await feedRes.text();
-        let html = getReelsHtml();
-        // Inject right before </head> as a global variable
-        const injection = `<script>window.__PREFETCHED_FEED=${feedJson};</script>`;
-        html = html.replace('</head>', injection + '\n</head>');
-        return res.send(html);
-      }
-    } catch {
-      // Feed fetch failed or timed out — serve vanilla HTML (client will fetch normally)
-    }
-
-    res.sendFile(reelsHtmlPath);
-  }
-
-  app.get('/reels', serveReelsWithPrefetch);
-  app.get('/reels/*', (req, res, next) => {
-    const filePath = path.join(FRONTEND_DIR, req.path);
-    if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
-      return next();
-    }
-    serveReelsWithPrefetch(req, res);
-  });
+  // Reels SSR routes are registered BEFORE express.static (see above)
 
   // CEO Dashboard
   app.get('/ceo-dashboard', (req, res) => {

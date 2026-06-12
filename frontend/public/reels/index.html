@@ -440,11 +440,11 @@
       var SNAP_THRESHOLD   = 0.04;   // Ultra-fast: was 0.12 — ~30px drag triggers swipe (TikTok ~0.08)
       var SNAP_DURATION    = 120;    // Ultra-fast: was 280ms — 40% faster than TikTok (~200ms)
       var RUBBER_BAND      = 0.3;
-      var RENDER_WINDOW    = 4;       // FIX #5: Keep 4 reels above + below rendered (was 3)
-      var PREFETCH_AHEAD   = 6;      // FIX #5: Prefetch next 6 videos (was 5)
+      var RENDER_WINDOW    = 3;       // PERF v2: Reduced from 4 → 3 (7 DOM nodes vs 9). Still smooth scrolling.
+      var PREFETCH_AHEAD   = 5;      // PERF v2: Reduced from 6 → 5. Fewer concurrent downloads on first load.
       var PAGE_SIZE        = 40;     // Larger pages = fewer fetches, more runway
       var LOAD_MORE_AT     = 15;     // Load next page when 15 reels away from end (aggressive)
-      var POOL_SIZE        = 11;     // FIX #2: video pool — MUST be >= RENDER_WINDOW*2+1 (9). Was 9, now 11 for headroom
+      var POOL_SIZE        = 9;      // PERF v2: RENDER_WINDOW*2+1=7, +2 headroom = 9. Fewer DOM elements.
       var CROSSFADE_MS     = 150;    // ⑯ audio crossfade duration
 
       // ── Placeholder poster (SVG) — shimmer loading state ──
@@ -1896,20 +1896,35 @@
               showFatalError('No reels available yet');
               return;
             }
-            // ㉑ Decode blurhash for first few videos if available
-            for(var i = 0; i < Math.min(allVideos.length, 5); i++){
-              if(allVideos[i].blurhash && !posterCache[i]){
-                var bh = decodeBlurHash(allVideos[i].blurhash, 4, 3);
-                if(bh) posterCache[i] = bh;
-              }
+            // PERF v2: Only decode blurhash for video 0 (current) synchronously.
+            // Defer the rest to after first paint via requestIdleCallback.
+            if(allVideos[0] && allVideos[0].blurhash && !posterCache[0]){
+              var bh0 = decodeBlurHash(allVideos[0].blurhash, 4, 3);
+              if(bh0) posterCache[0] = bh0;
             }
-            // PERF FIX #5: Load persisted poster frames for first batch
-            for(var i = 0; i < Math.min(allVideos.length, 10); i++){
-              if(!posterCache[i]){
-                var pp = getPersistedPoster(allVideos[i]);
-                if(pp) posterCache[i] = pp;
-              }
+            // Check persisted poster for video 0 only
+            if(!posterCache[0] && allVideos[0]){
+              var pp0 = getPersistedPoster(allVideos[0]);
+              if(pp0) posterCache[0] = pp0;
             }
+            // Defer rest of blurhash + poster loading to after first paint
+            var _deferPosterWork = function(){
+              for(var i = 1; i < Math.min(allVideos.length, 5); i++){
+                if(allVideos[i].blurhash && !posterCache[i]){
+                  var bh = decodeBlurHash(allVideos[i].blurhash, 4, 3);
+                  if(bh) posterCache[i] = bh;
+                }
+              }
+              for(var i = 1; i < Math.min(allVideos.length, 10); i++){
+                if(!posterCache[i]){
+                  var pp = getPersistedPoster(allVideos[i]);
+                  if(pp) posterCache[i] = pp;
+                }
+              }
+            };
+            if(window.requestIdleCallback) requestIdleCallback(_deferPosterWork);
+            else setTimeout(_deferPosterWork, 100);
+
             // M4 fix: Deep-link support — if URL has ?v=ID, start at that reel
             var startIndex = 0;
             try {
@@ -2043,6 +2058,9 @@
         vid._quality = currentQuality; // Track which quality we loaded
         vid.src = videoUrl;
         vid.muted = isMuted;
+        // PERF v2: Hint browser to prioritize first video download
+        if(index === currentIndex) vid.setAttribute('fetchpriority', 'high');
+        else vid.removeAttribute('fetchpriority');
 
         // PERF FIX #3: Connection-aware preloading
         // On slow connections, only fully preload current video
