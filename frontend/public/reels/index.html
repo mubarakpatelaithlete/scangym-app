@@ -2473,23 +2473,23 @@
       // <a download> on Android/desktop, long-press hint as last resort.
       var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
-      // ── Creative Commons notice before download ──
+      // ── Creative Commons free-to-use notice before download ──
       function showCCNotice(video, url, onConfirm){
         var overlay = document.createElement('div');
         overlay.className = 'cc-modal-overlay';
         var creatorName = (video.creator && video.creator.name) ? video.creator.name : 'the creator';
         overlay.innerHTML = '<div class="cc-modal">'
-          + '<div class="cc-icon">🎬</div>'
-          + '<h3>Creative Commons License</h3>'
-          + '<p>This video by <strong>' + creatorName + '</strong> is shared under a Creative Commons license.</p>'
-          + '<p>You are free to download and share it, but you <strong>must credit the creator</strong> and <strong>cannot use it for commercial purposes</strong> without permission.</p>'
+          + '<div class="cc-icon">🎉</div>'
+          + '<h3>Free to Use</h3>'
+          + '<p>This video by <strong>' + creatorName + '</strong> is <strong>100% free to use</strong> under Creative Commons.</p>'
+          + '<p>You can download, share, repost, and use this content however you like — no restrictions, no permission needed.</p>'
           + '<div class="cc-license-badge">'
-          +   '<img src="https://mirrors.creativecommons.org/presskit/buttons/80x15/svg/by-nc.svg" alt="CC BY-NC">'
-          +   '<span>CC BY-NC 4.0</span>'
+          +   '<img src="https://mirrors.creativecommons.org/presskit/buttons/80x15/svg/cc-zero.svg" alt="CC0">'
+          +   '<span>Creative Commons — Free to Use</span>'
           + '</div>'
           + '<div class="cc-buttons">'
           +   '<button class="cc-btn cc-btn-cancel">Cancel</button>'
-          +   '<button class="cc-btn cc-btn-download">I Agree &amp; Download</button>'
+          +   '<button class="cc-btn cc-btn-download">Download</button>'
           + '</div>'
           + '</div>';
         document.body.appendChild(overlay);
