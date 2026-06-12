@@ -17,8 +17,7 @@ const statsRouter = require('./routes/stats');
 const creatorsRouter = require('./routes/creators');
 const reelsRouter = require('./routes/reels');
 const ingestRouter = require('./routes/ingest');
-// M12 FIX: videoProxy.js removed — all 115 videos now use CDN directly, zero Drive videos remain
-// const videoProxyRouter = require('./routes/videoProxy');
+// M12: videoProxy.js deleted — all videos use CDN directly
 const directionsRouter = require('./routes/directions');
 const qrRouter = require('./routes/qr');
 const convictionRouter = require('./routes/conviction');
@@ -323,8 +322,7 @@ app.use('/api/stats', statsRouter);
 app.use('/api/creators', creatorsRouter);
 app.use('/api/reels', reelsRouter);
 app.use('/api/reels/admin/ingest', ingestRouter);
-// M12 FIX: video proxy removed — CDN serves directly, no middleman needed
-// app.use('/api/video-proxy', videoProxyRouter);
+// M12: video-proxy route removed — CDN serves directly
 app.use('/api/directions', directionsRouter);
 app.use('/api/qr', qrRouter);
 app.use('/api/conviction', convictionRouter);
