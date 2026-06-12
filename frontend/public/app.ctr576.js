@@ -6501,7 +6501,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
           body:JSON.stringify({gymId:parseInt(dbGymId),placeId:gymId,date:cs.selectedDate,time:cs.selectedTime,email,gymName:gymName,gymAddress:gymAddr,passType:cs.selectedPass||'day'})
         }).then(r=>r.json());
         if(result.success){
-          state.lastBooking=result.booking;state.lastQR=result.qr;
+          state.lastBooking=result.booking;state.lastQR=result.qr;state.lastAccess=result.access||null;
           closeBookingSheet();navigate('/booking-success?session_id=cash&booking_id='+result.booking.id);
           sgToast('💷 Reserved! Pay at the gym','success',3000);
         }else{
@@ -6531,9 +6531,9 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
           body:JSON.stringify({gymId:parseInt(dbGymId),placeId:gymId,date:cs.selectedDate,time:cs.selectedTime,email,gymName:gymName,gymAddress:gymAddr,passType:cs.selectedPass||'day',savedCardId:cs.savedCardId})
         }).then(r=>r.json());
         if(result.success){
-          state.lastBooking=result.booking;state.lastQR=result.qr;
+          state.lastBooking=result.booking;state.lastQR=result.qr;state.lastAccess=result.access||null;
           closeBookingSheet();navigate('/booking-success?session_id=quick&booking_id='+result.booking.id);
-          sgToast('⚡ Booked instantly!','success',3000);
+          sgToast(result.access?'🔓 Booked + door access ready!':'⚡ Booked instantly!','success',3000);
         }else{
           sgToast(result.error||'Quick checkout failed');
           btn.disabled=false;btnText.textContent='Confirm and pay · '+displayPriceStr;
@@ -7022,6 +7022,7 @@ function BookingSuccessPage(){
         if(r.success){
           state.lastBooking=r.booking;
           state.lastQR=r.qr;
+          state.lastAccess=r.access||null;
           render();
         }else{
           document.getElementById('booking-result').innerHTML=`<p class="text-red-400">${r.error||'Payment verification failed'}</p>`;
@@ -7120,6 +7121,33 @@ function BookingSuccessPage(){
         <button onclick="if(navigator.share){navigator.share({title:'ScanGym QR',text:'My gym booking QR code',url:window.location.href}).catch(()=>{})}else{navigator.clipboard.writeText(window.location.href).then(()=>{this.textContent='✅ Link Copied!';setTimeout(()=>{this.textContent='📤 Share Booking'},2000)})}" class="mt-3 text-brand text-sm font-medium hover:text-orange-400 cursor-pointer transition">📤 Share Booking</button>
       </div>
 
+      <!-- Tier 2: Access Control Credentials (Kisi QR unlock / Seam PIN / Mobile Key) -->
+      ${(()=>{
+        const ac=state.lastAccess;
+        if(!ac)return '';
+        if(ac.type==='kisi_access_link'&&ac.access_url)return `
+        <div class="bg-gradient-to-r from-green-900/30 to-emerald-900/20 rounded-2xl border border-green-500/30 p-6 mb-4 text-center">
+          <p class="text-green-400 font-bold text-lg mb-1">🔓 Door Access Ready</p>
+          <p class="text-slate-300 text-sm mb-4">${ac.instructions||'Scan this at the gym door reader to unlock'}</p>
+          ${ac.access_qr_url?`<div class="bg-white rounded-2xl p-4 inline-block mx-auto mb-3"><img src="${ac.access_qr_url}" alt="Door QR" class="w-48 h-48"></div>`:''}
+          <a href="${ac.access_url}" target="_blank" class="block w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-xl transition mt-2 cursor-pointer">🚪 Tap to Unlock Door</a>
+          <p class="text-slate-500 text-xs mt-2">Access valid: ${new Date(ac.starts_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})} — ${new Date(ac.ends_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</p>
+        </div>`;
+        if(ac.pin)return `
+        <div class="bg-gradient-to-r from-blue-900/30 to-indigo-900/20 rounded-2xl border border-blue-500/30 p-6 mb-4 text-center">
+          <p class="text-blue-400 font-bold text-lg mb-1">🔢 Door PIN Code</p>
+          <p class="text-slate-300 text-sm mb-3">${ac.instructions||'Enter this PIN at the gym keypad'}</p>
+          <div class="bg-slate-900 rounded-xl py-4 px-8 inline-block"><p class="text-4xl font-mono font-bold text-white tracking-[0.3em]">${ac.pin}</p></div>
+          <p class="text-slate-500 text-xs mt-3">Valid: ${new Date(ac.starts_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})} — ${new Date(ac.ends_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</p>
+        </div>`;
+        if(ac.mobile_key)return `
+        <div class="bg-gradient-to-r from-purple-900/30 to-violet-900/20 rounded-2xl border border-purple-500/30 p-6 mb-4 text-center">
+          <p class="text-purple-400 font-bold text-lg mb-1">📱 Mobile Key Sent</p>
+          <p class="text-slate-300 text-sm">${ac.instructions||'Check your phone — hold it near the door reader to unlock.'}</p>
+        </div>`;
+        return '';
+      })()}
+
       <!-- What's Next Steps -->
       <div class="bg-card rounded-2xl border border-slate-700 p-5 mb-4">
         <p class="text-white font-bold mb-4">🗺️ What happens next</p>
@@ -7142,8 +7170,8 @@ function BookingSuccessPage(){
           <div class="flex gap-3">
             <div class="w-8 h-8 bg-brand/20 rounded-lg flex items-center justify-center flex-shrink-0"><span class="text-brand text-sm font-bold">3</span></div>
             <div>
-              <p class="text-white font-medium text-sm">Scan at entrance</p>
-              <p class="text-slate-400 text-xs">Hold QR code to the scanner · Contactless entry</p>
+              <p class="text-white font-medium text-sm">${state.lastAccess?'Use your door access':'Scan at entrance'}</p>
+              <p class="text-slate-400 text-xs">${state.lastAccess?'Use the QR/PIN/mobile key above to unlock the door':'Hold QR code to the scanner · Contactless entry'}</p>
             </div>
           </div>
           <div class="flex gap-3">

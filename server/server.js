@@ -30,6 +30,7 @@ const liveSearchRouter = require('./routes/liveSearch');
 const geolocationRouter = require('./routes/geolocation');
 const referralsRouter = require('./routes/referrals');
 const streaksRouter = require('./routes/streaks');
+const accessRouter = require('./routes/access');
 const analyticsMiddleware = require('./middleware/analytics');
 
 const app = express();
@@ -337,6 +338,7 @@ app.use('/api/live', liveSearchRouter);
 app.use('/api/geolocation', geolocationRouter);
 app.use('/api/referrals', referralsRouter);
 app.use('/api/streaks', streaksRouter);
+app.use('/api/access', accessRouter);
 
 // -- Serve Frontend --
 // Digital Asset Links for Android TWA verification
