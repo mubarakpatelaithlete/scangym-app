@@ -343,7 +343,15 @@ router.post('/record-workout', async (req, res) => {
       } catch (e) {}
     }
 
+    // ChatGPT Playbook #5/#7: Include referral link in workout share
+    let referralHandle = null;
+    try {
+      const refQ = await pool.query('SELECT referral_handle FROM public.users WHERE id = $1', [userId]);
+      referralHandle = refQ.rows[0]?.referral_handle || null;
+    } catch (e) {}
+
     // Generate shareable workout card data
+    const referralSuffix = referralHandle ? ` Try it: scangym.com/r/${referralHandle}` : ' Try it: scangym.com';
     const workoutCard = {
       streak: newStreak,
       totalWorkouts,
@@ -351,7 +359,9 @@ router.post('/record-workout', async (req, res) => {
       date: todayStr,
       badges: actuallyNew,
       bonusReward,
-      shareText: `🔥 ${newStreak}-day gym streak! Just finished workout #${totalWorkouts} with @ScanGym 💪`,
+      referralHandle,
+      referralLink: referralHandle ? `https://scangym.com/r/${referralHandle}` : 'https://scangym.com',
+      shareText: `🔥 ${newStreak}-day gym streak! Just finished workout #${totalWorkouts} with @ScanGym 💪${referralSuffix}`,
     };
 
     res.json({

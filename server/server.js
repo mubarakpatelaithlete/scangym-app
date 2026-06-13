@@ -367,6 +367,13 @@ if (process.env.DATABASE_URL) {
     ALTER TABLE video_catalog ADD COLUMN IF NOT EXISTS variants_ready BOOLEAN DEFAULT false;
   `).then(() => console.log('✅ DB migration: video variants columns ready'))
     .catch(err => console.error('DB migration (variants):', err.message));
+
+  // ChatGPT Playbook: Auto-affiliate link for every user
+  _migrationPool.query(`
+    ALTER TABLE public.users ADD COLUMN IF NOT EXISTS referral_handle VARCHAR(100);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_users_referral_handle ON public.users (referral_handle) WHERE referral_handle IS NOT NULL;
+  `).then(() => console.log('✅ DB migration: referral_handle ready'))
+    .catch(err => console.error('DB migration (referral_handle):', err.message));
 }
 
 // -- Feature Routes (Tasks 1-24 with CEO corrections) --

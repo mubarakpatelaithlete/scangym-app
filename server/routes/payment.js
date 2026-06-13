@@ -751,6 +751,13 @@ router.post('/quick-checkout', async (req, res) => {
       }).catch(err => console.error('[Email] Send failed:', err.message));
     }
 
+    // ChatGPT Playbook #5/#7: Include referral link in every booking response
+    let referralHandle = null;
+    try {
+      const refQ = await pool.query('SELECT referral_handle FROM public.users WHERE id = $1', [req.session.userId]);
+      referralHandle = refQ.rows[0]?.referral_handle || null;
+    } catch (e) {}
+
     res.json({
       success: true,
       quickCheckout: true,
@@ -774,6 +781,10 @@ router.post('/quick-checkout', async (req, res) => {
         starts_at: accessCredential.starts_at,
         ends_at: accessCredential.ends_at,
       } : null,
+      // ChatGPT Playbook: Auto-embed referral link in share
+      referralHandle,
+      referralLink: referralHandle ? `https://scangym.com/r/${referralHandle}` : null,
+      shareText: `Just booked a gym session at ${g.name} for ${dayPrice.symbol}${price.toFixed(2)} with @ScanGym! No membership needed 🏋️ ${referralHandle ? 'scangym.com/r/' + referralHandle : 'scangym.com'}`,
       message: accessCredential
         ? '⚡ Booked! Door access provisioned — ' + accessCredential.instructions
         : '⚡ Booked instantly with your saved card!',
@@ -1363,5 +1374,213 @@ router.get('/resume', async (req, res) => {
   }
 });
 
+
+// ═══════════════════════════════════════════════════════════════════
+//  ChatGPT PLAYBOOK #3: FIRST SESSION FREE
+//  "Make the first scan so magical they can't shut up about it"
+//  
+//  First-ever booking for any user is completely free — £0, no card needed.
+//  Creates a confirmed booking with QR code instantly. Zero friction.
+// ═══════════════════════════════════════════════════════════════════
+
+/**
+ * GET /api/payment/check-first-free
+ * Check if the current user qualifies for a free first session.
+ */
+router.get('/check-first-free', async (req, res) => {
+  try {
+    const userId = req.session?.userId;
+    if (!userId) {
+      // Guests: check by email if provided
+      const email = req.query.email;
+      if (email) {
+        const guestBookings = await pool.query(
+          `SELECT COUNT(*) as cnt FROM public.bookings 
+           WHERE user_email = $1 AND status NOT IN ('cancelled')`,
+          [email]
+        );
+        return res.json({
+          eligible: parseInt(guestBookings.rows[0].cnt) === 0,
+          reason: parseInt(guestBookings.rows[0].cnt) === 0 ? 'first_booking' : 'has_previous_bookings',
+        });
+      }
+      return res.json({ eligible: true, reason: 'not_logged_in_assumed_new' });
+    }
+
+    // Check for any previous non-cancelled bookings
+    const prevBookings = await pool.query(
+      `SELECT COUNT(*) as cnt FROM public.bookings 
+       WHERE user_id = $1 AND status NOT IN ('cancelled')`,
+      [userId]
+    );
+
+    const count = parseInt(prevBookings.rows[0].cnt);
+    res.json({
+      eligible: count === 0,
+      reason: count === 0 ? 'first_booking' : 'has_previous_bookings',
+      previousBookings: count,
+    });
+  } catch (err) {
+    console.error('[FirstFree] Check error:', err.message);
+    res.json({ eligible: false, reason: 'error' });
+  }
+});
+
+/**
+ * POST /api/payment/first-free
+ * Book a free first session — no card, no Stripe, instant QR.
+ * 
+ * Requires: gymId, date. Optional: time, placeId, gymName, gymAddress.
+ * Works for both logged-in users and guests (email required for guests).
+ */
+router.post('/first-free', async (req, res) => {
+  try {
+    let { gymId, placeId, date, time, email, gymName: reqGymName, gymAddress: reqGymAddr } = req.body;
+    if (!date) return res.status(400).json({ error: 'date is required' });
+
+    const userId = req.session?.userId;
+
+    // Must be logged in OR provide email for guest
+    if (!userId && !email) {
+      return res.status(400).json({ error: 'Login or provide email for your free session' });
+    }
+
+    // Verify eligibility
+    if (userId) {
+      const prev = await pool.query(
+        `SELECT COUNT(*) as cnt FROM public.bookings WHERE user_id = $1 AND status NOT IN ('cancelled')`,
+        [userId]
+      );
+      if (parseInt(prev.rows[0].cnt) > 0) {
+        return res.status(400).json({ error: 'Free first session already used. You\'ve already booked before!' });
+      }
+    } else if (email) {
+      const prev = await pool.query(
+        `SELECT COUNT(*) as cnt FROM public.bookings WHERE user_email = $1 AND status NOT IN ('cancelled')`,
+        [email]
+      );
+      if (parseInt(prev.rows[0].cnt) > 0) {
+        return res.status(400).json({ error: 'Free first session already used for this email.' });
+      }
+    }
+
+    // Resolve time
+    const resolved = resolveTime(time);
+
+    // Resolve gym
+    let dbGymId = gymId;
+    if (placeId && isNaN(parseInt(gymId))) {
+      const ensureResult = await pool.query('SELECT id FROM public.gyms WHERE place_id = $1', [placeId]);
+      if (ensureResult.rows.length > 0) {
+        dbGymId = ensureResult.rows[0].id;
+      } else if (reqGymName) {
+        // Auto-create gym record for Google Places gym
+        const newGym = await pool.query(
+          `INSERT INTO public.gyms (name, address, place_id, country, created_at) 
+           VALUES ($1, $2, $3, 'GB', NOW()) RETURNING id`,
+          [reqGymName, reqGymAddr || '', placeId]
+        );
+        dbGymId = newGym.rows[0].id;
+      } else {
+        return res.status(404).json({ error: 'Gym not found' });
+      }
+    }
+
+    // Get gym info
+    const gym = await pool.query('SELECT id, name, address, country FROM gyms WHERE id = $1', [dbGymId]);
+    if (gym.rows.length === 0) return res.status(404).json({ error: 'Gym not found' });
+    const g = gym.rows[0];
+
+    // Duplicate check
+    const dupCheck = userId
+      ? await pool.query(
+          `SELECT id FROM public.bookings WHERE gym_id=$1 AND user_id=$2 AND booking_date=$3 AND start_time=$4 AND status!='cancelled' LIMIT 1`,
+          [dbGymId, userId, date, resolved.startTime]
+        )
+      : await pool.query(
+          `SELECT id FROM public.bookings WHERE gym_id=$1 AND user_email=$2 AND booking_date=$3 AND start_time=$4 AND status!='cancelled' LIMIT 1`,
+          [dbGymId, email, date, resolved.startTime]
+        );
+    if (dupCheck.rows.length > 0) {
+      return res.status(409).json({ error: 'You already have a booking at this gym for this date and time.' });
+    }
+
+    // Generate codes
+    const crypto = require('crypto');
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let bookingCode = '';
+    for (let i = 0; i < 8; i++) {
+      bookingCode += chars[Math.floor(Math.random() * chars.length)];
+      if (i === 3) bookingCode += '-';
+    }
+
+    // Get normal price for display (shows what they're saving)
+    const dayPrice = pricing.calculateGymPrice({ countryCode: g.country || 'GB', passType: 'day' });
+
+    // Create booking at £0 — confirmed immediately!
+    const bookingResult = await pool.query(
+      `INSERT INTO public.bookings
+        (gym_id, user_id, booking_date, start_time, end_time, total_amount,
+         platform_fee_amount, booking_type, booking_code, status,
+         user_email, user_name, stripe_payment_status, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, 0, 0, 'first_free', $6, 'confirmed', $7, $8, 'free', NOW(), NOW())
+       RETURNING *`,
+      [dbGymId, userId || 'guest', date, resolved.startTime, resolved.endTime,
+       bookingCode, email || '', userId ? 'User' : 'Guest']
+    );
+    const booking = bookingResult.rows[0];
+
+    // Generate QR code
+    const qr = await generate2ScanQR(booking.id, userId || 'guest-' + email, dbGymId);
+
+    // Update booking with QR
+    await pool.query(
+      `UPDATE public.bookings SET qr_code = $1, qr_code_url = $2 WHERE id = $3`,
+      [qr.token, qr.dataUrl, booking.id]
+    );
+
+    // Get user's referral handle for the share card
+    let referralHandle = null;
+    if (userId) {
+      const userRef = await pool.query('SELECT referral_handle FROM public.users WHERE id = $1', [userId]);
+      referralHandle = userRef.rows[0]?.referral_handle || null;
+    }
+
+    console.log(`🆓 [FirstFree] Free session booked! User: ${userId || email}, Gym: ${g.name}, Saved: ${dayPrice.display}`);
+
+    res.json({
+      success: true,
+      firstFree: true,
+      savedAmount: dayPrice.display,
+      savedPence: dayPrice.stripeAmount,
+      booking: {
+        id: booking.id,
+        gymId: dbGymId,
+        gymName: g.name,
+        gymAddress: g.address,
+        date: booking.booking_date,
+        time: resolved.startTime,
+        endTime: resolved.endTime,
+        price: 0,
+        originalPrice: dayPrice.amount,
+        originalPriceDisplay: dayPrice.display,
+        bookingCode: booking.booking_code,
+        status: 'confirmed',
+      },
+      qr: {
+        token: qr.token,
+        dataUrl: qr.dataUrl,
+        scanUrl: qr.scanUrl,
+        maxScans: qr.maxScans,
+      },
+      referralHandle,
+      referralLink: referralHandle ? `https://scangym.com/r/${referralHandle}` : null,
+      shareText: `🆓 Just booked my FIRST free gym session at ${g.name} with @ScanGym! No membership needed. Try it: ${referralHandle ? 'scangym.com/r/' + referralHandle : 'scangym.com'} 💪`,
+    });
+  } catch (err) {
+    console.error('[FirstFree] Booking error:', err);
+    res.status(500).json({ error: 'Failed to create free booking', detail: err.message });
+  }
+});
 
 module.exports = router;
