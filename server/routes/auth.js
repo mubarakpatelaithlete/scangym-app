@@ -22,6 +22,65 @@ const stripe = process.env.STRIPE_SECRET_KEY
   : null;
 
 /**
+ * ChatGPT Playbook #7: Auto-generate a referral handle for every user.
+ * Every user automatically gets scangym.com/r/{handle} — zero setup.
+ * Called on login/signup. Skips if handle already set.
+ */
+async function ensureReferralHandle(userId, firstName, lastName, email, phone) {
+  try {
+    // Check if user already has a handle
+    const existing = await pool.query(
+      'SELECT referral_handle FROM public.users WHERE id = $1',
+      [userId]
+    );
+    if (existing.rows.length > 0 && existing.rows[0].referral_handle) {
+      return existing.rows[0].referral_handle;
+    }
+
+    // Generate handle from name, email, or phone
+    let base = '';
+    if (firstName) {
+      base = (firstName + (lastName ? lastName.charAt(0) : '')).toLowerCase();
+    } else if (email) {
+      base = email.split('@')[0].toLowerCase();
+    } else if (phone) {
+      base = 'user' + phone.slice(-4);
+    } else {
+      base = 'user' + Math.random().toString(36).slice(2, 6);
+    }
+
+    // Clean: only alphanumeric + hyphens, max 30 chars
+    base = base.replace(/[^a-z0-9]/g, '').slice(0, 25);
+    if (!base) base = 'user' + Date.now().toString(36).slice(-6);
+
+    // Try the base handle first, then add random suffix if taken
+    let handle = base;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      try {
+        await pool.query(
+          'UPDATE public.users SET referral_handle = $1 WHERE id = $2 AND (referral_handle IS NULL OR referral_handle = \'\')',
+          [handle, userId]
+        );
+        // Verify it was set (could fail silently if unique constraint violated)
+        const check = await pool.query('SELECT referral_handle FROM public.users WHERE id = $1', [userId]);
+        if (check.rows[0]?.referral_handle === handle) {
+          console.log(`[Auth] Auto-assigned referral handle: ${handle} for user ${userId}`);
+          return handle;
+        }
+      } catch (e) {
+        // Unique constraint violation — try with suffix
+      }
+      handle = base + Math.random().toString(36).slice(2, 5);
+    }
+
+    return null; // Failed after retries — non-fatal
+  } catch (err) {
+    console.error('[Auth] Referral handle generation error (non-fatal):', err.message);
+    return null;
+  }
+}
+
+/**
  * Ensure user has a Stripe Customer (Uber creates one at signup).
  * Safe to call repeatedly — skips if already set.
  */
@@ -162,6 +221,9 @@ router.post('/verify', async (req, res) => {
     // For new users this creates it immediately; for existing users it backfills
     const stripeCustomerId = await ensureStripeCustomer(u.id, normalizedPhone, u.email);
 
+    // ChatGPT Playbook #7: Auto-generate referral link for every user
+    const referralHandle = await ensureReferralHandle(u.id, u.first_name, u.last_name, u.email, normalizedPhone);
+
     // Set session
     req.session.userId = u.id;
     req.session.phone = u.phone_number;
@@ -174,6 +236,8 @@ router.post('/verify', async (req, res) => {
         name: [u.first_name, u.last_name].filter(Boolean).join(' ') || null,
         email: u.email,
         hasStripeCustomer: !!stripeCustomerId,
+        referralHandle,
+        referralLink: referralHandle ? `scangym.com/r/${referralHandle}` : null,
       },
       message: 'Logged in successfully',
     });
@@ -198,7 +262,7 @@ router.get('/user', async (req, res) => {
     try {
       user = await pool.query(
         `SELECT id, phone_number, first_name, last_name, email, created_at,
-                fitness_level, emergency_contact, profile_complete
+                fitness_level, emergency_contact, profile_complete, referral_handle
          FROM public.users WHERE id = $1`,
         [req.session.userId]
       );
@@ -216,6 +280,13 @@ router.get('/user', async (req, res) => {
     }
 
     const u = user.rows[0];
+
+    // ChatGPT Playbook #7: Backfill referral handle if missing
+    let referralHandle = u.referral_handle || null;
+    if (!referralHandle) {
+      referralHandle = await ensureReferralHandle(u.id, u.first_name, u.last_name, u.email, u.phone_number);
+    }
+
     res.json({
       id: u.id,
       phone: u.phone_number,
@@ -227,6 +298,8 @@ router.get('/user', async (req, res) => {
       emergency_contact: u.emergency_contact || '',
       profile_complete: u.profile_complete || false,
       member_since: u.created_at,
+      referralHandle,
+      referralLink: referralHandle ? `scangym.com/r/${referralHandle}` : null,
     });
   } catch (err) {
     console.error('Get user error:', err);
@@ -425,6 +498,9 @@ router.post('/google-login', async (req, res) => {
     // Ensure Stripe Customer
     const stripeCustomerId = await ensureStripeCustomer(u.id, u.phone_number, email);
 
+    // ChatGPT Playbook #7: Auto-generate referral link for every user
+    const referralHandle = await ensureReferralHandle(u.id, firstName || u.first_name, lastName || u.last_name, email, u.phone_number);
+
     // Set session
     req.session.userId = u.id;
     req.session.phone = u.phone_number;
@@ -437,6 +513,8 @@ router.post('/google-login', async (req, res) => {
         name: [firstName || u.first_name, lastName || u.last_name].filter(Boolean).join(' ') || null,
         email: email,
         hasStripeCustomer: !!stripeCustomerId,
+        referralHandle,
+        referralLink: referralHandle ? `scangym.com/r/${referralHandle}` : null,
       },
       message: 'Logged in with Google',
     });

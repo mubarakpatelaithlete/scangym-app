@@ -10552,8 +10552,11 @@ window.sgShowWorkoutCard=function(data){
 };
 
 window.sgShareWorkout=function(text){
-  if(navigator.share){navigator.share({title:'ScanGym Workout',text:text,url:'https://scangym.com'}).catch(()=>{});}
-  else{navigator.clipboard.writeText(text).then(()=>sgToast('Copied to clipboard!','success'));}
+  // ChatGPT Playbook #5/#7: Share with referral link
+  var shareUrl=state.user&&state.user.referralHandle?'https://scangym.com/r/'+state.user.referralHandle:'https://scangym.com';
+  var shareText=text||(state.user&&state.user.referralHandle?'🔥 Just finished a workout with @ScanGym! Try it: scangym.com/r/'+state.user.referralHandle+' 💪':'🔥 Just finished a workout with @ScanGym! 💪');
+  if(navigator.share){navigator.share({title:'ScanGym Workout',text:shareText,url:shareUrl}).catch(()=>{});}
+  else{navigator.clipboard.writeText(shareText+' '+shareUrl).then(()=>sgToast('Copied to clipboard!','success'));}
 };
 
 // ─── 3. STREAK WIDGET (shown on home page) ───
