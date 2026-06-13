@@ -985,6 +985,12 @@ router.post('/confirm-intent', async (req, res) => {
 
 router.post('/cash-booking', async (req, res) => {
   try {
+    // S4-C05 FIX: Require authenticated session for cash bookings.
+    // Without this, anyone with the API URL can create unlimited fake reservations.
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: 'Please log in to book. Create a free account at scangym.com' });
+    }
+
     let { gymId, placeId, date, time, email, passType, gymName, gymAddress, referral_code } = req.body;
     if (!date) return res.status(400).json({ error: 'date required' });
     // C2 fix: Resolve 'anytime' / empty time to a sensible default
@@ -996,6 +1002,8 @@ router.post('/cash-booking', async (req, res) => {
 
     // Sanitize email — prevent null/undefined from crashing INSERT
     const safeEmail = (email && typeof email === 'string' && email.includes('@')) ? email.trim() : '';
+    // S4-C05 FIX: Define safeName — was previously undefined, crashing provisionAccessControl()
+    const safeName = (req.body.name && typeof req.body.name === 'string') ? req.body.name.trim() : 'Guest';
 
     // ── Step 1: Resolve gym ID ──
     let dbGymId = gymId;
@@ -1073,30 +1081,32 @@ router.post('/cash-booking', async (req, res) => {
     // ── Step 4: Insert booking (no qr_code — added via UPDATE after generate2ScanQR) ──
     let booking;
     try {
+      // S4-C05 FIX: Use authenticated userId instead of hardcoded 'guest'
       const bookingResult = await pool.query(
         `INSERT INTO public.bookings
           (gym_id, user_id, booking_date, start_time, end_time, total_amount,
            platform_fee_amount, booking_type, booking_code, status,
            user_email, user_name, created_at, updated_at)
-         VALUES ($1, 'guest', $2, $3, $4, $5, $6, $7, $8, 'reserved', $9, 'Guest', NOW(), NOW())
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'reserved', $10, $11, NOW(), NOW())
          RETURNING *`,
-        [dbGymId, date, resolved.startTime, resolved.endTime, price, price * 0.10,
-         passTypeClean + '_cash', bookingCode, safeEmail]
+        [dbGymId, req.session.userId, date, resolved.startTime, resolved.endTime, price, price * 0.10,
+         passTypeClean + '_cash', bookingCode, safeEmail, safeName]
       );
       booking = bookingResult.rows[0];
     } catch (insertErr) {
       console.error('[Cash Booking] INSERT failed:', insertErr.message, '| code:', insertErr.code, '| detail:', insertErr.detail);
       // Retry without platform_fee_amount if column doesn't exist
       try {
+        // S4-C05 FIX: Use authenticated userId in retry path too
         const bookingResult = await pool.query(
           `INSERT INTO public.bookings
             (gym_id, user_id, booking_date, start_time, end_time, total_amount,
              booking_type, booking_code, status,
              user_email, user_name, created_at, updated_at)
-           VALUES ($1, 'guest', $2, $3, $4, $5, $6, $7, 'reserved', $8, 'Guest', NOW(), NOW())
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'reserved', $9, $10, NOW(), NOW())
            RETURNING *`,
-          [dbGymId, date, resolved.startTime, resolved.endTime, price,
-           passTypeClean + '_cash', bookingCode, safeEmail]
+          [dbGymId, req.session.userId, date, resolved.startTime, resolved.endTime, price,
+           passTypeClean + '_cash', bookingCode, safeEmail, safeName]
         );
         booking = bookingResult.rows[0];
         console.log('[Cash Booking] Retry without platform_fee_amount succeeded');
@@ -1115,7 +1125,7 @@ router.post('/cash-booking', async (req, res) => {
     // ── Step 5: Generate QR code (non-blocking — don't fail the booking) ──
     let qr = { token: bookingCode, scanUrl: '', dataUrl: '', maxScans: 2, scansRemaining: 2, expiresAt: null };
     try {
-      qr = await generate2ScanQR(booking.id, 'guest', dbGymId);
+      qr = await generate2ScanQR(booking.id, req.session.userId, dbGymId);
       await pool.query(
         'UPDATE public.bookings SET qr_code = $1, qr_code_url = $2, updated_at = NOW() WHERE id = $3',
         [qr.token, qr.dataUrl, booking.id]
