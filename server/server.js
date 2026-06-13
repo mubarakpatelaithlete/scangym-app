@@ -63,9 +63,11 @@ app.use((req, res, next) => {
     if (reqPath.endsWith('.html') || reqPath.endsWith('sw.js')) {
       res.setHeader('Cache-Control', 'no-cache');
     } else if (reqPath.endsWith('.js') || reqPath.endsWith('.css')) {
-      // Content-hashed files (app.ctr576.js) get long cache; plain files get short cache
+      // Perf v2: Content-hashed files (app.ctr576.js) are immutable — cache 1 year
+      // Science: Shopify/Amazon serve hashed assets with immutable directive.
+      // Hash changes on every deploy, so 1yr is safe. Saves round-trips on repeat visits.
       if (/\.[a-z0-9]{3,8}\.js$/.test(reqPath) || /\.[a-z0-9]{3,8}\.css$/.test(reqPath)) {
-        res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
       } else {
         res.setHeader('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400');
       }
