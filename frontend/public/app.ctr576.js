@@ -1614,7 +1614,7 @@ function GymProfilePage(){
         <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
           <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.2);border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700;color:#4ade80">📈 ${bookedToday(gym.name)} booked today</span>
           <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.18);border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700;color:#f87171">👀 ${peopleLooking(gym.name)} people looking</span>
-          <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(255,109,0,.1);border:1px solid rgba(255,109,0,.18);border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700;color:#FF6D00">⏰ Booked ${minutesAgo(gym.name)} min ago</span>
+
         </div>
         <!-- Busyness Indicator (Fix #4C) -->
         <div style="margin-top:8px" id="gym-busyness-widget">
@@ -1690,14 +1690,8 @@ function GymProfilePage(){
 
     <!-- ═══ STICKY BOTTOM BAR — Full-width Book CTA + trust (Pay/Passes/Calendar moved to right-side TikTok icons) ═══ -->
     <div class="gym-sticky-bar" id="gym-sticky-bar">
-        <!-- Fix #107: FOMO urgency above CTA -->
-        <div style="text-align:center;padding:6px 16px 0;display:flex;justify-content:center;gap:12px">
-          <span style="font-size:10px;font-weight:700;color:#f87171;animation:pulse 2s infinite">🔥 ${spotsLeft(gym.name)} spots left today</span>
-          <span style="font-size:10px;font-weight:700;color:rgba(255,255,255,.4)">·</span>
-          <span style="font-size:10px;font-weight:700;color:#fbbf24">⏰ Last booked ${minutesAgo(gym.name)} min ago</span>
-        </div>
         <!-- Full-width Book CTA -->
-        <div style="padding:8px 16px 0">
+        <div style="padding:12px 16px 0">
           <button class="gym-sticky-book" id="gym-sticky-book" style="width:100%" onclick="event.preventDefault();event.stopPropagation();showUberCheckout('${gymId}')">⚡ Book Day Pass · ${currentPrice}</button>
         </div>
 
