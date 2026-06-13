@@ -1234,7 +1234,7 @@ function SearchPage(){
           html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'hours\')"><div class="tt-action-btn">\u{1F4C5}</div></div>';
           html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'facilities\')"><div class="tt-action-btn">\u{1F3CA}</div></div>';
           html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'equipment\')"><div class="tt-action-btn">\u{1F3CB}\uFE0F</div></div>';
-          html+='<div class="tt-action" onclick="event.stopPropagation();window._ttShowMap&&window._ttShowMap()"><div class="tt-action-btn">\u{1F5FA}\uFE0F</div></div>';
+          /* map button removed */
           html+='</div>';
 
           /* Bottom info */
