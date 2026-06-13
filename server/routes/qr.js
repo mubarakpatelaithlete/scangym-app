@@ -88,7 +88,9 @@ router.post('/generate', authenticateUser, async (req, res) => {
     if (booking.rows.length === 0) {
       return res.status(404).json({ error: 'Booking not found' });
     }
-    if (!['confirmed', 'completed', 'active'].includes(booking.rows[0].status)) {
+    // S5-C10 FIX: Include 'reserved' so cash bookings can also generate QR codes.
+    // Cash bookings start as 'reserved' (pay at gym), not 'confirmed'.
+    if (!['confirmed', 'completed', 'active', 'reserved'].includes(booking.rows[0].status)) {
       return res.status(400).json({ error: 'Booking must be paid/confirmed to generate QR code' });
     }
 
@@ -270,24 +272,41 @@ router.post('/scan', async (req, res) => {
       });
     }
 
+    // S5-C09 FIX: Use atomic UPDATE with WHERE scan_count check to prevent race condition.
+    // Two simultaneous scans can no longer both read scan_count=0 and both succeed.
+    const updateResult = await pool.query(`
+      UPDATE booking_qr_codes
+      SET scan_count = scan_count + 1,
+          status = CASE WHEN scan_count + 1 >= max_scans THEN 'expired' ELSE status END
+      WHERE id = $1 AND scan_count < max_scans
+      RETURNING scan_count, status
+    `, [qr.id]);
+
+    if (updateResult.rows.length === 0) {
+      return res.json({
+        valid: false,
+        error: 'QR code already fully used',
+        message: 'This QR code has been scanned the maximum number of times.',
+      });
+    }
+
+    const actualScanCount = updateResult.rows[0].scan_count;
+    const actualStatus = updateResult.rows[0].status;
+    const actualScanType = actualScanCount === 1 ? 'entry' : 'exit';
+
     // Record the scan
     await pool.query(`
       INSERT INTO booking_checkins (booking_id, qr_code_id, gym_id, user_id, scan_type, scan_number)
       VALUES ($1, $2, $3, $4, $5, $6)
-    `, [qr.booking_id, qr.id, qr.gym_id, qr.user_id, scanType, newScanCount]);
-
-    // Update QR code
-    await pool.query(`
-      UPDATE booking_qr_codes SET scan_count = $1, status = $2 WHERE id = $3
-    `, [newScanCount, newStatus, qr.id]);
+    `, [qr.booking_id, qr.id, qr.gym_id, qr.user_id, actualScanType, actualScanCount]);
 
     res.json({
       valid: true,
-      scanType,
-      scanNumber: newScanCount,
-      scansRemaining: qr.max_scans - newScanCount,
-      status: newStatus,
-      message: scanType === 'entry'
+      scanType: actualScanType,
+      scanNumber: actualScanCount,
+      scansRemaining: qr.max_scans - actualScanCount,
+      status: actualStatus,
+      message: actualScanType === 'entry'
         ? `✅ Welcome ${userName}! Entry recorded. Enjoy your workout at ${gymName}! (1 exit scan remaining)`
         : `👋 Goodbye ${userName}! Exit recorded. QR code is now expired. See you next time!`,
       bookingId: qr.booking_id,
@@ -296,7 +315,7 @@ router.post('/scan', async (req, res) => {
       userName,
       gymName,
       expiresAt: qr.expires_at,
-      aiCoachUnlocked: scanType === 'entry',
+      aiCoachUnlocked: actualScanType === 'entry',
     });
   } catch (err) {
     console.error('QR scan error:', err);
