@@ -1043,7 +1043,8 @@ async function loadGyms(lat,lng){
       render();
       /* Preload photos for first 3 cards */
       _photoPreloader.preloadGyms(cached,0);
-      if(lat&&lng){window._travelTimesLoaded=false;fetchRealTravelTimes(lat,lng);}
+      /* Perf: Defer travel times to idle — not needed for initial render */
+      if(lat&&lng){window._travelTimesLoaded=false;_scheduleIdle(function(){fetchRealTravelTimes(lat,lng);});}
       if(window.sgSocialProofToast) _scheduleIdle(function(){window.sgSocialProofToast();});
       /* Still refresh in background (stale-while-revalidate pattern) */
       api.getLive(`/nearby?lat=${lat}&lng=${lng}&radius=10000`).then(function(fresh){
@@ -1065,7 +1066,8 @@ async function loadGyms(lat,lng){
     /* Perf #121: Preload photos for first 3 visible cards */
     _photoPreloader.preloadGyms(state.gyms,0);
     // Fetch real travel times if we have user's GPS
-    if(lat&&lng){window._travelTimesLoaded=false;fetchRealTravelTimes(lat,lng);}
+    /* Perf: Defer travel times to idle — not needed for initial render */
+    if(lat&&lng){window._travelTimesLoaded=false;_scheduleIdle(function(){fetchRealTravelTimes(lat,lng);});}
     // Start real social proof toasts (uses loaded gym data)
     if(window.sgSocialProofToast) _scheduleIdle(function(){window.sgSocialProofToast();});
     /* Perf #120: Load pages 2+3 faster — Google needs ~2s for pagetoken readiness,
@@ -1212,74 +1214,19 @@ function SearchPage(){
         window._ttCards=_cards;
         var totalC=_cards.length;
         var html='<div id="book-map-view" class="tt-view">';
-        html+='<style>';
-        /* ═══ TikTok Immersive Layout Styles ═══ */
-        html+='.tt-view{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;position:relative}';
-        /* Carousel - horizontal snap scroll, each card is 100% width */
-        html+='.tt-carousel{display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;flex:1;min-height:0;will-change:scroll-position;contain:strict}';
-        html+='.tt-carousel::-webkit-scrollbar{display:none}';
-        /* Each card fills the full viewport */
-        html+='.tt-card{width:100%;min-height:100%;max-height:100%;scroll-snap-align:start;position:relative;display:flex;flex-direction:column;overflow:hidden;will-change:transform;contain:layout style paint}';
-        html+='.tt-card.tt-closed{opacity:0.5;filter:grayscale(25%)}';
-        html+='.tt-card.tt-closed .tt-cta-btn{background:#6b7280;box-shadow:none}';
-        /* Full-bleed photo */
-        html+='.tt-photo{position:absolute;inset:0;background-size:cover;background-position:center}';
-        /* Photo carousel within each card (swipe right for more photos) */
-        html+='.tt-photo-carousel{position:absolute;inset:0;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;display:flex;z-index:0;touch-action:pan-x}';
-        html+='.tt-photo-carousel::-webkit-scrollbar{display:none}';
-        html+='.tt-photo-slide{flex:0 0 100%;width:100%;height:100%;scroll-snap-align:start;background-size:cover;background-position:center;will-change:transform}';
-        html+='.tt-photo-dots{position:absolute;bottom:0;left:14px;display:flex;gap:4px;z-index:12}';
-        html+='.tt-photo-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.3);transition:all .3s}';
-        html+='.tt-photo-dot.act{background:#FF6D00;width:18px;border-radius:3px}';
-        html+='.tt-photo-placeholder{position:absolute;inset:0;background:#1a1f2e;display:flex;align-items:center;justify-content:center}';
-        html+='.tt-photo-placeholder::after{content:"🏋️";font-size:56px;opacity:.15}';
-        /* Gradient overlay for readability + Fix #58: orange circle brand identity */
-        html+='.tt-gradient{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.35) 0%,transparent 22%,transparent 55%,rgba(0,0,0,.55) 75%,rgba(0,0,0,.82) 100%);pointer-events:none;z-index:1}'
-        html+='.tt-card::after{content:\\'\\';position:absolute;bottom:18%;left:50%;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(255,109,0,.08) 0%,rgba(255,109,0,.03) 40%,transparent 70%);transform:translateX(-50%);pointer-events:none;z-index:0}';
-        /* Search bar - frosted glass overlay */
-        html+='.tt-search{position:absolute;top:0;left:0;right:0;z-index:20;display:flex;gap:8px;padding:8px 12px;padding-top:calc(env(safe-area-inset-top,8px) + 4px)}';
-        html+='.tt-search-input{flex:1;background:rgba(0,0,0,.45);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px 14px;color:rgba(255,255,255,.7);font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px;cursor:pointer}';
-        html+='.tt-search-gps{background:rgba(0,0,0,.45);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.1);border-radius:12px;width:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;-webkit-tap-highlight-color:transparent}';
-        html+='.tt-search-filter{background:rgba(0,0,0,.45);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.1);border-radius:12px;width:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;-webkit-tap-highlight-color:transparent}';
-        /* M8 fix: Removed fake "Gym Tour" badge — no actual tour videos exist */
-        /* Action buttons (right side, TikTok style) */
-        html+='.tt-actions{position:absolute;right:10px;top:65px;display:flex;flex-direction:column;gap:6px;z-index:15;align-items:center}';
-        html+='.tt-action{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;-webkit-tap-highlight-color:transparent}';
-        html+='.tt-action-btn{width:44px;height:44px;background:transparent;border:none;border-radius:0;display:flex;align-items:center;justify-content:center;font-size:24px;transition:all .15s;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5));opacity:.75}';
-        html+='.tt-action-btn:active{transform:scale(.85)}';
-        html+='.tt-action-label{display:none}';
-        /* Bottom info overlay */
-        html+='.tt-info{position:absolute;bottom:0;left:0;right:0;padding:0 14px 8px;z-index:15;pointer-events:none}';
-        html+='.tt-info>*{pointer-events:auto}';
-        /* Dots */
-        html+='.tt-dots{display:flex;gap:3px;margin-bottom:4px;flex-wrap:wrap;max-width:280px}';
-        html+='.tt-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.25);transition:all .3s}';
-        html+='.tt-dot.act{background:#FF6D00;width:18px;border-radius:3px}';
-        html+='.tt-counter{font-size:10px;color:rgba(255,255,255,.4);margin-bottom:4px;font-weight:500}';
-        /* Gym info */
-        html+='.tt-gym-name{color:#fff;font-size:28px;font-weight:900;text-shadow:0 2px 10px rgba(0,0,0,.6);line-height:1.15;margin-bottom:4px;letter-spacing:-.3px}';
-        html+='.tt-gym-addr{color:rgba(255,255,255,.7);font-size:12px;margin-bottom:6px;text-shadow:0 1px 4px rgba(0,0,0,.5);display:flex;align-items:center;gap:4px;flex-wrap:wrap}';
-        html+='.tt-tag-open{color:#4ade80}';
-        html+='.tt-tag-closed{color:#f87171}';
-        /* Chips */
-        html+='.tt-chips{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}';
-        html+='.tt-chip{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.14);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-radius:10px;padding:6px 12px;font-size:12px;color:rgba(255,255,255,.92);font-weight:700}';
-        /* CTA */
-        html+='.tt-cta{position:absolute;bottom:0;left:0;right:0;padding:8px 14px;z-index:16}';
-        html+='.tt-cta-btn{width:100%;padding:12px 0;border:none;border-radius:12px;background:linear-gradient(135deg,#FF6D00,#ff8534,#FF6D00);background-size:200% 200%;color:#fff;font-size:15px;font-weight:700;letter-spacing:.3px;cursor:pointer;-webkit-tap-highlight-color:transparent;box-shadow:0 4px 20px rgba(255,109,0,.4),0 0 20px rgba(255,109,0,.2);transition:all .15s;animation:casinoGlow 2s ease-in-out infinite}';
-        html+='.tt-cta-btn:active{transform:scale(.97);box-shadow:0 2px 10px rgba(255,109,0,.3)}';
-        /* Filter sheet */
-        html+='.tt-filter-sheet{display:none;position:absolute;top:52px;left:12px;right:12px;background:rgba(17,19,24,.96);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px;z-index:25;flex-wrap:wrap;gap:8px}';
-        html+='.tt-filter-sheet.open{display:flex}';
-        html+='.sg-filter-pill{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:7px 14px;color:rgba(255,255,255,.6);font-size:12px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;white-space:nowrap}';
-        html+='.sg-filter-pill.active{background:rgba(255,109,0,.15);border-color:rgba(255,109,0,.4);color:#FF6D00}';
-        /* Logo */
-        html+='.tt-logo{position:absolute;left:14px;bottom:0;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;z-index:15;border:2px solid rgba(255,255,255,.15);box-shadow:0 2px 8px rgba(0,0,0,.3)}';
-        html+='</style>';
+        /* Perf: Inject TikTok CSS once (persists across re-renders — saves ~12KB per render) */
+        if(!document.getElementById('tt-css')){
+          var _s=document.createElement('style');_s.id='tt-css';
+          _s.textContent='.tt-view{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;position:relative}.tt-carousel{display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;flex:1;min-height:0;will-change:scroll-position;contain:strict}.tt-carousel::-webkit-scrollbar{display:none}.tt-card{width:100%;min-height:100%;max-height:100%;scroll-snap-align:start;position:relative;display:flex;flex-direction:column;overflow:hidden;will-change:transform;contain:layout style paint}.tt-card.tt-closed{opacity:0.5;filter:grayscale(25%)}.tt-card.tt-closed .tt-cta-btn{background:#6b7280;box-shadow:none}.tt-photo{position:absolute;inset:0;background-size:cover;background-position:center}.tt-photo-carousel{position:absolute;inset:0;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;display:flex;z-index:0;touch-action:pan-x}.tt-photo-carousel::-webkit-scrollbar{display:none}.tt-photo-slide{flex:0 0 100%;width:100%;height:100%;scroll-snap-align:start;background-size:cover;background-position:center;will-change:transform}.tt-photo-dots{position:absolute;bottom:0;left:14px;display:flex;gap:4px;z-index:12}.tt-photo-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.3);transition:all .3s}.tt-photo-dot.act{background:#FF6D00;width:18px;border-radius:3px}.tt-photo-placeholder{position:absolute;inset:0;background:#1a1f2e;display:flex;align-items:center;justify-content:center}.tt-photo-placeholder::after{content:"🏋️";font-size:56px;opacity:.15}.tt-gradient{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.35) 0%,transparent 22%,transparent 55%,rgba(0,0,0,.55) 75%,rgba(0,0,0,.82) 100%);pointer-events:none;z-index:1}.tt-card::after{content:\\'\\';position:absolute;bottom:18%;left:50%;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(255,109,0,.08) 0%,rgba(255,109,0,.03) 40%,transparent 70%);transform:translateX(-50%);pointer-events:none;z-index:0}.tt-search{position:absolute;top:0;left:0;right:0;z-index:20;display:flex;gap:8px;padding:8px 12px;padding-top:calc(env(safe-area-inset-top,8px) + 4px)}.tt-search-input{flex:1;background:rgba(0,0,0,.45);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px 14px;color:rgba(255,255,255,.7);font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px;cursor:pointer}.tt-search-gps{background:rgba(0,0,0,.45);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.1);border-radius:12px;width:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-search-filter{background:rgba(0,0,0,.45);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.1);border-radius:12px;width:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-actions{position:absolute;right:10px;top:65px;display:flex;flex-direction:column;gap:6px;z-index:15;align-items:center}.tt-action{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-action-btn{width:44px;height:44px;background:transparent;border:none;border-radius:0;display:flex;align-items:center;justify-content:center;font-size:24px;transition:all .15s;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5));opacity:.75}.tt-action-btn:active{transform:scale(.85)}.tt-action-label{display:none}.tt-info{position:absolute;bottom:0;left:0;right:0;padding:0 14px 8px;z-index:15;pointer-events:none}.tt-info>*{pointer-events:auto}.tt-dots{display:flex;gap:3px;margin-bottom:4px;flex-wrap:wrap;max-width:280px}.tt-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.25);transition:all .3s}.tt-dot.act{background:#FF6D00;width:18px;border-radius:3px}.tt-counter{font-size:10px;color:rgba(255,255,255,.4);margin-bottom:4px;font-weight:500}.tt-gym-name{color:#fff;font-size:28px;font-weight:900;text-shadow:0 2px 10px rgba(0,0,0,.6);line-height:1.15;margin-bottom:4px;letter-spacing:-.3px}.tt-gym-addr{color:rgba(255,255,255,.7);font-size:12px;margin-bottom:6px;text-shadow:0 1px 4px rgba(0,0,0,.5);display:flex;align-items:center;gap:4px;flex-wrap:wrap}.tt-tag-open{color:#4ade80}.tt-tag-closed{color:#f87171}.tt-chips{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}.tt-chip{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.14);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-radius:10px;padding:6px 12px;font-size:12px;color:rgba(255,255,255,.92);font-weight:700}.tt-cta{position:absolute;bottom:0;left:0;right:0;padding:8px 14px;z-index:16}.tt-cta-btn{width:100%;padding:12px 0;border:none;border-radius:12px;background:linear-gradient(135deg,#FF6D00,#ff8534,#FF6D00);background-size:200% 200%;color:#fff;font-size:15px;font-weight:700;letter-spacing:.3px;cursor:pointer;-webkit-tap-highlight-color:transparent;box-shadow:0 4px 20px rgba(255,109,0,.4),0 0 20px rgba(255,109,0,.2);transition:all .15s;animation:casinoGlow 2s ease-in-out infinite}.tt-cta-btn:active{transform:scale(.97);box-shadow:0 2px 10px rgba(255,109,0,.3)}.tt-filter-sheet{display:none;position:absolute;top:52px;left:12px;right:12px;background:rgba(17,19,24,.96);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px;z-index:25;flex-wrap:wrap;gap:8px}.tt-filter-sheet.open{display:flex}.sg-filter-pill{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:7px 14px;color:rgba(255,255,255,.6);font-size:12px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;white-space:nowrap}.sg-filter-pill.active{background:rgba(255,109,0,.15);border-color:rgba(255,109,0,.4);color:#FF6D00}.tt-logo{position:absolute;left:14px;bottom:0;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;z-index:15;border:2px solid rgba(255,255,255,.15);box-shadow:0 2px 8px rgba(0,0,0,.3)}';
+          document.head.appendChild(_s);
+        }
 
         /* ═══ CAROUSEL ═══ */
+        /* Perf: Only build first 5 cards initially — rest lazy-loaded on scroll */
+        var _INITIAL_CARDS=5;
+        window._ttAllCards=_cards; /* Store for lazy builder */
         html+='<div class="tt-carousel" id="bm-carousel">';
-        _cards.forEach(function(c,i){
+        _cards.slice(0,_INITIAL_CARDS).forEach(function(c,i){
           // H14 fix: Removed fake "X booked today" count (was charCode-based, not real data)
           var logoColors=['#FF6D00,#E66200','#8b5cf6,#6d28d9','#ef4444,#b91c1c','#3b82f6,#1d4ed8','#eab308,#a16207','#22c55e,#15803d','#ec4899,#be185d','#14b8a6,#0f766e'];
           var logoEmojis=['\u{1F3CB}\uFE0F','\u{1F4AA}','\u{1F94A}','\u{1F3CA}','\u26A1','\u{1F49A}','\u{1F525}','\u{1F9D8}'];
@@ -1370,6 +1317,32 @@ function SearchPage(){
         });
         html+='</div>';
         html+='</div>';
+        /* Perf: Schedule lazy-build of remaining cards after initial render */
+        if(_cards.length>_INITIAL_CARDS){
+          setTimeout(function(){
+            var carousel=document.getElementById('bm-carousel');
+            if(!carousel)return;
+            var frag=document.createDocumentFragment();
+            var tmp=document.createElement('div');
+            _cards.slice(_INITIAL_CARDS).forEach(function(c,idx){
+              var i=idx+_INITIAL_CARDS;
+              var logoColors=['#FF6D00,#E66200','#8b5cf6,#6d28d9','#ef4444,#b91c1c','#3b82f6,#1d4ed8','#eab308,#a16207','#22c55e,#15803d','#ec4899,#be185d','#14b8a6,#0f766e'];
+              var logoEmojis=['\u{1F3CB}\uFE0F','\u{1F4AA}','\u{1F94A}','\u{1F3CA}','\u26A1','\u{1F49A}','\u{1F525}','\u{1F9D8}'];
+              var logoGrad=logoColors[i%8];var logoEmoji=logoEmojis[i%8];
+              var cardHtml='<div class="tt-card'+(c.isOpen?'':' tt-closed')+'" data-gym-card data-gym-id="'+c.id+'" data-idx="'+i+'" data-is-open="'+c.isOpen+'" data-rating="'+(c.rating||0)+'" data-reviews="'+(c.reviews||0)+'" data-distance="'+(c.gym.distance||99)+'">';
+              cardHtml+=c.photo?'<div class="tt-photo" style="background-image:url(\''+c.photo+'\')"></div>':'<div class="tt-photo-placeholder"></div>';
+              cardHtml+='<div class="tt-gradient"></div>';
+              cardHtml+='<div class="tt-info"><div class="tt-gym-name">'+c.name+'</div>';
+              cardHtml+='<div class="tt-gym-addr"><span class="'+c.openClass+'">'+c.openTag+'</span> · '+c.distMin+'</div>';
+              cardHtml+='<div class="tt-chips"><div class="tt-chip">\u2B50 '+c.rating+'</div><div class="tt-chip">\u{1F4B0} '+c.price+'</div></div></div>';
+              cardHtml+='<div class="tt-cta"><button class="tt-cta-btn" onclick="openGym(\''+c.id+'\',true)">Book '+c.name+' →</button></div>';
+              cardHtml+='</div>';
+              tmp.innerHTML=cardHtml;
+              while(tmp.firstChild)frag.appendChild(tmp.firstChild);
+            });
+            carousel.appendChild(frag);
+          },100);
+        }
         return html;
       })():''}
 
@@ -8058,8 +8031,8 @@ function _startGPSWatch(highAccuracy){
             state.searchResults=mergedGyms;
             render();
             console.log('[GPS] Upgraded to GPS results: H3:',h3Gyms.length,'Live:',liveGyms.length,'Merged:',mergedGyms.length,'radius:',searchRadius+'m','location:',locationName);
-            // Fetch real travel times from Google Distance Matrix
-            fetchRealTravelTimes(gps.lat,gps.lng);
+            // Perf: Defer travel times to idle — GPS results already render immediately
+            _scheduleIdle(function(){fetchRealTravelTimes(gps.lat,gps.lng);});
           }
         }catch(e){
           console.warn('[GPS] Nearby search error:',e.message);
