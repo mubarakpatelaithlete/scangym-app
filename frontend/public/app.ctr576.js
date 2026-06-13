@@ -6363,21 +6363,35 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
   const selPassName=gbs.passName||'Day Pass';
   const selPassIcon=gbs.passIcon||'⚡';
 
-  // Fix: Always use pricing engine (sgPrice) — single source of truth
-  // Backend charges sgPrice amount, so frontend must match to prevent bait-and-switch
+  // S4-C03 FIX: Fetch authoritative price from SERVER for this specific gym.
+  // Eliminates price mismatch between frontend display and backend charge.
   const _passKey=selPass==='week'?'weekly':selPass;
-  const _priceInfo=sgPrice(_passKey);
-  const _sym=_priceInfo.symbol||'£';
+  let _sgRefActive=null;try{const _r=JSON.parse(localStorage.getItem('sg_referral')||'null');if(_r&&_r.handle&&_r.expiry>Date.now())_sgRefActive=_r.handle;}catch(e){}
+
+  // Fetch gym-specific price from server (THE source of truth)
+  let _serverPrices=null;
+  let _referralInfo=null;
+  try{
+    const _pUrl='/api/pricing/gym-price?gymId='+encodeURIComponent(gymId)+
+      '&passType='+encodeURIComponent(_passKey)+
+      (_sgRefActive?'&referral='+encodeURIComponent(_sgRefActive):'');
+    const _pResp=await fetch(_pUrl).then(function(r){return r.json();});
+    if(_pResp.success){
+      _serverPrices=_pResp.prices;
+      _referralInfo=_pResp.referralDiscount||null;
+    }
+  }catch(e){console.warn('[Checkout] Gym price fetch failed, using sgPrice fallback');}
+
+  // Use server price if available, otherwise fall back to sgPrice()
+  const _priceInfo=_serverPrices&&_serverPrices[_passKey]?_serverPrices[_passKey]:sgPrice(_passKey);
+  const _sym=_priceInfo.symbol||(_serverPrices?'£':'£');
   const _baseAmount=_priceInfo.amount;
-  const passInfo={name:selPassName,icon:selPassIcon,amount:_baseAmount,display:_priceInfo.display};
+  const passInfo={name:selPassName,icon:selPassIcon,amount:_baseAmount,display:_priceInfo.display||(_sym+_baseAmount.toFixed(2))};
   const h=selTime==='anytime'?12:parseInt(selTime||'10');
   const isOffPeak=h<10||h>=20;
-  let displayPrice=_baseAmount;
-  let displayPriceStr=_sym+_baseAmount.toFixed(2);
-  // ═══ REFERRAL DISCOUNT: Apply £2 off if referral code is active ═══
-  // Referral tracking — attribute booking to creator (no fake discount shown)
-  // Backend does NOT apply any discount, so frontend must not display one
-  let _sgRefActive=null;try{const _r=JSON.parse(localStorage.getItem('sg_referral')||'null');if(_r&&_r.handle&&_r.expiry>Date.now())_sgRefActive=_r.handle;}catch(e){}
+  // S4-C11 FIX: Show real referral discount (server-calculated)
+  let displayPrice=_referralInfo?_referralInfo.discountedPrice:_baseAmount;
+  let displayPriceStr=_referralInfo?_referralInfo.finalDisplay:(_sym+_baseAmount.toFixed(2));
 
   // Format date for display
   const dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -6498,8 +6512,12 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
       <div style="padding:12px 24px;border-top:1px solid rgba(255,255,255,.06)">
         <div style="display:flex;justify-content:space-between;margin-bottom:6px">
           <span style="color:rgba(255,255,255,.5);font-size:13px">${passInfo.name}</span>
-          <span style="color:rgba(255,255,255,.7);font-size:13px">${displayPriceStr}</span>
+          <span style="color:rgba(255,255,255,.7);font-size:13px">${_sym}${_baseAmount.toFixed(2)}</span>
         </div>
+        ${_referralInfo?`<div style="display:flex;justify-content:space-between;margin-bottom:6px">
+          <span style="color:#22c55e;font-size:13px">🎉 Referral discount (${_referralInfo.percent}%)</span>
+          <span style="color:#22c55e;font-size:13px">-${_referralInfo.discountDisplay}</span>
+        </div>`:''}
         <div style="display:flex;justify-content:space-between;padding-top:8px;border-top:1px solid rgba(255,255,255,.08)">
           <span style="color:#fff;font-size:15px;font-weight:700">Total</span>
           <span style="color:#fff;font-size:15px;font-weight:700">${displayPriceStr}</span>
@@ -6550,6 +6568,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
     gym:gym,
     isGuest:false,
     ready:finalHasPayment,
+    referralCode:_sgRefActive||null,  // S4-C11/C12: Pass referral code to payment endpoints
   };
 
   // ═══ Swipe-down-to-close on bottom sheet ═══
@@ -6615,7 +6634,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
         }
         const result=await fetch('/api/payment/cash-booking',{
           method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
-          body:JSON.stringify({gymId:parseInt(dbGymId),placeId:gymId,date:cs.selectedDate,time:cs.selectedTime,email,gymName:gymName,gymAddress:gymAddr,passType:cs.selectedPass||'day'})
+          body:JSON.stringify({gymId:parseInt(dbGymId),placeId:gymId,date:cs.selectedDate,time:cs.selectedTime,email,gymName:gymName,gymAddress:gymAddr,passType:cs.selectedPass||'day',referral_code:cs.referralCode||undefined})
         }).then(r=>r.json());
         if(result.success){
           state.lastBooking=result.booking;state.lastQR=result.qr;state.lastAccess=result.access||null;
@@ -6647,7 +6666,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
         }
         const result=await fetch('/api/payment/quick-checkout',{
           method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
-          body:JSON.stringify({gymId:parseInt(dbGymId),placeId:gymId,date:cs.selectedDate,time:cs.selectedTime,email,gymName:gymName,gymAddress:gymAddr,passType:cs.selectedPass||'day',savedCardId:cs.savedCardId})
+          body:JSON.stringify({gymId:parseInt(dbGymId),placeId:gymId,date:cs.selectedDate,time:cs.selectedTime,email,gymName:gymName,gymAddress:gymAddr,passType:cs.selectedPass||'day',savedCardId:cs.savedCardId,referral_code:cs.referralCode||undefined})
         }).then(r=>r.json());
         if(result.success){
           state.lastBooking=result.booking;state.lastQR=result.qr;state.lastAccess=result.access||null;
