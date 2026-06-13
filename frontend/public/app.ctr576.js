@@ -1086,7 +1086,7 @@ function SearchPage(){
           var xAngles=[50,30,65,72,25,82,15,60,38,75,45,55,20,68,42,78,35,58,28,70];
           return{top:angles[i%20],left:xAngles[i%20]};
         }
-        var _cards=gyms.slice(0,20).map(function(gym,i){
+        var _cards=gyms.map(function(gym,i){
           var id=gym.placeId||gym.place_id||gym.id;
           var photo=gym.photo||gym.photo_url||
             (gym.photoReference?'/api/photo?ref='+encodeURIComponent(gym.photoReference)+'&maxwidth=1200':
@@ -1138,8 +1138,9 @@ function SearchPage(){
         html+='.tt-photo-dot.act{background:#FF6D00;width:18px;border-radius:3px}';
         html+='.tt-photo-placeholder{position:absolute;inset:0;background:#1a1f2e;display:flex;align-items:center;justify-content:center}';
         html+='.tt-photo-placeholder::after{content:"🏋️";font-size:56px;opacity:.15}';
-        /* Gradient overlay for readability */
-        html+='.tt-gradient{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.35) 0%,transparent 22%,transparent 55%,rgba(0,0,0,.55) 75%,rgba(0,0,0,.82) 100%);pointer-events:none;z-index:1}';
+        /* Gradient overlay for readability + Fix #58: orange circle brand identity */
+        html+='.tt-gradient{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.35) 0%,transparent 22%,transparent 55%,rgba(0,0,0,.55) 75%,rgba(0,0,0,.82) 100%);pointer-events:none;z-index:1}'
+        html+='.tt-card::after{content:\\'\\';position:absolute;bottom:18%;left:50%;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(255,109,0,.08) 0%,rgba(255,109,0,.03) 40%,transparent 70%);transform:translateX(-50%);pointer-events:none;z-index:0}';
         /* Search bar - frosted glass overlay */
         html+='.tt-search{position:absolute;top:0;left:0;right:0;z-index:20;display:flex;gap:8px;padding:8px 12px;padding-top:calc(env(safe-area-inset-top,8px) + 4px)}';
         html+='.tt-search-input{flex:1;background:rgba(0,0,0,.45);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px 14px;color:rgba(255,255,255,.7);font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px;cursor:pointer}';
@@ -1266,6 +1267,14 @@ function SearchPage(){
           html+='</div>';
           /* CTA inside info — Book directly from reels (no Screen 3 navigation) */
           html+='<div style="padding-right:50px;margin-top:8px;pointer-events:auto"><button class="tt-cta-btn" onclick="event.stopPropagation();showUberCheckout(\''+c.id+'\')">⚡ Book Day Pass · '+c.price+'</button></div>';
+          /* Fix #47: Quick action buttons (Pay, Passes, Calendar) on Stage 1 */
+          html+='<div style="display:flex;gap:8px;margin-top:6px;padding-right:50px;pointer-events:auto">';
+          html+='<div onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'payment\')" style="display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:5px 10px;cursor:pointer;-webkit-tap-highlight-color:transparent"><span style="font-size:12px">💳</span><span style="font-size:10px;color:rgba(255,255,255,.6);font-weight:600">Pay</span></div>';
+          html+='<div onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'passes\')" style="display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:5px 10px;cursor:pointer;-webkit-tap-highlight-color:transparent"><span style="font-size:12px">🎟️</span><span style="font-size:10px;color:rgba(255,255,255,.6);font-weight:600">Passes</span></div>';
+          html+='<div onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'hours\')" style="display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:5px 10px;cursor:pointer;-webkit-tap-highlight-color:transparent"><span style="font-size:12px">📅</span><span style="font-size:10px;color:rgba(255,255,255,.6);font-weight:600">Hours</span></div>';
+          html+='<div onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'facilities\')" style="display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:5px 10px;cursor:pointer;-webkit-tap-highlight-color:transparent"><span style="font-size:12px">🏋️</span><span style="font-size:10px;color:rgba(255,255,255,.6);font-weight:600">Gear</span></div>';
+          html+='</div>';
+          /* Fix #53: Motivating trust line */
           html+='<div style="display:flex;gap:12px;margin-top:5px;padding-right:50px"><span style="font-size:10px;color:rgba(255,255,255,.35);font-weight:600">✅ Free Cancel</span><span style="font-size:10px;color:rgba(255,255,255,.35);font-weight:600">🔒 Secure</span><span style="font-size:10px;color:rgba(255,255,255,.35);font-weight:600">⚡ Instant QR</span></div>';
           html+='</div>';
 
@@ -1344,8 +1353,9 @@ function GymProfilePage(){
     .gym-carousel-wrap.has-next::after{opacity:1}
     /* Price badge on photo */
     .gym-carousel-price{position:absolute;bottom:10px;right:12px;background:#22c55e;color:#fff;font-size:14px;font-weight:800;padding:4px 10px;border-radius:10px;z-index:6;box-shadow:0 2px 8px rgba(34,197,94,.4)}
-    /* Info section below photos */
+    /* Info section below photos — Fix #58: orange circle brand identity */
     .gym-info-section{flex:1;display:flex;flex-direction:column;padding:12px 16px 0;overflow-y:auto;-webkit-overflow-scrolling:touch;background:#0a0f14;position:relative}
+    .gym-info-section::before{content:'';position:absolute;top:20%;left:50%;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,rgba(255,109,0,.06) 0%,rgba(255,109,0,.02) 40%,transparent 70%);transform:translateX(-50%);pointer-events:none;z-index:0}
     /* Gym name + details card */
     .gym-info-card{margin-bottom:8px}
     .gym-info-name{font-family:'Sora',sans-serif;font-size:22px;font-weight:800;color:#fff;line-height:1.15;margin-bottom:2px}
@@ -1696,8 +1706,12 @@ function GymProfilePage(){
 
     <!-- ═══ STICKY BOTTOM BAR — Full-width Book CTA + trust (Pay/Passes/Calendar moved to right-side TikTok icons) ═══ -->
     <div class="gym-sticky-bar" id="gym-sticky-bar">
+        <!-- Fix #53: Motivating micro-copy above CTA -->
+        <div style="text-align:center;padding:6px 16px 0">
+          <span style="font-size:11px;font-weight:600;color:#FF6D00;letter-spacing:.3px">🔥 ${bookedToday(gym.name)} people booked today — your turn!</span>
+        </div>
         <!-- Full-width Book CTA -->
-        <div style="padding:12px 16px 0">
+        <div style="padding:8px 16px 0">
           <button class="gym-sticky-book" id="gym-sticky-book" style="width:100%" onclick="event.preventDefault();event.stopPropagation();showUberCheckout('${gymId}')">⚡ Book Day Pass · ${currentPrice}</button>
         </div>
 
@@ -1706,6 +1720,7 @@ function GymProfilePage(){
           <span style="font-size:10px;color:rgba(255,255,255,.3)">✅ Free Cancel</span>
           <span style="font-size:10px;color:rgba(255,255,255,.3)">🔒 Secure</span>
           <span style="font-size:10px;color:rgba(255,255,255,.3)">⚡ Instant QR</span>
+          <span style="font-size:10px;color:rgba(255,255,255,.3)">❤️ Because you deserve it</span>
         </div>
       </div>
 
@@ -1823,8 +1838,7 @@ window.scrollToPasses=function(){
 window.openGymOverlay=function(section){
   const gym=state.currentGym;if(!gym)return;
   const overlay=document.getElementById('gym-overlay');
-  // Fix 4: Hide tab bar when overlay is open
-  const tabBar=document.querySelector('.sg-tab-bar');if(tabBar)tabBar.classList.add('hidden');
+  // Fix #50: Keep tab bar visible — no longer hide it
   const title=document.getElementById('gym-overlay-title');
   const body=document.getElementById('gym-overlay-body');
   if(!overlay||!title||!body)return;
@@ -2125,8 +2139,7 @@ window.closeGymOverlay=function(){
   if(!overlay)return;
   overlay.classList.remove('open');
   document.body.style.overflow='';
-  // Fix 4: Show tab bar again
-  const tabBar=document.querySelector('.sg-tab-bar');if(tabBar)tabBar.classList.remove('hidden');
+  // Fix #50: Tab bar stays visible now — no show/hide needed
   // If opened directly from explore card row (Screen 3 removed), clean up standalone overlay and stay on reels
   if(window._directOverlayReturn){
     const returnRoute=window._directOverlayReturn;
@@ -2483,14 +2496,12 @@ window.openPaySheet=function(){
     }).catch(()=>{savedArea.innerHTML='';});
   }
   sheet.classList.add('open');
-  // ── Bug Fix #3: Hide tab bar so it can't cover pay sheet CTAs ──
-  var _psTabBar=document.querySelector('.sg-tab-bar');if(_psTabBar)_psTabBar.classList.add('hidden');
+  // Fix #50: Tab bar stays visible — pay sheet z-index handles layering
 };
 window.closePaySheet=function(){
   const sheet=document.getElementById('gym-pay-sheet');
   if(sheet)sheet.classList.remove('open');
-  // ── Bug Fix #3: Restore tab bar ──
-  var _psTabBar=document.querySelector('.sg-tab-bar');if(_psTabBar)_psTabBar.classList.remove('hidden');
+  // Fix #50: Tab bar stays visible — no restore needed
 };
 // Select a SAVED card as payment method (Uber-style)
 window.selectPayMethodSaved=function(el,cardId,brand,last4){
@@ -5799,7 +5810,7 @@ window.showGymDiscovery=function(){
   }
 
   // Build gym info for each card
-  const cards=gyms.slice(0,20).map((gym,i)=>{
+  const cards=gyms.map((gym,i)=>{
     const id=gym.placeId||gym.place_id||gym.id;
     const photo=gym.photo||gym.photo_url||
       (gym.photoReference?`/api/photo?ref=${encodeURIComponent(gym.photoReference)}&maxwidth=1200`:
