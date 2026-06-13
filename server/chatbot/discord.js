@@ -22,9 +22,13 @@
 
 const { handleMessage } = require('./message-handler');
 
-// Use built-in WebSocket (Node 22+) — zero dependencies
-// Falls back to 'ws' package if somehow not available
-const WS = globalThis.WebSocket;
+// Use built-in WebSocket (Node 22+) or fall back to 'ws' package (Node 20)
+let WS = globalThis.WebSocket;
+if (!WS) {
+  try { WS = require('ws'); } catch (_) {
+    console.error('[Discord] No WebSocket available — install ws package: npm i ws');
+  }
+}
 
 const DISCORD_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const DISCORD_API = 'https://discord.com/api/v10';
