@@ -392,6 +392,41 @@ const api={
   async payGet(url){const r=await fetch('/api/payment'+url,{credentials:'include'});return r.json()},
 };
 
+/* ═══ Perf #120/#121: Client-side gym data cache (sessionStorage) ═══
+   Like Spotify — revisiting same area is instant, no refetch needed.
+   Cache key = lat/lng rounded to 3 decimals (~111m precision). TTL = 10 min. */
+const _gymCache={
+  _key(lat,lng){return 'sg_gc_'+Math.round(lat*1000)+','+Math.round(lng*1000);},
+  get(lat,lng){try{var k=this._key(lat,lng);var raw=sessionStorage.getItem(k);if(!raw)return null;var d=JSON.parse(raw);if(Date.now()-d.t>600000)return null;return d.g;}catch(e){return null;}},
+  set(lat,lng,gyms){try{var k=this._key(lat,lng);sessionStorage.setItem(k,JSON.stringify({g:gyms,t:Date.now()}));}catch(e){}},
+  getSearch(q){try{var raw=sessionStorage.getItem('sg_sc_'+q);if(!raw)return null;var d=JSON.parse(raw);if(Date.now()-d.t>600000)return null;return d.g;}catch(e){return null;}},
+  setSearch(q,gyms){try{sessionStorage.setItem('sg_sc_'+q,JSON.stringify({g:gyms,t:Date.now()}));}catch(e){}}
+};
+
+/* ═══ Perf #121: Photo preloader (Spotify/TikTok-style) ═══
+   Preload photos for the next 2 gym cards so swipe feels instant. */
+const _photoPreloader={
+  _loaded:new Set(),
+  preload(urls){
+    urls.forEach(function(u){
+      if(!u||_photoPreloader._loaded.has(u))return;
+      _photoPreloader._loaded.add(u);
+      var img=new Image();
+      img.decoding='async';
+      img.src=u;
+    });
+  },
+  preloadGyms(gyms,startIdx){
+    var urls=[];
+    for(var i=startIdx;i<Math.min(startIdx+3,gyms.length);i++){
+      var g=gyms[i];if(!g)continue;
+      var p=g.photo||g.photo_url||(g.photoReference?'/api/photo?ref='+encodeURIComponent(g.photoReference)+'&maxwidth=600':'');
+      if(p)urls.push(p);
+    }
+    if(urls.length)_photoPreloader.preload(urls);
+  }
+};
+
 // ─── Router ───
 
 // Creator signup form
@@ -770,8 +805,8 @@ function GymCard(gym){
   const cardCurrentPrice=dayP.display;
   const dist=gym.distanceText||(gym.distance?`${gym.distance.toFixed(1)} km`:'Nearby');
   const photo=gym.photo||gym.photo_url||
-    (gym.photoReference?`/api/photo?ref=${encodeURIComponent(gym.photoReference)}&maxwidth=1200`:
-    (gym.photo_reference?`/api/photo?ref=${encodeURIComponent(gym.photo_reference)}&maxwidth=1200`:''));
+    (gym.photoReference?`/api/photo?ref=${encodeURIComponent(gym.photoReference)}&maxwidth=600`:
+    (gym.photo_reference?`/api/photo?ref=${encodeURIComponent(gym.photo_reference)}&maxwidth=600`:''));
   const photos=gym.photos_list||[];
   const hasPhoto=!!photo;
   const gymIdentifier=gym.placeId||gym.place_id||gym.id;
@@ -967,30 +1002,55 @@ function HomePage(){
 // ─── Page: Search Results ───
 async function loadGyms(lat,lng){
   try{
+    /* Perf #120: Check session cache first — instant on revisit */
+    var cached=_gymCache.get(lat,lng);
+    if(cached&&cached.length>0){
+      state.gyms=cached;state.searchResults=cached;state.nextPageToken=null;
+      render();
+      /* Preload photos for first 3 cards */
+      _photoPreloader.preloadGyms(cached,0);
+      if(lat&&lng){window._travelTimesLoaded=false;fetchRealTravelTimes(lat,lng);}
+      if(window.sgSocialProofToast) window.sgSocialProofToast();
+      /* Still refresh in background (stale-while-revalidate pattern) */
+      api.getLive(`/nearby?lat=${lat}&lng=${lng}&radius=10000`).then(function(fresh){
+        if(fresh.gyms&&fresh.gyms.length>0){
+          state.gyms=fresh.gyms;state.searchResults=fresh.gyms;
+          _gymCache.set(lat,lng,fresh.gyms);
+          render();
+        }
+      }).catch(function(){});
+      return;
+    }
     // LIVE Google Places API — searches every gym on Earth
     const data=await api.getLive(`/nearby?lat=${lat}&lng=${lng}&radius=10000`);
     state.gyms=data.gyms||[];
     state.searchResults=data.gyms||[];
     state.nextPageToken=data.nextPageToken||null;
+    _gymCache.set(lat,lng,state.gyms);
     render();
+    /* Perf #121: Preload photos for first 3 visible cards */
+    _photoPreloader.preloadGyms(state.gyms,0);
     // Fetch real travel times if we have user's GPS
     if(lat&&lng){window._travelTimesLoaded=false;fetchRealTravelTimes(lat,lng);}
     // Start real social proof toasts (uses loaded gym data)
     if(window.sgSocialProofToast) window.sgSocialProofToast();
-    // If we have more pages, load them in background
+    /* Perf #120: Load pages 2+3 faster — Google needs ~2s for pagetoken readiness,
+       but 2500ms was too conservative. Use 800ms + retry on INVALID_REQUEST. */
     if(data.nextPageToken){
       setTimeout(async()=>{
         try{
-          const page2=await api.getLive(`/nearby?lat=${lat}&lng=${lng}&pagetoken=${data.nextPageToken}`);
-          if(page2.gyms){state.gyms=[...state.gyms,...page2.gyms];render();}
+          var page2=await api.getLive(`/nearby?lat=${lat}&lng=${lng}&pagetoken=${data.nextPageToken}`);
+          if(!page2.gyms||page2.gyms.length===0){await new Promise(r=>setTimeout(r,1200));page2=await api.getLive(`/nearby?lat=${lat}&lng=${lng}&pagetoken=${data.nextPageToken}`);}
+          if(page2.gyms){state.gyms=[...state.gyms,...page2.gyms];_gymCache.set(lat,lng,state.gyms);render();_photoPreloader.preloadGyms(state.gyms,state.gyms.length-page2.gyms.length);}
           if(page2.nextPageToken){
             setTimeout(async()=>{
-              const page3=await api.getLive(`/nearby?lat=${lat}&lng=${lng}&pagetoken=${page2.nextPageToken}`);
-              if(page3.gyms){state.gyms=[...state.gyms,...page3.gyms];render();}
-            },2500);
+              var page3=await api.getLive(`/nearby?lat=${lat}&lng=${lng}&pagetoken=${page2.nextPageToken}`);
+              if(!page3.gyms||page3.gyms.length===0){await new Promise(r=>setTimeout(r,1200));page3=await api.getLive(`/nearby?lat=${lat}&lng=${lng}&pagetoken=${page2.nextPageToken}`);}
+              if(page3.gyms){state.gyms=[...state.gyms,...page3.gyms];_gymCache.set(lat,lng,state.gyms);render();}
+            },800);
           }
         }catch(e){}
-      },2500);
+      },800);
     }
   }catch(e){console.error('Failed to load gyms:',e)}
 }
@@ -1019,17 +1079,20 @@ async function searchGyms(query, isExplicit, _triggerLayer){
     }
     state.gyms=data.gyms||[];
     state.nextPageToken=data.nextPageToken||null;
+    _gymCache.setSearch(query,state.gyms);
     render();
+    _photoPreloader.preloadGyms(state.gyms,0);
     // Start real social proof toasts
     if(window.sgSocialProofToast) window.sgSocialProofToast();
-    // Load more pages
+    /* Perf #120: Faster page 2 loading for search — 800ms + retry */
     if(data.nextPageToken){
       setTimeout(async()=>{
         try{
-          const page2=await api.getLive(`/search?q=${encodeURIComponent(query)}&pagetoken=${data.nextPageToken}`);
+          var page2=await api.getLive(`/search?q=${encodeURIComponent(query)}&pagetoken=${data.nextPageToken}`);
+          if(!page2.gyms||page2.gyms.length===0){await new Promise(r=>setTimeout(r,1200));page2=await api.getLive(`/search?q=${encodeURIComponent(query)}&pagetoken=${data.nextPageToken}`);}
           if(page2.gyms){state.gyms=[...state.gyms,...page2.gyms];render();}
         }catch(e){}
-      },2500);
+      },800);
     }
   }catch(e){
     console.error('Search failed:',e);
@@ -1089,8 +1152,8 @@ function SearchPage(){
         var _cards=gyms.map(function(gym,i){
           var id=gym.placeId||gym.place_id||gym.id;
           var photo=gym.photo||gym.photo_url||
-            (gym.photoReference?'/api/photo?ref='+encodeURIComponent(gym.photoReference)+'&maxwidth=1200':
-            (gym.photo_reference?'/api/photo?ref='+encodeURIComponent(gym.photo_reference)+'&maxwidth=1200':''));
+            (gym.photoReference?'/api/photo?ref='+encodeURIComponent(gym.photoReference)+'&maxwidth=600':
+            (gym.photo_reference?'/api/photo?ref='+encodeURIComponent(gym.photo_reference)+'&maxwidth=600':''));
           var photos=gym.photos_list||[];
           var allPhotos=photos.length>1?photos.slice(0,5).map(function(p){return p.thumbnail||p.url||photo;}):[photo];
           var photoCount=photos.length||1;
@@ -5806,8 +5869,8 @@ window.showGymDiscovery=function(){
   const cards=gyms.map((gym,i)=>{
     const id=gym.placeId||gym.place_id||gym.id;
     const photo=gym.photo||gym.photo_url||
-      (gym.photoReference?`/api/photo?ref=${encodeURIComponent(gym.photoReference)}&maxwidth=1200`:
-      (gym.photo_reference?`/api/photo?ref=${encodeURIComponent(gym.photo_reference)}&maxwidth=1200`:''));
+      (gym.photoReference?`/api/photo?ref=${encodeURIComponent(gym.photoReference)}&maxwidth=600`:
+      (gym.photo_reference?`/api/photo?ref=${encodeURIComponent(gym.photo_reference)}&maxwidth=600`:''));
     const photos=gym.photos_list||[];
     const allPhotos=photos.length>1?photos.slice(0,5).map(p=>p.thumbnail||p.url||photo):[photo];
     const photoCount=photos.length||1;
@@ -6152,6 +6215,8 @@ window._initBookMapCarousel=function(){
       _loadPhotosForCard(idx);
       // Also preload next card
       _loadPhotosForCard(idx+1);
+      /* Perf #121: TikTok-style — preload photos for next 2 cards */
+      _photoPreloader.preloadGyms(state.gyms||[],idx+1);
     }
   },{passive:true});
 };
@@ -10761,7 +10826,7 @@ window.sgSwipeDiscovery=function(){
       return;
     }
     const g=shuffled[idx];
-    const photo=g.photo||g.photo_url||(g.photoReference?'/api/photo?ref='+encodeURIComponent(g.photoReference)+'&maxwidth=1200':'');
+    const photo=g.photo||g.photo_url||(g.photoReference?'/api/photo?ref='+encodeURIComponent(g.photoReference)+'&maxwidth=400':'');
     // v4.0: Flash deals removed — flat pricing
     const isFlashDeal=false;
     const flashPrice='';
@@ -11385,7 +11450,7 @@ window.sgMasonryGrid=function(gyms,containerId){
 
   let html='<div class="sg-masonry">';
   gyms.forEach((g,i)=>{
-    const photo=g.photo||g.photo_url||(g.photoReference?'/api/photo?ref='+encodeURIComponent(g.photoReference)+'&maxwidth=1200':'');
+    const photo=g.photo||g.photo_url||(g.photoReference?'/api/photo?ref='+encodeURIComponent(g.photoReference)+'&maxwidth=400':'');
     const heights=[140,180,160,200,150,170]; // Variable heights for visual interest
     const h=heights[i%heights.length];
     const gid=g.placeId||g.place_id||g.id;
