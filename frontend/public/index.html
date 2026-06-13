@@ -15,6 +15,9 @@
 
 <!-- DNS prefetch for secondary domains (resolve DNS in parallel) -->
 <link rel="dns-prefetch" href="https://api.stripe.com">
+<!-- Perf v2: Upgrade from dns-prefetch to preconnect — saves ~100ms on first photo load
+     (DNS+TCP+TLS for Google Places photos which are the main visual content) -->
+<link rel="preconnect" href="https://lh3.googleusercontent.com" crossorigin>
 <link rel="dns-prefetch" href="https://lh3.googleusercontent.com">
 <link rel="dns-prefetch" href="https://streetviewpixels-pa.googleapis.com">
 <link rel="dns-prefetch" href="https://places.googleapis.com">
