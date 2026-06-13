@@ -1,0 +1,364 @@
+openapi: 3.1.0
+info:
+  title: ScanGym — Book Any Gym, Anywhere
+  description: |
+    ScanGym is the Uber for gyms. Pay-per-session gym booking — no memberships, no contracts.
+    Search 1.2M+ gyms worldwide, see prices, ratings, and opening hours, then book a day pass instantly.
+    
+    Booking flow:
+    1. Search gyms by location or coordinates
+    2. Get gym details (pricing, hours, reviews)
+    3. Book a day pass (guest checkout with email)
+    4. User receives booking code + payment link
+    5. After payment → QR code for gym entry
+  version: 1.0.0
+servers:
+  - url: https://scangym.com
+    description: ScanGym Production API
+
+paths:
+  /api/live/search:
+    get:
+      operationId: searchGyms
+      summary: Search for gyms by location name
+      description: |
+        Find gyms by city, area, or text query. Returns a ranked list with prices, 
+        ratings, distance, and availability. Results are ranked by: 
+        1. Closest first, 2. Cheapest second, 3. Highest rated third, 4. 24/7 gyms fourth.
+        
+        Example queries: "gyms in Bolton", "CrossFit Manchester", "24 hour gym London"
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: Search query — city name, area, or gym type (e.g. "gym in Bolton", "CrossFit near Manchester")
+          schema:
+            type: string
+            example: "gym in Bolton"
+        - name: lat
+          in: query
+          required: false
+          description: User's latitude for distance-based ranking (optional but improves results)
+          schema:
+            type: number
+            example: 53.5781
+        - name: lng
+          in: query
+          required: false
+          description: User's longitude for distance-based ranking
+          schema:
+            type: number
+            example: -2.4282
+      responses:
+        '200':
+          description: List of matching gyms
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                    description: Total number of gyms found
+                  gyms:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GymSummary'
+
+  /api/live/nearby:
+    get:
+      operationId: searchNearbyGyms
+      summary: Find gyms near a location using coordinates
+      description: |
+        Search for gyms using latitude/longitude coordinates. More accurate than text search.
+        Use this when the user shares their location or you know their coordinates.
+        Results are ranked by distance first, then price, then ratings.
+      parameters:
+        - name: lat
+          in: query
+          required: true
+          description: Latitude coordinate
+          schema:
+            type: number
+            example: 53.5781
+        - name: lng
+          in: query
+          required: true
+          description: Longitude coordinate
+          schema:
+            type: number
+            example: -2.4282
+        - name: radius
+          in: query
+          required: false
+          description: Search radius in meters (default 5000, max 50000)
+          schema:
+            type: integer
+            default: 5000
+            maximum: 50000
+            example: 5000
+      responses:
+        '200':
+          description: Nearby gyms sorted by distance
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                  gyms:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GymSummary'
+
+  /api/live/place/{placeId}:
+    get:
+      operationId: getGymDetails
+      summary: Get full details for a specific gym
+      description: |
+        Get comprehensive details for a gym including pricing, opening hours, 
+        reviews, photos, facilities, and address. Use the placeId from search results.
+        Always show this info before booking so the user can make an informed decision.
+      parameters:
+        - name: placeId
+          in: path
+          required: true
+          description: Google Places ID of the gym (from search results)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Full gym details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  gym:
+                    $ref: '#/components/schemas/GymDetails'
+                  pricing:
+                    $ref: '#/components/schemas/Pricing'
+                  rating:
+                    $ref: '#/components/schemas/Rating'
+                  openingHours:
+                    type: object
+                    description: Opening hours by day of week
+
+  /api/bookings/guest-create:
+    post:
+      operationId: bookGymSession
+      summary: Book a day pass at a gym (guest checkout)
+      description: |
+        Create a gym booking using guest checkout (no account needed — just email).
+        Returns a booking code and the user should complete payment at scangym.com.
+        After payment, they receive a QR code for gym entry.
+        
+        IMPORTANT: Always confirm the gym details and price with the user before booking.
+        Ask for their email if not provided. Default time is "anytime" if not specified.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - gymId
+                - date
+                - email
+              properties:
+                gymId:
+                  type: integer
+                  description: Internal gym ID (from search results or gym details)
+                date:
+                  type: string
+                  format: date
+                  description: Booking date in YYYY-MM-DD format
+                  example: "2025-06-15"
+                time:
+                  type: string
+                  description: Preferred start time in HH:MM format (24h), or "anytime" for flexible
+                  default: "anytime"
+                  example: "10:00"
+                email:
+                  type: string
+                  format: email
+                  description: User's email for booking confirmation and receipt
+                  example: "user@example.com"
+                name:
+                  type: string
+                  description: User's name for the booking
+                  example: "John"
+                referral_code:
+                  type: string
+                  description: Creator/influencer referral code for 15% discount (optional)
+      responses:
+        '200':
+          description: Booking created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  booking:
+                    $ref: '#/components/schemas/Booking'
+        '400':
+          description: Missing required fields
+        '404':
+          description: Gym not found
+        '409':
+          description: Duplicate booking exists
+
+  /api/bookings/cancel:
+    post:
+      operationId: cancelBooking
+      summary: Cancel a gym booking
+      description: |
+        Cancel an existing booking. Free cancellation up to 2 hours before the session.
+        If paid, a refund is issued automatically to the original payment method.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - bookingId
+                - email
+              properties:
+                bookingId:
+                  type: integer
+                  description: The booking ID to cancel
+                email:
+                  type: string
+                  format: email
+                  description: Email used when booking (for verification)
+      responses:
+        '200':
+          description: Booking cancelled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  refunded:
+                    type: boolean
+                  message:
+                    type: string
+
+components:
+  schemas:
+    GymSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Internal gym ID (use for booking)
+        placeId:
+          type: string
+          description: Google Places ID (use for get_gym_details)
+        name:
+          type: string
+          example: "PureGym Bolton"
+        address:
+          type: string
+          example: "123 High Street, Bolton BL1 1AA"
+        distance:
+          type: string
+          description: Distance from search point (e.g. "0.3 mi")
+        distanceText:
+          type: string
+        dayPassPrice:
+          type: number
+          description: Day pass price in local currency
+          example: 4.49
+        currencySymbol:
+          type: string
+          example: "£"
+        rating:
+          type: number
+          example: 4.3
+        totalReviews:
+          type: integer
+          example: 127
+        openNow:
+          type: boolean
+        is24h:
+          type: boolean
+          description: Whether the gym is open 24/7
+
+    GymDetails:
+      type: object
+      properties:
+        name:
+          type: string
+        address:
+          type: string
+        phone:
+          type: string
+        website:
+          type: string
+        googleMapsUrl:
+          type: string
+        photos:
+          type: array
+          items:
+            type: string
+          description: Photo URLs
+
+    Pricing:
+      type: object
+      properties:
+        dayPass:
+          type: number
+          description: Day pass price
+        currency:
+          type: string
+          example: "GBP"
+        currencySymbol:
+          type: string
+          example: "£"
+        surgeMultiplier:
+          type: number
+          description: Dynamic pricing multiplier (1.0 = no surge)
+
+    Rating:
+      type: object
+      properties:
+        average:
+          type: number
+        total:
+          type: integer
+        breakdown:
+          type: object
+          description: Star distribution
+
+    Booking:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Booking ID (save this for cancellation)
+        gymId:
+          type: integer
+        gymName:
+          type: string
+        date:
+          type: string
+          format: date
+        time:
+          type: string
+        endTime:
+          type: string
+        price:
+          type: number
+        bookingCode:
+          type: string
+          description: Human-readable code (e.g. 5WCB-8VDY)
+        status:
+          type: string
+          enum: [pending, confirmed, cancelled]
