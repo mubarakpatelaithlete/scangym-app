@@ -211,7 +211,7 @@ try {
 /**
  * Send booking confirmation email with QR code
  */
-async function sendConfirmationEmail({ to, gymName, date, time, endTime, price, bookingCode, qrDataUrl }) {
+async function sendConfirmationEmail({ to, gymName, date, time, endTime, price, bookingCode, qrDataUrl, currencySymbol }) {
   if (!nodemailer || !process.env.SENDGRID_API_KEY && !process.env.SMTP_HOST) {
     console.log('[Email] Skipped — no email transport configured');
     return;
@@ -233,7 +233,7 @@ async function sendConfirmationEmail({ to, gymName, date, time, endTime, price, 
           <h2 style="color:white;margin:0 0 8px;">${gymName}</h2>
           <p style="color:#94a3b8;margin:4px 0;">📅 ${date}</p>
           <p style="color:#94a3b8;margin:4px 0;">🕐 ${time || 'Visit anytime today'}${endTime ? ' — ' + endTime : ''}</p>
-          <p style="color:#f97316;font-size:20px;font-weight:bold;margin:12px 0 0;">£${price}</p>
+          <p style="color:#f97316;font-size:20px;font-weight:bold;margin:12px 0 0;">${currencySymbol || '£'}${price}</p>
         </div>
         ${qrDataUrl ? `
         <div style="text-align:center;margin-bottom:24px;">
@@ -242,7 +242,14 @@ async function sendConfirmationEmail({ to, gymName, date, time, endTime, price, 
             <img src="${qrDataUrl}" alt="QR Code" width="200" height="200">
           </div>
           <p style="color:#64748b;font-size:12px;margin-top:8px;">Booking: ${bookingCode}</p>
-        </div>` : ''}
+        </div>` : `
+        <div style="text-align:center;margin-bottom:24px;">
+          <p style="color:white;font-weight:bold;margin-bottom:12px;">📱 Your Booking Code</p>
+          <div style="background:#1e293b;padding:20px;border-radius:12px;display:inline-block;border:2px solid #f97316;">
+            <p style="color:#f97316;font-size:28px;font-weight:800;margin:0;letter-spacing:4px;">${bookingCode}</p>
+          </div>
+          <p style="color:#94a3b8;font-size:12px;margin-top:8px;">Show this code at the gym entrance</p>
+        </div>`}
         <div style="background:#1e293b;border-radius:12px;padding:16px;font-size:14px;">
           <p style="color:white;font-weight:bold;margin:0 0 8px;">How it works:</p>
           <p style="color:#94a3b8;margin:4px 0;">📲 Show QR at the gym entrance</p>
@@ -568,7 +575,7 @@ router.post('/quick-checkout', async (req, res) => {
     if (!stripe) return res.status(500).json({ error: 'Payment not configured' });
     if (!req.session?.userId) return res.status(401).json({ error: 'Login required for 1-tap booking' });
 
-    let { gymId, date, time, cardId, savedCardId, placeId, passType, gymName: reqGymName, gymAddress: reqGymAddr } = req.body;
+    let { gymId, date, time, cardId, savedCardId, placeId, passType, gymName: reqGymName, gymAddress: reqGymAddr, referral_code } = req.body;
     const effectiveCardId = cardId || savedCardId; // Frontend sends savedCardId
     if (!date) return res.status(400).json({ error: 'date required' });
     // C2 fix: Resolve 'anytime' / empty time to a sensible default
@@ -630,8 +637,19 @@ router.post('/quick-checkout', async (req, res) => {
     });
     const gymCurrency = dayPrice.currency;
     const resolved = resolveTime(time);
-    const price = dayPrice.amount;
-    const amount = dayPrice.stripeAmount;
+
+    // S4-C11 FIX: Apply 15% referral discount when referral code is present
+    let price = dayPrice.amount;
+    let amount = dayPrice.stripeAmount;
+    let appliedDiscount = null;
+    if (referral_code) {
+      const REFERRAL_DISCOUNT_PERCENT = 15;
+      const discountAmount = parseFloat((price * REFERRAL_DISCOUNT_PERCENT / 100).toFixed(2));
+      price = parseFloat((price - discountAmount).toFixed(2));
+      amount = pricing.toStripeAmount(price, gymCurrency);
+      appliedDiscount = { percent: REFERRAL_DISCOUNT_PERCENT, saved: discountAmount, code: referral_code };
+      console.log(`[Payment] Referral discount: ${REFERRAL_DISCOUNT_PERCENT}% off → ${dayPrice.symbol}${price} (saved ${dayPrice.symbol}${discountAmount}) via "${referral_code}"`);
+    }
 
     // C8 FIX: Prevent duplicate bookings (same user + gym + date + time)
     const existingBooking = await pool.query(
@@ -711,7 +729,10 @@ router.post('/quick-checkout', async (req, res) => {
       [qr.token, qr.dataUrl, intent.id, booking.id]
     );
 
-    // Credit creator commission
+    // S4-C12 FIX: Credit creator commission (attach referral_code from request)
+    if (referral_code) {
+      booking.referral_code = referral_code;
+    }
     await creditCreatorCommission(booking);
 
     // Tier 2: Provision access control (non-blocking — Kisi/Seam door unlock)
@@ -726,6 +747,7 @@ router.post('/quick-checkout', async (req, res) => {
         to: user.email, gymName: g.name, date: bookingDate,
         time: booking.start_time, endTime: booking.end_time,
         price: price.toFixed(2), bookingCode, qrDataUrl: qr.dataUrl,
+        currencySymbol: dayPrice.symbol,
       }).catch(err => console.error('[Email] Send failed:', err.message));
     }
 
@@ -1010,7 +1032,17 @@ router.post('/cash-booking', async (req, res) => {
       countryCode: g.country || 'GB',
       passType: 'day',
     });
-    const price = dayPrice.amount;
+
+    // S4-C11 FIX: Apply 15% referral discount when referral code is present
+    let price = dayPrice.amount;
+    let appliedDiscount = null;
+    if (referral_code) {
+      const REFERRAL_DISCOUNT_PERCENT = 15;
+      const discountAmount = parseFloat((price * REFERRAL_DISCOUNT_PERCENT / 100).toFixed(2));
+      price = parseFloat((price - discountAmount).toFixed(2));
+      appliedDiscount = { percent: REFERRAL_DISCOUNT_PERCENT, saved: discountAmount, code: referral_code };
+      console.log(`[Payment] Cash referral discount: ${REFERRAL_DISCOUNT_PERCENT}% off → ${dayPrice.symbol}${price} via "${referral_code}"`);
+    }
 
     // C8 FIX: Prevent duplicate cash bookings (same email + gym + date + time)
     if (safeEmail) {
@@ -1104,6 +1136,7 @@ router.post('/cash-booking', async (req, res) => {
         to: safeEmail, gymName: g.name, date: bookingDate,
         time: booking.start_time, endTime: booking.end_time,
         price: price.toFixed(2), bookingCode, qrDataUrl: qr.dataUrl,
+        currencySymbol: dayPrice.symbol,
       }).catch(err => console.error('[Cash email] Send failed:', err.message));
     }
 
