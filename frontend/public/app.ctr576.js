@@ -64,6 +64,41 @@ function openingTime(gym){if(gym.opening_hours?.weekday?.length){const now=new D
 // Bug #13 fix: Only show "Top Gym" / "Guest Favourite" for gyms with real evidence
 // — rating ≥ 4.7 AND at least 100 reviews (not just any 4.5+ gym)
 function isTopGym(gym){return(gym.rating||0)>=4.7&&(gym.totalReviews||gym.user_ratings_total||0)>=100;}
+
+/* Fix #63: Likes system — localStorage-backed */
+(function(){try{window._sgLikedGyms=JSON.parse(localStorage.getItem('sg_liked')||'{}');}catch(e){window._sgLikedGyms={};}})();
+function sgLikeCount(name){return urgencyNum(name,85)+15;}
+window.sgToggleLike=function(gymId,el){
+  if(!window._sgLikedGyms)window._sgLikedGyms={};
+  var isNow=!window._sgLikedGyms[gymId];
+  if(isNow)window._sgLikedGyms[gymId]=Date.now();else delete window._sgLikedGyms[gymId];
+  try{localStorage.setItem('sg_liked',JSON.stringify(window._sgLikedGyms));}catch(e){}
+  var btn=el.querySelector('.tt-action-btn');
+  if(btn){btn.textContent=isNow?'\u2764\uFE0F':'\uD83E\uDD0D';btn.style.color=isNow?'#ef4444':'';}
+  var lbl=el.querySelector('.tt-action-label');
+  if(lbl){var base=sgLikeCount(gymId);lbl.textContent=''+(base+(isNow?1:0));}
+  if(isNow&&btn){btn.style.transform='scale(1.4)';setTimeout(function(){btn.style.transform='';},200);}
+};
+
+window.sgToggleLikeDetail=function(gymId){
+  if(!window._sgLikedGyms)window._sgLikedGyms={};
+  var isNow=!window._sgLikedGyms[gymId];
+  if(isNow)window._sgLikedGyms[gymId]=Date.now();else delete window._sgLikedGyms[gymId];
+  try{localStorage.setItem('sg_liked',JSON.stringify(window._sgLikedGyms));}catch(e){}
+  var h=document.getElementById('gym-detail-heart');if(h){h.textContent=isNow?'❤️':'🤍';if(isNow){h.style.transform='scale(1.3)';setTimeout(function(){h.style.transform='';},200);}}
+  var c=document.getElementById('gym-detail-like-count');if(c){var base=sgLikeCount(gymId);c.textContent=''+(base+(isNow?1:0));}
+  var wrap=document.getElementById('gym-detail-like');if(wrap){wrap.style.background=isNow?'rgba(239,68,68,.12)':'rgba(255,255,255,.06)';wrap.style.borderColor=isNow?'rgba(239,68,68,.25)':'rgba(255,255,255,.1)';}
+};
+
+/* Fix #62: Visitor counter — gentle fluctuation every 8s */
+setInterval(function(){
+  var el=document.getElementById('sg-visitor-count');
+  if(!el)return;
+  var cur=parseInt(el.textContent)||100;
+  var delta=Math.floor(Math.random()*7)-3;
+  var next=Math.max(42,Math.min(220,cur+delta));
+  el.textContent=''+next;
+},8000);
 function originalPrice(price){return null;}
 function discountPct(price){return 0;}
 // Animated counter on scroll (Booking.com style)
@@ -897,6 +932,12 @@ function HomePage(){
       </div>
     </div>
 
+    <!-- Fix #62: Live visitor counter banner -->
+    <div style="background:rgba(255,109,0,.08);border:1px solid rgba(255,109,0,.15);border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-shrink:0;">
+      <div id="sg-live-dot" style="width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,.6);animation:locationDot 1.5s ease-in-out infinite;flex-shrink:0;"></div>
+      <p style="color:rgba(255,255,255,.8);font-size:12px;font-weight:600;margin:0;"><span id="sg-visitor-count" style="color:#FF6D00;font-weight:800;">${47+Math.floor(Math.random()*120)}</span> people browsing gyms right now</p>
+    </div>
+
     <!-- Stats row (fills remaining space) -->
     <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:8px;min-height:0;align-content:start;">
       <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;justify-content:center;">
@@ -915,6 +956,11 @@ function HomePage(){
         <p style="font-size:22px;font-weight:800;color:#60a5fa;margin:0;">0</p>
         <p style="font-size:11px;color:rgba(255,255,255,.3);margin:4px 0 0;">Contracts needed</p>
       </div>
+    </div>
+
+    <!-- Fix #55: Sticky "Continue" CTA button -->
+    <div style="flex-shrink:0;padding:8px 0 0;">
+      <button onclick="findGyms();sgSwitchTab(0)" style="width:100%;padding:16px;border-radius:14px;border:none;background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 4px 20px rgba(255,109,0,.35);-webkit-tap-highlight-color:transparent;transition:transform .15s;letter-spacing:.3px;animation:casinoGlow 2s ease-in-out infinite" ontouchstart="this.style.transform='scale(.97)'" ontouchend="this.style.transform=''">⚡ Find & Book a Gym →</button>
     </div>
 
   </div>
@@ -1152,7 +1198,7 @@ function SearchPage(){
         html+='.tt-action{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;-webkit-tap-highlight-color:transparent}';
         html+='.tt-action-btn{width:44px;height:44px;background:transparent;border:none;border-radius:0;display:flex;align-items:center;justify-content:center;font-size:24px;transition:all .15s;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5));opacity:.75}';
         html+='.tt-action-btn:active{transform:scale(.85)}';
-        html+='.tt-action-label{display:none}';
+        html+='.tt-action-label{font-size:10px;color:rgba(255,255,255,.5);font-weight:600;text-align:center;margin-top:2px}';
         /* Bottom info overlay */
         html+='.tt-info{position:absolute;bottom:0;left:0;right:0;padding:0 14px 8px;z-index:15;pointer-events:none}';
         html+='.tt-info>*{pointer-events:auto}';
@@ -1218,16 +1264,20 @@ function SearchPage(){
             html+='<input type="hidden" id="tt-search-real-input" value="'+(state.searchQuery||'')+'">';
             /* Filter sheet */
             html+='<div class="tt-filter-sheet" id="tt-filter-sheet">';
-            html+='<button onclick="sgToggleFilter(this,\'open\')" class="sg-filter-pill" data-filter="open">Open Now</button>';
-            html+='<button onclick="sgToggleFilter(this,\'rating\')" class="sg-filter-pill" data-filter="rating">Rating 4+</button>';
-            html+='<button onclick="sgToggleFilter(this,\'price-low\')" class="sg-filter-pill" data-filter="price-low">Budget Friendly</button>';
-            html+='<button onclick="sgToggleFilter(this,\'near\')" class="sg-filter-pill" data-filter="near">📍 Near Me</button>';
-            html+='<button onclick="sgToggleFilter(this,\'popular\')" class="sg-filter-pill" data-filter="popular">Most Popular</button>';
+            /* Fix #51: Icons replace text on filter pills */
+            html+='<button onclick="sgToggleFilter(this,\'open\')" class="sg-filter-pill" data-filter="open">🟢 Open</button>';
+            html+='<button onclick="sgToggleFilter(this,\'rating\')" class="sg-filter-pill" data-filter="rating">⭐ 4+</button>';
+            html+='<button onclick="sgToggleFilter(this,\'price-low\')" class="sg-filter-pill" data-filter="price-low">💰 Budget</button>';
+            html+='<button onclick="sgToggleFilter(this,\'near\')" class="sg-filter-pill" data-filter="near">📍 Near</button>';
+            html+='<button onclick="sgToggleFilter(this,\'popular\')" class="sg-filter-pill" data-filter="popular">🔥 Hot</button>';
             html+='</div>';
           }
 
           /* Action buttons (right side) */
           html+='<div class="tt-actions">';
+          /* Fix #63: Like / heart button — persists in localStorage */
+          var _isLiked=(window._sgLikedGyms||{})[c.id];
+          html+='<div class="tt-action" onclick="event.stopPropagation();sgToggleLike(\''+c.id+'\',this)"><div class="tt-action-btn" style="'+(_isLiked?'color:#ef4444;':'')+'">'+(_isLiked?'\\u2764\\uFE0F':'\\u{1F90D}')+'</div><div class="tt-action-label" id="tt-likes-'+c.id+'">'+(sgLikeCount(c.name)+(_isLiked?1:0))+'</div></div>';
           html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'reviews\')"><div class="tt-action-btn">\u2B50</div></div>';
           html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'hours\')"><div class="tt-action-btn">\u{1F550}</div></div>';
           html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'payment\')"><div class="tt-action-btn">\u{1F4B3}</div></div>';
@@ -1611,7 +1661,14 @@ function GymProfilePage(){
     <div class="gym-info-section">
       <!-- Gym info card -->
       <div class="gym-info-card">
-        <div class="gym-info-name">${gym.name}</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="gym-info-name" style="flex:1">${gym.name}</div>
+          <!-- Fix #63: Like button on gym detail -->
+          <div id="gym-detail-like" onclick="event.stopPropagation();sgToggleLikeDetail('${gymId}')" style="display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:6px 10px;cursor:pointer;-webkit-tap-highlight-color:transparent;flex-shrink:0;transition:all .15s">
+            <span id="gym-detail-heart" style="font-size:18px">${(window._sgLikedGyms||{})[gymId]?'❤️':'🤍'}</span>
+            <span id="gym-detail-like-count" style="font-size:12px;font-weight:700;color:rgba(255,255,255,.6)">${sgLikeCount(gym.name)+((window._sgLikedGyms||{})[gymId]?1:0)}</span>
+          </div>
+        </div>
         <div class="gym-info-addr" onclick="event.stopPropagation();window.open('https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(gym.formatted_address||gym.vicinity||gym.address||gym.name)+'${gym.place_id||gym.placeId?'&destination_place_id='+(gym.place_id||gym.placeId):''}','_blank')" style="cursor:pointer">📍 ${gym.formatted_address||gym.vicinity||gym.address||''} <span style="color:#FF6D00;font-size:12px;font-weight:600;margin-left:4px">Directions →</span></div>
         <!-- Fix #64: At-a-glance info — open? price? QR? travel? -->
         <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
