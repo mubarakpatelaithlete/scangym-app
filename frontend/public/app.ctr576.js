@@ -420,12 +420,49 @@ const _photoPreloader={
     var urls=[];
     for(var i=startIdx;i<Math.min(startIdx+3,gyms.length);i++){
       var g=gyms[i];if(!g)continue;
-      var p=g.photo||g.photo_url||(g.photoReference?'/api/photo?ref='+encodeURIComponent(g.photoReference)+'&maxwidth=600':'');
+      var p=_gymPhotoUrl(g);
       if(p)urls.push(p);
     }
     if(urls.length)_photoPreloader.preload(urls);
   }
 };
+
+/* ═══ Perf Round 2: Touch-start prefetch (Instagram technique) ═══
+   Start loading gym detail data on touchstart — 150-300ms head start before tap fires.
+   When showUberCheckout() runs, the /api/live/place data is already cached by browser. */
+var _touchPrefetchDone={};
+document.addEventListener('touchstart',function(e){
+  var el=e.target.closest('.tt-card')||e.target.closest('.gym-card');
+  if(!el)return;
+  var onclick=el.getAttribute('onclick')||'';
+  var m=onclick.match(/openGym\('([^']+)'/)||onclick.match(/showUberCheckout\('([^']+)'/);
+  if(m&&m[1]&&!_touchPrefetchDone[m[1]]){
+    _touchPrefetchDone[m[1]]=true;
+    fetch('/api/live/place/'+m[1]).catch(function(){});
+  }
+},{passive:true});
+
+/* ═══ Perf Round 2: Connection-aware photo sizes (Spotify technique) ═══
+   On slow 2G/3G, use 400px photos instead of 600px — 40% less data. */
+var _photoMaxWidth=600;
+if(navigator.connection){
+  var _ct=navigator.connection.effectiveType;
+  if(_ct==='slow-2g'||_ct==='2g'||_ct==='3g')_photoMaxWidth=400;
+  navigator.connection.addEventListener('change',function(){
+    var ct2=navigator.connection.effectiveType;
+    _photoMaxWidth=(ct2==='slow-2g'||ct2==='2g'||ct2==='3g')?400:600;
+  });
+}
+/* Helper: get photo URL with connection-aware size */
+function _gymPhotoUrl(gym,size){
+  var w=size||_photoMaxWidth;
+  return gym.photo||gym.photo_url||
+    (gym.photoReference?'/api/photo?ref='+encodeURIComponent(gym.photoReference)+'&maxwidth='+w:
+    (gym.photo_reference?'/api/photo?ref='+encodeURIComponent(gym.photo_reference)+'&maxwidth='+w:''));
+}
+
+/* ═══ Perf Round 2: requestIdleCallback for non-critical work (TikTok technique) ═══ */
+var _scheduleIdle=window.requestIdleCallback||function(cb){setTimeout(cb,50);};
 
 // ─── Router ───
 
@@ -804,9 +841,7 @@ function GymCard(gym){
   const _isOPCard=_hCard<10||_hCard>=20;
   const cardCurrentPrice=dayP.display;
   const dist=gym.distanceText||(gym.distance?`${gym.distance.toFixed(1)} km`:'Nearby');
-  const photo=gym.photo||gym.photo_url||
-    (gym.photoReference?`/api/photo?ref=${encodeURIComponent(gym.photoReference)}&maxwidth=600`:
-    (gym.photo_reference?`/api/photo?ref=${encodeURIComponent(gym.photo_reference)}&maxwidth=600`:''));
+  const photo=_gymPhotoUrl(gym);
   const photos=gym.photos_list||[];
   const hasPhoto=!!photo;
   const gymIdentifier=gym.placeId||gym.place_id||gym.id;
@@ -1010,7 +1045,7 @@ async function loadGyms(lat,lng){
       /* Preload photos for first 3 cards */
       _photoPreloader.preloadGyms(cached,0);
       if(lat&&lng){window._travelTimesLoaded=false;fetchRealTravelTimes(lat,lng);}
-      if(window.sgSocialProofToast) window.sgSocialProofToast();
+      if(window.sgSocialProofToast) _scheduleIdle(function(){window.sgSocialProofToast();});
       /* Still refresh in background (stale-while-revalidate pattern) */
       api.getLive(`/nearby?lat=${lat}&lng=${lng}&radius=10000`).then(function(fresh){
         if(fresh.gyms&&fresh.gyms.length>0){
@@ -1033,7 +1068,7 @@ async function loadGyms(lat,lng){
     // Fetch real travel times if we have user's GPS
     if(lat&&lng){window._travelTimesLoaded=false;fetchRealTravelTimes(lat,lng);}
     // Start real social proof toasts (uses loaded gym data)
-    if(window.sgSocialProofToast) window.sgSocialProofToast();
+    if(window.sgSocialProofToast) _scheduleIdle(function(){window.sgSocialProofToast();});
     /* Perf #120: Load pages 2+3 faster — Google needs ~2s for pagetoken readiness,
        but 2500ms was too conservative. Use 800ms + retry on INVALID_REQUEST. */
     if(data.nextPageToken){
@@ -1083,7 +1118,7 @@ async function searchGyms(query, isExplicit, _triggerLayer){
     render();
     _photoPreloader.preloadGyms(state.gyms,0);
     // Start real social proof toasts
-    if(window.sgSocialProofToast) window.sgSocialProofToast();
+    if(window.sgSocialProofToast) _scheduleIdle(function(){window.sgSocialProofToast();});
     /* Perf #120: Faster page 2 loading for search — 800ms + retry */
     if(data.nextPageToken){
       setTimeout(async()=>{
@@ -1151,9 +1186,7 @@ function SearchPage(){
         }
         var _cards=gyms.map(function(gym,i){
           var id=gym.placeId||gym.place_id||gym.id;
-          var photo=gym.photo||gym.photo_url||
-            (gym.photoReference?'/api/photo?ref='+encodeURIComponent(gym.photoReference)+'&maxwidth=600':
-            (gym.photo_reference?'/api/photo?ref='+encodeURIComponent(gym.photo_reference)+'&maxwidth=600':''));
+          var photo=_gymPhotoUrl(gym);
           var photos=gym.photos_list||[];
           var allPhotos=photos.length>1?photos.slice(0,5).map(function(p){return p.thumbnail||p.url||photo;}):[photo];
           var photoCount=photos.length||1;
@@ -5868,9 +5901,7 @@ window.showGymDiscovery=function(){
   // Build gym info for each card
   const cards=gyms.map((gym,i)=>{
     const id=gym.placeId||gym.place_id||gym.id;
-    const photo=gym.photo||gym.photo_url||
-      (gym.photoReference?`/api/photo?ref=${encodeURIComponent(gym.photoReference)}&maxwidth=600`:
-      (gym.photo_reference?`/api/photo?ref=${encodeURIComponent(gym.photo_reference)}&maxwidth=600`:''));
+    const photo=_gymPhotoUrl(gym);
     const photos=gym.photos_list||[];
     const allPhotos=photos.length>1?photos.slice(0,5).map(p=>p.thumbnail||p.url||photo):[photo];
     const photoCount=photos.length||1;
@@ -6296,8 +6327,7 @@ window._ttShowMap=function(){
   const dayP=sgPrice('day');
   withCoords.forEach(function(gym,i){
     const id=gym.placeId||gym.place_id||gym.id;
-    const photo=gym.photo||gym.photo_url||
-      (gym.photoReference?'/api/photo?ref='+encodeURIComponent(gym.photoReference)+'&maxwidth=400':'');
+    const photo=_gymPhotoUrl(gym,400);
     const isOpen=gym.openNow!==false;
     const addr=(gym.address||gym.vicinity||'').split(',')[0];
     const card=document.createElement('div');
@@ -9759,12 +9789,20 @@ async function _startStripeConnect(handle){
   }
 }
 
+/* Perf Round 2: Debounced render — like Amazon/Uber, batch rapid render() calls
+   into a single requestAnimationFrame. Prevents jank when page 2/3 gyms load. */
+var _renderQueued=false;
 function render(){
-  try{ _renderInner(); }catch(err){
-    console.error('[Render] Error rendering page:',err);
-    const app=document.getElementById('app');
-    if(app)app.innerHTML='<div style="padding:40px 20px;text-align:center"><p style="font-size:40px;margin-bottom:16px">⚠️</p><p style="color:#fff;font-size:18px;font-weight:700;margin-bottom:8px">Something went wrong</p><p style="color:rgba(255,255,255,.4);margin-bottom:24px">'+err.message+'</p><button onclick="navigate(\'/explore\')" style="background:#FF6D00;color:#fff;border:none;padding:14px 32px;border-radius:12px;font-weight:700;font-size:16px;cursor:pointer">Go to Explore →</button></div>'+BottomTabBar();
-  }
+  if(_renderQueued)return;
+  _renderQueued=true;
+  requestAnimationFrame(function(){
+    _renderQueued=false;
+    try{ _renderInner(); }catch(err){
+      console.error('[Render] Error rendering page:',err);
+      const app=document.getElementById('app');
+      if(app)app.innerHTML='<div style="padding:40px 20px;text-align:center"><p style="font-size:40px;margin-bottom:16px">⚠️</p><p style="color:#fff;font-size:18px;font-weight:700;margin-bottom:8px">Something went wrong</p><p style="color:rgba(255,255,255,.4);margin-bottom:24px">'+err.message+'</p><button onclick="navigate(\'/explore\')" style="background:#FF6D00;color:#fff;border:none;padding:14px 32px;border-radius:12px;font-weight:700;font-size:16px;cursor:pointer">Go to Explore →</button></div>'+BottomTabBar();
+    }
+  });
 }
 function _renderInner(){
   const path=state.route;
@@ -10826,7 +10864,7 @@ window.sgSwipeDiscovery=function(){
       return;
     }
     const g=shuffled[idx];
-    const photo=g.photo||g.photo_url||(g.photoReference?'/api/photo?ref='+encodeURIComponent(g.photoReference)+'&maxwidth=400':'');
+    const photo=_gymPhotoUrl(g,400);
     // v4.0: Flash deals removed — flat pricing
     const isFlashDeal=false;
     const flashPrice='';
@@ -11450,7 +11488,7 @@ window.sgMasonryGrid=function(gyms,containerId){
 
   let html='<div class="sg-masonry">';
   gyms.forEach((g,i)=>{
-    const photo=g.photo||g.photo_url||(g.photoReference?'/api/photo?ref='+encodeURIComponent(g.photoReference)+'&maxwidth=400':'');
+    const photo=_gymPhotoUrl(g,400);
     const heights=[140,180,160,200,150,170]; // Variable heights for visual interest
     const h=heights[i%heights.length];
     const gid=g.placeId||g.place_id||g.id;
