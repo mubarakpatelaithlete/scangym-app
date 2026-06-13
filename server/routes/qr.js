@@ -88,9 +88,7 @@ router.post('/generate', authenticateUser, async (req, res) => {
     if (booking.rows.length === 0) {
       return res.status(404).json({ error: 'Booking not found' });
     }
-    // S5-C10 FIX: Include 'reserved' so cash bookings can also generate QR codes.
-    // Cash bookings start as 'reserved' (pay at gym), not 'confirmed'.
-    if (!['confirmed', 'completed', 'active', 'reserved'].includes(booking.rows[0].status)) {
+    if (!['confirmed', 'completed', 'active'].includes(booking.rows[0].status)) {
       return res.status(400).json({ error: 'Booking must be paid/confirmed to generate QR code' });
     }
 
