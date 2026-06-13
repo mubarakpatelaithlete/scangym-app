@@ -399,6 +399,8 @@ router.get('/nearby', async (req, res) => {
     };
 
     setCache(cacheKey, result);
+    /* Perf #120: Let browsers/CDN cache nearby results for 2 min */
+    res.setHeader('Cache-Control', 'public, max-age=120, stale-while-revalidate=300');
     res.json(result);
   } catch (err) {
     console.error('Live nearby error:', err);
