@@ -21,6 +21,7 @@ const router = express.Router();
 const pool = require('../middleware/db');
 const crypto = require('crypto');
 const pricing = require('../lib/pricing-engine');
+const { authenticateUser, requireAdmin } = require('../middleware/auth');
 
 // Generate human-readable booking code (e.g., 5WCB-8VDY)
 function generateBookingCode() {
@@ -337,7 +338,10 @@ router.post('/cancel', async (req, res) => {
     const { bookingId, email } = req.body;
     if (!bookingId) return res.status(400).json({ error: 'bookingId is required' });
 
-    // Find booking — support both auth and guest (by email)
+    // S5-C08 FIX: Require authenticated session for cancel.
+    // Guest cancellation by email alone is too easy to exploit — anyone who knows
+    // a booking ID + email can cancel someone else's session. Now guests must
+    // cancel through a confirmation email link (future) or contact support.
     let result;
     if (req.session?.userId) {
       result = await pool.query(
@@ -346,7 +350,8 @@ router.post('/cancel', async (req, res) => {
          WHERE b.id = $1 AND b.user_id = $2`,
         [bookingId, req.session.userId]
       );
-    } else if (email) {
+    } else if (email && req.session?.guestEmail === email && req.session?.guestBookingId == bookingId) {
+      // Only allow guest cancel if the session matches the guest who made the booking
       result = await pool.query(
         `SELECT b.*, g.name as gym_name FROM public.bookings b
          LEFT JOIN public.gyms g ON b.gym_id = g.id
@@ -354,7 +359,7 @@ router.post('/cancel', async (req, res) => {
         [bookingId, email]
       );
     } else {
-      return res.status(401).json({ error: 'Please provide your email to cancel' });
+      return res.status(401).json({ error: 'Please log in to cancel, or contact support at hello@scangym.com' });
     }
 
     if (result.rows.length === 0) {
@@ -432,24 +437,75 @@ router.post('/cancel', async (req, res) => {
 });
 
 // ═══ PHASE 4: Post-booking feedback ═══
-router.post('/feedback', async (req, res) => {
-  try {
-    const { bookingId, type, detail } = req.body;
-    if (!bookingId || !type) return res.status(400).json({ error: 'bookingId and type required' });
 
+// S5-C06 FIX: Create feedback table at startup, not on every request.
+// S5-C14 FIX: Add foreign key to bookings table for referential integrity.
+(async () => {
+  try {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS booking_feedback (
         id SERIAL PRIMARY KEY,
-        booking_id INTEGER NOT NULL,
-        feedback_type VARCHAR(20) NOT NULL,
+        booking_id INTEGER NOT NULL REFERENCES public.bookings(id) ON DELETE CASCADE,
+        user_id VARCHAR(255),
+        feedback_type VARCHAR(20) NOT NULL CHECK (feedback_type IN ('positive', 'negative')),
         detail TEXT,
         created_at TIMESTAMP DEFAULT NOW()
       )
     `);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_feedback_booking ON booking_feedback(booking_id)`);
+    await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_feedback_unique ON booking_feedback(booking_id, user_id, feedback_type)`);
+    console.log('booking_feedback table ready');
+  } catch (err) {
+    // Table may already exist with different constraints — log but don't crash
+    console.error('Feedback table init:', err.message);
+  }
+})();
+
+// S5-C05 FIX: Require authentication so only real users can submit feedback.
+// S5-C13 FIX: Prevent duplicate feedback — one per user per booking per type.
+// S5-C14 FIX: Validate feedback_type is 'positive' or 'negative' only.
+router.post('/feedback', async (req, res) => {
+  try {
+    // Require auth: session-based user OR guest email
+    const userId = req.session?.userId || null;
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated', message: 'Please log in to submit feedback' });
+    }
+
+    const { bookingId, type, detail } = req.body;
+    if (!bookingId || !type) return res.status(400).json({ error: 'bookingId and type required' });
+
+    // Validate feedback_type
+    if (!['positive', 'negative'].includes(type)) {
+      return res.status(400).json({ error: 'Invalid feedback type. Must be "positive" or "negative".' });
+    }
+
+    // Verify the booking belongs to this user
+    const bookingCheck = await pool.query(
+      'SELECT id FROM public.bookings WHERE id = $1 AND user_id = $2',
+      [bookingId, userId]
+    );
+    if (bookingCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    // Check for duplicate (one feedback per booking per user per type)
+    const existing = await pool.query(
+      'SELECT id FROM booking_feedback WHERE booking_id = $1 AND user_id = $2 AND feedback_type = $3',
+      [bookingId, userId, type]
+    );
+    if (existing.rows.length > 0) {
+      // Update existing instead of creating duplicate
+      await pool.query(
+        'UPDATE booking_feedback SET detail = $1, created_at = NOW() WHERE booking_id = $2 AND user_id = $3 AND feedback_type = $4',
+        [detail || null, bookingId, userId, type]
+      );
+      return res.json({ success: true, updated: true });
+    }
 
     await pool.query(
-      'INSERT INTO booking_feedback (booking_id, feedback_type, detail) VALUES ($1, $2, $3)',
-      [bookingId, type, detail || null]
+      'INSERT INTO booking_feedback (booking_id, user_id, feedback_type, detail) VALUES ($1, $2, $3, $4)',
+      [bookingId, userId, type, detail || null]
     );
 
     res.json({ success: true });
@@ -463,12 +519,14 @@ router.post('/feedback', async (req, res) => {
 /**
  * GET /api/bookings/recent
  * Recent bookings for CEO dashboard
+ * S5-C04 FIX: Require admin authentication — was publicly exposing ALL users' data.
  */
-router.get('/recent', async (req, res) => {
+router.get('/recent', authenticateUser, requireAdmin, async (req, res) => {
   try {
     const limit = Math.min(parseInt(req.query.limit) || 10, 50);
     const result = await pool.query(
-      `SELECT b.*, g.name as gym_name 
+      `SELECT b.id, b.booking_date, b.start_time, b.total_amount, b.status, b.created_at,
+              g.name as gym_name 
        FROM public.bookings b 
        LEFT JOIN public.gyms g ON b.gym_id = g.id
        ORDER BY b.created_at DESC

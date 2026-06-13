@@ -6619,6 +6619,8 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
         }).then(r=>r.json());
         if(result.success){
           state.lastBooking=result.booking;state.lastQR=result.qr;state.lastAccess=result.access||null;
+          // S5-C11 FIX: Persist to localStorage
+          try{localStorage.setItem('sg_last_booking',JSON.stringify(result.booking));localStorage.setItem('sg_last_qr',JSON.stringify(result.qr));}catch(e){}
           closeBookingSheet();navigate('/booking-success?session_id=cash&booking_id='+result.booking.id);
           sgToast('💷 Reserved! Pay at the gym','success',3000);
         }else{
@@ -6649,6 +6651,8 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
         }).then(r=>r.json());
         if(result.success){
           state.lastBooking=result.booking;state.lastQR=result.qr;state.lastAccess=result.access||null;
+          // S5-C11 FIX: Persist to localStorage
+          try{localStorage.setItem('sg_last_booking',JSON.stringify(result.booking));localStorage.setItem('sg_last_qr',JSON.stringify(result.qr));}catch(e){}
           closeBookingSheet();navigate('/booking-success?session_id=quick&booking_id='+result.booking.id);
           sgToast(result.access?'🔓 Booked + door access ready!':'⚡ Booked instantly!','success',3000);
         }else{
@@ -7077,7 +7081,7 @@ function ActiveSessionPage(){
     <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:20px;padding:20px;margin-bottom:16px;text-align:center">
       <div style="color:rgba(255,255,255,.5);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Your QR Code</div>
       <div style="display:inline-block;background:#fff;padding:16px;border-radius:16px;margin-bottom:8px">
-        <img src="${qr.url||'data:image/svg+xml,<svg/>'}" alt="QR Code" style="width:160px;height:160px;display:block">
+        <img src="${qr.dataUrl||qr.url||'data:image/svg+xml,<svg/>'}" alt="QR Code" style="width:160px;height:160px;display:block">
       </div>
       <div style="color:rgba(255,255,255,.35);font-size:11px">Show to staff if asked</div>
     </div>`:``}
@@ -7127,6 +7131,22 @@ function BookingSuccessPage(){
   const bookHour=new Date().getHours();
   localStorage.setItem('sg_typical_hour',String(bookHour));
 
+  // S5-C11 FIX: Try restoring state from localStorage before hitting the API
+  if(!state.lastQR){
+    try{
+      const savedBooking=localStorage.getItem('sg_last_booking');
+      const savedQR=localStorage.getItem('sg_last_qr');
+      if(savedBooking&&savedQR){
+        const parsedBooking=JSON.parse(savedBooking);
+        // Only restore if this is the same booking
+        if(String(parsedBooking.id)===String(bookingId)){
+          state.lastBooking=parsedBooking;
+          state.lastQR=JSON.parse(savedQR);
+        }
+      }
+    }catch(e){}
+  }
+
   // Verify payment and get QR (async — will update DOM)
   if(!state.lastQR){
     // For inline Stripe, QR is already set before navigating here
@@ -7140,6 +7160,8 @@ function BookingSuccessPage(){
           state.lastBooking=r.booking;
           state.lastQR=r.qr;
           state.lastAccess=r.access||null;
+          // S5-C11 FIX: Persist booking state to localStorage so page refresh doesn't lose data
+          try{localStorage.setItem('sg_last_booking',JSON.stringify(r.booking));localStorage.setItem('sg_last_qr',JSON.stringify(r.qr));}catch(e){}
           render();
         }else{
           document.getElementById('booking-result').innerHTML=`<p class="text-red-400">${r.error||'Payment verification failed'}</p>`;
@@ -7204,7 +7226,7 @@ function BookingSuccessPage(){
               <p class="text-slate-400 text-sm">Day Pass · 24-hour access</p>
             </div>
             <div class="text-right">
-              <p class="text-brand font-bold text-xl">£${b.price.toFixed(2)}</p>
+              <p class="text-brand font-bold text-xl">${b.currency==='USD'?'$':b.currency==='EUR'?'€':'£'}${b.price.toFixed(2)}</p>
               <p class="text-green-400 text-xs font-medium">${b.paymentMethod==='cash'?'RESERVED ⏳':'PAID ✓'}</p>
             </div>
           </div>
@@ -7232,7 +7254,7 @@ function BookingSuccessPage(){
         <p class="text-white font-bold text-lg mb-1">📱 Your Entry QR Code</p>
         <p class="text-slate-400 text-sm mb-4">Show this at the gym entrance</p>
         <div class="bg-white rounded-2xl p-5 inline-block shadow-lg shadow-white/5 mx-auto">
-          <img src="${qr.dataUrl}" alt="QR Code" class="w-56 h-56 sm:w-64 sm:h-64">
+          <img src="${qr.dataUrl||qr.url||''}" alt="QR Code" class="w-56 h-56 sm:w-64 sm:h-64" onerror="this.style.display='none';this.nextElementSibling&&(this.nextElementSibling.style.display='block')">
         </div>
         <p class="text-slate-500 text-xs mt-3">Token: ${qr.token}</p>
         <button onclick="if(navigator.share){navigator.share({title:'ScanGym QR',text:'My gym booking QR code',url:window.location.href}).catch(()=>{})}else{navigator.clipboard.writeText(window.location.href).then(()=>{this.textContent='✅ Link Copied!';setTimeout(()=>{this.textContent='📤 Share Booking'},2000)})}" class="mt-3 text-brand text-sm font-medium hover:text-orange-400 cursor-pointer transition">📤 Share Booking</button>

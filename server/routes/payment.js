@@ -98,7 +98,8 @@ async function generate2ScanQR(bookingId, userId, gymId) {
     const scanUrl = 'https://scangym.com/scan/' + qr.qr_token;
     let dataUrl = null;
     if (QRCode) {
-      try { dataUrl = await QRCode.toDataURL(scanUrl, { width: 400, margin: 2, errorCorrectionLevel: 'H' }); } catch (e) {}
+      try { dataUrl = await QRCode.toDataURL(scanUrl, { width: 400, margin: 2, errorCorrectionLevel: 'H' }); }
+      catch (e) { console.error('[QR] toDataURL failed for existing QR:', e.message); }
     }
     return {
       token: qr.qr_token, scanUrl, dataUrl,
@@ -126,9 +127,13 @@ async function generate2ScanQR(bookingId, userId, gymId) {
   );
 
   const scanUrl = 'https://scangym.com/scan/' + qrToken;
+  // S5-C03 FIX: Ensure QR data URL is always generated. Log errors instead of swallowing.
   let dataUrl = null;
   if (QRCode) {
-    try { dataUrl = await QRCode.toDataURL(scanUrl, { width: 400, margin: 2, errorCorrectionLevel: 'H' }); } catch (e) {}
+    try { dataUrl = await QRCode.toDataURL(scanUrl, { width: 400, margin: 2, errorCorrectionLevel: 'H' }); }
+    catch (e) { console.error('[QR] toDataURL failed for new QR:', e.message); }
+  } else {
+    console.error('[QR] qrcode module not available — QR images will not be generated');
   }
 
   return {
@@ -1130,5 +1135,200 @@ router.post('/cash-booking', async (req, res) => {
     res.status(500).json({ error: 'Failed to create reservation', detail: err.message });
   }
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  S5-C01 FIX: GET /verify — Verify payment after Stripe redirect
+//  Frontend calls this on the BookingSuccessPage to confirm payment went through
+//  and get the QR code + booking details.
+// ═══════════════════════════════════════════════════════════════════════════
+router.get('/verify', async (req, res) => {
+  try {
+    const { session_id, booking_id } = req.query;
+    if (!booking_id) {
+      return res.status(400).json({ error: 'booking_id is required' });
+    }
+
+    // Get booking
+    const result = await pool.query(
+      'SELECT b.*, g.name as gym_name, g.country FROM public.bookings b LEFT JOIN public.gyms g ON b.gym_id = g.id WHERE b.id = $1',
+      [booking_id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Booking not found' });
+    }
+
+    const booking = result.rows[0];
+
+    // For cash/quick checkout, the booking is already confirmed — just return details
+    if (session_id === 'cash' || session_id === 'quick') {
+      const qr = await generate2ScanQR(booking.id, booking.user_id, booking.gym_id);
+      const bookingDate = new Date(booking.booking_date).toLocaleDateString('en-GB');
+      const dayPrice = pricing.getDayPassPrice(booking.country || 'GB');
+
+      // Provision access control (non-blocking)
+      const accessCredential = await provisionAccessControl(
+        booking.id, booking.gym_id, booking.user_id,
+        booking.user_email, booking.user_name
+      );
+
+      return res.json({
+        success: true,
+        booking: {
+          id: booking.id, gymId: booking.gym_id,
+          gymName: booking.gym_name || 'Gym', date: bookingDate,
+          time: booking.start_time, endTime: booking.end_time,
+          price: parseFloat(booking.total_amount),
+          currency: dayPrice.currency || 'GBP',
+          bookingCode: booking.booking_code, status: booking.status,
+          paymentMethod: session_id === 'cash' ? 'cash' : 'card',
+        },
+        qr: {
+          token: qr.token, scanUrl: qr.scanUrl, dataUrl: qr.dataUrl,
+          maxScans: qr.maxScans, scansRemaining: qr.scansRemaining,
+          expiresAt: qr.expiresAt,
+        },
+        access: accessCredential ? {
+          type: accessCredential.type, provider: accessCredential.provider,
+          access_url: accessCredential.access_url, pin: accessCredential.pin,
+          instructions: accessCredential.instructions,
+        } : null,
+      });
+    }
+
+    // For Stripe intent payments, verify the payment went through
+    if (session_id === 'intent' && booking.stripe_payment_intent_id) {
+      if (!stripe) return res.status(500).json({ success: false, error: 'Payment system not configured' });
+
+      const intent = await stripe.paymentIntents.retrieve(booking.stripe_payment_intent_id);
+      if (intent.status !== 'succeeded') {
+        return res.json({ success: false, error: 'Payment not yet completed', status: intent.status });
+      }
+    }
+
+    // If booking is already confirmed, generate/fetch QR and return
+    if (['confirmed', 'completed', 'active', 'reserved'].includes(booking.status)) {
+      const qr = await generate2ScanQR(booking.id, booking.user_id, booking.gym_id);
+      const bookingDate = new Date(booking.booking_date).toLocaleDateString('en-GB');
+      const dayPrice = pricing.getDayPassPrice(booking.country || 'GB');
+
+      const accessCredential = await provisionAccessControl(
+        booking.id, booking.gym_id, booking.user_id,
+        booking.user_email, booking.user_name
+      );
+
+      return res.json({
+        success: true,
+        booking: {
+          id: booking.id, gymId: booking.gym_id,
+          gymName: booking.gym_name || 'Gym', date: bookingDate,
+          time: booking.start_time, endTime: booking.end_time,
+          price: parseFloat(booking.total_amount),
+          currency: dayPrice.currency || 'GBP',
+          bookingCode: booking.booking_code, status: booking.status,
+        },
+        qr: {
+          token: qr.token, scanUrl: qr.scanUrl, dataUrl: qr.dataUrl,
+          maxScans: qr.maxScans, scansRemaining: qr.scansRemaining,
+          expiresAt: qr.expiresAt,
+        },
+        access: accessCredential ? {
+          type: accessCredential.type, provider: accessCredential.provider,
+          access_url: accessCredential.access_url, pin: accessCredential.pin,
+          instructions: accessCredential.instructions,
+        } : null,
+      });
+    }
+
+    // Booking exists but not confirmed yet
+    return res.json({ success: false, error: 'Booking not yet confirmed', status: booking.status });
+
+  } catch (err) {
+    console.error('Payment verify error:', err);
+    res.status(500).json({ success: false, error: 'Payment verification failed' });
+  }
+});
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  S5-C02 FIX: GET /resume — Check if an abandoned booking can be resumed
+//  Frontend calls this on page load to show a "resume booking" banner.
+// ═══════════════════════════════════════════════════════════════════════════
+router.get('/resume', async (req, res) => {
+  try {
+    const { booking_id } = req.query;
+    if (!booking_id) {
+      return res.json({ canResume: false });
+    }
+
+    // Find the booking
+    const result = await pool.query(
+      `SELECT b.id, b.gym_id, b.status, b.total_amount, b.booking_date, b.start_time,
+              b.stripe_checkout_session_id, b.stripe_payment_intent_id,
+              g.name as gym_name
+       FROM public.bookings b
+       LEFT JOIN public.gyms g ON b.gym_id = g.id
+       WHERE b.id = $1`,
+      [booking_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.json({ canResume: false });
+    }
+
+    const booking = result.rows[0];
+
+    // Only pending bookings can be resumed
+    if (booking.status !== 'pending') {
+      return res.json({ canResume: false });
+    }
+
+    // Check if booking date hasn't passed
+    const bookingDate = new Date(booking.booking_date);
+    const now = new Date();
+    if (bookingDate < new Date(now.toISOString().split('T')[0])) {
+      // Booking date has passed — auto-cancel
+      await pool.query(
+        "UPDATE public.bookings SET status = 'cancelled', updated_at = NOW() WHERE id = $1",
+        [booking.id]
+      );
+      return res.json({ canResume: false });
+    }
+
+    // If there's a Stripe checkout session, try to get the URL
+    let checkoutUrl = null;
+    if (booking.stripe_checkout_session_id && stripe) {
+      try {
+        const session = await stripe.checkout.sessions.retrieve(booking.stripe_checkout_session_id);
+        if (session.status === 'open') {
+          checkoutUrl = session.url;
+        }
+      } catch (e) {
+        // Session expired — user needs to start new payment
+      }
+    }
+
+    // Fallback: link to gym page to rebook
+    if (!checkoutUrl) {
+      checkoutUrl = `/gym/${booking.gym_id}`;
+    }
+
+    res.json({
+      canResume: true,
+      booking: {
+        id: booking.id,
+        gymName: booking.gym_name || 'Gym',
+        date: booking.booking_date,
+        time: booking.start_time,
+        price: parseFloat(booking.total_amount || 0),
+      },
+      checkoutUrl,
+    });
+
+  } catch (err) {
+    console.error('Payment resume error:', err);
+    res.json({ canResume: false });
+  }
+});
+
 
 module.exports = router;
