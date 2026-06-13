@@ -1253,11 +1253,16 @@ function SearchPage(){
           html+='<div class="tt-gym-name">'+c.name+'</div>';
           /* Address */
           html+='<div class="tt-gym-addr">\u{1F4CD} '+(c.addr?c.addr.split(',')[0]:'Nearby')+' \u00b7 <span class="tt-travel-label" data-gym-travel-id="'+c.id+'">'+c.distMin+'</span> \u00b7 <span class="'+c.openClass+'">'+c.openTag+'</span></div>';
-          /* Chips */
+          /* Chips — Fix #59, #105, #107: Social proof & FOMO signals (seeded until real analytics wired up) */
+          var _bToday=bookedToday(c.name);
+          var _pLook=peopleLooking(c.name);
+          var _mAgo=minutesAgo(c.name);
           html+='<div class="tt-chips">';
           if(c.isPop) html+='<div class="tt-chip">\u{1F525} Popular</div>';
           html+='<div class="tt-chip">\u{1F4B0} '+c.price+'/day</div>';
           html+='<div class="tt-chip">\u2B50 '+c.rating+(c.reviews?' ('+c.reviews+')':'')+'</div>';
+          html+='<div class="tt-chip" style="background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.25)">\u{1F4C8} '+_bToday+' booked today</div>';
+          html+='<div class="tt-chip" style="background:rgba(239,68,68,.14);border:1px solid rgba(239,68,68,.2)">\u{1F440} '+_pLook+' looking now</div>';
           html+='</div>';
           /* CTA inside info — Book directly from reels (no Screen 3 navigation) */
           html+='<div style="padding-right:50px;margin-top:8px;pointer-events:auto"><button class="tt-cta-btn" onclick="event.stopPropagation();showUberCheckout(\''+c.id+'\')">⚡ Book Day Pass · '+c.price+'</button></div>';
@@ -1605,6 +1610,12 @@ function GymProfilePage(){
       <div class="gym-info-card">
         <div class="gym-info-name">${gym.name}</div>
         <div class="gym-info-addr" onclick="event.stopPropagation();window.open('https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(gym.formatted_address||gym.vicinity||gym.address||gym.name)+'${gym.place_id||gym.placeId?'&destination_place_id='+(gym.place_id||gym.placeId):''}','_blank')" style="cursor:pointer">📍 ${gym.formatted_address||gym.vicinity||gym.address||''} <span style="color:#FF6D00;font-size:12px;font-weight:600;margin-left:4px">Directions →</span></div>
+        <!-- Fix #59, #60, #105: Social proof signals on gym detail page -->
+        <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
+          <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.2);border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700;color:#4ade80">📈 ${bookedToday(gym.name)} booked today</span>
+          <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.18);border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700;color:#f87171">👀 ${peopleLooking(gym.name)} people looking</span>
+          <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(255,109,0,.1);border:1px solid rgba(255,109,0,.18);border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700;color:#FF6D00">⏰ Booked ${minutesAgo(gym.name)} min ago</span>
+        </div>
         <!-- Busyness Indicator (Fix #4C) -->
         <div style="margin-top:8px" id="gym-busyness-widget">
           ${(function(){
@@ -1679,8 +1690,14 @@ function GymProfilePage(){
 
     <!-- ═══ STICKY BOTTOM BAR — Full-width Book CTA + trust (Pay/Passes/Calendar moved to right-side TikTok icons) ═══ -->
     <div class="gym-sticky-bar" id="gym-sticky-bar">
+        <!-- Fix #107: FOMO urgency above CTA -->
+        <div style="text-align:center;padding:6px 16px 0;display:flex;justify-content:center;gap:12px">
+          <span style="font-size:10px;font-weight:700;color:#f87171;animation:pulse 2s infinite">🔥 ${spotsLeft(gym.name)} spots left today</span>
+          <span style="font-size:10px;font-weight:700;color:rgba(255,255,255,.4)">·</span>
+          <span style="font-size:10px;font-weight:700;color:#fbbf24">⏰ Last booked ${minutesAgo(gym.name)} min ago</span>
+        </div>
         <!-- Full-width Book CTA -->
-        <div style="padding:12px 16px 0">
+        <div style="padding:8px 16px 0">
           <button class="gym-sticky-book" id="gym-sticky-book" style="width:100%" onclick="event.preventDefault();event.stopPropagation();showUberCheckout('${gymId}')">⚡ Book Day Pass · ${currentPrice}</button>
         </div>
 
@@ -7210,8 +7227,10 @@ function BookingSuccessPage(){
             <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
           </div>
         </div>
-        <h1 class="font-brand text-3xl font-bold text-white mb-1">Booking Confirmed!</h1>
+        <h1 class="font-brand text-3xl font-bold text-white mb-1">Booking Confirmed! 🎉</h1>
         <p class="text-green-400 font-medium">${b.paymentMethod==='cash'?'✅ Reserved · Show QR & pay at gym':'✅ Payment received · QR code ready'}</p>
+        <!-- Fix #113: Feel-good motivational message after booking -->
+        <p class="text-white font-semibold text-sm mt-3" style="animation:fadeInUp .6s ease-out">${['💪 Your future self will thank you!','🏆 Champions train no matter what — you\'re one of them!','🔥 You just invested in the best version of yourself!','⚡ One workout closer to your goals!','🌟 The hardest part is showing up — you just did that!'][Math.floor(Math.abs((b.gymName||'').charCodeAt(0))%5)]}</p>
         <p class="text-slate-500 text-xs mt-2">🌍 Your ScanGym profile is now accepted at 1.2M+ gyms worldwide</p>
       </div>
 
@@ -7328,6 +7347,10 @@ function BookingSuccessPage(){
         <a href="${calUrl}" target="_blank" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-medium py-3 rounded-xl transition flex items-center justify-center gap-2 cursor-pointer border border-slate-700">
           📅 Add to Google Calendar
         </a>
+        <!-- Fix #115: Google Maps directions button after booking -->
+        <a href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(b.gymName+(b.gymAddress?' '+b.gymAddress:''))}" target="_blank" class="w-full bg-blue-900/40 hover:bg-blue-800/50 text-blue-300 font-medium py-3 rounded-xl transition flex items-center justify-center gap-2 cursor-pointer border border-blue-500/20">
+          🗺️ Get Directions to ${b.gymName}
+        </a>
         <button onclick="navigate('/explore')" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-brand/20">
           Book Another Gym
         </button>
@@ -7342,20 +7365,14 @@ function BookingSuccessPage(){
         <p class="text-slate-500 text-xs">Need help? 📧 hello@scangym.com</p>
       </div>
 
-      <!-- ═══ PHASE 4: Post-booking feedback ═══ -->
+      <!-- ═══ PHASE 4: Post-booking feedback — Fix #109: Star rating like Uber "rate your driver" ═══ -->
       <div class="mt-6 bg-card rounded-2xl border border-slate-700 p-5 text-center" id="sg-post-feedback">
-        <p class="text-white font-bold mb-2">How was your booking experience?</p>
-        <p class="text-slate-400 text-xs mb-4">Tap to let us know</p>
-        <div style="display:flex;justify-content:center;gap:24px">
-          <button onclick="sgFeedback('positive',${b.id})" class="sg-feedback-btn" data-fb="up" style="background:none;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px 24px;cursor:pointer;transition:all .15s">
-            <span style="font-size:32px;display:block">👍</span>
-            <span style="font-size:11px;color:rgba(255,255,255,.4);margin-top:4px;display:block">Great</span>
-          </button>
-          <button onclick="sgFeedback('negative',${b.id})" class="sg-feedback-btn" data-fb="down" style="background:none;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px 24px;cursor:pointer;transition:all .15s">
-            <span style="font-size:32px;display:block">👎</span>
-            <span style="font-size:11px;color:rgba(255,255,255,.4);margin-top:4px;display:block">Needs work</span>
-          </button>
+        <p class="text-white font-bold mb-1">⭐ Rate ${b.gymName}</p>
+        <p class="text-slate-400 text-xs mb-4">How was your experience? (rate after your workout)</p>
+        <div style="display:flex;justify-content:center;gap:8px;margin-bottom:12px" id="sg-star-rating">
+          ${[1,2,3,4,5].map(s=>'<button onclick="sgStarRate('+s+','+b.id+')" class="sg-star-btn" data-star="'+s+'" style="background:none;border:none;font-size:36px;cursor:pointer;transition:all .15s;filter:grayscale(100%) opacity(.4);padding:4px" onmouseover="sgStarHover('+s+')" onmouseout="sgStarHover(0)">⭐</button>').join('')}
         </div>
+        <p class="text-slate-500 text-xs" id="sg-star-label">Tap a star to rate</p>
       </div>
 
       <!-- ═══ PHASE 4: Quick rebook ═══ -->
@@ -8126,6 +8143,25 @@ window.sgSendFeedbackDetail=async function(bookingId){
     await fetch('/api/bookings/feedback',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({bookingId,type:'negative',detail:ta.value.trim()})}).catch(()=>{});
   }catch(e){}
   if(el) el.innerHTML='<div style="padding:16px;text-align:center"><span style="font-size:36px">✅</span><p style="color:#4ade80;font-weight:700;margin-top:8px">Feedback sent — thank you!</p></div>';
+};
+
+// ═══ Fix #109: Star Rating (Uber-style "rate your gym") ═══
+window.sgStarHover=function(n){
+  var btns=document.querySelectorAll('.sg-star-btn');
+  btns.forEach(function(b){
+    var s=parseInt(b.dataset.star);
+    b.style.filter=s<=n?'grayscale(0%) opacity(1)':'grayscale(100%) opacity(.4)';
+    b.style.transform=s<=n?'scale(1.15)':'scale(1)';
+  });
+};
+window.sgStarRate=async function(rating,bookingId){
+  var el=document.getElementById('sg-post-feedback');
+  if(!el) return;
+  var labels=['','😞 We\'ll do better','🤔 Room to improve','👍 Good gym!','🔥 Great workout!','🏆 Amazing — 5 stars!'];
+  el.innerHTML='<div style="padding:16px;text-align:center"><div style="font-size:36px;margin-bottom:8px">'+('⭐'.repeat(rating))+'</div><p style="color:#4ade80;font-weight:700;margin-top:4px">'+(labels[rating]||'Thanks!')+'</p><p style="color:rgba(255,255,255,.4);font-size:12px;margin-top:4px">Your rating helps other gym-goers</p></div>';
+  try{
+    await fetch('/api/bookings/feedback',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({bookingId:bookingId,type:rating>=4?'positive':'negative',rating:rating})}).catch(function(){});
+  }catch(e){}
 };
 
 // ═══ SEARCH FILTERS ═══
