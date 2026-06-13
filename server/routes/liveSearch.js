@@ -72,7 +72,7 @@ function extractCountryCode(formattedAddress) {
 
 // ─── Simple in-memory cache (5 min TTL) ─────────────────────
 const cache = new Map();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL = 15 * 60 * 1000; // 15 minutes — gyms don't change often, saves Google API calls
 
 function getCached(key) {
   const entry = cache.get(key);
