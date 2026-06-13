@@ -432,13 +432,12 @@ const _photoPreloader={
    When showUberCheckout() runs, the /api/live/place data is already cached by browser. */
 var _touchPrefetchDone={};
 document.addEventListener('touchstart',function(e){
-  var el=e.target.closest('.tt-card')||e.target.closest('.gym-card');
+  var el=e.target.closest('[data-gym-id]');
   if(!el)return;
-  var onclick=el.getAttribute('onclick')||'';
-  var m=onclick.match(/openGym\('([^']+)'/)||onclick.match(/showUberCheckout\('([^']+)'/);
-  if(m&&m[1]&&!_touchPrefetchDone[m[1]]){
-    _touchPrefetchDone[m[1]]=true;
-    fetch('/api/live/place/'+m[1]).catch(function(){});
+  var id=el.getAttribute('data-gym-id');
+  if(id&&!_touchPrefetchDone[id]){
+    _touchPrefetchDone[id]=true;
+    fetch('/api/live/place/'+id).catch(function(){});
   }
 },{passive:true});
 
@@ -861,7 +860,7 @@ function GymCard(gym){
     </div>`:hasPhoto?`<img src="${photo}" alt="${gym.name}" class="w-full h-full object-cover" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'w-full h-full flex items-center justify-center text-4xl\\'>🏋️</div>'">`
     :`<div class="w-full h-full flex items-center justify-center text-4xl">🏋️</div>`;
   return`
-  <div class="gym-card group bg-card rounded-2xl overflow-hidden border border-slate-700 hover:border-brand/50 cursor-pointer transition-all hover:shadow-lg hover:shadow-brand/10 hover:-translate-y-1" onclick="openGym('${gymIdentifier}',${isLive})">
+  <div class="gym-card group bg-card rounded-2xl overflow-hidden border border-slate-700 hover:border-brand/50 cursor-pointer transition-all hover:shadow-lg hover:shadow-brand/10 hover:-translate-y-1" data-gym-id="${gymIdentifier}" onclick="openGym('${gymIdentifier}',${isLive})">
     <div class="relative h-48 bg-slate-700">
       ${carouselHTML}
       <!-- Fix #4: Smart price badge — shows current time-aware price -->
@@ -1217,10 +1216,10 @@ function SearchPage(){
         /* ═══ TikTok Immersive Layout Styles ═══ */
         html+='.tt-view{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;position:relative}';
         /* Carousel - horizontal snap scroll, each card is 100% width */
-        html+='.tt-carousel{display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;flex:1;min-height:0}';
+        html+='.tt-carousel{display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;flex:1;min-height:0;will-change:scroll-position;contain:strict}';
         html+='.tt-carousel::-webkit-scrollbar{display:none}';
         /* Each card fills the full viewport */
-        html+='.tt-card{width:100%;min-height:100%;max-height:100%;scroll-snap-align:start;position:relative;display:flex;flex-direction:column;overflow:hidden}';
+        html+='.tt-card{width:100%;min-height:100%;max-height:100%;scroll-snap-align:start;position:relative;display:flex;flex-direction:column;overflow:hidden;will-change:transform;contain:layout style paint}';
         html+='.tt-card.tt-closed{opacity:0.5;filter:grayscale(25%)}';
         html+='.tt-card.tt-closed .tt-cta-btn{background:#6b7280;box-shadow:none}';
         /* Full-bleed photo */
@@ -1228,7 +1227,7 @@ function SearchPage(){
         /* Photo carousel within each card (swipe right for more photos) */
         html+='.tt-photo-carousel{position:absolute;inset:0;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;display:flex;z-index:0;touch-action:pan-x}';
         html+='.tt-photo-carousel::-webkit-scrollbar{display:none}';
-        html+='.tt-photo-slide{flex:0 0 100%;width:100%;height:100%;scroll-snap-align:start;background-size:cover;background-position:center}';
+        html+='.tt-photo-slide{flex:0 0 100%;width:100%;height:100%;scroll-snap-align:start;background-size:cover;background-position:center;will-change:transform}';
         html+='.tt-photo-dots{position:absolute;bottom:0;left:14px;display:flex;gap:4px;z-index:12}';
         html+='.tt-photo-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.3);transition:all .3s}';
         html+='.tt-photo-dot.act{background:#FF6D00;width:18px;border-radius:3px}';

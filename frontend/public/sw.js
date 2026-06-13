@@ -1,6 +1,8 @@
-// ScanGym Service Worker v3.0 — App Shell + Stale-While-Revalidate
+// ScanGym Service Worker v4.0 — App Shell + Photo Cache + Stale-While-Revalidate
 // Instant first paint on repeat visits via cached shell + background refresh
-const CACHE_NAME = 'scangym-v5';
+const CACHE_NAME = 'scangym-v6';
+const PHOTO_CACHE = 'scangym-photos-v1';
+const PHOTO_CACHE_MAX = 100; // Keep max 100 gym photos cached
 const APP_SHELL = [
   '/',
   '/styles.css',
@@ -16,11 +18,12 @@ self.addEventListener('install', event => {
   self.skipWaiting(); // Activate immediately
 });
 
-// Activate: clean all old caches
+// Activate: clean all old caches (keep current app + photo cache)
 self.addEventListener('activate', event => {
+  const keep = [CACHE_NAME, PHOTO_CACHE];
   event.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
+      Promise.all(keys.filter(k => !keep.includes(k)).map(k => caches.delete(k)))
     )
   );
   self.clients.claim(); // Take control immediately
@@ -33,13 +36,38 @@ self.addEventListener('fetch', event => {
   // Skip non-GET
   if (event.request.method !== 'GET') return;
 
+  // Photo proxy: cache-first — gym photos rarely change, saves bandwidth + instant on revisit
+  if (url.pathname.startsWith('/api/photo')) {
+    event.respondWith(
+      caches.match(event.request).then(cached => {
+        if (cached) return cached;
+        return fetch(event.request).then(response => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(PHOTO_CACHE).then(cache => {
+              cache.put(event.request, clone);
+              // Evict oldest if over limit
+              cache.keys().then(keys => {
+                if (keys.length > PHOTO_CACHE_MAX) {
+                  cache.delete(keys[0]);
+                }
+              });
+            });
+          }
+          return response;
+        }).catch(() => new Response('', { status: 404 }));
+      })
+    );
+    return;
+  }
+
   // API calls: network-first (never serve stale API data)
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(
       fetch(event.request)
         .then(response => {
-          // Cache config for offline fallback
-          if (response.ok && url.pathname === '/api/config') {
+          // Cache config + nearby for offline fallback
+          if (response.ok && (url.pathname === '/api/config' || url.pathname.startsWith('/api/live/nearby'))) {
             const clone = response.clone();
             caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
           }
