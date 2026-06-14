@@ -50,6 +50,17 @@ const QRCode = require('qrcode');
     `);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_checkin_booking ON booking_checkins(booking_id)`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_checkin_user ON booking_checkins(user_id)`);
+    // S5-M14 FIX: Add foreign key constraints (safe — uses IF NOT EXISTS pattern)
+    try {
+      await pool.query(`ALTER TABLE booking_qr_codes ADD CONSTRAINT fk_qr_booking FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE`);
+    } catch(e) { /* constraint may already exist */ }
+    try {
+      await pool.query(`ALTER TABLE booking_checkins ADD CONSTRAINT fk_checkin_booking FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE`);
+    } catch(e) { /* constraint may already exist */ }
+    try {
+      await pool.query(`ALTER TABLE booking_checkins ADD CONSTRAINT fk_checkin_qr FOREIGN KEY (qr_code_id) REFERENCES booking_qr_codes(id) ON DELETE CASCADE`);
+    } catch(e) { /* constraint may already exist */ }
+
     console.log('QR code tables ready (2-scan JD Gym model)');
   } catch (err) {
     console.error('QR table creation error:', err.message);
@@ -146,6 +157,16 @@ router.post('/generate', authenticateUser, async (req, res) => {
       color: { dark: '#000000', light: '#FFFFFF' },
       errorCorrectionLevel: 'H',
     });
+
+    // S5-M13 FIX: Sync QR data to bookings table so both sources stay in sync
+    try {
+      await pool.query(
+        'UPDATE bookings SET qr_code = $1, qr_code_url = $2, updated_at = NOW() WHERE id = $3',
+        [qrToken, qrDataUrl, parseInt(bookingId)]
+      );
+    } catch (syncErr) {
+      console.error('QR sync to bookings table:', syncErr.message);
+    }
 
     res.status(201).json({
       qrCode: {
