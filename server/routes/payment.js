@@ -1063,22 +1063,20 @@ router.post('/cash-booking', async (req, res) => {
       console.log(`[Payment] Cash referral discount: ${REFERRAL_DISCOUNT_PERCENT}% off → ${dayPrice.symbol}${price} via "${referral_code}"`);
     }
 
-    // C8 FIX: Prevent duplicate cash bookings (same email + gym + date + time)
-    if (safeEmail) {
-      const existingCash = await pool.query(
-        `SELECT id, status FROM public.bookings
-         WHERE gym_id = $1 AND user_email = $2 AND booking_date = $3 AND start_time = $4
-         AND status NOT IN ('cancelled')
-         LIMIT 1`,
-        [dbGymId, safeEmail, date, resolved.startTime]
-      );
-      if (existingCash.rows.length > 0) {
-        return res.status(409).json({
-          error: 'Duplicate booking',
-          message: 'A booking already exists at this gym for this date and time.',
-          existingBookingId: existingCash.rows[0].id,
-        });
-      }
+    // S4-C09 FIX: Prevent duplicate cash bookings using userId (always available after C-05 auth fix)
+    const existingCash = await pool.query(
+      `SELECT id, status FROM public.bookings
+       WHERE gym_id = $1 AND user_id = $2 AND booking_date = $3 AND start_time = $4
+       AND status NOT IN ('cancelled')
+       LIMIT 1`,
+      [dbGymId, req.session.userId, date, resolved.startTime]
+    );
+    if (existingCash.rows.length > 0) {
+      return res.status(409).json({
+        error: 'Duplicate booking',
+        message: 'You already have a booking at this gym for this date and time.',
+        existingBookingId: existingCash.rows[0].id,
+      });
     }
 
     // ── Step 3: Generate booking code (same XXXX-XXXX format as Stripe path, fits VARCHAR(9)) ──
