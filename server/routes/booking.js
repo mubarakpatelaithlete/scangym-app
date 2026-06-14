@@ -18,6 +18,8 @@
  */
 const express = require('express');
 const router = express.Router();
+// S5-H08 FIX: Init Stripe once at module load, not per-request
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const pool = require('../middleware/db');
 const crypto = require('crypto');
 const pricing = require('../lib/pricing-engine');
@@ -402,7 +404,7 @@ router.post('/cancel', async (req, res) => {
     let refunded = false;
     if (booking.stripe_payment_intent_id) {
       try {
-        const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+        // S5-H08: stripe now initialized at top of file
         await stripe.refunds.create({ payment_intent: booking.stripe_payment_intent_id });
         refunded = true;
         console.log(`✅ Refund issued for booking #${bookingId} (${booking.stripe_payment_intent_id})`);
@@ -472,8 +474,12 @@ router.post('/feedback', async (req, res) => {
       return res.status(401).json({ error: 'Not authenticated', message: 'Please log in to submit feedback' });
     }
 
-    const { bookingId, type, detail } = req.body;
+    const { bookingId, type, detail, rating } = req.body;
     if (!bookingId || !type) return res.status(400).json({ error: 'bookingId and type required' });
+    // S5-H11 FIX: Validate rating if provided
+    if (rating !== undefined && (typeof rating !== 'number' || rating < 1 || rating > 5)) {
+      return res.status(400).json({ error: 'Rating must be a number between 1 and 5' });
+    }
 
     // Validate feedback_type
     if (!['positive', 'negative'].includes(type)) {
@@ -497,15 +503,15 @@ router.post('/feedback', async (req, res) => {
     if (existing.rows.length > 0) {
       // Update existing instead of creating duplicate
       await pool.query(
-        'UPDATE booking_feedback SET detail = $1, created_at = NOW() WHERE booking_id = $2 AND user_id = $3 AND feedback_type = $4',
-        [detail || null, bookingId, userId, type]
+        'UPDATE booking_feedback SET detail = $1, rating = $5, created_at = NOW() WHERE booking_id = $2 AND user_id = $3 AND feedback_type = $4',
+        [detail || null, bookingId, userId, type, rating || null]
       );
       return res.json({ success: true, updated: true });
     }
 
     await pool.query(
-      'INSERT INTO booking_feedback (booking_id, user_id, feedback_type, detail) VALUES ($1, $2, $3, $4)',
-      [bookingId, userId, type, detail || null]
+      'INSERT INTO booking_feedback (booking_id, user_id, feedback_type, detail, rating) VALUES ($1, $2, $3, $4, $5)',
+      [bookingId, userId, type, detail || null, rating || null]
     );
 
     res.json({ success: true });
@@ -550,3 +556,47 @@ router.get('/recent', authenticateUser, requireAdmin, async (req, res) => {
 });
 
 module.exports = router;
+
+
+// ═══ S5-H11 FIX: Add rating column to feedback table ═══
+(async () => {
+  try {
+    await pool.query(`ALTER TABLE booking_feedback ADD COLUMN IF NOT EXISTS rating SMALLINT CHECK (rating >= 1 AND rating <= 5)`);
+    console.log('booking_feedback: rating column ready');
+  } catch (err) {
+    console.error('Add rating column:', err.message);
+  }
+})();
+
+// ═══ S5-H15 FIX: End session endpoint ═══
+router.post('/end', async (req, res) => {
+  try {
+    const userId = req.session?.userId || null;
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+    const { bookingId } = req.body;
+    if (!bookingId) return res.status(400).json({ error: 'bookingId required' });
+
+    // Verify the booking belongs to this user
+    const bookingCheck = await pool.query(
+      'SELECT id, status FROM public.bookings WHERE id = $1 AND user_id = $2',
+      [bookingId, userId]
+    );
+    if (bookingCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    // Mark session as completed
+    await pool.query(
+      `UPDATE public.bookings SET status = 'completed', checkout_time = NOW(), updated_at = NOW() WHERE id = $1`,
+      [bookingId]
+    );
+
+    console.log(`✅ Session ended early for booking #${bookingId} by user ${userId}`);
+    res.json({ success: true, message: 'Session ended successfully' });
+  } catch (err) {
+    console.error('End session error:', err.message);
+    res.status(500).json({ error: 'Failed to end session' });
+  }
+});
