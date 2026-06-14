@@ -474,7 +474,9 @@ router.post('/feedback', async (req, res) => {
       return res.status(401).json({ error: 'Not authenticated', message: 'Please log in to submit feedback' });
     }
 
-    const { bookingId, type, detail, rating } = req.body;
+    const { bookingId, type, rating } = req.body;
+    // S5-L04 FIX: Truncate feedback detail to 500 characters max
+    const detail = typeof req.body.detail === 'string' ? req.body.detail.slice(0, 500) : req.body.detail;
     if (!bookingId || !type) return res.status(400).json({ error: 'bookingId and type required' });
     // S5-H11 FIX: Validate rating if provided
     if (rating !== undefined && (typeof rating !== 'number' || rating < 1 || rating > 5)) {

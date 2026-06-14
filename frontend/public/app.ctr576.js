@@ -7388,11 +7388,12 @@ function BookingSuccessPage(){
       <div class="text-center mb-6 fade-in">
         <div class="relative inline-block">
           <div class="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-green-500/30" style="animation:scaleIn .5s cubic-bezier(.17,.67,.29,1.33)">
-            <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+            <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" role="img" aria-label="Booking confirmed checkmark"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
           </div>
         </div>
         <h1 class="font-brand text-3xl font-bold text-white mb-1">Booking Confirmed! 🎉</h1>
         <p class="text-green-400 font-medium">${b.paymentMethod==='cash'?'✅ Reserved · Show QR & pay at gym':'✅ Payment received · QR code ready'}</p>
+        <p class="text-slate-400 text-xs mt-1">📧 Confirmation email sent — check spam if you don't see it</p>
         <!-- Fix #113: Feel-good motivational message after booking -->
         <p class="text-white font-semibold text-sm mt-3" style="animation:fadeInUp .6s ease-out">${['💪 Your future self will thank you!','🏆 Champions train no matter what — you\'re one of them!','🔥 You just invested in the best version of yourself!','⚡ One workout closer to your goals!','🌟 The hardest part is showing up — you just did that!'][Math.floor(Math.abs((b.gymName||'').charCodeAt(0))%5)]}</p>
         <div id="sg-scroll-hint" style="margin-top:12px;text-align:center;animation:sgBounce 2s infinite;transition:opacity .3s"><span style="color:rgba(255,255,255,.3);font-size:24px">\u2304</span><p style="color:rgba(255,255,255,.3);font-size:10px;margin:0">Scroll for QR code & details</p></div>
@@ -7420,7 +7421,7 @@ function BookingSuccessPage(){
         <div class="grid grid-cols-3 divide-x divide-slate-700 p-4">
           <div class="text-center px-2">
             <p class="text-slate-500 text-xs mb-1">📅 Date</p>
-            <p class="text-white font-semibold text-sm">${b.date}</p>
+            <p class="text-white font-semibold text-sm">${(()=>{try{var parts=(b.date||'').split('/');if(parts.length===3)return new Date(parts[2],parts[1]-1,parts[0]).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});return b.date}catch(e){return b.date}})()}</p>
           </div>
           <div class="text-center px-2">
             <p class="text-slate-500 text-xs mb-1">🕐 Time</p>
@@ -7557,10 +7558,34 @@ function BookingSuccessPage(){
       </div>
 
     </div>
+
+      <!-- S5-L03 FIX: View My Bookings link -->
+      <button onclick="navigate('/my-bookings')" class="mt-3 w-full bg-slate-800/50 hover:bg-slate-700 text-slate-300 font-medium py-3 rounded-xl transition border border-slate-700/50 text-sm">
+        📋 View My Bookings
+      </button>
+
+      <!-- S5-L12 FIX: Push notification opt-in banner -->
+      <div id="sg-notif-banner" style="display:none;margin-top:16px;background:rgba(255,109,0,.08);border:1px solid rgba(255,109,0,.2);border-radius:16px;padding:16px;text-align:center">
+        <p style="color:#fff;font-weight:700;font-size:14px;margin:0 0 4px">🔔 Get session reminders?</p>
+        <p style="color:rgba(255,255,255,.5);font-size:12px;margin:0 0 12px">We'll remind you before your booking starts</p>
+        <div style="display:flex;gap:8px">
+          <button onclick="Notification.requestPermission().then(function(p){var bn=document.getElementById('sg-notif-banner');if(bn)bn.innerHTML=p==='granted'?'<p style=color:#4ade80;font-weight:600>Notifications enabled!</p>':'<p style=color:rgba(255,255,255,.4);font-size:12px>You can enable later in settings</p>'})" style="flex:1;background:#FF6D00;color:#fff;border:none;padding:10px;border-radius:10px;font-weight:600;cursor:pointer;font-size:13px">Enable</button>
+          <button onclick="document.getElementById('sg-notif-banner').style.display='none'" style="flex:1;background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.1);padding:10px;border-radius:10px;font-weight:600;cursor:pointer;font-size:13px">Not now</button>
+        </div>
+      </div>
+
+    </div>
   </div>
   <style>@keyframes scaleIn{0%{transform:scale(0)}60%{transform:scale(1.2)}100%{transform:scale(1)}}@keyframes sgBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}</style>`;
   // S5-M11 FIX: Scroll indicator on long page
   setTimeout(function(){var sc=document.getElementById('sg-scroll-hint');if(sc){window.addEventListener('scroll',function(){sc.style.opacity=window.scrollY>50?'0':'1'},{passive:true})}},200);
+  // S5-L12 FIX: Push notification opt-in after booking (ideal moment)
+  setTimeout(function(){
+    if('Notification' in window && Notification.permission==='default'){
+      var nb=document.getElementById('sg-notif-banner');
+      if(nb)nb.style.display='block';
+    }
+  },3000);
 }
 
 // ─── Page: My Bookings ───
@@ -7745,6 +7770,8 @@ function MyBookingsPage(){
   if(!state.user){
     return`<div class="pt-8 min-h-full px-4">
       <div class="max-w-md mx-auto py-12 text-center">
+        <!-- S5-L09 FIX: Back navigation -->
+        <div onclick="history.back()" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,.5);font-size:14px;font-weight:600;margin-bottom:16px"><span>←</span> Back</div>
         <div class="text-6xl mb-6">📋</div>
         <h1 class="font-brand text-3xl font-bold text-white mb-3">My Bookings</h1>
         <p class="text-slate-400 mb-8">Log in to view your bookings, QR codes, and booking history.</p>
@@ -7772,6 +7799,7 @@ function MyBookingsPage(){
   return`
   <div class="pt-8 min-h-full px-4">
     <div class="max-w-2xl mx-auto py-12">
+      <div onclick="history.back()" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,.5);font-size:14px;font-weight:600;margin-bottom:12px"><span>←</span> Back</div>
       <h1 class="font-brand text-3xl font-bold text-white mb-6 text-center">📋 My Bookings</h1>
       ${bookings.length===0 ? `
         <div class="text-center py-12">
@@ -8324,7 +8352,7 @@ window.sgFeedback=async function(type,bookingId){
   // Optimistic UI update
   el.innerHTML=type==='positive'
     ?'<div style="padding:16px;text-align:center"><span style="font-size:36px">🎉</span><p style="color:#4ade80;font-weight:700;margin-top:8px">Thanks! Glad you enjoyed it.</p></div>'
-    :'<div style="padding:16px;text-align:center"><span style="font-size:36px">💬</span><p style="color:#FF6D00;font-weight:700;margin-top:8px">Thanks for the feedback — we\'ll improve!</p><textarea id="sg-fb-detail" placeholder="What could be better?" style="width:100%;margin-top:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px;color:#fff;font-size:13px;resize:none;height:80px;outline:none"></textarea><button onclick="sgSendFeedbackDetail('+bookingId+')" style="margin-top:8px;background:#FF6D00;color:#fff;border:none;padding:8px 20px;border-radius:8px;font-weight:600;cursor:pointer;font-size:13px">Send</button></div>';
+    :'<div style="padding:16px;text-align:center"><span style="font-size:36px">💬</span><p style="color:#FF6D00;font-weight:700;margin-top:8px">Thanks for the feedback — we\'ll improve!</p><textarea id="sg-fb-detail" placeholder="What could be better?" maxlength="500" style="width:100%;margin-top:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px;color:#fff;font-size:13px;resize:none;height:80px;outline:none"></textarea><button onclick="sgSendFeedbackDetail('+bookingId+')" style="margin-top:8px;background:#FF6D00;color:#fff;border:none;padding:8px 20px;border-radius:8px;font-weight:600;cursor:pointer;font-size:13px">Send</button></div>';
   try{
     var fbRes=await fetch('/api/bookings/feedback',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({bookingId,type})});
     if(!fbRes.ok)throw new Error('API error');
@@ -8707,20 +8735,20 @@ function BottomTabBar(){
   const reelsIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="4"/><line x1="2" y1="8" x2="22" y2="8"/><line x1="10" y1="2" x2="10" y2="8"/><polygon points="10 13 16 16 10 19" fill="${t==='reels'?'#FF6D00':'rgba(255,255,255,.35)'}" stroke="none"/></svg>`;
   const bookIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/><circle cx="11" cy="11" r="2.5" fill="${t==='book'?'#FF6D00':'rgba(255,255,255,.3)'}" stroke="none"/></svg>`;
   const moreIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
-  return`<div class="sg-tab-bar">
-    <div class="sg-tab-item ${t==='reels'?'active':''}" onclick="switchTab('reels')">
+  return`<nav class="sg-tab-bar" role="tablist" aria-label="Main navigation">
+    <button class="sg-tab-item ${t==='reels'?'active':''}" role="tab" aria-selected="${t==='reels'}" aria-label="Reels" onclick="switchTab('reels')">
       ${reelsIcon}
       <span class="sg-tab-label">Reels</span>
-    </div>
-    <div class="sg-tab-item ${t==='book'?'active':''}" onclick="switchTab('book')">
+    </button>
+    <button class="sg-tab-item ${t==='book'?'active':''}" role="tab" aria-selected="${t==='book'}" aria-label="Book a gym" onclick="switchTab('book')">
       ${bookIcon}
       <span class="sg-tab-label">Book</span>
-    </div>
-    <div class="sg-tab-item ${t==='more'?'active':''}" onclick="switchTab('more')">
+    </button>
+    <button class="sg-tab-item ${t==='more'?'active':''}" role="tab" aria-selected="${t==='more'}" aria-label="Profile and settings" onclick="switchTab('more')">
       ${moreIcon}
       <span class="sg-tab-label">Profile</span>
-    </div>
-  </div>`;
+    </button>
+  </nav>`;
 }
 
 // ═══ STAFF QR SCANNER PAGE ═══
@@ -10551,6 +10579,7 @@ window._closeLocationPopup=function(){
 
 // ─── 1. CONFETTI SYSTEM (Robinhood-style celebration) ───
 window.sgConfetti=function(opts={}){
+  if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
   const duration=opts.duration||3000;
   const colors=opts.colors||['#FF6D00','#FF6D00','#fbbf24','#34d399','#60a5fa','#a78bfa','#f472b6','#fff'];
   const canvas=document.createElement('canvas');
@@ -10585,7 +10614,7 @@ window.sgConfetti=function(opts={}){
   }
   animate();
   // Haptic feedback
-  if(navigator.vibrate)navigator.vibrate([100,50,100]);
+  if(navigator.vibrate)navigator.vibrate([100,50,100]);else{document.body.style.transition='transform 50ms';document.body.style.transform='translateX(2px)';setTimeout(function(){document.body.style.transform='';},100);}
 };
 
 // ─── 2. POST-WORKOUT SHARE CARD ───
@@ -10593,6 +10622,7 @@ window.sgShowWorkoutCard=function(data){
   const card=document.createElement('div');
   card.id='sg-workout-card';
   card.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:center;animation:fadeIn .3s ease';
+  data.streak=data.streak||0;data.totalWorkouts=data.totalWorkouts||0;data.newBadges=data.newBadges||[];data.duration=data.duration||0;
   const streakEmoji=data.streak>=30?'👑':data.streak>=14?'🚀':data.streak>=7?'⚔️':data.streak>=3?'🔥':'💪';
   const badgeHtml=(data.newBadges||[]).map(b=>`<div style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,109,0,.15);border:1px solid rgba(255,109,0,.3);border-radius:20px;padding:6px 12px;font-size:13px"><span>${b.emoji}</span><span style="color:#FF6D00;font-weight:600">${b.name}</span></div>`).join(' ');
   const bonusHtml=data.bonusReward?`<div style="margin-top:12px;background:linear-gradient(135deg,rgba(52,211,153,.15),rgba(52,211,153,.05));border:1px solid rgba(52,211,153,.3);border-radius:12px;padding:12px;text-align:center"><p style="color:#34d399;font-size:14px;font-weight:700;margin:0">🎰 Bonus Reward! +${data.bonusReward.display}</p><p style="color:rgba(255,255,255,.5);font-size:11px;margin:4px 0 0">Added to your ScanGym Wallet</p></div>`:'';
@@ -11389,7 +11419,7 @@ window.sgSpinToWin=function(){
           slot.textContent=i<chars.length?chars[i]:'🎉';
           slot.style.borderColor='#22c55e';
           slot.style.background='rgba(34,197,94,.1)';
-          if(typeof navigator.vibrate==='function')navigator.vibrate(50);
+          if(typeof navigator.vibrate==='function')navigator.vibrate(50);else{document.body.style.transition='transform 30ms';document.body.style.transform='translateX(1px)';setTimeout(function(){document.body.style.transform='';},60);}
           resolved++;
           if(resolved===3){
             setTimeout(()=>{
