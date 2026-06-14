@@ -189,7 +189,7 @@ function askGymQuestion(question, gymId) {
     // Add escalation option
     history.innerHTML += `
       <div class="flex justify-start ml-8">
-        <button onclick="this.innerHTML='✅ We\\'ll notify the gym. Expect a reply within 30 minutes!';this.classList.add('text-emerald-400');this.classList.remove('text-slate-500','hover:text-brand')" class="text-xs text-slate-500 hover:text-brand transition cursor-pointer mt-1">
+        <button onclick="this.innerHTML='✅ We\'ll notify the gym. Expect a reply within 30 minutes!';this.classList.add('text-emerald-400');this.classList.remove('text-slate-500','hover:text-brand')" class="text-xs text-slate-500 hover:text-brand transition cursor-pointer mt-1">
           Not helpful? → Text the gym owner directly
         </button>
       </div>`;
@@ -892,7 +892,7 @@ function GymCard(gym){
       <button class="carousel-prev absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 bg-white/80 rounded-full text-black text-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition z-10">‹</button>
       <button class="carousel-next absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 bg-white/80 rounded-full text-black text-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition z-10">›</button>
       <div class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 z-10">${allPhotos.map((p,i)=>`<span class="carousel-dot w-2 h-2 rounded-full ${i===0?'bg-white':'bg-white/40'}"></span>`).join('')}</div>
-    </div>`:hasPhoto?`<img src="${photo}" alt="${gym.name}" class="w-full h-full object-cover" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'w-full h-full flex items-center justify-center text-4xl\\'>🏋️</div>'">`
+    </div>`:hasPhoto?`<img src="${photo}" alt="${gym.name}" class="w-full h-full object-cover" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\'w-full h-full flex items-center justify-center text-4xl\'>🏋️</div>'">`
     :`<div class="w-full h-full flex items-center justify-center text-4xl">🏋️</div>`;
   return`
   <div class="gym-card group bg-card rounded-2xl overflow-hidden border border-slate-700 hover:border-brand/50 cursor-pointer transition-all hover:shadow-lg hover:shadow-brand/10 hover:-translate-y-1" data-gym-id="${gymIdentifier}" onclick="openGym('${gymIdentifier}',${isLive})">
@@ -1711,7 +1711,7 @@ function GymProfilePage(){
     <div class="gym-carousel-wrap${photos.length>1?' has-next':''}" id="gym-carousel-wrap">
       <div class="gym-carousel-track" id="gym-carousel-track">
         ${photos.length>0
-          ?photos.slice(0,4).map((p,i)=>`<div class="gym-carousel-slide"><img src="${p.url||p.thumbnail||p}" alt="${gym.name} photo ${i+1}" loading="lazy" decoding="async" onerror="this.parentElement.innerHTML='<div class=\\'no-photo\\'>🏋️</div>'"></div>`).join('')
+          ?photos.slice(0,4).map((p,i)=>`<div class="gym-carousel-slide"><img src="${p.url||p.thumbnail||p}" alt="${gym.name} photo ${i+1}" loading="lazy" decoding="async" onerror="this.parentElement.innerHTML='<div class=\'no-photo\'>🏋️</div>'"></div>`).join('')
           :`<div class="gym-carousel-slide"><div class="no-photo">🏋️</div></div>`
         }
       </div>
@@ -4791,7 +4791,7 @@ function CreatorsPage(){
           ].map(p=>`
             <div class="group bg-card rounded-2xl overflow-hidden border border-slate-700/50 hover:border-brand/30 transition-all duration-300 hover:-translate-y-1">
               <div class="h-40 bg-slate-800 overflow-hidden">
-                <img src="${A}/thumbs/creator_assets/${p.img}" alt="${p.title}" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" width="400" height="225" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'flex items-center justify-center h-full text-5xl\\'>${p.icon}</div>'">
+                <img src="${A}/thumbs/creator_assets/${p.img}" alt="${p.title}" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" width="400" height="225" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\'flex items-center justify-center h-full text-5xl\'>${p.icon}</div>'">
               </div>
               <div class="p-5">
                 <div class="flex items-center gap-2 mb-2"><span class="text-xl">${p.icon}</span><h3 class="text-white font-bold text-lg">${p.title}</h3></div>
@@ -4844,7 +4844,7 @@ function CreatorsPage(){
               <span id="calc-val" class="bg-slate-800 text-white text-3xl font-bold px-6 py-3 rounded-xl min-w-[100px] text-center">10</span>
               <span class="text-slate-500">bookings</span>
             </div>
-            <input type="range" id="calc-slider" min="1" max="200" value="10" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-brand" oninput="document.getElementById('calc-val').textContent=this.value;const v=parseInt(this.value),hi=v*15;document.getElementById('calc-earn').innerHTML='Up to <span class=\\'text-brand text-4xl md:text-5xl font-bold\\'>£'+hi.toLocaleString()+'</span>';document.getElementById('calc-yr').textContent='£'+(v*10*12).toLocaleString()+' — £'+(hi*12).toLocaleString()+' per year';document.getElementById('calc-tier').textContent=v>=500?'👑 Legend':v>=100?'⭐ Elite Creator':v>=25?'🔥 Ambassador':'🌱 Explorer';">
+            <input type="range" id="calc-slider" min="1" max="200" value="10" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-brand" oninput="document.getElementById('calc-val').textContent=this.value;const v=parseInt(this.value),hi=v*15;document.getElementById('calc-earn').innerHTML='Up to <span class=\'text-brand text-4xl md:text-5xl font-bold\'>£'+hi.toLocaleString()+'</span>';document.getElementById('calc-yr').textContent='£'+(v*10*12).toLocaleString()+' — £'+(hi*12).toLocaleString()+' per year';document.getElementById('calc-tier').textContent=v>=500?'👑 Legend':v>=100?'⭐ Elite Creator':v>=25?'🔥 Ambassador':'🌱 Explorer';">
             <div class="flex justify-between text-slate-600 text-xs mt-2"><span>1</span><span>50</span><span>100</span><span>200</span></div>
             <div class="mt-6 pt-6 border-t border-slate-700">
               <p class="text-slate-500 text-xs mb-1">Estimated monthly earnings</p>
@@ -5002,7 +5002,7 @@ function CreatorsPage(){
             return`
             <div class="fs-asset group relative bg-card rounded-xl overflow-hidden border border-slate-700/30 hover:border-brand/30 transition" data-t="${a.type}">
               <div class="aspect-square bg-slate-800 overflow-hidden relative">
-                <img src="${ctrThumb(a.cat,a.file)}" alt="${a.name}" class="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300" width="250" height="250" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'flex items-center justify-center h-full text-3xl\\'>${a.type==='video'?'🎬':'📸'}</div>'">${a.type==='video'?`<div class="absolute inset-0 flex items-center justify-center pointer-events-none"><div class="w-12 h-12 bg-brand/80 rounded-full flex items-center justify-center group-hover:bg-brand transition shadow-lg"><span class="text-white text-lg ml-0.5">▶</span></div></div>`:``}
+                <img src="${ctrThumb(a.cat,a.file)}" alt="${a.name}" class="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300" width="250" height="250" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\'flex items-center justify-center h-full text-3xl\'>${a.type==='video'?'🎬':'📸'}</div>'">${a.type==='video'?`<div class="absolute inset-0 flex items-center justify-center pointer-events-none"><div class="w-12 h-12 bg-brand/80 rounded-full flex items-center justify-center group-hover:bg-brand transition shadow-lg"><span class="text-white text-lg ml-0.5">▶</span></div></div>`:``}
                 <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition">
                   <a href="${a.did?`https://drive.google.com/uc?export=download&id=${a.did}`:`${A}/${folder}/${a.file}`}" download="${a.file}" onclick="event.stopPropagation()" class="bg-brand hover:bg-green-500 text-white text-[10px] px-2.5 py-1.5 rounded-full font-bold shadow-lg flex items-center gap-1 no-underline" title="Download ${a.name}">⬇ Download</a>
                 </div>
