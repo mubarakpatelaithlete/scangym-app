@@ -18,6 +18,8 @@
  */
 const express = require('express');
 const router = express.Router();
+// S5-H08 FIX: Init Stripe once at module load, not per-request
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const pool = require('../middleware/db');
 const crypto = require('crypto');
 const pricing = require('../lib/pricing-engine');
@@ -402,7 +404,7 @@ router.post('/cancel', async (req, res) => {
     let refunded = false;
     if (booking.stripe_payment_intent_id) {
       try {
-        const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+        // S5-H08: stripe now initialized at top of file
         await stripe.refunds.create({ payment_intent: booking.stripe_payment_intent_id });
         refunded = true;
         console.log(`✅ Refund issued for booking #${bookingId} (${booking.stripe_payment_intent_id})`);
