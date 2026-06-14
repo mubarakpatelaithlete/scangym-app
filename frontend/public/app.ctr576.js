@@ -7395,6 +7395,7 @@ function BookingSuccessPage(){
         <p class="text-green-400 font-medium">${b.paymentMethod==='cash'?'✅ Reserved · Show QR & pay at gym':'✅ Payment received · QR code ready'}</p>
         <!-- Fix #113: Feel-good motivational message after booking -->
         <p class="text-white font-semibold text-sm mt-3" style="animation:fadeInUp .6s ease-out">${['💪 Your future self will thank you!','🏆 Champions train no matter what — you\'re one of them!','🔥 You just invested in the best version of yourself!','⚡ One workout closer to your goals!','🌟 The hardest part is showing up — you just did that!'][Math.floor(Math.abs((b.gymName||'').charCodeAt(0))%5)]}</p>
+        <div id="sg-scroll-hint" style="margin-top:12px;text-align:center;animation:sgBounce 2s infinite;transition:opacity .3s"><span style="color:rgba(255,255,255,.3);font-size:24px">\u2304</span><p style="color:rgba(255,255,255,.3);font-size:10px;margin:0">Scroll for QR code & details</p></div>
         <p class="text-slate-500 text-xs mt-2">🌍 Your ScanGym profile is now accepted at 1.2M+ gyms worldwide</p>
       </div>
 
@@ -7427,7 +7428,7 @@ function BookingSuccessPage(){
           </div>
           <div class="text-center px-2">
             <p class="text-slate-500 text-xs mb-1">🎫 Booking</p>
-            <p class="text-brand font-semibold text-xs">${b.bookingCode||qr.token}</p>
+            <p class="text-brand font-bold text-base tracking-wide" style="font-size:16px;letter-spacing:2px;cursor:pointer" onclick="navigator.clipboard.writeText('${b.bookingCode||qr.token}');sgToast('Booking code copied!','success',1500)">${b.bookingCode||qr.token}</p>
           </div>
         </div>
       </div>
@@ -7440,7 +7441,8 @@ function BookingSuccessPage(){
           <img src="${qr.dataUrl||qr.url||''}" alt="QR Code" class="w-56 h-56 sm:w-64 sm:h-64" onerror="this.style.display='none';this.nextElementSibling&&(this.nextElementSibling.style.display='block')">
         </div>
         <p class="text-slate-500 text-xs mt-3">Token: ${qr.token}</p>
-        <button onclick="const gymUrl='https://scangym.com/gym/${b.gymId}';const shareText='I just booked a session at ${b.gymName} on ScanGym! 🏋️ Check it out:';if(navigator.share){navigator.share({title:'ScanGym — ${b.gymName}',text:shareText,url:gymUrl}).catch(()=>{})}else{navigator.clipboard.writeText(shareText+' '+gymUrl).then(()=>{this.textContent='✅ Link Copied!';setTimeout(()=>{this.textContent='📤 Share Booking'},2000)}).catch(()=>{})}" class="mt-3 text-brand text-sm font-medium hover:text-orange-400 cursor-pointer transition">📤 Share Booking</button>
+        <button onclick="sgSaveQR()" class="mt-2 text-slate-400 text-sm hover:text-white cursor-pointer transition">💾 Save QR to Photos</button>
+        <button onclick="const gymUrl='https://scangym.com/gym/${b.gymId}';const shareText='I just booked a session at ${b.gymName} on ScanGym! 🏋️ Check it out:';if(navigator.share){navigator.share({title:'ScanGym — ${b.gymName}',text:shareText,url:gymUrl}).catch(()=>{})}else{navigator.clipboard.writeText(shareText+' '+gymUrl).then(()=>{this.textContent='✅ Link Copied!';setTimeout(()=>{this.textContent='📤 Share Booking'},2000)}).catch(function(){sgToast('Could not copy link','error',2000)})}" class="mt-3 text-brand text-sm font-medium hover:text-orange-400 cursor-pointer transition">📤 Share Booking</button>
       </div>
 
       <!-- Tier 2: Access Control Credentials (Kisi QR unlock / Seam PIN / Mobile Key) -->
@@ -7511,6 +7513,9 @@ function BookingSuccessPage(){
         <a href="${calUrl}" target="_blank" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-medium py-3 rounded-xl transition flex items-center justify-center gap-2 cursor-pointer border border-slate-700">
           📅 Add to Google Calendar
         </a>
+        <button onclick="sgDownloadICS()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-medium py-3 rounded-xl transition flex items-center justify-center gap-2 cursor-pointer border border-slate-700">
+          📅 Add to Apple / Outlook Calendar
+        </button>
         <!-- Fix #115: Google Maps directions button after booking -->
         <a href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(b.gymName+(b.gymAddress?' '+b.gymAddress:''))}" target="_blank" class="w-full bg-blue-900/40 hover:bg-blue-800/50 text-blue-300 font-medium py-3 rounded-xl transition flex items-center justify-center gap-2 cursor-pointer border border-blue-500/20">
           🗺️ Get Directions to ${b.gymName}
@@ -7553,33 +7558,50 @@ function BookingSuccessPage(){
 
     </div>
   </div>
-  <style>@keyframes scaleIn{0%{transform:scale(0)}60%{transform:scale(1.2)}100%{transform:scale(1)}}</style>`;
+  <style>@keyframes scaleIn{0%{transform:scale(0)}60%{transform:scale(1.2)}100%{transform:scale(1)}}@keyframes sgBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}</style>`;
+  // S5-M11 FIX: Scroll indicator on long page
+  setTimeout(function(){var sc=document.getElementById('sg-scroll-hint');if(sc){window.addEventListener('scroll',function(){sc.style.opacity=window.scrollY>50?'0':'1'},{passive:true})}},200);
 }
 
 // ─── Page: My Bookings ───
 // ─── Cancel Booking (with Stripe refund) ───
-window.cancelBooking=async function(bookingId){
+// S5-M02/M03/M04 FIX: Custom modal instead of window.confirm/prompt + loading state
+window.cancelBooking=function(bookingId){
   const _bk = state.lastBooking || {};
-  const cancelMsg = (_bk.paymentMethod||_bk.booking_type||'').includes('cash')
-    ? 'Cancel this booking? Since you selected cash payment, no card refund is needed.'
-    : 'Cancel this booking? You\'ll receive a full refund to your card within 3-5 business days.';
-  if(!confirm(cancelMsg))return;
-  const email=document.getElementById('sheet-email')?.value||state.user?.email||localStorage.getItem('sg_last_email')||prompt('Enter the email you used to book:');
-  if(!email)return;
-  try{
-    const r=await fetch('/api/bookings/cancel',{
-      method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
-      body:JSON.stringify({bookingId,email})
-    }).then(r=>r.json());
-    if(r.success){
-      sgToast(r.message,'success',6000);
-      setTimeout(()=>navigate('/explore'),2000);
-    }else{
-      sgToast(r.error||'Cancellation failed');
-    }
-  }catch(e){
-    sgToast('Failed to cancel. Please email hello@scangym.com');
-  }
+  const isCash = (_bk.paymentMethod||_bk.booking_type||'').includes('cash');
+  const cancelMsg = isCash
+    ? 'Since you selected cash, no card refund is needed.'
+    : 'You\'ll receive a full refund to your card within 3-5 business days.';
+  const knownEmail = document.getElementById('sheet-email')?.value||state.user?.email||localStorage.getItem('sg_last_email')||'';
+  const needEmail = !knownEmail;
+  const modal = document.createElement('div');
+  modal.id='sg-cancel-modal';
+  modal.style.cssText='position:fixed;inset:0;z-index:99998;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.7);padding:16px';
+  modal.innerHTML='<div style="background:#1e293b;border-radius:20px;padding:24px;max-width:380px;width:100%;border:1px solid rgba(255,255,255,.1);box-shadow:0 20px 60px rgba(0,0,0,.5)">'
+    +'<p style="color:#fff;font-weight:700;font-size:16px;margin:0 0 8px">Cancel this booking?</p>'
+    +'<p style="color:#94a3b8;font-size:13px;margin:0 0 16px">'+cancelMsg+'</p>'
+    +(needEmail?'<input id="sg-cancel-email" type="email" placeholder="Email you used to book" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:10px 12px;color:#fff;font-size:14px;margin-bottom:12px;outline:none">':'')
+    +'<div style="display:flex;gap:10px">'
+    +'<button id="sg-cancel-no" style="flex:1;background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.1);padding:12px;border-radius:12px;font-weight:600;cursor:pointer;font-size:14px">Keep Booking</button>'
+    +'<button id="sg-cancel-yes" style="flex:1;background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.25);padding:12px;border-radius:12px;font-weight:600;cursor:pointer;font-size:14px">Cancel Booking</button>'
+    +'</div></div>';
+  document.body.appendChild(modal);
+  modal.querySelector('#sg-cancel-no').onclick=function(){modal.remove()};
+  modal.onclick=function(e){if(e.target===modal)modal.remove()};
+  modal.querySelector('#sg-cancel-yes').onclick=async function(){
+    var email=needEmail?(document.getElementById('sg-cancel-email')?.value||'').trim():knownEmail;
+    if(!email){sgToast('Please enter your email');return;}
+    var btn=this;btn.textContent='Cancelling...';btn.style.opacity='.6';btn.disabled=true;
+    try{
+      var r=await fetch('/api/bookings/cancel',{
+        method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
+        body:JSON.stringify({bookingId:bookingId,email:email})
+      }).then(function(r){return r.json()});
+      modal.remove();
+      if(r.success){sgToast(r.message,'success',6000);setTimeout(function(){navigate('/explore')},2000);}
+      else{sgToast(r.error||'Cancellation failed');}
+    }catch(e){modal.remove();sgToast('Failed to cancel. Please email hello@scangym.com');}
+  };
 };
 
 // ─── Page: QR Scan Verify (gym staff scans customer QR) ───
@@ -8296,6 +8318,7 @@ window.autoLoadGyms=async function(){
 
 // ═══ PHASE 4: FEEDBACK HANDLER ═══
 window.sgFeedback=async function(type,bookingId){
+  window._sgLastFeedbackType=type;
   const el=document.getElementById('sg-post-feedback');
   if(!el) return;
   // Optimistic UI update
@@ -8303,15 +8326,16 @@ window.sgFeedback=async function(type,bookingId){
     ?'<div style="padding:16px;text-align:center"><span style="font-size:36px">🎉</span><p style="color:#4ade80;font-weight:700;margin-top:8px">Thanks! Glad you enjoyed it.</p></div>'
     :'<div style="padding:16px;text-align:center"><span style="font-size:36px">💬</span><p style="color:#FF6D00;font-weight:700;margin-top:8px">Thanks for the feedback — we\'ll improve!</p><textarea id="sg-fb-detail" placeholder="What could be better?" style="width:100%;margin-top:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px;color:#fff;font-size:13px;resize:none;height:80px;outline:none"></textarea><button onclick="sgSendFeedbackDetail('+bookingId+')" style="margin-top:8px;background:#FF6D00;color:#fff;border:none;padding:8px 20px;border-radius:8px;font-weight:600;cursor:pointer;font-size:13px">Send</button></div>';
   try{
-    await fetch('/api/bookings/feedback',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({bookingId,type})}).catch(()=>{});
-  }catch(e){}
+    var fbRes=await fetch('/api/bookings/feedback',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({bookingId,type})});
+    if(!fbRes.ok)throw new Error('API error');
+  }catch(e){sgToast('Could not save feedback. Try again later.','error',3000);}
 };
 window.sgSendFeedbackDetail=async function(bookingId){
   const ta=document.getElementById('sg-fb-detail');
   if(!ta||!ta.value.trim()) return;
   const el=document.getElementById('sg-post-feedback');
   try{
-    await fetch('/api/bookings/feedback',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({bookingId,type:'negative',detail:ta.value.trim()})}).catch(()=>{});
+    var fdr=await fetch('/api/bookings/feedback',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({bookingId,type:window._sgLastFeedbackType||'negative',detail:ta.value.trim()})});if(!fdr.ok)throw new Error('fail');
   }catch(e){}
   if(el) el.innerHTML='<div style="padding:16px;text-align:center"><span style="font-size:36px">✅</span><p style="color:#4ade80;font-weight:700;margin-top:8px">Feedback sent — thank you!</p></div>';
 };
@@ -8328,6 +8352,26 @@ window.sgEndSession=async function(){
   try{localStorage.removeItem('sg_last_booking');localStorage.removeItem('sg_last_qr');}catch(e){}
   navigate('/explore');
   sgToast('Session ended! Thanks for training','success',3000);
+};
+
+// S5-M01 FIX: .ics file download for Apple/Outlook calendars
+window.sgDownloadICS=function(){
+  var b=state.lastBooking;if(!b)return;
+  var qr=state.lastQR||{};
+  var d=new Date(b.bookingDate||b.date||Date.now());
+  var pad=function(n){return n<10?'0'+n:n};
+  var fmt=function(dt){return dt.getUTCFullYear()+''+pad(dt.getUTCMonth()+1)+''+pad(dt.getUTCDate())+'T'+pad(dt.getUTCHours())+''+pad(dt.getUTCMinutes())+'00Z'};
+  var end=new Date(d.getTime()+24*60*60*1000);
+  var ics='BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//ScanGym//EN\r\nBEGIN:VEVENT\r\nDTSTART:'+fmt(d)+'\r\nDTEND:'+fmt(end)+'\r\nSUMMARY:ScanGym Session - '+(b.gymName||'Gym')+'\r\nDESCRIPTION:Show your QR at reception. Booking: '+(b.bookingCode||qr.token||'')+'\r\nLOCATION:'+(b.gymName||'')+'\r\nEND:VEVENT\r\nEND:VCALENDAR';
+  var blob=new Blob([ics],{type:'text/calendar;charset=utf-8'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='scangym-session.ics';a.click();URL.revokeObjectURL(a.href);
+};
+
+// S5-M06 FIX: Save QR code image to phone gallery
+window.sgSaveQR=function(){
+  var qr=state.lastQR||{};var src=qr.dataUrl||qr.url||'';
+  if(!src){sgToast('No QR code available');return;}
+  var a=document.createElement('a');a.href=src;a.download='scangym-qr.png';a.click();
 };
 
 window.sgStarHover=function(n){
@@ -10510,7 +10554,7 @@ window.sgConfetti=function(opts={}){
   const duration=opts.duration||3000;
   const colors=opts.colors||['#FF6D00','#FF6D00','#fbbf24','#34d399','#60a5fa','#a78bfa','#f472b6','#fff'];
   const canvas=document.createElement('canvas');
-  canvas.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:99999';
+  canvas.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:50000';
   document.body.appendChild(canvas);
   const ctx=canvas.getContext('2d');
   canvas.width=window.innerWidth;canvas.height=window.innerHeight;
@@ -10581,8 +10625,8 @@ window.sgShareWorkout=function(text){
   // ChatGPT Playbook #5/#7: Share with referral link
   var shareUrl=state.user&&state.user.referralHandle?'https://scangym.com/r/'+state.user.referralHandle:'https://scangym.com';
   var shareText=text||(state.user&&state.user.referralHandle?'🔥 Just finished a workout with @ScanGym! Try it: scangym.com/r/'+state.user.referralHandle+' 💪':'🔥 Just finished a workout with @ScanGym! 💪');
-  if(navigator.share){navigator.share({title:'ScanGym Workout',text:shareText,url:shareUrl}).catch(()=>{});}
-  else{navigator.clipboard.writeText(shareText+' '+shareUrl).then(()=>sgToast('Copied to clipboard!','success'));}
+  if(navigator.share){navigator.share({title:'ScanGym Workout',text:shareText,url:shareUrl}).catch(function(){navigator.clipboard.writeText(shareText+' '+shareUrl).then(function(){sgToast('Copied to clipboard!','success')}).catch(function(){sgToast('Could not share','error',2000)})});}
+  else{navigator.clipboard.writeText(shareText+' '+shareUrl).then(function(){sgToast('Copied to clipboard!','success')}).catch(function(){sgToast('Could not copy link','error',2000)});}
 };
 
 // ─── 3. STREAK WIDGET (shown on home page) ───
@@ -10654,7 +10698,7 @@ window.sgVariableReferral=function(){
 
 // ─── 5b. RECORD WORKOUT & SHOW CARD (called on QR exit scan) ───
 window.sgRecordAndShare=function(){
-  fetch('/api/streaks/record-workout',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({durationMinutes:45})}).then(function(r){return r.json()}).then(function(d){if(d.success&&typeof sgShowWorkoutCard==='function')sgShowWorkoutCard(d);else if(d.alreadyRecorded)sgShowWorkoutCard({streak:d.streak||1,totalWorkouts:0,duration:45,newBadges:[],bonusReward:null,shareText:'Just finished a workout with @ScanGym! 💪'});}).catch(function(e){console.error('Record workout error:',e);});
+  var _sb=state.lastBooking||state.activeSession;var _st=_sb&&(_sb.checkinTime||_sb.created_at)?Math.floor((Date.now()-new Date(_sb.checkinTime||_sb.created_at).getTime())/60000):45;fetch('/api/streaks/record-workout',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({durationMinutes:_st||45})}).then(function(r){return r.json()}).then(function(d){if(d.success&&typeof sgShowWorkoutCard==='function')sgShowWorkoutCard(d);else if(d.alreadyRecorded)sgShowWorkoutCard({streak:d.streak||1,totalWorkouts:0,duration:_st||45,newBadges:[],bonusReward:null,shareText:'Just finished a workout with @ScanGym! 💪'});}).catch(function(e){console.error('Record workout error:',e);});
 };
 
 // v4.0: Flash deals removed — flat £4.49 pricing
