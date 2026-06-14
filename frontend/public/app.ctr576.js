@@ -377,6 +377,7 @@ checkAuth();
 
 // ─── State ───
 let state={user:null,gyms:[],currentGym:null,searchLat:null,searchLng:null,route:'/',bookings:[],wallet:{balance:0},authPhone:'',authStep:'phone',lastBooking:null,lastQR:null,userExplicitSearch:false,activeTab:'reels'};
+try{var _sb=localStorage.getItem('sg_last_booking');var _sq=localStorage.getItem('sg_last_qr');if(_sb){state.lastBooking=JSON.parse(_sb);}if(_sq){state.lastQR=JSON.parse(_sq);}}catch(e){}
 
 // ─── API Client ───
 const api={
@@ -7198,15 +7199,16 @@ function ActiveSessionPage(){
   const pad=n=>String(n).padStart(2,'0');
   const maxHours=24;
   const progress=Math.min((elapsed/(maxHours*3600))*100,100);
-  // Progress stages (like Uber ride states)
-  const stages=[
-    {name:'Checked In',icon:'✅',at:0},
-    {name:'Warming Up',icon:'🔥',at:10},
-    {name:'Training',icon:'💪',at:30},
-    {name:'Cool Down',icon:'🧊',at:80},
-    {name:'Session Complete',icon:'🏆',at:100}
+  // S5-H12 FIX: Time-based stages (realistic gym visit), not arbitrary % of 24h
+  var elapsedMins=Math.floor(elapsed/60);
+  var timeStages=[
+    {name:'Checked In',icon:'\u2705',minAt:0},
+    {name:'Warming Up',icon:'\ud83d\udd25',minAt:5},
+    {name:'Training',icon:'\ud83d\udcaa',minAt:15},
+    {name:'Finishing Up',icon:'\ud83e\uddf3',minAt:90},
+    {name:'Session Complete',icon:'\ud83c\udfc6',minAt:1440}
   ];
-  const currentStage=stages.filter(s=>progress>=s.at).pop()||stages[0];
+  var currentStage=timeStages.filter(function(s){return elapsedMins>=s.minAt}).pop()||timeStages[0];
   return`
   <div style="min-height:100%;background:linear-gradient(180deg,#0a0f14 0%,#0d1117 100%);padding:20px 16px;padding-top:calc(env(safe-area-inset-top,12px) + 12px)">
     <!-- Header -->
@@ -7274,7 +7276,7 @@ function ActiveSessionPage(){
     </div>
 
     <!-- End Session Button -->
-    <button onclick="if(confirm('End your session?')){navigate('/explore');sgToast('Session ended! Thanks for training 💪','success',3000)}" style="width:100%;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#f87171;padding:16px;border-radius:16px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:24px">End Session Early</button>
+    <button onclick="sgEndSession()" style="width:100%;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#f87171;padding:16px;border-radius:16px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:24px">End Session Early</button>
   </div>`;
 }
 // Live timer updater
@@ -7376,7 +7378,7 @@ function BookingSuccessPage(){
   calEndDateObj.setDate(calEndDateObj.getDate()+1);
   const calEndDate=calEndDateObj.toISOString().slice(0,10).replace(/-/g,'');
   const calEnd=calStart; // same time, next day
-  const calUrl='https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent('🏋️ ScanGym Session — '+b.gymName)+'&dates='+calDate+'T'+calStart+'/'+calEndDate+'T'+calEnd+'&details='+encodeURIComponent('QR Code: '+qr.token+'\nShow your QR at the gym entrance. Train for up to 24 hours.\n\nBooking: '+(b.bookingCode||qr.token));
+  const calUrl='https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent('🏋️ ScanGym Session — '+b.gymName)+'&dates='+calDate+'T'+calStart+'/'+calEndDate+'T'+calEnd+'&ctz='+(Intl.DateTimeFormat().resolvedOptions().timeZone||'Europe/London')+'&details='+encodeURIComponent('QR Code: '+qr.token+'\nShow your QR at the gym entrance. Train for up to 24 hours.\n\nBooking: '+(b.bookingCode||qr.token));
 
   return`
   <div class="pt-16 min-h-full px-4 pb-8">
@@ -7527,14 +7529,17 @@ function BookingSuccessPage(){
         <p class="text-slate-500 text-xs">Need help? 📧 hello@scangym.com</p>
       </div>
 
-      <!-- ═══ PHASE 4: Post-booking feedback — Fix #109: Star rating like Uber "rate your driver" ═══ -->
+      <!-- S5-H07 FIX: Don't show rating form immediately — user hasn't visited yet -->
       <div class="mt-6 bg-card rounded-2xl border border-slate-700 p-5 text-center" id="sg-post-feedback">
         <p class="text-white font-bold mb-1">⭐ Rate ${b.gymName}</p>
-        <p class="text-slate-400 text-xs mb-4">How was your experience? (rate after your workout)</p>
+        <p class="text-slate-400 text-xs mb-3">Come back here after your workout to leave a rating</p>
+        <button onclick="document.getElementById('sg-stars-hidden').style.display='block';this.style.display='none'" class="text-brand text-sm font-medium hover:text-orange-400 cursor-pointer transition">Already visited? Rate now →</button>
+        <div id="sg-stars-hidden" style="display:none;margin-top:12px">
         <div style="display:flex;justify-content:center;gap:8px;margin-bottom:12px" id="sg-star-rating">
           ${[1,2,3,4,5].map(s=>'<button onclick="sgStarRate('+s+','+b.id+')" class="sg-star-btn" data-star="'+s+'" style="background:none;border:none;font-size:36px;cursor:pointer;transition:all .15s;filter:grayscale(100%) opacity(.4);padding:4px" onmouseover="sgStarHover('+s+')" onmouseout="sgStarHover(0)">⭐</button>').join('')}
         </div>
         <p class="text-slate-500 text-xs" id="sg-star-label">Tap a star to rate</p>
+        </div>
       </div>
 
       <!-- ═══ PHASE 4: Quick rebook ═══ -->
@@ -8312,6 +8317,19 @@ window.sgSendFeedbackDetail=async function(bookingId){
 };
 
 // ═══ Fix #109: Star Rating (Uber-style "rate your gym") ═══
+// S5-H15 FIX: Actually end the session
+window.sgEndSession=async function(){
+  if(!confirm('End your session early? You can still re-enter until your 24h pass expires.'))return;
+  var b=state.lastBooking||state.activeSession;
+  if(b&&b.id){
+    try{await fetch('/api/bookings/end',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({bookingId:b.id})}).catch(function(){});}catch(e){}
+  }
+  state.lastBooking=null;state.activeSession=null;state.lastQR=null;
+  try{localStorage.removeItem('sg_last_booking');localStorage.removeItem('sg_last_qr');}catch(e){}
+  navigate('/explore');
+  sgToast('Session ended! Thanks for training','success',3000);
+};
+
 window.sgStarHover=function(n){
   var btns=document.querySelectorAll('.sg-star-btn');
   btns.forEach(function(b){
