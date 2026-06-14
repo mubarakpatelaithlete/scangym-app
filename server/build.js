@@ -40,6 +40,9 @@ async function minifyJS() {
   for (const file of jsFiles) {
     // Skip already-minified files and service worker
     if (file.endsWith('.min.js')) continue;
+    // Skip main app bundle — hand-written vanilla JS with complex CSS-in-JS
+    // strings that terser mangles (content:'' escapes, template strings, etc.)
+    if (path.basename(file).startsWith('app.ctr')) continue;
     
     const code = fs.readFileSync(file, 'utf8');
     const originalSize = Buffer.byteLength(code);
