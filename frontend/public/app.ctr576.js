@@ -7829,7 +7829,7 @@ setInterval(function(){
 
 // ─── Fix #150: Free Tools Page — BMI, Calorie Counter, Gym Finder ───
 function ToolsPage(){
-  return \`
+  return `
   <div class="sg-tab-content" style="padding:20px 16px 100px;max-width:520px;margin:0 auto">
     <div style="text-align:center;margin-bottom:24px;padding-top:20px">
       <h1 style="color:#fff;font-size:24px;font-weight:800;margin:0">🛠️ Free Fitness Tools</h1>
