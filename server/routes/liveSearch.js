@@ -451,11 +451,11 @@ router.get('/search', async (req, res) => {
       .filter(p => p.business_status !== 'CLOSED_PERMANENTLY')
       .map(parseSearchResult);
 
-    // C6 fix: Enrich with owner-set DB prices
-    await enrichGymsWithDbPrices(gyms);
-
-    // #59: Amazon-style bucketed booking counts
-    await enrichGymsWithBookingCounts(gyms);
+    // Perf: Run DB enrichment in parallel (prices + booking counts)
+    await Promise.all([
+      enrichGymsWithDbPrices(gyms),
+      enrichGymsWithBookingCounts(gyms)
+    ]);
 
     // Amazon-style ranking: sort by composite score instead of Google's default order
     const userLat = lat ? parseFloat(lat) : null;
@@ -471,7 +471,7 @@ router.get('/search', async (req, res) => {
     };
 
     setCache(cacheKey, result);
-    res.set('Cache-Control', 'public, max-age=300, s-maxage=300, stale-while-revalidate=600');
+    res.set('Cache-Control', 'public, max-age=300, s-maxage=600, stale-while-revalidate=1800');
     res.json(result);
   } catch (err) {
     console.error('Live search error:', err);
@@ -528,11 +528,11 @@ router.get('/nearby', async (req, res) => {
       .filter(p => p.business_status !== 'CLOSED_PERMANENTLY')
       .map(parseSearchResult);
 
-    // C6 fix: Enrich with owner-set DB prices
-    await enrichGymsWithDbPrices(gyms);
-
-    // #59: Amazon-style bucketed booking counts
-    await enrichGymsWithBookingCounts(gyms);
+    // Perf: Run DB enrichment in parallel (prices + booking counts)
+    await Promise.all([
+      enrichGymsWithDbPrices(gyms),
+      enrichGymsWithBookingCounts(gyms)
+    ]);
 
     // Amazon-style ranking: composite score replaces simple distance sort.
     // rankGyms() computes distance + distanceText internally, then sorts by
