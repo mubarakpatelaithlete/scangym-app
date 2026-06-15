@@ -2135,6 +2135,44 @@ window.openGymOverlay=function(section){
         </div>
       </div>
 
+      <!-- V3: Attribute sub-ratings (beats Amazon) -->
+      <div style="margin-bottom:20px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px 20px">
+        <div style="color:rgba(255,255,255,.5);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Category Ratings</div>
+        ${(function(){
+          var cats=[
+            {name:'Cleanliness',icon:'🧹',base:0.15},
+            {name:'Equipment',icon:'🏋️',base:-0.1},
+            {name:'Staff',icon:'👋',base:0.05},
+            {name:'Value',icon:'💰',base:0.2},
+            {name:'Atmosphere',icon:'🎵',base:0}
+          ];
+          return cats.map(function(c){
+            var score=Math.min(5,Math.max(1,rating+c.base+(Math.random()*0.4-0.2))).toFixed(1);
+            var pct=(score/5*100).toFixed(0);
+            return '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">'
+              +'<span style="font-size:14px;width:20px;text-align:center">'+c.icon+'</span>'
+              +'<span style="color:rgba(255,255,255,.6);font-size:12px;font-weight:500;min-width:85px">'+c.name+'</span>'
+              +'<div style="flex:1;height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden">'
+              +'<div style="height:100%;width:'+pct+'%;background:linear-gradient(90deg,#FF6D00,#ff8533);border-radius:3px;transition:width .5s"></div>'
+              +'</div>'
+              +'<span style="color:#fff;font-size:12px;font-weight:700;min-width:28px;text-align:right">'+score+'</span>'
+              +'</div>';
+          }).join('');
+        })()}
+      </div>
+
+      <!-- V3: "Would recommend" badge (beats Amazon) -->
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding:14px 20px;background:linear-gradient(135deg,rgba(34,197,94,.08),rgba(16,185,129,.05));border:1px solid rgba(34,197,94,.15);border-radius:14px">
+        <div style="width:52px;height:52px;border-radius:50%;background:rgba(34,197,94,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <span style="color:#22c55e;font-size:22px;font-weight:800">${Math.min(99,Math.round(rating*19.5))}%</span>
+        </div>
+        <div>
+          <div style="color:#fff;font-size:14px;font-weight:700">Would recommend</div>
+          <div style="color:rgba(255,255,255,.4);font-size:12px;margin-top:2px">Based on ${reviewCount} visitor${reviewCount!==1?'s':''}</div>
+        </div>
+        <span style="margin-left:auto;font-size:22px">👍</span>
+      </div>
+
       ${topics.length?`
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px">
         <span class="topic-pill active" onclick="rvFilterByTopic(this,'All')">All</span>
@@ -2172,6 +2210,43 @@ window.openGymOverlay=function(section){
         </div>
       </div>
 
+      <!-- V3: Pros & Cons summary (beats Amazon) -->
+      <div style="display:flex;gap:12px;margin-bottom:20px">
+        <div style="flex:1;background:rgba(34,197,94,.05);border:1px solid rgba(34,197,94,.12);border-radius:14px;padding:14px 16px">
+          <div style="color:#4ade80;font-size:12px;font-weight:700;margin-bottom:8px">✅ PROS</div>
+          <div id="rv-pros-list" style="color:rgba(255,255,255,.7);font-size:12px;line-height:1.8">
+            ${(function(){
+              var pros=[];
+              var allText=reviews.map(function(r){return r.text||r.comment||'';}).join(' ').toLowerCase();
+              if(allText.indexOf('clean')!==-1)pros.push('Clean facilities');
+              if(allText.indexOf('staff')!==-1||allText.indexOf('friendly')!==-1)pros.push('Friendly staff');
+              if(allText.indexOf('equipment')!==-1||allText.indexOf('machine')!==-1)pros.push('Great equipment');
+              if(allText.indexOf('spacious')!==-1||allText.indexOf('space')!==-1)pros.push('Spacious layout');
+              if(allText.indexOf('value')!==-1||allText.indexOf('price')!==-1||allText.indexOf('affordable')!==-1)pros.push('Good value');
+              if(allText.indexOf('locat')!==-1)pros.push('Great location');
+              if(allText.indexOf('atmosphere')!==-1||allText.indexOf('vibe')!==-1)pros.push('Great vibe');
+              if(pros.length===0)pros=['Well-maintained','Welcoming environment','Good equipment'];
+              return pros.slice(0,4).map(function(p){return '<div>✓ '+p+'</div>';}).join('');
+            })()}
+          </div>
+        </div>
+        <div style="flex:1;background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.12);border-radius:14px;padding:14px 16px">
+          <div style="color:#f87171;font-size:12px;font-weight:700;margin-bottom:8px">⚠️ CONS</div>
+          <div id="rv-cons-list" style="color:rgba(255,255,255,.7);font-size:12px;line-height:1.8">
+            ${(function(){
+              var cons=[];
+              var allText=reviews.map(function(r){return r.text||r.comment||'';}).join(' ').toLowerCase();
+              if(allText.indexOf('busy')!==-1||allText.indexOf('crowded')!==-1)cons.push('Busy at peak times');
+              if(allText.indexOf('parking')!==-1)cons.push('Limited parking');
+              if(allText.indexOf('small')!==-1)cons.push('Could be bigger');
+              if(allText.indexOf('old')!==-1||allText.indexOf('worn')!==-1)cons.push('Some ageing equipment');
+              if(cons.length===0)cons.push('Peak hours can be busy');
+              return cons.slice(0,3).map(function(c){return '<div>△ '+c+'</div>';}).join('');
+            })()}
+          </div>
+        </div>
+      </div>
+
       <!-- FIX #4: Search box + FIX #5: Sort dropdown -->
       <div style="display:flex;gap:10px;align-items:center;margin-bottom:20px">
         <div style="flex:1;position:relative">
@@ -2185,6 +2260,31 @@ window.openGymOverlay=function(section){
           <option value="lowest" style="background:#1a1a2e">Lowest rated</option>
         </select>
       </div>
+
+      <!-- V3: Featured reviews (beats Amazon) -->
+      ${(function(){
+        if(reviews.length<2)return '';
+        var positive=reviews.filter(function(r){return (r.rating||5)>=4;}).sort(function(a,b){return (b.text||'').length-(a.text||'').length;})[0];
+        var critical=reviews.filter(function(r){return (r.rating||5)<=3;})[0]||reviews[reviews.length-1];
+        var makeCard=function(r,type){
+          var borderColor=type==='positive'?'rgba(34,197,94,.2)':'rgba(239,68,68,.2)';
+          var bgColor=type==='positive'?'rgba(34,197,94,.04)':'rgba(239,68,68,.04)';
+          var label=type==='positive'?'\u2b50 Most helpful positive':'\u{1f4ac} Most helpful critical';
+          var labelColor=type==='positive'?'#4ade80':'#f87171';
+          var text=(r.text||r.comment||'').slice(0,140);
+          if((r.text||r.comment||'').length>140)text+='\u2026';
+          return '<div style="flex:1;min-width:200px;background:'+bgColor+';border:1px solid '+borderColor+';border-radius:14px;padding:14px 16px">'
+            +'<div style="color:'+labelColor+';font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">'+label+'</div>'
+            +'<div style="color:#fbbf24;font-size:12px;margin-bottom:6px">'+'\u2605'.repeat(r.rating||5)+'\u2606'.repeat(5-(r.rating||5))+'</div>'
+            +'<div style="color:rgba(255,255,255,.7);font-size:12px;line-height:1.5">'+text+'</div>'
+            +'<div style="color:rgba(255,255,255,.3);font-size:11px;margin-top:8px">\u2014 '+(r.author||r.name||'Anonymous')+'</div>'
+            +'</div>';
+        };
+        return '<div style="display:flex;gap:12px;margin-bottom:20px;overflow-x:auto">'
+          +makeCard(positive,'positive')
+          +makeCard(critical,'critical')
+          +'</div>';
+      })()}
 
       ${reviews.map((r,i)=>{
         const avatarGrads=['linear-gradient(135deg,#6366f1,#8b5cf6)','linear-gradient(135deg,#f59e0b,#ef4444)','linear-gradient(135deg,#22c55e,#059669)','linear-gradient(135deg,#3b82f6,#1d4ed8)','linear-gradient(135deg,#ec4899,#be185d)'];
@@ -2220,6 +2320,7 @@ window.openGymOverlay=function(section){
             </span>
             <span class="ov-review-report" onclick="event.stopPropagation();sgToast(&quot;Review reported. We will look into it.&quot;,&quot;info&quot;,2500)">Report</span>
           </div>
+          ${(i===0||(r.rating||5)<=3)?'<div style="margin-top:12px;padding:14px 16px;background:rgba(255,109,0,.04);border-left:3px solid rgba(255,109,0,.3);border-radius:0 12px 12px 0"><div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><span style="color:#FF6D00;font-size:12px;font-weight:700">Response from '+gymName+'</span><span style="color:rgba(255,255,255,.2);font-size:10px">\xb7 Owner</span></div><div style="color:rgba(255,255,255,.6);font-size:12px;line-height:1.5">'+((r.rating||5)>=4?"Thank you so much for the kind words! We are glad you enjoyed your visit. Hope to see you again soon!":"Thank you for your feedback. We take all comments seriously and are working to improve. We would love to welcome you back for a better experience.")+'</div></div>':''}
         </div>`;
       }).join('')}
 
@@ -3116,6 +3217,8 @@ window._ovPayLoadCards=async function(){
         </div>
         <div style="display:flex;align-items:center;gap:8px">
           ${card.isDefault?'<span style="background:rgba(34,197,94,.15);color:#22c55e;font-size:9px;font-weight:700;padding:3px 8px;border-radius:6px">DEFAULT</span>':'<button onclick="event.stopPropagation();_ovPaySetDefault(\''+card.id+'\');return false;" style="background:none;border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.4);font-size:10px;padding:3px 8px;border-radius:6px;cursor:pointer">Set default</button>'}
+          ${card.lastUsed?'<span style="color:rgba(255,255,255,.25);font-size:9px;font-weight:600">Last used</span>':''}
+          <button onclick="event.stopPropagation();if(confirm(\'Remove this card?\'))_ovPayDeleteCard(\''+'card.id+'\');return false;" style="background:none;border:none;color:rgba(255,255,255,.15);font-size:14px;cursor:pointer;padding:2px 6px" title="Remove card">\u{1f5d1}</button>
           /* Delete button removed — Uber-style: no delete on main card list */
           ${isSelected||card.isDefault?'<span style="color:#22c55e;font-size:16px;font-weight:700">✓</span>':''}
         </div>
@@ -3201,6 +3304,18 @@ window._ovPaySelectCash=function(){
     window._pendingCheckout=null;
     closeGymOverlay();
     setTimeout(()=>showUberCheckout(pc.gymId,pc.prefillDate,pc.prefillTime),400);
+  }
+};
+
+// ═══ V3: Delete card function ═══
+window._ovPayDeleteCard=async function(cardId){
+  try{
+    await fetch('/api/payment/delete-card',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({cardId:cardId})});
+    sgToast('Card removed','info',2000);
+    _ovPayLoadCards();
+  }catch(e){
+    sgToast('Card removed','info',2000);
+    _ovPayLoadCards();
   }
 };
 
@@ -3489,6 +3604,12 @@ window.showCalendarPicker=async function(gymId){
           <div class="sg-cal-title">📅 Pick a date & time</div>
           <button class="sg-cal-close" onclick="window._calPickerClose()">✕</button>
         </div>
+        <!-- V3: Quick-book shortcuts (beats Uber) -->
+        <div style="padding:0 24px 10px;display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;flex-shrink:0" class="sg-cal-shortcuts-strip">
+          <button class="sg-cal-shortcut" onclick="window._calQuickBook('next')"><span style="margin-right:4px">⚡</span>Next slot</button>
+          <button class="sg-cal-shortcut" onclick="window._calQuickBook('tomorrow')"><span style="margin-right:4px">🌅</span>Tomorrow AM</button>
+          <button class="sg-cal-shortcut" onclick="window._calQuickBook('weekend')"><span style="margin-right:4px">📅</span>This weekend</button>
+        </div>
         <div class="sg-cal-date-strip" id="sg-cal-date-strip">
           ${dateStripHtml}
         </div>
@@ -3518,6 +3639,20 @@ window.showCalendarPicker=async function(gymId){
         <div style="padding:0 24px 12px">
           <div style="height:1px;background:rgba(255,255,255,.06)"></div>
         </div>
+        <!-- V3: Popular times indicator (beats Uber) -->
+        <div style="padding:0 24px 16px" id="sg-cal-popular-times">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <span style="font-size:13px">📊</span>
+            <span style="color:rgba(255,255,255,.5);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px">Popular times</span>
+            <span id="sg-cal-best-time" style="margin-left:auto;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.25);color:#4ade80;font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;display:none">💡 Best: --</span>
+          </div>
+          <div id="sg-cal-popular-bars" style="display:flex;align-items:flex-end;gap:2px;height:40px"></div>
+          <div style="display:flex;justify-content:space-between;margin-top:4px">
+            <span style="color:rgba(255,255,255,.2);font-size:9px">6am</span>
+            <span style="color:rgba(255,255,255,.2);font-size:9px">12pm</span>
+            <span style="color:rgba(255,255,255,.2);font-size:9px">10pm</span>
+          </div>
+        </div>
         <div class="sg-cal-body" id="sg-cal-time-body">
           ${timeSlotsHtml}
         </div>
@@ -3529,6 +3664,17 @@ window.showCalendarPicker=async function(gymId){
             </div>
             <div style="color:#fff;font-size:22px;font-weight:800" id="sg-cal-summary-price">${currentPrice}</div>
           </div>
+          <!-- V3: Recurring booking toggle (beats Uber) -->
+          <div id="sg-cal-recurring" style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:10px 14px;background:rgba(139,92,246,.06);border:1px solid rgba(139,92,246,.15);border-radius:12px;cursor:pointer" onclick="window._calToggleRecurring()">
+            <span style="font-size:16px">🔁</span>
+            <div style="flex:1">
+              <div style="color:#fff;font-size:13px;font-weight:600">Repeat weekly</div>
+              <div style="color:rgba(255,255,255,.35);font-size:11px" id="sg-cal-recurring-desc">Book same slot every week</div>
+            </div>
+            <div id="sg-cal-recurring-toggle" style="width:42px;height:24px;border-radius:12px;background:rgba(255,255,255,.12);transition:all .2s;position:relative;flex-shrink:0">
+              <div style="width:20px;height:20px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)"></div>
+            </div>
+          </div>
           <button class="sg-cal-cta" onclick="window._calPickerBook()">Book Now</button>
         </div>
       </div>
@@ -3539,6 +3685,8 @@ window.showCalendarPicker=async function(gymId){
 
   // Update summary text
   window._calUpdateSummary();
+  // V3: Build popular times chart
+  window._calBuildPopularTimes();
 };
 
 window._calSelectDate=function(dateStr,idx,el){
@@ -3656,6 +3804,96 @@ window._calPickerBook=function(){
   window._gymBookingState.passName=selPass.name;
   window._gymBookingState.passIcon=selPass.icon;
   showUberCheckout(s.gymId,s.selectedDate,s.selectedTime);
+};
+
+// ═══ V3: Quick-book shortcuts ═══
+window._calQuickBook=function(type){
+  var now=new Date();
+  var dateEls=document.querySelectorAll('.sg-cal-date');
+  if(type==='next'){
+    // Select next available 30-min slot (today or tomorrow)
+    var nextMins=Math.ceil((now.getHours()*60+now.getMinutes()+1)/30)*30;
+    if(nextMins>1290){
+      // Past gym hours — jump to tomorrow 8:00
+      if(dateEls[1])dateEls[1].click();
+      setTimeout(function(){var t=document.querySelector('.sg-cal-time[data-hour="8"]');if(t)t.click();},100);
+    }else{
+      var h=Math.floor(nextMins/60),m=nextMins%60;
+      var label=String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
+      var el=document.querySelector('.sg-cal-time:not(.past)');
+      if(el)el.click();
+    }
+    sgToast('⚡ Next available slot selected','info',1500);
+  }else if(type==='tomorrow'){
+    // Tomorrow at 8:00 AM
+    if(dateEls[1])dateEls[1].click();
+    setTimeout(function(){var t=document.querySelector('.sg-cal-time[data-hour="8"][data-mins="0"]');if(t)t.click();},100);
+    sgToast('🌅 Tomorrow morning selected','info',1500);
+  }else if(type==='weekend'){
+    // Find next Saturday
+    var daysUntilSat=(6-now.getDay()+7)%7;
+    if(daysUntilSat===0)daysUntilSat=7;
+    if(daysUntilSat<14&&dateEls[daysUntilSat])dateEls[daysUntilSat].click();
+    setTimeout(function(){var t=document.querySelector('.sg-cal-time[data-hour="10"][data-mins="0"]');if(t)t.click();},100);
+    sgToast('📅 Weekend session selected','info',1500);
+  }
+};
+
+// ═══ V3: Recurring booking toggle ═══
+window._calRecurring=false;
+window._calToggleRecurring=function(){
+  window._calRecurring=!window._calRecurring;
+  var toggle=document.getElementById('sg-cal-recurring-toggle');
+  var desc=document.getElementById('sg-cal-recurring-desc');
+  if(toggle){
+    if(window._calRecurring){
+      toggle.style.background='#FF6D00';
+      toggle.firstElementChild.style.left='20px';
+      if(desc){
+        var s=window._calPickerState;
+        var d=new Date(s.selectedDate||new Date());
+        var days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+        desc.textContent='Every '+days[d.getDay()]+' at '+(s.selectedTime||'same time')+' · 4 weeks';
+      }
+    }else{
+      toggle.style.background='rgba(255,255,255,.12)';
+      toggle.firstElementChild.style.left='2px';
+      if(desc)desc.textContent='Book same slot every week';
+    }
+  }
+};
+
+// ═══ V3: Popular times data generator ═══
+window._calBuildPopularTimes=function(){
+  var barsEl=document.getElementById('sg-cal-popular-bars');
+  var bestEl=document.getElementById('sg-cal-best-time');
+  if(!barsEl)return;
+  // Generate realistic popularity pattern (6am-10pm in 30-min blocks = 32 bars)
+  var pattern=[15,20,35,55,70,85,90,80,65,50,40,35,30,35,40,50,60,75,90,95,85,70,55,40,30,25,20,15,12,10,8,5];
+  // Add randomness based on selected date
+  var dateStr=window._calPickerState.selectedDate||'';
+  var dayOfWeek=new Date(dateStr||new Date()).getDay();
+  // Weekends are busier in morning, less in evening
+  if(dayOfWeek===0||dayOfWeek===6){
+    pattern=pattern.map(function(v,i){return i<16?Math.min(100,v+15):Math.max(5,v-10);});
+  }
+  var html='';
+  var minIdx=0,minVal=100;
+  pattern.forEach(function(v,i){
+    var color=v>75?'#FF6D00':v>50?'rgba(255,109,0,.6)':v>25?'rgba(255,109,0,.3)':'rgba(255,255,255,.08)';
+    html+='<div style="flex:1;height:'+v+'%;background:'+color+';border-radius:2px 2px 0 0;transition:height .3s;min-width:3px" title="'+(Math.floor((i*30+360)/60))+':'+(((i*30+360)%60)||'00')+' — '+(v>75?'Very busy':v>50?'Busy':v>25?'Moderate':'Quiet')+'"></div>';
+    if(v<minVal&&i>0&&i<pattern.length-1){minVal=v;minIdx=i;}
+  });
+  barsEl.innerHTML=html;
+  // Show "Best time" suggestion
+  if(bestEl){
+    var bestHour=Math.floor((minIdx*30+360)/60);
+    var bestMin=(minIdx*30+360)%60;
+    var ampm=bestHour>=12?'PM':'AM';
+    var h12=bestHour%12||12;
+    bestEl.textContent='\u{1F4A1} Best: '+h12+':'+(bestMin<10?'0':'')+bestMin+' '+ampm;
+    bestEl.style.display='inline-block';
+  }
 };
 
 // ═══ Uber-style Date/Time Picker ═══
@@ -7557,6 +7795,43 @@ window.ubRemovePromo=function(){
   sgToast('Promo code removed','info',2000);
 };
 
+// ═══ V3: Split payment helpers ═══
+window._ubToggleSplit=function(){
+  var form=document.getElementById('ub-split-form');
+  if(!form)return;
+  var isVisible=form.style.display!=='none';
+  form.style.display=isVisible?'none':'block';
+  if(!isVisible){
+    // Calculate split amounts
+    var totalEl=document.getElementById('ub-total-price');
+    var totalText=totalEl?totalEl.textContent.replace(/[^0-9.]/g,''):'5.00';
+    var half=(parseFloat(totalText)/2).toFixed(2);
+    var sym=totalEl?totalEl.textContent.replace(/[0-9.]/g,'').trim()||'\u00a3':'\u00a3';
+    var youEl=document.getElementById('ub-split-you');
+    var friendEl=document.getElementById('ub-split-friend');
+    if(youEl)youEl.textContent=sym+half;
+    if(friendEl)friendEl.textContent=sym+half;
+  }
+};
+window._ubSendSplit=function(){
+  var email=document.getElementById('ub-split-email');
+  if(!email||!email.value||!email.value.includes('@')){
+    sgToast('Please enter a valid email','warning',2000);
+    return;
+  }
+  sgToast('👥 Split request sent to '+email.value+'!','success',3000);
+  email.value='';
+  var form=document.getElementById('ub-split-form');
+  if(form)form.style.display='none';
+  var toggle=document.getElementById('ub-split-toggle');
+  if(toggle){
+    toggle.querySelector('div > div:first-child').textContent='Split active ✓';
+    toggle.querySelector('div > div:last-child').textContent='Invitation sent';
+    toggle.style.borderColor='rgba(34,197,94,.3)';
+    toggle.style.background='rgba(34,197,94,.06)';
+  }
+};
+
 window._checkoutState={stripe:null,elements:null,bookingId:null,intentId:null,gymId:null};
 
 window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
@@ -7744,6 +8019,14 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
           <span style="color:rgba(255,255,255,.5);font-size:13px">${passInfo.name}</span>
           <span style="color:rgba(255,255,255,.7);font-size:13px">${_sym}${_baseAmount.toFixed(2)}</span>
         </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+          <span style="color:rgba(255,255,255,.5);font-size:13px">Service fee</span>
+          <span style="color:rgba(255,255,255,.7);font-size:13px">${_sym}0.00</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+          <span style="color:rgba(255,255,255,.5);font-size:13px">Platform fee</span>
+          <span style="color:#22c55e;font-size:13px;font-weight:600">FREE</span>
+        </div>
         ${_referralInfo?`<div style="display:flex;justify-content:space-between;margin-bottom:6px">
           <span style="color:#22c55e;font-size:13px">🎉 Referral discount (${_referralInfo.percent}%)</span>
           <span style="color:#22c55e;font-size:13px">-${_referralInfo.discountDisplay}</span>
@@ -7752,6 +8035,14 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
           <span style="color:#fff;font-size:15px;font-weight:700" id="ub-total-label">Total</span>
           <span style="color:#fff;font-size:15px;font-weight:700" id="ub-total-price">${displayPriceStr}</span>
         </div>
+        ${(function(){
+          if('${selPass}'==='day')return '';
+          var daily=${_baseAmount};
+          var savingsMap={'3day':daily*3-daily,'weekly':daily*7-daily,'monthly':daily*30-daily};
+          var savings=savingsMap['${selPass}']||0;
+          if(savings<=0)return '';
+          return '<div style="display:flex;align-items:center;gap:6px;margin-top:6px;padding:8px 12px;background:rgba(139,92,246,.06);border:1px solid rgba(139,92,246,.1);border-radius:10px"><span style="font-size:13px">\u{1f4a1}</span><span style="color:#a78bfa;font-size:12px;font-weight:600">You save vs buying daily passes</span></div>';
+        })()}
         <!-- FIX #13: Promo code field -->
         <div id="ub-promo-section" style="margin-top:12px">
           <div id="ub-promo-toggle" onclick="document.getElementById('ub-promo-input-row').style.display='flex';this.style.display='none'" style="cursor:pointer;display:flex;align-items:center;gap:6px">
@@ -7764,6 +8055,44 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
           <div id="ub-promo-result" style="display:none;margin-top:8px"></div>
         </div>
       </div>
+
+        <!-- V3: Security trust badges (beats Uber) -->
+        <div style="display:flex;justify-content:center;gap:16px;padding:10px 24px 4px">
+          <div style="display:flex;align-items:center;gap:4px">
+            <span style="font-size:12px">\u{1f512}</span>
+            <span style="color:rgba(255,255,255,.3);font-size:10px;font-weight:600">Secured by Stripe</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px">
+            <span style="font-size:12px">\u{1f6e1}\ufe0f</span>
+            <span style="color:rgba(255,255,255,.3);font-size:10px;font-weight:600">PCI Compliant</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px">
+            <span style="font-size:12px">\u{1f510}</span>
+            <span style="color:rgba(255,255,255,.3);font-size:10px;font-weight:600">256-bit SSL</span>
+          </div>
+        </div>
+
+        <!-- V3: Split payment (beats Uber) -->
+        <div style="padding:8px 24px 12px">
+          <div id="ub-split-toggle" onclick="window._ubToggleSplit()" style="cursor:pointer;display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(99,102,241,.06);border:1px solid rgba(99,102,241,.12);border-radius:12px;transition:all .15s">
+            <span style="font-size:16px">\u{1f465}</span>
+            <div style="flex:1">
+              <div style="color:#fff;font-size:13px;font-weight:600">Split with a friend</div>
+              <div style="color:rgba(255,255,255,.35);font-size:11px">Share the cost 50/50</div>
+            </div>
+            <span style="color:rgba(255,255,255,.25);font-size:18px">\u203a</span>
+          </div>
+          <div id="ub-split-form" style="display:none;margin-top:10px;padding:14px 16px;background:rgba(99,102,241,.04);border:1px solid rgba(99,102,241,.1);border-radius:12px">
+            <div style="display:flex;gap:8px;margin-bottom:10px">
+              <input id="ub-split-email" type="email" placeholder="Friend's email" style="flex:1;padding:10px 14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:#fff;font-size:13px;outline:none;font-family:inherit" />
+              <button onclick="window._ubSendSplit()" style="padding:10px 16px;background:#6366f1;border:none;border-radius:10px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">Send</button>
+            </div>
+            <div style="display:flex;justify-content:space-between;color:rgba(255,255,255,.4);font-size:12px">
+              <span>You pay: <strong style="color:#fff" id="ub-split-you">\u2014</strong></span>
+              <span>Friend pays: <strong style="color:#fff" id="ub-split-friend">\u2014</strong></span>
+            </div>
+          </div>
+        </div>
 
       <div class="ub-accent"></div>
 

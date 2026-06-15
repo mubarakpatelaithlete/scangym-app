@@ -190,3 +190,31 @@ body {
 
 /* Fullscreen photo viewer enhancement */
 .rv-fullscreen{backdrop-filter:blur(8px)}
+
+
+/* ═══ V3: Calendar Shortcuts (beats Uber) ═══ */
+.sg-cal-shortcut{
+  padding:8px 16px;border-radius:20px;border:1.5px solid rgba(255,109,0,.2);
+  background:rgba(255,109,0,.06);color:#FF6D00;font-size:12px;font-weight:700;
+  cursor:pointer;white-space:nowrap;transition:all .15s;
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  -webkit-tap-highlight-color:transparent;
+}
+.sg-cal-shortcut:active{transform:scale(.95);background:rgba(255,109,0,.15)}
+.sg-cal-shortcuts-strip::-webkit-scrollbar{display:none}
+
+/* ═══ V3: Popular times bar animation ═══ */
+#sg-cal-popular-bars div{animation:sgPopBar .5s ease-out backwards}
+@keyframes sgPopBar{from{height:0%}}
+
+/* ═══ V3: Featured reviews responsive ═══ */
+@media(max-width:480px){
+  #rv-featured-reviews{flex-direction:column}
+}
+
+/* ═══ V3: Attribute rating bars animation ═══ */
+.sg-attr-bar{animation:sgAttrGrow .6s ease-out backwards}
+@keyframes sgAttrGrow{from{width:0%}}
+
+/* ═══ V3: Split payment glow ═══ */
+#ub-split-toggle:active{transform:scale(.98)}
