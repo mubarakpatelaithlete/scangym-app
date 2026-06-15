@@ -462,9 +462,15 @@ router.get('/search', async (req, res) => {
     const userLng = lng ? parseFloat(lng) : null;
     rankGyms(gyms, userLat, userLng);
 
+    // ── Max-distance filter: drop gyms beyond 50 km ──
+    // Google Text Search treats location+radius as a bias, not a hard boundary,
+    // so results like "JOHN REED Fitness Praha" (1218 km) can leak into a Bolton search.
+    const MAX_SEARCH_DISTANCE_KM = 50;
+    const filteredGyms = gyms.filter(g => g.distance == null || g.distance <= MAX_SEARCH_DISTANCE_KM);
+
     const result = {
-      gyms,
-      total: gyms.length,
+      gyms: filteredGyms,
+      total: filteredGyms.length,
       nextPageToken: data.next_page_token || null,
       query: searchQuery,
       source: 'google_places_live',
@@ -541,9 +547,13 @@ router.get('/nearby', async (req, res) => {
     const searchLng = lng ? parseFloat(lng) : null;
     rankGyms(gyms, searchLat, searchLng);
 
+    // ── Max-distance filter (same as text search) ──
+    const MAX_NEARBY_DISTANCE_KM = 50;
+    const filteredGyms = gyms.filter(g => g.distance == null || g.distance <= MAX_NEARBY_DISTANCE_KM);
+
     const result = {
-      gyms,
-      total: gyms.length,
+      gyms: filteredGyms,
+      total: filteredGyms.length,
       nextPageToken: data.next_page_token || null,
       source: 'google_places_live',
     };
