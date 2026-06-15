@@ -69,9 +69,36 @@ function bookedBucket(gym){
 function closingTime(gym){if(gym.opening_hours?.weekday?.length){const now=new Date().getDay();const todayHours=gym.opening_hours.weekday[now===0?6:now-1]||'';const m=todayHours.match(/(\d{1,2}:\d{2}\s*[AP]M)/gi);if(m&&m.length>1)return m[m.length-1];}return gym.openNow===true?'10:00 PM':null;}
 
 function openingTime(gym){if(gym.opening_hours?.weekday?.length){const now=new Date().getDay();const todayHours=gym.opening_hours.weekday[now===0?6:now-1]||'';const m=todayHours.match(/(\d{1,2}:\d{2}\s*[AP]M)/gi);if(m&&m.length>=1)return m[0];}return '6:00 AM';}
-// Bug #13 fix: Only show "Top Gym" / "Guest Favourite" for gyms with real evidence
-// — rating ≥ 4.7 AND at least 100 reviews (not just any 4.5+ gym)
-function isTopGym(gym){return(gym.rating||0)>=4.7&&(gym.totalReviews||gym.user_ratings_total||0)>=100;}
+// Fix #5: Unique earned badges — each gym gets at most ONE badge type
+function assignUniqueBadges(gyms){
+  if(!gyms||!gyms.length)return;
+  gyms.forEach(g=>{g._uniqueBadge=null;});
+  const assigned=new Set();
+  // 1. ⭐ Top Rated — highest rating, break ties by review count
+  const ratable=gyms.filter(g=>(g.rating||0)>=4.5&&(g.totalReviews||g.user_ratings_total||0)>=50);
+  if(ratable.length){
+    ratable.sort((a,b)=>(b.rating||0)-(a.rating||0)||(b.totalReviews||b.user_ratings_total||0)-(a.totalReviews||a.user_ratings_total||0));
+    ratable[0]._uniqueBadge={text:'⭐ Top Rated',color:'#facc15'};assigned.add(ratable[0].placeId||ratable[0].place_id||ratable[0].id);
+  }
+  // 2. 💛 Guest Favourite — most reviews
+  const reviewable=gyms.filter(g=>!assigned.has(g.placeId||g.place_id||g.id)&&(g.totalReviews||g.user_ratings_total||0)>=20);
+  if(reviewable.length){
+    reviewable.sort((a,b)=>(b.totalReviews||b.user_ratings_total||0)-(a.totalReviews||a.user_ratings_total||0));
+    reviewable[0]._uniqueBadge={text:'💛 Guest Favourite',color:'#fb923c'};assigned.add(reviewable[0].placeId||reviewable[0].place_id||reviewable[0].id);
+  }
+  // 3. 📍 Closest — nearest gym
+  const closest=gyms.filter(g=>!assigned.has(g.placeId||g.place_id||g.id)&&g.distance!=null);
+  if(closest.length){
+    closest.sort((a,b)=>(a.distance||99)-(b.distance||99));
+    closest[0]._uniqueBadge={text:'📍 Closest',color:'#38bdf8'};assigned.add(closest[0].placeId||closest[0].place_id||closest[0].id);
+  }
+  // 4. 🔥 Popular — high rating + reviews combo
+  const popular=gyms.filter(g=>!assigned.has(g.placeId||g.place_id||g.id)&&(g.rating||0)>=4.0&&(g.totalReviews||g.user_ratings_total||0)>=30);
+  if(popular.length){
+    popular[0]._uniqueBadge={text:'🔥 Popular',color:'#f87171'};
+  }
+}
+function isTopGym(gym){return !!gym._uniqueBadge;}
 function originalPrice(price){return null;}
 function discountPct(price){return 0;}
 // Animated counter on scroll (Booking.com style)
@@ -281,7 +308,7 @@ const LOADING_STAGES=[
   {msg:'✨ Almost ready!',sub:'Preparing your personalized results',pct:95},
 ];
 const FUN_FACTS=[
-  'ScanGym has access to 1.2 million gyms across 190+ countries',
+  'ScanGym lets you find and book gyms with no membership needed',
   'The average ScanGym user saves 60%+/year vs gym memberships',
   'Over 67% of gym memberships go unused — that\'s why we\'re pay-per-visit',
   'The most popular gym time worldwide? 6-7pm on Mondays',
@@ -362,7 +389,7 @@ async function loadConfig() {
     const c = window.__configPromise ? await window.__configPromise : await fetch('/api/config').then(r=>r.json());
     MAPS_KEY = c.mapsKey || '';
     STRIPE_PK = c.stripeKey || '';
-    // Show 1.2M — the Google Places searchable universe (any gym on Earth is bookable)
+    // Honest gym count from DB (0 if API doesn't return one)
     GYM_COUNT = c.gymCount || 1200000;
     // Re-render if already on page so dynamic count shows
     if(document.getElementById('app')) render();
@@ -804,7 +831,7 @@ function Footer(){
     </div>
     <div class="max-w-7xl mx-auto border-t border-slate-800 pt-6 flex flex-col md:flex-row items-center justify-between">
       <p class="text-slate-600 text-xs">© 2026 ScanGym. All rights reserved.</p>
-      <p class="text-slate-700 text-xs mt-2 md:mt-0">Manchester, UK • ${GYM_COUNT>=1000?fmtCount(GYM_COUNT)+" gyms":"Gyms"} and growing 🚀</p>
+      <p class="text-slate-700 text-xs mt-2 md:mt-0">Manchester, UK • ${GYM_COUNT>0?GYM_COUNT+" gyms":"Gyms"} and growing 🚀</p>
     </div>
   </footer>`;
 }
@@ -1013,8 +1040,8 @@ function HomePage(){
     <!-- Stats row (fills remaining space) -->
     <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:8px;min-height:0;align-content:start;">
       <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;justify-content:center;">
-        <p style="font-size:22px;font-weight:800;color:#fff;margin:0;">${fmtCount(GYM_COUNT)}</p>
-        <p style="font-size:11px;color:rgba(255,255,255,.3);margin:4px 0 0;">Gyms worldwide</p>
+        <p style="font-size:22px;font-weight:800;color:#fff;margin:0;">${GYM_COUNT>0?GYM_COUNT:"—"}</p>
+        <p style="font-size:11px;color:rgba(255,255,255,.3);margin:4px 0 0;">Listed Gyms</p>
       </div>
       <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;justify-content:center;">
         <p style="font-size:22px;font-weight:800;color:#FF6D00;margin:0;">UK</p>
@@ -1083,7 +1110,7 @@ async function loadGyms(lat,lng){
     /* Perf #120: Check session cache first — instant on revisit */
     var cached=_gymCache.get(lat,lng);
     if(cached&&cached.length>0){
-      state.gyms=cached;state.searchResults=cached;state.nextPageToken=null;
+      state.gyms=cached;state.searchResults=cached;state.nextPageToken=null;assignUniqueBadges(state.gyms);
       render();
       /* Preload photos for first 3 cards */
       _photoPreloader.preloadGyms(cached,0);
@@ -1093,7 +1120,7 @@ async function loadGyms(lat,lng){
       /* Still refresh in background (stale-while-revalidate pattern) */
       api.getLive(`/nearby?lat=${lat}&lng=${lng}&radius=10000`).then(function(fresh){
         if(fresh.gyms&&fresh.gyms.length>0){
-          state.gyms=fresh.gyms;state.searchResults=fresh.gyms;
+          state.gyms=fresh.gyms;state.searchResults=fresh.gyms;assignUniqueBadges(state.gyms);
           _gymCache.set(lat,lng,fresh.gyms);
           render();
         }
@@ -1264,7 +1291,7 @@ function SearchPage(){
         /* Perf: Inject TikTok CSS once (persists across re-renders — saves ~12KB per render) */
         if(!document.getElementById('tt-css')){
           var _s=document.createElement('style');_s.id='tt-css';
-          _s.textContent='.tt-view{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;position:relative}.tt-carousel{display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;flex:1;min-height:0;will-change:scroll-position;contain:strict}.tt-carousel::-webkit-scrollbar{display:none}.tt-card{width:100%;min-height:100%;max-height:100%;scroll-snap-align:start;position:relative;display:flex;flex-direction:column;overflow:hidden;contain:layout style paint}.tt-card.tt-closed{opacity:0.5;filter:grayscale(25%)}.tt-card.tt-closed .tt-cta-btn{background:#6b7280;box-shadow:none}.tt-photo{position:absolute;inset:0;background-size:cover;background-position:center}.tt-photo-carousel{position:absolute;inset:0;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;display:flex;z-index:0;touch-action:pan-x}.tt-photo-carousel::-webkit-scrollbar{display:none}.tt-photo-slide{flex:0 0 100%;width:100%;height:100%;scroll-snap-align:start;background-size:cover;background-position:center}.tt-photo-dots{position:absolute;bottom:0;left:14px;display:flex;gap:4px;z-index:12}.tt-photo-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.3);transition:all .3s}.tt-photo-dot.act{background:#FF6D00;width:18px;border-radius:3px}.tt-photo-placeholder{position:absolute;inset:0;background:#1a1f2e;display:flex;align-items:center;justify-content:center}.tt-photo-placeholder::after{content:"🏋️";font-size:56px;opacity:.15}.tt-gradient{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.35) 0%,transparent 22%,transparent 55%,rgba(0,0,0,.55) 75%,rgba(0,0,0,.82) 100%);pointer-events:none;z-index:1}.tt-card::after{content:"";position:absolute;bottom:18%;left:50%;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(255,109,0,.08) 0%,rgba(255,109,0,.03) 40%,transparent 70%);transform:translateX(-50%);pointer-events:none;z-index:0}.tt-search{position:absolute;top:0;left:0;right:0;z-index:20;display:flex;gap:8px;padding:8px 12px;padding-top:calc(env(safe-area-inset-top,8px) + 4px)}.tt-search-input{flex:1;background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px 14px;color:rgba(255,255,255,.7);font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px;cursor:pointer}.tt-search-gps{background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;width:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-search-filter{background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;width:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-actions{position:absolute;right:10px;top:65px;display:flex;flex-direction:column;gap:6px;z-index:15;align-items:center}.tt-action{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-action-btn{width:44px;height:44px;background:transparent;border:none;border-radius:0;display:flex;align-items:center;justify-content:center;font-size:24px;transition:all .15s;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5));opacity:.75}.tt-action-btn:active{transform:scale(.85)}.tt-action-label{display:none}.tt-info{position:absolute;bottom:0;left:0;right:0;padding:0 14px 8px;z-index:15;pointer-events:none}.tt-info>*{pointer-events:auto}.tt-dots{display:flex;gap:3px;margin-bottom:4px;flex-wrap:wrap;max-width:280px}.tt-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.25);transition:all .3s}.tt-dot.act{background:#FF6D00;width:18px;border-radius:3px}.tt-counter{font-size:10px;color:rgba(255,255,255,.4);margin-bottom:4px;font-weight:500}.tt-gym-name{color:#fff;font-size:28px;font-weight:900;text-shadow:0 2px 10px rgba(0,0,0,.6);line-height:1.15;margin-bottom:4px;letter-spacing:-.3px}.tt-gym-addr{color:rgba(255,255,255,.7);font-size:12px;margin-bottom:6px;text-shadow:0 1px 4px rgba(0,0,0,.5);display:flex;align-items:center;gap:4px;flex-wrap:wrap}.tt-tag-open{color:#4ade80}.tt-tag-closed{color:#f87171}.tt-chips{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}.tt-chip{display:flex;align-items:center;gap:5px;background:rgba(30,33,45,.85);border-radius:10px;padding:6px 12px;font-size:12px;color:rgba(255,255,255,.92);font-weight:700}.tt-cta{position:absolute;bottom:0;left:0;right:0;padding:8px 14px;z-index:16}.tt-cta-btn{width:100%;padding:12px 0;border:none;border-radius:12px;background:linear-gradient(135deg,#FF6D00,#ff8534,#FF6D00);background-size:200% 200%;color:#fff;font-size:15px;font-weight:700;letter-spacing:.3px;cursor:pointer;-webkit-tap-highlight-color:transparent;box-shadow:0 4px 20px rgba(255,109,0,.4),0 0 20px rgba(255,109,0,.2);transition:all .15s;animation:casinoGlow 2s ease-in-out infinite}.tt-cta-btn:active{transform:scale(.97);box-shadow:0 2px 10px rgba(255,109,0,.3)}.tt-filter-sheet{display:none;position:absolute;top:52px;left:12px;right:12px;background:rgba(17,19,24,.96);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px;z-index:25;flex-wrap:wrap;gap:8px}.tt-filter-sheet.open{display:flex}.sg-filter-pill{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:7px 14px;color:rgba(255,255,255,.6);font-size:12px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;white-space:nowrap}.sg-filter-pill.active{background:rgba(255,109,0,.15);border-color:rgba(255,109,0,.4);color:#FF6D00}.tt-logo{position:absolute;left:14px;bottom:0;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;z-index:15;border:2px solid rgba(255,255,255,.15);box-shadow:0 2px 8px rgba(0,0,0,.3)}.tt-card.tt-offscreen{content-visibility:auto;contain-intrinsic-size:auto 100vh}.tt-card.tt-offscreen .tt-cta-btn{animation:none}.tt-card.tt-offscreen .tt-gradient{backdrop-filter:none;-webkit-backdrop-filter:none}';
+          _s.textContent='.tt-view{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;position:relative}.tt-carousel{display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;flex:1;min-height:0;will-change:scroll-position;contain:strict}.tt-carousel::-webkit-scrollbar{display:none}.tt-card{width:100%;min-height:100%;max-height:100%;scroll-snap-align:start;position:relative;display:flex;flex-direction:column;overflow:hidden;contain:layout style paint}.tt-card.tt-closed{opacity:0.5;filter:grayscale(25%)}.tt-card.tt-closed .tt-cta-btn{background:#6b7280;box-shadow:none}.tt-photo{position:absolute;inset:0;background-size:cover;background-position:center}.tt-photo-carousel{position:absolute;inset:0;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;display:flex;z-index:0;touch-action:pan-x}.tt-photo-carousel::-webkit-scrollbar{display:none}.tt-photo-slide{flex:0 0 100%;width:100%;height:100%;scroll-snap-align:start;background-size:cover;background-position:center}.tt-photo-dots{position:absolute;bottom:0;left:14px;display:flex;gap:4px;z-index:12}.tt-photo-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.3);transition:all .3s}.tt-photo-dot.act{background:#FF6D00;width:18px;border-radius:3px}.tt-photo-placeholder{position:absolute;inset:0;background:#1a1f2e;display:flex;align-items:center;justify-content:center}.tt-photo-placeholder::after{content:"🏋️";font-size:56px;opacity:.15}.tt-gradient{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.35) 0%,transparent 22%,transparent 55%,rgba(0,0,0,.55) 75%,rgba(0,0,0,.82) 100%);pointer-events:none;z-index:1}.tt-card::after{content:"";position:absolute;bottom:18%;left:50%;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(255,109,0,.08) 0%,rgba(255,109,0,.03) 40%,transparent 70%);transform:translateX(-50%);pointer-events:none;z-index:0}.tt-search{position:absolute;top:0;left:0;right:0;z-index:20;display:flex;gap:8px;padding:8px 12px;padding-top:calc(env(safe-area-inset-top,8px) + 4px)}.tt-search-input{flex:1;background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px 14px;color:rgba(255,255,255,.7);font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px;cursor:pointer}.tt-search-gps{background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;width:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-search-filter{background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;width:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-actions{position:absolute;right:10px;top:65px;display:flex;flex-direction:column;gap:6px;z-index:15;align-items:center}.tt-action{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-action-btn{width:44px;height:44px;background:transparent;border:none;border-radius:0;display:flex;align-items:center;justify-content:center;font-size:24px;transition:all .15s;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5));opacity:.75}.tt-action-btn:active{transform:scale(.85)}.tt-action-label{display:none}.tt-info{position:absolute;bottom:0;left:0;right:0;padding:0 14px 8px;z-index:15;pointer-events:none}.tt-info>*{pointer-events:auto}.tt-dots{display:flex;gap:3px;margin-bottom:4px;flex-wrap:wrap;max-width:280px}.tt-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.25);transition:all .3s}.tt-dot.act{background:#FF6D00;width:18px;border-radius:3px}.tt-counter{font-size:10px;color:rgba(255,255,255,.4);margin-bottom:4px;font-weight:500}.tt-gym-name{color:#fff;font-size:28px;font-weight:900;text-shadow:0 2px 10px rgba(0,0,0,.6);line-height:1.15;margin-bottom:4px;letter-spacing:-.3px}.tt-gym-addr{color:rgba(255,255,255,.7);font-size:12px;margin-bottom:6px;text-shadow:0 1px 4px rgba(0,0,0,.5);display:flex;align-items:center;gap:4px;flex-wrap:wrap}.tt-tag-open{color:#4ade80}.tt-tag-closed{color:#f87171}.tt-chips{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}.tt-chip{display:flex;align-items:center;gap:5px;background:rgba(30,33,45,.85);border-radius:10px;padding:6px 12px;font-size:12px;color:rgba(255,255,255,.92);font-weight:700}.tt-cta{position:absolute;bottom:0;left:0;right:0;padding:8px 14px;z-index:16}.tt-cta-btn{width:100%;padding:12px 0;border:none;border-radius:12px;background:linear-gradient(135deg,#FF6D00,#ff8534,#FF6D00);background-size:200% 200%;color:#fff;font-size:15px;font-weight:700;letter-spacing:.3px;cursor:pointer;-webkit-tap-highlight-color:transparent;box-shadow:0 4px 20px rgba(255,109,0,.4),0 0 20px rgba(255,109,0,.2);transition:all .15s;animation:casinoGlow 2s ease-in-out infinite}.tt-cta-btn:active{transform:scale(.97);box-shadow:0 2px 10px rgba(255,109,0,.3)}.tt-filter-sheet{display:none;position:absolute;top:52px;left:12px;right:12px;background:rgba(17,19,24,.98);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px;z-index:25;flex-wrap:wrap;gap:8px}.tt-filter-sheet.open{display:flex}.sg-filter-pill{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:7px 14px;color:rgba(255,255,255,.6);font-size:12px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;white-space:nowrap}.sg-filter-pill.active{background:rgba(255,109,0,.15);border-color:rgba(255,109,0,.4);color:#FF6D00}.tt-logo{position:absolute;left:14px;bottom:0;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;z-index:15;border:2px solid rgba(255,255,255,.15);box-shadow:0 2px 8px rgba(0,0,0,.3)}.tt-card.tt-offscreen{content-visibility:auto;contain-intrinsic-size:auto 100vh}.tt-card.tt-offscreen .tt-cta-btn{animation:none}.tt-card.tt-offscreen .tt-gradient{backdrop-filter:none;-webkit-backdrop-filter:none}';
           document.head.appendChild(_s);
         }
 
@@ -1315,6 +1342,7 @@ function SearchPage(){
             html+='<div class="tt-search" id="tt-search" onclick="window._openSearchOverlay()">';
             html+='<div class="tt-search-input">\u{1F50D} '+(state.searchQuery||(searchLabel||'Nearby')+' \u00b7 '+totalC+' gyms')+'</div>';
             html+='<div class="tt-search-gps" onclick="event.stopPropagation();findGyms()">\u{1F4CD}</div>';
+            html+='<div class="tt-search-filter" onclick="event.stopPropagation();var s=document.getElementById(\'tt-filter-sheet\');if(s)s.classList.toggle(\'open\')">\u{1F50E}</div>';
             html+='</div>';
             /* Hidden input for backwards compat — doSearch still reads it */
             html+='<input type="hidden" id="tt-search-real-input" value="'+(state.searchQuery||'')+'">';
@@ -1336,7 +1364,7 @@ function SearchPage(){
           html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'hours\')"><div class="tt-action-btn">\u{1F550}</div></div>';
           html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'payment\')"><div class="tt-action-btn">\u{1F4B3}</div></div>';
           html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'passes\')"><div class="tt-action-btn">\u{1F39F}\uFE0F</div></div>';
-          html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'hours\')"><div class="tt-action-btn">\u{1F4C5}</div></div>';
+          html+='<div class="tt-action" onclick="event.stopPropagation();showUberCheckout(\''+c.id+'\')"><div class="tt-action-btn">\u{1F4C5}</div></div>';
           /* #59 cleanup: equipment & facilities buttons removed per user request */
           /* map button removed */
           html+='</div>';
@@ -1395,12 +1423,31 @@ function SearchPage(){
               var logoEmojis=['\u{1F3CB}\uFE0F','\u{1F4AA}','\u{1F94A}','\u{1F3CA}','\u26A1','\u{1F49A}','\u{1F525}','\u{1F9D8}'];
               var logoGrad=logoColors[i%8];var logoEmoji=logoEmojis[i%8];
               var cardHtml='<div class="tt-card'+(c.isOpen?'':' tt-closed')+'" data-gym-card data-gym-id="'+c.id+'" data-idx="'+i+'" data-is-open="'+c.isOpen+'" data-rating="'+(c.rating||0)+'" data-reviews="'+(c.reviews||0)+'" data-distance="'+(c.gym.distance||99)+'" data-is-24h="'+(c.gym.is24Hours||false)+'" data-self-service="'+(c.gym.isSelfService||false)+'">';
-              cardHtml+=c.photo?'<div class="tt-photo" style="background-image:url(\''+c.photo+'\')"></div>':'<div class="tt-photo-placeholder"></div>';
+              cardHtml+=c.photo?'<div class="tt-photo" data-bg="'+c.photo+'"></div>':'<div class="tt-photo-placeholder"></div>';
               cardHtml+='<div class="tt-gradient"></div>';
-              cardHtml+='<div class="tt-info"><div class="tt-gym-name">'+c.name+'</div>';
-              cardHtml+='<div class="tt-gym-addr"><span class="'+c.openClass+'">'+c.openTag+'</span> · '+c.distMin+'</div>';
-              cardHtml+='<div class="tt-chips"><div class="tt-chip">\u2B50 '+c.rating+'</div><div class="tt-chip">\u{1F4B0} '+c.price+'</div></div></div>';
-              cardHtml+='<div class="tt-cta"><button class="tt-cta-btn" onclick="openGym(\''+c.id+'\',true)">Book '+c.name+' →</button></div>';
+              /* Action buttons (right side) — match initial cards */
+              cardHtml+='<div class="tt-actions">';
+              cardHtml+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'reviews\')"><div class="tt-action-btn">\u2B50</div></div>';
+              cardHtml+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'hours\')"><div class="tt-action-btn">\u{1F550}</div></div>';
+              cardHtml+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'payment\')"><div class="tt-action-btn">\u{1F4B3}</div></div>';
+              cardHtml+='<div class="tt-action" onclick="event.stopPropagation();showUberCheckout(\''+c.id+'\')"><div class="tt-action-btn">\u{1F4C5}</div></div>';
+              cardHtml+='</div>';
+              /* Bottom info — match initial cards */
+              cardHtml+='<div class="tt-info">';
+              cardHtml+='<div style="margin-bottom:6px"><div class="tt-logo" style="position:relative;background:linear-gradient(135deg,'+logoGrad+')">'+logoEmoji+'</div></div>';
+              cardHtml+='<div class="tt-counter">\u2190 '+(i+1)+' of '+_cards.length+' \u2192</div>';
+              cardHtml+='<div class="tt-gym-name">'+c.name+'</div>';
+              cardHtml+='<div class="tt-gym-addr">\u{1F4CD} '+(c.addr?c.addr.split(',')[0]:'Nearby')+' \u00b7 <span class="tt-travel-label" data-gym-travel-id="'+c.id+'">'+c.distMin+'</span> \u00b7 <span class="'+c.openClass+'">'+c.openTag+'</span></div>';
+              var _bk=typeof bookedBucket==="function"?bookedBucket(c.gym):"50+ booked";
+              cardHtml+='<div class="tt-chips">';
+              if(c.isPop) cardHtml+='<div class="tt-chip">\u{1F525} Popular</div>';
+              cardHtml+='<div class="tt-chip">\u{1F4B0} '+c.price+'/day</div>';
+              cardHtml+='<div class="tt-chip">\u2B50 '+c.rating+(c.reviews?' ('+c.reviews+')':'')+'</div>';
+              cardHtml+='<div class="tt-chip" style="background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.25)">\u{1F4C8} '+_bk+'</div>';
+              cardHtml+='</div>';
+              cardHtml+='<div style="padding-right:50px;margin-top:8px;pointer-events:auto"><button class="tt-cta-btn" onclick="event.stopPropagation();showUberCheckout(\''+c.id+'\')">\u26A1 Book Day Pass \u00b7 '+c.price+'</button></div>';
+              cardHtml+='<div style="display:flex;gap:12px;margin-top:5px;padding-right:50px"><span style="font-size:10px;color:rgba(255,255,255,.35);font-weight:600">\u2705 Free Cancel</span><span style="font-size:10px;color:rgba(255,255,255,.35);font-weight:600">\u{1F512} Secure</span><span style="font-size:10px;color:rgba(255,255,255,.35);font-weight:600">\u26A1 Instant QR</span></div>';
+              cardHtml+='</div>';
               cardHtml+='</div>';
               tmp.innerHTML=cardHtml;
               while(tmp.firstChild)frag.appendChild(tmp.firstChild);
@@ -5948,7 +5995,7 @@ function LoginPage(){
       <div class="text-center mb-8">
         <div class="w-16 h-16 bg-brand rounded-2xl flex items-center justify-center mx-auto mb-4"><span class="text-white font-bold text-2xl">S</span></div>
         <h1 class="font-brand text-2xl font-bold text-white">Welcome to ScanGym</h1>
-        <p class="text-slate-400 text-sm mt-1">${isCodeStep ? 'Enter the code we sent to '+state.authPhone : 'One account. 1.2M+ gyms worldwide.'}</p>
+        <p class="text-slate-400 text-sm mt-1">${isCodeStep ? 'Enter the code we sent to '+state.authPhone : 'One account. Any gym. No membership.'}</p>
       </div>
       <div class="bg-card rounded-2xl border border-slate-700 p-6 space-y-4">
         <div id="auth-error" class="hidden bg-red-900/50 border border-red-500 text-red-300 text-sm rounded-lg p-3"></div>
@@ -7682,7 +7729,7 @@ function BookingSuccessPage(){
         <!-- Fix #113: Feel-good motivational message after booking -->
         <p class="text-white font-semibold text-sm mt-3" style="animation:fadeInUp .6s ease-out">${['💪 Your future self will thank you!','🏆 Champions train no matter what — you\'re one of them!','🔥 You just invested in the best version of yourself!','⚡ One workout closer to your goals!','🌟 The hardest part is showing up — you just did that!'][Math.floor(Math.abs((b.gymName||'').charCodeAt(0))%5)]}</p>
         <div id="sg-scroll-hint" style="margin-top:12px;text-align:center;animation:sgBounce 2s infinite;transition:opacity .3s"><span style="color:rgba(255,255,255,.3);font-size:24px">\u2304</span><p style="color:rgba(255,255,255,.3);font-size:10px;margin:0">Scroll for QR code & details</p></div>
-        <p class="text-slate-500 text-xs mt-2">🌍 Your ScanGym profile is now accepted at 1.2M+ gyms worldwide</p>
+        <p class="text-slate-500 text-xs mt-2">🌍 Your ScanGym profile is ready — book any gym, no membership needed</p>
       </div>
 
       <!-- Booking Summary Card -->
@@ -9442,7 +9489,7 @@ window.sgOwnerUpdatePrice=async function(){
 };
 
 // ═══════════════════════════════════════════════════════════════════
-//  UNIVERSAL SCANGYM PROFILE — "One signup. 1.2M+ gyms worldwide."
+//  UNIVERSAL SCANGYM PROFILE — "One signup. Any gym. No membership."
 // ═══════════════════════════════════════════════════════════════════
 
 // ── ScanGym ID Card (QR-based universal pass) ──
@@ -9501,7 +9548,7 @@ function ScanGymIDCard(u){
     <div style="display:flex;align-items:center;justify-content:space-between">
       <div style="display:flex;align-items:center;gap:6px">
         <span style="width:6px;height:6px;background:#4ade80;border-radius:50%;display:inline-block"></span>
-        <span style="color:rgba(255,255,255,.5);font-size:11px;font-weight:600">Accepted at 1.2M+ gyms worldwide</span>
+        <span style="color:rgba(255,255,255,.5);font-size:11px;font-weight:600">Book any gym — no membership needed</span>
       </div>
       <button onclick="event.stopPropagation();_shareIDCard()" style="background:none;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.4);font-size:10px;padding:4px 10px;border-radius:8px;cursor:pointer;font-weight:600">📤 Share</button>
     </div>
@@ -9510,7 +9557,7 @@ function ScanGymIDCard(u){
 // Share ID card handler (Fix #8E)
 window._shareIDCard=function(){
   if(navigator.share){
-    navigator.share({title:'My ScanGym ID',text:'Check out my ScanGym gym pass! Universal access to 1.2M+ gyms worldwide.',url:'https://scangym.com'}).catch(()=>{});
+    navigator.share({title:'My ScanGym ID',text:'Check out my ScanGym gym pass! Book any gym. No membership needed.',url:'https://scangym.com'}).catch(()=>{});
   }else{
     navigator.clipboard.writeText('https://scangym.com').then(()=>sgToast('Link copied!','success',2000)).catch(()=>{});
   }
@@ -9519,7 +9566,7 @@ window._shareIDCard=function(){
 // ── Profile Edit Page ──
 function ProfilePage(){
   const u=state.user;
-  if(!u)return`<div style="text-align:center;padding:80px 20px"><p style="font-size:40px;margin-bottom:16px">🔒</p><p style="color:#fff;font-size:18px;font-weight:700;margin-bottom:8px">Log in to view your profile</p><p style="color:rgba(255,255,255,.4);margin-bottom:24px">Your ScanGym profile works at 1.2M+ gyms</p><button onclick="navigate('/login')" style="background:#FF6D00;color:#fff;border:none;padding:14px 32px;border-radius:12px;font-weight:700;font-size:16px;cursor:pointer">Log In →</button></div>`;
+  if(!u)return`<div style="text-align:center;padding:80px 20px"><p style="font-size:40px;margin-bottom:16px">🔒</p><p style="color:#fff;font-size:18px;font-weight:700;margin-bottom:8px">Log in to view your profile</p><p style="color:rgba(255,255,255,.4);margin-bottom:24px">Your ScanGym profile works at any gym</p><button onclick="navigate('/login')" style="background:#FF6D00;color:#fff;border:none;padding:14px 32px;border-radius:12px;font-weight:700;font-size:16px;cursor:pointer">Log In →</button></div>`;
   return`<div style="padding:16px;max-width:480px;margin:0 auto">
     <div onclick="navigate('/more')" style="display:flex;align-items:center;gap:8px;padding:12px 0;cursor:pointer;color:rgba(255,255,255,.6);font-size:14px;font-weight:600;margin-bottom:4px">← Back</div>
     <h2 style="color:#fff;font-size:22px;font-weight:800;margin:0 0 4px">My Profile</h2>
@@ -9601,7 +9648,7 @@ function ProfilePage(){
     </div>
 
     <div style="margin-top:24px;text-align:center">
-      <p style="color:rgba(255,255,255,.3);font-size:12px;line-height:1.6">🌍 Your ScanGym profile is your universal gym pass.<br>Accepted at <strong style="color:rgba(255,255,255,.5)">1.2M+ gyms</strong> in 190+ countries.</p>
+      <p style="color:rgba(255,255,255,.3);font-size:12px;line-height:1.6">🌍 Your ScanGym profile is your universal gym pass.<br>Accepted at <strong style="color:rgba(255,255,255,.5)">any gym</strong> — no membership needed.</p>
     </div>
   </div>`;
 }
@@ -9690,7 +9737,7 @@ function MoreHubPage(){
     </div>
 
     <!-- Universal ScanGym ID Card -->
-    ${u?ScanGymIDCard(u):'<div onclick="navigate(\'/login\')" style="background:rgba(255,109,0,.06);border:1px dashed rgba(255,109,0,.2);border-radius:16px;padding:20px;text-align:center;cursor:pointer;margin-bottom:20px"><p style="font-size:24px;margin-bottom:8px">🌍</p><p style="color:#fff;font-weight:700;font-size:15px;margin-bottom:4px">Get your Universal Gym Pass</p><p style="color:rgba(255,255,255,.4);font-size:12px">Sign up once. Accepted at 1.2M+ gyms worldwide.</p></div>'}
+    ${u?ScanGymIDCard(u):'<div onclick="navigate(\'/login\')" style="background:rgba(255,109,0,.06);border:1px dashed rgba(255,109,0,.2);border-radius:16px;padding:20px;text-align:center;cursor:pointer;margin-bottom:20px"><p style="font-size:24px;margin-bottom:8px">🌍</p><p style="color:#fff;font-weight:700;font-size:15px;margin-bottom:4px">Get your Universal Gym Pass</p><p style="color:rgba(255,255,255,.4);font-size:12px">Sign up once. Book any gym — no membership needed.</p></div>'}
 
     <!-- Your Activity -->
     <div class="sg-more-section">
