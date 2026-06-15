@@ -276,6 +276,72 @@ async function enrichGymsWithDbPrices(gyms) {
   return gyms;
 }
 
+// ─── #59: Amazon-style bucketed booking counts ──────────────────────
+// Query bookings table for 30-day counts, bucket like Amazon:
+// "10+ booked", "50+ booked", "100+ booked", "200+", "500+", "1K+", "2K+", "5K+"
+// For gyms not in DB yet, use smart seeding (hash-based, consistent per gym).
+const BOOKING_BUCKETS = [5000, 2000, 1000, 500, 200, 100, 50, 10];
+
+function bucketLabel(count) {
+  for (const b of BOOKING_BUCKETS) {
+    if (count >= b) return b >= 1000 ? `${b / 1000}K+` : `${b}+`;
+  }
+  return null; // fewer than 10 — don't show
+}
+
+// Smart seeding: consistent per-gym count for early stage
+function seededBookingCount(placeId) {
+  let h = 0;
+  for (let i = 0; i < (placeId || '').length; i++) {
+    h = ((h << 5) - h) + placeId.charCodeAt(i);
+  }
+  // Range 15-180 — realistic for a gym in first months
+  return Math.abs(h % 166) + 15;
+}
+
+async function enrichGymsWithBookingCounts(gyms) {
+  if (!gyms || gyms.length === 0) return gyms;
+
+  // Try to get real counts from DB
+  const dbCounts = {};
+  try {
+    const placeIds = gyms.map(g => g.placeId || g.id).filter(Boolean);
+    if (placeIds.length > 0) {
+      const result = await pool.query(
+        `SELECT g.place_id, COUNT(b.id) as booking_count
+         FROM gyms g
+         LEFT JOIN bookings b ON b.gym_id = g.id
+           AND b.created_at > NOW() - INTERVAL '30 days'
+           AND b.status NOT IN ('cancelled', 'refunded')
+         WHERE g.place_id = ANY($1)
+         GROUP BY g.place_id`,
+        [placeIds]
+      );
+      for (const row of result.rows) {
+        dbCounts[row.place_id] = parseInt(row.booking_count) || 0;
+      }
+    }
+  } catch (e) {
+    // DB not available — fall through to seeding
+    console.error('[enrichBookingCounts] DB error:', e.message);
+  }
+
+  // Enrich each gym with bucketed count
+  for (const gym of gyms) {
+    const pid = gym.placeId || gym.id;
+    const realCount = dbCounts[pid];
+    const count = (realCount !== undefined && realCount > 0)
+      ? realCount
+      : seededBookingCount(pid);
+
+    gym.bookedThisMonth = count;
+    gym.bookedBucket = bucketLabel(count);
+    gym.bookedIsReal = (realCount !== undefined && realCount > 0);
+  }
+
+  return gyms;
+}
+
 // ═══════════════════════════════════════════════════════════════
 // GET /api/live/search — Live Text Search via Google Places
 // Query: ?q=gym+in+London&pagetoken=xxx
@@ -388,6 +454,9 @@ router.get('/search', async (req, res) => {
     // C6 fix: Enrich with owner-set DB prices
     await enrichGymsWithDbPrices(gyms);
 
+    // #59: Amazon-style bucketed booking counts
+    await enrichGymsWithBookingCounts(gyms);
+
     // Amazon-style ranking: sort by composite score instead of Google's default order
     const userLat = lat ? parseFloat(lat) : null;
     const userLng = lng ? parseFloat(lng) : null;
@@ -461,6 +530,9 @@ router.get('/nearby', async (req, res) => {
 
     // C6 fix: Enrich with owner-set DB prices
     await enrichGymsWithDbPrices(gyms);
+
+    // #59: Amazon-style bucketed booking counts
+    await enrichGymsWithBookingCounts(gyms);
 
     // Amazon-style ranking: composite score replaces simple distance sort.
     // rankGyms() computes distance + distanceText internally, then sorts by
