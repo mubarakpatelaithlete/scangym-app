@@ -170,3 +170,23 @@ body {
 .sg-cal-pass.selected{background:rgba(255,109,0,.12);border-color:#FF6D00;box-shadow:0 0 12px rgba(255,109,0,.15)}
 .sg-cal-pass.selected span{color:#FF6D00!important}
 #sg-cal-pass-strip::-webkit-scrollbar{display:none}
+
+
+/* ═══ V2 Improvements (PR #288) ═══ */
+
+/* AI Review Summary */
+#rv-ai-summary strong{color:#c4b5fd;}
+
+/* Promo code field */
+#ub-promo-code::placeholder{color:rgba(255,255,255,.3);text-transform:none;letter-spacing:normal}
+#ub-promo-code:focus{border-color:rgba(255,109,0,.4)!important}
+
+/* Apple/Google Pay hover */
+#ov-pay-apple-btn:active,#ov-pay-google-btn:active{transform:scale(.98);opacity:.9}
+
+/* Review photo grid enhancement */
+.rv-review-photo{transition:transform .15s}
+.rv-review-photo:active{transform:scale(.95)}
+
+/* Fullscreen photo viewer enhancement */
+.rv-fullscreen{backdrop-filter:blur(8px)}

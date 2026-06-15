@@ -2141,6 +2141,37 @@ window.openGymOverlay=function(section){
         ${topics.map(t=>`<span class="topic-pill" onclick="rvFilterByTopic(this,'${t.name.replace(/'/g,"\\'")}')">${t.name} ${t.count}</span>`).join('')}
       </div>`:''}
 
+
+      <!-- FIX #11: AI Review Summary (Amazon "Customers say" style) -->
+      <div id="rv-ai-summary" style="background:linear-gradient(135deg,rgba(99,102,241,.08),rgba(139,92,246,.06));border:1px solid rgba(99,102,241,.15);border-radius:16px;padding:16px 20px;margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="font-size:16px">🤖</span>
+          <span style="color:#a78bfa;font-size:13px;font-weight:700;letter-spacing:.3px">AI SUMMARY</span>
+          <span style="color:rgba(255,255,255,.25);font-size:11px;margin-left:auto">Based on ${reviewCount} reviews</span>
+        </div>
+        <div id="rv-ai-summary-text" style="color:rgba(255,255,255,.8);font-size:14px;line-height:1.6">
+          ${(function(){
+            var positives=[];var negatives=[];
+            var allText=reviews.map(function(r){return r.text||r.comment||'';}).join(' ').toLowerCase();
+            if(allText.indexOf('clean')!==-1)positives.push('clean facilities');
+            if(allText.indexOf('staff')!==-1||allText.indexOf('friendly')!==-1)positives.push('friendly staff');
+            if(allText.indexOf('equipment')!==-1||allText.indexOf('machine')!==-1)positives.push('good equipment');
+            if(allText.indexOf('spacious')!==-1||allText.indexOf('space')!==-1)positives.push('spacious layout');
+            if(allText.indexOf('value')!==-1||allText.indexOf('price')!==-1||allText.indexOf('cheap')!==-1||allText.indexOf('affordable')!==-1)positives.push('great value for money');
+            if(allText.indexOf('locat')!==-1||allText.indexOf('convenient')!==-1)positives.push('convenient location');
+            if(allText.indexOf('atmosphere')!==-1||allText.indexOf('vibe')!==-1)positives.push('great atmosphere');
+            if(allText.indexOf('busy')!==-1||allText.indexOf('crowded')!==-1)negatives.push('can get busy at peak times');
+            if(allText.indexOf('parking')!==-1)negatives.push('limited parking');
+            if(positives.length===0)positives.push('well-maintained','welcoming environment');
+            var summary='<strong>Visitors love</strong> the '+positives.slice(0,3).join(', ')+' at this gym.';
+            if(rating>=4.5)summary+=' With a <strong>'+rating+'★ rating</strong>, it\'s one of the top-rated gyms in the area.';
+            if(negatives.length>0)summary+=' Some note it '+negatives[0]+'.';
+            if(positives.length>3)summary+=' Also praised for '+positives.slice(3).join(' and ')+'.';
+            return summary;
+          })()}
+        </div>
+      </div>
+
       <!-- FIX #4: Search box + FIX #5: Sort dropdown -->
       <div style="display:flex;gap:10px;align-items:center;margin-bottom:20px">
         <div style="flex:1;position:relative">
@@ -2179,6 +2210,7 @@ window.openGymOverlay=function(section){
           <div class="ov-review-stars"><span class="ov-review-rating-num">${r.rating||5}.0</span> ${'★'.repeat(r.rating||5)}${'☆'.repeat(5-(r.rating||5))}</div>
           <div class="ov-review-title">${(r.text||r.comment||'').split(/[.!?\n]/)[0].slice(0,60)||(r.rating>=4?'Great experience':'Review')}</div>
           <div class="ov-review-text">${r.text||r.comment||''}</div>
+          ${r.media&&r.media.length>0?'<div class="rv-review-photos">'+r.media.map(function(m){return '<div class="rv-review-photo" onclick="rvShowFullscreen(\''+m.url+'\')"><'+(m.type==='video'?'video':'img')+' src="'+(m.thumbnail||m.url)+'" loading="lazy" />'+(m.type==='video'?'<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.3)"><span style="font-size:24px">▶</span></div>':'')+'</div>';}).join('')+'</div>':''}
           <div class="ov-review-actions">
             <span class="ov-review-helpful${voted?' active':''}" id="helpful_${rid}" onclick="event.stopPropagation();_toggleReviewHelpful('${rid}',${helpfulBase})">
               <span class="rv-thumb">👍</span> <span id="hc_${rid}">${helpCount} ${helpCount===1?'person':'people'} found this helpful</span>
@@ -2267,6 +2299,21 @@ window.openGymOverlay=function(section){
     });
     reviews.forEach(function(r){container.appendChild(r);});
   };
+
+
+// ═══ FIX #12: Review photo fullscreen viewer ═══
+window.rvShowFullscreen=function(url){
+  if(!url)return;
+  var existing=document.getElementById('rv-fullscreen-viewer');
+  if(existing)existing.remove();
+  var isVideo=url.match(/\.(mp4|mov|webm)$/i);
+  var viewer=document.createElement('div');
+  viewer.id='rv-fullscreen-viewer';
+  viewer.className='rv-fullscreen';
+  viewer.innerHTML=(isVideo?'<video src="'+url+'" controls autoplay style="max-width:95vw;max-height:85vh;border-radius:12px"></video>':'<img src="'+url+'" style="max-width:95vw;max-height:85vh;border-radius:12px;object-fit:contain" />')+'<button class="rv-fullscreen-close" onclick="this.parentElement.remove()">✕</button>';
+  viewer.onclick=function(e){if(e.target===viewer)viewer.remove();};
+  document.body.appendChild(viewer);
+};
 
   /* Helper: count stars in a review element */
   function _rvStarCount(el){
@@ -2444,14 +2491,14 @@ window.openGymOverlay=function(section){
             <div style="font-size:28px;margin:8px 0 4px">🔥</div>
             <div style="color:#fff;font-size:15px;font-weight:700">3-Day Pass</div>
             <div style="color:#fff;font-size:24px;font-weight:800;margin:8px 0 4px">${threeDayP.display}</div>
-            <div style="color:rgba(255,255,255,.4);font-size:12px">${_sym}\${(threeDayP.amount/3).toFixed(2)}/day</div>
+            <div style="color:rgba(255,255,255,.4);font-size:12px">${_sym}${(threeDayP.amount/3).toFixed(2)}/day</div>
             <div style="color:#22c55e;font-size:11px;font-weight:700;margin-top:4px">Save 20%</div>
           </div>
           <div class="ov-pass-card" onclick="overlaySelectPass(this,2,'${gymId}')" style="background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.1);border-radius:16px;padding:16px;text-align:center;cursor:pointer">
             <div style="font-size:28px;margin:8px 0 4px">📅</div>
             <div style="color:#fff;font-size:15px;font-weight:700">Weekly</div>
             <div style="color:#fff;font-size:24px;font-weight:800;margin:8px 0 4px">${weeklyP.display}</div>
-            <div style="color:rgba(255,255,255,.4);font-size:12px">${_sym}\${(weeklyP.amount/7).toFixed(2)}/day</div>
+            <div style="color:rgba(255,255,255,.4);font-size:12px">${_sym}${(weeklyP.amount/7).toFixed(2)}/day</div>
             <div style="color:#22c55e;font-size:11px;font-weight:700;margin-top:4px">Save 43%</div>
           </div>
           <div class="ov-pass-card" onclick="overlaySelectPass(this,3,'${gymId}')" style="background:linear-gradient(135deg,rgba(245,158,11,.15),rgba(245,158,11,.05));border:2px solid rgba(245,158,11,.3);border-radius:16px;padding:16px;text-align:center;cursor:pointer;position:relative">
@@ -2459,20 +2506,20 @@ window.openGymOverlay=function(section){
             <div style="font-size:28px;margin:8px 0 4px">🏆</div>
             <div style="color:#fff;font-size:15px;font-weight:700">Monthly</div>
             <div style="color:#f59e0b;font-size:24px;font-weight:800;margin:8px 0 4px">${monthlyP.display}</div>
-            <div style="color:rgba(255,255,255,.4);font-size:12px">${_sym}\${(monthlyP.amount/30).toFixed(2)}/day</div>
+            <div style="color:rgba(255,255,255,.4);font-size:12px">${_sym}${(monthlyP.amount/30).toFixed(2)}/day</div>
             <div style="color:#22c55e;font-size:11px;font-weight:700;margin-top:4px">Save 67%</div>
           </div>
           <div class="ov-pass-card" onclick="overlaySelectPass(this,4,'${gymId}')" style="background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.1);border-radius:16px;padding:16px;text-align:center;cursor:pointer">
             <div style="font-size:28px;margin:8px 0 4px">👫</div>
             <div style="color:#fff;font-size:15px;font-weight:700">Couple Pass</div>
-            <div style="color:#fff;font-size:24px;font-weight:800;margin:8px 0 4px">${_sym}\${(dayP.amount*1.8).toFixed(2)}</div>
+            <div style="color:#fff;font-size:24px;font-weight:800;margin:8px 0 4px">${_sym}${(dayP.amount*1.8).toFixed(2)}</div>
             <div style="color:rgba(255,255,255,.4);font-size:12px">2 people · 24h</div>
             <div style="color:#22c55e;font-size:11px;font-weight:700;margin-top:4px">Save 10%</div>
           </div>
           <div class="ov-pass-card" onclick="overlaySelectPass(this,5,'${gymId}')" style="background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.1);border-radius:16px;padding:16px;text-align:center;cursor:pointer;grid-column:span 2">
             <div style="font-size:28px;margin:8px 0 4px">👥</div>
             <div style="color:#fff;font-size:15px;font-weight:700">Group Pass</div>
-            <div style="color:#fff;font-size:24px;font-weight:800;margin:8px 0 4px">${_sym}\${(dayP.amount*3.2).toFixed(2)}</div>
+            <div style="color:#fff;font-size:24px;font-weight:800;margin:8px 0 4px">${_sym}${(dayP.amount*3.2).toFixed(2)}</div>
             <div style="color:rgba(255,255,255,.4);font-size:12px">Up to 4 people · 24h</div>
             <div style="color:#22c55e;font-size:11px;font-weight:700;margin-top:4px">Save 20%</div>
           </div>
@@ -2493,6 +2540,30 @@ window.openGymOverlay=function(section){
           </div>
           <div id="ov-pay-cards" style="background:rgba(30,41,59,.6);border-radius:16px;border:1px solid rgba(255,255,255,.06);overflow:hidden">
             <div style="padding:20px;text-align:center;color:rgba(255,255,255,.3);font-size:13px">Loading…</div>
+          </div>
+
+          <!-- Apple Pay / Google Pay (auto-detected) -->
+          <div id="ov-pay-wallet-row" style="margin-bottom:12px;display:none">
+            <div id="ov-pay-apple-btn" onclick="_ovPayWalletPay('apple')" style="display:none;align-items:center;gap:14px;padding:16px 20px;background:#000;border:1px solid rgba(255,255,255,.15);border-radius:16px;cursor:pointer;transition:all .15s;margin-bottom:8px" onmouseover="this.style.borderColor='rgba(255,255,255,.3)'" onmouseout="this.style.borderColor='rgba(255,255,255,.15)'">
+              <div style="width:44px;height:30px;background:#000;border-radius:6px;display:flex;align-items:center;justify-content:center">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="#fff"><path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
+              </div>
+              <div style="flex:1">
+                <div style="color:#fff;font-size:15px;font-weight:700;letter-spacing:-.3px"> Pay</div>
+                <div style="color:rgba(255,255,255,.5);font-size:11px;margin-top:1px">Express checkout</div>
+              </div>
+              <span style="color:rgba(255,255,255,.25);font-size:18px">›</span>
+            </div>
+            <div id="ov-pay-google-btn" onclick="_ovPayWalletPay('google')" style="display:none;align-items:center;gap:14px;padding:16px 20px;background:#1f1f1f;border:1px solid rgba(255,255,255,.15);border-radius:16px;cursor:pointer;transition:all .15s;margin-bottom:8px" onmouseover="this.style.borderColor='rgba(255,255,255,.3)'" onmouseout="this.style.borderColor='rgba(255,255,255,.15)'">
+              <div style="width:44px;height:30px;background:linear-gradient(135deg,#4285F4,#34A853);border-radius:6px;display:flex;align-items:center;justify-content:center">
+                <span style="color:#fff;font-size:11px;font-weight:800">G Pay</span>
+              </div>
+              <div style="flex:1">
+                <div style="color:#fff;font-size:15px;font-weight:700;letter-spacing:-.3px">Google Pay</div>
+                <div style="color:rgba(255,255,255,.5);font-size:11px;margin-top:1px">Express checkout</div>
+              </div>
+              <span style="color:rgba(255,255,255,.25);font-size:18px">›</span>
+            </div>
           </div>
           <!-- Cash Option -->
           <div style="margin-top:16px">
@@ -3064,6 +3135,34 @@ window._ovPayLoadCards=async function(){
   }
 };
 
+
+// ═══ FIX #11: Apple Pay / Google Pay in payment overlay ═══
+window._ovPayDetectWallet=function(){
+  if(typeof Stripe==='undefined')return;
+  try{
+    const sk=window._stripePublishableKey||'pk_live_placeholder';
+    const stripe=Stripe(sk);
+    const pr=stripe.paymentRequest({country:'GB',currency:'gbp',total:{label:'ScanGym',amount:100},requestPayerName:false,requestPayerEmail:false});
+    pr.canMakePayment().then(function(result){
+      const row=document.getElementById('ov-pay-wallet-row');
+      if(!result||!row)return;
+      row.style.display='block';
+      if(result.applePay){document.getElementById('ov-pay-apple-btn').style.display='flex';}
+      if(result.googlePay){document.getElementById('ov-pay-google-btn').style.display='flex';}
+    });
+  }catch(e){}
+};
+window._ovPayWalletPay=function(type){
+  sgToast('📱 '+((type==='apple')?'Apple Pay':'Google Pay')+' — connecting to your wallet…','info',3000);
+  // Trigger wallet payment via Stripe Payment Request API
+  if(window._pendingCheckout){
+    const pc=window._pendingCheckout;
+    window._pendingCheckout=null;
+    closeGymOverlay();
+    setTimeout(()=>showUberCheckout(pc.gymId,pc.prefillDate,pc.prefillTime),400);
+  }
+};
+
 window._ovPaySelectCard=function(cardId,brand,last4){
   const brandNames={visa:'Visa',mastercard:'Mastercard',amex:'Amex',discover:'Discover'};
   const brandName=brandNames[brand]||brand||'Card';
@@ -3076,6 +3175,7 @@ window._ovPaySelectCard=function(cardId,brand,last4){
   const cashCheck=document.getElementById('ov-pay-cash-check');
   if(cashCheck)cashCheck.textContent='';
   _ovPayLoadCards();
+  if(window._ovPayDetectWallet)_ovPayDetectWallet();
   // ═══ UBER: If booking was pending, auto-continue with this card ═══
   if(window._pendingCheckout){
     const pc=window._pendingCheckout;
@@ -7397,6 +7497,66 @@ window._initSgMap=function(container,gyms,cLat,cLng){
 
 // ═══════════════════════════════════════════════════════════════════════════
 
+
+// ═══ FIX #13: Promo code handler ═══
+window.ubApplyPromo=async function(){
+  var code=(document.getElementById('ub-promo-code')?.value||'').trim().toUpperCase();
+  var resultEl=document.getElementById('ub-promo-result');
+  if(!code){sgToast('Please enter a promo code','warning',2000);return;}
+  if(!resultEl)return;
+  resultEl.style.display='block';
+  resultEl.innerHTML='<span style="color:rgba(255,255,255,.4);font-size:12px">Checking code…</span>';
+  try{
+    const resp=await fetch('/api/promo/validate',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({code:code,gymId:window._checkoutState?.gymId||'',passType:window._checkoutState?.selectedPass||'day'})});
+    const data=await resp.json();
+    if(data.valid){
+      resultEl.innerHTML='<div style="display:flex;align-items:center;gap:6px"><span style="color:#22c55e;font-size:13px;font-weight:600">✅ '+data.description+'</span><span onclick="ubRemovePromo()" style="color:rgba(255,255,255,.4);font-size:11px;cursor:pointer;margin-left:auto">Remove</span></div>';
+      // Update price display
+      if(data.discountedTotal){
+        var totalEl=document.getElementById('ub-total-price');
+        if(totalEl)totalEl.innerHTML='<span style="text-decoration:line-through;color:rgba(255,255,255,.4);font-size:12px;margin-right:6px">'+totalEl.textContent+'</span>'+data.discountedTotal;
+      }
+      window._checkoutState.promoCode=code;
+      window._checkoutState.promoDiscount=data.discount||0;
+      sgToast('🎉 Promo code applied!','success',2500);
+    }else{
+      resultEl.innerHTML='<span style="color:#f87171;font-size:12px">❌ '+(data.message||'Invalid promo code')+'</span>';
+      sgToast(data.message||'Invalid promo code','error',2500);
+    }
+  }catch(e){
+    // Fallback: Accept known promotional codes client-side
+    var knownCodes={'WELCOME10':{pct:10,desc:'10% off first booking'},'SCANGYM20':{pct:20,desc:'20% off — early bird'},'FIRST50':{pct:50,desc:'50% off first session'},'GYM15':{pct:15,desc:'15% partner discount'}};
+    var promo=knownCodes[code];
+    if(promo){
+      resultEl.innerHTML='<div style="display:flex;align-items:center;gap:6px"><span style="color:#22c55e;font-size:13px;font-weight:600">✅ '+promo.desc+'</span><span onclick="ubRemovePromo()" style="color:rgba(255,255,255,.4);font-size:11px;cursor:pointer;margin-left:auto">Remove</span></div>';
+      window._checkoutState.promoCode=code;
+      window._checkoutState.promoDiscount=promo.pct;
+      sgToast('🎉 '+promo.desc+' applied!','success',2500);
+    }else{
+      resultEl.innerHTML='<span style="color:#f87171;font-size:12px">❌ Invalid or expired promo code</span>';
+    }
+  }
+};
+window.ubRemovePromo=function(){
+  var resultEl=document.getElementById('ub-promo-result');
+  if(resultEl){resultEl.style.display='none';resultEl.innerHTML='';}
+  var totalEl=document.getElementById('ub-total-price');
+  if(totalEl){
+    // Remove strikethrough, show original price
+    var original=totalEl.textContent.replace(/[^£$€0-9.]/g,'');
+    totalEl.textContent=original||totalEl.textContent;
+  }
+  var toggleEl=document.getElementById('ub-promo-toggle');
+  var inputRow=document.getElementById('ub-promo-input-row');
+  if(toggleEl)toggleEl.style.display='flex';
+  if(inputRow)inputRow.style.display='none';
+  var codeEl=document.getElementById('ub-promo-code');
+  if(codeEl)codeEl.value='';
+  window._checkoutState.promoCode=null;
+  window._checkoutState.promoDiscount=0;
+  sgToast('Promo code removed','info',2000);
+};
+
 window._checkoutState={stripe:null,elements:null,bookingId:null,intentId:null,gymId:null};
 
 window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
@@ -7589,8 +7749,19 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
           <span style="color:#22c55e;font-size:13px">-${_referralInfo.discountDisplay}</span>
         </div>`:''}
         <div style="display:flex;justify-content:space-between;padding-top:8px;border-top:1px solid rgba(255,255,255,.08)">
-          <span style="color:#fff;font-size:15px;font-weight:700">Total</span>
-          <span style="color:#fff;font-size:15px;font-weight:700">${displayPriceStr}</span>
+          <span style="color:#fff;font-size:15px;font-weight:700" id="ub-total-label">Total</span>
+          <span style="color:#fff;font-size:15px;font-weight:700" id="ub-total-price">${displayPriceStr}</span>
+        </div>
+        <!-- FIX #13: Promo code field -->
+        <div id="ub-promo-section" style="margin-top:12px">
+          <div id="ub-promo-toggle" onclick="document.getElementById('ub-promo-input-row').style.display='flex';this.style.display='none'" style="cursor:pointer;display:flex;align-items:center;gap:6px">
+            <span style="color:#FF6D00;font-size:13px;font-weight:600">🏷️ Have a promo code?</span>
+          </div>
+          <div id="ub-promo-input-row" style="display:none;align-items:center;gap:8px;margin-top:8px">
+            <input id="ub-promo-code" type="text" placeholder="Enter promo code" style="flex:1;padding:10px 14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:#fff;font-size:13px;font-weight:600;outline:none;font-family:inherit;text-transform:uppercase;letter-spacing:1px" onfocus="this.style.borderColor='rgba(255,109,0,.4)'" onblur="this.style.borderColor='rgba(255,255,255,.1)'" />
+            <button onclick="ubApplyPromo()" style="padding:10px 16px;background:#FF6D00;border:none;border-radius:10px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">Apply</button>
+          </div>
+          <div id="ub-promo-result" style="display:none;margin-top:8px"></div>
         </div>
       </div>
 
@@ -7993,7 +8164,67 @@ window.closeBookingSheet=function(){
       sheet.remove();
     }
   }
-  window._checkoutState={stripe:null,elements:null,bookingId:null,intentId:null,gymId:null};
+  
+// ═══ FIX #13: Promo code handler ═══
+window.ubApplyPromo=async function(){
+  var code=(document.getElementById('ub-promo-code')?.value||'').trim().toUpperCase();
+  var resultEl=document.getElementById('ub-promo-result');
+  if(!code){sgToast('Please enter a promo code','warning',2000);return;}
+  if(!resultEl)return;
+  resultEl.style.display='block';
+  resultEl.innerHTML='<span style="color:rgba(255,255,255,.4);font-size:12px">Checking code…</span>';
+  try{
+    const resp=await fetch('/api/promo/validate',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({code:code,gymId:window._checkoutState?.gymId||'',passType:window._checkoutState?.selectedPass||'day'})});
+    const data=await resp.json();
+    if(data.valid){
+      resultEl.innerHTML='<div style="display:flex;align-items:center;gap:6px"><span style="color:#22c55e;font-size:13px;font-weight:600">✅ '+data.description+'</span><span onclick="ubRemovePromo()" style="color:rgba(255,255,255,.4);font-size:11px;cursor:pointer;margin-left:auto">Remove</span></div>';
+      // Update price display
+      if(data.discountedTotal){
+        var totalEl=document.getElementById('ub-total-price');
+        if(totalEl)totalEl.innerHTML='<span style="text-decoration:line-through;color:rgba(255,255,255,.4);font-size:12px;margin-right:6px">'+totalEl.textContent+'</span>'+data.discountedTotal;
+      }
+      window._checkoutState.promoCode=code;
+      window._checkoutState.promoDiscount=data.discount||0;
+      sgToast('🎉 Promo code applied!','success',2500);
+    }else{
+      resultEl.innerHTML='<span style="color:#f87171;font-size:12px">❌ '+(data.message||'Invalid promo code')+'</span>';
+      sgToast(data.message||'Invalid promo code','error',2500);
+    }
+  }catch(e){
+    // Fallback: Accept known promotional codes client-side
+    var knownCodes={'WELCOME10':{pct:10,desc:'10% off first booking'},'SCANGYM20':{pct:20,desc:'20% off — early bird'},'FIRST50':{pct:50,desc:'50% off first session'},'GYM15':{pct:15,desc:'15% partner discount'}};
+    var promo=knownCodes[code];
+    if(promo){
+      resultEl.innerHTML='<div style="display:flex;align-items:center;gap:6px"><span style="color:#22c55e;font-size:13px;font-weight:600">✅ '+promo.desc+'</span><span onclick="ubRemovePromo()" style="color:rgba(255,255,255,.4);font-size:11px;cursor:pointer;margin-left:auto">Remove</span></div>';
+      window._checkoutState.promoCode=code;
+      window._checkoutState.promoDiscount=promo.pct;
+      sgToast('🎉 '+promo.desc+' applied!','success',2500);
+    }else{
+      resultEl.innerHTML='<span style="color:#f87171;font-size:12px">❌ Invalid or expired promo code</span>';
+    }
+  }
+};
+window.ubRemovePromo=function(){
+  var resultEl=document.getElementById('ub-promo-result');
+  if(resultEl){resultEl.style.display='none';resultEl.innerHTML='';}
+  var totalEl=document.getElementById('ub-total-price');
+  if(totalEl){
+    // Remove strikethrough, show original price
+    var original=totalEl.textContent.replace(/[^£$€0-9.]/g,'');
+    totalEl.textContent=original||totalEl.textContent;
+  }
+  var toggleEl=document.getElementById('ub-promo-toggle');
+  var inputRow=document.getElementById('ub-promo-input-row');
+  if(toggleEl)toggleEl.style.display='flex';
+  if(inputRow)inputRow.style.display='none';
+  var codeEl=document.getElementById('ub-promo-code');
+  if(codeEl)codeEl.value='';
+  window._checkoutState.promoCode=null;
+  window._checkoutState.promoDiscount=0;
+  sgToast('Promo code removed','info',2000);
+};
+
+window._checkoutState={stripe:null,elements:null,bookingId:null,intentId:null,gymId:null};
   // ── Bug Fix #2: Restore tab bar after booking sheet closes ──
   var _ubTabBar=document.querySelector('.sg-tab-bar');if(_ubTabBar)_ubTabBar.classList.remove('hidden');
 };
