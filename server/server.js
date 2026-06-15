@@ -628,6 +628,11 @@ if (fs.existsSync(FRONTEND_DIR)) {
     res.sendFile(path.join(FRONTEND_DIR, 'admin', 'uploads', 'index.html'));
   });
 
+  // /about page — static, SEO-friendly, crawlable by LLMs
+  app.get('/about', (req, res) => {
+    res.sendFile(path.join(FRONTEND_DIR, 'about', 'index.html'));
+  });
+
   // SPA fallback - serve index.html for all non-API routes
   // UBER PATTERN #4: Inject Cloudflare geolocation + IP geo into HTML for 0ms location detection
   let _indexHtmlCache = null;
