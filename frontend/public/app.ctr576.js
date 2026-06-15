@@ -57,7 +57,15 @@ function urgencyNum(name,max){let h=0;for(let i=0;i<(name||'').length;i++)h=((h<
 function minutesAgo(name){return urgencyNum(name,45)+1;}
 function peopleLooking(name){return urgencyNum(name,8)+2;}
 function spotsLeft(name){return urgencyNum(name,6)+2;}
-function bookedToday(name){return urgencyNum(name,40)+10;}
+// #59: Amazon-style bucket — uses API data when available, falls back to seeded
+function bookedBucket(gym){
+  if(gym&&gym.bookedBucket) return gym.bookedBucket+' booked this month';
+  // Fallback: hash-based seed (consistent per gym)
+  var c=urgencyNum(gym&&gym.name||'gym',166)+15;
+  var buckets=[5000,2000,1000,500,200,100,50,10];
+  for(var i=0;i<buckets.length;i++){if(c>=buckets[i])return(buckets[i]>=1000?(buckets[i]/1000)+'K+':buckets[i]+'+')+' booked this month';}
+  return '10+ booked this month';
+}
 function closingTime(gym){if(gym.opening_hours?.weekday?.length){const now=new Date().getDay();const todayHours=gym.opening_hours.weekday[now===0?6:now-1]||'';const m=todayHours.match(/(\d{1,2}:\d{2}\s*[AP]M)/gi);if(m&&m.length>1)return m[m.length-1];}return gym.openNow===true?'10:00 PM':null;}
 
 function openingTime(gym){if(gym.opening_hours?.weekday?.length){const now=new Date().getDay();const todayHours=gym.opening_hours.weekday[now===0?6:now-1]||'';const m=todayHours.match(/(\d{1,2}:\d{2}\s*[AP]M)/gi);if(m&&m.length>=1)return m[0];}return '6:00 AM';}
@@ -1329,8 +1337,7 @@ function SearchPage(){
           html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'payment\')"><div class="tt-action-btn">\u{1F4B3}</div></div>';
           html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'passes\')"><div class="tt-action-btn">\u{1F39F}\uFE0F</div></div>';
           html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'hours\')"><div class="tt-action-btn">\u{1F4C5}</div></div>';
-          html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'facilities\')"><div class="tt-action-btn">\u{1F3CA}</div></div>';
-          html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'equipment\')"><div class="tt-action-btn">\u{1F3CB}\uFE0F</div></div>';
+          /* #59 cleanup: equipment & facilities buttons removed per user request */
           /* map button removed */
           html+='</div>';
 
@@ -1353,7 +1360,7 @@ function SearchPage(){
           /* Address */
           html+='<div class="tt-gym-addr">\u{1F4CD} '+(c.addr?c.addr.split(',')[0]:'Nearby')+' \u00b7 <span class="tt-travel-label" data-gym-travel-id="'+c.id+'">'+c.distMin+'</span> \u00b7 <span class="'+c.openClass+'">'+c.openTag+'</span></div>';
           /* Chips — Fix #59, #105, #107: Social proof & FOMO signals (seeded until real analytics wired up) */
-          var _bToday=bookedToday(c.name);
+          var _bMonth=bookedBucket(c.gym);
           var _pLook=peopleLooking(c.name);
           var _mAgo=minutesAgo(c.name);
           html+='<div class="tt-chips">';
@@ -1362,7 +1369,7 @@ function SearchPage(){
           if(c.gym.isSelfService) html+='<div class="tt-chip" style="background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.25);color:#a78bfa">\u{1F513} Self Entry</div>';
           html+='<div class="tt-chip">\u{1F4B0} '+c.price+'/day</div>';
           html+='<div class="tt-chip">\u2B50 '+c.rating+(c.reviews?' ('+c.reviews+')':'')+'</div>';
-          html+='<div class="tt-chip" style="background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.25)">\u{1F4C8} '+_bToday+' booked today</div>';
+          html+='<div class="tt-chip" style="background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.25)">\u{1F4C8} '+_bMonth+'</div>';
           html+='<div class="tt-chip" style="background:rgba(239,68,68,.14);border:1px solid rgba(239,68,68,.2)">\u{1F440} '+_pLook+' looking now</div>';
           html+='</div>';
           /* CTA inside info — Book directly from reels (no Screen 3 navigation) */
@@ -1748,7 +1755,7 @@ function GymProfilePage(){
         </div>
         <!-- Fix #59, #60: Social proof signals -->
         <div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap">
-          <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.2);border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700;color:#4ade80">📈 ${bookedToday(gym.name)} booked today</span>
+          <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.2);border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700;color:#4ade80">📈 ${bookedBucket(gym)}</span>
           <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.18);border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700;color:#f87171">👀 ${peopleLooking(gym.name)} people looking</span>
         </div>
         <!-- Busyness Indicator (Fix #4C) -->
@@ -1827,7 +1834,7 @@ function GymProfilePage(){
     <div class="gym-sticky-bar" id="gym-sticky-bar">
         <!-- Fix #53: Motivating micro-copy above CTA -->
         <div style="text-align:center;padding:6px 16px 0">
-          <span style="font-size:11px;font-weight:600;color:#FF6D00;letter-spacing:.3px">🔥 ${bookedToday(gym.name)} people booked today — your turn!</span>
+          <span style="font-size:11px;font-weight:600;color:#FF6D00;letter-spacing:.3px">🔥 ${bookedBucket(gym)} — your turn!</span>
         </div>
         <!-- Full-width Book CTA -->
         <div style="padding:8px 16px 0">
