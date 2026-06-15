@@ -2,6 +2,10 @@
 
 // Inject CSS animations for loading experience
 (function(){const s=document.createElement('style');s.textContent='@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}#fun-fact{transition:opacity 0.2s ease}.gym-card{animation:fadeInUp 0.3s ease-out both}.animate-slide-up{animation:slideUp 0.3s ease-out}@keyframes skeletonPulse{0%,100%{opacity:.6}50%{opacity:.3}}@keyframes locationDot{0%,100%{box-shadow:0 0 0 0 rgba(255,109,0,.4)}50%{box-shadow:0 0 0 8px rgba(255,109,0,0)}}.skel-card{animation:skeletonPulse 1.8s ease-in-out infinite}.loc-dot{animation:locationDot 1.5s ease-in-out infinite}.cards-enter .gym-card{animation:fadeInUp .4s ease-out both}@keyframes toastIn{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes toastOut{from{transform:translateY(0);opacity:1}to{transform:translateY(-100%);opacity:0}}@keyframes spin{to{transform:rotate(360deg)}}@keyframes casinoGlow{0%,100%{box-shadow:0 4px 20px rgba(255,109,0,.4),0 0 15px rgba(255,109,0,.15);background-position:0% 50%}50%{box-shadow:0 4px 30px rgba(255,109,0,.65),0 0 30px rgba(255,109,0,.3),0 0 60px rgba(255,109,0,.1);background-position:100% 50%}}@keyframes greenGlow{0%,100%{box-shadow:0 4px 20px rgba(34,197,94,.35),0 0 15px rgba(34,197,94,.1)}50%{box-shadow:0 4px 30px rgba(34,197,94,.6),0 0 30px rgba(34,197,94,.25),0 0 60px rgba(34,197,94,.1)}}.sg-spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}/* ── 3-Tab System (Polished) ── */.sg-tab-bar{position:fixed;bottom:0;left:0;right:0;height:56px;background:rgba(8,8,18,.98);backdrop-filter:blur(24px) saturate(1.8);-webkit-backdrop-filter:blur(24px) saturate(1.8);display:flex;align-items:center;justify-content:space-around;border-top:1px solid rgba(255,255,255,.06);z-index:9000;padding-bottom:env(safe-area-inset-bottom,0);pointer-events:auto!important}.sg-tab-item{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:6px 20px;border-radius:0;transition:all .25s cubic-bezier(.4,0,.2,1);-webkit-tap-highlight-color:transparent;user-select:none;position:relative;touch-action:manipulation}.sg-tab-item svg{width:26px;height:26px;stroke:rgba(255,255,255,.4);fill:none;stroke-width:1.8;transition:all .25s cubic-bezier(.4,0,.2,1)}.sg-tab-item .sg-tab-label{font-size:10px;font-weight:600;letter-spacing:.2px;color:rgba(255,255,255,.4);transition:all .25s cubic-bezier(.4,0,.2,1)}.sg-tab-item.active svg{stroke:#FF6D00;filter:drop-shadow(0 0 6px rgba(255,109,0,.35))}.sg-tab-item.active .sg-tab-label{color:#FF6D00}.sg-tab-item:active{transform:scale(.92)}.sg-tab-content{position:fixed;top:0;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom,0px));overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;scroll-behavior:smooth;display:flex;flex-direction:column}.sg-tab-content.reels-active{position:static;padding-bottom:0;overflow:visible}.sg-reels-frame{position:fixed;top:0;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom,0px));border:none;width:100%;height:calc(100vh - 56px - env(safe-area-inset-bottom,0px));z-index:1}.sg-more-hub{padding:20px 16px 24px;max-width:480px;margin:0 auto}.sg-more-section{margin-bottom:20px}.sg-more-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.3);margin-bottom:8px;padding-left:4px}.sg-more-item{display:flex;align-items:center;gap:14px;padding:14px 16px;background:rgba(255,255,255,.04);border-radius:14px;margin-bottom:6px;border:1px solid rgba(255,255,255,.04);cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}.sg-more-item:active{transform:scale(.98);background:rgba(255,255,255,.08)}.sg-more-item .sg-mi-icon{font-size:20px;width:40px;height:40px;background:rgba(255,255,255,.06);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.sg-more-item .sg-mi-text{flex:1}.sg-more-item .sg-mi-text h4{color:#fff;font-size:14px;font-weight:600;margin:0}.sg-more-item .sg-mi-text p{color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0}.sg-more-item .sg-mi-arrow{color:rgba(255,255,255,.2);font-size:16px}.sg-more-profile{display:flex;align-items:center;gap:14px;margin-bottom:28px;padding-top:12px}.sg-more-avatar{width:56px;height:56px;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff;flex-shrink:0}.sg-more-profile-info h3{color:#fff;font-size:18px;font-weight:700;margin:0}.sg-more-profile-info p{color:rgba(255,255,255,.4);font-size:13px;margin:2px 0 0}.sg-more-social{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}.sg-more-social a{display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:rgba(255,255,255,.04);border-radius:12px;border:1px solid rgba(255,255,255,.06);font-size:16px;transition:all .15s;text-decoration:none}.sg-more-social a:active{background:rgba(255,255,255,.1);transform:scale(.95)}.sg-more-back{display:flex;align-items:center;gap:8px;padding:12px 0;cursor:pointer;color:rgba(255,255,255,.6);font-size:14px;font-weight:600;margin-bottom:4px;-webkit-tap-highlight-color:transparent}.sg-more-back:active{color:#FF6D00}#sg-search-overlay{transition:opacity .2s ease}#sg-search-overlay.active{opacity:1!important}.hide-scrollbar::-webkit-scrollbar{display:none}.sg-dashboard{-webkit-tap-highlight-color:transparent;position:fixed;top:0;left:0;right:0;bottom:56px;z-index:10;overscroll-behavior:none;-webkit-overflow-scrolling:auto}html,body{height:100%;overflow:hidden;overscroll-behavior:none;position:fixed;width:100%}.sg-tab-bar.hidden{display:none!important}/* ── Option D: Sticky Continue Banner ── */#sg-continue-banner{position:fixed;bottom:calc(56px + env(safe-area-inset-bottom,0px));left:0;right:0;height:52px;background:linear-gradient(135deg,#FF6D00 0%,#E66200 100%);display:flex;align-items:center;justify-content:center;gap:8px;z-index:8999;box-shadow:0 -4px 20px rgba(255,109,0,.25);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .25s cubic-bezier(.4,0,.2,1),opacity .25s ease;touch-action:manipulation}#sg-continue-banner:active{transform:scale(.98)}#sg-continue-banner.sg-cb-hidden{transform:translateY(100%);opacity:0;pointer-events:none}#sg-continue-banner .sg-cb-text{font-size:16px;font-weight:700;color:#fff;letter-spacing:.3px}#sg-continue-banner .sg-cb-price{font-size:13px;font-weight:600;color:rgba(255,255,255,.75)}#sg-continue-banner .sg-cb-arrow{font-size:18px;color:#fff;margin-left:2px}.sg-tab-content.sg-cb-active{bottom:calc(56px + 52px + env(safe-area-inset-bottom,0px))!important}.sg-reels-frame.sg-cb-active{bottom:calc(56px + 52px + env(safe-area-inset-bottom,0px))!important;height:calc(100vh - 56px - 52px - env(safe-area-inset-bottom,0px))!important}';document.head.appendChild(s)})();
+// ═══ Perf #9: Preconnect to Google photo CDN for faster image loads ═══
+(function(){['https://lh3.googleusercontent.com','https://maps.googleapis.com'].forEach(function(d){
+var l=document.createElement('link');l.rel='preconnect';l.href=d;l.crossOrigin='anonymous';document.head.appendChild(l);
+var l2=document.createElement('link');l2.rel='dns-prefetch';l2.href=d;document.head.appendChild(l2);});})();
 
 // ─── Pricing: loaded from /pricing.js (shared across all pages) ───
 // sgPrice(), sgSymbol(), sgCommissionRange() are global — see pricing.js
@@ -22,6 +26,13 @@ window.sgToast=function(msg, type='error', duration=4000){
 };
 // Load Stripe.js for inline payment (Fix #5)
 // Lazy-load Stripe.js only when needed (saves ~40KB on initial load)
+// ═══ Perf #6: Preload Stripe SDK on first user interaction (Uber/Airbnb pattern) ═══
+(function(){var _sp=false;function _preloadStripe(){if(_sp)return;_sp=true;
+if(!document.querySelector('script[src*="stripe.com"]')){var l=document.createElement('link');l.rel='preload';l.as='script';l.href='https://js.stripe.com/v3/';document.head.appendChild(l);}
+document.removeEventListener('touchstart',_preloadStripe);document.removeEventListener('scroll',_preloadStripe);}
+document.addEventListener('touchstart',_preloadStripe,{once:true,passive:true});
+document.addEventListener('scroll',_preloadStripe,{once:true,passive:true});})();
+
 let _stripeLoadPromise=null;
 function ensureStripeLoaded(){
   if(window.Stripe)return Promise.resolve();
@@ -532,7 +543,7 @@ var _visibilityObserver=('IntersectionObserver' in window)?new IntersectionObser
     }
     else{e.target.classList.add('tt-offscreen');}
   });
-},{rootMargin:'200px 0px',threshold:0}):null;
+},{rootMargin:'600px',threshold:0}):null;
 
 // ─── Router ───
 
@@ -1157,10 +1168,16 @@ async function loadGyms(lat,lng){
             },800);
           }
         }catch(e){}
-      },800);
+      },300);
     }
   }catch(e){console.error('Failed to load gyms:',e)}
 }
+
+// Perf #1: Client-side search result cache (avoid re-fetching same query within 5 min)
+window._sgSearchCache=window._sgSearchCache||{};
+window._sgSearchCacheTTL=5*60*1000;
+function _sgGetSearchCache(q){var e=window._sgSearchCache[q];if(e&&Date.now()-e.ts<window._sgSearchCacheTTL)return e.data;delete window._sgSearchCache[q];return null;}
+function _sgSetSearchCache(q,d){window._sgSearchCache[q]={data:d,ts:Date.now()};var keys=Object.keys(window._sgSearchCache);if(keys.length>20)delete window._sgSearchCache[keys[0]];}
 
 async function searchGyms(query, isExplicit, _triggerLayer){
   try{
@@ -1171,6 +1188,8 @@ async function searchGyms(query, isExplicit, _triggerLayer){
     // Add timeout to prevent infinite loading — abort after 8 seconds
     const controller=new AbortController();
     const timeout=setTimeout(()=>controller.abort(),8000);
+    if(window._sgSearchCtrl){try{window._sgSearchCtrl.abort();}catch(e){}}
+    window._sgSearchCtrl=controller;
     // ━━━ LOCATION BIAS FIX: Pass detected coordinates to bias Google Places search ━━━
     let searchUrl=`/search?q=${encodeURIComponent(query)}`;
     if(state.searchLat&&state.searchLng){
@@ -1179,8 +1198,17 @@ async function searchGyms(query, isExplicit, _triggerLayer){
     // #17/#18: Pass 24h and self-service filter params to backend
     if(window._sgActiveFilters&&window._sgActiveFilters.has('24h')) searchUrl+='&filter24h=true';
     if(window._sgActiveFilters&&window._sgActiveFilters.has('self-service')) searchUrl+='&filterSelfService=true';
+    // Perf: Check client cache first
+    var _cachedResult=_sgGetSearchCache(searchUrl);
+    if(_cachedResult){clearTimeout(timeout);
+      state.gyms=_cachedResult.gyms||[];state.nextPageToken=_cachedResult.nextPageToken||null;
+      render();_photoPreloader.preloadGyms(state.gyms,0);
+      if(window.sgSocialProofToast)_scheduleIdle(function(){window.sgSocialProofToast();});
+      return;
+    }
     const data=await api.getLive(searchUrl);
     clearTimeout(timeout);
+    _sgSetSearchCache(searchUrl,data);
     // ━━━ RACE CONDITION FIX: If GPS (layer 5) loaded while this API call was in-flight, ━━━
     // ━━━ discard these stale results. GPS data is always more accurate. ━━━
     if(_triggerLayer && window._locationLayer > _triggerLayer){
@@ -2057,6 +2085,9 @@ window.openGymOverlay=function(section){
 
   if(section==='reviews'){
     title.innerHTML='⭐ Reviews';
+    // Perf #4: Show skeleton instantly, build heavy HTML in next frame
+    body.innerHTML='<div style="padding:20px"><div class="skel-card" style="height:60px;border-radius:12px;background:rgba(255,255,255,.06);margin-bottom:12px"></div><div class="skel-card" style="height:180px;border-radius:12px;background:rgba(255,255,255,.06);margin-bottom:12px"></div><div class="skel-card" style="height:100px;border-radius:12px;background:rgba(255,255,255,.06)"></div></div>';
+    overlay.classList.add('active');
     // Build rating distribution (estimate from rating if not available)
     const dist=estimateRatingDist(rating);
     // Get review topic keywords from Google reviews
@@ -2076,7 +2107,7 @@ window.openGymOverlay=function(section){
       <div style="margin-bottom:16px">
         <div class="rv-gallery-tabs">
           <div class="rv-gallery-tab active" onclick="rvFilterGallery('all',this)">📸 All Photos (${googlePhotos.length})</div>
-          <div class="rv-gallery-tab" onclick="rvFilterGallery('google',this)">🌐 Google</div>
+          <div class="rv-gallery-tab" onclick="rvFilterGallery('google',this)">🏢 Official</div>
           <div class="rv-gallery-tab" onclick="rvFilterGallery('visitor',this)">👤 Visitors</div>
         </div>
         <div class="rv-gallery" id="rv-photo-gallery">
@@ -2288,6 +2319,8 @@ window.openGymOverlay=function(section){
 // #10 REMOVED:   }
   else if(section==='hours'){
     title.innerHTML='🕐 Opening Hours';
+    // Perf #5: Show overlay immediately with skeleton, content renders in same frame
+    overlay.classList.add('active');
     const hours=gym.opening_hours?.weekday||gym.opening_hours?.weekday_text||[];
     const dayNames=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
     const today=new Date().getDay(); // 0=Sun
@@ -2342,7 +2375,7 @@ window.openGymOverlay=function(section){
         </div>
         <div style="margin-top:20px;padding:12px 16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;display:flex;align-items:center;gap:10px">
           <span style="font-size:20px">\ud83d\udca1</span>
-          <div style="color:rgba(255,255,255,.4);font-size:12px">Hours sourced from Google. Check with the gym for holiday schedules.</div>
+          <div style="color:rgba(255,255,255,.4);font-size:12px">Hours may vary on holidays. Check with the gym for special schedules.</div>
         </div>
       `;
     } else {
@@ -2350,7 +2383,7 @@ window.openGymOverlay=function(section){
         <div style="text-align:center;padding:40px 0;color:rgba(255,255,255,.3)">
           <div style="font-size:48px;margin-bottom:12px">🕐</div>
           <p>Opening hours not available</p>
-          <p style="font-size:12px;margin-top:8px">Try checking Google Maps for this gym's hours</p>
+          <p style="font-size:12px;margin-top:8px">Try contacting the gym directly for their hours</p>
         </div>
       `;
     }
@@ -3189,9 +3222,14 @@ window._gymSelectedTime=null;
 window._uberDatePickerState={selectedDateIdx:0,selectedTime:null};
 
 // Build date strip (30 days, Uber-style)
+// Perf #7: Cache date strip HTML — only rebuild when day changes
+window._dateStripCacheDay=null;window._dateStripCacheHtml=null;
 window._buildUberDateStrip=function(){
   const strip=document.getElementById('uber-date-strip');
   if(!strip)return;
+  // Perf #7: Use cached HTML if same calendar day
+  var _td=new Date().toDateString();
+  if(window._dateStripCacheDay===_td&&window._dateStripCacheHtml){strip.innerHTML=window._dateStripCacheHtml;return;}
   const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const now=new Date();
   let html='';
@@ -3205,7 +3243,7 @@ window._buildUberDateStrip=function(){
     html+='<span class="uber-date-num">'+dateNum+'</span>';
     html+='</div>';
   }
-  strip.innerHTML=html;
+  strip.innerHTML=html;window._dateStripCacheDay=new Date().toDateString();window._dateStripCacheHtml=html;
 };
 
 // Build time list (5-min intervals, Uber-style)
@@ -8552,6 +8590,8 @@ window.findGyms=function(){
   // NEVER await GPS. NEVER show blank screen. NEVER block the UI.
   const cached=getCachedLocation();
   if(state.gyms.length===0){
+    // Perf #2b: Restore last GPS from localStorage for instant startup
+    (function(){try{var g=JSON.parse(localStorage.getItem('sg_gps')||'null');if(g&&g.lat&&(Date.now()-g.ts<86400000)){state.searchLat=g.lat;state.searchLng=g.lng;if(g.query&&!cached?.query){searchGyms(g.query,false);return;}}}catch(e){}})();
     searchGyms(cached?.query||'gyms in London');
   }
 
@@ -8661,6 +8701,8 @@ function getCachedLocation(){
   }catch(e){return null;}
 }
 function setCachedLocation(loc){
+    // Perf #2: Persist last GPS fix to localStorage for instant next-visit startup
+    try{localStorage.setItem('sg_gps',JSON.stringify({lat:loc.lat,lng:loc.lng,city:loc.city||'',query:loc.query||'',ts:Date.now()}));}catch(e){}
   try{
     localStorage.setItem(LOC_CACHE_KEY,JSON.stringify({...loc,timestamp:Date.now()}));
   }catch(e){}
@@ -8919,7 +8961,7 @@ async function fetchRealTravelTimes(userLat,userLng){
       var spans=document.querySelectorAll('[data-gym-travel-id="'+gymId+'"]');
       spans.forEach(function(span){
         span.textContent=r.label||r.duration;
-        span.title=r.distance+(r.estimated?' (estimated)':' via Google Maps');
+        span.title=r.distance+(r.estimated?' (estimated)':' (driving)');
       });
       // Also store on gym object for re-renders
       gyms.forEach(function(g){
@@ -10985,7 +11027,7 @@ function _renderInner(){
     else if(path==='/tools')page=ToolsPage();
   else if(path==='/faq')page=InfoPage('Frequently Asked Questions',`<p class="text-slate-400 mb-6">Everything you need to know. Click any question to expand.</p><div class="space-y-3">${[{cat:"For Gym-Goers",qs:[{q:"How much does it cost?",a:`From ${sgPrice('day').display} per 24-hour session. 4 pass types: Day ${sgPrice('day').display}, 3-Day ${sgPrice('3day').display}, Weekly ${sgPrice('weekly').display}, Monthly ${sgPrice('monthly').display}. Same price any time of day.`},{q:"How do I get in?",a:"After booking, you get a unique QR code. Open it on your phone and scan at the gym entrance. Show it at reception and you're in."},{q:"Can I cancel?",a:"Yes! Free cancellation up to 2 hours before your session. Refund goes to your ScanGym Wallet instantly, or back to your card in 5-10 days."},{q:"Do I need an account?",a:"Quick sign-in with Google or phone number. Your card saves automatically — every booking after is just 1 tap. Apple Pay and Google Pay supported too."},{q:"How long can I stay?",a:"24 hours from scan-in. Scan out when you leave."}]},{cat:"For Gym Owners",qs:[{q:"How much does it cost to list?",a:"Zero. Free to list. We only take a small commission on bookings. You set your own prices and control availability."},{q:"What equipment do I get?",a:"Listed gyms qualify for free vending machines and QR scanner hardware — installed at no cost to you."},{q:"How do I get paid?",a:"Direct bank transfer, weekly. Full analytics dashboard shows your bookings, revenue, and ratings in real-time."}]},{cat:"For Creators",qs:[{q:"How does ScanSquad work?",a:"Sign up, get your personal referral page (scangym.com/r/yourname), share it. Earn 25% commission on every booking."},{q:"How much can I earn?",a:"Explorers: £50-150/mo. Ambassadors: £200-500/mo + free sessions. Elite: £500-1,200/mo. Legends: £1,200-5,000/mo."}]}].map(cat=>`<div class="mb-4"><h3 class="text-brand font-bold text-sm mb-2">${cat.cat}</h3>${cat.qs.map(q=>`<div class="border border-slate-700 rounded-lg mb-2 overflow-hidden"><button class="accordion-trigger w-full flex items-center justify-between p-4 text-left hover:bg-slate-800/50 transition"><span class="text-white text-sm font-medium">${q.q}</span><span class="accordion-arrow text-slate-500 transition-transform">▼</span></button><div class="overflow-hidden transition-all duration-300" style="max-height:0"><p class="text-slate-400 text-sm p-4 pt-0">${q.a}</p></div></div>`).join("")}</div>`).join("")}</div>`);
   else if(path==='/for-gyms'||path==='/gym-owners')page=InfoPage('For Gym Owners',`<p class="text-xl text-white font-bold">Fill your empty hours. Earn more revenue.</p><p class="text-lg text-slate-300">Gym-goers search ScanGym daily. Turn your quiet hours into profit.</p><div class="mt-6 bg-brand/10 border border-brand/30 rounded-xl p-6"><p class="text-white font-bold mb-3">💰 Revenue Calculator — How much could you earn?</p><div class="grid sm:grid-cols-3 gap-4 mb-4"><div><label class="text-slate-400 text-xs">Empty slots per day</label><input type="range" id="calc-slots" min="2" max="50" value="10" class="w-full accent-brand" oninput="document.getElementById('calc-result').textContent='£'+((this.value*${sgPrice('day').amount}*0.85)*30).toFixed(0)"></div><div class="text-center"><p class="text-slate-400 text-xs">Estimated monthly revenue</p><p id="calc-result" class="text-3xl font-bold text-brand">£${Math.round(10 * sgPrice('day').amount * 0.85 * 30).toLocaleString()}</p></div><div class="text-center"><p class="text-slate-400 text-xs">Your commission</p><p class="text-white font-bold">85%</p><p class="text-slate-500 text-xs">You keep · We take 15%</p></div></div><p class="text-slate-500 text-xs">Based on ${sgPrice('day').display} avg day pass × 10 bookings/day × 30 days. Actual results vary.</p></div><div class="mt-6 grid sm:grid-cols-3 gap-4"><div class="bg-slate-800 p-4 rounded-lg text-center"><p class="text-3xl mb-2">💸</p><p class="text-white font-semibold text-sm">You set the price</p><p class="text-slate-500 text-xs">4 passes from ${sgPrice('day').display}. Change anytime.</p></div><div class="bg-slate-800 p-4 rounded-lg text-center"><p class="text-3xl mb-2">⏸️</p><p class="text-white font-semibold text-sm">Full control</p><p class="text-slate-500 text-xs">Pause bookings with one toggle.</p></div><div class="bg-slate-800 p-4 rounded-lg text-center"><p class="text-3xl mb-2">🥤</p><p class="text-white font-semibold text-sm">Free equipment</p><p class="text-slate-500 text-xs">Vending machines + QR scanners.</p></div></div><p class="mt-6 text-center text-slate-400">Zero listing fee. Zero commitment. Cancel anytime.</p><div class="mt-6 flex gap-4 flex-wrap justify-center"><a onclick="navigate('/list-your-gym')" class="bg-brand hover:bg-orange-600 text-white font-bold px-8 py-4 rounded-xl cursor-pointer transition inline-block shadow-lg shadow-brand/20">List Your Gym — It's Free →</a><a onclick="navigate('/owner-benefits')" class="border border-brand text-brand hover:bg-brand hover:text-white font-bold px-8 py-4 rounded-xl cursor-pointer transition inline-block">See All Benefits →</a></div>`);
-  else if(path==='/list-your-gym')page=InfoPage('List Your Gym',`<div class="text-center mb-8"><p class="text-xl text-white font-bold">Get your gym listed in 10 minutes</p><p class="text-slate-300">Free forever. Start earning from day one.</p><div class="mt-3 flex justify-center gap-2"><span class="bg-green-900/30 text-green-400 text-xs px-3 py-1 rounded-full font-medium">⏱ 10-minute setup</span><span class="bg-blue-900/30 text-blue-400 text-xs px-3 py-1 rounded-full font-medium">💰 Free forever</span><span class="bg-brand/20 text-brand text-xs px-3 py-1 rounded-full font-medium">📊 Instant dashboard</span></div></div><div class="relative space-y-6">${[{step:"1",title:"Tell us about your gym",desc:"Name, address, facilities, opening hours. Your Google listing auto-fills most of this. Takes 3 minutes.",time:"3 min"},{step:"2",title:"Set your pricing",desc:"Choose from 4 pass types: Day ${sgPrice('day').display} · 3-Day ${sgPrice('3day').display} · Weekly ${sgPrice('weekly').display} · Monthly ${sgPrice('monthly').display}. Flat pricing, no complexity. Change anytime.",time:"2 min"},{step:"3",title:"Go live",desc:"We ship you a free QR scanner. Plug it in at your entrance. Customers scan in and out — easy QR check-in.",time:"5 min"}].map(s=>`<div class="flex gap-4"><div class="w-10 h-10 bg-brand rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">${s.step}</div><div class="flex-1 bg-slate-800 rounded-lg p-4"><div class="flex items-center justify-between"><p class="text-white font-bold">${s.title}</p><span class="text-brand text-xs font-medium">${s.time}</span></div><p class="text-slate-400 text-sm mt-1">${s.desc}</p></div></div>`).join("")}</div><div class="mt-8 bg-green-900/20 border border-green-800/30 rounded-xl p-5"><p class="text-white font-bold mb-2">✅ What you get — free:</p><div class="grid sm:grid-cols-2 gap-2 text-sm">${["Listing on ScanGym","Free QR scanner hardware","Owner analytics dashboard","Free vending machine (optional)","Zero listing fee — forever","85% commission to you","Weekly direct bank payouts","Pause bookings anytime"].map(f=>`<p class="text-slate-300 flex items-center gap-2"><span class="text-green-400">✓</span>${f}</p>`).join("")}</div></div><div class="mt-6 text-center"><a onclick="navigate('/contact')" class="bg-brand hover:bg-orange-600 text-white font-bold px-10 py-4 rounded-xl cursor-pointer transition inline-block shadow-lg shadow-brand/20 text-lg">List Your Gym — Free →</a><p class="text-slate-500 text-sm mt-3">📧 hello@scangym.com · 📱 @scangym</p></div>`);
+  else if(path==='/list-your-gym')page=InfoPage('List Your Gym',`<div class="text-center mb-8"><p class="text-xl text-white font-bold">Get your gym listed in 10 minutes</p><p class="text-slate-300">Free forever. Start earning from day one.</p><div class="mt-3 flex justify-center gap-2"><span class="bg-green-900/30 text-green-400 text-xs px-3 py-1 rounded-full font-medium">⏱ 10-minute setup</span><span class="bg-blue-900/30 text-blue-400 text-xs px-3 py-1 rounded-full font-medium">💰 Free forever</span><span class="bg-brand/20 text-brand text-xs px-3 py-1 rounded-full font-medium">📊 Instant dashboard</span></div></div><div class="relative space-y-6">${[{step:"1",title:"Tell us about your gym",desc:"Name, address, facilities, opening hours. Auto-fill makes it easy. Takes 3 minutes.",time:"3 min"},{step:"2",title:"Set your pricing",desc:"Choose from 4 pass types: Day ${sgPrice('day').display} · 3-Day ${sgPrice('3day').display} · Weekly ${sgPrice('weekly').display} · Monthly ${sgPrice('monthly').display}. Flat pricing, no complexity. Change anytime.",time:"2 min"},{step:"3",title:"Go live",desc:"We ship you a free QR scanner. Plug it in at your entrance. Customers scan in and out — easy QR check-in.",time:"5 min"}].map(s=>`<div class="flex gap-4"><div class="w-10 h-10 bg-brand rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">${s.step}</div><div class="flex-1 bg-slate-800 rounded-lg p-4"><div class="flex items-center justify-between"><p class="text-white font-bold">${s.title}</p><span class="text-brand text-xs font-medium">${s.time}</span></div><p class="text-slate-400 text-sm mt-1">${s.desc}</p></div></div>`).join("")}</div><div class="mt-8 bg-green-900/20 border border-green-800/30 rounded-xl p-5"><p class="text-white font-bold mb-2">✅ What you get — free:</p><div class="grid sm:grid-cols-2 gap-2 text-sm">${["Listing on ScanGym","Free QR scanner hardware","Owner analytics dashboard","Free vending machine (optional)","Zero listing fee — forever","85% commission to you","Weekly direct bank payouts","Pause bookings anytime"].map(f=>`<p class="text-slate-300 flex items-center gap-2"><span class="text-green-400">✓</span>${f}</p>`).join("")}</div></div><div class="mt-6 text-center"><a onclick="navigate('/contact')" class="bg-brand hover:bg-orange-600 text-white font-bold px-10 py-4 rounded-xl cursor-pointer transition inline-block shadow-lg shadow-brand/20 text-lg">List Your Gym — Free →</a><p class="text-slate-500 text-sm mt-3">📧 hello@scangym.com · 📱 @scangym</p></div>`);
   else if(path==='/owner-benefits')page=InfoPage('Owner Benefits',`<p class="text-xl text-white font-bold">Why 1,000+ gyms choose ScanGym</p><div class="mt-6 grid gap-4"><div class="bg-slate-800 p-4 rounded-lg"><p class="text-2xl mb-1">💰</p><p class="text-brand font-bold">Earn from empty hours</p><p>Your quiet hours generate zero revenue right now. ScanGym fills them with paying day-pass visitors. Average listed gym earns £800-2,000/month extra.</p></div><div class="bg-slate-800 p-4 rounded-lg"><p class="text-2xl mb-1">💸</p><p class="text-brand font-bold">You set the price</p><p>4 pass types from ${sgPrice('day').display}. Flat pricing across all time slots. Change pricing anytime with one tap.</p></div><div class="bg-slate-800 p-4 rounded-lg"><p class="text-2xl mb-1">📊</p><p class="text-brand font-bold">Full analytics dashboard</p><p>See bookings, revenue, ratings, peak hours, and customer demographics in real-time. Export reports monthly.</p></div><div class="bg-slate-800 p-4 rounded-lg"><p class="text-2xl mb-1">🔒</p><p class="text-brand font-bold">Full control</p><p>Pause bookings with one toggle. Set capacity limits. Block specific dates. You\'re always in charge.</p></div><div class="bg-slate-800 p-4 rounded-lg"><p class="text-2xl mb-1">🥤</p><p class="text-brand font-bold">Free equipment</p><p>Listed gyms qualify for free vending machines and QR scanner hardware — installed at no cost.</p></div><div class="bg-slate-800 p-4 rounded-lg"><p class="text-2xl mb-1">🏦</p><p class="text-brand font-bold">Gym finance</p><p>Opening a new gym? Access loans from £10k-500k through our lending partners. Government-backed options available.</p></div></div><div class="mt-6"><p class="text-slate-400">Zero listing fee. Zero commitment. Cancel anytime.</p><a onclick="navigate(\'/list-your-gym\')" class="mt-3 bg-brand hover:bg-orange-600 text-white font-bold px-8 py-4 rounded-xl cursor-pointer transition inline-block">List Your Gym — It\'s Free →</a></div>`);
   else if(path==='/blog')page=InfoPage('Blog / Transformations',`<p class="text-xl text-white">Real transformations. Real people. Real gyms.</p><p>Coming soon — stories from ScanGym users who found their perfect gym.</p><p>Want to share your story? <a onclick="navigate(\'/contact\')" class="text-brand cursor-pointer">Get in touch →</a></p>`);
   else if(path==='/contact')page=InfoPage('Contact',`<p class="text-lg text-slate-300 mb-6">Have a question? Fill out the form below or reach us directly.</p><div class="grid md:grid-cols-2 gap-8"><div><form onsubmit="event.preventDefault();alert('Thanks! We\'ll get back to you within 24 hours.');this.reset();" class="space-y-4"><div><label class="text-slate-400 text-sm block mb-1">Name</label><input type="text" required placeholder="Your name" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:border-brand outline-none text-sm"></div><div><label class="text-slate-400 text-sm block mb-1">Email</label><input type="email" required placeholder="your@email.com" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:border-brand outline-none text-sm"></div><div><label class="text-slate-400 text-sm block mb-1">Subject</label><select class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white focus:border-brand outline-none text-sm"><option>General Enquiry</option><option>Booking Issue</option><option>Gym Owner Enquiry</option><option>Creator / ScanSquad</option><option>Partnership</option><option>Bug Report</option></select></div><div><label class="text-slate-400 text-sm block mb-1">Message</label><textarea required rows="4" placeholder="How can we help?" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:border-brand outline-none text-sm resize-none"></textarea></div><button type="submit" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-3 rounded-xl transition">Send Message →</button></form></div><div class="space-y-4"><div class="bg-card rounded-xl p-5 border border-slate-700"><p class="text-white font-semibold mb-3">Get in Touch</p><div class="space-y-3 text-sm"><p class="text-slate-400">📧 <strong class="text-white">hello@scangym.com</strong></p><p class="text-slate-400">📍 <strong class="text-white">Manchester, UK</strong></p><p class="text-slate-400">📱 <strong class="text-white">Instagram: @scangym</strong></p><p class="text-slate-400">🐦 <strong class="text-white">Twitter/X: @scangym</strong></p></div></div><div class="bg-brand/10 border border-brand/30 rounded-xl p-5"><p class="text-white font-semibold mb-2">Gym Owner?</p><p class="text-slate-300 text-sm mb-3">Want to list your gym? We respond within 2 hours.</p><p class="text-brand text-sm font-medium">📧 hello@scangym.com</p></div></div></div>`);
@@ -11052,7 +11094,7 @@ function _renderInner(){
         <a onclick="navigate('/creator-earnings')" class="bg-brand hover:bg-orange-600 text-white font-bold px-8 py-3 rounded-xl cursor-pointer transition inline-block">View My Dashboard \u2192</a>
       </div>
     </div>`;
-  else if(path==='/privacy')page=InfoPage('Privacy Policy',`<p>Last updated: May 2026</p><p>ScanGym ("we", "us") respects your privacy. We collect only what\'s needed to process bookings: name, email, phone number, payment details, and location data.</p><p>We use Stripe for payments (PCI compliant), Twilio for OTP verification, and Google Maps for gym locations.</p><p>We never sell your data. Contact: hello@scangym.com</p>`);
+  else if(path==='/privacy')page=InfoPage('Privacy Policy',`<p>Last updated: May 2026</p><p>ScanGym ("we", "us") respects your privacy. We collect only what\'s needed to process bookings: name, email, phone number, payment details, and location data.</p><p>We use Stripe for payments (PCI compliant), Twilio for OTP verification, and mapping services for gym locations.</p><p>We never sell your data. Contact: hello@scangym.com</p>`);
   else if(path==='/terms')page=InfoPage('Terms of Service',`<p>Last updated: May 2026</p><p>By using ScanGym, you agree to these terms. ScanGym is a marketplace connecting gym-goers with gym owners. We are not a gym operator.</p><p>Bookings are 24-hour day passes. Free cancellation up to 2 hours before session start.</p><p>Contact: hello@scangym.com</p>`);
   else if(path==='/cookies')page=InfoPage('Cookie Policy',`<p>We use essential cookies for authentication and preferences. Analytics cookies help us understand usage patterns. You can disable non-essential cookies in your browser settings.</p>`);
   else if(path==='/bookings'||path==='/my-bookings')page=MyBookingsPage();
@@ -12646,7 +12688,14 @@ if(localStorage.getItem('sg_push_enabled')==='1'&&state.user){
   banner.innerHTML='<span class="sg-cb-text">Continue</span><span class="sg-cb-price"></span><span class="sg-cb-arrow">\u2192</span>';
   banner.addEventListener('click',function(){
     var gid=banner.getAttribute('data-gym-id');
-    if(gid&&typeof showUberCheckout==='function')showUberCheckout(gid);
+    // On Reels tab: CTA takes user to Book tab. On Book tab: straight to payment.
+    var activeTab=document.querySelector('.sg-tab-item.active .sg-tab-label');
+    var currentTab=activeTab?activeTab.textContent.trim().toLowerCase():'';
+    if(currentTab==='reels'||currentTab!=='book'){
+      if(typeof switchTab==='function')switchTab('book');
+    }else{
+      if(gid&&typeof showUberCheckout==='function')showUberCheckout(gid);
+    }
   });
   document.body.appendChild(banner);
 
@@ -12748,3 +12797,49 @@ if(localStorage.getItem('sg_push_enabled')==='1'&&state.user){
     };
   }
 })();
+
+// ═══ Performance Dashboard — call window.sgPerf() in console to see metrics ═══
+window.sgPerf=function(){
+  var nav=performance.getEntriesByType('navigation')[0];
+  var paint=performance.getEntriesByType('paint');
+  var fcp=paint.find(function(p){return p.name==='first-contentful-paint';});
+  var res=performance.getEntriesByType('resource');
+  var api=res.filter(function(r){return r.name.includes('/api/');});
+  var photos=res.filter(function(r){return r.name.includes('googleusercontent')||r.name.includes('api/photo');});
+  var appJs=res.find(function(r){return r.name.includes('app.ctr576');});
+  var m={
+    'Page Load':{
+      'First Contentful Paint':Math.round(fcp?.startTime||0)+'ms',
+      'DOM Content Loaded':Math.round(nav?.domContentLoadedEventEnd-nav?.startTime||0)+'ms',
+      'Full Load':Math.round(nav?.loadEventEnd-nav?.startTime||0)+'ms',
+      'App.js Size':Math.round((appJs?.transferSize||0)/1024)+'KB',
+      'App.js Load Time':Math.round(appJs?.duration||0)+'ms'
+    },
+    'API Performance':{
+      'Total API Calls':api.length,
+      'Avg Response':api.length?Math.round(api.reduce(function(s,r){return s+r.duration;},0)/api.length)+'ms':'N/A',
+      'Slowest':api.length?Math.round(Math.max.apply(null,api.map(function(r){return r.duration;})))+'ms':'N/A',
+      'Search':Math.round((api.find(function(r){return r.name.includes('live/search');})||{}).duration||0)+'ms'
+    },
+    'Photos':{
+      'Loaded':photos.length,
+      'Avg Load':photos.length?Math.round(photos.reduce(function(s,r){return s+r.duration;},0)/photos.length)+'ms':'N/A',
+      'Slowest':photos.length?Math.round(Math.max.apply(null,photos.map(function(r){return r.duration;})))+'ms':'N/A',
+      'Total Size':Math.round(photos.reduce(function(s,r){return s+(r.transferSize||0);},0)/1024)+'KB'
+    },
+    'Caching':{
+      'GPS in localStorage':!!localStorage.getItem('sg_gps'),
+      'Search Cache Entries':Object.keys(window._sgSearchCache||{}).length,
+      'Date Strip Cached':!!window._dateStripCacheHtml
+    },
+    'Total':{
+      'Requests':res.length,
+      'Transfer Size':Math.round(res.reduce(function(s,r){return s+(r.transferSize||0);},0)/1024)+'KB'
+    }
+  };
+  console.table(m['Page Load']);console.table(m['API Performance']);console.table(m['Photos']);console.table(m['Caching']);console.table(m['Total']);
+  return m;
+};
+// Auto-log perf summary after load
+window.addEventListener('load',function(){setTimeout(function(){console.log('%c[ScanGym Perf v5.3.0]','color:#FF6D00;font-weight:bold;font-size:14px');window.sgPerf();},3000);});
+
