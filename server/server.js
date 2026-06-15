@@ -7,6 +7,7 @@ const compression = require('compression');
 
 // Import feature routes
 const reviewsRouter = require('./routes/reviews');
+const reviewMediaRouter = require('./routes/review-media');
 const chatRouter = require('./routes/chat');
 const walletRouter = require('./routes/wallet');
 const guestRouter = require('./routes/guest');
@@ -378,6 +379,7 @@ if (process.env.DATABASE_URL) {
 
 // -- Feature Routes (Tasks 1-24 with CEO corrections) --
 app.use('/api/reviews', reviewsRouter);
+app.use('/api/review-media', reviewMediaRouter);
 app.use('/api/chat', chatRouter);
 app.use('/api/wallet', walletRouter);
 app.use('/api/guest', guestRouter);
