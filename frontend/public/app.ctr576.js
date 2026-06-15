@@ -1291,7 +1291,7 @@ function SearchPage(){
         /* Perf: Inject TikTok CSS once (persists across re-renders — saves ~12KB per render) */
         if(!document.getElementById('tt-css')){
           var _s=document.createElement('style');_s.id='tt-css';
-          _s.textContent='.tt-view{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;position:relative}.tt-carousel{display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;flex:1;min-height:0;will-change:scroll-position;contain:strict}.tt-carousel::-webkit-scrollbar{display:none}.tt-card{width:100%;min-height:100%;max-height:100%;scroll-snap-align:start;position:relative;display:flex;flex-direction:column;overflow:hidden;contain:layout style paint}.tt-card.tt-closed{opacity:0.5;filter:grayscale(25%)}.tt-card.tt-closed .tt-cta-btn{background:#6b7280;box-shadow:none}.tt-photo{position:absolute;inset:0;background-size:cover;background-position:center}.tt-photo-carousel{position:absolute;inset:0;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;display:flex;z-index:0;touch-action:pan-x}.tt-photo-carousel::-webkit-scrollbar{display:none}.tt-photo-slide{flex:0 0 100%;width:100%;height:100%;scroll-snap-align:start;background-size:cover;background-position:center}.tt-photo-dots{position:absolute;bottom:0;left:14px;display:flex;gap:4px;z-index:12}.tt-photo-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.3);transition:all .3s}.tt-photo-dot.act{background:#FF6D00;width:18px;border-radius:3px}.tt-photo-placeholder{position:absolute;inset:0;background:#1a1f2e;display:flex;align-items:center;justify-content:center}.tt-photo-placeholder::after{content:"🏋️";font-size:56px;opacity:.15}.tt-gradient{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.35) 0%,transparent 22%,transparent 55%,rgba(0,0,0,.55) 75%,rgba(0,0,0,.82) 100%);pointer-events:none;z-index:1}.tt-card::after{content:"";position:absolute;bottom:18%;left:50%;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(255,109,0,.08) 0%,rgba(255,109,0,.03) 40%,transparent 70%);transform:translateX(-50%);pointer-events:none;z-index:0}.tt-search{position:absolute;top:0;left:0;right:0;z-index:20;display:flex;gap:8px;padding:8px 12px;padding-top:calc(env(safe-area-inset-top,8px) + 4px)}.tt-search-input{flex:1;background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px 14px;color:rgba(255,255,255,.7);font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px;cursor:pointer}.tt-search-gps{background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;width:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-search-filter{background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;width:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-actions{position:absolute;right:10px;top:65px;display:flex;flex-direction:column;gap:6px;z-index:15;align-items:center}.tt-action{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-action-btn{width:44px;height:44px;background:transparent;border:none;border-radius:0;display:flex;align-items:center;justify-content:center;font-size:24px;transition:all .15s;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5));opacity:.75}.tt-action-btn:active{transform:scale(.85)}.tt-action-label{display:none}.tt-info{position:absolute;bottom:0;left:0;right:0;padding:0 14px 8px;z-index:15;pointer-events:none}.tt-info>*{pointer-events:auto}.tt-dots{display:flex;gap:3px;margin-bottom:4px;flex-wrap:wrap;max-width:280px}.tt-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.25);transition:all .3s}.tt-dot.act{background:#FF6D00;width:18px;border-radius:3px}.tt-counter{font-size:10px;color:rgba(255,255,255,.4);margin-bottom:4px;font-weight:500}.tt-gym-name{color:#fff;font-size:28px;font-weight:900;text-shadow:0 2px 10px rgba(0,0,0,.6);line-height:1.15;margin-bottom:4px;letter-spacing:-.3px}.tt-gym-addr{color:rgba(255,255,255,.7);font-size:12px;margin-bottom:6px;text-shadow:0 1px 4px rgba(0,0,0,.5);display:flex;align-items:center;gap:4px;flex-wrap:wrap}.tt-tag-open{color:#4ade80}.tt-tag-closed{color:#f87171}.tt-chips{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}.tt-chip{display:flex;align-items:center;gap:5px;background:rgba(30,33,45,.85);border-radius:10px;padding:6px 12px;font-size:12px;color:rgba(255,255,255,.92);font-weight:700}.tt-cta{position:absolute;bottom:0;left:0;right:0;padding:8px 14px;z-index:16}.tt-cta-btn{width:100%;padding:12px 0;border:none;border-radius:12px;background:linear-gradient(135deg,#FF6D00,#ff8534,#FF6D00);background-size:200% 200%;color:#fff;font-size:15px;font-weight:700;letter-spacing:.3px;cursor:pointer;-webkit-tap-highlight-color:transparent;box-shadow:0 4px 20px rgba(255,109,0,.4),0 0 20px rgba(255,109,0,.2);transition:all .15s;animation:casinoGlow 2s ease-in-out infinite}.tt-cta-btn:active{transform:scale(.97);box-shadow:0 2px 10px rgba(255,109,0,.3)}.tt-filter-sheet{display:none;position:absolute;top:52px;left:12px;right:12px;background:rgba(17,19,24,.98);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px;z-index:25;flex-wrap:wrap;gap:8px}.tt-filter-sheet.open{display:flex}.sg-filter-pill{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:7px 14px;color:rgba(255,255,255,.6);font-size:12px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;white-space:nowrap}.sg-filter-pill.active{background:rgba(255,109,0,.15);border-color:rgba(255,109,0,.4);color:#FF6D00}.tt-logo{position:absolute;left:14px;bottom:0;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;z-index:15;border:2px solid rgba(255,255,255,.15);box-shadow:0 2px 8px rgba(0,0,0,.3)}.tt-card.tt-offscreen{content-visibility:auto;contain-intrinsic-size:auto 100vh}.tt-card.tt-offscreen .tt-cta-btn{animation:none}.tt-card.tt-offscreen .tt-gradient{backdrop-filter:none;-webkit-backdrop-filter:none}';
+          _s.textContent='.tt-view{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;position:relative}.tt-carousel{display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;flex:1;min-height:0;will-change:scroll-position;contain:strict}.tt-carousel::-webkit-scrollbar{display:none}.tt-card{width:100%;min-height:100%;max-height:100%;scroll-snap-align:start;position:relative;display:flex;flex-direction:column;overflow:hidden;contain:layout style paint}.tt-card.tt-closed{opacity:0.5;filter:grayscale(25%)}.tt-card.tt-closed .tt-cta-btn{background:#6b7280;box-shadow:none}.tt-photo{position:absolute;inset:0;background-size:cover;background-position:center;background-color:#1a1f2e}.tt-photo-carousel{position:absolute;inset:0;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;display:flex;z-index:0;touch-action:pan-x}.tt-photo-carousel::-webkit-scrollbar{display:none}.tt-photo-slide{flex:0 0 100%;width:100%;height:100%;scroll-snap-align:start;background-size:cover;background-position:center;background-color:#1a1f2e;transition:background-color .3s ease}.tt-photo-dots{position:absolute;bottom:0;left:14px;display:flex;gap:4px;z-index:12}.tt-photo-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.3);transition:all .3s}.tt-photo-dot.act{background:#FF6D00;width:18px;border-radius:3px}.tt-photo-placeholder{position:absolute;inset:0;background:#1a1f2e;display:flex;align-items:center;justify-content:center}.tt-photo-placeholder::after{content:"🏋️";font-size:56px;opacity:.15}.tt-gradient{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.35) 0%,transparent 22%,transparent 55%,rgba(0,0,0,.55) 75%,rgba(0,0,0,.82) 100%);pointer-events:none;z-index:1}.tt-card::after{content:"";position:absolute;bottom:18%;left:50%;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(255,109,0,.08) 0%,rgba(255,109,0,.03) 40%,transparent 70%);transform:translateX(-50%);pointer-events:none;z-index:0}.tt-search{position:absolute;top:0;left:0;right:0;z-index:20;display:flex;gap:8px;padding:8px 12px;padding-top:calc(env(safe-area-inset-top,8px) + 4px)}.tt-search-input{flex:1;background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px 14px;color:rgba(255,255,255,.7);font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px;cursor:pointer}.tt-search-gps{background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;width:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-search-filter{background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;width:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-actions{position:absolute;right:10px;top:65px;display:flex;flex-direction:column;gap:6px;z-index:15;align-items:center}.tt-action{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-action-btn{width:44px;height:44px;background:transparent;border:none;border-radius:0;display:flex;align-items:center;justify-content:center;font-size:24px;transition:all .15s;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5));opacity:.75}.tt-action-btn:active{transform:scale(.85)}.tt-action-label{display:none}.tt-info{position:absolute;bottom:0;left:0;right:0;padding:0 14px 8px;z-index:15;pointer-events:none}.tt-info>*{pointer-events:auto}.tt-dots{display:flex;gap:3px;margin-bottom:4px;flex-wrap:wrap;max-width:280px}.tt-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.25);transition:all .3s}.tt-dot.act{background:#FF6D00;width:18px;border-radius:3px}.tt-counter{font-size:10px;color:rgba(255,255,255,.4);margin-bottom:4px;font-weight:500}.tt-gym-name{color:#fff;font-size:28px;font-weight:900;text-shadow:0 2px 10px rgba(0,0,0,.6);line-height:1.15;margin-bottom:4px;letter-spacing:-.3px}.tt-gym-addr{color:rgba(255,255,255,.7);font-size:12px;margin-bottom:6px;text-shadow:0 1px 4px rgba(0,0,0,.5);display:flex;align-items:center;gap:4px;flex-wrap:wrap}.tt-tag-open{color:#4ade80}.tt-tag-closed{color:#f87171}.tt-chips{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}.tt-chip{display:flex;align-items:center;gap:5px;background:rgba(30,33,45,.85);border-radius:10px;padding:6px 12px;font-size:12px;color:rgba(255,255,255,.92);font-weight:700}.tt-cta{position:absolute;bottom:0;left:0;right:0;padding:8px 14px;z-index:16}.tt-cta-btn{width:100%;padding:12px 0;border:none;border-radius:12px;background:linear-gradient(135deg,#FF6D00,#ff8534,#FF6D00);background-size:200% 200%;color:#fff;font-size:15px;font-weight:700;letter-spacing:.3px;cursor:pointer;-webkit-tap-highlight-color:transparent;box-shadow:0 4px 20px rgba(255,109,0,.4),0 0 20px rgba(255,109,0,.2);transition:all .15s;animation:casinoGlow 2s ease-in-out infinite}.tt-cta-btn:active{transform:scale(.97);box-shadow:0 2px 10px rgba(255,109,0,.3)}.tt-filter-sheet{display:none;position:absolute;top:52px;left:12px;right:12px;background:rgba(17,19,24,.98);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px;z-index:25;flex-wrap:wrap;gap:8px}.tt-filter-sheet.open{display:flex}.sg-filter-pill{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:7px 14px;color:rgba(255,255,255,.6);font-size:12px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;white-space:nowrap}.sg-filter-pill.active{background:rgba(255,109,0,.15);border-color:rgba(255,109,0,.4);color:#FF6D00}.tt-logo{position:absolute;left:14px;bottom:0;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;z-index:15;border:2px solid rgba(255,255,255,.15);box-shadow:0 2px 8px rgba(0,0,0,.3)}.tt-card.tt-offscreen{content-visibility:auto;contain-intrinsic-size:auto 100vh}.tt-card.tt-offscreen .tt-cta-btn{animation:none}.tt-card.tt-offscreen .tt-gradient{backdrop-filter:none;-webkit-backdrop-filter:none}';
           document.head.appendChild(_s);
         }
 
@@ -2108,15 +2108,15 @@ window.openGymOverlay=function(section){
 
       ${topics.length?`
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px">
-        <span class="topic-pill active">All</span>
-        ${topics.map(t=>`<span class="topic-pill">${t.name} ${t.count}</span>`).join('')}
+        <span class="topic-pill active" onclick="rvFilterByTopic(this,'All')">All</span>
+        ${topics.map(t=>`<span class="topic-pill" onclick="rvFilterByTopic(this,'${t.name.replace(/'/g,"\\'")}')">${t.name} ${t.count}</span>`).join('')}
       </div>`:''}
 
       <div style="display:flex;gap:8px;margin-bottom:20px">
-        <button class="sort-chip active">Most relevant</button>
-        <button class="sort-chip">Newest</button>
-        <button class="sort-chip">Highest</button>
-        <button class="sort-chip">Lowest</button>
+        <button class="sort-chip active" onclick="rvSortReviews(this,'relevant')">Most relevant</button>
+        <button class="sort-chip" onclick="rvSortReviews(this,'newest')">Newest</button>
+        <button class="sort-chip" onclick="rvSortReviews(this,'highest')">Highest</button>
+        <button class="sort-chip" onclick="rvSortReviews(this,'lowest')">Lowest</button>
       </div>
 
       ${reviews.map((r,i)=>{
@@ -2174,52 +2174,118 @@ window.openGymOverlay=function(section){
     window._rvGalleryItems=googlePhotos.map(p=>({url:p.url||p.thumbnail||p,type:'photo'}));
     window._rvStarFilter=0;
 
+  /* ═══ FIX #4: Topic pill filter + Sort chip handlers ═══ */
+  window.rvFilterByTopic=function(el,topicName){
+    // Toggle active state
+    var pills=document.querySelectorAll('.topic-pill');
+    var allPill=pills[0]; // "All" is always first
+    if(topicName==='All'){
+      pills.forEach(function(p){p.classList.remove('active');});
+      allPill.classList.add('active');
+      // Show all reviews
+      document.querySelectorAll('.ov-review').forEach(function(r){r.style.display='';});
+      return;
+    }
+    allPill.classList.remove('active');
+    el.classList.toggle('active');
+    // Collect active topics
+    var activeTopics=[];
+    pills.forEach(function(p){if(p.classList.contains('active')&&p!==allPill)activeTopics.push(p.textContent.replace(/\s*\d+$/,'').trim().toLowerCase());});
+    if(activeTopics.length===0){allPill.classList.add('active');document.querySelectorAll('.ov-review').forEach(function(r){r.style.display='';});return;}
+    // Filter reviews by topic keyword
+    document.querySelectorAll('.ov-review').forEach(function(r){
+      var text=(r.querySelector('.ov-review-text')||{}).textContent||'';
+      var match=activeTopics.some(function(t){return text.toLowerCase().indexOf(t)!==-1;});
+      r.style.display=match?'':'none';
+    });
+  };
+
+  window.rvSortReviews=function(el,sortType){
+    // Update active chip
+    document.querySelectorAll('.sort-chip').forEach(function(c){c.classList.remove('active');});
+    el.classList.add('active');
+    // Get review container (parent of .ov-review elements)
+    var reviews=Array.from(document.querySelectorAll('.ov-review'));
+    if(reviews.length===0)return;
+    var container=reviews[0].parentElement;
+    // Sort
+    reviews.sort(function(a,b){
+      if(sortType==='newest'){
+        var aDate=a.querySelector('.ov-review-date');var bDate=b.querySelector('.ov-review-date');
+        // "Reviewed X ago" — approximate: "a month" < "2 months" < "a year"
+        var aText=aDate?aDate.textContent:'';var bText=bDate?bDate.textContent:'';
+        return _rvTimeScore(aText)-_rvTimeScore(bText);
+      }else if(sortType==='highest'){
+        return _rvStarCount(b)-_rvStarCount(a);
+      }else if(sortType==='lowest'){
+        return _rvStarCount(a)-_rvStarCount(b);
+      }
+      return 0; // relevant = original order
+    });
+    reviews.forEach(function(r){container.appendChild(r);});
+  };
+
+  /* Helper: count stars in a review element */
+  function _rvStarCount(el){
+    var stars=el.querySelector('.ov-review-stars');
+    return stars?(stars.textContent.match(/★/g)||[]).length:0;
+  }
+  /* Helper: convert relative time to score (lower = more recent) */
+  function _rvTimeScore(text){
+    text=text.toLowerCase();
+    if(text.indexOf('day')!==-1||text.indexOf('hour')!==-1||text.indexOf('minute')!==-1)return 1;
+    if(text.indexOf('week')!==-1)return 7;
+    if(text.indexOf('month')!==-1){var n=parseInt(text)||1;return n*30;}
+    if(text.indexOf('year')!==-1){var n2=parseInt(text)||1;return n2*365;}
+    return 999;
+  }
+
     // Load user-uploaded media (async, appends to gallery)
     const dbGymId=gym.dbId||gym.id;
     if(dbGymId)rvLoadUserMedia(dbGymId);
   }
-  else if(section==='facilities'){
-    title.innerHTML='🏊 Facilities';
-    const facilities=getGymFacilities(gym);
-    body.innerHTML=`
-      <div class="ov-grid">
-        ${facilities.map(f=>`
-          <div class="ov-grid-item">
-            <span class="ov-grid-icon">${f.icon}</span>
-            <div class="ov-grid-name">${f.name}</div>
-            ${f.detail?`<div class="ov-grid-sub">${f.detail}</div>`:''}
-          </div>
-        `).join('')}
-      </div>
-      ${gym.formatted_address||gym.vicinity?`
-      <div class="ov-card" style="margin-top:20px">
-        <h3>📍 Location</h3>
-        <div style="display:flex;align-items:center;gap:10px">
-          <span style="font-size:24px">📍</span>
-          <div style="flex:1">
-            <div style="color:#fff;font-size:14px;font-weight:600">${gym.formatted_address||gym.vicinity||''}</div>
-            <div style="color:rgba(255,255,255,.4);font-size:12px">${gym.distance?gym.distance+' away':''}</div>
-          </div>
-          <button onclick="window.open('https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent('${(gym.formatted_address||gym.vicinity||gym.name||'').replace(/'/g,"\\'")}')+'${gym.place_id||gym.placeId?'&destination_place_id='+(gym.place_id||gym.placeId):''}','_blank')" style="background:#FF6D00;color:#fff;border:none;padding:8px 14px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">Directions →</button>
-        </div>
-      </div>`:''}
-    `;
-  }
-  else if(section==='equipment'){
-    title.innerHTML='🏋️ Equipment';
-    const equipment=getGymEquipment(gym);
-    body.innerHTML=`
-      <div class="ov-grid">
-        ${equipment.map(e=>`
-          <div class="ov-grid-item">
-            <span class="ov-grid-icon">${e.icon}</span>
-            <div class="ov-grid-name">${e.name}</div>
-            ${e.detail?`<div class="ov-grid-sub">${e.detail}</div>`:''}
-          </div>
-        `).join('')}
-      </div>
-    `;
-  }
+// #9 REMOVED:   else if(section==='facilities'){
+// #9 REMOVED:     title.innerHTML='🏊 Facilities';
+// #9 REMOVED:     const facilities=getGymFacilities(gym);
+// #9 REMOVED:     body.innerHTML=`
+// #9 REMOVED:       <div class="ov-grid">
+// #9 REMOVED:         ${facilities.map(f=>`
+// #9 REMOVED:           <div class="ov-grid-item">
+// #9 REMOVED:             <span class="ov-grid-icon">${f.icon}</span>
+// #9 REMOVED:             <div class="ov-grid-name">${f.name}</div>
+// #9 REMOVED:             ${f.detail?`<div class="ov-grid-sub">${f.detail}</div>`:''}
+// #9 REMOVED:           </div>
+// #9 REMOVED:         `).join('')}
+// #9 REMOVED:       </div>
+// #9 REMOVED:       ${gym.formatted_address||gym.vicinity?`
+// #9 REMOVED:       <div class="ov-card" style="margin-top:20px">
+// #9 REMOVED:         <h3>📍 Location</h3>
+// #9 REMOVED:         <div style="display:flex;align-items:center;gap:10px">
+// #9 REMOVED:           <span style="font-size:24px">📍</span>
+// #9 REMOVED:           <div style="flex:1">
+// #9 REMOVED:             <div style="color:#fff;font-size:14px;font-weight:600">${gym.formatted_address||gym.vicinity||''}</div>
+// #9 REMOVED:             <div style="color:rgba(255,255,255,.4);font-size:12px">${gym.distance?gym.distance+' away':''}</div>
+// #9 REMOVED:           </div>
+// #9 REMOVED:           <button onclick="window.open('https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent('${(gym.formatted_address||gym.vicinity||gym.name||'').replace(/'/g,"\\'")}')+'${gym.place_id||gym.placeId?'&destination_place_id='+(gym.place_id||gym.placeId):''}','_blank')" style="background:#FF6D00;color:#fff;border:none;padding:8px 14px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">Directions →</button>
+// #9 REMOVED:         </div>
+// #9 REMOVED:       </div>`:''}
+// #9 REMOVED:     `;
+// #9 REMOVED:   }
+// #10 REMOVED:   else if(section==='equipment'){
+// #10 REMOVED:     title.innerHTML='🏋️ Equipment';
+// #10 REMOVED:     const equipment=getGymEquipment(gym);
+// #10 REMOVED:     body.innerHTML=`
+// #10 REMOVED:       <div class="ov-grid">
+// #10 REMOVED:         ${equipment.map(e=>`
+// #10 REMOVED:           <div class="ov-grid-item">
+// #10 REMOVED:             <span class="ov-grid-icon">${e.icon}</span>
+// #10 REMOVED:             <div class="ov-grid-name">${e.name}</div>
+// #10 REMOVED:             ${e.detail?`<div class="ov-grid-sub">${e.detail}</div>`:''}
+// #10 REMOVED:           </div>
+// #10 REMOVED:         `).join('')}
+// #10 REMOVED:       </div>
+// #10 REMOVED:     `;
+// #10 REMOVED:   }
   else if(section==='hours'){
     title.innerHTML='🕐 Opening Hours';
     const hours=gym.opening_hours?.weekday||gym.opening_hours?.weekday_text||[];
@@ -2228,22 +2294,55 @@ window.openGymOverlay=function(section){
     const todayIdx=today===0?6:today-1;
 
     if(hours.length>0){
+      // FIX #5: Redesigned Opening Hours — visual timeline bars, today highlighted, countdown
+      const _isOpen5=gym.opening_hours?.isOpen===true;
+      const _closesAt5=closingTime(gym);
+      let _closesIn5='';
+      if(_isOpen5&&_closesAt5){
+        try{
+          const now5=new Date();
+          const m5=_closesAt5.match(/(\d+):(\d+)\s*(AM|PM)/i);
+          if(m5){let h5=parseInt(m5[1]);const mn5=parseInt(m5[2]);const ap5=m5[3].toUpperCase();
+          if(ap5==='PM'&&h5!==12)h5+=12;if(ap5==='AM'&&h5===12)h5=0;
+          const cd5=new Date(now5);cd5.setHours(h5,mn5,0,0);const diff5=cd5-now5;
+          if(diff5>0){const dH=Math.floor(diff5/3600000);const dM=Math.floor((diff5%3600000)/60000);
+          _closesIn5=dH>0?dH+'h '+dM+'m':dM+'min';}}
+        }catch(e){}
+      }
       body.innerHTML=`
-        <div class="ov-card">
+        <div style="display:flex;align-items:center;gap:10px;padding:14px 16px;background:${_isOpen5?'rgba(34,197,94,.1)':'rgba(239,68,68,.1)'};border:1px solid ${_isOpen5?'rgba(34,197,94,.2)':'rgba(239,68,68,.2)'};border-radius:12px;margin-bottom:20px">
+          <span style="width:10px;height:10px;border-radius:50%;background:${_isOpen5?'#4ade80':'#ef4444'};${_isOpen5?'animation:pulse 2s infinite;':''}flex-shrink:0"></span>
+          <div style="flex:1">
+            <div style="color:${_isOpen5?'#4ade80':'#f87171'};font-size:15px;font-weight:700">${_isOpen5?'Open Now':'Currently Closed'}</div>
+            ${_isOpen5&&_closesAt5?`<div style="color:rgba(255,255,255,.5);font-size:12px">Closes at ${_closesAt5}${_closesIn5?' \u00b7 '+_closesIn5+' left':''}</div>`:''}
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:2px">
           ${hours.map((h,i)=>{
-            // Parse "Monday: 6:00 AM – 9:30 PM" format
             const parts=h.split(':');
             const day=parts[0]?.trim()||dayNames[i]||'';
             const time=parts.slice(1).join(':').trim()||h;
-            return`<div class="ov-hour-row${i===todayIdx?' today':''}">
-              <span class="ov-hour-day">${day}${i===todayIdx?' (Today)':''}</span>
-              <span class="ov-hour-time">${time}</span>
+            const isToday5=i===todayIdx;
+            const timeMatch=time.match(/(\d+)(?::(\d+))?\s*(AM|PM)?\s*[\u2013-]\s*(\d+)(?::(\d+))?\s*(AM|PM)?/i);
+            let barWidth=60;
+            if(timeMatch){
+              let oH=parseInt(timeMatch[1]);const oAP=(timeMatch[3]||'AM').toUpperCase();
+              let cH=parseInt(timeMatch[4]);const cAP=(timeMatch[6]||'PM').toUpperCase();
+              if(oAP==='PM'&&oH!==12)oH+=12;if(oAP==='AM'&&oH===12)oH=0;
+              if(cAP==='PM'&&cH!==12)cH+=12;if(cAP==='AM'&&cH===12)cH=0;
+              barWidth=Math.min(100,Math.max(10,((cH-oH)/24)*100));
+            }else if(time.toLowerCase().includes('24 hour')||time.toLowerCase().includes('open 24')){barWidth=100;}
+            return`<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;${isToday5?'background:rgba(255,109,0,.08);border:1px solid rgba(255,109,0,.15)':'background:transparent;border:1px solid transparent'}">
+              <span style="min-width:36px;color:${isToday5?'#FF6D00':'rgba(255,255,255,.5)'};font-size:13px;font-weight:${isToday5?'700':'500'}">${day.slice(0,3)}</span>
+              <div style="flex:1;position:relative;height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden"><div style="width:${barWidth}%;height:100%;background:${isToday5?'linear-gradient(90deg,#FF6D00,#ff8534)':'linear-gradient(90deg,rgba(34,197,94,.6),rgba(34,197,94,.3))'};border-radius:3px"></div></div>
+              <span style="min-width:120px;text-align:right;color:${isToday5?'#fff':'rgba(255,255,255,.5)'};font-size:12px;font-weight:${isToday5?'600':'400'}">${time}</span>
+              ${isToday5?'<span style="background:#FF6D00;color:#000;font-size:9px;font-weight:800;padding:2px 6px;border-radius:6px">TODAY</span>':''}
             </div>`;
           }).join('')}
         </div>
-        <div style="margin-top:16px;display:flex;gap:12px;flex-wrap:wrap">
-          ${gym.opening_hours?.isOpen===true?`<div style="display:flex;align-items:center;gap:6px;color:#4ade80;font-size:14px;font-weight:600"><span style="width:8px;height:8px;background:#4ade80;border-radius:50%;display:inline-block;animation:pulse 2s infinite"></span> Open Now${closingTime(gym)?' · Closes '+closingTime(gym):''}</div>`:''}
-          ${gym.opening_hours?.isOpen===false?`<div style="color:rgba(255,255,255,.5);font-size:14px;font-weight:600">Currently Closed</div>`:''}
+        <div style="margin-top:20px;padding:12px 16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;display:flex;align-items:center;gap:10px">
+          <span style="font-size:20px">\ud83d\udca1</span>
+          <div style="color:rgba(255,255,255,.4);font-size:12px">Hours sourced from Google. Check with the gym for holiday schedules.</div>
         </div>
       `;
     } else {
@@ -2268,102 +2367,154 @@ window.openGymOverlay=function(section){
     const monthlyP=_ovGymP?{amount:parseFloat((_ovGymP*10).toFixed(2)),display:_sym+(_ovGymP*10).toFixed(2)}:sgPrice('monthly');
     const gymId=gym.placeId||gym.place_id||gym.id;
     body.innerHTML=`
-      <div style="margin-bottom:20px;text-align:center">
-        <p style="color:rgba(255,255,255,.6);font-size:14px;margin:0">Choose the pass that works for you</p>
+      <!-- FIX #7: Day Pass pre-selected by default, other passes behind expandable -->
+      <div style="margin-bottom:16px;text-align:center">
+        <p style="color:rgba(255,255,255,.6);font-size:14px;margin:0">Your selected pass</p>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px">
-        <div class="ov-pass-card selected" onclick="overlaySelectPass(this,0,'${gymId}')" style="background:linear-gradient(135deg,rgba(34,197,94,.15),rgba(34,197,94,.05));border:2px solid #22c55e;border-radius:16px;padding:16px;text-align:center;cursor:pointer;position:relative">
-          <div style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:#22c55e;color:#000;font-size:10px;font-weight:800;padding:2px 10px;border-radius:20px;">⚡ MOST POPULAR</div>
-          <div style="font-size:28px;margin:8px 0 4px">⚡</div>
-          <div style="color:#fff;font-size:15px;font-weight:700">Day Pass</div>
-          <div style="color:#22c55e;font-size:24px;font-weight:800;margin:8px 0 4px">${dayP.display}</div>
-          <div style="color:rgba(255,255,255,.4);font-size:12px">24h access</div>
+      <!-- Day Pass — always visible, pre-selected -->
+      <div class="ov-pass-card selected" onclick="overlaySelectPass(this,0,'${gymId}')" style="background:linear-gradient(135deg,rgba(34,197,94,.15),rgba(34,197,94,.05));border:2px solid #22c55e;border-radius:16px;padding:20px;text-align:center;cursor:pointer;position:relative;margin-bottom:16px">
+        <div style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:#22c55e;color:#000;font-size:10px;font-weight:800;padding:2px 10px;border-radius:20px;">⚡ MOST POPULAR</div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-top:4px">
+          <span style="font-size:32px">⚡</span>
+          <div style="text-align:left">
+            <div style="color:#fff;font-size:18px;font-weight:800">Day Pass</div>
+            <div style="color:rgba(255,255,255,.4);font-size:12px">24 hours full gym access</div>
+          </div>
+          <div style="margin-left:auto;color:#22c55e;font-size:28px;font-weight:800">${dayP.display}</div>
         </div>
-        <div class="ov-pass-card" onclick="overlaySelectPass(this,1,'${gymId}')" style="background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.1);border-radius:16px;padding:16px;text-align:center;cursor:pointer">
-          <div style="font-size:28px;margin:8px 0 4px">🔥</div>
-          <div style="color:#fff;font-size:15px;font-weight:700">3-Day Pass</div>
-          <div style="color:#fff;font-size:24px;font-weight:800;margin:8px 0 4px">${threeDayP.display}</div>
-          <div style="color:rgba(255,255,255,.4);font-size:12px">${_sym}${(threeDayP.amount/3).toFixed(2)}/day</div>
-          <div style="color:#22c55e;font-size:11px;font-weight:700;margin-top:4px">Save 20%</div>
-        </div>
-        <div class="ov-pass-card" onclick="overlaySelectPass(this,2,'${gymId}')" style="background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.1);border-radius:16px;padding:16px;text-align:center;cursor:pointer">
-          <div style="font-size:28px;margin:8px 0 4px">📅</div>
-          <div style="color:#fff;font-size:15px;font-weight:700">Weekly</div>
-          <div style="color:#fff;font-size:24px;font-weight:800;margin:8px 0 4px">${weeklyP.display}</div>
-          <div style="color:rgba(255,255,255,.4);font-size:12px">${_sym}${(weeklyP.amount/7).toFixed(2)}/day</div>
-          <div style="color:#22c55e;font-size:11px;font-weight:700;margin-top:4px">Save 43%</div>
-        </div>
-        <div class="ov-pass-card" onclick="overlaySelectPass(this,3,'${gymId}')" style="background:linear-gradient(135deg,rgba(245,158,11,.15),rgba(245,158,11,.05));border:2px solid rgba(245,158,11,.3);border-radius:16px;padding:16px;text-align:center;cursor:pointer;position:relative">
-          <div style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:#f59e0b;color:#000;font-size:10px;font-weight:800;padding:2px 10px;border-radius:20px;">👑 BEST VALUE</div>
-          <div style="font-size:28px;margin:8px 0 4px">🏆</div>
-          <div style="color:#fff;font-size:15px;font-weight:700">Monthly</div>
-          <div style="color:#f59e0b;font-size:24px;font-weight:800;margin:8px 0 4px">${monthlyP.display}</div>
-          <div style="color:rgba(255,255,255,.4);font-size:12px">${_sym}${(monthlyP.amount/30).toFixed(2)}/day</div>
-          <div style="color:#22c55e;font-size:11px;font-weight:700;margin-top:4px">Save 67%</div>
-        </div>
-      </div>
-      <div style="text-align:center;margin-bottom:16px">
-        <div style="display:flex;justify-content:center;gap:16px;color:rgba(255,255,255,.4);font-size:12px">
+        <div style="display:flex;justify-content:center;gap:12px;margin-top:12px;color:rgba(255,255,255,.4);font-size:11px">
           <span>✅ Free Cancel</span>
           <span>🔒 Secure</span>
           <span>⚡ Instant QR</span>
         </div>
       </div>
+      <!-- More Passes — hidden by default -->
+      <button id="ov-pass-expand-btn" onclick="document.getElementById('ov-pass-more').style.display='';this.style.display='none'" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:14px;color:rgba(255,255,255,.6);font-size:14px;font-weight:600;cursor:pointer;margin-bottom:16px;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:8px">
+        <span>See more passes</span>
+        <span style="font-size:11px">▼</span>
+      </button>
+      <div id="ov-pass-more" style="display:none">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+          <div class="ov-pass-card" onclick="overlaySelectPass(this,1,'${gymId}')" style="background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.1);border-radius:16px;padding:16px;text-align:center;cursor:pointer">
+            <div style="font-size:28px;margin:8px 0 4px">🔥</div>
+            <div style="color:#fff;font-size:15px;font-weight:700">3-Day Pass</div>
+            <div style="color:#fff;font-size:24px;font-weight:800;margin:8px 0 4px">${threeDayP.display}</div>
+            <div style="color:rgba(255,255,255,.4);font-size:12px">${_sym}\${(threeDayP.amount/3).toFixed(2)}/day</div>
+            <div style="color:#22c55e;font-size:11px;font-weight:700;margin-top:4px">Save 20%</div>
+          </div>
+          <div class="ov-pass-card" onclick="overlaySelectPass(this,2,'${gymId}')" style="background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.1);border-radius:16px;padding:16px;text-align:center;cursor:pointer">
+            <div style="font-size:28px;margin:8px 0 4px">📅</div>
+            <div style="color:#fff;font-size:15px;font-weight:700">Weekly</div>
+            <div style="color:#fff;font-size:24px;font-weight:800;margin:8px 0 4px">${weeklyP.display}</div>
+            <div style="color:rgba(255,255,255,.4);font-size:12px">${_sym}\${(weeklyP.amount/7).toFixed(2)}/day</div>
+            <div style="color:#22c55e;font-size:11px;font-weight:700;margin-top:4px">Save 43%</div>
+          </div>
+          <div class="ov-pass-card" onclick="overlaySelectPass(this,3,'${gymId}')" style="background:linear-gradient(135deg,rgba(245,158,11,.15),rgba(245,158,11,.05));border:2px solid rgba(245,158,11,.3);border-radius:16px;padding:16px;text-align:center;cursor:pointer;position:relative">
+            <div style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:#f59e0b;color:#000;font-size:10px;font-weight:800;padding:2px 10px;border-radius:20px;">👑 BEST VALUE</div>
+            <div style="font-size:28px;margin:8px 0 4px">🏆</div>
+            <div style="color:#fff;font-size:15px;font-weight:700">Monthly</div>
+            <div style="color:#f59e0b;font-size:24px;font-weight:800;margin:8px 0 4px">${monthlyP.display}</div>
+            <div style="color:rgba(255,255,255,.4);font-size:12px">${_sym}\${(monthlyP.amount/30).toFixed(2)}/day</div>
+            <div style="color:#22c55e;font-size:11px;font-weight:700;margin-top:4px">Save 67%</div>
+          </div>
+          <div class="ov-pass-card" onclick="overlaySelectPass(this,4,'${gymId}')" style="background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.1);border-radius:16px;padding:16px;text-align:center;cursor:pointer">
+            <div style="font-size:28px;margin:8px 0 4px">👫</div>
+            <div style="color:#fff;font-size:15px;font-weight:700">Couple Pass</div>
+            <div style="color:#fff;font-size:24px;font-weight:800;margin:8px 0 4px">${_sym}\${(dayP.amount*1.8).toFixed(2)}</div>
+            <div style="color:rgba(255,255,255,.4);font-size:12px">2 people · 24h</div>
+            <div style="color:#22c55e;font-size:11px;font-weight:700;margin-top:4px">Save 10%</div>
+          </div>
+          <div class="ov-pass-card" onclick="overlaySelectPass(this,5,'${gymId}')" style="background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.1);border-radius:16px;padding:16px;text-align:center;cursor:pointer;grid-column:span 2">
+            <div style="font-size:28px;margin:8px 0 4px">👥</div>
+            <div style="color:#fff;font-size:15px;font-weight:700">Group Pass</div>
+            <div style="color:#fff;font-size:24px;font-weight:800;margin:8px 0 4px">${_sym}\${(dayP.amount*3.2).toFixed(2)}</div>
+            <div style="color:rgba(255,255,255,.4);font-size:12px">Up to 4 people · 24h</div>
+            <div style="color:#22c55e;font-size:11px;font-weight:700;margin-top:4px">Save 20%</div>
+          </div>
+        </div>
+      </div>
     `;
   }
   else if(section==='payment'){
-    title.innerHTML='💳 Payment';
+    title.innerHTML='💳 Pay with';
     body.innerHTML=`
       <div style="padding:4px 0">
-        <!-- Saved Cards -->
-        <div style="margin-bottom:16px">
-          <div style="color:rgba(255,255,255,.5);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Saved cards</div>
+        <!-- FIX #6: Uber-style payment — main view with "+ Add" header -->
+        <div id="ov-pay-main-view">
+          <!-- Saved Cards Section -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <div style="color:rgba(255,255,255,.5);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px">Payment methods</div>
+            <button onclick="_ovPayShowAddView()" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:6px 14px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px"><span style="color:#22c55e;font-weight:800">+</span> Add</button>
+          </div>
           <div id="ov-pay-cards" style="background:rgba(30,41,59,.6);border-radius:16px;border:1px solid rgba(255,255,255,.06);overflow:hidden">
             <div style="padding:20px;text-align:center;color:rgba(255,255,255,.3);font-size:13px">Loading…</div>
           </div>
+          <!-- Cash Option -->
+          <div style="margin-top:16px">
+            <div id="ov-pay-cash" onclick="_ovPaySelectCash()" style="display:flex;align-items:center;gap:14px;padding:16px 20px;background:rgba(30,41,59,.6);border:1px solid rgba(255,255,255,.06);border-radius:16px;cursor:pointer;transition:all .15s">
+              <div style="width:44px;height:30px;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px">💷</div>
+              <div style="flex:1">
+                <div style="color:#fff;font-size:14px;font-weight:600">Cash at Gym</div>
+                <div style="color:rgba(255,255,255,.4);font-size:11px;margin-top:1px">Pay in person when you arrive</div>
+              </div>
+              <div id="ov-pay-cash-check" style="color:#22c55e;font-size:18px;font-weight:700"></div>
+            </div>
+          </div>
         </div>
 
-        <!-- Add Payment Method -->
-        <button onclick="_ovPayAddCard()" id="ov-pay-add-btn" style="width:100%;display:flex;align-items:center;gap:14px;padding:16px 20px;background:rgba(30,41,59,.6);border:1px dashed rgba(255,255,255,.15);border-radius:16px;cursor:pointer;transition:all .2s">
-          <div style="width:44px;height:30px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;color:#22c55e">+</div>
-          <div style="text-align:left">
-            <div style="color:#fff;font-size:14px;font-weight:600">Add payment method</div>
-            <div style="color:rgba(255,255,255,.4);font-size:11px;margin-top:1px">Visa, Mastercard, Amex</div>
+        <!-- Add Payment Method Sub-View (hidden by default) -->
+        <div id="ov-pay-add-view" style="display:none">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;cursor:pointer" onclick="_ovPayShowMainView()">
+            <span style="color:rgba(255,255,255,.5);font-size:18px">←</span>
+            <span style="color:#fff;font-size:16px;font-weight:700">Add a payment method</span>
           </div>
-        </button>
+          <div style="display:flex;flex-direction:column;gap:2px;background:rgba(30,41,59,.6);border-radius:16px;border:1px solid rgba(255,255,255,.06);overflow:hidden">
+            <div onclick="_ovPayAddCard()" style="display:flex;align-items:center;gap:14px;padding:16px 20px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.06);transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,.03)'" onmouseout="this.style.background='transparent'">
+              <div style="width:40px;height:28px;background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.25);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px">💳</div>
+              <div style="flex:1;color:#fff;font-size:14px;font-weight:600">Credit or debit card</div>
+              <span style="color:rgba(255,255,255,.25);font-size:18px">›</span>
+            </div>
+            <div onclick="sgToast('PayPal coming soon','info',2500)" style="display:flex;align-items:center;gap:14px;padding:16px 20px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.06);transition:background .15s;opacity:.5" onmouseover="this.style.background='rgba(255,255,255,.03)'" onmouseout="this.style.background='transparent'">
+              <div style="width:40px;height:28px;background:rgba(0,112,210,.15);border:1px solid rgba(0,112,210,.25);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#0070d2;font-weight:800">PP</div>
+              <div style="flex:1;color:#fff;font-size:14px;font-weight:600">PayPal <span style="color:rgba(255,255,255,.3);font-size:11px;font-weight:400">Coming soon</span></div>
+              <span style="color:rgba(255,255,255,.25);font-size:18px">›</span>
+            </div>
+            <div onclick="sgToast('Apple Pay / Google Pay coming soon','info',2500)" style="display:flex;align-items:center;gap:14px;padding:16px 20px;cursor:pointer;transition:background .15s;opacity:.5" onmouseover="this.style.background='rgba(255,255,255,.03)'" onmouseout="this.style.background='transparent'">
+              <div style="width:40px;height:28px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px">📱</div>
+              <div style="flex:1;color:#fff;font-size:14px;font-weight:600">Apple Pay / Google Pay <span style="color:rgba(255,255,255,.3);font-size:11px;font-weight:400">Coming soon</span></div>
+              <span style="color:rgba(255,255,255,.25);font-size:18px">›</span>
+            </div>
+          </div>
+        </div>
 
-        <!-- Add Card Form (Uber unified container) -->
-        <div id="ov-pay-card-form" style="display:none;margin-top:16px">
-          <!-- Unified card container -->
+        <!-- Card Form Sub-View (hidden by default) -->
+        <div id="ov-pay-card-form" style="display:none">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;cursor:pointer" onclick="_ovPayShowAddView()">
+            <span style="color:rgba(255,255,255,.5);font-size:18px">←</span>
+            <span style="color:#fff;font-size:16px;font-weight:700">Add credit or debit card</span>
+          </div>
+          <!-- Card form container -->
           <div style="background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb">
-            <!-- Card number row -->
             <div style="display:flex;align-items:center;padding:0 16px">
               <div id="ov-pay-card-number" style="flex:1;padding:16px 0;min-height:48px"></div>
               <span id="ov-pay-brand-badge" style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;background:transparent;color:#64748b;margin-left:8px;white-space:nowrap"></span>
             </div>
-            <!-- Divider -->
             <div style="height:1px;background:#e5e7eb;margin:0"></div>
-            <!-- Expiry + CVC row -->
             <div style="display:flex">
               <div id="ov-pay-card-expiry" style="flex:1;padding:16px;min-height:48px"></div>
               <div style="width:1px;background:#e5e7eb"></div>
               <div id="ov-pay-card-cvc" style="flex:1;padding:16px;min-height:48px"></div>
             </div>
           </div>
-          <button id="ov-pay-save-btn" onclick="_ovPaySaveCard()" style="width:100%;background:#22c55e;color:#fff;border:none;border-radius:12px;padding:16px;font-size:16px;font-weight:700;cursor:pointer;opacity:.5;pointer-events:none;transition:all .2s;margin-top:16px">Save Card</button>
+          <button id="ov-pay-save-btn" onclick="_ovPaySaveCard()" style="width:100%;background:#22c55e;color:#fff;border:none;border-radius:12px;padding:16px;font-size:16px;font-weight:700;cursor:pointer;opacity:.5;pointer-events:none;transition:all .2s;margin-top:16px">Add Card</button>
           <p id="ov-pay-card-error" style="color:#ef4444;font-size:13px;margin-top:8px;display:none"></p>
-        </div>
-
-        <!-- Cash Option -->
-        <div style="margin-top:16px">
-          <div style="color:rgba(255,255,255,.5);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Other</div>
-          <div id="ov-pay-cash" onclick="_ovPaySelectCash()" style="display:flex;align-items:center;gap:14px;padding:16px 20px;background:rgba(30,41,59,.6);border:1px solid rgba(255,255,255,.06);border-radius:16px;cursor:pointer;transition:all .15s">
-            <div style="width:44px;height:30px;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px">💷</div>
-            <div style="flex:1">
-              <div style="color:#fff;font-size:14px;font-weight:600">Cash at Gym</div>
-              <div style="color:rgba(255,255,255,.4);font-size:11px;margin-top:1px">Pay in person when you arrive</div>
-            </div>
-            <div id="ov-pay-cash-check" style="color:#22c55e;font-size:18px;font-weight:700"></div>
+          <div style="text-align:center;margin-top:12px">
+            <button onclick="_ovPayShowAddView()" style="background:none;border:none;color:rgba(255,255,255,.4);font-size:14px;cursor:pointer;padding:8px 16px">Cancel</button>
+          </div>
+          <!-- Loading overlay -->
+          <div id="ov-pay-loading" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,.6);z-index:10;display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px;border-radius:12px">
+            <div style="width:36px;height:36px;border:3px solid rgba(255,255,255,.2);border-top-color:#22c55e;border-radius:50%;animation:spin 1s linear infinite"></div>
+            <span style="color:#fff;font-size:14px;font-weight:600">Adding card…</span>
           </div>
         </div>
       </div>
@@ -2876,6 +3027,28 @@ window._ovPaySelectCash=function(){
   }
 };
 
+/* ═══ FIX #6: Uber-style payment sub-view navigation ═══ */
+window._ovPayShowMainView=function(){
+  var main=document.getElementById('ov-pay-main-view');
+  var add=document.getElementById('ov-pay-add-view');
+  var form=document.getElementById('ov-pay-card-form');
+  if(main)main.style.display='';
+  if(add)add.style.display='none';
+  if(form)form.style.display='none';
+  var title=document.getElementById('gym-overlay-title');
+  if(title)title.innerHTML='💳 Pay with';
+};
+window._ovPayShowAddView=function(){
+  var main=document.getElementById('ov-pay-main-view');
+  var add=document.getElementById('ov-pay-add-view');
+  var form=document.getElementById('ov-pay-card-form');
+  if(main)main.style.display='none';
+  if(add)add.style.display='';
+  if(form)form.style.display='none';
+  var title=document.getElementById('gym-overlay-title');
+  if(title)title.innerHTML='💳 Add payment method';
+};
+
 window._ovPayAddCard=async function(){
   if(!state.user){
     _showToast('Please sign in first to save a card');
@@ -3139,7 +3312,15 @@ window.openDateSheet=function(){
   if(!sheet)return;
   // Reset state
   window._uberDatePickerState.selectedDateIdx=0;
-  window._uberDatePickerState.selectedTime=null;
+  // FIX #8: Default = today pre-selected with next-hour time slot (like Uber scheduling)
+  var _now8=new Date();
+  var _nextHourMin8=Math.ceil((_now8.getHours()*60+_now8.getMinutes())/60)*60; // Round up to next hour
+  if(_nextHourMin8>22*60)_nextHourMin8=22*60; // Cap at 10pm
+  if(_nextHourMin8<6*60)_nextHourMin8=6*60; // Floor at 6am
+  var _hh8=String(Math.floor(_nextHourMin8/60)).padStart(2,'0');
+  var _mm8=String(_nextHourMin8%60).padStart(2,'0');
+  window._uberDatePickerState.selectedTime=_hh8+':'+_mm8;
+  window._gymSelectedTime=_hh8+':'+_mm8;
   // Set today's date
   window._gymBookingState.selectedDate=new Date().toISOString().split('T')[0];
   // Build UI
@@ -6533,6 +6714,30 @@ window._initBookMapCarousel=function(){
       dots.forEach(function(d,j){if(j===pi)d.classList.add('act');else d.classList.remove('act');});
     }),{passive:true});
   });
+
+  /* ═══ FIX #3: AUTO-SWIPE photo carousel every 5s (Instagram/Airbnb pattern) ═══ */
+  /* Pause on touch interaction, resume 5s after touch ends */
+  window._photoAutoSwipeTimers=window._photoAutoSwipeTimers||{};
+  function _startPhotoAutoSwipe(pc,cardIdx){
+    if(window._photoAutoSwipeTimers[cardIdx])clearInterval(window._photoAutoSwipeTimers[cardIdx]);
+    window._photoAutoSwipeTimers[cardIdx]=setInterval(function(){
+      if(!pc||!pc.offsetWidth)return;
+      var pw=pc.offsetWidth;
+      var maxScroll=pc.scrollWidth-pw;
+      var nextScroll=pc.scrollLeft+pw;
+      if(nextScroll>maxScroll+10){pc.scrollTo({left:0,behavior:'smooth'});}
+      else{pc.scrollTo({left:nextScroll,behavior:'smooth'});}
+    },5000);
+  }
+  function _pausePhotoAutoSwipe(cardIdx){
+    if(window._photoAutoSwipeTimers[cardIdx]){clearInterval(window._photoAutoSwipeTimers[cardIdx]);window._photoAutoSwipeTimers[cardIdx]=null;}
+  }
+  carousel.querySelectorAll('.tt-photo-carousel').forEach(function(pc){
+    var cardIdx=pc.getAttribute('data-card-idx');
+    _startPhotoAutoSwipe(pc,cardIdx);
+    pc.addEventListener('touchstart',function(){_pausePhotoAutoSwipe(cardIdx);},{passive:true});
+    pc.addEventListener('touchend',function(){setTimeout(function(){_startPhotoAutoSwipe(pc,cardIdx);},5000);},{passive:true});
+  });
   /* ═══ LAZY PHOTO LOADING: Fetch place details for visible gym to get multiple photos ═══ */
   var _photoCache={};
   function _loadPhotosForCard(idx){
@@ -7711,7 +7916,7 @@ function ToolsPage(){
       <p style="color:rgba(255,255,255,.5);font-size:13px;margin:0 0 16px">Find a gym near you — no membership needed</p>
       <button onclick="navigate('/explore')" style="background:#FF6D00;color:#fff;border:none;padding:14px 32px;border-radius:14px;font-weight:700;font-size:15px;cursor:pointer;box-shadow:0 4px 20px rgba(255,109,0,.3)">🏋️ Find a Gym Near Me</button>
     </div>
-  </div>\`;
+  </div>`;
 }
 
 function BookingSuccessPage(){
@@ -9120,6 +9325,40 @@ window._openSearchOverlay=function(){
     body.innerHTML=html;
   };
 
+  // FIX #1: Search bar speed improvements — AbortController, cache, fuzzy matching, skeleton
+  var _ssoAbortController=null;
+  var _ssoCache=new Map();
+  var _ssoCacheTTL=120000; // 2min cache
+
+  // Simple fuzzy match (Levenshtein distance ≤ 2)
+  function _ssoFuzzyMatch(str,query){
+    str=str.toLowerCase();query=query.toLowerCase();
+    if(str.indexOf(query)!==-1)return true;
+    // Simple character-skip fuzzy: all query chars appear in order
+    var si=0;
+    for(var qi=0;qi<query.length;qi++){
+      var found=false;
+      while(si<str.length){if(str[si]===query[qi]){si++;found=true;break;}si++;}
+      if(!found)return false;
+    }
+    return true;
+  }
+
+  // Skeleton loading for autocomplete
+  function _ssoShowSkeleton(){
+    var body=document.getElementById('sso-body');
+    if(!body)return;
+    var html='<div class="sso-autocomplete" style="padding:8px 0">';
+    for(var si=0;si<4;si++){
+      html+='<div style="display:flex;align-items:center;gap:12px;padding:14px;border-bottom:1px solid rgba(255,255,255,.04)">'
+        +'<div style="width:24px;height:24px;border-radius:8px;background:rgba(255,255,255,.06);animation:skeletonPulse 1.8s ease-in-out infinite"></div>'
+        +'<div style="flex:1"><div style="height:14px;width:'+(60+si*10)+'%;border-radius:4px;background:rgba(255,255,255,.06);animation:skeletonPulse 1.8s ease-in-out infinite"></div></div>'
+        +'</div>';
+    }
+    html+='</div>';
+    body.innerHTML=html;
+  }
+
   // Show autocomplete results
   window._ssoShowAutocomplete=function(query){
     var body=document.getElementById('sso-body');
@@ -9127,12 +9366,19 @@ window._openSearchOverlay=function(){
     var q=query.toLowerCase();
     var html='';
 
+    // FIX #1: Check cache first
+    var _cachedResult=_ssoCache.get(q);
+    if(_cachedResult&&(Date.now()-_cachedResult.time<_ssoCacheTTL)){
+      body.innerHTML=_cachedResult.html;
+      return;
+    }
+
     // Match against popular cities
-    var matched=_popularCities.filter(function(c){return c.name.toLowerCase().indexOf(q)!==-1||c.query.toLowerCase().indexOf(q)!==-1;});
+    var matched=_popularCities.filter(function(c){return _ssoFuzzyMatch(c.name,q)||_ssoFuzzyMatch(c.query,q);});
 
     // Match against current gyms
     var gymMatches=(state.gyms||[]).filter(function(g){
-      return (g.name||'').toLowerCase().indexOf(q)!==-1||(g.address||g.vicinity||'').toLowerCase().indexOf(q)!==-1;
+      return _ssoFuzzyMatch(g.name||'',q)||_ssoFuzzyMatch(g.address||g.vicinity||'',q);
     }).slice(0,5);
 
     // Always show "search for" at top
@@ -9170,6 +9416,8 @@ window._openSearchOverlay=function(){
     });
 
     html+='</div>';
+    // FIX #1: Cache this autocomplete result
+    _ssoCache.set(q,{html:html,time:Date.now()});
     body.innerHTML=html;
   };
 
@@ -9198,9 +9446,13 @@ window._openSearchOverlay=function(){
     if(clearBtn){clearBtn.classList.toggle('show',v.length>0);}
     clearTimeout(debounceTimer);
     debounceTimer=setTimeout(function(){
-      if(v.length>=2){_ssoShowAutocomplete(v);}
+      if(v.length>=2){
+        // FIX #1: Show skeleton immediately if not cached
+        if(!_ssoCache.has(v.trim().toLowerCase()))_ssoShowSkeleton();
+        _ssoShowAutocomplete(v);
+      }
       else{_ssoShowDefault();}
-    },150);
+    },250);
   });
 
   // Enter key to search
