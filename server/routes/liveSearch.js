@@ -72,7 +72,7 @@ function extractCountryCode(formattedAddress) {
 
 // ─── Simple in-memory cache (5 min TTL) ─────────────────────
 const cache = new Map();
-const CACHE_TTL = 15 * 60 * 1000; // 15 minutes — gyms don't change often, saves Google API calls
+const CACHE_TTL = 30 * 60 * 1000; // 30 minutes — gyms don't move, saves Google API calls + faster responses — gyms don't change often, saves Google API calls
 
 function getCached(key) {
   const entry = cache.get(key);
@@ -471,7 +471,12 @@ router.get('/search', async (req, res) => {
     };
 
     setCache(cacheKey, result);
-    res.set('Cache-Control', 'public, max-age=300, s-maxage=600, stale-while-revalidate=1800');
+    res.set('Cache-Control', 'public, max-age=600, s-maxage=900, stale-while-revalidate=3600');
+    res.set('Vary', 'Accept-Encoding');
+    // Perf R2: ETag for conditional requests (304 Not Modified)
+    const etag = '"sg-' + require('crypto').createHash('md5').update(JSON.stringify(result)).digest('hex').slice(0,12) + '"';
+    res.set('ETag', etag);
+    if (req.headers['if-none-match'] === etag) { res.status(304).end(); return; }
     res.json(result);
   } catch (err) {
     console.error('Live search error:', err);

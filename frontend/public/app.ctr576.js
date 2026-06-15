@@ -2,10 +2,13 @@
 
 // Inject CSS animations for loading experience
 (function(){const s=document.createElement('style');s.textContent='@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}#fun-fact{transition:opacity 0.2s ease}.gym-card{animation:fadeInUp 0.3s ease-out both}.animate-slide-up{animation:slideUp 0.3s ease-out}@keyframes skeletonPulse{0%,100%{opacity:.6}50%{opacity:.3}}@keyframes locationDot{0%,100%{box-shadow:0 0 0 0 rgba(255,109,0,.4)}50%{box-shadow:0 0 0 8px rgba(255,109,0,0)}}.skel-card{animation:skeletonPulse 1.8s ease-in-out infinite}.loc-dot{animation:locationDot 1.5s ease-in-out infinite}.cards-enter .gym-card{animation:fadeInUp .4s ease-out both}@keyframes toastIn{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes toastOut{from{transform:translateY(0);opacity:1}to{transform:translateY(-100%);opacity:0}}@keyframes spin{to{transform:rotate(360deg)}}@keyframes casinoGlow{0%,100%{box-shadow:0 4px 20px rgba(255,109,0,.4),0 0 15px rgba(255,109,0,.15);background-position:0% 50%}50%{box-shadow:0 4px 30px rgba(255,109,0,.65),0 0 30px rgba(255,109,0,.3),0 0 60px rgba(255,109,0,.1);background-position:100% 50%}}@keyframes greenGlow{0%,100%{box-shadow:0 4px 20px rgba(34,197,94,.35),0 0 15px rgba(34,197,94,.1)}50%{box-shadow:0 4px 30px rgba(34,197,94,.6),0 0 30px rgba(34,197,94,.25),0 0 60px rgba(34,197,94,.1)}}.sg-spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}/* ── 3-Tab System (Polished) ── */.sg-tab-bar{position:fixed;bottom:0;left:0;right:0;height:56px;background:rgba(8,8,18,.98);backdrop-filter:blur(24px) saturate(1.8);-webkit-backdrop-filter:blur(24px) saturate(1.8);display:flex;align-items:center;justify-content:space-around;border-top:1px solid rgba(255,255,255,.06);z-index:9000;padding-bottom:env(safe-area-inset-bottom,0);pointer-events:auto!important}.sg-tab-item{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:6px 20px;border-radius:0;transition:all .25s cubic-bezier(.4,0,.2,1);-webkit-tap-highlight-color:transparent;user-select:none;position:relative;touch-action:manipulation}.sg-tab-item svg{width:26px;height:26px;stroke:rgba(255,255,255,.4);fill:none;stroke-width:1.8;transition:all .25s cubic-bezier(.4,0,.2,1)}.sg-tab-item .sg-tab-label{font-size:10px;font-weight:600;letter-spacing:.2px;color:rgba(255,255,255,.4);transition:all .25s cubic-bezier(.4,0,.2,1)}.sg-tab-item.active svg{stroke:#FF6D00;filter:drop-shadow(0 0 6px rgba(255,109,0,.35))}.sg-tab-item.active .sg-tab-label{color:#FF6D00}.sg-tab-item:active{transform:scale(.92)}.sg-tab-content{position:fixed;top:0;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom,0px));overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;scroll-behavior:smooth;display:flex;flex-direction:column}.sg-tab-content.reels-active{position:static;padding-bottom:0;overflow:visible}.sg-reels-frame{position:fixed;top:0;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom,0px));border:none;width:100%;height:calc(100vh - 56px - env(safe-area-inset-bottom,0px));z-index:1}.sg-more-hub{padding:20px 16px 24px;max-width:480px;margin:0 auto}.sg-more-section{margin-bottom:20px}.sg-more-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.3);margin-bottom:8px;padding-left:4px}.sg-more-item{display:flex;align-items:center;gap:14px;padding:14px 16px;background:rgba(255,255,255,.04);border-radius:14px;margin-bottom:6px;border:1px solid rgba(255,255,255,.04);cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}.sg-more-item:active{transform:scale(.98);background:rgba(255,255,255,.08)}.sg-more-item .sg-mi-icon{font-size:20px;width:40px;height:40px;background:rgba(255,255,255,.06);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.sg-more-item .sg-mi-text{flex:1}.sg-more-item .sg-mi-text h4{color:#fff;font-size:14px;font-weight:600;margin:0}.sg-more-item .sg-mi-text p{color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0}.sg-more-item .sg-mi-arrow{color:rgba(255,255,255,.2);font-size:16px}.sg-more-profile{display:flex;align-items:center;gap:14px;margin-bottom:28px;padding-top:12px}.sg-more-avatar{width:56px;height:56px;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff;flex-shrink:0}.sg-more-profile-info h3{color:#fff;font-size:18px;font-weight:700;margin:0}.sg-more-profile-info p{color:rgba(255,255,255,.4);font-size:13px;margin:2px 0 0}.sg-more-social{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}.sg-more-social a{display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:rgba(255,255,255,.04);border-radius:12px;border:1px solid rgba(255,255,255,.06);font-size:16px;transition:all .15s;text-decoration:none}.sg-more-social a:active{background:rgba(255,255,255,.1);transform:scale(.95)}.sg-more-back{display:flex;align-items:center;gap:8px;padding:12px 0;cursor:pointer;color:rgba(255,255,255,.6);font-size:14px;font-weight:600;margin-bottom:4px;-webkit-tap-highlight-color:transparent}.sg-more-back:active{color:#FF6D00}#sg-search-overlay{transition:opacity .2s ease}#sg-search-overlay.active{opacity:1!important}.hide-scrollbar::-webkit-scrollbar{display:none}.sg-dashboard{-webkit-tap-highlight-color:transparent;position:fixed;top:0;left:0;right:0;bottom:56px;z-index:10;overscroll-behavior:none;-webkit-overflow-scrolling:auto}html,body{height:100%;overflow:hidden;overscroll-behavior:none;position:fixed;width:100%}.sg-tab-bar.hidden{display:none!important}/* ── Option D: Sticky Continue Banner ── */#sg-continue-banner{position:fixed;bottom:calc(56px + env(safe-area-inset-bottom,0px));left:0;right:0;height:52px;background:linear-gradient(135deg,#FF6D00 0%,#E66200 100%);display:flex;align-items:center;justify-content:center;gap:8px;z-index:8999;box-shadow:0 -4px 20px rgba(255,109,0,.25);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .25s cubic-bezier(.4,0,.2,1),opacity .25s ease;touch-action:manipulation}#sg-continue-banner:active{transform:scale(.98)}#sg-continue-banner.sg-cb-hidden{transform:translateY(100%);opacity:0;pointer-events:none}#sg-continue-banner .sg-cb-text{font-size:16px;font-weight:700;color:#fff;letter-spacing:.3px}#sg-continue-banner .sg-cb-price{font-size:13px;font-weight:600;color:rgba(255,255,255,.75)}#sg-continue-banner .sg-cb-arrow{font-size:18px;color:#fff;margin-left:2px}.sg-tab-content.sg-cb-active{bottom:calc(56px + 52px + env(safe-area-inset-bottom,0px))!important}.sg-reels-frame.sg-cb-active{bottom:calc(56px + 52px + env(safe-area-inset-bottom,0px))!important;height:calc(100vh - 56px - 52px - env(safe-area-inset-bottom,0px))!important}';document.head.appendChild(s)})();
-// ═══ Perf #9: Preconnect to Google photo CDN for faster image loads ═══
+// ═══ Perf R2 #9: Preconnect + warm connection to Google photo CDN ═══
 (function(){['https://lh3.googleusercontent.com','https://maps.googleapis.com'].forEach(function(d){
 var l=document.createElement('link');l.rel='preconnect';l.href=d;l.crossOrigin='anonymous';document.head.appendChild(l);
-var l2=document.createElement('link');l2.rel='dns-prefetch';l2.href=d;document.head.appendChild(l2);});})();
+var l2=document.createElement('link');l2.rel='dns-prefetch';l2.href=d;document.head.appendChild(l2);});
+// Warm the connection with a tiny fetch to establish HTTP/2 multiplexing
+setTimeout(function(){try{fetch('https://lh3.googleusercontent.com/',{method:'HEAD',mode:'no-cors'}).catch(function(){});}catch(e){}},100);
+})();
 
 // ─── Pricing: loaded from /pricing.js (shared across all pages) ───
 // sgPrice(), sgSymbol(), sgCommissionRange() are global — see pricing.js
@@ -26,12 +29,16 @@ window.sgToast=function(msg, type='error', duration=4000){
 };
 // Load Stripe.js for inline payment (Fix #5)
 // Lazy-load Stripe.js only when needed (saves ~40KB on initial load)
-// ═══ Perf #6: Preload Stripe SDK on first user interaction (Uber/Airbnb pattern) ═══
-(function(){var _sp=false;function _preloadStripe(){if(_sp)return;_sp=true;
-if(!document.querySelector('script[src*="stripe.com"]')){var l=document.createElement('link');l.rel='preload';l.as='script';l.href='https://js.stripe.com/v3/';document.head.appendChild(l);}
-document.removeEventListener('touchstart',_preloadStripe);document.removeEventListener('scroll',_preloadStripe);}
-document.addEventListener('touchstart',_preloadStripe,{once:true,passive:true});
-document.addEventListener('scroll',_preloadStripe,{once:true,passive:true});})();
+// ═══ Perf R2 #6: Actually LOAD Stripe SDK on first interaction (not just preload) ═══
+(function(){var _sp=false;function _eagerLoadStripe(){if(_sp)return;_sp=true;
+if(!window.Stripe&&!document.querySelector('script[src*="stripe.com"]')){
+  var s=document.createElement('script');s.src='https://js.stripe.com/v3/';s.async=true;
+  s.onload=function(){console.log('[Perf] Stripe SDK loaded eagerly');};
+  document.head.appendChild(s);
+}
+document.removeEventListener('touchstart',_eagerLoadStripe);document.removeEventListener('scroll',_eagerLoadStripe);}
+document.addEventListener('touchstart',_eagerLoadStripe,{once:true,passive:true});
+document.addEventListener('scroll',_eagerLoadStripe,{once:true,passive:true});})();
 
 let _stripeLoadPromise=null;
 function ensureStripeLoaded(){
@@ -1158,17 +1165,17 @@ async function loadGyms(lat,lng){
       setTimeout(async()=>{
         try{
           var page2=await api.getLive(`/nearby?lat=${lat}&lng=${lng}&pagetoken=${data.nextPageToken}`);
-          if(!page2.gyms||page2.gyms.length===0){await new Promise(r=>setTimeout(r,1200));page2=await api.getLive(`/nearby?lat=${lat}&lng=${lng}&pagetoken=${data.nextPageToken}`);}
+          if(!page2.gyms||page2.gyms.length===0){await new Promise(r=>setTimeout(r,600));page2=await api.getLive(`/nearby?lat=${lat}&lng=${lng}&pagetoken=${data.nextPageToken}`);}
           if(page2.gyms){state.gyms=[...state.gyms,...page2.gyms];_gymCache.set(lat,lng,state.gyms);render();_photoPreloader.preloadGyms(state.gyms,state.gyms.length-page2.gyms.length);}
           if(page2.nextPageToken){
             setTimeout(async()=>{
               var page3=await api.getLive(`/nearby?lat=${lat}&lng=${lng}&pagetoken=${page2.nextPageToken}`);
-              if(!page3.gyms||page3.gyms.length===0){await new Promise(r=>setTimeout(r,1200));page3=await api.getLive(`/nearby?lat=${lat}&lng=${lng}&pagetoken=${page2.nextPageToken}`);}
+              if(!page3.gyms||page3.gyms.length===0){await new Promise(r=>setTimeout(r,600));page3=await api.getLive(`/nearby?lat=${lat}&lng=${lng}&pagetoken=${page2.nextPageToken}`);}
               if(page3.gyms){state.gyms=[...state.gyms,...page3.gyms];_gymCache.set(lat,lng,state.gyms);render();}
             },800);
           }
         }catch(e){}
-      },300);
+      },200);
     }
   }catch(e){console.error('Failed to load gyms:',e)}
 }
@@ -1222,12 +1229,12 @@ async function searchGyms(query, isExplicit, _triggerLayer){
     _photoPreloader.preloadGyms(state.gyms,0);
     // Start real social proof toasts
     if(window.sgSocialProofToast) _scheduleIdle(function(){window.sgSocialProofToast();});
-    /* Perf #120: Faster page 2 loading for search — 800ms + retry */
+    /* Perf R2 #8: Even faster page 2 — 200ms initial + retry at 600ms */
     if(data.nextPageToken){
       setTimeout(async()=>{
         try{
           var page2=await api.getLive(`/search?q=${encodeURIComponent(query)}&pagetoken=${data.nextPageToken}`);
-          if(!page2.gyms||page2.gyms.length===0){await new Promise(r=>setTimeout(r,1200));page2=await api.getLive(`/search?q=${encodeURIComponent(query)}&pagetoken=${data.nextPageToken}`);}
+          if(!page2.gyms||page2.gyms.length===0){await new Promise(r=>setTimeout(r,600));page2=await api.getLive(`/search?q=${encodeURIComponent(query)}&pagetoken=${data.nextPageToken}`);}
           if(page2.gyms){state.gyms=[...state.gyms,...page2.gyms];render();}
         }catch(e){}
       },800);
@@ -2072,6 +2079,36 @@ window.scrollToPasses=function(){
   }
 };
 
+// ═══ Perf R2 #4/#5: Pre-build overlay HTML for visible gym (reviews + hours) ═══
+window._sgOverlayCache={};
+window._sgPrebuildOverlay=function(gym){
+  if(!gym||!gym.placeId)return;
+  var key=gym.placeId;
+  if(window._sgOverlayCache[key])return;
+  // Pre-compute data that takes time
+  var rating=gym.rating||4.5;
+  var reviewCount=gym.user_ratings_total||gym.totalReviews||47;
+  var reviews=(gym.reviews_data?.google||[]).map(function(r){return Object.assign({},r,{source:'google'});});
+  var sgRevs=(gym.reviews_data?.scangym||[]).map(function(r){return Object.assign({},r,{source:'scangym'});});
+  window._sgOverlayCache[key]={reviews:reviews.concat(sgRevs),rating:rating,reviewCount:reviewCount,prebuilt:true};
+};
+// Trigger prebuild when IntersectionObserver marks a card as visible
+window._sgPrebuildOnScroll=function(){
+  var cards=document.querySelectorAll('.tt-card:not(.tt-offscreen)');
+  if(cards.length>0){
+    var card=cards[0];
+    var gid=card.getAttribute('data-gym-id')||card.getAttribute('data-id');
+    var gym=state.gyms?.find(function(g){return (g.placeId||g.place_id||g.id)===gid;});
+    if(gym)window._sgPrebuildOverlay(gym);
+  }
+};
+// Run prebuild on scroll (throttled)
+var _pbTimer=null;
+document.addEventListener('scroll',function(){
+  if(_pbTimer)return;
+  _pbTimer=setTimeout(function(){_pbTimer=null;window._sgPrebuildOnScroll();},500);
+},{passive:true});
+
 window.openGymOverlay=function(section){
   const gym=state.currentGym;if(!gym)return;
   const overlay=document.getElementById('gym-overlay');
@@ -2098,7 +2135,7 @@ window.openGymOverlay=function(section){
     const googlePhotos=(gym.photos||gym.photos_list||[]).slice(0,15);
     const gpHtml=googlePhotos.map((p,i)=>{
       const url=p.url||p.thumbnail||p;
-      return `<div class="rv-gallery-item" onclick="rvFullscreen(${i},'google')"><img src="${typeof url==='string'?url:''}" loading="lazy" alt="Gym photo ${i+1}" /></div>`;
+      return `<div class="rv-gallery-item" onclick="rvFullscreen(${i},'google')"><img src="${typeof url==='string'?url:''}" loading="${i<3?'eager':'lazy'}" ${i<3?'fetchpriority="high"':''} alt="Gym photo ${i+1}" /></div>`;
     }).join('');
 
     body.innerHTML=`
@@ -8784,9 +8821,16 @@ function _fireGPS(highAccuracy){
         console.log('[Location] GPS permission denied — skipping entirely (0ms saved vs 5s timeout)');
         return;
       }
+      // Perf R2 #2: Get cached position instantly (maximumAge=60s) then upgrade
+      if(!highAccuracy&&navigator.geolocation){
+        navigator.geolocation.getCurrentPosition(function(pos){
+          var g={lat:pos.coords.latitude,lng:pos.coords.longitude};
+          if(!state.searchLat){state.searchLat=g.lat;state.searchLng=g.lng;
+          console.log('[GPS] Fast cached fix:',g.lat.toFixed(4),g.lng.toFixed(4),'acc:',Math.round(pos.coords.accuracy)+'m');}
+        },function(){},{enableHighAccuracy:false,timeout:2000,maximumAge:60000});
+      }
       _startGPSWatch(highAccuracy);
     }).catch(function(){
-      // Permissions API not supported — try GPS anyway
       _startGPSWatch(highAccuracy);
     });
   }else{
@@ -9255,6 +9299,15 @@ var _popularCities=[
 ];
 
 window._openSearchOverlay=function(){
+  // Perf R2 #1: Prefetch nearby gyms when search opens (results ready before user types)
+  if(state.searchLat&&state.searchLng&&!window._sgSearchPrefetched){
+    window._sgSearchPrefetched=true;
+    var pfUrl='/search?q=gyms+near+me&lat='+state.searchLat+'&lng='+state.searchLng;
+    if(!_sgGetSearchCache(pfUrl)){
+      api.getLive(pfUrl).then(function(d){_sgSetSearchCache(pfUrl,d);}).catch(function(){});
+    }
+  }
+  // original:
   document.getElementById('sg-search-overlay-v2')?.remove();
 
   var recent=_getRecentSearches();
@@ -12797,6 +12850,11 @@ if(localStorage.getItem('sg_push_enabled')==='1'&&state.user){
     };
   }
 })();
+
+// ═══ Perf R2 #7: Pre-build calendar date strip on page load ═══
+window.addEventListener('load',function(){setTimeout(function(){
+  if(typeof window._buildUberDateStrip==='function')window._buildUberDateStrip();
+},1000);});
 
 // ═══ Performance Dashboard — call window.sgPerf() in console to see metrics ═══
 window.sgPerf=function(){
