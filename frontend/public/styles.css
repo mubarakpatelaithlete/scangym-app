@@ -151,3 +151,22 @@ body {
 .sg-brand-dot{width:28px;height:28px;background:#FF6D00;border-radius:50%;box-shadow:0 0 10px rgba(255,109,0,.4);}
 .sg-brand-dot-sm{width:20px;height:20px;background:#FF6D00;border-radius:50%;box-shadow:0 0 8px rgba(255,109,0,.35);}
 .sg-brand-dot-lg{width:36px;height:36px;background:#FF6D00;border-radius:50%;box-shadow:0 0 12px rgba(255,109,0,.45);}
+
+
+/* ═══ PR #287 FIXES ═══ */
+
+/* Fix 1: Review star rating number */
+.ov-review-rating-num{color:#fbbf24;font-weight:800;font-size:14px;margin-right:3px}
+
+/* Fix 4: Review search box */
+#rv-search-box::placeholder{color:rgba(255,255,255,.3)}
+
+/* Fix 5: Sort dropdown */
+#rv-sort-dropdown option{background:#1a1a2e;color:#fff}
+
+/* Fix 10: Pass type selector on calendar */
+.sg-cal-pass{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:72px;padding:10px 12px;border-radius:14px;cursor:pointer;background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.06);transition:all .15s;-webkit-tap-highlight-color:transparent;color:#fff}
+.sg-cal-pass:active{transform:scale(.96)}
+.sg-cal-pass.selected{background:rgba(255,109,0,.12);border-color:#FF6D00;box-shadow:0 0 12px rgba(255,109,0,.15)}
+.sg-cal-pass.selected span{color:#FF6D00!important}
+#sg-cal-pass-strip::-webkit-scrollbar{display:none}

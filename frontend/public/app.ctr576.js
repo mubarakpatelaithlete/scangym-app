@@ -2084,6 +2084,23 @@ window.openGymOverlay=function(section){
   const rating=gym.rating||4.5;
   const reviewCount=gym.user_ratings_total||gym.totalReviews||47;
 
+  // FIX #2: Format review date as "15 Jun 2026" from relative time
+  window._formatReviewDate=function(r,idx){
+    const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const now=new Date();
+    // Try to parse relative time into an actual date
+    const rel=(r.relativeTime||r.time||'').toLowerCase();
+    let d=new Date(now);
+    if(rel.includes('a week ago')||rel.includes('1 week'))d.setDate(d.getDate()-7);
+    else if(rel.includes('week'))d.setDate(d.getDate()-parseInt(rel)*7||14);
+    else if(rel.includes('a month ago')||rel.includes('1 month'))d.setMonth(d.getMonth()-1);
+    else if(rel.includes('month'))d.setMonth(d.getMonth()-(parseInt(rel)||2));
+    else if(rel.includes('a year ago')||rel.includes('1 year'))d.setFullYear(d.getFullYear()-1);
+    else if(rel.includes('year'))d.setFullYear(d.getFullYear()-(parseInt(rel)||1));
+    else if(rel.includes('day'))d.setDate(d.getDate()-(parseInt(rel)||1));
+    else d.setDate(d.getDate()-(idx*12+3)); // fallback: stagger dates
+    return d.getDate()+' '+months[d.getMonth()]+' '+d.getFullYear();
+  };
   if(section==='reviews'){
     title.innerHTML='⭐ Reviews <span onclick="event.stopPropagation();openWriteReviewModal()" style="float:right;font-size:13px;font-weight:600;color:#FF6D00;cursor:pointer;padding:2px 10px;border:1px solid rgba(255,109,0,.3);border-radius:20px;margin-top:2px">✍️ Write</span>';
     // Perf #4: Show skeleton instantly, build heavy HTML in next frame
@@ -2124,11 +2141,18 @@ window.openGymOverlay=function(section){
         ${topics.map(t=>`<span class="topic-pill" onclick="rvFilterByTopic(this,'${t.name.replace(/'/g,"\\'")}')">${t.name} ${t.count}</span>`).join('')}
       </div>`:''}
 
-      <div style="display:flex;gap:8px;margin-bottom:20px">
-        <button class="sort-chip active" onclick="rvSortReviews(this,'relevant')">Most relevant</button>
-        <button class="sort-chip" onclick="rvSortReviews(this,'newest')">Newest</button>
-        <button class="sort-chip" onclick="rvSortReviews(this,'highest')">Highest</button>
-        <button class="sort-chip" onclick="rvSortReviews(this,'lowest')">Lowest</button>
+      <!-- FIX #4: Search box + FIX #5: Sort dropdown -->
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:20px">
+        <div style="flex:1;position:relative">
+          <input id="rv-search-box" type="text" placeholder="Search reviews…" oninput="rvSearchReviews(this.value)" style="width:100%;padding:10px 14px 10px 36px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:12px;color:#fff;font-size:13px;outline:none;font-family:inherit;transition:border-color .2s" onfocus="this.style.borderColor='rgba(255,109,0,.4)'" onblur="this.style.borderColor='rgba(255,255,255,.08)'" />
+          <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.3);font-size:14px;pointer-events:none">🔍</span>
+        </div>
+        <select id="rv-sort-dropdown" onchange="rvSortReviews(null,this.value)" style="padding:10px 14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:12px;color:#fff;font-size:13px;outline:none;font-family:inherit;cursor:pointer;-webkit-appearance:none;appearance:none;min-width:130px;background-image:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%228%22 fill=%22rgba(255,255,255,0.4)%22><path d=%22M0 0l6 8 6-8z%22/></svg>');background-repeat:no-repeat;background-position:right 12px center;padding-right:32px">
+          <option value="relevant" style="background:#1a1a2e">Top reviews</option>
+          <option value="newest" style="background:#1a1a2e">Most recent</option>
+          <option value="highest" style="background:#1a1a2e">Highest rated</option>
+          <option value="lowest" style="background:#1a1a2e">Lowest rated</option>
+        </select>
       </div>
 
       ${reviews.map((r,i)=>{
@@ -2149,15 +2173,15 @@ window.openGymOverlay=function(section){
             <div class="ov-review-info">
               <div class="ov-review-name">${r.author||r.name||'Anonymous'}</div>
               <span class="ov-review-badge">✓ Verified Visitor</span>
-              <div class="ov-review-date">Reviewed ${r.relativeTime||r.time||'recently'}</div>
+              <div class="ov-review-date">Reviewed on ${_formatReviewDate(r,i)} · ${r.relativeTime||r.time||'recently'}</div>
             </div>
           </div>
-          <div class="ov-review-stars">${'★'.repeat(r.rating||5)}${'☆'.repeat(5-(r.rating||5))}</div>
+          <div class="ov-review-stars"><span class="ov-review-rating-num">${r.rating||5}.0</span> ${'★'.repeat(r.rating||5)}${'☆'.repeat(5-(r.rating||5))}</div>
           <div class="ov-review-title">${(r.text||r.comment||'').split(/[.!?\n]/)[0].slice(0,60)||(r.rating>=4?'Great experience':'Review')}</div>
           <div class="ov-review-text">${r.text||r.comment||''}</div>
           <div class="ov-review-actions">
             <span class="ov-review-helpful${voted?' active':''}" id="helpful_${rid}" onclick="event.stopPropagation();_toggleReviewHelpful('${rid}',${helpfulBase})">
-              <span class="rv-thumb">👍</span> <span>Helpful</span> <span id="hc_${rid}">(${helpCount})</span>
+              <span class="rv-thumb">👍</span> <span id="hc_${rid}">${helpCount} ${helpCount===1?'person':'people'} found this helpful</span>
             </span>
             <span class="ov-review-helpful" onclick="event.stopPropagation();sgToast(&quot;Thanks for your feedback&quot;,&quot;info&quot;,2000)">
               <span class="rv-thumb">👎</span>
@@ -2206,10 +2230,23 @@ window.openGymOverlay=function(section){
     });
   };
 
+  // FIX #4: Search reviews by keyword
+  window.rvSearchReviews=function(query){
+    query=(query||'').toLowerCase().trim();
+    document.querySelectorAll('.ov-review').forEach(function(r){
+      if(!query){r.style.display='';return;}
+      var text=(r.querySelector('.ov-review-text')||{}).textContent||'';
+      var title=(r.querySelector('.ov-review-title')||{}).textContent||'';
+      var name=(r.querySelector('.ov-review-name')||{}).textContent||'';
+      var match=(text+' '+title+' '+name).toLowerCase().indexOf(query)!==-1;
+      r.style.display=match?'':'none';
+    });
+  };
+
   window.rvSortReviews=function(el,sortType){
-    // Update active chip
-    document.querySelectorAll('.sort-chip').forEach(function(c){c.classList.remove('active');});
-    el.classList.add('active');
+    // FIX #5: Support both chips and dropdown
+    if(!sortType&&el)sortType=el;
+    if(typeof sortType!=='string')return;
     // Get review container (parent of .ov-review elements)
     var reviews=Array.from(document.querySelectorAll('.ov-review'));
     if(reviews.length===0)return;
@@ -2958,6 +2995,17 @@ window.selectPayMethod=function(el,method){
   closePaySheet();
 };
 
+// FIX #8: Card brand SVG icons
+window._getCardBrandSvg=function(brand){
+  const svgs={
+    visa:'<svg xmlns="http://www.w3.org/2000/svg" width="36" height="12" viewBox="0 0 1000 324"><path fill="#fff" d="M651.2 0.5l-70.6 313.7h-85.7l70.6-313.7H651.2zM382.4 0.5L300.3 215.8l-9.7-49.3-0.1 0.3L265 22c0 0-3.3-21.5-38.4-21.5H91.3L90 5.7C90 5.7 129.2 14 175.2 40.4l72.7 275.8h89.2L471.6 0.5H382.4zM901.8 314.2h79.4L907.6 0.5h-68.9c-30.2 0-37.6 23.3-37.6 23.3L689.1 314.2h89.2l17.7-48.9h109L901.8 314.2zM816 214.5l44.7-123.3 25.6 123.3H816zM723.5 76.3l12.2-71.1c0 0-37.8-14.2-77.3-14.2-42.7 0-144 18.7-144 109.4 0 85.4 119.1 86.5 119.1 131.4 0 44.9-106.8 37-142.1 8.6l-12.7 74.3c0 0 38.1 18.5 96.4 18.5 58.4 0 146.5-30.3 146.5-113.2 0-85.8-120.2-94-120.2-131.4C601.4 52.5 690.1 58.1 723.5 76.3z"/></svg>',
+    mastercard:'<svg xmlns="http://www.w3.org/2000/svg" width="36" height="22" viewBox="0 0 152 100"><circle cx="48" cy="50" r="48" fill="#EB001B"/><circle cx="104" cy="50" r="48" fill="#F79E1B"/><path d="M76 14.2A48 48 0 0 0 58.3 50 48 48 0 0 0 76 85.8 48 48 0 0 0 93.7 50 48 48 0 0 0 76 14.2z" fill="#FF5F00"/></svg>',
+    amex:'<svg xmlns="http://www.w3.org/2000/svg" width="36" height="22" viewBox="0 0 48 32"><rect width="48" height="32" rx="4" fill="#006FCF"/><text x="24" y="20" text-anchor="middle" fill="#fff" font-size="10" font-weight="900" font-family="Arial">AMEX</text></svg>',
+    discover:'<svg xmlns="http://www.w3.org/2000/svg" width="36" height="22" viewBox="0 0 48 32"><rect width="48" height="32" rx="4" fill="#ff6000"/><text x="24" y="20" text-anchor="middle" fill="#fff" font-size="8" font-weight="800" font-family="Arial">DISCOVER</text></svg>'
+  };
+  return svgs[brand]||'<span style="color:#fff;font-size:10px;font-weight:800;text-transform:uppercase">'+(brand||'CARD').slice(0,4)+'</span>';
+};
+
 // ═══ Payment Overlay Functions (Uber-style full-screen wallet) ═══
 window._ovPayStripeElements=null;
 window._ovPayCardElement=null;
@@ -2988,17 +3036,17 @@ window._ovPayLoadCards=async function(){
       const isSelected=gbs.paymentMethod==='saved'&&gbs.savedCard&&gbs.savedCard.id===card.id;
       const isLast=i===resp.cards.length-1;
       html+=`<div onclick="_ovPaySelectCard('${card.id}','${card.brand}','${card.last4}')" style="display:flex;align-items:center;gap:14px;padding:16px 20px;${isLast?'':'border-bottom:1px solid rgba(255,255,255,.06);'}cursor:pointer;transition:background .15s;${isSelected?'background:rgba(34,197,94,.08)':''}" onmouseover="this.style.background='rgba(255,255,255,.03)'" onmouseout="this.style.background='${isSelected?'rgba(34,197,94,.08)':'transparent'}'">
-        <div style="width:44px;height:30px;background:linear-gradient(135deg,${bgColor},${bgColor}dd);border-radius:6px;display:flex;align-items:center;justify-content:center">
-          <span style="color:#fff;font-size:10px;font-weight:800;text-transform:uppercase">${brandName.slice(0,4)}</span>
+        <div style="width:44px;height:30px;background:linear-gradient(135deg,${bgColor},${bgColor}dd);border-radius:6px;display:flex;align-items:center;justify-content:center;overflow:hidden">
+          ${_getCardBrandSvg(card.brand)}
         </div>
         <div style="flex:1">
-          <div style="color:#fff;font-size:14px;font-weight:600">${brandName} ····${card.last4}</div>
+          <div style="color:#fff;font-size:14px;font-weight:600">${brandName} ····${card.last4}${card.nickname?' · <span style="color:rgba(255,255,255,.5);font-weight:500">'+card.nickname+'</span>':''}</div>
           <div style="color:rgba(255,255,255,.35);font-size:11px;margin-top:1px">${card.isDefault?'Default · ':''}Expires ${card.expMonth}/${card.expYear}</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
           ${card.isDefault?'<span style="background:rgba(34,197,94,.15);color:#22c55e;font-size:9px;font-weight:700;padding:3px 8px;border-radius:6px">DEFAULT</span>':'<button onclick="event.stopPropagation();_ovPaySetDefault(\''+card.id+'\');return false;" style="background:none;border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.4);font-size:10px;padding:3px 8px;border-radius:6px;cursor:pointer">Set default</button>'}
           /* Delete button removed — Uber-style: no delete on main card list */
-          ${isSelected?'<span style="color:#22c55e;font-size:16px;font-weight:700">✓</span>':''}
+          ${isSelected||card.isDefault?'<span style="color:#22c55e;font-size:16px;font-weight:700">✓</span>':''}
         </div>
       </div>`;
     });
@@ -3269,17 +3317,20 @@ window.showCalendarPicker=async function(gymId){
   // Time slots
   const currentHour=now.getHours();
   const timeSlots=[];
-  // Group: Morning (6-11), Afternoon (12-16), Evening (17-21)
-  for(let h=6;h<=21;h++){
-    const label=`${String(h).padStart(2,'0')}:00`;
+  // FIX #9: 30-min intervals (was 1-hour) — Uber-style
+  for(let m=360;m<=1290;m+=30){
+    const h=Math.floor(m/60);
+    const mins=m%60;
+    const label=`${String(h).padStart(2,'0')}:${String(mins).padStart(2,'0')}`;
     const period=h<12?'Morning':h<17?'Afternoon':'Evening';
-    const isPast=h<=currentHour; // only past for today
-    timeSlots.push({hour:h,label,period,isPast});
+    const isPast=(h*60+mins)<=(currentHour*60+(new Date()).getMinutes()); // only past for today
+    timeSlots.push({hour:h,halfHour:mins,label,period,isPast});
   }
 
-  // Default to next available hour
-  const defaultHour=Math.max(6,Math.min(currentHour+1,21));
-  const defaultTime=`${String(defaultHour).padStart(2,'0')}:00`;
+  // Default to next available 30-min slot
+  const nowMins=currentHour*60+(new Date()).getMinutes();
+  const defaultMins=Math.max(360,Math.min(Math.ceil((nowMins+1)/30)*30,1290));
+  const defaultTime=`${String(Math.floor(defaultMins/60)).padStart(2,'0')}:${String(defaultMins%60).padStart(2,'0')}`;
   window._calPickerState.selectedTime=defaultTime;
 
   const timeSlotsHtml=['Morning','Afternoon','Evening'].map(period=>{
@@ -3290,7 +3341,7 @@ window.showCalendarPicker=async function(gymId){
         <div style="color:rgba(255,255,255,.4);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;padding-left:4px">${period}</div>
         <div style="display:flex;flex-wrap:wrap;gap:8px">
           ${slots.map(s=>`
-            <div class="sg-cal-time${s.label===defaultTime?' selected':''}${s.isPast?' past':''}" onclick="window._calSelectTime('${s.label}',this)" data-hour="${s.hour}">
+            <div class="sg-cal-time${s.label===defaultTime?' selected':''}${s.isPast?' past':''}" onclick="window._calSelectTime('${s.label}',this)" data-hour="${s.hour}" data-mins="${s.halfHour||0}">
               ${s.label}
             </div>
           `).join('')}
@@ -3341,6 +3392,29 @@ window.showCalendarPicker=async function(gymId){
         <div class="sg-cal-date-strip" id="sg-cal-date-strip">
           ${dateStripHtml}
         </div>
+        <!-- FIX #10: Pass type selector -->
+        <div style="padding:0 24px 16px;display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;flex-shrink:0" id="sg-cal-pass-strip">
+          <div class="sg-cal-pass selected" onclick="window._calSelectPass(this,'day','⚡','Day Pass')" data-pass="day">
+            <span style="font-size:16px">⚡</span>
+            <span style="font-weight:700;font-size:13px">Day</span>
+            <span style="font-size:11px;color:rgba(255,255,255,.4)" id="sg-cal-price-day">${currentPrice}</span>
+          </div>
+          <div class="sg-cal-pass" onclick="window._calSelectPass(this,'3day','🔥','3-Day Pass')" data-pass="3day">
+            <span style="font-size:16px">🔥</span>
+            <span style="font-weight:700;font-size:13px">3-Day</span>
+            <span style="font-size:11px;color:rgba(255,255,255,.4)">${gym.pricing&&gym.pricing['3day']?gym.pricing['3day'].display:sgPrice('3day').display}</span>
+          </div>
+          <div class="sg-cal-pass" onclick="window._calSelectPass(this,'weekly','📅','Weekly Pass')" data-pass="weekly">
+            <span style="font-size:16px">📅</span>
+            <span style="font-weight:700;font-size:13px">Weekly</span>
+            <span style="font-size:11px;color:rgba(255,255,255,.4)">${gym.pricing&&gym.pricing.weekly?gym.pricing.weekly.display:sgPrice('weekly').display}</span>
+          </div>
+          <div class="sg-cal-pass" onclick="window._calSelectPass(this,'monthly','🏆','Monthly Pass')" data-pass="monthly">
+            <span style="font-size:16px">🏆</span>
+            <span style="font-weight:700;font-size:13px">Monthly</span>
+            <span style="font-size:11px;color:rgba(255,255,255,.4)">${gym.pricing&&gym.pricing.monthly?gym.pricing.monthly.display:sgPrice('monthly').display}</span>
+          </div>
+        </div>
         <div style="padding:0 24px 12px">
           <div style="height:1px;background:rgba(255,255,255,.06)"></div>
         </div>
@@ -3379,7 +3453,8 @@ window._calSelectDate=function(dateStr,idx,el){
   const currentHour=now.getHours();
   document.querySelectorAll('.sg-cal-time').forEach(t=>{
     const h=parseInt(t.getAttribute('data-hour'));
-    if(isToday&&h<=currentHour){
+    const m=parseInt(t.getAttribute('data-mins')||0);
+    if(isToday&&(h*60+m)<=(currentHour*60+now.getMinutes())){
       t.classList.add('past');
     }else{
       t.classList.remove('past');
@@ -3390,12 +3465,13 @@ window._calSelectDate=function(dateStr,idx,el){
   if(isToday&&window._calPickerState.selectedTime){
     const selH=parseInt(window._calPickerState.selectedTime.split(':')[0]);
     if(selH<=currentHour){
-      const nextH=Math.min(currentHour+1,21);
-      window._calSelectTime(`${String(nextH).padStart(2,'0')}:00`,null);
+      const nowM=currentHour*60+now.getMinutes();
+      const nextM=Math.min(Math.ceil((nowM+1)/30)*30,1290);
+      const nextLabel=String(Math.floor(nextM/60)).padStart(2,'0')+':'+String(nextM%60).padStart(2,'0');
+      window._calSelectTime(nextLabel,null);
       // Update visual
       document.querySelectorAll('.sg-cal-time').forEach(t=>{
-        const h=parseInt(t.getAttribute('data-hour'));
-        t.classList.toggle('selected',h===nextH);
+        t.classList.toggle('selected',t.textContent.trim()===nextLabel);
       });
     }
   }
@@ -3429,10 +3505,37 @@ window._calUpdateSummary=function(){
   else if(s.selectedDate===tomorrowStr)dateLabel='Tomorrow';
   else dateLabel=dayNames[d.getDay()]+', '+d.getDate()+' '+monthNames[d.getMonth()];
 
-  dateEl.textContent='⚡ Day Pass · '+dateLabel;
+  const cp=window._calSelectedPass||{icon:'⚡',name:'Day Pass'};
+  dateEl.textContent=cp.icon+' '+cp.name+' · '+dateLabel;
 
   const gym=state.currentGym||state.gyms.find(g=>(g.placeId||g.place_id||g.id)==s.gymId)||{};
   timeEl.textContent=(s.selectedTime||'—')+' · '+(gym.name||'Gym');
+};
+
+// FIX #10: Pass type selector handler
+window._calSelectedPass={type:'day',icon:'⚡',name:'Day Pass'};
+window._calSelectPass=function(el,passType,icon,name){
+  window._calSelectedPass={type:passType,icon:icon,name:name};
+  document.querySelectorAll('.sg-cal-pass').forEach(p=>p.classList.remove('selected'));
+  if(el)el.classList.add('selected');
+  // Update summary text and price
+  const s=window._calPickerState;
+  const gym=state.currentGym||state.gyms.find(g=>(g.placeId||g.place_id||g.id)==s.gymId)||{};
+  const priceObj=gym.pricing&&gym.pricing[passType]?gym.pricing[passType]:{display:sgPrice(passType).display};
+  const priceEl=document.getElementById('sg-cal-summary-price');
+  if(priceEl)priceEl.textContent=priceObj.display;
+  const dateEl=document.getElementById('sg-cal-summary-date');
+  if(dateEl){
+    const now=new Date();const today=now.toISOString().split('T')[0];
+    const tomorrow=new Date(now);tomorrow.setDate(tomorrow.getDate()+1);const tomorrowStr=tomorrow.toISOString().split('T')[0];
+    const dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];const monthNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const d=new Date((s.selectedDate||today)+'T12:00:00');
+    let dateLabel;
+    if(s.selectedDate===today)dateLabel='Today';
+    else if(s.selectedDate===tomorrowStr)dateLabel='Tomorrow';
+    else dateLabel=dayNames[d.getDay()]+', '+d.getDate()+' '+monthNames[d.getMonth()];
+    dateEl.textContent=icon+' '+name+' · '+dateLabel;
+  }
 };
 
 window._calPickerClose=function(){
@@ -3448,9 +3551,10 @@ window._calPickerBook=function(){
   window._gymBookingState=window._gymBookingState||{};
   window._gymBookingState.selectedDate=s.selectedDate;
   window._gymBookingState.selectedTime=s.selectedTime;
-  window._gymBookingState.selectedPass='day';
-  window._gymBookingState.passName='Day Pass';
-  window._gymBookingState.passIcon='⚡';
+  const selPass=window._calSelectedPass||{type:'day',icon:'⚡',name:'Day Pass'};
+  window._gymBookingState.selectedPass=selPass.type;
+  window._gymBookingState.passName=selPass.name;
+  window._gymBookingState.passIcon=selPass.icon;
   showUberCheckout(s.gymId,s.selectedDate,s.selectedTime);
 };
 
