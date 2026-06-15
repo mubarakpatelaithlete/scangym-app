@@ -57,7 +57,15 @@ function urgencyNum(name,max){let h=0;for(let i=0;i<(name||'').length;i++)h=((h<
 function minutesAgo(name){return urgencyNum(name,45)+1;}
 function peopleLooking(name){return urgencyNum(name,8)+2;}
 function spotsLeft(name){return urgencyNum(name,6)+2;}
-function bookedToday(name){return urgencyNum(name,40)+10;}
+// #59: Amazon-style bucket — uses API data when available, falls back to seeded
+function bookedBucket(gym){
+  if(gym&&gym.bookedBucket) return gym.bookedBucket+' booked this month';
+  // Fallback: hash-based seed (consistent per gym)
+  var c=urgencyNum(gym&&gym.name||'gym',166)+15;
+  var buckets=[5000,2000,1000,500,200,100,50,10];
+  for(var i=0;i<buckets.length;i++){if(c>=buckets[i])return(buckets[i]>=1000?(buckets[i]/1000)+'K+':buckets[i]+'+')+' booked this month';}
+  return '10+ booked this month';
+}
 function closingTime(gym){if(gym.opening_hours?.weekday?.length){const now=new Date().getDay();const todayHours=gym.opening_hours.weekday[now===0?6:now-1]||'';const m=todayHours.match(/(\d{1,2}:\d{2}\s*[AP]M)/gi);if(m&&m.length>1)return m[m.length-1];}return gym.openNow===true?'10:00 PM':null;}
 
 function openingTime(gym){if(gym.opening_hours?.weekday?.length){const now=new Date().getDay();const todayHours=gym.opening_hours.weekday[now===0?6:now-1]||'';const m=todayHours.match(/(\d{1,2}:\d{2}\s*[AP]M)/gi);if(m&&m.length>=1)return m[0];}return '6:00 AM';}
@@ -1329,8 +1337,7 @@ function SearchPage(){
           html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'payment\')"><div class="tt-action-btn">\u{1F4B3}</div></div>';
           html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'passes\')"><div class="tt-action-btn">\u{1F39F}\uFE0F</div></div>';
           html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'hours\')"><div class="tt-action-btn">\u{1F4C5}</div></div>';
-          html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'facilities\')"><div class="tt-action-btn">\u{1F3CA}</div></div>';
-          html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'equipment\')"><div class="tt-action-btn">\u{1F3CB}\uFE0F</div></div>';
+          /* #59 cleanup: equipment & facilities buttons removed per user request */
           /* map button removed */
           html+='</div>';
 
@@ -1353,7 +1360,7 @@ function SearchPage(){
           /* Address */
           html+='<div class="tt-gym-addr">\u{1F4CD} '+(c.addr?c.addr.split(',')[0]:'Nearby')+' \u00b7 <span class="tt-travel-label" data-gym-travel-id="'+c.id+'">'+c.distMin+'</span> \u00b7 <span class="'+c.openClass+'">'+c.openTag+'</span></div>';
           /* Chips — Fix #59, #105, #107: Social proof & FOMO signals (seeded until real analytics wired up) */
-          var _bToday=bookedToday(c.name);
+          var _bMonth=bookedBucket(c.gym);
           var _pLook=peopleLooking(c.name);
           var _mAgo=minutesAgo(c.name);
           html+='<div class="tt-chips">';
@@ -1362,7 +1369,7 @@ function SearchPage(){
           if(c.gym.isSelfService) html+='<div class="tt-chip" style="background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.25);color:#a78bfa">\u{1F513} Self Entry</div>';
           html+='<div class="tt-chip">\u{1F4B0} '+c.price+'/day</div>';
           html+='<div class="tt-chip">\u2B50 '+c.rating+(c.reviews?' ('+c.reviews+')':'')+'</div>';
-          html+='<div class="tt-chip" style="background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.25)">\u{1F4C8} '+_bToday+' booked today</div>';
+          html+='<div class="tt-chip" style="background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.25)">\u{1F4C8} '+_bMonth+'</div>';
           html+='<div class="tt-chip" style="background:rgba(239,68,68,.14);border:1px solid rgba(239,68,68,.2)">\u{1F440} '+_pLook+' looking now</div>';
           html+='</div>';
           /* CTA inside info — Book directly from reels (no Screen 3 navigation) */
@@ -1690,6 +1697,42 @@ function GymProfilePage(){
     .wr-success-icon{font-size:56px;margin-bottom:12px}
     .wr-success-title{color:#22c55e;font-size:18px;font-weight:700;margin-bottom:6px}
     .wr-success-sub{color:rgba(255,255,255,.4);font-size:13px}
+
+    /* #61: Photo/Video gallery styles */
+    .rv-gallery{display:flex;gap:8px;overflow-x:auto;padding:4px 0 12px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+    .rv-gallery::-webkit-scrollbar{display:none}
+    .rv-gallery-item{flex-shrink:0;width:100px;height:100px;border-radius:12px;overflow:hidden;position:relative;cursor:pointer;border:1px solid rgba(255,255,255,.08)}
+    .rv-gallery-item img,.rv-gallery-item video{width:100%;height:100%;object-fit:cover}
+    .rv-gallery-item .rv-play-badge{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.4);font-size:28px}
+    .rv-gallery-tabs{display:flex;gap:8px;margin-bottom:12px}
+    .rv-gallery-tab{padding:6px 14px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.08)}
+    .rv-gallery-tab.active{background:rgba(255,109,0,.12);color:#FF6D00;border-color:rgba(255,109,0,.3)}
+    .rv-fullscreen{position:fixed;inset:0;z-index:10002;background:rgba(0,0,0,.95);display:flex;align-items:center;justify-content:center;animation:fadeIn .2s}
+    .rv-fullscreen img,.rv-fullscreen video{max-width:95vw;max-height:85vh;border-radius:12px;object-fit:contain}
+    .rv-fullscreen-close{position:absolute;top:16px;right:16px;font-size:28px;color:#fff;cursor:pointer;z-index:10003;background:rgba(0,0,0,.5);width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:none}
+    .rv-fullscreen-nav{position:absolute;top:50%;transform:translateY(-50%);font-size:32px;color:#fff;cursor:pointer;padding:16px;background:rgba(0,0,0,.3);border-radius:50%;border:none}
+    .rv-fullscreen-nav.prev{left:8px}
+    .rv-fullscreen-nav.next{right:8px}
+
+    /* Star filter bars clickable */
+    .rating-bar-row{cursor:pointer;transition:opacity .15s}
+    .rating-bar-row:hover{opacity:.8}
+    .rating-bar-row.dim{opacity:.3}
+
+    /* Upload preview in write review */
+    .wr-media-row{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+    .wr-media-thumb{width:72px;height:72px;border-radius:10px;overflow:hidden;position:relative;border:1px solid rgba(255,255,255,.1)}
+    .wr-media-thumb img,.wr-media-thumb video{width:100%;height:100%;object-fit:cover}
+    .wr-media-thumb .wr-media-remove{position:absolute;top:2px;right:2px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.7);color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none}
+    .wr-add-media{width:72px;height:72px;border-radius:10px;border:2px dashed rgba(255,255,255,.15);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;color:rgba(255,255,255,.3);font-size:10px;gap:4px;transition:border-color .2s}
+    .wr-add-media:hover{border-color:rgba(255,109,0,.4);color:#FF6D00}
+    .wr-add-media-icon{font-size:20px}
+
+    /* Review inline photo strip */
+    .rv-review-photos{display:flex;gap:6px;margin:8px 0;overflow-x:auto;scrollbar-width:none}
+    .rv-review-photos::-webkit-scrollbar{display:none}
+    .rv-review-photo{width:64px;height:64px;border-radius:8px;overflow:hidden;flex-shrink:0;cursor:pointer;border:1px solid rgba(255,255,255,.06)}
+    .rv-review-photo img,.rv-review-photo video{width:100%;height:100%;object-fit:cover}
     @keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes scaleIn{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}
     @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 
@@ -1748,7 +1791,7 @@ function GymProfilePage(){
         </div>
         <!-- Fix #59, #60: Social proof signals -->
         <div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap">
-          <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.2);border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700;color:#4ade80">📈 ${bookedToday(gym.name)} booked today</span>
+          <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.2);border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700;color:#4ade80">📈 ${bookedBucket(gym)}</span>
           <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.18);border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700;color:#f87171">👀 ${peopleLooking(gym.name)} people looking</span>
         </div>
         <!-- Busyness Indicator (Fix #4C) -->
@@ -1827,7 +1870,7 @@ function GymProfilePage(){
     <div class="gym-sticky-bar" id="gym-sticky-bar">
         <!-- Fix #53: Motivating micro-copy above CTA -->
         <div style="text-align:center;padding:6px 16px 0">
-          <span style="font-size:11px;font-weight:600;color:#FF6D00;letter-spacing:.3px">🔥 ${bookedToday(gym.name)} people booked today — your turn!</span>
+          <span style="font-size:11px;font-weight:600;color:#FF6D00;letter-spacing:.3px">🔥 ${bookedBucket(gym)} — your turn!</span>
         </div>
         <!-- Full-width Book CTA -->
         <div style="padding:8px 16px 0">
@@ -1973,7 +2016,32 @@ window.openGymOverlay=function(section){
     const reviews=getGymReviews(gym);
     const topics=extractReviewTopics(reviews);
 
+    // #61: Build photo gallery from Google photos + user uploads
+    const googlePhotos=(gym.photos||gym.photos_list||[]).slice(0,15);
+    const gpHtml=googlePhotos.map((p,i)=>{
+      const url=p.url||p.thumbnail||p;
+      return `<div class="rv-gallery-item" onclick="rvFullscreen(${i},'google')"><img src="${typeof url==='string'?url:''}" loading="lazy" alt="Gym photo ${i+1}" /></div>`;
+    }).join('');
+
     body.innerHTML=`
+      ${googlePhotos.length>0?`
+      <!-- #61A: Photo Gallery -->
+      <div style="margin-bottom:16px">
+        <div class="rv-gallery-tabs">
+          <div class="rv-gallery-tab active" onclick="rvFilterGallery('all',this)">📸 All Photos (${googlePhotos.length})</div>
+          <div class="rv-gallery-tab" onclick="rvFilterGallery('google',this)">🌐 Google</div>
+          <div class="rv-gallery-tab" onclick="rvFilterGallery('visitor',this)">👤 Visitors</div>
+        </div>
+        <div class="rv-gallery" id="rv-photo-gallery">
+          ${gpHtml}
+          <div class="rv-gallery-item" style="background:rgba(255,109,0,.1);border:1px dashed rgba(255,109,0,.3);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px" onclick="openWriteReviewModal()">
+            <span style="font-size:24px">📷</span>
+            <span style="font-size:10px;color:#FF6D00;font-weight:600">Add Photo</span>
+          </div>
+        </div>
+      </div>`:''}
+
+      <!-- #61B: Amazon-style rating summary -->
       <div style="display:flex;gap:20px;align-items:center;margin-bottom:24px">
         <div style="text-align:center">
           <div style="color:#fff;font-size:52px;font-weight:800;line-height:1">${rating}</div>
@@ -1982,9 +2050,10 @@ window.openGymOverlay=function(section){
         </div>
         <div style="flex:1">
           ${[5,4,3,2,1].map(s=>`
-            <div class="rating-bar-row">
+            <div class="rating-bar-row" onclick="rvFilterByStar(${s},this)" title="Show ${s}-star reviews">
               <span class="rating-bar-label">${s}</span>
               <div class="rating-bar-bg"><div class="rating-bar-fill" style="width:${dist[s]}%"></div></div>
+              <span style="color:rgba(255,255,255,.3);font-size:11px;min-width:28px;text-align:right">${Math.round(dist[s]*reviewCount/100)}</span>
             </div>
           `).join('')}
         </div>
@@ -2043,14 +2112,24 @@ window.openGymOverlay=function(section){
           <p>No reviews yet. Be the first!</p>
         </div>`:''}
 
+      <div id="rv-star-filter-label" style="text-align:center;color:#fbbf24;font-size:12px;font-weight:600;margin-bottom:12px"></div>
+
       <div class="write-review-cta" onclick="event.stopPropagation();openWriteReviewModal()">
         <span class="write-review-icon">✍️</span>
         <div>
           <div class="write-review-title">Write a Review</div>
-          <div class="write-review-sub">Share your experience to help others</div>
+          <div class="write-review-sub">Share your experience & photos to help others</div>
         </div>
       </div>
     `;
+
+    // #61: Initialize gallery items array for fullscreen viewer
+    window._rvGalleryItems=googlePhotos.map(p=>({url:p.url||p.thumbnail||p,type:'photo'}));
+    window._rvStarFilter=0;
+
+    // Load user-uploaded media (async, appends to gallery)
+    const dbGymId=gym.dbId||gym.id;
+    if(dbGymId)rvLoadUserMedia(dbGymId);
   }
   else if(section==='facilities'){
     title.innerHTML='🏊 Facilities';
@@ -3186,6 +3265,24 @@ window.openWriteReviewModal=function(){
         <textarea class="wr-input wr-textarea" id="wr-body" placeholder="What did you like or dislike? How was the equipment, cleanliness, staff?" maxlength="2000" oninput="wrUpdateSubmit()"></textarea>
       </div>
 
+      <!-- #61C+D: Photo & Video upload -->
+      <div style="margin-bottom:12px">
+        <div class="wr-label">Add Photos & Videos</div>
+        <div class="wr-media-row" id="wr-media-row">
+          <label class="wr-add-media" id="wr-add-media-btn">
+            <span class="wr-add-media-icon">📷</span>
+            <span>Photo</span>
+            <input type="file" accept="image/*" multiple hidden onchange="wrAddMedia(this.files,'photo')" />
+          </label>
+          <label class="wr-add-media">
+            <span class="wr-add-media-icon">🎬</span>
+            <span>Video</span>
+            <input type="file" accept="video/*" hidden onchange="wrAddMedia(this.files,'video')" />
+          </label>
+        </div>
+        <div style="color:rgba(255,255,255,.25);font-size:11px;margin-top:4px">Up to 5 photos or 1 video (30 sec max)</div>
+      </div>
+
       <button class="wr-submit disabled" id="wr-submit-btn" onclick="submitWriteReview()">Submit Review</button>
     </div>
   `;
@@ -3259,6 +3356,22 @@ window.submitWriteReview=async function(){
     const rd=await rr.json();
     if(!rr.ok)throw new Error(rd.error||'Failed '+rr.status);
 
+    // #61C/D: Upload media files if any, then link to review
+    if(window._wrMediaFiles&&window._wrMediaFiles.length>0&&rd.id){
+      try{
+        const fd=new FormData();
+        fd.append('gymId',resolvedGymId);
+        window._wrMediaFiles.forEach(f=>fd.append('media',f));
+        const mr=await fetch('/api/review-media/upload',{method:'POST',body:fd,credentials:'include'});
+        const md=await mr.json();
+        if(md.success&&md.media){
+          const mediaIds=md.media.map(m=>m.id);
+          await fetch('/api/review-media/link',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({reviewId:rd.id,mediaIds})});
+        }
+      }catch(me){console.error('Media upload error (non-fatal):',me);}
+    }
+    window._wrMediaFiles=[];
+
     // Show success state
     const modalBody=document.getElementById('wr-modal-body');
     if(modalBody){
@@ -3285,6 +3398,171 @@ window.submitWriteReview=async function(){
     btn.className='wr-submit ready';
     btn.textContent='Submit Review';
   }
+};
+
+// ─── #61: Photo & Video review helpers ──────────────────────
+
+// Media file staging for write-review form
+window._wrMediaFiles=[];
+
+// Add media files to the review form
+window.wrAddMedia=function(fileList,type){
+  if(!fileList||fileList.length===0)return;
+  const maxFiles=5;
+  const maxVideo=1;
+  const maxSize=50*1024*1024;
+
+  for(let i=0;i<fileList.length;i++){
+    const f=fileList[i];
+    if(f.size>maxSize){sgToast('File too large (50MB max)','warning',2000);continue;}
+    if(type==='video'&&window._wrMediaFiles.filter(x=>x.type.startsWith('video/')).length>=maxVideo){
+      sgToast('Only 1 video allowed','warning',2000);continue;
+    }
+    if(window._wrMediaFiles.length>=maxFiles){sgToast('Max 5 files','warning',2000);break;}
+    window._wrMediaFiles.push(f);
+  }
+  wrRenderMediaPreviews();
+};
+
+// Render media preview thumbnails
+window.wrRenderMediaPreviews=function(){
+  const row=document.getElementById('wr-media-row');
+  if(!row)return;
+  // Remove old previews (keep the add buttons)
+  row.querySelectorAll('.wr-media-thumb').forEach(el=>el.remove());
+  
+  const addBtns=row.querySelectorAll('.wr-add-media');
+  window._wrMediaFiles.forEach((f,i)=>{
+    const thumb=document.createElement('div');
+    thumb.className='wr-media-thumb';
+    const url=URL.createObjectURL(f);
+    if(f.type.startsWith('video/')){
+      thumb.innerHTML=`<video src="${url}" muted></video><button class="wr-media-remove" onclick="event.preventDefault();wrRemoveMedia(${i})">✕</button>`;
+    }else{
+      thumb.innerHTML=`<img src="${url}" /><button class="wr-media-remove" onclick="event.preventDefault();wrRemoveMedia(${i})">✕</button>`;
+    }
+    row.insertBefore(thumb,addBtns[0]);
+  });
+};
+
+window.wrRemoveMedia=function(index){
+  window._wrMediaFiles.splice(index,1);
+  wrRenderMediaPreviews();
+};
+
+// Fullscreen photo/video viewer
+window._rvGalleryItems=[];
+window._rvGalleryIdx=0;
+
+window.rvFullscreen=function(idx,source){
+  window._rvGalleryIdx=idx;
+  const items=window._rvGalleryItems||[];
+  if(idx<0||idx>=items.length)return;
+  const item=items[idx];
+
+  const existing=document.getElementById('rv-fullscreen-overlay');
+  if(existing)existing.remove();
+
+  const ov=document.createElement('div');
+  ov.id='rv-fullscreen-overlay';
+  ov.className='rv-fullscreen';
+
+  const isVideo=item.type==='video';
+  const mediaHtml=isVideo
+    ?`<video src="${item.url}" controls autoplay playsinline style="max-width:95vw;max-height:85vh;border-radius:12px"></video>`
+    :`<img src="${item.url}" style="max-width:95vw;max-height:85vh;border-radius:12px;object-fit:contain" />`;
+
+  ov.innerHTML=`
+    <button class="rv-fullscreen-close" onclick="rvCloseFullscreen()">✕</button>
+    ${items.length>1?`<button class="rv-fullscreen-nav prev" onclick="rvFullscreen(${(idx-1+items.length)%items.length})">‹</button>`:''}
+    ${mediaHtml}
+    ${items.length>1?`<button class="rv-fullscreen-nav next" onclick="rvFullscreen(${(idx+1)%items.length})">›</button>`:''}
+    <div style="position:absolute;bottom:20px;text-align:center;width:100%;color:rgba(255,255,255,.5);font-size:12px">${idx+1} / ${items.length}</div>
+  `;
+  ov.addEventListener('click',function(e){if(e.target===ov)rvCloseFullscreen();});
+  document.body.appendChild(ov);
+};
+
+window.rvCloseFullscreen=function(){
+  const ov=document.getElementById('rv-fullscreen-overlay');
+  if(ov){ov.style.opacity='0';setTimeout(()=>ov.remove(),200);}
+};
+
+// Star filter: click a rating bar to filter reviews
+window._rvStarFilter=0;
+window.rvFilterByStar=function(star,el){
+  const rows=el.parentElement.querySelectorAll('.rating-bar-row');
+  if(window._rvStarFilter===star){
+    // Toggle off — show all
+    window._rvStarFilter=0;
+    rows.forEach(r=>r.classList.remove('dim'));
+  }else{
+    window._rvStarFilter=star;
+    rows.forEach(r=>{
+      const s=parseInt(r.querySelector('.rating-bar-label').textContent);
+      r.classList.toggle('dim',s!==star);
+    });
+  }
+  // Filter visible reviews
+  const reviewEls=document.querySelectorAll('.ov-review');
+  const starEls=document.querySelectorAll('.ov-review-stars');
+  reviewEls.forEach((rv,i)=>{
+    if(window._rvStarFilter===0){rv.style.display='';return;}
+    const starText=starEls[i]?.textContent||'';
+    const filledStars=(starText.match(/★/g)||[]).length;
+    rv.style.display=(filledStars===window._rvStarFilter)?'':'none';
+  });
+  // Show filter indicator
+  const indicator=document.getElementById('rv-star-filter-label');
+  if(indicator){
+    indicator.textContent=window._rvStarFilter?`Showing ${star}-star reviews`:'';
+  }
+};
+
+// Gallery tab filter
+window.rvFilterGallery=function(type,el){
+  document.querySelectorAll('.rv-gallery-tab').forEach(t=>t.classList.remove('active'));
+  if(el)el.classList.add('active');
+  const items=document.querySelectorAll('#rv-photo-gallery .rv-gallery-item');
+  items.forEach(item=>{
+    if(type==='all')item.style.display='';
+    else{
+      const src=item.getAttribute('data-source')||'google';
+      item.style.display=(src===type)?'':'none';
+    }
+  });
+};
+
+// Load user-uploaded media for a gym and append to gallery
+window.rvLoadUserMedia=async function(gymId){
+  try{
+    const r=await fetch('/api/review-media/gym/'+gymId);
+    if(!r.ok)return;
+    const data=await r.json();
+    if(!data.media||data.media.length===0)return;
+    const gallery=document.getElementById('rv-photo-gallery');
+    if(!gallery)return;
+    const addBtn=gallery.querySelector('[onclick*="openWriteReviewModal"]');
+    data.media.forEach((m,i)=>{
+      const div=document.createElement('div');
+      div.className='rv-gallery-item';
+      div.setAttribute('data-source','visitor');
+      const globalIdx=window._rvGalleryItems.length;
+      window._rvGalleryItems.push({url:m.url,type:m.media_type});
+      if(m.media_type==='video'){
+        div.innerHTML=`<video src="${m.url}" muted preload="metadata"></video><div class="rv-play-badge">▶</div>`;
+      }else{
+        div.innerHTML=`<img src="${m.url}" loading="lazy" />`;
+      }
+      div.onclick=function(){rvFullscreen(globalIdx);};
+      if(addBtn)gallery.insertBefore(div,addBtn);
+      else gallery.appendChild(div);
+    });
+    // Update visitor tab count
+    const tabs=document.querySelectorAll('.rv-gallery-tab');
+    if(tabs[2])tabs[2].textContent='👤 Visitors ('+data.media.length+')';
+    if(tabs[0])tabs[0].textContent='📸 All Photos ('+(window._rvGalleryItems.length)+')';
+  }catch(e){console.error('Load user media error:',e);}
 };
 
 // Helper: get facilities from gym data
