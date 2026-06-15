@@ -6769,12 +6769,9 @@ window._initSgMap=function(container,gyms,cLat,cLng){
       map:map,
       title:gym.name||'Gym',
       icon:{
-        path:google.maps.SymbolPath.CIRCLE,
-        scale:10,
-        fillColor:'#FF6D00',
-        fillOpacity:1,
-        strokeColor:'#fff',
-        strokeWeight:2
+        url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="36" height="44" viewBox="0 0 36 44"><defs><filter id="s"><feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-opacity=".3"/></filter></defs><path d="M18 0C8.06 0 0 8.06 0 18c0 13.5 18 26 18 26s18-12.5 18-26C36 8.06 27.94 0 18 0z" fill="#FF6D00" filter="url(%23s)"/><circle cx="18" cy="16" r="10" fill="#fff"/><text x="18" y="20" text-anchor="middle" font-size="13" font-weight="900" fill="#FF6D00" font-family="system-ui">S</text></svg>'),
+        scaledSize:new google.maps.Size(36,44),
+        anchor:new google.maps.Point(18,44)
       }
     });
     marker.addListener('click',function(){
@@ -7624,6 +7621,99 @@ setInterval(function(){
   el.textContent=pad(h)+':'+pad(m)+':'+pad(s);
 },1000);
 
+
+// ─── Fix #150: Free Tools Page — BMI, Calorie Counter, Gym Finder ───
+function ToolsPage(){
+  return \`
+  <div class="sg-tab-content" style="padding:20px 16px 100px;max-width:520px;margin:0 auto">
+    <div style="text-align:center;margin-bottom:24px;padding-top:20px">
+      <h1 style="color:#fff;font-size:24px;font-weight:800;margin:0">🛠️ Free Fitness Tools</h1>
+      <p style="color:rgba(255,255,255,.5);font-size:13px;margin:4px 0 0">No signup needed. 100% free.</p>
+    </div>
+
+    <!-- BMI Calculator -->
+    <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:20px;margin-bottom:16px">
+      <p style="color:#fff;font-weight:700;font-size:16px;margin:0 0 4px">📏 BMI Calculator</p>
+      <p style="color:rgba(255,255,255,.4);font-size:12px;margin:0 0 16px">Check if you're in the healthy range</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <div>
+          <label style="color:rgba(255,255,255,.5);font-size:11px;display:block;margin-bottom:4px">Height (cm)</label>
+          <input id="bmi-h" type="number" placeholder="175" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px;color:#fff;font-size:14px;outline:none">
+        </div>
+        <div>
+          <label style="color:rgba(255,255,255,.5);font-size:11px;display:block;margin-bottom:4px">Weight (kg)</label>
+          <input id="bmi-w" type="number" placeholder="70" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px;color:#fff;font-size:14px;outline:none">
+        </div>
+      </div>
+      <button onclick="(function(){var h=document.getElementById('bmi-h').value/100,w=document.getElementById('bmi-w').value;if(!h||!w)return;var bmi=(w/(h*h)).toFixed(1);var cat=bmi<18.5?'Underweight 🔵':bmi<25?'Healthy ✅':bmi<30?'Overweight 🟡':'Obese 🔴';var bar=Math.min(bmi/40*100,100);document.getElementById('bmi-result').innerHTML='<div style=margin-top:12px><p style=color:#fff;font-weight:700;font-size:28px;margin:0>'+bmi+'</p><p style=color:rgba(255,255,255,.6);font-size:13px;margin:4px\ 0>'+cat+'</p><div style=background:rgba(255,255,255,.1);border-radius:8px;height:8px;margin-top:8px;overflow:hidden><div style=height:100%;border-radius:8px;width:'+bar+'%;background:'+(bmi<18.5?'#3b82f6':bmi<25?'#22c55e':bmi<30?'#eab308':'#ef4444')+'></div></div><p style=color:rgba(255,255,255,.3);font-size:10px;margin-top:6px>18.5-24.9 is the healthy BMI range</p></div>'})()" style="width:100%;background:#FF6D00;color:#fff;border:none;padding:11px;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer">Calculate BMI</button>
+      <div id="bmi-result"></div>
+    </div>
+
+    <!-- Calorie Calculator -->
+    <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:20px;margin-bottom:16px">
+      <p style="color:#fff;font-weight:700;font-size:16px;margin:0 0 4px">🔥 Daily Calorie Calculator</p>
+      <p style="color:rgba(255,255,255,.4);font-size:12px;margin:0 0 16px">How many calories do you need per day?</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div>
+          <label style="color:rgba(255,255,255,.5);font-size:11px;display:block;margin-bottom:4px">Age</label>
+          <input id="cal-age" type="number" placeholder="25" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px;color:#fff;font-size:14px;outline:none">
+        </div>
+        <div>
+          <label style="color:rgba(255,255,255,.5);font-size:11px;display:block;margin-bottom:4px">Gender</label>
+          <select id="cal-gender" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px;color:#fff;font-size:14px;outline:none"><option value="male">Male</option><option value="female">Female</option></select>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div>
+          <label style="color:rgba(255,255,255,.5);font-size:11px;display:block;margin-bottom:4px">Height (cm)</label>
+          <input id="cal-h" type="number" placeholder="175" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px;color:#fff;font-size:14px;outline:none">
+        </div>
+        <div>
+          <label style="color:rgba(255,255,255,.5);font-size:11px;display:block;margin-bottom:4px">Weight (kg)</label>
+          <input id="cal-w" type="number" placeholder="70" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px;color:#fff;font-size:14px;outline:none">
+        </div>
+      </div>
+      <div style="margin-bottom:12px">
+        <label style="color:rgba(255,255,255,.5);font-size:11px;display:block;margin-bottom:4px">Activity Level</label>
+        <select id="cal-act" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px;color:#fff;font-size:14px;outline:none">
+          <option value="1.2">Sedentary (desk job)</option>
+          <option value="1.375">Light (1-3 days/week)</option>
+          <option value="1.55" selected>Moderate (3-5 days/week)</option>
+          <option value="1.725">Active (6-7 days/week)</option>
+          <option value="1.9">Very Active (athlete)</option>
+        </select>
+      </div>
+      <button onclick="(function(){var a=+document.getElementById('cal-age').value,g=document.getElementById('cal-gender').value,h=+document.getElementById('cal-h').value,w=+document.getElementById('cal-w').value,act=+document.getElementById('cal-act').value;if(!a||!h||!w)return;var bmr=g==='male'?10*w+6.25*h-5*a+5:10*w+6.25*h-5*a-161;var tdee=Math.round(bmr*act);document.getElementById('cal-result').innerHTML='<div style=margin-top:12px;display:grid;grid-template-columns:1fr\ 1fr\ 1fr;gap:8px;text-align:center><div style=background:rgba(34,197,94,.1);border-radius:12px;padding:12px><p style=color:#22c55e;font-size:10px;margin:0>LOSE</p><p style=color:#fff;font-weight:800;font-size:20px;margin:4px\ 0>'+(tdee-500)+'</p><p style=color:rgba(255,255,255,.4);font-size:10px;margin:0>cal/day</p></div><div style=background:rgba(255,109,0,.1);border:1px\ solid\ rgba(255,109,0,.2);border-radius:12px;padding:12px><p style=color:#FF6D00;font-size:10px;margin:0>MAINTAIN</p><p style=color:#fff;font-weight:800;font-size:20px;margin:4px\ 0>'+tdee+'</p><p style=color:rgba(255,255,255,.4);font-size:10px;margin:0>cal/day</p></div><div style=background:rgba(59,130,246,.1);border-radius:12px;padding:12px><p style=color:#3b82f6;font-size:10px;margin:0>GAIN</p><p style=color:#fff;font-weight:800;font-size:20px;margin:4px\ 0>'+(tdee+500)+'</p><p style=color:rgba(255,255,255,.4);font-size:10px;margin:0>cal/day</p></div></div>'})()" style="width:100%;background:#FF6D00;color:#fff;border:none;padding:11px;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer">Calculate Calories</button>
+      <div id="cal-result"></div>
+    </div>
+
+    <!-- One Rep Max Calculator -->
+    <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:20px;margin-bottom:16px">
+      <p style="color:#fff;font-weight:700;font-size:16px;margin:0 0 4px">🏋️ One Rep Max Calculator</p>
+      <p style="color:rgba(255,255,255,.4);font-size:12px;margin:0 0 16px">Estimate your max lift from any rep range</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <div>
+          <label style="color:rgba(255,255,255,.5);font-size:11px;display:block;margin-bottom:4px">Weight lifted (kg)</label>
+          <input id="orm-w" type="number" placeholder="80" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px;color:#fff;font-size:14px;outline:none">
+        </div>
+        <div>
+          <label style="color:rgba(255,255,255,.5);font-size:11px;display:block;margin-bottom:4px">Reps completed</label>
+          <input id="orm-r" type="number" placeholder="8" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px;color:#fff;font-size:14px;outline:none">
+        </div>
+      </div>
+      <button onclick="(function(){var w=+document.getElementById('orm-w').value,r=+document.getElementById('orm-r').value;if(!w||!r||r<1)return;var orm=Math.round(w*(1+r/30));document.getElementById('orm-result').innerHTML='<div style=margin-top:12px;text-align:center><p style=color:#fff;font-weight:800;font-size:36px;margin:0>'+orm+' kg</p><p style=color:rgba(255,255,255,.5);font-size:12px;margin:4px\ 0>Estimated 1 Rep Max (Epley formula)</p><div style=display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:12px;text-align:center>'+[{p:95,l:'95%'},{p:90,l:'90%'},{p:85,l:'85%'},{p:80,l:'80%'},{p:75,l:'75%'},{p:70,l:'70%'},{p:65,l:'65%'},{p:60,l:'60%'}].map(function(x){return '<div style=background:rgba(255,255,255,.04);border-radius:8px;padding:6px><p style=color:rgba(255,255,255,.4);font-size:9px;margin:0>'+x.l+'</p><p style=color:#fff;font-weight:700;font-size:13px;margin:2px\ 0>'+Math.round(orm*x.p/100)+'</p></div>'}).join('')+'</div></div>'})()" style="width:100%;background:#FF6D00;color:#fff;border:none;padding:11px;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer">Calculate 1RM</button>
+      <div id="orm-result"></div>
+    </div>
+
+    <!-- Find a Gym CTA -->
+    <div style="background:linear-gradient(135deg,rgba(255,109,0,.12),rgba(255,109,0,.04));border:1px solid rgba(255,109,0,.2);border-radius:16px;padding:24px;text-align:center;margin-bottom:16px">
+      <p style="color:#fff;font-weight:800;font-size:18px;margin:0 0 4px">Ready to train? 💪</p>
+      <p style="color:rgba(255,255,255,.5);font-size:13px;margin:0 0 16px">Find a gym near you — no membership needed</p>
+      <button onclick="navigate('/explore')" style="background:#FF6D00;color:#fff;border:none;padding:14px 32px;border-radius:14px;font-weight:700;font-size:15px;cursor:pointer;box-shadow:0 4px 20px rgba(255,109,0,.3)">🏋️ Find a Gym Near Me</button>
+    </div>
+  </div>\`;
+}
+
 function BookingSuccessPage(){
   const params=new URLSearchParams(window.location.search);
   const sessionId=params.get('session_id');
@@ -7867,16 +7957,33 @@ function BookingSuccessPage(){
         <p class="text-slate-500 text-xs">Need help? 📧 hello@scangym.com</p>
       </div>
 
-      <!-- S5-H07 FIX: Don't show rating form immediately — user hasn't visited yet -->
-      <div class="mt-6 bg-card rounded-2xl border border-slate-700 p-5 text-center" id="sg-post-feedback">
-        <p class="text-white font-bold mb-1">⭐ Rate ${b.gymName}</p>
-        <p class="text-slate-400 text-xs mb-3">Come back here after your workout to leave a rating</p>
-        <button onclick="document.getElementById('sg-stars-hidden').style.display='block';this.style.display='none'" class="text-brand text-sm font-medium hover:text-orange-400 cursor-pointer transition">Already visited? Rate now →</button>
-        <div id="sg-stars-hidden" style="display:none;margin-top:12px">
-        <div style="display:flex;justify-content:center;gap:8px;margin-bottom:12px" id="sg-star-rating">
-          ${[1,2,3,4,5].map(s=>'<button onclick="sgStarRate('+s+','+b.id+')" class="sg-star-btn" data-star="'+s+'" style="background:none;border:none;font-size:36px;cursor:pointer;transition:all .15s;filter:grayscale(100%) opacity(.4);padding:4px" onmouseover="sgStarHover('+s+')" onmouseout="sgStarHover(0)">⭐</button>').join('')}
+      <!-- Fix #114: Quick feedback thumbs up/down -->
+      <div class="mt-4 bg-card rounded-2xl border border-slate-700 p-4 text-center" id="sg-booking-feedback">
+        <p class="text-slate-400 text-xs mb-2">Was booking easy?</p>
+        <div style="display:flex;gap:12px;justify-content:center">
+          <button onclick="sgQuickFeedback('positive',${b.id});this.parentElement.parentElement.innerHTML='<p style=color:#4ade80;font-weight:600;padding:8px>Thanks for the feedback! 🎉</p>'" style="background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);border-radius:14px;padding:10px 24px;cursor:pointer;font-size:22px;transition:all .15s" onmousedown="this.style.transform='scale(.9)'" onmouseup="this.style.transform='scale(1)'">👍</button>
+          <button onclick="sgQuickFeedback('negative',${b.id});this.parentElement.parentElement.innerHTML='<p style=color:rgba(255,255,255,.5);font-weight:600;padding:8px>Thanks — we\'ll improve! 🙏</p>'" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:14px;padding:10px 24px;cursor:pointer;font-size:22px;transition:all .15s" onmousedown="this.style.transform='scale(.9)'" onmouseup="this.style.transform='scale(1)'">👎</button>
         </div>
-        <p class="text-slate-500 text-xs" id="sg-star-label">Tap a star to rate</p>
+      </div>
+
+      <!-- S5-H07 FIX: Don't show rating form immediately — user hasn't visited yet -->
+      <!-- Fix #109: Uber-style post-workout rating experience -->
+      <div class="mt-6 bg-card rounded-2xl border border-slate-700 overflow-hidden" id="sg-post-feedback">
+        <div style="background:linear-gradient(135deg,rgba(255,109,0,.08),rgba(255,109,0,.02));padding:24px 20px;text-align:center">
+          <p style="font-size:28px;margin:0 0 8px">💪</p>
+          <p class="text-white font-bold text-lg">How was your workout?</p>
+          <p class="text-slate-400 text-xs mb-4">Rate ${b.gymName} — your review helps other gym-goers</p>
+          <div style="display:flex;justify-content:center;gap:4px;margin-bottom:8px" id="sg-star-rating">
+            ${[1,2,3,4,5].map(s=>'<button onclick="sgStarRate('+s+','+b.id+')" class="sg-star-btn" data-star="'+s+'" style="background:none;border:none;font-size:40px;cursor:pointer;transition:all .2s cubic-bezier(.4,0,.2,1);filter:grayscale(100%) opacity(.3);padding:6px;transform:scale(1)" onmouseover="sgStarHover('+s+')" onmouseout="sgStarHover(0)">⭐</button>').join('')}
+          </div>
+          <p class="text-slate-500 text-xs" id="sg-star-label">Tap to rate</p>
+        </div>
+        <div id="sg-review-followup" style="display:none;padding:16px 20px;border-top:1px solid rgba(255,255,255,.06)">
+          <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;justify-content:center" id="sg-quick-tags">
+            ${['🏋️ Great equipment','🧹 Very clean','👥 Friendly staff','📍 Easy to find','🅿️ Good parking','🔥 Will return'].map(t=>'<button onclick="this.classList.toggle(\'sg-tag-active\');this.style.background=this.classList.contains(\'sg-tag-active\')?\' rgba(255,109,0,.2)\':\'rgba(255,255,255,.05)\';this.style.borderColor=this.classList.contains(\'sg-tag-active\')?\' rgba(255,109,0,.4)\':\'rgba(255,255,255,.1)\'" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:6px 12px;color:rgba(255,255,255,.7);font-size:12px;cursor:pointer;transition:all .15s">'+t+'</button>').join('')}
+          </div>
+          <textarea id="sg-review-text" placeholder="Tell others about your experience (optional)" style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px;color:#fff;font-size:13px;resize:none;height:72px;outline:none;font-family:inherit" onfocus="this.style.borderColor='rgba(255,109,0,.3)'" onblur="this.style.borderColor='rgba(255,255,255,.08)'"></textarea>
+          <button onclick="sgSubmitFullReview(${b.id})" style="width:100%;margin-top:8px;background:#FF6D00;color:#fff;border:none;padding:12px;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer;transition:all .15s" onmousedown="this.style.transform='scale(.97)'" onmouseup="this.style.transform='scale(1)'">Submit Review</button>
         </div>
       </div>
 
@@ -7919,6 +8026,43 @@ function BookingSuccessPage(){
     }
   },3000);
 }
+
+
+// ─── Fix #109: Enhanced review submission with tags ───
+window.sgSubmitFullReview=async function(bookingId){
+  const stars=document.querySelectorAll('.sg-star-btn[data-selected="true"]').length||parseInt(document.querySelector('.sg-star-btn[data-selected="true"]')?.dataset.star||'0');
+  const activeTags=Array.from(document.querySelectorAll('.sg-tag-active')).map(b=>b.textContent.trim());
+  const text=(document.getElementById('sg-review-text')?.value||'').trim();
+  const btn=event.target;
+  btn.textContent='Submitting...';btn.disabled=true;
+  try{
+    const r=await fetch('/api/reviews',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({booking_id:bookingId,rating:stars||5,comment:text||(activeTags.length?activeTags.join(', '):''),tags:activeTags})});
+    const d=await r.json();
+    document.getElementById('sg-post-feedback').innerHTML='<div style="padding:24px;text-align:center"><p style="font-size:36px;margin:0 0 8px">🎉</p><p style="color:#fff;font-weight:700">Thanks for your review!</p><p style="color:rgba(255,255,255,.4);font-size:12px">Your feedback helps other gym-goers</p></div>';
+  }catch(e){btn.textContent='Submit Review';btn.disabled=false;sgToast('Could not submit review','error');}
+};
+
+// ─── Fix #109: Show follow-up after star selection ───
+var _origSgStarRate=window.sgStarRate;
+window.sgStarRate=function(n,bid){
+  if(_origSgStarRate)_origSgStarRate(n,bid);
+  // Show the follow-up section with tags + text
+  var fu=document.getElementById('sg-review-followup');
+  if(fu)fu.style.display='block';
+  // Mark selected stars
+  document.querySelectorAll('.sg-star-btn').forEach(function(b){
+    var s=parseInt(b.dataset.star);
+    b.style.filter=s<=n?'grayscale(0%) opacity(1)':'grayscale(100%) opacity(.3)';
+    b.style.transform=s<=n?'scale(1.15)':'scale(1)';
+    b.dataset.selected=s<=n?'true':'false';
+  });
+  document.getElementById('sg-star-label').textContent=['','😞 Poor','😐 Below Average','🙂 Good','😊 Very Good','🤩 Excellent'][n]||'';
+};
+
+// ─── Fix #114: Quick feedback handler ───
+window.sgQuickFeedback=function(type,bookingId){
+  fetch('/api/bookings/feedback',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({bookingId:bookingId,type:type,detail:'booking-success page feedback'})}).catch(function(){});
+};
 
 // ─── Page: My Bookings ───
 // ─── Cancel Booking (with Stripe refund) ───
@@ -10586,6 +10730,7 @@ function _renderInner(){
 
 `);
     else if(path==='/about')page=InfoPage('About ScanGym',`<p class="text-xl text-white font-bold">The Skyscanner for Gyms</p><p class="text-lg text-slate-300">We're building a world where any gym is accessible to anyone, anywhere, for a fair price.</p><div class="mt-8 border-l-2 border-brand pl-6 space-y-6">${[{date:"2026",title:"Founded in Manchester",desc:"Mubarak Ibrahim Patel launches ScanGym — a marketplace connecting fitness enthusiasts with gym owners who have unused capacity."},{date:"2026",title:"QR Scan-and-Go",desc:"Easy gym entry with unique QR codes. Show your QR at reception — no membership cards needed."},{date:"2026",title:"AI Coach Launch",desc:"GPT-4o powered personal training. Custom workout plans, form analysis, and nutrition advice for every gym-goer."},{date:"Coming",title:"Global Expansion",desc:"Bringing ScanGym to every city on Earth. Dubai, New York, Barcelona, Berlin — gym access without borders."}].map(m=>`<div class="relative"><span class="absolute -left-[33px] w-4 h-4 bg-brand rounded-full border-2 border-dark"></span><p class="text-brand text-xs font-bold">${m.date}</p><p class="text-white font-semibold">${m.title}</p><p class="text-slate-400 text-sm">${m.desc}</p></div>`).join("")}</div><div class="mt-8 grid sm:grid-cols-3 gap-4"><div class="bg-slate-800 rounded-xl p-4 text-center"><p class="text-2xl font-bold text-white" data-counter data-target="10" data-suffix="+">0</p><p class="text-slate-500 text-xs">Cities Live</p></div><div class="bg-slate-800 rounded-xl p-4 text-center"><p class="text-2xl font-bold text-white" data-counter data-target="1" data-suffix="">0</p><p class="text-slate-500 text-xs">Country (UK)</p></div><div class="bg-slate-800 rounded-xl p-4 text-center"><p class="text-2xl font-bold text-white" data-counter data-target="18" data-suffix="">0</p><p class="text-slate-500 text-xs">Features Built</p></div></div><div class="mt-8"><p class="text-slate-400">📍 Manchester, UK · 📧 hello@scangym.com · 📱 @scangym</p></div>`);
+    else if(path==='/tools')page=ToolsPage();
   else if(path==='/faq')page=InfoPage('Frequently Asked Questions',`<p class="text-slate-400 mb-6">Everything you need to know. Click any question to expand.</p><div class="space-y-3">${[{cat:"For Gym-Goers",qs:[{q:"How much does it cost?",a:`From ${sgPrice('day').display} per 24-hour session. 4 pass types: Day ${sgPrice('day').display}, 3-Day ${sgPrice('3day').display}, Weekly ${sgPrice('weekly').display}, Monthly ${sgPrice('monthly').display}. Same price any time of day.`},{q:"How do I get in?",a:"After booking, you get a unique QR code. Open it on your phone and scan at the gym entrance. Show it at reception and you're in."},{q:"Can I cancel?",a:"Yes! Free cancellation up to 2 hours before your session. Refund goes to your ScanGym Wallet instantly, or back to your card in 5-10 days."},{q:"Do I need an account?",a:"Quick sign-in with Google or phone number. Your card saves automatically — every booking after is just 1 tap. Apple Pay and Google Pay supported too."},{q:"How long can I stay?",a:"24 hours from scan-in. Scan out when you leave."}]},{cat:"For Gym Owners",qs:[{q:"How much does it cost to list?",a:"Zero. Free to list. We only take a small commission on bookings. You set your own prices and control availability."},{q:"What equipment do I get?",a:"Listed gyms qualify for free vending machines and QR scanner hardware — installed at no cost to you."},{q:"How do I get paid?",a:"Direct bank transfer, weekly. Full analytics dashboard shows your bookings, revenue, and ratings in real-time."}]},{cat:"For Creators",qs:[{q:"How does ScanSquad work?",a:"Sign up, get your personal referral page (scangym.com/r/yourname), share it. Earn 25% commission on every booking."},{q:"How much can I earn?",a:"Explorers: £50-150/mo. Ambassadors: £200-500/mo + free sessions. Elite: £500-1,200/mo. Legends: £1,200-5,000/mo."}]}].map(cat=>`<div class="mb-4"><h3 class="text-brand font-bold text-sm mb-2">${cat.cat}</h3>${cat.qs.map(q=>`<div class="border border-slate-700 rounded-lg mb-2 overflow-hidden"><button class="accordion-trigger w-full flex items-center justify-between p-4 text-left hover:bg-slate-800/50 transition"><span class="text-white text-sm font-medium">${q.q}</span><span class="accordion-arrow text-slate-500 transition-transform">▼</span></button><div class="overflow-hidden transition-all duration-300" style="max-height:0"><p class="text-slate-400 text-sm p-4 pt-0">${q.a}</p></div></div>`).join("")}</div>`).join("")}</div>`);
   else if(path==='/for-gyms'||path==='/gym-owners')page=InfoPage('For Gym Owners',`<p class="text-xl text-white font-bold">Fill your empty hours. Earn more revenue.</p><p class="text-lg text-slate-300">Gym-goers search ScanGym daily. Turn your quiet hours into profit.</p><div class="mt-6 bg-brand/10 border border-brand/30 rounded-xl p-6"><p class="text-white font-bold mb-3">💰 Revenue Calculator — How much could you earn?</p><div class="grid sm:grid-cols-3 gap-4 mb-4"><div><label class="text-slate-400 text-xs">Empty slots per day</label><input type="range" id="calc-slots" min="2" max="50" value="10" class="w-full accent-brand" oninput="document.getElementById('calc-result').textContent='£'+((this.value*${sgPrice('day').amount}*0.85)*30).toFixed(0)"></div><div class="text-center"><p class="text-slate-400 text-xs">Estimated monthly revenue</p><p id="calc-result" class="text-3xl font-bold text-brand">£${Math.round(10 * sgPrice('day').amount * 0.85 * 30).toLocaleString()}</p></div><div class="text-center"><p class="text-slate-400 text-xs">Your commission</p><p class="text-white font-bold">85%</p><p class="text-slate-500 text-xs">You keep · We take 15%</p></div></div><p class="text-slate-500 text-xs">Based on ${sgPrice('day').display} avg day pass × 10 bookings/day × 30 days. Actual results vary.</p></div><div class="mt-6 grid sm:grid-cols-3 gap-4"><div class="bg-slate-800 p-4 rounded-lg text-center"><p class="text-3xl mb-2">💸</p><p class="text-white font-semibold text-sm">You set the price</p><p class="text-slate-500 text-xs">4 passes from ${sgPrice('day').display}. Change anytime.</p></div><div class="bg-slate-800 p-4 rounded-lg text-center"><p class="text-3xl mb-2">⏸️</p><p class="text-white font-semibold text-sm">Full control</p><p class="text-slate-500 text-xs">Pause bookings with one toggle.</p></div><div class="bg-slate-800 p-4 rounded-lg text-center"><p class="text-3xl mb-2">🥤</p><p class="text-white font-semibold text-sm">Free equipment</p><p class="text-slate-500 text-xs">Vending machines + QR scanners.</p></div></div><p class="mt-6 text-center text-slate-400">Zero listing fee. Zero commitment. Cancel anytime.</p><div class="mt-6 flex gap-4 flex-wrap justify-center"><a onclick="navigate('/list-your-gym')" class="bg-brand hover:bg-orange-600 text-white font-bold px-8 py-4 rounded-xl cursor-pointer transition inline-block shadow-lg shadow-brand/20">List Your Gym — It's Free →</a><a onclick="navigate('/owner-benefits')" class="border border-brand text-brand hover:bg-brand hover:text-white font-bold px-8 py-4 rounded-xl cursor-pointer transition inline-block">See All Benefits →</a></div>`);
   else if(path==='/list-your-gym')page=InfoPage('List Your Gym',`<div class="text-center mb-8"><p class="text-xl text-white font-bold">Get your gym listed in 10 minutes</p><p class="text-slate-300">Free forever. Start earning from day one.</p><div class="mt-3 flex justify-center gap-2"><span class="bg-green-900/30 text-green-400 text-xs px-3 py-1 rounded-full font-medium">⏱ 10-minute setup</span><span class="bg-blue-900/30 text-blue-400 text-xs px-3 py-1 rounded-full font-medium">💰 Free forever</span><span class="bg-brand/20 text-brand text-xs px-3 py-1 rounded-full font-medium">📊 Instant dashboard</span></div></div><div class="relative space-y-6">${[{step:"1",title:"Tell us about your gym",desc:"Name, address, facilities, opening hours. Your Google listing auto-fills most of this. Takes 3 minutes.",time:"3 min"},{step:"2",title:"Set your pricing",desc:"Choose from 4 pass types: Day ${sgPrice('day').display} · 3-Day ${sgPrice('3day').display} · Weekly ${sgPrice('weekly').display} · Monthly ${sgPrice('monthly').display}. Flat pricing, no complexity. Change anytime.",time:"2 min"},{step:"3",title:"Go live",desc:"We ship you a free QR scanner. Plug it in at your entrance. Customers scan in and out — easy QR check-in.",time:"5 min"}].map(s=>`<div class="flex gap-4"><div class="w-10 h-10 bg-brand rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">${s.step}</div><div class="flex-1 bg-slate-800 rounded-lg p-4"><div class="flex items-center justify-between"><p class="text-white font-bold">${s.title}</p><span class="text-brand text-xs font-medium">${s.time}</span></div><p class="text-slate-400 text-sm mt-1">${s.desc}</p></div></div>`).join("")}</div><div class="mt-8 bg-green-900/20 border border-green-800/30 rounded-xl p-5"><p class="text-white font-bold mb-2">✅ What you get — free:</p><div class="grid sm:grid-cols-2 gap-2 text-sm">${["Listing on ScanGym","Free QR scanner hardware","Owner analytics dashboard","Free vending machine (optional)","Zero listing fee — forever","85% commission to you","Weekly direct bank payouts","Pause bookings anytime"].map(f=>`<p class="text-slate-300 flex items-center gap-2"><span class="text-green-400">✓</span>${f}</p>`).join("")}</div></div><div class="mt-6 text-center"><a onclick="navigate('/contact')" class="bg-brand hover:bg-orange-600 text-white font-bold px-10 py-4 rounded-xl cursor-pointer transition inline-block shadow-lg shadow-brand/20 text-lg">List Your Gym — Free →</a><p class="text-slate-500 text-sm mt-3">📧 hello@scangym.com · 📱 @scangym</p></div>`);
