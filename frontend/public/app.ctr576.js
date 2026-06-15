@@ -1392,7 +1392,7 @@ function SearchPage(){
           html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'hours\')"><div class="tt-action-btn">\u{1F550}</div></div>';
           html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'payment\')"><div class="tt-action-btn">\u{1F4B3}</div></div>';
           html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'passes\')"><div class="tt-action-btn">\u{1F39F}\uFE0F</div></div>';
-          html+='<div class="tt-action" onclick="event.stopPropagation();showUberCheckout(\''+c.id+'\')"><div class="tt-action-btn">\u{1F4C5}</div></div>';
+          html+='<div class="tt-action" onclick="event.stopPropagation();showCalendarPicker(\''+c.id+'\')"><div class="tt-action-btn">\u{1F4C5}</div></div>';
           /* #59 cleanup: equipment & facilities buttons removed per user request */
           /* map button removed */
           html+='</div>';
@@ -1458,7 +1458,7 @@ function SearchPage(){
               cardHtml+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'reviews\')"><div class="tt-action-btn">\u2B50</div></div>';
               cardHtml+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'hours\')"><div class="tt-action-btn">\u{1F550}</div></div>';
               cardHtml+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'payment\')"><div class="tt-action-btn">\u{1F4B3}</div></div>';
-              cardHtml+='<div class="tt-action" onclick="event.stopPropagation();showUberCheckout(\''+c.id+'\')"><div class="tt-action-btn">\u{1F4C5}</div></div>';
+              cardHtml+='<div class="tt-action" onclick="event.stopPropagation();showCalendarPicker(\''+c.id+'\')"><div class="tt-action-btn">\u{1F4C5}</div></div>';
               cardHtml+='</div>';
               /* Bottom info — match initial cards */
               cardHtml+='<div class="tt-info">';
@@ -1726,11 +1726,12 @@ function GymProfilePage(){
     /* Review cards — Amazon style */
     .ov-review{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px;margin-bottom:12px}
     .ov-review-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
-    .ov-review-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#fff;flex-shrink:0}
-    .ov-review-avatar-img{width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.1);flex-shrink:0}
+    .ov-review-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0}
+    .ov-review-avatar-img{width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.1);flex-shrink:0}
     .ov-review-info{flex:1;min-width:0}
     .ov-review-name{color:#fff;font-size:14px;font-weight:600}
-    .ov-review-badge{display:inline-flex;align-items:center;gap:3px;background:rgba(34,197,94,.12);color:#22c55e;font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;margin-left:6px;vertical-align:middle}
+    .ov-review-badge{display:inline-flex;align-items:center;gap:3px;background:rgba(34,197,94,.12);color:#22c55e;font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;margin-top:2px}
+    .ov-review-title{color:#fff;font-size:15px;font-weight:700;margin-bottom:4px}
     .ov-review-date{color:rgba(255,255,255,.3);font-size:11px;margin-top:1px}
     .ov-review-stars{color:#fbbf24;font-size:13px;margin-bottom:8px}
     .ov-review-text{color:rgba(255,255,255,.6);font-size:13px;line-height:1.7;margin-bottom:12px}
@@ -2084,7 +2085,7 @@ window.openGymOverlay=function(section){
   const reviewCount=gym.user_ratings_total||gym.totalReviews||47;
 
   if(section==='reviews'){
-    title.innerHTML='⭐ Reviews';
+    title.innerHTML='⭐ Reviews <span onclick="event.stopPropagation();openWriteReviewModal()" style="float:right;font-size:13px;font-weight:600;color:#FF6D00;cursor:pointer;padding:2px 10px;border:1px solid rgba(255,109,0,.3);border-radius:20px;margin-top:2px">✍️ Write</span>';
     // Perf #4: Show skeleton instantly, build heavy HTML in next frame
     body.innerHTML='<div style="padding:20px"><div class="skel-card" style="height:60px;border-radius:12px;background:rgba(255,255,255,.06);margin-bottom:12px"></div><div class="skel-card" style="height:180px;border-radius:12px;background:rgba(255,255,255,.06);margin-bottom:12px"></div><div class="skel-card" style="height:100px;border-radius:12px;background:rgba(255,255,255,.06)"></div></div>';
     overlay.classList.add('active');
@@ -2094,30 +2095,10 @@ window.openGymOverlay=function(section){
     const reviews=getGymReviews(gym);
     const topics=extractReviewTopics(reviews);
 
-    // #61: Build photo gallery from Google photos + user uploads
-    const googlePhotos=(gym.photos||gym.photos_list||[]).slice(0,15);
-    const gpHtml=googlePhotos.map((p,i)=>{
-      const url=p.url||p.thumbnail||p;
-      return `<div class="rv-gallery-item" onclick="rvFullscreen(${i},'google')"><img src="${typeof url==='string'?url:''}" loading="lazy" alt="Gym photo ${i+1}" /></div>`;
-    }).join('');
+    // #61: Photo gallery REMOVED from reviews — reviews show reviews only (Amazon-style)
+    // Photos are accessible via the gym profile photos section instead.
 
     body.innerHTML=`
-      ${googlePhotos.length>0?`
-      <!-- #61A: Photo Gallery -->
-      <div style="margin-bottom:16px">
-        <div class="rv-gallery-tabs">
-          <div class="rv-gallery-tab active" onclick="rvFilterGallery('all',this)">📸 All Photos (${googlePhotos.length})</div>
-          <div class="rv-gallery-tab" onclick="rvFilterGallery('google',this)">🏢 Official</div>
-          <div class="rv-gallery-tab" onclick="rvFilterGallery('visitor',this)">👤 Visitors</div>
-        </div>
-        <div class="rv-gallery" id="rv-photo-gallery">
-          ${gpHtml}
-          <div class="rv-gallery-item" style="background:rgba(255,109,0,.1);border:1px dashed rgba(255,109,0,.3);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px" onclick="openWriteReviewModal()">
-            <span style="font-size:24px">📷</span>
-            <span style="font-size:10px;color:#FF6D00;font-weight:600">Add Photo</span>
-          </div>
-        </div>
-      </div>`:''}
 
       <!-- #61B: Amazon-style rating summary -->
       <div style="display:flex;gap:20px;align-items:center;margin-bottom:24px">
@@ -2166,11 +2147,13 @@ window.openGymOverlay=function(section){
           <div class="ov-review-top">
             ${avatarHtml}
             <div class="ov-review-info">
-              <div class="ov-review-name">${r.author||r.name||'Anonymous'}<span class="ov-review-badge">✓ Verified Visitor</span></div>
+              <div class="ov-review-name">${r.author||r.name||'Anonymous'}</div>
+              <span class="ov-review-badge">✓ Verified Visitor</span>
               <div class="ov-review-date">Reviewed ${r.relativeTime||r.time||'recently'}</div>
             </div>
           </div>
           <div class="ov-review-stars">${'★'.repeat(r.rating||5)}${'☆'.repeat(5-(r.rating||5))}</div>
+          <div class="ov-review-title">${(r.text||r.comment||'').split(/[.!?\n]/)[0].slice(0,60)||(r.rating>=4?'Great experience':'Review')}</div>
           <div class="ov-review-text">${r.text||r.comment||''}</div>
           <div class="ov-review-actions">
             <span class="ov-review-helpful${voted?' active':''}" id="helpful_${rid}" onclick="event.stopPropagation();_toggleReviewHelpful('${rid}',${helpfulBase})">
@@ -2192,17 +2175,9 @@ window.openGymOverlay=function(section){
 
       <div id="rv-star-filter-label" style="text-align:center;color:#fbbf24;font-size:12px;font-weight:600;margin-bottom:12px"></div>
 
-      <div class="write-review-cta" onclick="event.stopPropagation();openWriteReviewModal()">
-        <span class="write-review-icon">✍️</span>
-        <div>
-          <div class="write-review-title">Write a Review</div>
-          <div class="write-review-sub">Share your experience & photos to help others</div>
-        </div>
-      </div>
     `;
 
-    // #61: Initialize gallery items array for fullscreen viewer
-    window._rvGalleryItems=googlePhotos.map(p=>({url:p.url||p.thumbnail||p,type:'photo'}));
+    // Write Review CTA moved to overlay title area (top-right link)
     window._rvStarFilter=0;
 
   /* ═══ FIX #4: Topic pill filter + Sort chip handlers ═══ */
@@ -2502,21 +2477,13 @@ window.openGymOverlay=function(section){
             <span style="color:#fff;font-size:16px;font-weight:700">Add a payment method</span>
           </div>
           <div style="display:flex;flex-direction:column;gap:2px;background:rgba(30,41,59,.6);border-radius:16px;border:1px solid rgba(255,255,255,.06);overflow:hidden">
-            <div onclick="_ovPayAddCard()" style="display:flex;align-items:center;gap:14px;padding:16px 20px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.06);transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,.03)'" onmouseout="this.style.background='transparent'">
+            <div onclick="_ovPayAddCard()" style="display:flex;align-items:center;gap:14px;padding:16px 20px;cursor:pointer;transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,.03)'" onmouseout="this.style.background='transparent'">
               <div style="width:40px;height:28px;background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.25);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px">💳</div>
               <div style="flex:1;color:#fff;font-size:14px;font-weight:600">Credit or debit card</div>
               <span style="color:rgba(255,255,255,.25);font-size:18px">›</span>
             </div>
-            <div onclick="sgToast('PayPal coming soon','info',2500)" style="display:flex;align-items:center;gap:14px;padding:16px 20px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.06);transition:background .15s;opacity:.5" onmouseover="this.style.background='rgba(255,255,255,.03)'" onmouseout="this.style.background='transparent'">
-              <div style="width:40px;height:28px;background:rgba(0,112,210,.15);border:1px solid rgba(0,112,210,.25);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#0070d2;font-weight:800">PP</div>
-              <div style="flex:1;color:#fff;font-size:14px;font-weight:600">PayPal <span style="color:rgba(255,255,255,.3);font-size:11px;font-weight:400">Coming soon</span></div>
-              <span style="color:rgba(255,255,255,.25);font-size:18px">›</span>
-            </div>
-            <div onclick="sgToast('Apple Pay / Google Pay coming soon','info',2500)" style="display:flex;align-items:center;gap:14px;padding:16px 20px;cursor:pointer;transition:background .15s;opacity:.5" onmouseover="this.style.background='rgba(255,255,255,.03)'" onmouseout="this.style.background='transparent'">
-              <div style="width:40px;height:28px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px">📱</div>
-              <div style="flex:1;color:#fff;font-size:14px;font-weight:600">Apple Pay / Google Pay <span style="color:rgba(255,255,255,.3);font-size:11px;font-weight:400">Coming soon</span></div>
-              <span style="color:rgba(255,255,255,.25);font-size:18px">›</span>
-            </div>
+            <!-- PayPal: hidden until implemented -->
+            <!-- Apple/Google Pay: hidden until implemented -->
           </div>
         </div>
 
@@ -2537,6 +2504,35 @@ window.openGymOverlay=function(section){
               <div id="ov-pay-card-expiry" style="flex:1;padding:16px;min-height:48px"></div>
               <div style="width:1px;background:#e5e7eb"></div>
               <div id="ov-pay-card-cvc" style="flex:1;padding:16px;min-height:48px"></div>
+            </div>
+          </div>
+          <!-- Country + Postcode (Uber-style) -->
+          <div style="background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;margin-top:12px">
+            <div style="display:flex">
+              <div style="flex:1;padding:0 16px">
+                <select id="ov-pay-country" style="width:100%;padding:16px 0;border:none;font-size:15px;color:#1a1a2e;background:transparent;outline:none;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;-webkit-appearance:none;appearance:none;cursor:pointer">
+                  <option value="GB" selected>United Kingdom</option>
+                  <option value="US">United States</option>
+                  <option value="IE">Ireland</option>
+                  <option value="DE">Germany</option>
+                  <option value="FR">France</option>
+                  <option value="ES">Spain</option>
+                  <option value="IT">Italy</option>
+                  <option value="NL">Netherlands</option>
+                  <option value="AU">Australia</option>
+                  <option value="CA">Canada</option>
+                </select>
+              </div>
+              <div style="width:1px;background:#e5e7eb"></div>
+              <div style="flex:1;padding:0 16px">
+                <input id="ov-pay-postcode" type="text" placeholder="Postcode" style="width:100%;padding:16px 0;border:none;font-size:15px;color:#1a1a2e;background:transparent;outline:none;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" />
+              </div>
+            </div>
+          </div>
+          <!-- Nickname (Uber-style, optional) -->
+          <div style="background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;margin-top:12px">
+            <div style="padding:0 16px">
+              <input id="ov-pay-nickname" type="text" placeholder="Nickname (optional) e.g. joint account or work card" style="width:100%;padding:16px 0;border:none;font-size:15px;color:#1a1a2e;background:transparent;outline:none;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" />
             </div>
           </div>
           <button id="ov-pay-save-btn" onclick="_ovPaySaveCard()" style="width:100%;background:#22c55e;color:#fff;border:none;border-radius:12px;padding:16px;font-size:16px;font-weight:700;cursor:pointer;opacity:.5;pointer-events:none;transition:all .2s;margin-top:16px">Add Card</button>
@@ -3001,7 +2997,7 @@ window._ovPayLoadCards=async function(){
         </div>
         <div style="display:flex;align-items:center;gap:8px">
           ${card.isDefault?'<span style="background:rgba(34,197,94,.15);color:#22c55e;font-size:9px;font-weight:700;padding:3px 8px;border-radius:6px">DEFAULT</span>':'<button onclick="event.stopPropagation();_ovPaySetDefault(\''+card.id+'\');return false;" style="background:none;border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.4);font-size:10px;padding:3px 8px;border-radius:6px;cursor:pointer">Set default</button>'}
-          <button onclick="event.stopPropagation();_ovPayDeleteCard('${card.id}','${brandName} ····${card.last4}');return false;" style="background:none;border:none;color:rgba(255,255,255,.2);font-size:16px;cursor:pointer;padding:4px;transition:color .15s" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='rgba(255,255,255,.2)'">×</button>
+          /* Delete button removed — Uber-style: no delete on main card list */
           ${isSelected?'<span style="color:#22c55e;font-size:16px;font-weight:700">✓</span>':''}
         </div>
       </div>`;
@@ -3166,8 +3162,12 @@ window._ovPaySaveCard=async function(){
     const siResp=await fetch('/api/payment/setup-card',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'}});
     const siData=await siResp.json();
     if(!siData.clientSecret)throw new Error(siData.error||'Failed to create setup');
+    // Uber-style: include billing details (country, postcode, nickname)
+    const _payCountry=(document.getElementById('ov-pay-country')||{}).value||'GB';
+    const _payPostcode=(document.getElementById('ov-pay-postcode')||{}).value||'';
+    const _payNickname=(document.getElementById('ov-pay-nickname')||{}).value||'';
     const{setupIntent,error}=await window._ovPayStripeInstance.confirmCardSetup(siData.clientSecret,{
-      payment_method:{card:window._ovPayCardElement},
+      payment_method:{card:window._ovPayCardElement,billing_details:{address:{country:_payCountry,postal_code:_payPostcode}}},
     });
     if(error)throw new Error(error.message);
     await fetch('/api/payment/confirm-setup',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({setupIntentId:setupIntent.id})});
@@ -3217,6 +3217,243 @@ window._ovPayDeleteCard=async function(cardId,label){
 };
 
 // ═══ Date/time picker sheet ═══
+// ═══ Calendar Picker Overlay (Uber-style) ═══
+// Opens when user taps the 📅 calendar button on gym cards
+window._calPickerState={gymId:null,selectedDate:null,selectedTime:null};
+
+window.showCalendarPicker=async function(gymId){
+  // Remove any existing picker
+  document.getElementById('sg-cal-picker')?.remove();
+
+  const now=new Date();
+  const today=now.toISOString().split('T')[0];
+  const dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const monthNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const fullMonthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+  window._calPickerState={gymId,selectedDate:today,selectedTime:null};
+
+  // Get gym info for price display
+  const gym=state.currentGym||state.gyms.find(g=>(g.placeId||g.place_id||g.id)==gymId)||{};
+  const gymName=gym.name||'Gym';
+  const currentPrice=gym.pricing?.day?.display||sgPrice('day').display||'£5.00';
+
+  // Build 14-day date grid
+  const dates=[];
+  for(let i=0;i<14;i++){
+    const d=new Date(now);d.setDate(d.getDate()+i);
+    dates.push({
+      date:d.toISOString().split('T')[0],
+      day:dayNames[d.getDay()],
+      dayNum:d.getDate(),
+      month:monthNames[d.getMonth()],
+      fullMonth:fullMonthNames[d.getMonth()],
+      year:d.getFullYear(),
+      isToday:i===0,
+      isTomorrow:i===1
+    });
+  }
+
+  // Build calendar grid (Mon-Sun layout for current + next week block)
+  const curMonth=fullMonthNames[now.getMonth()];
+  const curYear=now.getFullYear();
+  // Simple: show a scrollable date strip (Uber-style) + time slots
+  const dateStripHtml=dates.map((d,i)=>`
+    <div class="sg-cal-date${i===0?' selected':''}" onclick="window._calSelectDate('${d.date}',${i},this)" data-date="${d.date}">
+      <div class="sg-cal-date-day">${d.isToday?'Today':d.isTomorrow?'Tomorrow':d.day}</div>
+      <div class="sg-cal-date-num">${d.dayNum}</div>
+      <div class="sg-cal-date-month">${d.month}</div>
+    </div>
+  `).join('');
+
+  // Time slots
+  const currentHour=now.getHours();
+  const timeSlots=[];
+  // Group: Morning (6-11), Afternoon (12-16), Evening (17-21)
+  for(let h=6;h<=21;h++){
+    const label=`${String(h).padStart(2,'0')}:00`;
+    const period=h<12?'Morning':h<17?'Afternoon':'Evening';
+    const isPast=h<=currentHour; // only past for today
+    timeSlots.push({hour:h,label,period,isPast});
+  }
+
+  // Default to next available hour
+  const defaultHour=Math.max(6,Math.min(currentHour+1,21));
+  const defaultTime=`${String(defaultHour).padStart(2,'0')}:00`;
+  window._calPickerState.selectedTime=defaultTime;
+
+  const timeSlotsHtml=['Morning','Afternoon','Evening'].map(period=>{
+    const slots=timeSlots.filter(s=>s.period===period);
+    if(slots.length===0)return '';
+    return `
+      <div style="margin-bottom:12px">
+        <div style="color:rgba(255,255,255,.4);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;padding-left:4px">${period}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          ${slots.map(s=>`
+            <div class="sg-cal-time${s.label===defaultTime?' selected':''}${s.isPast?' past':''}" onclick="window._calSelectTime('${s.label}',this)" data-hour="${s.hour}">
+              ${s.label}
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  const picker=document.createElement('div');
+  picker.id='sg-cal-picker';
+  picker.innerHTML=`
+    <style>
+      .sg-cal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9100;display:flex;flex-direction:column;animation:sgCalFadeIn .2s ease-out}
+      @keyframes sgCalFadeIn{from{opacity:0}to{opacity:1}}
+      .sg-cal-sheet{flex:1;display:flex;flex-direction:column;background:#0a0a0a;margin-top:auto;max-height:85vh;border-radius:20px 20px 0 0;overflow:hidden;animation:sgCalSlideUp .3s ease-out}
+      @keyframes sgCalSlideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+      .sg-cal-header{display:flex;align-items:center;justify-content:space-between;padding:20px 24px 16px;flex-shrink:0}
+      .sg-cal-title{color:#fff;font-size:20px;font-weight:700;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+      .sg-cal-close{width:36px;height:36px;background:rgba(255,255,255,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:rgba(255,255,255,.5);font-size:18px;border:none;-webkit-tap-highlight-color:transparent}
+      .sg-cal-close:active{background:rgba(255,255,255,.15)}
+      .sg-cal-date-strip{display:flex;gap:8px;padding:0 24px 16px;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;flex-shrink:0}
+      .sg-cal-date-strip::-webkit-scrollbar{display:none}
+      .sg-cal-date{display:flex;flex-direction:column;align-items:center;min-width:64px;padding:10px 8px;border-radius:14px;cursor:pointer;background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.06);transition:all .15s;-webkit-tap-highlight-color:transparent}
+      .sg-cal-date:active{transform:scale(.96)}
+      .sg-cal-date.selected{background:rgba(255,109,0,.12);border-color:#FF6D00;box-shadow:0 0 12px rgba(255,109,0,.15)}
+      .sg-cal-date-day{color:rgba(255,255,255,.4);font-size:11px;font-weight:600;margin-bottom:4px}
+      .sg-cal-date.selected .sg-cal-date-day{color:#FF6D00}
+      .sg-cal-date-num{color:#fff;font-size:22px;font-weight:800;line-height:1}
+      .sg-cal-date.selected .sg-cal-date-num{color:#FF6D00}
+      .sg-cal-date-month{color:rgba(255,255,255,.3);font-size:10px;font-weight:600;margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
+      .sg-cal-date.selected .sg-cal-date-month{color:rgba(255,109,0,.6)}
+      .sg-cal-body{flex:1;overflow-y:auto;padding:0 24px 16px;-webkit-overflow-scrolling:touch}
+      .sg-cal-time{padding:10px 16px;border-radius:10px;cursor:pointer;background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.06);color:#fff;font-size:14px;font-weight:600;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;transition:all .15s;-webkit-tap-highlight-color:transparent;text-align:center;min-width:64px}
+      .sg-cal-time:active{transform:scale(.96)}
+      .sg-cal-time.selected{background:rgba(255,109,0,.12);border-color:#FF6D00;color:#FF6D00}
+      .sg-cal-time.past{opacity:.3;pointer-events:none}
+      .sg-cal-footer{padding:12px 24px calc(16px + env(safe-area-inset-bottom,0px));background:#0a0a0a;border-top:1px solid rgba(255,255,255,.06);flex-shrink:0}
+      .sg-cal-summary{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+      .sg-cal-cta{width:100%;padding:18px;border:none;border-radius:14px;font-size:17px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#FF6D00,#ff8533);color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;-webkit-tap-highlight-color:transparent;transition:all .15s;box-shadow:0 4px 16px rgba(255,109,0,.3)}
+      .sg-cal-cta:active{transform:scale(.98);box-shadow:0 2px 8px rgba(255,109,0,.2)}
+    </style>
+    <div class="sg-cal-overlay" onclick="if(event.target===this)window._calPickerClose()">
+      <div class="sg-cal-sheet">
+        <div class="sg-cal-header">
+          <div class="sg-cal-title">📅 Pick a date & time</div>
+          <button class="sg-cal-close" onclick="window._calPickerClose()">✕</button>
+        </div>
+        <div class="sg-cal-date-strip" id="sg-cal-date-strip">
+          ${dateStripHtml}
+        </div>
+        <div style="padding:0 24px 12px">
+          <div style="height:1px;background:rgba(255,255,255,.06)"></div>
+        </div>
+        <div class="sg-cal-body" id="sg-cal-time-body">
+          ${timeSlotsHtml}
+        </div>
+        <div class="sg-cal-footer">
+          <div class="sg-cal-summary">
+            <div>
+              <div style="color:#fff;font-size:16px;font-weight:700" id="sg-cal-summary-date">⚡ Day Pass · Today</div>
+              <div style="color:rgba(255,255,255,.4);font-size:13px;margin-top:2px" id="sg-cal-summary-time">${defaultTime} · ${gymName}</div>
+            </div>
+            <div style="color:#fff;font-size:22px;font-weight:800" id="sg-cal-summary-price">${currentPrice}</div>
+          </div>
+          <button class="sg-cal-cta" onclick="window._calPickerBook()">Book Now</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(picker);
+  document.body.style.overflow='hidden';
+
+  // Update summary text
+  window._calUpdateSummary();
+};
+
+window._calSelectDate=function(dateStr,idx,el){
+  window._calPickerState.selectedDate=dateStr;
+  // Update visual selection
+  document.querySelectorAll('.sg-cal-date').forEach(d=>d.classList.remove('selected'));
+  if(el)el.classList.add('selected');
+
+  // Update time slot availability (disable past hours only for today)
+  const now=new Date();
+  const isToday=dateStr===now.toISOString().split('T')[0];
+  const currentHour=now.getHours();
+  document.querySelectorAll('.sg-cal-time').forEach(t=>{
+    const h=parseInt(t.getAttribute('data-hour'));
+    if(isToday&&h<=currentHour){
+      t.classList.add('past');
+    }else{
+      t.classList.remove('past');
+    }
+  });
+
+  // If selected time is now past, auto-select next available
+  if(isToday&&window._calPickerState.selectedTime){
+    const selH=parseInt(window._calPickerState.selectedTime.split(':')[0]);
+    if(selH<=currentHour){
+      const nextH=Math.min(currentHour+1,21);
+      window._calSelectTime(`${String(nextH).padStart(2,'0')}:00`,null);
+      // Update visual
+      document.querySelectorAll('.sg-cal-time').forEach(t=>{
+        const h=parseInt(t.getAttribute('data-hour'));
+        t.classList.toggle('selected',h===nextH);
+      });
+    }
+  }
+
+  window._calUpdateSummary();
+};
+
+window._calSelectTime=function(timeStr,el){
+  window._calPickerState.selectedTime=timeStr;
+  document.querySelectorAll('.sg-cal-time').forEach(t=>t.classList.remove('selected'));
+  if(el)el.classList.add('selected');
+  window._calUpdateSummary();
+};
+
+window._calUpdateSummary=function(){
+  const s=window._calPickerState;
+  const dateEl=document.getElementById('sg-cal-summary-date');
+  const timeEl=document.getElementById('sg-cal-summary-time');
+  if(!dateEl||!timeEl)return;
+
+  const now=new Date();
+  const today=now.toISOString().split('T')[0];
+  const tomorrow=new Date(now);tomorrow.setDate(tomorrow.getDate()+1);
+  const tomorrowStr=tomorrow.toISOString().split('T')[0];
+
+  const dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const monthNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const d=new Date(s.selectedDate+'T12:00:00');
+  let dateLabel;
+  if(s.selectedDate===today)dateLabel='Today';
+  else if(s.selectedDate===tomorrowStr)dateLabel='Tomorrow';
+  else dateLabel=dayNames[d.getDay()]+', '+d.getDate()+' '+monthNames[d.getMonth()];
+
+  dateEl.textContent='⚡ Day Pass · '+dateLabel;
+
+  const gym=state.currentGym||state.gyms.find(g=>(g.placeId||g.place_id||g.id)==s.gymId)||{};
+  timeEl.textContent=(s.selectedTime||'—')+' · '+(gym.name||'Gym');
+};
+
+window._calPickerClose=function(){
+  const picker=document.getElementById('sg-cal-picker');
+  if(picker)picker.remove();
+  document.body.style.overflow='';
+};
+
+window._calPickerBook=function(){
+  const s=window._calPickerState;
+  window._calPickerClose();
+  // Set booking state and go to checkout
+  window._gymBookingState=window._gymBookingState||{};
+  window._gymBookingState.selectedDate=s.selectedDate;
+  window._gymBookingState.selectedTime=s.selectedTime;
+  window._gymBookingState.selectedPass='day';
+  window._gymBookingState.passName='Day Pass';
+  window._gymBookingState.passIcon='⚡';
+  showUberCheckout(s.gymId,s.selectedDate,s.selectedTime);
+};
+
 // ═══ Uber-style Date/Time Picker ═══
 window._gymSelectedTime=null;
 window._uberDatePickerState={selectedDateIdx:0,selectedTime:null};
