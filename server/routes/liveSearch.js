@@ -98,6 +98,65 @@ function photoUrl(photoRef, maxWidth = 1200) {
   return `/api/photo?ref=${encodeURIComponent(photoRef)}&maxwidth=${maxWidth}`;
 }
 
+// ─── #17/#18: 24/7 and Self-Service gym detection ────────────
+// Known gym chains that operate 24/7 (always open, key-fob/QR entry)
+const CHAINS_24H = [
+  'puregym', 'pure gym', 'anytime fitness', 'snap fitness', 'the gym group',
+  'the gym ', 'jd gyms', 'jd gym', 'xercise4less', 'xercise 4 less',
+  'easygym', 'easy gym', '24/7 fitness', '24 hour fitness', '24hour fitness',
+  'energie fitness', 'fit4less', 'fit 4 less', 'simply gym', 'total fitness',
+  'buzz gym', 'everlast fitness', 'planet fitness', 'crunch fitness',
+  'goldsgym', 'golds gym', "gold's gym", 'mcfit', 'clever fit', 'fitx',
+  'fitness24seven', 'fitness 24 seven', 'basic-fit', 'basic fit',
+  'trainmore', 'sportcity', 'fit7', 'fitnessfirst 24', 'lifecentre 24',
+  '24seven', '24 7 fitness', 'iron 24', 'gym24', 'abs 24', 'anytime gym',
+];
+
+// Known self-service entry chains (unmanned / key-fob / app-based entry)
+const CHAINS_SELF_SERVICE = [
+  'puregym', 'pure gym', 'anytime fitness', 'snap fitness', 'the gym group',
+  'the gym ', 'jd gyms', 'jd gym', 'xercise4less', 'xercise 4 less',
+  'easygym', 'easy gym', '24/7 fitness', '24 hour fitness', '24hour fitness',
+  'fit4less', 'fit 4 less', 'simply gym', 'buzz gym', 'planet fitness',
+  'basic-fit', 'basic fit', 'mcfit', 'clever fit', 'fitx',
+  'fitness24seven', 'fitness 24 seven', 'trainmore',
+];
+
+/**
+ * Detect if a gym is 24/7 from name + opening_hours.
+ * Google Places search results include opening_hours.open_now but not periods.
+ * For Place Details (which has periods), we check the actual schedule.
+ */
+function detect24Hours(place) {
+  const name = (place.name || '').toLowerCase();
+  // Check name against known 24/7 chains
+  if (CHAINS_24H.some(chain => name.includes(chain))) return true;
+  // Check if name itself says "24" (e.g. "Gym 24/7", "Open 24 Hours")
+  if (/\b24\s*[\/\\]?\s*7\b/.test(name) || /\b24\s*h(ou)?r/i.test(name)) return true;
+  // If we have periods from Place Details, check for always-open pattern
+  // A 24/7 gym has one period: open day=0 time=0000, no close
+  const periods = place.opening_hours?.periods;
+  if (periods && periods.length === 1) {
+    const p = periods[0];
+    if (p.open && p.open.day === 0 && p.open.time === '0000' && !p.close) return true;
+  }
+  // Check weekday_text for "Open 24 hours" on every day
+  const weekday = place.opening_hours?.weekday_text;
+  if (weekday && weekday.length === 7 && weekday.every(d => /open 24 hours/i.test(d))) return true;
+  return false;
+}
+
+/**
+ * Detect if a gym has self-service entry (key-fob, QR, pin code — no staff needed).
+ */
+function detectSelfService(place) {
+  const name = (place.name || '').toLowerCase();
+  if (CHAINS_SELF_SERVICE.some(chain => name.includes(chain))) return true;
+  // If name contains self-service indicators
+  if (/\b(unmanned|self.service|keycard|key.fob|24.?7)\b/i.test(name)) return true;
+  return false;
+}
+
 // ─── Helper: Parse a Text/Nearby Search result into ScanGym gym format ───
 // v4.0: priceLevelToPrice removed — all gyms use £4.49 base (PPP + currency by country)
 
@@ -134,6 +193,8 @@ function parseSearchResult(place) {
     types: place.types || [],
     businessStatus: place.business_status || 'OPERATIONAL',
     openNow: place.opening_hours?.open_now ?? null,
+    is24Hours: detect24Hours(place),
+    isSelfService: detectSelfService(place),
     priceLevel: place.price_level ?? null,
     dayPassPrice: gymPrice.amount,
     currency: gymCurrency.currency,
@@ -163,7 +224,7 @@ async function enrichGymsWithDbPrices(gyms) {
     if (placeIds.length === 0) return gyms;
 
     const result = await pool.query(
-      'SELECT place_id, day_pass_price, is_accepting_bookings FROM gyms WHERE place_id = ANY($1)',
+      'SELECT place_id, day_pass_price, is_accepting_bookings, is_24h, is_self_service FROM gyms WHERE place_id = ANY($1)',
       [placeIds]
     );
 
@@ -201,6 +262,12 @@ async function enrichGymsWithDbPrices(gyms) {
         gym.openNow = false;
         gym.ownerIsOpen = false;
       }
+
+      // #17/#18: Owner-set 24/7 and self-service flags override chain detection
+      if (dbRow.is_24h === true) gym.is24Hours = true;
+      if (dbRow.is_24h === false) gym.is24Hours = false;
+      if (dbRow.is_self_service === true) gym.isSelfService = true;
+      if (dbRow.is_self_service === false) gym.isSelfService = false;
     }
   } catch (e) {
     // DB lookup failed — keep defaults (non-critical)
@@ -215,8 +282,8 @@ async function enrichGymsWithDbPrices(gyms) {
 // ═══════════════════════════════════════════════════════════════
 router.get('/search', async (req, res) => {
   try {
-    const { q, query, pagetoken, type, lat, lng, radius } = req.query;
-    const searchQuery = q || query;
+    const { q, query, pagetoken, type, lat, lng, radius, filter24h, filterSelfService } = req.query;
+    let searchQuery = q || query;
 
     if (!searchQuery && !pagetoken) {
       return res.status(400).json({ error: 'Query parameter "q" is required' });
@@ -226,8 +293,13 @@ router.get('/search', async (req, res) => {
       return res.status(500).json({ error: 'Google Maps API key not configured' });
     }
 
-    // Check cache (include lat/lng in cache key for location-biased searches)
-    const cacheKey = `search:${searchQuery}:${pagetoken || ''}:${lat || ''}:${lng || ''}`;
+    // #17: If 24h filter active, enhance query to prefer 24-hour gyms
+    if (filter24h === 'true' && searchQuery && !searchQuery.toLowerCase().includes('24')) {
+      searchQuery = searchQuery + ' 24 hour';
+    }
+
+    // Check cache (include lat/lng + filters in cache key)
+    const cacheKey = `search:${searchQuery}:${pagetoken || ''}:${lat || ''}:${lng || ''}:24h=${filter24h || ''}:ss=${filterSelfService || ''}`;
     const cached = getCached(cacheKey);
     if (cached) return res.json(cached);
 
@@ -344,7 +416,7 @@ router.get('/search', async (req, res) => {
 // ═══════════════════════════════════════════════════════════════
 router.get('/nearby', async (req, res) => {
   try {
-    const { lat, lng, radius = 5000, pagetoken, keyword } = req.query;
+    const { lat, lng, radius = 5000, pagetoken, keyword, filter24h, filterSelfService } = req.query;
 
     if (!pagetoken && (!lat || !lng)) {
       return res.status(400).json({ error: 'lat and lng are required' });
@@ -354,7 +426,13 @@ router.get('/nearby', async (req, res) => {
       return res.status(500).json({ error: 'Google Maps API key not configured' });
     }
 
-    const cacheKey = `nearby:${lat}:${lng}:${radius}:${pagetoken || ''}`;
+    // #17: Enhance keyword for 24h filter
+    let searchKeyword = keyword || 'gym fitness';
+    if (filter24h === 'true' && !searchKeyword.includes('24')) {
+      searchKeyword = '24 hour ' + searchKeyword;
+    }
+
+    const cacheKey = `nearby:${lat}:${lng}:${radius}:${pagetoken || ''}:24h=${filter24h || ''}:ss=${filterSelfService || ''}`;
     const cached = getCached(cacheKey);
     if (cached) return res.json(cached);
 
@@ -362,7 +440,7 @@ router.get('/nearby', async (req, res) => {
     if (pagetoken) {
       url = `${BASE_URL}/nearbysearch/json?pagetoken=${pagetoken}&key=${GOOGLE_MAPS_API_KEY}`;
     } else {
-      url = `${BASE_URL}/nearbysearch/json?location=${lat},${lng}&radius=${Math.min(parseInt(radius), 50000)}&type=gym&keyword=${encodeURIComponent(keyword || 'gym fitness')}&key=${GOOGLE_MAPS_API_KEY}`;
+      url = `${BASE_URL}/nearbysearch/json?location=${lat},${lng}&radius=${Math.min(parseInt(radius), 50000)}&type=gym&keyword=${encodeURIComponent(searchKeyword)}&key=${GOOGLE_MAPS_API_KEY}`;
     }
 
     const response = await fetch(url);
@@ -483,6 +561,9 @@ router.get('/place/:placeId', optionalAuth, async (req, res) => {
         types: p.types || [],
         priceLevel: p.price_level ?? null,
         isClaimed: dbGym?.is_claimed || false,
+        // #17/#18: 24/7 and self-service detection (uses full Place Details periods)
+        is24Hours: detect24Hours(p),
+        isSelfService: detectSelfService(p),
         // H15 fix: owner open/closed override — null means "use Google", true/false = owner override
         ownerIsOpen: dbGym?.is_accepting_bookings ?? null,
       },

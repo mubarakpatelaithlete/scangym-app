@@ -1141,6 +1141,9 @@ async function searchGyms(query, isExplicit, _triggerLayer){
     if(state.searchLat&&state.searchLng){
       searchUrl+=`&lat=${state.searchLat}&lng=${state.searchLng}`;
     }
+    // #17/#18: Pass 24h and self-service filter params to backend
+    if(window._sgActiveFilters&&window._sgActiveFilters.has('24h')) searchUrl+='&filter24h=true';
+    if(window._sgActiveFilters&&window._sgActiveFilters.has('self-service')) searchUrl+='&filterSelfService=true';
     const data=await api.getLive(searchUrl);
     clearTimeout(timeout);
     // ━━━ RACE CONDITION FIX: If GPS (layer 5) loaded while this API call was in-flight, ━━━
@@ -1271,7 +1274,7 @@ function SearchPage(){
           var logoGrad=logoColors[i%8];
           var logoEmoji=logoEmojis[i%8];
 
-          html+='<div class="tt-card'+(c.isOpen?'':' tt-closed')+'" data-gym-card data-gym-id="'+c.id+'" data-idx="'+i+'" data-is-open="'+c.isOpen+'" data-rating="'+(c.rating||0)+'" data-reviews="'+(c.reviews||0)+'" data-distance="'+(c.gym.distance||99)+'">';
+          html+='<div class="tt-card'+(c.isOpen?'':' tt-closed')+'" data-gym-card data-gym-id="'+c.id+'" data-idx="'+i+'" data-is-open="'+c.isOpen+'" data-rating="'+(c.rating||0)+'" data-reviews="'+(c.reviews||0)+'" data-distance="'+(c.gym.distance||99)+'" data-is-24h="'+(c.gym.is24Hours||false)+'" data-self-service="'+(c.gym.isSelfService||false)+'">';
 
           /* Photo */
           /* Perf v3: Only card 0 loads photos eagerly. Cards 1+ use data-bg for deferred loading.
@@ -1310,6 +1313,8 @@ function SearchPage(){
             /* Filter sheet */
             html+='<div class="tt-filter-sheet" id="tt-filter-sheet">';
             html+='<button onclick="sgToggleFilter(this,\'open\')" class="sg-filter-pill" data-filter="open">Open Now</button>';
+            html+='<button onclick="sgToggleFilter(this,\'24h\')" class="sg-filter-pill" data-filter="24h">⏰ 24/7</button>';
+            html+='<button onclick="sgToggleFilter(this,\'self-service\')" class="sg-filter-pill" data-filter="self-service">🔓 Self Entry</button>';
             html+='<button onclick="sgToggleFilter(this,\'rating\')" class="sg-filter-pill" data-filter="rating">Rating 4+</button>';
             html+='<button onclick="sgToggleFilter(this,\'price-low\')" class="sg-filter-pill" data-filter="price-low">Budget Friendly</button>';
             html+='<button onclick="sgToggleFilter(this,\'near\')" class="sg-filter-pill" data-filter="near">📍 Near Me</button>';
@@ -1353,6 +1358,8 @@ function SearchPage(){
           var _mAgo=minutesAgo(c.name);
           html+='<div class="tt-chips">';
           if(c.isPop) html+='<div class="tt-chip">\u{1F525} Popular</div>';
+          if(c.gym.is24Hours) html+='<div class="tt-chip" style="background:rgba(234,179,8,.15);border:1px solid rgba(234,179,8,.3);color:#fbbf24">\u23F0 24/7</div>';
+          if(c.gym.isSelfService) html+='<div class="tt-chip" style="background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.25);color:#a78bfa">\u{1F513} Self Entry</div>';
           html+='<div class="tt-chip">\u{1F4B0} '+c.price+'/day</div>';
           html+='<div class="tt-chip">\u2B50 '+c.rating+(c.reviews?' ('+c.reviews+')':'')+'</div>';
           html+='<div class="tt-chip" style="background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.25)">\u{1F4C8} '+_bToday+' booked today</div>';
@@ -1380,7 +1387,7 @@ function SearchPage(){
               var logoColors=['#FF6D00,#E66200','#8b5cf6,#6d28d9','#ef4444,#b91c1c','#3b82f6,#1d4ed8','#eab308,#a16207','#22c55e,#15803d','#ec4899,#be185d','#14b8a6,#0f766e'];
               var logoEmojis=['\u{1F3CB}\uFE0F','\u{1F4AA}','\u{1F94A}','\u{1F3CA}','\u26A1','\u{1F49A}','\u{1F525}','\u{1F9D8}'];
               var logoGrad=logoColors[i%8];var logoEmoji=logoEmojis[i%8];
-              var cardHtml='<div class="tt-card'+(c.isOpen?'':' tt-closed')+'" data-gym-card data-gym-id="'+c.id+'" data-idx="'+i+'" data-is-open="'+c.isOpen+'" data-rating="'+(c.rating||0)+'" data-reviews="'+(c.reviews||0)+'" data-distance="'+(c.gym.distance||99)+'">';
+              var cardHtml='<div class="tt-card'+(c.isOpen?'':' tt-closed')+'" data-gym-card data-gym-id="'+c.id+'" data-idx="'+i+'" data-is-open="'+c.isOpen+'" data-rating="'+(c.rating||0)+'" data-reviews="'+(c.reviews||0)+'" data-distance="'+(c.gym.distance||99)+'" data-is-24h="'+(c.gym.is24Hours||false)+'" data-self-service="'+(c.gym.isSelfService||false)+'">';
               cardHtml+=c.photo?'<div class="tt-photo" style="background-image:url(\''+c.photo+'\')"></div>':'<div class="tt-photo-placeholder"></div>';
               cardHtml+='<div class="tt-gradient"></div>';
               cardHtml+='<div class="tt-info"><div class="tt-gym-name">'+c.name+'</div>';
@@ -8445,12 +8452,29 @@ window.sgApplyFilters=function(){
   const cards=document.querySelectorAll('[data-gym-card]');
   if(!cards.length) return;
   const filters=window._sgActiveFilters;
+  let visibleCount=0;
   cards.forEach(card=>{
     let show=true;
     if(filters.has('open')&&card.dataset.isOpen==='false') show=false;
+    if(filters.has('24h')&&card.dataset.is24h!=='true') show=false;
+    if(filters.has('self-service')&&card.dataset.selfService!=='true') show=false;
     if(filters.has('rating')&&parseFloat(card.dataset.rating||'0')<4) show=false;
     card.style.display=show?'':'none';
+    if(show) visibleCount++;
   });
+  // Show "no results" message if all filtered out
+  let noResults=document.getElementById('sg-filter-no-results');
+  if(visibleCount===0&&filters.size>0){
+    if(!noResults){
+      noResults=document.createElement('div');
+      noResults.id='sg-filter-no-results';
+      noResults.style.cssText='text-align:center;padding:60px 20px;color:rgba(255,255,255,.5);font-size:15px;font-weight:600;';
+      noResults.innerHTML='😔 No gyms match these filters.<br><span style="font-size:13px;font-weight:400;color:rgba(255,255,255,.3)">Try removing a filter or searching a different area.</span>';
+      cards[0]?.parentElement?.appendChild(noResults);
+    }
+  } else if(noResults){
+    noResults.remove();
+  }
   // Sort if needed
   const grid=cards[0]?.parentElement;
   if(!grid) return;
