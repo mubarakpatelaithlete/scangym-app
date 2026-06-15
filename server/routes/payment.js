@@ -44,6 +44,43 @@ function getGymGeo(req) {
   return { country: gymCountry, city: '' };
 }
 
+/**
+ * RESILIENT BOOKING INSERT — Fix #8
+ * Ensures bookings table has all required columns before INSERT.
+ * Auto-creates missing columns on first call.
+ */
+let _bookingColumnsVerified = false;
+async function ensureBookingColumns() {
+  if (_bookingColumnsVerified) return;
+  try {
+    const colResult = await pool.query(
+      `SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'bookings'`
+    );
+    const existingCols = new Set(colResult.rows.map(r => r.column_name));
+
+    const requiredCols = [
+      { name: 'platform_fee_amount', type: 'NUMERIC DEFAULT 0' },
+      { name: 'booking_type', type: "TEXT DEFAULT 'instant'" },
+      { name: 'booking_code', type: 'VARCHAR(50)' },
+      { name: 'qr_code', type: 'VARCHAR(100)' },
+      { name: 'qr_code_url', type: 'TEXT' },
+      { name: 'user_email', type: 'VARCHAR(255)' },
+      { name: 'user_name', type: "VARCHAR(255) DEFAULT 'Guest'" },
+    ];
+
+    for (const col of requiredCols) {
+      if (!existingCols.has(col.name)) {
+        console.log(`[Schema Fix] Adding missing column: bookings.${col.name}`);
+        await pool.query(`ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS ${col.name} ${col.type}`);
+      }
+    }
+    _bookingColumnsVerified = true;
+    console.log('[Schema Fix] Booking columns verified ✓');
+  } catch (err) {
+    console.error('[Schema Fix] Column check failed:', err.message);
+  }
+}
+
 const STRIPE_SECRET = process.env.STRIPE_SECRET_KEY;
 let stripe;
 try {
@@ -677,6 +714,7 @@ router.post('/quick-checkout', async (req, res) => {
     }
 
     // Create booking
+    await ensureBookingColumns();
     const bookingResult = await pool.query(
       `INSERT INTO public.bookings
         (gym_id, user_id, booking_date, start_time, end_time, total_amount,
@@ -1091,6 +1129,7 @@ router.post('/cash-booking', async (req, res) => {
     let booking;
     try {
       // S4-C05 FIX: Use authenticated userId instead of hardcoded 'guest'
+      await ensureBookingColumns();
       const bookingResult = await pool.query(
         `INSERT INTO public.bookings
           (gym_id, user_id, booking_date, start_time, end_time, total_amount,
@@ -1107,6 +1146,7 @@ router.post('/cash-booking', async (req, res) => {
       // Retry without platform_fee_amount if column doesn't exist
       try {
         // S4-C05 FIX: Use authenticated userId in retry path too
+        await ensureBookingColumns();
         const bookingResult = await pool.query(
           `INSERT INTO public.bookings
             (gym_id, user_id, booking_date, start_time, end_time, total_amount,
@@ -1526,6 +1566,7 @@ router.post('/first-free', async (req, res) => {
     const dayPrice = pricing.calculateGymPrice({ countryCode: g.country || 'GB', passType: 'day' });
 
     // Create booking at £0 — confirmed immediately!
+    await ensureBookingColumns();
     const bookingResult = await pool.query(
       `INSERT INTO public.bookings
         (gym_id, user_id, booking_date, start_time, end_time, total_amount,
