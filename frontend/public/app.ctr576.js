@@ -9403,123 +9403,267 @@ window.sgVerifyQR=async function(token){
 };
 
 // ═══ CEO DASHBOARD PAGE ═══
-// Server-rendered at /forceo — shows key business metrics
+// ═══════════════════════════════════════════════════════════════════
+//  CEO DASHBOARD — Full analytics + affiliate tracking (#160, #161)
+//  Auto-refreshes every 60s. Period toggle: 24h / 7d / 30d
+// ═══════════════════════════════════════════════════════════════════
+window._ceoPeriod='7d';
 function CeoDashboardPage(){
-  // Fetch stats on mount
   setTimeout(()=>sgLoadCeoStats(),100);
-  return`<div style="max-width:900px;margin:0 auto;padding:20px 16px">
-    <!-- Header -->
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+  const d=new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  return`<div style="max-width:960px;margin:0 auto;padding:20px 16px 80px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px">
       <div>
-        <h1 style="font-size:24px;font-weight:900;color:#fff;letter-spacing:-0.02em">ScanGym HQ</h1>
-        <p style="color:rgba(255,255,255,.4);font-size:13px">CEO Dashboard · <span id="ceo-date">${new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</span></p>
+        <h1 style="font-size:24px;font-weight:900;color:#fff;letter-spacing:-.02em">ScanGym HQ</h1>
+        <p style="color:rgba(255,255,255,.4);font-size:13px">CEO Dashboard · ${d}</p>
       </div>
-      <button onclick="sgLoadCeoStats()" style="background:rgba(255,109,0,.1);border:1px solid rgba(255,109,0,.2);color:#FF6D00;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer">↻ Refresh</button>
+      <div style="display:flex;gap:6px;align-items:center">
+        <div id="ceo-period-btns" style="display:flex;gap:4px;background:rgba(255,255,255,.04);border-radius:8px;padding:3px">
+          ${['24h','7d','30d'].map(p=>`<button onclick="window._ceoPeriod='${p}';sgLoadCeoStats();document.querySelectorAll('#ceo-period-btns button').forEach(b=>b.style.background='transparent');this.style.background='rgba(255,109,0,.2)';this.style.color='#FF6D00'" style="background:${p==='7d'?'rgba(255,109,0,.2)':'transparent'};border:none;color:${p==='7d'?'#FF6D00':'rgba(255,255,255,.5)'};border-radius:6px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer">${p}</button>`).join('')}
+        </div>
+        <button onclick="sgLoadCeoStats()" style="background:rgba(255,109,0,.1);border:1px solid rgba(255,109,0,.2);color:#FF6D00;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer">↻</button>
+      </div>
     </div>
 
-    <!-- Key Metrics Row -->
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px" id="ceo-metrics">
-      ${['Total Revenue','Bookings Today','Active Users','Gyms Listed','Conversion Rate','Avg Rating'].map(label=>
-        `<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:14px">
-          <p style="color:rgba(255,255,255,.4);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px">${label}</p>
-          <p class="ceo-metric-val" style="color:#fff;font-size:22px;font-weight:800;margin-top:4px" data-metric="${label.toLowerCase().replace(/\\s/g,'-')}">—</p>
-        </div>`
-      ).join('')}
+    <!-- Key Metrics -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:20px" id="ceo-kpi">
+      ${[
+        {label:'Unique Visitors',id:'visitors',icon:'👁️',color:'#3b82f6'},
+        {label:'Total Hits',id:'hits',icon:'📈',color:'#8b5cf6'},
+        {label:'Bookings',id:'bookings',icon:'📅',color:'#FF6D00'},
+        {label:'Revenue',id:'revenue',icon:'💰',color:'#22c55e'},
+        {label:'Conversion',id:'conversion',icon:'🎯',color:'#eab308'},
+        {label:'Avg Booking',id:'avg-booking',icon:'💳',color:'#ec4899'}
+      ].map(m=>`<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:14px">
+        <p style="color:rgba(255,255,255,.4);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px">${m.icon} ${m.label}</p>
+        <p id="kpi-${m.id}" style="color:${m.color};font-size:22px;font-weight:800;margin-top:4px">—</p>
+      </div>`).join('')}
     </div>
 
     <!-- Conversion Funnel -->
-    <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px;margin-bottom:20px">
-      <h2 style="color:#fff;font-size:16px;font-weight:700;margin-bottom:16px">📊 Conversion Funnel (Last 30 Days)</h2>
+    <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px;margin-bottom:16px">
+      <h2 style="color:#fff;font-size:15px;font-weight:700;margin-bottom:14px">📊 Conversion Funnel</h2>
       <div id="ceo-funnel" style="color:rgba(255,255,255,.3);font-size:13px">Loading...</div>
     </div>
 
-    <!-- Recent Bookings -->
-    <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px;margin-bottom:20px">
-      <h2 style="color:#fff;font-size:16px;font-weight:700;margin-bottom:16px">📋 Recent Bookings</h2>
-      <div id="ceo-bookings" style="color:rgba(255,255,255,.3);font-size:13px">Loading...</div>
+    <!-- Traffic Sources -->
+    <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px;margin-bottom:16px">
+      <h2 style="color:#fff;font-size:15px;font-weight:700;margin-bottom:14px">🌍 Traffic Sources</h2>
+      <div id="ceo-sources" style="color:rgba(255,255,255,.3);font-size:13px">Loading...</div>
     </div>
 
-    <!-- System Health -->
-    <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px;margin-bottom:20px">
-      <h2 style="color:#fff;font-size:16px;font-weight:700;margin-bottom:16px">🟢 System Health</h2>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px" id="ceo-health">
-        ${['API Server','Database','Stripe Payments','Email (SendGrid)'].map(svc=>
-          `<div style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(34,197,94,.05);border:1px solid rgba(34,197,94,.1);border-radius:8px">
-            <div style="width:8px;height:8px;border-radius:50%;background:#22c55e;flex-shrink:0"></div>
-            <span style="color:rgba(255,255,255,.7);font-size:13px">${svc}</span>
-          </div>`
-        ).join('')}
+    <!-- ═══ AFFILIATE TRACKING ═══ -->
+    <div style="background:linear-gradient(135deg,rgba(168,85,247,.06),rgba(255,109,0,.04));border:1px solid rgba(168,85,247,.15);border-radius:14px;padding:20px;margin-bottom:16px">
+      <h2 style="color:#fff;font-size:15px;font-weight:700;margin-bottom:4px">🤝 Affiliate / Creator Tracking</h2>
+      <p style="color:rgba(255,255,255,.35);font-size:11px;margin-bottom:16px">Real-time creator performance</p>
+      <!-- Affiliate KPIs -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:16px" id="ceo-aff-kpi">
+        ${[
+          {label:'Total Creators',id:'aff-creators',color:'#a855f7'},
+          {label:'New This Period',id:'aff-new',color:'#3b82f6'},
+          {label:'Total Referrals',id:'aff-referrals',color:'#FF6D00'},
+          {label:'Conversions',id:'aff-conversions',color:'#22c55e'},
+          {label:'Creator Revenue',id:'aff-revenue',color:'#eab308'}
+        ].map(m=>`<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:12px;text-align:center">
+          <p style="color:rgba(255,255,255,.35);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.3px">${m.label}</p>
+          <p id="kpi-${m.id}" style="color:${m.color};font-size:20px;font-weight:800;margin-top:2px">—</p>
+        </div>`).join('')}
+      </div>
+      <!-- Affiliate Leaderboard -->
+      <div style="margin-top:12px">
+        <p style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">🏆 Creator Leaderboard</p>
+        <div id="ceo-aff-list" style="color:rgba(255,255,255,.3);font-size:13px">Loading...</div>
       </div>
     </div>
 
-    <!-- Quick Actions -->
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:20px">
-      <button onclick="navigate('/staff/scan')" style="background:rgba(255,109,0,.1);border:1px solid rgba(255,109,0,.15);color:#FF6D00;padding:12px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;text-align:center">📷 QR Scanner</button>
-      <button onclick="navigate('/explore')" style="background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.15);color:#3b82f6;padding:12px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;text-align:center">🔍 Browse Gyms</button>
-      <button onclick="navigate('/creator-earnings')" style="background:rgba(168,85,247,.1);border:1px solid rgba(168,85,247,.15);color:#a855f7;padding:12px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;text-align:center">📊 Creator Stats</button>
+    <!-- Platform Stats -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px">
+      ${[
+        {label:'Gyms Listed',id:'plat-gyms',icon:'🏋️'},
+        {label:'Users',id:'plat-users',icon:'👤'},
+        {label:'All-time Bookings',id:'plat-bookings',icon:'📋'},
+        {label:'Cities',id:'plat-cities',icon:'🌆'}
+      ].map(m=>`<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:14px">
+        <p style="color:rgba(255,255,255,.4);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px">${m.icon} ${m.label}</p>
+        <p id="kpi-${m.id}" style="color:#fff;font-size:20px;font-weight:800;margin-top:4px">—</p>
+      </div>`).join('')}
     </div>
 
-    <p style="text-align:center;color:rgba(255,255,255,.15);font-size:11px;margin-top:24px">Auto-refreshes every 60s · Data from Supabase</p>
+    <!-- Top Pages -->
+    <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px;margin-bottom:16px">
+      <h2 style="color:#fff;font-size:15px;font-weight:700;margin-bottom:14px">📄 Top Pages</h2>
+      <div id="ceo-pages" style="color:rgba(255,255,255,.3);font-size:13px">Loading...</div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px">
+      <button onclick="navigate('/staff/scan')" style="background:rgba(255,109,0,.1);border:1px solid rgba(255,109,0,.15);color:#FF6D00;padding:12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;text-align:center">📷 QR Scanner</button>
+      <button onclick="navigate('/explore')" style="background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.15);color:#3b82f6;padding:12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;text-align:center">🔍 Browse Gyms</button>
+      <button onclick="navigate('/creator-earnings')" style="background:rgba(168,85,247,.1);border:1px solid rgba(168,85,247,.15);color:#a855f7;padding:12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;text-align:center">💜 Creator Stats</button>
+      <button onclick="navigate('/tools')" style="background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.15);color:#22c55e;padding:12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;text-align:center">🔧 Free Tools</button>
+    </div>
+
+    <p style="text-align:center;color:rgba(255,255,255,.15);font-size:11px;margin-top:24px">Auto-refreshes every 60s · <span id="ceo-last-refresh"></span></p>
   </div>`;
 }
 
-// Load CEO dashboard stats
+// ── Load all CEO stats ──
 window.sgLoadCeoStats=async function(){
+  const p=window._ceoPeriod||'7d';
   try{
-    // Fetch stats from the API
-    const [statsR,bookingsR]=await Promise.all([
-      fetch('/api/stats/ceo',{credentials:'include'}).catch(()=>null),
-      fetch('/api/bookings/recent?limit=10',{credentials:'include'}).catch(()=>null)
+    const [statsR,creatorsR]=await Promise.all([
+      fetch('/api/stats/ceo?period='+p,{credentials:'include'}).then(r=>r.ok?r.json():null).catch(()=>null),
+      fetch('/api/stats/ceo/creators?period='+p,{credentials:'include'}).then(r=>r.ok?r.json():null).catch(()=>null)
     ]);
+    const s=statsR||{};
+    const c=creatorsR||{};
 
-    // Parse real stats from API
-    const statsData=statsR&&statsR.ok?await statsR.json().catch(()=>null):null;
-    const bookingsData=bookingsR&&bookingsR.ok?await bookingsR.json().catch(()=>null):null;
-    const metrics=document.querySelectorAll('.ceo-metric-val');
-    const sd=statsData||{};
-    const rev=sd.revenue||sd.totalRevenue||sd.total_revenue;
-    const defaults={'total-revenue':rev!=null?'\u00A3'+parseFloat(rev).toFixed(2):'\u00A30','bookings-today':''+(sd.bookingsToday||sd.bookings_today||0),'active-users':''+(sd.activeUsers||sd.active_users||sd.traffic?.uniqueVisitors||0),'gyms-listed':''+(sd.gymsListed||sd.gyms_listed||58),'conversion-rate':(sd.conversionRate||sd.conversion_rate||sd.funnel?.conversionRate||'0%'),'avg-rating':''+(sd.avgRating||sd.avg_rating||'4.2')};
-    metrics.forEach(m=>{const key=m.dataset.metric;m.textContent=defaults[key]||'\u2014';});
+    // ── KPIs ──
+    const ti=s.trafficIn||{};
+    const mo=s.moneyOut||{};
+    const cf=s.conversionFunnel||{};
+    const pl=s.platform||{};
+    _ceoSet('kpi-visitors',_fmtNum(ti.uniqueVisitors));
+    _ceoSet('kpi-hits',_fmtNum(ti.totalHits));
+    _ceoSet('kpi-bookings',_fmtNum(mo.totalBookings));
+    _ceoSet('kpi-revenue',mo.estimatedRevenue||'£0');
+    _ceoSet('kpi-conversion',cf.overallConversion||'0%');
+    _ceoSet('kpi-avg-booking',mo.avgBookingValue||'£0');
 
-    // Funnel with real data
-    const funnel=document.getElementById('ceo-funnel');
-    if(funnel){
-      const f=sd.funnel||{};
-      const vis=f.visitors||0;
-      function fPct(n){return vis>0?Math.round(n/vis*100)+'%':'\u2014';}
+    // Platform
+    _ceoSet('kpi-plat-gyms',_fmtNum(pl.gyms));
+    _ceoSet('kpi-plat-users',_fmtNum(pl.users));
+    _ceoSet('kpi-plat-bookings',_fmtNum(pl.bookings));
+    _ceoSet('kpi-plat-cities',_fmtNum(pl.cities));
+
+    // ── Funnel ──
+    const fn=cf.funnel||{};
+    const sc=cf.stepConversions||{};
+    const funnelEl=document.getElementById('ceo-funnel');
+    if(funnelEl){
       const steps=[
-        {label:'Visitors',count:vis||'\u2014',pct:vis?'100%':'\u2014',color:'#3b82f6'},
-        {label:'Search',count:f.searched||'\u2014',pct:fPct(f.searched||0),color:'#8b5cf6'},
-        {label:'Gym Profile',count:f.viewedProfile||'\u2014',pct:fPct(f.viewedProfile||0),color:'#FF6D00'},
-        {label:'Checkout',count:f.startedCheckout||'\u2014',pct:fPct(f.startedCheckout||0),color:'#eab308'},
-        {label:'Paid Booking',count:f.paidBooking||f.completedBooking||'\u2014',pct:fPct(f.paidBooking||f.completedBooking||0),color:'#22c55e'}
+        {label:'Visitors',count:fn['1_visitors']||0,pct:'100%',conv:'',color:'#3b82f6',w:100},
+        {label:'Searched',count:fn['2_searched']||0,pct:sc.visitorToSearch||'0%',conv:sc.visitorToSearch,color:'#8b5cf6',w:_pctNum(fn['2_searched'],fn['1_visitors'])},
+        {label:'Viewed Profile',count:fn['3_viewed_profile']||0,pct:sc.searchToProfile||'0%',conv:sc.searchToProfile,color:'#FF6D00',w:_pctNum(fn['3_viewed_profile'],fn['1_visitors'])},
+        {label:'Started Checkout',count:fn['4_started_checkout']||0,pct:sc.profileToCheckout||'0%',conv:sc.profileToCheckout,color:'#eab308',w:_pctNum(fn['4_started_checkout'],fn['1_visitors'])},
+        {label:'Paid Booking',count:fn['5_paid_booking']||0,pct:sc.checkoutToPaid||'0%',conv:sc.checkoutToPaid,color:'#22c55e',w:_pctNum(fn['5_paid_booking'],fn['1_visitors'])}
       ];
-      funnel.innerHTML=steps.map((s,i)=>`
-        <div style="display:flex;align-items:center;gap:12px;padding:8px 0;${i<steps.length-1?'border-bottom:1px solid rgba(255,255,255,.04)':''}">
-          <div style="width:10px;height:10px;border-radius:50%;background:${s.color};flex-shrink:0"></div>
-          <span style="color:rgba(255,255,255,.7);font-size:13px;flex:1">${s.label}</span>
-          <span style="color:#fff;font-size:14px;font-weight:600;min-width:50px;text-align:right">${s.count}</span>
-          <span style="color:rgba(255,255,255,.3);font-size:12px;min-width:40px;text-align:right">${s.pct}</span>
+      funnelEl.innerHTML=steps.map((s,i)=>`
+        <div style="margin-bottom:${i<4?'8':'0'}px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <span style="color:rgba(255,255,255,.7);font-size:12px;font-weight:600">${s.label}</span>
+            <span style="color:#fff;font-size:13px;font-weight:700">${_fmtNum(s.count)} <span style="color:rgba(255,255,255,.3);font-size:11px">${i>0?'('+s.pct+' step)':''}</span></span>
+          </div>
+          <div style="height:8px;background:rgba(255,255,255,.04);border-radius:4px;overflow:hidden">
+            <div style="height:100%;width:${Math.max(s.w,2)}%;background:${s.color};border-radius:4px;transition:width .5s ease"></div>
+          </div>
+          ${i>0&&i<5?'<div style="text-align:right;margin-top:2px"><span style="color:rgba(255,255,255,.25);font-size:10px">↓ '+s.conv+' conversion</span></div>':''}
         </div>
       `).join('');
     }
 
-    // Recent bookings with real data
-    const bookings=document.getElementById('ceo-bookings');
-    if(bookings){
-      const bks=bookingsData?.bookings||[];
-      if(bks.length===0){
-        bookings.innerHTML='<p style="color:rgba(255,255,255,.3);font-size:13px;text-align:center;padding:12px">No bookings recorded yet. Data will appear once customers start booking.</p>';
+    // ── Traffic Sources ──
+    const sourcesEl=document.getElementById('ceo-sources');
+    if(sourcesEl){
+      const src=ti.sources||[];
+      if(src.length===0){
+        sourcesEl.innerHTML='<p style="color:rgba(255,255,255,.3);font-size:12px;text-align:center">No traffic data yet</p>';
       }else{
-        bookings.innerHTML=bks.slice(0,10).map(b=>'<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)"><div><span style="color:#fff;font-size:13px;font-weight:600">'+(b.gymName||'Gym')+'</span><br><span style="color:rgba(255,255,255,.35);font-size:11px">'+(b.date?new Date(b.date).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'')+(b.time?' '+b.time:'')+'</span></div><div style="text-align:right"><span style="color:#FF6D00;font-weight:700;font-size:13px">£'+(b.price||0).toFixed(2)+'</span><br><span style="font-size:10px;padding:2px 6px;border-radius:8px;'+(b.status==='confirmed'?'background:rgba(34,197,94,.15);color:#22c55e':'background:rgba(234,179,8,.15);color:#eab308')+'">'+(b.status||'')+'</span></div></div>').join('');
+        const maxVisits=Math.max(...src.map(s=>parseInt(s.visits)||1));
+        const srcIcons={Direct:'🔗',Google:'🔍',Instagram:'📸',TikTok:'🎵',Facebook:'📘','Twitter/X':'🐦',YouTube:'▶️',Other:'🌐'};
+        sourcesEl.innerHTML=src.map(s=>{
+          const pct=Math.round((parseInt(s.visits)/maxVisits)*100);
+          return`<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+            <span style="font-size:16px;width:24px;text-align:center">${srcIcons[s.source]||'🌐'}</span>
+            <span style="color:rgba(255,255,255,.7);font-size:12px;font-weight:600;width:80px">${s.source}</span>
+            <div style="flex:1;height:6px;background:rgba(255,255,255,.04);border-radius:3px;overflow:hidden">
+              <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,#FF6D00,#ff9a44);border-radius:3px"></div>
+            </div>
+            <span style="color:#fff;font-size:12px;font-weight:700;min-width:50px;text-align:right">${_fmtNum(parseInt(s.visits))}</span>
+            <span style="color:rgba(255,255,255,.3);font-size:10px;min-width:45px;text-align:right">${_fmtNum(parseInt(s.unique_visitors))} uniq</span>
+          </div>`;
+        }).join('');
       }
     }
-  }catch(e){
-    console.warn('CEO stats error:',e);
-  }
+
+    // ── Affiliate KPIs ──
+    _ceoSet('kpi-aff-creators',_fmtNum(c.totalCreators));
+    _ceoSet('kpi-aff-new',_fmtNum(c.newCreators));
+    _ceoSet('kpi-aff-referrals',_fmtNum(c.totalReferrals));
+    _ceoSet('kpi-aff-conversions',_fmtNum(c.totalConversions));
+    _ceoSet('kpi-aff-revenue',c.totalCreatorRevenue||'£0');
+
+    // ── Affiliate Leaderboard ──
+    const affEl=document.getElementById('ceo-aff-list');
+    if(affEl){
+      const creators=c.creators||[];
+      if(creators.length===0){
+        affEl.innerHTML='<p style="color:rgba(255,255,255,.3);font-size:12px;text-align:center;padding:12px">No creators yet. When creators sign up via /creators, they\'ll appear here with their referral stats.</p>';
+      }else{
+        const tierColors={Explorer:'#94a3b8',Hustler:'#3b82f6',Pro:'#a855f7',Elite:'#FF6D00'};
+        affEl.innerHTML=`<div style="display:grid;grid-template-columns:30px 1fr 70px 70px 70px 80px;gap:4px;margin-bottom:8px;padding:0 4px">
+          <span style="color:rgba(255,255,255,.25);font-size:10px;font-weight:700">#</span>
+          <span style="color:rgba(255,255,255,.25);font-size:10px;font-weight:700">CREATOR</span>
+          <span style="color:rgba(255,255,255,.25);font-size:10px;font-weight:700;text-align:right">CLICKS</span>
+          <span style="color:rgba(255,255,255,.25);font-size:10px;font-weight:700;text-align:right">CONVERTS</span>
+          <span style="color:rgba(255,255,255,.25);font-size:10px;font-weight:700;text-align:right">RATE</span>
+          <span style="color:rgba(255,255,255,.25);font-size:10px;font-weight:700;text-align:right">EARNED</span>
+        </div>`+creators.slice(0,20).map((cr,i)=>{
+          const refs=parseInt(cr.referrals)||0;
+          const conv=parseInt(cr.conversions)||0;
+          const rate=refs>0?((conv/refs)*100).toFixed(1)+'%':'0%';
+          const earned='£'+((parseInt(cr.earnings_pence)||0)/100).toFixed(2);
+          const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);
+          const tc=tierColors[cr.tier]||'#94a3b8';
+          return`<div style="display:grid;grid-template-columns:30px 1fr 70px 70px 70px 80px;gap:4px;padding:6px 4px;border-radius:8px;background:${i<3?'rgba(255,109,0,.03)':'transparent'};border-bottom:1px solid rgba(255,255,255,.03)">
+            <span style="color:rgba(255,255,255,.5);font-size:13px;font-weight:700">${medal}</span>
+            <div>
+              <span style="color:#fff;font-size:12px;font-weight:600">${cr.name||'Creator'}</span>
+              ${cr.handle?'<span style="color:rgba(255,255,255,.25);font-size:10px;margin-left:4px">@'+cr.handle+'</span>':''}
+              <span style="color:${tc};font-size:9px;font-weight:700;background:${tc}15;padding:1px 5px;border-radius:4px;margin-left:4px">${cr.tier||'Explorer'}</span>
+            </div>
+            <span style="color:rgba(255,255,255,.6);font-size:12px;font-weight:600;text-align:right">${_fmtNum(refs)}</span>
+            <span style="color:#22c55e;font-size:12px;font-weight:600;text-align:right">${_fmtNum(conv)}</span>
+            <span style="color:rgba(255,255,255,.4);font-size:12px;text-align:right">${rate}</span>
+            <span style="color:#eab308;font-size:12px;font-weight:700;text-align:right">${earned}</span>
+          </div>`;
+        }).join('');
+      }
+    }
+
+    // ── Top Pages ──
+    const pagesEl=document.getElementById('ceo-pages');
+    if(pagesEl){
+      const pages=s.topPages||[];
+      if(pages.length===0){
+        pagesEl.innerHTML='<p style="color:rgba(255,255,255,.3);font-size:12px;text-align:center">No page data yet</p>';
+      }else{
+        const maxHits=Math.max(...pages.map(p=>parseInt(p.hits)||1));
+        pagesEl.innerHTML=pages.slice(0,10).map(pg=>{
+          const pct=Math.round((parseInt(pg.hits)/maxHits)*100);
+          return`<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+            <span style="color:#FF6D00;font-size:11px;font-weight:600;min-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${pg.path}</span>
+            <div style="flex:1;height:5px;background:rgba(255,255,255,.04);border-radius:3px;overflow:hidden">
+              <div style="height:100%;width:${pct}%;background:rgba(255,109,0,.4);border-radius:3px"></div>
+            </div>
+            <span style="color:#fff;font-size:11px;font-weight:700;min-width:40px;text-align:right">${_fmtNum(parseInt(pg.hits))}</span>
+          </div>`;
+        }).join('');
+      }
+    }
+
+    // Refresh timestamp
+    const refreshEl=document.getElementById('ceo-last-refresh');
+    if(refreshEl) refreshEl.textContent='Updated '+new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+
+  }catch(e){console.warn('CEO stats error:',e);}
 };
 
-// Auto-refresh CEO dashboard
+// Helpers
+function _ceoSet(id,val){const el=document.getElementById(id);if(el)el.textContent=val||'—';}
+function _fmtNum(n){if(n==null||isNaN(n))return'—';n=parseInt(n);if(n>=1000000)return(n/1000000).toFixed(1)+'M';if(n>=1000)return(n/1000).toFixed(1)+'K';return''+n;}
+function _pctNum(a,b){if(!b||b===0)return 2;return Math.max(Math.round((a/b)*100),2);}
+
 setInterval(()=>{if(state.route==='/forceo')sgLoadCeoStats();},60000);
 
 // Init scanner when staff/scan page is rendered
