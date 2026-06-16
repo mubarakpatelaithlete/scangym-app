@@ -14188,8 +14188,8 @@ if(localStorage.getItem('sg_push_enabled')==='1'&&state.user){
   }
 })();
 
-// ═══ Performance Dashboard — call window.sgPerf() in console to see metrics ═══
-window.sgPerf=function(){
+// ═══ Performance Dashboard — call window.sgPerfDashboard() in console to see metrics ═══
+window.sgPerfDashboard=function(){
   var nav=performance.getEntriesByType('navigation')[0];
   var paint=performance.getEntriesByType('paint');
   var fcp=paint.find(function(p){return p.name==='first-contentful-paint';});
