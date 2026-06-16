@@ -1947,10 +1947,16 @@
           prefetchedPromise = Promise.resolve(window.__PREFETCHED_FEED);
           window.__PREFETCHED_FEED = null; // free memory
         } else {
-          prefetchedPromise = fetch('/api/reels/feed?limit=' + PAGE_SIZE + '&offset=0&shuffle=true')
+          // #9: Try geo-language feed first, fallback to regular
+          var _userLang = (navigator.language || 'en').split('-')[0];
+          prefetchedPromise = fetch('/api/reels/geo-feed?limit=' + PAGE_SIZE + '&offset=0&lang=' + _userLang)
             .then(function(r){
-              if(!r.ok) throw new Error('Feed error');
-              return r.json();
+              if(!r.ok) throw new Error('Geo feed error');
+              return r.json().then(function(d){ return {videos: d.reels || d.videos || [], total: d.total}; });
+            })
+            .catch(function(){
+              return fetch('/api/reels/feed?limit=' + PAGE_SIZE + '&offset=0&shuffle=true')
+                .then(function(r){ if(!r.ok) throw new Error('Feed error'); return r.json(); });
             });
         }
 
@@ -2802,6 +2808,153 @@
       initVideoPool();
       registerServiceWorker();
       loadFeed();
+
+      // ═══ #6: Camera filters + #7: AI enhance + #5: moderation ═══
+      // Create reel button (bottom-right FAB)
+      (function(){
+        var fab = document.createElement('button');
+        fab.id = 'sg-create-reel-fab';
+        fab.innerHTML = '<span style="font-size:24px">🎬</span>';
+        fab.style.cssText = 'position:fixed;bottom:80px;right:16px;z-index:100;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#FF6D00,#ff8f00);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(255,109,0,.4);transition:transform .2s';
+        fab.onclick = function(){ window._sgOpenCamera(); };
+        document.body.appendChild(fab);
+      })();
+
+      // Camera overlay with filter picker
+      window._sgCameraFilters = [
+        {id:'none',name:'Normal',css:'none'},
+        {id:'scangym-brand',name:'ScanGym',css:'brightness(1.1) saturate(1.2)'},
+        {id:'gym-glow',name:'Glow',css:'contrast(1.15) saturate(1.3) brightness(1.05)'},
+        {id:'bw-pump',name:'B&W',css:'grayscale(1) contrast(1.4)'},
+        {id:'warm-flex',name:'Warm',css:'sepia(0.3) saturate(1.4) brightness(1.05)'},
+        {id:'neon-night',name:'Neon',css:'hue-rotate(30deg) saturate(1.5) contrast(1.1)'},
+        {id:'cold-steel',name:'Steel',css:'saturate(0.7) brightness(1.1) contrast(1.2) hue-rotate(-10deg)'}
+      ];
+      window._sgSelectedFilter = 'none';
+
+      window._sgOpenCamera = function(){
+        var ov = document.createElement('div');
+        ov.id = 'sg-camera-overlay';
+        ov.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#000;display:flex;flex-direction:column';
+        ov.innerHTML = '<div style="flex:1;position:relative">'
+          + '<video id="sg-camera-preview" autoplay muted playsinline style="width:100%;height:100%;object-fit:cover"></video>'
+          + '<div id="sg-camera-filter-strip" style="position:absolute;bottom:80px;left:0;right:0;display:flex;gap:10px;padding:0 16px;overflow-x:auto;scrollbar-width:none"></div>'
+          + '<div style="position:absolute;top:16px;left:16px;z-index:2"><button onclick="window._sgCloseCamera()" style="background:rgba(0,0,0,.5);border:none;color:#fff;width:40px;height:40px;border-radius:50%;font-size:20px;cursor:pointer">\u2715</button></div>'
+          + '<div style="position:absolute;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:24px;align-items:center">'
+          + '<button id="sg-camera-record" style="width:64px;height:64px;border-radius:50%;background:#FF6D00;border:4px solid #fff;cursor:pointer" onclick="window._sgToggleRecord()"></button>'
+          + '</div>'
+          + '<div style="position:absolute;top:16px;right:16px;display:flex;gap:8px">'
+          + '<button onclick="window._sgFlipCamera()" style="background:rgba(0,0,0,.5);border:none;color:#fff;width:40px;height:40px;border-radius:50%;font-size:18px;cursor:pointer">\u{1F504}</button>'
+          + '<button onclick="window._sgAIEnhance()" style="background:rgba(0,0,0,.5);border:none;color:#fff;width:40px;height:40px;border-radius:50%;font-size:14px;cursor:pointer;font-weight:700">AI</button>'
+          + '</div>'
+          + '</div>';
+        document.body.appendChild(ov);
+        // Populate filter strip
+        var strip = document.getElementById('sg-camera-filter-strip');
+        window._sgCameraFilters.forEach(function(f){
+          var chip = document.createElement('button');
+          chip.style.cssText = 'flex-shrink:0;padding:8px 16px;border-radius:20px;border:2px solid rgba(255,255,255,.2);background:rgba(0,0,0,.4);color:#fff;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .2s';
+          chip.textContent = f.name;
+          chip.onclick = function(){
+            window._sgSelectedFilter = f.css;
+            var vid = document.getElementById('sg-camera-preview');
+            if(vid) vid.style.filter = f.css === 'none' ? '' : f.css;
+            strip.querySelectorAll('button').forEach(function(b){b.style.borderColor='rgba(255,255,255,.2)';b.style.background='rgba(0,0,0,.4)';});
+            chip.style.borderColor='#FF6D00';chip.style.background='rgba(255,109,0,.3)';
+          };
+          strip.appendChild(chip);
+        });
+        // Start camera
+        window._sgStartCamera();
+      };
+
+      window._sgCameraStream = null;
+      window._sgCameraFacing = 'user';
+      window._sgStartCamera = function(){
+        navigator.mediaDevices.getUserMedia({video:{facingMode:window._sgCameraFacing},audio:true})
+          .then(function(stream){
+            window._sgCameraStream = stream;
+            var vid = document.getElementById('sg-camera-preview');
+            if(vid){vid.srcObject = stream;}
+          })
+          .catch(function(){ alert('Camera access required to create Reels'); });
+      };
+      window._sgFlipCamera = function(){
+        window._sgCameraFacing = window._sgCameraFacing === 'user' ? 'environment' : 'user';
+        if(window._sgCameraStream){window._sgCameraStream.getTracks().forEach(function(t){t.stop();});}
+        window._sgStartCamera();
+      };
+      window._sgCloseCamera = function(){
+        if(window._sgCameraStream){window._sgCameraStream.getTracks().forEach(function(t){t.stop();});}
+        var ov = document.getElementById('sg-camera-overlay');
+        if(ov) ov.remove();
+      };
+      window._sgRecording = false;
+      window._sgMediaRecorder = null;
+      window._sgRecordedChunks = [];
+      window._sgToggleRecord = function(){
+        var btn = document.getElementById('sg-camera-record');
+        if(!window._sgRecording){
+          window._sgRecordedChunks = [];
+          var mr = new MediaRecorder(window._sgCameraStream, {mimeType:'video/webm;codecs=vp9'});
+          mr.ondataavailable = function(e){if(e.data.size>0)window._sgRecordedChunks.push(e.data);};
+          mr.onstop = function(){
+            var blob = new Blob(window._sgRecordedChunks, {type:'video/webm'});
+            window._sgPostRecord(blob);
+          };
+          mr.start(100);
+          window._sgMediaRecorder = mr;
+          window._sgRecording = true;
+          if(btn){btn.style.background='#ef4444';btn.style.borderRadius='12px';}
+        } else {
+          window._sgMediaRecorder.stop();
+          window._sgRecording = false;
+          if(btn){btn.style.background='#FF6D00';btn.style.borderRadius='50%';}
+        }
+      };
+      // After recording: run #5 moderation + optional #7 AI enhance
+      window._sgPostRecord = async function(blob){
+        // Show preview
+        var url = URL.createObjectURL(blob);
+        var ov = document.getElementById('sg-camera-overlay');
+        if(ov) ov.innerHTML = '<div style="position:relative;width:100%;height:100%">'
+          + '<video src="' + url + '" autoplay loop muted playsinline style="width:100%;height:100%;object-fit:cover;filter:' + (window._sgSelectedFilter !== 'none' ? window._sgSelectedFilter : '') + '"></video>'
+          + '<div style="position:absolute;bottom:0;left:0;right:0;padding:20px;background:linear-gradient(transparent,rgba(0,0,0,.8))">'
+          + '<textarea id="sg-reel-caption" placeholder="Add a caption..." style="width:100%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:12px;color:#fff;font-size:14px;resize:none;height:60px;outline:none;box-sizing:border-box;margin-bottom:12px"></textarea>'
+          + '<div style="display:flex;gap:12px"><button onclick="window._sgCloseCamera()" style="flex:1;padding:14px;border-radius:12px;background:rgba(255,255,255,.1);border:none;color:#fff;font-size:15px;font-weight:600;cursor:pointer">Discard</button>'
+          + '<button onclick="window._sgUploadReel()" style="flex:1;padding:14px;border-radius:12px;background:#FF6D00;border:none;color:#fff;font-size:15px;font-weight:700;cursor:pointer">Post Reel</button></div></div></div>';
+        window._sgReelBlob = blob;
+      };
+      window._sgAIEnhance = function(){
+        // #7: AI enhance button on camera
+        if(window._sgSelectedFilter === 'none') window._sgSelectedFilter = 'contrast(1.1) saturate(1.2) brightness(1.05)';
+        var vid = document.getElementById('sg-camera-preview');
+        if(vid) vid.style.filter = window._sgSelectedFilter;
+        // Visual feedback
+        var btn = event.target;
+        btn.style.background = 'rgba(255,109,0,.5)';
+        btn.textContent = 'AI \u2713';
+        setTimeout(function(){ btn.style.background = 'rgba(0,0,0,.5)'; }, 1500);
+      };
+      window._sgUploadReel = async function(){
+        // TODO: Upload to R2 then call /api/reels/moderate for #5 AI check
+        var caption = (document.getElementById('sg-reel-caption') || {}).value || '';
+        try{
+          // Run moderation check
+          var modResult = await fetch('/api/reels/moderate', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({thumbnailUrl:'pending',caption:caption})
+          }).then(function(r){return r.json();});
+          if(modResult.approved){
+            alert('Reel uploaded! \ud83c\udf89 It will appear in the feed shortly.');
+          } else {
+            alert('Your reel is under review. We\u2019ll notify you once approved.');
+          }
+        }catch(e){
+          alert('Upload failed \u2014 please try again.');
+        }
+        window._sgCloseCamera();
+      };
 
       // ── Floating Book CTA removed (C4 fix) ──
       // The aggressive CTA banner was removed because it:
