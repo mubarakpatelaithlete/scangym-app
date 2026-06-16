@@ -638,4 +638,29 @@ router.post('/stripe-connect', async (req, res) => {
   }
 });
 
+// ─── #58 Track asset download for affiliate analytics ───
+router.post('/track-download', async (req, res) => {
+  try {
+    const { handle, asset } = req.body;
+    if (!handle) return res.status(400).json({ error: 'Missing creator handle' });
+    
+    // Log the download event (insert into referral_events or just log)
+    try {
+      await pool.query(
+        `INSERT INTO referral_events (creator_handle, event_type, metadata, created_at)
+         VALUES ($1, 'asset_download', $2, NOW())`,
+        [handle, JSON.stringify({ asset: asset || 'unknown' })]
+      );
+    } catch (dbErr) {
+      // Table might not exist yet — log and continue
+      console.log(`[Download] Tracked: ${handle} downloaded ${asset || 'asset'} (DB: ${dbErr.message})`);
+    }
+    
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[Download] Error:', err.message);
+    res.json({ success: true }); // Don't block downloads on tracking errors
+  }
+});
+
 module.exports = router;

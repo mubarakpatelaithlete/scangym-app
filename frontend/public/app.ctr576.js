@@ -29,6 +29,22 @@ window.sgGetAffiliateUrl=function(path){
   return 'https://scangym.com/r/'+handle;
 };
 
+// ─── #58 Download with Affiliate Link: auto-copy caption with creator link on asset download ───
+window.sgDownloadWithAffiliate=function(assetName,evt){
+  // When a creator downloads a toolkit asset, auto-copy a social caption with their affiliate link
+  var url=sgGetAffiliateUrl();
+  var caption='🏋️ Book any gym, anywhere — no membership needed! '+url+' #ScanGym #Fitness';
+  navigator.clipboard.writeText(caption).then(function(){
+    sgToast('✅ Downloaded! Caption with your link copied to clipboard — paste when sharing','success',4000);
+  }).catch(function(){});
+  // Track the download for affiliate analytics
+  if(typeof fetch!=='undefined'){
+    var handle='';
+    try{var c=JSON.parse(localStorage.getItem('sg_creator')||'null');if(c&&c.handle)handle=c.handle;}catch(e){}
+    if(handle){fetch('/api/referrals/track-download',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({handle:handle,asset:assetName})}).catch(function(){});}
+  }
+};
+
 // ─── Toast Notification System (replaces alert()) ───
 window.sgToast=function(msg, type='error', duration=4000){
   const existing=document.getElementById('sg-toast');
@@ -6815,7 +6831,7 @@ function CreatorsPage(){
               <div class="aspect-square bg-slate-800 overflow-hidden relative">
                 <img src="${ctrThumb(a.cat,a.file)}" alt="${a.name}" class="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300" width="250" height="250" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\'flex items-center justify-center h-full text-3xl\'>${a.type==='video'?'🎬':'📸'}</div>'">${a.type==='video'?`<div class="absolute inset-0 flex items-center justify-center pointer-events-none"><div class="w-12 h-12 bg-brand/80 rounded-full flex items-center justify-center group-hover:bg-brand transition shadow-lg"><span class="text-white text-lg ml-0.5">▶</span></div></div>`:``}
                 <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition">
-                  <a href="${a.did?`https://drive.google.com/uc?export=download&id=${a.did}`:`${A}/${folder}/${a.file}`}" download="${a.file}" onclick="event.stopPropagation()" class="bg-brand hover:bg-green-500 text-white text-[10px] px-2.5 py-1.5 rounded-full font-bold shadow-lg flex items-center gap-1 no-underline" title="Download ${a.name}">⬇ Download</a>
+                  <a href="${a.did?`https://drive.google.com/uc?export=download&id=${a.did}`:`${A}/${folder}/${a.file}`}" download="${a.file}" onclick="event.stopPropagation();sgDownloadWithAffiliate('${a.name}')" class="bg-brand hover:bg-green-500 text-white text-[10px] px-2.5 py-1.5 rounded-full font-bold shadow-lg flex items-center gap-1 no-underline" title="Download ${a.name}">⬇ Download</a>
                 </div>
               </div>
               <div class="p-2.5 flex items-center justify-between">
@@ -6823,7 +6839,7 @@ function CreatorsPage(){
                   <p class="text-white text-xs font-medium truncate">${a.name}</p>
                   <p class="text-slate-500 text-[10px]">${a.cat}</p>
                 </div>
-                <a href="${a.did?`https://drive.google.com/uc?export=download&id=${a.did}`:`${A}/${folder}/${a.file}`}" download="${a.file}" onclick="event.stopPropagation()" class="ml-2 flex-shrink-0 bg-slate-700 hover:bg-brand text-white rounded-lg p-1.5 transition" title="Download">
+                <a href="${a.did?`https://drive.google.com/uc?export=download&id=${a.did}`:`${A}/${folder}/${a.file}`}" download="${a.file}" onclick="event.stopPropagation();sgDownloadWithAffiliate('${a.name}')" class="ml-2 flex-shrink-0 bg-slate-700 hover:bg-brand text-white rounded-lg p-1.5 transition" title="Download">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 </a>
               </div>
