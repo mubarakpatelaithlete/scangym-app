@@ -774,6 +774,7 @@ window.addEventListener('message',function(e){
 // ─── Conviction Techniques (Task 9) ───
 const BADGES=[
   {icon:'✅',text:'Free cancellation',type:'risk'},
+  {icon:'🛡️',text:'First 3 bookings 100% money-back guarantee',type:'risk'},
   {icon:'🔒',text:'No membership needed',type:'risk'},
 ];
 
@@ -2115,14 +2116,44 @@ function GymProfilePage(){
             <span class="gym-pay-item-label">Credit or debit card</span>
             <span style="color:#999;font-size:20px">›</span>
           </div>
-          <div class="gym-pay-add-item" onclick="sgToast('PayPal coming soon!','info',2000)">
+          <div class="gym-pay-add-item" onclick="window._payConnectPayPal()">
             <div class="gym-pay-add-item-icon" style="background:#e3f2fd"><span style="color:#003087;font-size:14px;font-weight:800">P</span></div>
             <span class="gym-pay-item-label">PayPal</span>
             <span style="color:#999;font-size:20px">›</span>
           </div>
-          <div class="gym-pay-add-item" onclick="sgToast('Gift cards coming soon!','info',2000)">
+          <div class="gym-pay-add-item" onclick="window._payConnectGooglePay()">
+            <div class="gym-pay-add-item-icon" style="background:#f1f3f4"><span style="font-size:18px">🌐</span></div>
+            <span class="gym-pay-item-label">Google Pay</span>
+            <span style="color:#999;font-size:20px">›</span>
+          </div>
+          <div class="gym-pay-add-item" onclick="window._payConnectApplePay()">
+            <div class="gym-pay-add-item-icon" style="background:#000"><span style="color:#fff;font-size:16px;font-weight:800"></span></div>
+            <span class="gym-pay-item-label">Apple Pay</span>
+            <span style="color:#999;font-size:20px">›</span>
+          </div>
+          <div class="gym-pay-add-item" onclick="window._payConnectSamsungPay()">
+            <div class="gym-pay-add-item-icon" style="background:#1428a0"><span style="color:#fff;font-size:12px;font-weight:800">S</span></div>
+            <span class="gym-pay-item-label">Samsung Pay</span>
+            <span style="color:#999;font-size:20px">›</span>
+          </div>
+          <div class="gym-pay-add-item" onclick="window._payRedeemGiftCard()">
             <div class="gym-pay-add-item-icon" style="background:#f3e5f5"><span style="font-size:18px">🎁</span></div>
             <span class="gym-pay-item-label">Gift card</span>
+            <span style="color:#999;font-size:20px">›</span>
+          </div>
+          <div class="gym-pay-add-item" onclick="window._payConnectCrypto()">
+            <div class="gym-pay-add-item-icon" style="background:rgba(247,147,26,.13)"><span style="font-size:18px">₿</span></div>
+            <span class="gym-pay-item-label">Bitcoin / Crypto</span>
+            <span style="color:#999;font-size:20px">›</span>
+          </div>
+          <div class="gym-pay-add-item" onclick="window._payBankTransfer()">
+            <div class="gym-pay-add-item-icon" style="background:#e8f5e9"><span style="font-size:18px">🏦</span></div>
+            <span class="gym-pay-item-label">Bank transfer</span>
+            <span style="color:#999;font-size:20px">›</span>
+          </div>
+          <div class="gym-pay-add-item" onclick="window._payBNPL()">
+            <div class="gym-pay-add-item-icon" style="background:#fce4ec"><span style="font-size:14px;font-weight:800;color:#e91e63">K</span></div>
+            <span class="gym-pay-item-label">Buy now, pay later</span>
             <span style="color:#999;font-size:20px">›</span>
           </div>
         </div>
@@ -3314,7 +3345,7 @@ window._ensurePaySheetHTML=function(){
   }
   // Inject pay sheet HTML
   var div=document.createElement('div');
-  div.innerHTML='<div class="gym-pay-sheet" id="gym-pay-sheet" onclick="if(event.target===this||event.target.classList.contains(\'gym-pay-sheet-bg\'))closePaySheet()"><div class="gym-pay-sheet-bg"></div><div class="gym-pay-sheet-panel"><div class="gym-pay-sheet-drag"></div><div id="gym-pay-main-sheet"><div class="gym-pay-sheet-header"><button class="gym-pay-sheet-close" onclick="closePaySheet()">\u2715</button><button class="gym-pay-sheet-add-btn" onclick="window._paySheetShowAdd()">+ Add</button></div><div class="gym-pay-sheet-title">Pay with</div><div style="padding:8px 20px 0"><div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0"><span style="color:#000;font-size:17px;font-weight:700;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif">ScanGym balance</span><label style="position:relative;display:inline-block;width:48px;height:28px;cursor:pointer"><input type="checkbox" checked style="opacity:0;width:0;height:0" onchange="window._payToggleBalance(this)"><span id="sg-pay-toggle-track" style="position:absolute;inset:0;background:#000;border-radius:28px;transition:.3s"></span><span id="sg-pay-toggle-dot" style="position:absolute;height:22px;width:22px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s;transform:translateX(20px)"></span></label></div></div><div style="display:flex;align-items:center;gap:14px;padding:14px 20px"><div style="width:36px;height:36px;border-radius:8px;background:#FF6D00;display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="color:#fff;font-size:11px;font-weight:800">SG</span></div><span style="flex:1;color:#333;font-size:15px;font-weight:500;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif">ScanGym Credits: \u00a30.00</span></div><div style="height:1px;background:rgba(0,0,0,.06);margin:0 20px"></div><div class="gym-pay-section-title">Payment methods</div><div id="gym-pay-saved-cards"></div><div id="gym-pay-options"><div class="gym-pay-item" onclick="selectPayMethod(this,\'cash\')" data-method="cash"><div class="gym-pay-item-icon" style="background:#e8f5e9;border-radius:8px"><span style="font-size:18px">\ud83d\udcb7</span></div><span class="gym-pay-item-label">Cash</span><div class="gym-pay-item-check"></div></div></div><button class="gym-pay-save-btn" onclick="closePaySheet()">Save</button></div><div id="gym-pay-add-sheet" style="display:none"><div class="gym-pay-add-back" onclick="window._paySheetShowMain()"><span style="color:#000;font-size:22px">\u2190</span><span class="gym-pay-add-title">Add a payment method</span></div><div class="gym-pay-add-item" onclick="window._paySheetShowCardForm()"><div class="gym-pay-add-item-icon"><span style="font-size:18px">\ud83d\udcb3</span></div><span class="gym-pay-item-label">Credit or debit card</span><span style="color:#999;font-size:20px">\u203a</span></div><div class="gym-pay-add-item" onclick="sgToast(\'PayPal coming soon!\',\'info\',2000)"><div class="gym-pay-add-item-icon" style="background:#e3f2fd"><span style="color:#003087;font-size:14px;font-weight:800">P</span></div><span class="gym-pay-item-label">PayPal</span><span style="color:#999;font-size:20px">\u203a</span></div><div class="gym-pay-add-item" onclick="sgToast(\'Gift cards coming soon!\',\'info\',2000)"><div class="gym-pay-add-item-icon" style="background:#f3e5f5"><span style="font-size:18px">\ud83c\udf81</span></div><span class="gym-pay-item-label">Gift card</span><span style="color:#999;font-size:20px">\u203a</span></div></div><div id="gym-pay-card-sheet" style="display:none"><div class="gym-pay-add-back" onclick="window._paySheetShowAdd()"><span style="color:#000;font-size:22px">\u2190</span><span class="gym-pay-add-title">Add a payment method</span></div><div style="padding:16px 20px 8px"><div style="color:#000;font-size:26px;font-weight:800;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;line-height:1.2">Add credit or<br>debit card</div></div><div style="padding:8px 20px"><div style="margin-bottom:16px"><label style="color:#333;font-size:13px;font-weight:600;display:block;margin-bottom:6px">Card number</label><div id="gym-pay-inline-card-number" style="padding:14px 16px;background:#f5f5f5;border:1px solid #ddd;border-radius:8px;min-height:20px"></div></div><div style="display:flex;gap:12px;margin-bottom:16px"><div style="flex:1"><label style="color:#333;font-size:13px;font-weight:600;display:block;margin-bottom:6px">Exp. date</label><div id="gym-pay-inline-expiry" style="padding:14px 16px;background:#f5f5f5;border:1px solid #ddd;border-radius:8px;min-height:20px"></div></div><div style="flex:1"><div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><label style="color:#333;font-size:13px;font-weight:600">Security code</label><span style="color:#999;font-size:14px;cursor:help" title="3-digit code on back of card">\u2753</span></div><div id="gym-pay-inline-cvc" style="padding:14px 16px;background:#f5f5f5;border:1px solid #ddd;border-radius:8px;min-height:20px"></div></div></div><div style="margin-bottom:16px"><label style="color:#333;font-size:13px;font-weight:600;display:block;margin-bottom:6px">Country</label><select id="gym-pay-inline-country" style="width:100%;padding:14px 16px;background:#f5f5f5;border:1px solid #ddd;border-radius:8px;font-size:15px;color:#333;-webkit-appearance:none;appearance:none;cursor:pointer"><option value=\'GB\' selected>United Kingdom</option><option value=\'US\'>United States</option><option value=\'IE\'>Ireland</option><option value=\'DE\'>Germany</option><option value=\'FR\'>France</option><option value=\'ES\'>Spain</option><option value=\'IT\'>Italy</option><option value=\'NL\'>Netherlands</option><option value=\'AU\'>Australia</option><option value=\'CA\'>Canada</option></select></div><div style="margin-bottom:16px"><label style="color:#333;font-size:13px;font-weight:600;display:block;margin-bottom:6px">Postcode</label><input id="gym-pay-inline-postcode" type="text" style="width:100%;padding:14px 16px;background:#f5f5f5;border:1px solid #ddd;border-radius:8px;font-size:15px;color:#333;outline:none;box-sizing:border-box" /></div><div style="margin-bottom:8px"><label style="color:#333;font-size:13px;font-weight:600;display:block;margin-bottom:6px">Nickname (optional)</label><input id="gym-pay-inline-nickname" type="text" style="width:100%;padding:14px 16px;background:#f5f5f5;border:1px solid #ddd;border-radius:8px;font-size:15px;color:#333;outline:none;box-sizing:border-box" /></div></div><button id="gym-pay-inline-save" class="gym-pay-save-btn" onclick="window._paySheetSaveCard()" style="opacity:.5;pointer-events:none">Add card</button><p id="gym-pay-inline-error" style="color:#ef4444;font-size:13px;padding:0 20px;display:none"></p><div style="text-align:center;padding:8px 0 16px"><button onclick="window._paySheetShowAdd()" style="background:none;border:none;color:#999;font-size:14px;cursor:pointer;padding:8px 16px">Cancel</button></div></div></div></div>';
+  div.innerHTML='<div class="gym-pay-sheet" id="gym-pay-sheet" onclick="if(event.target===this||event.target.classList.contains(\'gym-pay-sheet-bg\'))closePaySheet()"><div class="gym-pay-sheet-bg"></div><div class="gym-pay-sheet-panel"><div class="gym-pay-sheet-drag"></div><div id="gym-pay-main-sheet"><div class="gym-pay-sheet-header"><button class="gym-pay-sheet-close" onclick="closePaySheet()">\u2715</button><button class="gym-pay-sheet-add-btn" onclick="window._paySheetShowAdd()">+ Add</button></div><div class="gym-pay-sheet-title">Pay with</div><div style="padding:8px 20px 0"><div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0"><span style="color:#000;font-size:17px;font-weight:700;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif">ScanGym balance</span><label style="position:relative;display:inline-block;width:48px;height:28px;cursor:pointer"><input type="checkbox" checked style="opacity:0;width:0;height:0" onchange="window._payToggleBalance(this)"><span id="sg-pay-toggle-track" style="position:absolute;inset:0;background:#000;border-radius:28px;transition:.3s"></span><span id="sg-pay-toggle-dot" style="position:absolute;height:22px;width:22px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s;transform:translateX(20px)"></span></label></div></div><div style="display:flex;align-items:center;gap:14px;padding:14px 20px"><div style="width:36px;height:36px;border-radius:8px;background:#FF6D00;display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="color:#fff;font-size:11px;font-weight:800">SG</span></div><span style="flex:1;color:#333;font-size:15px;font-weight:500;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif">ScanGym Credits: \u00a30.00</span></div><div style="height:1px;background:rgba(0,0,0,.06);margin:0 20px"></div><div class="gym-pay-section-title">Payment methods</div><div id="gym-pay-saved-cards"></div><div id="gym-pay-options"><div class="gym-pay-item" onclick="selectPayMethod(this,\'cash\')" data-method="cash"><div class="gym-pay-item-icon" style="background:#e8f5e9;border-radius:8px"><span style="font-size:18px">\ud83d\udcb7</span></div><span class="gym-pay-item-label">Cash</span><div class="gym-pay-item-check"></div></div></div><button class="gym-pay-save-btn" onclick="closePaySheet()">Save</button></div><div id="gym-pay-add-sheet" style="display:none"><div class="gym-pay-add-back" onclick="window._paySheetShowMain()"><span style="color:#000;font-size:22px">\u2190</span><span class="gym-pay-add-title">Add a payment method</span></div><div class="gym-pay-add-item" onclick="window._paySheetShowCardForm()"><div class="gym-pay-add-item-icon"><span style="font-size:18px">\ud83d\udcb3</span></div><span class="gym-pay-item-label">Credit or debit card</span><span style="color:#999;font-size:20px">\u203a</span></div><div class="gym-pay-add-item" onclick="window._payConnectPayPal()"><div class="gym-pay-add-item-icon" style="background:#e3f2fd"><span style="color:#003087;font-size:14px;font-weight:800">P</span></div><span class="gym-pay-item-label">PayPal</span><span style="color:#999;font-size:20px">\u203a</span></div><div class="gym-pay-add-item" onclick="window._payRedeemGiftCard()"><div class="gym-pay-add-item-icon" style="background:#f3e5f5"><span style="font-size:18px">\ud83c\udf81</span></div><span class="gym-pay-item-label">Gift card</span><span style="color:#999;font-size:20px">\u203a</span></div></div><div id="gym-pay-card-sheet" style="display:none"><div class="gym-pay-add-back" onclick="window._paySheetShowAdd()"><span style="color:#000;font-size:22px">\u2190</span><span class="gym-pay-add-title">Add a payment method</span></div><div style="padding:16px 20px 8px"><div style="color:#000;font-size:26px;font-weight:800;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;line-height:1.2">Add credit or<br>debit card</div></div><div style="padding:8px 20px"><div style="margin-bottom:16px"><label style="color:#333;font-size:13px;font-weight:600;display:block;margin-bottom:6px">Card number</label><div id="gym-pay-inline-card-number" style="padding:14px 16px;background:#f5f5f5;border:1px solid #ddd;border-radius:8px;min-height:20px"></div></div><div style="display:flex;gap:12px;margin-bottom:16px"><div style="flex:1"><label style="color:#333;font-size:13px;font-weight:600;display:block;margin-bottom:6px">Exp. date</label><div id="gym-pay-inline-expiry" style="padding:14px 16px;background:#f5f5f5;border:1px solid #ddd;border-radius:8px;min-height:20px"></div></div><div style="flex:1"><div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><label style="color:#333;font-size:13px;font-weight:600">Security code</label><span style="color:#999;font-size:14px;cursor:help" title="3-digit code on back of card">\u2753</span></div><div id="gym-pay-inline-cvc" style="padding:14px 16px;background:#f5f5f5;border:1px solid #ddd;border-radius:8px;min-height:20px"></div></div></div><div style="margin-bottom:16px"><label style="color:#333;font-size:13px;font-weight:600;display:block;margin-bottom:6px">Country</label><select id="gym-pay-inline-country" style="width:100%;padding:14px 16px;background:#f5f5f5;border:1px solid #ddd;border-radius:8px;font-size:15px;color:#333;-webkit-appearance:none;appearance:none;cursor:pointer"><option value=\'GB\' selected>United Kingdom</option><option value=\'US\'>United States</option><option value=\'IE\'>Ireland</option><option value=\'DE\'>Germany</option><option value=\'FR\'>France</option><option value=\'ES\'>Spain</option><option value=\'IT\'>Italy</option><option value=\'NL\'>Netherlands</option><option value=\'AU\'>Australia</option><option value=\'CA\'>Canada</option></select></div><div style="margin-bottom:16px"><label style="color:#333;font-size:13px;font-weight:600;display:block;margin-bottom:6px">Postcode</label><input id="gym-pay-inline-postcode" type="text" style="width:100%;padding:14px 16px;background:#f5f5f5;border:1px solid #ddd;border-radius:8px;font-size:15px;color:#333;outline:none;box-sizing:border-box" /></div><div style="margin-bottom:8px"><label style="color:#333;font-size:13px;font-weight:600;display:block;margin-bottom:6px">Nickname (optional)</label><input id="gym-pay-inline-nickname" type="text" style="width:100%;padding:14px 16px;background:#f5f5f5;border:1px solid #ddd;border-radius:8px;font-size:15px;color:#333;outline:none;box-sizing:border-box" /></div></div><button id="gym-pay-inline-save" class="gym-pay-save-btn" onclick="window._paySheetSaveCard()" style="opacity:.5;pointer-events:none">Add card</button><p id="gym-pay-inline-error" style="color:#ef4444;font-size:13px;padding:0 20px;display:none"></p><div style="text-align:center;padding:8px 0 16px"><button onclick="window._paySheetShowAdd()" style="background:none;border:none;color:#999;font-size:14px;cursor:pointer;padding:8px 16px">Cancel</button></div></div></div></div>';
   document.body.appendChild(div.firstChild);
 };
 window.openPaySheet=function(){
@@ -3430,6 +3461,97 @@ window._getCardBrandSvg=function(brand){
     discover:'<svg xmlns="http://www.w3.org/2000/svg" width="36" height="22" viewBox="0 0 48 32"><rect width="48" height="32" rx="4" fill="#ff6000"/><text x="24" y="20" text-anchor="middle" fill="#fff" font-size="8" font-weight="800" font-family="Arial">DISCOVER</text></svg>'
   };
   return svgs[brand]||'<span style="color:#fff;font-size:10px;font-weight:800;text-transform:uppercase">'+(brand||'CARD').slice(0,4)+'</span>';
+};
+
+// ═══ #42-#51 Payment method handlers ═══
+// #42: PayPal — redirect to PayPal OAuth + save
+window._payConnectPayPal=async function(){
+  sgToast('Connecting PayPal...','info',1500);
+  try{
+    var r=await fetch('/api/payments/paypal/connect',{method:'POST',headers:{'Content-Type':'application/json'}});
+    var d=await r.json();
+    if(d.redirectUrl){window.location.href=d.redirectUrl;}
+    else{sgToast('PayPal connected!','success',2000);closePaySheet();}
+  }catch(e){sgToast('PayPal setup failed — try again','error',2000);}
+};
+// #44: Google Pay — Stripe Payment Request
+window._payConnectGooglePay=async function(){
+  if(!window.PaymentRequest){sgToast('Google Pay not supported on this device','info',2000);return;}
+  try{
+    var r=await fetch('/api/payments/wallet-token',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({wallet:'google_pay'})});
+    var d=await r.json();
+    if(d.success){
+      selectPayMethod(document.querySelector('.gym-pay-item')||document.createElement('div'),'google_pay');
+      sgToast('Google Pay ready!','success',1500);closePaySheet();
+    }else{sgToast('Google Pay setup — enable in your browser settings','info',2500);}
+  }catch(e){sgToast('Google Pay not available yet','info',2000);}
+};
+// #45: Apple Pay — Stripe Payment Request
+window._payConnectApplePay=async function(){
+  if(!window.ApplePaySession){sgToast('Apple Pay requires Safari on iOS/macOS','info',2500);return;}
+  try{
+    var r=await fetch('/api/payments/wallet-token',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({wallet:'apple_pay'})});
+    var d=await r.json();
+    if(d.success){
+      selectPayMethod(document.querySelector('.gym-pay-item')||document.createElement('div'),'apple_pay');
+      sgToast('Apple Pay ready!','success',1500);closePaySheet();
+    }else{sgToast('Apple Pay setup — check device settings','info',2500);}
+  }catch(e){sgToast('Apple Pay not available yet','info',2000);}
+};
+// #46: Samsung Pay
+window._payConnectSamsungPay=async function(){
+  sgToast('Samsung Pay — redirecting...','info',1500);
+  try{
+    var r=await fetch('/api/payments/wallet-token',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({wallet:'samsung_pay'})});
+    var d=await r.json();
+    if(d.success){sgToast('Samsung Pay linked!','success',1500);closePaySheet();}
+    else{sgToast('Samsung Pay requires Samsung device','info',2500);}
+  }catch(e){sgToast('Samsung Pay not available yet','info',2000);}
+};
+// #43: Gift card redemption
+window._payRedeemGiftCard=function(){
+  var code=prompt('Enter your ScanGym gift card code:');
+  if(!code)return;
+  sgToast('Redeeming gift card...','info',1500);
+  fetch('/api/payments/gift-card/redeem',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:code.trim()})})
+    .then(function(r){return r.json()})
+    .then(function(d){
+      if(d.success){sgToast('Gift card applied! Balance: '+d.balance,'success',2500);closePaySheet();}
+      else{sgToast(d.error||'Invalid gift card code','error',2000);}
+    }).catch(function(){sgToast('Could not redeem — try again','error',2000);});
+};
+// #49: Bitcoin / Crypto via Coinbase Commerce or BTCPay
+window._payConnectCrypto=async function(){
+  sgToast('Setting up crypto payment...','info',1500);
+  try{
+    var r=await fetch('/api/payments/crypto/setup',{method:'POST',headers:{'Content-Type':'application/json'}});
+    var d=await r.json();
+    if(d.invoiceUrl){window.open(d.invoiceUrl,'_blank');}
+    else{sgToast('Crypto payments coming soon!','info',2000);}
+  }catch(e){sgToast('Crypto setup — coming soon','info',2000);}
+};
+// #50: Bank transfer
+window._payBankTransfer=async function(){
+  sgToast('Setting up bank transfer...','info',1500);
+  try{
+    var r=await fetch('/api/payments/bank-transfer/setup',{method:'POST',headers:{'Content-Type':'application/json'}});
+    var d=await r.json();
+    if(d.bankDetails){
+      sgToast('Bank details sent to your email!','success',2500);closePaySheet();
+    }else{sgToast('Bank transfer available after first card booking','info',2500);}
+  }catch(e){sgToast('Bank transfer — coming soon','info',2000);}
+};
+// #51: Buy Now Pay Later (Klarna / Afterpay)
+window._payBNPL=async function(){
+  sgToast('Checking BNPL eligibility...','info',1500);
+  try{
+    var r=await fetch('/api/payments/bnpl/check',{method:'POST',headers:{'Content-Type':'application/json'}});
+    var d=await r.json();
+    if(d.eligible){
+      selectPayMethod(document.querySelector('.gym-pay-item')||document.createElement('div'),'bnpl');
+      sgToast('Pay in 3 installments available at checkout!','success',2500);closePaySheet();
+    }else{sgToast('BNPL available for bookings over £10','info',2500);}
+  }catch(e){sgToast('Buy now pay later — coming soon','info',2000);}
 };
 
 // ═══ Payment Overlay Functions (full-screen wallet) ═══
