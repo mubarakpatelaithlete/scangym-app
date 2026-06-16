@@ -11949,6 +11949,16 @@ function MoreHubPage(){
     </div>
 
     <!-- For Creators -->
+    <!-- #139-#143: New Tabs -->
+    <div class="sg-more-section">
+      <div class="sg-more-section-title">🆓 Explore</div>
+      ${moreItem('🎮','Free Tools & Games','Workout games, timers, lessons','/free-tools')}
+      ${moreItem('🎵','Gym Music','AI workout playlists & beats','/gym-music')}
+      ${moreItem('📸','Posts','Share gym photos & stories','/posts')}
+      ${moreItem('🎬','Creator Reels','Tags, earnings, downloads','/creator-reels')}
+      ${moreItem('🏢','Gym Partner Hub','Claim & manage your gym','/gym-partner-hub')}
+    </div>
+
     <div class="sg-more-section">
       <div class="sg-more-section-title">For Creators</div>
       ${moreItem('\u{1F4F8}','ScanSquad','Join the creator community \u2014 earn 25%','/creators')}
@@ -13001,6 +13011,12 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
 
   else if(path==='/booking')page=InfoPage('Book a Gym Session',`<p class="text-xl text-white font-bold mb-2">3 taps. That’s it.</p><p class="text-lg text-slate-300 mb-8">Find a gym, pick your time, and go. No membership required.</p><div class="relative space-y-6 mb-8">${[{step:"1",icon:"🔍",title:"Find a Gym",desc:"Search by city, area, or gym name. Filter by price, rating, facilities, and distance. gyms across the UK.",time:"30 sec"},{step:"2",icon:"📅",title:"Pick Your Session",desc:"Choose your date and time slot. Day passes are valid for 24 hours from scan-in. Day Pass from ${sgPrice('day').display}.",time:"20 sec"},{step:"3",icon:"💳",title:"Pay Securely",desc:"Apple Pay, Google Pay, or card. Sign in once and your card saves for 1-tap booking. Free cancellation up to 2 hours before.",time:"10 sec"},{step:"4",icon:"📱",title:"Get Your QR Code",desc:"Instant QR code on your phone. Walk up to the gym, scan at the entrance, and you’re in. Quick and easy.",time:"Instant"},{step:"5",icon:"🏋️",title:"Train & Check Out",desc:"Enjoy the full gym for 24 hours. Scan out when you leave. Rate your experience and earn rewards.",time:"Your pace"}].map(s=>`<div class="flex gap-4"><div class="w-10 h-10 bg-brand rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">${s.step}</div><div class="flex-1 bg-slate-800 rounded-lg p-4"><div class="flex items-center justify-between"><p class="text-white font-bold"><span class="mr-2">${s.icon}</span>${s.title}</p><span class="text-brand text-xs font-medium">${s.time}</span></div><p class="text-slate-400 text-sm mt-1">${s.desc}</p></div></div>`).join("")}</div><div class="grid sm:grid-cols-3 gap-4 mb-8"><div class="bg-green-900/20 border border-green-800/30 rounded-xl p-4 text-center"><p class="text-2xl mb-1">✅</p><p class="text-white font-semibold text-sm">Free Cancellation</p><p class="text-slate-500 text-xs">Up to 2 hours before</p></div><div class="bg-blue-900/20 border border-blue-800/30 rounded-xl p-4 text-center"><p class="text-2xl mb-1">🔒</p><p class="text-white font-semibold text-sm">Secure Payment</p><p class="text-slate-500 text-xs">Stripe + Apple/Google Pay</p></div><div class="bg-brand/10 border border-brand/30 rounded-xl p-4 text-center"><p class="text-2xl mb-1">⚡</p><p class="text-white font-semibold text-sm">No Membership</p><p class="text-slate-500 text-xs">Pay per session only</p></div></div><div class="text-center"><a onclick="navigate('/explore')" class="bg-brand hover:bg-orange-600 text-white font-bold px-10 py-4 rounded-xl cursor-pointer transition inline-block shadow-lg shadow-brand/20 text-lg">Find a Gym Near You →</a><p class="text-slate-500 text-sm mt-3">From ${sgPrice('day').display} per session · No contracts · No sign-up required</p></div>`);
   else if(path==='/for-corporates')page=InfoPage('Corporate Wellness',`<p class="text-xl text-white font-bold mb-2">Gym access for your entire team. Zero admin.</p><p class="text-lg text-slate-300 mb-8">Give employees access to gyms across the UK. No memberships, no contracts, no hassle.</p><div class="bg-brand/10 border border-brand/30 rounded-xl p-6 mb-8"><p class="text-white font-bold mb-3">📊 Why Companies Choose ScanGym</p><div class="grid sm:grid-cols-4 gap-4">${[{stat:"67%",label:"less sick days",desc:"with active employees"},{stat:"41%",label:"higher retention",desc:"with wellness perks"},{stat:"3.2x",label:"ROI",desc:"on wellness spend"},{stat:"£0",label:"setup cost",desc:"start immediately"}].map(s=>`<div class="text-center"><p class="text-2xl font-bold text-brand">${s.stat}</p><p class="text-white text-sm font-medium">${s.label}</p><p class="text-slate-500 text-xs">${s.desc}</p></div>`).join("")}</div></div><div class="grid sm:grid-cols-2 gap-6 mb-8"><div class="bg-slate-800 rounded-xl p-6 border border-slate-700"><p class="text-2xl mb-2">🏢</p><p class="text-white font-bold mb-1">Pay-Per-Use</p><p class="text-slate-400 text-sm mb-3">Only pay when employees actually use a gym. No monthly minimums.</p><div class="space-y-2"><p class="text-slate-300 text-sm flex items-center gap-2"><span class="text-green-400">✓</span> From ${sgPrice('day').display} per session</p><p class="text-slate-300 text-sm flex items-center gap-2"><span class="text-green-400">✓</span> Monthly invoicing</p><p class="text-slate-300 text-sm flex items-center gap-2"><span class="text-green-400">✓</span> Usage dashboard</p></div></div><div class="bg-slate-800 rounded-xl p-6 border border-slate-700"><p class="text-2xl mb-2">💳</p><p class="text-white font-bold mb-1">Credit Allowance</p><p class="text-slate-400 text-sm mb-3">Give each employee a monthly gym credit. They choose where to train.</p><div class="space-y-2"><p class="text-slate-300 text-sm flex items-center gap-2"><span class="text-green-400">✓</span> Set per-employee budgets</p><p class="text-slate-300 text-sm flex items-center gap-2"><span class="text-green-400">✓</span> Unused credits roll over</p><p class="text-slate-300 text-sm flex items-center gap-2"><span class="text-green-400">✓</span> Admin controls</p></div></div></div><div class="bg-slate-800 rounded-xl p-6 border border-slate-700 mb-8"><p class="text-white font-bold mb-4">How It Works for Companies</p><div class="grid sm:grid-cols-3 gap-4">${[{step:"1",title:"Sign Up",desc:"Tell us your team size and budget. We set up your company portal in minutes."},{step:"2",title:"Invite Team",desc:"Send email invites. Employees use the web or app — no training needed."},{step:"3",title:"Track & Report",desc:"See usage, spend, and engagement in your admin dashboard. Export reports for HR."}].map(s=>`<div class="text-center"><div class="w-10 h-10 bg-brand rounded-full flex items-center justify-center text-white font-bold text-sm mx-auto mb-3">${s.step}</div><p class="text-white font-semibold text-sm">${s.title}</p><p class="text-slate-400 text-xs mt-1">${s.desc}</p></div>`).join("")}</div></div><div class="bg-green-900/20 border border-green-800/30 rounded-xl p-6 mb-8"><p class="text-white font-bold mb-3">✅ What’s Included — Every Plan</p><div class="grid sm:grid-cols-2 gap-2 text-sm">${["Access to gyms across the UK","No per-employee minimums","Admin dashboard & reporting","Free cancellation policy","24/7 email & chat support","GDPR compliant","Monthly or annual billing","Dedicated account manager (50+ staff)"].map(f=>`<p class="text-slate-300 flex items-center gap-2"><span class="text-green-400">✓</span>${f}</p>`).join("")}</div></div><div class="text-center"><a onclick="navigate('/contact')" class="bg-brand hover:bg-orange-600 text-white font-bold px-10 py-4 rounded-xl cursor-pointer transition inline-block shadow-lg shadow-brand/20 text-lg">Get a Corporate Quote →</a><p class="text-slate-500 text-sm mt-3">📧 hello@scangym.com · Free setup · Cancel anytime</p></div>`);
+  else if(path==='/free-tools')page=FreeToolsPage();
+  else if(path==='/gym-music')page=GymMusicPage();
+  else if(path==='/posts')page=PostsPage();
+  else if(path==='/creator-reels')page=CreatorReelsPage();
+  else if(path==='/gym-partner-hub')page=GymPartnerHubPage();
+  else if(path==='/onboard-chat')page=OnboardChatPage();
   else if(path==='/more')page=MoreHubPage();
   else if(path==='/book'){navigate('/explore',false);page=SearchPage();}
   else if(path==='/profile'){navigate('/more/profile',false);loadFullProfile();page=ProfilePage();}
@@ -14738,6 +14754,265 @@ if(localStorage.getItem('sg_push_enabled')==='1'&&state.user){
     };
   }
 })();
+
+// ═══ #139: Free Tools & Games Tab ═══
+function FreeToolsPage(){
+  return`<div style="max-width:480px;margin:0 auto;padding:20px 16px">
+    <div class="sg-more-back" onclick="navigate('/more')">← Back</div>
+    <h1 style="font-size:24px;font-weight:900;color:#fff;margin-bottom:4px">🎮 Free Tools & Games</h1>
+    <p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:24px">Fun fitness tools — no booking needed!</p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div onclick="sgToast('⏱️ Timer started!','success',2000)" style="background:rgba(255,109,0,.08);border:1px solid rgba(255,109,0,.12);border-radius:16px;padding:20px;text-align:center;cursor:pointer">
+        <p style="font-size:36px;margin-bottom:8px">⏱️</p>
+        <p style="color:#fff;font-weight:700;font-size:14px">Workout Timer</p>
+        <p style="color:rgba(255,255,255,.4);font-size:11px">HIIT, Tabata, Rest</p>
+      </div>
+      <div onclick="sgToast('🎲 Rolling...','info',1500)" style="background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.12);border-radius:16px;padding:20px;text-align:center;cursor:pointer">
+        <p style="font-size:36px;margin-bottom:8px">🎲</p>
+        <p style="color:#fff;font-weight:700;font-size:14px">Random Workout</p>
+        <p style="color:rgba(255,255,255,.4);font-size:11px">Spin the wheel!</p>
+      </div>
+      <div onclick="sgToast('📊 BMI Calculator coming!','info',1500)" style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.12);border-radius:16px;padding:20px;text-align:center;cursor:pointer">
+        <p style="font-size:36px;margin-bottom:8px">📊</p>
+        <p style="color:#fff;font-weight:700;font-size:14px">BMI Calculator</p>
+        <p style="color:rgba(255,255,255,.4);font-size:11px">Quick health check</p>
+      </div>
+      <div onclick="sgToast('🏃 Step counter syncing...','info',1500)" style="background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.12);border-radius:16px;padding:20px;text-align:center;cursor:pointer">
+        <p style="font-size:36px;margin-bottom:8px">🏃</p>
+        <p style="color:#fff;font-weight:700;font-size:14px">Step Counter</p>
+        <p style="color:rgba(255,255,255,.4);font-size:11px">Daily steps tracker</p>
+      </div>
+      <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.12);border-radius:16px;padding:20px;text-align:center;cursor:pointer">
+        <p style="font-size:36px;margin-bottom:8px">🧘</p>
+        <p style="color:#fff;font-weight:700;font-size:14px">Stretch Guide</p>
+        <p style="color:rgba(255,255,255,.4);font-size:11px">Animated lessons</p>
+      </div>
+      <div style="background:rgba(234,179,8,.08);border:1px solid rgba(234,179,8,.12);border-radius:16px;padding:20px;text-align:center;cursor:pointer">
+        <p style="font-size:36px;margin-bottom:8px">🎯</p>
+        <p style="color:#fff;font-weight:700;font-size:14px">Gym Bingo</p>
+        <p style="color:rgba(255,255,255,.4);font-size:11px">Complete challenges!</p>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ═══ #140: Gym Music Tab ═══
+function GymMusicPage(){
+  var playlists=[
+    {name:'Beast Mode 🔥',genre:'Heavy Bass EDM',bpm:'140-160',color:'#ef4444'},
+    {name:'Cardio Flow 💨',genre:'Upbeat Pop & Dance',bpm:'120-135',color:'#3b82f6'},
+    {name:'Iron Pump 💪',genre:'Hip Hop & Trap',bpm:'130-150',color:'#FF6D00'},
+    {name:'Zen Recovery 🧘',genre:'Lo-Fi & Ambient',bpm:'60-80',color:'#22c55e'},
+    {name:'Power Lift ⚡',genre:'Metal & Rock',bpm:'150-180',color:'#a855f7'},
+    {name:'Sprint Mode 🏃',genre:'Drum & Bass',bpm:'170-180',color:'#eab308'}
+  ];
+  return`<div style="max-width:480px;margin:0 auto;padding:20px 16px">
+    <div class="sg-more-back" onclick="navigate('/more')">← Back</div>
+    <h1 style="font-size:24px;font-weight:900;color:#fff;margin-bottom:4px">🎵 Gym Music</h1>
+    <p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:24px">AI-generated workout playlists</p>
+    ${playlists.map(function(p){return'<div style="display:flex;align-items:center;gap:14px;padding:16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;margin-bottom:10px;cursor:pointer" onclick="sgToast(\'▶️ Playing '+p.name+'\',\'success\',2000)"><div style="width:48px;height:48px;border-radius:12px;background:'+p.color+'22;border:1px solid '+p.color+'33;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">▶️</div><div style="flex:1"><p style="color:#fff;font-weight:700;font-size:15px;margin:0">'+p.name+'</p><p style="color:rgba(255,255,255,.4);font-size:12px;margin:2px 0 0">'+p.genre+' · '+p.bpm+' BPM</p></div></div>';}).join('')}
+    <div style="margin-top:16px;padding:16px;background:rgba(255,109,0,.06);border:1px solid rgba(255,109,0,.1);border-radius:14px;text-align:center">
+      <p style="font-size:24px;margin-bottom:8px">🤖</p>
+      <p style="color:#fff;font-weight:700;font-size:15px">AI Music Generator</p>
+      <p style="color:rgba(255,255,255,.4);font-size:12px;margin-bottom:12px">Powered by Suno AI — coming soon!</p>
+      <button style="background:#FF6D00;color:#fff;border:none;padding:10px 24px;border-radius:10px;font-weight:600;font-size:13px;cursor:pointer">🔔 Notify Me</button>
+    </div>
+  </div>`;
+}
+
+// ═══ #141: Posts Tab ═══
+function PostsPage(){
+  return`<div style="max-width:480px;margin:0 auto;padding:20px 16px">
+    <div class="sg-more-back" onclick="navigate('/more')">← Back</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <div>
+        <h1 style="font-size:24px;font-weight:900;color:#fff;margin-bottom:4px">📸 Posts</h1>
+        <p style="color:rgba(255,255,255,.4);font-size:13px">Share your gym moments</p>
+      </div>
+      <button onclick="sgToast('📷 Camera opening...','info',2000)" style="background:#FF6D00;color:#fff;border:none;padding:10px 20px;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer">+ Post</button>
+    </div>
+    <div style="text-align:center;padding:40px 16px">
+      <p style="font-size:64px;margin-bottom:16px">📸</p>
+      <h3 style="color:#fff;font-size:18px;font-weight:700;margin-bottom:8px">Be the first to post!</h3>
+      <p style="color:rgba(255,255,255,.4);font-size:14px;line-height:1.6">Share workout photos, gym selfies, and progress pics with the ScanGym community.</p>
+      <div style="display:flex;gap:8px;justify-content:center;margin-top:20px;flex-wrap:wrap">
+        ${['✨ Filters','🏷️ Tag Gym','📍 Location','🔥 Stories'].map(function(f){return'<span style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:8px 14px;color:rgba(255,255,255,.5);font-size:12px;font-weight:600">'+f+'</span>';}).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ═══ #142: Creator Reels Tab ═══
+function CreatorReelsPage(){
+  var u=state.user;
+  var creator=JSON.parse(localStorage.getItem('sg_creator')||'null');
+  return`<div style="max-width:480px;margin:0 auto;padding:20px 16px">
+    <div class="sg-more-back" onclick="navigate('/more')">← Back</div>
+    <h1 style="font-size:24px;font-weight:900;color:#fff;margin-bottom:4px">🎬 Creator Reels</h1>
+    <p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:24px">Your content, earnings & downloads</p>
+
+    ${creator?'<div style="background:rgba(255,109,0,.08);border:1px solid rgba(255,109,0,.15);border-radius:14px;padding:16px;margin-bottom:20px"><div style="display:flex;justify-content:space-between;align-items:center"><div><p style="color:rgba(255,255,255,.4);font-size:12px">Your Earnings</p><p style="color:#FF6D00;font-size:28px;font-weight:900">£0.00</p></div><div style="text-align:right"><p style="color:rgba(255,255,255,.4);font-size:12px">Downloads</p><p style="color:#fff;font-size:28px;font-weight:900">0</p></div></div></div>':''}
+
+    <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">
+      ${['#Workout','#GymLife','#Fitness','#Gains','#Motivation','#ScanGym'].map(function(tag){return'<span style="background:rgba(255,109,0,.1);border:1px solid rgba(255,109,0,.2);border-radius:20px;padding:6px 14px;color:#FF6D00;font-size:12px;font-weight:600;cursor:pointer">'+tag+'</span>';}).join('')}
+    </div>
+
+    <div style="text-align:center;padding:24px">
+      <p style="font-size:48px;margin-bottom:12px">🎬</p>
+      <p style="color:rgba(255,255,255,.5);font-size:14px;margin-bottom:16px">No reels yet. Create your first one!</p>
+      <button onclick="navigate('/reels')" style="background:#FF6D00;color:#fff;border:none;padding:12px 32px;border-radius:12px;font-weight:700;font-size:15px;cursor:pointer">📹 Create Reel</button>
+    </div>
+  </div>`;
+}
+
+// ═══ #143: Gym Partner Hub ═══
+function GymPartnerHubPage(){
+  return`<div style="max-width:480px;margin:0 auto;padding:20px 16px">
+    <div class="sg-more-back" onclick="navigate('/more')">← Back</div>
+    <h1 style="font-size:24px;font-weight:900;color:#fff;margin-bottom:4px">🏢 Gym Partner Hub</h1>
+    <p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:24px">Claim and manage your gym on ScanGym</p>
+
+    <!-- Claim Flow -->
+    <div style="background:rgba(255,109,0,.06);border:1px solid rgba(255,109,0,.1);border-radius:16px;padding:24px;margin-bottom:20px;text-align:center">
+      <p style="font-size:48px;margin-bottom:12px">🏢</p>
+      <h3 style="color:#fff;font-size:18px;font-weight:800;margin-bottom:8px">Claim Your Gym</h3>
+      <p style="color:rgba(255,255,255,.4);font-size:14px;line-height:1.5;margin-bottom:16px">Already listed on Google? Claim your gym in 3 steps and start accepting ScanGym bookings.</p>
+      <button onclick="navigate('/list-your-gym')" style="background:#FF6D00;color:#fff;border:none;padding:14px 32px;border-radius:12px;font-weight:700;font-size:16px;cursor:pointer;animation:casinoGlow 2s ease-in-out infinite">Claim Now →</button>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div onclick="navigate('/owner/controls')" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:16px;cursor:pointer;text-align:center">
+        <p style="font-size:28px;margin-bottom:6px">⚙️</p>
+        <p style="color:#fff;font-weight:700;font-size:13px">Owner Controls</p>
+      </div>
+      <div onclick="navigate('/forceo')" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:16px;cursor:pointer;text-align:center">
+        <p style="font-size:28px;margin-bottom:6px">📊</p>
+        <p style="color:#fff;font-weight:700;font-size:13px">Analytics</p>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ═══ #148: ChatGPT-style Onboarding UX ═══
+function OnboardChatPage(){
+  return`<div style="max-width:480px;margin:0 auto;padding:20px 16px">
+    <div class="sg-more-back" onclick="navigate('/more')">← Back</div>
+    <h1 style="font-size:20px;font-weight:900;color:#fff;margin-bottom:20px">💬 Let's get you set up</h1>
+    <div id="sg-onboard-chat" style="min-height:300px">
+      <div style="display:flex;gap:10px;margin-bottom:16px">
+        <div style="width:32px;height:32px;border-radius:50%;background:#FF6D00;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">🏋️</div>
+        <div style="background:rgba(255,255,255,.06);border-radius:14px 14px 14px 4px;padding:12px 16px;flex:1">
+          <p style="color:#fff;font-size:14px;line-height:1.5">Hey! 👋 I'm ScanGym. What brings you here today?</p>
+        </div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;padding-left:42px">
+        <button onclick="sgOnboardChoice('book')" style="background:rgba(255,109,0,.1);border:1px solid rgba(255,109,0,.2);color:#FF6D00;padding:10px 18px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer">🏃 Book a gym session</button>
+        <button onclick="sgOnboardChoice('list')" style="background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.2);color:#3b82f6;padding:10px 18px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer">🏢 List my gym</button>
+        <button onclick="sgOnboardChoice('earn')" style="background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);color:#22c55e;padding:10px 18px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer">💰 Earn as creator</button>
+        <button onclick="sgOnboardChoice('explore')" style="background:rgba(168,85,247,.1);border:1px solid rgba(168,85,247,.2);color:#a855f7;padding:10px 18px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer">🔍 Just exploring</button>
+      </div>
+    </div>
+  </div>`;
+}
+window.sgOnboardChoice=function(choice){
+  var routes={book:'/explore',list:'/list-your-gym',earn:'/creators',explore:'/explore'};
+  sgToast('Great choice! Taking you there... 🚀','success',2000);
+  setTimeout(function(){navigate(routes[choice]||'/explore');},1000);
+};
+
+// ═══ #144: Bottom popup system for right-side buttons ═══
+window.sgBottomPopup=function(title,contentHtml){
+  var existing=document.getElementById('sg-bottom-popup');
+  if(existing) existing.remove();
+  var popup=document.createElement('div');
+  popup.id='sg-bottom-popup';
+  popup.style.cssText='position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center';
+  popup.onclick=function(e){if(e.target===popup)popup.remove();};
+  popup.innerHTML='<div style="background:#111318;border-radius:20px 20px 0 0;width:100%;max-width:480px;max-height:80vh;overflow-y:auto;padding:20px 20px 40px;animation:slideUp .3s ease-out">'
+    +'<div style="width:40px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;margin:0 auto 16px"></div>'
+    +'<h3 style="color:#fff;font-size:17px;font-weight:800;margin-bottom:16px">'+title+'</h3>'
+    +contentHtml
+    +'</div>';
+  document.body.appendChild(popup);
+  // Swipe-down to close
+  var panel=popup.querySelector('div');
+  var startY=0;
+  panel.addEventListener('touchstart',function(e){startY=e.touches[0].clientY;});
+  panel.addEventListener('touchmove',function(e){
+    var dy=e.touches[0].clientY-startY;
+    if(dy>60){popup.remove();}
+  });
+};
+
+// ═══ #146: NFC Entry Support ═══
+window.sgNfcScan=async function(){
+  if(!('NDEFReader' in window)){
+    sgToast('📱 NFC not available on this device','info',3000);
+    return;
+  }
+  try{
+    var ndef=new NDEFReader();
+    await ndef.scan();
+    sgToast('📡 Hold phone near NFC reader...','info',5000);
+    ndef.addEventListener('reading',function(event){
+      sgToast('✅ NFC scanned! Entry confirmed.','success',3000);
+      window._sgPlayDopamine&&window._sgPlayDopamine('success');
+    });
+  }catch(e){
+    sgToast('NFC scan failed: '+e.message,'info',3000);
+  }
+};
+
+// ═══ #149: Capacitor config placeholder ═══
+window.sgCheckNative=function(){
+  if(window.Capacitor){
+    return{isNative:true,platform:window.Capacitor.getPlatform()};
+  }
+  return{isNative:false,platform:'web'};
+};
+
+// ═══ #150: Voice-First UX ═══
+window.sgVoiceSearch=function(){
+  if(!('webkitSpeechRecognition' in window)&&!('SpeechRecognition' in window)){
+    sgToast('🎤 Voice not supported on this browser','info',3000);
+    return;
+  }
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  var recognition=new SR();
+  recognition.continuous=false;
+  recognition.interimResults=false;
+  recognition.lang='en-GB';
+  sgToast('🎤 Listening...','info',5000);
+  recognition.onresult=function(event){
+    var transcript=event.results[0][0].transcript;
+    sgToast('🔍 Searching: "'+transcript+'"','success',3000);
+    // Trigger search with voice input
+    var searchInput=document.getElementById('sg-search-hidden');
+    if(searchInput){searchInput.value=transcript;doSearch&&doSearch();}
+  };
+  recognition.onerror=function(e){sgToast('Voice error: '+e.error,'info',2000);};
+  recognition.start();
+};
+
+// ═══ #61b: Earn button → affiliate flow ═══
+window.sgEarnFlow=function(){
+  var u=state.user;
+  if(!u){sgToast('🔐 Log in to start earning!','info',3000);navigate('/login');return;}
+  var creator=JSON.parse(localStorage.getItem('sg_creator')||'null');
+  if(creator){navigate('/scansquad/dashboard');return;}
+  // Show earn flow popup
+  sgBottomPopup('💰 Start Earning with ScanGym',
+    '<div style="text-align:center;margin-bottom:20px"><p style="font-size:48px">💰</p></div>'
+    +'<p style="color:rgba(255,255,255,.6);font-size:14px;line-height:1.6;margin-bottom:20px;text-align:center">Share gyms → friends book → you earn 25% commission on every booking. It\'s that simple!</p>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:24px">'
+    +'<div style="text-align:center"><p style="font-size:28px">📤</p><p style="color:#fff;font-size:12px;font-weight:600;margin-top:4px">Share</p></div>'
+    +'<div style="text-align:center"><p style="font-size:28px">📖</p><p style="color:#fff;font-size:12px;font-weight:600;margin-top:4px">They Book</p></div>'
+    +'<div style="text-align:center"><p style="font-size:28px">💰</p><p style="color:#fff;font-size:12px;font-weight:600;margin-top:4px">You Earn</p></div>'
+    +'</div>'
+    +'<button onclick="navigate(\'/creators\');document.getElementById(\'sg-bottom-popup\').remove()" style="width:100%;background:#FF6D00;color:#fff;border:none;padding:14px;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;animation:casinoGlow 2s ease-in-out infinite">Join ScanSquad → 25% Commission</button>'
+  );
+};
 
 // ═══ #123: Map View with Gym Markers ═══
 window.sgOpenMapView = function() {
