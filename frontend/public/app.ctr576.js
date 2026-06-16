@@ -11631,19 +11631,33 @@ function MoreHubPage(){
     </div>`;
   }
 
-  return`<div class="sg-more-hub">
-    <!-- Profile Header — tap goes to profile edit -->
-    <div class="sg-more-profile" onclick="navigate('${u?'/more/profile':'/login'}')">
-      <div class="sg-more-avatar">${avatar}</div>
-      <div class="sg-more-profile-info">
-        <h3>${displayName}</h3>
-        <p>${u?(email||'Tap to edit profile'):'Tap to sign in'}</p>
-      </div>
-    </div>
-
-    <!-- Universal ScanGym ID Card -->
-    ${u?ScanGymIDCard(u):'<div onclick="navigate(\'/login\')" style="background:rgba(255,109,0,.06);border:1px dashed rgba(255,109,0,.2);border-radius:16px;padding:20px;text-align:center;cursor:pointer;margin-bottom:20px"><p style="font-size:24px;margin-bottom:8px">🌍</p><p style="color:#fff;font-weight:700;font-size:15px;margin-bottom:4px">Get your Universal Gym Pass</p><p style="color:rgba(255,255,255,.4);font-size:12px">Sign up once. Book any gym — no membership needed.</p></div>'}
-
+  return(function(){
+  // #30+#31: Full-screen QR hero with TikTok-style action buttons
+  var qrHero='';
+  if(u){
+    var qrData=encodeURIComponent('https://scangym.com/member/'+u.id);
+    var qrUrl='https://api.qrserver.com/v1/create-qr-code/?size=400x400&bgcolor=0d0d1a&color=FF6D00&data='+qrData;
+    var uName=u.name||u.phone||'Member';
+    var since=u.member_since?new Date(u.member_since).toLocaleDateString('en-GB',{month:'short',year:'numeric'}):'2026';
+    var tS=u.stats?.totalSessions||0;var tG=u.stats?.totalGyms||0;var stk=u.stats?.streak||0;
+    var tier=tS>=100?{n:'Elite',i:'\u{1F451}',c:'#a855f7'}:tS>=50?{n:'Gold',i:'\u{1F947}',c:'#eab308'}:tS>=10?{n:'Silver',i:'\u{1F948}',c:'#94a3b8'}:{n:'Basic',i:'\u{1F3CB}\uFE0F',c:'#FF6D00'};
+    qrHero='<div style="position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 220px);padding:24px 16px 16px;text-align:center">'
+      +'<div style="margin-bottom:4px;display:flex;align-items:center;gap:8px"><span style="color:#fff;font-size:20px;font-weight:800">'+uName+'</span><span style="background:'+tier.c+'22;color:'+tier.c+';font-size:10px;font-weight:800;padding:3px 10px;border-radius:8px;text-transform:uppercase;letter-spacing:1px">'+tier.i+' '+tier.n+'</span></div>'
+      +'<p style="color:rgba(255,255,255,.4);font-size:12px;margin:0 0 20px">Member since '+since+'</p>'
+      +'<div style="background:rgba(255,109,0,.06);border:2px solid rgba(255,109,0,.2);border-radius:28px;padding:24px;margin-bottom:16px;position:relative"><img src="'+qrUrl+'" width="220" height="220" style="border-radius:16px;display:block" alt="Scan to enter"><div style="position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);background:#FF6D00;color:#fff;font-size:11px;font-weight:800;padding:4px 16px;border-radius:20px;white-space:nowrap;letter-spacing:.5px">SCAN TO ENTER</div></div>'
+      +'<p style="color:rgba(255,255,255,.3);font-size:12px;margin:16px 0 8px">Show this at the gym entrance</p>'
+      +'<div style="display:flex;gap:20px;margin-top:8px"><div style="text-align:center"><div style="color:#FF6D00;font-size:22px;font-weight:900">'+tS+'</div><div style="color:rgba(255,255,255,.3);font-size:10px;font-weight:600;text-transform:uppercase">Sessions</div></div><div style="text-align:center"><div style="color:#22c55e;font-size:22px;font-weight:900">'+tG+'</div><div style="color:rgba(255,255,255,.3);font-size:10px;font-weight:600;text-transform:uppercase">Gyms</div></div><div style="text-align:center"><div style="color:#3b82f6;font-size:22px;font-weight:900">'+stk+'\u{1F525}</div><div style="color:rgba(255,255,255,.3);font-size:10px;font-weight:600;text-transform:uppercase">Streak</div></div></div>'
+      +'<div style="position:absolute;right:8px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:16px;align-items:center">'
+      +'<div onclick="navigate(\'/more/profile\')" style="width:48px;height:48px;background:rgba(255,255,255,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;border:1px solid rgba(255,255,255,.1);font-size:20px" title="Profile">\u{1F464}</div>'
+      +'<div onclick="navigate(\'/bookings\')" style="width:48px;height:48px;background:rgba(255,255,255,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;border:1px solid rgba(255,255,255,.1);font-size:20px" title="Bookings">\u{1F4CB}</div>'
+      +'<div onclick="navigate(\'/wallet\')" style="width:48px;height:48px;background:rgba(255,255,255,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;border:1px solid rgba(255,255,255,.1);font-size:20px" title="Wallet">\u{1F4B3}</div>'
+      +'<div onclick="_shareIDCard()" style="width:48px;height:48px;background:rgba(255,255,255,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;border:1px solid rgba(255,255,255,.1);font-size:20px" title="Share">\u{1F4E4}</div>'
+      +'<div onclick="navigate(\'/refer\')" style="width:48px;height:48px;background:rgba(255,109,0,.15);border:1px solid rgba(255,109,0,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px" title="Refer & Earn">\u{1F381}</div>'
+      +'</div></div>';
+  }else{
+    qrHero='<div onclick="navigate(\'/login\')" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 220px);padding:40px 20px;text-align:center;cursor:pointer"><p style="font-size:60px;margin-bottom:16px">\u{1F30D}</p><p style="color:#fff;font-weight:800;font-size:20px;margin-bottom:8px">Get your Universal Gym Pass</p><p style="color:rgba(255,255,255,.4);font-size:14px;margin-bottom:24px">Sign up once. Scan QR to enter any gym.</p><button style="background:#FF6D00;color:#fff;border:none;padding:16px 40px;border-radius:14px;font-weight:700;font-size:16px;cursor:pointer">Get Started \u2192</button></div>';
+  }
+  return`<div class="sg-more-hub">${qrHero}
     <!-- Your Activity -->
     <div class="sg-more-section">
       <div class="sg-more-section-title">Your Activity</div>
