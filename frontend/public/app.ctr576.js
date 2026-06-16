@@ -10,6 +10,25 @@ var l2=document.createElement('link');l2.rel='dns-prefetch';l2.href=d;document.h
 // ─── Pricing: loaded from /pricing.js (shared across all pages) ───
 // sgPrice(), sgSymbol(), sgCommissionRange() are global — see pricing.js
 
+// ─── #57 Affiliate Link Helper: injects creator handle into every share URL ───
+// Returns affiliate URL if user is a creator, else plain scangym.com URL.
+// Usage: sgGetAffiliateUrl() → 'https://scangym.com/r/handle' or 'https://scangym.com'
+//        sgGetAffiliateUrl('/gym/abc123') → 'https://scangym.com/gym/abc123?ref=handle'
+window.sgGetAffiliateUrl=function(path){
+  var handle='';
+  // Check creator signup data first (ScanSquad creators)
+  try{var c=JSON.parse(localStorage.getItem('sg_creator')||'null');if(c&&c.handle)handle=c.handle;}catch(e){}
+  // Fallback: check state.user.referralHandle
+  if(!handle&&typeof state!=='undefined'&&state.user&&state.user.referralHandle)handle=state.user.referralHandle;
+  // Fallback: derive from user name/phone (same logic as /refer page)
+  if(!handle&&typeof state!=='undefined'&&state.user){handle=(state.user.name||state.user.phone||'').replace(/[^a-z0-9]/gi,'').toLowerCase();}
+  if(!handle)return path?'https://scangym.com'+(path.startsWith('/')?path:'/'+path):'https://scangym.com';
+  // If a specific path like /gym/abc123 is provided, use ?ref= param
+  if(path){return 'https://scangym.com'+(path.startsWith('/')?path:'/'+path)+'?ref='+encodeURIComponent(handle);}
+  // Default: /r/handle (creator landing page)
+  return 'https://scangym.com/r/'+handle;
+};
+
 // ─── Toast Notification System (replaces alert()) ───
 window.sgToast=function(msg, type='error', duration=4000){
   const existing=document.getElementById('sg-toast');
@@ -2455,7 +2474,7 @@ window.openGymOverlay=function(section){
           <div style="color:rgba(255,255,255,.35);font-size:13px;margin:10px 0 8px">${helpCount} ${helpCount===1?'person':'people'} found this helpful</div>
           <div class="ov-review-actions" style="display:flex;align-items:center;gap:16px">
             <button class="ov-review-helpful${voted?' active':''}" id="helpful_${rid}" onclick="event.stopPropagation();_toggleReviewHelpful('${rid}',${helpfulBase})" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:6px 16px;color:rgba(255,255,255,.7);font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent">Helpful</button>
-            <span onclick="event.stopPropagation();sgToast('Link copied!','info',2000)" style="color:rgba(255,255,255,.4);font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:4px"><span style="font-size:14px">\u2197</span> Share</span>
+            <span onclick="event.stopPropagation();navigator.clipboard.writeText(sgGetAffiliateUrl()).then(function(){sgToast('Link copied!','info',2000)}).catch(function(){sgToast('Could not copy','error',2000)})" style="color:rgba(255,255,255,.4);font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:4px"><span style="font-size:14px">\u2197</span> Share</span>
             <span class="ov-review-report" onclick="event.stopPropagation();sgToast('Review reported. We will look into it.','info',2500)" style="margin-left:auto;color:rgba(255,255,255,.3);font-size:13px;cursor:pointer">Report</span>
           </div>
         </div>`;
@@ -9490,7 +9509,7 @@ function BookingSuccessPage(){
         </div>
         <p class="text-slate-500 text-xs mt-3">Token: ${qr.token}</p>
         <button onclick="sgSaveQR()" class="mt-2 text-slate-400 text-sm hover:text-white cursor-pointer transition">💾 Save QR to Photos</button>
-        <button onclick="const gymUrl='https://scangym.com/gym/${b.gymId}';const shareText='I just booked a session at ${b.gymName} on ScanGym! 🏋️ Check it out:';if(navigator.share){navigator.share({title:'ScanGym — ${b.gymName}',text:shareText,url:gymUrl}).catch(()=>{})}else{navigator.clipboard.writeText(shareText+' '+gymUrl).then(()=>{this.textContent='✅ Link Copied!';setTimeout(()=>{this.textContent='📤 Share Booking'},2000)}).catch(function(){sgToast('Could not copy link','error',2000)})}" class="mt-3 text-brand text-sm font-medium hover:text-orange-400 cursor-pointer transition">📤 Share Booking</button>
+        <button onclick="const gymUrl=sgGetAffiliateUrl('/gym/${b.gymId}');const shareText='I just booked a session at ${b.gymName} on ScanGym! 🏋️ Check it out:';if(navigator.share){navigator.share({title:'ScanGym — ${b.gymName}',text:shareText,url:gymUrl}).catch(()=>{})}else{navigator.clipboard.writeText(shareText+' '+gymUrl).then(()=>{this.textContent='✅ Link Copied!';setTimeout(()=>{this.textContent='📤 Share Booking'},2000)}).catch(function(){sgToast('Could not copy link','error',2000)})}" class="mt-3 text-brand text-sm font-medium hover:text-orange-400 cursor-pointer transition">📤 Share Booking</button>
       </div>
 
       <!-- Tier 2: Access Control Credentials (Kisi QR unlock / Seam PIN / Mobile Key) -->
@@ -11379,9 +11398,9 @@ function ScanGymIDCard(u){
 // Share ID card handler (Fix #8E)
 window._shareIDCard=function(){
   if(navigator.share){
-    navigator.share({title:'My ScanGym ID',text:'Check out my ScanGym gym pass! Book any gym. No membership needed.',url:'https://scangym.com'}).catch(()=>{});
+    navigator.share({title:'My ScanGym ID',text:'Check out my ScanGym gym pass! Book any gym. No membership needed.',url:sgGetAffiliateUrl()}).catch(()=>{});
   }else{
-    navigator.clipboard.writeText('https://scangym.com').then(()=>sgToast('Link copied!','success',2000)).catch(()=>{});
+    navigator.clipboard.writeText(sgGetAffiliateUrl()).then(()=>sgToast('Link copied!','success',2000)).catch(()=>{});
   }
 };
 
@@ -12824,9 +12843,10 @@ window.sgShowWorkoutCard=function(data){
 };
 
 window.sgShareWorkout=function(text){
-  // ChatGPT Playbook #5/#7: Share with referral link
-  var shareUrl=state.user&&state.user.referralHandle?'https://scangym.com/r/'+state.user.referralHandle:'https://scangym.com';
-  var shareText=text||(state.user&&state.user.referralHandle?'🔥 Just finished a workout with @ScanGym! Try it: scangym.com/r/'+state.user.referralHandle+' 💪':'🔥 Just finished a workout with @ScanGym! 💪');
+  // #57: Use central affiliate URL helper for all shares
+  var shareUrl=sgGetAffiliateUrl();
+  var _h='';try{var _c=JSON.parse(localStorage.getItem('sg_creator')||'null');if(_c&&_c.handle)_h=_c.handle;}catch(e){}if(!_h&&state.user&&state.user.referralHandle)_h=state.user.referralHandle;
+  var shareText=text||(_h?'🔥 Just finished a workout with @ScanGym! Try it: scangym.com/r/'+_h+' 💪':'🔥 Just finished a workout with @ScanGym! 💪');
   if(navigator.share){navigator.share({title:'ScanGym Workout',text:shareText,url:shareUrl}).catch(function(){navigator.clipboard.writeText(shareText+' '+shareUrl).then(function(){sgToast('Copied to clipboard!','success')}).catch(function(){sgToast('Could not share','error',2000)})});}
   else{navigator.clipboard.writeText(shareText+' '+shareUrl).then(function(){sgToast('Copied to clipboard!','success')}).catch(function(){sgToast('Could not copy link','error',2000)});}
 };
@@ -13535,9 +13555,9 @@ window.sgWorkoutGrid=function(container){
 };
 window.sgShareGrid=function(){
   const grid=window._sgGridEmoji||'';
-  const text='My ScanGym Workout Grid 💪🔥\n\n'+grid+'\n\n#ScanGym #GymStreak';
-  if(navigator.share){navigator.share({text:text}).catch(()=>{})}
-  else{navigator.clipboard.writeText(text).then(()=>{if(typeof sgToast==='function')sgToast('📋 Copied to clipboard!')})}
+  const url=sgGetAffiliateUrl();const text='My ScanGym Workout Grid 💪🔥\n\n'+grid+'\n\n#ScanGym #GymStreak';
+  if(navigator.share){navigator.share({title:"ScanGym Workout Grid",text:text,url:url}).catch(()=>{})}
+  else{navigator.clipboard.writeText(text+'\n'+url).then(()=>{if(typeof sgToast==='function')sgToast('📋 Copied to clipboard!')})}
 };
 
 // ─── 17. SPIN-TO-WIN MYSTERY REWARD (Candy Crush + Robinhood mechanic #1 + #14 + #24) ───
