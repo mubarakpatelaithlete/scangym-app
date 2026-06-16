@@ -730,6 +730,7 @@ module.exports = {
   aggregatePerformance,
   startBackgroundJobs,
   stopBackgroundJobs,
+  loadPerformanceScores,
   // Expose for testing
   computeEngagementScore,
   scoreAndBucketVideos,
