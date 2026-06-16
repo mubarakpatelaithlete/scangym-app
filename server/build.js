@@ -182,9 +182,35 @@ function pct(saved, original) {
   return Math.round((saved / original) * 100) + '%';
 }
 
+// ─── Step 4: Validate JS syntax (catch octal escapes in template literals etc.) ─
+function validateJS() {
+  const jsFiles = findFiles(PUBLIC_DIR, '.js');
+  let errors = 0;
+
+  for (const file of jsFiles) {
+    if (file.endsWith('.min.js') || file.endsWith('.br') || file.endsWith('.gz')) continue;
+
+    const code = fs.readFileSync(file, 'utf8');
+    // Quick parse check — catches SyntaxError before deploy
+    try {
+      new Function(code);
+    } catch (e) {
+      console.error(`  ❌ ${path.relative(PUBLIC_DIR, file)}: ${e.message}`);
+      errors++;
+    }
+  }
+
+  if (errors > 0) {
+    console.error(`\n🚨 ${errors} JS file(s) have syntax errors — fix before deploying!\n`);
+    process.exit(1);
+  }
+  console.log(`  ✅ All JS files pass syntax validation\n`);
+}
+
 // ─── Run ──────────────────────────────────────────────────────────────
 (async () => {
   await minifyJS();
+  validateJS();
   preCompress();
   logSummary();
   console.log('✅ Build complete!\n');
