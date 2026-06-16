@@ -1628,11 +1628,11 @@ function GymProfilePage(){
     .gym-pay-sheet{position:fixed;inset:0;z-index:9200;opacity:0;pointer-events:none;transition:opacity .25s}
     .gym-pay-sheet.open{opacity:1;pointer-events:all}
     .gym-pay-sheet-bg{position:absolute;inset:0;background:rgba(0,0,0,.5)}
-    .gym-pay-sheet-panel{position:absolute;left:0;right:0;bottom:0;background:#111827;border-radius:20px 20px 0 0;transform:translateY(100%);transition:transform .35s cubic-bezier(.32,.72,0,1);max-height:70vh;overflow-y:auto;padding-bottom:env(safe-area-inset-bottom,0px)}
+    .gym-pay-sheet-panel{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:20px 20px 0 0;transform:translateY(100%);transition:transform .35s cubic-bezier(.32,.72,0,1);max-height:85vh;overflow-y:auto;padding-bottom:env(safe-area-inset-bottom,0px)}
     .gym-pay-sheet.open .gym-pay-sheet-panel{transform:translateY(0)}
-    .gym-pay-sheet-drag{width:40px;height:4px;border-radius:2px;background:rgba(255,255,255,.2);margin:10px auto 0}
-    .gym-pay-sheet-title{color:#fff;font-size:18px;font-weight:700;padding:16px 20px 12px}
-    .gym-pay-option{display:flex;align-items:center;gap:12px;padding:14px 20px;cursor:pointer;transition:background .15s;-webkit-tap-highlight-color:transparent}
+    .gym-pay-sheet-drag{width:40px;height:4px;border-radius:2px;background:rgba(0,0,0,.12);margin:10px auto 0}
+    .gym-pay-sheet-title{color:#000;font-size:28px;font-weight:800;padding:8px 20px 4px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}.gym-pay-sheet-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 0}.gym-pay-sheet-close{width:36px;height:36px;background:transparent;border:none;font-size:28px;color:#000;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}.gym-pay-sheet-add-btn{background:#f0f0f0;border:none;border-radius:20px;padding:8px 16px;color:#000;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;-webkit-tap-highlight-color:transparent}.gym-pay-section-title{color:#000;font-size:18px;font-weight:700;padding:20px 20px 12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}.gym-pay-item{display:flex;align-items:center;gap:14px;padding:16px 20px;cursor:pointer;transition:background .15s;border-bottom:1px solid rgba(0,0,0,.06);-webkit-tap-highlight-color:transparent}.gym-pay-item:active{background:rgba(0,0,0,.03)}.gym-pay-item-icon{width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.gym-pay-item-label{flex:1;color:#000;font-size:16px;font-weight:500;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}.gym-pay-item-check{width:28px;height:28px;border-radius:50%;border:2px solid #e0e0e0;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}.gym-pay-item.selected .gym-pay-item-check{background:#000;border-color:#000}.gym-pay-item.selected .gym-pay-item-check::after{content:'\2713';color:#fff;font-size:14px;font-weight:700}.gym-pay-save-btn{width:calc(100% - 40px);margin:16px 20px;padding:18px;border:none;border-radius:12px;background:#000;color:#fff;font-size:17px;font-weight:700;cursor:pointer;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;transition:all .15s;-webkit-tap-highlight-color:transparent}.gym-pay-save-btn:active{opacity:.8;transform:scale(.99)}.gym-pay-add-back{display:flex;align-items:center;gap:12px;padding:16px 20px;cursor:pointer;border-bottom:1px solid rgba(0,0,0,.06);-webkit-tap-highlight-color:transparent}.gym-pay-add-title{color:#000;font-size:18px;font-weight:700;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}.gym-pay-add-item{display:flex;align-items:center;gap:14px;padding:18px 20px;cursor:pointer;border-bottom:1px solid rgba(0,0,0,.06);transition:background .15s;-webkit-tap-highlight-color:transparent}.gym-pay-add-item:active{background:rgba(0,0,0,.03)}.gym-pay-add-item-icon{width:40px;height:40px;border-radius:8px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .gym-pay-option{display:none}
     .gym-pay-option:active{background:rgba(255,255,255,.04)}
     .gym-pay-option.selected{background:rgba(34,197,94,.08)}
     .gym-pay-option-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
@@ -1992,42 +1992,76 @@ function GymProfilePage(){
       <div class="gym-pay-sheet-bg"></div>
       <div class="gym-pay-sheet-panel">
         <div class="gym-pay-sheet-drag"></div>
-        <div class="gym-pay-sheet-title">Payment method</div>
-        <!-- Saved cards injected here by JS -->
-        <div id="gym-pay-saved-cards"></div>
-        <div id="gym-pay-options">
-          <!-- Apple Pay / Google Pay (Fix #6A: Stripe Payment Request API) -->
-          <div class="gym-pay-option" id="gym-pay-wallet-option" onclick="selectPayMethod(this,'wallet_pay')" data-method="wallet_pay" style="display:none">
-            <div class="gym-pay-option-icon" style="background:linear-gradient(135deg,#000,#333);border-radius:10px">
-              <span style="color:#fff;font-size:14px;font-weight:900">Pay</span>
-            </div>
-            <div>
-              <div class="gym-pay-option-label" id="gym-pay-wallet-label">Apple Pay / Google Pay</div>
-              <div class="gym-pay-option-sub">One-tap secure payment</div>
-            </div>
-            <div class="gym-pay-option-check"></div>
+        <!-- ═══ Main "Pay with" View ═══ -->
+        <div id="gym-pay-main-sheet">
+          <div class="gym-pay-sheet-header">
+            <button class="gym-pay-sheet-close" onclick="closePaySheet()">✕</button>
+            <button class="gym-pay-sheet-add-btn" onclick="window._paySheetShowAdd()">+ Add</button>
           </div>
-          <div class="gym-pay-option" onclick="selectPayMethod(this,'card')" data-method="card">
-            <div class="gym-pay-option-icon" style="background:linear-gradient(135deg,#1a1f71,#2d2f8e);border-radius:10px">
-              <span style="color:#fff;font-size:11px;font-weight:800">💳</span>
+          <div class="gym-pay-sheet-title">Pay with</div>
+          <!-- ScanGym Balance -->
+          <div style="padding:8px 20px 0">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0">
+              <span style="color:#000;font-size:17px;font-weight:700;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">ScanGym balance</span>
+              <label style="position:relative;display:inline-block;width:48px;height:28px;cursor:pointer"><input type="checkbox" checked style="opacity:0;width:0;height:0" onchange="window._payToggleBalance(this)"><span id="sg-pay-toggle-track" style="position:absolute;inset:0;background:#000;border-radius:28px;transition:.3s"></span><span id="sg-pay-toggle-dot" style="position:absolute;height:22px;width:22px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s;transform:translateX(20px)"></span></label>
             </div>
-            <div>
-              <div class="gym-pay-option-label">Add new card</div>
-              <div class="gym-pay-option-sub">Visa, Mastercard, Amex</div>
-            </div>
-            <div class="gym-pay-option-check"></div>
           </div>
-          <!-- BNPL removed — only saveable 1-tap methods kept -->
-          <div class="gym-pay-option" onclick="selectPayMethod(this,'cash')" data-method="cash">
-            <div class="gym-pay-option-icon" style="background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);border-radius:10px">
-              <span style="font-size:18px">💷</span>
-            </div>
-            <div>
-              <div class="gym-pay-option-label">Cash at Gym</div>
-              <div class="gym-pay-option-sub">Pay at reception</div>
-            </div>
-            <div class="gym-pay-option-check"></div>
+          <div style="display:flex;align-items:center;gap:14px;padding:14px 20px">
+            <div style="width:36px;height:36px;border-radius:8px;background:#FF6D00;display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="color:#fff;font-size:11px;font-weight:800">SG</span></div>
+            <span style="flex:1;color:#333;font-size:15px;font-weight:500;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">ScanGym Credits: £0.00</span>
           </div>
+          <div style="height:1px;background:rgba(0,0,0,.06);margin:0 20px"></div>
+          <!-- Payment Methods -->
+          <div class="gym-pay-section-title">Payment methods</div>
+          <div id="gym-pay-saved-cards"></div>
+          <div id="gym-pay-options">
+            <div class="gym-pay-item" onclick="selectPayMethod(this,'cash')" data-method="cash">
+              <div class="gym-pay-item-icon" style="background:#e8f5e9;border-radius:8px"><span style="font-size:18px">💷</span></div>
+              <span class="gym-pay-item-label">Cash</span>
+              <div class="gym-pay-item-check"></div>
+            </div>
+          </div>
+          <button class="gym-pay-save-btn" onclick="closePaySheet()">Save</button>
+        </div>
+        <!-- ═══ Add Payment Method Sub-View ═══ -->
+        <div id="gym-pay-add-sheet" style="display:none">
+          <div class="gym-pay-add-back" onclick="window._paySheetShowMain()">
+            <span style="color:#000;font-size:22px">←</span>
+            <span class="gym-pay-add-title">Add a payment method</span>
+          </div>
+          <div class="gym-pay-add-item" onclick="window._paySheetShowCardForm()">
+            <div class="gym-pay-add-item-icon"><span style="font-size:18px">💳</span></div>
+            <span class="gym-pay-item-label">Credit or debit card</span>
+            <span style="color:#999;font-size:20px">›</span>
+          </div>
+          <div class="gym-pay-add-item" onclick="sgToast('PayPal coming soon!','info',2000)">
+            <div class="gym-pay-add-item-icon" style="background:#e3f2fd"><span style="color:#003087;font-size:14px;font-weight:800">P</span></div>
+            <span class="gym-pay-item-label">PayPal</span>
+            <span style="color:#999;font-size:20px">›</span>
+          </div>
+          <div class="gym-pay-add-item" onclick="sgToast('Gift cards coming soon!','info',2000)">
+            <div class="gym-pay-add-item-icon" style="background:#f3e5f5"><span style="font-size:18px">🎁</span></div>
+            <span class="gym-pay-item-label">Gift card</span>
+            <span style="color:#999;font-size:20px">›</span>
+          </div>
+        </div>
+        <!-- ═══ Card Form Sub-View ═══ -->
+        <div id="gym-pay-card-sheet" style="display:none">
+          <div class="gym-pay-add-back" onclick="window._paySheetShowAdd()">
+            <span style="color:#000;font-size:22px">←</span>
+            <span class="gym-pay-add-title">Add a payment method</span>
+          </div>
+          <div style="padding:16px 20px 8px"><div style="color:#000;font-size:26px;font-weight:800;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;line-height:1.2">Add credit or<br>debit card</div></div>
+          <div style="padding:8px 20px">
+            <div style="margin-bottom:16px"><label style="color:#333;font-size:13px;font-weight:600;display:block;margin-bottom:6px">Card number</label><div id="gym-pay-inline-card-number" style="padding:14px 16px;background:#f5f5f5;border:1px solid #ddd;border-radius:8px;min-height:20px"></div></div>
+            <div style="display:flex;gap:12px;margin-bottom:16px"><div style="flex:1"><label style="color:#333;font-size:13px;font-weight:600;display:block;margin-bottom:6px">Exp. date</label><div id="gym-pay-inline-expiry" style="padding:14px 16px;background:#f5f5f5;border:1px solid #ddd;border-radius:8px;min-height:20px"></div></div><div style="flex:1"><div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><label style="color:#333;font-size:13px;font-weight:600">Security code</label><span style="color:#999;font-size:14px;cursor:help" title="3-digit code on back of card">❓</span></div><div id="gym-pay-inline-cvc" style="padding:14px 16px;background:#f5f5f5;border:1px solid #ddd;border-radius:8px;min-height:20px"></div></div></div>
+            <div style="margin-bottom:16px"><label style="color:#333;font-size:13px;font-weight:600;display:block;margin-bottom:6px">Country</label><select id="gym-pay-inline-country" style="width:100%;padding:14px 16px;background:#f5f5f5;border:1px solid #ddd;border-radius:8px;font-size:15px;color:#333;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;-webkit-appearance:none;appearance:none;cursor:pointer;background-image:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%228%22 fill=%22%23666%22><path d=%22M0 0l6 8 6-8z%22/></svg>');background-repeat:no-repeat;background-position:right 16px center;padding-right:36px"><option value='GB' selected>United Kingdom</option><option value='US'>United States</option><option value='IE'>Ireland</option><option value='DE'>Germany</option><option value='FR'>France</option><option value='ES'>Spain</option><option value='IT'>Italy</option><option value='NL'>Netherlands</option><option value='AU'>Australia</option><option value='CA'>Canada</option></select></div>
+            <div style="margin-bottom:16px"><label style="color:#333;font-size:13px;font-weight:600;display:block;margin-bottom:6px">Postcode</label><input id="gym-pay-inline-postcode" type="text" style="width:100%;padding:14px 16px;background:#f5f5f5;border:1px solid #ddd;border-radius:8px;font-size:15px;color:#333;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;outline:none;box-sizing:border-box" /></div>
+            <div style="margin-bottom:8px"><label style="color:#333;font-size:13px;font-weight:600;display:block;margin-bottom:6px">Nickname (optional)</label><input id="gym-pay-inline-nickname" type="text" style="width:100%;padding:14px 16px;background:#f5f5f5;border:1px solid #ddd;border-radius:8px;font-size:15px;color:#333;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;outline:none;box-sizing:border-box" /></div>
+          </div>
+          <button id="gym-pay-inline-save" class="gym-pay-save-btn" onclick="window._paySheetSaveCard()" style="opacity:.5;pointer-events:none">Add card</button>
+          <p id="gym-pay-inline-error" style="color:#ef4444;font-size:13px;padding:0 20px;display:none"></p>
+          <div style="text-align:center;padding:8px 0 16px"><button onclick="window._paySheetShowAdd()" style="background:none;border:none;color:#999;font-size:14px;cursor:pointer;padding:8px 16px">Cancel</button></div>
         </div>
       </div>
     </div>
@@ -2133,7 +2167,7 @@ window.openGymOverlay=function(section){
     return d.getDate()+' '+months[d.getMonth()]+' '+d.getFullYear();
   };
   if(section==='reviews'){
-    title.innerHTML='⭐ Reviews <span onclick="event.stopPropagation();openWriteReviewModal()" style="float:right;font-size:13px;font-weight:600;color:#FF6D00;cursor:pointer;padding:2px 10px;border:1px solid rgba(255,109,0,.3);border-radius:20px;margin-top:2px">✍️ Write</span>';
+    title.innerHTML='⭐ Reviews';
     // Perf #4: Show skeleton instantly, build heavy HTML in next frame
     body.innerHTML='<div style="padding:20px"><div class="skel-card" style="height:60px;border-radius:12px;background:rgba(255,255,255,.06);margin-bottom:12px"></div><div class="skel-card" style="height:180px;border-radius:12px;background:rgba(255,255,255,.06);margin-bottom:12px"></div><div class="skel-card" style="height:100px;border-radius:12px;background:rgba(255,255,255,.06)"></div></div>';
     overlay.classList.add('active');
@@ -2148,42 +2182,43 @@ window.openGymOverlay=function(section){
 
     body.innerHTML=`
 
-      <!-- #61B: Rating summary -->
-      <div style="display:flex;gap:20px;align-items:center;margin-bottom:24px">
-        <div style="text-align:center">
-          <div style="color:#fff;font-size:52px;font-weight:800;line-height:1">${rating}</div>
-          <div style="color:#fbbf24;font-size:16px;margin-top:4px">${'★'.repeat(Math.round(rating))}${'☆'.repeat(5-Math.round(rating))}</div>
-          <div style="color:rgba(255,255,255,.4);font-size:13px;margin-top:2px">(${reviewCount})</div>
+      <!-- Amazon-style: Customer reviews header -->
+      <div style="margin-bottom:20px">
+        <div style="color:#fff;font-size:18px;font-weight:700;margin-bottom:8px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">Customer reviews</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+          <div style="color:#fbbf24;font-size:18px;letter-spacing:-1px">${'★'.repeat(Math.round(rating))}${'☆'.repeat(5-Math.round(rating))}</div>
+          <span style="color:#fff;font-size:16px;font-weight:600">${rating} out of 5</span>
+          <span style="color:rgba(255,255,255,.3);font-size:18px;margin-left:auto">›</span>
         </div>
-        <div style="flex:1">
+        <div style="color:rgba(255,255,255,.4);font-size:14px;margin-bottom:16px">${reviewCount.toLocaleString()} global ratings</div>
+        <div>
           ${[5,4,3,2,1].map(s=>`
-            <div class="rating-bar-row" onclick="rvFilterByStar(${s},this)" title="Show ${s}-star reviews">
-              <span class="rating-bar-label">${s}</span>
-              <div class="rating-bar-bg"><div class="rating-bar-fill" style="width:${dist[s]}%"></div></div>
-              <span style="color:rgba(255,255,255,.3);font-size:11px;min-width:28px;text-align:right">${Math.round(dist[s]*reviewCount/100)}</span>
+            <div class="rating-bar-row" onclick="rvFilterByStar(${s},this)" title="Show ${s}-star reviews" style="cursor:pointer">
+              <span style="color:#3b82f6;font-size:13px;font-weight:500;min-width:44px;white-space:nowrap">${s} star</span>
+              <div class="rating-bar-bg" style="background:rgba(255,255,255,.1);border-radius:4px;overflow:hidden"><div class="rating-bar-fill" style="width:${dist[s]}%;background:#fbbf24;border-radius:4px"></div></div>
+              <span style="color:rgba(255,255,255,.4);font-size:13px;min-width:32px;text-align:right">${Math.round(dist[s])}%</span>
             </div>
           `).join('')}
         </div>
       </div>
+      <div style="height:1px;background:rgba(255,255,255,.06);margin-bottom:20px"></div>
 
       ${topics.length?`
-      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px">
-        <span class="topic-pill active" onclick="rvFilterByTopic(this,'All')">All</span>
+      <div style="margin-bottom:20px">
+        <div style="color:#fff;font-size:15px;font-weight:700;margin-bottom:12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">Select to learn more</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+        <span class="topic-pill active" onclick="rvFilterByTopic(this,'All')" style="display:none">All</span>
         ${topics.map(t=>{
-          const arrow=t.sentiment>=80?'↑':'→';
-          const color=t.sentiment>=80?'#4ade80':t.sentiment>=50?'#fbbf24':'#f87171';
-          return '<span class="topic-pill" onclick="rvFilterByTopic(this,\''+t.name.replace(/'/g,"\\\'")+'\')">'+t.name+' <span style="color:rgba(255,255,255,.35);font-size:10px">('+t.count+')</span> <span style="color:'+color+';font-weight:700;font-size:11px">'+arrow+t.sentiment+'%</span></span>';
+          const arrow=t.sentiment>=80?'↗':'∼';
+          const color=t.sentiment>=80?'#e68a00':'#3b82f6';
+          return '<span class="topic-pill" onclick="rvFilterByTopic(this,\''+t.name.replace(/'/g,"\\\'")+'\')"><span style="color:'+color+';font-weight:700;font-size:13px">'+arrow+'</span> '+t.name+' <span style="color:rgba(255,255,255,.35);font-size:12px">('+t.count+')</span></span>';
         }).join('')}
-      </div>`:''}
+      </div></div>`:''}
 
 
-      <!-- FIX #11: AI Review Summary ("Customers say" style) -->
-      <div id="rv-ai-summary" style="background:linear-gradient(135deg,rgba(99,102,241,.08),rgba(139,92,246,.06));border:1px solid rgba(99,102,241,.15);border-radius:16px;padding:16px 20px;margin-bottom:20px">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-          <span style="font-size:16px">🤖</span>
-          <span style="color:#a78bfa;font-size:13px;font-weight:700;letter-spacing:.3px">AI SUMMARY</span>
-          <span style="color:rgba(255,255,255,.25);font-size:11px;margin-left:auto">Based on ${reviewCount} reviews</span>
-        </div>
+      <!-- Amazon-style: "Customers say" summary -->
+      <div id="rv-ai-summary" style="margin-bottom:20px">
+        <div style="color:#fff;font-size:16px;font-weight:700;margin-bottom:10px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">Customers say</div>
         <div id="rv-ai-summary-text" style="color:rgba(255,255,255,.8);font-size:14px;line-height:1.6">
           ${(function(){
             var allText=reviews.map(function(r){return r.text||r.comment||'';}).join(' ').toLowerCase();
@@ -2219,18 +2254,14 @@ window.openGymOverlay=function(section){
             if(allText.indexOf('old')!==-1||allText.indexOf('dated')!==-1)cons.push('some areas could use updating');
             if(pros.length===0)pros.push('welcoming environment','well-maintained space');
             var avgRating=(reviews.reduce(function(s,r){return s+(r.rating||5);},0)/reviews.length).toFixed(1);
-            var html='<div style="margin-bottom:10px"><strong>Customers say:</strong> "'+pros.slice(0,3).join(', ')+'"</div>';
-            html+='<div style="display:flex;gap:16px;flex-wrap:wrap">';
-            html+='<div style="flex:1;min-width:140px"><div style="color:#4ade80;font-size:12px;font-weight:700;margin-bottom:4px">👍 PROS</div>';
-            pros.slice(0,4).forEach(function(p){html+='<div style="font-size:13px;color:rgba(255,255,255,.65);margin-bottom:2px">• '+p.charAt(0).toUpperCase()+p.slice(1)+'</div>';});
-            html+='</div>';
-            if(cons.length>0){
-              html+='<div style="flex:1;min-width:140px"><div style="color:#fbbf24;font-size:12px;font-weight:700;margin-bottom:4px">⚡ GOOD TO KNOW</div>';
-              cons.forEach(function(c){html+='<div style="font-size:13px;color:rgba(255,255,255,.5);margin-bottom:2px">• '+c.charAt(0).toUpperCase()+c.slice(1)+'</div>';});
-              html+='</div>';
-            }
-            html+='</div>';
-            if(rating>=4.0)html+='<div style="margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,.06);font-size:12px;color:rgba(255,255,255,.4)">⭐ Rated <strong style="color:#fbbf24">'+parseFloat(rating).toFixed(1)+'</strong> — one of the top-rated gyms in your area</div>';
+            // Amazon-style flowing paragraph
+            var gymName=(state.currentGym&&state.currentGym.name)||'This gym';
+            var para='Customers find '+gymName.replace(/'/g,'')+' to be '+pros.slice(0,2).join(' and ')+'. ';
+            if(pros.length>2)para+='Moreover, they appreciate the '+pros.slice(2,4).join(' and ')+'. ';
+            if(cons.length>0)para+='However, some visitors note that '+cons.join(' and ')+'.';
+            else para+='Overall, visitors rate it highly with '+parseFloat(rating).toFixed(1)+' out of 5 stars.';
+            var html='<div style="color:rgba(255,255,255,.75);font-size:14px;line-height:1.7;margin-bottom:8px">'+para+'</div>';
+            html+='<div style="display:flex;align-items:center;gap:6px;color:rgba(255,255,255,.3);font-size:12px;margin-top:8px"><span style="font-size:14px">🤖</span> Generated from the text of customer reviews</div>';
             return html;
           })()}
         </div>
@@ -2249,10 +2280,10 @@ window.openGymOverlay=function(section){
           });
           if(allPhotos.length>0){
             photosHtml='<div style="margin-bottom:20px">';
-            photosHtml+='<div style="color:rgba(255,255,255,.5);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">\u{1F4F8} Reviews with images</div>';
+            photosHtml+='<div style="color:#fff;font-size:16px;font-weight:700;margin-bottom:10px;font-family:-apple-system,BlinkMacSystemFont,sans-serif">Reviews with images</div>';
             photosHtml+='<div style="display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;padding-bottom:4px" class="rv-photo-carousel">';
             allPhotos.slice(0,10).forEach(function(p){
-              photosHtml+='<div onclick="rvShowFullscreen(\''+p.url+'\')" style="flex:0 0 80px;width:80px;height:80px;border-radius:12px;overflow:hidden;cursor:pointer;position:relative;border:1.5px solid rgba(255,255,255,.08)">';
+              photosHtml+='<div onclick="rvShowFullscreen(\''+p.url+'\')" style="flex:0 0 120px;width:120px;height:120px;border-radius:10px;overflow:hidden;cursor:pointer;position:relative;border:1px solid rgba(255,255,255,.08)">';
               photosHtml+='<img src="'+p.url+'" loading="lazy" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.style.display=\'none\'" />';
               photosHtml+='<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.7));padding:3px 6px;font-size:9px;color:rgba(255,255,255,.8)">'+p.author.split(' ')[0]+'</div>';
               photosHtml+='</div>';
@@ -2277,6 +2308,9 @@ window.openGymOverlay=function(section){
         </select>
       </div>
 
+      <!-- Amazon-style: Top reviews -->
+      <div style="color:#fff;font-size:16px;font-weight:700;margin-bottom:16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">Top reviews</div>
+
       ${reviews.map((r,i)=>{
         const avatarGrads=['linear-gradient(135deg,#6366f1,#8b5cf6)','linear-gradient(135deg,#f59e0b,#ef4444)','linear-gradient(135deg,#22c55e,#059669)','linear-gradient(135deg,#3b82f6,#1d4ed8)','linear-gradient(135deg,#ec4899,#be185d)'];
         const initial=(r.author||r.name||'A').charAt(0).toUpperCase();
@@ -2289,36 +2323,42 @@ window.openGymOverlay=function(section){
         const voted=_isReviewHelpfulVoted(rid);
         const helpCount=helpfulBase+(voted?1:0);
         return `
-        <div class="ov-review">
-          <div class="ov-review-top">
+        <div class="ov-review" style="border-bottom:1px solid rgba(255,255,255,.06);padding-bottom:20px;margin-bottom:20px">
+          <!-- Avatar + name row -->
+          <div class="ov-review-top" style="margin-bottom:8px">
             ${avatarHtml}
             <div class="ov-review-info">
-              <div class="ov-review-name">${r.author||r.name||'Anonymous'}</div>
-              <span class="ov-review-badge">✓ Verified Visitor</span>
-              <div class="ov-review-date">Reviewed on ${_formatReviewDate(r,i)} · ${r.relativeTime||r.time||'recently'}</div>
+              <div class="ov-review-name" style="font-size:14px;font-weight:600">${r.author||r.name||'Anonymous'}</div>
             </div>
           </div>
-          <div class="ov-review-stars"><span class="ov-review-rating-num">${r.rating||5}.0</span> ${'★'.repeat(r.rating||5)}${'☆'.repeat(5-(r.rating||5))}</div>
-          <div class="ov-review-title">${r.headline||(r.text||r.comment||'').split(/[.!?\n]/)[0].slice(0,60)||(r.rating>=4?'Great experience':'Review')}</div>
-          <div class="ov-review-text" id="rvtxt_${i}">${(function(){
+          <!-- Stars + Verified Visit badge -->
+          <div class="ov-review-stars" style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <span style="color:#fbbf24;font-size:14px">${'\u2605'.repeat(r.rating||5)}${'\u2606'.repeat(5-(r.rating||5))}</span>
+            <span style="color:#e68a00;font-size:13px;font-weight:700">Verified Visit</span>
+          </div>
+          <!-- Bold review title -->
+          <div class="ov-review-title" style="color:#fff;font-size:15px;font-weight:700;margin-bottom:4px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">${r.headline||(r.text||r.comment||'').split(/[.!?\n]/)[0].slice(0,80)||(r.rating>=4?'Great experience':'Review')}</div>
+          <!-- Reviewed on date -->
+          <div style="color:rgba(255,255,255,.35);font-size:13px;margin-bottom:10px">Reviewed on ${_formatReviewDate(r,i)}</div>
+          <!-- Review text with fade + Read more -->
+          <div class="ov-review-text" id="rvtxt_${i}" style="color:rgba(255,255,255,.75);font-size:14px;line-height:1.6">${(function(){
             var txt=r.text||r.comment||'';
             if(txt.length>200){
-              return '<span class="rv-text-short">'+txt.slice(0,200)+'\u2026 <span onclick="var f=document.getElementById(\'rvtxt_'+i+'\').querySelector(\'.rv-text-full\');f.style.display=\'inline\';this.parentElement.style.display=\'none\'" style="color:#FF6D00;font-weight:600;cursor:pointer;font-size:13px">Read more</span></span><span class="rv-text-full" style="display:none">'+txt+'</span>';
+              return '<span class="rv-text-short"><span style="color:rgba(255,255,255,.75)">'+txt.slice(0,200)+'</span><span style="color:rgba(255,255,255,.4)">'+txt.slice(200,260)+'</span></span><span class="rv-text-full" style="display:none">'+txt+'</span><div style="margin-top:6px"><span onclick="var f=document.getElementById(\'rvtxt_'+i+'\');f.querySelector(\'.rv-text-short\').style.display=\'none\';f.querySelector(\'.rv-text-full\').style.display=\'inline\';this.parentElement.style.display=\'none\'" style="color:#e68a00;font-weight:600;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:4px">\u25bc Read more</span></div>';
             }
             return txt;
           })()}</div>
-          ${r.media&&r.media.length>0?'<div class="rv-review-photos">'+r.media.map(function(m){return '<div class="rv-review-photo" onclick="rvShowFullscreen(\''+m.url+'\')"><'+(m.type==='video'?'video':'img')+' src="'+(m.thumbnail||m.url)+'" loading="lazy" />'+(m.type==='video'?'<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.3)"><span style="font-size:24px">▶</span></div>':'')+'</div>';}).join('')+'</div>':''}
-          <div class="ov-review-actions">
-            <span class="ov-review-helpful${voted?' active':''}" id="helpful_${rid}" onclick="event.stopPropagation();_toggleReviewHelpful('${rid}',${helpfulBase})">
-              <span class="rv-thumb">👍</span> <span id="hc_${rid}">${helpCount} ${helpCount===1?'person':'people'} found this helpful</span>
-            </span>
-            <span class="ov-review-helpful" onclick="event.stopPropagation();sgToast(&quot;Thanks for your feedback&quot;,&quot;info&quot;,2000)">
-              <span class="rv-thumb">👎</span>
-            </span>
-            <span class="ov-review-report" onclick="event.stopPropagation();sgToast(&quot;Review reported. We will look into it.&quot;,&quot;info&quot;,2500)">Report</span>
+          ${r.media&&r.media.length>0?'<div class="rv-review-photos" style="margin-top:10px">'+r.media.map(function(m){return '<div class="rv-review-photo" onclick="rvShowFullscreen(\''+m.url+'\')"><'+(m.type==='video'?'video':'img')+' src="'+(m.thumbnail||m.url)+'" loading="lazy" />'+(m.type==='video'?'<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.3)"><span style="font-size:24px">\u25b6</span></div>':'')+'</div>';}).join('')+'</div>':''}
+          <!-- Helpful count + actions -->
+          <div style="color:rgba(255,255,255,.35);font-size:13px;margin:10px 0 8px">${helpCount} ${helpCount===1?'person':'people'} found this helpful</div>
+          <div class="ov-review-actions" style="display:flex;align-items:center;gap:16px">
+            <button class="ov-review-helpful${voted?' active':''}" id="helpful_${rid}" onclick="event.stopPropagation();_toggleReviewHelpful('${rid}',${helpfulBase})" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:6px 16px;color:rgba(255,255,255,.7);font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent">Helpful</button>
+            <span onclick="event.stopPropagation();sgToast('Link copied!','info',2000)" style="color:rgba(255,255,255,.4);font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:4px"><span style="font-size:14px">\u2197</span> Share</span>
+            <span class="ov-review-report" onclick="event.stopPropagation();sgToast('Review reported. We will look into it.','info',2500)" style="margin-left:auto;color:rgba(255,255,255,.3);font-size:13px;cursor:pointer">Report</span>
           </div>
         </div>`;
       }).join('')}
+
 
       ${reviews.length===0?`
         <div style="text-align:center;padding:40px 0;color:rgba(255,255,255,.3)">
@@ -2327,6 +2367,19 @@ window.openGymOverlay=function(section){
         </div>`:''}
 
       <div id="rv-star-filter-label" style="text-align:center;color:#fbbf24;font-size:12px;font-weight:600;margin-bottom:12px"></div>
+
+      <!-- Amazon-style: See more reviews + Write a review -->
+      <div style="border-top:1px solid rgba(255,255,255,.06);padding-top:16px;margin-top:8px">
+        <div onclick="sgToast('Loading more reviews\u2026','info',2000)" style="display:flex;align-items:center;justify-content:space-between;padding:14px 0;cursor:pointer;-webkit-tap-highlight-color:transparent">
+          <span style="color:#fff;font-size:15px;font-weight:600;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">See more reviews</span>
+          <span style="color:rgba(255,255,255,.3);font-size:20px">\u203a</span>
+        </div>
+        <div style="height:1px;background:rgba(255,255,255,.06)"></div>
+        <div onclick="event.stopPropagation();openWriteReviewModal()" style="display:flex;align-items:center;justify-content:space-between;padding:14px 0;cursor:pointer;margin-top:4px;-webkit-tap-highlight-color:transparent">
+          <span style="color:#fff;font-size:15px;font-weight:600;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">Write a review</span>
+          <span style="color:rgba(255,255,255,.3);font-size:20px">\u203a</span>
+        </div>
+      </div>
 
     `;
 
@@ -3096,53 +3149,79 @@ window.selectGymPassCard=function(el,idx,gymId){
   }
 };
 
-// ═══ Payment method sheet ═══
+// ═══ Payment method sheet (Uber-style "Pay with") ═══
 window.openPaySheet=function(){
   const sheet=document.getElementById('gym-pay-sheet');
   if(!sheet)return;
-  // ═══ Inject saved cards at top of payment sheet ═══
+  // Always show main view first
+  window._paySheetShowMain();
+  // ═══ Inject saved cards (Uber-style: brand icon + last4 + checkmark) ═══
   const savedArea=document.getElementById('gym-pay-saved-cards');
   if(savedArea&&state.user){
-    savedArea.innerHTML='<div style="padding:8px 20px;color:rgba(255,255,255,.4);font-size:12px">Loading saved cards…</div>';
+    savedArea.innerHTML='<div style="padding:12px 20px;color:#999;font-size:13px">Loading saved cards…</div>';
     fetch('/api/payment/saved-cards',{credentials:'include'}).then(r=>r.json()).then(resp=>{
-      if(!resp.cards||resp.cards.length===0){
-        savedArea.innerHTML='';
-        return;
-      }
+      if(!resp.cards||resp.cards.length===0){savedArea.innerHTML='';return;}
       const gbs=window._gymBookingState;
-      let html='<div style="padding:4px 20px 8px"><div style="color:rgba(255,255,255,.5);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Saved cards</div>';
+      let html='';
       resp.cards.forEach(card=>{
         const brandNames={visa:'Visa',mastercard:'Mastercard',amex:'Amex',discover:'Discover'};
         const brandName=brandNames[card.brand]||card.brand||'Card';
         const isSelected=gbs.paymentMethod==='saved'&&gbs.savedCard&&gbs.savedCard.id===card.id;
-        html+=`<div class="gym-pay-option ${isSelected?'selected':''}" onclick="selectPayMethodSaved(this,'${card.id}','${card.brand}','${card.last4}')" data-method="saved" data-card-id="${card.id}">
-          <div class="gym-pay-option-icon" style="background:linear-gradient(135deg,#1e293b,#334155);border:1px solid rgba(255,255,255,.1);border-radius:10px">
-            <span style="font-size:16px">💳</span>
-          </div>
-          <div>
-            <div class="gym-pay-option-label">${brandName} ····${card.last4}</div>
-            <div class="gym-pay-option-sub">${card.isDefault?'Default':'Expires '+card.expMonth+'/'+card.expYear}</div>
-          </div>
-          <div class="gym-pay-option-check">${isSelected?'✓':''}</div>
-        </div>`;
+        const brandColors={visa:'#1a1f71',mastercard:'#eb001b',amex:'#006fcf',discover:'#ff6000'};
+        const bgColor=brandColors[card.brand]||'#333';
+        html+=`<div class="gym-pay-item${isSelected?' selected':''}" onclick="selectPayMethodSaved(this,'${card.id}','${card.brand}','${card.last4}')" data-method="saved" data-card-id="${card.id}"><div class="gym-pay-item-icon" style="background:${bgColor};border-radius:8px"><span style="color:#fff;font-size:10px;font-weight:800;text-transform:uppercase">${brandName.slice(0,4)}</span></div><span class="gym-pay-item-label">${brandName} ••••${card.last4}</span><div class="gym-pay-item-check"></div></div>`;
       });
-      html+='</div>';
       savedArea.innerHTML=html;
     }).catch(()=>{savedArea.innerHTML='';});
   }
   sheet.classList.add('open');
-  // Fix #50: Tab bar stays visible — pay sheet z-index handles layering
 };
 window.closePaySheet=function(){
   const sheet=document.getElementById('gym-pay-sheet');
   if(sheet)sheet.classList.remove('open');
-  // Fix #50: Tab bar stays visible — no restore needed
 };
+// Sub-view navigation
+window._paySheetShowMain=function(){var m=document.getElementById('gym-pay-main-sheet');var a=document.getElementById('gym-pay-add-sheet');var c=document.getElementById('gym-pay-card-sheet');if(m)m.style.display='';if(a)a.style.display='none';if(c)c.style.display='none';};
+window._paySheetShowAdd=function(){var m=document.getElementById('gym-pay-main-sheet');var a=document.getElementById('gym-pay-add-sheet');var c=document.getElementById('gym-pay-card-sheet');if(m)m.style.display='none';if(a)a.style.display='';if(c)c.style.display='none';};
+window._paySheetShowCardForm=function(){var m=document.getElementById('gym-pay-main-sheet');var a=document.getElementById('gym-pay-add-sheet');var c=document.getElementById('gym-pay-card-sheet');if(m)m.style.display='none';if(a)a.style.display='none';if(c)c.style.display='';window._paySheetMountStripe();};
+window._paySheetStripeElements=null;
+window._paySheetMountStripe=async function(){
+  if(window._paySheetStripeElements)return;
+  try{await ensureStripeLoaded();if(!window.Stripe||!STRIPE_PK)return;
+  const stripe=window.Stripe(STRIPE_PK);
+  const elements=stripe.elements();
+  const style={base:{fontSize:'15px',color:'#333',fontFamily:'-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif','::placeholder':{color:'#aaa'}},invalid:{color:'#ef4444'}};
+  const cardNum=elements.create('cardNumber',{style,showIcon:true});
+  const cardExp=elements.create('cardExpiry',{style});
+  const cardCvc=elements.create('cardCvc',{style,placeholder:'123'});
+  cardNum.mount('#gym-pay-inline-card-number');cardExp.mount('#gym-pay-inline-expiry');cardCvc.mount('#gym-pay-inline-cvc');
+  window._paySheetStripeElements={stripe,elements,cardNum,cardExp,cardCvc};
+  var complete={num:false,exp:false,cvc:false};
+  function checkComplete(){var btn=document.getElementById('gym-pay-inline-save');if(btn){var ok=complete.num&&complete.exp&&complete.cvc;btn.style.opacity=ok?'1':'.5';btn.style.pointerEvents=ok?'auto':'none';}}
+  cardNum.on('change',e=>{complete.num=e.complete;checkComplete();});
+  cardExp.on('change',e=>{complete.exp=e.complete;checkComplete();});
+  cardCvc.on('change',e=>{complete.cvc=e.complete;checkComplete();});
+  }catch(e){console.error('Stripe mount error',e);}
+};
+window._paySheetSaveCard=async function(){
+  var se=window._paySheetStripeElements;if(!se)return;
+  var btn=document.getElementById('gym-pay-inline-save');var errEl=document.getElementById('gym-pay-inline-error');
+  if(btn){btn.textContent='Adding card…';btn.style.opacity='.6';btn.style.pointerEvents='none';}
+  if(errEl)errEl.style.display='none';
+  try{var resp=await fetch('/api/payment/setup-intent',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'}});
+  var data=await resp.json();if(!data.clientSecret)throw new Error(data.error||'Could not create setup intent');
+  var {error,setupIntent}=await se.stripe.confirmCardSetup(data.clientSecret,{payment_method:{card:se.cardNum,billing_details:{address:{country:document.getElementById('gym-pay-inline-country')?.value||'GB',postal_code:document.getElementById('gym-pay-inline-postcode')?.value||''}}}});
+  if(error)throw new Error(error.message);
+  var nickname=document.getElementById('gym-pay-inline-nickname')?.value||'';
+  await fetch('/api/payment/confirm-card',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({setupIntentId:setupIntent.id,nickname})});
+  sgToast('Card added successfully!','success',2500);window._paySheetStripeElements=null;window._paySheetShowMain();window.openPaySheet();
+  }catch(e){if(errEl){errEl.textContent=e.message;errEl.style.display='block';}if(btn){btn.textContent='Add card';btn.style.opacity='1';btn.style.pointerEvents='auto';}}
+};
+window._payToggleBalance=function(cb){var d=document.getElementById('sg-pay-toggle-dot');var t=document.getElementById('sg-pay-toggle-track');if(d)d.style.transform=cb.checked?'translateX(20px)':'translateX(0)';if(t)t.style.background=cb.checked?'#000':'#ccc';};
 // Select a SAVED card as payment method
 window.selectPayMethodSaved=function(el,cardId,brand,last4){
-  document.querySelectorAll('.gym-pay-option').forEach(function(o){o.classList.remove('selected');const c=o.querySelector('.gym-pay-option-check');if(c)c.textContent='';});
+  document.querySelectorAll('.gym-pay-item').forEach(function(o){o.classList.remove('selected');});
   el.classList.add('selected');
-  el.querySelector('.gym-pay-option-check').textContent='✓';
   const brandNames={visa:'Visa',mastercard:'Mastercard',amex:'Amex',discover:'Discover'};
   const brandName=brandNames[brand]||brand||'Card';
   window._gymBookingState.paymentMethod='saved';
@@ -3150,22 +3229,19 @@ window.selectPayMethodSaved=function(el,cardId,brand,last4){
   const iconEl=document.getElementById('gym-pay-icon');
   const labelEl=document.getElementById('gym-pay-label');
   if(iconEl){iconEl.innerHTML='<span style="font-size:16px">💳</span>';}
-  if(labelEl)labelEl.textContent=brandName+' ····'+last4;
-  closePaySheet();
+  if(labelEl)labelEl.textContent=brandName+' ••••'+last4;
 };
 window.selectPayMethod=function(el,method){
-  document.querySelectorAll('.gym-pay-option').forEach(function(o){o.classList.remove('selected');const c=o.querySelector('.gym-pay-option-check');if(c)c.textContent='';});
+  document.querySelectorAll('.gym-pay-item').forEach(function(o){o.classList.remove('selected');});
   el.classList.add('selected');
-  el.querySelector('.gym-pay-option-check').textContent='✓';
   window._gymBookingState.paymentMethod=method;
   window._gymBookingState.savedCard=null;
   const iconEl=document.getElementById('gym-pay-icon');
   const labelEl=document.getElementById('gym-pay-label');
   if(method==='cash'){
     if(iconEl){iconEl.className='gym-sticky-pay-icon cash';iconEl.innerHTML='💷';}
-    if(labelEl)labelEl.textContent='Cash at Gym';
+    if(labelEl)labelEl.textContent='Cash';
   }
-  closePaySheet();
 };
 
 // FIX #8: Card brand SVG icons
