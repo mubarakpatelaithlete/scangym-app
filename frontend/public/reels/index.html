@@ -2416,6 +2416,10 @@
         var reelUrl = video.id
           ? (window.location.origin + '/reels?v=' + encodeURIComponent(video.id))
           : ((video.creator && video.creator.affiliateLink) || 'https://scangym.com/reels');
+        // #60: Inject viewer's affiliate handle into share URL (if they're a creator)
+        var _viewerHandle='';
+        try{var _vc=JSON.parse(localStorage.getItem('sg_creator')||'null');if(_vc&&_vc.handle)_viewerHandle=_vc.handle;}catch(e){}
+        if(_viewerHandle&&reelUrl.indexOf('ref=')===-1){reelUrl+=(reelUrl.indexOf('?')>=0?'&':'?')+'ref='+encodeURIComponent(_viewerHandle);}
         var url = reelUrl;
         var displayName = humanizeTitle(video.name);
         var text = (displayName || 'ScanGym Reels') + ' \u2014 Book a gym from ' + sgPrice('day').display + '! \uD83D\uDCAA';
