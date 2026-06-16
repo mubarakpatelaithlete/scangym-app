@@ -716,6 +716,25 @@ function navigate(path,pushState=true){
 }
 window.addEventListener('popstate',()=>{state.route=location.pathname;state.routeQuery=location.search||'';state.activeTab=getTabForRoute(state.route);render();_syncReelsVisibility();});
 
+// #171 fix: Capture ?ref= URL param on ANY page load (not just /r/{handle})
+(function(){
+  try{
+    var params=new URLSearchParams(window.location.search);
+    var ref=params.get('ref');
+    if(ref){
+      var expiry=Date.now()+(30*24*60*60*1000);
+      localStorage.setItem('sg_referral',JSON.stringify({handle:ref,expiry:expiry}));
+      document.cookie='sg_referral='+encodeURIComponent(ref)+';path=/;max-age='+(30*24*60*60)+';SameSite=Lax';
+      // Track click server-side
+      fetch('/api/referrals/track',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({creatorHandle:ref,visitorSession:Date.now().toString(36)})}).catch(function(){});
+      // Clean ?ref= from URL without reload
+      params.delete('ref');
+      var clean=window.location.pathname+(params.toString()?'?'+params.toString():'');
+      history.replaceState(null,'',clean);
+    }
+  }catch(e){}
+})();
+
 // ═══════════════════════════════════════════════════════════════
 //  FIX C2: Two-way iframe ↔ parent communication bridge
 // ═══════════════════════════════════════════════════════════════
