@@ -224,6 +224,19 @@ router.get('/earnings/:handle', async (req, res) => {
       });
     }
 
+    // #56: Count signups (users who clicked and then registered)
+    let totalSignups = 0;
+    try {
+      const signupRes = await pool.query(
+        `SELECT COUNT(*) as cnt FROM creator_referrals
+         WHERE creator_handle = $1 AND status IN ('signed_up', 'converted')`,
+        [handle]
+      );
+      totalSignups = parseInt(signupRes.rows[0]?.cnt || 0);
+    } catch (e) {
+      // Column may not exist
+    }
+
     // #63: Downloads and shares from referral_events
     let totalDownloads = 0, totalShares = 0;
     try {
@@ -255,6 +268,7 @@ router.get('/earnings/:handle', async (req, res) => {
       totalEarningsPence: parseInt(s.total_earnings_pence),
       totalEarnings: (parseInt(s.total_earnings_pence) / 100).toFixed(2),
       conversionRate,
+      totalSignups,
       totalDownloads,
       totalShares,
       dailyClicks,
