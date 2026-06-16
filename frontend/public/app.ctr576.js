@@ -27,6 +27,32 @@ window.sgToast=function(msg, type='error', duration=4000){
 // Load Stripe.js for inline payment (Fix #5)
 // Lazy-load Stripe.js only when needed (saves ~40KB on initial load)
 // ═══ Perf #6: Preload Stripe SDK on first user interaction (lazy-load on touch) ═══
+
+// ═══ ScanGym Performance Metrics ═══
+window.sgPerf={
+  _marks:{},_metrics:[],
+  start:function(name){this._marks[name]=performance.now();},
+  end:function(name){
+    if(!this._marks[name])return 0;
+    var dur=performance.now()-this._marks[name];
+    this._metrics.push({name:name,duration:Math.round(dur),ts:Date.now()});
+    delete this._marks[name];
+    if(dur>500)console.warn('[SG Perf] '+name+': '+Math.round(dur)+'ms (SLOW)');
+    else console.log('[SG Perf] '+name+': '+Math.round(dur)+'ms');
+    return dur;
+  },
+  report:function(){
+    var r={};
+    this._metrics.forEach(function(m){
+      if(!r[m.name])r[m.name]={count:0,total:0,min:Infinity,max:0};
+      r[m.name].count++;r[m.name].total+=m.duration;
+      r[m.name].min=Math.min(r[m.name].min,m.duration);
+      r[m.name].max=Math.max(r[m.name].max,m.duration);
+    });
+    Object.keys(r).forEach(function(k){r[k].avg=Math.round(r[k].total/r[k].count);});
+    console.table(r);return r;
+  }
+};
 (function(){var _sp=false;function _preloadStripe(){if(_sp)return;_sp=true;
 if(!document.querySelector('script[src*="stripe.com"]')){var l=document.createElement('link');l.rel='preload';l.as='script';l.href='https://js.stripe.com/v3/';document.head.appendChild(l);}
 document.removeEventListener('touchstart',_preloadStripe);document.removeEventListener('scroll',_preloadStripe);}
@@ -1116,7 +1142,7 @@ function HomePage(){
 }
 
 // ─── Page: Search Results ───
-async function loadGyms(lat,lng){
+async function loadGyms(lat,lng){sgPerf.start('load_gyms');
   try{
     /* Perf #120: Check session cache first — instant on revisit */
     var cached=_gymCache.get(lat,lng);
@@ -1171,15 +1197,16 @@ async function loadGyms(lat,lng){
       },300);
     }
   }catch(e){console.error('Failed to load gyms:',e)}
+  sgPerf.end('load_gyms');
 }
 
 // Perf #1: Client-side search result cache (avoid re-fetching same query within 5 min)
 window._sgSearchCache=window._sgSearchCache||{};
-window._sgSearchCacheTTL=5*60*1000;
+window._sgSearchCacheTTL=15*60*1000;
 function _sgGetSearchCache(q){var e=window._sgSearchCache[q];if(e&&Date.now()-e.ts<window._sgSearchCacheTTL)return e.data;delete window._sgSearchCache[q];return null;}
 function _sgSetSearchCache(q,d){window._sgSearchCache[q]={data:d,ts:Date.now()};var keys=Object.keys(window._sgSearchCache);if(keys.length>20)delete window._sgSearchCache[keys[0]];}
 
-async function searchGyms(query, isExplicit, _triggerLayer){
+async function searchGyms(query, isExplicit, _triggerLayer){sgPerf.start('search_gyms');
   try{
     // Fix: Track when user explicitly searched (city button or typed query)
     // This prevents GPS/IP from overriding their intent
@@ -1250,6 +1277,7 @@ async function searchGyms(query, isExplicit, _triggerLayer){
       if(input){input.focus();input.placeholder='Type a city, area, or gym name...';}
     },100);
   }
+  sgPerf.end('search_gyms');
 }
 
 function SearchPage(){
@@ -1927,11 +1955,11 @@ function GymProfilePage(){
         </div>
         <div class="gym-tt-item" onclick="openGymOverlay('passes')">
           <div class="gym-tt-circle">🎟️</div>
-          <div class="gym-tt-text">Passes</div>
+          <div class="gym-tt-text">${currentPrice}</div>
         </div>
         <div class="gym-tt-item" onclick="openDateSheet()">
           <div class="gym-tt-circle">📅</div>
-          <div class="gym-tt-text" id="gym-sticky-cal-time">${String(Math.min(new Date().getHours()+1,23)).padStart(2,'0')}:00</div>
+          <div class="gym-tt-text" id="gym-sticky-cal-time">${(function(){var d=new Date();var months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return d.getDate()+' '+months[d.getMonth()];})()}</div>
         </div>
       </div>
 
@@ -2072,6 +2100,13 @@ function GymProfilePage(){
       <div class="gym-date-sheet-panel">
         <div class="gym-date-sheet-drag"></div>
         <div class="gym-date-sheet-title">When do you want to go?</div>
+        <!-- Pass type selector -->
+        <div id="sg-pass-selector" style="display:flex;gap:6px;padding:4px 16px 10px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch">
+          <div class="sg-pass-chip selected" data-pass="day" onclick="window._selectCalPass(this,'day')" style="flex-shrink:0;padding:8px 16px;border-radius:20px;background:#fff;color:#000;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;border:1px solid transparent;white-space:nowrap">⚡ Day Pass</div>
+          <div class="sg-pass-chip" data-pass="3day" onclick="window._selectCalPass(this,'3day')" style="flex-shrink:0;padding:8px 16px;border-radius:20px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.6);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;border:1px solid rgba(255,255,255,.1);white-space:nowrap">🔥 3-Day</div>
+          <div class="sg-pass-chip" data-pass="weekly" onclick="window._selectCalPass(this,'weekly')" style="flex-shrink:0;padding:8px 16px;border-radius:20px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.6);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;border:1px solid rgba(255,255,255,.1);white-space:nowrap">📅 Weekly</div>
+          <div class="sg-pass-chip" data-pass="monthly" onclick="window._selectCalPass(this,'monthly')" style="flex-shrink:0;padding:8px 16px;border-radius:20px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.6);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;border:1px solid rgba(255,255,255,.1);white-space:nowrap">🏆 Monthly</div>
+        </div>
         <div class="sg-date-strip" id="sg-date-strip"></div>
         <div class="sg-date-divider"></div>
         <div class="sg-popular-times" id="sg-popular-times" style="display:none">
@@ -3178,9 +3213,14 @@ window.openPaySheet=function(){
         const brandNames={visa:'Visa',mastercard:'Mastercard',amex:'Amex',discover:'Discover'};
         const brandName=brandNames[card.brand]||card.brand||'Card';
         const isSelected=gbs.paymentMethod==='saved'&&gbs.savedCard&&gbs.savedCard.id===card.id;
+        const isDefault=card.isDefault||(resp.cards.indexOf(card)===0);
         const brandColors={visa:'#1a1f71',mastercard:'#eb001b',amex:'#006fcf',discover:'#ff6000'};
         const bgColor=brandColors[card.brand]||'#333';
-        html+=`<div class="gym-pay-item${isSelected?' selected':''}" onclick="selectPayMethodSaved(this,'${card.id}','${card.brand}','${card.last4}')" data-method="saved" data-card-id="${card.id}"><div class="gym-pay-item-icon" style="background:${bgColor};border-radius:8px"><span style="color:#fff;font-size:10px;font-weight:800;text-transform:uppercase">${brandName.slice(0,4)}</span></div><span class="gym-pay-item-label">${brandName} ••••${card.last4}</span><div class="gym-pay-item-check"></div></div>`;
+        const svgIcon=window._getCardBrandSvg?window._getCardBrandSvg(card.brand):'';
+        const iconHtml=svgIcon?'<span style="display:flex;align-items:center;justify-content:center">'+svgIcon+'</span>':'<span style="color:#fff;font-size:10px;font-weight:800;text-transform:uppercase">'+brandName.slice(0,4)+'</span>';
+        const nickHtml=card.nickname?'<div style="color:#999;font-size:12px;margin-top:1px">'+card.nickname+'</div>':'';
+        const defaultBadge=isDefault?'<span style="background:#e8f5e9;color:#2e7d32;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;margin-left:8px">Default</span>':'';
+        html+=`<div class="gym-pay-item${isSelected||isDefault?' selected':''}" onclick="selectPayMethodSaved(this,'${card.id}','${card.brand}','${card.last4}')" data-method="saved" data-card-id="${card.id}"><div class="gym-pay-item-icon" style="background:${bgColor};border-radius:8px">${iconHtml}</div><div style="flex:1"><span class="gym-pay-item-label" style="display:flex;align-items:center">${brandName} ••••${card.last4}${defaultBadge}</span>${nickHtml}</div><div class="gym-pay-item-check"></div></div>`;
       });
       savedArea.innerHTML=html;
     }).catch(()=>{savedArea.innerHTML='';});
@@ -3999,8 +4039,8 @@ window._buildTimeList=function(dateIdx){
     window._updateDateCTA();
     return;
   }
-  gymOpenMin=Math.ceil(gymOpenMin/5)*5;
-  gymCloseMin=Math.floor(gymCloseMin/5)*5;
+  gymOpenMin=Math.ceil(gymOpenMin/30)*30;
+  gymCloseMin=Math.floor(gymCloseMin/30)*30;
 
   let html='';
   let firstAvailable=null;
@@ -4012,7 +4052,7 @@ window._buildTimeList=function(dateIdx){
   const closeMM=String(gymCloseMin%60).padStart(2,'0');
   html+='<div style="padding:10px 20px 6px;display:flex;align-items:center;gap:6px"><span style="font-size:11px;color:rgba(255,255,255,.3);font-weight:600">🕐 Gym hours: '+openH+':'+openMM+' '+openAmpm+' – '+closeH+':'+closeMM+' '+closeAmpm+'</span></div>';
 
-  for(let m=gymOpenMin;m<=gymCloseMin;m+=5){
+  for(let m=gymOpenMin;m<=gymCloseMin;m+=30){
     const hh=String(Math.floor(m/60)).padStart(2,'0');
     const mm=String(m%60).padStart(2,'0');
     const timeStr=hh+':'+mm;
@@ -4264,7 +4304,10 @@ window._updateDateCTA=function(){
     if(idx===0)dateDisplay='Today';
     else if(idx===1)dateDisplay='Tomorrow';
     else dateDisplay=days[d.getDay()]+', '+months[d.getMonth()]+' '+d.getDate();
-    cta.textContent='Confirm · '+dateDisplay+' at '+timeDisplay;
+    var passNames={day:'Day Pass','3day':'3-Day','weekly':'Weekly','monthly':'Monthly'};
+    var passType=window._calSelectedPass||'day';
+    var passLabel=passNames[passType]||'Day Pass';
+    cta.textContent='Book '+passLabel+' · '+dateDisplay+' at '+timeDisplay;
     cta.disabled=false;
   }else{
     cta.textContent='Select a time';
@@ -4307,6 +4350,16 @@ window.openDateSheet=function(){
   }
 };
 
+// Pass type selector in calendar
+window._calSelectedPass='day';
+window._selectCalPass=function(el,passType){
+  window._calSelectedPass=passType;
+  document.querySelectorAll('.sg-pass-chip').forEach(function(c){
+    if(c.dataset.pass===passType){c.style.background='#fff';c.style.color='#000';c.style.borderColor='transparent';c.classList.add('selected');}
+    else{c.style.background='rgba(255,255,255,.06)';c.style.color='rgba(255,255,255,.6)';c.style.borderColor='rgba(255,255,255,.1)';c.classList.remove('selected');}
+  });
+  window._updateDateCTA();
+};
 window.closeDateSheet=function(){
   const sheet=document.getElementById('gym-date-sheet');
   if(sheet)sheet.classList.remove('open');
@@ -4318,9 +4371,18 @@ window.confirmDateSheet=function(){
   const time=window._datePickerState.selectedTime;
   if(!time)return;
   window._gymSelectedTime=time;
+  // Store selected pass type from calendar
+  if(window._calSelectedPass){
+    window._gymBookingState=window._gymBookingState||{};
+    window._gymBookingState.selectedPass=window._calSelectedPass;
+  }
   // Update calendar button display
   const timeEl=document.getElementById('gym-sticky-cal-time');
-  if(timeEl)timeEl.textContent=time;
+  if(timeEl){
+    const hh=parseInt(time.split(':')[0]);const mm=time.split(':')[1];
+    const hour12=hh%12||12;const ampm=hh<12?'AM':'PM';
+    timeEl.textContent=hour12+':'+mm+' '+ampm;
+  }
   // Close sheet
   window.closeDateSheet();
 };
@@ -9859,7 +9921,7 @@ async function _reverseGeocode(lat,lng){
 // 3. Never await — fire and forget, upgrade results via callback
 // ═══════════════════════════════════════════════════════════════════
 window._gpsWatchId=null;
-function _fireGPS(highAccuracy){
+function _fireGPS(highAccuracy){sgPerf.start('gps_fix');
   // ━━━ PERMISSION PRE-CHECK: Skip GPS instantly if permission is denied ━━━
   if(navigator.permissions&&navigator.permissions.query){
     navigator.permissions.query({name:'geolocation'}).then(function(status){
@@ -9980,10 +10042,12 @@ function _startGPSWatch(highAccuracy){
       if(accuracy<50){
         navigator.geolocation.clearWatch(window._gpsWatchId);
         window._gpsWatchId=null;
+        sgPerf.end('gps_fix');
         console.log('[GPS] Excellent accuracy achieved (',Math.round(accuracy),'m) — watch stopped');
       }
     },
     function(err){
+      sgPerf.end('gps_fix');
       console.log('[GPS] Error:',err.message,'— not blocking, other layers active');
       if(window._gpsWatchId!==null){
         navigator.geolocation.clearWatch(window._gpsWatchId);
@@ -11800,13 +11864,13 @@ async function _startStripeConnect(handle){
 /* Perf Round 2: Debounced render — batch rapid render() calls
    into a single requestAnimationFrame. Prevents jank when page 2/3 gyms load. */
 var _renderQueued=false;
-function render(){
+function render(){sgPerf.start('render');
   if(_renderQueued)return;
   _renderQueued=true;
   requestAnimationFrame(function(){
     _renderQueued=false;
-    try{ _renderInner(); }catch(err){
-      console.error('[Render] Error rendering page:',err);
+    try{ _renderInner();sgPerf.end('render'); }catch(err){
+      sgPerf.end('render');console.error('[Render] Error rendering page:',err);
       const app=document.getElementById('app');
       if(app)app.innerHTML='<div style="padding:40px 20px;text-align:center"><p style="font-size:40px;margin-bottom:16px">⚠️</p><p style="color:#fff;font-size:18px;font-weight:700;margin-bottom:8px">Something went wrong</p><p style="color:rgba(255,255,255,.4);margin-bottom:24px">'+err.message+'</p><button onclick="navigate(\'/explore\')" style="background:#FF6D00;color:#fff;border:none;padding:14px 32px;border-radius:12px;font-weight:700;font-size:16px;cursor:pointer">Go to Explore →</button></div>'+BottomTabBar();
     }
