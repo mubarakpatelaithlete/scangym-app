@@ -1359,7 +1359,7 @@ function SearchPage(){
           var openClass=isOpen?'tt-tag-open':'tt-tag-closed';
           var isPop=isTopGym(gym);
           // C6 fix: Use gym-specific price if owner set one, otherwise PPP default
-          var price=(gym.dayPassPrice&&gym.dayPassPrice>0)?(gym.currencySymbol||sgSymbol())+gym.dayPassPrice.toFixed(2):dayP.display;
+          var _gymSym=(gym.pricing&&gym.pricing.currencySymbol)||gym.currencySymbol||sgSymbol();var _gymDPP=(gym.pricing&&gym.pricing.dayPassPrice>0)?gym.pricing.dayPassPrice:((gym.dayPassPrice&&gym.dayPassPrice>0)?gym.dayPassPrice:0);var price=_gymDPP>0?(_gymSym+_gymDPP.toFixed(2)):dayP.display;
           var pos=_pinPos(i);
           var facList=facs.map(function(f){return f.replace(/^[^\s]+\s/,'');}).join(', ');
           var equipList=['Free weights','Cardio','Machines'].filter(function(_,j){return((gym.name||'').charCodeAt(0)+j)%3!==0;}).join(', ')||'Machines, Cardio';
@@ -1449,7 +1449,7 @@ function SearchPage(){
           var _gbs=window._gymBookingState||{};
           var _payLabel=(_gbs.paymentMethod==='saved'&&_gbs.savedCard)?('\u2022\u2022\u2022\u2022 '+_gbs.savedCard.last4):'Pay';
           var _passMap={day:'Day','3day':'3-Day',weekly:'Weekly',monthly:'Monthly'};var _passLabel=_passMap[_gbs.selectedPass||'day']||'Day';
-          var _calDate=_gbs.selectedDate||'Today';
+          var _calDate=_gbs.selectedDate||(function(){var _d=new Date();var _mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return _d.getDate()+' '+_mo[_d.getMonth()]})();
           if(_calDate!=='Today'){var _dp=_calDate.split('-');if(_dp.length===3){var _months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];_calDate=parseInt(_dp[2])+' '+(_months[parseInt(_dp[1])-1]||_dp[1]);}}
           html+='<div class="tt-actions">';
           html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'reviews\')"><div class="tt-action-btn">\u2B50</div><div class="tt-action-label">'+_reviewLabel+'</div></div>';
@@ -1525,7 +1525,7 @@ function SearchPage(){
               var _gbs2=window._gymBookingState||{};
               var _pl2=(_gbs2.paymentMethod==='saved'&&_gbs2.savedCard)?('\u2022\u2022\u2022\u2022 '+_gbs2.savedCard.last4):'Pay';
               var _pm2={day:'Day','3day':'3-Day',weekly:'Weekly',monthly:'Monthly'};var _psl2=_pm2[_gbs2.selectedPass||'day']||'Day';
-              var _cd2=_gbs2.selectedDate||'Today';
+              var _cd2=_gbs2.selectedDate||(function(){var _d=new Date();var _mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return _d.getDate()+' '+_mo[_d.getMonth()]})();
               if(_cd2!=='Today'){var _dp2=_cd2.split('-');if(_dp2.length===3){var _mo2=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];_cd2=parseInt(_dp2[2])+' '+(_mo2[parseInt(_dp2[1])-1]||_dp2[1]);}}
               cardHtml+='<div class="tt-actions">';
               cardHtml+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'reviews\')"><div class="tt-action-btn">\u2B50</div><div class="tt-action-label">'+_rl2+'</div></div>';
