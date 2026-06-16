@@ -8146,6 +8146,44 @@ window._initBookMapCarousel=function(){
       _visibilityObserver.observe(card);
     });
   }
+
+  /* #13: Auto-scroll to next gym card every 6s (pauses on touch/interaction) */
+  (function(){
+    var _asTouch=false;
+    carousel.addEventListener('touchstart',function(){_asTouch=true;},{passive:true});
+    carousel.addEventListener('touchend',function(){_asTouch=false;},{passive:true});
+    var _asInterval=setInterval(function(){
+      if(_asTouch||document.hidden)return;
+      var cards=carousel.querySelectorAll('.tt-card');
+      if(!cards.length)return;
+      var h=cards[0].offsetHeight||window.innerHeight;
+      var idx=Math.round(carousel.scrollTop/h);
+      var next=(idx+1<cards.length)?idx+1:0;
+      carousel.scrollTo({top:next*h,behavior:'smooth'});
+    },6000);
+    /* cleanup when navigating away */
+    window._ttAutoScrollInterval=_asInterval;
+  })();
+
+  /* #14: Auto-swipe photo carousel on visible card every 3s */
+  (function(){
+    setInterval(function(){
+      if(document.hidden)return;
+      var cards=carousel.querySelectorAll('.tt-card');
+      if(!cards.length)return;
+      var h=cards[0].offsetHeight||window.innerHeight;
+      var idx=Math.round(carousel.scrollTop/h);
+      var card=cards[idx];if(!card)return;
+      var pc=card.querySelector('.tt-photo-carousel');
+      if(!pc)return;
+      var sw=pc.scrollWidth;var cw=pc.clientWidth;
+      if(sw<=cw)return;
+      var maxScroll=sw-cw;
+      var nextPos=pc.scrollLeft+cw;
+      if(nextPos>maxScroll+10)nextPos=0;
+      pc.scrollTo({left:nextPos,behavior:'smooth'});
+    },3000);
+  })();
 };
 
 window.closeGymDiscovery=function(){
