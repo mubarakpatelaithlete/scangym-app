@@ -164,16 +164,25 @@ router.post('/convert', async (req, res) => {
 router.get('/earnings/:handle', async (req, res) => {
   try {
     const { handle } = req.params;
+    const { period } = req.query; // #63: 'today', 'week', or 'all'
     if (!handle) return res.status(400).json({ error: 'handle required' });
 
-    // Total stats
+    // #63: Build date filter based on period
+    let dateFilter = '';
+    if (period === 'today') {
+      dateFilter = "AND cr.created_at >= CURRENT_DATE";
+    } else if (period === 'week') {
+      dateFilter = "AND cr.created_at >= CURRENT_DATE - INTERVAL '7 days'";
+    }
+
+    // Total stats (with optional period filter)
     const stats = await pool.query(
       `SELECT
          COUNT(*) FILTER (WHERE status = 'clicked') as total_clicks,
          COUNT(*) FILTER (WHERE status = 'converted') as total_conversions,
          COALESCE(SUM(commission_pence) FILTER (WHERE status = 'converted'), 0) as total_earnings_pence
-       FROM creator_referrals
-       WHERE creator_handle = $1`,
+       FROM creator_referrals cr
+       WHERE cr.creator_handle = $1 ${dateFilter}`,
       [handle]
     );
 
@@ -189,6 +198,50 @@ router.get('/earnings/:handle', async (req, res) => {
       [handle]
     );
 
+    // #63: Daily clicks for sparkline (last 7 days)
+    let dailyClicks = [];
+    try {
+      const daily = await pool.query(
+        `SELECT DATE(created_at) as day, COUNT(*) as cnt
+         FROM creator_referrals
+         WHERE creator_handle = $1 AND created_at >= CURRENT_DATE - INTERVAL '6 days'
+         GROUP BY DATE(created_at)
+         ORDER BY day ASC`,
+        [handle]
+      );
+      // Fill in missing days
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(); d.setDate(d.getDate() - i);
+        const ds = d.toISOString().slice(0, 10);
+        const found = daily.rows.find(r => r.day && r.day.toISOString().slice(0, 10) === ds);
+        dailyClicks.push({ date: ds, count: found ? parseInt(found.cnt) : 0 });
+      }
+    } catch (e) {
+      // Table may not have created_at — return empty
+      dailyClicks = Array(7).fill(null).map((_, i) => {
+        const d = new Date(); d.setDate(d.getDate() - (6 - i));
+        return { date: d.toISOString().slice(0, 10), count: 0 };
+      });
+    }
+
+    // #63: Downloads and shares from referral_events
+    let totalDownloads = 0, totalShares = 0;
+    try {
+      const events = await pool.query(
+        `SELECT event_type, COUNT(*) as cnt
+         FROM referral_events
+         WHERE creator_handle = $1 AND event_type IN ('asset_download', 'share')
+         GROUP BY event_type`,
+        [handle]
+      );
+      events.rows.forEach(r => {
+        if (r.event_type === 'asset_download') totalDownloads = parseInt(r.cnt);
+        if (r.event_type === 'share') totalShares = parseInt(r.cnt);
+      });
+    } catch (e) {
+      // Table may not exist yet
+    }
+
     const s = stats.rows[0];
     const conversionRate = parseInt(s.total_clicks) > 0
       ? ((parseInt(s.total_conversions) / parseInt(s.total_clicks)) * 100).toFixed(1)
@@ -202,6 +255,9 @@ router.get('/earnings/:handle', async (req, res) => {
       totalEarningsPence: parseInt(s.total_earnings_pence),
       totalEarnings: (parseInt(s.total_earnings_pence) / 100).toFixed(2),
       conversionRate,
+      totalDownloads,
+      totalShares,
+      dailyClicks,
       recentConversions: recent.rows.map(r => ({
         bookingId: r.booking_id,
         commissionPence: r.commission_pence,
