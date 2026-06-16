@@ -3489,33 +3489,13 @@ window.showCalendarPicker=async function(gymId){
   const gymName=gym.name||'Gym';
   const currentPrice=gym.pricing?.day?.display||sgPrice('day').display||'£5.00';
 
-  // Build 14-day date grid
-  const dates=[];
-  for(let i=0;i<14;i++){
-    const d=new Date(now);d.setDate(d.getDate()+i);
-    dates.push({
-      date:d.toISOString().split('T')[0],
-      day:dayNames[d.getDay()],
-      dayNum:d.getDate(),
-      month:monthNames[d.getMonth()],
-      fullMonth:fullMonthNames[d.getMonth()],
-      year:d.getFullYear(),
-      isToday:i===0,
-      isTomorrow:i===1
-    });
-  }
-
-  // Build calendar grid (Mon-Sun layout for current + next week block)
-  const curMonth=fullMonthNames[now.getMonth()];
-  const curYear=now.getFullYear();
-  // Simple: show a scrollable date strip + time slots
-  const dateStripHtml=dates.map((d,i)=>`
-    <div class="sg-cal-date${i===0?' selected':''}" onclick="window._calSelectDate('${d.date}',${i},this)" data-date="${d.date}">
-      <div class="sg-cal-date-day">${d.isToday?'Today':d.isTomorrow?'Tomorrow':d.day}</div>
-      <div class="sg-cal-date-num">${d.dayNum}</div>
-      <div class="sg-cal-date-month">${d.month}</div>
-    </div>
-  `).join('');
+  // Store current view month for navigation
+  window._calPickerState.viewYear=now.getFullYear();
+  window._calPickerState.viewMonth=now.getMonth();
+  // Max date = 90 days from today
+  const maxDate=new Date(now);maxDate.setDate(maxDate.getDate()+90);
+  window._calPickerState.maxDate=maxDate.toISOString().split('T')[0];
+  window._calPickerState.todayStr=today;
 
   // Time slots
   const currentHour=now.getHours();
@@ -3565,17 +3545,22 @@ window.showCalendarPicker=async function(gymId){
       .sg-cal-title{color:#fff;font-size:20px;font-weight:700;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
       .sg-cal-close{width:36px;height:36px;background:rgba(255,255,255,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:rgba(255,255,255,.5);font-size:18px;border:none;-webkit-tap-highlight-color:transparent}
       .sg-cal-close:active{background:rgba(255,255,255,.15)}
-      .sg-cal-date-strip{display:flex;gap:8px;padding:0 24px 16px;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;flex-shrink:0}
-      .sg-cal-date-strip::-webkit-scrollbar{display:none}
-      .sg-cal-date{display:flex;flex-direction:column;align-items:center;min-width:64px;padding:10px 8px;border-radius:14px;cursor:pointer;background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.06);transition:all .15s;-webkit-tap-highlight-color:transparent}
-      .sg-cal-date:active{transform:scale(.96)}
-      .sg-cal-date.selected{background:rgba(255,109,0,.12);border-color:#FF6D00;box-shadow:0 0 12px rgba(255,109,0,.15)}
-      .sg-cal-date-day{color:rgba(255,255,255,.4);font-size:11px;font-weight:600;margin-bottom:4px}
-      .sg-cal-date.selected .sg-cal-date-day{color:#FF6D00}
-      .sg-cal-date-num{color:#fff;font-size:22px;font-weight:800;line-height:1}
-      .sg-cal-date.selected .sg-cal-date-num{color:#FF6D00}
-      .sg-cal-date-month{color:rgba(255,255,255,.3);font-size:10px;font-weight:600;margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
-      .sg-cal-date.selected .sg-cal-date-month{color:rgba(255,109,0,.6)}
+      .sg-cal-month-nav{display:flex;align-items:center;justify-content:space-between;padding:0 24px 8px;flex-shrink:0}
+      .sg-cal-nav-btn{width:40px;height:40px;background:none;border:none;color:rgba(255,255,255,.5);font-size:28px;font-weight:300;cursor:pointer;-webkit-tap-highlight-color:transparent;display:flex;align-items:center;justify-content:center;border-radius:50%;transition:all .15s}
+      .sg-cal-nav-btn:active{background:rgba(255,255,255,.08)}
+      .sg-cal-nav-btn.disabled{opacity:.2;pointer-events:none}
+      .sg-cal-month-title{color:#fff;font-size:18px;font-weight:700;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;letter-spacing:-.2px}
+      .sg-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);padding:0 20px 16px;flex-shrink:0}
+      .sg-cal-dow{text-align:center;color:rgba(255,255,255,.35);font-size:13px;font-weight:600;padding:8px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+      .sg-cal-day{text-align:center;padding:0;cursor:pointer;color:rgba(255,255,255,.85);font-size:16px;font-weight:500;transition:all .15s;-webkit-tap-highlight-color:transparent;display:flex;align-items:center;justify-content:center;width:40px;height:40px;margin:2px auto;border-radius:50%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+      .sg-cal-day:active{transform:scale(.9)}
+      .sg-cal-day.past{color:rgba(255,255,255,.18);pointer-events:none}
+      .sg-cal-day.today{border:2px solid rgba(255,255,255,.3)}
+      .sg-cal-day.selected{background:#FF6D00;color:#fff;font-weight:700;box-shadow:0 2px 8px rgba(255,109,0,.3)}
+      .sg-cal-day.selected.today{border-color:#FF6D00}
+      .sg-cal-day.empty{pointer-events:none;cursor:default}
+      .sg-cal-today-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:20px;color:rgba(255,255,255,.6);font-size:13px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;margin:0 24px 12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+      .sg-cal-today-btn:active{background:rgba(255,255,255,.1)}
       .sg-cal-body{flex:1;overflow-y:auto;padding:0 24px 16px;-webkit-overflow-scrolling:touch}
       .sg-cal-time{padding:10px 16px;border-radius:10px;cursor:pointer;background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.06);color:#fff;font-size:14px;font-weight:600;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;transition:all .15s;-webkit-tap-highlight-color:transparent;text-align:center;min-width:64px}
       .sg-cal-time:active{transform:scale(.96)}
@@ -3592,9 +3577,13 @@ window.showCalendarPicker=async function(gymId){
           <div class="sg-cal-title">📅 Pick a date & time</div>
           <button class="sg-cal-close" onclick="window._calPickerClose()">✕</button>
         </div>
-        <div class="sg-cal-date-strip" id="sg-cal-date-strip">
-          ${dateStripHtml}
+        <div class="sg-cal-month-nav">
+          <button class="sg-cal-nav-btn" id="sg-cal-prev" onclick="window._calPrevMonth()">‹</button>
+          <div class="sg-cal-month-title" id="sg-cal-month-title"></div>
+          <button class="sg-cal-nav-btn" id="sg-cal-next" onclick="window._calNextMonth()">›</button>
         </div>
+        <div class="sg-cal-grid" id="sg-cal-grid"></div>
+        <div style="padding:0 0 4px"><button class="sg-cal-today-btn" onclick="window._calGoToday()">📅 Today</button></div>
         <!-- FIX #10: Pass type selector -->
         <div style="padding:0 24px 16px;display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;flex-shrink:0" id="sg-cal-pass-strip">
           <div class="sg-cal-pass selected" onclick="window._calSelectPass(this,'day','⚡','Day Pass')" data-pass="day">
@@ -3652,22 +3641,101 @@ window.showCalendarPicker=async function(gymId){
   document.body.appendChild(picker);
   document.body.style.overflow='hidden';
 
+  // Render initial calendar grid
+  window._calBuildGrid(window._calPickerState.viewYear,window._calPickerState.viewMonth);
+
   // Update summary text
   window._calUpdateSummary();
   // FIX #14: Render Popular Times on initial load
   if(window._renderCalPickerPopularTimes)window._renderCalPickerPopularTimes(0);
 };
 
-window._calSelectDate=function(dateStr,idx,el){
+// ═══ Calendar Grid Builder (Uber-style month grid) ═══
+window._calBuildGrid=function(year,month){
+  const grid=document.getElementById('sg-cal-grid');
+  const titleEl=document.getElementById('sg-cal-month-title');
+  const prevBtn=document.getElementById('sg-cal-prev');
+  const nextBtn=document.getElementById('sg-cal-next');
+  if(!grid)return;
+  const fullMonths=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  if(titleEl)titleEl.textContent=fullMonths[month]+'    '+year;
+  // Disable prev if viewing current month
+  const now=new Date();
+  if(prevBtn)prevBtn.classList.toggle('disabled',year===now.getFullYear()&&month===now.getMonth());
+  // Disable next if > 90 days
+  const maxD=window._calPickerState.maxDate;
+  const lastOfMonth=new Date(year,month+1,0);
+  if(nextBtn)nextBtn.classList.toggle('disabled',lastOfMonth.toISOString().split('T')[0]>maxD);
+  // Day-of-week headers (Mon first)
+  const dows=['Mo','Tu','We','Th','Fr','Sa','Su'];
+  let html=dows.map(d=>'<div class="sg-cal-dow">'+d+'</div>').join('');
+  // First day of month
+  const firstDay=new Date(year,month,1);
+  let startDow=firstDay.getDay()-1;if(startDow<0)startDow=6; // Mon=0
+  // Empty cells before first day
+  for(let i=0;i<startDow;i++)html+='<div class="sg-cal-day empty"></div>';
+  // Days in month
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  const todayStr=window._calPickerState.todayStr;
+  const selDate=window._calPickerState.selectedDate;
+  for(let d=1;d<=daysInMonth;d++){
+    const dateStr=year+'-'+String(month+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const isPast=dateStr<todayStr;
+    const isFuture=dateStr>maxD;
+    const isToday=dateStr===todayStr;
+    const isSelected=dateStr===selDate;
+    let cls='sg-cal-day';
+    if(isPast||isFuture)cls+=' past';
+    if(isToday)cls+=' today';
+    if(isSelected)cls+=' selected';
+    if(isPast||isFuture){
+      html+='<div class="'+cls+'">'+d+'</div>';
+    }else{
+      html+='<div class="'+cls+'" onclick="window._calSelectDate(\''+dateStr+'\',this)" data-date="'+dateStr+'">'+d+'</div>';
+    }
+  }
+  grid.innerHTML=html;
+};
+
+window._calPrevMonth=function(){
+  const s=window._calPickerState;
+  const now=new Date();
+  if(s.viewYear===now.getFullYear()&&s.viewMonth===now.getMonth())return;
+  s.viewMonth--;
+  if(s.viewMonth<0){s.viewMonth=11;s.viewYear--;}
+  window._calBuildGrid(s.viewYear,s.viewMonth);
+};
+
+window._calNextMonth=function(){
+  const s=window._calPickerState;
+  s.viewMonth++;
+  if(s.viewMonth>11){s.viewMonth=0;s.viewYear++;}
+  window._calBuildGrid(s.viewYear,s.viewMonth);
+};
+
+window._calGoToday=function(){
+  const now=new Date();
+  const todayStr=now.toISOString().split('T')[0];
+  window._calPickerState.viewYear=now.getFullYear();
+  window._calPickerState.viewMonth=now.getMonth();
+  window._calSelectDate(todayStr,null);
+  window._calBuildGrid(now.getFullYear(),now.getMonth());
+};
+
+window._calSelectDate=function(dateStr,el){
   window._calPickerState.selectedDate=dateStr;
   // Update visual selection
-  document.querySelectorAll('.sg-cal-date').forEach(d=>d.classList.remove('selected'));
-  if(el)el.classList.add('selected');
+  document.querySelectorAll('.sg-cal-day').forEach(d=>{
+    d.classList.toggle('selected',d.getAttribute('data-date')===dateStr);
+  });
+  // Calculate day index from today for popular times
+  const now=new Date();
+  const sel=new Date(dateStr+'T12:00:00');
+  const idx=Math.round((sel-new Date(now.getFullYear(),now.getMonth(),now.getDate()))/(86400000));
   // FIX #14: Update Popular Times for selected date
   if(window._renderCalPickerPopularTimes)window._renderCalPickerPopularTimes(idx);
 
   // Update time slot availability (disable past hours only for today)
-  const now=new Date();
   const isToday=dateStr===now.toISOString().split('T')[0];
   const currentHour=now.getHours();
   document.querySelectorAll('.sg-cal-time').forEach(t=>{
