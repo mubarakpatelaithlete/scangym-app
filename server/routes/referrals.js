@@ -638,6 +638,33 @@ router.post('/stripe-connect', async (req, res) => {
   }
 });
 
+// ─── #59 Associate referral with logged-in user ───
+router.post('/associate', async (req, res) => {
+  try {
+    const { referrerHandle, userId, userName } = req.body;
+    if (!referrerHandle || !userId) return res.status(400).json({ error: 'Missing referrer or user' });
+
+    console.log(`[Referral] Associating: ${userId} (${userName || 'anon'}) was referred by ${referrerHandle}`);
+
+    try {
+      await pool.query(
+        `INSERT INTO referral_events (creator_handle, event_type, metadata, created_at)
+         VALUES ($1, 'signup', $2, NOW())
+         ON CONFLICT DO NOTHING`,
+        [referrerHandle, JSON.stringify({ userId, userName: userName || '' })]
+      );
+    } catch (dbErr) {
+      // Table may not exist yet — log the referral anyway
+      console.log(`[Referral] DB insert failed (table may not exist): ${dbErr.message}`);
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[Referral] Associate error:', err.message);
+    res.json({ success: true }); // Don't block login flow
+  }
+});
+
 // ─── #58 Track asset download for affiliate analytics ───
 router.post('/track-download', async (req, res) => {
   try {
