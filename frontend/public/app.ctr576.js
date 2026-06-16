@@ -11804,6 +11804,13 @@ function CreatorEarningsPage(){
       </div>
     </div>
 
+    <!-- #63: Period Selector -->
+    <div class="flex gap-2 mb-3" id="ce-period-tabs">
+      <button onclick="_ceSetPeriod('today')" id="ce-period-today" class="flex-1 bg-brand/20 text-brand font-bold py-2 rounded-lg text-xs transition border border-brand/30">Today</button>
+      <button onclick="_ceSetPeriod('week')" id="ce-period-week" class="flex-1 bg-slate-700/50 text-slate-400 font-bold py-2 rounded-lg text-xs transition border border-transparent">This Week</button>
+      <button onclick="_ceSetPeriod('all')" id="ce-period-all" class="flex-1 bg-slate-700/50 text-slate-400 font-bold py-2 rounded-lg text-xs transition border border-transparent">All Time</button>
+    </div>
+
     <!-- Conversion Rate -->
     <div class="bg-gradient-to-r from-brand/10 to-emerald-500/10 border border-brand/20 rounded-xl p-4 mb-4">
       <div class="flex items-center justify-between">
@@ -11812,6 +11819,35 @@ function CreatorEarningsPage(){
           <p class="text-slate-400 text-xs">Clicks → Bookings</p>
         </div>
         <p class="text-3xl font-black text-brand" id="ce-rate">—%</p>
+      </div>
+    </div>
+
+    <!-- #63: Downloads & Shares Tracker -->
+    <div class="grid grid-cols-2 gap-3 mb-4">
+      <div class="bg-slate-800/80 rounded-xl p-4 text-center border border-slate-700/50">
+        <p class="text-2xl font-black text-white" id="ce-downloads">—</p>
+        <p class="text-slate-400 text-xs mt-1">Asset Downloads</p>
+      </div>
+      <div class="bg-slate-800/80 rounded-xl p-4 text-center border border-slate-700/50">
+        <p class="text-2xl font-black text-white" id="ce-shares">—</p>
+        <p class="text-slate-400 text-xs mt-1">Link Shares</p>
+      </div>
+    </div>
+
+    <!-- #63: 7-Day Activity Sparkline -->
+    <div class="bg-slate-800/60 rounded-xl p-4 mb-4 border border-slate-700/30">
+      <p class="text-white font-bold text-sm mb-2">📈 Last 7 Days Activity</p>
+      <div class="flex items-end gap-1 h-12" id="ce-sparkline">
+        <div class="flex-1 bg-slate-700 rounded-t" style="height:10%"></div>
+        <div class="flex-1 bg-slate-700 rounded-t" style="height:10%"></div>
+        <div class="flex-1 bg-slate-700 rounded-t" style="height:10%"></div>
+        <div class="flex-1 bg-slate-700 rounded-t" style="height:10%"></div>
+        <div class="flex-1 bg-slate-700 rounded-t" style="height:10%"></div>
+        <div class="flex-1 bg-slate-700 rounded-t" style="height:10%"></div>
+        <div class="flex-1 bg-slate-700 rounded-t" style="height:10%"></div>
+      </div>
+      <div class="flex justify-between mt-1">
+        <span class="text-slate-600 text-[9px]">Mon</span><span class="text-slate-600 text-[9px]">Tue</span><span class="text-slate-600 text-[9px]">Wed</span><span class="text-slate-600 text-[9px]">Thu</span><span class="text-slate-600 text-[9px]">Fri</span><span class="text-slate-600 text-[9px]">Sat</span><span class="text-slate-600 text-[9px]">Sun</span>
       </div>
     </div>
 
@@ -12031,9 +12067,25 @@ async function _loadWithdrawalData(handle){
   }
 }
 
+// #63: Period selector handler
+window._cePeriod='all';
+function _ceSetPeriod(period){
+  window._cePeriod=period;
+  ['today','week','all'].forEach(function(p){
+    var tab=document.getElementById('ce-period-'+p);
+    if(tab){
+      if(p===period){tab.className='flex-1 bg-brand/20 text-brand font-bold py-2 rounded-lg text-xs transition border border-brand/30';}
+      else{tab.className='flex-1 bg-slate-700/50 text-slate-400 font-bold py-2 rounded-lg text-xs transition border border-transparent';}
+    }
+  });
+  var creatorData=JSON.parse(localStorage.getItem('sg_creator')||'null');
+  if(creatorData&&(creatorData.handle||creatorData.slug))_loadCreatorEarnings(creatorData.handle||creatorData.slug);
+}
+
 async function _loadCreatorEarnings(handle){
   try{
-    const res=await fetch('/api/referrals/earnings/'+encodeURIComponent(handle));
+    var _period=window._cePeriod||'all';
+    const res=await fetch('/api/referrals/earnings/'+encodeURIComponent(handle)+'?period='+_period);
     const data=await res.json();
     if(!data.success)return;
     
@@ -12134,6 +12186,24 @@ async function _loadCreatorEarnings(handle){
           return '<div class="bg-slate-800/60 rounded-lg p-3 flex items-center justify-between border border-slate-700/30"><div><p class="text-white text-sm font-medium">'+c.gymName+'</p><p class="text-slate-500 text-xs">'+dateStr+'</p></div><p class="text-brand font-bold">+£'+c.commission+'</p></div>';
         }).join('');
       }
+    }
+    
+    // #63: Update downloads & shares counts
+    var dlEl=document.getElementById('ce-downloads');
+    var shEl=document.getElementById('ce-shares');
+    if(dlEl)dlEl.textContent=data.totalDownloads||'0';
+    if(shEl)shEl.textContent=data.totalShares||'0';
+    
+    // #63: Update sparkline (7-day activity)
+    var sparkEl=document.getElementById('ce-sparkline');
+    if(sparkEl&&data.dailyClicks){
+      var days=data.dailyClicks;
+      var maxDay=Math.max.apply(null,days.map(function(d){return d.count;}))||1;
+      sparkEl.innerHTML=days.map(function(d){
+        var h=Math.max(10,Math.round((d.count/maxDay)*100));
+        var color=d.count>0?'bg-brand':'bg-slate-700';
+        return '<div class="flex-1 '+color+' rounded-t transition-all duration-500" style="height:'+h+'%" title="'+d.date+': '+d.count+' clicks"></div>';
+      }).join('');
     }
   }catch(e){
     console.error('[Earnings] Load failed:',e);
