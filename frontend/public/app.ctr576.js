@@ -1458,9 +1458,13 @@ function SearchPage(){
           html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'payment\')"><div class="tt-action-btn">\u{1F4B3}</div><div class="tt-action-label">'+_payLabel+'</div></div>';
           html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'passes\')"><div class="tt-action-btn">\u{1F39F}\uFE0F</div><div class="tt-action-label">'+_passLabel+'</div></div>';
           html+='<div class="tt-action" onclick="event.stopPropagation();showCalendarPicker(\''+c.id+'\')"><div class="tt-action-btn">\u{1F4C5}</div><div class="tt-action-label">'+_calDate+'</div></div>';
+          /* #104: Like button */
+          html+='<div class="tt-action" onclick="event.stopPropagation();sgToggleLike(\'gym\',\''+c.id+'\',this.querySelector(\'.tt-action-btn\'))"><div class="tt-action-btn" data-liked="false" style="font-size:22px">\u{1F90D} 0</div><div class="tt-action-label">Like</div></div>';
           /* #59 cleanup: equipment & facilities buttons removed per user request */
           /* map button removed */
           html+='</div>';
+          /* #103: Track gym view on scroll into view */
+          html+='<script>sgTrackView&&sgTrackView("gym","'+c.id+'")<\/script>';
 
           /* Bottom info */
           html+='<div class="tt-info" id="tt-info-'+i+'">';
@@ -11371,6 +11375,20 @@ function CeoDashboardPage(){
       </div>
     </div>
 
+    <!-- #106: Real-Time Visitors -->
+    <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px;margin-bottom:20px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div><h2 style="color:#fff;font-size:16px;font-weight:700;margin:0">🟢 Live Now</h2><p style="color:rgba(255,255,255,.3);font-size:12px;margin-top:2px">Real-time visitors on site</p></div>
+        <div id="ceo-realtime" style="font-size:36px;font-weight:900;color:#22c55e">—</div>
+      </div>
+    </div>
+
+    <!-- #99: Button Analytics (Top Clicked) -->
+    <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px;margin-bottom:20px">
+      <h2 style="color:#fff;font-size:16px;font-weight:700;margin-bottom:16px">🖱️ Top Clicked Buttons</h2>
+      <div id="ceo-buttons" style="color:rgba(255,255,255,.3);font-size:13px">Loading...</div>
+    </div>
+
     <!-- Quick Actions -->
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:20px">
       <button onclick="navigate('/staff/scan')" style="background:rgba(255,109,0,.1);border:1px solid rgba(255,109,0,.15);color:#FF6D00;padding:12px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;text-align:center">📷 QR Scanner</button>
@@ -11433,6 +11451,37 @@ window.sgLoadCeoStats=async function(){
         bookings.innerHTML=bks.slice(0,10).map(b=>'<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)"><div><span style="color:#fff;font-size:13px;font-weight:600">'+(b.gymName||'Gym')+'</span><br><span style="color:rgba(255,255,255,.35);font-size:11px">'+(b.date?new Date(b.date).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'')+(b.time?' '+b.time:'')+'</span></div><div style="text-align:right"><span style="color:#FF6D00;font-weight:700;font-size:13px">£'+(b.price||0).toFixed(2)+'</span><br><span style="font-size:10px;padding:2px 6px;border-radius:8px;'+(b.status==='confirmed'?'background:rgba(34,197,94,.15);color:#22c55e':'background:rgba(234,179,8,.15);color:#eab308')+'">'+(b.status||'')+'</span></div></div>').join('');
       }
     }
+    // #106: Load real-time visitor count
+    fetch('/api/analytics/realtime').then(r=>r.json()).then(d=>{
+      var el=document.getElementById('ceo-realtime');
+      if(el) el.textContent=d.online||0;
+    }).catch(()=>{});
+
+    // #99: Load top clicked buttons
+    fetch('/api/analytics/button-clicks').then(r=>r.json()).then(d=>{
+      var el=document.getElementById('ceo-buttons');
+      if(!el) return;
+      var entries=Object.entries(d.buttons||{}).sort((a,b)=>b[1].clicks-a[1].clicks).slice(0,10);
+      if(entries.length===0){
+        el.innerHTML='<p style="color:rgba(255,255,255,.3);font-size:13px">No click data yet. Data populates as users interact.</p>';
+        return;
+      }
+      el.innerHTML=entries.map(function(e){
+        return '<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)"><span style="color:rgba(255,255,255,.6);font-size:13px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+e[0]+'</span><span style="color:#FF6D00;font-weight:700;font-size:14px">'+e[1].clicks+'</span></div>';
+      }).join('');
+    }).catch(()=>{});
+
+    // #100: Also try the extended funnel API
+    fetch('/api/analytics/funnel?period=30d').then(r=>r.json()).then(d=>{
+      var funnel2=document.getElementById('ceo-funnel');
+      if(!funnel2||!d.funnel||d.funnel.length===0) return;
+      var hasData=d.funnel.some(function(s){return s.count>0;});
+      if(!hasData) return;
+      funnel2.innerHTML=d.funnel.map(function(s,i){
+        return '<div style="display:flex;align-items:center;gap:12px;padding:8px 0;'+(i<d.funnel.length-1?'border-bottom:1px solid rgba(255,255,255,.04)':'')+'"><div style="width:10px;height:10px;border-radius:50%;background:'+(s.color||'#FF6D00')+';flex-shrink:0"></div><span style="color:rgba(255,255,255,.7);font-size:13px;flex:1">'+s.step+'</span><span style="color:#fff;font-size:14px;font-weight:600;min-width:50px;text-align:right">'+s.count+'</span><span style="color:rgba(255,255,255,.3);font-size:12px;min-width:40px;text-align:right">'+(s.conversionRate||0)+'%</span></div>';
+      }).join('');
+    }).catch(()=>{});
+
   }catch(e){
     console.warn('CEO stats error:',e);
   }
@@ -14733,4 +14782,71 @@ window.sgPerfDashboard=function(){
 };
 // Auto-log perf summary after load
 window.addEventListener('load',function(){setTimeout(function(){console.log('%c[ScanGym Perf v5.3.0]','color:#FF6D00;font-weight:bold;font-size:14px');window.sgPerf();},3000);});
+
+// ═══ #99+#103+#104+#105+#106: Analytics Instrumentation ═══
+
+// Session ID for analytics
+window._sgSessionId = localStorage.getItem('sg_session') || ('s_' + Date.now() + '_' + Math.random().toString(36).slice(2,8));
+localStorage.setItem('sg_session', window._sgSessionId);
+
+// #99: Track button clicks globally
+document.addEventListener('click', function(e) {
+  var btn = e.target.closest('button, [onclick], .sg-more-item, .tt-cta-btn, .sg-filter-pill');
+  if (!btn) return;
+  var id = btn.id || btn.getAttribute('data-track') || btn.textContent?.trim()?.slice(0, 30) || 'unknown';
+  fetch('/api/analytics/button-click', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ buttonId: id, page: location.pathname, sessionId: window._sgSessionId })
+  }).catch(function() {});
+});
+
+// #103: Track gym/reel views
+window.sgTrackView = function(type, id) {
+  fetch('/api/analytics/view', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ entityType: type, entityId: id, sessionId: window._sgSessionId })
+  }).catch(function() {});
+};
+
+// #104: Like/unlike handler
+window.sgToggleLike = async function(type, id, btn) {
+  var liked = btn?.getAttribute('data-liked') === 'true';
+  var action = liked ? 'unlike' : 'like';
+  try {
+    var r = await fetch('/api/analytics/like', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entityType: type, entityId: id, userId: state.user?.id, action: action })
+    });
+    var d = await r.json();
+    if (btn) {
+      btn.setAttribute('data-liked', String(!liked));
+      btn.innerHTML = (!liked ? '❤️' : '🤍') + ' ' + d.likes;
+      btn.style.color = !liked ? '#ef4444' : 'rgba(255,255,255,.5)';
+    }
+  } catch (e) {}
+};
+
+// #105: Per-element feedback (thumbs up/down)
+window.sgFeedback = async function(elementId, vote, btn) {
+  try {
+    var r = await fetch('/api/analytics/feedback', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ elementId: elementId, page: location.pathname, vote: vote, sessionId: window._sgSessionId })
+    });
+    var d = await r.json();
+    if (btn) {
+      btn.style.opacity = '0.5';
+      btn.style.pointerEvents = 'none';
+    }
+  } catch (e) {}
+};
+
+// #106: Real-time visitor heartbeat (every 30s)
+(function _sgHeartbeat() {
+  fetch('/api/analytics/heartbeat', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionId: window._sgSessionId })
+  }).catch(function() {});
+  setTimeout(_sgHeartbeat, 30000);
+})();
 
