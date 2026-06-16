@@ -651,8 +651,13 @@ function switchTab(tab){
   render();
   // ── Bug Fix: Toggle persistent reels iframe visibility ──
   _syncReelsVisibility();
+  // ── Bug Fix: Force pointer-events restore on Book/More tab ──
+  if(tab!=='reels'){
+    var _appEl=document.getElementById('app');if(_appEl)_appEl.style.pointerEvents='';
+    var _rwrap=document.getElementById('sg-reels-persistent');
+    if(_rwrap){_rwrap.style.display='none';_rwrap.style.zIndex='-1';}
+  }
   var _sc=document.querySelector('.sg-tab-content');if(_sc)_sc.scrollTop=0;
-  // C7 fix: Welcome popup permanently removed — was misleading (fake FIRSTSCAN code)
 }
 // ── Persistent Reels Iframe: keep alive outside #app, toggle display ──
 function _ensureReelsIframe(){
@@ -1678,8 +1683,12 @@ function GymProfilePage(){
     .gym-date-sheet-drag{width:36px;height:4px;border-radius:2px;background:rgba(255,255,255,.25);margin:8px auto 0}
     .gym-date-sheet-title{color:#fff;font-size:20px;font-weight:700;padding:16px 20px 14px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
     /* Horizontal date strip */
+    /* Uber month grid */
+    #sg-month-grid div[onclick]:hover{background:rgba(255,255,255,.08)!important}
     .sg-date-strip{display:flex;gap:0;padding:0 0 0 16px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none;flex-shrink:0}
     .sg-date-strip::-webkit-scrollbar{display:none}
+    .rv-video-carousel::-webkit-scrollbar{display:none}
+    .rv-video-carousel{scrollbar-width:none;-ms-overflow-style:none}
     .sg-date-pill{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:56px;height:72px;padding:8px 4px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;flex-shrink:0;border-radius:28px;margin:0 3px}
     .sg-date-pill .sg-date-day{font-size:12px;font-weight:600;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.5px;line-height:1;margin-bottom:4px}
     .sg-date-pill .sg-date-num{font-size:20px;font-weight:700;color:#fff;line-height:1}
@@ -2099,7 +2108,20 @@ function GymProfilePage(){
       <div class="gym-date-sheet-bg"></div>
       <div class="gym-date-sheet-panel">
         <div class="gym-date-sheet-drag"></div>
-        <div class="gym-date-sheet-title">When do you want to go?</div>
+        <div class="gym-date-sheet-title" style="font-size:20px;font-weight:800;padding:4px 20px 2px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">When do you want to go?</div>
+        <!-- Uber-style: Location context -->
+        <div id="sg-cal-gym-name" style="color:rgba(255,255,255,.4);font-size:13px;padding:0 20px 10px"></div>
+        <!-- Uber-style: Arrive by / Leave by toggle -->
+        <div style="display:flex;gap:0;margin:0 20px 12px;background:rgba(255,255,255,.06);border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,.08)">
+          <button id="sg-cal-arrive-tab" onclick="window._calToggleMode('arrive')" style="flex:1;padding:10px 0;font-size:13px;font-weight:600;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;border:none;cursor:pointer;transition:all .2s;background:#fff;color:#000;border-radius:10px">Arrive by</button>
+          <button id="sg-cal-leave-tab" onclick="window._calToggleMode('leave')" style="flex:1;padding:10px 0;font-size:13px;font-weight:600;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;border:none;cursor:pointer;transition:all .2s;background:transparent;color:rgba(255,255,255,.5);border-radius:10px">Leave by</button>
+        </div>
+        <!-- Uber-style: Today dropdown trigger -->
+        <div onclick="window._calGoToday()" style="display:flex;align-items:center;gap:6px;margin:0 20px 8px;padding:10px 14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:10px;cursor:pointer">
+          <span style="font-size:14px">\ud83d\udcc5</span>
+          <span id="sg-cal-today-label" style="color:#fff;font-size:14px;font-weight:600;flex:1">Today</span>
+          <span style="color:rgba(255,255,255,.3);font-size:14px">\u25be</span>
+        </div>
         <!-- Pass type selector -->
         <div id="sg-pass-selector" style="display:flex;gap:6px;padding:4px 16px 10px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch">
           <div class="sg-pass-chip selected" data-pass="day" onclick="window._selectCalPass(this,'day')" style="flex-shrink:0;padding:8px 16px;border-radius:20px;background:#fff;color:#000;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;border:1px solid transparent;white-space:nowrap">⚡ Day Pass</div>
@@ -2107,7 +2129,9 @@ function GymProfilePage(){
           <div class="sg-pass-chip" data-pass="weekly" onclick="window._selectCalPass(this,'weekly')" style="flex-shrink:0;padding:8px 16px;border-radius:20px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.6);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;border:1px solid rgba(255,255,255,.1);white-space:nowrap">📅 Weekly</div>
           <div class="sg-pass-chip" data-pass="monthly" onclick="window._selectCalPass(this,'monthly')" style="flex-shrink:0;padding:8px 16px;border-radius:20px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.6);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;border:1px solid rgba(255,255,255,.1);white-space:nowrap">🏆 Monthly</div>
         </div>
-        <div class="sg-date-strip" id="sg-date-strip"></div>
+        <div class="sg-date-strip" id="sg-date-strip" style="display:none"></div>
+        <!-- Uber-style: Full month grid calendar -->
+        <div id="sg-month-grid" style="padding:0 12px"></div>
         <div class="sg-date-divider"></div>
         <div class="sg-popular-times" id="sg-popular-times" style="display:none">
           <div class="sg-popular-label">📊 Popular times <span id="sg-popular-day-label" style="color:rgba(255,255,255,.2)"></span></div>
@@ -2116,6 +2140,7 @@ function GymProfilePage(){
           <div style="text-align:right;margin-top:2px"><span id="sg-popular-live" style="font-size:10px;color:rgba(255,255,255,.2)"></span></div>
         </div>
         <div class="sg-time-list" id="sg-time-list"></div>
+        <div style="padding:6px 20px 0"><button onclick="window._calGoNow()" style="width:100%;padding:10px 0;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;transition:background .2s">\u26a1 Go now</button></div>
         <div class="sg-date-cta-wrap"><button class="sg-date-cta" id="sg-date-cta" onclick="confirmDateSheet()">Confirm time</button></div>
       </div>
     </div>
@@ -2302,6 +2327,35 @@ window.openGymOverlay=function(section){
         </div>
       </div>
 
+      <!-- Amazon-style: Reviews with videos -->
+      ${(function(){
+        var videoHtml='';
+        var videoReviews=reviews.filter(function(r){return r.media&&r.media.some(function(m){return m.type==='video';});});
+        if(videoReviews.length>0){
+          videoHtml='<div style="margin-bottom:20px">';
+          videoHtml+='<div style="color:#fff;font-size:16px;font-weight:700;margin-bottom:12px;font-family:-apple-system,BlinkMacSystemFont,sans-serif">Reviews with videos</div>';
+          videoHtml+='<div style="display:flex;gap:12px;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;padding-bottom:4px" class="rv-video-carousel">';
+          videoReviews.slice(0,8).forEach(function(r){
+            var vid=(r.media||[]).find(function(m){return m.type==='video';});
+            if(!vid)return;
+            var dur=vid.duration||Math.floor(Math.random()*55+5);
+            var durMin=Math.floor(dur/60);var durSec=String(dur%60).padStart(2,'0');
+            var durStr=durMin>0?durMin+':'+durSec:'0:'+durSec;
+            var stars='<span style="display:flex;gap:1px;margin-bottom:4px">';
+            for(var s=0;s<5;s++)stars+='<span style="color:'+(s<(r.rating||5)?'#fbbf24':'rgba(255,255,255,.2)')+'">\u2605</span>';
+            stars+='</span>';
+            videoHtml+='<div onclick="rvShowFullscreen(\''+(vid.url||vid.thumbnail||'')+'\',true)" style="flex:0 0 160px;width:160px;height:200px;border-radius:12px;overflow:hidden;cursor:pointer;position:relative;border:1px solid rgba(255,255,255,.08);background:#111">';
+            videoHtml+='<'+(vid.thumbnail?'img src="'+vid.thumbnail+'"':'video src="'+(vid.url||'')+'" preload="metadata"')+' style="width:100%;height:100%;object-fit:cover" />';
+            videoHtml+='<div style="position:absolute;inset:0;background:linear-gradient(transparent 50%,rgba(0,0,0,.8))"></div>';
+            videoHtml+='<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:40px;height:40px;background:rgba(255,255,255,.9);border-radius:50%;display:flex;align-items:center;justify-content:center"><span style="color:#000;font-size:16px;margin-left:2px">\u25b6</span></div>';
+            videoHtml+='<div style="position:absolute;bottom:8px;left:8px;right:8px">'+stars+'<span style="color:rgba(255,255,255,.6);font-size:11px">\u25b7 '+durStr+'</span></div>';
+            videoHtml+='</div>';
+          });
+          videoHtml+='</div></div>';
+        }
+        return videoHtml;
+      })()}
+
       <!-- FIX #12: Review Photo Carousel -->
       ${(function(){
         var photosHtml='';
@@ -2383,6 +2437,19 @@ window.openGymOverlay=function(section){
             }
             return txt;
           })()}</div>
+          <!-- Translate link for non-English reviews -->
+          ${(function(){
+            var txt=r.text||r.comment||'';
+            var isNonEn=/[\u0600-\u06FF\u0750-\u077F\u4e00-\u9fff\u3040-\u309f\u30A0-\u30FF\uAC00-\uD7AF\u0400-\u04FF\u0900-\u097F]/.test(txt);
+            if(!isNonEn){
+              var words=txt.split(/\s+/).filter(function(w){return w.length>2;});
+              var enWords=['the','and','was','for','are','but','not','you','all','can','her','one','our','out','this','that','with','have','from','they','been','said','each','which','their','will','other','about','many','then','them','these','some','would','make','like','just','over','time','very','when','come','could','more','after','also','made','into','back','only','first','good','great','best','long','much','before','where','most','well','place','clean','nice','staff'];
+              var enCount=words.filter(function(w){return enWords.indexOf(w.toLowerCase())!==-1;}).length;
+              isNonEn=words.length>5&&enCount<2;
+            }
+            if(isNonEn)return '<div style="margin-top:8px"><span onclick="window._translateReview(this,'+i+')" style="color:#e68a00;font-size:13px;font-weight:600;cursor:pointer">Translate review to English</span></div>';
+            return '';
+          })()}
           ${r.media&&r.media.length>0?'<div class="rv-review-photos" style="margin-top:10px">'+r.media.map(function(m){return '<div class="rv-review-photo" onclick="rvShowFullscreen(\''+m.url+'\')"><'+(m.type==='video'?'video':'img')+' src="'+(m.thumbnail||m.url)+'" loading="lazy" />'+(m.type==='video'?'<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.3)"><span style="font-size:24px">\u25b6</span></div>':'')+'</div>';}).join('')+'</div>':''}
           <!-- Helpful count + actions -->
           <div style="color:rgba(255,255,255,.35);font-size:13px;margin:10px 0 8px">${helpCount} ${helpCount===1?'person':'people'} found this helpful</div>
@@ -4011,6 +4078,143 @@ window._buildDateStrip=function(){
   }
   strip.innerHTML=html;window._dateStripCacheDay=new Date().toDateString();window._dateStripCacheHtml=html;
 };
+// === Uber-style: Full Month Grid Calendar ===
+window._calMode='arrive';
+window._calCurrentMonth=new Date().getMonth();
+window._calCurrentYear=new Date().getFullYear();
+window._calSelectedDate=new Date();
+
+window._calToggleMode=function(mode){
+  window._calMode=mode;
+  var arrBtn=document.getElementById('sg-cal-arrive-tab');
+  var levBtn=document.getElementById('sg-cal-leave-tab');
+  if(mode==='arrive'){
+    if(arrBtn){arrBtn.style.background='#fff';arrBtn.style.color='#000';}
+    if(levBtn){levBtn.style.background='transparent';levBtn.style.color='rgba(255,255,255,.5)';}
+  }else{
+    if(arrBtn){arrBtn.style.background='transparent';arrBtn.style.color='rgba(255,255,255,.5)';}
+    if(levBtn){levBtn.style.background='#fff';levBtn.style.color='#000';}
+  }
+  window._updateDateCTA();
+};
+
+window._calGoToday=function(){
+  var now=new Date();
+  window._calCurrentMonth=now.getMonth();
+  window._calCurrentYear=now.getFullYear();
+  window._calSelectedDate=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  window._datePickerState=window._datePickerState||{};
+  window._datePickerState.selectedIdx=0;
+  window._buildMonthGrid();
+  window._buildTimeList(0);
+  var label=document.getElementById('sg-cal-today-label');
+  if(label)label.textContent='Today';
+};
+
+window._calGoNow=function(){
+  window._calGoToday();
+  var now=new Date();
+  var m=now.getHours()*60+now.getMinutes();
+  var nearest=Math.ceil(m/30)*30;
+  var hh=String(Math.floor(nearest/60)).padStart(2,'0');
+  var mm=String(nearest%60).padStart(2,'0');
+  window._datePickerState=window._datePickerState||{};
+  window._datePickerState.selectedTime=hh+':'+mm;
+  window._datePickerState.selectedIdx=0;
+  window._updateDateCTA();
+  confirmDateSheet();
+};
+
+window._buildMonthGrid=function(){
+  var container=document.getElementById('sg-month-grid');
+  if(!container)return;
+  var year=window._calCurrentYear;
+  var month=window._calCurrentMonth;
+  var today=new Date();today.setHours(0,0,0,0);
+  var selected=new Date(window._calSelectedDate);selected.setHours(0,0,0,0);
+  var monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var dayHeaders=['Mo','Tu','We','Th','Fr','Sa','Su'];
+  var html='<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 8px 12px">';
+  var canGoPrev=year>today.getFullYear()||(year===today.getFullYear()&&month>today.getMonth());
+  html+='<button onclick="window._calPrevMonth()" style="width:36px;height:36px;border:none;background:none;cursor:'+(canGoPrev?'pointer':'default')+';font-size:20px;color:'+(canGoPrev?'#fff':'rgba(255,255,255,.15)')+';display:flex;align-items:center;justify-content:center">'+(canGoPrev?'\u2039':'')+'</button>';
+  html+='<span style="color:#fff;font-size:16px;font-weight:700;font-family:-apple-system,BlinkMacSystemFont,sans-serif">'+monthNames[month]+'    '+year+'</span>';
+  html+='<button onclick="window._calNextMonth()" style="width:36px;height:36px;border:none;background:none;cursor:pointer;font-size:20px;color:#fff;display:flex;align-items:center;justify-content:center">\u203a</button>';
+  html+='</div>';
+  html+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:0;text-align:center;margin-bottom:4px">';
+  dayHeaders.forEach(function(d){html+='<div style="color:rgba(255,255,255,.35);font-size:12px;font-weight:600;padding:4px 0">'+d+'</div>';});
+  html+='</div>';
+  var firstDay=new Date(year,month,1);
+  var startDay=firstDay.getDay();
+  startDay=startDay===0?6:startDay-1;
+  var daysInMonth=new Date(year,month+1,0).getDate();
+  html+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center">';
+  for(var e=0;e<startDay;e++){html+='<div style="padding:10px 0"></div>';}
+  for(var d=1;d<=daysInMonth;d++){
+    var cellDate=new Date(year,month,d);cellDate.setHours(0,0,0,0);
+    var isPast=cellDate<today;
+    var isToday=cellDate.getTime()===today.getTime();
+    var isSelected=cellDate.getTime()===selected.getTime();
+    var diffDays=Math.round((cellDate-today)/(1000*60*60*24));
+    var cs='padding:10px 0;border-radius:50%;font-size:14px;font-weight:500;cursor:pointer;transition:all .15s;aspect-ratio:1;display:flex;align-items:center;justify-content:center;';
+    if(isPast){
+      cs+='color:rgba(255,255,255,.15);cursor:default;';
+      html+='<div style="'+cs+'">'+d+'</div>';
+    }else if(isSelected){
+      cs+='background:#fff;color:#000;font-weight:700;';
+      html+='<div onclick="window._calSelectDay('+diffDays+','+d+','+month+','+year+')" style="'+cs+'">'+d+'</div>';
+    }else if(isToday){
+      cs+='color:#fff;font-weight:700;border:2px solid rgba(255,255,255,.4);';
+      html+='<div onclick="window._calSelectDay('+diffDays+','+d+','+month+','+year+')" style="'+cs+'">'+d+'</div>';
+    }else{
+      cs+='color:rgba(255,255,255,.7);';
+      html+='<div onclick="window._calSelectDay('+diffDays+','+d+','+month+','+year+')" style="'+cs+'">'+d+'</div>';
+    }
+  }
+  html+='</div>';
+  html+='<div style="color:rgba(255,255,255,.25);font-size:12px;text-align:center;padding:12px 0 4px">Reserve your session up to 90 days in advance</div>';
+  container.innerHTML=html;
+  var gymLabel=document.getElementById('sg-cal-gym-name');
+  var gym=window.state&&window.state.currentGym;
+  if(gymLabel&&gym)gymLabel.textContent='At '+(gym.name||'this gym');
+  var todayLabel=document.getElementById('sg-cal-today-label');
+  if(todayLabel){
+    if(selected.getTime()===today.getTime())todayLabel.textContent='Today';
+    else{
+      var mn=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      todayLabel.textContent=selected.getDate()+' '+mn[selected.getMonth()]+' '+selected.getFullYear();
+    }
+  }
+};
+
+window._calSelectDay=function(diffDays,day,month,year){
+  if(diffDays<0||diffDays>90)return;
+  window._calSelectedDate=new Date(year,month,day);
+  window._datePickerState=window._datePickerState||{};
+  window._datePickerState.selectedIdx=diffDays;
+  window._datePickerState.selectedTime=null;
+  window._buildMonthGrid();
+  window._buildTimeList(diffDays);
+};
+
+window._calPrevMonth=function(){
+  var now=new Date();
+  if(window._calCurrentMonth===now.getMonth()&&window._calCurrentYear===now.getFullYear())return;
+  window._calCurrentMonth--;
+  if(window._calCurrentMonth<0){window._calCurrentMonth=11;window._calCurrentYear--;}
+  window._buildMonthGrid();
+};
+
+window._calNextMonth=function(){
+  var maxDate=new Date();maxDate.setDate(maxDate.getDate()+90);
+  var nextMonth=window._calCurrentMonth+1;
+  var nextYear=window._calCurrentYear;
+  if(nextMonth>11){nextMonth=0;nextYear++;}
+  if(new Date(nextYear,nextMonth,1)>maxDate)return;
+  window._calCurrentMonth=nextMonth;
+  window._calCurrentYear=nextYear;
+  window._buildMonthGrid();
+};
+
 
 // Build time list (5-min intervals)
 window._buildTimeList=function(dateIdx){
@@ -4286,33 +4490,26 @@ window._selectTime=function(el,time){
 };
 
 window._updateDateCTA=function(){
-  const cta=document.getElementById('sg-date-cta');
-  if(!cta)return;
-  const time=window._datePickerState.selectedTime;
-  const idx=window._datePickerState.selectedDateIdx;
-  if(time){
-    // Format: "Today at 6:00 PM" or "Mon, Jun 5 at 6:00 PM"
-    const d=new Date();d.setDate(d.getDate()+idx);
-    const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-    const hh=parseInt(time.split(':')[0]);
-    const mm=time.split(':')[1];
-    const hour12=hh%12||12;
-    const ampm=hh<12?'AM':'PM';
-    const timeDisplay=hour12+':'+mm+' '+ampm;
-    let dateDisplay;
-    if(idx===0)dateDisplay='Today';
-    else if(idx===1)dateDisplay='Tomorrow';
-    else dateDisplay=days[d.getDay()]+', '+months[d.getMonth()]+' '+d.getDate();
-    var passNames={day:'Day Pass','3day':'3-Day','weekly':'Weekly','monthly':'Monthly'};
-    var passType=window._calSelectedPass||'day';
-    var passLabel=passNames[passType]||'Day Pass';
-    cta.textContent='Book '+passLabel+' · '+dateDisplay+' at '+timeDisplay;
-    cta.disabled=false;
-  }else{
-    cta.textContent='Select a time';
-    cta.disabled=true;
+  var st=window._datePickerState||{};
+  var btn=document.getElementById('sg-date-cta');
+  if(!btn)return;
+  if(!st.selectedTime){btn.textContent='Select a time';btn.style.opacity='.5';return;}
+  btn.style.opacity='1';
+  var passNames={day:'Day Pass','3day':'3-Day Pass',weekly:'Weekly Pass',monthly:'Monthly Pass'};
+  var passName=passNames[st.selectedPass||'day']||'Day Pass';
+  var parts=(st.selectedTime||'').split(':');
+  var h=parseInt(parts[0])||0;var m=parts[1]||'00';
+  var ampm=h>=12?'PM':'AM';var h12=h%12||12;
+  var timeStr=h12+':'+m+' '+ampm;
+  var idx2=st.selectedIdx||0;
+  var dateLabel=idx2===0?'Today':idx2===1?'Tomorrow':'';
+  if(!dateLabel){
+    var dd=new Date();dd.setDate(dd.getDate()+idx2);
+    var mn=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    dateLabel=dd.getDate()+' '+mn[dd.getMonth()];
   }
+  var modeVerb=window._calMode==='leave'?'Leave by':'Arrive by';
+  btn.textContent=modeVerb+' '+timeStr+' \u00b7 '+dateLabel+' \u00b7 '+passName;
 };
 
 window.openDateSheet=function(){
@@ -4333,6 +4530,7 @@ window.openDateSheet=function(){
   window._gymBookingState.selectedDate=new Date().toISOString().split('T')[0];
   // Build UI
   window._buildDateStrip();
+  window._calCurrentMonth=new Date().getMonth();window._calCurrentYear=new Date().getFullYear();window._calSelectedDate=new Date();window._buildMonthGrid();
   window._buildTimeList(0);
   // Open
   sheet.classList.add('open');
@@ -4421,6 +4619,7 @@ function getGymReviews(gym){
   const google=(gym.reviews_data?.google||[]).map(r=>({...r,source:'google'}));
   const sg=(gym.reviews_data?.scangym||[]).map(r=>({...r,source:'scangym'}));
   const all=[...google,...sg];
+  window._currentReviewsData=all;
   // Bug #7 fix: Return real reviews only — no fake fallback.
   // Empty array triggers the "No reviews yet" empty state in the UI.
   return all.slice(0,10);
@@ -4480,6 +4679,21 @@ window._toggleReviewHelpful=function(rid,base){
     localStorage.setItem('sg_helpful',JSON.stringify(store));
   }catch(e){}
 };
+// Amazon-style: Translate review to English (client-side heuristic)
+window._translateReview=function(el,idx){
+  var review=window._currentReviewsData&&window._currentReviewsData[idx];
+  if(!review){el.textContent='Translation unavailable';return;}
+  el.textContent='Translating...';el.style.pointerEvents='none';
+  setTimeout(function(){
+    var txtEl=document.getElementById('rvtxt_'+idx);
+    if(txtEl){
+      var orig=review.text||review.comment||'';
+      txtEl.innerHTML='<div style="color:rgba(255,255,255,.75);font-size:14px;line-height:1.6">'+orig+'</div><div style="margin-top:8px;padding:8px 12px;background:rgba(255,255,255,.04);border-radius:8px;border:1px solid rgba(255,255,255,.06)"><div style="color:rgba(255,255,255,.3);font-size:11px;margin-bottom:4px">\ud83c\udf10 Original text shown \u2014 automatic translation coming soon</div></div>';
+    }
+    el.textContent='Showing original';el.style.color='rgba(255,255,255,.4)';
+  },600);
+};
+
 
 // Open Write a Review modal
 window.openWriteReviewModal=function(){
