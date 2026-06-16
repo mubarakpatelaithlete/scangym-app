@@ -33,6 +33,7 @@ const streaksRouter = require('./routes/streaks');
 const accessRouter = require('./routes/access');
 const chatbotRouter = require('./chatbot');
 const commsLogRouter = require('./routes/comms-log');
+const paymentsExtendedRouter = require('./routes/payments-extended');
 const analyticsMiddleware = require('./middleware/analytics');
 
 const app = express();
@@ -403,6 +404,7 @@ app.use('/api/streaks', streaksRouter);
 app.use('/api/access', accessRouter);
 app.use('/api/chatbot', chatbotRouter);
 app.use('/api/comms-log', commsLogRouter);
+app.use('/api/payments', paymentsExtendedRouter);
 
 // -- Serve Frontend --
 // Digital Asset Links for Android TWA verification
