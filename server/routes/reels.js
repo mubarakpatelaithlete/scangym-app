@@ -36,6 +36,7 @@ const {
   rankFeed,
   processAnalytics,
   startBackgroundJobs,
+  loadPerformanceScores,
 } = require('../lib/reels-algorithm');
 
 // ═══════════════════════════════════════════════════════════
@@ -350,6 +351,20 @@ router.get('/feed', async (req, res) => {
 
     // 5. Paginate
     feed = feed.slice(offset, offset + limit);
+
+    // 5b. Inject share/save counts from video_performance into feed
+    try {
+      const perfMap = await loadPerformanceScores();
+      for (const v of feed) {
+        const key = String(v.cdnKey || v.id || '');
+        const perf = perfMap.get(key);
+        v.shareCount = perf ? perf.shareCount : 0;
+        v.saveCount  = perf ? perf.saveCount  : 0;
+      }
+    } catch (perfErr) {
+      // Non-fatal — buttons still work, just without counts
+      console.warn('Feed: performance count injection failed:', perfErr.message);
+    }
 
     // Build categories from the catalog videos we already loaded
     const allCats = [...new Set(catalogVideos.map(v => v.category))].sort();

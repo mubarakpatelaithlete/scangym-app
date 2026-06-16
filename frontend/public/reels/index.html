@@ -2323,11 +2323,15 @@
         actions.className = 'reel-actions';
         var bookHref = hasAffiliate ? escHtml(video.creator.affiliateLink) : '/explore';
 
+        var _shareC = video.shareCount || 0;
+        var _saveC  = video.saveCount  || 0;
+        var _shareLbl = _shareC > 0 ? (_shareC >= 1000 ? (_shareC/1000).toFixed(1).replace(/\.0$/,'')+'K' : String(_shareC)) : 'Share';
+        var _saveLbl  = _saveC  > 0 ? (_saveC  >= 1000 ? (_saveC /1000).toFixed(1).replace(/\.0$/,'')+'K' : String(_saveC))  : 'Save';
         actions.innerHTML = ''
           + '<div class="reel-action" data-action="share">'
-          +   '<div class="icon">' + ICONS.share + '</div><span class="label">Share</span></div>'
+          +   '<div class="icon">' + ICONS.share + '</div><span class="label">' + _shareLbl + '</span></div>'
           + '<div class="reel-action" data-action="save">'
-          +   '<div class="icon">' + ICONS.save + '</div><span class="label">Save</span></div>'
+          +   '<div class="icon">' + ICONS.save + '</div><span class="label">' + _saveLbl + '</span></div>'
           + '<a class="reel-action" data-action="create" href="/become-a-creator">'
           +   '<div class="icon" style="background:rgba(34,197,94,.85);border-color:rgba(34,197,94,.9)">' + ICONS.create + '</div><span class="label">Earn</span></a>';
         div.appendChild(actions);
