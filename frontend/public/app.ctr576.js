@@ -2276,18 +2276,9 @@ window.openGymOverlay=function(section){
       </div></div>`:''}
 
 
-      
-      <!-- Amazon-style review search box -->
-      <div style="margin-bottom:14px">
-        <div style="display:flex;align-items:center;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:0 12px;gap:8px">
-          <span style="color:rgba(255,255,255,.3);font-size:16px">🔍</span>
-          <input type="text" id="rv-search-input" placeholder="Search reviews..." oninput="window._rvSearchReviews(this.value)" style="flex:1;background:none;border:none;outline:none;color:#fff;font-size:14px;padding:12px 0;font-family:-apple-system,BlinkMacSystemFont,sans-serif" />
-          <span id="rv-search-clear" onclick="document.getElementById('rv-search-input').value='';window._rvSearchReviews('')" style="color:rgba(255,255,255,.3);font-size:18px;cursor:pointer;display:none">✕</span>
-        </div>
-      </div>
       <!-- Amazon-style: "Customers say" summary -->
       <div id="rv-ai-summary" style="margin-bottom:20px">
-        <div style="color:#fff;font-size:16px;font-weight:700;margin-bottom:4px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">Customers say</div><div style="font-size:11px;color:rgba(255,255,255,.35);margin-bottom:10px">AI-generated from the text of customer reviews</div>
+        <div style="color:#fff;font-size:16px;font-weight:700;margin-bottom:10px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">Customers say</div>
         <div id="rv-ai-summary-text" style="color:rgba(255,255,255,.8);font-size:14px;line-height:1.6">
           ${(function(){
             var allText=reviews.map(function(r){return r.text||r.comment||'';}).join(' ').toLowerCase();
@@ -2437,7 +2428,7 @@ window.openGymOverlay=function(section){
           <!-- Bold review title -->
           <div class="ov-review-title" style="color:#fff;font-size:15px;font-weight:700;margin-bottom:4px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">${r.headline||(r.text||r.comment||'').split(/[.!?\n]/)[0].slice(0,80)||(r.rating>=4?'Great experience':'Review')}</div>
           <!-- Reviewed on date -->
-          <div style="color:rgba(255,255,255,.35);font-size:13px;margin-bottom:10px">Reviewed in the United Kingdom on ${_formatReviewDate(r,i)}</div>
+          <div style="color:rgba(255,255,255,.35);font-size:13px;margin-bottom:10px">Reviewed on ${_formatReviewDate(r,i)}</div>
           <!-- Review text with fade + Read more -->
           <div class="ov-review-text" id="rvtxt_${i}" style="color:rgba(255,255,255,.75);font-size:14px;line-height:1.6">${(function(){
             var txt=r.text||r.comment||'';
@@ -2795,13 +2786,9 @@ window.rvShowFullscreen=function(url){
   }
   else if(section==='payment'){
     // ═══ FIX: Route ALL payment taps to the new Uber-style white sheet ═══
-    // The old dark overlay is replaced — openPaySheet() gives us:
-    // ✅ White background (Uber-style)
-    // ✅ ScanGym balance with toggle
-    // ✅ Saved cards with brand badges (Visa/MC/Amex)
-    // ✅ Working card form (no sign-in required)
-    // ✅ "Save" confirmation button
-    // ✅ Apple Pay / Google Pay detection
+    // Close dark overlay first — pay sheet is white and standalone
+    var _darkOv=document.getElementById('gym-overlay');
+    if(_darkOv){_darkOv.classList.remove('active','open');_darkOv.remove();}
     window.openPaySheet();
     return;
     // ─── OLD dark overlay below is now dead code ───
@@ -3017,7 +3004,7 @@ function _ensureStandaloneOverlay(gymId){
   if(!document.getElementById('sg-overlay-css')){
     var css=document.createElement('style');
     css.id='sg-overlay-css';
-    css.textContent='.gym-overlay{position:fixed;inset:0;z-index:9100;opacity:0;pointer-events:none;transition:opacity .3s ease}.gym-overlay.open{opacity:1;pointer-events:all}.gym-overlay-bg{position:absolute;inset:0;background:rgba(0,0,0,.5)}.gym-overlay-panel{position:absolute;left:0;right:0;bottom:0;top:0;background:#0a0f14;transform:translateY(100%);transition:transform .35s cubic-bezier(.32,.72,0,1);display:flex;flex-direction:column;overflow:hidden}.gym-overlay.open .gym-overlay-panel{transform:translateY(0)}.gym-overlay-drag{width:40px;height:4px;border-radius:2px;background:rgba(255,255,255,.2);margin:10px auto 0}.gym-overlay-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0}.gym-overlay-title{color:#fff;font-size:20px;font-weight:700;font-family:"Sora",sans-serif}.gym-overlay-close{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.1);border:none;color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .2s}.gym-overlay-close:hover{background:rgba(255,255,255,.2)}.gym-overlay-body{flex:1;overflow-y:auto;padding:20px;-webkit-overflow-scrolling:touch}.gym-overlay-footer{padding:12px 20px calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid rgba(255,255,255,.08);background:#0a0f14;flex-shrink:0;display:flex;align-items:center;justify-content:space-between}.rating-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}.rating-bar-label{color:rgba(255,255,255,.5);font-size:12px;width:14px;text-align:right}.rating-bar-bg{flex:1;height:8px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden}.rating-bar-fill{height:100%;border-radius:4px;background:#fbbf24}.topic-pill{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:8px 14px;color:rgba(255,255,255,.7);font-size:13px;font-weight:500;cursor:pointer;transition:all .2s}.topic-pill.active{background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.4);color:#4ade80}.sort-chip{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:7px 14px;color:rgba(255,255,255,.5);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s}.sort-chip.active{background:rgba(255,109,0,.15);border-color:rgba(255,109,0,.4);color:#FF6D00}.ov-pass-card{background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.1);border-radius:16px;padding:20px;cursor:pointer;transition:all .2s}.ov-pass-card:hover{border-color:rgba(255,255,255,.2);background:rgba(255,255,255,.08)}.gym-book-btn{background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:16px;font-weight:700;padding:14px 28px;border-radius:12px;border:none;box-shadow:0 4px 20px rgba(34,197,94,.4);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .15s}.gym-book-btn:active{transform:scale(.96)}';
+    css.textContent='.gym-overlay{position:fixed;inset:0;z-index:9100;opacity:0;pointer-events:none;transition:opacity .3s ease}.gym-overlay.open{opacity:1;pointer-events:all}.gym-overlay-bg{position:absolute;inset:0;background:rgba(0,0,0,.5)}.gym-overlay-panel{position:absolute;left:0;right:0;bottom:0;top:0;background:#0a0f14;transform:translateY(100%);transition:transform .35s cubic-bezier(.32,.72,0,1);display:flex;flex-direction:column;overflow:hidden}.gym-overlay.open .gym-overlay-panel{transform:translateY(0)}.gym-overlay-drag{width:40px;height:4px;border-radius:2px;background:rgba(255,255,255,.2);margin:10px auto 0}.gym-overlay-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0}.gym-overlay-title{color:#fff;font-size:20px;font-weight:700;font-family:"Sora",sans-serif}.gym-overlay-close{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.1);border:none;color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .2s}.gym-overlay-close:hover{background:rgba(255,255,255,.2)}.gym-overlay-body{flex:1;overflow-y:auto;padding:20px;-webkit-overflow-scrolling:touch}.gym-overlay-footer{padding:12px 20px calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid rgba(255,255,255,.08);background:#0a0f14;flex-shrink:0;display:flex;align-items:center;justify-content:space-between}.rating-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}.rating-bar-label{color:rgba(255,255,255,.5);font-size:12px;width:14px;text-align:right}.rating-bar-bg{flex:1;height:8px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden}.rating-bar-fill{height:100%;border-radius:4px;background:#fbbf24}.topic-pill{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:8px 14px;color:rgba(255,255,255,.7);font-size:13px;font-weight:500;cursor:pointer;transition:all .2s}.topic-pill.active{background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.4);color:#4ade80}.sort-chip{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:7px 14px;color:rgba(255,255,255,.5);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s}.sort-chip.active{background:rgba(255,109,0,.15);border-color:rgba(255,109,0,.4);color:#FF6D00}.ov-pass-card{background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.1);border-radius:16px;padding:20px;cursor:pointer;transition:all .2s}.ov-pass-card:hover{border-color:rgba(255,255,255,.2);background:rgba(255,255,255,.08)}.gym-book-btn{background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:16px;font-weight:700;padding:14px 28px;border-radius:12px;border:none;box-shadow:0 4px 20px rgba(34,197,94,.4);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .15s}.gym-book-btn:active{transform:scale(.96)}.ov-review{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px;margin-bottom:12px}.ov-review-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}.ov-review-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0}.ov-review-avatar-img{width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.1);flex-shrink:0}.ov-review-info{flex:1;min-width:0}.ov-review-name{color:#fff;font-size:14px;font-weight:600}.ov-review-badge{display:inline-flex;align-items:center;gap:3px;background:rgba(34,197,94,.12);color:#22c55e;font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;margin-top:2px}.ov-review-title{color:#fff;font-size:15px;font-weight:700;margin-bottom:4px}.ov-review-date{color:rgba(255,255,255,.3);font-size:11px;margin-top:1px}.ov-review-stars{color:#fbbf24;font-size:13px;margin-bottom:8px}.ov-review-text{color:rgba(255,255,255,.6);font-size:13px;line-height:1.7;margin-bottom:12px}.ov-review-actions{display:flex;align-items:center;gap:16px;padding-top:10px;border-top:1px solid rgba(255,255,255,.04)}';
     document.head.appendChild(css);
   }
   // Inject overlay HTML container
@@ -3272,9 +3259,28 @@ window.selectGymPassCard=function(el,idx,gymId){
 };
 
 // ═══ Payment method sheet (Uber-style "Pay with") ═══
+// ═══ Self-inject pay sheet HTML for standalone use (outside GymProfilePage) ═══
+window._ensurePaySheetHTML=function(){
+  if(document.getElementById('gym-pay-sheet'))return;
+  // Inject CSS if not present
+  if(!document.getElementById('sg-paysheet-css')){
+    var css=document.createElement('style');css.id='sg-paysheet-css';
+    css.textContent='.gym-pay-sheet{position:fixed;inset:0;z-index:9200;opacity:0;pointer-events:none;transition:opacity .25s}.gym-pay-sheet.open{opacity:1;pointer-events:all}.gym-pay-sheet-bg{position:absolute;inset:0;background:rgba(0,0,0,.5)}.gym-pay-sheet-panel{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:20px 20px 0 0;transform:translateY(100%);transition:transform .35s cubic-bezier(.32,.72,0,1);max-height:85vh;overflow-y:auto;padding-bottom:env(safe-area-inset-bottom,0px)}.gym-pay-sheet.open .gym-pay-sheet-panel{transform:translateY(0)}.gym-pay-sheet-drag{width:40px;height:4px;border-radius:2px;background:rgba(0,0,0,.12);margin:10px auto 0}.gym-pay-sheet-title{color:#000;font-size:28px;font-weight:800;padding:8px 20px 4px;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif}.gym-pay-sheet-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 0}.gym-pay-sheet-close{width:36px;height:36px;background:transparent;border:none;font-size:28px;color:#000;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}.gym-pay-sheet-add-btn{background:#f0f0f0;border:none;border-radius:20px;padding:8px 16px;color:#000;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;-webkit-tap-highlight-color:transparent}.gym-pay-section-title{color:#000;font-size:18px;font-weight:700;padding:20px 20px 12px;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif}.gym-pay-item{display:flex;align-items:center;gap:14px;padding:16px 20px;cursor:pointer;transition:background .15s;border-bottom:1px solid rgba(0,0,0,.06);-webkit-tap-highlight-color:transparent}.gym-pay-item:active{background:rgba(0,0,0,.03)}.gym-pay-item-icon{width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.gym-pay-item-label{flex:1;color:#000;font-size:16px;font-weight:500;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif}.gym-pay-item-check{width:28px;height:28px;border-radius:50%;border:2px solid #e0e0e0;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}.gym-pay-item.selected .gym-pay-item-check{background:#000;border-color:#000}.gym-pay-item.selected .gym-pay-item-check::after{content:\'\u2713\';color:#fff;font-size:14px;font-weight:700}.gym-pay-save-btn{width:calc(100% - 40px);margin:16px 20px;padding:18px;border:none;border-radius:12px;background:#000;color:#fff;font-size:17px;font-weight:700;cursor:pointer;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;transition:all .15s;-webkit-tap-highlight-color:transparent}.gym-pay-save-btn:active{opacity:.8;transform:scale(.99)}.gym-pay-add-back{display:flex;align-items:center;gap:12px;padding:16px 20px;cursor:pointer;border-bottom:1px solid rgba(0,0,0,.06);-webkit-tap-highlight-color:transparent}.gym-pay-add-title{color:#000;font-size:18px;font-weight:700;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif}.gym-pay-add-item{display:flex;align-items:center;gap:14px;padding:18px 20px;cursor:pointer;border-bottom:1px solid rgba(0,0,0,.06);transition:background .15s;-webkit-tap-highlight-color:transparent}.gym-pay-add-item:active{background:rgba(0,0,0,.03)}.gym-pay-add-item-icon{width:40px;height:40px;border-radius:8px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;flex-shrink:0}';
+    document.head.appendChild(css);
+  }
+  // Inject pay sheet HTML
+  var div=document.createElement('div');
+  div.innerHTML='<div class="gym-pay-sheet" id="gym-pay-sheet" onclick="if(event.target===this||event.target.classList.contains(\'gym-pay-sheet-bg\'))closePaySheet()"><div class="gym-pay-sheet-bg"></div><div class="gym-pay-sheet-panel"><div class="gym-pay-sheet-drag"></div><div id="gym-pay-main-sheet"><div class="gym-pay-sheet-header"><button class="gym-pay-sheet-close" onclick="closePaySheet()">\u2715</button><button class="gym-pay-sheet-add-btn" onclick="window._paySheetShowAdd()">+ Add</button></div><div class="gym-pay-sheet-title">Pay with</div><div style="padding:8px 20px 0"><div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0"><span style="color:#000;font-size:17px;font-weight:700;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif">ScanGym balance</span><label style="position:relative;display:inline-block;width:48px;height:28px;cursor:pointer"><input type="checkbox" checked style="opacity:0;width:0;height:0" onchange="window._payToggleBalance(this)"><span id="sg-pay-toggle-track" style="position:absolute;inset:0;background:#000;border-radius:28px;transition:.3s"></span><span id="sg-pay-toggle-dot" style="position:absolute;height:22px;width:22px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s;transform:translateX(20px)"></span></label></div></div><div style="display:flex;align-items:center;gap:14px;padding:14px 20px"><div style="width:36px;height:36px;border-radius:8px;background:#FF6D00;display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="color:#fff;font-size:11px;font-weight:800">SG</span></div><span style="flex:1;color:#333;font-size:15px;font-weight:500;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif">ScanGym Credits: \u00a30.00</span></div><div style="height:1px;background:rgba(0,0,0,.06);margin:0 20px"></div><div class="gym-pay-section-title">Payment methods</div><div id="gym-pay-saved-cards"></div><div id="gym-pay-options"><div class="gym-pay-item" onclick="selectPayMethod(this,\'cash\')" data-method="cash"><div class="gym-pay-item-icon" style="background:#e8f5e9;border-radius:8px"><span style="font-size:18px">\ud83d\udcb7</span></div><span class="gym-pay-item-label">Cash</span><div class="gym-pay-item-check"></div></div></div><button class="gym-pay-save-btn" onclick="closePaySheet()">Save</button></div><div id="gym-pay-add-sheet" style="display:none"><div class="gym-pay-add-back" onclick="window._paySheetShowMain()"><span style="color:#000;font-size:22px">\u2190</span><span class="gym-pay-add-title">Add a payment method</span></div><div class="gym-pay-add-item" onclick="window._paySheetShowCardForm()"><div class="gym-pay-add-item-icon"><span style="font-size:18px">\ud83d\udcb3</span></div><span class="gym-pay-item-label">Credit or debit card</span><span style="color:#999;font-size:20px">\u203a</span></div><div class="gym-pay-add-item" onclick="sgToast(\'PayPal coming soon!\',\'info\',2000)"><div class="gym-pay-add-item-icon" style="background:#e3f2fd"><span style="color:#003087;font-size:14px;font-weight:800">P</span></div><span class="gym-pay-item-label">PayPal</span><span style="color:#999;font-size:20px">\u203a</span></div><div class="gym-pay-add-item" onclick="sgToast(\'Gift cards coming soon!\',\'info\',2000)"><div class="gym-pay-add-item-icon" style="background:#f3e5f5"><span style="font-size:18px">\ud83c\udf81</span></div><span class="gym-pay-item-label">Gift card</span><span style="color:#999;font-size:20px">\u203a</span></div></div><div id="gym-pay-card-sheet" style="display:none"><div class="gym-pay-add-back" onclick="window._paySheetShowAdd()"><span style="color:#000;font-size:22px">\u2190</span><span class="gym-pay-add-title">Add a payment method</span></div><div style="padding:16px 20px 8px"><div style="color:#000;font-size:26px;font-weight:800;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;line-height:1.2">Add credit or<br>debit card</div></div><div style="padding:8px 20px"><div style="margin-bottom:16px"><label style="color:#333;font-size:13px;font-weight:600;display:block;margin-bottom:6px">Card number</label><div id="gym-pay-inline-card-number" style="padding:14px 16px;background:#f5f5f5;border:1px solid #ddd;border-radius:8px;min-height:20px"></div></div><div style="display:flex;gap:12px;margin-bottom:16px"><div style="flex:1"><label style="color:#333;font-size:13px;font-weight:600;display:block;margin-bottom:6px">Exp. date</label><div id="gym-pay-inline-expiry" style="padding:14px 16px;background:#f5f5f5;border:1px solid #ddd;border-radius:8px;min-height:20px"></div></div><div style="flex:1"><div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><label style="color:#333;font-size:13px;font-weight:600">Security code</label><span style="color:#999;font-size:14px;cursor:help" title="3-digit code on back of card">\u2753</span></div><div id="gym-pay-inline-cvc" style="padding:14px 16px;background:#f5f5f5;border:1px solid #ddd;border-radius:8px;min-height:20px"></div></div></div><div style="margin-bottom:16px"><label style="color:#333;font-size:13px;font-weight:600;display:block;margin-bottom:6px">Country</label><select id="gym-pay-inline-country" style="width:100%;padding:14px 16px;background:#f5f5f5;border:1px solid #ddd;border-radius:8px;font-size:15px;color:#333;-webkit-appearance:none;appearance:none;cursor:pointer"><option value=\'GB\' selected>United Kingdom</option><option value=\'US\'>United States</option><option value=\'IE\'>Ireland</option><option value=\'DE\'>Germany</option><option value=\'FR\'>France</option><option value=\'ES\'>Spain</option><option value=\'IT\'>Italy</option><option value=\'NL\'>Netherlands</option><option value=\'AU\'>Australia</option><option value=\'CA\'>Canada</option></select></div><div style="margin-bottom:16px"><label style="color:#333;font-size:13px;font-weight:600;display:block;margin-bottom:6px">Postcode</label><input id="gym-pay-inline-postcode" type="text" style="width:100%;padding:14px 16px;background:#f5f5f5;border:1px solid #ddd;border-radius:8px;font-size:15px;color:#333;outline:none;box-sizing:border-box" /></div><div style="margin-bottom:8px"><label style="color:#333;font-size:13px;font-weight:600;display:block;margin-bottom:6px">Nickname (optional)</label><input id="gym-pay-inline-nickname" type="text" style="width:100%;padding:14px 16px;background:#f5f5f5;border:1px solid #ddd;border-radius:8px;font-size:15px;color:#333;outline:none;box-sizing:border-box" /></div></div><button id="gym-pay-inline-save" class="gym-pay-save-btn" onclick="window._paySheetSaveCard()" style="opacity:.5;pointer-events:none">Add card</button><p id="gym-pay-inline-error" style="color:#ef4444;font-size:13px;padding:0 20px;display:none"></p><div style="text-align:center;padding:8px 0 16px"><button onclick="window._paySheetShowAdd()" style="background:none;border:none;color:#999;font-size:14px;cursor:pointer;padding:8px 16px">Cancel</button></div></div></div></div>';
+  document.body.appendChild(div.firstChild);
+};
 window.openPaySheet=function(){
-  const sheet=document.getElementById('gym-pay-sheet');
-  if(!sheet)return;
+  var sheet=document.getElementById('gym-pay-sheet');
+  if(!sheet){
+    // Self-inject pay sheet HTML when not inside GymProfilePage
+    window._ensurePaySheetHTML();
+    sheet=document.getElementById('gym-pay-sheet');
+    if(!sheet)return;
+  }
   // Always show main view first
   window._paySheetShowMain();
   // ═══ Inject saved cards (Uber-style: brand icon + last4 + checkmark) ═══
@@ -4631,6 +4637,14 @@ function getGymReviews(gym){
   window._currentReviewsData=all;
   // Bug #7 fix: Return real reviews only — no fake fallback.
   // Empty array triggers the "No reviews yet" empty state in the UI.
+  // FIX: Sort by highest rating first (Amazon-style "Top reviews")
+  all.sort(function(a,b){
+    var rA=a.rating||0,rB=b.rating||0;
+    if(rB!==rA)return rB-rA;
+    // Tie-break: longer review text = more helpful
+    var tA=(a.text||a.comment||'').length,tB=(b.text||b.comment||'').length;
+    return tB-tA;
+  });
   return all.slice(0,10);
 }
 
@@ -4703,31 +4717,6 @@ window._translateReview=function(el,idx){
   },600);
 };
 
-
-
-
-// ═══ Review search/filter by keyword ═══
-window._rvSearchReviews=function(query){
-  var clearBtn=document.getElementById('rv-search-clear');
-  if(clearBtn)clearBtn.style.display=query?'block':'none';
-  var reviewEls=document.querySelectorAll('.ov-review');
-  var q=query.toLowerCase().trim();
-  reviewEls.forEach(function(el){
-    if(!q){el.style.display='';return;}
-    var text=(el.textContent||'').toLowerCase();
-    el.style.display=text.includes(q)?'':'none';
-  });
-  // Update count label
-  var label=document.getElementById('rv-star-filter-label');
-  if(label&&q){
-    var visible=document.querySelectorAll('.ov-review[style*="display: none"]');
-    var total=reviewEls.length;
-    var shown=total-visible.length;
-    label.textContent='Showing '+shown+' of '+total+' reviews matching "'+query+'"';
-  } else if(label&&!q){
-    label.textContent='';
-  }
-};
 
 // Open Write a Review modal
 window.openWriteReviewModal=function(){
@@ -14199,8 +14188,8 @@ if(localStorage.getItem('sg_push_enabled')==='1'&&state.user){
   }
 })();
 
-// ═══ Performance Dashboard — call window.sgPerfDashboard() in console to see metrics ═══
-window.sgPerfDashboard=function(){
+// ═══ Performance Dashboard — call window.sgPerf() in console to see metrics ═══
+window.sgPerf=function(){
   var nav=performance.getEntriesByType('navigation')[0];
   var paint=performance.getEntriesByType('paint');
   var fcp=paint.find(function(p){return p.name==='first-contentful-paint';});
@@ -14242,5 +14231,5 @@ window.sgPerfDashboard=function(){
   return m;
 };
 // Auto-log perf summary after load
-window.addEventListener('load',function(){setTimeout(function(){console.log('%c[ScanGym Perf v5.3.0]','color:#FF6D00;font-weight:bold;font-size:14px');window.sgPerfDashboard();},3000);});
+window.addEventListener('load',function(){setTimeout(function(){console.log('%c[ScanGym Perf v5.3.0]','color:#FF6D00;font-weight:bold;font-size:14px');window.sgPerf();},3000);});
 
