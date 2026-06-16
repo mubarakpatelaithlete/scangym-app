@@ -7544,6 +7544,8 @@ window._sgGoogleCallback=async function(response){
     if(data.success&&data.user){
       state.user=data.user;
       state.authStep='phone';
+      // #59: Associate stored referral with the newly logged-in user
+      try{var _ref=JSON.parse(localStorage.getItem('sg_referral')||'null');if(_ref&&_ref.handle&&_ref.expiry>Date.now()){fetch('/api/referrals/associate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({referrerHandle:_ref.handle,userId:data.user.id||data.user.phone,userName:data.user.name||''})}).catch(function(){});}}catch(e){}
       sgToast('Welcome, '+(data.user.name||'there')+'! 🎉','success',3000);
       if(window._pendingCheckout&&window._pendingCheckout.gymId){
         const pc=window._pendingCheckout;
@@ -7683,6 +7685,8 @@ window.handleVerifyCode=async function(){
     if(r.success&&r.user){
       state.user=r.user;
       state.authStep='phone';
+      // #59: Associate stored referral with the newly logged-in user
+      try{var _ref=JSON.parse(localStorage.getItem('sg_referral')||'null');if(_ref&&_ref.handle&&_ref.expiry>Date.now()){fetch('/api/referrals/associate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({referrerHandle:_ref.handle,userId:r.user.id||r.user.phone,userName:r.user.name||''})}).catch(function(){});}}catch(e){}
       // Resume pending booking if user was trying to book before login
       if(window._pendingCheckout&&window._pendingCheckout.gymId){
         const pc=window._pendingCheckout;
@@ -13989,6 +13993,20 @@ window.sgMasonryGrid=function(gyms,containerId){
   setTimeout(sgStreakEarnBack,2000);
 })();
 
+
+// ─── #59 Capture ?ref= URL param on ANY page (not just /r/ route) ───
+(function(){
+  try{
+    var _p=new URLSearchParams(window.location.search);
+    var _ref=_p.get('ref');
+    if(_ref){
+      var expiry=Date.now()+(30*24*60*60*1000);
+      localStorage.setItem('sg_referral',JSON.stringify({handle:_ref,expiry:expiry}));
+      document.cookie='sg_referral='+encodeURIComponent(_ref)+';path=/;max-age='+(30*24*60*60)+';SameSite=Lax';
+      try{fetch('/api/referrals/track',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({creatorHandle:_ref,visitorSession:Date.now().toString(36)})}).catch(function(){});}catch(e){}
+    }
+  }catch(e){}
+})();
 
 // ─── Init ───
 state.route=location.pathname;
