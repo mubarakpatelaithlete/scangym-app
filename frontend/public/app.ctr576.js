@@ -1436,8 +1436,7 @@ function SearchPage(){
           html+='<div class="tt-chip" style="background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.25)">\u{1F4C8} '+_bMonth+'</div>';
           html+='<div class="tt-chip" style="background:rgba(239,68,68,.14);border:1px solid rgba(239,68,68,.2)">\u{1F440} '+_pLook+' looking now</div>';
           html+='</div>';
-          /* CTA inside info — Book directly from reels (no Screen 3 navigation) */
-          html+='<div style="padding-right:50px;margin-top:8px;pointer-events:auto"><button class="tt-cta-btn" onclick="event.stopPropagation();showBookingCheckout(\''+c.id+'\')">⚡ Book Day Pass · '+c.price+'</button></div>';
+          /* CTA removed — sticky Continue banner handles booking flow */
           /* Fix #53: Motivating trust line */
           html+='<div style="display:flex;gap:12px;margin-top:5px;padding-right:50px"><span style="font-size:10px;color:rgba(255,255,255,.35);font-weight:600">✅ Free Cancel</span><span style="font-size:10px;color:rgba(255,255,255,.35);font-weight:600">🔒 Secure</span><span style="font-size:10px;color:rgba(255,255,255,.35);font-weight:600">⚡ Instant QR</span></div>';
           html+='</div>';
@@ -1490,7 +1489,7 @@ function SearchPage(){
               cardHtml+='<div class="tt-chip">\u2B50 '+c.rating+(c.reviews?' ('+c.reviews+')':'')+'</div>';
               cardHtml+='<div class="tt-chip" style="background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.25)">\u{1F4C8} '+_bk+'</div>';
               cardHtml+='</div>';
-              cardHtml+='<div style="padding-right:50px;margin-top:8px;pointer-events:auto"><button class="tt-cta-btn" onclick="event.stopPropagation();showBookingCheckout(\''+c.id+'\')">\u26A1 Book Day Pass \u00b7 '+c.price+'</button></div>';
+              /* CTA removed — sticky Continue banner handles booking flow */
               cardHtml+='<div style="display:flex;gap:12px;margin-top:5px;padding-right:50px"><span style="font-size:10px;color:rgba(255,255,255,.35);font-weight:600">\u2705 Free Cancel</span><span style="font-size:10px;color:rgba(255,255,255,.35);font-weight:600">\u{1F512} Secure</span><span style="font-size:10px;color:rgba(255,255,255,.35);font-weight:600">\u26A1 Instant QR</span></div>';
               cardHtml+='</div>';
               cardHtml+='</div>';
@@ -13577,7 +13576,13 @@ _syncReelsVisibility();
 
 // Auto-load data based on initial route (IP+GPS parallel detection)
 if(state.route==='/explore'||state.route==='/nearby'||state.route==='/search'){
-  autoLoadGyms();
+  // Fix: Handle ?city= URL parameter — search for that city instead of auto-detecting
+  var _cityParam=(new URLSearchParams(window.location.search)).get('city');
+  if(_cityParam){
+    searchGyms('gyms in '+_cityParam, true);
+  } else {
+    autoLoadGyms();
+  }
 }
 // Load gym profile when visiting /gym/:id directly
 if(state.route.startsWith('/gym/')){
