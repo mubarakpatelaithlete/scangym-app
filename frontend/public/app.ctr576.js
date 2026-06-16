@@ -2022,6 +2022,25 @@ function GymProfilePage(){
         </div>
       </div>
 
+      <!-- #172 fix: Ask a Question — AI chat widget wired to askGymQuestion() -->
+      <div style="margin-top:16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px;margin-left:16px;margin-right:16px">
+        <p style="color:#fff;font-weight:700;font-size:14px;margin-bottom:10px">💬 Ask a Question</p>
+        <div id="gym-chat-history" style="max-height:200px;overflow-y:auto;margin-bottom:10px;display:flex;flex-direction:column;gap:8px"></div>
+        <div style="display:flex;gap:8px">
+          <input id="gym-question-input" type="text" placeholder="e.g. Is there a squat rack?" 
+            style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px 14px;color:#fff;font-size:13px;outline:none" 
+            onkeydown="if(event.key==='Enter'){var i=this;askGymQuestion(i.value,'${gymId}');i.value='';}" />
+          <button onclick="var i=document.getElementById('gym-question-input');askGymQuestion(i.value,'${gymId}');i.value='';"
+            style="background:#FF6D00;color:#fff;border:none;border-radius:12px;padding:10px 16px;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap">Ask →</button>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+          <button onclick="askGymQuestion('Is there a squat rack?','${gymId}')" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:5px 12px;color:rgba(255,255,255,.5);font-size:11px;cursor:pointer;white-space:nowrap">🏋️ Squat rack?</button>
+          <button onclick="askGymQuestion('How do I get in?','${gymId}')" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:5px 12px;color:rgba(255,255,255,.5);font-size:11px;cursor:pointer;white-space:nowrap">🚪 How to enter?</button>
+          <button onclick="askGymQuestion('Can I bring a friend?','${gymId}')" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:5px 12px;color:rgba(255,255,255,.5);font-size:11px;cursor:pointer;white-space:nowrap">👫 Bring a friend?</button>
+          <button onclick="askGymQuestion('What about lockers?','${gymId}')" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:5px 12px;color:rgba(255,255,255,.5);font-size:11px;cursor:pointer;white-space:nowrap">🔐 Lockers?</button>
+        </div>
+      </div>
+
     </div><!-- /gym-info-section -->
 
     <!-- ═══ STICKY BOTTOM BAR — Full-width Book CTA + trust (Pay/Passes/Calendar as right-side action icons) ═══ -->
