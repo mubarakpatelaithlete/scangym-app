@@ -96,12 +96,13 @@ function peopleLooking(name){return urgencyNum(name,8)+2;}
 function spotsLeft(name){return urgencyNum(name,6)+2;}
 // #59: Rating distribution bucket — uses API data when available, falls back to seeded
 function bookedBucket(gym){
+  // #170 fix: Only show real booking data — no fake numbers
   if(gym&&gym.bookedBucket) return gym.bookedBucket+' booked this month';
-  // Fallback: hash-based seed (consistent per gym)
-  var c=urgencyNum(gym&&gym.name||'gym',166)+15;
-  var buckets=[5000,2000,1000,500,200,100,50,10];
-  for(var i=0;i<buckets.length;i++){if(c>=buckets[i])return(buckets[i]>=1000?(buckets[i]/1000)+'K+':buckets[i]+'+')+' booked this month';}
-  return '10+ booked this month';
+  if(gym&&gym.monthlyBookings>0){
+    var b=gym.monthlyBookings;
+    return (b>=1000?(b/1000).toFixed(0)+'K+':b+'+')+' booked this month';
+  }
+  return ''; // No fake data fallback
 }
 function closingTime(gym){if(gym.opening_hours?.weekday?.length){const now=new Date().getDay();const todayHours=gym.opening_hours.weekday[now===0?6:now-1]||'';const m=todayHours.match(/(\d{1,2}:\d{2}\s*[AP]M)/gi);if(m&&m.length>1)return m[m.length-1];}return gym.openNow===true?'10:00 PM':null;}
 
@@ -1515,12 +1516,12 @@ function SearchPage(){
               cardHtml+='<div class="tt-counter">\u2190 '+(i+1)+' of '+_cards.length+' \u2192</div>';
               cardHtml+='<div class="tt-gym-name">'+c.name+'</div>';
               cardHtml+='<div class="tt-gym-addr">\u{1F4CD} '+(c.addr?c.addr.split(',')[0]:'Nearby')+' \u00b7 <span class="tt-travel-label" data-gym-travel-id="'+c.id+'">'+c.distMin+'</span> \u00b7 <span class="'+c.openClass+'">'+c.openTag+'</span></div>';
-              var _bk=typeof bookedBucket==="function"?bookedBucket(c.gym):"50+ booked";
+              var _bk=typeof bookedBucket==="function"?bookedBucket(c.gym):'';
               cardHtml+='<div class="tt-chips">';
               if(c.isPop) cardHtml+='<div class="tt-chip">\u{1F525} Popular</div>';
               cardHtml+='<div class="tt-chip">\u{1F4B0} '+c.price+'/day</div>';
               cardHtml+='<div class="tt-chip">\u2B50 '+c.rating+(c.reviews?' ('+c.reviews+')':'')+'</div>';
-              cardHtml+='<div class="tt-chip" style="background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.25)">\u{1F4C8} '+_bk+'</div>';
+              if(_bk) cardHtml+='<div class="tt-chip" style="background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.25)">\u{1F4C8} '+_bk+'</div>';
               cardHtml+='</div>';
               /* CTA removed — sticky Continue banner handles booking flow */
               cardHtml+='<div style="display:flex;gap:12px;margin-top:5px;padding-right:50px"><span style="font-size:10px;color:rgba(255,255,255,.35);font-weight:600">\u2705 Free Cancel</span><span style="font-size:10px;color:rgba(255,255,255,.35);font-weight:600">\u{1F512} Secure</span><span style="font-size:10px;color:rgba(255,255,255,.35);font-weight:600">\u26A1 Instant QR</span></div>';
@@ -1929,8 +1930,8 @@ function GymProfilePage(){
         </div>
         <!-- Fix #59, #60: Social proof signals -->
         <div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap">
-          <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.2);border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700;color:#4ade80">📈 ${bookedBucket(gym)}</span>
-          <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.18);border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700;color:#f87171">👀 ${peopleLooking(gym.name)} people looking</span>
+          ${bookedBucket(gym)?'<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.2);border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700;color:#4ade80">📈 '+bookedBucket(gym)+'</span>':''}
+          ${gym.lookingNow?'<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.18);border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700;color:#f87171">👀 '+gym.lookingNow+' people looking</span>':''}
         </div>
         <!-- Busyness Indicator (Fix #4C) -->
         <div style="margin-top:8px" id="gym-busyness-widget">
@@ -2008,7 +2009,7 @@ function GymProfilePage(){
     <div class="gym-sticky-bar" id="gym-sticky-bar">
         <!-- Fix #53: Motivating micro-copy above CTA -->
         <div style="text-align:center;padding:6px 16px 0">
-          <span style="font-size:11px;font-weight:600;color:#FF6D00;letter-spacing:.3px">🔥 ${bookedBucket(gym)} — your turn!</span>
+          <span style="font-size:11px;font-weight:600;color:#FF6D00;letter-spacing:.3px">🔥 ${bookedBucket(gym)?bookedBucket(gym)+' — your turn!':'Book a gym — your turn!'}</span>
         </div>
         <!-- Full-width Book CTA -->
         <div style="padding:8px 16px 0">
