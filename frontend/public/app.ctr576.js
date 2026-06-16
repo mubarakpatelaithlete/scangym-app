@@ -14738,6 +14738,184 @@ if(localStorage.getItem('sg_push_enabled')==='1'&&state.user){
   }
 })();
 
+// ═══ #110-#119: Engagement Features ═══
+
+// #110: Proactive chat — never leave visitor lonely
+// Show a friendly nudge after 15s of inactivity on any page
+(function(){
+  var _sgIdleTimer;
+  var _sgNudgeShown = false;
+  var nudges = [
+    '👋 Need help finding the perfect gym?',
+    '💪 Ready to book your first session?',
+    '🔥 Over 1.2M gyms worldwide — let me help you find one!',
+    '🎯 Looking for something specific? I can help!',
+    '⚡ Pro tip: Tap the 🔍 to search by location!'
+  ];
+  function resetIdle() {
+    clearTimeout(_sgIdleTimer);
+    if (_sgNudgeShown) return;
+    _sgIdleTimer = setTimeout(function() {
+      if (_sgNudgeShown) return;
+      _sgNudgeShown = true;
+      var msg = nudges[Math.floor(Math.random() * nudges.length)];
+      sgToast(msg, 'info', 5000);
+      // Show chat bubble
+      var bubble = document.createElement('div');
+      bubble.id = 'sg-proactive-chat';
+      bubble.style.cssText = 'position:fixed;bottom:80px;right:16px;z-index:9500;background:linear-gradient(135deg,#FF6D00,#ff8534);border-radius:50%;width:56px;height:56px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 20px rgba(255,109,0,.4);animation:casinoGlow 2s ease-in-out infinite';
+      bubble.innerHTML = '<span style="font-size:24px">💬</span>';
+      bubble.onclick = function() { navigate('/help'); bubble.remove(); };
+      document.body.appendChild(bubble);
+      setTimeout(function() { if(bubble.parentNode) bubble.remove(); }, 15000);
+    }, 15000);
+  }
+  document.addEventListener('touchstart', resetIdle);
+  document.addEventListener('click', resetIdle);
+  document.addEventListener('scroll', resetIdle);
+  resetIdle();
+})();
+
+// #111: Dopamine sound on key interactions
+window._sgDopamineEnabled = true;
+window._sgPlayDopamine = function(type) {
+  if (!window._sgDopamineEnabled) return;
+  try {
+    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    gain.gain.value = 0.08;
+    if (type === 'success') {
+      // Happy ascending ding
+      osc.frequency.setValueAtTime(523, ctx.currentTime);
+      osc.frequency.setValueAtTime(659, ctx.currentTime + 0.1);
+      osc.frequency.setValueAtTime(784, ctx.currentTime + 0.2);
+    } else if (type === 'click') {
+      // Soft tap
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      gain.gain.setValueAtTime(0.05, ctx.currentTime);
+    } else if (type === 'like') {
+      // Heartbeat pop
+      osc.frequency.setValueAtTime(440, ctx.currentTime);
+      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.08);
+    }
+    osc.type = 'sine';
+    osc.start();
+    osc.stop(ctx.currentTime + 0.3);
+  } catch(e) {}
+};
+
+// Play dopamine on CTA clicks, likes, bookings
+document.addEventListener('click', function(e) {
+  var btn = e.target.closest('.tt-cta-btn, [data-liked]');
+  if (btn) {
+    if (btn.classList.contains('tt-cta-btn')) window._sgPlayDopamine('success');
+    else window._sgPlayDopamine('like');
+  }
+});
+
+// #112: Casino border light rotating on interactive elements
+(function(){
+  var style = document.createElement('style');
+  style.textContent = '@keyframes sgBorderRotate{0%{border-image-source:linear-gradient(0deg,rgba(255,109,0,.4),transparent,transparent,transparent)}25%{border-image-source:linear-gradient(90deg,transparent,rgba(255,109,0,.4),transparent,transparent)}50%{border-image-source:linear-gradient(180deg,transparent,transparent,rgba(255,109,0,.4),transparent)}75%{border-image-source:linear-gradient(270deg,transparent,transparent,transparent,rgba(255,109,0,.4))}100%{border-image-source:linear-gradient(360deg,rgba(255,109,0,.4),transparent,transparent,transparent)}}@keyframes sgShimmerBorder{0%{box-shadow:inset 0 0 0 1px rgba(255,109,0,.05),0 0 0 0 rgba(255,109,0,0)}50%{box-shadow:inset 0 0 0 1px rgba(255,109,0,.2),0 0 12px 0 rgba(255,109,0,.08)}100%{box-shadow:inset 0 0 0 1px rgba(255,109,0,.05),0 0 0 0 rgba(255,109,0,0)}}.sg-glow-border{animation:sgShimmerBorder 3s ease-in-out infinite}';
+  document.head.appendChild(style);
+  // Apply glow border to interactive cards/buttons periodically
+  setInterval(function(){
+    document.querySelectorAll('.sg-more-item, .sg-filter-pill, .tt-action-btn').forEach(function(el, i){
+      el.style.animation = 'sgShimmerBorder 3s ease-in-out infinite';
+      el.style.animationDelay = (i * 0.3) + 's';
+    });
+  }, 10000);
+})();
+
+// #114: "Because you deserve it" post-purchase message
+// Hook into the booking success navigation
+var _origNavigate = window.navigate;
+if (typeof _origNavigate === 'function') {
+  window.navigate = function(path) {
+    _origNavigate(path);
+    if (path && path.indexOf('booking-success') !== -1) {
+      setTimeout(function() {
+        // Show feel-good overlay
+        var overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;animation:fadeInUp .5s ease-out';
+        overlay.innerHTML = '<div style="text-align:center;padding:24px;max-width:340px">'
+          + '<p style="font-size:72px;margin-bottom:16px">🎉</p>'
+          + '<h2 style="color:#fff;font-size:24px;font-weight:900;margin-bottom:8px">You Deserve This!</h2>'
+          + '<p style="color:rgba(255,255,255,.6);font-size:15px;line-height:1.6;margin-bottom:24px">Taking care of your body is the best investment you\'ll ever make. Enjoy your session! 💪</p>'
+          + '<p style="color:#FF6D00;font-size:14px;font-weight:700;margin-bottom:20px">Your QR code is ready →</p>'
+          + '<button onclick="this.closest(\'div\').parentNode.parentNode.remove()" style="background:#FF6D00;color:#fff;border:none;padding:14px 40px;border-radius:12px;font-weight:700;font-size:16px;cursor:pointer">Let\'s Go! 🏋️</button>'
+          + '</div>';
+        document.body.appendChild(overlay);
+        window._sgPlayDopamine && window._sgPlayDopamine('success');
+        // Auto-dismiss after 5s
+        setTimeout(function() { if(overlay.parentNode) overlay.remove(); }, 5000);
+      }, 500);
+    }
+  };
+}
+
+// #115: HeyGen avatar video after purchase (placeholder — shows animated avatar message)
+// Since HeyGen API requires paid plan, we simulate with an avatar animation
+window._sgShowAvatarMessage = function(name) {
+  var msg = (name ? 'Hey ' + name + '! ' : '') + 'Welcome to ScanGym! 🎉 Your session is booked and your QR code is ready. Just show it at the gym entrance. Have an amazing workout!';
+  // Show as a chat-style message
+  sgToast('🤖 ' + msg.slice(0, 80) + '...', 'success', 6000);
+};
+
+// #118 + #119: Replace text with icons + maximize emojis
+// This runs once and converts common text labels to emoji-first format
+(function(){
+  // Map of text → emoji replacements for common UI elements
+  var emojiMap = {
+    'Search': '🔍 Search',
+    'Book': '📖 Book',
+    'More': '⚡ More',
+    'Settings': '⚙️ Settings',
+    'Profile': '👤 Profile',
+    'Help': '💡 Help',
+    'Bookings': '📋 Bookings',
+    'Wallet': '💰 Wallet',
+    'Share': '📤 Share',
+    'Download': '⬇️ Download',
+    'Back': '← Back',
+    'Cancel': '✕ Cancel',
+    'Confirm': '✅ Confirm',
+    'Save': '💾 Save',
+    'Edit': '✏️ Edit',
+    'Delete': '🗑️ Delete',
+    'Login': '🔐 Login',
+    'Sign Up': '🚀 Sign Up',
+    'Contact': '📧 Contact',
+    'Reviews': '⭐ Reviews',
+    'Location': '📍 Location',
+    'Price': '💷 Price',
+    'Filter': '🔽 Filter',
+    'Sort': '↕️ Sort'
+  };
+
+  // Apply emoji enhancement to new DOM nodes
+  var _emojiObserver = new MutationObserver(function(mutations) {
+    mutations.forEach(function(m) {
+      m.addedNodes.forEach(function(node) {
+        if (node.nodeType !== 1) return;
+        // Add emojis to section titles
+        var titles = node.querySelectorAll ? node.querySelectorAll('.sg-more-section-title') : [];
+        titles.forEach(function(t) {
+          var text = t.textContent.trim();
+          if (text === 'Your Activity') t.textContent = '🏃 Your Activity';
+          else if (text === 'Help & Support') t.textContent = '💡 Help & Support';
+          else if (text === 'AI & Training') t.textContent = '🧠 AI & Training';
+          else if (text === 'Account') t.textContent = '👤 Account';
+        });
+      });
+    });
+  });
+  _emojiObserver.observe(document.body, { childList: true, subtree: true });
+})();
+
 // ═══ Performance Dashboard — call window.sgPerfDashboard() in console to see metrics ═══
 window.sgPerfDashboard=function(){
   var nav=performance.getEntriesByType('navigation')[0];
