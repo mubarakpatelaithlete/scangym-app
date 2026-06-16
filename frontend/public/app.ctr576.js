@@ -11679,6 +11679,48 @@ function CreatorEarningsPage(){
     </div>`;
   }
 
+  // #61: Onboarding wizard for new creators (show once, dismiss permanently)
+  const _onboarded=localStorage.getItem('sg_creator_onboarded');
+  if(!_onboarded){
+    return `<div class="max-w-lg mx-auto px-4 pt-6 pb-24">
+      <div class="text-center mb-6">
+        <span class="text-5xl">🎉</span>
+        <h1 class="text-2xl font-bold text-white mt-3">Welcome to ScanSquad!</h1>
+        <p class="text-slate-400 mt-1">You're in. Let's get you earning in 3 simple steps.</p>
+      </div>
+      <div class="space-y-4 mb-6">
+        <div class="bg-slate-800/80 rounded-xl p-5 border border-brand/30">
+          <div class="flex items-center gap-3 mb-2">
+            <div class="w-8 h-8 bg-brand rounded-full flex items-center justify-center text-white font-bold text-sm">1</div>
+            <h3 class="text-white font-bold">Copy Your Link</h3>
+          </div>
+          <p class="text-slate-300 text-sm ml-11">Your personal link is <span class="text-brand font-mono">scangym.com/r/${handle}</span></p>
+          <button onclick="navigator.clipboard.writeText('https://scangym.com/r/${handle}');sgToast('Link copied!','success',2000);this.textContent='✅ Copied!'" class="ml-11 mt-2 bg-brand/20 hover:bg-brand/30 text-brand font-bold px-4 py-2 rounded-lg text-sm transition cursor-pointer">📋 Copy Link</button>
+        </div>
+        <div class="bg-slate-800/80 rounded-xl p-5 border border-slate-700/50">
+          <div class="flex items-center gap-3 mb-2">
+            <div class="w-8 h-8 bg-slate-600 rounded-full flex items-center justify-center text-white font-bold text-sm">2</div>
+            <h3 class="text-white font-bold">Share on Social Media</h3>
+          </div>
+          <p class="text-slate-300 text-sm ml-11">Post your link on Instagram Stories, TikTok, Twitter, or WhatsApp. Use our 388+ ready-made assets from the toolkit below.</p>
+          <button onclick="navigate('/creators');" class="ml-11 mt-2 bg-slate-700/50 hover:bg-slate-700 text-white font-bold px-4 py-2 rounded-lg text-sm transition cursor-pointer">📦 Browse Toolkit</button>
+        </div>
+        <div class="bg-slate-800/80 rounded-xl p-5 border border-slate-700/50">
+          <div class="flex items-center gap-3 mb-2">
+            <div class="w-8 h-8 bg-slate-600 rounded-full flex items-center justify-center text-white font-bold text-sm">3</div>
+            <h3 class="text-white font-bold">Earn £1.25 Per Booking</h3>
+          </div>
+          <p class="text-slate-300 text-sm ml-11">When someone books a gym through your link, you earn commission. Track everything here on your dashboard. Withdraw anytime over £5.</p>
+        </div>
+      </div>
+      <div class="bg-emerald-900/20 border border-emerald-700/30 rounded-xl p-4 mb-6 text-center">
+        <p class="text-emerald-400 font-bold">💡 Pro Tip</p>
+        <p class="text-slate-300 text-sm mt-1">Creators who share within the first hour after signing up earn 3× more in their first week.</p>
+      </div>
+      <button onclick="localStorage.setItem('sg_creator_onboarded','1');render()" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-4 rounded-xl transition text-lg shadow-lg shadow-brand/20">Go to My Dashboard →</button>
+    </div>`;
+  }
+
   // Load earnings + withdrawal data async, then update dashboard extras
   setTimeout(function(){_loadCreatorEarnings(handle);_loadWithdrawalData(handle);},100);
 
