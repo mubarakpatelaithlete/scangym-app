@@ -98,9 +98,9 @@ function spotsLeft(name){return urgencyNum(name,6)+2;}
 function bookedBucket(gym){
   // #170 fix: Only show real booking data — no fake numbers
   if(gym&&gym.bookedBucket) return gym.bookedBucket+' booked this month';
-  if(gym&&gym.monthlyBookings>0){
-    var b=gym.monthlyBookings;
-    return (b>=1000?(b/1000).toFixed(0)+'K+':b+'+')+' booked this month';
+  var _bm=gym&&(gym.monthlyBookings||gym.bookedThisMonth||0);
+  if(_bm>0){
+    return (_bm>=1000?(_bm/1000).toFixed(0)+'K+':_bm+'+')+' booked this month';
   }
   return ''; // No fake data fallback
 }
@@ -1400,7 +1400,10 @@ function SearchPage(){
           if(c.allPhotos&&c.allPhotos.length>1){
             html+='<div class="tt-photo-carousel" id="tt-pcarousel-'+i+'" data-card-idx="'+i+'">';
             c.allPhotos.forEach(function(p,pi){
-              if(i===0){
+              var _isVid=/\.(mp4|webm|mov)(\?|$)/i.test(p);
+              if(_isVid){
+                html+='<div class="tt-photo-slide" ondragstart="return false" style="background:#0a0a0a"><video src="'+p+'" autoplay muted loop playsinline style="width:100%;height:100%;object-fit:cover"></video></div>';
+              } else if(i===0){
                 html+='<div class="tt-photo-slide" style="background-image:url(\''+p+'\')" ondragstart="return false"></div>';
               } else {
                 html+='<div class="tt-photo-slide" data-bg="'+p+'" ondragstart="return false"></div>';
@@ -1511,7 +1514,9 @@ function SearchPage(){
               var logoEmojis=['\u{1F3CB}\uFE0F','\u{1F4AA}','\u{1F94A}','\u{1F3CA}','\u26A1','\u{1F49A}','\u{1F525}','\u{1F9D8}'];
               var logoGrad=logoColors[i%8];var logoEmoji=logoEmojis[i%8];
               var cardHtml='<div class="tt-card'+(c.isOpen?'':' tt-closed')+'" data-gym-card data-gym-id="'+c.id+'" data-price="'+c.price+'" data-idx="'+i+'" data-is-open="'+c.isOpen+'" data-rating="'+(c.rating||0)+'" data-reviews="'+(c.reviews||0)+'" data-distance="'+(c.gym.distance||99)+'" data-is-24h="'+(c.gym.is24Hours||false)+'" data-self-service="'+(c.gym.isSelfService||false)+'">';
-              cardHtml+=c.photo?'<div class="tt-photo" data-bg="'+c.photo+'"></div>':'<div class="tt-photo-placeholder"></div>';
+              var _isVidLazy=/\.(mp4|webm|mov)(\?|$)/i.test(c.photo||'');
+              if(_isVidLazy){cardHtml+='<div class="tt-photo" style="background:#0a0a0a"><video src="'+c.photo+'" autoplay muted loop playsinline style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0"></video></div>';}
+              else{cardHtml+=c.photo?'<div class="tt-photo" data-bg="'+c.photo+'"></div>':'<div class="tt-photo-placeholder"></div>';}
               cardHtml+='<div class="tt-gradient"></div>';
               /* Action buttons (right side) — match initial cards with labels */
               var _rl2=c.rating+(c.reviews?' ('+c.reviews+')':'');
