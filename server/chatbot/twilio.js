@@ -41,6 +41,9 @@ router.post('/webhook', async (req, res) => {
 
     console.log(`[Twilio/${platform}] Message from ${userPhone}: ${Body.substring(0, 100)}`);
 
+    // #175: Log inbound message
+    try { const { logComms } = require('../routes/comms-log'); await logComms({ channel: platform, direction: 'inbound', from: userPhone, to: TWILIO_PHONE || '', subject: '', body: Body, status: 'received' }); } catch(e){}
+
     // Process through universal handler
     const response = await handleMessage(userId, Body.trim(), {
       userName: userPhone,
@@ -62,6 +65,9 @@ router.post('/webhook', async (req, res) => {
 </Response>`;
 
     res.type('text/xml').send(twiml);
+
+    // #175: Log outbound reply
+    try { const { logComms } = require('../routes/comms-log'); await logComms({ channel: platform, direction: 'outbound', from: TWILIO_PHONE || '', to: userPhone, subject: '', body: response.text, status: 'sent' }); } catch(e){}
 
   } catch (err) {
     console.error('[Twilio] Webhook error:', err);

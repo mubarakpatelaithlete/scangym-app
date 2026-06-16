@@ -79,6 +79,9 @@ router.post('/webhook', express.urlencoded({ extended: true, limit: '10mb' }), a
 
     console.log(`[Email] From ${senderName} <${senderEmail}>: ${messageText.substring(0, 100)}`);
 
+    // #175: Log inbound email
+    try { const { logComms } = require('../routes/comms-log'); await logComms({ channel: 'email', direction: 'inbound', from: senderEmail, to: SMTP_FROM, subject: subject || '', body: messageText, status: 'received' }); } catch(e){}
+
     // Process through universal handler
     const response = await handleMessage(userId, messageText.trim(), {
       userName: senderName,
@@ -161,8 +164,11 @@ async function sendEmailReply(toEmail, toName, originalSubject, responseText) {
     });
 
     console.log(`[Email] Reply sent to ${toEmail}`);
+    // #175: Log to comms_log
+    try { const { logComms } = require('../routes/comms-log'); await logComms({ channel: 'email', direction: 'outbound', from: SMTP_FROM, to: toEmail, subject: reSubject, body: plainText, status: 'sent' }); } catch(e){}
   } catch (err) {
     console.error('[Email] Send failed:', err.message);
+    try { const { logComms } = require('../routes/comms-log'); await logComms({ channel: 'email', direction: 'outbound', from: SMTP_FROM, to: toEmail, subject: reSubject, body: plainText, status: 'failed', metadata: { error: err.message } }); } catch(e){}
   }
 }
 
