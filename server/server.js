@@ -64,14 +64,9 @@ app.use((req, res, next) => {
     if (reqPath.endsWith('.html') || reqPath.endsWith('sw.js')) {
       res.setHeader('Cache-Control', 'no-cache');
     } else if (reqPath.endsWith('.js') || reqPath.endsWith('.css')) {
-      // Perf v2: Content-hashed files (app.ctr576.js) are immutable — cache 1 year
-      // Science: Shopify/Amazon serve hashed assets with immutable directive.
-      // Hash changes on every deploy, so 1yr is safe. Saves round-trips on repeat visits.
-      if (/\.[a-z0-9]{3,8}\.js$/.test(reqPath) || /\.[a-z0-9]{3,8}\.css$/.test(reqPath)) {
-        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-      } else {
-        res.setHeader('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400');
-      }
+      // JS/CSS: browser caches 1 day, CDN revalidates on every request (s-maxage=0).
+      // Cloudflare auto-purge on startup ensures fresh content after each deploy.
+      res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=0, must-revalidate');
     }
   }
   
@@ -684,9 +679,49 @@ app.use((err, req, res, next) => {
   res.status(err.status || 500).json({ error: err.message || 'Internal server error' });
 });
 
+// -- Cloudflare cache auto-purge on deploy --
+// Every Railway deploy restarts the server → purge CDN cache so users get fresh JS/CSS.
+function purgeCloudflareCache() {
+  const CF_ZONE_ID = process.env.CF_ZONE_ID || '74152524b3403c5a72d5f8a380f96a7a';
+  const CF_AUTH_EMAIL = process.env.CF_AUTH_EMAIL;
+  const CF_AUTH_KEY = process.env.CF_AUTH_KEY;
+  if (!CF_AUTH_EMAIL || !CF_AUTH_KEY) {
+    console.log('[CF] Skipping cache purge — CF_AUTH_EMAIL / CF_AUTH_KEY not set');
+    return;
+  }
+  const https = require('https');
+  const data = JSON.stringify({ purge_everything: true });
+  const req = https.request({
+    hostname: 'api.cloudflare.com',
+    path: `/client/v4/zones/${CF_ZONE_ID}/purge_cache`,
+    method: 'POST',
+    headers: {
+      'X-Auth-Email': CF_AUTH_EMAIL,
+      'X-Auth-Key': CF_AUTH_KEY,
+      'Content-Type': 'application/json',
+      'Content-Length': data.length,
+    },
+  }, (res) => {
+    let body = '';
+    res.on('data', (chunk) => body += chunk);
+    res.on('end', () => {
+      try {
+        const json = JSON.parse(body);
+        console.log(`[CF] Cache purge ${json.success ? '✅ success' : '❌ failed'}`);
+      } catch { console.log('[CF] Cache purge response:', body.slice(0, 200)); }
+    });
+  });
+  req.on('error', (e) => console.log('[CF] Cache purge error:', e.message));
+  req.write(data);
+  req.end();
+}
+
 // -- Start --
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`ScanGym v4.5.0 on :${PORT} | Frontend: ${fs.existsSync(FRONTEND_DIR+'/index.html')?'v3':'proxy'} | Auth: local session | Brotli+gzip pre-compressed`);
+
+  // Purge Cloudflare CDN cache on every deploy so users get fresh assets
+  setTimeout(purgeCloudflareCache, 5000);
 
   // Video enrichment + variants + posters now handled by the combined startup
   // pipeline in routes/reels.js (runs 30s after startup from DB catalog).
