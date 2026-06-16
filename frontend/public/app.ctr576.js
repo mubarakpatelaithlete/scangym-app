@@ -2276,9 +2276,18 @@ window.openGymOverlay=function(section){
       </div></div>`:''}
 
 
+      
+      <!-- Amazon-style review search box -->
+      <div style="margin-bottom:14px">
+        <div style="display:flex;align-items:center;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:0 12px;gap:8px">
+          <span style="color:rgba(255,255,255,.3);font-size:16px">🔍</span>
+          <input type="text" id="rv-search-input" placeholder="Search reviews..." oninput="window._rvSearchReviews(this.value)" style="flex:1;background:none;border:none;outline:none;color:#fff;font-size:14px;padding:12px 0;font-family:-apple-system,BlinkMacSystemFont,sans-serif" />
+          <span id="rv-search-clear" onclick="document.getElementById('rv-search-input').value='';window._rvSearchReviews('')" style="color:rgba(255,255,255,.3);font-size:18px;cursor:pointer;display:none">✕</span>
+        </div>
+      </div>
       <!-- Amazon-style: "Customers say" summary -->
       <div id="rv-ai-summary" style="margin-bottom:20px">
-        <div style="color:#fff;font-size:16px;font-weight:700;margin-bottom:10px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">Customers say</div>
+        <div style="color:#fff;font-size:16px;font-weight:700;margin-bottom:4px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">Customers say</div><div style="font-size:11px;color:rgba(255,255,255,.35);margin-bottom:10px">AI-generated from the text of customer reviews</div>
         <div id="rv-ai-summary-text" style="color:rgba(255,255,255,.8);font-size:14px;line-height:1.6">
           ${(function(){
             var allText=reviews.map(function(r){return r.text||r.comment||'';}).join(' ').toLowerCase();
@@ -2428,7 +2437,7 @@ window.openGymOverlay=function(section){
           <!-- Bold review title -->
           <div class="ov-review-title" style="color:#fff;font-size:15px;font-weight:700;margin-bottom:4px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">${r.headline||(r.text||r.comment||'').split(/[.!?\n]/)[0].slice(0,80)||(r.rating>=4?'Great experience':'Review')}</div>
           <!-- Reviewed on date -->
-          <div style="color:rgba(255,255,255,.35);font-size:13px;margin-bottom:10px">Reviewed on ${_formatReviewDate(r,i)}</div>
+          <div style="color:rgba(255,255,255,.35);font-size:13px;margin-bottom:10px">Reviewed in the United Kingdom on ${_formatReviewDate(r,i)}</div>
           <!-- Review text with fade + Read more -->
           <div class="ov-review-text" id="rvtxt_${i}" style="color:rgba(255,255,255,.75);font-size:14px;line-height:1.6">${(function(){
             var txt=r.text||r.comment||'';
@@ -4694,6 +4703,31 @@ window._translateReview=function(el,idx){
   },600);
 };
 
+
+
+
+// ═══ Review search/filter by keyword ═══
+window._rvSearchReviews=function(query){
+  var clearBtn=document.getElementById('rv-search-clear');
+  if(clearBtn)clearBtn.style.display=query?'block':'none';
+  var reviewEls=document.querySelectorAll('.ov-review');
+  var q=query.toLowerCase().trim();
+  reviewEls.forEach(function(el){
+    if(!q){el.style.display='';return;}
+    var text=(el.textContent||'').toLowerCase();
+    el.style.display=text.includes(q)?'':'none';
+  });
+  // Update count label
+  var label=document.getElementById('rv-star-filter-label');
+  if(label&&q){
+    var visible=document.querySelectorAll('.ov-review[style*="display: none"]');
+    var total=reviewEls.length;
+    var shown=total-visible.length;
+    label.textContent='Showing '+shown+' of '+total+' reviews matching "'+query+'"';
+  } else if(label&&!q){
+    label.textContent='';
+  }
+};
 
 // Open Write a Review modal
 window.openWriteReviewModal=function(){
@@ -14165,8 +14199,8 @@ if(localStorage.getItem('sg_push_enabled')==='1'&&state.user){
   }
 })();
 
-// ═══ Performance Dashboard — call window.sgPerf() in console to see metrics ═══
-window.sgPerf=function(){
+// ═══ Performance Dashboard — call window.sgPerfDashboard() in console to see metrics ═══
+window.sgPerfDashboard=function(){
   var nav=performance.getEntriesByType('navigation')[0];
   var paint=performance.getEntriesByType('paint');
   var fcp=paint.find(function(p){return p.name==='first-contentful-paint';});
@@ -14208,5 +14242,5 @@ window.sgPerf=function(){
   return m;
 };
 // Auto-log perf summary after load
-window.addEventListener('load',function(){setTimeout(function(){console.log('%c[ScanGym Perf v5.3.0]','color:#FF6D00;font-weight:bold;font-size:14px');window.sgPerf();},3000);});
+window.addEventListener('load',function(){setTimeout(function(){console.log('%c[ScanGym Perf v5.3.0]','color:#FF6D00;font-weight:bold;font-size:14px');window.sgPerfDashboard();},3000);});
 
