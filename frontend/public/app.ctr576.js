@@ -11649,6 +11649,9 @@ function CreatorEarningsPage(){
 
   // Load earnings + withdrawal data async, then update dashboard extras
   setTimeout(function(){_loadCreatorEarnings(handle);_loadWithdrawalData(handle);},100);
+  // #56: Auto-refresh every 30s for real-time feel
+  if(window._ceRefreshTimer)clearInterval(window._ceRefreshTimer);
+  window._ceRefreshTimer=setInterval(function(){_loadCreatorEarnings(handle);_loadWithdrawalData(handle);},30000);
 
   // Creator level system
   const levels=[
@@ -11774,6 +11777,28 @@ function CreatorEarningsPage(){
       </div>
       <div class="flex justify-between mt-1">
         <span class="text-slate-600 text-[9px]">Mon</span><span class="text-slate-600 text-[9px]">Tue</span><span class="text-slate-600 text-[9px]">Wed</span><span class="text-slate-600 text-[9px]">Thu</span><span class="text-slate-600 text-[9px]">Fri</span><span class="text-slate-600 text-[9px]">Sat</span><span class="text-slate-600 text-[9px]">Sun</span>
+      </div>
+    </div>
+
+    <!-- #56: Conversion Funnel Mini -->
+    <div class="bg-slate-800/60 rounded-xl p-4 mb-4 border border-slate-700/30">
+      <p class="text-white font-bold text-sm mb-3">🔄 Conversion Funnel</p>
+      <div class="space-y-2" id="ce-funnel">
+        <div class="flex items-center gap-3">
+          <span class="text-xs w-16 text-slate-400">Clicks</span>
+          <div class="flex-1 bg-slate-700/50 rounded-full h-4 overflow-hidden"><div id="ce-funnel-clicks" class="h-full rounded-full bg-blue-500 transition-all duration-700" style="width:100%"></div></div>
+          <span class="text-xs text-white font-bold w-10 text-right" id="ce-funnel-clicks-n">—</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="text-xs w-16 text-slate-400">Signups</span>
+          <div class="flex-1 bg-slate-700/50 rounded-full h-4 overflow-hidden"><div id="ce-funnel-signups" class="h-full rounded-full bg-purple-500 transition-all duration-700" style="width:0%"></div></div>
+          <span class="text-xs text-white font-bold w-10 text-right" id="ce-funnel-signups-n">—</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="text-xs w-16 text-slate-400">Bookings</span>
+          <div class="flex-1 bg-slate-700/50 rounded-full h-4 overflow-hidden"><div id="ce-funnel-bookings" class="h-full rounded-full bg-brand transition-all duration-700" style="width:0%"></div></div>
+          <span class="text-xs text-white font-bold w-10 text-right" id="ce-funnel-bookings-n">—</span>
+        </div>
       </div>
     </div>
 
@@ -12088,6 +12113,24 @@ async function _loadCreatorEarnings(handle){
       }
     }
     
+    // #56: Update conversion funnel
+    var clicks=parseInt(data.totalClicks)||0;
+    var conversions=parseInt(data.totalConversions)||0;
+    var signups=parseInt(data.totalSignups||0);
+    var funnelMax=Math.max(clicks,1);
+    var felC=document.getElementById('ce-funnel-clicks');
+    var felS=document.getElementById('ce-funnel-signups');
+    var felB=document.getElementById('ce-funnel-bookings');
+    if(felC)felC.style.width='100%';
+    if(felS)felS.style.width=Math.round((signups/funnelMax)*100)+'%';
+    if(felB)felB.style.width=Math.round((conversions/funnelMax)*100)+'%';
+    var fnC=document.getElementById('ce-funnel-clicks-n');
+    var fnS=document.getElementById('ce-funnel-signups-n');
+    var fnB=document.getElementById('ce-funnel-bookings-n');
+    if(fnC)fnC.textContent=clicks;
+    if(fnS)fnS.textContent=signups;
+    if(fnB)fnB.textContent=conversions;
+
     // #63: Update downloads & shares counts
     var dlEl=document.getElementById('ce-downloads');
     var shEl=document.getElementById('ce-shares');
