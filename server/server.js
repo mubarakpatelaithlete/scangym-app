@@ -35,6 +35,7 @@ const chatbotRouter = require('./chatbot');
 const commsLogRouter = require('./routes/comms-log');
 const paymentsExtendedRouter = require('./routes/payments-extended');
 const aiFeaturesRouter = require('./routes/ai-features');
+const gymPartnerRouter = require('./routes/gym-partner');
 const analyticsMiddleware = require('./middleware/analytics');
 
 const app = express();
@@ -407,6 +408,7 @@ app.use('/api/chatbot', chatbotRouter);
 app.use('/api/comms-log', commsLogRouter);
 app.use('/api/payments', paymentsExtendedRouter);
 app.use('/api/ai', aiFeaturesRouter);
+app.use('/api/gym-partner', gymPartnerRouter);
 
 // -- Serve Frontend --
 // Digital Asset Links for Android TWA verification

@@ -11502,6 +11502,37 @@ function OwnerControlsPage(){
       <div id="sg-price-result" style="margin-top:8px"></div>
     </div>
 
+    <!-- #89: Hours Override -->
+    <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px;margin-bottom:16px">
+      <p style="color:#fff;font-weight:700;font-size:15px;margin-bottom:4px">🕐 Hours Override</p>
+      <p style="color:rgba(255,255,255,.4);font-size:12px;margin-bottom:14px">Override Google hours — manually set open/closed</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button onclick="sgOwnerHoursOverride('open_now')" style="flex:1;min-width:90px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);color:#4ade80;padding:12px;border-radius:10px;font-weight:600;font-size:13px;cursor:pointer">✅ Force Open</button>
+        <button onclick="sgOwnerHoursOverride('closed_now')" style="flex:1;min-width:90px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#f87171;padding:12px;border-radius:10px;font-weight:600;font-size:13px;cursor:pointer">❌ Force Closed</button>
+        <button onclick="sgOwnerHoursOverride('use_google_hours')" style="flex:1;min-width:90px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.5);padding:12px;border-radius:10px;font-weight:600;font-size:13px;cursor:pointer">🔄 Use Google</button>
+      </div>
+      <div id="sg-hours-result" style="margin-top:8px"></div>
+    </div>
+
+    <!-- #86 Step 2: 24/7 & Self-Serve toggles -->
+    <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px;margin-bottom:16px">
+      <p style="color:#fff;font-weight:700;font-size:15px;margin-bottom:12px">🏷️ Gym Tags</p>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div><p style="color:#fff;font-size:14px;font-weight:600">⏰ 24/7 Gym</p><p style="color:rgba(255,255,255,.3);font-size:11px">Show in 24/7 filter results</p></div>
+        <label style="position:relative;display:inline-block;width:46px;height:26px;cursor:pointer"><input type="checkbox" id="sg-tag-24h" onchange="sgOwnerTag('is_24h',this.checked)" style="opacity:0;width:0;height:0"><span style="position:absolute;inset:0;background:rgba(255,255,255,.12);border-radius:13px;transition:all .2s"></span><span style="position:absolute;top:2px;left:2px;width:22px;height:22px;background:#fff;border-radius:50%;transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)"></span></label>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div><p style="color:#fff;font-size:14px;font-weight:600">🔓 Self-Serve Entry</p><p style="color:rgba(255,255,255,.3);font-size:11px">QR/smart lock access without staff</p></div>
+        <label style="position:relative;display:inline-block;width:46px;height:26px;cursor:pointer"><input type="checkbox" id="sg-tag-selfserve" onchange="sgOwnerTag('is_self_serve',this.checked)" style="opacity:0;width:0;height:0"><span style="position:absolute;inset:0;background:rgba(255,255,255,.12);border-radius:13px;transition:all .2s"></span><span style="position:absolute;top:2px;left:2px;width:22px;height:22px;background:#fff;border-radius:50%;transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)"></span></label>
+      </div>
+    </div>
+
+    <!-- #90: Strike System Info -->
+    <div style="background:rgba(239,68,68,.04);border:1px solid rgba(239,68,68,.08);border-radius:14px;padding:16px;margin-bottom:16px">
+      <p style="color:#fff;font-weight:700;font-size:14px;margin-bottom:4px">⚠️ Quality Policy</p>
+      <p style="color:rgba(255,255,255,.4);font-size:12px">3 reports for wrong hours or pricing = automatic suspension. Keep your info accurate to stay visible.</p>
+    </div>
+
     <!-- Owner Quick Links -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
       <button onclick="navigate('/forceo')" style="background:rgba(255,109,0,.08);border:1px solid rgba(255,109,0,.12);color:#FF6D00;padding:14px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;text-align:center">📊 CEO Dashboard</button>
@@ -11523,7 +11554,31 @@ window.sgOwnerToggle=async function(isOpen){
     status.textContent=isOpen?'✅ Your gym is currently accepting bookings':'❌ Your gym is currently closed for bookings';
   }
   try{
+    // #88: Use new gym-partner 1-click toggle API
+    await fetch('/api/gym-partner/toggle-active',{method:'PATCH',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({gymId:0,isActive:isOpen})}).catch(()=>{});
+    // Fallback to old API
     await fetch('/api/owner/toggle/0',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({isOpen})}).catch(()=>{});
+  }catch(e){}
+};
+
+// #89: Hours override handler
+window.sgOwnerHoursOverride=async function(overrideStatus){
+  var el=document.getElementById('sg-hours-result');
+  if(el) el.innerHTML='<p style="color:rgba(255,255,255,.4);font-size:12px;margin-top:8px">Updating...</p>';
+  try{
+    var r=await fetch('/api/gym-partner/hours-override',{method:'PATCH',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({gymId:0,overrideStatus:overrideStatus})});
+    var d=await r.json();
+    if(el) el.innerHTML='<p style="color:#4ade80;font-size:12px;margin-top:8px">'+(d.message||'Updated')+'</p>';
+  }catch(e){if(el) el.innerHTML='<p style="color:#f87171;font-size:12px;margin-top:8px">Failed to update</p>';}
+};
+
+// #86: Tag toggle handler (24/7, self-serve)
+window.sgOwnerTag=async function(tag,val){
+  var body={gymId:0}; body[tag.replace('is_','is')]=val; body['is24h']=undefined; body['isSelfServe']=undefined;
+  if(tag==='is_24h') body={gymId:0,is24h:val};
+  if(tag==='is_self_serve') body={gymId:0,isSelfServe:val};
+  try{
+    await fetch('/api/gym-partner/claim/preferences',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(body)});
   }catch(e){}
 };
 
