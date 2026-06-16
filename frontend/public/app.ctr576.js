@@ -1,4 +1,4 @@
-// ScanGym Frontend v5.3.0 — Uber-grade location accuracy (reverse geocoding, accuracy gate, dynamic radius)
+// ScanGym Frontend v5.3.0 — High-precision location accuracy (reverse geocoding, accuracy gate, dynamic radius)
 
 // Inject CSS animations for loading experience
 (function(){const s=document.createElement('style');s.textContent='@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}#fun-fact{transition:opacity 0.2s ease}.gym-card{animation:fadeInUp 0.3s ease-out both}.animate-slide-up{animation:slideUp 0.3s ease-out}@keyframes skeletonPulse{0%,100%{opacity:.6}50%{opacity:.3}}@keyframes locationDot{0%,100%{box-shadow:0 0 0 0 rgba(255,109,0,.4)}50%{box-shadow:0 0 0 8px rgba(255,109,0,0)}}.skel-card{animation:skeletonPulse 1.8s ease-in-out infinite}.loc-dot{animation:locationDot 1.5s ease-in-out infinite}.cards-enter .gym-card{animation:fadeInUp .4s ease-out both}@keyframes toastIn{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes toastOut{from{transform:translateY(0);opacity:1}to{transform:translateY(-100%);opacity:0}}@keyframes spin{to{transform:rotate(360deg)}}@keyframes casinoGlow{0%,100%{box-shadow:0 4px 20px rgba(255,109,0,.4),0 0 15px rgba(255,109,0,.15);background-position:0% 50%}50%{box-shadow:0 4px 30px rgba(255,109,0,.65),0 0 30px rgba(255,109,0,.3),0 0 60px rgba(255,109,0,.1);background-position:100% 50%}}@keyframes greenGlow{0%,100%{box-shadow:0 4px 20px rgba(34,197,94,.35),0 0 15px rgba(34,197,94,.1)}50%{box-shadow:0 4px 30px rgba(34,197,94,.6),0 0 30px rgba(34,197,94,.25),0 0 60px rgba(34,197,94,.1)}}.sg-spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}/* ── 3-Tab System (Polished) ── */.sg-tab-bar{position:fixed;bottom:0;left:0;right:0;height:56px;background:rgba(8,8,18,.98);backdrop-filter:blur(24px) saturate(1.8);-webkit-backdrop-filter:blur(24px) saturate(1.8);display:flex;align-items:center;justify-content:space-around;border-top:1px solid rgba(255,255,255,.06);z-index:9000;padding-bottom:env(safe-area-inset-bottom,0);pointer-events:auto!important}.sg-tab-item{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:6px 20px;border-radius:0;transition:all .25s cubic-bezier(.4,0,.2,1);-webkit-tap-highlight-color:transparent;user-select:none;position:relative;touch-action:manipulation}.sg-tab-item svg{width:26px;height:26px;stroke:rgba(255,255,255,.4);fill:none;stroke-width:1.8;transition:all .25s cubic-bezier(.4,0,.2,1)}.sg-tab-item .sg-tab-label{font-size:10px;font-weight:600;letter-spacing:.2px;color:rgba(255,255,255,.4);transition:all .25s cubic-bezier(.4,0,.2,1)}.sg-tab-item.active svg{stroke:#FF6D00;filter:drop-shadow(0 0 6px rgba(255,109,0,.35))}.sg-tab-item.active .sg-tab-label{color:#FF6D00}.sg-tab-item:active{transform:scale(.92)}.sg-tab-content{position:fixed;top:0;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom,0px));overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;scroll-behavior:smooth;display:flex;flex-direction:column}.sg-tab-content.reels-active{position:static;padding-bottom:0;overflow:visible}.sg-reels-frame{position:fixed;top:0;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom,0px));border:none;width:100%;height:calc(100vh - 56px - env(safe-area-inset-bottom,0px));z-index:1}.sg-more-hub{padding:20px 16px 24px;max-width:480px;margin:0 auto}.sg-more-section{margin-bottom:20px}.sg-more-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.3);margin-bottom:8px;padding-left:4px}.sg-more-item{display:flex;align-items:center;gap:14px;padding:14px 16px;background:rgba(255,255,255,.04);border-radius:14px;margin-bottom:6px;border:1px solid rgba(255,255,255,.04);cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}.sg-more-item:active{transform:scale(.98);background:rgba(255,255,255,.08)}.sg-more-item .sg-mi-icon{font-size:20px;width:40px;height:40px;background:rgba(255,255,255,.06);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.sg-more-item .sg-mi-text{flex:1}.sg-more-item .sg-mi-text h4{color:#fff;font-size:14px;font-weight:600;margin:0}.sg-more-item .sg-mi-text p{color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0}.sg-more-item .sg-mi-arrow{color:rgba(255,255,255,.2);font-size:16px}.sg-more-profile{display:flex;align-items:center;gap:14px;margin-bottom:28px;padding-top:12px}.sg-more-avatar{width:56px;height:56px;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff;flex-shrink:0}.sg-more-profile-info h3{color:#fff;font-size:18px;font-weight:700;margin:0}.sg-more-profile-info p{color:rgba(255,255,255,.4);font-size:13px;margin:2px 0 0}.sg-more-social{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}.sg-more-social a{display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:rgba(255,255,255,.04);border-radius:12px;border:1px solid rgba(255,255,255,.06);font-size:16px;transition:all .15s;text-decoration:none}.sg-more-social a:active{background:rgba(255,255,255,.1);transform:scale(.95)}.sg-more-back{display:flex;align-items:center;gap:8px;padding:12px 0;cursor:pointer;color:rgba(255,255,255,.6);font-size:14px;font-weight:600;margin-bottom:4px;-webkit-tap-highlight-color:transparent}.sg-more-back:active{color:#FF6D00}#sg-search-overlay{transition:opacity .2s ease}#sg-search-overlay.active{opacity:1!important}.hide-scrollbar::-webkit-scrollbar{display:none}.sg-dashboard{-webkit-tap-highlight-color:transparent;position:fixed;top:0;left:0;right:0;bottom:56px;z-index:10;overscroll-behavior:none;-webkit-overflow-scrolling:auto}html,body{height:100%;overflow:hidden;overscroll-behavior:none;position:fixed;width:100%}.sg-tab-bar.hidden{display:none!important}/* ── Option D: Sticky Continue Banner ── */#sg-continue-banner{position:fixed;bottom:calc(56px + env(safe-area-inset-bottom,0px));left:0;right:0;height:52px;background:linear-gradient(135deg,#FF6D00 0%,#E66200 100%);display:flex;align-items:center;justify-content:center;gap:8px;z-index:8999;box-shadow:0 -4px 20px rgba(255,109,0,.25);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .25s cubic-bezier(.4,0,.2,1),opacity .25s ease;touch-action:manipulation}#sg-continue-banner:active{transform:scale(.98)}#sg-continue-banner.sg-cb-hidden{transform:translateY(100%);opacity:0;pointer-events:none}#sg-continue-banner .sg-cb-text{font-size:16px;font-weight:700;color:#fff;letter-spacing:.3px}#sg-continue-banner .sg-cb-price{font-size:13px;font-weight:600;color:rgba(255,255,255,.75)}#sg-continue-banner .sg-cb-arrow{font-size:18px;color:#fff;margin-left:2px}.sg-tab-content.sg-cb-active{bottom:calc(56px + 52px + env(safe-area-inset-bottom,0px))!important}.sg-reels-frame.sg-cb-active{bottom:calc(56px + 52px + env(safe-area-inset-bottom,0px))!important;height:calc(100vh - 56px - 52px - env(safe-area-inset-bottom,0px))!important}';document.head.appendChild(s)})();
@@ -26,7 +26,7 @@ window.sgToast=function(msg, type='error', duration=4000){
 };
 // Load Stripe.js for inline payment (Fix #5)
 // Lazy-load Stripe.js only when needed (saves ~40KB on initial load)
-// ═══ Perf #6: Preload Stripe SDK on first user interaction (Uber/Airbnb pattern) ═══
+// ═══ Perf #6: Preload Stripe SDK on first user interaction (lazy-load on touch) ═══
 (function(){var _sp=false;function _preloadStripe(){if(_sp)return;_sp=true;
 if(!document.querySelector('script[src*="stripe.com"]')){var l=document.createElement('link');l.rel='preload';l.as='script';l.href='https://js.stripe.com/v3/';document.head.appendChild(l);}
 document.removeEventListener('touchstart',_preloadStripe);document.removeEventListener('scroll',_preloadStripe);}
@@ -54,7 +54,7 @@ if(!document.querySelector('link[href*="js.stripe.com"]')){
 const API='/api/v2';
 // UTM helper for creator links
 function addUTM(url,src,med,camp){const u=new URL(url,location.origin);u.searchParams.set('utm_source',src);u.searchParams.set('utm_medium',med);u.searchParams.set('utm_campaign',camp);return u.toString();}
-// SPA pageview tracking for GA4/Meta/TikTok
+// SPA pageview tracking for GA4/Meta/analytics
 function trackPageView(p){if(typeof gtag==='function')gtag('event','page_view',{page_path:p});if(typeof fbq==='function')fbq('track','PageView');if(typeof ttq==='object'&&ttq.page)ttq.page();}
 
 let MAPS_KEY='';
@@ -63,12 +63,12 @@ let STRIPE_PK='';
 let GYM_COUNT=0;
 function fmtCount(n){if(n>=1000000)return (n/1000000).toFixed(1).replace(/\.0$/,'')+'M+';if(n>=1000)return (n/1000).toFixed(0)+'K+';return n.toLocaleString();}
 
-// ─── World-Class Utilities (Booking.com + Airbnb + Uber patterns) ───
+// ─── World-Class Utilities  ───
 function urgencyNum(name,max){let h=0;for(let i=0;i<(name||'').length;i++)h=((h<<5)-h)+name.charCodeAt(i);return Math.abs(h%max)+1;}
 function minutesAgo(name){return urgencyNum(name,45)+1;}
 function peopleLooking(name){return urgencyNum(name,8)+2;}
 function spotsLeft(name){return urgencyNum(name,6)+2;}
-// #59: Amazon-style bucket — uses API data when available, falls back to seeded
+// #59: Rating distribution bucket — uses API data when available, falls back to seeded
 function bookedBucket(gym){
   if(gym&&gym.bookedBucket) return gym.bookedBucket+' booked this month';
   // Fallback: hash-based seed (consistent per gym)
@@ -122,9 +122,9 @@ function initCounters(){
   });
   const obs=new IntersectionObserver((entries)=>{entries.forEach(e=>{if(e.isIntersecting){const el=e.target;const target=parseInt(el.dataset.target)||0;const suffix=el.dataset.suffix||'';el.textContent='0'+suffix;const duration=1500;const start=performance.now();const step=(now)=>{const progress=Math.min((now-start)/duration,1);const eased=1-Math.pow(1-progress,3);el.textContent=Math.floor(eased*target).toLocaleString()+suffix;if(progress<1)requestAnimationFrame(step);};requestAnimationFrame(step);obs.unobserve(el);}});},{threshold:0.3});document.querySelectorAll('[data-counter]').forEach(el=>obs.observe(el));
 }
-// Photo carousel for gym cards (Airbnb style)
+// Photo carousel for gym cards 
 function initCarousels(){document.querySelectorAll('.gym-carousel').forEach(c=>{const imgs=c.querySelectorAll('.carousel-img');const dots=c.querySelectorAll('.carousel-dot');let current=0;c.querySelector('.carousel-next')?.addEventListener('click',(e)=>{e.stopPropagation();current=(current+1)%imgs.length;imgs.forEach((img,i)=>{img.style.transform=`translateX(${(i-current)*100}%)`;});dots.forEach((d,i)=>{d.className=i===current?'carousel-dot w-2 h-2 rounded-full bg-white':'carousel-dot w-2 h-2 rounded-full bg-white/40';});});c.querySelector('.carousel-prev')?.addEventListener('click',(e)=>{e.stopPropagation();current=(current-1+imgs.length)%imgs.length;imgs.forEach((img,i)=>{img.style.transform=`translateX(${(i-current)*100}%)`;});dots.forEach((d,i)=>{d.className=i===current?'carousel-dot w-2 h-2 rounded-full bg-white':'carousel-dot w-2 h-2 rounded-full bg-white/40';});});});}
-// Accordion FAQ (Airbnb style)
+// Accordion FAQ 
 function initAccordions(){document.querySelectorAll('.accordion-trigger').forEach(btn=>{btn.addEventListener('click',()=>{const content=btn.nextElementSibling;const arrow=btn.querySelector('.accordion-arrow');if(content.style.maxHeight){content.style.maxHeight=null;arrow.style.transform='rotate(0deg)';}else{content.style.maxHeight=content.scrollHeight+'px';arrow.style.transform='rotate(180deg)';}});});}
 // Init all interactive elements after render
 
@@ -212,7 +212,7 @@ function askGymQuestion(question, gymId) {
     } else if (q.includes('child') || q.includes('kid') || q.includes('creche') || q.includes('baby')) {
       answer = `Childcare facilities vary by gym. Some have creches or kids' zones — check the amenities above. ScanGym users must be 16+ to book independently, under-16s need a guardian present. 👶`;
     } else if (q.includes('photo') || q.includes('picture') || q.includes('selfie') || q.includes('instagram')) {
-      answer = `Most gyms are photo-friendly! Be respectful of other members. ${gym.name || 'This gym'} has great lighting for workout selfies. Tag @scangym on Instagram for a chance to be featured! 📸`;
+      answer = `Most gyms are photo-friendly! Be respectful of other members. ${gym.name || 'This gym'} has great lighting for workout selfies. Tag @scangym for a chance to be featured! 📸`;
     } else if (q.includes('music') || q.includes('headphone') || q.includes('speaker') || q.includes('playlist')) {
       answer = `Most gyms play background music. You can bring your own headphones for your playlist. Bluetooth speakers are usually not allowed in shared areas. WiFi is free for streaming! 🎵`;
     } else {
@@ -440,7 +440,7 @@ const api={
 };
 
 /* ═══ Perf #120/#121: Client-side gym data cache (sessionStorage) ═══
-   Like Spotify — revisiting same area is instant, no refetch needed.
+   Revisiting same area is instant, no refetch needed.
    Cache key = lat/lng rounded to 3 decimals (~111m precision). TTL = 10 min. */
 const _gymCache={
   _key(lat,lng){return 'sg_gc_'+Math.round(lat*1000)+','+Math.round(lng*1000);},
@@ -450,7 +450,7 @@ const _gymCache={
   setSearch(q,gyms){try{sessionStorage.setItem('sg_sc_'+q,JSON.stringify({g:gyms,t:Date.now()}));}catch(e){}}
 };
 
-/* ═══ Perf #121: Photo preloader (Spotify/TikTok-style) ═══
+/* ═══ Perf #121: Photo preloader (priority queue pattern) ═══
    Preload photos for the next 2 gym cards so swipe feels instant. */
 const _photoPreloader={
   _loaded:new Set(),
@@ -474,9 +474,9 @@ const _photoPreloader={
   }
 };
 
-/* ═══ Perf Round 2: Touch-start prefetch (Instagram technique) ═══
+/* ═══ Perf Round 2: Touch-start prefetch  ═══
    Start loading gym detail data on touchstart — 150-300ms head start before tap fires.
-   When showUberCheckout() runs, the /api/live/place data is already cached by browser. */
+   When showBookingCheckout() runs, the /api/live/place data is already cached by browser. */
 var _touchPrefetchDone={};
 document.addEventListener('touchstart',function(e){
   var el=e.target.closest('[data-gym-id]');
@@ -488,7 +488,7 @@ document.addEventListener('touchstart',function(e){
   }
 },{passive:true});
 
-/* ═══ Perf Round 2: Connection-aware photo sizes (Spotify technique) ═══
+/* ═══ Perf Round 2: Connection-aware photo sizes (streaming-app technique) ═══
    On slow 2G/3G, use 400px photos instead of 600px — 40% less data. */
 var _photoMaxWidth=600;
 if(navigator.connection){
@@ -507,10 +507,10 @@ function _gymPhotoUrl(gym,size){
     (gym.photo_reference?'/api/photo?ref='+encodeURIComponent(gym.photo_reference)+'&maxwidth='+w:''));
 }
 
-/* ═══ Perf Round 2: requestIdleCallback for non-critical work (TikTok technique) ═══ */
+/* ═══ Perf Round 2: requestIdleCallback for non-critical work ═══ */
 var _scheduleIdle=window.requestIdleCallback||function(cb){setTimeout(cb,50);};
 
-/* ═══ Perf v2: rAF-throttled scroll handler (Amazon/TikTok technique) ═══
+/* ═══ Perf v2: rAF-throttled scroll handler  ═══
  * Scroll events fire 60-120x/sec. Without throttle, every pixel triggers DOM reads
  * (offsetWidth, scrollLeft) + writes (classList, textContent), causing layout thrashing.
  * This wraps a scroll callback so it fires at most once per animation frame (~16ms). */
@@ -525,7 +525,7 @@ function _throttledScroll(fn){
 
 /* ═══ Perf v2: IntersectionObserver for off-screen animation pause ═══
  * casinoGlow box-shadow animation causes constant GPU repaints on EVERY CTA button.
- * Uber & Instagram pause animations on off-screen elements to save battery + GPU.
+ * Pause animations on off-screen elements to save battery + GPU.
  * This observer adds/removes 'tt-offscreen' class to pause animations. */
 var _visibilityObserver=('IntersectionObserver' in window)?new IntersectionObserver(function(entries){
   entries.forEach(function(e){
@@ -931,7 +931,7 @@ function GymCard(gym){
   const cTime=closingTime(gym);
   // const looking removed - was fake
   const mAgo=minutesAgo(gym.name);
-  // Airbnb-style photo carousel (multiple photos if available)
+  // Photo carousel (multiple photos if available)
   const allPhotos=photos.length>1?photos.slice(0,5).map(p=>p.thumbnail||p.url||photo):[photo];
   const carouselHTML=hasPhoto&&allPhotos.length>1?`
     <div class="gym-carousel relative w-full h-full overflow-hidden">
@@ -974,14 +974,14 @@ function GymCard(gym){
         <span class="text-xs text-accent font-medium">✅ Free cancellation</span>
         
       </div>
-      <button onclick="event.stopPropagation();showUberCheckout('${gymIdentifier}')" class="gym-card-book-btn">⚡ Book Now · ${cardCurrentPrice}</button>
+      <button onclick="event.stopPropagation();showBookingCheckout('${gymIdentifier}')" class="gym-card-book-btn">⚡ Book Now · ${cardCurrentPrice}</button>
     </div>
   </div>`;
 }
 
 // ─── Page: Home ───
 function HomePage(){
-  // Uber-style single-screen dashboard — everything fits in one viewport, no scroll
+  // Single-screen dashboard — everything fits in one viewport, no scroll
   const hour=new Date().getHours();
   const greeting=hour<12?'Good morning ☀️':hour<17?'Good afternoon 💪':'Good evening 🌙';
   // Fix #6: Include country code so Google Places returns correct region (Bolton UK, not Bolton Canada)
@@ -1009,14 +1009,14 @@ function HomePage(){
       <p style="color:rgba(255,255,255,.5);font-size:14px;margin:0;">${greeting}</p>
     </div>
 
-    <!-- Search bar (like Uber "Where to?") -->
+    <!-- Search bar -->
     <div onclick="document.getElementById('sg-search-overlay').style.display='flex';setTimeout(()=>{document.getElementById('sg-search-overlay').classList.add('active');document.getElementById('sg-search-input').focus();},10)" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:16px 18px;display:flex;align-items:center;gap:12px;cursor:pointer;flex-shrink:0;margin-bottom:12px;">
       <span style="font-size:20px;opacity:.6;">🔍</span>
       <span style="color:rgba(255,255,255,.4);font-size:15px;font-weight:500;">Search gym or city...</span>
       <span style="margin-left:auto;background:rgba(255,255,255,.06);padding:4px 10px;border-radius:8px;font-size:11px;color:rgba(255,255,255,.3);">📅 Today</span>
     </div>
 
-    <!-- GPS button (like Uber recent address) -->
+    <!-- GPS button (recent address) -->
     <div onclick="findGyms()" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;flex-shrink:0;margin-bottom:14px;-webkit-tap-highlight-color:transparent;" ontouchstart="this.style.background='rgba(255,255,255,.08)'" ontouchend="this.style.background='rgba(255,255,255,.04)'">
       <div style="width:40px;height:40px;background:rgba(255,109,0,.12);border-radius:12px;display:flex;align-items:center;justify-content:center;">
         <span style="font-size:18px;">📍</span>
@@ -1038,7 +1038,7 @@ function HomePage(){
       <span style="color:rgba(255,255,255,.7);font-size:20px;position:relative;z-index:1;">→</span>
     </div>
 
-    <!-- City chips (like Uber "For you" row) -->
+    <!-- City chips ("For you" row) -->
     <div style="flex-shrink:0;margin-bottom:14px;">
       <p style="color:rgba(255,255,255,.35);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin:0 0 8px 2px;">🔥 Trending Cities</p>
       <div style="display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;padding-bottom:4px;" class="hide-scrollbar">
@@ -1070,7 +1070,7 @@ function HomePage(){
 
   </div>
 
-  <!-- Full-screen search overlay (like Uber "Plan your trip") -->
+  <!-- Full-screen search overlay -->
   <div id="sg-search-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(5,8,22,.98);backdrop-filter:blur(20px);z-index:9500;flex-direction:column;padding:0 16px;padding-top:env(safe-area-inset-top,12px);opacity:0;transition:opacity .2s ease;" onclick="event.stopPropagation()">
     <!-- Header -->
     <div style="display:flex;align-items:center;gap:12px;padding:16px 0 12px;flex-shrink:0;">
@@ -1259,7 +1259,7 @@ function SearchPage(){
   const rawLabel=state.searchQuery||'Near You';
   const searchLabel=rawLabel.replace(/\bgyms?\s*(in|near|around)?\b/gi,'').trim()||rawLabel;
 
-  // ═══ UBER PATTERN #1: Skeleton cards (shown inline in same grid as real cards) ═══
+  // ═══ Skeleton cards (shown inline in same grid as real cards) ═══
   const skeletonCards=[0,1,2,3,4,5].map((n)=>`
     <div class="bg-card rounded-2xl overflow-hidden border border-slate-700 skel-card" style="animation-delay:${n*0.12}s">
       <div class="h-48 bg-slate-700 relative overflow-hidden">
@@ -1275,7 +1275,7 @@ function SearchPage(){
       </div>
     </div>`).join('');
 
-  // ═══ UBER PATTERN #2: ALWAYS show full page layout — header, search, filters, sort, grid ═══
+  // ═══ ALWAYS show full page layout — header, search, filters, sort, grid ═══
   // The page looks "loaded" instantly. Only the card content swaps from skeleton to real.
   return`
   <div style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;">
@@ -1316,7 +1316,7 @@ function SearchPage(){
         window._ttCards=_cards;
         var totalC=_cards.length;
         var html='<div id="book-map-view" class="tt-view">';
-        /* Perf: Inject TikTok CSS once (persists across re-renders — saves ~12KB per render) */
+        /* Perf: Inject card CSS once (persists across re-renders — saves ~12KB per render) */
         if(!document.getElementById('tt-css')){
           var _s=document.createElement('style');_s.id='tt-css';
           _s.textContent='.tt-view{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;position:relative}.tt-carousel{display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;flex:1;min-height:0;will-change:scroll-position;contain:strict}.tt-carousel::-webkit-scrollbar{display:none}.tt-card{width:100%;min-height:100%;max-height:100%;scroll-snap-align:start;position:relative;display:flex;flex-direction:column;overflow:hidden;contain:layout style paint}.tt-card.tt-closed{opacity:0.5;filter:grayscale(25%)}.tt-card.tt-closed .tt-cta-btn{background:#6b7280;box-shadow:none}.tt-photo{position:absolute;inset:0;background-size:cover;background-position:center;background-color:#1a1f2e}.tt-photo-carousel{position:absolute;inset:0;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;display:flex;z-index:0;touch-action:pan-x}.tt-photo-carousel::-webkit-scrollbar{display:none}.tt-photo-slide{flex:0 0 100%;width:100%;height:100%;scroll-snap-align:start;background-size:cover;background-position:center;background-color:#1a1f2e;transition:background-color .3s ease}.tt-photo-dots{position:absolute;bottom:0;left:14px;display:flex;gap:4px;z-index:12}.tt-photo-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.3);transition:all .3s}.tt-photo-dot.act{background:#FF6D00;width:18px;border-radius:3px}.tt-photo-placeholder{position:absolute;inset:0;background:#1a1f2e;display:flex;align-items:center;justify-content:center}.tt-photo-placeholder::after{content:"🏋️";font-size:56px;opacity:.15}.tt-gradient{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.35) 0%,transparent 22%,transparent 55%,rgba(0,0,0,.55) 75%,rgba(0,0,0,.82) 100%);pointer-events:none;z-index:1}.tt-card::after{content:"";position:absolute;bottom:18%;left:50%;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(255,109,0,.08) 0%,rgba(255,109,0,.03) 40%,transparent 70%);transform:translateX(-50%);pointer-events:none;z-index:0}.tt-search{position:absolute;top:0;left:0;right:0;z-index:20;display:flex;gap:8px;padding:8px 12px;padding-top:calc(env(safe-area-inset-top,8px) + 4px)}.tt-search-input{flex:1;background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px 14px;color:rgba(255,255,255,.7);font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px;cursor:pointer}.tt-search-gps{background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;width:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-search-filter{background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;width:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-actions{position:absolute;right:10px;top:65px;display:flex;flex-direction:column;gap:6px;z-index:15;align-items:center}.tt-action{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-action-btn{width:44px;height:44px;background:transparent;border:none;border-radius:0;display:flex;align-items:center;justify-content:center;font-size:24px;transition:all .15s;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5));opacity:.75}.tt-action-btn:active{transform:scale(.85)}.tt-action-label{display:none}.tt-info{position:absolute;bottom:0;left:0;right:0;padding:0 14px 8px;z-index:15;pointer-events:none}.tt-info>*{pointer-events:auto}.tt-dots{display:flex;gap:3px;margin-bottom:4px;flex-wrap:wrap;max-width:280px}.tt-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.25);transition:all .3s}.tt-dot.act{background:#FF6D00;width:18px;border-radius:3px}.tt-counter{font-size:10px;color:rgba(255,255,255,.4);margin-bottom:4px;font-weight:500}.tt-gym-name{color:#fff;font-size:28px;font-weight:900;text-shadow:0 2px 10px rgba(0,0,0,.6);line-height:1.15;margin-bottom:4px;letter-spacing:-.3px}.tt-gym-addr{color:rgba(255,255,255,.7);font-size:12px;margin-bottom:6px;text-shadow:0 1px 4px rgba(0,0,0,.5);display:flex;align-items:center;gap:4px;flex-wrap:wrap}.tt-tag-open{color:#4ade80}.tt-tag-closed{color:#f87171}.tt-chips{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}.tt-chip{display:flex;align-items:center;gap:5px;background:rgba(30,33,45,.85);border-radius:10px;padding:6px 12px;font-size:12px;color:rgba(255,255,255,.92);font-weight:700}.tt-cta{position:absolute;bottom:0;left:0;right:0;padding:8px 14px;z-index:16}.tt-cta-btn{width:100%;padding:12px 0;border:none;border-radius:12px;background:linear-gradient(135deg,#FF6D00,#ff8534,#FF6D00);background-size:200% 200%;color:#fff;font-size:15px;font-weight:700;letter-spacing:.3px;cursor:pointer;-webkit-tap-highlight-color:transparent;box-shadow:0 4px 20px rgba(255,109,0,.4),0 0 20px rgba(255,109,0,.2);transition:all .15s;animation:casinoGlow 2s ease-in-out infinite}.tt-cta-btn:active{transform:scale(.97);box-shadow:0 2px 10px rgba(255,109,0,.3)}.tt-filter-sheet{display:none;position:absolute;top:52px;left:12px;right:12px;background:rgba(17,19,24,.98);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px;z-index:25;flex-wrap:wrap;gap:8px}.tt-filter-sheet.open{display:flex}.sg-filter-pill{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:7px 14px;color:rgba(255,255,255,.6);font-size:12px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;white-space:nowrap}.sg-filter-pill.active{background:rgba(255,109,0,.15);border-color:rgba(255,109,0,.4);color:#FF6D00}.tt-logo{position:absolute;left:14px;bottom:0;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;z-index:15;border:2px solid rgba(255,255,255,.15);box-shadow:0 2px 8px rgba(0,0,0,.3)}.tt-card.tt-offscreen{content-visibility:auto;contain-intrinsic-size:auto 100vh}.tt-card.tt-offscreen .tt-cta-btn{animation:none}.tt-card.tt-offscreen .tt-gradient{backdrop-filter:none;-webkit-backdrop-filter:none}';
@@ -1325,7 +1325,7 @@ function SearchPage(){
 
         /* ═══ CAROUSEL ═══ */
         /* Perf v3: Only build 3 cards initially (visible + 2 buffer).
-         * Science: TikTok builds 1+1. We do 1+2 for smoother fast-scroll.
+         * Prefetch strategy: 1 ahead + 2 buffer for smoother fast-scroll.
          * Was 5 — each eagerly loaded photos, backdrop-filters, etc. */
         var _INITIAL_CARDS=3;
         window._ttAllCards=_cards; /* Store for lazy builder */
@@ -1343,7 +1343,7 @@ function SearchPage(){
           /* Perf v3: Only card 0 loads photos eagerly. Cards 1+ use data-bg for deferred loading.
            * Science: background-image:url() starts downloading the instant DOM is inserted.
            * 5 cards × 5 photos = 25 concurrent image requests fighting the first visible card.
-           * Pinterest/Instagram only load images for the viewport card. */
+           * Modern apps only load images for the viewport card. */
           if(c.allPhotos&&c.allPhotos.length>1){
             html+='<div class="tt-photo-carousel" id="tt-pcarousel-'+i+'" data-card-idx="'+i+'">';
             c.allPhotos.forEach(function(p,pi){
@@ -1365,7 +1365,7 @@ function SearchPage(){
 
           /* M8 fix: Removed fake "Gym Tour" badge */
 
-          /* Search bar (only on first card, shared) — taps open Uber-style search overlay */
+          /* Search bar (only on first card, shared) — taps open full-screen search overlay */
           if(i===0){
             html+='<div class="tt-search" id="tt-search" onclick="window._openSearchOverlay()">';
             html+='<div class="tt-search-input">\u{1F50D} '+(state.searchQuery||(searchLabel||'Nearby')+' \u00b7 '+totalC+' gyms')+'</div>';
@@ -1408,7 +1408,7 @@ function SearchPage(){
           }
           /* Gym dots (show which gym in the list) */
           /* Perf v3: Removed O(N²) dot elements. Was: N cards × N dots = 400 DOM nodes for 20 gyms.
-           * Replaced with text counter only (already existed below). Science: Facebook/Instagram
+           * Replaced with text counter only (already existed below). Science: Leading apps
            * found that DOM node count is the #1 predictor of interaction latency on mobile. */
           html+='<div class="tt-counter">\u2190 '+(i+1)+' of '+totalC+' \u2192</div>';
           /* Name */
@@ -1429,7 +1429,7 @@ function SearchPage(){
           html+='<div class="tt-chip" style="background:rgba(239,68,68,.14);border:1px solid rgba(239,68,68,.2)">\u{1F440} '+_pLook+' looking now</div>';
           html+='</div>';
           /* CTA inside info — Book directly from reels (no Screen 3 navigation) */
-          html+='<div style="padding-right:50px;margin-top:8px;pointer-events:auto"><button class="tt-cta-btn" onclick="event.stopPropagation();showUberCheckout(\''+c.id+'\')">⚡ Book Day Pass · '+c.price+'</button></div>';
+          html+='<div style="padding-right:50px;margin-top:8px;pointer-events:auto"><button class="tt-cta-btn" onclick="event.stopPropagation();showBookingCheckout(\''+c.id+'\')">⚡ Book Day Pass · '+c.price+'</button></div>';
           /* Fix #53: Motivating trust line */
           html+='<div style="display:flex;gap:12px;margin-top:5px;padding-right:50px"><span style="font-size:10px;color:rgba(255,255,255,.35);font-weight:600">✅ Free Cancel</span><span style="font-size:10px;color:rgba(255,255,255,.35);font-weight:600">🔒 Secure</span><span style="font-size:10px;color:rgba(255,255,255,.35);font-weight:600">⚡ Instant QR</span></div>';
           html+='</div>';
@@ -1473,7 +1473,7 @@ function SearchPage(){
               cardHtml+='<div class="tt-chip">\u2B50 '+c.rating+(c.reviews?' ('+c.reviews+')':'')+'</div>';
               cardHtml+='<div class="tt-chip" style="background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.25)">\u{1F4C8} '+_bk+'</div>';
               cardHtml+='</div>';
-              cardHtml+='<div style="padding-right:50px;margin-top:8px;pointer-events:auto"><button class="tt-cta-btn" onclick="event.stopPropagation();showUberCheckout(\''+c.id+'\')">\u26A1 Book Day Pass \u00b7 '+c.price+'</button></div>';
+              cardHtml+='<div style="padding-right:50px;margin-top:8px;pointer-events:auto"><button class="tt-cta-btn" onclick="event.stopPropagation();showBookingCheckout(\''+c.id+'\')">\u26A1 Book Day Pass \u00b7 '+c.price+'</button></div>';
               cardHtml+='<div style="display:flex;gap:12px;margin-top:5px;padding-right:50px"><span style="font-size:10px;color:rgba(255,255,255,.35);font-weight:600">\u2705 Free Cancel</span><span style="font-size:10px;color:rgba(255,255,255,.35);font-weight:600">\u{1F512} Secure</span><span style="font-size:10px;color:rgba(255,255,255,.35);font-weight:600">\u26A1 Instant QR</span></div>';
               cardHtml+='</div>';
               cardHtml+='</div>';
@@ -1531,7 +1531,7 @@ function GymProfilePage(){
 
   return`
   <style>
-    /* ═══ Fix #5: Zero-scroll gym detail with Instagram carousel ═══ */
+    /* ═══ Fix #5: Zero-scroll gym detail with swipe carousel ═══ */
     .gym-fs-hero{position:relative;width:100%;height:calc(100vh - 56px);height:calc(100dvh - 56px);overflow:hidden;background:#0a0a0a;display:flex;flex-direction:column}
     /* Photo carousel area (~38% of viewport) */
     .gym-carousel-wrap{position:relative;width:100%;height:38vh;height:38dvh;overflow:hidden;background:#0a0a0a;flex-shrink:0}
@@ -1540,12 +1540,12 @@ function GymProfilePage(){
     .gym-carousel-slide{flex:0 0 100%;width:100%;height:100%;position:relative}
     .gym-carousel-slide img{width:100%;height:100%;object-fit:cover}
     .gym-carousel-slide .no-photo{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:64px;background:#1e293b}
-    /* Instagram-style counter badge "1/4" — top right */
+    /* Photo counter badge "1/4" — top right */
     .gym-carousel-counter{position:absolute;top:12px;right:12px;background:rgba(0,0,0,.7);color:#fff;font-size:13px;font-weight:600;padding:4px 10px;border-radius:12px;z-index:6;letter-spacing:.5px;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
     /* Back button — top left */
     .gym-carousel-back{position:absolute;top:12px;left:12px;width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);border:none;color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:6;transition:background .2s}
     .gym-carousel-back:active{background:rgba(0,0,0,.7)}
-    /* Dot indicators — bottom of photo area, Instagram style */
+    /* Dot indicators — bottom of photo area */
     .gym-carousel-dots{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:5px;z-index:6}
     .gym-carousel-dots span{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.35);transition:all .3s}
     .gym-carousel-dots span.active{background:#fff;width:18px;border-radius:3px}
@@ -1561,7 +1561,7 @@ function GymProfilePage(){
     .gym-info-card{margin-bottom:8px}
     .gym-info-name{font-family:'Sora',sans-serif;font-size:22px;font-weight:800;color:#fff;line-height:1.15;margin-bottom:2px}
     .gym-info-addr{color:rgba(255,255,255,.55);font-size:13px;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    /* ═══ TikTok-style right side action icons (Pay, Passes, Calendar) ═══ */
+    /* ═══ Right side action icons (Pay, Passes, Calendar) ═══ */
     .gym-tt-actions{position:absolute;right:14px;top:16px;display:flex;flex-direction:column;gap:16px;z-index:5}
     .gym-tt-item{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;-webkit-tap-highlight-color:transparent}
     .gym-tt-circle{width:44px;height:44px;border-radius:0;background:transparent;border:none;display:flex;align-items:center;justify-content:center;font-size:22px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.4));transition:transform .15s}
@@ -1575,7 +1575,7 @@ function GymProfilePage(){
     .gym-qa-btn:active{transform:scale(.95);background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2)}
     .gym-qa-btn.has-label{gap:5px;flex:1.4}
     .gym-qa-icon{font-size:20px;line-height:1}
-    /* ═══ Uber-style pass cards ═══ */
+    /* ═══ Pass cards ═══ */
     .gym-pass-header{color:#fff;font-size:18px;font-weight:800;text-align:center;padding:4px 0 8px;font-family:'Sora',sans-serif}
     .gym-pass-cards{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;padding-bottom:140px}
     .gym-pass-card{display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px;padding:12px 8px 10px;border-radius:14px;border:2px solid rgba(255,255,255,.08);background:transparent;cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent;position:relative}
@@ -1591,7 +1591,7 @@ function GymProfilePage(){
     .gym-pass-card .gym-pass-perday{color:rgba(255,255,255,.4);font-size:10px}
     .gym-pass-card .gym-pass-save{font-size:9px;font-weight:700;color:#22c55e;background:rgba(34,197,94,.1);padding:2px 6px;border-radius:4px;margin-top:3px}
 
-    /* ═══ Sticky bottom bar (Uber-style) ═══ */
+    /* ═══ Sticky bottom bar ═══ */
     .gym-sticky-bar{position:absolute;bottom:0;left:0;right:0;z-index:50;background:#0a0f14;border-top:1px solid rgba(255,255,255,.08);padding-bottom:env(safe-area-inset-bottom,0px)}
     .gym-sticky-pay{display:flex;align-items:center;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .15s}
     .gym-sticky-pay:active{background:rgba(255,255,255,.04)}
@@ -1625,7 +1625,7 @@ function GymProfilePage(){
     .gym-pay-option-check{width:22px;height:22px;border-radius:50%;border:2px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px}
     .gym-pay-option.selected .gym-pay-option-check{background:#22c55e;border-color:#22c55e;color:#fff}
 
-    /* ═══ Uber-style Date/Time picker sheet ═══ */
+    /* ═══ Date/Time picker sheet ═══ */
     .gym-date-sheet{position:fixed;top:0;left:0;right:0;bottom:0;z-index:9200;opacity:0;pointer-events:none;transition:opacity .25s}
     .gym-date-sheet.open{opacity:1;pointer-events:all}
     .gym-date-sheet-bg{position:absolute;inset:0;background:rgba(0,0,0,.5)}
@@ -1634,29 +1634,29 @@ function GymProfilePage(){
     .gym-date-sheet-drag{width:36px;height:4px;border-radius:2px;background:rgba(255,255,255,.25);margin:8px auto 0}
     .gym-date-sheet-title{color:#fff;font-size:20px;font-weight:700;padding:16px 20px 14px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
     /* Horizontal date strip */
-    .uber-date-strip{display:flex;gap:0;padding:0 0 0 16px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none;flex-shrink:0}
-    .uber-date-strip::-webkit-scrollbar{display:none}
-    .uber-date-pill{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:56px;height:72px;padding:8px 4px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;flex-shrink:0;border-radius:28px;margin:0 3px}
-    .uber-date-pill .uber-date-day{font-size:12px;font-weight:600;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.5px;line-height:1;margin-bottom:4px}
-    .uber-date-pill .uber-date-num{font-size:20px;font-weight:700;color:#fff;line-height:1}
-    .uber-date-pill.selected{background:#fff}
-    .uber-date-pill.selected .uber-date-day{color:#000}
-    .uber-date-pill.selected .uber-date-num{color:#000}
-    .uber-date-pill:active{transform:scale(.95)}
+    .sg-date-strip{display:flex;gap:0;padding:0 0 0 16px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none;flex-shrink:0}
+    .sg-date-strip::-webkit-scrollbar{display:none}
+    .sg-date-pill{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:56px;height:72px;padding:8px 4px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;flex-shrink:0;border-radius:28px;margin:0 3px}
+    .sg-date-pill .sg-date-day{font-size:12px;font-weight:600;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.5px;line-height:1;margin-bottom:4px}
+    .sg-date-pill .sg-date-num{font-size:20px;font-weight:700;color:#fff;line-height:1}
+    .sg-date-pill.selected{background:#fff}
+    .sg-date-pill.selected .sg-date-day{color:#000}
+    .sg-date-pill.selected .sg-date-num{color:#000}
+    .sg-date-pill:active{transform:scale(.95)}
     /* Divider */
-    .uber-date-divider{height:1px;background:rgba(255,255,255,.08);margin:12px 0 0}
+    .sg-date-divider{height:1px;background:rgba(255,255,255,.08);margin:12px 0 0}
     /* Vertical time list */
-    .uber-time-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0;min-height:0;scrollbar-width:none;-ms-overflow-style:none}
-    .uber-time-list::-webkit-scrollbar{display:none}
-    .uber-time-item{padding:16px 20px;font-size:16px;font-weight:500;color:rgba(255,255,255,.5);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;display:flex;align-items:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
-    .uber-time-item:active{background:rgba(255,255,255,.04)}
-    .uber-time-item.selected{color:#fff;background:rgba(255,255,255,.08);font-weight:600}
-    .uber-time-item.past{color:rgba(255,255,255,.15);pointer-events:none}
+    .sg-time-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0;min-height:0;scrollbar-width:none;-ms-overflow-style:none}
+    .sg-time-list::-webkit-scrollbar{display:none}
+    .sg-time-item{padding:16px 20px;font-size:16px;font-weight:500;color:rgba(255,255,255,.5);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;display:flex;align-items:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+    .sg-time-item:active{background:rgba(255,255,255,.04)}
+    .sg-time-item.selected{color:#fff;background:rgba(255,255,255,.08);font-weight:600}
+    .sg-time-item.past{color:rgba(255,255,255,.15);pointer-events:none}
     /* CTA */
-    .uber-date-cta-wrap{flex-shrink:0;background:#000;padding:12px 16px calc(20px + env(safe-area-inset-bottom,0px));border-top:1px solid rgba(255,255,255,.06)}
-    .uber-date-cta{padding:16px;border-radius:8px;border:none;background:#fff;color:#000;font-size:16px;font-weight:700;width:100%;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
-    .uber-date-cta:active{transform:scale(.98);opacity:.9}
-    .uber-date-cta:disabled{opacity:.4;pointer-events:none}
+    .sg-date-cta-wrap{flex-shrink:0;background:#000;padding:12px 16px calc(20px + env(safe-area-inset-bottom,0px));border-top:1px solid rgba(255,255,255,.06)}
+    .sg-date-cta{padding:16px;border-radius:8px;border:none;background:#fff;color:#000;font-size:16px;font-weight:700;width:100%;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+    .sg-date-cta:active{transform:scale(.98);opacity:.9}
+    .sg-date-cta:disabled{opacity:.4;pointer-events:none}
 
     /* Legacy pill styles kept for backward compat */
     .gym-pass-row{display:none}
@@ -1723,7 +1723,8 @@ function GymProfilePage(){
     .sort-chip{padding:6px 14px;border-radius:16px;font-size:12px;font-weight:600;background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);border:none;cursor:pointer;transition:all .2s}
     .sort-chip.active{background:#22c55e;color:#fff}
 
-    /* Review cards — Amazon style */
+    /* Review cards */
+    .ov-review-title{color:#fff;font-size:14px;font-weight:700;margin-bottom:6px;line-height:1.3}
     .ov-review{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px;margin-bottom:12px}
     .ov-review-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
     .ov-review-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0}
@@ -1834,7 +1835,7 @@ function GymProfilePage(){
   </style>
 
   <div class="gym-fs-hero" id="gym-fs-page">
-    <!-- ═══ Instagram-style photo carousel (Fix #5) ═══ -->
+    <!-- ═══ Swipe photo carousel (Fix #5) ═══ -->
     <div class="gym-carousel-wrap${photos.length>1?' has-next':''}" id="gym-carousel-wrap">
       <div class="gym-carousel-track" id="gym-carousel-track">
         ${photos.length>0
@@ -1844,7 +1845,7 @@ function GymProfilePage(){
       </div>
       <!-- Back button -->
       <button class="gym-carousel-back" onclick="navigate('/explore')" aria-label="Go back">←</button>
-      <!-- Instagram counter "1/4" -->
+      <!-- Photo counter "1/4" -->
       ${photos.length>1?`<div class="gym-carousel-counter" id="gym-carousel-counter">1/${Math.min(photos.length,4)}</div>`:''}
       <!-- Dot indicators (Instagram style) -->
       ${photos.length>1?`<div class="gym-carousel-dots" id="gym-carousel-dots">${photos.slice(0,4).map((_,i)=>`<span class="${i===0?'active':''}"></span>`).join('')}</div>`:''}
@@ -1894,7 +1895,7 @@ function GymProfilePage(){
         </div>
       </div>
 
-      <!-- ═══ TikTok-style right side icons: Pay, Passes, Calendar ═══ -->
+      <!-- ═══ vertical-card right side icons: Pay, Passes, Calendar ═══ -->
       <div class="gym-tt-actions">
         <div class="gym-tt-item" onclick="openGymOverlay('payment')">
           <div class="gym-tt-circle" id="gym-pay-icon">💳</div>
@@ -1942,7 +1943,7 @@ function GymProfilePage(){
 
     </div><!-- /gym-info-section -->
 
-    <!-- ═══ STICKY BOTTOM BAR — Full-width Book CTA + trust (Pay/Passes/Calendar moved to right-side TikTok icons) ═══ -->
+    <!-- ═══ STICKY BOTTOM BAR — Full-width Book CTA + trust (Pay/Passes/Calendar as right-side action icons) ═══ -->
     <div class="gym-sticky-bar" id="gym-sticky-bar">
         <!-- Fix #53: Motivating micro-copy above CTA -->
         <div style="text-align:center;padding:6px 16px 0">
@@ -1950,7 +1951,7 @@ function GymProfilePage(){
         </div>
         <!-- Full-width Book CTA -->
         <div style="padding:8px 16px 0">
-          <button class="gym-sticky-book" id="gym-sticky-book" style="width:100%" onclick="event.preventDefault();event.stopPropagation();showUberCheckout('${gymId}')">⚡ Book Day Pass · ${currentPrice}</button>
+          <button class="gym-sticky-book" id="gym-sticky-book" style="width:100%" onclick="event.preventDefault();event.stopPropagation();showBookingCheckout('${gymId}')">⚡ Book Day Pass · ${currentPrice}</button>
         </div>
 
         <!-- Trust row -->
@@ -1962,7 +1963,7 @@ function GymProfilePage(){
         </div>
       </div>
 
-    <!-- ═══ Payment method sheet (Uber-style: saved cards first) ═══ -->
+    <!-- ═══ Payment method sheet (saved cards first) ═══ -->
     <div class="gym-pay-sheet" id="gym-pay-sheet" onclick="if(event.target===this||event.target.classList.contains('gym-pay-sheet-bg'))closePaySheet()">
       <div class="gym-pay-sheet-bg"></div>
       <div class="gym-pay-sheet-panel">
@@ -1992,7 +1993,7 @@ function GymProfilePage(){
             </div>
             <div class="gym-pay-option-check"></div>
           </div>
-          <!-- Klarna & Amazon Pay removed — only saveable 1-tap methods kept -->
+          <!-- BNPL removed — only saveable 1-tap methods kept -->
           <div class="gym-pay-option" onclick="selectPayMethod(this,'cash')" data-method="cash">
             <div class="gym-pay-option-icon" style="background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);border-radius:10px">
               <span style="font-size:18px">💷</span>
@@ -2007,16 +2008,16 @@ function GymProfilePage(){
       </div>
     </div>
 
-    <!-- ═══ Uber-style Date/time picker sheet ═══ -->
+    <!-- ═══ Date/time picker sheet ═══ -->
     <div class="gym-date-sheet" id="gym-date-sheet" onclick="if(event.target===this||event.target.classList.contains('gym-date-sheet-bg'))closeDateSheet()">
       <div class="gym-date-sheet-bg"></div>
       <div class="gym-date-sheet-panel">
         <div class="gym-date-sheet-drag"></div>
         <div class="gym-date-sheet-title">When do you want to go?</div>
-        <div class="uber-date-strip" id="uber-date-strip"></div>
-        <div class="uber-date-divider"></div>
-        <div class="uber-time-list" id="uber-time-list"></div>
-        <div class="uber-date-cta-wrap"><button class="uber-date-cta" id="uber-date-cta" onclick="confirmDateSheet()">Confirm time</button></div>
+        <div class="sg-date-strip" id="sg-date-strip"></div>
+        <div class="sg-date-divider"></div>
+        <div class="sg-time-list" id="sg-time-list"></div>
+        <div class="sg-date-cta-wrap"><button class="sg-date-cta" id="sg-date-cta" onclick="confirmDateSheet()">Confirm time</button></div>
       </div>
     </div>
   </div>
@@ -2036,7 +2037,7 @@ function GymProfilePage(){
           <div style="color:#fff;font-size:22px;font-weight:800">${currentPrice}</div>
           <div style="color:rgba(255,255,255,.4);font-size:11px">Your ScanGym pass works here ✓</div>
         </div>
-        <button class="gym-book-btn" onclick="event.preventDefault();event.stopPropagation();closeGymOverlay();showUberCheckout('${gymId}')">Book Now</button>
+        <button class="gym-book-btn" onclick="event.preventDefault();event.stopPropagation();closeGymOverlay();showBookingCheckout('${gymId}')">Book Now</button>
       </div>
     </div>
   </div>`;
@@ -2112,12 +2113,12 @@ window.openGymOverlay=function(section){
     const reviews=getGymReviews(gym);
     const topics=extractReviewTopics(reviews);
 
-    // #61: Photo gallery REMOVED from reviews — reviews show reviews only (Amazon-style)
+    // #61: Photo gallery REMOVED from reviews — reviews show reviews only
     // Photos are accessible via the gym profile photos section instead.
 
     body.innerHTML=`
 
-      <!-- #61B: Amazon-style rating summary -->
+      <!-- #61B: Rating summary -->
       <div style="display:flex;gap:20px;align-items:center;margin-bottom:24px">
         <div style="text-align:center">
           <div style="color:#fff;font-size:52px;font-weight:800;line-height:1">${rating}</div>
@@ -2142,7 +2143,7 @@ window.openGymOverlay=function(section){
       </div>`:''}
 
 
-      <!-- FIX #11: AI Review Summary (Amazon "Customers say" style) -->
+      <!-- FIX #11: AI Review Summary ("Customers say" style) -->
       <div id="rv-ai-summary" style="background:linear-gradient(135deg,rgba(99,102,241,.08),rgba(139,92,246,.06));border:1px solid rgba(99,102,241,.15);border-radius:16px;padding:16px 20px;margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
           <span style="font-size:16px">🤖</span>
@@ -2208,7 +2209,7 @@ window.openGymOverlay=function(section){
             </div>
           </div>
           <div class="ov-review-stars"><span class="ov-review-rating-num">${r.rating||5}.0</span> ${'★'.repeat(r.rating||5)}${'☆'.repeat(5-(r.rating||5))}</div>
-          <div class="ov-review-title">${(r.text||r.comment||'').split(/[.!?\n]/)[0].slice(0,60)||(r.rating>=4?'Great experience':'Review')}</div>
+          <div class="ov-review-title">${r.headline||(r.text||r.comment||'').split(/[.!?\n]/)[0].slice(0,60)||(r.rating>=4?'Great experience':'Review')}</div>
           <div class="ov-review-text">${r.text||r.comment||''}</div>
           ${r.media&&r.media.length>0?'<div class="rv-review-photos">'+r.media.map(function(m){return '<div class="rv-review-photo" onclick="rvShowFullscreen(\''+m.url+'\')"><'+(m.type==='video'?'video':'img')+' src="'+(m.thumbnail||m.url)+'" loading="lazy" />'+(m.type==='video'?'<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.3)"><span style="font-size:24px">▶</span></div>':'')+'</div>';}).join('')+'</div>':''}
           <div class="ov-review-actions">
@@ -2531,7 +2532,7 @@ window.rvShowFullscreen=function(url){
     title.innerHTML='💳 Pay with';
     body.innerHTML=`
       <div style="padding:4px 0">
-        <!-- FIX #6: Uber-style payment — main view with "+ Add" header -->
+        <!-- FIX #6: Payment — main view with "+ Add" header -->
         <div id="ov-pay-main-view">
           <!-- Saved Cards Section -->
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
@@ -2614,7 +2615,7 @@ window.rvShowFullscreen=function(url){
               <div id="ov-pay-card-cvc" style="flex:1;padding:16px;min-height:48px"></div>
             </div>
           </div>
-          <!-- Country + Postcode (Uber-style) -->
+          <!-- Country + Postcode -->
           <div style="background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;margin-top:12px">
             <div style="display:flex">
               <div style="flex:1;padding:0 16px">
@@ -2637,7 +2638,7 @@ window.rvShowFullscreen=function(url){
               </div>
             </div>
           </div>
-          <!-- Nickname (Uber-style, optional) -->
+          <!-- Nickname (optional) -->
           <div style="background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;margin-top:12px">
             <div style="padding:0 16px">
               <input id="ov-pay-nickname" type="text" placeholder="Nickname (optional) e.g. joint account or work card" style="width:100%;padding:16px 0;border:none;font-size:15px;color:#1a1a2e;background:transparent;outline:none;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" />
@@ -2747,7 +2748,7 @@ function _ensureStandaloneOverlay(gymId){
   var gym=state.currentGym||{};
   var currentPrice=(gym.pricing?.display)||(gym.dayPassPrice?((gym.currencySymbol||'£')+gym.dayPassPrice.toFixed(2)):'£5.00');
   var div=document.createElement('div');
-  div.innerHTML='<div class="gym-overlay" id="gym-overlay" onclick="if(event.target===this||event.target.classList.contains(\'gym-overlay-bg\'))closeGymOverlay()"><div class="gym-overlay-bg"></div><div class="gym-overlay-panel"><div class="gym-overlay-drag"></div><div class="gym-overlay-header"><div style="display:flex;align-items:center;gap:10px;"><div style="width:24px;height:24px;background:#FF6D00;border-radius:50%;flex-shrink:0;box-shadow:0 0 8px rgba(255,109,0,.4);"></div><div class="gym-overlay-title" id="gym-overlay-title"></div></div><button class="gym-overlay-close" onclick="closeGymOverlay()">✕</button></div><div class="gym-overlay-body" id="gym-overlay-body"></div><div class="gym-overlay-footer"><div><div style="color:#fff;font-size:22px;font-weight:800">'+currentPrice+'</div><div style="color:rgba(255,255,255,.4);font-size:11px">Your ScanGym pass works here ✓</div></div><button class="gym-book-btn" onclick="event.preventDefault();event.stopPropagation();closeGymOverlay();showUberCheckout(\''+gymId+'\')">Book Now</button></div></div></div>';
+  div.innerHTML='<div class="gym-overlay" id="gym-overlay" onclick="if(event.target===this||event.target.classList.contains(\'gym-overlay-bg\'))closeGymOverlay()"><div class="gym-overlay-bg"></div><div class="gym-overlay-panel"><div class="gym-overlay-drag"></div><div class="gym-overlay-header"><div style="display:flex;align-items:center;gap:10px;"><div style="width:24px;height:24px;background:#FF6D00;border-radius:50%;flex-shrink:0;box-shadow:0 0 8px rgba(255,109,0,.4);"></div><div class="gym-overlay-title" id="gym-overlay-title"></div></div><button class="gym-overlay-close" onclick="closeGymOverlay()">✕</button></div><div class="gym-overlay-body" id="gym-overlay-body"></div><div class="gym-overlay-footer"><div><div style="color:#fff;font-size:22px;font-weight:800">'+currentPrice+'</div><div style="color:rgba(255,255,255,.4);font-size:11px">Your ScanGym pass works here ✓</div></div><button class="gym-book-btn" onclick="event.preventDefault();event.stopPropagation();closeGymOverlay();showBookingCheckout(\''+gymId+'\')">Book Now</button></div></div></div>';
   document.body.appendChild(div.firstChild);
 }
 
@@ -2896,7 +2897,7 @@ window._gymBookingState={
   savedCard:null
 };
 
-// ═══ Uber-style: Load saved card and show on gym profile Pay row ═══
+// ═══ Load saved card and show on gym profile Pay row ═══
 (async function _loadSavedCardForPayRow(){
   if(!state.user)return;
   try{
@@ -2905,7 +2906,7 @@ window._gymBookingState={
       const card=resp.cards.find(c=>c.isDefault)||resp.cards[0];
       window._gymBookingState.savedCard=card;
       window._gymBookingState.paymentMethod='saved';
-      // Update the Pay row to show saved card (Uber-style)
+      // Update the Pay row to show saved card
       const payLabel=document.getElementById('gym-pay-label');
       const payIcon=document.getElementById('gym-pay-icon');
       if(payLabel){
@@ -2973,7 +2974,7 @@ window.selectGymPayment=function(el,method){
   window._gymBookingState.paymentMethod=method;
 };
 
-// ═══ Uber-style pass card selection ═══
+// ═══ Pass card selection ═══
 window.selectGymPassCard=function(el,idx,gymId){
   document.querySelectorAll('.gym-pass-card').forEach(function(c){c.classList.remove('selected');});
   el.classList.add('selected');
@@ -2998,7 +2999,7 @@ window.selectGymPassCard=function(el,idx,gymId){
 window.openPaySheet=function(){
   const sheet=document.getElementById('gym-pay-sheet');
   if(!sheet)return;
-  // ═══ Uber-style: inject saved cards at top of payment sheet ═══
+  // ═══ Inject saved cards at top of payment sheet ═══
   const savedArea=document.getElementById('gym-pay-saved-cards');
   if(savedArea&&state.user){
     savedArea.innerHTML='<div style="padding:8px 20px;color:rgba(255,255,255,.4);font-size:12px">Loading saved cards…</div>';
@@ -3036,7 +3037,7 @@ window.closePaySheet=function(){
   if(sheet)sheet.classList.remove('open');
   // Fix #50: Tab bar stays visible — no restore needed
 };
-// Select a SAVED card as payment method (Uber-style)
+// Select a SAVED card as payment method
 window.selectPayMethodSaved=function(el,cardId,brand,last4){
   document.querySelectorAll('.gym-pay-option').forEach(function(o){o.classList.remove('selected');const c=o.querySelector('.gym-pay-option-check');if(c)c.textContent='';});
   el.classList.add('selected');
@@ -3077,7 +3078,7 @@ window._getCardBrandSvg=function(brand){
   return svgs[brand]||'<span style="color:#fff;font-size:10px;font-weight:800;text-transform:uppercase">'+(brand||'CARD').slice(0,4)+'</span>';
 };
 
-// ═══ Payment Overlay Functions (Uber-style full-screen wallet) ═══
+// ═══ Payment Overlay Functions (full-screen wallet) ═══
 window._ovPayStripeElements=null;
 window._ovPayCardElement=null;
 window._ovPayStripeInstance=null;
@@ -3116,7 +3117,7 @@ window._ovPayLoadCards=async function(){
         </div>
         <div style="display:flex;align-items:center;gap:8px">
           ${card.isDefault?'<span style="background:rgba(34,197,94,.15);color:#22c55e;font-size:9px;font-weight:700;padding:3px 8px;border-radius:6px">DEFAULT</span>':'<button onclick="event.stopPropagation();_ovPaySetDefault(\''+card.id+'\');return false;" style="background:none;border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.4);font-size:10px;padding:3px 8px;border-radius:6px;cursor:pointer">Set default</button>'}
-          /* Delete button removed — Uber-style: no delete on main card list */
+          /* Delete button removed — no delete on main card list */
           ${isSelected||card.isDefault?'<span style="color:#22c55e;font-size:16px;font-weight:700">✓</span>':''}
         </div>
       </div>`;
@@ -3159,7 +3160,7 @@ window._ovPayWalletPay=function(type){
     const pc=window._pendingCheckout;
     window._pendingCheckout=null;
     closeGymOverlay();
-    setTimeout(()=>showUberCheckout(pc.gymId,pc.prefillDate,pc.prefillTime),400);
+    setTimeout(()=>showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime),400);
   }
 };
 
@@ -3176,12 +3177,12 @@ window._ovPaySelectCard=function(cardId,brand,last4){
   if(cashCheck)cashCheck.textContent='';
   _ovPayLoadCards();
   if(window._ovPayDetectWallet)_ovPayDetectWallet();
-  // ═══ UBER: If booking was pending, auto-continue with this card ═══
+  // ═══ If booking was pending, auto-continue with this card ═══
   if(window._pendingCheckout){
     const pc=window._pendingCheckout;
     window._pendingCheckout=null;
     closeGymOverlay();
-    setTimeout(()=>showUberCheckout(pc.gymId,pc.prefillDate,pc.prefillTime),400);
+    setTimeout(()=>showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime),400);
   }
 };
 
@@ -3195,16 +3196,16 @@ window._ovPaySelectCash=function(){
   const cashCheck=document.getElementById('ov-pay-cash-check');
   if(cashCheck)cashCheck.textContent='✓';
   _ovPayLoadCards();
-  // ═══ UBER: Auto-continue to checkout if booking was pending ═══
+  // ═══ Auto-continue to checkout if booking was pending ═══
   if(window._pendingCheckout){
     const pc=window._pendingCheckout;
     window._pendingCheckout=null;
     closeGymOverlay();
-    setTimeout(()=>showUberCheckout(pc.gymId,pc.prefillDate,pc.prefillTime),400);
+    setTimeout(()=>showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime),400);
   }
 };
 
-/* ═══ FIX #6: Uber-style payment sub-view navigation ═══ */
+/* ═══ FIX #6: Payment sub-view navigation ═══ */
 window._ovPayShowMainView=function(){
   var main=document.getElementById('ov-pay-main-view');
   var add=document.getElementById('ov-pay-add-view');
@@ -3247,7 +3248,7 @@ window._ovPayAddCard=async function(){
     window._ovPayStripeElements=si.elements({
       appearance:{theme:'flat',variables:{colorPrimary:'#22c55e',colorBackground:'#ffffff',colorText:'#1a1a2e',colorTextPlaceholder:'#9ca3af',borderRadius:'0px',colorDanger:'#ef4444'}},
     });
-    // Separate fields for Uber-style layout
+    // Separate fields layout
     window._ovPayCardNumber=window._ovPayStripeElements.create('cardNumber',{style:elStyle,showIcon:true});
     window._ovPayCardExpiry=window._ovPayStripeElements.create('cardExpiry',{style:elStyle});
     window._ovPayCardCvc=window._ovPayStripeElements.create('cardCvc',{style:elStyle});
@@ -3310,7 +3311,7 @@ window._ovPaySaveCard=async function(){
     const siResp=await fetch('/api/payment/setup-card',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'}});
     const siData=await siResp.json();
     if(!siData.clientSecret)throw new Error(siData.error||'Failed to create setup');
-    // Uber-style: include billing details (country, postcode, nickname)
+    // Include billing details (country, postcode, nickname)
     const _payCountry=(document.getElementById('ov-pay-country')||{}).value||'GB';
     const _payPostcode=(document.getElementById('ov-pay-postcode')||{}).value||'';
     const _payNickname=(document.getElementById('ov-pay-nickname')||{}).value||'';
@@ -3323,7 +3324,7 @@ window._ovPaySaveCard=async function(){
     if(window._ovPayCardNumber){window._ovPayCardNumber.clear();window._ovPayCardExpiry.clear();window._ovPayCardCvc.clear();}
     _showToast('💳 Card saved successfully!');
     await _ovPayLoadCards();
-    // ═══ UBER: Auto-continue to checkout if booking was pending ═══
+    // ═══ Auto-continue to checkout if booking was pending ═══
     if(window._pendingCheckout){
       const pc=window._pendingCheckout;
       window._pendingCheckout=null;
@@ -3337,7 +3338,7 @@ window._ovPaySaveCard=async function(){
         }
       }catch(e){}
       closeGymOverlay();
-      setTimeout(()=>showUberCheckout(pc.gymId,pc.prefillDate,pc.prefillTime),400);
+      setTimeout(()=>showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime),400);
       return;
     }
   }catch(err){
@@ -3365,7 +3366,7 @@ window._ovPayDeleteCard=async function(cardId,label){
 };
 
 // ═══ Date/time picker sheet ═══
-// ═══ Calendar Picker Overlay (Uber-style) ═══
+// ═══ Calendar Picker Overlay ═══
 // Opens when user taps the 📅 calendar button on gym cards
 window._calPickerState={gymId:null,selectedDate:null,selectedTime:null};
 
@@ -3405,7 +3406,7 @@ window.showCalendarPicker=async function(gymId){
   // Build calendar grid (Mon-Sun layout for current + next week block)
   const curMonth=fullMonthNames[now.getMonth()];
   const curYear=now.getFullYear();
-  // Simple: show a scrollable date strip (Uber-style) + time slots
+  // Simple: show a scrollable date strip + time slots
   const dateStripHtml=dates.map((d,i)=>`
     <div class="sg-cal-date${i===0?' selected':''}" onclick="window._calSelectDate('${d.date}',${i},this)" data-date="${d.date}">
       <div class="sg-cal-date-day">${d.isToday?'Today':d.isTomorrow?'Tomorrow':d.day}</div>
@@ -3417,7 +3418,7 @@ window.showCalendarPicker=async function(gymId){
   // Time slots
   const currentHour=now.getHours();
   const timeSlots=[];
-  // FIX #9: 30-min intervals (was 1-hour) — Uber-style
+  // FIX #9: 30-min intervals (was 1-hour)
   for(let m=360;m<=1290;m+=30){
     const h=Math.floor(m/60);
     const mins=m%60;
@@ -3655,18 +3656,18 @@ window._calPickerBook=function(){
   window._gymBookingState.selectedPass=selPass.type;
   window._gymBookingState.passName=selPass.name;
   window._gymBookingState.passIcon=selPass.icon;
-  showUberCheckout(s.gymId,s.selectedDate,s.selectedTime);
+  showBookingCheckout(s.gymId,s.selectedDate,s.selectedTime);
 };
 
-// ═══ Uber-style Date/Time Picker ═══
+// ═══ ScanGym Date/Time Picker ═══
 window._gymSelectedTime=null;
-window._uberDatePickerState={selectedDateIdx:0,selectedTime:null};
+window._datePickerState={selectedDateIdx:0,selectedTime:null};
 
-// Build date strip (30 days, Uber-style)
+// Build date strip (30 days)
 // Perf #7: Cache date strip HTML — only rebuild when day changes
 window._dateStripCacheDay=null;window._dateStripCacheHtml=null;
-window._buildUberDateStrip=function(){
-  const strip=document.getElementById('uber-date-strip');
+window._buildDateStrip=function(){
+  const strip=document.getElementById('sg-date-strip');
   if(!strip)return;
   // Perf #7: Use cached HTML if same calendar day
   var _td=new Date().toDateString();
@@ -3679,65 +3680,97 @@ window._buildUberDateStrip=function(){
     const dayName=i===0?'Today':i===1?'Tmrw':days[d.getDay()];
     const dateNum=d.getDate();
     const sel=i===0?' selected':'';
-    html+='<div class="uber-date-pill'+sel+'" data-idx="'+i+'" onclick="window._selectUberDate('+i+')">';
-    html+='<span class="uber-date-day">'+dayName+'</span>';
-    html+='<span class="uber-date-num">'+dateNum+'</span>';
+    html+='<div class="sg-date-pill'+sel+'" data-idx="'+i+'" onclick="window._selectDate('+i+')">';
+    html+='<span class="sg-date-day">'+dayName+'</span>';
+    html+='<span class="sg-date-num">'+dateNum+'</span>';
     html+='</div>';
   }
   strip.innerHTML=html;window._dateStripCacheDay=new Date().toDateString();window._dateStripCacheHtml=html;
 };
 
-// Build time list (5-min intervals, Uber-style)
-window._buildUberTimeList=function(dateIdx){
-  const list=document.getElementById('uber-time-list');
+// Build time list (5-min intervals)
+window._buildTimeList=function(dateIdx){
+  const list=document.getElementById('sg-time-list');
   if(!list)return;
   const now=new Date();
   const isToday=dateIdx===0;
   const currentMinutes=now.getHours()*60+now.getMinutes();
-  // Gym hours: 06:00 - 22:00 in 5-min intervals
+
+  // ═══ Gym hours awareness: use actual gym opening/closing times ═══
+  const gym=window.state?.currentGym||{};
+  const targetDate=new Date();targetDate.setDate(targetDate.getDate()+dateIdx);
+  const dayIdx=targetDate.getDay();
+  const weekday=gym.opening_hours?.weekday||[];
+  const dayText=weekday[dayIdx===0?6:dayIdx-1]||'';
+  const timeParts=dayText.match(/(\d{1,2}:\d{2}\s*[AP]M)/gi)||[];
+  let gymOpenMin=6*60, gymCloseMin=22*60;
+  if(timeParts.length>=2){
+    gymOpenMin=_parseTimeToMin(timeParts[0]);
+    gymCloseMin=_parseTimeToMin(timeParts[timeParts.length-1]);
+  } else if(dayText.toLowerCase().includes('closed')){
+    list.innerHTML='<div style="text-align:center;padding:40px 20px;color:rgba(255,255,255,.35)"><div style="font-size:32px;margin-bottom:8px">🔒</div><div style="font-size:14px;font-weight:600">Closed on this day</div><div style="font-size:12px;margin-top:4px;color:rgba(255,255,255,.25)">Try picking a different date</div></div>';
+    window._datePickerState.selectedTime=null;
+    window._updateDateCTA();
+    return;
+  }
+  gymOpenMin=Math.ceil(gymOpenMin/5)*5;
+  gymCloseMin=Math.floor(gymCloseMin/5)*5;
+
   let html='';
   let firstAvailable=null;
-  for(let m=6*60;m<=22*60;m+=5){
+  const openH=Math.floor(gymOpenMin/60)%12||12;
+  const openAmpm=Math.floor(gymOpenMin/60)<12?'AM':'PM';
+  const closeH=Math.floor(gymCloseMin/60)%12||12;
+  const closeAmpm=Math.floor(gymCloseMin/60)<12?'AM':'PM';
+  const openMM=String(gymOpenMin%60).padStart(2,'0');
+  const closeMM=String(gymCloseMin%60).padStart(2,'0');
+  html+='<div style="padding:10px 20px 6px;display:flex;align-items:center;gap:6px"><span style="font-size:11px;color:rgba(255,255,255,.3);font-weight:600">🕐 Gym hours: '+openH+':'+openMM+' '+openAmpm+' – '+closeH+':'+closeMM+' '+closeAmpm+'</span></div>';
+
+  for(let m=gymOpenMin;m<=gymCloseMin;m+=5){
     const hh=String(Math.floor(m/60)).padStart(2,'0');
     const mm=String(m%60).padStart(2,'0');
     const timeStr=hh+':'+mm;
     const isPast=isToday&&m<=currentMinutes;
-    // Format: "6:00 AM" style like Uber
     const hour12=Math.floor(m/60)%12||12;
     const ampm=Math.floor(m/60)<12?'AM':'PM';
     const displayTime=hour12+':'+mm+' '+ampm;
-    if(isPast){
-      // Don't render past times (Uber hides them entirely)
-      continue;
-    }
+    if(isPast){continue;}
     if(firstAvailable===null)firstAvailable=timeStr;
-    const sel=(window._uberDatePickerState.selectedTime===timeStr)?' selected':'';
-    html+='<div class="uber-time-item'+sel+'" data-time="'+timeStr+'" onclick="window._selectUberTime(this,\''+timeStr+'\')">'+displayTime+'</div>';
+    const sel=(window._datePickerState.selectedTime===timeStr)?' selected':'';
+    html+='<div class="sg-time-item'+sel+'" data-time="'+timeStr+'" onclick="window._selectTime(this,\''+timeStr+'\')">' +displayTime+'</div>';
+  }
+  if(!firstAvailable){
+    html+='<div style="text-align:center;padding:30px 20px;color:rgba(255,255,255,.35)"><div style="font-size:14px">No more slots today</div><div style="font-size:12px;margin-top:4px;color:rgba(255,255,255,.25)">Try tomorrow →</div></div>';
   }
   list.innerHTML=html;
-  // Auto-select first available if no selection or selection is past
-  if(!window._uberDatePickerState.selectedTime||
-     (isToday&&parseInt(window._uberDatePickerState.selectedTime.split(':')[0])*60+parseInt(window._uberDatePickerState.selectedTime.split(':')[1])<=currentMinutes)){
+  if(!window._datePickerState.selectedTime||
+     (isToday&&parseInt(window._datePickerState.selectedTime.split(':')[0])*60+parseInt(window._datePickerState.selectedTime.split(':')[1])<=currentMinutes)){
     if(firstAvailable){
-      window._uberDatePickerState.selectedTime=firstAvailable;
+      window._datePickerState.selectedTime=firstAvailable;
       const firstEl=list.querySelector('[data-time="'+firstAvailable+'"]');
       if(firstEl)firstEl.classList.add('selected');
     }
   }
-  // Scroll selected into view
   setTimeout(function(){
-    const selEl=list.querySelector('.uber-time-item.selected');
+    const selEl=list.querySelector('.sg-time-item.selected');
     if(selEl)selEl.scrollIntoView({block:'center',behavior:'smooth'});
   },50);
-  // Update CTA
-  window._updateUberCTA();
+  window._updateDateCTA();
 };
 
-window._selectUberDate=function(idx){
-  window._uberDatePickerState.selectedDateIdx=idx;
+function _parseTimeToMin(str){
+  const m=str.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+  if(!m)return 0;
+  let h=parseInt(m[1]);const min=parseInt(m[2]);const pm=m[3].toUpperCase()==='PM';
+  if(pm&&h!==12)h+=12;if(!pm&&h===12)h=0;
+  return h*60+min;
+}
+
+window._selectDate=function(idx){
+  window._datePickerState.selectedDateIdx=idx;
   // Update pills
-  document.querySelectorAll('.uber-date-pill').forEach(function(p){p.classList.remove('selected');});
-  const pill=document.querySelector('.uber-date-pill[data-idx="'+idx+'"]');
+  document.querySelectorAll('.sg-date-pill').forEach(function(p){p.classList.remove('selected');});
+  const pill=document.querySelector('.sg-date-pill[data-idx="'+idx+'"]');
   if(pill){
     pill.classList.add('selected');
     // Scroll pill into center of strip
@@ -3747,25 +3780,25 @@ window._selectUberDate=function(idx){
   const d=new Date();d.setDate(d.getDate()+idx);
   window._gymBookingState.selectedDate=d.toISOString().split('T')[0];
   // Reset time selection and rebuild time list
-  window._uberDatePickerState.selectedTime=null;
-  window._buildUberTimeList(idx);
+  window._datePickerState.selectedTime=null;
+  window._buildTimeList(idx);
 };
 
-window._selectUberTime=function(el,time){
-  document.querySelectorAll('.uber-time-item').forEach(function(t){t.classList.remove('selected');});
+window._selectTime=function(el,time){
+  document.querySelectorAll('.sg-time-item').forEach(function(t){t.classList.remove('selected');});
   el.classList.add('selected');
-  window._uberDatePickerState.selectedTime=time;
+  window._datePickerState.selectedTime=time;
   window._gymSelectedTime=time;
-  window._updateUberCTA();
+  window._updateDateCTA();
 };
 
-window._updateUberCTA=function(){
-  const cta=document.getElementById('uber-date-cta');
+window._updateDateCTA=function(){
+  const cta=document.getElementById('sg-date-cta');
   if(!cta)return;
-  const time=window._uberDatePickerState.selectedTime;
-  const idx=window._uberDatePickerState.selectedDateIdx;
+  const time=window._datePickerState.selectedTime;
+  const idx=window._datePickerState.selectedDateIdx;
   if(time){
-    // Format display like Uber: "Today at 6:00 PM" or "Mon, Jun 5 at 6:00 PM"
+    // Format: "Today at 6:00 PM" or "Mon, Jun 5 at 6:00 PM"
     const d=new Date();d.setDate(d.getDate()+idx);
     const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -3790,27 +3823,27 @@ window.openDateSheet=function(){
   const sheet=document.getElementById('gym-date-sheet');
   if(!sheet)return;
   // Reset state
-  window._uberDatePickerState.selectedDateIdx=0;
-  // FIX #8: Default = today pre-selected with next-hour time slot (like Uber scheduling)
+  window._datePickerState.selectedDateIdx=0;
+  // FIX #8: Default = today pre-selected with next-hour time slot
   var _now8=new Date();
   var _nextHourMin8=Math.ceil((_now8.getHours()*60+_now8.getMinutes())/60)*60; // Round up to next hour
   if(_nextHourMin8>22*60)_nextHourMin8=22*60; // Cap at 10pm
   if(_nextHourMin8<6*60)_nextHourMin8=6*60; // Floor at 6am
   var _hh8=String(Math.floor(_nextHourMin8/60)).padStart(2,'0');
   var _mm8=String(_nextHourMin8%60).padStart(2,'0');
-  window._uberDatePickerState.selectedTime=_hh8+':'+_mm8;
+  window._datePickerState.selectedTime=_hh8+':'+_mm8;
   window._gymSelectedTime=_hh8+':'+_mm8;
   // Set today's date
   window._gymBookingState.selectedDate=new Date().toISOString().split('T')[0];
   // Build UI
-  window._buildUberDateStrip();
-  window._buildUberTimeList(0);
+  window._buildDateStrip();
+  window._buildTimeList(0);
   // Open
   sheet.classList.add('open');
   // ── Bug Fix #3: Hide tab bar so it can't cover the CTA ──
   var _dtTabBar=document.querySelector('.sg-tab-bar');if(_dtTabBar)_dtTabBar.classList.add('hidden');
   // ── Bug Fix #3: Explicit touch handler on Confirm time button for mobile ──
-  var _dtCta=document.getElementById('uber-date-cta');
+  var _dtCta=document.getElementById('sg-date-cta');
   if(_dtCta&&!_dtCta._touchFixed){
     _dtCta._touchFixed=true;
     var _dtTapStart=0;
@@ -3829,7 +3862,7 @@ window.closeDateSheet=function(){
 };
 
 window.confirmDateSheet=function(){
-  const time=window._uberDatePickerState.selectedTime;
+  const time=window._datePickerState.selectedTime;
   if(!time)return;
   window._gymSelectedTime=time;
   // Update calendar button display
@@ -3919,7 +3952,7 @@ window._toggleReviewHelpful=function(rid,base){
   }catch(e){}
 };
 
-// Open Write a Review modal (Amazon-style)
+// Open Write a Review modal
 window.openWriteReviewModal=function(){
   // Check if logged in — if not, close reviews overlay and navigate to login
   if(!state.user||!state.user.id){
@@ -4043,7 +4076,7 @@ window.submitWriteReview=async function(){
   const rating=window._wrRating;
   const headline=(document.getElementById('wr-headline')?.value||'').trim();
   const body=(document.getElementById('wr-body')?.value||'').trim();
-  const comment=headline?headline+' — '+body:body;
+  const comment=headline?headline+' — '+body:body;const _reviewHeadline=headline;
 
   try{
     // If gym is live (Google Place), ensure it exists in DB first
@@ -5113,7 +5146,7 @@ function CreatorsPage(){
     {name:'How It Works',file:'ScanGym-Asset2-How-It-Works.webp',type:'image',cat:'Creator Assets'},
     {name:'Competitor Comparison',file:'ScanGym-Asset3-Competitor-Comparison.webp',type:'image',cat:'Creator Assets'},
     {name:'DM Outreach Card',file:'ScanGym-Asset4-DM-Outreach-Card.webp',type:'image',cat:'Creator Assets'},
-    {name:'Uber For Gyms Story',file:'ScanGym-Asset5-Uber-For-Gyms-Story.webp',type:'image',cat:'Creator Assets'},
+    {name:'Day Pass Revolution Story',file:'ScanGym-Asset5-Uber-For-Gyms-Story.webp',type:'image',cat:'Creator Assets'},
     {name:'Viral Hook',file:'ScanGym-Asset6-Viral-Hook.webp',type:'image',cat:'Creator Assets'},
     {name:'Price Comparison',file:'ScanGym-Asset7-Price-Comparison.webp',type:'image',cat:'Creator Assets'},
     {name:'Comment Bait',file:'ScanGym-Asset8-Comment-Bait.webp',type:'image',cat:'Creator Assets'},
@@ -6155,7 +6188,7 @@ window._fsFilter=function(type){
   });
 };
 
-// ─── Page: Wallet (Uber-style payment wallet) ───
+// ─── Page: Wallet (payment wallet) ───
 function WalletPage(){
   if(!state.user){
     return`<div class="pt-8 min-h-full px-4"><div class="max-w-md mx-auto py-20 text-center">
@@ -6206,7 +6239,7 @@ function WalletPage(){
         </div>
       </button>
 
-      <!-- Add Card Form (Uber unified container) -->
+      <!-- Add Card Form (unified container) -->
       <div id="wallet-add-card-form" style="display:none;margin-top:16px">
         <!-- Unified card container -->
         <div style="background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb">
@@ -6373,7 +6406,7 @@ window._walletAddCard=function(){
   form.style.display='block';
   if(btn)btn.style.display='none';
 
-  // Mount Stripe Elements — separate fields (Uber-style)
+  // Mount Stripe Elements — separate fields
   if(!window._walletStripeElements&&window.Stripe){
     const stripeKey=window._stripePublicKey||'pk_live_51Ss8P0DPbSptA7HKnQFKelVtYGIWnxhOC8MuZIQdqTYHCJRgI5x8GZ2TlE2DVKK0pLXLJWF9AYNK4RbAEhTk8BN00YoI3Xwjf';
     const stripeInstance=Stripe(stripeKey);
@@ -6715,7 +6748,7 @@ window._sgGoogleCallback=async function(response){
         const pc=window._pendingCheckout;
         window._pendingCheckout=null;
         navigate('/explore');
-        setTimeout(()=>showUberCheckout(pc.gymId,pc.prefillDate,pc.prefillTime),600);
+        setTimeout(()=>showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime),600);
       }else if(window._sgOneTapCreatorMode){
         window._sgOneTapCreatorMode=false;
         _handleCreatorGoogleSignup(data.user);
@@ -6854,7 +6887,7 @@ window.handleVerifyCode=async function(){
         const pc=window._pendingCheckout;
         window._pendingCheckout=null;
         navigate('/explore');
-        setTimeout(()=>showUberCheckout(pc.gymId,pc.prefillDate,pc.prefillTime),600);
+        setTimeout(()=>showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime),600);
       }else if(state.pendingBookGym){
         navigate('/gym/'+state.pendingBookGym);
         state.pendingBookGym=null;
@@ -6877,24 +6910,24 @@ window.handleLogout=async function(){
   navigate('/');
 };
 
-// ─── Booking Handler (Uber-level: ONE tap → ONE screen → DONE) ───
+// ─── Booking Handler (ONE tap → ONE screen → DONE) ───
 window.handleBookNow=async function(gymId){
   // Grab sidebar date/time if the user already selected them (desktop)
   const dateInput=document.querySelector('.sticky input[type="date"]');
   const timeSelect=document.querySelector('.sticky select');
   const date=dateInput?dateInput.value:'';
   const time=timeSelect?timeSelect.value:'';
-  showUberCheckout(gymId, date||undefined, time||undefined);
+  showBookingCheckout(gymId, date||undefined, time||undefined);
 };
 
 
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  UBER-STYLE SINGLE-SCREEN CHECKOUT — No separate confirm stage
-//  Payment method bar at bottom (like Uber ride confirm screen)
+//  SINGLE-SCREEN CHECKOUT — No separate confirm stage
+//  Payment method bar at bottom (single-screen confirm)
 //  Card entry forced in Payment sub-screen before allowing confirm
 // ═══════════════════════════════════════════════════════════════════════════
-// ── GYM DISCOVERY CAROUSEL (Uber-style horizontal swipe) ──
+// ── GYM DISCOVERY CAROUSEL (horizontal swipe) ──
 // ═══════════════════════════════════════════════════════════════════════════
 
 window.showGymDiscovery=function(){
@@ -7194,7 +7227,7 @@ window._initBookMapCarousel=function(){
     }),{passive:true});
   });
 
-  /* ═══ FIX #3: AUTO-SWIPE photo carousel every 5s (Instagram/Airbnb pattern) ═══ */
+  /* ═══ FIX #3: AUTO-SWIPE photo carousel every 5s (Instagram/industry pattern) ═══ */
   /* Pause on touch interaction, resume 5s after touch ends */
   window._photoAutoSwipeTimers=window._photoAutoSwipeTimers||{};
   function _startPhotoAutoSwipe(pc,cardIdx){
@@ -7293,7 +7326,7 @@ window._initBookMapCarousel=function(){
       _loadPhotosForCard(idx);
       // Also preload next card
       _loadPhotosForCard(idx+1);
-      /* Perf #121: TikTok-style — preload photos for next 2 cards */
+      /* Perf #121: vertical-card — preload photos for next 2 cards */
       _photoPreloader.preloadGyms(state.gyms||[],idx+1);
     }
   }),{passive:true});
@@ -7499,9 +7532,9 @@ window._initSgMap=function(container,gyms,cLat,cLng){
 
 
 // ═══ FIX #13: Promo code handler ═══
-window.ubApplyPromo=async function(){
-  var code=(document.getElementById('ub-promo-code')?.value||'').trim().toUpperCase();
-  var resultEl=document.getElementById('ub-promo-result');
+window.sgApplyPromo=async function(){
+  var code=(document.getElementById('sg-promo-code')?.value||'').trim().toUpperCase();
+  var resultEl=document.getElementById('sg-promo-result');
   if(!code){sgToast('Please enter a promo code','warning',2000);return;}
   if(!resultEl)return;
   resultEl.style.display='block';
@@ -7513,7 +7546,7 @@ window.ubApplyPromo=async function(){
       resultEl.innerHTML='<div style="display:flex;align-items:center;gap:6px"><span style="color:#22c55e;font-size:13px;font-weight:600">✅ '+data.description+'</span><span onclick="ubRemovePromo()" style="color:rgba(255,255,255,.4);font-size:11px;cursor:pointer;margin-left:auto">Remove</span></div>';
       // Update price display
       if(data.discountedTotal){
-        var totalEl=document.getElementById('ub-total-price');
+        var totalEl=document.getElementById('sg-total-price');
         if(totalEl)totalEl.innerHTML='<span style="text-decoration:line-through;color:rgba(255,255,255,.4);font-size:12px;margin-right:6px">'+totalEl.textContent+'</span>'+data.discountedTotal;
       }
       window._checkoutState.promoCode=code;
@@ -7538,19 +7571,19 @@ window.ubApplyPromo=async function(){
   }
 };
 window.ubRemovePromo=function(){
-  var resultEl=document.getElementById('ub-promo-result');
+  var resultEl=document.getElementById('sg-promo-result');
   if(resultEl){resultEl.style.display='none';resultEl.innerHTML='';}
-  var totalEl=document.getElementById('ub-total-price');
+  var totalEl=document.getElementById('sg-total-price');
   if(totalEl){
     // Remove strikethrough, show original price
     var original=totalEl.textContent.replace(/[^£$€0-9.]/g,'');
     totalEl.textContent=original||totalEl.textContent;
   }
-  var toggleEl=document.getElementById('ub-promo-toggle');
-  var inputRow=document.getElementById('ub-promo-input-row');
+  var toggleEl=document.getElementById('sg-promo-toggle');
+  var inputRow=document.getElementById('sg-promo-input-row');
   if(toggleEl)toggleEl.style.display='flex';
   if(inputRow)inputRow.style.display='none';
-  var codeEl=document.getElementById('ub-promo-code');
+  var codeEl=document.getElementById('sg-promo-code');
   if(codeEl)codeEl.value='';
   window._checkoutState.promoCode=null;
   window._checkoutState.promoDiscount=0;
@@ -7559,8 +7592,8 @@ window.ubRemovePromo=function(){
 
 window._checkoutState={stripe:null,elements:null,bookingId:null,intentId:null,gymId:null};
 
-window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
-  // ═══ OPTION A: Require login before booking (Uber-style) ═══
+window.showBookingCheckout=async function(gymId, prefillDate, prefillTime){
+  // ═══ Auth gate: Require login before booking ═══
   // Guests can browse freely, but must sign in to book.
   // After login, card is saved on first payment → 1-tap every time after.
   if(!state.user){
@@ -7653,7 +7686,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
   const finalIsSaved=finalPayMethod==='saved'&&gbs.savedCard;
   const finalHasPayment=finalIsCash||finalIsSaved;
 
-  // All users are logged in at this point (auth gate at top of showUberCheckout)
+  // All users are logged in at this point (auth gate at top of showBookingCheckout)
   const _isGuest=false;
   // If no payment method, redirect to payment overlay to add one
   if(!finalHasPayment){
@@ -7665,118 +7698,129 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
 
   sheet.innerHTML=`
   <style>
-    .ub-overlay{position:fixed;inset:0;background:#000;z-index:9200;display:flex;flex-direction:column}
+    .sg-bk-overlay{position:fixed;inset:0;background:#000;z-index:9200;display:flex;flex-direction:column}
     /* ── Map area (top ~60%) ── */
-    .ub-map{flex:1;background:#1c2333;position:relative;overflow:hidden}
-    .ub-map-road{position:absolute;background:#2a3349}
-    .ub-map-road-1{width:250%;height:26px;top:32%;left:-30%;transform:rotate(-35deg)}
-    .ub-map-road-2{width:24px;height:250%;top:-30%;left:58%;transform:rotate(10deg)}
-    .ub-map-road-3{width:250%;height:22px;top:72%;left:-20%;transform:rotate(-8deg)}
-    .ub-map-road-4{width:20px;height:120px;top:38%;left:42%;transform:rotate(5deg)}
-    .ub-map-label{position:absolute;font-size:10px;font-weight:700;color:rgba(255,255,255,.2);letter-spacing:3px;text-transform:uppercase;white-space:nowrap}
-    .ub-map-num{position:absolute;font-size:13px;font-weight:500;color:rgba(255,255,255,.18)}
-    .ub-back{position:absolute;top:calc(env(safe-area-inset-top,0px) + 12px);left:16px;width:44px;height:44px;background:rgba(0,0,0,.6);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;z-index:2;border:none;color:#fff}
-    .ub-back-arrow{width:16px;height:16px;border-left:2.5px solid #fff;border-bottom:2.5px solid #fff;transform:rotate(45deg);margin-left:4px}
+    .sg-bk-map{flex:1;background:#1c2333;position:relative;overflow:hidden}
+    .sg-bk-road{position:absolute;background:#2a3349}
+    .sg-bk-road-1{width:250%;height:26px;top:32%;left:-30%;transform:rotate(-35deg)}
+    .sg-bk-road-2{width:24px;height:250%;top:-30%;left:58%;transform:rotate(10deg)}
+    .sg-bk-road-3{width:250%;height:22px;top:72%;left:-20%;transform:rotate(-8deg)}
+    .sg-bk-road-4{width:20px;height:120px;top:38%;left:42%;transform:rotate(5deg)}
+    .sg-bk-label{position:absolute;font-size:10px;font-weight:700;color:rgba(255,255,255,.2);letter-spacing:3px;text-transform:uppercase;white-space:nowrap}
+    .sg-bk-num{position:absolute;font-size:13px;font-weight:500;color:rgba(255,255,255,.18)}
+    .sg-bk-back{position:absolute;top:calc(env(safe-area-inset-top,0px) + 12px);left:16px;width:44px;height:44px;background:rgba(0,0,0,.6);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;z-index:2;border:none;color:#fff}
+    .sg-bk-arrow{width:16px;height:16px;border-left:2.5px solid #fff;border-bottom:2.5px solid #fff;transform:rotate(45deg);margin-left:4px}
     /* Pin group */
-    .ub-pin{position:absolute;top:34%;left:50%;transform:translateX(-50%);z-index:3;display:flex;flex-direction:column;align-items:center}
-    .ub-pin-bubble{background:rgba(235,235,235,.92);color:#111;border-radius:20px;padding:8px 18px;font-size:14px;font-weight:600;white-space:nowrap;box-shadow:0 2px 12px rgba(0,0,0,.35)}
-    .ub-pin-stem{width:2px;height:20px;background:linear-gradient(to bottom,rgba(100,160,255,.5),rgba(59,130,246,.9));margin-top:2px}
-    .ub-pin-dot-wrap{width:28px;height:28px;background:rgba(59,130,246,.18);border-radius:50%;display:flex;align-items:center;justify-content:center;position:relative}
-    .ub-pin-dot{width:14px;height:14px;background:#3b82f6;border:3px solid #fff;border-radius:50%;box-shadow:0 0 8px rgba(59,130,246,.4);z-index:1}
-    @keyframes ubPulse{0%{transform:scale(1);opacity:.5}100%{transform:scale(2);opacity:0}}
-    .ub-pin-pulse{position:absolute;width:28px;height:28px;background:rgba(59,130,246,.12);border-radius:50%;animation:ubPulse 2s infinite}
+    .sg-bk-pin{position:absolute;top:34%;left:50%;transform:translateX(-50%);z-index:3;display:flex;flex-direction:column;align-items:center}
+    .sg-bk-bubble{background:rgba(235,235,235,.92);color:#111;border-radius:20px;padding:8px 18px;font-size:14px;font-weight:600;white-space:nowrap;box-shadow:0 2px 12px rgba(0,0,0,.35)}
+    .sg-bk-stem{width:2px;height:20px;background:linear-gradient(to bottom,rgba(100,160,255,.5),rgba(59,130,246,.9));margin-top:2px}
+    .sg-bk-dot-wrap{width:28px;height:28px;background:rgba(59,130,246,.18);border-radius:50%;display:flex;align-items:center;justify-content:center;position:relative}
+    .sg-bk-dot{width:14px;height:14px;background:#3b82f6;border:3px solid #fff;border-radius:50%;box-shadow:0 0 8px rgba(59,130,246,.4);z-index:1}
+    @keyframes sgBkPulse{0%{transform:scale(1);opacity:.5}100%{transform:scale(2);opacity:0}}
+    .sg-bk-pulse{position:absolute;width:28px;height:28px;background:rgba(59,130,246,.12);border-radius:50%;animation:sgBkPulse 2s infinite}
     /* ── Bottom sheet (black, minimal) ── */
-    .ub-sheet{background:#000;flex-shrink:0;display:flex;flex-direction:column}
-    .ub-sheet-title-row{display:flex;align-items:center;justify-content:space-between;padding:22px 24px 16px}
-    .ub-sheet-title{color:#fff;font-size:22px;font-weight:700;letter-spacing:-.3px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
-    .ub-sheet-search{width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:20px;color:rgba(255,255,255,.6);cursor:pointer}
-    .ub-sheet-divider{height:1px;background:rgba(255,255,255,.1);margin:0 24px}
-    .ub-sheet-info{padding:16px 24px 18px}
-    .ub-sheet-gym-name{color:#fff;font-size:19px;font-weight:700;margin-bottom:4px}
-    .ub-sheet-gym-addr{color:rgba(255,255,255,.4);font-size:14px;line-height:1.4}
-    .ub-sheet-detail{color:rgba(255,255,255,.35);font-size:14px;margin-top:8px}
-    .ub-accent{height:2px;margin:0 24px;background:linear-gradient(90deg,#FF6D00 0%,#f59e0b 50%,rgba(245,158,11,.15) 100%);border-radius:1px}
-    .ub-footer{padding:14px 24px calc(20px + env(safe-area-inset-bottom,0px))}
-    .ub-cta{width:100%;padding:18px;border:none;border-radius:14px;font-size:17px;font-weight:700;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
-    .ub-cta:active{transform:scale(.98)}
-    .ub-cta-primary{background:#e0e0e0;color:#111}
-    .ub-cta-disabled{background:rgba(255,255,255,.12);color:rgba(255,255,255,.3)}
-    .ub-error{padding:0 24px;margin-top:8px}
-    .ub-error-text{color:#f87171;font-size:13px;text-align:center}
+    .sg-bk-sheet{background:#000;flex-shrink:0;display:flex;flex-direction:column}
+    .sg-bk-sheet-title-row{display:flex;align-items:center;justify-content:space-between;padding:22px 24px 16px}
+    .sg-bk-sheet-title{color:#fff;font-size:22px;font-weight:700;letter-spacing:-.3px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+    .sg-bk-sheet-search{width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:20px;color:rgba(255,255,255,.6);cursor:pointer}
+    .sg-bk-sheet-divider{height:1px;background:rgba(255,255,255,.1);margin:0 24px}
+    .sg-bk-sheet-info{padding:16px 24px 18px}
+    .sg-bk-sheet-gym-name{color:#fff;font-size:19px;font-weight:700;margin-bottom:4px}
+    .sg-bk-sheet-gym-addr{color:rgba(255,255,255,.4);font-size:14px;line-height:1.4}
+    .sg-bk-sheet-detail{color:rgba(255,255,255,.35);font-size:14px;margin-top:8px}
+    .sg-bk-accent{height:2px;margin:0 24px;background:linear-gradient(90deg,#FF6D00 0%,#f59e0b 50%,rgba(245,158,11,.15) 100%);border-radius:1px}
+    .sg-bk-footer{padding:14px 24px calc(20px + env(safe-area-inset-bottom,0px))}
+    .sg-bk-cta{width:100%;padding:18px;border:none;border-radius:14px;font-size:17px;font-weight:700;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+    .sg-bk-cta:active{transform:scale(.98)}
+    .sg-bk-cta-primary{background:#e0e0e0;color:#111}
+    .sg-bk-cta-disabled{background:rgba(255,255,255,.12);color:rgba(255,255,255,.3)}
+    .sg-bk-error{padding:0 24px;margin-top:8px}
+    .sg-bk-error-text{color:#f87171;font-size:13px;text-align:center}
   </style>
 
-  <div class="ub-overlay">
+  <div class="sg-bk-overlay">
     <!-- ═══ Map area ═══ -->
-    <div class="ub-map">
-      <div class="ub-map-road ub-map-road-1"></div>
-      <div class="ub-map-road ub-map-road-2"></div>
-      <div class="ub-map-road ub-map-road-3"></div>
-      <div class="ub-map-road ub-map-road-4"></div>
-      <div class="ub-map-label" style="top:22%;left:8%;transform:rotate(-35deg)">Gym Road</div>
-      <div class="ub-map-label" style="top:18%;left:60%;transform:rotate(10deg)">High St</div>
-      <div class="ub-map-label" style="top:68%;left:10%;transform:rotate(-8deg)">Station Road</div>
-      <button class="ub-back" onclick="closeBookingSheet()"><div class="ub-back-arrow"></div></button>
+    <div class="sg-bk-map">
+      <div class="sg-bk-road sg-bk-road-1"></div>
+      <div class="sg-bk-road sg-bk-road-2"></div>
+      <div class="sg-bk-road sg-bk-road-3"></div>
+      <div class="sg-bk-road sg-bk-road-4"></div>
+      <div class="sg-bk-label" style="top:22%;left:8%;transform:rotate(-35deg)">Gym Road</div>
+      <div class="sg-bk-label" style="top:18%;left:60%;transform:rotate(10deg)">High St</div>
+      <div class="sg-bk-label" style="top:68%;left:10%;transform:rotate(-8deg)">Station Road</div>
+      <button class="sg-bk-back" onclick="closeBookingSheet()"><div class="sg-bk-arrow"></div></button>
       <!-- Pin -->
-      <div class="ub-pin">
-        <div class="ub-pin-bubble">Book at ${gymName}</div>
-        <div class="ub-pin-stem"></div>
-        <div class="ub-pin-dot-wrap"><div class="ub-pin-pulse"></div><div class="ub-pin-dot"></div></div>
+      <div class="sg-bk-pin">
+        <div class="sg-bk-bubble">Book at ${gymName}</div>
+        <div class="sg-bk-stem"></div>
+        <div class="sg-bk-dot-wrap"><div class="sg-bk-pulse"></div><div class="sg-bk-dot"></div></div>
       </div>
     </div>
 
     <!-- ═══ Confirm sheet ═══ -->
-    <div class="ub-sheet">
-      <div class="ub-sheet-title-row">
-        <div class="ub-sheet-title">Confirm your booking</div>
-        <div class="ub-sheet-search">🔍</div>
+    <div class="sg-bk-sheet">
+      <div class="sg-bk-sheet-title-row">
+        <div class="sg-bk-sheet-title">Confirm your booking</div>
+        <div class="sg-bk-sheet-search">🔍</div>
       </div>
-      <div class="ub-sheet-divider"></div>
+      <div class="sg-bk-sheet-divider"></div>
 
-      <div class="ub-sheet-info">
-        <div class="ub-sheet-gym-name">${gymName}</div>
-        <div class="ub-sheet-gym-addr">📍 ${gymAddr}</div>
-        <div class="ub-sheet-detail">${passInfo.name} · ${dateDisplay}${selTime!=='anytime'?' · '+selTime:''}</div>
+      <div class="sg-bk-sheet-info">
+        <div class="sg-bk-sheet-gym-name">${gymName}</div>
+        <div class="sg-bk-sheet-gym-addr">📍 ${gymAddr}</div>
+        <div class="sg-bk-sheet-detail">${passInfo.name} · ${dateDisplay}${selTime!=='anytime'?' · '+selTime:''}</div>
       </div>
 
-      <!-- ═══ Price breakdown (Zomato-style) ═══ -->
+      <!-- ═══ Price breakdown ═══ -->
       <div style="padding:12px 24px;border-top:1px solid rgba(255,255,255,.06)">
         <div style="display:flex;justify-content:space-between;margin-bottom:6px">
           <span style="color:rgba(255,255,255,.5);font-size:13px">${passInfo.name}</span>
           <span style="color:rgba(255,255,255,.7);font-size:13px">${_sym}${_baseAmount.toFixed(2)}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+          <span style="color:rgba(255,255,255,.5);font-size:13px">Platform fee</span>
+          <span style="color:#4ade80;font-size:13px;font-weight:600">${_sym}0.00</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+          <span style="color:rgba(255,255,255,.5);font-size:13px">Cancellation</span>
+          <span style="color:#4ade80;font-size:13px;font-weight:600">Free (2hr+)</span>
         </div>
         ${_referralInfo?`<div style="display:flex;justify-content:space-between;margin-bottom:6px">
           <span style="color:#22c55e;font-size:13px">🎉 Referral discount (${_referralInfo.percent}%)</span>
           <span style="color:#22c55e;font-size:13px">-${_referralInfo.discountDisplay}</span>
         </div>`:''}
         <div style="display:flex;justify-content:space-between;padding-top:8px;border-top:1px solid rgba(255,255,255,.08)">
-          <span style="color:#fff;font-size:15px;font-weight:700" id="ub-total-label">Total</span>
-          <span style="color:#fff;font-size:15px;font-weight:700" id="ub-total-price">${displayPriceStr}</span>
+          <span style="color:#fff;font-size:15px;font-weight:700" id="sg-total-label">Total</span>
+          <span style="color:#fff;font-size:15px;font-weight:700" id="sg-total-price">${displayPriceStr}</span>
+        </div>
+        <div style="text-align:center;margin-top:4px">
+          <span style="color:rgba(255,255,255,.2);font-size:11px">No hidden fees · Pay exactly what you see</span>
         </div>
         <!-- FIX #13: Promo code field -->
-        <div id="ub-promo-section" style="margin-top:12px">
-          <div id="ub-promo-toggle" onclick="document.getElementById('ub-promo-input-row').style.display='flex';this.style.display='none'" style="cursor:pointer;display:flex;align-items:center;gap:6px">
+        <div id="sg-promo-section" style="margin-top:12px">
+          <div id="sg-promo-toggle" onclick="document.getElementById('sg-promo-input-row').style.display='flex';this.style.display='none'" style="cursor:pointer;display:flex;align-items:center;gap:6px">
             <span style="color:#FF6D00;font-size:13px;font-weight:600">🏷️ Have a promo code?</span>
           </div>
-          <div id="ub-promo-input-row" style="display:none;align-items:center;gap:8px;margin-top:8px">
-            <input id="ub-promo-code" type="text" placeholder="Enter promo code" style="flex:1;padding:10px 14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:#fff;font-size:13px;font-weight:600;outline:none;font-family:inherit;text-transform:uppercase;letter-spacing:1px" onfocus="this.style.borderColor='rgba(255,109,0,.4)'" onblur="this.style.borderColor='rgba(255,255,255,.1)'" />
-            <button onclick="ubApplyPromo()" style="padding:10px 16px;background:#FF6D00;border:none;border-radius:10px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">Apply</button>
+          <div id="sg-promo-input-row" style="display:none;align-items:center;gap:8px;margin-top:8px">
+            <input id="sg-promo-code" type="text" placeholder="Enter promo code" style="flex:1;padding:10px 14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:#fff;font-size:13px;font-weight:600;outline:none;font-family:inherit;text-transform:uppercase;letter-spacing:1px" onfocus="this.style.borderColor='rgba(255,109,0,.4)'" onblur="this.style.borderColor='rgba(255,255,255,.1)'" />
+            <button onclick="sgApplyPromo()" style="padding:10px 16px;background:#FF6D00;border:none;border-radius:10px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">Apply</button>
           </div>
-          <div id="ub-promo-result" style="display:none;margin-top:8px"></div>
+          <div id="sg-promo-result" style="display:none;margin-top:8px"></div>
         </div>
       </div>
 
-      <div class="ub-accent"></div>
+      <div class="sg-bk-accent"></div>
 
       <!-- Payment handled via saved cards (user is always logged in) -->
 
       <!-- Error area -->
-      <div class="ub-error hidden" id="ub-confirm-error">
-        <div class="ub-error-text"></div>
+      <div class="sg-bk-error hidden" id="sg-confirm-error">
+        <div class="sg-bk-error-text"></div>
       </div>
 
-      <div class="ub-footer">
-        <button class="ub-cta ub-cta-primary" id="ub-cta-btn" onclick="ubConfirmPay()">
-          <span id="ub-cta-text">${finalIsCash?'Confirm · pay at gym':'Confirm and pay'}</span>
+      <div class="sg-bk-footer">
+        <button class="sg-bk-cta sg-bk-cta-primary" id="sg-bk-cta-btn" onclick="ubConfirmPay()">
+          <span id="sg-bk-cta-text">${finalIsCash?'Confirm · pay at gym':'Confirm and pay'}</span>
         </button>
       </div>
     </div>
@@ -7814,7 +7858,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
 
   // ═══ Swipe-down-to-close on bottom sheet ═══
   (function(){
-    let sy=0,cy=0,d=false,moved=false;const sh=sheet.querySelector('.ub-sheet');
+    let sy=0,cy=0,d=false,moved=false;const sh=sheet.querySelector('.sg-bk-sheet');
     if(!sh)return;
     sh.addEventListener('touchstart',e=>{
       sy=e.touches[0].clientY;cy=sy;d=true;moved=false;
@@ -7832,7 +7876,7 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
 
   // ── Bug Fix #2: Explicit touch handler on CTA button for mobile Safari ──
   (function(){
-    var ctaBtn=document.getElementById('ub-cta-btn');
+    var ctaBtn=document.getElementById('sg-bk-cta-btn');
     if(!ctaBtn)return;
     var _tapStartTime=0;
     ctaBtn.addEventListener('touchstart',function(e){_tapStartTime=Date.now();},{passive:true});
@@ -7848,9 +7892,9 @@ window.showUberCheckout=async function(gymId, prefillDate, prefillTime){
   // ═══ Confirm & Pay handler ═══
   window.ubConfirmPay=async function(){
     const cs=window._checkoutState;
-    const btn=document.getElementById('ub-cta-btn');
-    const btnText=document.getElementById('ub-cta-text');
-    const errEl=document.getElementById('ub-confirm-error');
+    const btn=document.getElementById('sg-bk-cta-btn');
+    const btnText=document.getElementById('sg-bk-cta-text');
+    const errEl=document.getElementById('sg-confirm-error');
     if(!btn||btn.disabled)return;
 
     errEl?.classList.add('hidden');
@@ -8027,7 +8071,7 @@ async function _initUberPaymentNew(gymId, gym){
   const cs=window._checkoutState;
   const stripeArea=document.getElementById('ub-stripe-area');
   if(!stripeArea)return; // Sheet was closed
-  const s3btn=document.getElementById('ub-cta-btn');
+  const s3btn=document.getElementById('sg-bk-cta-btn');
 
   // Check for saved cards first
   if(state.user){
@@ -8042,10 +8086,10 @@ async function _initUberPaymentNew(gymId, gym){
         const stripeSection=document.getElementById('ub-stripe-section');
         if(stripeSection)stripeSection.style.display='none';
         // Enable the CTA button
-        const ctaBtn=document.getElementById('ub-cta-btn');
+        const ctaBtn=document.getElementById('sg-bk-cta-btn');
         if(ctaBtn){ctaBtn.style.opacity='1';ctaBtn.style.pointerEvents='auto';}
         // Update CTA text to show saved card
-        const ctaText=document.getElementById('ub-cta-text');
+        const ctaText=document.getElementById('sg-bk-cta-text');
         if(ctaText)ctaText.textContent='Confirm and pay · ····'+card.last4;
       }
     }catch(e){console.log('No saved cards');}
@@ -8056,7 +8100,7 @@ async function _initUberPaymentNew(gymId, gym){
     let retries=0;
     while(!STRIPE_PK&&retries<15){await new Promise(r=>setTimeout(r,500));retries++;}
     if(!STRIPE_PK){
-      stripeArea.innerHTML='<div class="ub-stripe-wrap"><p style="color:#f87171;font-size:13px;text-align:center">Payment config failed to load. <span style="text-decoration:underline;cursor:pointer" onclick="_initUberPaymentNew(\''+gymId+'\')">Tap to retry</span></p></div>';
+      stripeArea.innerHTML='<div class="sg-bk-stripe-wrap"><p style="color:#f87171;font-size:13px;text-align:center">Payment config failed to load. <span style="text-decoration:underline;cursor:pointer" onclick="_initUberPaymentNew(\''+gymId+'\')">Tap to retry</span></p></div>';
       return;
     }
   }
@@ -8065,12 +8109,12 @@ async function _initUberPaymentNew(gymId, gym){
   try{
     await ensureStripeLoaded();
   }catch(e){
-    stripeArea.innerHTML='<div class="ub-stripe-wrap"><p style="color:#f87171;font-size:13px;text-align:center">Failed to load Stripe. <span style="text-decoration:underline;cursor:pointer" onclick="_initUberPaymentNew(\''+gymId+'\')">Tap to retry</span></p></div>';
+    stripeArea.innerHTML='<div class="sg-bk-stripe-wrap"><p style="color:#f87171;font-size:13px;text-align:center">Failed to load Stripe. <span style="text-decoration:underline;cursor:pointer" onclick="_initUberPaymentNew(\''+gymId+'\')">Tap to retry</span></p></div>';
     return;
   }
 
   if(!window.Stripe){
-    stripeArea.innerHTML='<div class="ub-stripe-wrap"><p style="color:#f87171;font-size:13px;text-align:center">Payment system unavailable. <span style="text-decoration:underline;cursor:pointer" onclick="_initUberPaymentNew(\''+gymId+'\')">Tap to retry</span></p></div>';
+    stripeArea.innerHTML='<div class="sg-bk-stripe-wrap"><p style="color:#f87171;font-size:13px;text-align:center">Payment system unavailable. <span style="text-decoration:underline;cursor:pointer" onclick="_initUberPaymentNew(\''+gymId+'\')">Tap to retry</span></p></div>';
     return;
   }
 
@@ -8110,15 +8154,15 @@ async function _initUberPaymentNew(gymId, gym){
     });
     cs.elements=elements;
 
-    stripeArea.innerHTML='<div class="ub-stripe-wrap"><div id="ub-stripe-el"></div></div>';
+    stripeArea.innerHTML='<div class="sg-bk-stripe-wrap"><div id="sg-bk-stripe-el"></div></div>';
     const paymentElement=elements.create('payment',{
       layout:{type:'tabs',defaultCollapsed:false},
       wallets:{applePay:'auto',googlePay:'auto'},
-      paymentMethodOrder:['apple_pay','google_pay','card','klarna','amazon_pay'],
+      paymentMethodOrder:['apple_pay','google_pay','card'],
       fields:{billingDetails:{address:{postalCode:'auto',country:'auto'}}},
       defaultValues:{billingDetails:{address:{country:userCountry}}},
     });
-    paymentElement.mount('#ub-stripe-el');
+    paymentElement.mount('#sg-bk-stripe-el');
 
     paymentElement.on('loaderror',(event)=>{
       console.error('[ScanGym] Payment Element load error:',event);
@@ -8132,7 +8176,7 @@ async function _initUberPaymentNew(gymId, gym){
       // C3 fix: Set payMode so ubConfirmPay uses the Stripe Elements path
       if(cs.payMode==='none'||!cs.payMode) cs.payMode='stripe_elements';
       // Enable the CTA button now that Stripe is loaded
-      const ctaBtn=document.getElementById('ub-cta-btn');
+      const ctaBtn=document.getElementById('sg-bk-cta-btn');
       if(ctaBtn){ctaBtn.style.opacity='1';ctaBtn.style.pointerEvents='auto';}
     });
     // Timeout: if Stripe doesn't load in 12s show retry
@@ -8145,7 +8189,7 @@ async function _initUberPaymentNew(gymId, gym){
 
   }catch(e){
     console.error('Payment init error:',e);
-    stripeArea.innerHTML='<div class="ub-stripe-wrap"><p style="color:#f87171;font-size:13px;text-align:center">Failed to load payment. Tap to retry.</p></div>';
+    stripeArea.innerHTML='<div class="sg-bk-stripe-wrap"><p style="color:#f87171;font-size:13px;text-align:center">Failed to load payment. Tap to retry.</p></div>';
     stripeArea.style.cursor='pointer';
     stripeArea.onclick=()=>{stripeArea.onclick=null;_initUberPaymentNew(gymId,gym);};
   }
@@ -8155,7 +8199,7 @@ async function _initUberPaymentNew(gymId, gym){
 window.closeBookingSheet=function(){
   const sheet=document.getElementById('booking-sheet');
   if(sheet){
-    const overlay=sheet.querySelector('.ub-overlay');
+    const overlay=sheet.querySelector('.sg-bk-overlay');
     if(overlay){
       overlay.style.transition='opacity .25s ease-out';
       overlay.style.opacity='0';
@@ -8166,9 +8210,9 @@ window.closeBookingSheet=function(){
   }
   
 // ═══ FIX #13: Promo code handler ═══
-window.ubApplyPromo=async function(){
-  var code=(document.getElementById('ub-promo-code')?.value||'').trim().toUpperCase();
-  var resultEl=document.getElementById('ub-promo-result');
+window.sgApplyPromo=async function(){
+  var code=(document.getElementById('sg-promo-code')?.value||'').trim().toUpperCase();
+  var resultEl=document.getElementById('sg-promo-result');
   if(!code){sgToast('Please enter a promo code','warning',2000);return;}
   if(!resultEl)return;
   resultEl.style.display='block';
@@ -8180,7 +8224,7 @@ window.ubApplyPromo=async function(){
       resultEl.innerHTML='<div style="display:flex;align-items:center;gap:6px"><span style="color:#22c55e;font-size:13px;font-weight:600">✅ '+data.description+'</span><span onclick="ubRemovePromo()" style="color:rgba(255,255,255,.4);font-size:11px;cursor:pointer;margin-left:auto">Remove</span></div>';
       // Update price display
       if(data.discountedTotal){
-        var totalEl=document.getElementById('ub-total-price');
+        var totalEl=document.getElementById('sg-total-price');
         if(totalEl)totalEl.innerHTML='<span style="text-decoration:line-through;color:rgba(255,255,255,.4);font-size:12px;margin-right:6px">'+totalEl.textContent+'</span>'+data.discountedTotal;
       }
       window._checkoutState.promoCode=code;
@@ -8205,19 +8249,19 @@ window.ubApplyPromo=async function(){
   }
 };
 window.ubRemovePromo=function(){
-  var resultEl=document.getElementById('ub-promo-result');
+  var resultEl=document.getElementById('sg-promo-result');
   if(resultEl){resultEl.style.display='none';resultEl.innerHTML='';}
-  var totalEl=document.getElementById('ub-total-price');
+  var totalEl=document.getElementById('sg-total-price');
   if(totalEl){
     // Remove strikethrough, show original price
     var original=totalEl.textContent.replace(/[^£$€0-9.]/g,'');
     totalEl.textContent=original||totalEl.textContent;
   }
-  var toggleEl=document.getElementById('ub-promo-toggle');
-  var inputRow=document.getElementById('ub-promo-input-row');
+  var toggleEl=document.getElementById('sg-promo-toggle');
+  var inputRow=document.getElementById('sg-promo-input-row');
   if(toggleEl)toggleEl.style.display='flex';
   if(inputRow)inputRow.style.display='none';
-  var codeEl=document.getElementById('ub-promo-code');
+  var codeEl=document.getElementById('sg-promo-code');
   if(codeEl)codeEl.value='';
   window._checkoutState.promoCode=null;
   window._checkoutState.promoDiscount=0;
@@ -8323,7 +8367,7 @@ window.processGuestBooking=async function(gymId,email){
 
 // ─── Page: Booking Success ───
 // ═══════════════════════════════════════════════════════════════════════════
-//  ACTIVE SESSION PAGE — "Uber In-Ride" equivalent (Fix #7A)
+//  ACTIVE SESSION PAGE — Live session tracker (Fix #7A)
 //  Shows: Live timer, gym info, QR code, session progress, end session CTA
 // ═══════════════════════════════════════════════════════════════════════════
 function ActiveSessionPage(){
@@ -8598,7 +8642,7 @@ function BookingSuccessPage(){
   const b=state.lastBooking;
   const qr=state.lastQR;
   // Blocker 8 Fix: Science-backed success page
-  // Research: Amazon, Uber, Booking.com, Airbnb all follow these principles:
+  // Research: Top consumer apps follow these principles:
   // 1. Immediate positive reinforcement (green checkmark + confetti animation)
   // 2. Clear booking summary with all details visible at once
   // 3. Primary action (QR code) is hero-sized and unmissable
@@ -8782,7 +8826,7 @@ function BookingSuccessPage(){
       </div>
 
       <!-- S5-H07 FIX: Don't show rating form immediately — user hasn't visited yet -->
-      <!-- Fix #109: Uber-style post-workout rating experience -->
+      <!-- Fix #109: Post-workout rating experience -->
       <div class="mt-6 bg-card rounded-2xl border border-slate-700 overflow-hidden" id="sg-post-feedback">
         <div style="background:linear-gradient(135deg,rgba(255,109,0,.08),rgba(255,109,0,.02));padding:24px 20px;text-align:center">
           <p style="font-size:28px;margin:0 0 8px">💪</p>
@@ -9158,7 +9202,7 @@ window.findGyms=function(){
   // User explicitly requested GPS — clear the explicit search lock
   state.userExplicitSearch=false;
 
-  // ━━━ UBER RULE: Show results INSTANTLY, upgrade in background ━━━
+  // ━━━ Show results INSTANTLY, upgrade in background ━━━
   // NEVER await GPS. NEVER show blank screen. NEVER block the UI.
   const cached=getCachedLocation();
   if(state.gyms.length===0){
@@ -9179,7 +9223,7 @@ window.findGyms=function(){
 };
 window.openGym=async function(id,isLive){
   // Screen 3 removed: go straight to checkout instead of gym detail page
-  showUberCheckout(id);
+  showBookingCheckout(id);
   return;
   navigate('/gym/'+id);
   // Check if this is a Google Place ID (starts with "ChI" or similar) or numeric DB id
@@ -9254,7 +9298,7 @@ window.filterGyms=function(type){
 };
 
 // ═══════════════════════════════════════════════════════════════
-//  UBER-GRADE LOCATION DETECTION — All 5 Techniques
+//  HIGH-PRECISION LOCATION DETECTION — All 5 Techniques
 // ═══════════════════════════════════════════════════════════════
 
 // Technique #2: Client-Side Location Cache (localStorage)
@@ -9340,9 +9384,9 @@ async function _reverseGeocode(lat,lng){
 }
 
 // ═══════════════════════════════════════════════════════════════════
-//  UBER GPS HELPER — Permission pre-check + watchPosition + fire-and-forget
+//  GPS HELPER — Permission pre-check + watchPosition + fire-and-forget
 // ═══════════════════════════════════════════════════════════════════
-// Based on Uber's documented patterns:
+// Based on industry-leading patterns:
 // 1. Check permission state BEFORE requesting (skip if denied → save 5s timeout)
 // 2. Use watchPosition (first fix in <500ms from cached GPS) not getCurrentPosition
 // 3. Never await — fire and forget, upgrade results via callback
@@ -9377,7 +9421,7 @@ function _startGPSWatch(highAccuracy){
   const t0=performance.now();
   let bestAccuracy=Infinity;
 
-  // ━━━ UBER PATTERN: watchPosition gives first fix in <500ms (cached GPS) ━━━
+  // ━━━ watchPosition gives first fix in <500ms (cached GPS) ━━━
   // Then progressively improves. We take the first fix, upgrade when better arrives.
   window._gpsWatchId=navigator.geolocation.watchPosition(
     async function(pos){
@@ -9551,7 +9595,7 @@ async function fetchRealTravelTimes(userLat,userLng){
 }
 
 // ═══════════════════════════════════════════════════════════════════
-//  UBER PATTERN #3: 5-LAYER LOCATION CASCADE — NEVER WAIT FOR GPS
+//  5-LAYER LOCATION CASCADE — NEVER WAIT FOR GPS
 // ═══════════════════════════════════════════════════════════════════
 // Each layer fires independently. Faster layers show results first.
 // Slower layers silently UPGRADE results when they arrive.
@@ -9663,7 +9707,7 @@ window.sgSendFeedbackDetail=async function(bookingId){
   if(el) el.innerHTML='<div style="padding:16px;text-align:center"><span style="font-size:36px">✅</span><p style="color:#4ade80;font-weight:700;margin-top:8px">Feedback sent — thank you!</p></div>';
 };
 
-// ═══ Fix #109: Star Rating (Uber-style "rate your gym") ═══
+// ═══ Fix #109: Star Rating ("rate your gym") ═══
 // S5-H15 FIX: Actually end the session
 window.sgEndSession=async function(){
   if(!confirm('End your session early? You can still re-enter until your 24h pass expires.'))return;
@@ -9787,7 +9831,7 @@ window.doSearch=function(query){
 };
 
 // ═══════════════════════════════════════════════════════════════
-// UBER-STYLE SEARCH OVERLAY
+// FULL-SCREEN SEARCH OVERLAY
 // Full-screen overlay with recent searches, popular cities, autocomplete
 // ═══════════════════════════════════════════════════════════════
 
@@ -10863,7 +10907,7 @@ function CreatorEarningsPage(){
       </div>
     </div>
 
-    <!-- ═══ EARNINGS GOAL BAR (Uber-style) ═══ -->
+    <!-- ═══ EARNINGS GOAL BAR ═══ -->
     <div id="ce-goal-bar" class="bg-slate-800/80 rounded-xl p-4 mb-4 border border-slate-700/50">
       <div class="flex items-center justify-between mb-2">
         <p class="text-white font-bold text-sm">🎯 Earnings Goal</p>
@@ -10922,7 +10966,7 @@ function CreatorEarningsPage(){
       </div>
     </div>
 
-    <!-- ═══ NEXT ACTION NUDGE (Uber-style) ═══ -->
+    <!-- ═══ NEXT ACTION NUDGE ═══ -->
     <div id="ce-nudge" class="bg-gradient-to-r from-brand/20 to-orange-600/10 border border-brand/30 rounded-xl p-4 mb-4">
       <div class="flex items-center gap-3">
         <span class="text-2xl">💡</span>
@@ -11161,7 +11205,7 @@ async function _loadCreatorEarnings(handle){
       if(checkEl)checkEl.textContent=ci<=currentLevel?'✓':'○';
     }
     
-    // --- Earnings Goal Bar (Uber-style) ---
+    // --- Earnings Goal Bar ---
     var goalTiers=[10,25,50,100,250,500,1000,2500,5000];
     var currentGoal=goalTiers[0];
     for(var gi=0;gi<goalTiers.length;gi++){if(earnings<goalTiers[gi]){currentGoal=goalTiers[gi];break;}}
@@ -11286,7 +11330,7 @@ async function _startStripeConnect(handle){
   }
 }
 
-/* Perf Round 2: Debounced render — like Amazon/Uber, batch rapid render() calls
+/* Perf Round 2: Debounced render — batch rapid render() calls
    into a single requestAnimationFrame. Prevents jank when page 2/3 gyms load. */
 var _renderQueued=false;
 function render(){
@@ -11331,7 +11375,7 @@ function _renderInner(){
   else if(path==='/login'||path==='/signup'||path==='/register')page=LoginPage();
   else if(path==='/how-it-works')page=InfoPage('How It Works',`<p>1. Find a gym near you using GPS or search</p><p>2. Book a 24-hour day pass — localized pricing worldwide</p><p>3. Pay with Apple Pay, Google Pay, or card (guest checkout available)</p><p>4. Get your QR code — scan in at the gym, scan out when done</p><p>5. Rate your session and earn rewards</p>`);
   else if(path==='/pricing')page=InfoPage('Pricing',`
-<!-- Uber-style Hero -->
+<!-- Hero Section -->
 <div class="text-center mb-10">
   <p class="text-brand text-sm font-bold tracking-widest uppercase mb-3">⚡ Live Pricing</p>
   <h1 class="text-4xl sm:text-5xl font-black text-white leading-tight mb-4">How much does<br>a gym session cost?</h1>
@@ -11376,7 +11420,7 @@ function _renderInner(){
   </div>
 </div>
 
-<!-- Uber-style Service Tiers -->
+<!-- Service Tiers -->
 <p class="text-white font-bold text-xl mb-4">Choose your session</p>
 <div class="space-y-3 mb-8" id="pricing-tiers">
   
@@ -11494,7 +11538,7 @@ function _renderInner(){
     <div class="bg-slate-800/50 rounded-xl p-5 text-center">
       <div class="text-3xl mb-3">📊</div>
       <p class="text-white font-bold mb-1">Demand-driven</p>
-      <p class="text-slate-400 text-sm">Like Uber surge — busy = slightly higher. Quiet = cheaper. Real-time.</p>
+      <p class="text-slate-400 text-sm">Dynamic pricing — busy = slightly higher. Quiet = cheaper. Real-time.</p>
     </div>
     <div class="bg-slate-800/50 rounded-xl p-5 text-center">
       <div class="text-3xl mb-3">🎯</div>
@@ -11733,9 +11777,9 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
   // Auto-load gyms when navigating to search page (Fix #1 + #6)
   if(path==='/explore'||path==='/nearby'||path==='/search'){
     autoLoadGyms();
-    // ━━━ UBER-STYLE BANNER: Gentle nudge to enable GPS, never blocks interaction ━━━
+    // ━━━ GPS BANNER: Gentle nudge to enable GPS, never blocks interaction ━━━
     _showLocationBannerIfNeeded();
-    // ━━━ AUTO-PROMPT: Request location on first explore visit (like Uber) ━━━
+    // ━━━ AUTO-PROMPT: Request location on first explore visit ━━━
     if(!window._gpsGranted&&!window._gpsAutoPrompted&&navigator.geolocation){
       window._gpsAutoPrompted=true;
       navigator.geolocation.getCurrentPosition(
@@ -11755,8 +11799,8 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
   if(path==='/staff/scan'){setTimeout(sgInitScanner,200);}
 }
 
-// ━━━ UBER-STYLE BANNER: Non-blocking location nudge (replaces old full-screen overlay) ━━━
-// Like Uber: small top banner, everything underneath stays clickable and functional.
+// ━━━ NON-BLOCKING BANNER: Location nudge (replaces old full-screen overlay) ━━━
+// Small top banner, everything underneath stays clickable and functional.
 function _showLocationBannerIfNeeded(){
   // Don't show if user already granted GPS, dismissed banner, or explicitly searched
   if(window._gpsGranted||window._locationBannerDismissed||state.userExplicitSearch) return;
@@ -11799,7 +11843,7 @@ function _injectLocationBanner(permState){
 
   var banner=document.createElement('div');
   banner.id='sg-location-banner';
-  // Uber-style: small golden/amber banner at top, dismissible, never blocks content
+  // Small golden/amber banner at top, dismissible, never blocks content
   banner.style.cssText='position:relative;z-index:10;margin:0 0 0 0;padding:10px 16px;display:flex;align-items:center;gap:10px;cursor:pointer;-webkit-tap-highlight-color:transparent;'
     +'background:linear-gradient(135deg,#78350f,#92400e);border-bottom:1px solid rgba(251,191,36,.2);';
 
@@ -11874,7 +11918,7 @@ window.toggleExploreMap=function(){
   }
 };
 
-// ═══ Uber-style location popup ═══
+// ═══ Location popup ═══
 window._showLocationPopup=function(){
   // Remove existing popup if any
   var existing=document.getElementById('sg-location-popup');
@@ -12143,8 +12187,8 @@ window.sgFlashDeal=function(){ return null; };
 // ╔══════════════════════════════════════════════════════════════════════════════╗
 // ║  ADDICTION MECHANICS V2 — FULL SCIENCE IMPLEMENTATION                       ║
 // ║  Covering ALL 25 mechanics from the research                                ║
-// ║  TikTok + Instagram + Duolingo + Tinder + Snapchat + YouTube + Netflix +    ║
-// ║  Spotify + Candy Crush + Pinterest + BeReal + Robinhood                     ║
+// ║  TikTok + Instagram + Duolingo + swipe + Snapchat + YouTube + Netflix +    ║
+// ║  Gamification + Masonry + Social + Rewards                     ║
 // ╚══════════════════════════════════════════════════════════════════════════════╝
 
 // ─── 7. SOCIAL PROOF COUNTERS (Instagram likes + Booking.com) ───
@@ -12346,7 +12390,7 @@ window.sgSunkCostBanner=function(container){
   }).catch(()=>{});
 };
 
-// ─── 9. TINDER-STYLE SWIPE DISCOVERY (mechanic #8 + #1) ───
+// ─── 9. swipe-to-discover SWIPE DISCOVERY (mechanic #8 + #1) ───
 // Swipe right = save gym, swipe left = skip, variable reward = occasional flash deal
 window.sgSwipeDiscovery=function(){
   if(document.getElementById('sg-swipe-overlay'))return;
@@ -12424,7 +12468,7 @@ window.sgSwipeDiscovery=function(){
         setTimeout(()=>{
           const gid=g.placeId||g.place_id||g.id;
           overlay.remove();
-          if(typeof showUberCheckout==='function')showUberCheckout(gid);
+          if(typeof showBookingCheckout==='function')showBookingCheckout(gid);
         },200);
       }else if(currentX<-80){
         // Swiped left = skip
@@ -12448,7 +12492,7 @@ window.sgSwipeDiscovery=function(){
       setTimeout(()=>{
         const gid=g.placeId||g.place_id||g.id;
         overlay.remove();
-        if(typeof showUberCheckout==='function')showUberCheckout(gid);
+        if(typeof showBookingCheckout==='function')showBookingCheckout(gid);
       },200);
     };
     document.getElementById('sg-swipe-save').onclick=()=>{
@@ -12972,7 +13016,7 @@ window.sgProfileCompletion=function(container){
 // Removed: misleading popup with fake promo code FIRSTSCAN that doesn't work.
 // Was re-triggering on every tab switch despite PR #137 removal.
 
-// ─── 25. PINTEREST MASONRY GYM GRID (mechanic #2 + visual dopamine) ───
+// ─── 25. MASONRY GYM GRID (mechanic #2 + visual dopamine) ───
 window.sgMasonryGrid=function(gyms,containerId){
   const container=document.getElementById(containerId);
   if(!container||!gyms||gyms.length===0)return;
@@ -13068,7 +13112,7 @@ window.sgMasonryGrid=function(gyms,containerId){
           <div style="font-size:24px">🔥</div>
           <div style="flex:1">
             <div style="font-size:14px;font-weight:700;color:#fff">Discover Gyms</div>
-            <div style="font-size:11px;color:rgba(255,255,255,.4)">Tinder-style swipe to find your next gym</div>
+            <div style="font-size:11px;color:rgba(255,255,255,.4)">Swipe to find your next gym</div>
           </div>
           <div style="color:rgba(255,255,255,.3)">→</div>
         </div>
@@ -13150,7 +13194,7 @@ render();
 // stays display:none because _syncReelsVisibility() was only called inside switchTab/navigate
 _syncReelsVisibility();
 
-// Auto-load data based on initial route (uses Uber-style IP+GPS parallel detection)
+// Auto-load data based on initial route (IP+GPS parallel detection)
 if(state.route==='/explore'||state.route==='/nearby'||state.route==='/search'){
   autoLoadGyms();
 }
@@ -13266,7 +13310,7 @@ if(localStorage.getItem('sg_push_enabled')==='1'&&state.user){
     if(currentTab==='reels'||currentTab!=='book'){
       if(typeof switchTab==='function')switchTab('book');
     }else{
-      if(gid&&typeof showUberCheckout==='function')showUberCheckout(gid);
+      if(gid&&typeof showBookingCheckout==='function')showBookingCheckout(gid);
     }
   });
   document.body.appendChild(banner);
@@ -13360,10 +13404,10 @@ if(localStorage.getItem('sg_push_enabled')==='1'&&state.user){
     };
   }
 
-  // Hide when uber checkout opens, show when it closes
-  var _origShowUber=window.showUberCheckout;
+  // Hide when booking checkout opens, show when it closes
+  var _origShowUber=window.showBookingCheckout;
   if(typeof _origShowUber==='function'){
-    window.showUberCheckout=function(){
+    window.showBookingCheckout=function(){
       window._sgHideContinueBanner();
       return _origShowUber.apply(this,arguments);
     };
