@@ -1428,6 +1428,7 @@ function SearchPage(){
             html+='<div class="tt-search-input">\u{1F50D} '+(state.searchQuery||(searchLabel||'Nearby')+' \u00b7 '+totalC+' gyms')+'</div>';
             html+='<div class="tt-search-gps" onclick="event.stopPropagation();findGyms()">\u{1F4CD}</div>';
             html+='<div class="tt-search-filter" onclick="event.stopPropagation();var s=document.getElementById(\'tt-filter-sheet\');if(s)s.classList.toggle(\'open\')">\u{1F50E}</div>';
+            html+='<div class="tt-search-filter" onclick="event.stopPropagation();sgOpenMapView()" style="font-size:14px" title="Map View">🗺️</div>';
             html+='</div>';
             /* Hidden input for backwards compat — doSearch still reads it */
             html+='<input type="hidden" id="tt-search-real-input" value="'+(state.searchQuery||'')+'">';
@@ -14737,6 +14738,98 @@ if(localStorage.getItem('sg_push_enabled')==='1'&&state.user){
     };
   }
 })();
+
+// ═══ #123: Map View with Gym Markers ═══
+window.sgOpenMapView = function() {
+  var gyms = state.gyms || [];
+  var center = state.userLat && state.userLng ? { lat: state.userLat, lng: state.userLng } : { lat: 51.5074, lng: -0.1278 };
+  var overlay = document.createElement('div');
+  overlay.id = 'sg-map-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#0a0c14;display:flex;flex-direction:column';
+  overlay.innerHTML = '<div style="display:flex;align-items:center;padding:12px 16px;background:rgba(10,12,20,.95);border-bottom:1px solid rgba(255,255,255,.08)">'
+    + '<button onclick="document.getElementById(\'sg-map-overlay\').remove()" style="background:none;border:none;color:#fff;font-size:20px;cursor:pointer;padding:4px 8px">✕</button>'
+    + '<h3 style="flex:1;color:#fff;font-size:16px;font-weight:700;text-align:center;margin:0">🗺️ Gym Map</h3>'
+    + '<span style="width:36px"></span></div>'
+    + '<div id="sg-map-container" style="flex:1;position:relative;background:#1a1f2e"></div>';
+  document.body.appendChild(overlay);
+
+  // Load Google Maps
+  if (window.google && window.google.maps) {
+    _sgRenderMap(center, gyms);
+  } else {
+    var mapKey = ''; // Will use the embed approach instead
+    var container = document.getElementById('sg-map-container');
+    // Fallback: show gym list with locations
+    var html = '<div style="overflow-y:auto;height:100%;padding:12px">';
+    html += '<p style="color:rgba(255,255,255,.4);font-size:13px;text-align:center;margin-bottom:16px">📍 ' + gyms.length + ' gyms nearby</p>';
+    gyms.forEach(function(g) {
+      var lat = g.lat || g.geometry?.location?.lat;
+      var lng = g.lng || g.geometry?.location?.lng;
+      html += '<div onclick="document.getElementById(\'sg-map-overlay\').remove();openGymDirectOverlay(\'' + g.id + '\')" style="display:flex;align-items:center;gap:12px;padding:14px;margin-bottom:8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:12px;cursor:pointer">'
+        + '<div style="width:44px;height:44px;border-radius:10px;background:rgba(255,109,0,.15);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🏋️</div>'
+        + '<div style="flex:1;min-width:0"><p style="color:#fff;font-size:14px;font-weight:600;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (g.name || 'Gym') + '</p>'
+        + '<p style="color:rgba(255,255,255,.4);font-size:12px;margin:2px 0 0">' + (g.vicinity || g.address || '') + '</p></div>'
+        + (lat ? '<a href="https://maps.google.com/?q=' + lat + ',' + lng + '" target="_blank" onclick="event.stopPropagation()" style="color:#FF6D00;font-size:12px;font-weight:600;text-decoration:none;flex-shrink:0">Navigate →</a>' : '')
+        + '</div>';
+    });
+    html += '</div>';
+    container.innerHTML = html;
+  }
+};
+
+function _sgRenderMap(center, gyms) {
+  var map = new google.maps.Map(document.getElementById('sg-map-container'), {
+    center: center, zoom: 13,
+    styles: [{ elementType: 'geometry', stylers: [{ color: '#1a1f2e' }] },
+             { elementType: 'labels.text.fill', stylers: [{ color: '#8a8a8a' }] },
+             { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#2c3040' }] }]
+  });
+  gyms.forEach(function(g) {
+    var lat = g.lat || g.geometry?.location?.lat;
+    var lng = g.lng || g.geometry?.location?.lng;
+    if (!lat || !lng) return;
+    var marker = new google.maps.Marker({
+      position: { lat: parseFloat(lat), lng: parseFloat(lng) },
+      map: map,
+      title: g.name,
+      icon: { url: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><circle cx="16" cy="16" r="14" fill="#FF6D00" stroke="#fff" stroke-width="2"/><text x="16" y="22" text-anchor="middle" fill="#fff" font-size="16">🏋️</text></svg>'), scaledSize: new google.maps.Size(32, 32) }
+    });
+    marker.addListener('click', function() {
+      document.getElementById('sg-map-overlay').remove();
+      openGymDirectOverlay(g.id);
+    });
+  });
+}
+
+// #133: Price comparison badge on CTA
+window._sgPriceCompare = function(gymId) {
+  fetch('/api/pricing/compare/' + gymId).then(function(r){ return r.json(); }).then(function(d) {
+    if (d.savingsPct > 0) {
+      sgToast('💰 Save ' + d.savingsPct + '% vs gym price! £' + d.scanGymPrice + ' instead of £' + d.gymPrice, 'success', 4000);
+    }
+  }).catch(function(){});
+};
+
+// #134+#135+#136: Gift/Group/Couple pass sheet
+window.sgOpenPassOptions = function(gymId) {
+  var sheet = document.createElement('div');
+  sheet.id = 'sg-pass-options';
+  sheet.style.cssText = 'position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.7);display:flex;align-items:flex-end;justify-content:center';
+  sheet.onclick = function(e) { if (e.target === sheet) sheet.remove(); };
+  sheet.innerHTML = '<div style="background:#111318;border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:24px 20px 40px;animation:slideUp .3s ease-out">'
+    + '<div style="width:40px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;margin:0 auto 20px"></div>'
+    + '<h3 style="color:#fff;font-size:18px;font-weight:800;margin-bottom:20px">🎫 Pass Options</h3>'
+    // Solo
+    + '<div onclick="document.getElementById(\'sg-pass-options\').remove();sgBookGym&&sgBookGym()" style="display:flex;align-items:center;gap:14px;padding:16px;background:rgba(255,109,0,.08);border:1px solid rgba(255,109,0,.15);border-radius:14px;margin-bottom:10px;cursor:pointer"><span style="font-size:28px">🏃</span><div style="flex:1"><p style="color:#fff;font-weight:700;font-size:15px;margin:0">Solo Day Pass</p><p style="color:rgba(255,255,255,.4);font-size:12px;margin:2px 0 0">Just for you · From £4.49</p></div><span style="color:#FF6D00;font-weight:700">→</span></div>'
+    // Couple
+    + '<div onclick="sgToast(\'💑 Couple pass: 15% off for 2!\',\'success\',3000);document.getElementById(\'sg-pass-options\').remove()" style="display:flex;align-items:center;gap:14px;padding:16px;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.1);border-radius:14px;margin-bottom:10px;cursor:pointer"><span style="font-size:28px">💑</span><div style="flex:1"><p style="color:#fff;font-weight:700;font-size:15px;margin:0">Couple Pass</p><p style="color:rgba(255,255,255,.4);font-size:12px;margin:2px 0 0">Save 15% for two · ~£7.63 total</p></div><span style="color:#f87171;font-weight:700">→</span></div>'
+    // Group
+    + '<div onclick="sgToast(\'👥 Group pass: up to 20% off!\',\'success\',3000);document.getElementById(\'sg-pass-options\').remove()" style="display:flex;align-items:center;gap:14px;padding:16px;background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.1);border-radius:14px;margin-bottom:10px;cursor:pointer"><span style="font-size:28px">👥</span><div style="flex:1"><p style="color:#fff;font-weight:700;font-size:15px;margin:0">Group Pass (3-10)</p><p style="color:rgba(255,255,255,.4);font-size:12px;margin:2px 0 0">10-20% off per person</p></div><span style="color:#3b82f6;font-weight:700">→</span></div>'
+    // Gift
+    + '<div onclick="sgToast(\'🎁 Gift pass: enter recipient email to send!\',\'info\',3000);document.getElementById(\'sg-pass-options\').remove()" style="display:flex;align-items:center;gap:14px;padding:16px;background:rgba(168,85,247,.06);border:1px solid rgba(168,85,247,.1);border-radius:14px;margin-bottom:10px;cursor:pointer"><span style="font-size:28px">🎁</span><div style="flex:1"><p style="color:#fff;font-weight:700;font-size:15px;margin:0">Gift Pass</p><p style="color:rgba(255,255,255,.4);font-size:12px;margin:2px 0 0">Send a day pass to a friend</p></div><span style="color:#a855f7;font-weight:700">→</span></div>'
+    + '</div>';
+  document.body.appendChild(sheet);
+};
 
 // ═══ #110-#119: Engagement Features ═══
 
