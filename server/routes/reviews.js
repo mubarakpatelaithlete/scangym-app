@@ -84,11 +84,17 @@ router.post('/', authenticateUser, async (req, res) => {
 
     if (bookingId) {
       const booking = await pool.query(
-        'SELECT id FROM bookings WHERE id = $1 AND user_id = $2',
+        'SELECT id, booking_date FROM bookings WHERE id = $1 AND user_id = $2',
         [parseInt(bookingId), userId]
       );
       if (booking.rows.length === 0) {
         return res.status(400).json({ error: 'Invalid booking ID' });
+      }
+      // #70: 7-day review window — only allow reviews within 7 days of booking
+      const bookingDate = new Date(booking.rows[0].booking_date);
+      const daysSinceBooking = (Date.now() - bookingDate.getTime()) / (1000 * 60 * 60 * 24);
+      if (daysSinceBooking > 7) {
+        return res.status(400).json({ error: 'Review window expired — reviews must be submitted within 7 days of your visit' });
       }
     }
 
