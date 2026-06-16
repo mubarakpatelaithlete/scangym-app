@@ -11930,30 +11930,54 @@ function CreatorEarningsPage(){
 // ═══ WITHDRAWAL FUNCTIONS ═══
 function _requestWithdrawal(handle){
   var form=document.getElementById('ce-payment-form');
-  if(form)form.classList.remove('hidden');
+  if(form){form.classList.remove('hidden');form.scrollIntoView({behavior:'smooth',block:'center'});}
 }
 
 async function _submitWithdrawal(handle){
-  var nameEl=document.getElementById('ce-bank-name');
-  var sortEl=document.getElementById('ce-bank-sort');
-  var acctEl=document.getElementById('ce-bank-acct');
-  if(!nameEl||!sortEl||!acctEl)return;
-  var name=nameEl.value.trim();
-  var sort=sortEl.value.trim();
-  var acct=acctEl.value.trim();
-  if(!name||!sort||!acct){sgToast('Please fill in all bank details','error');return;}
+  // #62: Support all payout methods + loading state + confirmation
+  var method=window._sgSelectedPayout||'bank';
+  var paymentDetails={};
+
+  if(method==='bank'){
+    var nameEl=document.getElementById('ce-bank-name');
+    var sortEl=document.getElementById('ce-bank-sort');
+    var acctEl=document.getElementById('ce-bank-acct');
+    if(!nameEl||!sortEl||!acctEl)return;
+    var name=nameEl.value.trim(),sort=sortEl.value.trim(),acct=acctEl.value.trim();
+    if(!name||!sort||!acct){sgToast('Please fill in all bank details','error');return;}
+    paymentDetails={accountName:name,sortCode:sort,accountNumber:acct};
+  }else if(method==='payoneer'){
+    var payoneerEl=document.getElementById('ce-payoneer-email');
+    if(!payoneerEl)return;
+    var payoneerEmail=payoneerEl.value.trim();
+    if(!payoneerEmail||!payoneerEmail.includes('@')){sgToast('Please enter a valid Payoneer email','error');return;}
+    paymentDetails={payoneerEmail:payoneerEmail};
+  }else if(method==='stripe'){
+    // Stripe Connect handled separately via _startStripeConnect
+    sgToast('Please connect your Stripe account first using the button above','info',3000);return;
+  }
+
+  // Confirm before submitting
+  var availEl=document.getElementById('ce-available');
+  var amount=availEl?availEl.textContent:'your balance';
+  if(!confirm('Withdraw '+amount+' via '+method.replace('_',' ')+'?'))return;
+
+  // Loading state
+  var btn=document.querySelector('#ce-payment-form button[onclick*="_submitWithdrawal"]');
+  var origText=btn?btn.textContent:'';
+  if(btn){btn.textContent='Processing...';btn.disabled=true;btn.style.opacity='0.6';}
 
   try{
     var res=await fetch('/api/referrals/withdraw',{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({creatorHandle:handle,paymentMethod:'bank_transfer',paymentDetails:{accountName:name,sortCode:sort,accountNumber:acct}})
+      body:JSON.stringify({creatorHandle:handle,paymentMethod:method==='bank'?'bank_transfer':method,paymentDetails:paymentDetails})
     });
     var data=await res.json();
     if(data.success){
-      sgToast('Withdrawal requested! '+data.withdrawal.amountDisplay+' pending review.','success',4000);
+      sgToast('✅ Withdrawal requested! '+(data.withdrawal?data.withdrawal.amountDisplay:amount)+' pending review.','success',4000);
       document.getElementById('ce-payment-form').classList.add('hidden');
-      nameEl.value='';sortEl.value='';acctEl.value='';
-      // Refresh data
+      // Clear form fields
+      ['ce-bank-name','ce-bank-sort','ce-bank-acct','ce-payoneer-email'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
       _loadCreatorEarnings(handle);
       _loadWithdrawalData(handle);
     }else{
@@ -11961,6 +11985,8 @@ async function _submitWithdrawal(handle){
     }
   }catch(e){
     sgToast('Network error — try again','error');
+  }finally{
+    if(btn){btn.textContent=origText;btn.disabled=false;btn.style.opacity='1';}
   }
 }
 
