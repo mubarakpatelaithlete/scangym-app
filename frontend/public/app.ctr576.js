@@ -10,41 +10,6 @@ var l2=document.createElement('link');l2.rel='dns-prefetch';l2.href=d;document.h
 // ─── Pricing: loaded from /pricing.js (shared across all pages) ───
 // sgPrice(), sgSymbol(), sgCommissionRange() are global — see pricing.js
 
-// ─── #57 Affiliate Link Helper: injects creator handle into every share URL ───
-// Returns affiliate URL if user is a creator, else plain scangym.com URL.
-// Usage: sgGetAffiliateUrl() → 'https://scangym.com/r/handle' or 'https://scangym.com'
-//        sgGetAffiliateUrl('/gym/abc123') → 'https://scangym.com/gym/abc123?ref=handle'
-window.sgGetAffiliateUrl=function(path){
-  var handle='';
-  // Check creator signup data first (ScanSquad creators)
-  try{var c=JSON.parse(localStorage.getItem('sg_creator')||'null');if(c&&c.handle)handle=c.handle;}catch(e){}
-  // Fallback: check state.user.referralHandle
-  if(!handle&&typeof state!=='undefined'&&state.user&&state.user.referralHandle)handle=state.user.referralHandle;
-  // Fallback: derive from user name/phone (same logic as /refer page)
-  if(!handle&&typeof state!=='undefined'&&state.user){handle=(state.user.name||state.user.phone||'').replace(/[^a-z0-9]/gi,'').toLowerCase();}
-  if(!handle)return path?'https://scangym.com'+(path.startsWith('/')?path:'/'+path):'https://scangym.com';
-  // If a specific path like /gym/abc123 is provided, use ?ref= param
-  if(path){return 'https://scangym.com'+(path.startsWith('/')?path:'/'+path)+'?ref='+encodeURIComponent(handle);}
-  // Default: /r/handle (creator landing page)
-  return 'https://scangym.com/r/'+handle;
-};
-
-// ─── #58 Download with Affiliate Link: auto-copy caption with creator link on asset download ───
-window.sgDownloadWithAffiliate=function(assetName,evt){
-  // When a creator downloads a toolkit asset, auto-copy a social caption with their affiliate link
-  var url=sgGetAffiliateUrl();
-  var caption='🏋️ Book any gym, anywhere — no membership needed! '+url+' #ScanGym #Fitness';
-  navigator.clipboard.writeText(caption).then(function(){
-    sgToast('✅ Downloaded! Caption with your link copied to clipboard — paste when sharing','success',4000);
-  }).catch(function(){});
-  // Track the download for affiliate analytics
-  if(typeof fetch!=='undefined'){
-    var handle='';
-    try{var c=JSON.parse(localStorage.getItem('sg_creator')||'null');if(c&&c.handle)handle=c.handle;}catch(e){}
-    if(handle){fetch('/api/referrals/track-download',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({handle:handle,asset:assetName})}).catch(function(){});}
-  }
-};
-
 // ─── Toast Notification System (replaces alert()) ───
 window.sgToast=function(msg, type='error', duration=4000){
   const existing=document.getElementById('sg-toast');
@@ -1387,7 +1352,7 @@ function SearchPage(){
         /* Perf: Inject card CSS once (persists across re-renders — saves ~12KB per render) */
         if(!document.getElementById('tt-css')){
           var _s=document.createElement('style');_s.id='tt-css';
-          _s.textContent='.tt-view{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;position:relative}.tt-carousel{display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;flex:1;min-height:0;will-change:scroll-position;contain:strict}.tt-carousel::-webkit-scrollbar{display:none}.tt-card{width:100%;min-height:100%;max-height:100%;scroll-snap-align:start;position:relative;display:flex;flex-direction:column;overflow:hidden;contain:layout style paint}.tt-card.tt-closed{opacity:0.5;filter:grayscale(25%)}.tt-card.tt-closed .tt-cta-btn{background:#6b7280;box-shadow:none}.tt-photo{position:absolute;inset:0;background-size:cover;background-position:center;background-color:#1a1f2e}.tt-photo-carousel{position:absolute;inset:0;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;display:flex;z-index:0;touch-action:pan-x}.tt-photo-carousel::-webkit-scrollbar{display:none}.tt-photo-slide{flex:0 0 100%;width:100%;height:100%;scroll-snap-align:start;background-size:cover;background-position:center;background-color:#1a1f2e;transition:background-color .3s ease}.tt-photo-dots{position:absolute;bottom:0;left:14px;display:flex;gap:4px;z-index:12}.tt-photo-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.3);transition:all .3s}.tt-photo-dot.act{background:#FF6D00;width:18px;border-radius:3px}.tt-photo-placeholder{position:absolute;inset:0;background:#1a1f2e;display:flex;align-items:center;justify-content:center}.tt-photo-placeholder::after{content:"🏋️";font-size:56px;opacity:.15}.tt-gradient{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.35) 0%,transparent 22%,transparent 55%,rgba(0,0,0,.55) 75%,rgba(0,0,0,.82) 100%);pointer-events:none;z-index:1}.tt-card::after{content:"";position:absolute;bottom:18%;left:50%;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(255,109,0,.08) 0%,rgba(255,109,0,.03) 40%,transparent 70%);transform:translateX(-50%);pointer-events:none;z-index:0}.tt-search{position:absolute;top:0;left:0;right:0;z-index:20;display:flex;gap:8px;padding:8px 12px;padding-top:calc(env(safe-area-inset-top,8px) + 4px)}.tt-search-input{flex:1;background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px 14px;color:rgba(255,255,255,.7);font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px;cursor:pointer}.tt-search-gps{background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;width:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-search-filter{background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;width:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-actions{position:absolute;right:10px;top:65px;display:flex;flex-direction:column;gap:6px;z-index:15;align-items:center}.tt-action{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-action-btn{width:44px;height:44px;background:transparent;border:none;border-radius:0;display:flex;align-items:center;justify-content:center;font-size:24px;transition:all .15s;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5));opacity:.75}.tt-action-btn:active{transform:scale(.85)}.tt-action-label{display:block;font-size:9px;color:rgba(255,255,255,.7);font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8);text-align:center;white-space:nowrap;max-width:52px;overflow:hidden;text-overflow:ellipsis;line-height:1.1}.tt-info{position:absolute;bottom:0;left:0;right:0;padding:0 14px 8px;z-index:15;pointer-events:none}.tt-info>*{pointer-events:auto}.tt-dots{display:flex;gap:3px;margin-bottom:4px;flex-wrap:wrap;max-width:280px}.tt-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.25);transition:all .3s}.tt-dot.act{background:#FF6D00;width:18px;border-radius:3px}.tt-counter{font-size:10px;color:rgba(255,255,255,.4);margin-bottom:4px;font-weight:500}.tt-gym-name{color:#fff;font-size:28px;font-weight:900;text-shadow:0 2px 10px rgba(0,0,0,.6);line-height:1.15;margin-bottom:4px;letter-spacing:-.3px}.tt-gym-addr{color:rgba(255,255,255,.7);font-size:12px;margin-bottom:6px;text-shadow:0 1px 4px rgba(0,0,0,.5);display:flex;align-items:center;gap:4px;flex-wrap:wrap}.tt-tag-open{color:#4ade80}.tt-tag-closed{color:#f87171}.tt-chips{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}.tt-chip{display:flex;align-items:center;gap:5px;background:rgba(30,33,45,.85);border-radius:10px;padding:6px 12px;font-size:12px;color:rgba(255,255,255,.92);font-weight:700}.tt-cta{position:absolute;bottom:0;left:0;right:0;padding:8px 14px;z-index:16}.tt-cta-btn{width:100%;padding:12px 0;border:none;border-radius:12px;background:linear-gradient(135deg,#FF6D00,#ff8534,#FF6D00);background-size:200% 200%;color:#fff;font-size:15px;font-weight:700;letter-spacing:.3px;cursor:pointer;-webkit-tap-highlight-color:transparent;box-shadow:0 4px 20px rgba(255,109,0,.4),0 0 20px rgba(255,109,0,.2);transition:all .15s;animation:casinoGlow 2s ease-in-out infinite}.tt-cta-btn:active{transform:scale(.97);box-shadow:0 2px 10px rgba(255,109,0,.3)}.tt-filter-sheet{display:none;position:absolute;top:52px;left:12px;right:12px;background:rgba(17,19,24,.98);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px;z-index:25;flex-wrap:wrap;gap:8px}.tt-filter-sheet.open{display:flex}.sg-filter-pill{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:7px 14px;color:rgba(255,255,255,.6);font-size:12px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;white-space:nowrap}.sg-filter-pill.active{background:rgba(255,109,0,.15);border-color:rgba(255,109,0,.4);color:#FF6D00}.tt-logo{position:absolute;left:14px;bottom:0;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;z-index:15;border:2px solid rgba(255,255,255,.15);box-shadow:0 2px 8px rgba(0,0,0,.3)}.tt-card.tt-offscreen{content-visibility:auto;contain-intrinsic-size:auto 100vh}.tt-card.tt-offscreen .tt-cta-btn{animation:none}.tt-card.tt-offscreen .tt-gradient{backdrop-filter:none;-webkit-backdrop-filter:none}';
+          _s.textContent='.tt-view{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;position:relative}.tt-carousel{display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;flex:1;min-height:0;will-change:scroll-position;contain:strict}.tt-carousel::-webkit-scrollbar{display:none}.tt-card{width:100%;min-height:100%;max-height:100%;scroll-snap-align:start;position:relative;display:flex;flex-direction:column;overflow:hidden;contain:layout style paint}.tt-card.tt-closed{opacity:0.5;filter:grayscale(25%)}.tt-card.tt-closed .tt-cta-btn{background:#6b7280;box-shadow:none}.tt-photo{position:absolute;inset:0;background-size:cover;background-position:center;background-color:#1a1f2e}.tt-photo-carousel{position:absolute;inset:0;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;display:flex;z-index:0;touch-action:pan-x}.tt-photo-carousel::-webkit-scrollbar{display:none}.tt-photo-slide{flex:0 0 100%;width:100%;height:100%;scroll-snap-align:start;background-size:cover;background-position:center;background-color:#1a1f2e;transition:background-color .3s ease;user-select:none;-webkit-user-select:none;-webkit-user-drag:none}.tt-photo-dots{position:absolute;bottom:0;left:14px;display:flex;gap:4px;z-index:12}.tt-photo-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.3);transition:all .3s}.tt-photo-dot.act{background:#FF6D00;width:18px;border-radius:3px}.tt-photo-placeholder{position:absolute;inset:0;background:#1a1f2e;display:flex;align-items:center;justify-content:center}.tt-photo-placeholder::after{content:"🏋️";font-size:56px;opacity:.15}.tt-gradient{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.35) 0%,transparent 22%,transparent 55%,rgba(0,0,0,.55) 75%,rgba(0,0,0,.82) 100%);pointer-events:none;z-index:1}.tt-card::after{content:"";position:absolute;bottom:18%;left:50%;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(255,109,0,.08) 0%,rgba(255,109,0,.03) 40%,transparent 70%);transform:translateX(-50%);pointer-events:none;z-index:0}.tt-search{position:absolute;top:0;left:0;right:0;z-index:20;display:flex;gap:8px;padding:8px 12px;padding-top:calc(env(safe-area-inset-top,8px) + 4px)}.tt-search-input{flex:1;background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px 14px;color:rgba(255,255,255,.7);font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px;cursor:pointer}.tt-search-gps{background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;width:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-search-filter{background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;width:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-actions{position:absolute;right:10px;top:65px;display:flex;flex-direction:column;gap:6px;z-index:15;align-items:center}.tt-action{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-action-btn{width:44px;height:44px;background:transparent;border:none;border-radius:0;display:flex;align-items:center;justify-content:center;font-size:24px;transition:all .15s;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5));opacity:.75}.tt-action-btn:active{transform:scale(.85)}.tt-action-label{display:block;font-size:9px;color:rgba(255,255,255,.7);font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8);text-align:center;white-space:nowrap;max-width:52px;overflow:hidden;text-overflow:ellipsis;line-height:1.1}.tt-info{position:absolute;bottom:0;left:0;right:0;padding:0 14px 8px;z-index:15;pointer-events:none}.tt-info>*{pointer-events:auto}.tt-dots{display:flex;gap:3px;margin-bottom:4px;flex-wrap:wrap;max-width:280px}.tt-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.25);transition:all .3s}.tt-dot.act{background:#FF6D00;width:18px;border-radius:3px}.tt-counter{font-size:10px;color:rgba(255,255,255,.4);margin-bottom:4px;font-weight:500}.tt-gym-name{color:#fff;font-size:28px;font-weight:900;text-shadow:0 2px 10px rgba(0,0,0,.6);line-height:1.15;margin-bottom:4px;letter-spacing:-.3px}.tt-gym-addr{color:rgba(255,255,255,.7);font-size:12px;margin-bottom:6px;text-shadow:0 1px 4px rgba(0,0,0,.5);display:flex;align-items:center;gap:4px;flex-wrap:wrap}.tt-tag-open{color:#4ade80}.tt-tag-closed{color:#f87171}.tt-chips{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}.tt-chip{display:flex;align-items:center;gap:5px;background:rgba(30,33,45,.85);border-radius:10px;padding:6px 12px;font-size:12px;color:rgba(255,255,255,.92);font-weight:700}.tt-cta{position:absolute;bottom:0;left:0;right:0;padding:8px 14px;z-index:16}.tt-cta-btn{width:100%;padding:12px 0;border:none;border-radius:12px;background:linear-gradient(135deg,#FF6D00,#ff8534,#FF6D00);background-size:200% 200%;color:#fff;font-size:15px;font-weight:700;letter-spacing:.3px;cursor:pointer;-webkit-tap-highlight-color:transparent;box-shadow:0 4px 20px rgba(255,109,0,.4),0 0 20px rgba(255,109,0,.2);transition:all .15s;animation:casinoGlow 2s ease-in-out infinite}.tt-cta-btn:active{transform:scale(.97);box-shadow:0 2px 10px rgba(255,109,0,.3)}.tt-filter-sheet{display:none;position:absolute;top:52px;left:12px;right:12px;background:rgba(17,19,24,.98);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px;z-index:25;flex-wrap:wrap;gap:8px}.tt-filter-sheet.open{display:flex}.sg-filter-pill{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:7px 14px;color:rgba(255,255,255,.6);font-size:12px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;white-space:nowrap}.sg-filter-pill.active{background:rgba(255,109,0,.15);border-color:rgba(255,109,0,.4);color:#FF6D00}.tt-logo{position:absolute;left:14px;bottom:0;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;z-index:15;border:2px solid rgba(255,255,255,.15);box-shadow:0 2px 8px rgba(0,0,0,.3)}.tt-card.tt-offscreen{content-visibility:auto;contain-intrinsic-size:auto 100vh}.tt-card.tt-offscreen .tt-cta-btn{animation:none}.tt-card.tt-offscreen .tt-gradient{backdrop-filter:none;-webkit-backdrop-filter:none}';
           document.head.appendChild(_s);
         }
 
@@ -1416,9 +1381,9 @@ function SearchPage(){
             html+='<div class="tt-photo-carousel" id="tt-pcarousel-'+i+'" data-card-idx="'+i+'">';
             c.allPhotos.forEach(function(p,pi){
               if(i===0){
-                html+='<div class="tt-photo-slide" style="background-image:url(\''+p+'\')"></div>';
+                html+='<div class="tt-photo-slide" style="background-image:url(\''+p+'\')" ondragstart="return false"></div>';
               } else {
-                html+='<div class="tt-photo-slide" data-bg="'+p+'"></div>';
+                html+='<div class="tt-photo-slide" data-bg="'+p+'" ondragstart="return false"></div>';
               }
             });
             html+='</div>';
@@ -1501,8 +1466,8 @@ function SearchPage(){
           if(c.gym.isSelfService) html+='<div class="tt-chip" style="background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.25);color:#a78bfa">\u{1F513} Self Entry</div>';
           html+='<div class="tt-chip">\u{1F4B0} '+c.price+'/day</div>';
           html+='<div class="tt-chip">\u2B50 '+c.rating+(c.reviews?' ('+c.reviews+')':'')+'</div>';
-          html+='<div class="tt-chip" style="background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.25)">\u{1F4C8} '+_bMonth+'</div>';
-          html+='<div class="tt-chip" style="background:rgba(239,68,68,.14);border:1px solid rgba(239,68,68,.2)">\u{1F440} '+_pLook+' looking now</div>';
+          if(c.gym.bookedBucket) html+='<div class="tt-chip" style="background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.25)">\u{1F4C8} '+_bMonth+'</div>';
+          if(c.gym.lookingNow) html+='<div class="tt-chip" style="background:rgba(239,68,68,.14);border:1px solid rgba(239,68,68,.2)">\u{1F440} '+c.gym.lookingNow+' looking now</div>';
           html+='</div>';
           /* CTA removed — sticky Continue banner handles booking flow */
           /* Fix #53: Motivating trust line */
@@ -2490,7 +2455,7 @@ window.openGymOverlay=function(section){
           <div style="color:rgba(255,255,255,.35);font-size:13px;margin:10px 0 8px">${helpCount} ${helpCount===1?'person':'people'} found this helpful</div>
           <div class="ov-review-actions" style="display:flex;align-items:center;gap:16px">
             <button class="ov-review-helpful${voted?' active':''}" id="helpful_${rid}" onclick="event.stopPropagation();_toggleReviewHelpful('${rid}',${helpfulBase})" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:6px 16px;color:rgba(255,255,255,.7);font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent">Helpful</button>
-            <span onclick="event.stopPropagation();navigator.clipboard.writeText(sgGetAffiliateUrl()).then(function(){sgToast('Link copied!','info',2000)}).catch(function(){sgToast('Could not copy','error',2000)})" style="color:rgba(255,255,255,.4);font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:4px"><span style="font-size:14px">\u2197</span> Share</span>
+            <span onclick="event.stopPropagation();sgToast('Link copied!','info',2000)" style="color:rgba(255,255,255,.4);font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:4px"><span style="font-size:14px">\u2197</span> Share</span>
             <span class="ov-review-report" onclick="event.stopPropagation();sgToast('Review reported. We will look into it.','info',2500)" style="margin-left:auto;color:rgba(255,255,255,.3);font-size:13px;cursor:pointer">Report</span>
           </div>
         </div>`;
@@ -3044,7 +3009,7 @@ function _ensureStandaloneOverlay(gymId){
   }
   // Inject overlay HTML container
   var gym=state.currentGym||{};
-  var currentPrice=(gym.pricing?.display)||(gym.dayPassPrice?((gym.currencySymbol||'£')+gym.dayPassPrice.toFixed(2)):'£5.00');
+  var currentPrice=(gym.pricing?.display)||(gym.dayPassPrice?((gym.currencySymbol||'£')+gym.dayPassPrice.toFixed(2)):sgPrice('day').display);
   var div=document.createElement('div');
   div.innerHTML='<div class="gym-overlay" id="gym-overlay" onclick="if(event.target===this||event.target.classList.contains(\'gym-overlay-bg\'))closeGymOverlay()"><div class="gym-overlay-bg"></div><div class="gym-overlay-panel"><div class="gym-overlay-drag"></div><div class="gym-overlay-header"><div style="display:flex;align-items:center;gap:10px;"><div style="width:24px;height:24px;background:#FF6D00;border-radius:50%;flex-shrink:0;box-shadow:0 0 8px rgba(255,109,0,.4);"></div><div class="gym-overlay-title" id="gym-overlay-title"></div></div><button class="gym-overlay-close" onclick="closeGymOverlay()">✕</button></div><div class="gym-overlay-body" id="gym-overlay-body"></div><div class="gym-overlay-footer"><div><div style="color:#fff;font-size:22px;font-weight:800">'+currentPrice+'</div><div style="color:rgba(255,255,255,.4);font-size:11px">Your ScanGym pass works here ✓</div></div><button class="gym-book-btn" onclick="event.preventDefault();event.stopPropagation();closeGymOverlay();showBookingCheckout(\''+gymId+'\')">Book Now</button></div></div></div>';
   document.body.appendChild(div.firstChild);
@@ -3730,7 +3695,7 @@ window.showCalendarPicker=async function(gymId){
   // Get gym info for price display
   const gym=state.currentGym||state.gyms.find(g=>(g.placeId||g.place_id||g.id)==gymId)||{};
   const gymName=gym.name||'Gym';
-  const currentPrice=gym.pricing?.day?.display||sgPrice('day').display||'£5.00';
+  const currentPrice=gym.pricing?.day?.display||sgPrice('day').display;
 
   // Store current view month for navigation
   window._calPickerState.viewYear=now.getFullYear();
@@ -6831,7 +6796,7 @@ function CreatorsPage(){
               <div class="aspect-square bg-slate-800 overflow-hidden relative">
                 <img src="${ctrThumb(a.cat,a.file)}" alt="${a.name}" class="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300" width="250" height="250" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\'flex items-center justify-center h-full text-3xl\'>${a.type==='video'?'🎬':'📸'}</div>'">${a.type==='video'?`<div class="absolute inset-0 flex items-center justify-center pointer-events-none"><div class="w-12 h-12 bg-brand/80 rounded-full flex items-center justify-center group-hover:bg-brand transition shadow-lg"><span class="text-white text-lg ml-0.5">▶</span></div></div>`:``}
                 <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition">
-                  <a href="${a.did?`https://drive.google.com/uc?export=download&id=${a.did}`:`${A}/${folder}/${a.file}`}" download="${a.file}" onclick="event.stopPropagation();sgDownloadWithAffiliate('${a.name}')" class="bg-brand hover:bg-green-500 text-white text-[10px] px-2.5 py-1.5 rounded-full font-bold shadow-lg flex items-center gap-1 no-underline" title="Download ${a.name}">⬇ Download</a>
+                  <a href="${a.did?`https://drive.google.com/uc?export=download&id=${a.did}`:`${A}/${folder}/${a.file}`}" download="${a.file}" onclick="event.stopPropagation()" class="bg-brand hover:bg-green-500 text-white text-[10px] px-2.5 py-1.5 rounded-full font-bold shadow-lg flex items-center gap-1 no-underline" title="Download ${a.name}">⬇ Download</a>
                 </div>
               </div>
               <div class="p-2.5 flex items-center justify-between">
@@ -6839,7 +6804,7 @@ function CreatorsPage(){
                   <p class="text-white text-xs font-medium truncate">${a.name}</p>
                   <p class="text-slate-500 text-[10px]">${a.cat}</p>
                 </div>
-                <a href="${a.did?`https://drive.google.com/uc?export=download&id=${a.did}`:`${A}/${folder}/${a.file}`}" download="${a.file}" onclick="event.stopPropagation();sgDownloadWithAffiliate('${a.name}')" class="ml-2 flex-shrink-0 bg-slate-700 hover:bg-brand text-white rounded-lg p-1.5 transition" title="Download">
+                <a href="${a.did?`https://drive.google.com/uc?export=download&id=${a.did}`:`${A}/${folder}/${a.file}`}" download="${a.file}" onclick="event.stopPropagation()" class="ml-2 flex-shrink-0 bg-slate-700 hover:bg-brand text-white rounded-lg p-1.5 transition" title="Download">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 </a>
               </div>
@@ -7544,8 +7509,6 @@ window._sgGoogleCallback=async function(response){
     if(data.success&&data.user){
       state.user=data.user;
       state.authStep='phone';
-      // #59: Associate stored referral with the newly logged-in user
-      try{var _ref=JSON.parse(localStorage.getItem('sg_referral')||'null');if(_ref&&_ref.handle&&_ref.expiry>Date.now()){fetch('/api/referrals/associate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({referrerHandle:_ref.handle,userId:data.user.id||data.user.phone,userName:data.user.name||''})}).catch(function(){});}}catch(e){}
       sgToast('Welcome, '+(data.user.name||'there')+'! 🎉','success',3000);
       if(window._pendingCheckout&&window._pendingCheckout.gymId){
         const pc=window._pendingCheckout;
@@ -7685,8 +7648,6 @@ window.handleVerifyCode=async function(){
     if(r.success&&r.user){
       state.user=r.user;
       state.authStep='phone';
-      // #59: Associate stored referral with the newly logged-in user
-      try{var _ref=JSON.parse(localStorage.getItem('sg_referral')||'null');if(_ref&&_ref.handle&&_ref.expiry>Date.now()){fetch('/api/referrals/associate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({referrerHandle:_ref.handle,userId:r.user.id||r.user.phone,userName:r.user.name||''})}).catch(function(){});}}catch(e){}
       // Resume pending booking if user was trying to book before login
       if(window._pendingCheckout&&window._pendingCheckout.gymId){
         const pc=window._pendingCheckout;
@@ -8096,6 +8057,7 @@ window._initBookMapCarousel=function(){
         var slide=document.createElement('div');
         slide.className='tt-photo-slide';
         slide.style.backgroundImage='url('+(p.thumbnail||p.url)+')';
+        slide.ondragstart=function(){return false;};
         pc.appendChild(slide);
       });
       // Create or rebuild dots
@@ -9529,7 +9491,7 @@ function BookingSuccessPage(){
         </div>
         <p class="text-slate-500 text-xs mt-3">Token: ${qr.token}</p>
         <button onclick="sgSaveQR()" class="mt-2 text-slate-400 text-sm hover:text-white cursor-pointer transition">💾 Save QR to Photos</button>
-        <button onclick="const gymUrl=sgGetAffiliateUrl('/gym/${b.gymId}');const shareText='I just booked a session at ${b.gymName} on ScanGym! 🏋️ Check it out:';if(navigator.share){navigator.share({title:'ScanGym — ${b.gymName}',text:shareText,url:gymUrl}).catch(()=>{})}else{navigator.clipboard.writeText(shareText+' '+gymUrl).then(()=>{this.textContent='✅ Link Copied!';setTimeout(()=>{this.textContent='📤 Share Booking'},2000)}).catch(function(){sgToast('Could not copy link','error',2000)})}" class="mt-3 text-brand text-sm font-medium hover:text-orange-400 cursor-pointer transition">📤 Share Booking</button>
+        <button onclick="const gymUrl='https://scangym.com/gym/${b.gymId}';const shareText='I just booked a session at ${b.gymName} on ScanGym! 🏋️ Check it out:';if(navigator.share){navigator.share({title:'ScanGym — ${b.gymName}',text:shareText,url:gymUrl}).catch(()=>{})}else{navigator.clipboard.writeText(shareText+' '+gymUrl).then(()=>{this.textContent='✅ Link Copied!';setTimeout(()=>{this.textContent='📤 Share Booking'},2000)}).catch(function(){sgToast('Could not copy link','error',2000)})}" class="mt-3 text-brand text-sm font-medium hover:text-orange-400 cursor-pointer transition">📤 Share Booking</button>
       </div>
 
       <!-- Tier 2: Access Control Credentials (Kisi QR unlock / Seam PIN / Mobile Key) -->
@@ -11418,9 +11380,9 @@ function ScanGymIDCard(u){
 // Share ID card handler (Fix #8E)
 window._shareIDCard=function(){
   if(navigator.share){
-    navigator.share({title:'My ScanGym ID',text:'Check out my ScanGym gym pass! Book any gym. No membership needed.',url:sgGetAffiliateUrl()}).catch(()=>{});
+    navigator.share({title:'My ScanGym ID',text:'Check out my ScanGym gym pass! Book any gym. No membership needed.',url:'https://scangym.com'}).catch(()=>{});
   }else{
-    navigator.clipboard.writeText(sgGetAffiliateUrl()).then(()=>sgToast('Link copied!','success',2000)).catch(()=>{});
+    navigator.clipboard.writeText('https://scangym.com').then(()=>sgToast('Link copied!','success',2000)).catch(()=>{});
   }
 };
 
@@ -11616,6 +11578,12 @@ function MoreHubPage(){
       ${moreItem('\u2709\uFE0F','Contact Us','Get in touch','/contact')}
     </div>
 
+    <!-- For Creators -->
+    <div class="sg-more-section">
+      <div class="sg-more-section-title">For Creators</div>
+      ${moreItem('\u{1F4F8}','ScanSquad','Join the creator community \u2014 earn 25%','/creators')}
+    </div>
+
     <!-- For Gym Owners -->
     <div class="sg-more-section">
       <div class="sg-more-section-title">For Gym Owners</div>
@@ -11676,48 +11644,6 @@ function CreatorEarningsPage(){
       <h1 class="text-2xl font-bold text-white mb-3">Creator Earnings</h1>
       <p class="text-slate-400 mb-6">Sign up as a ScanSquad creator to track your earnings.</p>
       <button onclick="navigate('/upload')" class="bg-brand hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-xl transition">Join ScanSquad →</button>
-    </div>`;
-  }
-
-  // #61: Onboarding wizard for new creators (show once, dismiss permanently)
-  const _onboarded=localStorage.getItem('sg_creator_onboarded');
-  if(!_onboarded){
-    return `<div class="max-w-lg mx-auto px-4 pt-6 pb-24">
-      <div class="text-center mb-6">
-        <span class="text-5xl">🎉</span>
-        <h1 class="text-2xl font-bold text-white mt-3">Welcome to ScanSquad!</h1>
-        <p class="text-slate-400 mt-1">You're in. Let's get you earning in 3 simple steps.</p>
-      </div>
-      <div class="space-y-4 mb-6">
-        <div class="bg-slate-800/80 rounded-xl p-5 border border-brand/30">
-          <div class="flex items-center gap-3 mb-2">
-            <div class="w-8 h-8 bg-brand rounded-full flex items-center justify-center text-white font-bold text-sm">1</div>
-            <h3 class="text-white font-bold">Copy Your Link</h3>
-          </div>
-          <p class="text-slate-300 text-sm ml-11">Your personal link is <span class="text-brand font-mono">scangym.com/r/${handle}</span></p>
-          <button onclick="navigator.clipboard.writeText('https://scangym.com/r/${handle}');sgToast('Link copied!','success',2000);this.textContent='✅ Copied!'" class="ml-11 mt-2 bg-brand/20 hover:bg-brand/30 text-brand font-bold px-4 py-2 rounded-lg text-sm transition cursor-pointer">📋 Copy Link</button>
-        </div>
-        <div class="bg-slate-800/80 rounded-xl p-5 border border-slate-700/50">
-          <div class="flex items-center gap-3 mb-2">
-            <div class="w-8 h-8 bg-slate-600 rounded-full flex items-center justify-center text-white font-bold text-sm">2</div>
-            <h3 class="text-white font-bold">Share on Social Media</h3>
-          </div>
-          <p class="text-slate-300 text-sm ml-11">Post your link on Instagram Stories, TikTok, Twitter, or WhatsApp. Use our 388+ ready-made assets from the toolkit below.</p>
-          <button onclick="navigate('/creators');" class="ml-11 mt-2 bg-slate-700/50 hover:bg-slate-700 text-white font-bold px-4 py-2 rounded-lg text-sm transition cursor-pointer">📦 Browse Toolkit</button>
-        </div>
-        <div class="bg-slate-800/80 rounded-xl p-5 border border-slate-700/50">
-          <div class="flex items-center gap-3 mb-2">
-            <div class="w-8 h-8 bg-slate-600 rounded-full flex items-center justify-center text-white font-bold text-sm">3</div>
-            <h3 class="text-white font-bold">Earn £1.25 Per Booking</h3>
-          </div>
-          <p class="text-slate-300 text-sm ml-11">When someone books a gym through your link, you earn commission. Track everything here on your dashboard. Withdraw anytime over £5.</p>
-        </div>
-      </div>
-      <div class="bg-emerald-900/20 border border-emerald-700/30 rounded-xl p-4 mb-6 text-center">
-        <p class="text-emerald-400 font-bold">💡 Pro Tip</p>
-        <p class="text-slate-300 text-sm mt-1">Creators who share within the first hour after signing up earn 3× more in their first week.</p>
-      </div>
-      <button onclick="localStorage.setItem('sg_creator_onboarded','1');render()" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-4 rounded-xl transition text-lg shadow-lg shadow-brand/20">Go to My Dashboard →</button>
     </div>`;
   }
 
@@ -11930,54 +11856,30 @@ function CreatorEarningsPage(){
 // ═══ WITHDRAWAL FUNCTIONS ═══
 function _requestWithdrawal(handle){
   var form=document.getElementById('ce-payment-form');
-  if(form){form.classList.remove('hidden');form.scrollIntoView({behavior:'smooth',block:'center'});}
+  if(form)form.classList.remove('hidden');
 }
 
 async function _submitWithdrawal(handle){
-  // #62: Support all payout methods + loading state + confirmation
-  var method=window._sgSelectedPayout||'bank';
-  var paymentDetails={};
-
-  if(method==='bank'){
-    var nameEl=document.getElementById('ce-bank-name');
-    var sortEl=document.getElementById('ce-bank-sort');
-    var acctEl=document.getElementById('ce-bank-acct');
-    if(!nameEl||!sortEl||!acctEl)return;
-    var name=nameEl.value.trim(),sort=sortEl.value.trim(),acct=acctEl.value.trim();
-    if(!name||!sort||!acct){sgToast('Please fill in all bank details','error');return;}
-    paymentDetails={accountName:name,sortCode:sort,accountNumber:acct};
-  }else if(method==='payoneer'){
-    var payoneerEl=document.getElementById('ce-payoneer-email');
-    if(!payoneerEl)return;
-    var payoneerEmail=payoneerEl.value.trim();
-    if(!payoneerEmail||!payoneerEmail.includes('@')){sgToast('Please enter a valid Payoneer email','error');return;}
-    paymentDetails={payoneerEmail:payoneerEmail};
-  }else if(method==='stripe'){
-    // Stripe Connect handled separately via _startStripeConnect
-    sgToast('Please connect your Stripe account first using the button above','info',3000);return;
-  }
-
-  // Confirm before submitting
-  var availEl=document.getElementById('ce-available');
-  var amount=availEl?availEl.textContent:'your balance';
-  if(!confirm('Withdraw '+amount+' via '+method.replace('_',' ')+'?'))return;
-
-  // Loading state
-  var btn=document.querySelector('#ce-payment-form button[onclick*="_submitWithdrawal"]');
-  var origText=btn?btn.textContent:'';
-  if(btn){btn.textContent='Processing...';btn.disabled=true;btn.style.opacity='0.6';}
+  var nameEl=document.getElementById('ce-bank-name');
+  var sortEl=document.getElementById('ce-bank-sort');
+  var acctEl=document.getElementById('ce-bank-acct');
+  if(!nameEl||!sortEl||!acctEl)return;
+  var name=nameEl.value.trim();
+  var sort=sortEl.value.trim();
+  var acct=acctEl.value.trim();
+  if(!name||!sort||!acct){sgToast('Please fill in all bank details','error');return;}
 
   try{
     var res=await fetch('/api/referrals/withdraw',{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({creatorHandle:handle,paymentMethod:method==='bank'?'bank_transfer':method,paymentDetails:paymentDetails})
+      body:JSON.stringify({creatorHandle:handle,paymentMethod:'bank_transfer',paymentDetails:{accountName:name,sortCode:sort,accountNumber:acct}})
     });
     var data=await res.json();
     if(data.success){
-      sgToast('✅ Withdrawal requested! '+(data.withdrawal?data.withdrawal.amountDisplay:amount)+' pending review.','success',4000);
+      sgToast('Withdrawal requested! '+data.withdrawal.amountDisplay+' pending review.','success',4000);
       document.getElementById('ce-payment-form').classList.add('hidden');
-      // Clear form fields
-      ['ce-bank-name','ce-bank-sort','ce-bank-acct','ce-payoneer-email'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+      nameEl.value='';sortEl.value='';acctEl.value='';
+      // Refresh data
       _loadCreatorEarnings(handle);
       _loadWithdrawalData(handle);
     }else{
@@ -11985,8 +11887,6 @@ async function _submitWithdrawal(handle){
     }
   }catch(e){
     sgToast('Network error — try again','error');
-  }finally{
-    if(btn){btn.textContent=origText;btn.disabled=false;btn.style.opacity='1';}
   }
 }
 
@@ -12622,9 +12522,16 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
     html=`<main class="sg-tab-content fade-in">${MoreHubPage()}</main>`+BottomTabBar();
   } else if(tab==='more'){
     // Sub-page within More tab — show back button + page content
+    // Fix: Context-aware back link — if user came from booking flow (pendingCheckout), go back to /explore
+    var _backTarget='/more';
+    var _backLabel='← Back to More';
+    if(path==='/login' && window._pendingCheckout){
+      _backTarget='/explore';
+      _backLabel='← Back to Explore';
+    }
     html=`<main class="sg-tab-content fade-in">
       <div style="max-width:480px;margin:0 auto;padding:12px 16px 0">
-        <div class="sg-more-back" onclick="navigate('/more')">← Back to More</div>
+        <div class="sg-more-back" onclick="navigate('${_backTarget}')">${_backLabel}</div>
       </div>
       ${page}
     </main>`+BottomTabBar();
@@ -12931,10 +12838,9 @@ window.sgShowWorkoutCard=function(data){
 };
 
 window.sgShareWorkout=function(text){
-  // #57: Use central affiliate URL helper for all shares
-  var shareUrl=sgGetAffiliateUrl();
-  var _h='';try{var _c=JSON.parse(localStorage.getItem('sg_creator')||'null');if(_c&&_c.handle)_h=_c.handle;}catch(e){}if(!_h&&state.user&&state.user.referralHandle)_h=state.user.referralHandle;
-  var shareText=text||(_h?'🔥 Just finished a workout with @ScanGym! Try it: scangym.com/r/'+_h+' 💪':'🔥 Just finished a workout with @ScanGym! 💪');
+  // ChatGPT Playbook #5/#7: Share with referral link
+  var shareUrl=state.user&&state.user.referralHandle?'https://scangym.com/r/'+state.user.referralHandle:'https://scangym.com';
+  var shareText=text||(state.user&&state.user.referralHandle?'🔥 Just finished a workout with @ScanGym! Try it: scangym.com/r/'+state.user.referralHandle+' 💪':'🔥 Just finished a workout with @ScanGym! 💪');
   if(navigator.share){navigator.share({title:'ScanGym Workout',text:shareText,url:shareUrl}).catch(function(){navigator.clipboard.writeText(shareText+' '+shareUrl).then(function(){sgToast('Copied to clipboard!','success')}).catch(function(){sgToast('Could not share','error',2000)})});}
   else{navigator.clipboard.writeText(shareText+' '+shareUrl).then(function(){sgToast('Copied to clipboard!','success')}).catch(function(){sgToast('Could not copy link','error',2000)});}
 };
@@ -13643,9 +13549,9 @@ window.sgWorkoutGrid=function(container){
 };
 window.sgShareGrid=function(){
   const grid=window._sgGridEmoji||'';
-  const url=sgGetAffiliateUrl();const text='My ScanGym Workout Grid 💪🔥\n\n'+grid+'\n\n#ScanGym #GymStreak';
-  if(navigator.share){navigator.share({title:"ScanGym Workout Grid",text:text,url:url}).catch(()=>{})}
-  else{navigator.clipboard.writeText(text+'\n'+url).then(()=>{if(typeof sgToast==='function')sgToast('📋 Copied to clipboard!')})}
+  const text='My ScanGym Workout Grid 💪🔥\n\n'+grid+'\n\n#ScanGym #GymStreak';
+  if(navigator.share){navigator.share({text:text}).catch(()=>{})}
+  else{navigator.clipboard.writeText(text).then(()=>{if(typeof sgToast==='function')sgToast('📋 Copied to clipboard!')})}
 };
 
 // ─── 17. SPIN-TO-WIN MYSTERY REWARD (Candy Crush + Robinhood mechanic #1 + #14 + #24) ───
@@ -14061,20 +13967,6 @@ window.sgMasonryGrid=function(gyms,containerId){
   setTimeout(sgStreakEarnBack,2000);
 })();
 
-
-// ─── #59 Capture ?ref= URL param on ANY page (not just /r/ route) ───
-(function(){
-  try{
-    var _p=new URLSearchParams(window.location.search);
-    var _ref=_p.get('ref');
-    if(_ref){
-      var expiry=Date.now()+(30*24*60*60*1000);
-      localStorage.setItem('sg_referral',JSON.stringify({handle:_ref,expiry:expiry}));
-      document.cookie='sg_referral='+encodeURIComponent(_ref)+';path=/;max-age='+(30*24*60*60)+';SameSite=Lax';
-      try{fetch('/api/referrals/track',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({creatorHandle:_ref,visitorSession:Date.now().toString(36)})}).catch(function(){});}catch(e){}
-    }
-  }catch(e){}
-})();
 
 // ─── Init ───
 state.route=location.pathname;
