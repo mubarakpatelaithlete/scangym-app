@@ -2633,6 +2633,42 @@ window.openGymOverlay=function(section){
   };
 
 
+// ── #75: Reviews auto-swiping carousel ──
+// Converts stacked .ov-review cards into a horizontal auto-scroll carousel
+window._sgReviewCarousel=function(){
+  var reviews=document.querySelectorAll('.ov-review');
+  if(reviews.length<2)return;
+  var parent=reviews[0].parentElement;if(!parent)return;
+  // Wrap reviews in horizontal scroller
+  var wrap=document.createElement('div');wrap.id='sg-review-carousel';
+  wrap.style.cssText='display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:4px 0';
+  reviews.forEach(function(r){
+    r.style.cssText+='min-width:280px;max-width:300px;flex-shrink:0;scroll-snap-align:start';
+    wrap.appendChild(r);
+  });
+  parent.appendChild(wrap);
+  // Auto-swipe every 4s
+  var idx=0;var total=reviews.length;
+  var _iv=setInterval(function(){
+    if(!document.getElementById('sg-review-carousel')){clearInterval(_iv);return;}
+    idx=(idx+1)%total;
+    reviews[idx].scrollIntoView({behavior:'smooth',block:'nearest',inline:'start'});
+  },4000);
+  // Pause on touch
+  wrap.addEventListener('touchstart',function(){clearInterval(_iv);},{passive:true});
+};
+// Hook: inject carousel after overlay render
+(function(){
+  var _origOpen=window.openGymDirectOverlay;
+  if(typeof _origOpen==='function'){
+    window.openGymDirectOverlay=async function(){
+      var r=await _origOpen.apply(this,arguments);
+      setTimeout(window._sgReviewCarousel,800);
+      return r;
+    };
+  }
+})();
+
 // ═══ FIX #12: Review photo fullscreen viewer ═══
 window.rvShowFullscreen=function(url){
   if(!url)return;
@@ -13245,7 +13281,47 @@ window.sgVariableReferral=function(){
 
 // ─── 5b. RECORD WORKOUT & SHOW CARD (called on QR exit scan) ───
 window.sgRecordAndShare=function(){
-  var _sb=state.lastBooking||state.activeSession;var _st=_sb&&(_sb.checkinTime||_sb.created_at)?Math.floor((Date.now()-new Date(_sb.checkinTime||_sb.created_at).getTime())/60000):45;fetch('/api/streaks/record-workout',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({durationMinutes:_st||45})}).then(function(r){return r.json()}).then(function(d){if(d.success&&typeof sgShowWorkoutCard==='function')sgShowWorkoutCard(d);else if(d.alreadyRecorded)sgShowWorkoutCard({streak:d.streak||1,totalWorkouts:0,duration:_st||45,newBadges:[],bonusReward:null,shareText:'Just finished a workout with @ScanGym! 💪'});}).catch(function(e){console.error('Record workout error:',e);});
+  var _sb=state.lastBooking||state.activeSession;var _st=_sb&&(_sb.checkinTime||_sb.created_at)?Math.floor((Date.now()-new Date(_sb.checkinTime||_sb.created_at).getTime())/60000):45;fetch('/api/streaks/record-workout',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({durationMinutes:_st||45})}).then(function(r){return r.json()}).then(function(d){if(d.success&&typeof sgShowWorkoutCard==='function')sgShowWorkoutCard(d);else if(d.alreadyRecorded)sgShowWorkoutCard({streak:d.streak||1,totalWorkouts:0,duration:_st||45,newBadges:[],bonusReward:null,shareText:'Just finished a workout with @ScanGym! 💪'});});/* #73: Auto rate-gym prompt 3s after workout */if(_sb){setTimeout(function(){window._sgShowRatePrompt(_sb.gymName||_sb.gym_name,_sb.gymId||_sb.gym_id,_sb.id);},3000);}}).catch(function(e){console.error('Record workout error:',e);});
+};
+
+// ─── #73: Auto rate-gym prompt after workout (Uber-style) ───
+window._sgShowRatePrompt=function(gymName, gymId, bookingId){
+  if(document.getElementById('sg-rate-overlay'))return;
+  var ov=document.createElement('div');ov.id='sg-rate-overlay';
+  ov.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;animation:fadeInUp .3s ease';
+  var sel=0;
+  ov.innerHTML='<div style="background:#111;border-radius:24px;padding:32px 24px;max-width:340px;width:90%;text-align:center">'
+    +'<p style="font-size:40px;margin-bottom:12px">\u{1F3CB}\uFE0F</p>'
+    +'<h3 style="color:#fff;font-size:20px;font-weight:800;margin:0 0 4px">How was your workout?</h3>'
+    +'<p style="color:rgba(255,255,255,.4);font-size:13px;margin:0 0 20px">'+(gymName||'Your gym session')+'</p>'
+    +'<div id="sg-rate-stars" style="display:flex;justify-content:center;gap:8px;margin-bottom:20px">'
+    +[1,2,3,4,5].map(function(n){return '<span data-star="'+n+'" style="font-size:36px;cursor:pointer;opacity:.3;transition:all .15s" onclick="window._sgSelectStar('+n+')">\u2B50</span>';}).join('')
+    +'</div>'
+    +'<textarea id="sg-rate-comment" placeholder="Tell us more (optional)" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px;color:#fff;font-size:14px;resize:none;height:60px;outline:none;box-sizing:border-box;margin-bottom:16px"></textarea>'
+    +'<button id="sg-rate-submit" onclick="window._sgSubmitRating(\''+gymId+'\','+bookingId+')" style="width:100%;background:#FF6D00;color:#fff;border:none;padding:14px;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;opacity:.5;pointer-events:none">Rate</button>'
+    +'<button onclick="document.getElementById(\'sg-rate-overlay\').remove()" style="background:none;border:none;color:rgba(255,255,255,.3);font-size:14px;cursor:pointer;margin-top:12px;padding:8px">Skip</button>'
+    +'</div>';
+  document.body.appendChild(ov);
+};
+window._sgSelectedRating=0;
+window._sgSelectStar=function(n){
+  window._sgSelectedRating=n;
+  document.querySelectorAll('#sg-rate-stars span').forEach(function(s){
+    s.style.opacity=parseInt(s.dataset.star)<=n?'1':'.3';
+    s.style.transform=parseInt(s.dataset.star)<=n?'scale(1.15)':'scale(1)';
+  });
+  var btn=document.getElementById('sg-rate-submit');
+  if(btn){btn.style.opacity='1';btn.style.pointerEvents='auto';}
+};
+window._sgSubmitRating=async function(gymId,bookingId){
+  var btn=document.getElementById('sg-rate-submit');
+  if(btn){btn.textContent='Submitting...';btn.style.opacity='.5';}
+  try{
+    var comment=document.getElementById('sg-rate-comment')?.value||'';
+    await fetch('/api/reviews',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({gymId:gymId,rating:window._sgSelectedRating,comment:comment,bookingId:bookingId})});
+    sgToast('Thanks for rating! \u2B50','success',2000);
+  }catch(e){}
+  var ov=document.getElementById('sg-rate-overlay');if(ov)ov.remove();
 };
 
 // v4.0: Flash deals removed — flat £4.49 pricing
