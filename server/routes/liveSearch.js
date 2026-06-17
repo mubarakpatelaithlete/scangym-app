@@ -794,28 +794,62 @@ router.post('/ensure-gym', optionalAuth, async (req, res) => {
     const zipMatch = (p.formatted_address || '').match(/[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}/i);
     if (zipMatch) zipCode = zipMatch[0].toUpperCase();
 
-    const result = await pool.query(`
-      INSERT INTO gyms 
-      (name, description, city, address, place_id, day_pass_price, currency, country, 
-       lat, lng, phone, website, rating, zip_code,
-       owner_id, slug, is_active, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 
-              $9, $10, $11, $12, $13, $14,
-              'system', $15, true, NOW(), NOW())
-      RETURNING id, name
-    `, [
-      p.name,
-      (p.name || 'Gym') + ' — ' + (p.formatted_address || ''),
-      city || 'Unknown',
-      p.formatted_address, placeId, gymPrice,
-      gymCurrency.currency.toUpperCase(), gymCountry,
-      geo.lat || 0, geo.lng || 0,
-      p.formatted_phone_number || '',
-      p.website || '',
-      p.rating || 0,
-      zipCode || '',
-      slug,
-    ]);
+    // Dynamic INSERT: query schema to only use columns that exist
+    const schemaRes = await pool.query(
+      `SELECT column_name, is_nullable, column_default FROM information_schema.columns WHERE table_name = 'gyms'`
+    );
+    const existingCols = new Set(schemaRes.rows.map(r => r.column_name));
+
+    // Extract state from address_components
+    const stateComp = (p.address_components || []).find(c => (c.types || []).includes('administrative_area_level_1'));
+    const state = stateComp ? stateComp.short_name : '';
+
+    // All possible columns and their values
+    const allColumns = {
+      name: p.name,
+      description: (p.name || 'Gym') + ' — ' + (p.formatted_address || ''),
+      city: city || 'Unknown',
+      state: state || '',
+      address: p.formatted_address,
+      place_id: placeId,
+      day_pass_price: gymPrice,
+      currency: gymCurrency.currency.toUpperCase(),
+      country: gymCountry,
+      latitude: geo.lat || 0,
+      longitude: geo.lng || 0,
+      lat: geo.lat || 0,
+      lng: geo.lng || 0,
+      phone: p.formatted_phone_number || '',
+      website: p.website || '',
+      rating: p.rating || 0,
+      average_rating: p.rating || 0,
+      total_reviews: p.user_ratings_total || 0,
+      zip_code: zipCode || '',
+      owner_id: 'system',
+      slug: slug,
+      is_active: true,
+      is_claimed: false,
+      is_accepting_bookings: true,
+      is_24h: false,
+      is_self_service: false,
+    };
+
+    // Filter to only existing columns (skip id, created_at, updated_at — handled separately)
+    const skipCols = new Set(['id', 'created_at', 'updated_at']);
+    const insertCols = [];
+    const insertVals = [];
+    for (const [col, val] of Object.entries(allColumns)) {
+      if (existingCols.has(col) && !skipCols.has(col)) {
+        insertCols.push(col);
+        insertVals.push(val);
+      }
+    }
+
+    const placeholders = insertVals.map((_, i) => `$${i + 1}`).join(', ');
+    const result = await pool.query(
+      `INSERT INTO gyms (${insertCols.join(', ')}, created_at, updated_at) VALUES (${placeholders}, NOW(), NOW()) RETURNING id, name`,
+      insertVals
+    );
 
     res.json({ gymId: result.rows[0].id, name: result.rows[0].name, country: gymCountry, currency: gymCurrency.currency.toUpperCase(), created: true });
   } catch (err) {
