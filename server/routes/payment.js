@@ -874,12 +874,18 @@ router.post('/create-intent', async (req, res) => {
     const amount = Math.round(parseFloat(booking.total_amount) * 100);
 
     // Uber-style: attach Customer to PaymentIntent so we can save the card after
+    const currency = (booking.gym_currency || 'GBP').toLowerCase();
+    // revolut_pay only supports GBP; amazon_pay only supports GBP/EUR/USD
+    const pmTypes = ['card'];
+    if (['gbp', 'eur', 'usd'].includes(currency)) pmTypes.push('amazon_pay');
+    if (currency === 'gbp') pmTypes.push('revolut_pay');
+
     const intentConfig = {
       amount,
-      currency: (booking.gym_currency || 'GBP').toLowerCase(), // C7 fix: Currency from gym's physical country
+      currency,
       metadata: { bookingId: String(booking.id), gymName: booking.gym_name || '' },
       receipt_email: email || booking.user_email || undefined,
-      payment_method_types: ['card', 'amazon_pay', 'revolut_pay'],
+      payment_method_types: pmTypes,
     };
 
     // If logged in, attach Stripe Customer → enables auto-save after payment
