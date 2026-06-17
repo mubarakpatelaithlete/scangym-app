@@ -4,7 +4,7 @@
  */
 const express = require('express');
 const router = express.Router();
-const { pool } = require('../db');
+const pool = require('../middleware/db');
 
 function authenticateUser(req, res, next) {
   if (!req.user?.id) return res.status(401).json({ error: 'Login required' });

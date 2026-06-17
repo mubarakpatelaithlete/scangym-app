@@ -4,7 +4,7 @@
  */
 const express = require('express');
 const router = express.Router();
-const { pool } = require('../db');
+const pool = require('../middleware/db');
 
 // #133: Price comparison — show 25% less than gym's own price
 router.get('/compare/:gymId', async (req, res) => {
