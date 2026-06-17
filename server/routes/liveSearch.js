@@ -41,9 +41,27 @@ const BASE_URL = 'https://maps.googleapis.com/maps/api/place';
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='is_self_service') THEN
           ALTER TABLE gyms ADD COLUMN is_self_service BOOLEAN DEFAULT FALSE;
         END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='lat') THEN
+          ALTER TABLE gyms ADD COLUMN lat DOUBLE PRECISION DEFAULT 0;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='lng') THEN
+          ALTER TABLE gyms ADD COLUMN lng DOUBLE PRECISION DEFAULT 0;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='phone') THEN
+          ALTER TABLE gyms ADD COLUMN phone VARCHAR(50) DEFAULT '';
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='website') THEN
+          ALTER TABLE gyms ADD COLUMN website TEXT DEFAULT '';
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='rating') THEN
+          ALTER TABLE gyms ADD COLUMN rating NUMERIC(3,2) DEFAULT 0;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='zip_code') THEN
+          ALTER TABLE gyms ADD COLUMN zip_code VARCHAR(20) DEFAULT '';
+        END IF;
       END $$;
     `);
-    console.log('[LiveSearch] gyms table columns verified (currency, country)');
+    console.log('[LiveSearch] gyms table columns verified (all ensure-gym columns)');
   } catch (err) {
     console.error('[LiveSearch] Migration error:', err.message);
   }
