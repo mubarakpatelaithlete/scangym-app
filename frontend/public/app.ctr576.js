@@ -3758,7 +3758,7 @@ window._ovPayAddCard=async function(){
   // Ensure Stripe.js is loaded before mounting elements
   await ensureStripeLoaded();
   if(!window._ovPayStripeElements&&window.Stripe){
-    const stripeKey=window._stripePublicKey||STRIPE_PK||'pk_live_51Ss8P0DPbSptA7HKnQFKelVtYGIWnxhOC8MuZIQdqTYHCJRgI5x8GZ2TlE2DVKK0pLXLJWF9AYNK4RbAEhTk8BN00YoI3Xwjf';
+    const stripeKey=window._stripePublicKey||STRIPE_PK||'pk_live_51Ss8P0DPbSptA7HKWLnsjajAHtjQUeK5ubq3SjUv8lpyCcXXXZ7vkAD5mv6UFpiRlCidArsgoTUVdFE7f5DaVT7g00XlmkxRVy';
     const si=Stripe(stripeKey);
     window._ovPayStripeInstance=si;
     const elStyle={base:{fontSize:'16px',color:'#1a1a2e',fontWeight:'400',fontFamily:'-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif','::placeholder':{color:'#9ca3af'}},invalid:{color:'#ef4444'}};
@@ -7270,7 +7270,7 @@ window._walletCardElement=null;
 window._initWalletPay=function(){
   if(!window.Stripe)return;
   try{
-    const stripeKey=window._stripePublicKey||'pk_live_51Ss8P0DPbSptA7HKnQFKelVtYGIWnxhOC8MuZIQdqTYHCJRgI5x8GZ2TlE2DVKK0pLXLJWF9AYNK4RbAEhTk8BN00YoI3Xwjf';
+    const stripeKey=window._stripePublicKey||'pk_live_51Ss8P0DPbSptA7HKWLnsjajAHtjQUeK5ubq3SjUv8lpyCcXXXZ7vkAD5mv6UFpiRlCidArsgoTUVdFE7f5DaVT7g00XlmkxRVy';
     const stripeInstance=Stripe(stripeKey);
     // C7 fix: Use gym's country/currency for Apple Pay / Google Pay
     const _wpGym=window._checkoutState?.gym||{};
@@ -7381,7 +7381,7 @@ window._walletAddCard=function(){
 
   // Mount Stripe Elements — separate fields
   if(!window._walletStripeElements&&window.Stripe){
-    const stripeKey=window._stripePublicKey||'pk_live_51Ss8P0DPbSptA7HKnQFKelVtYGIWnxhOC8MuZIQdqTYHCJRgI5x8GZ2TlE2DVKK0pLXLJWF9AYNK4RbAEhTk8BN00YoI3Xwjf';
+    const stripeKey=window._stripePublicKey||'pk_live_51Ss8P0DPbSptA7HKWLnsjajAHtjQUeK5ubq3SjUv8lpyCcXXXZ7vkAD5mv6UFpiRlCidArsgoTUVdFE7f5DaVT7g00XlmkxRVy';
     const stripeInstance=Stripe(stripeKey);
     const elStyle={base:{fontSize:'16px',color:'#1a1a2e',fontWeight:'400',fontFamily:'-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif','::placeholder':{color:'#9ca3af'}},invalid:{color:'#ef4444'}};
     window._walletStripeElements=stripeInstance.elements({
@@ -8823,7 +8823,12 @@ window.showBookingCheckout=async function(gymId, prefillDate, prefillTime){
 
       <div class="sg-bk-accent"></div>
 
-      <!-- Payment handled via saved cards (user is always logged in) -->
+      <!-- Stripe Elements area for new card payments -->
+      <div id="ub-stripe-area" style="padding:0 24px 12px">
+        <div id="ub-stripe-section">
+          <div id="ub-stripe-loading-msg" style="color:rgba(255,255,255,.4);font-size:13px;text-align:center;padding:12px 0">Loading payment…</div>
+        </div>
+      </div>
 
       <!-- Error area -->
       <div class="sg-bk-error hidden" id="sg-confirm-error">
@@ -8867,6 +8872,11 @@ window.showBookingCheckout=async function(gymId, prefillDate, prefillTime){
     ready:finalHasPayment,
     referralCode:_sgRefActive||null,  // S4-C11/C12: Pass referral code to payment endpoints
   };
+
+  // ═══ Auto-init Stripe Elements for users without saved cards ═══
+  if(!finalHasPayment){
+    _initUberPaymentNew(gymId, gym);
+  }
 
   // ═══ Swipe-down-to-close on bottom sheet ═══
   (function(){
@@ -8913,9 +8923,15 @@ window.showBookingCheckout=async function(gymId, prefillDate, prefillTime){
 
     // ─── No payment method → open wallet overlay ───
     if(cs.payMode==='none'||(!cs.payMode)){
-      closeBookingSheet();
-      setTimeout(()=>openGymOverlay('payment'),300);
-      sgToast('💳 Add a payment method first','info',3000);
+      // Stripe Elements should auto-init; if not ready yet, show hint
+      const stripeEl=document.getElementById('sg-bk-stripe-el');
+      if(stripeEl){
+        sgToast('💳 Enter your card details above','info',3000);
+      }else{
+        // Try to re-init Stripe Elements in the existing sheet
+        _initUberPaymentNew(cs.gymId, cs.gym);
+        sgToast('💳 Loading card form…','info',3000);
+      }
       return;
     }
 
