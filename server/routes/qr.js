@@ -36,6 +36,17 @@ const QRCode = require('qrcode');
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_qr_token ON booking_qr_codes(qr_token)`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_qr_booking ON booking_qr_codes(booking_id)`);
 
+    // Fix: ensure user_id is VARCHAR (may have been created as INTEGER in older schema)
+    try {
+      const colType = await pool.query(
+        `SELECT data_type FROM information_schema.columns WHERE table_name='booking_qr_codes' AND column_name='user_id'`
+      );
+      if (colType.rows.length > 0 && colType.rows[0].data_type === 'integer') {
+        await pool.query(`ALTER TABLE booking_qr_codes ALTER COLUMN user_id TYPE VARCHAR(255) USING user_id::text`);
+        console.log('[QR] Migrated booking_qr_codes.user_id from INTEGER to VARCHAR(255)');
+      }
+    } catch (e) { console.error('[QR] user_id migration check:', e.message); }
+
     await pool.query(`
       CREATE TABLE IF NOT EXISTS booking_checkins (
         id SERIAL PRIMARY KEY,
