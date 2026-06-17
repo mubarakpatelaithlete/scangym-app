@@ -15328,7 +15328,7 @@ window.sgPerfDashboard=function(){
   return m;
 };
 // Auto-log perf summary after load
-window.addEventListener('load',function(){setTimeout(function(){console.log('%c[ScanGym Perf v5.3.0]','color:#FF6D00;font-weight:bold;font-size:14px');window.sgPerf();},3000);});
+window.addEventListener('load',function(){setTimeout(function(){console.log('%c[ScanGym Perf v5.3.0]','color:#FF6D00;font-weight:bold;font-size:14px');window.sgPerf.report();},3000);});
 
 // ═══ #99+#103+#104+#105+#106: Analytics Instrumentation ═══
 
