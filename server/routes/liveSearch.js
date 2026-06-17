@@ -778,14 +778,25 @@ router.post('/ensure-gym', optionalAuth, async (req, res) => {
 
     const result = await pool.query(`
       INSERT INTO gyms 
-      (name, description, address, place_id, day_pass_price, currency, country, owner_id, slug, is_active, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, 'system', $8, true, NOW(), NOW())
+      (name, description, city, address, place_id, day_pass_price, currency, country, 
+       lat, lng, phone, website, rating, zip_code,
+       owner_id, slug, is_active, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 
+              $9, $10, $11, $12, $13, $14,
+              'system', $15, true, NOW(), NOW())
       RETURNING id, name
     `, [
       p.name,
       (p.name || 'Gym') + ' — ' + (p.formatted_address || ''),
+      city || 'Unknown',
       p.formatted_address, placeId, gymPrice,
-      gymCurrency.currency.toUpperCase(), gymCountry, slug,
+      gymCurrency.currency.toUpperCase(), gymCountry,
+      geo.lat || 0, geo.lng || 0,
+      p.formatted_phone_number || '',
+      p.website || '',
+      p.rating || 0,
+      zipCode || '',
+      slug,
     ]);
 
     res.json({ gymId: result.rows[0].id, name: result.rows[0].name, country: gymCountry, currency: gymCurrency.currency.toUpperCase(), created: true });
