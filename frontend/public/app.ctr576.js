@@ -8744,6 +8744,7 @@ window.showBookingCheckout=async function(gymId, prefillDate, prefillTime){
     .sg-bk-footer{padding:14px 24px calc(20px + env(safe-area-inset-bottom,0px))}
     .sg-bk-cta{width:100%;padding:18px;border:none;border-radius:14px;font-size:17px;font-weight:700;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
     .sg-bk-cta:active{transform:scale(.98)}
+    @keyframes sg-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
     .sg-bk-cta-primary{background:#e0e0e0;color:#111}
     .sg-bk-cta-disabled{background:rgba(255,255,255,.12);color:rgba(255,255,255,.3)}
     .sg-bk-error{padding:0 24px;margin-top:8px}
@@ -8826,7 +8827,10 @@ window.showBookingCheckout=async function(gymId, prefillDate, prefillTime){
       <!-- Stripe Elements area for new card payments -->
       <div id="ub-stripe-area" style="padding:0 24px 12px">
         <div id="ub-stripe-section">
-          <div id="ub-stripe-loading-msg" style="color:rgba(255,255,255,.4);font-size:13px;text-align:center;padding:12px 0">Loading payment…</div>
+          <div id="ub-stripe-loading-msg" style="padding:12px 0">
+            <div style="height:44px;border-radius:10px;background:linear-gradient(90deg,rgba(255,255,255,.04) 25%,rgba(255,255,255,.08) 50%,rgba(255,255,255,.04) 75%);background-size:200% 100%;animation:sg-shimmer 1.5s ease-in-out infinite;margin-bottom:8px"></div>
+            <div style="height:44px;border-radius:10px;background:linear-gradient(90deg,rgba(255,255,255,.04) 25%,rgba(255,255,255,.08) 50%,rgba(255,255,255,.04) 75%);background-size:200% 100%;animation:sg-shimmer 1.5s ease-in-out infinite .2s;display:flex;gap:8px"><div style="flex:1;border-radius:10px;background:inherit"></div><div style="flex:1;border-radius:10px;background:inherit"></div></div>
+          </div>
         </div>
       </div>
 
@@ -8837,13 +8841,27 @@ window.showBookingCheckout=async function(gymId, prefillDate, prefillTime){
 
       <div class="sg-bk-footer">
         <button class="sg-bk-cta sg-bk-cta-primary" id="sg-bk-cta-btn" onclick="ubConfirmPay()">
-          <span id="sg-bk-cta-text">${finalIsCash?'Confirm · pay at gym':'Confirm and pay'}</span>
+          <span id="sg-bk-cta-text">${finalIsCash?'Confirm · pay at gym':finalIsSaved?'Confirm and pay · ····'+gbs.savedCard.last4:'Confirm and pay'}</span>
         </button>
       </div>
     </div>
   </div>`;
 
   document.body.appendChild(sheet);
+
+  // ── Fix: Hide "Loading payment…" when user already has a payment method (cash or saved card) ──
+  if(finalHasPayment){
+    var _stripeArea=document.getElementById('ub-stripe-area');
+    if(_stripeArea)_stripeArea.style.display='none';
+    // Show payment method indicator for saved cards
+    if(finalIsSaved&&gbs.savedCard){
+      var _payIndicator=document.createElement('div');
+      _payIndicator.style.cssText='display:flex;align-items:center;gap:10px;padding:12px 24px;color:rgba(255,255,255,.7);font-size:13px';
+      _payIndicator.innerHTML='<span style="font-size:16px">💳</span> Paying with '+((gbs.savedCard.brand||'Card')+' ····'+gbs.savedCard.last4);
+      var _errorArea=document.getElementById('sg-confirm-error');
+      if(_errorArea)_errorArea.parentNode.insertBefore(_payIndicator,_errorArea);
+    }
+  }
 
   // ── Bug Fix #2: Hide tab bar when booking sheet is open (prevent z-index/touch conflicts) ──
   var _ubTabBar=document.querySelector('.sg-tab-bar');if(_ubTabBar)_ubTabBar.classList.add('hidden');
