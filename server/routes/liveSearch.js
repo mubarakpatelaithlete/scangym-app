@@ -32,6 +32,15 @@ const BASE_URL = 'https://maps.googleapis.com/maps/api/place';
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='country') THEN
           ALTER TABLE gyms ADD COLUMN country VARCHAR(10) DEFAULT 'GB';
         END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='is_accepting_bookings') THEN
+          ALTER TABLE gyms ADD COLUMN is_accepting_bookings BOOLEAN DEFAULT TRUE;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='is_24h') THEN
+          ALTER TABLE gyms ADD COLUMN is_24h BOOLEAN DEFAULT FALSE;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='is_self_service') THEN
+          ALTER TABLE gyms ADD COLUMN is_self_service BOOLEAN DEFAULT FALSE;
+        END IF;
       END $$;
     `);
     console.log('[LiveSearch] gyms table columns verified (currency, country)');
@@ -769,11 +778,12 @@ router.post('/ensure-gym', optionalAuth, async (req, res) => {
 
     const result = await pool.query(`
       INSERT INTO gyms 
-      (name, address, place_id, day_pass_price, currency, country, owner_id, slug, is_active, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, $5, $6, 'system', $7, true, NOW(), NOW())
+      (name, description, address, place_id, day_pass_price, currency, country, owner_id, slug, is_active, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, 'system', $8, true, NOW(), NOW())
       RETURNING id, name
     `, [
       p.name,
+      (p.name || 'Gym') + ' — ' + (p.formatted_address || ''),
       p.formatted_address, placeId, gymPrice,
       gymCurrency.currency.toUpperCase(), gymCountry, slug,
     ]);
