@@ -2338,8 +2338,7 @@
           +   '<div class="icon">' + ICONS.share + '</div><span class="label">' + _shareLbl + '</span></div>'
           + '<div class="reel-action" data-action="save">'
           +   '<div class="icon">' + ICONS.save + '</div><span class="label">' + _saveLbl + '</span></div>'
-          + '<a class="reel-action" data-action="create" href="/become-a-creator">'
-          +   '<div class="icon" style="background:rgba(34,197,94,.85);border-color:rgba(34,197,94,.9)">' + ICONS.create + '</div><span class="label">Earn</span></a>';
+          ; /* Earn action removed — moved to Profile tab */
         div.appendChild(actions);
 
         // Double-tap like
@@ -2810,15 +2809,7 @@
       loadFeed();
 
       // ═══ #6: Camera filters + #7: AI enhance + #5: moderation ═══
-      // Create reel button (bottom-right FAB)
-      (function(){
-        var fab = document.createElement('button');
-        fab.id = 'sg-create-reel-fab';
-        fab.innerHTML = '<span style="font-size:24px">🎬</span>';
-        fab.style.cssText = 'position:fixed;bottom:80px;right:16px;z-index:100;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#FF6D00,#ff8f00);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(255,109,0,.4);transition:transform .2s';
-        fab.onclick = function(){ window._sgOpenCamera(); };
-        document.body.appendChild(fab);
-      })();
+      // Create reel button — removed, moved to Profile tab
 
       // Camera overlay with filter picker
       window._sgCameraFilters = [
