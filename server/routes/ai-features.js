@@ -5,7 +5,7 @@
  */
 const express = require('express');
 const router = express.Router();
-const { pool } = require('../db');
+const pool = require('../middleware/db');
 
 // Auth middleware (optional — some endpoints work without login)
 function optionalAuth(req, res, next) {
