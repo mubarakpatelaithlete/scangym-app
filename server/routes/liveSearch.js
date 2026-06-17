@@ -21,6 +21,25 @@ const { getCurrencyForCountry, getDayPassPrice, calculateGymPrice } = require('.
 const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
 const BASE_URL = 'https://maps.googleapis.com/maps/api/place';
 
+// ─── Auto-migration: ensure gyms table has currency & country columns ──
+(async () => {
+  try {
+    await pool.query(`
+      DO $$ BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='currency') THEN
+          ALTER TABLE gyms ADD COLUMN currency VARCHAR(10) DEFAULT 'GBP';
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='country') THEN
+          ALTER TABLE gyms ADD COLUMN country VARCHAR(10) DEFAULT 'GB';
+        END IF;
+      END $$;
+    `);
+    console.log('[LiveSearch] gyms table columns verified (currency, country)');
+  } catch (err) {
+    console.error('[LiveSearch] Migration error:', err.message);
+  }
+})();
+
 // ─── C7 fix: Map of common country names/suffixes → ISO 3166-1 alpha-2 codes ──
 // Google Places formatted_address ends with the country name.
 // This covers all 99 countries in the pricing engine + common variants.
