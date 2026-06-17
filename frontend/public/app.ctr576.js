@@ -12006,6 +12006,7 @@ function MoreHubPage(){
       <p style="color:rgba(255,255,255,.2);font-size:11px">\u00A9 2026 ScanGym \u00B7 Manchester, UK</p>
     </div>
   </div>`;
+})();
 }
 
 
