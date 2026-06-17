@@ -1638,4 +1638,78 @@ router.post('/first-free', async (req, res) => {
   }
 });
 
+// ─── Route Aliases ──────────────────────────────────────────────────────────
+// The frontend pay-sheet (app.js _paySheetSaveCard) calls:
+//   POST /api/payment/setup-intent   → needs to reach /setup-card
+//   POST /api/payment/confirm-card   → needs to reach /confirm-setup
+// Without these aliases the server's SPA catch-all returns index.html,
+// which the frontend tries to JSON.parse → "Unexpected token '<'" error.
+// ────────────────────────────────────────────────────────────────────────────
+
+router.post('/setup-intent', async (req, res) => {
+  // Alias for /setup-card — create a SetupIntent to save a card
+  try {
+    if (!stripe) return res.status(500).json({ error: 'Payment not configured' });
+    if (!req.session?.userId) return res.status(401).json({ error: 'Login required' });
+
+    const customerId = await getOrCreateStripeCustomer(req.session.userId);
+
+    const setupIntent = await stripe.setupIntents.create({
+      customer: customerId,
+      payment_method_types: ['card'],
+      usage: 'off_session',
+    });
+
+    res.json({
+      success: true,
+      clientSecret: setupIntent.client_secret,
+    });
+  } catch (err) {
+    console.error('Setup intent (alias) error:', err);
+    res.status(500).json({ error: 'Failed to set up card saving' });
+  }
+});
+
+router.post('/confirm-card', async (req, res) => {
+  // Alias for /confirm-setup — confirm a SetupIntent and save the card
+  try {
+    if (!stripe) return res.status(500).json({ error: 'Payment not configured' });
+    if (!req.session?.userId) return res.status(401).json({ error: 'Login required' });
+
+    const { setupIntentId, nickname } = req.body;
+    if (!setupIntentId) return res.status(400).json({ error: 'setupIntentId required' });
+
+    const setupIntent = await stripe.setupIntents.retrieve(setupIntentId);
+    if (setupIntent.status !== 'succeeded') {
+      return res.status(400).json({ error: 'Setup not completed', status: setupIntent.status });
+    }
+
+    const pmId = setupIntent.payment_method;
+    const customerId = await getOrCreateStripeCustomer(req.session.userId);
+
+    // Set as default
+    await stripe.customers.update(customerId, {
+      invoice_settings: { default_payment_method: pmId },
+    });
+
+    const pm = await stripe.paymentMethods.retrieve(pmId);
+
+    res.json({
+      success: true,
+      card: {
+        id: pm.id,
+        brand: pm.card?.brand || 'card',
+        last4: pm.card?.last4 || '****',
+        expMonth: pm.card?.exp_month,
+        expYear: pm.card?.exp_year,
+        nickname: nickname || '',
+      },
+      message: '💳 Card saved! Future bookings will be 1-tap.',
+    });
+  } catch (err) {
+    console.error('Confirm card (alias) error:', err);
+    res.status(500).json({ error: 'Failed to confirm card setup' });
+  }
+});
+
 module.exports = router;
