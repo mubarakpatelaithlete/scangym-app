@@ -1459,8 +1459,7 @@ function SearchPage(){
           html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'payment\')"><div class="tt-action-btn">\u{1F4B3}</div><div class="tt-action-label">'+_payLabel+'</div></div>';
           html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'passes\')"><div class="tt-action-btn">\u{1F39F}\uFE0F</div><div class="tt-action-label">'+_passLabel+'</div></div>';
           html+='<div class="tt-action" onclick="event.stopPropagation();showCalendarPicker(\''+c.id+'\')"><div class="tt-action-btn">\u{1F4C5}</div><div class="tt-action-label">'+_calDate+'</div></div>';
-          /* #104: Like button */
-          html+='<div class="tt-action" onclick="event.stopPropagation();sgToggleLike(\'gym\',\''+c.id+'\',this.querySelector(\'.tt-action-btn\'))"><div class="tt-action-btn" data-liked="false" style="font-size:22px">\u{1F90D} 0</div><div class="tt-action-label">Like</div></div>';
+          /* #104: Like button — removed, creator features moved to Profile tab */
           /* #59 cleanup: equipment & facilities buttons removed per user request */
           /* map button removed */
           html+='</div>';
@@ -11991,6 +11990,13 @@ function MoreHubPage(){
       ${moreItem('📸','Posts','Share gym photos & stories','/posts')}
       ${moreItem('🎬','Creator Reels','Tags, earnings, downloads','/creator-reels')}
       ${moreItem('🏢','Gym Partner Hub','Claim & manage your gym','/gym-partner-hub')}
+    </div>
+
+    <!-- Creator tools (moved from Reels tab) -->
+    <div class="sg-more-section">
+      <div class="sg-more-section-title">🎬 Creator Tools</div>
+      ${moreItem('📹','Create Reel','Record & share gym content','/reels')}
+      ${moreItem('💰','Upload & Earn','Become a creator, earn 25%','/become-a-creator')}
     </div>
 
     <div class="sg-more-section">
