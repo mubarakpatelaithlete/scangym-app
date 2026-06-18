@@ -1427,21 +1427,10 @@ function SearchPage(){
             html+='<div class="tt-search" id="tt-search" onclick="window._openSearchOverlay()">';
             html+='<div class="tt-search-input">\u{1F50D} '+(state.searchQuery||(searchLabel||'Nearby')+' \u00b7 '+totalC+' gyms')+'</div>';
             html+='<div class="tt-search-gps" onclick="event.stopPropagation();findGyms()">\u{1F4CD}</div>';
-            html+='<div class="tt-search-filter" onclick="event.stopPropagation();var s=document.getElementById(\'tt-filter-sheet\');if(s)s.classList.toggle(\'open\')">\u{1F50E}</div>';
-            html+='<div class="tt-search-filter" onclick="event.stopPropagation();sgOpenMapView()" style="font-size:14px" title="Map View">🗺️</div>';
+            /* #Viktor: Removed filter & map buttons — clean search bar only */
             html+='</div>';
             /* Hidden input for backwards compat — doSearch still reads it */
             html+='<input type="hidden" id="tt-search-real-input" value="'+(state.searchQuery||'')+'">';
-            /* Filter sheet */
-            html+='<div class="tt-filter-sheet" id="tt-filter-sheet">';
-            html+='<button onclick="sgToggleFilter(this,\'open\')" class="sg-filter-pill" data-filter="open">Open Now</button>';
-            html+='<button onclick="sgToggleFilter(this,\'24h\')" class="sg-filter-pill" data-filter="24h">⏰ 24/7</button>';
-            html+='<button onclick="sgToggleFilter(this,\'self-service\')" class="sg-filter-pill" data-filter="self-service">🔓 Self Entry</button>';
-            html+='<button onclick="sgToggleFilter(this,\'rating\')" class="sg-filter-pill" data-filter="rating">Rating 4+</button>';
-            html+='<button onclick="sgToggleFilter(this,\'price-low\')" class="sg-filter-pill" data-filter="price-low">Budget Friendly</button>';
-            html+='<button onclick="sgToggleFilter(this,\'near\')" class="sg-filter-pill" data-filter="near">📍 Near Me</button>';
-            html+='<button onclick="sgToggleFilter(this,\'popular\')" class="sg-filter-pill" data-filter="popular">Most Popular</button>';
-            html+='</div>';
           }
 
           /* Action buttons (right side) — with contextual labels */
@@ -7691,6 +7680,10 @@ function LoginPage(){
           <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#34A853" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#FBBC05" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
           Continue with Google
         </button>
+        <button id="apple-signin-btn" onclick="handleAppleSignIn()" style="background:#000;color:#fff;border:1px solid rgba(255,255,255,.15);padding:14px;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;width:100%;transition:all .15s">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
+          Continue with Apple
+        </button>
         `}
         <div class="text-center">
           <p class="text-slate-500 text-xs mt-2">Sign in once — your card saves for 1-tap booking ⚡</p>
@@ -7773,26 +7766,129 @@ window._sgInitOneTap=async function(){
 // Auto-trigger One Tap after 1.5s on page load (non-blocking)
 setTimeout(function(){window._sgInitOneTap();},1500);
 
-// Manual Google Sign-In button handler (fallback if One Tap dismissed)
+// Manual Google Sign-In button handler — uses OAuth token flow (reliable popup)
+// FIX: Replaced prompt() (One Tap) with initTokenClient().requestAccessToken()
+// One Tap frequently fails on mobile due to: cooldowns after dismiss, 3rd-party
+// cookie blocks, incognito mode, and browser restrictions. The OAuth token client
+// opens a proper Google consent popup that works reliably everywhere.
 window.handleGoogleSignIn=async function(){
   const btn=document.getElementById('google-signin-btn');
   if(btn){btn.disabled=true;btn.style.opacity='.6';}
   try{
     await window._sgLoadGIS();
-    google.accounts.id.initialize({
+    var tokenClient=google.accounts.oauth2.initTokenClient({
       client_id:window._sgGoogleClientId||'placeholder-client-id.apps.googleusercontent.com',
-      callback:window._sgGoogleCallback
-    });
-    google.accounts.id.prompt(function(notification){
-      if(notification.isNotDisplayed()||notification.isSkippedMoment()){
-        sgToast('Google Sign-In popup blocked — try allowing popups','info',4000);
+      scope:'openid email profile',
+      callback:async function(tokenResponse){
+        if(tokenResponse.error){
+          sgToast('Google sign-in cancelled','info',2000);
+          if(btn){btn.disabled=false;btn.style.opacity='1';}
+          return;
+        }
+        try{
+          var r=await fetch('/api/auth/google-token-login',{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            credentials:'include',
+            body:JSON.stringify({access_token:tokenResponse.access_token})
+          });
+          var data=await r.json();
+          if(data.success&&data.user){
+            state.user=data.user;
+            state.authStep='phone';
+            sgToast('Welcome, '+(data.user.name||'there')+'! \ud83c\udf89','success',3000);
+            if(window._pendingCheckout&&window._pendingCheckout.gymId){
+              var pc=window._pendingCheckout;
+              window._pendingCheckout=null;
+              navigate('/explore');
+              setTimeout(function(){showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime);},600);
+            }else if(window._sgOneTapCreatorMode){
+              window._sgOneTapCreatorMode=false;
+              _handleCreatorGoogleSignup(data.user);
+            }else{
+              navigate('/explore');
+            }
+          }else{
+            sgToast(data.error||'Google sign-in failed','error',3000);
+          }
+        }catch(e){
+          sgToast('Google sign-in error: '+e.message,'error',3000);
+        }
         if(btn){btn.disabled=false;btn.style.opacity='1';}
       }
     });
+    tokenClient.requestAccessToken();
   }catch(e){
     sgToast('Could not load Google Sign-In: '+e.message,'error',3000);
     if(btn){btn.disabled=false;btn.style.opacity='1';}
   }
+};
+
+// ─── Apple Sign-In Handler ───
+// Load Apple JS SDK once
+window._sgLoadAppleJS=function(){
+  return new Promise(function(resolve,reject){
+    if(window.AppleID){resolve();return;}
+    if(window._sgAppleLoading){window._sgAppleLoading.then(resolve).catch(reject);return;}
+    window._sgAppleLoading=new Promise(function(res,rej){
+      var s=document.createElement('script');
+      s.src='https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js';
+      s.onload=function(){res();resolve();};
+      s.onerror=function(){rej(new Error('Failed to load Apple SDK'));reject(new Error('Failed to load Apple SDK'));};
+      document.head.appendChild(s);
+    });
+  });
+};
+
+window.handleAppleSignIn=async function(){
+  var btn=document.getElementById('apple-signin-btn');
+  if(btn){btn.style.opacity='.6';btn.style.pointerEvents='none';}
+  try{
+    await window._sgLoadAppleJS();
+    AppleID.auth.init({
+      clientId:window._sgAppleClientId||'com.scangym.web',
+      scope:'name email',
+      redirectURI:window.location.origin+'/api/auth/apple-callback',
+      usePopup:true
+    });
+    var data=await AppleID.auth.signIn();
+    // data.authorization.id_token (JWT), data.authorization.code
+    // data.user (only on FIRST sign-in: {name:{firstName,lastName}, email})
+    var r=await fetch('/api/auth/apple-login',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      credentials:'include',
+      body:JSON.stringify({
+        id_token:data.authorization.id_token,
+        code:data.authorization.code,
+        user:data.user||null
+      })
+    });
+    var result=await r.json();
+    if(result.success&&result.user){
+      state.user=result.user;
+      state.authStep='phone';
+      sgToast('Welcome, '+(result.user.name||'there')+'! \ud83c\udf89','success',3000);
+      if(window._pendingCheckout&&window._pendingCheckout.gymId){
+        var pc=window._pendingCheckout;
+        window._pendingCheckout=null;
+        navigate('/explore');
+        setTimeout(function(){showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime);},600);
+      }else{
+        navigate('/explore');
+      }
+    }else{
+      sgToast(result.error||'Apple sign-in failed','error',3000);
+    }
+  }catch(e){
+    if(e&&e.error==='popup_closed_by_user'){
+      sgToast('Apple sign-in cancelled','info',2000);
+    }else{
+      sgToast('Could not complete Apple sign-in','error',3000);
+      console.error('[Apple Sign-In]',e);
+    }
+  }
+  if(btn){btn.style.opacity='1';btn.style.pointerEvents='auto';}
 };
 
 // ─── Guest Flow Handlers (deprecated — login required before booking) ───
@@ -15149,41 +15245,8 @@ window.sgOpenPassOptions = function(gymId) {
 
 // ═══ #110-#119: Engagement Features ═══
 
-// #110: Proactive chat — never leave visitor lonely
-// Show a friendly nudge after 15s of inactivity on any page
-(function(){
-  var _sgIdleTimer;
-  var _sgNudgeShown = false;
-  var nudges = [
-    '👋 Need help finding the perfect gym?',
-    '💪 Ready to book your first session?',
-    '🔥 Over 1.2M gyms worldwide — let me help you find one!',
-    '🎯 Looking for something specific? I can help!',
-    '⚡ Pro tip: Tap the 🔍 to search by location!'
-  ];
-  function resetIdle() {
-    clearTimeout(_sgIdleTimer);
-    if (_sgNudgeShown) return;
-    _sgIdleTimer = setTimeout(function() {
-      if (_sgNudgeShown) return;
-      _sgNudgeShown = true;
-      var msg = nudges[Math.floor(Math.random() * nudges.length)];
-      sgToast(msg, 'info', 5000);
-      // Show chat bubble
-      var bubble = document.createElement('div');
-      bubble.id = 'sg-proactive-chat';
-      bubble.style.cssText = 'position:fixed;bottom:80px;right:16px;z-index:9500;background:linear-gradient(135deg,#FF6D00,#ff8534);border-radius:50%;width:56px;height:56px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 20px rgba(255,109,0,.4);animation:casinoGlow 2s ease-in-out infinite';
-      bubble.innerHTML = '<span style="font-size:24px">💬</span>';
-      bubble.onclick = function() { navigate('/help'); bubble.remove(); };
-      document.body.appendChild(bubble);
-      setTimeout(function() { if(bubble.parentNode) bubble.remove(); }, 15000);
-    }, 15000);
-  }
-  document.addEventListener('touchstart', resetIdle);
-  document.addEventListener('click', resetIdle);
-  document.addEventListener('scroll', resetIdle);
-  resetIdle();
-})();
+// #110: Proactive chat — moved to Profile tab (Help Center)
+// Floating bubble removed — help is accessible via Profile > Help Center
 
 // #111: Dopamine sound on key interactions
 window._sgDopamineEnabled = true;

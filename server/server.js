@@ -675,7 +675,8 @@ if (fs.existsSync(FRONTEND_DIR)) {
 
     // Inject geo hint + performance hints right before </head>
     const googleClientId = process.env.GOOGLE_CLIENT_ID || '';
-    const perfHints = `<script>window.__geoHint=${geoHint};window._sgGoogleClientId="${googleClientId}";</script>\n`;
+    const appleClientId = process.env.APPLE_CLIENT_ID || '';
+    const perfHints = `<script>window.__geoHint=${geoHint};window._sgGoogleClientId="${googleClientId}";window._sgAppleClientId="${appleClientId}";</script>\n`;
     const html = _indexHtmlCache.replace('</head>', perfHints + '</head>');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
