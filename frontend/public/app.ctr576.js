@@ -12878,7 +12878,7 @@ window._loadRebookSuggestions=async function(){
     var list=document.getElementById('rebook-list');
     if(!list)return;
     if(!data.length){
-      list.innerHTML='<div style="text-align:center;padding:40px 20px"><p style="font-size:40px;margin-bottom:12px">🏋️</p><p style="color:rgba(255,255,255,.5);font-size:14px">No gyms yet — book your first session!</p><button onclick="navigate(\\'/explore\\')" style="background:#FF6D00;color:#fff;border:none;padding:12px 28px;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer;margin-top:12px">Find a Gym →</button></div>';
+      list.innerHTML='<div style="text-align:center;padding:40px 20px"><p style="font-size:40px;margin-bottom:12px">🏋️</p><p style="color:rgba(255,255,255,.5);font-size:14px">No gyms yet — book your first session!</p><button onclick="navigate(\'/explore\')" style="background:#FF6D00;color:#fff;border:none;padding:12px 28px;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer;margin-top:12px">Find a Gym →</button></div>';
       return;
     }
     var dp=sgPrice('day');
