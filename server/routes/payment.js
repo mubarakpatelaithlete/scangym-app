@@ -692,7 +692,7 @@ router.post('/quick-checkout', async (req, res) => {
     const existingBooking = await pool.query(
       `SELECT id, status FROM public.bookings
        WHERE gym_id = $1 AND user_id = $2 AND booking_date = $3 AND start_time = $4
-       AND status NOT IN ('cancelled')
+       AND status NOT IN ('cancelled', 'failed')
        LIMIT 1`,
       [dbGymId, req.session.userId, date, resolved.startTime]
     );
@@ -1126,7 +1126,7 @@ router.post('/cash-booking', async (req, res) => {
     const existingCash = await pool.query(
       `SELECT id, status FROM public.bookings
        WHERE gym_id = $1 AND user_id = $2 AND booking_date = $3 AND start_time = $4
-       AND status NOT IN ('cancelled')
+       AND status NOT IN ('cancelled', 'failed')
        LIMIT 1`,
       [dbGymId, req.session.userId, date, resolved.startTime]
     );
