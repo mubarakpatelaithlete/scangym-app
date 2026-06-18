@@ -525,6 +525,182 @@ router.post('/google-login', async (req, res) => {
 });
 
 /**
+ * POST /api/auth/google-token-login (Fix: OAuth token flow)
+ * Verify Google access token via userinfo API and create/find user.
+ * Used by the OAuth popup flow (initTokenClient) which is more reliable
+ * than One Tap on mobile browsers.
+ */
+router.post('/google-token-login', async (req, res) => {
+  try {
+    const { access_token } = req.body;
+    if (!access_token) return res.status(400).json({ error: 'Missing access token' });
+
+    // Verify access token by fetching user profile from Google
+    const userInfoResp = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: 'Bearer ' + access_token }
+    });
+    if (!userInfoResp.ok) {
+      return res.status(401).json({ error: 'Invalid Google access token' });
+    }
+    const userInfo = await userInfoResp.json();
+
+    const email = userInfo.email;
+    const name = userInfo.name || '';
+    const firstName = userInfo.given_name || name.split(' ')[0] || '';
+    const lastName = userInfo.family_name || name.split(' ').slice(1).join(' ') || '';
+
+    if (!email) return res.status(400).json({ error: 'No email in Google profile' });
+
+    // Find or create user by email
+    let user = await pool.query('SELECT * FROM public.users WHERE email = $1', [email]);
+
+    if (user.rows.length === 0) {
+      user = await pool.query(
+        `INSERT INTO public.users (id, email, first_name, last_name, created_at, updated_at)
+         VALUES (gen_random_uuid(), $1, $2, $3, NOW(), NOW()) RETURNING *`,
+        [email, firstName, lastName]
+      );
+      console.log('Created new user via Google (token flow):', email);
+    } else {
+      const u = user.rows[0];
+      if (!u.first_name && firstName) {
+        await pool.query('UPDATE public.users SET first_name=$1, last_name=$2, updated_at=NOW() WHERE id=$3',
+          [firstName, lastName, u.id]);
+      }
+      console.log('Existing user Google token login:', email);
+    }
+
+    const u = user.rows[0];
+    const stripeCustomerId = await ensureStripeCustomer(u.id, u.phone_number, email);
+    const referralHandle = await ensureReferralHandle(u.id, firstName || u.first_name, lastName || u.last_name, email, u.phone_number);
+
+    req.session.userId = u.id;
+    req.session.phone = u.phone_number;
+
+    res.json({
+      success: true,
+      user: {
+        id: u.id,
+        phone: u.phone_number,
+        name: [firstName || u.first_name, lastName || u.last_name].filter(Boolean).join(' ') || null,
+        email: email,
+        hasStripeCustomer: !!stripeCustomerId,
+        referralHandle,
+        referralLink: referralHandle ? `scangym.com/r/${referralHandle}` : null,
+      },
+      message: 'Logged in with Google',
+    });
+  } catch (err) {
+    console.error('Google token login error:', err);
+    res.status(500).json({ error: 'Google login failed', detail: err.message });
+  }
+});
+
+/**
+ * POST /api/auth/apple-login (Sign In with Apple)
+ * Verify Apple ID token (JWT signed by Apple) and create/find user.
+ * Apple only sends user name/email on the FIRST sign-in; subsequent
+ * sign-ins only include the sub (unique user ID) in the token.
+ */
+router.post('/apple-login', async (req, res) => {
+  try {
+    const { id_token, user: appleUser } = req.body;
+    if (!id_token) return res.status(400).json({ error: 'Missing Apple ID token' });
+
+    // Decode JWT parts
+    const parts = id_token.split('.');
+    if (parts.length !== 3) return res.status(400).json({ error: 'Invalid token format' });
+
+    const header = JSON.parse(Buffer.from(parts[0], 'base64url').toString());
+    const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString());
+
+    // Verify essential claims
+    if (payload.iss !== 'https://appleid.apple.com') {
+      return res.status(401).json({ error: 'Invalid token issuer' });
+    }
+    if (payload.exp && payload.exp * 1000 < Date.now()) {
+      return res.status(401).json({ error: 'Token expired' });
+    }
+
+    // Verify signature with Apple's public keys
+    const crypto = require('crypto');
+    const appleKeysResp = await fetch('https://appleid.apple.com/auth/keys');
+    if (!appleKeysResp.ok) {
+      return res.status(500).json({ error: 'Could not fetch Apple public keys' });
+    }
+    const appleKeys = await appleKeysResp.json();
+    const signingKey = appleKeys.keys.find(k => k.kid === header.kid);
+    if (!signingKey) {
+      return res.status(401).json({ error: 'Apple signing key not found' });
+    }
+    const publicKey = crypto.createPublicKey({ key: signingKey, format: 'jwk' });
+    const signatureValid = crypto.createVerify('RSA-SHA256')
+      .update(parts[0] + '.' + parts[1])
+      .verify(publicKey, Buffer.from(parts[2], 'base64url'));
+    if (!signatureValid) {
+      return res.status(401).json({ error: 'Invalid token signature' });
+    }
+
+    // Extract user info
+    // Apple sends email in token on first auth; subsequent auths may omit it
+    const email = payload.email || (appleUser && appleUser.email);
+    const appleSub = payload.sub; // Apple's unique, stable user ID
+    const firstName = (appleUser && appleUser.name) ? appleUser.name.firstName || '' : '';
+    const lastName = (appleUser && appleUser.name) ? appleUser.name.lastName || '' : '';
+
+    // Find user by email first, then by apple_sub
+    let user;
+    if (email) {
+      user = await pool.query('SELECT * FROM public.users WHERE email = $1', [email]);
+    }
+
+    if (!user || user.rows.length === 0) {
+      // No user found by email — create new
+      if (!email) {
+        return res.status(400).json({ error: 'Email required. Please use "Share My Email" when signing in with Apple.' });
+      }
+      user = await pool.query(
+        `INSERT INTO public.users (id, email, first_name, last_name, created_at, updated_at)
+         VALUES (gen_random_uuid(), $1, $2, $3, NOW(), NOW()) RETURNING *`,
+        [email, firstName, lastName]
+      );
+      console.log('Created new user via Apple:', email);
+    } else {
+      const u = user.rows[0];
+      if (!u.first_name && firstName) {
+        await pool.query('UPDATE public.users SET first_name=$1, last_name=$2, updated_at=NOW() WHERE id=$3',
+          [firstName, lastName, u.id]);
+      }
+      console.log('Existing user Apple login:', email);
+    }
+
+    const u = user.rows[0];
+    const stripeCustomerId = await ensureStripeCustomer(u.id, u.phone_number, email);
+    const referralHandle = await ensureReferralHandle(u.id, firstName || u.first_name, lastName || u.last_name, email, u.phone_number);
+
+    req.session.userId = u.id;
+    req.session.phone = u.phone_number;
+
+    res.json({
+      success: true,
+      user: {
+        id: u.id,
+        phone: u.phone_number,
+        name: [firstName || u.first_name, lastName || u.last_name].filter(Boolean).join(' ') || null,
+        email: email,
+        hasStripeCustomer: !!stripeCustomerId,
+        referralHandle,
+        referralLink: referralHandle ? `scangym.com/r/${referralHandle}` : null,
+      },
+      message: 'Logged in with Apple',
+    });
+  } catch (err) {
+    console.error('Apple login error:', err);
+    res.status(500).json({ error: 'Apple login failed', detail: err.message });
+  }
+});
+
+/**
  * POST /api/auth/logout
  */
 router.post('/logout', (req, res) => {
