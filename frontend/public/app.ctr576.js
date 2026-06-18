@@ -1,7 +1,7 @@
 // ScanGym Frontend v5.3.1 — Fix P0: route payment to Uber-style white sheet + cache bust
 
 // Inject CSS animations for loading experience
-(function(){const s=document.createElement('style');s.textContent='@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}#fun-fact{transition:opacity 0.2s ease}.gym-card{animation:fadeInUp 0.3s ease-out both}.animate-slide-up{animation:slideUp 0.3s ease-out}@keyframes skeletonPulse{0%,100%{opacity:.6}50%{opacity:.3}}@keyframes locationDot{0%,100%{box-shadow:0 0 0 0 rgba(255,109,0,.4)}50%{box-shadow:0 0 0 8px rgba(255,109,0,0)}}.skel-card{animation:skeletonPulse 1.8s ease-in-out infinite}.loc-dot{animation:locationDot 1.5s ease-in-out infinite}.cards-enter .gym-card{animation:fadeInUp .4s ease-out both}@keyframes toastIn{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes toastOut{from{transform:translateY(0);opacity:1}to{transform:translateY(-100%);opacity:0}}@keyframes spin{to{transform:rotate(360deg)}}@keyframes casinoGlow{0%,100%{box-shadow:0 4px 20px rgba(255,109,0,.4),0 0 15px rgba(255,109,0,.15);background-position:0% 50%}50%{box-shadow:0 4px 30px rgba(255,109,0,.65),0 0 30px rgba(255,109,0,.3),0 0 60px rgba(255,109,0,.1);background-position:100% 50%}}@keyframes greenGlow{0%,100%{box-shadow:0 4px 20px rgba(34,197,94,.35),0 0 15px rgba(34,197,94,.1)}50%{box-shadow:0 4px 30px rgba(34,197,94,.6),0 0 30px rgba(34,197,94,.25),0 0 60px rgba(34,197,94,.1)}}.sg-spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}/* ── 3-Tab System (Polished) ── */.sg-tab-bar{position:fixed;bottom:0;left:0;right:0;height:56px;background:rgba(8,8,18,.98);backdrop-filter:blur(24px) saturate(1.8);-webkit-backdrop-filter:blur(24px) saturate(1.8);display:flex;align-items:center;justify-content:space-around;border-top:1px solid rgba(255,255,255,.06);z-index:9000;padding-bottom:env(safe-area-inset-bottom,0);pointer-events:auto!important}.sg-tab-item{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:6px 20px;border-radius:0;transition:all .25s cubic-bezier(.4,0,.2,1);-webkit-tap-highlight-color:transparent;user-select:none;position:relative;touch-action:manipulation}.sg-tab-item svg{width:26px;height:26px;stroke:rgba(255,255,255,.4);fill:none;stroke-width:1.8;transition:all .25s cubic-bezier(.4,0,.2,1)}.sg-tab-item .sg-tab-label{font-size:10px;font-weight:600;letter-spacing:.2px;color:rgba(255,255,255,.4);transition:all .25s cubic-bezier(.4,0,.2,1)}.sg-tab-item.active svg{stroke:#FF6D00;filter:drop-shadow(0 0 6px rgba(255,109,0,.35))}.sg-tab-item.active .sg-tab-label{color:#FF6D00}.sg-tab-item:active{transform:scale(.92)}.sg-tab-content{position:fixed;top:0;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom,0px));overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;scroll-behavior:smooth;display:flex;flex-direction:column}.sg-tab-content.reels-active{position:static;padding-bottom:0;overflow:visible}.sg-reels-frame{position:fixed;top:0;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom,0px));border:none;width:100%;height:calc(100vh - 56px - env(safe-area-inset-bottom,0px));z-index:1}.sg-more-hub{padding:20px 16px 24px;max-width:480px;margin:0 auto}.sg-more-section{margin-bottom:20px}.sg-more-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.3);margin-bottom:8px;padding-left:4px}.sg-more-item{display:flex;align-items:center;gap:14px;padding:14px 16px;background:rgba(255,255,255,.04);border-radius:14px;margin-bottom:6px;border:1px solid rgba(255,255,255,.04);cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}.sg-more-item:active{transform:scale(.98);background:rgba(255,255,255,.08)}.sg-more-item .sg-mi-icon{font-size:20px;width:40px;height:40px;background:rgba(255,255,255,.06);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.sg-more-item .sg-mi-text{flex:1}.sg-more-item .sg-mi-text h4{color:#fff;font-size:14px;font-weight:600;margin:0}.sg-more-item .sg-mi-text p{color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0}.sg-more-item .sg-mi-arrow{color:rgba(255,255,255,.2);font-size:16px}.sg-more-profile{display:flex;align-items:center;gap:14px;margin-bottom:28px;padding-top:12px}.sg-more-avatar{width:56px;height:56px;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff;flex-shrink:0}.sg-more-profile-info h3{color:#fff;font-size:18px;font-weight:700;margin:0}.sg-more-profile-info p{color:rgba(255,255,255,.4);font-size:13px;margin:2px 0 0}.sg-more-social{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}.sg-more-social a{display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:rgba(255,255,255,.04);border-radius:12px;border:1px solid rgba(255,255,255,.06);font-size:16px;transition:all .15s;text-decoration:none}.sg-more-social a:active{background:rgba(255,255,255,.1);transform:scale(.95)}.sg-more-back{display:flex;align-items:center;gap:8px;padding:12px 0;cursor:pointer;color:rgba(255,255,255,.6);font-size:14px;font-weight:600;margin-bottom:4px;-webkit-tap-highlight-color:transparent}.sg-more-back:active{color:#FF6D00}#sg-search-overlay{transition:opacity .2s ease}#sg-search-overlay.active{opacity:1!important}.hide-scrollbar::-webkit-scrollbar{display:none}.hide-scrollbar{scrollbar-width:none;-ms-overflow-style:none}*::-webkit-scrollbar{display:none}*{scrollbar-width:none;-ms-overflow-style:none}.sg-dashboard{-webkit-tap-highlight-color:transparent;position:fixed;top:0;left:0;right:0;bottom:56px;z-index:10;overscroll-behavior:none;-webkit-overflow-scrolling:auto}html,body{height:100%;overflow:hidden;overscroll-behavior:none;position:fixed;width:100%}.sg-tab-bar.hidden{display:none!important}/* ── Option D: Sticky Continue Banner ── */#sg-continue-banner{position:fixed;bottom:calc(56px + env(safe-area-inset-bottom,0px));left:0;right:0;height:52px;background:linear-gradient(135deg,#FF6D00 0%,#E66200 100%);display:flex;align-items:center;justify-content:center;gap:8px;z-index:8999;box-shadow:0 -4px 20px rgba(255,109,0,.25);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .25s cubic-bezier(.4,0,.2,1),opacity .25s ease;touch-action:manipulation}#sg-continue-banner:active{transform:scale(.98)}#sg-continue-banner.sg-cb-hidden{transform:translateY(100%);opacity:0;pointer-events:none}#sg-continue-banner .sg-cb-text{font-size:16px;font-weight:700;color:#fff;letter-spacing:.3px}#sg-continue-banner .sg-cb-price{font-size:13px;font-weight:600;color:rgba(255,255,255,.75)}#sg-continue-banner .sg-cb-arrow{font-size:18px;color:#fff;margin-left:2px}.sg-tab-content.sg-cb-active{bottom:calc(56px + 52px + env(safe-area-inset-bottom,0px))!important}.sg-reels-frame.sg-cb-active{bottom:calc(56px + 52px + env(safe-area-inset-bottom,0px))!important;height:calc(100vh - 56px - 52px - env(safe-area-inset-bottom,0px))!important}';document.head.appendChild(s)})();
+(function(){const s=document.createElement('style');s.textContent='@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}#fun-fact{transition:opacity 0.2s ease}.gym-card{animation:fadeInUp 0.3s ease-out both}.animate-slide-up{animation:slideUp 0.3s ease-out}@keyframes skeletonPulse{0%,100%{opacity:.6}50%{opacity:.3}}@keyframes locationDot{0%,100%{box-shadow:0 0 0 0 rgba(255,109,0,.4)}50%{box-shadow:0 0 0 8px rgba(255,109,0,0)}}.skel-card{animation:skeletonPulse 1.8s ease-in-out infinite}.loc-dot{animation:locationDot 1.5s ease-in-out infinite}.cards-enter .gym-card{animation:fadeInUp .4s ease-out both}@keyframes toastIn{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes toastOut{from{transform:translateY(0);opacity:1}to{transform:translateY(-100%);opacity:0}}@keyframes spin{to{transform:rotate(360deg)}}@keyframes casinoGlow{0%,100%{box-shadow:0 4px 20px rgba(255,109,0,.4),0 0 15px rgba(255,109,0,.15);background-position:0% 50%}50%{box-shadow:0 4px 30px rgba(255,109,0,.65),0 0 30px rgba(255,109,0,.3),0 0 60px rgba(255,109,0,.1);background-position:100% 50%}}@keyframes greenGlow{0%,100%{box-shadow:0 4px 20px rgba(34,197,94,.35),0 0 15px rgba(34,197,94,.1)}50%{box-shadow:0 4px 30px rgba(34,197,94,.6),0 0 30px rgba(34,197,94,.25),0 0 60px rgba(34,197,94,.1)}}.sg-spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}/* ── 3-Tab System (Polished) ── */.sg-tab-bar{position:fixed;bottom:0;left:0;right:0;height:56px;background:rgba(8,8,18,.98);backdrop-filter:blur(24px) saturate(1.8);-webkit-backdrop-filter:blur(24px) saturate(1.8);display:flex;align-items:center;justify-content:space-around;border-top:1px solid rgba(255,255,255,.06);z-index:9000;padding-bottom:env(safe-area-inset-bottom,0);pointer-events:auto!important}.sg-tab-item{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:6px 20px;border-radius:0;transition:all .25s cubic-bezier(.4,0,.2,1);-webkit-tap-highlight-color:transparent;user-select:none;position:relative;touch-action:manipulation}.sg-tab-item svg{width:26px;height:26px;stroke:rgba(255,255,255,.4);fill:none;stroke-width:1.8;transition:all .25s cubic-bezier(.4,0,.2,1)}.sg-tab-item .sg-tab-label{font-size:10px;font-weight:600;letter-spacing:.2px;color:rgba(255,255,255,.4);transition:all .25s cubic-bezier(.4,0,.2,1)}.sg-tab-item.active svg{stroke:#FF6D00;filter:drop-shadow(0 0 6px rgba(255,109,0,.35))}.sg-tab-item.active .sg-tab-label{color:#FF6D00}.sg-tab-item:active{transform:scale(.92)}.sg-tab-content{position:fixed;top:0;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom,0px));overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;scroll-behavior:smooth;display:flex;flex-direction:column}.sg-tab-content.reels-active{position:static;padding-bottom:0;overflow:visible}.sg-reels-frame{position:fixed;top:0;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom,0px));border:none;width:100%;height:calc(100vh - 56px - env(safe-area-inset-bottom,0px));z-index:1}.sg-more-hub{padding:20px 16px 24px;max-width:480px;margin:0 auto}.sg-more-section{margin-bottom:20px}.sg-more-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.3);margin-bottom:8px;padding-left:4px}.sg-more-item{display:flex;align-items:center;gap:14px;padding:14px 16px;background:rgba(255,255,255,.04);border-radius:14px;margin-bottom:6px;border:1px solid rgba(255,255,255,.04);cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}.sg-more-item:active{transform:scale(.98);background:rgba(255,255,255,.08)}.sg-more-item .sg-mi-icon{font-size:20px;width:40px;height:40px;background:rgba(255,255,255,.06);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.sg-more-item .sg-mi-text{flex:1}.sg-more-item .sg-mi-text h4{color:#fff;font-size:14px;font-weight:600;margin:0}.sg-more-item .sg-mi-text p{color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0}.sg-more-item .sg-mi-arrow{color:rgba(255,255,255,.2);font-size:16px}.sg-more-profile{display:flex;align-items:center;gap:14px;margin-bottom:28px;padding-top:12px}.sg-more-avatar{width:56px;height:56px;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff;flex-shrink:0}.sg-more-profile-info h3{color:#fff;font-size:18px;font-weight:700;margin:0}.sg-more-profile-info p{color:rgba(255,255,255,.4);font-size:13px;margin:2px 0 0}.sg-more-social{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}.sg-more-social a{display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:rgba(255,255,255,.04);border-radius:12px;border:1px solid rgba(255,255,255,.06);font-size:16px;transition:all .15s;text-decoration:none}.sg-more-social a:active{background:rgba(255,255,255,.1);transform:scale(.95)}.sg-more-back{display:flex;align-items:center;gap:8px;padding:12px 0;cursor:pointer;color:rgba(255,255,255,.6);font-size:14px;font-weight:600;margin-bottom:4px;-webkit-tap-highlight-color:transparent}.sg-more-back:active{color:#FF6D00}#sg-search-overlay{transition:opacity .2s ease}#sg-search-overlay.active{opacity:1!important}.hide-scrollbar::-webkit-scrollbar{display:none}.hide-scrollbar{scrollbar-width:none;-ms-overflow-style:none}*::-webkit-scrollbar{display:none}*{scrollbar-width:none;-ms-overflow-style:none}.sg-dashboard{-webkit-tap-highlight-color:transparent;position:fixed;top:0;left:0;right:0;bottom:56px;z-index:10;overscroll-behavior:none;-webkit-overflow-scrolling:auto}html,body{height:100%;overflow:hidden;overscroll-behavior:none;position:fixed;width:100%}.sg-tab-bar.hidden{display:none!important}/* ── Continue Banner (permanent layout element like tab bar) ── */#sg-continue-banner{position:fixed;bottom:calc(56px + env(safe-area-inset-bottom,0px));left:0;right:0;height:52px;background:linear-gradient(135deg,#FF6D00 0%,#E66200 100%);display:flex;align-items:center;justify-content:center;gap:8px;z-index:8999;box-shadow:0 -4px 20px rgba(255,109,0,.25);cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}#sg-continue-banner:active{opacity:.85}#sg-continue-banner.sg-cb-hidden{display:none}#sg-continue-banner .sg-cb-text{font-size:16px;font-weight:700;color:#fff;letter-spacing:.3px}#sg-continue-banner .sg-cb-price{font-size:13px;font-weight:600;color:rgba(255,255,255,.75)}#sg-continue-banner .sg-cb-arrow{font-size:18px;color:#fff;margin-left:2px}.sg-tab-content.sg-cb-active{bottom:calc(56px + 52px + env(safe-area-inset-bottom,0px))!important}.sg-reels-frame.sg-cb-active,.sg-reels-frame#sg-reels-iframe.sg-cb-active,#sg-reels-iframe.sg-cb-active{bottom:calc(56px + 52px + env(safe-area-inset-bottom,0px))!important;height:calc(100vh - 56px - 52px - env(safe-area-inset-bottom,0px))!important}';document.head.appendChild(s)})();
 // ═══ Perf #9: Preconnect to Google photo CDN for faster image loads ═══
 (function(){['https://lh3.googleusercontent.com','https://maps.googleapis.com'].forEach(function(d){
 var l=document.createElement('link');l.rel='preconnect';l.href=d;l.crossOrigin='anonymous';document.head.appendChild(l);
@@ -12058,6 +12058,9 @@ function MoreHubPage(){
       ${(state.lastBooking||state.activeSession)?moreItem('\u{1F3CB}\uFE0F','Active Session','Live session in progress →','/session'):''}
       ${moreItem('\u{1F4CB}','My Bookings','Upcoming & past visits','/bookings')}
       ${moreItem('\u{1F4B3}','Payment & Wallet','Cards, balance & methods','/wallet')}
+      ${moreItem('⚡','Quick Rebook','1-tap rebook with fingerprint','/quick-rebook')}
+      ${moreItem('👥','Group Booking','Book for friends, split payment','/group-book/1')}
+      ${moreItem('💳','Pay Next Visit','Emergency entry, pay later','/pay-next-visit')}
       ${moreItem('\u{1F39F}\uFE0F','Refer & Earn','Invite friends, earn 15%','/refer')}
     </div>
 
@@ -12093,6 +12096,7 @@ function MoreHubPage(){
     <!-- Creator tools (moved from Reels tab) -->
     <div class="sg-more-section">
       <div class="sg-more-section-title">🎬 Creator Tools</div>
+      ${moreItem('🎯','Creator Hub','TikTok-style dashboard, stats, reels','/creator-hub')}
       ${moreItem('📹','Create Reel','Record & share gym content','/reels')}
       ${moreItem('💰','Upload & Earn','Become a creator, earn 25%','/become-a-creator')}
     </div>
@@ -12107,6 +12111,7 @@ function MoreHubPage(){
       <div class="sg-more-section-title">For Gym Owners</div>
       ${moreItem('\u{1F3E2}','List Your Gym','It\'s free \u2014 start earning','/list-your-gym')}
       ${u?moreItem('\u2699\uFE0F','Owner Controls','Open/close toggle, pricing','/owner/controls'):''}
+      ${u?moreItem('⚙️','Manage Gym','Equipment, facilities, schedule, reviews','/gym-manage/1'):''}
       ${_isAdmin(u)?moreItem('\u{1F4C8}','CEO Dashboard','Revenue, bookings, funnel','/forceo'):''}
     </div>
 
@@ -12752,6 +12757,633 @@ function render(){sgPerf.start('render');
     }
   });
 }
+// ═══════════════════════════════════════════════════════════════
+// NEW FEATURES: Group Booking, Quick Rebook, Vending, Gym Management
+// ═══════════════════════════════════════════════════════════════
+
+/* ── Group Booking Page ── */
+function GroupBookingPage(){
+  const gymId=state.route.split('/group-book/')[1]||'';
+  return`<div style="padding:16px;max-width:480px;margin:0 auto">
+    <div onclick="history.back()" style="display:flex;align-items:center;gap:8px;padding:12px 0;cursor:pointer;color:rgba(255,255,255,.6);font-size:14px;font-weight:600;margin-bottom:4px">← Back</div>
+    <h2 style="color:#fff;font-size:22px;font-weight:800;margin:0 0 4px">👥 Group Booking</h2>
+    <p style="color:rgba(255,255,255,.4);font-size:13px;margin:0 0 20px">Book for you and your group — split the cost</p>
+
+    <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:20px;margin-bottom:16px">
+      <label style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:8px">How many people?</label>
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
+        <button onclick="var c=document.getElementById('gb-count');var v=Math.max(2,parseInt(c.value)-1);c.value=v;_updateGroupPrice(v)" style="width:44px;height:44px;background:rgba(255,109,0,.15);border:1px solid rgba(255,109,0,.3);border-radius:50%;color:#FF6D00;font-size:20px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center">−</button>
+        <input id="gb-count" type="number" value="2" min="2" max="10" style="width:60px;text-align:center;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px;color:#fff;font-size:24px;font-weight:800;outline:none" onchange="_updateGroupPrice(this.value)">
+        <button onclick="var c=document.getElementById('gb-count');var v=Math.min(10,parseInt(c.value)+1);c.value=v;_updateGroupPrice(v)" style="width:44px;height:44px;background:rgba(255,109,0,.15);border:1px solid rgba(255,109,0,.3);border-radius:50%;color:#FF6D00;font-size:20px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center">+</button>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;padding:12px 0;border-top:1px solid rgba(255,255,255,.06)">
+        <span style="color:rgba(255,255,255,.5);font-size:14px">Per person</span>
+        <span id="gb-per-person" style="color:#FF6D00;font-size:18px;font-weight:800">${(typeof sgPrice==='function'&&sgPrice('day'))?sgPrice('day').display:'£4.49'}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:12px 0;border-top:1px solid rgba(255,255,255,.06)">
+        <span style="color:rgba(255,255,255,.5);font-size:14px">Total</span>
+        <span id="gb-total" style="color:#fff;font-size:18px;font-weight:800">${(typeof sgPrice==='function'&&sgPrice('day'))?sgPrice('day').symbol+(sgPrice('day').amount*2).toFixed(2):'£8.98'}</span>
+      </div>
+    </div>
+
+    <div style="background:rgba(255,109,0,.08);border:1px solid rgba(255,109,0,.2);border-radius:16px;padding:16px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
+      <span style="font-size:24px">💡</span>
+      <div>
+        <p style="color:#FF6D00;font-size:14px;font-weight:700">How it works</p>
+        <p style="color:rgba(255,255,255,.5);font-size:12px;line-height:1.5">1. Create group → share code with friends<br>2. Friends join with the code<br>3. Everyone pays their share<br>4. All get QR codes to enter</p>
+      </div>
+    </div>
+
+    <button id="gb-create-btn" onclick="_createGroupBooking('${gymId}')" style="width:100%;background:#FF6D00;color:#fff;border:none;padding:16px;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:12px">Create Group Booking →</button>
+
+    <div style="text-align:center;margin-top:16px">
+      <p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:8px">Have a group code?</p>
+      <div style="display:flex;gap:8px">
+        <input id="gb-join-code" placeholder="Enter code" style="flex:1;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px;color:#fff;font-size:14px;text-align:center;text-transform:uppercase;letter-spacing:2px;outline:none">
+        <button onclick="_joinGroupBooking()" style="background:rgba(255,109,0,.15);border:1px solid rgba(255,109,0,.3);border-radius:12px;padding:12px 20px;color:#FF6D00;font-weight:700;font-size:14px;cursor:pointer">Join</button>
+      </div>
+    </div>
+
+    <div id="gb-result" style="display:none;margin-top:20px;background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.2);border-radius:16px;padding:20px;text-align:center">
+      <p style="font-size:32px;margin-bottom:8px">✅</p>
+      <p style="color:#4ade80;font-size:16px;font-weight:700" id="gb-result-msg">Group created!</p>
+      <p style="color:rgba(255,255,255,.5);font-size:13px;margin:8px 0" id="gb-result-code"></p>
+      <button id="gb-share-btn" style="background:rgba(255,109,0,.15);border:1px solid rgba(255,109,0,.3);border-radius:12px;padding:12px 24px;color:#FF6D00;font-weight:700;font-size:14px;cursor:pointer;margin-top:8px">📋 Copy Share Link</button>
+    </div>
+  </div>`;
+}
+window._updateGroupPrice=function(count){
+  var n=Math.max(2,Math.min(10,parseInt(count)||2));
+  var dp=(typeof sgPrice==='function')?sgPrice('day'):null;
+  if(!dp)return;
+  document.getElementById('gb-per-person').textContent=dp.display;
+  document.getElementById('gb-total').textContent=dp.symbol+(dp.amount*n).toFixed(2);
+};
+window._createGroupBooking=async function(gymId){
+  var btn=document.getElementById('gb-create-btn');btn.textContent='Creating...';btn.disabled=true;
+  try{
+    var count=parseInt(document.getElementById('gb-count').value)||2;
+    var today=new Date().toISOString().split('T')[0];
+    var r=await fetch('/api/group/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({gymId:gymId||1,date:today,memberCount:count})});
+    var d=await r.json();
+    if(d.success){
+      document.getElementById('gb-result').style.display='block';
+      document.getElementById('gb-result-msg').textContent='Group created! Share this code:';
+      document.getElementById('gb-result-code').innerHTML='<span style="font-size:28px;font-weight:900;color:#fff;letter-spacing:4px">'+d.groupCode+'</span><br><span style="font-size:12px;color:rgba(255,255,255,.3)">'+d.perPerson.display+' per person · '+d.totalMembers+' people</span>';
+      document.getElementById('gb-share-btn').onclick=function(){navigator.clipboard.writeText(d.shareLink);sgToast('Link copied!','success',2000);};
+    }else{sgToast(d.error||'Failed','error');}
+  }catch(e){sgToast('Network error','error');}
+  btn.textContent='Create Group Booking →';btn.disabled=false;
+};
+window._joinGroupBooking=async function(){
+  var code=document.getElementById('gb-join-code').value.trim().toUpperCase();
+  if(!code){sgToast('Enter a group code','error');return;}
+  try{
+    var r=await fetch('/api/group/join/'+code,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:state.user?.name||'Member'})});
+    var d=await r.json();
+    if(d.success){sgToast('Joined group! Pay your share: '+sgPrice('day').display,'success',3000);}
+    else{sgToast(d.error||'Failed to join','error');}
+  }catch(e){sgToast('Network error','error');}
+};
+
+/* ── Quick Rebook Page ── */
+function QuickRebookPage(){
+  setTimeout(function(){_loadRebookSuggestions();},200);
+  return`<div style="padding:16px;max-width:480px;margin:0 auto">
+    <div onclick="navigate('/more')" style="display:flex;align-items:center;gap:8px;padding:12px 0;cursor:pointer;color:rgba(255,255,255,.6);font-size:14px;font-weight:600;margin-bottom:4px">← Back</div>
+    <h2 style="color:#fff;font-size:22px;font-weight:800;margin:0 0 4px">⚡ Quick Rebook</h2>
+    <p style="color:rgba(255,255,255,.4);font-size:13px;margin:0 0 20px">1-tap rebook with fingerprint</p>
+
+    <div id="rebook-setup" style="display:none;background:rgba(255,109,0,.08);border:1px solid rgba(255,109,0,.2);border-radius:16px;padding:20px;margin-bottom:20px;text-align:center">
+      <p style="font-size:32px;margin-bottom:8px">🔐</p>
+      <p style="color:#fff;font-size:16px;font-weight:700;margin-bottom:4px">Enable Biometric Rebook</p>
+      <p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:16px">Use your fingerprint for instant 1-tap rebooking</p>
+      <button onclick="_setupBiometric()" style="background:#FF6D00;color:#fff;border:none;padding:14px 32px;border-radius:14px;font-weight:700;font-size:15px;cursor:pointer">Enable Fingerprint 🔐</button>
+    </div>
+
+    <div id="rebook-list" style="margin-bottom:20px">
+      <p style="color:rgba(255,255,255,.3);font-size:13px;text-align:center;padding:40px 0">Loading your frequent gyms...</p>
+    </div>
+
+    <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px;margin-top:12px">
+      <p style="color:rgba(255,255,255,.4);font-size:12px;line-height:1.6;text-align:center">💡 Your most visited gyms appear here. Tap to rebook instantly with your saved card and fingerprint verification.</p>
+    </div>
+  </div>`;
+}
+window._loadRebookSuggestions=async function(){
+  try{
+    var r=await fetch('/api/rebook/suggestions');
+    var data=await r.json();
+    var list=document.getElementById('rebook-list');
+    if(!list)return;
+    if(!data.length){
+      list.innerHTML='<div style="text-align:center;padding:40px 20px"><p style="font-size:40px;margin-bottom:12px">🏋️</p><p style="color:rgba(255,255,255,.5);font-size:14px">No gyms yet — book your first session!</p><button onclick="navigate(\\'/explore\\')" style="background:#FF6D00;color:#fff;border:none;padding:12px 28px;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer;margin-top:12px">Find a Gym →</button></div>';
+      return;
+    }
+    var dp=sgPrice('day');
+    var html=data.map(function(g){
+      return'<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px;margin-bottom:10px;display:flex;align-items:center;gap:14px;cursor:pointer;-webkit-tap-highlight-color:transparent" onclick="_quickRebook('+g.gym_id+')">'
+        +'<div style="width:56px;height:56px;background:rgba(255,109,0,.1);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">🏋️</div>'
+        +'<div style="flex:1;min-width:0"><p style="color:#fff;font-size:15px;font-weight:700;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(g.name||'Gym')+'</p>'
+        +'<p style="color:rgba(255,255,255,.4);font-size:12px;margin:2px 0 0">'+g.visit_count+' visits · '+(g.address||'').split(',')[0]+'</p></div>'
+        +'<div style="text-align:right"><span style="color:#FF6D00;font-size:16px;font-weight:800">'+(dp?dp.display:'£4.49')+'</span><p style="color:rgba(255,255,255,.3);font-size:10px;margin:2px 0 0">1 tap 🔐</p></div></div>';
+    }).join('');
+    list.innerHTML=html;
+    // Show biometric setup if not done
+    if(window.PublicKeyCredential){document.getElementById('rebook-setup').style.display='block';}
+  }catch(e){console.error('Rebook load error:',e);}
+};
+window._setupBiometric=async function(){
+  if(!window.PublicKeyCredential){sgToast('Biometric not supported on this device','error');return;}
+  try{
+    var userId=state.user?.id||'anon';
+    var challenge=new Uint8Array(32);crypto.getRandomValues(challenge);
+    var cred=await navigator.credentials.create({publicKey:{
+      challenge:challenge,
+      rp:{name:'ScanGym',id:location.hostname},
+      user:{id:new TextEncoder().encode(userId),name:state.user?.email||'user@scangym.com',displayName:state.user?.name||'ScanGym User'},
+      pubKeyCredParams:[{alg:-7,type:'public-key'},{alg:-257,type:'public-key'}],
+      authenticatorSelection:{authenticatorAttachment:'platform',userVerification:'required'},
+      timeout:60000
+    }});
+    var credId=btoa(String.fromCharCode(...new Uint8Array(cred.rawId)));
+    await fetch('/api/rebook/setup-biometric',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({credentialId:credId,publicKey:credId})});
+    localStorage.setItem('sg_biometric_cred',credId);
+    document.getElementById('rebook-setup').innerHTML='<p style="color:#4ade80;font-size:14px;font-weight:700">✅ Fingerprint enabled!</p>';
+    sgToast('Biometric rebook enabled!','success',2000);
+  }catch(e){sgToast('Biometric setup cancelled','info');}
+};
+window._quickRebook=async function(gymId){
+  var credId=localStorage.getItem('sg_biometric_cred');
+  if(!credId){
+    // No biometric — fallback to normal booking
+    navigate('/gym/'+gymId);
+    return;
+  }
+  try{
+    // Verify biometric
+    var challenge=new Uint8Array(32);crypto.getRandomValues(challenge);
+    var assertion=await navigator.credentials.get({publicKey:{
+      challenge:challenge,
+      allowCredentials:[{id:Uint8Array.from(atob(credId),function(c){return c.charCodeAt(0);}),type:'public-key'}],
+      userVerification:'required',
+      timeout:60000
+    }});
+    var assertCredId=btoa(String.fromCharCode(...new Uint8Array(assertion.rawId)));
+    var vr=await fetch('/api/rebook/verify-biometric',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({credentialId:assertCredId})});
+    var vd=await vr.json();
+    if(!vd.verified){sgToast('Verification failed','error');return;}
+    // Quick rebook
+    sgToast('Booking...','info',1500);
+    var rr=await fetch('/api/rebook/quick',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({gymId:gymId,rebookToken:vd.rebookToken})});
+    var rd=await rr.json();
+    if(rd.success){sgToast('✅ Booked at '+rd.gym+' — '+rd.amount,'success',4000);navigate('/booking-success');}
+    else{sgToast(rd.error||'Rebook failed','error');}
+  }catch(e){
+    if(e.name==='NotAllowedError'){sgToast('Fingerprint cancelled','info');}
+    else{navigate('/gym/'+gymId);}
+  }
+};
+
+/* ── Vending Machine Page ── */
+function VendingPage(){
+  var gymId=state.route.split('/vending/')[1]||'';
+  setTimeout(function(){_loadVending(gymId);},200);
+  return`<div style="padding:16px;max-width:480px;margin:0 auto">
+    <div onclick="history.back()" style="display:flex;align-items:center;gap:8px;padding:12px 0;cursor:pointer;color:rgba(255,255,255,.6);font-size:14px;font-weight:600;margin-bottom:4px">← Back</div>
+    <h2 style="color:#fff;font-size:22px;font-weight:800;margin:0 0 4px">🏪 Vending Machine</h2>
+    <p style="color:rgba(255,255,255,.4);font-size:13px;margin:0 0 20px">Buy drinks, snacks & essentials</p>
+    <div id="vending-list" style="display:flex;flex-direction:column;gap:8px">
+      <p style="color:rgba(255,255,255,.3);text-align:center;padding:40px 0">Loading menu...</p>
+    </div>
+  </div>`;
+}
+window._loadVending=async function(gymId){
+  try{
+    var r=await fetch('/api/amenities/'+(gymId||1)+'/vending');
+    var d=await r.json();
+    var list=document.getElementById('vending-list');if(!list)return;
+    var cats={};(d.items||[]).forEach(function(item){
+      var cat=item.item_category||item.category||'Other';
+      if(!cats[cat])cats[cat]=[];
+      cats[cat].push(item);
+    });
+    var html='';
+    Object.keys(cats).forEach(function(cat){
+      html+='<div style="margin-bottom:8px"><p style="color:rgba(255,255,255,.3);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;padding:4px 0;margin-bottom:4px">'+cat+'</p>';
+      cats[cat].forEach(function(item){
+        var p=item.price_pence||item.price||0;
+        var emoji=item.item_emoji||item.emoji||'🛒';
+        var name=item.item_name||item.name;
+        var inStock=item.in_stock!==false;
+        html+='<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px;display:flex;align-items:center;gap:12px;margin-bottom:6px;'+(inStock?'':'opacity:0.4;')+'">'
+          +'<span style="font-size:28px">'+emoji+'</span>'
+          +'<div style="flex:1"><p style="color:#fff;font-size:14px;font-weight:600;margin:0">'+name+'</p>'
+          +(inStock?'':'<p style="color:#ef4444;font-size:11px;margin:2px 0 0">Out of stock</p>')+'</div>'
+          +'<div style="text-align:right">'
+          +'<span style="color:#FF6D00;font-size:16px;font-weight:800">'+sgSymbol()+(p/100).toFixed(2)+'</span>'
+          +(inStock?'<br><button onclick="_buyVending(\\\''+name+'\\\','+gymId+')" style="background:rgba(255,109,0,.15);border:1px solid rgba(255,109,0,.3);border-radius:8px;padding:4px 12px;color:#FF6D00;font-size:11px;font-weight:700;cursor:pointer;margin-top:4px">Buy</button>':'')
+          +'</div></div>';
+      });
+      html+='</div>';
+    });
+    list.innerHTML=html;
+  }catch(e){console.error('Vending load:',e);}
+};
+window._buyVending=async function(itemName,gymId){
+  try{
+    var r=await fetch('/api/amenities/'+(gymId||1)+'/vending/buy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({itemName:itemName})});
+    var d=await r.json();
+    if(d.success){sgToast(d.message||'Purchased!','success',3000);}
+    else{sgToast(d.error||'Failed','error');}
+  }catch(e){sgToast('Network error','error');}
+};
+
+/* ── Gym Partner Management Page ── */
+function GymPartnerManagePage(){
+  var gymId=state.route.split('/gym-manage/')[1]||'';
+  setTimeout(function(){_loadGymMgmt(gymId);},200);
+  return`<div style="padding:16px;max-width:480px;margin:0 auto">
+    <div onclick="navigate('/gym-partner-hub')" style="display:flex;align-items:center;gap:8px;padding:12px 0;cursor:pointer;color:rgba(255,255,255,.6);font-size:14px;font-weight:600;margin-bottom:4px">← Back to Hub</div>
+    <h2 style="color:#fff;font-size:22px;font-weight:800;margin:0 0 20px">⚙️ Manage Gym</h2>
+
+    <!-- Tab navigation -->
+    <div style="display:flex;gap:4px;margin-bottom:20px;overflow-x:auto;padding-bottom:4px" id="gm-tabs">
+      <button onclick="_gmTab('equipment')" id="gm-tab-equipment" style="flex-shrink:0;background:#FF6D00;color:#fff;border:none;padding:10px 16px;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer">🏋️ Equipment</button>
+      <button onclick="_gmTab('facilities')" id="gm-tab-facilities" style="flex-shrink:0;background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);border:none;padding:10px 16px;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer">🚿 Facilities</button>
+      <button onclick="_gmTab('schedule')" id="gm-tab-schedule" style="flex-shrink:0;background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);border:none;padding:10px 16px;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer">📅 Schedule</button>
+      <button onclick="_gmTab('reviews')" id="gm-tab-reviews" style="flex-shrink:0;background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);border:none;padding:10px 16px;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer">⭐ Reviews</button>
+      <button onclick="_gmTab('amenities')" id="gm-tab-amenities" style="flex-shrink:0;background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);border:none;padding:10px 16px;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer">🎁 Amenities</button>
+    </div>
+
+    <div id="gm-content">
+      <p style="color:rgba(255,255,255,.3);text-align:center;padding:40px 0">Loading...</p>
+    </div>
+  </div>`;
+}
+window._gmCurrentGymId='';
+window._gmTab=function(tab){
+  // Style tabs
+  ['equipment','facilities','schedule','reviews','amenities'].forEach(function(t){
+    var el=document.getElementById('gm-tab-'+t);
+    if(el){el.style.background=t===tab?'#FF6D00':'rgba(255,255,255,.06)';el.style.color=t===tab?'#fff':'rgba(255,255,255,.5)';}
+  });
+  if(tab==='equipment')_loadEquipment(_gmCurrentGymId);
+  else if(tab==='facilities')_loadFacilities(_gmCurrentGymId);
+  else if(tab==='schedule')_loadSchedule(_gmCurrentGymId);
+  else if(tab==='reviews')_loadGymReviews(_gmCurrentGymId);
+  else if(tab==='amenities')_loadAmenities(_gmCurrentGymId);
+};
+window._loadGymMgmt=function(gymId){_gmCurrentGymId=gymId;_gmTab('equipment');};
+
+window._loadEquipment=async function(gymId){
+  var ct=document.getElementById('gm-content');if(!ct)return;
+  try{
+    var r=await fetch('/api/gym-mgmt/'+gymId+'/equipment');var d=await r.json();
+    var items=d.equipment||[];
+    var html='<button onclick="_addEquipment()" style="width:100%;background:rgba(255,109,0,.1);border:1px dashed rgba(255,109,0,.3);border-radius:14px;padding:14px;color:#FF6D00;font-weight:700;font-size:14px;cursor:pointer;margin-bottom:16px">+ Add Equipment</button>';
+    if(!items.length){html+='<p style="color:rgba(255,255,255,.3);text-align:center;padding:20px">No equipment added yet</p>';}
+    items.forEach(function(eq){
+      var statusColor=eq.is_out_of_order?'#ef4444':'#4ade80';
+      var statusText=eq.is_out_of_order?'⚠️ Out of Order':'✅ Working';
+      html+='<div style="background:rgba(255,255,255,.04);border:1px solid '+(eq.is_out_of_order?'rgba(239,68,68,.2)':'rgba(255,255,255,.08)')+';border-radius:14px;padding:14px;margin-bottom:8px;display:flex;align-items:center;gap:12px">'
+        +'<div style="flex:1"><p style="color:#fff;font-size:14px;font-weight:600;margin:0">'+eq.name+'</p>'
+        +'<p style="color:rgba(255,255,255,.4);font-size:12px;margin:2px 0 0">'+(eq.category||'')+' · Qty: '+(eq.quantity||1)+' · '+(eq.brand||'')+'</p>'
+        +'<p style="color:'+statusColor+';font-size:11px;font-weight:600;margin:4px 0 0">'+statusText+'</p></div>'
+        +'<div style="display:flex;flex-direction:column;gap:6px">'
+        +'<button onclick="_toggleEquipmentStatus('+eq.id+','+(!eq.is_out_of_order)+')" style="background:'+(eq.is_out_of_order?'rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.2);color:#4ade80':'rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#ef4444')+';border-radius:8px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer">'+(eq.is_out_of_order?'Fix':'Break')+'</button>'
+        +'<button onclick="_deleteEquipment('+eq.id+')" style="background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.1);border-radius:8px;padding:4px 10px;color:rgba(239,68,68,.5);font-size:11px;cursor:pointer">Delete</button>'
+        +'</div></div>';
+    });
+    ct.innerHTML=html;
+  }catch(e){ct.innerHTML='<p style="color:#ef4444">Failed to load</p>';}
+};
+
+window._addEquipment=function(){
+  var name=prompt('Equipment name (e.g. Bench Press, Treadmill):');
+  if(!name)return;
+  var category=prompt('Category (Cardio, Strength, Free Weights, Machines, Functional):')||'General';
+  fetch('/api/gym-mgmt/'+_gmCurrentGymId+'/equipment',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name,category:category})}).then(function(){sgToast('Added!','success');_loadEquipment(_gmCurrentGymId);});
+};
+window._toggleEquipmentStatus=function(id,isOut){
+  var reason=isOut?prompt('Reason (optional):'):'';
+  fetch('/api/gym-mgmt/'+_gmCurrentGymId+'/equipment/'+id+'/status',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({isOutOfOrder:isOut,reason:reason||''})}).then(function(){sgToast(isOut?'Marked out of order':'Marked as working','info');_loadEquipment(_gmCurrentGymId);});
+};
+window._deleteEquipment=function(id){
+  if(!confirm('Delete this equipment?'))return;
+  fetch('/api/gym-mgmt/'+_gmCurrentGymId+'/equipment/'+id,{method:'DELETE'}).then(function(){sgToast('Deleted','info');_loadEquipment(_gmCurrentGymId);});
+};
+
+window._loadFacilities=async function(gymId){
+  var ct=document.getElementById('gm-content');if(!ct)return;
+  try{
+    var r=await fetch('/api/gym-mgmt/'+gymId+'/facilities');var d=await r.json();
+    var items=d.facilities||[];
+    var html='<button onclick="_addFacility()" style="width:100%;background:rgba(255,109,0,.1);border:1px dashed rgba(255,109,0,.3);border-radius:14px;padding:14px;color:#FF6D00;font-weight:700;font-size:14px;cursor:pointer;margin-bottom:16px">+ Add Facility</button>';
+    if(!items.length){html+='<p style="color:rgba(255,255,255,.3);text-align:center;padding:20px">No facilities added yet</p>';}
+    items.forEach(function(f){
+      var statusColor=f.is_out_of_order?'#ef4444':'#4ade80';
+      var statusText=f.is_out_of_order?'⚠️ Out of Order':'✅ Working';
+      html+='<div style="background:rgba(255,255,255,.04);border:1px solid '+(f.is_out_of_order?'rgba(239,68,68,.2)':'rgba(255,255,255,.08)')+';border-radius:14px;padding:14px;margin-bottom:8px;display:flex;align-items:center;gap:12px">'
+        +'<div style="flex:1"><p style="color:#fff;font-size:14px;font-weight:600;margin:0">'+f.name+'</p>'
+        +'<p style="color:rgba(255,255,255,.4);font-size:12px;margin:2px 0 0">'+(f.category||'')+' · '+(f.is_free?'Free':'Paid')+'</p>'
+        +'<p style="color:'+statusColor+';font-size:11px;font-weight:600;margin:4px 0 0">'+statusText+'</p></div>'
+        +'<div style="display:flex;flex-direction:column;gap:6px">'
+        +'<button onclick="_toggleFacilityStatus('+f.id+','+(!f.is_out_of_order)+')" style="background:'+(f.is_out_of_order?'rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.2);color:#4ade80':'rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#ef4444')+';border-radius:8px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer">'+(f.is_out_of_order?'Fix':'Break')+'</button>'
+        +'<button onclick="_deleteFacility('+f.id+')" style="background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.1);border-radius:8px;padding:4px 10px;color:rgba(239,68,68,.5);font-size:11px;cursor:pointer">Delete</button>'
+        +'</div></div>';
+    });
+    ct.innerHTML=html;
+  }catch(e){ct.innerHTML='<p style="color:#ef4444">Failed to load</p>';}
+};
+window._addFacility=function(){
+  var name=prompt('Facility name (e.g. Shower, Locker, Sauna):');
+  if(!name)return;
+  var category=prompt('Category (Hygiene, Storage, Comfort, Recovery):')||'General';
+  fetch('/api/gym-mgmt/'+_gmCurrentGymId+'/facilities',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name,category:category})}).then(function(){sgToast('Added!','success');_loadFacilities(_gmCurrentGymId);});
+};
+window._toggleFacilityStatus=function(id,isOut){
+  var reason=isOut?prompt('Reason (optional):'):'';
+  fetch('/api/gym-mgmt/'+_gmCurrentGymId+'/facilities/'+id+'/status',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({isOutOfOrder:isOut,reason:reason||''})}).then(function(){sgToast(isOut?'Marked out of order':'Marked as working','info');_loadFacilities(_gmCurrentGymId);});
+};
+window._deleteFacility=function(id){
+  if(!confirm('Delete this facility?'))return;
+  fetch('/api/gym-mgmt/'+_gmCurrentGymId+'/facilities/'+id,{method:'DELETE'}).then(function(){sgToast('Deleted','info');_loadFacilities(_gmCurrentGymId);});
+};
+
+window._loadSchedule=async function(gymId){
+  var ct=document.getElementById('gm-content');if(!ct)return;
+  try{
+    var r=await fetch('/api/gym-mgmt/'+gymId+'/schedule');var d=await r.json();
+    var html='<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px;margin-bottom:16px">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'
+      +'<p style="color:#fff;font-size:15px;font-weight:700">24/7 Open</p>'
+      +'<div onclick="_toggle24h('+gymId+')" style="width:52px;height:28px;background:'+(d.is24h?'#FF6D00':'rgba(255,255,255,.15)')+';border-radius:14px;cursor:pointer;position:relative;transition:all .2s"><div style="width:24px;height:24px;background:#fff;border-radius:50%;position:absolute;top:2px;'+(d.is24h?'right:2px':'left:2px')+';transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)"></div></div></div>'
+      +'</div>';
+
+    html+='<p style="color:rgba(255,255,255,.5);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Schedule a Temporary Close</p>'
+      +'<div style="display:flex;gap:8px;margin-bottom:12px">'
+      +'<input id="gm-close-date" type="date" style="flex:1;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px;color:#fff;font-size:14px;outline:none">'
+      +'<input id="gm-close-reason" placeholder="Reason" style="flex:1;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px;color:#fff;font-size:14px;outline:none">'
+      +'</div>'
+      +'<button onclick="_scheduleClose('+gymId+')" style="width:100%;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:12px;padding:12px;color:#ef4444;font-weight:700;font-size:14px;cursor:pointer;margin-bottom:16px">Schedule Close</button>';
+
+    // Show existing overrides
+    if(d.overrides&&d.overrides.length){
+      html+='<p style="color:rgba(255,255,255,.5);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Upcoming Closures</p>';
+      d.overrides.forEach(function(o){
+        html+='<div style="background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.1);border-radius:12px;padding:12px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between">'
+          +'<div><p style="color:#fff;font-size:14px;font-weight:600">'+new Date(o.override_date).toLocaleDateString('en-GB',{weekday:'short',month:'short',day:'numeric'})+'</p>'
+          +'<p style="color:rgba(255,255,255,.4);font-size:12px">'+(o.reason||'No reason')+'</p></div>'
+          +'<span style="color:#ef4444;font-size:12px;font-weight:700">'+(o.is_closed?'CLOSED':'Modified hours')+'</span></div>';
+      });
+    }
+    ct.innerHTML=html;
+  }catch(e){ct.innerHTML='<p style="color:#ef4444">Failed to load</p>';}
+};
+window._toggle24h=function(gymId){
+  fetch('/api/gym-mgmt/'+gymId+'/schedule',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({is24h:true})}).then(function(){sgToast('Updated!','success');_loadSchedule(gymId);});
+};
+window._scheduleClose=function(gymId){
+  var date=document.getElementById('gm-close-date').value;
+  var reason=document.getElementById('gm-close-reason').value;
+  if(!date){sgToast('Pick a date','error');return;}
+  fetch('/api/gym-mgmt/'+gymId+'/schedule/close',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({date:date,reason:reason||'Maintenance'})}).then(function(){sgToast('Closure scheduled','success');_loadSchedule(gymId);});
+};
+
+window._loadGymReviews=async function(gymId){
+  var ct=document.getElementById('gm-content');if(!ct)return;
+  try{
+    var r=await fetch('/api/gym-mgmt/'+gymId+'/reviews');var d=await r.json();
+    var reviews=d.reviews||[];
+    var html='';
+    if(!reviews.length){html='<p style="color:rgba(255,255,255,.3);text-align:center;padding:40px 0">No reviews yet</p>';}
+    reviews.forEach(function(rv){
+      var stars='⭐'.repeat(Math.min(5,rv.rating||0));
+      html+='<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px;margin-bottom:10px">'
+        +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
+        +'<span style="color:#fff;font-size:14px;font-weight:600">'+(rv.user_name||'Customer')+'</span>'
+        +'<span style="font-size:12px">'+stars+'</span></div>'
+        +'<p style="color:rgba(255,255,255,.6);font-size:13px;margin:0 0 8px;line-height:1.5">'+(rv.text||rv.comment||'')+'</p>';
+      if(rv.response_text){
+        html+='<div style="background:rgba(255,109,0,.05);border-left:3px solid #FF6D00;padding:8px 12px;border-radius:0 8px 8px 0;margin-top:8px">'
+          +'<p style="color:#FF6D00;font-size:11px;font-weight:700;margin:0 0 4px">Owner Response</p>'
+          +'<p style="color:rgba(255,255,255,.5);font-size:12px;margin:0">'+rv.response_text+'</p></div>';
+      }else{
+        html+='<div style="display:flex;gap:6px;margin-top:8px">'
+          +'<button onclick="_respondReview('+rv.id+')" style="background:rgba(255,109,0,.1);border:1px solid rgba(255,109,0,.2);border-radius:8px;padding:6px 12px;color:#FF6D00;font-size:11px;font-weight:700;cursor:pointer">Reply</button>'
+          +'<button onclick="_offerReview('+rv.id+')" style="background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.2);border-radius:8px;padding:6px 12px;color:#4ade80;font-size:11px;font-weight:700;cursor:pointer">Offer Free Day</button>'
+          +'</div>';
+      }
+      html+='</div>';
+    });
+    ct.innerHTML=html;
+  }catch(e){ct.innerHTML='<p style="color:#ef4444">Failed to load</p>';}
+};
+window._respondReview=function(reviewId){
+  var text=prompt('Your response to this review:');
+  if(!text)return;
+  fetch('/api/gym-mgmt/'+_gmCurrentGymId+'/reviews/'+reviewId+'/respond',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:text})}).then(function(){sgToast('Response posted!','success');_loadGymReviews(_gmCurrentGymId);});
+};
+window._offerReview=function(reviewId){
+  fetch('/api/gym-mgmt/'+_gmCurrentGymId+'/reviews/'+reviewId+'/offer',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({offerType:'free_day',offerValue:'1 free day pass',message:'We appreciate your feedback! We would love to offer you a free day pass to come back and see the improvements we have made.'})}).then(function(){sgToast('Offer sent!','success');_loadGymReviews(_gmCurrentGymId);});
+};
+
+window._loadAmenities=async function(gymId){
+  var ct=document.getElementById('gm-content');if(!ct)return;
+  var amenityList=[
+    {key:'has_locker',label:'🔐 Lockers',freeKey:'locker_free'},
+    {key:'has_towel',label:'🧺 Towels',freeKey:'towel_free'},
+    {key:'has_shower',label:'🚿 Showers',freeKey:'shower_free'},
+    {key:'has_changing_room',label:'👔 Changing Room'},
+    {key:'has_hair_dryer',label:'💨 Hair Dryer'},
+    {key:'has_music_system',label:'🎵 Music System'},
+    {key:'has_sauna',label:'🧖 Sauna'},
+    {key:'has_wifi',label:'📶 WiFi'},
+    {key:'has_parking',label:'🅿️ Parking'},
+    {key:'has_water_fountain',label:'🚰 Water Fountain'}
+  ];
+  try{
+    var r=await fetch('/api/amenities/'+gymId);var d=await r.json();
+    var raw=d.raw||{};
+    var html='<p style="color:rgba(255,255,255,.5);font-size:12px;margin-bottom:12px">Toggle amenities your gym offers:</p>';
+    amenityList.forEach(function(a){
+      var isOn=!!raw[a.key];
+      html+='<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.04)">'
+        +'<span style="color:#fff;font-size:14px;font-weight:600">'+a.label+'</span>'
+        +'<div onclick="_toggleAmenity(\\''+a.key+'\\','+(!isOn)+')" style="width:48px;height:26px;background:'+(isOn?'#FF6D00':'rgba(255,255,255,.15)')+';border-radius:13px;cursor:pointer;position:relative;transition:all .2s"><div style="width:22px;height:22px;background:#fff;border-radius:50%;position:absolute;top:2px;'+(isOn?'right:2px':'left:2px')+';transition:all .2s"></div></div></div>';
+    });
+    html+='<button onclick="_saveAmenities()" style="width:100%;background:#FF6D00;color:#fff;border:none;padding:14px;border-radius:14px;font-weight:700;font-size:15px;cursor:pointer;margin-top:16px">Save Amenities</button>';
+    ct.innerHTML=html;
+  }catch(e){ct.innerHTML='<p style="color:#ef4444">Failed to load</p>';}
+};
+window._amenityState={};
+window._toggleAmenity=function(key,val){_amenityState[key]=val;_loadAmenities(_gmCurrentGymId);};
+window._saveAmenities=function(){
+  fetch('/api/amenities/'+_gmCurrentGymId,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(_amenityState)}).then(function(){sgToast('Amenities saved!','success');});
+};
+
+/* ── Creator TikTok-style Dashboard ── */
+function CreatorDashboardPage(){
+  var creatorData=JSON.parse(localStorage.getItem('sg_creator')||'null');
+  var handle=creatorData?.handle||'';
+  if(!handle){
+    return`<div style="text-align:center;padding:80px 20px">
+      <p style="font-size:48px;margin-bottom:16px">🎬</p>
+      <p style="color:#fff;font-size:20px;font-weight:800;margin-bottom:8px">Creator Dashboard</p>
+      <p style="color:rgba(255,255,255,.4);font-size:14px;margin-bottom:24px">Join ScanSquad to start earning</p>
+      <button onclick="navigate('/become-a-creator')" style="background:#FF6D00;color:#fff;border:none;padding:14px 32px;border-radius:14px;font-weight:700;font-size:16px;cursor:pointer">Join ScanSquad →</button>
+    </div>`;
+  }
+  setTimeout(function(){_loadCreatorDash(handle);},200);
+  var link='scangym.com/r/'+handle;
+  return`<div style="padding:0;max-width:480px;margin:0 auto;background:#0a0a16;min-height:100vh">
+    <!-- TikTok-style header -->
+    <div style="padding:16px 16px 0;display:flex;align-items:center;justify-content:space-between">
+      <div onclick="navigate('/more')" style="cursor:pointer;color:rgba(255,255,255,.6);font-size:14px;font-weight:600">← Back</div>
+      <p style="color:#fff;font-size:16px;font-weight:800">Creator Hub</p>
+      <div style="width:40px"></div>
+    </div>
+
+    <!-- Stats row -->
+    <div style="display:flex;gap:0;padding:16px 0;border-bottom:1px solid rgba(255,255,255,.06)">
+      <div style="flex:1;text-align:center"><p id="cd-clicks" style="color:#fff;font-size:24px;font-weight:900">—</p><p style="color:rgba(255,255,255,.35);font-size:11px">Clicks</p></div>
+      <div style="flex:1;text-align:center"><p id="cd-conversions" style="color:#fff;font-size:24px;font-weight:900">—</p><p style="color:rgba(255,255,255,.35);font-size:11px">Conversions</p></div>
+      <div style="flex:1;text-align:center"><p id="cd-earnings" style="color:#FF6D00;font-size:24px;font-weight:900">—</p><p style="color:rgba(255,255,255,.35);font-size:11px">Earnings</p></div>
+      <div style="flex:1;text-align:center"><p id="cd-balance" style="color:#4ade80;font-size:24px;font-weight:900">—</p><p style="color:rgba(255,255,255,.35);font-size:11px">Balance</p></div>
+    </div>
+
+    <!-- TikTok-style right-side buttons -->
+    <div style="padding:16px">
+      <!-- Copy Affiliate Link -->
+      <button onclick="navigator.clipboard.writeText('https://${link}');sgToast('Link copied! 🚀','success',2000)" style="width:100%;background:rgba(255,109,0,.1);border:1px solid rgba(255,109,0,.3);border-radius:14px;padding:14px;color:#FF6D00;font-weight:700;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px">📋 Copy Affiliate Link</button>
+
+      <!-- Withdraw Money -->
+      <button onclick="navigate('/creator-earnings')" style="width:100%;background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.3);border-radius:14px;padding:14px;color:#4ade80;font-weight:700;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px">💸 Withdraw Money</button>
+
+      <!-- Ready-made Reels -->
+      <div style="margin-top:16px">
+        <p style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">📹 Ready-Made Reels</p>
+        <div id="cd-reels-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <p style="color:rgba(255,255,255,.3);grid-column:span 2;text-align:center;padding:20px">Loading reels...</p>
+        </div>
+      </div>
+
+      <!-- Trending Reels -->
+      <div style="margin-top:20px">
+        <p style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">🔥 Trending Reels</p>
+        <div id="cd-trending" style="display:flex;flex-direction:column;gap:8px">
+          <p style="color:rgba(255,255,255,.3);text-align:center;padding:20px">Loading...</p>
+        </div>
+      </div>
+
+      <!-- Live Streaming -->
+      <div style="margin-top:20px">
+        <p style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">📡 Live</p>
+        <button onclick="sgToast('Live streaming coming soon! 🔴','info',3000)" style="width:100%;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:14px;padding:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+          <span style="width:12px;height:12px;background:#ef4444;border-radius:50%;display:inline-block;animation:locationDot 1.5s ease-in-out infinite"></span>
+          <span style="color:#ef4444;font-weight:700;font-size:15px">Go Live</span>
+        </button>
+        <button onclick="sgToast('Live chat coming soon! 💬','info',3000)" style="width:100%;background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);border-radius:14px;padding:14px;cursor:pointer;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:8px">
+          <span style="color:#3b82f6;font-weight:700;font-size:14px">💬 Live Chat</span>
+        </button>
+      </div>
+    </div>
+  </div>`;
+}
+window._loadCreatorDash=async function(handle){
+  try{
+    var r=await fetch('/api/referrals/stats/'+handle);
+    var d=await r.json();
+    var sym=(typeof sgSymbol==='function')?sgSymbol():'£';
+    document.getElementById('cd-clicks').textContent=d.clicks||0;
+    document.getElementById('cd-conversions').textContent=d.conversions||0;
+    document.getElementById('cd-earnings').textContent=sym+((d.earnings_pence||0)/100).toFixed(2);
+    document.getElementById('cd-balance').textContent=sym+((d.available_pence||d.earnings_pence||0)/100).toFixed(2);
+  }catch(e){}
+  // Load reels
+  try{
+    var rr=await fetch('/api/reels/feed?limit=6');
+    var rd=await rr.json();
+    var grid=document.getElementById('cd-reels-grid');if(!grid)return;
+    var reels=rd.reels||rd.feed||rd||[];
+    if(!reels.length){grid.innerHTML='<p style="color:rgba(255,255,255,.3);grid-column:span 2;text-align:center">No reels available yet</p>';return;}
+    grid.innerHTML=reels.slice(0,6).map(function(reel){
+      var thumb=reel.thumbnail_url||reel.video_url||'';
+      return'<div style="position:relative;aspect-ratio:9/16;background:rgba(255,255,255,.05);border-radius:12px;overflow:hidden;cursor:pointer" onclick="sgToast(\\'Download coming soon!\\',\\'info\\')">'
+        +(thumb?'<img src="'+thumb+'" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display=\\'none\\'">':'')
+        +'<div style="position:absolute;bottom:0;left:0;right:0;padding:8px;background:linear-gradient(transparent,rgba(0,0,0,.8))"><p style="color:#fff;font-size:11px;font-weight:600;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(reel.caption||reel.title||'Gym Reel')+'</p>'
+        +'<p style="color:rgba(255,255,255,.4);font-size:10px;margin:2px 0 0">'+(reel.views||0)+' views</p></div></div>';
+    }).join('');
+  }catch(e){}
+  // Load trending
+  try{
+    var tr=await fetch('/api/reels/feed?limit=5&sort=trending');
+    var td=await tr.json();
+    var trending=document.getElementById('cd-trending');if(!trending)return;
+    var treels=td.reels||td.feed||td||[];
+    if(!treels.length){trending.innerHTML='<p style="color:rgba(255,255,255,.3);text-align:center">No trending reels yet</p>';return;}
+    trending.innerHTML=treels.slice(0,5).map(function(reel,i){
+      return'<div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:10px">'
+        +'<span style="color:rgba(255,255,255,.2);font-size:18px;font-weight:900;width:24px;text-align:center">'+(i+1)+'</span>'
+        +'<div style="flex:1"><p style="color:#fff;font-size:13px;font-weight:600;margin:0">'+(reel.caption||'Gym Reel')+'</p>'
+        +'<p style="color:rgba(255,255,255,.4);font-size:11px;margin:2px 0 0">'+(reel.views||0)+' views · '+(reel.likes||0)+' likes</p></div>'
+        +'<span style="color:#FF6D00;font-size:12px;font-weight:700">🔥</span></div>';
+    }).join('');
+  }catch(e){}
+};
+
+/* ── Pay Next Visit / Credit Page ── */
+function PayNextVisitPage(){
+  return`<div style="padding:16px;max-width:480px;margin:0 auto">
+    <div onclick="history.back()" style="display:flex;align-items:center;gap:8px;padding:12px 0;cursor:pointer;color:rgba(255,255,255,.6);font-size:14px;font-weight:600;margin-bottom:4px">← Back</div>
+    <h2 style="color:#fff;font-size:22px;font-weight:800;margin:0 0 4px">💳 Pay Next Visit</h2>
+    <p style="color:rgba(255,255,255,.4);font-size:13px;margin:0 0 20px">Can't pay now? We've got you covered</p>
+
+    <div style="background:rgba(255,109,0,.08);border:1px solid rgba(255,109,0,.2);border-radius:16px;padding:20px;margin-bottom:20px">
+      <p style="font-size:32px;text-align:center;margin-bottom:12px">🤝</p>
+      <p style="color:#fff;font-size:16px;font-weight:700;text-align:center;margin-bottom:8px">Emergency Entry</p>
+      <p style="color:rgba(255,255,255,.5);font-size:13px;text-align:center;line-height:1.6">If your saved card isn't working and you don't have cash, you can enter now and pay on your next visit. A hold is placed on your account until payment.</p>
+    </div>
+
+    <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px;margin-bottom:16px">
+      <p style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">How it works</p>
+      <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:12px">
+        <div style="width:28px;height:28px;background:rgba(255,109,0,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#FF6D00;font-size:13px;font-weight:800">1</div>
+        <p style="color:rgba(255,255,255,.7);font-size:13px;margin:4px 0 0">Tap "Enter Now, Pay Later" below</p>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:12px">
+        <div style="width:28px;height:28px;background:rgba(255,109,0,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#FF6D00;font-size:13px;font-weight:800">2</div>
+        <p style="color:rgba(255,255,255,.7);font-size:13px;margin:4px 0 0">Get your QR code to enter the gym</p>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start">
+        <div style="width:28px;height:28px;background:rgba(255,109,0,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#FF6D00;font-size:13px;font-weight:800">3</div>
+        <p style="color:rgba(255,255,255,.7);font-size:13px;margin:4px 0 0">Payment is collected on your next booking</p>
+      </div>
+    </div>
+
+    <div style="background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.1);border-radius:12px;padding:12px;margin-bottom:20px">
+      <p style="color:#ef4444;font-size:12px;font-weight:600">⚠️ Note: Maximum 1 deferred payment at a time. Must be settled before your next booking.</p>
+    </div>
+
+    <button onclick="_requestPayNextVisit()" style="width:100%;background:#FF6D00;color:#fff;border:none;padding:16px;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer">Enter Now, Pay Later →</button>
+  </div>`;
+}
+window._requestPayNextVisit=async function(){
+  try{
+    // Create a deferred booking via cash-booking endpoint
+    var r=await fetch('/api/payment/cash-booking',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({gymId:1,type:'deferred',note:'Pay next visit'})});
+    var d=await r.json();
+    if(d.success||d.bookingCode){sgToast('✅ Entry granted! Pay on your next visit.','success',4000);navigate('/booking-success');}
+    else{sgToast(d.error||'Not available right now','error');}
+  }catch(e){sgToast('Network error','error');}
+};
+
+// ═══════════════════════════════════════════════════════════════
+// END NEW FEATURES
+// ═══════════════════════════════════════════════════════════════
+
 function _renderInner(){
   const path=state.route;
   let page='';
@@ -12773,6 +13405,13 @@ function _renderInner(){
   else if(path==='/coach')page=CoachPage();
   else if(path==='/creators')page=CreatorsPage();
   else if(path==='/creator-earnings')page=CreatorEarningsPage();
+  else if(path.startsWith('/group-book'))page=GroupBookingPage();
+  else if(path==='/group'){var code=state.routeQuery?.replace('?code=','');if(code){/* auto-join */}page=GroupBookingPage();}
+  else if(path==='/quick-rebook')page=QuickRebookPage();
+  else if(path.startsWith('/vending/'))page=VendingPage();
+  else if(path.startsWith('/gym-manage/'))page=GymPartnerManagePage();
+  else if(path==='/creator-hub')page=CreatorDashboardPage();
+  else if(path==='/pay-next-visit')page=PayNextVisitPage();
   else if(path==='/wallet')page=WalletPage();
   else if(path==='/dashboard'||path==='/admin'){const tk=localStorage.getItem('sg_token');if(!tk){page=`<div class="max-w-md mx-auto mt-20 text-center"><p class="text-2xl mb-4">🔒</p><p class="text-white font-bold text-xl mb-2">Dashboard Access Required</p><p class="text-slate-400 mb-4">Please log in with your admin account to view the dashboard.</p><button onclick="navigate(\'/login\')" class="bg-brand text-white px-6 py-3 rounded-lg font-bold">Log In →</button></div>`;}else{page=DashboardPage();}}
   else if(path==='/suppliers/vending')page=SupplierPage('vending');
@@ -14772,68 +15411,85 @@ if(localStorage.getItem('sg_push_enabled')==='1'&&state.user){
   sgEnablePushNotifications().catch(()=>{});
 }
 
-/* ═══ Sticky Continue Banner (above tab bar) ═══
- * Always-visible orange "Continue · price →" bar on Reels tab.
- * Tapping it navigates to Book tab. Not gym-specific — shows sgPrice('day').
- * Matches screenshot design: full-width orange, fixed above tab bar. */
+/* ═══ Sticky Continue Banner (permanent layout element) ═══
+ * Part of the bottom layout on Reels + Book tabs — like the tab bar itself.
+ * Content areas resize above it; nothing is covered.
+ * Reels tab: "Continue · £4.49 →" navigates to Book tab.
+ * Book tab: "Continue · £4.49 →" navigates to checkout for visible gym.
+ * Profile tab: banner hidden, content resizes back to tab bar only. */
 (function(){
   var banner=document.createElement('div');
   banner.id='sg-continue-banner';
-  banner.className='sg-cb-hidden'; // hidden until Reels tab active
+  banner.className='sg-cb-hidden';
   banner.innerHTML='<span class="sg-cb-text">Continue</span><span class="sg-cb-price"></span><span class="sg-cb-arrow">\u2192</span>';
 
-  // Tapping Continue → go to Book tab
   banner.addEventListener('click',function(){
-    if(typeof switchTab==='function')switchTab('book');
+    var activeLabel=document.querySelector('.sg-tab-item.active .sg-tab-label');
+    var currentTab=activeLabel?activeLabel.textContent.trim().toLowerCase():'';
+    if(currentTab==='book'){
+      // On Book tab: go to checkout for visible gym if available
+      var card=document.querySelector('.tt-card:not(.tt-offscreen)');
+      var gid=card?(card.getAttribute('data-gym-id')||card.getAttribute('data-id')):null;
+      if(gid&&typeof showBookingCheckout==='function'){showBookingCheckout(gid);}
+    }else{
+      // On Reels: navigate to Book tab
+      if(typeof switchTab==='function')switchTab('book');
+    }
   });
   document.body.appendChild(banner);
 
   var _cbVisible=false;
 
-  function _showBanner(){
-    // Update price each time (pricing may depend on geo/currency)
+  function _updatePrice(){
     var priceEl=banner.querySelector('.sg-cb-price');
-    if(priceEl){
-      var dp=(typeof sgPrice==='function')?sgPrice('day'):null;
-      priceEl.textContent=dp&&dp.display?('\u00b7 '+dp.display):'';
-    }
-    if(!_cbVisible){
-      _cbVisible=true;
-      banner.classList.remove('sg-cb-hidden');
-      var rf=document.querySelector('.sg-reels-frame');
-      if(rf)rf.classList.add('sg-cb-active');
-    }
+    if(!priceEl)return;
+    var dp=(typeof sgPrice==='function')?sgPrice('day'):null;
+    priceEl.textContent=dp&&dp.display?('\u00b7 '+dp.display):'';
+  }
+
+  function _showBanner(){
+    _updatePrice();
+    if(_cbVisible)return;
+    _cbVisible=true;
+    banner.classList.remove('sg-cb-hidden');
+    // Resize content areas so nothing is covered
+    var tc=document.querySelector('.sg-tab-content');
+    if(tc)tc.classList.add('sg-cb-active');
+    var rf=document.getElementById('sg-reels-iframe');
+    if(rf)rf.classList.add('sg-cb-active');
   }
 
   function _hideBanner(){
     if(!_cbVisible)return;
     _cbVisible=false;
     banner.classList.add('sg-cb-hidden');
-    var rf=document.querySelector('.sg-reels-frame');
+    var tc=document.querySelector('.sg-tab-content');
+    if(tc)tc.classList.remove('sg-cb-active');
+    var rf=document.getElementById('sg-reels-iframe');
     if(rf)rf.classList.remove('sg-cb-active');
   }
 
-  // Expose globally so other modules can trigger if needed
   window._sgShowContinueBanner=function(){_showBanner();};
   window._sgHideContinueBanner=function(){_hideBanner();};
 
-  // Show/hide based on active tab
+  // Show on Reels + Book, hide on Profile
   var _origSwitchTab=window.switchTab;
   if(typeof _origSwitchTab==='function'){
     window.switchTab=function(tab){
-      _origSwitchTab.apply(this,arguments);
-      if(tab==='reels'){
-        _showBanner();
-      }else{
+      if(tab==='more'){
         _hideBanner();
+      }else{
+        _showBanner();
       }
+      _origSwitchTab.apply(this,arguments);
     };
   }
 
-  // Show on initial load if Reels is the default tab
+  // Show on initial load (default tab is Reels)
   setTimeout(function(){
     var activeLabel=document.querySelector('.sg-tab-item.active .sg-tab-label');
-    if(activeLabel&&activeLabel.textContent.trim().toLowerCase()==='reels'){
+    var tab=activeLabel?activeLabel.textContent.trim().toLowerCase():'';
+    if(tab==='reels'||tab==='book'){
       _showBanner();
     }
   },500);
