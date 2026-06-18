@@ -829,6 +829,21 @@ router.post('/quick-checkout', async (req, res) => {
     });
   } catch (err) {
     console.error('Quick checkout error:', err);
+
+    // Fix: Update booking status to 'failed' when payment fails
+    // Without this, failed bookings stay 'pending' forever and block duplicate checks
+    if (typeof booking !== 'undefined' && booking && booking.id) {
+      try {
+        await pool.query(
+          'UPDATE public.bookings SET status = $1, updated_at = NOW() WHERE id = $2',
+          ['failed', booking.id]
+        );
+        console.log(`[Payment] Marked booking ${booking.id} as failed after payment error`);
+      } catch (updateErr) {
+        console.error('[Payment] Failed to update booking status:', updateErr.message);
+      }
+    }
+
     // Handle card authentication required (SCA)
     if (err.code === 'authentication_required') {
       return res.status(402).json({
