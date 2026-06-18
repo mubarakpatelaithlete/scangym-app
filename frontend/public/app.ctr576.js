@@ -7360,13 +7360,15 @@ window._loadWalletScreen=async function(){
   }
 };
 
-window._walletAddCard=function(){
+window._walletAddCard=async function(){
   const form=document.getElementById('wallet-add-card-form');
   const btn=document.getElementById('wallet-add-card-btn');
   if(!form)return;
   form.style.display='block';
   if(btn)btn.style.display='none';
 
+  // Ensure Stripe.js is loaded before mounting elements
+  await ensureStripeLoaded();
   // Mount Stripe Elements — separate fields
   if(!window._walletStripeElements&&window.Stripe){
     const stripeKey=window._stripePublicKey||'pk_live_51Ss8P0DPbSptA7HKWLnsjajAHtjQUeK5ubq3SjUv8lpyCcXXXZ7vkAD5mv6UFpiRlCidArsgoTUVdFE7f5DaVT7g00XlmkxRVy';
@@ -9101,7 +9103,7 @@ window.showBookingCheckout=async function(gymId, prefillDate, prefillTime){
           closeBookingSheet();navigate('/booking-success?session_id=quick&booking_id='+result.booking.id);
           sgToast(result.access?'🔓 Booked + door access ready!':'⚡ Booked instantly!','success',3000);
         }else{
-          sgToast(result.error||'Quick checkout failed');
+          const errMsg=result.detail||result.error||'Quick checkout failed';sgToast(errMsg,'error',6000);
           btn.disabled=false;btnText.textContent='Confirm and pay · '+displayPriceStr;
         }
       }catch(e){
@@ -14770,126 +14772,71 @@ if(localStorage.getItem('sg_push_enabled')==='1'&&state.user){
   sgEnablePushNotifications().catch(()=>{});
 }
 
-/* ═══ OPTION D: Sticky Continue Banner (above tab bar) ═══
- * Self-contained module — does NOT touch Reels/Book/Profile tab bar code.
- * Shows a fixed orange "Continue · price" banner above the tab bar when
- * the user is viewing a gym (Reels or Book tab). Tapping it opens checkout. */
+/* ═══ Sticky Continue Banner (above tab bar) ═══
+ * Always-visible orange "Continue · price →" bar on Reels tab.
+ * Tapping it navigates to Book tab. Not gym-specific — shows sgPrice('day').
+ * Matches screenshot design: full-width orange, fixed above tab bar. */
 (function(){
-  // Create banner element once
   var banner=document.createElement('div');
   banner.id='sg-continue-banner';
-  banner.className='sg-cb-hidden';
+  banner.className='sg-cb-hidden'; // hidden until Reels tab active
   banner.innerHTML='<span class="sg-cb-text">Continue</span><span class="sg-cb-price"></span><span class="sg-cb-arrow">\u2192</span>';
+
+  // Tapping Continue → go to Book tab
   banner.addEventListener('click',function(){
-    var gid=banner.getAttribute('data-gym-id');
-    // On Reels tab: CTA takes user to Book tab. On Book tab: straight to payment.
-    var activeTab=document.querySelector('.sg-tab-item.active .sg-tab-label');
-    var currentTab=activeTab?activeTab.textContent.trim().toLowerCase():'';
-    if(currentTab==='reels'||currentTab!=='book'){
-      if(typeof switchTab==='function')switchTab('book');
-    }else{
-      if(gid&&typeof showBookingCheckout==='function')showBookingCheckout(gid);
-    }
+    if(typeof switchTab==='function')switchTab('book');
   });
   document.body.appendChild(banner);
 
-  var _cbGymId=null;
   var _cbVisible=false;
 
-  // Show the banner with gym info
-  window._sgShowContinueBanner=function(gymId,price){
-    if(!gymId)return;
-    _cbGymId=gymId;
-    banner.setAttribute('data-gym-id',gymId);
+  function _showBanner(){
+    // Update price each time (pricing may depend on geo/currency)
     var priceEl=banner.querySelector('.sg-cb-price');
-    if(priceEl)priceEl.textContent=price?('\u00b7 '+price):'';
+    if(priceEl){
+      var dp=(typeof sgPrice==='function')?sgPrice('day'):null;
+      priceEl.textContent=dp&&dp.display?('\u00b7 '+dp.display):'';
+    }
     if(!_cbVisible){
       _cbVisible=true;
       banner.classList.remove('sg-cb-hidden');
-      // Shift content up to make room
-      var tc=document.querySelector('.sg-tab-content');
-      if(tc)tc.classList.add('sg-cb-active');
       var rf=document.querySelector('.sg-reels-frame');
       if(rf)rf.classList.add('sg-cb-active');
     }
-  };
+  }
 
-  // Hide the banner
-  window._sgHideContinueBanner=function(){
+  function _hideBanner(){
     if(!_cbVisible)return;
     _cbVisible=false;
-    _cbGymId=null;
     banner.classList.add('sg-cb-hidden');
-    var tc=document.querySelector('.sg-tab-content');
-    if(tc)tc.classList.remove('sg-cb-active');
     var rf=document.querySelector('.sg-reels-frame');
     if(rf)rf.classList.remove('sg-cb-active');
-  };
+  }
 
-  // Auto-detect visible gym from Reels carousel cards
-  // Uses IntersectionObserver — no touching existing scroll code
-  var _cbCardObserver=('IntersectionObserver' in window)?new IntersectionObserver(function(entries){
-    entries.forEach(function(e){
-      if(e.isIntersecting&&e.intersectionRatio>=0.5){
-        var card=e.target;
-        var gid=card.getAttribute('data-gym-id')||card.getAttribute('data-id');
-        var price=card.getAttribute('data-price')||'';
-        if(gid)window._sgShowContinueBanner(gid,price);
-      }
-    });
-  },{threshold:0.5}):null;
+  // Expose globally so other modules can trigger if needed
+  window._sgShowContinueBanner=function(){_showBanner();};
+  window._sgHideContinueBanner=function(){_hideBanner();};
 
-  // Observe new gym cards as they are added to DOM
-  var _cbMutObs=('MutationObserver' in window)?new MutationObserver(function(){
-    if(!_cbCardObserver)return;
-    document.querySelectorAll('.tt-card:not([data-cb-observed])').forEach(function(card){
-      card.setAttribute('data-cb-observed','1');
-      _cbCardObserver.observe(card);
-    });
-  }):null;
-
-  if(_cbMutObs)_cbMutObs.observe(document.body,{childList:true,subtree:true});
-
-  // Also observe cards already in DOM
-  setTimeout(function(){
-    if(!_cbCardObserver)return;
-    document.querySelectorAll('.tt-card').forEach(function(card){
-      if(!card.getAttribute('data-cb-observed')){
-        card.setAttribute('data-cb-observed','1');
-        _cbCardObserver.observe(card);
-      }
-    });
-  },1000);
-
-  // Hide banner when switching to Profile tab or when checkout opens
+  // Show/hide based on active tab
   var _origSwitchTab=window.switchTab;
   if(typeof _origSwitchTab==='function'){
     window.switchTab=function(tab){
-      if(tab==='more')window._sgHideContinueBanner();
       _origSwitchTab.apply(this,arguments);
-      // Re-show on reels/book if gym cards present
-      if(tab==='reels'||tab==='book'){
-        setTimeout(function(){
-          var cards=document.querySelectorAll('.tt-card:not(.tt-offscreen)');
-          if(cards.length>0){
-            var card=cards[0];
-            var gid=card.getAttribute('data-gym-id')||card.getAttribute('data-id');
-            var price=card.getAttribute('data-price')||'';
-            if(gid)window._sgShowContinueBanner(gid,price);
-          }
-        },300);
+      if(tab==='reels'){
+        _showBanner();
+      }else{
+        _hideBanner();
       }
     };
   }
 
-  // Hide when booking checkout opens, show when it closes
-  var _origShowUber=window.showBookingCheckout;
-  if(typeof _origShowUber==='function'){
-    window.showBookingCheckout=function(){
-      window._sgHideContinueBanner();
-      return _origShowUber.apply(this,arguments);
-    };
-  }
+  // Show on initial load if Reels is the default tab
+  setTimeout(function(){
+    var activeLabel=document.querySelector('.sg-tab-item.active .sg-tab-label');
+    if(activeLabel&&activeLabel.textContent.trim().toLowerCase()==='reels'){
+      _showBanner();
+    }
+  },500);
 })();
 
 // ═══ #139: Free Tools & Games Tab ═══
