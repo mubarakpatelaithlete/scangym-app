@@ -168,6 +168,23 @@ router.post('/split-pay', requireAuth, express.json(), async (req, res) => {
   }
 });
 
+// GET /my — My group bookings (MUST be before /:bookingId)
+router.get('/my', async (req, res) => {
+  if (!req.session?.userId) return res.status(401).json({ error: 'Login required' });
+  try {
+    const groups = await pool.query(
+      `SELECT gb.*, g.name as gym_name FROM group_bookings gb
+       JOIN group_members gm ON gb.id = gm.group_booking_id
+       LEFT JOIN gyms g ON gb.gym_id = g.id
+       WHERE gm.user_id = $1 ORDER BY gb.created_at DESC LIMIT 20`,
+      [req.session.userId]
+    );
+    res.json(groups.rows);
+  } catch (e) {
+    res.status(500).json({ error: 'Failed' });
+  }
+});
+
 // GET /:bookingId — Get group booking details
 router.get('/:bookingId', async (req, res) => {
   try {
@@ -193,23 +210,6 @@ router.get('/:bookingId', async (req, res) => {
     });
   } catch (e) {
     res.status(500).json({ error: 'Failed to load group booking' });
-  }
-});
-
-// GET /my — My group bookings
-router.get('/my', async (req, res) => {
-  if (!req.session?.userId) return res.status(401).json({ error: 'Login required' });
-  try {
-    const groups = await pool.query(
-      `SELECT gb.*, g.name as gym_name FROM group_bookings gb
-       JOIN group_members gm ON gb.id = gm.group_booking_id
-       LEFT JOIN gyms g ON gb.gym_id = g.id
-       WHERE gm.user_id = $1 ORDER BY gb.created_at DESC LIMIT 20`,
-      [req.session.userId]
-    );
-    res.json(groups.rows);
-  } catch (e) {
-    res.status(500).json({ error: 'Failed' });
   }
 });
 

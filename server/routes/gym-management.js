@@ -41,7 +41,7 @@ const pool = require('../middleware/db');
         category VARCHAR(100),
         brand VARCHAR(100),
         quantity INTEGER DEFAULT 1,
-        condition VARCHAR(50) DEFAULT 'good',
+        equipment_condition VARCHAR(50) DEFAULT 'good',
         is_out_of_order BOOLEAN DEFAULT false,
         out_of_order_since TIMESTAMPTZ,
         out_of_order_reason TEXT,
@@ -108,22 +108,31 @@ function requireAuth(req, res, next) {
 
 router.get('/:gymId/equipment', async (req, res) => {
   try {
+    // Ensure table exists (in case init race condition)
+    await pool.query(`CREATE TABLE IF NOT EXISTS gym_equipment (
+      id SERIAL PRIMARY KEY, gym_id INTEGER NOT NULL, name VARCHAR(200) NOT NULL,
+      category VARCHAR(100), brand VARCHAR(100), quantity INTEGER DEFAULT 1,
+      equipment_condition VARCHAR(50) DEFAULT 'good',
+      is_out_of_order BOOLEAN DEFAULT false, out_of_order_since TIMESTAMPTZ,
+      out_of_order_reason TEXT, photo_url TEXT, sort_order INTEGER DEFAULT 0,
+      created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW()
+    )`);
     const r = await pool.query(
       'SELECT * FROM gym_equipment WHERE gym_id = $1 ORDER BY sort_order, category, name',
       [req.params.gymId]
     );
     res.json({ equipment: r.rows, total: r.rows.length });
-  } catch (e) { res.status(500).json({ error: 'Failed' }); }
+  } catch (e) { console.error('Equipment GET error:', e.message); res.status(500).json({ error: 'Failed' }); }
 });
 
 router.post('/:gymId/equipment', requireAuth, express.json(), async (req, res) => {
   try {
-    const { name, category, brand, quantity, condition, photo_url } = req.body;
+    const { name, category, brand, quantity, equipment_condition, photo_url } = req.body;
     if (!name) return res.status(400).json({ error: 'name required' });
     const r = await pool.query(
-      `INSERT INTO gym_equipment (gym_id, name, category, brand, quantity, condition, photo_url)
+      `INSERT INTO gym_equipment (gym_id, name, category, brand, quantity, equipment_condition, photo_url)
        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-      [req.params.gymId, name, category || 'General', brand, quantity || 1, condition || 'good', photo_url]
+      [req.params.gymId, name, category || 'General', brand, quantity || 1, equipment_condition || 'good', photo_url]
     );
     res.json({ success: true, equipment: r.rows[0] });
   } catch (e) { res.status(500).json({ error: 'Failed to add' }); }
@@ -131,13 +140,13 @@ router.post('/:gymId/equipment', requireAuth, express.json(), async (req, res) =
 
 router.put('/:gymId/equipment/:id', requireAuth, express.json(), async (req, res) => {
   try {
-    const { name, category, brand, quantity, condition, photo_url } = req.body;
+    const { name, category, brand, quantity, equipment_condition, photo_url } = req.body;
     await pool.query(
       `UPDATE gym_equipment SET name=COALESCE($1,name), category=COALESCE($2,category),
-       brand=COALESCE($3,brand), quantity=COALESCE($4,quantity), condition=COALESCE($5,condition),
+       brand=COALESCE($3,brand), quantity=COALESCE($4,quantity), equipment_condition=COALESCE($5,equipment_condition),
        photo_url=COALESCE($6,photo_url), updated_at=NOW()
        WHERE id=$7 AND gym_id=$8`,
-      [name, category, brand, quantity, condition, photo_url, req.params.id, req.params.gymId]
+      [name, category, brand, quantity, equipment_condition, photo_url, req.params.id, req.params.gymId]
     );
     res.json({ success: true });
   } catch (e) { res.status(500).json({ error: 'Failed to update' }); }
