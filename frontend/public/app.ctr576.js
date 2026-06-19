@@ -16705,3 +16705,152 @@ window.sgFeedback = async function(elementId, vote, btn) {
   };
 })();
 
+
+/* ═══════════════════════════════════════════════════════════════════
+   BOOKING.COM-STYLE LOCATION ERROR POPUP
+   Purely additive — zero changes to existing location code.
+   Shows a friendly popup when user taps 📍 and GPS is denied/off.
+   ═══════════════════════════════════════════════════════════════════ */
+(function(){
+  // ── Inject CSS ──
+  var sty=document.createElement('style');
+  sty.textContent=`
+    .sg-loc-overlay{position:fixed;inset:0;z-index:99999;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);opacity:0;transition:opacity .2s ease;pointer-events:none}
+    .sg-loc-overlay.open{opacity:1;pointer-events:auto}
+    .sg-loc-popup{width:100%;max-width:420px;background:#1a1d27;border-radius:20px 20px 0 0;padding:28px 24px env(safe-area-inset-bottom,24px);transform:translateY(100%);transition:transform .25s cubic-bezier(.32,.72,.32,1)}
+    .sg-loc-overlay.open .sg-loc-popup{transform:translateY(0)}
+    .sg-loc-icon{text-align:center;margin-bottom:16px}
+    .sg-loc-icon-circle{display:inline-flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:50%;background:rgba(255,109,0,.12);border:2px solid rgba(255,109,0,.25)}
+    .sg-loc-icon-circle svg{width:28px;height:28px;fill:none;stroke:#FF6D00;stroke-width:2}
+    .sg-loc-title{color:#fff;font-size:18px;font-weight:700;text-align:center;margin-bottom:8px}
+    .sg-loc-desc{color:rgba(255,255,255,.5);font-size:14px;text-align:center;line-height:1.5;margin-bottom:24px}
+    .sg-loc-options{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+    .sg-loc-option{display:flex;align-items:center;gap:14px;padding:14px 16px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s}
+    .sg-loc-option:active{background:rgba(255,255,255,.08);transform:scale(.98)}
+    .sg-loc-option.primary{background:rgba(255,109,0,.1);border-color:rgba(255,109,0,.3)}
+    .sg-loc-option-icon{font-size:22px;width:40px;height:40px;background:rgba(255,255,255,.06);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .sg-loc-option.primary .sg-loc-option-icon{background:rgba(255,109,0,.15)}
+    .sg-loc-option-text{flex:1}
+    .sg-loc-option-text strong{color:#fff;font-size:15px;font-weight:600;display:block}
+    .sg-loc-option-text span{color:rgba(255,255,255,.4);font-size:12px}
+    .sg-loc-option.primary .sg-loc-option-text strong{color:#FF6D00}
+    .sg-loc-option .sg-loc-arrow{color:rgba(255,255,255,.2);font-size:18px}
+    .sg-loc-cancel{text-align:center;padding:12px;color:rgba(255,255,255,.4);font-size:14px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent}
+    .sg-loc-cancel:active{color:#fff}
+  `;
+  document.head.appendChild(sty);
+
+  var popupEl=null;
+
+  function _buildPopup(){
+    var el=document.createElement('div');
+    el.className='sg-loc-overlay';
+    el.id='sg-loc-error-popup';
+    el.innerHTML=`
+      <div class="sg-loc-popup">
+        <div class="sg-loc-icon">
+          <div class="sg-loc-icon-circle">
+            <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" stroke-linejoin="round"/><circle cx="12" cy="9" r="2.5"/></svg>
+          </div>
+        </div>
+        <div class="sg-loc-title">Location is turned off</div>
+        <div class="sg-loc-desc">Enable location to find gyms near you instantly. You can also search by city name instead.</div>
+        <div class="sg-loc-options">
+          <div class="sg-loc-option primary" onclick="window._sgLocOpenSettings()">
+            <div class="sg-loc-option-icon">⚙️</div>
+            <div class="sg-loc-option-text">
+              <strong>Open Location Settings</strong>
+              <span>Enable GPS for precise results</span>
+            </div>
+            <div class="sg-loc-arrow">›</div>
+          </div>
+          <div class="sg-loc-option" onclick="window._sgLocSearchInstead()">
+            <div class="sg-loc-option-icon">🔍</div>
+            <div class="sg-loc-option-text">
+              <strong>Search by city instead</strong>
+              <span>Type a city or area name</span>
+            </div>
+            <div class="sg-loc-arrow">›</div>
+          </div>
+        </div>
+        <div class="sg-loc-cancel" onclick="window._sgLocDismiss()">Not now</div>
+      </div>
+    `;
+    // Tap overlay background to dismiss
+    el.addEventListener('click',function(e){
+      if(e.target===el)window._sgLocDismiss();
+    });
+    document.body.appendChild(el);
+    popupEl=el;
+  }
+
+  function _showPopup(){
+    if(!popupEl)_buildPopup();
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){
+        popupEl.classList.add('open');
+      });
+    });
+    if(navigator.vibrate)navigator.vibrate(30);
+  }
+
+  window._sgLocDismiss=function(){
+    if(popupEl)popupEl.classList.remove('open');
+  };
+
+  window._sgLocOpenSettings=function(){
+    window._sgLocDismiss();
+    // On Android Chrome, this opens location settings
+    // On iOS Safari, we guide user (iOS can't deep-link to settings from web)
+    var isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
+    if(isIOS){
+      // iOS: Can't open settings directly from web — show toast with instructions
+      if(typeof sgToast==='function'){
+        sgToast('📍 Go to Settings → Privacy → Location Services → Safari → Allow','info',5000);
+      }
+    }else{
+      // Android: Try to open location settings via intent
+      // This works on Android Chrome — opens device location settings
+      try{
+        window.open('intent://settings/location#Intent;scheme=android.settings;end','_blank');
+      }catch(e){}
+      // Fallback toast
+      if(typeof sgToast==='function'){
+        sgToast('📍 Open your phone Settings → Location → Turn on','info',4000);
+      }
+    }
+  };
+
+  window._sgLocSearchInstead=function(){
+    window._sgLocDismiss();
+    // Open the search overlay
+    if(typeof window._openSearchOverlay==='function'){
+      window._openSearchOverlay();
+    }
+  };
+
+  // ── HOOK: Wrap findGyms to detect denied GPS and show popup ──
+  // This does NOT modify findGyms — it wraps it. The original always runs.
+  var _origFindGyms=window.findGyms;
+  window.findGyms=function(){
+    // Always call original first — it has its own fallbacks and never blocks
+    _origFindGyms.apply(this,arguments);
+
+    // Then check permission state — if denied, show the popup
+    if(navigator.permissions&&navigator.permissions.query){
+      navigator.permissions.query({name:'geolocation'}).then(function(status){
+        if(status.state==='denied'){
+          // Small delay so the app renders first, then popup slides up
+          setTimeout(function(){_showPopup();},300);
+        }
+      }).catch(function(){});
+    }
+  };
+
+  // ── Also show popup if GPS watch returns error with PERMISSION_DENIED ──
+  // Listen for the _fireGPS error without modifying it — we hook into
+  // the geolocation error event by monkey-patching watchPosition's error callback.
+  // Actually, we DON'T do this — it would modify existing code behavior.
+  // Instead, we rely on the permission check in the findGyms wrapper above.
+  // This keeps the existing code 100% untouched.
+})();
