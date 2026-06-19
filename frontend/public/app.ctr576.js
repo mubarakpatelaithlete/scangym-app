@@ -16241,6 +16241,17 @@ window.sgFeedback = async function(elementId, vote, btn) {
     .sg-auth-success-icon{font-size:48px;margin-bottom:12px}
     .sg-auth-success-text{color:#fff;font-size:18px;font-weight:700;margin-bottom:4px}
     .sg-auth-success-sub{color:rgba(255,255,255,.4);font-size:13px}
+    /* R3: Step transition animation — slides content in from right */
+    @keyframes sgAuthSlideIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
+    .sg-auth-step-enter{animation:sgAuthSlideIn .25s ease-out}
+    /* R3: Google button pulse to draw attention */
+    .sg-auth-btn-google{animation:casinoGlow 2.5s ease-in-out infinite}
+    /* R3: Confetti burst on done step */
+    @keyframes sgAuthConfetti{0%{transform:scale(0) rotate(0deg);opacity:1}50%{transform:scale(1.3) rotate(180deg);opacity:1}100%{transform:scale(1) rotate(360deg);opacity:1}}
+    .sg-auth-success-icon{animation:sgAuthConfetti .6s cubic-bezier(.68,-.55,.27,1.55)}
+    /* R3: Faster, slicker panel open */
+    .sg-auth-overlay{transition:opacity .15s ease-out}
+    .sg-auth-panel{transition:transform .2s cubic-bezier(.32,.72,.32,1)}
   `;
   document.head.appendChild(sty);
 
@@ -16277,7 +16288,7 @@ window.sgFeedback = async function(elementId, vote, btn) {
     if(!content)return;
     var titles={book:{t:'Sign in to book',s:'1 tap — your card saves for instant booking ⚡'},reels:{t:'Sign in to share',s:'Get your personal affiliate link & start earning 💰'}};
     var t=titles[_sheetMode]||titles.book;
-    content.innerHTML=_progressDots('auth')+`
+    content.innerHTML=`<div class="sg-auth-step-enter">`+_progressDots('auth')+`
       <div class="sg-auth-title">${t.t}</div>
       <div class="sg-auth-sub">${t.s}</div>
       <button class="sg-auth-btn sg-auth-btn-google" onclick="handleGoogleSignIn()">
@@ -16302,7 +16313,7 @@ window.sgFeedback = async function(elementId, vote, btn) {
         📲 Send Code
       </button>
       <div class="sg-auth-footer">Sign in once — works everywhere in ScanGym</div>
-    `;
+    </div>`;
     setTimeout(function(){var inp=document.getElementById('sg-auth-phone');if(inp)inp.focus();},350);
   }
 
@@ -16311,7 +16322,7 @@ window.sgFeedback = async function(elementId, vote, btn) {
     _sheetStep='code';
     var content=document.getElementById('sg-auth-content');
     if(!content)return;
-    content.innerHTML=_progressDots('auth')+`
+    content.innerHTML=`<div class="sg-auth-step-enter">`+_progressDots('auth')+`
       <div class="sg-auth-title">Enter your code</div>
       <div class="sg-auth-sub">Sent to ${phone}</div>
       <input class="sg-auth-code-input" id="sg-auth-code" type="text" maxlength="6" placeholder="••••••" inputmode="numeric" autocomplete="one-time-code">
@@ -16320,7 +16331,7 @@ window.sgFeedback = async function(elementId, vote, btn) {
         Verify & Continue
       </button>
       <div class="sg-auth-back" onclick="window._sgAuthBackToPhone()">← Change number</div>
-    `;
+    </div>`;
     setTimeout(function(){var inp=document.getElementById('sg-auth-code');if(inp)inp.focus();},350);
   }
 
@@ -16329,7 +16340,7 @@ window.sgFeedback = async function(elementId, vote, btn) {
     _sheetStep='card';
     var content=document.getElementById('sg-auth-content');
     if(!content)return;
-    content.innerHTML=_progressDots('card')+`
+    content.innerHTML=`<div class="sg-auth-step-enter">`+_progressDots('card')+`
       <div class="sg-auth-title">Add your card</div>
       <div class="sg-auth-sub">Saves securely — 1-tap booking every time 🔒</div>
       <label class="sg-auth-label">Card number</label>
@@ -16350,7 +16361,7 @@ window.sgFeedback = async function(elementId, vote, btn) {
       </button>
       <div class="sg-auth-back" onclick="window._sgAuthSkipCard()">Skip for now</div>
       <div class="sg-auth-footer">Powered by Stripe · Your card details never touch our servers</div>
-    `;
+    </div>`;
     // Mount Stripe Elements
     _mountStripeCard();
   }
@@ -16389,7 +16400,7 @@ window.sgFeedback = async function(elementId, vote, btn) {
     try{creatorData=JSON.parse(localStorage.getItem('sg_creator')||'null');}catch(e){}
     var hasHandle=creatorData&&(creatorData.handle||creatorData.slug);
 
-    content.innerHTML=_progressDots('withdraw')+`
+    content.innerHTML=`<div class="sg-auth-step-enter">`+_progressDots('withdraw')+`
       <div class="sg-auth-title">Get paid for sharing</div>
       <div class="sg-auth-sub">Connect your payout method — earn 25% on every booking 💰</div>
       <div class="sg-auth-check selected" id="sg-auth-wd-paypal" onclick="window._sgAuthSelectWithdraw('paypal')">
@@ -16413,7 +16424,7 @@ window.sgFeedback = async function(elementId, vote, btn) {
       </button>
       <div class="sg-auth-back" onclick="window._sgAuthSkipWithdraw()">Skip for now</div>
       <div class="sg-auth-footer">You can change this anytime in your profile</div>
-    `;
+    </div>`;
     // Default to PayPal form
     window._sgAuthWithdrawType='paypal';
     _renderWithdrawForm('paypal');
@@ -16447,13 +16458,15 @@ window.sgFeedback = async function(elementId, vote, btn) {
     var msg=_sheetMode==='book'
       ?{icon:'🎉',t:'You\'re all set!',s:'Card saved — 1-tap booking is ready'}
       :{icon:'🚀',t:'Ready to earn!',s:'Share reels and earn 25% on every booking'};
-    content.innerHTML=_progressDots('done')+`
+    content.innerHTML=`<div class="sg-auth-step-enter">`+_progressDots('done')+`
       <div class="sg-auth-success">
         <div class="sg-auth-success-icon">${msg.icon}</div>
         <div class="sg-auth-success-text">${msg.t}</div>
         <div class="sg-auth-success-sub">${msg.s}</div>
       </div>
-    `;
+    </div>`;
+    /* R3: Haptic feedback on success */
+    if(navigator.vibrate)navigator.vibrate([50,30,80]);
     // Auto-close after 1.2s and resume pending action
     setTimeout(function(){
       window._sgCloseAuthSheet();
@@ -16580,7 +16593,10 @@ window.sgFeedback = async function(elementId, vote, btn) {
       // Confirm on server
       await fetch('/api/payment/confirm-setup',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({setupIntentId:result.setupIntent.id})});
       _sheetStripeElements=null;
-      _renderDoneStep();
+      /* R3: Brief checkmark flash before done */
+      if(btn){btn.textContent='✅ Card Saved!';btn.style.opacity='1';btn.style.background='#22c55e';}
+      if(navigator.vibrate)navigator.vibrate(50);
+      setTimeout(function(){_renderDoneStep();},400);
     }catch(e){
       err.textContent=e.message||'Card save failed';err.style.display='block';
       if(btn){btn.textContent='💳 Save Card & Continue';btn.style.opacity='1';btn.style.pointerEvents='auto';}
@@ -16643,7 +16659,10 @@ window.sgFeedback = async function(elementId, vote, btn) {
           body:JSON.stringify({creatorHandle:handle,paymentMethod:type==='paypal'?'paypal':'bank_transfer',paymentDetails:details})
         }).catch(function(){});
       }
-      _renderDoneStep();
+      /* R3: Brief checkmark flash before done */
+      if(btn){btn.textContent='✅ Connected!';btn.style.opacity='1';btn.style.background='#22c55e';}
+      if(navigator.vibrate)navigator.vibrate(50);
+      setTimeout(function(){_renderDoneStep();},400);
     }catch(e){
       err.textContent='Failed to save — try again';err.style.display='block';
       if(btn){btn.textContent='💰 Connect & Start Earning';btn.style.opacity='1';btn.style.pointerEvents='auto';}
@@ -16664,6 +16683,10 @@ window.sgFeedback = async function(elementId, vote, btn) {
     requestAnimationFrame(function(){
       requestAnimationFrame(function(){
         _sheetEl.classList.add('open');
+        /* R3: Auto-skip auth if user is already logged in → jump to step 2 */
+        if(state.user){
+          setTimeout(function(){_afterAuthSuccess();},200);
+        }
       });
     });
   };
