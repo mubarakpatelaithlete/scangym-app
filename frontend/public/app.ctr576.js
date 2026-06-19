@@ -15620,15 +15620,18 @@ if(localStorage.getItem('sg_push_enabled')==='1'&&state.user){
   window._sgHideContinueBanner=function(){_hideBanner();};
 
   // Show on Reels + Book, hide on Profile
+  // R6 FIX: Call original switchTab FIRST (rebuilds DOM), THEN apply banner logic
+  // Otherwise _showBanner exits early (_cbVisible=true) and new DOM misses sg-cb-active
   var _origSwitchTab=window.switchTab;
   if(typeof _origSwitchTab==='function'){
     window.switchTab=function(tab){
+      _origSwitchTab.apply(this,arguments);
       if(tab==='more'){
         _hideBanner();
       }else{
+        _cbVisible=false; // force re-apply since DOM was rebuilt
         _showBanner();
       }
-      _origSwitchTab.apply(this,arguments);
     };
   }
 
