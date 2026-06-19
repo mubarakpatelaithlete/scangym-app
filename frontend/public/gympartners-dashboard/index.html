@@ -23,6 +23,37 @@
     .gym-selector{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:20px;margin-bottom:16px}
     .gym-selector select{width:100%;padding:12px 16px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:#1a1a2e;color:#fff;font-size:14px;font-weight:600;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23FF6D00' stroke-width='2' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 16px center}
 
+    /* Claim / Find gym */
+    .claim-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:28px 24px;max-width:560px;margin:32px auto}
+    .claim-card h2{font-size:20px;font-weight:800;margin-bottom:4px;display:flex;align-items:center;gap:10px}
+    .claim-card .sub{font-size:13px;color:rgba(255,255,255,.4);margin-bottom:20px}
+    .claim-search-wrap{display:flex;gap:8px;align-items:center}
+    .claim-search{flex:1;padding:14px 18px 14px 44px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#fff;font-size:15px;font-weight:500;outline:none;transition:.2s}
+    .claim-search:focus{border-color:#FF6D00;box-shadow:0 0 0 4px rgba(255,109,0,.1)}
+    .claim-search::placeholder{color:rgba(255,255,255,.25)}
+    .claim-search-icon{position:absolute;left:16px;top:50%;transform:translateY(-50%);font-size:16px;opacity:.4}
+    .claim-search-field{position:relative;flex:1}
+    .pin-btn{width:52px;height:52px;border-radius:14px;border:1px solid rgba(255,109,0,.25);background:rgba(255,109,0,.08);color:#FF6D00;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.2s;flex-shrink:0}
+    .pin-btn:hover{background:rgba(255,109,0,.15);border-color:#FF6D00;box-shadow:0 0 12px rgba(255,109,0,.2)}
+    .pin-btn:active{transform:scale(.93)}
+    .pin-btn.locating{animation:pulse-pin 1s infinite}
+    @keyframes pulse-pin{0%,100%{opacity:1}50%{opacity:.4}}
+    .claim-results{margin-top:12px;max-height:340px;overflow-y:auto}
+    .claim-results:empty{display:none}
+    .claim-gym{padding:14px 16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;margin-bottom:8px;cursor:pointer;transition:.15s;display:flex;align-items:center;gap:14px}
+    .claim-gym:hover{background:rgba(255,109,0,.06);border-color:rgba(255,109,0,.2)}
+    .claim-gym .cg-info{flex:1;min-width:0}
+    .claim-gym .cg-name{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .claim-gym .cg-addr{font-size:11px;color:rgba(255,255,255,.35);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .claim-gym .cg-tags{display:flex;gap:5px;margin-top:5px}
+    .cg-tag{font-size:9px;padding:2px 7px;border-radius:5px;font-weight:600}
+    .cg-tag.t24{background:rgba(34,197,94,.12);color:#22c55e}
+    .cg-tag.trate{background:rgba(255,255,255,.06);color:rgba(255,255,255,.5)}
+    .cg-tag.tdist{background:rgba(99,102,241,.1);color:#818cf8}
+    .claim-gym .cg-arrow{color:rgba(255,255,255,.15);font-size:18px;flex-shrink:0}
+    .claim-msg{text-align:center;padding:20px;color:rgba(255,255,255,.3);font-size:13px}
+    .claim-or{text-align:center;color:rgba(255,255,255,.2);font-size:12px;margin:12px 0;font-weight:600}
+
     /* Toggle switch — Zomato style */
     .toggle-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:20px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:16px}
     .toggle-info h3{font-size:15px;font-weight:700}
@@ -109,7 +140,7 @@
         const data = await res.json();
         gyms = data.gyms || [];
         if (gyms.length === 0) {
-          document.getElementById('main').innerHTML = '<div class="loading">You don\'t have any gyms yet.<br><br><a href="/" style="color:#FF6D00">← Back to ScanGym</a></div>';
+          showClaimFlow();
           return;
         }
         selectedGymId = gyms[0].id;
@@ -342,6 +373,151 @@
       document.body.appendChild(t);
       setTimeout(() => t.remove(), 3000);
     }
+
+    /* ── Claim flow: Find your gym ── */
+    let claimSearchTimer = null;
+
+    function showClaimFlow() {
+      const main = document.getElementById('main');
+      main.innerHTML = `
+        <div class="claim-card">
+          <h2>🏢 Find your gym</h2>
+          <p class="sub">Search by name or tap 📍 to find gyms near you instantly</p>
+          <div class="claim-search-wrap">
+            <div class="claim-search-field">
+              <span class="claim-search-icon">🔍</span>
+              <input type="text" class="claim-search" id="claimSearch" placeholder="e.g. PureGym London Bridge" autocomplete="off" autofocus>
+            </div>
+            <button class="pin-btn" id="pinBtn" onclick="window.__usePin()" title="Find gyms near me">📍</button>
+          </div>
+          <div class="claim-results" id="claimResults"></div>
+        </div>
+      `;
+
+      document.getElementById('claimSearch').addEventListener('input', function() {
+        clearTimeout(claimSearchTimer);
+        const q = this.value.trim();
+        if (q.length < 2) { document.getElementById('claimResults').innerHTML = ''; return; }
+        document.getElementById('claimResults').innerHTML = '<div class="claim-msg"><div class="spinner" style="margin:0 auto 8px"></div>Searching…</div>';
+        claimSearchTimer = setTimeout(() => claimSearch(q), 350);
+      });
+    }
+
+    async function claimSearch(q, lat, lng) {
+      try {
+        let url = '/api/live/search?q=' + encodeURIComponent(q) + '&type=gym';
+        if (lat && lng) url += '&lat=' + lat + '&lng=' + lng;
+        const res = await fetch(url);
+        const data = await res.json();
+        renderClaimResults(data.results || [], !!lat);
+      } catch (e) {
+        document.getElementById('claimResults').innerHTML = '<div class="claim-msg">Search error — try again</div>';
+      }
+    }
+
+    async function nearbySearch(lat, lng) {
+      try {
+        const res = await fetch('/api/live/nearby?lat=' + lat + '&lng=' + lng + '&radius=10000');
+        const data = await res.json();
+        renderClaimResults(data.gyms || data.results || [], true);
+      } catch (e) {
+        document.getElementById('claimResults').innerHTML = '<div class="claim-msg">Could not find nearby gyms — try typing the name instead</div>';
+      }
+    }
+
+    function renderClaimResults(results, showDist) {
+      const el = document.getElementById('claimResults');
+      if (!results.length) {
+        el.innerHTML = '<div class="claim-msg">No gyms found. Try a different name or city.</div>';
+        return;
+      }
+      el.innerHTML = results.slice(0, 10).map(g => {
+        const is24 = g.is24Hours || (g.opening_hours?.periods?.length === 1 && g.opening_hours.periods[0].open?.time === '0000' && !g.opening_hours.periods[0].close);
+        const stars = g.rating ? '⭐ ' + g.rating : '';
+        const dist = (showDist && g.distanceText) ? g.distanceText : '';
+        const pid = g.place_id || '';
+        const name = esc(g.name || '');
+        const addr = esc(g.formatted_address || g.vicinity || g.address || '');
+        return '<div class="claim-gym" onclick="window.__claimGym(\'' + pid.replace(/'/g,"\\'") + '\')">' +
+          '<div class="cg-info"><div class="cg-name">' + name + '</div><div class="cg-addr">' + addr + '</div>' +
+          '<div class="cg-tags">' +
+            (is24 ? '<span class="cg-tag t24">24/7</span>' : '') +
+            (stars ? '<span class="cg-tag trate">' + stars + '</span>' : '') +
+            (dist ? '<span class="cg-tag tdist">' + dist + '</span>' : '') +
+          '</div></div><div class="cg-arrow">›</div></div>';
+      }).join('');
+    }
+
+    /* 📍 Pin button — geolocation */
+    window.__usePin = function() {
+      const btn = document.getElementById('pinBtn');
+      const el = document.getElementById('claimResults');
+
+      if (!navigator.geolocation) {
+        el.innerHTML = '<div class="claim-msg">📍 Location not supported on this browser — type your gym name instead</div>';
+        return;
+      }
+
+      btn.classList.add('locating');
+      btn.textContent = '⏳';
+      el.innerHTML = '<div class="claim-msg"><div class="spinner" style="margin:0 auto 8px"></div>Finding gyms near you…</div>';
+
+      navigator.geolocation.getCurrentPosition(
+        function(pos) {
+          btn.classList.remove('locating');
+          btn.textContent = '📍';
+          nearbySearch(pos.coords.latitude, pos.coords.longitude);
+        },
+        function(err) {
+          btn.classList.remove('locating');
+          btn.textContent = '📍';
+          const msgs = {
+            1: '📍 Location permission denied — please type your gym name instead',
+            2: '📍 Could not determine location — try again or type your gym name',
+            3: '📍 Location timed out — try again or type your gym name'
+          };
+          el.innerHTML = '<div class="claim-msg">' + (msgs[err.code] || msgs[2]) + '</div>';
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    };
+
+    /* Claim a gym */
+    window.__claimGym = async function(placeId) {
+      const el = document.getElementById('claimResults');
+      el.innerHTML = '<div class="claim-msg"><div class="spinner" style="margin:0 auto 8px"></div>Claiming your gym…</div>';
+
+      try {
+        // 1. Ensure gym in DB
+        const ensureRes = await fetch('/api/live/ensure-gym', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ placeId })
+        });
+        const ensureData = await ensureRes.json();
+        const gymId = ensureData.gymId;
+        if (!gymId) throw new Error('Could not register gym');
+
+        // 2. Claim
+        await fetch('/api/gym-partner/claim', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ gymId })
+        });
+
+        // 3. Confirm
+        await fetch('/api/gym-partner/claim/confirm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ gymId })
+        }).catch(() => {});
+
+        showToast('✅ Gym claimed! Loading dashboard…', 'success');
+        setTimeout(() => location.reload(), 1200);
+      } catch (e) {
+        el.innerHTML = '<div class="claim-msg">❌ ' + esc(e.message) + ' — try again</div>';
+      }
+    };
 
     init();
   })();
