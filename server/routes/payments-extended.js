@@ -113,22 +113,92 @@ router.post('/bank-transfer/setup', async (req, res) => {
   }
 });
 
-// ── #51: BNPL Eligibility Check (Klarna / Afterpay) ──
+// ── #51: BNPL / Pay Next Visit — Emergency Deferred Payment ──
 router.post('/bnpl/check', async (req, res) => {
   try {
-    const userId = req.user?.id;
+    const userId = req.user?.id || req.session?.userId;
     if (!userId) return res.status(401).json({ error: 'Login required' });
 
-    // TODO: Check Klarna/Afterpay eligibility based on order amount
-    // BNPL typically requires minimum order (e.g., £10+)
+    // Check if user already has an outstanding deferred payment
+    let hasOutstanding = false;
+    try {
+      const existing = await pool.query(
+        `SELECT id FROM deferred_payments WHERE user_id = $1 AND status = 'pending' LIMIT 1`,
+        [userId]
+      );
+      hasOutstanding = existing.rows.length > 0;
+    } catch (e) {
+      // Table may not exist yet — that's fine, means no outstanding
+    }
+
+    if (hasOutstanding) {
+      return res.json({
+        eligible: false,
+        message: 'You have an outstanding deferred payment. Please settle it before using Pay Next Visit again.',
+        providers: ['scangym_deferred']
+      });
+    }
+
+    // Eligible: no outstanding deferred payments
     res.json({ 
-      eligible: false,
-      message: 'Buy now pay later available for bookings over £10',
-      providers: ['klarna', 'afterpay']
+      eligible: true,
+      message: 'Pay Next Visit available — enter now, pay on your next booking',
+      providers: ['scangym_deferred'],
+      terms: 'Maximum 1 deferred payment at a time. Auto-collected on next booking.'
     });
   } catch (err) {
     console.error('BNPL check error:', err.message);
     res.status(500).json({ error: 'BNPL check failed' });
+  }
+});
+
+// ── #51b: Create deferred payment (Pay Next Visit) ──
+router.post('/bnpl/create', async (req, res) => {
+  try {
+    const userId = req.user?.id || req.session?.userId;
+    if (!userId) return res.status(401).json({ error: 'Login required' });
+
+    const { gymId, amount, bookingId } = req.body;
+    if (!gymId) return res.status(400).json({ error: 'gymId required' });
+
+    // Create deferred_payments table if not exists
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS deferred_payments (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        gym_id INTEGER NOT NULL,
+        booking_id INTEGER,
+        amount_pence INTEGER NOT NULL DEFAULT 449,
+        status VARCHAR(20) DEFAULT 'pending',
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        settled_at TIMESTAMPTZ
+      )
+    `);
+
+    // Check no outstanding deferred payment
+    const existing = await pool.query(
+      `SELECT id FROM deferred_payments WHERE user_id = $1 AND status = 'pending' LIMIT 1`,
+      [userId]
+    );
+    if (existing.rows.length > 0) {
+      return res.status(400).json({ error: 'You already have a pending deferred payment. Settle it first.' });
+    }
+
+    // Create the deferred payment record
+    const result = await pool.query(
+      `INSERT INTO deferred_payments (user_id, gym_id, booking_id, amount_pence, status)
+       VALUES ($1, $2, $3, $4, 'pending') RETURNING id`,
+      [userId, gymId, bookingId || null, amount || 449]
+    );
+
+    res.json({
+      success: true,
+      deferredPaymentId: result.rows[0].id,
+      message: 'Entry granted! Payment will be collected on your next booking.'
+    });
+  } catch (err) {
+    console.error('BNPL create error:', err.message);
+    res.status(500).json({ error: 'Could not create deferred payment' });
   }
 });
 
