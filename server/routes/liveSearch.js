@@ -146,60 +146,137 @@ function photoUrl(photoRef, maxWidth = 1200) {
 
 // ─── #17/#18: 24/7 and Self-Service gym detection ────────────
 // Known gym chains that operate 24/7 (always open, key-fob/QR entry)
+// Worldwide list — 60+ chains across all major markets
 const CHAINS_24H = [
-  'puregym', 'pure gym', 'anytime fitness', 'snap fitness', 'the gym group',
-  'the gym ', 'jd gyms', 'jd gym', 'xercise4less', 'xercise 4 less',
-  'easygym', 'easy gym', '24/7 fitness', '24 hour fitness', '24hour fitness',
-  'energie fitness', 'fit4less', 'fit 4 less', 'simply gym', 'total fitness',
-  'buzz gym', 'everlast fitness', 'planet fitness', 'crunch fitness',
-  'goldsgym', 'golds gym', "gold's gym", 'mcfit', 'clever fit', 'fitx',
-  'fitness24seven', 'fitness 24 seven', 'basic-fit', 'basic fit',
-  'trainmore', 'sportcity', 'fit7', 'fitnessfirst 24', 'lifecentre 24',
-  '24seven', '24 7 fitness', 'iron 24', 'gym24', 'abs 24', 'anytime gym',
+  // ── UK & Ireland ──
+  'puregym', 'pure gym', 'the gym group', 'the gym ', 'jd gyms', 'jd gym',
+  'xercise4less', 'xercise 4 less', 'easygym', 'easy gym', 'energie fitness',
+  'fit4less', 'fit 4 less', 'simply gym', 'total fitness', 'buzz gym',
+  'everlast fitness', 'gymshark lifting club', 'flyefit',
+  // ── USA & Canada ──
+  'anytime fitness', 'planet fitness', '24 hour fitness', '24hour fitness',
+  'snap fitness', 'crunch fitness', 'la fitness', 'youfit', 'workout anytime',
+  'club fitness', 'chuze fitness', 'vasa fitness', 'eos fitness',
+  'fitness 19', 'fitness19', 'blink fitness', 'title boxing',
+  'fit4less', 'goodlife fitness', 'world gym',
+  // ── Europe ──
+  'mcfit', 'clever fit', 'fitx', 'fitness24seven', 'fitness 24 seven',
+  'basic-fit', 'basic fit', 'trainmore', 'sportcity', 'fit7',
+  'john reed', 'high5', 'fitnessfirst', 'fitness first', 'bodyfit',
+  'keep cool', 'neoness', 'amazonia', 'vivagym', 'viva gym',
+  'altafit', 'dir fitness', 'mcfit', 'actic', 'sats',
+  'fresh fitness', 'cleverfit', 'superfit',
+  // ── Australia & NZ ──
+  'jetts fitness', 'jetts', 'plus fitness', 'anytime fitness',
+  'workout 24', 'snap fitness', 'world gym', 'zap fitness',
+  // ── Asia ──
+  'joyfit', 'fastgym', 'tipness', 'anytime fitness', 'gold gym',
+  'fitness first', 'celebrity fitness',
+  // ── Middle East ──
+  'fitness time', 'leejam', 'warehouse gym', 'gymnation',
+  // ── South America ──
+  'smartfit', 'smart fit', 'bodytech', 'bio ritmo',
+  // ── India ──
+  'cult.fit', 'cultfit', 'anytime fitness', 'gold gym', 'snap fitness',
+  // ── Africa ──
+  'virgin active', 'planet fitness',
+  // ── Generic 24/7 patterns ──
+  '24/7 fitness', '24seven', '24 7 fitness', 'iron 24', 'gym24', 'abs 24',
+  'anytime gym', 'fitnessfirst 24', 'lifecentre 24', 'open 24',
+  'nonstop gym', 'non stop gym', 'nonstop fitness', 'alltime fitness',
 ];
 
 // Known self-service entry chains (unmanned / key-fob / app-based entry)
 const CHAINS_SELF_SERVICE = [
-  'puregym', 'pure gym', 'anytime fitness', 'snap fitness', 'the gym group',
-  'the gym ', 'jd gyms', 'jd gym', 'xercise4less', 'xercise 4 less',
-  'easygym', 'easy gym', '24/7 fitness', '24 hour fitness', '24hour fitness',
-  'fit4less', 'fit 4 less', 'simply gym', 'buzz gym', 'planet fitness',
+  // ── UK ──
+  'puregym', 'pure gym', 'the gym group', 'the gym ', 'jd gyms', 'jd gym',
+  'xercise4less', 'xercise 4 less', 'easygym', 'easy gym', 'fit4less',
+  'fit 4 less', 'simply gym', 'buzz gym', 'flyefit',
+  // ── US & Canada ──
+  'anytime fitness', 'snap fitness', 'planet fitness', '24 hour fitness',
+  '24hour fitness', 'workout anytime', 'youfit', 'blink fitness',
+  // ── Europe ──
   'basic-fit', 'basic fit', 'mcfit', 'clever fit', 'fitx',
-  'fitness24seven', 'fitness 24 seven', 'trainmore',
+  'fitness24seven', 'fitness 24 seven', 'trainmore', 'john reed',
+  'vivagym', 'viva gym', 'fresh fitness', 'cleverfit', 'neoness',
+  // ── Australia & NZ ──
+  'jetts fitness', 'jetts', 'plus fitness', 'zap fitness',
+  // ── Asia ──
+  'joyfit', 'fastgym', 'anytime fitness',
+  // ── Middle East ──
+  'gymnation',
+  // ── South America ──
+  'smartfit', 'smart fit',
+  // ── Generic ──
+  '24/7 fitness', 'nonstop gym', 'non stop gym',
 ];
 
 /**
  * Detect if a gym is 24/7 from name + opening_hours.
- * Google Places search results include opening_hours.open_now but not periods.
- * For Place Details (which has periods), we check the actual schedule.
+ * 
+ * Detection layers (most reliable → least):
+ *   1. Google Places opening_hours.periods — single always-open period = definitive 24/7
+ *   2. Google Places weekday_text — "Open 24 hours" on all 7 days
+ *   3. Known chain names — 60+ worldwide 24/7 gym chains
+ *   4. Name pattern matching — "24/7", "24 hour", "24hr" in gym name
+ *   5. regularOpeningHours (New API) — periods array check
  */
 function detect24Hours(place) {
-  const name = (place.name || '').toLowerCase();
-  // Check name against known 24/7 chains
-  if (CHAINS_24H.some(chain => name.includes(chain))) return true;
-  // Check if name itself says "24" (e.g. "Gym 24/7", "Open 24 Hours")
-  if (/\b24\s*[\/\\]?\s*7\b/.test(name) || /\b24\s*h(ou)?r/i.test(name)) return true;
-  // If we have periods from Place Details, check for always-open pattern
+  // ── Layer 1: Google Places periods (most reliable) ──
   // A 24/7 gym has one period: open day=0 time=0000, no close
   const periods = place.opening_hours?.periods;
   if (periods && periods.length === 1) {
     const p = periods[0];
     if (p.open && p.open.day === 0 && p.open.time === '0000' && !p.close) return true;
   }
-  // Check weekday_text for "Open 24 hours" on every day
+  // Also handle gyms with 7 periods all showing 0000-0000 (some Google results)
+  if (periods && periods.length === 7) {
+    const allDay = periods.every(p => 
+      p.open?.time === '0000' && (!p.close || p.close?.time === '2359' || p.close?.time === '0000')
+    );
+    if (allDay) return true;
+  }
+
+  // ── Layer 2: weekday_text — "Open 24 hours" on all 7 days ──
   const weekday = place.opening_hours?.weekday_text;
   if (weekday && weekday.length === 7 && weekday.every(d => /open 24 hours/i.test(d))) return true;
+  // Also check for translated variants (Google returns localized text)
+  if (weekday && weekday.length === 7 && weekday.every(d => /24/i.test(d) && /hour|heur|stund|hora|uur|tim/i.test(d))) return true;
+
+  // ── Layer 3: Known chain names (60+ worldwide) ──
+  const name = (place.name || '').toLowerCase();
+  if (CHAINS_24H.some(chain => name.includes(chain))) return true;
+
+  // ── Layer 4: Name pattern matching ──
+  if (/\b24\s*[\/\\]?\s*7\b/.test(name) || /\b24\s*h(ou)?rs?\b/i.test(name)) return true;
+  if (/always\s*open/i.test(name) || /non\s*-?\s*stop/i.test(name)) return true;
+  if (/\bopen\s*24\b/i.test(name) || /\b24\s*gym/i.test(name)) return true;
+
+  // ── Layer 5: New Places API regularOpeningHours ──
+  const regHours = place.regularOpeningHours;
+  if (regHours?.periods) {
+    // New API format: periods[].open.day, periods[].open.hour, periods[].open.minute
+    if (regHours.periods.length === 1) {
+      const p = regHours.periods[0];
+      if (p.open?.day === 0 && p.open?.hour === 0 && (p.open?.minute || 0) === 0 && !p.close) return true;
+    }
+  }
+
   return false;
 }
 
 /**
  * Detect if a gym has self-service entry (key-fob, QR, pin code — no staff needed).
+ * Self-service gyms are almost always 24/7 — if it's 24/7, it's very likely self-service.
  */
 function detectSelfService(place) {
   const name = (place.name || '').toLowerCase();
+  // Known self-service chains
   if (CHAINS_SELF_SERVICE.some(chain => name.includes(chain))) return true;
-  // If name contains self-service indicators
-  if (/\b(unmanned|self.service|keycard|key.fob|24.?7)\b/i.test(name)) return true;
+  // Name contains self-service indicators
+  if (/\b(unmanned|self.service|keycard|key.fob|key.card|pin.entry|qr.entry|app.entry)\b/i.test(name)) return true;
+  // 24/7 gyms are almost always self-service (you can't staff 24/7 economically)
+  if (detect24Hours(place)) return true;
   return false;
 }
 
@@ -493,7 +570,7 @@ router.get('/search', async (req, res) => {
       return res.json({ gyms: [], total: 0, nextPageToken: null, query: searchQuery, source: 'google_places_live', error: data.status });
     }
 
-    const gyms = (data.results || [])
+    let gyms = (data.results || [])
       .filter(p => p.business_status !== 'CLOSED_PERMANENTLY')
       .map(parseSearchResult);
 
@@ -502,6 +579,16 @@ router.get('/search', async (req, res) => {
       enrichGymsWithDbPrices(gyms),
       enrichGymsWithBookingCounts(gyms)
     ]);
+
+    // ── #17 TRUE SERVER-SIDE FILTERING ──────────────────────────
+    // The query-bias ("24 hour" appended) gets Google to *prefer* 24/7 gyms,
+    // but non-24/7 results can still slip through. This actually removes them.
+    if (filter24h === 'true') {
+      gyms = gyms.filter(g => g.is24Hours === true);
+    }
+    if (filterSelfService === 'true') {
+      gyms = gyms.filter(g => g.isSelfService === true);
+    }
 
     // Amazon-style ranking: sort by composite score instead of Google's default order
     const userLat = lat ? parseFloat(lat) : null;
@@ -514,6 +601,10 @@ router.get('/search', async (req, res) => {
       nextPageToken: data.next_page_token || null,
       query: searchQuery,
       source: 'google_places_live',
+      filters: {
+        is24h: filter24h === 'true',
+        isSelfService: filterSelfService === 'true',
+      },
     };
 
     setCache(cacheKey, result);
@@ -570,7 +661,7 @@ router.get('/nearby', async (req, res) => {
       return res.status(502).json({ error: 'Nearby search error', details: data.status });
     }
 
-    const gyms = (data.results || [])
+    let gyms = (data.results || [])
       .filter(p => p.business_status !== 'CLOSED_PERMANENTLY')
       .map(parseSearchResult);
 
@@ -579,6 +670,14 @@ router.get('/nearby', async (req, res) => {
       enrichGymsWithDbPrices(gyms),
       enrichGymsWithBookingCounts(gyms)
     ]);
+
+    // ── #17 TRUE SERVER-SIDE FILTERING (nearby) ─────────────────
+    if (filter24h === 'true') {
+      gyms = gyms.filter(g => g.is24Hours === true);
+    }
+    if (filterSelfService === 'true') {
+      gyms = gyms.filter(g => g.isSelfService === true);
+    }
 
     // Amazon-style ranking: composite score replaces simple distance sort.
     // rankGyms() computes distance + distanceText internally, then sorts by
@@ -592,6 +691,10 @@ router.get('/nearby', async (req, res) => {
       total: gyms.length,
       nextPageToken: data.next_page_token || null,
       source: 'google_places_live',
+      filters: {
+        is24h: filter24h === 'true',
+        isSelfService: filterSelfService === 'true',
+      },
     };
 
     setCache(cacheKey, result);
