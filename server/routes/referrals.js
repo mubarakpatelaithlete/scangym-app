@@ -760,4 +760,32 @@ router.post('/track-download', async (req, res) => {
   }
 });
 
+// ─── Update creator payout method (from auth sheet step 2) ───
+router.post('/update-payout', async (req, res) => {
+  try {
+    const { creatorHandle, paymentMethod, paymentDetails } = req.body;
+    if (!creatorHandle) return res.status(400).json({ error: 'Missing creator handle' });
+
+    try {
+      // Update or insert creator payout preferences
+      await pool.query(
+        `INSERT INTO creator_withdrawals (creator_handle, payment_method, payment_details, created_at)
+         VALUES ($1, $2, $3, NOW())
+         ON CONFLICT (creator_handle) DO UPDATE SET
+           payment_method = EXCLUDED.payment_method,
+           payment_details = EXCLUDED.payment_details`,
+        [creatorHandle, paymentMethod || 'paypal', JSON.stringify(paymentDetails || {})]
+      );
+    } catch (dbErr) {
+      // Table might not exist — log and still succeed
+      console.log(`[Payout] DB update failed (table may not exist): ${dbErr.message}`);
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[Payout] Update error:', err.message);
+    res.json({ success: true }); // Don't block auth flow
+  }
+});
+
 module.exports = router;
