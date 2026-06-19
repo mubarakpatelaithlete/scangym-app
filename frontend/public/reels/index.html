@@ -2414,9 +2414,50 @@
 
       // H6 fix: Share now always gives feedback — toast on success, clipboard fallback, never silent.
       // M4 fix: Share reel-specific URL (scangym.com/reels?v=ID) instead of generic page URL.
+      // ── Auth state from parent ──
+      var _reelsUserLoggedIn = false;
+      var _reelsUser = null;
+      var _pendingShareVideo = null;
+      var _pendingSaveVideo = null;
+      var _pendingSaveUrl = null;
+
+      window.addEventListener('message', function(ev){
+        if(!ev.data || !ev.data.type) return;
+        if(ev.data.type === 'sg-auth-state'){
+          _reelsUserLoggedIn = !!ev.data.loggedIn;
+          _reelsUser = ev.data.user || null;
+        }
+        if(ev.data.type === 'sg-auth-complete'){
+          _reelsUserLoggedIn = true;
+          // Resume pending action after auth
+          if(ev.data.action === 'share' && _pendingShareVideo){
+            _doShare(_pendingShareVideo);
+            _pendingShareVideo = null;
+          }
+          if(ev.data.action === 'save' && _pendingSaveVideo){
+            handleSave(_pendingSaveVideo, _pendingSaveUrl);
+            _pendingSaveVideo = null; _pendingSaveUrl = null;
+          }
+        }
+      });
+
+      // Also check localStorage for existing session
+      try{var _sc=localStorage.getItem('sg_creator');if(_sc){var _p=JSON.parse(_sc);if(_p&&_p.handle)_reelsUserLoggedIn=true;}}catch(e){}
+
       function handleShare(video){
         trackEvent('share', currentIndex); // G7 fix: track shares
         if(navigator.vibrate) navigator.vibrate(10);
+
+        // Gate behind auth — if not signed in, ask parent to show auth sheet
+        if(!_reelsUserLoggedIn && window.parent && window.parent !== window){
+          _pendingShareVideo = video;
+          window.parent.postMessage({type:'sg-auth-request', action:'share', video:{id:video.id,name:video.name}}, '*');
+          return;
+        }
+        _doShare(video);
+      }
+
+      function _doShare(video){
         // Build reel-specific deep link — falls back to affiliate link if present, then generic
         var reelUrl = video.id
           ? (window.location.origin + '/reels?v=' + encodeURIComponent(video.id))
@@ -2438,16 +2479,10 @@
           navigator.share({title:'ScanGym Reels',text:text,url:url})
             .then(function(){ showToast('\u2705 Shared!'); })
             .catch(function(err){
-              // User cancelled the share sheet — not an error, but still give feedback
-              if(err && err.name === 'AbortError'){
-                // User cancelled — no toast needed
-                return;
-              }
-              // Share API failed — fall back to clipboard
+              if(err && err.name === 'AbortError') return;
               copyToClipboard(sharePayload);
             });
         } else {
-          // Desktop / no share API — copy to clipboard
           copyToClipboard(sharePayload);
         }
       }
@@ -2519,6 +2554,14 @@
         trackEvent('save', currentIndex); // G7 fix: track saves
         if(navigator.vibrate) navigator.vibrate(10);
         if(!url) return;
+
+        // Gate behind auth — if not signed in, ask parent to show auth sheet
+        if(!_reelsUserLoggedIn && window.parent && window.parent !== window){
+          _pendingSaveVideo = video;
+          _pendingSaveUrl = url;
+          window.parent.postMessage({type:'sg-auth-request', action:'save', video:{id:video.id,name:video.name}}, '*');
+          return;
+        }
 
         // Show Creative Commons notice first — download only after user agrees
         showCCNotice(video, url, function(){
