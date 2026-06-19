@@ -8873,6 +8873,12 @@ window.showBookingCheckout=async function(gymId, prefillDate, prefillTime){
         gbs.savedCard={id:defCard.id,brand:defCard.brand,last4:defCard.last4};
       }
     }catch(e){}
+    /* R6 FIX: If saved-cards API returned nothing but user just saved a card
+       in the AuthSheet, fall back to the locally cached card info */
+    if(gbs.paymentMethod!=='saved'&&window._justSavedCard&&gbs.savedCard){
+      gbs.paymentMethod='saved';
+    }
+    if(window._justSavedCard)window._justSavedCard=false;
   }
 
   // Re-read after auto-detect
@@ -16557,16 +16563,29 @@ window.sgFeedback = async function(elementId, vote, btn) {
     sgToast('Welcome, '+(state.user.name||'there')+'! 🎉','success',1500);
 
     if(_sheetMode==='book'){
-      // Check if user already has saved cards
+      /* R6: Check if user already has saved cards — also check _gymBookingState
+         in case a card was just saved in a prior flow */
+      var _alreadyHasCard=false;
       try{
         var resp=await fetch('/api/payment/saved-cards',{credentials:'include'}).then(function(r){return r.json();});
         if(resp.cards&&resp.cards.length>0){
-          // R5 FIX: Already has cards — skip done step entirely, instant resume
-          window._sgCloseAuthSheet();
-          _resumePendingAction();
-          return;
+          _alreadyHasCard=true;
+          // R6: Pre-set payment method for instant checkout
+          if(!window._gymBookingState)window._gymBookingState={};
+          var defCard=resp.cards.find(function(c){return c.isDefault;})||resp.cards[0];
+          window._gymBookingState.paymentMethod='saved';
+          window._gymBookingState.savedCard={id:defCard.id,brand:defCard.brand,last4:defCard.last4};
         }
       }catch(e){}
+      if(!_alreadyHasCard&&window._gymBookingState&&window._gymBookingState.paymentMethod==='saved'){
+        _alreadyHasCard=true;
+      }
+      if(_alreadyHasCard){
+        // R5/R6: Already has cards — skip card step, instant resume
+        window._sgCloseAuthSheet();
+        _resumePendingAction();
+        return;
+      }
       // No cards — show card form
       _renderCardStep();
     }else if(_sheetMode==='reels'){
@@ -16610,7 +16629,8 @@ window.sgFeedback = async function(elementId, vote, btn) {
   function _resumePendingAction(){
     if(window._pendingCheckout&&window._pendingCheckout.gymId){
       var pc=window._pendingCheckout;window._pendingCheckout=null;
-      setTimeout(function(){showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime);},200);
+      /* R6: Faster resume — 100ms is enough for the sheet close animation */
+      setTimeout(function(){showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime);},100);
     }else if(window._pendingReelsAction){
       _sendToReels({type:'sg-auth-complete',action:window._pendingReelsAction,video:window._pendingReelsVideo});
       window._pendingReelsAction=null;window._pendingReelsVideo=null;
@@ -16689,12 +16709,24 @@ window.sgFeedback = async function(elementId, vote, btn) {
       });
       if(result.error)throw new Error(result.error.message);
       // Confirm on server
-      await fetch('/api/payment/confirm-setup',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({setupIntentId:result.setupIntent.id})});
+      var _confirmResp=await fetch('/api/payment/confirm-setup',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({setupIntentId:result.setupIntent.id})}).then(function(r){return r.json();}).catch(function(){return {};});
       _sheetStripeElements=null;
+      /* R6: Store just-saved card in _gymBookingState so showBookingCheckout
+         can find it instantly — eliminates race condition with /api/payment/saved-cards */
+      var _pm=result.setupIntent.payment_method;
+      var _cardInfo=_confirmResp.card||null;
+      if(!window._gymBookingState)window._gymBookingState={};
+      window._gymBookingState.paymentMethod='saved';
+      window._gymBookingState.savedCard={
+        id:(typeof _pm==='string'?_pm:(_pm&&_pm.id)||'pm_just_saved'),
+        brand:(_cardInfo&&_cardInfo.brand)||'card',
+        last4:(_cardInfo&&_cardInfo.last4)||'••••'
+      };
+      window._justSavedCard=true;
       /* R5: Brief checkmark flash then instant resume — skip done step */
       if(btn){btn.textContent='✅ Card Saved!';btn.style.opacity='1';btn.style.background='#22c55e';}
       if(navigator.vibrate)navigator.vibrate(50);
-      setTimeout(function(){window._sgCloseAuthSheet();_resumePendingAction();},300);
+      setTimeout(function(){window._sgCloseAuthSheet();_resumePendingAction();},200);
     }catch(e){
       err.textContent=e.message||'Card save failed';err.style.display='block';
       if(btn){btn.textContent='💳 Save Card & Continue';btn.style.opacity='1';btn.style.pointerEvents='auto';}
@@ -16783,10 +16815,10 @@ window.sgFeedback = async function(elementId, vote, btn) {
           body:JSON.stringify({creatorHandle:handle,paymentMethod:payMethod,paymentDetails:details})
         }).catch(function(){});
       }
-      /* R5: Brief checkmark flash then instant resume — skip done step */
+      /* R6: Brief checkmark flash then instant resume — faster 200ms transition */
       if(btn){btn.textContent='✅ Connected!';btn.style.opacity='1';btn.style.background='#22c55e';}
       if(navigator.vibrate)navigator.vibrate(50);
-      setTimeout(function(){window._sgCloseAuthSheet();_resumePendingAction();},300);
+      setTimeout(function(){window._sgCloseAuthSheet();_resumePendingAction();},200);
     }catch(e){
       err.textContent='Failed to save — try again';err.style.display='block';
       if(btn){btn.textContent='💰 Connect & Start Earning';btn.style.opacity='1';btn.style.pointerEvents='auto';}
