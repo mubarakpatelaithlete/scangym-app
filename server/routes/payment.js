@@ -1225,6 +1225,7 @@ router.post('/cash-booking', async (req, res) => {
       booking: {
         id: booking.id, gymName: g.name, date: bookingDate,
         time: booking.start_time, price, bookingCode,
+        currencySymbol: dayPrice.symbol, currency: dayPrice.currency,
         status: 'reserved', paymentMethod: 'cash',
       },
       qr: {

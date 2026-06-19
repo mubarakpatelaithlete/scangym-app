@@ -32,11 +32,12 @@
   };
 
   // ── Fetch prices ──
+  // PPP FIX: Default pricing always uses gym's country (GB), not visitor IP.
+  // Per-gym prices are fetched via /api/pricing/gym-price when gym overlay opens.
+  // This prevents Indian visitors seeing ₹83 for UK gyms.
   function init() {
-    var geo = window.__geoHint || {};
-    var country = geo.country || 'GB';
+    var country = 'GB'; // ScanGym gyms are UK-based — default to GB
     var url = '/api/pricing/prices?country=' + encodeURIComponent(country);
-    if (geo.city) url += '&city=' + encodeURIComponent(geo.city);
 
     // Use XMLHttpRequest for widest compatibility (reels uses var/ES5)
     try {

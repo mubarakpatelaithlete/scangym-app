@@ -426,6 +426,7 @@ async function loadConfig() {
   try {
     const c = window.__configPromise ? await window.__configPromise : await fetch('/api/config').then(r=>r.json());
     MAPS_KEY = c.mapsKey || '';
+    window._sgMapboxToken = c.mapboxToken || '';
     STRIPE_PK = c.stripeKey || '';
     // Honest gym count from DB (0 if API doesn't return one)
     GYM_COUNT = c.gymCount || 1200000;
@@ -8620,16 +8621,18 @@ window._ttShowMap=function(){
     cardsContainer.appendChild(card);
   });
 
-  // Use Google Maps JavaScript API if available, otherwise embed
-  if(window.google&&window.google.maps){
+  // Use Mapbox GL JS (Uber-style dark map, no Google branding)
+  if(window.mapboxgl){
     _initSgMap(mapContainer,withCoords,cLat,cLng);
   } else {
-    // Load Google Maps JS API
-    const script=document.createElement('script');
-    script.src='https://maps.googleapis.com/maps/api/js?key='+MAPS_KEY+'&callback=_sgMapReady';
-    window._sgMapReadyData={container:mapContainer,gyms:withCoords,lat:cLat,lng:cLng};
-    window._sgMapReady=function(){_initSgMap(window._sgMapReadyData.container,window._sgMapReadyData.gyms,window._sgMapReadyData.lat,window._sgMapReadyData.lng);};
-    document.head.appendChild(script);
+    // Load Mapbox GL JS
+    var mbLink=document.createElement('link');
+    mbLink.rel='stylesheet';mbLink.href='https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css';
+    document.head.appendChild(mbLink);
+    var mbScript=document.createElement('script');
+    mbScript.src='https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js';
+    mbScript.onload=function(){_initSgMap(mapContainer,withCoords,cLat,cLng);};
+    document.head.appendChild(mbScript);
   }
 
   // Animate in
@@ -8641,75 +8644,80 @@ window._ttShowMap=function(){
 };
 
 // Initialize Google Map with gym markers
+// Mapbox GL JS — Uber-style dark map (no Google branding)
 window._initSgMap=function(container,gyms,cLat,cLng){
-  const map=new google.maps.Map(container,{
-    center:{lat:cLat,lng:cLng},
-    zoom:13,
-    disableDefaultUI:true,
-    zoomControl:true,
-    styles:[
-      {elementType:'geometry',stylers:[{color:'#1a1a2e'}]},
-      {elementType:'labels.text.stroke',stylers:[{color:'#1a1a2e'}]},
-      {elementType:'labels.text.fill',stylers:[{color:'#746855'}]},
-      {featureType:'road',elementType:'geometry',stylers:[{color:'#2c2c44'}]},
-      {featureType:'road',elementType:'labels.text.fill',stylers:[{color:'#9ca5b3'}]},
-      {featureType:'water',elementType:'geometry',stylers:[{color:'#17263c'}]},
-      {featureType:'poi',stylers:[{visibility:'off'}]},
-      {featureType:'transit',stylers:[{visibility:'off'}]}
-    ]
+  if(!window.mapboxgl){console.warn('[Map] Mapbox GL not loaded');return;}
+  mapboxgl.accessToken=window._sgMapboxToken||'pk.eyJ1Ijoic2Nhbmd5bSIsImEiOiJjbTQ3enR3MmMwMjNxMmtxdnFyb2oxOGo0In0.placeholder';
+
+  var map=new mapboxgl.Map({
+    container:container,
+    style:'mapbox://styles/mapbox/dark-v11',
+    center:[cLng,cLat],
+    zoom:12,
+    attributionControl:false,
+    logoPosition:'bottom-right'
   });
+  map.addControl(new mapboxgl.NavigationControl({showCompass:false}),'top-right');
+  map.addControl(new mapboxgl.AttributionControl({compact:true}),'bottom-right');
 
-  const bounds=new google.maps.LatLngBounds();
-  const infoWindow=new google.maps.InfoWindow();
+  var bounds=new mapboxgl.LngLatBounds();
 
-  gyms.forEach(function(gym,i){
-    const pos={lat:gym.latitude,lng:gym.longitude};
-    bounds.extend(pos);
-    const marker=new google.maps.Marker({
-      position:pos,
-      map:map,
-      title:gym.name||'Gym',
-      icon:{
-        url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="36" height="44" viewBox="0 0 36 44"><defs><filter id="s"><feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-opacity=".3"/></filter></defs><path d="M18 0C8.06 0 0 8.06 0 18c0 13.5 18 26 18 26s18-12.5 18-26C36 8.06 27.94 0 18 0z" fill="#FF6D00" filter="url(%23s)"/><circle cx="18" cy="16" r="10" fill="#fff"/><text x="18" y="20" text-anchor="middle" font-size="13" font-weight="900" fill="#FF6D00" font-family="system-ui">S</text></svg>'),
-        scaledSize:new google.maps.Size(36,44),
-        anchor:new google.maps.Point(18,44)
-      }
-    });
-    marker.addListener('click',function(){
-      const isOpen=gym.openNow!==false;
-      infoWindow.setContent(
-        '<div style="padding:4px;min-width:160px;font-family:system-ui">'
-        +'<strong style="font-size:14px">'+(gym.name||'Gym')+'</strong><br>'
-        +'<span style="color:#666;font-size:12px">'+(gym.address||'').split(',')[0]+'</span><br>'
+  map.on('load',function(){
+    gyms.forEach(function(gym,i){
+      var lng=gym.longitude,lat=gym.latitude;
+      if(!lng||!lat)return;
+      bounds.extend([lng,lat]);
+
+      // Create custom marker element (ScanGym orange pin)
+      var el=document.createElement('div');
+      el.style.cssText='width:36px;height:44px;cursor:pointer;';
+      el.innerHTML='<svg xmlns="http://www.w3.org/2000/svg" width="36" height="44" viewBox="0 0 36 44"><defs><filter id="s"><feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-opacity=".3"/></filter></defs><path d="M18 0C8.06 0 0 8.06 0 18c0 13.5 18 26 18 26s18-12.5 18-26C36 8.06 27.94 0 18 0z" fill="#FF6D00" filter="url(#s)"/><circle cx="18" cy="16" r="10" fill="#fff"/><text x="18" y="20" text-anchor="middle" font-size="13" font-weight="900" fill="#FF6D00" font-family="system-ui">S</text></svg>';
+
+      // Popup content
+      var isOpen=gym.openNow!==false;
+      var popupHtml='<div style="padding:4px;min-width:160px;font-family:system-ui">'
+        +'<strong style="font-size:14px;color:#fff">'+(gym.name||'Gym')+'</strong><br>'
+        +'<span style="color:#94a3b8;font-size:12px">'+(gym.address||'').split(',')[0]+'</span><br>'
         +(gym.rating?'<span style="color:#FF6D00;font-weight:700">⭐ '+gym.rating+'</span> · ':'')
         +'<span style="color:'+(isOpen?'#22c55e':'#ef4444')+'">●</span> '+(isOpen?'Open':'Closed')
-        +'</div>'
-      );
-      infoWindow.open(map,marker);
-      // Scroll card into view
-      const cards=document.getElementById('sgm-cards');
-      if(cards&&cards.children[i]){cards.children[i].scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});}
+        +'</div>';
+
+      var popup=new mapboxgl.Popup({offset:25,closeButton:false,className:'sg-map-popup'})
+        .setHTML(popupHtml);
+
+      var marker=new mapboxgl.Marker({element:el,anchor:'bottom'})
+        .setLngLat([lng,lat])
+        .setPopup(popup)
+        .addTo(map);
+
+      el.addEventListener('click',function(){
+        var cards=document.getElementById('sgm-cards');
+        if(cards&&cards.children[i])cards.children[i].scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+      });
     });
+
+    // Add user location marker (blue dot like Uber)
+    if(state.searchLat&&state.searchLng){
+      var userEl=document.createElement('div');
+      userEl.style.cssText='width:20px;height:20px;background:#3b82f6;border:3px solid #fff;border-radius:50%;box-shadow:0 0 0 4px rgba(59,130,246,.3);';
+      new mapboxgl.Marker({element:userEl})
+        .setLngLat([state.searchLng,state.searchLat])
+        .addTo(map);
+      bounds.extend([state.searchLng,state.searchLat]);
+    }
+
+    if(gyms.length>1){
+      map.fitBounds(bounds,{padding:{top:80,bottom:140,left:20,right:20},maxZoom:15});
+    }
   });
 
-  // Add user location marker if available
-  if(state.searchLat&&state.searchLng){
-    new google.maps.Marker({
-      position:{lat:state.searchLat,lng:state.searchLng},
-      map:map,
-      title:'You',
-      icon:{
-        path:google.maps.SymbolPath.CIRCLE,
-        scale:8,
-        fillColor:'#3b82f6',
-        fillOpacity:1,
-        strokeColor:'#fff',
-        strokeWeight:3
-      }
-    });
+  // Inject popup dark theme CSS
+  if(!document.getElementById('sg-mapbox-popup-css')){
+    var style=document.createElement('style');
+    style.id='sg-mapbox-popup-css';
+    style.textContent='.sg-map-popup .mapboxgl-popup-content{background:#1e293b;border-radius:12px;border:1px solid rgba(255,255,255,.08);box-shadow:0 8px 32px rgba(0,0,0,.5);padding:8px 12px}.sg-map-popup .mapboxgl-popup-tip{border-top-color:#1e293b}';
+    document.head.appendChild(style);
   }
-
-  if(gyms.length>1)map.fitBounds(bounds,{top:80,bottom:140,left:20,right:20});
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -9639,8 +9647,8 @@ function ActiveSessionPage(){
           <div style="color:rgba(255,255,255,.4);font-size:13px">${b.passType||'Day Pass'} · ${b.date||'Today'}</div>
         </div>
         <div style="text-align:right">
-          <div style="color:#22c55e;font-size:14px;font-weight:700">£${(b.price||5.00).toFixed(2)}</div>
-          <div style="color:rgba(255,255,255,.3);font-size:11px">PAID ✓</div>
+          <div style="color:#22c55e;font-size:14px;font-weight:700">${b.currencySymbol||'£'}${(b.price||5.00).toFixed(2)}</div>
+          <div style="color:rgba(255,255,255,.3);font-size:11px">${(b.paymentMethod||b.booking_type||'').includes('cash')?'💷 PAY AT GYM':'PAID ✓'}</div>
         </div>
       </div>
       <!-- Live Timer (hero) -->

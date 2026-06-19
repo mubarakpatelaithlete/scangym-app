@@ -296,6 +296,7 @@ app.get('/api/v2/health', (req, res) => {
 app.get("/api/config", async (req, res) => {
   res.json({
     mapsKey: process.env.GOOGLE_MAPS_API_KEY || "",
+    mapboxToken: process.env.MAPBOX_TOKEN || "",
     stripeKey: process.env.STRIPE_PUBLISHABLE_KEY || "",
     brand: "ScanGym",
     liveSearch: true,
