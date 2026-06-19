@@ -44,11 +44,17 @@
     .step-num{width:32px;height:32px;border-radius:50%;background:rgba(255,109,0,.15);color:#FF6D00;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 
     /* ── Search ── */
-    .search-wrap{position:relative}
+    .search-wrap{display:flex;gap:8px;align-items:center}
+    .search-field{position:relative;flex:1}
     .search-input{width:100%;padding:16px 20px 16px 48px;border-radius:16px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#fff;font-size:16px;font-weight:500;outline:none;transition:.2s}
     .search-input:focus{border-color:#FF6D00;box-shadow:0 0 0 4px rgba(255,109,0,.1)}
     .search-input::placeholder{color:rgba(255,255,255,.25)}
     .search-icon{position:absolute;left:18px;top:50%;transform:translateY(-50%);font-size:18px;opacity:.4}
+    .pin-btn{width:56px;height:56px;border-radius:16px;border:1px solid rgba(255,109,0,.25);background:rgba(255,109,0,.08);color:#FF6D00;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.2s;flex-shrink:0}
+    .pin-btn:hover{background:rgba(255,109,0,.15);border-color:#FF6D00;box-shadow:0 0 12px rgba(255,109,0,.2)}
+    .pin-btn:active{transform:scale(.93)}
+    .pin-btn.locating{animation:pulse-pin 1s infinite}
+    @keyframes pulse-pin{0%,100%{opacity:1}50%{opacity:.4}}
     .search-results{margin-top:12px;max-height:360px;overflow-y:auto;border-radius:16px}
     .search-results:empty{display:none}
     .gym-result{padding:14px 16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;margin-bottom:8px;cursor:pointer;transition:.15s}
@@ -60,6 +66,7 @@
     .gym-tag{font-size:10px;padding:3px 8px;border-radius:6px;font-weight:600}
     .gym-tag.t24h{background:rgba(34,197,94,.12);color:#22c55e}
     .gym-tag.trating{background:rgba(255,255,255,.06);color:rgba(255,255,255,.5)}
+    .gym-tag.tdist{background:rgba(99,102,241,.1);color:#818cf8}
     .searching-msg{text-align:center;padding:20px;color:rgba(255,255,255,.3);font-size:13px}
 
     /* ── Selected gym banner ── */
@@ -145,8 +152,11 @@
         <p class="sub">Search by gym name or address</p>
 
         <div class="search-wrap">
-          <span class="search-icon">🔍</span>
-          <input type="text" class="search-input" id="gymSearch" placeholder="e.g. PureGym London Bridge" autocomplete="off" autofocus>
+          <div class="search-field">
+            <span class="search-icon">🔍</span>
+            <input type="text" class="search-input" id="gymSearch" placeholder="e.g. PureGym London Bridge" autocomplete="off" autofocus>
+          </div>
+          <button class="pin-btn" id="pinBtn" title="Find gyms near me">📍</button>
         </div>
         <div class="search-results" id="searchResults"></div>
       </div>
@@ -273,6 +283,64 @@
       if (q.length < 2) { resultsEl.innerHTML = ''; return; }
       resultsEl.innerHTML = '<div class="searching-msg"><div class="spinner"></div> Searching…</div>';
       searchTimer = setTimeout(() => searchGyms(q), 350);
+    });
+
+    /* ── 📍 Pin button — geolocation ── */
+    document.getElementById('pinBtn').addEventListener('click', function() {
+      const btn = this;
+      if (!navigator.geolocation) {
+        resultsEl.innerHTML = '<div class="searching-msg">📍 Location not supported — type your gym name instead</div>';
+        return;
+      }
+      btn.classList.add('locating');
+      btn.textContent = '⏳';
+      resultsEl.innerHTML = '<div class="searching-msg"><div class="spinner"></div> Finding gyms near you…</div>';
+
+      navigator.geolocation.getCurrentPosition(
+        async function(pos) {
+          btn.classList.remove('locating');
+          btn.textContent = '📍';
+          try {
+            const res = await fetch(API + '/api/live/nearby?lat=' + pos.coords.latitude + '&lng=' + pos.coords.longitude + '&radius=10000');
+            const data = await res.json();
+            const nearby = data.gyms || data.results || [];
+            if (nearby.length === 0) {
+              resultsEl.innerHTML = '<div class="searching-msg">No gyms found nearby. Try typing the name instead.</div>';
+              return;
+            }
+            window._searchResults = nearby;
+            resultsEl.innerHTML = nearby.slice(0, 10).map(g => {
+              const is24 = g.is24Hours || is24Hour(g);
+              const stars = g.rating ? '⭐ ' + g.rating : '';
+              const dist = g.distanceText || '';
+              return `
+                <div class="gym-result" data-pid="${g.place_id}" onclick="selectGym(this, '${escape(g.place_id)}')">
+                  <div class="gym-name">${esc(g.name)}</div>
+                  <div class="gym-addr">${esc(g.formatted_address || g.vicinity || g.address || '')}</div>
+                  <div class="gym-tags">
+                    ${is24 ? '<span class="gym-tag t24h">24/7</span>' : ''}
+                    ${stars ? '<span class="gym-tag trating">' + stars + '</span>' : ''}
+                    ${dist ? '<span class="gym-tag tdist">' + dist + '</span>' : ''}
+                  </div>
+                </div>
+              `;
+            }).join('');
+          } catch (e) {
+            resultsEl.innerHTML = '<div class="searching-msg">Search error — try typing the name instead</div>';
+          }
+        },
+        function(err) {
+          btn.classList.remove('locating');
+          btn.textContent = '📍';
+          const msgs = {
+            1: '📍 Location permission denied — type your gym name instead',
+            2: '📍 Could not get location — try again or type the name',
+            3: '📍 Location timed out — try again'
+          };
+          resultsEl.innerHTML = '<div class="searching-msg">' + (msgs[err.code] || msgs[2]) + '</div>';
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
     });
 
     async function searchGyms(q) {
