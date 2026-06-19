@@ -1,7 +1,7 @@
 // ScanGym Frontend v5.3.1 — Fix P0: route payment to Uber-style white sheet + cache bust
 
 // Inject CSS animations for loading experience
-(function(){const s=document.createElement('style');s.textContent='@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}#fun-fact{transition:opacity 0.2s ease}.gym-card{animation:fadeInUp 0.3s ease-out both}.animate-slide-up{animation:slideUp 0.3s ease-out}@keyframes skeletonPulse{0%,100%{opacity:.6}50%{opacity:.3}}@keyframes locationDot{0%,100%{box-shadow:0 0 0 0 rgba(255,109,0,.4)}50%{box-shadow:0 0 0 8px rgba(255,109,0,0)}}.skel-card{animation:skeletonPulse 1.8s ease-in-out infinite}.loc-dot{animation:locationDot 1.5s ease-in-out infinite}.cards-enter .gym-card{animation:fadeInUp .4s ease-out both}@keyframes toastIn{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes toastOut{from{transform:translateY(0);opacity:1}to{transform:translateY(-100%);opacity:0}}@keyframes spin{to{transform:rotate(360deg)}}@keyframes casinoGlow{0%,100%{box-shadow:0 4px 20px rgba(255,109,0,.4),0 0 15px rgba(255,109,0,.15);background-position:0% 50%}50%{box-shadow:0 4px 30px rgba(255,109,0,.65),0 0 30px rgba(255,109,0,.3),0 0 60px rgba(255,109,0,.1);background-position:100% 50%}}@keyframes greenGlow{0%,100%{box-shadow:0 4px 20px rgba(34,197,94,.35),0 0 15px rgba(34,197,94,.1)}50%{box-shadow:0 4px 30px rgba(34,197,94,.6),0 0 30px rgba(34,197,94,.25),0 0 60px rgba(34,197,94,.1)}}.sg-spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}/* ── 3-Tab System (Polished) ── */.sg-tab-bar{position:fixed;bottom:0;left:0;right:0;height:56px;background:rgba(8,8,18,.98);backdrop-filter:blur(24px) saturate(1.8);-webkit-backdrop-filter:blur(24px) saturate(1.8);display:flex;align-items:center;justify-content:space-around;border-top:1px solid rgba(255,255,255,.06);z-index:9000;padding-bottom:env(safe-area-inset-bottom,0);pointer-events:auto!important}.sg-tab-item{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:6px 20px;border-radius:0;transition:all .25s cubic-bezier(.4,0,.2,1);-webkit-tap-highlight-color:transparent;user-select:none;position:relative;touch-action:manipulation}.sg-tab-item svg{width:26px;height:26px;stroke:rgba(255,255,255,.4);fill:none;stroke-width:1.8;transition:all .25s cubic-bezier(.4,0,.2,1)}.sg-tab-item .sg-tab-label{font-size:10px;font-weight:600;letter-spacing:.2px;color:rgba(255,255,255,.4);transition:all .25s cubic-bezier(.4,0,.2,1)}.sg-tab-item.active svg{stroke:#FF6D00;filter:drop-shadow(0 0 6px rgba(255,109,0,.35))}.sg-tab-item.active .sg-tab-label{color:#FF6D00}.sg-tab-item:active{transform:scale(.92)}.sg-tab-content{position:fixed;top:0;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom,0px));overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;scroll-behavior:smooth;display:flex;flex-direction:column}.sg-tab-content.reels-active{position:static;padding-bottom:0;overflow:visible}.sg-reels-frame{position:fixed;top:0;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom,0px));border:none;width:100%;height:calc(100vh - 56px - env(safe-area-inset-bottom,0px));z-index:1}.sg-more-hub{padding:20px 16px 24px;max-width:480px;margin:0 auto}.sg-more-section{margin-bottom:20px}.sg-more-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.3);margin-bottom:8px;padding-left:4px}.sg-more-item{display:flex;align-items:center;gap:14px;padding:14px 16px;background:rgba(255,255,255,.04);border-radius:14px;margin-bottom:6px;border:1px solid rgba(255,255,255,.04);cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}.sg-more-item:active{transform:scale(.98);background:rgba(255,255,255,.08)}.sg-more-item .sg-mi-icon{font-size:20px;width:40px;height:40px;background:rgba(255,255,255,.06);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.sg-more-item .sg-mi-text{flex:1}.sg-more-item .sg-mi-text h4{color:#fff;font-size:14px;font-weight:600;margin:0}.sg-more-item .sg-mi-text p{color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0}.sg-more-item .sg-mi-arrow{color:rgba(255,255,255,.2);font-size:16px}.sg-more-profile{display:flex;align-items:center;gap:14px;margin-bottom:28px;padding-top:12px}.sg-more-avatar{width:56px;height:56px;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff;flex-shrink:0}.sg-more-profile-info h3{color:#fff;font-size:18px;font-weight:700;margin:0}.sg-more-profile-info p{color:rgba(255,255,255,.4);font-size:13px;margin:2px 0 0}.sg-more-social{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}.sg-more-social a{display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:rgba(255,255,255,.04);border-radius:12px;border:1px solid rgba(255,255,255,.06);font-size:16px;transition:all .15s;text-decoration:none}.sg-more-social a:active{background:rgba(255,255,255,.1);transform:scale(.95)}.sg-more-back{display:flex;align-items:center;gap:8px;padding:12px 0;cursor:pointer;color:rgba(255,255,255,.6);font-size:14px;font-weight:600;margin-bottom:4px;-webkit-tap-highlight-color:transparent}.sg-more-back:active{color:#FF6D00}#sg-search-overlay{transition:opacity .2s ease}#sg-search-overlay.active{opacity:1!important}.hide-scrollbar::-webkit-scrollbar{display:none}.hide-scrollbar{scrollbar-width:none;-ms-overflow-style:none}*::-webkit-scrollbar{display:none}*{scrollbar-width:none;-ms-overflow-style:none}.sg-dashboard{-webkit-tap-highlight-color:transparent;position:fixed;top:0;left:0;right:0;bottom:56px;z-index:10;overscroll-behavior:none;-webkit-overflow-scrolling:auto}html,body{height:100%;overflow:hidden;overscroll-behavior:none;position:fixed;width:100%}.sg-tab-bar.hidden{display:none!important}/* ── Continue Banner (permanent layout element like tab bar) ── */#sg-continue-banner{position:fixed;bottom:calc(56px + env(safe-area-inset-bottom,0px));left:0;right:0;height:52px;background:linear-gradient(135deg,#FF6D00 0%,#E66200 100%);display:flex;align-items:center;justify-content:center;gap:8px;z-index:8999;box-shadow:0 -4px 20px rgba(255,109,0,.25);cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}#sg-continue-banner:active{opacity:.85}#sg-continue-banner.sg-cb-hidden{display:none}#sg-continue-banner .sg-cb-text{font-size:16px;font-weight:700;color:#fff;letter-spacing:.3px}#sg-continue-banner .sg-cb-price{font-size:13px;font-weight:600;color:rgba(255,255,255,.75)}#sg-continue-banner .sg-cb-arrow{font-size:18px;color:#fff;margin-left:2px}.sg-tab-content.sg-cb-active{bottom:calc(56px + 52px + env(safe-area-inset-bottom,0px))!important}.sg-reels-frame.sg-cb-active,.sg-reels-frame#sg-reels-iframe.sg-cb-active,#sg-reels-iframe.sg-cb-active{bottom:calc(56px + 52px + env(safe-area-inset-bottom,0px))!important;height:calc(100vh - 56px - 52px - env(safe-area-inset-bottom,0px))!important}';document.head.appendChild(s)})();
+(function(){const s=document.createElement('style');s.textContent='@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}#fun-fact{transition:opacity 0.2s ease}.gym-card{animation:fadeInUp 0.3s ease-out both}.animate-slide-up{animation:slideUp 0.3s ease-out}@keyframes skeletonPulse{0%,100%{opacity:.6}50%{opacity:.3}}@keyframes locationDot{0%,100%{box-shadow:0 0 0 0 rgba(255,109,0,.4)}50%{box-shadow:0 0 0 8px rgba(255,109,0,0)}}.skel-card{animation:skeletonPulse 1.8s ease-in-out infinite}.loc-dot{animation:locationDot 1.5s ease-in-out infinite}.cards-enter .gym-card{animation:fadeInUp .4s ease-out both}@keyframes toastIn{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes toastOut{from{transform:translateY(0);opacity:1}to{transform:translateY(-100%);opacity:0}}@keyframes spin{to{transform:rotate(360deg)}}@keyframes casinoGlow{0%,100%{box-shadow:0 4px 20px rgba(255,109,0,.4),0 0 15px rgba(255,109,0,.15);background-position:0% 50%}50%{box-shadow:0 4px 30px rgba(255,109,0,.65),0 0 30px rgba(255,109,0,.3),0 0 60px rgba(255,109,0,.1);background-position:100% 50%}}@keyframes greenGlow{0%,100%{box-shadow:0 4px 20px rgba(34,197,94,.35),0 0 15px rgba(34,197,94,.1)}50%{box-shadow:0 4px 30px rgba(34,197,94,.6),0 0 30px rgba(34,197,94,.25),0 0 60px rgba(34,197,94,.1)}}.sg-spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}/* ── 3-Tab System (Polished) ── */.sg-tab-bar{position:fixed;bottom:0;left:0;right:0;height:56px;background:rgba(8,8,18,.98);backdrop-filter:blur(24px) saturate(1.8);-webkit-backdrop-filter:blur(24px) saturate(1.8);display:flex;align-items:center;justify-content:space-around;border-top:1px solid rgba(255,255,255,.06);z-index:9000;padding-bottom:env(safe-area-inset-bottom,0);pointer-events:auto!important}.sg-tab-item{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:6px 20px;border-radius:0;transition:all .25s cubic-bezier(.4,0,.2,1);-webkit-tap-highlight-color:transparent;user-select:none;position:relative;touch-action:manipulation}.sg-tab-item svg{width:26px;height:26px;stroke:rgba(255,255,255,.4);fill:none;stroke-width:1.8;transition:all .25s cubic-bezier(.4,0,.2,1)}.sg-tab-item .sg-tab-label{font-size:10px;font-weight:600;letter-spacing:.2px;color:rgba(255,255,255,.4);transition:all .25s cubic-bezier(.4,0,.2,1)}.sg-tab-item.active svg{stroke:#FF6D00;filter:drop-shadow(0 0 6px rgba(255,109,0,.35))}.sg-tab-item.active .sg-tab-label{color:#FF6D00}.sg-tab-item:active{transform:scale(.92)}.sg-tab-content{position:fixed;top:0;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom,0px));overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;scroll-behavior:smooth;display:flex;flex-direction:column}.sg-tab-content.reels-active{position:static;padding-bottom:0;overflow:visible}.sg-reels-frame{position:fixed;top:0;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom,0px));border:none;width:100%;height:calc(100vh - 56px - env(safe-area-inset-bottom,0px));z-index:1}.sg-more-hub{padding:20px 16px 24px;max-width:480px;margin:0 auto}.sg-more-section{margin-bottom:20px}.sg-more-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.3);margin-bottom:8px;padding-left:4px}.sg-more-item{display:flex;align-items:center;gap:14px;padding:14px 16px;background:rgba(255,255,255,.04);border-radius:14px;margin-bottom:6px;border:1px solid rgba(255,255,255,.04);cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}.sg-more-item:active{transform:scale(.98);background:rgba(255,255,255,.08)}.sg-more-item .sg-mi-icon{font-size:20px;width:40px;height:40px;background:rgba(255,255,255,.06);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.sg-more-item .sg-mi-text{flex:1}.sg-more-item .sg-mi-text h4{color:#fff;font-size:14px;font-weight:600;margin:0}.sg-more-item .sg-mi-text p{color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0}.sg-more-item .sg-mi-arrow{color:rgba(255,255,255,.2);font-size:16px}.sg-more-profile{display:flex;align-items:center;gap:14px;margin-bottom:28px;padding-top:12px}.sg-more-avatar{width:56px;height:56px;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff;flex-shrink:0}.sg-more-profile-info h3{color:#fff;font-size:18px;font-weight:700;margin:0}.sg-more-profile-info p{color:rgba(255,255,255,.4);font-size:13px;margin:2px 0 0}.sg-more-social{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}.sg-more-social a{display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:rgba(255,255,255,.04);border-radius:12px;border:1px solid rgba(255,255,255,.06);font-size:16px;transition:all .15s;text-decoration:none}.sg-more-social a:active{background:rgba(255,255,255,.1);transform:scale(.95)}.sg-more-back{display:flex;align-items:center;gap:8px;padding:12px 0;cursor:pointer;color:rgba(255,255,255,.6);font-size:14px;font-weight:600;margin-bottom:4px;-webkit-tap-highlight-color:transparent}.sg-more-back:active{color:#FF6D00}#sg-search-overlay{transition:opacity .2s ease}#sg-search-overlay.active{opacity:1!important}.hide-scrollbar::-webkit-scrollbar{display:none}.hide-scrollbar{scrollbar-width:none;-ms-overflow-style:none}*::-webkit-scrollbar{display:none}*{scrollbar-width:none;-ms-overflow-style:none}.sg-dashboard{-webkit-tap-highlight-color:transparent;position:fixed;top:0;left:0;right:0;bottom:56px;z-index:10;overscroll-behavior:none;-webkit-overflow-scrolling:auto}html,body{height:100%;overflow:hidden;overscroll-behavior:none;position:fixed;width:100%}.sg-tab-bar.hidden{display:none!important}/* ── Continue Banner (permanent layout element like tab bar) ── */#sg-continue-banner{position:fixed;bottom:calc(56px + env(safe-area-inset-bottom,0px));left:0;right:0;height:52px;background:linear-gradient(135deg,#FF6D00 0%,#E66200 100%);display:flex;align-items:center;justify-content:center;gap:8px;z-index:8999;box-shadow:0 -4px 20px rgba(255,109,0,.25);cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}#sg-continue-banner:active{opacity:.85}#sg-continue-banner.sg-cb-hidden{display:none}#sg-continue-banner .sg-cb-text{font-size:16px;font-weight:700;color:#fff;letter-spacing:.3px}#sg-continue-banner .sg-cb-price{font-size:13px;font-weight:600;color:rgba(255,255,255,.75)}#sg-continue-banner .sg-cb-arrow{font-size:18px;color:#fff;margin-left:2px}.sg-tab-content.sg-cb-active{bottom:calc(56px + 52px + env(safe-area-inset-bottom,0px))!important}.sg-reels-frame.sg-cb-active,.sg-reels-frame#sg-reels-iframe.sg-cb-active,#sg-reels-iframe.sg-cb-active{bottom:calc(56px + 52px + env(safe-area-inset-bottom,0px))!important;height:calc(100vh - 56px - 52px - env(safe-area-inset-bottom,0px))!important}.sg-dashboard.sg-cb-active{bottom:calc(56px + 52px)!important}';document.head.appendChild(s)})();
 // ═══ Perf #9: Preconnect to Google photo CDN for faster image loads ═══
 (function(){['https://lh3.googleusercontent.com','https://maps.googleapis.com'].forEach(function(d){
 var l=document.createElement('link');l.rel='preconnect';l.href=d;l.crossOrigin='anonymous';document.head.appendChild(l);
@@ -15595,11 +15595,13 @@ if(localStorage.getItem('sg_push_enabled')==='1'&&state.user){
     if(_cbVisible)return;
     _cbVisible=true;
     banner.classList.remove('sg-cb-hidden');
-    // Resize content areas so nothing is covered
+    // R6 FIX: Resize ALL content areas so nothing is covered — like the tab bar
     var tc=document.querySelector('.sg-tab-content');
     if(tc)tc.classList.add('sg-cb-active');
     var rf=document.getElementById('sg-reels-iframe');
     if(rf)rf.classList.add('sg-cb-active');
+    var db=document.querySelector('.sg-dashboard');
+    if(db)db.classList.add('sg-cb-active');
   }
 
   function _hideBanner(){
@@ -15610,6 +15612,8 @@ if(localStorage.getItem('sg_push_enabled')==='1'&&state.user){
     if(tc)tc.classList.remove('sg-cb-active');
     var rf=document.getElementById('sg-reels-iframe');
     if(rf)rf.classList.remove('sg-cb-active');
+    var db=document.querySelector('.sg-dashboard');
+    if(db)db.classList.remove('sg-cb-active');
   }
 
   window._sgShowContinueBanner=function(){_showBanner();};
@@ -16263,10 +16267,10 @@ window.sgFeedback = async function(elementId, vote, btn) {
   // Inject CSS once
   var sty=document.createElement('style');
   sty.textContent=`
-    .sg-auth-overlay{position:fixed;inset:0;z-index:9500;display:flex;flex-direction:column;justify-content:flex-end;pointer-events:none;opacity:0;transition:opacity .25s}
+    .sg-auth-overlay{position:fixed;inset:0;z-index:9500;display:flex;flex-direction:column;justify-content:flex-end;pointer-events:none;opacity:0;transition:opacity .1s ease-out}
     .sg-auth-overlay.open{opacity:1;pointer-events:auto}
     .sg-auth-bg{position:absolute;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-    .sg-auth-panel{position:relative;background:#111;border-radius:24px 24px 0 0;padding:28px 24px calc(24px + env(safe-area-inset-bottom,0px));transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,.24,1.02);max-height:85vh;overflow-y:auto}
+    .sg-auth-panel{position:relative;background:#111;border-radius:24px 24px 0 0;padding:28px 24px calc(24px + env(safe-area-inset-bottom,0px));transform:translateY(100%);transition:transform .15s cubic-bezier(.32,.72,.32,1);max-height:85vh;overflow-y:auto}
     .sg-auth-overlay.open .sg-auth-panel{transform:translateY(0)}
     .sg-auth-drag{width:40px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;margin:0 auto 20px}
     .sg-auth-title{color:#fff;font-size:22px;font-weight:800;text-align:center;margin-bottom:4px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
@@ -16322,16 +16326,13 @@ window.sgFeedback = async function(elementId, vote, btn) {
     /* R3: Confetti burst on done step */
     @keyframes sgAuthConfetti{0%{transform:scale(0) rotate(0deg);opacity:1}50%{transform:scale(1.3) rotate(180deg);opacity:1}100%{transform:scale(1) rotate(360deg);opacity:1}}
     .sg-auth-success-icon{animation:sgAuthConfetti .6s cubic-bezier(.68,-.55,.27,1.55)}
-    /* R5: Fastest possible panel open/close */
-    .sg-auth-overlay{transition:opacity .1s ease-out}
-    .sg-auth-panel{transition:transform .15s cubic-bezier(.32,.72,.32,1)}
+    /* R6: Speeds consolidated into single declarations above */
   `;
   document.head.appendChild(sty);
 
   function _progressDots(step){
-    // book: auth → card → done (3 dots)
-    // reels: auth → withdraw → done (3 dots)
-    var steps=_sheetMode==='book'?['auth','card','done']:['auth','withdraw','done'];
+    // R6: 2 dots only — done step is auto-skipped
+    var steps=_sheetMode==="book"?["auth","card"]:["auth","withdraw"];
     var idx=steps.indexOf(step);if(idx<0)idx=0;
     return '<div class="sg-auth-progress">'+steps.map(function(s,i){
       return '<div class="sg-auth-dot'+(i<idx?' done':'')+(i===idx?' active':'')+'"></div>';
@@ -16387,7 +16388,7 @@ window.sgFeedback = async function(elementId, vote, btn) {
       </button>
       <div class="sg-auth-footer">Sign in once — works everywhere in ScanGym</div>
     </div>`;
-    setTimeout(function(){var inp=document.getElementById('sg-auth-phone');if(inp)inp.focus();},350);
+    // R6: Don't auto-focus phone input — avoids keyboard pop when user wants Google/Apple
   }
 
   // ── Step 1b: OTP Code ──
@@ -16476,7 +16477,7 @@ window.sgFeedback = async function(elementId, vote, btn) {
     content.innerHTML=`<div class="sg-auth-step-enter">`+_progressDots('withdraw')+`
       <div class="sg-auth-title">Get paid for sharing</div>
       <div class="sg-auth-sub">1-click connect — earn 25% on every booking 💰</div>
-      <button class="sg-auth-btn sg-auth-btn-phone" onclick="window._sgAuthWithdrawType='stripe_connect';window._sgAuthSaveWithdraw()" style="margin-bottom:12px;animation:casinoGlow 2.5s ease-in-out infinite">
+      <button class="sg-auth-btn sg-auth-btn-phone" onclick="window._sgAuthWithdrawType='stripe_connect';window._sgAuthSaveWithdraw()" style="margin-bottom:8px;animation:casinoGlow 2.5s ease-in-out infinite">
         ⚡ Connect with Stripe — 1 click
       </button>
       <div style="color:rgba(255,255,255,.35);font-size:11px;text-align:center;margin-bottom:16px">Auto-deposit to your bank · Like Amazon Seller & Fiverr</div>
@@ -16501,27 +16502,21 @@ window.sgFeedback = async function(elementId, vote, btn) {
       </div>
       <div id="sg-auth-wd-form"></div>
       <div class="sg-auth-error" id="sg-auth-err"></div>
-      <button class="sg-auth-btn sg-auth-btn-green" id="sg-auth-wd-btn" onclick="window._sgAuthSaveWithdraw()">
-        💰 Connect & Start Earning
+      <button class="sg-auth-btn sg-auth-btn-green sg-cb-hidden" id="sg-auth-wd-btn" onclick="window._sgAuthSaveWithdraw()" style="display:none">
+        💰 Save & Start Earning
       </button>
-      <div class="sg-auth-back" onclick="window._sgAuthSkipWithdraw()">Skip for now</div>
-      <div class="sg-auth-footer">You can change this anytime in your profile</div>
+      <div class="sg-auth-footer" style="margin-top:12px">You can change this anytime in your profile</div>
     </div>`;
-    // Default to Stripe Connect (primary like Amazon Seller/Fiverr)
+    // R6: Default to Stripe Connect — hero button handles it directly, no duplicate CTA needed
     window._sgAuthWithdrawType='stripe_connect';
-    _renderWithdrawForm('stripe_connect');
   }
 
   function _renderWithdrawForm(type){
     var form=document.getElementById('sg-auth-wd-form');
     if(!form)return;
     if(type==='stripe_connect'){
-      form.innerHTML=`
-        <div style="margin-top:12px;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);border-radius:12px;padding:14px">
-          <p style="color:#fff;font-size:13px;font-weight:600;margin:0 0 4px">⚡ 1-click Stripe Connect</p>
-          <p style="color:rgba(255,255,255,.5);font-size:11px;margin:0">We'll redirect you to Stripe to securely connect your bank account. Payouts auto-deposit — like Amazon Seller or Fiverr.</p>
-        </div>
-      `;
+      // R6: Hero button above already explains Stripe — no extra info box needed
+      form.innerHTML='';
     }else if(type==='paypal'){
       form.innerHTML=`
         <label class="sg-auth-label" style="margin-top:12px">PayPal email</label>
@@ -16729,6 +16724,9 @@ window.sgFeedback = async function(elementId, vote, btn) {
     document.getElementById('sg-auth-wd-paypal').classList.toggle('selected',type==='paypal');
     document.getElementById('sg-auth-wd-bank').classList.toggle('selected',type==='bank');
     _renderWithdrawForm(type);
+    // R6: Show green save button only for PayPal/Bank (Stripe hero button handles itself)
+    var greenBtn=document.getElementById('sg-auth-wd-btn');
+    if(greenBtn){greenBtn.style.display=(type==='stripe_connect')?'none':'flex';}
   };
 
   window._sgAuthSaveWithdraw=async function(){
