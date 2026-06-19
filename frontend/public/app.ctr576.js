@@ -3696,7 +3696,7 @@ window._ovPayWalletPay=function(type){
     const pc=window._pendingCheckout;
     window._pendingCheckout=null;
     closeGymOverlay();
-    setTimeout(()=>showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime),400);
+    setTimeout(()=>showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime),200);
   }
 };
 
@@ -3718,7 +3718,7 @@ window._ovPaySelectCard=function(cardId,brand,last4){
     const pc=window._pendingCheckout;
     window._pendingCheckout=null;
     closeGymOverlay();
-    setTimeout(()=>showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime),400);
+    setTimeout(()=>showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime),200);
   }
 };
 
@@ -3737,7 +3737,7 @@ window._ovPaySelectCash=function(){
     const pc=window._pendingCheckout;
     window._pendingCheckout=null;
     closeGymOverlay();
-    setTimeout(()=>showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime),400);
+    setTimeout(()=>showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime),200);
   }
 };
 
@@ -3874,7 +3874,7 @@ window._ovPaySaveCard=async function(){
         }
       }catch(e){}
       closeGymOverlay();
-      setTimeout(()=>showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime),400);
+      setTimeout(()=>showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime),200);
       return;
     }
   }catch(err){
@@ -7759,7 +7759,7 @@ window._sgGoogleCallback=async function(response){
           const pc=window._pendingCheckout;
           window._pendingCheckout=null;
           if(state.activeTab!=='book')navigate('/explore');
-          setTimeout(()=>showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime),600);
+          setTimeout(()=>showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime),200);
         }else if(window._pendingReelsAction){
           _sendToReels({type:'sg-auth-complete',action:window._pendingReelsAction,video:window._pendingReelsVideo});
           window._pendingReelsAction=null;window._pendingReelsVideo=null;
@@ -7855,7 +7855,7 @@ window.handleGoogleSignIn=async function(){
                 var pc=window._pendingCheckout;
                 window._pendingCheckout=null;
                 if(state.activeTab!=='book')navigate('/explore');
-                setTimeout(function(){showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime);},600);
+                setTimeout(function(){showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime);},200);
               }else if(window._pendingReelsAction){
                 _sendToReels({type:'sg-auth-complete',action:window._pendingReelsAction,video:window._pendingReelsVideo});
                 window._pendingReelsAction=null;window._pendingReelsVideo=null;
@@ -7935,7 +7935,7 @@ window.handleAppleSignIn=async function(){
           var pc=window._pendingCheckout;
           window._pendingCheckout=null;
           if(state.activeTab!=='book')navigate('/explore');
-          setTimeout(function(){showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime);},600);
+          setTimeout(function(){showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime);},200);
         }else if(window._pendingReelsAction){
           _sendToReels({type:'sg-auth-complete',action:window._pendingReelsAction,video:window._pendingReelsVideo});
           window._pendingReelsAction=null;window._pendingReelsVideo=null;
@@ -8025,7 +8025,7 @@ window.handleVerifyCode=async function(){
           const pc=window._pendingCheckout;
           window._pendingCheckout=null;
           if(state.activeTab!=='book')navigate('/explore');
-          setTimeout(()=>showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime),600);
+          setTimeout(()=>showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime),200);
         }else if(window._pendingReelsAction){
           if(typeof _sendToReels==='function')_sendToReels({type:'sg-auth-complete',action:window._pendingReelsAction,video:window._pendingReelsVideo});
           window._pendingReelsAction=null;window._pendingReelsVideo=null;
@@ -16315,16 +16315,16 @@ window.sgFeedback = async function(elementId, vote, btn) {
     .sg-auth-success-text{color:#fff;font-size:18px;font-weight:700;margin-bottom:4px}
     .sg-auth-success-sub{color:rgba(255,255,255,.4);font-size:13px}
     /* R3: Step transition animation — slides content in from right */
-    @keyframes sgAuthSlideIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
-    .sg-auth-step-enter{animation:sgAuthSlideIn .25s ease-out}
+    @keyframes sgAuthSlideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+    .sg-auth-step-enter{animation:sgAuthSlideIn .15s ease-out}
     /* R3: Google button pulse to draw attention */
     .sg-auth-btn-google{animation:casinoGlow 2.5s ease-in-out infinite}
     /* R3: Confetti burst on done step */
     @keyframes sgAuthConfetti{0%{transform:scale(0) rotate(0deg);opacity:1}50%{transform:scale(1.3) rotate(180deg);opacity:1}100%{transform:scale(1) rotate(360deg);opacity:1}}
     .sg-auth-success-icon{animation:sgAuthConfetti .6s cubic-bezier(.68,-.55,.27,1.55)}
-    /* R3: Faster, slicker panel open */
-    .sg-auth-overlay{transition:opacity .15s ease-out}
-    .sg-auth-panel{transition:transform .2s cubic-bezier(.32,.72,.32,1)}
+    /* R5: Fastest possible panel open/close */
+    .sg-auth-overlay{transition:opacity .1s ease-out}
+    .sg-auth-panel{transition:transform .15s cubic-bezier(.32,.72,.32,1)}
   `;
   document.head.appendChild(sty);
 
@@ -16475,19 +16475,21 @@ window.sgFeedback = async function(elementId, vote, btn) {
 
     content.innerHTML=`<div class="sg-auth-step-enter">`+_progressDots('withdraw')+`
       <div class="sg-auth-title">Get paid for sharing</div>
-      <div class="sg-auth-sub">Connect your payout method — earn 25% on every booking 💰</div>
-      <div class="sg-auth-check selected" id="sg-auth-wd-stripe" onclick="window._sgAuthSelectWithdraw('stripe_connect')">
-        <div class="sg-auth-check-icon" style="font-size:22px">⚡</div>
-        <div class="sg-auth-check-text">
-          <strong>Stripe Connect</strong>
-          <span>Recommended — instant payouts, auto-deposit</span>
-        </div>
+      <div class="sg-auth-sub">1-click connect — earn 25% on every booking 💰</div>
+      <button class="sg-auth-btn sg-auth-btn-phone" onclick="window._sgAuthWithdrawType='stripe_connect';window._sgAuthSaveWithdraw()" style="margin-bottom:12px;animation:casinoGlow 2.5s ease-in-out infinite">
+        ⚡ Connect with Stripe — 1 click
+      </button>
+      <div style="color:rgba(255,255,255,.35);font-size:11px;text-align:center;margin-bottom:16px">Auto-deposit to your bank · Like Amazon Seller & Fiverr</div>
+      <div class="sg-auth-divider">
+        <div class="sg-auth-divider-line"></div>
+        <span class="sg-auth-divider-text">or choose another</span>
+        <div class="sg-auth-divider-line"></div>
       </div>
-      <div class="sg-auth-check" id="sg-auth-wd-paypal" onclick="window._sgAuthSelectWithdraw('paypal')">
+      <div class="sg-auth-check" id="sg-auth-wd-paypal" onclick="window._sgAuthSelectWithdraw('paypal')" style="margin-top:8px">
         <div class="sg-auth-check-icon">🅿️</div>
         <div class="sg-auth-check-text">
           <strong>PayPal</strong>
-          <span>Fast — instant transfers</span>
+          <span>Instant transfers</span>
         </div>
       </div>
       <div class="sg-auth-check" id="sg-auth-wd-bank" onclick="window._sgAuthSelectWithdraw('bank')">
@@ -16554,25 +16556,26 @@ window.sgFeedback = async function(elementId, vote, btn) {
     </div>`;
     /* R3: Haptic feedback on success */
     if(navigator.vibrate)navigator.vibrate([50,30,80]);
-    // Auto-close after 1.2s and resume pending action
+    // R5 FIX: Auto-close after 400ms — fast fast fast
     setTimeout(function(){
       window._sgCloseAuthSheet();
       _resumePendingAction();
-    },1200);
+    },400);
   }
 
   // ── After auth success: decide next step ──
   async function _afterAuthSuccess(){
     _sendToReels({type:'sg-auth-state',loggedIn:true,user:{name:state.user.name,phone:state.user.phone}});
-    sgToast('Welcome, '+(state.user.name||'there')+'! 🎉','success',2000);
+    sgToast('Welcome, '+(state.user.name||'there')+'! 🎉','success',1500);
 
     if(_sheetMode==='book'){
       // Check if user already has saved cards
       try{
         var resp=await fetch('/api/payment/saved-cards',{credentials:'include'}).then(function(r){return r.json();});
         if(resp.cards&&resp.cards.length>0){
-          // Already has cards — skip to done
-          _renderDoneStep();
+          // R5 FIX: Already has cards — skip done step entirely, instant resume
+          window._sgCloseAuthSheet();
+          _resumePendingAction();
           return;
         }
       }catch(e){}
@@ -16602,11 +16605,12 @@ window.sgFeedback = async function(elementId, vote, btn) {
         })}).catch(function(){});
       }
       if(creatorData.withdrawMethod){
-        // Already has withdraw method — skip to done
-        _renderDoneStep();
+        // R5 FIX: Already has withdraw method — skip done, instant resume share/save
+        window._sgCloseAuthSheet();
+        _resumePendingAction();
         return;
       }
-      // Show withdraw setup
+      // Show withdraw setup — Stripe Connect is default (1-click)
       _renderWithdrawStep();
     }else{
       // Unknown mode — just close
@@ -16618,7 +16622,7 @@ window.sgFeedback = async function(elementId, vote, btn) {
   function _resumePendingAction(){
     if(window._pendingCheckout&&window._pendingCheckout.gymId){
       var pc=window._pendingCheckout;window._pendingCheckout=null;
-      setTimeout(function(){showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime);},400);
+      setTimeout(function(){showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime);},200);
     }else if(window._pendingReelsAction){
       _sendToReels({type:'sg-auth-complete',action:window._pendingReelsAction,video:window._pendingReelsVideo});
       window._pendingReelsAction=null;window._pendingReelsVideo=null;
@@ -16699,10 +16703,10 @@ window.sgFeedback = async function(elementId, vote, btn) {
       // Confirm on server
       await fetch('/api/payment/confirm-setup',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({setupIntentId:result.setupIntent.id})});
       _sheetStripeElements=null;
-      /* R3: Brief checkmark flash before done */
+      /* R5: Brief checkmark flash then instant resume — skip done step */
       if(btn){btn.textContent='✅ Card Saved!';btn.style.opacity='1';btn.style.background='#22c55e';}
       if(navigator.vibrate)navigator.vibrate(50);
-      setTimeout(function(){_renderDoneStep();},400);
+      setTimeout(function(){window._sgCloseAuthSheet();_resumePendingAction();},300);
     }catch(e){
       err.textContent=e.message||'Card save failed';err.style.display='block';
       if(btn){btn.textContent='💳 Save Card & Continue';btn.style.opacity='1';btn.style.pointerEvents='auto';}
@@ -16788,10 +16792,10 @@ window.sgFeedback = async function(elementId, vote, btn) {
           body:JSON.stringify({creatorHandle:handle,paymentMethod:payMethod,paymentDetails:details})
         }).catch(function(){});
       }
-      /* R3: Brief checkmark flash before done */
+      /* R5: Brief checkmark flash then instant resume — skip done step */
       if(btn){btn.textContent='✅ Connected!';btn.style.opacity='1';btn.style.background='#22c55e';}
       if(navigator.vibrate)navigator.vibrate(50);
-      setTimeout(function(){_renderDoneStep();},400);
+      setTimeout(function(){window._sgCloseAuthSheet();_resumePendingAction();},300);
     }catch(e){
       err.textContent='Failed to save — try again';err.style.display='block';
       if(btn){btn.textContent='💰 Connect & Start Earning';btn.style.opacity='1';btn.style.pointerEvents='auto';}
@@ -16812,9 +16816,9 @@ window.sgFeedback = async function(elementId, vote, btn) {
     requestAnimationFrame(function(){
       requestAnimationFrame(function(){
         _sheetEl.classList.add('open');
-        /* R3: Auto-skip auth if user is already logged in → jump to step 2 */
+        /* R5: Auto-skip auth if user is already logged in → instant jump to step 2 */
         if(state.user){
-          setTimeout(function(){_afterAuthSuccess();},200);
+          setTimeout(function(){_afterAuthSuccess();},50);
         }
       });
     });
