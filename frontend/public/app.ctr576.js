@@ -1385,7 +1385,7 @@ function SearchPage(){
         /* Perf: Inject card CSS once (persists across re-renders — saves ~12KB per render) */
         if(!document.getElementById('tt-css')){
           var _s=document.createElement('style');_s.id='tt-css';
-          _s.textContent='.tt-view{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;position:relative}.tt-carousel{display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;flex:1;min-height:0;will-change:scroll-position;contain:strict}.tt-carousel::-webkit-scrollbar{display:none}.tt-card{width:100%;min-height:100%;max-height:100%;scroll-snap-align:start;position:relative;display:flex;flex-direction:column;overflow:hidden;contain:layout style paint}.tt-card.tt-closed{opacity:0.5;filter:grayscale(25%)}.tt-card.tt-closed .tt-cta-btn{background:#6b7280;box-shadow:none}.tt-photo{position:absolute;inset:0;background-size:cover;background-position:center;background-color:#1a1f2e}.tt-photo-carousel{position:absolute;inset:0;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;display:flex;z-index:0;touch-action:pan-x}.tt-photo-carousel::-webkit-scrollbar{display:none}.tt-photo-slide{flex:0 0 100%;width:100%;height:100%;scroll-snap-align:start;background-size:cover;background-position:center;background-color:#1a1f2e;transition:background-color .3s ease;user-select:none;-webkit-user-select:none;-webkit-user-drag:none}.tt-photo-dots{position:absolute;bottom:0;left:14px;display:flex;gap:4px;z-index:12}.tt-photo-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.3);transition:all .3s}.tt-photo-dot.act{background:#FF6D00;width:18px;border-radius:3px}.tt-photo-placeholder{position:absolute;inset:0;background:#1a1f2e;display:flex;align-items:center;justify-content:center}.tt-photo-placeholder::after{content:"🏋️";font-size:56px;opacity:.15}.tt-gradient{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.35) 0%,transparent 22%,transparent 55%,rgba(0,0,0,.55) 75%,rgba(0,0,0,.82) 100%);pointer-events:none;z-index:1}.tt-card::after{content:"";position:absolute;bottom:18%;left:50%;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(255,109,0,.08) 0%,rgba(255,109,0,.03) 40%,transparent 70%);transform:translateX(-50%);pointer-events:none;z-index:0}.tt-search{position:absolute;top:0;left:0;right:0;z-index:20;display:flex;gap:8px;padding:8px 12px;padding-top:calc(env(safe-area-inset-top,8px) + 4px)}.tt-search-input{flex:1;background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px 14px;color:rgba(255,255,255,.7);font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px;cursor:pointer}.tt-search-gps{background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;width:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-search-filter{background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;width:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-actions{position:absolute;right:10px;top:65px;display:flex;flex-direction:column;gap:6px;z-index:15;align-items:center}.tt-action{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-action-btn{width:44px;height:44px;background:transparent;border:none;border-radius:0;display:flex;align-items:center;justify-content:center;font-size:24px;transition:all .15s;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5));opacity:.75}.tt-action-btn:active{transform:scale(.85)}.tt-action-label{display:block;font-size:9px;color:rgba(255,255,255,.7);font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8);text-align:center;white-space:nowrap;max-width:52px;overflow:hidden;text-overflow:ellipsis;line-height:1.1}.tt-info{position:absolute;bottom:0;left:0;right:0;padding:0 14px 8px;z-index:15;pointer-events:none}.tt-info>*{pointer-events:auto}.tt-dots{display:flex;gap:3px;margin-bottom:4px;flex-wrap:wrap;max-width:280px}.tt-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.25);transition:all .3s}.tt-dot.act{background:#FF6D00;width:18px;border-radius:3px}.tt-counter{font-size:10px;color:rgba(255,255,255,.4);margin-bottom:4px;font-weight:500}.tt-gym-name{color:#fff;font-size:28px;font-weight:900;text-shadow:0 2px 10px rgba(0,0,0,.6);line-height:1.15;margin-bottom:4px;letter-spacing:-.3px}.tt-gym-addr{color:rgba(255,255,255,.7);font-size:12px;margin-bottom:6px;text-shadow:0 1px 4px rgba(0,0,0,.5);display:flex;align-items:center;gap:4px;flex-wrap:wrap}.tt-tag-open{color:#4ade80}.tt-tag-closed{color:#f87171}.tt-chips{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}.tt-chip{display:flex;align-items:center;gap:5px;background:rgba(30,33,45,.85);border-radius:10px;padding:6px 12px;font-size:12px;color:rgba(255,255,255,.92);font-weight:700}.tt-cta{position:absolute;bottom:0;left:0;right:0;padding:8px 14px;z-index:16}.tt-cta-btn{width:100%;padding:12px 0;border:none;border-radius:12px;background:linear-gradient(135deg,#FF6D00,#ff8534,#FF6D00);background-size:200% 200%;color:#fff;font-size:15px;font-weight:700;letter-spacing:.3px;cursor:pointer;-webkit-tap-highlight-color:transparent;box-shadow:0 4px 20px rgba(255,109,0,.4),0 0 20px rgba(255,109,0,.2);transition:all .15s;animation:casinoGlow 2s ease-in-out infinite}.tt-cta-btn:active{transform:scale(.97);box-shadow:0 2px 10px rgba(255,109,0,.3)}.tt-filter-sheet{display:none;position:absolute;top:52px;left:12px;right:12px;background:rgba(17,19,24,.98);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px;z-index:25;flex-wrap:wrap;gap:8px}.tt-filter-sheet.open{display:flex}.sg-filter-pill{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:7px 14px;color:rgba(255,255,255,.6);font-size:12px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;white-space:nowrap}.sg-filter-pill.active{background:rgba(255,109,0,.15);border-color:rgba(255,109,0,.4);color:#FF6D00}.tt-logo{position:absolute;left:14px;bottom:0;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;z-index:15;border:2px solid rgba(255,255,255,.15);box-shadow:0 2px 8px rgba(0,0,0,.3)}.tt-card.tt-offscreen{content-visibility:auto;contain-intrinsic-size:auto 100vh}.tt-card.tt-offscreen .tt-cta-btn{animation:none}.tt-card.tt-offscreen .tt-gradient{backdrop-filter:none;-webkit-backdrop-filter:none}';
+          _s.textContent='.tt-view{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;position:relative}.tt-carousel{display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;flex:1;min-height:0;will-change:scroll-position;contain:strict}.tt-carousel::-webkit-scrollbar{display:none}.tt-card{width:100%;min-height:100%;max-height:100%;scroll-snap-align:start;position:relative;display:flex;flex-direction:column;overflow:hidden;contain:layout style paint}.tt-card.tt-closed{opacity:0.5;filter:grayscale(25%)}.tt-card.tt-closed .tt-cta-btn{background:#6b7280;box-shadow:none}.tt-photo{position:absolute;inset:0;background-size:cover;background-position:center;background-color:#1a1f2e}.tt-photo-carousel{position:absolute;inset:0;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;display:flex;z-index:0;touch-action:pan-x}.tt-photo-carousel::-webkit-scrollbar{display:none}.tt-photo-slide{flex:0 0 100%;width:100%;height:100%;scroll-snap-align:start;background-size:cover;background-position:center;background-color:#1a1f2e;transition:background-color .3s ease;user-select:none;-webkit-user-select:none;-webkit-user-drag:none}.tt-photo-dots{position:absolute;bottom:0;left:14px;display:flex;gap:4px;z-index:12}.tt-photo-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.3);transition:all .3s}.tt-photo-dot.act{background:#FF6D00;width:18px;border-radius:3px}.tt-photo-placeholder{position:absolute;inset:0;background:#1a1f2e;display:flex;align-items:center;justify-content:center}.tt-photo-placeholder::after{content:"🏋️";font-size:56px;opacity:.15}.tt-gradient{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.35) 0%,transparent 22%,transparent 55%,rgba(0,0,0,.55) 75%,rgba(0,0,0,.82) 100%);pointer-events:none;z-index:1}.tt-card::after{content:"";position:absolute;bottom:18%;left:50%;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(255,109,0,.08) 0%,rgba(255,109,0,.03) 40%,transparent 70%);transform:translateX(-50%);pointer-events:none;z-index:0}.tt-search{position:absolute;top:0;left:0;right:0;z-index:20;display:flex;gap:8px;padding:8px 12px;padding-top:calc(env(safe-area-inset-top,8px) + 4px)}.tt-search-input{flex:1;background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px 14px;color:rgba(255,255,255,.7);font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px;cursor:pointer}.tt-search-gps{background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;width:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-search-filter{background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;width:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-actions{position:absolute;right:10px;top:65px;display:flex;flex-direction:column;gap:6px;z-index:15;align-items:center}.tt-action{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-action-btn{width:44px;height:44px;background:transparent;border:none;border-radius:0;display:flex;align-items:center;justify-content:center;font-size:24px;transition:all .15s;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5));opacity:.75}.tt-action-btn:active{transform:scale(.85)}.tt-action-label{display:block;font-size:9px;color:rgba(255,255,255,.7);font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8);text-align:center;white-space:nowrap;max-width:52px;overflow:hidden;text-overflow:ellipsis;line-height:1.1}.tt-info{position:absolute;bottom:0;left:0;right:0;padding:0 14px 14px;z-index:15;pointer-events:none}.tt-info>*{pointer-events:auto}.tt-dots{display:flex;gap:3px;margin-bottom:4px;flex-wrap:wrap;max-width:280px}.tt-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.25);transition:all .3s}.tt-dot.act{background:#FF6D00;width:18px;border-radius:3px}.tt-counter{font-size:10px;color:rgba(255,255,255,.4);margin-bottom:4px;font-weight:500}.tt-gym-name{color:#fff;font-size:28px;font-weight:900;text-shadow:0 2px 10px rgba(0,0,0,.6);line-height:1.15;margin-bottom:4px;letter-spacing:-.3px}.tt-gym-addr{color:rgba(255,255,255,.7);font-size:12px;margin-bottom:6px;text-shadow:0 1px 4px rgba(0,0,0,.5);display:flex;align-items:center;gap:4px;flex-wrap:wrap}.tt-tag-open{color:#4ade80}.tt-tag-closed{color:#f87171}.tt-chips{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}.tt-chip{display:flex;align-items:center;gap:5px;background:rgba(30,33,45,.85);border-radius:10px;padding:6px 12px;font-size:12px;color:rgba(255,255,255,.92);font-weight:700}.tt-cta{position:absolute;bottom:0;left:0;right:0;padding:8px 14px;z-index:16}.tt-cta-btn{width:100%;padding:12px 0;border:none;border-radius:12px;background:linear-gradient(135deg,#FF6D00,#ff8534,#FF6D00);background-size:200% 200%;color:#fff;font-size:15px;font-weight:700;letter-spacing:.3px;cursor:pointer;-webkit-tap-highlight-color:transparent;box-shadow:0 4px 20px rgba(255,109,0,.4),0 0 20px rgba(255,109,0,.2);transition:all .15s;animation:casinoGlow 2s ease-in-out infinite}.tt-cta-btn:active{transform:scale(.97);box-shadow:0 2px 10px rgba(255,109,0,.3)}.tt-filter-sheet{display:none;position:absolute;top:52px;left:12px;right:12px;background:rgba(17,19,24,.98);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px;z-index:25;flex-wrap:wrap;gap:8px}.tt-filter-sheet.open{display:flex}.sg-filter-pill{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:7px 14px;color:rgba(255,255,255,.6);font-size:12px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;white-space:nowrap}.sg-filter-pill.active{background:rgba(255,109,0,.15);border-color:rgba(255,109,0,.4);color:#FF6D00}.tt-logo{position:absolute;left:14px;bottom:0;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;z-index:15;border:2px solid rgba(255,255,255,.15);box-shadow:0 2px 8px rgba(0,0,0,.3)}.tt-card.tt-offscreen{content-visibility:auto;contain-intrinsic-size:auto 100vh}.tt-card.tt-offscreen .tt-cta-btn{animation:none}.tt-card.tt-offscreen .tt-gradient{backdrop-filter:none;-webkit-backdrop-filter:none}';
           document.head.appendChild(_s);
         }
 
@@ -1434,10 +1434,15 @@ function SearchPage(){
 
           /* M8 fix: Removed fake "Gym Tour" badge */
 
+          /* FIX #1: Orange brand circle top-left (matches reels tab branding) */
+          if(i===0){
+            html+='<div style="position:absolute;top:16px;left:16px;width:28px;height:28px;background:#FF6D00;border-radius:50%;z-index:20;opacity:.85;box-shadow:0 0 10px rgba(255,109,0,.5)"></div>';
+          }
+
           /* Search bar (only on first card, shared) — taps open full-screen search overlay */
           if(i===0){
             html+='<div class="tt-search" id="tt-search" onclick="window._openSearchOverlay()">';
-            html+='<div class="tt-search-input">\u{1F50D} '+(state.searchQuery||(searchLabel||'Nearby')+' \u00b7 '+totalC+' gyms')+'</div>';
+            html+='<div class="tt-search-input" style="margin-left:36px">\u{1F50D} '+(state.searchQuery||(searchLabel||'Nearby')+' \u00b7 '+totalC+' gyms')+'</div>';
             html+='<div class="tt-search-gps" onclick="event.stopPropagation();findGyms()">\u{1F4CD}</div>';
             /* #Viktor: Removed filter & map buttons — clean search bar only */
             html+='</div>';
@@ -1455,6 +1460,9 @@ function SearchPage(){
           var _calDate=_gbs.selectedDate||(function(){var _d=new Date();var _mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return _d.getDate()+' '+_mo[_d.getMonth()]})();
           if(_calDate!=='Today'){var _dp=_calDate.split('-');if(_dp.length===3){var _months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];_calDate=parseInt(_dp[2])+' '+(_months[parseInt(_dp[1])-1]||_dp[1]);}}
           html+='<div class="tt-actions">';
+          /* FIX #4: 📍 pin + 🔍 search on right side action column */
+          html+='<div class="tt-action" onclick="event.stopPropagation();findGyms()"><div class="tt-action-btn">\u{1F4CD}</div><div class="tt-action-label">Near Me</div></div>';
+          html+='<div class="tt-action" onclick="event.stopPropagation();window._openSearchOverlay()"><div class="tt-action-btn">\u{1F50D}</div><div class="tt-action-label">Search</div></div>';
           html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'reviews\')"><div class="tt-action-btn">\u2B50</div><div class="tt-action-label">'+_reviewLabel+'</div></div>';
           html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'hours\')"><div class="tt-action-btn">\u{1F550}</div><div class="tt-action-label" style="color:'+_hoursColor+'">'+_hoursLabel+'</div></div>';
           html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'payment\')"><div class="tt-action-btn">\u{1F4B3}</div><div class="tt-action-label">'+_payLabel+'</div></div>';
@@ -1534,6 +1542,9 @@ function SearchPage(){
               var _cd2=_gbs2.selectedDate||(function(){var _d=new Date();var _mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return _d.getDate()+' '+_mo[_d.getMonth()]})();
               if(_cd2!=='Today'){var _dp2=_cd2.split('-');if(_dp2.length===3){var _mo2=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];_cd2=parseInt(_dp2[2])+' '+(_mo2[parseInt(_dp2[1])-1]||_dp2[1]);}}
               cardHtml+='<div class="tt-actions">';
+              /* FIX #4: 📍 pin + 🔍 search on right side (lazy cards too) */
+              cardHtml+='<div class="tt-action" onclick="event.stopPropagation();findGyms()"><div class="tt-action-btn">\u{1F4CD}</div><div class="tt-action-label">Near Me</div></div>';
+              cardHtml+='<div class="tt-action" onclick="event.stopPropagation();window._openSearchOverlay()"><div class="tt-action-btn">\u{1F50D}</div><div class="tt-action-label">Search</div></div>';
               cardHtml+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'reviews\')"><div class="tt-action-btn">\u2B50</div><div class="tt-action-label">'+_rl2+'</div></div>';
               cardHtml+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'hours\')"><div class="tt-action-btn">\u{1F550}</div><div class="tt-action-label" style="color:'+_hc2+'">'+_hl2+'</div></div>';
               cardHtml+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'payment\')"><div class="tt-action-btn">\u{1F4B3}</div><div class="tt-action-label">'+_pl2+'</div></div>';
@@ -7722,22 +7733,26 @@ window._sgGoogleCallback=async function(response){
     if(data.success&&data.user){
       state.user=data.user;
       state.authStep='phone';
-      if(typeof window._sgCloseAuthSheet==='function')window._sgCloseAuthSheet();
-      _sendToReels({type:'sg-auth-state',loggedIn:true,user:{name:data.user.name,phone:data.user.phone}});
-      sgToast('Welcome, '+(data.user.name||'there')+'! 🎉','success',3000);
-      if(window._pendingCheckout&&window._pendingCheckout.gymId){
-        const pc=window._pendingCheckout;
-        window._pendingCheckout=null;
-        if(state.activeTab!=='book')navigate('/explore');
-        setTimeout(()=>showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime),600);
-      }else if(window._pendingReelsAction){
-        _sendToReels({type:'sg-auth-complete',action:window._pendingReelsAction,video:window._pendingReelsVideo});
-        window._pendingReelsAction=null;window._pendingReelsVideo=null;
-      }else if(window._sgOneTapCreatorMode){
-        window._sgOneTapCreatorMode=false;
-        _handleCreatorGoogleSignup(data.user);
+      // If auth sheet is open, advance to next step (card/withdraw)
+      if(typeof window._sgAuthAfterSuccess==='function'&&document.querySelector('.sg-auth-overlay.open')){
+        window._sgAuthAfterSuccess();
       }else{
-        navigate('/explore');
+        _sendToReels({type:'sg-auth-state',loggedIn:true,user:{name:data.user.name,phone:data.user.phone}});
+        sgToast('Welcome, '+(data.user.name||'there')+'! 🎉','success',3000);
+        if(window._pendingCheckout&&window._pendingCheckout.gymId){
+          const pc=window._pendingCheckout;
+          window._pendingCheckout=null;
+          if(state.activeTab!=='book')navigate('/explore');
+          setTimeout(()=>showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime),600);
+        }else if(window._pendingReelsAction){
+          _sendToReels({type:'sg-auth-complete',action:window._pendingReelsAction,video:window._pendingReelsVideo});
+          window._pendingReelsAction=null;window._pendingReelsVideo=null;
+        }else if(window._sgOneTapCreatorMode){
+          window._sgOneTapCreatorMode=false;
+          _handleCreatorGoogleSignup(data.user);
+        }else{
+          navigate('/explore');
+        }
       }
     }else{
       sgToast(data.error||'Google sign-in failed','error',3000);
@@ -7815,22 +7830,25 @@ window.handleGoogleSignIn=async function(){
           if(data.success&&data.user){
             state.user=data.user;
             state.authStep='phone';
-            if(typeof window._sgCloseAuthSheet==='function')window._sgCloseAuthSheet();
-            _sendToReels({type:'sg-auth-state',loggedIn:true,user:{name:data.user.name,phone:data.user.phone}});
-            sgToast('Welcome, '+(data.user.name||'there')+'! \ud83c\udf89','success',3000);
-            if(window._pendingCheckout&&window._pendingCheckout.gymId){
-              var pc=window._pendingCheckout;
-              window._pendingCheckout=null;
-              if(state.activeTab!=='book')navigate('/explore');
-              setTimeout(function(){showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime);},600);
-            }else if(window._pendingReelsAction){
-              _sendToReels({type:'sg-auth-complete',action:window._pendingReelsAction,video:window._pendingReelsVideo});
-              window._pendingReelsAction=null;window._pendingReelsVideo=null;
-            }else if(window._sgOneTapCreatorMode){
-              window._sgOneTapCreatorMode=false;
-              _handleCreatorGoogleSignup(data.user);
+            if(typeof window._sgAuthAfterSuccess==='function'&&document.querySelector('.sg-auth-overlay.open')){
+              window._sgAuthAfterSuccess();
             }else{
-              navigate('/explore');
+              _sendToReels({type:'sg-auth-state',loggedIn:true,user:{name:data.user.name,phone:data.user.phone}});
+              sgToast('Welcome, '+(data.user.name||'there')+'! \ud83c\udf89','success',3000);
+              if(window._pendingCheckout&&window._pendingCheckout.gymId){
+                var pc=window._pendingCheckout;
+                window._pendingCheckout=null;
+                if(state.activeTab!=='book')navigate('/explore');
+                setTimeout(function(){showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime);},600);
+              }else if(window._pendingReelsAction){
+                _sendToReels({type:'sg-auth-complete',action:window._pendingReelsAction,video:window._pendingReelsVideo});
+                window._pendingReelsAction=null;window._pendingReelsVideo=null;
+              }else if(window._sgOneTapCreatorMode){
+                window._sgOneTapCreatorMode=false;
+                _handleCreatorGoogleSignup(data.user);
+              }else{
+                navigate('/explore');
+              }
             }
           }else{
             sgToast(data.error||'Google sign-in failed','error',3000);
@@ -7892,19 +7910,22 @@ window.handleAppleSignIn=async function(){
     if(result.success&&result.user){
       state.user=result.user;
       state.authStep='phone';
-      if(typeof window._sgCloseAuthSheet==='function')window._sgCloseAuthSheet();
-      _sendToReels({type:'sg-auth-state',loggedIn:true,user:{name:result.user.name,phone:result.user.phone}});
-      sgToast('Welcome, '+(result.user.name||'there')+'! \ud83c\udf89','success',3000);
-      if(window._pendingCheckout&&window._pendingCheckout.gymId){
-        var pc=window._pendingCheckout;
-        window._pendingCheckout=null;
-        if(state.activeTab!=='book')navigate('/explore');
-        setTimeout(function(){showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime);},600);
-      }else if(window._pendingReelsAction){
-        _sendToReels({type:'sg-auth-complete',action:window._pendingReelsAction,video:window._pendingReelsVideo});
-        window._pendingReelsAction=null;window._pendingReelsVideo=null;
+      if(typeof window._sgAuthAfterSuccess==='function'&&document.querySelector('.sg-auth-overlay.open')){
+        window._sgAuthAfterSuccess();
       }else{
-        navigate('/explore');
+        _sendToReels({type:'sg-auth-state',loggedIn:true,user:{name:result.user.name,phone:result.user.phone}});
+        sgToast('Welcome, '+(result.user.name||'there')+'! \ud83c\udf89','success',3000);
+        if(window._pendingCheckout&&window._pendingCheckout.gymId){
+          var pc=window._pendingCheckout;
+          window._pendingCheckout=null;
+          if(state.activeTab!=='book')navigate('/explore');
+          setTimeout(function(){showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime);},600);
+        }else if(window._pendingReelsAction){
+          _sendToReels({type:'sg-auth-complete',action:window._pendingReelsAction,video:window._pendingReelsVideo});
+          window._pendingReelsAction=null;window._pendingReelsVideo=null;
+        }else{
+          navigate('/explore');
+        }
       }
     }else{
       sgToast(result.error||'Apple sign-in failed','error',3000);
@@ -7979,22 +8000,25 @@ window.handleVerifyCode=async function(){
     if(r.success&&r.user){
       state.user=r.user;
       state.authStep='phone';
-      if(typeof window._sgCloseAuthSheet==='function')window._sgCloseAuthSheet();
-      if(typeof _sendToReels==='function')_sendToReels({type:'sg-auth-state',loggedIn:true,user:{name:r.user.name,phone:r.user.phone}});
-      // Resume pending booking if user was trying to book before login
-      if(window._pendingCheckout&&window._pendingCheckout.gymId){
-        const pc=window._pendingCheckout;
-        window._pendingCheckout=null;
-        if(state.activeTab!=='book')navigate('/explore');
-        setTimeout(()=>showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime),600);
-      }else if(window._pendingReelsAction){
-        if(typeof _sendToReels==='function')_sendToReels({type:'sg-auth-complete',action:window._pendingReelsAction,video:window._pendingReelsVideo});
-        window._pendingReelsAction=null;window._pendingReelsVideo=null;
-      }else if(state.pendingBookGym){
-        navigate('/gym/'+state.pendingBookGym);
-        state.pendingBookGym=null;
+      if(typeof window._sgAuthAfterSuccess==='function'&&document.querySelector('.sg-auth-overlay.open')){
+        window._sgAuthAfterSuccess();
       }else{
-        navigate('/explore');
+        if(typeof _sendToReels==='function')_sendToReels({type:'sg-auth-state',loggedIn:true,user:{name:r.user.name,phone:r.user.phone}});
+        // Resume pending booking if user was trying to book before login
+        if(window._pendingCheckout&&window._pendingCheckout.gymId){
+          const pc=window._pendingCheckout;
+          window._pendingCheckout=null;
+          if(state.activeTab!=='book')navigate('/explore');
+          setTimeout(()=>showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime),600);
+        }else if(window._pendingReelsAction){
+          if(typeof _sendToReels==='function')_sendToReels({type:'sg-auth-complete',action:window._pendingReelsAction,video:window._pendingReelsVideo});
+          window._pendingReelsAction=null;window._pendingReelsVideo=null;
+        }else if(state.pendingBookGym){
+          navigate('/gym/'+state.pendingBookGym);
+          state.pendingBookGym=null;
+        }else{
+          navigate('/explore');
+        }
       }
     }else{
       errDiv.textContent=r.error||'Invalid code';errDiv.classList.remove('hidden');
@@ -8444,7 +8468,11 @@ window._initBookMapCarousel=function(){
     });
   }
 
-  /* #13: Auto-scroll to next gym card every 6s (pauses on touch/interaction) */
+  /* FIX #5: Auto-swipe photos first, then auto-scroll to next gym card only after all photos done */
+  /* Combines old #13 (card scroll) and #14 (photo swipe) into one smart flow:
+     - Every 3s, advance to next photo of current gym
+     - When last photo is reached (all swipes done), wait 3s then scroll to next gym card
+     - Pauses on touch interaction */
   (function(){
     var _asTouch=false;
     carousel.addEventListener('touchstart',function(){_asTouch=true;},{passive:true});
@@ -8455,31 +8483,31 @@ window._initBookMapCarousel=function(){
       if(!cards.length)return;
       var h=cards[0].offsetHeight||window.innerHeight;
       var idx=Math.round(carousel.scrollTop/h);
+      var card=cards[idx];if(!card)return;
+
+      /* Check if current card has a photo carousel */
+      var pc=card.querySelector('.tt-photo-carousel');
+      if(pc){
+        var sw=pc.scrollWidth;var cw=pc.clientWidth;
+        if(sw>cw){
+          var maxScroll=sw-cw;
+          var currentPos=pc.scrollLeft;
+          /* If NOT at the last photo yet, swipe to next photo */
+          if(currentPos<maxScroll-10){
+            pc.scrollTo({left:currentPos+cw,behavior:'smooth'});
+            return; /* Don't scroll to next card yet */
+          }
+          /* At last photo — reset photos to first and fall through to scroll next card */
+          pc.scrollTo({left:0,behavior:'smooth'});
+        }
+      }
+
+      /* All photos done (or no carousel) — scroll to next gym card */
       var next=(idx+1<cards.length)?idx+1:0;
       carousel.scrollTo({top:next*h,behavior:'smooth'});
-    },6000);
+    },3000);
     /* cleanup when navigating away */
     window._ttAutoScrollInterval=_asInterval;
-  })();
-
-  /* #14: Auto-swipe photo carousel on visible card every 3s */
-  (function(){
-    setInterval(function(){
-      if(document.hidden)return;
-      var cards=carousel.querySelectorAll('.tt-card');
-      if(!cards.length)return;
-      var h=cards[0].offsetHeight||window.innerHeight;
-      var idx=Math.round(carousel.scrollTop/h);
-      var card=cards[idx];if(!card)return;
-      var pc=card.querySelector('.tt-photo-carousel');
-      if(!pc)return;
-      var sw=pc.scrollWidth;var cw=pc.clientWidth;
-      if(sw<=cw)return;
-      var maxScroll=sw-cw;
-      var nextPos=pc.scrollLeft+cw;
-      if(nextPos>maxScroll+10)nextPos=0;
-      pc.scrollTo({left:nextPos,behavior:'smooth'});
-    },3000);
   })();
 };
 
@@ -15478,8 +15506,15 @@ if(localStorage.getItem('sg_push_enabled')==='1'&&state.user){
   function _updatePrice(){
     var priceEl=banner.querySelector('.sg-cb-price');
     if(!priceEl)return;
-    var dp=(typeof sgPrice==='function')?sgPrice('day'):null;
-    priceEl.textContent=dp&&dp.display?('\u00b7 '+dp.display):'';
+    /* FIX #2: Only show price on Book tab, NOT on Reels */
+    var activeLabel=document.querySelector('.sg-tab-item.active .sg-tab-label');
+    var currentTab=activeLabel?activeLabel.textContent.trim().toLowerCase():'';
+    if(currentTab==='book'){
+      var dp=(typeof sgPrice==='function')?sgPrice('day'):null;
+      priceEl.textContent=dp&&dp.display?('\u00b7 '+dp.display):'';
+    }else{
+      priceEl.textContent='';
+    }
   }
 
   function _showBanner(){
@@ -16138,14 +16173,19 @@ window.sgFeedback = async function(elementId, vote, btn) {
   setTimeout(_sgHeartbeat, 30000);
 })();
 
-/* ═══ 1-Click Inline Auth Sheet ═══
- * Slides up from bottom over current context (no page redirect).
- * Triggered by showBookingCheckout (book tab) or reels share/save.
- * After auth: closes → resumes pending action automatically.
+/* ═══ 1-Click Inline Auth Sheet v2 ═══
+ * Multi-step bottom sheet: Auth → Payment/Withdraw → Done
+ *
+ * BOOK flow:  Sign in (1 tap) → Add card (if none saved) → Checkout opens
+ * REELS flow: Sign in (1 tap) → Connect withdraw method (if none) → Share/Save
+ *
+ * Everything happens inside one sliding sheet — zero page redirects.
  */
 (function(){
   var _sheetEl=null;
   var _sheetMode='book'; // 'book' or 'reels'
+  var _sheetStripeElements=null; // Stripe card elements for book flow
+  var _sheetStep='auth'; // 'auth' | 'code' | 'card' | 'withdraw' | 'done'
 
   // Inject CSS once
   var sty=document.createElement('style');
@@ -16171,14 +16211,59 @@ window.sgFeedback = async function(elementId, vote, btn) {
     .sg-auth-phone-input:focus,.sg-auth-phone-cc:focus{border-color:#FF6D00}
     .sg-auth-phone-input::placeholder{color:rgba(255,255,255,.25)}
     .sg-auth-btn-phone{background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff}
+    .sg-auth-btn-green{background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff}
     .sg-auth-code-input{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:16px;color:#fff;font-size:20px;text-align:center;letter-spacing:8px;outline:none;margin-bottom:12px}
     .sg-auth-code-input:focus{border-color:#FF6D00}
     .sg-auth-back{color:rgba(255,255,255,.4);font-size:13px;text-align:center;cursor:pointer;margin-top:8px}
     .sg-auth-back:active{color:#FF6D00}
     .sg-auth-footer{color:rgba(255,255,255,.25);font-size:11px;text-align:center;margin-top:16px}
     .sg-auth-error{color:#f87171;font-size:13px;text-align:center;margin-bottom:8px;display:none}
+    .sg-auth-progress{display:flex;gap:6px;justify-content:center;margin-bottom:20px}
+    .sg-auth-dot{width:8px;height:8px;border-radius:4px;background:rgba(255,255,255,.12);transition:all .3s}
+    .sg-auth-dot.active{background:#FF6D00;width:24px}
+    .sg-auth-dot.done{background:#22c55e}
+    .sg-auth-field{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:14px 16px;color:#fff;font-size:15px;outline:none;margin-bottom:10px;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+    .sg-auth-field:focus{border-color:#FF6D00}
+    .sg-auth-field::placeholder{color:rgba(255,255,255,.25)}
+    .sg-auth-label{color:rgba(255,255,255,.5);font-size:12px;font-weight:600;margin-bottom:6px;display:block}
+    .sg-auth-check{display:flex;align-items:center;gap:12px;padding:14px 16px;background:rgba(255,255,255,.04);border-radius:14px;margin-bottom:8px;cursor:pointer;border:1px solid rgba(255,255,255,.06);transition:all .15s;-webkit-tap-highlight-color:transparent}
+    .sg-auth-check:active{background:rgba(255,255,255,.08)}
+    .sg-auth-check.selected{border-color:rgba(255,109,0,.4);background:rgba(255,109,0,.06)}
+    .sg-auth-check-icon{font-size:22px;width:40px;text-align:center;flex-shrink:0}
+    .sg-auth-check-text{flex:1}
+    .sg-auth-check-text strong{color:#fff;font-size:15px;font-weight:600;display:block}
+    .sg-auth-check-text span{color:rgba(255,255,255,.35);font-size:12px}
+    .sg-auth-stripe-el{padding:14px 16px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;margin-bottom:10px;min-height:20px}
+    .sg-auth-stripe-el.StripeElement--focus{border-color:#FF6D00}
+    .sg-auth-stripe-row{display:flex;gap:10px}
+    .sg-auth-stripe-row .sg-auth-stripe-el{flex:1}
+    .sg-auth-success{text-align:center;padding:20px 0}
+    .sg-auth-success-icon{font-size:48px;margin-bottom:12px}
+    .sg-auth-success-text{color:#fff;font-size:18px;font-weight:700;margin-bottom:4px}
+    .sg-auth-success-sub{color:rgba(255,255,255,.4);font-size:13px}
+    /* R3: Step transition animation — slides content in from right */
+    @keyframes sgAuthSlideIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
+    .sg-auth-step-enter{animation:sgAuthSlideIn .25s ease-out}
+    /* R3: Google button pulse to draw attention */
+    .sg-auth-btn-google{animation:casinoGlow 2.5s ease-in-out infinite}
+    /* R3: Confetti burst on done step */
+    @keyframes sgAuthConfetti{0%{transform:scale(0) rotate(0deg);opacity:1}50%{transform:scale(1.3) rotate(180deg);opacity:1}100%{transform:scale(1) rotate(360deg);opacity:1}}
+    .sg-auth-success-icon{animation:sgAuthConfetti .6s cubic-bezier(.68,-.55,.27,1.55)}
+    /* R3: Faster, slicker panel open */
+    .sg-auth-overlay{transition:opacity .15s ease-out}
+    .sg-auth-panel{transition:transform .2s cubic-bezier(.32,.72,.32,1)}
   `;
   document.head.appendChild(sty);
+
+  function _progressDots(step){
+    // book: auth → card → done (3 dots)
+    // reels: auth → withdraw → done (3 dots)
+    var steps=_sheetMode==='book'?['auth','card','done']:['auth','withdraw','done'];
+    var idx=steps.indexOf(step);if(idx<0)idx=0;
+    return '<div class="sg-auth-progress">'+steps.map(function(s,i){
+      return '<div class="sg-auth-dot'+(i<idx?' done':'')+(i===idx?' active':'')+'"></div>';
+    }).join('')+'</div>';
+  }
 
   function _buildSheet(){
     var el=document.createElement('div');
@@ -16193,15 +16278,17 @@ window.sgFeedback = async function(elementId, vote, btn) {
     `;
     document.body.appendChild(el);
     _sheetEl=el;
-    _renderPhoneStep();
+    _renderAuthStep();
   }
 
-  function _renderPhoneStep(){
+  // ── Step 1: Sign In ──
+  function _renderAuthStep(){
+    _sheetStep='auth';
     var content=document.getElementById('sg-auth-content');
     if(!content)return;
     var titles={book:{t:'Sign in to book',s:'1 tap — your card saves for instant booking ⚡'},reels:{t:'Sign in to share',s:'Get your personal affiliate link & start earning 💰'}};
     var t=titles[_sheetMode]||titles.book;
-    content.innerHTML=`
+    content.innerHTML=`<div class="sg-auth-step-enter">`+_progressDots('auth')+`
       <div class="sg-auth-title">${t.t}</div>
       <div class="sg-auth-sub">${t.s}</div>
       <button class="sg-auth-btn sg-auth-btn-google" onclick="handleGoogleSignIn()">
@@ -16226,15 +16313,16 @@ window.sgFeedback = async function(elementId, vote, btn) {
         📲 Send Code
       </button>
       <div class="sg-auth-footer">Sign in once — works everywhere in ScanGym</div>
-    `;
-    // Auto-focus phone input
+    </div>`;
     setTimeout(function(){var inp=document.getElementById('sg-auth-phone');if(inp)inp.focus();},350);
   }
 
+  // ── Step 1b: OTP Code ──
   function _renderCodeStep(phone){
+    _sheetStep='code';
     var content=document.getElementById('sg-auth-content');
     if(!content)return;
-    content.innerHTML=`
+    content.innerHTML=`<div class="sg-auth-step-enter">`+_progressDots('auth')+`
       <div class="sg-auth-title">Enter your code</div>
       <div class="sg-auth-sub">Sent to ${phone}</div>
       <input class="sg-auth-code-input" id="sg-auth-code" type="text" maxlength="6" placeholder="••••••" inputmode="numeric" autocomplete="one-time-code">
@@ -16243,11 +16331,195 @@ window.sgFeedback = async function(elementId, vote, btn) {
         Verify & Continue
       </button>
       <div class="sg-auth-back" onclick="window._sgAuthBackToPhone()">← Change number</div>
-    `;
+    </div>`;
     setTimeout(function(){var inp=document.getElementById('sg-auth-code');if(inp)inp.focus();},350);
   }
 
-  // Phone auth handlers for the inline sheet
+  // ── Step 2 (Book): Add Card ──
+  function _renderCardStep(){
+    _sheetStep='card';
+    var content=document.getElementById('sg-auth-content');
+    if(!content)return;
+    content.innerHTML=`<div class="sg-auth-step-enter">`+_progressDots('card')+`
+      <div class="sg-auth-title">Add your card</div>
+      <div class="sg-auth-sub">Saves securely — 1-tap booking every time 🔒</div>
+      <label class="sg-auth-label">Card number</label>
+      <div class="sg-auth-stripe-el" id="sg-auth-card-num"></div>
+      <div class="sg-auth-stripe-row">
+        <div>
+          <label class="sg-auth-label">Expiry</label>
+          <div class="sg-auth-stripe-el" id="sg-auth-card-exp"></div>
+        </div>
+        <div>
+          <label class="sg-auth-label">CVC</label>
+          <div class="sg-auth-stripe-el" id="sg-auth-card-cvc"></div>
+        </div>
+      </div>
+      <div class="sg-auth-error" id="sg-auth-err"></div>
+      <button class="sg-auth-btn sg-auth-btn-phone" id="sg-auth-card-btn" onclick="window._sgAuthSaveCard()" style="opacity:.5;pointer-events:none">
+        💳 Save Card & Continue
+      </button>
+      <div class="sg-auth-back" onclick="window._sgAuthSkipCard()">Skip for now</div>
+      <div class="sg-auth-footer">Powered by Stripe · Your card details never touch our servers</div>
+    </div>`;
+    // Mount Stripe Elements
+    _mountStripeCard();
+  }
+
+  function _mountStripeCard(){
+    _sheetStripeElements=null;
+    try{
+      if(!window.Stripe)return;
+      var stripePk=window._sgStripePublishableKey||'pk_live_placeholder';
+      var stripe=Stripe(stripePk);
+      var elements=stripe.elements();
+      var style={base:{color:'#fff',fontSize:'16px','::placeholder':{color:'rgba(255,255,255,.3)'}},invalid:{color:'#f87171'}};
+      var cardNum=elements.create('cardNumber',{style:style,showIcon:true});
+      var cardExp=elements.create('cardExpiry',{style:style});
+      var cardCvc=elements.create('cardCvc',{style:style,placeholder:'123'});
+      cardNum.mount('#sg-auth-card-num');
+      cardExp.mount('#sg-auth-card-exp');
+      cardCvc.mount('#sg-auth-card-cvc');
+      _sheetStripeElements={stripe:stripe,elements:elements,cardNum:cardNum,cardExp:cardExp,cardCvc:cardCvc};
+      // Enable button when complete
+      var complete={num:false,exp:false,cvc:false};
+      function _check(){var btn=document.getElementById('sg-auth-card-btn');if(btn){var ok=complete.num&&complete.exp&&complete.cvc;btn.style.opacity=ok?'1':'.5';btn.style.pointerEvents=ok?'auto':'none';}}
+      cardNum.on('change',function(e){complete.num=e.complete;_check();});
+      cardExp.on('change',function(e){complete.exp=e.complete;_check();});
+      cardCvc.on('change',function(e){complete.cvc=e.complete;_check();});
+    }catch(e){console.warn('[AuthSheet] Stripe mount failed:',e);}
+  }
+
+  // ── Step 2 (Reels): Connect Withdraw Method ──
+  function _renderWithdrawStep(){
+    _sheetStep='withdraw';
+    var content=document.getElementById('sg-auth-content');
+    if(!content)return;
+    // Check if they already have a creator handle
+    var creatorData=null;
+    try{creatorData=JSON.parse(localStorage.getItem('sg_creator')||'null');}catch(e){}
+    var hasHandle=creatorData&&(creatorData.handle||creatorData.slug);
+
+    content.innerHTML=`<div class="sg-auth-step-enter">`+_progressDots('withdraw')+`
+      <div class="sg-auth-title">Get paid for sharing</div>
+      <div class="sg-auth-sub">Connect your payout method — earn 25% on every booking 💰</div>
+      <div class="sg-auth-check selected" id="sg-auth-wd-paypal" onclick="window._sgAuthSelectWithdraw('paypal')">
+        <div class="sg-auth-check-icon">🅿️</div>
+        <div class="sg-auth-check-text">
+          <strong>PayPal</strong>
+          <span>Fastest — instant transfers</span>
+        </div>
+      </div>
+      <div class="sg-auth-check" id="sg-auth-wd-bank" onclick="window._sgAuthSelectWithdraw('bank')">
+        <div class="sg-auth-check-icon">🏦</div>
+        <div class="sg-auth-check-text">
+          <strong>Bank Transfer</strong>
+          <span>1-3 business days</span>
+        </div>
+      </div>
+      <div id="sg-auth-wd-form"></div>
+      <div class="sg-auth-error" id="sg-auth-err"></div>
+      <button class="sg-auth-btn sg-auth-btn-green" id="sg-auth-wd-btn" onclick="window._sgAuthSaveWithdraw()">
+        💰 Connect & Start Earning
+      </button>
+      <div class="sg-auth-back" onclick="window._sgAuthSkipWithdraw()">Skip for now</div>
+      <div class="sg-auth-footer">You can change this anytime in your profile</div>
+    </div>`;
+    // Default to PayPal form
+    window._sgAuthWithdrawType='paypal';
+    _renderWithdrawForm('paypal');
+  }
+
+  function _renderWithdrawForm(type){
+    var form=document.getElementById('sg-auth-wd-form');
+    if(!form)return;
+    if(type==='paypal'){
+      form.innerHTML=`
+        <label class="sg-auth-label" style="margin-top:12px">PayPal email</label>
+        <input class="sg-auth-field" id="sg-auth-wd-email" type="email" placeholder="your@email.com" autocomplete="email">
+      `;
+    }else{
+      form.innerHTML=`
+        <label class="sg-auth-label" style="margin-top:12px">Account holder name</label>
+        <input class="sg-auth-field" id="sg-auth-wd-name" type="text" placeholder="Full name on account">
+        <label class="sg-auth-label">Sort code</label>
+        <input class="sg-auth-field" id="sg-auth-wd-sort" type="text" placeholder="00-00-00" maxlength="8">
+        <label class="sg-auth-label">Account number</label>
+        <input class="sg-auth-field" id="sg-auth-wd-acct" type="text" placeholder="12345678" maxlength="8" inputmode="numeric">
+      `;
+    }
+  }
+
+  // ── Step 3: Success ──
+  function _renderDoneStep(){
+    _sheetStep='done';
+    var content=document.getElementById('sg-auth-content');
+    if(!content)return;
+    var msg=_sheetMode==='book'
+      ?{icon:'🎉',t:'You\'re all set!',s:'Card saved — 1-tap booking is ready'}
+      :{icon:'🚀',t:'Ready to earn!',s:'Share reels and earn 25% on every booking'};
+    content.innerHTML=`<div class="sg-auth-step-enter">`+_progressDots('done')+`
+      <div class="sg-auth-success">
+        <div class="sg-auth-success-icon">${msg.icon}</div>
+        <div class="sg-auth-success-text">${msg.t}</div>
+        <div class="sg-auth-success-sub">${msg.s}</div>
+      </div>
+    </div>`;
+    /* R3: Haptic feedback on success */
+    if(navigator.vibrate)navigator.vibrate([50,30,80]);
+    // Auto-close after 1.2s and resume pending action
+    setTimeout(function(){
+      window._sgCloseAuthSheet();
+      _resumePendingAction();
+    },1200);
+  }
+
+  // ── After auth success: decide next step ──
+  async function _afterAuthSuccess(){
+    _sendToReels({type:'sg-auth-state',loggedIn:true,user:{name:state.user.name,phone:state.user.phone}});
+    sgToast('Welcome, '+(state.user.name||'there')+'! 🎉','success',2000);
+
+    if(_sheetMode==='book'){
+      // Check if user already has saved cards
+      try{
+        var resp=await fetch('/api/payment/saved-cards',{credentials:'include'}).then(function(r){return r.json();});
+        if(resp.cards&&resp.cards.length>0){
+          // Already has cards — skip to done
+          _renderDoneStep();
+          return;
+        }
+      }catch(e){}
+      // No cards — show card form
+      _renderCardStep();
+    }else if(_sheetMode==='reels'){
+      // Check if user already has a creator profile with withdraw info
+      var creatorData=null;
+      try{creatorData=JSON.parse(localStorage.getItem('sg_creator')||'null');}catch(e){}
+      if(creatorData&&creatorData.withdrawMethod){
+        // Already has withdraw method — skip to done
+        _renderDoneStep();
+        return;
+      }
+      // Show withdraw setup
+      _renderWithdrawStep();
+    }else{
+      // Unknown mode — just close
+      window._sgCloseAuthSheet();
+      _resumePendingAction();
+    }
+  }
+
+  function _resumePendingAction(){
+    if(window._pendingCheckout&&window._pendingCheckout.gymId){
+      var pc=window._pendingCheckout;window._pendingCheckout=null;
+      setTimeout(function(){showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime);},400);
+    }else if(window._pendingReelsAction){
+      _sendToReels({type:'sg-auth-complete',action:window._pendingReelsAction,video:window._pendingReelsVideo});
+      window._pendingReelsAction=null;window._pendingReelsVideo=null;
+    }
+  }
+
+  // ── Phone auth handlers ──
   window._sgAuthSendCode=async function(){
     var inp=document.getElementById('sg-auth-phone');
     var btn=document.getElementById('sg-auth-send-btn');
@@ -16289,17 +16561,7 @@ window.sgFeedback = async function(elementId, vote, btn) {
       if(r.success&&r.user){
         state.user=r.user;
         state.authStep='phone';
-        window._sgCloseAuthSheet();
-        _sendToReels({type:'sg-auth-state',loggedIn:true,user:{name:r.user.name,phone:r.user.phone}});
-        sgToast('Welcome! 🎉','success',2000);
-        // Resume pending action
-        if(window._pendingCheckout&&window._pendingCheckout.gymId){
-          var pc=window._pendingCheckout;window._pendingCheckout=null;
-          setTimeout(function(){showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime);},400);
-        }else if(window._pendingReelsAction){
-          _sendToReels({type:'sg-auth-complete',action:window._pendingReelsAction,video:window._pendingReelsVideo});
-          window._pendingReelsAction=null;window._pendingReelsVideo=null;
-        }
+        _afterAuthSuccess();
       }else{
         err.textContent=r.error||'Invalid code';err.style.display='block';
         btn.textContent='Verify & Continue';btn.disabled=false;
@@ -16310,15 +16572,121 @@ window.sgFeedback = async function(elementId, vote, btn) {
     }
   };
 
-  window._sgAuthBackToPhone=function(){_renderPhoneStep();};
+  window._sgAuthBackToPhone=function(){_renderAuthStep();};
 
+  // ── Card save handler (Book flow) ──
+  window._sgAuthSaveCard=async function(){
+    if(!_sheetStripeElements)return;
+    var btn=document.getElementById('sg-auth-card-btn');
+    var err=document.getElementById('sg-auth-err');
+    if(btn){btn.textContent='Saving…';btn.style.opacity='.5';btn.style.pointerEvents='none';}
+    err.style.display='none';
+    try{
+      // Create SetupIntent on server
+      var resp=await fetch('/api/payment/setup-card',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({})}).then(function(r){return r.json();});
+      if(!resp.clientSecret)throw new Error(resp.error||'Could not create setup intent');
+      // Confirm with Stripe
+      var result=await _sheetStripeElements.stripe.confirmCardSetup(resp.clientSecret,{
+        payment_method:{card:_sheetStripeElements.cardNum,billing_details:{}}
+      });
+      if(result.error)throw new Error(result.error.message);
+      // Confirm on server
+      await fetch('/api/payment/confirm-setup',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({setupIntentId:result.setupIntent.id})});
+      _sheetStripeElements=null;
+      /* R3: Brief checkmark flash before done */
+      if(btn){btn.textContent='✅ Card Saved!';btn.style.opacity='1';btn.style.background='#22c55e';}
+      if(navigator.vibrate)navigator.vibrate(50);
+      setTimeout(function(){_renderDoneStep();},400);
+    }catch(e){
+      err.textContent=e.message||'Card save failed';err.style.display='block';
+      if(btn){btn.textContent='💳 Save Card & Continue';btn.style.opacity='1';btn.style.pointerEvents='auto';}
+    }
+  };
+
+  window._sgAuthSkipCard=function(){
+    _sheetStripeElements=null;
+    window._sgCloseAuthSheet();
+    _resumePendingAction();
+  };
+
+  // ── Withdraw method handlers (Reels flow) ──
+  window._sgAuthWithdrawType='paypal';
+
+  window._sgAuthSelectWithdraw=function(type){
+    window._sgAuthWithdrawType=type;
+    document.getElementById('sg-auth-wd-paypal').classList.toggle('selected',type==='paypal');
+    document.getElementById('sg-auth-wd-bank').classList.toggle('selected',type==='bank');
+    _renderWithdrawForm(type);
+  };
+
+  window._sgAuthSaveWithdraw=async function(){
+    var btn=document.getElementById('sg-auth-wd-btn');
+    var err=document.getElementById('sg-auth-err');
+    var type=window._sgAuthWithdrawType;
+    var details={};
+
+    if(type==='paypal'){
+      var email=document.getElementById('sg-auth-wd-email');
+      if(!email||!email.value.trim()||!email.value.includes('@')){
+        err.textContent='Enter a valid PayPal email';err.style.display='block';return;
+      }
+      details={paypalEmail:email.value.trim()};
+    }else{
+      var name=document.getElementById('sg-auth-wd-name');
+      var sort=document.getElementById('sg-auth-wd-sort');
+      var acct=document.getElementById('sg-auth-wd-acct');
+      if(!name||!name.value.trim()||!sort||!sort.value.trim()||!acct||!acct.value.trim()){
+        err.textContent='Fill in all bank details';err.style.display='block';return;
+      }
+      details={accountName:name.value.trim(),sortCode:sort.value.trim(),accountNumber:acct.value.trim()};
+    }
+    err.style.display='none';
+    if(btn){btn.textContent='Saving…';btn.style.opacity='.5';btn.style.pointerEvents='none';}
+
+    // Save withdraw method to localStorage (and server if creator)
+    try{
+      var creatorData=JSON.parse(localStorage.getItem('sg_creator')||'null')||{};
+      creatorData.withdrawMethod=type;
+      creatorData.withdrawDetails=details;
+      localStorage.setItem('sg_creator',JSON.stringify(creatorData));
+
+      // If creator has a handle, also save to server preferences
+      if(creatorData.handle||creatorData.slug){
+        var handle=creatorData.handle||creatorData.slug;
+        await fetch('/api/referrals/update-payout',{
+          method:'POST',credentials:'include',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({creatorHandle:handle,paymentMethod:type==='paypal'?'paypal':'bank_transfer',paymentDetails:details})
+        }).catch(function(){});
+      }
+      /* R3: Brief checkmark flash before done */
+      if(btn){btn.textContent='✅ Connected!';btn.style.opacity='1';btn.style.background='#22c55e';}
+      if(navigator.vibrate)navigator.vibrate(50);
+      setTimeout(function(){_renderDoneStep();},400);
+    }catch(e){
+      err.textContent='Failed to save — try again';err.style.display='block';
+      if(btn){btn.textContent='💰 Connect & Start Earning';btn.style.opacity='1';btn.style.pointerEvents='auto';}
+    }
+  };
+
+  window._sgAuthSkipWithdraw=function(){
+    window._sgCloseAuthSheet();
+    _resumePendingAction();
+  };
+
+  // ── Public API ──
   window._sgShowAuthSheet=function(mode){
     _sheetMode=mode||'book';
+    _sheetStep='auth';
     if(!_sheetEl)_buildSheet();
-    else _renderPhoneStep();
+    else _renderAuthStep();
     requestAnimationFrame(function(){
       requestAnimationFrame(function(){
         _sheetEl.classList.add('open');
+        /* R3: Auto-skip auth if user is already logged in → jump to step 2 */
+        if(state.user){
+          setTimeout(function(){_afterAuthSuccess();},200);
+        }
       });
     });
   };
@@ -16326,6 +16694,14 @@ window.sgFeedback = async function(elementId, vote, btn) {
   window._sgCloseAuthSheet=function(){
     if(!_sheetEl)return;
     _sheetEl.classList.remove('open');
+    _sheetStripeElements=null;
+  };
+
+  // ── Hook: called by Google/Apple auth callbacks to advance the sheet ──
+  window._sgAuthAfterSuccess=function(){
+    if(_sheetStep==='auth'||_sheetStep==='code'){
+      _afterAuthSuccess();
+    }
   };
 })();
 
