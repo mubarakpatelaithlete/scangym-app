@@ -1434,20 +1434,13 @@ function SearchPage(){
 
           /* M8 fix: Removed fake "Gym Tour" badge */
 
-          /* FIX #1: Orange brand circle top-left (matches reels tab branding) */
-          if(i===0){
-            html+='<div style="position:absolute;top:16px;left:16px;width:28px;height:28px;background:#FF6D00;border-radius:50%;z-index:20;opacity:.85;box-shadow:0 0 10px rgba(255,109,0,.5)"></div>';
-          }
+          /* FIX #1: Orange brand circle top-left on ALL cards (brand identity) */
+          html+='<div style="position:absolute;top:16px;left:16px;width:28px;height:28px;background:#FF6D00;border-radius:50%;z-index:20;opacity:.85;box-shadow:0 0 10px rgba(255,109,0,.5)"></div>';
 
-          /* Search bar (only on first card, shared) — taps open full-screen search overlay */
+          /* FIX #6: Removed duplicate top search bar — right-side Search + Near Me icons handle this now */
+          /* Hidden input kept for backwards compat — doSearch still reads it */
           if(i===0){
-            html+='<div class="tt-search" id="tt-search" onclick="window._openSearchOverlay()">';
-            html+='<div class="tt-search-input" style="margin-left:36px">\u{1F50D} '+(state.searchQuery||(searchLabel||'Nearby')+' \u00b7 '+totalC+' gyms')+'</div>';
-            html+='<div class="tt-search-gps" onclick="event.stopPropagation();findGyms()">\u{1F4CD}</div>';
-            /* #Viktor: Removed filter & map buttons — clean search bar only */
-            html+='</div>';
-            /* Hidden input for backwards compat — doSearch still reads it */
-            html+='<input type="hidden" id="tt-search-real-input" value="'+(state.searchQuery||'')+'">';
+            html+='<input type="hidden" id="tt-search-real-input" value="'+(state.searchQuery||'')+'">'; 
           }
 
           /* Action buttons (right side) — with contextual labels */
@@ -1532,6 +1525,8 @@ function SearchPage(){
               if(_isVidLazy){cardHtml+='<div class="tt-photo" style="background:#0a0a0a"><video src="'+c.photo+'" autoplay muted loop playsinline style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0"></video></div>';}
               else{cardHtml+=c.photo?'<div class="tt-photo" data-bg="'+c.photo+'"></div>':'<div class="tt-photo-placeholder"></div>';}
               cardHtml+='<div class="tt-gradient"></div>';
+              /* FIX #1: Orange brand circle top-left on ALL cards (brand identity) */
+              cardHtml+='<div style="position:absolute;top:16px;left:16px;width:28px;height:28px;background:#FF6D00;border-radius:50%;z-index:20;opacity:.85;box-shadow:0 0 10px rgba(255,109,0,.5)"></div>';
               /* Action buttons (right side) — match initial cards with labels */
               var _rl2=c.rating+(c.reviews?' ('+c.reviews+')':'');
               var _hc2=c.isOpen?'#4ade80':'#f87171';
@@ -2865,11 +2860,8 @@ window.rvShowFullscreen=function(url){
         </div>
       </div>
       <!-- More Passes — hidden by default -->
-      <button id="ov-pass-expand-btn" onclick="document.getElementById('ov-pass-more').style.display='';this.style.display='none'" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:14px;color:rgba(255,255,255,.6);font-size:14px;font-weight:600;cursor:pointer;margin-bottom:16px;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:8px">
-        <span>See more passes</span>
-        <span style="font-size:11px">▼</span>
-      </button>
-      <div id="ov-pass-more" style="display:none">
+      <!-- FIX #4: Removed "See more passes" collapse — all passes visible like Uber -->
+      <div id="ov-pass-more" style="display:block">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
           <div class="ov-pass-card" onclick="overlaySelectPass(this,1,'${gymId}')" style="background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.1);border-radius:16px;padding:16px;text-align:center;cursor:pointer">
             <div style="font-size:28px;margin:8px 0 4px">🔥</div>
@@ -3049,6 +3041,12 @@ window.rvShowFullscreen=function(url){
     `;
     // Load saved cards
     _ovPayLoadCards();
+  }
+
+  // FIX #3: Hide green Book Now CTA footer on Reviews & Opening Hours overlays
+  const overlayFooter=overlay.querySelector('.gym-overlay-footer');
+  if(overlayFooter){
+    overlayFooter.style.display=(section==='reviews'||section==='hours')?'none':'flex';
   }
 
   // Open overlay with animation
@@ -4425,6 +4423,9 @@ window._calSelectDay=function(diffDays,day,month,year){
   window._datePickerState=window._datePickerState||{};
   window._datePickerState.selectedIdx=diffDays;
   window._datePickerState.selectedTime=null;
+  // FIX #2: Also update booking state with selected date immediately
+  window._gymBookingState=window._gymBookingState||{};
+  window._gymBookingState.selectedDate=year+'-'+String(month+1).padStart(2,'0')+'-'+String(day).padStart(2,'0');
   window._buildMonthGrid();
   window._buildTimeList(diffDays);
 };
@@ -4802,9 +4803,14 @@ window.confirmDateSheet=function(){
   const time=window._datePickerState.selectedTime;
   if(!time)return;
   window._gymSelectedTime=time;
+  // FIX #2: Store selected DATE (was missing — only time was saved, date was lost)
+  window._gymBookingState=window._gymBookingState||{};
+  var _selIdx=window._datePickerState.selectedIdx||0;
+  var _selD=new Date();_selD.setDate(_selD.getDate()+_selIdx);
+  window._gymBookingState.selectedDate=_selD.toISOString().split('T')[0];
+  window._gymBookingState.selectedTime=time;
   // Store selected pass type from calendar
   if(window._calSelectedPass){
-    window._gymBookingState=window._gymBookingState||{};
     window._gymBookingState.selectedPass=window._calSelectedPass;
   }
   // Update calendar button display
