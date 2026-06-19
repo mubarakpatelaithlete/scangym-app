@@ -36,7 +36,53 @@ const pool = require('../middleware/db');
       ALTER TABLE public.bookings
       ADD COLUMN IF NOT EXISTS referral_code VARCHAR(100)
     `);
-    console.log('[Referrals] Tables ready');
+
+    // ── Research 2 (Amazon Affiliate): Multi-channel tracking columns ──
+    await pool.query(`ALTER TABLE creator_referrals ADD COLUMN IF NOT EXISTS source VARCHAR(50)`);
+    await pool.query(`ALTER TABLE creator_referrals ADD COLUMN IF NOT EXISTS gym_id VARCHAR(100)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_creator_referrals_source ON creator_referrals(source)`);
+
+    // ── Research 2 (Amazon Affiliate): Signup bounty tracking ──
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS creator_bounties (
+        id SERIAL PRIMARY KEY,
+        creator_handle VARCHAR(100) NOT NULL,
+        bounty_type VARCHAR(50) NOT NULL DEFAULT 'signup',
+        amount_pence INTEGER NOT NULL DEFAULT 100,
+        user_id TEXT,
+        status VARCHAR(30) DEFAULT 'pending',
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        paid_at TIMESTAMPTZ
+      )
+    `);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_creator_bounties_handle ON creator_bounties(creator_handle)`);
+
+    // ── Research 3 (Social Platforms): Gym saves/boards (Pinterest-style) ──
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS gym_boards (
+        id SERIAL PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        name VARCHAR(200) NOT NULL DEFAULT 'Saved Gyms',
+        emoji VARCHAR(10) DEFAULT '💪',
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_gym_boards_user ON gym_boards(user_id)`);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS gym_saves (
+        id SERIAL PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        gym_id VARCHAR(100) NOT NULL,
+        gym_name VARCHAR(300),
+        gym_photo_url TEXT,
+        board_id INTEGER REFERENCES gym_boards(id) ON DELETE SET NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(user_id, gym_id)
+      )
+    `);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_gym_saves_user ON gym_saves(user_id)`);
+
+    console.log('[Referrals] Tables ready (+ multi-channel, bounties, gym boards)');
   } catch (err) {
     console.error('[Referrals] Table init error:', err.message);
   }
@@ -48,10 +94,15 @@ const pool = require('../middleware/db');
 // ─────────────────────────────────────────────────────────────────
 router.post('/track', async (req, res) => {
   try {
-    const { creatorHandle, visitorSession } = req.body;
+    // Amazon-style: track source channel + gym-specific deep links
+    const { creatorHandle, visitorSession, source, gymId } = req.body;
     if (!creatorHandle) {
       return res.status(400).json({ error: 'creatorHandle is required' });
     }
+
+    // Validate source is a known channel (Amazon Tracking ID style)
+    const validSources = ['tiktok','instagram','youtube','twitter','facebook','snapchat','pinterest','linkedin','whatsapp','blog','email','website','other'];
+    const safeSource = source && validSources.includes(source.toLowerCase()) ? source.toLowerCase() : null;
 
     // Look up creator email from creator_memberships via landing pages
     let creatorEmail = null;
@@ -73,10 +124,10 @@ router.post('/track', async (req, res) => {
     }
 
     const result = await pool.query(
-      `INSERT INTO creator_referrals (creator_handle, creator_email, visitor_session, status)
-       VALUES ($1, $2, $3, 'clicked')
+      `INSERT INTO creator_referrals (creator_handle, creator_email, visitor_session, status, source, gym_id)
+       VALUES ($1, $2, $3, 'clicked', $4, $5)
        RETURNING id`,
-      [creatorHandle, creatorEmail, visitorSession || null]
+      [creatorHandle, creatorEmail, visitorSession || null, safeSource, gymId || null]
     );
 
     // Increment total_referrals on creator_memberships
@@ -572,7 +623,7 @@ router.get('/admin/withdrawals', async (req, res) => {
 router.post('/admin/withdrawals/:id/approve', async (req, res) => {
   try {
     const { id } = req.params;
-    const { adminNotes } = req.body;
+    const { adminNotes, autoExecute } = req.body;
 
     const result = await pool.query(
       `UPDATE creator_withdrawals
@@ -597,8 +648,40 @@ router.post('/admin/withdrawals/:id/approve', async (req, res) => {
       );
     } catch (e) {}
 
+    // Research 1: Auto-execute Stripe Connect payout if requested
+    let payoutResult = null;
+    if (autoExecute !== false) {
+      try {
+        const stripe = process.env.STRIPE_SECRET_KEY ? require('stripe')(process.env.STRIPE_SECRET_KEY) : null;
+        if (stripe) {
+          const creator = await pool.query(
+            `SELECT stripe_connect_id FROM creator_landing_pages WHERE slug = $1 LIMIT 1`,
+            [w.creator_handle]
+          );
+          if (creator.rows.length && creator.rows[0].stripe_connect_id) {
+            const transfer = await stripe.transfers.create({
+              amount: w.amount_pence,
+              currency: 'gbp',
+              destination: creator.rows[0].stripe_connect_id,
+              description: `ScanGym creator payout - ${w.creator_handle}`,
+              metadata: { withdrawal_id: String(w.id), creator_handle: w.creator_handle },
+            });
+            await pool.query(
+              `UPDATE creator_withdrawals SET status = 'paid', admin_notes = $1 WHERE id = $2`,
+              [`Auto-paid via Stripe: ${transfer.id}`, w.id]
+            );
+            payoutResult = { transferId: transfer.id, status: 'paid' };
+            console.log(`[Payout] Auto-executed: ${transfer.id} → ${w.creator_handle}`);
+          }
+        }
+      } catch (payErr) {
+        console.log(`[Payout] Auto-execute skipped (${payErr.message}) — marked as approved only`);
+        payoutResult = { error: payErr.message, status: 'approved_manual' };
+      }
+    }
+
     console.log(`[Withdrawals] Approved: £${(w.amount_pence/100).toFixed(2)} for ${w.creator_handle}`);
-    res.json({ success: true, withdrawal: w });
+    res.json({ success: true, withdrawal: w, payout: payoutResult });
   } catch (err) {
     console.error('[Withdrawals] Approve error:', err.message);
     res.status(500).json({ error: 'Failed to approve withdrawal' });
@@ -787,5 +870,400 @@ router.post('/update-payout', async (req, res) => {
     res.json({ success: true }); // Don't block auth flow
   }
 });
+
+// ═══════════════════════════════════════════════════════════════════
+//  RESEARCH 2: Amazon-Level Affiliate Features
+//  Multi-channel analytics, signup bounties, gym deep links
+// ═══════════════════════════════════════════════════════════════════
+
+// ─────────────────────────────────────────────────────────────────
+//  GET /api/referrals/channels/:handle
+//  Per-channel analytics (Amazon Tracking ID style)
+//  Shows which platform (TikTok, IG, YouTube) drives most bookings
+// ─────────────────────────────────────────────────────────────────
+router.get('/channels/:handle', async (req, res) => {
+  try {
+    const { handle } = req.params;
+    if (!handle) return res.status(400).json({ error: 'handle required' });
+
+    const channels = await pool.query(
+      `SELECT
+         COALESCE(source, 'direct') as channel,
+         COUNT(*) as total_clicks,
+         COUNT(*) FILTER (WHERE status = 'converted') as conversions,
+         COALESCE(SUM(commission_pence) FILTER (WHERE status = 'converted'), 0) as earnings_pence
+       FROM creator_referrals
+       WHERE creator_handle = $1
+       GROUP BY COALESCE(source, 'direct')
+       ORDER BY total_clicks DESC`,
+      [handle]
+    );
+
+    // Per-gym breakdown (Amazon Product-level tracking)
+    const gyms = await pool.query(
+      `SELECT
+         gym_id,
+         COUNT(*) as clicks,
+         COUNT(*) FILTER (WHERE status = 'converted') as bookings,
+         COALESCE(SUM(commission_pence) FILTER (WHERE status = 'converted'), 0) as earnings_pence
+       FROM creator_referrals
+       WHERE creator_handle = $1 AND gym_id IS NOT NULL
+       GROUP BY gym_id
+       ORDER BY bookings DESC
+       LIMIT 20`,
+      [handle]
+    );
+
+    res.json({
+      success: true,
+      channels: channels.rows.map(c => ({
+        channel: c.channel,
+        clicks: parseInt(c.total_clicks),
+        conversions: parseInt(c.conversions),
+        conversionRate: parseInt(c.total_clicks) > 0
+          ? ((parseInt(c.conversions) / parseInt(c.total_clicks)) * 100).toFixed(1) + '%'
+          : '0.0%',
+        earnings: '£' + (parseInt(c.earnings_pence) / 100).toFixed(2),
+        earningsPence: parseInt(c.earnings_pence),
+      })),
+      topGyms: gyms.rows.map(g => ({
+        gymId: g.gym_id,
+        clicks: parseInt(g.clicks),
+        bookings: parseInt(g.bookings),
+        earnings: '£' + (parseInt(g.earnings_pence) / 100).toFixed(2),
+      })),
+    });
+  } catch (err) {
+    console.error('[Referrals] Channels error:', err.message);
+    res.status(500).json({ error: 'Failed to fetch channel analytics' });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────
+//  POST /api/referrals/bounty
+//  Signup bounty: credit £1 to creator when a referred user signs up
+//  (Amazon pays $3 for Prime trial, $5-$15 for Audible — we pay £1 per signup)
+// ─────────────────────────────────────────────────────────────────
+const SIGNUP_BOUNTY_PENCE = 100; // £1.00 per new user signup
+
+router.post('/bounty', async (req, res) => {
+  try {
+    const { creatorHandle, userId, bountyType } = req.body;
+    if (!creatorHandle || !userId) {
+      return res.status(400).json({ error: 'creatorHandle and userId required' });
+    }
+
+    // Prevent duplicate bounties for same user
+    const existing = await pool.query(
+      `SELECT id FROM creator_bounties WHERE creator_handle = $1 AND user_id = $2 AND bounty_type = $3`,
+      [creatorHandle, userId, bountyType || 'signup']
+    );
+    if (existing.rows.length > 0) {
+      return res.json({ success: true, duplicate: true, message: 'Bounty already credited' });
+    }
+
+    // Credit the bounty
+    await pool.query(
+      `INSERT INTO creator_bounties (creator_handle, bounty_type, amount_pence, user_id, status)
+       VALUES ($1, $2, $3, $4, 'credited')`,
+      [creatorHandle, bountyType || 'signup', SIGNUP_BOUNTY_PENCE, userId]
+    );
+
+    // Update creator earnings
+    try {
+      await pool.query(
+        `UPDATE creator_memberships SET total_earnings_pence = total_earnings_pence + $1
+         WHERE user_id = (SELECT creator_user_id FROM creator_landing_pages WHERE slug = $2 LIMIT 1)`,
+        [SIGNUP_BOUNTY_PENCE, creatorHandle]
+      );
+    } catch (e) {}
+
+    console.log(`[Bounty] £${(SIGNUP_BOUNTY_PENCE/100).toFixed(2)} signup bounty → ${creatorHandle} (user: ${userId})`);
+    res.json({ success: true, bountyPence: SIGNUP_BOUNTY_PENCE });
+  } catch (err) {
+    console.error('[Bounty] Error:', err.message);
+    res.status(500).json({ error: 'Failed to credit bounty' });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────
+//  GET /api/referrals/bounties/:handle
+//  Returns bounty history + totals for creator dashboard
+// ─────────────────────────────────────────────────────────────────
+router.get('/bounties/:handle', async (req, res) => {
+  try {
+    const { handle } = req.params;
+    const totals = await pool.query(
+      `SELECT
+         COUNT(*) as total_bounties,
+         COALESCE(SUM(amount_pence), 0) as total_pence
+       FROM creator_bounties
+       WHERE creator_handle = $1 AND status = 'credited'`,
+      [handle]
+    );
+    const recent = await pool.query(
+      `SELECT bounty_type, amount_pence, created_at
+       FROM creator_bounties
+       WHERE creator_handle = $1
+       ORDER BY created_at DESC LIMIT 20`,
+      [handle]
+    );
+    res.json({
+      success: true,
+      totalBounties: parseInt(totals.rows[0].total_bounties),
+      totalEarningsPence: parseInt(totals.rows[0].total_pence),
+      recent: recent.rows,
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch bounties' });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────
+//  POST /api/referrals/generate-link
+//  Amazon SiteStripe-style: Generate affiliate deep link for any gym
+// ─────────────────────────────────────────────────────────────────
+router.post('/generate-link', async (req, res) => {
+  try {
+    const { creatorHandle, gymId, gymName, source } = req.body;
+    if (!creatorHandle) return res.status(400).json({ error: 'creatorHandle required' });
+
+    const baseUrl = 'https://scangym.com';
+    const params = [`ref=${encodeURIComponent(creatorHandle)}`];
+    if (source) params.push(`src=${encodeURIComponent(source)}`);
+
+    let link;
+    if (gymId) {
+      // Deep link to specific gym (Amazon Product Link style)
+      link = `${baseUrl}/gym/${gymId}?${params.join('&')}`;
+    } else {
+      // General creator link (Amazon Storefront style)
+      link = `${baseUrl}/r/${encodeURIComponent(creatorHandle)}${source ? '?src=' + encodeURIComponent(source) : ''}`;
+    }
+
+    // Log link generation for analytics
+    try {
+      await pool.query(
+        `INSERT INTO referral_events (creator_handle, event_type, metadata, created_at)
+         VALUES ($1, 'link_generated', $2, NOW())`,
+        [creatorHandle, JSON.stringify({ gymId, gymName, source, link })]
+      );
+    } catch (e) {}
+
+    res.json({
+      success: true,
+      link,
+      shortLink: link, // Future: add URL shortener
+      gymId: gymId || null,
+      gymName: gymName || null,
+      source: source || null,
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to generate link' });
+  }
+});
+
+
+// ═══════════════════════════════════════════════════════════════════
+//  RESEARCH 1: Stripe Connect Auto-Payouts
+//  When admin approves withdrawal, auto-execute via Stripe Connect
+// ═══════════════════════════════════════════════════════════════════
+
+// ─────────────────────────────────────────────────────────────────
+//  POST /api/referrals/admin/withdrawals/:id/execute-payout
+//  Auto-execute payout via Stripe Connect (replaces manual bank transfer)
+// ─────────────────────────────────────────────────────────────────
+router.post('/admin/withdrawals/:id/execute-payout', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const stripe = process.env.STRIPE_SECRET_KEY
+      ? require('stripe')(process.env.STRIPE_SECRET_KEY)
+      : null;
+    if (!stripe) return res.status(500).json({ error: 'Stripe not configured' });
+
+    // Get withdrawal details
+    const w = await pool.query(
+      `SELECT * FROM creator_withdrawals WHERE id = $1 AND status = 'approved'`,
+      [id]
+    );
+    if (w.rows.length === 0) {
+      return res.status(404).json({ error: 'Withdrawal not found or not approved' });
+    }
+    const withdrawal = w.rows[0];
+
+    // Find creator's Stripe Connect account
+    const creator = await pool.query(
+      `SELECT stripe_connect_id FROM creator_landing_pages WHERE slug = $1 LIMIT 1`,
+      [withdrawal.creator_handle]
+    );
+    if (!creator.rows.length || !creator.rows[0].stripe_connect_id) {
+      return res.status(400).json({
+        error: 'Creator has no Stripe Connect account. Ask them to connect at /creator-earnings',
+        needsOnboarding: true,
+      });
+    }
+
+    const stripeAccountId = creator.rows[0].stripe_connect_id;
+
+    // Execute Stripe transfer to connected account
+    const transfer = await stripe.transfers.create({
+      amount: withdrawal.amount_pence,
+      currency: 'gbp',
+      destination: stripeAccountId,
+      description: `ScanGym creator payout - ${withdrawal.creator_handle}`,
+      metadata: {
+        withdrawal_id: String(withdrawal.id),
+        creator_handle: withdrawal.creator_handle,
+      },
+    });
+
+    // Update withdrawal status to 'paid'
+    await pool.query(
+      `UPDATE creator_withdrawals
+       SET status = 'paid', admin_notes = $1, processed_at = NOW()
+       WHERE id = $2`,
+      [`Stripe Transfer: ${transfer.id}`, id]
+    );
+
+    console.log(`[Payout] Stripe transfer ${transfer.id}: £${(withdrawal.amount_pence/100).toFixed(2)} → ${withdrawal.creator_handle}`);
+
+    res.json({
+      success: true,
+      transferId: transfer.id,
+      amount: '£' + (withdrawal.amount_pence / 100).toFixed(2),
+      destination: stripeAccountId,
+    });
+  } catch (err) {
+    console.error('[Payout] Execute error:', err.message);
+    res.status(500).json({ error: 'Payout failed: ' + err.message });
+  }
+});
+
+
+// ═══════════════════════════════════════════════════════════════════
+//  RESEARCH 3: Social Platform Features — Gym Boards (Pinterest)
+//  Save gyms to collections, organize favorites
+// ═══════════════════════════════════════════════════════════════════
+
+// ─── POST /api/referrals/gyms/save — Save/unsave a gym ───
+router.post('/gyms/save', async (req, res) => {
+  try {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: 'Sign in to save gyms' });
+    }
+    const { gymId, gymName, gymPhotoUrl, boardId } = req.body;
+    if (!gymId) return res.status(400).json({ error: 'gymId required' });
+
+    // Toggle: if already saved, unsave
+    const existing = await pool.query(
+      'SELECT id FROM gym_saves WHERE user_id = $1 AND gym_id = $2',
+      [req.session.userId, gymId]
+    );
+
+    if (existing.rows.length > 0) {
+      await pool.query('DELETE FROM gym_saves WHERE user_id = $1 AND gym_id = $2', [req.session.userId, gymId]);
+      return res.json({ success: true, saved: false, message: 'Gym removed from saved' });
+    }
+
+    // Ensure user has a default board
+    let targetBoard = boardId;
+    if (!targetBoard) {
+      const defaultBoard = await pool.query(
+        `SELECT id FROM gym_boards WHERE user_id = $1 ORDER BY created_at ASC LIMIT 1`,
+        [req.session.userId]
+      );
+      if (defaultBoard.rows.length === 0) {
+        const newBoard = await pool.query(
+          `INSERT INTO gym_boards (user_id, name, emoji) VALUES ($1, 'Saved Gyms', '💪') RETURNING id`,
+          [req.session.userId]
+        );
+        targetBoard = newBoard.rows[0].id;
+      } else {
+        targetBoard = defaultBoard.rows[0].id;
+      }
+    }
+
+    await pool.query(
+      `INSERT INTO gym_saves (user_id, gym_id, gym_name, gym_photo_url, board_id)
+       VALUES ($1, $2, $3, $4, $5) ON CONFLICT (user_id, gym_id) DO NOTHING`,
+      [req.session.userId, gymId, gymName || null, gymPhotoUrl || null, targetBoard]
+    );
+
+    res.json({ success: true, saved: true, message: 'Gym saved!' });
+  } catch (err) {
+    console.error('[GymSave] Error:', err.message);
+    res.status(500).json({ error: 'Failed to save gym' });
+  }
+});
+
+// ─── GET /api/referrals/gyms/saved — Get saved gyms (with boards) ───
+router.get('/gyms/saved', async (req, res) => {
+  try {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: 'Sign in to see saved gyms' });
+    }
+
+    const boards = await pool.query(
+      `SELECT b.*, COUNT(gs.id) as gym_count
+       FROM gym_boards b
+       LEFT JOIN gym_saves gs ON gs.board_id = b.id
+       WHERE b.user_id = $1
+       GROUP BY b.id
+       ORDER BY b.created_at ASC`,
+      [req.session.userId]
+    );
+
+    const saves = await pool.query(
+      `SELECT gs.*, b.name as board_name, b.emoji as board_emoji
+       FROM gym_saves gs
+       LEFT JOIN gym_boards b ON gs.board_id = b.id
+       WHERE gs.user_id = $1
+       ORDER BY gs.created_at DESC`,
+      [req.session.userId]
+    );
+
+    res.json({
+      success: true,
+      boards: boards.rows,
+      savedGyms: saves.rows,
+      totalSaved: saves.rows.length,
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch saved gyms' });
+  }
+});
+
+// ─── POST /api/referrals/gyms/boards — Create a new board ───
+router.post('/gyms/boards', async (req, res) => {
+  try {
+    if (!req.session?.userId) return res.status(401).json({ error: 'Sign in first' });
+    const { name, emoji } = req.body;
+    if (!name) return res.status(400).json({ error: 'Board name required' });
+
+    const result = await pool.query(
+      `INSERT INTO gym_boards (user_id, name, emoji) VALUES ($1, $2, $3) RETURNING *`,
+      [req.session.userId, name.slice(0, 200), emoji || '💪']
+    );
+    res.json({ success: true, board: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to create board' });
+  }
+});
+
+// ─── GET /api/referrals/gyms/is-saved/:gymId — Check if gym is saved ───
+router.get('/gyms/is-saved/:gymId', async (req, res) => {
+  try {
+    if (!req.session?.userId) return res.json({ saved: false });
+    const result = await pool.query(
+      'SELECT id FROM gym_saves WHERE user_id = $1 AND gym_id = $2',
+      [req.session.userId, req.params.gymId]
+    );
+    res.json({ saved: result.rows.length > 0 });
+  } catch (err) {
+    res.json({ saved: false });
+  }
+});
+
 
 module.exports = router;
