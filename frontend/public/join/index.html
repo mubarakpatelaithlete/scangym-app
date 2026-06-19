@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>ScanGym — List Your Gym in 2 Minutes</title>
+  <meta name="description" content="Connect your gym to ScanGym and start earning from day passes. 2 minutes, zero hardware.">
+  <link rel="icon" href="/favicon.ico">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0a0a16;color:#fff;min-height:100vh;overflow-x:hidden}
+
+    /* ── Progress bar ── */
+    .progress{position:fixed;top:0;left:0;right:0;height:4px;background:rgba(255,255,255,.06);z-index:100}
+    .progress-fill{height:100%;background:#FF6D00;transition:width .5s cubic-bezier(.4,0,.2,1);width:0%}
+
+    /* ── Header ── */
+    .header{padding:20px 24px;text-align:center}
+    .logo{font-size:22px;font-weight:900;letter-spacing:-0.5px}
+    .logo span{color:#FF6D00}
+
+    /* ── Hero ── */
+    .hero{text-align:center;padding:32px 24px 24px;max-width:580px;margin:0 auto}
+    .hero-badge{display:inline-block;padding:6px 16px;border-radius:20px;background:rgba(255,109,0,.1);border:1px solid rgba(255,109,0,.2);font-size:12px;font-weight:700;color:#FF6D00;margin-bottom:16px;text-transform:uppercase;letter-spacing:.5px}
+    .hero h1{font-size:32px;font-weight:900;line-height:1.15;letter-spacing:-0.5px;margin-bottom:10px}
+    .hero h1 em{font-style:normal;color:#FF6D00}
+    .hero p{font-size:15px;color:rgba(255,255,255,.5);line-height:1.5}
+    .trust-row{display:flex;justify-content:center;gap:24px;margin-top:20px;flex-wrap:wrap}
+    .trust-item{font-size:12px;color:rgba(255,255,255,.35);display:flex;align-items:center;gap:6px}
+    .trust-item span{font-size:16px}
+
+    /* ── Container ── */
+    .container{max-width:520px;margin:0 auto;padding:0 20px 60px}
+
+    /* ── Steps ── */
+    .step-section{display:none;animation:fadeUp .4s}
+    .step-section.active{display:block}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+
+    /* ── Cards ── */
+    .card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:28px 24px;margin-bottom:16px}
+    .card h2{font-size:18px;font-weight:800;margin-bottom:4px;display:flex;align-items:center;gap:10px}
+    .card .sub{font-size:13px;color:rgba(255,255,255,.4);margin-bottom:20px}
+    .step-num{width:32px;height:32px;border-radius:50%;background:rgba(255,109,0,.15);color:#FF6D00;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+    /* ── Search ── */
+    .search-wrap{position:relative}
+    .search-input{width:100%;padding:16px 20px 16px 48px;border-radius:16px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#fff;font-size:16px;font-weight:500;outline:none;transition:.2s}
+    .search-input:focus{border-color:#FF6D00;box-shadow:0 0 0 4px rgba(255,109,0,.1)}
+    .search-input::placeholder{color:rgba(255,255,255,.25)}
+    .search-icon{position:absolute;left:18px;top:50%;transform:translateY(-50%);font-size:18px;opacity:.4}
+    .search-results{margin-top:12px;max-height:360px;overflow-y:auto;border-radius:16px}
+    .search-results:empty{display:none}
+    .gym-result{padding:14px 16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;margin-bottom:8px;cursor:pointer;transition:.15s}
+    .gym-result:hover{background:rgba(255,109,0,.06);border-color:rgba(255,109,0,.2)}
+    .gym-result.selected{background:rgba(255,109,0,.1);border-color:#FF6D00}
+    .gym-result .gym-name{font-size:15px;font-weight:700}
+    .gym-result .gym-addr{font-size:12px;color:rgba(255,255,255,.35);margin-top:3px}
+    .gym-result .gym-tags{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+    .gym-tag{font-size:10px;padding:3px 8px;border-radius:6px;font-weight:600}
+    .gym-tag.t24h{background:rgba(34,197,94,.12);color:#22c55e}
+    .gym-tag.trating{background:rgba(255,255,255,.06);color:rgba(255,255,255,.5)}
+    .searching-msg{text-align:center;padding:20px;color:rgba(255,255,255,.3);font-size:13px}
+
+    /* ── Selected gym banner ── */
+    .selected-gym{background:rgba(255,109,0,.08);border:1px solid rgba(255,109,0,.25);border-radius:16px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;gap:14px}
+    .selected-gym .sg-icon{width:44px;height:44px;border-radius:12px;background:rgba(255,109,0,.15);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+    .selected-gym .sg-info{flex:1;min-width:0}
+    .selected-gym .sg-name{font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .selected-gym .sg-addr{font-size:12px;color:rgba(255,255,255,.4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .sg-change{font-size:12px;color:#FF6D00;font-weight:700;cursor:pointer;white-space:nowrap}
+
+    /* ── Seam webview ── */
+    .seam-frame{width:100%;min-height:520px;border:none;border-radius:16px;background:#fff;margin-top:16px}
+
+    /* ── Buttons ── */
+    .btn{padding:16px 32px;border-radius:16px;font-size:15px;font-weight:700;cursor:pointer;border:none;transition:.2s;width:100%;text-align:center}
+    .btn:active{transform:scale(.97)}
+    .btn-primary{background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff;box-shadow:0 4px 24px rgba(255,109,0,.3)}
+    .btn-primary:disabled{opacity:.35;cursor:not-allowed;transform:none}
+    .btn-secondary{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#fff;margin-top:10px}
+    .btn-skip{background:none;border:none;color:rgba(255,255,255,.3);font-size:13px;cursor:pointer;margin-top:12px;padding:8px;text-align:center;width:100%}
+    .btn-skip:hover{color:rgba(255,255,255,.5)}
+
+    /* ── Success ── */
+    .success-wrap{text-align:center;padding:24px 0}
+    .success-icon{width:80px;height:80px;border-radius:50%;background:rgba(34,197,94,.12);display:flex;align-items:center;justify-content:center;font-size:40px;margin:0 auto 20px;animation:pop .4s cubic-bezier(.17,.67,.21,1.28)}
+    @keyframes pop{0%{transform:scale(0)}100%{transform:scale(1)}}
+    .success-wrap h2{font-size:24px;font-weight:900;margin-bottom:8px}
+    .success-wrap p{font-size:14px;color:rgba(255,255,255,.5);line-height:1.6}
+    .checklist{text-align:left;margin:24px 0;background:rgba(255,255,255,.03);border-radius:14px;padding:16px 20px}
+    .check-row{display:flex;align-items:center;gap:10px;padding:8px 0;font-size:14px}
+    .check-row:not(:last-child){border-bottom:1px solid rgba(255,255,255,.05)}
+    .check-done{color:#22c55e;font-size:18px}
+    .check-pending{color:rgba(255,255,255,.2);font-size:18px}
+
+    /* ── Loading / Spinner ── */
+    .spinner{width:24px;height:24px;border:3px solid rgba(255,255,255,.1);border-top-color:#FF6D00;border-radius:50%;animation:spin .7s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .loading-state{text-align:center;padding:32px;color:rgba(255,255,255,.4)}
+    .loading-state p{margin-top:8px;font-size:14px}
+
+    /* ── How it works (compact) ── */
+    .how-row{display:flex;gap:12px;margin-bottom:12px;align-items:flex-start}
+    .how-num{width:24px;height:24px;border-radius:50%;background:rgba(255,109,0,.12);color:#FF6D00;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+    .how-text{font-size:13px;color:rgba(255,255,255,.6);line-height:1.5}
+    .how-text strong{color:#fff}
+
+    /* ── Mobile ── */
+    @media(max-width:480px){
+      .hero h1{font-size:26px}
+      .card{padding:20px 18px}
+      .trust-row{gap:16px}
+    }
+  </style>
+</head>
+<body>
+  <!-- Top progress bar -->
+  <div class="progress"><div class="progress-fill" id="progressFill"></div></div>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">Scan<span>Gym</span></div>
+  </div>
+
+  <!-- Hero -->
+  <div class="hero" id="heroSection">
+    <div class="hero-badge">Takes 2 minutes</div>
+    <h1>Start earning from <em>day passes</em> today</h1>
+    <p>Connect your gym's existing lock system. Customers book, pay, and get automatic door access. Zero staff needed.</p>
+    <div class="trust-row">
+      <div class="trust-item"><span>🏋️</span> 1.2M+ gyms</div>
+      <div class="trust-item"><span>🔐</span> 30+ lock brands</div>
+      <div class="trust-item"><span>💳</span> Instant payouts</div>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- STEP 1: Find your gym                              -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="step-section active" id="step1">
+      <div class="card">
+        <h2><div class="step-num">1</div> Find your gym</h2>
+        <p class="sub">Search by gym name or address</p>
+
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" class="search-input" id="gymSearch" placeholder="e.g. PureGym London Bridge" autocomplete="off" autofocus>
+        </div>
+        <div class="search-results" id="searchResults"></div>
+      </div>
+
+      <button class="btn btn-primary" id="btnStep1" disabled>
+        This is my gym →
+      </button>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- STEP 2: Connect your lock                          -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="step-section" id="step2">
+      <div id="selectedGymBanner" class="selected-gym" style="display:none">
+        <div class="sg-icon">🏢</div>
+        <div class="sg-info">
+          <div class="sg-name" id="sgName"></div>
+          <div class="sg-addr" id="sgAddr"></div>
+        </div>
+        <span class="sg-change" onclick="goBack()">Change</span>
+      </div>
+
+      <div class="card">
+        <h2><div class="step-num">2</div> Connect your lock</h2>
+        <p class="sub">Log into your lock system below. ScanGym never sees your password.</p>
+
+        <div id="seamLoading" class="loading-state">
+          <div class="spinner"></div>
+          <p>Starting secure connection…</p>
+        </div>
+
+        <iframe id="seamFrame" class="seam-frame" style="display:none" allow="clipboard-write"></iframe>
+
+        <div id="seamError" style="display:none;text-align:center;padding:24px">
+          <p style="font-size:40px;margin-bottom:8px">⚠️</p>
+          <p style="font-weight:700">Could not start lock connection</p>
+          <p style="font-size:13px;color:rgba(255,255,255,.4);margin-top:4px" id="seamErrorMsg"></p>
+          <button class="btn btn-secondary" style="margin-top:16px;width:auto;display:inline-block" onclick="startSeamConnect()">Try again</button>
+        </div>
+      </div>
+
+      <button class="btn-skip" onclick="skipLock()">I don't have a smart lock yet → skip for now</button>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- STEP 3: Done!                                      -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="step-section" id="step3">
+      <div class="card">
+        <div class="success-wrap">
+          <div class="success-icon">✅</div>
+          <h2>You're live on ScanGym!</h2>
+          <p>Customers can now find and book your gym. Here's what happens automatically:</p>
+
+          <div class="checklist" id="checklist">
+            <div class="check-row"><span class="check-done">✓</span> Your gym is listed on ScanGym</div>
+            <div class="check-row"><span class="check-done">✓</span> Day pass pricing set automatically</div>
+            <div class="check-row" id="checkLock"><span class="check-done">✓</span> Lock system connected — auto door codes</div>
+            <div class="check-row"><span class="check-done">✓</span> Payments go straight to you</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>📊 What's next</h2>
+        <div class="how-row"><div class="how-num">1</div><div class="how-text"><strong>Customers book day passes</strong> on ScanGym and pay online</div></div>
+        <div class="how-row"><div class="how-num">2</div><div class="how-text"><strong>They get a door code</strong> that works only during their booking window</div></div>
+        <div class="how-row"><div class="how-num">3</div><div class="how-text"><strong>You earn money</strong> with zero staff work — manage everything from your dashboard</div></div>
+      </div>
+
+      <button class="btn btn-primary" onclick="window.location.href='/gympartners-dashboard'">
+        Open Dashboard →
+      </button>
+    </div>
+  </div>
+
+  <script>
+  (function(){
+    /* ── State ── */
+    let selectedPlace = null;   // { place_id, name, address, rating, is24h }
+    let claimedGymId = null;
+    let seamWebviewId = null;
+    let searchTimer = null;
+    const API = '';
+
+    /* ── Auth helpers ── */
+    function getToken() {
+      try {
+        const st = JSON.parse(localStorage.getItem('scangym_state') || '{}');
+        return st.token || localStorage.getItem('token') || '';
+      } catch { return localStorage.getItem('token') || ''; }
+    }
+    function authHeaders() {
+      return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() };
+    }
+    function isLoggedIn() { return !!getToken(); }
+
+    /* ── Progress bar ── */
+    function setProgress(pct) {
+      document.getElementById('progressFill').style.width = pct + '%';
+    }
+
+    /* ── Step navigation ── */
+    function showStep(n) {
+      document.querySelectorAll('.step-section').forEach(el => el.classList.remove('active'));
+      document.getElementById('step' + n).classList.add('active');
+      // Collapse hero after step 1
+      const hero = document.getElementById('heroSection');
+      if (n > 1) hero.style.display = 'none';
+      else hero.style.display = '';
+
+      if (n === 1) setProgress(0);
+      if (n === 2) setProgress(50);
+      if (n === 3) setProgress(100);
+    }
+
+    /* ── STEP 1: Search gyms ── */
+    const searchInput = document.getElementById('gymSearch');
+    const resultsEl = document.getElementById('searchResults');
+
+    searchInput.addEventListener('input', function() {
+      clearTimeout(searchTimer);
+      const q = this.value.trim();
+      if (q.length < 2) { resultsEl.innerHTML = ''; return; }
+      resultsEl.innerHTML = '<div class="searching-msg"><div class="spinner"></div> Searching…</div>';
+      searchTimer = setTimeout(() => searchGyms(q), 350);
+    });
+
+    async function searchGyms(q) {
+      try {
+        const res = await fetch(API + '/api/live/search?q=' + encodeURIComponent(q) + '&type=gym');
+        const data = await res.json();
+        const gyms = data.results || [];
+        if (gyms.length === 0) {
+          resultsEl.innerHTML = '<div class="searching-msg">No gyms found. Try a different name or city.</div>';
+          return;
+        }
+        resultsEl.innerHTML = gyms.slice(0, 8).map(g => {
+          const is24 = is24Hour(g);
+          const stars = g.rating ? '⭐ ' + g.rating : '';
+          return `
+            <div class="gym-result" data-pid="${g.place_id}" onclick="selectGym(this, '${escape(g.place_id)}')">
+              <div class="gym-name">${esc(g.name)}</div>
+              <div class="gym-addr">${esc(g.formatted_address || g.vicinity || '')}</div>
+              <div class="gym-tags">
+                ${is24 ? '<span class="gym-tag t24h">24/7</span>' : ''}
+                ${stars ? '<span class="gym-tag trating">' + stars + '</span>' : ''}
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        // Store gym data for selection
+        window._searchResults = gyms;
+      } catch (err) {
+        resultsEl.innerHTML = '<div class="searching-msg">Search error — try again</div>';
+      }
+    }
+
+    function is24Hour(g) {
+      if (g.opening_hours?.periods) {
+        const p = g.opening_hours.periods;
+        if (p.length === 1 && p[0].open?.day === 0 && p[0].open?.time === '0000' && !p[0].close) return true;
+      }
+      return false;
+    }
+
+    function esc(s) { return (s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function escape(s) { return (s||'').replace(/'/g, "\\'"); }
+
+    window.selectGym = function(el, placeId) {
+      // Deselect others
+      document.querySelectorAll('.gym-result').forEach(r => r.classList.remove('selected'));
+      el.classList.add('selected');
+
+      // Find gym data
+      const g = (window._searchResults || []).find(x => x.place_id === placeId);
+      if (!g) return;
+
+      selectedPlace = {
+        place_id: g.place_id,
+        name: g.name,
+        address: g.formatted_address || g.vicinity || '',
+        rating: g.rating,
+        is24h: is24Hour(g)
+      };
+
+      const btn = document.getElementById('btnStep1');
+      btn.disabled = false;
+      btn.textContent = 'This is my gym →';
+    };
+
+    document.getElementById('btnStep1').addEventListener('click', async function() {
+      if (!selectedPlace) return;
+      this.disabled = true;
+      this.innerHTML = '<div class="spinner"></div> Setting up…';
+
+      try {
+        // 1. Ensure gym exists in DB
+        const ensureRes = await fetch(API + '/api/live/ensure-gym', {
+          method: 'POST',
+          headers: authHeaders(),
+          body: JSON.stringify({ placeId: selectedPlace.place_id })
+        });
+        const ensureData = await ensureRes.json();
+        claimedGymId = ensureData.gymId;
+
+        // 2. Claim if logged in
+        if (isLoggedIn() && claimedGymId) {
+          await fetch(API + '/api/gym-partner/claim', {
+            method: 'POST',
+            headers: authHeaders(),
+            body: JSON.stringify({ gymId: claimedGymId })
+          }).catch(() => {}); // OK if already claimed or columns missing
+
+          // 3. Confirm & go live
+          await fetch(API + '/api/gym-partner/claim/confirm', {
+            method: 'POST',
+            headers: authHeaders(),
+            body: JSON.stringify({ gymId: claimedGymId })
+          }).catch(() => {});
+        }
+
+        // Show selected gym banner
+        document.getElementById('sgName').textContent = selectedPlace.name;
+        document.getElementById('sgAddr').textContent = selectedPlace.address;
+        document.getElementById('selectedGymBanner').style.display = 'flex';
+
+        // Move to step 2
+        showStep(2);
+        startSeamConnect();
+      } catch (err) {
+        this.disabled = false;
+        this.textContent = 'This is my gym →';
+        alert('Something went wrong. Please try again.');
+      }
+    });
+
+    /* ── STEP 2: Seam Connect ── */
+    window.startSeamConnect = async function() {
+      const loading = document.getElementById('seamLoading');
+      const frame = document.getElementById('seamFrame');
+      const error = document.getElementById('seamError');
+
+      loading.style.display = '';
+      frame.style.display = 'none';
+      error.style.display = 'none';
+
+      if (!isLoggedIn()) {
+        // Not logged in — show the frame area with a login prompt
+        loading.innerHTML = '<p style="font-size:15px;font-weight:700;margin-bottom:8px">Log in to connect your lock</p><p style="font-size:13px;color:rgba(255,255,255,.4)">You need a ScanGym account to continue.</p><br><button class="btn btn-primary" style="width:auto;display:inline-block;padding:12px 32px" onclick="window.location.href=\'/\'">Log in / Sign up →</button>';
+        return;
+      }
+
+      if (!claimedGymId) {
+        loading.innerHTML = '<p>No gym selected. Please go back and select your gym.</p>';
+        return;
+      }
+
+      try {
+        const res = await fetch(API + '/api/access/owner/create-connect-webview', {
+          method: 'POST',
+          headers: authHeaders(),
+          body: JSON.stringify({ gymId: claimedGymId })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed');
+
+        seamWebviewId = data.connect_webview_id;
+        frame.src = data.url;
+        frame.style.display = '';
+        loading.style.display = 'none';
+
+        // Poll for completion
+        pollSeamConnection();
+      } catch (err) {
+        loading.style.display = 'none';
+        error.style.display = '';
+        document.getElementById('seamErrorMsg').textContent = err.message;
+      }
+    };
+
+    function pollSeamConnection() {
+      const interval = setInterval(async () => {
+        const step2 = document.getElementById('step2');
+        if (!step2.classList.contains('active')) { clearInterval(interval); return; }
+
+        try {
+          const res = await fetch(API + '/api/access/owner/complete-connect', {
+            method: 'POST',
+            headers: authHeaders(),
+            body: JSON.stringify({ gymId: claimedGymId, connectWebviewId: seamWebviewId })
+          });
+          const data = await res.json();
+          if (data.connected) {
+            clearInterval(interval);
+            finishOnboarding(true, data);
+          }
+        } catch {}
+      }, 3000);
+    }
+
+    /* ── Skip lock ── */
+    window.skipLock = function() {
+      finishOnboarding(false, null);
+    };
+
+    /* ── STEP 3: Success ── */
+    function finishOnboarding(lockConnected, data) {
+      // Update checklist
+      if (!lockConnected) {
+        document.getElementById('checkLock').innerHTML =
+          '<span class="check-pending">○</span> Lock not connected yet — <a href="/gympartners-dashboard/connect-access" style="color:#FF6D00;font-weight:700">connect later</a>';
+      }
+
+      showStep(3);
+    }
+
+    /* ── Go back ── */
+    window.goBack = function() {
+      showStep(1);
+    };
+
+    /* ── Check URL for redirect from Seam ── */
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('status') === 'complete' && params.get('gym_id')) {
+      claimedGymId = parseInt(params.get('gym_id'));
+      finishOnboarding(true, {});
+    }
+
+    /* ── Init ── */
+    setProgress(0);
+  })();
+  </script>
+</body>
+</html>
