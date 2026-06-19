@@ -717,20 +717,25 @@ function navigate(path,pushState=true){
 window.addEventListener('popstate',()=>{state.route=location.pathname;state.routeQuery=location.search||'';state.activeTab=getTabForRoute(state.route);render();_syncReelsVisibility();});
 
 // #171 fix: Capture ?ref= URL param on ANY page load (not just /r/{handle})
+// Amazon-style: also capture &src= for multi-channel tracking + &gym= for gym deep links
 (function(){
   try{
     var params=new URLSearchParams(window.location.search);
     var ref=params.get('ref');
     if(ref){
+      var src=params.get('src')||null;
+      var gymDeepLink=params.get('gym')||null;
       var expiry=Date.now()+(30*24*60*60*1000);
-      localStorage.setItem('sg_referral',JSON.stringify({handle:ref,expiry:expiry}));
+      localStorage.setItem('sg_referral',JSON.stringify({handle:ref,expiry:expiry,source:src,gymId:gymDeepLink}));
       document.cookie='sg_referral='+encodeURIComponent(ref)+';path=/;max-age='+(30*24*60*60)+';SameSite=Lax';
-      // Track click server-side
-      fetch('/api/referrals/track',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({creatorHandle:ref,visitorSession:Date.now().toString(36)})}).catch(function(){});
-      // Clean ?ref= from URL without reload
-      params.delete('ref');
+      // Track click server-side with source channel + gym
+      fetch('/api/referrals/track',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({creatorHandle:ref,visitorSession:Date.now().toString(36),source:src,gymId:gymDeepLink})}).catch(function(){});
+      // Clean tracking params from URL without reload
+      params.delete('ref');params.delete('src');params.delete('gym');
       var clean=window.location.pathname+(params.toString()?'?'+params.toString():'');
       history.replaceState(null,'',clean);
+      // If gym deep link, navigate to that gym after a moment
+      if(gymDeepLink){setTimeout(function(){if(typeof navigate==='function')navigate('/gym/'+gymDeepLink);},500);}
     }
   }catch(e){}
 })();
@@ -1461,9 +1466,10 @@ function SearchPage(){
           html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'payment\')"><div class="tt-action-btn">\u{1F4B3}</div><div class="tt-action-label">'+_payLabel+'</div></div>';
           html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'hours\')"><div class="tt-action-btn">\u{1F550}</div><div class="tt-action-label" style="color:'+_hoursColor+'">'+_hoursLabel+'</div></div>';
           html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'reviews\')"><div class="tt-action-btn">\u2B50</div><div class="tt-action-label">'+_reviewLabel+'</div></div>';
-          /* #104: Like button — removed, creator features moved to Profile tab */
-          /* #59 cleanup: equipment & facilities buttons removed per user request */
-          /* map button removed */
+          /* Pinterest-style Save button — saves gym to user's board */
+          html+='<div class="tt-action" onclick="event.stopPropagation();window._sgSaveGym(\''+c.id+'\',\''+c.name.replace(/'/g,"\\'")+'\',this)"><div class="tt-action-btn" id="tt-save-btn-'+c.id+'">🔖</div><div class="tt-action-label" id="tt-save-label-'+c.id+'">Save</div></div>';
+          /* Amazon SiteStripe-style: Generate affiliate link for this gym */
+          html+='<div class="tt-action" onclick="event.stopPropagation();window._sgShareGymLink(\''+c.id+'\',\''+c.name.replace(/'/g,"\\'")+'\')"><div class="tt-action-btn">🔗</div><div class="tt-action-label">Share</div></div>';
           html+='</div>';
           /* #103: Track gym view on scroll into view */
           html+='<script>sgTrackView&&sgTrackView("gym","'+c.id+'")<\/script>';
@@ -1545,6 +1551,9 @@ function SearchPage(){
               cardHtml+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'payment\')"><div class="tt-action-btn">\u{1F4B3}</div><div class="tt-action-label">'+_pl2+'</div></div>';
               cardHtml+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'hours\')"><div class="tt-action-btn">\u{1F550}</div><div class="tt-action-label" style="color:'+_hc2+'">'+_hl2+'</div></div>';
               cardHtml+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'reviews\')"><div class="tt-action-btn">\u2B50</div><div class="tt-action-label">'+_rl2+'</div></div>';
+              /* Pinterest Save + Amazon SiteStripe Share (match first-card buttons) */
+              cardHtml+='<div class="tt-action" onclick="event.stopPropagation();window._sgSaveGym(\''+c.id+'\',\''+c.name.replace(/'/g,"\\'")+'\',this)"><div class="tt-action-btn" id="tt-save-btn-'+c.id+'">🔖</div><div class="tt-action-label" id="tt-save-label-'+c.id+'">Save</div></div>';
+              cardHtml+='<div class="tt-action" onclick="event.stopPropagation();window._sgShareGymLink(\''+c.id+'\',\''+c.name.replace(/'/g,"\\'")+'\')"><div class="tt-action-btn">🔗</div><div class="tt-action-label">Share</div></div>';
               cardHtml+='</div>';
               /* Bottom info — match initial cards */
               cardHtml+='<div class="tt-info">';
@@ -12395,6 +12404,32 @@ function CreatorEarningsPage(){
       </div>
     </div>
 
+    <!-- ═══ CHANNEL ANALYTICS (Amazon Tracking IDs) ═══ -->
+    <div class="bg-slate-800/60 rounded-xl p-4 mb-4 border border-slate-700/30">
+      <div class="flex items-center justify-between mb-3">
+        <p class="text-white font-bold text-sm">📡 Channel Analytics</p>
+        <span class="text-xs text-slate-500">Like Amazon Tracking IDs</span>
+      </div>
+      <div id="ce-channels" style="min-height:20px">
+        <p class="text-slate-500 text-xs">Share your link on different platforms to see per-channel stats here.</p>
+      </div>
+      <div class="mt-3 grid grid-cols-3 gap-2">
+        <button onclick="window._sgCopyChannelLink('${handle}','tiktok')" class="bg-slate-700/50 hover:bg-slate-600/50 rounded-lg px-2 py-2 text-center transition" title="Copy TikTok link"><span class="text-sm">🎵</span><p class="text-slate-400 text-[9px] mt-1">TikTok</p></button>
+        <button onclick="window._sgCopyChannelLink('${handle}','instagram')" class="bg-slate-700/50 hover:bg-slate-600/50 rounded-lg px-2 py-2 text-center transition" title="Copy Instagram link"><span class="text-sm">📸</span><p class="text-slate-400 text-[9px] mt-1">Instagram</p></button>
+        <button onclick="window._sgCopyChannelLink('${handle}','youtube')" class="bg-slate-700/50 hover:bg-slate-600/50 rounded-lg px-2 py-2 text-center transition" title="Copy YouTube link"><span class="text-sm">🎬</span><p class="text-slate-400 text-[9px] mt-1">YouTube</p></button>
+      </div>
+    </div>
+
+    <!-- ═══ SIGNUP BOUNTIES ═══ -->
+    <div class="bg-slate-800/60 rounded-xl p-4 mb-4 border border-slate-700/30">
+      <div class="flex items-center justify-between">
+        <p class="text-white font-bold text-sm">🎯 Signup Bounties</p>
+        <span class="bg-emerald-500/15 text-emerald-400 text-xs font-bold px-2 py-1 rounded-full">£1 per signup</span>
+      </div>
+      <p class="text-slate-400 text-xs mt-1 mb-2">Earn £1 for every new user who creates an account via your link — even if they don't book!</p>
+      <div id="ce-bounties" class="text-sm"><span class="text-slate-500">Loading...</span></div>
+    </div>
+
     <!-- ═══ NEXT ACTION NUDGE ═══ -->
     <div id="ce-nudge" class="bg-gradient-to-r from-brand/20 to-orange-600/10 border border-brand/30 rounded-xl p-4 mb-4">
       <div class="flex items-center gap-3">
@@ -12412,10 +12447,11 @@ function CreatorEarningsPage(){
       <p class="text-white font-bold mb-2">💰 How you earn</p>
       <div class="space-y-2 text-sm text-slate-300">
         <div class="flex justify-between"><span>Commission per booking</span><span class="text-brand font-bold">£1.25</span></div>
+        <div class="flex justify-between"><span>Signup bounty</span><span class="text-emerald-400 font-bold">£1.00</span></div>
         <div class="flex justify-between"><span>Customer discount</span><span class="text-emerald-400 font-bold">15% off</span></div>
         <div class="flex justify-between"><span>Cookie duration</span><span class="text-slate-400">30 days</span></div>
         <div class="flex justify-between"><span>Clearing period</span><span class="text-slate-400">7 days</span></div>
-        <div class="flex justify-between"><span>Payout methods</span><span class="text-slate-400">Bank · Stripe · Payoneer</span></div>
+        <div class="flex justify-between"><span>Payout methods</span><span class="text-slate-400">Stripe Connect · Bank · PayPal</span></div>
       </div>
     </div>
 
@@ -12741,6 +12777,29 @@ async function _loadCreatorEarnings(handle){
         return '<div class="flex-1 '+color+' rounded-t transition-all duration-500" style="height:'+h+'%" title="'+d.date+': '+d.count+' clicks"></div>';
       }).join('');
     }
+
+    // ═══ Amazon-style: Per-channel analytics (load from new endpoint) ═══
+    try{
+      var chRes=await fetch('/api/referrals/channels/'+encodeURIComponent(handle));
+      var chData=await chRes.json();
+      var chanEl=document.getElementById('ce-channels');
+      if(chanEl&&chData.success&&chData.channels.length>0){
+        var channelIcons={tiktok:'🎵',instagram:'📸',youtube:'🎬',twitter:'🐦',facebook:'📘',snapchat:'👻',pinterest:'📌',linkedin:'💼',whatsapp:'💬',blog:'📝',email:'✉️',website:'🌐',direct:'🔗',other:'📎'};
+        chanEl.innerHTML=chData.channels.map(function(ch){
+          return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)"><span style="font-size:18px">'+(channelIcons[ch.channel]||'📎')+'</span><div style="flex:1"><p style="color:#fff;font-size:13px;font-weight:600;text-transform:capitalize;margin:0">'+ch.channel+'</p><p style="color:rgba(255,255,255,.35);font-size:11px;margin:0">'+ch.clicks+' clicks · '+ch.conversions+' bookings · '+ch.conversionRate+'</p></div><span style="color:#4ade80;font-weight:700;font-size:13px">'+ch.earnings+'</span></div>';
+        }).join('');
+      }
+    }catch(e){}
+
+    // ═══ Load bounty earnings ═══
+    try{
+      var bRes=await fetch('/api/referrals/bounties/'+encodeURIComponent(handle));
+      var bData=await bRes.json();
+      var bEl=document.getElementById('ce-bounties');
+      if(bEl&&bData.success){
+        bEl.innerHTML='<span style="color:#4ade80;font-weight:700">'+bData.totalBounties+' signups</span><span style="color:rgba(255,255,255,.35)"> · </span><span style="color:#fff;font-weight:700">£'+(bData.totalEarningsPence/100).toFixed(2)+'</span><span style="color:rgba(255,255,255,.35)"> in bounties</span>';
+      }
+    }catch(e){}
   }catch(e){
     console.error('[Earnings] Load failed:',e);
   }
@@ -16409,11 +16468,18 @@ window.sgFeedback = async function(elementId, vote, btn) {
     content.innerHTML=`<div class="sg-auth-step-enter">`+_progressDots('withdraw')+`
       <div class="sg-auth-title">Get paid for sharing</div>
       <div class="sg-auth-sub">Connect your payout method — earn 25% on every booking 💰</div>
-      <div class="sg-auth-check selected" id="sg-auth-wd-paypal" onclick="window._sgAuthSelectWithdraw('paypal')">
+      <div class="sg-auth-check selected" id="sg-auth-wd-stripe" onclick="window._sgAuthSelectWithdraw('stripe_connect')">
+        <div class="sg-auth-check-icon" style="font-size:22px">⚡</div>
+        <div class="sg-auth-check-text">
+          <strong>Stripe Connect</strong>
+          <span>Recommended — instant payouts, auto-deposit</span>
+        </div>
+      </div>
+      <div class="sg-auth-check" id="sg-auth-wd-paypal" onclick="window._sgAuthSelectWithdraw('paypal')">
         <div class="sg-auth-check-icon">🅿️</div>
         <div class="sg-auth-check-text">
           <strong>PayPal</strong>
-          <span>Fastest — instant transfers</span>
+          <span>Fast — instant transfers</span>
         </div>
       </div>
       <div class="sg-auth-check" id="sg-auth-wd-bank" onclick="window._sgAuthSelectWithdraw('bank')">
@@ -16431,15 +16497,22 @@ window.sgFeedback = async function(elementId, vote, btn) {
       <div class="sg-auth-back" onclick="window._sgAuthSkipWithdraw()">Skip for now</div>
       <div class="sg-auth-footer">You can change this anytime in your profile</div>
     </div>`;
-    // Default to PayPal form
-    window._sgAuthWithdrawType='paypal';
-    _renderWithdrawForm('paypal');
+    // Default to Stripe Connect (primary like Amazon Seller/Fiverr)
+    window._sgAuthWithdrawType='stripe_connect';
+    _renderWithdrawForm('stripe_connect');
   }
 
   function _renderWithdrawForm(type){
     var form=document.getElementById('sg-auth-wd-form');
     if(!form)return;
-    if(type==='paypal'){
+    if(type==='stripe_connect'){
+      form.innerHTML=`
+        <div style="margin-top:12px;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);border-radius:12px;padding:14px">
+          <p style="color:#fff;font-size:13px;font-weight:600;margin:0 0 4px">⚡ 1-click Stripe Connect</p>
+          <p style="color:rgba(255,255,255,.5);font-size:11px;margin:0">We'll redirect you to Stripe to securely connect your bank account. Payouts auto-deposit — like Amazon Seller or Fiverr.</p>
+        </div>
+      `;
+    }else if(type==='paypal'){
       form.innerHTML=`
         <label class="sg-auth-label" style="margin-top:12px">PayPal email</label>
         <input class="sg-auth-field" id="sg-auth-wd-email" type="email" placeholder="your@email.com" autocomplete="email">
@@ -16639,6 +16712,8 @@ window.sgFeedback = async function(elementId, vote, btn) {
 
   window._sgAuthSelectWithdraw=function(type){
     window._sgAuthWithdrawType=type;
+    var stripeEl=document.getElementById('sg-auth-wd-stripe');
+    if(stripeEl)stripeEl.classList.toggle('selected',type==='stripe_connect');
     document.getElementById('sg-auth-wd-paypal').classList.toggle('selected',type==='paypal');
     document.getElementById('sg-auth-wd-bank').classList.toggle('selected',type==='bank');
     _renderWithdrawForm(type);
@@ -16650,7 +16725,27 @@ window.sgFeedback = async function(elementId, vote, btn) {
     var type=window._sgAuthWithdrawType;
     var details={};
 
-    if(type==='paypal'){
+    if(type==='stripe_connect'){
+      // Redirect to Stripe Connect onboarding (like Amazon Seller / Fiverr)
+      err.style.display='none';
+      if(btn){btn.textContent='⚡ Redirecting to Stripe…';btn.style.opacity='.5';btn.style.pointerEvents='none';}
+      try{
+        var creatorData=JSON.parse(localStorage.getItem('sg_creator')||'null')||{};
+        var handle=creatorData.handle||creatorData.slug||creatorData.email;
+        var res=await fetch('/api/referrals/stripe-connect',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({creatorHandle:handle,email:creatorData.email})});
+        var d=await res.json();
+        if(d.success&&d.onboardingUrl){
+          // Store that they chose Stripe Connect
+          creatorData.withdrawMethod='stripe_connect';
+          localStorage.setItem('sg_creator',JSON.stringify(creatorData));
+          window.location.href=d.onboardingUrl;return;
+        }else{
+          err.textContent=d.error||'Stripe Connect setup failed';err.style.display='block';
+          if(btn){btn.textContent='💰 Connect & Start Earning';btn.style.opacity='1';btn.style.pointerEvents='auto';}
+        }
+      }catch(e){err.textContent='Network error — try again';err.style.display='block';if(btn){btn.textContent='💰 Connect & Start Earning';btn.style.opacity='1';btn.style.pointerEvents='auto';}}
+      return;
+    }else if(type==='paypal'){
       var email=document.getElementById('sg-auth-wd-email');
       if(!email||!email.value.trim()||!email.value.includes('@')){
         err.textContent='Enter a valid PayPal email';err.style.display='block';return;
@@ -16678,10 +16773,11 @@ window.sgFeedback = async function(elementId, vote, btn) {
       // If creator has a handle, also save to server preferences
       if(creatorData.handle||creatorData.slug){
         var handle=creatorData.handle||creatorData.slug;
+        var payMethod=type==='paypal'?'paypal':'bank_transfer';
         await fetch('/api/referrals/update-payout',{
           method:'POST',credentials:'include',
           headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({creatorHandle:handle,paymentMethod:type==='paypal'?'paypal':'bank_transfer',paymentDetails:details})
+          body:JSON.stringify({creatorHandle:handle,paymentMethod:payMethod,paymentDetails:details})
         }).catch(function(){});
       }
       /* R3: Brief checkmark flash before done */
@@ -16736,6 +16832,108 @@ window.sgFeedback = async function(elementId, vote, btn) {
    Purely additive — zero changes to existing location code.
    Shows a friendly popup when user taps 📍 and GPS is denied/off.
    ═══════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════
+   RESEARCH 3: Pinterest-Style Gym Save + Amazon SiteStripe Affiliate Links
+   Purely additive — new global functions only. No existing code touched.
+   ═══════════════════════════════════════════════════════════════════ */
+
+// ─── Pinterest-style: Save gym to board ───
+window._sgSaveGym=function(gymId,gymName,btnEl){
+  fetch('/api/referrals/gyms/save',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({gymId:gymId,gymName:gymName})}).then(function(r){return r.json()}).then(function(d){
+    if(d.error&&d.error.includes('Sign in')){
+      // Not signed in — trigger auth then retry
+      window._sheetMode='save_gym';window._pendingSaveGym={gymId:gymId,gymName:gymName};
+      if(typeof _sgShowAuthSheet==='function')_sgShowAuthSheet();
+      return;
+    }
+    var iconEl=document.getElementById('tt-save-btn-'+gymId);
+    var labelEl=document.getElementById('tt-save-label-'+gymId);
+    if(d.saved){
+      if(iconEl)iconEl.textContent='✅';
+      if(labelEl){labelEl.textContent='Saved';labelEl.style.color='#4ade80';}
+      sgToast('💪 Gym saved to your board!','success',2000);
+    }else{
+      if(iconEl)iconEl.textContent='🔖';
+      if(labelEl){labelEl.textContent='Save';labelEl.style.color='';}
+      sgToast('Removed from saved','info',2000);
+    }
+  }).catch(function(){sgToast('Could not save gym','error',2000);});
+};
+
+// ─── Amazon Tracking ID style: Copy channel-specific affiliate link ───
+window._sgCopyChannelLink=function(handle,channel){
+  var link='https://scangym.com/r/'+encodeURIComponent(handle)+'?src='+encodeURIComponent(channel);
+  navigator.clipboard.writeText(link).then(function(){
+    var channelNames={tiktok:'TikTok',instagram:'Instagram',youtube:'YouTube',twitter:'Twitter',facebook:'Facebook',snapchat:'Snapchat',pinterest:'Pinterest',linkedin:'LinkedIn',whatsapp:'WhatsApp',blog:'Blog',email:'Email'};
+    sgToast('🔗 '+(channelNames[channel]||channel)+' link copied!','success',2500);
+    // Track link generation
+    fetch('/api/referrals/generate-link',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({creatorHandle:handle,source:channel})}).catch(function(){});
+  }).catch(function(){sgToast('Could not copy link','error',2000);});
+};
+
+// ─── Amazon SiteStripe-style: Share affiliate link for any gym ───
+window._sgShareGymLink=function(gymId,gymName){
+  // Get creator handle from localStorage (if user is a creator)
+  var creator=null;
+  try{var c=JSON.parse(localStorage.getItem('sg_creator')||'null');if(c&&c.handle)creator=c.handle;}catch(e){}
+
+  // Build the link
+  var baseUrl='https://scangym.com';
+  var link;
+  if(creator){
+    // Creator gets affiliate link with their handle
+    link=baseUrl+'/gym/'+gymId+'?ref='+encodeURIComponent(creator);
+  }else{
+    // Regular user gets plain gym link
+    link=baseUrl+'/gym/'+gymId;
+  }
+
+  var shareText='Check out '+gymName+' on ScanGym! 🏋️ No membership needed, just scan & train:';
+
+  // Use native share if available, otherwise copy
+  if(navigator.share){
+    navigator.share({title:'ScanGym — '+gymName,text:shareText,url:link}).then(function(){
+      // Track share event for creators
+      if(creator){fetch('/api/referrals/track-download',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({creatorHandle:creator,assetType:'gym_share',assetId:gymId})}).catch(function(){});}
+    }).catch(function(){});
+  }else{
+    navigator.clipboard.writeText(shareText+' '+link).then(function(){
+      sgToast(creator?'🔗 Affiliate link copied!':'🔗 Link copied!','success',2500);
+      if(creator){fetch('/api/referrals/track-download',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({creatorHandle:creator,assetType:'gym_share',assetId:gymId})}).catch(function(){});}
+    }).catch(function(){sgToast('Could not copy link','error',2000);});
+  }
+
+  // Log link generation server-side if creator
+  if(creator){
+    fetch('/api/referrals/generate-link',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({creatorHandle:creator,gymId:gymId,gymName:gymName})}).catch(function(){});
+  }
+};
+
+// ─── Auto-trigger signup bounty when user registers via referral link ───
+(function(){
+  // Hook into auth success to credit bounty to referring creator
+  var _origAfterAuth=window._afterAuthSuccessOriginal||null;
+  // We watch for the sg_onboarded flag to trigger bounty
+  var _bountyInterval=setInterval(function(){
+    try{
+      var onboarded=localStorage.getItem('sg_onboarded');
+      var bountySent=localStorage.getItem('sg_bounty_sent');
+      if(onboarded&&!bountySent){
+        var ref=JSON.parse(localStorage.getItem('sg_referral')||'null');
+        if(ref&&ref.handle&&ref.expiry>Date.now()){
+          var userId=localStorage.getItem('sg_uid')||('anon_'+Date.now().toString(36));
+          fetch('/api/referrals/bounty',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({creatorHandle:ref.handle,userId:userId,bountyType:'signup'})}).catch(function(){});
+          localStorage.setItem('sg_bounty_sent','1');
+          clearInterval(_bountyInterval);
+        }
+      }
+    }catch(e){}
+  },3000);
+  // Stop checking after 60 seconds
+  setTimeout(function(){clearInterval(_bountyInterval);},60000);
+})();
+
 (function(){
   // ── Inject CSS ──
   var sty=document.createElement('style');
