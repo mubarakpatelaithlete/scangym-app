@@ -16498,10 +16498,29 @@ window.sgFeedback = async function(elementId, vote, btn) {
       // No cards — show card form
       _renderCardStep();
     }else if(_sheetMode==='reels'){
-      // Check if user already has a creator profile with withdraw info
+      // FIX #1: Auto-generate creator handle for Reels auth users so affiliate deeplinks work.
+      // Without this, _doShare() can't append ?ref= because sg_creator.handle is empty.
       var creatorData=null;
       try{creatorData=JSON.parse(localStorage.getItem('sg_creator')||'null');}catch(e){}
-      if(creatorData&&creatorData.withdrawMethod){
+      if(!creatorData||!creatorData.handle){
+        // Auto-create handle from user name or phone
+        var _usr=state.user||{};
+        var _autoHandle=(_usr.name||'').replace(/[^a-z0-9]/gi,'').toLowerCase()||(_usr.phone||'').replace(/[^0-9]/g,'').slice(-6)||('sg'+Date.now().toString(36));
+        creatorData=creatorData||{};
+        creatorData.handle=_autoHandle;
+        creatorData.name=_usr.name||'';
+        creatorData.email=_usr.email||'';
+        creatorData.autoCreated=true;
+        localStorage.setItem('sg_creator',JSON.stringify(creatorData));
+        // Register with server (fire-and-forget)
+        fetch('/api/v2/creator-apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+          first_name:(_usr.name||'').split(' ')[0]||'',
+          last_name:(_usr.name||'').split(' ').slice(1).join(' ')||'',
+          email:_usr.email||'',
+          instagram:'',tiktok:'',youtube:'',followers:'',why:'auto-reels-share'
+        })}).catch(function(){});
+      }
+      if(creatorData.withdrawMethod){
         // Already has withdraw method — skip to done
         _renderDoneStep();
         return;
