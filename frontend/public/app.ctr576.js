@@ -763,6 +763,18 @@ window.addEventListener('message',function(e){
     case 'sg-reels-ready':
       // Reels player finished loading — send initial state
       _sendToReels({type:'sg-reels-visibility',visible:state.activeTab==='reels'});
+      // Send auth state so reels iframe knows if user is logged in
+      _sendToReels({type:'sg-auth-state',loggedIn:!!state.user,user:state.user?{name:state.user.name,phone:state.user.phone}:null});
+      break;
+    case 'sg-auth-request':
+      // Reels iframe wants user to sign in (share/save tapped while logged out)
+      window._pendingReelsAction=e.data.action||null;
+      window._pendingReelsVideo=e.data.video||null;
+      if(typeof window._sgShowAuthSheet==='function'){
+        window._sgShowAuthSheet('reels');
+      }else{
+        navigate('/login');
+      }
       break;
   }
 });
@@ -7710,12 +7722,17 @@ window._sgGoogleCallback=async function(response){
     if(data.success&&data.user){
       state.user=data.user;
       state.authStep='phone';
+      if(typeof window._sgCloseAuthSheet==='function')window._sgCloseAuthSheet();
+      _sendToReels({type:'sg-auth-state',loggedIn:true,user:{name:data.user.name,phone:data.user.phone}});
       sgToast('Welcome, '+(data.user.name||'there')+'! 🎉','success',3000);
       if(window._pendingCheckout&&window._pendingCheckout.gymId){
         const pc=window._pendingCheckout;
         window._pendingCheckout=null;
-        navigate('/explore');
+        if(state.activeTab!=='book')navigate('/explore');
         setTimeout(()=>showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime),600);
+      }else if(window._pendingReelsAction){
+        _sendToReels({type:'sg-auth-complete',action:window._pendingReelsAction,video:window._pendingReelsVideo});
+        window._pendingReelsAction=null;window._pendingReelsVideo=null;
       }else if(window._sgOneTapCreatorMode){
         window._sgOneTapCreatorMode=false;
         _handleCreatorGoogleSignup(data.user);
@@ -7798,12 +7815,17 @@ window.handleGoogleSignIn=async function(){
           if(data.success&&data.user){
             state.user=data.user;
             state.authStep='phone';
+            if(typeof window._sgCloseAuthSheet==='function')window._sgCloseAuthSheet();
+            _sendToReels({type:'sg-auth-state',loggedIn:true,user:{name:data.user.name,phone:data.user.phone}});
             sgToast('Welcome, '+(data.user.name||'there')+'! \ud83c\udf89','success',3000);
             if(window._pendingCheckout&&window._pendingCheckout.gymId){
               var pc=window._pendingCheckout;
               window._pendingCheckout=null;
-              navigate('/explore');
+              if(state.activeTab!=='book')navigate('/explore');
               setTimeout(function(){showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime);},600);
+            }else if(window._pendingReelsAction){
+              _sendToReels({type:'sg-auth-complete',action:window._pendingReelsAction,video:window._pendingReelsVideo});
+              window._pendingReelsAction=null;window._pendingReelsVideo=null;
             }else if(window._sgOneTapCreatorMode){
               window._sgOneTapCreatorMode=false;
               _handleCreatorGoogleSignup(data.user);
@@ -7870,12 +7892,17 @@ window.handleAppleSignIn=async function(){
     if(result.success&&result.user){
       state.user=result.user;
       state.authStep='phone';
+      if(typeof window._sgCloseAuthSheet==='function')window._sgCloseAuthSheet();
+      _sendToReels({type:'sg-auth-state',loggedIn:true,user:{name:result.user.name,phone:result.user.phone}});
       sgToast('Welcome, '+(result.user.name||'there')+'! \ud83c\udf89','success',3000);
       if(window._pendingCheckout&&window._pendingCheckout.gymId){
         var pc=window._pendingCheckout;
         window._pendingCheckout=null;
-        navigate('/explore');
+        if(state.activeTab!=='book')navigate('/explore');
         setTimeout(function(){showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime);},600);
+      }else if(window._pendingReelsAction){
+        _sendToReels({type:'sg-auth-complete',action:window._pendingReelsAction,video:window._pendingReelsVideo});
+        window._pendingReelsAction=null;window._pendingReelsVideo=null;
       }else{
         navigate('/explore');
       }
@@ -7895,12 +7922,12 @@ window.handleAppleSignIn=async function(){
 
 // ─── Guest Flow Handlers (deprecated — login required before booking) ───
 window.startGuestFlow=function(){
-  navigate('/login');
-  sgToast('📲 Sign in to book — your card saves for 1-tap next time','info',4000);
+  if(typeof window._sgShowAuthSheet==='function'){window._sgShowAuthSheet('book');}
+  else{navigate('/login');sgToast('📲 Sign in to book — your card saves for 1-tap next time','info',4000);}
 };
 window.confirmGuestFlow=function(){
-  navigate('/login');
-  sgToast('📲 Sign in to book — your card saves for 1-tap next time','info',4000);
+  if(typeof window._sgShowAuthSheet==='function'){window._sgShowAuthSheet('book');}
+  else{navigate('/login');sgToast('📲 Sign in to book — your card saves for 1-tap next time','info',4000);}
 };
 
 // Legacy compatibility — no-ops for old guest explore paths
@@ -7952,12 +7979,17 @@ window.handleVerifyCode=async function(){
     if(r.success&&r.user){
       state.user=r.user;
       state.authStep='phone';
+      if(typeof window._sgCloseAuthSheet==='function')window._sgCloseAuthSheet();
+      if(typeof _sendToReels==='function')_sendToReels({type:'sg-auth-state',loggedIn:true,user:{name:r.user.name,phone:r.user.phone}});
       // Resume pending booking if user was trying to book before login
       if(window._pendingCheckout&&window._pendingCheckout.gymId){
         const pc=window._pendingCheckout;
         window._pendingCheckout=null;
-        navigate('/explore');
+        if(state.activeTab!=='book')navigate('/explore');
         setTimeout(()=>showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime),600);
+      }else if(window._pendingReelsAction){
+        if(typeof _sendToReels==='function')_sendToReels({type:'sg-auth-complete',action:window._pendingReelsAction,video:window._pendingReelsVideo});
+        window._pendingReelsAction=null;window._pendingReelsVideo=null;
       }else if(state.pendingBookGym){
         navigate('/gym/'+state.pendingBookGym);
         state.pendingBookGym=null;
@@ -8703,12 +8735,15 @@ window._checkoutState={stripe:null,elements:null,bookingId:null,intentId:null,gy
 
 window.showBookingCheckout=async function(gymId, prefillDate, prefillTime){
   // ═══ Auth gate: Require login before booking ═══
-  // Guests can browse freely, but must sign in to book.
-  // After login, card is saved on first payment → 1-tap every time after.
+  // 1-click flow: inline auth sheet slides up — no page redirect.
   if(!state.user){
     window._pendingCheckout={gymId, prefillDate:prefillDate||null, prefillTime:prefillTime||null};
-    navigate('/login');
-    sgToast('📲 Sign in to book — your card saves for 1-tap next time','info',4000);
+    if(typeof window._sgShowAuthSheet==='function'){
+      window._sgShowAuthSheet('book');
+    }else{
+      navigate('/login');
+      sgToast('📲 Sign in to book — your card saves for 1-tap next time','info',4000);
+    }
     return;
   }
 
@@ -16101,5 +16136,196 @@ window.sgFeedback = async function(elementId, vote, btn) {
     body: JSON.stringify({ sessionId: window._sgSessionId })
   }).catch(function() {});
   setTimeout(_sgHeartbeat, 30000);
+})();
+
+/* ═══ 1-Click Inline Auth Sheet ═══
+ * Slides up from bottom over current context (no page redirect).
+ * Triggered by showBookingCheckout (book tab) or reels share/save.
+ * After auth: closes → resumes pending action automatically.
+ */
+(function(){
+  var _sheetEl=null;
+  var _sheetMode='book'; // 'book' or 'reels'
+
+  // Inject CSS once
+  var sty=document.createElement('style');
+  sty.textContent=`
+    .sg-auth-overlay{position:fixed;inset:0;z-index:9500;display:flex;flex-direction:column;justify-content:flex-end;pointer-events:none;opacity:0;transition:opacity .25s}
+    .sg-auth-overlay.open{opacity:1;pointer-events:auto}
+    .sg-auth-bg{position:absolute;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+    .sg-auth-panel{position:relative;background:#111;border-radius:24px 24px 0 0;padding:28px 24px calc(24px + env(safe-area-inset-bottom,0px));transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,.24,1.02);max-height:85vh;overflow-y:auto}
+    .sg-auth-overlay.open .sg-auth-panel{transform:translateY(0)}
+    .sg-auth-drag{width:40px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;margin:0 auto 20px}
+    .sg-auth-title{color:#fff;font-size:22px;font-weight:800;text-align:center;margin-bottom:4px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+    .sg-auth-sub{color:rgba(255,255,255,.4);font-size:13px;text-align:center;margin-bottom:24px}
+    .sg-auth-btn{width:100%;padding:16px;border-radius:14px;font-size:16px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .15s;border:none;-webkit-tap-highlight-color:transparent;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+    .sg-auth-btn:active{transform:scale(.97)}
+    .sg-auth-btn-google{background:#fff;color:#1f1f1f;margin-bottom:10px}
+    .sg-auth-btn-apple{background:#000;color:#fff;border:1px solid rgba(255,255,255,.15)!important;margin-bottom:10px}
+    .sg-auth-divider{display:flex;align-items:center;gap:12px;margin:16px 0}
+    .sg-auth-divider-line{flex:1;height:1px;background:rgba(255,255,255,.1)}
+    .sg-auth-divider-text{color:rgba(255,255,255,.3);font-size:12px;font-weight:500}
+    .sg-auth-phone-row{display:flex;gap:8px;margin-bottom:12px}
+    .sg-auth-phone-cc{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:14px 10px;color:#fff;font-size:14px;min-width:72px;outline:none}
+    .sg-auth-phone-input{flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:14px 16px;color:#fff;font-size:16px;outline:none}
+    .sg-auth-phone-input:focus,.sg-auth-phone-cc:focus{border-color:#FF6D00}
+    .sg-auth-phone-input::placeholder{color:rgba(255,255,255,.25)}
+    .sg-auth-btn-phone{background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff}
+    .sg-auth-code-input{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:16px;color:#fff;font-size:20px;text-align:center;letter-spacing:8px;outline:none;margin-bottom:12px}
+    .sg-auth-code-input:focus{border-color:#FF6D00}
+    .sg-auth-back{color:rgba(255,255,255,.4);font-size:13px;text-align:center;cursor:pointer;margin-top:8px}
+    .sg-auth-back:active{color:#FF6D00}
+    .sg-auth-footer{color:rgba(255,255,255,.25);font-size:11px;text-align:center;margin-top:16px}
+    .sg-auth-error{color:#f87171;font-size:13px;text-align:center;margin-bottom:8px;display:none}
+  `;
+  document.head.appendChild(sty);
+
+  function _buildSheet(){
+    var el=document.createElement('div');
+    el.className='sg-auth-overlay';
+    el.id='sg-auth-overlay';
+    el.innerHTML=`
+      <div class="sg-auth-bg" onclick="window._sgCloseAuthSheet()"></div>
+      <div class="sg-auth-panel">
+        <div class="sg-auth-drag"></div>
+        <div id="sg-auth-content"></div>
+      </div>
+    `;
+    document.body.appendChild(el);
+    _sheetEl=el;
+    _renderPhoneStep();
+  }
+
+  function _renderPhoneStep(){
+    var content=document.getElementById('sg-auth-content');
+    if(!content)return;
+    var titles={book:{t:'Sign in to book',s:'1 tap — your card saves for instant booking ⚡'},reels:{t:'Sign in to share',s:'Get your personal affiliate link & start earning 💰'}};
+    var t=titles[_sheetMode]||titles.book;
+    content.innerHTML=`
+      <div class="sg-auth-title">${t.t}</div>
+      <div class="sg-auth-sub">${t.s}</div>
+      <button class="sg-auth-btn sg-auth-btn-google" onclick="handleGoogleSignIn()">
+        <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#34A853" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#FBBC05" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+        Continue with Google
+      </button>
+      <button class="sg-auth-btn sg-auth-btn-apple" onclick="handleAppleSignIn()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
+        Continue with Apple
+      </button>
+      <div class="sg-auth-divider">
+        <div class="sg-auth-divider-line"></div>
+        <span class="sg-auth-divider-text">or use phone</span>
+        <div class="sg-auth-divider-line"></div>
+      </div>
+      <div class="sg-auth-phone-row">
+        <select class="sg-auth-phone-cc" id="sg-auth-cc">${_getCountryCodeOptions()}</select>
+        <input class="sg-auth-phone-input" id="sg-auth-phone" type="tel" placeholder="7XXX XXXXXX" autocomplete="tel">
+      </div>
+      <div class="sg-auth-error" id="sg-auth-err"></div>
+      <button class="sg-auth-btn sg-auth-btn-phone" id="sg-auth-send-btn" onclick="window._sgAuthSendCode()">
+        📲 Send Code
+      </button>
+      <div class="sg-auth-footer">Sign in once — works everywhere in ScanGym</div>
+    `;
+    // Auto-focus phone input
+    setTimeout(function(){var inp=document.getElementById('sg-auth-phone');if(inp)inp.focus();},350);
+  }
+
+  function _renderCodeStep(phone){
+    var content=document.getElementById('sg-auth-content');
+    if(!content)return;
+    content.innerHTML=`
+      <div class="sg-auth-title">Enter your code</div>
+      <div class="sg-auth-sub">Sent to ${phone}</div>
+      <input class="sg-auth-code-input" id="sg-auth-code" type="text" maxlength="6" placeholder="••••••" inputmode="numeric" autocomplete="one-time-code">
+      <div class="sg-auth-error" id="sg-auth-err"></div>
+      <button class="sg-auth-btn sg-auth-btn-phone" id="sg-auth-verify-btn" onclick="window._sgAuthVerifyCode()">
+        Verify & Continue
+      </button>
+      <div class="sg-auth-back" onclick="window._sgAuthBackToPhone()">← Change number</div>
+    `;
+    setTimeout(function(){var inp=document.getElementById('sg-auth-code');if(inp)inp.focus();},350);
+  }
+
+  // Phone auth handlers for the inline sheet
+  window._sgAuthSendCode=async function(){
+    var inp=document.getElementById('sg-auth-phone');
+    var btn=document.getElementById('sg-auth-send-btn');
+    var err=document.getElementById('sg-auth-err');
+    if(!inp)return;
+    var phone=inp.value.replace(/\s/g,'');
+    if(!phone||phone.length<7){err.textContent='Enter a valid phone number';err.style.display='block';return;}
+    err.style.display='none';
+    btn.textContent='Sending…';btn.disabled=true;
+    try{
+      var cc=document.getElementById('sg-auth-cc');
+      var countryCode=cc?cc.value:'+44';
+      var fullPhone=phone.startsWith('+')?phone:countryCode+phone.replace(/^0/,'');
+      var r=await fetch('/api/auth/send-code',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({phone:fullPhone})}).then(function(r){return r.json();});
+      if(r.success){
+        state.authPhone=r.phone||fullPhone;
+        _renderCodeStep(state.authPhone);
+      }else{
+        err.textContent=r.error||'Failed to send code';err.style.display='block';
+        btn.textContent='📲 Send Code';btn.disabled=false;
+      }
+    }catch(e){
+      err.textContent='Network error — try again';err.style.display='block';
+      btn.textContent='📲 Send Code';btn.disabled=false;
+    }
+  };
+
+  window._sgAuthVerifyCode=async function(){
+    var inp=document.getElementById('sg-auth-code');
+    var btn=document.getElementById('sg-auth-verify-btn');
+    var err=document.getElementById('sg-auth-err');
+    if(!inp)return;
+    var code=inp.value.trim();
+    if(!code||code.length<4){err.textContent='Enter the verification code';err.style.display='block';return;}
+    err.style.display='none';
+    btn.textContent='Verifying…';btn.disabled=true;
+    try{
+      var r=await fetch('/api/auth/verify',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({phone:state.authPhone,code:code})}).then(function(r){return r.json();});
+      if(r.success&&r.user){
+        state.user=r.user;
+        state.authStep='phone';
+        window._sgCloseAuthSheet();
+        _sendToReels({type:'sg-auth-state',loggedIn:true,user:{name:r.user.name,phone:r.user.phone}});
+        sgToast('Welcome! 🎉','success',2000);
+        // Resume pending action
+        if(window._pendingCheckout&&window._pendingCheckout.gymId){
+          var pc=window._pendingCheckout;window._pendingCheckout=null;
+          setTimeout(function(){showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime);},400);
+        }else if(window._pendingReelsAction){
+          _sendToReels({type:'sg-auth-complete',action:window._pendingReelsAction,video:window._pendingReelsVideo});
+          window._pendingReelsAction=null;window._pendingReelsVideo=null;
+        }
+      }else{
+        err.textContent=r.error||'Invalid code';err.style.display='block';
+        btn.textContent='Verify & Continue';btn.disabled=false;
+      }
+    }catch(e){
+      err.textContent='Network error';err.style.display='block';
+      btn.textContent='Verify & Continue';btn.disabled=false;
+    }
+  };
+
+  window._sgAuthBackToPhone=function(){_renderPhoneStep();};
+
+  window._sgShowAuthSheet=function(mode){
+    _sheetMode=mode||'book';
+    if(!_sheetEl)_buildSheet();
+    else _renderPhoneStep();
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){
+        _sheetEl.classList.add('open');
+      });
+    });
+  };
+
+  window._sgCloseAuthSheet=function(){
+    if(!_sheetEl)return;
+    _sheetEl.classList.remove('open');
+  };
 })();
 
