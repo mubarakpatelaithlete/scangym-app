@@ -1453,14 +1453,14 @@ function SearchPage(){
           var _calDate=_gbs.selectedDate||(function(){var _d=new Date();var _mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return _d.getDate()+' '+_mo[_d.getMonth()]})();
           if(_calDate!=='Today'){var _dp=_calDate.split('-');if(_dp.length===3){var _months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];_calDate=parseInt(_dp[2])+' '+(_months[parseInt(_dp[1])-1]||_dp[1]);}}
           html+='<div class="tt-actions">';
-          /* FIX #4: 📍 pin + 🔍 search on right side action column */
+          /* Button order: Find → When → What → Pay → Info (Uber booking flow) */
           html+='<div class="tt-action" onclick="event.stopPropagation();findGyms()"><div class="tt-action-btn">\u{1F4CD}</div><div class="tt-action-label">Near Me</div></div>';
           html+='<div class="tt-action" onclick="event.stopPropagation();window._openSearchOverlay()"><div class="tt-action-btn">\u{1F50D}</div><div class="tt-action-label">Search</div></div>';
-          html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'reviews\')"><div class="tt-action-btn">\u2B50</div><div class="tt-action-label">'+_reviewLabel+'</div></div>';
-          html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'hours\')"><div class="tt-action-btn">\u{1F550}</div><div class="tt-action-label" style="color:'+_hoursColor+'">'+_hoursLabel+'</div></div>';
-          html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'payment\')"><div class="tt-action-btn">\u{1F4B3}</div><div class="tt-action-label">'+_payLabel+'</div></div>';
-          html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'passes\')"><div class="tt-action-btn">\u{1F39F}\uFE0F</div><div class="tt-action-label">'+_passLabel+'</div></div>';
           html+='<div class="tt-action" onclick="event.stopPropagation();showCalendarPicker(\''+c.id+'\')"><div class="tt-action-btn">\u{1F4C5}</div><div class="tt-action-label">'+_calDate+'</div></div>';
+          html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'passes\')"><div class="tt-action-btn">\u{1F39F}\uFE0F</div><div class="tt-action-label">'+_passLabel+'</div></div>';
+          html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'payment\')"><div class="tt-action-btn">\u{1F4B3}</div><div class="tt-action-label">'+_payLabel+'</div></div>';
+          html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'hours\')"><div class="tt-action-btn">\u{1F550}</div><div class="tt-action-label" style="color:'+_hoursColor+'">'+_hoursLabel+'</div></div>';
+          html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'reviews\')"><div class="tt-action-btn">\u2B50</div><div class="tt-action-label">'+_reviewLabel+'</div></div>';
           /* #104: Like button — removed, creator features moved to Profile tab */
           /* #59 cleanup: equipment & facilities buttons removed per user request */
           /* map button removed */
@@ -1537,14 +1537,14 @@ function SearchPage(){
               var _cd2=_gbs2.selectedDate||(function(){var _d=new Date();var _mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return _d.getDate()+' '+_mo[_d.getMonth()]})();
               if(_cd2!=='Today'){var _dp2=_cd2.split('-');if(_dp2.length===3){var _mo2=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];_cd2=parseInt(_dp2[2])+' '+(_mo2[parseInt(_dp2[1])-1]||_dp2[1]);}}
               cardHtml+='<div class="tt-actions">';
-              /* FIX #4: 📍 pin + 🔍 search on right side (lazy cards too) */
+              /* Button order: Find → When → What → Pay → Info (lazy cards) */
               cardHtml+='<div class="tt-action" onclick="event.stopPropagation();findGyms()"><div class="tt-action-btn">\u{1F4CD}</div><div class="tt-action-label">Near Me</div></div>';
               cardHtml+='<div class="tt-action" onclick="event.stopPropagation();window._openSearchOverlay()"><div class="tt-action-btn">\u{1F50D}</div><div class="tt-action-label">Search</div></div>';
-              cardHtml+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'reviews\')"><div class="tt-action-btn">\u2B50</div><div class="tt-action-label">'+_rl2+'</div></div>';
-              cardHtml+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'hours\')"><div class="tt-action-btn">\u{1F550}</div><div class="tt-action-label" style="color:'+_hc2+'">'+_hl2+'</div></div>';
-              cardHtml+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'payment\')"><div class="tt-action-btn">\u{1F4B3}</div><div class="tt-action-label">'+_pl2+'</div></div>';
-              cardHtml+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'passes\')"><div class="tt-action-btn">\u{1F39F}\uFE0F</div><div class="tt-action-label">'+_psl2+'</div></div>';
               cardHtml+='<div class="tt-action" onclick="event.stopPropagation();showCalendarPicker(\''+c.id+'\')"><div class="tt-action-btn">\u{1F4C5}</div><div class="tt-action-label">'+_cd2+'</div></div>';
+              cardHtml+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'passes\')"><div class="tt-action-btn">\u{1F39F}\uFE0F</div><div class="tt-action-label">'+_psl2+'</div></div>';
+              cardHtml+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'payment\')"><div class="tt-action-btn">\u{1F4B3}</div><div class="tt-action-label">'+_pl2+'</div></div>';
+              cardHtml+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'hours\')"><div class="tt-action-btn">\u{1F550}</div><div class="tt-action-label" style="color:'+_hc2+'">'+_hl2+'</div></div>';
+              cardHtml+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'reviews\')"><div class="tt-action-btn">\u2B50</div><div class="tt-action-label">'+_rl2+'</div></div>';
               cardHtml+='</div>';
               /* Bottom info — match initial cards */
               cardHtml+='<div class="tt-info">';
