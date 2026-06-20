@@ -11700,12 +11700,12 @@ function ChatTabPage(){
   };
   function _getResponse(msg){
     var m=msg.toLowerCase();
+    if(m.indexOf('5k')>=0||m.indexOf('couch')>=0||m.indexOf('cardio')>=0)return aiResponses.couch[0];
     if(m.indexOf('workout')>=0||m.indexOf('plan')>=0||m.indexOf('exercise')>=0||m.indexOf('create')>=0)return aiResponses.workout[0];
     if(m.indexOf('gym')>=0||m.indexOf('find')>=0||m.indexOf('near')>=0||m.indexOf('book')>=0)return aiResponses.gym[0];
     if(m.indexOf('meal')>=0||m.indexOf('food')>=0||m.indexOf('protein')>=0||m.indexOf('nutrition')>=0||m.indexOf('eat')>=0)return aiResponses.meal[0];
     if(m.indexOf('progress')>=0||m.indexOf('track')>=0||m.indexOf('measure')>=0)return aiResponses.progress[0];
-    if(m.indexOf('5k')>=0||m.indexOf('couch')>=0||m.indexOf('run')>=0||m.indexOf('cardio')>=0)return aiResponses.couch[0];
-    if(m.indexOf('recover')>=0||m.indexOf('rest')>=0||m.indexOf('sleep')>=0||m.indexOf('stretch')>=0)return aiResponses.recovery[0];
+    if(m.indexOf('recover')>=0||m.indexOf('rest')>=0||m.indexOf('sleep')>=0||m.indexOf('stretch')>=0||m.indexOf('run')>=0)return aiResponses.recovery[0];
     return aiResponses.default[Math.floor(Math.random()*aiResponses.default.length)];
   }
   function _sendChat(){
