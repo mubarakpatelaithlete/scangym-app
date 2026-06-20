@@ -291,6 +291,7 @@ const apiPaths = [
   '/api/auth', '/api/bookings', '/api/payment', '/api/live',
   '/api/geolocation',
   '/api/streaks',
+  '/api/channels',
 ];
 apiPaths.forEach(p => app.use(p, express.json()));
 

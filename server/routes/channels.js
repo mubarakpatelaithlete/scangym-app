@@ -15,6 +15,7 @@
 
 const express = require('express');
 const router = express.Router();
+router.use(express.json());
 const pool = require('../middleware/db');
 const crypto = require('crypto');
 
@@ -31,22 +32,12 @@ const CHANNELS = [
 ];
 
 // ─── DB migration (auto-creates table on first load) ────────
-let tableReady = false;
-async function ensureTable() {
-  if (tableReady) return;
+(async () => {
   try {
-    // Check if table exists and has correct schema
-    const check = await pool.query(
-      "SELECT data_type FROM information_schema.columns WHERE table_name = 'user_channels' AND column_name = 'user_id'"
-    );
-    if (check.rows.length > 0 && check.rows[0].data_type !== 'uuid') {
-      console.log('[user_channels] Dropping old table (wrong user_id type)...');
-      await pool.query('DROP TABLE IF EXISTS user_channels CASCADE');
-    }
     await pool.query(`
       CREATE TABLE IF NOT EXISTS user_channels (
         id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-        user_id UUID NOT NULL,
+        user_id VARCHAR(255) NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
         channel VARCHAR(50) NOT NULL,
         channel_user_id VARCHAR(255),
         channel_username VARCHAR(255),
@@ -55,18 +46,15 @@ async function ensureTable() {
         is_active BOOLEAN DEFAULT true,
         metadata JSONB DEFAULT '{}',
         UNIQUE(user_id, channel)
-      )
+      );
+      CREATE INDEX IF NOT EXISTS idx_user_channels_user ON user_channels(user_id);
+      CREATE INDEX IF NOT EXISTS idx_user_channels_channel ON user_channels(channel, channel_user_id);
     `);
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_user_channels_user ON user_channels(user_id)');
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_user_channels_channel ON user_channels(channel, channel_user_id)');
-    tableReady = true;
-    console.log('[user_channels] Table ready');
+    console.log('✅ DB migration: user_channels table ready');
   } catch (err) {
-    console.error('[user_channels] Migration error:', err.message);
+    console.error('DB migration (user_channels):', err.message);
   }
-}
-// Run migration on startup
-ensureTable().catch(e => console.error('[user_channels] init error:', e.message));
+})();
 
 // Pending link tokens (in-memory, expires after 10 minutes)
 const pendingLinks = new Map();
@@ -74,8 +62,6 @@ const pendingLinks = new Map();
 // ─── GET /api/channels — List channels + user connections ───
 router.get('/', async (req, res) => {
   try {
-    await ensureTable();
-
     const userId = req.session?.userId;
     let connections = [];
 
@@ -123,21 +109,18 @@ router.get('/', async (req, res) => {
 
 // ─── POST /api/channels/connect — Connect a channel ─────────
 router.post('/connect', async (req, res) => {
+  const userId = req.session?.userId;
+  if (!userId) return res.status(401).json({ error: 'Please log in first' });
+
+  const { channel, channelUserId, channelUsername, metadata } = req.body;
+  if (!channel) return res.status(400).json({ error: 'channel is required' });
+
+  // Validate channel exists
+  const channelConfig = CHANNELS.find(c => c.id === channel);
+  if (!channelConfig) return res.status(400).json({ error: 'Unknown channel' });
+  if (channelConfig.status === 'coming_soon') return res.status(400).json({ error: 'This channel is coming soon' });
+
   try {
-    const userId = req.session?.userId;
-    console.log('[Channels] Connect request, userId:', userId);
-    if (!userId) return res.status(401).json({ error: 'Please log in first' });
-
-    const { channel, channelUserId, channelUsername, metadata } = req.body;
-    console.log('[Channels] Connect:', { channel, channelUserId, channelUsername });
-    if (!channel) return res.status(400).json({ error: 'channel is required' });
-
-    const channelConfig = CHANNELS.find(c => c.id === channel);
-    if (!channelConfig) return res.status(400).json({ error: 'Unknown channel' });
-    if (channelConfig.status === 'coming_soon') return res.status(400).json({ error: 'This channel is coming soon' });
-
-    await ensureTable();
-
     await pool.query(`
       INSERT INTO user_channels (user_id, channel, channel_user_id, channel_username, metadata, is_active, connected_at)
       VALUES ($1, $2, $3, $4, $5, true, NOW())
@@ -145,11 +128,10 @@ router.post('/connect', async (req, res) => {
       DO UPDATE SET channel_user_id = $3, channel_username = $4, metadata = $5, is_active = true, connected_at = NOW()
     `, [userId, channel, channelUserId || null, channelUsername || null, JSON.stringify(metadata || {})]);
 
-    console.log('[Channels] Connected successfully:', channel);
-    res.json({ success: true, channel, message: channelConfig.name + ' connected!' });
+    res.json({ success: true, channel, message: `${channelConfig.name} connected!` });
   } catch (err) {
-    console.error('[Channels] Connect error:', err.message, err.stack);
-    try { res.status(500).json({ error: 'Failed to connect: ' + err.message }); } catch(e) {}
+    console.error('[Channels] Connect error:', err.message);
+    res.status(500).json({ error: 'Failed to connect channel' });
   }
 });
 
@@ -205,32 +187,29 @@ router.get('/telegram/deeplink', async (req, res) => {
 
 // ─── POST /api/channels/telegram/verify — Webhook calls this ─
 router.post('/telegram/verify', async (req, res) => {
+  const { token, telegramUserId, telegramUsername, telegramName } = req.body;
+  if (!token) return res.status(400).json({ error: 'token required' });
+
+  const pending = pendingLinks.get(token);
+  if (!pending) return res.status(400).json({ error: 'Invalid or expired token' });
+  if (Date.now() - pending.createdAt > 600000) {
+    pendingLinks.delete(token);
+    return res.status(400).json({ error: 'Token expired' });
+  }
+
   try {
-    const { token, telegramUserId, telegramUsername, telegramName } = req.body;
-    console.log('[Channels] Verify:', { token: token?.substring(0,8), telegramUserId });
-    if (!token) return res.status(400).json({ error: 'token required' });
-
-    const pending = pendingLinks.get(token);
-    if (!pending) return res.status(400).json({ error: 'Invalid or expired token' });
-    if (Date.now() - pending.createdAt > 600000) {
-      pendingLinks.delete(token);
-      return res.status(400).json({ error: 'Token expired' });
-    }
-
-    await ensureTable();
     await pool.query(`
       INSERT INTO user_channels (user_id, channel, channel_user_id, channel_username, metadata, is_active, connected_at)
       VALUES ($1, 'telegram', $2, $3, $4, true, NOW())
-      ON CONFLICT (user_id, channel)
+      ON CONFLICT (user_id, channel) 
       DO UPDATE SET channel_user_id = $2, channel_username = $3, metadata = $4, is_active = true, connected_at = NOW()
     `, [pending.userId, String(telegramUserId), telegramUsername || null, JSON.stringify({ name: telegramName })]);
 
     pendingLinks.delete(token);
-    console.log('[Channels] Telegram verified for user:', pending.userId);
     res.json({ success: true, message: 'Telegram connected!' });
   } catch (err) {
-    console.error('[Channels] Telegram verify error:', err.message, err.stack);
-    try { res.status(500).json({ error: 'Failed to verify: ' + err.message }); } catch(e) {}
+    console.error('[Channels] Telegram verify error:', err.message);
+    res.status(500).json({ error: 'Failed to verify' });
   }
 });
 
@@ -280,35 +259,3 @@ router.post('/welcome', async (req, res) => {
 });
 
 module.exports = router;
-
-// ─── GET /api/channels/discord/invite — Get Discord bot invite URL ───
-router.get('/discord/invite', async (req, res) => {
-  try {
-    // Try to get the bot user ID from the discord module status
-    let botId = '';
-    try {
-      const discord = require('../chatbot/discord');
-      const status = discord.getStatus();
-      if (status && status.bot && status.bot.id) botId = status.bot.id;
-    } catch(e) {}
-
-    if (!botId) {
-      return res.json({ inviteUrl: null, message: 'Discord bot not configured' });
-    }
-
-    const inviteUrl = `https://discord.com/api/oauth2/authorize?client_id=${botId}&permissions=2048&scope=bot`;
-    res.json({ inviteUrl, botId });
-  } catch (err) {
-    console.error('[Channels] Discord invite error:', err.message);
-    res.status(500).json({ error: 'Failed to get invite URL' });
-  }
-});
-
-// ─── GET /api/channels/whatsapp/number — Get WhatsApp number ───
-router.get('/whatsapp/number', async (req, res) => {
-  const phone = process.env.TWILIO_PHONE_NUMBER || '';
-  if (!phone) {
-    return res.json({ number: null, message: 'WhatsApp number not configured' });
-  }
-  res.json({ number: phone });
-});
