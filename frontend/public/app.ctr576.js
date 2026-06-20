@@ -4247,7 +4247,8 @@ window._calUpdateSummary=function(){
   else if(s.selectedDate===tomorrowStr)dateLabel='Tomorrow';
   else dateLabel=dayNames[d.getDay()]+', '+d.getDate()+' '+monthNames[d.getMonth()];
 
-  const cp=window._calSelectedPass||{icon:'⚡',name:'Day Pass'};
+  const _rawCp=window._calSelectedPass;
+  const cp=(typeof _rawCp==='object'&&_rawCp)?_rawCp:{icon:'⚡',name:'Day Pass'};
   dateEl.textContent=cp.icon+' '+cp.name+' · '+dateLabel;
 
   const gym=state.currentGym||state.gyms.find(g=>(g.placeId||g.place_id||g.id)==s.gymId)||{};
@@ -4813,10 +4814,12 @@ window.openDateSheet=function(){
   }
 };
 
-// Pass type selector in calendar
-window._calSelectedPass='day';
+// Pass type selector in calendar (legacy date sheet)
+// Must use same object format as new calendar picker to avoid 'undefined undefined' bug
+var _passLookup={day:{type:'day',icon:'⚡',name:'Day Pass'},'3day':{type:'3day',icon:'🔥',name:'3-Day Pass'},weekly:{type:'weekly',icon:'📅',name:'Weekly Pass'},monthly:{type:'monthly',icon:'🏆',name:'Monthly Pass'},couple:{type:'couple',icon:'👫',name:'Couple Pass'},group:{type:'group',icon:'👥',name:'Group Pass'}};
+window._calSelectedPass=_passLookup['day'];
 window._selectCalPass=function(el,passType){
-  window._calSelectedPass=passType;
+  window._calSelectedPass=_passLookup[passType]||{type:passType,icon:'⚡',name:passType+' Pass'};
   document.querySelectorAll('.sg-pass-chip').forEach(function(c){
     if(c.dataset.pass===passType){c.style.background='#fff';c.style.color='#000';c.style.borderColor='transparent';c.classList.add('selected');}
     else{c.style.background='rgba(255,255,255,.06)';c.style.color='rgba(255,255,255,.6)';c.style.borderColor='rgba(255,255,255,.1)';c.classList.remove('selected');}
@@ -4842,7 +4845,7 @@ window.confirmDateSheet=function(){
   window._gymBookingState.selectedTime=time;
   // Store selected pass type from calendar
   if(window._calSelectedPass){
-    window._gymBookingState.selectedPass=window._calSelectedPass;
+    window._gymBookingState.selectedPass=typeof window._calSelectedPass==='object'?window._calSelectedPass.type:window._calSelectedPass;
   }
   // Update calendar button display
   const timeEl=document.getElementById('gym-sticky-cal-time');
