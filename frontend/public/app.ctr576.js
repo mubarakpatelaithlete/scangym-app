@@ -11479,100 +11479,167 @@ window._closeSearchOverlay=function(){
 // ─── Bottom Tab Bar (Polished — IG/TikTok/YT style) ───
 // ═══ MUSIC TAB — Audio fitness content ═══
 function MusicTabPage(){
-  return`<div style="max-width:480px;margin:0 auto;padding:16px 16px 80px">
-    <div style="text-align:center;padding:20px 0">
-      <h1 style="font-size:24px;font-weight:900;color:#fff;margin-bottom:4px">🎵 Music</h1>
-      <p style="color:rgba(255,255,255,.4);font-size:13px">Workout playlists & gym beats</p>
-    </div>
-
-    <!-- Featured Playlist -->
-    <div style="background:linear-gradient(135deg,rgba(168,85,247,.15),rgba(236,72,153,.1));border:1px solid rgba(168,85,247,.2);border-radius:20px;padding:24px;margin-bottom:16px;text-align:center">
-      <div style="font-size:48px;margin-bottom:12px">🔥</div>
-      <p style="color:#fff;font-size:18px;font-weight:800;margin-bottom:4px">Beast Mode Mix</p>
-      <p style="color:rgba(255,255,255,.4);font-size:12px;margin-bottom:16px">High energy gym playlist · 45 min</p>
-      <button onclick="sgToast('🎵 Music player coming soon!','info',3000)" style="background:linear-gradient(135deg,#a855f7,#ec4899);color:#fff;border:none;padding:14px 32px;border-radius:14px;font-weight:700;font-size:15px;cursor:pointer;box-shadow:0 4px 20px rgba(168,85,247,.3)">▶ Play Now</button>
-    </div>
-
-    <!-- Genre Grid -->
-    <p style="color:#fff;font-weight:700;font-size:16px;margin-bottom:12px">Browse by Mood</p>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
-      ${[{e:'💪',n:'Power Lift',c:'#ef4444'},{e:'🏃',n:'Cardio Rush',c:'#f97316'},{e:'🧘',n:'Yoga Flow',c:'#22c55e'},{e:'🥊',n:'Boxing Beat',c:'#3b82f6'},{e:'🏋️',n:'Heavy Metal',c:'#8b5cf6'},{e:'🎧',n:'Lo-Fi Focus',c:'#06b6d4'},{e:'🔥',n:'HIIT Timer',c:'#eab308'},{e:'🌙',n:'Cool Down',c:'#64748b'}].map(function(g){return '<div onclick="sgToast(\\'🎵 '+g.n+' playlist coming soon!\\',\\'info\\',2000)" style="background:linear-gradient(135deg,'+g.c+'15,'+g.c+'08);border:1px solid '+g.c+'25;border-radius:14px;padding:16px;cursor:pointer;text-align:center;transition:transform .15s" ontouchstart="this.style.transform=\\'scale(.97)\\'" ontouchend="this.style.transform=\\'\\'"><span style="font-size:28px;display:block;margin-bottom:6px">'+g.e+'</span><p style="color:#fff;font-size:13px;font-weight:700">'+g.n+'</p></div>';}).join('')}
-    </div>
-
-    <!-- Coming Soon Banner -->
-    <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:20px;text-align:center">
-      <p style="color:rgba(255,255,255,.4);font-size:13px">🎶 Full music player with gym workout playlists launching soon.</p>
-      <p style="color:rgba(255,255,255,.25);font-size:11px;margin-top:4px">Your gym session, your soundtrack.</p>
+  // ═══ FULL-SCREEN SPOTIFY-STYLE MUSIC — TikTok immersive layout ═══
+  var playlists=[
+    {id:1,title:'Beast Mode',sub:'High intensity \xb7 45 min',emoji:'\ud83d\udd25',grad:'linear-gradient(135deg,#dc2626,#991b1b)',plays:'12.4K'},
+    {id:2,title:'Cardio Rush',sub:'Running & HIIT \xb7 38 min',emoji:'\ud83c\udfc3',grad:'linear-gradient(135deg,#f97316,#c2410c)',plays:'8.7K'},
+    {id:3,title:'Power Lift',sub:'Heavy sets \xb7 52 min',emoji:'\ud83d\udcaa',grad:'linear-gradient(135deg,#3b82f6,#1d4ed8)',plays:'15.1K'},
+    {id:4,title:'Yoga Flow',sub:'Stretching & calm \xb7 30 min',emoji:'\ud83e\uddd8',grad:'linear-gradient(135deg,#22c55e,#15803d)',plays:'6.2K'},
+    {id:5,title:'Boxing Beat',sub:'Combat rhythm \xb7 40 min',emoji:'\ud83e\udd4a',grad:'linear-gradient(135deg,#a855f7,#7c3aed)',plays:'9.8K'},
+    {id:6,title:'Lo-Fi Focus',sub:'Zen concentration \xb7 60 min',emoji:'\ud83c\udfa7',grad:'linear-gradient(135deg,#06b6d4,#0891b2)',plays:'11.3K'},
+    {id:7,title:'Heavy Metal',sub:'Aggressive lifts \xb7 48 min',emoji:'\ud83e\udd18',grad:'linear-gradient(135deg,#64748b,#334155)',plays:'7.5K'},
+    {id:8,title:'Cool Down',sub:'Recovery & stretch \xb7 20 min',emoji:'\ud83c\udf19',grad:'linear-gradient(135deg,#6366f1,#4338ca)',plays:'4.9K'}
+  ];
+  var _ci=window._sgMusicIdx||0;var pl=playlists[_ci];
+  var tracks=[
+    {n:'Unstoppable',a:'The Score',d:'3:24'},{n:'Till I Collapse',a:'Eminem',d:'4:57'},
+    {n:'Stronger',a:'Kanye West',d:'5:11'},{n:'Eye of the Tiger',a:'Survivor',d:'4:05'},
+    {n:'Lose Yourself',a:'Eminem',d:'5:26'},{n:'Remember the Name',a:'Fort Minor',d:'3:50'},
+    {n:'Thunderstruck',a:'AC/DC',d:'4:52'},{n:'Can\'t Hold Us',a:'Macklemore',d:'4:18'}
+  ];
+  return`<div style="position:relative;width:100%;min-height:calc(100vh - 56px);overflow-y:auto;overflow-x:hidden;background:#0a0a16;-webkit-overflow-scrolling:touch">
+    <div style="position:absolute;top:0;left:0;right:0;height:50%;${pl.grad};opacity:.12"></div>
+    <div style="position:absolute;top:0;left:0;right:0;height:55%;background:linear-gradient(180deg,transparent 40%,#0a0a16 100%)"></div>
+    <div style="position:relative;z-index:2;padding-bottom:20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px 8px">
+        <span style="color:#fff;font-size:18px;font-weight:800">\ud83c\udfb5 Music</span>
+        <div onclick="sgToast('\ud83d\udd0d Search coming soon','info',2000)" style="width:36px;height:36px;background:rgba(255,255,255,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px">\ud83d\udd0d</div>
+      </div>
+      <div style="text-align:center;padding:12px 32px 16px">
+        <div style="width:200px;height:200px;margin:0 auto 16px;border-radius:24px;${pl.grad};display:flex;align-items:center;justify-content:center;font-size:72px;box-shadow:0 20px 60px rgba(0,0,0,.5)">${pl.emoji}</div>
+        <p style="color:#fff;font-size:22px;font-weight:900;margin-bottom:2px">${pl.title}</p>
+        <p style="color:rgba(255,255,255,.45);font-size:13px;margin-bottom:16px">${pl.sub} \xb7 ${pl.plays} plays</p>
+        <div style="display:flex;align-items:center;justify-content:center;gap:28px">
+          <div onclick="window._sgMusicIdx=(_ci>0?_ci-1:7);render()" style="width:44px;height:44px;background:rgba(255,255,255,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px">\u23ee</div>
+          <div onclick="sgToast('\u25b6 Playing '+pl.title,'info',2000)" style="width:64px;height:64px;background:#FF6D00;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:26px;box-shadow:0 4px 24px rgba(255,109,0,.4)">\u25b6</div>
+          <div onclick="window._sgMusicIdx=((_ci+1)%8);render()" style="width:44px;height:44px;background:rgba(255,255,255,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px">\u23ed</div>
+        </div>
+        <div style="margin:16px 24px 4px;height:3px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden"><div style="width:35%;height:100%;background:#FF6D00;border-radius:2px"></div></div>
+        <div style="display:flex;justify-content:space-between;padding:0 28px"><span style="color:rgba(255,255,255,.3);font-size:10px">1:12</span><span style="color:rgba(255,255,255,.3);font-size:10px">3:24</span></div>
+      </div>
+      <div style="padding:0 16px">
+        <p style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;padding:0 4px">Up Next</p>
+        ${tracks.map(function(t,i){return '<div onclick="sgToast(\\'\u25b6 '+t.n+'\\',\\'info\\',2000)" style="display:flex;align-items:center;gap:12px;padding:12px;background:'+(i===0?'rgba(255,109,0,.08)':'rgba(255,255,255,.03)')+';border:1px solid '+(i===0?'rgba(255,109,0,.15)':'rgba(255,255,255,.05)')+';border-radius:14px;margin-bottom:6px;cursor:pointer" ontouchstart="this.style.background=\\'rgba(255,255,255,.08)\\'" ontouchend="this.style.background=\\''+(i===0?'rgba(255,109,0,.08)':'rgba(255,255,255,.03)')+'\\'">'
+          +'<div style="width:40px;height:40px;background:rgba(255,255,255,.06);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;color:'+(i===0?'#FF6D00':'rgba(255,255,255,.4)')+';font-weight:800">'+(i+1)+'</div>'
+          +'<div style="flex:1;min-width:0"><p style="color:#fff;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+t.n+'</p><p style="color:rgba(255,255,255,.35);font-size:11px">'+t.a+'</p></div>'
+          +'<span style="color:rgba(255,255,255,.3);font-size:11px;flex-shrink:0">'+t.d+'</span></div>';}).join('')}
+        <p style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin:16px 0 10px;padding:0 4px">All Playlists</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-bottom:16px">
+          ${playlists.map(function(p,i){return '<div onclick="window._sgMusicIdx='+i+';render()" style="background:rgba(255,255,255,.04);border:1px solid '+(i===_ci?'rgba(255,109,0,.3)':'rgba(255,255,255,.06)')+';border-radius:14px;padding:14px;cursor:pointer;text-align:center;transition:.15s" ontouchstart="this.style.transform=\\'scale(.96)\\'" ontouchend="this.style.transform=\\'\\'"><span style="font-size:32px;display:block;margin-bottom:6px">'+p.emoji+'</span><p style="color:#fff;font-size:12px;font-weight:700">'+p.title+'</p><p style="color:rgba(255,255,255,.3);font-size:10px">'+p.plays+' plays</p></div>';}).join('')}
+        </div>
+      </div>
     </div>
   </div>`;
 }
 
-// ═══ PHOTOS TAB — Carousel / photo feed ═══
+// ═══ PHOTOS TAB — Full-screen TikTok-style image carousel ═══
 function PhotosTabPage(){
-  return`<div style="max-width:480px;margin:0 auto;padding:16px 16px 80px">
-    <div style="text-align:center;padding:20px 0">
-      <h1 style="font-size:24px;font-weight:900;color:#fff;margin-bottom:4px">📸 Photos</h1>
-      <p style="color:rgba(255,255,255,.4);font-size:13px">Gym transformations & workout inspo</p>
+  var categories=['🔥 Trending','💪 Before/After','🏋️ Form Tips','🍽 Meal Prep','📊 Progress','🏅 PRs'];
+  var _catIdx=window._sgPhotosCat||0;
+  var photos=[
+    {emoji:'🏋️',title:'Morning Deadlift PR',user:'@fitking_23',likes:'2.4K',bg:'linear-gradient(135deg,#1a1a2e,#16213e)'},
+    {emoji:'💪',title:'6 Month Transformation',user:'@sarah_gains',likes:'8.1K',bg:'linear-gradient(135deg,#0f3460,#1a1a2e)'},
+    {emoji:'🥗',title:'High Protein Meal Prep',user:'@mealmaster',likes:'3.7K',bg:'linear-gradient(135deg,#1b4332,#081c15)'},
+    {emoji:'🏃',title:'5K Personal Best!',user:'@runner_mike',likes:'1.9K',bg:'linear-gradient(135deg,#312e81,#1e1b4b)'},
+    {emoji:'🧘',title:'Sunrise Yoga Session',user:'@zen_fit',likes:'5.2K',bg:'linear-gradient(135deg,#422006,#1c1917)'},
+    {emoji:'🥊',title:'Boxing Session Highlights',user:'@boxfit_uk',likes:'4.6K',bg:'linear-gradient(135deg,#7f1d1d,#450a0a)'},
+    {emoji:'📊',title:'12 Week Progress Update',user:'@trackingpro',likes:'6.3K',bg:'linear-gradient(135deg,#1e3a5f,#0c1929)'},
+    {emoji:'🏅',title:'Competition Day!',user:'@powerlifter99',likes:'9.8K',bg:'linear-gradient(135deg,#3f3f46,#18181b)'},
+    {emoji:'🔥',title:'Leg Day Pump',user:'@quad_queen',likes:'3.1K',bg:'linear-gradient(135deg,#4c0519,#1c0612)'}
+  ];
+  return`<div style="position:relative;width:100%;min-height:calc(100vh - 56px);overflow-y:auto;overflow-x:hidden;background:#0a0a16;-webkit-overflow-scrolling:touch">
+    <!-- Top bar -->
+    <div style="position:sticky;top:0;z-index:10;background:rgba(10,10,22,.95);backdrop-filter:blur(16px);padding:16px 16px 0">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <span style="color:#fff;font-size:18px;font-weight:800">📸 Photos</span>
+        <div style="display:flex;gap:8px">
+          <div onclick="sgToast('📷 Upload coming soon','info',2000)" style="width:36px;height:36px;background:rgba(255,109,0,.12);border:1px solid rgba(255,109,0,.25);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px">➕</div>
+        </div>
+      </div>
+      <!-- Category pills (horizontal scroll) -->
+      <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:12px;-webkit-overflow-scrolling:touch">
+        ${categories.map(function(c,i){return '<button onclick="window._sgPhotosCat='+i+';render()" style="flex-shrink:0;background:'+(i===_catIdx?'rgba(255,109,0,.15)':'rgba(255,255,255,.04)')+';border:1px solid '+(i===_catIdx?'rgba(255,109,0,.3)':'rgba(255,255,255,.08)')+';color:'+(i===_catIdx?'#FF6D00':'rgba(255,255,255,.5)')+';padding:8px 16px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">'+c+'</button>';}).join('')}
+      </div>
     </div>
-
-    <!-- Photo Categories -->
-    <div style="display:flex;gap:8px;margin-bottom:16px;overflow-x:auto;padding-bottom:4px">
-      ${['🔥 Trending','💪 Before/After','🏋️ Form Tips','🍽 Meal Prep','📊 Progress'].map(function(c,i){return '<button style="flex-shrink:0;background:'+(i===0?'rgba(255,109,0,.15)':'rgba(255,255,255,.04)')+';border:1px solid '+(i===0?'rgba(255,109,0,.3)':'rgba(255,255,255,.08)')+';color:'+(i===0?'#FF6D00':'rgba(255,255,255,.5)')+';padding:8px 16px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">'+c+'</button>';}).join('')}
-    </div>
-
-    <!-- Photo Grid Placeholder -->
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;margin-bottom:20px">
-      ${Array(9).fill(0).map(function(_,i){
-        var colors=['#1a1a2e','#16213e','#0f3460','#1a1a2e','#16213e','#0f3460','#1a1a2e','#16213e','#0f3460'];
-        var emojis=['🏋️','💪','🥗','🏃','🧘','🥊','📊','🏅','🔥'];
-        return '<div style="aspect-ratio:1;background:'+colors[i]+';border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:28px;cursor:pointer" onclick="sgToast(\\'📸 Photo carousel coming soon!\\',\\'info\\',2000)">'+emojis[i]+'</div>';
-      }).join('')}
-    </div>
-
-    <!-- Upload CTA -->
-    <div style="background:linear-gradient(135deg,rgba(255,109,0,.08),rgba(255,145,0,.04));border:1px solid rgba(255,109,0,.15);border-radius:16px;padding:20px;text-align:center;margin-bottom:16px">
-      <p style="font-size:32px;margin-bottom:8px">📷</p>
-      <p style="color:#fff;font-weight:700;font-size:15px;margin-bottom:4px">Share Your Gym Moments</p>
-      <p style="color:rgba(255,255,255,.35);font-size:12px;margin-bottom:12px">Post transformation photos, gym selfies, and workout wins</p>
-      <button onclick="sgToast('📸 Photo uploads coming soon!','info',2000)" style="background:#FF6D00;color:#fff;border:none;padding:12px 28px;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer">Upload Photo</button>
-    </div>
-
-    <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px;text-align:center">
-      <p style="color:rgba(255,255,255,.4);font-size:13px">📸 Instagram-style photo carousel launching soon</p>
+    <!-- Full-screen style photo cards (each takes most of viewport like TikTok) -->
+    <div style="padding:4px 12px 20px">
+      ${photos.map(function(p,i){return '<div onclick="sgToast(\\'📸 Full-screen view coming soon\\',\\'info\\',2000)" style="width:100%;height:420px;margin-bottom:8px;border-radius:20px;overflow:hidden;position:relative;cursor:pointer;${p.bg}">'
+        +'<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:80px">'+p.emoji+'</div>'
+        +'<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.75));padding:20px 16px 16px">'
+        +'<p style="color:#fff;font-size:16px;font-weight:800;margin-bottom:4px;text-shadow:0 2px 8px rgba(0,0,0,.5)">'+p.title+'</p>'
+        +'<div style="display:flex;align-items:center;justify-content:space-between">'
+        +'<span style="color:rgba(255,255,255,.6);font-size:12px">'+p.user+'</span>'
+        +'<div style="display:flex;align-items:center;gap:4px"><span style="font-size:14px">❤️</span><span style="color:rgba(255,255,255,.6);font-size:12px;font-weight:600">'+p.likes+'</span></div>'
+        +'</div></div>'
+        +'<div style="position:absolute;right:12px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:12px">'
+        +'<div style="width:40px;height:40px;background:rgba(255,255,255,.15);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px">❤️</div>'
+        +'<div style="width:40px;height:40px;background:rgba(255,255,255,.15);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px">💬</div>'
+        +'<div style="width:40px;height:40px;background:rgba(255,255,255,.15);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px">📤</div>'
+        +'</div></div>';}).join('')}
     </div>
   </div>`;
 }
 
-// ═══ CHAT TAB — Community text chat ═══
+// ═══ CHAT TAB — AI Chat (ChatGPT/Claude style), full-screen TikTok layout ═══
 function ChatTabPage(){
   var u=state.user;
-  return`<div style="max-width:480px;margin:0 auto;padding:16px 16px 80px">
-    <div style="text-align:center;padding:20px 0">
-      <h1 style="font-size:24px;font-weight:900;color:#fff;margin-bottom:4px">💬 Chat</h1>
-      <p style="color:rgba(255,255,255,.4);font-size:13px">Connect with gym-goers near you</p>
+  // Chat message history (stored in window for session persistence)
+  if(!window._sgChatMsgs){
+    window._sgChatMsgs=[
+      {role:'ai',text:'Hey! 👋 I\'m your ScanGym AI assistant. I can help you with:\n\n💪 Workout plans & exercise tips\n🏋️ Find gyms near you\n🥗 Nutrition advice\n📊 Track your progress\n\nWhat would you like to know?'},
+    ];
+  }
+  var msgs=window._sgChatMsgs;
+  var suggestions=['💪 Create a workout plan','🏋️ Find gyms near me','🥗 Meal plan for muscle gain','📊 How to track progress','🧘 Recovery tips','🏃 Couch to 5K plan'];
+  function _sendChat(){
+    var inp=document.getElementById('sg-chat-input');
+    if(!inp||!inp.value.trim())return;
+    var msg=inp.value.trim();
+    inp.value='';
+    window._sgChatMsgs.push({role:'user',text:msg});
+    // Simulate AI response
+    setTimeout(function(){
+      var responses=[
+        'Great question! Here\'s what I recommend for your fitness journey...\n\n🏋️ Start with compound movements: squats, deadlifts, bench press\n⏱ 3-4 sessions per week, 45-60 minutes each\n🥗 Aim for 1.6-2.2g protein per kg bodyweight\n💤 Get 7-9 hours of sleep\n\nWant me to create a detailed plan?',
+        'I\'d love to help with that! 💪\n\nBased on the latest exercise science:\n\n1. Progressive overload is key — increase weight/reps weekly\n2. Rest 2-3 minutes between heavy sets\n3. Track everything in a training log\n4. Deload every 4-6 weeks\n\nShall I go deeper on any of these?',
+        'Absolutely! Here\'s a science-backed approach:\n\n🔥 For fat loss: caloric deficit of 300-500 kcal/day\n💪 For muscle gain: surplus of 200-300 kcal/day\n🥤 Stay hydrated — 3-4L water daily\n\nThe key is consistency over perfection. Would you like a customized plan?'
+      ];
+      window._sgChatMsgs.push({role:'ai',text:responses[Math.floor(Math.random()*responses.length)]});
+      render();
+      setTimeout(function(){var box=document.getElementById('sg-chat-scroll');if(box)box.scrollTop=box.scrollHeight;},100);
+    },800);
+    render();
+    setTimeout(function(){var box=document.getElementById('sg-chat-scroll');if(box)box.scrollTop=box.scrollHeight;},100);
+  }
+  window._sgSendChat=_sendChat;
+  window._sgChatSuggest=function(txt){window._sgChatMsgs.push({role:'user',text:txt});setTimeout(function(){window._sgChatMsgs.push({role:'ai',text:'Let me help you with that! I\'m working on a personalized response...\n\n✨ This feature is being enhanced. Soon I\'ll connect to real-time gym data, your booking history, and AI-powered workout intelligence.\n\nIn the meantime, check out the Book tab to find gyms near you! 🏋️'});render();setTimeout(function(){var box=document.getElementById('sg-chat-scroll');if(box)box.scrollTop=box.scrollHeight;},100);},800);render();};
+  return`<div style="position:relative;width:100%;height:calc(100vh - 56px);display:flex;flex-direction:column;background:#0a0a16;overflow:hidden">
+    <!-- Top bar -->
+    <div style="flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:rgba(10,10,22,.95);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,.06)">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:36px;height:36px;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 0 12px rgba(255,109,0,.3)">🤖</div>
+        <div><p style="color:#fff;font-size:15px;font-weight:800">ScanGym AI</p><p style="color:rgba(255,255,255,.4);font-size:11px">Online · Powered by AI</p></div>
+      </div>
+      <div onclick="window._sgChatMsgs=null;render()" style="width:36px;height:36px;background:rgba(255,255,255,.06);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px" title="New chat">✨</div>
     </div>
-
-    <!-- Chat Rooms -->
-    <p style="color:#fff;font-weight:700;font-size:16px;margin-bottom:12px">Community Rooms</p>
-    <div style="margin-bottom:20px">
-      ${[
-        {icon:'🏋️',name:'General Gym Chat',members:'2.5K',desc:'Talk about anything gym-related',color:'#FF6D00'},
-        {icon:'💪',name:'Form Check',members:'890',desc:'Post videos for form feedback',color:'#3b82f6'},
-        {icon:'🍽',name:'Nutrition & Meal Prep',members:'1.2K',desc:'Share recipes and diet tips',color:'#22c55e'},
-        {icon:'🏃',name:'Running Club',members:'650',desc:'Running tips, routes & challenges',color:'#f97316'},
-        {icon:'🎯',name:'Accountability Partners',members:'430',desc:'Find a workout buddy near you',color:'#a855f7'},
-        {icon:'📈',name:'Progress Updates',members:'780',desc:'Share your fitness journey',color:'#eab308'}
-      ].map(function(r){return '<div onclick="sgToast(\\'💬 Chat launching soon! Stay tuned.\\',\\'info\\',2000)" style="display:flex;align-items:center;gap:12px;padding:14px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;margin-bottom:8px;cursor:pointer;transition:background .15s" ontouchstart="this.style.background=\\'rgba(255,255,255,.06)\\'" ontouchend="this.style.background=\\'rgba(255,255,255,.03)\\'"><div style="width:44px;height:44px;background:'+r.color+'15;border:1px solid '+r.color+'30;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">'+r.icon+'</div><div style="flex:1;min-width:0"><p style="color:#fff;font-weight:600;font-size:14px">'+r.name+'</p><p style="color:rgba(255,255,255,.3);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+r.desc+'</p></div><div style="text-align:right;flex-shrink:0"><span style="color:rgba(255,255,255,.25);font-size:10px">'+r.members+' members</span></div></div>';}).join('')}
+    <!-- Messages area (scrollable) -->
+    <div id="sg-chat-scroll" style="flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch">
+      ${msgs.map(function(m){
+        if(m.role==='ai'){
+          return '<div style="display:flex;gap:10px;margin-bottom:16px;max-width:85%"><div style="width:28px;height:28px;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;margin-top:2px">🤖</div><div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:18px;border-top-left-radius:4px;padding:12px 16px;color:rgba(255,255,255,.85);font-size:14px;line-height:1.6;white-space:pre-wrap">'+m.text+'</div></div>';
+        }else{
+          return '<div style="display:flex;justify-content:flex-end;margin-bottom:16px"><div style="max-width:80%;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:18px;border-top-right-radius:4px;padding:12px 16px;color:#fff;font-size:14px;line-height:1.5;white-space:pre-wrap">'+m.text+'</div></div>';
+        }
+      }).join('')}
+      ${msgs.length<=1?'<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">'+suggestions.map(function(s){return '<button onclick="window._sgChatSuggest(\\''+s.replace(/'/g,"\\\\'")+'\\');return false" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.6);padding:10px 16px;border-radius:20px;font-size:13px;cursor:pointer;transition:.15s;white-space:nowrap" ontouchstart="this.style.background=\\'rgba(255,255,255,.1)\\'" ontouchend="this.style.background=\\'rgba(255,255,255,.04)\\'">'+s+'</button>';}).join('')+'</div>':''}
     </div>
-
-    ${!u?'<div style="background:rgba(255,109,0,.08);border:1px solid rgba(255,109,0,.15);border-radius:14px;padding:20px;text-align:center"><p style="color:#fff;font-weight:700;margin-bottom:8px">Join the community</p><p style="color:rgba(255,255,255,.4);font-size:12px;margin-bottom:12px">Sign in to chat with other gym-goers</p><button onclick="navigate(\\'/login\\')" style="background:#FF6D00;color:#fff;border:none;padding:12px 28px;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer">Sign In</button></div>':''}
-
-    <!-- DMs Coming Soon -->
-    <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px;text-align:center;margin-top:16px">
-      <p style="color:rgba(255,255,255,.4);font-size:13px">💬 Direct messages & group chats launching soon</p>
+    <!-- Input area (fixed bottom) -->
+    <div style="flex-shrink:0;padding:12px 16px;background:rgba(10,10,22,.98);backdrop-filter:blur(16px);border-top:1px solid rgba(255,255,255,.06)">
+      ${!u?'<div onclick="navigate(\\'/login\\')" style="text-align:center;padding:8px;cursor:pointer"><p style="color:rgba(255,255,255,.5);font-size:13px">Sign in to chat with ScanGym AI</p></div>':'<div style="display:flex;gap:8px;align-items:flex-end"><input id="sg-chat-input" type="text" placeholder="Ask me anything..." onkeydown="if(event.key===\\'Enter\\')window._sgSendChat()" style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:24px;padding:12px 18px;color:#fff;font-size:14px;outline:none;transition:border-color .2s" onfocus="this.style.borderColor=\\'rgba(255,109,0,.4)\\'" onblur="this.style.borderColor=\\'rgba(255,255,255,.1)\\'"><button onclick="window._sgSendChat()" style="width:44px;height:44px;background:#FF6D00;border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;flex-shrink:0;box-shadow:0 2px 12px rgba(255,109,0,.3)">↑</button></div>'}
     </div>
   </div>`;
 }
+
 
 function BottomTabBar(){
   const t=state.activeTab;
@@ -12325,143 +12392,117 @@ window.loadFullProfile=async function(){
 function _isAdmin(u){return u&&['8111c9b2-552a-442c-aeff-0580c60ba75e'].indexOf(u.id)>=0;}
 function MoreHubPage(){
   const u=state.user;
-  const avatar=u?(u.name||u.phone||'U').charAt(0).toUpperCase():'?';
-  const displayName=u?(u.name||u.phone):'Guest';
-  const email=u?.email||'';
-
   function moreItem(icon,title,sub,route){
     return`<div class="sg-more-item" onclick="navigate('${route}')">
       <div class="sg-mi-icon">${icon}</div>
       <div class="sg-mi-text"><h4>${title}</h4>${sub?`<p>${sub}</p>`:''}</div>
-      <span class="sg-mi-arrow">›</span>
+      <span class="sg-mi-arrow">\u203a</span>
     </div>`;
   }
-
-  return(function(){
-  // #30+#31: Full-screen QR hero with TikTok-style action buttons
-  var qrHero='';
+  // ── Full-screen TikTok-style QR profile ──
   if(u){
     var qrData=encodeURIComponent('https://scangym.com/member/'+u.id);
     var qrUrl='https://api.qrserver.com/v1/create-qr-code/?size=400x400&bgcolor=0d0d1a&color=FF6D00&data='+qrData;
     var uName=u.name||u.phone||'Member';
     var since=u.member_since?new Date(u.member_since).toLocaleDateString('en-GB',{month:'short',year:'numeric'}):'2026';
     var tS=u.stats?.totalSessions||0;var tG=u.stats?.totalGyms||0;var stk=u.stats?.streak||0;
-    var tier=tS>=100?{n:'Elite',i:'\u{1F451}',c:'#a855f7'}:tS>=50?{n:'Gold',i:'\u{1F947}',c:'#eab308'}:tS>=10?{n:'Silver',i:'\u{1F948}',c:'#94a3b8'}:{n:'Basic',i:'\u{1F3CB}\uFE0F',c:'#FF6D00'};
-    qrHero='<div style="position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 220px);padding:24px 16px 16px;text-align:center">'
-      +'<div style="margin-bottom:4px;display:flex;align-items:center;gap:8px"><span style="color:#fff;font-size:20px;font-weight:800">'+uName+'</span><span style="background:'+tier.c+'22;color:'+tier.c+';font-size:10px;font-weight:800;padding:3px 10px;border-radius:8px;text-transform:uppercase;letter-spacing:1px">'+tier.i+' '+tier.n+'</span></div>'
-      +'<p style="color:rgba(255,255,255,.4);font-size:12px;margin:0 0 20px">Member since '+since+'</p>'
-      +'<div style="background:rgba(255,109,0,.06);border:2px solid rgba(255,109,0,.2);border-radius:28px;padding:24px;margin-bottom:16px;position:relative"><img src="'+qrUrl+'" width="220" height="220" style="border-radius:16px;display:block" alt="Scan to enter"><div style="position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);background:#FF6D00;color:#fff;font-size:11px;font-weight:800;padding:4px 16px;border-radius:20px;white-space:nowrap;letter-spacing:.5px">SCAN TO ENTER</div></div>'
-      +'<p style="color:rgba(255,255,255,.3);font-size:12px;margin:16px 0 8px">Show this at the gym entrance</p>'
-      +'<div style="display:flex;gap:20px;margin-top:8px"><div style="text-align:center"><div style="color:#FF6D00;font-size:22px;font-weight:900">'+tS+'</div><div style="color:rgba(255,255,255,.3);font-size:10px;font-weight:600;text-transform:uppercase">Sessions</div></div><div style="text-align:center"><div style="color:#22c55e;font-size:22px;font-weight:900">'+tG+'</div><div style="color:rgba(255,255,255,.3);font-size:10px;font-weight:600;text-transform:uppercase">Gyms</div></div><div style="text-align:center"><div style="color:#3b82f6;font-size:22px;font-weight:900">'+stk+'\u{1F525}</div><div style="color:rgba(255,255,255,.3);font-size:10px;font-weight:600;text-transform:uppercase">Streak</div></div></div>'
-      +'<div style="position:absolute;right:8px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:16px;align-items:center">'
-      +'<div onclick="navigate(\'/more/profile\')" style="width:48px;height:48px;background:rgba(255,255,255,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;border:1px solid rgba(255,255,255,.1);font-size:20px" title="Profile">\u{1F464}</div>'
-      +'<div onclick="navigate(\'/bookings\')" style="width:48px;height:48px;background:rgba(255,255,255,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;border:1px solid rgba(255,255,255,.1);font-size:20px" title="Bookings">\u{1F4CB}</div>'
-      +'<div onclick="navigate(\'/wallet\')" style="width:48px;height:48px;background:rgba(255,255,255,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;border:1px solid rgba(255,255,255,.1);font-size:20px" title="Wallet">\u{1F4B3}</div>'
-      +'<div onclick="_shareIDCard()" style="width:48px;height:48px;background:rgba(255,255,255,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;border:1px solid rgba(255,255,255,.1);font-size:20px" title="Share">\u{1F4E4}</div>'
-      +'<div onclick="navigate(\'/refer\')" style="width:48px;height:48px;background:rgba(255,109,0,.15);border:1px solid rgba(255,109,0,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px" title="Refer & Earn">\u{1F381}</div>'
-      +'</div></div>';
+    var tier=tS>=100?{n:'Elite',i:'\ud83d\udc51',c:'#a855f7'}:tS>=50?{n:'Gold',i:'\ud83e\udd47',c:'#eab308'}:tS>=10?{n:'Silver',i:'\ud83e\udd48',c:'#94a3b8'}:{n:'Basic',i:'\ud83c\udfcb\ufe0f',c:'#FF6D00'};
+    return`<div style="position:relative;width:100%;min-height:calc(100vh - 56px);background:#0a0a16;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch">
+      <!-- Background gradient -->
+      <div style="position:fixed;top:0;left:0;right:0;height:45%;background:linear-gradient(135deg,rgba(255,109,0,.08),rgba(168,85,247,.06));pointer-events:none"></div>
+      <div style="position:fixed;top:0;left:0;right:0;height:50%;background:linear-gradient(180deg,transparent 40%,#0a0a16 100%);pointer-events:none"></div>
+      <!-- QR Hero (full viewport) -->
+      <div style="position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 56px);padding:24px 16px;text-align:center">
+        <!-- User info -->
+        <div style="margin-bottom:6px;display:flex;align-items:center;gap:8px">
+          <span style="color:#fff;font-size:22px;font-weight:900">${uName}</span>
+          <span style="background:${tier.c}22;color:${tier.c};font-size:10px;font-weight:800;padding:3px 10px;border-radius:8px;text-transform:uppercase;letter-spacing:1px">${tier.i} ${tier.n}</span>
+        </div>
+        <p style="color:rgba(255,255,255,.4);font-size:12px;margin:0 0 24px">Member since ${since}</p>
+        <!-- QR Code (large, centered like a reel) -->
+        <div style="background:rgba(255,109,0,.06);border:2px solid rgba(255,109,0,.2);border-radius:32px;padding:28px;margin-bottom:16px;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+          <img src="${qrUrl}" width="240" height="240" style="border-radius:20px;display:block" alt="Scan to enter">
+          <div style="position:absolute;bottom:-12px;left:50%;transform:translateX(-50%);background:#FF6D00;color:#fff;font-size:12px;font-weight:800;padding:6px 20px;border-radius:20px;white-space:nowrap;letter-spacing:.5px;box-shadow:0 4px 16px rgba(255,109,0,.4)">SCAN TO ENTER</div>
+        </div>
+        <p style="color:rgba(255,255,255,.3);font-size:12px;margin:20px 0 12px">Show this at the gym entrance</p>
+        <!-- Stats row -->
+        <div style="display:flex;gap:24px;margin-bottom:24px">
+          <div style="text-align:center"><div style="color:#FF6D00;font-size:24px;font-weight:900">${tS}</div><div style="color:rgba(255,255,255,.3);font-size:10px;font-weight:600;text-transform:uppercase">Sessions</div></div>
+          <div style="text-align:center"><div style="color:#22c55e;font-size:24px;font-weight:900">${tG}</div><div style="color:rgba(255,255,255,.3);font-size:10px;font-weight:600;text-transform:uppercase">Gyms</div></div>
+          <div style="text-align:center"><div style="color:#3b82f6;font-size:24px;font-weight:900">${stk}\ud83d\udd25</div><div style="color:rgba(255,255,255,.3);font-size:10px;font-weight:600;text-transform:uppercase">Streak</div></div>
+        </div>
+        <!-- TikTok-style right action buttons -->
+        <div style="position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:14px;align-items:center">
+          <div onclick="navigate('/more/profile')" style="width:48px;height:48px;background:rgba(255,255,255,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;border:1px solid rgba(255,255,255,.1);font-size:20px" title="Edit Profile">\ud83d\udc64</div>
+          <div onclick="navigate('/bookings')" style="width:48px;height:48px;background:rgba(255,255,255,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;border:1px solid rgba(255,255,255,.1);font-size:20px" title="Bookings">\ud83d\udccb</div>
+          <div onclick="navigate('/wallet')" style="width:48px;height:48px;background:rgba(255,255,255,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;border:1px solid rgba(255,255,255,.1);font-size:20px" title="Wallet">\ud83d\udcb3</div>
+          <div onclick="_shareIDCard()" style="width:48px;height:48px;background:rgba(255,255,255,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;border:1px solid rgba(255,255,255,.1);font-size:20px" title="Share">\ud83d\udce4</div>
+          <div onclick="navigate('/refer')" style="width:48px;height:48px;background:rgba(255,109,0,.15);border:1px solid rgba(255,109,0,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px" title="Refer & Earn">\ud83c\udf81</div>
+        </div>
+      </div>
+      <!-- Scrollable sections below the QR hero -->
+      <div style="position:relative;z-index:3;padding:0 16px 24px;max-width:480px;margin:0 auto">
+        <div class="sg-more-section">
+          <div class="sg-more-section-title">Your Activity</div>
+          ${(state.lastBooking||state.activeSession)?moreItem('\ud83c\udfcb\ufe0f','Active Session','Live session in progress \u2192','/session'):''}
+          ${moreItem('\ud83d\udccb','My Bookings','Upcoming & past visits','/bookings')}
+          ${moreItem('\ud83d\udcb3','Payment & Wallet','Cards, balance & methods','/wallet')}
+          ${moreItem('\u26a1','Quick Rebook','1-tap rebook with fingerprint','/quick-rebook')}
+          ${moreItem('\ud83d\udc65','Group Booking','Book for friends, split payment','/group-book/1')}
+          ${moreItem('\ud83d\udcb3','Pay Next Visit','Emergency entry, pay later','/pay-next-visit')}
+          ${moreItem('\ud83c\udf9f\ufe0f','Refer & Earn','Invite friends, earn 15%','/refer')}
+        </div>
+        <div class="sg-more-section">
+          <div class="sg-more-section-title">AI & Training</div>
+          ${moreItem('\ud83e\udd16','AI Trainer','Get personalized exercise tips','/ai-trainer')}
+          ${moreItem('\ud83d\udcc5','Workout Calendar','Attendance, workouts & muscles','/calendar')}
+          ${moreItem('\ud83d\udcc8','Progress Tracking','Trends & science-backed corrections','/progress')}
+          ${moreItem('\ud83c\udfcb\ufe0f','Weight Calculator','1RM & progressive overload','/weight-calc')}
+          ${moreItem('\ud83d\udd2c','Facility Science','Evidence-based benefits','/facility-science')}
+          ${moreItem('\ud83c\udf93','Equipment Tutorials','Step-by-step animated guides','/tutorials')}
+        </div>
+        <div class="sg-more-section">
+          <div class="sg-more-section-title">Help & Support</div>
+          ${moreItem('\ud83c\udd98','Help Center','FAQ, guides & support','/help')}
+          ${moreItem('\u2709\ufe0f','Contact Us','Get in touch','/contact')}
+        </div>
+        <div class="sg-more-section">
+          <div class="sg-more-section-title">\ud83c\udd93 Explore</div>
+          ${moreItem('\ud83c\udfae','Free Tools & Games','Workout games, timers, lessons','/free-tools')}
+          ${moreItem('\ud83c\udfb5','Gym Music','AI workout playlists & beats','/gym-music')}
+          ${moreItem('\ud83d\udcf8','Posts','Share gym photos & stories','/posts')}
+          ${moreItem('\ud83c\udfac','Creator Reels','Tags, earnings, downloads','/creator-reels')}
+          ${moreItem('\ud83c\udfe2','Gym Partner Hub','Claim & manage your gym','/gym-partner-hub')}
+        </div>
+        <div class="sg-more-section">
+          <div class="sg-more-section-title">\ud83c\udfac Creator Tools</div>
+          ${moreItem('\ud83c\udfaf','Creator Hub','TikTok-style dashboard, stats, reels','/creator-hub')}
+          ${moreItem('\ud83d\udcf9','Create Reel','Record & share gym content','/reels')}
+          ${moreItem('\ud83d\udcb0','Upload & Earn','Become a creator, earn 25%','/become-a-creator')}
+        </div>
+        <div class="sg-more-section">
+          <div class="sg-more-section-title">For Creators</div>
+          ${moreItem('\ud83d\udcf8','ScanSquad','Join the creator community \u2014 earn 25%','/creators')}
+        </div>
+        <div style="margin-top:16px;text-align:center">
+          <p style="color:rgba(255,255,255,.3);font-size:12px;line-height:1.6">\ud83c\udf0d Your ScanGym profile is your universal gym pass.<br>Accepted at <strong style="color:rgba(255,255,255,.5)">any gym</strong> \u2014 no membership needed.</p>
+        </div>
+        ${u?'<div style="text-align:center;margin-top:24px"><button onclick="logout()" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#ef4444;padding:12px 28px;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer">Sign Out</button></div>':''}
+        <div style="height:20px"></div>
+      </div>
+    </div>`;
   }else{
-    qrHero='<div onclick="navigate(\'/login\')" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 220px);padding:40px 20px;text-align:center;cursor:pointer"><p style="font-size:60px;margin-bottom:16px">\u{1F30D}</p><p style="color:#fff;font-weight:800;font-size:20px;margin-bottom:8px">Get your Universal Gym Pass</p><p style="color:rgba(255,255,255,.4);font-size:14px;margin-bottom:24px">Sign up once. Scan QR to enter any gym.</p><button style="background:#FF6D00;color:#fff;border:none;padding:16px 40px;border-radius:14px;font-weight:700;font-size:16px;cursor:pointer">Get Started \u2192</button></div>';
+    // Not logged in — full-screen sign-up CTA
+    return`<div style="position:relative;width:100%;height:calc(100vh - 56px);display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0a0a16;text-align:center;padding:40px 20px">
+      <div style="position:absolute;top:0;left:0;right:0;height:50%;background:linear-gradient(135deg,rgba(255,109,0,.06),rgba(168,85,247,.04));pointer-events:none"></div>
+      <div style="position:relative;z-index:2">
+        <p style="font-size:72px;margin-bottom:20px">\ud83c\udf0d</p>
+        <p style="color:#fff;font-weight:900;font-size:24px;margin-bottom:8px">Get your Universal Gym Pass</p>
+        <p style="color:rgba(255,255,255,.4);font-size:15px;margin-bottom:32px;max-width:300px">Sign up once. Scan QR to enter any gym worldwide.</p>
+        <button onclick="navigate('/login')" style="background:#FF6D00;color:#fff;border:none;padding:18px 48px;border-radius:16px;font-weight:800;font-size:18px;cursor:pointer;box-shadow:0 4px 24px rgba(255,109,0,.4)">Get Started \u2192</button>
+      </div>
+    </div>`;
   }
-  return`<div class="sg-more-hub">${qrHero}
-    <!-- Your Activity -->
-    <div class="sg-more-section">
-      <div class="sg-more-section-title">Your Activity</div>
-      ${(state.lastBooking||state.activeSession)?moreItem('\u{1F3CB}\uFE0F','Active Session','Live session in progress →','/session'):''}
-      ${moreItem('\u{1F4CB}','My Bookings','Upcoming & past visits','/bookings')}
-      ${moreItem('\u{1F4B3}','Payment & Wallet','Cards, balance & methods','/wallet')}
-      ${moreItem('⚡','Quick Rebook','1-tap rebook with fingerprint','/quick-rebook')}
-      ${moreItem('👥','Group Booking','Book for friends, split payment','/group-book/1')}
-      ${moreItem('💳','Pay Next Visit','Emergency entry, pay later','/pay-next-visit')}
-      ${moreItem('\u{1F39F}\uFE0F','Refer & Earn','Invite friends, earn 15%','/refer')}
-    </div>
-
-    <!-- #79-#85: AI & Training -->
-    <div class="sg-more-section">
-      <div class="sg-more-section-title">AI & Training</div>
-      ${moreItem('🤖','AI Trainer','Get personalized exercise tips','/ai-trainer')}
-      ${moreItem('📅','Workout Calendar','Attendance, workouts & muscles','/calendar')}
-      ${moreItem('📈','Progress Tracking','Trends & science-backed corrections','/progress')}
-      ${moreItem('🏋️','Weight Calculator','1RM & progressive overload','/weight-calc')}
-      ${moreItem('🔬','Facility Science','Evidence-based benefits','/facility-science')}
-      ${moreItem('🎓','Equipment Tutorials','Step-by-step animated guides','/tutorials')}
-    </div>
-
-    <!-- Help & Support -->
-    <div class="sg-more-section">
-      <div class="sg-more-section-title">Help & Support</div>
-      ${moreItem('\u{1F198}','Help Center','FAQ, guides & support','/help')}
-      ${moreItem('\u2709\uFE0F','Contact Us','Get in touch','/contact')}
-    </div>
-
-    <!-- For Creators -->
-    <!-- #139-#143: New Tabs -->
-    <div class="sg-more-section">
-      <div class="sg-more-section-title">🆓 Explore</div>
-      ${moreItem('🎮','Free Tools & Games','Workout games, timers, lessons','/free-tools')}
-      ${moreItem('🎵','Gym Music','AI workout playlists & beats','/gym-music')}
-      ${moreItem('📸','Posts','Share gym photos & stories','/posts')}
-      ${moreItem('🎬','Creator Reels','Tags, earnings, downloads','/creator-reels')}
-      ${moreItem('🏢','Gym Partner Hub','Claim & manage your gym','/gym-partner-hub')}
-    </div>
-
-    <!-- Creator tools (moved from Reels tab) -->
-    <div class="sg-more-section">
-      <div class="sg-more-section-title">🎬 Creator Tools</div>
-      ${moreItem('🎯','Creator Hub','TikTok-style dashboard, stats, reels','/creator-hub')}
-      ${moreItem('📹','Create Reel','Record & share gym content','/reels')}
-      ${moreItem('💰','Upload & Earn','Become a creator, earn 25%','/become-a-creator')}
-    </div>
-
-    <div class="sg-more-section">
-      <div class="sg-more-section-title">For Creators</div>
-      ${moreItem('\u{1F4F8}','ScanSquad','Join the creator community \u2014 earn 25%','/creators')}
-    </div>
-
-    <!-- For Gym Owners -->
-    <div class="sg-more-section">
-      <div class="sg-more-section-title">For Gym Owners</div>
-      ${moreItem('\u{1F3E2}','List Your Gym','It\'s free \u2014 start earning','/list-your-gym')}
-      ${u?moreItem('\u2699\uFE0F','Owner Controls','Open/close toggle, pricing','/owner/controls'):''}
-      ${u?moreItem('⚙️','Manage Gym','Equipment, facilities, schedule, reviews','/gym-manage/1'):''}
-      ${_isAdmin(u)?moreItem('\u{1F4C8}','CEO Dashboard','Revenue, bookings, funnel','/forceo'):''}
-    </div>
-
-    <!-- Account -->
-    <div class="sg-more-section">
-      <div class="sg-more-section-title">Account</div>
-      ${moreItem(u?'\u{1F464}':'\u{1F511}',u?'My Profile':'Log In',u?'Edit your universal gym pass':'Sign in or create account',u?'/more/profile':'/login')}
-      ${u?'<div class="sg-more-item" onclick="handleLogout()" style="border:1px solid rgba(239,68,68,.15)"><div class="sg-mi-icon" style="background:rgba(239,68,68,.08)">\u{1F6AA}</div><div class="sg-mi-text"><h4 style="color:#ef4444">Log Out</h4><p>Sign out of your account</p></div><span class="sg-mi-arrow">\u203A</span></div>':''}
-    </div>
-
-    <!-- Legal (compact inline links) -->
-    <div class="sg-more-section">
-      <div class="sg-more-section-title">Legal</div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px;padding:0 4px">
-        <a onclick="navigate('/privacy')" style="color:rgba(255,255,255,.35);font-size:12px;cursor:pointer">Privacy</a>
-        <span style="color:rgba(255,255,255,.15)">\u00B7</span>
-        <a onclick="navigate('/terms')" style="color:rgba(255,255,255,.35);font-size:12px;cursor:pointer">Terms</a>
-        <span style="color:rgba(255,255,255,.15)">\u00B7</span>
-        <a onclick="navigate('/cookies')" style="color:rgba(255,255,255,.35);font-size:12px;cursor:pointer">Cookies</a>
-      </div>
-    </div>
-
-    <!-- Social -->
-    <div class="sg-more-section">
-      <div class="sg-more-social">
-        <a href="https://instagram.com/scangym" target="_blank" rel="noopener">\u{1F4F8}</a>
-        <a href="https://x.com/scangym" target="_blank" rel="noopener">\u{1D54F}</a>
-        <a href="https://tiktok.com/@scangym" target="_blank" rel="noopener">\u{1F3B5}</a>
-        <a href="https://facebook.com/scangym" target="_blank" rel="noopener">\u{1F4D8}</a>
-      </div>
-    </div>
-
-    <!-- Footer -->
-    <div style="text-align:center;padding:16px 0 8px;border-top:1px solid rgba(255,255,255,.06);margin-top:8px">
-      <p style="color:rgba(255,255,255,.2);font-size:11px">\u00A9 2026 ScanGym \u00B7 Manchester, UK</p>
-    </div>
-  </div>`;
-})();
 }
 
 
