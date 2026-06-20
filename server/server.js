@@ -666,6 +666,22 @@ if (fs.existsSync(FRONTEND_DIR)) {
     res.sendFile(path.join(FRONTEND_DIR, 'admin', 'uploads', 'index.html'));
   });
 
+  // === Role-based dashboards (Option B: separate mini-apps) ===
+  app.get('/creator', (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache');
+    res.sendFile(path.join(FRONTEND_DIR, 'creator', 'index.html'));
+  });
+
+  app.get('/partner', (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache');
+    res.sendFile(path.join(FRONTEND_DIR, 'partner', 'index.html'));
+  });
+
+  app.get('/admin', (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache');
+    res.sendFile(path.join(FRONTEND_DIR, 'admin', 'index.html'));
+  });
+
   // /about page — static, SEO-friendly, crawlable by LLMs
   app.get('/about', (req, res) => {
     res.sendFile(path.join(FRONTEND_DIR, 'about', 'index.html'));

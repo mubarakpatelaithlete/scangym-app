@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+  <title>ScanGym — CEO Dashboard</title>
+  <meta name="theme-color" content="#0a0a16"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <link rel="icon" href="/favicon.ico"/>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0a0a16;color:#fff;min-height:100vh;padding-bottom:70px;overflow-x:hidden}
+    a{color:inherit;text-decoration:none}
+
+    /* ── Header ── */
+    .header{background:linear-gradient(135deg,#111827,#1f2937);padding:16px 20px;border-bottom:1px solid rgba(255,109,0,.2);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;backdrop-filter:blur(12px)}
+    .header-left{display:flex;align-items:center;gap:10px}
+    .logo-dot{width:28px;height:28px;background:#FF6D00;border-radius:50%;box-shadow:0 0 12px rgba(255,109,0,.4)}
+    .header h1{font-size:18px;font-weight:800}
+    .header h1 span{color:#FF6D00}
+    .period-btns{display:flex;gap:4px}
+    .period-btn{padding:6px 12px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.5);transition:.15s}
+    .period-btn.active{background:rgba(255,109,0,.15);border-color:rgba(255,109,0,.3);color:#FF6D00}
+    .period-btn:active{transform:scale(.95)}
+
+    /* ── Content ── */
+    .content{padding:16px;max-width:800px;margin:0 auto}
+    .section-title{font-size:15px;font-weight:800;margin:20px 0 10px;display:flex;align-items:center;gap:8px}
+    .section-title:first-child{margin-top:4px}
+
+    /* ── Stats ── */
+    .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:8px}
+    .stats.three{grid-template-columns:repeat(3,1fr)}
+    .stats.five{grid-template-columns:repeat(5,1fr)}
+    .stat{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px;text-align:center;transition:.15s}
+    .stat:hover{border-color:rgba(255,109,0,.2)}
+    .stat .num{font-size:22px;font-weight:800;color:#FF6D00}
+    .stat .lbl{font-size:10px;color:rgba(255,255,255,.4);margin-top:3px;text-transform:uppercase;letter-spacing:.5px}
+    .stat .sub{font-size:10px;color:rgba(255,255,255,.2);margin-top:2px}
+    .stat .num.green{color:#22c55e}
+    .stat .num.blue{color:#3b82f6}
+    .stat .num.purple{color:#a855f7}
+
+    /* ── Funnel ── */
+    .funnel{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px;margin-bottom:12px}
+    .funnel-step{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+    .funnel-label{width:100px;font-size:12px;font-weight:600;color:rgba(255,255,255,.6);flex-shrink:0}
+    .funnel-bar-wrap{flex:1;background:rgba(255,255,255,.06);border-radius:6px;height:28px;overflow:hidden;position:relative}
+    .funnel-bar{height:100%;border-radius:6px;display:flex;align-items:center;padding:0 10px;font-size:11px;font-weight:700;min-width:30px;transition:width .6s ease}
+    .funnel-count{width:50px;text-align:right;font-size:12px;font-weight:700;color:#FF6D00;flex-shrink:0}
+    .funnel-pct{width:40px;text-align:right;font-size:11px;color:rgba(255,255,255,.35);flex-shrink:0}
+
+    /* ── Chart ── */
+    .chart-container{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px;margin-bottom:12px}
+    .chart-title{font-size:13px;font-weight:700;color:rgba(255,255,255,.6);margin-bottom:10px}
+    .chart-bars{display:flex;align-items:flex-end;gap:3px;height:100px;padding-top:8px}
+    .chart-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;height:100%}
+    .chart-bar{width:100%;border-radius:3px 3px 0 0;min-height:2px;transition:height .4s;margin-top:auto}
+    .chart-bar.orange{background:linear-gradient(180deg,#FF6D00,#E66200)}
+    .chart-bar.green{background:linear-gradient(180deg,#22c55e,#16a34a)}
+    .chart-bar.blue{background:linear-gradient(180deg,#3b82f6,#1d4ed8)}
+    .chart-bar-label{font-size:8px;color:rgba(255,255,255,.25);margin-top:3px;white-space:nowrap}
+    .chart-bar-val{font-size:8px;font-weight:700;margin-bottom:1px}
+    .chart-bar-val.orange{color:#FF6D00}
+    .chart-bar-val.green{color:#22c55e}
+
+    /* ── Table ── */
+    .table-wrap{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;overflow:hidden;margin-bottom:12px}
+    table{width:100%;border-collapse:collapse}
+    th{text-align:left;padding:10px 14px;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:rgba(255,255,255,.35);background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.06)}
+    td{padding:8px 14px;font-size:12px;border-bottom:1px solid rgba(255,255,255,.04)}
+    tr:hover td{background:rgba(255,255,255,.02)}
+    .badge-pill{display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700}
+    .source-bar{height:5px;border-radius:3px;background:linear-gradient(90deg,#FF6D00,#fb923c);display:inline-block;vertical-align:middle;margin-left:6px}
+
+    /* ── Stripe card ── */
+    .stripe-card{background:linear-gradient(135deg,rgba(99,91,255,.1),rgba(99,91,255,.03));border:1px solid rgba(99,91,255,.2);border-radius:16px;padding:20px;margin-bottom:12px}
+    .stripe-logo{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+    .stripe-logo span{font-size:14px;font-weight:800;color:#635BFF}
+
+    /* ── KPI row ── */
+    .kpi-row{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px}
+    .kpi{flex-shrink:0;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px 16px;min-width:120px}
+    .kpi .num{font-size:20px;font-weight:800;color:#FF6D00}
+    .kpi .lbl{font-size:9px;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+
+    /* ── Bottom Nav ── */
+    .bottom-nav{position:fixed;bottom:0;left:0;right:0;height:56px;background:rgba(8,8,18,.98);backdrop-filter:blur(24px);display:flex;align-items:center;justify-content:space-around;border-top:1px solid rgba(255,255,255,.06);z-index:9000;padding-bottom:env(safe-area-inset-bottom,0)}
+    .nav-item{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:6px 10px;-webkit-tap-highlight-color:transparent}
+    .nav-item svg{width:22px;height:22px;stroke:rgba(255,255,255,.4);fill:none;stroke-width:1.8;transition:.2s}
+    .nav-item .nav-label{font-size:9px;font-weight:600;color:rgba(255,255,255,.4);transition:.2s}
+    .nav-item.active svg{stroke:#FF6D00;filter:drop-shadow(0 0 6px rgba(255,109,0,.35))}
+    .nav-item.active .nav-label{color:#FF6D00}
+
+    .loading{text-align:center;padding:40px;color:rgba(255,255,255,.3)}
+    .spinner{width:28px;height:28px;border:3px solid rgba(255,255,255,.1);border-top-color:#FF6D00;border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 10px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .empty-state{text-align:center;padding:20px;color:rgba(255,255,255,.25);font-size:13px}
+    .login-gate{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:70vh;text-align:center;padding:24px}
+    .login-gate h2{font-size:22px;font-weight:800;margin-bottom:8px}
+    .login-gate p{color:rgba(255,255,255,.4);margin-bottom:20px;font-size:14px}
+    .login-btn{padding:14px 36px;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;border:none;background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff;box-shadow:0 4px 20px rgba(255,109,0,.3)}
+    .login-btn:active{transform:scale(.95)}
+
+    @media(max-width:500px){.stats.five{grid-template-columns:repeat(2,1fr)}.stats.three{grid-template-columns:repeat(3,1fr)}.funnel-label{width:70px;font-size:10px}}
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-left">
+      <div class="logo-dot"></div>
+      <h1><span>ScanGym</span> CEO</h1>
+    </div>
+    <div class="period-btns">
+      <button class="period-btn" data-period="24h" onclick="setPeriod('24h')">24h</button>
+      <button class="period-btn active" data-period="7d" onclick="setPeriod('7d')">7d</button>
+      <button class="period-btn" data-period="30d" onclick="setPeriod('30d')">30d</button>
+    </div>
+  </div>
+
+  <div class="content" id="main">
+    <div class="loading"><div class="spinner"></div>Loading CEO dashboard…</div>
+  </div>
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav">
+    <div class="nav-item active" onclick="showTab('overview')">
+      <svg viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+      <span class="nav-label">Overview</span>
+    </div>
+    <div class="nav-item" onclick="showTab('revenue')">
+      <svg viewBox="0 0 24 24"><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      <span class="nav-label">Revenue</span>
+    </div>
+    <div class="nav-item" onclick="showTab('users')">
+      <svg viewBox="0 0 24 24"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+      <span class="nav-label">Users</span>
+    </div>
+    <div class="nav-item" onclick="showTab('content')">
+      <svg viewBox="0 0 24 24"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+      <span class="nav-label">Content</span>
+    </div>
+    <div class="nav-item" onclick="showTab('ops')">
+      <svg viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+      <span class="nav-label">Ops</span>
+    </div>
+  </nav>
+
+  <script>
+  (function(){
+    let currentTab='overview';
+    let period='7d';
+    let dashData=null;
+    let creatorsData=null;
+
+    window.setPeriod=function(p){
+      period=p;
+      document.querySelectorAll('.period-btn').forEach(b=>{b.classList.toggle('active',b.dataset.period===p);});
+      loadDashboard();
+    };
+
+    async function loadDashboard(){
+      const main=document.getElementById('main');
+      main.innerHTML='<div class="loading"><div class="spinner"></div>Loading…</div>';
+      try{
+        const [ceoRes,crRes]=await Promise.all([
+          fetch('/api/stats/ceo?period='+period).then(r=>r.json()).catch(()=>({})),
+          fetch('/api/stats/ceo/creators?period='+period).then(r=>r.json()).catch(()=>null)
+        ]);
+        if(ceoRes.error){
+          main.innerHTML='<div class="login-gate"><p style="font-size:48px;margin-bottom:12px">🔒</p><h2>CEO Access Required</h2><p>Log in with your admin account to view analytics.</p><button class="login-btn" onclick="location.href=\'/login\'">Log In →</button></div>';
+          return;
+        }
+        dashData=ceoRes;
+        creatorsData=crRes;
+        renderCurrentTab();
+      }catch(e){
+        main.innerHTML='<div class="login-gate"><p style="font-size:48px;margin-bottom:12px">⚠️</p><h2>Could not load dashboard</h2><p>Make sure you\'re logged in as admin.</p><button class="login-btn" onclick="location.href=\'/login\'">Log In →</button></div>';
+      }
+    }
+
+    function renderCurrentTab(){
+      if(currentTab==='overview')renderOverview();
+      else if(currentTab==='revenue')renderRevenue();
+      else if(currentTab==='users')renderUsers();
+      else if(currentTab==='content')renderContent();
+      else if(currentTab==='ops')renderOps();
+    }
+
+    function renderOverview(){
+      const d=dashData||{};
+      const t=d.trafficIn||{};
+      const m=d.moneyOut||{};
+      const p=d.platform||{};
+      const f=d.conversionFunnel||{};
+
+      let html=`
+        <!-- KPI Scroll -->
+        <div class="kpi-row">
+          <div class="kpi"><div class="num">${fmt(t.totalHits)}</div><div class="lbl">Total Hits</div></div>
+          <div class="kpi"><div class="num">${fmt(t.uniqueVisitors)}</div><div class="lbl">Unique Visitors</div></div>
+          <div class="kpi"><div class="num" style="color:#22c55e">${m.estimatedRevenue||m.totalRevenue||'£0'}</div><div class="lbl">Revenue</div></div>
+          <div class="kpi"><div class="num">${fmt(m.totalBookings||m.totalPaidBookings)}</div><div class="lbl">Paid Bookings</div></div>
+          <div class="kpi"><div class="num" style="color:#a855f7">${fmt(p.totalUsers||p.users)}</div><div class="lbl">Users</div></div>
+        </div>
+
+        <!-- Conversion Funnel -->
+        <div class="section-title">🎯 Conversion Funnel</div>`;
+
+      if(f.funnel){
+        const steps=[
+          {label:'Visitors',val:f.funnel['1_visitors']||0,color:'#3b82f6'},
+          {label:'Searched',val:f.funnel['2_searched']||0,color:'#8b5cf6'},
+          {label:'Viewed Gym',val:f.funnel['3_viewed_profile']||0,color:'#ec4899'},
+          {label:'Checkout',val:f.funnel['4_started_checkout']||0,color:'#FF6D00'},
+          {label:'Paid',val:f.funnel['5_paid_booking']||0,color:'#22c55e'}
+        ];
+        const maxF=Math.max(steps[0].val,1);
+        html+='<div class="funnel">';
+        steps.forEach((s,i)=>{
+          const pct=((s.val/maxF)*100).toFixed(0);
+          const stepPct=i>0&&steps[i-1].val>0?((s.val/steps[i-1].val)*100).toFixed(0)+'%':'—';
+          html+=`<div class="funnel-step"><div class="funnel-label">${s.label}</div><div class="funnel-bar-wrap"><div class="funnel-bar" style="width:${Math.max(pct,3)}%;background:${s.color}">${fmt(s.val)}</div></div><div class="funnel-pct">${stepPct}</div></div>`;
+        });
+        html+=`<div style="text-align:center;margin-top:12px;font-size:13px;font-weight:700">Overall: <span style="color:#22c55e">${f.overallConversion||'0%'}</span></div></div>`;
+      }else{
+        html+='<div class="empty-state">Funnel data populates as traffic comes in</div>';
+      }
+
+      // Daily Traffic Chart
+      if(t.dailyTrend&&t.dailyTrend.length){
+        html+='<div class="chart-container"><div class="chart-title">📈 Daily Traffic</div><div class="chart-bars">';
+        const maxVal=Math.max(...t.dailyTrend.map(x=>x.total||x.unique_visitors||0),1);
+        t.dailyTrend.forEach(x=>{
+          const val=x.total||x.unique_visitors||0;
+          const h=Math.max((val/maxVal)*100,2);
+          const day=new Date(x.date).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+          html+=`<div class="chart-bar-wrap"><div class="chart-bar-val orange">${fmt(val)}</div><div class="chart-bar orange" style="height:${h}%"></div><div class="chart-bar-label">${day}</div></div>`;
+        });
+        html+='</div></div>';
+      }
+
+      // Platform stats
+      html+=`
+        <div class="section-title">🏢 Platform</div>
+        <div class="stats">
+          <div class="stat"><div class="num blue">${fmt(p.totalGyms||p.gyms)}</div><div class="lbl">Gyms Listed</div></div>
+          <div class="stat"><div class="num purple">${fmt(p.totalUsers||p.users)}</div><div class="lbl">Total Users</div></div>
+          <div class="stat"><div class="num">${fmt(p.totalBookings||p.bookings)}</div><div class="lbl">Total Bookings</div></div>
+          <div class="stat"><div class="num green">${fmt(p.cities)}</div><div class="lbl">Cities</div></div>
+        </div>
+      `;
+
+      document.getElementById('main').innerHTML=html;
+    }
+
+    function renderRevenue(){
+      const m=(dashData||{}).moneyOut||{};
+      const cr=creatorsData||{};
+
+      let html=`
+        <div class="section-title">💰 Revenue</div>
+        <div class="stats">
+          <div class="stat"><div class="num green">${m.estimatedRevenue||m.totalRevenue||'£0'}</div><div class="lbl">Total Revenue</div></div>
+          <div class="stat"><div class="num">${m.avgBookingValue||'£0'}</div><div class="lbl">Avg Booking</div></div>
+          <div class="stat"><div class="num green">${fmt(m.totalBookings||m.totalPaidBookings)}</div><div class="lbl">Paid Bookings</div></div>
+          <div class="stat"><div class="num">${m.scanGymShare||'£0'}</div><div class="lbl">ScanGym Share</div></div>
+        </div>
+
+        <!-- Stripe Integration -->
+        <div class="stripe-card">
+          <div class="stripe-logo"><span>💳 Stripe</span></div>
+          <div class="stats" style="margin-bottom:0">
+            <div class="stat" style="border-color:rgba(99,91,255,.15)"><div class="num green">${m.estimatedRevenue||'£0'}</div><div class="lbl">Gross Volume</div></div>
+            <div class="stat" style="border-color:rgba(99,91,255,.15)"><div class="num">${m.refunds||'£0'}</div><div class="lbl">Refunds</div></div>
+          </div>
+        </div>
+
+        <div class="section-title">🎬 Creator Affiliate Program</div>
+        <div class="stats">
+          <div class="stat"><div class="num purple">${fmt(cr.totalCreators)}</div><div class="lbl">Creators</div></div>
+          <div class="stat"><div class="num">${fmt(cr.totalReferrals)}</div><div class="lbl">Referrals</div></div>
+          <div class="stat"><div class="num green">${cr.totalCreatorRevenue||'£0'}</div><div class="lbl">Creator Revenue</div></div>
+          <div class="stat"><div class="num">${fmt(cr.totalConversions)}</div><div class="lbl">Conversions</div></div>
+        </div>
+      `;
+
+      // Per-creator table
+      if(cr.creators&&cr.creators.length){
+        html+='<div class="table-wrap"><table><thead><tr><th>Creator</th><th>Tier</th><th>Refs</th><th>Conv</th><th>Earned</th></tr></thead><tbody>';
+        cr.creators.forEach(c=>{
+          const colors={starter:'rgba(34,197,94,.12)',rising:'rgba(251,191,36,.12)',pro:'rgba(255,109,0,.12)',legend:'rgba(168,85,247,.12)'};
+          html+=`<tr><td style="font-weight:600">${esc(c.name||c.handle||'Creator')}</td><td><span class="badge-pill" style="background:${colors[c.tier]||'rgba(255,255,255,.06)'}">${c.badge||''} ${esc(c.tier||'starter')}</span></td><td>${fmt(c.referrals)}</td><td>${fmt(c.conversions)}</td><td style="color:#22c55e;font-weight:700">£${((c.earnings_pence||0)/100).toFixed(2)}</td></tr>`;
+        });
+        html+='</tbody></table></div>';
+      }
+
+      document.getElementById('main').innerHTML=html;
+    }
+
+    function renderUsers(){
+      const p=(dashData||{}).platform||{};
+      let html=`
+        <div class="section-title">👥 User Growth</div>
+        <div class="stats three">
+          <div class="stat"><div class="num purple">${fmt(p.totalUsers||p.users)}</div><div class="lbl">Total Users</div></div>
+          <div class="stat"><div class="num green">${fmt(p.newUsersToday||'--')}</div><div class="lbl">Today</div></div>
+          <div class="stat"><div class="num blue">${fmt(p.newUsersWeek||'--')}</div><div class="lbl">This Week</div></div>
+        </div>
+
+        <div class="section-title">📊 User Breakdown</div>
+        <div class="stats">
+          <div class="stat"><div class="num">${fmt(p.gymGoers||'--')}</div><div class="lbl">Gym-Goers</div></div>
+          <div class="stat"><div class="num purple">${fmt((creatorsData||{}).totalCreators||'--')}</div><div class="lbl">Creators</div></div>
+          <div class="stat"><div class="num blue">${fmt(p.partners||'--')}</div><div class="lbl">Gym Partners</div></div>
+          <div class="stat"><div class="num green">${fmt(p.corporates||'--')}</div><div class="lbl">Corporates</div></div>
+        </div>
+
+        <div class="section-title">🌍 Geography</div>
+        <div class="stats">
+          <div class="stat"><div class="num">${fmt(p.cities||'--')}</div><div class="lbl">Cities</div></div>
+          <div class="stat"><div class="num blue">${fmt(p.countries||'--')}</div><div class="lbl">Countries</div></div>
+        </div>
+
+        <div class="section-title">🏆 Top Cities</div>
+        <div class="empty-state">City-level breakdown populates as user base grows</div>
+      `;
+      document.getElementById('main').innerHTML=html;
+    }
+
+    function renderContent(){
+      let html=`
+        <div class="section-title">🎬 Content Overview</div>
+        <div class="stats">
+          <div class="stat"><div class="num">--</div><div class="lbl">Total Reels</div></div>
+          <div class="stat"><div class="num">--</div><div class="lbl">Total Views</div></div>
+          <div class="stat"><div class="num">--</div><div class="lbl">Avg Watch Time</div></div>
+          <div class="stat"><div class="num">--</div><div class="lbl">Completion Rate</div></div>
+        </div>
+
+        <div class="section-title">📹 Pending Review</div>
+        <div id="pending-reels"><div class="loading"><div class="spinner"></div>Loading…</div></div>
+
+        <div class="section-title">🔥 Top Performing Reels</div>
+        <div class="empty-state">Reel analytics populate as content library grows</div>
+      `;
+      document.getElementById('main').innerHTML=html;
+      loadPendingReels();
+    }
+
+    async function loadPendingReels(){
+      const el=document.getElementById('pending-reels');
+      try{
+        const r=await fetch('/api/reels/feed?limit=5').then(r=>r.json()).catch(()=>({reels:[]}));
+        if(!r.reels||!r.reels.length){el.innerHTML='<div class="empty-state">No reels pending review</div>';return;}
+        el.innerHTML=r.reels.slice(0,5).map(reel=>`
+          <div style="display:flex;align-items:center;gap:12px;padding:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;margin-bottom:6px">
+            <div style="width:44px;height:44px;border-radius:8px;background:rgba(255,109,0,.1);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🎬</div>
+            <div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(reel.caption||'Untitled')}</div><div style="font-size:10px;color:rgba(255,255,255,.3);margin-top:2px">${esc(reel.creator||'Unknown')} · ${fmt(reel.views||0)} views</div></div>
+          </div>`).join('');
+      }catch(e){el.innerHTML='<div class="empty-state">Could not load reels</div>';}
+    }
+
+    function renderOps(){
+      let html=`
+        <div class="section-title">⚙️ Operations</div>
+
+        <div style="padding:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:14px;margin-bottom:8px;cursor:pointer" onclick="location.href='/admin/uploads'">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:20px">📋</span>
+            <div><div style="font-size:13px;font-weight:700">Upload Review Queue</div><div style="font-size:11px;color:rgba(255,255,255,.35)">Approve or reject creator uploads</div></div>
+          </div>
+        </div>
+
+        <div style="padding:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:14px;margin-bottom:8px;cursor:pointer" onclick="location.href='/ceo-dashboard'">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:20px">📊</span>
+            <div><div style="font-size:13px;font-weight:700">Legacy Dashboard</div><div style="font-size:11px;color:rgba(255,255,255,.35)">Full-width analytics view</div></div>
+          </div>
+        </div>
+
+        <div style="padding:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:14px;margin-bottom:8px;cursor:pointer" onclick="location.href='/'">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:20px">🏠</span>
+            <div><div style="font-size:13px;font-weight:700">Customer App</div><div style="font-size:11px;color:rgba(255,255,255,.35)">Switch to customer view</div></div>
+          </div>
+        </div>
+
+        <div class="section-title">🔗 Quick Links</div>
+        <div class="stats">
+          <div class="stat" onclick="location.href='/creator'" style="cursor:pointer"><div class="num purple" style="font-size:18px">🎬</div><div class="lbl">Creator Studio</div></div>
+          <div class="stat" onclick="location.href='/partner'" style="cursor:pointer"><div class="num blue" style="font-size:18px">🏢</div><div class="lbl">Partner Hub</div></div>
+        </div>
+
+        <div class="section-title">🔧 System Health</div>
+        <div class="stats three">
+          <div class="stat"><div class="num green" style="font-size:16px">✓</div><div class="lbl">API</div></div>
+          <div class="stat"><div class="num green" style="font-size:16px">✓</div><div class="lbl">Stripe</div></div>
+          <div class="stat"><div class="num green" style="font-size:16px">✓</div><div class="lbl">Database</div></div>
+        </div>
+
+        <div style="text-align:center;margin-top:20px">
+          <p style="color:rgba(255,255,255,.15);font-size:10px">ScanGym CEO Dashboard v2.0</p>
+        </div>
+      `;
+      document.getElementById('main').innerHTML=html;
+    }
+
+    function showTab(tab){
+      currentTab=tab;
+      document.querySelectorAll('.nav-item').forEach((el,i)=>{
+        el.classList.toggle('active',['overview','revenue','users','content','ops'][i]===tab);
+      });
+      if(!dashData){loadDashboard();return;}
+      renderCurrentTab();
+    }
+    window.showTab=showTab;
+
+    function fmt(n){return n!=null?Number(n).toLocaleString():'0';}
+    function esc(s){return s?String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'):'';}
+
+    loadDashboard();
+  })();
+  </script>
+</body>
+</html>
