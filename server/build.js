@@ -4,15 +4,18 @@
  * 
  * Runs during Docker build (after files are copied):
  * 1. Minify JS files with terser (60-70% size reduction)
- * 2. Pre-compress all text assets with Brotli (.br) and gzip (.gz)
- * 3. Log size savings
+ * 2. Content-hash JS/CSS filenames for instant cache busting
+ * 3. Pre-compress all text assets with Brotli (.br) and gzip (.gz)
+ * 4. Log size savings
  * 
  * Result: Express serves pre-compressed files → zero runtime compression cost
+ *         Content-hashed filenames → users always get fresh code after deploys
  */
 
 const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
+const crypto = require('crypto');
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
 
@@ -84,7 +87,94 @@ async function minifyJS() {
   console.log(`  📦 Total JS savings: ${fmt(totalSaved)}\n`);
 }
 
-// ─── Step 2: Pre-compress with Brotli + gzip ──────────────────────────
+// ─── Step 2: Content-hash filenames for cache busting ─────────────────
+// Every deploy changes the hash → new URL → browser fetches fresh code instantly
+// This is how Netflix, Vercel, Next.js, Stripe, and Airbnb all solve caching.
+function contentHashAssets() {
+  console.log('🔑 Content-hashing assets for cache busting...\n');
+
+  // Assets to hash: [original filename, glob pattern for finding references]
+  const ASSETS_TO_HASH = [
+    'app.ctr576.js',
+    'styles.css',
+    'robust-location.js',
+    'pricing.js',
+  ];
+
+  // Files that reference the assets (HTML, JS, SW)
+  const REFERENCE_FILES = [
+    ...findFiles(PUBLIC_DIR, '.html'),
+    path.join(PUBLIC_DIR, 'sw.js'),
+  ];
+
+  const hashMap = {}; // original name → hashed name
+
+  // 1. Compute content hash for each asset and rename
+  for (const assetName of ASSETS_TO_HASH) {
+    const assetPath = path.join(PUBLIC_DIR, assetName);
+    if (!fs.existsSync(assetPath)) continue;
+
+    const content = fs.readFileSync(assetPath);
+    const hash = crypto.createHash('md5').update(content).digest('hex').slice(0, 8);
+    const ext = path.extname(assetName);
+    const base = assetName.slice(0, -ext.length);
+    const hashedName = `${base}.${hash}${ext}`;
+
+    // Copy to hashed filename (keep original for perf dashboard self-reference)
+    fs.copyFileSync(assetPath, path.join(PUBLIC_DIR, hashedName));
+    hashMap[assetName] = hashedName;
+    console.log(`  ✅ ${assetName} → ${hashedName}`);
+  }
+
+  // 2. Update all references in HTML files and SW
+  for (const refFile of REFERENCE_FILES) {
+    if (!fs.existsSync(refFile)) continue;
+    let content = fs.readFileSync(refFile, 'utf8');
+    let changed = false;
+
+    for (const [original, hashed] of Object.entries(hashMap)) {
+      // Replace references like /app.ctr576.js?v=5.3.1 or /app.ctr576.js or '/app.ctr576.js'
+      // Handles: href="/X?v=...", src="/X?v=...", '/X', "/X"
+      const escaped = original.replace(/\./g, '\\.');
+      const regex = new RegExp(`(["'/])${escaped}(\\?[^"'\\s]*)?`, 'g');
+      const newContent = content.replace(regex, `$1${hashed}`);
+      if (newContent !== content) {
+        content = newContent;
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      fs.writeFileSync(refFile, content);
+      console.log(`  📝 Updated references in ${path.relative(PUBLIC_DIR, refFile)}`);
+    }
+  }
+
+  // 3. Update service worker cache name so it invalidates on every deploy
+  const swPath = path.join(PUBLIC_DIR, 'sw.js');
+  if (fs.existsSync(swPath)) {
+    let swContent = fs.readFileSync(swPath, 'utf8');
+    // Compute a combined hash of all hashed asset names for the cache version
+    const cacheHash = crypto.createHash('md5')
+      .update(Object.values(hashMap).sort().join(','))
+      .digest('hex').slice(0, 8);
+    swContent = swContent.replace(
+      /const CACHE_NAME = '[^']+'/,
+      `const CACHE_NAME = 'scangym-${cacheHash}'`
+    );
+    fs.writeFileSync(swPath, swContent);
+    console.log(`  📝 Updated SW cache name → scangym-${cacheHash}`);
+  }
+
+  // 4. Write hash manifest for server.js to read at runtime
+  const manifestPath = path.join(PUBLIC_DIR, '.asset-manifest.json');
+  fs.writeFileSync(manifestPath, JSON.stringify(hashMap, null, 2));
+  console.log(`  📝 Wrote asset manifest (${Object.keys(hashMap).length} entries)\n`);
+
+  return hashMap;
+}
+
+// ─── Step 3: Pre-compress with Brotli + gzip ──────────────────────────
 function preCompress() {
   const COMPRESSIBLE = ['.js', '.css', '.html', '.json', '.svg', '.txt', '.xml', '.webmanifest'];
   const files = [];
@@ -135,9 +225,21 @@ function preCompress() {
   console.log(`  📦 Gzip savings: ${fmt(totalGzSaved)}\n`);
 }
 
-// ─── Step 3: Log final sizes ──────────────────────────────────────────
+// ─── Step 4: Log final sizes ──────────────────────────────────────────
 function logSummary() {
-  const keyFiles = ['app.ctr576.js', 'styles.css', 'robust-location.js', 'sw.js', 'index.html'];
+  // Read manifest to show hashed filenames
+  const manifestPath = path.join(PUBLIC_DIR, '.asset-manifest.json');
+  let manifest = {};
+  if (fs.existsSync(manifestPath)) {
+    try { manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8')); } catch {}
+  }
+  const keyFiles = [
+    manifest['app.ctr576.js'] || 'app.ctr576.js',
+    manifest['styles.css'] || 'styles.css',
+    manifest['robust-location.js'] || 'robust-location.js',
+    'sw.js',
+    'index.html'
+  ];
   
   console.log('📊 Final asset sizes:');
   console.log('  File                    Original   Brotli     Gzip');
@@ -182,7 +284,7 @@ function pct(saved, original) {
   return Math.round((saved / original) * 100) + '%';
 }
 
-// ─── Step 4: Validate JS syntax (catch octal escapes in template literals etc.) ─
+// ─── Step 5: Validate JS syntax (catch octal escapes in template literals etc.) ─
 function validateJS() {
   const jsFiles = findFiles(PUBLIC_DIR, '.js');
   let errors = 0;
@@ -214,6 +316,7 @@ function validateJS() {
 (async () => {
   await minifyJS();
   validateJS();
+  contentHashAssets();
   preCompress();
   logSummary();
   console.log('✅ Build complete!\n');

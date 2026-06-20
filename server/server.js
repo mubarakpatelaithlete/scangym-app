@@ -52,6 +52,19 @@ const PORT = process.env.PORT || 5000;
 // Frontend directory (Dockerfile copies it to ./public/)
 const FRONTEND_DIR = path.join(__dirname, 'public');
 
+// -- Asset manifest (content-hashed filenames from build.js) --
+// Maps original names → hashed names, e.g. { "app.ctr576.js": "app.ctr576.a3f2b9c.js" }
+let ASSET_MANIFEST = {};
+const manifestPath = path.join(FRONTEND_DIR, '.asset-manifest.json');
+if (fs.existsSync(manifestPath)) {
+  try {
+    ASSET_MANIFEST = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    console.log(`[Build] Asset manifest loaded: ${Object.keys(ASSET_MANIFEST).length} hashed assets`);
+  } catch (e) {
+    console.log('[Build] Asset manifest parse error:', e.message);
+  }
+}
+
 // -- Middleware --
 // Serve pre-compressed Brotli (.br) and gzip (.gz) files when available
 // Generated at build time (build.js) with max compression (Brotli quality 11).
@@ -74,9 +87,13 @@ app.use((req, res, next) => {
     if (reqPath.endsWith('.html') || reqPath.endsWith('sw.js')) {
       res.setHeader('Cache-Control', 'no-cache');
     } else if (reqPath.endsWith('.js') || reqPath.endsWith('.css')) {
-      // JS/CSS: browser caches 1 day, CDN revalidates on every request (s-maxage=0).
-      // Cloudflare auto-purge on startup ensures fresh content after each deploy.
-      res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=0, must-revalidate');
+      // Content-hashed files (e.g. app.ctr576.a3f2b9c.js) → immutable forever cache
+      if (/\.[a-f0-9]{8}\.(js|css)$/i.test(reqPath)) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      } else {
+        // Unhashed files: short cache with revalidation
+        res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=0, must-revalidate');
+      }
     }
   }
   
@@ -563,9 +580,12 @@ if (fs.existsSync(FRONTEND_DIR)) {
       } else if (filePath.endsWith('sw.js')) {
         res.setHeader('Cache-Control', 'no-cache');
       } else if (filePath.endsWith('.js') || filePath.endsWith('.css')) {
-        // Hashed filenames get 1-day cache + stale-while-revalidate; unhashed get 1h
-        if (/\.[a-z0-9]{3,8}\.(js|css)$/i.test(filePath)) {
-          res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
+        // Content-hashed filenames (e.g. app.ctr576.a3f2b9c.js) → cache forever
+        // The hash changes when the file changes, so browsers always get fresh code
+        const basename = path.basename(filePath);
+        const isHashed = Object.values(ASSET_MANIFEST).some(h => basename === h || basename.startsWith(h.split('.')[0] + '.'));
+        if (/\.[a-f0-9]{8}\.(js|css)$/i.test(filePath) || isHashed) {
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
         } else {
           res.setHeader('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400');
         }

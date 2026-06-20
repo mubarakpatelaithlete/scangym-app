@@ -19,11 +19,13 @@ COPY frontend/public/ ./public/
 RUN node build.js
 
 # Verify files and log sizes
-RUN echo "=== v4.4.0 Build ===" && \
+RUN echo "=== v4.5.1 Build (cache-busted) ===" && \
     ls -la public/index.html && \
-    ls -la public/app.ctr576.js public/app.ctr576.js.br public/app.ctr576.js.gz 2>/dev/null && \
+    ls -la public/app.ctr576.*.js 2>/dev/null && \
+    ls -la public/.asset-manifest.json 2>/dev/null && echo "Asset manifest: OK" || echo "Asset manifest: missing" && \
+    cat public/.asset-manifest.json 2>/dev/null || true && \
     ls -la public/reels/index.html 2>/dev/null && echo "Reels app: OK" || echo "Reels app: missing" && \
-    ls -la public/styles.css public/sw.js 2>/dev/null || true && \
+    ls -la public/sw.js 2>/dev/null || true && \
     echo "Public dir size:" && du -sh public/ && \
     echo "Node modules size:" && du -sh node_modules/
 
