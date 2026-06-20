@@ -11508,8 +11508,13 @@ function MusicTabPage(){
   var filtered=tracks;
   if(_search){filtered=tracks.filter(function(t){return t.n.toLowerCase().indexOf(_search.toLowerCase())>=0||t.a.toLowerCase().indexOf(_search.toLowerCase())>=0;});}
   // Progress bar animation
-  var progWidth=_playing?'100%':'35%';
-  var progAnim=_playing?'animation:sgMusicProgress 180s linear forwards;':'';
+  // Live timer
+  if(_playing&&!window._sgMusicTimer){window._sgMusicStart=Date.now();window._sgMusicTimer=setInterval(function(){var el=document.getElementById('sg-music-elapsed');if(el){var s=Math.floor((Date.now()-window._sgMusicStart)/1000);el.textContent=Math.floor(s/60)+':'+(s%60<10?'0':'')+s%60;}var bar=document.getElementById('sg-music-bar');if(bar){var dur=214;var pct=Math.min(100,s/dur*100);bar.style.width=pct+'%';}},1000);}
+  if(!_playing&&window._sgMusicTimer){clearInterval(window._sgMusicTimer);window._sgMusicTimer=null;}
+  var _elapsed=0;if(_playing&&window._sgMusicStart)_elapsed=Math.floor((Date.now()-window._sgMusicStart)/1000);
+  var _elStr=Math.floor(_elapsed/60)+':'+(_elapsed%60<10?'0':'')+_elapsed%60;
+  var progWidth=_playing?(_elapsed/214*100)+'%':'35%';
+  var progAnim='';
   return`<div style="position:relative;width:100%;min-height:calc(100vh - 56px);overflow-y:auto;overflow-x:hidden;background:#0a0a16;-webkit-overflow-scrolling:touch">
     <style>@keyframes sgMusicProgress{0%{width:0%}100%{width:100%}}@keyframes sgMusicPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}@keyframes sgEqualizer{0%,100%{height:4px}50%{height:16px}}</style>
     <!-- Background from playlist art -->
@@ -11533,14 +11538,14 @@ function MusicTabPage(){
         <!-- Controls -->
         <div style="display:flex;align-items:center;justify-content:center;gap:20px">
           <div onclick="window._sgMusicShuffle=!window._sgMusicShuffle;render()" style="width:40px;height:40px;background:${window._sgMusicShuffle?'rgba(255,109,0,.15)':'rgba(255,255,255,.06)'};border:1px solid ${window._sgMusicShuffle?'rgba(255,109,0,.3)':'rgba(255,255,255,.08)'};border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px" title="Shuffle">🔀</div>
-          <div onclick="window._sgMusicTrack=(_at>0?_at-1:7);render()" style="width:44px;height:44px;background:rgba(255,255,255,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px">⏮</div>
+          <div onclick="window._sgMusicTrack=(_at>0?_at-1:7);window._sgMusicStart=Date.now();render()" style="width:44px;height:44px;background:rgba(255,255,255,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px">⏮</div>
           <div onclick="window._sgMusicPlaying=!window._sgMusicPlaying;window._sgMusicEmbed=true;render()" style="width:64px;height:64px;background:#FF6D00;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:26px;box-shadow:0 4px 24px rgba(255,109,0,.4)">${_playing?'⏸':'▶'}</div>
-          <div onclick="window._sgMusicTrack=((_at+1)%8);render()" style="width:44px;height:44px;background:rgba(255,255,255,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px">⏭</div>
+          <div onclick="window._sgMusicTrack=((_at+1)%8);window._sgMusicStart=Date.now();render()" style="width:44px;height:44px;background:rgba(255,255,255,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px">⏭</div>
           <div onclick="window._sgMusicRepeat=!window._sgMusicRepeat;render()" style="width:40px;height:40px;background:${window._sgMusicRepeat?'rgba(255,109,0,.15)':'rgba(255,255,255,.06)'};border:1px solid ${window._sgMusicRepeat?'rgba(255,109,0,.3)':'rgba(255,255,255,.08)'};border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px" title="Repeat">🔁</div>
         </div>
         <!-- Progress bar (animated when playing) -->
-        <div style="margin:16px 24px 4px;height:4px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden"><div style="width:${progWidth};height:100%;background:linear-gradient(90deg,#FF6D00,#ff9a44);border-radius:2px;transition:width .3s;${progAnim}"></div></div>
-        <div style="display:flex;justify-content:space-between;padding:0 28px"><span style="color:rgba(255,255,255,.3);font-size:10px">${_playing?'0:00':'1:12'}</span><span style="color:rgba(255,255,255,.3);font-size:10px">${tracks[_at].d}</span></div>
+        <div style="margin:16px 24px 4px;height:4px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden"><div id="sg-music-bar" style="width:${progWidth};height:100%;background:linear-gradient(90deg,#FF6D00,#ff9a44);border-radius:2px;transition:width 1s linear"></div></div>
+        <div style="display:flex;justify-content:space-between;padding:0 28px"><span id="sg-music-elapsed" style="color:rgba(255,255,255,.3);font-size:10px">${_playing?_elStr:'1:12'}</span><span style="color:rgba(255,255,255,.3);font-size:10px">${tracks[_at].d}</span></div>
       </div>
       ${_showEmbed?'<div style="padding:0 16px 16px"><div style="border-radius:16px;overflow:hidden"><iframe style="border-radius:16px" src="https://open.spotify.com/embed/playlist/'+pl.spotifyId+'?utm_source=generator&theme=0" width="100%" height="152" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe></div><p style="color:rgba(255,255,255,.3);font-size:10px;text-align:center;margin-top:6px">🎧 Tap a track above or use Spotify player</p></div>':''}
       <!-- Track list -->
@@ -11549,7 +11554,7 @@ function MusicTabPage(){
           <p style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px">Up Next</p>
           ${!_showEmbed?'<div onclick="window._sgMusicEmbed=true;render()" style="color:#FF6D00;font-size:11px;font-weight:700;cursor:pointer">Open Player ▶</div>':''}
         </div>
-        ${filtered.map(function(t,i){var isActive=i===_at;return '<div onclick="window._sgMusicTrack='+i+';window._sgMusicPlaying=true;window._sgMusicEmbed=true;render()" style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:'+(isActive?'rgba(255,109,0,.1)':'rgba(255,255,255,.03)')+';border:1px solid '+(isActive?'rgba(255,109,0,.2)':'rgba(255,255,255,.05)')+';border-radius:14px;margin-bottom:6px;cursor:pointer;transition:all .15s" ontouchstart="this.style.transform=\'scale(.98)\'" ontouchend="this.style.transform=\'\'">'
+        ${filtered.map(function(t,i){var isActive=i===_at;return '<div onclick="window._sgMusicTrack='+i+';window._sgMusicPlaying=true;window._sgMusicEmbed=true;window._sgMusicStart=Date.now();render()" style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:'+(isActive?'rgba(255,109,0,.1)':'rgba(255,255,255,.03)')+';border:1px solid '+(isActive?'rgba(255,109,0,.2)':'rgba(255,255,255,.05)')+';border-radius:14px;margin-bottom:6px;cursor:pointer;transition:all .15s" ontouchstart="this.style.transform=\'scale(.98)\'" ontouchend="this.style.transform=\'\'">'
           +'<div style="width:44px;height:44px;border-radius:10px;overflow:hidden;flex-shrink:0;position:relative"><img src="'+t.img+'" width="44" height="44" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display=\'none\'">'+(isActive&&_playing?'<div style="position:absolute;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center;gap:2px;padding-bottom:8px"><div style="width:3px;background:#FF6D00;border-radius:2px;animation:sgEqualizer .4s ease infinite"></div><div style="width:3px;background:#FF6D00;border-radius:2px;animation:sgEqualizer .4s ease .1s infinite"></div><div style="width:3px;background:#FF6D00;border-radius:2px;animation:sgEqualizer .4s ease .2s infinite"></div><div style="width:3px;background:#FF6D00;border-radius:2px;animation:sgEqualizer .4s ease .3s infinite"></div></div>':'')+'</div>'
           +'<div style="flex:1;min-width:0"><p style="color:'+(isActive?'#FF6D00':'#fff')+';font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+t.n+'</p><p style="color:rgba(255,255,255,.35);font-size:11px">'+t.a+'</p></div>'
           +'<span style="color:rgba(255,255,255,.3);font-size:11px;flex-shrink:0">'+t.d+'</span></div>';}).join('')}
@@ -11633,7 +11638,7 @@ function _photoCard(p,idx){
 }
 function _photoOverlay(p){
   if(!p)return '';
-  return '<div onclick="window._sgPhotosFS=null;render()" style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.95);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;animation:fadeInUp .2s ease">'
+  return '<div onclick="window._sgPhotosFS=null;render()" style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.98);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;animation:fadeInUp .2s ease">'
     +'<div onclick="event.stopPropagation()" style="max-width:100%;max-height:80vh;position:relative">'
     +'<img src="'+p.img.replace('w=400','w=800').replace('h=400','h=800').replace('h=500','h=800').replace('h=600','h=900').replace('h=450','h=700').replace('h=550','h=800')+'" style="max-width:100%;max-height:70vh;object-fit:contain;border-radius:20px;display:block">'
     +'<div style="margin-top:16px;text-align:center">'
@@ -11649,6 +11654,14 @@ function _photoOverlay(p){
 }
 
 // ═══ CHAT TAB — Steal ChatGPT/Claude: always-visible input, streaming, smart responses ═══
+// Simple markdown→HTML for chat: **bold**, *italic*, \n→<br>, •→bullet
+function _sgMd(t){
+  return t
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.+?)\*\*/g,'<strong style="color:#fff">$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/\n/g,'<br>');
+}
 function ChatTabPage(){
   var u=state.user;
   if(!window._sgChatMsgs){
@@ -11734,9 +11747,9 @@ function ChatTabPage(){
     <div id="sg-chat-scroll" style="flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch">
       ${msgs.map(function(m){
         if(m.role==='ai'){
-          return '<div style="display:flex;gap:10px;margin-bottom:16px;max-width:88%"><div style="width:28px;height:28px;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;margin-top:2px">🤖</div><div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:18px;border-top-left-radius:4px;padding:12px 16px;color:rgba(255,255,255,.85);font-size:14px;line-height:1.6;white-space:pre-wrap">'+m.text+'</div></div>';
+          return '<div style="display:flex;gap:10px;margin-bottom:16px;max-width:88%"><div style="width:28px;height:28px;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;margin-top:2px">🤖</div><div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:18px;border-top-left-radius:4px;padding:12px 16px;color:rgba(255,255,255,.85);font-size:14px;line-height:1.6">'+_sgMd(m.text)+'</div></div>';
         }else{
-          return '<div style="display:flex;justify-content:flex-end;margin-bottom:16px"><div style="max-width:80%;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:18px;border-top-right-radius:4px;padding:12px 16px;color:#fff;font-size:14px;line-height:1.5;white-space:pre-wrap">'+m.text+'</div></div>';
+          return '<div style="display:flex;justify-content:flex-end;margin-bottom:16px"><div style="max-width:80%;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:18px;border-top-right-radius:4px;padding:12px 16px;color:#fff;font-size:14px;line-height:1.5">'+_sgMd(m.text)+'</div></div>';
         }
       }).join('')}
       ${_typing?'<div style="display:flex;gap:10px;margin-bottom:16px"><div style="width:28px;height:28px;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">🤖</div><div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:18px;border-top-left-radius:4px;padding:14px 20px;display:flex;gap:4px"><span style="width:8px;height:8px;background:#FF6D00;border-radius:50%;animation:sgTypingDot 1.4s infinite"></span><span style="width:8px;height:8px;background:#FF6D00;border-radius:50%;animation:sgTypingDot 1.4s .2s infinite"></span><span style="width:8px;height:8px;background:#FF6D00;border-radius:50%;animation:sgTypingDot 1.4s .4s infinite"></span></div></div>':''}
