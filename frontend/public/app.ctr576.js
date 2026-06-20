@@ -16706,15 +16706,16 @@ window._connectWhatsApp=async function(){
   var btn=document.getElementById('ch-connect-btn');
   btn.textContent='Connecting...';btn.disabled=true;
   try{
-    // For WhatsApp, we connect using their phone number (already in the system)
     var phone=state.user&&state.user.phone;
     if(!phone){sgToast('Please add a phone number first','error');btn.textContent='Open WhatsApp Chat 💬';btn.disabled=false;return;}
     var r=await fetch('/api/channels/connect',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({channel:'whatsapp',channelUserId:'whatsapp:'+phone,channelUsername:phone})});
     var data=await r.json();
     if(data.success){
-      // Open WhatsApp with pre-filled message
-      var waNumber=(window._sgTwilioPhone||'+447700900000').replace(/[^0-9]/g,'');
-      window.open('https://wa.me/'+waNumber+'?text=Hi%20ScanGym!','_blank');
+      // Fetch real WhatsApp number from backend
+      var waNumber='';
+      try{var wr=await fetch('/api/channels/whatsapp/number');var wd=await wr.json();waNumber=(wd.number||'').replace(/[^0-9]/g,'');}catch(e){}
+      if(waNumber){window.open('https://wa.me/'+waNumber+'?text=Hi%20ScanGym!','_blank');}
+      else{sgToast('WhatsApp number not available yet — connected anyway!','info');}
       var popup=document.getElementById('sg-bottom-popup');
       if(popup)popup.remove();
       sgToast('✅ WhatsApp connected!','success',3000);
@@ -16730,8 +16731,11 @@ window._connectDiscord=async function(){
     var r=await fetch('/api/channels/connect',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({channel:'discord',channelUsername:state.user&&state.user.name||'User'})});
     var data=await r.json();
     if(data.success){
-      // Open Discord bot invite link
-      window.open('https://discord.com/api/oauth2/authorize?client_id=&permissions=2048&scope=bot','_blank');
+      // Fetch real Discord invite URL from backend
+      var inviteUrl='';
+      try{var dr=await fetch('/api/channels/discord/invite');var dd=await dr.json();inviteUrl=dd.inviteUrl||'';}catch(e){}
+      if(inviteUrl){window.open(inviteUrl,'_blank');}
+      else{sgToast('Discord bot not configured yet — connected anyway!','info');}
       var popup=document.getElementById('sg-bottom-popup');
       if(popup)popup.remove();
       sgToast('✅ Discord bot added! DM it to start','success',3000);

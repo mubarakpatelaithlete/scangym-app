@@ -258,3 +258,35 @@ router.post('/welcome', async (req, res) => {
 });
 
 module.exports = router;
+
+// ─── GET /api/channels/discord/invite — Get Discord bot invite URL ───
+router.get('/discord/invite', async (req, res) => {
+  try {
+    // Try to get the bot user ID from the discord module status
+    let botId = '';
+    try {
+      const discord = require('../chatbot/discord');
+      const status = discord.getStatus();
+      if (status && status.bot && status.bot.id) botId = status.bot.id;
+    } catch(e) {}
+
+    if (!botId) {
+      return res.json({ inviteUrl: null, message: 'Discord bot not configured' });
+    }
+
+    const inviteUrl = `https://discord.com/api/oauth2/authorize?client_id=${botId}&permissions=2048&scope=bot`;
+    res.json({ inviteUrl, botId });
+  } catch (err) {
+    console.error('[Channels] Discord invite error:', err.message);
+    res.status(500).json({ error: 'Failed to get invite URL' });
+  }
+});
+
+// ─── GET /api/channels/whatsapp/number — Get WhatsApp number ───
+router.get('/whatsapp/number', async (req, res) => {
+  const phone = process.env.TWILIO_PHONE_NUMBER || '';
+  if (!phone) {
+    return res.json({ number: null, message: 'WhatsApp number not configured' });
+  }
+  res.json({ number: phone });
+});
