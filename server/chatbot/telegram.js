@@ -37,8 +37,38 @@ router.post('/webhook', async (req, res) => {
     const text = msg.text.trim();
     const userName = [msg.from.first_name, msg.from.last_name].filter(Boolean).join(' ') || 'Telegram User';
 
-    // Skip /start command — send help
-    const input = text === '/start' ? 'help' : text;
+    // Handle /start with deep link token (Layer 2 channel connect)
+    let input = text;
+    if (text === '/start') {
+      input = 'help';
+    } else if (text.startsWith('/start ')) {
+      const token = text.split('/start ')[1].trim();
+      if (token && token.length >= 16) {
+        // This is a channel connect deep link — verify the token
+        try {
+          const verifyResp = await fetch((process.env.BASE_URL || 'https://scangym.com') + '/api/channels/telegram/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              token,
+              telegramUserId: msg.from.id,
+              telegramUsername: msg.from.username || null,
+              telegramName: userName,
+            }),
+          });
+          const verifyData = await verifyResp.json();
+          if (verifyData.success) {
+            await sendTelegramMessage(chatId, '✅ *Connected!*\n\nYour ScanGym account is now linked to Telegram.\n\nTry: "Find gyms near Manchester"');
+            return;
+          }
+        } catch (e) {
+          console.error('[Telegram] Deep link verify error:', e.message);
+        }
+        input = 'help';
+      } else {
+        input = 'help';
+      }
+    }
 
     // Send "typing..." indicator
     sendAction(chatId, 'typing');
