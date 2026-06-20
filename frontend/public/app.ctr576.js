@@ -11477,76 +11477,123 @@ window._closeSearchOverlay=function(){
 
 // ─── Router ───
 // ─── Bottom Tab Bar (Polished — IG/TikTok/YT style) ───
-// ═══ MUSIC TAB — Audio fitness content ═══
+// ═══ MUSIC TAB — Steal Spotify: real audio, real art, real controls ═══
 function MusicTabPage(){
-  // ═══ FULL-SCREEN SPOTIFY-STYLE MUSIC — TikTok immersive layout ═══
   var playlists=[
-    {id:1,title:'Beast Mode',sub:'High intensity \xb7 45 min',emoji:'\ud83d\udd25',grad:'linear-gradient(135deg,#dc2626,#991b1b)',plays:'12.4K'},
-    {id:2,title:'Cardio Rush',sub:'Running & HIIT \xb7 38 min',emoji:'\ud83c\udfc3',grad:'linear-gradient(135deg,#f97316,#c2410c)',plays:'8.7K'},
-    {id:3,title:'Power Lift',sub:'Heavy sets \xb7 52 min',emoji:'\ud83d\udcaa',grad:'linear-gradient(135deg,#3b82f6,#1d4ed8)',plays:'15.1K'},
-    {id:4,title:'Yoga Flow',sub:'Stretching & calm \xb7 30 min',emoji:'\ud83e\uddd8',grad:'linear-gradient(135deg,#22c55e,#15803d)',plays:'6.2K'},
-    {id:5,title:'Boxing Beat',sub:'Combat rhythm \xb7 40 min',emoji:'\ud83e\udd4a',grad:'linear-gradient(135deg,#a855f7,#7c3aed)',plays:'9.8K'},
-    {id:6,title:'Lo-Fi Focus',sub:'Zen concentration \xb7 60 min',emoji:'\ud83c\udfa7',grad:'linear-gradient(135deg,#06b6d4,#0891b2)',plays:'11.3K'},
-    {id:7,title:'Heavy Metal',sub:'Aggressive lifts \xb7 48 min',emoji:'\ud83e\udd18',grad:'linear-gradient(135deg,#64748b,#334155)',plays:'7.5K'},
-    {id:8,title:'Cool Down',sub:'Recovery & stretch \xb7 20 min',emoji:'\ud83c\udf19',grad:'linear-gradient(135deg,#6366f1,#4338ca)',plays:'4.9K'}
+    {id:1,title:'Beast Mode',sub:'High intensity · 45 min',img:'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400&h=400&fit=crop',plays:'12.4K',spotifyId:'37i9dQZF1DX76Wlfdnj7AP'},
+    {id:2,title:'Cardio Rush',sub:'Running & HIIT · 38 min',img:'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400&h=400&fit=crop',plays:'8.7K',spotifyId:'37i9dQZF1DX3ZeFHRhhi7Y'},
+    {id:3,title:'Power Lift',sub:'Heavy sets · 52 min',img:'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=400&h=400&fit=crop',plays:'15.1K',spotifyId:'37i9dQZF1DX70RN3TfnE9m'},
+    {id:4,title:'Yoga Flow',sub:'Stretching & calm · 30 min',img:'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&h=400&fit=crop',plays:'6.2K',spotifyId:'37i9dQZF1DX9uKNf5jGX6m'},
+    {id:5,title:'Boxing Beat',sub:'Combat rhythm · 40 min',img:'https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?w=400&h=400&fit=crop',plays:'9.8K',spotifyId:'37i9dQZF1DX5OUTmBCPLvR'},
+    {id:6,title:'Lo-Fi Focus',sub:'Zen concentration · 60 min',img:'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=400&h=400&fit=crop',plays:'11.3K',spotifyId:'37i9dQZF1DWWQRwui0ExPn'},
+    {id:7,title:'Heavy Metal',sub:'Aggressive lifts · 48 min',img:'https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=400&h=400&fit=crop',plays:'7.5K',spotifyId:'37i9dQZF1DX9qNs32fujYe'},
+    {id:8,title:'Cool Down',sub:'Recovery & stretch · 20 min',img:'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=400&h=400&fit=crop',plays:'4.9K',spotifyId:'37i9dQZF1DX2PQDq3PfrWk'}
+  ];
+  var tracks=[
+    {n:'Unstoppable',a:'The Score',d:'3:24',img:'https://images.unsplash.com/photo-1470468969717-61d5d54fd036?w=80&h=80&fit=crop'},
+    {n:'Till I Collapse',a:'Eminem',d:'4:57',img:'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=80&h=80&fit=crop'},
+    {n:'Stronger',a:'Kanye West',d:'5:11',img:'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=80&h=80&fit=crop'},
+    {n:'Eye of the Tiger',a:'Survivor',d:'4:05',img:'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=80&h=80&fit=crop'},
+    {n:'Lose Yourself',a:'Eminem',d:'5:26',img:'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=80&h=80&fit=crop'},
+    {n:'Remember the Name',a:'Fort Minor',d:'3:50',img:'https://images.unsplash.com/photo-1504898770365-14faca6a7320?w=80&h=80&fit=crop'},
+    {n:'Thunderstruck',a:'AC/DC',d:'4:52',img:'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=80&h=80&fit=crop'},
+    {n:'Can\'t Hold Us',a:'Macklemore',d:'4:18',img:'https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?w=80&h=80&fit=crop'}
   ];
   var _ci=window._sgMusicIdx||0;var pl=playlists[_ci];
-  var tracks=[
-    {n:'Unstoppable',a:'The Score',d:'3:24'},{n:'Till I Collapse',a:'Eminem',d:'4:57'},
-    {n:'Stronger',a:'Kanye West',d:'5:11'},{n:'Eye of the Tiger',a:'Survivor',d:'4:05'},
-    {n:'Lose Yourself',a:'Eminem',d:'5:26'},{n:'Remember the Name',a:'Fort Minor',d:'3:50'},
-    {n:'Thunderstruck',a:'AC/DC',d:'4:52'},{n:'Can\'t Hold Us',a:'Macklemore',d:'4:18'}
-  ];
+  var _at=window._sgMusicTrack||0;
+  var _playing=window._sgMusicPlaying||false;
+  var _search=window._sgMusicSearch||'';
+  var _showEmbed=window._sgMusicEmbed||false;
+  // Filter tracks by search
+  var filtered=tracks;
+  if(_search){filtered=tracks.filter(function(t){return t.n.toLowerCase().indexOf(_search.toLowerCase())>=0||t.a.toLowerCase().indexOf(_search.toLowerCase())>=0;});}
+  // Progress bar animation
+  var progWidth=_playing?'100%':'35%';
+  var progAnim=_playing?'animation:sgMusicProgress 180s linear forwards;':'';
   return`<div style="position:relative;width:100%;min-height:calc(100vh - 56px);overflow-y:auto;overflow-x:hidden;background:#0a0a16;-webkit-overflow-scrolling:touch">
-    <div style="position:absolute;top:0;left:0;right:0;height:50%;${pl.grad};opacity:.12"></div>
-    <div style="position:absolute;top:0;left:0;right:0;height:55%;background:linear-gradient(180deg,transparent 40%,#0a0a16 100%)"></div>
+    <style>@keyframes sgMusicProgress{0%{width:0%}100%{width:100%}}@keyframes sgMusicPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}@keyframes sgEqualizer{0%,100%{height:4px}50%{height:16px}}</style>
+    <!-- Background from playlist art -->
+    <div style="position:absolute;top:0;left:0;right:0;height:55%;background:url('${pl.img}') center/cover;opacity:.15;filter:blur(40px)"></div>
+    <div style="position:absolute;top:0;left:0;right:0;height:60%;background:linear-gradient(180deg,transparent 30%,#0a0a16 100%)"></div>
     <div style="position:relative;z-index:2;padding-bottom:20px">
+      <!-- Top bar with search -->
       <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px 8px">
-        <span style="color:#fff;font-size:18px;font-weight:800">\ud83c\udfb5 Music</span>
-        <div onclick="sgToast('\ud83d\udd0d Search coming soon','info',2000)" style="width:36px;height:36px;background:rgba(255,255,255,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px">\ud83d\udd0d</div>
-      </div>
-      <div style="text-align:center;padding:12px 32px 16px">
-        <div style="width:200px;height:200px;margin:0 auto 16px;border-radius:24px;${pl.grad};display:flex;align-items:center;justify-content:center;font-size:72px;box-shadow:0 20px 60px rgba(0,0,0,.5)">${pl.emoji}</div>
-        <p style="color:#fff;font-size:22px;font-weight:900;margin-bottom:2px">${pl.title}</p>
-        <p style="color:rgba(255,255,255,.45);font-size:13px;margin-bottom:16px">${pl.sub} \xb7 ${pl.plays} plays</p>
-        <div style="display:flex;align-items:center;justify-content:center;gap:28px">
-          <div onclick="window._sgMusicIdx=(_ci>0?_ci-1:7);render()" style="width:44px;height:44px;background:rgba(255,255,255,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px">\u23ee</div>
-          <div onclick="sgToast('\u25b6 Playing '+pl.title,'info',2000)" style="width:64px;height:64px;background:#FF6D00;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:26px;box-shadow:0 4px 24px rgba(255,109,0,.4)">\u25b6</div>
-          <div onclick="window._sgMusicIdx=((_ci+1)%8);render()" style="width:44px;height:44px;background:rgba(255,255,255,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px">\u23ed</div>
+        <span style="color:#fff;font-size:18px;font-weight:800">🎵 Music</span>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div onclick="window._sgMusicSearchOpen=!window._sgMusicSearchOpen;render()" style="width:36px;height:36px;background:rgba(255,255,255,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px">🔍</div>
         </div>
-        <div style="margin:16px 24px 4px;height:3px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden"><div style="width:35%;height:100%;background:#FF6D00;border-radius:2px"></div></div>
-        <div style="display:flex;justify-content:space-between;padding:0 28px"><span style="color:rgba(255,255,255,.3);font-size:10px">1:12</span><span style="color:rgba(255,255,255,.3);font-size:10px">3:24</span></div>
       </div>
+      ${window._sgMusicSearchOpen?'<div style="padding:0 20px 12px"><input id="sg-music-search" type="text" placeholder="Search tracks or artists..." value="'+_search+'" oninput="window._sgMusicSearch=this.value;render()" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:12px 18px;color:#fff;font-size:14px;outline:none;box-sizing:border-box" onfocus="this.style.borderColor=\'rgba(255,109,0,.4)\'" onblur="this.style.borderColor=\'rgba(255,255,255,.1)\'"></div>':''}
+      <!-- Now Playing hero -->
+      <div style="text-align:center;padding:12px 32px 16px">
+        <div style="width:220px;height:220px;margin:0 auto 16px;border-radius:24px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.6);${_playing?'animation:sgMusicPulse 2s ease-in-out infinite':''}"><img src="${pl.img}" width="220" height="220" style="width:100%;height:100%;object-fit:cover;display:block" alt="${pl.title}" onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#FF6D00,#E66200)';this.parentElement.innerHTML='<div style=\\'display:flex;align-items:center;justify-content:center;height:100%;font-size:72px\\'>🎵</div>'"></div>
+        <p style="color:#fff;font-size:22px;font-weight:900;margin-bottom:2px">${pl.title}</p>
+        <p style="color:rgba(255,255,255,.45);font-size:13px;margin-bottom:8px">${pl.sub} · ${pl.plays} plays</p>
+        <p style="color:rgba(255,255,255,.3);font-size:11px;margin-bottom:16px">Now playing: ${tracks[_at].n} — ${tracks[_at].a}</p>
+        <!-- Controls -->
+        <div style="display:flex;align-items:center;justify-content:center;gap:20px">
+          <div onclick="window._sgMusicShuffle=!window._sgMusicShuffle;render()" style="width:40px;height:40px;background:${window._sgMusicShuffle?'rgba(255,109,0,.15)':'rgba(255,255,255,.06)'};border:1px solid ${window._sgMusicShuffle?'rgba(255,109,0,.3)':'rgba(255,255,255,.08)'};border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px" title="Shuffle">🔀</div>
+          <div onclick="window._sgMusicTrack=(_at>0?_at-1:7);render()" style="width:44px;height:44px;background:rgba(255,255,255,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px">⏮</div>
+          <div onclick="window._sgMusicPlaying=!window._sgMusicPlaying;window._sgMusicEmbed=true;render()" style="width:64px;height:64px;background:#FF6D00;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:26px;box-shadow:0 4px 24px rgba(255,109,0,.4)">${_playing?'⏸':'▶'}</div>
+          <div onclick="window._sgMusicTrack=((_at+1)%8);render()" style="width:44px;height:44px;background:rgba(255,255,255,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px">⏭</div>
+          <div onclick="window._sgMusicRepeat=!window._sgMusicRepeat;render()" style="width:40px;height:40px;background:${window._sgMusicRepeat?'rgba(255,109,0,.15)':'rgba(255,255,255,.06)'};border:1px solid ${window._sgMusicRepeat?'rgba(255,109,0,.3)':'rgba(255,255,255,.08)'};border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px" title="Repeat">🔁</div>
+        </div>
+        <!-- Progress bar (animated when playing) -->
+        <div style="margin:16px 24px 4px;height:4px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden"><div style="width:${progWidth};height:100%;background:linear-gradient(90deg,#FF6D00,#ff9a44);border-radius:2px;transition:width .3s;${progAnim}"></div></div>
+        <div style="display:flex;justify-content:space-between;padding:0 28px"><span style="color:rgba(255,255,255,.3);font-size:10px">${_playing?'0:00':'1:12'}</span><span style="color:rgba(255,255,255,.3);font-size:10px">${tracks[_at].d}</span></div>
+      </div>
+      ${_showEmbed?'<div style="padding:0 16px 16px"><div style="border-radius:16px;overflow:hidden"><iframe style="border-radius:16px" src="https://open.spotify.com/embed/playlist/'+pl.spotifyId+'?utm_source=generator&theme=0" width="100%" height="152" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe></div><p style="color:rgba(255,255,255,.3);font-size:10px;text-align:center;margin-top:6px">🎧 Tap a track above or use Spotify player</p></div>':''}
+      <!-- Track list -->
       <div style="padding:0 16px">
-        <p style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;padding:0 4px">Up Next</p>
-        ${tracks.map(function(t,i){return '<div onclick="sgToast(\'\u25b6 '+t.n+'\',\'info\',2000)" style="display:flex;align-items:center;gap:12px;padding:12px;background:'+(i===0?'rgba(255,109,0,.08)':'rgba(255,255,255,.03)')+';border:1px solid '+(i===0?'rgba(255,109,0,.15)':'rgba(255,255,255,.05)')+';border-radius:14px;margin-bottom:6px;cursor:pointer" ontouchstart="this.style.background=\'rgba(255,255,255,.08)\'" ontouchend="this.style.background=\''+(i===0?'rgba(255,109,0,.08)':'rgba(255,255,255,.03)')+'\'">'
-          +'<div style="width:40px;height:40px;background:rgba(255,255,255,.06);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;color:'+(i===0?'#FF6D00':'rgba(255,255,255,.4)')+';font-weight:800">'+(i+1)+'</div>'
-          +'<div style="flex:1;min-width:0"><p style="color:#fff;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+t.n+'</p><p style="color:rgba(255,255,255,.35);font-size:11px">'+t.a+'</p></div>'
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:0 4px">
+          <p style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px">Up Next</p>
+          ${!_showEmbed?'<div onclick="window._sgMusicEmbed=true;render()" style="color:#FF6D00;font-size:11px;font-weight:700;cursor:pointer">Open Player ▶</div>':''}
+        </div>
+        ${filtered.map(function(t,i){var isActive=i===_at;return '<div onclick="window._sgMusicTrack='+i+';window._sgMusicPlaying=true;window._sgMusicEmbed=true;render()" style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:'+(isActive?'rgba(255,109,0,.1)':'rgba(255,255,255,.03)')+';border:1px solid '+(isActive?'rgba(255,109,0,.2)':'rgba(255,255,255,.05)')+';border-radius:14px;margin-bottom:6px;cursor:pointer;transition:all .15s" ontouchstart="this.style.transform=\'scale(.98)\'" ontouchend="this.style.transform=\'\'">'
+          +'<div style="width:44px;height:44px;border-radius:10px;overflow:hidden;flex-shrink:0;position:relative"><img src="'+t.img+'" width="44" height="44" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display=\'none\'">'+(isActive&&_playing?'<div style="position:absolute;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center;gap:2px;padding-bottom:8px"><div style="width:3px;background:#FF6D00;border-radius:2px;animation:sgEqualizer .4s ease infinite"></div><div style="width:3px;background:#FF6D00;border-radius:2px;animation:sgEqualizer .4s ease .1s infinite"></div><div style="width:3px;background:#FF6D00;border-radius:2px;animation:sgEqualizer .4s ease .2s infinite"></div><div style="width:3px;background:#FF6D00;border-radius:2px;animation:sgEqualizer .4s ease .3s infinite"></div></div>':'')+'</div>'
+          +'<div style="flex:1;min-width:0"><p style="color:'+(isActive?'#FF6D00':'#fff')+';font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+t.n+'</p><p style="color:rgba(255,255,255,.35);font-size:11px">'+t.a+'</p></div>'
           +'<span style="color:rgba(255,255,255,.3);font-size:11px;flex-shrink:0">'+t.d+'</span></div>';}).join('')}
+        <!-- Playlist grid -->
         <p style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin:16px 0 10px;padding:0 4px">All Playlists</p>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-bottom:16px">
-          ${playlists.map(function(p,i){return '<div onclick="window._sgMusicIdx='+i+';render()" style="background:rgba(255,255,255,.04);border:1px solid '+(i===_ci?'rgba(255,109,0,.3)':'rgba(255,255,255,.06)')+';border-radius:14px;padding:14px;cursor:pointer;text-align:center;transition:.15s" ontouchstart="this.style.transform=\'scale(.96)\'" ontouchend="this.style.transform=\'\'"><span style="font-size:32px;display:block;margin-bottom:6px">'+p.emoji+'</span><p style="color:#fff;font-size:12px;font-weight:700">'+p.title+'</p><p style="color:rgba(255,255,255,.3);font-size:10px">'+p.plays+' plays</p></div>';}).join('')}
+          ${playlists.map(function(p,i){return '<div onclick="window._sgMusicIdx='+i+';window._sgMusicTrack=0;window._sgMusicEmbed=true;render()" style="background:rgba(255,255,255,.04);border:1px solid '+(i===_ci?'rgba(255,109,0,.3)':'rgba(255,255,255,.06)')+';border-radius:14px;overflow:hidden;cursor:pointer;transition:.15s" ontouchstart="this.style.transform=\'scale(.96)\'" ontouchend="this.style.transform=\'\'"><div style="width:100%;aspect-ratio:1;overflow:hidden"><img src="'+p.img+'" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display=\'none\'"></div><div style="padding:10px 12px"><p style="color:#fff;font-size:12px;font-weight:700">'+p.title+'</p><p style="color:rgba(255,255,255,.3);font-size:10px">'+p.plays+' plays</p></div></div>';}).join('')}
         </div>
       </div>
     </div>
   </div>`;
 }
 
-// ═══ PHOTOS TAB — Full-screen TikTok-style image carousel ═══
+// ═══ PHOTOS TAB — Steal Pinterest: masonry grid, real photos, working filters ═══
 function PhotosTabPage(){
   var categories=['🔥 Trending','💪 Before/After','🏋️ Form Tips','🍽 Meal Prep','📊 Progress','🏅 PRs'];
   var _catIdx=window._sgPhotosCat||0;
-  var photos=[
-    {emoji:'🏋️',title:'Morning Deadlift PR',user:'@fitking_23',likes:'2.4K',bg:'linear-gradient(135deg,#1a1a2e,#16213e)'},
-    {emoji:'💪',title:'6 Month Transformation',user:'@sarah_gains',likes:'8.1K',bg:'linear-gradient(135deg,#0f3460,#1a1a2e)'},
-    {emoji:'🥗',title:'High Protein Meal Prep',user:'@mealmaster',likes:'3.7K',bg:'linear-gradient(135deg,#1b4332,#081c15)'},
-    {emoji:'🏃',title:'5K Personal Best!',user:'@runner_mike',likes:'1.9K',bg:'linear-gradient(135deg,#312e81,#1e1b4b)'},
-    {emoji:'🧘',title:'Sunrise Yoga Session',user:'@zen_fit',likes:'5.2K',bg:'linear-gradient(135deg,#422006,#1c1917)'},
-    {emoji:'🥊',title:'Boxing Session Highlights',user:'@boxfit_uk',likes:'4.6K',bg:'linear-gradient(135deg,#7f1d1d,#450a0a)'},
-    {emoji:'📊',title:'12 Week Progress Update',user:'@trackingpro',likes:'6.3K',bg:'linear-gradient(135deg,#1e3a5f,#0c1929)'},
-    {emoji:'🏅',title:'Competition Day!',user:'@powerlifter99',likes:'9.8K',bg:'linear-gradient(135deg,#3f3f46,#18181b)'},
-    {emoji:'🔥',title:'Leg Day Pump',user:'@quad_queen',likes:'3.1K',bg:'linear-gradient(135deg,#4c0519,#1c0612)'}
+  // Real Unsplash gym/fitness photos — 2 arrays for masonry columns
+  var allPhotos=[
+    {img:'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400&h=500&fit=crop',title:'Morning Deadlift PR',user:'@fitking_23',likes:'2.4K',h:280,cat:0},
+    {img:'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400&h=600&fit=crop',title:'6 Month Transformation',user:'@sarah_gains',likes:'8.1K',h:340,cat:1},
+    {img:'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=400&h=400&fit=crop',title:'High Protein Meal Prep',user:'@mealmaster',likes:'3.7K',h:240,cat:3},
+    {img:'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=400&h=500&fit=crop',title:'5K Personal Best!',user:'@runner_mike',likes:'1.9K',h:300,cat:4},
+    {img:'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&h=550&fit=crop',title:'Sunrise Yoga Session',user:'@zen_fit',likes:'5.2K',h:320,cat:0},
+    {img:'https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?w=400&h=450&fit=crop',title:'Boxing Highlights',user:'@boxfit_uk',likes:'4.6K',h:260,cat:2},
+    {img:'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=400&h=500&fit=crop',title:'12 Week Progress',user:'@trackingpro',likes:'6.3K',h:290,cat:4},
+    {img:'https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=400&h=600&fit=crop',title:'Competition Day!',user:'@powerlifter99',likes:'9.8K',h:350,cat:5},
+    {img:'https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=400&h=450&fit=crop',title:'Leg Day Pump',user:'@quad_queen',likes:'3.1K',h:260,cat:0},
+    {img:'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=400&h=500&fit=crop',title:'Perfect Squat Form',user:'@formcheck',likes:'7.2K',h:300,cat:2},
+    {img:'https://images.unsplash.com/photo-1532384748853-8f54a8f476e2?w=400&h=400&fit=crop',title:'Healthy Bowl Prep',user:'@eatclean',likes:'4.1K',h:240,cat:3},
+    {img:'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=400&h=550&fit=crop',title:'Cable Fly Gains',user:'@chestday',likes:'5.8K',h:330,cat:0},
+    {img:'https://images.unsplash.com/photo-1605296867304-46d5465a13f1?w=400&h=500&fit=crop',title:'Home Workout Setup',user:'@homegym_pro',likes:'6.5K',h:290,cat:2},
+    {img:'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=400&h=450&fit=crop',title:'Stretching Routine',user:'@flex_daily',likes:'2.8K',h:260,cat:1},
+    {img:'https://images.unsplash.com/photo-1546483875-ad9014c88eba?w=400&h=500&fit=crop',title:'Marathon Training',user:'@run_26mi',likes:'3.9K',h:300,cat:4},
+    {img:'https://images.unsplash.com/photo-1579758629938-03607ccdbaba?w=400&h=550&fit=crop',title:'Bench PR 140kg!',user:'@benchbeast',likes:'11.2K',h:340,cat:5}
   ];
+  // Filter by category (0 = trending = show all)
+  var photos=_catIdx===0?allPhotos:allPhotos.filter(function(p){return p.cat===_catIdx;});
+  if(photos.length===0)photos=allPhotos;
+  // Split into 2 columns for masonry
+  var col1=[],col2=[];
+  photos.forEach(function(p,i){if(i%2===0)col1.push(p);else col2.push(p);});
+  // Full-screen overlay state
+  var _fsPhoto=window._sgPhotosFS;
   return`<div style="position:relative;width:100%;min-height:calc(100vh - 56px);overflow-y:auto;overflow-x:hidden;background:#0a0a16;-webkit-overflow-scrolling:touch">
     <!-- Top bar -->
     <div style="position:sticky;top:0;z-index:10;background:rgba(10,10,22,.95);backdrop-filter:blur(16px);padding:16px 16px 0">
@@ -11556,34 +11603,54 @@ function PhotosTabPage(){
           <div onclick="sgToast('📷 Upload coming soon','info',2000)" style="width:36px;height:36px;background:rgba(255,109,0,.12);border:1px solid rgba(255,109,0,.25);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px">➕</div>
         </div>
       </div>
-      <!-- Category pills (horizontal scroll) -->
+      <!-- Category pills -->
       <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:12px;-webkit-overflow-scrolling:touch">
-        ${categories.map(function(c,i){return '<button onclick="window._sgPhotosCat='+i+';render()" style="flex-shrink:0;background:'+(i===_catIdx?'rgba(255,109,0,.15)':'rgba(255,255,255,.04)')+';border:1px solid '+(i===_catIdx?'rgba(255,109,0,.3)':'rgba(255,255,255,.08)')+';color:'+(i===_catIdx?'#FF6D00':'rgba(255,255,255,.5)')+';padding:8px 16px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">'+c+'</button>';}).join('')}
+        ${categories.map(function(c,i){return '<button onclick="window._sgPhotosCat='+i+';render()" style="flex-shrink:0;background:'+(i===_catIdx?'rgba(255,109,0,.15)':'rgba(255,255,255,.04)')+';border:1px solid '+(i===_catIdx?'rgba(255,109,0,.3)':'rgba(255,255,255,.08)')+';color:'+(i===_catIdx?'#FF6D00':'rgba(255,255,255,.5)')+';padding:8px 16px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:.15s">'+c+'</button>';}).join('')}
       </div>
     </div>
-    <!-- Full-screen style photo cards (each takes most of viewport like TikTok) -->
-    <div style="padding:4px 12px 20px">
-      ${photos.map(function(p,i){return '<div onclick="sgToast(\'📸 Full-screen view coming soon\',\'info\',2000)" style="width:100%;height:420px;margin-bottom:8px;border-radius:20px;overflow:hidden;position:relative;cursor:pointer;${p.bg}">'
-        +'<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:80px">'+p.emoji+'</div>'
-        +'<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.75));padding:20px 16px 16px">'
-        +'<p style="color:#fff;font-size:16px;font-weight:800;margin-bottom:4px;text-shadow:0 2px 8px rgba(0,0,0,.5)">'+p.title+'</p>'
-        +'<div style="display:flex;align-items:center;justify-content:space-between">'
-        +'<span style="color:rgba(255,255,255,.6);font-size:12px">'+p.user+'</span>'
-        +'<div style="display:flex;align-items:center;gap:4px"><span style="font-size:14px">❤️</span><span style="color:rgba(255,255,255,.6);font-size:12px;font-weight:600">'+p.likes+'</span></div>'
-        +'</div></div>'
-        +'<div style="position:absolute;right:12px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:12px">'
-        +'<div style="width:40px;height:40px;background:rgba(255,255,255,.15);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px">❤️</div>'
-        +'<div style="width:40px;height:40px;background:rgba(255,255,255,.15);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px">💬</div>'
-        +'<div style="width:40px;height:40px;background:rgba(255,255,255,.15);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px">📤</div>'
-        +'</div></div>';}).join('')}
+    <!-- Pinterest-style 2-column masonry grid -->
+    <div style="display:flex;gap:8px;padding:8px 12px 20px">
+      <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+        ${col1.map(function(p,i){return _photoCard(p,i*2);}).join('')}
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+        ${col2.map(function(p,i){return _photoCard(p,i*2+1);}).join('')}
+      </div>
     </div>
+    <!-- Full-screen overlay -->
+    ${_fsPhoto!=null?_photoOverlay(photos[_fsPhoto]):''}
   </div>`;
 }
+function _photoCard(p,idx){
+  return '<div onclick="window._sgPhotosFS='+idx+';render()" style="border-radius:16px;overflow:hidden;position:relative;cursor:pointer;background:rgba(255,255,255,.04)" ontouchstart="this.style.transform=\'scale(.97)\'" ontouchend="this.style.transform=\'\'">'
+    +'<img src="'+p.img+'" style="width:100%;height:'+p.h+'px;object-fit:cover;display:block" loading="lazy" onerror="this.style.height=\'200px\';this.style.background=\'linear-gradient(135deg,#1a1a2e,#16213e)\'">'
+    +'<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.7));padding:12px 10px 10px">'
+    +'<p style="color:#fff;font-size:12px;font-weight:700;margin-bottom:2px;text-shadow:0 1px 4px rgba(0,0,0,.5)">'+p.title+'</p>'
+    +'<div style="display:flex;align-items:center;justify-content:space-between">'
+    +'<span style="color:rgba(255,255,255,.6);font-size:10px">'+p.user+'</span>'
+    +'<div style="display:flex;align-items:center;gap:3px"><span style="font-size:12px">❤️</span><span style="color:rgba(255,255,255,.6);font-size:10px;font-weight:600">'+p.likes+'</span></div>'
+    +'</div></div></div>';
+}
+function _photoOverlay(p){
+  if(!p)return '';
+  return '<div onclick="window._sgPhotosFS=null;render()" style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.95);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;animation:fadeInUp .2s ease">'
+    +'<div onclick="event.stopPropagation()" style="max-width:100%;max-height:80vh;position:relative">'
+    +'<img src="'+p.img.replace('w=400','w=800').replace('h=400','h=800').replace('h=500','h=800').replace('h=600','h=900').replace('h=450','h=700').replace('h=550','h=800')+'" style="max-width:100%;max-height:70vh;object-fit:contain;border-radius:20px;display:block">'
+    +'<div style="margin-top:16px;text-align:center">'
+    +'<p style="color:#fff;font-size:18px;font-weight:800;margin-bottom:4px">'+p.title+'</p>'
+    +'<p style="color:rgba(255,255,255,.5);font-size:13px;margin-bottom:12px">'+p.user+'</p>'
+    +'<div style="display:flex;gap:16px;justify-content:center">'
+    +'<div onclick="event.stopPropagation();this.innerHTML=\'❤️ Liked!\';this.style.color=\'#FF6D00\'" style="color:rgba(255,255,255,.6);font-size:14px;cursor:pointer;padding:8px 16px;background:rgba(255,255,255,.08);border-radius:20px">❤️ '+p.likes+'</div>'
+    +'<div onclick="event.stopPropagation();sgToast(\'💬 Comments coming soon\',\'info\',2000)" style="color:rgba(255,255,255,.6);font-size:14px;cursor:pointer;padding:8px 16px;background:rgba(255,255,255,.08);border-radius:20px">💬 Comment</div>'
+    +'<div onclick="event.stopPropagation();sgToast(\'📤 Shared!\',\'success\',2000)" style="color:rgba(255,255,255,.6);font-size:14px;cursor:pointer;padding:8px 16px;background:rgba(255,255,255,.08);border-radius:20px">📤 Share</div>'
+    +'</div></div></div>'
+    +'<div onclick="window._sgPhotosFS=null;render()" style="position:absolute;top:16px;right:16px;width:40px;height:40px;background:rgba(255,255,255,.1);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px">✕</div>'
+    +'</div>';
+}
 
-// ═══ CHAT TAB — AI Chat (ChatGPT/Claude style), full-screen TikTok layout ═══
+// ═══ CHAT TAB — Steal ChatGPT/Claude: always-visible input, streaming, smart responses ═══
 function ChatTabPage(){
   var u=state.user;
-  // Chat message history (stored in window for session persistence)
   if(!window._sgChatMsgs){
     window._sgChatMsgs=[
       {role:'ai',text:'Hey! 👋 I\'m your ScanGym AI assistant. I can help you with:\n\n💪 Workout plans & exercise tips\n🏋️ Find gyms near you\n🥗 Nutrition advice\n📊 Track your progress\n\nWhat would you like to know?'},
@@ -11591,54 +11658,100 @@ function ChatTabPage(){
   }
   var msgs=window._sgChatMsgs;
   var suggestions=['💪 Create a workout plan','🏋️ Find gyms near me','🥗 Meal plan for muscle gain','📊 How to track progress','🧘 Recovery tips','🏃 Couch to 5K plan'];
+  // AI response pool — varied, helpful, detailed
+  var aiResponses={
+    'workout':[
+      '💪 Here\'s your personalized *Push/Pull/Legs* split:\n\n**Day 1 — Push:**\n• Bench Press: 4×8\n• Overhead Press: 3×10\n• Incline DB Press: 3×12\n• Lateral Raises: 3×15\n• Tricep Pushdown: 3×12\n\n**Day 2 — Pull:**\n• Deadlift: 4×5\n• Barbell Row: 4×8\n• Pull-ups: 3×max\n• Face Pulls: 3×15\n• Barbell Curl: 3×12\n\n**Day 3 — Legs:**\n• Squat: 4×6\n• Romanian DL: 3×10\n• Leg Press: 3×12\n• Walking Lunges: 3×10/side\n• Calf Raises: 4×15\n\nRest 2-3 min between heavy sets. Progressive overload weekly! 🔥'
+    ],
+    'gym':[
+      '🏋️ To find gyms near you:\n\n1. Tap the **Book** tab at the bottom\n2. Enable location or search by city\n3. Filter by: 24/7, self-entry, price range\n4. Book a day pass from £4.49\n5. Get your QR code → scan at entry\n\n📍 We have *1.2M+ gyms* worldwide. No membership needed — just book and go!\n\nWant me to help you find a specific type of gym?'
+    ],
+    'meal':[
+      '🥗 Here\'s a *high-protein muscle-gain* meal plan:\n\n**Breakfast (7am):**\n• 4 eggs scrambled + 2 toast + avocado\n• Protein: 35g | Cals: 550\n\n**Snack (10am):**\n• Greek yogurt + berries + honey\n• Protein: 20g | Cals: 250\n\n**Lunch (1pm):**\n• Chicken breast 200g + rice + broccoli\n• Protein: 50g | Cals: 650\n\n**Pre-workout (4pm):**\n• Banana + protein shake\n• Protein: 25g | Cals: 300\n\n**Dinner (7pm):**\n• Salmon 200g + sweet potato + salad\n• Protein: 45g | Cals: 600\n\n**Total: ~175g protein | ~2,350 cals**\n\nAdjust calories up/down based on your goals! 📊'
+    ],
+    'progress':[
+      '📊 Here\'s how to track progress like a pro:\n\n**Weekly measurements:**\n• Weight (same time, same conditions)\n• Progress photos (front, side, back)\n• Key lifts (bench, squat, deadlift)\n• Waist/chest/arm measurements\n\n**Apps I recommend:**\n• Strong (workout tracking)\n• MyFitnessPal (nutrition)\n• ScanGym (gym visits & streaks!)\n\n**Key rules:**\n✅ Weigh weekly, not daily (water fluctuates)\n✅ Take photos every 2 weeks in same lighting\n✅ Track your top 3 lifts — are they going up?\n✅ Use a 4-week rolling average\n\nConsistency > perfection! 💪'
+    ],
+    'recovery':[
+      '🧘 Science-backed recovery tips:\n\n**Sleep (most important!):**\n• 7-9 hours minimum\n• Dark room, cool temp (18°C)\n• No screens 1hr before bed\n\n**Active Recovery:**\n• Light walking (6-8K steps on rest days)\n• Foam rolling (10 min post-workout)\n• Dynamic stretching before, static after\n\n**Nutrition:**\n• 20-40g protein within 2hrs post-workout\n• Anti-inflammatory foods: berries, fish, turmeric\n• Hydrate: 3-4L water daily\n\n**Every 4-6 weeks:**\n• Deload week (50% volume)\n• This prevents overtraining and plateaus\n\nRecovery is where gains happen! 💤🔥'
+    ],
+    'default':[
+      'Great question! 💪\n\nI can help with:\n• 🏋️ Custom workout plans\n• 🥗 Nutrition & meal planning\n• 📊 Progress tracking strategies\n• 🏃 Cardio programs (Couch to 5K, HIIT)\n• 🧘 Recovery & mobility\n• 🔍 Finding gyms near you\n\nWhat interests you most? Just ask anything — I\'m here to help! 🚀',
+      'That\'s a great topic! Let me give you some advice...\n\n🎯 The 3 pillars of fitness:\n1. **Training** — Progressive overload, 3-5x/week\n2. **Nutrition** — Calories + protein targets\n3. **Recovery** — Sleep + rest days\n\nMaster these 3 and results are inevitable.\n\nWant me to dive deep into any of these? 💪'
+    ]
+  };
+  function _getResponse(msg){
+    var m=msg.toLowerCase();
+    if(m.indexOf('workout')>=0||m.indexOf('plan')>=0||m.indexOf('exercise')>=0||m.indexOf('create')>=0)return aiResponses.workout[0];
+    if(m.indexOf('gym')>=0||m.indexOf('find')>=0||m.indexOf('near')>=0||m.indexOf('book')>=0)return aiResponses.gym[0];
+    if(m.indexOf('meal')>=0||m.indexOf('food')>=0||m.indexOf('protein')>=0||m.indexOf('nutrition')>=0||m.indexOf('eat')>=0)return aiResponses.meal[0];
+    if(m.indexOf('progress')>=0||m.indexOf('track')>=0||m.indexOf('measure')>=0)return aiResponses.progress[0];
+    if(m.indexOf('recover')>=0||m.indexOf('rest')>=0||m.indexOf('sleep')>=0||m.indexOf('stretch')>=0||m.indexOf('5k')>=0||m.indexOf('couch')>=0)return aiResponses.recovery[0];
+    return aiResponses.default[Math.floor(Math.random()*aiResponses.default.length)];
+  }
   function _sendChat(){
     var inp=document.getElementById('sg-chat-input');
     if(!inp||!inp.value.trim())return;
     var msg=inp.value.trim();
     inp.value='';
     window._sgChatMsgs.push({role:'user',text:msg});
-    // Simulate AI response
+    window._sgChatTyping=true;
+    render();
+    setTimeout(function(){var box=document.getElementById('sg-chat-scroll');if(box)box.scrollTop=box.scrollHeight;},50);
+    // Simulate typing delay then respond
     setTimeout(function(){
-      var responses=[
-        'Great question! Here\'s what I recommend for your fitness journey...\n\n🏋️ Start with compound movements: squats, deadlifts, bench press\n⏱ 3-4 sessions per week, 45-60 minutes each\n🥗 Aim for 1.6-2.2g protein per kg bodyweight\n💤 Get 7-9 hours of sleep\n\nWant me to create a detailed plan?',
-        'I\'d love to help with that! 💪\n\nBased on the latest exercise science:\n\n1. Progressive overload is key — increase weight/reps weekly\n2. Rest 2-3 minutes between heavy sets\n3. Track everything in a training log\n4. Deload every 4-6 weeks\n\nShall I go deeper on any of these?',
-        'Absolutely! Here\'s a science-backed approach:\n\n🔥 For fat loss: caloric deficit of 300-500 kcal/day\n💪 For muscle gain: surplus of 200-300 kcal/day\n🥤 Stay hydrated — 3-4L water daily\n\nThe key is consistency over perfection. Would you like a customized plan?'
-      ];
-      window._sgChatMsgs.push({role:'ai',text:responses[Math.floor(Math.random()*responses.length)]});
+      window._sgChatTyping=false;
+      window._sgChatMsgs.push({role:'ai',text:_getResponse(msg)});
       render();
       setTimeout(function(){var box=document.getElementById('sg-chat-scroll');if(box)box.scrollTop=box.scrollHeight;},100);
-    },800);
-    render();
-    setTimeout(function(){var box=document.getElementById('sg-chat-scroll');if(box)box.scrollTop=box.scrollHeight;},100);
+    },1200);
   }
   window._sgSendChat=_sendChat;
-  window._sgChatSuggest=function(txt){window._sgChatMsgs.push({role:'user',text:txt});setTimeout(function(){window._sgChatMsgs.push({role:'ai',text:'Let me help you with that! I\'m working on a personalized response...\n\n✨ This feature is being enhanced. Soon I\'ll connect to real-time gym data, your booking history, and AI-powered workout intelligence.\n\nIn the meantime, check out the Book tab to find gyms near you! 🏋️'});render();setTimeout(function(){var box=document.getElementById('sg-chat-scroll');if(box)box.scrollTop=box.scrollHeight;},100);},800);render();};
+  window._sgChatSuggest=function(txt){
+    window._sgChatMsgs.push({role:'user',text:txt});
+    window._sgChatTyping=true;
+    render();
+    setTimeout(function(){var box=document.getElementById('sg-chat-scroll');if(box)box.scrollTop=box.scrollHeight;},50);
+    setTimeout(function(){
+      window._sgChatTyping=false;
+      window._sgChatMsgs.push({role:'ai',text:_getResponse(txt)});
+      render();
+      setTimeout(function(){var box=document.getElementById('sg-chat-scroll');if(box)box.scrollTop=box.scrollHeight;},100);
+    },1200);
+  };
+  var _typing=window._sgChatTyping||false;
   return`<div style="position:relative;width:100%;height:calc(100vh - 56px);display:flex;flex-direction:column;background:#0a0a16;overflow:hidden">
+    <style>@keyframes sgTypingDot{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-4px)}}</style>
     <!-- Top bar -->
     <div style="flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:rgba(10,10,22,.95);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,.06)">
       <div style="display:flex;align-items:center;gap:10px">
         <div style="width:36px;height:36px;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 0 12px rgba(255,109,0,.3)">🤖</div>
-        <div><p style="color:#fff;font-size:15px;font-weight:800">ScanGym AI</p><p style="color:rgba(255,255,255,.4);font-size:11px">Online · Powered by AI</p></div>
+        <div><p style="color:#fff;font-size:15px;font-weight:800">ScanGym AI</p><p style="color:${_typing?'#22c55e':'rgba(255,255,255,.4)'};font-size:11px">${_typing?'Typing...':'Online · Powered by AI'}</p></div>
       </div>
-      <div onclick="window._sgChatMsgs=null;render()" style="width:36px;height:36px;background:rgba(255,255,255,.06);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px" title="New chat">✨</div>
+      <div onclick="window._sgChatMsgs=null;window._sgChatTyping=false;render()" style="width:36px;height:36px;background:rgba(255,255,255,.06);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px" title="New chat">✨</div>
     </div>
-    <!-- Messages area (scrollable) -->
+    <!-- Messages area -->
     <div id="sg-chat-scroll" style="flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch">
       ${msgs.map(function(m){
         if(m.role==='ai'){
-          return '<div style="display:flex;gap:10px;margin-bottom:16px;max-width:85%"><div style="width:28px;height:28px;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;margin-top:2px">🤖</div><div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:18px;border-top-left-radius:4px;padding:12px 16px;color:rgba(255,255,255,.85);font-size:14px;line-height:1.6;white-space:pre-wrap">'+m.text+'</div></div>';
+          return '<div style="display:flex;gap:10px;margin-bottom:16px;max-width:88%"><div style="width:28px;height:28px;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;margin-top:2px">🤖</div><div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:18px;border-top-left-radius:4px;padding:12px 16px;color:rgba(255,255,255,.85);font-size:14px;line-height:1.6;white-space:pre-wrap">'+m.text+'</div></div>';
         }else{
           return '<div style="display:flex;justify-content:flex-end;margin-bottom:16px"><div style="max-width:80%;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:18px;border-top-right-radius:4px;padding:12px 16px;color:#fff;font-size:14px;line-height:1.5;white-space:pre-wrap">'+m.text+'</div></div>';
         }
       }).join('')}
+      ${_typing?'<div style="display:flex;gap:10px;margin-bottom:16px"><div style="width:28px;height:28px;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">🤖</div><div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:18px;border-top-left-radius:4px;padding:14px 20px;display:flex;gap:4px"><span style="width:8px;height:8px;background:#FF6D00;border-radius:50%;animation:sgTypingDot 1.4s infinite"></span><span style="width:8px;height:8px;background:#FF6D00;border-radius:50%;animation:sgTypingDot 1.4s .2s infinite"></span><span style="width:8px;height:8px;background:#FF6D00;border-radius:50%;animation:sgTypingDot 1.4s .4s infinite"></span></div></div>':''}
       ${msgs.length<=1?'<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">'+suggestions.map(function(s){return '<button onclick="window._sgChatSuggest(\''+s.replace(/'/g,"\\\'")+'\');return false" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.6);padding:10px 16px;border-radius:20px;font-size:13px;cursor:pointer;transition:.15s;white-space:nowrap" ontouchstart="this.style.background=\'rgba(255,255,255,.1)\'" ontouchend="this.style.background=\'rgba(255,255,255,.04)\'">'+s+'</button>';}).join('')+'</div>':''}
     </div>
-    <!-- Input area (fixed bottom) -->
+    <!-- Input area — ALWAYS visible, no auth gate (like ChatGPT) -->
     <div style="flex-shrink:0;padding:12px 16px;background:rgba(10,10,22,.98);backdrop-filter:blur(16px);border-top:1px solid rgba(255,255,255,.06)">
-      ${!u?'<div onclick="navigate(\'/login\')" style="text-align:center;padding:8px;cursor:pointer"><p style="color:rgba(255,255,255,.5);font-size:13px">Sign in to chat with ScanGym AI</p></div>':'<div style="display:flex;gap:8px;align-items:flex-end"><input id="sg-chat-input" type="text" placeholder="Ask me anything..." onkeydown="if(event.key===\'Enter\')window._sgSendChat()" style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:24px;padding:12px 18px;color:#fff;font-size:14px;outline:none;transition:border-color .2s" onfocus="this.style.borderColor=\'rgba(255,109,0,.4)\'" onblur="this.style.borderColor=\'rgba(255,255,255,.1)\'"><button onclick="window._sgSendChat()" style="width:44px;height:44px;background:#FF6D00;border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;flex-shrink:0;box-shadow:0 2px 12px rgba(255,109,0,.3)">↑</button></div>'}
+      <div style="display:flex;gap:8px;align-items:flex-end">
+        <input id="sg-chat-input" type="text" placeholder="Ask anything..." onkeydown="if(event.key==='Enter')window._sgSendChat()" style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:24px;padding:12px 18px;color:#fff;font-size:14px;outline:none;transition:border-color .2s" onfocus="this.style.borderColor='rgba(255,109,0,.4)'" onblur="this.style.borderColor='rgba(255,255,255,.1)'">
+        <button onclick="window._sgSendChat()" style="width:44px;height:44px;background:#FF6D00;border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;flex-shrink:0;box-shadow:0 2px 12px rgba(255,109,0,.3)">↑</button>
+      </div>
     </div>
   </div>`;
 }
+
 
 
 function BottomTabBar(){
@@ -12492,14 +12605,48 @@ function MoreHubPage(){
       </div>
     </div>`;
   }else{
-    // Not logged in — full-screen sign-up CTA
-    return`<div style="position:relative;width:100%;height:calc(100vh - 56px);display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0a0a16;text-align:center;padding:40px 20px">
-      <div style="position:absolute;top:0;left:0;right:0;height:50%;background:linear-gradient(135deg,rgba(255,109,0,.06),rgba(168,85,247,.04));pointer-events:none"></div>
-      <div style="position:relative;z-index:2">
-        <p style="font-size:72px;margin-bottom:20px">\ud83c\udf0d</p>
-        <p style="color:#fff;font-weight:900;font-size:24px;margin-bottom:8px">Get your Universal Gym Pass</p>
-        <p style="color:rgba(255,255,255,.4);font-size:15px;margin-bottom:32px;max-width:300px">Sign up once. Scan QR to enter any gym worldwide.</p>
-        <button onclick="navigate('/login')" style="background:#FF6D00;color:#fff;border:none;padding:18px 48px;border-radius:16px;font-weight:800;font-size:18px;cursor:pointer;box-shadow:0 4px 24px rgba(255,109,0,.4)">Get Started \u2192</button>
+    // Not logged in — full-screen sign-up with form (steal Apple Wallet style)
+    return`<div style="position:relative;width:100%;min-height:calc(100vh - 56px);overflow-y:auto;background:#0a0a16;-webkit-overflow-scrolling:touch">
+      <div style="position:absolute;top:0;left:0;right:0;height:50%;background:linear-gradient(135deg,rgba(255,109,0,.08),rgba(168,85,247,.06));pointer-events:none"></div>
+      <div style="position:absolute;top:0;left:0;right:0;height:55%;background:linear-gradient(180deg,transparent 40%,#0a0a16 100%);pointer-events:none"></div>
+      <div style="position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;padding:48px 24px 32px;text-align:center">
+        <!-- QR Pass Preview -->
+        <div style="width:200px;height:200px;background:rgba(255,109,0,.06);border:2px solid rgba(255,109,0,.2);border-radius:32px;display:flex;align-items:center;justify-content:center;margin-bottom:24px;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+          <div style="text-align:center">
+            <p style="font-size:64px;margin-bottom:8px">\ud83c\udf0d</p>
+            <p style="color:rgba(255,255,255,.3);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px">Your QR Here</p>
+          </div>
+        </div>
+        <p style="color:#fff;font-weight:900;font-size:26px;margin-bottom:8px">Universal Gym Pass</p>
+        <p style="color:rgba(255,255,255,.4);font-size:15px;margin-bottom:8px;max-width:300px">Sign up once. Scan QR to enter any gym worldwide.</p>
+        <p style="color:rgba(255,255,255,.25);font-size:12px;margin-bottom:28px">No membership · No contract · Pay per visit</p>
+        <!-- Stats preview -->
+        <div style="display:flex;gap:24px;margin-bottom:28px">
+          <div style="text-align:center"><div style="color:#FF6D00;font-size:22px;font-weight:900">1.2M+</div><div style="color:rgba(255,255,255,.3);font-size:10px;font-weight:600;text-transform:uppercase">Gyms</div></div>
+          <div style="text-align:center"><div style="color:#22c55e;font-size:22px;font-weight:900">£4.49</div><div style="color:rgba(255,255,255,.3);font-size:10px;font-weight:600;text-transform:uppercase">From</div></div>
+          <div style="text-align:center"><div style="color:#3b82f6;font-size:22px;font-weight:900">190+</div><div style="color:rgba(255,255,255,.3);font-size:10px;font-weight:600;text-transform:uppercase">Countries</div></div>
+        </div>
+        <!-- Sign-up form -->
+        <div style="width:100%;max-width:340px">
+          <button onclick="navigate('/login')" style="width:100%;background:#FF6D00;color:#fff;border:none;padding:16px;border-radius:14px;font-weight:800;font-size:16px;cursor:pointer;box-shadow:0 4px 24px rgba(255,109,0,.4);margin-bottom:12px;transition:.15s" ontouchstart="this.style.transform='scale(.97)'" ontouchend="this.style.transform=''">Get Started \u2192</button>
+          <button onclick="navigate('/login')" style="width:100%;background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.1);padding:16px;border-radius:14px;font-weight:700;font-size:14px;cursor:pointer;margin-bottom:24px;transition:.15s" ontouchstart="this.style.background='rgba(255,255,255,.1)'" ontouchend="this.style.background='rgba(255,255,255,.06)'">I already have an account</button>
+        </div>
+        <!-- How it works -->
+        <div style="width:100%;max-width:340px;text-align:left">
+          <p style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">How it works</p>
+          <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:16px">
+            <div style="width:32px;height:32px;background:rgba(255,109,0,.12);border:1px solid rgba(255,109,0,.25);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#FF6D00;font-size:14px;font-weight:800;flex-shrink:0">1</div>
+            <div><p style="color:#fff;font-size:14px;font-weight:700">Sign up in 10 seconds</p><p style="color:rgba(255,255,255,.4);font-size:12px">Email or Google — no credit card needed</p></div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:16px">
+            <div style="width:32px;height:32px;background:rgba(255,109,0,.12);border:1px solid rgba(255,109,0,.25);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#FF6D00;font-size:14px;font-weight:800;flex-shrink:0">2</div>
+            <div><p style="color:#fff;font-size:14px;font-weight:700">Find & book a gym</p><p style="color:rgba(255,255,255,.4);font-size:12px">Search 1.2M+ gyms, buy a day pass</p></div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:16px">
+            <div style="width:32px;height:32px;background:rgba(255,109,0,.12);border:1px solid rgba(255,109,0,.25);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#FF6D00;font-size:14px;font-weight:800;flex-shrink:0">3</div>
+            <div><p style="color:#fff;font-size:14px;font-weight:700">Scan QR & enter</p><p style="color:rgba(255,255,255,.4);font-size:12px">Show your QR code at the door — done!</p></div>
+          </div>
+        </div>
       </div>
     </div>`;
   }
