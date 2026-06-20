@@ -3608,15 +3608,15 @@ window._payBankTransfer=async function(){
 };
 // #51: Buy Now Pay Later (Klarna / Afterpay)
 window._payBNPL=async function(){
-  sgToast('Checking BNPL eligibility...','info',1500);
+  sgToast('Checking eligibility...','info',1500);
   try{
-    var r=await fetch('/api/payments/bnpl/check',{method:'POST',headers:{'Content-Type':'application/json'}});
+    var r=await fetch('/api/payments/bnpl/check',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include'});
     var d=await r.json();
     if(d.eligible){
       selectPayMethod(document.querySelector('.gym-pay-item')||document.createElement('div'),'bnpl');
-      sgToast('Pay in 3 installments available at checkout!','success',2500);closePaySheet();
-    }else{sgToast('BNPL available for bookings over £10','info',2500);}
-  }catch(e){sgToast('Buy now pay later — coming soon','info',2000);}
+      sgToast('✅ Pay Next Visit enabled — enter now, pay later!','success',2500);closePaySheet();
+    }else{sgToast(d.message||'Settle your pending payment first','info',2500);}
+  }catch(e){sgToast('Please sign in to use Pay Next Visit','info',2000);}
 };
 
 // ═══ Payment Overlay Functions (full-screen wallet) ═══

@@ -6,6 +6,8 @@
  *   /api/chatbot/twilio/*     → WhatsApp + SMS via Twilio
  *   /api/chatbot/discord/*    → Discord bot (WebSocket + status routes)
  *   /api/chatbot/email/*      → Email booking via SendGrid
+ *   /api/chatbot/slack/*      → Slack bot (Events API + slash commands)
+ *   /api/chatbot/msteams/*    → Microsoft Teams bot (Bot Framework)
  *   /api/chatbot/test         → Test endpoint (for development)
  * 
  * Each adapter is a thin Express router that receives messages
@@ -34,6 +36,14 @@ router.use('/discord', discordRouter);
 const emailRouter = require('./email');
 router.use('/email', emailRouter);
 
+// Slack (Events API + slash commands)
+const slackRouter = require('./slack');
+router.use('/slack', slackRouter);
+
+// Microsoft Teams (Bot Framework)
+const msteamsRouter = require('./msteams');
+router.use('/msteams', msteamsRouter);
+
 // ─── Start Discord Bot (connects on server boot) ────────────
 // Call this after Express is listening
 startDiscordBot();
@@ -60,6 +70,8 @@ router.get('/health', (req, res) => {
     sms: !!process.env.TWILIO_ACCOUNT_SID,
     discord: !!process.env.DISCORD_BOT_TOKEN,
     email: !!process.env.SENDGRID_API_KEY,
+    slack: !!process.env.SLACK_BOT_TOKEN,
+    msteams: !!process.env.TEAMS_APP_ID,
   };
 
   res.json({
