@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+  <title>ScanGym — Gym Partner Hub</title>
+  <meta name="theme-color" content="#0a0a16"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <link rel="icon" href="/favicon.ico"/>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0a0a16;color:#fff;min-height:100vh;padding-bottom:70px;overflow-x:hidden}
+    a{color:inherit;text-decoration:none}
+
+    /* ── Header ── */
+    .header{background:linear-gradient(135deg,#111827,#1f2937);padding:16px 20px;border-bottom:1px solid rgba(59,130,246,.2);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;backdrop-filter:blur(12px)}
+    .header-left{display:flex;align-items:center;gap:10px}
+    .logo-dot{width:28px;height:28px;background:linear-gradient(135deg,#3b82f6,#06b6d4);border-radius:50%;box-shadow:0 0 12px rgba(59,130,246,.4)}
+    .header h1{font-size:18px;font-weight:800}
+    .header h1 span{color:#3b82f6}
+    .hdr-btn{padding:8px 14px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:rgba(255,255,255,.6);transition:.15s}
+    .hdr-btn:active{transform:scale(.95)}
+
+    /* ── Content ── */
+    .content{padding:16px;max-width:600px;margin:0 auto}
+    .section-title{font-size:15px;font-weight:800;margin:20px 0 10px;display:flex;align-items:center;gap:8px}
+    .section-title:first-child{margin-top:4px}
+
+    /* ── Stat cards ── */
+    .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:8px}
+    .stats.four{grid-template-columns:repeat(4,1fr)}
+    .stat{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px;text-align:center;transition:.15s}
+    .stat:hover{border-color:rgba(59,130,246,.2)}
+    .stat .num{font-size:24px;font-weight:800;color:#3b82f6}
+    .stat .lbl{font-size:10px;color:rgba(255,255,255,.4);margin-top:3px;text-transform:uppercase;letter-spacing:.5px}
+
+    /* ── Toggle ── */
+    .toggle-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .toggle-info h3{font-size:14px;font-weight:700}
+    .toggle-info p{font-size:11px;color:rgba(255,255,255,.35);margin-top:2px}
+    .toggle-switch{position:relative;width:56px;height:30px;flex-shrink:0}
+    .toggle-switch input{opacity:0;width:0;height:0}
+    .toggle-slider{position:absolute;cursor:pointer;inset:0;background:rgba(239,68,68,.3);border-radius:30px;transition:.3s;border:2px solid rgba(239,68,68,.3)}
+    .toggle-slider:before{position:absolute;content:"";height:22px;width:22px;left:2px;bottom:2px;background:#fff;border-radius:50%;transition:.3s;box-shadow:0 2px 6px rgba(0,0,0,.3)}
+    .toggle-switch input:checked+.toggle-slider{background:rgba(34,197,94,.3);border-color:rgba(34,197,94,.4)}
+    .toggle-switch input:checked+.toggle-slider:before{transform:translateX(26px)}
+    .status-pill{font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px}
+    .status-pill.online{background:rgba(34,197,94,.15);color:#22c55e}
+    .status-pill.offline{background:rgba(239,68,68,.15);color:#ef4444}
+
+    /* ── Gym card ── */
+    .gym-info{background:linear-gradient(135deg,rgba(59,130,246,.08),rgba(6,182,212,.04));border:1px solid rgba(59,130,246,.15);border-radius:20px;padding:20px;margin-bottom:16px}
+    .gym-name{font-size:20px;font-weight:800;margin-bottom:4px}
+    .gym-addr{font-size:12px;color:rgba(255,255,255,.4)}
+    .gym-badges{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+    .gym-badge{font-size:10px;padding:4px 10px;border-radius:8px;font-weight:600;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08)}
+
+    /* ── Booking item ── */
+    .booking-item{display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;margin-bottom:8px}
+    .bi-avatar{width:40px;height:40px;border-radius:10px;background:rgba(59,130,246,.1);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+    .bi-info{flex:1;min-width:0}
+    .bi-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .bi-meta{font-size:11px;color:rgba(255,255,255,.35);margin-top:2px}
+    .bi-status{font-size:10px;font-weight:700;padding:4px 10px;border-radius:6px;flex-shrink:0}
+    .bi-status.confirmed{background:rgba(34,197,94,.12);color:#22c55e}
+    .bi-status.pending{background:rgba(251,191,36,.12);color:#fbbf24}
+    .bi-status.checked-in{background:rgba(59,130,246,.12);color:#3b82f6}
+
+    /* ── Pricing ── */
+    .price-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+    .price-row:last-child{border:none}
+    .price-label{font-size:13px;font-weight:600;color:rgba(255,255,255,.6)}
+    .price-value{font-size:16px;font-weight:800;color:#3b82f6}
+
+    /* ── Chart ── */
+    .chart-container{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px;margin-bottom:12px}
+    .chart-bars{display:flex;align-items:flex-end;gap:3px;height:100px;padding-top:8px}
+    .chart-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;height:100%}
+    .chart-bar{width:100%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,#3b82f6,#1d4ed8);min-height:2px;transition:height .4s;margin-top:auto}
+    .chart-bar-label{font-size:8px;color:rgba(255,255,255,.25);margin-top:3px}
+    .chart-bar-val{font-size:8px;color:#3b82f6;font-weight:700;margin-bottom:1px}
+
+    /* ── Claim ── */
+    .claim-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:28px 20px;text-align:center;margin:20px 0}
+    .claim-search{width:100%;padding:14px 18px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#fff;font-size:15px;outline:none;margin-top:12px}
+    .claim-search:focus{border-color:#3b82f6;box-shadow:0 0 0 4px rgba(59,130,246,.1)}
+    .claim-search::placeholder{color:rgba(255,255,255,.25)}
+    .claim-results{margin-top:12px;text-align:left}
+    .claim-gym{padding:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;margin-bottom:6px;cursor:pointer;transition:.15s}
+    .claim-gym:hover{background:rgba(59,130,246,.06);border-color:rgba(59,130,246,.2)}
+    .claim-gym .cg-name{font-size:13px;font-weight:700}
+    .claim-gym .cg-addr{font-size:11px;color:rgba(255,255,255,.35);margin-top:2px}
+
+    /* ── Action items ── */
+    .action-item{display:flex;align-items:center;gap:12px;padding:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:14px;margin-bottom:8px;cursor:pointer;transition:.15s}
+    .action-item:active{background:rgba(255,255,255,.08);transform:scale(.99)}
+    .ai-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+    .ai-info{flex:1}
+    .ai-info h4{font-size:13px;font-weight:700}
+    .ai-info p{font-size:11px;color:rgba(255,255,255,.35);margin-top:2px}
+    .ai-arrow{color:rgba(255,255,255,.15);font-size:16px}
+
+    /* ── Bottom Nav ── */
+    .bottom-nav{position:fixed;bottom:0;left:0;right:0;height:56px;background:rgba(8,8,18,.98);backdrop-filter:blur(24px);display:flex;align-items:center;justify-content:space-around;border-top:1px solid rgba(255,255,255,.06);z-index:9000;padding-bottom:env(safe-area-inset-bottom,0)}
+    .nav-item{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:6px 12px;-webkit-tap-highlight-color:transparent}
+    .nav-item svg{width:22px;height:22px;stroke:rgba(255,255,255,.4);fill:none;stroke-width:1.8;transition:.2s}
+    .nav-item .nav-label{font-size:9px;font-weight:600;color:rgba(255,255,255,.4);transition:.2s}
+    .nav-item.active svg{stroke:#3b82f6;filter:drop-shadow(0 0 6px rgba(59,130,246,.35))}
+    .nav-item.active .nav-label{color:#3b82f6}
+
+    .toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);padding:12px 24px;border-radius:12px;font-size:13px;font-weight:600;z-index:10000;animation:toastIn .3s ease}
+    .toast.success{background:#22c55e;color:#fff}
+    .toast.info{background:#3b82f6;color:#fff}
+    @keyframes toastIn{from{transform:translateX(-50%) translateY(-100%);opacity:0}to{transform:translateX(-50%) translateY(0);opacity:1}}
+    .loading{text-align:center;padding:40px;color:rgba(255,255,255,.3)}
+    .spinner{width:28px;height:28px;border:3px solid rgba(255,255,255,.1);border-top-color:#3b82f6;border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 10px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .empty-state{text-align:center;padding:20px;color:rgba(255,255,255,.25);font-size:13px}
+    .btn{padding:12px 28px;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer;border:none;transition:.15s}
+    .btn:active{transform:scale(.95)}
+    .btn-primary{background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;box-shadow:0 4px 16px rgba(59,130,246,.3)}
+
+    @media(max-width:400px){.stats.four{grid-template-columns:repeat(2,1fr)}}
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-left">
+      <div class="logo-dot"></div>
+      <h1><span>Partner</span> Hub</h1>
+    </div>
+    <button class="hdr-btn" onclick="location.href='/'">← App</button>
+  </div>
+
+  <div class="content" id="main">
+    <div class="loading"><div class="spinner"></div>Loading partner dashboard…</div>
+  </div>
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav">
+    <div class="nav-item active" onclick="showTab('dashboard')">
+      <svg viewBox="0 0 24 24"><path d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm0 8a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zm10 0a1 1 0 011-1h4a1 1 0 011 1v6a1 1 0 01-1 1h-4a1 1 0 01-1-1v-6z"/></svg>
+      <span class="nav-label">Dashboard</span>
+    </div>
+    <div class="nav-item" onclick="showTab('bookings')">
+      <svg viewBox="0 0 24 24"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+      <span class="nav-label">Bookings</span>
+    </div>
+    <div class="nav-item" onclick="showTab('reviews')">
+      <svg viewBox="0 0 24 24"><path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
+      <span class="nav-label">Reviews</span>
+    </div>
+    <div class="nav-item" onclick="showTab('pricing')">
+      <svg viewBox="0 0 24 24"><path d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z"/></svg>
+      <span class="nav-label">Pricing</span>
+    </div>
+    <div class="nav-item" onclick="showTab('settings')">
+      <svg viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+      <span class="nav-label">Settings</span>
+    </div>
+  </nav>
+
+  <script>
+  (function(){
+    let currentTab='dashboard';
+    let gymData=null;
+    let isOnline=true;
+    let claimTimer=null;
+
+    function toast(msg,type){const t=document.createElement('div');t.className='toast '+(type||'info');t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2500);}
+
+    async function init(){
+      // Check if partner has claimed a gym
+      const stored=JSON.parse(localStorage.getItem('sg_partner_gym')||'null');
+      if(stored&&stored.gymId){
+        gymData=stored;
+        try{
+          const r=await fetch('/api/stats/gym/'+stored.gymId).then(r=>r.json()).catch(()=>null);
+          if(r)gymData.stats=r.stats;
+        }catch(e){}
+        renderDashboard();
+      }else{
+        showClaimFlow();
+      }
+    }
+
+    function showClaimFlow(){
+      document.getElementById('main').innerHTML=`
+        <div class="claim-card">
+          <p style="font-size:56px;margin-bottom:12px">🏢</p>
+          <h2 style="font-size:22px;font-weight:800;margin-bottom:4px">Claim Your Gym</h2>
+          <p style="font-size:13px;color:rgba(255,255,255,.4);margin-bottom:16px">Search for your gym and claim it to start accepting ScanGym bookings.</p>
+          <div style="position:relative">
+            <input class="claim-search" id="gym-search" type="text" placeholder="🔍 Search your gym name or location…" oninput="searchGyms(this.value)"/>
+          </div>
+          <div class="claim-results" id="claim-results"></div>
+          <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,.06)">
+            <p style="color:rgba(255,255,255,.25);font-size:12px;margin-bottom:12px">Gym not listed?</p>
+            <a href="/list-your-gym" class="btn btn-primary" style="display:inline-block">Register New Gym →</a>
+          </div>
+        </div>`;
+    }
+
+    window.searchGyms=function(q){
+      clearTimeout(claimTimer);
+      if(q.length<2){document.getElementById('claim-results').innerHTML='';return;}
+      claimTimer=setTimeout(async()=>{
+        try{
+          const r=await fetch('/api/search?q='+encodeURIComponent(q)+'&limit=5').then(r=>r.json());
+          const el=document.getElementById('claim-results');
+          if(!r.results||!r.results.length){el.innerHTML='<div class="empty-state">No gyms found for "'+esc(q)+'"</div>';return;}
+          el.innerHTML=r.results.map(g=>`
+            <div class="claim-gym" onclick="claimGym(${g.id},'${esc(g.name)}','${esc(g.formatted_address||g.vicinity||'')}')">
+              <div class="cg-name">${esc(g.name)}</div>
+              <div class="cg-addr">${esc(g.formatted_address||g.vicinity||'')}</div>
+            </div>`).join('');
+        }catch(e){document.getElementById('claim-results').innerHTML='<div class="empty-state">Search error</div>';}
+      },300);
+    };
+
+    window.claimGym=function(id,name,addr){
+      gymData={gymId:id,name:name,address:addr,claimedAt:new Date().toISOString()};
+      localStorage.setItem('sg_partner_gym',JSON.stringify(gymData));
+      toast('✅ '+name+' claimed!','success');
+      init();
+    };
+
+    function renderDashboard(){
+      const s=gymData.stats||{bookings:{total:0,monthly:0,weekly:0},reviews:{total:0,averageRating:0}};
+      let html=`
+        <!-- Gym Info -->
+        <div class="gym-info">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div class="gym-name">${esc(gymData.name||'Your Gym')}</div>
+              <div class="gym-addr">${esc(gymData.address||'')}</div>
+            </div>
+            <span class="status-pill ${isOnline?'online':'offline'}">${isOnline?'● Live':'● Offline'}</span>
+          </div>
+          <div class="gym-badges">
+            <span class="gym-badge">⭐ ${s.reviews?.averageRating||'--'} rating</span>
+            <span class="gym-badge">📅 ${s.bookings?.total||0} bookings</span>
+            <span class="gym-badge">✅ Verified Partner</span>
+          </div>
+        </div>
+
+        <!-- Online/Offline Toggle -->
+        <div class="toggle-card">
+          <div class="toggle-info">
+            <h3>${isOnline?'🟢 Accepting Bookings':'🔴 Bookings Paused'}</h3>
+            <p>${isOnline?'Customers can see and book your gym':'Your gym is hidden from search'}</p>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" ${isOnline?'checked':''} onchange="toggleOnline(this.checked)"/>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <!-- Stats -->
+        <div class="section-title">📊 Performance</div>
+        <div class="stats four">
+          <div class="stat"><div class="num">${s.bookings?.weekly||0}</div><div class="lbl">This Week</div></div>
+          <div class="stat"><div class="num">${s.bookings?.monthly||0}</div><div class="lbl">This Month</div></div>
+          <div class="stat"><div class="num">${s.bookings?.total||0}</div><div class="lbl">All Time</div></div>
+          <div class="stat"><div class="num">⭐${s.reviews?.averageRating||'--'}</div><div class="lbl">Rating</div></div>
+        </div>
+
+        <!-- Revenue -->
+        <div class="section-title">💰 Revenue</div>
+        <div class="stats">
+          <div class="stat"><div class="num" style="color:#22c55e">£${((s.bookings?.monthly||0)*4.49*0.85).toFixed(0)}</div><div class="lbl">Est. Monthly</div></div>
+          <div class="stat"><div class="num" style="color:#22c55e">85%</div><div class="lbl">Your Share</div></div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="section-title">⚡ Quick Actions</div>
+        <div class="action-item" onclick="showTab('bookings')">
+          <div class="ai-icon" style="background:rgba(59,130,246,.1)">📅</div>
+          <div class="ai-info"><h4>Today's Bookings</h4><p>View and manage upcoming check-ins</p></div>
+          <span class="ai-arrow">›</span>
+        </div>
+        <div class="action-item" onclick="toast('QR Scanner opening…','info')">
+          <div class="ai-icon" style="background:rgba(34,197,94,.1)">📱</div>
+          <div class="ai-info"><h4>Scan QR Code</h4><p>Check in a customer at your gym</p></div>
+          <span class="ai-arrow">›</span>
+        </div>
+        <div class="action-item" onclick="showTab('reviews')">
+          <div class="ai-icon" style="background:rgba(251,191,36,.1)">⭐</div>
+          <div class="ai-info"><h4>Reviews (${s.reviews?.total||0})</h4><p>Read and respond to customer reviews</p></div>
+          <span class="ai-arrow">›</span>
+        </div>
+      `;
+      document.getElementById('main').innerHTML=html;
+    }
+
+    function renderBookings(){
+      let html=`
+        <div class="section-title">📅 Today's Bookings</div>
+        <div id="bookings-list"><div class="loading"><div class="spinner"></div>Loading bookings…</div></div>
+      `;
+      document.getElementById('main').innerHTML=html;
+      loadBookings();
+    }
+
+    async function loadBookings(){
+      const el=document.getElementById('bookings-list');
+      if(!gymData||!gymData.gymId){el.innerHTML='<div class="empty-state">Claim a gym first</div>';return;}
+      try{
+        const r=await fetch('/api/bookings/gym/'+gymData.gymId+'?period=today').then(r=>r.json()).catch(()=>({bookings:[]}));
+        if(!r.bookings||!r.bookings.length){
+          el.innerHTML='<div class="empty-state">No bookings today yet. Share your gym link to attract visitors!</div>';
+          return;
+        }
+        el.innerHTML=r.bookings.map(b=>`
+          <div class="booking-item">
+            <div class="bi-avatar">${b.user_name?b.user_name[0].toUpperCase():'👤'}</div>
+            <div class="bi-info">
+              <div class="bi-name">${esc(b.user_name||'Guest')}</div>
+              <div class="bi-meta">${b.pass_type||'Day Pass'} · ${new Date(b.booking_date||Date.now()).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
+            </div>
+            <span class="bi-status ${b.status||'confirmed'}">${(b.status||'confirmed').toUpperCase()}</span>
+          </div>`).join('');
+      }catch(e){el.innerHTML='<div class="empty-state">Could not load bookings</div>';}
+    }
+
+    function renderReviews(){
+      let html=`
+        <div class="section-title">⭐ Customer Reviews</div>
+        <div id="reviews-list"><div class="loading"><div class="spinner"></div>Loading reviews…</div></div>
+      `;
+      document.getElementById('main').innerHTML=html;
+      loadReviews();
+    }
+
+    async function loadReviews(){
+      const el=document.getElementById('reviews-list');
+      if(!gymData||!gymData.gymId){el.innerHTML='<div class="empty-state">Claim a gym first</div>';return;}
+      try{
+        const r=await fetch('/api/reviews/'+gymData.gymId).then(r=>r.json()).catch(()=>({reviews:[]}));
+        if(!r.reviews||!r.reviews.length){
+          el.innerHTML='<div class="empty-state">No reviews yet. Great service = great reviews! 🌟</div>';
+          return;
+        }
+        el.innerHTML=r.reviews.map(rev=>`
+          <div style="padding:14px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;margin-bottom:8px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <div style="font-weight:600;font-size:13px">${esc(rev.user_name||'Anonymous')}</div>
+              <div style="color:#fbbf24;font-size:12px">${'⭐'.repeat(rev.rating||5)}</div>
+            </div>
+            <p style="font-size:13px;color:rgba(255,255,255,.6);line-height:1.4">${esc(rev.comment||'No comment')}</p>
+            <p style="font-size:10px;color:rgba(255,255,255,.2);margin-top:6px">${new Date(rev.created_at||Date.now()).toLocaleDateString()}</p>
+          </div>`).join('');
+      }catch(e){el.innerHTML='<div class="empty-state">Could not load reviews</div>';}
+    }
+
+    function renderPricing(){
+      let html=`
+        <div class="section-title">💰 Your Pricing</div>
+        <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px;margin-bottom:16px">
+          <div class="price-row"><span class="price-label">Day Pass (24h)</span><span class="price-value">£4.49</span></div>
+          <div class="price-row"><span class="price-label">3-Day Pass</span><span class="price-value">£11.49</span></div>
+          <div class="price-row"><span class="price-label">Weekly Pass</span><span class="price-value">£19.49</span></div>
+          <div class="price-row"><span class="price-label">Monthly Pass</span><span class="price-value">£34.49</span></div>
+        </div>
+
+        <div style="background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.12);border-radius:14px;padding:16px;margin-bottom:16px">
+          <p style="font-weight:700;font-size:14px;margin-bottom:8px">💰 Revenue Split</p>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="flex:1;text-align:center">
+              <p style="font-size:24px;font-weight:800;color:#22c55e">85%</p>
+              <p style="font-size:11px;color:rgba(255,255,255,.4)">You Keep</p>
+            </div>
+            <div style="width:1px;height:40px;background:rgba(255,255,255,.08)"></div>
+            <div style="flex:1;text-align:center">
+              <p style="font-size:24px;font-weight:800;color:rgba(255,255,255,.4)">15%</p>
+              <p style="font-size:11px;color:rgba(255,255,255,.4)">ScanGym Fee</p>
+            </div>
+          </div>
+        </div>
+
+        <p style="color:rgba(255,255,255,.25);font-size:11px;text-align:center">Custom pricing coming soon. Contact hello@scangym.com for enterprise rates.</p>
+      `;
+      document.getElementById('main').innerHTML=html;
+    }
+
+    function renderSettings(){
+      let html=`
+        <div class="section-title">⚙️ Partner Settings</div>
+
+        <div class="action-item" onclick="toast('Access control settings coming soon','info')">
+          <div class="ai-icon" style="background:rgba(59,130,246,.1)">🔐</div>
+          <div class="ai-info"><h4>Access Control</h4><p>Connect QR scanner and access system</p></div>
+          <span class="ai-arrow">›</span>
+        </div>
+
+        <div class="action-item" onclick="toast('Gym profile editor coming soon','info')">
+          <div class="ai-icon" style="background:rgba(168,85,247,.1)">📝</div>
+          <div class="ai-info"><h4>Edit Gym Profile</h4><p>Photos, description, amenities, hours</p></div>
+          <span class="ai-arrow">›</span>
+        </div>
+
+        <div class="action-item" onclick="toast('Payout settings coming soon','info')">
+          <div class="ai-icon" style="background:rgba(34,197,94,.1)">🏦</div>
+          <div class="ai-info"><h4>Payout Settings</h4><p>Bank account and payment schedule</p></div>
+          <span class="ai-arrow">›</span>
+        </div>
+
+        <div class="action-item" onclick="toast('Staff accounts coming soon','info')">
+          <div class="ai-icon" style="background:rgba(251,191,36,.1)">👥</div>
+          <div class="ai-info"><h4>Staff Accounts</h4><p>Add reception staff to manage check-ins</p></div>
+          <span class="ai-arrow">›</span>
+        </div>
+
+        <div class="action-item" onclick="location.href='/'">
+          <div class="ai-icon" style="background:rgba(255,109,0,.1)">🏠</div>
+          <div class="ai-info"><h4>Back to ScanGym App</h4><p>Switch to customer view</p></div>
+          <span class="ai-arrow">›</span>
+        </div>
+
+        <div style="text-align:center;margin-top:20px">
+          <button onclick="localStorage.removeItem('sg_partner_gym');location.reload()" style="background:none;border:1px solid rgba(239,68,68,.2);color:#ef4444;padding:10px 20px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer">Unclaim Gym</button>
+          <p style="color:rgba(255,255,255,.15);font-size:10px;margin-top:12px">Also: <a href="/creator" style="color:rgba(255,255,255,.3)">Creator Studio</a> · <a href="/admin" style="color:rgba(255,255,255,.3)">CEO Dashboard</a></p>
+        </div>
+      `;
+      document.getElementById('main').innerHTML=html;
+    }
+
+    window.toggleOnline=function(checked){
+      isOnline=checked;
+      toast(isOnline?'🟢 Gym is now live':'🔴 Bookings paused',isOnline?'success':'info');
+      renderDashboard();
+    };
+
+    function showTab(tab){
+      currentTab=tab;
+      document.querySelectorAll('.nav-item').forEach((el,i)=>{
+        el.classList.toggle('active',['dashboard','bookings','reviews','pricing','settings'][i]===tab);
+      });
+      if(!gymData&&tab!=='dashboard'){showClaimFlow();return;}
+      if(tab==='dashboard')renderDashboard();
+      else if(tab==='bookings')renderBookings();
+      else if(tab==='reviews')renderReviews();
+      else if(tab==='pricing')renderPricing();
+      else if(tab==='settings')renderSettings();
+    }
+    window.showTab=showTab;
+
+    function esc(s){return s?String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'):'';}
+
+    init();
+  })();
+  </script>
+</body>
+</html>

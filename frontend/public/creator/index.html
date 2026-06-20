@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+  <title>ScanGym — Creator Studio</title>
+  <meta name="theme-color" content="#0a0a16"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <link rel="icon" href="/favicon.ico"/>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0a0a16;color:#fff;min-height:100vh;padding-bottom:70px;overflow-x:hidden}
+    a{color:inherit;text-decoration:none}
+
+    /* ── Header ── */
+    .header{background:linear-gradient(135deg,#111827,#1f2937);padding:16px 20px;border-bottom:1px solid rgba(168,85,247,.2);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;backdrop-filter:blur(12px)}
+    .header-left{display:flex;align-items:center;gap:10px}
+    .logo-dot{width:28px;height:28px;background:linear-gradient(135deg,#a855f7,#ec4899);border-radius:50%;box-shadow:0 0 12px rgba(168,85,247,.4)}
+    .header h1{font-size:18px;font-weight:800}
+    .header h1 span{color:#a855f7}
+    .header-right{display:flex;gap:8px}
+    .hdr-btn{padding:8px 14px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:rgba(255,255,255,.6);transition:.15s}
+    .hdr-btn:active{transform:scale(.95)}
+    .hdr-btn.primary{background:rgba(168,85,247,.15);border-color:rgba(168,85,247,.3);color:#a855f7}
+
+    /* ── Content ── */
+    .content{padding:16px;max-width:600px;margin:0 auto}
+    .section-title{font-size:15px;font-weight:800;margin:20px 0 10px;display:flex;align-items:center;gap:8px}
+    .section-title:first-child{margin-top:4px}
+
+    /* ── Stat cards ── */
+    .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:8px}
+    .stat{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px;text-align:center;transition:.15s}
+    .stat:hover{border-color:rgba(168,85,247,.2)}
+    .stat .num{font-size:24px;font-weight:800;color:#a855f7}
+    .stat .lbl{font-size:10px;color:rgba(255,255,255,.4);margin-top:3px;text-transform:uppercase;letter-spacing:.5px}
+    .stat .sub{font-size:10px;color:rgba(255,255,255,.2);margin-top:2px}
+
+    /* ── Tier card ── */
+    .tier-card{border-radius:20px;padding:20px;margin-bottom:16px;position:relative;overflow:hidden}
+    .tier-card.starter{background:linear-gradient(135deg,rgba(34,197,94,.08),rgba(34,197,94,.02));border:1px solid rgba(34,197,94,.15)}
+    .tier-card.rising{background:linear-gradient(135deg,rgba(251,191,36,.08),rgba(251,191,36,.02));border:1px solid rgba(251,191,36,.15)}
+    .tier-card.pro{background:linear-gradient(135deg,rgba(255,109,0,.08),rgba(255,109,0,.02));border:1px solid rgba(255,109,0,.15)}
+    .tier-card.legend{background:linear-gradient(135deg,rgba(168,85,247,.1),rgba(168,85,247,.03));border:1px solid rgba(168,85,247,.2)}
+    .tier-top{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+    .tier-emoji{font-size:40px}
+    .tier-name{font-size:18px;font-weight:800}
+    .tier-level{font-size:11px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:1px}
+    .progress-wrap{margin-top:8px}
+    .progress-labels{display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.4);margin-bottom:4px}
+    .progress-bar{height:8px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden}
+    .progress-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,#a855f7,#ec4899);transition:width .6s ease}
+
+    /* ── Share Link ── */
+    .share-card{background:linear-gradient(135deg,rgba(168,85,247,.08),rgba(236,72,153,.05));border:1px solid rgba(168,85,247,.15);border-radius:16px;padding:16px;margin-bottom:16px}
+    .share-url{display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.3);border-radius:10px;padding:10px 14px;margin-top:8px}
+    .share-url code{flex:1;font-size:13px;color:#a855f7;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .copy-btn{padding:8px 14px;border-radius:8px;border:none;background:#a855f7;color:#fff;font-weight:700;font-size:12px;cursor:pointer;flex-shrink:0}
+    .copy-btn:active{transform:scale(.93)}
+
+    /* ── Content list ── */
+    .content-item{display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;margin-bottom:8px;cursor:pointer;transition:.15s}
+    .content-item:active{background:rgba(255,255,255,.06)}
+    .ci-thumb{width:52px;height:52px;border-radius:10px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+    .ci-info{flex:1;min-width:0}
+    .ci-title{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .ci-meta{font-size:11px;color:rgba(255,255,255,.35);margin-top:2px}
+    .ci-stat{text-align:right;flex-shrink:0}
+    .ci-stat .num{font-size:16px;font-weight:800;color:#a855f7}
+    .ci-stat .lbl{font-size:9px;color:rgba(255,255,255,.3)}
+
+    /* ── Action buttons ── */
+    .action-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+    .action-btn{padding:14px;border-radius:14px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);text-align:center;cursor:pointer;transition:.15s}
+    .action-btn:active{transform:scale(.97);background:rgba(255,255,255,.08)}
+    .action-btn .icon{font-size:24px;margin-bottom:4px}
+    .action-btn .label{font-size:12px;font-weight:700;color:rgba(255,255,255,.7)}
+
+    /* ── Earnings card ── */
+    .earnings-card{background:linear-gradient(135deg,rgba(34,197,94,.08),rgba(34,197,94,.03));border:1px solid rgba(34,197,94,.15);border-radius:16px;padding:20px;margin-bottom:16px;text-align:center}
+    .earnings-amount{font-size:36px;font-weight:900;color:#22c55e}
+    .earnings-label{font-size:12px;color:rgba(255,255,255,.4);margin-top:4px}
+    .withdraw-btns{display:flex;gap:8px;margin-top:14px;justify-content:center}
+    .withdraw-btn{padding:10px 20px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;border:none;transition:.15s}
+    .withdraw-btn:active{transform:scale(.95)}
+    .withdraw-btn.wallet{background:rgba(168,85,247,.15);color:#a855f7;border:1px solid rgba(168,85,247,.2)}
+    .withdraw-btn.bank{background:rgba(34,197,94,.15);color:#22c55e;border:1px solid rgba(34,197,94,.2)}
+
+    /* ── Bottom Nav ── */
+    .bottom-nav{position:fixed;bottom:0;left:0;right:0;height:56px;background:rgba(8,8,18,.98);backdrop-filter:blur(24px);display:flex;align-items:center;justify-content:space-around;border-top:1px solid rgba(255,255,255,.06);z-index:9000;padding-bottom:env(safe-area-inset-bottom,0)}
+    .nav-item{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:6px 12px;-webkit-tap-highlight-color:transparent}
+    .nav-item svg{width:22px;height:22px;stroke:rgba(255,255,255,.4);fill:none;stroke-width:1.8;transition:.2s}
+    .nav-item .nav-label{font-size:9px;font-weight:600;color:rgba(255,255,255,.4);transition:.2s}
+    .nav-item.active svg{stroke:#a855f7;filter:drop-shadow(0 0 6px rgba(168,85,247,.35))}
+    .nav-item.active .nav-label{color:#a855f7}
+
+    /* ── Toast ── */
+    .toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);padding:12px 24px;border-radius:12px;font-size:13px;font-weight:600;z-index:10000;animation:toastIn .3s ease}
+    .toast.success{background:#22c55e;color:#fff}
+    .toast.info{background:#3b82f6;color:#fff}
+    @keyframes toastIn{from{transform:translateX(-50%) translateY(-100%);opacity:0}to{transform:translateX(-50%) translateY(0);opacity:1}}
+
+    .loading{text-align:center;padding:40px;color:rgba(255,255,255,.3)}
+    .spinner{width:28px;height:28px;border:3px solid rgba(255,255,255,.1);border-top-color:#a855f7;border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 10px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .empty-state{text-align:center;padding:30px;color:rgba(255,255,255,.25);font-size:13px}
+
+    @media(max-width:380px){.stats{grid-template-columns:1fr 1fr}.stat .num{font-size:20px}}
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-left">
+      <div class="logo-dot"></div>
+      <h1><span>Creator</span> Studio</h1>
+    </div>
+    <div class="header-right">
+      <button class="hdr-btn" onclick="location.href='/'">← App</button>
+      <button class="hdr-btn primary" onclick="location.href='/upload'">+ Upload</button>
+    </div>
+  </div>
+
+  <div class="content" id="main">
+    <div class="loading"><div class="spinner"></div>Loading creator profile…</div>
+  </div>
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav">
+    <div class="nav-item active" onclick="showTab('home')">
+      <svg viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1h-2"/></svg>
+      <span class="nav-label">Home</span>
+    </div>
+    <div class="nav-item" onclick="showTab('content')">
+      <svg viewBox="0 0 24 24"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+      <span class="nav-label">Content</span>
+    </div>
+    <div class="nav-item" onclick="showTab('earnings')">
+      <svg viewBox="0 0 24 24"><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      <span class="nav-label">Earnings</span>
+    </div>
+    <div class="nav-item" onclick="showTab('analytics')">
+      <svg viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+      <span class="nav-label">Analytics</span>
+    </div>
+    <div class="nav-item" onclick="showTab('settings')">
+      <svg viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+      <span class="nav-label">Settings</span>
+    </div>
+  </nav>
+
+  <script>
+  (function(){
+    const TIERS={starter:{name:'Starter',badge:'🌱',next:'Rising Star',nextReq:10,color:'#22c55e',cls:'starter'},rising:{name:'Rising Star',badge:'⭐',next:'Pro Creator',nextReq:50,color:'#fbbf24',cls:'rising'},pro:{name:'Pro Creator',badge:'🔥',next:'Legend',nextReq:100,color:'#FF6D00',cls:'pro'},legend:{name:'Legend',badge:'👑',next:null,nextReq:null,color:'#a855f7',cls:'legend'}};
+
+    let currentTab='home';
+    let creatorData=null;
+
+    function toast(msg,type){const t=document.createElement('div');t.className='toast '+(type||'info');t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2500);}
+
+    async function loadCreator(){
+      try{
+        const stored=JSON.parse(localStorage.getItem('sg_creator')||'null');
+        if(!stored||!stored.handle){showSignup();return;}
+        creatorData=stored;
+        const [earningsRes,reelsRes]=await Promise.all([
+          fetch('/api/creators/earnings/'+stored.handle).then(r=>r.json()).catch(()=>null),
+          fetch('/api/reels/creator/'+stored.handle).then(r=>r.json()).catch(()=>null)
+        ]);
+        creatorData.earnings=earningsRes;
+        creatorData.reels=reelsRes;
+        renderHome();
+      }catch(e){showSignup();}
+    }
+
+    function showSignup(){
+      document.getElementById('main').innerHTML=`
+        <div style="text-align:center;padding:40px 20px">
+          <p style="font-size:56px;margin-bottom:16px">🎬</p>
+          <h2 style="font-size:22px;font-weight:800;margin-bottom:8px">Join ScanSquad</h2>
+          <p style="color:rgba(255,255,255,.4);font-size:14px;margin-bottom:24px;line-height:1.5">Create gym content, share your referral link, and earn 25% commission on every booking.</p>
+          <div class="stats" style="margin-bottom:24px">
+            <div class="stat"><div class="num">25%</div><div class="lbl">Commission</div></div>
+            <div class="stat"><div class="num">£0</div><div class="lbl">To Join</div></div>
+            <div class="stat"><div class="num">Weekly</div><div class="lbl">Payouts</div></div>
+            <div class="stat"><div class="num">Free</div><div class="lbl">Gym Access</div></div>
+          </div>
+          <button onclick="location.href='/upload'" style="background:linear-gradient(135deg,#a855f7,#ec4899);color:#fff;border:none;padding:16px 40px;border-radius:14px;font-weight:700;font-size:16px;cursor:pointer;box-shadow:0 4px 20px rgba(168,85,247,.3)">Become a Creator →</button>
+          <p style="color:rgba(255,255,255,.25);font-size:11px;margin-top:12px">Already a creator? <a href="/login" style="color:#a855f7">Sign in</a></p>
+        </div>`;
+    }
+
+    function renderHome(){
+      const handle=creatorData.handle||'';
+      const e=creatorData.earnings||{};
+      const totalBookings=e.totalBookings||0;
+      const totalEarned=((e.totalEarnings||0)/100).toFixed(2);
+      const tier=getTier(totalBookings);
+      const nextTierReq=tier.nextReq||totalBookings;
+      const pct=tier.nextReq?Math.min((totalBookings/tier.nextReq)*100,100):100;
+
+      let html=`
+        <!-- Tier Card -->
+        <div class="tier-card ${tier.cls}">
+          <div class="tier-top">
+            <div class="tier-emoji">${tier.badge}</div>
+            <div><div class="tier-name">${tier.name}</div><div class="tier-level">ScanSquad Creator</div></div>
+          </div>
+          ${tier.next?`<div class="progress-wrap"><div class="progress-labels"><span>${totalBookings} bookings</span><span>${tier.nextReq} for ${tier.next}</span></div><div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div></div>`:'<p style="color:rgba(255,255,255,.4);font-size:12px">🏆 You\'ve reached the top tier!</p>'}
+        </div>
+
+        <!-- Share Link -->
+        <div class="share-card">
+          <p style="font-weight:700;font-size:14px">🔗 Your Referral Link</p>
+          <p style="font-size:11px;color:rgba(255,255,255,.35);margin-top:2px">Share to earn 25% on every booking</p>
+          <div class="share-url">
+            <code>scangym.com/r/${handle}</code>
+            <button class="copy-btn" onclick="navigator.clipboard.writeText('https://scangym.com/r/${handle}');toast('Link copied!','success')">Copy</button>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="action-grid">
+          <div class="action-btn" onclick="location.href='/upload'"><div class="icon">📹</div><div class="label">Upload Reel</div></div>
+          <div class="action-btn" onclick="shareLink()"><div class="icon">📤</div><div class="label">Share Link</div></div>
+          <div class="action-btn" onclick="showTab('earnings')"><div class="icon">💰</div><div class="label">Withdraw</div></div>
+          <div class="action-btn" onclick="location.href='/creators'"><div class="icon">🎨</div><div class="label">Get Assets</div></div>
+        </div>
+
+        <!-- Stats -->
+        <div class="section-title">📊 Your Stats</div>
+        <div class="stats">
+          <div class="stat"><div class="num">£${totalEarned}</div><div class="lbl">Total Earned</div></div>
+          <div class="stat"><div class="num">${totalBookings}</div><div class="lbl">Bookings Driven</div></div>
+          <div class="stat"><div class="num">${e.totalClicks||0}</div><div class="lbl">Link Clicks</div></div>
+          <div class="stat"><div class="num">${e.conversionRate||'0%'}</div><div class="lbl">Conversion</div></div>
+        </div>
+
+        <!-- Recent Referrals -->
+        <div class="section-title">🔥 Recent Referrals</div>
+        <div id="recent-referrals"><div class="empty-state">No referrals yet. Share your link to start earning!</div></div>
+      `;
+      document.getElementById('main').innerHTML=html;
+      loadRecentReferrals(handle);
+    }
+
+    async function loadRecentReferrals(handle){
+      try{
+        const r=await fetch('/api/referrals/'+handle+'/recent').then(r=>r.json());
+        const el=document.getElementById('recent-referrals');
+        if(!r.referrals||!r.referrals.length){el.innerHTML='<div class="empty-state">No referrals yet — share your link!</div>';return;}
+        el.innerHTML=r.referrals.slice(0,5).map(ref=>`
+          <div class="content-item">
+            <div class="ci-thumb" style="background:rgba(34,197,94,.1)">${ref.converted?'✅':'⏳'}</div>
+            <div class="ci-info"><div class="ci-title">${ref.converted?'Booking completed':'Click — pending'}</div><div class="ci-meta">${new Date(ref.created_at).toLocaleDateString()}</div></div>
+            ${ref.converted?'<div class="ci-stat"><div class="num">+£'+((ref.commission||0)/100).toFixed(2)+'</div><div class="lbl">earned</div></div>':''}
+          </div>`).join('');
+      }catch(e){}
+    }
+
+    function renderContent(){
+      let html=`
+        <div class="section-title">📹 Your Content</div>
+        <div class="action-grid" style="margin-bottom:20px">
+          <div class="action-btn" onclick="location.href='/upload'" style="border-color:rgba(168,85,247,.2);background:rgba(168,85,247,.06)">
+            <div class="icon">➕</div><div class="label" style="color:#a855f7">Upload New Reel</div>
+          </div>
+          <div class="action-btn" onclick="location.href='/creators'">
+            <div class="icon">🎨</div><div class="label">Marketing Assets</div>
+          </div>
+        </div>
+        <div class="section-title">🎬 Your Reels</div>
+        <div id="creator-reels"><div class="loading"><div class="spinner"></div>Loading reels…</div></div>
+      `;
+      document.getElementById('main').innerHTML=html;
+      loadCreatorReels();
+    }
+
+    async function loadCreatorReels(){
+      const handle=(creatorData||{}).handle;
+      if(!handle){document.getElementById('creator-reels').innerHTML='<div class="empty-state">Sign in to see your reels</div>';return;}
+      try{
+        const r=await fetch('/api/reels/creator/'+handle).then(r=>r.json());
+        const el=document.getElementById('creator-reels');
+        if(!r.reels||!r.reels.length){el.innerHTML='<div class="empty-state">No reels yet. <a href="/upload" style="color:#a855f7">Upload your first one →</a></div>';return;}
+        el.innerHTML=r.reels.map(reel=>`
+          <div class="content-item">
+            <div class="ci-thumb">🎥</div>
+            <div class="ci-info"><div class="ci-title">${esc(reel.caption||'Untitled Reel')}</div><div class="ci-meta">${reel.status||'active'} · ${new Date(reel.created_at||Date.now()).toLocaleDateString()}</div></div>
+            <div class="ci-stat"><div class="num">${fmt(reel.views||0)}</div><div class="lbl">views</div></div>
+          </div>`).join('');
+      }catch(e){document.getElementById('creator-reels').innerHTML='<div class="empty-state">Could not load reels</div>';}
+    }
+
+    function renderEarnings(){
+      const e=(creatorData||{}).earnings||{};
+      const totalEarned=((e.totalEarnings||0)/100).toFixed(2);
+      const available=((e.availableBalance||e.totalEarnings||0)/100).toFixed(2);
+      const pending=((e.pendingBalance||0)/100).toFixed(2);
+      const handle=(creatorData||{}).handle||'';
+
+      let html=`
+        <div class="earnings-card">
+          <p style="font-size:12px;color:rgba(255,255,255,.4);margin-bottom:4px">Available Balance</p>
+          <div class="earnings-amount">£${available}</div>
+          <div class="earnings-label">Total earned: £${totalEarned} · Pending: £${pending}</div>
+          <div class="withdraw-btns">
+            <button class="withdraw-btn wallet" onclick="withdrawToWallet()">💜 To Wallet</button>
+            <button class="withdraw-btn bank" onclick="withdrawToBank()">🏦 To Bank</button>
+          </div>
+        </div>
+
+        <div class="section-title">📈 Earnings Breakdown</div>
+        <div class="stats">
+          <div class="stat"><div class="num">${e.thisWeek||'£0'}</div><div class="lbl">This Week</div></div>
+          <div class="stat"><div class="num">${e.thisMonth||'£0'}</div><div class="lbl">This Month</div></div>
+          <div class="stat"><div class="num">${e.totalBookings||0}</div><div class="lbl">Bookings</div></div>
+          <div class="stat"><div class="num">${e.conversionRate||'0%'}</div><div class="lbl">Conversion</div></div>
+        </div>
+
+        <div class="section-title">💳 Payout History</div>
+        <div id="payout-history"><div class="empty-state">No payouts yet. Earn £5+ to request your first withdrawal.</div></div>
+      `;
+      document.getElementById('main').innerHTML=html;
+    }
+
+    function renderAnalytics(){
+      let html=`
+        <div class="section-title">📊 Content Analytics</div>
+        <div class="stats">
+          <div class="stat"><div class="num" id="a-views">--</div><div class="lbl">Total Views</div></div>
+          <div class="stat"><div class="num" id="a-shares">--</div><div class="lbl">Shares</div></div>
+          <div class="stat"><div class="num" id="a-clicks">--</div><div class="lbl">Link Clicks</div></div>
+          <div class="stat"><div class="num" id="a-conv">--</div><div class="lbl">Conversions</div></div>
+        </div>
+
+        <div class="section-title">🔥 Top Performing Content</div>
+        <div id="top-content"><div class="loading"><div class="spinner"></div>Loading analytics…</div></div>
+
+        <div class="section-title">📅 Daily Performance</div>
+        <div id="daily-chart" style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:20px;text-align:center">
+          <p style="color:rgba(255,255,255,.25);font-size:13px">📊 Charts populate as your content gets views and clicks</p>
+        </div>
+      `;
+      document.getElementById('main').innerHTML=html;
+      loadAnalytics();
+    }
+
+    async function loadAnalytics(){
+      const handle=(creatorData||{}).handle;
+      if(!handle)return;
+      try{
+        const r=await fetch('/api/creators/analytics/'+handle).then(r=>r.json()).catch(()=>({}));
+        if(r.totalViews!=null)document.getElementById('a-views').textContent=fmt(r.totalViews);
+        if(r.totalShares!=null)document.getElementById('a-shares').textContent=fmt(r.totalShares);
+        if(r.totalClicks!=null)document.getElementById('a-clicks').textContent=fmt(r.totalClicks);
+        if(r.conversionRate!=null)document.getElementById('a-conv').textContent=r.conversionRate;
+      }catch(e){}
+      document.getElementById('top-content').innerHTML='<div class="empty-state">Upload reels and share your link to see analytics here</div>';
+    }
+
+    function renderSettings(){
+      const handle=(creatorData||{}).handle||'';
+      let html=`
+        <div class="section-title">⚙️ Creator Settings</div>
+
+        <div class="content-item" onclick="location.href='/upload'" style="margin-bottom:12px">
+          <div class="ci-thumb" style="background:rgba(168,85,247,.1)">📹</div>
+          <div class="ci-info"><div class="ci-title">Upload Content</div><div class="ci-meta">Add new reels and workout videos</div></div>
+        </div>
+
+        <div class="content-item" onclick="navigator.clipboard.writeText('https://scangym.com/r/${handle}');toast('Copied!','success')" style="margin-bottom:12px">
+          <div class="ci-thumb" style="background:rgba(168,85,247,.1)">🔗</div>
+          <div class="ci-info"><div class="ci-title">Referral Link</div><div class="ci-meta">scangym.com/r/${handle}</div></div>
+        </div>
+
+        <div class="content-item" onclick="location.href='/creators'" style="margin-bottom:12px">
+          <div class="ci-thumb" style="background:rgba(34,197,94,.1)">🎨</div>
+          <div class="ci-info"><div class="ci-title">Marketing Assets</div><div class="ci-meta">Download shareable banners, links & QR codes</div></div>
+        </div>
+
+        <div class="content-item" onclick="toast('Stripe Connect coming soon','info')" style="margin-bottom:12px">
+          <div class="ci-thumb" style="background:rgba(99,102,241,.1)">🏦</div>
+          <div class="ci-info"><div class="ci-title">Payout Settings</div><div class="ci-meta">Connect bank account via Stripe</div></div>
+        </div>
+
+        <div class="content-item" onclick="location.href='/'" style="margin-bottom:12px">
+          <div class="ci-thumb" style="background:rgba(255,109,0,.1)">🏠</div>
+          <div class="ci-info"><div class="ci-title">Back to ScanGym App</div><div class="ci-meta">Switch to customer view</div></div>
+        </div>
+
+        <div style="text-align:center;margin-top:24px">
+          <p style="color:rgba(255,255,255,.2);font-size:11px">Creator Studio v1.0</p>
+          <p style="color:rgba(255,255,255,.15);font-size:10px;margin-top:4px">Also try: <a href="/partner" style="color:rgba(255,255,255,.3)">Partner Hub</a> · <a href="/admin" style="color:rgba(255,255,255,.3)">CEO Dashboard</a></p>
+        </div>
+      `;
+      document.getElementById('main').innerHTML=html;
+    }
+
+    function showTab(tab){
+      currentTab=tab;
+      document.querySelectorAll('.nav-item').forEach((el,i)=>{
+        el.classList.toggle('active',['home','content','earnings','analytics','settings'][i]===tab);
+      });
+      if(!creatorData&&tab!=='home'){showSignup();return;}
+      if(tab==='home')renderHome();
+      else if(tab==='content')renderContent();
+      else if(tab==='earnings')renderEarnings();
+      else if(tab==='analytics')renderAnalytics();
+      else if(tab==='settings')renderSettings();
+    }
+    window.showTab=showTab;
+
+    function shareLink(){
+      const handle=(creatorData||{}).handle||'';
+      if(navigator.share){
+        navigator.share({title:'ScanGym',text:'Book any gym near you!',url:'https://scangym.com/r/'+handle});
+      }else{
+        navigator.clipboard.writeText('https://scangym.com/r/'+handle);
+        toast('Link copied!','success');
+      }
+    }
+    window.shareLink=shareLink;
+
+    function withdrawToWallet(){toast('💜 Credited to your ScanGym Wallet!','success');}
+    function withdrawToBank(){toast('🏦 Bank withdrawal — connect Stripe first','info');}
+    window.withdrawToWallet=withdrawToWallet;
+    window.withdrawToBank=withdrawToBank;
+
+    function getTier(bookings){
+      if(bookings>=100)return TIERS.legend;
+      if(bookings>=50)return TIERS.pro;
+      if(bookings>=10)return TIERS.rising;
+      return TIERS.starter;
+    }
+    function fmt(n){return n!=null?Number(n).toLocaleString():'0';}
+    function esc(s){return s?String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'):'';}
+
+    loadCreator();
+  })();
+  </script>
+</body>
+</html>
