@@ -2333,11 +2333,19 @@
         var _saveC  = video.saveCount  || 0;
         var _shareLbl = _shareC > 0 ? (_shareC >= 1000 ? (_shareC/1000).toFixed(1).replace(/\.0$/,'')+'K' : String(_shareC)) : 'Share';
         var _saveLbl  = _saveC  > 0 ? (_saveC  >= 1000 ? (_saveC /1000).toFixed(1).replace(/\.0$/,'')+'K' : String(_saveC))  : 'Save';
+
+        // -- "Which reels I haven't shared/saved yet" tracker --
+        var _sharedReels = _getSharedReels();
+        var _isShared = _sharedReels.shared && _sharedReels.shared.indexOf(video.id) !== -1;
+        var _isSaved = _sharedReels.saved && _sharedReels.saved.indexOf(video.id) !== -1;
+        var _shareCheck = _isShared ? ' \u2713' : '';
+        var _saveCheck = _isSaved ? ' \u2713' : '';
+
         actions.innerHTML = ''
-          + '<div class="reel-action" data-action="share">'
-          +   '<div class="icon">' + ICONS.share + '</div><span class="label">' + _shareLbl + '</span></div>'
-          + '<div class="reel-action" data-action="save">'
-          +   '<div class="icon">' + ICONS.save + '</div><span class="label">' + _saveLbl + '</span></div>'
+          + '<div class="reel-action" data-action="share"' + (_isShared?' style="color:#22c55e"':'') + '>'
+          +   '<div class="icon">' + ICONS.share + '</div><span class="label">' + _shareLbl + _shareCheck + '</span></div>'
+          + '<div class="reel-action" data-action="save"' + (_isSaved?' style="color:#22c55e"':'') + '>'
+          +   '<div class="icon">' + ICONS.save + '</div><span class="label">' + _saveLbl + _saveCheck + '</span></div>'
           ; /* Earn action removed — moved to Profile tab */
         div.appendChild(actions);
 
@@ -2502,6 +2510,37 @@
         }
       }
 
+      // -- Shared/Saved reel tracker (localStorage) --
+      function _getSharedReels() {
+        try { return JSON.parse(localStorage.getItem('sg_reel_tracker') || '{"shared":[],"saved":[]}'); }
+        catch(e) { return {shared:[], saved:[]}; }
+      }
+      function _markReelShared(videoId) {
+        var t = _getSharedReels();
+        if (!t.shared) t.shared = [];
+        if (t.shared.indexOf(videoId) === -1) t.shared.push(videoId);
+        localStorage.setItem('sg_reel_tracker', JSON.stringify(t));
+        // Update UI: turn share button green for current reel
+        var actions = document.querySelectorAll('.reel-action[data-action="share"]');
+        if (actions[currentIndex]) {
+          actions[currentIndex].style.color = '#22c55e';
+          var lbl = actions[currentIndex].querySelector('.label');
+          if (lbl && lbl.textContent.indexOf('\u2713') === -1) lbl.textContent += ' \u2713';
+        }
+      }
+      function _markReelSaved(videoId) {
+        var t = _getSharedReels();
+        if (!t.saved) t.saved = [];
+        if (t.saved.indexOf(videoId) === -1) t.saved.push(videoId);
+        localStorage.setItem('sg_reel_tracker', JSON.stringify(t));
+        var actions = document.querySelectorAll('.reel-action[data-action="save"]');
+        if (actions[currentIndex]) {
+          actions[currentIndex].style.color = '#22c55e';
+          var lbl = actions[currentIndex].querySelector('.label');
+          if (lbl && lbl.textContent.indexOf('\u2713') === -1) lbl.textContent += ' \u2713';
+        }
+      }
+
       function handleShare(video){
         trackEvent('share', currentIndex); // G7 fix: track shares
         if(navigator.vibrate) navigator.vibrate(10);
@@ -2536,15 +2575,15 @@
         if(navigator.share){
           navigator.share({title:'ScanGym Reels',text:text,url:url})
             .then(function(){
-              showToast('\u2705 Shared!');
+              showToast('\u2705 Shared!'); _markReelShared(video.id);
               if(_viewerHandle) setTimeout(function(){ showToast('💰 You earn 25% when someone books!'); }, 2000);
             })
             .catch(function(err){
               if(err && err.name === 'AbortError') return;
-              copyToClipboard(sharePayload);
+              copyToClipboard(sharePayload); _markReelShared(video.id);
             });
         } else {
-          copyToClipboard(sharePayload);
+          copyToClipboard(sharePayload); _markReelShared(video.id);
           if(_viewerHandle) setTimeout(function(){ showToast('💰 You earn 25% when someone books!'); }, 2000);
         }
       }
@@ -2651,7 +2690,7 @@
               var shareData = { files: [file] };
               if(navigator.canShare(shareData)){
                 return navigator.share(shareData).then(function(){
-                  showToast('\u2705 Saved!');
+                  showToast('\u2705 Saved!'); _markReelSaved(video.id);
                 }).catch(function(err){
                   if(err && err.name === 'AbortError') return;
                   // Share failed — open download URL directly
@@ -2674,7 +2713,7 @@
             document.body.appendChild(a);
             a.click();
             a.remove();
-            showToast('\u2705 Saved!');
+            showToast('\u2705 Saved!'); _markReelSaved(video.id);
           }
           return;
         }
@@ -2692,7 +2731,7 @@
           a.click();
           a.remove();
           setTimeout(function(){ URL.revokeObjectURL(blobUrl); }, 1000);
-          showToast('\u2705 Saved!');
+          showToast('\u2705 Saved!'); _markReelSaved(video.id);
         }).catch(function(){
           if(isIOS){
             iosLongPressHint(url);

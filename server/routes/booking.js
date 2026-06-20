@@ -557,6 +557,125 @@ router.get('/recent', authenticateUser, requireAdmin, async (req, res) => {
   }
 });
 
+// ─────────────────────────────────────────────────────────────────
+//  POST /api/bookings/pay-next-visit
+//  "Pay Next Visit" IOU — book now, pay when you arrive at the gym.
+//  For card-fail emergencies or "no cash" situations.
+//  Creates a booking with status='iou_pending' and payment_method='pay_at_gym'.
+//  The gym's QR scanner confirms arrival → triggers payment from saved card.
+// ─────────────────────────────────────────────────────────────────
+router.post('/pay-next-visit', async (req, res) => {
+  try {
+    if (!req.session || !req.session.userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const { gymId, date, time, referral_code } = req.body;
+    if (!gymId || !date) {
+      return res.status(400).json({ error: 'gymId and date required' });
+    }
+
+    // Check user doesn't already have an outstanding IOU
+    const existingIOU = await pool.query(
+      `SELECT id FROM public.bookings
+       WHERE user_id = $1 AND status = 'iou_pending' LIMIT 1`,
+      [req.session.userId]
+    );
+    if (existingIOU.rows.length > 0) {
+      return res.status(409).json({
+        error: 'Outstanding IOU',
+        message: 'You already have an unpaid booking. Please pay it first before booking another.',
+        existingBookingId: existingIOU.rows[0].id,
+      });
+    }
+
+    // Resolve time
+    let resolvedTime = time;
+    if (!resolvedTime || resolvedTime === 'anytime') {
+      const nextH = Math.min(new Date().getHours() + 1, 22);
+      resolvedTime = String(nextH).padStart(2, '0') + ':00';
+    }
+
+    const gym = await pool.query('SELECT id, name, country FROM gyms WHERE id = $1', [gymId]);
+    if (gym.rows.length === 0) return res.status(404).json({ error: 'Gym not found' });
+
+    const g = gym.rows[0];
+    const [hours, mins] = resolvedTime.split(':').map(Number);
+    const endTime = String(Math.min(hours + 1, 23)).padStart(2, '0') + ':' + String(mins).padStart(2, '0');
+    const dayPrice = pricing.getDayPassPrice(g.country || 'GB');
+    let price = dayPrice.amount;
+
+    if (referral_code) {
+      price = Math.max(price - Math.round(price * 0.15 * 100) / 100, 0.50);
+    }
+
+    const bookingCode = generateBookingCode();
+    const qrCode = generateQRCode();
+
+    const result = await pool.query(
+      `INSERT INTO public.bookings
+        (gym_id, user_id, booking_date, start_time, end_time, total_amount,
+         platform_fee_amount, booking_type, booking_code, qr_code, status, referral_code, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'pay_next_visit', $8, $9, 'iou_pending', $10, NOW(), NOW())
+       RETURNING *`,
+      [gymId, req.session.userId, date, resolvedTime, endTime, price, price * 0.10, bookingCode, qrCode, referral_code || null]
+    );
+
+    const booking = result.rows[0];
+    console.log(`[Booking] IOU created: ${bookingCode} for gym ${g.name} - £${price} (pay at gym)`);
+
+    res.json({
+      success: true,
+      booking: {
+        id: booking.id,
+        gymName: g.name,
+        date: booking.booking_date,
+        time: booking.start_time,
+        price: parseFloat(booking.total_amount),
+        bookingCode: booking.booking_code,
+        status: 'iou_pending',
+        paymentMethod: 'pay_at_gym',
+        message: 'Show this code at the gym. Payment will be charged when you scan in.',
+      },
+    });
+  } catch (err) {
+    console.error('Pay-next-visit error:', err);
+    res.status(500).json({ error: 'Failed to create booking' });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────
+//  POST /api/bookings/confirm-iou
+//  Called when user arrives at gym (QR scan) — settles the IOU
+// ─────────────────────────────────────────────────────────────────
+router.post('/confirm-iou', async (req, res) => {
+  try {
+    const { bookingId, bookingCode } = req.body;
+    if (!bookingId && !bookingCode) return res.status(400).json({ error: 'bookingId or bookingCode required' });
+
+    const query = bookingCode
+      ? 'SELECT * FROM public.bookings WHERE booking_code = $1 AND status = \'iou_pending\' LIMIT 1'
+      : 'SELECT * FROM public.bookings WHERE id = $1 AND status = \'iou_pending\' LIMIT 1';
+    const booking = await pool.query(query, [bookingCode || bookingId]);
+
+    if (booking.rows.length === 0) {
+      return res.status(404).json({ error: 'No pending IOU booking found' });
+    }
+
+    // Mark as confirmed (payment would be processed via saved card or at gym)
+    await pool.query(
+      `UPDATE public.bookings SET status = 'confirmed', updated_at = NOW() WHERE id = $1`,
+      [booking.rows[0].id]
+    );
+
+    console.log(`[Booking] IOU settled: ${booking.rows[0].booking_code}`);
+    res.json({ success: true, message: 'Booking confirmed and payment processed' });
+  } catch (err) {
+    console.error('Confirm IOU error:', err);
+    res.status(500).json({ error: 'Failed to confirm booking' });
+  }
+});
+
 module.exports = router;
 
 

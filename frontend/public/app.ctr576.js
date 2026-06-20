@@ -1,7 +1,7 @@
 // ScanGym Frontend v5.3.1 — Fix P0: route payment to Uber-style white sheet + cache bust
 
 // Inject CSS animations for loading experience
-(function(){const s=document.createElement('style');s.textContent='@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}#fun-fact{transition:opacity 0.2s ease}.gym-card{animation:fadeInUp 0.3s ease-out both}.animate-slide-up{animation:slideUp 0.3s ease-out}@keyframes skeletonPulse{0%,100%{opacity:.6}50%{opacity:.3}}@keyframes locationDot{0%,100%{box-shadow:0 0 0 0 rgba(255,109,0,.4)}50%{box-shadow:0 0 0 8px rgba(255,109,0,0)}}.skel-card{animation:skeletonPulse 1.8s ease-in-out infinite}.loc-dot{animation:locationDot 1.5s ease-in-out infinite}.cards-enter .gym-card{animation:fadeInUp .4s ease-out both}@keyframes toastIn{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes toastOut{from{transform:translateY(0);opacity:1}to{transform:translateY(-100%);opacity:0}}@keyframes spin{to{transform:rotate(360deg)}}@keyframes casinoGlow{0%,100%{box-shadow:0 4px 20px rgba(255,109,0,.4),0 0 15px rgba(255,109,0,.15);background-position:0% 50%}50%{box-shadow:0 4px 30px rgba(255,109,0,.65),0 0 30px rgba(255,109,0,.3),0 0 60px rgba(255,109,0,.1);background-position:100% 50%}}@keyframes greenGlow{0%,100%{box-shadow:0 4px 20px rgba(34,197,94,.35),0 0 15px rgba(34,197,94,.1)}50%{box-shadow:0 4px 30px rgba(34,197,94,.6),0 0 30px rgba(34,197,94,.25),0 0 60px rgba(34,197,94,.1)}}.sg-spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}/* ── 3-Tab System (Polished) ── */.sg-tab-bar{position:fixed;bottom:0;left:0;right:0;height:56px;background:rgba(8,8,18,.98);backdrop-filter:blur(24px) saturate(1.8);-webkit-backdrop-filter:blur(24px) saturate(1.8);display:flex;align-items:center;justify-content:space-around;border-top:1px solid rgba(255,255,255,.06);z-index:9000;padding-bottom:env(safe-area-inset-bottom,0);pointer-events:auto!important}.sg-tab-item{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:6px 20px;border-radius:0;transition:all .25s cubic-bezier(.4,0,.2,1);-webkit-tap-highlight-color:transparent;user-select:none;position:relative;touch-action:manipulation}.sg-tab-item svg{width:26px;height:26px;stroke:rgba(255,255,255,.4);fill:none;stroke-width:1.8;transition:all .25s cubic-bezier(.4,0,.2,1)}.sg-tab-item .sg-tab-label{font-size:10px;font-weight:600;letter-spacing:.2px;color:rgba(255,255,255,.4);transition:all .25s cubic-bezier(.4,0,.2,1)}.sg-tab-item.active svg{stroke:#FF6D00;filter:drop-shadow(0 0 6px rgba(255,109,0,.35))}.sg-tab-item.active .sg-tab-label{color:#FF6D00}.sg-tab-item:active{transform:scale(.92)}.sg-tab-content{position:fixed;top:0;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom,0px));overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;scroll-behavior:smooth;display:flex;flex-direction:column}.sg-tab-content.reels-active{position:static;padding-bottom:0;overflow:visible}.sg-reels-frame{position:fixed;top:0;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom,0px));border:none;width:100%;height:calc(100vh - 56px - env(safe-area-inset-bottom,0px));z-index:1}.sg-more-hub{padding:20px 16px 24px;max-width:480px;margin:0 auto}.sg-more-section{margin-bottom:20px}.sg-more-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.3);margin-bottom:8px;padding-left:4px}.sg-more-item{display:flex;align-items:center;gap:14px;padding:14px 16px;background:rgba(255,255,255,.04);border-radius:14px;margin-bottom:6px;border:1px solid rgba(255,255,255,.04);cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}.sg-more-item:active{transform:scale(.98);background:rgba(255,255,255,.08)}.sg-more-item .sg-mi-icon{font-size:20px;width:40px;height:40px;background:rgba(255,255,255,.06);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.sg-more-item .sg-mi-text{flex:1}.sg-more-item .sg-mi-text h4{color:#fff;font-size:14px;font-weight:600;margin:0}.sg-more-item .sg-mi-text p{color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0}.sg-more-item .sg-mi-arrow{color:rgba(255,255,255,.2);font-size:16px}.sg-more-profile{display:flex;align-items:center;gap:14px;margin-bottom:28px;padding-top:12px}.sg-more-avatar{width:56px;height:56px;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff;flex-shrink:0}.sg-more-profile-info h3{color:#fff;font-size:18px;font-weight:700;margin:0}.sg-more-profile-info p{color:rgba(255,255,255,.4);font-size:13px;margin:2px 0 0}.sg-more-social{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}.sg-more-social a{display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:rgba(255,255,255,.04);border-radius:12px;border:1px solid rgba(255,255,255,.06);font-size:16px;transition:all .15s;text-decoration:none}.sg-more-social a:active{background:rgba(255,255,255,.1);transform:scale(.95)}.sg-more-back{display:flex;align-items:center;gap:8px;padding:12px 0;cursor:pointer;color:rgba(255,255,255,.6);font-size:14px;font-weight:600;margin-bottom:4px;-webkit-tap-highlight-color:transparent}.sg-more-back:active{color:#FF6D00}#sg-search-overlay{transition:opacity .2s ease}#sg-search-overlay.active{opacity:1!important}.hide-scrollbar::-webkit-scrollbar{display:none}.hide-scrollbar{scrollbar-width:none;-ms-overflow-style:none}*::-webkit-scrollbar{display:none}*{scrollbar-width:none;-ms-overflow-style:none}.sg-dashboard{-webkit-tap-highlight-color:transparent;position:fixed;top:0;left:0;right:0;bottom:56px;z-index:10;overscroll-behavior:none;-webkit-overflow-scrolling:auto}html,body{height:100%;overflow:hidden;overscroll-behavior:none;position:fixed;width:100%}.sg-tab-bar.hidden{display:none!important}/* ── Continue Banner (permanent layout element like tab bar) ── */#sg-continue-banner{position:fixed;bottom:calc(56px + env(safe-area-inset-bottom,0px));left:0;right:0;height:52px;background:linear-gradient(135deg,#FF6D00 0%,#E66200 100%);display:flex;align-items:center;justify-content:center;gap:8px;z-index:8999;box-shadow:0 -4px 20px rgba(255,109,0,.25);cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}#sg-continue-banner:active{opacity:.85}#sg-continue-banner.sg-cb-hidden{display:none}#sg-continue-banner .sg-cb-text{font-size:16px;font-weight:700;color:#fff;letter-spacing:.3px}#sg-continue-banner .sg-cb-price{font-size:13px;font-weight:600;color:rgba(255,255,255,.75)}#sg-continue-banner .sg-cb-arrow{font-size:18px;color:#fff;margin-left:2px}body.sg-cb-active .sg-tab-content{bottom:calc(56px + 52px + env(safe-area-inset-bottom,0px))!important}body.sg-cb-active .sg-reels-frame,body.sg-cb-active #sg-reels-iframe{bottom:calc(56px + 52px + env(safe-area-inset-bottom,0px))!important;height:calc(100vh - 56px - 52px - env(safe-area-inset-bottom,0px))!important}body.sg-cb-active .sg-dashboard{bottom:calc(56px + 52px)!important}';document.head.appendChild(s)})();
+(function(){const s=document.createElement('style');s.textContent='@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}#fun-fact{transition:opacity 0.2s ease}.gym-card{animation:fadeInUp 0.3s ease-out both}.animate-slide-up{animation:slideUp 0.3s ease-out}@keyframes skeletonPulse{0%,100%{opacity:.6}50%{opacity:.3}}@keyframes locationDot{0%,100%{box-shadow:0 0 0 0 rgba(255,109,0,.4)}50%{box-shadow:0 0 0 8px rgba(255,109,0,0)}}.skel-card{animation:skeletonPulse 1.8s ease-in-out infinite}.loc-dot{animation:locationDot 1.5s ease-in-out infinite}.cards-enter .gym-card{animation:fadeInUp .4s ease-out both}@keyframes toastIn{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes toastOut{from{transform:translateY(0);opacity:1}to{transform:translateY(-100%);opacity:0}}@keyframes spin{to{transform:rotate(360deg)}}@keyframes casinoGlow{0%,100%{box-shadow:0 4px 20px rgba(255,109,0,.4),0 0 15px rgba(255,109,0,.15);background-position:0% 50%}50%{box-shadow:0 4px 30px rgba(255,109,0,.65),0 0 30px rgba(255,109,0,.3),0 0 60px rgba(255,109,0,.1);background-position:100% 50%}}@keyframes greenGlow{0%,100%{box-shadow:0 4px 20px rgba(34,197,94,.35),0 0 15px rgba(34,197,94,.1)}50%{box-shadow:0 4px 30px rgba(34,197,94,.6),0 0 30px rgba(34,197,94,.25),0 0 60px rgba(34,197,94,.1)}}.sg-spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}/* ── 6-Tab System (Polished) ── */.sg-tab-bar{position:fixed;bottom:0;left:0;right:0;height:56px;background:rgba(8,8,18,.98);backdrop-filter:blur(24px) saturate(1.8);-webkit-backdrop-filter:blur(24px) saturate(1.8);display:flex;align-items:center;justify-content:space-around;border-top:1px solid rgba(255,255,255,.06);z-index:9000;padding-bottom:env(safe-area-inset-bottom,0);pointer-events:auto!important}.sg-tab-item{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:6px 8px;border-radius:0;transition:all .25s cubic-bezier(.4,0,.2,1);-webkit-tap-highlight-color:transparent;user-select:none;position:relative;touch-action:manipulation}.sg-tab-item svg{width:22px;height:22px;stroke:rgba(255,255,255,.4);fill:none;stroke-width:1.8;transition:all .25s cubic-bezier(.4,0,.2,1)}.sg-tab-item .sg-tab-label{font-size:9px;font-weight:600;letter-spacing:.2px;color:rgba(255,255,255,.4);transition:all .25s cubic-bezier(.4,0,.2,1)}.sg-tab-item.active svg{stroke:#FF6D00;filter:drop-shadow(0 0 6px rgba(255,109,0,.35))}.sg-tab-item.active .sg-tab-label{color:#FF6D00}.sg-tab-item:active{transform:scale(.92)}.sg-tab-content{position:fixed;top:0;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom,0px));overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;scroll-behavior:smooth;display:flex;flex-direction:column}.sg-tab-content.reels-active{position:static;padding-bottom:0;overflow:visible}.sg-reels-frame{position:fixed;top:0;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom,0px));border:none;width:100%;height:calc(100vh - 56px - env(safe-area-inset-bottom,0px));z-index:1}.sg-more-hub{padding:20px 16px 24px;max-width:480px;margin:0 auto}.sg-more-section{margin-bottom:20px}.sg-more-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.3);margin-bottom:8px;padding-left:4px}.sg-more-item{display:flex;align-items:center;gap:14px;padding:14px 16px;background:rgba(255,255,255,.04);border-radius:14px;margin-bottom:6px;border:1px solid rgba(255,255,255,.04);cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}.sg-more-item:active{transform:scale(.98);background:rgba(255,255,255,.08)}.sg-more-item .sg-mi-icon{font-size:20px;width:40px;height:40px;background:rgba(255,255,255,.06);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.sg-more-item .sg-mi-text{flex:1}.sg-more-item .sg-mi-text h4{color:#fff;font-size:14px;font-weight:600;margin:0}.sg-more-item .sg-mi-text p{color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0}.sg-more-item .sg-mi-arrow{color:rgba(255,255,255,.2);font-size:16px}.sg-more-profile{display:flex;align-items:center;gap:14px;margin-bottom:28px;padding-top:12px}.sg-more-avatar{width:56px;height:56px;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff;flex-shrink:0}.sg-more-profile-info h3{color:#fff;font-size:18px;font-weight:700;margin:0}.sg-more-profile-info p{color:rgba(255,255,255,.4);font-size:13px;margin:2px 0 0}.sg-more-social{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}.sg-more-social a{display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:rgba(255,255,255,.04);border-radius:12px;border:1px solid rgba(255,255,255,.06);font-size:16px;transition:all .15s;text-decoration:none}.sg-more-social a:active{background:rgba(255,255,255,.1);transform:scale(.95)}.sg-more-back{display:flex;align-items:center;gap:8px;padding:12px 0;cursor:pointer;color:rgba(255,255,255,.6);font-size:14px;font-weight:600;margin-bottom:4px;-webkit-tap-highlight-color:transparent}.sg-more-back:active{color:#FF6D00}#sg-search-overlay{transition:opacity .2s ease}#sg-search-overlay.active{opacity:1!important}.hide-scrollbar::-webkit-scrollbar{display:none}.hide-scrollbar{scrollbar-width:none;-ms-overflow-style:none}*::-webkit-scrollbar{display:none}*{scrollbar-width:none;-ms-overflow-style:none}.sg-dashboard{-webkit-tap-highlight-color:transparent;position:fixed;top:0;left:0;right:0;bottom:56px;z-index:10;overscroll-behavior:none;-webkit-overflow-scrolling:auto}html,body{height:100%;overflow:hidden;overscroll-behavior:none;position:fixed;width:100%}.sg-tab-bar.hidden{display:none!important}/* ── Continue Banner (permanent layout element like tab bar) ── */#sg-continue-banner{position:fixed;bottom:calc(56px + env(safe-area-inset-bottom,0px));left:0;right:0;height:52px;background:linear-gradient(135deg,#FF6D00 0%,#E66200 100%);display:flex;align-items:center;justify-content:center;gap:8px;z-index:8999;box-shadow:0 -4px 20px rgba(255,109,0,.25);cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}#sg-continue-banner:active{opacity:.85}#sg-continue-banner.sg-cb-hidden{display:none}#sg-continue-banner .sg-cb-text{font-size:16px;font-weight:700;color:#fff;letter-spacing:.3px}#sg-continue-banner .sg-cb-price{font-size:13px;font-weight:600;color:rgba(255,255,255,.75)}#sg-continue-banner .sg-cb-arrow{font-size:18px;color:#fff;margin-left:2px}body.sg-cb-active .sg-tab-content{bottom:calc(56px + 52px + env(safe-area-inset-bottom,0px))!important}body.sg-cb-active .sg-reels-frame,body.sg-cb-active #sg-reels-iframe{bottom:calc(56px + 52px + env(safe-area-inset-bottom,0px))!important;height:calc(100vh - 56px - 52px - env(safe-area-inset-bottom,0px))!important}body.sg-cb-active .sg-dashboard{bottom:calc(56px + 52px)!important}';document.head.appendChild(s)})();
 // ═══ Perf #9: Preconnect to Google photo CDN for faster image loads ═══
 (function(){['https://lh3.googleusercontent.com','https://maps.googleapis.com'].forEach(function(d){
 var l=document.createElement('link');l.rel='preconnect';l.href=d;l.crossOrigin='anonymous';document.head.appendChild(l);
@@ -640,15 +640,20 @@ async function generateReferLink(){var em=document.getElementById('refer-email')
 // ─── 3-Tab Navigation System ───
 function getTabForRoute(path){
   if(path==='/'||path==='')return 'reels';
-  if(path==='/explore')return 'book';
   if(path==='/reels')return 'reels';
   if(path==='/explore'||path==='/nearby'||path==='/search'||path.startsWith('/gym/')||path==='/booking-success'||path.startsWith('/r/'))return 'book';
+  if(path==='/music')return 'music';
+  if(path==='/photos'||path==='/carousel')return 'photos';
+  if(path==='/chat'||path==='/community')return 'chat';
   return 'more';
 }
 function switchTab(tab){
   state.activeTab=tab;
   if(tab==='reels'){state.route='/';history.pushState(null,'','/');}
   else if(tab==='book'){state.route=state._lastBookRoute||'/explore';history.pushState(null,'',state.route);}
+  else if(tab==='music'){state.route='/music';history.pushState(null,'','/music');}
+  else if(tab==='photos'){state.route='/photos';history.pushState(null,'','/photos');}
+  else if(tab==='chat'){state.route='/chat';history.pushState(null,'','/chat');}
   else if(tab==='more'){state.route=state._lastMoreRoute||'/more';history.pushState(null,'',state.route);}
   render();
   // ── Bug Fix: Toggle persistent reels iframe visibility ──
@@ -9028,6 +9033,12 @@ window.showBookingCheckout=async function(gymId, prefillDate, prefillTime){
         <div class="sg-bk-error-text"></div>
       </div>
 
+      <!-- Quick Options -->
+      <div style="padding:0 24px 8px;display:flex;gap:8px">
+        <button onclick="window._sgBookFor2('${gymId}','${selDate}','${selTime}')" style="flex:1;background:rgba(168,85,247,.1);border:1px solid rgba(168,85,247,.2);color:#a855f7;padding:10px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer">👫 Book for 2</button>
+        <button onclick="window._sgPayNextVisit('${gymId}','${selDate}','${selTime}')" style="flex:1;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.2);color:#3b82f6;padding:10px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer">⏳ Pay Next Visit</button>
+      </div>
+
       <div class="sg-bk-footer">
         <button class="sg-bk-cta sg-bk-cta-primary" id="sg-bk-cta-btn" onclick="ubConfirmPay()">
           <span id="sg-bk-cta-text">${finalIsCash?'Confirm · pay at gym':finalIsSaved?'Confirm and pay · ····'+gbs.savedCard.last4:'Confirm and pay'}</span>
@@ -9119,6 +9130,103 @@ window.showBookingCheckout=async function(gymId, prefillDate, prefillTime){
   })();
 
   // ═══ Confirm & Pay handler ═══
+  // ── "Book for 2" shortcut — uses existing group booking API ──
+  window._sgBookFor2=async function(gymId, date, time) {
+    if(!state.user){sgToast('Please log in first','info',2000);return;}
+    try {
+      var btn=event.target;btn.disabled=true;btn.textContent='Creating group...';
+      var r=await fetch('/api/group/create',{
+        method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
+        body:JSON.stringify({gymId:gymId,date:date,time:time||'anytime',count:2})
+      });
+      var d=await r.json();
+      if(d.success){
+        // Copy share link and show success
+        var link=d.shareLink||('https://scangym.com/group/'+d.groupCode);
+        navigator.clipboard.writeText(link).catch(function(){});
+        document.getElementById('booking-sheet')?.remove();
+        sgToast('👫 Group booking created! Share link copied — send to your partner','success',5000);
+        navigate('/booking-success?group='+d.groupCode);
+      } else {
+        sgToast(d.error||'Failed to create group booking','error',3000);
+        btn.disabled=false;btn.textContent='👫 Book for 2';
+      }
+    } catch(e) {
+      sgToast('Something went wrong','error',2000);
+      btn.disabled=false;btn.textContent='👫 Book for 2';
+    }
+  };
+
+  // ── "Pay Next Visit" IOU — book now, pay when you arrive ──
+  window._sgPayNextVisit=async function(gymId, date, time) {
+    if(!state.user){sgToast('Please log in first','info',2000);return;}
+    try {
+      var btn=event.target;btn.disabled=true;btn.textContent='Reserving...';
+      var refCode=null;
+      try{var _r=JSON.parse(localStorage.getItem('sg_referral')||'null');if(_r&&_r.handle&&_r.expiry>Date.now())refCode=_r.handle;}catch(e){}
+      var r=await fetch('/api/bookings/pay-next-visit',{
+        method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
+        body:JSON.stringify({gymId:gymId,date:date,time:time||'anytime',referral_code:refCode})
+      });
+      var d=await r.json();
+      if(d.success){
+        document.getElementById('booking-sheet')?.remove();
+        sgToast('⏳ Reserved! Show code '+d.booking.bookingCode+' at the gym. Pay when you arrive.','success',6000);
+        navigate('/booking-success');
+      } else {
+        sgToast(d.error||d.message||'Failed to reserve','error',3000);
+        btn.disabled=false;btn.textContent='⏳ Pay Next Visit';
+      }
+    } catch(e) {
+      sgToast('Something went wrong','error',2000);
+      btn.disabled=false;btn.textContent='⏳ Pay Next Visit';
+    }
+  };
+
+  // ── Cash with Fingerprint — biometric confirmation for cash bookings ──
+  window._sgCashWithBiometric=async function(gymId, date, time) {
+    if(!state.user){sgToast('Please log in first','info',2000);return;}
+    // Check if WebAuthn/biometric is available
+    if(!window.PublicKeyCredential){
+      sgToast('Biometric auth not available on this device','info',3000);
+      return;
+    }
+    try {
+      // Request biometric verification
+      var cred=await navigator.credentials.get({
+        publicKey:{
+          challenge:new Uint8Array(32),
+          timeout:60000,
+          userVerification:'required',
+          rpId:window.location.hostname
+        }
+      });
+      if(cred){
+        // Biometric confirmed — proceed with cash booking
+        var refCode=null;
+        try{var _r=JSON.parse(localStorage.getItem('sg_referral')||'null');if(_r&&_r.handle&&_r.expiry>Date.now())refCode=_r.handle;}catch(e){}
+        var r=await fetch('/api/bookings/create',{
+          method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
+          body:JSON.stringify({gymId:gymId,date:date,time:time||'anytime',referral_code:refCode})
+        });
+        var d=await r.json();
+        if(d.success){
+          document.getElementById('booking-sheet')?.remove();
+          sgToast('🔒 Booking confirmed with biometric! Pay cash at the gym.','success',5000);
+          navigate('/booking-success');
+        } else {
+          sgToast(d.error||'Booking failed','error',3000);
+        }
+      }
+    } catch(e) {
+      if(e.name==='NotAllowedError'){
+        sgToast('Biometric verification cancelled','info',2000);
+      } else {
+        sgToast('Biometric not set up — use regular booking instead','info',3000);
+      }
+    }
+  };
+
   window.ubConfirmPay=async function(){
     const cs=window._checkoutState;
     const btn=document.getElementById('sg-bk-cta-btn');
@@ -11369,11 +11477,111 @@ window._closeSearchOverlay=function(){
 
 // ─── Router ───
 // ─── Bottom Tab Bar (Polished — IG/TikTok/YT style) ───
+// ═══ MUSIC TAB — Audio fitness content ═══
+function MusicTabPage(){
+  return`<div style="max-width:480px;margin:0 auto;padding:16px 16px 80px">
+    <div style="text-align:center;padding:20px 0">
+      <h1 style="font-size:24px;font-weight:900;color:#fff;margin-bottom:4px">🎵 Music</h1>
+      <p style="color:rgba(255,255,255,.4);font-size:13px">Workout playlists & gym beats</p>
+    </div>
+
+    <!-- Featured Playlist -->
+    <div style="background:linear-gradient(135deg,rgba(168,85,247,.15),rgba(236,72,153,.1));border:1px solid rgba(168,85,247,.2);border-radius:20px;padding:24px;margin-bottom:16px;text-align:center">
+      <div style="font-size:48px;margin-bottom:12px">🔥</div>
+      <p style="color:#fff;font-size:18px;font-weight:800;margin-bottom:4px">Beast Mode Mix</p>
+      <p style="color:rgba(255,255,255,.4);font-size:12px;margin-bottom:16px">High energy gym playlist · 45 min</p>
+      <button onclick="sgToast('🎵 Music player coming soon!','info',3000)" style="background:linear-gradient(135deg,#a855f7,#ec4899);color:#fff;border:none;padding:14px 32px;border-radius:14px;font-weight:700;font-size:15px;cursor:pointer;box-shadow:0 4px 20px rgba(168,85,247,.3)">▶ Play Now</button>
+    </div>
+
+    <!-- Genre Grid -->
+    <p style="color:#fff;font-weight:700;font-size:16px;margin-bottom:12px">Browse by Mood</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
+      ${[{e:'💪',n:'Power Lift',c:'#ef4444'},{e:'🏃',n:'Cardio Rush',c:'#f97316'},{e:'🧘',n:'Yoga Flow',c:'#22c55e'},{e:'🥊',n:'Boxing Beat',c:'#3b82f6'},{e:'🏋️',n:'Heavy Metal',c:'#8b5cf6'},{e:'🎧',n:'Lo-Fi Focus',c:'#06b6d4'},{e:'🔥',n:'HIIT Timer',c:'#eab308'},{e:'🌙',n:'Cool Down',c:'#64748b'}].map(function(g){return '<div onclick="sgToast(\\'🎵 '+g.n+' playlist coming soon!\\',\\'info\\',2000)" style="background:linear-gradient(135deg,'+g.c+'15,'+g.c+'08);border:1px solid '+g.c+'25;border-radius:14px;padding:16px;cursor:pointer;text-align:center;transition:transform .15s" ontouchstart="this.style.transform=\\'scale(.97)\\'" ontouchend="this.style.transform=\\'\\'"><span style="font-size:28px;display:block;margin-bottom:6px">'+g.e+'</span><p style="color:#fff;font-size:13px;font-weight:700">'+g.n+'</p></div>';}).join('')}
+    </div>
+
+    <!-- Coming Soon Banner -->
+    <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:20px;text-align:center">
+      <p style="color:rgba(255,255,255,.4);font-size:13px">🎶 Full music player with gym workout playlists launching soon.</p>
+      <p style="color:rgba(255,255,255,.25);font-size:11px;margin-top:4px">Your gym session, your soundtrack.</p>
+    </div>
+  </div>`;
+}
+
+// ═══ PHOTOS TAB — Carousel / photo feed ═══
+function PhotosTabPage(){
+  return`<div style="max-width:480px;margin:0 auto;padding:16px 16px 80px">
+    <div style="text-align:center;padding:20px 0">
+      <h1 style="font-size:24px;font-weight:900;color:#fff;margin-bottom:4px">📸 Photos</h1>
+      <p style="color:rgba(255,255,255,.4);font-size:13px">Gym transformations & workout inspo</p>
+    </div>
+
+    <!-- Photo Categories -->
+    <div style="display:flex;gap:8px;margin-bottom:16px;overflow-x:auto;padding-bottom:4px">
+      ${['🔥 Trending','💪 Before/After','🏋️ Form Tips','🍽 Meal Prep','📊 Progress'].map(function(c,i){return '<button style="flex-shrink:0;background:'+(i===0?'rgba(255,109,0,.15)':'rgba(255,255,255,.04)')+';border:1px solid '+(i===0?'rgba(255,109,0,.3)':'rgba(255,255,255,.08)')+';color:'+(i===0?'#FF6D00':'rgba(255,255,255,.5)')+';padding:8px 16px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">'+c+'</button>';}).join('')}
+    </div>
+
+    <!-- Photo Grid Placeholder -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;margin-bottom:20px">
+      ${Array(9).fill(0).map(function(_,i){
+        var colors=['#1a1a2e','#16213e','#0f3460','#1a1a2e','#16213e','#0f3460','#1a1a2e','#16213e','#0f3460'];
+        var emojis=['🏋️','💪','🥗','🏃','🧘','🥊','📊','🏅','🔥'];
+        return '<div style="aspect-ratio:1;background:'+colors[i]+';border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:28px;cursor:pointer" onclick="sgToast(\\'📸 Photo carousel coming soon!\\',\\'info\\',2000)">'+emojis[i]+'</div>';
+      }).join('')}
+    </div>
+
+    <!-- Upload CTA -->
+    <div style="background:linear-gradient(135deg,rgba(255,109,0,.08),rgba(255,145,0,.04));border:1px solid rgba(255,109,0,.15);border-radius:16px;padding:20px;text-align:center;margin-bottom:16px">
+      <p style="font-size:32px;margin-bottom:8px">📷</p>
+      <p style="color:#fff;font-weight:700;font-size:15px;margin-bottom:4px">Share Your Gym Moments</p>
+      <p style="color:rgba(255,255,255,.35);font-size:12px;margin-bottom:12px">Post transformation photos, gym selfies, and workout wins</p>
+      <button onclick="sgToast('📸 Photo uploads coming soon!','info',2000)" style="background:#FF6D00;color:#fff;border:none;padding:12px 28px;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer">Upload Photo</button>
+    </div>
+
+    <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px;text-align:center">
+      <p style="color:rgba(255,255,255,.4);font-size:13px">📸 Instagram-style photo carousel launching soon</p>
+    </div>
+  </div>`;
+}
+
+// ═══ CHAT TAB — Community text chat ═══
+function ChatTabPage(){
+  var u=state.user;
+  return`<div style="max-width:480px;margin:0 auto;padding:16px 16px 80px">
+    <div style="text-align:center;padding:20px 0">
+      <h1 style="font-size:24px;font-weight:900;color:#fff;margin-bottom:4px">💬 Chat</h1>
+      <p style="color:rgba(255,255,255,.4);font-size:13px">Connect with gym-goers near you</p>
+    </div>
+
+    <!-- Chat Rooms -->
+    <p style="color:#fff;font-weight:700;font-size:16px;margin-bottom:12px">Community Rooms</p>
+    <div style="margin-bottom:20px">
+      ${[
+        {icon:'🏋️',name:'General Gym Chat',members:'2.5K',desc:'Talk about anything gym-related',color:'#FF6D00'},
+        {icon:'💪',name:'Form Check',members:'890',desc:'Post videos for form feedback',color:'#3b82f6'},
+        {icon:'🍽',name:'Nutrition & Meal Prep',members:'1.2K',desc:'Share recipes and diet tips',color:'#22c55e'},
+        {icon:'🏃',name:'Running Club',members:'650',desc:'Running tips, routes & challenges',color:'#f97316'},
+        {icon:'🎯',name:'Accountability Partners',members:'430',desc:'Find a workout buddy near you',color:'#a855f7'},
+        {icon:'📈',name:'Progress Updates',members:'780',desc:'Share your fitness journey',color:'#eab308'}
+      ].map(function(r){return '<div onclick="sgToast(\\'💬 Chat launching soon! Stay tuned.\\',\\'info\\',2000)" style="display:flex;align-items:center;gap:12px;padding:14px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;margin-bottom:8px;cursor:pointer;transition:background .15s" ontouchstart="this.style.background=\\'rgba(255,255,255,.06)\\'" ontouchend="this.style.background=\\'rgba(255,255,255,.03)\\'"><div style="width:44px;height:44px;background:'+r.color+'15;border:1px solid '+r.color+'30;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">'+r.icon+'</div><div style="flex:1;min-width:0"><p style="color:#fff;font-weight:600;font-size:14px">'+r.name+'</p><p style="color:rgba(255,255,255,.3);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+r.desc+'</p></div><div style="text-align:right;flex-shrink:0"><span style="color:rgba(255,255,255,.25);font-size:10px">'+r.members+' members</span></div></div>';}).join('')}
+    </div>
+
+    ${!u?'<div style="background:rgba(255,109,0,.08);border:1px solid rgba(255,109,0,.15);border-radius:14px;padding:20px;text-align:center"><p style="color:#fff;font-weight:700;margin-bottom:8px">Join the community</p><p style="color:rgba(255,255,255,.4);font-size:12px;margin-bottom:12px">Sign in to chat with other gym-goers</p><button onclick="navigate(\\'/login\\')" style="background:#FF6D00;color:#fff;border:none;padding:12px 28px;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer">Sign In</button></div>':''}
+
+    <!-- DMs Coming Soon -->
+    <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px;text-align:center;margin-top:16px">
+      <p style="color:rgba(255,255,255,.4);font-size:13px">💬 Direct messages & group chats launching soon</p>
+    </div>
+  </div>`;
+}
+
 function BottomTabBar(){
   const t=state.activeTab;
   // SVG icons — crisp at any resolution, no emoji rendering differences
   const reelsIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="4"/><line x1="2" y1="8" x2="22" y2="8"/><line x1="10" y1="2" x2="10" y2="8"/><polygon points="10 13 16 16 10 19" fill="${t==='reels'?'#FF6D00':'rgba(255,255,255,.35)'}" stroke="none"/></svg>`;
   const bookIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/><circle cx="11" cy="11" r="2.5" fill="${t==='book'?'#FF6D00':'rgba(255,255,255,.3)'}" stroke="none"/></svg>`;
+  const musicIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3" fill="${t==='music'?'#FF6D00':'rgba(255,255,255,.3)'}"/><circle cx="18" cy="16" r="3" fill="${t==='music'?'#FF6D00':'rgba(255,255,255,.3)'}"/></svg>`;
+  const photosIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2" fill="${t==='photos'?'#FF6D00':'rgba(255,255,255,.3)'}"/><path d="M21 15l-5-5L5 21"/></svg>`;
+  const chatIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>`;
   const moreIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
   return`<nav class="sg-tab-bar" role="tablist" aria-label="Main navigation">
     <button class="sg-tab-item ${t==='reels'?'active':''}" role="tab" aria-selected="${t==='reels'}" aria-label="Reels" onclick="switchTab('reels')">
@@ -11383,6 +11591,18 @@ function BottomTabBar(){
     <button class="sg-tab-item ${t==='book'?'active':''}" role="tab" aria-selected="${t==='book'}" aria-label="Book a gym" onclick="switchTab('book')">
       ${bookIcon}
       <span class="sg-tab-label">Book</span>
+    </button>
+    <button class="sg-tab-item ${t==='music'?'active':''}" role="tab" aria-selected="${t==='music'}" aria-label="Music" onclick="switchTab('music')">
+      ${musicIcon}
+      <span class="sg-tab-label">Music</span>
+    </button>
+    <button class="sg-tab-item ${t==='photos'?'active':''}" role="tab" aria-selected="${t==='photos'}" aria-label="Photos" onclick="switchTab('photos')">
+      ${photosIcon}
+      <span class="sg-tab-label">Photos</span>
+    </button>
+    <button class="sg-tab-item ${t==='chat'?'active':''}" role="tab" aria-selected="${t==='chat'}" aria-label="Chat" onclick="switchTab('chat')">
+      ${chatIcon}
+      <span class="sg-tab-label">Chat</span>
     </button>
     <button class="sg-tab-item ${t==='more'?'active':''}" role="tab" aria-selected="${t==='more'}" aria-label="Profile and settings" onclick="switchTab('more')">
       ${moreIcon}
@@ -12479,7 +12699,7 @@ function CreatorEarningsPage(){
       </div>
     </div>
 
-    <!-- Withdrawal Section -->
+    <!-- Withdrawal Section (smoother 1-tap flow) -->
     <div class="mb-4">
       <div class="flex items-center justify-between mb-3">
         <p class="text-white font-bold">💸 Withdraw Earnings</p>
@@ -12494,6 +12714,19 @@ function CreatorEarningsPage(){
         </div>
         <div class="flex gap-3 text-xs text-slate-500">
           <span>Min: ${sgSymbol()}5.00</span><span>·</span><span>Pending: <span id="ce-pending">${sgSymbol()}0.00</span></span><span>·</span><span>Withdrawn: <span id="ce-withdrawn">${sgSymbol()}0.00</span></span>
+        </div>
+        <!-- 1-Tap Quick Withdraw Shortcuts -->
+        <div class="grid grid-cols-2 gap-2 mt-3" id="ce-quick-withdraw">
+          <button onclick="_quickWithdrawToWallet('${handle}')" class="bg-brand/10 hover:bg-brand/20 border border-brand/20 rounded-lg px-3 py-2 text-center transition">
+            <span class="text-sm">👛</span>
+            <p class="text-brand text-xs font-bold mt-1">To Wallet</p>
+            <p class="text-slate-500 text-[9px]">Instant · Free</p>
+          </button>
+          <button onclick="_quickWithdrawToBank('${handle}')" class="bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 rounded-lg px-3 py-2 text-center transition">
+            <span class="text-sm">🏦</span>
+            <p class="text-emerald-400 text-xs font-bold mt-1">To Bank</p>
+            <p class="text-slate-500 text-[9px]">1-3 days · £1</p>
+          </button>
         </div>
       </div>
     </div>
@@ -12865,6 +13098,39 @@ function _selectPayoutMethod(method){
 }
 
 // ═══ STRIPE CONNECT ONBOARDING ═══
+// ── 1-Tap Quick Withdraw to ScanGym Wallet (instant, free) ──
+async function _quickWithdrawToWallet(handle){
+  try{
+    var avail=document.getElementById('ce-available');
+    var amt=parseFloat((avail?avail.textContent:'0').replace(/[^0-9.]/g,''));
+    if(!amt||amt<0.01){sgToast('No earnings to withdraw yet','info',2000);return;}
+    sgToast('Moving £'+amt.toFixed(2)+' to your ScanGym Wallet...','info',2000);
+    var r=await fetch('/api/wallet/reward',{
+      method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
+      body:JSON.stringify({amount:amt,reason:'Creator earnings withdrawal to wallet',referenceType:'creator_withdrawal'})
+    });
+    var d=await r.json();
+    if(d.success){
+      sgToast('👛 £'+amt.toFixed(2)+' added to your wallet! Use it to book gyms.','success',4000);
+      if(avail)avail.textContent='£0.00';
+    }else{
+      sgToast(d.error||'Withdrawal failed','error',3000);
+    }
+  }catch(e){sgToast('Something went wrong','error',2000);}
+}
+
+// ── 1-Tap Quick Withdraw to Bank (shows bank form) ──
+function _quickWithdrawToBank(handle){
+  var form=document.getElementById('ce-payment-form');
+  if(form){
+    form.classList.remove('hidden');
+    _selectPayoutMethod('bank');
+    form.scrollIntoView({behavior:'smooth',block:'center'});
+  }else{
+    _requestWithdrawal(handle);
+  }
+}
+
 async function _startStripeConnect(handle){
   try{
     sgToast('Setting up Stripe Connect...','info',3000);
@@ -13936,6 +14202,7 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
   else if(path==='/posts')page=PostsPage();
   else if(path==='/creator-reels')page=CreatorReelsPage();
   else if(path==='/gym-partner-hub')page=GymPartnerHubPage();
+  else if(path==='/partner'||path==='/partners'||path==='/gym-partner')page=PartnerLandingPage();
   else if(path==='/onboard-chat')page=OnboardChatPage();
   else if(path==='/more')page=MoreHubPage();
   else if(path==='/book'){navigate('/explore',false);page=SearchPage();}
@@ -13968,6 +14235,12 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
       </div>
       ${page}
     </main>`+BottomTabBar();
+  } else if(tab==='music') {
+    html=`<main class="sg-tab-content fade-in">${MusicTabPage()}</main>`+BottomTabBar();
+  } else if(tab==='photos') {
+    html=`<main class="sg-tab-content fade-in">${PhotosTabPage()}</main>`+BottomTabBar();
+  } else if(tab==='chat') {
+    html=`<main class="sg-tab-content fade-in">${ChatTabPage()}</main>`+BottomTabBar();
   } else if((path==='/explore'||path==='/nearby'||path==='/search') && tab==='book') {
     // Book tab home — scrollable so gym cards below the map are visible
     html=`<main class="sg-tab-content fade-in">${page}</main>`+BottomTabBar();
@@ -15753,6 +16026,124 @@ function CreatorReelsPage(){
 }
 
 // ═══ #143: Gym Partner Hub ═══
+// ═══ Gym Partner Landing Page — /partner (was 404) ═══
+function PartnerLandingPage(){
+  return`<div style="max-width:480px;margin:0 auto;padding:0 16px 100px">
+    <!-- Hero -->
+    <div style="text-align:center;padding:40px 0 24px">
+      <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);border-radius:20px;padding:6px 14px;margin-bottom:16px">
+        <span style="color:#22c55e;font-size:11px;font-weight:700">🟢 FREE TO JOIN</span>
+      </div>
+      <h1 style="font-size:28px;font-weight:900;color:#fff;line-height:1.2;margin-bottom:8px">Get More Customers<br>Without Lifting a Finger</h1>
+      <p style="color:rgba(255,255,255,.5);font-size:15px;line-height:1.5">ScanGym sends you paying gym-goers during your quiet hours. You keep 85%.</p>
+    </div>
+
+    <!-- Revenue Calculator -->
+    <div style="background:linear-gradient(135deg,rgba(255,109,0,.08),rgba(255,145,0,.04));border:1px solid rgba(255,109,0,.15);border-radius:20px;padding:24px;margin-bottom:16px">
+      <p style="color:#fff;font-weight:800;font-size:16px;margin-bottom:4px">💰 How Much Could You Earn?</p>
+      <p style="color:rgba(255,255,255,.35);font-size:12px;margin-bottom:16px">Drag the slider to see your monthly potential</p>
+      <div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+          <span style="color:rgba(255,255,255,.5);font-size:12px">Empty slots per day</span>
+          <span style="color:#FF6D00;font-weight:700;font-size:14px" id="partner-slots">10</span>
+        </div>
+        <input type="range" min="2" max="60" value="10" style="width:100%;accent-color:#FF6D00" oninput="document.getElementById('partner-slots').textContent=this.value;document.getElementById('partner-rev').textContent='£'+(this.value*4.49*0.85*30).toFixed(0)">
+      </div>
+      <div style="text-align:center;background:rgba(0,0,0,.3);border-radius:14px;padding:20px">
+        <p style="color:rgba(255,255,255,.4);font-size:11px;text-transform:uppercase;letter-spacing:1px">Estimated monthly revenue</p>
+        <p style="color:#FF6D00;font-size:42px;font-weight:900;margin:4px 0" id="partner-rev">£1,145</p>
+        <p style="color:rgba(255,255,255,.3);font-size:11px">You keep 85% · We take 15%</p>
+      </div>
+    </div>
+
+    <!-- How It Works -->
+    <div style="margin-bottom:16px">
+      <p style="color:#fff;font-weight:800;font-size:16px;margin-bottom:12px">⚡ Live in 10 Minutes</p>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          <div style="width:36px;height:36px;border-radius:50%;background:#FF6D00;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#fff;flex-shrink:0">1</div>
+          <div style="flex:1;padding-top:6px"><p style="color:#fff;font-weight:700;font-size:14px">Find your gym</p><p style="color:rgba(255,255,255,.4);font-size:13px">Search by name — we pull your info from Google automatically</p></div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          <div style="width:36px;height:36px;border-radius:50%;background:#FF6D00;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#fff;flex-shrink:0">2</div>
+          <div style="flex:1;padding-top:6px"><p style="color:#fff;font-weight:700;font-size:14px">Set your price</p><p style="color:rgba(255,255,255,.4);font-size:13px">Day pass from £4.49. Change anytime with one tap.</p></div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          <div style="width:36px;height:36px;border-radius:50%;background:#FF6D00;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#fff;flex-shrink:0">3</div>
+          <div style="flex:1;padding-top:6px"><p style="color:#fff;font-weight:700;font-size:14px">Start earning</p><p style="color:rgba(255,255,255,.4);font-size:13px">We send you customers. You get paid weekly to your bank.</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Find My Gym Search -->
+    <div id="partner-search-box" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:20px;margin-bottom:16px">
+      <p style="color:#fff;font-weight:800;font-size:16px;margin-bottom:12px">🔍 Find Your Gym</p>
+      <div style="position:relative">
+        <input id="partner-gym-search" type="text" placeholder="Type your gym name..." style="width:100%;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.1);color:#fff;padding:14px 16px;border-radius:12px;font-size:15px;outline:none;box-sizing:border-box" oninput="_partnerSearchGyms(this.value)">
+        <div id="partner-search-results" style="position:absolute;top:100%;left:0;right:0;background:#1a1a2e;border:1px solid rgba(255,255,255,.1);border-radius:12px;margin-top:4px;max-height:240px;overflow-y:auto;display:none;z-index:100"></div>
+      </div>
+      <p style="color:rgba(255,255,255,.25);font-size:11px;margin-top:8px">We'll auto-fill your gym's details from Google</p>
+    </div>
+
+    <!-- What You Get -->
+    <div style="background:rgba(34,197,94,.05);border:1px solid rgba(34,197,94,.1);border-radius:16px;padding:20px;margin-bottom:16px">
+      <p style="color:#fff;font-weight:800;font-size:16px;margin-bottom:12px">✅ Everything Free</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        ${['📊 Analytics dashboard','🔒 Full control','🥤 Free vending machine','📱 QR scanner','💳 Weekly payouts','⏸️ Pause anytime','🏷️ Set your price','📈 Fill empty hours'].map(function(f){return '<div style="background:rgba(255,255,255,.03);border-radius:10px;padding:10px;font-size:12px;color:rgba(255,255,255,.7)">'+f+'</div>';}).join('')}
+      </div>
+    </div>
+
+    <!-- Social Proof -->
+    <div style="text-align:center;margin-bottom:20px">
+      <div style="display:flex;justify-content:center;gap:24px;margin-bottom:12px">
+        <div><p style="color:#fff;font-size:24px;font-weight:900">58+</p><p style="color:rgba(255,255,255,.35);font-size:11px">Gyms Listed</p></div>
+        <div><p style="color:#fff;font-size:24px;font-weight:900">2.5K+</p><p style="color:rgba(255,255,255,.35);font-size:11px">Active Users</p></div>
+        <div><p style="color:#fff;font-size:24px;font-weight:900">85%</p><p style="color:rgba(255,255,255,.35);font-size:11px">You Keep</p></div>
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <div style="position:fixed;bottom:0;left:0;right:0;padding:12px 16px;background:linear-gradient(0deg,#0f0f1a 80%,transparent);z-index:99">
+      <button onclick="navigate('/list-your-gym')" style="width:100%;background:#FF6D00;color:#fff;border:none;padding:16px;border-radius:14px;font-weight:800;font-size:17px;cursor:pointer;box-shadow:0 4px 20px rgba(255,109,0,.3);animation:casinoGlow 2s ease-in-out infinite">List Your Gym — It's Free →</button>
+      <p style="text-align:center;color:rgba(255,255,255,.25);font-size:11px;margin-top:6px">No credit card needed · Cancel anytime</p>
+    </div>
+  </div>`;
+}
+
+// Partner gym search function
+var _partnerSearchTimeout;
+window._partnerSearchGyms=function(q){
+  clearTimeout(_partnerSearchTimeout);
+  var results=document.getElementById('partner-search-results');
+  if(!q||q.length<2){results.style.display='none';return;}
+  _partnerSearchTimeout=setTimeout(async function(){
+    try{
+      var r=await fetch('/api/gyms/search?q='+encodeURIComponent(q)+'&limit=5');
+      var d=await r.json();
+      if(!d.results||!d.results.length){
+        results.innerHTML='<div style="padding:12px 16px;color:rgba(255,255,255,.4);font-size:13px">No gyms found — <a onclick="navigate(\\'/contact\\')" style="color:#FF6D00;cursor:pointer">contact us to add yours</a></div>';
+        results.style.display='block';
+        return;
+      }
+      results.innerHTML=d.results.map(function(g){
+        return '<div onclick="_partnerClaimGym(\\''+g.place_id+'\\',\\''+encodeURIComponent(g.name||'')+'\\' )" style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer;display:flex;align-items:center;gap:10px;transition:background .15s" onmouseover="this.style.background=\\'rgba(255,109,0,.08)\\'" onmouseout="this.style.background=\\'none\\'"><div style="width:36px;height:36px;border-radius:10px;background:rgba(255,109,0,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0">🏢</div><div style="flex:1;min-width:0"><p style="color:#fff;font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(g.name||'Gym')+'</p><p style="color:rgba(255,255,255,.3);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(g.address||g.vicinity||'')+'</p></div><span style="color:#FF6D00;font-size:12px;font-weight:700;flex-shrink:0">Claim →</span></div>';
+      }).join('');
+      results.style.display='block';
+    }catch(e){results.style.display='none';}
+  },350);
+};
+window._partnerClaimGym=function(placeId,gymName){
+  // Check login first
+  var token=localStorage.getItem('sg_token');
+  if(!token){
+    sgToast('Please log in first to claim your gym','info',3000);
+    navigate('/login');
+    return;
+  }
+  sgToast('Starting claim for '+decodeURIComponent(gymName)+'...','success',2000);
+  navigate('/list-your-gym?claim='+placeId);
+};
+
 function GymPartnerHubPage(){
   return`<div style="max-width:480px;margin:0 auto;padding:20px 16px">
     <div class="sg-more-back" onclick="navigate('/more')">← Back</div>
