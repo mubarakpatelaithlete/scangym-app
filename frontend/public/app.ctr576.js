@@ -568,6 +568,18 @@ var _visibilityObserver=('IntersectionObserver' in window)?new IntersectionObser
           el.removeAttribute('data-bg');
         });
       }
+      /* Perf v5: Pre-fetch gym data when card enters viewport for instant overlay */
+      var gid=e.target.getAttribute('data-gym-id');
+      if(gid&&window._gymDataCache&&!window._gymDataCache[gid]){
+        try{api.getLive('/place/'+gid).then(function(data){
+          if(data&&data.gym){
+            var _oh=data.openingHours||{};
+            if(data.gym.ownerIsOpen===true)_oh.isOpen=true;
+            else if(data.gym.ownerIsOpen===false)_oh.isOpen=false;
+            window._gymDataCache[gid]={data:{...data.gym,id:data.gym.dbId||data.gym.placeId,place_id:data.gym.placeId,photo_url:data.photos?.[0]?.url||null,photos_list:data.photos||[],rating:data.rating?.google||null,user_ratings_total:data.rating?.googleTotal||0,formatted_address:data.gym.address,vicinity:data.gym.address,opening_hours:_oh,openNow:_oh.isOpen??null,reviews_data:data.reviews,pricing:data.pricing,map:data.map,source:'live'},ts:Date.now()};
+          }
+        }).catch(function(){});}catch(err){}
+      }
     }
     else{e.target.classList.add('tt-offscreen');}
   });
@@ -1396,7 +1408,7 @@ function SearchPage(){
         /* Perf: Inject card CSS once (persists across re-renders — saves ~12KB per render) */
         if(!document.getElementById('tt-css')){
           var _s=document.createElement('style');_s.id='tt-css';
-          _s.textContent='.tt-view{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;position:relative}.tt-carousel{display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;flex:1;min-height:0;will-change:scroll-position;contain:strict}.tt-carousel::-webkit-scrollbar{display:none}.tt-card{width:100%;min-height:100%;max-height:100%;scroll-snap-align:start;position:relative;display:flex;flex-direction:column;overflow:hidden;contain:layout style paint}.tt-card.tt-closed{opacity:0.5;filter:grayscale(25%)}.tt-card.tt-closed .tt-cta-btn{background:#6b7280;box-shadow:none}.tt-photo{position:absolute;inset:0;background-size:cover;background-position:center;background-color:#1a1f2e}.tt-photo-carousel{position:absolute;inset:0;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;display:flex;z-index:0;touch-action:pan-x}.tt-photo-carousel::-webkit-scrollbar{display:none}.tt-photo-slide{flex:0 0 100%;width:100%;height:100%;scroll-snap-align:start;background-size:cover;background-position:center;background-color:#1a1f2e;transition:background-color .3s ease;user-select:none;-webkit-user-select:none;-webkit-user-drag:none}.tt-photo-dots{position:absolute;bottom:0;left:14px;display:flex;gap:4px;z-index:12}.tt-photo-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.3);transition:all .3s}.tt-photo-dot.act{background:#FF6D00;width:18px;border-radius:3px}.tt-photo-placeholder{position:absolute;inset:0;background:#1a1f2e;display:flex;align-items:center;justify-content:center}.tt-photo-placeholder::after{content:"🏋️";font-size:56px;opacity:.15}.tt-gradient{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.35) 0%,transparent 22%,transparent 55%,rgba(0,0,0,.55) 75%,rgba(0,0,0,.82) 100%);pointer-events:none;z-index:1}.tt-card::after{content:"";position:absolute;bottom:18%;left:50%;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(255,109,0,.08) 0%,rgba(255,109,0,.03) 40%,transparent 70%);transform:translateX(-50%);pointer-events:none;z-index:0}.tt-search{position:absolute;top:0;left:0;right:0;z-index:20;display:flex;gap:8px;padding:8px 12px;padding-top:calc(env(safe-area-inset-top,8px) + 4px)}.tt-search-input{flex:1;background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px 14px;color:rgba(255,255,255,.7);font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px;cursor:pointer}.tt-search-gps{background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;width:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-search-filter{background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;width:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-actions{position:absolute;right:10px;top:65px;display:flex;flex-direction:column;gap:6px;z-index:15;align-items:center}.tt-action{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-action-btn{width:44px;height:44px;background:transparent;border:none;border-radius:0;display:flex;align-items:center;justify-content:center;font-size:24px;transition:all .15s;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5));opacity:.75}.tt-action-btn:active{transform:scale(.85)}.tt-action-label{display:block;font-size:9px;color:rgba(255,255,255,.7);font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8);text-align:center;white-space:nowrap;max-width:52px;overflow:hidden;text-overflow:ellipsis;line-height:1.1}.tt-info{position:absolute;bottom:0;left:0;right:0;padding:0 14px 14px;z-index:15;pointer-events:none}.tt-info>*{pointer-events:auto}.tt-dots{display:flex;gap:3px;margin-bottom:4px;flex-wrap:wrap;max-width:280px}.tt-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.25);transition:all .3s}.tt-dot.act{background:#FF6D00;width:18px;border-radius:3px}.tt-counter{font-size:10px;color:rgba(255,255,255,.4);margin-bottom:4px;font-weight:500}.tt-gym-name{color:#fff;font-size:28px;font-weight:900;text-shadow:0 2px 10px rgba(0,0,0,.6);line-height:1.15;margin-bottom:4px;letter-spacing:-.3px}.tt-gym-addr{color:rgba(255,255,255,.7);font-size:12px;margin-bottom:6px;text-shadow:0 1px 4px rgba(0,0,0,.5);display:flex;align-items:center;gap:4px;flex-wrap:wrap}.tt-tag-open{color:#4ade80}.tt-tag-closed{color:#f87171}.tt-chips{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}.tt-chip{display:flex;align-items:center;gap:5px;background:rgba(30,33,45,.85);border-radius:10px;padding:6px 12px;font-size:12px;color:rgba(255,255,255,.92);font-weight:700}.tt-cta{position:absolute;bottom:0;left:0;right:0;padding:8px 14px;z-index:16}.tt-cta-btn{width:100%;padding:12px 0;border:none;border-radius:12px;background:linear-gradient(135deg,#FF6D00,#ff8534,#FF6D00);background-size:200% 200%;color:#fff;font-size:15px;font-weight:700;letter-spacing:.3px;cursor:pointer;-webkit-tap-highlight-color:transparent;box-shadow:0 4px 20px rgba(255,109,0,.4),0 0 20px rgba(255,109,0,.2);transition:all .15s;animation:casinoGlow 2s ease-in-out infinite}.tt-cta-btn:active{transform:scale(.97);box-shadow:0 2px 10px rgba(255,109,0,.3)}.tt-filter-sheet{display:none;position:absolute;top:52px;left:12px;right:12px;background:rgba(17,19,24,.98);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px;z-index:25;flex-wrap:wrap;gap:8px}.tt-filter-sheet.open{display:flex}.sg-filter-pill{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:7px 14px;color:rgba(255,255,255,.6);font-size:12px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;white-space:nowrap}.sg-filter-pill.active{background:rgba(255,109,0,.15);border-color:rgba(255,109,0,.4);color:#FF6D00}.tt-logo{position:absolute;left:14px;bottom:0;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;z-index:15;border:2px solid rgba(255,255,255,.15);box-shadow:0 2px 8px rgba(0,0,0,.3)}.tt-card.tt-offscreen{content-visibility:auto;contain-intrinsic-size:auto 100vh}.tt-card.tt-offscreen .tt-cta-btn{animation:none}.tt-card.tt-offscreen .tt-gradient{backdrop-filter:none;-webkit-backdrop-filter:none}';
+          _s.textContent='.tt-view{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;position:relative}.tt-carousel{display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;flex:1;min-height:0;will-change:scroll-position;contain:strict}.tt-carousel::-webkit-scrollbar{display:none}.tt-card{width:100%;min-height:100%;max-height:100%;scroll-snap-align:start;position:relative;display:flex;flex-direction:column;overflow:hidden;contain:layout style paint}.tt-card.tt-closed{opacity:0.5;filter:grayscale(25%)}.tt-card.tt-closed .tt-cta-btn{background:#6b7280;box-shadow:none}.tt-photo{position:absolute;inset:0;background-size:cover;background-position:center;background-color:#1a1f2e}.tt-photo-carousel{position:absolute;inset:0;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;display:flex;z-index:0;touch-action:pan-x}.tt-photo-carousel::-webkit-scrollbar{display:none}.tt-photo-slide{flex:0 0 100%;width:100%;height:100%;scroll-snap-align:start;background-size:cover;background-position:center;background-color:#1a1f2e;transition:background-color .3s ease;user-select:none;-webkit-user-select:none;-webkit-user-drag:none}.tt-photo-dots{position:absolute;bottom:0;left:14px;display:flex;gap:4px;z-index:12}.tt-photo-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.3);transition:all .3s}.tt-photo-dot.act{background:#FF6D00;width:18px;border-radius:3px}.tt-photo-placeholder{position:absolute;inset:0;background:#1a1f2e;display:flex;align-items:center;justify-content:center}.tt-photo-placeholder::after{content:"🏋️";font-size:56px;opacity:.15}.tt-gradient{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.35) 0%,transparent 22%,transparent 55%,rgba(0,0,0,.55) 75%,rgba(0,0,0,.82) 100%);pointer-events:none;z-index:1}.tt-card::after{content:"";position:absolute;bottom:18%;left:50%;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(255,109,0,.08) 0%,rgba(255,109,0,.03) 40%,transparent 70%);transform:translateX(-50%);pointer-events:none;z-index:0}.tt-search{position:absolute;top:0;left:0;right:0;z-index:20;display:flex;gap:8px;padding:8px 12px;padding-top:calc(env(safe-area-inset-top,8px) + 4px)}.tt-search-input{flex:1;background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px 14px;color:rgba(255,255,255,.7);font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px;cursor:pointer}.tt-search-gps{background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;width:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-search-filter{background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;width:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-actions{position:absolute;right:10px;top:65px;display:flex;flex-direction:column;gap:6px;z-index:15;align-items:center}.tt-action{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-action-btn{width:44px;height:44px;background:transparent;border:none;border-radius:0;display:flex;align-items:center;justify-content:center;font-size:24px;transition:all .15s;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5));opacity:.75}.tt-action-btn:active{transform:scale(.85);transition:transform .05s}.tt-action-label{display:block;font-size:9px;color:rgba(255,255,255,.7);font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8);text-align:center;white-space:nowrap;max-width:52px;overflow:hidden;text-overflow:ellipsis;line-height:1.1}.tt-info{position:absolute;bottom:0;left:0;right:0;padding:0 14px 14px;z-index:15;pointer-events:none}.tt-info>*{pointer-events:auto}.tt-dots{display:flex;gap:3px;margin-bottom:4px;flex-wrap:wrap;max-width:280px}.tt-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.25);transition:all .3s}.tt-dot.act{background:#FF6D00;width:18px;border-radius:3px}.tt-counter{font-size:10px;color:rgba(255,255,255,.4);margin-bottom:4px;font-weight:500}.tt-gym-name{color:#fff;font-size:28px;font-weight:900;text-shadow:0 2px 10px rgba(0,0,0,.6);line-height:1.15;margin-bottom:4px;letter-spacing:-.3px}.tt-gym-addr{color:rgba(255,255,255,.7);font-size:12px;margin-bottom:6px;text-shadow:0 1px 4px rgba(0,0,0,.5);display:flex;align-items:center;gap:4px;flex-wrap:wrap}.tt-tag-open{color:#4ade80}.tt-tag-closed{color:#f87171}.tt-chips{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}.tt-chip{display:flex;align-items:center;gap:5px;background:rgba(30,33,45,.85);border-radius:10px;padding:6px 12px;font-size:12px;color:rgba(255,255,255,.92);font-weight:700}.tt-cta{position:absolute;bottom:0;left:0;right:0;padding:8px 14px;z-index:16}.tt-cta-btn{width:100%;padding:12px 0;border:none;border-radius:12px;background:linear-gradient(135deg,#FF6D00,#ff8534,#FF6D00);background-size:200% 200%;color:#fff;font-size:15px;font-weight:700;letter-spacing:.3px;cursor:pointer;-webkit-tap-highlight-color:transparent;box-shadow:0 4px 20px rgba(255,109,0,.4),0 0 20px rgba(255,109,0,.2);transition:all .15s;animation:casinoGlow 2s ease-in-out infinite}.tt-cta-btn:active{transform:scale(.97);box-shadow:0 2px 10px rgba(255,109,0,.3)}.tt-filter-sheet{display:none;position:absolute;top:52px;left:12px;right:12px;background:rgba(17,19,24,.98);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px;z-index:25;flex-wrap:wrap;gap:8px}.tt-filter-sheet.open{display:flex}.sg-filter-pill{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:7px 14px;color:rgba(255,255,255,.6);font-size:12px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;white-space:nowrap}.sg-filter-pill.active{background:rgba(255,109,0,.15);border-color:rgba(255,109,0,.4);color:#FF6D00}.tt-logo{position:absolute;left:14px;bottom:0;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;z-index:15;border:2px solid rgba(255,255,255,.15);box-shadow:0 2px 8px rgba(0,0,0,.3)}.tt-card.tt-offscreen{content-visibility:auto;contain-intrinsic-size:auto 100vh}.tt-card.tt-offscreen .tt-cta-btn{animation:none}.tt-card.tt-offscreen .tt-gradient{backdrop-filter:none;-webkit-backdrop-filter:none}';
           document.head.appendChild(_s);
         }
 
@@ -1713,7 +1725,7 @@ function GymProfilePage(){
     .gym-pay-sheet{position:fixed;inset:0;z-index:9200;opacity:0;pointer-events:none;transition:opacity .25s}
     .gym-pay-sheet.open{opacity:1;pointer-events:all}
     .gym-pay-sheet-bg{position:absolute;inset:0;background:rgba(0,0,0,.5)}
-    .gym-pay-sheet-panel{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:20px 20px 0 0;transform:translateY(100%);transition:transform .35s cubic-bezier(.32,.72,0,1);max-height:85vh;overflow-y:auto;padding-bottom:env(safe-area-inset-bottom,0px)}
+    .gym-pay-sheet-panel{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:20px 20px 0 0;transform:translateY(100%);transition:transform .15s cubic-bezier(.32,.72,0,1);max-height:85vh;overflow-y:auto;padding-bottom:env(safe-area-inset-bottom,0px)}
     .gym-pay-sheet.open .gym-pay-sheet-panel{transform:translateY(0)}
     .gym-pay-sheet-drag{width:40px;height:4px;border-radius:2px;background:rgba(0,0,0,.12);margin:10px auto 0}
     .gym-pay-sheet-title{color:#000;font-size:28px;font-weight:800;padding:8px 20px 4px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}.gym-pay-sheet-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 0}.gym-pay-sheet-close{width:36px;height:36px;background:transparent;border:none;font-size:28px;color:#000;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}.gym-pay-sheet-add-btn{background:#f0f0f0;border:none;border-radius:20px;padding:8px 16px;color:#000;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;-webkit-tap-highlight-color:transparent}.gym-pay-section-title{color:#000;font-size:18px;font-weight:700;padding:20px 20px 12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}.gym-pay-item{display:flex;align-items:center;gap:14px;padding:16px 20px;cursor:pointer;transition:background .15s;border-bottom:1px solid rgba(0,0,0,.06);-webkit-tap-highlight-color:transparent}.gym-pay-item:active{background:rgba(0,0,0,.03)}.gym-pay-item-icon{width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.gym-pay-item-label{flex:1;color:#000;font-size:16px;font-weight:500;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}.gym-pay-item-check{width:28px;height:28px;border-radius:50%;border:2px solid #e0e0e0;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}.gym-pay-item.selected .gym-pay-item-check{background:#000;border-color:#000}.gym-pay-item.selected .gym-pay-item-check::after{content:'✓';color:#fff;font-size:14px;font-weight:700}.gym-pay-save-btn{width:calc(100% - 40px);margin:16px 20px;padding:18px;border:none;border-radius:12px;background:#000;color:#fff;font-size:17px;font-weight:700;cursor:pointer;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;transition:all .15s;-webkit-tap-highlight-color:transparent}.gym-pay-save-btn:active{opacity:.8;transform:scale(.99)}.gym-pay-add-back{display:flex;align-items:center;gap:12px;padding:16px 20px;cursor:pointer;border-bottom:1px solid rgba(0,0,0,.06);-webkit-tap-highlight-color:transparent}.gym-pay-add-title{color:#000;font-size:18px;font-weight:700;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}.gym-pay-add-item{display:flex;align-items:center;gap:14px;padding:18px 20px;cursor:pointer;border-bottom:1px solid rgba(0,0,0,.06);transition:background .15s;-webkit-tap-highlight-color:transparent}.gym-pay-add-item:active{background:rgba(0,0,0,.03)}.gym-pay-add-item-icon{width:40px;height:40px;border-radius:8px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -1730,7 +1742,7 @@ function GymProfilePage(){
     .gym-date-sheet{position:fixed;top:0;left:0;right:0;bottom:0;z-index:9200;opacity:0;pointer-events:none;transition:opacity .25s}
     .gym-date-sheet.open{opacity:1;pointer-events:all}
     .gym-date-sheet-bg{position:absolute;inset:0;background:rgba(0,0,0,.5)}
-    .gym-date-sheet-panel{position:absolute;left:0;right:0;bottom:0;background:#000;border-radius:16px 16px 0 0;transform:translateY(100%);transition:transform .35s cubic-bezier(.32,.72,0,1);padding-bottom:env(safe-area-inset-bottom,0px);max-height:85vh;display:flex;flex-direction:column;overflow:hidden}
+    .gym-date-sheet-panel{position:absolute;left:0;right:0;bottom:0;background:#000;border-radius:16px 16px 0 0;transform:translateY(100%);transition:transform .15s cubic-bezier(.32,.72,0,1);padding-bottom:env(safe-area-inset-bottom,0px);max-height:85vh;display:flex;flex-direction:column;overflow:hidden}
     .gym-date-sheet.open .gym-date-sheet-panel{transform:translateY(0)}
     .gym-date-sheet-drag{width:36px;height:4px;border-radius:2px;background:rgba(255,255,255,.25);margin:8px auto 0}
     .gym-date-sheet-title{color:#fff;font-size:20px;font-weight:700;padding:16px 20px 14px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
@@ -1816,7 +1828,7 @@ function GymProfilePage(){
     .gym-overlay{position:fixed;inset:0;z-index:9100;opacity:0;pointer-events:none;transition:opacity .3s ease}
     .gym-overlay.open{opacity:1;pointer-events:all}
     .gym-overlay-bg{position:absolute;inset:0;background:rgba(0,0,0,.5)}
-    .gym-overlay-panel{position:absolute;left:0;right:0;bottom:0;top:0;background:#0a0f14;transform:translateY(100%);transition:transform .35s cubic-bezier(.32,.72,0,1);display:flex;flex-direction:column;overflow:hidden}
+    .gym-overlay-panel{position:absolute;left:0;right:0;bottom:0;top:0;background:#0a0f14;transform:translateY(100%);transition:transform .15s cubic-bezier(.32,.72,0,1);display:flex;flex-direction:column;overflow:hidden}
     .gym-overlay.open .gym-overlay-panel{transform:translateY(0)}
     .gym-overlay-drag{width:40px;height:4px;border-radius:2px;background:rgba(255,255,255,.2);margin:10px auto 0}
     .gym-overlay-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0}
@@ -3097,7 +3109,7 @@ window.closeGymOverlay=function(){
 // ── Gym data cache: avoids re-fetching when tapping multiple overlay buttons ──
 // Each entry expires after 5 minutes so data stays fresh.
 window._gymDataCache=window._gymDataCache||{};
-const GYM_CACHE_TTL=5*60*1000; // 5 minutes
+const GYM_CACHE_TTL=15*60*1000; // 15 minutes — faster repeated access
 
 window.openGymDirectOverlay=async function(id,isLive,section){
   window._directOverlayReturn=state.route||'/explore';
@@ -3106,35 +3118,39 @@ window.openGymDirectOverlay=async function(id,isLive,section){
   const cached=window._gymDataCache[id];
   if(cached&&(Date.now()-cached.ts)<GYM_CACHE_TTL){
     state.currentGym=cached.data;
-  }else{
-    // Load gym data silently (no navigate, no render)
-    const isPlaceId=isLive||isNaN(parseInt(id));
-    try{
-      if(isPlaceId){
-        const data=await api.getLive('/place/'+id);
-        if(data.gym){
-          // H15 fix: if owner set open/closed override, apply it over Google's data
-          const _oh=data.openingHours||{};
-          if(data.gym.ownerIsOpen===true) _oh.isOpen=true;
-          else if(data.gym.ownerIsOpen===false) _oh.isOpen=false;
-          state.currentGym={...data.gym,id:data.gym.dbId||data.gym.placeId,place_id:data.gym.placeId,photo_url:data.photos?.[0]?.url||null,photos_list:data.photos||[],rating:data.rating?.google||null,user_ratings_total:data.rating?.googleTotal||0,formatted_address:data.gym.address,vicinity:data.gym.address,opening_hours:_oh,openNow:_oh.isOpen??null,reviews_data:data.reviews,pricing:data.pricing,map:data.map,source:'live'};
-        }
-      }else{
-        const data=await api.getGuest('/gym/'+id);
-        state.currentGym=data.gym||data;
-      }
-    }catch(e){
-      console.error('Failed to load gym data for overlay:',e);
-      state.currentGym=state.gyms.find(g=>(g.placeId||g.id)==id)||{name:'Loading...',id};
-    }
-    // Save to cache
-    window._gymDataCache[id]={data:state.currentGym,ts:Date.now()};
+    // Open instantly — no await needed
+    _ensureStandaloneOverlay(id);
+    openGymOverlay(section);
+    return;
   }
 
-  // Ensure standalone overlay container exists in DOM
+  // Show overlay INSTANTLY with local gym card data (no network wait)
+  var fallback=state.gyms.find(g=>(g.placeId||g.place_id||g.id)==id);
+  if(fallback){state.currentGym=fallback;}
   _ensureStandaloneOverlay(id);
-  // Open the overlay section directly
   openGymOverlay(section);
+
+  // Fetch full data in background — upgrades overlay seamlessly
+  const isPlaceId=isLive||isNaN(parseInt(id));
+  try{
+    if(isPlaceId){
+      const data=await api.getLive('/place/'+id);
+      if(data.gym){
+        const _oh=data.openingHours||{};
+        if(data.gym.ownerIsOpen===true) _oh.isOpen=true;
+        else if(data.gym.ownerIsOpen===false) _oh.isOpen=false;
+        state.currentGym={...data.gym,id:data.gym.dbId||data.gym.placeId,place_id:data.gym.placeId,photo_url:data.photos?.[0]?.url||null,photos_list:data.photos||[],rating:data.rating?.google||null,user_ratings_total:data.rating?.googleTotal||0,formatted_address:data.gym.address,vicinity:data.gym.address,opening_hours:_oh,openNow:_oh.isOpen??null,reviews_data:data.reviews,pricing:data.pricing,map:data.map,source:'live'};
+      }
+    }else{
+      const data=await api.getGuest('/gym/'+id);
+      state.currentGym=data.gym||data;
+    }
+    // Save to cache + re-render to upgrade overlay with full data
+    window._gymDataCache[id]={data:state.currentGym,ts:Date.now()};
+    openGymOverlay(section);
+  }catch(e){
+    console.error('Failed to load gym data for overlay:',e);
+  }
 };
 
 // Inject standalone overlay container for use without gym detail page
@@ -3144,7 +3160,7 @@ function _ensureStandaloneOverlay(gymId){
   if(!document.getElementById('sg-overlay-css')){
     var css=document.createElement('style');
     css.id='sg-overlay-css';
-    css.textContent='.gym-overlay{position:fixed;inset:0;z-index:9100;opacity:0;pointer-events:none;transition:opacity .3s ease}.gym-overlay.open{opacity:1;pointer-events:all}.gym-overlay-bg{position:absolute;inset:0;background:rgba(0,0,0,.5)}.gym-overlay-panel{position:absolute;left:0;right:0;bottom:0;top:0;background:#0a0f14;transform:translateY(100%);transition:transform .35s cubic-bezier(.32,.72,0,1);display:flex;flex-direction:column;overflow:hidden}.gym-overlay.open .gym-overlay-panel{transform:translateY(0)}.gym-overlay-drag{width:40px;height:4px;border-radius:2px;background:rgba(255,255,255,.2);margin:10px auto 0}.gym-overlay-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0}.gym-overlay-title{color:#fff;font-size:20px;font-weight:700;font-family:"Sora",sans-serif}.gym-overlay-close{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.1);border:none;color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .2s}.gym-overlay-close:hover{background:rgba(255,255,255,.2)}.gym-overlay-body{flex:1;overflow-y:auto;padding:20px;-webkit-overflow-scrolling:touch}.gym-overlay-footer{padding:12px 20px calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid rgba(255,255,255,.08);background:#0a0f14;flex-shrink:0;display:flex;align-items:center;justify-content:space-between}.rating-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}.rating-bar-label{color:rgba(255,255,255,.5);font-size:12px;width:14px;text-align:right}.rating-bar-bg{flex:1;height:8px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden}.rating-bar-fill{height:100%;border-radius:4px;background:#fbbf24}.topic-pill{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:8px 14px;color:rgba(255,255,255,.7);font-size:13px;font-weight:500;cursor:pointer;transition:all .2s}.topic-pill.active{background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.4);color:#4ade80}.sort-chip{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:7px 14px;color:rgba(255,255,255,.5);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s}.sort-chip.active{background:rgba(255,109,0,.15);border-color:rgba(255,109,0,.4);color:#FF6D00}.ov-pass-card{background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.1);border-radius:16px;padding:20px;cursor:pointer;transition:all .2s}.ov-pass-card:hover{border-color:rgba(255,255,255,.2);background:rgba(255,255,255,.08)}.gym-book-btn{background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:16px;font-weight:700;padding:14px 28px;border-radius:12px;border:none;box-shadow:0 4px 20px rgba(34,197,94,.4);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .15s}.gym-book-btn:active{transform:scale(.96)}.ov-review{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px;margin-bottom:12px}.ov-review-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}.ov-review-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0}.ov-review-avatar-img{width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.1);flex-shrink:0}.ov-review-info{flex:1;min-width:0}.ov-review-name{color:#fff;font-size:14px;font-weight:600}.ov-review-badge{display:inline-flex;align-items:center;gap:3px;background:rgba(34,197,94,.12);color:#22c55e;font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;margin-top:2px}.ov-review-title{color:#fff;font-size:15px;font-weight:700;margin-bottom:4px}.ov-review-date{color:rgba(255,255,255,.3);font-size:11px;margin-top:1px}.ov-review-stars{color:#fbbf24;font-size:13px;margin-bottom:8px}.ov-review-text{color:rgba(255,255,255,.6);font-size:13px;line-height:1.7;margin-bottom:12px}.ov-review-actions{display:flex;align-items:center;gap:16px;padding-top:10px;border-top:1px solid rgba(255,255,255,.04)}';
+    css.textContent='.gym-overlay{position:fixed;inset:0;z-index:9100;opacity:0;pointer-events:none;transition:opacity .3s ease}.gym-overlay.open{opacity:1;pointer-events:all}.gym-overlay-bg{position:absolute;inset:0;background:rgba(0,0,0,.5)}.gym-overlay-panel{position:absolute;left:0;right:0;bottom:0;top:0;background:#0a0f14;transform:translateY(100%);transition:transform .15s cubic-bezier(.32,.72,0,1);display:flex;flex-direction:column;overflow:hidden}.gym-overlay.open .gym-overlay-panel{transform:translateY(0)}.gym-overlay-drag{width:40px;height:4px;border-radius:2px;background:rgba(255,255,255,.2);margin:10px auto 0}.gym-overlay-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0}.gym-overlay-title{color:#fff;font-size:20px;font-weight:700;font-family:"Sora",sans-serif}.gym-overlay-close{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.1);border:none;color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .2s}.gym-overlay-close:hover{background:rgba(255,255,255,.2)}.gym-overlay-body{flex:1;overflow-y:auto;padding:20px;-webkit-overflow-scrolling:touch}.gym-overlay-footer{padding:12px 20px calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid rgba(255,255,255,.08);background:#0a0f14;flex-shrink:0;display:flex;align-items:center;justify-content:space-between}.rating-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}.rating-bar-label{color:rgba(255,255,255,.5);font-size:12px;width:14px;text-align:right}.rating-bar-bg{flex:1;height:8px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden}.rating-bar-fill{height:100%;border-radius:4px;background:#fbbf24}.topic-pill{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:8px 14px;color:rgba(255,255,255,.7);font-size:13px;font-weight:500;cursor:pointer;transition:all .2s}.topic-pill.active{background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.4);color:#4ade80}.sort-chip{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:7px 14px;color:rgba(255,255,255,.5);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s}.sort-chip.active{background:rgba(255,109,0,.15);border-color:rgba(255,109,0,.4);color:#FF6D00}.ov-pass-card{background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.1);border-radius:16px;padding:20px;cursor:pointer;transition:all .2s}.ov-pass-card:hover{border-color:rgba(255,255,255,.2);background:rgba(255,255,255,.08)}.gym-book-btn{background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:16px;font-weight:700;padding:14px 28px;border-radius:12px;border:none;box-shadow:0 4px 20px rgba(34,197,94,.4);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .15s}.gym-book-btn:active{transform:scale(.96)}.ov-review{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px;margin-bottom:12px}.ov-review-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}.ov-review-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0}.ov-review-avatar-img{width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.1);flex-shrink:0}.ov-review-info{flex:1;min-width:0}.ov-review-name{color:#fff;font-size:14px;font-weight:600}.ov-review-badge{display:inline-flex;align-items:center;gap:3px;background:rgba(34,197,94,.12);color:#22c55e;font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;margin-top:2px}.ov-review-title{color:#fff;font-size:15px;font-weight:700;margin-bottom:4px}.ov-review-date{color:rgba(255,255,255,.3);font-size:11px;margin-top:1px}.ov-review-stars{color:#fbbf24;font-size:13px;margin-bottom:8px}.ov-review-text{color:rgba(255,255,255,.6);font-size:13px;line-height:1.7;margin-bottom:12px}.ov-review-actions{display:flex;align-items:center;gap:16px;padding-top:10px;border-top:1px solid rgba(255,255,255,.04)}';
     document.head.appendChild(css);
   }
   // Inject overlay HTML container
@@ -3405,7 +3421,7 @@ window._ensurePaySheetHTML=function(){
   // Inject CSS if not present
   if(!document.getElementById('sg-paysheet-css')){
     var css=document.createElement('style');css.id='sg-paysheet-css';
-    css.textContent='.gym-pay-sheet{position:fixed;inset:0;z-index:9200;opacity:0;pointer-events:none;transition:opacity .25s}.gym-pay-sheet.open{opacity:1;pointer-events:all}.gym-pay-sheet-bg{position:absolute;inset:0;background:rgba(0,0,0,.5)}.gym-pay-sheet-panel{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:20px 20px 0 0;transform:translateY(100%);transition:transform .35s cubic-bezier(.32,.72,0,1);max-height:85vh;overflow-y:auto;padding-bottom:env(safe-area-inset-bottom,0px)}.gym-pay-sheet.open .gym-pay-sheet-panel{transform:translateY(0)}.gym-pay-sheet-drag{width:40px;height:4px;border-radius:2px;background:rgba(0,0,0,.12);margin:10px auto 0}.gym-pay-sheet-title{color:#000;font-size:28px;font-weight:800;padding:8px 20px 4px;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif}.gym-pay-sheet-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 0}.gym-pay-sheet-close{width:36px;height:36px;background:transparent;border:none;font-size:28px;color:#000;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}.gym-pay-sheet-add-btn{background:#f0f0f0;border:none;border-radius:20px;padding:8px 16px;color:#000;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;-webkit-tap-highlight-color:transparent}.gym-pay-section-title{color:#000;font-size:18px;font-weight:700;padding:20px 20px 12px;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif}.gym-pay-item{display:flex;align-items:center;gap:14px;padding:16px 20px;cursor:pointer;transition:background .15s;border-bottom:1px solid rgba(0,0,0,.06);-webkit-tap-highlight-color:transparent}.gym-pay-item:active{background:rgba(0,0,0,.03)}.gym-pay-item-icon{width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.gym-pay-item-label{flex:1;color:#000;font-size:16px;font-weight:500;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif}.gym-pay-item-check{width:28px;height:28px;border-radius:50%;border:2px solid #e0e0e0;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}.gym-pay-item.selected .gym-pay-item-check{background:#000;border-color:#000}.gym-pay-item.selected .gym-pay-item-check::after{content:\'\u2713\';color:#fff;font-size:14px;font-weight:700}.gym-pay-save-btn{width:calc(100% - 40px);margin:16px 20px;padding:18px;border:none;border-radius:12px;background:#000;color:#fff;font-size:17px;font-weight:700;cursor:pointer;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;transition:all .15s;-webkit-tap-highlight-color:transparent}.gym-pay-save-btn:active{opacity:.8;transform:scale(.99)}.gym-pay-add-back{display:flex;align-items:center;gap:12px;padding:16px 20px;cursor:pointer;border-bottom:1px solid rgba(0,0,0,.06);-webkit-tap-highlight-color:transparent}.gym-pay-add-title{color:#000;font-size:18px;font-weight:700;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif}.gym-pay-add-item{display:flex;align-items:center;gap:14px;padding:18px 20px;cursor:pointer;border-bottom:1px solid rgba(0,0,0,.06);transition:background .15s;-webkit-tap-highlight-color:transparent}.gym-pay-add-item:active{background:rgba(0,0,0,.03)}.gym-pay-add-item-icon{width:40px;height:40px;border-radius:8px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;flex-shrink:0}';
+    css.textContent='.gym-pay-sheet{position:fixed;inset:0;z-index:9200;opacity:0;pointer-events:none;transition:opacity .25s}.gym-pay-sheet.open{opacity:1;pointer-events:all}.gym-pay-sheet-bg{position:absolute;inset:0;background:rgba(0,0,0,.5)}.gym-pay-sheet-panel{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:20px 20px 0 0;transform:translateY(100%);transition:transform .15s cubic-bezier(.32,.72,0,1);max-height:85vh;overflow-y:auto;padding-bottom:env(safe-area-inset-bottom,0px)}.gym-pay-sheet.open .gym-pay-sheet-panel{transform:translateY(0)}.gym-pay-sheet-drag{width:40px;height:4px;border-radius:2px;background:rgba(0,0,0,.12);margin:10px auto 0}.gym-pay-sheet-title{color:#000;font-size:28px;font-weight:800;padding:8px 20px 4px;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif}.gym-pay-sheet-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 0}.gym-pay-sheet-close{width:36px;height:36px;background:transparent;border:none;font-size:28px;color:#000;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}.gym-pay-sheet-add-btn{background:#f0f0f0;border:none;border-radius:20px;padding:8px 16px;color:#000;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;-webkit-tap-highlight-color:transparent}.gym-pay-section-title{color:#000;font-size:18px;font-weight:700;padding:20px 20px 12px;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif}.gym-pay-item{display:flex;align-items:center;gap:14px;padding:16px 20px;cursor:pointer;transition:background .15s;border-bottom:1px solid rgba(0,0,0,.06);-webkit-tap-highlight-color:transparent}.gym-pay-item:active{background:rgba(0,0,0,.03)}.gym-pay-item-icon{width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.gym-pay-item-label{flex:1;color:#000;font-size:16px;font-weight:500;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif}.gym-pay-item-check{width:28px;height:28px;border-radius:50%;border:2px solid #e0e0e0;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}.gym-pay-item.selected .gym-pay-item-check{background:#000;border-color:#000}.gym-pay-item.selected .gym-pay-item-check::after{content:\'\u2713\';color:#fff;font-size:14px;font-weight:700}.gym-pay-save-btn{width:calc(100% - 40px);margin:16px 20px;padding:18px;border:none;border-radius:12px;background:#000;color:#fff;font-size:17px;font-weight:700;cursor:pointer;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;transition:all .15s;-webkit-tap-highlight-color:transparent}.gym-pay-save-btn:active{opacity:.8;transform:scale(.99)}.gym-pay-add-back{display:flex;align-items:center;gap:12px;padding:16px 20px;cursor:pointer;border-bottom:1px solid rgba(0,0,0,.06);-webkit-tap-highlight-color:transparent}.gym-pay-add-title{color:#000;font-size:18px;font-weight:700;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif}.gym-pay-add-item{display:flex;align-items:center;gap:14px;padding:18px 20px;cursor:pointer;border-bottom:1px solid rgba(0,0,0,.06);transition:background .15s;-webkit-tap-highlight-color:transparent}.gym-pay-add-item:active{background:rgba(0,0,0,.03)}.gym-pay-add-item-icon{width:40px;height:40px;border-radius:8px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;flex-shrink:0}';
     document.head.appendChild(css);
   }
   // Inject pay sheet HTML
@@ -11515,54 +11531,49 @@ function MusicTabPage(){
   var _elStr=Math.floor(_elapsed/60)+':'+(_elapsed%60<10?'0':'')+_elapsed%60;
   var progWidth=_playing?(_elapsed/214*100)+'%':'35%';
   var progAnim='';
-  return`<div style="position:relative;width:100%;min-height:calc(100vh - 56px);overflow-y:auto;overflow-x:hidden;background:#0a0a16;-webkit-overflow-scrolling:touch">
-    <style>@keyframes sgMusicProgress{0%{width:0%}100%{width:100%}}@keyframes sgMusicPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}@keyframes sgEqualizer{0%,100%{height:4px}50%{height:16px}}</style>
-    <!-- Background from playlist art -->
-    <div style="position:absolute;top:0;left:0;right:0;height:55%;background:url('${pl.img}') center/cover;opacity:.15;filter:blur(40px)"></div>
-    <div style="position:absolute;top:0;left:0;right:0;height:60%;background:linear-gradient(180deg,transparent 30%,#0a0a16 100%)"></div>
-    <div style="position:relative;z-index:2;padding-bottom:20px">
-      <!-- Top bar with search -->
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px 8px">
-        <span style="color:#fff;font-size:18px;font-weight:800">🎵 Music</span>
-        <div style="display:flex;gap:8px;align-items:center">
-          <div onclick="window._sgMusicSearchOpen=!window._sgMusicSearchOpen;render()" style="width:36px;height:36px;background:rgba(255,255,255,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px">🔍</div>
-        </div>
+  return`<div style="position:absolute;inset:0;background:#0a0a16;overflow:hidden">
+    <style>@keyframes sgMusicPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.03)}}@keyframes sgEqualizer{0%,100%{height:4px}50%{height:16px}}@keyframes sgDiscSpin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}</style>
+    <!-- Background from playlist art (blurred) -->
+    <div style="position:absolute;inset:0;background:url('${pl.img}') center/cover;opacity:.12;filter:blur(50px);pointer-events:none"></div>
+    <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,10,22,.3) 0%,rgba(10,10,22,.85) 50%,#0a0a16 100%);pointer-events:none"></div>
+    <!-- Fixed full-screen layout — no scrolling -->
+    <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px 20px;z-index:2">
+      <!-- Top: Title -->
+      <div style="position:absolute;top:12px;left:16px;right:16px;display:flex;align-items:center;justify-content:space-between">
+        <span style="color:#fff;font-size:17px;font-weight:800">🎵 Music</span>
+        <div onclick="window._sgMusicSearchOpen=!window._sgMusicSearchOpen;render()" style="width:32px;height:32px;background:rgba(255,255,255,.1);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px">🔍</div>
       </div>
-      ${window._sgMusicSearchOpen?'<div style="padding:0 20px 12px"><input id="sg-music-search" type="text" placeholder="Search tracks or artists..." value="'+_search+'" oninput="window._sgMusicSearch=this.value;render()" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:12px 18px;color:#fff;font-size:14px;outline:none;box-sizing:border-box" onfocus="this.style.borderColor=\'rgba(255,109,0,.4)\'" onblur="this.style.borderColor=\'rgba(255,255,255,.1)\'"></div>':''}
-      <!-- Now Playing hero -->
-      <div style="text-align:center;padding:12px 32px 16px">
-        <div style="width:220px;height:220px;margin:0 auto 16px;border-radius:24px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.6);${_playing?'animation:sgMusicPulse 2s ease-in-out infinite':''}"><img src="${pl.img}" width="220" height="220" style="width:100%;height:100%;object-fit:cover;display:block" alt="${pl.title}" onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#FF6D00,#E66200)';this.parentElement.innerHTML='<div style=\\'display:flex;align-items:center;justify-content:center;height:100%;font-size:72px\\'>🎵</div>'"></div>
-        <p style="color:#fff;font-size:22px;font-weight:900;margin-bottom:2px">${pl.title}</p>
-        <p style="color:rgba(255,255,255,.45);font-size:13px;margin-bottom:8px">${pl.sub} · ${pl.plays} plays</p>
-        <p style="color:rgba(255,255,255,.3);font-size:11px;margin-bottom:16px">Now playing: ${tracks[_at].n} — ${tracks[_at].a}</p>
-        <!-- Controls -->
-        <div style="display:flex;align-items:center;justify-content:center;gap:20px">
-          <div onclick="window._sgMusicShuffle=!window._sgMusicShuffle;render()" style="width:40px;height:40px;background:${window._sgMusicShuffle?'rgba(255,109,0,.15)':'rgba(255,255,255,.06)'};border:1px solid ${window._sgMusicShuffle?'rgba(255,109,0,.3)':'rgba(255,255,255,.08)'};border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px" title="Shuffle">🔀</div>
-          <div onclick="window._sgMusicTrack=(_at>0?_at-1:7);window._sgMusicStart=Date.now();render()" style="width:44px;height:44px;background:rgba(255,255,255,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px">⏮</div>
-          <div onclick="window._sgMusicPlaying=!window._sgMusicPlaying;window._sgMusicEmbed=true;render()" style="width:64px;height:64px;background:#FF6D00;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:26px;box-shadow:0 4px 24px rgba(255,109,0,.4)">${_playing?'⏸':'▶'}</div>
-          <div onclick="window._sgMusicTrack=((_at+1)%8);window._sgMusicStart=Date.now();render()" style="width:44px;height:44px;background:rgba(255,255,255,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px">⏭</div>
-          <div onclick="window._sgMusicRepeat=!window._sgMusicRepeat;render()" style="width:40px;height:40px;background:${window._sgMusicRepeat?'rgba(255,109,0,.15)':'rgba(255,255,255,.06)'};border:1px solid ${window._sgMusicRepeat?'rgba(255,109,0,.3)':'rgba(255,255,255,.08)'};border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px" title="Repeat">🔁</div>
-        </div>
-        <!-- Progress bar (animated when playing) -->
-        <div style="margin:16px 24px 4px;height:4px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden"><div id="sg-music-bar" style="width:${progWidth};height:100%;background:linear-gradient(90deg,#FF6D00,#ff9a44);border-radius:2px;transition:width 1s linear"></div></div>
-        <div style="display:flex;justify-content:space-between;padding:0 28px"><span id="sg-music-elapsed" style="color:rgba(255,255,255,.3);font-size:10px">${_playing?_elStr:'1:12'}</span><span style="color:rgba(255,255,255,.3);font-size:10px">${tracks[_at].d}</span></div>
+      ${window._sgMusicSearchOpen?'<div style="position:absolute;top:48px;left:16px;right:16px;z-index:10"><input id="sg-music-search" type="text" placeholder="Search tracks..." value="'+_search+'" oninput="window._sgMusicSearch=this.value;render()" style="width:100%;background:rgba(10,10,22,.9);backdrop-filter:blur(12px);border:1px solid rgba(255,109,0,.3);border-radius:14px;padding:10px 16px;color:#fff;font-size:13px;outline:none;box-sizing:border-box"></div>':''}
+      <!-- Album art (centered, large) -->
+      <div style="width:200px;height:200px;margin-bottom:16px;border-radius:24px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.6);${_playing?'animation:sgMusicPulse 2s ease-in-out infinite':''}"><img src="${pl.img}" width="200" height="200" style="width:100%;height:100%;object-fit:cover;display:block" alt="${pl.title}" onerror="this.parentElement.style.background='linear-gradient(135deg,#FF6D00,#E66200)';this.parentElement.innerHTML='<div style=\\'display:flex;align-items:center;justify-content:center;height:100%;font-size:64px\\'>🎵</div>'"></div>
+      <!-- Song info -->
+      <p style="color:#fff;font-size:20px;font-weight:900;margin:0 0 2px">${pl.title}</p>
+      <p style="color:rgba(255,255,255,.45);font-size:12px;margin:0 0 4px">${pl.sub} · ${pl.plays} plays</p>
+      <p style="color:rgba(255,255,255,.3);font-size:11px;margin:0 0 16px">Now playing: ${tracks[_at].n} — ${tracks[_at].a}</p>
+      <!-- Controls -->
+      <div style="display:flex;align-items:center;justify-content:center;gap:18px;margin-bottom:12px">
+        <div onclick="window._sgMusicShuffle=!window._sgMusicShuffle;render()" style="width:38px;height:38px;background:${window._sgMusicShuffle?'rgba(255,109,0,.15)':'rgba(255,255,255,.06)'};border:1px solid ${window._sgMusicShuffle?'rgba(255,109,0,.3)':'rgba(255,255,255,.08)'};border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px">🔀</div>
+        <div onclick="window._sgMusicTrack=(_at>0?_at-1:7);window._sgMusicStart=Date.now();render()" style="width:42px;height:42px;background:rgba(255,255,255,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:17px">⏮</div>
+        <div onclick="window._sgMusicPlaying=!window._sgMusicPlaying;window._sgMusicEmbed=true;render()" style="width:60px;height:60px;background:#FF6D00;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:24px;box-shadow:0 4px 24px rgba(255,109,0,.4)">${_playing?'⏸':'▶'}</div>
+        <div onclick="window._sgMusicTrack=((_at+1)%8);window._sgMusicStart=Date.now();render()" style="width:42px;height:42px;background:rgba(255,255,255,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:17px">⏭</div>
+        <div onclick="window._sgMusicRepeat=!window._sgMusicRepeat;render()" style="width:38px;height:38px;background:${window._sgMusicRepeat?'rgba(255,109,0,.15)':'rgba(255,255,255,.06)'};border:1px solid ${window._sgMusicRepeat?'rgba(255,109,0,.3)':'rgba(255,255,255,.08)'};border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px">🔁</div>
       </div>
-      ${_showEmbed?'<div style="padding:0 16px 16px"><div style="border-radius:16px;overflow:hidden"><iframe style="border-radius:16px" src="https://open.spotify.com/embed/playlist/'+pl.spotifyId+'?utm_source=generator&theme=0" width="100%" height="152" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe></div><p style="color:rgba(255,255,255,.3);font-size:10px;text-align:center;margin-top:6px">🎧 Tap a track above or use Spotify player</p></div>':''}
-      <!-- Track list -->
-      <div style="padding:0 16px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:0 4px">
-          <p style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px">Up Next</p>
-          ${!_showEmbed?'<div onclick="window._sgMusicEmbed=true;render()" style="color:#FF6D00;font-size:11px;font-weight:700;cursor:pointer">Open Player ▶</div>':''}
-        </div>
-        ${filtered.map(function(t,i){var isActive=i===_at;return '<div onclick="window._sgMusicTrack='+i+';window._sgMusicPlaying=true;window._sgMusicEmbed=true;window._sgMusicStart=Date.now();render()" style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:'+(isActive?'rgba(255,109,0,.1)':'rgba(255,255,255,.03)')+';border:1px solid '+(isActive?'rgba(255,109,0,.2)':'rgba(255,255,255,.05)')+';border-radius:14px;margin-bottom:6px;cursor:pointer;transition:all .15s" ontouchstart="this.style.transform=\'scale(.98)\'" ontouchend="this.style.transform=\'\'">'
-          +'<div style="width:44px;height:44px;border-radius:10px;overflow:hidden;flex-shrink:0;position:relative"><img src="'+t.img+'" width="44" height="44" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display=\'none\'">'+(isActive&&_playing?'<div style="position:absolute;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center;gap:2px;padding-bottom:8px"><div style="width:3px;background:#FF6D00;border-radius:2px;animation:sgEqualizer .4s ease infinite"></div><div style="width:3px;background:#FF6D00;border-radius:2px;animation:sgEqualizer .4s ease .1s infinite"></div><div style="width:3px;background:#FF6D00;border-radius:2px;animation:sgEqualizer .4s ease .2s infinite"></div><div style="width:3px;background:#FF6D00;border-radius:2px;animation:sgEqualizer .4s ease .3s infinite"></div></div>':'')+'</div>'
-          +'<div style="flex:1;min-width:0"><p style="color:'+(isActive?'#FF6D00':'#fff')+';font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+t.n+'</p><p style="color:rgba(255,255,255,.35);font-size:11px">'+t.a+'</p></div>'
-          +'<span style="color:rgba(255,255,255,.3);font-size:11px;flex-shrink:0">'+t.d+'</span></div>';}).join('')}
-        <!-- Playlist grid -->
-        <p style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin:16px 0 10px;padding:0 4px">All Playlists</p>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-bottom:16px">
-          ${playlists.map(function(p,i){return '<div onclick="window._sgMusicIdx='+i+';window._sgMusicTrack=0;window._sgMusicEmbed=true;window._sgMusicStart=Date.now();window._sgMusicPlaying=true;render()" style="background:rgba(255,255,255,.04);border:1px solid '+(i===_ci?'rgba(255,109,0,.3)':'rgba(255,255,255,.06)')+';border-radius:14px;overflow:hidden;cursor:pointer;transition:.15s" ontouchstart="this.style.transform=\'scale(.96)\'" ontouchend="this.style.transform=\'\'"><div style="width:100%;aspect-ratio:1;overflow:hidden"><img src="'+p.img+'" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display=\'none\'"></div><div style="padding:10px 12px"><p style="color:#fff;font-size:12px;font-weight:700">'+p.title+'</p><p style="color:rgba(255,255,255,.3);font-size:10px">'+p.plays+' plays</p></div></div>';}).join('')}
-        </div>
+      <!-- Progress bar -->
+      <div style="width:calc(100% - 40px);max-width:320px">
+        <div style="height:4px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden"><div id="sg-music-bar" style="width:${progWidth};height:100%;background:linear-gradient(90deg,#FF6D00,#ff9a44);border-radius:2px;transition:width 1s linear"></div></div>
+        <div style="display:flex;justify-content:space-between;margin-top:4px"><span id="sg-music-elapsed" style="color:rgba(255,255,255,.3);font-size:10px">${_playing?_elStr:'1:12'}</span><span style="color:rgba(255,255,255,.3);font-size:10px">${tracks[_at].d}</span></div>
+      </div>
+      <!-- Spotify embed (compact, at bottom) -->
+      ${_showEmbed?'<div style="width:calc(100% - 20px);max-width:340px;margin-top:12px;border-radius:12px;overflow:hidden"><iframe style="border-radius:12px" src="https://open.spotify.com/embed/playlist/'+pl.spotifyId+'?utm_source=generator&theme=0" width="100%" height="80" frameBorder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe></div>':'<div onclick="window._sgMusicEmbed=true;render()" style="margin-top:12px;color:#FF6D00;font-size:12px;font-weight:700;cursor:pointer">Open Spotify Player ▶</div>'}
+    </div>
+    <!-- Right-side action buttons (Reels/TikTok style) -->
+    <div style="position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:14px;align-items:center;z-index:5">
+      ${playlists.slice(0,6).map(function(p,i){return '<div onclick="window._sgMusicIdx='+i+';window._sgMusicTrack=0;window._sgMusicEmbed=true;window._sgMusicStart=Date.now();window._sgMusicPlaying=true;render()" style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer"><div style="width:44px;height:44px;border-radius:50%;overflow:hidden;border:2px solid '+(i===_ci?'rgba(255,109,0,.5)':'rgba(255,255,255,.1)')+';display:flex;align-items:center;justify-content:center"><img src="'+p.img+'" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML=\\'🎵\\'"></div><span style="color:'+(i===_ci?'#FF6D00':'rgba(255,255,255,.5)')+';font-size:8px;font-weight:600;max-width:44px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+p.title.split(' ')[0]+'</span></div>';}).join('')}
+    </div>
+    <!-- Bottom: Up Next (compact horizontal scroll) -->
+    <div style="position:absolute;bottom:8px;left:0;right:0;z-index:3;padding:0 12px">
+      <div style="display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:4px">
+        ${filtered.map(function(t,i){var isActive=i===_at;return '<div onclick="window._sgMusicTrack='+i+';window._sgMusicPlaying=true;window._sgMusicEmbed=true;window._sgMusicStart=Date.now();render()" style="flex-shrink:0;display:flex;align-items:center;gap:8px;padding:6px 10px;background:'+(isActive?'rgba(255,109,0,.15)':'rgba(255,255,255,.05)')+';backdrop-filter:blur(8px);border:1px solid '+(isActive?'rgba(255,109,0,.3)':'rgba(255,255,255,.06)')+';border-radius:10px;cursor:pointer"><div style="width:32px;height:32px;border-radius:8px;overflow:hidden;flex-shrink:0;position:relative"><img src="'+t.img+'" width="32" height="32" style="width:100%;height:100%;object-fit:cover">'+(isActive&&_playing?'<div style="position:absolute;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center;gap:1px;padding-bottom:6px"><div style="width:2px;background:#FF6D00;border-radius:1px;animation:sgEqualizer .4s ease infinite"></div><div style="width:2px;background:#FF6D00;border-radius:1px;animation:sgEqualizer .4s ease .1s infinite"></div><div style="width:2px;background:#FF6D00;border-radius:1px;animation:sgEqualizer .4s ease .2s infinite"></div></div>':'')+'</div><div style="min-width:0"><p style="color:'+(isActive?'#FF6D00':'#fff')+';font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px">'+t.n+'</p><p style="color:rgba(255,255,255,.3);font-size:9px;white-space:nowrap">'+t.a+'</p></div></div>';}).join('')}
       </div>
     </div>
   </div>`;
@@ -12614,139 +12625,123 @@ function MoreHubPage(){
     var since=u.member_since?new Date(u.member_since).toLocaleDateString('en-GB',{month:'short',year:'numeric'}):'2026';
     var tS=u.stats?.totalSessions||0;var tG=u.stats?.totalGyms||0;var stk=u.stats?.streak||0;
     var tier=tS>=100?{n:'Elite',i:'\ud83d\udc51',c:'#a855f7'}:tS>=50?{n:'Gold',i:'\ud83e\udd47',c:'#eab308'}:tS>=10?{n:'Silver',i:'\ud83e\udd48',c:'#94a3b8'}:{n:'Basic',i:'\ud83c\udfcb\ufe0f',c:'#FF6D00'};
-    return`<div style="position:relative;width:100%;min-height:calc(100vh - 56px);background:#0a0a16;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch">
-      <!-- Background gradient -->
-      <div style="position:fixed;top:0;left:0;right:0;height:45%;background:linear-gradient(135deg,rgba(255,109,0,.08),rgba(168,85,247,.06));pointer-events:none"></div>
-      <div style="position:fixed;top:0;left:0;right:0;height:50%;background:linear-gradient(180deg,transparent 40%,#0a0a16 100%);pointer-events:none"></div>
-      <!-- QR Hero (full viewport) -->
-      <div style="position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 56px);padding:24px 16px;text-align:center">
+    return`<div style="position:absolute;inset:0;background:#0a0a16;overflow:hidden">
+      <style>@keyframes sgQrGlow{0%,100%{box-shadow:0 20px 60px rgba(0,0,0,.3),0 0 40px rgba(255,109,0,.05)}50%{box-shadow:0 20px 60px rgba(0,0,0,.3),0 0 50px rgba(255,109,0,.12)}}</style>
+      <!-- Background gradients -->
+      <div style="position:absolute;top:0;left:0;right:0;height:45%;background:linear-gradient(135deg,rgba(255,109,0,.08),rgba(168,85,247,.06));pointer-events:none"></div>
+      <div style="position:absolute;top:0;left:0;right:0;height:50%;background:linear-gradient(180deg,transparent 40%,#0a0a16 100%);pointer-events:none"></div>
+      <!-- Fixed full-screen QR profile -->
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center;z-index:2">
         <!-- User info -->
         <div style="margin-bottom:6px;display:flex;align-items:center;gap:8px">
-          <span style="color:#fff;font-size:22px;font-weight:900">${uName}</span>
-          <span style="background:${tier.c}22;color:${tier.c};font-size:10px;font-weight:800;padding:3px 10px;border-radius:8px;text-transform:uppercase;letter-spacing:1px">${tier.i} ${tier.n}</span>
+          <span style="color:#fff;font-size:20px;font-weight:900">${uName}</span>
+          <span style="background:${tier.c}22;color:${tier.c};font-size:9px;font-weight:800;padding:3px 8px;border-radius:8px;text-transform:uppercase;letter-spacing:1px">${tier.i} ${tier.n}</span>
         </div>
-        <p style="color:rgba(255,255,255,.4);font-size:12px;margin:0 0 24px">Member since ${since}</p>
-        <!-- QR Code (large, centered like a reel) -->
-        <div style="background:rgba(255,109,0,.06);border:2px solid rgba(255,109,0,.2);border-radius:32px;padding:28px;margin-bottom:16px;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.3)">
-          <img src="${qrUrl}" width="240" height="240" style="border-radius:20px;display:block" alt="Scan to enter">
-          <div style="position:absolute;bottom:-12px;left:50%;transform:translateX(-50%);background:#FF6D00;color:#fff;font-size:12px;font-weight:800;padding:6px 20px;border-radius:20px;white-space:nowrap;letter-spacing:.5px;box-shadow:0 4px 16px rgba(255,109,0,.4)">SCAN TO ENTER</div>
+        <p style="color:rgba(255,255,255,.4);font-size:11px;margin:0 0 16px">Member since ${since}</p>
+        <!-- QR Code (large, centered) -->
+        <div style="background:rgba(255,109,0,.06);border:2px solid rgba(255,109,0,.2);border-radius:32px;padding:24px;margin-bottom:14px;position:relative;animation:sgQrGlow 3s ease-in-out infinite">
+          <img src="${qrUrl}" width="200" height="200" style="border-radius:20px;display:block" alt="Scan to enter">
+          <div style="position:absolute;bottom:-12px;left:50%;transform:translateX(-50%);background:#FF6D00;color:#fff;font-size:11px;font-weight:800;padding:5px 18px;border-radius:20px;white-space:nowrap;letter-spacing:.5px;box-shadow:0 4px 16px rgba(255,109,0,.4)">SCAN TO ENTER</div>
         </div>
-        <p style="color:rgba(255,255,255,.3);font-size:12px;margin:20px 0 12px">Show this at the gym entrance</p>
+        <p style="color:rgba(255,255,255,.3);font-size:11px;margin:16px 0 10px">Show this at the gym entrance</p>
         <!-- Stats row -->
-        <div style="display:flex;gap:24px;margin-bottom:24px">
-          <div style="text-align:center"><div style="color:#FF6D00;font-size:24px;font-weight:900">${tS}</div><div style="color:rgba(255,255,255,.3);font-size:10px;font-weight:600;text-transform:uppercase">Sessions</div></div>
-          <div style="text-align:center"><div style="color:#22c55e;font-size:24px;font-weight:900">${tG}</div><div style="color:rgba(255,255,255,.3);font-size:10px;font-weight:600;text-transform:uppercase">Gyms</div></div>
-          <div style="text-align:center"><div style="color:#3b82f6;font-size:24px;font-weight:900">${stk}\ud83d\udd25</div><div style="color:rgba(255,255,255,.3);font-size:10px;font-weight:600;text-transform:uppercase">Streak</div></div>
-        </div>
-        <!-- TikTok-style right action buttons -->
-        <div style="position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:14px;align-items:center">
-          <div onclick="navigate('/more/profile')" style="width:48px;height:48px;background:rgba(255,255,255,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;border:1px solid rgba(255,255,255,.1);font-size:20px" title="Edit Profile">\ud83d\udc64</div>
-          <div onclick="navigate('/bookings')" style="width:48px;height:48px;background:rgba(255,255,255,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;border:1px solid rgba(255,255,255,.1);font-size:20px" title="Bookings">\ud83d\udccb</div>
-          <div onclick="navigate('/wallet')" style="width:48px;height:48px;background:rgba(255,255,255,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;border:1px solid rgba(255,255,255,.1);font-size:20px" title="Wallet">\ud83d\udcb3</div>
-          <div onclick="_shareIDCard()" style="width:48px;height:48px;background:rgba(255,255,255,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;border:1px solid rgba(255,255,255,.1);font-size:20px" title="Share">\ud83d\udce4</div>
-          <div onclick="navigate('/refer')" style="width:48px;height:48px;background:rgba(255,109,0,.15);border:1px solid rgba(255,109,0,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px" title="Refer & Earn">\ud83c\udf81</div>
+        <div style="display:flex;gap:20px;margin-bottom:16px">
+          <div style="text-align:center"><div style="color:#FF6D00;font-size:22px;font-weight:900">${tS}</div><div style="color:rgba(255,255,255,.3);font-size:9px;font-weight:600;text-transform:uppercase">Sessions</div></div>
+          <div style="text-align:center"><div style="color:#22c55e;font-size:22px;font-weight:900">${tG}</div><div style="color:rgba(255,255,255,.3);font-size:9px;font-weight:600;text-transform:uppercase">Gyms</div></div>
+          <div style="text-align:center"><div style="color:#3b82f6;font-size:22px;font-weight:900">${stk}\ud83d\udd25</div><div style="color:rgba(255,255,255,.3);font-size:9px;font-weight:600;text-transform:uppercase">Streak</div></div>
         </div>
       </div>
-      <!-- Scrollable sections below the QR hero -->
-      <div style="position:relative;z-index:3;padding:0 16px 24px;max-width:480px;margin:0 auto">
-        <div class="sg-more-section">
-          <div class="sg-more-section-title">Your Activity</div>
-          ${(state.lastBooking||state.activeSession)?moreItem('\ud83c\udfcb\ufe0f','Active Session','Live session in progress \u2192','/session'):''}
-          ${moreItem('\ud83d\udccb','My Bookings','Upcoming & past visits','/bookings')}
-          ${moreItem('\ud83d\udcb3','Payment & Wallet','Cards, balance & methods','/wallet')}
-          ${moreItem('\u26a1','Quick Rebook','1-tap rebook with fingerprint','/quick-rebook')}
-          ${moreItem('\ud83d\udc65','Group Booking','Book for friends, split payment','/group-book/1')}
-          ${moreItem('\ud83d\udcb3','Pay Next Visit','Emergency entry, pay later','/pay-next-visit')}
-          ${moreItem('\ud83c\udf9f\ufe0f','Refer & Earn','Invite friends, earn 15%','/refer')}
+      <!-- Right-side action buttons (Reels/TikTok style) -->
+      <div style="position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:14px;align-items:center;z-index:5">
+        <div onclick="navigate('/more/profile')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
+          <div style="width:44px;height:44px;background:rgba(255,255,255,.1);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.1)">\ud83d\udc64</div>
+          <span style="color:rgba(255,255,255,.6);font-size:9px;font-weight:600">Edit</span>
         </div>
-        <div class="sg-more-section">
-          <div class="sg-more-section-title">AI & Training</div>
-          ${moreItem('\ud83e\udd16','AI Trainer','Get personalized exercise tips','/ai-trainer')}
-          ${moreItem('\ud83d\udcc5','Workout Calendar','Attendance, workouts & muscles','/calendar')}
-          ${moreItem('\ud83d\udcc8','Progress Tracking','Trends & science-backed corrections','/progress')}
-          ${moreItem('\ud83c\udfcb\ufe0f','Weight Calculator','1RM & progressive overload','/weight-calc')}
-          ${moreItem('\ud83d\udd2c','Facility Science','Evidence-based benefits','/facility-science')}
-          ${moreItem('\ud83c\udf93','Equipment Tutorials','Step-by-step animated guides','/tutorials')}
+        <div onclick="navigate('/bookings')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
+          <div style="width:44px;height:44px;background:rgba(255,255,255,.1);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.1)">\ud83d\udccb</div>
+          <span style="color:rgba(255,255,255,.6);font-size:9px;font-weight:600">Bookings</span>
         </div>
-        <div class="sg-more-section">
-          <div class="sg-more-section-title">📡 Channels</div>
-          ${moreItem('📡','My Channels','Telegram, WhatsApp, Discord & more','/channels')}
+        <div onclick="navigate('/wallet')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
+          <div style="width:44px;height:44px;background:rgba(255,255,255,.1);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.1)">\ud83d\udcb3</div>
+          <span style="color:rgba(255,255,255,.6);font-size:9px;font-weight:600">Wallet</span>
         </div>
-        <div class="sg-more-section">
-          <div class="sg-more-section-title">Help & Support</div>
-          ${moreItem('\ud83c\udd98','Help Center','FAQ, guides & support','/help')}
-          ${moreItem('\u2709\ufe0f','Contact Us','Get in touch','/contact')}
+        <div onclick="_shareIDCard()" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
+          <div style="width:44px;height:44px;background:rgba(255,255,255,.1);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.1)">\ud83d\udce4</div>
+          <span style="color:rgba(255,255,255,.6);font-size:9px;font-weight:600">Share</span>
         </div>
-        <div class="sg-more-section">
-          <div class="sg-more-section-title">\ud83c\udd93 Explore</div>
-          ${moreItem('\ud83c\udfae','Free Tools & Games','Workout games, timers, lessons','/free-tools')}
-          ${moreItem('\ud83c\udfb5','Gym Music','AI workout playlists & beats','/gym-music')}
-          ${moreItem('\ud83d\udcf8','Posts','Share gym photos & stories','/posts')}
-          ${moreItem('\ud83c\udfac','Creator Reels','Tags, earnings, downloads','/creator-reels')}
-          ${moreItem('\ud83c\udfe2','Gym Partner Hub','Claim & manage your gym','/gym-partner-hub')}
+        <div onclick="navigate('/refer')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
+          <div style="width:44px;height:44px;background:rgba(255,109,0,.15);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,109,0,.3)">\ud83c\udf81</div>
+          <span style="color:rgba(255,255,255,.6);font-size:9px;font-weight:600">Refer</span>
         </div>
-        <div class="sg-more-section">
-          <div class="sg-more-section-title">\ud83c\udfac Creator Tools</div>
-          ${moreItem('\ud83c\udfaf','Creator Hub','TikTok-style dashboard, stats, reels','/creator-hub')}
-          ${moreItem('\ud83d\udcf9','Create Reel','Record & share gym content','/reels')}
-          ${moreItem('\ud83d\udcb0','Upload & Earn','Become a creator, earn 25%','/become-a-creator')}
+        <div onclick="navigate('/more')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
+          <div style="width:44px;height:44px;background:rgba(255,255,255,.1);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.1)">\u2699\ufe0f</div>
+          <span style="color:rgba(255,255,255,.6);font-size:9px;font-weight:600">More</span>
         </div>
-        <div class="sg-more-section">
-          <div class="sg-more-section-title">For Creators</div>
-          ${moreItem('\ud83d\udcf8','ScanSquad','Join the creator community \u2014 earn 25%','/creators')}
-        </div>
-        <div style="margin-top:16px;text-align:center">
-          <p style="color:rgba(255,255,255,.3);font-size:12px;line-height:1.6">\ud83c\udf0d Your ScanGym profile is your universal gym pass.<br>Accepted at <strong style="color:rgba(255,255,255,.5)">any gym</strong> \u2014 no membership needed.</p>
-        </div>
-        ${u?'<div style="text-align:center;margin-top:24px"><button onclick="logout()" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#ef4444;padding:12px 28px;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer">Sign Out</button></div>':''}
-        <div style="height:20px"></div>
+        ${u?'<div onclick="logout()" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer"><div style="width:44px;height:44px;background:rgba(239,68,68,.1);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(239,68,68,.2)">\ud83d\udeaa</div><span style="color:rgba(239,68,68,.6);font-size:9px;font-weight:600">Out</span></div>':''}
+      </div>
+      <!-- Bottom info -->
+      <div style="position:absolute;bottom:12px;left:0;right:0;text-align:center;z-index:3">
+        <p style="color:rgba(255,255,255,.2);font-size:10px">\ud83c\udf0d Your universal gym pass \u2014 accepted at any gym</p>
       </div>
     </div>`;
   }else{
-    // Not logged in — full-screen sign-up with form (steal Apple Wallet style)
-    return`<div style="position:relative;width:100%;min-height:calc(100vh - 56px);overflow-y:auto;background:#0a0a16;-webkit-overflow-scrolling:touch">
+    // Not logged in — fixed full-screen QR pass with right-side Reels-style buttons
+    return`<div style="position:absolute;inset:0;background:#0a0a16;overflow:hidden">
+      <style>@keyframes sgCtaPulse{0%,100%{box-shadow:0 4px 24px rgba(255,109,0,.4)}50%{box-shadow:0 4px 32px rgba(255,109,0,.6)}}@keyframes sgQrGlow{0%,100%{box-shadow:0 20px 60px rgba(0,0,0,.3),0 0 40px rgba(255,109,0,.05)}50%{box-shadow:0 20px 60px rgba(0,0,0,.3),0 0 50px rgba(255,109,0,.12)}}</style>
+      <!-- Background gradients -->
       <div style="position:absolute;top:0;left:0;right:0;height:50%;background:linear-gradient(135deg,rgba(255,109,0,.08),rgba(168,85,247,.06));pointer-events:none"></div>
       <div style="position:absolute;top:0;left:0;right:0;height:55%;background:linear-gradient(180deg,transparent 40%,#0a0a16 100%);pointer-events:none"></div>
-      <div style="position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;padding:48px 24px 32px;text-align:center">
-        <!-- QR Pass Preview -->
-        <div style="width:200px;height:200px;background:rgba(255,109,0,.06);border:2px solid rgba(255,109,0,.2);border-radius:32px;display:flex;align-items:center;justify-content:center;margin-bottom:24px;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+      <!-- Main content — centered, fixed, no scroll -->
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center;z-index:2">
+        <!-- QR Pass Preview (large, centered like a reel) -->
+        <div style="width:180px;height:180px;background:rgba(255,109,0,.06);border:2px solid rgba(255,109,0,.2);border-radius:32px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;animation:sgQrGlow 3s ease-in-out infinite">
           <div style="text-align:center">
-            <p style="font-size:64px;margin-bottom:8px">\ud83c\udf0d</p>
-            <p style="color:rgba(255,255,255,.3);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px">Your QR Here</p>
+            <p style="font-size:56px;margin-bottom:6px">\ud83c\udf0d</p>
+            <p style="color:rgba(255,255,255,.3);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px">Your QR Here</p>
           </div>
         </div>
-        <p style="color:#fff;font-weight:900;font-size:26px;margin-bottom:8px">Universal Gym Pass</p>
-        <p style="color:rgba(255,255,255,.4);font-size:15px;margin-bottom:8px;max-width:300px">Sign up once. Scan QR to enter any gym worldwide.</p>
-        <p style="color:rgba(255,255,255,.25);font-size:12px;margin-bottom:28px">No membership · No contract · Pay per visit</p>
-        <!-- Stats preview -->
-        <div style="display:flex;gap:24px;margin-bottom:28px">
-          <div style="text-align:center"><div style="color:#FF6D00;font-size:22px;font-weight:900">1.2M+</div><div style="color:rgba(255,255,255,.3);font-size:10px;font-weight:600;text-transform:uppercase">Gyms</div></div>
-          <div style="text-align:center"><div style="color:#22c55e;font-size:22px;font-weight:900">£4.49</div><div style="color:rgba(255,255,255,.3);font-size:10px;font-weight:600;text-transform:uppercase">From</div></div>
-          <div style="text-align:center"><div style="color:#3b82f6;font-size:22px;font-weight:900">190+</div><div style="color:rgba(255,255,255,.3);font-size:10px;font-weight:600;text-transform:uppercase">Countries</div></div>
+        <p style="color:#fff;font-weight:900;font-size:24px;margin-bottom:6px">Universal Gym Pass</p>
+        <p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:6px;max-width:280px">Sign up once. Scan QR to enter any gym worldwide.</p>
+        <p style="color:rgba(255,255,255,.25);font-size:11px;margin-bottom:20px">No membership · No contract · Pay per visit</p>
+        <!-- Stats row -->
+        <div style="display:flex;gap:20px;margin-bottom:20px">
+          <div style="text-align:center"><div style="color:#FF6D00;font-size:20px;font-weight:900">1.2M+</div><div style="color:rgba(255,255,255,.3);font-size:9px;font-weight:600;text-transform:uppercase">Gyms</div></div>
+          <div style="text-align:center"><div style="color:#22c55e;font-size:20px;font-weight:900">£4.49</div><div style="color:rgba(255,255,255,.3);font-size:9px;font-weight:600;text-transform:uppercase">From</div></div>
+          <div style="text-align:center"><div style="color:#3b82f6;font-size:20px;font-weight:900">190+</div><div style="color:rgba(255,255,255,.3);font-size:9px;font-weight:600;text-transform:uppercase">Countries</div></div>
         </div>
-        <!-- Sign-up form -->
-        <div style="width:100%;max-width:340px">
-          <p style="color:rgba(255,255,255,.35);font-size:12px;margin-bottom:12px">\u2728 Join 50K+ members worldwide</p>
-          <button onclick="navigate('/login')" style="width:100%;background:linear-gradient(135deg,#FF6D00,#ff8533);color:#fff;border:none;padding:16px;border-radius:14px;font-weight:800;font-size:16px;cursor:pointer;box-shadow:0 4px 24px rgba(255,109,0,.4);margin-bottom:12px;transition:.15s;animation:sgCtaPulse 2s ease-in-out infinite" ontouchstart="this.style.transform='scale(.97)'" ontouchend="this.style.transform=''">Get Started \u2192</button>
-          <style>@keyframes sgCtaPulse{0%,100%{box-shadow:0 4px 24px rgba(255,109,0,.4)}50%{box-shadow:0 4px 32px rgba(255,109,0,.6)}}</style>
-          <button onclick="navigate('/login')" style="width:100%;background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.1);padding:16px;border-radius:14px;font-weight:700;font-size:14px;cursor:pointer;margin-bottom:24px;transition:.15s" ontouchstart="this.style.background='rgba(255,255,255,.1)'" ontouchend="this.style.background='rgba(255,255,255,.06)'">I already have an account</button>
+        <!-- CTA buttons -->
+        <div style="width:100%;max-width:300px">
+          <p style="color:rgba(255,255,255,.35);font-size:11px;margin-bottom:10px">\u2728 Join 50K+ members worldwide</p>
+          <button onclick="navigate('/login')" style="width:100%;background:linear-gradient(135deg,#FF6D00,#ff8533);color:#fff;border:none;padding:14px;border-radius:14px;font-weight:800;font-size:15px;cursor:pointer;box-shadow:0 4px 24px rgba(255,109,0,.4);margin-bottom:10px;transition:.1s;animation:sgCtaPulse 2s ease-in-out infinite" ontouchstart="this.style.transform='scale(.97)'" ontouchend="this.style.transform=''">Get Started \u2192</button>
+          <button onclick="navigate('/login')" style="width:100%;background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.1);padding:14px;border-radius:14px;font-weight:700;font-size:13px;cursor:pointer;transition:.1s" ontouchstart="this.style.background='rgba(255,255,255,.1)'" ontouchend="this.style.background='rgba(255,255,255,.06)'">I already have an account</button>
         </div>
-        <!-- How it works -->
-        <div style="width:100%;max-width:340px;text-align:left">
-          <p style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">How it works</p>
-          <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:16px">
-            <div style="width:32px;height:32px;background:rgba(255,109,0,.12);border:1px solid rgba(255,109,0,.25);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#FF6D00;font-size:14px;font-weight:800;flex-shrink:0">1</div>
-            <div><p style="color:#fff;font-size:14px;font-weight:700">Sign up in 10 seconds</p><p style="color:rgba(255,255,255,.4);font-size:12px">Email or Google — no credit card needed</p></div>
-          </div>
-          <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:16px">
-            <div style="width:32px;height:32px;background:rgba(255,109,0,.12);border:1px solid rgba(255,109,0,.25);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#FF6D00;font-size:14px;font-weight:800;flex-shrink:0">2</div>
-            <div><p style="color:#fff;font-size:14px;font-weight:700">Find & book a gym</p><p style="color:rgba(255,255,255,.4);font-size:12px">Search 1.2M+ gyms, buy a day pass</p></div>
-          </div>
-          <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:16px">
-            <div style="width:32px;height:32px;background:rgba(255,109,0,.12);border:1px solid rgba(255,109,0,.25);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#FF6D00;font-size:14px;font-weight:800;flex-shrink:0">3</div>
-            <div><p style="color:#fff;font-size:14px;font-weight:700">Scan QR & enter</p><p style="color:rgba(255,255,255,.4);font-size:12px">Show your QR code at the door — done!</p></div>
-          </div>
+      </div>
+      <!-- Right-side action buttons (Reels/TikTok style) -->
+      <div style="position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:14px;align-items:center;z-index:5">
+        <div onclick="navigate('/login')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
+          <div style="width:44px;height:44px;background:rgba(255,255,255,.1);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.1)">\ud83d\udc64</div>
+          <span style="color:rgba(255,255,255,.6);font-size:9px;font-weight:600">Sign Up</span>
         </div>
+        <div onclick="switchTab('book')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
+          <div style="width:44px;height:44px;background:rgba(255,255,255,.1);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.1)">\ud83d\udd0d</div>
+          <span style="color:rgba(255,255,255,.6);font-size:9px;font-weight:600">Find Gym</span>
+        </div>
+        <div onclick="navigate('/login')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
+          <div style="width:44px;height:44px;background:rgba(255,255,255,.1);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.1)">\ud83d\udcb3</div>
+          <span style="color:rgba(255,255,255,.6);font-size:9px;font-weight:600">Pricing</span>
+        </div>
+        <div onclick="navigate('/become-a-creator')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
+          <div style="width:44px;height:44px;background:rgba(255,109,0,.15);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,109,0,.3)">\ud83c\udfac</div>
+          <span style="color:rgba(255,255,255,.6);font-size:9px;font-weight:600">Creator</span>
+        </div>
+        <div onclick="navigate('/help')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
+          <div style="width:44px;height:44px;background:rgba(255,255,255,.1);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.1)">\u2753</div>
+          <span style="color:rgba(255,255,255,.6);font-size:9px;font-weight:600">Help</span>
+        </div>
+      </div>
+      <!-- Bottom info -->
+      <div style="position:absolute;bottom:12px;left:0;right:0;text-align:center;z-index:3">
+        <p style="color:rgba(255,255,255,.2);font-size:10px">\ud83c\udf0d Accepted at any gym worldwide · No membership needed</p>
       </div>
     </div>`;
   }
