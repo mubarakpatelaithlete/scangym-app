@@ -422,7 +422,51 @@ async function creditCreatorCommission(booking) {
        WHERE user_id = (SELECT creator_user_id FROM creator_landing_pages WHERE slug = $2 LIMIT 1)`,
       [commissionPence, booking.referral_code]
     );
-    console.log(`[Payment] Credited £1.25 commission to creator "${booking.referral_code}" for booking ${booking.id}`);
+    console.log(`[Payment] Credited £${(commissionPence / 100).toFixed(2)} commission to creator "${booking.referral_code}" for booking ${booking.id}`);
+
+    // ── Auto-credit commission to creator's ScanGym Wallet ──
+    // This is the zero-friction payout: creators earn into their wallet automatically.
+    // They can spend on free gym sessions or cash out via Stripe Connect later.
+    try {
+      const creatorUser = await pool.query(
+        'SELECT creator_user_id FROM creator_landing_pages WHERE slug = $1 LIMIT 1',
+        [booking.referral_code]
+      );
+      if (creatorUser.rows.length > 0 && creatorUser.rows[0].creator_user_id) {
+        const creatorUserId = creatorUser.rows[0].creator_user_id;
+
+        // Upsert wallet: create if doesn't exist, add commission if it does
+        const walletUpsert = await pool.query(`
+          INSERT INTO wallets (user_id, balance_pence, total_loaded_pence, total_spent_pence, currency, is_active, created_at, updated_at)
+          VALUES ($1, $2, $2, 0, 'GBP', true, NOW(), NOW())
+          ON CONFLICT (user_id) DO UPDATE
+          SET balance_pence = wallets.balance_pence + $2,
+              total_loaded_pence = wallets.total_loaded_pence + $2,
+              updated_at = NOW()
+          RETURNING id, balance_pence
+        `, [creatorUserId, commissionPence]);
+
+        // Record the wallet transaction
+        if (walletUpsert.rows.length > 0) {
+          await pool.query(`
+            INSERT INTO wallet_transactions (wallet_id, user_id, type, amount_pence, balance_after_pence, description, reference_type, created_at)
+            VALUES ($1, $2, 'reward', $3, $4, $5, 'commission', NOW())
+          `, [
+            walletUpsert.rows[0].id,
+            creatorUserId,
+            commissionPence,
+            walletUpsert.rows[0].balance_pence,
+            `🎉 Creator commission: £${(commissionPence / 100).toFixed(2)} from booking #${booking.id}`
+          ]);
+        }
+
+        console.log(`[Payment] Wallet auto-credited: £${(commissionPence / 100).toFixed(2)} → creator "${booking.referral_code}" (balance: £${(walletUpsert.rows[0].balance_pence / 100).toFixed(2)})`);
+      }
+    } catch (walletErr) {
+      // Non-blocking: commission is already recorded in creator_referrals
+      console.error('[Payment] Wallet auto-credit failed (non-blocking):', walletErr.message);
+    }
+
   } catch (commErr) {
     console.error('[Payment] Commission credit failed (non-blocking):', commErr.message);
   }

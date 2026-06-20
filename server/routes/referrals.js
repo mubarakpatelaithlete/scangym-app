@@ -201,7 +201,50 @@ router.post('/convert', async (req, res) => {
     }
 
     console.log(`[Referrals] Commission credited: ${commission}p to ${creatorHandle} for booking ${bookingId}`);
-    res.json({ success: true, commissionPence: commission });
+
+    // ── Auto-credit commission to creator's ScanGym Wallet ──
+    // Zero-friction payout: creators earn into their wallet automatically.
+    // Wallet balance can be spent on free gym sessions or cashed out via Stripe Connect.
+    let walletCredited = false;
+    try {
+      const creatorUser = await pool.query(
+        'SELECT creator_user_id FROM creator_landing_pages WHERE slug = $1 LIMIT 1',
+        [creatorHandle]
+      );
+      if (creatorUser.rows.length > 0 && creatorUser.rows[0].creator_user_id) {
+        const creatorUserId = creatorUser.rows[0].creator_user_id;
+
+        const walletUpsert = await pool.query(`
+          INSERT INTO wallets (user_id, balance_pence, total_loaded_pence, total_spent_pence, currency, is_active, created_at, updated_at)
+          VALUES ($1, $2, $2, 0, 'GBP', true, NOW(), NOW())
+          ON CONFLICT (user_id) DO UPDATE
+          SET balance_pence = wallets.balance_pence + $2,
+              total_loaded_pence = wallets.total_loaded_pence + $2,
+              updated_at = NOW()
+          RETURNING id, balance_pence
+        `, [creatorUserId, commission]);
+
+        if (walletUpsert.rows.length > 0) {
+          await pool.query(`
+            INSERT INTO wallet_transactions (wallet_id, user_id, type, amount_pence, balance_after_pence, description, reference_type, created_at)
+            VALUES ($1, $2, 'reward', $3, $4, $5, 'commission', NOW())
+          `, [
+            walletUpsert.rows[0].id,
+            creatorUserId,
+            commission,
+            walletUpsert.rows[0].balance_pence,
+            `🎉 Creator commission: £${(commission / 100).toFixed(2)} from booking #${bookingId}`
+          ]);
+          walletCredited = true;
+        }
+
+        console.log(`[Referrals] Wallet auto-credited: £${(commission / 100).toFixed(2)} → "${creatorHandle}" (balance: £${(walletUpsert.rows[0].balance_pence / 100).toFixed(2)})`);
+      }
+    } catch (walletErr) {
+      console.error('[Referrals] Wallet auto-credit failed (non-blocking):', walletErr.message);
+    }
+
+    res.json({ success: true, commissionPence: commission, walletCredited });
   } catch (err) {
     console.error('[Referrals] Convert error:', err.message);
     res.status(500).json({ error: 'Failed to credit commission' });

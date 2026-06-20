@@ -2429,6 +2429,14 @@
         }
         if(ev.data.type === 'sg-auth-complete'){
           _reelsUserLoggedIn = true;
+          _reelsUser = ev.data.user || _reelsUser;
+
+          // ── Auto-enroll as ScanSquad creator on first Share/Save ──
+          // Zero-friction: user logs in → automatically becomes a creator →
+          // their share link includes their affiliate handle → they earn 25% commission
+          // → commission auto-credits to their ScanGym Wallet
+          _autoEnrollCreator(ev.data.user);
+
           // Resume pending action after auth
           if(ev.data.action === 'share' && _pendingShareVideo){
             _doShare(_pendingShareVideo);
@@ -2443,6 +2451,56 @@
 
       // Also check localStorage for existing session
       try{var _sc=localStorage.getItem('sg_creator');if(_sc){var _p=JSON.parse(_sc);if(_p&&_p.handle)_reelsUserLoggedIn=true;}}catch(e){}
+
+      // ── Auto-enroll as ScanSquad creator (Share → Earn → Wallet flow) ──
+      // When a user logs in via Share/Save, automatically make them a creator
+      // so their share links earn 25% commission → auto-credited to wallet.
+      function _autoEnrollCreator(user) {
+        try {
+          // Skip if already enrolled
+          var existing = localStorage.getItem('sg_creator');
+          if (existing) {
+            var parsed = JSON.parse(existing);
+            if (parsed && parsed.handle) return; // Already a creator
+          }
+
+          // Generate handle from email or name
+          var email = (user && user.email) || '';
+          var name = (user && user.name) || '';
+          if (!email) return; // Can't enroll without email
+
+          var handle = email.split('@')[0].replace(/[^a-z0-9]/gi, '').toLowerCase();
+
+          // Store creator locally (instant — no network needed for share links to work)
+          localStorage.setItem('sg_creator', JSON.stringify({
+            handle: handle,
+            email: email,
+            name: name.split(' ')[0] || handle
+          }));
+
+          // Register on server (non-blocking — fire and forget)
+          fetch('/api/v2/creator-apply', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              first_name: name.split(' ')[0] || '',
+              last_name: name.split(' ').slice(1).join(' ') || '',
+              email: email,
+              instagram: '',
+              tiktok: '',
+              youtube: '',
+              followers: '',
+              why: 'auto-enroll-share'
+            })
+          }).catch(function(){});
+
+          // Show earning toast — let the user know they can earn
+          showToast('💰 Share & Earn activated! You earn 25% on every booking from your links.');
+
+        } catch (e) {
+          // Silent fail — enrollment is best-effort
+        }
+      }
 
       function handleShare(video){
         trackEvent('share', currentIndex); // G7 fix: track shares
@@ -2477,13 +2535,17 @@
         // Try native share sheet first (mobile)
         if(navigator.share){
           navigator.share({title:'ScanGym Reels',text:text,url:url})
-            .then(function(){ showToast('\u2705 Shared!'); })
+            .then(function(){
+              showToast('\u2705 Shared!');
+              if(_viewerHandle) setTimeout(function(){ showToast('💰 You earn 25% when someone books!'); }, 2000);
+            })
             .catch(function(err){
               if(err && err.name === 'AbortError') return;
               copyToClipboard(sharePayload);
             });
         } else {
           copyToClipboard(sharePayload);
+          if(_viewerHandle) setTimeout(function(){ showToast('💰 You earn 25% when someone books!'); }, 2000);
         }
       }
 
