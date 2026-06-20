@@ -33,10 +33,20 @@ const CHANNELS = [
 // ─── DB migration (auto-creates table on first load) ────────
 (async () => {
   try {
+    // Drop existing table if schema mismatch (VARCHAR vs UUID)
+    const check = await pool.query(`
+      SELECT data_type FROM information_schema.columns 
+      WHERE table_name = 'user_channels' AND column_name = 'user_id'
+    `);
+    if (check.rows.length > 0 && check.rows[0].data_type !== 'uuid') {
+      console.log('[user_channels] Dropping old table (user_id was VARCHAR, needs UUID)...');
+      await pool.query('DROP TABLE IF EXISTS user_channels CASCADE');
+    }
+    
     await pool.query(`
       CREATE TABLE IF NOT EXISTS user_channels (
         id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-        user_id VARCHAR(255) NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+        user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
         channel VARCHAR(50) NOT NULL,
         channel_user_id VARCHAR(255),
         channel_username VARCHAR(255),
@@ -49,7 +59,7 @@ const CHANNELS = [
       CREATE INDEX IF NOT EXISTS idx_user_channels_user ON user_channels(user_id);
       CREATE INDEX IF NOT EXISTS idx_user_channels_channel ON user_channels(channel, channel_user_id);
     `);
-    console.log('✅ DB migration: user_channels table ready');
+    console.log('✅ DB migration: user_channels table ready (UUID user_id)');
   } catch (err) {
     console.error('DB migration (user_channels):', err.message);
   }
