@@ -11561,7 +11561,7 @@ function MusicTabPage(){
         <!-- Playlist grid -->
         <p style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin:16px 0 10px;padding:0 4px">All Playlists</p>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-bottom:16px">
-          ${playlists.map(function(p,i){return '<div onclick="window._sgMusicIdx='+i+';window._sgMusicTrack=0;window._sgMusicEmbed=true;render()" style="background:rgba(255,255,255,.04);border:1px solid '+(i===_ci?'rgba(255,109,0,.3)':'rgba(255,255,255,.06)')+';border-radius:14px;overflow:hidden;cursor:pointer;transition:.15s" ontouchstart="this.style.transform=\'scale(.96)\'" ontouchend="this.style.transform=\'\'"><div style="width:100%;aspect-ratio:1;overflow:hidden"><img src="'+p.img+'" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display=\'none\'"></div><div style="padding:10px 12px"><p style="color:#fff;font-size:12px;font-weight:700">'+p.title+'</p><p style="color:rgba(255,255,255,.3);font-size:10px">'+p.plays+' plays</p></div></div>';}).join('')}
+          ${playlists.map(function(p,i){return '<div onclick="window._sgMusicIdx='+i+';window._sgMusicTrack=0;window._sgMusicEmbed=true;window._sgMusicStart=Date.now();window._sgMusicPlaying=true;render()" style="background:rgba(255,255,255,.04);border:1px solid '+(i===_ci?'rgba(255,109,0,.3)':'rgba(255,255,255,.06)')+';border-radius:14px;overflow:hidden;cursor:pointer;transition:.15s" ontouchstart="this.style.transform=\'scale(.96)\'" ontouchend="this.style.transform=\'\'"><div style="width:100%;aspect-ratio:1;overflow:hidden"><img src="'+p.img+'" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display=\'none\'"></div><div style="padding:10px 12px"><p style="color:#fff;font-size:12px;font-weight:700">'+p.title+'</p><p style="color:rgba(255,255,255,.3);font-size:10px">'+p.plays+' plays</p></div></div>';}).join('')}
         </div>
       </div>
     </div>
@@ -11600,6 +11600,7 @@ function PhotosTabPage(){
   // Full-screen overlay state
   var _fsPhoto=window._sgPhotosFS;
   return`<div style="position:relative;width:100%;min-height:calc(100vh - 56px);overflow-y:auto;overflow-x:hidden;background:#0a0a16;-webkit-overflow-scrolling:touch">
+    <style>@keyframes sgHeartPop{0%{transform:scale(0);opacity:1}50%{transform:scale(1.3);opacity:1}100%{transform:scale(1);opacity:0}}</style>
     <!-- Top bar -->
     <div style="position:sticky;top:0;z-index:10;background:rgba(10,10,22,.95);backdrop-filter:blur(16px);padding:16px 16px 0">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
@@ -11627,8 +11628,9 @@ function PhotosTabPage(){
   </div>`;
 }
 function _photoCard(p,idx){
-  return '<div onclick="window._sgPhotosFS='+idx+';render()" style="border-radius:16px;overflow:hidden;position:relative;cursor:pointer;background:rgba(255,255,255,.04)" ontouchstart="this.style.transform=\'scale(.97)\'" ontouchend="this.style.transform=\'\'">'
+  return '<div onclick="window._sgPhotosFS='+idx+';render()" ondblclick="event.stopPropagation();this.querySelector(\'.sg-heart-pop\')&&(this.querySelector(\'.sg-heart-pop\').style.display=\'flex\');setTimeout(function(){document.querySelectorAll(\'.sg-heart-pop\').forEach(function(e){e.style.display=\'none\'})},800)" style="border-radius:16px;overflow:hidden;position:relative;cursor:pointer;background:rgba(255,255,255,.04)" ontouchstart="this.style.transform=\'scale(.97)\'" ontouchend="this.style.transform=\'\'">'
     +'<img src="'+p.img+'" style="width:100%;height:'+p.h+'px;object-fit:cover;display:block" loading="lazy" onerror="this.style.height=\'200px\';this.style.background=\'linear-gradient(135deg,#1a1a2e,#16213e)\'">'
+    +'<div class="sg-heart-pop" style="display:none;position:absolute;inset:0;align-items:center;justify-content:center;z-index:5;pointer-events:none"><span style="font-size:48px;animation:sgHeartPop .6s ease-out forwards">❤️</span></div>'
     +'<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.7));padding:12px 10px 10px">'
     +'<p style="color:#fff;font-size:12px;font-weight:700;margin-bottom:2px;text-shadow:0 1px 4px rgba(0,0,0,.5)">'+p.title+'</p>'
     +'<div style="display:flex;align-items:center;justify-content:space-between">'
@@ -11649,7 +11651,7 @@ function _photoOverlay(p){
     +'<div onclick="event.stopPropagation();sgToast(\'💬 Comments coming soon\',\'info\',2000)" style="color:rgba(255,255,255,.6);font-size:14px;cursor:pointer;padding:8px 16px;background:rgba(255,255,255,.08);border-radius:20px">💬 Comment</div>'
     +'<div onclick="event.stopPropagation();sgToast(\'📤 Shared!\',\'success\',2000)" style="color:rgba(255,255,255,.6);font-size:14px;cursor:pointer;padding:8px 16px;background:rgba(255,255,255,.08);border-radius:20px">📤 Share</div>'
     +'</div></div></div>'
-    +'<div onclick="window._sgPhotosFS=null;render()" style="position:absolute;top:16px;right:16px;width:40px;height:40px;background:rgba(255,255,255,.1);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px">✕</div>'
+    +'<div onclick="event.stopPropagation();window._sgPhotosFS=null;render()" style="position:fixed;top:16px;right:16px;z-index:10001;width:44px;height:44px;background:rgba(255,255,255,.15);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px;color:#fff;font-weight:300">✕</div>'
     +'</div>';
 }
 
@@ -11658,8 +11660,10 @@ function _photoOverlay(p){
 function _sgMd(t){
   return t
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    .replace(/\*\*(.+?)\*\*/g,'<strong style="color:#fff">$1</strong>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong style="color:#fff;font-weight:700">$1</strong>')
     .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/^• (.+)$/gm,'<div style="display:flex;gap:6px;margin:2px 0"><span style="color:#FF6D00;flex-shrink:0">•</span><span>$1</span></div>')
+    .replace(/^\- (.+)$/gm,'<div style="display:flex;gap:6px;margin:2px 0"><span style="color:#FF6D00;flex-shrink:0">•</span><span>$1</span></div>')
     .replace(/\n/g,'<br>');
 }
 function ChatTabPage(){
@@ -11688,6 +11692,7 @@ function ChatTabPage(){
     'recovery':[
       '🧘 Science-backed recovery tips:\n\n**Sleep (most important!):**\n• 7-9 hours minimum\n• Dark room, cool temp (18°C)\n• No screens 1hr before bed\n\n**Active Recovery:**\n• Light walking (6-8K steps on rest days)\n• Foam rolling (10 min post-workout)\n• Dynamic stretching before, static after\n\n**Nutrition:**\n• 20-40g protein within 2hrs post-workout\n• Anti-inflammatory foods: berries, fish, turmeric\n• Hydrate: 3-4L water daily\n\n**Every 4-6 weeks:**\n• Deload week (50% volume)\n• This prevents overtraining and plateaus\n\nRecovery is where gains happen! 💤🔥'
     ],
+    'couch':['🏃 **Couch to 5K — 8 Week Plan:**\n\n**Weeks 1-2:** Walk 4 min → Jog 1 min (repeat 6x)\n**Weeks 3-4:** Walk 3 min → Jog 2 min (repeat 5x)\n**Weeks 5-6:** Walk 2 min → Jog 5 min (repeat 4x)\n**Week 7:** Walk 1 min → Jog 8 min (repeat 3x)\n**Week 8:** Jog 30 min non-stop! 🎉\n\n**Tips:**\n• Run 3x/week with rest days between\n• Don\'t worry about speed — just keep moving\n• Get proper running shoes (visit a running store)\n• Hydrate before, during & after\n\nYou\'ve got this! 💪'],
     'default':[
       'Great question! 💪\n\nI can help with:\n• 🏋️ Custom workout plans\n• 🥗 Nutrition & meal planning\n• 📊 Progress tracking strategies\n• 🏃 Cardio programs (Couch to 5K, HIIT)\n• 🧘 Recovery & mobility\n• 🔍 Finding gyms near you\n\nWhat interests you most? Just ask anything — I\'m here to help! 🚀',
       'That\'s a great topic! Let me give you some advice...\n\n🎯 The 3 pillars of fitness:\n1. **Training** — Progressive overload, 3-5x/week\n2. **Nutrition** — Calories + protein targets\n3. **Recovery** — Sleep + rest days\n\nMaster these 3 and results are inevitable.\n\nWant me to dive deep into any of these? 💪'
@@ -11699,7 +11704,8 @@ function ChatTabPage(){
     if(m.indexOf('gym')>=0||m.indexOf('find')>=0||m.indexOf('near')>=0||m.indexOf('book')>=0)return aiResponses.gym[0];
     if(m.indexOf('meal')>=0||m.indexOf('food')>=0||m.indexOf('protein')>=0||m.indexOf('nutrition')>=0||m.indexOf('eat')>=0)return aiResponses.meal[0];
     if(m.indexOf('progress')>=0||m.indexOf('track')>=0||m.indexOf('measure')>=0)return aiResponses.progress[0];
-    if(m.indexOf('recover')>=0||m.indexOf('rest')>=0||m.indexOf('sleep')>=0||m.indexOf('stretch')>=0||m.indexOf('5k')>=0||m.indexOf('couch')>=0)return aiResponses.recovery[0];
+    if(m.indexOf('5k')>=0||m.indexOf('couch')>=0||m.indexOf('run')>=0||m.indexOf('cardio')>=0)return aiResponses.couch[0];
+    if(m.indexOf('recover')>=0||m.indexOf('rest')>=0||m.indexOf('sleep')>=0||m.indexOf('stretch')>=0)return aiResponses.recovery[0];
     return aiResponses.default[Math.floor(Math.random()*aiResponses.default.length)];
   }
   function _sendChat(){
@@ -11717,7 +11723,7 @@ function ChatTabPage(){
       window._sgChatMsgs.push({role:'ai',text:_getResponse(msg)});
       render();
       setTimeout(function(){var box=document.getElementById('sg-chat-scroll');if(box)box.scrollTop=box.scrollHeight;},100);
-    },1200);
+    },1400+Math.min(1200,_getResponse(msg).length*2));
   }
   window._sgSendChat=_sendChat;
   window._sgChatSuggest=function(txt){
@@ -11741,7 +11747,7 @@ function ChatTabPage(){
         <div style="width:36px;height:36px;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 0 12px rgba(255,109,0,.3)">🤖</div>
         <div><p style="color:#fff;font-size:15px;font-weight:800">ScanGym AI</p><p style="color:${_typing?'#22c55e':'rgba(255,255,255,.4)'};font-size:11px">${_typing?'Typing...':'Online · Powered by AI'}</p></div>
       </div>
-      <div onclick="window._sgChatMsgs=null;window._sgChatTyping=false;render()" style="width:36px;height:36px;background:rgba(255,255,255,.06);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px" title="New chat">✨</div>
+      <div onclick="window._sgChatMsgs=null;window._sgChatTyping=false;render();sgToast('✨ New conversation started','success',2000)" style="width:36px;height:36px;background:rgba(255,255,255,.06);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px" title="New chat">✨</div>
     </div>
     <!-- Messages area -->
     <div id="sg-chat-scroll" style="flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch">
@@ -12641,7 +12647,9 @@ function MoreHubPage(){
         </div>
         <!-- Sign-up form -->
         <div style="width:100%;max-width:340px">
-          <button onclick="navigate('/login')" style="width:100%;background:#FF6D00;color:#fff;border:none;padding:16px;border-radius:14px;font-weight:800;font-size:16px;cursor:pointer;box-shadow:0 4px 24px rgba(255,109,0,.4);margin-bottom:12px;transition:.15s" ontouchstart="this.style.transform='scale(.97)'" ontouchend="this.style.transform=''">Get Started \u2192</button>
+          <p style="color:rgba(255,255,255,.35);font-size:12px;margin-bottom:12px">\u2728 Join 50K+ members worldwide</p>
+          <button onclick="navigate('/login')" style="width:100%;background:linear-gradient(135deg,#FF6D00,#ff8533);color:#fff;border:none;padding:16px;border-radius:14px;font-weight:800;font-size:16px;cursor:pointer;box-shadow:0 4px 24px rgba(255,109,0,.4);margin-bottom:12px;transition:.15s;animation:sgCtaPulse 2s ease-in-out infinite" ontouchstart="this.style.transform='scale(.97)'" ontouchend="this.style.transform=''">Get Started \u2192</button>
+          <style>@keyframes sgCtaPulse{0%,100%{box-shadow:0 4px 24px rgba(255,109,0,.4)}50%{box-shadow:0 4px 32px rgba(255,109,0,.6)}}</style>
           <button onclick="navigate('/login')" style="width:100%;background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.1);padding:16px;border-radius:14px;font-weight:700;font-size:14px;cursor:pointer;margin-bottom:24px;transition:.15s" ontouchstart="this.style.background='rgba(255,255,255,.1)'" ontouchend="this.style.background='rgba(255,255,255,.06)'">I already have an account</button>
         </div>
         <!-- How it works -->
