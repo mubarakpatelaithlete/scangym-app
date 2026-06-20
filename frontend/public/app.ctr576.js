@@ -11572,88 +11572,163 @@ function MusicTabPage(){
 function PhotosTabPage(){
   var categories=['🔥 Trending','💪 Before/After','🏋️ Form Tips','🍽 Meal Prep','📊 Progress','🏅 PRs'];
   var _catIdx=window._sgPhotosCat||0;
-  // Real Unsplash gym/fitness photos — 2 arrays for masonry columns
+  // Real Unsplash gym/fitness photos — high-res for full-screen
   var allPhotos=[
-    {img:'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400&h=500&fit=crop',title:'Morning Deadlift PR',user:'@fitking_23',likes:'2.4K',h:280,cat:0},
-    {img:'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400&h=600&fit=crop',title:'6 Month Transformation',user:'@sarah_gains',likes:'8.1K',h:340,cat:1},
-    {img:'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=400&h=400&fit=crop',title:'High Protein Meal Prep',user:'@mealmaster',likes:'3.7K',h:240,cat:3},
-    {img:'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=400&h=500&fit=crop',title:'5K Personal Best!',user:'@runner_mike',likes:'1.9K',h:300,cat:4},
-    {img:'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&h=550&fit=crop',title:'Sunrise Yoga Session',user:'@zen_fit',likes:'5.2K',h:320,cat:0},
-    {img:'https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?w=400&h=450&fit=crop',title:'Boxing Highlights',user:'@boxfit_uk',likes:'4.6K',h:260,cat:2},
-    {img:'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=400&h=500&fit=crop',title:'12 Week Progress',user:'@trackingpro',likes:'6.3K',h:290,cat:4},
-    {img:'https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=400&h=600&fit=crop',title:'Competition Day!',user:'@powerlifter99',likes:'9.8K',h:350,cat:5},
-    {img:'https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=400&h=450&fit=crop',title:'Leg Day Pump',user:'@quad_queen',likes:'3.1K',h:260,cat:0},
-    {img:'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=400&h=500&fit=crop',title:'Perfect Squat Form',user:'@formcheck',likes:'7.2K',h:300,cat:2},
-    {img:'https://images.unsplash.com/photo-1532384748853-8f54a8f476e2?w=400&h=400&fit=crop',title:'Healthy Bowl Prep',user:'@eatclean',likes:'4.1K',h:240,cat:3},
-    {img:'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=400&h=550&fit=crop',title:'Cable Fly Gains',user:'@chestday',likes:'5.8K',h:330,cat:0},
-    {img:'https://images.unsplash.com/photo-1605296867304-46d5465a13f1?w=400&h=500&fit=crop',title:'Home Workout Setup',user:'@homegym_pro',likes:'6.5K',h:290,cat:2},
-    {img:'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=400&h=450&fit=crop',title:'Stretching Routine',user:'@flex_daily',likes:'2.8K',h:260,cat:1},
-    {img:'https://images.unsplash.com/photo-1546483875-ad9014c88eba?w=400&h=500&fit=crop',title:'Marathon Training',user:'@run_26mi',likes:'3.9K',h:300,cat:4},
-    {img:'https://images.unsplash.com/photo-1579758629938-03607ccdbaba?w=400&h=550&fit=crop',title:'Bench PR 140kg!',user:'@benchbeast',likes:'11.2K',h:340,cat:5}
+    {img:'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1080&h=1920&fit=crop',title:'Morning Deadlift PR',user:'@fitking_23',likes:'2.4K',likesN:2400,comments:'148',cat:0,avatar:'🏋️'},
+    {img:'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=1080&h=1920&fit=crop',title:'6 Month Transformation',user:'@sarah_gains',likes:'8.1K',likesN:8100,comments:'432',cat:1,avatar:'💪'},
+    {img:'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=1080&h=1920&fit=crop',title:'High Protein Meal Prep',user:'@mealmaster',likes:'3.7K',likesN:3700,comments:'215',cat:3,avatar:'🍳'},
+    {img:'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=1080&h=1920&fit=crop',title:'5K Personal Best!',user:'@runner_mike',likes:'1.9K',likesN:1900,comments:'97',cat:4,avatar:'🏃'},
+    {img:'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=1080&h=1920&fit=crop',title:'Sunrise Yoga Session',user:'@zen_fit',likes:'5.2K',likesN:5200,comments:'284',cat:0,avatar:'🧘'},
+    {img:'https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?w=1080&h=1920&fit=crop',title:'Boxing Highlights',user:'@boxfit_uk',likes:'4.6K',likesN:4600,comments:'310',cat:2,avatar:'🥊'},
+    {img:'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=1080&h=1920&fit=crop',title:'12 Week Progress',user:'@trackingpro',likes:'6.3K',likesN:6300,comments:'521',cat:4,avatar:'📊'},
+    {img:'https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=1080&h=1920&fit=crop',title:'Competition Day!',user:'@powerlifter99',likes:'9.8K',likesN:9800,comments:'673',cat:5,avatar:'🏅'},
+    {img:'https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=1080&h=1920&fit=crop',title:'Leg Day Pump',user:'@quad_queen',likes:'3.1K',likesN:3100,comments:'176',cat:0,avatar:'🦵'},
+    {img:'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=1080&h=1920&fit=crop',title:'Perfect Squat Form',user:'@formcheck',likes:'7.2K',likesN:7200,comments:'445',cat:2,avatar:'✅'},
+    {img:'https://images.unsplash.com/photo-1532384748853-8f54a8f476e2?w=1080&h=1920&fit=crop',title:'Healthy Bowl Prep',user:'@eatclean',likes:'4.1K',likesN:4100,comments:'232',cat:3,avatar:'🥗'},
+    {img:'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=1080&h=1920&fit=crop',title:'Cable Fly Gains',user:'@chestday',likes:'5.8K',likesN:5800,comments:'367',cat:0,avatar:'💥'},
+    {img:'https://images.unsplash.com/photo-1605296867304-46d5465a13f1?w=1080&h=1920&fit=crop',title:'Home Workout Setup',user:'@homegym_pro',likes:'6.5K',likesN:6500,comments:'401',cat:2,avatar:'🏠'},
+    {img:'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=1080&h=1920&fit=crop',title:'Stretching Routine',user:'@flex_daily',likes:'2.8K',likesN:2800,comments:'134',cat:1,avatar:'🤸'},
+    {img:'https://images.unsplash.com/photo-1546483875-ad9014c88eba?w=1080&h=1920&fit=crop',title:'Marathon Training',user:'@run_26mi',likes:'3.9K',likesN:3900,comments:'198',cat:4,avatar:'🏃'},
+    {img:'https://images.unsplash.com/photo-1579758629938-03607ccdbaba?w=1080&h=1920&fit=crop',title:'Bench PR 140kg!',user:'@benchbeast',likes:'11.2K',likesN:11200,comments:'892',cat:5,avatar:'🔥'}
   ];
   // Filter by category (0 = trending = show all)
   var photos=_catIdx===0?allPhotos:allPhotos.filter(function(p){return p.cat===_catIdx;});
   if(photos.length===0)photos=allPhotos;
-  // Split into 2 columns for masonry
-  var col1=[],col2=[];
-  photos.forEach(function(p,i){if(i%2===0)col1.push(p);else col2.push(p);});
-  // Full-screen overlay state
-  var _fsPhoto=window._sgPhotosFS;
-  return`<div style="position:relative;width:100%;min-height:calc(100vh - 56px);overflow-y:auto;overflow-x:hidden;background:#0a0a16;-webkit-overflow-scrolling:touch">
-    <style>@keyframes sgHeartPop{0%{transform:scale(0);opacity:1}50%{transform:scale(1.3);opacity:1}100%{transform:scale(1);opacity:0}}</style>
-    <!-- Top bar -->
-    <div style="position:sticky;top:0;z-index:10;background:rgba(10,10,22,.95);backdrop-filter:blur(16px);padding:16px 16px 0">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-        <span style="color:#fff;font-size:18px;font-weight:800">📸 Photos</span>
-        <div style="display:flex;gap:8px">
-          <div onclick="sgToast('📷 Upload coming soon','info',2000)" style="width:36px;height:36px;background:rgba(255,109,0,.12);border:1px solid rgba(255,109,0,.25);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px">➕</div>
+  // Store filtered photos globally for actions
+  window._sgPhotosAll=photos;
+  var curIdx=window._sgPhotoCur||0;
+  if(curIdx>=photos.length)curIdx=0;
+  return`<div id="sg-photos-wrap" style="position:absolute;inset:0;background:#000;overflow:hidden">
+    <style>
+      @keyframes sgHeartPop{0%{transform:translate(-50%,-50%) scale(0);opacity:1}50%{transform:translate(-50%,-50%) scale(1.3);opacity:1}100%{transform:translate(-50%,-50%) scale(1);opacity:0}}
+      @keyframes sgActionBounce{0%{transform:scale(1)}50%{transform:scale(1.3)}100%{transform:scale(1)}}
+      #sg-photo-track{scroll-snap-type:y mandatory;overflow-y:scroll;height:100%;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+      #sg-photo-track::-webkit-scrollbar{display:none}
+      .sg-photo-slide{scroll-snap-align:start;scroll-snap-stop:always;width:100%;height:100%;position:relative;flex-shrink:0}
+      .sg-photo-slide img{width:100%;height:100%;object-fit:cover;display:block}
+    </style>
+    <!-- Floating category pills -->
+    <div style="position:absolute;top:0;left:0;right:0;z-index:20;background:linear-gradient(180deg,rgba(0,0,0,.7) 0%,rgba(0,0,0,.3) 70%,transparent 100%);padding:14px 16px 20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <span style="color:#fff;font-size:17px;font-weight:800;text-shadow:0 1px 8px rgba(0,0,0,.5)">📸 Photos</span>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span style="color:rgba(255,255,255,.5);font-size:12px;font-weight:600" id="sg-photo-counter">${curIdx+1}/${photos.length}</span>
+          <div onclick="sgToast('📷 Upload coming soon','info',2000)" style="width:32px;height:32px;background:rgba(255,255,255,.15);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px">➕</div>
         </div>
       </div>
-      <!-- Category pills -->
-      <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:12px;-webkit-overflow-scrolling:touch">
-        ${categories.map(function(c,i){return '<button onclick="window._sgPhotosCat='+i+';render()" style="flex-shrink:0;background:'+(i===_catIdx?'rgba(255,109,0,.15)':'rgba(255,255,255,.04)')+';border:1px solid '+(i===_catIdx?'rgba(255,109,0,.3)':'rgba(255,255,255,.08)')+';color:'+(i===_catIdx?'#FF6D00':'rgba(255,255,255,.5)')+';padding:8px 16px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:.15s">'+c+'</button>';}).join('')}
+      <div style="display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none" class="sg-pills-row">
+        ${categories.map(function(c,i){return '<button onclick="event.stopPropagation();window._sgPhotosCat='+i+';window._sgPhotoCur=0;render()" style="flex-shrink:0;background:'+(i===_catIdx?'rgba(255,109,0,.25)':'rgba(255,255,255,.1)')+';backdrop-filter:blur(8px);border:1px solid '+(i===_catIdx?'rgba(255,109,0,.4)':'rgba(255,255,255,.12)')+';color:'+(i===_catIdx?'#FF6D00':'rgba(255,255,255,.7)')+';padding:6px 14px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;transition:.15s">'+c+'</button>';}).join('')}
       </div>
     </div>
-    <!-- Pinterest-style 2-column masonry grid -->
-    <div style="display:flex;gap:8px;padding:8px 12px 20px">
-      <div style="flex:1;display:flex;flex-direction:column;gap:8px">
-        ${col1.map(function(p,i){return _photoCard(p,i*2);}).join('')}
-      </div>
-      <div style="flex:1;display:flex;flex-direction:column;gap:8px">
-        ${col2.map(function(p,i){return _photoCard(p,i*2+1);}).join('')}
-      </div>
+    <!-- Full-screen snap scroll track -->
+    <div id="sg-photo-track" style="display:flex;flex-direction:column">
+      ${photos.map(function(p,i){return _photoSlide(p,i,photos.length);}).join('')}
     </div>
-    <!-- Full-screen overlay -->
-    ${_fsPhoto!=null?_photoOverlay(photos[_fsPhoto]):''}
   </div>`;
 }
-function _photoCard(p,idx){
-  return '<div onclick="window._sgPhotosFS='+idx+';render()" ondblclick="event.stopPropagation();this.querySelector(\'.sg-heart-pop\')&&(this.querySelector(\'.sg-heart-pop\').style.display=\'flex\');setTimeout(function(){document.querySelectorAll(\'.sg-heart-pop\').forEach(function(e){e.style.display=\'none\'})},800)" style="border-radius:16px;overflow:hidden;position:relative;cursor:pointer;background:rgba(255,255,255,.04)" ontouchstart="this.style.transform=\'scale(.97)\'" ontouchend="this.style.transform=\'\'">'
-    +'<img src="'+p.img+'" style="width:100%;height:'+p.h+'px;object-fit:cover;display:block" loading="lazy" onerror="this.style.height=\'200px\';this.style.background=\'linear-gradient(135deg,#1a1a2e,#16213e)\'">'
-    +'<div class="sg-heart-pop" style="display:none;position:absolute;inset:0;align-items:center;justify-content:center;z-index:5;pointer-events:none"><span style="font-size:48px;animation:sgHeartPop .6s ease-out forwards">❤️</span></div>'
-    +'<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.7));padding:12px 10px 10px">'
-    +'<p style="color:#fff;font-size:12px;font-weight:700;margin-bottom:2px;text-shadow:0 1px 4px rgba(0,0,0,.5)">'+p.title+'</p>'
-    +'<div style="display:flex;align-items:center;justify-content:space-between">'
-    +'<span style="color:rgba(255,255,255,.6);font-size:10px">'+p.user+'</span>'
-    +'<div style="display:flex;align-items:center;gap:3px"><span style="font-size:12px">❤️</span><span style="color:rgba(255,255,255,.6);font-size:10px;font-weight:600">'+p.likes+'</span></div>'
-    +'</div></div></div>';
-}
-function _photoOverlay(p){
-  if(!p)return '';
-  return '<div onclick="window._sgPhotosFS=null;render()" style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.98);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;animation:fadeInUp .2s ease">'
-    +'<div onclick="event.stopPropagation()" style="max-width:100%;max-height:80vh;position:relative">'
-    +'<img src="'+p.img.replace('w=400','w=800').replace('h=400','h=800').replace('h=500','h=800').replace('h=600','h=900').replace('h=450','h=700').replace('h=550','h=800')+'" style="max-width:100%;max-height:70vh;object-fit:contain;border-radius:20px;display:block">'
-    +'<div style="margin-top:16px;text-align:center">'
-    +'<p style="color:#fff;font-size:18px;font-weight:800;margin-bottom:4px">'+p.title+'</p>'
-    +'<p style="color:rgba(255,255,255,.5);font-size:13px;margin-bottom:12px">'+p.user+'</p>'
-    +'<div style="display:flex;gap:16px;justify-content:center">'
-    +'<div onclick="event.stopPropagation();this.innerHTML=\'❤️ Liked!\';this.style.color=\'#FF6D00\'" style="color:rgba(255,255,255,.6);font-size:14px;cursor:pointer;padding:8px 16px;background:rgba(255,255,255,.08);border-radius:20px">❤️ '+p.likes+'</div>'
-    +'<div onclick="event.stopPropagation();sgToast(\'💬 Comments coming soon\',\'info\',2000)" style="color:rgba(255,255,255,.6);font-size:14px;cursor:pointer;padding:8px 16px;background:rgba(255,255,255,.08);border-radius:20px">💬 Comment</div>'
-    +'<div onclick="event.stopPropagation();sgToast(\'📤 Shared!\',\'success\',2000)" style="color:rgba(255,255,255,.6);font-size:14px;cursor:pointer;padding:8px 16px;background:rgba(255,255,255,.08);border-radius:20px">📤 Share</div>'
-    +'</div></div></div>'
-    +'<div onclick="event.stopPropagation();window._sgPhotosFS=null;render()" style="position:fixed;top:16px;right:16px;z-index:10001;width:44px;height:44px;background:rgba(255,255,255,.15);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px;color:#fff;font-weight:300">✕</div>'
+// Full-screen photo slide (like a Reel but for photos)
+function _photoSlide(p,idx,total){
+  var likeId='sg-plike-'+idx;
+  return '<div class="sg-photo-slide" data-idx="'+idx+'">'
+    // Photo fills entire screen
+    +'<img src="'+p.img+'" alt="'+p.title+'" loading="'+(idx<3?'eager':'lazy')+'" onerror="this.style.background=\'linear-gradient(135deg,#1a1a2e,#16213e)\'">'
+    // Double-tap heart overlay
+    +'<div id="sg-heart-'+idx+'" style="display:none;position:absolute;top:50%;left:50%;z-index:30;pointer-events:none"><span style="font-size:80px;animation:sgHeartPop .8s ease-out forwards">\u2764\ufe0f</span></div>'
+    // Bottom gradient + info
+    +'<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent 0%,rgba(0,0,0,.4) 30%,rgba(0,0,0,.8) 100%);padding:60px 16px 20px;z-index:15">'
+    +'<div style="display:flex;align-items:flex-end;gap:12px">'
+    // Left: user info + title
+    +'<div style="flex:1;min-width:0">'
+    +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
+    +'<div style="width:36px;height:36px;background:linear-gradient(135deg,#FF6D00,#ff8533);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;border:2px solid rgba(255,255,255,.3)">'+p.avatar+'</div>'
+    +'<div><p style="color:#fff;font-size:13px;font-weight:700;margin:0">'+p.user+'</p>'
+    +'<p style="color:rgba(255,255,255,.5);font-size:10px;margin:0">ScanGym Member</p></div>'
+    +'</div>'
+    +'<p style="color:#fff;font-size:15px;font-weight:800;margin:0 0 4px;text-shadow:0 1px 6px rgba(0,0,0,.5)">'+p.title+'</p>'
+    +'<p style="color:rgba(255,255,255,.45);font-size:11px;margin:0">\ud83c\udfcb\ufe0f ScanGym Community</p>'
+    +'</div>'
+    // Right: action buttons (TikTok-style vertical stack)
+    +'<div style="display:flex;flex-direction:column;align-items:center;gap:16px;flex-shrink:0">'
+    // Like button
+    +'<div id="'+likeId+'" onclick="event.stopPropagation();_sgToggleLike('+idx+')" style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer">'
+    +'<div style="width:44px;height:44px;background:rgba(255,255,255,.12);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px">\u2764\ufe0f</div>'
+    +'<span style="color:#fff;font-size:11px;font-weight:600">'+p.likes+'</span>'
+    +'</div>'
+    // Comment button
+    +'<div onclick="event.stopPropagation();sgToast(\'💬 Comments coming soon\',\'info\',2000)" style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer">'
+    +'<div style="width:44px;height:44px;background:rgba(255,255,255,.12);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px">\ud83d\udcac</div>'
+    +'<span style="color:#fff;font-size:11px;font-weight:600">'+p.comments+'</span>'
+    +'</div>'
+    // Share button
+    +'<div onclick="event.stopPropagation();sgToast(\'📤 Link copied!\',\'success\',2000)" style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer">'
+    +'<div style="width:44px;height:44px;background:rgba(255,255,255,.12);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px">\ud83d\udce4</div>'
+    +'<span style="color:#fff;font-size:11px;font-weight:600">Share</span>'
+    +'</div>'
+    // Bookmark button
+    +'<div onclick="event.stopPropagation();this.querySelector(\'div\').style.background=\'rgba(255,109,0,.25)\';sgToast(\'🔖 Saved!\',\'success\',1500)" style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer">'
+    +'<div style="width:44px;height:44px;background:rgba(255,255,255,.12);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px">\ud83d\udd16</div>'
+    +'<span style="color:#fff;font-size:11px;font-weight:600">Save</span>'
+    +'</div>'
+    +'</div>'
+    +'</div>'
+    +'</div>'
     +'</div>';
 }
+// Toggle like on photo
+function _sgToggleLike(idx){
+  var p=window._sgPhotosAll[idx];if(!p)return;
+  var el=document.getElementById('sg-plike-'+idx);if(!el)return;
+  var liked=el.getAttribute('data-liked')==='1';
+  if(!liked){
+    el.setAttribute('data-liked','1');
+    el.querySelector('div').style.background='rgba(255,109,0,.25)';
+    el.querySelector('div').style.borderColor='rgba(255,109,0,.4)';
+    el.querySelector('span').textContent=(parseFloat(p.likes)+0.1).toFixed(1)+'K';
+    el.querySelector('div').style.animation='sgActionBounce .3s ease';
+    // Show heart pop
+    var heart=document.getElementById('sg-heart-'+idx);
+    if(heart){heart.style.display='block';setTimeout(function(){heart.style.display='none'},800);}
+  }else{
+    el.setAttribute('data-liked','0');
+    el.querySelector('div').style.background='rgba(255,255,255,.12)';
+    el.querySelector('div').style.borderColor='transparent';
+    el.querySelector('span').textContent=p.likes;
+    el.querySelector('div').style.animation='';
+  }
+}
+// Double-tap to like on photo slides
+(function(){
+  var _lastTap=0;
+  document.addEventListener('touchend',function(e){
+    var slide=e.target.closest('.sg-photo-slide');
+    if(!slide)return;
+    var now=Date.now();
+    if(now-_lastTap<300){
+      var idx=parseInt(slide.getAttribute('data-idx'));
+      var el=document.getElementById('sg-plike-'+idx);
+      if(el&&el.getAttribute('data-liked')!=='1')_sgToggleLike(idx);
+      else{
+        var heart=document.getElementById('sg-heart-'+idx);
+        if(heart){heart.style.display='block';setTimeout(function(){heart.style.display='none'},800);}
+      }
+    }
+    _lastTap=now;
+  });
+  // Update photo counter on scroll
+  var _scrollTimer=null;
+  document.addEventListener('scroll',function(e){
+    var track=document.getElementById('sg-photo-track');
+    if(!track||e.target!==track)return;
+    clearTimeout(_scrollTimer);
+    _scrollTimer=setTimeout(function(){
+      var slideH=track.firstElementChild?track.firstElementChild.offsetHeight:1;
+      var idx=Math.round(track.scrollTop/slideH);
+      window._sgPhotoCur=idx;
+      var counter=document.getElementById('sg-photo-counter');
+      if(counter&&window._sgPhotosAll)counter.textContent=(idx+1)+'/'+window._sgPhotosAll.length;
+    },100);
+  },true);
+})();
 
 // ═══ CHAT TAB — Steal ChatGPT/Claude: always-visible input, streaming, smart responses ═══
 // Simple markdown→HTML for chat: **bold**, *italic*, \n→<br>, •→bullet
