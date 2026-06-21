@@ -12,9 +12,11 @@
  * that receive messages in their format and pass plain text here.
  */
 
-const SCANGYM_API = (process.env.SCANGYM_API_URL || process.env.RAILWAY_PUBLIC_DOMAIN 
-  ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` 
-  : 'http://localhost:5000').replace(/\/+$/, '');
+const SCANGYM_API = (
+  process.env.SCANGYM_API_URL ||
+  (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : null) ||
+  'http://localhost:5000'
+).replace(/\/+$/, '');
 
 // ─── Intent Detection (keyword-based, no AI dependency) ─────
 // Simple but effective — works offline, zero latency, zero cost.
@@ -41,14 +43,17 @@ function detectIntent(text) {
   // Status / my bookings
   if (/\b(status|my booking|my session|booking code)\b/.test(lower)) return INTENTS.STATUS;
   
-  // Search / find
-  if (/\b(find|search|show|list|near|nearby|gym|gyms|where)\b/.test(lower)) return INTENTS.SEARCH;
+  // Help — greetings, general questions, non-gym messages
+  if (/\b(help|start|hello|hi|hey|menu|commands|what can you|how do|how does|about|who are you|price|pricing|cost)\b/.test(lower)) return INTENTS.HELP;
   
-  // Help
-  if (/\b(help|start|hello|hi|hey|menu|commands)\b/.test(lower)) return INTENTS.HELP;
+  // Search / find — only when the message clearly wants gym results
+  if (/\b(find|search|show|list|near|nearby|gym|gyms|where|city|town)\b/.test(lower)) return INTENTS.SEARCH;
   
-  // Default: try search (most common intent)
-  return INTENTS.SEARCH;
+  // If it looks like a location name (2+ chars, no special chars, no question marks), try search
+  if (/^[a-z\s,'-]{2,40}$/i.test(lower) && !lower.includes('?')) return INTENTS.SEARCH;
+  
+  // Default: show help instead of garbage search results
+  return INTENTS.UNKNOWN;
 }
 
 // ─── Entity Extraction ──────────────────────────────────────
@@ -174,7 +179,7 @@ function getSession(userId) {
     s.lastActive = Date.now();
     return s;
   }
-  const newSession = { lastActive: Date.now(), lastResults: [], pendingBooking: null };
+  const newSession = { lastActive: Date.now(), lastResults: [], pendingBooking: null, lastMessage: '', lastResponse: '' };
   sessions.set(userId, newSession);
   // Cleanup old sessions
   if (sessions.size > 10000) {
@@ -204,26 +209,49 @@ async function handleMessage(userId, text, meta = {}) {
   const entities = extractEntities(text);
   const session = getSession(userId);
   
+  // Dedup: if user sends the exact same message again, don't re-process
+  const normalised = text.toLowerCase().trim();
+  if (session.lastMessage === normalised && session.lastResponse) {
+    return { text: session.lastResponse };
+  }
+  
   try {
+    let result;
     switch (intent) {
       case INTENTS.HELP:
-        return { text: getHelpText() };
+        result = { text: getHelpText() };
+        break;
         
       case INTENTS.SEARCH:
-        return await handleSearch(session, text, entities);
+        result = await handleSearch(session, text, entities);
+        break;
         
       case INTENTS.BOOK:
-        return await handleBook(session, text, entities, meta);
+        result = await handleBook(session, text, entities, meta);
+        break;
         
       case INTENTS.CANCEL:
-        return await handleCancel(entities);
+        result = await handleCancel(entities);
+        break;
         
       case INTENTS.STATUS:
-        return { text: "📋 To check your booking, visit scangym.com or tell me your booking code." };
+        result = { text: "📋 To check your booking, visit scangym.com or tell me your booking code." };
+        break;
         
       default:
-        return await handleSearch(session, text, entities);
+        result = { text: "🤔 I'm not sure what you mean. Here's what I can help with:\n\n" +
+          "🔍 *Search:* \"Gyms in London\"\n" +
+          "📅 *Book:* \"Book a gym in Manchester for tomorrow\"\n" +
+          "❌ *Cancel:* \"Cancel booking 123\"\n\n" +
+          "💡 Just type a city name to find gyms!" };
+        break;
     }
+    
+    // Store for dedup
+    session.lastMessage = normalised;
+    session.lastResponse = result.text;
+    
+    return result;
   } catch (err) {
     console.error('[MessageHandler] Error:', err);
     return { text: "😕 Something went wrong. Please try again or visit scangym.com directly." };

@@ -452,7 +452,7 @@ checkAuth();
 
 
 // ─── State ───
-let state={user:null,gyms:[],currentGym:null,searchLat:null,searchLng:null,route:'/',bookings:[],wallet:{balance:0},authPhone:'',authStep:'phone',lastBooking:null,lastQR:null,userExplicitSearch:false,activeTab:'reels'};
+let state={user:null,gyms:[],currentGym:null,searchLat:null,searchLng:null,route:'/',bookings:[],wallet:{balance:0},authPhone:'',authStep:'phone',lastBooking:null,lastQR:null,userExplicitSearch:false,activeTab:'reels',_searchLoading:true};
 try{var _sb=localStorage.getItem('sg_last_booking');var _sq=localStorage.getItem('sg_last_qr');if(_sb){state.lastBooking=JSON.parse(_sb);}if(_sq){state.lastQR=JSON.parse(_sq);}}catch(e){}
 
 // ─── API Client ───
@@ -1275,6 +1275,7 @@ async function searchGyms(query, isExplicit, _triggerLayer){sgPerf.start('search
     // This prevents GPS/IP from overriding their intent
     if(isExplicit) state.userExplicitSearch=true;
     state.searchQuery=query;
+    state._searchLoading=true;
     // Add timeout to prevent infinite loading — abort after 8 seconds
     const controller=new AbortController();
     const timeout=setTimeout(()=>controller.abort(),8000);
@@ -1292,6 +1293,7 @@ async function searchGyms(query, isExplicit, _triggerLayer){sgPerf.start('search
     var _cachedResult=_sgGetSearchCache(searchUrl);
     if(_cachedResult){clearTimeout(timeout);
       state.gyms=_cachedResult.gyms||[];state.nextPageToken=_cachedResult.nextPageToken||null;
+      state._searchLoading=false;
       render();_photoPreloader.preloadGyms(state.gyms,0);
       if(window.sgSocialProofToast)_scheduleIdle(function(){window.sgSocialProofToast();});
       return;
@@ -1303,10 +1305,12 @@ async function searchGyms(query, isExplicit, _triggerLayer){sgPerf.start('search
     // ━━━ discard these stale results. GPS data is always more accurate. ━━━
     if(_triggerLayer && window._locationLayer > _triggerLayer){
       console.log('[Search] Discarding stale L'+_triggerLayer+' results for "'+query+'" — L'+window._locationLayer+' already loaded');
+      state._searchLoading=false;
       return;
     }
     state.gyms=data.gyms||[];
     state.nextPageToken=data.nextPageToken||null;
+    state._searchLoading=false;
     _gymCache.setSearch(query,state.gyms);
     render();
     _photoPreloader.preloadGyms(state.gyms,0);
@@ -1327,6 +1331,7 @@ async function searchGyms(query, isExplicit, _triggerLayer){sgPerf.start('search
     // Show error state instead of infinite loading
     state.gyms=[];
     state.searchQuery=query;
+    state._searchLoading=false;
     render();
     // Show helpful message to user
     setTimeout(()=>{
@@ -1345,7 +1350,7 @@ async function searchGyms(query, isExplicit, _triggerLayer){sgPerf.start('search
 
 function SearchPage(){
   const gyms=state.gyms||[];
-  const isLoading=gyms.length===0;
+  const isLoading=state._searchLoading===true&&gyms.length===0;
   // Blocker 6 Fix: Strip "gyms"/"gym" from query to avoid "Gyms London gyms" duplication
   const rawLabel=state.searchQuery||'Near You';
   const searchLabel=rawLabel.replace(/\bgyms?\s*(in|near|around)?\b/gi,'').trim()||rawLabel;
