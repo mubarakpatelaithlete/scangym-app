@@ -395,16 +395,39 @@ router.get('/history/:conversationId', optionalAuth, async (req, res) => {
 });
 
 // POST /api/chat/quick — Quick chat without gym context (general fitness AI)
+// Accepts optional fitness profile for personalized recommendations
 router.post('/quick', async (req, res) => {
   try {
-    const { message } = req.body;
+    const { message, userProfile } = req.body;
     if (!message) return res.status(400).json({ error: 'message is required' });
+
+    // Build personalized context from user fitness profile
+    let profileContext = '';
+    if (userProfile) {
+      const fieldMap = {
+        name:'Name', height_cm:'Height (cm)', weight_kg:'Weight (kg)', body_fat_pct:'Body Fat %',
+        muscle_mass_kg:'Muscle Mass (kg)', fitness_goal:'Goal', fitness_level:'Level',
+        age:'Age', gender:'Gender', city:'City', country:'Country', body_type:'Body Type',
+        weakest_muscle:'Weakest Muscle', supplements:'Supplements', diet:'Diet Preference',
+        sleep_hours:'Sleep (hrs/night)', water_litres:'Water (L/day)',
+        workout_duration:'Workout Duration (mins)', weekly_sessions:'Sessions/Week',
+        diseases:'Diseases/Injuries', metabolism:'Metabolism'
+      };
+      const parts = [];
+      for (const [key, label] of Object.entries(fieldMap)) {
+        if (userProfile[key]) parts.push(`${label}: ${userProfile[key]}`);
+      }
+      if (parts.length > 0) {
+        profileContext = `\n\nCUSTOMER FITNESS PROFILE:\n${parts.join('\n')}\n\nYou know this customer personally. Use their FULL profile to give hyper-personalized answers:\n- Calculate BMI, TDEE, calorie/macro targets from their stats\n- Tailor workout plans to their goal, body type, weakest muscles, injuries\n- Recommend diet/nutrition based on their diet preference, supplements, goal\n- Factor in sleep, water, metabolism when advising recovery\n- Suggest gyms/trainers matching their level and location\n- Address them by name. Be their personal coach who knows everything about them.`;
+      }
+    }
 
     const systemPrompt = `You are ScanGym AI — a friendly, energetic fitness assistant built into ScanGym, the world's first universal gym pass app.
 Help users with: gym questions, workout tips, nutrition advice, fitness motivation, booking help.
-Keep answers concise (under 100 words), warm, and motivating.
+Give personalized recommendations based on the customer's fitness profile when available.
+Keep answers concise (under 150 words), warm, and motivating.
 Use emojis sparingly: 💪 🏋️ 🔥 ⚡
-Brand: ScanGym only.`;
+Brand: ScanGym only.${profileContext}`;
 
     const messages = [
       { role: 'system', content: systemPrompt },
