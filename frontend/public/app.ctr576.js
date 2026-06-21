@@ -11504,80 +11504,116 @@ window._closeSearchOverlay=function(){
 // ─── Router ───
 // ─── Bottom Tab Bar (Polished — IG/TikTok/YT style) ───
 // ═══ MUSIC TAB — Fullscreen vertical scroll player ═══
+// ── Lyrics database (timed lyrics for immersive overlay) ──
+var _sgLyricsDB={
+  'Unstoppable':[[0,'♪ ♪ ♪'],[8,'I put my armor on'],[14,'Show you how strong I am'],[20,'I put my armor on'],[26,"I'll show you that I am"],[32,'I\'m unstoppable'],[38,'I\'m a Porsche with no brakes'],[44,'I\'m invincible'],[50,"Yeah I win every single game"],[58,"I'm so powerful"],[64,"I don't need batteries to play"],[70,"I'm so confident"],[76,"Yeah it's all over my face"],[84,'I\'m unstoppable today'],[92,'Unstoppable today'],[100,'Unstoppable today'],[110,'I\'m unstoppable today'],[120,'♪ ♪ ♪']],
+  'Till I Collapse':[[0,'♪ ♪ ♪'],[6,"'Cause sometimes you just feel tired"],[12,'Feel weak'],[16,'When you feel weak'],[20,'You feel like you wanna just give up'],[28,"But you gotta search within you"],[34,"Gotta find that inner strength"],[40,"And just pull that shit out of you"],[48,"'Til I collapse I'm spillin' these raps"],[54,"Long as you feel 'em"],[60,"'Til the day that I drop"],[66,"You'll never say that I'm not killin' 'em"],[74,"'Cause when I am not"],[78,"Then I'mma stop pennin' 'em"],[84,"And I am not hip-hop"],[90,"And I'm just not Eminem"],[98,'♪ ♪ ♪']],
+  'Blinding Lights':[[0,'♪ ♪ ♪'],[8,"I've been tryna call"],[14,"I've been on my own"],[20,'For long enough'],[26,"Maybe you can show me how to love"],[34,"I'm going through withdrawals"],[40,"You don't even have to do too much"],[48,"I said ooh, I'm blinding"],[54,"Walking down, I can't look"],[60,'No I can\'t stop staring'],[66,"It's so bright, so right"],[74,"I can't sleep until I feel your touch"],[82,'♪ ♪ ♪']],
+  'Eye of the Tiger':[[0,'♪ ♪ ♪'],[10,"Risin' up, back on the street"],[18,"Did my time, took my chances"],[26,"Went the distance now I'm back on my feet"],[34,"Just a man and his will to survive"],[42,"So many times, it happens too fast"],[50,"You trade your passion for glory"],[58,"Don't lose your grip on the dreams of the past"],[66,"You must fight just to keep them alive"],[76,"It's the eye of the tiger"],[82,"It's the thrill of the fight"],[88,"Risin' up to the challenge of our rival"],[96,'♪ ♪ ♪']],
+  'Enter Sandman':[[0,'♪ ♪ ♪'],[16,"Say your prayers little one"],[22,"Don't forget my son"],[28,"To include everyone"],[34,"I tuck you in, warm within"],[40,"Keep you free from sin"],[46,"'Til the Sandman he comes"],[54,"Sleep with one eye open"],[60,"Gripping your pillow tight"],[68,"Exit light"],[72,"Enter night"],[78,"Take my hand"],[84,"We're off to never-never land"],[92,'♪ ♪ ♪']]
+};
+
+// ── Render lyrics overlay ──
+function _sgRenderLyrics(track,elapsed,pl){
+  var lines=_sgLyricsDB[track.n];
+  // Generate generic lyrics if not in DB
+  if(!lines){
+    lines=[[0,'♪ ♪ ♪'],[8,'Feel the rhythm in your soul'],[16,'Let the music take control'],[24,'Push it harder, feel alive'],[32,'This is how we thrive'],[40,'♪ ♪ ♪'],[48,'Every beat drops like fire'],[56,'Taking us higher and higher'],[64,'No stopping now, no retreat'],[72,'Moving to the beat'],[80,'♪ ♪ ♪'],[88,'One more rep, one more round'],[96,'Feel the bass, feel the sound'],[104,'We\'re unstoppable tonight'],[112,'Burning so bright'],[120,'♪ ♪ ♪']];
+  }
+  // Find active line
+  var activeIdx=0;
+  for(var i=0;i<lines.length;i++){
+    if(elapsed>=lines[i][0])activeIdx=i;
+  }
+  var lyricsHtml=lines.map(function(l,i){
+    return '<div class="sg-lyrics-line'+(i===activeIdx?' active':'')+'" style="animation:sgLyricsScroll .4s ease '+(i*0.05)+'s both">'+l[1]+'</div>';
+  }).join('');
+
+  return '<div class="sg-lyrics-overlay" onclick="window._sgLyricsOpen=false;render()">'+
+    '<div style="position:absolute;top:16px;right:16px;z-index:25;cursor:pointer;font-size:24px;color:rgba(255,255,255,.5);width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.08);border-radius:50%">✕</div>'+
+    '<div style="margin-bottom:20px;text-align:center">'+
+      '<div style="font-size:12px;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:2px;font-weight:700;margin-bottom:4px">'+pl.title+'</div>'+
+      '<div style="font-size:18px;color:#fff;font-weight:800">'+track.n+'</div>'+
+      '<div style="font-size:13px;color:rgba(255,255,255,.5);font-weight:500">'+track.a+'</div>'+
+    '</div>'+
+    '<div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:4px;max-width:320px">'+lyricsHtml+'</div>'+
+  '</div>';
+}
+
 function MusicTabPage(){
   // ── Playlist data (8 curated workout playlists) ──
   var playlists=[
     {id:1,title:'Beast Mode',sub:'High intensity',img:'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=600&h=600&fit=crop',color:'#c62828',
      tracks:[
-       {n:'Unstoppable',a:'The Score',d:'3:24',dur:204,img:'https://images.unsplash.com/photo-1470468969717-61d5d54fd036?w=200&h=200&fit=crop',audio:'/audio/beast-mode-1.mp3'},
-       {n:'Till I Collapse',a:'Eminem ft. Nate Dogg',d:'4:57',dur:297,img:'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200&h=200&fit=crop',audio:'/audio/beast-mode-2.mp3'},
-       {n:'Stronger',a:'Kanye West',d:'5:11',dur:311,img:'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=200&h=200&fit=crop'},
-       {n:'Remember the Name',a:'Fort Minor',d:'3:50',dur:230,img:'https://images.unsplash.com/photo-1504898770365-14faca6a7320?w=200&h=200&fit=crop'},
-       {n:'Thunderstruck',a:'AC/DC',d:'4:52',dur:292,img:'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=200&h=200&fit=crop'},
-       {n:'Lose Yourself',a:'Eminem',d:'5:26',dur:326,img:'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=200&h=200&fit=crop'}
+       {n:'Unstoppable',a:'The Score',d:'3:24',dur:204,img:'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=600&h=600&fit=crop',audio:'/audio/beast-mode-1.mp3'},
+       {n:'Till I Collapse',a:'Eminem ft. Nate Dogg',d:'4:57',dur:297,img:'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=600&h=600&fit=crop',audio:'/audio/beast-mode-2.mp3'},
+       {n:'Stronger',a:'Kanye West',d:'5:11',dur:311,img:'https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=600&h=600&fit=crop'},
+       {n:'Remember the Name',a:'Fort Minor',d:'3:50',dur:230,img:'https://images.unsplash.com/photo-1605296867304-46d5465a13f1?w=600&h=600&fit=crop'},
+       {n:'Thunderstruck',a:'AC/DC',d:'4:52',dur:292,img:'https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=600&h=600&fit=crop'},
+       {n:'Lose Yourself',a:'Eminem',d:'5:26',dur:326,img:'https://images.unsplash.com/photo-1550345332-09e3ac987658?w=600&h=600&fit=crop'}
      ]},
     {id:2,title:'Cardio Rush',sub:'Running & HIIT',img:'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=600&h=600&fit=crop',color:'#e65100',
      tracks:[
-       {n:'Blinding Lights',a:'The Weeknd',d:'3:20',dur:200,img:'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200&h=200&fit=crop'},
-       {n:'Physical',a:'Dua Lipa',d:'3:13',dur:193,img:'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=200&h=200&fit=crop'},
-       {n:'Don\'t Start Now',a:'Dua Lipa',d:'3:03',dur:183,img:'https://images.unsplash.com/photo-1504898770365-14faca6a7320?w=200&h=200&fit=crop'},
-       {n:'Levitating',a:'Dua Lipa',d:'3:23',dur:203,img:'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=200&h=200&fit=crop'},
-       {n:'Savage Love',a:'Jawsh 685',d:'2:51',dur:171,img:'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=200&h=200&fit=crop'},
-       {n:'Dynamite',a:'BTS',d:'3:19',dur:199,img:'https://images.unsplash.com/photo-1470468969717-61d5d54fd036?w=200&h=200&fit=crop'}
+       {n:'Blinding Lights',a:'The Weeknd',d:'3:20',dur:200,img:'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=600&h=600&fit=crop'},
+       {n:'Physical',a:'Dua Lipa',d:'3:13',dur:193,img:'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=600&h=600&fit=crop'},
+       {n:'Don\'t Start Now',a:'Dua Lipa',d:'3:03',dur:183,img:'https://images.unsplash.com/photo-1486218119243-13883505764c?w=600&h=600&fit=crop'},
+       {n:'Levitating',a:'Dua Lipa',d:'3:23',dur:203,img:'https://images.unsplash.com/photo-1538805060514-97d9cc17730c?w=600&h=600&fit=crop'},
+       {n:'Savage Love',a:'Jawsh 685',d:'2:51',dur:171,img:'https://images.unsplash.com/photo-1571008887538-b36bb32f4571?w=600&h=600&fit=crop'},
+       {n:'Dynamite',a:'BTS',d:'3:19',dur:199,img:'https://images.unsplash.com/photo-1461896836934-bd45ba8bca5e?w=600&h=600&fit=crop'}
      ]},
     {id:3,title:'Power Lift',sub:'Heavy sets',img:'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=600&h=600&fit=crop',color:'#4a148c',
      tracks:[
-       {n:'Enter Sandman',a:'Metallica',d:'5:31',dur:331,img:'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200&h=200&fit=crop'},
-       {n:'Back in Black',a:'AC/DC',d:'4:15',dur:255,img:'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=200&h=200&fit=crop'},
-       {n:'Killing in the Name',a:'Rage Against the Machine',d:'5:13',dur:313,img:'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=200&h=200&fit=crop'},
-       {n:'Bodies',a:'Drowning Pool',d:'3:22',dur:202,img:'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=200&h=200&fit=crop'},
-       {n:'Indestructible',a:'Disturbed',d:'4:36',dur:276,img:'https://images.unsplash.com/photo-1470468969717-61d5d54fd036?w=200&h=200&fit=crop'},
-       {n:'Last Resort',a:'Papa Roach',d:'3:19',dur:199,img:'https://images.unsplash.com/photo-1504898770365-14faca6a7320?w=200&h=200&fit=crop'}
+       {n:'Enter Sandman',a:'Metallica',d:'5:31',dur:331,img:'https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?w=600&h=600&fit=crop'},
+       {n:'Back in Black',a:'AC/DC',d:'4:15',dur:255,img:'https://images.unsplash.com/photo-1532029837206-abbe2b7620e3?w=600&h=600&fit=crop'},
+       {n:'Killing in the Name',a:'Rage Against the Machine',d:'5:13',dur:313,img:'https://images.unsplash.com/photo-1567598508481-65985588e295?w=600&h=600&fit=crop'},
+       {n:'Bodies',a:'Drowning Pool',d:'3:22',dur:202,img:'https://images.unsplash.com/photo-1579758629938-03607ccdbaba?w=600&h=600&fit=crop'},
+       {n:'Indestructible',a:'Disturbed',d:'4:36',dur:276,img:'https://images.unsplash.com/photo-1533681904393-9ab6ebed60d5?w=600&h=600&fit=crop'},
+       {n:'Last Resort',a:'Papa Roach',d:'3:19',dur:199,img:'https://images.unsplash.com/photo-1546483875-ad9014c88eba?w=600&h=600&fit=crop'}
      ]},
     {id:4,title:'Yoga Flow',sub:'Stretch & calm',img:'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=600&h=600&fit=crop',color:'#1b5e20',
      tracks:[
-       {n:'Weightless',a:'Marconi Union',d:'8:09',dur:489,img:'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=200&h=200&fit=crop'},
-       {n:'Breathe Me',a:'Sia',d:'4:34',dur:274,img:'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200&h=200&fit=crop'},
-       {n:'River Flows in You',a:'Yiruma',d:'3:12',dur:192,img:'https://images.unsplash.com/photo-1504898770365-14faca6a7320?w=200&h=200&fit=crop'},
-       {n:'Sunset Lover',a:'Petit Biscuit',d:'3:30',dur:210,img:'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=200&h=200&fit=crop'},
-       {n:'Orinoco Flow',a:'Enya',d:'4:25',dur:265,img:'https://images.unsplash.com/photo-1470468969717-61d5d54fd036?w=200&h=200&fit=crop'},
-       {n:'Clair de Lune',a:'Debussy',d:'5:00',dur:300,img:'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=200&h=200&fit=crop'}
+       {n:'Weightless',a:'Marconi Union',d:'8:09',dur:489,img:'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=600&h=600&fit=crop'},
+       {n:'Breathe Me',a:'Sia',d:'4:34',dur:274,img:'https://images.unsplash.com/photo-1545205597-3d9d02c29597?w=600&h=600&fit=crop'},
+       {n:'River Flows in You',a:'Yiruma',d:'3:12',dur:192,img:'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=600&h=600&fit=crop'},
+       {n:'Sunset Lover',a:'Petit Biscuit',d:'3:30',dur:210,img:'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&h=600&fit=crop'},
+       {n:'Orinoco Flow',a:'Enya',d:'4:25',dur:265,img:'https://images.unsplash.com/photo-1510797215324-95aa89f43c33?w=600&h=600&fit=crop'},
+       {n:'Clair de Lune',a:'Debussy',d:'5:00',dur:300,img:'https://images.unsplash.com/photo-1515377905703-c4788e51af15?w=600&h=600&fit=crop'}
      ]},
     {id:5,title:'Boxing Beat',sub:'Combat rhythm',img:'https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?w=600&h=600&fit=crop',color:'#b71c1c',
      tracks:[
-       {n:'Eye of the Tiger',a:'Survivor',d:'4:05',dur:245,img:'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=200&h=200&fit=crop'},
-       {n:'Gonna Fly Now',a:'Bill Conti',d:'2:48',dur:168,img:'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200&h=200&fit=crop'},
-       {n:'X Gon\' Give It to Ya',a:'DMX',d:'3:42',dur:222,img:'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=200&h=200&fit=crop'},
-       {n:'Can\'t Be Touched',a:'Roy Jones Jr',d:'4:01',dur:241,img:'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=200&h=200&fit=crop'},
-       {n:'Warrior',a:'Disturbed',d:'3:49',dur:229,img:'https://images.unsplash.com/photo-1504898770365-14faca6a7320?w=200&h=200&fit=crop'},
-       {n:'Smells Like Teen Spirit',a:'Nirvana',d:'5:01',dur:301,img:'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=200&h=200&fit=crop'}
+       {n:'Eye of the Tiger',a:'Survivor',d:'4:05',dur:245,img:'https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?w=600&h=600&fit=crop'},
+       {n:'Gonna Fly Now',a:'Bill Conti',d:'2:48',dur:168,img:'https://images.unsplash.com/photo-1517438322307-e67111335449?w=600&h=600&fit=crop'},
+       {n:'X Gon\' Give It to Ya',a:'DMX',d:'3:42',dur:222,img:'https://images.unsplash.com/photo-1495555961986-6d4c1ecb7be3?w=600&h=600&fit=crop'},
+       {n:'Can\'t Be Touched',a:'Roy Jones Jr',d:'4:01',dur:241,img:'https://images.unsplash.com/photo-1544717297-fa95b6ee9643?w=600&h=600&fit=crop'},
+       {n:'Warrior',a:'Disturbed',d:'3:49',dur:229,img:'https://images.unsplash.com/photo-1591117207239-788bf8486b09?w=600&h=600&fit=crop'},
+       {n:'Smells Like Teen Spirit',a:'Nirvana',d:'5:01',dur:301,img:'https://images.unsplash.com/photo-1552072092-7f9b8d63efcb?w=600&h=600&fit=crop'}
      ]},
     {id:6,title:'Lo-Fi Focus',sub:'Zen concentration',img:'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=600&h=600&fit=crop',color:'#0d47a1',
      tracks:[
-       {n:'Snowman',a:'WYS',d:'2:45',dur:165,img:'https://images.unsplash.com/photo-1470468969717-61d5d54fd036?w=200&h=200&fit=crop'},
-       {n:'Coffee',a:'beabadoobee',d:'3:26',dur:206,img:'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200&h=200&fit=crop'},
-       {n:'i love u',a:'Billie Eilish (lo-fi)',d:'2:53',dur:173,img:'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=200&h=200&fit=crop'},
-       {n:'Aesthetic',a:'Xilo',d:'3:10',dur:190,img:'https://images.unsplash.com/photo-1504898770365-14faca6a7320?w=200&h=200&fit=crop'},
-       {n:'Chill Vibes',a:'Saib',d:'2:35',dur:155,img:'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=200&h=200&fit=crop'},
-       {n:'Daylight',a:'Joji',d:'2:43',dur:163,img:'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=200&h=200&fit=crop'}
+       {n:'Snowman',a:'WYS',d:'2:45',dur:165,img:'https://images.unsplash.com/photo-1483412033650-1015ddeb83d1?w=600&h=600&fit=crop'},
+       {n:'Coffee',a:'beabadoobee',d:'3:26',dur:206,img:'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=600&h=600&fit=crop'},
+       {n:'i love u',a:'Billie Eilish (lo-fi)',d:'2:53',dur:173,img:'https://images.unsplash.com/photo-1487180144351-b8472da7d491?w=600&h=600&fit=crop'},
+       {n:'Aesthetic',a:'Xilo',d:'3:10',dur:190,img:'https://images.unsplash.com/photo-1494232410401-ad00d5433cfa?w=600&h=600&fit=crop'},
+       {n:'Chill Vibes',a:'Saib',d:'2:35',dur:155,img:'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&h=600&fit=crop'},
+       {n:'Daylight',a:'Joji',d:'2:43',dur:163,img:'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=600&h=600&fit=crop'}
      ]},
     {id:7,title:'Heavy Metal',sub:'Aggressive lifts',img:'https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=600&h=600&fit=crop',color:'#212121',
      tracks:[
-       {n:'Master of Puppets',a:'Metallica',d:'8:36',dur:516,img:'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200&h=200&fit=crop'},
-       {n:'Chop Suey!',a:'System of a Down',d:'3:30',dur:210,img:'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=200&h=200&fit=crop'},
-       {n:'Walk',a:'Pantera',d:'5:15',dur:315,img:'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=200&h=200&fit=crop'},
-       {n:'Raining Blood',a:'Slayer',d:'4:17',dur:257,img:'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=200&h=200&fit=crop'},
-       {n:'Du Hast',a:'Rammstein',d:'3:54',dur:234,img:'https://images.unsplash.com/photo-1470468969717-61d5d54fd036?w=200&h=200&fit=crop'},
-       {n:'Psychosocial',a:'Slipknot',d:'4:43',dur:283,img:'https://images.unsplash.com/photo-1504898770365-14faca6a7320?w=200&h=200&fit=crop'}
+       {n:'Master of Puppets',a:'Metallica',d:'8:36',dur:516,img:'https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?w=600&h=600&fit=crop'},
+       {n:'Chop Suey!',a:'System of a Down',d:'3:30',dur:210,img:'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&h=600&fit=crop'},
+       {n:'Walk',a:'Pantera',d:'5:15',dur:315,img:'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&h=600&fit=crop'},
+       {n:'Raining Blood',a:'Slayer',d:'4:17',dur:257,img:'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=600&h=600&fit=crop'},
+       {n:'Du Hast',a:'Rammstein',d:'3:54',dur:234,img:'https://images.unsplash.com/photo-1470468969717-61d5d54fd036?w=600&h=600&fit=crop'},
+       {n:'Psychosocial',a:'Slipknot',d:'4:43',dur:283,img:'https://images.unsplash.com/photo-1504898770365-14faca6a7320?w=600&h=600&fit=crop'}
      ]},
     {id:8,title:'Cool Down',sub:'Recovery & stretch',img:'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=600&h=600&fit=crop',color:'#006064',
      tracks:[
-       {n:'Someone Like You',a:'Adele',d:'4:45',dur:285,img:'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200&h=200&fit=crop'},
-       {n:'Fix You',a:'Coldplay',d:'4:55',dur:295,img:'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=200&h=200&fit=crop'},
-       {n:'Let Her Go',a:'Passenger',d:'4:12',dur:252,img:'https://images.unsplash.com/photo-1504898770365-14faca6a7320?w=200&h=200&fit=crop'},
-       {n:'Skinny Love',a:'Bon Iver',d:'3:58',dur:238,img:'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=200&h=200&fit=crop'},
-       {n:'Chasing Cars',a:'Snow Patrol',d:'4:27',dur:267,img:'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=200&h=200&fit=crop'},
-       {n:'Falling Slowly',a:'Glen Hansard',d:'4:02',dur:242,img:'https://images.unsplash.com/photo-1470468969717-61d5d54fd036?w=200&h=200&fit=crop'}
+       {n:'Someone Like You',a:'Adele',d:'4:45',dur:285,img:'https://images.unsplash.com/photo-1515377905703-c4788e51af15?w=600&h=600&fit=crop'},
+       {n:'Fix You',a:'Coldplay',d:'4:55',dur:295,img:'https://images.unsplash.com/photo-1504609773096-104ff2c73ba4?w=600&h=600&fit=crop'},
+       {n:'Let Her Go',a:'Passenger',d:'4:12',dur:252,img:'https://images.unsplash.com/photo-1499346030926-9a72daac6c63?w=600&h=600&fit=crop'},
+       {n:'Skinny Love',a:'Bon Iver',d:'3:58',dur:238,img:'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=600&h=600&fit=crop'},
+       {n:'Chasing Cars',a:'Snow Patrol',d:'4:27',dur:267,img:'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=600&h=600&fit=crop'},
+       {n:'Falling Slowly',a:'Glen Hansard',d:'4:02',dur:242,img:'https://images.unsplash.com/photo-1490730141103-6cac27aaab94?w=600&h=600&fit=crop'}
      ]}
   ];
 
@@ -11623,12 +11659,38 @@ function MusicTabPage(){
   window._sgMusicPlaylists=playlists;
   var _hasAudio=!!t.audio;
 
-  // Load audio source if track changed
+  // Apply volume setting
+  if(typeof window._sgVolume==='number'){window._sgAudio.volume=window._sgVolume;}
+  else{window._sgVolume=1;}
+
+  // Load audio source if track changed (with crossfade)
   if(_hasAudio){
     if(window._sgAudio.getAttribute('data-track-key')!==(_pi+'-'+_ti)){
+      // Crossfade: fade out current, load new, fade in
+      var _oldVol=window._sgVolume||1;
+      if(!window._sgAudio.paused&&window._sgAudio.src){
+        // Quick fade out over 300ms
+        var _fadeOut=window._sgAudio;
+        var _fadeStep=_oldVol/6;
+        var _fadeInt=setInterval(function(){
+          var v=_fadeOut.volume-_fadeStep;
+          if(v<=0){_fadeOut.volume=0;_fadeOut.pause();clearInterval(_fadeInt);}
+          else{_fadeOut.volume=v;}
+        },50);
+      }
       window._sgAudio.src=t.audio;
       window._sgAudio.setAttribute('data-track-key',_pi+'-'+_ti);
       window._sgAudioLoaded=true;
+      // Fade in new track
+      window._sgAudio.volume=0;
+      window._sgAudio.addEventListener('canplay',function _fi(){
+        var v=0;var _fiInt=setInterval(function(){
+          v+=_oldVol/6;
+          if(v>=_oldVol){window._sgAudio.volume=_oldVol;clearInterval(_fiInt);}
+          else{window._sgAudio.volume=v;}
+        },50);
+        window._sgAudio.removeEventListener('canplay',_fi);
+      });
     }
     if(_playing&&window._sgAudio.paused){try{window._sgAudio.play();}catch(e){}}
     if(!_playing&&!window._sgAudio.paused){window._sgAudio.pause();}
@@ -11676,14 +11738,14 @@ function MusicTabPage(){
     var likeKey=_pi+'_'+idx;
     var isLiked=_liked[likeKey];
 
-    return '<div class="sg-m-card" data-idx="'+idx+'" style="'+
+    return '<div class="sg-m-card" data-idx="'+idx+'" data-active="'+isActive+'" style="'+
       'width:100%;height:100%;flex:0 0 100%;scroll-snap-align:start;position:relative;overflow:hidden;'+
       (isActive?'':'content-visibility:auto;contain-intrinsic-size:auto 100vh;')+
     '">'+
       // Blurred background from track art
-      '<div style="position:absolute;inset:-40px;background:url(\''+tr.img+'\') center/cover;filter:blur(60px) saturate(1.4) brightness(.4);transform:scale(1.3);pointer-events:none;will-change:transform"></div>'+
-      // Dark gradient overlay
-      '<div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.2) 0%,rgba(0,0,0,.45) 40%,rgba(0,0,0,.7) 100%);pointer-events:none"></div>'+
+      '<div style="position:absolute;inset:-40px;background:url(\''+tr.img.replace('200','600')+'\') center/cover;filter:blur(50px) saturate(1.8) brightness(.55);transform:scale(1.3);pointer-events:none;will-change:transform;transition:background .6s ease"></div>'+
+      // Colored gradient overlay matching playlist vibe
+      '<div style="position:absolute;inset:0;background:linear-gradient(180deg,'+pl.color+'33 0%,rgba(0,0,0,.35) 40%,rgba(0,0,0,.65) 100%);pointer-events:none"></div>'+
       // Content (centered now-playing)
       '<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px 100px;z-index:2">'+
         // Album art — large, rounded
@@ -11743,9 +11805,19 @@ function MusicTabPage(){
       '@keyframes sgDiscSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}'+
       '@keyframes sgSwipeHint{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-12px)}}'+
       '@keyframes sgDotPulse{0%,100%{opacity:.4}50%{opacity:1}}'+
+      '@keyframes sgFadeIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}'+
+      '@keyframes sgLyricsScroll{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}'+
+      '@keyframes sgVolSlide{from{opacity:0;transform:scaleX(0)}to{opacity:1;transform:scaleX(1)}}'+
       '.sg-m-card{will-change:auto;contain:layout style paint}'+
+      '.sg-m-card[data-active="true"]{animation:sgFadeIn .4s ease-out}'+
       '#sg-m-carousel::-webkit-scrollbar{display:none}'+
       '#sg-m-carousel{scrollbar-width:none;-ms-overflow-style:none}'+
+      '.sg-vol-slider{-webkit-appearance:none;appearance:none;width:80px;height:3px;background:rgba(255,255,255,.2);border-radius:2px;outline:none;cursor:pointer}'+
+      '.sg-vol-slider::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;background:#FF6D00;border-radius:50%;cursor:pointer;box-shadow:0 0 6px rgba(255,109,0,.4)}'+
+      '.sg-vol-slider::-moz-range-thumb{width:12px;height:12px;background:#FF6D00;border-radius:50%;cursor:pointer;border:none}'+
+      '.sg-lyrics-overlay{position:absolute;inset:0;z-index:20;background:rgba(0,0,0,.85);backdrop-filter:blur(20px);display:flex;flex-direction:column;align-items:center;padding:80px 24px 140px;overflow-y:auto;-webkit-overflow-scrolling:touch}'+
+      '.sg-lyrics-line{color:rgba(255,255,255,.35);font-size:20px;font-weight:700;text-align:center;padding:12px 0;transition:all .3s ease;line-height:1.4}'+
+      '.sg-lyrics-line.active{color:#fff;font-size:24px;text-shadow:0 0 30px rgba(255,109,0,.4)}'+
     '</style>'+
     // ── Top bar: category pills (horizontal scroll) ──
     '<div style="position:absolute;top:0;left:0;right:0;z-index:10;padding:8px 0 0;background:linear-gradient(180deg,rgba(0,0,0,.7) 0%,transparent 100%)">'+
@@ -11796,14 +11868,26 @@ function MusicTabPage(){
         // Repeat
         '<div onclick="window._sgMusicRepeat=!window._sgMusicRepeat;render()" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;opacity:'+(_repeat?'1':'.4')+';'+(_repeat?'color:#FF6D00':'')+'">🔁</div>'+
       '</div>'+
-      // Now playing mini info
-      '<div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:6px">'+
-        '<div style="display:flex;gap:2px;align-items:flex-end;height:14px">'+
-          (_playing?'<div style="width:2px;background:#FF6D00;border-radius:1px;animation:sgEq .4s ease infinite"></div><div style="width:2px;background:#FF6D00;border-radius:1px;animation:sgEq .4s ease .15s infinite"></div><div style="width:2px;background:#FF6D00;border-radius:1px;animation:sgEq .4s ease .3s infinite"></div><div style="width:2px;background:#FF6D00;border-radius:1px;animation:sgEq .4s ease .1s infinite"></div>':'')+
+      // Volume + Lyrics row
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;padding:0 4px">'+
+        // Volume control
+        '<div style="display:flex;align-items:center;gap:6px">'+
+          '<div onclick="var a=window._sgAudio;if(a){a.muted=!a.muted;render()}" style="cursor:pointer;font-size:14px;width:20px;text-align:center;-webkit-tap-highlight-color:transparent">'+(window._sgAudio&&window._sgAudio.muted?'🔇':((window._sgVolume||1)>0.5?'🔊':'🔉'))+'</div>'+
+          '<input type="range" min="0" max="100" value="'+Math.round((window._sgVolume||1)*100)+'" class="sg-vol-slider" oninput="window._sgVolume=this.value/100;if(window._sgAudio){window._sgAudio.volume=this.value/100;window._sgAudio.muted=false}">'+
         '</div>'+
-        '<span style="color:rgba(255,255,255,.5);font-size:11px;font-weight:600">'+(t.audio?'🔊 ':'')+t.n+' · '+t.a+'</span>'+
+        // Now playing mini info
+        '<div style="display:flex;align-items:center;gap:6px;flex:1;justify-content:center;overflow:hidden">'+
+          '<div style="display:flex;gap:2px;align-items:flex-end;height:14px;flex-shrink:0">'+
+            (_playing?'<div style="width:2px;background:#FF6D00;border-radius:1px;animation:sgEq .4s ease infinite"></div><div style="width:2px;background:#FF6D00;border-radius:1px;animation:sgEq .4s ease .15s infinite"></div><div style="width:2px;background:#FF6D00;border-radius:1px;animation:sgEq .4s ease .3s infinite"></div><div style="width:2px;background:#FF6D00;border-radius:1px;animation:sgEq .4s ease .1s infinite"></div>':'')+
+          '</div>'+
+          '<span style="color:rgba(255,255,255,.5);font-size:10px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+t.n+' · '+t.a+'</span>'+
+        '</div>'+
+        // Lyrics toggle
+        '<div onclick="window._sgLyricsOpen=!window._sgLyricsOpen;render()" style="cursor:pointer;font-size:12px;padding:3px 10px;border-radius:12px;background:'+(window._sgLyricsOpen?'rgba(255,109,0,.25)':'rgba(255,255,255,.08)')+';color:'+(window._sgLyricsOpen?'#FF6D00':'rgba(255,255,255,.5)')+';font-weight:700;-webkit-tap-highlight-color:transparent;border:1px solid '+(window._sgLyricsOpen?'rgba(255,109,0,.3)':'transparent')+'">♪</div>'+
       '</div>'+
     '</div>'+
+    // ── Lyrics overlay (fullscreen when toggled) ──
+    (window._sgLyricsOpen?_sgRenderLyrics(t,_elapsed,pl):'') +
   '</div>';
 }
 
@@ -12032,9 +12116,6 @@ if(!window._sgChat){
     streamText:'',
     streamIdx:0,
     streamTimer:null,
-    onboarding:false,
-    onboardingHistory:[],
-    _onboardStarted:false,
   };
 }
 
@@ -12119,12 +12200,6 @@ async function _sgChatSend(msgText){
   render();
   _sgScrollBottom();
 
-  // If in onboarding mode, route to onboarding handler
-  if(chat.onboarding){
-    _sgOnboardingSend(msg);
-    return;
-  }
-
   // Build user fitness profile for personalized AI
   var userProfile=null;
   if(state.user){
@@ -12175,57 +12250,102 @@ function _sgFallback(msg){
   return 'Great question! 💪 I can help with:\n\n• 🏋️ Custom workout plans\n• 🥗 Nutrition & meal planning\n• 📊 Progress tracking\n• 🏃 Cardio programs\n• 🧘 Recovery & mobility\n• 🔍 Finding gyms near you\n\nWhat interests you most? 🚀';
 }
 
-// ── Conversational Fitness Onboarding ──
-// ChatGPT-style: AI asks questions one by one to build your profile
-function _sgOnboardingStart(){
-  var chat=window._sgChat;
-  chat.onboarding=true;
-  chat.onboardingHistory=[];
-  chat.msgs.push({role:'ai',text:'Hey! 👋 Before we get started, I\u2019d love to get to know you so I can give you *personalized* coaching.\n\nLet\u2019s do a quick fitness check-in — just answer naturally, like you\u2019re talking to a trainer.\n\n**What\u2019s your name, age, and gender?**',ts:Date.now()});
-  render();
-  _sgScrollBottom();
+// ── Fitness Profile Setup Modal ──
+function _sgFitnessSetup(){
+  var u=state.user||{};
+  var o=document.createElement('div');
+  o.id='sg-fitness-overlay';
+  o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(12px);z-index:99999;display:flex;align-items:flex-end;justify-content:center;animation:fadeInUp .25s ease-out';
+  o.innerHTML='<div style="width:100%;max-width:480px;max-height:88vh;background:#111118;border-radius:24px 24px 0 0;padding:24px 20px env(safe-area-inset-bottom,20px);overflow-y:auto">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">'
+    +'<h2 style="color:#fff;font-size:18px;font-weight:900;margin:0">📋 Fitness Profile</h2>'
+    +'<button onclick="document.getElementById(\'sg-fitness-overlay\').remove()" style="background:rgba(255,255,255,.1);border:none;color:#fff;width:32px;height:32px;border-radius:50%;font-size:16px;cursor:pointer">✕</button>'
+    +'</div>'
+    +'<p style="color:rgba(255,255,255,.4);font-size:12px;margin:0 0 20px">The more you share, the smarter your AI coach gets.</p>'
+    +_sgFField('Height (cm)','sg-fp-height','number',u.height_cm||'','175')
+    +_sgFField('Weight (kg)','sg-fp-weight','number',u.weight_kg||'','75')
+    +_sgFField('Body Fat %','sg-fp-bf','number',u.body_fat_pct||'','18')
+    +_sgFField('Muscle Mass (kg)','sg-fp-mm','number',u.muscle_mass_kg||'','32')
+    +_sgFField('Age','sg-fp-age','number',u.age||'','25')
+    +'<label style="display:block;margin-bottom:14px"><span style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Gender</span>'
+    +'<select id="sg-fp-gender" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#fff;padding:12px 14px;border-radius:12px;font-size:14px;outline:none">'
+    +'<option value=""'+(!(u.gender)?'selected':'')+' style="color:#666">Select</option>'
+    +'<option value="male"'+((u.gender==='male')?' selected':'')+'>Male</option>'
+    +'<option value="female"'+((u.gender==='female')?' selected':'')+'>Female</option>'
+    +'<option value="other"'+((u.gender==='other')?' selected':'')+'>Other</option></select></label>'
+    +_sgFField('City','sg-fp-city','text',u.city||'','London')
+    +_sgFField('Country','sg-fp-country','text',u.country||'','UK')
+    +'<label style="display:block;margin-bottom:14px"><span style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Body Type</span>'
+    +'<select id="sg-fp-bodytype" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#fff;padding:12px 14px;border-radius:12px;font-size:14px;outline:none">'
+    +'<option value="">Select</option>'
+    +'<option value="ectomorph"'+((u.body_type==='ectomorph')?' selected':'')+'>Ectomorph (lean/long)</option>'
+    +'<option value="mesomorph"'+((u.body_type==='mesomorph')?' selected':'')+'>Mesomorph (muscular)</option>'
+    +'<option value="endomorph"'+((u.body_type==='endomorph')?' selected':'')+'>Endomorph (stocky)</option></select></label>'
+    +'<label style="display:block;margin-bottom:14px"><span style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Fitness Goal</span>'
+    +'<select id="sg-fp-goal" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#fff;padding:12px 14px;border-radius:12px;font-size:14px;outline:none">'
+    +'<option value="">Select</option>'
+    +'<option value="lose fat"'+((u.fitness_goal==='lose fat')?' selected':'')+'>Lose Fat</option>'
+    +'<option value="build muscle"'+((u.fitness_goal==='build muscle')?' selected':'')+'>Build Muscle</option>'
+    +'<option value="get stronger"'+((u.fitness_goal==='get stronger')?' selected':'')+'>Get Stronger</option>'
+    +'<option value="improve endurance"'+((u.fitness_goal==='improve endurance')?' selected':'')+'>Improve Endurance</option>'
+    +'<option value="maintain fitness"'+((u.fitness_goal==='maintain fitness')?' selected':'')+'>Maintain Fitness</option>'
+    +'<option value="body recomp"'+((u.fitness_goal==='body recomp')?' selected':'')+'>Body Recomposition</option></select></label>'
+    +_sgFField('Weakest Muscle','sg-fp-weakmuscle','text',u.weakest_muscle||'','e.g. calves, shoulders')
+    +_sgFField('Supplements','sg-fp-supps','text',u.supplements||'','e.g. creatine, protein, multivitamin')
+    +_sgFField('Diet Preference','sg-fp-diet','text',u.diet||'','e.g. keto, vegan, no preference')
+    +_sgFField('Daily Sleep (hrs)','sg-fp-sleep','number',u.sleep_hours||'','8')
+    +_sgFField('Daily Water (L)','sg-fp-water','number',u.water_litres||'','2.5')
+    +_sgFField('Workout Duration (mins)','sg-fp-duration','number',u.workout_duration||'','60')
+    +_sgFField('Weekly Sessions','sg-fp-sessions','number',u.weekly_sessions||'','4')
+    +_sgFField('Diseases / Injuries','sg-fp-diseases','text',u.diseases||'','e.g. asthma, bad knees, none')
+    +_sgFField('Metabolism','sg-fp-metabolism','text',u.metabolism||'','fast, normal, or slow')
+    +'<button onclick="_sgFitnessSave()" style="width:100%;background:linear-gradient(135deg,#FF6D00,#ff8533);color:#fff;border:none;padding:16px;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;margin-top:8px;box-shadow:0 4px 20px rgba(255,109,0,.35)">Save Fitness Profile 💪</button>'
+    +'</div>';
+  document.body.appendChild(o);
+  o.addEventListener('click',function(e){if(e.target===o)o.remove();});
 }
-
-async function _sgOnboardingSend(msg){
-  var chat=window._sgChat;
-  chat.onboardingHistory.push({role:'user',content:msg});
-
+function _sgFField(label,id,type,val,ph){
+  return '<label style="display:block;margin-bottom:14px"><span style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">'+label+'</span>'
+    +'<input id="'+id+'" type="'+type+'" value="'+(val||'')+'" placeholder="'+ph+'" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#fff;padding:12px 14px;border-radius:12px;font-size:14px;outline:none;box-sizing:border-box" onfocus="this.style.borderColor=\'rgba(255,109,0,.4)\'" onblur="this.style.borderColor=\'rgba(255,255,255,.1)\'"></label>';
+}
+async function _sgFitnessSave(){
+  var d={};
+  var v=function(id){var el=document.getElementById(id);return el?el.value.trim():'';};
+  if(v('sg-fp-height'))d.height_cm=parseFloat(v('sg-fp-height'));
+  if(v('sg-fp-weight'))d.weight_kg=parseFloat(v('sg-fp-weight'));
+  if(v('sg-fp-bf'))d.body_fat_pct=parseFloat(v('sg-fp-bf'));
+  if(v('sg-fp-mm'))d.muscle_mass_kg=parseFloat(v('sg-fp-mm'));
+  if(v('sg-fp-goal'))d.fitness_goal=v('sg-fp-goal');
+  if(v('sg-fp-age'))d.age=parseInt(v('sg-fp-age'));
+  if(v('sg-fp-gender'))d.gender=v('sg-fp-gender');
+  if(v('sg-fp-city'))d.city=v('sg-fp-city');
+  if(v('sg-fp-country'))d.country=v('sg-fp-country');
+  if(v('sg-fp-bodytype'))d.body_type=v('sg-fp-bodytype');
+  if(v('sg-fp-weakmuscle'))d.weakest_muscle=v('sg-fp-weakmuscle');
+  if(v('sg-fp-supps'))d.supplements=v('sg-fp-supps');
+  if(v('sg-fp-diet'))d.diet=v('sg-fp-diet');
+  if(v('sg-fp-sleep'))d.sleep_hours=parseFloat(v('sg-fp-sleep'));
+  if(v('sg-fp-water'))d.water_litres=parseFloat(v('sg-fp-water'));
+  if(v('sg-fp-duration'))d.workout_duration=parseInt(v('sg-fp-duration'));
+  if(v('sg-fp-sessions'))d.weekly_sessions=parseInt(v('sg-fp-sessions'));
+  if(v('sg-fp-diseases'))d.diseases=v('sg-fp-diseases');
+  if(v('sg-fp-metabolism'))d.metabolism=v('sg-fp-metabolism');
+  if(Object.keys(d).length===0){sgToast('Fill in at least one field','error');return;}
   try{
-    var resp=await fetch('/api/chat/onboarding',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({message:msg,history:chat.onboardingHistory})
-    });
-    if(!resp.ok)throw new Error('API error');
+    var resp=await fetch('/api/auth/profile',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});
+    if(!resp.ok)throw new Error('save failed');
     var data=await resp.json();
-    chat.typing=false;
-
-    // Check if Gemini extracted profile data (onboarding complete)
-    if(data.profileData&&Object.keys(data.profileData).length>0){
-      // Save profile to backend
-      try{
-        var saveResp=await fetch('/api/auth/profile',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data.profileData)});
-        if(saveResp.ok){
-          var saveData=await saveResp.json();
-          if(saveData.user)Object.assign(state.user,saveData.user);
-          Object.assign(state.user,data.profileData);
-          localStorage.setItem('sg_fitness_profile',JSON.stringify(data.profileData));
-        }
-      }catch(e){console.error('Profile save error:',e);}
-      chat.onboarding=false;
-      chat.onboardingHistory=[];
-      sgToast('Profile saved! AI is now personalized 💪','success',2500);
-    }
-
-    // Add AI's next question or completion message
-    chat.onboardingHistory.push({role:'assistant',content:data.reply});
-    _sgChatStream(data.reply);
+    if(data.user){Object.assign(state.user,data.user);}
+    // Also save extended fields to state.user for chat context
+    Object.assign(state.user,d);
+    localStorage.setItem('sg_fitness_profile',JSON.stringify(d));
+    sgToast('Fitness profile saved! AI is now personalized 💪','success');
+    var ol=document.getElementById('sg-fitness-overlay');if(ol)ol.remove();
+    render();
   }catch(err){
-    console.error('Onboarding error:',err);
-    chat.typing=false;
-    _sgChatStream('Sorry, something went wrong. Let\u2019s try that again — what were you saying?');
+    console.error('Fitness save error:',err);
+    sgToast('Could not save — try again','error');
   }
-  _sgChatSave();
 }
 
 function _sgChatCopy(idx){
@@ -12241,13 +12361,6 @@ function ChatTabPage(){
   var msgs=chat.msgs;
   var isTyping=chat.typing;
   var isEmpty=msgs.length===0;
-
-  // Auto-start conversational onboarding for new users without fitness profile
-  var fp=Object.assign({},state.user||{},JSON.parse(localStorage.getItem('sg_fitness_profile')||'{}'));
-  if(isEmpty&&state.user&&!fp.fitness_goal&&!chat.onboarding&&!chat._onboardStarted){
-    chat._onboardStarted=true;
-    setTimeout(function(){_sgOnboardingStart();},400);
-  }
 
   // Suggestion chips — 2-column grid
   var suggestions=[
@@ -12281,6 +12394,7 @@ function ChatTabPage(){
       </div>
       <h2 style="color:#fff;font-size:22px;font-weight:900;margin:0 0 8px;letter-spacing:-.3px">What can I help with?</h2>
       <p style="color:rgba(255,255,255,.35);font-size:13px;margin:0 0 20px;max-width:280px">Your AI fitness coach. Workouts, nutrition, gym finder — ask anything.</p>
+      ${state.user&&!state.user.fitness_goal?'<div onclick="_sgFitnessSetup()" style="width:100%;max-width:340px;background:linear-gradient(135deg,rgba(255,109,0,.08),rgba(168,85,247,.06));border:1px solid rgba(255,109,0,.15);border-radius:16px;padding:14px 16px;margin-bottom:16px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px;transition:all .15s" ontouchstart="this.style.borderColor=\'rgba(255,109,0,.4)\'" ontouchend="this.style.borderColor=\'rgba(255,109,0,.15)\'"><span style="font-size:24px">📋</span><div><p style="color:#fff;font-size:13px;font-weight:700;margin:0">Set up your fitness profile</p><p style="color:rgba(255,255,255,.4);font-size:11px;margin:3px 0 0">Height, weight, goals — unlock personalized AI coaching</p></div><span style="color:rgba(255,109,0,.6);font-size:16px">›</span></div>':''}
       <!-- Suggestion grid (2-column) -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;max-width:340px">
         ${suggestions.map(function(s){
