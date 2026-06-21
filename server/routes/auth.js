@@ -318,7 +318,7 @@ router.put('/profile', async (req, res) => {
       return res.status(401).json({ error: 'Not authenticated' });
     }
 
-    const { first_name, last_name, email, fitness_level, emergency_contact } = req.body;
+    const { first_name, last_name, email, fitness_level, emergency_contact, height_cm, weight_kg, body_fat_pct, muscle_mass_kg, fitness_goal } = req.body;
     const userId = req.session.userId;
 
     // Ensure profile columns exist (idempotent)
@@ -326,18 +326,40 @@ router.put('/profile', async (req, res) => {
       ALTER TABLE public.users ADD COLUMN IF NOT EXISTS fitness_level VARCHAR(50);
       ALTER TABLE public.users ADD COLUMN IF NOT EXISTS emergency_contact VARCHAR(255);
       ALTER TABLE public.users ADD COLUMN IF NOT EXISTS profile_complete BOOLEAN DEFAULT false;
+      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS height_cm NUMERIC;
+      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS weight_kg NUMERIC;
+      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS body_fat_pct NUMERIC;
+      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS muscle_mass_kg NUMERIC;
+      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS fitness_goal TEXT;
+      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS age INTEGER;
+      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS gender VARCHAR(20);
+      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS city VARCHAR(100);
+      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS country VARCHAR(100);
+      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS body_type VARCHAR(30);
+      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS weakest_muscle VARCHAR(100);
+      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS supplements TEXT;
+      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS diet TEXT;
+      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS sleep_hours NUMERIC;
+      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS water_litres NUMERIC;
+      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS workout_duration INTEGER;
+      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS weekly_sessions INTEGER;
+      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS diseases TEXT;
+      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS metabolism VARCHAR(30);
     `);
 
-    // Build dynamic update
+    // Build dynamic update — accept any fitness profile field
     const fields = [];
     const values = [];
     let idx = 1;
 
-    if (first_name !== undefined) { fields.push(`first_name = $${idx++}`); values.push(first_name); }
-    if (last_name !== undefined) { fields.push(`last_name = $${idx++}`); values.push(last_name); }
-    if (email !== undefined) { fields.push(`email = $${idx++}`); values.push(email); }
-    if (fitness_level !== undefined) { fields.push(`fitness_level = $${idx++}`); values.push(fitness_level); }
-    if (emergency_contact !== undefined) { fields.push(`emergency_contact = $${idx++}`); values.push(emergency_contact); }
+    const allowedFields = ['first_name','last_name','email','fitness_level','emergency_contact',
+      'height_cm','weight_kg','body_fat_pct','muscle_mass_kg','fitness_goal',
+      'age','gender','city','country','body_type','weakest_muscle','supplements',
+      'diet','sleep_hours','water_litres','workout_duration','weekly_sessions','diseases','metabolism'];
+
+    for (const field of allowedFields) {
+      if (req.body[field] !== undefined) { fields.push(`${field} = $${idx++}`); values.push(req.body[field]); }
+    }
 
     if (fields.length === 0) {
       return res.status(400).json({ error: 'No fields to update' });
@@ -352,7 +374,7 @@ router.put('/profile', async (req, res) => {
     fields.push(`updated_at = NOW()`);
 
     values.push(userId);
-    const query = `UPDATE public.users SET ${fields.join(', ')} WHERE id = $${idx} RETURNING id, first_name, last_name, email, phone_number, fitness_level, emergency_contact, profile_complete, created_at`;
+    const query = `UPDATE public.users SET ${fields.join(', ')} WHERE id = $${idx} RETURNING id, first_name, last_name, email, phone_number, fitness_level, emergency_contact, profile_complete, height_cm, weight_kg, body_fat_pct, muscle_mass_kg, fitness_goal, created_at`;
 
     const result = await pool.query(query, values);
 
@@ -373,6 +395,11 @@ router.put('/profile', async (req, res) => {
         fitness_level: u.fitness_level,
         emergency_contact: u.emergency_contact,
         profile_complete: u.profile_complete,
+        height_cm: u.height_cm ? parseFloat(u.height_cm) : null,
+        weight_kg: u.weight_kg ? parseFloat(u.weight_kg) : null,
+        body_fat_pct: u.body_fat_pct ? parseFloat(u.body_fat_pct) : null,
+        muscle_mass_kg: u.muscle_mass_kg ? parseFloat(u.muscle_mass_kg) : null,
+        fitness_goal: u.fitness_goal || null,
         member_since: u.created_at,
       },
     });
@@ -397,11 +424,17 @@ router.get('/profile', async (req, res) => {
       ALTER TABLE public.users ADD COLUMN IF NOT EXISTS fitness_level VARCHAR(50);
       ALTER TABLE public.users ADD COLUMN IF NOT EXISTS emergency_contact VARCHAR(255);
       ALTER TABLE public.users ADD COLUMN IF NOT EXISTS profile_complete BOOLEAN DEFAULT false;
+      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS height_cm NUMERIC;
+      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS weight_kg NUMERIC;
+      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS body_fat_pct NUMERIC;
+      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS muscle_mass_kg NUMERIC;
+      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS fitness_goal TEXT;
     `);
 
     const result = await pool.query(
       `SELECT id, phone_number, first_name, last_name, email, fitness_level, emergency_contact, 
-              profile_complete, stripe_customer_id, created_at
+              profile_complete, stripe_customer_id, created_at,
+              height_cm, weight_kg, body_fat_pct, muscle_mass_kg, fitness_goal
        FROM public.users WHERE id = $1`,
       [req.session.userId]
     );
@@ -434,6 +467,11 @@ router.get('/profile', async (req, res) => {
       fitness_level: u.fitness_level || '',
       emergency_contact: u.emergency_contact || '',
       profile_complete: u.profile_complete || false,
+      height_cm: u.height_cm ? parseFloat(u.height_cm) : null,
+      weight_kg: u.weight_kg ? parseFloat(u.weight_kg) : null,
+      body_fat_pct: u.body_fat_pct ? parseFloat(u.body_fat_pct) : null,
+      muscle_mass_kg: u.muscle_mass_kg ? parseFloat(u.muscle_mass_kg) : null,
+      fitness_goal: u.fitness_goal || null,
       has_payment: !!u.stripe_customer_id,
       member_since: u.created_at,
       stats: {
