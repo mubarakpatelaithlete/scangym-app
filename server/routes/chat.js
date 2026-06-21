@@ -1,6 +1,6 @@
 /**
- * Task 6: AI Gym Receptionist Chat — CORRECTED
- * CEO: "Option C" — AI answers instantly + escalates to gym owner via SMS/email
+ * Task 6: AI Gym Receptionist Chat — GEMINI FLASH 2.0
+ * Migrated from OpenAI to Google Gemini (free tier: 15 RPM, 1M tokens/day)
  * Hybrid: AI chatbot handles common questions; when it can't help, it
  * escalates to the gym owner with SMS (Twilio) + email notification.
  */
@@ -8,8 +8,11 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../middleware/db');
 const { optionalAuth } = require('../middleware/auth');
-const OpenAI = require('openai');
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+// Gemini API config
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_MAPS_API_KEY;
+const GEMINI_MODEL = 'gemini-2.0-flash';
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 // Twilio config for SMS escalation
 const TWILIO_SID = process.env.TWILIO_ACCOUNT_SID;
@@ -52,6 +55,48 @@ const emailTransport = nodemailer.createTransport({
 })();
 
 /**
+ * Call Gemini API
+ */
+async function callGemini(messages, maxTokens = 300) {
+  // Convert OpenAI-style messages to Gemini format
+  const systemMsg = messages.find(m => m.role === 'system');
+  const chatMessages = messages.filter(m => m.role !== 'system');
+  
+  const contents = chatMessages.map(m => ({
+    role: m.role === 'assistant' ? 'model' : 'user',
+    parts: [{ text: m.content }]
+  }));
+
+  const body = {
+    contents,
+    generationConfig: {
+      maxOutputTokens: maxTokens,
+      temperature: 0.7,
+    }
+  };
+
+  // Add system instruction if present
+  if (systemMsg) {
+    body.systemInstruction = { parts: [{ text: systemMsg.content }] };
+  }
+
+  const response = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    console.error('Gemini API error:', response.status, err);
+    throw new Error(`Gemini API error: ${response.status} - ${err?.error?.message || 'Unknown'}`);
+  }
+
+  const data = await response.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || '[ESCALATE] Unable to process the question.';
+}
+
+/**
  * Send SMS to gym owner via Twilio
  */
 async function sendOwnerSMS(ownerPhone, gymName, userMessage) {
@@ -89,11 +134,11 @@ async function sendOwnerEmail(ownerEmail, gymName, userMessage, conversationId) 
         <h2>A customer needs your help</h2>
         <p><strong>Gym:</strong> ${gymName}</p>
         <p><strong>Customer message:</strong></p>
-        <blockquote style="background:#f5f5f5;padding:12px;border-left:3px solid #00D4AA;">
+        <blockquote style="background:#f5f5f5;padding:12px;border-left:3px solid #FF6B35;">
           ${userMessage}
         </blockquote>
         <p>Our AI couldn't fully answer this question. Please reply at:</p>
-        <p><a href="https://scangym.com/owner/messages/${conversationId}" style="background:#00D4AA;color:white;padding:10px 20px;text-decoration:none;display:inline-block;">Reply to Customer</a></p>
+        <p><a href="https://scangym.com/owner/messages/${conversationId}" style="background:#FF6B35;color:white;padding:10px 20px;text-decoration:none;display:inline-block;">Reply to Customer</a></p>
         <p style="color:#666;font-size:12px;">— ScanGym Team</p>
       `,
     });
@@ -105,7 +150,8 @@ async function sendOwnerEmail(ownerEmail, gymName, userMessage, conversationId) 
 }
 
 function buildGymContext(gym) {
-  return `You are the AI receptionist for "${gym.name}" on ScanGym.
+  return `You are the AI fitness assistant for ScanGym — the world's first universal gym pass app.
+You are currently helping a customer who is looking at "${gym.name}" on ScanGym.
 Address: ${gym.address || 'Not available'}
 City: ${gym.city || 'UK'}
 ${gym.day_pass_price ? `Day pass (24hr): £${gym.day_pass_price}` : ''}
@@ -115,15 +161,23 @@ ${gym.phone ? `Phone: ${gym.phone}` : ''}
 ${gym.description ? `About: ${gym.description}` : ''}
 Rating: ${gym.average_rating || 'New'} (${gym.total_reviews || 0} reviews)
 
+PERSONALITY:
+- You are energetic, motivating, and friendly — like a personal trainer who's also a helpful concierge
+- Use gym/fitness language naturally: "crush it", "let's get you in there", "gains await"
+- Keep answers concise (under 150 words) but warm and helpful
+- Use relevant emojis sparingly: 💪 🏋️ 🔥 ⚡
+
 INSTRUCTIONS:
-- Answer questions about this gym helpfully and concisely (under 150 words).
+- Answer questions about this gym helpfully and concisely.
+- You can also help with general fitness, workout tips, nutrition advice, and gym etiquette.
 - If you CAN answer confidently, do so.
-- If you CANNOT answer (e.g., specific availability, special requests, membership queries,
+- If you CANNOT answer (e.g., specific real-time availability, special requests, membership queries,
   complaints, or anything you're unsure about), respond with EXACTLY this prefix:
   [ESCALATE] followed by a brief explanation of what the customer needs.
   Example: "[ESCALATE] Customer is asking about wheelchair accessibility which I don't have data on."
-- Always be friendly and encourage booking through ScanGym.
-- Brand name is ScanGym only (never mention AIthlete or Gym Link AI).`;
+- Always encourage booking through ScanGym.
+- Brand name is ScanGym only (never mention AIthlete or Gym Link AI).
+- ScanGym offers: Day Pass, 3-Day Pass, Weekly Pass — no membership required.`;
 }
 
 // POST /api/chat/start — Start a new conversation with a gym
@@ -144,7 +198,6 @@ router.post('/start', optionalAuth, async (req, res) => {
       `, [`Chat with ${gym.name}`]);
       conversationId = convo.rows[0].id;
     } catch (e) {
-      // If conversations table doesn't exist, create a simple one
       await pool.query(`CREATE TABLE IF NOT EXISTS conversations (id SERIAL PRIMARY KEY, title TEXT, created_at TIMESTAMP DEFAULT NOW())`);
       await pool.query(`CREATE TABLE IF NOT EXISTS messages (id SERIAL PRIMARY KEY, conversation_id INTEGER, role VARCHAR(20), content TEXT, created_at TIMESTAMP DEFAULT NOW())`);
       const convo = await pool.query(`INSERT INTO conversations (title, created_at) VALUES ($1, NOW()) RETURNING *`, [`Chat with ${gym.name}`]);
@@ -156,7 +209,7 @@ router.post('/start', optionalAuth, async (req, res) => {
       VALUES ($1, 'system', $2, NOW())
     `, [conversationId, buildGymContext(gym)]);
 
-    const welcomeMsg = `Hi! 👋 Welcome to ${gym.name}! I'm here to help with any questions about the gym. If I can't answer something, I'll connect you directly with the gym team. What would you like to know?`;
+    const welcomeMsg = `Hey! 💪 Welcome to ${gym.name} on ScanGym! I'm your AI fitness assistant — ask me anything about this gym, workouts, or booking. If I can't help, I'll connect you straight to the gym team. What can I help you with?`;
 
     await pool.query(`
       INSERT INTO messages (conversation_id, role, content, created_at)
@@ -169,6 +222,7 @@ router.post('/start', optionalAuth, async (req, res) => {
       gymName: gym.name,
       messages: [{ role: 'assistant', content: welcomeMsg, timestamp: new Date().toISOString() }],
       supportsHumanEscalation: true,
+      aiModel: 'gemini-2.0-flash',
     });
   } catch (err) {
     console.error('Chat start error:', err);
@@ -200,15 +254,15 @@ router.post('/message', optionalAuth, async (req, res) => {
     );
     const messages = history.rows.map(m => ({ role: m.role, content: m.content }));
 
-    // Get AI response
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages,
-      max_tokens: 300,
-      temperature: 0.7,
-    });
-
-    let aiResponse = completion.choices[0]?.message?.content || "[ESCALATE] Unable to process the question.";
+    // Get AI response from Gemini
+    let aiResponse;
+    try {
+      aiResponse = await callGemini(messages, 300);
+    } catch (geminiErr) {
+      console.error('Gemini error, using fallback:', geminiErr.message);
+      // Fallback to basic response if Gemini fails
+      aiResponse = getFallbackResponse(message);
+    }
 
     // Check for escalation trigger
     const needsEscalation = aiResponse.includes('[ESCALATE]');
@@ -217,7 +271,6 @@ router.post('/message', optionalAuth, async (req, res) => {
     if (needsEscalation) {
       const escalateReason = aiResponse.replace('[ESCALATE]', '').trim();
 
-      // Get gym info for owner notification
       const gymNameMatch = convo.rows[0].title?.match(/Chat with (.+)/);
       let gymInfo = null;
       if (gymNameMatch) {
@@ -228,7 +281,6 @@ router.post('/message', optionalAuth, async (req, res) => {
         gymInfo = gymResult.rows[0] || null;
       }
 
-      // Get owner contact info
       let ownerPhone = null;
       let ownerEmail = null;
       if (gymInfo?.claimed_by) {
@@ -241,11 +293,9 @@ router.post('/message', optionalAuth, async (req, res) => {
         } catch (e) {}
       }
 
-      // Send SMS + Email to gym owner
       const smsOk = await sendOwnerSMS(ownerPhone, gymInfo?.name || 'Your gym', message);
       const emailOk = await sendOwnerEmail(ownerEmail, gymInfo?.name || 'Your gym', message, conversationId);
 
-      // Log escalation
       try {
         await pool.query(`
           INSERT INTO chat_escalations (conversation_id, gym_id, user_message, escalation_reason, owner_notified_sms, owner_notified_email)
@@ -253,8 +303,7 @@ router.post('/message', optionalAuth, async (req, res) => {
         `, [parseInt(conversationId), gymInfo?.id || null, message, escalateReason, smsOk, emailOk]);
       } catch (e) {}
 
-      // Replace AI response with friendly escalation message
-      aiResponse = `Great question! That's something the gym team can best help with. I've just notified them ${smsOk || emailOk ? 'via ' + (smsOk ? 'SMS' : '') + (smsOk && emailOk ? ' and ' : '') + (emailOk ? 'email' : '') : ''} and they'll get back to you shortly. In the meantime, is there anything else I can help with?`;
+      aiResponse = `Great question! That's something the gym team can best help with. I've just notified them ${smsOk || emailOk ? 'via ' + (smsOk ? 'SMS' : '') + (smsOk && emailOk ? ' and ' : '') + (emailOk ? 'email' : '') : ''} and they'll get back to you shortly. In the meantime, is there anything else I can help with? 💪`;
 
       escalation = {
         escalated: true,
@@ -277,12 +326,27 @@ router.post('/message', optionalAuth, async (req, res) => {
     });
   } catch (err) {
     console.error('Chat message error:', err);
-    if (err.status === 401 || err.code === 'invalid_api_key') {
-      return res.status(503).json({ error: 'AI service temporarily unavailable' });
-    }
     res.status(500).json({ error: 'Failed to process message' });
   }
 });
+
+/**
+ * Fallback responses when Gemini API is unavailable
+ */
+function getFallbackResponse(question) {
+  const q = question.toLowerCase();
+  if (q.includes('price') || q.includes('cost') || q.includes('how much'))
+    return `ScanGym offers flexible passes — Day Pass, 3-Day Pass, and Weekly Pass. Prices vary by gym and time of day. No membership needed! Check the booking section for exact pricing. 💰`;
+  if (q.includes('cancel') || q.includes('refund'))
+    return `Free cancellation up to 2 hours before your session! Refund goes instantly to your ScanGym Wallet, or back to your card in 5-10 days. No questions asked. ✅`;
+  if (q.includes('shower') || q.includes('changing'))
+    return `Most gyms have changing rooms with showers. Towels are included with Standard tier and above. 🚿`;
+  if (q.includes('parking') || q.includes('park'))
+    return `Parking varies by location. Check the map for nearby options. Many ScanGym locations have free parking or are near public transport. 🅿️`;
+  if (q.includes('workout') || q.includes('exercise') || q.includes('routine'))
+    return `Looking for workout tips? Try starting with compound movements: squats, deadlifts, bench press, rows. 3-4 sets of 8-12 reps each. Rest 60-90 seconds between sets. You've got this! 🔥`;
+  return `Great question! I'm here to help with anything about this gym, workouts, booking, or fitness tips. Could you tell me a bit more about what you'd like to know? 💪`;
+}
 
 // POST /api/chat/escalation/:id/respond — Gym owner responds to escalation
 router.post('/escalation/:id/respond', async (req, res) => {
@@ -299,7 +363,6 @@ router.post('/escalation/:id/respond', async (req, res) => {
       return res.status(404).json({ error: 'Escalation not found' });
     }
 
-    // Add owner response to the conversation
     const esc = result.rows[0];
     await pool.query(
       `INSERT INTO messages (conversation_id, role, content, created_at) VALUES ($1, 'assistant', $2, NOW())`,
@@ -328,6 +391,37 @@ router.get('/history/:conversationId', optionalAuth, async (req, res) => {
     res.json({ conversationId: parseInt(conversationId), title: convo.rows[0].title, messages: msgs.rows });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch history' });
+  }
+});
+
+// POST /api/chat/quick — Quick chat without gym context (general fitness AI)
+router.post('/quick', async (req, res) => {
+  try {
+    const { message } = req.body;
+    if (!message) return res.status(400).json({ error: 'message is required' });
+
+    const systemPrompt = `You are ScanGym AI — a friendly, energetic fitness assistant built into ScanGym, the world's first universal gym pass app.
+Help users with: gym questions, workout tips, nutrition advice, fitness motivation, booking help.
+Keep answers concise (under 100 words), warm, and motivating.
+Use emojis sparingly: 💪 🏋️ 🔥 ⚡
+Brand: ScanGym only.`;
+
+    const messages = [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: message }
+    ];
+
+    let reply;
+    try {
+      reply = await callGemini(messages, 200);
+    } catch (err) {
+      reply = getFallbackResponse(message);
+    }
+
+    res.json({ reply, model: 'gemini-2.0-flash' });
+  } catch (err) {
+    console.error('Quick chat error:', err);
+    res.status(500).json({ error: 'Failed to process message' });
   }
 });
 
