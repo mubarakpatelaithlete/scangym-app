@@ -82,3 +82,37 @@ router.get('/health', (req, res) => {
 });
 
 module.exports = router;
+
+// ─── Debug: test Gemini API directly ────────────────────────
+router.get('/debug-gemini', async (req, res) => {
+  const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_MAPS_API_KEY;
+  const status = {
+    hasGeminiKey: !!process.env.GEMINI_API_KEY,
+    hasGoogleMapsKey: !!process.env.GOOGLE_MAPS_API_KEY,
+    resolvedKeyPrefix: GEMINI_API_KEY ? GEMINI_API_KEY.substring(0, 8) + '...' : 'NONE',
+  };
+
+  if (!GEMINI_API_KEY) {
+    return res.json({ ...status, geminiWorking: false, error: 'No API key found' });
+  }
+
+  try {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: 'Say "hello" in one word' }] }],
+        generationConfig: { maxOutputTokens: 20 },
+      }),
+    });
+    const data = await resp.json();
+    if (!resp.ok) {
+      return res.json({ ...status, geminiWorking: false, httpStatus: resp.status, error: data });
+    }
+    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    return res.json({ ...status, geminiWorking: true, testReply: reply });
+  } catch (e) {
+    return res.json({ ...status, geminiWorking: false, error: e.message });
+  }
+});
