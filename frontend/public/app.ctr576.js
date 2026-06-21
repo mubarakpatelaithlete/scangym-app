@@ -13005,131 +13005,145 @@ function MoreHubPage(){
       <span class="sg-mi-arrow">\u203a</span>
     </div>`;
   }
-  // ── Full-screen TikTok-style QR profile ──
+  // ── Full-screen TikTok-style QR profile (v2 — QR IS the screen) ──
   if(u){
     var qrData=encodeURIComponent('https://scangym.com/member/'+u.id);
-    var qrUrl='https://api.qrserver.com/v1/create-qr-code/?size=400x400&bgcolor=0d0d1a&color=FF6D00&data='+qrData;
+    var qrUrl='https://api.qrserver.com/v1/create-qr-code/?size=800x800&bgcolor=050508&color=FF6D00&data='+qrData;
     var uName=u.name||u.phone||'Member';
+    var initial=uName.charAt(0).toUpperCase();
     var since=u.member_since?new Date(u.member_since).toLocaleDateString('en-GB',{month:'short',year:'numeric'}):'2026';
     var tS=u.stats?.totalSessions||0;var tG=u.stats?.totalGyms||0;var stk=u.stats?.streak||0;
     var tier=tS>=100?{n:'Elite',i:'\ud83d\udc51',c:'#a855f7'}:tS>=50?{n:'Gold',i:'\ud83e\udd47',c:'#eab308'}:tS>=10?{n:'Silver',i:'\ud83e\udd48',c:'#94a3b8'}:{n:'Basic',i:'\ud83c\udfcb\ufe0f',c:'#FF6D00'};
-    return`<div style="position:absolute;inset:0;background:#0a0a16;overflow:hidden">
-      <style>@keyframes sgQrGlow{0%,100%{box-shadow:0 20px 60px rgba(0,0,0,.3),0 0 40px rgba(255,109,0,.05)}50%{box-shadow:0 20px 60px rgba(0,0,0,.3),0 0 50px rgba(255,109,0,.12)}}</style>
-      <!-- Background gradients -->
-      <div style="position:absolute;top:0;left:0;right:0;height:45%;background:linear-gradient(135deg,rgba(255,109,0,.08),rgba(168,85,247,.06));pointer-events:none"></div>
-      <div style="position:absolute;top:0;left:0;right:0;height:50%;background:linear-gradient(180deg,transparent 40%,#0a0a16 100%);pointer-events:none"></div>
-      <!-- Fixed full-screen QR profile -->
-      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center;z-index:2">
-        <!-- User info -->
-        <div style="margin-bottom:6px;display:flex;align-items:center;gap:8px">
-          <span style="color:#fff;font-size:20px;font-weight:900">${uName}</span>
-          <span style="background:${tier.c}22;color:${tier.c};font-size:9px;font-weight:800;padding:3px 8px;border-radius:8px;text-transform:uppercase;letter-spacing:1px">${tier.i} ${tier.n}</span>
+    return`<div style="position:absolute;inset:0;background:#000;overflow:hidden">
+      <style>
+        @keyframes sgScanLine{0%{top:0}100%{top:calc(100% - 3px)}}
+        @keyframes sgQrPulse{0%,100%{opacity:.15}50%{opacity:.3}}
+      </style>
+      <!-- ═══ QR CODE — FULL SCREEN BACKGROUND (like TikTok video) ═══ -->
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#050508;z-index:1">
+        <img src="${qrUrl}" style="width:100%;height:100%;object-fit:contain;padding:12px;opacity:.85" alt="Scan to enter">
+        <!-- Scan line animation -->
+        <div style="position:absolute;inset:0;overflow:hidden;pointer-events:none">
+          <div style="position:absolute;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent 5%,rgba(255,109,0,.5) 50%,transparent 95%);animation:sgScanLine 3s ease-in-out infinite alternate"></div>
         </div>
-        <p style="color:rgba(255,255,255,.4);font-size:11px;margin:0 0 16px">Member since ${since}</p>
-        <!-- QR Code (large, centered) -->
-        <div style="background:rgba(255,109,0,.06);border:2px solid rgba(255,109,0,.2);border-radius:32px;padding:24px;margin-bottom:14px;position:relative;animation:sgQrGlow 3s ease-in-out infinite">
-          <img src="${qrUrl}" width="200" height="200" style="border-radius:20px;display:block" alt="Scan to enter">
-          <div style="position:absolute;bottom:-12px;left:50%;transform:translateX(-50%);background:#FF6D00;color:#fff;font-size:11px;font-weight:800;padding:5px 18px;border-radius:20px;white-space:nowrap;letter-spacing:.5px;box-shadow:0 4px 16px rgba(255,109,0,.4)">SCAN TO ENTER</div>
-        </div>
-        <p style="color:rgba(255,255,255,.3);font-size:11px;margin:16px 0 10px">Show this at the gym entrance</p>
-        <!-- Stats row -->
-        <div style="display:flex;gap:20px;margin-bottom:16px">
-          <div style="text-align:center"><div style="color:#FF6D00;font-size:22px;font-weight:900">${tS}</div><div style="color:rgba(255,255,255,.3);font-size:9px;font-weight:600;text-transform:uppercase">Sessions</div></div>
-          <div style="text-align:center"><div style="color:#22c55e;font-size:22px;font-weight:900">${tG}</div><div style="color:rgba(255,255,255,.3);font-size:9px;font-weight:600;text-transform:uppercase">Gyms</div></div>
-          <div style="text-align:center"><div style="color:#3b82f6;font-size:22px;font-weight:900">${stk}\ud83d\udd25</div><div style="color:rgba(255,255,255,.3);font-size:9px;font-weight:600;text-transform:uppercase">Streak</div></div>
+        <!-- Ambient glow -->
+        <div style="position:absolute;inset:0;background:radial-gradient(circle at center,rgba(255,109,0,.06) 0%,transparent 70%);animation:sgQrPulse 4s ease-in-out infinite;pointer-events:none"></div>
+        <!-- Top gradient for readability -->
+        <div style="position:absolute;top:0;left:0;right:0;height:140px;background:linear-gradient(180deg,rgba(0,0,0,.85) 0%,transparent 100%);pointer-events:none"></div>
+        <!-- Bottom gradient for readability -->
+        <div style="position:absolute;bottom:0;left:0;right:0;height:200px;background:linear-gradient(0deg,rgba(0,0,0,.9) 0%,transparent 100%);pointer-events:none"></div>
+      </div>
+      <!-- ═══ TOP OVERLAY — User info (like TikTok top bar) ═══ -->
+      <div style="position:absolute;top:max(env(safe-area-inset-top,0px),12px);left:16px;right:70px;z-index:10;display:flex;align-items:center;gap:10px">
+        <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#FF6D00,#ff8533);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;flex-shrink:0;border:2px solid rgba(255,109,0,.4);color:#fff">${initial}</div>
+        <div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:16px;font-weight:800;color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.8)">${uName}</span>
+            <span style="background:${tier.c}33;color:${tier.c};font-size:8px;font-weight:800;padding:3px 8px;border-radius:8px;text-transform:uppercase;letter-spacing:.8px">${tier.i} ${tier.n}</span>
+          </div>
+          <p style="color:rgba(255,255,255,.45);font-size:10px;text-shadow:0 1px 4px rgba(0,0,0,.6)">Member since ${since}</p>
         </div>
       </div>
-      <!-- Right-side action buttons (Reels/TikTok style) -->
-      <div style="position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:14px;align-items:center;z-index:5">
+      <!-- ═══ RIGHT-SIDE BUTTONS — TikTok/Reels style, floating on QR ═══ -->
+      <div style="position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:18px;align-items:center;z-index:10">
         <div onclick="navigate('/more/profile')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
-          <div style="width:44px;height:44px;background:rgba(255,255,255,.1);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.1)">\ud83d\udc64</div>
-          <span style="color:rgba(255,255,255,.6);font-size:9px;font-weight:600">Edit</span>
+          <div style="width:46px;height:46px;background:rgba(0,0,0,.45);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.12)">\ud83d\udc64</div>
+          <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Edit</span>
         </div>
         <div onclick="navigate('/bookings')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
-          <div style="width:44px;height:44px;background:rgba(255,255,255,.1);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.1)">\ud83d\udccb</div>
-          <span style="color:rgba(255,255,255,.6);font-size:9px;font-weight:600">Bookings</span>
+          <div style="width:46px;height:46px;background:rgba(0,0,0,.45);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.12)">\ud83d\udccb</div>
+          <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Bookings</span>
         </div>
         <div onclick="navigate('/wallet')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
-          <div style="width:44px;height:44px;background:rgba(255,255,255,.1);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.1)">\ud83d\udcb3</div>
-          <span style="color:rgba(255,255,255,.6);font-size:9px;font-weight:600">Wallet</span>
+          <div style="width:46px;height:46px;background:rgba(0,0,0,.45);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.12)">\ud83d\udcb3</div>
+          <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Wallet</span>
         </div>
         <div onclick="_shareIDCard()" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
-          <div style="width:44px;height:44px;background:rgba(255,255,255,.1);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.1)">\ud83d\udce4</div>
-          <span style="color:rgba(255,255,255,.6);font-size:9px;font-weight:600">Share</span>
+          <div style="width:46px;height:46px;background:rgba(0,0,0,.45);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.12)">\ud83d\udce4</div>
+          <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Share</span>
         </div>
         <div onclick="navigate('/refer')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
-          <div style="width:44px;height:44px;background:rgba(255,109,0,.15);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,109,0,.3)">\ud83c\udf81</div>
-          <span style="color:rgba(255,255,255,.6);font-size:9px;font-weight:600">Refer</span>
+          <div style="width:46px;height:46px;background:rgba(255,109,0,.15);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,109,0,.3)">\ud83c\udf81</div>
+          <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Refer</span>
         </div>
         <div onclick="navigate('/more')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
-          <div style="width:44px;height:44px;background:rgba(255,255,255,.1);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.1)">\u2699\ufe0f</div>
-          <span style="color:rgba(255,255,255,.6);font-size:9px;font-weight:600">More</span>
+          <div style="width:46px;height:46px;background:rgba(0,0,0,.45);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.12)">\u2699\ufe0f</div>
+          <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">More</span>
         </div>
-        ${u?'<div onclick="logout()" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer"><div style="width:44px;height:44px;background:rgba(239,68,68,.1);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(239,68,68,.2)">\ud83d\udeaa</div><span style="color:rgba(239,68,68,.6);font-size:9px;font-weight:600">Out</span></div>':''}
+        <div onclick="logout()" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
+          <div style="width:46px;height:46px;background:rgba(239,68,68,.1);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(239,68,68,.2)">\ud83d\udeaa</div>
+          <span style="color:rgba(239,68,68,.6);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Out</span>
+        </div>
       </div>
-      <!-- Bottom info -->
-      <div style="position:absolute;bottom:12px;left:0;right:0;text-align:center;z-index:3">
-        <p style="color:rgba(255,255,255,.2);font-size:10px">\ud83c\udf0d Your universal gym pass \u2014 accepted at any gym</p>
+      <!-- ═══ BOTTOM OVERLAY — Stats + badge (like TikTok caption area) ═══ -->
+      <div style="position:absolute;bottom:12px;left:16px;right:70px;z-index:10">
+        <div style="display:inline-block;background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff;font-size:11px;font-weight:800;padding:6px 20px;border-radius:20px;letter-spacing:.8px;text-transform:uppercase;box-shadow:0 4px 20px rgba(255,109,0,.4);margin-bottom:12px">\ud83d\udccd SCAN TO ENTER</div>
+        <div style="display:flex;gap:20px">
+          <div><span style="color:#FF6D00;font-size:20px;font-weight:900;text-shadow:0 2px 8px rgba(0,0,0,.6)">${tS}</span><span style="color:rgba(255,255,255,.5);font-size:10px;font-weight:600;margin-left:4px">sessions</span></div>
+          <div><span style="color:#22c55e;font-size:20px;font-weight:900;text-shadow:0 2px 8px rgba(0,0,0,.6)">${tG}</span><span style="color:rgba(255,255,255,.5);font-size:10px;font-weight:600;margin-left:4px">gyms</span></div>
+          <div><span style="color:#3b82f6;font-size:20px;font-weight:900;text-shadow:0 2px 8px rgba(0,0,0,.6)">${stk}\ud83d\udd25</span><span style="color:rgba(255,255,255,.5);font-size:10px;font-weight:600;margin-left:4px">streak</span></div>
+        </div>
       </div>
     </div>`;
   }else{
-    // Not logged in — fixed full-screen QR pass with right-side Reels-style buttons
-    return`<div style="position:absolute;inset:0;background:#0a0a16;overflow:hidden">
-      <style>@keyframes sgCtaPulse{0%,100%{box-shadow:0 4px 24px rgba(255,109,0,.4)}50%{box-shadow:0 4px 32px rgba(255,109,0,.6)}}@keyframes sgQrGlow{0%,100%{box-shadow:0 20px 60px rgba(0,0,0,.3),0 0 40px rgba(255,109,0,.05)}50%{box-shadow:0 20px 60px rgba(0,0,0,.3),0 0 50px rgba(255,109,0,.12)}}</style>
-      <!-- Background gradients -->
-      <div style="position:absolute;top:0;left:0;right:0;height:50%;background:linear-gradient(135deg,rgba(255,109,0,.08),rgba(168,85,247,.06));pointer-events:none"></div>
-      <div style="position:absolute;top:0;left:0;right:0;height:55%;background:linear-gradient(180deg,transparent 40%,#0a0a16 100%);pointer-events:none"></div>
-      <!-- Main content — centered, fixed, no scroll -->
-      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center;z-index:2">
-        <!-- QR Pass Preview (large, centered like a reel) -->
-        <div style="width:180px;height:180px;background:rgba(255,109,0,.06);border:2px solid rgba(255,109,0,.2);border-radius:32px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;animation:sgQrGlow 3s ease-in-out infinite">
-          <div style="text-align:center">
-            <p style="font-size:56px;margin-bottom:6px">\ud83c\udf0d</p>
-            <p style="color:rgba(255,255,255,.3);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px">Your QR Here</p>
-          </div>
-        </div>
-        <p style="color:#fff;font-weight:900;font-size:24px;margin-bottom:6px">Universal Gym Pass</p>
-        <p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:6px;max-width:280px">Sign up once. Scan QR to enter any gym worldwide.</p>
-        <p style="color:rgba(255,255,255,.25);font-size:11px;margin-bottom:20px">No membership · No contract · Pay per visit</p>
-        <!-- Stats row -->
-        <div style="display:flex;gap:20px;margin-bottom:20px">
-          <div style="text-align:center"><div style="color:#FF6D00;font-size:20px;font-weight:900">1.2M+</div><div style="color:rgba(255,255,255,.3);font-size:9px;font-weight:600;text-transform:uppercase">Gyms</div></div>
-          <div style="text-align:center"><div style="color:#22c55e;font-size:20px;font-weight:900">£4.49</div><div style="color:rgba(255,255,255,.3);font-size:9px;font-weight:600;text-transform:uppercase">From</div></div>
-          <div style="text-align:center"><div style="color:#3b82f6;font-size:20px;font-weight:900">190+</div><div style="color:rgba(255,255,255,.3);font-size:9px;font-weight:600;text-transform:uppercase">Countries</div></div>
-        </div>
-        <!-- CTA buttons -->
-        <div style="width:100%;max-width:300px">
-          <p style="color:rgba(255,255,255,.35);font-size:11px;margin-bottom:10px">\u2728 Join 50K+ members worldwide</p>
-          <button onclick="navigate('/login')" style="width:100%;background:linear-gradient(135deg,#FF6D00,#ff8533);color:#fff;border:none;padding:14px;border-radius:14px;font-weight:800;font-size:15px;cursor:pointer;box-shadow:0 4px 24px rgba(255,109,0,.4);margin-bottom:10px;transition:.1s;animation:sgCtaPulse 2s ease-in-out infinite" ontouchstart="this.style.transform='scale(.97)'" ontouchend="this.style.transform=''">Get Started \u2192</button>
-          <button onclick="navigate('/login')" style="width:100%;background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.1);padding:14px;border-radius:14px;font-weight:700;font-size:13px;cursor:pointer;transition:.1s" ontouchstart="this.style.background='rgba(255,255,255,.1)'" ontouchend="this.style.background='rgba(255,255,255,.06)'">I already have an account</button>
+    // Not logged in — ghost QR fills screen, CTA overlay
+    return`<div style="position:absolute;inset:0;background:#000;overflow:hidden">
+      <style>
+        @keyframes sgQrPulse{0%,100%{opacity:.1}50%{opacity:.25}}
+        @keyframes sgCtaPulse{0%,100%{box-shadow:0 4px 24px rgba(255,109,0,.35)}50%{box-shadow:0 4px 36px rgba(255,109,0,.55)}}
+      </style>
+      <!-- ═══ GHOST QR — FULL SCREEN BACKGROUND ═══ -->
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#050508;z-index:1">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=800x800&bgcolor=050508&color=1a1a2e&data=https://scangym.com/signup&margin=0" style="width:100%;height:100%;object-fit:contain;padding:12px;opacity:.4" alt="QR placeholder">
+        <div style="position:absolute;inset:0;background:radial-gradient(circle at center,rgba(255,109,0,.05) 0%,transparent 60%);animation:sgQrPulse 4s ease-in-out infinite;pointer-events:none"></div>
+        <div style="position:absolute;top:0;left:0;right:0;height:160px;background:linear-gradient(180deg,rgba(0,0,0,.9) 0%,transparent 100%);pointer-events:none"></div>
+        <div style="position:absolute;bottom:0;left:0;right:0;height:340px;background:linear-gradient(0deg,rgba(0,0,0,.95) 0%,rgba(0,0,0,.7) 50%,transparent 100%);pointer-events:none"></div>
+      </div>
+      <!-- ═══ TOP — ScanGym branding ═══ -->
+      <div style="position:absolute;top:max(env(safe-area-inset-top,0px),16px);left:16px;right:70px;z-index:10;display:flex;align-items:center;gap:10px">
+        <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#FF6D00,#ff8533);display:flex;align-items:center;justify-content:center;flex-shrink:0;border:2px solid rgba(255,109,0,.3)"><span style="font-size:16px">\ud83c\udf0d</span></div>
+        <div>
+          <span style="font-size:15px;font-weight:800;color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.8)">ScanGym</span>
+          <p style="color:rgba(255,255,255,.4);font-size:10px;text-shadow:0 1px 4px rgba(0,0,0,.6)">Universal Gym Pass</p>
         </div>
       </div>
-      <!-- Right-side action buttons (Reels/TikTok style) -->
-      <div style="position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:14px;align-items:center;z-index:5">
+      <!-- ═══ CENTER — Lock + "Your QR Pass" overlaid on ghost QR ═══ -->
+      <div style="position:absolute;top:50%;left:16px;right:70px;transform:translateY(-50%);z-index:10;text-align:center">
+        <p style="font-size:56px;margin-bottom:8px;filter:drop-shadow(0 4px 12px rgba(0,0,0,.5))">\ud83d\udd12</p>
+        <p style="color:rgba(255,255,255,.25);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;text-shadow:0 1px 6px rgba(0,0,0,.8)">Your QR Pass</p>
+      </div>
+      <!-- ═══ RIGHT-SIDE BUTTONS — TikTok style ═══ -->
+      <div style="position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:18px;align-items:center;z-index:10">
         <div onclick="navigate('/login')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
-          <div style="width:44px;height:44px;background:rgba(255,255,255,.1);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.1)">\ud83d\udc64</div>
-          <span style="color:rgba(255,255,255,.6);font-size:9px;font-weight:600">Sign Up</span>
+          <div style="width:46px;height:46px;background:rgba(0,0,0,.45);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.12)">\ud83d\udc64</div>
+          <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Sign Up</span>
         </div>
         <div onclick="switchTab('book')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
-          <div style="width:44px;height:44px;background:rgba(255,255,255,.1);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.1)">\ud83d\udd0d</div>
-          <span style="color:rgba(255,255,255,.6);font-size:9px;font-weight:600">Find Gym</span>
+          <div style="width:46px;height:46px;background:rgba(0,0,0,.45);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.12)">\ud83d\udd0d</div>
+          <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Find Gym</span>
         </div>
         <div onclick="navigate('/login')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
-          <div style="width:44px;height:44px;background:rgba(255,255,255,.1);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.1)">\ud83d\udcb3</div>
-          <span style="color:rgba(255,255,255,.6);font-size:9px;font-weight:600">Pricing</span>
+          <div style="width:46px;height:46px;background:rgba(0,0,0,.45);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.12)">\ud83d\udcb3</div>
+          <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Pricing</span>
         </div>
         <div onclick="navigate('/become-a-creator')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
-          <div style="width:44px;height:44px;background:rgba(255,109,0,.15);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,109,0,.3)">\ud83c\udfac</div>
-          <span style="color:rgba(255,255,255,.6);font-size:9px;font-weight:600">Creator</span>
+          <div style="width:46px;height:46px;background:rgba(255,109,0,.15);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,109,0,.3)">\ud83c\udfac</div>
+          <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Creator</span>
         </div>
         <div onclick="navigate('/help')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
-          <div style="width:44px;height:44px;background:rgba(255,255,255,.1);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.1)">\u2753</div>
-          <span style="color:rgba(255,255,255,.6);font-size:9px;font-weight:600">Help</span>
+          <div style="width:46px;height:46px;background:rgba(0,0,0,.45);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.12)">\u2753</div>
+          <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Help</span>
         </div>
       </div>
-      <!-- Bottom info -->
-      <div style="position:absolute;bottom:12px;left:0;right:0;text-align:center;z-index:3">
-        <p style="color:rgba(255,255,255,.2);font-size:10px">\ud83c\udf0d Accepted at any gym worldwide · No membership needed</p>
+      <!-- ═══ BOTTOM — Stats + CTA ═══ -->
+      <div style="position:absolute;bottom:12px;left:16px;right:16px;z-index:10">
+        <div style="display:flex;gap:20px;margin-bottom:14px;justify-content:center">
+          <div style="text-align:center"><span style="color:#FF6D00;font-size:18px;font-weight:900;text-shadow:0 2px 8px rgba(0,0,0,.6)">1.2M+</span><span style="color:rgba(255,255,255,.4);font-size:9px;margin-left:4px">gyms</span></div>
+          <div style="text-align:center"><span style="color:#22c55e;font-size:18px;font-weight:900;text-shadow:0 2px 8px rgba(0,0,0,.6)">\u00a34.49</span><span style="color:rgba(255,255,255,.4);font-size:9px;margin-left:4px">from</span></div>
+          <div style="text-align:center"><span style="color:#3b82f6;font-size:18px;font-weight:900;text-shadow:0 2px 8px rgba(0,0,0,.6)">190+</span><span style="color:rgba(255,255,255,.4);font-size:9px;margin-left:4px">countries</span></div>
+        </div>
+        <button onclick="navigate('/login')" style="width:100%;background:linear-gradient(135deg,#FF6D00,#ff8533);color:#fff;border:none;padding:15px;border-radius:16px;font-weight:800;font-size:16px;cursor:pointer;animation:sgCtaPulse 2s ease-in-out infinite;margin-bottom:8px;letter-spacing:.3px" ontouchstart="this.style.transform='scale(.97)'" ontouchend="this.style.transform=''">Get Your QR Pass \u2192</button>
+        <button onclick="navigate('/login')" style="width:100%;background:rgba(255,255,255,.05);color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.08);padding:12px;border-radius:14px;font-weight:600;font-size:12px;cursor:pointer" ontouchstart="this.style.background='rgba(255,255,255,.1)'" ontouchend="this.style.background='rgba(255,255,255,.05)'">I already have an account</button>
       </div>
     </div>`;
   }
