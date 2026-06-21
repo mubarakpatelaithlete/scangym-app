@@ -7,15 +7,34 @@ const router = express.Router();
 const pool = require('../middleware/db');
 const { authenticateUser, optionalAuth } = require('../middleware/auth');
 
+// ─── Helper: Resolve gymId param to integer DB id ────────────
+// Handles both integer IDs (from DB) and Google Place ID strings (e.g. "ChIJ...")
+async function resolveGymId(gymIdParam) {
+  const parsed = parseInt(gymIdParam);
+  if (!isNaN(parsed)) return parsed;
+  // It's a Place ID string — look up the gym by place_id
+  const result = await pool.query('SELECT id FROM gyms WHERE place_id = $1 LIMIT 1', [gymIdParam]);
+  return result.rows.length > 0 ? result.rows[0].id : null;
+}
+
 // GET /api/reviews/gym/:gymId - Public: Get reviews for a gym
 router.get('/gym/:gymId', optionalAuth, async (req, res) => {
   try {
-    const { gymId } = req.params;
+    const { gymId: gymIdParam } = req.params;
     const { page = 1, limit = 20, sort = 'newest' } = req.query;
     const offset = (parseInt(page) - 1) * parseInt(limit);
     const orderBy = sort === 'highest' ? 'rating DESC' :
                     sort === 'lowest' ? 'rating ASC' :
                     'created_at DESC';
+
+    const gymId = await resolveGymId(gymIdParam);
+    if (gymId === null) {
+      // No gym found for this Place ID — return empty reviews (not 500)
+      return res.json({
+        reviews: [], stats: { totalReviews: 0, averageRating: 0, distribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 } },
+        page: parseInt(page), totalPages: 0,
+      });
+    }
 
     const reviewsResult = await pool.query(`
       SELECT id, rating, comment, owner_response, created_at, updated_at,
@@ -25,7 +44,7 @@ router.get('/gym/:gymId', optionalAuth, async (req, res) => {
       WHERE gym_id = $1
       ORDER BY ${orderBy}
       LIMIT $2 OFFSET $3
-    `, [parseInt(gymId), parseInt(limit), offset]);
+    `, [gymId, parseInt(limit), offset]);
 
     const statsResult = await pool.query(`
       SELECT COUNT(*) as total_reviews,
@@ -36,7 +55,7 @@ router.get('/gym/:gymId', optionalAuth, async (req, res) => {
              COUNT(CASE WHEN rating = 2 THEN 1 END) as two_star,
              COUNT(CASE WHEN rating = 1 THEN 1 END) as one_star
       FROM reviews WHERE gym_id = $1
-    `, [parseInt(gymId)]);
+    `, [gymId]);
 
     const stats = statsResult.rows[0];
     res.json({
@@ -64,19 +83,24 @@ router.get('/gym/:gymId', optionalAuth, async (req, res) => {
 // POST /api/reviews - Auth: Create a review
 router.post('/', authenticateUser, async (req, res) => {
   try {
-    const { gymId, rating, comment, bookingId } = req.body;
+    const { gymId: gymIdParam, rating, comment, bookingId } = req.body;
     const userId = req.user.id;
 
-    if (!gymId || !rating) {
+    if (!gymIdParam || !rating) {
       return res.status(400).json({ error: 'gymId and rating are required' });
     }
     if (rating < 1 || rating > 5) {
       return res.status(400).json({ error: 'Rating must be between 1 and 5' });
     }
 
+    const gymId = await resolveGymId(gymIdParam);
+    if (gymId === null) {
+      return res.status(404).json({ error: 'Gym not found' });
+    }
+
     const existing = await pool.query(
       'SELECT id FROM reviews WHERE user_id = $1 AND gym_id = $2',
-      [userId, parseInt(gymId)]
+      [userId, gymId]
     );
     if (existing.rows.length > 0) {
       return res.status(409).json({ error: 'You already reviewed this gym', reviewId: existing.rows[0].id });
@@ -102,7 +126,7 @@ router.post('/', authenticateUser, async (req, res) => {
       INSERT INTO reviews (gym_id, user_id, booking_id, rating, comment, created_at, updated_at)
       VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
       RETURNING *
-    `, [parseInt(gymId), userId, bookingId ? parseInt(bookingId) : null, rating, comment || null]);
+    `, [gymId, userId, bookingId ? parseInt(bookingId) : null, rating, comment || null]);
 
     await pool.query(`
       UPDATE gyms SET
@@ -110,7 +134,7 @@ router.post('/', authenticateUser, async (req, res) => {
         total_reviews = (SELECT COUNT(*) FROM reviews WHERE gym_id = $1),
         updated_at = NOW()
       WHERE id = $1
-    `, [parseInt(gymId)]);
+    `, [gymId]);
 
     res.status(201).json(result.rows[0]);
   } catch (err) {
