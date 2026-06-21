@@ -11503,91 +11503,287 @@ window._closeSearchOverlay=function(){
 
 // ─── Router ───
 // ─── Bottom Tab Bar (Polished — IG/TikTok/YT style) ───
-// ═══ MUSIC TAB — Steal Spotify: real audio, real art, real controls ═══
+// ═══ MUSIC TAB — Spotify UI + TikTok fullscreen vertical scroll ═══
 function MusicTabPage(){
+  // ── Playlist data (8 curated workout playlists with real Spotify IDs) ──
   var playlists=[
-    {id:1,title:'Beast Mode',sub:'High intensity · 45 min',img:'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400&h=400&fit=crop',plays:'12.4K',spotifyId:'37i9dQZF1DX76Wlfdnj7AP'},
-    {id:2,title:'Cardio Rush',sub:'Running & HIIT · 38 min',img:'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400&h=400&fit=crop',plays:'8.7K',spotifyId:'37i9dQZF1DX3ZeFHRhhi7Y'},
-    {id:3,title:'Power Lift',sub:'Heavy sets · 52 min',img:'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=400&h=400&fit=crop',plays:'15.1K',spotifyId:'37i9dQZF1DX70RN3TfnE9m'},
-    {id:4,title:'Yoga Flow',sub:'Stretching & calm · 30 min',img:'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&h=400&fit=crop',plays:'6.2K',spotifyId:'37i9dQZF1DX9uKNf5jGX6m'},
-    {id:5,title:'Boxing Beat',sub:'Combat rhythm · 40 min',img:'https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?w=400&h=400&fit=crop',plays:'9.8K',spotifyId:'37i9dQZF1DX5OUTmBCPLvR'},
-    {id:6,title:'Lo-Fi Focus',sub:'Zen concentration · 60 min',img:'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=400&h=400&fit=crop',plays:'11.3K',spotifyId:'37i9dQZF1DWWQRwui0ExPn'},
-    {id:7,title:'Heavy Metal',sub:'Aggressive lifts · 48 min',img:'https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=400&h=400&fit=crop',plays:'7.5K',spotifyId:'37i9dQZF1DX9qNs32fujYe'},
-    {id:8,title:'Cool Down',sub:'Recovery & stretch · 20 min',img:'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=400&h=400&fit=crop',plays:'4.9K',spotifyId:'37i9dQZF1DX2PQDq3PfrWk'}
+    {id:1,title:'Beast Mode',sub:'High intensity',img:'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=600&h=600&fit=crop',color:'#c62828',spotifyId:'37i9dQZF1DX76Wlfdnj7AP',
+     tracks:[
+       {n:'Unstoppable',a:'The Score',d:'3:24',dur:204,img:'https://images.unsplash.com/photo-1470468969717-61d5d54fd036?w=200&h=200&fit=crop'},
+       {n:'Till I Collapse',a:'Eminem ft. Nate Dogg',d:'4:57',dur:297,img:'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200&h=200&fit=crop'},
+       {n:'Stronger',a:'Kanye West',d:'5:11',dur:311,img:'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=200&h=200&fit=crop'},
+       {n:'Remember the Name',a:'Fort Minor',d:'3:50',dur:230,img:'https://images.unsplash.com/photo-1504898770365-14faca6a7320?w=200&h=200&fit=crop'},
+       {n:'Thunderstruck',a:'AC/DC',d:'4:52',dur:292,img:'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=200&h=200&fit=crop'},
+       {n:'Lose Yourself',a:'Eminem',d:'5:26',dur:326,img:'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=200&h=200&fit=crop'}
+     ]},
+    {id:2,title:'Cardio Rush',sub:'Running & HIIT',img:'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=600&h=600&fit=crop',color:'#e65100',spotifyId:'37i9dQZF1DX3ZeFHRhhi7Y',
+     tracks:[
+       {n:'Blinding Lights',a:'The Weeknd',d:'3:20',dur:200,img:'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200&h=200&fit=crop'},
+       {n:'Physical',a:'Dua Lipa',d:'3:13',dur:193,img:'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=200&h=200&fit=crop'},
+       {n:'Don\'t Start Now',a:'Dua Lipa',d:'3:03',dur:183,img:'https://images.unsplash.com/photo-1504898770365-14faca6a7320?w=200&h=200&fit=crop'},
+       {n:'Levitating',a:'Dua Lipa',d:'3:23',dur:203,img:'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=200&h=200&fit=crop'},
+       {n:'Savage Love',a:'Jawsh 685',d:'2:51',dur:171,img:'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=200&h=200&fit=crop'},
+       {n:'Dynamite',a:'BTS',d:'3:19',dur:199,img:'https://images.unsplash.com/photo-1470468969717-61d5d54fd036?w=200&h=200&fit=crop'}
+     ]},
+    {id:3,title:'Power Lift',sub:'Heavy sets',img:'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=600&h=600&fit=crop',color:'#4a148c',spotifyId:'37i9dQZF1DX70RN3TfnE9m',
+     tracks:[
+       {n:'Enter Sandman',a:'Metallica',d:'5:31',dur:331,img:'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200&h=200&fit=crop'},
+       {n:'Back in Black',a:'AC/DC',d:'4:15',dur:255,img:'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=200&h=200&fit=crop'},
+       {n:'Killing in the Name',a:'Rage Against the Machine',d:'5:13',dur:313,img:'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=200&h=200&fit=crop'},
+       {n:'Bodies',a:'Drowning Pool',d:'3:22',dur:202,img:'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=200&h=200&fit=crop'},
+       {n:'Indestructible',a:'Disturbed',d:'4:36',dur:276,img:'https://images.unsplash.com/photo-1470468969717-61d5d54fd036?w=200&h=200&fit=crop'},
+       {n:'Last Resort',a:'Papa Roach',d:'3:19',dur:199,img:'https://images.unsplash.com/photo-1504898770365-14faca6a7320?w=200&h=200&fit=crop'}
+     ]},
+    {id:4,title:'Yoga Flow',sub:'Stretch & calm',img:'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=600&h=600&fit=crop',color:'#1b5e20',spotifyId:'37i9dQZF1DX9uKNf5jGX6m',
+     tracks:[
+       {n:'Weightless',a:'Marconi Union',d:'8:09',dur:489,img:'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=200&h=200&fit=crop'},
+       {n:'Breathe Me',a:'Sia',d:'4:34',dur:274,img:'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200&h=200&fit=crop'},
+       {n:'River Flows in You',a:'Yiruma',d:'3:12',dur:192,img:'https://images.unsplash.com/photo-1504898770365-14faca6a7320?w=200&h=200&fit=crop'},
+       {n:'Sunset Lover',a:'Petit Biscuit',d:'3:30',dur:210,img:'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=200&h=200&fit=crop'},
+       {n:'Orinoco Flow',a:'Enya',d:'4:25',dur:265,img:'https://images.unsplash.com/photo-1470468969717-61d5d54fd036?w=200&h=200&fit=crop'},
+       {n:'Clair de Lune',a:'Debussy',d:'5:00',dur:300,img:'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=200&h=200&fit=crop'}
+     ]},
+    {id:5,title:'Boxing Beat',sub:'Combat rhythm',img:'https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?w=600&h=600&fit=crop',color:'#b71c1c',spotifyId:'37i9dQZF1DX5OUTmBCPLvR',
+     tracks:[
+       {n:'Eye of the Tiger',a:'Survivor',d:'4:05',dur:245,img:'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=200&h=200&fit=crop'},
+       {n:'Gonna Fly Now',a:'Bill Conti',d:'2:48',dur:168,img:'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200&h=200&fit=crop'},
+       {n:'X Gon\' Give It to Ya',a:'DMX',d:'3:42',dur:222,img:'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=200&h=200&fit=crop'},
+       {n:'Can\'t Be Touched',a:'Roy Jones Jr',d:'4:01',dur:241,img:'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=200&h=200&fit=crop'},
+       {n:'Warrior',a:'Disturbed',d:'3:49',dur:229,img:'https://images.unsplash.com/photo-1504898770365-14faca6a7320?w=200&h=200&fit=crop'},
+       {n:'Smells Like Teen Spirit',a:'Nirvana',d:'5:01',dur:301,img:'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=200&h=200&fit=crop'}
+     ]},
+    {id:6,title:'Lo-Fi Focus',sub:'Zen concentration',img:'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=600&h=600&fit=crop',color:'#0d47a1',spotifyId:'37i9dQZF1DWWQRwui0ExPn',
+     tracks:[
+       {n:'Snowman',a:'WYS',d:'2:45',dur:165,img:'https://images.unsplash.com/photo-1470468969717-61d5d54fd036?w=200&h=200&fit=crop'},
+       {n:'Coffee',a:'beabadoobee',d:'3:26',dur:206,img:'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200&h=200&fit=crop'},
+       {n:'i love u',a:'Billie Eilish (lo-fi)',d:'2:53',dur:173,img:'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=200&h=200&fit=crop'},
+       {n:'Aesthetic',a:'Xilo',d:'3:10',dur:190,img:'https://images.unsplash.com/photo-1504898770365-14faca6a7320?w=200&h=200&fit=crop'},
+       {n:'Chill Vibes',a:'Saib',d:'2:35',dur:155,img:'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=200&h=200&fit=crop'},
+       {n:'Daylight',a:'Joji',d:'2:43',dur:163,img:'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=200&h=200&fit=crop'}
+     ]},
+    {id:7,title:'Heavy Metal',sub:'Aggressive lifts',img:'https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=600&h=600&fit=crop',color:'#212121',spotifyId:'37i9dQZF1DX9qNs32fujYe',
+     tracks:[
+       {n:'Master of Puppets',a:'Metallica',d:'8:36',dur:516,img:'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200&h=200&fit=crop'},
+       {n:'Chop Suey!',a:'System of a Down',d:'3:30',dur:210,img:'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=200&h=200&fit=crop'},
+       {n:'Walk',a:'Pantera',d:'5:15',dur:315,img:'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=200&h=200&fit=crop'},
+       {n:'Raining Blood',a:'Slayer',d:'4:17',dur:257,img:'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=200&h=200&fit=crop'},
+       {n:'Du Hast',a:'Rammstein',d:'3:54',dur:234,img:'https://images.unsplash.com/photo-1470468969717-61d5d54fd036?w=200&h=200&fit=crop'},
+       {n:'Psychosocial',a:'Slipknot',d:'4:43',dur:283,img:'https://images.unsplash.com/photo-1504898770365-14faca6a7320?w=200&h=200&fit=crop'}
+     ]},
+    {id:8,title:'Cool Down',sub:'Recovery & stretch',img:'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=600&h=600&fit=crop',color:'#006064',spotifyId:'37i9dQZF1DX2PQDq3PfrWk',
+     tracks:[
+       {n:'Someone Like You',a:'Adele',d:'4:45',dur:285,img:'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200&h=200&fit=crop'},
+       {n:'Fix You',a:'Coldplay',d:'4:55',dur:295,img:'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=200&h=200&fit=crop'},
+       {n:'Let Her Go',a:'Passenger',d:'4:12',dur:252,img:'https://images.unsplash.com/photo-1504898770365-14faca6a7320?w=200&h=200&fit=crop'},
+       {n:'Skinny Love',a:'Bon Iver',d:'3:58',dur:238,img:'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=200&h=200&fit=crop'},
+       {n:'Chasing Cars',a:'Snow Patrol',d:'4:27',dur:267,img:'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=200&h=200&fit=crop'},
+       {n:'Falling Slowly',a:'Glen Hansard',d:'4:02',dur:242,img:'https://images.unsplash.com/photo-1470468969717-61d5d54fd036?w=200&h=200&fit=crop'}
+     ]}
   ];
-  var tracks=[
-    {n:'Unstoppable',a:'The Score',d:'3:24',img:'https://images.unsplash.com/photo-1470468969717-61d5d54fd036?w=80&h=80&fit=crop'},
-    {n:'Till I Collapse',a:'Eminem',d:'4:57',img:'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=80&h=80&fit=crop'},
-    {n:'Stronger',a:'Kanye West',d:'5:11',img:'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=80&h=80&fit=crop'},
-    {n:'Eye of the Tiger',a:'Survivor',d:'4:05',img:'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=80&h=80&fit=crop'},
-    {n:'Lose Yourself',a:'Eminem',d:'5:26',img:'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=80&h=80&fit=crop'},
-    {n:'Remember the Name',a:'Fort Minor',d:'3:50',img:'https://images.unsplash.com/photo-1504898770365-14faca6a7320?w=80&h=80&fit=crop'},
-    {n:'Thunderstruck',a:'AC/DC',d:'4:52',img:'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=80&h=80&fit=crop'},
-    {n:'Can\'t Hold Us',a:'Macklemore',d:'4:18',img:'https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?w=80&h=80&fit=crop'}
-  ];
-  var _ci=window._sgMusicIdx||0;var pl=playlists[_ci];
-  var _at=window._sgMusicTrack||0;
+
+  // ── State ──
+  var _pi=window._sgMusicPI||0; // playlist index
+  var _ti=window._sgMusicTI||0; // track index within playlist
   var _playing=window._sgMusicPlaying||false;
-  var _search=window._sgMusicSearch||'';
-  var _showEmbed=window._sgMusicEmbed||false;
-  // Filter tracks by search
-  var filtered=tracks;
-  if(_search){filtered=tracks.filter(function(t){return t.n.toLowerCase().indexOf(_search.toLowerCase())>=0||t.a.toLowerCase().indexOf(_search.toLowerCase())>=0;});}
-  // Progress bar animation
-  // Live timer
-  if(_playing&&!window._sgMusicTimer){window._sgMusicStart=Date.now();window._sgMusicTimer=setInterval(function(){var el=document.getElementById('sg-music-elapsed');if(el){var s=Math.floor((Date.now()-window._sgMusicStart)/1000);el.textContent=Math.floor(s/60)+':'+(s%60<10?'0':'')+s%60;}var bar=document.getElementById('sg-music-bar');if(bar){var dur=214;var pct=Math.min(100,s/dur*100);bar.style.width=pct+'%';}},1000);}
+  var _liked=window._sgMusicLiked||{};
+  var _shuffle=window._sgMusicShuffle||false;
+  var _repeat=window._sgMusicRepeat||false;
+
+  var pl=playlists[_pi];
+  var tracks=pl.tracks;
+  var t=tracks[_ti]||tracks[0];
+
+  // ── Timer logic ──
+  if(_playing&&!window._sgMusicTimer){
+    window._sgMusicStart=Date.now();
+    window._sgMusicTimer=setInterval(function(){
+      var el=document.getElementById('sg-m-elapsed');
+      var bar=document.getElementById('sg-m-prog');
+      var dot=document.getElementById('sg-m-dot');
+      if(!el||!bar)return;
+      var s=Math.floor((Date.now()-window._sgMusicStart)/1000);
+      var track=playlists[window._sgMusicPI||0].tracks[window._sgMusicTI||0];
+      var dur=track?track.dur:240;
+      el.textContent=Math.floor(s/60)+':'+((s%60)<10?'0':'')+(s%60);
+      var pct=Math.min(100,s/dur*100);
+      bar.style.width=pct+'%';
+      if(dot)dot.style.left='calc('+pct+'% - 6px)';
+      // Auto-advance
+      if(s>=dur){
+        window._sgMusicTI=((window._sgMusicTI||0)+1)%playlists[window._sgMusicPI||0].tracks.length;
+        window._sgMusicStart=Date.now();
+        // Scroll to next track
+        var carousel=document.getElementById('sg-m-carousel');
+        if(carousel){var h=carousel.clientHeight;carousel.scrollTo({top:h*(window._sgMusicTI),behavior:'smooth'});}
+        render();
+      }
+    },500);
+  }
   if(!_playing&&window._sgMusicTimer){clearInterval(window._sgMusicTimer);window._sgMusicTimer=null;}
-  var _elapsed=0;if(_playing&&window._sgMusicStart)_elapsed=Math.floor((Date.now()-window._sgMusicStart)/1000);
+
+  var _elapsed=0;
+  if(_playing&&window._sgMusicStart)_elapsed=Math.floor((Date.now()-window._sgMusicStart)/1000);
   var _elStr=Math.floor(_elapsed/60)+':'+(_elapsed%60<10?'0':'')+_elapsed%60;
-  var progWidth=_playing?(_elapsed/214*100)+'%':'35%';
-  var progAnim='';
-  return`<div style="position:absolute;inset:0;background:#0a0a16;overflow:hidden">
-    <style>@keyframes sgMusicPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.03)}}@keyframes sgEqualizer{0%,100%{height:4px}50%{height:16px}}@keyframes sgDiscSpin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}</style>
-    <!-- Background from playlist art (blurred) -->
-    <div style="position:absolute;inset:0;background:url('${pl.img}') center/cover;opacity:.12;filter:blur(50px);pointer-events:none"></div>
-    <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,10,22,.3) 0%,rgba(10,10,22,.85) 50%,#0a0a16 100%);pointer-events:none"></div>
-    <!-- Fixed full-screen layout — no scrolling -->
-    <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px 20px;z-index:2">
-      <!-- Top: Title -->
-      <div style="position:absolute;top:12px;left:16px;right:16px;display:flex;align-items:center;justify-content:space-between">
-        <span style="color:#fff;font-size:17px;font-weight:800">🎵 Music</span>
-        <div onclick="window._sgMusicSearchOpen=!window._sgMusicSearchOpen;render()" style="width:32px;height:32px;background:rgba(255,255,255,.1);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px">🔍</div>
-      </div>
-      ${window._sgMusicSearchOpen?'<div style="position:absolute;top:48px;left:16px;right:16px;z-index:10"><input id="sg-music-search" type="text" placeholder="Search tracks..." value="'+_search+'" oninput="window._sgMusicSearch=this.value;render()" style="width:100%;background:rgba(10,10,22,.9);backdrop-filter:blur(12px);border:1px solid rgba(255,109,0,.3);border-radius:14px;padding:10px 16px;color:#fff;font-size:13px;outline:none;box-sizing:border-box"></div>':''}
-      <!-- Album art (centered, large) -->
-      <div style="width:200px;height:200px;margin-bottom:16px;border-radius:24px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.6);${_playing?'animation:sgMusicPulse 2s ease-in-out infinite':''}"><img src="${pl.img}" width="200" height="200" style="width:100%;height:100%;object-fit:cover;display:block" alt="${pl.title}" onerror="this.parentElement.style.background='linear-gradient(135deg,#FF6D00,#E66200)';this.parentElement.innerHTML='<div style=\\'display:flex;align-items:center;justify-content:center;height:100%;font-size:64px\\'>🎵</div>'"></div>
-      <!-- Song info -->
-      <p style="color:#fff;font-size:20px;font-weight:900;margin:0 0 2px">${pl.title}</p>
-      <p style="color:rgba(255,255,255,.45);font-size:12px;margin:0 0 4px">${pl.sub} · ${pl.plays} plays</p>
-      <p style="color:rgba(255,255,255,.3);font-size:11px;margin:0 0 16px">Now playing: ${tracks[_at].n} — ${tracks[_at].a}</p>
-      <!-- Controls -->
-      <div style="display:flex;align-items:center;justify-content:center;gap:18px;margin-bottom:12px">
-        <div onclick="window._sgMusicShuffle=!window._sgMusicShuffle;render()" style="width:38px;height:38px;background:${window._sgMusicShuffle?'rgba(255,109,0,.15)':'rgba(255,255,255,.06)'};border:1px solid ${window._sgMusicShuffle?'rgba(255,109,0,.3)':'rgba(255,255,255,.08)'};border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px">🔀</div>
-        <div onclick="window._sgMusicTrack=(_at>0?_at-1:7);window._sgMusicStart=Date.now();render()" style="width:42px;height:42px;background:rgba(255,255,255,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:17px">⏮</div>
-        <div onclick="window._sgMusicPlaying=!window._sgMusicPlaying;window._sgMusicEmbed=true;render()" style="width:60px;height:60px;background:#FF6D00;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:24px;box-shadow:0 4px 24px rgba(255,109,0,.4)">${_playing?'⏸':'▶'}</div>
-        <div onclick="window._sgMusicTrack=((_at+1)%8);window._sgMusicStart=Date.now();render()" style="width:42px;height:42px;background:rgba(255,255,255,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:17px">⏭</div>
-        <div onclick="window._sgMusicRepeat=!window._sgMusicRepeat;render()" style="width:38px;height:38px;background:${window._sgMusicRepeat?'rgba(255,109,0,.15)':'rgba(255,255,255,.06)'};border:1px solid ${window._sgMusicRepeat?'rgba(255,109,0,.3)':'rgba(255,255,255,.08)'};border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px">🔁</div>
-      </div>
-      <!-- Progress bar -->
-      <div style="width:calc(100% - 40px);max-width:320px">
-        <div style="height:4px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden"><div id="sg-music-bar" style="width:${progWidth};height:100%;background:linear-gradient(90deg,#FF6D00,#ff9a44);border-radius:2px;transition:width 1s linear"></div></div>
-        <div style="display:flex;justify-content:space-between;margin-top:4px"><span id="sg-music-elapsed" style="color:rgba(255,255,255,.3);font-size:10px">${_playing?_elStr:'1:12'}</span><span style="color:rgba(255,255,255,.3);font-size:10px">${tracks[_at].d}</span></div>
-      </div>
-      <!-- Spotify embed (compact, at bottom) -->
-      ${_showEmbed?'<div style="width:calc(100% - 20px);max-width:340px;margin-top:12px;border-radius:12px;overflow:hidden"><iframe style="border-radius:12px" src="https://open.spotify.com/embed/playlist/'+pl.spotifyId+'?utm_source=generator&theme=0" width="100%" height="80" frameBorder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe></div>':'<div onclick="window._sgMusicEmbed=true;render()" style="margin-top:12px;color:#FF6D00;font-size:12px;font-weight:700;cursor:pointer">Open Spotify Player ▶</div>'}
-    </div>
-    <!-- Right-side action buttons (Reels/TikTok style) -->
-    <div style="position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:14px;align-items:center;z-index:5">
-      ${playlists.slice(0,6).map(function(p,i){return '<div onclick="window._sgMusicIdx='+i+';window._sgMusicTrack=0;window._sgMusicEmbed=true;window._sgMusicStart=Date.now();window._sgMusicPlaying=true;render()" style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer"><div style="width:44px;height:44px;border-radius:50%;overflow:hidden;border:2px solid '+(i===_ci?'rgba(255,109,0,.5)':'rgba(255,255,255,.1)')+';display:flex;align-items:center;justify-content:center"><img src="'+p.img+'" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML=\'🎵\'"></div><span style="color:'+(i===_ci?'#FF6D00':'rgba(255,255,255,.5)')+';font-size:8px;font-weight:600;max-width:44px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+p.title.split(' ')[0]+'</span></div>';}).join('')}
-    </div>
-    <!-- Bottom: Up Next (compact horizontal scroll) -->
-    <div style="position:absolute;bottom:8px;left:0;right:0;z-index:3;padding:0 12px">
-      <div style="display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:4px">
-        ${filtered.map(function(t,i){var isActive=i===_at;return '<div onclick="window._sgMusicTrack='+i+';window._sgMusicPlaying=true;window._sgMusicEmbed=true;window._sgMusicStart=Date.now();render()" style="flex-shrink:0;display:flex;align-items:center;gap:8px;padding:6px 10px;background:'+(isActive?'rgba(255,109,0,.15)':'rgba(255,255,255,.05)')+';backdrop-filter:blur(8px);border:1px solid '+(isActive?'rgba(255,109,0,.3)':'rgba(255,255,255,.06)')+';border-radius:10px;cursor:pointer"><div style="width:32px;height:32px;border-radius:8px;overflow:hidden;flex-shrink:0;position:relative"><img src="'+t.img+'" width="32" height="32" style="width:100%;height:100%;object-fit:cover">'+(isActive&&_playing?'<div style="position:absolute;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center;gap:1px;padding-bottom:6px"><div style="width:2px;background:#FF6D00;border-radius:1px;animation:sgEqualizer .4s ease infinite"></div><div style="width:2px;background:#FF6D00;border-radius:1px;animation:sgEqualizer .4s ease .1s infinite"></div><div style="width:2px;background:#FF6D00;border-radius:1px;animation:sgEqualizer .4s ease .2s infinite"></div></div>':'')+'</div><div style="min-width:0"><p style="color:'+(isActive?'#FF6D00':'#fff')+';font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px">'+t.n+'</p><p style="color:rgba(255,255,255,.3);font-size:9px;white-space:nowrap">'+t.a+'</p></div></div>';}).join('')}
-      </div>
-    </div>
-  </div>`;
+  var progPct=_playing?Math.min(100,_elapsed/(t.dur||240)*100):0;
+
+  // ── Build fullscreen track cards (TikTok-style vertical snap scroll) ──
+  var trackCards=tracks.map(function(tr,idx){
+    var isActive=idx===_ti;
+    var likeKey=_pi+'_'+idx;
+    var isLiked=_liked[likeKey];
+
+    return '<div class="sg-m-card" data-idx="'+idx+'" style="'+
+      'width:100%;height:100%;flex:0 0 100%;scroll-snap-align:start;position:relative;overflow:hidden;'+
+      (isActive?'':'content-visibility:auto;contain-intrinsic-size:auto 100vh;')+
+    '">'+
+      // Blurred background from track art
+      '<div style="position:absolute;inset:-40px;background:url(\''+tr.img+'\') center/cover;filter:blur(60px) saturate(1.4) brightness(.4);transform:scale(1.3);pointer-events:none;will-change:transform"></div>'+
+      // Dark gradient overlay
+      '<div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.2) 0%,rgba(0,0,0,.45) 40%,rgba(0,0,0,.7) 100%);pointer-events:none"></div>'+
+      // Content (centered like Spotify now-playing)
+      '<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px 100px;z-index:2">'+
+        // Album art — large, Spotify-style rounded
+        '<div style="width:min(280px,72vw);aspect-ratio:1;border-radius:12px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.6),0 8px 32px rgba(0,0,0,.4);margin-bottom:28px;'+
+          (isActive&&_playing?'animation:sgMusicPulse 3s ease-in-out infinite':'')+
+        '"><img src="'+tr.img.replace('200','600')+'" style="width:100%;height:100%;object-fit:cover;display:block" alt="'+tr.n+'" loading="'+(Math.abs(idx-_ti)<=1?'eager':'lazy')+'"></div>'+
+        // Track info
+        '<div style="text-align:center;width:100%;max-width:320px">'+
+          '<h2 style="color:#fff;font-size:22px;font-weight:800;margin:0 0 4px;letter-spacing:-.3px;text-shadow:0 2px 12px rgba(0,0,0,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+tr.n+'</h2>'+
+          '<p style="color:rgba(255,255,255,.65);font-size:14px;font-weight:500;margin:0 0 2px">'+tr.a+'</p>'+
+          '<p style="color:rgba(255,255,255,.35);font-size:11px;font-weight:600;margin:0;text-transform:uppercase;letter-spacing:1px">'+pl.title+'</p>'+
+        '</div>'+
+      '</div>'+
+      // Right-side TikTok actions
+      '<div style="position:absolute;right:12px;bottom:140px;display:flex;flex-direction:column;align-items:center;gap:20px;z-index:5">'+
+        // Like
+        '<div onclick="event.stopPropagation();var l=window._sgMusicLiked||{};var k=\''+likeKey+'\';l[k]=!l[k];window._sgMusicLiked=l;render()" style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;-webkit-tap-highlight-color:transparent">'+
+          '<div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:26px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5))">'+(isLiked?'❤️':'🤍')+'</div>'+
+          '<span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">'+(isLiked?'Liked':'Like')+'</span>'+
+        '</div>'+
+        // Add to playlist
+        '<div style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer">'+
+          '<div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:24px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5))">➕</div>'+
+          '<span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">Save</span>'+
+        '</div>'+
+        // Share
+        '<div onclick="event.stopPropagation();navigator.clipboard&&navigator.clipboard.writeText(\'https://scangym.com/music?track='+encodeURIComponent(tr.n)+'\');window._sgToast&&window._sgToast(\'Link copied!\',\'✅\')" style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer">'+
+          '<div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:24px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5))">↗️</div>'+
+          '<span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">Share</span>'+
+        '</div>'+
+        // Playlist art (spinning disc when playing — Spotify DNA)
+        '<div style="width:44px;height:44px;border-radius:50%;overflow:hidden;border:2px solid rgba(255,255,255,.2);'+
+          (isActive&&_playing?'animation:sgDiscSpin 4s linear infinite':'')+
+        '"><img src="'+pl.img+'" style="width:100%;height:100%;object-fit:cover" alt="'+pl.title+'"></div>'+
+      '</div>'+
+      // Swipe hint (only on first card)
+      (idx===0&&!_playing?'<div style="position:absolute;bottom:110px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:4px;z-index:3;animation:sgSwipeHint 2s ease-in-out infinite;opacity:.5"><div style="width:20px;height:20px;border-left:2px solid rgba(255,255,255,.5);border-bottom:2px solid rgba(255,255,255,.5);transform:rotate(-45deg)"></div><span style="color:rgba(255,255,255,.5);font-size:10px;font-weight:600">Swipe up</span></div>':'')+
+    '</div>';
+  }).join('');
+
+  // ── Playlist category pills ──
+  var pills=playlists.map(function(p,i){
+    var active=i===_pi;
+    return '<div onclick="window._sgMusicPI='+i+';window._sgMusicTI=0;window._sgMusicStart=Date.now();window._sgMusicPlaying=true;var c=document.getElementById(\'sg-m-carousel\');if(c)c.scrollTop=0;render()" style="'+
+      'flex-shrink:0;padding:6px 16px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;'+
+      'white-space:nowrap;transition:all .15s;-webkit-tap-highlight-color:transparent;'+
+      (active?'background:#FF6D00;color:#fff;box-shadow:0 2px 12px rgba(255,109,0,.35)':'background:rgba(255,255,255,.08);color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.08)')+
+    '">'+p.title+'</div>';
+  }).join('');
+
+  // ── Build the full page ──
+  return '<div style="position:absolute;inset:0;background:#0a0a0a;overflow:hidden">'+
+    // CSS animations
+    '<style>'+
+      '@keyframes sgMusicPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.02)}}'+
+      '@keyframes sgEq{0%,100%{height:3px}50%{height:14px}}'+
+      '@keyframes sgDiscSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}'+
+      '@keyframes sgSwipeHint{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-12px)}}'+
+      '@keyframes sgDotPulse{0%,100%{opacity:.4}50%{opacity:1}}'+
+      '.sg-m-card{will-change:auto;contain:layout style paint}'+
+      '#sg-m-carousel::-webkit-scrollbar{display:none}'+
+      '#sg-m-carousel{scrollbar-width:none;-ms-overflow-style:none}'+
+    '</style>'+
+    // ── Top bar: category pills (horizontal scroll, Spotify-style) ──
+    '<div style="position:absolute;top:0;left:0;right:0;z-index:10;padding:8px 0 0;background:linear-gradient(180deg,rgba(0,0,0,.7) 0%,transparent 100%)">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;padding:0 16px 8px">'+
+        '<span style="color:#fff;font-size:18px;font-weight:900;letter-spacing:-.3px">Music</span>'+
+        '<div style="display:flex;gap:8px">'+
+          '<div onclick="window._sgMusicSearchOpen=!window._sgMusicSearchOpen;render()" style="width:34px;height:34px;background:rgba(255,255,255,.1);backdrop-filter:blur(12px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px">🔍</div>'+
+        '</div>'+
+      '</div>'+
+      // Search bar (toggle)
+      (window._sgMusicSearchOpen?'<div style="padding:0 16px 8px"><input id="sg-music-search-input" type="text" placeholder="Search songs, artists..." value="'+(window._sgMusicSearch||'')+'" oninput="window._sgMusicSearch=this.value;render()" style="width:100%;background:rgba(255,255,255,.08);border:1px solid rgba(255,109,0,.2);border-radius:12px;padding:10px 16px;color:#fff;font-size:14px;outline:none;box-sizing:border-box;backdrop-filter:blur(12px)"></div>':'')+
+      // Category pills
+      '<div style="display:flex;gap:8px;overflow-x:auto;padding:0 16px 10px;-webkit-overflow-scrolling:touch;scrollbar-width:none">'+pills+'</div>'+
+    '</div>'+
+    // ── Vertical snap-scroll carousel (TikTok-style) ──
+    '<div id="sg-m-carousel" style="'+
+      'position:absolute;inset:0;'+
+      'display:flex;flex-direction:column;'+
+      'overflow-y:auto;overflow-x:hidden;'+
+      'scroll-snap-type:y mandatory;'+
+      '-webkit-overflow-scrolling:touch;'+
+      'scroll-behavior:smooth;'+
+      'will-change:scroll-position;'+
+    '">'+trackCards+'</div>'+
+    // ── Bottom player bar (Spotify mini player — fixed, always visible) ──
+    '<div style="position:absolute;bottom:0;left:0;right:0;z-index:10;background:linear-gradient(180deg,transparent 0%,rgba(0,0,0,.85) 30%,rgba(0,0,0,.95) 100%);padding:12px 16px 8px">'+
+      // Progress bar + scrubber
+      '<div style="width:100%;margin-bottom:8px;position:relative">'+
+        '<div style="height:3px;background:rgba(255,255,255,.12);border-radius:2px;overflow:visible;position:relative">'+
+          '<div id="sg-m-prog" style="width:'+progPct+'%;height:100%;background:linear-gradient(90deg,#FF6D00,#ff9a44);border-radius:2px;transition:width .5s linear"></div>'+
+          '<div id="sg-m-dot" style="position:absolute;top:-4px;left:calc('+progPct+'% - 6px);width:12px;height:12px;background:#fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.4);transition:left .5s linear;pointer-events:none"></div>'+
+        '</div>'+
+        '<div style="display:flex;justify-content:space-between;margin-top:4px">'+
+          '<span id="sg-m-elapsed" style="color:rgba(255,255,255,.4);font-size:10px;font-weight:500">'+(_playing?_elStr:'0:00')+'</span>'+
+          '<span style="color:rgba(255,255,255,.4);font-size:10px;font-weight:500">'+t.d+'</span>'+
+        '</div>'+
+      '</div>'+
+      // Transport controls (Spotify-style)
+      '<div style="display:flex;align-items:center;justify-content:center;gap:24px">'+
+        // Shuffle
+        '<div onclick="window._sgMusicShuffle=!window._sgMusicShuffle;render()" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;opacity:'+(_shuffle?'1':'.4')+';'+(_shuffle?'color:#FF6D00':'')+'">🔀</div>'+
+        // Previous
+        '<div onclick="window._sgMusicTI=Math.max(0,(window._sgMusicTI||0)-1);window._sgMusicStart=Date.now();var c=document.getElementById(\'sg-m-carousel\');if(c){c.scrollTo({top:c.clientHeight*window._sgMusicTI,behavior:\'smooth\'});}render()" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:22px;-webkit-tap-highlight-color:transparent">⏮</div>'+
+        // Play/Pause (large orange button — Spotify DNA)
+        '<div onclick="window._sgMusicPlaying=!window._sgMusicPlaying;render()" style="width:56px;height:56px;background:#FF6D00;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:24px;box-shadow:0 4px 24px rgba(255,109,0,.45);-webkit-tap-highlight-color:transparent;transition:transform .1s;active:scale(.92)">'+(_playing?'⏸':'▶️')+'</div>'+
+        // Next
+        '<div onclick="var tracks='+JSON.stringify(tracks.map(function(x){return 1;}))+';window._sgMusicTI=((window._sgMusicTI||0)+1)%'+tracks.length+';window._sgMusicStart=Date.now();var c=document.getElementById(\'sg-m-carousel\');if(c){c.scrollTo({top:c.clientHeight*window._sgMusicTI,behavior:\'smooth\'});}render()" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:22px;-webkit-tap-highlight-color:transparent">⏭</div>'+
+        // Repeat
+        '<div onclick="window._sgMusicRepeat=!window._sgMusicRepeat;render()" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;opacity:'+(_repeat?'1':'.4')+';'+(_repeat?'color:#FF6D00':'')+'">🔁</div>'+
+      '</div>'+
+      // Now playing mini info
+      '<div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:6px">'+
+        '<div style="display:flex;gap:2px;align-items:flex-end;height:14px">'+
+          (_playing?'<div style="width:2px;background:#FF6D00;border-radius:1px;animation:sgEq .4s ease infinite"></div><div style="width:2px;background:#FF6D00;border-radius:1px;animation:sgEq .4s ease .15s infinite"></div><div style="width:2px;background:#FF6D00;border-radius:1px;animation:sgEq .4s ease .3s infinite"></div><div style="width:2px;background:#FF6D00;border-radius:1px;animation:sgEq .4s ease .1s infinite"></div>':'')+
+        '</div>'+
+        '<span style="color:rgba(255,255,255,.5);font-size:11px;font-weight:600">'+t.n+' · '+t.a+'</span>'+
+      '</div>'+
+    '</div>'+
+  '</div>';
 }
+
+// ── Scroll listener: sync track index with scroll position ──
+(function(){
+  var _scrollDebounce;
+  document.addEventListener('scroll',function(e){
+    var carousel=document.getElementById('sg-m-carousel');
+    if(!carousel||e.target!==carousel)return;
+    clearTimeout(_scrollDebounce);
+    _scrollDebounce=setTimeout(function(){
+      var h=carousel.clientHeight;
+      if(h<=0)return;
+      var idx=Math.round(carousel.scrollTop/h);
+      if(idx!==window._sgMusicTI){
+        window._sgMusicTI=idx;
+        window._sgMusicStart=Date.now();
+        window._sgMusicPlaying=true;
+        render();
+      }
+    },150);
+  },true);
+})();
+
 
 // ═══ PHOTOS TAB — Steal Pinterest: masonry grid, real photos, working filters ═══
 function PhotosTabPage(){
