@@ -292,6 +292,7 @@ const apiPaths = [
   '/api/geolocation',
   '/api/streaks',
   '/api/channels',
+  '/api/chatbot',
 ];
 apiPaths.forEach(p => app.use(p, express.json()));
 
