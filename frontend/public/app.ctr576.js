@@ -11503,11 +11503,11 @@ window._closeSearchOverlay=function(){
 
 // ─── Router ───
 // ─── Bottom Tab Bar (Polished — IG/TikTok/YT style) ───
-// ═══ MUSIC TAB — Spotify UI + TikTok fullscreen vertical scroll ═══
+// ═══ MUSIC TAB — Fullscreen vertical scroll player ═══
 function MusicTabPage(){
-  // ── Playlist data (8 curated workout playlists with real Spotify IDs) ──
+  // ── Playlist data (8 curated workout playlists) ──
   var playlists=[
-    {id:1,title:'Beast Mode',sub:'High intensity',img:'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=600&h=600&fit=crop',color:'#c62828',spotifyId:'37i9dQZF1DX76Wlfdnj7AP',
+    {id:1,title:'Beast Mode',sub:'High intensity',img:'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=600&h=600&fit=crop',color:'#c62828',
      tracks:[
        {n:'Unstoppable',a:'The Score',d:'3:24',dur:204,img:'https://images.unsplash.com/photo-1470468969717-61d5d54fd036?w=200&h=200&fit=crop'},
        {n:'Till I Collapse',a:'Eminem ft. Nate Dogg',d:'4:57',dur:297,img:'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200&h=200&fit=crop'},
@@ -11516,7 +11516,7 @@ function MusicTabPage(){
        {n:'Thunderstruck',a:'AC/DC',d:'4:52',dur:292,img:'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=200&h=200&fit=crop'},
        {n:'Lose Yourself',a:'Eminem',d:'5:26',dur:326,img:'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=200&h=200&fit=crop'}
      ]},
-    {id:2,title:'Cardio Rush',sub:'Running & HIIT',img:'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=600&h=600&fit=crop',color:'#e65100',spotifyId:'37i9dQZF1DX3ZeFHRhhi7Y',
+    {id:2,title:'Cardio Rush',sub:'Running & HIIT',img:'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=600&h=600&fit=crop',color:'#e65100',
      tracks:[
        {n:'Blinding Lights',a:'The Weeknd',d:'3:20',dur:200,img:'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200&h=200&fit=crop'},
        {n:'Physical',a:'Dua Lipa',d:'3:13',dur:193,img:'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=200&h=200&fit=crop'},
@@ -11525,7 +11525,7 @@ function MusicTabPage(){
        {n:'Savage Love',a:'Jawsh 685',d:'2:51',dur:171,img:'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=200&h=200&fit=crop'},
        {n:'Dynamite',a:'BTS',d:'3:19',dur:199,img:'https://images.unsplash.com/photo-1470468969717-61d5d54fd036?w=200&h=200&fit=crop'}
      ]},
-    {id:3,title:'Power Lift',sub:'Heavy sets',img:'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=600&h=600&fit=crop',color:'#4a148c',spotifyId:'37i9dQZF1DX70RN3TfnE9m',
+    {id:3,title:'Power Lift',sub:'Heavy sets',img:'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=600&h=600&fit=crop',color:'#4a148c',
      tracks:[
        {n:'Enter Sandman',a:'Metallica',d:'5:31',dur:331,img:'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200&h=200&fit=crop'},
        {n:'Back in Black',a:'AC/DC',d:'4:15',dur:255,img:'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=200&h=200&fit=crop'},
@@ -11534,7 +11534,7 @@ function MusicTabPage(){
        {n:'Indestructible',a:'Disturbed',d:'4:36',dur:276,img:'https://images.unsplash.com/photo-1470468969717-61d5d54fd036?w=200&h=200&fit=crop'},
        {n:'Last Resort',a:'Papa Roach',d:'3:19',dur:199,img:'https://images.unsplash.com/photo-1504898770365-14faca6a7320?w=200&h=200&fit=crop'}
      ]},
-    {id:4,title:'Yoga Flow',sub:'Stretch & calm',img:'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=600&h=600&fit=crop',color:'#1b5e20',spotifyId:'37i9dQZF1DX9uKNf5jGX6m',
+    {id:4,title:'Yoga Flow',sub:'Stretch & calm',img:'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=600&h=600&fit=crop',color:'#1b5e20',
      tracks:[
        {n:'Weightless',a:'Marconi Union',d:'8:09',dur:489,img:'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=200&h=200&fit=crop'},
        {n:'Breathe Me',a:'Sia',d:'4:34',dur:274,img:'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200&h=200&fit=crop'},
@@ -11543,7 +11543,7 @@ function MusicTabPage(){
        {n:'Orinoco Flow',a:'Enya',d:'4:25',dur:265,img:'https://images.unsplash.com/photo-1470468969717-61d5d54fd036?w=200&h=200&fit=crop'},
        {n:'Clair de Lune',a:'Debussy',d:'5:00',dur:300,img:'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=200&h=200&fit=crop'}
      ]},
-    {id:5,title:'Boxing Beat',sub:'Combat rhythm',img:'https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?w=600&h=600&fit=crop',color:'#b71c1c',spotifyId:'37i9dQZF1DX5OUTmBCPLvR',
+    {id:5,title:'Boxing Beat',sub:'Combat rhythm',img:'https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?w=600&h=600&fit=crop',color:'#b71c1c',
      tracks:[
        {n:'Eye of the Tiger',a:'Survivor',d:'4:05',dur:245,img:'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=200&h=200&fit=crop'},
        {n:'Gonna Fly Now',a:'Bill Conti',d:'2:48',dur:168,img:'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200&h=200&fit=crop'},
@@ -11552,7 +11552,7 @@ function MusicTabPage(){
        {n:'Warrior',a:'Disturbed',d:'3:49',dur:229,img:'https://images.unsplash.com/photo-1504898770365-14faca6a7320?w=200&h=200&fit=crop'},
        {n:'Smells Like Teen Spirit',a:'Nirvana',d:'5:01',dur:301,img:'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=200&h=200&fit=crop'}
      ]},
-    {id:6,title:'Lo-Fi Focus',sub:'Zen concentration',img:'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=600&h=600&fit=crop',color:'#0d47a1',spotifyId:'37i9dQZF1DWWQRwui0ExPn',
+    {id:6,title:'Lo-Fi Focus',sub:'Zen concentration',img:'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=600&h=600&fit=crop',color:'#0d47a1',
      tracks:[
        {n:'Snowman',a:'WYS',d:'2:45',dur:165,img:'https://images.unsplash.com/photo-1470468969717-61d5d54fd036?w=200&h=200&fit=crop'},
        {n:'Coffee',a:'beabadoobee',d:'3:26',dur:206,img:'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200&h=200&fit=crop'},
@@ -11561,7 +11561,7 @@ function MusicTabPage(){
        {n:'Chill Vibes',a:'Saib',d:'2:35',dur:155,img:'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=200&h=200&fit=crop'},
        {n:'Daylight',a:'Joji',d:'2:43',dur:163,img:'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=200&h=200&fit=crop'}
      ]},
-    {id:7,title:'Heavy Metal',sub:'Aggressive lifts',img:'https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=600&h=600&fit=crop',color:'#212121',spotifyId:'37i9dQZF1DX9qNs32fujYe',
+    {id:7,title:'Heavy Metal',sub:'Aggressive lifts',img:'https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=600&h=600&fit=crop',color:'#212121',
      tracks:[
        {n:'Master of Puppets',a:'Metallica',d:'8:36',dur:516,img:'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200&h=200&fit=crop'},
        {n:'Chop Suey!',a:'System of a Down',d:'3:30',dur:210,img:'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=200&h=200&fit=crop'},
@@ -11570,7 +11570,7 @@ function MusicTabPage(){
        {n:'Du Hast',a:'Rammstein',d:'3:54',dur:234,img:'https://images.unsplash.com/photo-1470468969717-61d5d54fd036?w=200&h=200&fit=crop'},
        {n:'Psychosocial',a:'Slipknot',d:'4:43',dur:283,img:'https://images.unsplash.com/photo-1504898770365-14faca6a7320?w=200&h=200&fit=crop'}
      ]},
-    {id:8,title:'Cool Down',sub:'Recovery & stretch',img:'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=600&h=600&fit=crop',color:'#006064',spotifyId:'37i9dQZF1DX2PQDq3PfrWk',
+    {id:8,title:'Cool Down',sub:'Recovery & stretch',img:'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=600&h=600&fit=crop',color:'#006064',
      tracks:[
        {n:'Someone Like You',a:'Adele',d:'4:45',dur:285,img:'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200&h=200&fit=crop'},
        {n:'Fix You',a:'Coldplay',d:'4:55',dur:295,img:'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=200&h=200&fit=crop'},
@@ -11640,9 +11640,9 @@ function MusicTabPage(){
       '<div style="position:absolute;inset:-40px;background:url(\''+tr.img+'\') center/cover;filter:blur(60px) saturate(1.4) brightness(.4);transform:scale(1.3);pointer-events:none;will-change:transform"></div>'+
       // Dark gradient overlay
       '<div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.2) 0%,rgba(0,0,0,.45) 40%,rgba(0,0,0,.7) 100%);pointer-events:none"></div>'+
-      // Content (centered like Spotify now-playing)
+      // Content (centered now-playing)
       '<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px 100px;z-index:2">'+
-        // Album art — large, Spotify-style rounded
+        // Album art — large, rounded
         '<div style="width:min(280px,72vw);aspect-ratio:1;border-radius:12px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.6),0 8px 32px rgba(0,0,0,.4);margin-bottom:28px;'+
           (isActive&&_playing?'animation:sgMusicPulse 3s ease-in-out infinite':'')+
         '"><img src="'+tr.img.replace('200','600')+'" style="width:100%;height:100%;object-fit:cover;display:block" alt="'+tr.n+'" loading="'+(Math.abs(idx-_ti)<=1?'eager':'lazy')+'"></div>'+
@@ -11670,7 +11670,7 @@ function MusicTabPage(){
           '<div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:24px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5))">↗️</div>'+
           '<span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">Share</span>'+
         '</div>'+
-        // Playlist art (spinning disc when playing — Spotify DNA)
+        // Playlist art (spinning disc when playing)
         '<div style="width:44px;height:44px;border-radius:50%;overflow:hidden;border:2px solid rgba(255,255,255,.2);'+
           (isActive&&_playing?'animation:sgDiscSpin 4s linear infinite':'')+
         '"><img src="'+pl.img+'" style="width:100%;height:100%;object-fit:cover" alt="'+pl.title+'"></div>'+
@@ -11703,7 +11703,7 @@ function MusicTabPage(){
       '#sg-m-carousel::-webkit-scrollbar{display:none}'+
       '#sg-m-carousel{scrollbar-width:none;-ms-overflow-style:none}'+
     '</style>'+
-    // ── Top bar: category pills (horizontal scroll, Spotify-style) ──
+    // ── Top bar: category pills (horizontal scroll) ──
     '<div style="position:absolute;top:0;left:0;right:0;z-index:10;padding:8px 0 0;background:linear-gradient(180deg,rgba(0,0,0,.7) 0%,transparent 100%)">'+
       '<div style="display:flex;align-items:center;justify-content:space-between;padding:0 16px 8px">'+
         '<span style="color:#fff;font-size:18px;font-weight:900;letter-spacing:-.3px">Music</span>'+
@@ -11726,7 +11726,7 @@ function MusicTabPage(){
       'scroll-behavior:smooth;'+
       'will-change:scroll-position;'+
     '">'+trackCards+'</div>'+
-    // ── Bottom player bar (Spotify mini player — fixed, always visible) ──
+    // ── Bottom player bar (fixed, always visible) ──
     '<div style="position:absolute;bottom:0;left:0;right:0;z-index:10;background:linear-gradient(180deg,transparent 0%,rgba(0,0,0,.85) 30%,rgba(0,0,0,.95) 100%);padding:12px 16px 8px">'+
       // Progress bar + scrubber
       '<div style="width:100%;margin-bottom:8px;position:relative">'+
@@ -11739,13 +11739,13 @@ function MusicTabPage(){
           '<span style="color:rgba(255,255,255,.4);font-size:10px;font-weight:500">'+t.d+'</span>'+
         '</div>'+
       '</div>'+
-      // Transport controls (Spotify-style)
+      // Transport controls
       '<div style="display:flex;align-items:center;justify-content:center;gap:24px">'+
         // Shuffle
         '<div onclick="window._sgMusicShuffle=!window._sgMusicShuffle;render()" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;opacity:'+(_shuffle?'1':'.4')+';'+(_shuffle?'color:#FF6D00':'')+'">🔀</div>'+
         // Previous
         '<div onclick="window._sgMusicTI=Math.max(0,(window._sgMusicTI||0)-1);window._sgMusicStart=Date.now();var c=document.getElementById(\'sg-m-carousel\');if(c){c.scrollTo({top:c.clientHeight*window._sgMusicTI,behavior:\'smooth\'});}render()" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:22px;-webkit-tap-highlight-color:transparent">⏮</div>'+
-        // Play/Pause (large orange button — Spotify DNA)
+        // Play/Pause (large orange button)
         '<div onclick="window._sgMusicPlaying=!window._sgMusicPlaying;render()" style="width:56px;height:56px;background:#FF6D00;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:24px;box-shadow:0 4px 24px rgba(255,109,0,.45);-webkit-tap-highlight-color:transparent;transition:transform .1s;active:scale(.92)">'+(_playing?'⏸':'▶️')+'</div>'+
         // Next
         '<div onclick="var tracks='+JSON.stringify(tracks.map(function(x){return 1;}))+';window._sgMusicTI=((window._sgMusicTI||0)+1)%'+tracks.length+';window._sgMusicStart=Date.now();var c=document.getElementById(\'sg-m-carousel\');if(c){c.scrollTo({top:c.clientHeight*window._sgMusicTI,behavior:\'smooth\'});}render()" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:22px;-webkit-tap-highlight-color:transparent">⏭</div>'+
