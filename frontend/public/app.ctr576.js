@@ -11751,124 +11751,306 @@ function _sgToggleLike(idx){
   },true);
 })();
 
-// ═══ CHAT TAB — Steal ChatGPT/Claude: always-visible input, streaming, smart responses ═══
-// Simple markdown→HTML for chat: **bold**, *italic*, \n→<br>, •→bullet
+// ═══ CHAT TAB — Streaming AI, beautiful UX ═══
+// Markdown→HTML: **bold**, *italic*, `code`, ```blocks```, \n→<br>, •/- →bullet, # headings
 function _sgMd(t){
-  return t
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    .replace(/\*\*(.+?)\*\*/g,'<strong style="color:#fff;font-weight:700">$1</strong>')
-    .replace(/\*(.+?)\*/g,'<em>$1</em>')
-    .replace(/^• (.+)$/gm,'<div style="display:flex;gap:6px;margin:2px 0"><span style="color:#FF6D00;flex-shrink:0">•</span><span>$1</span></div>')
-    .replace(/^\- (.+)$/gm,'<div style="display:flex;gap:6px;margin:2px 0"><span style="color:#FF6D00;flex-shrink:0">•</span><span>$1</span></div>')
-    .replace(/\n/g,'<br>');
+  // Escape HTML first
+  t=t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  // Code blocks (``` ... ```)
+  t=t.replace(/```(\w*)\n?([\s\S]*?)```/g,function(_,lang,code){
+    return '<div style="position:relative;margin:8px 0;border-radius:10px;overflow:hidden;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.08)"><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 12px;background:rgba(255,255,255,.04);border-bottom:1px solid rgba(255,255,255,.06)"><span style="font-size:11px;color:rgba(255,255,255,.4);font-weight:600">'+(lang||'code')+'</span><button onclick="navigator.clipboard.writeText(this.parentElement.nextElementSibling.textContent);this.textContent=\'Copied!\';setTimeout(()=>this.textContent=\'Copy\',1500)" style="font-size:10px;color:rgba(255,255,255,.4);background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:3px 10px;cursor:pointer;font-weight:600">Copy</button></div><pre style="margin:0;padding:12px;overflow-x:auto;font-size:12.5px;line-height:1.5;color:rgba(255,255,255,.8);font-family:\'SF Mono\',Monaco,Consolas,monospace">'+code.trim()+'</pre></div>';
+  });
+  // Inline code
+  t=t.replace(/`([^`]+)`/g,'<code style="background:rgba(255,109,0,.1);color:#FF6D00;padding:2px 6px;border-radius:4px;font-size:12.5px;font-family:\'SF Mono\',Monaco,monospace">$1</code>');
+  // Bold
+  t=t.replace(/\*\*(.+?)\*\*/g,'<strong style="color:#fff;font-weight:700">$1</strong>');
+  // Italic
+  t=t.replace(/\*(.+?)\*/g,'<em>$1</em>');
+  // Headers
+  t=t.replace(/^### (.+)$/gm,'<p style="color:#fff;font-weight:800;font-size:14px;margin:12px 0 4px">$1</p>');
+  t=t.replace(/^## (.+)$/gm,'<p style="color:#fff;font-weight:800;font-size:15px;margin:14px 0 6px">$1</p>');
+  t=t.replace(/^# (.+)$/gm,'<p style="color:#fff;font-weight:900;font-size:17px;margin:16px 0 8px">$1</p>');
+  // Bullets
+  t=t.replace(/^[•] (.+)$/gm,'<div style="display:flex;gap:8px;margin:3px 0;padding-left:4px"><span style="color:#FF6D00;flex-shrink:0;font-size:8px;margin-top:6px">●</span><span>$1</span></div>');
+  t=t.replace(/^- (.+)$/gm,'<div style="display:flex;gap:8px;margin:3px 0;padding-left:4px"><span style="color:#FF6D00;flex-shrink:0;font-size:8px;margin-top:6px">●</span><span>$1</span></div>');
+  // Numbered lists
+  t=t.replace(/^(\d+)\. (.+)$/gm,'<div style="display:flex;gap:8px;margin:3px 0;padding-left:4px"><span style="color:#FF6D00;flex-shrink:0;font-weight:700;font-size:13px;min-width:18px">$1.</span><span>$2</span></div>');
+  // Line breaks
+  t=t.replace(/\n/g,'<br>');
+  return t;
 }
+
+// ── Chat state management ──
+if(!window._sgChat){
+  window._sgChat={
+    conversations:JSON.parse(localStorage.getItem('sg_chat_history')||'[]'),
+    activeConvoId:null,
+    msgs:[],
+    typing:false,
+    streamText:'',
+    streamIdx:0,
+    streamTimer:null,
+  };
+}
+
+function _sgChatSave(){
+  try{
+    var convos=window._sgChat.conversations.slice(-20); // keep last 20
+    localStorage.setItem('sg_chat_history',JSON.stringify(convos));
+  }catch(e){}
+}
+
+function _sgChatNewConvo(){
+  window._sgChat.msgs=[];
+  window._sgChat.activeConvoId=Date.now();
+  window._sgChat.typing=false;
+  window._sgChat.streamText='';
+  if(window._sgChat.streamTimer)clearInterval(window._sgChat.streamTimer);
+  render();
+  sgToast('✨ New chat','success',1500);
+}
+
+function _sgChatStream(text,callback){
+  // Typewriter streaming effect
+  var chat=window._sgChat;
+  chat.streamText='';
+  chat.streamIdx=0;
+  var words=text.split(/(\s+)/); // split keeping whitespace
+  var idx=0;
+  chat.typing=true;
+  // Add placeholder message
+  chat.msgs.push({role:'ai',text:'',streaming:true});
+  render();
+  _sgScrollBottom();
+
+  var speed=18; // ms per word chunk — fast streaming
+  chat.streamTimer=setInterval(function(){
+    if(idx>=words.length){
+      clearInterval(chat.streamTimer);
+      // Finalize message
+      var lastMsg=chat.msgs[chat.msgs.length-1];
+      lastMsg.text=text;
+      lastMsg.streaming=false;
+      chat.typing=false;
+      chat.streamText='';
+      render();
+      _sgScrollBottom();
+      if(callback)callback();
+      return;
+    }
+    // Add next word(s) — batch 1-3 for speed variation
+    var batch=Math.ceil(Math.random()*3);
+    for(var b=0;b<batch&&idx<words.length;b++,idx++){
+      chat.streamText+=words[idx];
+    }
+    // Update last message
+    var lastMsg=chat.msgs[chat.msgs.length-1];
+    lastMsg.text=chat.streamText;
+    render();
+    _sgScrollBottom();
+  },speed);
+}
+
+function _sgScrollBottom(){
+  setTimeout(function(){
+    var box=document.getElementById('sg-chat-scroll');
+    if(box)box.scrollTop=box.scrollHeight;
+  },30);
+}
+
+async function _sgChatSend(msgText){
+  var chat=window._sgChat;
+  if(chat.typing)return;
+  var msg=msgText||(document.getElementById('sg-chat-input')?document.getElementById('sg-chat-input').value.trim():'');
+  if(!msg)return;
+
+  // Clear input
+  var inp=document.getElementById('sg-chat-input');
+  if(inp){inp.value='';inp.style.height='44px';}
+
+  // Add user message
+  chat.msgs.push({role:'user',text:msg,ts:Date.now()});
+  chat.typing=true;
+  render();
+  _sgScrollBottom();
+
+  // Call AI API
+  try{
+    var resp=await fetch('/api/chat/quick',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({message:msg})
+    });
+    if(!resp.ok)throw new Error('API error '+resp.status);
+    var data=await resp.json();
+    chat.typing=false;
+    // Stream the response
+    _sgChatStream(data.reply||data.message||'Sorry, I couldn\'t process that. Try again!');
+  }catch(err){
+    console.error('Chat API error:',err);
+    chat.typing=false;
+    // Fallback — use local responses
+    _sgChatStream(_sgFallback(msg));
+  }
+
+  // Save to conversation history
+  _sgChatSave();
+}
+
+function _sgFallback(msg){
+  var m=msg.toLowerCase();
+  if(m.indexOf('workout')>=0||m.indexOf('plan')>=0||m.indexOf('exercise')>=0)
+    return '💪 Here\'s a solid **Push/Pull/Legs** split:\n\n**Day 1 — Push:**\n• Bench Press: 4×8\n• Overhead Press: 3×10\n• Incline DB Press: 3×12\n• Lateral Raises: 3×15\n• Tricep Pushdown: 3×12\n\n**Day 2 — Pull:**\n• Deadlift: 4×5\n• Barbell Row: 4×8\n• Pull-ups: 3×max\n• Face Pulls: 3×15\n\n**Day 3 — Legs:**\n• Squat: 4×6\n• Romanian DL: 3×10\n• Leg Press: 3×12\n• Walking Lunges: 3×10/side\n\nRest 2-3 min between heavy sets. Progressive overload weekly! 🔥';
+  if(m.indexOf('gym')>=0||m.indexOf('find')>=0||m.indexOf('near')>=0||m.indexOf('book')>=0)
+    return '🏋️ To find gyms near you:\n\n1. Tap the **Book** tab\n2. Enable location or search by city\n3. Filter by amenities & price\n4. Book a day pass from £4.49\n5. Get your QR code → scan at entry\n\n📍 We have *1.2M+ gyms* across 190+ countries. No membership needed — just book and go!';
+  if(m.indexOf('meal')>=0||m.indexOf('food')>=0||m.indexOf('protein')>=0||m.indexOf('nutrition')>=0||m.indexOf('eat')>=0)
+    return '🥗 **High-protein meal plan:**\n\n**Breakfast:**\n• 4 eggs + 2 toast + avocado (35g protein)\n\n**Lunch:**\n• Chicken breast 200g + rice + broccoli (50g protein)\n\n**Dinner:**\n• Salmon 200g + sweet potato + salad (45g protein)\n\n**Snacks:**\n• Greek yogurt + berries (20g)\n• Protein shake + banana (25g)\n\n**Total: ~175g protein | ~2,350 cals**\n\nAdjust based on your goals! 📊';
+  if(m.indexOf('recover')>=0||m.indexOf('rest')>=0||m.indexOf('sleep')>=0||m.indexOf('stretch')>=0)
+    return '🧘 **Recovery essentials:**\n\n**Sleep (most important):**\n• 7-9 hours minimum\n• Dark room, 18°C\n• No screens 1hr before bed\n\n**Active Recovery:**\n• Light walking on rest days\n• Foam rolling 10 min post-workout\n• Stretch after, not before\n\n**Nutrition:**\n• 20-40g protein within 2hrs post-workout\n• Anti-inflammatory: berries, fish, turmeric\n• 3-4L water daily\n\nRecovery is where gains happen! 💤';
+  if(m.indexOf('progress')>=0||m.indexOf('track')>=0)
+    return '📊 **Track progress like a pro:**\n\n• Weigh weekly (same time, same conditions)\n• Progress photos every 2 weeks\n• Track top lifts: bench, squat, deadlift\n• Measure waist, chest, arms monthly\n\n**Key rule:** 4-week rolling average > daily weight. Consistency > perfection! 💪';
+  return 'Great question! 💪 I can help with:\n\n• 🏋️ Custom workout plans\n• 🥗 Nutrition & meal planning\n• 📊 Progress tracking\n• 🏃 Cardio programs\n• 🧘 Recovery & mobility\n• 🔍 Finding gyms near you\n\nWhat interests you most? 🚀';
+}
+
+function _sgChatCopy(idx){
+  var chat=window._sgChat;
+  if(chat.msgs[idx]){
+    navigator.clipboard.writeText(chat.msgs[idx].text);
+    sgToast('Copied to clipboard','success',1500);
+  }
+}
+
 function ChatTabPage(){
-  var u=state.user;
-  if(!window._sgChatMsgs){
-    window._sgChatMsgs=[
-      {role:'ai',text:'Hey! 👋 I\'m your ScanGym AI assistant. I can help you with:\n\n💪 Workout plans & exercise tips\n🏋️ Find gyms near you\n🥗 Nutrition advice\n📊 Track your progress\n\nWhat would you like to know?'},
-    ];
-  }
-  var msgs=window._sgChatMsgs;
-  var suggestions=['💪 Create a workout plan','🏋️ Find gyms near me','🥗 Meal plan for muscle gain','📊 How to track progress','🧘 Recovery tips','🏃 Couch to 5K plan'];
-  // AI response pool — varied, helpful, detailed
-  var aiResponses={
-    'workout':[
-      '💪 Here\'s your personalized *Push/Pull/Legs* split:\n\n**Day 1 — Push:**\n• Bench Press: 4×8\n• Overhead Press: 3×10\n• Incline DB Press: 3×12\n• Lateral Raises: 3×15\n• Tricep Pushdown: 3×12\n\n**Day 2 — Pull:**\n• Deadlift: 4×5\n• Barbell Row: 4×8\n• Pull-ups: 3×max\n• Face Pulls: 3×15\n• Barbell Curl: 3×12\n\n**Day 3 — Legs:**\n• Squat: 4×6\n• Romanian DL: 3×10\n• Leg Press: 3×12\n• Walking Lunges: 3×10/side\n• Calf Raises: 4×15\n\nRest 2-3 min between heavy sets. Progressive overload weekly! 🔥'
-    ],
-    'gym':[
-      '🏋️ To find gyms near you:\n\n1. Tap the **Book** tab at the bottom\n2. Enable location or search by city\n3. Filter by: 24/7, self-entry, price range\n4. Book a day pass from £4.49\n5. Get your QR code → scan at entry\n\n📍 We have *1.2M+ gyms* worldwide. No membership needed — just book and go!\n\nWant me to help you find a specific type of gym?'
-    ],
-    'meal':[
-      '🥗 Here\'s a *high-protein muscle-gain* meal plan:\n\n**Breakfast (7am):**\n• 4 eggs scrambled + 2 toast + avocado\n• Protein: 35g | Cals: 550\n\n**Snack (10am):**\n• Greek yogurt + berries + honey\n• Protein: 20g | Cals: 250\n\n**Lunch (1pm):**\n• Chicken breast 200g + rice + broccoli\n• Protein: 50g | Cals: 650\n\n**Pre-workout (4pm):**\n• Banana + protein shake\n• Protein: 25g | Cals: 300\n\n**Dinner (7pm):**\n• Salmon 200g + sweet potato + salad\n• Protein: 45g | Cals: 600\n\n**Total: ~175g protein | ~2,350 cals**\n\nAdjust calories up/down based on your goals! 📊'
-    ],
-    'progress':[
-      '📊 Here\'s how to track progress like a pro:\n\n**Weekly measurements:**\n• Weight (same time, same conditions)\n• Progress photos (front, side, back)\n• Key lifts (bench, squat, deadlift)\n• Waist/chest/arm measurements\n\n**Apps I recommend:**\n• Strong (workout tracking)\n• MyFitnessPal (nutrition)\n• ScanGym (gym visits & streaks!)\n\n**Key rules:**\n✅ Weigh weekly, not daily (water fluctuates)\n✅ Take photos every 2 weeks in same lighting\n✅ Track your top 3 lifts — are they going up?\n✅ Use a 4-week rolling average\n\nConsistency > perfection! 💪'
-    ],
-    'recovery':[
-      '🧘 Science-backed recovery tips:\n\n**Sleep (most important!):**\n• 7-9 hours minimum\n• Dark room, cool temp (18°C)\n• No screens 1hr before bed\n\n**Active Recovery:**\n• Light walking (6-8K steps on rest days)\n• Foam rolling (10 min post-workout)\n• Dynamic stretching before, static after\n\n**Nutrition:**\n• 20-40g protein within 2hrs post-workout\n• Anti-inflammatory foods: berries, fish, turmeric\n• Hydrate: 3-4L water daily\n\n**Every 4-6 weeks:**\n• Deload week (50% volume)\n• This prevents overtraining and plateaus\n\nRecovery is where gains happen! 💤🔥'
-    ],
-    'couch':['🏃 **Couch to 5K — 8 Week Plan:**\n\n**Weeks 1-2:** Walk 4 min → Jog 1 min (repeat 6x)\n**Weeks 3-4:** Walk 3 min → Jog 2 min (repeat 5x)\n**Weeks 5-6:** Walk 2 min → Jog 5 min (repeat 4x)\n**Week 7:** Walk 1 min → Jog 8 min (repeat 3x)\n**Week 8:** Jog 30 min non-stop! 🎉\n\n**Tips:**\n• Run 3x/week with rest days between\n• Don\'t worry about speed — just keep moving\n• Get proper running shoes (visit a running store)\n• Hydrate before, during & after\n\nYou\'ve got this! 💪'],
-    'default':[
-      'Great question! 💪\n\nI can help with:\n• 🏋️ Custom workout plans\n• 🥗 Nutrition & meal planning\n• 📊 Progress tracking strategies\n• 🏃 Cardio programs (Couch to 5K, HIIT)\n• 🧘 Recovery & mobility\n• 🔍 Finding gyms near you\n\nWhat interests you most? Just ask anything — I\'m here to help! 🚀',
-      'That\'s a great topic! Let me give you some advice...\n\n🎯 The 3 pillars of fitness:\n1. **Training** — Progressive overload, 3-5x/week\n2. **Nutrition** — Calories + protein targets\n3. **Recovery** — Sleep + rest days\n\nMaster these 3 and results are inevitable.\n\nWant me to dive deep into any of these? 💪'
-    ]
+  var chat=window._sgChat;
+  var msgs=chat.msgs;
+  var isTyping=chat.typing;
+  var isEmpty=msgs.length===0;
+
+  // Suggestion chips — 2-column grid
+  var suggestions=[
+    {icon:'💪',text:'Create a workout plan'},
+    {icon:'🏋️',text:'Find gyms near me'},
+    {icon:'🥗',text:'Meal plan for muscle gain'},
+    {icon:'📊',text:'How to track progress'},
+    {icon:'🧘',text:'Recovery & stretching tips'},
+    {icon:'🏃',text:'Couch to 5K plan'},
+  ];
+
+  // Auto-expand textarea handler
+  window._sgChatAutoGrow=function(el){
+    el.style.height='44px';
+    el.style.height=Math.min(el.scrollHeight,120)+'px';
   };
-  function _getResponse(msg){
-    var m=msg.toLowerCase();
-    if(m.indexOf('5k')>=0||m.indexOf('couch')>=0||m.indexOf('cardio')>=0)return aiResponses.couch[0];
-    if(m.indexOf('workout')>=0||m.indexOf('plan')>=0||m.indexOf('exercise')>=0||m.indexOf('create')>=0)return aiResponses.workout[0];
-    if(m.indexOf('gym')>=0||m.indexOf('find')>=0||m.indexOf('near')>=0||m.indexOf('book')>=0)return aiResponses.gym[0];
-    if(m.indexOf('meal')>=0||m.indexOf('food')>=0||m.indexOf('protein')>=0||m.indexOf('nutrition')>=0||m.indexOf('eat')>=0)return aiResponses.meal[0];
-    if(m.indexOf('progress')>=0||m.indexOf('track')>=0||m.indexOf('measure')>=0)return aiResponses.progress[0];
-    if(m.indexOf('recover')>=0||m.indexOf('rest')>=0||m.indexOf('sleep')>=0||m.indexOf('stretch')>=0||m.indexOf('run')>=0)return aiResponses.recovery[0];
-    return aiResponses.default[Math.floor(Math.random()*aiResponses.default.length)];
-  }
-  function _sendChat(){
-    var inp=document.getElementById('sg-chat-input');
-    if(!inp||!inp.value.trim())return;
-    var msg=inp.value.trim();
-    inp.value='';
-    window._sgChatMsgs.push({role:'user',text:msg});
-    window._sgChatTyping=true;
-    render();
-    setTimeout(function(){var box=document.getElementById('sg-chat-scroll');if(box)box.scrollTop=box.scrollHeight;},50);
-    // Simulate typing delay then respond
-    setTimeout(function(){
-      window._sgChatTyping=false;
-      window._sgChatMsgs.push({role:'ai',text:_getResponse(msg)});
-      render();
-      setTimeout(function(){var box=document.getElementById('sg-chat-scroll');if(box)box.scrollTop=box.scrollHeight;},100);
-    },1400+Math.min(1200,_getResponse(msg).length*2));
-  }
-  window._sgSendChat=_sendChat;
-  window._sgChatSuggest=function(txt){
-    window._sgChatMsgs.push({role:'user',text:txt});
-    window._sgChatTyping=true;
-    render();
-    setTimeout(function(){var box=document.getElementById('sg-chat-scroll');if(box)box.scrollTop=box.scrollHeight;},50);
-    setTimeout(function(){
-      window._sgChatTyping=false;
-      window._sgChatMsgs.push({role:'ai',text:_getResponse(txt)});
-      render();
-      setTimeout(function(){var box=document.getElementById('sg-chat-scroll');if(box)box.scrollTop=box.scrollHeight;},100);
-    },1200);
+
+  window._sgChatKeydown=function(e){
+    if(e.key==='Enter'&&!e.shiftKey){
+      e.preventDefault();
+      _sgChatSend();
+    }
   };
-  var _typing=window._sgChatTyping||false;
-  return`<div style="position:relative;width:100%;height:calc(100vh - 56px);display:flex;flex-direction:column;background:#0a0a16;overflow:hidden">
-    <style>@keyframes sgTypingDot{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-4px)}}</style>
-    <!-- Top bar -->
-    <div style="flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:rgba(10,10,22,.95);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,.06)">
+
+  // ── Empty state (centered greeting) ──
+  var emptyStateHtml=`
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center">
+      <!-- Logo orb -->
+      <div style="width:64px;height:64px;background:linear-gradient(135deg,#FF6D00,#ff8533);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 8px 32px rgba(255,109,0,.3);margin-bottom:20px">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+      </div>
+      <h2 style="color:#fff;font-size:22px;font-weight:900;margin:0 0 8px;letter-spacing:-.3px">What can I help with?</h2>
+      <p style="color:rgba(255,255,255,.35);font-size:13px;margin:0 0 28px;max-width:280px">Your AI fitness coach. Workouts, nutrition, gym finder — ask anything.</p>
+      <!-- Suggestion grid (2-column) -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;max-width:340px">
+        ${suggestions.map(function(s){
+          return '<button onclick="_sgChatSend(\''+s.icon+' '+s.text.replace(/'/g,"\\\\'")+'\')" style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:12px 14px;cursor:pointer;transition:all .15s;text-align:left;color:rgba(255,255,255,.6);font-size:12.5px;line-height:1.3" ontouchstart="this.style.background=\'rgba(255,255,255,.1)\';this.style.borderColor=\'rgba(255,109,0,.3)\'" ontouchend="this.style.background=\'rgba(255,255,255,.04)\';this.style.borderColor=\'rgba(255,255,255,.07)\'" onmouseenter="this.style.background=\'rgba(255,255,255,.08)\';this.style.borderColor=\'rgba(255,109,0,.2)\'" onmouseleave="this.style.background=\'rgba(255,255,255,.04)\';this.style.borderColor=\'rgba(255,255,255,.07)\'"><span style="font-size:18px;flex-shrink:0">'+s.icon+'</span><span>'+s.text+'</span></button>';
+        }).join('')}
+      </div>
+    </div>`;
+
+  // ── Messages area ──
+  var messagesHtml=msgs.map(function(m,i){
+    if(m.role==='ai'){
+      var isStreaming=m.streaming;
+      return '<div style="display:flex;gap:10px;margin-bottom:20px;max-width:92%;animation:fadeInUp .25s ease-out">'
+        +'<div style="width:28px;height:28px;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;box-shadow:0 2px 8px rgba(255,109,0,.2)">'
+        +'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>'
+        +'</div>'
+        +'<div style="flex:1;min-width:0">'
+        +'<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:18px;border-top-left-radius:4px;padding:14px 16px;color:rgba(255,255,255,.85);font-size:13.5px;line-height:1.65">'
+        +_sgMd(m.text)
+        +(isStreaming?'<span style="display:inline-block;width:2px;height:16px;background:#FF6D00;margin-left:2px;animation:sgCursorBlink 1s step-end infinite;vertical-align:text-bottom"></span>':'')
+        +'</div>'
+        // Action buttons (copy, like) — only show when not streaming
+        +(!isStreaming&&m.text?'<div style="display:flex;gap:4px;margin-top:4px;padding-left:4px">'
+        +'<button onclick="_sgChatCopy('+i+')" style="display:flex;align-items:center;gap:4px;background:none;border:none;color:rgba(255,255,255,.25);font-size:11px;cursor:pointer;padding:4px 8px;border-radius:8px;transition:.15s" onmouseenter="this.style.color=\'rgba(255,255,255,.6)\';this.style.background=\'rgba(255,255,255,.06)\'" onmouseleave="this.style.color=\'rgba(255,255,255,.25)\';this.style.background=\'none\'">'
+        +'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>'
+        +'Copy</button>'
+        +'</div>':'')
+        +'</div></div>';
+    }else{
+      return '<div style="display:flex;justify-content:flex-end;margin-bottom:20px;animation:fadeInUp .2s ease-out">'
+        +'<div style="max-width:82%;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:18px;border-top-right-radius:4px;padding:12px 16px;color:#fff;font-size:13.5px;line-height:1.5;box-shadow:0 2px 12px rgba(255,109,0,.2)">'
+        +_sgMd(m.text)
+        +'</div></div>';
+    }
+  }).join('');
+
+  // ── Thinking indicator ──
+  var thinkingHtml=isTyping&&!msgs.some(function(m){return m.streaming;})
+    ? '<div style="display:flex;gap:10px;margin-bottom:16px;animation:fadeInUp .2s ease-out">'
+      +'<div style="width:28px;height:28px;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 8px rgba(255,109,0,.2)">'
+      +'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>'
+      +'</div>'
+      +'<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:18px;border-top-left-radius:4px;padding:14px 20px;display:flex;align-items:center;gap:6px">'
+      +'<div style="display:flex;gap:4px">'
+      +'<span style="width:7px;height:7px;background:#FF6D00;border-radius:50%;animation:sgTypingDot 1.4s infinite"></span>'
+      +'<span style="width:7px;height:7px;background:#FF6D00;border-radius:50%;animation:sgTypingDot 1.4s .2s infinite"></span>'
+      +'<span style="width:7px;height:7px;background:#FF6D00;border-radius:50%;animation:sgTypingDot 1.4s .4s infinite"></span>'
+      +'</div>'
+      +'<span style="color:rgba(255,255,255,.3);font-size:12px;margin-left:4px">Thinking...</span>'
+      +'</div></div>'
+    : '';
+
+  return `<div style="position:relative;width:100%;height:calc(100vh - 56px);display:flex;flex-direction:column;background:#0a0a16;overflow:hidden">
+    <style>
+      @keyframes sgTypingDot{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-4px)}}
+      @keyframes sgCursorBlink{0%,100%{opacity:1}50%{opacity:0}}
+      #sg-chat-input::-webkit-scrollbar{display:none}
+      #sg-chat-input{scrollbar-width:none}
+    </style>
+
+    <!-- ═══ Top bar — clean, minimal ═══ -->
+    <div style="flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:rgba(10,10,22,.95);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.05)">
       <div style="display:flex;align-items:center;gap:10px">
-        <div style="width:36px;height:36px;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 0 12px rgba(255,109,0,.3)">🤖</div>
-        <div><p style="color:#fff;font-size:15px;font-weight:800">ScanGym AI</p><p style="color:${_typing?'#22c55e':'rgba(255,255,255,.4)'};font-size:11px">${_typing?'Typing...':'Online · Powered by AI'}</p></div>
+        <div style="width:32px;height:32px;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(255,109,0,.25)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        </div>
+        <div>
+          <p style="color:#fff;font-size:15px;font-weight:800;margin:0;line-height:1.2">ScanGym AI</p>
+          <p style="color:${isTyping?'#22c55e':'rgba(255,255,255,.3)'};font-size:10px;margin:0;font-weight:600;transition:color .3s">${isTyping?'● Thinking...':'Online · Powered by AI'}</p>
+        </div>
       </div>
-      <div onclick="window._sgChatMsgs=null;window._sgChatTyping=false;render();sgToast('✨ New conversation started','success',2000)" style="width:36px;height:36px;background:rgba(255,255,255,.06);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px" title="New chat">✨</div>
+      <button onclick="_sgChatNewConvo()" style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:10px;cursor:pointer;transition:.15s" title="New chat" ontouchstart="this.style.background='rgba(255,255,255,.12)'" ontouchend="this.style.background='rgba(255,255,255,.05)'">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2" stroke-linecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      </button>
     </div>
-    <!-- Messages area -->
-    <div id="sg-chat-scroll" style="flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch">
-      ${msgs.map(function(m){
-        if(m.role==='ai'){
-          return '<div style="display:flex;gap:10px;margin-bottom:16px;max-width:88%"><div style="width:28px;height:28px;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;margin-top:2px">🤖</div><div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:18px;border-top-left-radius:4px;padding:12px 16px;color:rgba(255,255,255,.85);font-size:14px;line-height:1.6">'+_sgMd(m.text)+'</div></div>';
-        }else{
-          return '<div style="display:flex;justify-content:flex-end;margin-bottom:16px"><div style="max-width:80%;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:18px;border-top-right-radius:4px;padding:12px 16px;color:#fff;font-size:14px;line-height:1.5">'+_sgMd(m.text)+'</div></div>';
-        }
-      }).join('')}
-      ${_typing?'<div style="display:flex;gap:10px;margin-bottom:16px"><div style="width:28px;height:28px;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">🤖</div><div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:18px;border-top-left-radius:4px;padding:14px 20px;display:flex;gap:4px"><span style="width:8px;height:8px;background:#FF6D00;border-radius:50%;animation:sgTypingDot 1.4s infinite"></span><span style="width:8px;height:8px;background:#FF6D00;border-radius:50%;animation:sgTypingDot 1.4s .2s infinite"></span><span style="width:8px;height:8px;background:#FF6D00;border-radius:50%;animation:sgTypingDot 1.4s .4s infinite"></span></div></div>':''}
-      ${msgs.length<=1?'<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">'+suggestions.map(function(s){return '<button onclick="window._sgChatSuggest(\''+s.replace(/'/g,"\\\'")+'\');return false" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.6);padding:10px 16px;border-radius:20px;font-size:13px;cursor:pointer;transition:.15s;white-space:nowrap" ontouchstart="this.style.background=\'rgba(255,255,255,.1)\'" ontouchend="this.style.background=\'rgba(255,255,255,.04)\'">'+s+'</button>';}).join('')+'</div>':''}
+
+    <!-- ═══ Messages / Empty state ═══ -->
+    <div id="sg-chat-scroll" style="flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain">
+      ${isEmpty ? emptyStateHtml : messagesHtml + thinkingHtml}
     </div>
-    <!-- Input area — ALWAYS visible, no auth gate (like ChatGPT) -->
-    <div style="flex-shrink:0;padding:12px 16px;background:rgba(10,10,22,.98);backdrop-filter:blur(16px);border-top:1px solid rgba(255,255,255,.06)">
-      <div style="display:flex;gap:8px;align-items:flex-end">
-        <input id="sg-chat-input" type="text" placeholder="Ask anything..." onkeydown="if(event.key==='Enter')window._sgSendChat()" style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:24px;padding:12px 18px;color:#fff;font-size:14px;outline:none;transition:border-color .2s" onfocus="this.style.borderColor='rgba(255,109,0,.4)'" onblur="this.style.borderColor='rgba(255,255,255,.1)'">
-        <button onclick="window._sgSendChat()" style="width:44px;height:44px;background:#FF6D00;border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;flex-shrink:0;box-shadow:0 2px 12px rgba(255,109,0,.3)">↑</button>
+
+    <!-- ═══ Input area — always visible, auto-expanding ═══ -->
+    <div style="flex-shrink:0;padding:10px 14px 14px;background:rgba(10,10,22,.98);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid rgba(255,255,255,.05)">
+      <div style="display:flex;gap:8px;align-items:flex-end;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:22px;padding:4px 4px 4px 16px;transition:border-color .2s" id="sg-chat-input-wrap" onfocusin="this.style.borderColor='rgba(255,109,0,.35)'" onfocusout="this.style.borderColor='rgba(255,255,255,.08)'">
+        <textarea id="sg-chat-input" rows="1" placeholder="Ask anything..." oninput="_sgChatAutoGrow(this)" onkeydown="_sgChatKeydown(event)" style="flex:1;background:none;border:none;resize:none;color:#fff;font-size:14px;line-height:1.4;outline:none;padding:8px 0;max-height:120px;min-height:28px;height:28px;font-family:inherit;overflow-y:auto"></textarea>
+        <button onclick="_sgChatSend()" style="width:36px;height:36px;background:${isTyping?'rgba(255,109,0,.4)':'#FF6D00'};border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:${isTyping?'not-allowed':'pointer'};flex-shrink:0;transition:all .2s;box-shadow:0 2px 10px rgba(255,109,0,.25)" ${isTyping?'disabled':''}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+        </button>
       </div>
+      <p style="text-align:center;color:rgba(255,255,255,.15);font-size:10px;margin:8px 0 0;font-weight:500">ScanGym AI can make mistakes. Verify important info.</p>
     </div>
   </div>`;
 }
-
-
-
 function BottomTabBar(){
   const t=state.activeTab;
   // SVG icons — crisp at any resolution, no emoji rendering differences
