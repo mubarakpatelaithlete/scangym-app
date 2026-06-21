@@ -17,6 +17,7 @@ const ownerRouter = require('./routes/owner');
 const statsRouter = require('./routes/stats');
 const creatorsRouter = require('./routes/creators');
 const reelsRouter = require('./routes/reels');
+const socialReelsRouter = require('./routes/social-reels');
 const ingestRouter = require('./routes/ingest');
 // M12: videoProxy.js deleted — all videos use CDN directly
 const directionsRouter = require('./routes/directions');
@@ -416,6 +417,7 @@ app.use('/api/stats', statsRouter);
 app.use('/api/creators', creatorsRouter);
 app.use('/api/reels', reelsRouter);
 app.use('/api/reels/admin/ingest', ingestRouter);
+app.use('/api/social-reels', socialReelsRouter);
 // M12: video-proxy route removed — CDN serves directly
 app.use('/api/directions', directionsRouter);
 app.use('/api/qr', qrRouter);
