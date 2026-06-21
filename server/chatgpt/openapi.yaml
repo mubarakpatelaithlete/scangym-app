@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: ScanGym — Book Any Gym, Anywhere
   description: |
-    ScanGym is the Uber for gyms. Pay-per-session gym booking — no memberships, no contracts.
+    ScanGym is a gym discovery and booking marketplace. Pay-per-session gym booking — no memberships, no contracts.
     Search 1.2M+ gyms worldwide, see prices, ratings, and opening hours, then book a day pass instantly.
     
     Booking flow:
@@ -20,6 +20,7 @@ paths:
   /api/live/search:
     get:
       operationId: searchGyms
+      x-openai-isConsequential: false
       summary: Search for gyms by location name
       description: |
         Find gyms by city, area, or text query. Returns a ranked list with prices, 
@@ -68,6 +69,7 @@ paths:
   /api/live/nearby:
     get:
       operationId: searchNearbyGyms
+      x-openai-isConsequential: false
       summary: Find gyms near a location using coordinates
       description: |
         Search for gyms using latitude/longitude coordinates. More accurate than text search.
@@ -115,6 +117,7 @@ paths:
   /api/live/place/{placeId}:
     get:
       operationId: getGymDetails
+      x-openai-isConsequential: false
       summary: Get full details for a specific gym
       description: |
         Get comprehensive details for a gym including pricing, opening hours, 
@@ -148,13 +151,14 @@ paths:
   /api/bookings/guest-create:
     post:
       operationId: bookGymSession
+      x-openai-isConsequential: true
       summary: Book a day pass at a gym (guest checkout)
       description: |
-        Create a gym booking using guest checkout (no account needed — just email).
-        Returns a booking code and the user should complete payment at scangym.com.
-        After payment, they receive a QR code for gym entry.
+        Create a provisional gym booking using guest checkout (no account needed — just email).
+        Returns a booking code and a payment link. Payment is completed externally on scangym.com;
+        no purchases or payments happen inside ChatGPT. After payment, the user receives a QR code for gym entry.
         
-        IMPORTANT: Always confirm the gym details and price with the user before booking.
+        IMPORTANT: Always confirm the gym name, date/time, email, and price with the user before booking.
         Ask for their email if not provided. Default time is "anytime" if not specified.
       requestBody:
         required: true
@@ -214,6 +218,7 @@ paths:
   /api/bookings/cancel:
     post:
       operationId: cancelBooking
+      x-openai-isConsequential: true
       summary: Cancel a gym booking
       description: |
         Cancel an existing booking. Free cancellation up to 2 hours before the session.

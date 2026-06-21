@@ -2,7 +2,7 @@
 
 **Book any gym, anywhere — from Claude, Cursor, or any MCP client.**
 
-No memberships. Just pay per visit. The Uber for gyms.
+No memberships. Just flexible pay-per-session gym access through ScanGym.
 
 <!-- mcp-name: io.github.mubarakpatelaithlete/scangym -->
 

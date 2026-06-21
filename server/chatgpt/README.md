@@ -25,7 +25,7 @@ This is a **Custom GPT with Actions** — ChatGPT reads our OpenAPI spec to know
 ### Step 2: Configure the GPT
 
 **Name:** ScanGym — Book Any Gym  
-**Description:** Find and book gym sessions worldwide. No memberships, just pay per visit. The Uber for gyms. 💪  
+**Description:** Find and book gym sessions worldwide. No memberships, just pay per visit. Flexible gym access from ScanGym. 💪  
 **Instructions:** Copy the contents of `gpt-instructions.md`
 
 ### Step 3: Add Actions

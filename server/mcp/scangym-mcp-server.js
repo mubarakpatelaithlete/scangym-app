@@ -74,6 +74,12 @@ const TOOLS = [
   {
     name: 'search_gyms',
     description: 'Search for gyms by location name or coordinates. Returns a ranked list of nearby gyms with prices, ratings, and availability. Example: "gyms in Bolton" or "gyms near me" with lat/lng.',
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     inputSchema: {
       type: 'object',
       properties: {
@@ -100,6 +106,12 @@ const TOOLS = [
   {
     name: 'get_gym_details',
     description: 'Get full details for a specific gym including pricing, opening hours, photos, reviews, and address. Use the placeId from search results.',
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     inputSchema: {
       type: 'object',
       properties: {
@@ -112,8 +124,42 @@ const TOOLS = [
     },
   },
   {
-    name: 'book_gym_session',
-    description: 'Book a day pass at a gym. Creates a booking and returns a booking code + payment link. The user pays via the link, then gets a QR code for gym entry.',
+    name: 'check_availability',
+    description: 'Check whether a gym appears available for a requested date/time. This is read-only and does not create a booking or payment.',
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
+    inputSchema: {
+      type: 'object',
+      properties: {
+        placeId: {
+          type: 'string',
+          description: 'Google Places ID of the gym (from search results)',
+        },
+        date: {
+          type: 'string',
+          description: 'Requested booking date in YYYY-MM-DD format',
+        },
+        time: {
+          type: 'string',
+          description: 'Requested start time in HH:MM format (24h), or "anytime" for flexible',
+        },
+      },
+      required: ['placeId', 'date'],
+    },
+  },
+  {
+    name: 'create_booking',
+    description: 'Create a provisional guest booking and return a payment link. Requires confirmed=true after the user has reviewed gym, date/time, price, and email. Payment is completed externally on scangym.com; no payment happens inside ChatGPT.',
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     inputSchema: {
       type: 'object',
       properties: {
@@ -137,13 +183,63 @@ const TOOLS = [
           type: 'string',
           description: 'User name for the booking',
         },
+        confirmed: {
+          type: 'boolean',
+          description: 'Must be true only after the user explicitly confirms the gym, date/time, price, and email.',
+        },
       },
-      required: ['placeId', 'date', 'email'],
+      required: ['placeId', 'date', 'email', 'confirmed'],
+    },
+  },
+  {
+    name: 'book_gym_session',
+    description: 'Create a provisional day-pass booking at a gym. Requires confirmed=true after the user has reviewed gym, date/time, price, and email. The user pays externally on scangym.com, then gets a QR code for gym entry.',
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
+    inputSchema: {
+      type: 'object',
+      properties: {
+        placeId: {
+          type: 'string',
+          description: 'Google Places ID of the gym to book',
+        },
+        date: {
+          type: 'string',
+          description: 'Booking date in YYYY-MM-DD format',
+        },
+        time: {
+          type: 'string',
+          description: 'Preferred start time in HH:MM format (24h), or "anytime" for flexible',
+        },
+        email: {
+          type: 'string',
+          description: 'User email for booking confirmation and receipt',
+        },
+        name: {
+          type: 'string',
+          description: 'User name for the booking',
+        },
+        confirmed: {
+          type: 'boolean',
+          description: 'Must be true only after the user explicitly confirms the gym, date/time, price, and email.',
+        },
+      },
+      required: ['placeId', 'date', 'email', 'confirmed'],
     },
   },
   {
     name: 'cancel_booking',
     description: 'Cancel a gym booking. Free cancellation up to 2 hours before the session. Refund is automatic if paid.',
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     inputSchema: {
       type: 'object',
       properties: {
@@ -174,6 +270,20 @@ async function callApi(path, options = {}) {
   } catch (err) {
     return { error: `API request failed: ${err.message}` };
   }
+}
+
+function toNumber(value) {
+  if (value == null || value === '') return null;
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+  const cleaned = String(value).replace(/[^0-9.-]/g, '');
+  if (!cleaned) return null;
+  const parsed = Number(cleaned);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function formatMoney(amount, symbol = '£') {
+  const numeric = toNumber(amount);
+  return numeric != null && numeric > 0 ? `${symbol}${numeric.toFixed(2)}` : 'Price shown on ScanGym';
 }
 
 async function searchGyms(args) {
@@ -218,12 +328,14 @@ async function searchGyms(args) {
 }
 
 function formatGym(g) {
+  const symbol = g.currencySymbol || g.pricing?.currencySymbol || '£';
+  const dayPassPrice = toNumber(g.dayPassPrice ?? g.pricing?.dayPassPrice);
   return {
     placeId: g.placeId || g.id,
     name: g.name,
     address: g.address,
     distance: g.distanceText || null,
-    price: `${g.currencySymbol || '£'}${g.dayPassPrice} day pass`,
+    price: `${formatMoney(dayPassPrice, symbol)} day pass`,
     rating: g.rating ? `${g.rating}★ (${g.totalReviews} reviews)` : 'No reviews yet',
     openNow: g.openNow === true ? 'Open now' : g.openNow === false ? 'Closed' : 'Unknown',
     rankingScore: g.rankingScore || null,
@@ -249,7 +361,7 @@ async function getGymDetails(args) {
     website: gym.website || 'Not listed',
     googleMaps: gym.googleMapsUrl,
     pricing: {
-      dayPass: `${pricing.currencySymbol || '£'}${pricing.dayPassPrice}`,
+      dayPass: formatMoney(pricing.dayPassPrice, pricing.currencySymbol || '£'),
       currency: pricing.currency,
     },
     rating: {
@@ -263,11 +375,49 @@ async function getGymDetails(args) {
   };
 }
 
+async function checkAvailability(args) {
+  const { placeId, date, time } = args;
+  if (!placeId || !date) return { error: 'placeId and date are required.' };
+
+  const data = await callApi(`/api/live/place/${encodeURIComponent(placeId)}`);
+  if (data.error) return { error: data.error };
+
+  const gym = data.gym || {};
+  const pricing = data.pricing || {};
+  const hours = data.openingHours || {};
+  return {
+    available: true,
+    provisional: true,
+    gymName: gym.name,
+    address: gym.address,
+    date,
+    time: time || 'anytime',
+    price: formatMoney(pricing.dayPassPrice, pricing.currencySymbol || '£'),
+    isOpenNow: hours.isOpen,
+    openingHours: hours.weekday || [],
+    message: 'ScanGym can create a provisional booking for this gym. Confirm the gym, date/time, price, and email with the user before calling create_booking.',
+  };
+}
+
 async function bookGymSession(args) {
-  const { placeId, date, time, email, name } = args;
+  const { placeId, date, time, email, name, confirmed } = args;
 
   if (!placeId || !date || !email) {
     return { error: 'placeId, date, and email are required.' };
+  }
+
+  if (confirmed !== true) {
+    return {
+      confirmationRequired: true,
+      message: 'Before creating a ScanGym booking, ask the user to confirm the gym, date/time, email, and price. Then call this tool again with confirmed=true. Payment must be completed externally on scangym.com.',
+      requestedBooking: {
+        placeId,
+        date,
+        time: time || 'anytime',
+        email,
+        name: name || null,
+      },
+    };
   }
 
   // Step 1: Ensure gym exists in our DB (creates record if needed)
@@ -373,6 +523,10 @@ async function handleMessage(msg) {
           case 'get_gym_details':
             result = await getGymDetails(toolArgs);
             break;
+          case 'check_availability':
+            result = await checkAvailability(toolArgs);
+            break;
+          case 'create_booking':
           case 'book_gym_session':
             result = await bookGymSession(toolArgs);
             break;

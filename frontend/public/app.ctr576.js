@@ -90,6 +90,8 @@ let GYM_COUNT=0;
 function fmtCount(n){if(n>=1000000)return (n/1000000).toFixed(1).replace(/\.0$/,'')+'M+';if(n>=1000)return (n/1000).toFixed(0)+'K+';return n.toLocaleString();}
 
 // ─── World-Class Utilities  ───
+function sgNum(v){if(v==null||v==='')return null;if(typeof v==='number')return isFinite(v)?v:null;var n=Number(String(v).replace(/[^0-9.-]/g,''));return isFinite(n)?n:null;}
+function sgMoney(v,sym){var n=sgNum(v);return n!=null&&n>0?(sym||sgSymbol())+n.toFixed(2):null;}
 function urgencyNum(name,max){let h=0;for(let i=0;i<(name||'').length;i++)h=((h<<5)-h)+name.charCodeAt(i);return Math.abs(h%max)+1;}
 function minutesAgo(name){return urgencyNum(name,45)+1;}
 function peopleLooking(name){return urgencyNum(name,8)+2;}
@@ -1395,7 +1397,7 @@ function SearchPage(){
           var openClass=isOpen?'tt-tag-open':'tt-tag-closed';
           var isPop=isTopGym(gym);
           // C6 fix: Use gym-specific price if owner set one, otherwise PPP default
-          var _gymSym=(gym.pricing&&gym.pricing.currencySymbol)||gym.currencySymbol||sgSymbol();var _gymDPP=(gym.pricing&&gym.pricing.dayPassPrice>0)?gym.pricing.dayPassPrice:((gym.dayPassPrice&&gym.dayPassPrice>0)?gym.dayPassPrice:0);var price=_gymDPP>0?(_gymSym+_gymDPP.toFixed(2)):dayP.display;
+          var _gymSym=(gym.pricing&&gym.pricing.currencySymbol)||gym.currencySymbol||sgSymbol();var _rawGymDPP=(gym.pricing&&sgNum(gym.pricing.dayPassPrice)>0)?gym.pricing.dayPassPrice:gym.dayPassPrice;var _gymDPP=sgNum(_rawGymDPP)||0;var price=_gymDPP>0?(_gymSym+_gymDPP.toFixed(2)):dayP.display;
           var pos=_pinPos(i);
           var facList=facs.map(function(f){return f.replace(/^[^\s]+\s/,'');}).join(', ');
           var equipList=['Free weights','Cardio','Machines'].filter(function(_,j){return((gym.name||'').charCodeAt(0)+j)%3!==0;}).join(', ')||'Machines, Cardio';
@@ -1633,7 +1635,7 @@ function GymProfilePage(){
   const reviewCount=gym.user_ratings_total||gym.totalReviews||47;
   const isOpen=gym.opening_hours?.isOpen;
   // C7 fix: Always use gym's currency/price (from gym's country), never visitor's
-  const _gymPrice=(gym.pricing&&gym.pricing.dayPassPrice>0)?gym.pricing.dayPassPrice:((gym.dayPassPrice&&gym.dayPassPrice>0)?gym.dayPassPrice:null);
+  const _gymPrice=sgNum((gym.pricing&&sgNum(gym.pricing.dayPassPrice)>0)?gym.pricing.dayPassPrice:gym.dayPassPrice);
   const _sym=(gym.pricing&&gym.pricing.currencySymbol)||gym.currencySymbol||sgSymbol();
   const _dayP=_gymPrice?{amount:_gymPrice,display:_sym+_gymPrice.toFixed(2)}:sgPrice('day');
   const _3dayP=_gymPrice?{amount:parseFloat((_gymPrice*2.67).toFixed(2)),display:_sym+(_gymPrice*2.67).toFixed(2)}:sgPrice('3day');
@@ -3165,7 +3167,7 @@ function _ensureStandaloneOverlay(gymId){
   }
   // Inject overlay HTML container
   var gym=state.currentGym||{};
-  var currentPrice=(gym.pricing?.display)||(gym.dayPassPrice?((gym.currencySymbol||'£')+gym.dayPassPrice.toFixed(2)):sgPrice('day').display);
+  var currentPrice=(gym.pricing?.display)||sgMoney(gym.dayPassPrice,gym.currencySymbol||'£')||sgPrice('day').display;
   var div=document.createElement('div');
   div.innerHTML='<div class="gym-overlay" id="gym-overlay" onclick="if(event.target===this||event.target.classList.contains(\'gym-overlay-bg\'))closeGymOverlay()"><div class="gym-overlay-bg"></div><div class="gym-overlay-panel"><div class="gym-overlay-drag"></div><div class="gym-overlay-header"><div style="display:flex;align-items:center;gap:10px;"><div style="width:24px;height:24px;background:#FF6D00;border-radius:50%;flex-shrink:0;box-shadow:0 0 8px rgba(255,109,0,.4);"></div><div class="gym-overlay-title" id="gym-overlay-title"></div></div><button class="gym-overlay-close" onclick="closeGymOverlay()">✕</button></div><div class="gym-overlay-body" id="gym-overlay-body"></div><div class="gym-overlay-footer"><div><div style="color:#fff;font-size:22px;font-weight:800">'+currentPrice+'</div><div style="color:rgba(255,255,255,.4);font-size:11px">Your ScanGym pass works here ✓</div></div><button class="gym-book-btn" onclick="event.preventDefault();event.stopPropagation();closeGymOverlay();showBookingCheckout(\''+gymId+'\')">Book Now</button></div></div></div>';
   document.body.appendChild(div.firstChild);
@@ -6173,7 +6175,7 @@ function CreatorsPage(){
     {name:'Comment Bait',file:'ScanGym-Asset8-Comment-Bait.webp',type:'image',cat:'Creator Assets'},
     {name:'Gym Review Story',file:'ScanGym-Asset9-Gym-Review-Story.webp',type:'image',cat:'Creator Assets'},
     // Branded (6)
-    {name:'AIthlete Soul ID Avatar',file:'AIthlete-Soul-ID-Avatar.webp',type:'image',cat:'Branded'},
+    {name:'ScanGym Legacy Avatar',file:'ScanGym-Legacy-Avatar.webp',type:'image',cat:'Branded'},
     {name:'Membership vs ScanGym',file:'ScanGym-CMO-ComparisonInfographic-MembershipVsScanGym.webp',type:'image',cat:'Branded'},
     {name:'Hero Graphic + App Mockup',file:'ScanGym-CMO-HeroGraphic-AppMockup.webp',type:'image',cat:'Branded'},
     {name:'Affiliate Earnings',file:'ScanGym-CMO-I20-AffiliateEarnings-Landscape.webp',type:'image',cat:'Branded'},
@@ -6214,7 +6216,7 @@ function CreatorsPage(){
     {name:'AI Cinematic 2',file:'ai-cinematic_2.png',type:'image',cat:'Social Packs'},
     {name:'AI Cinematic 3',file:'ai-cinematic_3.png',type:'image',cat:'Social Packs'},
     // Marketing (28)
-    {name:'AIthlete Widget',file:'aithlete-widget-proper.png',type:'image',cat:'Marketing'},
+    {name:'ScanGym Widget',file:'scangym-widget-proper.png',type:'image',cat:'Marketing'},
     // Social Packs (30)
     {name:'City Promos Square 1',file:'city-promos-square_1.png',type:'image',cat:'Social Packs'},
     {name:'City Promos Square 2',file:'city-promos-square_2.png',type:'image',cat:'Social Packs'},
@@ -8130,7 +8132,7 @@ window.showGymDiscovery=function(){
     const openClass=isOpen?'gd-tag-open':'gd-tag-closed';
     const isPop=isTopGym(gym);
     // C7 fix: Always use gym's currency/price (from gym's country), never visitor's
-    const price=(gym.dayPassPrice&&gym.dayPassPrice>0)?(gym.currencySymbol||sgSymbol())+gym.dayPassPrice.toFixed(2):dayP.display;
+    const price=sgMoney(gym.dayPassPrice,gym.currencySymbol||sgSymbol())||dayP.display;
     const pos=pinPos(i,gyms.length);
     return{id,gym,photo,allPhotos,photoCount,dist,distMin,facs,rating,reviews,addr,isOpen,openText,openTag,openClass,isPop,price,pos,name:gym.name||'Gym',i};
   });
@@ -9777,7 +9779,7 @@ function ActiveSessionPage(){
           <div style="color:rgba(255,255,255,.4);font-size:13px">${b.passType||'Day Pass'} · ${b.date||'Today'}</div>
         </div>
         <div style="text-align:right">
-          <div style="color:#22c55e;font-size:14px;font-weight:700">${b.currencySymbol||'£'}${(b.price||5.00).toFixed(2)}</div>
+          <div style="color:#22c55e;font-size:14px;font-weight:700">${b.currencySymbol||'£'}${(sgNum(b.price)||5.00).toFixed(2)}</div>
           <div style="color:rgba(255,255,255,.3);font-size:11px">${(b.paymentMethod||b.booking_type||'').includes('cash')?'💷 PAY AT GYM':'PAID ✓'}</div>
         </div>
       </div>
@@ -10051,7 +10053,7 @@ function BookingSuccessPage(){
               <p class="text-slate-400 text-sm">Day Pass · 24-hour access</p>
             </div>
             <div class="text-right">
-              <p class="text-brand font-bold text-xl">${b.currency==='USD'?'$':b.currency==='EUR'?'€':'£'}${b.price.toFixed(2)}</p>
+              <p class="text-brand font-bold text-xl">${b.currency==='USD'?'$':b.currency==='EUR'?'€':'£'}${(sgNum(b.price)||0).toFixed(2)}</p>
               <p class="text-green-400 text-xs font-medium">${b.paymentMethod==='cash'?'RESERVED ⏳':'PAID ✓'}</p>
             </div>
           </div>
@@ -10506,7 +10508,7 @@ function MyBookingsPage(){
             <div>
               <p class="text-white font-bold text-lg">${b.gymName||'Gym'}</p>
               <p class="text-slate-400 text-sm">${(()=>{try{const d=new Date(b.date);return d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'})}catch(e){return b.date}})()}${b.time?' at '+b.time:''}</p>
-              <p class="text-brand font-bold">£${b.price.toFixed(2)}</p>
+              <p class="text-brand font-bold">£${(sgNum(b.price)||0).toFixed(2)}</p>
             </div>
             <span class="px-3 py-1 rounded-full text-xs font-bold ${b.status==='confirmed'?'bg-accent/20 text-accent':'bg-yellow-500/20 text-yellow-400'}">${b.status}</span>
           </div>
@@ -12177,7 +12179,7 @@ window.sgLoadCeoStats=async function(){
       if(bks.length===0){
         bookings.innerHTML='<p style="color:rgba(255,255,255,.3);font-size:13px;text-align:center;padding:12px">No bookings recorded yet. Data will appear once customers start booking.</p>';
       }else{
-        bookings.innerHTML=bks.slice(0,10).map(b=>'<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)"><div><span style="color:#fff;font-size:13px;font-weight:600">'+(b.gymName||'Gym')+'</span><br><span style="color:rgba(255,255,255,.35);font-size:11px">'+(b.date?new Date(b.date).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'')+(b.time?' '+b.time:'')+'</span></div><div style="text-align:right"><span style="color:#FF6D00;font-weight:700;font-size:13px">£'+(b.price||0).toFixed(2)+'</span><br><span style="font-size:10px;padding:2px 6px;border-radius:8px;'+(b.status==='confirmed'?'background:rgba(34,197,94,.15);color:#22c55e':'background:rgba(234,179,8,.15);color:#eab308')+'">'+(b.status||'')+'</span></div></div>').join('');
+        bookings.innerHTML=bks.slice(0,10).map(b=>'<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)"><div><span style="color:#fff;font-size:13px;font-weight:600">'+(b.gymName||'Gym')+'</span><br><span style="color:rgba(255,255,255,.35);font-size:11px">'+(b.date?new Date(b.date).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'')+(b.time?' '+b.time:'')+'</span></div><div style="text-align:right"><span style="color:#FF6D00;font-weight:700;font-size:13px">£'+(sgNum(b.price)||0).toFixed(2)+'</span><br><span style="font-size:10px;padding:2px 6px;border-radius:8px;'+(b.status==='confirmed'?'background:rgba(34,197,94,.15);color:#22c55e':'background:rgba(234,179,8,.15);color:#eab308')+'">'+(b.status||'')+'</span></div></div>').join('');
       }
     }
     // #106: Load real-time visitor count
