@@ -280,6 +280,79 @@ function detectSelfService(place) {
   return false;
 }
 
+// ─── FALLBACK: Search local DB when Google Places API is unavailable ───
+// Returns gyms from our database formatted to match Google Places shape
+async function searchGymsFromDatabase(searchQuery, limit = 20) {
+  try {
+    // Search by name, city, or address (case-insensitive)
+    const q = `%${(searchQuery || '').replace(/\bgym[s]?\b/gi, '').replace(/\bin\b/gi, '').trim()}%`;
+    const result = await pool.query(
+      `SELECT id, name, address, city, country, lat, lng, latitude, longitude, 
+              rating, average_rating, total_reviews, day_pass_price, currency,
+              place_id, is_24h, is_self_service, phone, website, zip_code,
+              is_accepting_bookings
+       FROM gyms 
+       WHERE name ILIKE $1 OR city ILIKE $1 OR address ILIKE $1
+       ORDER BY rating DESC NULLS LAST, total_reviews DESC NULLS LAST
+       LIMIT $2`,
+      [q, limit]
+    );
+
+    // If no results from search, return all gyms
+    if (result.rows.length === 0) {
+      const allGyms = await pool.query(
+        `SELECT id, name, address, city, country, lat, lng, latitude, longitude,
+                rating, average_rating, total_reviews, day_pass_price, currency,
+                place_id, is_24h, is_self_service, phone, website, zip_code,
+                is_accepting_bookings
+         FROM gyms 
+         ORDER BY rating DESC NULLS LAST, total_reviews DESC NULLS LAST
+         LIMIT $1`,
+        [limit]
+      );
+      return allGyms.rows.map(formatDbGym);
+    }
+
+    return result.rows.map(formatDbGym);
+  } catch (err) {
+    console.error('[LiveSearch] Database fallback error:', err.message);
+    return [];
+  }
+}
+
+// Format a DB gym row to match the Google Places search result shape
+function formatDbGym(row) {
+  const gymCountry = row.country || 'GB';
+  const gymCurrency = getCurrencyForCountry(gymCountry);
+  const gymPrice = getDayPassPrice(gymCountry);
+
+  return {
+    id: row.place_id || `db-${row.id}`,
+    placeId: row.place_id || `db-${row.id}`,
+    name: row.name || 'Unknown Gym',
+    address: row.address || '',
+    city: row.city || '',
+    country: gymCountry,
+    latitude: row.lat || row.latitude || null,
+    longitude: row.lng || row.longitude || null,
+    rating: row.rating || row.average_rating || null,
+    totalReviews: row.total_reviews || 0,
+    photo: null,
+    photoReference: null,
+    photos_list: [],
+    types: ['gym'],
+    businessStatus: 'OPERATIONAL',
+    openNow: null,
+    is24Hours: row.is_24h || false,
+    isSelfService: row.is_self_service || false,
+    priceLevel: null,
+    dayPassPrice: row.day_pass_price || gymPrice.amount,
+    currency: row.currency || gymCurrency.currency,
+    currencySymbol: gymCurrency.symbol,
+    source: 'database_fallback',
+  };
+}
+
 // ─── Helper: Parse a Text/Nearby Search result into ScanGym gym format ───
 // v4.0: priceLevelToPrice removed — all gyms use £4.49 base (PPP + currency by country)
 
@@ -479,6 +552,12 @@ router.get('/search', async (req, res) => {
     }
 
     if (!GOOGLE_MAPS_API_KEY) {
+      // No API key — fall back to database
+      console.log('[LiveSearch] No API key configured, falling back to database');
+      const fallbackGyms = await searchGymsFromDatabase(searchQuery);
+      if (fallbackGyms.length > 0) {
+        return res.json({ gyms: fallbackGyms, total: fallbackGyms.length, nextPageToken: null, query: searchQuery, source: 'database_fallback' });
+      }
       return res.status(500).json({ error: 'Google Maps API key not configured' });
     }
 
@@ -552,6 +631,12 @@ router.get('/search', async (req, res) => {
       } catch (fetchErr) {
         console.error('Google Places fetch error (attempt', attempt + 1, '):', fetchErr.message);
         if (attempt === maxRetries) {
+          // Fetch failed — try database fallback
+          console.log('[LiveSearch] Fetch failed, falling back to database for:', searchQuery);
+          const fetchFallbackGyms = await searchGymsFromDatabase(searchQuery);
+          if (fetchFallbackGyms.length > 0) {
+            return res.json({ gyms: fetchFallbackGyms, total: fetchFallbackGyms.length, nextPageToken: null, query: searchQuery, source: 'database_fallback' });
+          }
           return res.json({ gyms: [], total: 0, nextPageToken: null, query: searchQuery, source: 'google_places_live', error: 'Search temporarily unavailable' });
         }
         continue;
@@ -566,7 +651,16 @@ router.get('/search', async (req, res) => {
 
     if (data.status !== 'OK') {
       console.error('Google Places Text Search error:', data.status, data.error_message);
-      // Return empty results instead of 502 so the frontend doesn't break
+      // ━━━ FALLBACK: Search local DB when Google Places API is unavailable ━━━
+      // Instead of returning empty results (which causes infinite skeleton on frontend),
+      // fall back to our database of previously-discovered gyms.
+      console.log('[LiveSearch] Falling back to database search for:', searchQuery);
+      const fallbackGyms = await searchGymsFromDatabase(searchQuery);
+      if (fallbackGyms.length > 0) {
+        const result = { gyms: fallbackGyms, total: fallbackGyms.length, nextPageToken: null, query: searchQuery, source: 'database_fallback' };
+        return res.json(result);
+      }
+      // If DB also empty, return empty with error
       return res.json({ gyms: [], total: 0, nextPageToken: null, query: searchQuery, source: 'google_places_live', error: data.status });
     }
 
@@ -664,6 +758,12 @@ router.get('/nearby', async (req, res) => {
 
     if (data.status !== 'OK') {
       console.error('Google Places Nearby error:', data.status, data.error_message);
+      // ━━━ FALLBACK: Use DB gyms when Google Places API is unavailable ━━━
+      console.log('[LiveSearch] Nearby search falling back to database');
+      const fallbackGyms = await searchGymsFromDatabase('gym');
+      if (fallbackGyms.length > 0) {
+        return res.json({ gyms: fallbackGyms, total: fallbackGyms.length, nextPageToken: null, source: 'database_fallback' });
+      }
       return res.status(502).json({ error: 'Nearby search error', details: data.status });
     }
 
