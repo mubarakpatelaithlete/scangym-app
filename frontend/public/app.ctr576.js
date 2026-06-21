@@ -12032,6 +12032,9 @@ if(!window._sgChat){
     streamText:'',
     streamIdx:0,
     streamTimer:null,
+    onboarding:false,
+    onboardingHistory:[],
+    _onboardStarted:false,
   };
 }
 
@@ -12116,6 +12119,12 @@ async function _sgChatSend(msgText){
   render();
   _sgScrollBottom();
 
+  // If in onboarding mode, route to onboarding handler
+  if(chat.onboarding){
+    _sgOnboardingSend(msg);
+    return;
+  }
+
   // Build user fitness profile for personalized AI
   var userProfile=null;
   if(state.user){
@@ -12166,102 +12175,57 @@ function _sgFallback(msg){
   return 'Great question! 💪 I can help with:\n\n• 🏋️ Custom workout plans\n• 🥗 Nutrition & meal planning\n• 📊 Progress tracking\n• 🏃 Cardio programs\n• 🧘 Recovery & mobility\n• 🔍 Finding gyms near you\n\nWhat interests you most? 🚀';
 }
 
-// ── Fitness Profile Setup Modal ──
-function _sgFitnessSetup(){
-  var u=state.user||{};
-  var o=document.createElement('div');
-  o.id='sg-fitness-overlay';
-  o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(12px);z-index:99999;display:flex;align-items:flex-end;justify-content:center;animation:fadeInUp .25s ease-out';
-  o.innerHTML='<div style="width:100%;max-width:480px;max-height:88vh;background:#111118;border-radius:24px 24px 0 0;padding:24px 20px env(safe-area-inset-bottom,20px);overflow-y:auto">'
-    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">'
-    +'<h2 style="color:#fff;font-size:18px;font-weight:900;margin:0">📋 Fitness Profile</h2>'
-    +'<button onclick="document.getElementById(\'sg-fitness-overlay\').remove()" style="background:rgba(255,255,255,.1);border:none;color:#fff;width:32px;height:32px;border-radius:50%;font-size:16px;cursor:pointer">✕</button>'
-    +'</div>'
-    +'<p style="color:rgba(255,255,255,.4);font-size:12px;margin:0 0 20px">The more you share, the smarter your AI coach gets.</p>'
-    +_sgFField('Height (cm)','sg-fp-height','number',u.height_cm||'','175')
-    +_sgFField('Weight (kg)','sg-fp-weight','number',u.weight_kg||'','75')
-    +_sgFField('Body Fat %','sg-fp-bf','number',u.body_fat_pct||'','18')
-    +_sgFField('Muscle Mass (kg)','sg-fp-mm','number',u.muscle_mass_kg||'','32')
-    +_sgFField('Age','sg-fp-age','number',u.age||'','25')
-    +'<label style="display:block;margin-bottom:14px"><span style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Gender</span>'
-    +'<select id="sg-fp-gender" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#fff;padding:12px 14px;border-radius:12px;font-size:14px;outline:none">'
-    +'<option value=""'+(!(u.gender)?'selected':'')+' style="color:#666">Select</option>'
-    +'<option value="male"'+((u.gender==='male')?' selected':'')+'>Male</option>'
-    +'<option value="female"'+((u.gender==='female')?' selected':'')+'>Female</option>'
-    +'<option value="other"'+((u.gender==='other')?' selected':'')+'>Other</option></select></label>'
-    +_sgFField('City','sg-fp-city','text',u.city||'','London')
-    +_sgFField('Country','sg-fp-country','text',u.country||'','UK')
-    +'<label style="display:block;margin-bottom:14px"><span style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Body Type</span>'
-    +'<select id="sg-fp-bodytype" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#fff;padding:12px 14px;border-radius:12px;font-size:14px;outline:none">'
-    +'<option value="">Select</option>'
-    +'<option value="ectomorph"'+((u.body_type==='ectomorph')?' selected':'')+'>Ectomorph (lean/long)</option>'
-    +'<option value="mesomorph"'+((u.body_type==='mesomorph')?' selected':'')+'>Mesomorph (muscular)</option>'
-    +'<option value="endomorph"'+((u.body_type==='endomorph')?' selected':'')+'>Endomorph (stocky)</option></select></label>'
-    +'<label style="display:block;margin-bottom:14px"><span style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Fitness Goal</span>'
-    +'<select id="sg-fp-goal" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#fff;padding:12px 14px;border-radius:12px;font-size:14px;outline:none">'
-    +'<option value="">Select</option>'
-    +'<option value="lose fat"'+((u.fitness_goal==='lose fat')?' selected':'')+'>Lose Fat</option>'
-    +'<option value="build muscle"'+((u.fitness_goal==='build muscle')?' selected':'')+'>Build Muscle</option>'
-    +'<option value="get stronger"'+((u.fitness_goal==='get stronger')?' selected':'')+'>Get Stronger</option>'
-    +'<option value="improve endurance"'+((u.fitness_goal==='improve endurance')?' selected':'')+'>Improve Endurance</option>'
-    +'<option value="maintain fitness"'+((u.fitness_goal==='maintain fitness')?' selected':'')+'>Maintain Fitness</option>'
-    +'<option value="body recomp"'+((u.fitness_goal==='body recomp')?' selected':'')+'>Body Recomposition</option></select></label>'
-    +_sgFField('Weakest Muscle','sg-fp-weakmuscle','text',u.weakest_muscle||'','e.g. calves, shoulders')
-    +_sgFField('Supplements','sg-fp-supps','text',u.supplements||'','e.g. creatine, protein, multivitamin')
-    +_sgFField('Diet Preference','sg-fp-diet','text',u.diet||'','e.g. keto, vegan, no preference')
-    +_sgFField('Daily Sleep (hrs)','sg-fp-sleep','number',u.sleep_hours||'','8')
-    +_sgFField('Daily Water (L)','sg-fp-water','number',u.water_litres||'','2.5')
-    +_sgFField('Workout Duration (mins)','sg-fp-duration','number',u.workout_duration||'','60')
-    +_sgFField('Weekly Sessions','sg-fp-sessions','number',u.weekly_sessions||'','4')
-    +_sgFField('Diseases / Injuries','sg-fp-diseases','text',u.diseases||'','e.g. asthma, bad knees, none')
-    +_sgFField('Metabolism','sg-fp-metabolism','text',u.metabolism||'','fast, normal, or slow')
-    +'<button onclick="_sgFitnessSave()" style="width:100%;background:linear-gradient(135deg,#FF6D00,#ff8533);color:#fff;border:none;padding:16px;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;margin-top:8px;box-shadow:0 4px 20px rgba(255,109,0,.35)">Save Fitness Profile 💪</button>'
-    +'</div>';
-  document.body.appendChild(o);
-  o.addEventListener('click',function(e){if(e.target===o)o.remove();});
+// ── Conversational Fitness Onboarding ──
+// ChatGPT-style: AI asks questions one by one to build your profile
+function _sgOnboardingStart(){
+  var chat=window._sgChat;
+  chat.onboarding=true;
+  chat.onboardingHistory=[];
+  chat.msgs.push({role:'ai',text:'Hey! 👋 Before we get started, I\u2019d love to get to know you so I can give you *personalized* coaching.\n\nLet\u2019s do a quick fitness check-in — just answer naturally, like you\u2019re talking to a trainer.\n\n**What\u2019s your name, age, and gender?**',ts:Date.now()});
+  render();
+  _sgScrollBottom();
 }
-function _sgFField(label,id,type,val,ph){
-  return '<label style="display:block;margin-bottom:14px"><span style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">'+label+'</span>'
-    +'<input id="'+id+'" type="'+type+'" value="'+(val||'')+'" placeholder="'+ph+'" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#fff;padding:12px 14px;border-radius:12px;font-size:14px;outline:none;box-sizing:border-box" onfocus="this.style.borderColor=\'rgba(255,109,0,.4)\'" onblur="this.style.borderColor=\'rgba(255,255,255,.1)\'"></label>';
-}
-async function _sgFitnessSave(){
-  var d={};
-  var v=function(id){var el=document.getElementById(id);return el?el.value.trim():'';};
-  if(v('sg-fp-height'))d.height_cm=parseFloat(v('sg-fp-height'));
-  if(v('sg-fp-weight'))d.weight_kg=parseFloat(v('sg-fp-weight'));
-  if(v('sg-fp-bf'))d.body_fat_pct=parseFloat(v('sg-fp-bf'));
-  if(v('sg-fp-mm'))d.muscle_mass_kg=parseFloat(v('sg-fp-mm'));
-  if(v('sg-fp-goal'))d.fitness_goal=v('sg-fp-goal');
-  if(v('sg-fp-age'))d.age=parseInt(v('sg-fp-age'));
-  if(v('sg-fp-gender'))d.gender=v('sg-fp-gender');
-  if(v('sg-fp-city'))d.city=v('sg-fp-city');
-  if(v('sg-fp-country'))d.country=v('sg-fp-country');
-  if(v('sg-fp-bodytype'))d.body_type=v('sg-fp-bodytype');
-  if(v('sg-fp-weakmuscle'))d.weakest_muscle=v('sg-fp-weakmuscle');
-  if(v('sg-fp-supps'))d.supplements=v('sg-fp-supps');
-  if(v('sg-fp-diet'))d.diet=v('sg-fp-diet');
-  if(v('sg-fp-sleep'))d.sleep_hours=parseFloat(v('sg-fp-sleep'));
-  if(v('sg-fp-water'))d.water_litres=parseFloat(v('sg-fp-water'));
-  if(v('sg-fp-duration'))d.workout_duration=parseInt(v('sg-fp-duration'));
-  if(v('sg-fp-sessions'))d.weekly_sessions=parseInt(v('sg-fp-sessions'));
-  if(v('sg-fp-diseases'))d.diseases=v('sg-fp-diseases');
-  if(v('sg-fp-metabolism'))d.metabolism=v('sg-fp-metabolism');
-  if(Object.keys(d).length===0){sgToast('Fill in at least one field','error');return;}
+
+async function _sgOnboardingSend(msg){
+  var chat=window._sgChat;
+  chat.onboardingHistory.push({role:'user',content:msg});
+
   try{
-    var resp=await fetch('/api/auth/profile',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});
-    if(!resp.ok)throw new Error('save failed');
+    var resp=await fetch('/api/chat/onboarding',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({message:msg,history:chat.onboardingHistory})
+    });
+    if(!resp.ok)throw new Error('API error');
     var data=await resp.json();
-    if(data.user){Object.assign(state.user,data.user);}
-    // Also save extended fields to state.user for chat context
-    Object.assign(state.user,d);
-    localStorage.setItem('sg_fitness_profile',JSON.stringify(d));
-    sgToast('Fitness profile saved! AI is now personalized 💪','success');
-    var ol=document.getElementById('sg-fitness-overlay');if(ol)ol.remove();
-    render();
+    chat.typing=false;
+
+    // Check if Gemini extracted profile data (onboarding complete)
+    if(data.profileData&&Object.keys(data.profileData).length>0){
+      // Save profile to backend
+      try{
+        var saveResp=await fetch('/api/auth/profile',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data.profileData)});
+        if(saveResp.ok){
+          var saveData=await saveResp.json();
+          if(saveData.user)Object.assign(state.user,saveData.user);
+          Object.assign(state.user,data.profileData);
+          localStorage.setItem('sg_fitness_profile',JSON.stringify(data.profileData));
+        }
+      }catch(e){console.error('Profile save error:',e);}
+      chat.onboarding=false;
+      chat.onboardingHistory=[];
+      sgToast('Profile saved! AI is now personalized 💪','success',2500);
+    }
+
+    // Add AI's next question or completion message
+    chat.onboardingHistory.push({role:'assistant',content:data.reply});
+    _sgChatStream(data.reply);
   }catch(err){
-    console.error('Fitness save error:',err);
-    sgToast('Could not save — try again','error');
+    console.error('Onboarding error:',err);
+    chat.typing=false;
+    _sgChatStream('Sorry, something went wrong. Let\u2019s try that again — what were you saying?');
   }
+  _sgChatSave();
 }
 
 function _sgChatCopy(idx){
@@ -12277,6 +12241,13 @@ function ChatTabPage(){
   var msgs=chat.msgs;
   var isTyping=chat.typing;
   var isEmpty=msgs.length===0;
+
+  // Auto-start conversational onboarding for new users without fitness profile
+  var fp=Object.assign({},state.user||{},JSON.parse(localStorage.getItem('sg_fitness_profile')||'{}'));
+  if(isEmpty&&state.user&&!fp.fitness_goal&&!chat.onboarding&&!chat._onboardStarted){
+    chat._onboardStarted=true;
+    setTimeout(function(){_sgOnboardingStart();},400);
+  }
 
   // Suggestion chips — 2-column grid
   var suggestions=[
@@ -12310,7 +12281,6 @@ function ChatTabPage(){
       </div>
       <h2 style="color:#fff;font-size:22px;font-weight:900;margin:0 0 8px;letter-spacing:-.3px">What can I help with?</h2>
       <p style="color:rgba(255,255,255,.35);font-size:13px;margin:0 0 20px;max-width:280px">Your AI fitness coach. Workouts, nutrition, gym finder — ask anything.</p>
-      ${state.user&&!state.user.fitness_goal?'<div onclick="_sgFitnessSetup()" style="width:100%;max-width:340px;background:linear-gradient(135deg,rgba(255,109,0,.08),rgba(168,85,247,.06));border:1px solid rgba(255,109,0,.15);border-radius:16px;padding:14px 16px;margin-bottom:16px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px;transition:all .15s" ontouchstart="this.style.borderColor=\'rgba(255,109,0,.4)\'" ontouchend="this.style.borderColor=\'rgba(255,109,0,.15)\'"><span style="font-size:24px">📋</span><div><p style="color:#fff;font-size:13px;font-weight:700;margin:0">Set up your fitness profile</p><p style="color:rgba(255,255,255,.4);font-size:11px;margin:3px 0 0">Height, weight, goals — unlock personalized AI coaching</p></div><span style="color:rgba(255,109,0,.6);font-size:16px">›</span></div>':''}
       <!-- Suggestion grid (2-column) -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;max-width:340px">
         ${suggestions.map(function(s){

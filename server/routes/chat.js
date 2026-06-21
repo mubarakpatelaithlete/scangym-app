@@ -448,4 +448,101 @@ Brand: ScanGym only.${profileContext}`;
   }
 });
 
+// POST /api/chat/onboarding — Conversational fitness profile intake (ChatGPT-style)
+// Gemini asks questions one by one, extracts profile data when enough info gathered
+router.post('/onboarding', async (req, res) => {
+  try {
+    const { message, history } = req.body;
+    if (!message) return res.status(400).json({ error: 'message is required' });
+
+    const systemPrompt = `You are ScanGym AI — a friendly, energetic fitness coach doing a quick intake interview to learn about a new member.
+
+YOUR TASK: Ask fitness profile questions ONE AT A TIME, conversationally. Be warm, use 1-2 emojis max per reply. Keep each reply under 60 words.
+
+FIELDS TO COLLECT (ask naturally, group related ones 2-3 at a time max):
+- height (cm), weight (kg), age, gender
+- body fat %, muscle mass (kg) — say "estimate is fine" or "skip if unsure"
+- fitness goal (lose fat / build muscle / get stronger / improve endurance / maintain / body recomp)
+- body type (ectomorph / mesomorph / endomorph — briefly explain each)
+- weakest muscle group
+- diet preference, supplements
+- sleep hours, daily water intake (litres)
+- workout duration (mins), weekly sessions
+- any diseases or injuries
+- metabolism (fast/normal/slow)
+- city, country
+
+RULES:
+- Ask 2-3 related fields per question (e.g. "height and weight?" then "age and gender?")
+- Accept approximate answers, be encouraging
+- If they say "skip" or "idk", move on — don't push
+- After collecting enough info (at least goal + 4-5 other fields), wrap up with a SHORT personalized summary of what you learned and what you'll help them with
+
+CRITICAL: When you have enough data to complete the profile, you MUST end your reply with a JSON block on its own line:
+[PROFILE_DATA]{"height_cm":175,"weight_kg":80,"age":25,"gender":"male","fitness_goal":"build muscle"}[/PROFILE_DATA]
+Include ONLY fields the user actually provided. Use these exact keys: height_cm, weight_kg, body_fat_pct, muscle_mass_kg, fitness_goal, age, gender, city, country, body_type, weakest_muscle, supplements, diet, sleep_hours, water_litres, workout_duration, weekly_sessions, diseases, metabolism.
+Do NOT include the JSON block until you have at least fitness_goal plus 4 other fields.`;
+
+    // Build conversation history for multi-turn
+    const messages = [{ role: 'system', content: systemPrompt }];
+
+    // Add prior conversation turns
+    if (history && Array.isArray(history)) {
+      for (const turn of history) {
+        messages.push({ role: turn.role === 'assistant' ? 'model' : 'user', content: turn.content });
+      }
+    }
+
+    // Add current message
+    messages.push({ role: 'user', content: message });
+
+    // Call Gemini
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) return res.status(500).json({ error: 'AI not configured' });
+
+    const geminiResp = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: systemPrompt }] },
+          contents: messages.filter(m => m.role !== 'system').map(m => ({
+            role: m.role === 'user' ? 'user' : 'model',
+            parts: [{ text: m.content }]
+          })),
+          generationConfig: { temperature: 0.7, maxOutputTokens: 300 }
+        })
+      }
+    );
+
+    if (!geminiResp.ok) {
+      const errText = await geminiResp.text();
+      console.error('Gemini onboarding error:', errText);
+      return res.status(500).json({ error: 'AI error' });
+    }
+
+    const geminiData = await geminiResp.json();
+    let reply = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "Let's continue — what's your main fitness goal?";
+
+    // Extract profile data if present
+    let profileData = null;
+    const profileMatch = reply.match(/\[PROFILE_DATA\](.*?)\[\/PROFILE_DATA\]/s);
+    if (profileMatch) {
+      try {
+        profileData = JSON.parse(profileMatch[1]);
+        // Clean the reply — remove the JSON block
+        reply = reply.replace(/\[PROFILE_DATA\].*?\[\/PROFILE_DATA\]/s, '').trim();
+      } catch (e) {
+        console.error('Profile data parse error:', e);
+      }
+    }
+
+    res.json({ reply, profileData });
+  } catch (err) {
+    console.error('Onboarding error:', err);
+    res.status(500).json({ error: 'Onboarding failed', detail: err.message });
+  }
+});
+
 module.exports = router;
