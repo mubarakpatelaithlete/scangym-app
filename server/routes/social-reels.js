@@ -85,6 +85,9 @@ async function initSocialReelsTable() {
       )
     `);
     
+    // Clear stale cache entries that have 0 results (from failed API calls)
+    await pool.query("DELETE FROM social_reels_cache WHERE result_count = 0");
+    
     console.log('[social-reels] Tables ready');
   } catch (err) {
     console.error('[social-reels] Table init error:', err.message);
