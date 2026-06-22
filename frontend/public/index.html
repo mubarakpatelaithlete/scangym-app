@@ -9,7 +9,6 @@
 <meta name="author" content="ScanGym">
 <link rel="canonical" href="https://scangym.com/">
 
-<!-- Open Graph / Social -->
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://scangym.com/">
 <meta property="og:title" content="ScanGym - Book a Gym. Anywhere.">
@@ -19,7 +18,6 @@
 <meta name="twitter:title" content="ScanGym - Book a Gym. Anywhere.">
 <meta name="twitter:description" content="Find and book 1.2M+ gyms worldwide. Day passes from $5.49, QR entry, no membership needed.">
 
-<!-- Schema.org JSON-LD: WebApplication -->
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -53,7 +51,6 @@
 }
 </script>
 
-<!-- Schema.org JSON-LD: Organization -->
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -71,82 +68,40 @@
 }
 </script>
 
-<!-- Schema.org JSON-LD: FAQPage (AI assistants love FAQs) -->
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "FAQPage",
   "mainEntity": [
-    {
-      "@type": "Question",
-      "name": "What is ScanGym?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "ScanGym is a gym finder and booking marketplace. It lets you search over 1.2 million gyms worldwide, buy a day pass starting from $5.49, and enter the gym using a QR code -- no membership or contract needed."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "How much does a gym day pass cost on ScanGym?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Day passes on ScanGym start from $5.49 per visit. Prices vary by gym location and facilities. There are no monthly memberships or long-term commitments."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "How does ScanGym work?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Search for gyms near you, pick one, buy a day pass with Stripe, and receive a QR code. Show the QR code at the gym entrance to check in. It works like booking a hotel room but for gyms."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "Can I find 24-hour gyms on ScanGym?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Yes. ScanGym has a dedicated 24/7 gym filter that shows only gyms open around the clock, including chains like Anytime Fitness, Planet Fitness, Snap Fitness, and more."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "Do I need a gym membership to use ScanGym?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "No. ScanGym is built for people who don't want a membership. You pay per visit with a day pass. No contracts, no cancellation fees, no commitments."
-      }
-    }
+    {"@type":"Question","name":"What is ScanGym?","acceptedAnswer":{"@type":"Answer","text":"ScanGym is a gym finder and booking marketplace. It lets you search over 1.2 million gyms worldwide, buy a day pass starting from $5.49, and enter the gym using a QR code -- no membership or contract needed."}},
+    {"@type":"Question","name":"How much does a gym day pass cost on ScanGym?","acceptedAnswer":{"@type":"Answer","text":"Day passes on ScanGym start from $5.49 per visit. Prices vary by gym location and facilities. There are no monthly memberships or long-term commitments."}},
+    {"@type":"Question","name":"How does ScanGym work?","acceptedAnswer":{"@type":"Answer","text":"Search for gyms near you, pick one, buy a day pass with Stripe, and receive a QR code. Show the QR code at the gym entrance to check in."}},
+    {"@type":"Question","name":"Can I find 24-hour gyms on ScanGym?","acceptedAnswer":{"@type":"Answer","text":"Yes. ScanGym has a dedicated 24/7 gym filter that shows only gyms open around the clock."}},
+    {"@type":"Question","name":"Do I need a gym membership to use ScanGym?","acceptedAnswer":{"@type":"Answer","text":"No. ScanGym is built for people who don't want a membership. You pay per visit with a day pass. No contracts, no cancellation fees, no commitments."}}
   ]
 }
 </script>
 
-<!-- Preconnect to critical origins (eliminate DNS+TCP+TLS latency) -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://js.stripe.com" crossorigin>
 <link rel="preconnect" href="https://maps.googleapis.com">
 <link rel="preconnect" href="https://maps.gstatic.com" crossorigin>
 
-<!-- DNS prefetch for secondary domains (resolve DNS in parallel) -->
 <link rel="dns-prefetch" href="https://api.stripe.com">
 <link rel="preconnect" href="https://lh3.googleusercontent.com" crossorigin>
 <link rel="dns-prefetch" href="https://lh3.googleusercontent.com">
 <link rel="dns-prefetch" href="https://streetviewpixels-pa.googleapis.com">
 <link rel="dns-prefetch" href="https://places.googleapis.com">
 
-<!-- Preload critical resources (browser fetches immediately, high priority) -->
 <link rel="preload" href="/styles.css?v=5.3.1" as="style">
 <link rel="preload" href="/app.ctr576.js?v=5.3.1" as="script" fetchpriority="high">
 
-<!-- Pre-compiled Tailwind CSS (replaces CDN runtime -- 5KB gzip vs 100KB JS) -->
 <link rel="stylesheet" href="/styles.css?v=5.3.1">
 
-<!-- Fonts: reduced to 3 weights (400, 600, 700) with display=swap -->
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Sora:wght@600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Sora:wght@600;700&display=swap" rel="stylesheet"></noscript>
 
-<!-- Critical CSS inlined -->
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:#0f172a;color:#e2e8f0;-webkit-font-smoothing:antialiased}
@@ -162,17 +117,10 @@ h1,h2,h3,.font-brand{font-family:'Sora',sans-serif}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 </style>
 
-<!-- Speculation Rules for instant page transitions (Chrome 121+) -->
 <script type="speculationrules">
 {
-  "prerender": [{
-    "where": { "href_matches": "/*" },
-    "eagerness": "moderate"
-  }],
-  "prefetch": [{
-    "where": { "href_matches": "/*" },
-    "eagerness": "moderate"
-  }]
+  "prerender": [{"where": { "href_matches": "/*" },"eagerness": "moderate"}],
+  "prefetch": [{"where": { "href_matches": "/*" },"eagerness": "moderate"}]
 }
 </script>
 
@@ -208,6 +156,7 @@ if('serviceWorker' in navigator){
 <script src="/robust-location.js" defer></script>
 <script src="/pricing.js" defer></script>
 <script src="/app.ctr576.js?v=5.3.1" defer></script>
-<script src="/app-patches.js?v=1.0" defer></script>
+<script src="/app-patches.js?v=2.0" defer></script>
+<script src="/app-patches-v3.js?v=1.0" defer></script>
 </body>
 </html>
