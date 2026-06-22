@@ -301,10 +301,12 @@ apiPaths.forEach(p => app.use(p, express.json()));
 app.get('/health', (req, res) => res.status(200).send('ok'));
 app.get('/api/v2/health', (req, res) => {
   res.json({
-    status: 'ok', version: 'v4.6.0', brand: 'ScanGym',
+    status: 'ok', version: 'v5.9.0', brand: 'ScanGym',
     ts: new Date().toISOString(),
-    features: 18, tasks: '24/24 + auth + booking + payment + live-search', ok: true,
+    features: 22, tasks: '24/24 + auth + booking + payment + live-search + chatbot-ai + gym-partner + creator-earnings',
+    ok: true,
     frontend: fs.existsSync(path.join(FRONTEND_DIR, 'index.html')) ? 'v3' : 'none',
+    chatbot: { universal: true, webchat: true, aiChain: true },
   });
 });
 
