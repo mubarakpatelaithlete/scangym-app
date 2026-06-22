@@ -44,6 +44,10 @@ router.use('/slack', slackRouter);
 const msteamsRouter = require('./msteams');
 router.use('/msteams', msteamsRouter);
 
+// Web Chat (REST API — same handler as all channels)
+const webchatRouter = require('./webchat');
+router.use('/web', webchatRouter);
+
 // ─── Start Discord Bot (connects on server boot) ────────────
 // Call this after Express is listening
 startDiscordBot();
@@ -72,12 +76,23 @@ router.get('/health', (req, res) => {
     email: !!process.env.SENDGRID_API_KEY,
     slack: !!process.env.SLACK_BOT_TOKEN,
     msteams: !!process.env.TEAMS_APP_ID,
+    web: true, // Always available
+  };
+
+  const aiProviders = {
+    groq: !!process.env.GROQ_API_KEY,
+    gemini: !!(process.env.GEMINI_API_KEY || process.env.GOOGLE_MAPS_API_KEY),
+    cloudflare: !!(process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_AI_TOKEN),
+    huggingface: !!(process.env.HF_API_KEY || process.env.HUGGINGFACE_API_KEY),
+    fallback: true, // Pattern-matching always available
   };
 
   res.json({
     status: 'ok',
     channels,
     activeChannels: Object.entries(channels).filter(([, v]) => v).map(([k]) => k),
+    aiProviders,
+    activeAI: Object.entries(aiProviders).filter(([, v]) => v).map(([k]) => k),
   });
 });
 

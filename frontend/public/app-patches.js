@@ -312,6 +312,134 @@
   }
 
   // ====================================================================
+  // CH1: Chat tab — route gym queries through universal chatbot handler
+  // so the Chat tab works EXACTLY like Telegram/Discord/Slack/Teams
+  // ====================================================================
+  function patchChatUniversalHandler() {
+    // Wrap the original _sgChatSend to route gym/booking queries
+    // through /api/chatbot/web/message (same handler as all channels)
+    var origSend = window._sgChatSend;
+    if (!origSend || origSend._sgUniversalPatched) return;
+
+    window._sgChatSend = async function(msgText) {
+      var chat = window._sgChat;
+      if (!chat || chat.typing) return;
+      var msg = msgText || (document.getElementById('sg-chat-input') ? document.getElementById('sg-chat-input').value.trim() : '');
+      if (!msg) return;
+
+      // Detect if this is a gym/booking/ScanGym query → route to universal handler
+      var lower = msg.toLowerCase();
+      var isGymQuery = /\b(gym|gyms|book|booking|cancel|price|pricing|cost|find|search|near|nearby|qr|scangym|day pass|membership|refund|channel|telegram|whatsapp|discord|slack|teams)\b/.test(lower);
+      // Also catch city names that look like gym searches
+      var isCitySearch = /^[a-z][a-z\s,'-]{1,35}$/i.test(lower) && !lower.includes('?') &&
+        !['yes','no','ok','okay','sure','thanks','thank you','cool','great','nice','good','bad','bye','lol','haha'].includes(lower.trim());
+      // Also greetings
+      var isGreeting = /^(hi|hey|hello|hola|yo|sup|hiya|morning|good morning|good evening|good afternoon)[\s!.?]*$/i.test(lower);
+
+      if (isGymQuery || isCitySearch || isGreeting) {
+        // Clear input
+        var inp = document.getElementById('sg-chat-input');
+        if (inp) { inp.value = ''; inp.style.height = '44px'; }
+
+        // Add user message to chat
+        chat.msgs.push({ role: 'user', text: msg, ts: Date.now() });
+        chat.typing = true;
+        if (window.render) window.render();
+        if (window._sgScrollBottom) window._sgScrollBottom();
+
+        try {
+          var userId = 'web:' + ((window.state && window.state.user && window.state.user.id) || 'anon');
+          var userName = (window.state && window.state.user && window.state.user.name) || 'User';
+          var resp = await fetch('/api/chatbot/web/message', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: msg, userId: userId, userName: userName })
+          });
+          if (!resp.ok) throw new Error('API error ' + resp.status);
+          var data = await resp.json();
+          chat.typing = false;
+          // Stream the response for nice UX
+          if (window._sgChatStream) {
+            window._sgChatStream(data.text || 'Sorry, I couldn\'t process that. Try again!');
+          } else {
+            chat.msgs.push({ role: 'ai', text: data.text || 'Sorry, try again!', ts: Date.now() });
+            if (window.render) window.render();
+          }
+        } catch (err) {
+          console.error('[Chat] Universal handler error:', err);
+          chat.typing = false;
+          // Fallback to original handler
+          origSend.call(window, msg);
+          return;
+        }
+        if (window._sgChatSave) window._sgChatSave();
+        return;
+      }
+
+      // Non-gym query → use original fitness AI handler
+      return origSend.call(window, msgText);
+    };
+    window._sgChatSend._sgUniversalPatched = true;
+    console.log('[Patches] CH1: Chat tab now uses universal chatbot handler for gym queries');
+  }
+
+  // ====================================================================
+  // CH2: Channels page — show real-time bot status badges
+  // ====================================================================
+  function patchChannelsLiveStatus() {
+    // Add live status indicators to channel cards
+    async function updateChannelStatus() {
+      try {
+        var resp = await fetch('/api/chatbot/health');
+        if (!resp.ok) return;
+        var data = await resp.json();
+        var channels = data.channels || {};
+
+        // Update channel cards with live status
+        document.querySelectorAll('[data-channel-id]').forEach(function(card) {
+          var chId = card.dataset.channelId;
+          var isLive = false;
+          if (chId === 'telegram') isLive = channels.telegram;
+          else if (chId === 'whatsapp') isLive = channels.whatsapp;
+          else if (chId === 'discord') isLive = channels.discord;
+          else if (chId === 'sms') isLive = channels.sms;
+          else if (chId === 'email') isLive = channels.email;
+          else if (chId === 'slack') isLive = channels.slack;
+          else if (chId === 'msteams') isLive = channels.msteams;
+
+          // Add or update live badge
+          var badge = card.querySelector('.sg-ch-live-badge');
+          if (!badge) {
+            badge = document.createElement('span');
+            badge.className = 'sg-ch-live-badge';
+            badge.style.cssText = 'font-size:9px;font-weight:700;padding:2px 6px;border-radius:6px;margin-left:auto;flex-shrink:0';
+            card.appendChild(badge);
+          }
+          if (isLive) {
+            badge.textContent = '● LIVE';
+            badge.style.color = '#22c55e';
+            badge.style.background = 'rgba(34,197,94,.1)';
+          } else {
+            badge.textContent = '○ Setup needed';
+            badge.style.color = 'rgba(255,255,255,.3)';
+            badge.style.background = 'rgba(255,255,255,.04)';
+          }
+        });
+      } catch (e) {}
+    }
+
+    // Run on Channels page load and periodically
+    setInterval(function() {
+      if (window.location.pathname === '/channels' || (window.state && window.state.route === '/channels')) {
+        updateChannelStatus();
+      }
+    }, 5000);
+    // Also run immediately
+    setTimeout(updateChannelStatus, 1000);
+    console.log('[Patches] CH2: Channel live status badges active');
+  }
+
+  // ====================================================================
   // INIT
   // ====================================================================
   function init() {
@@ -323,7 +451,9 @@
     patchGymOverlay();
     addUSPMessaging();
     patchReelsBooking();
-    console.log('[ScanGym Patches v2.0] Applied: #4 #5 #17 #18 #19 #26 #35 #49 C1');
+    patchChatUniversalHandler();
+    patchChannelsLiveStatus();
+    console.log('[ScanGym Patches v3.0] Applied: #4 #5 #17 #18 #19 #26 #35 #49 C1 CH1 CH2');
   }
 
   if (document.readyState === 'loading') {
