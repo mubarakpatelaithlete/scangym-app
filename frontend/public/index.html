@@ -33,7 +33,7 @@
     "@type": "Offer",
     "price": "5.49",
     "priceCurrency": "USD",
-    "description": "Day pass — single visit to any gym"
+    "description": "Day pass -- single visit to any gym"
   },
   "featureList": [
     "Search 1.2M+ gyms worldwide",
@@ -60,7 +60,7 @@
   "@type": "Organization",
   "name": "ScanGym",
   "url": "https://scangym.com",
-  "description": "ScanGym is a gym booking marketplace that lets anyone book a day pass at any gym, anywhere — no membership needed.",
+  "description": "ScanGym is a gym booking marketplace that lets anyone book a day pass at any gym, anywhere -- no membership needed.",
   "foundingDate": "2024",
   "sameAs": [],
   "contactPoint": {
@@ -82,7 +82,7 @@
       "name": "What is ScanGym?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "ScanGym is a gym finder and booking marketplace. It lets you search over 1.2 million gyms worldwide, buy a day pass starting from $5.49, and enter the gym using a QR code — no membership or contract needed."
+        "text": "ScanGym is a gym finder and booking marketplace. It lets you search over 1.2 million gyms worldwide, buy a day pass starting from $5.49, and enter the gym using a QR code -- no membership or contract needed."
       }
     },
     {
@@ -130,8 +130,6 @@
 
 <!-- DNS prefetch for secondary domains (resolve DNS in parallel) -->
 <link rel="dns-prefetch" href="https://api.stripe.com">
-<!-- Perf v2: Upgrade from dns-prefetch to preconnect — saves ~100ms on first photo load
-     (DNS+TCP+TLS for Google Places photos which are the main visual content) -->
 <link rel="preconnect" href="https://lh3.googleusercontent.com" crossorigin>
 <link rel="dns-prefetch" href="https://lh3.googleusercontent.com">
 <link rel="dns-prefetch" href="https://streetviewpixels-pa.googleapis.com">
@@ -141,14 +139,14 @@
 <link rel="preload" href="/styles.css?v=5.3.1" as="style">
 <link rel="preload" href="/app.ctr576.js?v=5.3.1" as="script" fetchpriority="high">
 
-<!-- Pre-compiled Tailwind CSS (replaces CDN runtime — 5KB gzip vs 100KB JS) -->
+<!-- Pre-compiled Tailwind CSS (replaces CDN runtime -- 5KB gzip vs 100KB JS) -->
 <link rel="stylesheet" href="/styles.css?v=5.3.1">
 
 <!-- Fonts: reduced to 3 weights (400, 600, 700) with display=swap -->
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Sora:wght@600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Sora:wght@600;700&display=swap" rel="stylesheet"></noscript>
 
-<!-- Critical CSS inlined (above-the-fold renders instantly without external CSS) -->
+<!-- Critical CSS inlined -->
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:#0f172a;color:#e2e8f0;-webkit-font-smoothing:antialiased}
@@ -181,28 +179,24 @@ h1,h2,h3,.font-brand{font-family:'Sora',sans-serif}
 </head>
 <body class="bg-dark min-h-screen">
 <div id="app">
-  <!-- Skeleton UI: shown instantly, replaced when app.js renders (v5 — bottom tab only) -->
   <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:0 24px;text-align:center">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:40px">
-      <span style="font-size:28px">🏋️</span>
+      <span style="font-size:28px">&#127947;</span>
       <span style="font-family:Sora,sans-serif;font-weight:800;font-size:24px;color:white">Scan<span style="color:#FF6D00">Gym</span></span>
     </div>
     <div class="skeleton" style="width:100%;max-width:320px;height:48px;border-radius:14px;margin:0 auto 12px"></div>
     <div class="skeleton" style="width:100%;max-width:320px;height:48px;border-radius:14px;margin:0 auto 16px"></div>
     <div class="skeleton" style="width:200px;height:16px;border-radius:8px;margin:0 auto"></div>
   </div>
-  <!-- Skeleton tab bar (matches JS BottomTabBar order: Reels | Book | Profile) -->
   <div id="skeleton-tab-bar" style="position:fixed;bottom:0;left:0;right:0;height:64px;background:rgba(10,10,22,.97);display:flex;align-items:center;justify-content:space-around;border-top:1px solid rgba(255,255,255,.08);padding-bottom:env(safe-area-inset-bottom,0)">
-    <div style="text-align:center"><span style="font-size:24px">🎬</span><br><span style="font-size:10px;color:#FF6D00;font-weight:600">Reels</span></div>
-    <div style="text-align:center;opacity:.45"><span style="font-size:24px">🏋️</span><br><span style="font-size:10px;color:rgba(255,255,255,.4);font-weight:600">Book</span></div>
-    <div style="text-align:center;opacity:.45"><span style="font-size:24px">👤</span><br><span style="font-size:10px;color:rgba(255,255,255,.4);font-weight:600">Profile</span></div>
+    <div style="text-align:center"><span style="font-size:24px">&#127910;</span><br><span style="font-size:10px;color:#FF6D00;font-weight:600">Reels</span></div>
+    <div style="text-align:center;opacity:.45"><span style="font-size:24px">&#127947;</span><br><span style="font-size:10px;color:rgba(255,255,255,.4);font-weight:600">Book</span></div>
+    <div style="text-align:center;opacity:.45"><span style="font-size:24px">&#128100;</span><br><span style="font-size:10px;color:rgba(255,255,255,.4);font-weight:600">Profile</span></div>
   </div>
 </div>
 
-<!-- Prefetch config data while JS loads (eliminates render-block wait) -->
 <script>window.__configPromise=fetch('/api/config').then(r=>r.json()).catch(()=>({mapsKey:'',stripeKey:'',brand:'ScanGym',gymCount:1200000,liveSearch:true}));</script>
 
-<!-- Register service worker for instant repeat visits -->
 <script>
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>{
@@ -214,5 +208,6 @@ if('serviceWorker' in navigator){
 <script src="/robust-location.js" defer></script>
 <script src="/pricing.js" defer></script>
 <script src="/app.ctr576.js?v=5.3.1" defer></script>
+<script src="/app-patches.js?v=1.0" defer></script>
 </body>
 </html>
