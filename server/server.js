@@ -690,6 +690,16 @@ if (fs.existsSync(FRONTEND_DIR)) {
     res.sendFile(path.join(FRONTEND_DIR, 'admin', 'index.html'));
   });
 
+  // === Team internal webapp (Creator / Partner / Admin) ===
+  app.get('/team', (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache');
+    res.sendFile(path.join(FRONTEND_DIR, 'team', 'index.html'));
+  });
+  app.get('/team/*', (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache');
+    res.sendFile(path.join(FRONTEND_DIR, 'team', 'index.html'));
+  });
+
   // /about page — static, SEO-friendly, crawlable by LLMs
   app.get('/about', (req, res) => {
     res.sendFile(path.join(FRONTEND_DIR, 'about', 'index.html'));
