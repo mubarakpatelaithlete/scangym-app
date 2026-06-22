@@ -682,7 +682,48 @@
     patchChannelsLiveStatus();
     patchGymPartnerHub();
     patchCreatorEarningsOnboard();
-    console.log('[ScanGym Patches v4.0] Applied: #4 #5 #17 #18 #19 #26 #35 #49 C1 CH1 CH2 GP1 CR1');
+    patchContinueBanner();
+    console.log('[ScanGym Patches v5.0] Applied: #4 #5 #17 #18 #19 #26 #35 #49 C1 CH1 CH2 GP1 CR1 CB1');
+  }
+
+  /* ── CB1: Fix Continue Banner — prevent Android Google Search hijack ── */
+  function patchContinueBanner() {
+    var banner = document.getElementById('sg-continue-banner');
+    if (!banner) return;
+
+    // 1. Inject CSS to kill text selection on banner + all children
+    var style = document.createElement('style');
+    style.textContent = [
+      '#sg-continue-banner,#sg-continue-banner *{',
+      '  -webkit-user-select:none!important;',
+      '  -moz-user-select:none!important;',
+      '  -ms-user-select:none!important;',
+      '  user-select:none!important;',
+      '  -webkit-touch-callout:none!important;',
+      '  pointer-events:auto;',
+      '}',
+    ].join('');
+    document.head.appendChild(style);
+
+    // 2. Add ARIA role so browsers treat it as a real button
+    banner.setAttribute('role', 'button');
+    banner.setAttribute('tabindex', '0');
+
+    // 3. Block text selection events that trigger Google Smart Select on Android
+    banner.addEventListener('selectstart', function(e) { e.preventDefault(); }, { passive: false });
+    banner.addEventListener('contextmenu', function(e) { e.preventDefault(); }, { passive: false });
+
+    // 4. Use touchend as backup click — some Android browsers swallow click on divs
+    var _touchMoved = false;
+    banner.addEventListener('touchstart', function() { _touchMoved = false; }, { passive: true });
+    banner.addEventListener('touchmove', function() { _touchMoved = true; }, { passive: true });
+    banner.addEventListener('touchend', function(e) {
+      if (_touchMoved) return; // was a scroll, not a tap
+      e.preventDefault(); // prevent ghost click + Google search
+      banner.click(); // fire the existing click handler
+    }, { passive: false });
+
+    console.log('[CB1] Continue banner mobile fix applied');
   }
 
   if (document.readyState === 'loading') {
