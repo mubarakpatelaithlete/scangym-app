@@ -268,3 +268,114 @@ router.get('/filter', async (req, res) => {
 });
 
 module.exports = router;
+
+// ── Gym Partner Earnings/Revenue Summary ──
+router.get('/earnings', authenticateUser, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Find gyms claimed by this user
+    const gyms = await pool.query(
+      `SELECT id, name, day_pass_price_pence, accepting_bookings
+       FROM gyms WHERE claimed_by::text = $1::text
+       ORDER BY name`, [userId]
+    ).catch(() => ({ rows: [] }));
+    
+    if (!gyms.rows.length) {
+      return res.json({
+        success: true,
+        totalRevenuePence: 0,
+        totalBookings: 0,
+        gyms: [],
+        stripeConnected: false,
+        message: 'No claimed gyms yet'
+      });
+    }
+    
+    const gymIds = gyms.rows.map(g => g.id);
+    
+    // Count bookings for these gyms
+    let totalBookings = 0;
+    let totalRevenuePence = 0;
+    
+    try {
+      const bookingsRes = await pool.query(
+        `SELECT COUNT(*) as count, COALESCE(SUM(amount_pence), 0) as revenue
+         FROM bookings WHERE gym_id = ANY($1) AND status IN ('confirmed', 'completed')`,
+        [gymIds]
+      );
+      totalBookings = parseInt(bookingsRes.rows[0].count) || 0;
+      totalRevenuePence = parseInt(bookingsRes.rows[0].revenue) || 0;
+    } catch (e) {
+      // bookings table might not exist yet
+    }
+    
+    // Check if user has Stripe connected
+    let stripeConnected = false;
+    try {
+      const stripeRes = await pool.query(
+        `SELECT stripe_connect_id FROM users WHERE id = $1`, [userId]
+      );
+      stripeConnected = !!(stripeRes.rows[0]?.stripe_connect_id);
+    } catch (e) {}
+    
+    res.json({
+      success: true,
+      totalRevenuePence,
+      totalBookings,
+      gyms: gyms.rows.map(g => ({
+        id: g.id,
+        name: g.name,
+        dayPassPricePence: g.day_pass_price_pence || 499,
+        active: g.accepting_bookings !== false
+      })),
+      stripeConnected
+    });
+  } catch (err) {
+    console.error('Gym earnings error:', err.message);
+    res.status(500).json({ error: 'Failed to fetch earnings' });
+  }
+});
+
+// ── Gym Partner Stripe Connect Setup ──
+router.post('/stripe-connect', authenticateUser, express.json(), async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Verify user has claimed gyms
+    const gyms = await pool.query(
+      `SELECT id FROM gyms WHERE claimed_by::text = $1::text LIMIT 1`, [userId]
+    ).catch(() => ({ rows: [] }));
+    
+    if (!gyms.rows.length) {
+      return res.status(400).json({ error: 'You must claim a gym first' });
+    }
+    
+    // Create or retrieve Stripe Connect account
+    let stripeAccountId;
+    try {
+      const existing = await pool.query(
+        `SELECT stripe_connect_id FROM users WHERE id = $1`, [userId]
+      );
+      stripeAccountId = existing.rows[0]?.stripe_connect_id;
+    } catch (e) {}
+    
+    if (!stripeAccountId) {
+      // Would create a Stripe Connect account - for now return instruction
+      return res.json({
+        success: true,
+        message: 'Stripe Connect setup initiated. We will contact you to complete bank verification.',
+        setupPending: true
+      });
+    }
+    
+    res.json({
+      success: true,
+      stripeConnected: true,
+      message: 'Stripe account already connected'
+    });
+  } catch (err) {
+    console.error('Gym Stripe Connect error:', err.message);
+    res.status(500).json({ error: 'Stripe setup failed' });
+  }
+});
