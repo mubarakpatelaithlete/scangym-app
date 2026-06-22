@@ -900,16 +900,45 @@
 (function(){
   var style = document.createElement('style');
   style.textContent = [
-    '#sg-cal-picker { min-height: 60vh !important; height: auto !important; max-height: 90vh !important; overflow-y: auto !important; }',
-    '#sg-cal-picker .cal-grid { min-height: 200px !important; }',
-    '#sg-cal-picker .cal-day, #sg-cal-picker [onclick*="calSelectDay"] { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: manipulation; cursor: pointer; }',
-    '#sg-cal-picker .cal-time-slot { -webkit-user-select: none; user-select: none; touch-action: manipulation; cursor: pointer; }',
+    '#sg-cal-picker { position: fixed !important; inset: 0 !important; z-index: 9050 !important; width: 100vw !important; height: 100vh !important; pointer-events: none; }',
+    '#sg-cal-picker > * { pointer-events: auto; }',
+    '#sg-cal-picker .sg-cal-overlay { z-index: 9100 !important; }',
+    '.sg-cal-day:not(.empty):not(.past) { -webkit-user-select: none !important; user-select: none !important; -webkit-touch-callout: none !important; touch-action: manipulation !important; cursor: pointer !important; -webkit-tap-highlight-color: rgba(255,109,0,.3) !important; }',
+    '.sg-cal-time { -webkit-user-select: none !important; user-select: none !important; touch-action: manipulation !important; cursor: pointer !important; }',
     '.tt-action { -webkit-user-select: none !important; user-select: none !important; -webkit-touch-callout: none !important; touch-action: manipulation !important; }',
     '.tt-action-btn { -webkit-user-select: none !important; user-select: none !important; pointer-events: none; }',
     '.tt-action-label { -webkit-user-select: none !important; user-select: none !important; pointer-events: none; }'
   ].join('\n');
   document.head.appendChild(style);
-  console.log('[CAL1+USS1] Calendar height fix + user-select patches applied');
+  // CAL1b: Add touchend fallback for mobile date selection
+  // Some mobile browsers swallow onclick on divs inside height:0 parents
+  document.addEventListener('touchend', function(e) {
+    var day = e.target.closest('.sg-cal-day:not(.empty):not(.past)');
+    if (!day) return;
+    var dateStr = day.getAttribute('data-date');
+    if (!dateStr) return;
+    e.preventDefault();
+    // Call the date selector directly
+    if (typeof window._calSelectDate === 'function') {
+      window._calSelectDate(dateStr, day);
+      console.log('[CAL1b] Touch-selected date:', dateStr);
+    }
+  }, { passive: false });
+
+  // CAL1c: Same for time slots
+  document.addEventListener('touchend', function(e) {
+    var slot = e.target.closest('.sg-cal-time:not(.past)');
+    if (!slot) return;
+    var time = slot.textContent.trim();
+    if (!time) return;
+    e.preventDefault();
+    if (typeof window._calSelectTime === 'function') {
+      window._calSelectTime(time, slot);
+      console.log('[CAL1c] Touch-selected time:', time);
+    }
+  }, { passive: false });
+
+  console.log('[CAL1+USS1] Calendar height fix + touch handlers + user-select patches applied');
 })();
 
 // ── SPD3: Make Hours/Reviews overlays faster with skeleton-first pattern ──
