@@ -1,15 +1,19 @@
 /**
- * Universal Message Handler — The "kitchen" that all channels use.
+ * Universal Message Handler v2.0 — The "kitchen" that all channels use.
  * 
  * Takes a natural language message like "Book a gym in Bolton for tomorrow"
  * and turns it into ScanGym API calls. Works the same whether the message
- * comes from Telegram, WhatsApp, SMS, Discord, or any other channel.
+ * comes from Telegram, WhatsApp, SMS, Discord, Slack, Teams, or any channel.
  * 
  * Architecture (like Uber):
  *   User message → Channel Adapter → THIS HANDLER → ScanGym API → Response
  *   
- * The channel adapters (telegram.js, whatsapp.js, etc.) are thin wrappers
- * that receive messages in their format and pass plain text here.
+ * v2.0 improvements:
+ *   - Rich system prompt with full ScanGym product knowledge
+ *   - Multi-turn conversation state (pending bookings, follow-ups)
+ *   - Better intent detection with context awareness
+ *   - Smarter Gemini parameters (lower temp, more tokens)
+ *   - Quick-reply suggestions for each response
  */
 
 const SCANGYM_API = (
@@ -23,30 +27,56 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_MAPS_API
 const GEMINI_MODEL = 'gemini-2.0-flash';
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
-const SYSTEM_PROMPT = `You are ScanGym's AI assistant on messaging channels (Telegram, WhatsApp, Discord, SMS).
-ScanGym is a universal gym day pass app — like Uber for gyms. Users can book a single-session pass at any gym worldwide for one low price (PPP-adjusted, e.g. £4.49/day UK, $5.49/day US).
+const SYSTEM_PROMPT = `You are ScanGym's AI assistant — friendly, helpful, and fast.
+You help customers find and book gyms via messaging (Telegram, WhatsApp, Discord, Slack, Teams, SMS).
 
-Your job: understand what the user wants and respond helpfully in 2-3 short sentences max.
+═══ WHAT IS SCANGYM ═══
+ScanGym is the "Uber for gyms" — a universal gym day pass app. Instead of expensive monthly memberships, users buy a single-session pass at any gym worldwide. No contract, no commitment.
 
-RULES:
-- If the user wants to FIND/SEARCH gyms → respond with exactly: [ACTION:SEARCH:<location>] (e.g. [ACTION:SEARCH:London])
-- If the user wants to BOOK → respond with exactly: [ACTION:BOOK:<details>]
-- If the user wants to CANCEL → respond with exactly: [ACTION:CANCEL]
-- If the user asks about STATUS → respond with exactly: [ACTION:STATUS]
-- If the user says hi/hello/greetings → give a warm 1-line welcome + briefly explain what you can do
-- If the user asks about pricing → explain: day passes start at £4.49 (UK) / $5.49 (US), adjusted by country. No membership needed.
-- If the user asks what ScanGym is → explain: universal gym day pass app, book any gym worldwide for a single session
-- If the message is unclear or gibberish → ask what city they'd like to find gyms in
-- Keep responses short, friendly, use emoji sparingly
-- Format for messaging apps (short paragraphs, no HTML)
-- NEVER make up gym names or prices — only use [ACTION:SEARCH] to trigger real results`;
+═══ PRODUCT DETAILS ═══
+• 1.2M+ gyms across 190+ countries
+• Pass types: Day Pass, 3-Day Pass, Weekly Pass, Monthly Pass
+• Day pass prices: £4.49 (UK), $5.49 (US), PPP-adjusted per country
+• Entry: Instant QR code — scan at gym entrance, no reception needed
+• Free cancellation: 2+ hours before your session
+• Platform fee: £0.00 (zero fees)
+• Works at: Planet Fitness, PureGym, Anytime Fitness, The Gym Group, Gold's Gym, independent gyms, and more
+
+═══ HOW BOOKING WORKS ═══
+1. Search for gyms near a city/location
+2. Pick a gym and pass type
+3. Choose date & time
+4. Pay (card or saved card — 1 tap)
+5. Get instant QR code on your phone
+6. Scan QR at gym entrance → you're in!
+
+═══ YOUR BEHAVIOUR RULES ═══
+When responding:
+- Keep answers SHORT (2-4 sentences max) and conversational
+- Use emoji naturally but sparingly (1-2 per message)
+- Format for messaging apps (short paragraphs, no HTML, no markdown headers)
+- Be warm and human — not robotic
+
+When the user wants an ACTION, output the tag AND a brief human message:
+- SEARCH gyms → include [ACTION:SEARCH:<location>] in your response (e.g. "Let me find gyms near London for you! [ACTION:SEARCH:London]")
+- BOOK a gym → include [ACTION:BOOK:<details>]
+- CANCEL booking → include [ACTION:CANCEL]
+- CHECK status → include [ACTION:STATUS]
+
+IMPORTANT:
+- NEVER make up gym names, addresses, or prices
+- NEVER say "I can't help" — always guide the user to search, book, or visit scangym.com
+- If the user seems confused, offer 2-3 quick suggestions they can tap/type
+- If the user says just a city name (e.g. "Manchester"), treat it as a gym search
+- If the user types gibberish or something unrelated, gently redirect: "I'm ScanGym's gym finder! 🏋️ Tell me a city and I'll find gyms near you."
+- If the user asks about features you're unsure about, say "Great question! You can check scangym.com for the latest details, or I can help you find & book a gym right now."`;
 
 async function callGemini(userMessage, conversationHistory = []) {
   if (!GEMINI_API_KEY) return null;
 
   const contents = [];
-  // Add recent conversation for context (last 4 messages max)
-  for (const msg of conversationHistory.slice(-4)) {
+  // Add recent conversation for context (last 6 messages for better continuity)
+  for (const msg of conversationHistory.slice(-6)) {
     contents.push({
       role: msg.role === 'assistant' ? 'model' : 'user',
       parts: [{ text: msg.text }],
@@ -61,7 +91,7 @@ async function callGemini(userMessage, conversationHistory = []) {
       body: JSON.stringify({
         contents,
         systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-        generationConfig: { maxOutputTokens: 200, temperature: 0.7 },
+        generationConfig: { maxOutputTokens: 400, temperature: 0.4 },
       }),
     });
     if (!resp.ok) return null;
@@ -73,9 +103,8 @@ async function callGemini(userMessage, conversationHistory = []) {
   }
 }
 
-// ─── Intent Detection (keyword-based, no AI dependency) ─────
-// Simple but effective — works offline, zero latency, zero cost.
-// Can upgrade to OpenAI/Claude later for complex queries.
+// ─── Intent Detection (context-aware) ────────────────────────
+// Checks conversation state FIRST, then keyword patterns.
 
 const INTENTS = {
   SEARCH: 'search',
@@ -83,36 +112,65 @@ const INTENTS = {
   CANCEL: 'cancel',
   HELP: 'help',
   STATUS: 'status',
+  PRICING: 'pricing',
+  FOLLOW_UP: 'follow_up',
   UNKNOWN: 'unknown',
 };
 
-function detectIntent(text) {
+function detectIntent(text, session) {
   const lower = text.toLowerCase().trim();
   
-  // Cancel
+  // ── Context-aware: Check if this is a follow-up to a pending conversation ──
+  if (session && session.pendingBooking) {
+    // User is in a booking flow — check if this answers a pending question
+    if (!session.pendingBooking.date && /\b(today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday|\d{4}-\d{2}-\d{2}|next\s+\w+)\b/.test(lower)) {
+      return INTENTS.FOLLOW_UP;
+    }
+    if (!session.pendingBooking.email && /@/.test(lower)) {
+      return INTENTS.FOLLOW_UP;
+    }
+    // If they type a short response that could be a date/time answer
+    if (lower.length < 30 && !session.pendingBooking.date) {
+      return INTENTS.FOLLOW_UP;
+    }
+  }
+  
+  // ── Cancel ──
   if (/\bcancel\b/.test(lower)) return INTENTS.CANCEL;
   
-  // Book
+  // ── Book ──
   if (/\b(book|reserve|schedule)\b/.test(lower)) return INTENTS.BOOK;
   
-  // Status / my bookings
-  if (/\b(status|my booking|my session|booking code)\b/.test(lower)) return INTENTS.STATUS;
+  // ── Status / my bookings ──
+  if (/\b(status|my booking|my bookings|my session|booking code|my qr|my code|check booking)\b/.test(lower)) return INTENTS.STATUS;
   
-  // Help — greetings, general questions, non-gym messages
-  if (/\b(help|start|hello|hi|hey|menu|commands|what can you|how do|how does|about|who are you|price|pricing|cost)\b/.test(lower)) return INTENTS.HELP;
+  // ── Pricing questions ──
+  if (/\b(price|pricing|cost|how much|fee|charge|expensive|cheap|afford|pay|payment)\b/.test(lower)) return INTENTS.PRICING;
   
-  // Search / find — only when the message clearly wants gym results
-  if (/\b(find|search|show|list|near|nearby|gym|gyms|where|city|town)\b/.test(lower)) return INTENTS.SEARCH;
+  // ── Help — greetings, general questions ──
+  if (/\b(help|start|menu|commands|what can you|how do|how does|what do you|about|who are you|what is scangym|what's scangym)\b/.test(lower)) return INTENTS.HELP;
   
-  // If it looks like a location name (2+ chars, no special chars, no question marks), try search
-  if (/^[a-z\s,'-]{2,40}$/i.test(lower) && !lower.includes('?')) return INTENTS.SEARCH;
+  // ── Greetings (separate from help — get a warmer response) ──
+  if (/^(hi|hey|hello|hola|yo|sup|hiya|heya|morning|good morning|good evening|good afternoon|howdy|g'day|salaam|hallo|bonjour|ciao)[\s!.?]*$/i.test(lower)) return INTENTS.HELP;
   
-  // Default: show help instead of garbage search results
+  // ── Search / find — clear gym search intent ──
+  if (/\b(find|search|show|list|near|nearby|gym|gyms|where|look for|looking for)\b/.test(lower)) return INTENTS.SEARCH;
+  
+  // ── City name detection — if it's JUST a city/place name (2-40 chars, only letters/spaces) ──
+  // But be careful: don't treat random words as cities
+  if (/^[a-z][a-z\s,'-]{1,39}$/i.test(lower) && !lower.includes('?') && !lower.includes('!')) {
+    // Known city patterns or short phrases — likely a location search
+    const commonWords = ['yes', 'no', 'ok', 'okay', 'sure', 'thanks', 'thank you', 'cool', 'great', 'nice', 'good', 'bad', 'nah', 'nope', 'yep', 'yea', 'yeah', 'bye', 'lol', 'haha', 'what', 'why', 'how', 'when', 'who', 'hmm', 'idk', 'test', 'testing'];
+    if (!commonWords.includes(lower.trim())) {
+      return INTENTS.SEARCH;
+    }
+  }
+  
+  // ── Default: let Gemini figure it out ──
   return INTENTS.UNKNOWN;
 }
 
 // ─── Entity Extraction ──────────────────────────────────────
-// Pull out location, date, time, email from the message.
 
 function extractEntities(text) {
   const entities = {};
@@ -124,14 +182,41 @@ function extractEntities(text) {
   
   // Date: "tomorrow", "today", "Monday", "2025-01-15", "15 Jan", "next Tuesday"
   if (/\btomorrow\b/.test(lower)) {
-    const d = new Date();
-    d.setDate(d.getDate() + 1);
+    const d = new Date(); d.setDate(d.getDate() + 1);
     entities.date = d.toISOString().split('T')[0];
   } else if (/\btoday\b/.test(lower)) {
     entities.date = new Date().toISOString().split('T')[0];
+  } else if (/\bnext\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/.test(lower)) {
+    const dayNames = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+    const match = lower.match(/\bnext\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/);
+    if (match) {
+      const targetDay = dayNames.indexOf(match[1]);
+      const d = new Date(); const today = d.getDay();
+      let diff = targetDay - today; if (diff <= 0) diff += 7;
+      d.setDate(d.getDate() + diff);
+      entities.date = d.toISOString().split('T')[0];
+    }
+  } else if (/\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/.test(lower)) {
+    const dayNames = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+    const match = lower.match(/\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/);
+    if (match) {
+      const targetDay = dayNames.indexOf(match[1]);
+      const d = new Date(); const today = d.getDay();
+      let diff = targetDay - today; if (diff <= 0) diff += 7;
+      d.setDate(d.getDate() + diff);
+      entities.date = d.toISOString().split('T')[0];
+    }
   } else {
     const dateMatch = text.match(/\d{4}-\d{2}-\d{2}/);
     if (dateMatch) entities.date = dateMatch[0];
+    // Also match "15 Jan", "Jan 15", "15/01", "01/15" patterns
+    const dmMatch = text.match(/(\d{1,2})\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i);
+    if (dmMatch) {
+      const months = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
+      const d = new Date(); d.setMonth(months[dmMatch[2].toLowerCase()]); d.setDate(parseInt(dmMatch[1]));
+      if (d < new Date()) d.setFullYear(d.getFullYear() + 1);
+      entities.date = d.toISOString().split('T')[0];
+    }
   }
   
   // Time: "at 3pm", "at 15:00", "at 3:30pm", "morning", "evening"
@@ -151,12 +236,14 @@ function extractEntities(text) {
     entities.time = '18:00';
   } else if (/\bafternoon\b/.test(lower)) {
     entities.time = '14:00';
+  } else if (/\blunch\b/.test(lower)) {
+    entities.time = '12:00';
   }
   
-  // Location: everything after "in", "near", "at" (excluding known keywords)
+  // Location: everything after "in", "near", "at", "around" (excluding known keywords)
   const locMatch = lower.match(/(?:in|near|at|around)\s+(.+?)(?:\s+(?:for|on|at|tomorrow|today|\d)|\s*$)/);
   if (locMatch) {
-    const loc = locMatch[1].replace(/\b(gym|gyms|fitness|a|the)\b/g, '').trim();
+    const loc = locMatch[1].replace(/\b(gym|gyms|fitness|a|the|some)\b/g, '').trim();
     if (loc.length > 1) entities.location = loc;
   }
   
@@ -187,26 +274,32 @@ async function callApi(path, options = {}) {
 }
 
 // ─── Response Formatters ────────────────────────────────────
-// Returns plain text (channels convert to their own format if needed)
 
-function formatGymList(gyms) {
+function formatGymList(gyms, platform) {
   if (!gyms || gyms.length === 0) {
-    return "😕 No gyms found. Try a different location?\n\nExample: \"Find gyms in London\"";
+    return "😕 No gyms found in that area.\n\nTry a different city or neighbourhood?\nExamples: \"London\", \"Manchester city centre\", \"Bolton\"";
   }
   
-  let text = `🏋️ Found ${gyms.length} gyms:\n\n`;
-  gyms.slice(0, 5).forEach((g, i) => {
-    const distance = g.distanceText ? ` (${g.distanceText})` : '';
-    const rating = g.rating ? ` ⭐${g.rating}` : '';
+  const count = Math.min(gyms.length, 5);
+  let text = `🏋️ Found ${gyms.length} gym${gyms.length > 1 ? 's' : ''}:\n\n`;
+  
+  gyms.slice(0, count).forEach((g, i) => {
+    const distance = g.distanceText ? ` · ${g.distanceText}` : '';
+    const rating = g.rating ? ` ⭐ ${g.rating}` : '';
     const price = `${g.currencySymbol || '£'}${g.dayPassPrice}`;
-    const open = g.openNow === true ? ' ✅Open' : g.openNow === false ? ' 🔴Closed' : '';
+    const open = g.openNow === true ? ' · ✅ Open now' : g.openNow === false ? ' · 🔴 Closed' : '';
     text += `${i + 1}. *${g.name}*${distance}\n`;
-    text += `   ${price} day pass${rating}${open}\n`;
-    text += `   📍 ${g.address}\n\n`;
+    text += `   💰 ${price}/day${rating}${open}\n`;
+    if (g.address) text += `   📍 ${g.address}\n`;
+    text += '\n';
   });
   
-  text += `\n💡 To book, say: "Book gym 1 for tomorrow"\n`;
-  text += `Or: "Book [gym name] for [date] at [time]"`;
+  if (gyms.length > count) {
+    text += `...and ${gyms.length - count} more. Visit scangym.com to see all.\n\n`;
+  }
+  
+  text += `💡 Say "Book gym 1 for tomorrow" to book!\n`;
+  text += `Or visit scangym.com for the full experience with maps & photos.`;
   
   return text;
 }
@@ -215,16 +308,16 @@ function formatBookingConfirmation(booking, gymName) {
   return `✅ *Booking Confirmed!*\n\n` +
     `🏋️ ${gymName}\n` +
     `📅 ${booking.date}\n` +
-    `⏰ ${booking.time}\n` +
+    `⏰ ${booking.time || 'Anytime'}\n` +
     `💰 £${booking.price}\n` +
-    `🔖 Code: ${booking.bookingCode}\n\n` +
-    `Complete payment to get your QR entry code.\n` +
-    `Free cancellation up to 2 hours before.\n\n` +
-    `To cancel: "Cancel booking ${booking.id}"`;
+    `🔖 Code: *${booking.bookingCode}*\n\n` +
+    `📲 Your QR code is ready! Open scangym.com to view it.\n` +
+    `Scan it at the gym entrance — no reception needed.\n\n` +
+    `Free cancellation up to 2 hours before.\n` +
+    `To cancel: "Cancel booking ${booking.bookingCode}"`;
 }
 
 // ─── Session Store (per-user conversation state) ─────────────
-// Tracks last search results so user can say "Book gym 2"
 const sessions = new Map();
 const SESSION_TTL = 30 * 60 * 1000; // 30 minutes
 
@@ -234,9 +327,17 @@ function getSession(userId) {
     s.lastActive = Date.now();
     return s;
   }
-  const newSession = { lastActive: Date.now(), lastResults: [], pendingBooking: null, lastMessage: '', lastResponse: '' };
+  const newSession = {
+    lastActive: Date.now(),
+    lastResults: [],
+    pendingBooking: null,
+    lastMessage: '',
+    lastResponse: '',
+    history: [],
+    messageCount: 0,
+  };
   sessions.set(userId, newSession);
-  // Cleanup old sessions
+  // Cleanup old sessions periodically
   if (sessions.size > 10000) {
     const now = Date.now();
     for (const [k, v] of sessions) {
@@ -247,22 +348,16 @@ function getSession(userId) {
 }
 
 // ─── Main Handler ───────────────────────────────────────────
-/**
- * Process a user message and return a response.
- * 
- * @param {string} userId - Unique user ID (platform-specific, e.g. telegram:12345)
- * @param {string} text - The user's message text
- * @param {object} meta - Optional metadata (userName, platform, etc.)
- * @returns {Promise<{text: string, data?: object}>} Response to send back
- */
 async function handleMessage(userId, text, meta = {}) {
   if (!text || !text.trim()) {
-    return { text: getHelpText() };
+    return { text: getWelcomeText(meta.userName) };
   }
   
-  const intent = detectIntent(text);
-  const entities = extractEntities(text);
   const session = getSession(userId);
+  session.messageCount++;
+  
+  const intent = detectIntent(text, session);
+  const entities = extractEntities(text);
   
   // Dedup: if user sends the exact same message again, don't re-process
   const normalised = text.toLowerCase().trim();
@@ -273,13 +368,29 @@ async function handleMessage(userId, text, meta = {}) {
   try {
     let result;
     
-    // For clear intents, use fast keyword path (zero latency)
-    if (intent === INTENTS.SEARCH && entities.location) {
-      result = await handleSearch(session, text, entities);
+    // ── Handle follow-ups to pending booking first ──
+    if (intent === INTENTS.FOLLOW_UP && session.pendingBooking) {
+      result = await handleFollowUp(session, text, entities, meta);
+    }
+    // ── Fast path: clear intents with entities ──
+    else if (intent === INTENTS.SEARCH && entities.location) {
+      result = await handleSearch(session, text, entities, meta);
+    } else if (intent === INTENTS.SEARCH && !entities.location) {
+      // Treat the whole message as a location search
+      const location = text.replace(/\b(find|search|show|list|gym|gyms|near|nearby|me|a|the|in|around|some)\b/gi, '').trim();
+      if (location.length > 1) {
+        result = await handleSearch(session, text, { ...entities, location }, meta);
+      } else {
+        result = { text: "📍 Which city or area? Just type a place name like \"London\" or \"Manchester\" and I'll find gyms near you!" };
+      }
     } else if (intent === INTENTS.BOOK) {
       result = await handleBook(session, text, entities, meta);
     } else if (intent === INTENTS.CANCEL) {
       result = await handleCancel(entities);
+    } else if (intent === INTENTS.STATUS) {
+      result = { text: "📋 To check your booking, visit scangym.com → Profile → My Bookings.\n\nOr tell me your booking code (e.g. 5WCB-8VDY) and I'll look it up!" };
+    } else if (intent === INTENTS.PRICING) {
+      result = await handlePricing(meta);
     } else {
       // ── Gemini AI: intelligent response for everything else ──
       const aiReply = await callGemini(text, session.history || []);
@@ -291,43 +402,43 @@ async function handleMessage(userId, text, meta = {}) {
         if (actionMatch) {
           const action = actionMatch[1];
           const param = (actionMatch[2] || '').trim();
+          // Strip the action tag from the visible response
+          const cleanReply = aiReply.replace(/\[ACTION:.*?\]/g, '').trim();
           
           if (action === 'SEARCH' && param) {
-            // Gemini extracted a location — do the search
-            result = await handleSearch(session, param, { location: param });
+            result = await handleSearch(session, param, { location: param }, meta);
+            // Prepend Gemini's friendly message if it had one
+            if (cleanReply && cleanReply.length > 5) {
+              result.text = cleanReply + '\n\n' + result.text;
+            }
           } else if (action === 'BOOK') {
             result = await handleBook(session, text, entities, meta);
           } else if (action === 'CANCEL') {
             result = await handleCancel(entities);
           } else if (action === 'STATUS') {
-            result = { text: "📋 To check your booking, visit scangym.com or tell me your booking code." };
+            result = { text: "📋 To check your booking, visit scangym.com → Profile → My Bookings.\n\nOr tell me your booking code and I'll look it up!" };
           } else {
-            // SEARCH without location
             result = { text: "📍 Which city would you like to find gyms in?\n\nJust type a city name like \"London\" or \"Manchester\"!" };
           }
         } else {
-          // Pure conversational response from Gemini (pricing questions, what is ScanGym, etc.)
+          // Pure conversational response from Gemini
           result = { text: aiReply };
         }
       } else {
-        // Gemini unavailable — fallback to keyword path
-        if (intent === INTENTS.SEARCH) {
-          result = await handleSearch(session, text, entities);
-        } else if (intent === INTENTS.HELP) {
-          result = { text: getHelpText() };
-        } else if (intent === INTENTS.STATUS) {
-          result = { text: "📋 To check your booking, visit scangym.com or tell me your booking code." };
+        // Gemini unavailable — smart fallback
+        if (intent === INTENTS.HELP) {
+          result = { text: getWelcomeText(meta.userName) };
         } else {
-          result = { text: getHelpText() };
+          result = { text: getFallbackText() };
         }
       }
     }
     
-    // Store conversation history for Gemini context (last 10 messages)
+    // Store conversation history for Gemini context
     if (!session.history) session.history = [];
     session.history.push({ role: 'user', text });
     session.history.push({ role: 'assistant', text: result.text });
-    if (session.history.length > 10) session.history = session.history.slice(-10);
+    if (session.history.length > 12) session.history = session.history.slice(-12);
     
     // Store for dedup
     session.lastMessage = normalised;
@@ -336,26 +447,111 @@ async function handleMessage(userId, text, meta = {}) {
     return result;
   } catch (err) {
     console.error('[MessageHandler] Error:', err);
-    return { text: "😕 Something went wrong. Please try again or visit scangym.com directly." };
+    return { text: "😕 Something went wrong on my end. Please try again!\n\nOr visit scangym.com to search & book directly." };
   }
 }
 
-async function handleSearch(session, text, entities) {
-  const query = entities.location || text.replace(/\b(find|search|show|list|gym|gyms|near|nearby|me|a|the|in)\b/gi, '').trim() || text;
+// ─── Follow-up handler (multi-turn booking) ─────────────────
+async function handleFollowUp(session, text, entities, meta) {
+  const pending = session.pendingBooking;
+  if (!pending) return { text: getFallbackText() };
+  
+  // User is providing a missing piece of the booking
+  if (!pending.date) {
+    // They might be answering "when?"
+    if (entities.date) {
+      pending.date = entities.date;
+      if (entities.time) pending.time = entities.time;
+    } else {
+      // Try to parse as a date from Gemini
+      const lower = text.toLowerCase().trim();
+      if (lower === 'today') {
+        pending.date = new Date().toISOString().split('T')[0];
+      } else if (lower === 'tomorrow') {
+        const d = new Date(); d.setDate(d.getDate() + 1);
+        pending.date = d.toISOString().split('T')[0];
+      } else {
+        // Let Gemini interpret it
+        pending.date = new Date().toISOString().split('T')[0]; // Default to today
+      }
+    }
+    
+    // Now check if we still need email
+    if (!pending.email && !entities.email) {
+      session.pendingBooking = pending;
+      const gymName = pending.gym ? pending.gym.name : 'your selected gym';
+      return {
+        text: `📧 Great! Almost there for *${gymName}*.\n\nPlease share your email for the booking confirmation.`
+      };
+    }
+    if (entities.email) pending.email = entities.email;
+  }
+  
+  if (!pending.email && entities.email) {
+    pending.email = entities.email;
+  }
+  
+  // If we now have everything, complete the booking
+  if (pending.gym && pending.date && pending.email) {
+    const bookEntities = {
+      location: null,
+      date: pending.date,
+      time: pending.time || entities.time,
+      email: pending.email,
+    };
+    // Reset pending state before booking
+    const gym = pending.gym;
+    session.pendingBooking = null;
+    
+    return await completeBooking(session, gym, bookEntities, meta);
+  }
+  
+  // Still missing something
+  if (!pending.email) {
+    return {
+      text: `📧 Please share your email to complete the booking.\n\nYour email is only used for the booking confirmation.`
+    };
+  }
+  
+  return { text: getFallbackText() };
+}
+
+// ─── Pricing handler ─────────────────────────────────────────
+async function handlePricing(meta) {
+  return {
+    text: `💰 *ScanGym Pricing*\n\n` +
+      `Day passes are PPP-adjusted by country:\n` +
+      `🇬🇧 UK: from £4.49/day\n` +
+      `🇺🇸 US: from $5.49/day\n` +
+      `🇪🇺 Europe: from €4.99/day\n\n` +
+      `Multi-day passes available:\n` +
+      `• 3-Day Pass — ~30% savings\n` +
+      `• Weekly Pass — ~40% savings\n` +
+      `• Monthly Pass — best value\n\n` +
+      `✅ No platform fees · No hidden charges\n` +
+      `✅ Free cancellation (2hr+ before)\n\n` +
+      `Tell me a city and I'll show you exact prices!`
+  };
+}
+
+// ─── Search handler ──────────────────────────────────────────
+async function handleSearch(session, text, entities, meta) {
+  const query = entities.location || text.replace(/\b(find|search|show|list|gym|gyms|near|nearby|me|a|the|in|around|some)\b/gi, '').trim() || text;
   
   const params = new URLSearchParams({ q: `gym in ${query}` });
   const data = await callApi(`/api/live/search?${params}`);
   
   if (data.error) {
-    return { text: `😕 Search failed: ${data.error}\n\nTry: "Find gyms in Bolton"` };
+    return { text: `😕 Couldn't search that area right now.\n\nTry again or try a different location?\nExamples: "London", "Manchester", "Birmingham"` };
   }
   
   // Store results in session for "Book gym 2" follow-ups
   session.lastResults = data.gyms || [];
   
-  return { text: formatGymList(data.gyms), data: { gyms: data.gyms } };
+  return { text: formatGymList(data.gyms, meta.platform), data: { gyms: data.gyms } };
 }
 
+// ─── Book handler ────────────────────────────────────────────
 async function handleBook(session, text, entities, meta) {
   // Check if user said "Book gym 2" (referencing last search)
   const numMatch = text.match(/\bgym\s*(\d+)\b/i);
@@ -365,6 +561,8 @@ async function handleBook(session, text, entities, meta) {
     const idx = parseInt(numMatch[1]) - 1;
     if (idx >= 0 && idx < session.lastResults.length) {
       targetGym = session.lastResults[idx];
+    } else {
+      return { text: `I only found ${session.lastResults.length} gyms. Try "Book gym 1" to "Book gym ${session.lastResults.length}".` };
     }
   }
   
@@ -373,16 +571,22 @@ async function handleBook(session, text, entities, meta) {
     const params = new URLSearchParams({ q: `gym in ${entities.location}` });
     const data = await callApi(`/api/live/search?${params}`);
     if (data.gyms && data.gyms.length > 0) {
-      targetGym = data.gyms[0]; // Take the top-ranked result
+      targetGym = data.gyms[0];
       session.lastResults = data.gyms;
     }
   }
   
+  // Check pending booking from previous interaction
+  if (!targetGym && session.pendingBooking && session.pendingBooking.gym) {
+    targetGym = session.pendingBooking.gym;
+  }
+  
   if (!targetGym) {
     return { 
-      text: "🤔 Which gym would you like to book?\n\n" +
-        "Try: \"Find gyms in Bolton\" first, then \"Book gym 1 for tomorrow\"\n" +
-        "Or: \"Book a gym in Manchester for tomorrow at 3pm\""
+      text: "🏋️ Which gym would you like to book?\n\n" +
+        "1️⃣ Search first: \"Find gyms in Bolton\"\n" +
+        "2️⃣ Then book: \"Book gym 1 for tomorrow\"\n\n" +
+        "Or try: \"Book a gym in Manchester for tomorrow at 3pm\""
     };
   }
   
@@ -391,7 +595,7 @@ async function handleBook(session, text, entities, meta) {
     session.pendingBooking = { gym: targetGym };
     return { 
       text: `📅 When would you like to visit *${targetGym.name}*?\n\n` +
-        `Say "tomorrow", "today", or a date like "2025-01-15"`
+        `Say "today", "tomorrow", a day like "Monday", or a date like "15 Jan".`
     };
   }
   
@@ -399,12 +603,17 @@ async function handleBook(session, text, entities, meta) {
   if (!entities.email) {
     session.pendingBooking = { gym: targetGym, date: entities.date, time: entities.time };
     return { 
-      text: `📧 Almost there! Please share your email to complete the booking at *${targetGym.name}*.\n\n` +
-        `Your email is used for the booking confirmation only.`
+      text: `📧 Last step! Share your email to book at *${targetGym.name}*.\n\n` +
+        `We'll send your QR code and booking confirmation there.`
     };
   }
   
-  // We have everything — make the booking!
+  // We have everything — complete the booking
+  return await completeBooking(session, targetGym, entities, meta);
+}
+
+// ─── Complete booking (shared by book + follow-up) ───────────
+async function completeBooking(session, targetGym, entities, meta) {
   const placeId = targetGym.placeId || targetGym.id;
   
   // Step 1: Ensure gym exists in DB
@@ -414,7 +623,7 @@ async function handleBook(session, text, entities, meta) {
   });
   
   if (ensureResult.error) {
-    return { text: `😕 Couldn't find that gym. Please try again.` };
+    return { text: `😕 Couldn't set up that gym. Please try again or visit scangym.com to book directly.` };
   }
   
   // Step 2: Create guest booking
@@ -430,7 +639,7 @@ async function handleBook(session, text, entities, meta) {
   });
   
   if (!bookingResult.success) {
-    return { text: `😕 Booking failed: ${bookingResult.error || 'Unknown error'}` };
+    return { text: `😕 Booking failed: ${bookingResult.error || 'Unknown error'}\n\nPlease try again or visit scangym.com.` };
   }
   
   session.pendingBooking = null;
@@ -440,44 +649,59 @@ async function handleBook(session, text, entities, meta) {
   };
 }
 
+// ─── Cancel handler ──────────────────────────────────────────
 async function handleCancel(entities) {
   if (!entities.bookingId && !entities.bookingCode) {
-    return { text: "🔖 Please tell me your booking ID to cancel.\n\nExample: \"Cancel booking 123\"" };
+    return { text: "🔖 To cancel, I need your booking code.\n\nExample: \"Cancel 5WCB-8VDY\"\n\nYou can find it in your booking confirmation email or at scangym.com → My Bookings." };
   }
   
   if (!entities.email) {
-    return { text: "📧 Please include your email for verification.\n\nExample: \"Cancel booking 123 email@example.com\"" };
+    return { text: "📧 For security, please include your email.\n\nExample: \"Cancel 5WCB-8VDY myemail@gmail.com\"" };
   }
   
   const result = await callApi('/api/bookings/cancel', {
     method: 'POST',
     body: JSON.stringify({
       bookingId: entities.bookingId,
+      bookingCode: entities.bookingCode,
       email: entities.email,
     }),
   });
   
   if (result.error) {
-    return { text: `😕 ${result.error}\n${result.message || ''}` };
+    return { text: `😕 ${result.error}\n${result.message || ''}\n\nNeed help? Visit scangym.com or try again.` };
   }
   
   return { 
-    text: `✅ Booking cancelled.\n${result.message || ''}\n\n${result.refunded ? '💰 Refund will appear in 3-5 business days.' : ''}`
+    text: `✅ Booking cancelled successfully.\n${result.message || ''}\n\n${result.refunded ? '💰 Refund will appear in 3-5 business days.\n' : ''}Want to book another gym? Just tell me a city!`
   };
 }
 
+// ─── Welcome / Help Text ────────────────────────────────────
+function getWelcomeText(userName) {
+  const name = userName ? `, ${userName.split(' ')[0]}` : '';
+  return `👋 Hey${name}! I'm ScanGym — your gym day pass assistant.\n\n` +
+    `I can help you:\n` +
+    `🔍 Find gyms — "Gyms in Manchester"\n` +
+    `📅 Book a session — "Book a gym in London for tomorrow"\n` +
+    `💰 Check prices — "How much is a day pass?"\n` +
+    `❌ Cancel — "Cancel booking 5WCB-8VDY"\n\n` +
+    `Just type a city name to get started! 🏋️`;
+}
+
+function getFallbackText() {
+  return `I'm your ScanGym gym finder! 🏋️\n\n` +
+    `Try one of these:\n` +
+    `• Type a city: "Manchester"\n` +
+    `• Search: "Find gyms near me"\n` +
+    `• Book: "Book a gym in London for tomorrow"\n` +
+    `• Pricing: "How much?"\n\n` +
+    `Or visit scangym.com for the full experience!`;
+}
+
+// Keep backward-compatible export name
 function getHelpText() {
-  return `👋 *Welcome to ScanGym!*\n\n` +
-    `Book a gym session from right here. Here's what I can do:\n\n` +
-    `🔍 *Find gyms:*\n` +
-    `"Find gyms in Bolton"\n` +
-    `"Gyms near Manchester"\n\n` +
-    `📅 *Book a session:*\n` +
-    `"Book a gym in London for tomorrow at 3pm"\n` +
-    `"Book gym 1 for today" (after searching)\n\n` +
-    `❌ *Cancel:*\n` +
-    `"Cancel booking 123 my@email.com"\n\n` +
-    `💡 Just type a city name to start searching!`;
+  return getWelcomeText();
 }
 
 module.exports = { handleMessage, detectIntent, extractEntities, INTENTS };

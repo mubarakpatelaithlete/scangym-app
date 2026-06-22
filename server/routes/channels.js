@@ -26,8 +26,8 @@ const CHANNELS = [
   { id: 'discord',   name: 'Discord',        icon: '🎮',  color: '#5865F2', status: 'active',   difficulty: 'easy',   description: 'Find & book gyms from Discord' },
   { id: 'sms',       name: 'SMS',            icon: '📱',  color: '#34D399', status: 'active',   difficulty: 'easy',   description: 'Text to search and book gyms' },
   { id: 'email',     name: 'Email',          icon: '📧',  color: '#EA580C', status: 'active',   difficulty: 'easy',   description: 'Email book@scangym.com to find gyms' },
-  { id: 'slack',     name: 'Slack',          icon: '💼',  color: '#E01E5A', status: 'coming_soon', difficulty: 'medium', description: 'Book gyms from your Slack workspace' },
-  { id: 'msteams',   name: 'Microsoft Teams', icon: '🟣',  color: '#6264A7', status: 'coming_soon', difficulty: 'hard',   description: 'Enterprise gym booking via Teams' },
+  { id: 'slack',     name: 'Slack',          icon: '💼',  color: '#E01E5A', status: 'active', difficulty: 'easy', description: 'Book gyms from your Slack workspace' },
+  { id: 'msteams',   name: 'Microsoft Teams', icon: '🟣',  color: '#6264A7', status: 'active', difficulty: 'easy', description: 'Book gyms right from Teams chat' },
   { id: 'chatgpt',   name: 'ChatGPT',        icon: '🤖',  color: '#10A37F', status: 'coming_soon', difficulty: 'medium', description: 'Find gyms through ChatGPT' },
 ];
 
@@ -256,6 +256,64 @@ router.post('/welcome', async (req, res) => {
     console.error('[Channels] Welcome error:', err.message);
     res.status(500).json({ error: 'Failed to send welcome' });
   }
+});
+
+// ─── GET /api/channels/whatsapp/number — Get WhatsApp number ─
+router.get('/whatsapp/number', (req, res) => {
+  const phone = process.env.TWILIO_PHONE_NUMBER || process.env.WHATSAPP_NUMBER || '';
+  if (!phone) return res.json({ number: '', error: 'WhatsApp number not configured' });
+  res.json({ number: phone, formatted: phone.replace(/(\+\d{2})(\d{4})(\d{6})/, '$1 $2 $3') });
+});
+
+// ─── GET /api/channels/discord/invite — Get Discord bot invite ─
+router.get('/discord/invite', async (req, res) => {
+  // Try to get bot ID from Discord status endpoint
+  try {
+    const statusResp = await fetch(`${req.protocol}://${req.get('host')}/api/chatbot/discord/status`);
+    const status = await statusResp.json();
+    if (status.bot && status.bot.id) {
+      return res.json({
+        inviteUrl: `https://discord.com/api/oauth2/authorize?client_id=${status.bot.id}&permissions=2048&scope=bot`,
+        botId: status.bot.id,
+        botUsername: status.bot.username,
+      });
+    }
+  } catch (e) {}
+  // Fallback: use env var
+  const appId = process.env.DISCORD_APP_ID || process.env.DISCORD_CLIENT_ID || '';
+  if (appId) {
+    return res.json({ inviteUrl: `https://discord.com/api/oauth2/authorize?client_id=${appId}&permissions=2048&scope=bot` });
+  }
+  res.json({ error: 'Discord bot not configured. Set DISCORD_BOT_TOKEN.' });
+});
+
+// ─── GET /api/channels/slack/install — Get Slack install link ─
+router.get('/slack/install', (req, res) => {
+  const clientId = process.env.SLACK_CLIENT_ID || '';
+  const scopes = 'chat:write,im:history,app_mentions:read,im:read';
+  if (clientId) {
+    return res.json({
+      installUrl: `https://slack.com/oauth/v2/authorize?client_id=${clientId}&scope=${scopes}&redirect_uri=${encodeURIComponent(req.protocol + '://' + req.get('host') + '/api/channels/slack/callback')}`,
+    });
+  }
+  // Fallback: direct Slack App page
+  const appId = process.env.SLACK_APP_ID || '';
+  if (appId) {
+    return res.json({ installUrl: `https://slack.com/apps/${appId}` });
+  }
+  res.json({ installUrl: 'https://slack.com/apps', note: 'Search for ScanGym in the Slack App Directory' });
+});
+
+// ─── GET /api/channels/msteams/install — Get Teams install link ─
+router.get('/msteams/install', (req, res) => {
+  const appId = process.env.TEAMS_APP_ID || '';
+  if (appId) {
+    return res.json({
+      installUrl: `https://teams.microsoft.com/l/app/${appId}`,
+      note: 'Install ScanGym bot in your Teams workspace',
+    });
+  }
+  res.json({ installUrl: 'https://appsource.microsoft.com/', note: 'Search for ScanGym in the Teams App Store' });
 });
 
 module.exports = router;

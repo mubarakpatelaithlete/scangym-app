@@ -17391,6 +17391,18 @@ window._connectChannel=function(channelId,channelName,channelIcon,channelColor){
       action:'_connectEmail()',
       actionText:'Connect Email 📧',
       note:'Uses your registered email address'
+    },
+    slack:{
+      steps:['Tap the button below to install the bot','Add ScanGym to your Slack workspace','DM the bot or mention @ScanGym in any channel'],
+      action:'_connectSlack()',
+      actionText:'Add to Slack 💼',
+      note:'Works in DMs and channels — just mention @ScanGym'
+    },
+    msteams:{
+      steps:['Tap the button below to install the bot','Add ScanGym to your Teams workspace','Chat with the bot to search & book gyms'],
+      action:'_connectMSTeams()',
+      actionText:'Add to Teams 🟣',
+      note:'Works in personal chat and team channels'
     }
   };
 
@@ -17544,6 +17556,50 @@ window._connectEmail=async function(){
       _loadChannels();
     }else{sgToast(data.error||'Failed','error');btn.textContent='Connect Email 📧';btn.disabled=false;}
   }catch(e){sgToast('Network error','error');btn.textContent='Connect Email 📧';btn.disabled=false;}
+};
+
+// ─── Connect Slack ──────────────────────────────────────────
+window._connectSlack=async function(){
+  var btn=document.getElementById('ch-connect-btn');
+  btn.textContent='Connecting...';btn.disabled=true;
+  try{
+    // Register connection in DB
+    var r=await fetch('/api/channels/connect',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({channel:'slack',channelUsername:state.user&&state.user.name||'User'})});
+    var data=await r.json();
+    if(data.success){
+      // Try to get Slack install URL
+      var installUrl='';
+      try{var sr=await fetch('/api/channels/slack/install');var sd=await sr.json();installUrl=sd.installUrl||'';}catch(e){}
+      if(installUrl){window.open(installUrl,'_blank');}
+      else{sgToast('Slack bot will be available soon — connected!','info');}
+      var popup=document.getElementById('sg-bottom-popup');
+      if(popup)popup.remove();
+      sgToast('✅ Slack connected! DM the bot to start','success',3000);
+      _loadChannels();
+    }else{sgToast(data.error||'Failed','error');btn.textContent='Add to Slack 💼';btn.disabled=false;}
+  }catch(e){sgToast('Network error','error');btn.textContent='Add to Slack 💼';btn.disabled=false;}
+};
+
+// ─── Connect MS Teams ───────────────────────────────────────
+window._connectMSTeams=async function(){
+  var btn=document.getElementById('ch-connect-btn');
+  btn.textContent='Connecting...';btn.disabled=true;
+  try{
+    // Register connection in DB
+    var r=await fetch('/api/channels/connect',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({channel:'msteams',channelUsername:state.user&&state.user.name||'User'})});
+    var data=await r.json();
+    if(data.success){
+      // Try to get Teams install URL
+      var installUrl='';
+      try{var tr=await fetch('/api/channels/msteams/install');var td=await tr.json();installUrl=td.installUrl||'';}catch(e){}
+      if(installUrl){window.open(installUrl,'_blank');}
+      else{sgToast('Teams bot will be available soon — connected!','info');}
+      var popup=document.getElementById('sg-bottom-popup');
+      if(popup)popup.remove();
+      sgToast('✅ Teams connected! Chat with the bot to start','success',3000);
+      _loadChannels();
+    }else{sgToast(data.error||'Failed','error');btn.textContent='Add to Teams 🟣';btn.disabled=false;}
+  }catch(e){sgToast('Network error','error');btn.textContent='Add to Teams 🟣';btn.disabled=false;}
 };
 
 // ─── Disconnect channel ─────────────────────────────────────
