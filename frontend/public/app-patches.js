@@ -682,12 +682,12 @@
     patchChannelsLiveStatus();
     patchGymPartnerHub();
     patchCreatorEarningsOnboard();
-    patchContinueBanner();
-    console.log('[ScanGym Patches v5.0] Applied: #4 #5 #17 #18 #19 #26 #35 #49 C1 CH1 CH2 GP1 CR1 CB1');
+    patchContinueBannerMobile();
+    console.log('[ScanGym Patches v6.0] Applied: #4 #5 #17 #18 #19 #26 #35 #49 C1 CH1 CH2 GP1 CR1 CB1');
   }
 
   /* ── CB1: Fix Continue Banner — prevent Android Google Search hijack ── */
-  function patchContinueBanner() {
+  function patchContinueBannerMobile() {
     var banner = document.getElementById('sg-continue-banner');
     if (!banner) return;
 
@@ -732,4 +732,220 @@
     setTimeout(init, 500);
   }
 
+})();
+
+// ═══════════════════════════════════════════════════════════════════════
+// ScanGym Patches v6.0 — Speed + Search + Calendar + Pay + Icons
+// ═══════════════════════════════════════════════════════════════════════
+
+// ── SRC1: Fix Search — autoLoadGyms on first Book tab visit ──
+(function(){
+  var _origSwitchTab2 = window.switchTab;
+  if (typeof _origSwitchTab2 !== 'function') return;
+  var _bookLoaded = false;
+  window.switchTab = function(tab) {
+    _origSwitchTab2.apply(this, arguments);
+    if (tab === 'book' && !_bookLoaded) {
+      _bookLoaded = true;
+      if (typeof autoLoadGyms === 'function' && (!window.state || !window.state.gyms || window.state.gyms.length === 0)) {
+        // state is closure-scoped, try accessing via the function itself
+        try {
+          if (typeof state !== 'undefined' && state.gyms && state.gyms.length === 0) {
+            autoLoadGyms();
+            console.log('[SRC1] Auto-loading gyms on first Book tab visit');
+          } else if (typeof state !== 'undefined' && (!state.gyms || state.gyms.length === 0)) {
+            autoLoadGyms();
+            console.log('[SRC1] Auto-loading gyms (state.gyms empty)');
+          }
+        } catch(e) {
+          // state not in scope — call findGyms as fallback
+          if (typeof findGyms === 'function') { findGyms(); console.log('[SRC1] findGyms fallback'); }
+        }
+      } else if (typeof findGyms === 'function') {
+        try {
+          if (typeof state !== 'undefined' && (!state.gyms || state.gyms.length === 0)) {
+            findGyms();
+            console.log('[SRC1] findGyms on first Book visit');
+          }
+        } catch(e) {}
+      }
+    }
+  };
+  console.log('[SRC1] Book tab auto-search patch applied');
+})();
+
+// ── SPD1: Pay button — skip dark overlay, open white sheet directly ──
+(function(){
+  // Intercept the TikTok-style pay icon click to bypass the slow openGymDirectOverlay flow
+  document.addEventListener('click', function(e) {
+    var el = e.target.closest('.tt-action');
+    if (!el) return;
+    var label = el.querySelector('.tt-action-label');
+    if (!label || label.textContent.trim() !== 'Pay') return;
+    
+    // Found a Pay icon click — prevent default overlay flow
+    e.stopPropagation();
+    e.preventDefault();
+    
+    // Get the gym card to set currentGym context
+    var card = el.closest('.tt-card');
+    if (card) {
+      var gid = card.getAttribute('data-gym-id') || card.getAttribute('data-id');
+      if (gid && typeof openGymDirectOverlay === 'function') {
+        // Set currentGym context without opening overlay
+        try {
+          if (typeof state !== 'undefined' && state.gyms) {
+            var gym = state.gyms.find(function(g) { return (g.place_id || g.placeId || g.id) === gid; });
+            if (gym) state.currentGym = gym;
+          }
+        } catch(ex) {}
+      }
+    }
+    
+    // Open pay sheet directly — skip the dark overlay entirely
+    if (typeof openPaySheet === 'function') {
+      openPaySheet();
+      console.log('[SPD1] Pay sheet opened directly (skipped overlay)');
+    }
+  }, true); // capture phase to intercept before original handler
+  console.log('[SPD1] Direct pay sheet patch applied');
+})();
+
+// ── SPD2: Prefetch gym data for instant Hours/Reviews/Calendar ──
+(function(){
+  var _prefetched = new Set();
+  var _prefetchQueue = [];
+  var _prefetching = false;
+  
+  function prefetchGym(id) {
+    if (!id || _prefetched.has(id)) return;
+    _prefetched.add(id);
+    _prefetchQueue.push(id);
+    drainQueue();
+  }
+  
+  function drainQueue() {
+    if (_prefetching || _prefetchQueue.length === 0) return;
+    _prefetching = true;
+    var id = _prefetchQueue.shift();
+    // Use low-priority fetch to not block user interactions
+    fetch('/api/live/place/' + encodeURIComponent(id), { priority: 'low' })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        // Store in the gym cache so openGymDirectOverlay finds it
+        if (data && typeof _gymCache !== 'undefined' && _gymCache.set) {
+          _gymCache.set(id, data);
+        }
+        // Also store in the GYM_CACHE map if it exists
+        if (typeof window._sgGymDetailCache === 'undefined') window._sgGymDetailCache = {};
+        window._sgGymDetailCache[id] = { data: data, ts: Date.now() };
+      })
+      .catch(function(){})
+      .finally(function() {
+        _prefetching = false;
+        if (_prefetchQueue.length > 0) setTimeout(drainQueue, 200);
+      });
+  }
+  
+  // Observe gym cards entering viewport
+  if (typeof IntersectionObserver !== 'undefined') {
+    var observer = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (!entry.isIntersecting) return;
+        var card = entry.target;
+        var gid = card.getAttribute('data-gym-id') || card.getAttribute('data-id');
+        if (gid) prefetchGym(gid);
+        observer.unobserve(card); // Only prefetch once per card
+      });
+    }, { rootMargin: '200px 0px' }); // Start prefetching 200px before visible
+    
+    // Watch for new cards being added
+    var bodyObserver = new MutationObserver(function() {
+      var cards = document.querySelectorAll('.tt-card:not([data-prefetch-observed])');
+      cards.forEach(function(card) {
+        card.setAttribute('data-prefetch-observed', '1');
+        observer.observe(card);
+      });
+    });
+    bodyObserver.observe(document.body, { childList: true, subtree: true });
+    console.log('[SPD2] Gym data prefetch (IntersectionObserver) applied');
+  }
+  
+  // Also patch openGymDirectOverlay to use prefetched data
+  var _origOpenDirect = window.openGymDirectOverlay;
+  if (typeof _origOpenDirect === 'function') {
+    window.openGymDirectOverlay = async function(id, isLive, section) {
+      // Check our prefetch cache first
+      var cached = window._sgGymDetailCache && window._sgGymDetailCache[id];
+      if (cached && (Date.now() - cached.ts) < 15 * 60 * 1000) {
+        // Use cached data — instant open!
+        try {
+          if (typeof state !== 'undefined') {
+            state.currentGym = cached.data;
+          }
+          if (typeof openGymOverlay === 'function' && section) {
+            openGymOverlay(section);
+            console.log('[SPD2] Instant overlay from prefetch cache:', section);
+            return;
+          }
+        } catch(e) {}
+      }
+      // Fallback to original
+      return _origOpenDirect.apply(this, arguments);
+    };
+  }
+})();
+
+// ── CAL1: Calendar picker height fix + user-select on day cells ──
+(function(){
+  var style = document.createElement('style');
+  style.textContent = [
+    '#sg-cal-picker { min-height: 60vh !important; height: auto !important; max-height: 90vh !important; overflow-y: auto !important; }',
+    '#sg-cal-picker .cal-grid { min-height: 200px !important; }',
+    '#sg-cal-picker .cal-day, #sg-cal-picker [onclick*="calSelectDay"] { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: manipulation; cursor: pointer; }',
+    '#sg-cal-picker .cal-time-slot { -webkit-user-select: none; user-select: none; touch-action: manipulation; cursor: pointer; }',
+    '.tt-action { -webkit-user-select: none !important; user-select: none !important; -webkit-touch-callout: none !important; touch-action: manipulation !important; }',
+    '.tt-action-btn { -webkit-user-select: none !important; user-select: none !important; pointer-events: none; }',
+    '.tt-action-label { -webkit-user-select: none !important; user-select: none !important; pointer-events: none; }'
+  ].join('\n');
+  document.head.appendChild(style);
+  console.log('[CAL1+USS1] Calendar height fix + user-select patches applied');
+})();
+
+// ── SPD3: Make Hours/Reviews overlays faster with skeleton-first pattern ──
+(function(){
+  // Patch openGymOverlay to show content from card data immediately (no API wait)
+  var _origOpenOverlay = window.openGymOverlay;
+  if (typeof _origOpenOverlay !== 'function') return;
+  
+  window.openGymOverlay = function(section) {
+    // For hours: if we have opening_hours data from prefetch cache, use it
+    if (section === 'hours' || section === 'reviews') {
+      try {
+        var gym = state.currentGym;
+        if (gym) {
+          var gid = gym.place_id || gym.placeId || gym.id;
+          var cached = window._sgGymDetailCache && window._sgGymDetailCache[gid];
+          if (cached && cached.data) {
+            // Merge prefetched data into currentGym for richer content
+            if (cached.data.opening_hours && !gym.opening_hours) {
+              gym.opening_hours = cached.data.opening_hours;
+            }
+            if (cached.data.reviews && (!gym.reviews || gym.reviews.length === 0)) {
+              gym.reviews = cached.data.reviews;
+            }
+          }
+        }
+      } catch(e) {}
+    }
+    return _origOpenOverlay.apply(this, arguments);
+  };
+  console.log('[SPD3] Overlay data merge patch applied');
+})();
+
+// ── AI1: Enhanced chatbot — intercept and improve webchat responses ──
+// (Server-side prompt fix is separate; this is a client-side fallback)
+(function(){
+  // No client-side chatbot patch needed — server handles AI responses
+  console.log('[Patches v6.0] All speed + search + calendar + pay + icon patches loaded');
 })();
