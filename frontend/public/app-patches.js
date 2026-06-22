@@ -440,6 +440,233 @@
   }
 
   // ====================================================================
+  // GP1: Enhanced Gym Partner Hub — Get Paid + Access Control + Revenue
+  // ====================================================================
+  function patchGymPartnerHub() {
+    if (typeof window.GymPartnerHubPage !== 'function') return;
+    var _origGPHub = window.GymPartnerHubPage;
+    window.GymPartnerHubPage = function() {
+      return '<div style="max-width:480px;margin:0 auto;padding:20px 16px">' +
+        '<div class="sg-more-back" onclick="navigate(\'/more\')">← Back</div>' +
+        '<h1 style="font-size:24px;font-weight:900;color:#fff;margin-bottom:4px">🏢 Gym Partner Hub</h1>' +
+        '<p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:20px">Claim, manage and earn from your gym on ScanGym</p>' +
+
+        // Revenue preview banner
+        '<div id="gp-revenue-banner" style="background:linear-gradient(135deg,rgba(255,109,0,.12),rgba(255,109,0,.04));border:1px solid rgba(255,109,0,.15);border-radius:14px;padding:16px 18px;margin-bottom:20px;display:none">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center">' +
+            '<div><p style="color:rgba(255,255,255,.45);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">YOUR REVENUE</p>' +
+            '<p id="gp-revenue-amount" style="color:#FF6D00;font-size:28px;font-weight:900;margin:0">£0.00</p></div>' +
+            '<div style="text-align:right"><p id="gp-bookings-count" style="color:#fff;font-size:18px;font-weight:800;margin:0">0</p>' +
+            '<p style="color:rgba(255,255,255,.35);font-size:11px;margin:0">bookings</p></div>' +
+          '</div>' +
+          '<div id="gp-stripe-status" style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.06)"></div>' +
+        '</div>' +
+
+        // Claim flow
+        '<div style="background:rgba(255,109,0,.06);border:1px solid rgba(255,109,0,.1);border-radius:16px;padding:24px;margin-bottom:20px;text-align:center">' +
+          '<p style="font-size:48px;margin-bottom:12px">🏢</p>' +
+          '<h3 style="color:#fff;font-size:18px;font-weight:800;margin-bottom:8px">Claim Your Gym</h3>' +
+          '<p style="color:rgba(255,255,255,.4);font-size:14px;line-height:1.5;margin-bottom:16px">Already listed on Google? Claim your gym in 3 steps and start accepting ScanGym bookings.</p>' +
+          '<button onclick="navigate(\'/list-your-gym\')" style="background:#FF6D00;color:#fff;border:none;padding:14px 32px;border-radius:12px;font-weight:700;font-size:16px;cursor:pointer;animation:casinoGlow 2s ease-in-out infinite">Claim Now →</button>' +
+        '</div>' +
+
+        // 4-tile grid: Owner Controls, Access Control, Get Paid, Analytics
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">' +
+          '<div onclick="navigate(\'/owner/controls\')" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:16px;cursor:pointer;text-align:center;transition:border-color .2s" onmouseover="this.style.borderColor=\'rgba(255,109,0,.3)\'" onmouseout="this.style.borderColor=\'rgba(255,255,255,.06)\'">' +
+            '<p style="font-size:28px;margin-bottom:6px">⚙️</p>' +
+            '<p style="color:#fff;font-weight:700;font-size:13px;margin-bottom:2px">Owner Controls</p>' +
+            '<p style="color:rgba(255,255,255,.3);font-size:10px">Toggle bookings, pricing</p>' +
+          '</div>' +
+          '<div onclick="sgGymPartnerPayout()" style="background:rgba(16,185,129,.04);border:1px solid rgba(16,185,129,.1);border-radius:14px;padding:16px;cursor:pointer;text-align:center;transition:border-color .2s" onmouseover="this.style.borderColor=\'rgba(16,185,129,.3)\'" onmouseout="this.style.borderColor=\'rgba(16,185,129,.1)\'">' +
+            '<p style="font-size:28px;margin-bottom:6px">💰</p>' +
+            '<p style="color:#10b981;font-weight:700;font-size:13px;margin-bottom:2px">Get Paid</p>' +
+            '<p style="color:rgba(255,255,255,.3);font-size:10px">Set up bank / Stripe</p>' +
+          '</div>' +
+          '<div onclick="navigate(\'/owner/controls\')" style="background:rgba(59,130,246,.04);border:1px solid rgba(59,130,246,.1);border-radius:14px;padding:16px;cursor:pointer;text-align:center;transition:border-color .2s" onmouseover="this.style.borderColor=\'rgba(59,130,246,.3)\'" onmouseout="this.style.borderColor=\'rgba(59,130,246,.1)\'">' +
+            '<p style="font-size:28px;margin-bottom:6px">🔐</p>' +
+            '<p style="color:#3b82f6;font-weight:700;font-size:13px;margin-bottom:2px">Access Control</p>' +
+            '<p style="color:rgba(255,255,255,.3);font-size:10px">Kisi, Salto, Brivo</p>' +
+          '</div>' +
+          '<div onclick="navigate(\'/forceo\')" style="background:rgba(168,85,247,.04);border:1px solid rgba(168,85,247,.1);border-radius:14px;padding:16px;cursor:pointer;text-align:center;transition:border-color .2s" onmouseover="this.style.borderColor=\'rgba(168,85,247,.3)\'" onmouseout="this.style.borderColor=\'rgba(168,85,247,.1)\'">' +
+            '<p style="font-size:28px;margin-bottom:6px">📊</p>' +
+            '<p style="color:#a855f7;font-weight:700;font-size:13px;margin-bottom:2px">Analytics</p>' +
+            '<p style="color:rgba(255,255,255,.3);font-size:10px">Revenue & bookings</p>' +
+          '</div>' +
+        '</div>' +
+
+        // Quick links
+        '<div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);border-radius:12px;padding:14px 16px">' +
+          '<p style="color:rgba(255,255,255,.3);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">QUICK LINKS</p>' +
+          '<div onclick="navigate(\'/channels\')" style="display:flex;align-items:center;gap:10px;padding:8px 0;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.04)">' +
+            '<span style="font-size:16px">💬</span><span style="color:rgba(255,255,255,.6);font-size:13px">Customer Chat Channels</span>' +
+          '</div>' +
+          '<div onclick="navigate(\'/more\')" style="display:flex;align-items:center;gap:10px;padding:8px 0;cursor:pointer">' +
+            '<span style="font-size:16px">📋</span><span style="color:rgba(255,255,255,.6);font-size:13px">Help & Support</span>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    };
+
+    // Load revenue data when on Hub page
+    window.sgLoadGymPartnerRevenue = async function() {
+      try {
+        var r = await fetch('/api/gym-partner/earnings', { credentials: 'include' });
+        var d = await r.json();
+        if (!d.success) return;
+        var banner = document.getElementById('gp-revenue-banner');
+        if (!banner) return;
+        if (d.gyms && d.gyms.length > 0) {
+          banner.style.display = 'block';
+          var amt = document.getElementById('gp-revenue-amount');
+          var bk = document.getElementById('gp-bookings-count');
+          var st = document.getElementById('gp-stripe-status');
+          if (amt) amt.textContent = '£' + (d.totalRevenuePence / 100).toFixed(2);
+          if (bk) bk.textContent = d.totalBookings;
+          if (st) {
+            if (d.stripeConnected) {
+              st.innerHTML = '<span style="color:#4ade80;font-size:12px;font-weight:600">✅ Stripe Connected — payouts enabled</span>';
+            } else {
+              st.innerHTML = '<span style="color:#fbbf24;font-size:12px;font-weight:600">⚠️ <a onclick="sgGymPartnerPayout()" style="color:#fbbf24;text-decoration:underline;cursor:pointer">Set up payouts</a> to receive earnings</span>';
+            }
+          }
+        }
+      } catch (e) { /* no-op */ }
+    };
+
+    // Gym Partner Payout Setup Sheet
+    window.sgGymPartnerPayout = function() {
+      var existing = document.getElementById('sg-gp-payout-sheet');
+      if (existing) existing.remove();
+      var sheet = document.createElement('div');
+      sheet.id = 'sg-gp-payout-sheet';
+      sheet.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:10000;display:flex;flex-direction:column;justify-content:flex-end;';
+      sheet.innerHTML =
+        '<div onclick="document.getElementById(\'sg-gp-payout-sheet\').remove()" style="flex:1;background:rgba(0,0,0,.6);backdrop-filter:blur(8px)"></div>' +
+        '<div style="background:#1a1a2e;border-radius:24px 24px 0 0;padding:24px 20px 36px;max-height:80vh;overflow-y:auto">' +
+          '<div style="width:36px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;margin:0 auto 20px"></div>' +
+          '<h2 style="color:#fff;font-size:20px;font-weight:900;margin-bottom:4px">💰 Get Paid</h2>' +
+          '<p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:20px">Set up how you receive your gym booking revenue</p>' +
+
+          // Option 1: Stripe Connect
+          '<div id="gp-payout-stripe" onclick="sgSetupGymStripe()" style="background:rgba(99,102,241,.06);border:1px solid rgba(99,102,241,.15);border-radius:14px;padding:18px;margin-bottom:12px;cursor:pointer;transition:border-color .2s" onmouseover="this.style.borderColor=\'rgba(99,102,241,.4)\'" onmouseout="this.style.borderColor=\'rgba(99,102,241,.15)\'">' +
+            '<div style="display:flex;align-items:center;gap:12px">' +
+              '<span style="font-size:28px">⚡</span>' +
+              '<div><p style="color:#fff;font-weight:700;font-size:15px;margin:0 0 2px">Stripe Connect</p>' +
+              '<p style="color:rgba(255,255,255,.4);font-size:12px;margin:0">Direct bank deposits · Fast setup · Instant payouts</p></div>' +
+            '</div>' +
+            '<div style="margin-top:10px;background:#6366f1;color:#fff;border:none;padding:10px;border-radius:10px;text-align:center;font-weight:700;font-size:13px">Connect Stripe →</div>' +
+          '</div>' +
+
+          // Option 2: Bank Transfer
+          '<div onclick="sgSetupGymBank()" style="background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.15);border-radius:14px;padding:18px;margin-bottom:12px;cursor:pointer;transition:border-color .2s" onmouseover="this.style.borderColor=\'rgba(16,185,129,.4)\'" onmouseout="this.style.borderColor=\'rgba(16,185,129,.15)\'">' +
+            '<div style="display:flex;align-items:center;gap:12px">' +
+              '<span style="font-size:28px">🏦</span>' +
+              '<div><p style="color:#fff;font-weight:700;font-size:15px;margin:0 0 2px">Bank Transfer</p>' +
+              '<p style="color:rgba(255,255,255,.4);font-size:12px;margin:0">Manual payouts · Weekly settlement · Any bank</p></div>' +
+            '</div>' +
+          '</div>' +
+
+          // Option 3: ScanGym Wallet
+          '<div onclick="sgSetupGymWallet()" style="background:rgba(255,109,0,.06);border:1px solid rgba(255,109,0,.15);border-radius:14px;padding:18px;margin-bottom:12px;cursor:pointer;transition:border-color .2s" onmouseover="this.style.borderColor=\'rgba(255,109,0,.4)\'" onmouseout="this.style.borderColor=\'rgba(255,109,0,.15)\'">' +
+            '<div style="display:flex;align-items:center;gap:12px">' +
+              '<span style="font-size:28px">👛</span>' +
+              '<div><p style="color:#fff;font-weight:700;font-size:15px;margin:0 0 2px">ScanGym Wallet</p>' +
+              '<p style="color:rgba(255,255,255,.4);font-size:12px;margin:0">Instant · Use for bookings or transfer later</p></div>' +
+            '</div>' +
+          '</div>' +
+
+          '<p style="color:rgba(255,255,255,.2);font-size:11px;text-align:center;margin-top:12px">ScanGym takes 15% platform fee · Rest goes directly to you</p>' +
+        '</div>';
+      document.body.appendChild(sheet);
+    };
+
+    // Stripe Connect setup for gym partners
+    window.sgSetupGymStripe = async function() {
+      try {
+        if (typeof sgToast === 'function') sgToast('Setting up Stripe Connect...', 'info', 3000);
+        var r = await fetch('/api/gym-partner/stripe-connect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include'
+        });
+        var d = await r.json();
+        if (d.onboardingUrl) {
+          window.location.href = d.onboardingUrl;
+        } else if (d.stripeConnected) {
+          if (typeof sgToast === 'function') sgToast('✅ Stripe already connected!', 'success', 3000);
+          var sheet = document.getElementById('sg-gp-payout-sheet');
+          if (sheet) sheet.remove();
+        } else {
+          if (typeof sgToast === 'function') sgToast(d.message || 'Setup initiated - we will be in touch!', 'success', 4000);
+          var sheet = document.getElementById('sg-gp-payout-sheet');
+          if (sheet) sheet.remove();
+        }
+      } catch (e) {
+        if (typeof sgToast === 'function') sgToast('Network error — try again', 'error', 3000);
+      }
+    };
+
+    window.sgSetupGymBank = function() {
+      if (typeof sgToast === 'function') sgToast('📧 Contact team@scangym.org to set up bank transfers', 'info', 4000);
+      var sheet = document.getElementById('sg-gp-payout-sheet');
+      if (sheet) sheet.remove();
+    };
+
+    window.sgSetupGymWallet = function() {
+      if (typeof sgToast === 'function') sgToast('👛 Earnings will auto-deposit to your ScanGym Wallet', 'success', 3000);
+      var sheet = document.getElementById('sg-gp-payout-sheet');
+      if (sheet) sheet.remove();
+    };
+
+    // Auto-load revenue data on hub page
+    var _origRender = window._renderInner;
+    if (_origRender) {
+      window._renderInner = function() {
+        _origRender.apply(this, arguments);
+        if (window.state && window.state.route === '/gym-partner-hub') {
+          setTimeout(function() { window.sgLoadGymPartnerRevenue(); }, 300);
+        }
+      };
+    }
+
+    console.log('[Patches] GP1: Enhanced Gym Partner Hub active');
+  }
+
+  // ====================================================================
+  // CR1: Creator Earnings Smooth Onboard — auto-show payout setup prompt
+  // ====================================================================
+  function patchCreatorEarningsOnboard() {
+    // After signup, auto-prompt first-time creators to set up payouts
+    var interval = setInterval(function() {
+      var route = window.state && window.state.route;
+      if (route !== '/creator-earnings') return;
+      var creator = localStorage.getItem('sg_creator');
+      if (!creator) return;
+      try { creator = JSON.parse(creator); } catch(e) { return; }
+      // Check if first visit (no payout method set)
+      var prompted = localStorage.getItem('sg_creator_payout_prompted');
+      if (prompted) return;
+      // Show a gentle prompt after 1.5s
+      setTimeout(function() {
+        var withdrawSection = document.querySelector('[onclick*="_quickWithdraw"]');
+        if (withdrawSection) {
+          withdrawSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Flash the withdrawal section
+          var parent = withdrawSection.closest('div[style*="border"]');
+          if (parent) {
+            parent.style.transition = 'box-shadow 0.5s';
+            parent.style.boxShadow = '0 0 0 2px rgba(255,109,0,.5), 0 0 20px rgba(255,109,0,.15)';
+            setTimeout(function() { parent.style.boxShadow = ''; }, 3000);
+          }
+        }
+        localStorage.setItem('sg_creator_payout_prompted', '1');
+      }, 1500);
+      clearInterval(interval);
+    }, 1000);
+    console.log('[Patches] CR1: Creator earnings onboard prompt active');
+  }
+
+  // ====================================================================
   // INIT
   // ====================================================================
   function init() {
@@ -453,7 +680,9 @@
     patchReelsBooking();
     patchChatUniversalHandler();
     patchChannelsLiveStatus();
-    console.log('[ScanGym Patches v3.0] Applied: #4 #5 #17 #18 #19 #26 #35 #49 C1 CH1 CH2');
+    patchGymPartnerHub();
+    patchCreatorEarningsOnboard();
+    console.log('[ScanGym Patches v4.0] Applied: #4 #5 #17 #18 #19 #26 #35 #49 C1 CH1 CH2 GP1 CR1');
   }
 
   if (document.readyState === 'loading') {
