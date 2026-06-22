@@ -1,4 +1,4 @@
-// ScanGym Frontend v5.3.1 — Fix P0: route payment to Uber-style white sheet + cache bust
+// ScanGym Frontend v5.4.0 — Perfect 1-tap booking: faster auth→pay→QR flow
 
 // Inject CSS animations for loading experience
 (function(){const s=document.createElement('style');s.textContent='@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}#fun-fact{transition:opacity 0.2s ease}.gym-card{animation:fadeInUp 0.3s ease-out both}.animate-slide-up{animation:slideUp 0.3s ease-out}@keyframes skeletonPulse{0%,100%{opacity:.6}50%{opacity:.3}}@keyframes locationDot{0%,100%{box-shadow:0 0 0 0 rgba(255,109,0,.4)}50%{box-shadow:0 0 0 8px rgba(255,109,0,0)}}.skel-card{animation:skeletonPulse 1.8s ease-in-out infinite}.loc-dot{animation:locationDot 1.5s ease-in-out infinite}.cards-enter .gym-card{animation:fadeInUp .4s ease-out both}@keyframes toastIn{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes toastOut{from{transform:translateY(0);opacity:1}to{transform:translateY(-100%);opacity:0}}@keyframes spin{to{transform:rotate(360deg)}}@keyframes casinoGlow{0%,100%{box-shadow:0 4px 20px rgba(255,109,0,.4),0 0 15px rgba(255,109,0,.15);background-position:0% 50%}50%{box-shadow:0 4px 30px rgba(255,109,0,.65),0 0 30px rgba(255,109,0,.3),0 0 60px rgba(255,109,0,.1);background-position:100% 50%}}@keyframes greenGlow{0%,100%{box-shadow:0 4px 20px rgba(34,197,94,.35),0 0 15px rgba(34,197,94,.1)}50%{box-shadow:0 4px 30px rgba(34,197,94,.6),0 0 30px rgba(34,197,94,.25),0 0 60px rgba(34,197,94,.1)}}.sg-spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}/* ── 6-Tab System (Polished) ── */.sg-tab-bar{position:fixed;bottom:0;left:0;right:0;height:56px;background:rgba(8,8,18,.98);backdrop-filter:blur(24px) saturate(1.8);-webkit-backdrop-filter:blur(24px) saturate(1.8);display:flex;align-items:center;justify-content:space-around;border-top:1px solid rgba(255,255,255,.06);z-index:9000;padding-bottom:env(safe-area-inset-bottom,0);pointer-events:auto!important}.sg-tab-item{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:6px 8px;border-radius:0;transition:all .25s cubic-bezier(.4,0,.2,1);-webkit-tap-highlight-color:transparent;user-select:none;position:relative;touch-action:manipulation}.sg-tab-item svg{width:22px;height:22px;stroke:rgba(255,255,255,.4);fill:none;stroke-width:1.8;transition:all .25s cubic-bezier(.4,0,.2,1)}.sg-tab-item .sg-tab-label{font-size:9px;font-weight:600;letter-spacing:.2px;color:rgba(255,255,255,.4);transition:all .25s cubic-bezier(.4,0,.2,1)}.sg-tab-item.active svg{stroke:#FF6D00;filter:drop-shadow(0 0 6px rgba(255,109,0,.35))}.sg-tab-item.active .sg-tab-label{color:#FF6D00}.sg-tab-item:active{transform:scale(.92)}.sg-tab-content{position:fixed;top:0;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom,0px));overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;scroll-behavior:smooth;display:flex;flex-direction:column}.sg-tab-content.reels-active{position:static;padding-bottom:0;overflow:visible}.sg-reels-frame{position:fixed;top:0;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom,0px));border:none;width:100%;height:calc(100vh - 56px - env(safe-area-inset-bottom,0px));z-index:1}.sg-more-hub{padding:20px 16px 24px;max-width:480px;margin:0 auto}.sg-more-section{margin-bottom:20px}.sg-more-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.3);margin-bottom:8px;padding-left:4px}.sg-more-item{display:flex;align-items:center;gap:14px;padding:14px 16px;background:rgba(255,255,255,.04);border-radius:14px;margin-bottom:6px;border:1px solid rgba(255,255,255,.04);cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}.sg-more-item:active{transform:scale(.98);background:rgba(255,255,255,.08)}.sg-more-item .sg-mi-icon{font-size:20px;width:40px;height:40px;background:rgba(255,255,255,.06);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.sg-more-item .sg-mi-text{flex:1}.sg-more-item .sg-mi-text h4{color:#fff;font-size:14px;font-weight:600;margin:0}.sg-more-item .sg-mi-text p{color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0}.sg-more-item .sg-mi-arrow{color:rgba(255,255,255,.2);font-size:16px}.sg-more-profile{display:flex;align-items:center;gap:14px;margin-bottom:28px;padding-top:12px}.sg-more-avatar{width:56px;height:56px;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff;flex-shrink:0}.sg-more-profile-info h3{color:#fff;font-size:18px;font-weight:700;margin:0}.sg-more-profile-info p{color:rgba(255,255,255,.4);font-size:13px;margin:2px 0 0}.sg-more-social{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}.sg-more-social a{display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:rgba(255,255,255,.04);border-radius:12px;border:1px solid rgba(255,255,255,.06);font-size:16px;transition:all .15s;text-decoration:none}.sg-more-social a:active{background:rgba(255,255,255,.1);transform:scale(.95)}.sg-more-back{display:flex;align-items:center;gap:8px;padding:12px 0;cursor:pointer;color:rgba(255,255,255,.6);font-size:14px;font-weight:600;margin-bottom:4px;-webkit-tap-highlight-color:transparent}.sg-more-back:active{color:#FF6D00}#sg-search-overlay{transition:opacity .2s ease}#sg-search-overlay.active{opacity:1!important}.hide-scrollbar::-webkit-scrollbar{display:none}.hide-scrollbar{scrollbar-width:none;-ms-overflow-style:none}*::-webkit-scrollbar{display:none}*{scrollbar-width:none;-ms-overflow-style:none}.sg-dashboard{-webkit-tap-highlight-color:transparent;position:fixed;top:0;left:0;right:0;bottom:56px;z-index:10;overscroll-behavior:none;-webkit-overflow-scrolling:auto}html,body{height:100%;overflow:hidden;overscroll-behavior:none;position:fixed;width:100%}.sg-tab-bar.hidden{display:none!important}/* ── Continue Banner (permanent layout element like tab bar) ── */#sg-continue-banner{position:fixed;bottom:calc(56px + env(safe-area-inset-bottom,0px));left:0;right:0;height:52px;background:linear-gradient(135deg,#FF6D00 0%,#E66200 100%);display:flex;align-items:center;justify-content:center;gap:8px;z-index:8999;box-shadow:0 -4px 20px rgba(255,109,0,.25);cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}#sg-continue-banner:active{opacity:.85}#sg-continue-banner.sg-cb-hidden{display:none}#sg-continue-banner .sg-cb-text{font-size:16px;font-weight:700;color:#fff;letter-spacing:.3px}#sg-continue-banner .sg-cb-price{font-size:13px;font-weight:600;color:rgba(255,255,255,.75)}#sg-continue-banner .sg-cb-arrow{font-size:18px;color:#fff;margin-left:2px}body.sg-cb-active .sg-tab-content{bottom:calc(56px + 52px + env(safe-area-inset-bottom,0px))!important}body.sg-cb-active .sg-reels-frame,body.sg-cb-active #sg-reels-iframe{bottom:calc(56px + 52px + env(safe-area-inset-bottom,0px))!important;height:calc(100vh - 56px - 52px - env(safe-area-inset-bottom,0px))!important}body.sg-cb-active .sg-dashboard{bottom:calc(56px + 52px)!important}';document.head.appendChild(s)})();
@@ -7886,7 +7886,7 @@ window.handleGoogleSignIn=async function(){
                 var pc=window._pendingCheckout;
                 window._pendingCheckout=null;
                 if(state.activeTab!=='book')navigate('/explore');
-                setTimeout(function(){showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime);},200);
+                setTimeout(function(){showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime);},80);
               }else if(window._pendingReelsAction){
                 _sendToReels({type:'sg-auth-complete',action:window._pendingReelsAction,video:window._pendingReelsVideo});
                 window._pendingReelsAction=null;window._pendingReelsVideo=null;
@@ -8857,19 +8857,25 @@ window.showBookingCheckout=async function(gymId, prefillDate, prefillTime){
   const _passKey=selPass==='week'?'weekly':selPass;
   let _sgRefActive=null;try{const _r=JSON.parse(localStorage.getItem('sg_referral')||'null');if(_r&&_r.handle&&_r.expiry>Date.now())_sgRefActive=_r.handle;}catch(e){}
 
-  // Fetch gym-specific price from server (THE source of truth)
+  // R7: Parallel fetch — price + saved cards at the same time for speed
   let _serverPrices=null;
   let _referralInfo=null;
-  try{
-    const _pUrl='/api/pricing/gym-price?gymId='+encodeURIComponent(gymId)+
-      '&passType='+encodeURIComponent(_passKey)+
-      (_sgRefActive?'&referral='+encodeURIComponent(_sgRefActive):'');
-    const _pResp=await fetch(_pUrl).then(function(r){return r.json();});
-    if(_pResp.success){
-      _serverPrices=_pResp.prices;
-      _referralInfo=_pResp.referralDiscount||null;
-    }
-  }catch(e){console.warn('[Checkout] Gym price fetch failed, using sgPrice fallback');}
+  const _pUrl='/api/pricing/gym-price?gymId='+encodeURIComponent(gymId)+
+    '&passType='+encodeURIComponent(_passKey)+
+    (_sgRefActive?'&referral='+encodeURIComponent(_sgRefActive):'');
+  const _priceFetch=fetch(_pUrl).then(function(r){return r.json();}).catch(function(){return null;});
+  const _cardsFetch=(!isCash&&!isSaved&&state.user)?fetch('/api/payment/saved-cards',{credentials:'include'}).then(function(r){return r.json();}).catch(function(){return null;}):Promise.resolve(null);
+  const [_pResp,_cardsResp]=await Promise.all([_priceFetch,_cardsFetch]);
+  if(_pResp&&_pResp.success){
+    _serverPrices=_pResp.prices;
+    _referralInfo=_pResp.referralDiscount||null;
+  }
+  // Apply saved cards from parallel fetch
+  if(_cardsResp&&_cardsResp.cards&&_cardsResp.cards.length>0){
+    const defCard=_cardsResp.cards.find(function(c){return c.isDefault;})||_cardsResp.cards[0];
+    gbs.paymentMethod='saved';
+    gbs.savedCard={id:defCard.id,brand:defCard.brand,last4:defCard.last4};
+  }
 
   // Use server price if available, otherwise fall back to sgPrice()
   const _priceInfo=_serverPrices&&_serverPrices[_passKey]?_serverPrices[_passKey]:sgPrice(_passKey);
@@ -8894,23 +8900,13 @@ window.showBookingCheckout=async function(gymId, prefillDate, prefillTime){
 
   const sheet=document.createElement('div');
   sheet.id='booking-sheet';
-  // ═══ Auto-detect payment: fetch saved cards if not already selected ═══
-  if(!isCash&&!isSaved&&state.user){
-    try{
-      const cardsResp=await fetch('/api/payment/saved-cards',{credentials:'include'}).then(r=>r.json());
-      if(cardsResp.cards&&cardsResp.cards.length>0){
-        const defCard=cardsResp.cards.find(c=>c.isDefault)||cardsResp.cards[0];
-        gbs.paymentMethod='saved';
-        gbs.savedCard={id:defCard.id,brand:defCard.brand,last4:defCard.last4};
-      }
-    }catch(e){}
-    /* R6 FIX: If saved-cards API returned nothing but user just saved a card
-       in the AuthSheet, fall back to the locally cached card info */
-    if(gbs.paymentMethod!=='saved'&&window._justSavedCard&&gbs.savedCard){
-      gbs.paymentMethod='saved';
-    }
-    if(window._justSavedCard)window._justSavedCard=false;
+  // ═══ Auto-detect payment: cards already fetched in parallel above ═══
+  /* R6 FIX: If saved-cards API returned nothing but user just saved a card
+     in the AuthSheet, fall back to the locally cached card info */
+  if(gbs.paymentMethod!=='saved'&&window._justSavedCard&&gbs.savedCard){
+    gbs.paymentMethod='saved';
   }
+  if(window._justSavedCard)window._justSavedCard=false;
 
   // Re-read after auto-detect
   const finalPayMethod=gbs.paymentMethod||'none';
@@ -8931,8 +8927,8 @@ window.showBookingCheckout=async function(gymId, prefillDate, prefillTime){
   sheet.innerHTML=`
   <style>
     .sg-bk-overlay{position:fixed;inset:0;background:#000;z-index:9200;display:flex;flex-direction:column}
-    /* ── Map area (top ~60%) ── */
-    .sg-bk-map{flex:1;background:#1c2333;position:relative;overflow:hidden}
+    /* ── Map area (compact ~35% — more room for booking info + CTA) ── */
+    .sg-bk-map{flex:0 0 35%;max-height:35vh;background:#1c2333;position:relative;overflow:hidden}
     .sg-bk-road{position:absolute;background:#2a3349}
     .sg-bk-road-1{width:250%;height:26px;top:32%;left:-30%;transform:rotate(-35deg)}
     .sg-bk-road-2{width:24px;height:250%;top:-30%;left:58%;transform:rotate(10deg)}
@@ -8950,8 +8946,8 @@ window.showBookingCheckout=async function(gymId, prefillDate, prefillTime){
     .sg-bk-dot{width:14px;height:14px;background:#3b82f6;border:3px solid #fff;border-radius:50%;box-shadow:0 0 8px rgba(59,130,246,.4);z-index:1}
     @keyframes sgBkPulse{0%{transform:scale(1);opacity:.5}100%{transform:scale(2);opacity:0}}
     .sg-bk-pulse{position:absolute;width:28px;height:28px;background:rgba(59,130,246,.12);border-radius:50%;animation:sgBkPulse 2s infinite}
-    /* ── Bottom sheet (black, minimal) ── */
-    .sg-bk-sheet{background:#000;flex-shrink:0;display:flex;flex-direction:column}
+    /* ── Bottom sheet (black, minimal, takes remaining space) ── */
+    .sg-bk-sheet{background:#000;flex:1;display:flex;flex-direction:column;overflow-y:auto;-webkit-overflow-scrolling:touch}
     .sg-bk-sheet-title-row{display:flex;align-items:center;justify-content:space-between;padding:22px 24px 16px}
     .sg-bk-sheet-title{color:#fff;font-size:22px;font-weight:700;letter-spacing:-.3px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
     .sg-bk-sheet-search{width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:20px;color:rgba(255,255,255,.6);cursor:pointer}
@@ -8961,11 +8957,11 @@ window.showBookingCheckout=async function(gymId, prefillDate, prefillTime){
     .sg-bk-sheet-gym-addr{color:rgba(255,255,255,.4);font-size:14px;line-height:1.4}
     .sg-bk-sheet-detail{color:rgba(255,255,255,.35);font-size:14px;margin-top:8px}
     .sg-bk-accent{height:2px;margin:0 24px;background:linear-gradient(90deg,#FF6D00 0%,#f59e0b 50%,rgba(245,158,11,.15) 100%);border-radius:1px}
-    .sg-bk-footer{padding:14px 24px calc(20px + env(safe-area-inset-bottom,0px))}
+    .sg-bk-footer{padding:14px 24px calc(20px + env(safe-area-inset-bottom,0px));margin-top:auto;background:#000;position:sticky;bottom:0;z-index:2}
     .sg-bk-cta{width:100%;padding:18px;border:none;border-radius:14px;font-size:17px;font-weight:700;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
     .sg-bk-cta:active{transform:scale(.98)}
     @keyframes sg-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
-    .sg-bk-cta-primary{background:#e0e0e0;color:#111}
+    .sg-bk-cta-primary{background:linear-gradient(135deg,#FF6D00 0%,#E66200 100%);color:#fff;animation:casinoGlow 2.5s ease-in-out infinite;font-size:18px;letter-spacing:.3px}
     .sg-bk-cta-disabled{background:rgba(255,255,255,.12);color:rgba(255,255,255,.3)}
     .sg-bk-error{padding:0 24px;margin-top:8px}
     .sg-bk-error-text{color:#f87171;font-size:13px;text-align:center}
@@ -9059,15 +9055,15 @@ window.showBookingCheckout=async function(gymId, prefillDate, prefillTime){
         <div class="sg-bk-error-text"></div>
       </div>
 
-      <!-- Quick Options -->
-      <div style="padding:0 24px 8px;display:flex;gap:8px">
-        <button onclick="window._sgBookFor2('${gymId}','${selDate}','${selTime}')" style="flex:1;background:rgba(168,85,247,.1);border:1px solid rgba(168,85,247,.2);color:#a855f7;padding:10px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer">👫 Book for 2</button>
-        <button onclick="window._sgPayNextVisit('${gymId}','${selDate}','${selTime}')" style="flex:1;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.2);color:#3b82f6;padding:10px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer">⏳ Pay Next Visit</button>
+      <!-- Quick Options (subtle - secondary to main CTA) -->
+      <div style="padding:0 24px 6px;display:flex;gap:6px;opacity:.7">
+        <button onclick="window._sgBookFor2('${gymId}','${selDate}','${selTime}')" style="flex:1;background:rgba(168,85,247,.06);border:1px solid rgba(168,85,247,.1);color:#a855f7;padding:8px;border-radius:10px;font-size:11px;font-weight:600;cursor:pointer">👫 Book for 2</button>
+        <button onclick="window._sgPayNextVisit('${gymId}','${selDate}','${selTime}')" style="flex:1;background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.1);color:#3b82f6;padding:8px;border-radius:10px;font-size:11px;font-weight:600;cursor:pointer">⏳ Pay Next Visit</button>
       </div>
 
       <div class="sg-bk-footer">
         <button class="sg-bk-cta sg-bk-cta-primary" id="sg-bk-cta-btn" onclick="ubConfirmPay()">
-          <span id="sg-bk-cta-text">${finalIsCash?'Confirm · pay at gym':finalIsSaved?'Confirm and pay · ····'+gbs.savedCard.last4:'Confirm and pay'}</span>
+          <span id="sg-bk-cta-text">${finalIsCash?'⚡ Confirm · Pay at Gym':finalIsSaved?'⚡ Book Now · '+displayPriceStr+' · ····'+gbs.savedCard.last4:'⚡ Confirm & Pay '+displayPriceStr}</span>
         </button>
       </div>
     </div>
@@ -9082,8 +9078,8 @@ window.showBookingCheckout=async function(gymId, prefillDate, prefillTime){
     // Show payment method indicator for saved cards
     if(finalIsSaved&&gbs.savedCard){
       var _payIndicator=document.createElement('div');
-      _payIndicator.style.cssText='display:flex;align-items:center;gap:10px;padding:12px 24px;color:rgba(255,255,255,.7);font-size:13px';
-      _payIndicator.innerHTML='<span style="font-size:16px">💳</span> Paying with '+((gbs.savedCard.brand||'Card')+' ····'+gbs.savedCard.last4);
+      _payIndicator.style.cssText='display:flex;align-items:center;gap:10px;padding:14px 24px;color:rgba(255,255,255,.85);font-size:14px;font-weight:600;background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.12);margin:8px 24px;border-radius:12px';
+      _payIndicator.innerHTML='<span style="font-size:18px">💳</span> <span style="flex:1">'+((gbs.savedCard.brand||'Card')+' ····'+gbs.savedCard.last4)+'</span><span style="color:#4ade80;font-size:12px">✓ Ready</span>';
       var _errorArea=document.getElementById('sg-confirm-error');
       if(_errorArea)_errorArea.parentNode.insertBefore(_payIndicator,_errorArea);
     }
@@ -9312,7 +9308,7 @@ window.showBookingCheckout=async function(gymId, prefillDate, prefillTime){
     if(cs.payMode==='saved'&&cs.savedCardId){
       const email=localStorage.getItem('sg_last_email')||'';
       btn.disabled=true;
-      btnText.innerHTML='<span class="sg-spinner" style="width:18px;height:18px;display:inline-block"></span> Booking…';
+      btnText.innerHTML='<span class="sg-spinner" style="width:18px;height:18px;display:inline-block"></span> Booking instantly…';
       try{
         let dbGymId=gymId;
         if(isNaN(parseInt(gymId))){
@@ -9327,7 +9323,9 @@ window.showBookingCheckout=async function(gymId, prefillDate, prefillTime){
           // S5-C11 FIX: Persist to localStorage
           try{localStorage.setItem('sg_last_booking',JSON.stringify(result.booking));localStorage.setItem('sg_last_qr',JSON.stringify(result.qr));}catch(e){}
           closeBookingSheet();navigate('/booking-success?session_id=quick&booking_id='+result.booking.id);
-          sgToast(result.access?'🔓 Booked + door access ready!':'⚡ Booked instantly!','success',3000);
+          /* R7: Haptic on success */
+          if(navigator.vibrate)navigator.vibrate([50,30,80]);
+          sgToast(result.access?'🔓 Booked + door access ready!':'⚡ Booked instantly! QR code ready','success',3000);
         }else{
           const errMsg=result.detail||result.error||'Quick checkout failed';sgToast(errMsg,'error',6000);
           btn.disabled=false;btnText.textContent='Confirm and pay · '+displayPriceStr;
@@ -17921,10 +17919,10 @@ window.sgFeedback = async function(elementId, vote, btn) {
   // Inject CSS once
   var sty=document.createElement('style');
   sty.textContent=`
-    .sg-auth-overlay{position:fixed;inset:0;z-index:9500;display:flex;flex-direction:column;justify-content:flex-end;pointer-events:none;opacity:0;transition:opacity .1s ease-out}
+    .sg-auth-overlay{position:fixed;inset:0;z-index:9500;display:flex;flex-direction:column;justify-content:flex-end;pointer-events:none;opacity:0;transition:opacity .08s ease-out}
     .sg-auth-overlay.open{opacity:1;pointer-events:auto}
     .sg-auth-bg{position:absolute;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-    .sg-auth-panel{position:relative;background:#111;border-radius:24px 24px 0 0;padding:28px 24px calc(24px + env(safe-area-inset-bottom,0px));transform:translateY(100%);transition:transform .15s cubic-bezier(.32,.72,.32,1);max-height:85vh;overflow-y:auto}
+    .sg-auth-panel{position:relative;background:#111;border-radius:24px 24px 0 0;padding:28px 24px calc(24px + env(safe-area-inset-bottom,0px));transform:translateY(100%);transition:transform .12s cubic-bezier(.32,.72,.32,1);max-height:85vh;overflow-y:auto}
     .sg-auth-overlay.open .sg-auth-panel{transform:translateY(0)}
     .sg-auth-drag{width:40px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;margin:0 auto 20px}
     .sg-auth-title{color:#fff;font-size:22px;font-weight:800;text-align:center;margin-bottom:4px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
@@ -18205,11 +18203,11 @@ window.sgFeedback = async function(elementId, vote, btn) {
     </div>`;
     /* R3: Haptic feedback on success */
     if(navigator.vibrate)navigator.vibrate([50,30,80]);
-    // R5 FIX: Auto-close after 400ms — fast fast fast
+    // R7 FIX: Auto-close after 200ms — instant feel
     setTimeout(function(){
       window._sgCloseAuthSheet();
       _resumePendingAction();
-    },400);
+    },200);
   }
 
   // ── After auth success: decide next step ──
@@ -18236,8 +18234,9 @@ window.sgFeedback = async function(elementId, vote, btn) {
         _alreadyHasCard=true;
       }
       if(_alreadyHasCard){
-        // R5/R6: Already has cards — skip card step, instant resume
+        // R7: Already has cards — skip card step, instant resume (0 delay)
         window._sgCloseAuthSheet();
+        /* R7 FIX: Immediate resume — no done screen needed when user has card */
         _resumePendingAction();
         return;
       }
@@ -18284,8 +18283,8 @@ window.sgFeedback = async function(elementId, vote, btn) {
   function _resumePendingAction(){
     if(window._pendingCheckout&&window._pendingCheckout.gymId){
       var pc=window._pendingCheckout;window._pendingCheckout=null;
-      /* R6: Faster resume — 100ms is enough for the sheet close animation */
-      setTimeout(function(){showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime);},100);
+      /* R7: Instant resume — 50ms minimal delay for DOM cleanup */
+      setTimeout(function(){showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime);},50);
     }else if(window._pendingReelsAction){
       _sendToReels({type:'sg-auth-complete',action:window._pendingReelsAction,video:window._pendingReelsVideo});
       window._pendingReelsAction=null;window._pendingReelsVideo=null;
