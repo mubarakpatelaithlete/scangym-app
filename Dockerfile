@@ -19,7 +19,7 @@ COPY frontend/public/ ./public/
 RUN node build.js
 
 # Verify files and log sizes
-RUN echo "=== v4.5.1 Build (cache-busted) ===" && \
+RUN echo "=== v5.7.0 Build (cache-busted) ===" && \
     ls -la public/index.html && \
     ls -la public/app.ctr576.*.js 2>/dev/null && \
     ls -la public/.asset-manifest.json 2>/dev/null && echo "Asset manifest: OK" || echo "Asset manifest: missing" && \
