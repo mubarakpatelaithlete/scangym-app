@@ -978,3 +978,175 @@
   // No client-side chatbot patch needed — server handles AI responses
   console.log('[Patches v6.0] All speed + search + calendar + pay + icon patches loaded');
 })();
+
+// ═══════════════════════════════════════════════════════════════
+//  v7.0 — CHAT CHANNEL BUTTONS + APP STORE BADGES + FLOATING CHAT
+//  Research: Strava (footer app badges), Uber (social+app), Deliveroo
+//  (app badges top of footer), Intercom/Peloton (floating chat widget)
+// ═══════════════════════════════════════════════════════════════
+
+// ── CH1: Chat channel selector row in Chat tab ──
+// Adds horizontal scrollable channel buttons above the chat interface
+(function(){
+  // Inject styles once
+  var sty = document.createElement('style');
+  sty.textContent = `
+    .sg-ch-row{display:flex;gap:8px;padding:8px 16px 6px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-shrink:0;background:rgba(10,10,22,.95);border-bottom:1px solid rgba(255,255,255,.06)}
+    .sg-ch-row::-webkit-scrollbar{display:none}
+    .sg-ch-btn{display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:20px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);cursor:pointer;white-space:nowrap;transition:all .15s;-webkit-tap-highlight-color:transparent;flex-shrink:0;text-decoration:none}
+    .sg-ch-btn:active{transform:scale(.95);background:rgba(255,255,255,.1)}
+    .sg-ch-btn img,.sg-ch-btn svg{width:18px;height:18px;flex-shrink:0;border-radius:4px}
+    .sg-ch-btn span{font-size:12px;font-weight:600;color:rgba(255,255,255,.7)}
+    .sg-ch-btn.sg-ch-active{border-color:rgba(255,109,0,.4);background:rgba(255,109,0,.1)}
+    .sg-ch-btn.sg-ch-active span{color:#FF6D00}
+    .sg-ch-label{font-size:10px;color:rgba(255,255,255,.3);font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:10px 16px 2px;flex-shrink:0}
+  `;
+  document.head.appendChild(sty);
+
+  // Channel definitions
+  var channels = [
+    {id:'webchat', icon:'💬', name:'AI Chat', color:'#FF6D00', active:true},
+    {id:'telegram', icon:'', svg:'<svg viewBox="0 0 24 24" fill="#26A5E4"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.04-.28-.02-.12.03-2.02 1.28-5.69 3.77-.54.37-1.03.55-1.47.54-.48-.01-1.41-.27-2.1-.5-.85-.28-1.52-.43-1.46-.91.03-.25.38-.51 1.05-.78 4.12-1.79 6.87-2.97 8.26-3.54 3.93-1.62 4.75-1.9 5.28-1.91.12 0 .37.03.54.17.14.12.18.28.2.47-.01.06.01.24 0 .37z"/></svg>', name:'Telegram', url:'https://t.me/scangymbot'},
+    {id:'whatsapp', icon:'', svg:'<svg viewBox="0 0 24 24" fill="#25D366"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91C21.95 6.45 17.5 2 12.04 2zm5.82 14.01c-.24.68-1.41 1.3-1.95 1.36-.51.06-1.15.09-1.85-.12-.43-.13-.98-.3-1.69-.58-2.97-1.18-4.91-4.19-5.06-4.39-.14-.2-1.18-1.57-1.18-3 0-1.43.75-2.14 1.01-2.43.27-.29.58-.37.78-.37.19 0 .39 0 .56.01.18.01.42-.07.66.5.24.58.82 2 .89 2.15.07.14.12.31.02.5-.1.19-.14.31-.29.47-.14.17-.3.38-.43.51-.14.14-.29.3-.13.58.17.29.74 1.22 1.58 1.97 1.09.97 2 1.27 2.29 1.41.29.14.46.12.63-.07.17-.19.73-.85.92-1.14.19-.29.39-.24.66-.14.27.1 1.7.8 1.99.95.29.14.48.22.56.34.07.12.07.68-.17 1.36z"/></svg>', name:'WhatsApp', url:'https://wa.me/447780772177?text=Hi%20ScanGym!'},
+    {id:'discord', icon:'', svg:'<svg viewBox="0 0 24 24" fill="#5865F2"><path d="M20.32 4.37a19.8 19.8 0 0 0-4.89-1.52.07.07 0 0 0-.08.04c-.21.38-.45.87-.61 1.26a18.27 18.27 0 0 0-5.49 0 12.64 12.64 0 0 0-.62-1.26.07.07 0 0 0-.08-.04 19.74 19.74 0 0 0-4.89 1.52.07.07 0 0 0-.03.03C1.29 8.42.47 12.31.91 16.15a.08.08 0 0 0 .03.06 19.9 19.9 0 0 0 5.99 3.03.07.07 0 0 0 .08-.03c.46-.63.87-1.3 1.22-2a.07.07 0 0 0-.04-.1 13.1 13.1 0 0 1-1.87-.9.07.07 0 0 1-.01-.12c.13-.09.25-.19.37-.29a.07.07 0 0 1 .07-.01c3.93 1.8 8.18 1.8 12.07 0a.07.07 0 0 1 .07.01c.12.1.25.2.37.29a.07.07 0 0 1 0 .12c-.6.35-1.22.65-1.87.9a.07.07 0 0 0-.04.1c.36.7.77 1.37 1.22 2a.07.07 0 0 0 .08.03 19.84 19.84 0 0 0 6-3.03.08.08 0 0 0 .03-.05c.53-5.47-.87-10.22-3.65-14.43a.06.06 0 0 0-.03-.03zM8.02 13.71c-1.25 0-2.28-1.15-2.28-2.56s1.01-2.56 2.28-2.56c1.28 0 2.3 1.16 2.28 2.56 0 1.41-1.01 2.56-2.28 2.56zm8.44 0c-1.25 0-2.28-1.15-2.28-2.56s1.01-2.56 2.28-2.56c1.28 0 2.3 1.16 2.28 2.56 0 1.41-1 2.56-2.28 2.56z"/></svg>', name:'Discord', url:'https://discord.gg/scangym'},
+    {id:'slack', icon:'', svg:'<svg viewBox="0 0 24 24"><path d="M5.04 15.16a2.12 2.12 0 0 1-2.12 2.12A2.12 2.12 0 0 1 .8 15.16a2.12 2.12 0 0 1 2.12-2.12h2.12v2.12zm1.07 0a2.12 2.12 0 0 1 2.12-2.12 2.12 2.12 0 0 1 2.12 2.12v5.31a2.12 2.12 0 0 1-2.12 2.12 2.12 2.12 0 0 1-2.12-2.12v-5.31z" fill="#E01E5A"/><path d="M8.23 5.04a2.12 2.12 0 0 1-2.12-2.12A2.12 2.12 0 0 1 8.23.8a2.12 2.12 0 0 1 2.12 2.12v2.12H8.23zm0 1.08a2.12 2.12 0 0 1 2.12 2.12 2.12 2.12 0 0 1-2.12 2.12H2.92A2.12 2.12 0 0 1 .8 8.24a2.12 2.12 0 0 1 2.12-2.12h5.31z" fill="#36C5F0"/><path d="M18.96 8.24a2.12 2.12 0 0 1 2.12-2.12 2.12 2.12 0 0 1 2.12 2.12 2.12 2.12 0 0 1-2.12 2.12h-2.12V8.24zm-1.07 0a2.12 2.12 0 0 1-2.12 2.12 2.12 2.12 0 0 1-2.12-2.12V2.92A2.12 2.12 0 0 1 15.77.8a2.12 2.12 0 0 1 2.12 2.12v5.32z" fill="#2EB67D"/><path d="M15.77 18.96a2.12 2.12 0 0 1 2.12 2.12 2.12 2.12 0 0 1-2.12 2.12 2.12 2.12 0 0 1-2.12-2.12v-2.12h2.12zm0-1.07a2.12 2.12 0 0 1-2.12-2.12 2.12 2.12 0 0 1 2.12-2.12h5.31a2.12 2.12 0 0 1 2.12 2.12 2.12 2.12 0 0 1-2.12 2.12h-5.31z" fill="#ECB22E"/></svg>', name:'Slack', url:'https://scangym.slack.com'},
+    {id:'teams', icon:'', svg:'<svg viewBox="0 0 24 24" fill="#6264A7"><path d="M20.67 7.5h-2.83V5.17a1 1 0 0 0-1-1h-1.17a2.5 2.5 0 1 0-3.67-1.67 2.5 2.5 0 0 0 .83 1.67H11.5a1 1 0 0 0-1 1V7.5H7.33A1.33 1.33 0 0 0 6 8.83V12a5 5 0 0 0 3.5 4.77V18.5a1.5 1.5 0 0 0 1.5 1.5h2a1.5 1.5 0 0 0 1.5-1.5v-1.73A5 5 0 0 0 18 12V8.83a1.33 1.33 0 0 0-1.33-1.33zm-6.17-3a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z"/></svg>', name:'Teams', url:'https://teams.microsoft.com'}
+  ];
+
+  // Inject channel row into Chat tab after render
+  var _origSwitch3 = window.switchTab;
+  if (typeof _origSwitch3 !== 'function') return;
+  window.switchTab = function(tab) {
+    _origSwitch3.apply(this, arguments);
+    if (tab === 'chat') {
+      setTimeout(function(){
+        var chatContainer = document.querySelector('.sg-tab-content');
+        if (!chatContainer) return;
+        // Don't inject twice
+        if (chatContainer.querySelector('.sg-ch-label')) return;
+        
+        var firstChild = chatContainer.firstElementChild;
+        if (!firstChild) return;
+        
+        // Build channel row HTML
+        var rowHtml = '<div class="sg-ch-label">Chat with us on</div><div class="sg-ch-row">';
+        channels.forEach(function(ch){
+          var iconHtml = ch.svg ? ch.svg : '<span style="font-size:18px">'+ch.icon+'</span>';
+          var activeClass = ch.active ? ' sg-ch-active' : '';
+          if (ch.active) {
+            rowHtml += '<div class="sg-ch-btn'+activeClass+'" onclick="event.stopPropagation()">'+iconHtml+'<span>'+ch.name+'</span></div>';
+          } else {
+            rowHtml += '<a class="sg-ch-btn'+activeClass+'" href="'+ch.url+'" target="_blank" rel="noopener">'+iconHtml+'<span>'+ch.name+'</span></a>';
+          }
+        });
+        rowHtml += '</div>';
+        
+        // Insert at the very top of the chat container's inner div
+        var chatInner = firstChild;
+        chatInner.insertAdjacentHTML('afterbegin', rowHtml);
+      }, 50);
+    }
+  };
+  console.log('[CH1] Chat channel selector row patch applied');
+})();
+
+// ── APP1: App store badges in Profile tab ──
+// Adds "Get the App" section with Apple App Store + Google Play badges
+(function(){
+  var sty2 = document.createElement('style');
+  sty2.textContent = `
+    .sg-app-badges{position:absolute;bottom:80px;left:16px;right:70px;z-index:10;display:flex;flex-direction:column;gap:6px}
+    .sg-app-badges-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.3);text-shadow:0 1px 4px rgba(0,0,0,.8)}
+    .sg-app-badges-row{display:flex;gap:8px;flex-wrap:wrap}
+    .sg-app-badge{height:36px;border-radius:8px;background:rgba(0,0,0,.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.12);padding:6px 12px;display:flex;align-items:center;gap:6px;cursor:pointer;transition:all .15s;text-decoration:none;-webkit-tap-highlight-color:transparent}
+    .sg-app-badge:active{transform:scale(.95);background:rgba(0,0,0,.8)}
+    .sg-app-badge svg{width:20px;height:20px;flex-shrink:0}
+    .sg-app-badge-text{display:flex;flex-direction:column}
+    .sg-app-badge-text .sg-abt{font-size:7px;color:rgba(255,255,255,.5);line-height:1;letter-spacing:.3px}
+    .sg-app-badge-text .sg-abb{font-size:11px;color:#fff;font-weight:700;line-height:1.2}
+  `;
+  document.head.appendChild(sty2);
+
+  // Apple App Store badge SVG
+  var appleSvg = '<svg viewBox="0 0 24 24" fill="#fff"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>';
+  var googleSvg = '<svg viewBox="0 0 24 24"><path d="M3.61 1.81L13.42 12 3.6 22.19A2.4 2.4 0 0 1 2 19.98V4.02a2.4 2.4 0 0 1 1.61-2.21z" fill="#4285F4"/><path d="M16.28 15.05L13.42 12l2.86-3.05L20.56 11a1.38 1.38 0 0 1 0 2l-4.28 2.05z" fill="#FBBC04"/><path d="M16.28 8.95L13.42 12 3.61 1.81c.5-.53 1.3-.6 1.88-.16l10.79 7.3z" fill="#EA4335"/><path d="M16.28 15.05L5.49 22.35c-.58.44-1.38.37-1.88-.16L13.42 12l2.86 3.05z" fill="#34A853"/></svg>';
+
+  // Patch the MoreHubPage to inject app badges
+  // We intercept the Profile tab render and inject our badges
+  var _origSwitch4 = window.switchTab;
+  if (typeof _origSwitch4 !== 'function') return;
+  window.switchTab = function(tab) {
+    _origSwitch4.apply(this, arguments);
+    if (tab === 'more') {
+      setTimeout(function(){
+        var chatContainer = document.querySelector('.sg-tab-content');
+        if (!chatContainer) return;
+        // Don't inject twice
+        if (document.querySelector('.sg-app-badges')) return;
+        
+        // Find the bottom overlay area (where stats are)
+        var bottomOverlay = chatContainer.querySelector('[style*="bottom:12px"]');
+        if (bottomOverlay) {
+          // Insert above it
+          var badgesDiv = document.createElement('div');
+          badgesDiv.className = 'sg-app-badges';
+          badgesDiv.innerHTML = '<div class="sg-app-badges-label">📲 Get the app</div>'
+            + '<div class="sg-app-badges-row">'
+            + '<a class="sg-app-badge" href="https://apps.apple.com/app/scangym" target="_blank" rel="noopener">'
+            + appleSvg
+            + '<div class="sg-app-badge-text"><span class="sg-abt">Download on the</span><span class="sg-abb">App Store</span></div>'
+            + '</a>'
+            + '<a class="sg-app-badge" href="https://play.google.com/store/apps/details?id=com.scangym" target="_blank" rel="noopener">'
+            + googleSvg
+            + '<div class="sg-app-badge-text"><span class="sg-abt">GET IT ON</span><span class="sg-abb">Google Play</span></div>'
+            + '</a>'
+            + '</div>';
+          bottomOverlay.parentElement.insertBefore(badgesDiv, bottomOverlay);
+        }
+      }, 50);
+    }
+  };
+  console.log('[APP1] App store badges (Profile tab) patch applied');
+})();
+
+// ── FAB1: Floating chat button on every tab (except Chat itself) ──
+// Small orange bubble bottom-right like Intercom/Peloton/Crisp
+(function(){
+  var fabStyle = document.createElement('style');
+  fabStyle.textContent = `
+    #sg-chat-fab{position:fixed;bottom:calc(66px + env(safe-area-inset-bottom,0px));right:12px;width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#FF6D00,#E66200);display:flex;align-items:center;justify-content:center;z-index:8998;cursor:pointer;box-shadow:0 4px 20px rgba(255,109,0,.4),0 0 0 0 rgba(255,109,0,.3);-webkit-tap-highlight-color:transparent;transition:all .2s;animation:sgFabPulse 3s ease-in-out infinite}
+    #sg-chat-fab:active{transform:scale(.9)}
+    #sg-chat-fab.sg-fab-hidden{display:none!important}
+    @keyframes sgFabPulse{0%,100%{box-shadow:0 4px 20px rgba(255,109,0,.4),0 0 0 0 rgba(255,109,0,.3)}50%{box-shadow:0 4px 20px rgba(255,109,0,.4),0 0 0 8px rgba(255,109,0,0)}}
+    body.sg-cb-active #sg-chat-fab{bottom:calc(118px + env(safe-area-inset-bottom,0px))}
+    #sg-chat-fab .sg-fab-badge{position:absolute;top:-2px;right:-2px;width:18px;height:18px;background:#22c55e;border-radius:50%;border:2px solid #0a0a16;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;font-weight:900}
+  `;
+  document.head.appendChild(fabStyle);
+  
+  // Create FAB element
+  var fab = document.createElement('div');
+  fab.id = 'sg-chat-fab';
+  fab.setAttribute('role', 'button');
+  fab.setAttribute('aria-label', 'Chat with us');
+  fab.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>';
+  fab.onclick = function(){ switchTab('chat'); };
+  document.body.appendChild(fab);
+  
+  // Show/hide based on current tab
+  var _origSwitch5 = window.switchTab;
+  if (typeof _origSwitch5 !== 'function') return;
+  window.switchTab = function(tab) {
+    _origSwitch5.apply(this, arguments);
+    var fabEl = document.getElementById('sg-chat-fab');
+    if (fabEl) {
+      if (tab === 'chat') {
+        fabEl.classList.add('sg-fab-hidden');
+      } else {
+        fabEl.classList.remove('sg-fab-hidden');
+      }
+    }
+  };
+  console.log('[FAB1] Floating chat button patch applied');
+})();
+
+console.log('[Patches v7.0] Chat channels + app store badges + floating chat button loaded');
