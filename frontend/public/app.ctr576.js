@@ -1606,6 +1606,22 @@ function SearchPage(){
         return html;
       })():''}
 
+      ${(!isLoading&&!gyms[0])?`
+        <div style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;align-items:center;justify-content:center;padding:24px;text-align:center;background:linear-gradient(180deg,#0a0c14 0%,#111525 100%)">
+          <div style="font-size:64px;margin-bottom:16px;opacity:.8">🏋️</div>
+          <h2 style="color:#fff;font-size:22px;font-weight:800;margin:0 0 8px">No Gyms Found</h2>
+          <p style="color:rgba(255,255,255,.5);font-size:14px;margin:0 0 20px;max-width:280px;line-height:1.5">Search for a city or area to discover gyms near you</p>
+          <div style="width:100%;max-width:320px;display:flex;gap:8px;margin-bottom:16px">
+            <input id="sg-empty-search" type="text" placeholder="Try: London, Manchester, NYC..."
+              style="flex:1;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:14px 16px;color:#fff;font-size:14px;outline:none"
+              onkeydown="if(event.key==='Enter'){var v=this.value.trim();if(v){window._autoLoaded=false;searchGyms('gyms in '+v,true);}}">
+            <button onclick="var v=document.getElementById('sg-empty-search').value.trim();if(v){window._autoLoaded=false;searchGyms('gyms in '+v,true);}" style="background:#FF6D00;color:#fff;border:none;border-radius:12px;padding:14px 18px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;box-shadow:0 4px 16px rgba(255,109,0,.3)">Search</button>
+          </div>
+          <button onclick="window._autoLoaded=false;searchGyms('gyms in London',true)" style="background:rgba(255,255,255,.08);color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 20px;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:8px">🔄 Try London</button>
+          <button onclick="window._autoLoaded=false;window._gpsAutoPrompted=false;findGyms()" style="background:transparent;color:rgba(255,109,0,.8);border:none;padding:8px;font-size:13px;font-weight:600;cursor:pointer">📍 Enable GPS Instead</button>
+        </div>
+      `:''}
+
       ${isLoading?`
         <div style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;padding:0 16px;padding-top:env(safe-area-inset-top,12px);">
           <div style="flex-shrink:0;margin-bottom:12px;">
@@ -11759,18 +11775,13 @@ function MusicTabPage(){
       '</div>'+
       // Right-side TikTok actions
       '<div style="position:absolute;right:12px;bottom:140px;display:flex;flex-direction:column;align-items:center;gap:20px;z-index:5">'+
-        // Like
-        '<div onclick="event.stopPropagation();var l=window._sgMusicLiked||{};var k=\''+likeKey+'\';l[k]=!l[k];window._sgMusicLiked=l;render()" style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;-webkit-tap-highlight-color:transparent">'+
-          '<div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:26px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5))">'+(isLiked?'❤️':'🤍')+'</div>'+
-          '<span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">'+(isLiked?'Liked':'Like')+'</span>'+
+        // Save to playlist (Spotify-style — saves track to user's playlist)
+        '<div onclick="event.stopPropagation();_sgMusicSaveToPlaylist('+_pi+','+idx+')" style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;-webkit-tap-highlight-color:transparent">'+
+          '<div id="sg-m-save-'+_pi+'-'+idx+'" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:24px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5));transition:all .2s">'+(window._sgMusicSaved&&window._sgMusicSaved[_pi+'_'+idx]?'✅':'➕')+'</div>'+
+          '<span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">'+(window._sgMusicSaved&&window._sgMusicSaved[_pi+'_'+idx]?'Saved':'Save')+'</span>'+
         '</div>'+
-        // Add to playlist
-        '<div style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer">'+
-          '<div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:24px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5))">➕</div>'+
-          '<span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">Save</span>'+
-        '</div>'+
-        // Share
-        '<div onclick="event.stopPropagation();navigator.clipboard&&navigator.clipboard.writeText(\'https://scangym.com/music?track='+encodeURIComponent(tr.n)+'\');window._sgToast&&window._sgToast(\'Link copied!\',\'✅\')" style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer">'+
+        // Share playlist with deep affiliate link
+        '<div onclick="event.stopPropagation();_sgMusicShareWithAffiliate(\''+encodeURIComponent(tr.n)+'\','+_pi+')" style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer">'+
           '<div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:24px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5))">↗️</div>'+
           '<span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">Share</span>'+
         '</div>'+
@@ -11913,6 +11924,97 @@ function MusicTabPage(){
 })();
 
 
+// ═══ MUSIC: Save to Playlist (Spotify-style) ═══
+// Saves track to user's playlist in localStorage; shows toast + animates button
+function _sgMusicSaveToPlaylist(playlistIdx, trackIdx) {
+  var saved = window._sgMusicSaved || {};
+  var key = playlistIdx + '_' + trackIdx;
+  var playlists = window._sgMusicPlaylists || [];
+  var pl = playlists[playlistIdx];
+  var tr = pl && pl.tracks ? pl.tracks[trackIdx] : null;
+  if (!tr) return;
+
+  if (saved[key]) {
+    // Unsave — remove from playlist
+    delete saved[key];
+    window._sgMusicSaved = saved;
+    try { localStorage.setItem('sg_music_saved', JSON.stringify(saved)); } catch(e) {}
+    var el = document.getElementById('sg-m-save-' + playlistIdx + '-' + trackIdx);
+    if (el) { el.textContent = '➕'; el.style.animation = ''; }
+    if (window._sgToast) window._sgToast('Removed from playlist', '🗑️');
+  } else {
+    // Save to playlist
+    saved[key] = { name: tr.n, artist: tr.a, playlist: pl.title, savedAt: Date.now() };
+    window._sgMusicSaved = saved;
+    try { localStorage.setItem('sg_music_saved', JSON.stringify(saved)); } catch(e) {}
+    var el2 = document.getElementById('sg-m-save-' + playlistIdx + '-' + trackIdx);
+    if (el2) { el2.textContent = '✅'; el2.style.animation = 'sgActionBounce .3s ease'; }
+    if (window._sgToast) window._sgToast('Saved to "' + pl.title + '" playlist', '✅');
+  }
+  // Re-render to update button state
+  setTimeout(function() { render(); }, 300);
+}
+
+// ═══ MUSIC: Share with Deep Affiliate Link ═══
+// Copies share URL with user's affiliate code appended if logged in
+function _sgMusicShareWithAffiliate(trackName, playlistIdx) {
+  var playlists = window._sgMusicPlaylists || [];
+  var pl = playlists[playlistIdx];
+  var plName = pl ? encodeURIComponent(pl.title) : '';
+  var baseUrl = 'https://scangym.com/music?track=' + trackName + '&playlist=' + plName;
+
+  // Check if user is logged in and has an affiliate/referral code
+  var user = window._sgUser || state.user || null;
+  var affiliateCode = '';
+  if (user) {
+    affiliateCode = user.affiliateCode || user.referralCode || user.uid || '';
+  }
+  // Also check localStorage for stored affiliate code
+  if (!affiliateCode) {
+    try { affiliateCode = localStorage.getItem('sg_affiliate_code') || ''; } catch(e) {}
+  }
+
+  var shareUrl = affiliateCode
+    ? baseUrl + '&ref=' + encodeURIComponent(affiliateCode)
+    : baseUrl;
+
+  // Copy to clipboard
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(shareUrl).then(function() {
+      if (window._sgToast) window._sgToast(affiliateCode ? 'Affiliate link copied! You earn on signups 💰' : 'Link copied!', '✅');
+    }).catch(function() {
+      _sgFallbackCopy(shareUrl, affiliateCode);
+    });
+  } else {
+    _sgFallbackCopy(shareUrl, affiliateCode);
+  }
+
+  // Also trigger Web Share API if available (mobile)
+  if (navigator.share) {
+    navigator.share({
+      title: 'ScanGym Music — ' + decodeURIComponent(trackName),
+      text: pl ? '🎵 Check out "' + pl.title + '" playlist on ScanGym!' : '🎵 Listen on ScanGym!',
+      url: shareUrl
+    }).catch(function() {}); // User may cancel — ignore
+  }
+}
+function _sgFallbackCopy(url, hasAffiliate) {
+  var ta = document.createElement('textarea');
+  ta.value = url; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); } catch(e) {}
+  document.body.removeChild(ta);
+  if (window._sgToast) window._sgToast(hasAffiliate ? 'Affiliate link copied! 💰' : 'Link copied!', '✅');
+}
+
+// Load saved playlist from localStorage on startup
+(function() {
+  try {
+    var saved = JSON.parse(localStorage.getItem('sg_music_saved') || '{}');
+    if (saved && typeof saved === 'object') window._sgMusicSaved = saved;
+  } catch(e) {}
+})();
+
 // ═══ PHOTOS TAB — Steal Pinterest: masonry grid, real photos, working filters ═══
 function PhotosTabPage(){
   var categories=['🔥 Trending','💪 Before/After','🏋️ Form Tips','🍽 Meal Prep','📊 Progress','🏅 PRs'];
@@ -11973,12 +12075,9 @@ function PhotosTabPage(){
 }
 // Full-screen photo slide (like a Reel but for photos)
 function _photoSlide(p,idx,total){
-  var likeId='sg-plike-'+idx;
   return '<div class="sg-photo-slide" data-idx="'+idx+'">'
     // Photo fills entire screen
     +'<img src="'+p.img+'" alt="'+p.title+'" loading="'+(idx<3?'eager':'lazy')+'" onerror="this.style.background=\'linear-gradient(135deg,#1a1a2e,#16213e)\'">'
-    // Double-tap heart overlay
-    +'<div id="sg-heart-'+idx+'" style="display:none;position:absolute;top:50%;left:50%;z-index:30;pointer-events:none"><span style="font-size:80px;animation:sgHeartPop .8s ease-out forwards">\u2764\ufe0f</span></div>'
     // Bottom gradient + info
     +'<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent 0%,rgba(0,0,0,.4) 30%,rgba(0,0,0,.8) 100%);padding:60px 16px 20px;z-index:15">'
     +'<div style="display:flex;align-items:flex-end;gap:12px">'
@@ -11994,16 +12093,6 @@ function _photoSlide(p,idx,total){
     +'</div>'
     // Right: action buttons (TikTok-style vertical stack)
     +'<div style="display:flex;flex-direction:column;align-items:center;gap:16px;flex-shrink:0">'
-    // Like button
-    +'<div id="'+likeId+'" onclick="event.stopPropagation();_sgToggleLike('+idx+')" style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer">'
-    +'<div style="width:44px;height:44px;background:rgba(255,255,255,.12);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px">\u2764\ufe0f</div>'
-    +'<span style="color:#fff;font-size:11px;font-weight:600">'+p.likes+'</span>'
-    +'</div>'
-    // Comment button
-    +'<div onclick="event.stopPropagation();sgToast(\'💬 Comments coming soon\',\'info\',2000)" style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer">'
-    +'<div style="width:44px;height:44px;background:rgba(255,255,255,.12);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px">\ud83d\udcac</div>'
-    +'<span style="color:#fff;font-size:11px;font-weight:600">'+p.comments+'</span>'
-    +'</div>'
     // Share button
     +'<div onclick="event.stopPropagation();sgToast(\'📤 Link copied!\',\'success\',2000)" style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer">'
     +'<div style="width:44px;height:44px;background:rgba(255,255,255,.12);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px">\ud83d\udce4</div>'
@@ -13129,8 +13218,9 @@ function ScanGymIDCard(u){
         <div style="color:#fff;font-size:18px;font-weight:800;margin-bottom:2px">${name}</div>
         <div style="color:rgba(255,255,255,.4);font-size:12px">Member since ${since}</div>
       </div>
-      <div style="flex-shrink:0;width:80px;height:80px;background:rgba(0,0,0,.3);border-radius:14px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,109,0,.15)">
+      <div onclick="_sgShowFullScreenQR('${name}','${since}','${tier.name}','${tier.icon}','${tier.color}','${qrUrl.replace(/'/g,"\\'")}','${u.id||''}')" style="flex-shrink:0;width:80px;height:80px;background:rgba(0,0,0,.3);border-radius:14px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,109,0,.15);cursor:pointer;position:relative">
         <img src="${qrUrl}" width="64" height="64" style="border-radius:8px" alt="QR">
+        <div style="position:absolute;bottom:-2px;right:-2px;width:20px;height:20px;background:#FF6D00;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;box-shadow:0 2px 6px rgba(0,0,0,.4)">⛶</div>
       </div>
     </div>
     <!-- Stats Row (Fix #8E) -->
@@ -13157,6 +13247,61 @@ function ScanGymIDCard(u){
     </div>
   </div>`;
 }
+// ═══ FULL-SCREEN QR CODE (TikTok-style immersive overlay) ═══
+window._sgShowFullScreenQR=function(name,since,tierName,tierIcon,tierColor,qrUrl,memberId){
+  // Generate larger QR code for full-screen display
+  var qrData=encodeURIComponent('https://scangym.com/member/'+memberId);
+  var qrUrlLarge='https://api.qrserver.com/v1/create-qr-code/?size=300x300&bgcolor=0d0d1a&color=FF6D00&data='+qrData;
+  var overlay=document.createElement('div');
+  overlay.id='sg-qr-fullscreen';
+  overlay.style.cssText='position:fixed;inset:0;z-index:99999;background:linear-gradient(180deg,#0a0c14 0%,#111525 30%,#0d0f1a 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;animation:sgQRFadeIn .3s ease;-webkit-tap-highlight-color:transparent';
+  overlay.innerHTML=
+    '<style>'+
+    '@keyframes sgQRFadeIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}'+
+    '@keyframes sgQRPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,109,0,.3),0 20px 60px rgba(255,109,0,.15)}50%{box-shadow:0 0 0 20px rgba(255,109,0,0),0 20px 60px rgba(255,109,0,.25)}}'+
+    '@keyframes sgQRGlow{0%,100%{opacity:.3}50%{opacity:.6}}'+
+    '</style>'+
+    // Close button (top-right)
+    '<div onclick="document.getElementById(\'sg-qr-fullscreen\').remove()" style="position:absolute;top:max(16px,env(safe-area-inset-top,16px));right:16px;width:40px;height:40px;background:rgba(255,255,255,.08);backdrop-filter:blur(12px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;z-index:5;color:rgba(255,255,255,.6)">✕</div>'+
+    // ScanGym branding top
+    '<div style="position:absolute;top:max(20px,env(safe-area-inset-top,20px));left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:8px">'+
+      '<div style="width:32px;height:32px;background:#FF6D00;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;color:#fff">S</div>'+
+      '<span style="color:#fff;font-size:16px;font-weight:800;letter-spacing:-.3px">ScanGym</span>'+
+    '</div>'+
+    // Ambient glow behind QR
+    '<div style="position:absolute;width:350px;height:350px;background:radial-gradient(circle,rgba(255,109,0,.12),transparent 70%);border-radius:50%;animation:sgQRGlow 3s ease-in-out infinite;pointer-events:none"></div>'+
+    // QR code container
+    '<div style="position:relative;background:rgba(255,255,255,.03);border:2px solid rgba(255,109,0,.25);border-radius:32px;padding:32px;animation:sgQRPulse 2.5s ease-in-out infinite;backdrop-filter:blur(20px)">'+
+      '<img src="'+qrUrlLarge+'" style="width:min(280px,65vw);height:min(280px,65vw);border-radius:16px;display:block" alt="ScanGym QR Code">'+
+    '</div>'+
+    // Member info below QR
+    '<div style="margin-top:28px;text-align:center">'+
+      '<h2 style="color:#fff;font-size:24px;font-weight:900;margin:0 0 6px;letter-spacing:-.3px">'+name+'</h2>'+
+      '<div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:4px">'+
+        '<span style="background:rgba(255,109,0,.12);border:1px solid rgba(255,109,0,.2);padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;color:'+tierColor+';display:flex;align-items:center;gap:4px">'+tierIcon+' '+tierName+'</span>'+
+      '</div>'+
+      '<p style="color:rgba(255,255,255,.4);font-size:13px;margin:6px 0 0">Member since '+since+'</p>'+
+    '</div>'+
+    // Instructions at bottom
+    '<div style="position:absolute;bottom:max(40px,env(safe-area-inset-bottom,40px));text-align:center;padding:0 24px">'+
+      '<p style="color:rgba(255,255,255,.35);font-size:13px;font-weight:600;margin:0 0 6px">📱 Show this QR at the gym entrance</p>'+
+      '<p style="color:rgba(255,255,255,.2);font-size:11px;margin:0">Tap anywhere to close</p>'+
+    '</div>';
+  // Close on background tap
+  overlay.addEventListener('click',function(e){
+    if(e.target===overlay)overlay.remove();
+  });
+  // Close on swipe down
+  var startY=0;
+  overlay.addEventListener('touchstart',function(e){startY=e.touches[0].clientY;},{passive:true});
+  overlay.addEventListener('touchend',function(e){
+    if(e.changedTouches[0].clientY-startY>100)overlay.remove();
+  },{passive:true});
+  document.body.appendChild(overlay);
+  // Increase screen brightness hint (if supported)
+  try{if(screen.orientation)screen.keepAwake=true;}catch(e){}
+};
+
 // Share ID card handler (Fix #8E)
 window._shareIDCard=function(){
   if(navigator.share){
