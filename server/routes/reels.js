@@ -322,57 +322,11 @@ router.get('/feed', async (req, res) => {
     }
 
 
-    // 2e. SOCIAL REELS: Mix in approved YouTube Shorts & TikTok from social_reels table
-    // Views count for original creators (win-win). Interspersed every 5th position.
-    try {
-      const socialResult = await pool.query(
-        `SELECT id, platform, external_id, title, author_name, author_url,
-                thumbnail_url, embed_html, video_url, view_count, category
-         FROM social_reels
-         WHERE is_approved = true AND is_hidden = false
-         ORDER BY fetched_at DESC, view_count DESC
-         LIMIT 30`
-      );
-      
-      if (socialResult.rows.length > 0) {
-        const socialReels = socialResult.rows.map(s => ({
-          id: `social_${s.id}`,
-          name: s.title || 'Social Reel',
-          category: s.category || 'Social',
-          source: s.platform, // 'youtube' or 'tiktok'
-          type: 'social',
-          url: s.video_url,
-          embedHtml: s.embed_html,
-          thumb: s.thumbnail_url,
-          posterUrl: s.thumbnail_url,
-          externalId: s.external_id,
-          creator: {
-            handle: s.author_name,
-            name: s.author_name,
-            profileUrl: s.author_url,
-          },
-          viewCount: s.view_count,
-        }));
-        
-        // Interleave: insert 1 social reel every 5 catalog reels
-        const mixed = [];
-        let socialIdx = 0;
-        for (let i = 0; i < feed.length; i++) {
-          mixed.push(feed[i]);
-          if ((i + 1) % 5 === 0 && socialIdx < socialReels.length) {
-            mixed.push(socialReels[socialIdx++]);
-          }
-        }
-        // Append any remaining social reels
-        while (socialIdx < socialReels.length) {
-          mixed.push(socialReels[socialIdx++]);
-        }
-        feed = mixed;
-      }
-    } catch (socialErr) {
-      // Non-fatal — feed works without social reels
-      console.warn('Feed: social reels mix failed:', socialErr.message);
-    }
+    // 2e. SOCIAL REELS: DISABLED — iframe embeds caused speed degradation and
+    // inflated reel count (127 catalog + 18 social = 145 shown as broken reels).
+    // Social reels rendered as heavy YouTube/TikTok iframes instead of native <video>.
+    // TODO: Re-enable when social reels are proxied as native video URLs.
+    // See: PR #386 (original), disabled by UI cleanup PR.
 
     // ── Store in cache (before category filter/ranking) ──
     _feedCache = feed.map(v => ({ ...v, variants: v.variants ? { ...v.variants } : undefined }));
