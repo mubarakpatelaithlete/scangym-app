@@ -19507,90 +19507,21 @@ window._sgDownloadBrandedImage=function(gymId,gymName){
     var ctx=canvas.getContext('2d');
     ctx.drawImage(img,0,0,W,H);
 
-    // ── ScanGym watermark (TikTok-style: bottom-right + top-left) ──
+    // ── 🟠 Orange circle branding (same as reels/book tab top-left identity) ──
     var scale=W/1080;
     var brandColor='#FF6D00';
-
-    // Bottom-right: ScanGym logo badge + name
-    var badgeH=Math.round(44*scale);var badgeW=Math.round(200*scale);
-    var badgeX=W-badgeW-Math.round(20*scale);
-    var badgeY=H-badgeH-Math.round(20*scale);
-    // Semi-transparent dark pill background
-    ctx.fillStyle='rgba(0,0,0,0.65)';
-    var r=Math.round(badgeH/2);
-    ctx.beginPath();
-    ctx.moveTo(badgeX+r,badgeY);ctx.lineTo(badgeX+badgeW-r,badgeY);
-    ctx.arcTo(badgeX+badgeW,badgeY,badgeX+badgeW,badgeY+r,r);
-    ctx.lineTo(badgeX+badgeW,badgeY+badgeH-r);
-    ctx.arcTo(badgeX+badgeW,badgeY+badgeH,badgeX+badgeW-r,badgeY+badgeH,r);
-    ctx.lineTo(badgeX+r,badgeY+badgeH);
-    ctx.arcTo(badgeX,badgeY+badgeH,badgeX,badgeY+badgeH-r,r);
-    ctx.lineTo(badgeX,badgeY+r);
-    ctx.arcTo(badgeX,badgeY,badgeX+r,badgeY,r);
-    ctx.closePath();ctx.fill();
-    // Orange circle icon
-    var circR=Math.round(16*scale);
-    var circX=badgeX+Math.round(24*scale);
-    var circY=badgeY+badgeH/2;
+    // Orange circle — top-left, matching the in-app brand circle
+    var circR=Math.round(20*scale);
+    var circX=Math.round(28*scale);
+    var circY=Math.round(28*scale);
+    ctx.globalAlpha=0.85;
     ctx.fillStyle=brandColor;
     ctx.beginPath();ctx.arc(circX,circY,circR,0,Math.PI*2);ctx.fill();
-    // "SG" inside circle
-    ctx.fillStyle='#fff';ctx.font='bold '+Math.round(11*scale)+'px -apple-system,BlinkMacSystemFont,sans-serif';
-    ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.fillText('SG',circX,circY);
-    // "ScanGym" text
-    ctx.fillStyle='#fff';ctx.font='bold '+Math.round(16*scale)+'px -apple-system,BlinkMacSystemFont,sans-serif';
-    ctx.textAlign='left';ctx.textBaseline='middle';
-    ctx.fillText('ScanGym',circX+circR+Math.round(8*scale),circY);
-
-    // Top-left: "@scangym" username tag (like TikTok)
-    ctx.fillStyle='rgba(0,0,0,0.5)';
-    var tagFont=Math.round(14*scale);
-    ctx.font='bold '+tagFont+'px -apple-system,BlinkMacSystemFont,sans-serif';
-    var tagText='@scangym';
-    var tagW=ctx.measureText(tagText).width+Math.round(20*scale);
-    var tagH=Math.round(32*scale);
-    var tagX=Math.round(16*scale);
-    var tagY=Math.round(16*scale);
-    var tagR=Math.round(tagH/2);
-    ctx.beginPath();
-    ctx.moveTo(tagX+tagR,tagY);ctx.lineTo(tagX+tagW-tagR,tagY);
-    ctx.arcTo(tagX+tagW,tagY,tagX+tagW,tagY+tagR,tagR);
-    ctx.lineTo(tagX+tagW,tagY+tagH-tagR);
-    ctx.arcTo(tagX+tagW,tagY+tagH,tagX+tagW-tagR,tagY+tagH,tagR);
-    ctx.lineTo(tagX+tagR,tagY+tagH);
-    ctx.arcTo(tagX,tagY+tagH,tagX,tagY+tagH-tagR,tagR);
-    ctx.lineTo(tagX,tagY+tagR);
-    ctx.arcTo(tagX,tagY,tagX+tagR,tagY,tagR);
-    ctx.closePath();ctx.fill();
-    ctx.fillStyle=brandColor;
-    ctx.textAlign='left';ctx.textBaseline='middle';
-    ctx.fillText(tagText,tagX+Math.round(10*scale),tagY+tagH/2);
-
-    // Bottom-left: gym name
-    if(gymName){
-      var nameFont=Math.round(13*scale);
-      ctx.font='600 '+nameFont+'px -apple-system,BlinkMacSystemFont,sans-serif';
-      var nameText=gymName.length>35?gymName.substring(0,35)+'…':gymName;
-      var nameW=ctx.measureText(nameText).width+Math.round(20*scale);
-      var nameH=Math.round(30*scale);
-      var nameX=Math.round(16*scale);
-      var nameY=H-nameH-Math.round(20*scale);
-      var nameR=Math.round(nameH/2);
-      ctx.fillStyle='rgba(0,0,0,0.5)';
-      ctx.beginPath();
-      ctx.moveTo(nameX+nameR,nameY);ctx.lineTo(nameX+nameW-nameR,nameY);
-      ctx.arcTo(nameX+nameW,nameY,nameX+nameW,nameY+nameR,nameR);
-      ctx.lineTo(nameX+nameW,nameY+nameH-nameR);
-      ctx.arcTo(nameX+nameW,nameY+nameH,nameX+nameW-nameR,nameY+nameH,nameR);
-      ctx.lineTo(nameX+nameR,nameY+nameH);
-      ctx.arcTo(nameX,nameY+nameH,nameX,nameY+nameH-nameR,nameR);
-      ctx.lineTo(nameX,nameY+nameR);
-      ctx.arcTo(nameX,nameY,nameX+nameR,nameY,nameR);
-      ctx.closePath();ctx.fill();
-      ctx.fillStyle='#fff';ctx.textAlign='left';ctx.textBaseline='middle';
-      ctx.fillText(nameText,nameX+Math.round(10*scale),nameY+nameH/2);
-    }
+    // Glow shadow
+    ctx.shadowColor='rgba(255,109,0,0.5)';ctx.shadowBlur=Math.round(10*scale);
+    ctx.beginPath();ctx.arc(circX,circY,circR,0,Math.PI*2);ctx.fill();
+    ctx.shadowColor='transparent';ctx.shadowBlur=0;
+    ctx.globalAlpha=1.0;
 
     // Download
     try{
