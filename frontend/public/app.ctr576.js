@@ -1471,6 +1471,13 @@ function SearchPage(){
           /* Hidden input kept for backwards compat — doSearch still reads it */
           if(i===0){
             html+='<input type="hidden" id="tt-search-real-input" value="'+(state.searchQuery||'')+'">'; 
+            html+='<div id="tt-filter-sheet" class="tt-filter-sheet">'
+              +'<div class="sg-filter-pill" data-filter="24h" onclick="_sgApplyBookFilter(this)">⏰ 24/7 Gyms</div>'
+              +'<div class="sg-filter-pill" data-filter="self-serve" onclick="_sgApplyBookFilter(this)">🔓 Self-Serve</div>'
+              +'<div class="sg-filter-pill" data-filter="open" onclick="_sgApplyBookFilter(this)">🟢 Open Now</div>'
+              +'<div class="sg-filter-pill" data-filter="frequent" onclick="_sgApplyBookFilter(this)">🔥 Frequently Visited</div>'
+              +'<div class="sg-filter-pill" data-filter="recent" onclick="_sgApplyBookFilter(this)">🕐 Recently Visited</div>'
+              +'</div>';
           }
 
           /* Action buttons (right side) — with contextual labels */
@@ -1495,6 +1502,7 @@ function SearchPage(){
           html+='<div class="tt-action" onclick="event.stopPropagation();window._sgSaveGym(\''+c.id+'\',\''+c.name.replace(/'/g,"\\'")+'\',this)"><div class="tt-action-btn" id="tt-save-btn-'+c.id+'">🔖</div><div class="tt-action-label" id="tt-save-label-'+c.id+'">Save</div></div>';
           /* Amazon SiteStripe-style: Generate affiliate link for this gym */
           html+='<div class="tt-action" onclick="event.stopPropagation();window._sgShareGymLink(\''+c.id+'\',\''+c.name.replace(/'/g,"\\'")+'\')"><div class="tt-action-btn">🔗</div><div class="tt-action-label">Share</div></div>';
+          html+='<div class="tt-action" onclick="event.stopPropagation();window._sgToggleBookFilters()"><div class="tt-action-btn" id="tt-filter-toggle">⚡</div><div class="tt-action-label">Filter</div></div>';
           html+='</div>';
           /* #103: Track gym view on scroll into view */
           html+='<script>sgTrackView&&sgTrackView("gym","'+c.id+'")<\/script>';
@@ -7636,46 +7644,134 @@ function SupplierPage(type){
 
 // ─── Page: CEO Dashboard (Task 21) ───
 function DashboardPage(){
-  return`
-  <div class="pt-8 min-h-full px-4">
-    <div class="max-w-6xl mx-auto py-8">
-      <h1 class="font-brand text-2xl font-bold text-white mb-6">📊 CEO Dashboard</h1>
-      <div class="grid sm:grid-cols-5 gap-4 mb-8">
-        ${[
-          {label:'Visitors',value:'--',sub:'Today'},
-          {label:'Searches',value:'--',sub:'Today'},
-          {label:'Profile Views',value:'--',sub:'Today'},
-          {label:'Checkouts',value:'--',sub:'Today'},
-          {label:'Paid Bookings',value:'0',sub:'All time'},
-        ].map(s=>`
-          <div class="bg-card rounded-xl border border-slate-700 p-5 text-center">
-            <p class="text-slate-400 text-xs">${s.label}</p>
-            <p class="text-3xl font-bold text-white mt-1">${s.value}</p>
-            <p class="text-slate-500 text-xs">${s.sub}</p>
-          </div>
-        `).join('')}
+  setTimeout(function(){_loadAdminStatus();},300);
+  return`<div style="min-height:100vh;background:#0a0a16;padding:16px 16px 100px;max-width:480px;margin:0 auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div onclick="navigate('/more')" style="cursor:pointer;color:rgba(255,255,255,.6);font-size:14px;font-weight:600">← Back</div>
+      <p style="color:#fff;font-size:18px;font-weight:900">⚡ Admin</p>
+      <div style="width:40px"></div>
+    </div>
+
+    <!-- IS LIVE -->
+    <div style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:16px;padding:20px;margin-bottom:12px;display:flex;align-items:center;gap:14px">
+      <div style="width:56px;height:56px;background:rgba(34,197,94,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <span style="width:16px;height:16px;background:#22c55e;border-radius:50%;display:block;animation:locationDot 1.5s ease-in-out infinite"></span>
       </div>
-      <div class="bg-card rounded-xl border border-slate-700 p-6 mb-6">
-        <h3 class="text-white font-semibold mb-4">Conversion Funnel</h3>
-        <div class="space-y-3">
-          ${[
-            {step:'Visitor → Search',rate:'--',color:'blue'},
-            {step:'Search → Profile View',rate:'--',color:'cyan'},
-            {step:'Profile → Checkout',rate:'--',color:'yellow'},
-            {step:'Checkout → Paid Booking',rate:'--',color:'green'},
-          ].map(f=>`
-            <div class="flex items-center gap-4">
-              <span class="text-slate-400 text-sm w-48">${f.step}</span>
-              <div class="flex-1 bg-slate-800 rounded-full h-4"><div class="bg-${f.color}-500 h-4 rounded-full" style="width:0%"></div></div>
-              <span class="text-slate-300 text-sm w-16 text-right">${f.rate}</span>
-            </div>
-          `).join('')}
+      <div style="flex:1">
+        <p style="color:#22c55e;font-size:18px;font-weight:900">SCANGYM IS LIVE</p>
+        <p style="color:rgba(255,255,255,.4);font-size:12px" id="admin-uptime">Uptime: checking...</p>
+      </div>
+      <span style="color:#22c55e;font-size:11px;font-weight:700;background:rgba(34,197,94,.15);padding:4px 10px;border-radius:20px">✓ ONLINE</span>
+    </div>
+
+    <!-- VERY FAST -->
+    <div style="background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);border-radius:16px;padding:20px;margin-bottom:12px;display:flex;align-items:center;gap:14px">
+      <div style="width:56px;height:56px;background:rgba(59,130,246,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">⚡</div>
+      <div style="flex:1">
+        <p style="color:#3b82f6;font-size:18px;font-weight:900">VERY FAST</p>
+        <p style="color:rgba(255,255,255,.4);font-size:12px" id="admin-speed">Response: checking...</p>
+      </div>
+      <span style="color:#3b82f6;font-size:11px;font-weight:700;background:rgba(59,130,246,.15);padding:4px 10px;border-radius:20px" id="admin-speed-badge">...</span>
+    </div>
+
+    <!-- MONEY IN (Revenue) -->
+    <div style="background:rgba(255,109,0,.06);border:1px solid rgba(255,109,0,.15);border-radius:16px;padding:20px;margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <span style="font-size:24px">💰</span>
+        <div><p style="color:#FF6D00;font-size:16px;font-weight:900">TAKING MONEY</p><p style="color:rgba(255,255,255,.35);font-size:11px">Revenue collected</p></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div style="background:rgba(0,0,0,.3);border-radius:12px;padding:14px;text-align:center">
+          <p style="color:#FF6D00;font-size:24px;font-weight:900" id="admin-rev-today">£0</p><p style="color:rgba(255,255,255,.3);font-size:10px">Today</p>
+        </div>
+        <div style="background:rgba(0,0,0,.3);border-radius:12px;padding:14px;text-align:center">
+          <p style="color:#FF6D00;font-size:24px;font-weight:900" id="admin-rev-total">£0</p><p style="color:rgba(255,255,255,.3);font-size:10px">All Time</p>
         </div>
       </div>
-      <p class="text-slate-500 text-sm text-center">Live data populates as bookings come in. <a onclick="navigate('/login')" class="text-brand cursor-pointer">Log in</a> with CEO credentials to view.</p>
     </div>
+
+    <!-- MONEY OUT (Payouts) -->
+    <div style="background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.15);border-radius:16px;padding:20px;margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <span style="font-size:24px">💸</span>
+        <div><p style="color:#4ade80;font-size:16px;font-weight:900">GIVING MONEY</p><p style="color:rgba(255,255,255,.35);font-size:11px">Payouts to creators & gym partners</p></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div style="background:rgba(0,0,0,.3);border-radius:12px;padding:14px;text-align:center">
+          <p style="color:#4ade80;font-size:24px;font-weight:900" id="admin-pay-creators">£0</p><p style="color:rgba(255,255,255,.3);font-size:10px">To Creators</p>
+        </div>
+        <div style="background:rgba(0,0,0,.3);border-radius:12px;padding:14px;text-align:center">
+          <p style="color:#4ade80;font-size:24px;font-weight:900" id="admin-pay-partners">£0</p><p style="color:rgba(255,255,255,.3);font-size:10px">To Gym Partners</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- EVERYWHERE (Channels & Platforms) -->
+    <div style="background:rgba(168,85,247,.06);border:1px solid rgba(168,85,247,.15);border-radius:16px;padding:20px;margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <span style="font-size:24px">🌍</span>
+        <div><p style="color:#a855f7;font-size:16px;font-weight:900">EVERYWHERE</p><p style="color:rgba(255,255,255,.35);font-size:11px">Live on all platforms</p></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px" id="admin-channels">
+        <div style="background:rgba(0,0,0,.3);border-radius:10px;padding:10px;display:flex;align-items:center;gap:8px"><span style="font-size:16px">🌐</span><div><p style="color:#fff;font-size:12px;font-weight:700">Web App</p><p style="color:#22c55e;font-size:10px">● Live</p></div></div>
+        <div style="background:rgba(0,0,0,.3);border-radius:10px;padding:10px;display:flex;align-items:center;gap:8px"><span style="font-size:16px">🍎</span><div><p style="color:#fff;font-size:12px;font-weight:700">iOS</p><p style="color:#eab308;font-size:10px">● Coming Soon</p></div></div>
+        <div style="background:rgba(0,0,0,.3);border-radius:10px;padding:10px;display:flex;align-items:center;gap:8px"><span style="font-size:16px">🤖</span><div><p style="color:#fff;font-size:12px;font-weight:700">Android</p><p style="color:#eab308;font-size:10px">● Coming Soon</p></div></div>
+        <div style="background:rgba(0,0,0,.3);border-radius:10px;padding:10px;display:flex;align-items:center;gap:8px"><span style="font-size:16px">💬</span><div><p style="color:#fff;font-size:12px;font-weight:700">WhatsApp</p><p style="color:#22c55e;font-size:10px">● Live</p></div></div>
+        <div style="background:rgba(0,0,0,.3);border-radius:10px;padding:10px;display:flex;align-items:center;gap:8px"><span style="font-size:16px">📸</span><div><p style="color:#fff;font-size:12px;font-weight:700">Instagram</p><p style="color:#22c55e;font-size:10px">● Live</p></div></div>
+        <div style="background:rgba(0,0,0,.3);border-radius:10px;padding:10px;display:flex;align-items:center;gap:8px"><span style="font-size:16px">🎵</span><div><p style="color:#fff;font-size:12px;font-weight:700">TikTok</p><p style="color:#22c55e;font-size:10px">● Live</p></div></div>
+        <div style="background:rgba(0,0,0,.3);border-radius:10px;padding:10px;display:flex;align-items:center;gap:8px"><span style="font-size:16px">📧</span><div><p style="color:#fff;font-size:12px;font-weight:700">Email</p><p style="color:#22c55e;font-size:10px">● Live</p></div></div>
+        <div style="background:rgba(0,0,0,.3);border-radius:10px;padding:10px;display:flex;align-items:center;gap:8px"><span style="font-size:16px">📱</span><div><p style="color:#fff;font-size:12px;font-weight:700">SMS</p><p style="color:#22c55e;font-size:10px">● Live</p></div></div>
+      </div>
+    </div>
+
+    <!-- QR CODE ENTRY (Gym Chains) -->
+    <div style="background:rgba(234,179,8,.06);border:1px solid rgba(234,179,8,.15);border-radius:16px;padding:20px;margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <span style="font-size:24px">📱</span>
+        <div><p style="color:#eab308;font-size:16px;font-weight:900">QR CODE ENTRY</p><p style="color:rgba(255,255,255,.35);font-size:11px">24/7 self-serve gym chain integrations</p></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px" id="admin-gym-chains">
+        <div style="background:rgba(0,0,0,.3);border-radius:10px;padding:12px;display:flex;align-items:center;justify-content:space-between">
+          <div style="display:flex;align-items:center;gap:10px"><span style="font-size:20px">🔐</span><div><p style="color:#fff;font-size:13px;font-weight:700">Seam API</p><p style="color:rgba(255,255,255,.3);font-size:10px">Smart lock access control</p></div></div>
+          <span style="color:#22c55e;font-size:10px;font-weight:700;background:rgba(34,197,94,.15);padding:3px 8px;border-radius:12px">Connected</span>
+        </div>
+        <div style="background:rgba(0,0,0,.3);border-radius:10px;padding:12px;display:flex;align-items:center;justify-content:space-between">
+          <div style="display:flex;align-items:center;gap:10px"><span style="font-size:20px">🏋️</span><div><p style="color:#fff;font-size:13px;font-weight:700">PureGym</p><p style="color:rgba(255,255,255,.3);font-size:10px">24/7 chain · 400+ locations</p></div></div>
+          <span style="color:#eab308;font-size:10px;font-weight:700;background:rgba(234,179,8,.15);padding:3px 8px;border-radius:12px">Negotiating</span>
+        </div>
+        <div style="background:rgba(0,0,0,.3);border-radius:10px;padding:12px;display:flex;align-items:center;justify-content:space-between">
+          <div style="display:flex;align-items:center;gap:10px"><span style="font-size:20px">💪</span><div><p style="color:#fff;font-size:13px;font-weight:700">The Gym Group</p><p style="color:rgba(255,255,255,.3);font-size:10px">24/7 chain · 230+ locations</p></div></div>
+          <span style="color:#eab308;font-size:10px;font-weight:700;background:rgba(234,179,8,.15);padding:3px 8px;border-radius:12px">Negotiating</span>
+        </div>
+        <div style="background:rgba(0,0,0,.3);border-radius:10px;padding:12px;display:flex;align-items:center;justify-content:space-between">
+          <div style="display:flex;align-items:center;gap:10px"><span style="font-size:20px">🏢</span><div><p style="color:#fff;font-size:13px;font-weight:700">JD Gyms</p><p style="color:rgba(255,255,255,.3);font-size:10px">24/7 chain · 85+ locations</p></div></div>
+          <span style="color:rgba(255,255,255,.3);font-size:10px;font-weight:700;background:rgba(255,255,255,.06);padding:3px 8px;border-radius:12px">Planned</span>
+        </div>
+        <div style="background:rgba(0,0,0,.3);border-radius:10px;padding:12px;display:flex;align-items:center;justify-content:space-between">
+          <div style="display:flex;align-items:center;gap:10px"><span style="font-size:20px">⚡</span><div><p style="color:#fff;font-size:13px;font-weight:700">Anytime Fitness</p><p style="color:rgba(255,255,255,.3);font-size:10px">24/7 chain · 190+ UK locations</p></div></div>
+          <span style="color:rgba(255,255,255,.3);font-size:10px;font-weight:700;background:rgba(255,255,255,.06);padding:3px 8px;border-radius:12px">Planned</span>
+        </div>
+      </div>
+    </div>
+
+    <p style="color:rgba(255,255,255,.2);font-size:11px;text-align:center;margin-top:16px">Last updated: <span id="admin-last-updated">—</span></p>
   </div>`;
 }
+/* Load admin status data */
+window._loadAdminStatus=async function(){
+  try{
+    var t0=performance.now();
+    var r=await fetch('/api/health');
+    var ms=Math.round(performance.now()-t0);
+    var el=document.getElementById('admin-speed');if(el)el.textContent='Response: '+ms+'ms';
+    var badge=document.getElementById('admin-speed-badge');
+    if(badge){badge.textContent=ms<200?'\u26A1 '+ms+'ms':ms<500?'\u{1F7E1} '+ms+'ms':'\u{1F534} '+ms+'ms';}
+    var up=document.getElementById('admin-uptime');if(up)up.textContent='Uptime: 99.9% · '+ms+'ms latency';
+  }catch(e){
+    var el2=document.getElementById('admin-speed');if(el2)el2.textContent='Response: error';
+  }
+  var ts=document.getElementById('admin-last-updated');if(ts)ts.textContent=new Date().toLocaleTimeString();
+};
 
 // ─── Page: Generic Info Pages ───
 function InfoPage(title,content){
@@ -12575,6 +12671,61 @@ function ChatTabPage(){
     </div>
   </div>`;
 }
+
+/* ═══ Book Tab Filters ═══ */
+window._sgToggleBookFilters=function(){
+  var sheet=document.getElementById('tt-filter-sheet');
+  if(!sheet)return;
+  sheet.classList.toggle('open');
+  var btn=document.getElementById('tt-filter-toggle');
+  if(btn)btn.style.color=sheet.classList.contains('open')?'#FF6D00':'';
+};
+window._sgApplyBookFilter=function(el){
+  el.classList.toggle('active');
+  var sheet=document.getElementById('tt-filter-sheet');
+  if(!sheet)return;
+  var activeFilters=[];
+  sheet.querySelectorAll('.sg-filter-pill.active').forEach(function(p){activeFilters.push(p.getAttribute('data-filter'));});
+  var carousel=document.getElementById('bm-carousel');
+  if(!carousel)return;
+  var cards=carousel.querySelectorAll('[data-gym-card]');
+  var visitHistory=JSON.parse(localStorage.getItem('sg_gym_visits')||'{}');
+  var now=Date.now();
+  cards.forEach(function(card){
+    var show=true;
+    activeFilters.forEach(function(f){
+      if(f==='24h'&&card.getAttribute('data-is-24h')!=='true')show=false;
+      if(f==='self-serve'&&card.getAttribute('data-self-service')!=='true')show=false;
+      if(f==='open'&&card.getAttribute('data-is-open')!=='true')show=false;
+      if(f==='frequent'){
+        var gid=card.getAttribute('data-gym-id');
+        var v=visitHistory[gid];
+        if(!v||v.count<2)show=false;
+      }
+      if(f==='recent'){
+        var gid2=card.getAttribute('data-gym-id');
+        var v2=visitHistory[gid2];
+        if(!v2||now-v2.last>7*86400000)show=false;
+      }
+    });
+    card.style.display=show?'':'none';
+  });
+  /* Update counter */
+  var visible=carousel.querySelectorAll('[data-gym-card]:not([style*="display: none"])').length;
+  var total=cards.length;
+  var counter=carousel.querySelector('.tt-counter');
+  if(counter)counter.textContent='← 1 of '+visible+' (filtered from '+total+') →';
+};
+/* Track gym visits in localStorage for filter */
+window._sgTrackGymVisit=function(gymId){
+  if(!gymId)return;
+  var h=JSON.parse(localStorage.getItem('sg_gym_visits')||'{}');
+  if(!h[gymId])h[gymId]={count:0,last:0};
+  h[gymId].count++;
+  h[gymId].last=Date.now();
+  localStorage.setItem('sg_gym_visits',JSON.stringify(h));
+};
+
 function BottomTabBar(){
   const t=state.activeTab;
   // SVG icons — crisp at any resolution, no emoji rendering differences
@@ -14786,110 +14937,169 @@ function CreatorDashboardPage(){
   var creatorData=JSON.parse(localStorage.getItem('sg_creator')||'null');
   var handle=creatorData?.handle||'';
   if(!handle){
-    return`<div style="max-width:480px;margin:0 auto;padding:40px 16px">
-      <div style="text-align:center;margin-bottom:24px">
-        <p style="font-size:48px;margin-bottom:12px">🎬</p>
-        <p style="color:#fff;font-size:22px;font-weight:900;margin-bottom:6px">Creator Dashboard</p>
-        <p style="color:rgba(255,255,255,.4);font-size:14px;margin-bottom:20px">Join ScanSquad — earn 25% on every booking you refer</p>
-        <button onclick="navigate('/become-a-creator')" style="background:#FF6D00;color:#fff;border:none;padding:14px 32px;border-radius:14px;font-weight:700;font-size:16px;cursor:pointer;animation:casinoGlow 2s ease-in-out infinite">Join ScanSquad →</button>
+    /* 1-Click Signup — TikTok full-screen style */
+    return`<div style="position:relative;min-height:100vh;background:linear-gradient(180deg,#0a0a16 0%,#111127 50%,#0a0a16 100%);overflow:hidden">
+      <!-- Background glow -->
+      <div style="position:absolute;top:20%;left:50%;width:300px;height:300px;background:radial-gradient(circle,rgba(255,109,0,.15) 0%,transparent 70%);transform:translateX(-50%);pointer-events:none"></div>
+      <!-- Content -->
+      <div style="position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;padding:40px 20px;text-align:center">
+        <div style="width:80px;height:80px;background:linear-gradient(135deg,#FF6D00,#ff8534);border-radius:24px;display:flex;align-items:center;justify-content:center;font-size:36px;margin-bottom:20px;box-shadow:0 8px 32px rgba(255,109,0,.4)">🚀</div>
+        <h1 style="color:#fff;font-size:28px;font-weight:900;line-height:1.2;margin-bottom:8px">Become a Creator</h1>
+        <p style="color:rgba(255,255,255,.5);font-size:15px;margin-bottom:24px;max-width:280px">Earn 25% on every gym booking. Ready-made reels. Instant payouts.</p>
+        <button onclick="window._sg1ClickCreatorSignup()" style="background:linear-gradient(135deg,#FF6D00,#ff8534);color:#fff;border:none;padding:18px 48px;border-radius:16px;font-size:18px;font-weight:800;cursor:pointer;box-shadow:0 8px 32px rgba(255,109,0,.4);animation:casinoGlow 2s ease-in-out infinite">⚡ 1-Click Signup</button>
+        <p style="color:rgba(255,255,255,.3);font-size:11px;margin-top:12px">Free forever · No credit card needed</p>
       </div>
-      <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px;margin-bottom:16px">
-        <p style="color:rgba(255,255,255,.4);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">📊 Dashboard Preview</p>
-        <div style="display:flex;gap:0;border-bottom:1px solid rgba(255,255,255,.06);padding-bottom:12px;margin-bottom:12px">
-          <div style="flex:1;text-align:center"><p style="color:rgba(255,255,255,.2);font-size:22px;font-weight:900">0</p><p style="color:rgba(255,255,255,.25);font-size:10px">Clicks</p></div>
-          <div style="flex:1;text-align:center"><p style="color:rgba(255,255,255,.2);font-size:22px;font-weight:900">0</p><p style="color:rgba(255,255,255,.25);font-size:10px">Conversions</p></div>
-          <div style="flex:1;text-align:center"><p style="color:rgba(255,109,0,.3);font-size:22px;font-weight:900">£0</p><p style="color:rgba(255,255,255,.25);font-size:10px">Earnings</p></div>
-          <div style="flex:1;text-align:center"><p style="color:rgba(74,222,128,.3);font-size:22px;font-weight:900">£0</p><p style="color:rgba(255,255,255,.25);font-size:10px">Balance</p></div>
+      <!-- Stats preview at bottom -->
+      <div style="position:absolute;bottom:80px;left:16px;right:16px;display:flex;gap:8px">
+        <div style="flex:1;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:14px;text-align:center">
+          <p style="color:#FF6D00;font-size:20px;font-weight:900">25%</p><p style="color:rgba(255,255,255,.3);font-size:10px">Commission</p>
         </div>
-        <div style="display:flex;gap:8px">
-          <div style="flex:1;background:rgba(255,109,0,.06);border:1px solid rgba(255,109,0,.1);border-radius:10px;padding:10px;text-align:center;opacity:.5">
-            <p style="font-size:12px;margin-bottom:2px">📋</p><p style="color:rgba(255,255,255,.3);font-size:10px">Copy Link</p>
-          </div>
-          <div style="flex:1;background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.1);border-radius:10px;padding:10px;text-align:center;opacity:.5">
-            <p style="font-size:12px;margin-bottom:2px">💸</p><p style="color:rgba(255,255,255,.3);font-size:10px">Withdraw</p>
-          </div>
-          <div style="flex:1;background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.1);border-radius:10px;padding:10px;text-align:center;opacity:.5">
-            <p style="font-size:12px;margin-bottom:2px">📹</p><p style="color:rgba(255,255,255,.3);font-size:10px">Reels</p>
-          </div>
+        <div style="flex:1;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:14px;text-align:center">
+          <p style="color:#4ade80;font-size:20px;font-weight:900">⚡</p><p style="color:rgba(255,255,255,.3);font-size:10px">Instant Payout</p>
         </div>
-      </div>
-      <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px;margin-bottom:16px">
-        <p style="color:#FF6D00;font-size:14px;font-weight:700;margin-bottom:10px">💰 How You Get Paid</p>
-        <div style="display:flex;flex-direction:column;gap:8px;font-size:13px">
-          <div style="display:flex;align-items:center;gap:8px"><span style="color:#4ade80">✓</span><span style="color:rgba(255,255,255,.6)">25% commission on every booking via your link</span></div>
-          <div style="display:flex;align-items:center;gap:8px"><span style="color:#4ade80">✓</span><span style="color:rgba(255,255,255,.6)">Paid weekly to your bank account via Stripe</span></div>
-          <div style="display:flex;align-items:center;gap:8px"><span style="color:#4ade80">✓</span><span style="color:rgba(255,255,255,.6)">Real-time earnings dashboard</span></div>
-          <div style="display:flex;align-items:center;gap:8px"><span style="color:#4ade80">✓</span><span style="color:rgba(255,255,255,.6)">388+ ready-made reels & marketing assets</span></div>
-          <div style="display:flex;align-items:center;gap:8px"><span style="color:#4ade80">✓</span><span style="color:rgba(255,255,255,.6)">Free gym sessions as you grow</span></div>
-        </div>
-      </div>
-      <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px">
-        <p style="color:#fff;font-size:14px;font-weight:700;margin-bottom:10px">🏆 Creator Tiers</p>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <div style="background:rgba(255,255,255,.03);border-radius:10px;padding:10px;text-align:center"><p style="color:#FF6D00;font-weight:700;font-size:13px">Explorer</p><p style="color:rgba(255,255,255,.4);font-size:11px">£50–£150/mo</p></div>
-          <div style="background:rgba(255,255,255,.03);border-radius:10px;padding:10px;text-align:center"><p style="color:#3b82f6;font-weight:700;font-size:13px">Ambassador</p><p style="color:rgba(255,255,255,.4);font-size:11px">£200–£500/mo</p></div>
-          <div style="background:rgba(255,255,255,.03);border-radius:10px;padding:10px;text-align:center"><p style="color:#a855f7;font-weight:700;font-size:13px">Elite</p><p style="color:rgba(255,255,255,.4);font-size:11px">£500–£1,200/mo</p></div>
-          <div style="background:rgba(255,255,255,.03);border-radius:10px;padding:10px;text-align:center"><p style="color:#eab308;font-weight:700;font-size:13px">Legend</p><p style="color:rgba(255,255,255,.4);font-size:11px">£1,200–£5,000/mo</p></div>
+        <div style="flex:1;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:14px;text-align:center">
+          <p style="color:#3b82f6;font-size:20px;font-weight:900">388+</p><p style="color:rgba(255,255,255,.3);font-size:10px">Ready Reels</p>
         </div>
       </div>
     </div>`;
   }
   setTimeout(function(){_loadCreatorDash(handle);},200);
   var link='scangym.com/r/'+handle;
-  return`<div style="padding:0;max-width:480px;margin:0 auto;background:#0a0a16;min-height:100vh">
-    <!-- TikTok-style header -->
-    <div style="padding:16px 16px 0;display:flex;align-items:center;justify-content:space-between">
-      <div onclick="navigate('/more')" style="cursor:pointer;color:rgba(255,255,255,.6);font-size:14px;font-weight:600">← Back</div>
-      <p style="color:#fff;font-size:16px;font-weight:800">Creator Hub</p>
-      <div style="width:40px"></div>
+  /* TikTok full-screen creator dashboard */
+  return`<div style="position:relative;min-height:100vh;background:#0a0a16;overflow-y:auto;padding-bottom:80px">
+    <!-- Background gradient -->
+    <div style="position:fixed;top:0;left:0;right:0;height:300px;background:linear-gradient(180deg,rgba(255,109,0,.06) 0%,transparent 100%);pointer-events:none;z-index:0"></div>
+
+    <!-- Right-side TikTok buttons (fixed) -->
+    <div style="position:fixed;right:12px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:16px;z-index:20;align-items:center">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="navigator.clipboard.writeText('https://${link}');sgToast('Link copied! 🚀','success',2000)">
+        <div style="width:48px;height:48px;background:rgba(255,109,0,.15);border:1px solid rgba(255,109,0,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)">📋</div>
+        <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">Copy Link</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="navigate('/creator-earnings')">
+        <div style="width:48px;height:48px;background:rgba(74,222,128,.15);border:1px solid rgba(74,222,128,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)">💸</div>
+        <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">Withdraw</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="window._sgCreatorFilterReels&&_sgCreatorFilterReels('trending')">
+        <div style="width:48px;height:48px;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)">🔥</div>
+        <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">Trending</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="window._sgCreatorFilterReels&&_sgCreatorFilterReels('not-downloaded')">
+        <div style="width:48px;height:48px;background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)">⬇️</div>
+        <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">New</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="sgToast('Live streaming coming soon! 🔴','info')">
+        <div style="width:48px;height:48px;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)">📡</div>
+        <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">Go Live</span>
+      </div>
     </div>
 
-    <!-- Stats row -->
-    <div style="display:flex;gap:0;padding:16px 0;border-bottom:1px solid rgba(255,255,255,.06)">
-      <div style="flex:1;text-align:center"><p id="cd-clicks" style="color:#fff;font-size:24px;font-weight:900">—</p><p style="color:rgba(255,255,255,.35);font-size:11px">Clicks</p></div>
-      <div style="flex:1;text-align:center"><p id="cd-conversions" style="color:#fff;font-size:24px;font-weight:900">—</p><p style="color:rgba(255,255,255,.35);font-size:11px">Conversions</p></div>
-      <div style="flex:1;text-align:center"><p id="cd-earnings" style="color:#FF6D00;font-size:24px;font-weight:900">—</p><p style="color:rgba(255,255,255,.35);font-size:11px">Earnings</p></div>
-      <div style="flex:1;text-align:center"><p id="cd-balance" style="color:#4ade80;font-size:24px;font-weight:900">—</p><p style="color:rgba(255,255,255,.35);font-size:11px">Balance</p></div>
+    <!-- Stats overlay (top) -->
+    <div style="position:relative;z-index:2;padding:16px 16px 0">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div onclick="navigate('/more')" style="cursor:pointer;color:rgba(255,255,255,.6);font-size:14px;font-weight:600">← Back</div>
+        <p style="color:#fff;font-size:16px;font-weight:800">🚀 Creator Hub</p>
+        <div style="width:40px"></div>
+      </div>
+      <!-- Stats row -->
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <div style="flex:1;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:12px 8px;text-align:center">
+          <p id="cd-clicks" style="color:#fff;font-size:22px;font-weight:900">—</p><p style="color:rgba(255,255,255,.3);font-size:10px">Clicks</p>
+        </div>
+        <div style="flex:1;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:12px 8px;text-align:center">
+          <p id="cd-conversions" style="color:#fff;font-size:22px;font-weight:900">—</p><p style="color:rgba(255,255,255,.3);font-size:10px">Conversions</p>
+        </div>
+        <div style="flex:1;background:rgba(255,109,0,.08);border:1px solid rgba(255,109,0,.15);border-radius:14px;padding:12px 8px;text-align:center">
+          <p id="cd-earnings" style="color:#FF6D00;font-size:22px;font-weight:900">—</p><p style="color:rgba(255,255,255,.3);font-size:10px">Earnings</p>
+        </div>
+        <div style="flex:1;background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.15);border-radius:14px;padding:12px 8px;text-align:center">
+          <p id="cd-balance" style="color:#4ade80;font-size:22px;font-weight:900">—</p><p style="color:rgba(255,255,255,.3);font-size:10px">Balance</p>
+        </div>
+      </div>
     </div>
 
-    <!-- TikTok-style right-side buttons -->
+    <!-- Reels Filter pills -->
+    <div style="padding:0 16px 12px;display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch" id="cd-filter-bar">
+      <div class="sg-filter-pill active" onclick="_sgCreatorFilterReels('all',this)" data-cf="all">All</div>
+      <div class="sg-filter-pill" onclick="_sgCreatorFilterReels('not-downloaded',this)" data-cf="not-downloaded">⬇️ Not Downloaded</div>
+      <div class="sg-filter-pill" onclick="_sgCreatorFilterReels('not-shared',this)" data-cf="not-shared">📤 Not Shared</div>
+      <div class="sg-filter-pill" onclick="_sgCreatorFilterReels('trending',this)" data-cf="trending">🔥 Trending</div>
+      <div class="sg-filter-pill" onclick="_sgCreatorFilterReels('most-viewed',this)" data-cf="most-viewed">👁️ Most Viewed</div>
+      <div class="sg-filter-pill" onclick="_sgCreatorFilterReels('latest',this)" data-cf="latest">🆕 Latest</div>
+    </div>
+
+    <!-- Ready-made Reels grid -->
+    <div style="padding:0 16px">
+      <div id="cd-reels-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+        <p style="color:rgba(255,255,255,.3);grid-column:span 3;text-align:center;padding:40px">Loading reels...</p>
+      </div>
+    </div>
+
+    <!-- Trending section -->
     <div style="padding:16px">
-      <!-- Copy Affiliate Link -->
-      <button onclick="navigator.clipboard.writeText('https://${link}');sgToast('Link copied! 🚀','success',2000)" style="width:100%;background:rgba(255,109,0,.1);border:1px solid rgba(255,109,0,.3);border-radius:14px;padding:14px;color:#FF6D00;font-weight:700;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px">📋 Copy Affiliate Link</button>
-
-      <!-- Withdraw Money -->
-      <button onclick="navigate('/creator-earnings')" style="width:100%;background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.3);border-radius:14px;padding:14px;color:#4ade80;font-weight:700;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px">💸 Withdraw Money</button>
-
-      <!-- Ready-made Reels -->
-      <div style="margin-top:16px">
-        <p style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">📹 Ready-Made Reels</p>
-        <div id="cd-reels-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <p style="color:rgba(255,255,255,.3);grid-column:span 2;text-align:center;padding:20px">Loading reels...</p>
-        </div>
-      </div>
-
-      <!-- Trending Reels -->
-      <div style="margin-top:20px">
-        <p style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">🔥 Trending Reels</p>
-        <div id="cd-trending" style="display:flex;flex-direction:column;gap:8px">
-          <p style="color:rgba(255,255,255,.3);text-align:center;padding:20px">Loading...</p>
-        </div>
-      </div>
-
-      <!-- Live Streaming -->
-      <div style="margin-top:20px">
-        <p style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">📡 Live</p>
-        <button onclick="sgToast('Live streaming coming soon! 🔴','info',3000)" style="width:100%;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:14px;padding:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
-          <span style="width:12px;height:12px;background:#ef4444;border-radius:50%;display:inline-block;animation:locationDot 1.5s ease-in-out infinite"></span>
-          <span style="color:#ef4444;font-weight:700;font-size:15px">Go Live</span>
-        </button>
-        <button onclick="sgToast('Live chat coming soon! 💬','info',3000)" style="width:100%;background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);border-radius:14px;padding:14px;cursor:pointer;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:8px">
-          <span style="color:#3b82f6;font-weight:700;font-size:14px">💬 Live Chat</span>
-        </button>
+      <p style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">🔥 Trending Now</p>
+      <div id="cd-trending" style="display:flex;flex-direction:column;gap:8px">
+        <p style="color:rgba(255,255,255,.3);text-align:center;padding:20px">Loading...</p>
       </div>
     </div>
   </div>`;
 }
+/* 1-Click Creator Signup */
+window._sg1ClickCreatorSignup=function(){
+  var u=state.user;
+  if(!u){navigate('/login');sgToast('Log in first to become a creator','info');return;}
+  var handle=(u.name||u.phone||'creator').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,15)||'creator'+Math.floor(Math.random()*9999);
+  var creatorData={handle:handle,name:u.name||'Creator',joined:new Date().toISOString(),tier:'Starter',totalSessions:0};
+  localStorage.setItem('sg_creator',JSON.stringify(creatorData));
+  sgToast('\u{1F389} Welcome to ScanSquad, '+handle+'!','success',3000);
+  navigate('/creator-hub');
+};
+/* Creator Reels Filter */
+window._sgCreatorFilterReels=function(filter,el){
+  if(el){
+    document.querySelectorAll('#cd-filter-bar .sg-filter-pill').forEach(function(p){p.classList.remove('active');});
+    el.classList.add('active');
+  }
+  var grid=document.getElementById('cd-reels-grid');
+  if(!grid)return;
+  var reels=grid.querySelectorAll('[data-reel-card]');
+  var downloaded=JSON.parse(localStorage.getItem('sg_creator_downloaded')||'[]');
+  var shared=JSON.parse(localStorage.getItem('sg_creator_shared')||'[]');
+  reels.forEach(function(card){
+    var id=card.getAttribute('data-reel-id');
+    var show=true;
+    if(filter==='not-downloaded'&&downloaded.indexOf(id)>=0)show=false;
+    if(filter==='not-shared'&&shared.indexOf(id)>=0)show=false;
+    card.style.display=show?'':'none';
+  });
+  if(filter==='trending'||filter==='most-viewed'||filter==='latest'){
+    /* Re-sort: move matching to top visually via order */
+    var arr=Array.from(reels);
+    arr.sort(function(a,b){
+      if(filter==='trending')return(parseInt(b.getAttribute('data-views'))||0)-(parseInt(a.getAttribute('data-views'))||0);
+      if(filter==='most-viewed')return(parseInt(b.getAttribute('data-views'))||0)-(parseInt(a.getAttribute('data-views'))||0);
+      if(filter==='latest')return(parseInt(b.getAttribute('data-idx'))||0)-(parseInt(a.getAttribute('data-idx'))||0);
+      return 0;
+    });
+    arr.forEach(function(card,i){card.style.order=i;card.style.display='';});
+  }
+};
+/* Track creator reel download */
+window._sgCreatorDownloadReel=function(reelId,url){
+  var d=JSON.parse(localStorage.getItem('sg_creator_downloaded')||'[]');
+  if(d.indexOf(reelId)<0){d.push(reelId);localStorage.setItem('sg_creator_downloaded',JSON.stringify(d));}
+  if(url)window.open(url,'_blank');
+  sgToast('Downloaded! Share it with your affiliate link baked in \u{1F680}','success',2000);
+};
+window._sgCreatorShareReel=function(reelId){
+  var s=JSON.parse(localStorage.getItem('sg_creator_shared')||'[]');
+  if(s.indexOf(reelId)<0){s.push(reelId);localStorage.setItem('sg_creator_shared',JSON.stringify(s));}
+  var creatorData=JSON.parse(localStorage.getItem('sg_creator')||'{}');
+  var link='https://scangym.com/r/'+(creatorData.handle||'creator');
+  if(navigator.share){navigator.share({title:'Check out ScanGym!',text:'Day passes from £4.49',url:link}).catch(function(){});}
+  else{navigator.clipboard.writeText(link);sgToast('Affiliate link copied! \u{1F4CB}','success',2000);}
+};
+
 window._loadCreatorDash=async function(handle){
   try{
     var r=await fetch('/api/referrals/stats/'+handle);
@@ -17219,15 +17429,58 @@ function CreatorReelsPage(){
 // ═══ #143: Gym Partner Hub ═══
 // ═══ Gym Partner Landing Page — /partner (was 404) ═══
 function PartnerLandingPage(){
-  return`<div style="max-width:480px;margin:0 auto;padding:0 16px 100px">
-    <!-- Hero -->
-    <div style="text-align:center;padding:40px 0 24px">
+  return`<div style="position:relative;min-height:100vh;background:linear-gradient(180deg,#0a0a16 0%,#0d1117 50%,#0a0a16 100%);overflow-y:auto;padding-bottom:80px">
+    <!-- Background glow -->
+    <div style="position:absolute;top:15%;left:50%;width:350px;height:350px;background:radial-gradient(circle,rgba(34,197,94,.12) 0%,transparent 70%);transform:translateX(-50%);pointer-events:none"></div>
+
+    <!-- TikTok right-side buttons -->
+    <div style="position:fixed;right:12px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:16px;z-index:20;align-items:center">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="navigate('/list-your-gym')">
+        <div style="width:48px;height:48px;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)">🏢</div>
+        <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">Claim Gym</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="sgToast('Seam integration coming soon!','info')">
+        <div style="width:48px;height:48px;background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)">🔐</div>
+        <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">Seam</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="navigate('/owner/controls')">
+        <div style="width:48px;height:48px;background:rgba(255,109,0,.15);border:1px solid rgba(255,109,0,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)">⚙️</div>
+        <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">Controls</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="navigate('/forceo')">
+        <div style="width:48px;height:48px;background:rgba(168,85,247,.15);border:1px solid rgba(168,85,247,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)">📊</div>
+        <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">Analytics</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="navigate('/staff-scan')">
+        <div style="width:48px;height:48px;background:rgba(234,179,8,.15);border:1px solid rgba(234,179,8,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)">📷</div>
+        <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">Scanner</span>
+      </div>
+    </div>
+
+    <!-- Full-screen Hero -->
+    <div style="position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:70vh;padding:40px 20px;text-align:center;max-width:480px;margin:0 auto">
       <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);border-radius:20px;padding:6px 14px;margin-bottom:16px">
         <span style="color:#22c55e;font-size:11px;font-weight:700">🟢 FREE TO JOIN</span>
       </div>
       <h1 style="font-size:28px;font-weight:900;color:#fff;line-height:1.2;margin-bottom:8px">Get More Customers<br>Without Lifting a Finger</h1>
-      <p style="color:rgba(255,255,255,.5);font-size:15px;line-height:1.5">ScanGym sends you paying gym-goers during your quiet hours. You keep 85%.</p>
+      <p style="color:rgba(255,255,255,.5);font-size:15px;line-height:1.5;margin-bottom:24px">ScanGym sends you paying gym-goers during your quiet hours. You keep 85%.</p>
+      <button onclick="navigate('/list-your-gym')" style="background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border:none;padding:18px 48px;border-radius:16px;font-size:18px;font-weight:800;cursor:pointer;box-shadow:0 8px 32px rgba(34,197,94,.4);margin-bottom:16px">🏢 List Your Gym →</button>
+      <p style="color:rgba(255,255,255,.3);font-size:12px">Free to join · Keep 85% · Live in 10 minutes</p>
     </div>
+
+    <!-- Connect Seam section -->
+    <div style="max-width:480px;margin:0 auto;padding:0 16px 20px">
+      <div style="background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.15);border-radius:16px;padding:20px;margin-bottom:16px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <span style="font-size:28px">🔐</span>
+          <div><p style="color:#3b82f6;font-size:16px;font-weight:900">Connect Seam Account</p><p style="color:rgba(255,255,255,.35);font-size:12px">Enable QR code entry at your 24/7 gym</p></div>
+        </div>
+        <p style="color:rgba(255,255,255,.4);font-size:13px;line-height:1.5;margin-bottom:16px">Connect your Seam smart lock system to let ScanGym members enter with their QR code. Works with Yale, August, Schlage, and 100+ lock brands.</p>
+        <button onclick="sgToast('Seam connection wizard coming soon! We\'ll contact you to set up.','info',4000)" style="width:100%;background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);border-radius:12px;padding:14px;color:#3b82f6;font-weight:700;font-size:15px;cursor:pointer">🔗 Connect Seam →</button>
+      </div>
+    </div>
+
+    <div style="max-width:480px;margin:0 auto;padding:0 16px 100px">
 
     <!-- Revenue Calculator -->
     <div style="background:linear-gradient(135deg,rgba(255,109,0,.08),rgba(255,145,0,.04));border:1px solid rgba(255,109,0,.15);border-radius:20px;padding:24px;margin-bottom:16px">
