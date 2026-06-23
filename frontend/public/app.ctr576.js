@@ -17572,7 +17572,11 @@ function PartnerLandingPage(){
     <!-- TikTok right-side buttons -->
     <div style="position:fixed;right:12px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:16px;z-index:20;align-items:center">
       <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="navigate('/list-your-gym')">
-        <div style="width:48px;height:48px;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)">🏢</div>
+        <div style="width:52px;height:52px;background:linear-gradient(135deg,#22c55e,#16a34a);border:2px solid rgba(34,197,94,.5);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 4px 16px rgba(34,197,94,.35)">🏢</div>
+        <span style="color:#22c55e;font-size:9px;font-weight:700">List Gym</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="navigate('/list-your-gym')">
+        <div style="width:48px;height:48px;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)">📋</div>
         <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">Claim Gym</span>
       </div>
       <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="_sgConnectSeam()">
@@ -17604,15 +17608,63 @@ function PartnerLandingPage(){
       <p style="color:rgba(255,255,255,.3);font-size:12px">Free to join · Keep 85% · Live in 10 minutes</p>
     </div>
 
-    <!-- Connect Seam section -->
-    <div style="max-width:480px;margin:0 auto;padding:0 16px 20px">
-      <div style="background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.15);border-radius:16px;padding:20px;margin-bottom:16px">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-          <span style="font-size:28px">🔐</span>
-          <div><p style="color:#3b82f6;font-size:16px;font-weight:900">Connect Seam Account</p><p style="color:rgba(255,255,255,.35);font-size:12px">Enable QR code entry at your 24/7 gym</p></div>
+    <!-- Full-Screen Seam Section — TikTok style -->
+    <div style="position:relative;width:100%;min-height:100vh;background:linear-gradient(180deg,#f8f9fa 0%,#e9ecef 40%,#0a0a16 60%,#0a0a16 100%);display:flex;flex-direction:column;align-items:center;overflow:hidden">
+      <!-- Seam branding top -->
+      <div style="padding:32px 20px 0;text-align:center;width:100%;z-index:2">
+        <div style="display:inline-flex;align-items:center;gap:8px;margin-bottom:8px">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" fill="#6366f1"/></svg>
+          <span style="font-size:20px;font-weight:900;color:#1a1a2e;letter-spacing:-0.5px">seam</span>
         </div>
-        <p style="color:rgba(255,255,255,.4);font-size:13px;line-height:1.5;margin-bottom:16px">Connect your Seam smart lock system to let ScanGym members enter with their QR code. Works with Yale, August, Schlage, and 100+ lock brands.</p>
-        <button onclick="_sgConnectSeam()" style="width:100%;background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);border-radius:12px;padding:14px;color:#3b82f6;font-weight:700;font-size:15px;cursor:pointer">🔗 Connect Seam →</button>
+        <p style="color:rgba(26,26,46,.4);font-size:11px;letter-spacing:0.5px;text-transform:uppercase;font-weight:600">POWERING MEMBER ACCESS</p>
+      </div>
+
+      <!-- 3D Hardware Visual -->
+      <div style="position:relative;width:100%;flex:1;display:flex;align-items:center;justify-content:center;min-height:340px;z-index:1">
+        <!-- CSS 3D Turnstile illustration -->
+        <div style="position:relative;width:280px;height:280px">
+          <!-- Left device -->
+          <div style="position:absolute;left:10px;bottom:30px;width:120px;height:160px;background:linear-gradient(135deg,#e8eaed,#f5f5f5);border-radius:8px;box-shadow:10px 10px 30px rgba(0,0,0,.1),-5px -5px 20px rgba(255,255,255,.8);transform:perspective(800px) rotateY(-15deg) rotateX(5deg)">
+            <div style="position:absolute;top:15px;left:15px;width:30px;height:40px;background:linear-gradient(135deg,#d1d5db,#e5e7eb);border-radius:4px"></div>
+            <div style="position:absolute;top:20px;left:20px;width:8px;height:8px;background:#22c55e;border-radius:50%;box-shadow:0 0 8px rgba(34,197,94,.6)"></div>
+            <div style="position:absolute;top:85px;left:0;right:0;height:3px;background:linear-gradient(90deg,#22c55e,#4ade80);box-shadow:0 0 10px rgba(34,197,94,.4)"></div>
+            <div style="position:absolute;top:92px;left:0;right:0;height:2px;background:linear-gradient(90deg,#22c55e,#4ade80);opacity:.5"></div>
+          </div>
+          <!-- Right device -->
+          <div style="position:absolute;right:10px;bottom:50px;width:100px;height:140px;background:linear-gradient(135deg,#f0f0f0,#fafafa);border-radius:6px;box-shadow:8px 8px 25px rgba(0,0,0,.08),-4px -4px 15px rgba(255,255,255,.9);transform:perspective(800px) rotateY(15deg) rotateX(5deg)">
+            <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:20px;height:30px;background:linear-gradient(135deg,#d1d5db,#e5e7eb);border-radius:3px"></div>
+            <div style="position:absolute;top:75px;left:0;right:0;height:3px;background:linear-gradient(90deg,#22c55e,#4ade80);box-shadow:0 0 10px rgba(34,197,94,.4)"></div>
+            <div style="position:absolute;top:82px;left:0;right:0;height:2px;background:linear-gradient(90deg,#22c55e,#4ade80);opacity:.5"></div>
+          </div>
+          <!-- Floor shadow/arrows -->
+          <div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:200px;height:30px;background:radial-gradient(ellipse,rgba(0,0,0,.08) 0%,transparent 70%)"></div>
+        </div>
+      </div>
+
+      <!-- Content overlay at bottom -->
+      <div style="position:relative;z-index:2;width:100%;padding:0 24px 24px;text-align:center">
+        <h2 style="font-size:26px;font-weight:900;color:#fff;line-height:1.15;margin-bottom:8px">Powering Member<br>Access for Fitness</h2>
+        <p style="color:rgba(255,255,255,.5);font-size:14px;line-height:1.5;margin-bottom:20px;max-width:320px;margin-left:auto;margin-right:auto">Enable 24/7 member access with QR code entry. Works with Yale, August, Schlage &amp; 100+ lock brands.</p>
+
+        <!-- Lock brand logos -->
+        <div style="display:flex;justify-content:center;gap:16px;margin-bottom:24px;flex-wrap:wrap">
+          <span style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:6px 12px;font-size:11px;color:rgba(255,255,255,.5);font-weight:600">Yale</span>
+          <span style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:6px 12px;font-size:11px;color:rgba(255,255,255,.5);font-weight:600">August</span>
+          <span style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:6px 12px;font-size:11px;color:rgba(255,255,255,.5);font-weight:600">Schlage</span>
+          <span style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:6px 12px;font-size:11px;color:rgba(255,255,255,.5);font-weight:600">Salto</span>
+          <span style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:6px 12px;font-size:11px;color:rgba(255,255,255,.5);font-weight:600">Brivo</span>
+        </div>
+
+        <!-- Connect Seam CTA -->
+        <button onclick="_sgConnectSeam()" style="width:100%;max-width:360px;background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;border:none;padding:18px 32px;border-radius:16px;font-size:18px;font-weight:800;cursor:pointer;box-shadow:0 8px 32px rgba(99,102,241,.4);margin-bottom:12px;display:inline-block">🔐 Connect Seam →</button>
+        <p style="color:rgba(255,255,255,.3);font-size:11px">Free setup · QR code entry · 24/7 access control</p>
+
+        <!-- Stats -->
+        <div style="display:flex;justify-content:center;gap:24px;margin-top:20px;padding-top:20px;border-top:1px solid rgba(255,255,255,.06)">
+          <div><p style="color:#6366f1;font-size:20px;font-weight:900">100+</p><p style="color:rgba(255,255,255,.3);font-size:10px">Lock Brands</p></div>
+          <div><p style="color:#6366f1;font-size:20px;font-weight:900">24/7</p><p style="color:rgba(255,255,255,.3);font-size:10px">Access</p></div>
+          <div><p style="color:#6366f1;font-size:20px;font-weight:900">QR</p><p style="color:rgba(255,255,255,.3);font-size:10px">Entry</p></div>
+        </div>
       </div>
     </div>
 
