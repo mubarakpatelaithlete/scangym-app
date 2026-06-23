@@ -3499,6 +3499,12 @@ window.openPaySheet=function(){
 window.closePaySheet=function(){
   const sheet=document.getElementById('gym-pay-sheet');
   if(sheet)sheet.classList.remove('open');
+  // FIX: Auto-resume pending booking after payment method selected
+  if(window._pendingCheckout){
+    const pc=window._pendingCheckout;
+    window._pendingCheckout=null;
+    setTimeout(()=>showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime),200);
+  }
 };
 // Sub-view navigation
 window._paySheetShowMain=function(){var m=document.getElementById('gym-pay-main-sheet');var a=document.getElementById('gym-pay-add-sheet');var c=document.getElementById('gym-pay-card-sheet');if(m)m.style.display='';if(a)a.style.display='none';if(c)c.style.display='none';};
@@ -3534,7 +3540,23 @@ window._paySheetSaveCard=async function(){
   if(error)throw new Error(error.message);
   var nickname=document.getElementById('gym-pay-inline-nickname')?.value||'';
   await fetch('/api/payment/confirm-card',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({setupIntentId:setupIntent.id,nickname})});
-  sgToast('Card added successfully!','success',2500);window._paySheetStripeElements=null;window._paySheetShowMain();window.openPaySheet();
+  sgToast('Card added successfully!','success',2500);window._paySheetStripeElements=null;
+  // FIX: After saving a new card, auto-resume pending booking instead of just refreshing the pay sheet
+  if(window._pendingCheckout){
+    // Fetch the card just saved so we can select it as payment method
+    try{var _newCards=await fetch('/api/payment/saved-cards',{credentials:'include'}).then(function(r){return r.json();});
+    if(_newCards&&_newCards.cards&&_newCards.cards.length>0){
+      var _nc=_newCards.cards[0];
+      window._gymBookingState.paymentMethod='saved';
+      window._gymBookingState.savedCard={id:_nc.id,brand:_nc.brand,last4:_nc.last4};
+      window._justSavedCard=true;
+    }}catch(_e){}
+    var _pc=window._pendingCheckout;window._pendingCheckout=null;
+    closePaySheet();
+    setTimeout(function(){showBookingCheckout(_pc.gymId,_pc.prefillDate,_pc.prefillTime);},300);
+  }else{
+    window._paySheetShowMain();window.openPaySheet();
+  }
   }catch(e){if(errEl){errEl.textContent=e.message;errEl.style.display='block';}if(btn){btn.textContent='Add card';btn.style.opacity='1';btn.style.pointerEvents='auto';}}
 };
 window._payToggleBalance=function(cb){var d=document.getElementById('sg-pay-toggle-dot');var t=document.getElementById('sg-pay-toggle-track');if(d)d.style.transform=cb.checked?'translateX(20px)':'translateX(0)';if(t)t.style.background=cb.checked?'#000':'#ccc';};
@@ -3550,6 +3572,13 @@ window.selectPayMethodSaved=function(el,cardId,brand,last4){
   const labelEl=document.getElementById('gym-pay-label');
   if(iconEl){iconEl.innerHTML='<span style="font-size:16px">💳</span>';}
   if(labelEl)labelEl.textContent=brandName+' ••••'+last4;
+  // FIX: Auto-resume pending booking when user selects a saved card in pay sheet
+  if(window._pendingCheckout){
+    const pc=window._pendingCheckout;
+    window._pendingCheckout=null;
+    closePaySheet();
+    setTimeout(()=>showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime),250);
+  }
 };
 window.selectPayMethod=function(el,method){
   document.querySelectorAll('.gym-pay-item').forEach(function(o){o.classList.remove('selected');});
@@ -3561,6 +3590,13 @@ window.selectPayMethod=function(el,method){
   if(method==='cash'){
     if(iconEl){iconEl.className='gym-sticky-pay-icon cash';iconEl.innerHTML='💷';}
     if(labelEl)labelEl.textContent='Cash';
+  }
+  // FIX: Auto-resume pending booking when user selects cash in pay sheet
+  if(window._pendingCheckout){
+    const pc=window._pendingCheckout;
+    window._pendingCheckout=null;
+    closePaySheet();
+    setTimeout(()=>showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime),250);
   }
 };
 
@@ -9089,13 +9125,9 @@ window.showBookingCheckout=async function(gymId, prefillDate, prefillTime){
 
   // All users are logged in at this point (auth gate at top of showBookingCheckout)
   const _isGuest=false;
-  // If no payment method, redirect to payment overlay to add one
-  if(!finalHasPayment){
-    window._pendingCheckout={gymId, prefillDate:selDate, prefillTime:selTime};
-    openGymOverlay('payment');
-    sgToast('💳 Add a payment method to book','info',3000);
-    return;
-  }
+  // FIX: Removed early return that blocked users without saved cards from ever
+  // seeing the booking sheet. Now the sheet always renders — Stripe Elements
+  // load inline for new card entry when no saved card/cash is selected.
 
   sheet.innerHTML=`
   <style>
@@ -9748,8 +9780,13 @@ window.closeBookingSheet=function(){
       sheet.remove();
     }
   }
-  
-// ═══ FIX #13: Promo code handler ═══
+  // Reset checkout state on close
+  window._checkoutState={stripe:null,elements:null,bookingId:null,intentId:null,gymId:null};
+  // Restore tab bar after booking sheet closes
+  var _ubTabBar=document.querySelector('.sg-tab-bar');if(_ubTabBar)_ubTabBar.classList.remove('hidden');
+};
+
+// ═══ Promo code handler (moved outside closeBookingSheet so it exists on page load) ═══
 window.sgApplyPromo=async function(){
   var code=(document.getElementById('sg-promo-code')?.value||'').trim().toUpperCase();
   var resultEl=document.getElementById('sg-promo-result');
@@ -9762,7 +9799,6 @@ window.sgApplyPromo=async function(){
     const data=await resp.json();
     if(data.valid){
       resultEl.innerHTML='<div style="display:flex;align-items:center;gap:6px"><span style="color:#22c55e;font-size:13px;font-weight:600">✅ '+data.description+'</span><span onclick="ubRemovePromo()" style="color:rgba(255,255,255,.4);font-size:11px;cursor:pointer;margin-left:auto">Remove</span></div>';
-      // Update price display
       if(data.discountedTotal){
         var totalEl=document.getElementById('sg-total-price');
         if(totalEl)totalEl.innerHTML='<span style="text-decoration:line-through;color:rgba(255,255,255,.4);font-size:12px;margin-right:6px">'+totalEl.textContent+'</span>'+data.discountedTotal;
@@ -9775,7 +9811,6 @@ window.sgApplyPromo=async function(){
       sgToast(data.message||'Invalid promo code','error',2500);
     }
   }catch(e){
-    // Fallback: Accept known promotional codes client-side
     var knownCodes={'WELCOME10':{pct:10,desc:'10% off first booking'},'SCANGYM20':{pct:20,desc:'20% off — early bird'},'FIRST50':{pct:50,desc:'50% off first session'},'GYM15':{pct:15,desc:'15% partner discount'}};
     var promo=knownCodes[code];
     if(promo){
@@ -9793,7 +9828,6 @@ window.ubRemovePromo=function(){
   if(resultEl){resultEl.style.display='none';resultEl.innerHTML='';}
   var totalEl=document.getElementById('sg-total-price');
   if(totalEl){
-    // Remove strikethrough, show original price
     var original=totalEl.textContent.replace(/[^£$€0-9.]/g,'');
     totalEl.textContent=original||totalEl.textContent;
   }
@@ -9807,11 +9841,7 @@ window.ubRemovePromo=function(){
   window._checkoutState.promoDiscount=0;
   sgToast('Promo code removed','info',2000);
 };
-
 window._checkoutState={stripe:null,elements:null,bookingId:null,intentId:null,gymId:null};
-  // ── Bug Fix #2: Restore tab bar after booking sheet closes ──
-  var _ubTabBar=document.querySelector('.sg-tab-bar');if(_ubTabBar)_ubTabBar.classList.remove('hidden');
-};
 
 
 // ─── Resume Abandoned Booking (Fix #8) ───
