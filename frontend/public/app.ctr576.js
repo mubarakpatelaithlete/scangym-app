@@ -13759,7 +13759,23 @@ function MoreHubPage(){
         </div>
       </div>
       <!-- ═══ RIGHT-SIDE BUTTONS — TikTok/Reels style, floating on QR ═══ -->
-      <div style="position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:18px;align-items:center;z-index:10">
+      <div style="position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:14px;align-items:center;z-index:10">
+        <div onclick="navigate('/become-a-creator')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
+          <div style="width:46px;height:46px;background:rgba(255,109,0,.15);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,109,0,.3)">\ud83c\udfac</div>
+          <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Creator</span>
+        </div>
+        <div onclick="navigate('/partner')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
+          <div style="width:46px;height:46px;background:rgba(34,197,94,.12);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(34,197,94,.25)">\ud83c\udfcb\ufe0f</div>
+          <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Partner</span>
+        </div>
+        <div onclick="navigate('/apps')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
+          <div style="width:46px;height:46px;background:rgba(0,0,0,.45);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.12)">\ud83d\udcf1</div>
+          <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Apps</span>
+        </div>
+        <div onclick="navigate('/channels')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
+          <div style="width:46px;height:46px;background:rgba(0,0,0,.45);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.12)">\ud83d\udce1</div>
+          <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Channels</span>
+        </div>
         <div onclick="navigate('/more/profile')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
           <div style="width:46px;height:46px;background:rgba(0,0,0,.45);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.12)">\ud83d\udc64</div>
           <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Edit</span>
@@ -15740,6 +15756,7 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
   else if(path==='/creator-reels')page=CreatorReelsPage();
   else if(path==='/gym-partner-hub')page=GymPartnerHubPage();
   else if(path==='/partner'||path==='/partners'||path==='/gym-partner')page=PartnerLandingPage();
+  else if(path==='/apps')page=AppsPage();
   else if(path==='/channels')page=ChannelsPage();
   else if(path==='/onboard-chat')page=OnboardChatPage();
   else if(path==='/more')page=MoreHubPage();
@@ -17859,6 +17876,45 @@ function GymPartnerHubPage(){
 // ═══════════════════════════════════════════════════════════════
 // LAYER 2: MY CHANNELS — Connect messaging platforms to ScanGym
 // ═══════════════════════════════════════════════════════════════
+
+
+// ═══════════════════════════════════════════════════════════════════
+//  APPS PAGE — Download ScanGym on any platform
+// ═══════════════════════════════════════════════════════════════════
+function AppsPage(){
+  var stores=[
+    {name:'App Store',icon:'\ud83c\udf4f',desc:'iPhone & iPad',color:'#007AFF',url:'https://apps.apple.com/app/scangym/id6738043795',live:1},
+    {name:'Google Play',icon:'\ud83e\udd16',desc:'Android phones & tablets',color:'#34A853',url:'https://play.google.com/store/apps/details?id=com.scangym.app',live:0},
+    {name:'Microsoft Store',icon:'\ud83e\ude9f',desc:'Windows 10 & 11',color:'#0078D4',url:'https://apps.microsoft.com/detail/9nh8vrn834dv',live:1},
+    {name:'Samsung Galaxy Store',icon:'\ud83d\udcf1',desc:'Samsung devices',color:'#1428A0',url:'https://galaxy.store/scangym',live:0},
+    {name:'Web App (PWA)',icon:'\ud83c\udf10',desc:'Any browser \u2014 install to home screen',color:'#FF6D00',url:'https://scangym.com',live:1},
+  ];
+  return`<div style="max-width:480px;margin:0 auto;padding:20px 16px 100px">
+    <div class="sg-more-back" onclick="navigate('/more')">\u2190 Back</div>
+    <div style="text-align:center;margin-bottom:24px">
+      <div style="width:64px;height:64px;background:linear-gradient(135deg,#FF6D00,#ff8533);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 12px;box-shadow:0 8px 32px rgba(255,109,0,.3)">\ud83d\udcf2</div>
+      <h1 style="font-size:22px;font-weight:900;color:#fff;margin:0 0 4px">Get ScanGym</h1>
+      <p style="color:rgba(255,255,255,.4);font-size:13px;margin:0">Download on your favourite platform</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      ${stores.map(function(s){
+        var badge=s.live?'<span style="background:rgba(34,197,94,.15);color:#22c55e;font-size:9px;font-weight:800;padding:2px 8px;border-radius:6px;text-transform:uppercase">Live</span>':'<span style="background:rgba(255,255,255,.08);color:rgba(255,255,255,.35);font-size:9px;font-weight:800;padding:2px 8px;border-radius:6px;text-transform:uppercase">Coming Soon</span>';
+        return'<div '+(s.live?'onclick="window.open(\''+s.url+'\',\'_blank\')" style="cursor:pointer;':'style="opacity:.6;')+'display:flex;align-items:center;gap:14px;padding:16px;background:rgba(255,255,255,.04);border-radius:14px;border:1px solid rgba(255,255,255,.06)">'
+          +'<div style="width:48px;height:48px;background:'+s.color+'18;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">'+s.icon+'</div>'
+          +'<div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px"><span style="color:#fff;font-size:15px;font-weight:700">'+s.name+'</span>'+badge+'</div><p style="color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0">'+s.desc+'</p></div>'
+          +(s.live?'<div style="color:rgba(255,255,255,.25);font-size:18px">\u203a</div>':'')
+          +'</div>';
+      }).join('')}
+    </div>
+    <div style="margin-top:24px;background:rgba(255,109,0,.06);border:1px solid rgba(255,109,0,.12);border-radius:16px;padding:16px;display:flex;gap:12px;align-items:flex-start">
+      <span style="font-size:24px">\ud83d\udca1</span>
+      <div>
+        <p style="color:#FF6D00;font-size:13px;font-weight:700;margin:0 0 4px">Works everywhere</p>
+        <p style="color:rgba(255,255,255,.4);font-size:12px;line-height:1.6;margin:0">One account works across all platforms. Book on your phone, check in on your watch, manage on your laptop.</p>
+      </div>
+    </div>
+  </div>`;
+}
 
 function ChannelsPage(){
   // Kick off data load
