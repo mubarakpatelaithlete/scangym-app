@@ -674,15 +674,38 @@ router.get('/cdn-proxy/:cdnKey', (req, res) => {
  * iOS Safari blocks <a download> on cross-origin URLs and sometimes on blob URLs.
  * This endpoint proxies the CDN video with Content-Disposition: attachment,
  * which forces the browser to download rather than play inline.
+ *
+ * 🟠 WATERMARK: All downloaded reels now include ScanGym orange branding
+ * (like TikTok's @username watermark). Uses FFmpeg drawtext overlay.
+ * Watermarked files are cached so repeat downloads are instant.
+ * Pass ?raw=1 to skip watermark (internal/admin use only).
  */
-router.get('/download/:cdnKey', (req, res) => {
+router.get('/download/:cdnKey', async (req, res) => {
   const cdnKey = req.params.cdnKey.replace(/[^a-zA-Z0-9_-]/g, '');
   const filename = (req.query.name || 'scangym-reel').replace(/[^a-zA-Z0-9_-]/g, '_') + '.mp4';
-  const cdnUrl = `https://cdn.scangym.com/videos/${cdnKey}.mp4`;
+  const skipWatermark = req.query.raw === '1';
 
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
   res.setHeader('Content-Type', 'video/mp4');
+
+  // ── Watermarked download (default) ──
+  if (!skipWatermark) {
+    try {
+      const { getWatermarkedVideo } = require('../lib/video-watermark');
+      const wmPath = await getWatermarkedVideo(cdnKey);
+      const stat = require('fs').statSync(wmPath);
+      res.setHeader('Content-Length', stat.size);
+      res.setHeader('Cache-Control', 'public, max-age=86400'); // cache 24h
+      return require('fs').createReadStream(wmPath).pipe(res);
+    } catch (err) {
+      console.warn('Watermark failed, falling back to raw download:', err.message);
+      // Fall through to raw CDN proxy below
+    }
+  }
+
+  // ── Raw CDN proxy (fallback / ?raw=1) ──
+  const cdnUrl = `https://cdn.scangym.com/videos/${cdnKey}.mp4`;
   res.setHeader('Cache-Control', 'no-cache');
 
   https.get(cdnUrl, (upstream) => {
