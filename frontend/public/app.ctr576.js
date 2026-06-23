@@ -17363,8 +17363,19 @@ if(localStorage.getItem('sg_push_enabled')==='1'&&state.user){
       var gid=card?(card.getAttribute('data-gym-id')||card.getAttribute('data-id')):null;
       if(gid&&typeof showBookingCheckout==='function'){showBookingCheckout(gid);}
     }else{
-      // On Reels: navigate to Book tab
-      if(typeof switchTab==='function')switchTab('book');
+      // On Reels: check auth first, then navigate to Book tab
+      if(state.user){
+        // Already logged in — go straight to Book tab
+        if(typeof switchTab==='function')switchTab('book');
+      }else{
+        // Not logged in — show auth sheet, then navigate to Book on success
+        window._pendingReelsAction='switch-to-book';
+        if(typeof window._sgShowAuthSheet==='function'){
+          window._sgShowAuthSheet('reels');
+        }else if(typeof switchTab==='function'){
+          switchTab('book');
+        }
+      }
     }
   });
   document.body.appendChild(banner);
@@ -18752,8 +18763,8 @@ window.sgFeedback = async function(elementId, vote, btn) {
   document.head.appendChild(sty);
 
   function _progressDots(step){
-    // All modes: single auth step only. Card/withdraw steps removed from flow.
-    var steps=["auth"];
+    // Book mode: auth → card (saved cards picker). Share/reels: auth only.
+    var steps=_sheetMode==="book"?["auth","card"]:["auth"];
     var idx=steps.indexOf(step);if(idx<0)idx=0;
     return '<div class="sg-auth-progress">'+steps.map(function(s,i){
       return '<div class="sg-auth-dot'+(i<idx?' done':'')+(i===idx?' active':'')+'"></div>';
@@ -18835,30 +18846,36 @@ window.sgFeedback = async function(elementId, vote, btn) {
     _sheetStep='card';
     var content=document.getElementById('sg-auth-content');
     if(!content)return;
+    // ── Saved Cards Picker (same as Pay button) ──
     content.innerHTML=`<div class="sg-auth-step-enter">`+_progressDots('card')+`
-      <div class="sg-auth-title">Add your card</div>
-      <div class="sg-auth-sub">Saves securely — 1-tap booking every time 🔒</div>
-      <label class="sg-auth-label">Card number</label>
-      <div class="sg-auth-stripe-el" id="sg-auth-card-num"></div>
-      <div class="sg-auth-stripe-row">
-        <div>
-          <label class="sg-auth-label">Expiry</label>
-          <div class="sg-auth-stripe-el" id="sg-auth-card-exp"></div>
-        </div>
-        <div>
-          <label class="sg-auth-label">CVC</label>
-          <div class="sg-auth-stripe-el" id="sg-auth-card-cvc"></div>
-        </div>
+      <div class="sg-auth-title">Pay with</div>
+      <div class="sg-auth-sub">Select a payment method or add a new one 💳</div>
+      <div id="sg-auth-cards-list" style="margin-bottom:16px">
+        <div style="text-align:center;color:rgba(255,255,255,.4);font-size:13px;padding:20px 0">Loading saved cards…</div>
       </div>
-      <div class="sg-auth-error" id="sg-auth-err"></div>
-      <button class="sg-auth-btn sg-auth-btn-phone" id="sg-auth-card-btn" onclick="window._sgAuthSaveCard()" style="opacity:.5;pointer-events:none">
-        💳 Save Card & Continue
+      <div id="sg-auth-add-card-form" style="display:none">
+        <div style="margin-bottom:12px">
+          <label class="sg-auth-label">Card number</label>
+          <div class="sg-auth-stripe-el" id="sg-auth-card-num"></div>
+        </div>
+        <div class="sg-auth-stripe-row">
+          <div style="flex:1"><label class="sg-auth-label">Expiry</label><div class="sg-auth-stripe-el" id="sg-auth-card-exp"></div></div>
+          <div style="flex:1"><label class="sg-auth-label">CVC</label><div class="sg-auth-stripe-el" id="sg-auth-card-cvc"></div></div>
+        </div>
+        <div class="sg-auth-error" id="sg-auth-err"></div>
+        <button class="sg-auth-btn sg-auth-btn-phone" id="sg-auth-card-btn" onclick="window._sgAuthSaveCard()" style="opacity:.5;pointer-events:none;margin-bottom:8px">
+          💳 Add Card
+        </button>
+        <div class="sg-auth-back" onclick="window._sgAuthToggleAddCard(false)">← Back to saved cards</div>
+      </div>
+      <button class="sg-auth-btn sg-auth-btn-green" id="sg-auth-card-continue" onclick="window._sgAuthCardContinue()" style="display:none">
+        ✅ Continue to Checkout
       </button>
       <div class="sg-auth-back" onclick="window._sgAuthSkipCard()">Skip for now</div>
       <div class="sg-auth-footer">Powered by Stripe · Your card details never touch our servers</div>
     </div>`;
-    // Mount Stripe Elements
-    _mountStripeCard();
+    // Load and display saved cards
+    _loadSavedCardsInSheet();
   }
 
   function _mountStripeCard(){
@@ -18884,6 +18901,99 @@ window.sgFeedback = async function(elementId, vote, btn) {
       cardCvc.on('change',function(e){complete.cvc=e.complete;_check();});
     }catch(e){console.warn('[AuthSheet] Stripe mount failed:',e);}
   }
+
+  // ── Load saved cards into auth sheet (Pay-button style) ──
+  async function _loadSavedCardsInSheet(){
+    var listEl=document.getElementById('sg-auth-cards-list');
+    var continueBtn=document.getElementById('sg-auth-card-continue');
+    if(!listEl)return;
+    try{
+      var resp=await fetch('/api/payment/saved-cards',{credentials:'include'}).then(function(r){return r.json();});
+      if(!resp.cards||resp.cards.length===0){
+        // No saved cards — show add card form + "+ Add new card" button
+        listEl.innerHTML='<div style="text-align:center;padding:16px 0;color:rgba(255,255,255,.4);font-size:14px">No saved cards yet</div>'+
+          '<button class="sg-auth-btn sg-auth-btn-phone" onclick="window._sgAuthToggleAddCard(true)" style="margin-bottom:8px">+ Add a new card</button>';
+        return;
+      }
+      var gbs=window._gymBookingState||{};
+      var html='';
+      resp.cards.forEach(function(card,i){
+        var brandNames={visa:'Visa',mastercard:'Mastercard',amex:'Amex',discover:'Discover'};
+        var brandName=brandNames[card.brand]||card.brand||'Card';
+        var isDefault=card.isDefault||(i===0);
+        var isSelected=(gbs.paymentMethod==='saved'&&gbs.savedCard&&gbs.savedCard.id===card.id)||isDefault;
+        var brandColors={visa:'#1a1f71',mastercard:'#eb001b',amex:'#006fcf',discover:'#ff6000'};
+        var bgColor=brandColors[card.brand]||'#333';
+        var defaultBadge=isDefault?'<span style="background:rgba(34,197,94,.15);color:#22c55e;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;margin-left:8px">Default</span>':'';
+        html+='<div class="sg-auth-check'+(isSelected?' selected':'')+'" onclick="window._sgAuthSelectCard(this,\''+card.id+'\',\''+card.brand+'\',\''+card.last4+'\')" data-card-id="'+card.id+'" style="'+(isSelected?'border-color:rgba(255,109,0,.4);background:rgba(255,109,0,.06)':'')+'">';
+        html+='<div style="width:40px;height:28px;border-radius:6px;background:'+bgColor+';display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="color:#fff;font-size:9px;font-weight:800;text-transform:uppercase">'+brandName.slice(0,4)+'</span></div>';
+        html+='<div class="sg-auth-check-text"><strong>'+brandName+' ••••'+card.last4+defaultBadge+'</strong><span>'+((card.nickname)?card.nickname:'Expires '+((card.exp_month||'')+'/'+( card.exp_year||'')))+'</span></div>';
+        html+='<div style="width:20px;height:20px;border-radius:50%;border:2px solid '+(isSelected?'#FF6D00':'rgba(255,255,255,.2)')+';display:flex;align-items:center;justify-content:center">'+(isSelected?'<div style="width:10px;height:10px;border-radius:50%;background:#FF6D00"></div>':'')+'</div>';
+        html+='</div>';
+        // Auto-select default card into booking state
+        if(isSelected){
+          if(!window._gymBookingState)window._gymBookingState={};
+          window._gymBookingState.paymentMethod='saved';
+          window._gymBookingState.savedCard={id:card.id,brand:card.brand,last4:card.last4};
+        }
+      });
+      html+='<div class="sg-auth-check" onclick="window._sgAuthToggleAddCard(true)" style="cursor:pointer;border-style:dashed">';
+      html+='<div style="width:40px;height:28px;border-radius:6px;background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="color:rgba(255,255,255,.5);font-size:18px">+</span></div>';
+      html+='<div class="sg-auth-check-text"><strong>Add a new card</strong><span>Credit or debit card</span></div>';
+      html+='</div>';
+      listEl.innerHTML=html;
+      // Show continue button if a card is selected
+      if(continueBtn&&gbs.paymentMethod==='saved'){continueBtn.style.display='';}
+    }catch(e){
+      listEl.innerHTML='<div style="text-align:center;padding:16px 0;color:rgba(255,255,255,.4);font-size:14px">Could not load cards</div>'+
+        '<button class="sg-auth-btn sg-auth-btn-phone" onclick="window._sgAuthToggleAddCard(true)" style="margin-bottom:8px">+ Add a new card</button>';
+    }
+  }
+
+  // Select a saved card in auth sheet
+  window._sgAuthSelectCard=function(el,cardId,brand,last4){
+    // Deselect all
+    var checks=document.querySelectorAll('#sg-auth-cards-list .sg-auth-check');
+    checks.forEach(function(c){c.classList.remove('selected');c.style.borderColor='';c.style.background='';var dot=c.querySelector('div[style*="border-radius:50%"]');if(dot){dot.style.borderColor='rgba(255,255,255,.2)';dot.innerHTML='';}});
+    // Select this one
+    el.classList.add('selected');
+    el.style.borderColor='rgba(255,109,0,.4)';
+    el.style.background='rgba(255,109,0,.06)';
+    var dot=el.querySelector('div[style*="border-radius:50%"]');
+    if(dot){dot.style.borderColor='#FF6D00';dot.innerHTML='<div style="width:10px;height:10px;border-radius:50%;background:#FF6D00"></div>';}
+    // Update booking state
+    if(!window._gymBookingState)window._gymBookingState={};
+    window._gymBookingState.paymentMethod='saved';
+    window._gymBookingState.savedCard={id:cardId,brand:brand,last4:last4};
+    // Show continue button
+    var btn=document.getElementById('sg-auth-card-continue');
+    if(btn)btn.style.display='';
+  };
+
+  // Toggle add card form visibility
+  window._sgAuthToggleAddCard=function(show){
+    var form=document.getElementById('sg-auth-add-card-form');
+    var list=document.getElementById('sg-auth-cards-list');
+    var continueBtn=document.getElementById('sg-auth-card-continue');
+    if(show){
+      if(form)form.style.display='';
+      if(list)list.style.display='none';
+      if(continueBtn)continueBtn.style.display='none';
+      _mountStripeCard();
+    }else{
+      if(form)form.style.display='none';
+      if(list)list.style.display='';
+      // Re-show continue if a card is selected
+      var gbs=window._gymBookingState||{};
+      if(continueBtn&&gbs.paymentMethod==='saved')continueBtn.style.display='';
+    }
+  };
+
+  // Continue to checkout with selected card
+  window._sgAuthCardContinue=function(){
+    window._sgCloseAuthSheet();
+    _resumePendingAction();
+  };
 
   // ── Step 2 (Reels): Connect Withdraw Method ──
   function _renderWithdrawStep(){
@@ -18985,22 +19095,9 @@ window.sgFeedback = async function(elementId, vote, btn) {
     sgToast('Welcome, '+(state.user.name||'there')+'! 🎉','success',1500);
 
     if(_sheetMode==='book'){
-      /* After login, go straight to checkout — the pay button in checkout
-         already handles saved cards and adding new cards inline.
-         Pre-load saved cards in background for the checkout pay button. */
-      try{
-        var resp=await fetch('/api/payment/saved-cards',{credentials:'include'}).then(function(r){return r.json();});
-        if(resp.cards&&resp.cards.length>0){
-          if(!window._gymBookingState)window._gymBookingState={};
-          var defCard=resp.cards.find(function(c){return c.isDefault;})||resp.cards[0];
-          window._gymBookingState.paymentMethod='saved';
-          window._gymBookingState.savedCard={id:defCard.id,brand:defCard.brand,last4:defCard.last4};
-        }
-      }catch(e){}
-      // Skip card step — go directly to booking checkout
-      window._sgCloseAuthSheet();
-      _resumePendingAction();
-      return;
+      /* After login, show saved cards picker (same style as Pay button).
+         Users can select an existing card, add a new one, or skip. */
+      _renderCardStep();
     }else if(_sheetMode==='reels'){
       // FIX #1: Auto-generate creator handle for Reels auth users so affiliate deeplinks work.
       // Without this, _doShare() can't append ?ref= because sg_creator.handle is empty.
@@ -19042,8 +19139,19 @@ window.sgFeedback = async function(elementId, vote, btn) {
       /* R7: Instant resume — 50ms minimal delay for DOM cleanup */
       setTimeout(function(){showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime);},50);
     }else if(window._pendingReelsAction){
-      _sendToReels({type:'sg-auth-complete',action:window._pendingReelsAction,video:window._pendingReelsVideo});
-      window._pendingReelsAction=null;window._pendingReelsVideo=null;
+      if(window._pendingReelsAction==='switch-to-book'){
+        // Continue banner on reels: after login, go to book tab
+        window._pendingReelsAction=null;window._pendingReelsVideo=null;
+        if(typeof switchTab==='function')switchTab('book');
+      }else if(window._pendingReelsAction==='share-gym'&&window._pendingShareGym){
+        // Share button: after login, resume share with affiliate link
+        var sg=window._pendingShareGym;
+        window._pendingReelsAction=null;window._pendingReelsVideo=null;window._pendingShareGym=null;
+        setTimeout(function(){window._sgShareGymLink(sg.gymId,sg.gymName);},100);
+      }else{
+        _sendToReels({type:'sg-auth-complete',action:window._pendingReelsAction,video:window._pendingReelsVideo});
+        window._pendingReelsAction=null;window._pendingReelsVideo=null;
+      }
     }
   }
 
@@ -19133,10 +19241,10 @@ window.sgFeedback = async function(elementId, vote, btn) {
         last4:(_cardInfo&&_cardInfo.last4)||'••••'
       };
       window._justSavedCard=true;
-      /* R5: Brief checkmark flash then instant resume — skip done step */
-      if(btn){btn.textContent='✅ Card Saved!';btn.style.opacity='1';btn.style.background='#22c55e';}
+      /* Card saved — show checkmark flash then go to checkout */
+      if(btn){btn.textContent='✅ Card Added!';btn.style.opacity='1';btn.style.background='#22c55e';}
       if(navigator.vibrate)navigator.vibrate(50);
-      setTimeout(function(){window._sgCloseAuthSheet();_resumePendingAction();},200);
+      setTimeout(function(){window._sgCloseAuthSheet();_resumePendingAction();},400);
     }catch(e){
       err.textContent=e.message||'Card save failed';err.style.display='block';
       if(btn){btn.textContent='💳 Save Card & Continue';btn.style.opacity='1';btn.style.pointerEvents='auto';}
@@ -19319,11 +19427,21 @@ window._sgCopyChannelLink=function(handle,channel){
 
 // ─── Amazon SiteStripe-style: Share affiliate link for any gym ───
 window._sgShareGymLink=function(gymId,gymName){
+  // If not logged in, require login first (auto-generates creator handle for affiliate link)
+  if(!state.user){
+    window._pendingShareGym={gymId:gymId,gymName:gymName};
+    window._pendingReelsAction='share-gym';
+    if(typeof window._sgShowAuthSheet==='function'){
+      window._sgShowAuthSheet('reels');
+    }
+    return;
+  }
+
   // Get creator handle from localStorage (if user is a creator)
   var creator=null;
   try{var c=JSON.parse(localStorage.getItem('sg_creator')||'null');if(c&&c.handle)creator=c.handle;}catch(e){}
 
-  // Build the link
+  // Build the link — always with affiliate code after login
   var baseUrl='https://scangym.com';
   var link;
   if(creator){
