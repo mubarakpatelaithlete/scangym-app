@@ -1,104 +1,55 @@
-# ScanGym ChatGPT GPT — Book Gyms from ChatGPT
+# ScanGym Custom GPT — Setup Guide
 
-Let anyone book a gym session directly from ChatGPT — just like booking.com does for hotels.
+## Quick Setup (5 minutes)
 
-> "Find me a cheap gym in Bolton and book it for tomorrow" → Done. ✅
-
-## How It Works
-
-```
-User → ChatGPT → GPT Actions (OpenAPI spec) → ScanGym API → Booking Created
-                                                            → Payment Link
-                                                            → QR Code Entry
-```
-
-This is a **Custom GPT with Actions** — ChatGPT reads our OpenAPI spec to know which ScanGym APIs to call. No authentication needed (uses guest checkout with email).
-
-## Setup Guide
-
-### Step 1: Create the GPT
-
-1. Go to [chatgpt.com/gpts/editor](https://chatgpt.com/gpts/editor)
-2. Click **"Create a GPT"**
-3. Go to the **Configure** tab
+### Step 1: Go to ChatGPT GPT Editor
+Visit [chatgpt.com/gpts/editor](https://chatgpt.com/gpts/editor) and click "Create a GPT"
 
 ### Step 2: Configure the GPT
 
 **Name:** ScanGym — Book Any Gym  
-**Description:** Find and book gym sessions worldwide. No memberships, just pay per visit. Flexible gym access from ScanGym. 💪  
-**Instructions:** Copy the contents of `gpt-instructions.md`
+**Description:** Find and book gym day passes at 1.2M+ gyms worldwide. No membership needed. Just pay per visit from £4.49.  
+**Instructions:** Copy the contents of `gpt-instructions.md`  
+
+**Conversation Starters:**
+1. Find me a gym near Manchester 🏋️
+2. What's the cheapest gym in London?
+3. Book a session for tomorrow morning
+4. Cancel my booking
+
+**Profile Image:** Use the ScanGym logo (orange circle with dumbbell)
 
 ### Step 3: Add Actions
+1. Click "Create new action"
+2. Set Authentication to "None"
+3. Paste the contents of `openapi.yaml` into the schema
+4. Click "Test" to verify each endpoint works
 
-1. In the Configure tab, scroll to **Actions** → click **"Create new action"**
-2. Set **Authentication** to **"None"**
-3. Paste the contents of `openapi.yaml` into the **Schema** field
-4. Set **Privacy policy URL** to `https://scangym.com/privacy`
+### Step 4: Publish
+1. Click "Update" (top right)
+2. Set publishing to **"Everyone"** (Public — visible in GPT Store)
+3. Select category: **Lifestyle**
+4. Click "Confirm"
 
-### Step 4: Set Conversation Starters
-
-Add these example prompts:
-- "Find gyms near me"
-- "Book a gym in Bolton for tomorrow"
-- "What's the cheapest gym in Manchester?"
-- "Cancel my booking"
-
-### Step 5: Upload Profile Image
-
-Use the ScanGym logo (orange 🟠 circle branding).
-
-### Step 6: Publish
-
-1. Click **"Save"** → Choose **"Everyone"**
-2. Verify your **Builder Profile** at Settings → Builder Profile:
-   - Option A: Verify your name (from billing)
-   - Option B: Verify domain `scangym.com` (add DNS TXT record)
-3. Your GPT appears in the GPT Store!
+### Step 5: Verify Domain (for GPT Store visibility)
+1. Go to your GPT settings → Actions → click your action
+2. Under "Privacy policy", add: `https://scangym.com/privacy`
+3. Follow the domain verification steps (add a TXT record or meta tag)
 
 ## Testing
 
-Before publishing, test these conversations:
+Test these queries after publishing:
+- "Find gyms in Bolton" → should return gym list from scangym.com API
+- "Book a gym for tomorrow" → should ask for location, email, and confirm before booking
+- "Cancel booking 12345" → should ask for email and cancel
 
-| Test | What to say | Expected |
-|------|-------------|----------|
-| Search | "Find gyms in Bolton" | Returns list of gyms with prices |
-| Details | "Tell me more about [gym name]" | Shows hours, reviews, photos |
-| Book | "Book [gym] for tomorrow, email: test@test.com" | Creates booking, returns code |
-| Cancel | "Cancel booking 123, email: test@test.com" | Cancels and confirms |
-| No location | "I want to go to the gym" | Asks for location |
-| Referral | "Book with code FITJOHN" | Applies 15% discount |
+## Files in this directory
+- `gpt-instructions.md` — System prompt for the GPT
+- `openapi.yaml` — OpenAPI 3.1 schema connecting to scangym.com API
+- `README.md` — This file
 
-## Files
+## Live GPT Link
+https://chatgpt.com/g/g-6a2d42cd13e08191a65eebd2426bbe60-scangym
 
-| File | Purpose |
-|------|---------|
-| `openapi.yaml` | OpenAPI 3.1 spec — defines the API actions ChatGPT can call |
-| `gpt-instructions.md` | System prompt — personality, rules, booking flow |
-| `README.md` | This setup guide |
-
-## Architecture — All AI Channels
-
-ScanGym is bookable from multiple AI platforms:
-
-| Platform | Technology | Status |
-|----------|-----------|--------|
-| **ChatGPT** | GPT Actions (this folder) | 🆕 Ready to set up |
-| **Claude** | MCP Server (`../mcp/`) | ✅ Built |
-| **Telegram** | Bot API (`../chatbot/telegram.js`) | ✅ Live |
-| **WhatsApp** | Twilio (`../chatbot/twilio.js`) | ✅ Live |
-| **SMS** | Twilio (`../chatbot/twilio.js`) | ✅ Live |
-| **Discord** | Bot (`../chatbot/discord.js`) | ✅ Live |
-| **Email** | SendGrid (`../chatbot/email.js`) | ✅ Live |
-
-All channels use the same ScanGym API — the difference is just how messages arrive and leave.
-
-## Future: OpenAI Apps SDK
-
-Booking.com, Expedia, and Spotify use the new **Apps SDK** (built on MCP). This is a premium tier that gives:
-- Custom UI inside ChatGPT (not just text)
-- Direct integration without manual GPT setup
-- Featured placement in ChatGPT
-
-To apply: [platform.openai.com/apps](https://platform.openai.com/apps)
-
-For now, the GPT Actions approach gets ScanGym into ChatGPT immediately while the Apps SDK application is reviewed.
+## Support
+book@scangym.com

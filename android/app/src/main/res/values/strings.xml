@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ScanGym</string>
+    <string name="title_activity_main">ScanGym</string>
+    <string name="package_name">com.scangym.app</string>
+    <string name="custom_url_scheme">scangym</string>
+</resources>

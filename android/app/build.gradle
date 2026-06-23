@@ -1,0 +1,71 @@
+// ScanGym Android App — Build Configuration
+// Build release: ./gradlew assembleRelease
+// Build AAB for Play Store: ./gradlew bundleRelease
+
+apply plugin: 'com.android.application'
+
+android {
+    namespace "com.scangym.app"
+    compileSdkVersion 34
+
+    defaultConfig {
+        applicationId "com.scangym.app"
+        minSdkVersion 23
+        targetSdkVersion 34
+        versionCode 1
+        versionName "1.0.0"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    signingConfigs {
+        release {
+            // To sign for Play Store / Galaxy Store:
+            // 1. Generate keystore: keytool -genkey -v -keystore scangym-release.keystore -alias scangym -keyalg RSA -keysize 2048 -validity 10000
+            // 2. Set environment variables:
+            //    SCANGYM_RELEASE_STORE_FILE=./scangym-release.keystore
+            //    SCANGYM_RELEASE_STORE_PASSWORD=your_password
+            //    SCANGYM_RELEASE_KEY_ALIAS=scangym
+            //    SCANGYM_RELEASE_KEY_PASSWORD=your_password
+            if (System.getenv("SCANGYM_RELEASE_STORE_FILE")) {
+                storeFile file(System.getenv("SCANGYM_RELEASE_STORE_FILE"))
+                storePassword System.getenv("SCANGYM_RELEASE_STORE_PASSWORD")
+                keyAlias System.getenv("SCANGYM_RELEASE_KEY_ALIAS")
+                keyPassword System.getenv("SCANGYM_RELEASE_KEY_PASSWORD")
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            if (signingConfigs.release.storeFile) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+repositories {
+    flatDir {
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:1.6.1"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:1.2.0"
+    implementation "androidx.core:core-splashscreen:1.0.1"
+    implementation project(':capacitor-android')
+    testImplementation "junit:junit:4.13.2"
+    androidTestImplementation "androidx.test.ext:junit:1.1.5"
+    androidTestImplementation "androidx.test.espresso:espresso-core:3.5.1"
+}
+
+apply from: 'capacitor.build.gradle'
