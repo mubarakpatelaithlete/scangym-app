@@ -381,6 +381,54 @@ router.get('/earnings/:handle', async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────────
+//  GET /api/referrals/stats/:handle  (Alias for /earnings/:handle)
+//  Frontend creator tab calls this path — proxy to earnings endpoint
+// ─────────────────────────────────────────────────────────────────
+router.get('/stats/:handle', async (req, res) => {
+  try {
+    const { handle } = req.params;
+    if (!handle) return res.status(400).json({ error: 'handle required' });
+
+    // Fetch earnings
+    const stats = await pool.query(
+      `SELECT
+         COUNT(*) FILTER (WHERE status = 'clicked') as total_clicks,
+         COUNT(*) FILTER (WHERE status = 'converted') as total_conversions,
+         COALESCE(SUM(commission_pence) FILTER (WHERE status = 'converted'), 0) as total_earnings_pence
+       FROM creator_referrals WHERE creator_handle = $1`,
+      [handle]
+    );
+
+    // Fetch balance
+    const earned = await pool.query(
+      `SELECT COALESCE(SUM(commission_pence), 0) as total_earned
+       FROM creator_referrals WHERE creator_handle = $1 AND status = 'converted'`,
+      [handle]
+    );
+    const withdrawn = await pool.query(
+      `SELECT COALESCE(SUM(amount_pence) FILTER (WHERE status IN ('approved','paid','pending')), 0) as total_used
+       FROM creator_withdrawals WHERE creator_handle = $1`,
+      [handle]
+    ).catch(() => ({ rows: [{ total_used: 0 }] }));
+
+    const s = stats.rows[0];
+    const availablePence = parseInt(earned.rows[0].total_earned) - parseInt(withdrawn.rows[0].total_used || 0);
+
+    // Return shape the frontend expects
+    res.json({
+      success: true,
+      clicks: parseInt(s.total_clicks),
+      conversions: parseInt(s.total_conversions),
+      earnings_pence: parseInt(s.total_earnings_pence),
+      available_pence: Math.max(0, availablePence),
+    });
+  } catch (err) {
+    console.error('[Referrals] Stats error:', err.message);
+    res.status(500).json({ error: 'Failed to load stats' });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────
 //  GET /api/referrals/discount/:handle
 //  Validates a referral code and returns discount info
 // ─────────────────────────────────────────────────────────────────

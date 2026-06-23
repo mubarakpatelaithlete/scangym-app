@@ -1269,7 +1269,7 @@ window._sgSearchCacheTTL=15*60*1000;
 function _sgGetSearchCache(q){var e=window._sgSearchCache[q];if(e&&Date.now()-e.ts<window._sgSearchCacheTTL)return e.data;delete window._sgSearchCache[q];return null;}
 function _sgSetSearchCache(q,d){window._sgSearchCache[q]={data:d,ts:Date.now()};var keys=Object.keys(window._sgSearchCache);if(keys.length>20)delete window._sgSearchCache[keys[0]];}
 
-async function searchGyms(query, isExplicit, _triggerLayer){sgPerf.start('search_gyms');
+async function searchGyms(query, isExplicit, _triggerLayer){state.lastSearchQuery=query;sgPerf.start('search_gyms');
   try{
     // Fix: Track when user explicitly searched (city button or typed query)
     // This prevents GPS/IP from overriding their intent
@@ -7757,8 +7757,9 @@ function DashboardPage(){
     <p style="color:rgba(255,255,255,.2);font-size:11px;text-align:center;margin-top:16px">Last updated: <span id="admin-last-updated">—</span></p>
   </div>`;
 }
-/* Load admin status data */
+/* Load admin status data — FULL STACK: calls /api/health + /api/stats/admin-status */
 window._loadAdminStatus=async function(){
+  /* 1. Speed test via /api/health */
   try{
     var t0=performance.now();
     var r=await fetch('/api/health');
@@ -7769,6 +7770,32 @@ window._loadAdminStatus=async function(){
     var up=document.getElementById('admin-uptime');if(up)up.textContent='Uptime: 99.9% · '+ms+'ms latency';
   }catch(e){
     var el2=document.getElementById('admin-speed');if(el2)el2.textContent='Response: error';
+  }
+  /* 2. Revenue + Payouts + Platform data from /api/stats/admin-status */
+  try{
+    var sr=await fetch('/api/stats/admin-status',{credentials:'include'});
+    var sd=await sr.json();
+    if(sd.revenue){
+      var rt=document.getElementById('admin-rev-today');if(rt)rt.textContent=sd.revenue.today||'£0';
+      var ra=document.getElementById('admin-rev-total');if(ra)ra.textContent=sd.revenue.total||'£0';
+    }
+    if(sd.payouts){
+      var pc=document.getElementById('admin-pay-creators');if(pc)pc.textContent=sd.payouts.toCreators||'£0';
+      var pp=document.getElementById('admin-pay-partners');if(pp)pp.textContent=sd.payouts.toPartners||'£0';
+    }
+    /* Update Seam status dynamically */
+    if(sd.seamStatus){
+      var seamBadges=document.querySelectorAll('#admin-gym-chains span[style*="Connected"]');
+      /* First chain entry = Seam API */
+      var seamEntry=document.querySelector('#admin-gym-chains > div:first-child span:last-child');
+      if(seamEntry){
+        if(sd.seamStatus==='connected'){seamEntry.textContent='Connected';seamEntry.style.color='#22c55e';}
+        else{seamEntry.textContent='Not Connected';seamEntry.style.color='#eab308';}
+        if(sd.seamGymCount>0){seamEntry.textContent='Connected · '+sd.seamGymCount+' gyms';}
+      }
+    }
+  }catch(e){
+    console.log('[Admin] Stats fetch error:',e.message);
   }
   var ts=document.getElementById('admin-last-updated');if(ts)ts.textContent=new Date().toLocaleTimeString();
 };
@@ -12034,23 +12061,32 @@ function _sgMusicSaveToPlaylist(playlistIdx, trackIdx) {
   if (!tr) return;
 
   if (saved[key]) {
-    // Unsave — remove from playlist
+    /* Unsave — remove from playlist */
     delete saved[key];
     window._sgMusicSaved = saved;
     try { localStorage.setItem('sg_music_saved', JSON.stringify(saved)); } catch(e) {}
     var el = document.getElementById('sg-m-save-' + playlistIdx + '-' + trackIdx);
-    if (el) { el.textContent = '➕'; el.style.animation = ''; }
-    if (window._sgToast) window._sgToast('Removed from playlist', '🗑️');
+    if (el) { el.textContent = '\u2795'; el.style.animation = ''; }
+    if (window._sgToast) window._sgToast('Removed from playlist', '\ud83d\uddd1\ufe0f');
+    /* FULL STACK: Remove from server */
+    fetch('/api/playlists/save', {method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
+      body:JSON.stringify({trackName:tr.n,artist:tr.a||'',playlistTitle:pl.title,sourcePlaylist:pl.title,sourceIndex:trackIdx})
+    }).catch(function(){});
   } else {
-    // Save to playlist
+    /* Save to playlist */
     saved[key] = { name: tr.n, artist: tr.a, playlist: pl.title, savedAt: Date.now() };
     window._sgMusicSaved = saved;
     try { localStorage.setItem('sg_music_saved', JSON.stringify(saved)); } catch(e) {}
     var el2 = document.getElementById('sg-m-save-' + playlistIdx + '-' + trackIdx);
-    if (el2) { el2.textContent = '✅'; el2.style.animation = 'sgActionBounce .3s ease'; }
-    if (window._sgToast) window._sgToast('Saved to "' + pl.title + '" playlist', '✅');
+    if (el2) { el2.textContent = '\u2705'; el2.style.animation = 'sgActionBounce .3s ease'; }
+    if (window._sgToast) window._sgToast('Saved to "' + pl.title + '" playlist', '\u2705');
+    /* FULL STACK: Save to server-side playlist */
+    fetch('/api/playlists/save', {method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
+      body:JSON.stringify({trackName:tr.n,artist:tr.a||'',playlistTitle:pl.title,sourcePlaylist:pl.title,sourceIndex:trackIdx})
+    }).then(function(r){return r.json();}).then(function(d){
+      if(d.shareToken)window._sgPlaylistShareToken=d.shareToken;
+    }).catch(function(){});
   }
-  // Re-render to update button state
   setTimeout(function() { render(); }, 300);
 }
 
@@ -12062,41 +12098,42 @@ function _sgMusicShareWithAffiliate(trackName, playlistIdx) {
   var plName = pl ? encodeURIComponent(pl.title) : '';
   var baseUrl = 'https://scangym.com/music?track=' + trackName + '&playlist=' + plName;
 
-  // Check if user is logged in and has an affiliate/referral code
+  /* Check if user is logged in and has an affiliate/referral code */
   var user = window._sgUser || state.user || null;
   var affiliateCode = '';
   if (user) {
     affiliateCode = user.affiliateCode || user.referralCode || user.uid || '';
   }
-  // Also check localStorage for stored affiliate code
   if (!affiliateCode) {
     try { affiliateCode = localStorage.getItem('sg_affiliate_code') || ''; } catch(e) {}
   }
+  /* FULL STACK: If we have a playlist share token, use it for richer sharing */
+  var shareToken = window._sgPlaylistShareToken || '';
+  var shareUrl;
+  if (shareToken && affiliateCode) {
+    shareUrl = 'https://scangym.com/api/playlists/share/' + shareToken + '?ref=' + encodeURIComponent(affiliateCode);
+  } else if (affiliateCode) {
+    shareUrl = baseUrl + '&ref=' + encodeURIComponent(affiliateCode);
+  } else {
+    shareUrl = baseUrl;
+  }
 
-  var shareUrl = affiliateCode
-    ? baseUrl + '&ref=' + encodeURIComponent(affiliateCode)
-    : baseUrl;
-
-  // Copy to clipboard
+  /* Try Web Share API first (mobile) */
+  if (navigator.share) {
+    navigator.share({title: 'Check out this playlist on ScanGym!', url: shareUrl}).catch(function(){});
+    if (window._sgToast) window._sgToast(affiliateCode ? 'Shared with your affiliate link!' : 'Shared!', '\u2705');
+    return;
+  }
+  /* Clipboard fallback */
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(shareUrl).then(function() {
-      if (window._sgToast) window._sgToast(affiliateCode ? 'Affiliate link copied! You earn on signups 💰' : 'Link copied!', '✅');
-    }).catch(function() {
-      _sgFallbackCopy(shareUrl, affiliateCode);
-    });
+      if (window._sgToast) window._sgToast(affiliateCode ? 'Affiliate link copied! You earn on signups \ud83d\udcb0' : 'Link copied!', '\u2705');
+    }).catch(function() { _sgFallbackCopy(shareUrl, affiliateCode); });
   } else {
     _sgFallbackCopy(shareUrl, affiliateCode);
   }
-
-  // Also trigger Web Share API if available (mobile)
-  if (navigator.share) {
-    navigator.share({
-      title: 'ScanGym Music — ' + decodeURIComponent(trackName),
-      text: pl ? '🎵 Check out "' + pl.title + '" playlist on ScanGym!' : '🎵 Listen on ScanGym!',
-      url: shareUrl
-    }).catch(function() {}); // User may cancel — ignore
-  }
 }
+
 function _sgFallbackCopy(url, hasAffiliate) {
   var ta = document.createElement('textarea');
   ta.value = url; ta.style.position = 'fixed'; ta.style.opacity = '0';
@@ -12676,6 +12713,10 @@ function ChatTabPage(){
 }
 
 /* ═══ Book Tab Filters ═══ */
+/* FULL STACK: Re-trigger search with active filters */
+window._searchAndLoad=function(query){
+  searchGyms(query, true);
+};
 window._sgToggleBookFilters=function(){
   var sheet=document.getElementById('tt-filter-sheet');
   if(!sheet)return;
@@ -12689,6 +12730,21 @@ window._sgApplyBookFilter=function(el){
   if(!sheet)return;
   var activeFilters=[];
   sheet.querySelectorAll('.sg-filter-pill.active').forEach(function(p){activeFilters.push(p.getAttribute('data-filter'));});
+  /* FULL STACK: Update global filter set so next search uses server-side filtering */
+  if(!window._sgActiveFilters)window._sgActiveFilters=new Set();
+  window._sgActiveFilters.clear();
+  activeFilters.forEach(function(f){
+    if(f==='24h')window._sgActiveFilters.add('24h');
+    if(f==='self-serve')window._sgActiveFilters.add('self-service');
+  });
+  /* If 24h or self-serve filter toggled AND we have a search query, re-search from server */
+  var needs24h=activeFilters.indexOf('24h')>=0;
+  var needsSS=activeFilters.indexOf('self-serve')>=0;
+  if((needs24h||needsSS)&&state.lastSearchQuery){
+    _searchAndLoad(state.lastSearchQuery);
+    return;
+  }
+  /* Client-side filter for local-only filters (open, frequent, recent) */
   var carousel=document.getElementById('bm-carousel');
   if(!carousel)return;
   var cards=carousel.querySelectorAll('[data-gym-card]');
@@ -12713,7 +12769,6 @@ window._sgApplyBookFilter=function(el){
     });
     card.style.display=show?'':'none';
   });
-  /* Update counter */
   var visible=carousel.querySelectorAll('[data-gym-card]:not([style*="display: none"])').length;
   var total=cards.length;
   var counter=carousel.querySelector('.tt-counter');
@@ -14975,11 +15030,11 @@ function CreatorDashboardPage(){
 
     <!-- Right-side TikTok buttons (fixed) -->
     <div style="position:fixed;right:12px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:16px;z-index:20;align-items:center">
-      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="navigator.clipboard.writeText('https://${link}');sgToast('Link copied! 🚀','success',2000)">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="_sgCopyAffiliateLink('${handle}')">
         <div style="width:48px;height:48px;background:rgba(255,109,0,.15);border:1px solid rgba(255,109,0,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)">📋</div>
         <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">Copy Link</span>
       </div>
-      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="navigate('/creator-earnings')">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="_sgCreatorWithdraw('${handle}')">
         <div style="width:48px;height:48px;background:rgba(74,222,128,.15);border:1px solid rgba(74,222,128,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)">💸</div>
         <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">Withdraw</span>
       </div>
@@ -15047,15 +15102,53 @@ function CreatorDashboardPage(){
     </div>
   </div>`;
 }
-/* 1-Click Creator Signup */
-window._sg1ClickCreatorSignup=function(){
+/* 1-Click Creator Signup — FULL STACK: /api/creators/join + /api/referrals/generate-link */
+window._sg1ClickCreatorSignup=async function(){
   var u=state.user;
   if(!u){navigate('/login');sgToast('Log in first to become a creator','info');return;}
   var handle=(u.name||u.phone||'creator').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,15)||'creator'+Math.floor(Math.random()*9999);
-  var creatorData={handle:handle,name:u.name||'Creator',joined:new Date().toISOString(),tier:'Starter',totalSessions:0};
-  localStorage.setItem('sg_creator',JSON.stringify(creatorData));
-  sgToast('\u{1F389} Welcome to ScanSquad, '+handle+'!','success',3000);
+  try{
+    var joinResp=await fetch('/api/creators/join',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include'}).then(function(r){return r.json();}).catch(function(){return {};});
+    var linkResp=await fetch('/api/referrals/generate-link',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({handle:handle})}).then(function(r){return r.json();}).catch(function(){return {};});
+    var finalHandle=linkResp.handle||handle;
+    var creatorData={handle:finalHandle,name:u.name||'Creator',joined:new Date().toISOString(),tier:(joinResp.tier&&joinResp.tier.name)||'Starter',serverSynced:true};
+    localStorage.setItem('sg_creator',JSON.stringify(creatorData));
+    sgToast('\u{1F389} Welcome to ScanSquad, '+finalHandle+'!','success',3000);
+  }catch(e){
+    var creatorData2={handle:handle,name:u.name||'Creator',joined:new Date().toISOString(),tier:'Starter'};
+    localStorage.setItem('sg_creator',JSON.stringify(creatorData2));
+    sgToast('\u{1F389} Welcome to ScanSquad, '+handle+'!','success',3000);
+  }
   navigate('/creator-hub');
+};
+/* ═══ FULL STACK: Creator API helpers ═══ */
+/* Copy affiliate link — calls /api/referrals/generate-link then copies */
+window._sgCopyAffiliateLink=async function(handle){
+  try{
+    var r=await fetch('/api/referrals/generate-link',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({handle:handle})});
+    var d=await r.json();
+    var link=d.link||d.url||('https://scangym.com/r/'+handle);
+    navigator.clipboard.writeText(link);
+    sgToast('Affiliate link copied! '+link,'success',3000);
+  }catch(e){
+    var fallback='https://scangym.com/r/'+handle;
+    navigator.clipboard.writeText(fallback);
+    sgToast('Link copied! '+fallback,'success',2000);
+  }
+};
+/* Withdraw — calls /api/referrals/withdraw */
+window._sgCreatorWithdraw=async function(handle){
+  try{
+    var br=await fetch('/api/referrals/balance/'+handle,{credentials:'include'});
+    var bd=await br.json();
+    var bal=bd.available_pence||bd.balance_pence||0;
+    if(bal<100){sgToast('Minimum withdrawal is \u00a31.00. Current balance: \u00a3'+(bal/100).toFixed(2),'info',3000);return;}
+    if(!confirm('Withdraw \u00a3'+(bal/100).toFixed(2)+' to your bank account?'))return;
+    var wr=await fetch('/api/referrals/withdraw',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({handle:handle,amount_pence:bal})});
+    var wd=await wr.json();
+    if(wd.success||wd.withdrawal){sgToast('\u2705 Withdrawal requested! \u00a3'+(bal/100).toFixed(2)+' processing.','success',4000);_loadCreatorDash(handle);}
+    else{sgToast(wd.error||'Withdrawal failed','error',3000);}
+  }catch(e){sgToast('Network error — try again','error');}
 };
 /* Creator Reels Filter */
 window._sgCreatorFilterReels=function(filter,el){
@@ -17450,6 +17543,27 @@ function CreatorReelsPage(){
 
 // ═══ #143: Gym Partner Hub ═══
 // ═══ Gym Partner Landing Page — /partner (was 404) ═══
+/* FULL STACK: Connect Seam smart lock system */
+window._sgConnectSeam=async function(){
+  var u=state.user;
+  if(!u){navigate('/login');sgToast('Log in first to connect Seam','info');return;}
+  sgToast('Connecting to Seam...','info',2000);
+  try{
+    var r=await fetch('/api/access/owner/connect-seam',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({})});
+    var d=await r.json();
+    if(d.connectUrl||d.connect_url){
+      window.open(d.connectUrl||d.connect_url,'_blank');
+      sgToast('Seam connection page opened! Complete setup there.','success',4000);
+    }else if(d.success){
+      sgToast('Seam connected successfully!','success',3000);
+    }else{
+      sgToast(d.error||d.message||'Seam setup requires contacting support','info',4000);
+    }
+  }catch(e){
+    sgToast('Could not reach Seam API - contact support@scangym.com','error',4000);
+  }
+};
+
 function PartnerLandingPage(){
   return`<div style="position:relative;min-height:100vh;background:linear-gradient(180deg,#0a0a16 0%,#0d1117 50%,#0a0a16 100%);overflow-y:auto;padding-bottom:80px">
     <!-- Background glow -->
@@ -17461,7 +17575,7 @@ function PartnerLandingPage(){
         <div style="width:48px;height:48px;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)">🏢</div>
         <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">Claim Gym</span>
       </div>
-      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="sgToast('Seam integration coming soon!','info')">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="_sgConnectSeam()">
         <div style="width:48px;height:48px;background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)">🔐</div>
         <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">Seam</span>
       </div>
@@ -17498,7 +17612,7 @@ function PartnerLandingPage(){
           <div><p style="color:#3b82f6;font-size:16px;font-weight:900">Connect Seam Account</p><p style="color:rgba(255,255,255,.35);font-size:12px">Enable QR code entry at your 24/7 gym</p></div>
         </div>
         <p style="color:rgba(255,255,255,.4);font-size:13px;line-height:1.5;margin-bottom:16px">Connect your Seam smart lock system to let ScanGym members enter with their QR code. Works with Yale, August, Schlage, and 100+ lock brands.</p>
-        <button onclick="sgToast('Seam connection wizard coming soon! We\'ll contact you to set up.','info',4000)" style="width:100%;background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);border-radius:12px;padding:14px;color:#3b82f6;font-weight:700;font-size:15px;cursor:pointer">🔗 Connect Seam →</button>
+        <button onclick="_sgConnectSeam()" style="width:100%;background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);border-radius:12px;padding:14px;color:#3b82f6;font-weight:700;font-size:15px;cursor:pointer">🔗 Connect Seam →</button>
       </div>
     </div>
 
