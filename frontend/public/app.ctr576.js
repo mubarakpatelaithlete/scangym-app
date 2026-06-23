@@ -8969,6 +8969,10 @@ window.showBookingCheckout=async function(gymId, prefillDate, prefillTime){
   const _passKey=selPass==='week'?'weekly':selPass;
   let _sgRefActive=null;try{const _r=JSON.parse(localStorage.getItem('sg_referral')||'null');if(_r&&_r.handle&&_r.expiry>Date.now())_sgRefActive=_r.handle;}catch(e){}
 
+  // FIX: Moved isCash/isSaved declarations before they're referenced (was temporal dead zone crash)
+  const isCash=selPayMethod==='cash';
+  const isSaved=selPayMethod==='saved'&&gbs.savedCard;
+
   // R7: Parallel fetch — price + saved cards at the same time for speed
   let _serverPrices=null;
   let _referralInfo=null;
@@ -9006,8 +9010,7 @@ window.showBookingCheckout=async function(gymId, prefillDate, prefillTime){
   const dateObj=new Date(selDate+'T12:00:00');
   const dateDisplay=selDate===today?'Today':`${dayNames[dateObj.getDay()]}, ${dateObj.getDate()} ${monthNames[dateObj.getMonth()]}`;
 
-  const isCash=selPayMethod==='cash';
-  const isSaved=selPayMethod==='saved'&&gbs.savedCard;
+  // isCash and isSaved already declared above (before parallel fetch)
   const savedCardLabel=isSaved?((({visa:'Visa',mastercard:'Mastercard',amex:'Amex'})[gbs.savedCard.brand]||gbs.savedCard.brand||'Card')+' ····'+gbs.savedCard.last4):'';
 
   const sheet=document.createElement('div');
@@ -17243,8 +17246,27 @@ if(localStorage.getItem('sg_push_enabled')==='1'&&state.user){
     var activeLabel=document.querySelector('.sg-tab-item.active .sg-tab-label');
     var currentTab=activeLabel?activeLabel.textContent.trim().toLowerCase():'';
     if(currentTab==='book'){
-      // On Book tab: go to checkout for visible gym if available
-      var card=document.querySelector('.tt-card:not(.tt-offscreen)');
+      // On Book tab: go to checkout for the currently visible gym card.
+      // FIX: Use scroll position to find the card actually in view, not just
+      // the first non-offscreen card (IntersectionObserver rootMargin:600px
+      // marks multiple cards as visible, querySelector always returned card 0).
+      var carousel=document.getElementById('bm-carousel');
+      var card=null;
+      if(carousel){
+        var cards=carousel.querySelectorAll('.tt-card');
+        var scrollTop=carousel.scrollTop;
+        var viewH=carousel.clientHeight;
+        var bestCard=null;var bestOverlap=0;
+        cards.forEach(function(c){
+          var top=c.offsetTop;var h=c.offsetHeight;
+          var overlapStart=Math.max(top,scrollTop);
+          var overlapEnd=Math.min(top+h,scrollTop+viewH);
+          var overlap=Math.max(0,overlapEnd-overlapStart);
+          if(overlap>bestOverlap){bestOverlap=overlap;bestCard=c;}
+        });
+        card=bestCard;
+      }
+      if(!card) card=document.querySelector('.tt-card:not(.tt-offscreen)');
       var gid=card?(card.getAttribute('data-gym-id')||card.getAttribute('data-id')):null;
       if(gid&&typeof showBookingCheckout==='function'){showBookingCheckout(gid);}
     }else{
