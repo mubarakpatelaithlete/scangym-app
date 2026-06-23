@@ -18752,8 +18752,8 @@ window.sgFeedback = async function(elementId, vote, btn) {
   document.head.appendChild(sty);
 
   function _progressDots(step){
-    // R6: 2 dots only — done step is auto-skipped
-    var steps=_sheetMode==="book"?["auth","card"]:["auth","withdraw"];
+    // R6: Book mode: auth → card. Share/reels: auth only (no withdraw step).
+    var steps=_sheetMode==="book"?["auth","card"]:["auth"];
     var idx=steps.indexOf(step);if(idx<0)idx=0;
     return '<div class="sg-auth-progress">'+steps.map(function(s,i){
       return '<div class="sg-auth-dot'+(i<idx?' done':'')+(i===idx?' active':'')+'"></div>';
@@ -19034,14 +19034,11 @@ window.sgFeedback = async function(elementId, vote, btn) {
           instagram:'',tiktok:'',youtube:'',followers:'',why:'auto-reels-share'
         })}).catch(function(){});
       }
-      if(creatorData.withdrawMethod){
-        // R5 FIX: Already has withdraw method — skip done, instant resume share/save
-        window._sgCloseAuthSheet();
-        _resumePendingAction();
-        return;
-      }
-      // Show withdraw setup — Stripe Connect is default (1-click)
-      _renderWithdrawStep();
+      // After login, affiliate code is auto-added to share link.
+      // Earnings go to ScanGym wallet — no need for payment connect step.
+      window._sgCloseAuthSheet();
+      _resumePendingAction();
+      return;
     }else{
       // Unknown mode — just close
       window._sgCloseAuthSheet();
