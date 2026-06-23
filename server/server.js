@@ -44,6 +44,7 @@ const groupBookingRouter = require('./routes/group-booking');
 const rebookRouter = require('./routes/rebook');
 const amenitiesRouter = require('./routes/amenities');
 const gymMgmtRouter = require('./routes/gym-management');
+const playlistsRouter = require('./routes/playlists');
 const analyticsMiddleware = require('./middleware/analytics');
 
 const app = express();
@@ -447,6 +448,7 @@ app.use('/api/group', groupBookingRouter);
 app.use('/api/rebook', rebookRouter);
 app.use('/api/amenities', amenitiesRouter);
 app.use('/api/gym-mgmt', gymMgmtRouter);
+app.use('/api/playlists', playlistsRouter);
 
 // -- Serve Frontend --
 // Digital Asset Links for Android TWA verification
