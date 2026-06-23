@@ -13929,18 +13929,7 @@ function MoreHubPage(){
           <div style="width:46px;height:46px;background:rgba(0,0,0,.45);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.12)">\ud83d\udcb3</div>
           <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Wallet</span>
         </div>
-        <div onclick="_shareIDCard()" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
-          <div style="width:46px;height:46px;background:rgba(0,0,0,.45);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.12)">\ud83d\udce4</div>
-          <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Share</span>
-        </div>
-        <div onclick="navigate('/refer')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
-          <div style="width:46px;height:46px;background:rgba(255,109,0,.15);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,109,0,.3)">\ud83c\udf81</div>
-          <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Refer</span>
-        </div>
-        <div onclick="navigate('/more')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
-          <div style="width:46px;height:46px;background:rgba(0,0,0,.45);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.12)">\u2699\ufe0f</div>
-          <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">More</span>
-        </div>
+        <!-- Share, Refer, and Settings buttons removed -->
         <div onclick="logout()" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
           <div style="width:46px;height:46px;background:rgba(239,68,68,.1);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(239,68,68,.2)">\ud83d\udeaa</div>
           <span style="color:rgba(239,68,68,.6);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Out</span>
