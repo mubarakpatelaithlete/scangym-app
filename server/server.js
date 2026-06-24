@@ -213,7 +213,7 @@ app.use(session({
     secure: process.env.NODE_ENV === 'production', // true on Railway (HTTPS via proxy)
     httpOnly: true,
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    sameSite: 'lax',
+    sameSite: 'strict',
   },
   proxy: true, // Trust Railway's reverse proxy for secure cookies
 }));

@@ -632,7 +632,13 @@ router.get('/cdn-proxy/:cdnKey', (req, res) => {
   const cdnKey = req.params.cdnKey.replace(/[^a-zA-Z0-9_-]/g, '');
   const cdnUrl = `https://cdn.scangym.com/videos/${cdnKey}.mp4`;
 
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const origin = req.headers.origin;
+  const allowedOrigins = ['https://scangym.com', 'https://www.scangym.com'];
+  if (origin && allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', 'https://scangym.com');
+  }
   res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Range');
   res.setHeader('Access-Control-Expose-Headers', 'Content-Range, Content-Length, Accept-Ranges');
@@ -685,7 +691,13 @@ router.get('/download/:cdnKey', async (req, res) => {
   const filename = (req.query.name || 'scangym-reel').replace(/[^a-zA-Z0-9_-]/g, '_') + '.mp4';
   const skipWatermark = req.query.raw === '1';
 
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const origin = req.headers.origin;
+  const allowedOrigins = ['https://scangym.com', 'https://www.scangym.com'];
+  if (origin && allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', 'https://scangym.com');
+  }
   res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
   res.setHeader('Content-Type', 'video/mp4');
 

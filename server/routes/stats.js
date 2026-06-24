@@ -17,6 +17,11 @@ const router = express.Router();
 const pool = require('../middleware/db');
 const { authenticateUser, optionalAuth } = require('../middleware/auth');
 
+const PERIOD_INTERVALS = { '24h': '1 day', '7d': '7 days', '30d': '30 days' };
+function safeInterval(period) {
+  return PERIOD_INTERVALS[period] || '7 days';
+}
+
 // GET /api/stats/gym/:gymId — Public stats summary
 router.get('/gym/:gymId', optionalAuth, async (req, res) => {
   try {
@@ -126,7 +131,7 @@ router.get('/owner/:gymId', authenticateUser, async (req, res) => {
 router.get('/ceo', authenticateUser, async (req, res) => {
   try {
     const { period = '7d' } = req.query;
-    const interval = period === '30d' ? '30 days' : period === '24h' ? '1 day' : '7 days';
+    const interval = safeInterval(period);
 
     // ========= TRAFFIC VOLUME =========
     let traffic = { total: 0, pageViews: 0, apiCalls: 0, uniqueVisitors: 0, sources: [] };
@@ -342,7 +347,7 @@ router.get('/ceo', authenticateUser, async (req, res) => {
 router.get('/analytics', authenticateUser, async (req, res) => {
   try {
     const { period = '7d' } = req.query;
-    const interval = period === '30d' ? '30 days' : period === '24h' ? '1 day' : '7 days';
+    const interval = safeInterval(period);
 
     let analytics = { pageViews: 0, apiCalls: 0, uniqueVisitors: 0, topPages: [] };
     try {
@@ -489,7 +494,7 @@ router.get('/suppliers', async (req, res) => {
 router.get('/ceo/creators', authenticateUser, async (req, res) => {
   try {
     const { period = '7d' } = req.query;
-    const interval = period === '30d' ? '30 days' : period === '24h' ? '1 day' : '7 days';
+    const interval = safeInterval(period);
 
     // Total creators
     let totalCreators = 0, totalReferrals = 0, totalEarnings = 0, totalConversions = 0;
