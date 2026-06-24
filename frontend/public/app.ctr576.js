@@ -18348,27 +18348,41 @@ window._loadPartnerPayouts=async function(){
 
 // ═══ AI TRAINER TAB PAGE ═══
 // Full-featured AI personal trainer page — same quality as MusicTabPage & PhotosTabPage
+// Uses TikTok-style fullscreen swipeable cards like PhotosTabPage
 function TrainerTabPage(){
-  var muscleGroups=[
-    {id:'chest',name:'Chest',icon:'💪',img:'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=600&h=400&fit=crop',exercises:['Bench Press','Incline DB Press','Cable Fly','Push-ups','Dips'],color:'#ef4444'},
-    {id:'back',name:'Back',icon:'🔙',img:'https://images.unsplash.com/photo-1603287681836-b174ce5074c2?w=600&h=400&fit=crop',exercises:['Deadlift','Lat Pulldown','Barbell Row','Pull-ups','Cable Row'],color:'#3b82f6'},
-    {id:'legs',name:'Legs',icon:'🦵',img:'https://images.unsplash.com/photo-1434608519344-49d77a699e1d?w=600&h=400&fit=crop',exercises:['Squat','Leg Press','Romanian DL','Lunges','Leg Curl'],color:'#22c55e'},
-    {id:'shoulders',name:'Shoulders',icon:'🏔️',img:'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=600&h=400&fit=crop',exercises:['OHP','Lateral Raise','Face Pull','Arnold Press','Rear Delt Fly'],color:'#a855f7'},
-    {id:'arms',name:'Arms',icon:'💪',img:'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=600&h=400&fit=crop',exercises:['Barbell Curl','Tricep Pushdown','Hammer Curl','Skull Crusher','Preacher Curl'],color:'#f59e0b'},
-    {id:'core',name:'Core',icon:'🎯',img:'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=600&h=400&fit=crop',exercises:['Plank','Cable Crunch','Hanging Leg Raise','Russian Twist','Ab Wheel'],color:'#06b6d4'}
+  var categories=['🔥 All','💪 Chest','🔙 Back','🦵 Legs','🏔️ Shoulders','💪 Arms','🎯 Core','🏃 Cardio'];
+  var _catIdx=window._sgTrainerCat||0;
+  var allExercises=[
+    {img:'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=1080&h=1920&fit=crop',title:'Bench Press',muscle:'Chest',sets:'4×8-12',rest:'90s',user:'@coach_ai',likes:'12.4K',likesN:12400,comments:'892',cat:1,tip:'Keep shoulder blades retracted. Drive feet into floor for leg drive. Control the descent — 2 seconds down, explode up.',avatar:'💪',color:'#ef4444'},
+    {img:'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1080&h=1920&fit=crop',title:'Deadlift',muscle:'Back',sets:'5×5',rest:'3 min',user:'@powercoach',likes:'18.7K',likesN:18700,comments:'1.2K',cat:2,tip:'Hinge at hips, bar close to shins. Brace core hard. Lock out with glutes — don\'t hyperextend your back.',avatar:'🏋️',color:'#3b82f6'},
+    {img:'https://images.unsplash.com/photo-1434608519344-49d77a699e1d?w=1080&h=1920&fit=crop',title:'Barbell Squat',muscle:'Legs',sets:'4×6-10',rest:'2 min',user:'@legday_pro',likes:'15.3K',likesN:15300,comments:'967',cat:3,tip:'Break at hips and knees together. Keep chest up, knees tracking over toes. Hit parallel or below.',avatar:'🦵',color:'#22c55e'},
+    {img:'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=1080&h=1920&fit=crop',title:'Overhead Press',muscle:'Shoulders',sets:'4×8-10',rest:'90s',user:'@military_press',likes:'8.9K',likesN:8900,comments:'534',cat:4,tip:'Squeeze glutes for stability. Press in a slight arc — bar travels around your face. Lock out at the top.',avatar:'🏔️',color:'#a855f7'},
+    {img:'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=1080&h=1920&fit=crop',title:'Barbell Curl',muscle:'Arms',sets:'3×10-12',rest:'60s',user:'@arm_gains',likes:'6.2K',likesN:6200,comments:'378',cat:5,tip:'Keep elbows pinned to sides. Full range of motion — stretch at the bottom, squeeze at the top. No swinging!',avatar:'💪',color:'#f59e0b'},
+    {img:'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=1080&h=1920&fit=crop',title:'Hanging Leg Raise',muscle:'Core',sets:'3×12-15',rest:'45s',user:'@abs_master',likes:'7.8K',likesN:7800,comments:'445',cat:6,tip:'Slow and controlled — no kipping. Curl pelvis up, don\'t just swing legs. Hold at the top for 1 second.',avatar:'🎯',color:'#06b6d4'},
+    {img:'https://images.unsplash.com/photo-1603287681836-b174ce5074c2?w=1080&h=1920&fit=crop',title:'Lat Pulldown',muscle:'Back',sets:'4×10-12',rest:'60s',user:'@back_width',likes:'5.5K',likesN:5500,comments:'312',cat:2,tip:'Pull to upper chest, not behind neck. Lean back slightly. Squeeze lats at the bottom of each rep.',avatar:'🔙',color:'#3b82f6'},
+    {img:'https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=1080&h=1920&fit=crop',title:'Incline Dumbbell Press',muscle:'Chest',sets:'4×10-12',rest:'90s',user:'@chest_dev',likes:'9.1K',likesN:9100,comments:'578',cat:1,tip:'30-45° incline. Lower dumbbells to nipple line. Press up in an arc — dumbbells should nearly touch at the top.',avatar:'💪',color:'#ef4444'},
+    {img:'https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=1080&h=1920&fit=crop',title:'Romanian Deadlift',muscle:'Legs',sets:'3×10-12',rest:'90s',user:'@hamstring_king',likes:'10.4K',likesN:10400,comments:'623',cat:3,tip:'Soft knees, push hips BACK. Feel the stretch in hamstrings. Keep bar close to legs throughout.',avatar:'🦵',color:'#22c55e'},
+    {img:'https://images.unsplash.com/photo-1605296867304-46d5465a13f1?w=1080&h=1920&fit=crop',title:'Lateral Raise',muscle:'Shoulders',sets:'4×12-15',rest:'45s',user:'@delt_sculptor',likes:'11.3K',likesN:11300,comments:'701',cat:4,tip:'Slight bend in elbows. Lift to ear height, not above. Lead with elbows, pour imaginary water at the top.',avatar:'🏔️',color:'#a855f7'},
+    {img:'https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?w=1080&h=1920&fit=crop',title:'Tricep Pushdown',muscle:'Arms',sets:'3×12-15',rest:'45s',user:'@tri_master',likes:'4.8K',likesN:4800,comments:'267',cat:5,tip:'Lock elbows at your sides. Full extension at the bottom, squeeze triceps hard. Slow eccentric — 2-3 seconds.',avatar:'💪',color:'#f59e0b'},
+    {img:'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=1080&h=1920&fit=crop',title:'HIIT Sprint Intervals',muscle:'Cardio',sets:'10×30s on/30s off',rest:'Active',user:'@cardio_beast',likes:'13.6K',likesN:13600,comments:'845',cat:7,tip:'Go ALL OUT on sprint intervals. Full recovery during rest periods. Start with 6 rounds, build to 10 over 4 weeks.',avatar:'🏃',color:'#f43f5e'},
+    {img:'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=1080&h=1920&fit=crop',title:'Cable Fly',muscle:'Chest',sets:'3×12-15',rest:'60s',user:'@fly_motion',likes:'7.1K',likesN:7100,comments:'389',cat:1,tip:'Big stretch at the bottom, bring hands together at chest height. Maintain slight elbow bend throughout.',avatar:'💪',color:'#ef4444'},
+    {img:'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=1080&h=1920&fit=crop',title:'Pull-ups',muscle:'Back',sets:'4×Max reps',rest:'2 min',user:'@pullup_pro',likes:'16.2K',likesN:16200,comments:'1.1K',cat:2,tip:'Dead hang at bottom, chin over bar at top. No kipping — strict form. Can\'t do one? Start with negatives.',avatar:'🔙',color:'#3b82f6'},
+    {img:'https://images.unsplash.com/photo-1550345332-09e3ac987658?w=1080&h=1920&fit=crop',title:'Leg Press',muscle:'Legs',sets:'4×12-15',rest:'90s',user:'@leg_machine',likes:'8.4K',likesN:8400,comments:'498',cat:3,tip:'Feet shoulder-width apart, mid-platform. Lower until knees hit 90°. Don\'t lock out knees at the top.',avatar:'🦵',color:'#22c55e'},
+    {img:'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=1080&h=1920&fit=crop',title:'Plank Hold',muscle:'Core',sets:'3×45-60s',rest:'30s',user:'@core_strength',likes:'5.9K',likesN:5900,comments:'334',cat:6,tip:'Squeeze everything — glutes, core, quads. Body in a straight line. If your hips sag, you\'re done — rest.',avatar:'🎯',color:'#06b6d4'}
   ];
-  var quickWorkouts=[
-    {title:'Full Body Blast',duration:'45 min',level:'Intermediate',icon:'🔥',muscles:'All muscle groups',exercises:8},
-    {title:'Upper Body Power',duration:'40 min',level:'Advanced',icon:'💪',muscles:'Chest, Back, Shoulders, Arms',exercises:10},
-    {title:'Leg Day Destroyer',duration:'50 min',level:'All Levels',icon:'🦵',muscles:'Quads, Hamstrings, Glutes, Calves',exercises:8},
-    {title:'HIIT Cardio Burn',duration:'25 min',level:'Beginner+',icon:'🏃',muscles:'Full body cardio',exercises:12},
-    {title:'Core & Abs',duration:'20 min',level:'All Levels',icon:'🎯',muscles:'Abs, Obliques, Lower Back',exercises:6},
-    {title:'Push Day',duration:'45 min',level:'Intermediate',icon:'🏋️',muscles:'Chest, Shoulders, Triceps',exercises:9}
-  ];
-  var selMuscle=window._sgTrainerMuscle||null;
+
+  var exercises=_catIdx===0?allExercises:allExercises.filter(function(e){return e.cat===_catIdx;});
+  if(exercises.length===0)exercises=allExercises;
+  window._sgTrainerExAll=exercises;
+  var curIdx=window._sgTrainerExCur||0;
+  if(curIdx>=exercises.length)curIdx=0;
+
+  // AI chat state
   var trainerChat=window._sgTrainerChat||[];
   var trainerLoading=window._sgTrainerLoading||false;
-  // Init trainer send function
+  var showChat=window._sgTrainerShowChat||false;
+
+  // Init functions
   window._sgTrainerAsk=async function(q){
     if(!q||window._sgTrainerLoading)return;
     window._sgTrainerLoading=true;
@@ -18378,101 +18392,135 @@ function TrainerTabPage(){
       var r=await fetch('/api/ai/avatar-trainer',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({muscleGroup:q})});
       var d=await r.json();
       window._sgTrainerChat.push({role:'ai',text:d.response?.text||'Here\'s my recommendation for '+q+'!'});
-    }catch(e){window._sgTrainerChat.push({role:'ai',text:'💡 Try focusing on compound movements for '+q+'. Start with 3 sets of 8-12 reps, rest 60-90s between sets.'});}
+    }catch(e){window._sgTrainerChat.push({role:'ai',text:'💡 Focus on compound movements. Start with 3 sets of 8-12 reps, rest 60-90s between sets. Progressive overload is key!'});}
     window._sgTrainerLoading=false;render();
-    setTimeout(function(){var c=document.getElementById('sg-trainer-chat');if(c)c.scrollTop=c.scrollHeight;},100);
+    setTimeout(function(){var c=document.getElementById('sg-trainer-chat-msgs');if(c)c.scrollTop=c.scrollHeight;},100);
   };
-  window._sgTrainerSend=function(){
-    var el=document.getElementById('sg-trainer-input');
+  window._sgTrainerSendMsg=function(){
+    var el=document.getElementById('sg-trainer-chat-input');
     if(!el||!el.value.trim())return;
     window._sgTrainerAsk(el.value.trim());el.value='';
   };
-  window._sgTrainerWorkout=async function(title){
-    window._sgTrainerAsk('Generate a detailed workout plan for: '+title);
+  window._sgTrainerToggleChat=function(){
+    window._sgTrainerShowChat=!window._sgTrainerShowChat;render();
   };
-  return`<div id="sg-trainer-wrap" style="position:absolute;inset:0;background:linear-gradient(180deg,#0a0a16 0%,#111127 100%);overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none">
-    <style>
-      #sg-trainer-wrap::-webkit-scrollbar{display:none}
-      @keyframes sgTrainerPulse{0%,100%{box-shadow:0 0 20px rgba(255,109,0,.2)}50%{box-shadow:0 0 40px rgba(255,109,0,.4)}}
-      @keyframes sgTrainerFade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-      .sg-trainer-card{animation:sgTrainerFade .3s ease-out forwards}
-    </style>
-    <!-- Header -->
-    <div style="padding:16px 16px 0;display:flex;align-items:center;justify-content:space-between">
-      <div style="display:flex;align-items:center;gap:10px">
-        <div style="width:42px;height:42px;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;animation:sgTrainerPulse 3s ease-in-out infinite">🤖</div>
-        <div>
-          <h1 style="font-size:18px;font-weight:900;color:#fff;margin:0;letter-spacing:-.3px">AI Personal Trainer</h1>
-          <p style="color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0">Powered by GPT-4o · Your 24/7 coach</p>
-        </div>
-      </div>
-      <div onclick="window._sgTrainerChat=[];render()" style="width:34px;height:34px;background:rgba(255,255,255,.06);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px" title="New session">🔄</div>
-    </div>
+  window._sgTrainerLike=function(idx){
+    var ex=window._sgTrainerExAll[idx];if(!ex)return;
+    ex._liked=!ex._liked;
+    ex.likesN=ex._liked?(ex.likesN+1):(ex.likesN-1);
+    ex.likes=ex.likesN>999?((ex.likesN/1000).toFixed(1)+'K'):(''+ex.likesN);
+    render();
+  };
+  window._sgTrainerBookmark=function(idx){
+    var ex=window._sgTrainerExAll[idx];if(!ex)return;
+    ex._saved=!ex._saved;
+    sgToast(ex._saved?'✅ Saved to your workouts':'Removed from saved','info',2000);
+    render();
+  };
 
-    <!-- Muscle Group Selector — Horizontal scroll -->
-    <div style="padding:16px 0 8px">
-      <div style="display:flex;gap:10px;overflow-x:auto;padding:0 16px;-webkit-overflow-scrolling:touch;scrollbar-width:none">
-        ${muscleGroups.map(function(m){
-          var sel=selMuscle===m.id;
-          return '<div onclick="window._sgTrainerMuscle='+(sel?'null':'\''+m.id+'\'')+';render()" style="flex-shrink:0;width:90px;cursor:pointer;text-align:center;transition:.2s">'+
-            '<div style="width:90px;height:90px;border-radius:16px;overflow:hidden;border:2px solid '+(sel?m.color:'rgba(255,255,255,.08)')+';position:relative;margin-bottom:6px">'+
-            '<img src="'+m.img+'" style="width:100%;height:100%;object-fit:cover;opacity:'+(sel?'.9':'.5')+'" loading="lazy">'+
-            '<div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,'+(sel?m.color+'cc':'rgba(0,0,0,.7)')+');display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px">'+
-            '<span style="font-size:20px">'+m.icon+'</span></div></div>'+
-            '<span style="color:'+(sel?m.color:'rgba(255,255,255,.5)')+';font-size:11px;font-weight:'+(sel?'700':'600')+'">'+m.name+'</span></div>';
-        }).join('')}
-      </div>
-    </div>
+  // Build exercise slides (Photos-tab style)
+  function exerciseSlide(ex, idx, total){
+    var liked=ex._liked||false;
+    var saved=ex._saved||false;
+    return '<div class="sg-trainer-slide" style="scroll-snap-align:start;scroll-snap-stop:always;width:100%;height:100%;position:relative;flex-shrink:0">'+
+      '<img src="'+ex.img+'" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy" alt="'+ex.title+'">'+
+      '<div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.2) 0%,transparent 30%,transparent 50%,rgba(0,0,0,.85) 100%)"></div>'+
+      // ── Right action bar (like Photos tab) ──
+      '<div style="position:absolute;right:12px;bottom:180px;display:flex;flex-direction:column;align-items:center;gap:18px;z-index:10">'+
+        '<div onclick="window._sgTrainerLike('+idx+')" style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;-webkit-tap-highlight-color:transparent">'+
+          '<div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:26px;'+(liked?'animation:sgTrainerActionBounce .3s ease-out':'')+'">❤️</div>'+
+          '<span style="color:#fff;font-size:11px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.5)">'+ex.likes+'</span>'+
+        '</div>'+
+        '<div onclick="window._sgTrainerBookmark('+idx+')" style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer">'+
+          '<div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:24px">'+(saved?'🔖':'🔖')+'</div>'+
+          '<span style="color:#fff;font-size:11px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.5)">'+(saved?'Saved':'Save')+'</span>'+
+        '</div>'+
+        '<div onclick="window._sgTrainerAsk(\''+ex.title+' — detailed form tips, common mistakes, and a workout plan\')" style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer">'+
+          '<div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:24px">🤖</div>'+
+          '<span style="color:#fff;font-size:11px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.5)">Ask AI</span>'+
+        '</div>'+
+        '<div onclick="sgToast(\'📤 Share coming soon\',\'info\',2000)" style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer">'+
+          '<div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:24px">↗️</div>'+
+          '<span style="color:#fff;font-size:11px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.5)">Share</span>'+
+        '</div>'+
+      '</div>'+
+      // ── Bottom info overlay ──
+      '<div style="position:absolute;bottom:0;left:0;right:0;padding:16px 16px 20px;z-index:10">'+
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">'+
+          '<div style="width:36px;height:36px;background:linear-gradient(135deg,'+ex.color+','+ex.color+'99);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;border:2px solid rgba(255,255,255,.3)">'+ex.avatar+'</div>'+
+          '<div><span style="color:#fff;font-size:14px;font-weight:800;text-shadow:0 1px 6px rgba(0,0,0,.5)">'+ex.user+'</span><span style="color:rgba(255,255,255,.5);font-size:12px;margin-left:6px">· Follow</span></div>'+
+        '</div>'+
+        '<h2 style="color:#fff;font-size:22px;font-weight:900;margin:0 0 4px;text-shadow:0 2px 10px rgba(0,0,0,.5);letter-spacing:-.3px">'+ex.title+'</h2>'+
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'+
+          '<span style="background:'+ex.color+'40;color:#fff;padding:3px 10px;border-radius:8px;font-size:11px;font-weight:700;border:1px solid '+ex.color+'60">'+ex.muscle+'</span>'+
+          '<span style="color:rgba(255,255,255,.6);font-size:12px;font-weight:600">'+ex.sets+'</span>'+
+          '<span style="color:rgba(255,255,255,.4);font-size:12px">⏱ Rest '+ex.rest+'</span>'+
+        '</div>'+
+        '<p style="color:rgba(255,255,255,.75);font-size:13px;line-height:1.5;margin:0;text-shadow:0 1px 4px rgba(0,0,0,.4)">💡 '+ex.tip+'</p>'+
+      '</div>'+
+    '</div>';
+  }
 
-    ${selMuscle?function(){
-      var mg=muscleGroups.find(function(m){return m.id===selMuscle;});
-      return '<div style="padding:0 16px 12px;animation:sgTrainerFade .3s ease-out" class="sg-trainer-card">'+
-        '<div style="background:'+mg.color+'15;border:1px solid '+mg.color+'30;border-radius:16px;padding:16px">'+
-        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">'+
-        '<span style="font-size:24px">'+mg.icon+'</span>'+
-        '<div><h3 style="color:#fff;font-size:16px;font-weight:800;margin:0">'+mg.name+' Exercises</h3>'+
-        '<p style="color:rgba(255,255,255,.4);font-size:11px;margin:2px 0 0">Tap any exercise for AI coaching tips</p></div></div>'+
-        '<div style="display:flex;flex-wrap:wrap;gap:6px">'+
-        mg.exercises.map(function(ex){
-          return '<button onclick="window._sgTrainerAsk(\''+ex+' form tips and workout plan\')" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);color:#fff;padding:8px 14px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;transition:.15s" onmouseenter="this.style.background=\''+mg.color+'25\';this.style.borderColor=\''+mg.color+'50\'" onmouseleave="this.style.background=\'rgba(255,255,255,.06)\';this.style.borderColor=\'rgba(255,255,255,.08)\'">'+ex+'</button>';
-        }).join('')+
-        '</div></div></div>';
-    }():''}
-
-    <!-- Quick Workouts Grid -->
-    <div style="padding:4px 16px 12px">
-      <h3 style="color:#fff;font-size:15px;font-weight:800;margin:0 0 10px;display:flex;align-items:center;gap:6px">⚡ Quick Workouts<span style="color:rgba(255,255,255,.25);font-size:11px;font-weight:500;margin-left:4px">Tap to generate</span></h3>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        ${quickWorkouts.map(function(w){
-          return '<div onclick="window._sgTrainerWorkout(\''+w.title+'\');" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:14px;cursor:pointer;transition:.15s" onmouseenter="this.style.borderColor=\'rgba(255,109,0,.3)\'" onmouseleave="this.style.borderColor=\'rgba(255,255,255,.06)\'">'+
-            '<div style="font-size:22px;margin-bottom:6px">'+w.icon+'</div>'+
-            '<p style="color:#fff;font-size:13px;font-weight:700;margin:0 0 2px">'+w.title+'</p>'+
-            '<p style="color:rgba(255,255,255,.35);font-size:10px;margin:0">'+w.duration+' · '+w.level+'</p>'+
-            '<p style="color:rgba(255,255,255,.25);font-size:10px;margin:3px 0 0">'+w.muscles+'</p>'+
-          '</div>';
-        }).join('')}
-      </div>
-    </div>
-
-    <!-- AI Chat Section -->
-    <div style="padding:0 16px 120px">
-      <h3 style="color:#fff;font-size:15px;font-weight:800;margin:0 0 10px;display:flex;align-items:center;gap:6px">💬 Ask Your Trainer</h3>
-      <div id="sg-trainer-chat" style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:12px;min-height:120px;max-height:300px;overflow-y:auto;margin-bottom:10px;scrollbar-width:none">
-        ${trainerChat.length===0?
-          '<div style="text-align:center;padding:20px 0"><p style="color:rgba(255,255,255,.2);font-size:13px">Ask me about workouts, form, nutrition, recovery...</p></div>':
+  // Chat overlay HTML
+  var chatOverlay='';
+  if(showChat){
+    chatOverlay='<div style="position:absolute;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(12px);z-index:50;display:flex;flex-direction:column">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px">'+
+        '<div style="display:flex;align-items:center;gap:10px">'+
+          '<div style="width:36px;height:36px;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px">🤖</div>'+
+          '<div><h3 style="color:#fff;font-size:16px;font-weight:800;margin:0">AI Trainer</h3><p style="color:rgba(255,255,255,.4);font-size:11px;margin:0">Ask me anything about fitness</p></div>'+
+        '</div>'+
+        '<div onclick="window._sgTrainerToggleChat()" style="width:36px;height:36px;background:rgba(255,255,255,.1);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px">✕</div>'+
+      '</div>'+
+      '<div id="sg-trainer-chat-msgs" style="flex:1;overflow-y:auto;padding:0 16px;scrollbar-width:none;-webkit-overflow-scrolling:touch">'+
+        (trainerChat.length===0?
+          '<div style="text-align:center;padding:40px 20px"><div style="font-size:48px;margin-bottom:12px">🤖</div><h3 style="color:#fff;font-size:18px;font-weight:800;margin:0 0 8px">Ask Your AI Trainer</h3><p style="color:rgba(255,255,255,.4);font-size:13px;margin:0 0 20px">Workouts, form tips, nutrition, recovery — I know it all</p><div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center">'+
+            ['Create a workout plan','Best exercises for fat loss','How much protein?','Push pull legs split','Recovery tips','Calculate my 1RM'].map(function(s){return '<button onclick="window._sgTrainerAsk(\''+s+'\')" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.7);padding:8px 14px;border-radius:12px;font-size:12px;font-weight:600;cursor:pointer">'+s+'</button>';}).join('')+
+          '</div></div>':
           trainerChat.map(function(m){
-            if(m.role==='user')return '<div style="display:flex;justify-content:flex-end;margin-bottom:8px"><div style="max-width:80%;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:14px;border-top-right-radius:4px;padding:10px 14px;color:#fff;font-size:13px;line-height:1.5">'+m.text+'</div></div>';
-            return '<div style="display:flex;gap:8px;margin-bottom:8px"><div style="width:24px;height:24px;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px">🤖</div><div style="max-width:85%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:14px;border-top-left-radius:4px;padding:10px 14px;color:rgba(255,255,255,.85);font-size:13px;line-height:1.6">'+m.text+'</div></div>';
-          }).join('')}
-        ${trainerLoading?'<div style="display:flex;gap:8px;margin-bottom:8px"><div style="width:24px;height:24px;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px">🤖</div><div style="background:rgba(255,255,255,.04);border-radius:14px;padding:10px 14px;display:flex;gap:4px"><span style="width:6px;height:6px;background:#FF6D00;border-radius:50%;animation:sgTypingDot 1.4s infinite"></span><span style="width:6px;height:6px;background:#FF6D00;border-radius:50%;animation:sgTypingDot 1.4s .2s infinite"></span><span style="width:6px;height:6px;background:#FF6D00;border-radius:50%;animation:sgTypingDot 1.4s .4s infinite"></span></div></div>':''}
-      </div>
-      <!-- Input bar -->
-      <div style="display:flex;gap:8px;align-items:flex-end">
-        <input id="sg-trainer-input" type="text" placeholder="Ask about workouts, form, nutrition..." style="flex:1;padding:12px 16px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:14px;color:#fff;font-size:14px;outline:none" onkeydown="if(event.key==='Enter'){event.preventDefault();window._sgTrainerSend();}">
-        <button onclick="window._sgTrainerSend()" style="width:44px;height:44px;background:#FF6D00;border:none;border-radius:14px;color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">➤</button>
-      </div>
-    </div>
-  </div>`;
+            if(m.role==='user')return '<div style="display:flex;justify-content:flex-end;margin-bottom:10px"><div style="max-width:80%;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:16px;border-top-right-radius:4px;padding:12px 16px;color:#fff;font-size:14px;line-height:1.5">'+m.text+'</div></div>';
+            return '<div style="display:flex;gap:8px;margin-bottom:10px"><div style="width:28px;height:28px;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px">🤖</div><div style="max-width:85%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:16px;border-top-left-radius:4px;padding:12px 16px;color:rgba(255,255,255,.85);font-size:14px;line-height:1.6">'+m.text+'</div></div>';
+          }).join(''))+
+        (trainerLoading?'<div style="display:flex;gap:8px;margin-bottom:10px"><div style="width:28px;height:28px;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px">🤖</div><div style="background:rgba(255,255,255,.06);border-radius:16px;padding:12px 16px;display:flex;gap:6px"><span style="width:8px;height:8px;background:#FF6D00;border-radius:50%;animation:sgTrainerTyping 1.4s infinite"></span><span style="width:8px;height:8px;background:#FF6D00;border-radius:50%;animation:sgTrainerTyping 1.4s .2s infinite"></span><span style="width:8px;height:8px;background:#FF6D00;border-radius:50%;animation:sgTrainerTyping 1.4s .4s infinite"></span></div></div>':'')+
+      '</div>'+
+      '<div style="padding:12px 16px calc(16px + env(safe-area-inset-bottom,0px));display:flex;gap:8px;background:rgba(0,0,0,.6)">'+
+        '<input id="sg-trainer-chat-input" type="text" placeholder="Ask about workouts, form, nutrition..." style="flex:1;padding:14px 18px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:16px;color:#fff;font-size:15px;outline:none" onkeydown="if(event.key===\'Enter\'){event.preventDefault();window._sgTrainerSendMsg();}">'+
+        '<button onclick="window._sgTrainerSendMsg()" style="width:48px;height:48px;background:#FF6D00;border:none;border-radius:16px;color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">➤</button>'+
+      '</div>'+
+    '</div>';
+  }
+
+  return '<div id="sg-trainer-wrap" style="position:absolute;inset:0;background:#000;overflow:hidden">'+
+    '<style>'+
+      '@keyframes sgTrainerActionBounce{0%{transform:scale(1)}50%{transform:scale(1.3)}100%{transform:scale(1)}}'+
+      '@keyframes sgTrainerTyping{0%,100%{opacity:.3;transform:translateY(0)}50%{opacity:1;transform:translateY(-4px)}}'+
+      '#sg-trainer-track{scroll-snap-type:y mandatory;overflow-y:scroll;height:100%;-webkit-overflow-scrolling:touch;scrollbar-width:none}'+
+      '#sg-trainer-track::-webkit-scrollbar{display:none}'+
+      '.sg-trainer-slide{scroll-snap-align:start;scroll-snap-stop:always;width:100%;height:100%;position:relative;flex-shrink:0}'+
+      '.sg-trainer-slide img{width:100%;height:100%;object-fit:cover;display:block}'+
+    '</style>'+
+    // Floating category pills (same as Photos tab)
+    '<div style="position:absolute;top:0;left:0;right:0;z-index:20;background:linear-gradient(180deg,rgba(0,0,0,.7) 0%,rgba(0,0,0,.3) 70%,transparent 100%);padding:14px 16px 20px">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'+
+        '<span style="color:#fff;font-size:17px;font-weight:800;text-shadow:0 1px 8px rgba(0,0,0,.5)">🏋️ Trainer</span>'+
+        '<div style="display:flex;gap:8px;align-items:center">'+
+          '<span style="color:rgba(255,255,255,.5);font-size:12px;font-weight:600" id="sg-trainer-counter">'+(curIdx+1)+'/'+exercises.length+'</span>'+
+          '<div onclick="window._sgTrainerToggleChat()" style="width:32px;height:32px;background:rgba(255,255,255,.15);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px">🤖</div>'+
+        '</div>'+
+      '</div>'+
+      '<div style="display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none" class="sg-pills-row">'+
+        categories.map(function(c,i){return '<button onclick="event.stopPropagation();window._sgTrainerCat='+i+';window._sgTrainerExCur=0;render()" style="flex-shrink:0;background:'+(i===_catIdx?'rgba(255,109,0,.25)':'rgba(255,255,255,.1)')+';backdrop-filter:blur(8px);border:1px solid '+(i===_catIdx?'rgba(255,109,0,.4)':'rgba(255,255,255,.12)')+';color:'+(i===_catIdx?'#FF6D00':'rgba(255,255,255,.7)')+';padding:6px 14px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;transition:.15s">'+c+'</button>';}).join('')+
+      '</div>'+
+    '</div>'+
+    // Full-screen snap scroll track (same as Photos tab)
+    '<div id="sg-trainer-track" style="display:flex;flex-direction:column">'+
+      exercises.map(function(ex,i){return exerciseSlide(ex,i,exercises.length);}).join('')+
+    '</div>'+
+    // AI chat FAB button (bottom-left)
+    (!showChat?'<div onclick="window._sgTrainerToggleChat()" style="position:absolute;bottom:20px;left:16px;z-index:30;background:linear-gradient(135deg,#FF6D00,#E66200);width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 24px rgba(255,109,0,.4);font-size:24px;-webkit-tap-highlight-color:transparent" title="Chat with AI Trainer">🤖</div>':'')+
+    // Chat overlay
+    chatOverlay+
+  '</div>';
 }
 
 
