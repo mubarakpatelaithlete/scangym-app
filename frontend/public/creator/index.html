@@ -1,179 +1,240 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-  <title>ScanGym — Creator Studio</title>
-  <meta name="theme-color" content="#0a0a16"/>
-  <meta name="apple-mobile-web-app-capable" content="yes"/>
-  <link rel="icon" href="/favicon.ico"/>
-  <style>
-    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-    html,body{height:100%;height:100dvh;overflow:hidden;background:#0a0a16;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#fff;touch-action:none;overscroll-behavior:none}
-    *::-webkit-scrollbar{display:none}*{scrollbar-width:none}
-
-    /* ── Fixed fullscreen cards — NO scrolling ── */
-    .screen{position:fixed;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;padding-right:72px;text-align:center;overflow:hidden}
-    .screen.active{display:flex}
-
-    /* ── Gradients per screen ── */
-    .screen-home{background:linear-gradient(180deg,#1a0a2e 0%,#0a0a16 60%)}
-    .screen-content{background:linear-gradient(180deg,#0f2027 0%,#0a0a16 60%)}
-    .screen-earnings{background:linear-gradient(180deg,#1a2e0a 0%,#0a0a16 60%)}
-    .screen-share{background:linear-gradient(180deg,#2e0a1a 0%,#0a0a16 60%)}
-
-    /* ── Stat pill ── */
-    .stat-pill{display:inline-flex;flex-direction:column;align-items:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:14px 18px;min-width:80px}
-    .stat-pill .num{font-size:26px;font-weight:900}
-    .stat-pill .lbl{font-size:9px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;margin-top:4px}
-
-    /* ── Content item ── */
-    .cr-item{display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:16px;margin-bottom:8px;cursor:pointer;transition:.15s;width:100%;max-width:400px;text-align:left}
-    .cr-item:active{background:rgba(255,255,255,.08);transform:scale(.98)}
-    .cr-thumb{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
-
-    /* ── Action button ── */
-    .cr-action{padding:14px 28px;border-radius:16px;border:none;font-weight:700;font-size:15px;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:8px}
-    .cr-action:active{transform:scale(.95)}
-    .cr-action.primary{background:#a855f7;color:#fff;box-shadow:0 4px 20px rgba(168,85,247,.3)}
-    .cr-action.green{background:#22c55e;color:#fff;box-shadow:0 4px 20px rgba(34,197,94,.3)}
-    .cr-action.secondary{background:rgba(255,255,255,.06);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.1)}
-
-    /* ── Tier badge ── */
-    .tier-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 16px;border-radius:12px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px}
-
-    /* ── Right-side action bar ── */
-    .side-actions{position:fixed;right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:14px;z-index:100}
-    .side-btn{width:48px;height:48px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px;border:1px solid rgba(255,255,255,.06);transition:.2s;position:relative}
-    .side-btn:active{transform:scale(.9)}
-    .side-btn.active{background:rgba(168,85,247,.25);border-color:rgba(168,85,247,.4);box-shadow:0 0 16px rgba(168,85,247,.2)}
-
-    /* ── Back button ── */
-    .back-btn{position:fixed;top:16px;left:16px;z-index:100;width:40px;height:40px;background:rgba(255,255,255,.1);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;border:1px solid rgba(255,255,255,.08);text-decoration:none;color:#fff}
-    .back-btn:active{transform:scale(.9)}
-
-    /* ── Ref link box ── */
-    .ref-link-box{display:flex;align-items:center;gap:10px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:14px 18px;margin-bottom:16px;width:100%;max-width:380px}
-    .ref-link-box code{flex:1;color:#a855f7;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .ref-link-box button{background:#a855f7;color:#fff;border:none;padding:8px 16px;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;flex-shrink:0}
-
-    /* ── Fade transition ── */
-    @keyframes fadeIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}
-    .screen.active{animation:fadeIn .2s ease-out}
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>ScanGym Creator — ScanSquad Program</title>
+<link rel="icon" href="/favicon.ico">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0a0a16;color:#fff;min-height:100vh;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{display:none}
+:root{--brand:#FF6D00;--brand-dark:#E66200;--green:#22c55e;--red:#ef4444;--blue:#3b82f6;--purple:#a855f7;--gold:#f59e0b;--pink:#ec4899;--card:rgba(255,255,255,.04);--border:rgba(255,255,255,.06)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:.6}50%{opacity:1}}
+@keyframes glow{0%,100%{box-shadow:0 0 20px rgba(255,109,0,.3)}50%{box-shadow:0 0 40px rgba(255,109,0,.5)}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+.fade-up{animation:fadeUp .4s ease-out forwards}
+.creator-track{scroll-snap-type:y mandatory;overflow-y:scroll;height:100vh;-webkit-overflow-scrolling:touch}
+.creator-slide{scroll-snap-align:start;scroll-snap-stop:always;width:100%;min-height:100vh;position:relative}
+.tier-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:20px;transition:.2s;cursor:pointer}
+.tier-card:hover{border-color:var(--brand);transform:translateY(-2px)}
+.cta-btn{background:var(--brand);color:#fff;border:none;padding:14px 28px;border-radius:14px;font-size:16px;font-weight:800;cursor:pointer;width:100%;transition:.2s;box-shadow:0 4px 20px rgba(255,109,0,.3)}
+.cta-btn:active{transform:scale(.97)}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;text-align:center}
+</style>
 </head>
 <body>
-  <!-- Back to main app -->
-  <a href="/" class="back-btn" title="Back to ScanGym">←</a>
+<div class="creator-track" id="creatorTrack">
 
-  <!-- Right-side navigation buttons -->
-  <div class="side-actions">
-    <div class="side-btn active" onclick="showScreen(0)" title="Home">🏠</div>
-    <div class="side-btn" onclick="showScreen(1)" title="Content">📹</div>
-    <div class="side-btn" onclick="showScreen(2)" title="Earnings">📊</div>
-    <div class="side-btn" onclick="showScreen(3)" title="Share">📤</div>
+<!-- ═══ SLIDE 1: HERO — OnlyFans-style creator landing ═══ -->
+<div class="creator-slide" style="display:flex;flex-direction:column;justify-content:center;align-items:center;padding:24px;text-align:center;background:linear-gradient(180deg,#0a0a16 0%,#1a0a20 40%,#0a0a16 100%)">
+  <div style="position:absolute;inset:0;overflow:hidden">
+    <div style="position:absolute;top:20%;left:30%;width:200px;height:200px;background:radial-gradient(circle,rgba(255,109,0,.1) 0%,transparent 70%);animation:pulse 4s infinite"></div>
+    <div style="position:absolute;bottom:30%;right:20%;width:150px;height:150px;background:radial-gradient(circle,rgba(168,85,247,.1) 0%,transparent 70%);animation:pulse 4s 2s infinite"></div>
   </div>
-
-  <!-- Screen 1: Creator Home -->
-  <div class="screen screen-home active" data-screen="0">
-    <div style="font-size:64px;margin-bottom:16px">🎬</div>
-    <h1 style="font-size:28px;font-weight:900;margin-bottom:8px">Creator Studio</h1>
-    <p style="color:rgba(255,255,255,.5);font-size:14px;max-width:320px;margin-bottom:20px">Create gym content. Earn 25% commission on every booking from your reels.</p>
-    <div class="tier-badge" style="background:rgba(34,197,94,.1);color:#22c55e;border:1px solid rgba(34,197,94,.2);margin-bottom:24px">🌱 Starter Creator</div>
-    <div style="display:flex;gap:12px;margin-bottom:24px">
-      <div class="stat-pill"><span class="num" style="color:#a855f7">0</span><span class="lbl">Reels</span></div>
-      <div class="stat-pill"><span class="num" style="color:#FF6D00">0</span><span class="lbl">Views</span></div>
-      <div class="stat-pill"><span class="num" style="color:#22c55e">£0</span><span class="lbl">Earned</span></div>
+  
+  <div style="position:relative;z-index:1">
+    <div style="display:flex;justify-content:center;gap:8px;margin-bottom:20px">
+      <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#ec4899,#a855f7);display:flex;align-items:center;justify-content:center;font-size:22px">🏋️</div>
+      <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#06b6d4);display:flex;align-items:center;justify-content:center;font-size:22px">💪</div>
+      <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#FF6D00,#f59e0b);display:flex;align-items:center;justify-content:center;font-size:22px">🔥</div>
     </div>
-    <button class="cr-action primary" onclick="showScreen(1)">📹 Upload First Reel</button>
-  </div>
-
-  <!-- Screen 2: Your Content -->
-  <div class="screen screen-content" data-screen="1">
-    <div style="font-size:48px;margin-bottom:12px">📱</div>
-    <h2 style="font-size:22px;font-weight:800;margin-bottom:4px">Your Content</h2>
-    <p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:20px">Manage your uploaded reels & posts</p>
-    <div style="width:100%;max-width:400px">
-      <div class="cr-item">
-        <div class="cr-thumb" style="background:rgba(168,85,247,.15)">🎬</div>
-        <div style="flex:1"><p style="font-weight:700;font-size:14px">Leg Day at Crunch</p><p style="color:rgba(255,255,255,.35);font-size:11px">2.4K views · 3 bookings</p></div>
-        <span style="color:#22c55e;font-weight:800;font-size:14px">£3.60</span>
-      </div>
-      <div class="cr-item">
-        <div class="cr-thumb" style="background:rgba(59,130,246,.15)">💪</div>
-        <div style="flex:1"><p style="font-weight:700;font-size:14px">Morning HIIT Routine</p><p style="color:rgba(255,255,255,.35);font-size:11px">1.8K views · 2 bookings</p></div>
-        <span style="color:#22c55e;font-weight:800;font-size:14px">£2.40</span>
-      </div>
-      <div class="cr-item">
-        <div class="cr-thumb" style="background:rgba(255,109,0,.15)">🏋️</div>
-        <div style="flex:1"><p style="font-weight:700;font-size:14px">Best Gym in London</p><p style="color:rgba(255,255,255,.35);font-size:11px">956 views · 1 booking</p></div>
-        <span style="color:#22c55e;font-weight:800;font-size:14px">£1.20</span>
-      </div>
-    </div>
-    <button class="cr-action secondary" style="margin-top:16px" onclick="alert('📹 Record new reel')">+ Create New Reel</button>
-  </div>
-
-  <!-- Screen 3: Earnings -->
-  <div class="screen screen-earnings" data-screen="2">
-    <div style="font-size:48px;margin-bottom:12px">💰</div>
-    <h2 style="font-size:22px;font-weight:800;margin-bottom:4px">Earnings</h2>
-    <p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:20px">Your commission from gym bookings</p>
-    <div style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.15);border-radius:24px;padding:24px 32px;margin-bottom:20px;width:100%;max-width:360px">
-      <p style="color:rgba(255,255,255,.4);font-size:12px;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Total Earnings</p>
-      <p style="color:#22c55e;font-size:42px;font-weight:900;margin-bottom:8px">£7.20</p>
-      <p style="color:rgba(255,255,255,.3);font-size:12px">From 6 bookings via your content</p>
-    </div>
-    <div style="display:flex;gap:12px;margin-bottom:20px">
-      <div class="stat-pill"><span class="num" style="color:#FF6D00">25%</span><span class="lbl">Commission</span></div>
-      <div class="stat-pill"><span class="num" style="color:#22c55e">6</span><span class="lbl">Referrals</span></div>
-    </div>
-    <button class="cr-action green" onclick="alert('💸 Withdrawal request sent!')">💸 Withdraw to Bank</button>
-  </div>
-
-  <!-- Screen 4: Share & Upload -->
-  <div class="screen screen-share" data-screen="3">
-    <div style="font-size:48px;margin-bottom:12px">🔗</div>
-    <h2 style="font-size:22px;font-weight:800;margin-bottom:4px">Your Share Link</h2>
-    <p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:20px;max-width:300px">Share your unique link. Earn 25% on every booking.</p>
-    <div class="ref-link-box">
-      <code>scangym.com/r/creator</code>
-      <button onclick="navigator.clipboard.writeText('https://scangym.com/r/creator');this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500)">Copy</button>
-    </div>
+    
+    <h1 style="font-size:34px;font-weight:900;letter-spacing:-.8px;margin-bottom:8px;background:linear-gradient(135deg,#FF6D00,#ec4899,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent">ScanSquad</h1>
+    <p style="font-size:18px;font-weight:600;color:rgba(255,255,255,.7);margin-bottom:4px">Creator Program</p>
+    <p style="color:rgba(255,255,255,.4);font-size:14px;margin-bottom:32px;max-width:320px;line-height:1.6">Monetize your fitness content.<br>Share your link. Get paid. Build your brand.</p>
+    
+    <!-- Earnings preview — OnlyFans style -->
     <div style="display:flex;gap:10px;margin-bottom:28px">
-      <button class="cr-action secondary" onclick="navigator.share?navigator.share({title:'ScanGym',url:'https://scangym.com/r/creator'}):alert('Link copied!')">📤 Share</button>
-      <button class="cr-action secondary" onclick="alert('📊 Coming soon!')">📊 Track Clicks</button>
+      <div style="flex:1;background:rgba(236,72,153,.08);border:1px solid rgba(236,72,153,.2);border-radius:16px;padding:14px">
+        <div style="font-size:24px;font-weight:900;color:var(--pink)">£5K+</div>
+        <div style="font-size:10px;color:rgba(255,255,255,.35);text-transform:uppercase;font-weight:700;letter-spacing:.5px">Top Earner/mo</div>
+      </div>
+      <div style="flex:1;background:rgba(255,109,0,.08);border:1px solid rgba(255,109,0,.2);border-radius:16px;padding:14px">
+        <div style="font-size:24px;font-weight:900;color:var(--brand)">25%</div>
+        <div style="font-size:10px;color:rgba(255,255,255,.35);text-transform:uppercase;font-weight:700;letter-spacing:.5px">Commission</div>
+      </div>
+      <div style="flex:1;background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.2);border-radius:16px;padding:14px">
+        <div style="font-size:24px;font-weight:900;color:var(--purple)">∞</div>
+        <div style="font-size:10px;color:rgba(255,255,255,.35);text-transform:uppercase;font-weight:700;letter-spacing:.5px">No Cap</div>
+      </div>
     </div>
-    <div style="width:1px;height:1px"></div>
-    <div style="width:100%;max-width:360px">
-      <div class="cr-item" onclick="alert('📹 Recording coming soon!')">
-        <div class="cr-thumb" style="background:rgba(255,109,0,.15)">📹</div>
-        <div style="flex:1"><p style="font-weight:700;font-size:14px">Record a Video</p><p style="color:rgba(255,255,255,.35);font-size:11px">Use your camera to film a gym visit</p></div>
+    
+    <button class="cta-btn" onclick="document.getElementById('creatorTrack').scrollTo({top:window.innerHeight,behavior:'smooth'})" style="max-width:340px;margin:0 auto">
+      Become a Creator →
+    </button>
+    <p style="color:rgba(255,255,255,.25);font-size:11px;margin-top:12px">Free to join · Instant approval · Get paid weekly</p>
+    
+    <div style="position:absolute;bottom:24px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.3);font-size:24px;animation:pulse 2s infinite">↓</div>
+  </div>
+</div>
+
+<!-- ═══ SLIDE 2: HOW IT WORKS + TIERS — OnlyFans-style ═══ -->
+<div class="creator-slide" style="padding:20px 16px;overflow-y:auto">
+  
+  <!-- How it works -->
+  <h2 style="font-size:20px;font-weight:900;margin-bottom:16px;text-align:center">How It Works</h2>
+  <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:28px">
+    <div style="display:flex;gap:14px;align-items:flex-start;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px">
+      <div style="width:40px;height:40px;background:var(--brand);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;flex-shrink:0">1</div>
+      <div><h3 style="font-size:15px;font-weight:700;margin-bottom:4px">Get Your Link</h3><p style="color:rgba(255,255,255,.4);font-size:12px;line-height:1.5">Sign up and get your personal referral page: <span style="color:var(--brand);font-weight:600">scangym.com/r/yourname</span></p></div>
+    </div>
+    <div style="display:flex;gap:14px;align-items:flex-start;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px">
+      <div style="width:40px;height:40px;background:var(--purple);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;flex-shrink:0">2</div>
+      <div><h3 style="font-size:15px;font-weight:700;margin-bottom:4px">Share & Create</h3><p style="color:rgba(255,255,255,.4);font-size:12px;line-height:1.5">Post on TikTok, Instagram, YouTube. Review gyms. Share workout content. Tag @scangym.</p></div>
+    </div>
+    <div style="display:flex;gap:14px;align-items:flex-start;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px">
+      <div style="width:40px;height:40px;background:var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;flex-shrink:0">3</div>
+      <div><h3 style="font-size:15px;font-weight:700;margin-bottom:4px">Get Paid</h3><p style="color:rgba(255,255,255,.4);font-size:12px;line-height:1.5">Earn 25% commission on every booking through your link. Weekly payouts direct to your bank.</p></div>
+    </div>
+  </div>
+  
+  <!-- Creator Tiers — OnlyFans levels -->
+  <h2 style="font-size:20px;font-weight:900;margin-bottom:16px;text-align:center">🏆 Creator Tiers</h2>
+  <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:28px">
+    
+    <div class="tier-card" style="border-color:rgba(148,163,184,.2)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <span style="font-size:28px">🌱</span>
+        <div><h3 style="font-size:16px;font-weight:800">Starter</h3><p style="color:rgba(255,255,255,.4);font-size:11px">0–10 referrals</p></div>
+        <span style="margin-left:auto;color:rgba(255,255,255,.5);font-size:14px;font-weight:700">£50–150/mo</span>
       </div>
-      <div class="cr-item" onclick="alert('📤 Upload coming soon!')">
-        <div class="cr-thumb" style="background:rgba(168,85,247,.15)">📤</div>
-        <div style="flex:1"><p style="font-weight:700;font-size:14px">Upload from Gallery</p><p style="color:rgba(255,255,255,.35);font-size:11px">Pick an existing video from your phone</p></div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        <span style="background:rgba(255,255,255,.06);font-size:10px;padding:4px 10px;border-radius:8px;color:rgba(255,255,255,.5)">25% commission</span>
+        <span style="background:rgba(255,255,255,.06);font-size:10px;padding:4px 10px;border-radius:8px;color:rgba(255,255,255,.5)">Personal link</span>
+        <span style="background:rgba(255,255,255,.06);font-size:10px;padding:4px 10px;border-radius:8px;color:rgba(255,255,255,.5)">Weekly payouts</span>
       </div>
-      <div class="cr-item" onclick="alert('🏷 Coming soon!')">
-        <div class="cr-thumb" style="background:rgba(59,130,246,.15)">🏷</div>
-        <div style="flex:1"><p style="font-weight:700;font-size:14px">Tag a Gym</p><p style="color:rgba(255,255,255,.35);font-size:11px">Link your reel to a gym for bookings</p></div>
+    </div>
+    
+    <div class="tier-card" style="border-color:rgba(59,130,246,.2)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <span style="font-size:28px">⭐</span>
+        <div><h3 style="font-size:16px;font-weight:800;color:var(--blue)">Rising Star</h3><p style="color:rgba(255,255,255,.4);font-size:11px">10–30 referrals</p></div>
+        <span style="margin-left:auto;color:var(--blue);font-size:14px;font-weight:700">£150–400/mo</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        <span style="background:rgba(59,130,246,.1);font-size:10px;padding:4px 10px;border-radius:8px;color:var(--blue)">All Starter perks</span>
+        <span style="background:rgba(59,130,246,.1);font-size:10px;padding:4px 10px;border-radius:8px;color:var(--blue)">Verified badge ✓</span>
+        <span style="background:rgba(59,130,246,.1);font-size:10px;padding:4px 10px;border-radius:8px;color:var(--blue)">Priority support</span>
+      </div>
+    </div>
+    
+    <div class="tier-card" style="border-color:rgba(255,109,0,.2)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <span style="font-size:28px">🔥</span>
+        <div><h3 style="font-size:16px;font-weight:800;color:var(--brand)">Hot Creator</h3><p style="color:rgba(255,255,255,.4);font-size:11px">30–75 referrals</p></div>
+        <span style="margin-left:auto;color:var(--brand);font-size:14px;font-weight:700">£400–800/mo</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        <span style="background:rgba(255,109,0,.1);font-size:10px;padding:4px 10px;border-radius:8px;color:var(--brand)">All Rising perks</span>
+        <span style="background:rgba(255,109,0,.1);font-size:10px;padding:4px 10px;border-radius:8px;color:var(--brand)">Free sessions</span>
+        <span style="background:rgba(255,109,0,.1);font-size:10px;padding:4px 10px;border-radius:8px;color:var(--brand)">Custom merch</span>
+        <span style="background:rgba(255,109,0,.1);font-size:10px;padding:4px 10px;border-radius:8px;color:var(--brand)">Brand collabs</span>
+      </div>
+    </div>
+    
+    <div class="tier-card" style="border-color:rgba(168,85,247,.2)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <span style="font-size:28px">💎</span>
+        <div><h3 style="font-size:16px;font-weight:800;color:var(--purple)">Elite</h3><p style="color:rgba(255,255,255,.4);font-size:11px">75–200 referrals</p></div>
+        <span style="margin-left:auto;color:var(--purple);font-size:14px;font-weight:700">£800–2K/mo</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        <span style="background:rgba(168,85,247,.1);font-size:10px;padding:4px 10px;border-radius:8px;color:var(--purple)">30% commission</span>
+        <span style="background:rgba(168,85,247,.1);font-size:10px;padding:4px 10px;border-radius:8px;color:var(--purple)">Monthly bonus</span>
+        <span style="background:rgba(168,85,247,.1);font-size:10px;padding:4px 10px;border-radius:8px;color:var(--purple)">Featured profile</span>
+        <span style="background:rgba(168,85,247,.1);font-size:10px;padding:4px 10px;border-radius:8px;color:var(--purple)">Event access</span>
+      </div>
+    </div>
+    
+    <div class="tier-card" style="border-color:rgba(245,158,11,.3);background:linear-gradient(135deg,rgba(245,158,11,.05),rgba(255,109,0,.05))">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <span style="font-size:28px">👑</span>
+        <div><h3 style="font-size:16px;font-weight:800;color:var(--gold)">Legend</h3><p style="color:rgba(255,255,255,.4);font-size:11px">200+ referrals</p></div>
+        <span style="margin-left:auto;color:var(--gold);font-size:14px;font-weight:700">£2K–5K+/mo</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        <span style="background:rgba(245,158,11,.1);font-size:10px;padding:4px 10px;border-radius:8px;color:var(--gold)">35% commission</span>
+        <span style="background:rgba(245,158,11,.1);font-size:10px;padding:4px 10px;border-radius:8px;color:var(--gold)">ScanGym ambassador</span>
+        <span style="background:rgba(245,158,11,.1);font-size:10px;padding:4px 10px;border-radius:8px;color:var(--gold)">Revenue share</span>
+        <span style="background:rgba(245,158,11,.1);font-size:10px;padding:4px 10px;border-radius:8px;color:var(--gold)">Equity options</span>
       </div>
     </div>
   </div>
+  
+  <!-- Creator Dashboard Preview -->
+  <h2 style="font-size:20px;font-weight:900;margin-bottom:16px;text-align:center">📊 Your Dashboard</h2>
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:20px;padding:20px;margin-bottom:16px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+      <div class="stat-card"><div style="font-size:22px;font-weight:900;color:var(--brand)">142</div><div style="font-size:10px;color:rgba(255,255,255,.35);text-transform:uppercase;font-weight:700">Total Referrals</div></div>
+      <div class="stat-card"><div style="font-size:22px;font-weight:900;color:var(--green)">£1,847</div><div style="font-size:10px;color:rgba(255,255,255,.35);text-transform:uppercase;font-weight:700">Earned This Month</div></div>
+      <div class="stat-card"><div style="font-size:22px;font-weight:900;color:var(--blue)">12.4K</div><div style="font-size:10px;color:rgba(255,255,255,.35);text-transform:uppercase;font-weight:700">Link Clicks</div></div>
+      <div class="stat-card"><div style="font-size:22px;font-weight:900;color:var(--purple)">8.2%</div><div style="font-size:10px;color:rgba(255,255,255,.35);text-transform:uppercase;font-weight:700">Conversion Rate</div></div>
+    </div>
+    <!-- Mini chart -->
+    <div style="display:flex;align-items:flex-end;gap:4px;height:60px;margin-bottom:8px">
+      <div style="flex:1;background:var(--brand);border-radius:3px 3px 0 0;height:40%"></div>
+      <div style="flex:1;background:var(--brand);border-radius:3px 3px 0 0;height:55%"></div>
+      <div style="flex:1;background:var(--brand);border-radius:3px 3px 0 0;height:70%"></div>
+      <div style="flex:1;background:var(--brand);border-radius:3px 3px 0 0;height:60%"></div>
+      <div style="flex:1;background:var(--brand);border-radius:3px 3px 0 0;height:85%"></div>
+      <div style="flex:1;background:var(--brand);border-radius:3px 3px 0 0;height:95%"></div>
+      <div style="flex:1;background:var(--brand);border-radius:3px 3px 0 0;height:100%"></div>
+    </div>
+    <p style="color:rgba(255,255,255,.3);font-size:10px;text-align:center">Earnings trend — last 7 days</p>
+  </div>
+  
+  <!-- Content Ideas -->
+  <h2 style="font-size:20px;font-weight:900;margin-bottom:16px;text-align:center">🎬 Content Ideas</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:28px">
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;text-align:center">
+      <span style="font-size:28px">🎥</span>
+      <p style="color:#fff;font-size:12px;font-weight:700;margin-top:6px">Gym Reviews</p>
+      <p style="color:rgba(255,255,255,.35);font-size:10px;margin-top:2px">Tour & review local gyms</p>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;text-align:center">
+      <span style="font-size:28px">💪</span>
+      <p style="color:#fff;font-size:12px;font-weight:700;margin-top:6px">Workout Vlogs</p>
+      <p style="color:rgba(255,255,255,.35);font-size:10px;margin-top:2px">Film your gym sessions</p>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;text-align:center">
+      <span style="font-size:28px">📸</span>
+      <p style="color:#fff;font-size:12px;font-weight:700;margin-top:6px">Transformations</p>
+      <p style="color:rgba(255,255,255,.35);font-size:10px;margin-top:2px">Before/after progress</p>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;text-align:center">
+      <span style="font-size:28px">🍽️</span>
+      <p style="color:#fff;font-size:12px;font-weight:700;margin-top:6px">Meal Prep</p>
+      <p style="color:rgba(255,255,255,.35);font-size:10px;margin-top:2px">Nutrition & recipes</p>
+    </div>
+  </div>
+  
+  <!-- Creator Tools -->
+  <h2 style="font-size:20px;font-weight:900;margin-bottom:16px;text-align:center">🛠️ Creator Tools</h2>
+  <div style="display:flex;flex-direction:column;gap:8px;padding-bottom:100px">
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;display:flex;align-items:center;gap:12px">
+      <span style="font-size:22px">🔗</span>
+      <div style="flex:1"><h3 style="font-size:14px;font-weight:700">Smart Link</h3><p style="color:rgba(255,255,255,.35);font-size:11px">Custom landing page with your branding</p></div>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;display:flex;align-items:center;gap:12px">
+      <span style="font-size:22px">📊</span>
+      <div style="flex:1"><h3 style="font-size:14px;font-weight:700">Analytics Dashboard</h3><p style="color:rgba(255,255,255,.35);font-size:11px">Track clicks, conversions, and earnings</p></div>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;display:flex;align-items:center;gap:12px">
+      <span style="font-size:22px">🎨</span>
+      <div style="flex:1"><h3 style="font-size:14px;font-weight:700">Media Kit</h3><p style="color:rgba(255,255,255,.35);font-size:11px">Logos, banners, social templates</p></div>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;display:flex;align-items:center;gap:12px">
+      <span style="font-size:22px">🎁</span>
+      <div style="flex:1"><h3 style="font-size:14px;font-weight:700">Promo Codes</h3><p style="color:rgba(255,255,255,.35);font-size:11px">Generate custom discount codes for fans</p></div>
+    </div>
+    <button class="cta-btn" onclick="window.location.href='/become-a-creator'" style="margin-top:12px">
+      Start Earning Now — It's Free →
+    </button>
+  </div>
+</div>
 
-<script>
-(function(){
-  var screens = document.querySelectorAll('.screen');
-  var btns = document.querySelectorAll('.side-btn');
-
-  window.showScreen = function(idx) {
-    screens.forEach(function(s, i) {
-      s.classList.toggle('active', i === idx);
-    });
-    btns.forEach(function(b, i) {
-      b.classList.toggle('active', i === idx);
-    });
-  };
-})();
-</script>
+</div>
 </body>
 </html>
