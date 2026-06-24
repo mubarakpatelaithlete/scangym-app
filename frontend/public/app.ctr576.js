@@ -668,6 +668,7 @@ function switchTab(tab){
   else if(tab==='music'){state.route='/music';history.pushState(null,'','/music');}
   else if(tab==='photos'){state.route='/photos';history.pushState(null,'','/photos');}
   else if(tab==='chat'){state.route='/chat';history.pushState(null,'','/chat');}
+  else if(tab==='partner'){state.route='/partner';history.pushState(null,'','/partner');}
   else if(tab==='more'){state.route=state._lastMoreRoute||'/more';history.pushState(null,'',state.route);}
   render();
   // ── Bug Fix: Toggle persistent reels iframe visibility ──
@@ -12864,6 +12865,7 @@ function BottomTabBar(){
   const musicIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3" fill="${t==='music'?'#FF6D00':'rgba(255,255,255,.3)'}"/><circle cx="18" cy="16" r="3" fill="${t==='music'?'#FF6D00':'rgba(255,255,255,.3)'}"/></svg>`;
   const photosIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2" fill="${t==='photos'?'#FF6D00':'rgba(255,255,255,.3)'}"/><path d="M21 15l-5-5L5 21"/></svg>`;
   const chatIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>`;
+  const partnerIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`;
   const moreIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
   return`<nav class="sg-tab-bar" role="tablist" aria-label="Main navigation">
     <button class="sg-tab-item ${t==='reels'?'active':''}" role="tab" aria-selected="${t==='reels'}" aria-label="Reels" onclick="switchTab('reels')">
@@ -12885,6 +12887,10 @@ function BottomTabBar(){
     <button class="sg-tab-item ${t==='chat'?'active':''}" role="tab" aria-selected="${t==='chat'}" aria-label="Chat" onclick="switchTab('chat')">
       ${chatIcon}
       <span class="sg-tab-label">Chat</span>
+    </button>
+    <button class="sg-tab-item ${t==='partner'?'active':''}" role="tab" aria-selected="${t==='partner'}" aria-label="Partner" onclick="switchTab('partner')">
+      ${partnerIcon}
+      <span class="sg-tab-label">Partner</span>
     </button>
     <button class="sg-tab-item ${t==='more'?'active':''}" role="tab" aria-selected="${t==='more'}" aria-label="Profile and settings" onclick="switchTab('more')">
       ${moreIcon}
@@ -15916,6 +15922,8 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
     // ── Bug Fix #1: Persistent Reels iframe (lives outside #app, toggled via _syncReelsVisibility) ──
     _ensureReelsIframe();
     html=BottomTabBar();
+  } else if(tab==='partner') {
+    html=`<main class="sg-tab-content fade-in">${PartnerLandingPage()}</main>`+BottomTabBar();
   } else if(tab==='more' && (path==='/more'||path==='/more/')){
     // More hub page
     html=`<main class="sg-tab-content fade-in">${MoreHubPage()}</main>`+BottomTabBar();
