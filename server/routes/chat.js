@@ -290,7 +290,9 @@ router.post('/message', optionalAuth, async (req, res) => {
             ownerPhone = ownerResult.rows[0].phone;
             ownerEmail = ownerResult.rows[0].email;
           }
-        } catch (e) {}
+        } catch (e) {
+          console.warn('[Chat] Failed to fetch gym owner contact info:', e.message);
+        }
       }
 
       const smsOk = await sendOwnerSMS(ownerPhone, gymInfo?.name || 'Your gym', message);
@@ -301,7 +303,9 @@ router.post('/message', optionalAuth, async (req, res) => {
           INSERT INTO chat_escalations (conversation_id, gym_id, user_message, escalation_reason, owner_notified_sms, owner_notified_email)
           VALUES ($1, $2, $3, $4, $5, $6)
         `, [parseInt(conversationId), gymInfo?.id || null, message, escalateReason, smsOk, emailOk]);
-      } catch (e) {}
+      } catch (e) {
+        console.error('[Chat] Failed to record escalation in database:', e.message);
+      }
 
       aiResponse = `Great question! That's something the gym team can best help with. I've just notified them ${smsOk || emailOk ? 'via ' + (smsOk ? 'SMS' : '') + (smsOk && emailOk ? ' and ' : '') + (emailOk ? 'email' : '') : ''} and they'll get back to you shortly. In the meantime, is there anything else I can help with? 💪`;
 

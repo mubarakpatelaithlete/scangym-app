@@ -184,7 +184,9 @@ async function gatherGymData(gymId, userId) {
         `SELECT COUNT(*) FROM analytics_events WHERE path LIKE $1 AND created_at > NOW() - INTERVAL '1 hour'`,
         [`%gym%${gymId}%`]);
       data.recentViews = parseInt(views.rows[0].count);
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[Conviction] Failed to fetch recent view count:', e.message);
+    }
 
     // Platform stats
     const totalGyms = await pool.query('SELECT COUNT(*) FROM gyms');
@@ -210,7 +212,9 @@ async function gatherGymData(gymId, userId) {
         data.firstVisitDiscount = pricing.rows[0].first_visit_discount_pct || 50;
         data.offPeakDiscount = pricing.rows[0].off_peak_discount_pct || 0;
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[Conviction] Failed to fetch gym pricing:', e.message);
+    }
 
     // User-specific
     if (userId) {

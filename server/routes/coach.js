@@ -187,7 +187,9 @@ router.post('/message', authenticateUser, requireCheckedIn, async (req, res) => 
         [userId]
       );
       bookingHistory = bookingsResult.rows;
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[Coach] Failed to fetch booking history for context:', e.message);
+    }
 
     await pool.query(
       'INSERT INTO coach_conversations (user_id, role, content) VALUES ($1, $2, $3)',
@@ -247,7 +249,9 @@ router.get('/status', authenticateUser, async (req, res) => {
         [userId]
       );
       hasBooking = bookings.rows.length > 0;
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[Coach] Failed to check booking status:', e.message);
+    }
 
     // Check for QR check-in
     let hasCheckedIn = false;
@@ -260,7 +264,9 @@ router.get('/status', authenticateUser, async (req, res) => {
         [userId]
       );
       hasCheckedIn = checkins.rows.length > 0;
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[Coach] Failed to check check-in status:', e.message);
+    }
 
     const unlocked = hasBooking && hasCheckedIn;
 

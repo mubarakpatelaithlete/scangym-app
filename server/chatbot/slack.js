@@ -251,7 +251,9 @@ async function sendTypingIndicator(channel) {
       },
       body: JSON.stringify({ channel }),
     });
-  } catch (e) {}
+  } catch (e) {
+    // Typing indicator failure is non-critical
+  }
 }
 
 async function sendSlackMessage(channel, text, threadTs) {

@@ -99,7 +99,9 @@ router.post('/webhook', express.urlencoded({ extended: true }), async (req, res)
     }
 
     // Log inbound
-    try { const { logComms } = require('../routes/comms-log'); await logComms({ channel: platform, direction: 'inbound', from: userPhone, to: TWILIO_PHONE || '', subject: '', body: bodyTrimmed, status: 'received' }); } catch(e){}
+    try { const { logComms } = require('../routes/comms-log'); await logComms({ channel: platform, direction: 'inbound', from: userPhone, to: TWILIO_PHONE || '', subject: '', body: bodyTrimmed, status: 'received' }); } catch(e){
+      console.warn('[Twilio] Failed to log inbound comms:', e.message);
+    }
 
     // Process through universal handler
     const response = await handleMessage(userId, bodyTrimmed, {
@@ -139,7 +141,9 @@ router.post('/webhook', express.urlencoded({ extended: true }), async (req, res)
     }
 
     // Log outbound
-    try { const { logComms } = require('../routes/comms-log'); await logComms({ channel: platform, direction: 'outbound', from: TWILIO_PHONE || '', to: userPhone, subject: '', body: response.text, status: 'sent' }); } catch(e){}
+    try { const { logComms } = require('../routes/comms-log'); await logComms({ channel: platform, direction: 'outbound', from: TWILIO_PHONE || '', to: userPhone, subject: '', body: response.text, status: 'sent' }); } catch(e){
+      console.warn('[Twilio] Failed to log outbound comms:', e.message);
+    }
 
   } catch (err) {
     console.error('[Twilio] Webhook error:', err);
@@ -226,7 +230,9 @@ router.post('/status', (req, res) => {
   if (MessageStatus === 'failed' || MessageStatus === 'undelivered') {
     console.error(`[Twilio] Message ${MessageSid} to ${To}: ${MessageStatus} (${ErrorCode}: ${ErrorMessage || 'unknown'})`);
     // Log delivery failure
-    try { const { logComms } = require('../routes/comms-log'); logComms({ channel: To?.startsWith('whatsapp:') ? 'whatsapp' : 'sms', direction: 'outbound', from: TWILIO_PHONE || '', to: To, subject: '', body: '', status: 'failed', metadata: { errorCode: ErrorCode, errorMessage: ErrorMessage } }); } catch(e){}
+    try { const { logComms } = require('../routes/comms-log'); logComms({ channel: To?.startsWith('whatsapp:') ? 'whatsapp' : 'sms', direction: 'outbound', from: TWILIO_PHONE || '', to: To, subject: '', body: '', status: 'failed', metadata: { errorCode: ErrorCode, errorMessage: ErrorMessage } }); } catch(e){
+      console.warn('[Twilio] Failed to log delivery failure:', e.message);
+    }
   }
   res.sendStatus(200);
 });

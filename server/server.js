@@ -735,7 +735,9 @@ if (fs.existsSync(FRONTEND_DIR)) {
         if (geo && geo.city) {
           geoHint = JSON.stringify({ city: geo.city, country: geo.country, lat: geo.ll?.[0], lng: geo.ll?.[1], source: 'geoip_inline' });
         }
-      } catch (e) {}
+      } catch (e) {
+        // geoip-lite may not be installed — non-critical fallback
+      }
     }
 
     // Inject geo hint + performance hints right before </head>
