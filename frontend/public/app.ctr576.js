@@ -17778,182 +17778,75 @@ window._sgConnectSeam=async function(){
 };
 
 function PartnerLandingPage(){
-  return`<div style="position:relative;min-height:100vh;background:linear-gradient(180deg,#0a0a16 0%,#0d1117 50%,#0a0a16 100%);overflow-y:auto;padding-bottom:80px">
-    <!-- Background glow -->
-    <div style="position:absolute;top:15%;left:50%;width:350px;height:350px;background:radial-gradient(circle,rgba(34,197,94,.12) 0%,transparent 70%);transform:translateX(-50%);pointer-events:none"></div>
-
-    <!-- TikTok right-side buttons -->
-    <div style="position:fixed;right:12px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:16px;z-index:20;align-items:center">
-      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="navigate('/list-your-gym')">
-        <div style="width:52px;height:52px;background:linear-gradient(135deg,#22c55e,#16a34a);border:2px solid rgba(34,197,94,.5);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 4px 16px rgba(34,197,94,.35)">🏢</div>
-        <span style="color:#22c55e;font-size:9px;font-weight:700">List Gym</span>
+  return`<div style="position:absolute;inset:0;background:#000;overflow:hidden">
+      <style>
+        @keyframes sgPartnerPulse{0%,100%{opacity:.12}50%{opacity:.25}}
+        @keyframes sgPartnerGlow{0%,100%{box-shadow:0 4px 24px rgba(34,197,94,.35)}50%{box-shadow:0 4px 36px rgba(34,197,94,.55)}}
+      </style>
+      <!-- ═══ FULL-SCREEN BACKGROUND — Gradient with glow ═══ -->
+      <div style="position:absolute;inset:0;background:linear-gradient(160deg,#050508 0%,#0a1a0f 40%,#050508 100%);z-index:1">
+        <div style="position:absolute;top:20%;left:50%;width:400px;height:400px;background:radial-gradient(circle,rgba(34,197,94,.08) 0%,transparent 70%);transform:translateX(-50%);animation:sgPartnerPulse 4s ease-in-out infinite;pointer-events:none"></div>
+        <!-- Top gradient for readability -->
+        <div style="position:absolute;top:0;left:0;right:0;height:120px;background:linear-gradient(180deg,rgba(0,0,0,.7) 0%,transparent 100%);pointer-events:none"></div>
+        <!-- Bottom gradient for readability -->
+        <div style="position:absolute;bottom:0;left:0;right:0;height:200px;background:linear-gradient(0deg,rgba(0,0,0,.85) 0%,transparent 100%);pointer-events:none"></div>
       </div>
-      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="navigate('/list-your-gym')">
-        <div style="width:48px;height:48px;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)">📋</div>
-        <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">Claim Gym</span>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="_sgConnectSeam()">
-        <div style="width:48px;height:48px;background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)">🔐</div>
-        <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">Seam</span>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="navigate('/owner/controls')">
-        <div style="width:48px;height:48px;background:rgba(255,109,0,.15);border:1px solid rgba(255,109,0,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)">⚙️</div>
-        <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">Controls</span>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="navigate('/forceo')">
-        <div style="width:48px;height:48px;background:rgba(168,85,247,.15);border:1px solid rgba(168,85,247,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)">📊</div>
-        <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">Analytics</span>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="navigate('/staff-scan')">
-        <div style="width:48px;height:48px;background:rgba(234,179,8,.15);border:1px solid rgba(234,179,8,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)">📷</div>
-        <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">Scanner</span>
-      </div>
-    </div>
-
-    <!-- Full-screen Hero -->
-    <div style="position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:70vh;padding:40px 20px;text-align:center;max-width:480px;margin:0 auto">
-      <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);border-radius:20px;padding:6px 14px;margin-bottom:16px">
-        <span style="color:#22c55e;font-size:11px;font-weight:700">🟢 FREE TO JOIN</span>
-      </div>
-      <h1 style="font-size:28px;font-weight:900;color:#fff;line-height:1.2;margin-bottom:8px">Get More Customers<br>Without Lifting a Finger</h1>
-      <p style="color:rgba(255,255,255,.5);font-size:15px;line-height:1.5;margin-bottom:24px">ScanGym sends you paying gym-goers during your quiet hours. You keep 85%.</p>
-      <button onclick="navigate('/list-your-gym')" style="background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border:none;padding:18px 48px;border-radius:16px;font-size:18px;font-weight:800;cursor:pointer;box-shadow:0 8px 32px rgba(34,197,94,.4);margin-bottom:16px">🏢 List Your Gym →</button>
-      <p style="color:rgba(255,255,255,.3);font-size:12px">Free to join · Keep 85% · Live in 10 minutes</p>
-    </div>
-
-    <!-- Full-Screen Seam Section — TikTok style -->
-    <div style="position:relative;width:100%;min-height:100vh;background:linear-gradient(180deg,#f8f9fa 0%,#e9ecef 40%,#0a0a16 60%,#0a0a16 100%);display:flex;flex-direction:column;align-items:center;overflow:hidden">
-      <!-- Seam branding top -->
-      <div style="padding:32px 20px 0;text-align:center;width:100%;z-index:2">
-        <div style="display:inline-flex;align-items:center;gap:8px;margin-bottom:8px">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" fill="#6366f1"/></svg>
-          <span style="font-size:20px;font-weight:900;color:#1a1a2e;letter-spacing:-0.5px">seam</span>
-        </div>
-        <p style="color:rgba(26,26,46,.4);font-size:11px;letter-spacing:0.5px;text-transform:uppercase;font-weight:600">POWERING MEMBER ACCESS</p>
-      </div>
-
-      <!-- 3D Hardware Visual -->
-      <div style="position:relative;width:100%;flex:1;display:flex;align-items:center;justify-content:center;min-height:340px;z-index:1">
-        <!-- CSS 3D Turnstile illustration -->
-        <div style="position:relative;width:280px;height:280px">
-          <!-- Left device -->
-          <div style="position:absolute;left:10px;bottom:30px;width:120px;height:160px;background:linear-gradient(135deg,#e8eaed,#f5f5f5);border-radius:8px;box-shadow:10px 10px 30px rgba(0,0,0,.1),-5px -5px 20px rgba(255,255,255,.8);transform:perspective(800px) rotateY(-15deg) rotateX(5deg)">
-            <div style="position:absolute;top:15px;left:15px;width:30px;height:40px;background:linear-gradient(135deg,#d1d5db,#e5e7eb);border-radius:4px"></div>
-            <div style="position:absolute;top:20px;left:20px;width:8px;height:8px;background:#22c55e;border-radius:50%;box-shadow:0 0 8px rgba(34,197,94,.6)"></div>
-            <div style="position:absolute;top:85px;left:0;right:0;height:3px;background:linear-gradient(90deg,#22c55e,#4ade80);box-shadow:0 0 10px rgba(34,197,94,.4)"></div>
-            <div style="position:absolute;top:92px;left:0;right:0;height:2px;background:linear-gradient(90deg,#22c55e,#4ade80);opacity:.5"></div>
-          </div>
-          <!-- Right device -->
-          <div style="position:absolute;right:10px;bottom:50px;width:100px;height:140px;background:linear-gradient(135deg,#f0f0f0,#fafafa);border-radius:6px;box-shadow:8px 8px 25px rgba(0,0,0,.08),-4px -4px 15px rgba(255,255,255,.9);transform:perspective(800px) rotateY(15deg) rotateX(5deg)">
-            <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:20px;height:30px;background:linear-gradient(135deg,#d1d5db,#e5e7eb);border-radius:3px"></div>
-            <div style="position:absolute;top:75px;left:0;right:0;height:3px;background:linear-gradient(90deg,#22c55e,#4ade80);box-shadow:0 0 10px rgba(34,197,94,.4)"></div>
-            <div style="position:absolute;top:82px;left:0;right:0;height:2px;background:linear-gradient(90deg,#22c55e,#4ade80);opacity:.5"></div>
-          </div>
-          <!-- Floor shadow/arrows -->
-          <div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:200px;height:30px;background:radial-gradient(ellipse,rgba(0,0,0,.08) 0%,transparent 70%)"></div>
+      <!-- ═══ TOP — ScanGym Partner branding ═══ -->
+      <div style="position:absolute;top:max(env(safe-area-inset-top,0px),12px);left:16px;right:70px;z-index:10;display:flex;align-items:center;gap:10px">
+        <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#22c55e,#16a34a);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;border:2px solid rgba(34,197,94,.4)">` + '\ud83c\udfcb\ufe0f' + `</div>
+        <div>
+          <span style="font-size:16px;font-weight:800;color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.8)">ScanGym Partner</span>
+          <p style="color:rgba(255,255,255,.45);font-size:10px;text-shadow:0 1px 4px rgba(0,0,0,.6)">Gym Owner Dashboard</p>
         </div>
       </div>
-
-      <!-- Content overlay at bottom -->
-      <div style="position:relative;z-index:2;width:100%;padding:0 24px 24px;text-align:center">
-        <h2 style="font-size:26px;font-weight:900;color:#fff;line-height:1.15;margin-bottom:8px">Powering Member<br>Access for Fitness</h2>
-        <p style="color:rgba(255,255,255,.5);font-size:14px;line-height:1.5;margin-bottom:20px;max-width:320px;margin-left:auto;margin-right:auto">Enable 24/7 member access with QR code entry. Works with Yale, August, Schlage &amp; 100+ lock brands.</p>
-
-        <!-- Lock brand logos -->
-        <div style="display:flex;justify-content:center;gap:16px;margin-bottom:24px;flex-wrap:wrap">
-          <span style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:6px 12px;font-size:11px;color:rgba(255,255,255,.5);font-weight:600">Yale</span>
-          <span style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:6px 12px;font-size:11px;color:rgba(255,255,255,.5);font-weight:600">August</span>
-          <span style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:6px 12px;font-size:11px;color:rgba(255,255,255,.5);font-weight:600">Schlage</span>
-          <span style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:6px 12px;font-size:11px;color:rgba(255,255,255,.5);font-weight:600">Salto</span>
-          <span style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:6px 12px;font-size:11px;color:rgba(255,255,255,.5);font-weight:600">Brivo</span>
+      <!-- ═══ RIGHT-SIDE BUTTONS — TikTok style ═══ -->
+      <div style="position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:14px;align-items:center;z-index:10">
+        <div onclick="navigate('/list-your-gym')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
+          <div style="width:46px;height:46px;background:linear-gradient(135deg,#22c55e,#16a34a);border:2px solid rgba(34,197,94,.5);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 4px 16px rgba(34,197,94,.35)">` + '\ud83c\udfe2' + `</div>
+          <span style="color:#22c55e;font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">List Gym</span>
         </div>
-
-        <!-- Connect Seam CTA -->
-        <button onclick="_sgConnectSeam()" style="width:100%;max-width:360px;background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;border:none;padding:18px 32px;border-radius:16px;font-size:18px;font-weight:800;cursor:pointer;box-shadow:0 8px 32px rgba(99,102,241,.4);margin-bottom:12px;display:inline-block">🔐 Connect Seam →</button>
-        <p style="color:rgba(255,255,255,.3);font-size:11px">Free setup · QR code entry · 24/7 access control</p>
-
-        <!-- Stats -->
-        <div style="display:flex;justify-content:center;gap:24px;margin-top:20px;padding-top:20px;border-top:1px solid rgba(255,255,255,.06)">
-          <div><p style="color:#6366f1;font-size:20px;font-weight:900">100+</p><p style="color:rgba(255,255,255,.3);font-size:10px">Lock Brands</p></div>
-          <div><p style="color:#6366f1;font-size:20px;font-weight:900">24/7</p><p style="color:rgba(255,255,255,.3);font-size:10px">Access</p></div>
-          <div><p style="color:#6366f1;font-size:20px;font-weight:900">QR</p><p style="color:rgba(255,255,255,.3);font-size:10px">Entry</p></div>
+        <div onclick="navigate('/list-your-gym')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
+          <div style="width:46px;height:46px;background:rgba(34,197,94,.15);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(34,197,94,.3)">` + '\ud83d\udccb' + `</div>
+          <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Claim</span>
         </div>
-      </div>
-    </div>
-
-    <div style="max-width:480px;margin:0 auto;padding:0 16px 100px">
-
-    <!-- Revenue Calculator -->
-    <div style="background:linear-gradient(135deg,rgba(255,109,0,.08),rgba(255,145,0,.04));border:1px solid rgba(255,109,0,.15);border-radius:20px;padding:24px;margin-bottom:16px">
-      <p style="color:#fff;font-weight:800;font-size:16px;margin-bottom:4px">💰 How Much Could You Earn?</p>
-      <p style="color:rgba(255,255,255,.35);font-size:12px;margin-bottom:16px">Drag the slider to see your monthly potential</p>
-      <div style="margin-bottom:12px">
-        <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-          <span style="color:rgba(255,255,255,.5);font-size:12px">Empty slots per day</span>
-          <span style="color:#FF6D00;font-weight:700;font-size:14px" id="partner-slots">10</span>
+        <div onclick="_sgConnectSeam()" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
+          <div style="width:46px;height:46px;background:rgba(99,102,241,.15);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(99,102,241,.3)">` + '\ud83d\udd10' + `</div>
+          <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Seam</span>
         </div>
-        <input type="range" min="2" max="60" value="10" style="width:100%;accent-color:#FF6D00" oninput="document.getElementById('partner-slots').textContent=this.value;document.getElementById('partner-rev').textContent='£'+(this.value*4.49*0.85*30).toFixed(0)">
-      </div>
-      <div style="text-align:center;background:rgba(0,0,0,.3);border-radius:14px;padding:20px">
-        <p style="color:rgba(255,255,255,.4);font-size:11px;text-transform:uppercase;letter-spacing:1px">Estimated monthly revenue</p>
-        <p style="color:#FF6D00;font-size:42px;font-weight:900;margin:4px 0" id="partner-rev">£1,145</p>
-        <p style="color:rgba(255,255,255,.3);font-size:11px">You keep 85% · We take 15%</p>
-      </div>
-    </div>
-
-    <!-- How It Works -->
-    <div style="margin-bottom:16px">
-      <p style="color:#fff;font-weight:800;font-size:16px;margin-bottom:12px">⚡ Live in 10 Minutes</p>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <div style="display:flex;gap:12px;align-items:flex-start">
-          <div style="width:36px;height:36px;border-radius:50%;background:#FF6D00;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#fff;flex-shrink:0">1</div>
-          <div style="flex:1;padding-top:6px"><p style="color:#fff;font-weight:700;font-size:14px">Find your gym</p><p style="color:rgba(255,255,255,.4);font-size:13px">Search by name — we pull your info from Google automatically</p></div>
+        <div onclick="navigate('/owner/controls')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
+          <div style="width:46px;height:46px;background:rgba(255,109,0,.15);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,109,0,.3)">` + '\u2699\ufe0f' + `</div>
+          <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Controls</span>
         </div>
-        <div style="display:flex;gap:12px;align-items:flex-start">
-          <div style="width:36px;height:36px;border-radius:50%;background:#FF6D00;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#fff;flex-shrink:0">2</div>
-          <div style="flex:1;padding-top:6px"><p style="color:#fff;font-weight:700;font-size:14px">Set your price</p><p style="color:rgba(255,255,255,.4);font-size:13px">Day pass from £4.49. Change anytime with one tap.</p></div>
+        <div onclick="navigate('/forceo')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
+          <div style="width:46px;height:46px;background:rgba(168,85,247,.15);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(168,85,247,.3)">` + '\ud83d\udcca' + `</div>
+          <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Analytics</span>
         </div>
-        <div style="display:flex;gap:12px;align-items:flex-start">
-          <div style="width:36px;height:36px;border-radius:50%;background:#FF6D00;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#fff;flex-shrink:0">3</div>
-          <div style="flex:1;padding-top:6px"><p style="color:#fff;font-weight:700;font-size:14px">Start earning</p><p style="color:rgba(255,255,255,.4);font-size:13px">We send you customers. You get paid weekly to your bank.</p></div>
+        <div onclick="navigate('/staff-scan')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
+          <div style="width:46px;height:46px;background:rgba(234,179,8,.15);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(234,179,8,.3)">` + '\ud83d\udcf7' + `</div>
+          <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Scanner</span>
         </div>
       </div>
-    </div>
-
-    <!-- Find My Gym Search -->
-    <div id="partner-search-box" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:20px;margin-bottom:16px">
-      <p style="color:#fff;font-weight:800;font-size:16px;margin-bottom:12px">🔍 Find Your Gym</p>
-      <div style="position:relative">
-        <input id="partner-gym-search" type="text" placeholder="Type your gym name..." style="width:100%;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.1);color:#fff;padding:14px 16px;border-radius:12px;font-size:15px;outline:none;box-sizing:border-box" oninput="_partnerSearchGyms(this.value)">
-        <div id="partner-search-results" style="position:absolute;top:100%;left:0;right:0;background:#1a1a2e;border:1px solid rgba(255,255,255,.1);border-radius:12px;margin-top:4px;max-height:240px;overflow-y:auto;display:none;z-index:100"></div>
+      <!-- ═══ CENTER — Hero content ═══ -->
+      <div style="position:absolute;top:50%;left:16px;right:70px;transform:translateY(-50%);z-index:10">
+        <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);border-radius:20px;padding:6px 14px;margin-bottom:14px">
+          <span style="color:#22c55e;font-size:11px;font-weight:700">` + '\ud83d\udfe2' + ` FREE TO JOIN</span>
+        </div>
+        <h1 style="font-size:26px;font-weight:900;color:#fff;line-height:1.15;margin-bottom:8px;text-shadow:0 2px 12px rgba(0,0,0,.6)">Get More Customers<br>Without Lifting a Finger</h1>
+        <p style="color:rgba(255,255,255,.5);font-size:14px;line-height:1.5;margin-bottom:20px;text-shadow:0 1px 6px rgba(0,0,0,.4)">ScanGym sends you paying gym-goers during your quiet hours. You keep 85%.</p>
+        <button onclick="navigate('/list-your-gym')" style="background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border:none;padding:16px 36px;border-radius:16px;font-size:17px;font-weight:800;cursor:pointer;box-shadow:0 8px 32px rgba(34,197,94,.4);animation:sgPartnerGlow 2s ease-in-out infinite" ontouchstart="this.style.transform='scale(.97)'" ontouchend="this.style.transform=''">` + '\ud83c\udfe2' + ` List Your Gym ` + '\u2192' + `</button>
+        <p style="color:rgba(255,255,255,.3);font-size:11px;margin-top:10px">Free to join ` + '\u00b7' + ` Keep 85% ` + '\u00b7' + ` Live in 10 minutes</p>
       </div>
-      <p style="color:rgba(255,255,255,.25);font-size:11px;margin-top:8px">We'll auto-fill your gym's details from Google</p>
-    </div>
-
-    <!-- What You Get -->
-    <div style="background:rgba(34,197,94,.05);border:1px solid rgba(34,197,94,.1);border-radius:16px;padding:20px;margin-bottom:16px">
-      <p style="color:#fff;font-weight:800;font-size:16px;margin-bottom:12px">✅ Everything Free</p>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        ${['📊 Analytics dashboard','🔒 Full control','🥤 Free vending machine','📱 QR scanner','💳 Weekly payouts','⏸️ Pause anytime','🏷️ Set your price','📈 Fill empty hours'].map(function(f){return '<div style="background:rgba(255,255,255,.03);border-radius:10px;padding:10px;font-size:12px;color:rgba(255,255,255,.7)">'+f+'</div>';}).join('')}
+      <!-- ═══ BOTTOM — Stats ═══ -->
+      <div style="position:absolute;bottom:12px;left:16px;right:70px;z-index:10">
+        <div style="display:flex;gap:20px">
+          <div><span style="color:#22c55e;font-size:20px;font-weight:900;text-shadow:0 2px 8px rgba(0,0,0,.6)">58+</span><span style="color:rgba(255,255,255,.5);font-size:10px;font-weight:600;margin-left:4px">gyms</span></div>
+          <div><span style="color:#FF6D00;font-size:20px;font-weight:900;text-shadow:0 2px 8px rgba(0,0,0,.6)">85%</span><span style="color:rgba(255,255,255,.5);font-size:10px;font-weight:600;margin-left:4px">you keep</span></div>
+          <div><span style="color:#6366f1;font-size:20px;font-weight:900;text-shadow:0 2px 8px rgba(0,0,0,.6)">24/7</span><span style="color:rgba(255,255,255,.5);font-size:10px;font-weight:600;margin-left:4px">access</span></div>
+        </div>
       </div>
-    </div>
-
-    <!-- Social Proof -->
-    <div style="text-align:center;margin-bottom:20px">
-      <div style="display:flex;justify-content:center;gap:24px;margin-bottom:12px">
-        <div><p style="color:#fff;font-size:24px;font-weight:900">58+</p><p style="color:rgba(255,255,255,.35);font-size:11px">Gyms Listed</p></div>
-        <div><p style="color:#fff;font-size:24px;font-weight:900">2.5K+</p><p style="color:rgba(255,255,255,.35);font-size:11px">Active Users</p></div>
-        <div><p style="color:#fff;font-size:24px;font-weight:900">85%</p><p style="color:rgba(255,255,255,.35);font-size:11px">You Keep</p></div>
-      </div>
-    </div>
-
-    <!-- CTA -->
-    <div style="position:fixed;bottom:0;left:0;right:0;padding:12px 16px;background:linear-gradient(0deg,#0f0f1a 80%,transparent);z-index:99">
-      <button onclick="navigate('/list-your-gym')" style="width:100%;background:#FF6D00;color:#fff;border:none;padding:16px;border-radius:14px;font-weight:800;font-size:17px;cursor:pointer;box-shadow:0 4px 20px rgba(255,109,0,.3);animation:casinoGlow 2s ease-in-out infinite">List Your Gym — It's Free →</button>
-      <p style="text-align:center;color:rgba(255,255,255,.25);font-size:11px;margin-top:6px">No credit card needed · Cancel anytime</p>
-    </div>
-  </div>`;
+    </div>`;
 }
+
 
 // Partner gym search function
 var _partnerSearchTimeout;
