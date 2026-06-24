@@ -652,6 +652,10 @@ router.post('/set-default-card', async (req, res) => {
  * This is the magic: user taps "Book Now" → booking confirmed instantly.
  */
 router.post('/quick-checkout', async (req, res) => {
+  // BUG FIX: Declare booking OUTSIDE try so catch block can access it
+  // Previously `const booking` was inside try {} → block-scoped → catch couldn't
+  // mark it as 'failed' → stuck 'pending' bookings blocked all future attempts.
+  let booking = null;
   try {
     if (!stripe) return res.status(500).json({ error: 'Payment not configured' });
     if (!req.session?.userId) return res.status(401).json({ error: 'Login required for 1-tap booking' });
@@ -769,7 +773,7 @@ router.post('/quick-checkout', async (req, res) => {
       [dbGymId, req.session.userId, date, resolved.startTime, resolved.endTime,
        price, price * 0.10, bookingCode, user.email || '']
     );
-    const booking = bookingResult.rows[0];
+    booking = bookingResult.rows[0];
 
     // Charge the saved card — instant, no user interaction! (Like Uber)
     // v4.0: Surge pricing removed
@@ -877,8 +881,8 @@ router.post('/quick-checkout', async (req, res) => {
     console.error('Quick checkout error:', err);
 
     // Fix: Update booking status to 'failed' when payment fails
-    // Without this, failed bookings stay 'pending' forever and block duplicate checks
-    if (typeof booking !== 'undefined' && booking && booking.id) {
+    // booking is now declared with `let` BEFORE the try block, so it's accessible here
+    if (booking && booking.id) {
       try {
         await pool.query(
           'UPDATE public.bookings SET status = $1, updated_at = NOW() WHERE id = $2',
@@ -890,12 +894,13 @@ router.post('/quick-checkout', async (req, res) => {
       }
     }
 
-    // Handle card authentication required (SCA)
+    // Handle card authentication required (SCA / 3D Secure)
     if (err.code === 'authentication_required') {
       return res.status(402).json({
         error: 'Card requires authentication',
         requiresAuth: true,
         clientSecret: err.raw?.payment_intent?.client_secret,
+        bookingId: booking ? booking.id : null,
       });
     }
     res.status(500).json({ error: 'Quick checkout failed', detail: err.message });
