@@ -177,7 +177,9 @@ router.get('/:gymId', optionalAuth, async (req, res) => {
         avgRating: parseFloat(parseFloat(reviewStats.rows[0].avg_rating).toFixed(1)),
         latest: latestReviews.rows,
       };
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[GymProfile] Failed to fetch ScanGym reviews:', e.message);
+    }
 
     // Booking stats for social proof
     let bookingStats = { total: 0, thisMonth: 0 };
@@ -191,7 +193,9 @@ router.get('/:gymId', optionalAuth, async (req, res) => {
         total: parseInt(bStats.rows[0].total),
         thisMonth: parseInt(bStats.rows[0].monthly),
       };
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[GymProfile] Failed to fetch booking stats:', e.message);
+    }
 
     // Pricing from gym_pricing or gyms table
     let pricing = null;
@@ -204,7 +208,9 @@ router.get('/:gymId', optionalAuth, async (req, res) => {
           currency: p.rows[0].currency || 'GBP',
         };
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[GymProfile] Failed to fetch gym pricing:', e.message);
+    }
     if (!pricing) {
       pricing = {
         dayPassPrice: gym.day_pass_price || gym.hourly_rate || null,

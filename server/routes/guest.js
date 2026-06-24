@@ -49,11 +49,14 @@ router.get('/gyms', async (req, res) => {
       ) < $${params.length}`;
     }
 
-    // Task 20: Smart sorting
-    const orderClause = sortBy === 'price' ? 'hourly_rate ASC NULLS LAST' :
-                         sortBy === 'distance' && lat ? 'latitude ASC' :
-                         sortBy === 'reviews' ? 'total_reviews DESC NULLS LAST' :
-                         'average_rating DESC NULLS LAST';
+    // Task 20: Smart sorting — explicit allowlist prevents SQL injection
+    const SORT_OPTIONS = {
+      price: 'hourly_rate ASC NULLS LAST',
+      distance: lat ? 'latitude ASC' : 'average_rating DESC NULLS LAST',
+      reviews: 'total_reviews DESC NULLS LAST',
+      rating: 'average_rating DESC NULLS LAST',
+    };
+    const orderClause = SORT_OPTIONS[sortBy] || 'average_rating DESC NULLS LAST';
     query += ` ORDER BY ${orderClause}`;
 
     params.push(parseInt(limit), offset);

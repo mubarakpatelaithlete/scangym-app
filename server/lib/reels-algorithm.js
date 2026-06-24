@@ -458,7 +458,9 @@ async function loadSessionPreferences(sessionId) {
       for (const row of catResult.rows) {
         catMap[row.id] = (row.category || '').toLowerCase();
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[ReelsAlgorithm] Failed to fetch video categories:', e.message);
+    }
 
     for (const row of result.rows) {
       const cat = catMap[row.video_id];

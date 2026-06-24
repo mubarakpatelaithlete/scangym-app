@@ -175,7 +175,9 @@ router.get('/telegram/deeplink', async (req, res) => {
     const resp = await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/getMe`);
     const data = await resp.json();
     if (data.ok) botUsername = data.result.username;
-  } catch (e) {}
+  } catch (e) {
+    console.warn('[Channels] Failed to fetch Telegram bot username:', e.message);
+  }
 
   res.json({
     deepLink: `https://t.me/${botUsername}?start=${token}`,
@@ -278,7 +280,9 @@ router.get('/discord/invite', async (req, res) => {
         botUsername: status.bot.username,
       });
     }
-  } catch (e) {}
+  } catch (e) {
+    console.warn('[Channels] Failed to fetch Discord bot status:', e.message);
+  }
   // Fallback: use env var
   const appId = process.env.DISCORD_APP_ID || process.env.DISCORD_CLIENT_ID || '';
   if (appId) {

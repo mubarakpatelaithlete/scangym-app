@@ -5,6 +5,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../middleware/db');
+const { authenticateUser } = require('../middleware/auth');
 
 // In-memory stores for real-time tracking
 const buttonClicks = {};    // #99: per-button click counts
@@ -27,7 +28,7 @@ router.post('/button-click', express.json(), (req, res) => {
   res.json({ success: true });
 });
 
-router.get('/button-clicks', (req, res) => {
+router.get('/button-clicks', authenticateUser, (req, res) => {
   const { page } = req.query;
   const result = {};
   Object.entries(buttonClicks).forEach(([key, data]) => {
@@ -43,13 +44,15 @@ router.get('/button-clicks', (req, res) => {
 });
 
 // ── #100: Traffic + Conversion Funnel ──
-router.get('/funnel', async (req, res) => {
+router.get('/funnel', authenticateUser, async (req, res) => {
   try {
     const { period } = req.query; // 'today', '7d', '30d', 'all'
-    let dateFilter = '';
-    if (period === 'today') dateFilter = "AND created_at >= CURRENT_DATE";
-    else if (period === '7d') dateFilter = "AND created_at >= NOW() - INTERVAL '7 days'";
-    else if (period === '30d') dateFilter = "AND created_at >= NOW() - INTERVAL '30 days'";
+    const DATE_FILTERS = {
+      today: "AND created_at >= CURRENT_DATE",
+      '7d': "AND created_at >= NOW() - INTERVAL '7 days'",
+      '30d': "AND created_at >= NOW() - INTERVAL '30 days'",
+    };
+    const dateFilter = DATE_FILTERS[period] || '';
 
     // Try to get real data from tables
     const visits = await pool.query(`SELECT COUNT(*) as c FROM page_views WHERE 1=1 ${dateFilter}`).catch(() => ({ rows: [{ c: 0 }] }));

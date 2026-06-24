@@ -17,6 +17,11 @@ const router = express.Router();
 const pool = require('../middleware/db');
 const { authenticateUser, optionalAuth } = require('../middleware/auth');
 
+const PERIOD_INTERVALS = { '24h': '1 day', '7d': '7 days', '30d': '30 days' };
+function safeInterval(period) {
+  return PERIOD_INTERVALS[period] || '7 days';
+}
+
 // GET /api/stats/gym/:gymId — Public stats summary
 router.get('/gym/:gymId', optionalAuth, async (req, res) => {
   try {
@@ -126,7 +131,7 @@ router.get('/owner/:gymId', authenticateUser, async (req, res) => {
 router.get('/ceo', authenticateUser, async (req, res) => {
   try {
     const { period = '7d' } = req.query;
-    const interval = period === '30d' ? '30 days' : period === '24h' ? '1 day' : '7 days';
+    const interval = safeInterval(period);
 
     // ========= TRAFFIC VOLUME =========
     let traffic = { total: 0, pageViews: 0, apiCalls: 0, uniqueVisitors: 0, sources: [] };
@@ -163,7 +168,9 @@ router.get('/ceo', authenticateUser, async (req, res) => {
         GROUP BY source ORDER BY visits DESC
       `);
       traffic.sources = sources.rows;
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[Stats] Failed to fetch traffic data:', e.message);
+    }
 
     // Daily traffic trend
     let dailyTraffic = [];
@@ -177,7 +184,9 @@ router.get('/ceo', authenticateUser, async (req, res) => {
         GROUP BY DATE_TRUNC('day', created_at) ORDER BY date
       `);
       dailyTraffic = daily.rows;
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[Stats] Failed to fetch daily traffic trend:', e.message);
+    }
 
     // ========= CONVERSION FUNNEL =========
     // Visitor → Search → Profile View → Checkout → Paid Booking
@@ -223,7 +232,9 @@ router.get('/ceo', authenticateUser, async (req, res) => {
         AND created_at > NOW() - INTERVAL '${interval}'
       `);
       funnel.startedCheckout = parseInt(checkout.rows[0].count);
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[Stats] Failed to fetch conversion funnel data:', e.message);
+    }
 
     // Step 5: Completed bookings (from DB)
     try {
@@ -234,7 +245,9 @@ router.get('/ceo', authenticateUser, async (req, res) => {
       `);
       funnel.completedBooking = parseInt(bookings.rows[0].total);
       funnel.paidBooking = parseInt(bookings.rows[0].paid);
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[Stats] Failed to fetch booking counts for funnel:', e.message);
+    }
 
     // Overall conversion: Visitor → Paid Booking
     if (funnel.visitors > 0) {
@@ -274,7 +287,9 @@ router.get('/ceo', authenticateUser, async (req, res) => {
         gymOwnerShare: `£${(totalRevenue * 0.75).toFixed(2)}`,
         avgBookingValue: totalPaid > 0 ? `£${(totalRevenue / totalPaid).toFixed(2)}` : '£0.00',
       };
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[Stats] Failed to fetch revenue data:', e.message);
+    }
 
     // ========= PLATFORM STATS =========
     let platform = { gyms: 0, users: 0, bookings: 0, cities: 0 };
@@ -289,7 +304,9 @@ router.get('/ceo', authenticateUser, async (req, res) => {
         bookings: parseInt(bookings.rows[0].count),
         cities: parseInt(cities.rows[0].count),
       };
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[Stats] Failed to fetch platform stats:', e.message);
+    }
 
     // Top pages
     let topPages = [];
@@ -300,7 +317,9 @@ router.get('/ceo', authenticateUser, async (req, res) => {
         GROUP BY path ORDER BY hits DESC LIMIT 10
       `);
       topPages = pages.rows;
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[Stats] Failed to fetch top pages:', e.message);
+    }
 
     res.json({
       dashboard: 'ScanGym CEO Dashboard',
@@ -342,7 +361,7 @@ router.get('/ceo', authenticateUser, async (req, res) => {
 router.get('/analytics', authenticateUser, async (req, res) => {
   try {
     const { period = '7d' } = req.query;
-    const interval = period === '30d' ? '30 days' : period === '24h' ? '1 day' : '7 days';
+    const interval = safeInterval(period);
 
     let analytics = { pageViews: 0, apiCalls: 0, uniqueVisitors: 0, topPages: [] };
     try {
@@ -365,7 +384,9 @@ router.get('/analytics', authenticateUser, async (req, res) => {
         topPages: topPages.rows,
         period,
       };
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[Stats] Failed to fetch analytics data:', e.message);
+    }
 
     const gymCount = await pool.query('SELECT COUNT(*) FROM gyms');
     const userCount = await pool.query('SELECT COUNT(*) FROM users');
@@ -489,7 +510,7 @@ router.get('/suppliers', async (req, res) => {
 router.get('/ceo/creators', authenticateUser, async (req, res) => {
   try {
     const { period = '7d' } = req.query;
-    const interval = period === '30d' ? '30 days' : period === '24h' ? '1 day' : '7 days';
+    const interval = safeInterval(period);
 
     // Total creators
     let totalCreators = 0, totalReferrals = 0, totalEarnings = 0, totalConversions = 0;
@@ -506,7 +527,9 @@ router.get('/ceo/creators', authenticateUser, async (req, res) => {
       totalReferrals = parseInt(totals.rows[0].referrals);
       totalEarnings = parseInt(totals.rows[0].earnings);
       totalConversions = parseInt(totals.rows[0].conversions);
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[Stats] Failed to fetch creator totals:', e.message);
+    }
 
     // Per-creator breakdown
     try {
@@ -523,7 +546,9 @@ router.get('/ceo/creators', authenticateUser, async (req, res) => {
         LIMIT 50
       `);
       creators = perCreator.rows;
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[Stats] Failed to fetch per-creator breakdown:', e.message);
+    }
 
     // New creators in period
     let newCreators = 0;
@@ -532,7 +557,9 @@ router.get('/ceo/creators', authenticateUser, async (req, res) => {
         SELECT COUNT(*) FROM creator_memberships WHERE joined_at > NOW() - INTERVAL '${interval}'
       `);
       newCreators = parseInt(nc.rows[0].count);
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[Stats] Failed to fetch new creators count:', e.message);
+    }
 
     res.json({
       totalCreators,
@@ -552,7 +579,7 @@ router.get('/ceo/creators', authenticateUser, async (req, res) => {
 //  Combined endpoint for the Admin tab — health, revenue, payouts,
 //  platform status in one call for fast dashboard loading
 // ─────────────────────────────────────────────────────────────────
-router.get('/admin-status', async (req, res) => {
+router.get('/admin-status', authenticateUser, async (req, res) => {
   try {
     const result = {
       isLive: true,
@@ -574,7 +601,9 @@ router.get('/admin-status', async (req, res) => {
       const todayPence = Math.round(parseFloat(todayRev.rows[0].total || 0) * 100);
       result.revenue.todayPence = todayPence;
       result.revenue.today = '£' + (todayPence / 100).toFixed(2);
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[Stats] Failed to fetch today revenue:', e.message);
+    }
 
     // Revenue: All time
     try {
@@ -586,7 +615,9 @@ router.get('/admin-status', async (req, res) => {
       const totalPence = Math.round(parseFloat(allRev.rows[0].total || 0) * 100);
       result.revenue.totalPence = totalPence;
       result.revenue.total = '£' + (totalPence / 100).toFixed(2);
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[Stats] Failed to fetch total revenue:', e.message);
+    }
 
     // Payouts: To creators (commissions)
     try {
@@ -597,14 +628,18 @@ router.get('/admin-status', async (req, res) => {
       const cp = parseInt(creatorPayouts.rows[0].total);
       result.payouts.creatorsPence = cp;
       result.payouts.toCreators = '£' + (cp / 100).toFixed(2);
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[Stats] Failed to fetch creator payouts:', e.message);
+    }
 
     // Payouts: To partners (gym owner share = 75% of revenue)
     try {
       const partnerPence = Math.round(result.revenue.totalPence * 0.75);
       result.payouts.partnersPence = partnerPence;
       result.payouts.toPartners = '£' + (partnerPence / 100).toFixed(2);
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[Stats] Failed to calculate partner payouts:', e.message);
+    }
 
     // Platform counts
     try {
@@ -616,7 +651,9 @@ router.get('/admin-status', async (req, res) => {
         bookings: parseInt(bookings.rows[0].count),
         gyms: parseInt(gyms.rows[0].count),
       };
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[Stats] Failed to fetch platform counts:', e.message);
+    }
 
     // Seam status
     try {

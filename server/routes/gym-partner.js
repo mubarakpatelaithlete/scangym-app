@@ -317,7 +317,9 @@ router.get('/earnings', authenticateUser, async (req, res) => {
         `SELECT stripe_connect_id FROM users WHERE id = $1`, [userId]
       );
       stripeConnected = !!(stripeRes.rows[0]?.stripe_connect_id);
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[GymPartner] Failed to check Stripe Connect status:', e.message);
+    }
     
     res.json({
       success: true,
@@ -358,7 +360,9 @@ router.post('/stripe-connect', authenticateUser, express.json(), async (req, res
         `SELECT stripe_connect_id FROM users WHERE id = $1`, [userId]
       );
       stripeAccountId = existing.rows[0]?.stripe_connect_id;
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[GymPartner] Failed to retrieve existing Stripe account:', e.message);
+    }
     
     if (!stripeAccountId) {
       // Would create a Stripe Connect account - for now return instruction

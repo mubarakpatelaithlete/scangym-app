@@ -24,9 +24,8 @@ router.get('/gym/:gymId', optionalAuth, async (req, res) => {
     const { gymId: gymIdParam } = req.params;
     const { sort = 'newest' } = req.query;
     const { page, limit, offset } = parsePagination(req.query, { limit: 20 });
-    const orderBy = sort === 'highest' ? 'rating DESC' :
-                    sort === 'lowest' ? 'rating ASC' :
-                    'created_at DESC';
+    const SORT_OPTIONS = { highest: 'rating DESC', lowest: 'rating ASC', newest: 'created_at DESC' };
+    const orderBy = SORT_OPTIONS[sort] || 'created_at DESC';
 
     const gymId = await resolveGymId(gymIdParam);
     if (gymId === null) {

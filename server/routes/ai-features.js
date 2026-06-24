@@ -118,15 +118,15 @@ router.get('/progress', async (req, res) => {
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ error: 'Login required' });
 
-    const weeks = parseInt(req.query.weeks) || 12;
+    const weeks = Math.min(Math.max(parseInt(req.query.weeks) || 12, 1), 52);
 
     // Get workout history
     const workouts = await pool.query(`
       SELECT created_at, duration_minutes, muscles_trained, workout_type, intensity
       FROM workout_logs
-      WHERE user_id = $1 AND created_at > NOW() - INTERVAL '${weeks} weeks'
+      WHERE user_id = $1 AND created_at > NOW() - make_interval(weeks => $2)
       ORDER BY created_at
-    `, [userId]).catch(() => ({ rows: [] }));
+    `, [userId, weeks]).catch(() => ({ rows: [] }));
 
     const data = workouts.rows || [];
     const weeklyVolume = {};

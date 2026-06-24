@@ -61,7 +61,7 @@ async function optionalAuth(req, res, next) {
       }
     }
   } catch (err) {
-    // Silently continue without auth
+    console.warn('[Auth] Optional auth check failed:', err.message);
   }
   next();
 }

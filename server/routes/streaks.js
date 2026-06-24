@@ -322,7 +322,9 @@ router.post('/record-workout', async (req, res) => {
         if (check.rows.length > 0) {
           actuallyNew.push({ key: badge, ...BADGES[badge] });
         }
-      } catch (e) {}
+      } catch (e) {
+        console.warn('[Streaks] Failed to award badge:', badge, e.message);
+      }
     }
 
     // Variable reward: random bonus wallet credit (1 in 5 chance)
@@ -340,7 +342,9 @@ router.post('/record-workout', async (req, res) => {
           FROM wallets w WHERE w.user_id = $1
         `, [userId, bonusPence, `🎰 Workout bonus! +£${(bonusPence/100).toFixed(2)}`]);
         bonusReward = { amount: bonusPence / 100, display: `£${(bonusPence / 100).toFixed(2)}` };
-      } catch (e) {}
+      } catch (e) {
+        console.warn('[Streaks] Failed to award workout bonus:', e.message);
+      }
     }
 
     // ChatGPT Playbook #5/#7: Include referral link in workout share
@@ -348,7 +352,9 @@ router.post('/record-workout', async (req, res) => {
     try {
       const refQ = await pool.query('SELECT referral_handle FROM public.users WHERE id = $1', [userId]);
       referralHandle = refQ.rows[0]?.referral_handle || null;
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[Streaks] Failed to fetch referral handle:', e.message);
+    }
 
     // Generate shareable workout card data
     const referralSuffix = referralHandle ? ` Try it: scangym.com/r/${referralHandle}` : ' Try it: scangym.com';

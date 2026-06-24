@@ -603,7 +603,9 @@ router.post('/withdraw', async (req, res) => {
         const user = await pool.query('SELECT email FROM public.users WHERE id = $1', [lp.rows[0].user_id]);
         if (user.rows.length > 0) email = user.rows[0].email;
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[Referrals] Failed to fetch creator email for withdrawal:', e.message);
+    }
 
     // Create withdrawal request
     const result = await pool.query(
@@ -737,7 +739,9 @@ router.post('/admin/withdrawals/:id/approve', async (req, res) => {
          WHERE user_id = (SELECT creator_user_id FROM creator_landing_pages WHERE slug = $2 LIMIT 1)`,
         [w.amount_pence, w.creator_handle]
       );
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[Referrals] Failed to update withdrawn total:', e.message);
+    }
 
     // Research 1: Auto-execute Stripe Connect payout if requested
     let payoutResult = null;
@@ -1067,7 +1071,9 @@ router.post('/bounty', async (req, res) => {
          WHERE user_id = (SELECT creator_user_id FROM creator_landing_pages WHERE slug = $2 LIMIT 1)`,
         [SIGNUP_BOUNTY_PENCE, creatorHandle]
       );
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[Referrals] Failed to update creator earnings for bounty:', e.message);
+    }
 
     console.log(`[Bounty] £${(SIGNUP_BOUNTY_PENCE/100).toFixed(2)} signup bounty → ${creatorHandle} (user: ${userId})`);
     res.json({ success: true, bountyPence: SIGNUP_BOUNTY_PENCE });
@@ -1139,7 +1145,9 @@ router.post('/generate-link', async (req, res) => {
          VALUES ($1, 'link_generated', $2, NOW())`,
         [creatorHandle, JSON.stringify({ gymId, gymName, source, link })]
       );
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[Referrals] Failed to log link generation event:', e.message);
+    }
 
     res.json({
       success: true,

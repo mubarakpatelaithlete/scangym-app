@@ -167,7 +167,9 @@ router.get('/booking/:bookingId', authenticateUser, async (req, res) => {
             polyline: dirData.routes[0].overview_polyline?.points,
           };
         }
-      } catch (e) {}
+      } catch (e) {
+        console.warn('[Directions] Failed to fetch route data from Google Maps:', e.message);
+      }
     }
 
     // Task 10: Upsells — CORRECTION: "must be 100% accurate on real time live data"
@@ -185,7 +187,9 @@ router.get('/booking/:bookingId', authenticateUser, async (req, res) => {
           link: '/wallet',
         });
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[Directions] Failed to fetch wallet for upsell:', e.message);
+    }
 
     // v4.1: Off-peak discount removed — flat pricing at all times
 
