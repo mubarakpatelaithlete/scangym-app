@@ -13917,33 +13917,31 @@ function MoreHubPage(){
           <div style="width:46px;height:46px;background:rgba(0,0,0,.45);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.12)">\ud83d\udce1</div>
           <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Channels</span>
         </div>
-        <div onclick="navigate('/more/profile')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
-          <div style="width:46px;height:46px;background:rgba(0,0,0,.45);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.12)">\ud83d\udc64</div>
-          <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Edit</span>
-        </div>
-        <div onclick="navigate('/bookings')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
-          <div style="width:46px;height:46px;background:rgba(0,0,0,.45);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.12)">\ud83d\udccb</div>
-          <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Bookings</span>
-        </div>
-        <div onclick="navigate('/wallet')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
-          <div style="width:46px;height:46px;background:rgba(0,0,0,.45);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.12)">\ud83d\udcb3</div>
-          <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Wallet</span>
-        </div>
-        <div onclick="_shareIDCard()" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
-          <div style="width:46px;height:46px;background:rgba(0,0,0,.45);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.12)">\ud83d\udce4</div>
-          <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Share</span>
-        </div>
-        <div onclick="navigate('/refer')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
-          <div style="width:46px;height:46px;background:rgba(255,109,0,.15);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,109,0,.3)">\ud83c\udf81</div>
-          <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Refer</span>
-        </div>
-        <div onclick="navigate('/more')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
-          <div style="width:46px;height:46px;background:rgba(0,0,0,.45);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.12)">\u2699\ufe0f</div>
+        <div onclick="(function(e){e.stopPropagation();var m=document.getElementById('sgMoreMenu');if(m)m.style.display=m.style.display==='flex'?'none':'flex'})(event)" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
+          <div style="width:46px;height:46px;background:rgba(0,0,0,.45);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.85)">\u22ef</div>
           <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">More</span>
         </div>
-        <div onclick="logout()" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
-          <div style="width:46px;height:46px;background:rgba(239,68,68,.1);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(239,68,68,.2)">\ud83d\udeaa</div>
-          <span style="color:rgba(239,68,68,.6);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Out</span>
+      </div>
+      <!-- ═══ MORE MENU POPUP — Edit, Bookings, Wallet, Out ═══ -->
+      <div id="sgMoreMenu" onclick="this.style.display='none'" style="display:none;position:absolute;inset:0;z-index:50;align-items:center;justify-content:center;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)">
+        <div onclick="event.stopPropagation()" style="background:rgba(20,20,25,.95);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:20px 24px;display:flex;flex-direction:column;gap:6px;min-width:220px;box-shadow:0 16px 48px rgba(0,0,0,.6)">
+          <div onclick="document.getElementById('sgMoreMenu').style.display='none';navigate('/more/profile')" style="display:flex;align-items:center;gap:12px;padding:12px 8px;border-radius:12px;cursor:pointer" onmouseenter="this.style.background='rgba(255,255,255,.08)'" onmouseleave="this.style.background='transparent'">
+            <div style="width:40px;height:40px;background:rgba(0,0,0,.45);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;border:1px solid rgba(255,255,255,.12)">\ud83d\udc64</div>
+            <span style="color:#fff;font-size:14px;font-weight:700">Edit Profile</span>
+          </div>
+          <div onclick="document.getElementById('sgMoreMenu').style.display='none';navigate('/bookings')" style="display:flex;align-items:center;gap:12px;padding:12px 8px;border-radius:12px;cursor:pointer" onmouseenter="this.style.background='rgba(255,255,255,.08)'" onmouseleave="this.style.background='transparent'">
+            <div style="width:40px;height:40px;background:rgba(0,0,0,.45);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;border:1px solid rgba(255,255,255,.12)">\ud83d\udccb</div>
+            <span style="color:#fff;font-size:14px;font-weight:700">Bookings</span>
+          </div>
+          <div onclick="document.getElementById('sgMoreMenu').style.display='none';navigate('/wallet')" style="display:flex;align-items:center;gap:12px;padding:12px 8px;border-radius:12px;cursor:pointer" onmouseenter="this.style.background='rgba(255,255,255,.08)'" onmouseleave="this.style.background='transparent'">
+            <div style="width:40px;height:40px;background:rgba(0,0,0,.45);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;border:1px solid rgba(255,255,255,.12)">\ud83d\udcb3</div>
+            <span style="color:#fff;font-size:14px;font-weight:700">Wallet</span>
+          </div>
+          <div style="border-top:1px solid rgba(255,255,255,.08);margin:4px 0"></div>
+          <div onclick="document.getElementById('sgMoreMenu').style.display='none';logout()" style="display:flex;align-items:center;gap:12px;padding:12px 8px;border-radius:12px;cursor:pointer" onmouseenter="this.style.background='rgba(239,68,68,.1)'" onmouseleave="this.style.background='transparent'">
+            <div style="width:40px;height:40px;background:rgba(239,68,68,.1);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;border:1px solid rgba(239,68,68,.2)">\ud83d\udeaa</div>
+            <span style="color:#ef4444;font-size:14px;font-weight:700">Sign Out</span>
+          </div>
         </div>
       </div>
       <!-- ═══ BOTTOM OVERLAY — Stats + badge (like TikTok caption area) ═══ -->
