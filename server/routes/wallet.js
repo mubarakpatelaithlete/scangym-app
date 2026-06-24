@@ -6,6 +6,8 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../middleware/db');
 const { authenticateUser } = require('../middleware/auth');
+const { getOrCreateWallet, penceToPounds } = require('../lib/wallet-utils');
+const { parsePagination } = require('../lib/pagination');
 
 router.use(authenticateUser);
 
@@ -13,15 +15,7 @@ router.use(authenticateUser);
 router.get('/', async (req, res) => {
   try {
     const userId = req.user.id;
-    let wallet = await pool.query('SELECT * FROM wallets WHERE user_id = $1', [userId]);
-    if (wallet.rows.length === 0) {
-      wallet = await pool.query(`
-        INSERT INTO wallets (user_id, balance_pence, total_loaded_pence, total_spent_pence, currency, is_active, created_at, updated_at)
-        VALUES ($1, 0, 0, 0, 'GBP', true, NOW(), NOW())
-        RETURNING *
-      `, [userId]);
-    }
-    const w = wallet.rows[0];
+    const w = await getOrCreateWallet(userId);
     res.json({
       balance: w.balance_pence / 100,
       balancePence: w.balance_pence,
@@ -56,15 +50,8 @@ router.post('/topup', async (req, res) => {
     else if (amountPence >= 2000) bonusPence = Math.round(amountPence * 0.10);
     const totalCredit = amountPence + bonusPence;
 
-    let wallet = await pool.query('SELECT * FROM wallets WHERE user_id = $1', [userId]);
-    if (wallet.rows.length === 0) {
-      wallet = await pool.query(`
-        INSERT INTO wallets (user_id, balance_pence, total_loaded_pence, total_spent_pence, currency, is_active, created_at, updated_at)
-        VALUES ($1, 0, 0, 0, 'GBP', true, NOW(), NOW())
-        RETURNING *
-      `, [userId]);
-    }
-    const newBalance = wallet.rows[0].balance_pence + totalCredit;
+    const wallet = await getOrCreateWallet(userId);
+    const newBalance = wallet.balance_pence + totalCredit;
 
     await pool.query(`
       UPDATE wallets SET balance_pence = $1, total_loaded_pence = total_loaded_pence + $2, updated_at = NOW()
@@ -75,7 +62,7 @@ router.post('/topup', async (req, res) => {
       INSERT INTO wallet_transactions (wallet_id, user_id, type, amount_pence, balance_after_pence, description, reference_type, created_at)
       VALUES ($1, $2, 'top_up', $3, $4, $5, 'stripe', NOW())
     `, [
-      wallet.rows[0].id, userId, totalCredit, newBalance,
+      wallet.id, userId, totalCredit, newBalance,
       bonusPence > 0 ? `Top-up £${(amountPence/100).toFixed(2)} + £${(bonusPence/100).toFixed(2)} bonus` : `Top-up £${(amountPence/100).toFixed(2)}`,
     ]);
 
@@ -148,15 +135,8 @@ router.post('/reward', async (req, res) => {
       return res.status(400).json({ error: 'Reward must be between 1p and £50' });
     }
 
-    let wallet = await pool.query('SELECT * FROM wallets WHERE user_id = $1', [userId]);
-    if (wallet.rows.length === 0) {
-      wallet = await pool.query(`
-        INSERT INTO wallets (user_id, balance_pence, total_loaded_pence, total_spent_pence, currency, is_active, created_at, updated_at)
-        VALUES ($1, 0, 0, 0, 'GBP', true, NOW(), NOW())
-        RETURNING *
-      `, [userId]);
-    }
-    const newBalance = wallet.rows[0].balance_pence + amountPence;
+    const wallet = await getOrCreateWallet(userId);
+    const newBalance = wallet.balance_pence + amountPence;
 
     await pool.query(`
       UPDATE wallets SET balance_pence = $1, total_loaded_pence = total_loaded_pence + $2, updated_at = NOW()
@@ -167,7 +147,7 @@ router.post('/reward', async (req, res) => {
       INSERT INTO wallet_transactions (wallet_id, user_id, type, amount_pence, balance_after_pence, description, reference_type, created_at)
       VALUES ($1, $2, 'reward', $3, $4, $5, $6, NOW())
     `, [
-      wallet.rows[0].id, userId, amountPence, newBalance,
+      wallet.id, userId, amountPence, newBalance,
       reason || `Reward £${(amountPence/100).toFixed(2)}`,
       referenceType || 'reward',
     ]);
@@ -183,8 +163,8 @@ router.post('/reward', async (req, res) => {
 router.get('/transactions', async (req, res) => {
   try {
     const userId = req.user.id;
-    const { page = 1, limit = 20, type } = req.query;
-    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const { type } = req.query;
+    const { page, limit, offset } = parsePagination(req.query, { limit: 20 });
 
     const wallet = await pool.query('SELECT id FROM wallets WHERE user_id = $1', [userId]);
     if (wallet.rows.length === 0) {
@@ -201,20 +181,21 @@ router.get('/transactions', async (req, res) => {
       params.push(type);
     }
     query += ` ORDER BY created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
-    params.push(parseInt(limit), offset);
+    params.push(limit, offset);
 
     const result = await pool.query(query, params);
     const countResult = await pool.query(
       'SELECT COUNT(*) FROM wallet_transactions WHERE wallet_id = $1', [wallet.rows[0].id]
     );
 
+    const total = parseInt(countResult.rows[0].count);
     res.json({
       transactions: result.rows.map(t => ({
         ...t, amount: t.amount_pence / 100, balanceAfter: t.balance_after_pence / 100,
       })),
-      total: parseInt(countResult.rows[0].count),
-      page: parseInt(page),
-      totalPages: Math.ceil(parseInt(countResult.rows[0].count) / parseInt(limit)),
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
     });
   } catch (err) {
     console.error('Wallet transactions error:', err);

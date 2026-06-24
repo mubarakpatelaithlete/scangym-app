@@ -6,12 +6,13 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../middleware/db');
 const { optionalAuth } = require('../middleware/auth');
+const { parsePagination } = require('../lib/pagination');
 
 // GET /api/guest/gyms - Browse gyms without auth
 router.get('/gyms', async (req, res) => {
   try {
-    const { city, search, lat, lng, radius = 10, page = 1, limit = 20, type, amenity, minRating, maxPrice, sortBy } = req.query;
-    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const { city, search, lat, lng, radius = 10, type, amenity, minRating, maxPrice, sortBy } = req.query;
+    const { page, limit, offset } = parsePagination(req.query, { limit: 20 });
     let query = 'SELECT * FROM gyms WHERE 1=1';
     const params = [];
 

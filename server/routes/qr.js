@@ -15,6 +15,7 @@ const router = express.Router();
 const pool = require('../middleware/db');
 const { authenticateUser } = require('../middleware/auth');
 const QRCode = require('qrcode');
+const { generateQRToken } = require('../lib/code-generators');
 
 // Ensure QR tables exist
 (async () => {
@@ -78,21 +79,7 @@ const QRCode = require('qrcode');
   }
 })();
 
-/**
- * Generate a unique QR token
- */
-function generateQRToken() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
-  const segments = [];
-  for (let s = 0; s < 4; s++) {
-    let seg = '';
-    for (let i = 0; i < 6; i++) {
-      seg += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    segments.push(seg);
-  }
-  return 'SG-' + segments.join('-');
-}
+// generateQRToken is now imported from ../lib/code-generators
 
 // POST /api/qr/generate — Generate QR code for a paid booking
 router.post('/generate', authenticateUser, async (req, res) => {
