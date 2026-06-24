@@ -68,7 +68,9 @@ router.post('/chat', optionalAuth, async (req, res) => {
       try {
         const r = await pool.query('SELECT * FROM users WHERE id = $1', [req.user.id]);
         if (r.rows.length) userProfile = r.rows[0];
-      } catch(e) {}
+      } catch(e) {
+        console.warn('[AITrainer] Failed to fetch user profile:', e.message);
+      }
     }
 
     if (!GEMINI_API_KEY) {

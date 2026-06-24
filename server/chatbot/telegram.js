@@ -160,7 +160,9 @@ async function sendAction(chatId, action) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chat_id: chatId, action }),
     });
-  } catch (e) {}
+  } catch (e) {
+    // Typing indicator failure is non-critical
+  }
 }
 
 function splitMessage(text, maxLen) {

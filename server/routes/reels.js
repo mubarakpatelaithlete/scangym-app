@@ -486,7 +486,9 @@ router.get('/categories', async (req, res) => {
         const cat = row.category || 'Creator';
         catCounts[cat] = (catCounts[cat] || 0) + parseInt(row.count);
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[Reels] Failed to fetch upload categories:', e.message);
+    }
 
     const categories = Object.entries(catCounts)
       .map(([name, count]) => ({ name, count }))

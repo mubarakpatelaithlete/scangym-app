@@ -838,7 +838,9 @@ router.post('/quick-checkout', async (req, res) => {
     try {
       const refQ = await pool.query('SELECT referral_handle FROM public.users WHERE id = $1', [req.session.userId]);
       referralHandle = refQ.rows[0]?.referral_handle || null;
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[Payment] Failed to fetch referral handle:', e.message);
+    }
 
     res.json({
       success: true,
@@ -1014,7 +1016,9 @@ router.post('/confirm-intent', async (req, res) => {
         [email, bookingId]
       );
       booking.user_email = email;
-      try { await stripe.paymentIntents.update(paymentIntentId, { receipt_email: email }); } catch(e) {}
+      try { await stripe.paymentIntents.update(paymentIntentId, { receipt_email: email }); } catch(e) {
+        console.warn('[Payment] Failed to update receipt email on payment intent:', e.message);
+      }
     }
 
     // ═══ UBER-STYLE AUTO-SAVE: Save the card for future 1-tap bookings ═══

@@ -212,7 +212,10 @@ router.get('/share/:token', async (req, res) => {
            VALUES ($1, $2, 'clicked')`,
           [ref, req.headers['x-forwarded-for'] || req.ip || 'unknown']
         );
-      } catch (e) {} // Table might not exist
+      } catch (e) {
+        // Table might not exist yet — non-critical referral tracking
+        console.warn('[Playlists] Failed to track referral click:', e.message);
+      }
     }
 
     res.json({

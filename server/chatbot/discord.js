@@ -390,7 +390,9 @@ async function sendTyping(channelId) {
       method: 'POST',
       headers: { 'Authorization': `Bot ${DISCORD_TOKEN}` },
     });
-  } catch (e) {}
+  } catch (e) {
+    // Typing indicator failure is non-critical
+  }
 }
 
 async function respondToInteraction(interaction, content, ephemeral, deferred) {

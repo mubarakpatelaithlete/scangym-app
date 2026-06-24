@@ -133,7 +133,9 @@ router.post('/join', authenticateUser, async (req, res) => {
     try {
       const refResult = await pool.query('SELECT COUNT(*) FROM referrals WHERE referrer_id = $1', [userId]);
       totalReferrals = parseInt(refResult.rows[0].count);
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[Creators] Failed to count referrals for tier calculation:', e.message);
+    }
 
     const tier = calculateTier(totalReferrals);
     const result = await pool.query(`
@@ -168,7 +170,9 @@ router.get('/membership', authenticateUser, async (req, res) => {
         FROM referrals WHERE referrer_id = $1
       `, [req.user.id]);
       referralStats = { total: parseInt(refs.rows[0].total), conversions: parseInt(refs.rows[0].conversions) };
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[Creators] Failed to fetch referral stats:', e.message);
+    }
 
     const newTier = calculateTier(referralStats.total);
     if (newTier !== m.tier) {
@@ -338,7 +342,9 @@ router.get('/r/:slug', async (req, res) => {
           badge: membership.rows[0].badge,
         };
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[Creators] Failed to fetch creator stats for landing page:', e.message);
+    }
 
     // Get nearby gyms for this creator's target city
     let nearbyGyms = [];
@@ -349,7 +355,9 @@ router.get('/r/:slug', async (req, res) => {
           [`%${p.target_city}%`]
         );
         nearbyGyms = gyms.rows;
-      } catch (e) {}
+      } catch (e) {
+        console.warn('[Creators] Failed to fetch nearby gyms for landing page:', e.message);
+      }
     }
 
     // Science-backed landing page structure

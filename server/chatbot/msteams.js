@@ -269,7 +269,9 @@ async function sendTypingIndicator(serviceUrl, conversationId) {
       },
       body: JSON.stringify({ type: 'typing' }),
     });
-  } catch (e) {}
+  } catch (e) {
+    // Typing indicator failure is non-critical
+  }
 }
 
 async function sendTeamsMessage(serviceUrl, conversationId, replyToId, text) {

@@ -64,7 +64,9 @@ router.post('/webhook', express.urlencoded({ extended: true, limit: '10mb' }), a
     console.log(`[Email] From ${senderName} <${senderEmail}>: ${messageText.substring(0, 100)}`);
 
     // Log inbound
-    try { const { logComms } = require('../routes/comms-log'); await logComms({ channel: 'email', direction: 'inbound', from: senderEmail, to: SMTP_FROM, subject: subject || '', body: messageText, status: 'received' }); } catch(e){}
+    try { const { logComms } = require('../routes/comms-log'); await logComms({ channel: 'email', direction: 'inbound', from: senderEmail, to: SMTP_FROM, subject: subject || '', body: messageText, status: 'received' }); } catch(e){
+      console.warn('[Email] Failed to log inbound comms:', e.message);
+    }
 
     // Try to auto-link by email address
     let linkedUserName = senderName;
@@ -78,7 +80,9 @@ router.post('/webhook', express.urlencoded({ extended: true, limit: '10mb' }), a
       if (linkData.linked && linkData.userName) {
         linkedUserName = linkData.userName;
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[Email] Failed to auto-link email to user:', e.message);
+    }
 
     // Process through universal handler
     const response = await handleMessage(userId, messageText.trim(), {
@@ -95,7 +99,9 @@ router.post('/webhook', express.urlencoded({ extended: true, limit: '10mb' }), a
         if (parsed && parsed.length > 0) {
           attachmentInfo = `\n\n📎 ${parsed.length} attachment(s) received.`;
         }
-      } catch (e) {}
+      } catch (e) {
+        // Attachment parsing is non-critical
+      }
     }
 
     // Reply via email
@@ -266,10 +272,14 @@ async function sendEmailReply(toEmail, toName, originalSubject, responseText, in
       messageThreads.set(toEmail, info.messageId);
     }
 
-    try { const { logComms } = require('../routes/comms-log'); await logComms({ channel: 'email', direction: 'outbound', from: SMTP_FROM, to: toEmail, subject: reSubject, body: plainText, status: 'sent' }); } catch(e){}
+    try { const { logComms } = require('../routes/comms-log'); await logComms({ channel: 'email', direction: 'outbound', from: SMTP_FROM, to: toEmail, subject: reSubject, body: plainText, status: 'sent' }); } catch(e){
+      console.warn('[Email] Failed to log outbound comms:', e.message);
+    }
   } catch (err) {
     console.error('[Email] Send failed:', err.message);
-    try { const { logComms } = require('../routes/comms-log'); await logComms({ channel: 'email', direction: 'outbound', from: SMTP_FROM, to: toEmail, subject: reSubject, body: plainText, status: 'failed', metadata: { error: err.message } }); } catch(e){}
+    try { const { logComms } = require('../routes/comms-log'); await logComms({ channel: 'email', direction: 'outbound', from: SMTP_FROM, to: toEmail, subject: reSubject, body: plainText, status: 'failed', metadata: { error: err.message } }); } catch(e){
+      console.warn('[Email] Failed to log failed outbound comms:', e.message);
+    }
   }
 }
 

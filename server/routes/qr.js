@@ -282,7 +282,9 @@ router.post('/scan', async (req, res) => {
       if (user.rows[0]) userName = [user.rows[0].first_name, user.rows[0].last_name].filter(Boolean).join(' ') || 'Member';
       const gym = await pool.query('SELECT name FROM gyms WHERE id = $1', [qr.gym_id]);
       if (gym.rows[0]) gymName = gym.rows[0].name;
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[QR] Failed to fetch user/gym info for scan display:', e.message);
+    }
 
     // If cash booking + entry scan + not yet confirmed → ask staff to confirm cash first
     if (isCashBooking && scanType === 'entry' && booking.status === 'reserved') {
@@ -461,7 +463,9 @@ router.post('/confirm-cash', async (req, res) => {
       if (user.rows[0]) userName = [user.rows[0].first_name, user.rows[0].last_name].filter(Boolean).join(' ') || 'Member';
       const gym = await pool.query('SELECT name FROM gyms WHERE id = $1', [qr.gym_id]);
       if (gym.rows[0]) gymName = gym.rows[0].name;
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[QR] Failed to fetch user/gym info for cash confirm display:', e.message);
+    }
 
     res.json({
       valid: true,

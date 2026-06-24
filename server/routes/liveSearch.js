@@ -683,7 +683,9 @@ router.get('/place/:placeId', optionalAuth, async (req, res) => {
     try {
       const dbResult = await pool.query('SELECT id, day_pass_price, hourly_rate, is_claimed, is_accepting_bookings FROM gyms WHERE place_id = $1', [placeId]);
       if (dbResult.rows.length > 0) dbGym = dbResult.rows[0];
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[LiveSearch] Failed to fetch gym from DB by place_id:', e.message);
+    }
 
     let scangymReviews = [];
     let scangymRating = null;
@@ -695,7 +697,9 @@ router.get('/place/:placeId', optionalAuth, async (req, res) => {
         if (parseInt(stats.rows[0].total) > 0) {
           scangymRating = { average: parseFloat(parseFloat(stats.rows[0].avg).toFixed(1)), total: parseInt(stats.rows[0].total) };
         }
-      } catch (e) {}
+      } catch (e) {
+        console.warn('[LiveSearch] Failed to fetch ScanGym reviews:', e.message);
+      }
     }
 
     const gymCountry = extractCountryCode(p.formatted_address);
