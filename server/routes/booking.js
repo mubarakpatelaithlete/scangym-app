@@ -21,25 +21,11 @@ const router = express.Router();
 // S5-H08 FIX: Init Stripe once at module load, not per-request
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const pool = require('../middleware/db');
-const crypto = require('crypto');
 const pricing = require('../lib/pricing-engine');
 const { authenticateUser, requireAdmin } = require('../middleware/auth');
-
-// Generate human-readable booking code (e.g., 5WCB-8VDY)
-function generateBookingCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let code = '';
-  for (let i = 0; i < 8; i++) {
-    code += chars[Math.floor(Math.random() * chars.length)];
-    if (i === 3) code += '-';
-  }
-  return code;
-}
-
-// Generate machine booking code
-function generateQRCode() {
-  return 'BOOK_' + crypto.randomBytes(8).toString('hex').toUpperCase();
-}
+const { generateBookingCode, generateQRCode } = require('../lib/code-generators');
+const { resolveTime } = require('../lib/time-utils');
+const { applyReferralDiscount } = require('../lib/referral-discount');
 
 /**
  * POST /api/bookings/create
@@ -57,10 +43,9 @@ router.post('/create', async (req, res) => {
     }
 
     // C2 fix: Resolve 'anytime' / empty time to a sensible default
-    if (!time || time === 'anytime') {
-      const nextH = Math.min(new Date().getHours() + 1, 22);
-      time = String(nextH).padStart(2, '0') + ':00';
-    }
+    const resolved = resolveTime(time);
+    time = resolved.startTime;
+    const endTime = resolved.endTime;
 
     // Get gym info
     const gym = await pool.query('SELECT id, name, address, country FROM gyms WHERE id = $1', [gymId]);
@@ -70,21 +55,11 @@ router.post('/create', async (req, res) => {
 
     const g = gym.rows[0];
 
-    // C3 FIX: endTime = startTime + 1 hour (not same as startTime)
-    const [hours, mins] = time.split(':').map(Number);
-    const endHour = Math.min(hours + 1, 23);
-    const endTime = String(endHour).padStart(2, '0') + ':' + String(mins).padStart(2, '0');
-
     // v4.0: Flat £4.49 base, PPP + currency by gym's country
     const dayPrice = pricing.getDayPassPrice(g.country || 'GB');
-    let price = dayPrice.amount;
 
     // G4 FIX: Apply 15% referral discount (matches frontend display)
-    if (referral_code) {
-      const discount = Math.round(price * 0.15 * 100) / 100;
-      price = Math.max(price - discount, 0.50); // minimum £0.50
-      console.log(`[Booking] Referral discount applied: -£${discount.toFixed(2)} for creator "${referral_code}"`);
-    }
+    let { price } = applyReferralDiscount(dayPrice.amount, referral_code, { context: 'Booking' });
 
     // C8 FIX: Prevent duplicate bookings (same user + gym + date + time)
     const existingBooking = await pool.query(
@@ -237,10 +212,9 @@ router.post('/guest-create', async (req, res) => {
     }
 
     // C2 fix: Resolve 'anytime' / empty time to a sensible default
-    if (!time || time === 'anytime') {
-      const nextH = Math.min(new Date().getHours() + 1, 22);
-      time = String(nextH).padStart(2, '0') + ':00';
-    }
+    const resolved = resolveTime(time);
+    time = resolved.startTime;
+    const endTime = resolved.endTime;
 
     // Validate email
     if (!email.includes('@') || !email.includes('.')) {
@@ -255,21 +229,11 @@ router.post('/guest-create', async (req, res) => {
 
     const g = gym.rows[0];
 
-    // C3 FIX: endTime = startTime + 1 hour (not same as startTime)
-    const [hours, mins] = time.split(':').map(Number);
-    const endHour = Math.min(hours + 1, 23);
-    const endTime = String(endHour).padStart(2, '0') + ':' + String(mins).padStart(2, '0');
-
     // v4.0: Flat £4.49 base, PPP + currency by gym's country
     const dayPrice = pricing.getDayPassPrice(g.country || 'GB');
-    let price = dayPrice.amount;
 
     // G4 FIX: Apply 15% referral discount for guests too
-    if (referral_code) {
-      const discount = Math.round(price * 0.15 * 100) / 100;
-      price = Math.max(price - discount, 0.50);
-      console.log(`[Booking] Guest referral discount: -£${discount.toFixed(2)} for creator "${referral_code}"`);
-    }
+    let { price } = applyReferralDiscount(dayPrice.amount, referral_code, { context: 'Booking', currencySymbol: dayPrice.symbol || '£' });
 
     // C8 FIX: Prevent duplicate guest bookings (same email + gym + date + time)
     const existingGuest = await pool.query(
@@ -590,24 +554,17 @@ router.post('/pay-next-visit', async (req, res) => {
     }
 
     // Resolve time
-    let resolvedTime = time;
-    if (!resolvedTime || resolvedTime === 'anytime') {
-      const nextH = Math.min(new Date().getHours() + 1, 22);
-      resolvedTime = String(nextH).padStart(2, '0') + ':00';
-    }
+    const resolved = resolveTime(time);
+    const resolvedTime = resolved.startTime;
+    const endTime = resolved.endTime;
 
     const gym = await pool.query('SELECT id, name, country FROM gyms WHERE id = $1', [gymId]);
     if (gym.rows.length === 0) return res.status(404).json({ error: 'Gym not found' });
 
     const g = gym.rows[0];
-    const [hours, mins] = resolvedTime.split(':').map(Number);
-    const endTime = String(Math.min(hours + 1, 23)).padStart(2, '0') + ':' + String(mins).padStart(2, '0');
     const dayPrice = pricing.getDayPassPrice(g.country || 'GB');
-    let price = dayPrice.amount;
 
-    if (referral_code) {
-      price = Math.max(price - Math.round(price * 0.15 * 100) / 100, 0.50);
-    }
+    let { price } = applyReferralDiscount(dayPrice.amount, referral_code, { context: 'Booking' });
 
     const bookingCode = generateBookingCode();
     const qrCode = generateQRCode();

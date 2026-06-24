@@ -8,6 +8,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../middleware/db');
+const { parsePagination } = require('../lib/pagination');
 const { authenticateUser } = require('../middleware/auth');
 const OpenAI = require('openai');
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -282,11 +283,10 @@ router.get('/status', authenticateUser, async (req, res) => {
 // GET /api/coach/history — GATED
 router.get('/history', authenticateUser, requireCheckedIn, async (req, res) => {
   try {
-    const { page = 1, limit = 20 } = req.query;
-    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const { page, limit, offset } = parsePagination(req.query, { limit: 20 });
     const result = await pool.query(
       'SELECT role, content, created_at FROM coach_conversations WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3',
-      [req.user.id, parseInt(limit), offset]
+      [req.user.id, limit, offset]
     );
     res.json({ messages: result.rows.reverse() });
   } catch (err) {
@@ -350,11 +350,10 @@ router.post('/workout', authenticateUser, requireCheckedIn, async (req, res) => 
 // GET /api/coach/workouts — GATED
 router.get('/workouts', authenticateUser, requireCheckedIn, async (req, res) => {
   try {
-    const { page = 1, limit = 20 } = req.query;
-    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const { page, limit, offset } = parsePagination(req.query, { limit: 20 });
     const result = await pool.query(
       'SELECT * FROM workout_logs WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3',
-      [req.user.id, parseInt(limit), offset]
+      [req.user.id, limit, offset]
     );
     res.json({ workouts: result.rows });
   } catch (err) {

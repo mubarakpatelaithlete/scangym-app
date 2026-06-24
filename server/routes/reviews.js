@@ -6,6 +6,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../middleware/db');
 const { authenticateUser, optionalAuth } = require('../middleware/auth');
+const { parsePagination } = require('../lib/pagination');
 
 // ─── Helper: Resolve gymId param to integer DB id ────────────
 // Handles both integer IDs (from DB) and Google Place ID strings (e.g. "ChIJ...")
@@ -21,8 +22,8 @@ async function resolveGymId(gymIdParam) {
 router.get('/gym/:gymId', optionalAuth, async (req, res) => {
   try {
     const { gymId: gymIdParam } = req.params;
-    const { page = 1, limit = 20, sort = 'newest' } = req.query;
-    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const { sort = 'newest' } = req.query;
+    const { page, limit, offset } = parsePagination(req.query, { limit: 20 });
     const orderBy = sort === 'highest' ? 'rating DESC' :
                     sort === 'lowest' ? 'rating ASC' :
                     'created_at DESC';

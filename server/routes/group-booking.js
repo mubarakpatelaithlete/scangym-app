@@ -13,6 +13,7 @@ const router = express.Router();
 const pool = require('../middleware/db');
 const crypto = require('crypto');
 const pricing = require('../lib/pricing-engine');
+const { generateGroupCode } = require('../lib/code-generators');
 
 // Ensure tables exist
 (async () => {
@@ -48,9 +49,7 @@ const pricing = require('../lib/pricing-engine');
   } catch (e) { console.error('Group booking table init:', e.message); }
 })();
 
-function generateGroupCode() {
-  return crypto.randomBytes(3).toString('hex').toUpperCase();
-}
+// generateGroupCode is now imported from ../lib/code-generators
 
 function requireAuth(req, res, next) {
   if (!req.session?.userId) return res.status(401).json({ error: 'Login required' });

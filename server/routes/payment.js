@@ -32,6 +32,8 @@ const pool = require('../middleware/db');
 // ─── Global Pricing Engine (PPP + Surge) ────────────────────────────────────
 const pricing = require('../lib/pricing-engine');
 const { getAccessService, isAccessControlEnabled } = require('../lib/access-control');
+const { applyReferralDiscount } = require('../lib/referral-discount');
+const { resolveTime } = require('../lib/time-utils');
 // v4.0: Surge pricing removed — flat £4.49 base everywhere
 
 /**
@@ -89,29 +91,7 @@ try {
   console.error('Stripe init error:', err.message);
 }
 
-/**
- * Resolve 'anytime' time strings into a consistent object.
- */
-function resolveTime(time) {
-  const isAnytime = !time || time === 'anytime';
-  let effectiveTime = time;
-  if (isAnytime) {
-    const now = new Date();
-    const nextHour = Math.min(Math.max(now.getUTCHours() + 1, 6), 20);
-    effectiveTime = String(nextHour).padStart(2, '0') + ':00';
-  }
-  const hours = parseInt(effectiveTime.split(':')[0], 10);
-  // C3 FIX: endTime = startTime + 1 hour (day pass is a 1-hour session window)
-  const endHour = Math.min(hours + 1, 23);
-  const endTime = String(endHour).padStart(2, '0') + ':' + effectiveTime.split(':')[1];
-  return {
-    isAnytime,
-    hours,
-    startTime: effectiveTime,
-    endTime,
-    displayTime: isAnytime ? 'Anytime today' : effectiveTime,
-  };
-}
+// resolveTime is now imported from ../lib/time-utils
 
 let QRCode;
 try {
@@ -659,11 +639,6 @@ router.post('/quick-checkout', async (req, res) => {
     let { gymId, date, time, cardId, savedCardId, placeId, passType, gymName: reqGymName, gymAddress: reqGymAddr, referral_code } = req.body;
     const effectiveCardId = cardId || savedCardId; // Frontend sends savedCardId
     if (!date) return res.status(400).json({ error: 'date required' });
-    // C2 fix: Resolve 'anytime' / empty time to a sensible default
-    if (!time || time === 'anytime') {
-      const nextH = Math.min(new Date().getHours() + 1, 22);
-      time = String(nextH).padStart(2, '0') + ':00';
-    }
 
     // Get user + Stripe customer
     const userResult = await pool.query(
@@ -720,16 +695,10 @@ router.post('/quick-checkout', async (req, res) => {
     const resolved = resolveTime(time);
 
     // S4-C11 FIX: Apply 15% referral discount when referral code is present
-    let price = dayPrice.amount;
     let amount = dayPrice.stripeAmount;
-    let appliedDiscount = null;
-    if (referral_code) {
-      const REFERRAL_DISCOUNT_PERCENT = 15;
-      const discountAmount = parseFloat((price * REFERRAL_DISCOUNT_PERCENT / 100).toFixed(2));
-      price = parseFloat((price - discountAmount).toFixed(2));
+    const { price, appliedDiscount } = applyReferralDiscount(dayPrice.amount, referral_code, { context: 'Payment', currencySymbol: dayPrice.symbol });
+    if (appliedDiscount) {
       amount = pricing.toStripeAmount(price, gymCurrency);
-      appliedDiscount = { percent: REFERRAL_DISCOUNT_PERCENT, saved: discountAmount, code: referral_code };
-      console.log(`[Payment] Referral discount: ${REFERRAL_DISCOUNT_PERCENT}% off → ${dayPrice.symbol}${price} (saved ${dayPrice.symbol}${discountAmount}) via "${referral_code}"`);
     }
 
     // C8 FIX: Prevent duplicate bookings (same user + gym + date + time)
@@ -1107,11 +1076,6 @@ router.post('/cash-booking', async (req, res) => {
 
     let { gymId, placeId, date, time, email, passType, gymName, gymAddress, referral_code } = req.body;
     if (!date) return res.status(400).json({ error: 'date required' });
-    // C2 fix: Resolve 'anytime' / empty time to a sensible default
-    if (!time || time === 'anytime') {
-      const nextH = Math.min(new Date().getHours() + 1, 22);
-      time = String(nextH).padStart(2, '0') + ':00';
-    }
     if (!gymId && !placeId) return res.status(400).json({ error: 'gymId or placeId required' });
 
     // Sanitize email — prevent null/undefined from crashing INSERT
@@ -1156,15 +1120,7 @@ router.post('/cash-booking', async (req, res) => {
     });
 
     // S4-C11 FIX: Apply 15% referral discount when referral code is present
-    let price = dayPrice.amount;
-    let appliedDiscount = null;
-    if (referral_code) {
-      const REFERRAL_DISCOUNT_PERCENT = 15;
-      const discountAmount = parseFloat((price * REFERRAL_DISCOUNT_PERCENT / 100).toFixed(2));
-      price = parseFloat((price - discountAmount).toFixed(2));
-      appliedDiscount = { percent: REFERRAL_DISCOUNT_PERCENT, saved: discountAmount, code: referral_code };
-      console.log(`[Payment] Cash referral discount: ${REFERRAL_DISCOUNT_PERCENT}% off → ${dayPrice.symbol}${price} via "${referral_code}"`);
-    }
+    const { price, appliedDiscount } = applyReferralDiscount(dayPrice.amount, referral_code, { context: 'Payment', currencySymbol: dayPrice.symbol });
 
     // S4-C09 FIX: Prevent duplicate cash bookings using userId (always available after C-05 auth fix)
     const existingCash = await pool.query(
