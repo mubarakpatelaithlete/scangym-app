@@ -1,7 +1,7 @@
 // ScanGym Frontend v5.4.0 — Perfect 1-tap booking: faster auth→pay→QR flow
 
 // Inject CSS animations for loading experience
-(function(){const s=document.createElement('style');s.textContent='@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}#fun-fact{transition:opacity 0.2s ease}.gym-card{animation:fadeInUp 0.3s ease-out both}.animate-slide-up{animation:slideUp 0.3s ease-out}@keyframes skeletonPulse{0%,100%{opacity:.6}50%{opacity:.3}}@keyframes locationDot{0%,100%{box-shadow:0 0 0 0 rgba(255,109,0,.4)}50%{box-shadow:0 0 0 8px rgba(255,109,0,0)}}.skel-card{animation:skeletonPulse 1.8s ease-in-out infinite}.loc-dot{animation:locationDot 1.5s ease-in-out infinite}.cards-enter .gym-card{animation:fadeInUp .4s ease-out both}@keyframes toastIn{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes toastOut{from{transform:translateY(0);opacity:1}to{transform:translateY(-100%);opacity:0}}@keyframes spin{to{transform:rotate(360deg)}}@keyframes casinoGlow{0%,100%{box-shadow:0 4px 20px rgba(255,109,0,.4),0 0 15px rgba(255,109,0,.15);background-position:0% 50%}50%{box-shadow:0 4px 30px rgba(255,109,0,.65),0 0 30px rgba(255,109,0,.3),0 0 60px rgba(255,109,0,.1);background-position:100% 50%}}@keyframes greenGlow{0%,100%{box-shadow:0 4px 20px rgba(34,197,94,.35),0 0 15px rgba(34,197,94,.1)}50%{box-shadow:0 4px 30px rgba(34,197,94,.6),0 0 30px rgba(34,197,94,.25),0 0 60px rgba(34,197,94,.1)}}.sg-spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}/* ── 6-Tab System (Polished) ── */.sg-tab-bar{position:fixed;bottom:0;left:0;right:0;height:56px;background:rgba(8,8,18,.98);backdrop-filter:blur(24px) saturate(1.8);-webkit-backdrop-filter:blur(24px) saturate(1.8);display:flex;align-items:center;justify-content:space-around;border-top:1px solid rgba(255,255,255,.06);z-index:9000;padding-bottom:env(safe-area-inset-bottom,0);pointer-events:auto!important}.sg-tab-item{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:6px 8px;border-radius:0;transition:all .25s cubic-bezier(.4,0,.2,1);-webkit-tap-highlight-color:transparent;user-select:none;position:relative;touch-action:manipulation}.sg-tab-item svg{width:22px;height:22px;stroke:rgba(255,255,255,.4);fill:none;stroke-width:1.8;transition:all .25s cubic-bezier(.4,0,.2,1)}.sg-tab-item .sg-tab-label{font-size:9px;font-weight:600;letter-spacing:.2px;color:rgba(255,255,255,.4);transition:all .25s cubic-bezier(.4,0,.2,1)}.sg-tab-item.active svg{stroke:#FF6D00;filter:drop-shadow(0 0 6px rgba(255,109,0,.35))}.sg-tab-item.active .sg-tab-label{color:#FF6D00}.sg-tab-item:active{transform:scale(.92)}.sg-tab-content{position:fixed;top:0;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom,0px));overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;scroll-behavior:smooth;display:flex;flex-direction:column}.sg-tab-content.reels-active{position:static;padding-bottom:0;overflow:visible}.sg-reels-frame{position:fixed;top:0;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom,0px));border:none;width:100%;height:calc(100vh - 56px - env(safe-area-inset-bottom,0px));z-index:1}.sg-more-hub{padding:20px 16px 24px;max-width:480px;margin:0 auto}.sg-more-section{margin-bottom:20px}.sg-more-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.3);margin-bottom:8px;padding-left:4px}.sg-more-item{display:flex;align-items:center;gap:14px;padding:14px 16px;background:rgba(255,255,255,.04);border-radius:14px;margin-bottom:6px;border:1px solid rgba(255,255,255,.04);cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}.sg-more-item:active{transform:scale(.98);background:rgba(255,255,255,.08)}.sg-more-item .sg-mi-icon{font-size:20px;width:40px;height:40px;background:rgba(255,255,255,.06);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.sg-more-item .sg-mi-text{flex:1}.sg-more-item .sg-mi-text h4{color:#fff;font-size:14px;font-weight:600;margin:0}.sg-more-item .sg-mi-text p{color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0}.sg-more-item .sg-mi-arrow{color:rgba(255,255,255,.2);font-size:16px}.sg-more-profile{display:flex;align-items:center;gap:14px;margin-bottom:28px;padding-top:12px}.sg-more-avatar{width:56px;height:56px;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff;flex-shrink:0}.sg-more-profile-info h3{color:#fff;font-size:18px;font-weight:700;margin:0}.sg-more-profile-info p{color:rgba(255,255,255,.4);font-size:13px;margin:2px 0 0}.sg-more-social{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}.sg-more-social a{display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:rgba(255,255,255,.04);border-radius:12px;border:1px solid rgba(255,255,255,.06);font-size:16px;transition:all .15s;text-decoration:none}.sg-more-social a:active{background:rgba(255,255,255,.1);transform:scale(.95)}.sg-more-back{display:flex;align-items:center;gap:8px;padding:12px 0;cursor:pointer;color:rgba(255,255,255,.6);font-size:14px;font-weight:600;margin-bottom:4px;-webkit-tap-highlight-color:transparent}.sg-more-back:active{color:#FF6D00}#sg-search-overlay{transition:opacity .2s ease}#sg-search-overlay.active{opacity:1!important}.hide-scrollbar::-webkit-scrollbar{display:none}.hide-scrollbar{scrollbar-width:none;-ms-overflow-style:none}*::-webkit-scrollbar{display:none}*{scrollbar-width:none;-ms-overflow-style:none}.sg-dashboard{-webkit-tap-highlight-color:transparent;position:fixed;top:0;left:0;right:0;bottom:56px;z-index:10;overscroll-behavior:none;-webkit-overflow-scrolling:auto}html,body{height:100%;overflow:hidden;overscroll-behavior:none;position:fixed;width:100%}.sg-tab-bar.hidden{display:none!important}/* ── Continue Banner (permanent layout element like tab bar) ── */#sg-continue-banner{position:fixed;bottom:calc(56px + env(safe-area-inset-bottom,0px));left:0;right:0;height:52px;background:linear-gradient(135deg,#FF6D00 0%,#E66200 100%);display:flex;align-items:center;justify-content:center;gap:8px;z-index:8999;box-shadow:0 -4px 20px rgba(255,109,0,.25);cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}#sg-continue-banner:active{opacity:.85}#sg-continue-banner.sg-cb-hidden{display:none}#sg-continue-banner .sg-cb-text{-webkit-user-select:none;user-select:none;font-size:16px;font-weight:700;color:#fff;letter-spacing:.3px}#sg-continue-banner .sg-cb-price{font-size:13px;font-weight:600;color:rgba(255,255,255,.75)}#sg-continue-banner .sg-cb-arrow{font-size:18px;color:#fff;margin-left:2px}body.sg-cb-active .sg-tab-content{bottom:calc(56px + 52px + env(safe-area-inset-bottom,0px))!important}body.sg-cb-active .sg-reels-frame,body.sg-cb-active #sg-reels-iframe{bottom:calc(56px + 52px + env(safe-area-inset-bottom,0px))!important;height:calc(100vh - 56px - 52px - env(safe-area-inset-bottom,0px))!important}body.sg-cb-active .sg-dashboard{bottom:calc(56px + 52px)!important}';document.head.appendChild(s)})();
+(function(){const s=document.createElement('style');s.textContent='@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}#fun-fact{transition:opacity 0.2s ease}.gym-card{animation:fadeInUp 0.3s ease-out both}.animate-slide-up{animation:slideUp 0.3s ease-out}@keyframes skeletonPulse{0%,100%{opacity:.6}50%{opacity:.3}}@keyframes locationDot{0%,100%{box-shadow:0 0 0 0 rgba(255,109,0,.4)}50%{box-shadow:0 0 0 8px rgba(255,109,0,0)}}.skel-card{animation:skeletonPulse 1.8s ease-in-out infinite}.loc-dot{animation:locationDot 1.5s ease-in-out infinite}.cards-enter .gym-card{animation:fadeInUp .4s ease-out both}@keyframes toastIn{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes toastOut{from{transform:translateY(0);opacity:1}to{transform:translateY(-100%);opacity:0}}@keyframes spin{to{transform:rotate(360deg)}}@keyframes sgDot{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1.1)}}@keyframes casinoGlow{0%,100%{box-shadow:0 4px 20px rgba(255,109,0,.4),0 0 15px rgba(255,109,0,.15);background-position:0% 50%}50%{box-shadow:0 4px 30px rgba(255,109,0,.65),0 0 30px rgba(255,109,0,.3),0 0 60px rgba(255,109,0,.1);background-position:100% 50%}}@keyframes greenGlow{0%,100%{box-shadow:0 4px 20px rgba(34,197,94,.35),0 0 15px rgba(34,197,94,.1)}50%{box-shadow:0 4px 30px rgba(34,197,94,.6),0 0 30px rgba(34,197,94,.25),0 0 60px rgba(34,197,94,.1)}}.sg-spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}/* ── 7-Tab System (Polished) ── */.sg-tab-bar{position:fixed;bottom:0;left:0;right:0;height:56px;background:rgba(8,8,18,.98);backdrop-filter:blur(24px) saturate(1.8);-webkit-backdrop-filter:blur(24px) saturate(1.8);display:flex;align-items:center;justify-content:space-around;border-top:1px solid rgba(255,255,255,.06);z-index:9000;padding-bottom:env(safe-area-inset-bottom,0);pointer-events:auto!important}.sg-tab-item{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:6px 4px;border-radius:0;transition:all .25s cubic-bezier(.4,0,.2,1);-webkit-tap-highlight-color:transparent;user-select:none;position:relative;touch-action:manipulation}.sg-tab-item svg{width:22px;height:22px;stroke:rgba(255,255,255,.4);fill:none;stroke-width:1.8;transition:all .25s cubic-bezier(.4,0,.2,1)}.sg-tab-item .sg-tab-label{font-size:8px;font-weight:600;letter-spacing:.1px;color:rgba(255,255,255,.4);transition:all .25s cubic-bezier(.4,0,.2,1)}.sg-tab-item.active svg{stroke:#FF6D00;filter:drop-shadow(0 0 6px rgba(255,109,0,.35))}.sg-tab-item.active .sg-tab-label{color:#FF6D00}.sg-tab-item:active{transform:scale(.92)}.sg-tab-content{position:fixed;top:0;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom,0px));overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;scroll-behavior:smooth;display:flex;flex-direction:column}.sg-tab-content.reels-active{position:static;padding-bottom:0;overflow:visible}.sg-reels-frame{position:fixed;top:0;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom,0px));border:none;width:100%;height:calc(100vh - 56px - env(safe-area-inset-bottom,0px));z-index:1}.sg-more-hub{padding:20px 16px 24px;max-width:480px;margin:0 auto}.sg-more-section{margin-bottom:20px}.sg-more-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.3);margin-bottom:8px;padding-left:4px}.sg-more-item{display:flex;align-items:center;gap:14px;padding:14px 16px;background:rgba(255,255,255,.04);border-radius:14px;margin-bottom:6px;border:1px solid rgba(255,255,255,.04);cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}.sg-more-item:active{transform:scale(.98);background:rgba(255,255,255,.08)}.sg-more-item .sg-mi-icon{font-size:20px;width:40px;height:40px;background:rgba(255,255,255,.06);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.sg-more-item .sg-mi-text{flex:1}.sg-more-item .sg-mi-text h4{color:#fff;font-size:14px;font-weight:600;margin:0}.sg-more-item .sg-mi-text p{color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0}.sg-more-item .sg-mi-arrow{color:rgba(255,255,255,.2);font-size:16px}.sg-more-profile{display:flex;align-items:center;gap:14px;margin-bottom:28px;padding-top:12px}.sg-more-avatar{width:56px;height:56px;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff;flex-shrink:0}.sg-more-profile-info h3{color:#fff;font-size:18px;font-weight:700;margin:0}.sg-more-profile-info p{color:rgba(255,255,255,.4);font-size:13px;margin:2px 0 0}.sg-more-social{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}.sg-more-social a{display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:rgba(255,255,255,.04);border-radius:12px;border:1px solid rgba(255,255,255,.06);font-size:16px;transition:all .15s;text-decoration:none}.sg-more-social a:active{background:rgba(255,255,255,.1);transform:scale(.95)}.sg-more-back{display:flex;align-items:center;gap:8px;padding:12px 0;cursor:pointer;color:rgba(255,255,255,.6);font-size:14px;font-weight:600;margin-bottom:4px;-webkit-tap-highlight-color:transparent}.sg-more-back:active{color:#FF6D00}#sg-search-overlay{transition:opacity .2s ease}#sg-search-overlay.active{opacity:1!important}.hide-scrollbar::-webkit-scrollbar{display:none}.hide-scrollbar{scrollbar-width:none;-ms-overflow-style:none}*::-webkit-scrollbar{display:none}*{scrollbar-width:none;-ms-overflow-style:none}.sg-dashboard{-webkit-tap-highlight-color:transparent;position:fixed;top:0;left:0;right:0;bottom:56px;z-index:10;overscroll-behavior:none;-webkit-overflow-scrolling:auto}html,body{height:100%;overflow:hidden;overscroll-behavior:none;position:fixed;width:100%}.sg-tab-bar.hidden{display:none!important}/* ── Continue Banner (permanent layout element like tab bar) ── */#sg-continue-banner{position:fixed;bottom:calc(56px + env(safe-area-inset-bottom,0px));left:0;right:0;height:52px;background:linear-gradient(135deg,#FF6D00 0%,#E66200 100%);display:flex;align-items:center;justify-content:center;gap:8px;z-index:8999;box-shadow:0 -4px 20px rgba(255,109,0,.25);cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}#sg-continue-banner:active{opacity:.85}#sg-continue-banner.sg-cb-hidden{display:none}#sg-continue-banner .sg-cb-text{-webkit-user-select:none;user-select:none;font-size:16px;font-weight:700;color:#fff;letter-spacing:.3px}#sg-continue-banner .sg-cb-price{font-size:13px;font-weight:600;color:rgba(255,255,255,.75)}#sg-continue-banner .sg-cb-arrow{font-size:18px;color:#fff;margin-left:2px}body.sg-cb-active .sg-tab-content{bottom:calc(56px + 52px + env(safe-area-inset-bottom,0px))!important}body.sg-cb-active .sg-reels-frame,body.sg-cb-active #sg-reels-iframe{bottom:calc(56px + 52px + env(safe-area-inset-bottom,0px))!important;height:calc(100vh - 56px - 52px - env(safe-area-inset-bottom,0px))!important}body.sg-cb-active .sg-dashboard{bottom:calc(56px + 52px)!important}';document.head.appendChild(s)})();
 // ═══ Perf #9: Preconnect to Google photo CDN for faster image loads ═══
 (function(){['https://lh3.googleusercontent.com','https://maps.googleapis.com'].forEach(function(d){
 var l=document.createElement('link');l.rel='preconnect';l.href=d;l.crossOrigin='anonymous';document.head.appendChild(l);
@@ -659,6 +659,7 @@ function getTabForRoute(path){
   if(path==='/music')return 'music';
   if(path==='/photos'||path==='/carousel')return 'photos';
   if(path==='/chat'||path==='/community')return 'chat';
+  if(path==='/trainer'||path==='/ai-trainer')return 'trainer';
   return 'more';
 }
 function switchTab(tab){
@@ -668,6 +669,7 @@ function switchTab(tab){
   else if(tab==='music'){state.route='/music';history.pushState(null,'','/music');}
   else if(tab==='photos'){state.route='/photos';history.pushState(null,'','/photos');}
   else if(tab==='chat'){state.route='/chat';history.pushState(null,'','/chat');}
+  else if(tab==='trainer'){state.route='/trainer';history.pushState(null,'','/trainer');}
   else if(tab==='more'){state.route=state._lastMoreRoute||'/more';history.pushState(null,'',state.route);}
   render();
   // ── Bug Fix: Toggle persistent reels iframe visibility ──
@@ -12651,6 +12653,125 @@ function _sgChatCopy(idx){
   }
 }
 
+// ═══════════════════════════════════════════════════════════════
+//  Trainer Tab — AI Personal Trainer (proper tab like Music/Photos)
+// ═══════════════════════════════════════════════════════════════
+if(!window._sgTrainer)window._sgTrainer={msgs:[],typing:false,history:[]};
+// Clean up legacy patches-v3 trainer DOM if it exists
+(function(){var old=document.getElementById('sg-ait-c2');if(old)old.remove();var oldBtn=document.getElementById('sg-ait-btn');if(oldBtn)oldBtn.remove();})();
+
+function _sgTrainerSend(){
+  var input=document.getElementById('sg-trainer-input');
+  if(!input)return;
+  var text=input.value.trim();
+  if(!text)return;
+  input.value='';
+  input.style.height='44px';
+  var t=window._sgTrainer;
+  t.msgs.push({role:'user',text:text,ts:Date.now()});
+  t.typing=true;
+  render();
+  // Scroll to bottom
+  setTimeout(function(){var c=document.getElementById('sg-trainer-msgs');if(c)c.scrollTop=c.scrollHeight;},50);
+  // Call API
+  fetch('/api/ai-trainer/chat',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    credentials:'include',
+    body:JSON.stringify({message:text,history:t.history.slice(-8)})
+  }).then(function(r){return r.json();}).then(function(d){
+    var reply=d.reply||"I'm here to help! Tell me your fitness goal and I'll create a plan. 💪";
+    t.msgs.push({role:'assistant',text:reply,ts:Date.now(),actions:d.actions||[]});
+    t.history.push({role:'user',content:text});
+    t.history.push({role:'assistant',content:reply});
+    t.typing=false;
+    render();
+    setTimeout(function(){var c=document.getElementById('sg-trainer-msgs');if(c)c.scrollTop=c.scrollHeight;},50);
+  }).catch(function(){
+    t.msgs.push({role:'assistant',text:"Connection hiccup — try again! Meanwhile: progressive overload (add 2.5kg/week) is the #1 way to build muscle. 💪",ts:Date.now()});
+    t.typing=false;
+    render();
+  });
+}
+
+window._sgTrainerSend=_sgTrainerSend;
+
+window._sgTrainerKeydown=function(e){
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();_sgTrainerSend();}
+};
+
+window._sgTrainerAutoGrow=function(el){
+  el.style.height='44px';
+  el.style.height=Math.min(el.scrollHeight,120)+'px';
+};
+
+function TrainerTabPage(){
+  var t=window._sgTrainer;
+  var msgs=t.msgs;
+  var isTyping=t.typing;
+  var isEmpty=msgs.length===0;
+  var u=state.user;
+
+  var suggestions=[
+    {icon:'💪',text:'Create a workout plan'},
+    {icon:'🔥',text:'Best exercises for fat loss'},
+    {icon:'🍗',text:'How much protein do I need?'},
+    {icon:'📊',text:'Calculate my 1 rep max'},
+    {icon:'🏋️',text:'Push pull legs split'},
+    {icon:'🧘',text:'Recovery & stretching tips'},
+  ];
+
+  return`<div style="display:flex;flex-direction:column;height:100%;background:linear-gradient(180deg,#0a0a16 0%,#0d0d1a 100%)">
+    <!-- Header -->
+    <div style="padding:16px 16px 12px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="width:44px;height:44px;background:linear-gradient(135deg,#FF6D00,#ff8533);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🤖</div>
+        <div style="flex:1">
+          <h3 style="color:#fff;font-size:16px;font-weight:800;margin:0">AI Personal Trainer</h3>
+          <p style="color:rgba(255,255,255,.4);font-size:11px;margin:2px 0 0">Science-backed • Personalised${u?' • Knows your stats':''}</p>
+        </div>
+        <div style="width:8px;height:8px;background:#22c55e;border-radius:50%;box-shadow:0 0 8px rgba(34,197,94,.5)"></div>
+      </div>
+    </div>
+
+    <!-- Messages area -->
+    <div id="sg-trainer-msgs" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px">
+      ${isEmpty?`
+        <!-- Welcome state -->
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px">
+          <div style="font-size:64px;margin-bottom:12px">🏋️</div>
+          <h2 style="color:#fff;font-size:20px;font-weight:800;margin:0 0 8px">Your AI Trainer</h2>
+          <p style="color:rgba(255,255,255,.4);font-size:13px;margin:0 0 24px;max-width:280px">Ask me anything about workouts, nutrition, or recovery. I'll create personalised plans based on your stats.</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;max-width:320px">
+            ${suggestions.map(function(s){
+              return '<button onclick="document.getElementById(\'sg-trainer-input\').value=\''+s.text+'\';_sgTrainerSend()" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px 10px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:8px;transition:.15s" ontouchstart="this.style.background=\'rgba(255,109,0,.1)\'" ontouchend="this.style.background=\'rgba(255,255,255,.04)\'"><span style="font-size:18px">'+s.icon+'</span><span style="color:rgba(255,255,255,.7);font-size:12px;font-weight:600">'+s.text+'</span></button>';
+            }).join('')}
+          </div>
+        </div>
+      `:`
+        ${msgs.map(function(m){
+          if(m.role==='user'){
+            return '<div style="align-self:flex-end;max-width:85%"><div style="background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff;padding:12px 16px;border-radius:18px 18px 4px 18px;font-size:14px;line-height:1.5;font-weight:500">'+m.text.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</div><div style="text-align:right;margin-top:4px"><span style="color:rgba(255,255,255,.2);font-size:10px">'+new Date(m.ts).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+'</span></div></div>';
+          } else {
+            return '<div style="align-self:flex-start;max-width:85%;display:flex;gap:8px"><div style="width:28px;height:28px;background:linear-gradient(135deg,#FF6D00,#ff8533);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;margin-top:2px">🤖</div><div><div style="background:rgba(255,255,255,.06);color:rgba(255,255,255,.9);padding:12px 16px;border-radius:4px 18px 18px 18px;font-size:14px;line-height:1.6;border:1px solid rgba(255,255,255,.06)">'+m.text.replace(/\n/g,'<br>').replace(/\*\*(.+?)\*\*/g,'<strong style="color:#FF6D00">$1</strong>')+'</div><div style="margin-top:4px"><span style="color:rgba(255,255,255,.2);font-size:10px">'+new Date(m.ts).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+'</span></div></div></div>';
+          }
+        }).join('')}
+        ${isTyping?'<div style="align-self:flex-start;display:flex;gap:8px"><div style="width:28px;height:28px;background:linear-gradient(135deg,#FF6D00,#ff8533);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">🤖</div><div style="background:rgba(255,255,255,.06);padding:12px 16px;border-radius:4px 18px 18px 18px;border:1px solid rgba(255,255,255,.06)"><div style="display:flex;gap:4px"><span style="width:6px;height:6px;background:rgba(255,255,255,.4);border-radius:50%;animation:sgDot 1.4s ease-in-out infinite"></span><span style="width:6px;height:6px;background:rgba(255,255,255,.4);border-radius:50%;animation:sgDot 1.4s ease-in-out .2s infinite"></span><span style="width:6px;height:6px;background:rgba(255,255,255,.4);border-radius:50%;animation:sgDot 1.4s ease-in-out .4s infinite"></span></div></div></div>':''}
+      `}
+    </div>
+
+    <!-- Input area -->
+    <div style="padding:8px 12px 12px;border-top:1px solid rgba(255,255,255,.06);flex-shrink:0;background:rgba(8,8,18,.95)">
+      <div style="display:flex;gap:8px;align-items:flex-end">
+        <textarea id="sg-trainer-input" placeholder="Ask your trainer anything..." rows="1" onkeydown="_sgTrainerKeydown(event)" oninput="_sgTrainerAutoGrow(this)" style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:22px;color:#fff;font-size:14px;padding:12px 16px;resize:none;outline:none;height:44px;max-height:120px;font-family:inherit;line-height:1.4;transition:border-color .2s" onfocus="this.style.borderColor='rgba(255,109,0,.4)'" onblur="this.style.borderColor='rgba(255,255,255,.1)'"></textarea>
+        <button onclick="_sgTrainerSend()" style="width:44px;height:44px;background:linear-gradient(135deg,#FF6D00,#E66200);border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;box-shadow:0 4px 16px rgba(255,109,0,.3);transition:.15s" ontouchstart="this.style.transform='scale(.9)'" ontouchend="this.style.transform=''">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2" fill="rgba(255,255,255,.15)"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>`;
+}
+
 function ChatTabPage(){
   var chat=window._sgChat;
   var msgs=chat.msgs;
@@ -12864,6 +12985,7 @@ function BottomTabBar(){
   const musicIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3" fill="${t==='music'?'#FF6D00':'rgba(255,255,255,.3)'}"/><circle cx="18" cy="16" r="3" fill="${t==='music'?'#FF6D00':'rgba(255,255,255,.3)'}"/></svg>`;
   const photosIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2" fill="${t==='photos'?'#FF6D00':'rgba(255,255,255,.3)'}"/><path d="M21 15l-5-5L5 21"/></svg>`;
   const chatIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>`;
+  const trainerIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="3"/><path d="M12 8v4"/><path d="M8 21l2-9"/><path d="M16 21l-2-9"/><path d="M6 12h12"/><circle cx="6" cy="12" r="1.5" fill="${t==='trainer'?'#FF6D00':'rgba(255,255,255,.3)'}"/><circle cx="18" cy="12" r="1.5" fill="${t==='trainer'?'#FF6D00':'rgba(255,255,255,.3)'}"/></svg>`;
   const moreIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
   return`<nav class="sg-tab-bar" role="tablist" aria-label="Main navigation">
     <button class="sg-tab-item ${t==='reels'?'active':''}" role="tab" aria-selected="${t==='reels'}" aria-label="Reels" onclick="switchTab('reels')">
@@ -12885,6 +13007,10 @@ function BottomTabBar(){
     <button class="sg-tab-item ${t==='chat'?'active':''}" role="tab" aria-selected="${t==='chat'}" aria-label="Chat" onclick="switchTab('chat')">
       ${chatIcon}
       <span class="sg-tab-label">Chat</span>
+    </button>
+    <button class="sg-tab-item ${t==='trainer'?'active':''}" role="tab" aria-selected="${t==='trainer'}" aria-label="AI Trainer" onclick="switchTab('trainer')">
+      ${trainerIcon}
+      <span class="sg-tab-label">Trainer</span>
     </button>
     <button class="sg-tab-item ${t==='more'?'active':''}" role="tab" aria-selected="${t==='more'}" aria-label="Profile and settings" onclick="switchTab('more')">
       ${moreIcon}
@@ -15865,8 +15991,6 @@ function _renderInner(){
   else if(path==='/session'||path==='/active-session')page=ActiveSessionPage();
   else if(path==='/featured')page=InfoPage('Featured Listings',`<p class="text-xl text-white font-bold">Featured Gyms on ScanGym</p><p>Get your gym seen by thousands. Featured listings appear at the top of search results with a highlighted badge.</p><p>✅ Priority placement in search</p><p>✅ Featured badge on your profile</p><p>✅ 3x more profile views on average</p><p><a onclick="navigate(\'/contact\')" class="text-brand cursor-pointer">Contact us about featured listings →</a></p>`);
   else if(path==='/careers')page=InfoPage('Careers at ScanGym',`<p class="text-xl text-white font-bold">Join the Team</p><p>We\'re building the future of gym access in the UK. Currently a lean team based in Manchester.</p><p>Interested in working with us? Send your CV to:</p><p>📧 <strong>hello@scangym.com</strong></p>`);
-  // #79: AI Trainer page
-  else if(path==='/ai-trainer')page=InfoPage('AI Trainer',`<div style="text-align:center;padding:20px 0"><p style="font-size:48px">🤖</p><h2 style="color:#fff;font-size:22px;font-weight:800;margin:12px 0 8px">AI Personal Trainer</h2><p style="color:rgba(255,255,255,.5);font-size:14px;margin-bottom:24px">Ask me anything about your workout</p><div style="padding:0 8px"><select id="sg-ai-muscle" style="width:100%;padding:14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;color:#fff;font-size:15px;margin-bottom:12px"><option value="">Choose muscle group</option><option value="chest">Chest</option><option value="back">Back</option><option value="legs">Legs</option><option value="shoulders">Shoulders</option><option value="arms">Arms</option><option value="core">Core</option></select><button onclick="(async function(){var m=document.getElementById('sg-ai-muscle').value;var r=await fetch('/api/ai/avatar-trainer',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({muscleGroup:m||'general fitness'})});var d=await r.json();document.getElementById('sg-ai-response').innerHTML='<div style=\'background:rgba(255,109,0,.08);border:1px solid rgba(255,109,0,.2);border-radius:16px;padding:16px;margin-top:16px;text-align:left\'><p style=\'color:#FF6D00;font-size:13px;font-weight:700;margin-bottom:8px\'>🏋️ Trainer says:</p><p style=\'color:#fff;font-size:15px;line-height:1.6\'>'+(d.response?.text||'Ask me something!')+'</p></div>';})()" style="width:100%;padding:14px;background:#FF6D00;color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer">Get AI Tip 💪</button><div id="sg-ai-response"></div></div></div>`);
   // #80: Calendar page
   else if(path==='/calendar')page=InfoPage('Workout Calendar',`<div style="text-align:center;padding:16px 0"><p style="font-size:48px">📅</p><h2 style="color:#fff;font-size:22px;font-weight:800;margin:12px 0">Your Training Calendar</h2><div id="sg-calendar-grid" style="padding:8px"><p style="color:rgba(255,255,255,.3)">Loading...</p></div><script>setTimeout(async function(){try{var r=await fetch('/api/ai/calendar',{credentials:'include'});var d=await r.json();var h='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:16px">';['M','T','W','T','F','S','S'].forEach(function(d){h+='<div style="color:rgba(255,255,255,.3);font-size:11px;font-weight:700;text-align:center;padding:4px">'+d+'</div>';});for(var i=1;i<=30;i++){var dd=d.month+'-'+(i<10?'0':'')+i;var active=d.days&&d.days[dd];h+='<div style="aspect-ratio:1;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff;background:'+(active?'rgba(255,109,0,.3)':'rgba(255,255,255,.04)')+'">'+i+'</div>';}h+='</div>';h+='<div style="margin-top:16px;display:flex;gap:12px;justify-content:center"><div style="text-align:center"><div style="color:#FF6D00;font-size:24px;font-weight:900">'+(d.stats?.activeDays||0)+'</div><div style="color:rgba(255,255,255,.3);font-size:11px">Active Days</div></div><div style="text-align:center"><div style="color:#22c55e;font-size:24px;font-weight:900">'+(d.stats?.consistency||0)+'%</div><div style="color:rgba(255,255,255,.3);font-size:11px">Consistency</div></div></div>';document.getElementById('sg-calendar-grid').innerHTML=h;}catch(e){document.getElementById('sg-calendar-grid').innerHTML='<p style="color:#FF6D00">Sign in to see your calendar</p>';}},300)</script></div>`);
   // #81: Progress page
@@ -15938,6 +16062,8 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
     html=`<main class="sg-tab-content fade-in">${MusicTabPage()}</main>`+BottomTabBar();
   } else if(tab==='photos') {
     html=`<main class="sg-tab-content fade-in">${PhotosTabPage()}</main>`+BottomTabBar();
+  } else if(tab==='trainer') {
+    html=`<main class="sg-tab-content fade-in">${TrainerTabPage()}</main>`+BottomTabBar();
   } else if(tab==='chat') {
     html=`<main class="sg-tab-content fade-in">${ChatTabPage()}</main>`+BottomTabBar();
   } else if((path==='/explore'||path==='/nearby'||path==='/search') && tab==='book') {
