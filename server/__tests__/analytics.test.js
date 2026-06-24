@@ -53,43 +53,50 @@ describe('analytics middleware', () => {
   it('skips health check endpoint', () => {
     const req = mockReq('/api/v2/health');
     const res = mockRes();
+    const originalEnd = res.end;
     const next = jest.fn();
 
     analyticsMiddleware(req, res, next);
 
     expect(next).toHaveBeenCalled();
     // end should not be monkey-patched for skipped paths
-    expect(res.end).toBe(res.end); // original
+    expect(res.end).toBe(originalEnd);
   });
 
   it('skips static assets', () => {
     const req = mockReq('/bundle.js');
     const res = mockRes();
+    const originalEnd = res.end;
     const next = jest.fn();
 
     analyticsMiddleware(req, res, next);
 
     expect(next).toHaveBeenCalled();
+    expect(res.end).toBe(originalEnd);
   });
 
   it('skips CSS files', () => {
     const req = mockReq('/styles.css');
     const res = mockRes();
+    const originalEnd = res.end;
     const next = jest.fn();
 
     analyticsMiddleware(req, res, next);
 
     expect(next).toHaveBeenCalled();
+    expect(res.end).toBe(originalEnd);
   });
 
   it('skips image files', () => {
     const req = mockReq('/logo.png');
     const res = mockRes();
+    const originalEnd = res.end;
     const next = jest.fn();
 
     analyticsMiddleware(req, res, next);
 
     expect(next).toHaveBeenCalled();
+    expect(res.end).toBe(originalEnd);
   });
 
   it('patches res.end for tracked paths', () => {
