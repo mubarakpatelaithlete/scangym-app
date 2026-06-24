@@ -552,7 +552,7 @@ router.get('/ceo/creators', authenticateUser, async (req, res) => {
 //  Combined endpoint for the Admin tab — health, revenue, payouts,
 //  platform status in one call for fast dashboard loading
 // ─────────────────────────────────────────────────────────────────
-router.get('/admin-status', async (req, res) => {
+router.get('/admin-status', authenticateUser, async (req, res) => {
   try {
     const result = {
       isLive: true,

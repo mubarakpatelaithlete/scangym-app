@@ -5,6 +5,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../middleware/db');
+const { authenticateUser } = require('../middleware/auth');
 
 // In-memory stores for real-time tracking
 const buttonClicks = {};    // #99: per-button click counts
@@ -27,7 +28,7 @@ router.post('/button-click', express.json(), (req, res) => {
   res.json({ success: true });
 });
 
-router.get('/button-clicks', (req, res) => {
+router.get('/button-clicks', authenticateUser, (req, res) => {
   const { page } = req.query;
   const result = {};
   Object.entries(buttonClicks).forEach(([key, data]) => {
@@ -43,7 +44,7 @@ router.get('/button-clicks', (req, res) => {
 });
 
 // ── #100: Traffic + Conversion Funnel ──
-router.get('/funnel', async (req, res) => {
+router.get('/funnel', authenticateUser, async (req, res) => {
   try {
     const { period } = req.query; // 'today', '7d', '30d', 'all'
     let dateFilter = '';

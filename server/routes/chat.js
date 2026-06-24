@@ -123,22 +123,30 @@ async function sendOwnerSMS(ownerPhone, gymName, userMessage) {
 /**
  * Send email to gym owner
  */
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 async function sendOwnerEmail(ownerEmail, gymName, userMessage, conversationId) {
   if (!ownerEmail || !process.env.SMTP_USER) return false;
   try {
+    const safeGymName = escapeHtml(gymName);
+    const safeMessage = escapeHtml(userMessage);
+    const safeConvoId = encodeURIComponent(conversationId);
     await emailTransport.sendMail({
       from: `"ScanGym" <${process.env.SMTP_USER || 'noreply@scangym.com'}>`,
       to: ownerEmail,
-      subject: `[ScanGym] Customer needs help at ${gymName}`,
+      subject: `[ScanGym] Customer needs help at ${safeGymName}`,
       html: `
         <h2>A customer needs your help</h2>
-        <p><strong>Gym:</strong> ${gymName}</p>
+        <p><strong>Gym:</strong> ${safeGymName}</p>
         <p><strong>Customer message:</strong></p>
         <blockquote style="background:#f5f5f5;padding:12px;border-left:3px solid #FF6B35;">
-          ${userMessage}
+          ${safeMessage}
         </blockquote>
         <p>Our AI couldn't fully answer this question. Please reply at:</p>
-        <p><a href="https://scangym.com/owner/messages/${conversationId}" style="background:#FF6B35;color:white;padding:10px 20px;text-decoration:none;display:inline-block;">Reply to Customer</a></p>
+        <p><a href="https://scangym.com/owner/messages/${safeConvoId}" style="background:#FF6B35;color:white;padding:10px 20px;text-decoration:none;display:inline-block;">Reply to Customer</a></p>
         <p style="color:#666;font-size:12px;">— ScanGym Team</p>
       `,
     });
@@ -349,15 +357,35 @@ function getFallbackResponse(question) {
 }
 
 // POST /api/chat/escalation/:id/respond — Gym owner responds to escalation
-router.post('/escalation/:id/respond', async (req, res) => {
+const { authenticateUser } = require('../middleware/auth');
+router.post('/escalation/:id/respond', authenticateUser, async (req, res) => {
   try {
     const { response } = req.body;
     const escalationId = parseInt(req.params.id);
 
+    if (!response || typeof response !== 'string' || response.trim().length === 0) {
+      return res.status(400).json({ error: 'Response text is required' });
+    }
+
+    // Verify the authenticated user owns the gym this escalation belongs to
+    const escCheck = await pool.query(
+      `SELECT ce.id, ce.gym_id, g.claimed_by
+       FROM chat_escalations ce
+       LEFT JOIN gyms g ON g.id = ce.gym_id
+       WHERE ce.id = $1`,
+      [escalationId]
+    );
+    if (escCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Escalation not found' });
+    }
+    if (escCheck.rows[0].claimed_by && String(escCheck.rows[0].claimed_by) !== String(req.user.id)) {
+      return res.status(403).json({ error: 'Only the gym owner can respond to this escalation' });
+    }
+
     const result = await pool.query(`
       UPDATE chat_escalations SET owner_response = $1, status = 'resolved', resolved_at = NOW()
       WHERE id = $2 RETURNING *
-    `, [response, escalationId]);
+    `, [response.trim(), escalationId]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Escalation not found' });
