@@ -213,7 +213,7 @@ app.use(session({
     secure: process.env.NODE_ENV === 'production', // true on Railway (HTTPS via proxy)
     httpOnly: true,
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    sameSite: 'lax',
+    sameSite: 'strict',
   },
   proxy: true, // Trust Railway's reverse proxy for secure cookies
 }));
@@ -340,10 +340,17 @@ app.get("/api/photo", async (req, res) => {
     let googleUrl;
     if (name) {
       // New Places API format: /v1/places/PLACE_ID/photos/PHOTO_REF/media
-      googleUrl = `https://places.googleapis.com/v1/${name}/media?maxWidthPx=${maxwidth}${maxheight ? `&maxHeightPx=${maxheight}` : ''}&key=${apiKey}`;
+      // Validate name to prevent SSRF — must match Places API resource path
+      if (!/^places\/[A-Za-z0-9_-]+\/photos\/[A-Za-z0-9_-]+$/.test(name)) {
+        return res.status(400).json({ error: 'Invalid photo name parameter' });
+      }
+      googleUrl = `https://places.googleapis.com/v1/${name}/media?maxWidthPx=${encodeURIComponent(maxwidth)}${maxheight ? `&maxHeightPx=${encodeURIComponent(maxheight)}` : ''}&key=${apiKey}`;
     } else if (ref) {
-      // Legacy format: photo_reference
-      googleUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=${maxwidth}&photo_reference=${ref}&key=${apiKey}`;
+      // Legacy format: photo_reference — validate alphanumeric
+      if (!/^[A-Za-z0-9_-]+$/.test(ref)) {
+        return res.status(400).json({ error: 'Invalid photo reference' });
+      }
+      googleUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=${encodeURIComponent(maxwidth)}&photo_reference=${encodeURIComponent(ref)}&key=${apiKey}`;
     } else {
       return res.status(400).json({ error: 'Missing ref or name parameter' });
     }
@@ -371,10 +378,12 @@ app.get("/api/map-embed", (req, res) => {
   const { place_id } = req.query;
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
   if (!place_id || !apiKey) return res.status(400).send('Missing place_id');
+  // Validate place_id format (Google Place IDs are alphanumeric with underscores/hyphens)
+  if (!/^[A-Za-z0-9_-]+$/.test(place_id)) return res.status(400).send('Invalid place_id');
   // Return an HTML page with the embedded map — key stays in server-generated HTML, not in API responses
   res.setHeader('Content-Type', 'text/html');
   res.setHeader('Cache-Control', 'public, max-age=3600');
-  res.send(`<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width"><style>*{margin:0;padding:0}iframe{width:100%;height:100vh;border:none}</style></head><body><iframe src="https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=place_id:${place_id}" allowfullscreen></iframe></body></html>`);
+  res.send(`<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width"><style>*{margin:0;padding:0}iframe{width:100%;height:100vh;border:none}</style></head><body><iframe src="https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=place_id:${encodeURIComponent(place_id)}" allowfullscreen></iframe></body></html>`);
 });
 
 // -- DB Migrations (idempotent — safe to run every startup) --
@@ -580,7 +589,7 @@ if (fs.existsSync(FRONTEND_DIR)) {
 
   app.use(express.static(FRONTEND_DIR, {
     maxAge: '7d',
-    dotfiles: 'allow',
+    dotfiles: 'ignore',
     etag: true,
     lastModified: true,
     index: false, // Disable auto index.html so SPA catch-all can inject runtime config (geoHint, Google Client ID)
@@ -762,11 +771,11 @@ app.use((err, req, res, next) => {
 // -- Cloudflare cache auto-purge on deploy --
 // Every Railway deploy restarts the server → purge CDN cache so users get fresh JS/CSS.
 function purgeCloudflareCache() {
-  const CF_ZONE_ID = process.env.CF_ZONE_ID || '74152524b3403c5a72d5f8a380f96a7a';
+  const CF_ZONE_ID = process.env.CF_ZONE_ID;
   const CF_AUTH_EMAIL = process.env.CF_AUTH_EMAIL;
   const CF_AUTH_KEY = process.env.CF_AUTH_KEY;
-  if (!CF_AUTH_EMAIL || !CF_AUTH_KEY) {
-    console.log('[CF] Skipping cache purge — CF_AUTH_EMAIL / CF_AUTH_KEY not set');
+  if (!CF_ZONE_ID || !CF_AUTH_EMAIL || !CF_AUTH_KEY) {
+    console.log('[CF] Skipping cache purge — CF_ZONE_ID / CF_AUTH_EMAIL / CF_AUTH_KEY not set');
     return;
   }
   const https = require('https');

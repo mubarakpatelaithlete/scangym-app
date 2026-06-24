@@ -3865,7 +3865,7 @@ window._ovPayAddCard=async function(){
   // Ensure Stripe.js is loaded before mounting elements
   await ensureStripeLoaded();
   if(!window._ovPayStripeElements&&window.Stripe){
-    const stripeKey=window._stripePublicKey||STRIPE_PK||'pk_live_51Ss8P0DPbSptA7HKWLnsjajAHtjQUeK5ubq3SjUv8lpyCcXXXZ7vkAD5mv6UFpiRlCidArsgoTUVdFE7f5DaVT7g00XlmkxRVy';
+    const stripeKey=window._stripePublicKey||STRIPE_PK||'pk_live_placeholder';
     const si=Stripe(stripeKey);
     window._ovPayStripeInstance=si;
     const elStyle={base:{fontSize:'16px',color:'#1a1a2e',fontWeight:'400',fontFamily:'-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif','::placeholder':{color:'#9ca3af'}},invalid:{color:'#ef4444'}};
@@ -7419,7 +7419,7 @@ window._walletCardElement=null;
 window._initWalletPay=function(){
   if(!window.Stripe)return;
   try{
-    const stripeKey=window._stripePublicKey||'pk_live_51Ss8P0DPbSptA7HKWLnsjajAHtjQUeK5ubq3SjUv8lpyCcXXXZ7vkAD5mv6UFpiRlCidArsgoTUVdFE7f5DaVT7g00XlmkxRVy';
+    const stripeKey=window._stripePublicKey||'pk_live_placeholder';
     const stripeInstance=Stripe(stripeKey);
     // C7 fix: Use gym's country/currency for Apple Pay / Google Pay
     const _wpGym=window._checkoutState?.gym||{};
@@ -7532,7 +7532,7 @@ window._walletAddCard=async function(){
   await ensureStripeLoaded();
   // Mount Stripe Elements — separate fields
   if(!window._walletStripeElements&&window.Stripe){
-    const stripeKey=window._stripePublicKey||'pk_live_51Ss8P0DPbSptA7HKWLnsjajAHtjQUeK5ubq3SjUv8lpyCcXXXZ7vkAD5mv6UFpiRlCidArsgoTUVdFE7f5DaVT7g00XlmkxRVy';
+    const stripeKey=window._stripePublicKey||'pk_live_placeholder';
     const stripeInstance=Stripe(stripeKey);
     const elStyle={base:{fontSize:'16px',color:'#1a1a2e',fontWeight:'400',fontFamily:'-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif','::placeholder':{color:'#9ca3af'}},invalid:{color:'#ef4444'}};
     window._walletStripeElements=stripeInstance.elements({
