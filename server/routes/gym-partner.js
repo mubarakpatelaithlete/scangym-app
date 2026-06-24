@@ -383,3 +383,268 @@ router.post('/stripe-connect', authenticateUser, express.json(), async (req, res
     res.status(500).json({ error: 'Stripe setup failed' });
   }
 });
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  PARTNER DASHBOARD — All-in-one data endpoint for partner/index.html
+// ═══════════════════════════════════════════════════════════════════════════
+
+router.get('/dashboard', authenticateUser, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // 1. Get claimed gyms
+    const gymsRes = await pool.query(
+      `SELECT id, name, address, latitude, longitude, day_pass_price,
+              is_active, claimed_at, average_rating, total_reviews,
+              accepting_bookings, is_24h
+       FROM gyms WHERE claimed_by::text = $1::text ORDER BY name`,
+      [userId]
+    ).catch(() => ({ rows: [] }));
+
+    if (!gymsRes.rows.length) {
+      return res.json({
+        success: true,
+        hasGyms: false,
+        message: 'No claimed gyms. Claim a gym first at /partner',
+        gyms: [], today: {}, orders: [], earnings: {}, weeklyChart: []
+      });
+    }
+
+    const gymIds = gymsRes.rows.map(g => g.id);
+    const primaryGym = gymsRes.rows[0];
+
+    // 2. Today's stats
+    const todayStats = await pool.query(`
+      SELECT
+        COUNT(*) as total_bookings,
+        COUNT(CASE WHEN status IN ('confirmed','completed') THEN 1 END) as confirmed,
+        COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending,
+        COUNT(CASE WHEN status = 'cancelled' THEN 1 END) as cancelled,
+        COALESCE(SUM(CASE WHEN status IN ('confirmed','completed') THEN total_amount END), 0) as revenue,
+        COALESCE(SUM(CASE WHEN status IN ('confirmed','completed') THEN COALESCE(amount_pence,0) END), 0) as revenue_pence
+      FROM bookings
+      WHERE gym_id = ANY($1) AND DATE(created_at) = CURRENT_DATE
+    `, [gymIds]).catch(() => ({
+      rows: [{ total_bookings: 0, confirmed: 0, pending: 0, cancelled: 0, revenue: 0, revenue_pence: 0 }]
+    }));
+
+    const ts = todayStats.rows[0];
+    const todayRevenue = parseFloat(ts.revenue) || (parseInt(ts.revenue_pence) / 100) || 0;
+
+    // 3. Active check-ins (recent confirmed bookings today)
+    const liveCheckins = await pool.query(`
+      SELECT b.id, b.booking_code, b.qr_code, b.status, b.created_at,
+             b.total_amount, b.amount_pence, b.pass_type, b.booking_type,
+             COALESCE(b.user_name, u.name, u.email, 'Guest') as customer_name
+      FROM bookings b
+      LEFT JOIN users u ON b.user_id::text = u.id::text
+      WHERE b.gym_id = ANY($1)
+        AND DATE(b.created_at) = CURRENT_DATE
+        AND b.status IN ('confirmed', 'pending', 'completed')
+      ORDER BY b.created_at DESC LIMIT 20
+    `, [gymIds]).catch(() => ({ rows: [] }));
+
+    // 4. Weekly chart (last 7 days)
+    const weeklyChart = await pool.query(`
+      SELECT DATE(created_at) as day,
+             COUNT(*) as bookings,
+             COALESCE(SUM(total_amount), 0) as revenue,
+             COALESCE(SUM(amount_pence), 0) as revenue_pence
+      FROM bookings
+      WHERE gym_id = ANY($1)
+        AND created_at > NOW() - INTERVAL '7 days'
+        AND status IN ('confirmed','completed')
+      GROUP BY DATE(created_at)
+      ORDER BY day
+    `, [gymIds]).catch(() => ({ rows: [] }));
+
+    // 5. All orders (last 30 days)
+    const orders = await pool.query(`
+      SELECT b.id, b.booking_code, b.qr_code, b.status, b.created_at,
+             b.total_amount, b.amount_pence, b.pass_type, b.booking_type,
+             b.booking_date, b.start_time,
+             COALESCE(b.user_name, u.name, u.email, 'Guest') as customer_name,
+             g.name as gym_name
+      FROM bookings b
+      LEFT JOIN users u ON b.user_id::text = u.id::text
+      LEFT JOIN gyms g ON b.gym_id = g.id
+      WHERE b.gym_id = ANY($1)
+        AND b.created_at > NOW() - INTERVAL '30 days'
+      ORDER BY b.created_at DESC LIMIT 100
+    `, [gymIds]).catch(() => ({ rows: [] }));
+
+    // 6. Earnings summary
+    const earningsMonth = await pool.query(`
+      SELECT COUNT(*) as bookings,
+             COALESCE(SUM(total_amount), 0) as revenue,
+             COALESCE(SUM(amount_pence), 0) as revenue_pence
+      FROM bookings
+      WHERE gym_id = ANY($1)
+        AND created_at > DATE_TRUNC('month', NOW())
+        AND status IN ('confirmed','completed')
+    `, [gymIds]).catch(() => ({ rows: [{ bookings: 0, revenue: 0, revenue_pence: 0 }] }));
+
+    const earningsWeek = await pool.query(`
+      SELECT COUNT(*) as bookings,
+             COALESCE(SUM(total_amount), 0) as revenue,
+             COALESCE(SUM(amount_pence), 0) as revenue_pence
+      FROM bookings
+      WHERE gym_id = ANY($1)
+        AND created_at > DATE_TRUNC('week', NOW())
+        AND status IN ('confirmed','completed')
+    `, [gymIds]).catch(() => ({ rows: [{ bookings: 0, revenue: 0, revenue_pence: 0 }] }));
+
+    const earningsAll = await pool.query(`
+      SELECT COUNT(*) as bookings,
+             COALESCE(SUM(total_amount), 0) as revenue,
+             COALESCE(SUM(amount_pence), 0) as revenue_pence
+      FROM bookings
+      WHERE gym_id = ANY($1)
+        AND status IN ('confirmed','completed')
+    `, [gymIds]).catch(() => ({ rows: [{ bookings: 0, revenue: 0, revenue_pence: 0 }] }));
+
+    // 7. Reviews
+    const avgRating = await pool.query(`
+      SELECT AVG(rating) as avg_rating, COUNT(*) as count
+      FROM reviews WHERE gym_id = ANY($1)
+    `, [gymIds]).catch(() => ({ rows: [{ avg_rating: null, count: 0 }] }));
+
+    // 8. Unique visitors
+    const unique = await pool.query(`
+      SELECT COUNT(DISTINCT user_id) as count FROM bookings WHERE gym_id = ANY($1)
+    `, [gymIds]).catch(() => ({ rows: [{ count: 0 }] }));
+
+    // Calculate revenue helper
+    const calcRev = (row) => parseFloat(row.revenue) || (parseInt(row.revenue_pence) / 100) || 0;
+
+    res.json({
+      success: true,
+      hasGyms: true,
+      gyms: gymsRes.rows.map(g => ({
+        id: g.id, name: g.name, address: g.address,
+        dayPassPrice: g.day_pass_price || 5,
+        isActive: g.is_active !== false && g.accepting_bookings !== false,
+        rating: g.average_rating, reviews: g.total_reviews,
+        is24h: g.is_24h, claimedAt: g.claimed_at
+      })),
+      today: {
+        bookings: parseInt(ts.total_bookings) || 0,
+        confirmed: parseInt(ts.confirmed) || 0,
+        pending: parseInt(ts.pending) || 0,
+        cancelled: parseInt(ts.cancelled) || 0,
+        revenue: todayRevenue
+      },
+      liveCheckins: liveCheckins.rows.map(c => ({
+        id: c.id, code: c.booking_code || c.qr_code,
+        customer: c.customer_name,
+        status: c.status,
+        passType: c.pass_type || 'day',
+        amount: parseFloat(c.total_amount) || (parseInt(c.amount_pence) / 100) || 0,
+        time: c.created_at
+      })),
+      weeklyChart: weeklyChart.rows.map(w => ({
+        day: w.day,
+        bookings: parseInt(w.bookings),
+        revenue: calcRev(w)
+      })),
+      orders: orders.rows.map(o => ({
+        id: o.id, code: o.booking_code || `#SG-${o.id}`,
+        customer: o.customer_name,
+        status: o.status,
+        passType: o.pass_type || 'day',
+        amount: parseFloat(o.total_amount) || (parseInt(o.amount_pence) / 100) || 0,
+        date: o.booking_date || o.created_at,
+        time: o.start_time,
+        gymName: o.gym_name
+      })),
+      earnings: {
+        thisWeek: calcRev(earningsWeek.rows[0]),
+        thisMonth: calcRev(earningsMonth.rows[0]),
+        allTime: calcRev(earningsAll.rows[0]),
+        weekBookings: parseInt(earningsWeek.rows[0].bookings) || 0,
+        monthBookings: parseInt(earningsMonth.rows[0].bookings) || 0,
+        allBookings: parseInt(earningsAll.rows[0].bookings) || 0
+      },
+      rating: {
+        average: parseFloat(avgRating.rows[0].avg_rating) || 0,
+        count: parseInt(avgRating.rows[0].count) || 0
+      },
+      uniqueVisitors: parseInt(unique.rows[0].count) || 0
+    });
+  } catch (err) {
+    console.error('[Partner Dashboard] Error:', err.message);
+    res.status(500).json({ error: 'Failed to load partner dashboard', detail: err.message });
+  }
+});
+
+// ── Partner bookings for a specific gym ──
+router.get('/bookings/:gymId', authenticateUser, async (req, res) => {
+  try {
+    const gymId = parseInt(req.params.gymId);
+    const userId = req.user.id;
+
+    // Verify ownership
+    const gym = await pool.query(
+      'SELECT id FROM gyms WHERE id = $1 AND claimed_by::text = $2::text', [gymId, userId]
+    ).catch(() => ({ rows: [] }));
+    if (!gym.rows.length) return res.status(403).json({ error: 'Not your gym' });
+
+    const { status, page = 1, limit = 50 } = req.query;
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    let whereClause = 'WHERE b.gym_id = $1';
+    const params = [gymId];
+    if (status && status !== 'all') {
+      whereClause += ` AND b.status = $${params.length + 1}`;
+      params.push(status);
+    }
+
+    const result = await pool.query(`
+      SELECT b.*, COALESCE(b.user_name, u.name, u.email, 'Guest') as customer_name
+      FROM bookings b
+      LEFT JOIN users u ON b.user_id::text = u.id::text
+      ${whereClause}
+      ORDER BY b.created_at DESC
+      LIMIT $${params.length + 1} OFFSET $${params.length + 2}
+    `, [...params, parseInt(limit), offset]).catch(() => ({ rows: [] }));
+
+    const countRes = await pool.query(
+      `SELECT COUNT(*) as total FROM bookings b ${whereClause}`, params
+    ).catch(() => ({ rows: [{ total: 0 }] }));
+
+    res.json({
+      success: true,
+      bookings: result.rows,
+      total: parseInt(countRes.rows[0].total),
+      page: parseInt(page),
+      limit: parseInt(limit)
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch bookings' });
+  }
+});
+
+// ── Update gym capacity ──
+router.patch('/capacity', authenticateUser, express.json(), async (req, res) => {
+  try {
+    const { gymId, maxCapacity } = req.body;
+    if (!gymId || !maxCapacity) return res.status(400).json({ error: 'gymId and maxCapacity required' });
+
+    await pool.query(
+      `UPDATE gyms SET max_capacity = $1, updated_at = NOW()
+       WHERE id = $2 AND claimed_by::text = $3::text`,
+      [maxCapacity, gymId, req.user.id]
+    ).catch(async () => {
+      await pool.query(
+        `UPDATE gyms SET metadata = COALESCE(metadata, '{}'::jsonb) || $1::jsonb, updated_at = NOW()
+         WHERE id = $2 AND claimed_by::text = $3::text`,
+        [JSON.stringify({ max_capacity: maxCapacity }), gymId, req.user.id]
+      );
+    });
+
+    res.json({ success: true, maxCapacity });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update capacity' });
+  }
+});

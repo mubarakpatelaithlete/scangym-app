@@ -11,21 +11,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 ::-webkit-scrollbar{display:none}
 a{text-decoration:none;color:inherit}
 
-/* Zomato-style variables */
 :root{--brand:#FF6D00;--brand-dark:#E66200;--green:#22c55e;--red:#ef4444;--blue:#3b82f6;--purple:#a855f7;--bg:#0a0a16;--card:rgba(255,255,255,.04);--border:rgba(255,255,255,.06)}
 
-/* Animations */
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 @keyframes pulse{0%,100%{opacity:.6}50%{opacity:1}}
-@keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
 .fade-up{animation:fadeUp .4s ease-out forwards}
 
-/* Swipeable cards — TikTok/Zomato style */
-.partner-track{scroll-snap-type:y mandatory;overflow-y:scroll;height:100vh;-webkit-overflow-scrolling:touch}
-.partner-slide{scroll-snap-align:start;scroll-snap-stop:always;width:100%;height:100vh;position:relative;display:flex;flex-direction:column}
-
-/* Hero slide */
-.hero-slide{background:linear-gradient(180deg,#0a0a16 0%,#1a1025 50%,#0a0a16 100%)}
+/* Loading spinner */
+.sg-loader{width:32px;height:32px;border:3px solid rgba(255,255,255,.1);border-top-color:var(--brand);border-radius:50%;animation:spin .7s linear infinite;margin:40px auto}
 
 /* Tab bar */
 .partner-tabs{display:flex;gap:0;background:rgba(0,0,0,.6);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
@@ -37,12 +31,12 @@ a{text-decoration:none;color:inherit}
 .stat-val{font-size:28px;font-weight:900;margin:4px 0}
 .stat-label{font-size:10px;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.8px;font-weight:700}
 
-/* Order card — Zomato style */
+/* Order card */
 .order-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:10px;transition:.2s}
 .order-card:active{transform:scale(.98)}
 
 /* Toggle switch */
-.toggle{position:relative;width:48px;height:26px;background:rgba(255,255,255,.15);border-radius:13px;cursor:pointer;transition:.3s}
+.toggle{position:relative;width:48px;height:26px;background:rgba(255,255,255,.15);border-radius:13px;cursor:pointer;transition:.3s;flex-shrink:0}
 .toggle.on{background:var(--green)}
 .toggle::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;background:#fff;border-radius:50%;transition:.3s}
 .toggle.on::after{left:25px}
@@ -50,242 +44,648 @@ a{text-decoration:none;color:inherit}
 /* CTA button */
 .cta-btn{background:var(--brand);color:#fff;border:none;padding:14px 28px;border-radius:14px;font-size:16px;font-weight:800;cursor:pointer;width:100%;transition:.2s;box-shadow:0 4px 20px rgba(255,109,0,.3)}
 .cta-btn:active{transform:scale(.97)}
+.cta-btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* Login page */
+.login-page{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px}
+.login-card{background:var(--card);border:1px solid var(--border);border-radius:24px;padding:32px;max-width:380px;width:100%}
+.login-input{width:100%;padding:14px 16px;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:12px;color:#fff;font-size:15px;margin-bottom:12px;outline:none;transition:.2s}
+.login-input:focus{border-color:var(--brand)}
+.login-input::placeholder{color:rgba(255,255,255,.25)}
+
+/* Status badge */
+.badge{display:inline-block;font-size:9px;font-weight:800;padding:2px 8px;border-radius:4px;text-transform:uppercase}
+.badge-active{background:rgba(34,197,94,.15);color:var(--green)}
+.badge-pending{background:rgba(255,109,0,.15);color:var(--brand)}
+.badge-completed{background:rgba(59,130,246,.15);color:var(--blue)}
+.badge-cancelled{background:rgba(239,68,68,.15);color:var(--red)}
+
+/* Manage items */
+.manage-item{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;cursor:pointer;transition:.2s}
+.manage-item:active{transform:scale(.98)}
+
+/* Toast */
+.partner-toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(100px);background:#222;color:#fff;padding:12px 24px;border-radius:12px;font-size:13px;font-weight:600;z-index:10000;transition:.3s;opacity:0;pointer-events:none}
+.partner-toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+/* Empty state */
+.empty-state{text-align:center;padding:40px 20px;color:rgba(255,255,255,.3)}
+.empty-state span{font-size:48px;display:block;margin-bottom:12px}
 </style>
 </head>
 <body>
-<div class="partner-track" id="partnerTrack">
 
-<!-- ═══ SLIDE 1: HERO — Zomato Partner style ═══ -->
-<div class="partner-slide hero-slide" style="justify-content:center;align-items:center;padding:24px;text-align:center">
-  <div style="position:absolute;inset:0;overflow:hidden">
-    <div style="position:absolute;top:10%;left:50%;transform:translateX(-50%);width:300px;height:300px;background:radial-gradient(circle,rgba(255,109,0,.15) 0%,transparent 70%);animation:pulse 4s ease-in-out infinite"></div>
-  </div>
-  <div style="position:relative;z-index:1">
-    <div style="width:80px;height:80px;background:linear-gradient(135deg,var(--brand),var(--brand-dark));border-radius:24px;display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto 20px;box-shadow:0 8px 40px rgba(255,109,0,.4)">🏋️</div>
-    <h1 style="font-size:32px;font-weight:900;letter-spacing:-.5px;margin-bottom:8px">ScanGym Partner</h1>
-    <p style="color:rgba(255,255,255,.5);font-size:15px;margin-bottom:32px;max-width:320px">Your gym. Your rules. Your revenue.<br>Join 1,000+ gym owners earning more.</p>
-    
-    <!-- Stats row like Zomato -->
-    <div style="display:flex;gap:12px;margin-bottom:32px">
-      <div class="stat-card" style="flex:1;background:rgba(255,109,0,.08);border-color:rgba(255,109,0,.2)">
-        <div class="stat-val" style="color:var(--brand)">£2.4K</div>
-        <div class="stat-label">Avg Monthly Revenue</div>
+<!-- Toast -->
+<div class="partner-toast" id="pToast"></div>
+
+<!-- App container -->
+<div id="partnerApp"></div>
+
+<script>
+// ═══ ScanGym Partner — Fully Functional Dashboard ═══
+// Connects to real /api/gym-partner/* endpoints
+
+const P = {
+  user: null,
+  gyms: [],
+  dashboard: null,
+  activeGymId: null,
+  currentTab: 'dashboard',
+  loading: true
+};
+
+// ── Toast ──
+function pToast(msg, dur = 3000) {
+  const t = document.getElementById('pToast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+}
+
+// ── API helper ──
+async function pApi(url, opts = {}) {
+  try {
+    const res = await fetch(url, { credentials: 'include', ...opts });
+    if (res.status === 401) { P.user = null; renderApp(); return null; }
+    return await res.json();
+  } catch (e) {
+    console.error('API error:', url, e);
+    return null;
+  }
+}
+
+// ── Check auth ──
+async function checkAuth() {
+  const res = await pApi('/api/auth/me');
+  if (res && res.user) {
+    P.user = res.user;
+    return true;
+  }
+  // Try session check
+  const res2 = await pApi('/api/auth/session');
+  if (res2 && (res2.user || res2.loggedIn)) {
+    P.user = res2.user || { id: res2.userId, email: res2.email };
+    return true;
+  }
+  return false;
+}
+
+// ── Load dashboard data ──
+async function loadDashboard() {
+  P.loading = true;
+  renderApp();
+  const data = await pApi('/api/gym-partner/dashboard');
+  if (data && data.success) {
+    P.dashboard = data;
+    P.gyms = data.gyms || [];
+    if (P.gyms.length && !P.activeGymId) P.activeGymId = P.gyms[0].id;
+  }
+  P.loading = false;
+  renderApp();
+}
+
+// ── Format currency ──
+function fmtGBP(amount) {
+  return '£' + (parseFloat(amount) || 0).toFixed(2);
+}
+
+// ── Time ago ──
+function timeAgo(dateStr) {
+  if (!dateStr) return '';
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return mins + ' min ago';
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return hrs + 'h ago';
+  return Math.floor(hrs / 24) + 'd ago';
+}
+
+// ── Format date ──
+function fmtDate(d) {
+  if (!d) return '';
+  const dt = new Date(d);
+  return dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+// ═══ RENDER ═══
+function renderApp() {
+  const app = document.getElementById('partnerApp');
+  if (!P.user) {
+    app.innerHTML = renderLogin();
+    return;
+  }
+  if (P.loading) {
+    app.innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh">
+        <div class="sg-loader"></div>
+        <p style="color:rgba(255,255,255,.4);margin-top:16px;font-size:14px">Loading your dashboard…</p>
+      </div>`;
+    return;
+  }
+  if (!P.dashboard || !P.dashboard.hasGyms) {
+    app.innerHTML = renderNoGyms();
+    return;
+  }
+  app.innerHTML = renderDashboard();
+}
+
+// ── Login page ──
+function renderLogin() {
+  return `
+    <div class="login-page">
+      <div style="text-align:center;margin-bottom:32px">
+        <div style="width:72px;height:72px;background:linear-gradient(135deg,var(--brand),var(--brand-dark));border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 16px;box-shadow:0 8px 40px rgba(255,109,0,.4)">🏋️</div>
+        <h1 style="font-size:28px;font-weight:900;letter-spacing:-.5px">ScanGym Partner</h1>
+        <p style="color:rgba(255,255,255,.4);font-size:14px;margin-top:6px">Sign in to manage your gym</p>
       </div>
-      <div class="stat-card" style="flex:1;background:rgba(34,197,94,.08);border-color:rgba(34,197,94,.2)">
-        <div class="stat-val" style="color:var(--green)">85%</div>
-        <div class="stat-label">Commission to You</div>
+      <div class="login-card">
+        <form onsubmit="handleLogin(event)">
+          <input class="login-input" type="text" id="loginPhone" placeholder="Phone number or email" required>
+          <input class="login-input" type="password" id="loginPass" placeholder="OTP or password" required>
+          <button class="cta-btn" type="submit" id="loginBtn">Sign In →</button>
+        </form>
+        <p style="color:rgba(255,255,255,.3);font-size:11px;text-align:center;margin-top:16px">
+          Use your ScanGym account credentials.<br>
+          <a href="/" style="color:var(--brand)">Don't have an account? Sign up on ScanGym</a>
+        </p>
       </div>
+    </div>`;
+}
+
+// ── No gyms page ──
+function renderNoGyms() {
+  return `
+    <div class="login-page">
+      <div style="text-align:center">
+        <div style="font-size:64px;margin-bottom:16px">🏢</div>
+        <h2 style="font-size:24px;font-weight:800;margin-bottom:8px">No Gyms Claimed Yet</h2>
+        <p style="color:rgba(255,255,255,.4);font-size:14px;margin-bottom:24px;max-width:320px">
+          Claim your gym on ScanGym to start receiving bookings and managing your business.
+        </p>
+        <button class="cta-btn" onclick="window.location.href='/list-your-gym'" style="max-width:300px">
+          List Your Gym — It's Free →
+        </button>
+        <p style="color:rgba(255,255,255,.3);font-size:12px;margin-top:16px">
+          Logged in as ${P.user?.email || 'Partner'} · <a href="#" onclick="handleLogout()" style="color:var(--brand)">Sign out</a>
+        </p>
+      </div>
+    </div>`;
+}
+
+// ── Main dashboard ──
+function renderDashboard() {
+  const d = P.dashboard;
+  const t = d.today || {};
+  const gym = P.gyms[0] || {};
+
+  return `
+    <div class="partner-tabs">
+      <button class="${P.currentTab==='dashboard'?'active':''}" onclick="switchTab('dashboard')">📊 Dashboard</button>
+      <button class="${P.currentTab==='orders'?'active':''}" onclick="switchTab('orders')">📋 Orders</button>
+      <button class="${P.currentTab==='manage'?'active':''}" onclick="switchTab('manage')">📝 Manage</button>
+      <button class="${P.currentTab==='earnings'?'active':''}" onclick="switchTab('earnings')">💰 Earnings</button>
     </div>
-    
-    <button class="cta-btn" onclick="document.getElementById('partnerTrack').scrollTo({top:window.innerHeight,behavior:'smooth'})">
-      Become a Partner →
-    </button>
-    <p style="color:rgba(255,255,255,.3);font-size:11px;margin-top:12px">Free to list · No commitment · Cancel anytime</p>
-    
-    <div style="position:absolute;bottom:24px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.3);font-size:24px;animation:pulse 2s infinite">↓</div>
-  </div>
-</div>
 
-<!-- ═══ SLIDE 2: DASHBOARD — Live orders & revenue (Zomato-style) ═══ -->
-<div class="partner-slide" style="padding:0;overflow-y:auto">
-  <div class="partner-tabs">
-    <button class="active" onclick="showPartnerTab(this,'dashboard')">📊 Dashboard</button>
-    <button onclick="showPartnerTab(this,'orders')">📋 Orders</button>
-    <button onclick="showPartnerTab(this,'menu')">📝 Manage</button>
-    <button onclick="showPartnerTab(this,'earnings')">💰 Earnings</button>
-  </div>
-  
-  <div id="tab-dashboard" style="padding:16px">
-    <!-- Today's stats — Zomato partner style -->
+    <div id="tab-dashboard" style="padding:16px;${P.currentTab==='dashboard'?'':'display:none'}">
+      ${renderDashboardTab()}
+    </div>
+    <div id="tab-orders" style="padding:16px;${P.currentTab==='orders'?'':'display:none'}">
+      ${renderOrdersTab()}
+    </div>
+    <div id="tab-manage" style="padding:16px;${P.currentTab==='manage'?'':'display:none'}">
+      ${renderManageTab()}
+    </div>
+    <div id="tab-earnings" style="padding:16px;${P.currentTab==='earnings'?'':'display:none'}">
+      ${renderEarningsTab()}
+    </div>
+
+    <div style="position:fixed;bottom:0;left:0;right:0;background:rgba(10,10,22,.95);backdrop-filter:blur(12px);border-top:1px solid var(--border);padding:8px 16px;display:flex;align-items:center;justify-content:space-between;z-index:100">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="width:32px;height:32px;background:var(--brand);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px">🏋️</div>
+        <div>
+          <p style="font-size:12px;font-weight:700">${gym.name || 'Your Gym'}</p>
+          <p style="font-size:10px;color:rgba(255,255,255,.3)">${gym.isActive ? '🟢 Live' : '🔴 Paused'}</p>
+        </div>
+      </div>
+      <button onclick="refreshDashboard()" style="background:rgba(255,255,255,.08);border:none;color:#fff;padding:8px 16px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer">↻ Refresh</button>
+    </div>`;
+}
+
+// ── Dashboard tab ──
+function renderDashboardTab() {
+  const d = P.dashboard;
+  const t = d.today || {};
+  const gym = P.gyms[0] || {};
+  const checkins = d.liveCheckins || [];
+  const weekly = d.weeklyChart || [];
+  const weekRevenue = d.earnings?.thisWeek || 0;
+  const rating = d.rating || {};
+
+  // Build weekly chart bars
+  const maxRev = Math.max(...weekly.map(w => w.revenue), 1);
+  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  let chartBars = '';
+  // Fill 7 days
+  for (let i = 6; i >= 0; i--) {
+    const date = new Date(Date.now() - i * 86400000);
+    const dayKey = date.toISOString().split('T')[0];
+    const dayData = weekly.find(w => w.day && w.day.startsWith(dayKey));
+    const rev = dayData ? dayData.revenue : 0;
+    const pct = maxRev > 0 ? Math.max(5, (rev / maxRev) * 100) : 5;
+    const isFuture = i < 0;
+    chartBars += `<div style="flex:1;background:${isFuture?'rgba(255,109,0,.15)':'var(--brand)'};border-radius:4px 4px 0 0;height:${pct}%"></div>`;
+  }
+
+  // Day labels for chart
+  let dayLabels = '';
+  for (let i = 6; i >= 0; i--) {
+    const date = new Date(Date.now() - i * 86400000);
+    dayLabels += `<span style="color:rgba(255,255,255,.3);font-size:9px">${dayNames[date.getDay()]}</span>`;
+  }
+
+  // Live check-ins HTML
+  let checkinsHtml = '';
+  if (checkins.length === 0) {
+    checkinsHtml = `<div class="empty-state"><span>👋</span><p>No check-ins today yet</p></div>`;
+  } else {
+    checkins.slice(0, 10).forEach(c => {
+      const statusColor = c.status === 'confirmed' ? 'var(--green)' : c.status === 'pending' ? 'var(--brand)' : 'var(--blue)';
+      const badgeClass = c.status === 'confirmed' ? 'badge-active' : c.status === 'pending' ? 'badge-pending' : 'badge-completed';
+      checkinsHtml += `
+        <div class="order-card" style="border-left:3px solid ${statusColor}">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <span style="font-size:14px;font-weight:700">${c.customer || 'Guest'}</span>
+              <span class="badge ${badgeClass}" style="margin-left:6px">${c.status}</span>
+            </div>
+            <span style="color:rgba(255,255,255,.3);font-size:11px">${timeAgo(c.time)}</span>
+          </div>
+          <p style="color:rgba(255,255,255,.4);font-size:12px;margin-top:4px">${c.passType || 'Day'} Pass · ${fmtGBP(c.amount)} · ${c.code || '#SG-'+c.id}</p>
+        </div>`;
+    });
+  }
+
+  return `
     <h2 style="font-size:18px;font-weight:800;margin-bottom:14px;display:flex;align-items:center;gap:8px">
       <span style="width:8px;height:8px;background:var(--green);border-radius:50%;animation:pulse 1.5s infinite"></span>
       Today's Performance
     </h2>
-    
+
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
-      <div class="stat-card"><div class="stat-val" style="color:var(--brand)">24</div><div class="stat-label">Bookings Today</div></div>
-      <div class="stat-card"><div class="stat-val" style="color:var(--green)">£412</div><div class="stat-label">Revenue Today</div></div>
-      <div class="stat-card"><div class="stat-val" style="color:var(--blue)">4.9★</div><div class="stat-label">Avg Rating</div></div>
-      <div class="stat-card"><div class="stat-val" style="color:var(--purple)">87%</div><div class="stat-label">Occupancy</div></div>
+      <div class="stat-card"><div class="stat-val" style="color:var(--brand)">${t.bookings || 0}</div><div class="stat-label">Bookings Today</div></div>
+      <div class="stat-card"><div class="stat-val" style="color:var(--green)">${fmtGBP(t.revenue)}</div><div class="stat-label">Revenue Today</div></div>
+      <div class="stat-card"><div class="stat-val" style="color:var(--blue)">${rating.average ? rating.average.toFixed(1) + '★' : 'N/A'}</div><div class="stat-label">Avg Rating (${rating.count || 0})</div></div>
+      <div class="stat-card"><div class="stat-val" style="color:var(--purple)">${d.uniqueVisitors || 0}</div><div class="stat-label">Unique Visitors</div></div>
     </div>
-    
-    <!-- Gym Status Toggle — Zomato open/close -->
-    <div style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:16px;padding:16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between">
+
+    <!-- Gym Status Toggle -->
+    <div id="gymToggleCard" style="background:${gym.isActive?'rgba(34,197,94,.08)':'rgba(239,68,68,.08)'};border:1px solid ${gym.isActive?'rgba(34,197,94,.2)':'rgba(239,68,68,.2)'};border-radius:16px;padding:16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between">
       <div>
-        <h3 style="font-size:15px;font-weight:800;color:var(--green)">🟢 Accepting Bookings</h3>
-        <p style="color:rgba(255,255,255,.4);font-size:11px;margin-top:2px">Your gym is live on ScanGym</p>
+        <h3 id="toggleLabel" style="font-size:15px;font-weight:800;color:${gym.isActive?'var(--green)':'var(--red)'}">${gym.isActive?'🟢 Accepting Bookings':'🔴 Paused'}</h3>
+        <p style="color:rgba(255,255,255,.4);font-size:11px;margin-top:2px">${gym.isActive?'Your gym is live on ScanGym':'Your gym is hidden from search'}</p>
       </div>
-      <div class="toggle on" onclick="this.classList.toggle('on');var h=this.previousElementSibling;h.querySelector('h3').textContent=this.classList.contains('on')?'🟢 Accepting Bookings':'🔴 Paused';h.querySelector('h3').style.color=this.classList.contains('on')?'var(--green)':'var(--red)'"></div>
+      <div class="toggle ${gym.isActive?'on':''}" onclick="toggleGymActive(this)"></div>
     </div>
-    
-    <!-- Live Queue — Zomato real-time orders -->
-    <h3 style="font-size:14px;font-weight:700;margin-bottom:10px;color:rgba(255,255,255,.6)">🔴 Live Check-ins</h3>
-    <div id="live-queue">
-      <div class="order-card" style="border-left:3px solid var(--green)">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div>
-            <span style="font-size:14px;font-weight:700">Sarah K.</span>
-            <span style="background:rgba(34,197,94,.15);color:var(--green);font-size:9px;font-weight:800;padding:2px 8px;border-radius:4px;margin-left:6px">ACTIVE</span>
-          </div>
-          <span style="color:rgba(255,255,255,.3);font-size:11px">Scanned in 14 min ago</span>
-        </div>
-        <p style="color:rgba(255,255,255,.4);font-size:12px;margin-top:4px">Day Pass · £7.99 · QR #SG-8421</p>
-      </div>
-      <div class="order-card" style="border-left:3px solid var(--green)">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div>
-            <span style="font-size:14px;font-weight:700">Mike R.</span>
-            <span style="background:rgba(34,197,94,.15);color:var(--green);font-size:9px;font-weight:800;padding:2px 8px;border-radius:4px;margin-left:6px">ACTIVE</span>
-          </div>
-          <span style="color:rgba(255,255,255,.3);font-size:11px">Scanned in 42 min ago</span>
-        </div>
-        <p style="color:rgba(255,255,255,.4);font-size:12px;margin-top:4px">Weekly Pass · £24.99 · QR #SG-7735</p>
-      </div>
-      <div class="order-card" style="border-left:3px solid var(--brand)">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div>
-            <span style="font-size:14px;font-weight:700">Emma L.</span>
-            <span style="background:rgba(255,109,0,.15);color:var(--brand);font-size:9px;font-weight:800;padding:2px 8px;border-radius:4px;margin-left:6px">PENDING</span>
-          </div>
-          <span style="color:rgba(255,255,255,.3);font-size:11px">Booked for 3pm</span>
-        </div>
-        <p style="color:rgba(255,255,255,.4);font-size:12px;margin-top:4px">Day Pass · £7.99 · Arriving soon</p>
-      </div>
-    </div>
-    
-    <!-- Revenue Chart placeholder -->
+
+    <!-- Live Check-ins -->
+    <h3 style="font-size:14px;font-weight:700;margin-bottom:10px;color:rgba(255,255,255,.6)">🔴 Live Check-ins (${checkins.length})</h3>
+    <div id="live-queue">${checkinsHtml}</div>
+
+    <!-- Weekly Chart -->
     <h3 style="font-size:14px;font-weight:700;margin:16px 0 10px;color:rgba(255,255,255,.6)">📈 This Week</h3>
     <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px">
       <div style="display:flex;align-items:flex-end;gap:6px;height:100px;margin-bottom:8px">
-        <div style="flex:1;background:var(--brand);border-radius:4px 4px 0 0;height:60%"></div>
-        <div style="flex:1;background:var(--brand);border-radius:4px 4px 0 0;height:75%"></div>
-        <div style="flex:1;background:var(--brand);border-radius:4px 4px 0 0;height:45%"></div>
-        <div style="flex:1;background:var(--brand);border-radius:4px 4px 0 0;height:90%"></div>
-        <div style="flex:1;background:var(--brand);border-radius:4px 4px 0 0;height:80%"></div>
-        <div style="flex:1;background:rgba(255,109,0,.3);border-radius:4px 4px 0 0;height:55%"></div>
-        <div style="flex:1;background:rgba(255,109,0,.15);border-radius:4px 4px 0 0;height:30%;border:1px dashed rgba(255,109,0,.3)"></div>
+        ${chartBars}
       </div>
-      <div style="display:flex;justify-content:space-between">
-        <span style="color:rgba(255,255,255,.3);font-size:9px">Mon</span>
-        <span style="color:rgba(255,255,255,.3);font-size:9px">Tue</span>
-        <span style="color:rgba(255,255,255,.3);font-size:9px">Wed</span>
-        <span style="color:rgba(255,255,255,.3);font-size:9px">Thu</span>
-        <span style="color:rgba(255,255,255,.3);font-size:9px">Fri</span>
-        <span style="color:rgba(255,255,255,.3);font-size:9px">Sat</span>
-        <span style="color:rgba(255,255,255,.3);font-size:9px">Sun</span>
-      </div>
+      <div style="display:flex;justify-content:space-between">${dayLabels}</div>
       <div style="display:flex;justify-content:space-between;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
-        <div><span style="color:rgba(255,255,255,.4);font-size:11px">This week</span><br><span style="color:#fff;font-size:18px;font-weight:900">£2,847</span></div>
-        <div style="text-align:right"><span style="color:rgba(255,255,255,.4);font-size:11px">vs last week</span><br><span style="color:var(--green);font-size:18px;font-weight:900">+18%</span></div>
+        <div><span style="color:rgba(255,255,255,.4);font-size:11px">This week</span><br><span style="color:#fff;font-size:18px;font-weight:900">${fmtGBP(weekRevenue)}</span></div>
+        <div style="text-align:right"><span style="color:rgba(255,255,255,.4);font-size:11px">Bookings</span><br><span style="color:var(--green);font-size:18px;font-weight:900">${d.earnings?.weekBookings || 0}</span></div>
       </div>
     </div>
-    
-    <!-- Capacity management -->
+
+    <!-- Quick Settings -->
     <h3 style="font-size:14px;font-weight:700;margin:16px 0 10px;color:rgba(255,255,255,.6)">⚙️ Quick Settings</h3>
     <div style="display:flex;flex-direction:column;gap:8px;padding-bottom:100px">
       <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;display:flex;align-items:center;justify-content:space-between">
         <div><span style="font-size:14px;font-weight:700">Max Capacity</span><p style="color:rgba(255,255,255,.3);font-size:11px;margin-top:2px">Set daily visitor limit</p></div>
         <div style="display:flex;align-items:center;gap:8px">
-          <button onclick="var v=this.nextElementSibling;v.textContent=Math.max(1,parseInt(v.textContent)-1)" style="width:30px;height:30px;background:rgba(255,255,255,.08);border:none;border-radius:8px;color:#fff;font-size:16px;cursor:pointer">−</button>
-          <span style="color:var(--brand);font-size:18px;font-weight:900;min-width:30px;text-align:center">50</span>
-          <button onclick="var v=this.previousElementSibling;v.textContent=parseInt(v.textContent)+1" style="width:30px;height:30px;background:rgba(255,255,255,.08);border:none;border-radius:8px;color:#fff;font-size:16px;cursor:pointer">+</button>
+          <button onclick="adjustCapacity(-1)" style="width:30px;height:30px;background:rgba(255,255,255,.08);border:none;border-radius:8px;color:#fff;font-size:16px;cursor:pointer">−</button>
+          <span id="capacityVal" style="color:var(--brand);font-size:18px;font-weight:900;min-width:30px;text-align:center">50</span>
+          <button onclick="adjustCapacity(1)" style="width:30px;height:30px;background:rgba(255,255,255,.08);border:none;border-radius:8px;color:#fff;font-size:16px;cursor:pointer">+</button>
         </div>
       </div>
       <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;display:flex;align-items:center;justify-content:space-between">
-        <div><span style="font-size:14px;font-weight:700">Auto-accept Bookings</span><p style="color:rgba(255,255,255,.3);font-size:11px;margin-top:2px">No manual approval needed</p></div>
-        <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+        <div><span style="font-size:14px;font-weight:700">Day Pass Price</span><p style="color:rgba(255,255,255,.3);font-size:11px;margin-top:2px">24-hour access pass</p></div>
+        <span style="color:var(--green);font-size:18px;font-weight:900">${fmtGBP(P.gyms[0]?.dayPassPrice || 5)}</span>
       </div>
-      <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;display:flex;align-items:center;justify-content:space-between">
-        <div><span style="font-size:14px;font-weight:700">Push Notifications</span><p style="color:rgba(255,255,255,.3);font-size:11px;margin-top:2px">Get alerts for new bookings</p></div>
-        <div class="toggle on" onclick="this.classList.toggle('on')"></div>
-      </div>
-      <div onclick="window.location.href='/list-your-gym'" style="background:var(--brand);border-radius:14px;padding:16px;text-align:center;cursor:pointer;font-size:16px;font-weight:800;margin-top:8px">
-        List Your Gym — It's Free →
-      </div>
-    </div>
-  </div>
-  
-  <!-- Hidden tabs -->
-  <div id="tab-orders" style="padding:16px;display:none">
+    </div>`;
+}
+
+// ── Orders tab ──
+function renderOrdersTab() {
+  const d = P.dashboard;
+  const orders = d.orders || [];
+  const t = d.today || {};
+
+  const totalOrders = orders.length;
+  const activeOrders = orders.filter(o => o.status === 'confirmed').length;
+  const completedOrders = orders.filter(o => o.status === 'completed').length;
+  const cancelledOrders = orders.filter(o => o.status === 'cancelled').length;
+
+  let ordersHtml = '';
+  if (orders.length === 0) {
+    ordersHtml = `<div class="empty-state"><span>📋</span><p>No orders in the last 30 days</p></div>`;
+  } else {
+    orders.forEach(o => {
+      const statusBadge = o.status === 'confirmed' ? 'badge-active' :
+                          o.status === 'completed' ? 'badge-completed' :
+                          o.status === 'cancelled' ? 'badge-cancelled' : 'badge-pending';
+      ordersHtml += `
+        <div class="order-card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-weight:700">${o.code}</span>
+            <span style="color:var(--green);font-size:12px;font-weight:700">${fmtGBP(o.amount)}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+            <p style="color:rgba(255,255,255,.4);font-size:12px">${o.customer} · ${o.passType || 'Day'} Pass · ${fmtDate(o.date)}</p>
+            <span class="badge ${statusBadge}">${o.status}</span>
+          </div>
+        </div>`;
+    });
+  }
+
+  return `
     <h2 style="font-size:18px;font-weight:800;margin-bottom:14px">📋 Recent Orders</h2>
     <div style="display:flex;gap:8px;margin-bottom:16px;overflow-x:auto">
-      <span style="background:var(--brand);color:#fff;padding:6px 16px;border-radius:20px;font-size:12px;font-weight:700;white-space:nowrap">All (47)</span>
-      <span style="background:var(--card);border:1px solid var(--border);color:rgba(255,255,255,.5);padding:6px 16px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap">Active (3)</span>
-      <span style="background:var(--card);border:1px solid var(--border);color:rgba(255,255,255,.5);padding:6px 16px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap">Completed (42)</span>
-      <span style="background:var(--card);border:1px solid var(--border);color:rgba(255,255,255,.5);padding:6px 16px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap">Cancelled (2)</span>
+      <span style="background:var(--brand);color:#fff;padding:6px 16px;border-radius:20px;font-size:12px;font-weight:700;white-space:nowrap">All (${totalOrders})</span>
+      <span style="background:var(--card);border:1px solid var(--border);color:rgba(255,255,255,.5);padding:6px 16px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap">Active (${activeOrders})</span>
+      <span style="background:var(--card);border:1px solid var(--border);color:rgba(255,255,255,.5);padding:6px 16px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap">Completed (${completedOrders})</span>
+      <span style="background:var(--card);border:1px solid var(--border);color:rgba(255,255,255,.5);padding:6px 16px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap">Cancelled (${cancelledOrders})</span>
     </div>
-    <!-- Order list -->
-    <div style="display:flex;flex-direction:column;gap:8px;padding-bottom:80px">
-      <div class="order-card"><div style="display:flex;justify-content:space-between"><span style="font-weight:700">#SG-8421</span><span style="color:var(--green);font-size:12px;font-weight:700">£7.99</span></div><p style="color:rgba(255,255,255,.4);font-size:12px;margin-top:4px">Sarah K. · Day Pass · 2:14 PM</p></div>
-      <div class="order-card"><div style="display:flex;justify-content:space-between"><span style="font-weight:700">#SG-7735</span><span style="color:var(--green);font-size:12px;font-weight:700">£24.99</span></div><p style="color:rgba(255,255,255,.4);font-size:12px;margin-top:4px">Mike R. · Weekly Pass · 1:32 PM</p></div>
-      <div class="order-card"><div style="display:flex;justify-content:space-between"><span style="font-weight:700">#SG-7698</span><span style="color:var(--green);font-size:12px;font-weight:700">£7.99</span></div><p style="color:rgba(255,255,255,.4);font-size:12px;margin-top:4px">James W. · Day Pass · 11:45 AM</p></div>
-      <div class="order-card"><div style="display:flex;justify-content:space-between"><span style="font-weight:700">#SG-7612</span><span style="color:var(--green);font-size:12px;font-weight:700">£49.99</span></div><p style="color:rgba(255,255,255,.4);font-size:12px;margin-top:4px">Lisa M. · Monthly Pass · 10:20 AM</p></div>
-      <div class="order-card"><div style="display:flex;justify-content:space-between"><span style="font-weight:700">#SG-7580</span><span style="color:rgba(255,255,255,.3);font-size:12px;font-weight:700">£7.99</span></div><p style="color:rgba(255,255,255,.4);font-size:12px;margin-top:4px">Tom H. · Day Pass · Yesterday 6:30 PM · <span style="color:rgba(255,255,255,.3)">Completed ✓</span></p></div>
-    </div>
-  </div>
-  
-  <div id="tab-menu" style="padding:16px;display:none">
+    <div style="display:flex;flex-direction:column;gap:8px;padding-bottom:80px">${ordersHtml}</div>`;
+}
+
+// ── Manage tab ──
+function renderManageTab() {
+  const gym = P.gyms[0] || {};
+  return `
     <h2 style="font-size:18px;font-weight:800;margin-bottom:14px">📝 Manage Your Gym</h2>
     <div style="display:flex;flex-direction:column;gap:10px;padding-bottom:80px">
-      <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;cursor:pointer" onclick="alert('Coming soon: Edit gym details')">
-        <div style="display:flex;align-items:center;gap:12px"><span style="font-size:24px">🏢</span><div style="flex:1"><h3 style="font-size:15px;font-weight:700">Gym Details</h3><p style="color:rgba(255,255,255,.35);font-size:11px;margin-top:2px">Name, address, description, photos</p></div><span style="color:rgba(255,255,255,.2);font-size:18px">›</span></div>
+      <div class="manage-item" onclick="manageGymDetails()">
+        <div style="display:flex;align-items:center;gap:12px"><span style="font-size:24px">🏢</span><div style="flex:1"><h3 style="font-size:15px;font-weight:700">Gym Details</h3><p style="color:rgba(255,255,255,.35);font-size:11px;margin-top:2px">${gym.name || 'Set name'} · ${gym.address || 'Set address'}</p></div><span style="color:rgba(255,255,255,.2);font-size:18px">›</span></div>
       </div>
-      <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;cursor:pointer" onclick="alert('Coming soon: Equipment list')">
-        <div style="display:flex;align-items:center;gap:12px"><span style="font-size:24px">🏋️</span><div style="flex:1"><h3 style="font-size:15px;font-weight:700">Equipment & Facilities</h3><p style="color:rgba(255,255,255,.35);font-size:11px;margin-top:2px">List all equipment, amenities, features</p></div><span style="color:rgba(255,255,255,.2);font-size:18px">›</span></div>
+      <div class="manage-item" onclick="managePricing()">
+        <div style="display:flex;align-items:center;gap:12px"><span style="font-size:24px">💰</span><div style="flex:1"><h3 style="font-size:15px;font-weight:700">Pricing & Passes</h3><p style="color:rgba(255,255,255,.35);font-size:11px;margin-top:2px">Day pass: ${fmtGBP(gym.dayPassPrice || 5)} · 24hr access</p></div><span style="color:rgba(255,255,255,.2);font-size:18px">›</span></div>
       </div>
-      <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;cursor:pointer" onclick="alert('Coming soon: Pricing')">
-        <div style="display:flex;align-items:center;gap:12px"><span style="font-size:24px">💰</span><div style="flex:1"><h3 style="font-size:15px;font-weight:700">Pricing & Passes</h3><p style="color:rgba(255,255,255,.35);font-size:11px;margin-top:2px">Day, 3-Day, Weekly, Monthly pass prices</p></div><span style="color:rgba(255,255,255,.2);font-size:18px">›</span></div>
+      <div class="manage-item" onclick="manageHours()">
+        <div style="display:flex;align-items:center;gap:12px"><span style="font-size:24px">⏰</span><div style="flex:1"><h3 style="font-size:15px;font-weight:700">Opening Hours</h3><p style="color:rgba(255,255,255,.35);font-size:11px;margin-top:2px">${gym.is24h ? '24/7 — Always Open' : 'Tap to set hours'}</p></div><span style="color:rgba(255,255,255,.2);font-size:18px">›</span></div>
       </div>
-      <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;cursor:pointer" onclick="alert('Coming soon: Hours')">
-        <div style="display:flex;align-items:center;gap:12px"><span style="font-size:24px">⏰</span><div style="flex:1"><h3 style="font-size:15px;font-weight:700">Opening Hours</h3><p style="color:rgba(255,255,255,.35);font-size:11px;margin-top:2px">Set operating hours for each day</p></div><span style="color:rgba(255,255,255,.2);font-size:18px">›</span></div>
+      <div class="manage-item" onclick="manageCapacity()">
+        <div style="display:flex;align-items:center;gap:12px"><span style="font-size:24px">👥</span><div style="flex:1"><h3 style="font-size:15px;font-weight:700">Capacity & Access</h3><p style="color:rgba(255,255,255,.35);font-size:11px;margin-top:2px">Max visitors, QR scanner setup</p></div><span style="color:rgba(255,255,255,.2);font-size:18px">›</span></div>
       </div>
-      <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;cursor:pointer" onclick="alert('Coming soon: Gallery')">
-        <div style="display:flex;align-items:center;gap:12px"><span style="font-size:24px">📸</span><div style="flex:1"><h3 style="font-size:15px;font-weight:700">Photo Gallery</h3><p style="color:rgba(255,255,255,.35);font-size:11px;margin-top:2px">Upload gym photos (max 20)</p></div><span style="color:rgba(255,255,255,.2);font-size:18px">›</span></div>
+      <div class="manage-item" onclick="managePhotos()">
+        <div style="display:flex;align-items:center;gap:12px"><span style="font-size:24px">📸</span><div style="flex:1"><h3 style="font-size:15px;font-weight:700">Photo Gallery</h3><p style="color:rgba(255,255,255,.35);font-size:11px;margin-top:2px">Upload gym photos to attract customers</p></div><span style="color:rgba(255,255,255,.2);font-size:18px">›</span></div>
       </div>
-      <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;cursor:pointer" onclick="alert('Coming soon: Staff')">
-        <div style="display:flex;align-items:center;gap:12px"><span style="font-size:24px">👥</span><div style="flex:1"><h3 style="font-size:15px;font-weight:700">Staff & Access</h3><p style="color:rgba(255,255,255,.35);font-size:11px;margin-top:2px">Add staff members, manage permissions</p></div><span style="color:rgba(255,255,255,.2);font-size:18px">›</span></div>
+      <div class="manage-item" onclick="window.location.href='/gympartners-dashboard/connect-access'">
+        <div style="display:flex;align-items:center;gap:12px"><span style="font-size:24px">🔐</span><div style="flex:1"><h3 style="font-size:15px;font-weight:700">Access Control</h3><p style="color:rgba(255,255,255,.35);font-size:11px;margin-top:2px">Door lock integration, smart access</p></div><span style="color:rgba(255,255,255,.2);font-size:18px">›</span></div>
       </div>
-      <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;cursor:pointer" onclick="alert('Coming soon: QR Scanner')">
-        <div style="display:flex;align-items:center;gap:12px"><span style="font-size:24px">📱</span><div style="flex:1"><h3 style="font-size:15px;font-weight:700">QR Scanner Setup</h3><p style="color:rgba(255,255,255,.35);font-size:11px;margin-top:2px">Configure entry/exit scanning</p></div><span style="color:rgba(255,255,255,.2);font-size:18px">›</span></div>
+      <div class="manage-item" onclick="window.location.href='/gympartners-dashboard'">
+        <div style="display:flex;align-items:center;gap:12px"><span style="font-size:24px">📊</span><div style="flex:1"><h3 style="font-size:15px;font-weight:700">Advanced Analytics</h3><p style="color:rgba(255,255,255,.35);font-size:11px;margin-top:2px">Detailed stats, peak hours, reviews</p></div><span style="color:rgba(255,255,255,.2);font-size:18px">›</span></div>
       </div>
-    </div>
-  </div>
-  
-  <div id="tab-earnings" style="padding:16px;display:none">
+    </div>`;
+}
+
+// ── Earnings tab ──
+function renderEarningsTab() {
+  const d = P.dashboard;
+  const e = d.earnings || {};
+  const gym = P.gyms[0] || {};
+
+  // Calculate ScanGym commission (25%)
+  const partnerShare = e.allTime * 0.75;
+  const commission = e.allTime * 0.25;
+
+  return `
     <h2 style="font-size:18px;font-weight:800;margin-bottom:14px">💰 Earnings</h2>
     <div style="background:linear-gradient(135deg,var(--brand),var(--brand-dark));border-radius:20px;padding:20px;margin-bottom:16px;position:relative;overflow:hidden">
       <div style="position:absolute;top:-20px;right:-20px;width:80px;height:80px;background:rgba(255,255,255,.1);border-radius:50%"></div>
-      <p style="color:rgba(255,255,255,.7);font-size:12px;font-weight:600">Total Balance</p>
-      <p style="font-size:36px;font-weight:900;margin:4px 0">£4,847.50</p>
-      <p style="color:rgba(255,255,255,.6);font-size:12px">Available for withdrawal</p>
-      <button style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);color:#fff;padding:10px 24px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;margin-top:12px">Withdraw to Bank →</button>
+      <p style="color:rgba(255,255,255,.7);font-size:12px;font-weight:600">Your Total Earnings (75%)</p>
+      <p style="font-size:36px;font-weight:900;margin:4px 0">${fmtGBP(partnerShare)}</p>
+      <p style="color:rgba(255,255,255,.6);font-size:12px">${e.allBookings || 0} total bookings · ${fmtGBP(commission)} ScanGym fee</p>
+      <button onclick="setupStripeConnect()" style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);color:#fff;padding:10px 24px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;margin-top:12px">
+        ${P.dashboard?.stripeConnected ? '✅ Bank Connected' : 'Connect Bank Account →'}
+      </button>
     </div>
+
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
-      <div class="stat-card"><div class="stat-val" style="color:var(--green);font-size:22px">£2,847</div><div class="stat-label">This Week</div></div>
-      <div class="stat-card"><div class="stat-val" style="color:var(--blue);font-size:22px">£11,230</div><div class="stat-label">This Month</div></div>
+      <div class="stat-card"><div class="stat-val" style="color:var(--green);font-size:22px">${fmtGBP(e.thisWeek)}</div><div class="stat-label">This Week (${e.weekBookings || 0})</div></div>
+      <div class="stat-card"><div class="stat-val" style="color:var(--blue);font-size:22px">${fmtGBP(e.thisMonth)}</div><div class="stat-label">This Month (${e.monthBookings || 0})</div></div>
     </div>
-    <h3 style="font-size:14px;font-weight:700;margin-bottom:10px;color:rgba(255,255,255,.6)">Recent Payouts</h3>
+
+    <h3 style="font-size:14px;font-weight:700;margin-bottom:10px;color:rgba(255,255,255,.6)">Earnings Breakdown</h3>
     <div style="display:flex;flex-direction:column;gap:8px;padding-bottom:80px">
-      <div class="order-card"><div style="display:flex;justify-content:space-between"><span style="font-weight:700">June Week 3</span><span style="color:var(--green);font-weight:700">£2,847.00</span></div><p style="color:rgba(255,255,255,.4);font-size:12px;margin-top:4px">Paid to ****4521 · 21 Jun 2026</p></div>
-      <div class="order-card"><div style="display:flex;justify-content:space-between"><span style="font-weight:700">June Week 2</span><span style="color:var(--green);font-weight:700">£2,190.50</span></div><p style="color:rgba(255,255,255,.4);font-size:12px;margin-top:4px">Paid to ****4521 · 14 Jun 2026</p></div>
-      <div class="order-card"><div style="display:flex;justify-content:space-between"><span style="font-weight:700">June Week 1</span><span style="color:var(--green);font-weight:700">£3,105.00</span></div><p style="color:rgba(255,255,255,.4);font-size:12px;margin-top:4px">Paid to ****4521 · 7 Jun 2026</p></div>
-    </div>
-  </div>
-</div>
+      <div class="order-card">
+        <div style="display:flex;justify-content:space-between"><span style="font-weight:700">Total Revenue</span><span style="color:var(--green);font-weight:700">${fmtGBP(e.allTime)}</span></div>
+        <p style="color:rgba(255,255,255,.4);font-size:12px;margin-top:4px">Gross revenue from all bookings</p>
+      </div>
+      <div class="order-card">
+        <div style="display:flex;justify-content:space-between"><span style="font-weight:700">Your Share (75%)</span><span style="color:var(--green);font-weight:700">${fmtGBP(partnerShare)}</span></div>
+        <p style="color:rgba(255,255,255,.4);font-size:12px;margin-top:4px">After ScanGym 25% platform fee</p>
+      </div>
+      <div class="order-card">
+        <div style="display:flex;justify-content:space-between"><span style="font-weight:700">ScanGym Fee (25%)</span><span style="color:rgba(255,255,255,.3);font-weight:700">${fmtGBP(commission)}</span></div>
+        <p style="color:rgba(255,255,255,.4);font-size:12px;margin-top:4px">Platform, payment processing, customer support</p>
+      </div>
+      <div class="order-card">
+        <div style="display:flex;justify-content:space-between"><span style="font-weight:700">Day Pass Price</span><span style="color:var(--brand);font-weight:700">${fmtGBP(gym.dayPassPrice || 5)}</span></div>
+        <p style="color:rgba(255,255,255,.4);font-size:12px;margin-top:4px">
+          <a href="#" onclick="managePricing();return false" style="color:var(--brand)">Change price →</a>
+        </p>
+      </div>
+    </div>`;
+}
 
-</div>
+// ═══ ACTIONS ═══
 
-<script>
-function showPartnerTab(btn, tabId) {
-  // Update tab buttons
-  document.querySelectorAll('.partner-tabs button').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  // Show/hide tab content
-  ['dashboard','orders','menu','earnings'].forEach(t => {
-    var el = document.getElementById('tab-' + t);
-    if (el) el.style.display = t === tabId ? 'block' : 'none';
+function switchTab(tab) {
+  P.currentTab = tab;
+  renderApp();
+}
+
+async function handleLogin(e) {
+  e.preventDefault();
+  const phone = document.getElementById('loginPhone').value;
+  const pass = document.getElementById('loginPass').value;
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true; btn.textContent = 'Signing in…';
+
+  // Try OTP login first, then password
+  let res = await pApi('/api/auth/verify-otp', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phone, otp: pass })
+  });
+
+  if (!res || !res.success) {
+    // Try email/password
+    res = await pApi('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: phone, password: pass, phone })
+    });
+  }
+
+  if (res && (res.success || res.user)) {
+    P.user = res.user || { email: phone };
+    await loadDashboard();
+  } else {
+    pToast(res?.error || 'Login failed. Check credentials.', 4000);
+    btn.disabled = false; btn.textContent = 'Sign In →';
+  }
+}
+
+function handleLogout() {
+  fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => {});
+  P.user = null; P.dashboard = null; P.gyms = [];
+  renderApp();
+}
+
+async function toggleGymActive(el) {
+  const gym = P.gyms[0];
+  if (!gym) return;
+  const newState = !el.classList.contains('on');
+
+  const res = await pApi('/api/gym-partner/toggle-active', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ gymId: gym.id, isActive: newState })
+  });
+
+  if (res && res.success) {
+    el.classList.toggle('on', newState);
+    gym.isActive = newState;
+    const label = document.getElementById('toggleLabel');
+    const card = document.getElementById('gymToggleCard');
+    if (label) {
+      label.textContent = newState ? '🟢 Accepting Bookings' : '🔴 Paused';
+      label.style.color = newState ? 'var(--green)' : 'var(--red)';
+    }
+    if (card) {
+      card.style.background = newState ? 'rgba(34,197,94,.08)' : 'rgba(239,68,68,.08)';
+      card.style.borderColor = newState ? 'rgba(34,197,94,.2)' : 'rgba(239,68,68,.2)';
+    }
+    pToast(newState ? '✅ Gym is live!' : '⏸️ Gym paused');
+  } else {
+    pToast(res?.error || 'Toggle failed', 4000);
+  }
+}
+
+async function adjustCapacity(delta) {
+  const el = document.getElementById('capacityVal');
+  if (!el) return;
+  const current = parseInt(el.textContent) || 50;
+  const newVal = Math.max(1, current + delta);
+  el.textContent = newVal;
+
+  // Save to backend
+  const gym = P.gyms[0];
+  if (gym) {
+    await pApi('/api/gym-partner/capacity', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ gymId: gym.id, maxCapacity: newVal })
+    });
+  }
+}
+
+async function refreshDashboard() {
+  pToast('Refreshing…');
+  await loadDashboard();
+  pToast('Dashboard updated!');
+}
+
+async function setupStripeConnect() {
+  const gym = P.gyms[0];
+  if (!gym) return;
+  pToast('Setting up bank connection…');
+  const res = await pApi('/api/gym-partner/stripe-connect', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ gymId: gym.id })
+  });
+  if (res) {
+    pToast(res.message || 'Stripe setup initiated!', 5000);
+  }
+}
+
+function managePricing() {
+  const gym = P.gyms[0];
+  if (!gym) return;
+  const price = prompt('Set day pass price (£):', gym.dayPassPrice || 5);
+  if (price && !isNaN(price) && parseFloat(price) > 0) {
+    pApi('/api/owner/pricing/' + gym.id, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dayPassPrice: parseFloat(price) })
+    }).then(res => {
+      if (res && res.success) {
+        gym.dayPassPrice = parseFloat(price);
+        pToast('Price updated to £' + parseFloat(price).toFixed(2));
+        renderApp();
+      } else {
+        pToast(res?.error || 'Price update failed', 4000);
+      }
+    });
+  }
+}
+
+function manageHours() {
+  const gym = P.gyms[0];
+  if (!gym) return;
+  const choice = confirm('Set your gym as 24/7?\n\nOK = 24/7 Open\nCancel = Use Google Maps hours');
+  pApi('/api/gym-partner/hours-override', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      gymId: gym.id,
+      overrideStatus: choice ? 'open_now' : 'use_google_hours'
+    })
+  }).then(res => {
+    pToast(res?.message || 'Hours updated!');
   });
 }
+
+function manageGymDetails() {
+  window.location.href = '/gympartners-dashboard';
+}
+
+function manageCapacity() {
+  const gym = P.gyms[0];
+  const cap = prompt('Set max daily capacity:', 50);
+  if (cap && !isNaN(cap)) {
+    pApi('/api/gym-partner/capacity', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ gymId: gym.id, maxCapacity: parseInt(cap) })
+    }).then(() => pToast('Capacity set to ' + cap));
+  }
+}
+
+function managePhotos() {
+  pToast('Photo upload coming soon!');
+}
+
+// ═══ INIT ═══
+(async function init() {
+  const loggedIn = await checkAuth();
+  if (loggedIn) {
+    await loadDashboard();
+  } else {
+    P.loading = false;
+    renderApp();
+  }
+})();
 </script>
 </body>
 </html>
