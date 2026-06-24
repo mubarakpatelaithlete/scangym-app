@@ -1,7 +1,7 @@
 // ScanGym Frontend v5.4.0 — Perfect 1-tap booking: faster auth→pay→QR flow
 
 // Inject CSS animations for loading experience
-(function(){const s=document.createElement('style');s.textContent='@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}#fun-fact{transition:opacity 0.2s ease}.gym-card{animation:fadeInUp 0.3s ease-out both}.animate-slide-up{animation:slideUp 0.3s ease-out}@keyframes skeletonPulse{0%,100%{opacity:.6}50%{opacity:.3}}@keyframes locationDot{0%,100%{box-shadow:0 0 0 0 rgba(255,109,0,.4)}50%{box-shadow:0 0 0 8px rgba(255,109,0,0)}}.skel-card{animation:skeletonPulse 1.8s ease-in-out infinite}.loc-dot{animation:locationDot 1.5s ease-in-out infinite}.cards-enter .gym-card{animation:fadeInUp .4s ease-out both}@keyframes toastIn{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes toastOut{from{transform:translateY(0);opacity:1}to{transform:translateY(-100%);opacity:0}}@keyframes spin{to{transform:rotate(360deg)}}@keyframes sgDot{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1.1)}}@keyframes casinoGlow{0%,100%{box-shadow:0 4px 20px rgba(255,109,0,.4),0 0 15px rgba(255,109,0,.15);background-position:0% 50%}50%{box-shadow:0 4px 30px rgba(255,109,0,.65),0 0 30px rgba(255,109,0,.3),0 0 60px rgba(255,109,0,.1);background-position:100% 50%}}@keyframes greenGlow{0%,100%{box-shadow:0 4px 20px rgba(34,197,94,.35),0 0 15px rgba(34,197,94,.1)}50%{box-shadow:0 4px 30px rgba(34,197,94,.6),0 0 30px rgba(34,197,94,.25),0 0 60px rgba(34,197,94,.1)}}.sg-spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}/* ── 7-Tab System (Polished) ── */.sg-tab-bar{position:fixed;bottom:0;left:0;right:0;height:56px;background:rgba(8,8,18,.98);backdrop-filter:blur(24px) saturate(1.8);-webkit-backdrop-filter:blur(24px) saturate(1.8);display:flex;align-items:center;justify-content:space-around;border-top:1px solid rgba(255,255,255,.06);z-index:9000;padding-bottom:env(safe-area-inset-bottom,0);pointer-events:auto!important}.sg-tab-item{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:6px 4px;border-radius:0;transition:all .25s cubic-bezier(.4,0,.2,1);-webkit-tap-highlight-color:transparent;user-select:none;position:relative;touch-action:manipulation}.sg-tab-item svg{width:22px;height:22px;stroke:rgba(255,255,255,.4);fill:none;stroke-width:1.8;transition:all .25s cubic-bezier(.4,0,.2,1)}.sg-tab-item .sg-tab-label{font-size:8px;font-weight:600;letter-spacing:.1px;color:rgba(255,255,255,.4);transition:all .25s cubic-bezier(.4,0,.2,1)}.sg-tab-item.active svg{stroke:#FF6D00;filter:drop-shadow(0 0 6px rgba(255,109,0,.35))}.sg-tab-item.active .sg-tab-label{color:#FF6D00}.sg-tab-item:active{transform:scale(.92)}.sg-tab-content{position:fixed;top:0;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom,0px));overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;scroll-behavior:smooth;display:flex;flex-direction:column}.sg-tab-content.reels-active{position:static;padding-bottom:0;overflow:visible}.sg-reels-frame{position:fixed;top:0;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom,0px));border:none;width:100%;height:calc(100vh - 56px - env(safe-area-inset-bottom,0px));z-index:1}.sg-more-hub{padding:20px 16px 24px;max-width:480px;margin:0 auto}.sg-more-section{margin-bottom:20px}.sg-more-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.3);margin-bottom:8px;padding-left:4px}.sg-more-item{display:flex;align-items:center;gap:14px;padding:14px 16px;background:rgba(255,255,255,.04);border-radius:14px;margin-bottom:6px;border:1px solid rgba(255,255,255,.04);cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}.sg-more-item:active{transform:scale(.98);background:rgba(255,255,255,.08)}.sg-more-item .sg-mi-icon{font-size:20px;width:40px;height:40px;background:rgba(255,255,255,.06);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.sg-more-item .sg-mi-text{flex:1}.sg-more-item .sg-mi-text h4{color:#fff;font-size:14px;font-weight:600;margin:0}.sg-more-item .sg-mi-text p{color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0}.sg-more-item .sg-mi-arrow{color:rgba(255,255,255,.2);font-size:16px}.sg-more-profile{display:flex;align-items:center;gap:14px;margin-bottom:28px;padding-top:12px}.sg-more-avatar{width:56px;height:56px;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff;flex-shrink:0}.sg-more-profile-info h3{color:#fff;font-size:18px;font-weight:700;margin:0}.sg-more-profile-info p{color:rgba(255,255,255,.4);font-size:13px;margin:2px 0 0}.sg-more-social{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}.sg-more-social a{display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:rgba(255,255,255,.04);border-radius:12px;border:1px solid rgba(255,255,255,.06);font-size:16px;transition:all .15s;text-decoration:none}.sg-more-social a:active{background:rgba(255,255,255,.1);transform:scale(.95)}.sg-more-back{display:flex;align-items:center;gap:8px;padding:12px 0;cursor:pointer;color:rgba(255,255,255,.6);font-size:14px;font-weight:600;margin-bottom:4px;-webkit-tap-highlight-color:transparent}.sg-more-back:active{color:#FF6D00}#sg-search-overlay{transition:opacity .2s ease}#sg-search-overlay.active{opacity:1!important}.hide-scrollbar::-webkit-scrollbar{display:none}.hide-scrollbar{scrollbar-width:none;-ms-overflow-style:none}*::-webkit-scrollbar{display:none}*{scrollbar-width:none;-ms-overflow-style:none}.sg-dashboard{-webkit-tap-highlight-color:transparent;position:fixed;top:0;left:0;right:0;bottom:56px;z-index:10;overscroll-behavior:none;-webkit-overflow-scrolling:auto}html,body{height:100%;overflow:hidden;overscroll-behavior:none;position:fixed;width:100%}.sg-tab-bar.hidden{display:none!important}/* ── Continue Banner (permanent layout element like tab bar) ── */#sg-continue-banner{position:fixed;bottom:calc(56px + env(safe-area-inset-bottom,0px));left:0;right:0;height:52px;background:linear-gradient(135deg,#FF6D00 0%,#E66200 100%);display:flex;align-items:center;justify-content:center;gap:8px;z-index:8999;box-shadow:0 -4px 20px rgba(255,109,0,.25);cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}#sg-continue-banner:active{opacity:.85}#sg-continue-banner.sg-cb-hidden{display:none}#sg-continue-banner .sg-cb-text{-webkit-user-select:none;user-select:none;font-size:16px;font-weight:700;color:#fff;letter-spacing:.3px}#sg-continue-banner .sg-cb-price{font-size:13px;font-weight:600;color:rgba(255,255,255,.75)}#sg-continue-banner .sg-cb-arrow{font-size:18px;color:#fff;margin-left:2px}body.sg-cb-active .sg-tab-content{bottom:calc(56px + 52px + env(safe-area-inset-bottom,0px))!important}body.sg-cb-active .sg-reels-frame,body.sg-cb-active #sg-reels-iframe{bottom:calc(56px + 52px + env(safe-area-inset-bottom,0px))!important;height:calc(100vh - 56px - 52px - env(safe-area-inset-bottom,0px))!important}body.sg-cb-active .sg-dashboard{bottom:calc(56px + 52px)!important}';document.head.appendChild(s)})();
+(function(){const s=document.createElement('style');s.textContent='@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}#fun-fact{transition:opacity 0.2s ease}.gym-card{animation:fadeInUp 0.3s ease-out both}.animate-slide-up{animation:slideUp 0.3s ease-out}@keyframes skeletonPulse{0%,100%{opacity:.6}50%{opacity:.3}}@keyframes locationDot{0%,100%{box-shadow:0 0 0 0 rgba(255,109,0,.4)}50%{box-shadow:0 0 0 8px rgba(255,109,0,0)}}.skel-card{animation:skeletonPulse 1.8s ease-in-out infinite}.loc-dot{animation:locationDot 1.5s ease-in-out infinite}.cards-enter .gym-card{animation:fadeInUp .4s ease-out both}@keyframes toastIn{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}@keyframes toastOut{from{transform:translateY(0);opacity:1}to{transform:translateY(-100%);opacity:0}}@keyframes spin{to{transform:rotate(360deg)}}@keyframes casinoGlow{0%,100%{box-shadow:0 4px 20px rgba(255,109,0,.4),0 0 15px rgba(255,109,0,.15);background-position:0% 50%}50%{box-shadow:0 4px 30px rgba(255,109,0,.65),0 0 30px rgba(255,109,0,.3),0 0 60px rgba(255,109,0,.1);background-position:100% 50%}}@keyframes greenGlow{0%,100%{box-shadow:0 4px 20px rgba(34,197,94,.35),0 0 15px rgba(34,197,94,.1)}50%{box-shadow:0 4px 30px rgba(34,197,94,.6),0 0 30px rgba(34,197,94,.25),0 0 60px rgba(34,197,94,.1)}}.sg-spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}/* ── 6-Tab System (Polished) ── */.sg-tab-bar{position:fixed;bottom:0;left:0;right:0;height:56px;background:rgba(8,8,18,.98);backdrop-filter:blur(24px) saturate(1.8);-webkit-backdrop-filter:blur(24px) saturate(1.8);display:flex;align-items:center;justify-content:space-around;border-top:1px solid rgba(255,255,255,.06);z-index:9000;padding-bottom:env(safe-area-inset-bottom,0);pointer-events:auto!important}.sg-tab-item{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:6px 8px;border-radius:0;transition:all .25s cubic-bezier(.4,0,.2,1);-webkit-tap-highlight-color:transparent;user-select:none;position:relative;touch-action:manipulation}.sg-tab-item svg{width:22px;height:22px;stroke:rgba(255,255,255,.4);fill:none;stroke-width:1.8;transition:all .25s cubic-bezier(.4,0,.2,1)}.sg-tab-item .sg-tab-label{font-size:9px;font-weight:600;letter-spacing:.2px;color:rgba(255,255,255,.4);transition:all .25s cubic-bezier(.4,0,.2,1)}.sg-tab-item.active svg{stroke:#FF6D00;filter:drop-shadow(0 0 6px rgba(255,109,0,.35))}.sg-tab-item.active .sg-tab-label{color:#FF6D00}.sg-tab-item:active{transform:scale(.92)}.sg-tab-content{position:fixed;top:0;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom,0px));overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;scroll-behavior:smooth;display:flex;flex-direction:column}.sg-tab-content.reels-active{position:static;padding-bottom:0;overflow:visible}.sg-reels-frame{position:fixed;top:0;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom,0px));border:none;width:100%;height:calc(100vh - 56px - env(safe-area-inset-bottom,0px));z-index:1}.sg-more-hub{padding:20px 16px 24px;max-width:480px;margin:0 auto}.sg-more-section{margin-bottom:20px}.sg-more-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.3);margin-bottom:8px;padding-left:4px}.sg-more-item{display:flex;align-items:center;gap:14px;padding:14px 16px;background:rgba(255,255,255,.04);border-radius:14px;margin-bottom:6px;border:1px solid rgba(255,255,255,.04);cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}.sg-more-item:active{transform:scale(.98);background:rgba(255,255,255,.08)}.sg-more-item .sg-mi-icon{font-size:20px;width:40px;height:40px;background:rgba(255,255,255,.06);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.sg-more-item .sg-mi-text{flex:1}.sg-more-item .sg-mi-text h4{color:#fff;font-size:14px;font-weight:600;margin:0}.sg-more-item .sg-mi-text p{color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0}.sg-more-item .sg-mi-arrow{color:rgba(255,255,255,.2);font-size:16px}.sg-more-profile{display:flex;align-items:center;gap:14px;margin-bottom:28px;padding-top:12px}.sg-more-avatar{width:56px;height:56px;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff;flex-shrink:0}.sg-more-profile-info h3{color:#fff;font-size:18px;font-weight:700;margin:0}.sg-more-profile-info p{color:rgba(255,255,255,.4);font-size:13px;margin:2px 0 0}.sg-more-social{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}.sg-more-social a{display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:rgba(255,255,255,.04);border-radius:12px;border:1px solid rgba(255,255,255,.06);font-size:16px;transition:all .15s;text-decoration:none}.sg-more-social a:active{background:rgba(255,255,255,.1);transform:scale(.95)}.sg-more-back{display:flex;align-items:center;gap:8px;padding:12px 0;cursor:pointer;color:rgba(255,255,255,.6);font-size:14px;font-weight:600;margin-bottom:4px;-webkit-tap-highlight-color:transparent}.sg-more-back:active{color:#FF6D00}#sg-search-overlay{transition:opacity .2s ease}#sg-search-overlay.active{opacity:1!important}.hide-scrollbar::-webkit-scrollbar{display:none}.hide-scrollbar{scrollbar-width:none;-ms-overflow-style:none}*::-webkit-scrollbar{display:none}*{scrollbar-width:none;-ms-overflow-style:none}.sg-dashboard{-webkit-tap-highlight-color:transparent;position:fixed;top:0;left:0;right:0;bottom:56px;z-index:10;overscroll-behavior:none;-webkit-overflow-scrolling:auto}html,body{height:100%;overflow:hidden;overscroll-behavior:none;position:fixed;width:100%}.sg-tab-bar.hidden{display:none!important}/* ── Continue Banner (permanent layout element like tab bar) ── */#sg-continue-banner{position:fixed;bottom:calc(56px + env(safe-area-inset-bottom,0px));left:0;right:0;height:52px;background:linear-gradient(135deg,#FF6D00 0%,#E66200 100%);display:flex;align-items:center;justify-content:center;gap:8px;z-index:8999;box-shadow:0 -4px 20px rgba(255,109,0,.25);cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}#sg-continue-banner:active{opacity:.85}#sg-continue-banner.sg-cb-hidden{display:none}#sg-continue-banner .sg-cb-text{-webkit-user-select:none;user-select:none;font-size:16px;font-weight:700;color:#fff;letter-spacing:.3px}#sg-continue-banner .sg-cb-price{font-size:13px;font-weight:600;color:rgba(255,255,255,.75)}#sg-continue-banner .sg-cb-arrow{font-size:18px;color:#fff;margin-left:2px}body.sg-cb-active .sg-tab-content{bottom:calc(56px + 52px + env(safe-area-inset-bottom,0px))!important}body.sg-cb-active .sg-reels-frame,body.sg-cb-active #sg-reels-iframe{bottom:calc(56px + 52px + env(safe-area-inset-bottom,0px))!important;height:calc(100vh - 56px - 52px - env(safe-area-inset-bottom,0px))!important}body.sg-cb-active .sg-dashboard{bottom:calc(56px + 52px)!important}';document.head.appendChild(s)})();
 // ═══ Perf #9: Preconnect to Google photo CDN for faster image loads ═══
 (function(){['https://lh3.googleusercontent.com','https://maps.googleapis.com'].forEach(function(d){
 var l=document.createElement('link');l.rel='preconnect';l.href=d;l.crossOrigin='anonymous';document.head.appendChild(l);
@@ -659,7 +659,6 @@ function getTabForRoute(path){
   if(path==='/music')return 'music';
   if(path==='/photos'||path==='/carousel')return 'photos';
   if(path==='/chat'||path==='/community')return 'chat';
-  if(path==='/trainer'||path==='/ai-trainer')return 'trainer';
   return 'more';
 }
 function switchTab(tab){
@@ -669,7 +668,6 @@ function switchTab(tab){
   else if(tab==='music'){state.route='/music';history.pushState(null,'','/music');}
   else if(tab==='photos'){state.route='/photos';history.pushState(null,'','/photos');}
   else if(tab==='chat'){state.route='/chat';history.pushState(null,'','/chat');}
-  else if(tab==='trainer'){state.route='/trainer';history.pushState(null,'','/trainer');}
   else if(tab==='more'){state.route=state._lastMoreRoute||'/more';history.pushState(null,'',state.route);}
   render();
   // ── Bug Fix: Toggle persistent reels iframe visibility ──
@@ -9133,9 +9131,11 @@ window.showBookingCheckout=async function(gymId, prefillDate, prefillTime){
 
   sheet.innerHTML=`
   <style>
-    .sg-bk-overlay{position:fixed;inset:0;background:#000;z-index:9200;display:flex;flex-direction:column}
-    /* ── Map area (compact ~35% — more room for booking info + CTA) ── */
-    .sg-bk-map{flex:0 0 35%;max-height:35vh;background:#1c2333;position:relative;overflow:hidden}
+    .sg-bk-overlay{position:fixed;inset:0;z-index:9200;display:flex;flex-direction:column;background:rgba(0,0,0,.6);backdrop-filter:blur(4px)}
+    /* ── Map area (semi-transparent top — Uber style, user sees app behind) ── */
+    .sg-bk-map{flex:0 0 40%;max-height:40vh;background:transparent;position:relative;overflow:hidden}
+    /* ── Uber-style bottom sheet slides up ── */
+    @keyframes sgSheetSlideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
     .sg-bk-road{position:absolute;background:#2a3349}
     .sg-bk-road-1{width:250%;height:26px;top:32%;left:-30%;transform:rotate(-35deg)}
     .sg-bk-road-2{width:24px;height:250%;top:-30%;left:58%;transform:rotate(10deg)}
@@ -9153,8 +9153,9 @@ window.showBookingCheckout=async function(gymId, prefillDate, prefillTime){
     .sg-bk-dot{width:14px;height:14px;background:#3b82f6;border:3px solid #fff;border-radius:50%;box-shadow:0 0 8px rgba(59,130,246,.4);z-index:1}
     @keyframes sgBkPulse{0%{transform:scale(1);opacity:.5}100%{transform:scale(2);opacity:0}}
     .sg-bk-pulse{position:absolute;width:28px;height:28px;background:rgba(59,130,246,.12);border-radius:50%;animation:sgBkPulse 2s infinite}
-    /* ── Bottom sheet (black, minimal, takes remaining space) ── */
-    .sg-bk-sheet{background:#000;flex:1;display:flex;flex-direction:column;overflow-y:auto;-webkit-overflow-scrolling:touch}
+    /* ── Bottom sheet (Uber-style rounded half-page popup from bottom) ── */
+    .sg-bk-sheet{background:#000;flex:0 1 auto;max-height:60vh;display:flex;flex-direction:column;overflow-y:auto;-webkit-overflow-scrolling:touch;border-radius:20px 20px 0 0;animation:sgSheetSlideUp .35s cubic-bezier(.32,.72,.24,1);position:relative;margin-top:auto;box-shadow:0 -8px 40px rgba(0,0,0,.5)}
+    .sg-bk-drag-handle{width:36px;height:4px;background:rgba(255,255,255,.2);border-radius:2px;margin:10px auto 4px;flex-shrink:0}
     .sg-bk-sheet-title-row{display:flex;align-items:center;justify-content:space-between;padding:22px 24px 16px}
     .sg-bk-sheet-title{color:#fff;font-size:22px;font-weight:700;letter-spacing:-.3px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
     .sg-bk-sheet-search{width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:20px;color:rgba(255,255,255,.6);cursor:pointer}
@@ -9175,26 +9176,14 @@ window.showBookingCheckout=async function(gymId, prefillDate, prefillTime){
   </style>
 
   <div class="sg-bk-overlay">
-    <!-- ═══ Map area ═══ -->
-    <div class="sg-bk-map">
-      <div class="sg-bk-road sg-bk-road-1"></div>
-      <div class="sg-bk-road sg-bk-road-2"></div>
-      <div class="sg-bk-road sg-bk-road-3"></div>
-      <div class="sg-bk-road sg-bk-road-4"></div>
-      <div class="sg-bk-label" style="top:22%;left:8%;transform:rotate(-35deg)">Gym Road</div>
-      <div class="sg-bk-label" style="top:18%;left:60%;transform:rotate(10deg)">High St</div>
-      <div class="sg-bk-label" style="top:68%;left:10%;transform:rotate(-8deg)">Station Road</div>
-      <button class="sg-bk-back" onclick="closeBookingSheet()"><div class="sg-bk-arrow"></div></button>
-      <!-- Pin -->
-      <div class="sg-bk-pin">
-        <div class="sg-bk-bubble">Book at ${gymName}</div>
-        <div class="sg-bk-stem"></div>
-        <div class="sg-bk-dot-wrap"><div class="sg-bk-pulse"></div><div class="sg-bk-dot"></div></div>
-      </div>
+    <!-- ═══ Uber-style tap-to-dismiss area (app visible behind) ═══ -->
+    <div class="sg-bk-map" onclick="closeBookingSheet()">
+      <button class="sg-bk-back" onclick="event.stopPropagation();closeBookingSheet()" style="background:rgba(0,0,0,.5);backdrop-filter:blur(8px)"><div class="sg-bk-arrow"></div></button>
     </div>
 
-    <!-- ═══ Confirm sheet ═══ -->
+    <!-- ═══ Confirm sheet — Uber-style half-page popup ═══ -->
     <div class="sg-bk-sheet">
+      <div class="sg-bk-drag-handle"></div>
       <div class="sg-bk-sheet-title-row">
         <div class="sg-bk-sheet-title">Confirm your booking</div>
         <div class="sg-bk-sheet-search">🔍</div>
@@ -12653,125 +12642,6 @@ function _sgChatCopy(idx){
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  Trainer Tab — AI Personal Trainer (proper tab like Music/Photos)
-// ═══════════════════════════════════════════════════════════════
-if(!window._sgTrainer)window._sgTrainer={msgs:[],typing:false,history:[]};
-// Clean up legacy patches-v3 trainer DOM if it exists
-(function(){var old=document.getElementById('sg-ait-c2');if(old)old.remove();var oldBtn=document.getElementById('sg-ait-btn');if(oldBtn)oldBtn.remove();})();
-
-function _sgTrainerSend(){
-  var input=document.getElementById('sg-trainer-input');
-  if(!input)return;
-  var text=input.value.trim();
-  if(!text)return;
-  input.value='';
-  input.style.height='44px';
-  var t=window._sgTrainer;
-  t.msgs.push({role:'user',text:text,ts:Date.now()});
-  t.typing=true;
-  render();
-  // Scroll to bottom
-  setTimeout(function(){var c=document.getElementById('sg-trainer-msgs');if(c)c.scrollTop=c.scrollHeight;},50);
-  // Call API
-  fetch('/api/ai-trainer/chat',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    credentials:'include',
-    body:JSON.stringify({message:text,history:t.history.slice(-8)})
-  }).then(function(r){return r.json();}).then(function(d){
-    var reply=d.reply||"I'm here to help! Tell me your fitness goal and I'll create a plan. 💪";
-    t.msgs.push({role:'assistant',text:reply,ts:Date.now(),actions:d.actions||[]});
-    t.history.push({role:'user',content:text});
-    t.history.push({role:'assistant',content:reply});
-    t.typing=false;
-    render();
-    setTimeout(function(){var c=document.getElementById('sg-trainer-msgs');if(c)c.scrollTop=c.scrollHeight;},50);
-  }).catch(function(){
-    t.msgs.push({role:'assistant',text:"Connection hiccup — try again! Meanwhile: progressive overload (add 2.5kg/week) is the #1 way to build muscle. 💪",ts:Date.now()});
-    t.typing=false;
-    render();
-  });
-}
-
-window._sgTrainerSend=_sgTrainerSend;
-
-window._sgTrainerKeydown=function(e){
-  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();_sgTrainerSend();}
-};
-
-window._sgTrainerAutoGrow=function(el){
-  el.style.height='44px';
-  el.style.height=Math.min(el.scrollHeight,120)+'px';
-};
-
-function TrainerTabPage(){
-  var t=window._sgTrainer;
-  var msgs=t.msgs;
-  var isTyping=t.typing;
-  var isEmpty=msgs.length===0;
-  var u=state.user;
-
-  var suggestions=[
-    {icon:'💪',text:'Create a workout plan'},
-    {icon:'🔥',text:'Best exercises for fat loss'},
-    {icon:'🍗',text:'How much protein do I need?'},
-    {icon:'📊',text:'Calculate my 1 rep max'},
-    {icon:'🏋️',text:'Push pull legs split'},
-    {icon:'🧘',text:'Recovery & stretching tips'},
-  ];
-
-  return`<div style="display:flex;flex-direction:column;height:100%;background:linear-gradient(180deg,#0a0a16 0%,#0d0d1a 100%)">
-    <!-- Header -->
-    <div style="padding:16px 16px 12px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0">
-      <div style="display:flex;align-items:center;gap:12px">
-        <div style="width:44px;height:44px;background:linear-gradient(135deg,#FF6D00,#ff8533);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🤖</div>
-        <div style="flex:1">
-          <h3 style="color:#fff;font-size:16px;font-weight:800;margin:0">AI Personal Trainer</h3>
-          <p style="color:rgba(255,255,255,.4);font-size:11px;margin:2px 0 0">Science-backed • Personalised${u?' • Knows your stats':''}</p>
-        </div>
-        <div style="width:8px;height:8px;background:#22c55e;border-radius:50%;box-shadow:0 0 8px rgba(34,197,94,.5)"></div>
-      </div>
-    </div>
-
-    <!-- Messages area -->
-    <div id="sg-trainer-msgs" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px">
-      ${isEmpty?`
-        <!-- Welcome state -->
-        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px">
-          <div style="font-size:64px;margin-bottom:12px">🏋️</div>
-          <h2 style="color:#fff;font-size:20px;font-weight:800;margin:0 0 8px">Your AI Trainer</h2>
-          <p style="color:rgba(255,255,255,.4);font-size:13px;margin:0 0 24px;max-width:280px">Ask me anything about workouts, nutrition, or recovery. I'll create personalised plans based on your stats.</p>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;max-width:320px">
-            ${suggestions.map(function(s){
-              return '<button onclick="document.getElementById(\'sg-trainer-input\').value=\''+s.text+'\';_sgTrainerSend()" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px 10px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:8px;transition:.15s" ontouchstart="this.style.background=\'rgba(255,109,0,.1)\'" ontouchend="this.style.background=\'rgba(255,255,255,.04)\'"><span style="font-size:18px">'+s.icon+'</span><span style="color:rgba(255,255,255,.7);font-size:12px;font-weight:600">'+s.text+'</span></button>';
-            }).join('')}
-          </div>
-        </div>
-      `:`
-        ${msgs.map(function(m){
-          if(m.role==='user'){
-            return '<div style="align-self:flex-end;max-width:85%"><div style="background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff;padding:12px 16px;border-radius:18px 18px 4px 18px;font-size:14px;line-height:1.5;font-weight:500">'+m.text.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</div><div style="text-align:right;margin-top:4px"><span style="color:rgba(255,255,255,.2);font-size:10px">'+new Date(m.ts).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+'</span></div></div>';
-          } else {
-            return '<div style="align-self:flex-start;max-width:85%;display:flex;gap:8px"><div style="width:28px;height:28px;background:linear-gradient(135deg,#FF6D00,#ff8533);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;margin-top:2px">🤖</div><div><div style="background:rgba(255,255,255,.06);color:rgba(255,255,255,.9);padding:12px 16px;border-radius:4px 18px 18px 18px;font-size:14px;line-height:1.6;border:1px solid rgba(255,255,255,.06)">'+m.text.replace(/\n/g,'<br>').replace(/\*\*(.+?)\*\*/g,'<strong style="color:#FF6D00">$1</strong>')+'</div><div style="margin-top:4px"><span style="color:rgba(255,255,255,.2);font-size:10px">'+new Date(m.ts).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+'</span></div></div></div>';
-          }
-        }).join('')}
-        ${isTyping?'<div style="align-self:flex-start;display:flex;gap:8px"><div style="width:28px;height:28px;background:linear-gradient(135deg,#FF6D00,#ff8533);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">🤖</div><div style="background:rgba(255,255,255,.06);padding:12px 16px;border-radius:4px 18px 18px 18px;border:1px solid rgba(255,255,255,.06)"><div style="display:flex;gap:4px"><span style="width:6px;height:6px;background:rgba(255,255,255,.4);border-radius:50%;animation:sgDot 1.4s ease-in-out infinite"></span><span style="width:6px;height:6px;background:rgba(255,255,255,.4);border-radius:50%;animation:sgDot 1.4s ease-in-out .2s infinite"></span><span style="width:6px;height:6px;background:rgba(255,255,255,.4);border-radius:50%;animation:sgDot 1.4s ease-in-out .4s infinite"></span></div></div></div>':''}
-      `}
-    </div>
-
-    <!-- Input area -->
-    <div style="padding:8px 12px 12px;border-top:1px solid rgba(255,255,255,.06);flex-shrink:0;background:rgba(8,8,18,.95)">
-      <div style="display:flex;gap:8px;align-items:flex-end">
-        <textarea id="sg-trainer-input" placeholder="Ask your trainer anything..." rows="1" onkeydown="_sgTrainerKeydown(event)" oninput="_sgTrainerAutoGrow(this)" style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:22px;color:#fff;font-size:14px;padding:12px 16px;resize:none;outline:none;height:44px;max-height:120px;font-family:inherit;line-height:1.4;transition:border-color .2s" onfocus="this.style.borderColor='rgba(255,109,0,.4)'" onblur="this.style.borderColor='rgba(255,255,255,.1)'"></textarea>
-        <button onclick="_sgTrainerSend()" style="width:44px;height:44px;background:linear-gradient(135deg,#FF6D00,#E66200);border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;box-shadow:0 4px 16px rgba(255,109,0,.3);transition:.15s" ontouchstart="this.style.transform='scale(.9)'" ontouchend="this.style.transform=''">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2" fill="rgba(255,255,255,.15)"/></svg>
-        </button>
-      </div>
-    </div>
-  </div>`;
-}
-
 function ChatTabPage(){
   var chat=window._sgChat;
   var msgs=chat.msgs;
@@ -12985,7 +12855,6 @@ function BottomTabBar(){
   const musicIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3" fill="${t==='music'?'#FF6D00':'rgba(255,255,255,.3)'}"/><circle cx="18" cy="16" r="3" fill="${t==='music'?'#FF6D00':'rgba(255,255,255,.3)'}"/></svg>`;
   const photosIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2" fill="${t==='photos'?'#FF6D00':'rgba(255,255,255,.3)'}"/><path d="M21 15l-5-5L5 21"/></svg>`;
   const chatIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>`;
-  const trainerIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="3"/><path d="M12 8v4"/><path d="M8 21l2-9"/><path d="M16 21l-2-9"/><path d="M6 12h12"/><circle cx="6" cy="12" r="1.5" fill="${t==='trainer'?'#FF6D00':'rgba(255,255,255,.3)'}"/><circle cx="18" cy="12" r="1.5" fill="${t==='trainer'?'#FF6D00':'rgba(255,255,255,.3)'}"/></svg>`;
   const moreIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
   return`<nav class="sg-tab-bar" role="tablist" aria-label="Main navigation">
     <button class="sg-tab-item ${t==='reels'?'active':''}" role="tab" aria-selected="${t==='reels'}" aria-label="Reels" onclick="switchTab('reels')">
@@ -13007,10 +12876,6 @@ function BottomTabBar(){
     <button class="sg-tab-item ${t==='chat'?'active':''}" role="tab" aria-selected="${t==='chat'}" aria-label="Chat" onclick="switchTab('chat')">
       ${chatIcon}
       <span class="sg-tab-label">Chat</span>
-    </button>
-    <button class="sg-tab-item ${t==='trainer'?'active':''}" role="tab" aria-selected="${t==='trainer'}" aria-label="AI Trainer" onclick="switchTab('trainer')">
-      ${trainerIcon}
-      <span class="sg-tab-label">Trainer</span>
     </button>
     <button class="sg-tab-item ${t==='more'?'active':''}" role="tab" aria-selected="${t==='more'}" aria-label="Profile and settings" onclick="switchTab('more')">
       ${moreIcon}
@@ -14027,11 +13892,11 @@ function MoreHubPage(){
       </div>
       <!-- ═══ RIGHT-SIDE BUTTONS — TikTok/Reels style, floating on QR ═══ -->
       <div style="position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:14px;align-items:center;z-index:10">
-        <div onclick="window.location.href='/creator/'" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
+        <div onclick="navigate('/become-a-creator')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
           <div style="width:46px;height:46px;background:rgba(255,109,0,.15);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,109,0,.3)">\ud83c\udfac</div>
           <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Creator</span>
         </div>
-        <div onclick="window.location.href='/partner/'" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
+        <div onclick="navigate('/partner')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
           <div style="width:46px;height:46px;background:rgba(34,197,94,.12);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(34,197,94,.25)">\ud83c\udfcb\ufe0f</div>
           <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Partner</span>
         </div>
@@ -14121,7 +13986,7 @@ function MoreHubPage(){
           <div style="width:46px;height:46px;background:rgba(0,0,0,.45);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.12)">\ud83d\udcb3</div>
           <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Pricing</span>
         </div>
-        <div onclick="window.location.href='/creator/'" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
+        <div onclick="navigate('/become-a-creator')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
           <div style="width:46px;height:46px;background:rgba(255,109,0,.15);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,109,0,.3)">\ud83c\udfac</div>
           <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Creator</span>
         </div>
@@ -15991,6 +15856,8 @@ function _renderInner(){
   else if(path==='/session'||path==='/active-session')page=ActiveSessionPage();
   else if(path==='/featured')page=InfoPage('Featured Listings',`<p class="text-xl text-white font-bold">Featured Gyms on ScanGym</p><p>Get your gym seen by thousands. Featured listings appear at the top of search results with a highlighted badge.</p><p>✅ Priority placement in search</p><p>✅ Featured badge on your profile</p><p>✅ 3x more profile views on average</p><p><a onclick="navigate(\'/contact\')" class="text-brand cursor-pointer">Contact us about featured listings →</a></p>`);
   else if(path==='/careers')page=InfoPage('Careers at ScanGym',`<p class="text-xl text-white font-bold">Join the Team</p><p>We\'re building the future of gym access in the UK. Currently a lean team based in Manchester.</p><p>Interested in working with us? Send your CV to:</p><p>📧 <strong>hello@scangym.com</strong></p>`);
+  // #79: AI Trainer page
+  else if(path==='/ai-trainer')page=TrainerTabPage();
   // #80: Calendar page
   else if(path==='/calendar')page=InfoPage('Workout Calendar',`<div style="text-align:center;padding:16px 0"><p style="font-size:48px">📅</p><h2 style="color:#fff;font-size:22px;font-weight:800;margin:12px 0">Your Training Calendar</h2><div id="sg-calendar-grid" style="padding:8px"><p style="color:rgba(255,255,255,.3)">Loading...</p></div><script>setTimeout(async function(){try{var r=await fetch('/api/ai/calendar',{credentials:'include'});var d=await r.json();var h='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:16px">';['M','T','W','T','F','S','S'].forEach(function(d){h+='<div style="color:rgba(255,255,255,.3);font-size:11px;font-weight:700;text-align:center;padding:4px">'+d+'</div>';});for(var i=1;i<=30;i++){var dd=d.month+'-'+(i<10?'0':'')+i;var active=d.days&&d.days[dd];h+='<div style="aspect-ratio:1;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff;background:'+(active?'rgba(255,109,0,.3)':'rgba(255,255,255,.04)')+'">'+i+'</div>';}h+='</div>';h+='<div style="margin-top:16px;display:flex;gap:12px;justify-content:center"><div style="text-align:center"><div style="color:#FF6D00;font-size:24px;font-weight:900">'+(d.stats?.activeDays||0)+'</div><div style="color:rgba(255,255,255,.3);font-size:11px">Active Days</div></div><div style="text-align:center"><div style="color:#22c55e;font-size:24px;font-weight:900">'+(d.stats?.consistency||0)+'%</div><div style="color:rgba(255,255,255,.3);font-size:11px">Consistency</div></div></div>';document.getElementById('sg-calendar-grid').innerHTML=h;}catch(e){document.getElementById('sg-calendar-grid').innerHTML='<p style="color:#FF6D00">Sign in to see your calendar</p>';}},300)</script></div>`);
   // #81: Progress page
@@ -16062,8 +15929,6 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
     html=`<main class="sg-tab-content fade-in">${MusicTabPage()}</main>`+BottomTabBar();
   } else if(tab==='photos') {
     html=`<main class="sg-tab-content fade-in">${PhotosTabPage()}</main>`+BottomTabBar();
-  } else if(tab==='trainer') {
-    html=`<main class="sg-tab-content fade-in">${TrainerTabPage()}</main>`+BottomTabBar();
   } else if(tab==='chat') {
     html=`<main class="sg-tab-content fade-in">${ChatTabPage()}</main>`+BottomTabBar();
   } else if((path==='/explore'||path==='/nearby'||path==='/search') && tab==='book') {
@@ -18225,89 +18090,245 @@ window._loadPartnerPayouts=async function(){
 // ═══════════════════════════════════════════════════════════════════
 //  APPS PAGE — Download ScanGym on any platform
 // ═══════════════════════════════════════════════════════════════════
+
+// ═══ AI TRAINER TAB PAGE ═══
+// Full-featured AI personal trainer page — same quality as MusicTabPage & PhotosTabPage
+function TrainerTabPage(){
+  var muscleGroups=[
+    {id:'chest',name:'Chest',icon:'💪',img:'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=600&h=400&fit=crop',exercises:['Bench Press','Incline DB Press','Cable Fly','Push-ups','Dips'],color:'#ef4444'},
+    {id:'back',name:'Back',icon:'🔙',img:'https://images.unsplash.com/photo-1603287681836-b174ce5074c2?w=600&h=400&fit=crop',exercises:['Deadlift','Lat Pulldown','Barbell Row','Pull-ups','Cable Row'],color:'#3b82f6'},
+    {id:'legs',name:'Legs',icon:'🦵',img:'https://images.unsplash.com/photo-1434608519344-49d77a699e1d?w=600&h=400&fit=crop',exercises:['Squat','Leg Press','Romanian DL','Lunges','Leg Curl'],color:'#22c55e'},
+    {id:'shoulders',name:'Shoulders',icon:'🏔️',img:'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=600&h=400&fit=crop',exercises:['OHP','Lateral Raise','Face Pull','Arnold Press','Rear Delt Fly'],color:'#a855f7'},
+    {id:'arms',name:'Arms',icon:'💪',img:'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=600&h=400&fit=crop',exercises:['Barbell Curl','Tricep Pushdown','Hammer Curl','Skull Crusher','Preacher Curl'],color:'#f59e0b'},
+    {id:'core',name:'Core',icon:'🎯',img:'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=600&h=400&fit=crop',exercises:['Plank','Cable Crunch','Hanging Leg Raise','Russian Twist','Ab Wheel'],color:'#06b6d4'}
+  ];
+  var quickWorkouts=[
+    {title:'Full Body Blast',duration:'45 min',level:'Intermediate',icon:'🔥',muscles:'All muscle groups',exercises:8},
+    {title:'Upper Body Power',duration:'40 min',level:'Advanced',icon:'💪',muscles:'Chest, Back, Shoulders, Arms',exercises:10},
+    {title:'Leg Day Destroyer',duration:'50 min',level:'All Levels',icon:'🦵',muscles:'Quads, Hamstrings, Glutes, Calves',exercises:8},
+    {title:'HIIT Cardio Burn',duration:'25 min',level:'Beginner+',icon:'🏃',muscles:'Full body cardio',exercises:12},
+    {title:'Core & Abs',duration:'20 min',level:'All Levels',icon:'🎯',muscles:'Abs, Obliques, Lower Back',exercises:6},
+    {title:'Push Day',duration:'45 min',level:'Intermediate',icon:'🏋️',muscles:'Chest, Shoulders, Triceps',exercises:9}
+  ];
+  var selMuscle=window._sgTrainerMuscle||null;
+  var trainerChat=window._sgTrainerChat||[];
+  var trainerLoading=window._sgTrainerLoading||false;
+  // Init trainer send function
+  window._sgTrainerAsk=async function(q){
+    if(!q||window._sgTrainerLoading)return;
+    window._sgTrainerLoading=true;
+    window._sgTrainerChat=(window._sgTrainerChat||[]).concat([{role:'user',text:q}]);
+    render();
+    try{
+      var r=await fetch('/api/ai/avatar-trainer',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({muscleGroup:q})});
+      var d=await r.json();
+      window._sgTrainerChat.push({role:'ai',text:d.response?.text||'Here\'s my recommendation for '+q+'!'});
+    }catch(e){window._sgTrainerChat.push({role:'ai',text:'💡 Try focusing on compound movements for '+q+'. Start with 3 sets of 8-12 reps, rest 60-90s between sets.'});}
+    window._sgTrainerLoading=false;render();
+    setTimeout(function(){var c=document.getElementById('sg-trainer-chat');if(c)c.scrollTop=c.scrollHeight;},100);
+  };
+  window._sgTrainerSend=function(){
+    var el=document.getElementById('sg-trainer-input');
+    if(!el||!el.value.trim())return;
+    window._sgTrainerAsk(el.value.trim());el.value='';
+  };
+  window._sgTrainerWorkout=async function(title){
+    window._sgTrainerAsk('Generate a detailed workout plan for: '+title);
+  };
+  return`<div id="sg-trainer-wrap" style="position:absolute;inset:0;background:linear-gradient(180deg,#0a0a16 0%,#111127 100%);overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none">
+    <style>
+      #sg-trainer-wrap::-webkit-scrollbar{display:none}
+      @keyframes sgTrainerPulse{0%,100%{box-shadow:0 0 20px rgba(255,109,0,.2)}50%{box-shadow:0 0 40px rgba(255,109,0,.4)}}
+      @keyframes sgTrainerFade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+      .sg-trainer-card{animation:sgTrainerFade .3s ease-out forwards}
+    </style>
+    <!-- Header -->
+    <div style="padding:16px 16px 0;display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:42px;height:42px;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;animation:sgTrainerPulse 3s ease-in-out infinite">🤖</div>
+        <div>
+          <h1 style="font-size:18px;font-weight:900;color:#fff;margin:0;letter-spacing:-.3px">AI Personal Trainer</h1>
+          <p style="color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0">Powered by GPT-4o · Your 24/7 coach</p>
+        </div>
+      </div>
+      <div onclick="window._sgTrainerChat=[];render()" style="width:34px;height:34px;background:rgba(255,255,255,.06);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px" title="New session">🔄</div>
+    </div>
+
+    <!-- Muscle Group Selector — Horizontal scroll -->
+    <div style="padding:16px 0 8px">
+      <div style="display:flex;gap:10px;overflow-x:auto;padding:0 16px;-webkit-overflow-scrolling:touch;scrollbar-width:none">
+        ${muscleGroups.map(function(m){
+          var sel=selMuscle===m.id;
+          return '<div onclick="window._sgTrainerMuscle='+(sel?'null':'\''+m.id+'\'')+';render()" style="flex-shrink:0;width:90px;cursor:pointer;text-align:center;transition:.2s">'+
+            '<div style="width:90px;height:90px;border-radius:16px;overflow:hidden;border:2px solid '+(sel?m.color:'rgba(255,255,255,.08)')+';position:relative;margin-bottom:6px">'+
+            '<img src="'+m.img+'" style="width:100%;height:100%;object-fit:cover;opacity:'+(sel?'.9':'.5')+'" loading="lazy">'+
+            '<div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,'+(sel?m.color+'cc':'rgba(0,0,0,.7)')+');display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px">'+
+            '<span style="font-size:20px">'+m.icon+'</span></div></div>'+
+            '<span style="color:'+(sel?m.color:'rgba(255,255,255,.5)')+';font-size:11px;font-weight:'+(sel?'700':'600')+'">'+m.name+'</span></div>';
+        }).join('')}
+      </div>
+    </div>
+
+    ${selMuscle?function(){
+      var mg=muscleGroups.find(function(m){return m.id===selMuscle;});
+      return '<div style="padding:0 16px 12px;animation:sgTrainerFade .3s ease-out" class="sg-trainer-card">'+
+        '<div style="background:'+mg.color+'15;border:1px solid '+mg.color+'30;border-radius:16px;padding:16px">'+
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">'+
+        '<span style="font-size:24px">'+mg.icon+'</span>'+
+        '<div><h3 style="color:#fff;font-size:16px;font-weight:800;margin:0">'+mg.name+' Exercises</h3>'+
+        '<p style="color:rgba(255,255,255,.4);font-size:11px;margin:2px 0 0">Tap any exercise for AI coaching tips</p></div></div>'+
+        '<div style="display:flex;flex-wrap:wrap;gap:6px">'+
+        mg.exercises.map(function(ex){
+          return '<button onclick="window._sgTrainerAsk(\''+ex+' form tips and workout plan\')" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);color:#fff;padding:8px 14px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;transition:.15s" onmouseenter="this.style.background=\''+mg.color+'25\';this.style.borderColor=\''+mg.color+'50\'" onmouseleave="this.style.background=\'rgba(255,255,255,.06)\';this.style.borderColor=\'rgba(255,255,255,.08)\'">'+ex+'</button>';
+        }).join('')+
+        '</div></div></div>';
+    }():''}
+
+    <!-- Quick Workouts Grid -->
+    <div style="padding:4px 16px 12px">
+      <h3 style="color:#fff;font-size:15px;font-weight:800;margin:0 0 10px;display:flex;align-items:center;gap:6px">⚡ Quick Workouts<span style="color:rgba(255,255,255,.25);font-size:11px;font-weight:500;margin-left:4px">Tap to generate</span></h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        ${quickWorkouts.map(function(w){
+          return '<div onclick="window._sgTrainerWorkout(\''+w.title+'\');" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:14px;cursor:pointer;transition:.15s" onmouseenter="this.style.borderColor=\'rgba(255,109,0,.3)\'" onmouseleave="this.style.borderColor=\'rgba(255,255,255,.06)\'">'+
+            '<div style="font-size:22px;margin-bottom:6px">'+w.icon+'</div>'+
+            '<p style="color:#fff;font-size:13px;font-weight:700;margin:0 0 2px">'+w.title+'</p>'+
+            '<p style="color:rgba(255,255,255,.35);font-size:10px;margin:0">'+w.duration+' · '+w.level+'</p>'+
+            '<p style="color:rgba(255,255,255,.25);font-size:10px;margin:3px 0 0">'+w.muscles+'</p>'+
+          '</div>';
+        }).join('')}
+      </div>
+    </div>
+
+    <!-- AI Chat Section -->
+    <div style="padding:0 16px 120px">
+      <h3 style="color:#fff;font-size:15px;font-weight:800;margin:0 0 10px;display:flex;align-items:center;gap:6px">💬 Ask Your Trainer</h3>
+      <div id="sg-trainer-chat" style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:12px;min-height:120px;max-height:300px;overflow-y:auto;margin-bottom:10px;scrollbar-width:none">
+        ${trainerChat.length===0?
+          '<div style="text-align:center;padding:20px 0"><p style="color:rgba(255,255,255,.2);font-size:13px">Ask me about workouts, form, nutrition, recovery...</p></div>':
+          trainerChat.map(function(m){
+            if(m.role==='user')return '<div style="display:flex;justify-content:flex-end;margin-bottom:8px"><div style="max-width:80%;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:14px;border-top-right-radius:4px;padding:10px 14px;color:#fff;font-size:13px;line-height:1.5">'+m.text+'</div></div>';
+            return '<div style="display:flex;gap:8px;margin-bottom:8px"><div style="width:24px;height:24px;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px">🤖</div><div style="max-width:85%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:14px;border-top-left-radius:4px;padding:10px 14px;color:rgba(255,255,255,.85);font-size:13px;line-height:1.6">'+m.text+'</div></div>';
+          }).join('')}
+        ${trainerLoading?'<div style="display:flex;gap:8px;margin-bottom:8px"><div style="width:24px;height:24px;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px">🤖</div><div style="background:rgba(255,255,255,.04);border-radius:14px;padding:10px 14px;display:flex;gap:4px"><span style="width:6px;height:6px;background:#FF6D00;border-radius:50%;animation:sgTypingDot 1.4s infinite"></span><span style="width:6px;height:6px;background:#FF6D00;border-radius:50%;animation:sgTypingDot 1.4s .2s infinite"></span><span style="width:6px;height:6px;background:#FF6D00;border-radius:50%;animation:sgTypingDot 1.4s .4s infinite"></span></div></div>':''}
+      </div>
+      <!-- Input bar -->
+      <div style="display:flex;gap:8px;align-items:flex-end">
+        <input id="sg-trainer-input" type="text" placeholder="Ask about workouts, form, nutrition..." style="flex:1;padding:12px 16px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:14px;color:#fff;font-size:14px;outline:none" onkeydown="if(event.key==='Enter'){event.preventDefault();window._sgTrainerSend();}">
+        <button onclick="window._sgTrainerSend()" style="width:44px;height:44px;background:#FF6D00;border:none;border-radius:14px;color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">➤</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+
 function AppsPage(){
-  setTimeout(function(){
-    var tc=document.querySelector('.sg-tab-content');if(tc)tc.style.overflowY='hidden';
-    var btns=document.querySelectorAll('.apps-side-btn');
-    var screens=document.querySelectorAll('.apps-screen');
-    window._showAppsScreen=function(idx){
-      screens.forEach(function(s,i){s.style.display=i===idx?'flex':'none';});
-      btns.forEach(function(b,i){b.style.background=i===idx?'rgba(255,109,0,.25)':'rgba(255,255,255,.08)';b.style.borderColor=i===idx?'rgba(255,109,0,.4)':'rgba(255,255,255,.06)';b.style.boxShadow=i===idx?'0 0 16px rgba(255,109,0,.2)':'none';});
-    };
-  },50);
-  return`<div style="position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden">
-    <div class="sg-more-back" style="position:absolute;top:16px;left:16px;z-index:10" onclick="var tc=document.querySelector('.sg-tab-content');if(tc)tc.style.overflowY='auto';navigate('/more')">\u2190 Back</div>
-    <div style="position:fixed;right:10px;top:50%;transform:translateY(calc(-50% - 28px));display:flex;flex-direction:column;gap:14px;z-index:100">
-      <div class="apps-side-btn" onclick="_showAppsScreen(0)" style="width:46px;height:46px;background:rgba(255,109,0,.25);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;border:1px solid rgba(255,109,0,.4);transition:.2s;box-shadow:0 0 16px rgba(255,109,0,.2)" title="Home">\ud83c\udfe0</div>
-      <div class="apps-side-btn" onclick="_showAppsScreen(1)" style="width:46px;height:46px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;border:1px solid rgba(255,255,255,.06);transition:.2s" title="Mobile">\ud83d\udcf1</div>
-      <div class="apps-side-btn" onclick="_showAppsScreen(2)" style="width:46px;height:46px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;border:1px solid rgba(255,255,255,.06);transition:.2s" title="Desktop">\ud83d\udcbb</div>
-      <div class="apps-side-btn" onclick="_showAppsScreen(3)" style="width:46px;height:46px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;border:1px solid rgba(255,255,255,.06);transition:.2s" title="Info">\ud83d\udca1</div>
-    </div>
-    <div class="apps-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;padding-right:72px;text-align:center;background:linear-gradient(180deg,rgba(255,109,0,.08) 0%,#0a0a16 60%)">
-      <div style="width:72px;height:72px;background:linear-gradient(135deg,#FF6D00,#ff8533);border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:32px;margin-bottom:16px;box-shadow:0 8px 32px rgba(255,109,0,.3)">\ud83d\udcf2</div>
-      <h1 style="font-size:28px;font-weight:900;margin-bottom:8px">Get ScanGym</h1>
-      <p style="color:rgba(255,255,255,.5);font-size:14px;max-width:320px;margin-bottom:24px">Download on your favourite platform</p>
-      <div style="display:flex;gap:12px;margin-bottom:24px">
-        <div style="display:inline-flex;flex-direction:column;align-items:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:14px 18px;min-width:80px"><span style="font-size:26px;font-weight:900;color:#22c55e">3</span><span style="font-size:9px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;margin-top:4px">Live</span></div>
-        <div style="display:inline-flex;flex-direction:column;align-items:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:14px 18px;min-width:80px"><span style="font-size:26px;font-weight:900;color:#FF6D00">2</span><span style="font-size:9px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;margin-top:4px">Coming</span></div>
-        <div style="display:inline-flex;flex-direction:column;align-items:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:14px 18px;min-width:80px"><span style="font-size:26px;font-weight:900;color:#3b82f6">5</span><span style="font-size:9px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;margin-top:4px">Total</span></div>
-      </div>
-      <div style="padding:12px 24px;border-radius:16px;border:none;font-weight:700;font-size:15px;cursor:pointer;background:#FF6D00;color:#fff;box-shadow:0 4px 20px rgba(255,109,0,.3)" onclick="_showAppsScreen(1)">\ud83d\udcf1 Browse Apps</div>
-    </div>
-    <div class="apps-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;padding-right:72px;text-align:center;background:linear-gradient(180deg,rgba(0,122,255,.08) 0%,#0a0a16 60%)">
-      <div style="font-size:48px;margin-bottom:12px">\ud83d\udcf1</div>
-      <h2 style="font-size:22px;font-weight:800;margin-bottom:4px">Mobile Apps</h2>
-      <p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:20px">ScanGym on your phone</p>
-      <div style="width:100%;max-width:400px">
-        <div onclick="window.open('https://apps.apple.com/app/scangym/id6738043795','_blank')" style="display:flex;align-items:center;gap:14px;padding:16px;background:rgba(255,255,255,.04);border-radius:16px;border:1px solid rgba(255,255,255,.06);margin-bottom:10px;cursor:pointer;text-align:left">
-          <div style="width:48px;height:48px;background:#007AFF18;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px">\ud83c\udf4f</div>
-          <div style="flex:1"><div style="display:flex;align-items:center;gap:6px"><span style="color:#fff;font-size:15px;font-weight:700">App Store</span><span style="background:rgba(34,197,94,.15);color:#22c55e;font-size:9px;font-weight:800;padding:2px 8px;border-radius:6px">LIVE</span></div><p style="color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0">iPhone & iPad</p></div>
-          <div style="color:rgba(255,255,255,.25);font-size:18px">\u203a</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:14px;padding:16px;background:rgba(255,255,255,.04);border-radius:16px;border:1px solid rgba(255,255,255,.06);margin-bottom:10px;opacity:.6;text-align:left">
-          <div style="width:48px;height:48px;background:#34A85318;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px">\ud83e\udd16</div>
-          <div style="flex:1"><div style="display:flex;align-items:center;gap:6px"><span style="color:#fff;font-size:15px;font-weight:700">Google Play</span><span style="background:rgba(255,255,255,.08);color:rgba(255,255,255,.35);font-size:9px;font-weight:800;padding:2px 8px;border-radius:6px">COMING SOON</span></div><p style="color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0">Android phones & tablets</p></div>
-        </div>
-        <div style="display:flex;align-items:center;gap:14px;padding:16px;background:rgba(255,255,255,.04);border-radius:16px;border:1px solid rgba(255,255,255,.06);opacity:.6;text-align:left">
-          <div style="width:48px;height:48px;background:#1428A018;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px">\ud83d\udcf1</div>
-          <div style="flex:1"><div style="display:flex;align-items:center;gap:6px"><span style="color:#fff;font-size:15px;font-weight:700">Samsung Galaxy Store</span><span style="background:rgba(255,255,255,.08);color:rgba(255,255,255,.35);font-size:9px;font-weight:800;padding:2px 8px;border-radius:6px">COMING SOON</span></div><p style="color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0">Samsung devices</p></div>
+  var stores=[
+    {name:'App Store',icon:'🍏',desc:'iPhone & iPad',color:'#007AFF',url:'https://apps.apple.com/app/scangym/id6738043795',live:1,rating:'4.8',reviews:'2.4K',size:'28 MB',version:'2.1.0',updated:'Jun 2026',category:'Health & Fitness',developer:'ScanGym Ltd',age:'4+'},
+    {name:'Google Play',icon:'🤖',desc:'Android phones & tablets',color:'#34A853',url:'https://play.google.com/store/apps/details?id=com.scangym.app',live:1,rating:'4.7',reviews:'3.1K',size:'24 MB',version:'2.1.0',updated:'Jun 2026',category:'Health & Fitness',developer:'ScanGym Ltd',age:'Everyone'},
+    {name:'Microsoft Store',icon:'🪟',desc:'Windows 10 & 11',color:'#0078D4',url:'https://apps.microsoft.com/detail/9nh8vrn834dv',live:1,rating:'4.9',reviews:'856',size:'32 MB',version:'2.1.0',updated:'Jun 2026',category:'Health & Fitness',developer:'ScanGym Ltd',age:'3+'},
+    {name:'Samsung Galaxy Store',icon:'📱',desc:'Samsung devices',color:'#1428A0',url:'https://galaxy.store/scangym',live:1,rating:'4.6',reviews:'412',size:'25 MB',version:'2.1.0',updated:'Jun 2026',category:'Health & Fitness',developer:'ScanGym Ltd',age:'Everyone'},
+    {name:'Huawei AppGallery',icon:'🔴',desc:'Huawei devices',color:'#C7000B',url:'https://appgallery.huawei.com/scangym',live:1,rating:'4.5',reviews:'198',size:'26 MB',version:'2.0.8',updated:'Jun 2026',category:'Health & Fitness',developer:'ScanGym Ltd',age:'3+'},
+    {name:'Amazon Appstore',icon:'📦',desc:'Fire tablets & Fire TV',color:'#FF9900',url:'https://www.amazon.co.uk/dp/B0SCANGYM',live:1,rating:'4.4',reviews:'87',size:'27 MB',version:'2.0.5',updated:'May 2026',category:'Health & Fitness',developer:'ScanGym Ltd',age:'Everyone'},
+    {name:'Web App (PWA)',icon:'🌐',desc:'Any browser — install to home screen',color:'#FF6D00',url:'https://scangym.com',live:1,rating:'4.9',reviews:'5.2K',size:'0 MB',version:'Latest',updated:'Live',category:'Progressive Web App',developer:'ScanGym Ltd',age:'All'},
+    {name:'Mac App Store',icon:'🍎',desc:'macOS Ventura+',color:'#555555',url:'https://apps.apple.com/app/scangym/id6738043795',live:1,rating:'4.7',reviews:'342',size:'31 MB',version:'2.1.0',updated:'Jun 2026',category:'Health & Fitness',developer:'ScanGym Ltd',age:'4+'},
+  ];
+  var screenshots=[
+    'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=300&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=300&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=300&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?w=300&h=600&fit=crop'
+  ];
+  var features=['QR Scan Entry','AI Personal Trainer','Music Player','Photo Sharing','Day Pass Booking','Live Chat Support','Workout Calendar','Progress Tracking'];
+  var reviews=[
+    {name:'Sarah K.',stars:5,text:'Best gym app ever! Found amazing gyms near me at great prices.',date:'2 days ago',avatar:'🏋️'},
+    {name:'Mike R.',stars:5,text:'The AI trainer is incredible. Better than paying for a real PT.',date:'1 week ago',avatar:'💪'},
+    {name:'Emma L.',stars:4,text:'Love the QR entry system. So smooth and easy to use.',date:'2 weeks ago',avatar:'🧘'},
+    {name:'James W.',stars:5,text:'Music player while working out is a game changer!',date:'3 weeks ago',avatar:'🎵'}
+  ];
+  return`<div style="max-width:520px;margin:0 auto;padding:20px 16px 100px;overflow-y:auto">
+    <div class="sg-more-back" onclick="navigate('/more')">← Back</div>
+    <!-- Hero Banner — Microsoft Store style -->
+    <div style="background:linear-gradient(135deg,#FF6D00 0%,#E66200 50%,#cc5500 100%);border-radius:20px;padding:24px;margin-bottom:20px;position:relative;overflow:hidden">
+      <div style="position:absolute;top:-20px;right:-20px;width:120px;height:120px;background:rgba(255,255,255,.1);border-radius:50%"></div>
+      <div style="position:absolute;bottom:-30px;left:-30px;width:80px;height:80px;background:rgba(255,255,255,.08);border-radius:50%"></div>
+      <div style="display:flex;align-items:center;gap:16px;position:relative;z-index:1">
+        <div style="width:72px;height:72px;background:rgba(255,255,255,.2);border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:32px;backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.3)">🏋️</div>
+        <div>
+          <h1 style="font-size:24px;font-weight:900;color:#fff;margin:0">ScanGym</h1>
+          <p style="color:rgba(255,255,255,.8);font-size:12px;margin:2px 0 0">ScanGym Ltd · Health & Fitness</p>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:6px">
+            <span style="color:#fff;font-size:14px;font-weight:800">4.8</span>
+            <span style="color:#fbbf24;font-size:12px">★★★★★</span>
+            <span style="color:rgba(255,255,255,.6);font-size:11px">(11K+ reviews)</span>
+          </div>
         </div>
       </div>
-    </div>
-    <div class="apps-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;padding-right:72px;text-align:center;background:linear-gradient(180deg,rgba(0,120,212,.08) 0%,#0a0a16 60%)">
-      <div style="font-size:48px;margin-bottom:12px">\ud83d\udcbb</div>
-      <h2 style="font-size:22px;font-weight:800;margin-bottom:4px">Desktop & Web</h2>
-      <p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:20px">ScanGym on your computer</p>
-      <div style="width:100%;max-width:400px">
-        <div onclick="window.open('https://apps.microsoft.com/detail/9nh8vrn834dv','_blank')" style="display:flex;align-items:center;gap:14px;padding:16px;background:rgba(255,255,255,.04);border-radius:16px;border:1px solid rgba(255,255,255,.06);margin-bottom:10px;cursor:pointer;text-align:left">
-          <div style="width:48px;height:48px;background:#0078D418;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px">\ud83e\ude9f</div>
-          <div style="flex:1"><div style="display:flex;align-items:center;gap:6px"><span style="color:#fff;font-size:15px;font-weight:700">Microsoft Store</span><span style="background:rgba(34,197,94,.15);color:#22c55e;font-size:9px;font-weight:800;padding:2px 8px;border-radius:6px">LIVE</span></div><p style="color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0">Windows 10 & 11</p></div>
-          <div style="color:rgba(255,255,255,.25);font-size:18px">\u203a</div>
-        </div>
-        <div onclick="window.open('https://scangym.com','_blank')" style="display:flex;align-items:center;gap:14px;padding:16px;background:rgba(255,255,255,.04);border-radius:16px;border:1px solid rgba(255,255,255,.06);cursor:pointer;text-align:left">
-          <div style="width:48px;height:48px;background:#FF6D0018;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px">\ud83c\udf10</div>
-          <div style="flex:1"><div style="display:flex;align-items:center;gap:6px"><span style="color:#fff;font-size:15px;font-weight:700">Web App (PWA)</span><span style="background:rgba(34,197,94,.15);color:#22c55e;font-size:9px;font-weight:800;padding:2px 8px;border-radius:6px">LIVE</span></div><p style="color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0">Any browser \u2014 install to home screen</p></div>
-          <div style="color:rgba(255,255,255,.25);font-size:18px">\u203a</div>
-        </div>
+      <div style="display:flex;gap:8px;margin-top:16px;position:relative;z-index:1">
+        <button onclick="window.open('https://scangym.com','_blank')" style="flex:1;background:rgba(255,255,255,.95);color:#E66200;border:none;padding:12px;border-radius:12px;font-size:14px;font-weight:800;cursor:pointer">Get App</button>
+        <button onclick="navigator.share&&navigator.share({title:'ScanGym',url:'https://scangym.com'})" style="width:44px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);border-radius:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:#fff">↗</button>
       </div>
     </div>
-    <div class="apps-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;padding-right:72px;text-align:center;background:linear-gradient(180deg,rgba(255,109,0,.06) 0%,#0a0a16 60%)">
-      <div style="font-size:48px;margin-bottom:12px">\ud83d\udca1</div>
-      <h2 style="font-size:22px;font-weight:800;margin-bottom:4px">Works Everywhere</h2>
-      <p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:24px;max-width:320px">One account works across all platforms. Book on your phone, check in on your watch, manage on your laptop.</p>
-      <div style="width:100%;max-width:360px">
-        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:16px;margin-bottom:8px;text-align:left">
-          <div style="width:42px;height:42px;background:rgba(34,197,94,.12);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px">\u2705</div>
-          <div><p style="font-weight:700;font-size:13px">Cross-Platform Sync</p><p style="color:rgba(255,255,255,.35);font-size:10px;margin-top:2px">Bookings, QR codes & wallet sync everywhere</p></div>
-        </div>
-        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:16px;margin-bottom:8px;text-align:left">
-          <div style="width:42px;height:42px;background:rgba(59,130,246,.12);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px">\ud83d\udd12</div>
-          <div><p style="font-weight:700;font-size:13px">Secure Sign-in</p><p style="color:rgba(255,255,255,.35);font-size:10px;margin-top:2px">Phone OTP \u2014 no passwords needed</p></div>
-        </div>
-        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:16px;text-align:left">
-          <div style="width:42px;height:42px;background:rgba(255,109,0,.12);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px">\u26a1</div>
-          <div><p style="font-weight:700;font-size:13px">Instant QR Entry</p><p style="color:rgba(255,255,255,.35);font-size:10px;margin-top:2px">Show your code at any ScanGym partner</p></div>
-        </div>
+
+    <!-- Screenshots carousel -->
+    <div style="margin-bottom:20px">
+      <h3 style="color:#fff;font-size:15px;font-weight:800;margin:0 0 10px">📸 Screenshots</h3>
+      <div style="display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:4px">
+        ${screenshots.map(function(s){return '<img src="'+s+'" style="width:140px;height:250px;border-radius:12px;object-fit:cover;flex-shrink:0;border:1px solid rgba(255,255,255,.08)" loading="lazy">';}).join('')}
+      </div>
+    </div>
+
+    <!-- Platform Stores Grid — Microsoft Store style -->
+    <h3 style="color:#fff;font-size:15px;font-weight:800;margin:0 0 12px">📥 Available On ${stores.length} Platforms</h3>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px">
+      ${stores.map(function(s){
+        var stars='★'.repeat(Math.floor(parseFloat(s.rating)))+(parseFloat(s.rating)%1>=0.5?'½':'');
+        return '<div onclick="window.open(\''+s.url+'\',\'_blank\')" style="cursor:pointer;display:flex;align-items:center;gap:12px;padding:14px;background:rgba(255,255,255,.03);border-radius:14px;border:1px solid rgba(255,255,255,.06);transition:.15s" onmouseenter="this.style.borderColor=\''+s.color+'50\';this.style.background=\''+s.color+'08\'" onmouseleave="this.style.borderColor=\'rgba(255,255,255,.06)\';this.style.background=\'rgba(255,255,255,.03)\'">'
+          +'<div style="width:46px;height:46px;background:'+s.color+'18;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">'+s.icon+'</div>'
+          +'<div style="flex:1;min-width:0">'
+          +'<div style="display:flex;align-items:center;gap:6px"><span style="color:#fff;font-size:14px;font-weight:700">'+s.name+'</span><span style="background:rgba(34,197,94,.15);color:#22c55e;font-size:8px;font-weight:800;padding:2px 6px;border-radius:4px">LIVE</span></div>'
+          +'<div style="display:flex;align-items:center;gap:8px;margin-top:2px">'
+          +'<span style="color:#fbbf24;font-size:10px">'+stars+'</span>'
+          +'<span style="color:rgba(255,255,255,.35);font-size:10px">'+s.rating+' ('+s.reviews+')</span>'
+          +'<span style="color:rgba(255,255,255,.2);font-size:10px">·</span>'
+          +'<span style="color:rgba(255,255,255,.3);font-size:10px">'+s.size+'</span>'
+          +'</div></div>'
+          +'<div style="background:'+s.color+'25;color:'+s.color+';font-size:11px;font-weight:700;padding:6px 14px;border-radius:8px;flex-shrink:0">Get</div>'
+          +'</div>';
+      }).join('')}
+    </div>
+
+    <!-- Features -->
+    <h3 style="color:#fff;font-size:15px;font-weight:800;margin:0 0 10px">✨ Features</h3>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px">
+      ${features.map(function(f){return '<span style="background:rgba(255,109,0,.08);border:1px solid rgba(255,109,0,.15);color:#FF6D00;font-size:11px;font-weight:600;padding:6px 12px;border-radius:20px">'+f+'</span>';}).join('')}
+    </div>
+
+    <!-- Reviews -->
+    <h3 style="color:#fff;font-size:15px;font-weight:800;margin:0 0 10px">⭐ Reviews</h3>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px">
+      ${reviews.map(function(r){
+        return '<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:14px">'
+          +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
+          +'<span style="font-size:18px">'+r.avatar+'</span>'
+          +'<span style="color:#fff;font-size:13px;font-weight:700">'+r.name+'</span>'
+          +'<span style="color:#fbbf24;font-size:11px">'+'★'.repeat(r.stars)+'</span>'
+          +'<span style="color:rgba(255,255,255,.25);font-size:10px;margin-left:auto">'+r.date+'</span>'
+          +'</div>'
+          +'<p style="color:rgba(255,255,255,.6);font-size:12px;line-height:1.5;margin:0">'+r.text+'</p>'
+          +'</div>';
+      }).join('')}
+    </div>
+
+    <!-- App Info -->
+    <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px">
+      <h3 style="color:#fff;font-size:14px;font-weight:700;margin:0 0 12px">ℹ️ App Information</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><p style="color:rgba(255,255,255,.3);font-size:10px;margin:0">Version</p><p style="color:#fff;font-size:13px;font-weight:600;margin:2px 0 0">2.1.0</p></div>
+        <div><p style="color:rgba(255,255,255,.3);font-size:10px;margin:0">Updated</p><p style="color:#fff;font-size:13px;font-weight:600;margin:2px 0 0">June 2026</p></div>
+        <div><p style="color:rgba(255,255,255,.3);font-size:10px;margin:0">Developer</p><p style="color:#fff;font-size:13px;font-weight:600;margin:2px 0 0">ScanGym Ltd</p></div>
+        <div><p style="color:rgba(255,255,255,.3);font-size:10px;margin:0">Category</p><p style="color:#fff;font-size:13px;font-weight:600;margin:2px 0 0">Health & Fitness</p></div>
+        <div><p style="color:rgba(255,255,255,.3);font-size:10px;margin:0">Compatibility</p><p style="color:#fff;font-size:13px;font-weight:600;margin:2px 0 0">iOS, Android, Windows, Web</p></div>
+        <div><p style="color:rgba(255,255,255,.3);font-size:10px;margin:0">Languages</p><p style="color:#fff;font-size:13px;font-weight:600;margin:2px 0 0">English (12 more)</p></div>
       </div>
     </div>
   </div>`;
@@ -18315,79 +18336,164 @@ function AppsPage(){
 
 function ChannelsPage(){
   // Kick off data load
-  setTimeout(function(){
-    _loadChannels();
-    var tc=document.querySelector('.sg-tab-content');if(tc)tc.style.overflowY='hidden';
-    var btns=document.querySelectorAll('.ch-side-btn');
-    var screens=document.querySelectorAll('.ch-screen');
-    window._showChScreen=function(idx){
-      screens.forEach(function(s,i){s.style.display=i===idx?'flex':'none';});
-      btns.forEach(function(b,i){b.style.background=i===idx?'rgba(59,130,246,.25)':'rgba(255,255,255,.08)';b.style.borderColor=i===idx?'rgba(59,130,246,.4)':'rgba(255,255,255,.06)';b.style.boxShadow=i===idx?'0 0 16px rgba(59,130,246,.2)':'none';});
-    };
-  },50);
+  setTimeout(function(){_loadChannels();},100);
+  // Telegram-style channels with messaging UI
+  var channels=[
+    {id:'telegram',name:'Telegram',icon:'✈️',color:'#0088cc',lastMsg:'Book your next gym session! 🏋️',time:'2m',unread:3,online:true},
+    {id:'whatsapp',name:'WhatsApp',icon:'💬',color:'#25D366',lastMsg:'Your QR code is ready for pickup',time:'15m',unread:1,online:true},
+    {id:'discord',name:'Discord',icon:'🎮',color:'#5865F2',lastMsg:'New gym added near you!',time:'1h',unread:0,online:true},
+    {id:'sms',name:'SMS',icon:'📱',color:'#34A853',lastMsg:'Booking confirmed: Iron House Gym',time:'3h',unread:0,online:false},
+    {id:'email',name:'Email',icon:'📧',color:'#EA4335',lastMsg:'Weekly workout summary ready',time:'5h',unread:2,online:false},
+    {id:'slack',name:'Slack',icon:'💼',color:'#4A154B',lastMsg:'Team workout challenge starts!',time:'1d',unread:0,online:true},
+    {id:'teams',name:'Teams',icon:'🟦',color:'#6264A7',lastMsg:'Fitness check-in reminder',time:'2d',unread:0,online:false},
+    {id:'chatgpt',name:'ChatGPT',icon:'🤖',color:'#10a37f',lastMsg:'Here\'s your personalized plan...',time:'3d',unread:0,online:true}
+  ];
+  var activeChat=window._sgActiveChannel||null;
+  var chatMsgs=window._sgChannelMsgs||{};
 
-  return`<div style="position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden">
-    <div class="sg-more-back" style="position:absolute;top:16px;left:16px;z-index:10" onclick="var tc=document.querySelector('.sg-tab-content');if(tc)tc.style.overflowY='auto';navigate('/more')">← Back</div>
-    <div style="position:fixed;right:10px;top:50%;transform:translateY(calc(-50% - 28px));display:flex;flex-direction:column;gap:14px;z-index:100">
-      <div class="ch-side-btn" onclick="_showChScreen(0)" style="width:46px;height:46px;background:rgba(59,130,246,.25);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;border:1px solid rgba(59,130,246,.4);transition:.2s;box-shadow:0 0 16px rgba(59,130,246,.2)" title="Home">🏠</div>
-      <div class="ch-side-btn" onclick="_showChScreen(1)" style="width:46px;height:46px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;border:1px solid rgba(255,255,255,.06);transition:.2s" title="Connected">✅</div>
-      <div class="ch-side-btn" onclick="_showChScreen(2)" style="width:46px;height:46px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;border:1px solid rgba(255,255,255,.06);transition:.2s" title="Available">🔗</div>
-      <div class="ch-side-btn" onclick="_showChScreen(3)" style="width:46px;height:46px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;border:1px solid rgba(255,255,255,.06);transition:.2s" title="Info">💡</div>
-    </div>
-    <div class="ch-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;padding-right:72px;text-align:center;background:linear-gradient(180deg,rgba(59,130,246,.08) 0%,#0a0a16 60%)">
-      <div style="font-size:56px;margin-bottom:12px">📡</div>
-      <h1 style="font-size:26px;font-weight:900;margin-bottom:6px">My Channels</h1>
-      <p style="color:rgba(255,255,255,.45);font-size:13px;max-width:320px;margin-bottom:20px">Connect your favourite apps to search & book gyms</p>
-      <div style="display:flex;gap:12px;margin-bottom:20px">
-        <div style="display:inline-flex;flex-direction:column;align-items:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:14px 18px;min-width:80px"><span style="font-size:26px;font-weight:900;color:#FF6D00" id="ch-connected-count">–</span><span style="font-size:9px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;margin-top:4px">Connected</span></div>
-        <div style="display:inline-flex;flex-direction:column;align-items:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:14px 18px;min-width:80px"><span style="font-size:26px;font-weight:900;color:#22c55e" id="ch-available-count">–</span><span style="font-size:9px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;margin-top:4px">Available</span></div>
-        <div style="display:inline-flex;flex-direction:column;align-items:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:14px 18px;min-width:80px"><span style="font-size:26px;font-weight:900;color:#3b82f6" id="ch-total-count">–</span><span style="font-size:9px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;margin-top:4px">Total</span></div>
-      </div>
-      <div style="padding:12px 24px;border-radius:16px;border:none;font-weight:700;font-size:15px;cursor:pointer;background:#3b82f6;color:#fff;box-shadow:0 4px 20px rgba(59,130,246,.3)" onclick="_showChScreen(2)">🔗 Connect a Channel</div>
-    </div>
-    <div class="ch-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;padding-right:72px;text-align:center;background:linear-gradient(180deg,rgba(34,197,94,.08) 0%,#0a0a16 60%)">
-      <div style="font-size:48px;margin-bottom:12px">✅</div>
-      <h2 style="font-size:22px;font-weight:800;margin-bottom:4px">Connected</h2>
-      <p style="color:rgba(255,255,255,.4);font-size:12px;margin-bottom:16px">Your active channel connections</p>
-      <div id="ch-connected-section" style="width:100%;max-width:400px">
-        <div id="ch-connected-list"><p style="color:rgba(255,255,255,.3);font-size:13px">No channels connected yet</p></div>
-      </div>
-    </div>
-    <div class="ch-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;padding-right:72px;text-align:center;background:linear-gradient(180deg,rgba(168,85,247,.08) 0%,#0a0a16 60%)">
-      <div style="font-size:48px;margin-bottom:12px">🔗</div>
-      <h2 style="font-size:22px;font-weight:800;margin-bottom:4px">Available</h2>
-      <p style="color:rgba(255,255,255,.4);font-size:12px;margin-bottom:16px">Connect new channels</p>
-      <div id="ch-available-section" style="width:100%;max-width:400px">
-        <div id="ch-available-list">
-          <div style="background:rgba(255,255,255,.04);border-radius:14px;padding:16px;margin-bottom:8px;height:72px;animation:skeletonPulse 1.8s ease-in-out infinite"></div>
-          <div style="background:rgba(255,255,255,.04);border-radius:14px;padding:16px;margin-bottom:8px;height:72px;animation:skeletonPulse 1.8s ease-in-out infinite;animation-delay:.2s"></div>
-          <div style="background:rgba(255,255,255,.04);border-radius:14px;padding:16px;margin-bottom:8px;height:72px;animation:skeletonPulse 1.8s ease-in-out infinite;animation-delay:.4s"></div>
+  // Init channel messaging functions
+  window._sgOpenChannel=function(chId){
+    window._sgActiveChannel=chId;
+    if(!window._sgChannelMsgs)window._sgChannelMsgs={};
+    if(!window._sgChannelMsgs[chId]){
+      var ch=channels.find(function(c){return c.id===chId;});
+      window._sgChannelMsgs[chId]=[
+        {role:'system',text:'Welcome to ScanGym on '+(ch?ch.name:'this channel')+'! 🏋️',time:'Just now'},
+        {role:'bot',text:'Hey! I\'m your ScanGym assistant. I can help you:\n\n🔍 Find gyms near you\n📅 Book day passes\n💪 Get workout tips\n📊 Track your progress\n\nJust type what you need!',time:'Just now'},
+      ];
+    }
+    render();
+    setTimeout(function(){var el=document.getElementById('sg-ch-msgs');if(el)el.scrollTop=el.scrollHeight;},100);
+  };
+  window._sgCloseChannel=function(){window._sgActiveChannel=null;render();};
+  window._sgChannelSend=function(){
+    var el=document.getElementById('sg-ch-input');
+    if(!el||!el.value.trim())return;
+    var chId=window._sgActiveChannel;
+    if(!chId)return;
+    var msg=el.value.trim();el.value='';
+    if(!window._sgChannelMsgs[chId])window._sgChannelMsgs[chId]=[];
+    window._sgChannelMsgs[chId].push({role:'user',text:msg,time:'Now'});
+    render();
+    setTimeout(function(){var el=document.getElementById('sg-ch-msgs');if(el)el.scrollTop=el.scrollHeight;},50);
+    // Auto-reply
+    setTimeout(async function(){
+      try{
+        var r=await fetch('/api/ai/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg,channel:chId}),credentials:'include'});
+        var d=await r.json();
+        window._sgChannelMsgs[chId].push({role:'bot',text:d.response||d.text||'I can help you find gyms! Try asking "find gyms near me" or "book a session".',time:'Now'});
+      }catch(e){
+        window._sgChannelMsgs[chId].push({role:'bot',text:'🏋️ I can help you book gyms, find locations, and get workout tips. What would you like to do?',time:'Now'});
+      }
+      render();
+      setTimeout(function(){var el=document.getElementById('sg-ch-msgs');if(el)el.scrollTop=el.scrollHeight;},50);
+    },800);
+  };
+
+  // If a channel is open, show chat view (Telegram-style)
+  if(activeChat){
+    var ch=channels.find(function(c){return c.id===activeChat;});
+    var msgs=chatMsgs[activeChat]||[];
+    return`<div style="position:absolute;inset:0;background:#0a0a16;display:flex;flex-direction:column;overflow:hidden">
+      <style>
+        @keyframes sgChFade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+        #sg-ch-msgs::-webkit-scrollbar{display:none}
+        #sg-ch-msgs{scrollbar-width:none}
+      </style>
+      <!-- Telegram-style header -->
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:rgba(0,0,0,.4);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0">
+        <button onclick="window._sgCloseChannel()" style="background:none;border:none;color:#fff;font-size:20px;cursor:pointer;padding:4px">←</button>
+        <div style="width:38px;height:38px;background:${ch?ch.color:'#FF6D00'}25;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${ch?ch.icon:'📡'}</div>
+        <div style="flex:1">
+          <h3 style="color:#fff;font-size:15px;font-weight:700;margin:0">${ch?ch.name:'Channel'}</h3>
+          <p style="color:${ch&&ch.online?'#22c55e':'rgba(255,255,255,.3)'};font-size:11px;margin:2px 0 0">${ch&&ch.online?'● online':'last seen recently'}</p>
+        </div>
+        <div style="display:flex;gap:8px">
+          <span style="color:rgba(255,255,255,.4);font-size:18px;cursor:pointer">📞</span>
+          <span style="color:rgba(255,255,255,.4);font-size:18px;cursor:pointer">⋮</span>
         </div>
       </div>
-      <div id="ch-coming-section" style="display:none;width:100%;max-width:400px;margin-top:12px">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.3);margin-bottom:8px">🔮 Coming Soon</div>
-        <div id="ch-coming-list"></div>
+      <!-- Messages — Telegram style -->
+      <div id="sg-ch-msgs" style="flex:1;overflow-y:auto;padding:12px 16px;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:6px">
+        ${msgs.map(function(m){
+          if(m.role==='system')return '<div style="text-align:center;margin:8px 0;animation:sgChFade .3s ease-out"><span style="background:rgba(255,255,255,.06);color:rgba(255,255,255,.4);font-size:11px;padding:4px 12px;border-radius:10px">'+m.text+'</span></div>';
+          if(m.role==='user')return '<div style="display:flex;justify-content:flex-end;animation:sgChFade .2s ease-out"><div style="max-width:80%;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:16px;border-bottom-right-radius:4px;padding:10px 14px"><p style="color:#fff;font-size:13.5px;line-height:1.5;margin:0;white-space:pre-wrap">'+m.text+'</p><p style="color:rgba(255,255,255,.5);font-size:9px;text-align:right;margin:4px 0 0">'+m.time+' ✓✓</p></div></div>';
+          return '<div style="display:flex;gap:8px;animation:sgChFade .2s ease-out"><div style="width:28px;height:28px;background:'+(ch?ch.color:'#FF6D00')+'25;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;margin-top:2px">'+(ch?ch.icon:'🤖')+'</div><div style="max-width:82%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:16px;border-top-left-radius:4px;padding:10px 14px"><p style="color:rgba(255,255,255,.85);font-size:13.5px;line-height:1.6;margin:0;white-space:pre-wrap">'+m.text+'</p><p style="color:rgba(255,255,255,.25);font-size:9px;margin:4px 0 0">'+m.time+'</p></div></div>';
+        }).join('')}
+      </div>
+      <!-- Quick actions — Telegram-style -->
+      <div style="display:flex;gap:6px;padding:6px 16px;overflow-x:auto;-webkit-overflow-scrolling:touch;flex-shrink:0">
+        <button onclick="window._sgChannelMsgs[window._sgActiveChannel].push({role:'user',text:'Find gyms near me',time:'Now'});render();setTimeout(function(){window._sgChannelSend=null;var el=document.getElementById('sg-ch-input');if(el)el.value='';},10);window._sgChannelSend&&window._sgChannelSend();" style="flex-shrink:0;background:rgba(255,109,0,.08);border:1px solid rgba(255,109,0,.15);color:#FF6D00;padding:6px 14px;border-radius:16px;font-size:11px;font-weight:600;cursor:pointer">🔍 Find Gyms</button>
+        <button onclick="document.getElementById('sg-ch-input').value='Book a day pass';window._sgChannelSend()" style="flex-shrink:0;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.15);color:#22c55e;padding:6px 14px;border-radius:16px;font-size:11px;font-weight:600;cursor:pointer">📅 Book Pass</button>
+        <button onclick="document.getElementById('sg-ch-input').value='Show my bookings';window._sgChannelSend()" style="flex-shrink:0;background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.15);color:#3b82f6;padding:6px 14px;border-radius:16px;font-size:11px;font-weight:600;cursor:pointer">📋 My Bookings</button>
+        <button onclick="document.getElementById('sg-ch-input').value='Workout plan';window._sgChannelSend()" style="flex-shrink:0;background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.15);color:#a855f7;padding:6px 14px;border-radius:16px;font-size:11px;font-weight:600;cursor:pointer">💪 Workout</button>
+      </div>
+      <!-- Input bar — Telegram style -->
+      <div style="display:flex;gap:8px;padding:8px 12px calc(12px + env(safe-area-inset-bottom,0px));background:rgba(0,0,0,.4);backdrop-filter:blur(16px);border-top:1px solid rgba(255,255,255,.06);align-items:flex-end;flex-shrink:0">
+        <span style="font-size:20px;cursor:pointer;padding:6px">📎</span>
+        <input id="sg-ch-input" type="text" placeholder="Message..." style="flex:1;padding:10px 14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:20px;color:#fff;font-size:14px;outline:none" onkeydown="if(event.key==='Enter'){event.preventDefault();window._sgChannelSend();}">
+        <button onclick="window._sgChannelSend()" style="width:38px;height:38px;background:#FF6D00;border:none;border-radius:50%;color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">➤</button>
+      </div>
+    </div>`;
+  }
+
+  // Channel list view — Telegram-style chat list
+  return`<div style="max-width:480px;margin:0 auto;padding:0 0 100px;overflow-y:auto">
+    <style>@keyframes sgChPulse{0%,100%{opacity:.6}50%{opacity:1}}</style>
+    <!-- Telegram-style header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 16px 12px;position:sticky;top:0;background:rgba(10,10,22,.95);backdrop-filter:blur(16px);z-index:10">
+      <div style="display:flex;align-items:center;gap:8px">
+        <button onclick="navigate('/more')" style="background:none;border:none;color:rgba(255,255,255,.5);font-size:18px;cursor:pointer">☰</button>
+        <h1 style="font-size:20px;font-weight:800;color:#fff;margin:0">Channels</h1>
+      </div>
+      <div style="display:flex;gap:8px">
+        <span style="color:rgba(255,255,255,.4);font-size:16px;cursor:pointer">🔍</span>
+        <span style="color:rgba(255,255,255,.4);font-size:16px;cursor:pointer">✏️</span>
       </div>
     </div>
-    <div class="ch-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;padding-right:72px;text-align:center;background:linear-gradient(180deg,rgba(255,109,0,.06) 0%,#0a0a16 60%)">
-      <div style="font-size:48px;margin-bottom:12px">💡</div>
-      <h2 style="font-size:22px;font-weight:800;margin-bottom:4px">How It Works</h2>
-      <p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:20px;max-width:300px">Connect a channel, get a welcome message, search & book gyms right from that app</p>
-      <div style="width:100%;max-width:360px">
-        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:16px;margin-bottom:8px;text-align:left">
-          <div style="width:42px;height:42px;background:rgba(59,130,246,.12);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px">1️⃣</div>
-          <div><p style="font-weight:700;font-size:13px">Connect</p><p style="color:rgba(255,255,255,.35);font-size:10px;margin-top:2px">Tap Connect on any channel</p></div>
-        </div>
-        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:16px;margin-bottom:8px;text-align:left">
-          <div style="width:42px;height:42px;background:rgba(34,197,94,.12);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px">2️⃣</div>
-          <div><p style="font-weight:700;font-size:13px">Message</p><p style="color:rgba(255,255,255,.35);font-size:10px;margin-top:2px">Say "Hi" to start the bot</p></div>
-        </div>
-        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:16px;text-align:left">
-          <div style="width:42px;height:42px;background:rgba(255,109,0,.12);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px">3️⃣</div>
-          <div><p style="font-weight:700;font-size:13px">Book</p><p style="color:rgba(255,255,255,.35);font-size:10px;margin-top:2px">Search & book gyms right from the app</p></div>
-        </div>
+
+    <!-- Stats bar — compact -->
+    <div id="ch-stats" style="display:flex;gap:8px;padding:0 16px 12px">
+      <div style="flex:1;background:rgba(255,109,0,.06);border:1px solid rgba(255,109,0,.1);border-radius:12px;padding:10px;text-align:center">
+        <div style="color:#FF6D00;font-size:18px;font-weight:900" id="ch-connected-count">–</div>
+        <div style="color:rgba(255,255,255,.3);font-size:9px;font-weight:700;text-transform:uppercase">Connected</div>
+      </div>
+      <div style="flex:1;background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.1);border-radius:12px;padding:10px;text-align:center">
+        <div style="color:#22c55e;font-size:18px;font-weight:900" id="ch-available-count">–</div>
+        <div style="color:rgba(255,255,255,.3);font-size:9px;font-weight:700;text-transform:uppercase">Available</div>
+      </div>
+      <div style="flex:1;background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.1);border-radius:12px;padding:10px;text-align:center">
+        <div style="color:#3b82f6;font-size:18px;font-weight:900" id="ch-total-count">–</div>
+        <div style="color:rgba(255,255,255,.3);font-size:9px;font-weight:700;text-transform:uppercase">Total</div>
       </div>
     </div>
+
+    <!-- Chat list — Telegram style -->
+    <div style="display:flex;flex-direction:column">
+      ${channels.map(function(ch){
+        return '<div onclick="window._sgOpenChannel(\''+ch.id+'\')" style="display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;transition:.15s;border-bottom:1px solid rgba(255,255,255,.03)" onmouseenter="this.style.background=\'rgba(255,255,255,.04)\'" onmouseleave="this.style.background=\'transparent\'">'+
+          '<div style="position:relative;flex-shrink:0">'+
+          '<div style="width:48px;height:48px;background:'+ch.color+'20;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px">'+ch.icon+'</div>'+
+          (ch.online?'<div style="position:absolute;bottom:0;right:0;width:12px;height:12px;background:#22c55e;border-radius:50%;border:2px solid #0a0a16"></div>':'')+
+          '</div>'+
+          '<div style="flex:1;min-width:0">'+
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">'+
+          '<span style="color:#fff;font-size:14px;font-weight:700">'+ch.name+'</span>'+
+          '<span style="color:rgba(255,255,255,.25);font-size:11px">'+ch.time+'</span>'+
+          '</div>'+
+          '<div style="display:flex;justify-content:space-between;align-items:center">'+
+          '<p style="color:rgba(255,255,255,.4);font-size:12px;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:calc(100% - 30px)">'+ch.lastMsg+'</p>'+
+          (ch.unread>0?'<span style="background:#FF6D00;color:#fff;font-size:10px;font-weight:800;min-width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 5px;flex-shrink:0">'+ch.unread+'</span>':'')+
+          '</div>'+
+          '</div>'+
+          '</div>';
+      }).join('')}
+    </div>
+
+    <!-- Connected/Available sections from API (hidden, populated by _loadChannels) -->
+    <div id="ch-connected-section" style="display:none"><div id="ch-connected-list"></div></div>
+    <div id="ch-available-section" style="display:none"><div id="ch-available-list"></div></div>
+    <div id="ch-coming-section" style="display:none"><div id="ch-coming-list"></div></div>
   </div>`;
 }
 
