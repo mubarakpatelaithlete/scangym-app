@@ -9510,44 +9510,55 @@ window.showBookingCheckout=async function(gymId, prefillDate, prefillTime){
         if(isNaN(parseInt(gymId))){
           try{const ensured=await fetch('/api/live/ensure-gym',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({placeId:gymId})}).then(r=>r.json());if(ensured.gymId)dbGymId=ensured.gymId;}catch(e){}
         }
-        const result=await fetch('/api/payment/quick-checkout',{
+        const resp=await fetch('/api/payment/quick-checkout',{
           method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
           body:JSON.stringify({gymId:parseInt(dbGymId),placeId:gymId,date:cs.selectedDate,time:cs.selectedTime,email,gymName:gymName,gymAddress:gymAddr,passType:cs.selectedPass||'day',savedCardId:cs.savedCardId,referral_code:cs.referralCode||undefined})
-        }).then(r=>r.json());
-        /* ── SCA/3D Secure fix: Handle 402 requiresAuth response ── */
+        });
+        // BUG FIX: Check HTTP status before parsing JSON
+        if(resp.status===401){
+          sgToast('Session expired — please sign in again','error',5000);
+          btn.disabled=false;btnText.textContent='⚡ Book Now · '+displayPriceStr;
+          navigate('/login');return;
+        }
+        if(resp.status===429){
+          sgToast('Too many requests — please wait a minute','error',5000);
+          btn.disabled=false;btnText.textContent='⚡ Book Now · '+displayPriceStr;return;
+        }
+        let result;
+        try{result=await resp.json();}catch(parseErr){
+          console.error('Response parse error:',parseErr);
+          sgToast('Server error — please try again','error',5000);
+          btn.disabled=false;btnText.textContent='⚡ Book Now · '+displayPriceStr;return;
+        }
+        // BUG FIX: Handle SCA / 3D Secure authentication required
         if(result.requiresAuth&&result.clientSecret){
-          btnText.textContent='🔐 Authenticating card…';
+          btnText.innerHTML='<span class="sg-spinner" style="width:18px;height:18px;display:inline-block"></span> Authenticating card…';
           try{
             await ensureStripeLoaded();
-            const stripe=window.Stripe(STRIPE_PK);
-            const {error:scaErr,paymentIntent}=await stripe.confirmCardPayment(result.clientSecret);
-            if(scaErr){
-              sgToast(scaErr.message||'Card authentication failed','error',6000);
-              btn.disabled=false;btnText.textContent='Confirm and pay · '+displayPriceStr;
-            }else if(paymentIntent&&paymentIntent.status==='succeeded'){
-              /* SCA passed — confirm booking on backend */
-              const confirmRes=await fetch('/api/payment/confirm-sca',{
-                method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
-                body:JSON.stringify({paymentIntentId:paymentIntent.id,gymId:parseInt(dbGymId),placeId:gymId,date:cs.selectedDate,time:cs.selectedTime,email,gymName:gymName,gymAddress:gymAddr,passType:cs.selectedPass||'day'})
-              }).then(r=>r.json());
-              if(confirmRes.success){
-                state.lastBooking=confirmRes.booking;state.lastQR=confirmRes.qr;state.lastAccess=confirmRes.access||null;
-                try{localStorage.setItem('sg_last_booking',JSON.stringify(confirmRes.booking));localStorage.setItem('sg_last_qr',JSON.stringify(confirmRes.qr));}catch(e){}
-                closeBookingSheet();navigate('/booking-success?session_id=sca&booking_id='+confirmRes.booking.id);
-                if(navigator.vibrate)navigator.vibrate([50,30,80]);
-                sgToast('✅ Payment authenticated! QR code ready','success',3000);
-              }else{
-                sgToast(confirmRes.error||'Booking confirmation failed','error',6000);
-                btn.disabled=false;btnText.textContent='Confirm and pay · '+displayPriceStr;
-              }
-            }else{
-              sgToast('Card authentication incomplete. Please try again.','error',5000);
-              btn.disabled=false;btnText.textContent='Confirm and pay · '+displayPriceStr;
+            const stripeInstance=window.Stripe(STRIPE_PK);
+            const{error:scaError,paymentIntent}=await stripeInstance.confirmCardPayment(result.clientSecret);
+            if(scaError){
+              sgToast(scaError.message||'Card authentication failed','error',6000);
+              btn.disabled=false;btnText.textContent='⚡ Book Now · '+displayPriceStr;return;
             }
-          }catch(scaE){
-            console.error('SCA auth error:',scaE);
-            sgToast('Authentication error. Please try again.','error',5000);
-            btn.disabled=false;btnText.textContent='Confirm and pay · '+displayPriceStr;
+            // SCA succeeded — confirm on backend
+            if(paymentIntent&&paymentIntent.status==='succeeded'){
+              const confirmResp=await fetch('/api/payment/confirm-intent',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({bookingId:result.bookingId||paymentIntent.metadata?.bookingId,paymentIntentId:paymentIntent.id,email})}).then(r=>r.json());
+              if(confirmResp.success){
+                state.lastBooking=confirmResp.booking;state.lastQR=confirmResp.qr;state.lastAccess=confirmResp.access||null;
+                try{localStorage.setItem('sg_last_booking',JSON.stringify(confirmResp.booking));localStorage.setItem('sg_last_qr',JSON.stringify(confirmResp.qr));}catch(e){}
+                closeBookingSheet();navigate('/booking-success?session_id=sca&booking_id='+(confirmResp.booking?.id||''));
+                if(navigator.vibrate)navigator.vibrate([50,30,80]);
+                sgToast('✅ Card verified & booked!','success',3000);
+              }else{
+                sgToast(confirmResp.error||'Booking confirmation failed after card auth','error',6000);
+                btn.disabled=false;btnText.textContent='⚡ Book Now · '+displayPriceStr;
+              }
+            }
+          }catch(scaErr){
+            console.error('SCA error:',scaErr);
+            sgToast('Card authentication failed — try a different card','error',6000);
+            btn.disabled=false;btnText.textContent='⚡ Book Now · '+displayPriceStr;
           }
           return;
         }
@@ -9561,12 +9572,12 @@ window.showBookingCheckout=async function(gymId, prefillDate, prefillTime){
           sgToast(result.access?'🔓 Booked + door access ready!':'⚡ Booked instantly! QR code ready','success',3000);
         }else{
           const errMsg=result.detail||result.error||'Quick checkout failed';sgToast(errMsg,'error',6000);
-          btn.disabled=false;btnText.textContent='Confirm and pay · '+displayPriceStr;
+          btn.disabled=false;btnText.textContent='⚡ Book Now · '+displayPriceStr;
         }
       }catch(e){
         console.error('Quick checkout error:',e);
         sgToast('Something went wrong. Please try again','error',5000);
-        btn.disabled=false;btnText.textContent='Confirm and pay · '+displayPriceStr;
+        btn.disabled=false;btnText.textContent='⚡ Book Now · '+displayPriceStr;
       }
       return;
     }
@@ -12678,6 +12689,213 @@ function _sgChatCopy(idx){
     sgToast('Copied to clipboard','success',1500);
   }
 }
+
+// ═══════════════════════════════════════════════════════════════
+//  Trainer Tab — AI Personal Trainer (proper tab like Music/Photos)
+// ═══════════════════════════════════════════════════════════════
+if(!window._sgTrainer)window._sgTrainer={msgs:[],typing:false,history:[],activeScreen:0};
+// Clean up legacy patches-v3 trainer DOM if it exists
+(function(){var old=document.getElementById('sg-ait-c2');if(old)old.remove();var oldBtn=document.getElementById('sg-ait-btn');if(oldBtn)oldBtn.remove();})();
+
+function _sgTrainerSend(prefill){
+  var input=document.getElementById('sg-trainer-input');
+  var text=prefill||(input?input.value.trim():'');
+  if(!text)return;
+  if(input){input.value='';input.style.height='44px';}
+  var t=window._sgTrainer;
+  t.msgs.push({role:'user',text:text,ts:Date.now()});
+  t.typing=true;
+  // Switch to chat screen
+  t.activeScreen=1;
+  render();
+  setTimeout(function(){var c=document.getElementById('sg-trainer-msgs');if(c)c.scrollTop=c.scrollHeight;},50);
+  fetch('/api/ai-trainer/chat',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    credentials:'include',
+    body:JSON.stringify({message:text,history:t.history.slice(-8)})
+  }).then(function(r){return r.json();}).then(function(d){
+    var reply=d.reply||"I'm here to help! Tell me your fitness goal and I'll create a plan. 💪";
+    t.msgs.push({role:'assistant',text:reply,ts:Date.now(),actions:d.actions||[]});
+    t.history.push({role:'user',content:text});
+    t.history.push({role:'assistant',content:reply});
+    t.typing=false;
+    render();
+    setTimeout(function(){var c=document.getElementById('sg-trainer-msgs');if(c)c.scrollTop=c.scrollHeight;},50);
+  }).catch(function(){
+    t.msgs.push({role:'assistant',text:"Connection hiccup — try again! Meanwhile: progressive overload (add 2.5kg/week) is the #1 way to build muscle. 💪",ts:Date.now()});
+    t.typing=false;
+    render();
+  });
+}
+
+window._sgTrainerSend=_sgTrainerSend;
+
+window._sgTrainerKeydown=function(e){
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();_sgTrainerSend();}
+};
+
+window._sgTrainerAutoGrow=function(el){
+  el.style.height='44px';
+  el.style.height=Math.min(el.scrollHeight,120)+'px';
+};
+
+window._showTrainerScreen=function(idx){
+  window._sgTrainer.activeScreen=idx;
+  var btns=document.querySelectorAll('.trainer-side-btn');
+  var screens=document.querySelectorAll('.trainer-screen');
+  screens.forEach(function(s,i){s.style.display=i===idx?'flex':'none';});
+  btns.forEach(function(b,i){
+    b.style.background=i===idx?'rgba(255,109,0,.25)':'rgba(255,255,255,.08)';
+    b.style.borderColor=i===idx?'rgba(255,109,0,.4)':'rgba(255,255,255,.06)';
+    b.style.boxShadow=i===idx?'0 0 16px rgba(255,109,0,.2)':'none';
+  });
+};
+
+function TrainerTabPage(){
+  var t=window._sgTrainer;
+  var activeScreen=t.activeScreen||0;
+  var msgs=t.msgs;
+  var isTyping=t.typing;
+  var isEmpty=msgs.length===0;
+
+  // Ensure overflow hidden on tab content container (fullscreen mode)
+  setTimeout(function(){
+    var tc=document.querySelector('.sg-tab-content');if(tc)tc.style.overflowY='hidden';
+    var btns=document.querySelectorAll('.trainer-side-btn');
+    var screens=document.querySelectorAll('.trainer-screen');
+    if(btns.length&&screens.length){
+      screens.forEach(function(s,i){s.style.display=i===activeScreen?'flex':'none';});
+      btns.forEach(function(b,i){
+        b.style.background=i===activeScreen?'rgba(255,109,0,.25)':'rgba(255,255,255,.08)';
+        b.style.borderColor=i===activeScreen?'rgba(255,109,0,.4)':'rgba(255,255,255,.06)';
+        b.style.boxShadow=i===activeScreen?'0 0 16px rgba(255,109,0,.2)':'none';
+      });
+    }
+    // Auto-scroll chat if on chat screen
+    if(activeScreen===1){var c=document.getElementById('sg-trainer-msgs');if(c)c.scrollTop=c.scrollHeight;}
+  },50);
+
+  var suggestions=[
+    {icon:'\ud83d\udcaa',text:'Create a workout plan'},
+    {icon:'\ud83d\udd25',text:'Best exercises for fat loss'},
+    {icon:'\ud83c\udf57',text:'How much protein do I need?'},
+    {icon:'\ud83d\udcca',text:'Calculate my 1 rep max'},
+    {icon:'\ud83c\udfcb\ufe0f',text:'Push pull legs split'},
+    {icon:'\ud83e\uddd8',text:'Recovery & stretching tips'},
+  ];
+
+  // ── Build messages HTML for chat screen ──
+  var msgsHtml='';
+  if(isEmpty){
+    msgsHtml='<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px">'
+      +'<div style="font-size:56px;margin-bottom:12px">\ud83e\udd16</div>'
+      +'<h3 style="color:#fff;font-size:18px;font-weight:800;margin:0 0 8px">Start a conversation</h3>'
+      +'<p style="color:rgba(255,255,255,.4);font-size:13px;margin:0 0 20px;max-width:260px">Ask about workouts, nutrition, recovery \u2014 I\'ll create personalised plans</p>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;max-width:300px">'
+      +suggestions.map(function(s){
+        return '<button onclick="_sgTrainerSend(\''+s.text+'\')" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:10px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:8px;transition:.15s;color:rgba(255,255,255,.7);font-size:11px;font-weight:600" ontouchstart="this.style.background=\'rgba(255,109,0,.1)\'" ontouchend="this.style.background=\'rgba(255,255,255,.04)\'"><span style="font-size:16px">'+s.icon+'</span><span>'+s.text+'</span></button>';
+      }).join('')
+      +'</div></div>';
+  }else{
+    msgsHtml=msgs.map(function(m){
+      if(m.role==='user'){
+        return '<div style="align-self:flex-end;max-width:85%"><div style="background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff;padding:12px 16px;border-radius:18px 18px 4px 18px;font-size:14px;line-height:1.5;font-weight:500">'+m.text.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</div><div style="text-align:right;margin-top:4px"><span style="color:rgba(255,255,255,.2);font-size:10px">'+new Date(m.ts).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+'</span></div></div>';
+      }else{
+        return '<div style="align-self:flex-start;max-width:85%;display:flex;gap:8px"><div style="width:28px;height:28px;background:linear-gradient(135deg,#FF6D00,#ff8533);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;margin-top:2px">\ud83e\udd16</div><div><div style="background:rgba(255,255,255,.06);color:rgba(255,255,255,.9);padding:12px 16px;border-radius:4px 18px 18px 18px;font-size:14px;line-height:1.6;border:1px solid rgba(255,255,255,.06)">'+m.text.replace(/\n/g,'<br>').replace(/\*\*(.+?)\*\*/g,'<strong style="color:#FF6D00">$1</strong>')+'</div><div style="margin-top:4px"><span style="color:rgba(255,255,255,.2);font-size:10px">'+new Date(m.ts).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+'</span></div></div></div>';
+      }
+    }).join('');
+    if(isTyping){
+      msgsHtml+='<div style="align-self:flex-start;display:flex;gap:8px"><div style="width:28px;height:28px;background:linear-gradient(135deg,#FF6D00,#ff8533);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">\ud83e\udd16</div><div style="background:rgba(255,255,255,.06);padding:12px 16px;border-radius:4px 18px 18px 18px;border:1px solid rgba(255,255,255,.06)"><div style="display:flex;gap:4px"><span style="width:6px;height:6px;background:rgba(255,255,255,.4);border-radius:50%;animation:sgDot 1.4s ease-in-out infinite"></span><span style="width:6px;height:6px;background:rgba(255,255,255,.4);border-radius:50%;animation:sgDot 1.4s ease-in-out .2s infinite"></span><span style="width:6px;height:6px;background:rgba(255,255,255,.4);border-radius:50%;animation:sgDot 1.4s ease-in-out .4s infinite"></span></div></div></div>';
+    }
+  }
+
+  return`<div style="position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden">
+    <!-- Right-side navigation buttons -->
+    <div style="position:fixed;right:10px;top:50%;transform:translateY(calc(-50% - 28px));display:flex;flex-direction:column;gap:14px;z-index:100">
+      <div class="trainer-side-btn" onclick="_showTrainerScreen(0)" style="width:46px;height:46px;background:rgba(255,109,0,.25);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;border:1px solid rgba(255,109,0,.4);transition:.2s;box-shadow:0 0 16px rgba(255,109,0,.2)" title="Home">\ud83c\udfe0</div>
+      <div class="trainer-side-btn" onclick="_showTrainerScreen(1)" style="width:46px;height:46px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;border:1px solid rgba(255,255,255,.06);transition:.2s" title="Chat">\ud83d\udcac</div>
+      <div class="trainer-side-btn" onclick="_showTrainerScreen(2)" style="width:46px;height:46px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;border:1px solid rgba(255,255,255,.06);transition:.2s" title="Plans">\ud83d\udcdd</div>
+      <div class="trainer-side-btn" onclick="_showTrainerScreen(3)" style="width:46px;height:46px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;border:1px solid rgba(255,255,255,.06);transition:.2s" title="Progress">\ud83d\udcc8</div>
+    </div>
+
+    <!-- Screen 0: Trainer Home -->
+    <div class="trainer-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;padding-right:72px;text-align:center;background:linear-gradient(180deg,rgba(255,109,0,.08) 0%,#0a0a16 60%);overflow:hidden">
+      <div style="width:80px;height:80px;background:linear-gradient(135deg,#FF6D00,#ff8533);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:38px;margin-bottom:16px;box-shadow:0 8px 32px rgba(255,109,0,.3)">\ud83e\udd16</div>
+      <h1 style="font-size:26px;font-weight:900;margin-bottom:6px">AI Personal Trainer</h1>
+      <p style="color:rgba(255,255,255,.4);font-size:13px;max-width:280px;margin-bottom:20px">Science-backed \u2022 Personalised \u2022 24/7 Available</p>
+      <div style="display:flex;gap:12px;margin-bottom:24px">
+        <div style="display:inline-flex;flex-direction:column;align-items:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:14px 18px;min-width:80px"><span style="font-size:26px;font-weight:900;color:#FF6D00">`+msgs.length+`</span><span style="font-size:9px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;margin-top:4px">Messages</span></div>
+        <div style="display:inline-flex;flex-direction:column;align-items:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:14px 18px;min-width:80px"><span style="font-size:26px;font-weight:900;color:#22c55e">\u221e</span><span style="font-size:9px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;margin-top:4px">Sessions</span></div>
+        <div style="display:inline-flex;flex-direction:column;align-items:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:14px 18px;min-width:80px"><span style="font-size:26px;font-weight:900;color:#a855f7">AI</span><span style="font-size:9px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;margin-top:4px">Powered</span></div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <div onclick="_showTrainerScreen(1)" style="padding:14px 28px;border-radius:16px;border:none;font-weight:700;font-size:15px;cursor:pointer;background:#FF6D00;color:#fff;box-shadow:0 4px 20px rgba(255,109,0,.3);display:inline-flex;align-items:center;gap:8px;transition:.15s">\ud83d\udcac Start Chat</div>
+        <div onclick="_showTrainerScreen(2)" style="padding:14px 28px;border-radius:16px;border:none;font-weight:700;font-size:15px;cursor:pointer;background:rgba(255,255,255,.06);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.1);display:inline-flex;align-items:center;gap:8px;transition:.15s">\ud83d\udcdd My Plans</div>
+      </div>
+    </div>
+
+    <!-- Screen 1: Chat (fullscreen, fixed, messages area with input at bottom) -->
+    <div class="trainer-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;padding-right:60px;background:linear-gradient(180deg,#0a0a16 0%,#0d0d1a 100%);overflow:hidden">
+      <div style="padding:14px 16px 10px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:36px;height:36px;background:linear-gradient(135deg,#FF6D00,#ff8533);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">\ud83e\udd16</div>
+          <div style="flex:1"><h3 style="color:#fff;font-size:15px;font-weight:800;margin:0">AI Trainer</h3><p style="color:rgba(255,255,255,.3);font-size:10px;margin:2px 0 0">Online \u2022 Ready to help</p></div>
+          <div style="width:8px;height:8px;background:#22c55e;border-radius:50%;box-shadow:0 0 8px rgba(34,197,94,.5)"></div>
+        </div>
+      </div>
+      <div id="sg-trainer-msgs" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px">`+msgsHtml+`</div>
+      <div style="padding:8px 12px 12px;border-top:1px solid rgba(255,255,255,.06);flex-shrink:0;background:rgba(8,8,18,.95)">
+        <div style="display:flex;gap:8px;align-items:flex-end">
+          <textarea id="sg-trainer-input" placeholder="Ask your trainer anything..." rows="1" onkeydown="_sgTrainerKeydown(event)" oninput="_sgTrainerAutoGrow(this)" style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:22px;color:#fff;font-size:14px;padding:12px 16px;resize:none;outline:none;height:44px;max-height:120px;font-family:inherit;line-height:1.4;transition:border-color .2s" onfocus="this.style.borderColor='rgba(255,109,0,.4)'" onblur="this.style.borderColor='rgba(255,255,255,.1)'"></textarea>
+          <button onclick="_sgTrainerSend()" style="width:44px;height:44px;background:linear-gradient(135deg,#FF6D00,#E66200);border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;box-shadow:0 4px 16px rgba(255,109,0,.3);transition:.15s" ontouchstart="this.style.transform='scale(.9)'" ontouchend="this.style.transform=''">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2" fill="rgba(255,255,255,.15)"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 2: Plans (fixed fullscreen) -->
+    <div class="trainer-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;padding-right:72px;text-align:center;background:linear-gradient(180deg,rgba(168,85,247,.06) 0%,#0a0a16 60%);overflow:hidden">
+      <div style="font-size:56px;margin-bottom:12px">\ud83d\udcdd</div>
+      <h2 style="font-size:22px;font-weight:800;margin-bottom:4px">Workout Plans</h2>
+      <p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:24px">AI-generated plans tailored to your goals</p>
+      <div style="width:100%;max-width:380px">
+        <div onclick="_sgTrainerSend('Create a push/pull/legs workout split for me')" style="display:flex;align-items:center;gap:14px;padding:16px;background:rgba(255,255,255,.04);border-radius:16px;border:1px solid rgba(255,255,255,.06);margin-bottom:10px;cursor:pointer;text-align:left;transition:.15s" ontouchstart="this.style.background='rgba(255,109,0,.08)'" ontouchend="this.style.background='rgba(255,255,255,.04)'">
+          <div style="width:44px;height:44px;background:linear-gradient(135deg,#FF6D00,#ff8533);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">\ud83c\udfcb\ufe0f</div>
+          <div><div style="color:#fff;font-size:14px;font-weight:700">Push / Pull / Legs</div><div style="color:rgba(255,255,255,.4);font-size:12px;margin-top:2px">Classic 6-day muscle-building split</div></div>
+        </div>
+        <div onclick="_sgTrainerSend('Create a full body workout plan for beginners')" style="display:flex;align-items:center;gap:14px;padding:16px;background:rgba(255,255,255,.04);border-radius:16px;border:1px solid rgba(255,255,255,.06);margin-bottom:10px;cursor:pointer;text-align:left;transition:.15s" ontouchstart="this.style.background='rgba(255,109,0,.08)'" ontouchend="this.style.background='rgba(255,255,255,.04)'">
+          <div style="width:44px;height:44px;background:linear-gradient(135deg,#22c55e,#16a34a);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">\ud83d\udcaa</div>
+          <div><div style="color:#fff;font-size:14px;font-weight:700">Full Body Beginner</div><div style="color:rgba(255,255,255,.4);font-size:12px;margin-top:2px">3-day introduction to strength training</div></div>
+        </div>
+        <div onclick="_sgTrainerSend('Create a fat loss meal plan with macros')" style="display:flex;align-items:center;gap:14px;padding:16px;background:rgba(255,255,255,.04);border-radius:16px;border:1px solid rgba(255,255,255,.06);margin-bottom:10px;cursor:pointer;text-align:left;transition:.15s" ontouchstart="this.style.background='rgba(255,109,0,.08)'" ontouchend="this.style.background='rgba(255,255,255,.04)'">
+          <div style="width:44px;height:44px;background:linear-gradient(135deg,#f59e0b,#d97706);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">\ud83e\udd57</div>
+          <div><div style="color:#fff;font-size:14px;font-weight:700">Fat Loss Nutrition</div><div style="color:rgba(255,255,255,.4);font-size:12px;margin-top:2px">Macro-optimised meal plan with shopping list</div></div>
+        </div>
+        <div onclick="_sgTrainerSend('Create a Couch to 5K running plan')" style="display:flex;align-items:center;gap:14px;padding:16px;background:rgba(255,255,255,.04);border-radius:16px;border:1px solid rgba(255,255,255,.06);cursor:pointer;text-align:left;transition:.15s" ontouchstart="this.style.background='rgba(255,109,0,.08)'" ontouchend="this.style.background='rgba(255,255,255,.04)'">
+          <div style="width:44px;height:44px;background:linear-gradient(135deg,#3b82f6,#2563eb);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">\ud83c\udfc3</div>
+          <div><div style="color:#fff;font-size:14px;font-weight:700">Couch to 5K</div><div style="color:rgba(255,255,255,.4);font-size:12px;margin-top:2px">8-week beginner running programme</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 3: Progress (fixed fullscreen) -->
+    <div class="trainer-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;padding-right:72px;text-align:center;background:linear-gradient(180deg,rgba(34,197,94,.06) 0%,#0a0a16 60%);overflow:hidden">
+      <div style="font-size:56px;margin-bottom:12px">\ud83d\udcc8</div>
+      <h2 style="font-size:22px;font-weight:800;margin-bottom:4px">Your Progress</h2>
+      <p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:24px;max-width:280px">Track workouts, log exercises, and watch your gains</p>
+      <div style="display:flex;gap:12px;margin-bottom:24px">
+        <div style="display:inline-flex;flex-direction:column;align-items:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:14px 18px;min-width:80px"><span style="font-size:26px;font-weight:900;color:#22c55e">0</span><span style="font-size:9px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;margin-top:4px">Workouts</span></div>
+        <div style="display:inline-flex;flex-direction:column;align-items:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:14px 18px;min-width:80px"><span style="font-size:26px;font-weight:900;color:#FF6D00">0</span><span style="font-size:9px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;margin-top:4px">Streak</span></div>
+        <div style="display:inline-flex;flex-direction:column;align-items:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:14px 18px;min-width:80px"><span style="font-size:26px;font-weight:900;color:#a855f7">0</span><span style="font-size:9px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;margin-top:4px">Exercises</span></div>
+      </div>
+      <div onclick="_sgTrainerSend('Log my workout: bench press 3x8 at 80kg, squats 4x6 at 100kg')" style="padding:14px 28px;border-radius:16px;border:none;font-weight:700;font-size:15px;cursor:pointer;background:#22c55e;color:#fff;box-shadow:0 4px 20px rgba(34,197,94,.3);display:inline-flex;align-items:center;gap:8px;transition:.15s;margin-bottom:12px">\u2795 Log Workout</div>
+      <div onclick="_sgTrainerSend('Show me my workout progress and suggest improvements')" style="padding:14px 28px;border-radius:16px;border:none;font-weight:700;font-size:15px;cursor:pointer;background:rgba(255,255,255,.06);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.1);display:inline-flex;align-items:center;gap:8px;transition:.15s">\ud83d\udcca View Progress</div>
+    </div>
+  </div>`;
+}
+
 
 function ChatTabPage(){
   var chat=window._sgChat;
