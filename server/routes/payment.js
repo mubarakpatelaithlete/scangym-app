@@ -904,6 +904,71 @@ router.post('/quick-checkout', async (req, res) => {
 
 
 // ═══════════════════════════════════════════════════════════════════════════
+//  3B. CONFIRM SCA — After 3D Secure authentication completes on frontend
+//      Creates booking + generates QR code for authenticated payment
+// ═══════════════════════════════════════════════════════════════════════════
+
+router.post('/confirm-sca', authenticateUser, express.json(), async (req, res) => {
+  try {
+    const { paymentIntentId, gymId, placeId, date, time, email, gymName, gymAddress, passType } = req.body;
+    if (!paymentIntentId) return res.status(400).json({ error: 'paymentIntentId required' });
+
+    // Verify payment intent succeeded
+    const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
+    if (pi.status !== 'succeeded') {
+      return res.status(400).json({ error: 'Payment not completed', status: pi.status });
+    }
+
+    // Create booking
+    const bookingResult = await pool.query(
+      `INSERT INTO bookings (user_id, gym_id, place_id, date, time, status, payment_intent_id, amount_pence, pass_type, customer_email, gym_name, gym_address, created_at)
+       VALUES ($1, $2, $3, $4, $5, 'confirmed', $6, $7, $8, $9, $10, $11, NOW())
+       RETURNING *`,
+      [req.user.id, gymId || null, placeId || null, date, time || '00:00', paymentIntentId, pi.amount, passType || 'day', email, gymName, gymAddress]
+    ).catch(async () => {
+      // Fallback if columns missing
+      const r = await pool.query(
+        `INSERT INTO bookings (user_id, gym_id, date, status, payment_intent_id, created_at) VALUES ($1, $2, $3, 'confirmed', $4, NOW()) RETURNING *`,
+        [req.user.id, gymId, date, paymentIntentId]
+      );
+      return r;
+    });
+
+    const booking = bookingResult.rows[0];
+
+    // Generate QR code
+    let qr = { dataUrl: null, code: null };
+    try {
+      const qrCode = 'SG-' + booking.id + '-' + Date.now().toString(36).toUpperCase();
+      const QRCode = require('qrcode');
+      const qrDataUrl = await QRCode.toDataURL(JSON.stringify({ bookingId: booking.id, code: qrCode, gym: gymName, date, time }), { width: 300, margin: 2 });
+      qr = { dataUrl: qrDataUrl, code: qrCode };
+
+      // Store QR in DB
+      await pool.query(
+        'UPDATE bookings SET qr_code = $1, qr_data_url = $2 WHERE id = $3',
+        [qrCode, qrDataUrl, booking.id]
+      ).catch(() => {});
+    } catch (qrErr) {
+      console.error('[SCA] QR generation error:', qrErr.message);
+    }
+
+    console.log(`[SCA] Booking ${booking.id} confirmed after 3DS auth — PI ${paymentIntentId}`);
+
+    res.json({
+      success: true,
+      booking: { id: booking.id, status: 'confirmed', date, time, passType, gymName },
+      qr,
+      access: null
+    });
+  } catch (err) {
+    console.error('[SCA] Confirm error:', err.message);
+    res.status(500).json({ error: 'Failed to confirm booking after authentication', detail: err.message });
+  }
+});
+
+
+// ═══════════════════════════════════════════════════════════════════════════
 //  4. FIRST-TIME CARD PAYMENT — Stripe Elements (fallback for new users)
 //     After this payment, card is AUTO-SAVED for future 1-tap bookings.
 // ═══════════════════════════════════════════════════════════════════════════

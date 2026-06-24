@@ -9514,6 +9514,43 @@ window.showBookingCheckout=async function(gymId, prefillDate, prefillTime){
           method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
           body:JSON.stringify({gymId:parseInt(dbGymId),placeId:gymId,date:cs.selectedDate,time:cs.selectedTime,email,gymName:gymName,gymAddress:gymAddr,passType:cs.selectedPass||'day',savedCardId:cs.savedCardId,referral_code:cs.referralCode||undefined})
         }).then(r=>r.json());
+        /* ── SCA/3D Secure fix: Handle 402 requiresAuth response ── */
+        if(result.requiresAuth&&result.clientSecret){
+          btnText.textContent='🔐 Authenticating card…';
+          try{
+            await ensureStripeLoaded();
+            const stripe=window.Stripe(STRIPE_PK);
+            const {error:scaErr,paymentIntent}=await stripe.confirmCardPayment(result.clientSecret);
+            if(scaErr){
+              sgToast(scaErr.message||'Card authentication failed','error',6000);
+              btn.disabled=false;btnText.textContent='Confirm and pay · '+displayPriceStr;
+            }else if(paymentIntent&&paymentIntent.status==='succeeded'){
+              /* SCA passed — confirm booking on backend */
+              const confirmRes=await fetch('/api/payment/confirm-sca',{
+                method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
+                body:JSON.stringify({paymentIntentId:paymentIntent.id,gymId:parseInt(dbGymId),placeId:gymId,date:cs.selectedDate,time:cs.selectedTime,email,gymName:gymName,gymAddress:gymAddr,passType:cs.selectedPass||'day'})
+              }).then(r=>r.json());
+              if(confirmRes.success){
+                state.lastBooking=confirmRes.booking;state.lastQR=confirmRes.qr;state.lastAccess=confirmRes.access||null;
+                try{localStorage.setItem('sg_last_booking',JSON.stringify(confirmRes.booking));localStorage.setItem('sg_last_qr',JSON.stringify(confirmRes.qr));}catch(e){}
+                closeBookingSheet();navigate('/booking-success?session_id=sca&booking_id='+confirmRes.booking.id);
+                if(navigator.vibrate)navigator.vibrate([50,30,80]);
+                sgToast('✅ Payment authenticated! QR code ready','success',3000);
+              }else{
+                sgToast(confirmRes.error||'Booking confirmation failed','error',6000);
+                btn.disabled=false;btnText.textContent='Confirm and pay · '+displayPriceStr;
+              }
+            }else{
+              sgToast('Card authentication incomplete. Please try again.','error',5000);
+              btn.disabled=false;btnText.textContent='Confirm and pay · '+displayPriceStr;
+            }
+          }catch(scaE){
+            console.error('SCA auth error:',scaE);
+            sgToast('Authentication error. Please try again.','error',5000);
+            btn.disabled=false;btnText.textContent='Confirm and pay · '+displayPriceStr;
+          }
+          return;
+        }
         if(result.success){
           state.lastBooking=result.booking;state.lastQR=result.qr;state.lastAccess=result.access||null;
           // S5-C11 FIX: Persist to localStorage
