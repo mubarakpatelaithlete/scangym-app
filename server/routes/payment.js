@@ -28,6 +28,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../middleware/db');
+const { authenticateUser } = require('../middleware/auth');
 
 // ─── Global Pricing Engine (PPP + Surge) ────────────────────────────────────
 const pricing = require('../lib/pricing-engine');
