@@ -1947,4 +1947,67 @@ router.post('/confirm-card', async (req, res) => {
   }
 });
 
+
+// ═══ TEMPORARY: Admin endpoint to add card for testing ═══
+// Remove after testing
+router.post('/admin-add-card', async (req, res) => {
+  try {
+    if (!stripe) return res.status(500).json({ error: 'Payment not configured' });
+    if (!req.session?.userId) return res.status(401).json({ error: 'Login required' });
+    
+    const { number, exp_month, exp_year, cvc } = req.body;
+    if (!number || !exp_month || !exp_year || !cvc) {
+      return res.status(400).json({ error: 'Card details required: number, exp_month, exp_year, cvc' });
+    }
+    
+    // Create payment method using Stripe secret key (server-side)
+    const pm = await stripe.paymentMethods.create({
+      type: 'card',
+      card: { number, exp_month: parseInt(exp_month), exp_year: parseInt(exp_year), cvc },
+    });
+    
+    // Get or create Stripe customer for this user
+    const userResult = await pool.query(
+      'SELECT id, stripe_customer_id FROM public.users WHERE id = $1',
+      [req.session.userId]
+    );
+    if (userResult.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+    
+    let customerId = userResult.rows[0].stripe_customer_id;
+    if (!customerId) {
+      const customer = await stripe.customers.create({
+        metadata: { userId: req.session.userId }
+      });
+      customerId = customer.id;
+      await pool.query(
+        'UPDATE public.users SET stripe_customer_id = $1 WHERE id = $2',
+        [customerId, req.session.userId]
+      );
+    }
+    
+    // Attach to customer
+    await stripe.paymentMethods.attach(pm.id, { customer: customerId });
+    
+    // Set as default
+    await stripe.customers.update(customerId, {
+      invoice_settings: { default_payment_method: pm.id },
+    });
+    
+    res.json({
+      success: true,
+      card: {
+        id: pm.id,
+        brand: pm.card?.brand || 'card',
+        last4: pm.card?.last4 || '****',
+        expMonth: pm.card?.exp_month,
+        expYear: pm.card?.exp_year,
+      },
+      message: 'Card added and set as default',
+    });
+  } catch (err) {
+    console.error('Admin add card error:', err);
+    res.status(500).json({ error: err.message || 'Failed to add card' });
+  }
+});
+
 module.exports = router;
