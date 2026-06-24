@@ -10,13 +10,11 @@
   <link rel="icon" href="/favicon.ico"/>
   <style>
     *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-    html,body{height:100%;height:100dvh;overflow:hidden;background:#0a0a16;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#fff;touch-action:pan-y;overscroll-behavior:none}
+    html,body{height:100%;height:100dvh;overflow:hidden;background:#0a0a16;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#fff;touch-action:none;overscroll-behavior:none}
     *::-webkit-scrollbar{display:none}*{scrollbar-width:none}
 
-    /* ══════════════════════════════════════════════════════════════
-       BOTTOM TAB BAR — 3 tabs fixed at bottom
-    ══════════════════════════════════════════════════════════════ */
-    .team-tab-bar{position:fixed;bottom:0;left:0;right:0;height:64px;height:calc(64px + env(safe-area-inset-bottom,0px));padding-bottom:env(safe-area-inset-bottom,0px);background:rgba(10,10,22,.95);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid rgba(255,255,255,.06);display:flex;z-index:500;user-select:none;-webkit-user-select:none}
+    /* ══ BOTTOM TAB BAR ══ */
+    .team-tab-bar{position:fixed;bottom:0;left:0;right:0;height:64px;height:calc(64px + env(safe-area-inset-bottom,0px));padding-bottom:env(safe-area-inset-bottom,0px);background:rgba(10,10,22,.95);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid rgba(255,255,255,.06);display:flex;z-index:500;user-select:none}
     .team-tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;transition:.15s;position:relative}
     .team-tab .t-icon{font-size:22px;transition:.15s}
     .team-tab .t-label{font-size:10px;font-weight:600;color:rgba(255,255,255,.35);transition:.15s;letter-spacing:.3px}
@@ -25,43 +23,29 @@
     .team-tab.active::after{content:'';position:absolute;top:0;left:25%;right:25%;height:2px;background:#FF6D00;border-radius:0 0 2px 2px}
     .team-tab:active{transform:scale(.92)}
 
-    /* ══════════════════════════════════════════════════════════════
-       TAB CONTENT — full screen, scroll inside, hidden when inactive
-    ══════════════════════════════════════════════════════════════ */
-    .tab-content{position:fixed;top:0;left:0;right:0;bottom:64px;bottom:calc(64px + env(safe-area-inset-bottom,0px));overflow-y:auto;-webkit-overflow-scrolling:touch;display:none}
-    .tab-content.active{display:block}
+    /* ══ FIXED FULLSCREEN SCREENS — NO scrolling ══ */
+    .screen{position:fixed;top:0;left:0;right:0;bottom:calc(64px + env(safe-area-inset-bottom,0px));display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;padding-right:72px;text-align:center;overflow:hidden}
+    .screen.active{display:flex}
 
-    /* ══════════════════════════════════════════════════════════════
-       RIGHT-SIDE ACTIONS (TikTok style)
-    ══════════════════════════════════════════════════════════════ */
-    .side-actions{position:fixed;right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:12px;z-index:400}
-    .side-btn{width:46px;height:46px;background:rgba(255,255,255,.08);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;border:1px solid rgba(255,255,255,.06);transition:.15s;flex-direction:column;gap:2px}
+    /* ══ RIGHT-SIDE ACTION BAR ══ */
+    .side-actions{position:fixed;right:10px;top:50%;transform:translateY(calc(-50% - 32px));display:flex;flex-direction:column;gap:12px;z-index:400}
+    .side-btn{width:46px;height:46px;background:rgba(255,255,255,.08);backdrop-filter:blur(12px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;border:1px solid rgba(255,255,255,.06);transition:.2s}
     .side-btn:active{transform:scale(.88);background:rgba(255,255,255,.16)}
-    .side-btn .sb-label{font-size:8px;color:rgba(255,255,255,.5);font-weight:600;display:none}
+    .side-btn.active{background:rgba(255,109,0,.25);border-color:rgba(255,109,0,.4);box-shadow:0 0 16px rgba(255,109,0,.2)}
 
-    /* ══════════════════════════════════════════════════════════════
-       SHARED COMPONENTS
-    ══════════════════════════════════════════════════════════════ */
-    .section{padding:20px 16px;max-width:480px;margin:0 auto}
-    .section-title{font-size:18px;font-weight:900;margin-bottom:4px}
-    .section-sub{color:rgba(255,255,255,.4);font-size:12px;margin-bottom:16px}
+    /* ══ SHARED STYLES ══ */
+    .stat-pill{display:inline-flex;flex-direction:column;align-items:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:12px 16px;min-width:72px}
+    .stat-pill .num{font-size:22px;font-weight:900}
+    .stat-pill .lbl{font-size:8px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;margin-top:3px}
 
-    .card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px;margin-bottom:10px;transition:.15s}
-    .card:active{transform:scale(.98);background:rgba(255,255,255,.06)}
-
-    .stat-row{display:flex;gap:8px;margin-bottom:16px;overflow-x:auto}
-    .stat-box{flex:1;min-width:0;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:14px 12px;text-align:center}
-    .stat-box .s-num{font-size:24px;font-weight:900;line-height:1.1}
-    .stat-box .s-label{font-size:9px;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.5px;margin-top:3px}
-
-    .list-item{display:flex;align-items:center;gap:12px;padding:14px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:14px;margin-bottom:8px;cursor:pointer;transition:.15s;text-decoration:none;color:#fff}
+    .list-item{display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:14px;margin-bottom:8px;cursor:pointer;transition:.15s;text-decoration:none;color:#fff;width:100%;max-width:400px;text-align:left}
     .list-item:active{background:rgba(255,255,255,.08);transform:scale(.98)}
-    .list-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
-    .list-item .li-title{font-size:14px;font-weight:700}
-    .list-item .li-sub{font-size:11px;color:rgba(255,255,255,.35);margin-top:2px}
-    .list-item .li-right{font-size:13px;font-weight:800;flex-shrink:0;margin-left:auto}
+    .list-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+    .list-item .li-title{font-size:13px;font-weight:700}
+    .list-item .li-sub{font-size:10px;color:rgba(255,255,255,.35);margin-top:2px}
+    .list-item .li-right{font-size:12px;font-weight:800;flex-shrink:0;margin-left:auto}
 
-    .btn{display:inline-flex;align-items:center;gap:8px;padding:14px 24px;border-radius:14px;border:none;font-weight:700;font-size:14px;cursor:pointer;transition:.15s;text-decoration:none}
+    .btn{display:inline-flex;align-items:center;gap:8px;padding:12px 22px;border-radius:14px;border:none;font-weight:700;font-size:14px;cursor:pointer;transition:.15s}
     .btn:active{transform:scale(.95)}
     .btn-orange{background:#FF6D00;color:#fff;box-shadow:0 4px 20px rgba(255,109,0,.25)}
     .btn-green{background:#22c55e;color:#fff;box-shadow:0 4px 20px rgba(34,197,94,.25)}
@@ -70,191 +54,68 @@
 
     .badge{display:inline-flex;align-items:center;gap:5px;padding:5px 14px;border-radius:10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
 
-    /* Hero header per tab */
-    .tab-hero{padding:48px 20px 24px;text-align:center;position:relative}
-    .tab-hero .hero-icon{font-size:56px;margin-bottom:12px}
-    .tab-hero h1{font-size:26px;font-weight:900;margin-bottom:6px}
-    .tab-hero p{color:rgba(255,255,255,.45);font-size:14px;max-width:340px;margin:0 auto}
-
-    /* Big earnings card */
-    .earnings-card{background:linear-gradient(135deg,rgba(34,197,94,.08) 0%,rgba(34,197,94,.02) 100%);border:1px solid rgba(34,197,94,.12);border-radius:20px;padding:24px;text-align:center;margin-bottom:16px}
+    .earnings-card{background:linear-gradient(135deg,rgba(34,197,94,.08) 0%,rgba(34,197,94,.02) 100%);border:1px solid rgba(34,197,94,.12);border-radius:20px;padding:20px;text-align:center;margin-bottom:16px;width:100%;max-width:360px}
     .earnings-card .ec-label{color:rgba(255,255,255,.4);font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
-    .earnings-card .ec-amount{font-size:40px;font-weight:900;color:#22c55e;margin-bottom:4px}
-    .earnings-card .ec-sub{color:rgba(255,255,255,.3);font-size:12px}
+    .earnings-card .ec-amount{font-size:36px;font-weight:900;color:#22c55e;margin-bottom:4px}
+    .earnings-card .ec-sub{color:rgba(255,255,255,.3);font-size:11px}
 
-    /* Referral link box */
-    .ref-link-box{display:flex;align-items:center;gap:10px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:12px 16px;margin-bottom:16px}
+    .ref-link-box{display:flex;align-items:center;gap:10px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:12px 16px;margin-bottom:14px;width:100%;max-width:380px}
     .ref-link-box code{flex:1;color:#a855f7;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .ref-link-box button{background:#a855f7;color:#fff;border:none;padding:8px 16px;border-radius:10px;font-weight:700;font-size:12px;cursor:pointer;flex-shrink:0}
-    .ref-link-box button:active{transform:scale(.95)}
+    .ref-link-box button{background:#a855f7;color:#fff;border:none;padding:8px 14px;border-radius:10px;font-weight:700;font-size:12px;cursor:pointer}
 
-    /* Steps (Amazon Associates style) */
-    .steps{display:flex;gap:12px;margin-bottom:20px;padding:0 4px}
-    .step{flex:1;text-align:center;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:16px;padding:16px 10px}
-    .step .step-num{width:28px;height:28px;background:#FF6D00;color:#fff;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;margin-bottom:8px}
-    .step .step-title{font-size:12px;font-weight:700;margin-bottom:2px}
-    .step .step-sub{font-size:10px;color:rgba(255,255,255,.35)}
+    .connect-card{background:linear-gradient(135deg,rgba(99,102,241,.08) 0%,rgba(99,102,241,.02) 100%);border:1px solid rgba(99,102,241,.15);border-radius:20px;padding:20px;text-align:center;margin-bottom:14px;width:100%;max-width:360px}
 
-    /* Connect device card (Seam-style) */
-    .connect-card{background:linear-gradient(135deg,rgba(99,102,241,.08) 0%,rgba(99,102,241,.02) 100%);border:1px solid rgba(99,102,241,.15);border-radius:20px;padding:24px;text-align:center;margin-bottom:16px}
-    .connect-card .cc-icon{font-size:48px;margin-bottom:12px}
-    .connect-card h3{font-size:18px;font-weight:800;margin-bottom:6px}
-    .connect-card p{color:rgba(255,255,255,.4);font-size:13px;max-width:300px;margin:0 auto 16px}
-
-    /* Device list item */
-    .device-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:14px;margin-bottom:8px}
-    .device-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+    .device-item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:14px;margin-bottom:6px;width:100%;max-width:360px;text-align:left}
+    .device-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
     .device-dot.online{background:#22c55e;box-shadow:0 0 8px rgba(34,197,94,.4)}
     .device-dot.offline{background:#ef4444}
-    .device-item .di-name{font-size:13px;font-weight:700}
-    .device-item .di-sub{font-size:10px;color:rgba(255,255,255,.35)}
-    .device-item .di-action{margin-left:auto;padding:6px 14px;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.2);border-radius:10px;font-size:11px;font-weight:700;color:#818cf8;cursor:pointer}
-    .device-item .di-action:active{background:rgba(99,102,241,.2)}
 
-    /* Admin live pulse */
+    .bar-chart{display:flex;align-items:flex-end;gap:4px;height:60px;margin:10px 0;width:100%;max-width:320px}
+    .bar-chart .bar{flex:1;background:rgba(255,109,0,.25);border-radius:3px 3px 0 0;position:relative}
+    .bar-chart .bar .bar-lbl{position:absolute;bottom:-14px;left:50%;transform:translateX(-50%);font-size:8px;color:rgba(255,255,255,.25)}
+
     @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(34,197,94,.4)}70%{box-shadow:0 0 0 8px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
     .live-dot{width:8px;height:8px;background:#22c55e;border-radius:50%;animation:pulse 2s infinite;display:inline-block;margin-right:5px}
 
-    /* Mini bar chart */
-    .bar-chart{display:flex;align-items:flex-end;gap:4px;height:70px;margin:12px 0}
-    .bar-chart .bar{flex:1;background:rgba(255,109,0,.25);border-radius:3px 3px 0 0;transition:.3s;position:relative;min-width:0}
-    .bar-chart .bar:hover{background:rgba(255,109,0,.45)}
-    .bar-chart .bar .bar-lbl{position:absolute;bottom:-16px;left:50%;transform:translateX(-50%);font-size:8px;color:rgba(255,255,255,.25);white-space:nowrap}
+    /* ── Screen gradients ── */
+    .screen[data-tab="creator"]{background:linear-gradient(180deg,rgba(168,85,247,.08) 0%,#0a0a16 60%)}
+    .screen[data-tab="partner"]{background:linear-gradient(180deg,rgba(34,197,94,.08) 0%,#0a0a16 60%)}
+    .screen[data-tab="admin"]{background:linear-gradient(180deg,rgba(59,130,246,.08) 0%,#0a0a16 60%)}
 
-    /* Funnel visualization */
-    .funnel{width:100%;max-width:360px;margin:0 auto 16px}
-    .funnel-step{display:flex;align-items:center;gap:10px;margin-bottom:6px}
-    .funnel-bar{height:28px;border-radius:6px;display:flex;align-items:center;padding:0 10px;font-size:11px;font-weight:700;color:#fff;min-width:40px}
-    .funnel-label{font-size:11px;color:rgba(255,255,255,.4);white-space:nowrap}
-
-    /* Gradient hero backgrounds */
-    #tab-creator .tab-hero{background:linear-gradient(180deg,rgba(168,85,247,.12) 0%,transparent 100%)}
-    #tab-partner .tab-hero{background:linear-gradient(180deg,rgba(34,197,94,.12) 0%,transparent 100%)}
-    #tab-admin .tab-hero{background:linear-gradient(180deg,rgba(59,130,246,.12) 0%,transparent 100%)}
-
-    /* ══════════════════════════════════════════════════════════════
-       COMMISSION TIERS TABLE
-    ══════════════════════════════════════════════════════════════ */
-    .tier-table{width:100%;border-collapse:collapse;margin-bottom:16px;font-size:12px}
-    .tier-table th{text-align:left;color:rgba(255,255,255,.35);font-size:10px;text-transform:uppercase;letter-spacing:.5px;padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.06)}
-    .tier-table td{padding:10px;border-bottom:1px solid rgba(255,255,255,.03);vertical-align:middle}
-    .tier-table tr:last-child td{border-bottom:none}
-    .tier-table .tier-badge-sm{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:8px;font-size:10px;font-weight:700}
-
-    /* ══════════════════════════════════════════════════════════════
-       FADE IN ANIMATION
-    ══════════════════════════════════════════════════════════════ */
-    @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-    .fade-in{animation:fadeUp .35s ease-out}
+    @keyframes fadeIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}
+    .screen.active{animation:fadeIn .2s ease-out}
   </style>
 </head>
 <body>
 
-<!-- ════════════════════════════════════════════════════════════════
-     TAB 1: CREATOR (Amazon Associates-inspired)
-════════════════════════════════════════════════════════════════ -->
-<div id="tab-creator" class="tab-content active">
-  <!-- Hero -->
-  <div class="tab-hero">
-    <div class="hero-icon">🎬</div>
-    <h1>Creator Program</h1>
-    <p>Share gym links. Earn 25% commission on every booking. Amazon Associates for fitness.</p>
-    <div style="margin-top:16px">
-      <span class="badge" style="background:rgba(34,197,94,.1);color:#22c55e;border:1px solid rgba(34,197,94,.15)">🌱 Starter Creator</span>
-    </div>
-  </div>
+<!-- ════════════════════════════════════════
+     CREATOR TAB — 4 screens
+════════════════════════════════════════ -->
 
-  <!-- How it works (Amazon style) -->
-  <div class="section">
-    <div class="section-title">How It Works</div>
-    <div class="section-sub">3 simple steps to start earning</div>
-    <div class="steps">
-      <div class="step">
-        <div class="step-num">1</div>
-        <div class="step-title">Sign Up</div>
-        <div class="step-sub">Free to join, instant approval</div>
-      </div>
-      <div class="step">
-        <div class="step-num">2</div>
-        <div class="step-title">Share</div>
-        <div class="step-sub">Share gym links with your audience</div>
-      </div>
-      <div class="step">
-        <div class="step-num">3</div>
-        <div class="step-title">Earn</div>
-        <div class="step-sub">25% on every booking</div>
-      </div>
-    </div>
+<!-- Creator Screen 1: Home -->
+<div class="screen" data-tab="creator" data-idx="0">
+  <div style="font-size:56px;margin-bottom:12px">🎬</div>
+  <h1 style="font-size:26px;font-weight:900;margin-bottom:6px">Creator Program</h1>
+  <p style="color:rgba(255,255,255,.45);font-size:13px;max-width:320px;margin-bottom:16px">Share gym links. Earn 25% commission on every booking.</p>
+  <span class="badge" style="background:rgba(34,197,94,.1);color:#22c55e;border:1px solid rgba(34,197,94,.15);margin-bottom:20px">🌱 Starter Creator</span>
+  <div style="display:flex;gap:10px;margin-bottom:20px">
+    <div class="stat-pill"><span class="num" style="color:#a855f7">0</span><span class="lbl">Reels</span></div>
+    <div class="stat-pill"><span class="num" style="color:#FF6D00">142</span><span class="lbl">Clicks</span></div>
+    <div class="stat-pill"><span class="num" style="color:#22c55e">£7.20</span><span class="lbl">Earned</span></div>
   </div>
-
-  <!-- Your affiliate link -->
-  <div class="section" style="padding-top:0">
-    <div class="section-title">🔗 Your Share Link</div>
-    <div class="section-sub">Anyone who books through this link earns you commission</div>
-    <div class="ref-link-box">
-      <code id="ref-link">scangym.com/r/creator123</code>
-      <button onclick="navigator.clipboard.writeText('https://scangym.com/r/creator123');this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500)">Copy</button>
-    </div>
-    <div style="display:flex;gap:8px">
-      <button class="btn btn-purple" style="flex:1;justify-content:center;font-size:13px;padding:12px" onclick="navigator.share?navigator.share({title:'ScanGym',text:'Book any gym for £5.49/day!',url:'https://scangym.com/r/creator123'}):alert('Link copied!')">📤 Share Link</button>
-      <button class="btn btn-ghost" style="flex:1;justify-content:center;font-size:13px;padding:12px" onclick="alert('🔗 Deep link builder coming soon!')">🏋️ Link a Gym</button>
-    </div>
+  <div class="ref-link-box">
+    <code>scangym.com/r/creator123</code>
+    <button onclick="navigator.clipboard.writeText('https://scangym.com/r/creator123');this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500)">Copy</button>
   </div>
+  <button class="btn btn-purple" onclick="navigator.share?navigator.share({title:'ScanGym',url:'https://scangym.com/r/creator123'}):alert('Link copied!')">📤 Share Link</button>
+</div>
 
-  <!-- Earnings -->
-  <div class="section" style="padding-top:0">
-    <div class="section-title">💰 Earnings</div>
-    <div class="section-sub">Commission from bookings via your links</div>
-    <div class="earnings-card">
-      <div class="ec-label">Total Earned</div>
-      <div class="ec-amount">£7.20</div>
-      <div class="ec-sub">From 6 bookings · this month</div>
-    </div>
-    <div class="stat-row">
-      <div class="stat-box"><div class="s-num" style="color:#FF6D00">142</div><div class="s-label">Link Clicks</div></div>
-      <div class="stat-box"><div class="s-num" style="color:#3b82f6">6</div><div class="s-label">Bookings</div></div>
-      <div class="stat-box"><div class="s-num" style="color:#22c55e">4.2%</div><div class="s-label">Conv. Rate</div></div>
-    </div>
-    <button class="btn btn-green" style="width:100%;justify-content:center" onclick="alert('💸 Withdrawal request submitted!')">💸 Withdraw to Bank</button>
-  </div>
-
-  <!-- Commission Tiers -->
-  <div class="section" style="padding-top:0">
-    <div class="section-title">📊 Commission Tiers</div>
-    <div class="section-sub">Earn more as you grow</div>
-    <div class="card" style="padding:0;overflow:hidden">
-      <table class="tier-table">
-        <thead><tr><th>Tier</th><th>Bookings/mo</th><th>Commission</th></tr></thead>
-        <tbody>
-          <tr>
-            <td><span class="tier-badge-sm" style="background:rgba(34,197,94,.1);color:#22c55e">🌱 Starter</span></td>
-            <td style="color:rgba(255,255,255,.6)">0–10</td>
-            <td style="color:#22c55e;font-weight:800">25%</td>
-          </tr>
-          <tr>
-            <td><span class="tier-badge-sm" style="background:rgba(59,130,246,.1);color:#3b82f6">⚡ Rising</span></td>
-            <td style="color:rgba(255,255,255,.6)">11–50</td>
-            <td style="color:#3b82f6;font-weight:800">30%</td>
-          </tr>
-          <tr>
-            <td><span class="tier-badge-sm" style="background:rgba(168,85,247,.1);color:#a855f7">🔥 Pro</span></td>
-            <td style="color:rgba(255,255,255,.6)">51–200</td>
-            <td style="color:#a855f7;font-weight:800">35%</td>
-          </tr>
-          <tr>
-            <td><span class="tier-badge-sm" style="background:rgba(255,109,0,.1);color:#FF6D00">👑 Elite</span></td>
-            <td style="color:rgba(255,255,255,.6)">200+</td>
-            <td style="color:#FF6D00;font-weight:800">40%</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- Your Content / Reels -->
-  <div class="section" style="padding-top:0">
-    <div class="section-title">📱 Your Content</div>
-    <div class="section-sub">Reels that earn you commissions</div>
+<!-- Creator Screen 2: Content -->
+<div class="screen" data-tab="creator" data-idx="1">
+  <div style="font-size:48px;margin-bottom:12px">📱</div>
+  <h2 style="font-size:22px;font-weight:800;margin-bottom:4px">Your Content</h2>
+  <p style="color:rgba(255,255,255,.4);font-size:12px;margin-bottom:16px">Reels that earn you commissions</p>
+  <div style="width:100%;max-width:400px">
     <div class="list-item">
       <div class="list-icon" style="background:rgba(168,85,247,.12)">🎬</div>
       <div><div class="li-title">Leg Day at Crunch</div><div class="li-sub">2.4K views · 3 bookings</div></div>
@@ -270,143 +131,138 @@
       <div><div class="li-title">Best Gym in London</div><div class="li-sub">956 views · 1 booking</div></div>
       <div class="li-right" style="color:#22c55e">£1.20</div>
     </div>
-    <div style="display:flex;gap:8px;margin-top:12px">
-      <button class="btn btn-orange" style="flex:1;justify-content:center;font-size:13px;padding:12px" onclick="alert('📹 Upload reel!')">📹 Upload Reel</button>
-      <button class="btn btn-ghost" style="flex:1;justify-content:center;font-size:13px;padding:12px" onclick="alert('📹 Record video!')">🎥 Record</button>
-    </div>
   </div>
+  <div style="display:flex;gap:8px;margin-top:14px">
+    <button class="btn btn-orange" onclick="alert('📹 Upload reel!')">📹 Upload</button>
+    <button class="btn btn-ghost" onclick="alert('🎥 Record!')">🎥 Record</button>
+  </div>
+</div>
 
-  <!-- Marketing Assets Library -->
-  <div class="section" style="padding-top:0">
-    <div class="section-title">🎨 Asset Library</div>
-    <div class="section-sub">Ready-made content to share</div>
-    <div class="list-item" onclick="alert('📥 Download Hero Banner')">
+<!-- Creator Screen 3: Earnings -->
+<div class="screen" data-tab="creator" data-idx="2">
+  <div style="font-size:48px;margin-bottom:12px">💰</div>
+  <h2 style="font-size:22px;font-weight:800;margin-bottom:4px">Earnings</h2>
+  <p style="color:rgba(255,255,255,.4);font-size:12px;margin-bottom:16px">Commission from bookings via your links</p>
+  <div class="earnings-card">
+    <div class="ec-label">Total Earned</div>
+    <div class="ec-amount">£7.20</div>
+    <div class="ec-sub">From 6 bookings · this month</div>
+  </div>
+  <div style="display:flex;gap:10px;margin-bottom:16px">
+    <div class="stat-pill"><span class="num" style="color:#FF6D00">142</span><span class="lbl">Clicks</span></div>
+    <div class="stat-pill"><span class="num" style="color:#3b82f6">6</span><span class="lbl">Bookings</span></div>
+    <div class="stat-pill"><span class="num" style="color:#22c55e">4.2%</span><span class="lbl">Conv Rate</span></div>
+  </div>
+  <button class="btn btn-green" onclick="alert('💸 Withdrawal submitted!')">💸 Withdraw to Bank</button>
+</div>
+
+<!-- Creator Screen 4: Assets -->
+<div class="screen" data-tab="creator" data-idx="3">
+  <div style="font-size:48px;margin-bottom:12px">🎨</div>
+  <h2 style="font-size:22px;font-weight:800;margin-bottom:4px">Asset Library</h2>
+  <p style="color:rgba(255,255,255,.4);font-size:12px;margin-bottom:16px">Ready-made content to share</p>
+  <div style="width:100%;max-width:400px">
+    <div class="list-item" onclick="alert('📥 Download')">
       <div class="list-icon" style="background:rgba(255,109,0,.12)">🖼</div>
       <div><div class="li-title">Hero Banner</div><div class="li-sub">1080×1080 · Instagram/TikTok</div></div>
       <div class="li-right" style="color:rgba(255,255,255,.3)">📥</div>
     </div>
-    <div class="list-item" onclick="alert('📥 Download Price Comparison')">
+    <div class="list-item" onclick="alert('📥 Download')">
       <div class="list-icon" style="background:rgba(34,197,94,.12)">📊</div>
       <div><div class="li-title">Price Comparison Card</div><div class="li-sub">ScanGym vs Memberships</div></div>
       <div class="li-right" style="color:rgba(255,255,255,.3)">📥</div>
     </div>
-    <div class="list-item" onclick="alert('📥 Download Viral Hook')">
+    <div class="list-item" onclick="alert('📥 Download')">
       <div class="list-icon" style="background:rgba(168,85,247,.12)">🎯</div>
       <div><div class="li-title">Viral Hook Template</div><div class="li-sub">TikTok hook scripts + captions</div></div>
       <div class="li-right" style="color:rgba(255,255,255,.3)">📥</div>
     </div>
-    <div class="list-item" onclick="alert('📥 Download DM Template')">
+    <div class="list-item" onclick="alert('📥 Download')">
       <div class="list-icon" style="background:rgba(59,130,246,.12)">💬</div>
-      <div><div class="li-title">DM Outreach Template</div><div class="li-sub">Copy-paste messages for gym influencers</div></div>
+      <div><div class="li-title">DM Outreach Template</div><div class="li-sub">Copy-paste messages for influencers</div></div>
       <div class="li-right" style="color:rgba(255,255,255,.3)">📥</div>
     </div>
-    <button class="btn btn-ghost" style="width:100%;justify-content:center;margin-top:8px">View All 28 Assets →</button>
   </div>
-
-  <div style="height:24px"></div>
 </div>
 
-<!-- ════════════════════════════════════════════════════════════════
-     TAB 2: PARTNER (Seam.co-inspired access control + gym management)
-════════════════════════════════════════════════════════════════ -->
-<div id="tab-partner" class="tab-content">
-  <!-- Hero -->
-  <div class="tab-hero">
-    <div class="hero-icon">🏢</div>
-    <h1>Gym Partner Hub</h1>
-    <p>List your gym. Get bookings. Connect smart locks for self-service entry. Zero upfront cost.</p>
-    <div style="margin-top:16px">
-      <span class="badge" style="background:rgba(34,197,94,.1);color:#22c55e;border:1px solid rgba(34,197,94,.15)">✅ Verified Partner</span>
-    </div>
+<!-- ════════════════════════════════════════
+     PARTNER TAB — 4 screens
+════════════════════════════════════════ -->
+
+<!-- Partner Screen 1: Home + Stats -->
+<div class="screen" data-tab="partner" data-idx="0">
+  <div style="font-size:56px;margin-bottom:12px">🏢</div>
+  <h1 style="font-size:26px;font-weight:900;margin-bottom:6px">Gym Partner Hub</h1>
+  <p style="color:rgba(255,255,255,.45);font-size:13px;max-width:320px;margin-bottom:16px">List your gym. Get bookings. Connect smart locks for self-service entry.</p>
+  <span class="badge" style="background:rgba(34,197,94,.1);color:#22c55e;border:1px solid rgba(34,197,94,.15);margin-bottom:20px">✅ Verified Partner</span>
+  <div style="display:flex;gap:10px;margin-bottom:20px">
+    <div class="stat-pill"><span class="num" style="color:#22c55e">£0</span><span class="lbl">Revenue</span></div>
+    <div class="stat-pill"><span class="num" style="color:#FF6D00">0</span><span class="lbl">Bookings</span></div>
+    <div class="stat-pill"><span class="num" style="color:#3b82f6">0</span><span class="lbl">Check-ins</span></div>
+    <div class="stat-pill"><span class="num" style="color:#a855f7">80%</span><span class="lbl">Share</span></div>
   </div>
+  <button class="btn btn-green" onclick="alert('🏋️ Claim your gym!')">🏋️ Claim Your Gym</button>
+</div>
 
-  <!-- Stats -->
-  <div class="section">
-    <div class="stat-row">
-      <div class="stat-box"><div class="s-num" style="color:#22c55e">£0</div><div class="s-label">Revenue</div></div>
-      <div class="stat-box"><div class="s-num" style="color:#FF6D00">0</div><div class="s-label">Bookings</div></div>
-      <div class="stat-box"><div class="s-num" style="color:#3b82f6">0</div><div class="s-label">Check-ins</div></div>
-      <div class="stat-box"><div class="s-num" style="color:#a855f7">80%</div><div class="s-label">Rev Share</div></div>
-    </div>
-  </div>
-
-  <!-- Connect Seam Account (main feature) -->
-  <div class="section" style="padding-top:0">
-    <div class="connect-card">
-      <div class="cc-icon">🔐</div>
-      <h3>Connect Access Control</h3>
-      <p>Link your Seam account to enable self-service gym entry via smart locks, turnstiles & access points</p>
-      <button class="btn btn-purple" onclick="alert('🔗 Opening Seam Connect Webview...\nAuthorise ScanGym to manage your smart locks.')">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-        Connect Seam Account
-      </button>
-    </div>
-  </div>
-
-  <!-- Connected Devices -->
-  <div class="section" style="padding-top:0">
-    <div class="section-title">📡 Connected Devices</div>
-    <div class="section-sub">Smart locks & access points at your gym</div>
-
+<!-- Partner Screen 2: Access Control -->
+<div class="screen" data-tab="partner" data-idx="1">
+  <div style="font-size:48px;margin-bottom:10px">🔐</div>
+  <h2 style="font-size:22px;font-weight:800;margin-bottom:4px">Access Control</h2>
+  <p style="color:rgba(255,255,255,.4);font-size:12px;margin-bottom:14px">Smart locks & access points at your gym</p>
+  <div style="width:100%;max-width:360px">
     <div class="device-item">
       <div class="device-dot online"></div>
-      <div style="flex:1"><div class="di-name">Front Door — Kaba Lock</div><div class="di-sub">Online · Battery 87%</div></div>
-      <div class="di-action" onclick="alert('🔓 Unlocked!')">Unlock</div>
+      <div style="flex:1"><div style="font-size:13px;font-weight:700">Front Door — Kaba</div><div style="font-size:10px;color:rgba(255,255,255,.35)">Online · 87%</div></div>
+      <div style="padding:5px 12px;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.2);border-radius:10px;font-size:11px;font-weight:700;color:#818cf8;cursor:pointer" onclick="alert('🔓 Unlocked!')">Unlock</div>
     </div>
     <div class="device-item">
       <div class="device-dot online"></div>
-      <div style="flex:1"><div class="di-name">Side Entrance — Yale Lock</div><div class="di-sub">Online · Battery 92%</div></div>
-      <div class="di-action" onclick="alert('🔓 Unlocked!')">Unlock</div>
+      <div style="flex:1"><div style="font-size:13px;font-weight:700">Side Entrance — Yale</div><div style="font-size:10px;color:rgba(255,255,255,.35)">Online · 92%</div></div>
+      <div style="padding:5px 12px;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.2);border-radius:10px;font-size:11px;font-weight:700;color:#818cf8;cursor:pointer" onclick="alert('🔓 Unlocked!')">Unlock</div>
     </div>
     <div class="device-item">
       <div class="device-dot offline"></div>
-      <div style="flex:1"><div class="di-name">Emergency Exit — August Lock</div><div class="di-sub">Offline · Last seen 2h ago</div></div>
-      <div class="di-action" style="opacity:.5">Offline</div>
+      <div style="flex:1"><div style="font-size:13px;font-weight:700">Emergency — August</div><div style="font-size:10px;color:rgba(255,255,255,.35)">Offline · 2h ago</div></div>
+      <div style="padding:5px 12px;opacity:.5;font-size:11px;font-weight:700;color:rgba(255,255,255,.4)">Offline</div>
     </div>
-
-    <button class="btn btn-ghost" style="width:100%;justify-content:center;margin-top:12px" onclick="alert('➕ Add another device via Seam')">+ Add Device</button>
   </div>
+  <button class="btn btn-purple" style="margin-top:14px" onclick="alert('🔗 Opening Seam Connect...')">🔗 Connect Seam Account</button>
+</div>
 
-  <!-- Access Control Log -->
-  <div class="section" style="padding-top:0">
-    <div class="section-title">📋 Access Log</div>
-    <div class="section-sub">Recent QR check-ins at your gym</div>
+<!-- Partner Screen 3: Earnings -->
+<div class="screen" data-tab="partner" data-idx="2">
+  <div style="font-size:48px;margin-bottom:12px">💰</div>
+  <h2 style="font-size:22px;font-weight:800;margin-bottom:4px">Earnings & Payouts</h2>
+  <p style="color:rgba(255,255,255,.4);font-size:12px;margin-bottom:16px">Revenue from day pass bookings</p>
+  <div class="earnings-card">
+    <div class="ec-label">Available Balance</div>
+    <div class="ec-amount">£0.00</div>
+    <div class="ec-sub">80% revenue share · Withdraw via Stripe</div>
+  </div>
+  <div style="width:100%;max-width:360px">
     <div class="list-item">
       <div class="list-icon" style="background:rgba(34,197,94,.12)">✅</div>
       <div><div class="li-title">James W. — QR Entry</div><div class="li-sub">Front Door · 2 min ago</div></div>
-      <div class="li-right" style="color:#22c55e;font-size:11px">£4.39</div>
+      <div class="li-right" style="color:#22c55e">£4.39</div>
     </div>
     <div class="list-item">
       <div class="list-icon" style="background:rgba(34,197,94,.12)">✅</div>
       <div><div class="li-title">Sarah M. — QR Entry</div><div class="li-sub">Side Entrance · 28 min ago</div></div>
-      <div class="li-right" style="color:#22c55e;font-size:11px">£4.39</div>
-    </div>
-    <div class="list-item">
-      <div class="list-icon" style="background:rgba(239,68,68,.12)">❌</div>
-      <div><div class="li-title">Unknown — Invalid QR</div><div class="li-sub">Front Door · 1h ago</div></div>
-      <div class="li-right" style="color:#ef4444;font-size:11px">Denied</div>
+      <div class="li-right" style="color:#22c55e">£4.39</div>
     </div>
   </div>
-
-  <!-- Earnings & Payouts -->
-  <div class="section" style="padding-top:0">
-    <div class="section-title">💰 Earnings & Payouts</div>
-    <div class="section-sub">Revenue from day pass bookings</div>
-    <div class="earnings-card">
-      <div class="ec-label">Available Balance</div>
-      <div class="ec-amount">£0.00</div>
-      <div class="ec-sub">80% revenue share · Withdraw via Stripe</div>
-    </div>
-    <div style="display:flex;gap:8px">
-      <button class="btn btn-green" style="flex:1;justify-content:center;font-size:13px" onclick="alert('💸 Withdraw coming soon!')">💸 Withdraw</button>
-      <button class="btn btn-ghost" style="flex:1;justify-content:center;font-size:13px" onclick="alert('🏦 Connect Stripe')">🏦 Add Bank</button>
-    </div>
+  <div style="display:flex;gap:8px;margin-top:14px">
+    <button class="btn btn-green" onclick="alert('💸 Withdraw!')">💸 Withdraw</button>
+    <button class="btn btn-ghost" onclick="alert('🏦 Connect Stripe')">🏦 Add Bank</button>
   </div>
+</div>
 
-  <!-- Manage Your Gym -->
-  <div class="section" style="padding-top:0">
-    <div class="section-title">⚙️ Manage Your Gym</div>
-    <div class="section-sub">Update listing details</div>
+<!-- Partner Screen 4: Manage Gym -->
+<div class="screen" data-tab="partner" data-idx="3">
+  <div style="font-size:48px;margin-bottom:12px">⚙️</div>
+  <h2 style="font-size:22px;font-weight:800;margin-bottom:4px">Manage Your Gym</h2>
+  <p style="color:rgba(255,255,255,.4);font-size:12px;margin-bottom:16px">Update listing details</p>
+  <div style="width:100%;max-width:400px">
     <div class="list-item" onclick="alert('🕐 Set hours')">
       <div class="list-icon" style="background:rgba(255,109,0,.12)">🕐</div>
       <div><div class="li-title">Opening Hours</div><div class="li-sub">Set your daily schedule</div></div>
@@ -419,109 +275,92 @@
       <div class="list-icon" style="background:rgba(59,130,246,.12)">📸</div>
       <div><div class="li-title">Photos & Tour</div><div class="li-sub">12 photos uploaded</div></div>
     </div>
-    <div class="list-item" onclick="alert('🏊 Edit amenities')">
-      <div class="list-icon" style="background:rgba(168,85,247,.12)">🏊</div>
-      <div><div class="li-title">Amenities</div><div class="li-sub">Pool, sauna, classes & more</div></div>
-    </div>
-    <div class="list-item" onclick="alert('🖨 Print QR poster')">
+    <div class="list-item" onclick="alert('🖨 Print poster')">
       <div class="list-icon" style="background:rgba(255,109,0,.12)">🖨</div>
       <div><div class="li-title">Print QR Poster</div><div class="li-sub">A4 poster for gym entrance</div></div>
     </div>
   </div>
-
-  <div style="height:24px"></div>
 </div>
 
-<!-- ════════════════════════════════════════════════════════════════
-     TAB 3: ADMIN (CEO Analytics Dashboard)
-════════════════════════════════════════════════════════════════ -->
-<div id="tab-admin" class="tab-content">
-  <!-- Hero -->
-  <div class="tab-hero">
-    <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:12px">
-      <div class="live-dot"></div>
-      <span style="color:#22c55e;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Live Dashboard</span>
+<!-- ════════════════════════════════════════
+     ADMIN TAB — 4 screens
+════════════════════════════════════════ -->
+
+<!-- Admin Screen 1: Dashboard -->
+<div class="screen" data-tab="admin" data-idx="0">
+  <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px">
+    <div class="live-dot"></div>
+    <span style="color:#22c55e;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Live Dashboard</span>
+  </div>
+  <h1 style="font-size:26px;font-weight:900;margin-bottom:6px">Admin</h1>
+  <p style="color:rgba(255,255,255,.45);font-size:13px;margin-bottom:16px">Platform analytics & management</p>
+  <span class="badge" style="background:rgba(34,197,94,.06);color:#22c55e;border:1px solid rgba(34,197,94,.1);margin-bottom:20px">🟢 All Systems Operational</span>
+  <div style="display:flex;gap:10px;margin-bottom:14px">
+    <div class="stat-pill"><span class="num" style="color:#FF6D00">0</span><span class="lbl">Live Users</span></div>
+    <div class="stat-pill"><span class="num" style="color:#22c55e">£0</span><span class="lbl">Revenue</span></div>
+    <div class="stat-pill"><span class="num" style="color:#3b82f6">0</span><span class="lbl">Bookings</span></div>
+  </div>
+  <div style="display:flex;gap:10px">
+    <div class="stat-pill"><span class="num" style="color:#a855f7">0</span><span class="lbl">Creators</span></div>
+    <div class="stat-pill"><span class="num" style="color:#22c55e">0</span><span class="lbl">Partners</span></div>
+    <div class="stat-pill"><span class="num" style="color:#eab308">1.2M+</span><span class="lbl">Gyms</span></div>
+  </div>
+</div>
+
+<!-- Admin Screen 2: Analytics -->
+<div class="screen" data-tab="admin" data-idx="1">
+  <div style="font-size:48px;margin-bottom:12px">📈</div>
+  <h2 style="font-size:22px;font-weight:800;margin-bottom:4px">Analytics</h2>
+  <p style="color:rgba(255,255,255,.4);font-size:12px;margin-bottom:16px">Traffic & conversions — last 7 days</p>
+  <div class="bar-chart">
+    <div class="bar" style="height:22%"><span class="bar-lbl">Mon</span></div>
+    <div class="bar" style="height:38%"><span class="bar-lbl">Tue</span></div>
+    <div class="bar" style="height:52%"><span class="bar-lbl">Wed</span></div>
+    <div class="bar" style="height:44%"><span class="bar-lbl">Thu</span></div>
+    <div class="bar" style="height:68%"><span class="bar-lbl">Fri</span></div>
+    <div class="bar" style="height:85%;background:rgba(255,109,0,.45)"><span class="bar-lbl">Sat</span></div>
+    <div class="bar" style="height:58%"><span class="bar-lbl">Sun</span></div>
+  </div>
+  <div style="height:20px"></div>
+  <div style="display:flex;gap:10px;margin-top:14px">
+    <div class="stat-pill"><span class="num" style="color:#3b82f6">0</span><span class="lbl">Users</span></div>
+    <div class="stat-pill"><span class="num" style="color:#FF6D00">0</span><span class="lbl">Active</span></div>
+    <div class="stat-pill"><span class="num" style="color:#22c55e">0</span><span class="lbl">New Today</span></div>
+  </div>
+  <button class="btn btn-ghost" style="margin-top:16px" onclick="alert('📥 Export report')">📥 Export CSV</button>
+</div>
+
+<!-- Admin Screen 3: Settings -->
+<div class="screen" data-tab="admin" data-idx="2">
+  <div style="font-size:48px;margin-bottom:12px">⚙️</div>
+  <h2 style="font-size:22px;font-weight:800;margin-bottom:4px">Settings</h2>
+  <p style="color:rgba(255,255,255,.4);font-size:12px;margin-bottom:16px">Platform configuration</p>
+  <div style="width:100%;max-width:400px">
+    <div class="list-item" onclick="alert('💳 Stripe settings')">
+      <div class="list-icon" style="background:rgba(34,197,94,.12)">💳</div>
+      <div><div class="li-title">Stripe & Payments</div><div class="li-sub">API keys, webhooks</div></div>
     </div>
-    <h1>Admin</h1>
-    <p>ScanGym platform analytics & management</p>
-    <div style="margin-top:16px">
-      <span class="badge" style="background:rgba(34,197,94,.06);color:#22c55e;border:1px solid rgba(34,197,94,.1)">🟢 All Systems Operational</span>
+    <div class="list-item" onclick="alert('🔔 Alerts')">
+      <div class="list-icon" style="background:rgba(234,179,8,.12)">🔔</div>
+      <div><div class="li-title">Alerts & Notifications</div><div class="li-sub">Revenue milestones, errors</div></div>
+    </div>
+    <div class="list-item" onclick="alert('🛡 Security')">
+      <div class="list-icon" style="background:rgba(168,85,247,.12)">🛡</div>
+      <div><div class="li-title">Security & Access</div><div class="li-sub">Team roles, 2FA, API tokens</div></div>
+    </div>
+    <div class="list-item" onclick="alert('🔗 Integrations')">
+      <div class="list-icon" style="background:rgba(59,130,246,.12)">🔗</div>
+      <div><div class="li-title">Integrations</div><div class="li-sub">Seam, Twilio, Maps</div></div>
     </div>
   </div>
+</div>
 
-  <!-- Key Metrics -->
-  <div class="section">
-    <div class="section-title">📊 Key Metrics</div>
-    <div class="section-sub">Real-time platform overview</div>
-    <div class="stat-row">
-      <div class="stat-box"><div class="s-num" style="color:#FF6D00">0</div><div class="s-label">Live Users</div></div>
-      <div class="stat-box"><div class="s-num" style="color:#22c55e">£0</div><div class="s-label">Revenue</div></div>
-      <div class="stat-box"><div class="s-num" style="color:#3b82f6">0</div><div class="s-label">Bookings</div></div>
-    </div>
-    <div class="stat-row">
-      <div class="stat-box"><div class="s-num" style="color:#a855f7">0</div><div class="s-label">Creators</div></div>
-      <div class="stat-box"><div class="s-num" style="color:#22c55e">0</div><div class="s-label">Partners</div></div>
-      <div class="stat-box"><div class="s-num" style="color:#eab308">1.2M+</div><div class="s-label">Gyms</div></div>
-    </div>
-  </div>
-
-  <!-- Traffic Chart -->
-  <div class="section" style="padding-top:0">
-    <div class="section-title">📈 Traffic — Last 7 Days</div>
-    <div class="section-sub">Website visitors</div>
-    <div class="card" style="padding:16px 12px">
-      <div class="bar-chart">
-        <div class="bar" style="height:22%"><span class="bar-lbl">Mon</span></div>
-        <div class="bar" style="height:38%"><span class="bar-lbl">Tue</span></div>
-        <div class="bar" style="height:52%"><span class="bar-lbl">Wed</span></div>
-        <div class="bar" style="height:44%"><span class="bar-lbl">Thu</span></div>
-        <div class="bar" style="height:68%"><span class="bar-lbl">Fri</span></div>
-        <div class="bar" style="height:85%;background:rgba(255,109,0,.45)"><span class="bar-lbl">Sat</span></div>
-        <div class="bar" style="height:58%"><span class="bar-lbl">Sun</span></div>
-      </div>
-      <div style="height:20px"></div>
-      <div style="display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.35)">
-        <span>0 page views</span>
-        <span>0% bounce rate</span>
-        <span>0s avg session</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- Conversion Funnel -->
-  <div class="section" style="padding-top:0">
-    <div class="section-title">🎯 Conversion Funnel</div>
-    <div class="section-sub">Visitor → Booking pipeline</div>
-    <div class="card">
-      <div class="funnel">
-        <div class="funnel-step">
-          <div class="funnel-bar" style="width:100%;background:rgba(59,130,246,.3)">0</div>
-          <div class="funnel-label">Visitors</div>
-        </div>
-        <div class="funnel-step">
-          <div class="funnel-bar" style="width:70%;background:rgba(168,85,247,.3)">0</div>
-          <div class="funnel-label">Searched</div>
-        </div>
-        <div class="funnel-step">
-          <div class="funnel-bar" style="width:40%;background:rgba(255,109,0,.3)">0</div>
-          <div class="funnel-label">Viewed Gym</div>
-        </div>
-        <div class="funnel-step">
-          <div class="funnel-bar" style="width:20%;background:rgba(34,197,94,.3)">0</div>
-          <div class="funnel-label">Booked</div>
-        </div>
-        <div class="funnel-step">
-          <div class="funnel-bar" style="width:15%;background:rgba(34,197,94,.5)">0</div>
-          <div class="funnel-label">Checked In</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Revenue Breakdown -->
-  <div class="section" style="padding-top:0">
-    <div class="section-title">💰 Revenue Breakdown</div>
-    <div class="section-sub">Stripe transactions & payouts</div>
+<!-- Admin Screen 4: Revenue -->
+<div class="screen" data-tab="admin" data-idx="3">
+  <div style="font-size:48px;margin-bottom:12px">💰</div>
+  <h2 style="font-size:22px;font-weight:800;margin-bottom:4px">Revenue</h2>
+  <p style="color:rgba(255,255,255,.4);font-size:12px;margin-bottom:16px">Stripe transactions & payouts</p>
+  <div style="width:100%;max-width:400px">
     <div class="list-item">
       <div class="list-icon" style="background:rgba(34,197,94,.12)">💳</div>
       <div><div class="li-title">Day Pass Sales</div><div class="li-sub">0 sold today</div></div>
@@ -539,59 +378,20 @@
     </div>
     <div class="list-item">
       <div class="list-icon" style="background:rgba(59,130,246,.12)">🏦</div>
-      <div><div class="li-title">Net Platform Revenue</div><div class="li-sub">After all commissions & payouts</div></div>
+      <div><div class="li-title">Net Platform Revenue</div><div class="li-sub">After all commissions</div></div>
       <div class="li-right" style="color:#3b82f6">£0</div>
     </div>
   </div>
-
-  <!-- Users -->
-  <div class="section" style="padding-top:0">
-    <div class="section-title">👥 Users & Signups</div>
-    <div class="section-sub">User growth</div>
-    <div class="stat-row">
-      <div class="stat-box"><div class="s-num" style="color:#3b82f6">0</div><div class="s-label">Total Users</div></div>
-      <div class="stat-box"><div class="s-num" style="color:#FF6D00">0</div><div class="s-label">Active Today</div></div>
-      <div class="stat-box"><div class="s-num" style="color:#22c55e">0</div><div class="s-label">New Today</div></div>
-    </div>
-    <div class="list-item">
-      <div class="list-icon" style="background:rgba(255,109,0,.12)">🆕</div>
-      <div><div class="li-title" style="color:rgba(255,255,255,.35)">No signups yet</div><div class="li-sub">Users will appear here</div></div>
-    </div>
-  </div>
-
-  <!-- Quick Actions -->
-  <div class="section" style="padding-top:0">
-    <div class="section-title">⚡ Quick Actions</div>
-    <div class="section-sub">Platform management</div>
-    <div class="list-item" onclick="alert('📊 Export analytics')">
-      <div class="list-icon" style="background:rgba(59,130,246,.12)">📥</div>
-      <div><div class="li-title">Export Analytics</div><div class="li-sub">CSV/PDF report</div></div>
-    </div>
-    <div class="list-item" onclick="alert('🔔 Configure alerts')">
-      <div class="list-icon" style="background:rgba(234,179,8,.12)">🔔</div>
-      <div><div class="li-title">Alerts & Notifications</div><div class="li-sub">Revenue milestones, errors</div></div>
-    </div>
-    <div class="list-item" onclick="alert('⚙️ Platform settings')">
-      <div class="list-icon" style="background:rgba(255,255,255,.05)">⚙️</div>
-      <div><div class="li-title">Platform Settings</div><div class="li-sub">Pricing, API keys, integrations</div></div>
-    </div>
-    <div class="list-item" onclick="alert('🛡 Security')">
-      <div class="list-icon" style="background:rgba(168,85,247,.12)">🛡</div>
-      <div><div class="li-title">Security & Access</div><div class="li-sub">Team roles, 2FA, API tokens</div></div>
-    </div>
-  </div>
-
-  <div style="height:24px"></div>
 </div>
 
-<!-- ════════════════════════════════════════════════════════════════
-     RIGHT-SIDE ACTIONS (change per tab)
-════════════════════════════════════════════════════════════════ -->
+<!-- ════════════════════════════════════════
+     SIDE ACTIONS (dynamic per tab)
+════════════════════════════════════════ -->
 <div class="side-actions" id="side-actions"></div>
 
-<!-- ════════════════════════════════════════════════════════════════
+<!-- ════════════════════════════════════════
      BOTTOM TAB BAR
-════════════════════════════════════════════════════════════════ -->
+════════════════════════════════════════ -->
 <div class="team-tab-bar">
   <div class="team-tab active" data-tab="creator" onclick="switchTeamTab('creator')">
     <span class="t-icon">🎬</span>
@@ -611,60 +411,85 @@
 (function(){
   'use strict';
 
-  // Side-action configs per tab
+  // Side button configs per tab: icon + title
   var sideConfig = {
     creator: [
-      {icon:'📹',label:'Upload',action:function(){alert('📹 Upload reel!')}},
-      {icon:'🔗',label:'Link',action:function(){navigator.clipboard.writeText('https://scangym.com/r/creator123');alert('Link copied!')}},
-      {icon:'📊',label:'Stats',action:function(){alert('📊 Analytics')}},
-      {icon:'📤',label:'Share',action:function(){navigator.share?navigator.share({title:'ScanGym Creator',url:'https://scangym.com/creator'}):alert('Link copied!')}}
+      {icon:'🏠',title:'Home'},
+      {icon:'📹',title:'Content'},
+      {icon:'📊',title:'Earnings'},
+      {icon:'📤',title:'Assets'}
     ],
     partner: [
-      {icon:'🔐',label:'Access',action:function(){alert('🔐 Connect Seam')}},
-      {icon:'🔓',label:'Unlock',action:function(){alert('🔓 Unlock front door')}},
-      {icon:'📊',label:'Stats',action:function(){alert('📊 Booking analytics')}},
-      {icon:'⚙️',label:'Settings',action:function(){alert('⚙️ Gym settings')}}
+      {icon:'🏠',title:'Home'},
+      {icon:'🔐',title:'Access'},
+      {icon:'💰',title:'Earnings'},
+      {icon:'⚙️',title:'Manage'}
     ],
     admin: [
-      {icon:'📥',label:'Export',action:function(){alert('📥 Export report')}},
-      {icon:'🔔',label:'Alerts',action:function(){alert('🔔 0 new alerts')}},
-      {icon:'⚙️',label:'Config',action:function(){alert('⚙️ Platform settings')}},
-      {icon:'🔄',label:'Refresh',action:function(){alert('🔄 Data refreshed')}}
+      {icon:'🏠',title:'Dashboard'},
+      {icon:'📈',title:'Analytics'},
+      {icon:'⚙️',title:'Settings'},
+      {icon:'💰',title:'Revenue'}
     ]
   };
 
-  function renderSideActions(tab){
+  // Current state
+  var currentTab = 'creator';
+  var currentScreenIdx = {creator:0, partner:0, admin:0};
+
+  function renderSideActions(tab) {
     var container = document.getElementById('side-actions');
     var config = sideConfig[tab] || [];
-    container.innerHTML = config.map(function(c){
-      return '<div class="side-btn" title="'+c.label+'">'+c.icon+'</div>';
+    var activeIdx = currentScreenIdx[tab] || 0;
+    container.innerHTML = config.map(function(c, i){
+      var cls = 'side-btn' + (i === activeIdx ? ' active' : '');
+      return '<div class="' + cls + '" title="' + c.title + '" data-sidx="' + i + '">' + c.icon + '</div>';
     }).join('');
-    // Attach click handlers
+    // Attach handlers
     var btns = container.querySelectorAll('.side-btn');
-    config.forEach(function(c, i){
-      if(btns[i]) btns[i].onclick = c.action;
+    btns.forEach(function(b){
+      b.onclick = function(){
+        var idx = parseInt(b.dataset.sidx);
+        showScreenInTab(tab, idx);
+      };
     });
   }
 
-  window.switchTeamTab = function(tab){
-    // Update tabs
+  function showScreenInTab(tab, idx) {
+    currentScreenIdx[tab] = idx;
+    // Hide all screens for this tab, show the right one
+    var allScreens = document.querySelectorAll('.screen[data-tab="' + tab + '"]');
+    allScreens.forEach(function(s, i){
+      s.classList.toggle('active', i === idx);
+    });
+    // Update side buttons
+    var btns = document.querySelectorAll('#side-actions .side-btn');
+    btns.forEach(function(b, i){
+      b.classList.toggle('active', i === idx);
+    });
+  }
+
+  window.switchTeamTab = function(tab) {
+    currentTab = tab;
+    // Update tab bar
     document.querySelectorAll('.team-tab').forEach(function(t){
       t.classList.toggle('active', t.dataset.tab === tab);
     });
-    // Update content
-    document.querySelectorAll('.tab-content').forEach(function(c){
-      var isActive = c.id === 'tab-' + tab;
-      c.classList.toggle('active', isActive);
-      if(isActive) c.classList.add('fade-in');
+    // Hide ALL screens, then show the active one for this tab
+    document.querySelectorAll('.screen').forEach(function(s){
+      s.classList.remove('active');
     });
-    // Update side actions
+    var idx = currentScreenIdx[tab] || 0;
+    var screens = document.querySelectorAll('.screen[data-tab="' + tab + '"]');
+    if(screens[idx]) screens[idx].classList.add('active');
+    // Re-render side actions
     renderSideActions(tab);
-    // Update URL without reload
+    // Update URL
     var paths = {creator:'/team',partner:'/team/partner',admin:'/team/admin'};
     history.replaceState(null, '', paths[tab] || '/team');
   };
 
-  // Init: detect tab from URL
+  // Init from URL
   var path = location.pathname;
   var initTab = 'creator';
   if(path.includes('/partner')) initTab = 'partner';

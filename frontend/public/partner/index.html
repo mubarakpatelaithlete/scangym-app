@@ -9,178 +9,171 @@
   <link rel="icon" href="/favicon.ico"/>
   <style>
     *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-    html,body{height:100%;height:100dvh;overflow:hidden;background:#0a0a16;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#fff;touch-action:pan-y;overscroll-behavior:none}
+    html,body{height:100%;height:100dvh;overflow:hidden;background:#0a0a16;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#fff;touch-action:none;overscroll-behavior:none}
     *::-webkit-scrollbar{display:none}*{scrollbar-width:none}
 
-    .partner-track{position:fixed;top:0;left:0;right:0;bottom:0;overflow-y:auto;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch}
-    .partner-card{width:100vw;min-height:100vh;min-height:100dvh;scroll-snap-align:start;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center;overflow:hidden}
+    /* ── Fixed fullscreen cards — NO scrolling ── */
+    .screen{position:fixed;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;padding-right:72px;text-align:center;overflow:hidden}
+    .screen.active{display:flex}
 
-    .card-hero{background:linear-gradient(180deg,#0a2e1a 0%,#0a0a16 60%)}
-    .card-claim{background:linear-gradient(180deg,#1a1a2e 0%,#0a0a16 60%)}
-    .card-qr{background:linear-gradient(180deg,#2e1a0a 0%,#0a0a16 60%)}
-    .card-earnings{background:linear-gradient(180deg,#0a1e2e 0%,#0a0a16 60%)}
-    .card-manage{background:linear-gradient(180deg,#1e0a2e 0%,#0a0a16 60%)}
+    /* ── Gradients per screen ── */
+    .screen-find{background:linear-gradient(180deg,#0a2e1a 0%,#0a0a16 60%)}
+    .screen-manage{background:linear-gradient(180deg,#1e0a2e 0%,#0a0a16 60%)}
+    .screen-earnings{background:linear-gradient(180deg,#0a1e2e 0%,#0a0a16 60%)}
+    .screen-qr{background:linear-gradient(180deg,#2e1a0a 0%,#0a0a16 60%)}
 
-    .stat-pill{display:inline-flex;flex-direction:column;align-items:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:16px 20px;min-width:90px}
-    .stat-pill .num{font-size:28px;font-weight:900}
-    .stat-pill .lbl{font-size:10px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;margin-top:4px}
+    /* ── Stat pill ── */
+    .stat-pill{display:inline-flex;flex-direction:column;align-items:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:14px 18px;min-width:80px}
+    .stat-pill .num{font-size:26px;font-weight:900}
+    .stat-pill .lbl{font-size:9px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;margin-top:4px}
 
-    .pt-item{display:flex;align-items:center;gap:12px;padding:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:16px;margin-bottom:8px;cursor:pointer;transition:.15s;width:100%;max-width:400px;text-align:left}
+    /* ── List item ── */
+    .pt-item{display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:16px;margin-bottom:8px;cursor:pointer;transition:.15s;width:100%;max-width:400px;text-align:left}
     .pt-item:active{background:rgba(255,255,255,.08);transform:scale(.98)}
-    .pt-thumb{width:52px;height:52px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+    .pt-thumb{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
 
+    /* ── Action button ── */
     .pt-action{padding:14px 28px;border-radius:16px;border:none;font-weight:700;font-size:15px;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:8px}
     .pt-action:active{transform:scale(.95)}
     .pt-action.primary{background:#22c55e;color:#fff;box-shadow:0 4px 20px rgba(34,197,94,.3)}
     .pt-action.secondary{background:rgba(255,255,255,.06);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.1)}
     .pt-action.orange{background:#FF6D00;color:#fff;box-shadow:0 4px 20px rgba(255,109,0,.3)}
 
-    /* Search box */
-    .search-box{width:100%;max-width:380px;position:relative;margin-bottom:20px}
+    /* ── Search box ── */
+    .search-box{width:100%;max-width:380px;position:relative;margin-bottom:16px}
     .search-box input{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:14px 18px 14px 44px;color:#fff;font-size:15px;outline:none;transition:border-color .2s}
     .search-box input:focus{border-color:rgba(34,197,94,.4)}
     .search-box .search-icon{position:absolute;left:16px;top:50%;transform:translateY(-50%);font-size:18px}
 
-    .side-actions{position:fixed;right:12px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:14px;z-index:100}
-    .side-btn{width:48px;height:48px;background:rgba(255,255,255,.1);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px;border:1px solid rgba(255,255,255,.08);transition:.15s}
-    .side-btn:active{transform:scale(.9);background:rgba(255,255,255,.2)}
+    /* ── Right-side action bar ── */
+    .side-actions{position:fixed;right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:14px;z-index:100}
+    .side-btn{width:48px;height:48px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px;border:1px solid rgba(255,255,255,.06);transition:.2s;position:relative}
+    .side-btn:active{transform:scale(.9)}
+    .side-btn.active{background:rgba(34,197,94,.25);border-color:rgba(34,197,94,.4);box-shadow:0 0 16px rgba(34,197,94,.2)}
 
+    /* ── Back button ── */
     .back-btn{position:fixed;top:16px;left:16px;z-index:100;width:40px;height:40px;background:rgba(255,255,255,.1);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;border:1px solid rgba(255,255,255,.08);text-decoration:none;color:#fff}
     .back-btn:active{transform:scale(.9)}
 
-    @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
-    .swipe-hint{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:4px;animation:bounce 2s infinite}
-    .swipe-hint span{color:rgba(255,255,255,.25);font-size:11px}
-    .swipe-dot{width:4px;height:16px;background:rgba(255,255,255,.15);border-radius:2px}
+    /* ── QR mockup ── */
+    .qr-mockup{background:rgba(255,109,0,.06);border:2px solid rgba(255,109,0,.2);border-radius:28px;padding:20px;margin-bottom:16px;position:relative}
+    .qr-inner{width:140px;height:140px;background:rgba(255,255,255,.04);border:2px dashed rgba(255,109,0,.2);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:50px}
+    .qr-label{position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);background:#FF6D00;color:#fff;font-size:10px;font-weight:800;padding:4px 14px;border-radius:20px;white-space:nowrap}
+
+    /* ── Fade transition ── */
+    @keyframes fadeIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}
+    .screen.active{animation:fadeIn .2s ease-out}
   </style>
 </head>
 <body>
   <a href="/" class="back-btn" title="Back to ScanGym">←</a>
 
+  <!-- Right-side navigation buttons -->
   <div class="side-actions">
-    <div class="side-btn" onclick="location.href='/'" title="Home">🏠</div>
-    <div class="side-btn" onclick="alert('📊 Analytics coming soon!')" title="Analytics">📊</div>
-    <div class="side-btn" onclick="alert('⚙️ Settings coming soon!')" title="Settings">⚙️</div>
-    <div class="side-btn" onclick="navigator.share?navigator.share({title:'ScanGym Partner',url:'https://scangym.com/partner'}):alert('Link copied!')" title="Share">📤</div>
+    <div class="side-btn active" onclick="showScreen(0)" title="Find & Claim">🏠</div>
+    <div class="side-btn" onclick="showScreen(1)" title="Manage Gym">⚙️</div>
+    <div class="side-btn" onclick="showScreen(2)" title="Earnings">💰</div>
+    <div class="side-btn" onclick="showScreen(3)" title="QR System">📱</div>
   </div>
 
-  <div class="partner-track">
-    <!-- Card 1: Welcome Hero -->
-    <div class="partner-card card-hero">
-      <div style="font-size:64px;margin-bottom:20px">🏢</div>
-      <h1 style="font-size:28px;font-weight:900;margin-bottom:8px">Gym Partner Hub</h1>
-      <p style="color:rgba(255,255,255,.5);font-size:15px;max-width:340px;margin-bottom:28px">Join ScanGym's network. Get new customers with zero upfront cost. They book, you earn.</p>
-      <div style="display:flex;gap:12px;margin-bottom:24px">
-        <div class="stat-pill"><span class="num" style="color:#22c55e">1.2M+</span><span class="lbl">Gyms Listed</span></div>
-        <div class="stat-pill"><span class="num" style="color:#FF6D00">$5.49</span><span class="lbl">Day Pass</span></div>
-      </div>
-      <button class="pt-action primary" onclick="document.querySelector('.card-claim').scrollIntoView({behavior:'smooth'})">🏋️ Claim Your Gym</button>
-      <div class="swipe-hint"><div class="swipe-dot"></div><span>Swipe up</span></div>
+  <!-- Screen 1: Find & Claim Your Gym -->
+  <div class="screen screen-find active" data-screen="0">
+    <div style="font-size:64px;margin-bottom:16px">🏢</div>
+    <h1 style="font-size:28px;font-weight:900;margin-bottom:8px">Gym Partner Hub</h1>
+    <p style="color:rgba(255,255,255,.5);font-size:14px;max-width:320px;margin-bottom:20px">Join ScanGym's network. Get new customers with zero upfront cost.</p>
+    <div style="display:flex;gap:12px;margin-bottom:20px">
+      <div class="stat-pill"><span class="num" style="color:#22c55e">1.2M+</span><span class="lbl">Gyms</span></div>
+      <div class="stat-pill"><span class="num" style="color:#FF6D00">$5.49</span><span class="lbl">Day Pass</span></div>
+      <div class="stat-pill"><span class="num" style="color:#a855f7">80%</span><span class="lbl">Rev Share</span></div>
     </div>
-
-    <!-- Card 2: Find & Claim Your Gym -->
-    <div class="partner-card card-claim">
-      <div style="font-size:48px;margin-bottom:16px">🔍</div>
-      <h2 style="font-size:22px;font-weight:800;margin-bottom:4px">Find & Claim Your Gym</h2>
-      <p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:24px;max-width:320px">Search for your gym. If it's already listed, claim it. If not, add it in seconds.</p>
-      <div class="search-box">
-        <span class="search-icon">🔍</span>
-        <input type="text" placeholder="Search your gym name or address..." id="gym-search"/>
-      </div>
-      <!-- Sample gym results -->
-      <div style="width:100%;max-width:400px">
-        <div class="pt-item" onclick="alert('✅ Claim request sent! We\\'ll verify within 24h.')">
-          <div class="pt-thumb" style="background:rgba(34,197,94,.15)">🏋️</div>
-          <div style="flex:1"><p style="font-weight:700;font-size:14px">PureGym London Bridge</p><p style="color:rgba(255,255,255,.35);font-size:11px">3 Tooley St, London SE1 2PF</p></div>
-          <span style="color:#22c55e;font-weight:700;font-size:12px;background:rgba(34,197,94,.1);padding:4px 10px;border-radius:8px">Claim</span>
-        </div>
-        <div class="pt-item" onclick="alert('✅ Claim request sent!')">
-          <div class="pt-thumb" style="background:rgba(59,130,246,.15)">🏋️</div>
-          <div style="flex:1"><p style="font-weight:700;font-size:14px">The Gym Group Bermondsey</p><p style="color:rgba(255,255,255,.35);font-size:11px">189 Bermondsey St, London</p></div>
-          <span style="color:#22c55e;font-weight:700;font-size:12px;background:rgba(34,197,94,.1);padding:4px 10px;border-radius:8px">Claim</span>
-        </div>
-        <div class="pt-item" onclick="alert('✅ Claim request sent!')">
-          <div class="pt-thumb" style="background:rgba(255,109,0,.15)">🏋️</div>
-          <div style="flex:1"><p style="font-weight:700;font-size:14px">Anytime Fitness Kington</p><p style="color:rgba(255,255,255,.35);font-size:11px">Bridge St, Kington HR5 3DJ</p></div>
-          <span style="color:#22c55e;font-weight:700;font-size:12px;background:rgba(34,197,94,.1);padding:4px 10px;border-radius:8px">Claim</span>
-        </div>
-      </div>
-      <p style="color:rgba(255,255,255,.3);font-size:12px;margin-top:16px">Don't see your gym? <a onclick="alert('➕ Add gym form coming soon!')" style="color:#22c55e;cursor:pointer;text-decoration:underline">Add it here</a></p>
-      <div class="swipe-hint"><div class="swipe-dot"></div><span>Swipe up</span></div>
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" placeholder="Search your gym name..." id="gym-search"/>
     </div>
+    <button class="pt-action primary" onclick="alert('✅ Claim request sent! Verified within 24h.')">🏋️ Claim Your Gym</button>
+  </div>
 
-    <!-- Card 3: ScanGym QR System -->
-    <div class="partner-card card-qr">
-      <div style="font-size:48px;margin-bottom:16px">📱</div>
-      <h2 style="font-size:22px;font-weight:800;margin-bottom:4px">ScanGym QR Entry System</h2>
-      <p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:24px;max-width:320px">Customers scan QR at your door. No staff needed. Instant check-in.</p>
-      <!-- QR mockup -->
-      <div style="background:rgba(255,109,0,.06);border:2px solid rgba(255,109,0,.2);border-radius:28px;padding:24px;margin-bottom:20px;position:relative">
-        <div style="width:180px;height:180px;background:rgba(255,255,255,.04);border:2px dashed rgba(255,109,0,.2);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:60px">📱</div>
-        <div style="position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);background:#FF6D00;color:#fff;font-size:11px;font-weight:800;padding:4px 16px;border-radius:20px;white-space:nowrap">SCAN TO CHECK IN</div>
+  <!-- Screen 2: Manage Your Gym -->
+  <div class="screen screen-manage" data-screen="1">
+    <div style="font-size:48px;margin-bottom:12px">⚙️</div>
+    <h2 style="font-size:22px;font-weight:800;margin-bottom:4px">Manage Your Gym</h2>
+    <p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:20px">Update hours, amenities, pricing & photos</p>
+    <div style="width:100%;max-width:400px">
+      <div class="pt-item" onclick="alert('🕐 Set hours coming soon!')">
+        <div class="pt-thumb" style="background:rgba(255,109,0,.15)">🕐</div>
+        <div style="flex:1"><p style="font-weight:700;font-size:14px">Opening Hours</p><p style="color:rgba(255,255,255,.35);font-size:11px">Set your daily schedule</p></div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:8px;width:100%;max-width:360px;margin-top:16px">
-        <div class="pt-item">
-          <div class="pt-thumb" style="background:rgba(255,109,0,.15)">🖨</div>
-          <div style="flex:1"><p style="font-weight:700;font-size:14px">Print QR Poster</p><p style="color:rgba(255,255,255,.35);font-size:11px">A4 poster for your gym entrance</p></div>
-        </div>
-        <div class="pt-item">
-          <div class="pt-thumb" style="background:rgba(34,197,94,.15)">📷</div>
-          <div style="flex:1"><p style="font-weight:700;font-size:14px">Staff Scanner</p><p style="color:rgba(255,255,255,.35);font-size:11px">Verify customer QR codes instantly</p></div>
-        </div>
+      <div class="pt-item" onclick="alert('💲 Set pricing coming soon!')">
+        <div class="pt-thumb" style="background:rgba(34,197,94,.15)">💲</div>
+        <div style="flex:1"><p style="font-weight:700;font-size:14px">Day Pass Pricing</p><p style="color:rgba(255,255,255,.35);font-size:11px">Set your day pass rate</p></div>
       </div>
-      <div class="swipe-hint"><div class="swipe-dot"></div><span>Swipe up</span></div>
-    </div>
-
-    <!-- Card 4: Earnings & Withdrawals -->
-    <div class="partner-card card-earnings">
-      <div style="font-size:48px;margin-bottom:16px">💰</div>
-      <h2 style="font-size:22px;font-weight:800;margin-bottom:4px">Earnings & Payouts</h2>
-      <p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:24px">Revenue from day pass bookings at your gym</p>
-      <div style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.15);border-radius:24px;padding:28px 32px;margin-bottom:20px;width:100%;max-width:360px">
-        <p style="color:rgba(255,255,255,.4);font-size:12px;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Available Balance</p>
-        <p style="color:#22c55e;font-size:42px;font-weight:900;margin-bottom:8px">£0.00</p>
-        <p style="color:rgba(255,255,255,.3);font-size:12px">Withdrawals via Stripe Connect or bank transfer</p>
+      <div class="pt-item" onclick="alert('📸 Upload photos coming soon!')">
+        <div class="pt-thumb" style="background:rgba(59,130,246,.15)">📸</div>
+        <div style="flex:1"><p style="font-weight:700;font-size:14px">Photos & Tour</p><p style="color:rgba(255,255,255,.35);font-size:11px">Showcase your facility</p></div>
       </div>
-      <div style="display:flex;gap:12px;margin-bottom:20px">
-        <div class="stat-pill"><span class="num" style="color:#FF6D00">0</span><span class="lbl">Bookings</span></div>
-        <div class="stat-pill"><span class="num" style="color:#22c55e">80%</span><span class="lbl">Revenue Share</span></div>
-      </div>
-      <div style="display:flex;gap:10px">
-        <button class="pt-action primary" onclick="alert('💸 Withdraw coming soon!')">💸 Withdraw</button>
-        <button class="pt-action secondary" onclick="alert('🏦 Connect Stripe to receive payouts')">🏦 Add Bank</button>
-      </div>
-      <div class="swipe-hint"><div class="swipe-dot"></div><span>Swipe up</span></div>
-    </div>
-
-    <!-- Card 5: Manage Your Gym -->
-    <div class="partner-card card-manage">
-      <div style="font-size:48px;margin-bottom:16px">⚙️</div>
-      <h2 style="font-size:22px;font-weight:800;margin-bottom:4px">Manage Your Gym</h2>
-      <p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:24px">Update hours, amenities, pricing & photos</p>
-      <div style="width:100%;max-width:400px">
-        <div class="pt-item" onclick="alert('🕐 Set hours coming soon!')">
-          <div class="pt-thumb" style="background:rgba(255,109,0,.15)">🕐</div>
-          <div style="flex:1"><p style="font-weight:700;font-size:14px">Opening Hours</p><p style="color:rgba(255,255,255,.35);font-size:11px">Set your daily schedule</p></div>
-        </div>
-        <div class="pt-item" onclick="alert('💲 Set pricing coming soon!')">
-          <div class="pt-thumb" style="background:rgba(34,197,94,.15)">💲</div>
-          <div style="flex:1"><p style="font-weight:700;font-size:14px">Day Pass Pricing</p><p style="color:rgba(255,255,255,.35);font-size:11px">Set your day pass rate</p></div>
-        </div>
-        <div class="pt-item" onclick="alert('📸 Upload photos coming soon!')">
-          <div class="pt-thumb" style="background:rgba(59,130,246,.15)">📸</div>
-          <div style="flex:1"><p style="font-weight:700;font-size:14px">Photos & Tour</p><p style="color:rgba(255,255,255,.35);font-size:11px">Showcase your facility</p></div>
-        </div>
-        <div class="pt-item" onclick="alert('🏊 Amenities coming soon!')">
-          <div class="pt-thumb" style="background:rgba(168,85,247,.15)">🏊</div>
-          <div style="flex:1"><p style="font-weight:700;font-size:14px">Amenities</p><p style="color:rgba(255,255,255,.35);font-size:11px">Pool, sauna, classes & more</p></div>
-        </div>
-        <div class="pt-item" onclick="alert('📊 Visitor analytics coming soon!')">
-          <div class="pt-thumb" style="background:rgba(234,179,8,.15)">📊</div>
-          <div style="flex:1"><p style="font-weight:700;font-size:14px">Visitor Analytics</p><p style="color:rgba(255,255,255,.35);font-size:11px">Track check-ins and peak hours</p></div>
-        </div>
+      <div class="pt-item" onclick="alert('🏊 Amenities coming soon!')">
+        <div class="pt-thumb" style="background:rgba(168,85,247,.15)">🏊</div>
+        <div style="flex:1"><p style="font-weight:700;font-size:14px">Amenities</p><p style="color:rgba(255,255,255,.35);font-size:11px">Pool, sauna, classes & more</p></div>
       </div>
     </div>
   </div>
+
+  <!-- Screen 3: Earnings & Payouts -->
+  <div class="screen screen-earnings" data-screen="2">
+    <div style="font-size:48px;margin-bottom:12px">💰</div>
+    <h2 style="font-size:22px;font-weight:800;margin-bottom:4px">Earnings & Payouts</h2>
+    <p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:20px">Revenue from day pass bookings at your gym</p>
+    <div style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.15);border-radius:24px;padding:24px 32px;margin-bottom:20px;width:100%;max-width:360px">
+      <p style="color:rgba(255,255,255,.4);font-size:12px;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Available Balance</p>
+      <p style="color:#22c55e;font-size:42px;font-weight:900;margin-bottom:8px">£0.00</p>
+      <p style="color:rgba(255,255,255,.3);font-size:12px">80% revenue share · Withdraw via Stripe</p>
+    </div>
+    <div style="display:flex;gap:12px;margin-bottom:20px">
+      <div class="stat-pill"><span class="num" style="color:#FF6D00">0</span><span class="lbl">Bookings</span></div>
+      <div class="stat-pill"><span class="num" style="color:#22c55e">80%</span><span class="lbl">Rev Share</span></div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="pt-action primary" onclick="alert('💸 Withdraw coming soon!')">💸 Withdraw</button>
+      <button class="pt-action secondary" onclick="alert('🏦 Connect Stripe to receive payouts')">🏦 Add Bank</button>
+    </div>
+  </div>
+
+  <!-- Screen 4: QR Entry System -->
+  <div class="screen screen-qr" data-screen="3">
+    <div style="font-size:48px;margin-bottom:12px">📱</div>
+    <h2 style="font-size:22px;font-weight:800;margin-bottom:4px">ScanGym QR Entry</h2>
+    <p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:20px;max-width:300px">Customers scan QR at your door. No staff needed. Instant check-in.</p>
+    <div class="qr-mockup">
+      <div class="qr-inner">📱</div>
+      <div class="qr-label">SCAN TO CHECK IN</div>
+    </div>
+    <div style="width:100%;max-width:360px;margin-top:8px">
+      <div class="pt-item" onclick="alert('🖨 Downloading QR poster...')">
+        <div class="pt-thumb" style="background:rgba(255,109,0,.15)">🖨</div>
+        <div style="flex:1"><p style="font-weight:700;font-size:14px">Print QR Poster</p><p style="color:rgba(255,255,255,.35);font-size:11px">A4 poster for your gym entrance</p></div>
+      </div>
+      <div class="pt-item" onclick="alert('📷 Opening scanner...')">
+        <div class="pt-thumb" style="background:rgba(34,197,94,.15)">📷</div>
+        <div style="flex:1"><p style="font-weight:700;font-size:14px">Staff Scanner</p><p style="color:rgba(255,255,255,.35);font-size:11px">Verify customer QR codes instantly</p></div>
+      </div>
+    </div>
+    <button class="pt-action orange" style="margin-top:12px" onclick="alert('🔐 Opening Seam Connect...')">🔐 Connect Smart Locks</button>
+  </div>
+
+<script>
+(function(){
+  var screens = document.querySelectorAll('.screen');
+  var btns = document.querySelectorAll('.side-btn');
+
+  window.showScreen = function(idx) {
+    screens.forEach(function(s, i) {
+      s.classList.toggle('active', i === idx);
+    });
+    btns.forEach(function(b, i) {
+      b.classList.toggle('active', i === idx);
+    });
+  };
+})();
+</script>
 </body>
 </html>

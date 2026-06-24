@@ -18100,35 +18100,88 @@ window._loadPartnerPayouts=async function(){
 //  APPS PAGE — Download ScanGym on any platform
 // ═══════════════════════════════════════════════════════════════════
 function AppsPage(){
-  var stores=[
-    {name:'App Store',icon:'\ud83c\udf4f',desc:'iPhone & iPad',color:'#007AFF',url:'https://apps.apple.com/app/scangym/id6738043795',live:1},
-    {name:'Google Play',icon:'\ud83e\udd16',desc:'Android phones & tablets',color:'#34A853',url:'https://play.google.com/store/apps/details?id=com.scangym.app',live:0},
-    {name:'Microsoft Store',icon:'\ud83e\ude9f',desc:'Windows 10 & 11',color:'#0078D4',url:'https://apps.microsoft.com/detail/9nh8vrn834dv',live:1},
-    {name:'Samsung Galaxy Store',icon:'\ud83d\udcf1',desc:'Samsung devices',color:'#1428A0',url:'https://galaxy.store/scangym',live:0},
-    {name:'Web App (PWA)',icon:'\ud83c\udf10',desc:'Any browser \u2014 install to home screen',color:'#FF6D00',url:'https://scangym.com',live:1},
-  ];
-  return`<div style="max-width:480px;margin:0 auto;padding:20px 16px 100px">
-    <div class="sg-more-back" onclick="navigate('/more')">\u2190 Back</div>
-    <div style="text-align:center;margin-bottom:24px">
-      <div style="width:64px;height:64px;background:linear-gradient(135deg,#FF6D00,#ff8533);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 12px;box-shadow:0 8px 32px rgba(255,109,0,.3)">\ud83d\udcf2</div>
-      <h1 style="font-size:22px;font-weight:900;color:#fff;margin:0 0 4px">Get ScanGym</h1>
-      <p style="color:rgba(255,255,255,.4);font-size:13px;margin:0">Download on your favourite platform</p>
+  setTimeout(function(){
+    var tc=document.querySelector('.sg-tab-content');if(tc)tc.style.overflowY='hidden';
+    var btns=document.querySelectorAll('.apps-side-btn');
+    var screens=document.querySelectorAll('.apps-screen');
+    window._showAppsScreen=function(idx){
+      screens.forEach(function(s,i){s.style.display=i===idx?'flex':'none';});
+      btns.forEach(function(b,i){b.style.background=i===idx?'rgba(255,109,0,.25)':'rgba(255,255,255,.08)';b.style.borderColor=i===idx?'rgba(255,109,0,.4)':'rgba(255,255,255,.06)';b.style.boxShadow=i===idx?'0 0 16px rgba(255,109,0,.2)':'none';});
+    };
+  },50);
+  return`<div style="position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden">
+    <div class="sg-more-back" style="position:absolute;top:16px;left:16px;z-index:10" onclick="var tc=document.querySelector('.sg-tab-content');if(tc)tc.style.overflowY='auto';navigate('/more')">\u2190 Back</div>
+    <div style="position:fixed;right:10px;top:50%;transform:translateY(calc(-50% - 28px));display:flex;flex-direction:column;gap:14px;z-index:100">
+      <div class="apps-side-btn" onclick="_showAppsScreen(0)" style="width:46px;height:46px;background:rgba(255,109,0,.25);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;border:1px solid rgba(255,109,0,.4);transition:.2s;box-shadow:0 0 16px rgba(255,109,0,.2)" title="Home">\ud83c\udfe0</div>
+      <div class="apps-side-btn" onclick="_showAppsScreen(1)" style="width:46px;height:46px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;border:1px solid rgba(255,255,255,.06);transition:.2s" title="Mobile">\ud83d\udcf1</div>
+      <div class="apps-side-btn" onclick="_showAppsScreen(2)" style="width:46px;height:46px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;border:1px solid rgba(255,255,255,.06);transition:.2s" title="Desktop">\ud83d\udcbb</div>
+      <div class="apps-side-btn" onclick="_showAppsScreen(3)" style="width:46px;height:46px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;border:1px solid rgba(255,255,255,.06);transition:.2s" title="Info">\ud83d\udca1</div>
     </div>
-    <div style="display:flex;flex-direction:column;gap:10px">
-      ${stores.map(function(s){
-        var badge=s.live?'<span style="background:rgba(34,197,94,.15);color:#22c55e;font-size:9px;font-weight:800;padding:2px 8px;border-radius:6px;text-transform:uppercase">Live</span>':'<span style="background:rgba(255,255,255,.08);color:rgba(255,255,255,.35);font-size:9px;font-weight:800;padding:2px 8px;border-radius:6px;text-transform:uppercase">Coming Soon</span>';
-        return'<div '+(s.live?'onclick="window.open(\''+s.url+'\',\'_blank\')" style="cursor:pointer;':'style="opacity:.6;')+'display:flex;align-items:center;gap:14px;padding:16px;background:rgba(255,255,255,.04);border-radius:14px;border:1px solid rgba(255,255,255,.06)">'
-          +'<div style="width:48px;height:48px;background:'+s.color+'18;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">'+s.icon+'</div>'
-          +'<div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px"><span style="color:#fff;font-size:15px;font-weight:700">'+s.name+'</span>'+badge+'</div><p style="color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0">'+s.desc+'</p></div>'
-          +(s.live?'<div style="color:rgba(255,255,255,.25);font-size:18px">\u203a</div>':'')
-          +'</div>';
-      }).join('')}
+    <div class="apps-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;padding-right:72px;text-align:center;background:linear-gradient(180deg,rgba(255,109,0,.08) 0%,#0a0a16 60%)">
+      <div style="width:72px;height:72px;background:linear-gradient(135deg,#FF6D00,#ff8533);border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:32px;margin-bottom:16px;box-shadow:0 8px 32px rgba(255,109,0,.3)">\ud83d\udcf2</div>
+      <h1 style="font-size:28px;font-weight:900;margin-bottom:8px">Get ScanGym</h1>
+      <p style="color:rgba(255,255,255,.5);font-size:14px;max-width:320px;margin-bottom:24px">Download on your favourite platform</p>
+      <div style="display:flex;gap:12px;margin-bottom:24px">
+        <div style="display:inline-flex;flex-direction:column;align-items:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:14px 18px;min-width:80px"><span style="font-size:26px;font-weight:900;color:#22c55e">3</span><span style="font-size:9px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;margin-top:4px">Live</span></div>
+        <div style="display:inline-flex;flex-direction:column;align-items:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:14px 18px;min-width:80px"><span style="font-size:26px;font-weight:900;color:#FF6D00">2</span><span style="font-size:9px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;margin-top:4px">Coming</span></div>
+        <div style="display:inline-flex;flex-direction:column;align-items:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:14px 18px;min-width:80px"><span style="font-size:26px;font-weight:900;color:#3b82f6">5</span><span style="font-size:9px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;margin-top:4px">Total</span></div>
+      </div>
+      <div style="padding:12px 24px;border-radius:16px;border:none;font-weight:700;font-size:15px;cursor:pointer;background:#FF6D00;color:#fff;box-shadow:0 4px 20px rgba(255,109,0,.3)" onclick="_showAppsScreen(1)">\ud83d\udcf1 Browse Apps</div>
     </div>
-    <div style="margin-top:24px;background:rgba(255,109,0,.06);border:1px solid rgba(255,109,0,.12);border-radius:16px;padding:16px;display:flex;gap:12px;align-items:flex-start">
-      <span style="font-size:24px">\ud83d\udca1</span>
-      <div>
-        <p style="color:#FF6D00;font-size:13px;font-weight:700;margin:0 0 4px">Works everywhere</p>
-        <p style="color:rgba(255,255,255,.4);font-size:12px;line-height:1.6;margin:0">One account works across all platforms. Book on your phone, check in on your watch, manage on your laptop.</p>
+    <div class="apps-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;padding-right:72px;text-align:center;background:linear-gradient(180deg,rgba(0,122,255,.08) 0%,#0a0a16 60%)">
+      <div style="font-size:48px;margin-bottom:12px">\ud83d\udcf1</div>
+      <h2 style="font-size:22px;font-weight:800;margin-bottom:4px">Mobile Apps</h2>
+      <p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:20px">ScanGym on your phone</p>
+      <div style="width:100%;max-width:400px">
+        <div onclick="window.open('https://apps.apple.com/app/scangym/id6738043795','_blank')" style="display:flex;align-items:center;gap:14px;padding:16px;background:rgba(255,255,255,.04);border-radius:16px;border:1px solid rgba(255,255,255,.06);margin-bottom:10px;cursor:pointer;text-align:left">
+          <div style="width:48px;height:48px;background:#007AFF18;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px">\ud83c\udf4f</div>
+          <div style="flex:1"><div style="display:flex;align-items:center;gap:6px"><span style="color:#fff;font-size:15px;font-weight:700">App Store</span><span style="background:rgba(34,197,94,.15);color:#22c55e;font-size:9px;font-weight:800;padding:2px 8px;border-radius:6px">LIVE</span></div><p style="color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0">iPhone & iPad</p></div>
+          <div style="color:rgba(255,255,255,.25);font-size:18px">\u203a</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;padding:16px;background:rgba(255,255,255,.04);border-radius:16px;border:1px solid rgba(255,255,255,.06);margin-bottom:10px;opacity:.6;text-align:left">
+          <div style="width:48px;height:48px;background:#34A85318;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px">\ud83e\udd16</div>
+          <div style="flex:1"><div style="display:flex;align-items:center;gap:6px"><span style="color:#fff;font-size:15px;font-weight:700">Google Play</span><span style="background:rgba(255,255,255,.08);color:rgba(255,255,255,.35);font-size:9px;font-weight:800;padding:2px 8px;border-radius:6px">COMING SOON</span></div><p style="color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0">Android phones & tablets</p></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;padding:16px;background:rgba(255,255,255,.04);border-radius:16px;border:1px solid rgba(255,255,255,.06);opacity:.6;text-align:left">
+          <div style="width:48px;height:48px;background:#1428A018;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px">\ud83d\udcf1</div>
+          <div style="flex:1"><div style="display:flex;align-items:center;gap:6px"><span style="color:#fff;font-size:15px;font-weight:700">Samsung Galaxy Store</span><span style="background:rgba(255,255,255,.08);color:rgba(255,255,255,.35);font-size:9px;font-weight:800;padding:2px 8px;border-radius:6px">COMING SOON</span></div><p style="color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0">Samsung devices</p></div>
+        </div>
+      </div>
+    </div>
+    <div class="apps-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;padding-right:72px;text-align:center;background:linear-gradient(180deg,rgba(0,120,212,.08) 0%,#0a0a16 60%)">
+      <div style="font-size:48px;margin-bottom:12px">\ud83d\udcbb</div>
+      <h2 style="font-size:22px;font-weight:800;margin-bottom:4px">Desktop & Web</h2>
+      <p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:20px">ScanGym on your computer</p>
+      <div style="width:100%;max-width:400px">
+        <div onclick="window.open('https://apps.microsoft.com/detail/9nh8vrn834dv','_blank')" style="display:flex;align-items:center;gap:14px;padding:16px;background:rgba(255,255,255,.04);border-radius:16px;border:1px solid rgba(255,255,255,.06);margin-bottom:10px;cursor:pointer;text-align:left">
+          <div style="width:48px;height:48px;background:#0078D418;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px">\ud83e\ude9f</div>
+          <div style="flex:1"><div style="display:flex;align-items:center;gap:6px"><span style="color:#fff;font-size:15px;font-weight:700">Microsoft Store</span><span style="background:rgba(34,197,94,.15);color:#22c55e;font-size:9px;font-weight:800;padding:2px 8px;border-radius:6px">LIVE</span></div><p style="color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0">Windows 10 & 11</p></div>
+          <div style="color:rgba(255,255,255,.25);font-size:18px">\u203a</div>
+        </div>
+        <div onclick="window.open('https://scangym.com','_blank')" style="display:flex;align-items:center;gap:14px;padding:16px;background:rgba(255,255,255,.04);border-radius:16px;border:1px solid rgba(255,255,255,.06);cursor:pointer;text-align:left">
+          <div style="width:48px;height:48px;background:#FF6D0018;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px">\ud83c\udf10</div>
+          <div style="flex:1"><div style="display:flex;align-items:center;gap:6px"><span style="color:#fff;font-size:15px;font-weight:700">Web App (PWA)</span><span style="background:rgba(34,197,94,.15);color:#22c55e;font-size:9px;font-weight:800;padding:2px 8px;border-radius:6px">LIVE</span></div><p style="color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0">Any browser \u2014 install to home screen</p></div>
+          <div style="color:rgba(255,255,255,.25);font-size:18px">\u203a</div>
+        </div>
+      </div>
+    </div>
+    <div class="apps-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;padding-right:72px;text-align:center;background:linear-gradient(180deg,rgba(255,109,0,.06) 0%,#0a0a16 60%)">
+      <div style="font-size:48px;margin-bottom:12px">\ud83d\udca1</div>
+      <h2 style="font-size:22px;font-weight:800;margin-bottom:4px">Works Everywhere</h2>
+      <p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:24px;max-width:320px">One account works across all platforms. Book on your phone, check in on your watch, manage on your laptop.</p>
+      <div style="width:100%;max-width:360px">
+        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:16px;margin-bottom:8px;text-align:left">
+          <div style="width:42px;height:42px;background:rgba(34,197,94,.12);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px">\u2705</div>
+          <div><p style="font-weight:700;font-size:13px">Cross-Platform Sync</p><p style="color:rgba(255,255,255,.35);font-size:10px;margin-top:2px">Bookings, QR codes & wallet sync everywhere</p></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:16px;margin-bottom:8px;text-align:left">
+          <div style="width:42px;height:42px;background:rgba(59,130,246,.12);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px">\ud83d\udd12</div>
+          <div><p style="font-weight:700;font-size:13px">Secure Sign-in</p><p style="color:rgba(255,255,255,.35);font-size:10px;margin-top:2px">Phone OTP \u2014 no passwords needed</p></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:16px;text-align:left">
+          <div style="width:42px;height:42px;background:rgba(255,109,0,.12);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px">\u26a1</div>
+          <div><p style="font-weight:700;font-size:13px">Instant QR Entry</p><p style="color:rgba(255,255,255,.35);font-size:10px;margin-top:2px">Show your code at any ScanGym partner</p></div>
+        </div>
       </div>
     </div>
   </div>`;
@@ -18136,62 +18189,77 @@ function AppsPage(){
 
 function ChannelsPage(){
   // Kick off data load
-  setTimeout(function(){_loadChannels();},100);
+  setTimeout(function(){
+    _loadChannels();
+    var tc=document.querySelector('.sg-tab-content');if(tc)tc.style.overflowY='hidden';
+    var btns=document.querySelectorAll('.ch-side-btn');
+    var screens=document.querySelectorAll('.ch-screen');
+    window._showChScreen=function(idx){
+      screens.forEach(function(s,i){s.style.display=i===idx?'flex':'none';});
+      btns.forEach(function(b,i){b.style.background=i===idx?'rgba(59,130,246,.25)':'rgba(255,255,255,.08)';b.style.borderColor=i===idx?'rgba(59,130,246,.4)':'rgba(255,255,255,.06)';b.style.boxShadow=i===idx?'0 0 16px rgba(59,130,246,.2)':'none';});
+    };
+  },50);
 
-  return`<div style="max-width:480px;margin:0 auto;padding:20px 16px 100px">
-    <div class="sg-more-back" onclick="navigate('/more')">← Back</div>
-
-    <!-- Header -->
-    <div style="margin-bottom:24px">
-      <h1 style="font-size:22px;font-weight:900;color:#fff;margin:0 0 4px">📡 My Channels</h1>
-      <p style="color:rgba(255,255,255,.4);font-size:13px;margin:0">Connect your favourite apps to search & book gyms</p>
+  return`<div style="position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden">
+    <div class="sg-more-back" style="position:absolute;top:16px;left:16px;z-index:10" onclick="var tc=document.querySelector('.sg-tab-content');if(tc)tc.style.overflowY='auto';navigate('/more')">← Back</div>
+    <div style="position:fixed;right:10px;top:50%;transform:translateY(calc(-50% - 28px));display:flex;flex-direction:column;gap:14px;z-index:100">
+      <div class="ch-side-btn" onclick="_showChScreen(0)" style="width:46px;height:46px;background:rgba(59,130,246,.25);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;border:1px solid rgba(59,130,246,.4);transition:.2s;box-shadow:0 0 16px rgba(59,130,246,.2)" title="Home">🏠</div>
+      <div class="ch-side-btn" onclick="_showChScreen(1)" style="width:46px;height:46px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;border:1px solid rgba(255,255,255,.06);transition:.2s" title="Connected">✅</div>
+      <div class="ch-side-btn" onclick="_showChScreen(2)" style="width:46px;height:46px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;border:1px solid rgba(255,255,255,.06);transition:.2s" title="Available">🔗</div>
+      <div class="ch-side-btn" onclick="_showChScreen(3)" style="width:46px;height:46px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;border:1px solid rgba(255,255,255,.06);transition:.2s" title="Info">💡</div>
     </div>
-
-    <!-- Stats bar -->
-    <div id="ch-stats" style="display:flex;gap:10px;margin-bottom:20px">
-      <div style="flex:1;background:rgba(255,109,0,.08);border:1px solid rgba(255,109,0,.15);border-radius:14px;padding:14px;text-align:center">
-        <div style="color:#FF6D00;font-size:22px;font-weight:900" id="ch-connected-count">–</div>
-        <div style="color:rgba(255,255,255,.35);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Connected</div>
+    <div class="ch-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;padding-right:72px;text-align:center;background:linear-gradient(180deg,rgba(59,130,246,.08) 0%,#0a0a16 60%)">
+      <div style="font-size:56px;margin-bottom:12px">📡</div>
+      <h1 style="font-size:26px;font-weight:900;margin-bottom:6px">My Channels</h1>
+      <p style="color:rgba(255,255,255,.45);font-size:13px;max-width:320px;margin-bottom:20px">Connect your favourite apps to search & book gyms</p>
+      <div style="display:flex;gap:12px;margin-bottom:20px">
+        <div style="display:inline-flex;flex-direction:column;align-items:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:14px 18px;min-width:80px"><span style="font-size:26px;font-weight:900;color:#FF6D00" id="ch-connected-count">–</span><span style="font-size:9px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;margin-top:4px">Connected</span></div>
+        <div style="display:inline-flex;flex-direction:column;align-items:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:14px 18px;min-width:80px"><span style="font-size:26px;font-weight:900;color:#22c55e" id="ch-available-count">–</span><span style="font-size:9px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;margin-top:4px">Available</span></div>
+        <div style="display:inline-flex;flex-direction:column;align-items:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:14px 18px;min-width:80px"><span style="font-size:26px;font-weight:900;color:#3b82f6" id="ch-total-count">–</span><span style="font-size:9px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;margin-top:4px">Total</span></div>
       </div>
-      <div style="flex:1;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.15);border-radius:14px;padding:14px;text-align:center">
-        <div style="color:#22c55e;font-size:22px;font-weight:900" id="ch-available-count">–</div>
-        <div style="color:rgba(255,255,255,.35);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Available</div>
-      </div>
-      <div style="flex:1;background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.15);border-radius:14px;padding:14px;text-align:center">
-        <div style="color:#3b82f6;font-size:22px;font-weight:900" id="ch-total-count">–</div>
-        <div style="color:rgba(255,255,255,.35);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Total</div>
-      </div>
+      <div style="padding:12px 24px;border-radius:16px;border:none;font-weight:700;font-size:15px;cursor:pointer;background:#3b82f6;color:#fff;box-shadow:0 4px 20px rgba(59,130,246,.3)" onclick="_showChScreen(2)">🔗 Connect a Channel</div>
     </div>
-
-    <!-- Connected channels section -->
-    <div id="ch-connected-section" style="display:none;margin-bottom:24px">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.3);margin-bottom:8px;padding-left:4px">✅ Connected</div>
-      <div id="ch-connected-list"></div>
-    </div>
-
-    <!-- Available channels section -->
-    <div id="ch-available-section" style="margin-bottom:24px">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.3);margin-bottom:8px;padding-left:4px">🔗 Available to Connect</div>
-      <div id="ch-available-list">
-        <!-- Skeleton loaders -->
-        <div style="background:rgba(255,255,255,.04);border-radius:14px;padding:16px;margin-bottom:8px;height:72px;animation:skeletonPulse 1.8s ease-in-out infinite"></div>
-        <div style="background:rgba(255,255,255,.04);border-radius:14px;padding:16px;margin-bottom:8px;height:72px;animation:skeletonPulse 1.8s ease-in-out infinite;animation-delay:.2s"></div>
-        <div style="background:rgba(255,255,255,.04);border-radius:14px;padding:16px;margin-bottom:8px;height:72px;animation:skeletonPulse 1.8s ease-in-out infinite;animation-delay:.4s"></div>
+    <div class="ch-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;padding-right:72px;text-align:center;background:linear-gradient(180deg,rgba(34,197,94,.08) 0%,#0a0a16 60%)">
+      <div style="font-size:48px;margin-bottom:12px">✅</div>
+      <h2 style="font-size:22px;font-weight:800;margin-bottom:4px">Connected</h2>
+      <p style="color:rgba(255,255,255,.4);font-size:12px;margin-bottom:16px">Your active channel connections</p>
+      <div id="ch-connected-section" style="width:100%;max-width:400px">
+        <div id="ch-connected-list"><p style="color:rgba(255,255,255,.3);font-size:13px">No channels connected yet</p></div>
       </div>
     </div>
-
-    <!-- Coming soon section -->
-    <div id="ch-coming-section" style="display:none;margin-bottom:24px">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.3);margin-bottom:8px;padding-left:4px">🔮 Coming Soon</div>
-      <div id="ch-coming-list"></div>
+    <div class="ch-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;padding-right:72px;text-align:center;background:linear-gradient(180deg,rgba(168,85,247,.08) 0%,#0a0a16 60%)">
+      <div style="font-size:48px;margin-bottom:12px">🔗</div>
+      <h2 style="font-size:22px;font-weight:800;margin-bottom:4px">Available</h2>
+      <p style="color:rgba(255,255,255,.4);font-size:12px;margin-bottom:16px">Connect new channels</p>
+      <div id="ch-available-section" style="width:100%;max-width:400px">
+        <div id="ch-available-list">
+          <div style="background:rgba(255,255,255,.04);border-radius:14px;padding:16px;margin-bottom:8px;height:72px;animation:skeletonPulse 1.8s ease-in-out infinite"></div>
+          <div style="background:rgba(255,255,255,.04);border-radius:14px;padding:16px;margin-bottom:8px;height:72px;animation:skeletonPulse 1.8s ease-in-out infinite;animation-delay:.2s"></div>
+          <div style="background:rgba(255,255,255,.04);border-radius:14px;padding:16px;margin-bottom:8px;height:72px;animation:skeletonPulse 1.8s ease-in-out infinite;animation-delay:.4s"></div>
+        </div>
+      </div>
+      <div id="ch-coming-section" style="display:none;width:100%;max-width:400px;margin-top:12px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.3);margin-bottom:8px">🔮 Coming Soon</div>
+        <div id="ch-coming-list"></div>
+      </div>
     </div>
-
-    <!-- Info card -->
-    <div style="background:rgba(255,109,0,.06);border:1px solid rgba(255,109,0,.12);border-radius:16px;padding:16px;display:flex;gap:12px;align-items:flex-start">
-      <span style="font-size:24px">💡</span>
-      <div>
-        <p style="color:#FF6D00;font-size:13px;font-weight:700;margin:0 0 4px">How it works</p>
-        <p style="color:rgba(255,255,255,.4);font-size:12px;line-height:1.6;margin:0">Connect a channel → get a welcome message → search & book gyms right from that app. Your conversations sync across all channels.</p>
+    <div class="ch-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;padding-right:72px;text-align:center;background:linear-gradient(180deg,rgba(255,109,0,.06) 0%,#0a0a16 60%)">
+      <div style="font-size:48px;margin-bottom:12px">💡</div>
+      <h2 style="font-size:22px;font-weight:800;margin-bottom:4px">How It Works</h2>
+      <p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:20px;max-width:300px">Connect a channel, get a welcome message, search & book gyms right from that app</p>
+      <div style="width:100%;max-width:360px">
+        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:16px;margin-bottom:8px;text-align:left">
+          <div style="width:42px;height:42px;background:rgba(59,130,246,.12);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px">1️⃣</div>
+          <div><p style="font-weight:700;font-size:13px">Connect</p><p style="color:rgba(255,255,255,.35);font-size:10px;margin-top:2px">Tap Connect on any channel</p></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:16px;margin-bottom:8px;text-align:left">
+          <div style="width:42px;height:42px;background:rgba(34,197,94,.12);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px">2️⃣</div>
+          <div><p style="font-weight:700;font-size:13px">Message</p><p style="color:rgba(255,255,255,.35);font-size:10px;margin-top:2px">Say "Hi" to start the bot</p></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:16px;text-align:left">
+          <div style="width:42px;height:42px;background:rgba(255,109,0,.12);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px">3️⃣</div>
+          <div><p style="font-weight:700;font-size:13px">Book</p><p style="color:rgba(255,255,255,.35);font-size:10px;margin-top:2px">Search & book gyms right from the app</p></div>
+        </div>
       </div>
     </div>
   </div>`;
