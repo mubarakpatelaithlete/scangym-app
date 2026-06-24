@@ -83,7 +83,16 @@ async function ensureBookingColumns() {
 
 const STRIPE_SECRET = process.env.STRIPE_SECRET_KEY;
 let stripe;
+let stripeKeyValid = false;
 try {
+  if (!STRIPE_SECRET) {
+    console.error('[Payment] CRITICAL: STRIPE_SECRET_KEY env var is NOT SET! All payments will fail.');
+  } else if (!STRIPE_SECRET.startsWith('sk_')) {
+    console.error('[Payment] CRITICAL: STRIPE_SECRET_KEY does not start with sk_ — likely invalid.');
+  } else {
+    console.log(`[Payment] Stripe key loaded: ${STRIPE_SECRET.substring(0, 7)}...${STRIPE_SECRET.slice(-4)} (${STRIPE_SECRET.length} chars)`);
+    stripeKeyValid = true;
+  }
   stripe = require('stripe')(STRIPE_SECRET);
 } catch (err) {
   console.error('Stripe init error:', err.message);
@@ -561,6 +570,58 @@ router.post('/confirm-setup', async (req, res) => {
  * List saved payment methods for the logged-in user.
  * Uber shows this as "Payment" with card icons on the ride screen.
  */
+// V7: Payment health check — diagnose configuration issues
+router.get('/health', async (req, res) => {
+  const checks = {
+    stripeKeySet: !!STRIPE_SECRET,
+    stripeKeyFormat: STRIPE_SECRET ? STRIPE_SECRET.startsWith('sk_') : false,
+    stripeKeyMode: STRIPE_SECRET ? (STRIPE_SECRET.startsWith('sk_live') ? 'live' : STRIPE_SECRET.startsWith('sk_test') ? 'test' : 'unknown') : 'missing',
+    stripeObjectCreated: !!stripe,
+    stripeKeyValid: false,
+    dbConnected: false,
+    bookingsTableExists: false,
+    qrTableExists: false,
+  };
+  // Test Stripe key by making a lightweight API call
+  if (stripe) {
+    try {
+      await stripe.balance.retrieve();
+      checks.stripeKeyValid = true;
+    } catch (e) {
+      checks.stripeError = e.message;
+    }
+  }
+  // Test DB connection
+  try {
+    const r = await pool.query('SELECT 1 as ok');
+    checks.dbConnected = r.rows[0]?.ok === 1;
+  } catch (e) {
+    checks.dbError = e.message;
+  }
+  // Check tables exist
+  try {
+    const tables = await pool.query(
+      `SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_name IN ('bookings','booking_qr_codes','users')`
+    );
+    const tNames = tables.rows.map(r => r.table_name);
+    checks.bookingsTableExists = tNames.includes('bookings');
+    checks.qrTableExists = tNames.includes('booking_qr_codes');
+    checks.usersTableExists = tNames.includes('users');
+  } catch (e) {
+    checks.tableCheckError = e.message;
+  }
+  // Count stuck pending bookings
+  try {
+    const stale = await pool.query(
+      `SELECT COUNT(*) as cnt FROM public.bookings WHERE status = 'pending' AND created_at < NOW() - INTERVAL '5 minutes'`
+    );
+    checks.stalePendingBookings = parseInt(stale.rows[0]?.cnt || '0');
+  } catch (e) {}
+
+  const allGood = checks.stripeKeyValid && checks.dbConnected && checks.bookingsTableExists && checks.qrTableExists;
+  res.json({ status: allGood ? 'healthy' : 'unhealthy', checks });
+});
+
 router.get('/saved-cards', async (req, res) => {
   try {
     if (!stripe) return res.status(500).json({ error: 'Payment not configured' });
@@ -657,7 +718,8 @@ router.post('/quick-checkout', async (req, res) => {
   // mark it as 'failed' → stuck 'pending' bookings blocked all future attempts.
   let booking = null;
   try {
-    if (!stripe) return res.status(500).json({ error: 'Payment not configured' });
+    if (!stripe) return res.status(500).json({ error: 'Payment not configured — Stripe not initialised' });
+    if (!stripeKeyValid) return res.status(500).json({ error: 'Payment not configured — invalid Stripe API key. Contact support.' });
     if (!req.session?.userId) return res.status(401).json({ error: 'Login required for 1-tap booking' });
 
     let { gymId, date, time, cardId, savedCardId, placeId, passType, gymName: reqGymName, gymAddress: reqGymAddr, referral_code } = req.body;
@@ -736,11 +798,29 @@ router.post('/quick-checkout', async (req, res) => {
       console.log(`[Payment] Referral discount: ${REFERRAL_DISCOUNT_PERCENT}% off → ${dayPrice.symbol}${price} (saved ${dayPrice.symbol}${discountAmount}) via "${referral_code}"`);
     }
 
+    // V7-FIX: Clean up stale 'pending' bookings (>5 min old) for this user
+    // These get stuck when Stripe charge fails but catch block can't update status
+    try {
+      const cleaned = await pool.query(
+        `UPDATE public.bookings SET status = 'failed', updated_at = NOW()
+         WHERE user_id = $1 AND status = 'pending'
+         AND created_at < NOW() - INTERVAL '5 minutes'
+         RETURNING id`,
+        [req.session.userId]
+      );
+      if (cleaned.rows.length > 0) {
+        console.log(`[Payment] Cleaned ${cleaned.rows.length} stale pending bookings for user ${req.session.userId}: ${cleaned.rows.map(r => r.id).join(', ')}`);
+      }
+    } catch (cleanupErr) {
+      console.warn('[Payment] Stale booking cleanup failed (non-fatal):', cleanupErr.message);
+    }
+
     // C8 FIX: Prevent duplicate bookings (same user + gym + date + time)
+    // V7-FIX: Only block on 'confirmed'/'reserved' bookings, not stale 'pending'
     const existingBooking = await pool.query(
       `SELECT id, status FROM public.bookings
        WHERE gym_id = $1 AND user_id = $2 AND booking_date = $3 AND start_time = $4
-       AND status NOT IN ('cancelled', 'failed')
+       AND status IN ('confirmed', 'reserved')
        LIMIT 1`,
       [dbGymId, req.session.userId, date, resolved.startTime]
     );
@@ -878,10 +958,25 @@ router.post('/quick-checkout', async (req, res) => {
         : '⚡ Booked instantly with your saved card!',
     });
   } catch (err) {
-    console.error('Quick checkout error:', err);
+    console.error('[Payment] Quick checkout error:', err.type, err.code, err.message);
 
-    // Fix: Update booking status to 'failed' when payment fails
-    // booking is now declared with `let` BEFORE the try block, so it's accessible here
+    // V7-FIX: Handle SCA / 3D Secure BEFORE marking as failed
+    // When card requires authentication, the booking should stay 'pending' — not 'failed'
+    // The frontend will complete 3DS auth and then call /confirm-intent
+    if (err.code === 'authentication_required' || err.code === 'payment_intent_authentication_failure') {
+      // Keep booking as 'pending' — will be confirmed after 3DS or cleaned up by stale check
+      console.log(`[Payment] SCA required for booking ${booking?.id}, keeping as pending for 3DS flow`);
+      const pi = err.raw?.payment_intent;
+      return res.status(402).json({
+        error: 'Card requires authentication',
+        requiresAuth: true,
+        clientSecret: pi?.client_secret || null,
+        paymentIntentId: pi?.id || null,
+        bookingId: booking ? booking.id : null,
+      });
+    }
+
+    // For genuine failures, mark booking as 'failed'
     if (booking && booking.id) {
       try {
         await pool.query(
@@ -894,16 +989,21 @@ router.post('/quick-checkout', async (req, res) => {
       }
     }
 
-    // Handle card authentication required (SCA / 3D Secure)
-    if (err.code === 'authentication_required') {
-      return res.status(402).json({
-        error: 'Card requires authentication',
-        requiresAuth: true,
-        clientSecret: err.raw?.payment_intent?.client_secret,
-        bookingId: booking ? booking.id : null,
-      });
+    // Provide specific error messages for common Stripe errors
+    let userMessage = 'Payment failed. Please try again.';
+    if (err.type === 'StripeCardError') {
+      userMessage = err.message || 'Your card was declined.';
+    } else if (err.type === 'StripeInvalidRequestError') {
+      userMessage = 'Payment configuration error. Please contact support.';
+      console.error('[Payment] Stripe config error — check STRIPE_SECRET_KEY env var:', err.message);
+    } else if (err.type === 'StripeAuthenticationError') {
+      userMessage = 'Payment system error. Please try again later.';
+      console.error('[Payment] CRITICAL: Stripe API key is invalid! Check STRIPE_SECRET_KEY env var.');
+    } else if (err.type === 'StripeConnectionError') {
+      userMessage = 'Could not connect to payment processor. Please try again.';
     }
-    res.status(500).json({ error: 'Quick checkout failed', detail: err.message });
+
+    res.status(500).json({ error: userMessage, detail: err.message, code: err.code || 'unknown' });
   }
 });
 
