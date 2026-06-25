@@ -340,48 +340,176 @@ router.get('/earnings', authenticateUser, async (req, res) => {
 });
 
 // ── Gym Partner Stripe Connect Setup ──
+// Creates an Express Connected Account and returns an onboarding link
 router.post('/stripe-connect', authenticateUser, express.json(), async (req, res) => {
   try {
     const userId = req.user.id;
+    const stripe = process.env.STRIPE_SECRET_KEY ? require('stripe')(process.env.STRIPE_SECRET_KEY) : null;
+    
+    if (!stripe) {
+      return res.status(503).json({ error: 'Payment service not configured. Please contact support.' });
+    }
     
     // Verify user has claimed gyms
     const gyms = await pool.query(
-      `SELECT id FROM gyms WHERE claimed_by::text = $1::text LIMIT 1`, [userId]
+      `SELECT id, name FROM gyms WHERE claimed_by::text = $1::text LIMIT 1`, [userId]
     ).catch(() => ({ rows: [] }));
     
     if (!gyms.rows.length) {
       return res.status(400).json({ error: 'You must claim a gym first' });
     }
     
-    // Create or retrieve Stripe Connect account
-    let stripeAccountId;
-    try {
-      const existing = await pool.query(
-        `SELECT stripe_connect_id FROM users WHERE id = $1`, [userId]
-      );
-      stripeAccountId = existing.rows[0]?.stripe_connect_id;
-    } catch (e) {
-      console.warn('[GymPartner] Failed to retrieve existing Stripe account:', e.message);
-    }
+    // Get user info
+    const userRes = await pool.query(
+      `SELECT email, full_name, stripe_connect_id FROM users WHERE id = $1`, [userId]
+    );
+    const user = userRes.rows[0];
+    if (!user) return res.status(404).json({ error: 'User not found' });
     
+    let stripeAccountId = user.stripe_connect_id;
+    
+    // Create Express account if none exists
     if (!stripeAccountId) {
-      // Would create a Stripe Connect account - for now return instruction
-      return res.json({
-        success: true,
-        message: 'Stripe Connect setup initiated. We will contact you to complete bank verification.',
-        setupPending: true
-      });
+      try {
+        const account = await stripe.accounts.create({
+          type: 'express',
+          country: 'GB',
+          email: user.email,
+          capabilities: {
+            card_payments: { requested: true },
+            transfers: { requested: true },
+          },
+          business_type: 'individual',
+          metadata: {
+            scangym_user_id: String(userId),
+            gym_name: gyms.rows[0].name,
+          },
+        });
+        stripeAccountId = account.id;
+        
+        // Save to DB
+        await pool.query(
+          `UPDATE users SET stripe_connect_id = $1 WHERE id = $2`,
+          [stripeAccountId, userId]
+        );
+        console.log(`[StripeConnect] Created account ${stripeAccountId} for user ${userId}`);
+      } catch (createErr) {
+        console.error('[StripeConnect] Account creation failed:', createErr.message);
+        return res.status(500).json({ error: 'Failed to create payout account. Please try again.' });
+      }
     }
     
-    res.json({
-      success: true,
-      stripeConnected: true,
-      message: 'Stripe account already connected'
-    });
+    // Check if onboarding is already complete
+    try {
+      const account = await stripe.accounts.retrieve(stripeAccountId);
+      if (account.charges_enabled && account.payouts_enabled) {
+        return res.json({
+          success: true,
+          stripeConnected: true,
+          onboardingComplete: true,
+          message: 'Bank account connected and verified ✓',
+        });
+      }
+    } catch (e) {
+      console.warn('[StripeConnect] Account retrieve failed:', e.message);
+    }
+    
+    // Create onboarding link
+    const BASE = process.env.BASE_URL || 'https://scangym.com';
+    try {
+      const accountLink = await stripe.accountLinks.create({
+        account: stripeAccountId,
+        refresh_url: `${BASE}/partner?stripe=refresh`,
+        return_url: `${BASE}/partner?stripe=success`,
+        type: 'account_onboarding',
+      });
+      
+      res.json({
+        success: true,
+        onboardingUrl: accountLink.url,
+        message: 'Complete your bank details to receive payouts',
+      });
+    } catch (linkErr) {
+      console.error('[StripeConnect] Account link creation failed:', linkErr.message);
+      return res.status(500).json({ error: 'Failed to generate onboarding link. Please try again.' });
+    }
   } catch (err) {
     console.error('Gym Stripe Connect error:', err.message);
     res.status(500).json({ error: 'Stripe setup failed' });
   }
+});
+
+// ── Check Stripe Connect Status ──
+router.get('/stripe-connect/status', authenticateUser, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const stripe = process.env.STRIPE_SECRET_KEY ? require('stripe')(process.env.STRIPE_SECRET_KEY) : null;
+    
+    const userRes = await pool.query(
+      `SELECT stripe_connect_id FROM users WHERE id = $1`, [userId]
+    );
+    const connectId = userRes.rows[0]?.stripe_connect_id;
+    
+    if (!connectId || !stripe) {
+      return res.json({ connected: false, onboardingComplete: false });
+    }
+    
+    try {
+      const account = await stripe.accounts.retrieve(connectId);
+      return res.json({
+        connected: true,
+        onboardingComplete: account.charges_enabled && account.payouts_enabled,
+        payoutsEnabled: account.payouts_enabled,
+        chargesEnabled: account.charges_enabled,
+        detailsSubmitted: account.details_submitted,
+      });
+    } catch (e) {
+      return res.json({ connected: false, error: e.message });
+    }
+  } catch (err) {
+    res.status(500).json({ error: 'Status check failed' });
+  }
+});
+
+// ── Stripe Connect Webhook (for Express account updates) ──
+router.post('/stripe-connect/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  const stripe = process.env.STRIPE_SECRET_KEY ? require('stripe')(process.env.STRIPE_SECRET_KEY) : null;
+  if (!stripe) return res.sendStatus(200);
+  
+  let event;
+  try {
+    const sig = req.headers['stripe-signature'];
+    const endpointSecret = process.env.STRIPE_CONNECT_WEBHOOK_SECRET;
+    if (endpointSecret && sig) {
+      event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+    } else {
+      event = JSON.parse(req.body);
+    }
+  } catch (err) {
+    console.error('[StripeConnect] Webhook error:', err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+  
+  // Handle account.updated events
+  if (event.type === 'account.updated') {
+    const account = event.data.object;
+    console.log(`[StripeConnect] Account ${account.id} updated — charges:${account.charges_enabled} payouts:${account.payouts_enabled}`);
+    
+    if (account.charges_enabled && account.payouts_enabled) {
+      // Mark user as fully onboarded
+      try {
+        await pool.query(
+          `UPDATE users SET stripe_connect_verified = true WHERE stripe_connect_id = $1`,
+          [account.id]
+        );
+        console.log(`[StripeConnect] ✅ Account ${account.id} fully verified`);
+      } catch (e) {
+        console.warn('[StripeConnect] DB update failed:', e.message);
+      }
+    }
+  }
+  
+  res.sendStatus(200);
 });
 
 
