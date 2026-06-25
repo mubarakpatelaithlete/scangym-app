@@ -4083,9 +4083,9 @@ window.showCalendarPicker=async function(gymId){
   picker.id='sg-cal-picker';
   picker.innerHTML=`
     <style>
-      .sg-cal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9100;display:flex;flex-direction:column;animation:sgCalFadeIn .2s ease-out}
+      .sg-cal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9100;display:flex;flex-direction:column;animation:sgCalFadeIn .1s ease-out}
       @keyframes sgCalFadeIn{from{opacity:0}to{opacity:1}}
-      .sg-cal-sheet{flex:1;display:flex;flex-direction:column;background:#0a0a0a;margin-top:auto;max-height:85vh;border-radius:20px 20px 0 0;overflow:hidden;animation:sgCalSlideUp .3s ease-out}
+      .sg-cal-sheet{flex:1;display:flex;flex-direction:column;background:#0a0a0a;margin-top:auto;max-height:85vh;border-radius:20px 20px 0 0;overflow:hidden;animation:sgCalSlideUp .15s ease-out}
       @keyframes sgCalSlideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
       .sg-cal-header{display:flex;align-items:center;justify-content:space-between;padding:20px 24px 16px;flex-shrink:0}
       .sg-cal-title{color:#fff;font-size:20px;font-weight:700;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
@@ -4130,8 +4130,8 @@ window.showCalendarPicker=async function(gymId){
         </div>
         <div class="sg-cal-grid" id="sg-cal-grid"></div>
         <div style="padding:0 0 4px"><button class="sg-cal-today-btn" onclick="window._calGoToday()">📅 Today</button></div>
-        <!-- FIX #10: Pass type selector -->
-        <div style="padding:0 24px 16px;display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;flex-shrink:0" id="sg-cal-pass-strip">
+        <!-- FIX #10: Pass type selector (removed per Zafira — Day Pass only) -->
+        <div style="padding:0 24px 16px;display:none;gap:8px;overflow-x:auto;scrollbar-width:none;flex-shrink:0" id="sg-cal-pass-strip">
           <div class="sg-cal-pass selected" onclick="window._calSelectPass(this,'day','⚡','Day Pass')" data-pass="day">
             <span style="font-size:16px">⚡</span>
             <span style="font-weight:700;font-size:13px">Day</span>
