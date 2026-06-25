@@ -15740,55 +15740,105 @@ window._requestPayNextVisit=async function(){
 
 // ═══ CREATOR TAB PAGE (OnlyFans-inspired) — Fixed fullscreen, no scrolling ═══
 function CreatorFullPage(){
-  return `<div style="position:fixed;top:0;left:0;right:0;bottom:56px;background:linear-gradient(180deg,#0a0a16 0%,#111127 100%);display:flex;flex-direction:column;overflow:hidden">
+  var u=window.state&&window.state.user;
+  var name=u?(u.full_name||u.email||'Creator'):'Creator';
+  var refCode=u?(u.referral_code||'creator123'):'creator123';
+  var refLink='scangym.com/r/'+refCode;
+  return `<div style="position:fixed;top:0;left:0;right:0;bottom:56px;background:linear-gradient(180deg,rgba(168,85,247,.08) 0%,#0a0a16 60%);display:flex;flex-direction:column;overflow:hidden">
     <!-- Right side buttons -->
     <div style="position:absolute;right:12px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:14px;z-index:10">
       <div onclick="_showCreatorScreen(0)" class="creator-side-btn" style="width:46px;height:46px;background:rgba(255,109,0,.25);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;border:1px solid rgba(255,109,0,.4);transition:.2s;box-shadow:0 0 16px rgba(255,109,0,.2)" title="Home">\ud83c\udfe0</div>
-      <div onclick="_showCreatorScreen(1)" class="creator-side-btn" style="width:46px;height:46px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;border:1px solid rgba(255,255,255,.06);transition:.2s" title="Earnings">\ud83d\udcb0</div>
-      <div onclick="_showCreatorScreen(2)" class="creator-side-btn" style="width:46px;height:46px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;border:1px solid rgba(255,255,255,.06);transition:.2s" title="Content">\ud83c\udfa5</div>
-      <div onclick="_showCreatorScreen(3)" class="creator-side-btn" style="width:46px;height:46px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;border:1px solid rgba(255,255,255,.06);transition:.2s" title="Subscribers">\ud83d\udc65</div>
-      <div onclick="_showCreatorScreen(4)" class="creator-side-btn" style="width:46px;height:46px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;border:1px solid rgba(255,255,255,.06);transition:.2s" title="Settings">\u2699\ufe0f</div>
+      <div onclick="_showCreatorScreen(1)" class="creator-side-btn" style="width:46px;height:46px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;border:1px solid rgba(255,255,255,.06);transition:.2s" title="Content">\ud83d\udcf9</div>
+      <div onclick="_showCreatorScreen(2)" class="creator-side-btn" style="width:46px;height:46px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;border:1px solid rgba(255,255,255,.06);transition:.2s" title="Earnings">\ud83d\udcb0</div>
+      <div onclick="_showCreatorScreen(3)" class="creator-side-btn" style="width:46px;height:46px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;border:1px solid rgba(255,255,255,.06);transition:.2s" title="Assets">\ud83c\udfa8</div>
     </div>
-    <!-- Screens -->
+    <!-- Screen 0: Home — stats + referral link -->
     <div class="creator-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;padding-right:72px;text-align:center;overflow:hidden">
-      <div style="font-size:64px;margin-bottom:16px">\ud83c\udfa8</div>
-      <h2 style="color:#fff;font-size:28px;font-weight:900;margin-bottom:8px">Creator Hub</h2>
-      <p style="color:rgba(255,255,255,.5);font-size:14px;margin-bottom:24px;max-width:300px">Monetise your fitness content. Earn from referrals, subscriptions, and exclusive content.</p>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;max-width:320px;margin-bottom:20px">
-        <div style="background:rgba(255,109,0,.1);border:1px solid rgba(255,109,0,.2);border-radius:14px;padding:14px;text-align:center"><p style="font-size:24px;font-weight:900;color:#FF6D00">25%</p><p style="color:rgba(255,255,255,.4);font-size:11px">Commission</p></div>
-        <div style="background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);border-radius:14px;padding:14px;text-align:center"><p style="font-size:24px;font-weight:900;color:#22c55e">\u00a30</p><p style="color:rgba(255,255,255,.4);font-size:11px">Start Free</p></div>
+      <div style="font-size:56px;margin-bottom:12px">\ud83c\udfac</div>
+      <h1 style="font-size:26px;font-weight:900;color:#fff;margin-bottom:6px">Creator Program</h1>
+      <p style="color:rgba(255,255,255,.45);font-size:13px;max-width:320px;margin-bottom:12px">Share gym links. Earn 25% commission on every booking.</p>
+      <span style="display:inline-flex;align-items:center;gap:5px;padding:5px 14px;border-radius:10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;background:rgba(34,197,94,.1);color:#22c55e;border:1px solid rgba(34,197,94,.15);margin-bottom:16px">\ud83c\udf31 Starter Creator</span>
+      <div style="display:flex;gap:10px;margin-bottom:16px">
+        <div style="display:inline-flex;flex-direction:column;align-items:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:12px 16px;min-width:72px"><span style="font-size:22px;font-weight:900;color:#a855f7">0</span><span style="font-size:8px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Reels</span></div>
+        <div style="display:inline-flex;flex-direction:column;align-items:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:12px 16px;min-width:72px"><span style="font-size:22px;font-weight:900;color:#FF6D00">142</span><span style="font-size:8px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Clicks</span></div>
+        <div style="display:inline-flex;flex-direction:column;align-items:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:12px 16px;min-width:72px"><span style="font-size:22px;font-weight:900;color:#22c55e">\u00a37.20</span><span style="font-size:8px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Earned</span></div>
       </div>
-      <button onclick="navigate('/become-a-creator')" style="background:#FF6D00;color:#fff;border:none;padding:14px 32px;border-radius:14px;font-weight:700;font-size:15px;cursor:pointer">Become a Creator \u2192</button>
+      <div style="display:flex;align-items:center;gap:10px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:12px 16px;margin-bottom:14px;width:100%;max-width:360px">
+        <code style="flex:1;color:#a855f7;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${refLink}</code>
+        <button onclick="navigator.clipboard.writeText('https://${refLink}');this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500)" style="background:#a855f7;color:#fff;border:none;padding:8px 14px;border-radius:10px;font-weight:700;font-size:12px;cursor:pointer">Copy</button>
+      </div>
+      <button onclick="navigator.share?navigator.share({title:'ScanGym',url:'https://${refLink}'}):navigator.clipboard.writeText('https://${refLink}')" style="background:#a855f7;color:#fff;border:none;padding:12px 22px;border-radius:14px;font-weight:700;font-size:14px;cursor:pointer;box-shadow:0 4px 20px rgba(168,85,247,.25)">\ud83d\udce4 Share Link</button>
     </div>
+    <!-- Screen 1: Content — your reels -->
+    <div class="creator-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;padding-right:72px;text-align:center;overflow:hidden">
+      <div style="font-size:48px;margin-bottom:12px">\ud83d\udcf1</div>
+      <h2 style="font-size:22px;font-weight:800;color:#fff;margin-bottom:4px">Your Content</h2>
+      <p style="color:rgba(255,255,255,.4);font-size:12px;margin-bottom:16px">Reels that earn you commissions</p>
+      <div style="width:100%;max-width:380px">
+        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:14px;margin-bottom:8px;text-align:left">
+          <div style="width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;background:rgba(168,85,247,.12)">\ud83c\udfac</div>
+          <div style="flex:1"><div style="font-size:13px;font-weight:700;color:#fff">Leg Day at Crunch</div><div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:2px">2.4K views \u00b7 3 bookings</div></div>
+          <div style="font-size:12px;font-weight:800;color:#22c55e">\u00a33.60</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:14px;margin-bottom:8px;text-align:left">
+          <div style="width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;background:rgba(59,130,246,.12)">\ud83d\udcaa</div>
+          <div style="flex:1"><div style="font-size:13px;font-weight:700;color:#fff">Morning HIIT Routine</div><div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:2px">1.8K views \u00b7 2 bookings</div></div>
+          <div style="font-size:12px;font-weight:800;color:#22c55e">\u00a32.40</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:14px;margin-bottom:8px;text-align:left">
+          <div style="width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;background:rgba(255,109,0,.12)">\ud83c\udfcb\ufe0f</div>
+          <div style="flex:1"><div style="font-size:13px;font-weight:700;color:#fff">Best Gym in London</div><div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:2px">956 views \u00b7 1 booking</div></div>
+          <div style="font-size:12px;font-weight:800;color:#22c55e">\u00a31.20</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button onclick="alert('\ud83d\udcf9 Upload reel!')" style="background:#FF6D00;color:#fff;border:none;padding:12px 22px;border-radius:14px;font-weight:700;font-size:14px;cursor:pointer">\ud83d\udcf9 Upload</button>
+        <button onclick="alert('\ud83c\udfa5 Record!')" style="background:rgba(255,255,255,.05);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.08);padding:12px 22px;border-radius:14px;font-weight:700;font-size:14px;cursor:pointer">\ud83c\udfa5 Record</button>
+      </div>
+    </div>
+    <!-- Screen 2: Earnings -->
     <div class="creator-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;padding-right:72px;text-align:center;overflow:hidden">
       <div style="font-size:48px;margin-bottom:12px">\ud83d\udcb0</div>
-      <h3 style="color:#fff;font-size:22px;font-weight:800;margin-bottom:8px">Earnings</h3>
-      <p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:20px">Track your income from referrals and content</p>
-      <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:20px;width:100%;max-width:300px">
-        <p style="color:rgba(255,255,255,.3);font-size:11px;margin-bottom:4px">Total Earned</p>
-        <p style="color:#22c55e;font-size:36px;font-weight:900">\u00a30.00</p>
-        <p style="color:rgba(255,255,255,.3);font-size:11px;margin-top:8px">Start sharing to earn</p>
+      <h2 style="font-size:22px;font-weight:800;color:#fff;margin-bottom:4px">Earnings</h2>
+      <p style="color:rgba(255,255,255,.4);font-size:12px;margin-bottom:16px">Commission from bookings via your links</p>
+      <div style="background:linear-gradient(135deg,rgba(34,197,94,.08) 0%,rgba(34,197,94,.02) 100%);border:1px solid rgba(34,197,94,.12);border-radius:20px;padding:20px;text-align:center;margin-bottom:16px;width:100%;max-width:340px">
+        <div style="color:rgba(255,255,255,.4);font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Total Earned</div>
+        <div style="font-size:36px;font-weight:900;color:#22c55e;margin-bottom:4px">\u00a37.20</div>
+        <div style="color:rgba(255,255,255,.3);font-size:11px">From 6 bookings \u00b7 this month</div>
       </div>
+      <div style="display:flex;gap:10px;margin-bottom:16px">
+        <div style="display:inline-flex;flex-direction:column;align-items:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:12px 16px;min-width:72px"><span style="font-size:22px;font-weight:900;color:#FF6D00">142</span><span style="font-size:8px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Clicks</span></div>
+        <div style="display:inline-flex;flex-direction:column;align-items:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:12px 16px;min-width:72px"><span style="font-size:22px;font-weight:900;color:#3b82f6">6</span><span style="font-size:8px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Bookings</span></div>
+        <div style="display:inline-flex;flex-direction:column;align-items:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:12px 16px;min-width:72px"><span style="font-size:22px;font-weight:900;color:#22c55e">4.2%</span><span style="font-size:8px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Conv Rate</span></div>
+      </div>
+      <button onclick="navigate('/wallet')" style="background:#22c55e;color:#fff;border:none;padding:12px 22px;border-radius:14px;font-weight:700;font-size:14px;cursor:pointer;box-shadow:0 4px 20px rgba(34,197,94,.25)">\ud83d\udcb8 Withdraw to Bank</button>
     </div>
+    <!-- Screen 3: Asset Library -->
     <div class="creator-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;padding-right:72px;text-align:center;overflow:hidden">
-      <div style="font-size:48px;margin-bottom:12px">\ud83c\udfa5</div>
-      <h3 style="color:#fff;font-size:22px;font-weight:800;margin-bottom:8px">Your Content</h3>
-      <p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:20px">Upload workout videos, meal plans, and fitness guides</p>
-      <button onclick="navigate('/upload')" style="background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.1);padding:14px 28px;border-radius:14px;font-weight:600;font-size:14px;cursor:pointer">\ud83d\udce4 Upload Content</button>
-    </div>
-    <div class="creator-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;padding-right:72px;text-align:center;overflow:hidden">
-      <div style="font-size:48px;margin-bottom:12px">\ud83d\udc65</div>
-      <h3 style="color:#fff;font-size:22px;font-weight:800;margin-bottom:8px">Subscribers</h3>
-      <p style="color:rgba(255,255,255,.4);font-size:13px">Your followers and subscribers will appear here</p>
-    </div>
-    <div class="creator-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;padding-right:72px;text-align:center;overflow:hidden">
-      <div style="font-size:48px;margin-bottom:12px">\u2699\ufe0f</div>
-      <h3 style="color:#fff;font-size:22px;font-weight:800;margin-bottom:8px">Creator Settings</h3>
-      <p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:20px">Manage your creator profile and payouts</p>
-      <div style="display:flex;flex-direction:column;gap:10px;width:100%;max-width:280px">
-        <button style="background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.1);padding:12px;border-radius:12px;font-size:13px;cursor:pointer;text-align:left">\ud83d\udc64 Edit Profile</button>
-        <button style="background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.1);padding:12px;border-radius:12px;font-size:13px;cursor:pointer;text-align:left">\ud83c\udfe6 Payout Settings</button>
-        <button style="background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.1);padding:12px;border-radius:12px;font-size:13px;cursor:pointer;text-align:left">\ud83d\udd14 Notifications</button>
+      <div style="font-size:48px;margin-bottom:12px">\ud83c\udfa8</div>
+      <h2 style="font-size:22px;font-weight:800;color:#fff;margin-bottom:4px">Asset Library</h2>
+      <p style="color:rgba(255,255,255,.4);font-size:12px;margin-bottom:16px">Ready-made content to share</p>
+      <div style="width:100%;max-width:380px">
+        <div onclick="alert('\ud83d\udce5 Download')" style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:14px;margin-bottom:8px;cursor:pointer;text-align:left">
+          <div style="width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;background:rgba(255,109,0,.12)">\ud83d\uddbc</div>
+          <div style="flex:1"><div style="font-size:13px;font-weight:700;color:#fff">Hero Banner</div><div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:2px">1080\u00d71080 \u00b7 Instagram/TikTok</div></div>
+          <span style="font-size:12px;color:rgba(255,255,255,.3)">\ud83d\udce5</span>
+        </div>
+        <div onclick="alert('\ud83d\udce5 Download')" style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:14px;margin-bottom:8px;cursor:pointer;text-align:left">
+          <div style="width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;background:rgba(34,197,94,.12)">\ud83d\udcca</div>
+          <div style="flex:1"><div style="font-size:13px;font-weight:700;color:#fff">Price Comparison Card</div><div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:2px">ScanGym vs Memberships</div></div>
+          <span style="font-size:12px;color:rgba(255,255,255,.3)">\ud83d\udce5</span>
+        </div>
+        <div onclick="alert('\ud83d\udce5 Download')" style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:14px;margin-bottom:8px;cursor:pointer;text-align:left">
+          <div style="width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;background:rgba(168,85,247,.12)">\ud83c\udfaf</div>
+          <div style="flex:1"><div style="font-size:13px;font-weight:700;color:#fff">Viral Hook Template</div><div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:2px">TikTok hook scripts + captions</div></div>
+          <span style="font-size:12px;color:rgba(255,255,255,.3)">\ud83d\udce5</span>
+        </div>
+        <div onclick="alert('\ud83d\udce5 Download')" style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:14px;margin-bottom:8px;cursor:pointer;text-align:left">
+          <div style="width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;background:rgba(59,130,246,.12)">\ud83d\udcac</div>
+          <div style="flex:1"><div style="font-size:13px;font-weight:700;color:#fff">DM Outreach Template</div><div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:2px">Copy-paste messages for influencers</div></div>
+          <span style="font-size:12px;color:rgba(255,255,255,.3)">\ud83d\udce5</span>
+        </div>
       </div>
     </div>
   </div>`;
@@ -15839,61 +15889,103 @@ function ListYourGymFullPage(){
   </div>`;
 }
 
-// ═══ PARTNER TAB PAGE (Zomato-inspired) — Fixed fullscreen, no scrolling ═══
+// ═══ PARTNER TAB PAGE — Merged with Team Admin Partner content ═══
 function PartnerFullPage(){
-  return `<div style="position:fixed;top:0;left:0;right:0;bottom:56px;background:linear-gradient(180deg,#0a0a16 0%,#111127 100%);display:flex;flex-direction:column;overflow:hidden">
+  return `<div style="position:fixed;top:0;left:0;right:0;bottom:56px;background:linear-gradient(180deg,rgba(34,197,94,.08) 0%,#0a0a16 60%);display:flex;flex-direction:column;overflow:hidden">
     <!-- Right side buttons -->
     <div style="position:absolute;right:12px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:14px;z-index:10">
-      <div onclick="_showPartnerScreen(0)" class="partner-side-btn" style="width:46px;height:46px;background:rgba(255,109,0,.25);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;border:1px solid rgba(255,109,0,.4);transition:.2s;box-shadow:0 0 16px rgba(255,109,0,.2)" title="Dashboard">\ud83c\udfe0</div>
-      <div onclick="_showPartnerScreen(1)" class="partner-side-btn" style="width:46px;height:46px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;border:1px solid rgba(255,255,255,.06);transition:.2s" title="Bookings">\ud83d\udcc5</div>
-      <div onclick="_showPartnerScreen(2)" class="partner-side-btn" style="width:46px;height:46px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;border:1px solid rgba(255,255,255,.06);transition:.2s" title="Revenue">\ud83d\udcb0</div>
-      <div onclick="_showPartnerScreen(3)" class="partner-side-btn" style="width:46px;height:46px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;border:1px solid rgba(255,255,255,.06);transition:.2s" title="Hardware">\ud83d\udce6</div>
-      <div onclick="_showPartnerScreen(4)" class="partner-side-btn" style="width:46px;height:46px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;border:1px solid rgba(255,255,255,.06);transition:.2s" title="Settings">\u2699\ufe0f</div>
+      <div onclick="_showPartnerScreen(0)" class="partner-side-btn" style="width:46px;height:46px;background:rgba(255,109,0,.25);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;border:1px solid rgba(255,109,0,.4);transition:.2s;box-shadow:0 0 16px rgba(255,109,0,.2)" title="Home">\ud83c\udfe0</div>
+      <div onclick="_showPartnerScreen(1)" class="partner-side-btn" style="width:46px;height:46px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;border:1px solid rgba(255,255,255,.06);transition:.2s" title="Access Control">\ud83d\udd10</div>
+      <div onclick="_showPartnerScreen(2)" class="partner-side-btn" style="width:46px;height:46px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;border:1px solid rgba(255,255,255,.06);transition:.2s" title="Earnings">\ud83d\udcb0</div>
+      <div onclick="_showPartnerScreen(3)" class="partner-side-btn" style="width:46px;height:46px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;border:1px solid rgba(255,255,255,.06);transition:.2s" title="Manage Gym">\u2699\ufe0f</div>
     </div>
-    <!-- Screens -->
+    <!-- Screen 0: Home — stats + claim gym -->
     <div class="partner-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;padding-right:72px;text-align:center;overflow:hidden">
-      <div style="font-size:64px;margin-bottom:16px">\ud83c\udfcb\ufe0f</div>
-      <h2 style="color:#fff;font-size:28px;font-weight:900;margin-bottom:8px">Partner Dashboard</h2>
-      <p style="color:rgba(255,255,255,.5);font-size:14px;margin-bottom:24px;max-width:300px">List your gym on ScanGym. Earn from empty hours. Free hardware included.</p>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;width:100%;max-width:340px;margin-bottom:20px">
-        <div style="background:rgba(255,109,0,.1);border:1px solid rgba(255,109,0,.2);border-radius:12px;padding:12px 8px;text-align:center"><p style="font-size:20px;font-weight:900;color:#FF6D00">0</p><p style="color:rgba(255,255,255,.4);font-size:10px">Bookings</p></div>
-        <div style="background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);border-radius:12px;padding:12px 8px;text-align:center"><p style="font-size:20px;font-weight:900;color:#22c55e">\u00a30</p><p style="color:rgba(255,255,255,.4);font-size:10px">Revenue</p></div>
-        <div style="background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.2);border-radius:12px;padding:12px 8px;text-align:center"><p style="font-size:20px;font-weight:900;color:#3b82f6">0</p><p style="color:rgba(255,255,255,.4);font-size:10px">Reviews</p></div>
+      <div style="font-size:56px;margin-bottom:12px">\ud83c\udfe2</div>
+      <h1 style="font-size:26px;font-weight:900;color:#fff;margin-bottom:6px">Gym Partner Hub</h1>
+      <p style="color:rgba(255,255,255,.45);font-size:13px;max-width:320px;margin-bottom:12px">List your gym. Get bookings. Connect smart locks for self-service entry.</p>
+      <span style="display:inline-flex;align-items:center;gap:5px;padding:5px 14px;border-radius:10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;background:rgba(34,197,94,.1);color:#22c55e;border:1px solid rgba(34,197,94,.15);margin-bottom:16px">\u2705 Verified Partner</span>
+      <div style="display:flex;gap:10px;margin-bottom:16px">
+        <div style="display:inline-flex;flex-direction:column;align-items:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:12px 14px;min-width:68px"><span style="font-size:20px;font-weight:900;color:#22c55e">\u00a30</span><span style="font-size:8px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Revenue</span></div>
+        <div style="display:inline-flex;flex-direction:column;align-items:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:12px 14px;min-width:68px"><span style="font-size:20px;font-weight:900;color:#FF6D00">0</span><span style="font-size:8px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Bookings</span></div>
+        <div style="display:inline-flex;flex-direction:column;align-items:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:12px 14px;min-width:68px"><span style="font-size:20px;font-weight:900;color:#3b82f6">0</span><span style="font-size:8px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Check-ins</span></div>
+        <div style="display:inline-flex;flex-direction:column;align-items:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:12px 14px;min-width:68px"><span style="font-size:20px;font-weight:900;color:#a855f7">80%</span><span style="font-size:8px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Share</span></div>
       </div>
-      <button onclick="navigate('/list-your-gym')" style="background:#FF6D00;color:#fff;border:none;padding:14px 32px;border-radius:14px;font-weight:700;font-size:15px;cursor:pointer">List Your Gym \u2192</button>
+      <button onclick="navigate('/list-your-gym')" style="background:#22c55e;color:#fff;border:none;padding:12px 22px;border-radius:14px;font-weight:700;font-size:14px;cursor:pointer;box-shadow:0 4px 20px rgba(34,197,94,.25)">\ud83c\udfcb\ufe0f Claim Your Gym \u2192</button>
     </div>
+    <!-- Screen 1: Access Control — smart locks + Seam -->
     <div class="partner-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;padding-right:72px;text-align:center;overflow:hidden">
-      <div style="font-size:48px;margin-bottom:12px">\ud83d\udcc5</div>
-      <h3 style="color:#fff;font-size:22px;font-weight:800;margin-bottom:8px">Bookings</h3>
-      <p style="color:rgba(255,255,255,.4);font-size:13px">Incoming bookings from customers will appear here</p>
+      <div style="font-size:48px;margin-bottom:10px">\ud83d\udd10</div>
+      <h2 style="font-size:22px;font-weight:800;color:#fff;margin-bottom:4px">Access Control</h2>
+      <p style="color:rgba(255,255,255,.4);font-size:12px;margin-bottom:14px">Smart locks & access points at your gym</p>
+      <div style="width:100%;max-width:360px">
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:14px;margin-bottom:6px;text-align:left">
+          <div style="width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 8px rgba(34,197,94,.4);flex-shrink:0"></div>
+          <div style="flex:1"><div style="font-size:13px;font-weight:700;color:#fff">Front Door \u2014 Kaba</div><div style="font-size:10px;color:rgba(255,255,255,.35)">Online \u00b7 87%</div></div>
+          <div onclick="alert('\ud83d\udd13 Unlocked!')" style="padding:5px 12px;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.2);border-radius:10px;font-size:11px;font-weight:700;color:#818cf8;cursor:pointer">Unlock</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:14px;margin-bottom:6px;text-align:left">
+          <div style="width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 8px rgba(34,197,94,.4);flex-shrink:0"></div>
+          <div style="flex:1"><div style="font-size:13px;font-weight:700;color:#fff">Side Entrance \u2014 Yale</div><div style="font-size:10px;color:rgba(255,255,255,.35)">Online \u00b7 92%</div></div>
+          <div onclick="alert('\ud83d\udd13 Unlocked!')" style="padding:5px 12px;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.2);border-radius:10px;font-size:11px;font-weight:700;color:#818cf8;cursor:pointer">Unlock</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:14px;margin-bottom:6px;text-align:left">
+          <div style="width:8px;height:8px;border-radius:50%;background:#ef4444;flex-shrink:0"></div>
+          <div style="flex:1"><div style="font-size:13px;font-weight:700;color:#fff">Emergency \u2014 August</div><div style="font-size:10px;color:rgba(255,255,255,.35)">Offline \u00b7 2h ago</div></div>
+          <div style="padding:5px 12px;opacity:.5;font-size:11px;font-weight:700;color:rgba(255,255,255,.4)">Offline</div>
+        </div>
+      </div>
+      <button onclick="window._sgConnectSeam?window._sgConnectSeam():alert('\ud83d\udd17 Connect Seam')" style="background:#a855f7;color:#fff;border:none;padding:12px 22px;border-radius:14px;font-weight:700;font-size:14px;cursor:pointer;margin-top:14px;box-shadow:0 4px 20px rgba(168,85,247,.25)">\ud83d\udd17 Connect Seam Account</button>
     </div>
+    <!-- Screen 2: Earnings & Payouts -->
     <div class="partner-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;padding-right:72px;text-align:center;overflow:hidden">
       <div style="font-size:48px;margin-bottom:12px">\ud83d\udcb0</div>
-      <h3 style="color:#fff;font-size:22px;font-weight:800;margin-bottom:8px">Revenue</h3>
-      <p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:20px">Track your earnings and payouts</p>
-      <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:20px;width:100%;max-width:300px">
-        <p style="color:rgba(255,255,255,.3);font-size:11px;margin-bottom:4px">Total Revenue</p>
-        <p style="color:#22c55e;font-size:36px;font-weight:900">\u00a30.00</p>
+      <h2 style="font-size:22px;font-weight:800;color:#fff;margin-bottom:4px">Earnings & Payouts</h2>
+      <p style="color:rgba(255,255,255,.4);font-size:12px;margin-bottom:16px">Revenue from day pass bookings</p>
+      <div style="background:linear-gradient(135deg,rgba(34,197,94,.08) 0%,rgba(34,197,94,.02) 100%);border:1px solid rgba(34,197,94,.12);border-radius:20px;padding:20px;text-align:center;margin-bottom:16px;width:100%;max-width:340px">
+        <div style="color:rgba(255,255,255,.4);font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Available Balance</div>
+        <div style="font-size:36px;font-weight:900;color:#22c55e;margin-bottom:4px">\u00a30.00</div>
+        <div style="color:rgba(255,255,255,.3);font-size:11px">80% revenue share \u00b7 Withdraw via Stripe</div>
+      </div>
+      <div style="width:100%;max-width:360px">
+        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:14px;margin-bottom:8px;text-align:left">
+          <div style="width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;background:rgba(34,197,94,.12)">\u2705</div>
+          <div style="flex:1"><div style="font-size:13px;font-weight:700;color:#fff">James W. \u2014 QR Entry</div><div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:2px">Front Door \u00b7 2 min ago</div></div>
+          <div style="font-size:12px;font-weight:800;color:#22c55e">\u00a34.39</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:14px;margin-bottom:8px;text-align:left">
+          <div style="width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;background:rgba(34,197,94,.12)">\u2705</div>
+          <div style="flex:1"><div style="font-size:13px;font-weight:700;color:#fff">Sarah M. \u2014 QR Entry</div><div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:2px">Side Entrance \u00b7 28 min ago</div></div>
+          <div style="font-size:12px;font-weight:800;color:#22c55e">\u00a34.39</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button onclick="navigate('/wallet')" style="background:#22c55e;color:#fff;border:none;padding:12px 22px;border-radius:14px;font-weight:700;font-size:14px;cursor:pointer;box-shadow:0 4px 20px rgba(34,197,94,.25)">\ud83d\udcb8 Withdraw</button>
+        <button onclick="alert('\ud83c\udfe6 Connect Stripe')" style="background:rgba(255,255,255,.05);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.08);padding:12px 22px;border-radius:14px;font-weight:700;font-size:14px;cursor:pointer">\ud83c\udfe6 Add Bank</button>
       </div>
     </div>
-    <div class="partner-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;padding-right:72px;text-align:center;overflow:hidden">
-      <div style="font-size:48px;margin-bottom:12px">\ud83d\udce6</div>
-      <h3 style="color:#fff;font-size:22px;font-weight:800;margin-bottom:8px">Free Hardware</h3>
-      <p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:20px">QR scanners and vending machines — installed free</p>
-      <div style="display:flex;flex-direction:column;gap:10px;width:100%;max-width:280px">
-        <button onclick="navigate('/suppliers/qr')" style="background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.1);padding:14px;border-radius:12px;font-size:13px;cursor:pointer;text-align:left">\ud83d\udcf1 Request QR Scanner</button>
-        <button onclick="navigate('/suppliers/vending')" style="background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.1);padding:14px;border-radius:12px;font-size:13px;cursor:pointer;text-align:left">\ud83e\udd64 Request Vending Machine</button>
-      </div>
-    </div>
+    <!-- Screen 3: Manage Your Gym -->
     <div class="partner-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;padding-right:72px;text-align:center;overflow:hidden">
       <div style="font-size:48px;margin-bottom:12px">\u2699\ufe0f</div>
-      <h3 style="color:#fff;font-size:22px;font-weight:800;margin-bottom:8px">Partner Settings</h3>
-      <p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:20px">Manage your gym listing and preferences</p>
-      <div style="display:flex;flex-direction:column;gap:10px;width:100%;max-width:280px">
-        <button style="background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.1);padding:12px;border-radius:12px;font-size:13px;cursor:pointer;text-align:left">\ud83c\udfcb\ufe0f Edit Gym Profile</button>
-        <button style="background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.1);padding:12px;border-radius:12px;font-size:13px;cursor:pointer;text-align:left">\ud83d\udcb3 Payout Settings</button>
-        <button style="background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.1);padding:12px;border-radius:12px;font-size:13px;cursor:pointer;text-align:left">\u23f0 Opening Hours</button>
-        <button style="background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.1);padding:12px;border-radius:12px;font-size:13px;cursor:pointer;text-align:left">\ud83d\udc65 Capacity Limits</button>
+      <h2 style="font-size:22px;font-weight:800;color:#fff;margin-bottom:4px">Manage Your Gym</h2>
+      <p style="color:rgba(255,255,255,.4);font-size:12px;margin-bottom:16px">Update listing details</p>
+      <div style="width:100%;max-width:380px">
+        <div onclick="alert('\ud83d\udd50 Set hours')" style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:14px;margin-bottom:8px;cursor:pointer;text-align:left">
+          <div style="width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;background:rgba(255,109,0,.12)">\ud83d\udd50</div>
+          <div style="flex:1"><div style="font-size:13px;font-weight:700;color:#fff">Opening Hours</div><div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:2px">Set your daily schedule</div></div>
+        </div>
+        <div onclick="alert('\ud83d\udcb2 Set pricing')" style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:14px;margin-bottom:8px;cursor:pointer;text-align:left">
+          <div style="width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;background:rgba(34,197,94,.12)">\ud83d\udcb2</div>
+          <div style="flex:1"><div style="font-size:13px;font-weight:700;color:#fff">Day Pass Pricing</div><div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:2px">Currently: \u00a35.49/day</div></div>
+        </div>
+        <div onclick="alert('\ud83d\udcf8 Upload photos')" style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:14px;margin-bottom:8px;cursor:pointer;text-align:left">
+          <div style="width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;background:rgba(59,130,246,.12)">\ud83d\udcf8</div>
+          <div style="flex:1"><div style="font-size:13px;font-weight:700;color:#fff">Photos & Tour</div><div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:2px">12 photos uploaded</div></div>
+        </div>
+        <div onclick="alert('\ud83d\udda8 Print poster')" style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:14px;margin-bottom:8px;cursor:pointer;text-align:left">
+          <div style="width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;background:rgba(255,109,0,.12)">\ud83d\udda8</div>
+          <div style="flex:1"><div style="font-size:13px;font-weight:700;color:#fff">Print QR Poster</div><div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:2px">A4 poster for gym entrance</div></div>
+        </div>
       </div>
     </div>
   </div>`;
