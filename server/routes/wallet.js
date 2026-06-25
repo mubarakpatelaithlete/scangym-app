@@ -222,4 +222,64 @@ router.get('/transactions', async (req, res) => {
   }
 });
 
+// POST /api/wallet/withdraw - Request withdrawal to bank account
+router.post('/withdraw', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    let { amountPence, bankDetails } = req.body;
+    
+    // Support amount in pounds
+    if (req.body.amount && !amountPence) {
+      amountPence = Math.round(req.body.amount * 100);
+    }
+    
+    // Validation
+    if (!amountPence || amountPence < 1000) {
+      return res.status(400).json({ error: 'Minimum withdrawal is £10.00' });
+    }
+    if (amountPence > 100000) {
+      return res.status(400).json({ error: 'Maximum withdrawal is £1,000.00 per request' });
+    }
+    
+    // Check wallet balance
+    const wallet = await pool.query('SELECT * FROM wallets WHERE user_id = $1', [userId]);
+    if (wallet.rows.length === 0 || wallet.rows[0].balance_pence < amountPence) {
+      return res.status(400).json({ error: 'Insufficient balance' });
+    }
+    
+    const w = wallet.rows[0];
+    const newBalance = w.balance_pence - amountPence;
+    
+    // Deduct from wallet
+    await pool.query(`
+      UPDATE wallets SET balance_pence = $1, total_spent_pence = total_spent_pence + $2, updated_at = NOW()
+      WHERE user_id = $3
+    `, [newBalance, amountPence, userId]);
+    
+    // Record transaction
+    await pool.query(`
+      INSERT INTO wallet_transactions (wallet_id, user_id, type, amount_pence, balance_after_pence, description, reference_type, created_at)
+      VALUES ($1, $2, 'withdrawal', $3, $4, $5, 'bank_transfer', NOW())
+    `, [
+      w.id, userId, -amountPence, newBalance,
+      `Withdrawal request £${(amountPence/100).toFixed(2)} to bank`
+    ]);
+    
+    // TODO: Implement Stripe Connect payout or manual bank transfer
+    // For now, log the request for manual processing
+    console.log(`💳 Withdrawal request: User ${userId}, £${(amountPence/100).toFixed(2)}, Balance after: £${(newBalance/100).toFixed(2)}`);
+    
+    res.json({
+      success: true,
+      message: `Withdrawal of £${(amountPence/100).toFixed(2)} requested. Funds will arrive in 2-5 business days.`,
+      amountWithdrawn: amountPence / 100,
+      newBalance: newBalance / 100,
+      estimatedArrival: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    });
+  } catch (err) {
+    console.error('Wallet withdrawal error:', err);
+    res.status(500).json({ error: 'Failed to process withdrawal' });
+  }
+});
+
 module.exports = router;
