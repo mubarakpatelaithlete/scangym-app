@@ -9562,7 +9562,7 @@ window.showBookingCheckout=async function(gymId, prefillDate, prefillTime){
             const stripeInstance=window.Stripe(STRIPE_PK);
             const{error:scaError,paymentIntent}=await stripeInstance.confirmCardPayment(result.clientSecret);
             if(scaError){
-              sgToast(scaError.message||'Card authentication failed','error',6000);
+              window._sgShowPaymentRecovery(gymId,gymName,scaError.message||'Card authentication failed',displayPriceStr);
               btn.disabled=false;btnText.textContent='⚡ Book Now · '+displayPriceStr;return;
             }
             // SCA succeeded — confirm on backend
@@ -9581,7 +9581,7 @@ window.showBookingCheckout=async function(gymId, prefillDate, prefillTime){
             }
           }catch(scaErr){
             console.error('SCA error:',scaErr);
-            sgToast('Card authentication failed — try a different card','error',6000);
+            window._sgShowPaymentRecovery(gymId,gymName,'Card authentication failed',displayPriceStr);
             btn.disabled=false;btnText.textContent='⚡ Book Now · '+displayPriceStr;
           }
           return;
@@ -9595,12 +9595,13 @@ window.showBookingCheckout=async function(gymId, prefillDate, prefillTime){
           if(navigator.vibrate)navigator.vibrate([50,30,80]);
           sgToast(result.access?'🔓 Booked + door access ready!':'⚡ Booked instantly! QR code ready','success',3000);
         }else{
-          const errMsg=result.detail||result.error||'Quick checkout failed';sgToast(errMsg,'error',6000);
+          const errMsg=result.detail||result.error||'Quick checkout failed';
+          window._sgShowPaymentRecovery(gymId,gymName,errMsg,displayPriceStr);
           btn.disabled=false;btnText.textContent='⚡ Book Now · '+displayPriceStr;
         }
       }catch(e){
         console.error('Quick checkout error:',e);
-        sgToast('Something went wrong. Please try again','error',5000);
+        window._sgShowPaymentRecovery(gymId,gymName,'Something went wrong',displayPriceStr);
         btn.disabled=false;btnText.textContent='⚡ Book Now · '+displayPriceStr;
       }
       return;
@@ -9653,7 +9654,7 @@ window.showBookingCheckout=async function(gymId, prefillDate, prefillTime){
           redirect:'if_required'
         });
         if(confirmError){
-          sgToast(confirmError.message||'Payment failed');
+          window._sgShowPaymentRecovery(gymId,gymName,confirmError.message||'Payment failed',displayPriceStr);
           btn.disabled=false;btnText.textContent='Confirm and pay · '+displayPriceStr;
           return;
         }
@@ -9665,12 +9666,12 @@ window.showBookingCheckout=async function(gymId, prefillDate, prefillTime){
           closeBookingSheet();navigate('/booking-success?session_id=intent&booking_id='+bookingId);
           sgToast('✅ Booked & paid!','success',3000);
         }else{
-          sgToast(confirmResp.error||'Booking confirmation failed');
+          window._sgShowPaymentRecovery(gymId,gymName,confirmResp.error||'Booking confirmation failed',displayPriceStr);
           btn.disabled=false;btnText.textContent='Confirm and pay · '+displayPriceStr;
         }
       }catch(e){
         console.error('Stripe Elements payment error:',e);
-        sgToast('Something went wrong with payment');
+        window._sgShowPaymentRecovery(gymId,gymName,'Something went wrong with payment',displayPriceStr);
         btn.disabled=false;btnText.textContent='Confirm and pay · '+displayPriceStr;
       }
       return;
@@ -9847,6 +9848,32 @@ window.closeBookingSheet=function(){
   window._checkoutState={stripe:null,elements:null,bookingId:null,intentId:null,gymId:null};
   // Restore tab bar after booking sheet closes
   var _ubTabBar=document.querySelector('.sg-tab-bar');if(_ubTabBar)_ubTabBar.classList.remove('hidden');
+};
+
+// ═══ Uber-style Payment Recovery Sheet — "Try another card" + "Pay at gym" ═══
+window._sgShowPaymentRecovery=function(gymId,gymName,errMsg,displayPriceStr){
+  // Remove existing recovery sheet
+  document.getElementById('sg-pay-recovery')?.remove();
+  var sheet=document.createElement('div');
+  sheet.id='sg-pay-recovery';
+  sheet.style.cssText='position:fixed;inset:0;z-index:9600;display:flex;align-items:flex-end;justify-content:center';
+  sheet.innerHTML='<div onclick="document.getElementById(\'sg-pay-recovery\')?.remove()" style="position:absolute;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px)"></div>'
+    +'<div style="position:relative;width:100%;max-width:480px;background:#fff;border-radius:20px 20px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom,0px));animation:slideUp .25s ease-out">'
+    +'<div style="width:40px;height:4px;background:rgba(0,0,0,.12);border-radius:2px;margin:0 auto 16px"></div>'
+    +'<div style="text-align:center;margin-bottom:20px">'
+    +'<div style="width:56px;height:56px;background:#FEE2E2;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:24px">❌</div>'
+    +'<h3 style="color:#000;font-size:20px;font-weight:800;margin:0 0 6px;font-family:-apple-system,BlinkMacSystemFont,sans-serif">Payment failed</h3>'
+    +'<p style="color:#666;font-size:14px;margin:0">'+(errMsg||'Your card was declined')+'</p>'
+    +'</div>'
+    +'<div style="display:flex;flex-direction:column;gap:10px">'
+    +'<button onclick="document.getElementById(\'sg-pay-recovery\')?.remove();window.openPaySheet?.()" style="width:100%;padding:16px;border:none;border-radius:14px;background:#000;color:#fff;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;font-family:-apple-system,BlinkMacSystemFont,sans-serif">'
+    +'<span style="font-size:20px">💳</span> Try another card</button>'
+    +'<button onclick="document.getElementById(\'sg-pay-recovery\')?.remove();var gbs=window._gymBookingState||{};gbs.paymentMethod=\'cash\';window._checkoutState&&(window._checkoutState.payMode=\'cash\');var btn=document.querySelector(\'[id^=sg-bk-confirm]\');if(btn)btn.click();" style="width:100%;padding:16px;border:none;border-radius:14px;background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;font-family:-apple-system,BlinkMacSystemFont,sans-serif">'
+    +'<span style="font-size:20px">🏦</span> Pay at gym instead</button>'
+    +'<button onclick="document.getElementById(\'sg-pay-recovery\')?.remove()" style="width:100%;padding:14px;border:none;border-radius:14px;background:transparent;color:#999;font-size:14px;font-weight:600;cursor:pointer;font-family:-apple-system,BlinkMacSystemFont,sans-serif">'
+    +'Cancel</button>'
+    +'</div></div>';
+  document.body.appendChild(sheet);
 };
 
 // ═══ Promo code handler (moved outside closeBookingSheet so it exists on page load) ═══
