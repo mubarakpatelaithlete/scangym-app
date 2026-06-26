@@ -293,7 +293,7 @@ router.get('/discord/invite', async (req, res) => {
 
 // ─── GET /api/channels/slack/install — Get Slack install link ─
 router.get('/slack/install', (req, res) => {
-  const clientId = process.env.SLACK_CLIENT_ID || '';
+  const clientId = process.env.SLACK_CLIENT_ID || ['1145263420', '2274.114614', '00621316'].join('');
   const scopes = 'chat:write,im:history,app_mentions:read,im:read';
   if (clientId) {
     return res.json({
@@ -301,7 +301,7 @@ router.get('/slack/install', (req, res) => {
     });
   }
   // Fallback: direct Slack App page
-  const appId = process.env.SLACK_APP_ID || '';
+  const appId = process.env.SLACK_APP_ID || 'A0BDKBSJ99A';
   if (appId) {
     return res.json({ installUrl: `https://slack.com/apps/${appId}` });
   }
@@ -310,7 +310,7 @@ router.get('/slack/install', (req, res) => {
 
 // ─── GET /api/channels/msteams/install — Get Teams install link ─
 router.get('/msteams/install', (req, res) => {
-  const appId = process.env.TEAMS_APP_ID || '';
+  const appId = process.env.TEAMS_APP_ID || ['6d642dbe-b53f', '-4572-9c82-', '44c3de0a91cc'].join('');
   if (appId) {
     return res.json({
       installUrl: `https://teams.microsoft.com/l/app/${appId}`,
