@@ -320,4 +320,24 @@ router.get('/msteams/install', (req, res) => {
   res.json({ installUrl: 'https://appsource.microsoft.com/', note: 'Search for ScanGym in the Teams App Store' });
 });
 
+// ─── Webhook forwarding routes ─────────────────────────────
+// External services (Slack Events API, Azure Bot Framework) post to these URLs.
+// We forward them to the chatbot adapter routers which contain the actual handlers.
+
+// Slack: /api/channels/slack/webhook → /api/chatbot/slack/events
+const slackChatbot = require('../chatbot/slack');
+router.use('/slack/webhook', (req, res, next) => {
+  // Forward all methods (POST for events, GET for health checks)
+  // The Slack adapter handles url_verification challenge automatically
+  req.url = '/events'; // Rewrite to match the Slack adapter's /events route
+  slackChatbot(req, res, next);
+});
+
+// MS Teams: /api/channels/msteams/webhook → /api/chatbot/msteams/messages
+const msteamsChatbot = require('../chatbot/msteams');
+router.use('/msteams/webhook', (req, res, next) => {
+  req.url = '/messages'; // Rewrite to match the Teams adapter's /messages route
+  msteamsChatbot(req, res, next);
+});
+
 module.exports = router;

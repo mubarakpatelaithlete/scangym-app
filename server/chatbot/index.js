@@ -74,7 +74,7 @@ router.get('/health', (req, res) => {
     sms: !!(process.env.TWILIO_ACCOUNT_SID || true),
     discord: !!process.env.DISCORD_BOT_TOKEN,
     email: !!(process.env.SENDGRID_API_KEY || true),
-    slack: !!process.env.SLACK_BOT_TOKEN,
+    slack: !!(process.env.SLACK_BOT_TOKEN && process.env.SLACK_SIGNING_SECRET),
     msteams: !!process.env.TEAMS_APP_ID,
     web: true, // Always available
   };

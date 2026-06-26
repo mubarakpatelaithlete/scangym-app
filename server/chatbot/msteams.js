@@ -25,6 +25,8 @@ const { handleMessage } = require('./message-handler');
 
 const TEAMS_APP_ID = process.env.TEAMS_APP_ID;
 const TEAMS_APP_PASSWORD = process.env.TEAMS_APP_PASSWORD;
+const TEAMS_APP_TENANT_ID = process.env.TEAMS_APP_TENANT_ID;
+const TEAMS_BOT_TYPE = process.env.TEAMS_BOT_TYPE || 'MultiTenant'; // MultiTenant, SingleTenant, or UserAssignedMSI
 const BASE_URL = process.env.BASE_URL || 'https://scangym.com';
 
 let _accessToken = null;
@@ -36,10 +38,23 @@ const conversationRefs = new Map();
 // ─── Get Bot Framework access token ─────────────────────────
 async function getAccessToken() {
   if (_accessToken && Date.now() < _tokenExpiry - 60000) return _accessToken;
-  if (!TEAMS_APP_ID || !TEAMS_APP_PASSWORD) return null;
+  if (!TEAMS_APP_ID) return null;
+
+  // For User-Assigned Managed Identity (no password needed on Azure),
+  // we still need a client secret for non-Azure hosting (Railway, Vercel, etc.)
+  if (!TEAMS_APP_PASSWORD) {
+    console.warn('[Teams] No TEAMS_APP_PASSWORD set — bot can receive messages but cannot reply.');
+    console.warn('[Teams] To fix: Create a client secret in Azure Entra ID → App Registrations → Certificates & secrets');
+    return null;
+  }
+
+  // Use tenant-specific endpoint for SingleTenant/UserAssignedMSI bots
+  const tokenEndpoint = (TEAMS_BOT_TYPE === 'SingleTenant' || TEAMS_BOT_TYPE === 'UserAssignedMSI')
+    ? `https://login.microsoftonline.com/${TEAMS_APP_TENANT_ID || 'botframework.com'}/oauth2/v2.0/token`
+    : 'https://login.microsoftonline.com/botframework.com/oauth2/v2.0/token';
 
   try {
-    const resp = await fetch('https://login.microsoftonline.com/botframework.com/oauth2/v2.0/token', {
+    const resp = await fetch(tokenEndpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
@@ -50,6 +65,10 @@ async function getAccessToken() {
       }),
     });
     const data = await resp.json();
+    if (!data.access_token) {
+      console.error('[Teams] Token response error:', JSON.stringify(data));
+      return null;
+    }
     _accessToken = data.access_token;
     _tokenExpiry = Date.now() + (data.expires_in * 1000);
     return _accessToken;
