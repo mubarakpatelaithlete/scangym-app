@@ -41,7 +41,7 @@ const SYSTEM_PROMPT = `You are ScanGym's AI assistant — friendly, helpful, and
 You help customers find and book gyms via messaging (Telegram, WhatsApp, Discord, Slack, Teams, SMS).
 
 ═══ WHAT IS SCANGYM ═══
-ScanGym is the "Uber for gyms" — a universal gym day pass app. Instead of expensive monthly memberships, users buy a single-session pass at any gym worldwide. No contract, no commitment.
+ScanGym is the "Uber for gyms" — a universal gym day pass app. Instead of expensive monthly memberships, users buy a single-session pass at any gym worldwide. No contract, no commitment. Founded in the UK, available worldwide.
 
 ═══ PRODUCT DETAILS ═══
 • 1.2M+ gyms across 190+ countries
@@ -52,16 +52,42 @@ ScanGym is the "Uber for gyms" — a universal gym day pass app. Instead of expe
 • Platform fee: £0.00 (zero fees)
 • Works at: Planet Fitness, PureGym, Anytime Fitness, The Gym Group, Gold's Gym, independent gyms, and more
 
+═══ HOW QR CHECK-IN WORKS ═══
+After booking, you get an instant QR code in the app and via email. At the gym, simply scan the QR at the entrance terminal or show it to staff. No need to speak to reception — just scan and start training. Works like a digital key.
+
 ═══ HOW BOOKING WORKS ═══
 1. Search for gyms near a city/location
 2. Pick a gym and pass type
 3. Choose date & time
-4. Pay (card or saved card — 1 tap)
+4. Pay (card, saved card, Apple Pay, Google Pay, PayPal, or cash at gym)
 5. Get instant QR code on your phone
 6. Scan QR at gym entrance — you're in!
 
+═══ CREATOR PROGRAM (Earn Money) ═══
+ScanGym Creators earn commission by sharing gym content and referral links — like being a gym influencer:
+• Share your personal affiliate link for any gym
+• Earn 30% commission on every booking through your link
+• Get a Creator dashboard with analytics, earnings tracking, and content tools
+• Access 242+ ready-made marketing assets (stories, reels, posts)
+• Request payouts anytime via Stripe Connect
+• Top creators earn "Top 15%" badges and bonus bounties
+Think of it like the OnlyFans creator model but for fitness content and gym referrals.
+
+═══ PARTNER PROGRAM (Gym Owners) ═══
+Gym owners can list their gym on ScanGym for free:
+• Receive instant bookings and day pass revenue
+• Live check-in dashboard to see who's visiting
+• Access control integration for QR-based door entry
+• Analytics: revenue, check-ins, peak hours, growth trends
+• Earnings dashboard with Stripe Connect payouts
+• Growth Centre with marketing tools and competitor insights
+Like Booking.com or JustEat for gyms.
+
 ═══ AVAILABLE CHANNELS ═══
-Users can book via: Telegram (@ScanGymBot), WhatsApp, Discord, Slack, MS Teams, SMS, Email, or the website (scangym.com).
+Users can book via: Telegram (@ScanGymBot), WhatsApp, Discord, Slack, MS Teams, SMS, Email, or the website (scangym.com). Download the app from the App Store, Google Play, Microsoft Store, or Samsung Galaxy Store.
+
+═══ COUNTRIES & COVERAGE ═══
+ScanGym works in 190+ countries. Prices are automatically adjusted for each country using PPP (Purchasing Power Parity), so a day pass in India might be ₹199 while it's £4.49 in the UK. If a specific gym isn't listed yet, users can request it.
 
 ═══ YOUR BEHAVIOUR RULES ═══
 When responding:
@@ -69,6 +95,8 @@ When responding:
 - Use emoji naturally but sparingly (1-2 per message)
 - Format for messaging apps (short paragraphs, no HTML, no markdown headers)
 - Be warm and human — not robotic
+- ALWAYS answer the user's ACTUAL question directly with specific information
+- If someone asks about creators, partners, QR check-in, or any feature — explain it fully
 
 When the user wants an ACTION, output the tag AND a brief human message:
 - SEARCH gyms → include [ACTION:SEARCH:<location>] in your response
@@ -79,15 +107,14 @@ When the user wants an ACTION, output the tag AND a brief human message:
 IMPORTANT:
 - NEVER make up gym names, addresses, or prices
 - NEVER say "I can't help" — always guide the user to search, book, or visit scangym.com
+- NEVER give generic welcome messages when the user asked a specific question
 - If the user seems confused, offer 2-3 quick suggestions
 - If the user says just a city name (e.g. "Manchester"), treat it as a gym search
 - If the user types gibberish or something unrelated, gently redirect
-- If the user asks about features you're unsure about, say "Check scangym.com for the latest, or I can help you find & book a gym!"
 
 ═══ LOCATION & CONTEXT AWARENESS ═══
-- If the user asks "how do you know my location?" or "you don't know where I am" — explain: "I can detect your approximate area from your IP address, or you can tell me your city and I'll find the best gyms near you! 📍"
+- If the user asks "how do you know my location?" — explain: "I can detect your approximate area from your IP address, or you can tell me your city and I'll find the best gyms near you! 📍"
 - If the user questions your knowledge — be honest: "I search real gym data from Google Maps in real-time, so results are always up-to-date!"
-- ALWAYS answer the user's ACTUAL question directly. Never give generic "I'm here to help" responses — address what they specifically asked.
 - If you genuinely don't understand the question, say so clearly and ask them to rephrase — don't give an unrelated answer.
 - Match the user's tone and energy. If they ask a serious question, give a direct answer. If they're casual, be friendly.`;
 
@@ -380,10 +407,10 @@ function detectIntent(text, session) {
   // ── Channel questions ──
   if (/\b(channel|channels|telegram|whatsapp|discord|slack|teams|connect|app|download|install)\b/.test(lower)) return INTENTS.CHANNELS;
   
-  // ── Help — greetings, general questions ──
-  if (/\b(help|start|menu|commands|what can you|how do|how does|what do you|about|who are you|what is scangym|what's scangym)\b/.test(lower)) return INTENTS.HELP;
+  // ── Help — only pure help/menu requests ──
+  if (/^(help|start|menu|commands)[\s!.?]*$/i.test(lower)) return INTENTS.HELP;
   
-  // ── Greetings ──
+  // ── Greetings — only standalone greetings (everything else goes to AI) ──
   if (/^(hi|hey|hello|hola|yo|sup|hiya|heya|morning|good morning|good evening|good afternoon|howdy|g'day|salaam|hallo|bonjour|ciao|what's up|whats up|wassup)[\s!.?]*$/i.test(lower)) return INTENTS.HELP;
   
   // ── Search / find — clear gym search intent ──
@@ -919,7 +946,7 @@ async function handleCancel(entities) {
 function getSmartFallback(text, session, meta) {
   const lower = text.toLowerCase().trim();
   
-  // Common conversational patterns
+  // Common conversational patterns — short social responses
   if (/\b(thank|thanks|cheers|ta|thx)\b/.test(lower)) {
     return "You're welcome! 😊 Let me know if you need anything else. Happy to help find gyms anytime! 🏋️";
   }
@@ -929,23 +956,40 @@ function getSmartFallback(text, session, meta) {
   if (/\b(awesome|amazing|great|perfect|cool|nice|love it|brilliant)\b/.test(lower)) {
     return "Glad to hear it! 😄 Anything else I can help with? I'm always here to find gyms or help with bookings! 🏋️";
   }
-  if (/\b(how are you|how's it going|what's up)\b/.test(lower)) {
+  if (/\b(how are you|how's it going)\b/.test(lower)) {
     return "I'm great, thanks for asking! 😊 Ready to help you find the perfect gym. What city are you looking in? 🏋️";
   }
-  if (/\b(who are you|your name|about you)\b/.test(lower)) {
-    return "I'm ScanGym's AI assistant! 🏋️ I help you find and book gym day passes anywhere in the world — no membership needed. Just tell me a city to get started!";
+
+  // ── Informational questions — give real answers even when AI is down ──
+  if (/\b(who are you|your name|about you|what is scangym|what's scangym)\b/.test(lower)) {
+    return "I'm ScanGym's AI assistant! 🏋️ ScanGym is the \"Uber for gyms\" — buy a day pass at any gym worldwide. No membership, no contract. 1.2M+ gyms in 190+ countries, from £4.49/day.\n\nJust tell me a city and I'll find gyms near you!";
+  }
+  if (/\b(creator|affiliate|earn|commission|referral|influencer)\b/.test(lower)) {
+    return "💰 ScanGym Creators earn 30% commission!\n\n• Share your personal affiliate link for any gym\n• Earn on every booking through your link\n• Get a Creator dashboard with analytics & earnings\n• Access 242+ ready-made marketing assets\n• Request payouts anytime via Stripe\n\nSign up at scangym.com → Creator tab! 🚀";
+  }
+  if (/\b(partner|gym owner|list my gym|add my gym|gym business)\b/.test(lower)) {
+    return "🏢 Gym owners can list on ScanGym for FREE!\n\n• Receive instant day pass bookings\n• Live check-in dashboard\n• QR-based door access control\n• Revenue analytics & growth tools\n• Stripe Connect payouts\n\nSign up at scangym.com → Partner tab! 📊";
+  }
+  if (/\b(qr|check.?in|scan|entrance|door|entry|how.*get in|how.*enter)\b/.test(lower)) {
+    return "📱 QR Check-In is easy!\n\nAfter booking, you get an instant QR code in the app + email. At the gym, scan it at the entrance terminal or show to staff. No reception needed — just scan and start training! Works like a digital key 🔑";
   }
   if (/\b(membership|monthly|subscription|contract)\b/.test(lower)) {
-    return "🚫 *No memberships needed!*\n\nScanGym is pay-as-you-go — buy a day pass, walk in, work out, done.\n\n• Day passes from £4.49\n• No contracts or commitments\n• Free cancellation\n• QR code entry\n\nTell me a city to find gyms!";
+    return "🚫 No memberships needed!\n\nScanGym is pay-as-you-go — buy a day pass, walk in, work out, done.\n\n• Day passes from £4.49\n• No contracts or commitments\n• Free cancellation\n• QR code entry\n\nTell me a city to find gyms!";
   }
   if (/\b(how does|how do|how it works|explain)\b/.test(lower)) {
-    return "🏋️ *How ScanGym Works:*\n\n1️⃣ Search for gyms near you\n2️⃣ Pick a gym & pass type\n3️⃣ Pay (from £4.49)\n4️⃣ Get instant QR code\n5️⃣ Scan at gym entrance — you're in!\n\nNo membership, no contract. Just tell me a city to start! 📍";
+    return "🏋️ How ScanGym Works:\n\n1️⃣ Search for gyms near you\n2️⃣ Pick a gym & pass type\n3️⃣ Pay (from £4.49)\n4️⃣ Get instant QR code\n5️⃣ Scan at gym entrance — you're in!\n\nNo membership, no contract. Works in 190+ countries! Tell me a city to start 📍";
   }
   if (/\b(safe|secure|trust|legit|scam|real)\b/.test(lower)) {
-    return "🔒 *100% safe & secure*\n\n• Stripe-powered payments (bank-grade encryption)\n• Free cancellation up to 2 hours before\n• Real gyms verified on Google Maps\n• QR code entry — instant access\n• Used by thousands of gym-goers\n\nTry it with a day pass — risk-free! 💪";
+    return "🔒 100% safe & secure!\n\n• Stripe-powered payments (bank-grade encryption)\n• Free cancellation up to 2 hours before\n• Real gyms verified on Google Maps\n• QR code entry — instant access\n• Used by thousands of gym-goers\n\nTry it with a day pass — risk-free! 💪";
   }
   if (/\b(refund|money back|charged|receipt)\b/.test(lower)) {
-    return "💰 *Refunds & Receipts*\n\n• Cancel 2+ hours before → full refund\n• Refund appears in 3-5 business days\n• Receipts sent to your email automatically\n\nTo cancel: \"Cancel [your-booking-code]\"\nNeed help? Visit scangym.com → My Bookings 📋";
+    return "💰 Refunds & Receipts:\n\n• Cancel 2+ hours before → full refund\n• Refund appears in 3-5 business days\n• Receipts sent to your email automatically\n\nTo cancel: \"Cancel [your-booking-code]\"\nNeed help? Visit scangym.com → My Bookings 📋";
+  }
+  if (/\b(country|countries|international|worldwide|global|india|usa|europe|asia|africa|work in my)\b/.test(lower)) {
+    return "🌍 ScanGym works in 190+ countries!\n\nPrices are automatically adjusted for each country — so a day pass in India might be ₹199 while it's £4.49 in the UK.\n\nTell me your city and I'll find gyms near you! 📍";
+  }
+  if (/\b(tip|advice|workout|exercise|routine|muscle|cardio|weight|protein|diet|nutrition|fitness)\b/.test(lower)) {
+    return "💪 Great question! While I'm focused on helping you find and book gyms, here's a quick tip: Consistency beats intensity. Even 30 mins 3x/week makes a huge difference!\n\nWant me to find a gym near you? Just tell me your city! 🏋️";
   }
   
   // Default: guide them to search
