@@ -94,6 +94,23 @@ function generateQRToken() {
   return 'SG-' + segments.join('-');
 }
 
+/**
+ * Compute QR expiry based on pass type.
+ * S5-C07 FIX: Different pass types get appropriate expiry windows.
+ * Previously ALL passes got 24hrs — weekly/monthly passes were expiring too soon.
+ */
+function getQRExpiry(passType) {
+  const PASS_EXPIRY_HOURS = {
+    day:     24,
+    '3day':  72,
+    three_day: 72,
+    weekly:  168,  // 7 days
+    monthly: 720,  // 30 days
+  };
+  const hours = PASS_EXPIRY_HOURS[(passType || 'day').toLowerCase()] || 24;
+  return new Date(Date.now() + hours * 60 * 60 * 1000);
+}
+
 // POST /api/qr/generate — Generate QR code for a paid booking
 router.post('/generate', authenticateUser, async (req, res) => {
   try {
@@ -102,16 +119,24 @@ router.post('/generate', authenticateUser, async (req, res) => {
 
     if (!bookingId) return res.status(400).json({ error: 'bookingId is required' });
 
-    // Verify booking belongs to user and is paid
+    // Verify booking belongs to user
     const booking = await pool.query(
-      `SELECT b.id, b.gym_id, b.status FROM bookings b WHERE b.id = $1 AND b.user_id = $2`,
+      `SELECT b.id, b.gym_id, b.status, b.pass_type FROM bookings b WHERE b.id = $1 AND b.user_id = $2`,
       [parseInt(bookingId), userId]
     );
     if (booking.rows.length === 0) {
       return res.status(404).json({ error: 'Booking not found' });
     }
-    if (!['confirmed', 'completed', 'active'].includes(booking.rows[0].status)) {
-      return res.status(400).json({ error: 'Booking must be paid/confirmed to generate QR code' });
+
+    // S5-C07 FIX: Include 'reserved' (cash bookings) and 'iou_pending' in allowed statuses.
+    // Previously only 'confirmed'/'completed'/'active' were allowed, which meant cash
+    // bookings (status='reserved') could never get a QR code → users could not enter gym.
+    const ALLOWED_STATUSES = ['confirmed', 'completed', 'active', 'reserved', 'iou_pending'];
+    if (!ALLOWED_STATUSES.includes(booking.rows[0].status)) {
+      return res.status(400).json({
+        error: 'Cannot generate QR for this booking',
+        message: `Booking status '${booking.rows[0].status}' is not eligible for QR generation. Expected one of: ${ALLOWED_STATUSES.join(', ')}.`,
+      });
     }
 
     // Check if QR already exists for this booking
@@ -148,9 +173,10 @@ router.post('/generate', authenticateUser, async (req, res) => {
       }
     }
 
-    // Generate new QR code
+    // Generate new QR code with correct expiry for pass type
     const qrToken = generateQRToken();
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    const passType = booking.rows[0].pass_type || 'day';
+    const expiresAt = getQRExpiry(passType);
 
     const result = await pool.query(`
       INSERT INTO booking_qr_codes (booking_id, user_id, gym_id, qr_token, max_scans, expires_at)
@@ -179,6 +205,10 @@ router.post('/generate', authenticateUser, async (req, res) => {
       console.error('QR sync to bookings table:', syncErr.message);
     }
 
+    // Determine expiry label for response
+    const EXPIRY_LABELS = { day: '24 hours', '3day': '72 hours', weekly: '7 days', monthly: '30 days' };
+    const expiryLabel = EXPIRY_LABELS[passType] || '24 hours';
+
     res.status(201).json({
       qrCode: {
         id: qr.id,
@@ -190,12 +220,13 @@ router.post('/generate', authenticateUser, async (req, res) => {
         scansRemaining: 2,
         status: 'active',
         expiresAt: expiresAt.toISOString(),
+        passType,
       },
       policy: {
         maxScans: 2,
         scanFlow: ['Scan 1: Entry (check-in at gym door)', 'Scan 2: Exit (check-out when leaving)'],
         expiresAfterScans: 'QR expires permanently after 2 scans',
-        expiresAfterTime: '24 hours from generation',
+        expiresAfterTime: `${expiryLabel} from generation`,
         model: 'JD Gym style — entry + exit, then done',
       },
     });
@@ -243,7 +274,7 @@ router.post('/scan', async (req, res) => {
       return res.json({
         valid: false,
         error: 'QR code expired',
-        message: 'This 24-hour day pass has expired.',
+        message: 'This day pass has expired.',
         scanCount: qr.scan_count,
         maxScans: qr.max_scans,
       });
@@ -393,7 +424,7 @@ router.get('/status/:bookingId', authenticateUser, async (req, res) => {
         status: isExpired ? 'expired' : 'active',
         expiresAt: q.expires_at,
         isExpired,
-        expiredReason: isExpiredByScans ? '2 scans used (entry + exit)' : isExpiredByTime ? '24-hour period ended' : null,
+        expiredReason: isExpiredByScans ? '2 scans used (entry + exit)' : isExpiredByTime ? 'Pass period ended' : null,
       },
       scanHistory: scans.rows,
       aiCoachUnlocked: scans.rows.some(s => s.scan_type === 'entry'),
