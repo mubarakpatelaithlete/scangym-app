@@ -532,17 +532,20 @@ async function callApi(path, options = {}) {
 
 function formatGymList(gyms, platform) {
   if (!gyms || gyms.length === 0) {
-    return "😕 No gyms found in that area.\n\nTry a different city or neighbourhood?\nExamples: \"London\", \"Manchester city centre\", \"Bolton\"";
+    return "😕 No gyms found in that area.\n\nTry a different city or neighbourhood?\nExamples: \"London\", \"Manchester city centre\", \"New York\"";
   }
   
   const count = Math.min(gyms.length, 5);
-  let text = `🏋️ Found ${gyms.length} gym${gyms.length > 1 ? 's' : ''}:\n\n`;
+  const cityName = gyms[0]?.city || '';
+  let text = `🏋️ Found ${gyms.length} gym${gyms.length > 1 ? 's' : ''}${cityName ? ' in ' + cityName : ''}:\n\n`;
   
   gyms.slice(0, count).forEach((g, i) => {
     const distance = g.distanceText ? ` · ${g.distanceText}` : '';
     const rating = g.rating ? ` ⭐ ${g.rating}` : '';
+    const stars = g.rating ? ' ' + '★'.repeat(Math.round(g.rating)) + '☆'.repeat(5 - Math.round(g.rating)) : '';
     const price = `${g.currencySymbol || '£'}${g.dayPassPrice}`;
     const open = g.openNow === true ? ' · ✅ Open now' : g.openNow === false ? ' · 🔴 Closed' : '';
+    const types = g.types && g.types.length > 0 ? g.types.slice(0, 2).join(', ') : '';
     text += `${i + 1}. *${g.name}*${distance}\n`;
     text += `   💰 ${price}/day${rating}${open}\n`;
     if (g.address) text += `   📍 ${g.address}\n`;
@@ -553,23 +556,30 @@ function formatGymList(gyms, platform) {
     text += `...and ${gyms.length - count} more. Visit scangym.com to see all.\n\n`;
   }
   
-  text += `💡 Say "Book gym 1 for tomorrow" to book!\n`;
-  text += `Or visit scangym.com for the full experience with maps & photos.`;
+  text += `━━━━━━━━━━━━━━━━\n`;
+  text += `💡 To book: "Book gym 1 for tomorrow"\n`;
+  text += `🔍 More results: "Show more gyms"\n`;
+  text += `🌐 Full experience: scangym.com`;
   
   return text;
 }
 
 function formatBookingConfirmation(booking, gymName) {
-  return `✅ *Booking Confirmed!*\n\n` +
-    `🏋️ ${gymName}\n` +
+  return `━━━━━━━━━━━━━━━━\n` +
+    `✅ *Booking Confirmed!*\n` +
+    `━━━━━━━━━━━━━━━━\n\n` +
+    `🏋️ *${gymName}*\n` +
     `📅 ${booking.date}\n` +
-    `⏰ ${booking.time || 'Anytime'}\n` +
+    `⏰ ${booking.time || 'Anytime during opening hours'}\n` +
     `💰 £${booking.price}\n` +
+    `🎫 Pass: ${booking.passType || 'Day Pass'}\n` +
     `🔖 Code: *${booking.bookingCode}*\n\n` +
-    `📲 Your QR code is ready! Open scangym.com to view it.\n` +
-    `Scan it at the gym entrance — no reception needed.\n\n` +
-    `Free cancellation up to 2 hours before.\n` +
-    `To cancel: "Cancel booking ${booking.bookingCode}"`;
+    `📲 *Your QR code is ready!*\n` +
+    `Open scangym.com to view your QR code.\n` +
+    `Scan it at the gym entrance — no reception needed! 🔑\n\n` +
+    `⏳ Free cancellation up to 2 hours before your session.\n` +
+    `To cancel: "Cancel booking ${booking.bookingCode}"\n\n` +
+    `Enjoy your workout! 💪`;
 }
 
 // ─── Session Store (per-user conversation state) ─────────────
@@ -992,6 +1002,42 @@ function getSmartFallback(text, session, meta) {
     return "💪 Great question! While I'm focused on helping you find and book gyms, here's a quick tip: Consistency beats intensity. Even 30 mins 3x/week makes a huge difference!\n\nWant me to find a gym near you? Just tell me your city! 🏋️";
   }
   
+  // ── App download ──
+  if (/\b(app|download|ios|android|iphone|google play|app store|samsung|microsoft store|windows)\b/.test(lower)) {
+    return "📱 Get ScanGym on any device!\n\n" +
+      "🍎 iOS: App Store → search \"ScanGym\"\n" +
+      "🤖 Android: Google Play → search \"ScanGym\"\n" +
+      "💻 Windows: Microsoft Store → search \"ScanGym\"\n" +
+      "📱 Samsung: Galaxy Store → search \"ScanGym\"\n\n" +
+      "Or use scangym.com from any browser — works perfectly on mobile! 🌐";
+  }
+  // ── Contact / support ──
+  if (/\b(contact|support|help me|email|customer service|complaint|issue|problem|bug)\b/.test(lower)) {
+    return "📧 Need help? Here\'s how to reach us:\n\n" +
+      "📧 Email: hello@scangym.com\n" +
+      "🌐 Web: scangym.com/support\n" +
+      "💬 Or just tell me your issue right here!\n\n" +
+      "I can help with:\n" +
+      "• Finding gyms 🔍\n" +
+      "• Booking issues 📅\n" +
+      "• Cancellations & refunds 💰\n" +
+      "• Account questions 👤";
+  }
+  // ── Opening hours ──
+  if (/\b(open|hours|when|close|closing|opening|24.?h|24.?7)\b/.test(lower)) {
+    return "⏰ Gym hours vary by location!\n\nSearch for a gym and I\'ll show you which ones are open right now ✅\n\nMany gyms are open 24/7 — just tell me your city! 📍";
+  }
+  // ── Group / corporate bookings ──
+  if (/\b(group|corporate|team|company|office|bulk|many|multiple)\b/.test(lower)) {
+    return "👥 Group & Corporate Bookings!\n\n" +
+      "Want to book for a team or company?\n" +
+      "• Group day passes available\n" +
+      "• Corporate wellness programs\n" +
+      "• Volume discounts\n\n" +
+      "📧 Email hello@scangym.com for group rates!\n" +
+      "Or book individually — just tell me your city! 📍";
+  }
+  
   // Default: guide them to search
   return getWelcomeText(meta.userName);
 }
@@ -999,23 +1045,29 @@ function getSmartFallback(text, session, meta) {
 // ─── Welcome / Help Text ────────────────────────────────────
 function getWelcomeText(userName) {
   const name = userName ? `, ${userName.split(' ')[0]}` : '';
-  return `👋 Hey${name}! I'm ScanGym — your gym day pass assistant.\n\n` +
-    `I can help you:\n` +
+  return `👋 Hey${name}! Welcome to ScanGym — the Uber for Gyms 🏋️\n\n` +
+    `Skip the membership. Book a day pass at any gym, anywhere.\n\n` +
+    `Here\'s what I can do:\n` +
     `🔍 Find gyms — "Gyms in Manchester"\n` +
-    `📅 Book a session — "Book a gym in London for tomorrow"\n` +
+    `📅 Book a session — "Book gym 1 for tomorrow"\n` +
     `💰 Check prices — "How much is a day pass?"\n` +
+    `💳 Creator program — "How do I earn with ScanGym?"\n` +
+    `🏢 Gym owners — "List my gym on ScanGym"\n` +
     `❌ Cancel — "Cancel booking 5WCB-8VDY"\n\n` +
-    `Just type a city name to get started! 🏋️`;
+    `💡 Just type any city name to find gyms near you!\n` +
+    `1.2M+ gyms · 190+ countries · From £4.49/day`;
 }
 
 function getFallbackText() {
-  return `I'm your ScanGym gym finder! 🏋️\n\n` +
-    `Try one of these:\n` +
-    `• Type a city: "Manchester"\n` +
-    `• Search: "Find gyms near me"\n` +
-    `• Book: "Book a gym in London for tomorrow"\n` +
-    `• Pricing: "How much?"\n\n` +
-    `Or visit scangym.com for the full experience!`;
+  return `I'm ScanGym — your universal gym day pass assistant! 🏋️\n\n` +
+    `Here are some things you can try:\n` +
+    `📍 Type a city: "Manchester" or "New York"\n` +
+    `🔍 Search: "Find gyms near me"\n` +
+    `📅 Book: "Book gym 1 for tomorrow"\n` +
+    `💰 Pricing: "How much is a day pass?"\n` +
+    `💳 Earn money: "How do I become a Creator?"\n` +
+    `🏢 For gyms: "List my gym on ScanGym"\n\n` +
+    `Or visit scangym.com for the full experience with maps & photos! 🗺️`;
 }
 
 function getHelpText() {
