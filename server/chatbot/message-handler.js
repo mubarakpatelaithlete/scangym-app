@@ -444,6 +444,7 @@ function formatGymList(gyms, platform, offset = 0) {
   text += `━━━━━━━━━━━━━━━━\n`;
   text += `💡 To book: "Book gym 1 for tomorrow"\n`;
   if (offset + count < gyms.length) text += `📋 More results: "Show more gyms"\n`;
+  text += `💳 Or book online: scangym.com/explore\n`;
   text += `🌐 scangym.com — maps, photos & reviews`;
   
   return text;
@@ -451,6 +452,10 @@ function formatGymList(gyms, platform, offset = 0) {
 
 function formatBookingConfirmation(booking, gymName, passType) {
   const pass = passType || booking.passType || 'Day Pass';
+  const bookingId = booking.id || booking.bookingId || '';
+  const qrLink = bookingId ? `https://scangym.com/booking/${bookingId}/qr` : 'https://scangym.com/bookings';
+  const payLink = bookingId ? `https://scangym.com/booking/${bookingId}/pay` : '';
+  const price = booking.currencySymbol ? `${booking.currencySymbol}${booking.price}` : `£${booking.price}`;
   return `━━━━━━━━━━━━━━━━\n` +
     `✅ *Booking Confirmed!*\n` +
     `━━━━━━━━━━━━━━━━\n\n` +
@@ -458,10 +463,11 @@ function formatBookingConfirmation(booking, gymName, passType) {
     `📅 ${booking.date}\n` +
     `⏰ ${booking.time || 'Anytime during opening hours'}\n` +
     `🎫 ${pass}\n` +
-    `💰 £${booking.price}\n` +
+    `💰 ${price}\n` +
     `🔖 Code: *${booking.bookingCode}*\n\n` +
+    (payLink ? `💳 *Complete payment:* ${payLink}\n\n` : '') +
     `📲 *Your QR code is ready!*\n` +
-    `Open scangym.com → My Bookings to view it.\n` +
+    `🔗 View QR: ${qrLink}\n` +
     `Scan at the gym entrance — no reception needed! 🔑\n\n` +
     `⏳ Free cancel: up to 2 hours before.\n` +
     `To cancel: "Cancel ${booking.bookingCode}"\n\n` +
