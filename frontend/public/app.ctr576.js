@@ -13810,6 +13810,10 @@ function OwnerControlsPage(){
           </div>
         </div>
       </div>
+      <div style="background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.1);border-radius:10px;padding:10px 12px;margin-bottom:14px">
+        <p style="color:#60a5fa;font-size:11px;font-weight:600;margin-bottom:4px">💡 How Seam works</p>
+        <p style="color:rgba(255,255,255,.35);font-size:10px;line-height:1.5;margin:0">1. Sign up at <b style="color:#60a5fa">seam.co</b> (free trial)<br>2. Connect your lock brand (Salto, Brivo, etc)<br>3. Copy your ACS System ID<br>4. Paste it below — customers get auto-access!</p>
+      </div>
       <p style="color:rgba(255,255,255,.4);font-size:11px;font-weight:600;margin-bottom:8px">UPGRADE TO SMART ACCESS:</p>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
         <button onclick="sgShowAccessConnect('kisi')" style="background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.15);color:#3b82f6;padding:12px 8px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;text-align:center">🔐 Kisi<br><span style='font-size:10px;opacity:.6'>QR door unlock</span></button>
@@ -19000,11 +19004,50 @@ function GymPartnerHubPage(){
   return`<div style="max-width:480px;margin:0 auto;padding:20px 16px">
     <div class="sg-more-back" onclick="navigate('/more')">\u2190 Back</div>
     <h1 style="font-size:24px;font-weight:900;color:#fff;margin-bottom:4px">\ud83c\udfe2 Gym Partner Hub</h1>
-    <p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:20px">Manage your gym on ScanGym</p>
+    <p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:12px">Manage your gym on ScanGym</p>
+
+    <!-- R6-P01: Live/Offline status badge -->
+    <div id="partner-live-badge" style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;margin-bottom:14px;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.15)">
+      <div id="partner-live-dot" style="width:10px;height:10px;border-radius:50%;background:#22c55e;box-shadow:0 0 8px rgba(34,197,94,.6);animation:sgPulse 2s infinite"></div>
+      <span id="partner-live-text" style="color:#4ade80;font-size:13px;font-weight:700">LIVE — Accepting Bookings</span>
+      <button id="partner-live-toggle-btn" onclick="_partnerQuickToggle()" style="margin-left:auto;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.6);padding:4px 12px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer">Pause</button>
+    </div>
+    <style>@keyframes sgPulse{0%,100%{opacity:1}50%{opacity:.4}}</style>
+
+    <!-- R6-P02: Setup Checklist -->
+    <div id="partner-checklist" style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:14px;margin-bottom:16px;display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <h3 style="color:#fff;font-size:14px;font-weight:700;margin:0">\ud83d\udee0\ufe0f Setup Progress</h3>
+        <span id="partner-checklist-pct" style="color:#FF6D00;font-size:12px;font-weight:700">0%</span>
+      </div>
+      <div style="width:100%;height:6px;background:rgba(255,255,255,.06);border-radius:3px;margin-bottom:12px;overflow:hidden"><div id="partner-checklist-bar" style="height:100%;background:linear-gradient(90deg,#FF6D00,#ff9800);border-radius:3px;width:0%;transition:width .5s"></div></div>
+      <div id="partner-checklist-items" style="display:flex;flex-direction:column;gap:6px"></div>
+    </div>
+
+    <!-- R6-P04: Stripe Connect Banner (shown if not connected) -->
+    <div id="partner-stripe-banner" style="display:none;background:linear-gradient(135deg,rgba(168,85,247,.12),rgba(59,130,246,.08));border:1px solid rgba(168,85,247,.2);border-radius:14px;padding:14px;margin-bottom:16px;text-align:center">
+      <p style="font-size:22px;margin-bottom:6px">\ud83c\udfe6</p>
+      <p style="color:#fff;font-size:14px;font-weight:700;margin-bottom:4px">Connect Your Bank</p>
+      <p style="color:rgba(255,255,255,.4);font-size:11px;margin-bottom:10px">Set up Stripe to receive your 85% revenue share</p>
+      <button onclick="_partnerConnectStripe()" style="background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;border:none;padding:10px 24px;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 4px 16px rgba(168,85,247,.3)">Connect Stripe \u2192</button>
+    </div>
 
     <!-- Today's Stats Row -->
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px" id="partner-stats">
       ${[{l:"Today's Revenue",i:'\ud83d\udcb0',k:'revenue'},{l:"Bookings",i:'\ud83d\udcdd',k:'bookings'},{l:'Avg Rating',i:'\u2b50',k:'rating'}].map(function(m){return'<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:14px;text-align:center"><p style="color:rgba(255,255,255,.4);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">'+m.i+' '+m.l+'</p><p class="partner-stat-val" data-stat="'+m.k+'" style="color:#fff;font-size:20px;font-weight:800"><span class="skel-card" style="display:inline-block;width:40px;height:20px;background:rgba(255,255,255,.06);border-radius:4px"></span></p></div>';}).join('')}
+    </div>
+
+    <!-- R6-P07: 7-Day Revenue Sparkline -->
+    <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:14px;margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <h3 style="color:#fff;font-size:14px;font-weight:700">\ud83d\udcc8 7-Day Revenue</h3>
+        <span id="partner-7d-total" style="color:#FF6D00;font-size:12px;font-weight:700"></span>
+      </div>
+      <div id="partner-sparkline" style="display:flex;align-items:flex-end;gap:4px;height:60px"></div>
+      <div style="display:flex;justify-content:space-between;margin-top:4px">
+        <span style="color:rgba(255,255,255,.2);font-size:9px" id="partner-spark-start"></span>
+        <span style="color:rgba(255,255,255,.2);font-size:9px" id="partner-spark-end"></span>
+      </div>
     </div>
 
     <!-- Today's Bookings -->
@@ -19053,12 +19096,17 @@ function GymPartnerHubPage(){
       </div>
     </div>
 
-    <!-- Claim CTA (if not claimed) -->
-    <div id="partner-claim-cta" style="background:rgba(255,109,0,.06);border:1px solid rgba(255,109,0,.1);border-radius:14px;padding:16px;text-align:center;margin-bottom:16px">
-      <p style="font-size:28px;margin-bottom:8px">\ud83c\udfe2</p>
-      <h3 style="color:#fff;font-size:16px;font-weight:700;margin-bottom:4px">Not listed yet?</h3>
-      <p style="color:rgba(255,255,255,.4);font-size:12px;margin-bottom:12px">Claim your gym to start accepting ScanGym bookings</p>
-      <button onclick="navigate('/list-your-gym')" style="background:#FF6D00;color:#fff;border:none;padding:12px 28px;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer">Claim Your Gym \u2192</button>
+    <!-- R6-P03: Gym Search & Claim (if not claimed) -->
+    <div id="partner-claim-cta" style="background:rgba(255,109,0,.06);border:1px solid rgba(255,109,0,.1);border-radius:14px;padding:16px;margin-bottom:16px">
+      <p style="font-size:22px;margin-bottom:6px;text-align:center">\ud83d\udd0d</p>
+      <h3 style="color:#fff;font-size:15px;font-weight:700;margin-bottom:4px;text-align:center">Find & Claim Your Gym</h3>
+      <p style="color:rgba(255,255,255,.4);font-size:11px;margin-bottom:12px;text-align:center">Search by name to claim and start earning</p>
+      <div style="position:relative;margin-bottom:10px">
+        <input id="partner-claim-search" type="text" placeholder="Search gym name..." oninput="_partnerSearchClaim(this.value)" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px 12px 10px 34px;color:#fff;font-size:13px;outline:none;box-sizing:border-box">
+        <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:14px;opacity:.4">\ud83d\udd0d</span>
+      </div>
+      <div id="partner-claim-results" style="max-height:180px;overflow-y:auto"></div>
+      <p style="color:rgba(255,255,255,.25);font-size:10px;text-align:center;margin-top:8px">Can\u2019t find it? <span onclick="navigate('/list-your-gym')" style="color:#FF6D00;cursor:pointer;font-weight:600">List manually \u2192</span></p>
     </div>
 
     <!-- Quick Links -->
@@ -19070,6 +19118,65 @@ function GymPartnerHubPage(){
 }
 
 // Load partner hub data
+window._partnerQuickToggle=async function(){
+  try{
+    var badge=document.getElementById('partner-live-badge');
+    var dot=document.getElementById('partner-live-dot');
+    var txt=document.getElementById('partner-live-text');
+    var btn=document.getElementById('partner-live-toggle-btn');
+    var isLive=dot&&dot.style.background==='rgb(34, 197, 94)';
+    var newState=!isLive;
+    if(dot){dot.style.background=newState?'#22c55e':'#ef4444';dot.style.boxShadow=newState?'0 0 8px rgba(34,197,94,.6)':'0 0 8px rgba(239,68,68,.4)';dot.style.animation=newState?'sgPulse 2s infinite':'none';}
+    if(txt){txt.textContent=newState?'LIVE \u2014 Accepting Bookings':'OFFLINE \u2014 Bookings Paused';txt.style.color=newState?'#4ade80':'#f87171';}
+    if(badge){badge.style.background=newState?'rgba(34,197,94,.08)':'rgba(239,68,68,.06)';badge.style.borderColor=newState?'rgba(34,197,94,.15)':'rgba(239,68,68,.12)';}
+    if(btn){btn.textContent=newState?'Pause':'Go Live';}
+    await fetch('/api/gym-partner/toggle-active',{method:'PATCH',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({gymId:0,isActive:newState})}).catch(function(){});
+    sgToast(newState?'Your gym is now LIVE':'Bookings paused','info');
+  }catch(e){}
+};
+
+window._partnerConnectStripe=async function(){
+  try{
+    sgToast('Setting up Stripe...','info');
+    var r=await fetch('/api/gym-partner/stripe-connect',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({})});
+    var d=await r.json();
+    if(d.onboardingUrl){window.open(d.onboardingUrl,'_blank');}
+    else if(d.onboardingComplete){sgToast('Stripe already connected!','success');var b=document.getElementById('partner-stripe-banner');if(b)b.style.display='none';}
+    else{sgToast(d.error||'Stripe setup failed','error');}
+  }catch(e){sgToast('Network error','error');}
+};
+
+window._partnerSearchClaim=async function(q){
+  var box=document.getElementById('partner-claim-results');if(!box)return;
+  if(!q||q.length<2){box.innerHTML='';return;}
+  try{
+    var r=await fetch('/api/search?q='+encodeURIComponent(q)+'&limit=5').catch(function(){return null;});
+    var d=r&&r.ok?await r.json().catch(function(){return{gyms:[]};}):({gyms:[]});
+    var gyms=d.gyms||d.results||[];
+    if(!gyms.length){box.innerHTML='<p style="color:rgba(255,255,255,.3);font-size:12px;padding:8px;text-align:center">No gyms found</p>';return;}
+    box.innerHTML=gyms.slice(0,5).map(function(g){
+      var claimed=g.claimed_by?true:false;
+      return '<div style="display:flex;align-items:center;gap:10px;padding:8px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px;margin-bottom:4px">'
+        +'<div style="width:36px;height:36px;background:rgba(255,109,0,.1);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">\ud83c\udfcb\ufe0f</div>'
+        +'<div style="flex:1;min-width:0"><p style="color:#fff;font-size:12px;font-weight:600;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(g.name||'Gym')+'</p>'
+        +'<p style="color:rgba(255,255,255,.3);font-size:10px;margin:0">'+(g.city||g.address||'')+'</p></div>'
+        +(claimed?'<span style="color:rgba(255,255,255,.3);font-size:10px">Claimed</span>'
+        :'<button onclick="_partnerClaimGym('+g.id+')" style="background:#FF6D00;color:#fff;border:none;padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0">Claim</button>')
+        +'</div>';
+    }).join('');
+  }catch(e){box.innerHTML='<p style="color:#f87171;font-size:11px;text-align:center">Search error</p>';}
+};
+
+window._partnerClaimGym=async function(gymId){
+  if(!confirm('Claim this gym as yours?'))return;
+  try{
+    var r=await fetch('/api/gym-partner/claim',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({gymId:gymId})});
+    var d=await r.json();
+    if(d.success){sgToast('Gym claimed! \ud83c\udf89','success');setTimeout(function(){navigate('/gym-partner-hub');},800);}
+    else{sgToast(d.error||'Claim failed','error');}
+  }catch(e){sgToast('Network error','error');}
+};
+
 window._loadPartnerHub=async function(){
   try{
     var r=await fetch('/api/gym-partner/dashboard',{credentials:'include'}).catch(function(){return null;});
@@ -19077,6 +19184,70 @@ window._loadPartnerHub=async function(){
     // Update stats
     var stats={'revenue':d.todayRevenue!=null?'\u00A3'+parseFloat(d.todayRevenue).toFixed(2):'\u00A30','bookings':''+(d.todayBookings||0),'rating':''+(d.avgRating||'4.2')};
     document.querySelectorAll('.partner-stat-val').forEach(function(el){el.textContent=stats[el.dataset.stat]||'\u2014';});
+    // R6-P01: Update live/offline badge
+    var liveDot=document.getElementById('partner-live-dot');
+    var liveTxt=document.getElementById('partner-live-text');
+    var liveBtn=document.getElementById('partner-live-toggle-btn');
+    var liveBadge=document.getElementById('partner-live-badge');
+    var isActive=d.isActive!==false;
+    if(liveDot){liveDot.style.background=isActive?'#22c55e':'#ef4444';liveDot.style.boxShadow=isActive?'0 0 8px rgba(34,197,94,.6)':'0 0 8px rgba(239,68,68,.4)';liveDot.style.animation=isActive?'sgPulse 2s infinite':'none';}
+    if(liveTxt){liveTxt.textContent=isActive?'LIVE \u2014 Accepting Bookings':'OFFLINE \u2014 Bookings Paused';liveTxt.style.color=isActive?'#4ade80':'#f87171';}
+    if(liveBadge){liveBadge.style.background=isActive?'rgba(34,197,94,.08)':'rgba(239,68,68,.06)';liveBadge.style.borderColor=isActive?'rgba(34,197,94,.15)':'rgba(239,68,68,.12)';}
+    if(liveBtn){liveBtn.textContent=isActive?'Pause':'Go Live';}
+
+    // R6-P02: Setup checklist
+    var clBox=document.getElementById('partner-checklist');
+    var clItems=document.getElementById('partner-checklist-items');
+    var hasClaimed=d.hasClaimed||d.gymId||d.todayBookings!=null;
+    var hasStripe=d.stripeStatus==='connected';
+    var hasAccess=d.accessConnected||false;
+    var hasPricing=d.pricingSet||true;
+    var steps=[
+      {done:hasClaimed,label:'Claim your gym',icon:'\ud83c\udfe2'},
+      {done:hasStripe,label:'Connect bank (Stripe)',icon:'\ud83c\udfe6'},
+      {done:hasAccess,label:'Connect access control',icon:'\ud83d\udd10'},
+      {done:hasPricing,label:'Set pricing',icon:'\ud83d\udcb0'},
+      {done:isActive,label:'Go live',icon:'\ud83d\ude80'}
+    ];
+    var doneCount=steps.filter(function(s){return s.done;}).length;
+    if(clBox&&doneCount<5){
+      clBox.style.display='block';
+      var pct=Math.round(doneCount/5*100);
+      var pctEl=document.getElementById('partner-checklist-pct');if(pctEl)pctEl.textContent=pct+'%';
+      var barEl=document.getElementById('partner-checklist-bar');if(barEl)barEl.style.width=pct+'%';
+      if(clItems){clItems.innerHTML=steps.map(function(s){return '<div style="display:flex;align-items:center;gap:10px;padding:6px 8px;background:rgba(255,255,255,.02);border-radius:8px">'
+        +'<span style="font-size:14px">'+(s.done?'\u2705':'\u2b1c')+'</span>'
+        +'<span style="color:'+(s.done?'rgba(255,255,255,.4)':'#fff')+';font-size:12px;font-weight:'+(s.done?'400':'600')+';'+(s.done?'text-decoration:line-through':'')+'">'+s.icon+' '+s.label+'</span>'
+        +'</div>';}).join('');}
+    }
+
+    // R6-P04: Stripe banner
+    var stripeBanner=document.getElementById('partner-stripe-banner');
+    if(stripeBanner){stripeBanner.style.display=hasStripe?'none':'block';}
+
+    // R6-P03: Hide claim CTA if already claimed
+    var claimCta=document.getElementById('partner-claim-cta');
+    if(claimCta&&hasClaimed){claimCta.style.display='none';}
+
+    // R6-P07: Sparkline
+    var spark=document.getElementById('partner-sparkline');
+    if(spark){
+      var dailyRev=d.dailyRevenue||[];
+      if(dailyRev.length===0){for(var di=6;di>=0;di--){var dd=new Date();dd.setDate(dd.getDate()-di);dailyRev.push({date:dd.toISOString().slice(0,10),amount:0});}}
+      var maxRev=Math.max.apply(null,dailyRev.map(function(x){return parseFloat(x.amount)||0;}))||1;
+      var total7d=dailyRev.reduce(function(s,x){return s+(parseFloat(x.amount)||0);},0);
+      var t7dEl=document.getElementById('partner-7d-total');if(t7dEl)t7dEl.textContent='\u00A3'+total7d.toFixed(2);
+      spark.innerHTML=dailyRev.map(function(x){
+        var val=parseFloat(x.amount)||0;
+        var h=Math.max(4,Math.round(val/maxRev*56));
+        var dayLabel=new Date(x.date+'T12:00:00').toLocaleDateString('en-GB',{weekday:'narrow'});
+        return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">'
+          +'<span style="color:rgba(255,255,255,.3);font-size:8px">\u00A3'+val.toFixed(0)+'</span>'
+          +'<div style="width:100%;height:'+h+'px;background:linear-gradient(180deg,#FF6D00,rgba(255,109,0,.3));border-radius:4px"></div>'
+          +'<span style="color:rgba(255,255,255,.25);font-size:8px">'+dayLabel+'</span></div>';
+      }).join('');
+    }
+
     // Today's bookings list
     var bkEl=document.getElementById('partner-today-bookings');
     if(bkEl){
@@ -19178,12 +19349,37 @@ function PartnerPayoutsPage(){
   +'<div style="background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.1);border-radius:12px;padding:16px;text-align:center"><p style="color:rgba(255,255,255,.4);font-size:10px;font-weight:600;text-transform:uppercase;margin-bottom:4px">Pending Payout</p><p id="partner-pending" style="color:#22c55e;font-size:24px;font-weight:900"><span class="skel-card" style="display:inline-block;width:60px;height:24px;background:rgba(255,255,255,.06);border-radius:4px"></span></p></div>'
   +'</div>'
   +'<div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:16px;margin-bottom:16px"><h3 style="color:#fff;font-size:15px;font-weight:700;margin-bottom:12px">\ud83d\udcb0 Payout History</h3><div id="partner-payout-list"><div style="display:flex;flex-direction:column;gap:8px">'+[1,2,3].map(function(){return'<div class="skel-card" style="height:40px;background:rgba(255,255,255,.03);border-radius:8px"></div>';}).join('')+'</div></div></div>'
+  +'<div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:16px;margin-bottom:16px"><h3 style="color:#fff;font-size:14px;font-weight:700;margin-bottom:8px">\ud83d\udcb8 Request Payout</h3><div id="partner-withdraw-box"><div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span style="color:rgba(255,255,255,.4);font-size:12px">Available:</span><span id="partner-withdraw-avail" style="color:#22c55e;font-size:18px;font-weight:800">\u00A30.00</span></div><button id="partner-withdraw-btn" onclick="_partnerRequestPayout()" style="width:100%;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border:none;padding:12px;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;box-shadow:0 4px 16px rgba(34,197,94,.25)">Withdraw to Bank \u2192</button><p style="color:rgba(255,255,255,.25);font-size:10px;margin-top:6px;text-align:center">Min. payout \u00A310 \u00b7 Processed in 2-3 business days</p></div></div>'
   +'<div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:16px"><h3 style="color:#fff;font-size:15px;font-weight:700;margin-bottom:8px">\ud83c\udfe6 Payout Method</h3><p style="color:rgba(255,255,255,.4);font-size:12px;margin-bottom:12px">Payouts are processed weekly via Stripe Connect</p><div id="partner-stripe-status" style="display:flex;align-items:center;gap:8px;padding:10px;background:rgba(34,197,94,.05);border:1px solid rgba(34,197,94,.1);border-radius:8px"><div style="width:8px;height:8px;border-radius:50%;background:#22c55e"></div><span style="color:rgba(255,255,255,.6);font-size:13px">Stripe Connected</span></div></div></div>';
 }
+window._partnerRequestPayout=async function(){
+  var btn=document.getElementById('partner-withdraw-btn');
+  if(btn){btn.textContent='Processing...';btn.style.opacity='.6';}
+  try{
+    var r=await fetch('/api/gym-partner/request-payout',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({})});
+    var d=await r.json();
+    if(d.success){
+      sgToast('Payout requested! \ud83d\udcb8','success');
+      if(btn){btn.textContent='\u2705 Payout Requested';btn.style.background='rgba(34,197,94,.15)';btn.disabled=true;}
+    }else{
+      sgToast(d.error||'Payout failed','error');
+      if(btn){btn.textContent='Withdraw to Bank \u2192';btn.style.opacity='1';}
+    }
+  }catch(e){
+    sgToast('Network error','error');
+    if(btn){btn.textContent='Withdraw to Bank \u2192';btn.style.opacity='1';}
+  }
+};
+
 window._loadPartnerPayouts=async function(){
   try{
     var r=await fetch('/api/gym-partner/payouts',{credentials:'include'}).catch(function(){return null;});
     var d=r&&r.ok?await r.json().catch(function(){return {};}):{};
+    // R6-P06: Fill withdraw amount
+    var wa=document.getElementById('partner-withdraw-avail');
+    if(wa)wa.textContent='\u00A3'+(parseFloat(d.pendingPayout)||0).toFixed(2);
+    var wb=document.getElementById('partner-withdraw-btn');
+    if(wb&&(parseFloat(d.pendingPayout)||0)<10){wb.style.opacity='.5';wb.onclick=function(){sgToast('Minimum payout is \u00A310','info');};}
     var te=document.getElementById('partner-total-earned');
     if(te)te.textContent='\u00A3'+(parseFloat(d.totalEarned)||0).toFixed(2);
     var pe=document.getElementById('partner-pending');
