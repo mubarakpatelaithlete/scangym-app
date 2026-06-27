@@ -1188,6 +1188,11 @@ function HomePage(){
       </div>
     </div>
 
+    <!-- R5-C01: Recent search history -->
+    <div id="sg-search-history" style="flex-shrink:0;margin-bottom:12px">
+      ${(function(){try{var h=JSON.parse(localStorage.getItem('sg_search_history')||'[]');if(!h.length)return'';return'<p style="color:rgba(255,255,255,.3);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;margin:0 0 8px 4px;">Recent Searches</p><div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px">'+h.map(function(s){return'<button onclick="searchGyms(\''+s.replace(/'/g,"\\'")+' gyms\',true);navigate(\'/explore\');document.getElementById(\'sg-search-overlay\').classList.remove(\'active\');setTimeout(()=>document.getElementById(\'sg-search-overlay\').style.display=\'none\',200)" style="background:rgba(255,109,0,.08);border:1px solid rgba(255,109,0,.15);border-radius:10px;padding:8px 14px;color:#FF6D00;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap">🕐 '+s+'</button>'}).join('')+'</div>';}catch(e){return'';}})()}
+    </div>
+
     <!-- Popular cities list -->
     <p style="color:rgba(255,255,255,.3);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;margin:0 0 8px 4px;flex-shrink:0;">Popular Cities</p>
     <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;">
@@ -1276,6 +1281,9 @@ async function searchGyms(query, isExplicit, _triggerLayer){state.lastSearchQuer
     // Fix: Track when user explicitly searched (city button or typed query)
     // This prevents GPS/IP from overriding their intent
     if(isExplicit) state.userExplicitSearch=true;
+    // R5-C01: Save to search history (last 5 unique searches)
+    if(isExplicit&&query){
+      try{var _sh=JSON.parse(localStorage.getItem('sg_search_history')||'[]');var _clean=query.replace(/\s*gyms?$/i,'').trim();if(_clean.length>1){_sh=_sh.filter(function(s){return s!==_clean});_sh.unshift(_clean);if(_sh.length>5)_sh=_sh.slice(0,5);localStorage.setItem('sg_search_history',JSON.stringify(_sh))}}catch(e){}}
     state.searchQuery=query;
     state._searchLoading=true;
     // Add timeout to prevent infinite loading — abort after 8 seconds
@@ -2070,8 +2078,9 @@ function GymProfilePage(){
       </div>
 
       <!-- ═══ 2×2 Grid "Choose a pass" cards (Kotler pricing) — hidden by default, shown via Passes button ═══ -->
-      <div class="gym-pass-header" id="gym-pass-header" style="display:none;">Choose a pass</div>
-      <div class="gym-pass-cards" id="gym-pass-cards" style="display:none;">
+      <!-- R5-C02: Auto-reveal pass cards — users see all pass options immediately -->
+      <div class="gym-pass-header" id="gym-pass-header">Choose a pass</div>
+      <div class="gym-pass-cards" id="gym-pass-cards">
         <div class="gym-pass-card selected" onclick="selectGymPassCard(this,0,'${gymId}')" data-pass="day">
           <div class="gym-pass-card-badge">⚡ MOST POPULAR</div>
           <div class="gym-pass-card-top"><div class="gym-pass-card-icon">⚡</div><span class="gym-pass-card-name">Day Pass</span></div>
@@ -9055,7 +9064,10 @@ window.showBookingCheckout=async function(gymId, prefillDate, prefillTime){
   // ═══ Auth gate: Require login before booking ═══
   // 1-click flow: inline auth sheet slides up — no page redirect.
   if(!state.user){
-    window._pendingCheckout={gymId, prefillDate:prefillDate||null, prefillTime:prefillTime||null};
+    // R5-C04: Persist full checkout intent across auth (pass type, date, time, gym)
+    var _gbs=window._gymBookingState||{};
+    window._pendingCheckout={gymId, prefillDate:prefillDate||_gbs.selectedDate||null, prefillTime:prefillTime||_gbs.selectedTime||null, passType:_gbs.selectedPass||'day', passName:_gbs.passName||'Day Pass'};
+    try{sessionStorage.setItem('sg_pending_checkout',JSON.stringify(window._pendingCheckout))}catch(e){}
     if(typeof window._sgShowAuthSheet==='function'){
       window._sgShowAuthSheet('book');
     }else{
@@ -9064,6 +9076,8 @@ window.showBookingCheckout=async function(gymId, prefillDate, prefillTime){
     }
     return;
   }
+  // R5-C04: Restore persisted checkout state after auth
+  if(!window._pendingCheckout){try{var _pc=JSON.parse(sessionStorage.getItem('sg_pending_checkout')||'null');if(_pc&&_pc.gymId===gymId){window._pendingCheckout=null;sessionStorage.removeItem('sg_pending_checkout');if(_pc.passType){window._gymBookingState=window._gymBookingState||{};window._gymBookingState.selectedPass=_pc.passType;window._gymBookingState.passName=_pc.passName||'Day Pass';}if(_pc.prefillDate)prefillDate=prefillDate||_pc.prefillDate;if(_pc.prefillTime)prefillTime=prefillTime||_pc.prefillTime;}}catch(e){}}
 
   document.getElementById('booking-sheet')?.remove();
 
@@ -9223,7 +9237,16 @@ window.showBookingCheckout=async function(gymId, prefillDate, prefillTime){
       <div class="sg-bk-sheet-info">
         <div class="sg-bk-sheet-gym-name">${gymName}</div>
         <div class="sg-bk-sheet-gym-addr">📍 ${gymAddr}</div>
-        <div class="sg-bk-sheet-detail">${passInfo.name} · ${dateDisplay}${selTime!=='anytime'?' · '+selTime:''}</div>
+        <!-- R5-C03: Tappable inline date/time pickers in checkout -->
+        <div class="sg-bk-sheet-detail" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <span>${passInfo.name}</span>
+          <span style="color:rgba(255,255,255,.2)">·</span>
+          <span onclick="document.getElementById('sg-bk-date-input').showPicker?.()" style="cursor:pointer;color:#FF6D00;font-weight:600;display:inline-flex;align-items:center;gap:4px">📅 <span id="sg-bk-date-label">${dateDisplay}</span></span>
+          <input type="date" id="sg-bk-date-input" value="${selDate}" min="${today}" style="position:absolute;opacity:0;width:0;height:0" onchange="var d=new Date(this.value+'T12:00:00');var days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];var months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];document.getElementById('sg-bk-date-label').textContent=this.value==='${today}'?'Today':days[d.getDay()]+', '+d.getDate()+' '+months[d.getMonth()];if(window._checkoutState)window._checkoutState.selectedDate=this.value">
+          <span style="color:rgba(255,255,255,.2)">·</span>
+          <span onclick="document.getElementById('sg-bk-time-input').showPicker?.()" style="cursor:pointer;color:#FF6D00;font-weight:600;display:inline-flex;align-items:center;gap:4px">🕐 <span id="sg-bk-time-label">${selTime==='anytime'?'Anytime':selTime}</span></span>
+          <input type="time" id="sg-bk-time-input" value="${selTime==='anytime'?'':selTime}" min="06:00" max="22:00" style="position:absolute;opacity:0;width:0;height:0" onchange="document.getElementById('sg-bk-time-label').textContent=this.value||'Anytime';if(window._checkoutState)window._checkoutState.selectedTime=this.value||'anytime'">
+        </div>
       </div>
 
       <!-- ═══ Price breakdown ═══ -->
@@ -10372,7 +10395,9 @@ function BookingSuccessPage(){
           </div>
           <div class="text-center px-2">
             <p class="text-slate-500 text-xs mb-1">🕐 Time</p>
-            <p class="text-white font-semibold text-sm">24hr access from ${b.time}</p>
+            <p class="text-white font-semibold text-sm">24hr from ${b.time}</p>
+            <!-- R5-C05: Live countdown timer -->
+            <p class="text-green-400 text-xs font-bold mt-1" id="sg-pass-countdown"></p>
           </div>
           <div class="text-center px-2">
             <p class="text-slate-500 text-xs mb-1">🎫 Booking</p>
@@ -10588,6 +10613,41 @@ window.sgStarRate=function(n,bid){
 window.sgQuickFeedback=function(type,bookingId){
   fetch('/api/bookings/feedback',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({bookingId:bookingId,type:type,detail:'booking-success page feedback'})}).catch(function(){});
 };
+
+// R5-C05: Live countdown timer for active booking pass
+(function(){
+  var _cdInterval=null;
+  window._sgStartCountdown=function(){
+    if(_cdInterval)clearInterval(_cdInterval);
+    _cdInterval=setInterval(function(){
+      var el=document.getElementById('sg-pass-countdown');
+      if(!el){clearInterval(_cdInterval);return;}
+      var b=state.lastBooking;if(!b)return;
+      // Calculate expiry: booking date+time + 24hrs
+      try{
+        var parts=(b.date||'').split('/');
+        var timeParts=(b.time||'12:00').split(':');
+        var bookDate;
+        if(parts.length===3)bookDate=new Date(parseInt(parts[2]),parseInt(parts[1])-1,parseInt(parts[0]),parseInt(timeParts[0])||12,parseInt(timeParts[1])||0);
+        else bookDate=new Date();
+        var expiry=new Date(bookDate.getTime()+24*60*60*1000);
+        var now=new Date();
+        var diff=expiry-now;
+        if(diff<=0){el.textContent='⏰ Pass expired';el.style.color='#f87171';clearInterval(_cdInterval);return;}
+        var hrs=Math.floor(diff/3600000);var mins=Math.floor((diff%3600000)/60000);var secs=Math.floor((diff%60000)/1000);
+        el.textContent='⏱️ '+hrs+'h '+mins+'m '+secs+'s left';
+        if(hrs<2){el.style.color='#f59e0b';}
+        if(hrs<1){el.style.color='#f87171';}
+      }catch(e){}
+    },1000);
+  };
+  // Auto-start: observe DOM for countdown element appearing
+  try{new MutationObserver(function(muts){
+    if(document.getElementById('sg-pass-countdown'))window._sgStartCountdown();
+  }).observe(document.body||document.documentElement,{childList:true,subtree:true});}catch(e){}
+  // Also check on page load in case already rendered
+  setTimeout(function(){if(document.getElementById('sg-pass-countdown'))window._sgStartCountdown();},500);
+})();
 
 // ─── Page: My Bookings ───
 // ─── Cancel Booking (with Stripe refund) ───
@@ -10845,6 +10905,11 @@ function MyBookingsPage(){
               </div>
             </div>
           `}
+          <!-- R5-C07: Quick re-book button -->
+          <div class="mt-3 pt-3 border-t border-slate-700" style="display:flex;gap:8px">
+            <button onclick="showBookingCheckout('${b.gymId||b.gym_id||''}')" style="flex:1;background:rgba(255,109,0,.1);border:1px solid rgba(255,109,0,.2);color:#FF6D00;padding:10px;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">🔄 Book Again</button>
+            ${b.status==='confirmed'||b.status==='active'?'<button onclick="cancelBooking('+b.id+')" style="flex:1;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.12);color:#f87171;padding:10px;border-radius:12px;font-size:13px;font-weight:600;cursor:pointer">↩️ Cancel</button>':''}
+          </div>
         </div>
       `).join('')}
     </div>
@@ -11404,10 +11469,28 @@ window.sgDownloadICS=function(){
 };
 
 // S5-M06 FIX: Save QR code image to phone gallery
+// R5-C06: Improved QR save — native share on mobile, canvas download on desktop
 window.sgSaveQR=function(){
   var qr=state.lastQR||{};var src=qr.dataUrl||qr.url||'';
   if(!src){sgToast('No QR code available');return;}
+  // Try Web Share API first (mobile native share sheet)
+  if(navigator.share&&navigator.canShare){
+    fetch(src).then(function(r){return r.blob()}).then(function(blob){
+      var file=new File([blob],'scangym-qr.png',{type:'image/png'});
+      if(navigator.canShare({files:[file]})){
+        navigator.share({title:'ScanGym QR Code',text:'My gym entry QR code',files:[file]}).catch(function(){});
+        return;
+      }
+      // Fallback to download
+      var a=document.createElement('a');a.href=src;a.download='scangym-qr.png';a.click();
+    }).catch(function(){
+      var a=document.createElement('a');a.href=src;a.download='scangym-qr.png';a.click();
+    });
+    return;
+  }
+  // Desktop fallback
   var a=document.createElement('a');a.href=src;a.download='scangym-qr.png';a.click();
+  sgToast('💾 QR code saved!','success',2000);
 };
 
 window.sgStarHover=function(n){
