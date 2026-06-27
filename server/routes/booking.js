@@ -148,7 +148,7 @@ router.get('/', async (req, res) => {
     }
 
     const result = await pool.query(
-      `SELECT b.*, g.name as gym_name 
+      `SELECT b.*, g.name as gym_name, g.country as gym_country
        FROM public.bookings b 
        LEFT JOIN public.gyms g ON b.gym_id = g.id
        WHERE b.user_id = $1 
@@ -156,22 +156,27 @@ router.get('/', async (req, res) => {
       [req.session.userId]
     );
 
-    const bookings = result.rows.map(b => ({
-      id: b.id,
-      gymName: b.gym_name || 'Gym',
-      date: b.booking_date,
-      time: b.start_time,
-      endTime: b.end_time,
-      price: parseFloat(b.total_amount || 0),
-      bookingCode: b.booking_code,
-      status: b.status,
-      qr: (b.qr_code && b.status === 'confirmed') ? {
-        token: b.qr_code,
-        dataUrl: b.qr_code_url || null,
-        scanCount: b.checked_in_at ? 1 : 0,
-        status: b.checked_in_at ? 'used' : 'active',
-      } : null,
-    }));
+    const bookings = result.rows.map(b => {
+      const currencyInfo = pricing.getCurrencyForCountry(b.gym_country || 'GB');
+      return {
+        id: b.id,
+        gymName: b.gym_name || 'Gym',
+        date: b.booking_date,
+        time: b.start_time,
+        endTime: b.end_time,
+        price: parseFloat(b.total_amount || 0),
+        currency: currencyInfo.currency,
+        currencySymbol: currencyInfo.symbol,
+        bookingCode: b.booking_code,
+        status: b.status,
+        qr: (b.qr_code && b.status === 'confirmed') ? {
+          token: b.qr_code,
+          dataUrl: b.qr_code_url || null,
+          scanCount: b.checked_in_at ? 1 : 0,
+          status: b.checked_in_at ? 'used' : 'active',
+        } : null,
+      };
+    });
 
     res.json({ success: true, bookings });
   } catch (err) {

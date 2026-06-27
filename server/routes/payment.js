@@ -1225,11 +1225,13 @@ router.post('/confirm-intent', async (req, res) => {
     // Send email
     const recipientEmail = booking.user_email || intent.receipt_email;
     if (recipientEmail) {
+      const emailCurrency = pricing.getCurrencyForCountry(booking.gym_country || 'GB');
       sendConfirmationEmail({
         to: recipientEmail, gymName, date: bookingDate,
         time: booking.start_time, endTime: booking.end_time,
         price: parseFloat(booking.total_amount).toFixed(2),
         bookingCode: booking.booking_code, qrDataUrl: qr.dataUrl,
+        currencySymbol: emailCurrency.symbol,
       }).catch(err => console.error('[Email] Send failed:', err.message));
     }
 

@@ -7337,11 +7337,17 @@ window._fsFilter=function(type){
 // ─── Page: Wallet (payment wallet) ───
 function WalletPage(){
   if(!state.user){
-    return`<div class="pt-8 min-h-full px-4"><div class="max-w-md mx-auto py-20 text-center">
+    return`<div class="pt-8 min-h-full px-4"><div class="max-w-md mx-auto py-12 text-center">
       <div style="font-size:64px;margin-bottom:16px">💳</div>
-      <h1 class="font-brand text-2xl font-bold text-white mb-3">Payment</h1>
-      <p class="text-slate-400 mb-8">Create an account to save cards for 1-tap booking.</p>
-      <button onclick="navigate('/login')" class="bg-brand hover:bg-orange-600 text-white font-bold py-4 px-8 rounded-xl transition text-lg">Get Started</button>
+      <h1 class="font-brand text-2xl font-bold text-white mb-3">Payment & Wallet</h1>
+      <p class="text-slate-400 mb-4">Sign in to manage your payment methods and ScanGym balance.</p>
+      <div style="display:flex;flex-direction:column;gap:10px;text-align:left;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:16px 20px;margin-bottom:24px">
+        <div style="display:flex;align-items:center;gap:10px"><span style="font-size:18px">💰</span><span style="color:rgba(255,255,255,.6);font-size:13px">ScanGym Balance — instant refunds & top-ups</span></div>
+        <div style="display:flex;align-items:center;gap:10px"><span style="font-size:18px">💳</span><span style="color:rgba(255,255,255,.6);font-size:13px">Save cards for 1-tap booking (Visa, Mastercard, Amex)</span></div>
+        <div style="display:flex;align-items:center;gap:10px"><span style="font-size:18px">📱</span><span style="color:rgba(255,255,255,.6);font-size:13px">Apple Pay & Google Pay supported</span></div>
+        <div style="display:flex;align-items:center;gap:10px"><span style="font-size:18px">🔒</span><span style="color:rgba(255,255,255,.6);font-size:13px">Secured by Stripe — bank-level encryption</span></div>
+      </div>
+      <button onclick="navigate('/login')" class="bg-brand hover:bg-orange-600 text-white font-bold py-4 px-8 rounded-xl transition text-lg w-full">Sign In to Get Started</button>
     </div></div>`;
   }
 
@@ -10334,7 +10340,7 @@ function BookingSuccessPage(){
         </div>
         <h1 class="font-brand text-3xl font-bold text-white mb-1">Booking Confirmed! 🎉</h1>
         <p class="text-green-400 font-medium">${b.paymentMethod==='cash'?'✅ Reserved · Show QR & pay at gym':'✅ Payment received · QR code ready'}</p>
-        <p class="text-slate-400 text-xs mt-1">📧 Confirmation email sent — check spam if you don't see it</p>
+        <p class="text-slate-400 text-xs mt-1">📧 Check your email for a confirmation — it may take a minute</p>
         <!-- Fix #113: Feel-good motivational message after booking -->
         <p class="text-white font-semibold text-sm mt-3" style="animation:fadeInUp .6s ease-out">${['💪 Your future self will thank you!','🏆 Champions train no matter what — you\'re one of them!','🔥 You just invested in the best version of yourself!','⚡ One workout closer to your goals!','🌟 The hardest part is showing up — you just did that!'][Math.floor(Math.abs((b.gymName||'').charCodeAt(0))%5)]}</p>
         <div id="sg-scroll-hint" style="margin-top:12px;text-align:center;animation:sgBounce 2s infinite;transition:opacity .3s"><span style="color:rgba(255,255,255,.3);font-size:24px">\u2304</span><p style="color:rgba(255,255,255,.3);font-size:10px;margin:0">Scroll for QR code & details</p></div>
@@ -10352,7 +10358,7 @@ function BookingSuccessPage(){
               <p class="text-slate-400 text-sm">Day Pass · 24-hour access</p>
             </div>
             <div class="text-right">
-              <p class="text-brand font-bold text-xl">${b.currency==='USD'?'$':b.currency==='EUR'?'€':'£'}${(sgNum(b.price)||0).toFixed(2)}</p>
+              <p class="text-brand font-bold text-xl">${b.currencySymbol||'£'}${(sgNum(b.price)||0).toFixed(2)}</p>
               <p class="text-green-400 text-xs font-medium">${b.paymentMethod==='cash'?'RESERVED ⏳':'PAID ✓'}</p>
             </div>
           </div>
@@ -10765,13 +10771,16 @@ function MyBookingsPage(){
   if(!state.user){
     return`<div class="pt-8 min-h-full px-4">
       <div class="max-w-md mx-auto py-12 text-center">
-        <!-- S5-L09 FIX: Back navigation -->
-        <div onclick="history.back()" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,.5);font-size:14px;font-weight:600;margin-bottom:16px"><span>←</span> Back</div>
         <div class="text-6xl mb-6">📋</div>
         <h1 class="font-brand text-3xl font-bold text-white mb-3">My Bookings</h1>
-        <p class="text-slate-400 mb-8">Log in to view your bookings, QR codes, and booking history.</p>
-        <button onclick="navigate('/login')" class="bg-brand hover:bg-orange-600 text-white font-bold px-8 py-3 rounded-xl transition shadow-lg shadow-brand/20 w-full">🔑 Log In to View Bookings</button>
-        <p class="text-slate-500 text-sm mt-4">Don't have an account? Book a gym first and we'll create one for you.</p>
+        <p class="text-slate-400 mb-4">Sign in to view your bookings, QR codes, and booking history.</p>
+        <div style="display:flex;flex-direction:column;gap:10px;text-align:left;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:16px 20px;margin-bottom:24px">
+          <div style="display:flex;align-items:center;gap:10px"><span style="font-size:18px">📱</span><span style="color:rgba(255,255,255,.6);font-size:13px">Instant QR codes for gym entry</span></div>
+          <div style="display:flex;align-items:center;gap:10px"><span style="font-size:18px">🕐</span><span style="color:rgba(255,255,255,.6);font-size:13px">Full booking history & receipts</span></div>
+          <div style="display:flex;align-items:center;gap:10px"><span style="font-size:18px">❌</span><span style="color:rgba(255,255,255,.6);font-size:13px">Free cancellation up to 2 hours before</span></div>
+        </div>
+        <button onclick="navigate('/login')" class="bg-brand hover:bg-orange-600 text-white font-bold px-8 py-3 rounded-xl transition shadow-lg shadow-brand/20 w-full">🔑 Sign In to View Bookings</button>
+        <p class="text-slate-500 text-sm mt-4">No account yet? Book a gym and one is created automatically.</p>
         <button onclick="navigate('/explore')" class="mt-3 bg-slate-800 hover:bg-slate-700 text-white px-8 py-3 rounded-xl transition w-full">🔍 Find a Gym Near You</button>
       </div>
     </div>`;
@@ -10794,7 +10803,6 @@ function MyBookingsPage(){
   return`
   <div class="pt-8 min-h-full px-4">
     <div class="max-w-2xl mx-auto py-12">
-      <div onclick="history.back()" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,.5);font-size:14px;font-weight:600;margin-bottom:12px"><span>←</span> Back</div>
       <h1 class="font-brand text-3xl font-bold text-white mb-6 text-center">📋 My Bookings</h1>
       ${bookings.length===0 ? `
         <div class="text-center py-12">
@@ -10807,7 +10815,7 @@ function MyBookingsPage(){
             <div>
               <p class="text-white font-bold text-lg">${b.gymName||'Gym'}</p>
               <p class="text-slate-400 text-sm">${(()=>{try{const d=new Date(b.date);return d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'})}catch(e){return b.date}})()}${b.time?' at '+b.time:''}</p>
-              <p class="text-brand font-bold">£${(sgNum(b.price)||0).toFixed(2)}</p>
+              <p class="text-brand font-bold">${b.currencySymbol||'£'}${(sgNum(b.price)||0).toFixed(2)}</p>
             </div>
             <span class="px-3 py-1 rounded-full text-xs font-bold ${b.status==='confirmed'?'bg-accent/20 text-accent':'bg-yellow-500/20 text-yellow-400'}">${b.status}</span>
           </div>
@@ -10882,9 +10890,8 @@ window.findGyms=function(){
   _fireGPS(true); // true = high accuracy (user explicitly asked for GPS)
 };
 window.openGym=async function(id,isLive){
-  // Screen 3 removed: go straight to checkout instead of gym detail page
-  showBookingCheckout(id);
-  return;
+  // Restore gym detail page — users see photos, hours, reviews before booking.
+  // The "⚡ Book Now" button on gym cards still goes directly to checkout.
   navigate('/gym/'+id);
   // Check if this is a Google Place ID (starts with "ChI" or similar) or numeric DB id
   const isPlaceId=isLive||isNaN(parseInt(id));
