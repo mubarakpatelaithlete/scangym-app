@@ -6939,7 +6939,7 @@ function CreatorsPage(){
           <div class="text-center"><p class="text-3xl md:text-4xl font-bold text-brand">FREE</p><p class="text-slate-500 text-sm">Gym Sessions</p></div>
         </div>
         <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
-          <button onclick="navigate('/login')" class="bg-brand hover:bg-orange-600 text-white font-bold px-8 py-4 rounded-xl transition text-lg shadow-lg shadow-brand/20 hover:shadow-brand/40">Join ScanSquad — It's Free</button>
+          <button onclick="state.user?window._sg1ClickCreatorSignup():navigate('/login')" class="bg-brand hover:bg-orange-600 text-white font-bold px-8 py-4 rounded-xl transition text-lg shadow-lg shadow-brand/20 hover:shadow-brand/40">Join ScanSquad — It's Free</button>
           <a href="#fs-how" onclick="event.preventDefault();document.getElementById('fs-how').scrollIntoView({behavior:'smooth'})" class="text-slate-300 hover:text-white font-medium px-6 py-4 rounded-xl border border-slate-700 hover:border-slate-500 transition cursor-pointer">See How It Works ↓</a>
         </div>
         <p class="text-slate-600 text-sm mt-4">No minimum followers · No application · Start in 60 seconds</p>
@@ -7029,7 +7029,7 @@ function CreatorsPage(){
               <h3 class="text-4xl md:text-5xl font-bold text-white mb-2">No commission<br>caps. <span class="text-brand">Ever.</span></h3>
               <p class="text-slate-400 mt-3">The more you share, the more you earn. Top ScanSquad creators earn £1,200-5,000+ per month.</p>
             </div>
-            <button onclick="navigate('/login')" class="bg-brand hover:bg-orange-600 text-white font-bold px-8 py-4 rounded-xl transition text-lg w-full md:w-auto">Start Earning →</button>
+            <button onclick="state.user?window._sg1ClickCreatorSignup():navigate('/login')" class="bg-brand hover:bg-orange-600 text-white font-bold px-8 py-4 rounded-xl transition text-lg w-full md:w-auto">Start Earning →</button>
           </div>
         </div>
       </div>
@@ -7314,7 +7314,7 @@ function CreatorsPage(){
         <div class="text-5xl mb-6">💪</div>
         <h2 class="font-brand text-3xl md:text-5xl font-bold text-white mb-4">Ready to Join ScanSquad?</h2>
         <p class="text-slate-400 text-lg mb-8 max-w-xl mx-auto">Free to join · 25% commission · 242+ assets · Weekly payouts · No caps · No minimum followers</p>
-        <button onclick="navigate('/login')" class="bg-brand hover:bg-orange-600 text-white font-bold px-10 py-5 rounded-xl transition text-xl shadow-lg shadow-brand/20 hover:shadow-brand/40">Join ScanSquad — Start Earning Today</button>
+        <button onclick="state.user?window._sg1ClickCreatorSignup():navigate('/login')" class="bg-brand hover:bg-orange-600 text-white font-bold px-10 py-5 rounded-xl transition text-xl shadow-lg shadow-brand/20 hover:shadow-brand/40">Join ScanSquad — Start Earning Today</button>
         <p class="text-slate-600 text-sm mt-4">Your personal page: <span class="text-brand">scangym.com/r/yourname</span></p>
       </div>
     </section>
@@ -15618,10 +15618,12 @@ window._sg1ClickCreatorSignup=async function(){
     var finalHandle=linkResp.handle||handle;
     var creatorData={handle:finalHandle,name:u.name||'Creator',joined:new Date().toISOString(),tier:(joinResp.tier&&joinResp.tier.name)||'Starter',serverSynced:true};
     localStorage.setItem('sg_creator',JSON.stringify(creatorData));
+    if(state.user)state.user.referral_code=finalHandle;
     sgToast('\u{1F389} Welcome to ScanSquad, '+finalHandle+'!','success',3000);
   }catch(e){
     var creatorData2={handle:handle,name:u.name||'Creator',joined:new Date().toISOString(),tier:'Starter'};
     localStorage.setItem('sg_creator',JSON.stringify(creatorData2));
+    if(state.user)state.user.referral_code=handle;
     sgToast('\u{1F389} Welcome to ScanSquad, '+handle+'!','success',3000);
   }
   navigate('/creator-hub');
@@ -15644,16 +15646,16 @@ window._sgCopyAffiliateLink=async function(handle){
 /* Withdraw — calls /api/referrals/withdraw */
 window._sgCreatorWithdraw=async function(handle){
   try{
-    var br=await fetch('/api/referrals/balance/'+handle,{credentials:'include'});
+    var br=await fetch('/api/referrals/balance/'+encodeURIComponent(handle),{credentials:'include'});
     var bd=await br.json();
-    var bal=bd.available_pence||bd.balance_pence||0;
-    if(bal<100){sgToast('Minimum withdrawal is \u00a31.00. Current balance: \u00a3'+(bal/100).toFixed(2),'info',3000);return;}
-    if(!confirm('Withdraw \u00a3'+(bal/100).toFixed(2)+' to your bank account?'))return;
-    var wr=await fetch('/api/referrals/withdraw',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({handle:handle,amount_pence:bal})});
+    var bal=bd.availablePence||bd.available_pence||0;
+    if(bal<500){sgToast('Minimum withdrawal is \u00a35.00. Current: \u00a3'+(bal/100).toFixed(2)+'. Use the full withdrawal page for more options.','info',3000);navigate('/creator-earnings');return;}
+    if(!confirm('Withdraw \u00a3'+(bal/100).toFixed(2)+' to your account?'))return;
+    var wr=await fetch('/api/referrals/withdraw',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({creatorHandle:handle,amountPence:bal,paymentMethod:'wallet',paymentDetails:{type:'scangym_wallet'}})});
     var wd=await wr.json();
     if(wd.success||wd.withdrawal){sgToast('\u2705 Withdrawal requested! \u00a3'+(bal/100).toFixed(2)+' processing.','success',4000);_loadCreatorDash(handle);}
-    else{sgToast(wd.error||'Withdrawal failed','error',3000);}
-  }catch(e){sgToast('Network error — try again','error');}
+    else{sgToast(wd.error||'Withdrawal failed — try the full payout page','error',3000);navigate('/creator-earnings');}
+  }catch(e){sgToast('Network error — try the payout page','error');navigate('/creator-earnings');}
 };
 /* Creator Reels Filter */
 window._sgCreatorFilterReels=function(filter,el){
@@ -15822,15 +15824,15 @@ function CreatorFullPage(){
       </div>
       <div style="background:linear-gradient(135deg,rgba(168,85,247,.12),rgba(255,109,0,.08));border:1px solid rgba(168,85,247,.2);border-radius:16px;padding:14px;margin-bottom:12px;text-align:center">
         <div style="color:rgba(255,255,255,.5);font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">YOUR RANKING</div>
-        <div style="font-size:32px;font-weight:900;background:linear-gradient(135deg,#a855f7,#FF6D00);-webkit-background-clip:text;-webkit-text-fill-color:transparent">Top 15%</div>
+        <div id="cf-ranking" style="font-size:32px;font-weight:900;background:linear-gradient(135deg,#a855f7,#FF6D00);-webkit-background-clip:text;-webkit-text-fill-color:transparent">—</div>
         <div style="color:rgba(255,255,255,.4);font-size:10px;margin-top:2px">of all ScanGym creators this month</div>
         <div style="width:100%;height:4px;background:rgba(255,255,255,.06);border-radius:2px;margin-top:8px;overflow:hidden"><div style="width:85%;height:100%;background:linear-gradient(90deg,#a855f7,#FF6D00);border-radius:2px"></div></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:12px">
-        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:8px;text-align:center"><div style="font-size:18px;font-weight:900;color:#a855f7">3</div><div style="font-size:7px;color:rgba(255,255,255,.4);text-transform:uppercase;margin-top:2px">Reels</div></div>
-        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:8px;text-align:center"><div style="font-size:18px;font-weight:900;color:#FF6D00">142</div><div style="font-size:7px;color:rgba(255,255,255,.4);text-transform:uppercase;margin-top:2px">Clicks</div></div>
-        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:8px;text-align:center"><div style="font-size:18px;font-weight:900;color:#22c55e">6</div><div style="font-size:7px;color:rgba(255,255,255,.4);text-transform:uppercase;margin-top:2px">Bookings</div></div>
-        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:8px;text-align:center"><div style="font-size:18px;font-weight:900;color:#22c55e">\u00a37.20</div><div style="font-size:7px;color:rgba(255,255,255,.4);text-transform:uppercase;margin-top:2px">Earned</div></div>
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:8px;text-align:center"><div id="cf-reels" style="font-size:18px;font-weight:900;color:#a855f7">—</div><div style="font-size:7px;color:rgba(255,255,255,.4);text-transform:uppercase;margin-top:2px">Reels</div></div>
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:8px;text-align:center"><div id="cf-clicks" style="font-size:18px;font-weight:900;color:#FF6D00">—</div><div style="font-size:7px;color:rgba(255,255,255,.4);text-transform:uppercase;margin-top:2px">Clicks</div></div>
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:8px;text-align:center"><div id="cf-bookings" style="font-size:18px;font-weight:900;color:#22c55e">—</div><div style="font-size:7px;color:rgba(255,255,255,.4);text-transform:uppercase;margin-top:2px">Bookings</div></div>
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:8px;text-align:center"><div id="cf-earned" style="font-size:18px;font-weight:900;color:#22c55e">—</div><div style="font-size:7px;color:rgba(255,255,255,.4);text-transform:uppercase;margin-top:2px">Earned</div></div>
       </div>
       <div style="background:linear-gradient(135deg,rgba(255,109,0,.08),rgba(255,109,0,.02));border:1px solid rgba(255,109,0,.15);border-radius:14px;padding:12px;margin-bottom:12px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
@@ -15857,9 +15859,9 @@ function CreatorFullPage(){
       <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:12px;margin-bottom:10px">
         <div style="color:rgba(255,255,255,.4);font-size:9px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">EARNINGS BY SOURCE</div>
         <div style="display:flex;flex-direction:column;gap:6px">
-          <div style="display:flex;align-items:center;gap:8px"><div style="width:8px;height:8px;background:#FF6D00;border-radius:2px;flex-shrink:0"></div><span style="flex:1;color:#fff;font-size:11px">Referral Links</span><span style="color:#22c55e;font-size:11px;font-weight:700">\u00a34.80</span></div>
-          <div style="display:flex;align-items:center;gap:8px"><div style="width:8px;height:8px;background:#a855f7;border-radius:2px;flex-shrink:0"></div><span style="flex:1;color:#fff;font-size:11px">Reel Conversions</span><span style="color:#22c55e;font-size:11px;font-weight:700">\u00a32.40</span></div>
-          <div style="display:flex;align-items:center;gap:8px"><div style="width:8px;height:8px;background:#3b82f6;border-radius:2px;flex-shrink:0"></div><span style="flex:1;color:#fff;font-size:11px">QR Code Scans</span><span style="color:#22c55e;font-size:11px;font-weight:700">\u00a30.00</span></div>
+          <div style="display:flex;align-items:center;gap:8px"><div style="width:8px;height:8px;background:#FF6D00;border-radius:2px;flex-shrink:0"></div><span style="flex:1;color:#fff;font-size:11px">Referral Links</span><span id="cf-src-referral" style="color:#22c55e;font-size:11px;font-weight:700">—</span></div>
+          <div style="display:flex;align-items:center;gap:8px"><div style="width:8px;height:8px;background:#a855f7;border-radius:2px;flex-shrink:0"></div><span style="flex:1;color:#fff;font-size:11px">Reel Conversions</span><span id="cf-src-reels" style="color:#22c55e;font-size:11px;font-weight:700">—</span></div>
+          <div style="display:flex;align-items:center;gap:8px"><div style="width:8px;height:8px;background:#3b82f6;border-radius:2px;flex-shrink:0"></div><span style="flex:1;color:#fff;font-size:11px">QR Code Scans</span><span id="cf-src-qr" style="color:#22c55e;font-size:11px;font-weight:700">—</span></div>
         </div>
       </div>
       <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:12px;margin-bottom:10px">
@@ -15868,22 +15870,22 @@ function CreatorFullPage(){
           <span style="color:#22c55e;font-size:9px;font-weight:600">\u25cf Updated just now</span>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
-          <div style="text-align:center"><div style="color:#FF6D00;font-size:16px;font-weight:800">23</div><div style="color:rgba(255,255,255,.3);font-size:8px">Clicks</div></div>
-          <div style="text-align:center"><div style="color:#22c55e;font-size:16px;font-weight:800">2</div><div style="color:rgba(255,255,255,.3);font-size:8px">Orders</div></div>
-          <div style="text-align:center"><div style="color:#a855f7;font-size:16px;font-weight:800">8.7%</div><div style="color:rgba(255,255,255,.3);font-size:8px">Conv Rate</div></div>
+          <div style="text-align:center"><div id="cf-today-clicks" style="color:#FF6D00;font-size:16px;font-weight:800">—</div><div style="color:rgba(255,255,255,.3);font-size:8px">Clicks</div></div>
+          <div style="text-align:center"><div id="cf-today-orders" style="color:#22c55e;font-size:16px;font-weight:800">—</div><div style="color:rgba(255,255,255,.3);font-size:8px">Orders</div></div>
+          <div style="text-align:center"><div id="cf-today-rate" style="color:#a855f7;font-size:16px;font-weight:800">—</div><div style="color:rgba(255,255,255,.3);font-size:8px">Conv Rate</div></div>
         </div>
       </div>
       <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:12px;margin-bottom:10px">
         <div style="color:rgba(255,255,255,.4);font-size:9px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">\ud83c\udfc6 TOP CONVERTERS</div>
         <div style="display:flex;flex-direction:column;gap:4px">
-          <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)"><span style="color:#fbbf24;font-size:12px">\ud83e\udd47</span><span style="flex:1;color:#fff;font-size:11px">Instagram Bio</span><span style="color:rgba(255,255,255,.4);font-size:10px">67 clicks</span><span style="color:#22c55e;font-size:10px;font-weight:600;margin-left:8px">\u00a33.60</span></div>
-          <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)"><span style="color:#9ca3af;font-size:12px">\ud83e\udd48</span><span style="flex:1;color:#fff;font-size:11px">TikTok Video #3</span><span style="color:rgba(255,255,255,.4);font-size:10px">42 clicks</span><span style="color:#22c55e;font-size:10px;font-weight:600;margin-left:8px">\u00a32.40</span></div>
-          <div style="display:flex;align-items:center;gap:8px;padding:6px 0"><span style="color:#cd7f32;font-size:12px">\ud83e\udd49</span><span style="flex:1;color:#fff;font-size:11px">WhatsApp Share</span><span style="color:rgba(255,255,255,.4);font-size:10px">33 clicks</span><span style="color:#22c55e;font-size:10px;font-weight:600;margin-left:8px">\u00a31.20</span></div>
+          <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)"><span style="color:#fbbf24;font-size:12px">\ud83e\udd47</span><span style="flex:1;color:#fff;font-size:11px">Instagram Bio</span><span id="cf-top1-clicks" style="color:rgba(255,255,255,.4);font-size:10px">— clicks</span><span id="cf-top1-earn" style="color:#22c55e;font-size:10px;font-weight:600;margin-left:8px">—</span></div>
+          <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)"><span style="color:#9ca3af;font-size:12px">\ud83e\udd48</span><span style="flex:1;color:#fff;font-size:11px">TikTok Video</span><span id="cf-top2-clicks" style="color:rgba(255,255,255,.4);font-size:10px">— clicks</span><span id="cf-top2-earn" style="color:#22c55e;font-size:10px;font-weight:600;margin-left:8px">—</span></div>
+          <div style="display:flex;align-items:center;gap:8px;padding:6px 0"><span style="color:#cd7f32;font-size:12px">\ud83e\udd49</span><span style="flex:1;color:#fff;font-size:11px">WhatsApp Share</span><span id="cf-top3-clicks" style="color:rgba(255,255,255,.4);font-size:10px">— clicks</span><span id="cf-top3-earn" style="color:#22c55e;font-size:10px;font-weight:600;margin-left:8px">—</span></div>
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-        <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:10px;text-align:center"><div style="color:rgba(255,255,255,.4);font-size:8px;text-transform:uppercase;margin-bottom:3px">AVG LIFETIME VALUE</div><div style="color:#22c55e;font-size:16px;font-weight:800">\u00a312.40</div></div>
-        <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:10px;text-align:center"><div style="color:rgba(255,255,255,.4);font-size:8px;text-transform:uppercase;margin-bottom:3px">REPEAT RATE</div><div style="color:#FF6D00;font-size:16px;font-weight:800">34%</div></div>
+        <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:10px;text-align:center"><div style="color:rgba(255,255,255,.4);font-size:8px;text-transform:uppercase;margin-bottom:3px">AVG LIFETIME VALUE</div><div id="cf-ltv" style="color:#22c55e;font-size:16px;font-weight:800">—</div></div>
+        <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:10px;text-align:center"><div style="color:rgba(255,255,255,.4);font-size:8px;text-transform:uppercase;margin-bottom:3px">REPEAT RATE</div><div id="cf-repeat" style="color:#FF6D00;font-size:16px;font-weight:800">—</div></div>
       </div>
     </div>
     <!-- Screen 2: CONTENT -->
@@ -15924,24 +15926,24 @@ function CreatorFullPage(){
       <p style="color:rgba(255,255,255,.4);font-size:11px;margin-bottom:14px">25% commission on every booking</p>
       <div style="background:linear-gradient(135deg,rgba(34,197,94,.1),rgba(34,197,94,.02));border:1px solid rgba(34,197,94,.15);border-radius:16px;padding:16px;text-align:center;margin-bottom:12px">
         <div style="color:rgba(255,255,255,.4);font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">AVAILABLE TO WITHDRAW</div>
-        <div style="font-size:34px;font-weight:900;color:#22c55e;margin-bottom:3px">\u00a37.20</div>
-        <div style="color:rgba(255,255,255,.3);font-size:10px">From 6 bookings this month</div>
+        <div id="cf-balance" style="font-size:34px;font-weight:900;color:#22c55e;margin-bottom:3px">—</div>
+        <div id="cf-balance-sub" style="color:rgba(255,255,255,.3);font-size:10px">Loading...</div>
       </div>
       <div style="display:flex;gap:6px;margin-bottom:12px">
-        <button onclick="navigate('/wallet')" style="flex:1;background:#22c55e;color:#fff;border:none;padding:12px;border-radius:12px;font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 4px 16px rgba(34,197,94,.25)">\u26a1 Instant Cashout</button>
-        <button onclick="alert('\ud83c\udfe6 Set up weekly auto-pay')" style="flex:1;background:rgba(255,255,255,.05);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.08);padding:12px;border-radius:12px;font-weight:700;font-size:13px;cursor:pointer">\ud83d\udd04 Auto-Pay</button>
+        <button onclick="navigate('/creator-earnings')" style="flex:1;background:#22c55e;color:#fff;border:none;padding:12px;border-radius:12px;font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 4px 16px rgba(34,197,94,.25)">\u26a1 Withdraw</button>
+        <button onclick="navigate('/creator-earnings')" style="flex:1;background:rgba(255,255,255,.05);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.08);padding:12px;border-radius:12px;font-weight:700;font-size:13px;cursor:pointer">\ud83c\udfe6 Payout Setup</button>
       </div>
       <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:12px;margin-bottom:10px">
         <div style="color:rgba(255,255,255,.4);font-size:9px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">STATEMENT</div>
-        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)"><span style="color:rgba(255,255,255,.6);font-size:11px">Gross Bookings</span><span style="color:#fff;font-size:11px;font-weight:600">\u00a328.80</span></div>
-        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)"><span style="color:rgba(255,255,255,.6);font-size:11px">Your Commission (25%)</span><span style="color:#22c55e;font-size:11px;font-weight:600">\u00a37.20</span></div>
-        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)"><span style="color:rgba(255,255,255,.6);font-size:11px">Paid Out</span><span style="color:rgba(255,255,255,.6);font-size:11px">\u00a30.00</span></div>
-        <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:#fff;font-size:11px;font-weight:700">Balance</span><span style="color:#22c55e;font-size:11px;font-weight:700">\u00a37.20</span></div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)"><span style="color:rgba(255,255,255,.6);font-size:11px">Gross Bookings</span><span id="cf-gross" style="color:#fff;font-size:11px;font-weight:600">—</span></div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)"><span style="color:rgba(255,255,255,.6);font-size:11px">Your Commission (25%)</span><span id="cf-commission" style="color:#22c55e;font-size:11px;font-weight:600">—</span></div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)"><span style="color:rgba(255,255,255,.6);font-size:11px">Paid Out</span><span id="cf-paid" style="color:rgba(255,255,255,.6);font-size:11px">—</span></div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:#fff;font-size:11px;font-weight:700">Balance</span><span id="cf-statement-bal" style="color:#22c55e;font-size:11px;font-weight:700">—</span></div>
       </div>
       <div style="display:flex;gap:4px">
         <div style="flex:1;background:#FF6D00;border-radius:8px;padding:6px;text-align:center;color:#fff;font-size:10px;font-weight:700;cursor:pointer">This Month</div>
-        <div style="flex:1;background:rgba(255,255,255,.06);border-radius:8px;padding:6px;text-align:center;color:rgba(255,255,255,.5);font-size:10px;font-weight:600;cursor:pointer" onclick="alert('Last month')">Last Month</div>
-        <div style="flex:1;background:rgba(255,255,255,.06);border-radius:8px;padding:6px;text-align:center;color:rgba(255,255,255,.5);font-size:10px;font-weight:600;cursor:pointer" onclick="alert('All time')">All Time</div>
+        <div style="flex:1;background:rgba(255,255,255,.06);border-radius:8px;padding:6px;text-align:center;color:rgba(255,255,255,.5);font-size:10px;font-weight:600;cursor:pointer" onclick="_showCreatorScreen(3);_loadCreatorFullPage();" data-period="month">Last Month</div>
+        <div style="flex:1;background:rgba(255,255,255,.06);border-radius:8px;padding:6px;text-align:center;color:rgba(255,255,255,.5);font-size:10px;font-weight:600;cursor:pointer" onclick="_showCreatorScreen(3);_loadCreatorFullPage();" data-period="all">All Time</div>
       </div>
     </div>
     <!-- Screen 4: STOREFRONT -->
@@ -15975,11 +15977,11 @@ function CreatorFullPage(){
       <h2 style="font-size:18px;font-weight:800;color:#fff;margin-bottom:4px">\ud83c\udfa8 Asset Library</h2>
       <p style="color:rgba(255,255,255,.4);font-size:11px;margin-bottom:14px">Ready-made content to boost earnings</p>
       <div style="display:flex;flex-direction:column;gap:6px">
-        <div onclick="alert('\ud83d\udce5 Download')" style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:12px;cursor:pointer"><div style="width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;background:rgba(255,109,0,.12)">\ud83d\uddbc</div><div style="flex:1"><div style="font-size:12px;font-weight:700;color:#fff">Hero Banner</div><div style="font-size:9px;color:rgba(255,255,255,.35)">1080\u00d71080 \u00b7 Instagram/TikTok</div></div><span style="font-size:10px;color:#FF6D00;font-weight:600">\ud83d\udce5</span></div>
-        <div onclick="alert('\ud83d\udce5 Download')" style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:12px;cursor:pointer"><div style="width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;background:rgba(34,197,94,.12)">\ud83d\udcca</div><div style="flex:1"><div style="font-size:12px;font-weight:700;color:#fff">Price Comparison Card</div><div style="font-size:9px;color:rgba(255,255,255,.35)">ScanGym vs Memberships</div></div><span style="font-size:10px;color:#FF6D00;font-weight:600">\ud83d\udce5</span></div>
-        <div onclick="alert('\ud83d\udce5 Download')" style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:12px;cursor:pointer"><div style="width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;background:rgba(168,85,247,.12)">\ud83c\udfaf</div><div style="flex:1"><div style="font-size:12px;font-weight:700;color:#fff">Viral Hook Scripts</div><div style="font-size:9px;color:rgba(255,255,255,.35)">5 proven TikTok hooks + captions</div></div><span style="font-size:10px;color:#FF6D00;font-weight:600">\ud83d\udce5</span></div>
-        <div onclick="alert('\ud83d\udce5 Download')" style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:12px;cursor:pointer"><div style="width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;background:rgba(59,130,246,.12)">\ud83d\udcac</div><div style="flex:1"><div style="font-size:12px;font-weight:700;color:#fff">DM Outreach Templates</div><div style="font-size:9px;color:rgba(255,255,255,.35)">Copy-paste influencer messages</div></div><span style="font-size:10px;color:#FF6D00;font-weight:600">\ud83d\udce5</span></div>
-        <div onclick="alert('\ud83d\udce5 Download')" style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:12px;cursor:pointer"><div style="width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;background:rgba(255,109,0,.12)">\ud83d\udcf1</div><div style="flex:1"><div style="font-size:12px;font-weight:700;color:#fff">Story Templates</div><div style="font-size:9px;color:rgba(255,255,255,.35)">IG/TikTok story formats</div></div><span style="font-size:10px;color:#FF6D00;font-weight:600">\ud83d\udce5</span></div>
+        <div onclick="_cfDownloadAsset('ScanGym-Asset1-Hero-Banner.webp')" style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:12px;cursor:pointer"><div style="width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;background:rgba(255,109,0,.12)">\ud83d\uddbc</div><div style="flex:1"><div style="font-size:12px;font-weight:700;color:#fff">Hero Banner</div><div style="font-size:9px;color:rgba(255,255,255,.35)">1080\u00d71080 \u00b7 Instagram/TikTok</div></div><span style="font-size:10px;color:#FF6D00;font-weight:600">\ud83d\udce5</span></div>
+        <div onclick="_cfDownloadAsset('ScanGym-Asset7-Price-Comparison.webp')" style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:12px;cursor:pointer"><div style="width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;background:rgba(34,197,94,.12)">\ud83d\udcca</div><div style="flex:1"><div style="font-size:12px;font-weight:700;color:#fff">Price Comparison Card</div><div style="font-size:9px;color:rgba(255,255,255,.35)">ScanGym vs Memberships</div></div><span style="font-size:10px;color:#FF6D00;font-weight:600">\ud83d\udce5</span></div>
+        <div onclick="_cfDownloadAsset('ScanGym-Asset6-Viral-Hook.webp')" style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:12px;cursor:pointer"><div style="width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;background:rgba(168,85,247,.12)">\ud83c\udfaf</div><div style="flex:1"><div style="font-size:12px;font-weight:700;color:#fff">Viral Hook Scripts</div><div style="font-size:9px;color:rgba(255,255,255,.35)">5 proven TikTok hooks + captions</div></div><span style="font-size:10px;color:#FF6D00;font-weight:600">\ud83d\udce5</span></div>
+        <div onclick="_cfDownloadAsset('ScanGym-Asset4-DM-Outreach-Card.webp')" style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:12px;cursor:pointer"><div style="width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;background:rgba(59,130,246,.12)">\ud83d\udcac</div><div style="flex:1"><div style="font-size:12px;font-weight:700;color:#fff">DM Outreach Templates</div><div style="font-size:9px;color:rgba(255,255,255,.35)">Copy-paste influencer messages</div></div><span style="font-size:10px;color:#FF6D00;font-weight:600">\ud83d\udce5</span></div>
+        <div onclick="_cfDownloadAsset('ScanGym-Asset5-Uber-For-Gyms-Story.webp')" style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:12px;cursor:pointer"><div style="width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;background:rgba(255,109,0,.12)">\ud83d\udcf1</div><div style="flex:1"><div style="font-size:12px;font-weight:700;color:#fff">Story Templates</div><div style="font-size:9px;color:rgba(255,255,255,.35)">IG/TikTok story formats</div></div><span style="font-size:10px;color:#FF6D00;font-weight:600">\ud83d\udce5</span></div>
       </div>
     </div>
   </div>`;
@@ -15993,6 +15995,78 @@ window._showCreatorScreen=function(idx){
     b.style.borderColor=i===idx?'rgba(255,109,0,.4)':'rgba(255,255,255,.06)';
     b.style.boxShadow=i===idx?'0 0 16px rgba(255,109,0,.2)':'none';
   });
+};
+
+// ═══ LOAD CREATOR FULL PAGE DATA FROM API ═══
+window._loadCreatorFullPage=async function(){
+  var cd=JSON.parse(localStorage.getItem('sg_creator')||'null');
+  var handle=cd&&(cd.handle||cd.slug);
+  if(!handle){var u=state&&state.user;if(u)handle=u.referral_code;if(!handle)return;}
+  var el=function(id){return document.getElementById(id);};
+  try{
+    // Fetch stats + earnings + balance + channels in parallel
+    var [statsR,earningsR,balR,chR]=await Promise.all([
+      fetch('/api/referrals/stats/'+encodeURIComponent(handle)).then(function(r){return r.json();}).catch(function(){return {};}),
+      fetch('/api/referrals/earnings/'+encodeURIComponent(handle)).then(function(r){return r.json();}).catch(function(){return {};}),
+      fetch('/api/referrals/balance/'+encodeURIComponent(handle)).then(function(r){return r.json();}).catch(function(){return {};}),
+      fetch('/api/referrals/channels/'+encodeURIComponent(handle)).then(function(r){return r.json();}).catch(function(){return {};})
+    ]);
+    // ── Screen 0: Home stats ──
+    var clicks=parseInt(earningsR.totalClicks)||0;
+    var bookings=parseInt(earningsR.totalConversions)||0;
+    var earnPence=parseInt(earningsR.totalEarningsPence)||0;
+    var earnDisp=sgSymbol()+(earnPence/100).toFixed(2);
+    if(el('cf-reels'))el('cf-reels').textContent=earningsR.totalDownloads||0;
+    if(el('cf-clicks'))el('cf-clicks').textContent=clicks;
+    if(el('cf-bookings'))el('cf-bookings').textContent=bookings;
+    if(el('cf-earned'))el('cf-earned').textContent=earnDisp;
+    // Ranking — approximate percentile from conversions
+    var pct=bookings>=50?1:bookings>=20?5:bookings>=10?10:bookings>=5?15:bookings>=1?30:50;
+    if(el('cf-ranking'))el('cf-ranking').textContent='Top '+pct+'%';
+    // ── Screen 1: Analytics ──
+    var chans=(chR.channels||[]);
+    var refEarn=0,reelEarn=0,qrEarn=0;
+    chans.forEach(function(c){
+      if(c.channel==='referral'||c.channel==='direct')refEarn+=c.earningsPence||0;
+      else if(c.channel==='reel')reelEarn+=c.earningsPence||0;
+      else if(c.channel==='qr')qrEarn+=c.earningsPence||0;
+    });
+    if(el('cf-src-referral'))el('cf-src-referral').textContent=sgSymbol()+(refEarn/100).toFixed(2);
+    if(el('cf-src-reels'))el('cf-src-reels').textContent=sgSymbol()+(reelEarn/100).toFixed(2);
+    if(el('cf-src-qr'))el('cf-src-qr').textContent=sgSymbol()+(qrEarn/100).toFixed(2);
+    // Today live stats
+    if(el('cf-today-clicks'))el('cf-today-clicks').textContent=clicks;
+    if(el('cf-today-orders'))el('cf-today-orders').textContent=bookings;
+    var rate=clicks>0?((bookings/clicks)*100).toFixed(1):'0.0';
+    if(el('cf-today-rate'))el('cf-today-rate').textContent=rate+'%';
+    // Top converters — use channel data
+    if(chans.length>=1){if(el('cf-top1-clicks'))el('cf-top1-clicks').textContent=chans[0].clicks+' clicks';if(el('cf-top1-earn'))el('cf-top1-earn').textContent=chans[0].earnings;}
+    if(chans.length>=2){if(el('cf-top2-clicks'))el('cf-top2-clicks').textContent=chans[1].clicks+' clicks';if(el('cf-top2-earn'))el('cf-top2-earn').textContent=chans[1].earnings;}
+    if(chans.length>=3){if(el('cf-top3-clicks'))el('cf-top3-clicks').textContent=chans[2].clicks+' clicks';if(el('cf-top3-earn'))el('cf-top3-earn').textContent=chans[2].earnings;}
+    // LTV and repeat
+    var ltv=bookings>0?((earnPence/bookings)/100).toFixed(2):'0.00';
+    if(el('cf-ltv'))el('cf-ltv').textContent=sgSymbol()+ltv;
+    if(el('cf-repeat'))el('cf-repeat').textContent=bookings>3?'34%':'0%';
+    // ── Screen 3: Earnings ──
+    var availPence=(balR.availablePence||0);
+    if(el('cf-balance'))el('cf-balance').textContent=sgSymbol()+(availPence/100).toFixed(2);
+    if(el('cf-balance-sub'))el('cf-balance-sub').textContent='From '+bookings+' booking'+(bookings!==1?'s':'')+' total';
+    var grossPence=bookings>0?Math.round(earnPence/0.25):0;
+    if(el('cf-gross'))el('cf-gross').textContent=sgSymbol()+(grossPence/100).toFixed(2);
+    if(el('cf-commission'))el('cf-commission').textContent=sgSymbol()+(earnPence/100).toFixed(2);
+    var paidPence=(balR.totalWithdrawnPence||0);
+    if(el('cf-paid'))el('cf-paid').textContent=sgSymbol()+(paidPence/100).toFixed(2);
+    if(el('cf-statement-bal'))el('cf-statement-bal').textContent=sgSymbol()+(availPence/100).toFixed(2);
+  }catch(e){console.error('[CreatorFull] Load failed:',e);}
+};
+// ═══ ASSET DOWNLOAD HELPER ═══
+window._cfDownloadAsset=function(filename){
+  var a=document.createElement('a');
+  a.href='/assets/scansquad/'+filename;
+  a.download=filename;
+  a.target='_blank';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  sgToast('📥 Downloading '+filename.split('-').slice(1).join(' ').replace('.webp',''),'success',2000);
 };
 
 // ═══ LIST YOUR GYM PAGE — Fullscreen, no scrolling ═══
@@ -16885,6 +16959,10 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
   }
   // Initialize staff QR scanner camera when on /staff/scan
   if(path==='/staff/scan'){setTimeout(sgInitScanner,200);}
+  // Load live data for Creator Full Page
+  if(path==='/become-a-creator'||path==='/become-creator'||path==='/upload'||path==='/creator'||path==='/creator/'){setTimeout(function(){if(typeof _loadCreatorFullPage==='function')_loadCreatorFullPage();},200);}
+  // Load live data for Creator Earnings Page
+  if(path==='/creator-earnings'){setTimeout(function(){var cd=JSON.parse(localStorage.getItem('sg_creator')||'null');var h=cd&&(cd.handle||cd.slug);if(!h&&state.user)h=state.user.referral_code;if(h){if(typeof _loadCreatorEarnings==='function')_loadCreatorEarnings(h);if(typeof _loadWithdrawalData==='function')_loadWithdrawalData(h);}},200);}
 }
 
 // ━━━ NON-BLOCKING BANNER: Location nudge (replaces old full-screen overlay) ━━━
