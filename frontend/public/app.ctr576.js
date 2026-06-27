@@ -14474,6 +14474,18 @@ function CreatorEarningsPage(){
       <button onclick="navigator.clipboard.writeText('https://scangym.com/r/${handle}');sgToast('Link copied!','success',2000)" class="bg-slate-800 hover:bg-slate-700 text-white px-3 py-2 rounded-lg text-sm transition">📋 Copy Link</button>
     </div>
 
+    <!-- R7-A05: Payout Method Status -->
+    <div id="ce-payout-banner" class="bg-gradient-to-r from-purple-900/20 to-blue-900/20 rounded-xl p-4 mb-4 border border-purple-700/30">
+      <div class="flex items-center gap-3">
+        <div id="ce-payout-icon" style="width:40px;height:40px;background:rgba(239,68,68,.1);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">\u26a0\ufe0f</div>
+        <div class="flex-1">
+          <p id="ce-payout-title" class="text-white font-bold text-sm">Payout Not Set Up</p>
+          <p id="ce-payout-desc" class="text-slate-400 text-xs">Connect a bank account or Stripe to withdraw your earnings</p>
+        </div>
+        <button id="ce-payout-action-btn" onclick="document.getElementById('ce-payment-form').classList.remove('hidden');document.getElementById('ce-payment-form').scrollIntoView({behavior:'smooth'})" class="bg-purple-600 hover:bg-purple-500 text-white font-bold px-3 py-2 rounded-lg text-xs transition whitespace-nowrap">Set Up</button>
+      </div>
+    </div>
+
     <!-- ═══ CREATOR LEVEL BADGE ═══ -->
     <div id="ce-level-badge" class="bg-gradient-to-r from-slate-800 to-slate-800/60 rounded-xl p-4 mb-4 border border-slate-700/50">
       <div class="flex items-center gap-3">
@@ -14739,7 +14751,7 @@ function CreatorEarningsPage(){
       </div>
     </div>
 
-    <!-- Withdrawal History -->
+    <!-- R7-A06: Withdrawal History with Timeline -->
     <div class="mb-6">
       <p class="text-white font-bold mb-3">Withdrawal History</p>
       <div id="ce-withdraw-history" class="space-y-2">
@@ -14795,6 +14807,17 @@ async function _submitWithdrawal(handle){
 }
 
 async function _loadWithdrawalData(handle){
+  try{var pr=await fetch('/api/referrals/activity/'+encodeURIComponent(handle));var pd=await pr.json();
+    var hasPayout=pd.hasPayoutMethod||false;
+    var payIcon=document.getElementById('ce-payout-icon');var payTitle=document.getElementById('ce-payout-title');
+    var payDesc=document.getElementById('ce-payout-desc');var payBtn=document.getElementById('ce-payout-action-btn');
+    if(hasPayout){
+      if(payIcon){payIcon.innerHTML='\u2705';payIcon.style.background='rgba(34,197,94,.1)';}
+      if(payTitle)payTitle.textContent='Payouts Connected';
+      if(payDesc)payDesc.textContent='Your withdrawal method is set up and ready';
+      if(payBtn){payBtn.textContent='Manage';payBtn.className='bg-slate-700 hover:bg-slate-600 text-white font-bold px-3 py-2 rounded-lg text-xs transition whitespace-nowrap';}
+    }
+  }catch(e){}
   try{
     // Load balance
     var balRes=await fetch('/api/referrals/balance/'+encodeURIComponent(handle));
@@ -14822,11 +14845,15 @@ async function _loadWithdrawalData(handle){
       if(hist.withdrawals.length===0){
         histEl.innerHTML='<div class="bg-slate-800/40 rounded-lg p-3 text-center text-slate-500 text-sm">No withdrawals yet</div>';
       }else{
+        /* R7-A06: Timeline */
         histEl.innerHTML=hist.withdrawals.map(function(w){
-          var statusColor=w.status==='approved'||w.status==='paid'?'text-emerald-400':w.status==='pending'?'text-yellow-400':'text-red-400';
-          var statusIcon=w.status==='approved'||w.status==='paid'?'✅':w.status==='pending'?'⏳':'❌';
+          var sc={pending:{i:'\u23f3',c:'#f59e0b',b:'rgba(245,158,11,.1)',l:'Pending',s:1},approved:{i:'\u2705',c:'#22c55e',b:'rgba(34,197,94,.1)',l:'Approved',s:2},processing:{i:'\u2699\ufe0f',c:'#3b82f6',b:'rgba(59,130,246,.1)',l:'Processing',s:2},paid:{i:'\ud83d\udcb0',c:'#22c55e',b:'rgba(34,197,94,.1)',l:'Paid',s:3},rejected:{i:'\u274c',c:'#ef4444',b:'rgba(239,68,68,.1)',l:'Rejected',s:0}}[w.status]||{i:'\u23f3',c:'#f59e0b',b:'rgba(245,158,11,.1)',l:'Pending',s:1};
+          var tl=['Requested','Processing','Paid'].map(function(st,idx){
+            var act=idx<sc.s;
+            return '<div style="display:flex;flex-direction:column;align-items:center;flex:1"><div style="width:16px;height:16px;border-radius:50%;background:'+(act?sc.c:'rgba(255,255,255,.1)')+';display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff">'+(act?'\u2713':'')+'</div><span style="font-size:8px;color:'+(act?sc.c:'rgba(255,255,255,.2)')+';margin-top:2px">'+st+'</span></div>';
+          }).join('<div style="flex:1;height:2px;background:'+(sc.s>1?sc.c:'rgba(255,255,255,.06)')+';margin-top:8px"></div>');
           var d=new Date(w.requestedAt);var dateStr=d.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
-          return '<div class="bg-slate-800/60 rounded-lg p-3 flex items-center justify-between border border-slate-700/30"><div class="flex items-center gap-2"><span>'+statusIcon+'</span><div><p class="text-white text-sm font-medium">'+w.amountDisplay+'</p><p class="text-slate-500 text-xs">'+dateStr+' · '+w.method.replace('_',' ')+'</p></div></div><span class="'+statusColor+' text-xs font-bold uppercase">'+w.status+'</span></div>';
+          return '<div class="bg-slate-800/60 rounded-lg p-3 border border-slate-700/30"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div><p class="text-white font-bold text-sm">'+sc.i+' '+w.amountDisplay+'</p><p class="text-slate-500 text-xs">'+dateStr+(w.method?' \u00b7 '+w.method.replace('_',' '):'')+'</p></div><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:'+sc.b+';color:'+sc.c+'">'+sc.l+'</span></div><div style="display:flex;align-items:flex-start;gap:0;padding:0 8px">'+tl+'</div></div>';
         }).join('');
       }
     }
@@ -15685,6 +15712,59 @@ function CreatorDashboardPage(){
       </div>
     </div>
 
+    <!-- R7-A02: Payout Setup Banner -->
+    <div id="cd-payout-banner" style="display:none;margin:0 16px 12px;background:linear-gradient(135deg,rgba(168,85,247,.1),rgba(59,130,246,.06));border:1px solid rgba(168,85,247,.2);border-radius:14px;padding:14px;text-align:center">
+      <p style="font-size:20px;margin-bottom:4px">🏦</p>
+      <p style="color:#fff;font-size:14px;font-weight:700;margin-bottom:2px">Set Up Payouts</p>
+      <p style="color:rgba(255,255,255,.35);font-size:11px;margin-bottom:10px">Connect your bank to withdraw your earnings</p>
+      <button onclick="navigate('/creator-earnings')" style="background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;border:none;padding:10px 24px;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer">Set Up Payouts →</button>
+    </div>
+
+    <!-- R7-A03: Affiliate Link Card -->
+    <div style="margin:0 16px 12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <p style="color:#fff;font-size:13px;font-weight:700">🔗 Your Affiliate Link</p>
+        <div id="cd-payout-status" style="display:flex;align-items:center;gap:4px;padding:2px 8px;background:rgba(239,68,68,.1);border-radius:6px">
+          <div style="width:6px;height:6px;border-radius:50%;background:#ef4444"></div>
+          <span style="color:#f87171;font-size:9px;font-weight:600">No Payout Set</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:10px">
+        <div style="flex:1;background:rgba(255,109,0,.05);border:1px solid rgba(255,109,0,.15);border-radius:10px;padding:10px 12px;overflow:hidden">
+          <p id="cd-affiliate-url" style="color:#FF6D00;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">scangym.com/r/${handle}</p>
+        </div>
+        <button onclick="_sgCopyAffiliateLink('${handle}')" style="background:#FF6D00;color:#fff;border:none;padding:10px 14px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">📋 Copy</button>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button onclick="_sgShareAffiliate('${handle}','whatsapp')" style="flex:1;background:rgba(37,211,102,.08);border:1px solid rgba(37,211,102,.15);color:#25d366;padding:8px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer">WhatsApp</button>
+        <button onclick="_sgShareAffiliate('${handle}','twitter')" style="flex:1;background:rgba(29,161,242,.08);border:1px solid rgba(29,161,242,.15);color:#1da1f2;padding:8px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer">Twitter/X</button>
+        <button onclick="_sgShareAffiliate('${handle}','native')" style="flex:1;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.6);padding:8px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer">📤 Share</button>
+      </div>
+    </div>
+
+    <!-- R7-A04: Quick Withdraw on Hub -->
+    <div style="margin:0 16px 12px;background:rgba(74,222,128,.04);border:1px solid rgba(74,222,128,.1);border-radius:14px;padding:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div>
+          <p style="color:rgba(255,255,255,.4);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Available to Withdraw</p>
+          <p id="cd-withdraw-amount" style="color:#4ade80;font-size:24px;font-weight:900;margin:2px 0 0">£0.00</p>
+        </div>
+        <button id="cd-withdraw-btn" onclick="_sgCreatorWithdraw('${handle}')" style="background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border:none;padding:10px 20px;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer">Withdraw →</button>
+      </div>
+      <p style="color:rgba(255,255,255,.25);font-size:10px">Min. £5 · Instant to wallet · 1-3 days to bank</p>
+    </div>
+
+    <!-- R7-A07: Recent Activity Feed -->
+    <div style="margin:0 16px 12px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <p style="color:#fff;font-size:13px;font-weight:700">⚡ Recent Activity</p>
+        <span style="color:rgba(255,255,255,.2);font-size:10px">Live</span>
+      </div>
+      <div id="cd-activity-feed" style="display:flex;flex-direction:column;gap:4px;max-height:160px;overflow-y:auto">
+        <p style="color:rgba(255,255,255,.2);font-size:11px;text-align:center;padding:12px">Loading activity...</p>
+      </div>
+    </div>
+
     <!-- Reels Filter pills -->
     <div style="padding:0 16px 12px;display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch" id="cd-filter-bar">
       <div class="sg-filter-pill active" onclick="_sgCreatorFilterReels('all',this)" data-cf="all">All</div>
@@ -15731,7 +15811,33 @@ window._sg1ClickCreatorSignup=async function(){
     sgToast('\u{1F389} Welcome to ScanSquad, '+handle+'!','success',3000);
   }
   navigate('/creator-hub');
+  setTimeout(function(){_sgShowCreatorOnboarding(finalHandle||handle);},600);
 };
+/* R7-A01: Onboarding modal */
+window._sgShowCreatorOnboarding=function(handle){
+  var o=document.createElement('div');o.id='sg-creator-onboard';
+  o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  var h='<div style="background:#111;border:1px solid rgba(255,255,255,.1);border-radius:20px;max-width:380px;width:100%;padding:24px;text-align:center">';
+  h+='<div id="sg-ob-s1"><p style="font-size:40px;margin-bottom:12px">\ud83c\udf89</p>';
+  h+='<h2 style="color:#fff;font-size:22px;font-weight:900;margin-bottom:6px">Welcome to ScanSquad!</h2>';
+  h+='<p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:20px">You\u2019re now a creator. 3 quick steps to get started.</p>';
+  h+='<div style="display:flex;gap:6px;margin-bottom:20px"><div style="flex:1;height:4px;border-radius:2px;background:#FF6D00"></div><div style="flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.1)"></div><div style="flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.1)"></div></div>';
+  h+='<button onclick="_sgObStep(2)" style="width:100%;background:#FF6D00;color:#fff;border:none;padding:14px;border-radius:12px;font-weight:700;font-size:15px;cursor:pointer">Next: Set Up Payouts \u2192</button></div>';
+  h+='<div id="sg-ob-s2" style="display:none"><p style="font-size:40px;margin-bottom:12px">\ud83c\udfe6</p>';
+  h+='<h2 style="color:#fff;font-size:20px;font-weight:900;margin-bottom:6px">Set Up Payouts</h2>';
+  h+='<p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:16px">Connect your bank to withdraw earnings.</p>';
+  h+='<div style="display:flex;gap:6px;margin-bottom:16px"><div style="flex:1;height:4px;border-radius:2px;background:#FF6D00"></div><div style="flex:1;height:4px;border-radius:2px;background:#FF6D00"></div><div style="flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.1)"></div></div>';
+  h+='<button onclick="document.getElementById(\'sg-creator-onboard\').remove();navigate(\'/creator-earnings\')" style="width:100%;background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;border:none;padding:12px;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;margin-bottom:8px">Set Up Payouts \u2192</button>';
+  h+='<button onclick="_sgObStep(3)" style="width:100%;background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.08);padding:10px;border-radius:10px;font-size:12px;cursor:pointer">Skip for now</button></div>';
+  h+='<div id="sg-ob-s3" style="display:none"><p style="font-size:40px;margin-bottom:12px">\ud83d\udd17</p>';
+  h+='<h2 style="color:#fff;font-size:20px;font-weight:900;margin-bottom:6px">Share Your Link</h2>';
+  h+='<p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:12px">Your unique affiliate link is ready:</p>';
+  h+='<div style="background:rgba(255,109,0,.06);border:1px solid rgba(255,109,0,.15);border-radius:10px;padding:12px;margin-bottom:16px"><p style="color:#FF6D00;font-size:14px;font-weight:700">scangym.com/r/'+handle+'</p></div>';
+  h+='<div style="display:flex;gap:6px;margin-bottom:16px"><div style="flex:1;height:4px;border-radius:2px;background:#FF6D00"></div><div style="flex:1;height:4px;border-radius:2px;background:#FF6D00"></div><div style="flex:1;height:4px;border-radius:2px;background:#FF6D00"></div></div>';
+  h+='<button onclick="_sgCopyAffiliateLink(\''+handle+'\');document.getElementById(\'sg-creator-onboard\').remove()" style="width:100%;background:#FF6D00;color:#fff;border:none;padding:14px;border-radius:12px;font-weight:700;font-size:15px;cursor:pointer">\ud83d\udccb Copy Link & Start Earning</button></div></div>';
+  o.innerHTML=h;document.body.appendChild(o);
+};
+window._sgObStep=function(s){for(var i=1;i<=3;i++){var e=document.getElementById('sg-ob-s'+i);if(e)e.style.display=i===s?'block':'none';}};
 /* ═══ FULL STACK: Creator API helpers ═══ */
 /* Copy affiliate link — calls /api/referrals/generate-link then copies */
 window._sgCopyAffiliateLink=async function(handle){
@@ -15760,6 +15866,22 @@ window._sgCreatorWithdraw=async function(handle){
     if(wd.success||wd.withdrawal){sgToast('\u2705 Withdrawal requested! \u00a3'+(bal/100).toFixed(2)+' processing.','success',4000);_loadCreatorDash(handle);}
     else{sgToast(wd.error||'Withdrawal failed — try the full payout page','error',3000);navigate('/creator-earnings');}
   }catch(e){sgToast('Network error — try the payout page','error');navigate('/creator-earnings');}
+};
+/* R7-A03: Share affiliate link */
+window._sgShareAffiliate=function(handle,platform){
+  var link='https://scangym.com/r/'+handle;
+  var text='Check out ScanGym - gym access from \u00a34.49! Use my link: ';
+  if(platform==='whatsapp'){window.open('https://wa.me/?text='+encodeURIComponent(text+link),'_blank');}
+  else if(platform==='twitter'){window.open('https://twitter.com/intent/tweet?text='+encodeURIComponent(text)+' '+encodeURIComponent(link),'_blank');}
+  else if(navigator.share){navigator.share({title:'ScanGym',text:text,url:link}).catch(function(){});}
+  else{navigator.clipboard.writeText(link);sgToast('Link copied!','success');}
+};
+/* R7-A07: Time ago helper */
+window._sgTimeAgo=function(dateStr){
+  if(!dateStr)return '';
+  var diff=Math.floor((Date.now()-new Date(dateStr).getTime())/1000);
+  if(diff<60)return 'now';if(diff<3600)return Math.floor(diff/60)+'m';
+  if(diff<86400)return Math.floor(diff/3600)+'h';return Math.floor(diff/86400)+'d';
 };
 /* Creator Reels Filter */
 window._sgCreatorFilterReels=function(filter,el){
@@ -15816,6 +15938,32 @@ window._loadCreatorDash=async function(handle){
     document.getElementById('cd-conversions').textContent=d.conversions||0;
     document.getElementById('cd-earnings').textContent=sym+((d.earnings_pence||0)/100).toFixed(2);
     document.getElementById('cd-balance').textContent=sym+((d.available_pence||d.earnings_pence||0)/100).toFixed(2);
+    // R7: Update hub cards
+    var wdAmt=document.getElementById('cd-withdraw-amount');
+    if(wdAmt)wdAmt.textContent=sym+((d.available_pence||d.earnings_pence||0)/100).toFixed(2);
+    var wdBtn=document.getElementById('cd-withdraw-btn');
+    if(wdBtn&&(d.available_pence||0)<500){wdBtn.style.opacity='.5';}
+    var payBanner=document.getElementById('cd-payout-banner');
+    if(payBanner){payBanner.style.display=d.hasPayoutMethod?'none':'block';}
+    var payStatus=document.getElementById('cd-payout-status');
+    if(payStatus&&d.hasPayoutMethod){payStatus.innerHTML='<div style="width:6px;height:6px;border-radius:50%;background:#22c55e"></div><span style="color:#4ade80;font-size:9px;font-weight:600">Payout Ready</span>';payStatus.style.background='rgba(34,197,94,.1)';}
+  }catch(e){}
+  // R7-A07: Load activity feed
+  try{
+    var af=await fetch('/api/referrals/activity/'+handle);var ad=await af.json();
+    var feedEl=document.getElementById('cd-activity-feed');
+    if(feedEl&&ad.activities&&ad.activities.length){
+      feedEl.innerHTML=ad.activities.slice(0,8).map(function(a){
+        var icons={click:'\ud83d\udc41\ufe0f',signup:'\ud83d\udc64',conversion:'\ud83d\udcb0',download:'\u2b07\ufe0f',share:'\ud83d\udce4',bounty:'\ud83c\udfaf'};
+        var colors={click:'rgba(59,130,246,.7)',signup:'rgba(168,85,247,.7)',conversion:'#FF6D00',download:'rgba(255,255,255,.4)',share:'rgba(255,255,255,.4)',bounty:'rgba(34,197,94,.7)'};
+        var icon=icons[a.type]||'\u26a1';var color=colors[a.type]||'rgba(255,255,255,.4)';
+        var ago=_sgTimeAgo(a.created_at);
+        return '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:rgba(255,255,255,.02);border-radius:8px">'
+          +'<span style="font-size:12px">'+icon+'</span>'
+          +'<span style="flex:1;color:'+color+';font-size:11px;font-weight:500">'+a.description+'</span>'
+          +'<span style="color:rgba(255,255,255,.15);font-size:9px;white-space:nowrap">'+ago+'</span></div>';
+      }).join('');
+    }else if(feedEl){feedEl.innerHTML='<p style="color:rgba(255,255,255,.2);font-size:11px;text-align:center;padding:12px">Share your link to see activity here</p>';}
   }catch(e){}
   // Load reels
   try{

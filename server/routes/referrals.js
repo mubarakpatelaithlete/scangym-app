@@ -886,6 +886,43 @@ router.post('/stripe-connect', async (req, res) => {
   }
 });
 
+// ─── R7-A07: Activity feed ───
+router.get('/activity/:handle', async (req, res) => {
+  try {
+    const { handle } = req.params;
+    if (!handle) return res.status(400).json({ error: 'handle required' });
+    const activities = [];
+    try {
+      const events = await pool.query(
+        `SELECT event_type as type, metadata, created_at FROM referral_events WHERE creator_handle = $1 ORDER BY created_at DESC LIMIT 20`, [handle]);
+      events.rows.forEach(e => {
+        let desc = e.type === 'click' ? 'Someone clicked your link' : e.type === 'link_generated' ? 'Affiliate link generated' : e.type === 'signup' ? 'New user signed up via your link' : (e.type || '').replace(/_/g, ' ');
+        activities.push({ type: e.type, description: desc, created_at: e.created_at });
+      });
+    } catch (e) { console.warn('[Activity]', e.message); }
+    try {
+      const conv = await pool.query(
+        `SELECT commission_pence, created_at FROM creator_referrals WHERE creator_handle = $1 AND status = 'converted' ORDER BY created_at DESC LIMIT 10`, [handle]);
+      conv.rows.forEach(c => activities.push({ type: 'conversion', description: '\u00a3' + (c.commission_pence / 100).toFixed(2) + ' earned from booking', created_at: c.created_at }));
+    } catch (e) { console.warn('[Activity]', e.message); }
+    try {
+      const bounties = await pool.query(
+        `SELECT amount_pence, created_at FROM creator_bounties WHERE creator_handle = $1 ORDER BY created_at DESC LIMIT 5`, [handle]);
+      bounties.rows.forEach(b => activities.push({ type: 'bounty', description: '\u00a3' + (b.amount_pence / 100).toFixed(2) + ' signup bounty', created_at: b.created_at }));
+    } catch (e) { console.warn('[Activity]', e.message); }
+    activities.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    let hasPayoutMethod = false;
+    try {
+      const lp = await pool.query('SELECT stripe_connect_id FROM creator_landing_pages WHERE slug = $1 LIMIT 1', [handle]);
+      if (lp.rows.length > 0 && lp.rows[0].stripe_connect_id) hasPayoutMethod = true;
+    } catch (e) {}
+    res.json({ activities: activities.slice(0, 15), hasPayoutMethod, total: activities.length });
+  } catch (err) {
+    console.error('[Activity]', err.message);
+    res.json({ activities: [], hasPayoutMethod: false, total: 0 });
+  }
+});
+
 // ─── #59 Associate referral with logged-in user ───
 router.post('/associate', async (req, res) => {
   try {
