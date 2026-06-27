@@ -753,6 +753,150 @@ router.get('/bookings/:gymId', authenticateUser, async (req, res) => {
   }
 });
 
+// ── Partner bookings (no gymId — auto-detect from claimed gyms) ──
+router.get('/bookings', authenticateUser, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const gyms = await pool.query(
+      'SELECT id FROM gyms WHERE claimed_by::text = $1::text', [userId]
+    ).catch(() => ({ rows: [] }));
+    if (!gyms.rows.length) return res.json({ bookings: [] });
+    const gymIds = gyms.rows.map(g => g.id);
+
+    const { period = 'today', page = 1, limit = 50 } = req.query;
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    let dateFilter = "AND DATE(b.created_at) = CURRENT_DATE";
+    if (period === 'week') dateFilter = "AND b.created_at > DATE_TRUNC('week', NOW())";
+    if (period === 'month') dateFilter = "AND b.created_at > DATE_TRUNC('month', NOW())";
+
+    const result = await pool.query(`
+      SELECT b.id, b.booking_code, b.status, b.created_at, b.booking_date,
+             b.total_amount, b.amount_pence, b.pass_type, b.start_time,
+             COALESCE(b.user_name, u.name, u.email, 'Guest') as user_name,
+             g.name as gym_name
+      FROM bookings b
+      LEFT JOIN users u ON b.user_id::text = u.id::text
+      LEFT JOIN gyms g ON b.gym_id = g.id
+      WHERE b.gym_id = ANY($1) ${dateFilter}
+      ORDER BY b.created_at DESC
+      LIMIT $2 OFFSET $3
+    `, [gymIds, parseInt(limit), offset]).catch(() => ({ rows: [] }));
+
+    res.json({
+      bookings: result.rows.map(b => ({
+        id: b.id, code: b.booking_code,
+        userName: b.user_name,
+        date: b.booking_date || (b.created_at ? new Date(b.created_at).toLocaleDateString() : ''),
+        time: b.start_time || (b.created_at ? new Date(b.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : ''),
+        passType: b.pass_type || 'Day Pass',
+        price: parseFloat(b.total_amount) || (parseInt(b.amount_pence) / 100) || 0,
+        status: b.status || 'pending',
+        gymName: b.gym_name
+      }))
+    });
+  } catch (err) {
+    console.error('[Partner Bookings]', err.message);
+    res.status(500).json({ error: 'Failed to fetch bookings' });
+  }
+});
+
+// ── Partner customers ──
+router.get('/customers', authenticateUser, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const gyms = await pool.query(
+      'SELECT id FROM gyms WHERE claimed_by::text = $1::text', [userId]
+    ).catch(() => ({ rows: [] }));
+    if (!gyms.rows.length) return res.json({ customers: [], reviews: [] });
+    const gymIds = gyms.rows.map(g => g.id);
+
+    // Unique customers
+    const customers = await pool.query(`
+      SELECT DISTINCT ON (b.user_id)
+        b.user_id, COALESCE(b.user_name, u.name, u.email, 'Guest') as name,
+        COUNT(*) OVER (PARTITION BY b.user_id) as visit_count,
+        MAX(b.created_at) OVER (PARTITION BY b.user_id) as last_visit
+      FROM bookings b
+      LEFT JOIN users u ON b.user_id::text = u.id::text
+      WHERE b.gym_id = ANY($1) AND b.status IN ('confirmed','completed')
+      ORDER BY b.user_id, b.created_at DESC
+      LIMIT 50
+    `, [gymIds]).catch(() => ({ rows: [] }));
+
+    // Reviews
+    const reviews = await pool.query(`
+      SELECT r.rating, r.comment as text, r.created_at,
+             COALESCE(u.name, u.email, 'User') as user_name
+      FROM reviews r
+      LEFT JOIN users u ON r.user_id::text = u.id::text
+      WHERE r.gym_id = ANY($1)
+      ORDER BY r.created_at DESC LIMIT 20
+    `, [gymIds]).catch(() => ({ rows: [] }));
+
+    res.json({
+      customers: customers.rows.map(c => ({
+        name: c.name,
+        visits: parseInt(c.visit_count) || 1,
+        lastVisit: c.last_visit ? new Date(c.last_visit).toLocaleDateString() : ''
+      })),
+      reviews: reviews.rows.map(r => ({
+        userName: r.user_name,
+        rating: r.rating || 5,
+        text: r.text || '',
+        date: r.created_at ? new Date(r.created_at).toLocaleDateString() : ''
+      }))
+    });
+  } catch (err) {
+    console.error('[Partner Customers]', err.message);
+    res.status(500).json({ error: 'Failed to fetch customers' });
+  }
+});
+
+// ── Partner payouts ──
+router.get('/payouts', authenticateUser, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const gyms = await pool.query(
+      'SELECT id FROM gyms WHERE claimed_by::text = $1::text', [userId]
+    ).catch(() => ({ rows: [] }));
+    if (!gyms.rows.length) return res.json({ totalEarned: 0, pendingPayout: 0, payouts: [], stripeStatus: 'not_connected' });
+    const gymIds = gyms.rows.map(g => g.id);
+
+    // Total earnings
+    const earnings = await pool.query(`
+      SELECT COUNT(*) as bookings,
+             COALESCE(SUM(total_amount), 0) as revenue,
+             COALESCE(SUM(amount_pence), 0) as revenue_pence
+      FROM bookings
+      WHERE gym_id = ANY($1) AND status IN ('confirmed','completed')
+    `, [gymIds]).catch(() => ({ rows: [{ bookings: 0, revenue: 0, revenue_pence: 0 }] }));
+
+    const row = earnings.rows[0];
+    const totalRevenue = parseFloat(row.revenue) || (parseInt(row.revenue_pence) / 100) || 0;
+    const partnerShare = totalRevenue * 0.85; // 85% share
+
+    // Check Stripe Connect status
+    let stripeStatus = 'not_connected';
+    try {
+      const stripeRes = await pool.query(
+        'SELECT stripe_connect_id FROM users WHERE id = $1', [userId]
+      );
+      if (stripeRes.rows[0]?.stripe_connect_id) stripeStatus = 'connected';
+    } catch (e) { /* column may not exist */ }
+
+    res.json({
+      totalEarned: partnerShare.toFixed(2),
+      pendingPayout: partnerShare.toFixed(2), // All earnings are pending until payout system is built
+      payouts: [], // No payout history yet — will be populated when Stripe payouts are set up
+      stripeStatus,
+      bookingCount: parseInt(row.bookings) || 0
+    });
+  } catch (err) {
+    console.error('[Partner Payouts]', err.message);
+    res.status(500).json({ error: 'Failed to fetch payouts' });
+  }
+});
+
 // ── Update gym capacity ──
 router.patch('/capacity', authenticateUser, express.json(), async (req, res) => {
   try {
