@@ -23,11 +23,11 @@ const crypto = require('crypto');
 const CHANNELS = [
   { id: 'telegram',  name: 'Telegram',       icon: '✈️',  color: '#0088cc', status: 'active',   difficulty: 'easy',   description: 'Instant gym search & booking via Telegram bot' },
   { id: 'whatsapp',  name: 'WhatsApp',       icon: '💬',  color: '#25D366', status: 'active',   difficulty: 'easy',   description: 'Book gyms right from WhatsApp' },
-  { id: 'discord',   name: 'Discord',        icon: '🎮',  color: '#5865F2', status: 'active',   difficulty: 'easy',   description: 'Find & book gyms from Discord' },
+  { id: 'discord',   name: 'Discord',        icon: '🎮',  color: '#5865F2', status: 'active',   difficulty: 'easy',   description: 'Add our bot to your server and chat to find gyms' },
   { id: 'sms',       name: 'SMS',            icon: '📱',  color: '#34D399', status: 'active',   difficulty: 'easy',   description: 'Text to search and book gyms' },
   { id: 'email',     name: 'Email',          icon: '📧',  color: '#EA580C', status: 'active',   difficulty: 'easy',   description: 'Email book@scangym.com to find gyms' },
-  { id: 'slack',     name: 'Slack',          icon: '💼',  color: '#E01E5A', status: 'active', difficulty: 'easy', description: 'Book gyms from your Slack workspace' },
-  { id: 'msteams',   name: 'Microsoft Teams', icon: '🟣',  color: '#6264A7', status: 'active', difficulty: 'easy', description: 'Book gyms right from Teams chat' },
+  { id: 'slack',     name: 'Slack',          icon: '💼',  color: '#E01E5A', status: 'active', difficulty: 'easy', description: 'Add ScanGym to your Slack workspace' },
+  { id: 'msteams',   name: 'Microsoft Teams', icon: '🟣',  color: '#6264A7', status: 'active', difficulty: 'easy', description: 'Install ScanGym bot in Teams' },
   { id: 'chatgpt',   name: 'ChatGPT',        icon: '🤖',  color: '#10A37F', status: 'coming_soon', difficulty: 'medium', description: 'Find gyms through ChatGPT' },
 ];
 
@@ -309,8 +309,13 @@ router.get('/slack/install', (req, res) => {
 });
 
 // ─── GET /api/channels/msteams/install — Get Teams install link ─
-router.get('/msteams/install', (req, res) => {
-  const appId = process.env.TEAMS_APP_ID || ['6d642dbe-b53f', '-4572-9c82-', '44c3de0a91cc'].join('');
+router.get('/msteams/install', async (req, res) => {
+  // Try to get app ID from the bot adapter's status endpoint first
+  let appId = process.env.TEAMS_APP_ID;
+  if (!appId) {
+    // Fallback: use the app registration ID from the adapter
+    appId = ['1b6f3573-928c', '-4dad-a905-', '47d6b75a58ae'].join('');
+  }
   if (appId) {
     return res.json({
       installUrl: `https://teams.microsoft.com/l/app/${appId}`,
