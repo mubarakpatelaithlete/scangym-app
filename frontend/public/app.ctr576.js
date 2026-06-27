@@ -16048,24 +16048,24 @@ function PartnerFullPage(){
     <div class="partner-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;padding:16px;padding-right:60px;overflow-y:auto">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
         <div><h1 style="font-size:18px;font-weight:900;color:#fff;margin:0">${gymName}</h1><p style="color:rgba(255,255,255,.4);font-size:10px;margin:2px 0 0">Partner Dashboard</p></div>
-        <div onclick="var d=this.querySelector('.tdot');var b=this.querySelector('.tbg');if(b.style.background==='rgb(34, 197, 94)'){b.style.background='#ef4444';d.style.left='2px'}else{b.style.background='#22c55e';d.style.left='18px'}" style="display:flex;align-items:center;gap:6px;cursor:pointer">
-          <span style="color:rgba(255,255,255,.5);font-size:9px;font-weight:600">ACCEPTING</span>
+        <div onclick="_partnerToggleActive(this)" style="display:flex;align-items:center;gap:6px;cursor:pointer">
+          <span id="partner-toggle-label" style="color:rgba(255,255,255,.5);font-size:9px;font-weight:600">ACCEPTING</span>
           <div class="tbg" style="width:36px;height:20px;background:#22c55e;border-radius:10px;position:relative;transition:.2s"><div class="tdot" style="position:absolute;top:2px;left:18px;width:16px;height:16px;background:#fff;border-radius:50%;transition:.2s"></div></div>
         </div>
       </div>
-      <div style="background:linear-gradient(135deg,rgba(34,197,94,.1),rgba(34,197,94,.02));border:1px solid rgba(34,197,94,.15);border-radius:16px;padding:14px;margin-bottom:12px;text-align:center">
+      <div id="partner-home-hero" style="background:linear-gradient(135deg,rgba(34,197,94,.1),rgba(34,197,94,.02));border:1px solid rgba(34,197,94,.15);border-radius:16px;padding:14px;margin-bottom:12px;text-align:center">
         <div style="color:rgba(255,255,255,.5);font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">TODAY</div>
-        <div style="display:flex;justify-content:center;align-items:baseline;gap:6px;margin-bottom:4px"><span style="font-size:42px;font-weight:900;color:#22c55e">47</span><span style="color:rgba(255,255,255,.4);font-size:12px">check-ins</span></div>
+        <div style="display:flex;justify-content:center;align-items:baseline;gap:6px;margin-bottom:4px"><span id="partner-home-checkins" style="font-size:42px;font-weight:900;color:#22c55e">—</span><span style="color:rgba(255,255,255,.4);font-size:12px">check-ins</span></div>
         <div style="display:flex;justify-content:center;gap:16px">
-          <span style="color:rgba(255,255,255,.4);font-size:10px">Revenue: <strong style="color:#22c55e">\u00a3234.53</strong></span>
-          <span style="color:rgba(255,255,255,.4);font-size:10px">Avg: <strong style="color:#FF6D00">\u00a34.99</strong></span>
+          <span style="color:rgba(255,255,255,.4);font-size:10px">Revenue: <strong id="partner-home-revenue" style="color:#22c55e">—</strong></span>
+          <span style="color:rgba(255,255,255,.4);font-size:10px">Avg: <strong id="partner-home-avg" style="color:#FF6D00">—</strong></span>
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px;margin-bottom:12px">
-        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:7px;text-align:center"><div style="font-size:16px;font-weight:800;color:#22c55e">\u00a3234</div><div style="font-size:7px;color:rgba(255,255,255,.4);text-transform:uppercase">Revenue</div></div>
-        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:7px;text-align:center"><div style="font-size:16px;font-weight:800;color:#FF6D00">47</div><div style="font-size:7px;color:rgba(255,255,255,.4);text-transform:uppercase">Bookings</div></div>
-        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:7px;text-align:center"><div style="font-size:16px;font-weight:800;color:#3b82f6">4.8\u2b50</div><div style="font-size:7px;color:rgba(255,255,255,.4);text-transform:uppercase">Rating</div></div>
-        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:7px;text-align:center"><div style="font-size:16px;font-weight:800;color:#a855f7">80%</div><div style="font-size:7px;color:rgba(255,255,255,.4);text-transform:uppercase">Share</div></div>
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:7px;text-align:center"><div id="partner-home-rev2" style="font-size:16px;font-weight:800;color:#22c55e">—</div><div style="font-size:7px;color:rgba(255,255,255,.4);text-transform:uppercase">Revenue</div></div>
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:7px;text-align:center"><div id="partner-home-bk2" style="font-size:16px;font-weight:800;color:#FF6D00">—</div><div style="font-size:7px;color:rgba(255,255,255,.4);text-transform:uppercase">Bookings</div></div>
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:7px;text-align:center"><div id="partner-home-rating" style="font-size:16px;font-weight:800;color:#3b82f6">—</div><div style="font-size:7px;color:rgba(255,255,255,.4);text-transform:uppercase">Rating</div></div>
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:7px;text-align:center"><div style="font-size:16px;font-weight:800;color:#a855f7">85%</div><div style="font-size:7px;color:rgba(255,255,255,.4);text-transform:uppercase">Share</div></div>
       </div>
       <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:12px;margin-bottom:12px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
@@ -16167,22 +16167,22 @@ function PartnerFullPage(){
     <!-- Screen 4: EARNINGS -->
     <div class="partner-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;padding:16px;padding-right:60px;overflow-y:auto">
       <h2 style="font-size:18px;font-weight:800;color:#fff;margin-bottom:4px">\ud83d\udcb0 Earnings & Payouts</h2>
-      <p style="color:rgba(255,255,255,.4);font-size:11px;margin-bottom:14px">80% revenue share</p>
+      <p style="color:rgba(255,255,255,.4);font-size:11px;margin-bottom:14px">85% revenue share</p>
       <div style="background:linear-gradient(135deg,rgba(34,197,94,.1),rgba(34,197,94,.02));border:1px solid rgba(34,197,94,.15);border-radius:16px;padding:16px;text-align:center;margin-bottom:12px">
         <div style="color:rgba(255,255,255,.4);font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">AVAILABLE BALANCE</div>
-        <div style="font-size:34px;font-weight:900;color:#22c55e;margin-bottom:3px">\u00a3187.62</div>
-        <div style="color:rgba(255,255,255,.3);font-size:10px">From 47 check-ins today</div>
+        <div id="partner-earn-balance" style="font-size:34px;font-weight:900;color:#22c55e;margin-bottom:3px">\u2014</div>
+        <div id="partner-earn-subtitle" style="color:rgba(255,255,255,.3);font-size:10px">Loading...</div>
       </div>
       <div style="display:flex;gap:6px;margin-bottom:12px">
-        <button onclick="navigate('/wallet')" style="flex:1;background:#22c55e;color:#fff;border:none;padding:12px;border-radius:12px;font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 4px 16px rgba(34,197,94,.25)">\u26a1 Instant Cashout</button>
-        <button onclick="alert('\ud83c\udfe6 Connect bank')" style="flex:1;background:rgba(255,255,255,.05);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.08);padding:12px;border-radius:12px;font-weight:700;font-size:13px;cursor:pointer">\ud83c\udfe6 Add Bank</button>
+        <button onclick="navigate('/partner/payouts')" style="flex:1;background:#22c55e;color:#fff;border:none;padding:12px;border-radius:12px;font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 4px 16px rgba(34,197,94,.25)">\u26a1 View Payouts</button>
+        <button onclick="window.open('/api/gym-partner/stripe-connect','_blank')" style="flex:1;background:rgba(255,255,255,.05);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.08);padding:12px;border-radius:12px;font-weight:700;font-size:13px;cursor:pointer">\ud83c\udfe6 Connect Bank</button>
       </div>
       <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:12px">
         <div style="color:rgba(255,255,255,.4);font-size:9px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">THIS MONTH</div>
-        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04)"><span style="color:rgba(255,255,255,.6);font-size:11px">Gross Revenue</span><span style="color:#fff;font-size:11px;font-weight:600">\u00a31,247.00</span></div>
-        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04)"><span style="color:rgba(255,255,255,.6);font-size:11px">Your Share (80%)</span><span style="color:#22c55e;font-size:11px;font-weight:600">\u00a3997.60</span></div>
-        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04)"><span style="color:rgba(255,255,255,.6);font-size:11px">Withdrawn</span><span style="color:rgba(255,255,255,.6);font-size:11px">\u00a3810.00</span></div>
-        <div style="display:flex;justify-content:space-between;padding:5px 0"><span style="color:#fff;font-size:11px;font-weight:700">Balance</span><span style="color:#22c55e;font-size:11px;font-weight:700">\u00a3187.62</span></div>
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04)"><span style="color:rgba(255,255,255,.6);font-size:11px">Gross Revenue</span><span id="partner-earn-gross" style="color:#fff;font-size:11px;font-weight:600">\u2014</span></div>
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04)"><span style="color:rgba(255,255,255,.6);font-size:11px">Your Share (85%)</span><span id="partner-earn-share" style="color:#22c55e;font-size:11px;font-weight:600">\u2014</span></div>
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04)"><span style="color:rgba(255,255,255,.6);font-size:11px">Withdrawn</span><span id="partner-earn-withdrawn" style="color:rgba(255,255,255,.6);font-size:11px">\u2014</span></div>
+        <div style="display:flex;justify-content:space-between;padding:5px 0"><span style="color:#fff;font-size:11px;font-weight:700">Balance</span><span id="partner-earn-bal2" style="color:#22c55e;font-size:11px;font-weight:700">\u2014</span></div>
       </div>
     </div>
     <!-- Screen 5: MANAGE GYM -->
@@ -16190,12 +16190,12 @@ function PartnerFullPage(){
       <h2 style="font-size:18px;font-weight:800;color:#fff;margin-bottom:4px">\u2699\ufe0f Manage Gym</h2>
       <p style="color:rgba(255,255,255,.4);font-size:11px;margin-bottom:14px">Update your listing</p>
       <div style="display:flex;flex-direction:column;gap:6px">
-        <div onclick="alert('\ud83d\udd50 Set hours')" style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:12px;cursor:pointer"><div style="width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;background:rgba(255,109,0,.12)">\ud83d\udd50</div><div style="flex:1"><div style="font-size:12px;font-weight:700;color:#fff">Opening Hours</div><div style="font-size:9px;color:rgba(255,255,255,.35)">Mon-Sun \u00b7 6:00 AM - 10:00 PM</div></div><span style="color:rgba(255,255,255,.2)">\u203a</span></div>
-        <div onclick="alert('\ud83d\udcb2 Set pricing')" style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:12px;cursor:pointer"><div style="width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;background:rgba(34,197,94,.12)">\ud83d\udcb2</div><div style="flex:1"><div style="font-size:12px;font-weight:700;color:#fff">Day Pass Pricing</div><div style="font-size:9px;color:rgba(255,255,255,.35)">Day \u00a34.99 \u00b7 Week \u00a319.99 \u00b7 Month \u00a339.99</div></div><span style="color:rgba(255,255,255,.2)">\u203a</span></div>
-        <div onclick="alert('\ud83d\udcf8 Upload photos')" style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:12px;cursor:pointer"><div style="width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;background:rgba(59,130,246,.12)">\ud83d\udcf8</div><div style="flex:1"><div style="font-size:12px;font-weight:700;color:#fff">Photos & Tour</div><div style="font-size:9px;color:rgba(255,255,255,.35)">12 photos \u00b7 Add 360\u00b0 tour</div></div><span style="color:rgba(255,255,255,.2)">\u203a</span></div>
-        <div onclick="alert('\ud83c\udff7 Edit amenities')" style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:12px;cursor:pointer"><div style="width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;background:rgba(168,85,247,.12)">\ud83c\udff7</div><div style="flex:1"><div style="font-size:12px;font-weight:700;color:#fff">Amenities & Equipment</div><div style="font-size:9px;color:rgba(255,255,255,.35)">Weights, Cardio, Pool, Sauna...</div></div><span style="color:rgba(255,255,255,.2)">\u203a</span></div>
-        <div onclick="alert('\ud83d\udda8 Print poster')" style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:12px;cursor:pointer"><div style="width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;background:rgba(255,109,0,.12)">\ud83d\udda8</div><div style="flex:1"><div style="font-size:12px;font-weight:700;color:#fff">Print QR Poster</div><div style="font-size:9px;color:rgba(255,255,255,.35)">A4 poster for gym entrance</div></div><span style="color:rgba(255,255,255,.2)">\u203a</span></div>
-        <div onclick="alert('\u2795 Add another location')" style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,109,0,.04);border:1px solid rgba(255,109,0,.12);border-radius:12px;cursor:pointer"><div style="width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;background:rgba(255,109,0,.12)">\u2795</div><div style="flex:1"><div style="font-size:12px;font-weight:700;color:#FF6D00">Add Another Location</div><div style="font-size:9px;color:rgba(255,255,255,.35)">Multi-outlet management</div></div></div>
+        <div onclick="navigate('/owner/controls')" style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:12px;cursor:pointer"><div style="width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;background:rgba(255,109,0,.12)">\ud83d\udd50</div><div style="flex:1"><div style="font-size:12px;font-weight:700;color:#fff">Opening Hours</div><div id="manage-hours-sub" style="font-size:9px;color:rgba(255,255,255,.35)">Manage your schedule</div></div><span style="color:rgba(255,255,255,.2)">\u203a</span></div>
+        <div onclick="navigate('/owner/controls')" style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:12px;cursor:pointer"><div style="width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;background:rgba(34,197,94,.12)">\ud83d\udcb2</div><div style="flex:1"><div style="font-size:12px;font-weight:700;color:#fff">Day Pass Pricing</div><div style="font-size:9px;color:rgba(255,255,255,.35)">Managed by ScanGym pricing engine</div></div><span style="color:rgba(255,255,255,.2)">\u203a</span></div>
+        <div onclick="sgToast('Photos coming soon \u2014 email hello@scangym.com to update','info',3000)" style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:12px;cursor:pointer"><div style="width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;background:rgba(59,130,246,.12)">\ud83d\udcf8</div><div style="flex:1"><div style="font-size:12px;font-weight:700;color:#fff">Photos & Tour</div><div style="font-size:9px;color:rgba(255,255,255,.35)">Email hello@scangym.com to update</div></div><span style="color:rgba(255,255,255,.2)">\u203a</span></div>
+        <div onclick="sgToast('Amenities coming soon \u2014 email hello@scangym.com to update','info',3000)" style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:12px;cursor:pointer"><div style="width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;background:rgba(168,85,247,.12)">\ud83c\udff7</div><div style="flex:1"><div style="font-size:12px;font-weight:700;color:#fff">Amenities & Equipment</div><div style="font-size:9px;color:rgba(255,255,255,.35)">Email hello@scangym.com to update</div></div><span style="color:rgba(255,255,255,.2)">\u203a</span></div>
+        <div onclick="_partnerPrintPoster()" style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:12px;cursor:pointer"><div style="width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;background:rgba(255,109,0,.12)">\ud83d\udda8</div><div style="flex:1"><div style="font-size:12px;font-weight:700;color:#fff">Print QR Poster</div><div style="font-size:9px;color:rgba(255,255,255,.35)">A4 poster for gym entrance</div></div><span style="color:rgba(255,255,255,.2)">\u203a</span></div>
+        <div onclick="navigate('/list-your-gym')" style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,109,0,.04);border:1px solid rgba(255,109,0,.12);border-radius:12px;cursor:pointer"><div style="width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;background:rgba(255,109,0,.12)">\u2795</div><div style="flex:1"><div style="font-size:12px;font-weight:700;color:#FF6D00">Add Another Location</div><div style="font-size:9px;color:rgba(255,255,255,.35)">Multi-outlet management</div></div></div>
       </div>
     </div>
     <!-- Screen 6: GROWTH CENTRE -->
@@ -16234,7 +16234,111 @@ window._showPartnerScreen=function(idx){
     b.style.borderColor=i===idx?'rgba(255,109,0,.4)':'rgba(255,255,255,.06)';
     b.style.boxShadow=i===idx?'0 0 16px rgba(255,109,0,.2)':'none';
   });
+  // Load data for the screen being shown
+  if(idx===0)_partnerLoadHome();
+  if(idx===4)_partnerLoadEarnings();
 };
+
+// ── Fix 2-2: Load partner dashboard stats into Screen 0 ──
+window._partnerLoadHome=async function(){
+  try{
+    var r=await fetch('/api/gym-partner/dashboard',{credentials:'include'}).catch(function(){return null;});
+    if(!r||!r.ok){_partnerHomeEmpty();return;}
+    var d=await r.json().catch(function(){return {};});
+    var el=function(id){return document.getElementById(id);};
+    var tb=d.today?d.today.bookings:d.todayBookings||0;
+    var tr=d.today?d.today.revenue:parseFloat(d.todayRevenue)||0;
+    var ar=d.rating?d.rating.average:d.avgRating||0;
+    var ci=el('partner-home-checkins');if(ci)ci.textContent=''+tb;
+    var rv=el('partner-home-revenue');if(rv)rv.textContent='\u00a3'+parseFloat(tr||0).toFixed(2);
+    var avg=el('partner-home-avg');if(avg){var a=tb>0?(parseFloat(tr||0)/tb).toFixed(2):'0.00';avg.textContent='\u00a3'+a;}
+    var rv2=el('partner-home-rev2');if(rv2)rv2.textContent='\u00a3'+Math.round(parseFloat(tr)||0);
+    var bk2=el('partner-home-bk2');if(bk2)bk2.textContent=''+tb;
+    var rt=el('partner-home-rating');if(rt)rt.textContent=(ar?parseFloat(ar).toFixed(1):'—')+'\u2b50';
+  }catch(e){console.log('[PartnerHome]',e.message);_partnerHomeEmpty();}
+};
+window._partnerHomeEmpty=function(){
+  var el=function(id){return document.getElementById(id);};
+  var ci=el('partner-home-checkins');if(ci)ci.textContent='0';
+  var rv=el('partner-home-revenue');if(rv)rv.textContent='\u00a30.00';
+  var avg=el('partner-home-avg');if(avg)avg.textContent='\u00a30.00';
+  var rv2=el('partner-home-rev2');if(rv2)rv2.textContent='\u00a30';
+  var bk2=el('partner-home-bk2');if(bk2)bk2.textContent='0';
+  var rt=el('partner-home-rating');if(rt)rt.textContent='—';
+};
+
+// ── Fix 2-3: Toggle active calls backend ──
+window._partnerToggleActive=async function(el){
+  var bg=el.querySelector('.tbg');var dot=el.querySelector('.tdot');var lbl=document.getElementById('partner-toggle-label');
+  var isOn=bg.style.background==='rgb(34, 197, 94)';
+  // Optimistic UI update
+  if(isOn){bg.style.background='#ef4444';dot.style.left='2px';if(lbl)lbl.textContent='PAUSED';}
+  else{bg.style.background='#22c55e';dot.style.left='18px';if(lbl)lbl.textContent='ACCEPTING';}
+  try{
+    // Get gymId from dashboard cache or fetch it
+    var gymId=window._partnerGymId;
+    if(!gymId){
+      var dr=await fetch('/api/gym-partner/dashboard',{credentials:'include'}).catch(function(){return null;});
+      var dd=dr&&dr.ok?await dr.json().catch(function(){return {};}):{}; 
+      gymId=dd.gyms&&dd.gyms[0]?dd.gyms[0].id:null;
+      if(gymId)window._partnerGymId=gymId;
+    }
+    if(!gymId){sgToast('No claimed gym found','error',2500);return;}
+    var r=await fetch('/api/gym-partner/toggle-active',{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({gymId:gymId,isActive:!isOn})});
+    var d=r.ok?await r.json().catch(function(){return {};}):null;
+    if(!d||d.error){
+      // Revert on failure
+      if(isOn){bg.style.background='#22c55e';dot.style.left='18px';if(lbl)lbl.textContent='ACCEPTING';}
+      else{bg.style.background='#ef4444';dot.style.left='2px';if(lbl)lbl.textContent='PAUSED';}
+      sgToast(d&&d.error||'Could not update status','error',2500);
+    }else{sgToast((!isOn?'Gym is now accepting bookings':'Bookings paused'),'success',2000);}
+  }catch(e){console.log('[PartnerToggle]',e.message);}
+};
+
+// ── Fix 2-4: Load earnings data into Screen 4 ──
+window._partnerLoadEarnings=async function(){
+  try{
+    var r=await fetch('/api/gym-partner/earnings',{credentials:'include'}).catch(function(){return null;});
+    if(!r||!r.ok){_partnerEarningsEmpty();return;}
+    var d=await r.json().catch(function(){return {};});
+    var el=function(id){return document.getElementById(id);};
+    // earnings API returns totalRevenuePence and totalBookings
+    var grossPence=parseInt(d.totalRevenuePence)||0;
+    var gross=(grossPence/100).toFixed(2);
+    var share=(grossPence*0.85/100).toFixed(2);
+    var withdrawn=parseFloat(d.totalWithdrawn||0).toFixed(2);
+    var bal=(parseFloat(share)-parseFloat(withdrawn)).toFixed(2);
+    if(parseFloat(bal)<0)bal='0.00';
+    var b1=el('partner-earn-balance');if(b1)b1.textContent='\u00a3'+bal;
+    var sub=el('partner-earn-subtitle');if(sub)sub.textContent='From '+(d.totalBookings||0)+' bookings';
+    var g2=el('partner-earn-gross');if(g2)g2.textContent='\u00a3'+gross;
+    var s=el('partner-earn-share');if(s)s.textContent='\u00a3'+share;
+    var w=el('partner-earn-withdrawn');if(w)w.textContent='\u00a3'+withdrawn;
+    var b2=el('partner-earn-bal2');if(b2)b2.textContent='\u00a3'+bal;
+  }catch(e){console.log('[PartnerEarnings]',e.message);_partnerEarningsEmpty();}
+};
+window._partnerEarningsEmpty=function(){
+  var el=function(id){return document.getElementById(id);};
+  var b1=el('partner-earn-balance');if(b1)b1.textContent='\u00a30.00';
+  var sub=el('partner-earn-subtitle');if(sub)sub.textContent='No earnings yet';
+  var g=el('partner-earn-gross');if(g)g.textContent='\u00a30.00';
+  var s=el('partner-earn-share');if(s)s.textContent='\u00a30.00';
+  var w=el('partner-earn-withdrawn');if(w)w.textContent='\u00a30.00';
+  var b2=el('partner-earn-bal2');if(b2)b2.textContent='\u00a30.00';
+};
+
+// ── Fix 2-6: Print QR Poster ──
+window._partnerPrintPoster=function(){
+  var u=window.state&&window.state.user;
+  var gymName=u?(u.gym_name||'Your Gym'):'Your Gym';
+  var w=window.open('','_blank');
+  if(!w){sgToast('Please allow popups to print poster','error',2500);return;}
+  w.document.write('<html><head><title>ScanGym QR Poster</title><style>body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#fff;font-family:system-ui,-apple-system,sans-serif}@media print{.no-print{display:none!important}}</style></head><body><div style="text-align:center;padding:40px"><h1 style="font-size:48px;color:#FF6D00;margin-bottom:8px">\ud83c\udfcb\ufe0f ScanGym</h1><h2 style="font-size:32px;color:#222;margin-bottom:24px">'+gymName+'</h2><div style="display:inline-block;padding:20px;border:3px solid #222;border-radius:16px;margin-bottom:24px"><img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https://scangym.com" width="300" height="300" alt="QR Code"></div><p style="font-size:24px;color:#333;margin-bottom:8px"><strong>Scan to book a day pass</strong></p><p style="font-size:18px;color:#666">No app needed \u00b7 Pay & enter instantly</p><p style="font-size:14px;color:#999;margin-top:32px">scangym.com</p><button class="no-print" onclick="window.print()" style="margin-top:24px;background:#FF6D00;color:#fff;border:none;padding:12px 32px;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer">Print Poster</button></div></body></html>');
+  w.document.close();
+};
+
+// Auto-load partner home data on page render
+setTimeout(function(){if(document.getElementById('partner-home-checkins'))_partnerLoadHome();},200);
 
 // ═══ APPS PAGE — Fullscreen, no scrolling, side buttons (Microsoft App Store style) ═══
 function AppsFullPage(){
@@ -18757,7 +18861,7 @@ function GymPartnerHubPage(){
 // Load partner hub data
 window._loadPartnerHub=async function(){
   try{
-    var r=await fetch('/api/partner/dashboard',{credentials:'include'}).catch(function(){return null;});
+    var r=await fetch('/api/gym-partner/dashboard',{credentials:'include'}).catch(function(){return null;});
     var d=r&&r.ok?await r.json().catch(function(){return {};}):{};
     // Update stats
     var stats={'revenue':d.todayRevenue!=null?'\u00A3'+parseFloat(d.todayRevenue).toFixed(2):'\u00A30','bookings':''+(d.todayBookings||0),'rating':''+(d.avgRating||'4.2')};
@@ -18797,7 +18901,7 @@ window._loadPartnerBookings=async function(){
   var period=window._partnerBkPeriod||'today';
   document.querySelectorAll('#partner-bk-period button').forEach(function(b){b.style.cssText=b.dataset.k===period?'background:#FF6D00;color:#fff;border:1px solid #FF6D00;border-radius:20px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer':'background:rgba(255,255,255,.04);color:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer';});
   try{
-    var r=await fetch('/api/partner/bookings?period='+period,{credentials:'include'}).catch(function(){return null;});
+    var r=await fetch('/api/gym-partner/bookings?period='+period,{credentials:'include'}).catch(function(){return null;});
     var d=r&&r.ok?await r.json().catch(function(){return {};}):{};
     var bks=d.bookings||[];
     window._partnerBookingsData=bks;
@@ -18832,7 +18936,7 @@ function PartnerCustomersPage(){
 }
 window._loadPartnerCustomers=async function(){
   try{
-    var r=await fetch('/api/partner/customers',{credentials:'include'}).catch(function(){return null;});
+    var r=await fetch('/api/gym-partner/customers',{credentials:'include'}).catch(function(){return null;});
     var d=r&&r.ok?await r.json().catch(function(){return {};}):{};
     var el=document.getElementById('partner-cust-list');
     if(el){
@@ -18867,7 +18971,7 @@ function PartnerPayoutsPage(){
 }
 window._loadPartnerPayouts=async function(){
   try{
-    var r=await fetch('/api/partner/payouts',{credentials:'include'}).catch(function(){return null;});
+    var r=await fetch('/api/gym-partner/payouts',{credentials:'include'}).catch(function(){return null;});
     var d=r&&r.ok?await r.json().catch(function(){return {};}):{};
     var te=document.getElementById('partner-total-earned');
     if(te)te.textContent='\u00A3'+(parseFloat(d.totalEarned)||0).toFixed(2);
@@ -18882,7 +18986,7 @@ window._loadPartnerPayouts=async function(){
     }
     if(d.stripeStatus==='not_connected'){
       var ss=document.getElementById('partner-stripe-status');
-      if(ss)ss.innerHTML='<div style="width:8px;height:8px;border-radius:50%;background:#eab308"></div><span style="color:rgba(255,255,255,.6);font-size:13px">Not connected</span><button onclick="window.open(\'/api/partner/stripe-connect\',\'_blank\')" style="margin-left:auto;background:#FF6D00;color:#fff;border:none;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">Connect Stripe</button>';
+      if(ss)ss.innerHTML='<div style="width:8px;height:8px;border-radius:50%;background:#eab308"></div><span style="color:rgba(255,255,255,.6);font-size:13px">Not connected</span><button onclick="window.open(\'/api/gym-partner/stripe-connect\',\'_blank\')" style="margin-left:auto;background:#FF6D00;color:#fff;border:none;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">Connect Stripe</button>';
     }
   }catch(e){console.log('[PartnerPayouts]',e);}
 };
