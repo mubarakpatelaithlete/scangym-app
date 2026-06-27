@@ -10173,7 +10173,38 @@ setInterval(function(){
 // ─── Fix #150: Free Tools Page — BMI, Calorie Counter, Gym Finder ───
 function ToolsPage(){
   return `
-  <div class="sg-tab-content" style="padding:20px 16px 100px;max-width:520px;margin:0 auto">
+  <div style="position:relative">
+    <!-- Side nav buttons (logged-out: 3 core flow + More) -->
+    <div style="position:fixed;right:8px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:10px;z-index:10">
+      <!-- 1. Sign In -->
+      <div onclick="navigate('/login')" style="width:42px;height:42px;background:rgba(255,109,0,.25);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:1px solid rgba(255,109,0,.4);transition:.2s;box-shadow:0 0 16px rgba(255,109,0,.2)" title="Sign In">\ud83d\udd11</div>
+      <!-- 2. Get Affiliate Link -->
+      <div onclick="sgToast('Sign in first to get your affiliate link','info',2000);navigate('/login')" style="width:42px;height:42px;background:rgba(168,85,247,.2);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:1px solid rgba(168,85,247,.3);transition:.2s;box-shadow:0 0 12px rgba(168,85,247,.15)" title="Get Affiliate Link">\ud83d\udd17</div>
+      <!-- 3. Withdraw Money -->
+      <div onclick="sgToast('Sign in first to withdraw earnings','info',2000);navigate('/login')" style="width:42px;height:42px;background:rgba(34,197,94,.15);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:1px solid rgba(34,197,94,.2);transition:.2s;box-shadow:0 0 12px rgba(34,197,94,.1)" title="Withdraw Money">\ud83d\udcb8</div>
+      <!-- 4. More -->
+      <div onclick="var m=document.getElementById('ctr-lo-more');if(m)m.style.display=m.style.display==='none'?'block':'none'" style="width:42px;height:42px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;letter-spacing:2px;border:1px solid rgba(255,255,255,.06);transition:.2s;color:rgba(255,255,255,.6)" title="More">\u2022\u2022\u2022</div>
+    </div>
+    <!-- More dropdown (logged-out) -->
+    <div id="ctr-lo-more" style="display:none;position:fixed;right:58px;top:50%;transform:translateY(-50%);z-index:11;background:rgba(15,15,30,.95);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:8px;min-width:180px;box-shadow:0 8px 32px rgba(0,0,0,.5)">
+      <div onclick="navigate('/login');document.getElementById('ctr-lo-more').style.display='none'" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:.15s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='transparent'">
+        <span style="font-size:16px">\ud83c\udfe0</span><span style="color:#fff;font-size:13px;font-weight:600">Home</span>
+      </div>
+      <div onclick="navigate('/login');document.getElementById('ctr-lo-more').style.display='none'" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:.15s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='transparent'">
+        <span style="font-size:16px">\ud83d\udcca</span><span style="color:#fff;font-size:13px;font-weight:600">Analytics</span>
+      </div>
+      <div onclick="navigate('/login');document.getElementById('ctr-lo-more').style.display='none'" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:.15s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='transparent'">
+        <span style="font-size:16px">\ud83d\udcf9</span><span style="color:#fff;font-size:13px;font-weight:600">Content</span>
+      </div>
+      <div onclick="navigate('/login');document.getElementById('ctr-lo-more').style.display='none'" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:.15s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='transparent'">
+        <span style="font-size:16px">\ud83c\udfe0</span><span style="color:#fff;font-size:13px;font-weight:600">Storefront</span>
+      </div>
+      <div onclick="navigate('/login');document.getElementById('ctr-lo-more').style.display='none'" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:.15s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='transparent'">
+        <span style="font-size:16px">\ud83c\udfa8</span><span style="color:#fff;font-size:13px;font-weight:600">Assets</span>
+      </div>
+    </div>
+  </div>
+  <div class="sg-tab-content" style="padding:20px 16px 100px;max-width:520px;margin:0 auto;padding-right:60px">
     <div style="text-align:center;margin-bottom:24px;padding-top:20px">
       <h1 style="color:#fff;font-size:24px;font-weight:800;margin:0">🛠️ Free Fitness Tools</h1>
       <p style="color:rgba(255,255,255,.5);font-size:13px;margin:4px 0 0">No signup needed. 100% free.</p>
@@ -16056,14 +16087,34 @@ function CreatorFullPage(){
   var refLink='scangym.com/r/'+refCode;
   var firstName=name.split(' ')[0];
   return `<div style="position:fixed;top:0;left:0;right:0;bottom:56px;background:#0a0a16;display:flex;flex-direction:column;overflow:hidden">
-    <!-- Side nav buttons (6 screens) -->
+    <!-- Side nav buttons (3 core flow + More) -->
     <div style="position:absolute;right:8px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:10px;z-index:10">
-      <div onclick="_showCreatorScreen(0)" class="creator-side-btn" style="width:42px;height:42px;background:rgba(255,109,0,.25);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:1px solid rgba(255,109,0,.4);transition:.2s;box-shadow:0 0 16px rgba(255,109,0,.2)" title="Home">\ud83c\udfe0</div>
-      <div onclick="_showCreatorScreen(1)" class="creator-side-btn" style="width:42px;height:42px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:1px solid rgba(255,255,255,.06);transition:.2s" title="Analytics">\ud83d\udcca</div>
-      <div onclick="_showCreatorScreen(2)" class="creator-side-btn" style="width:42px;height:42px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:1px solid rgba(255,255,255,.06);transition:.2s" title="Content">\ud83d\udcf9</div>
-      <div onclick="_showCreatorScreen(3)" class="creator-side-btn" style="width:42px;height:42px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:1px solid rgba(255,255,255,.06);transition:.2s" title="Earnings">\ud83d\udcb0</div>
-      <div onclick="_showCreatorScreen(4)" class="creator-side-btn" style="width:42px;height:42px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:1px solid rgba(255,255,255,.06);transition:.2s" title="Storefront">\ud83c\udfe0</div>
-      <div onclick="_showCreatorScreen(5)" class="creator-side-btn" style="width:42px;height:42px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:1px solid rgba(255,255,255,.06);transition:.2s" title="Assets">\ud83c\udfa8</div>
+      <!-- 1. Sign In -->
+      <div onclick="${u?'sgToast(\'Already signed in ✅\',\'success\',1500)':'navigate(\'/login\')'};_closeCreatorMore()" class="creator-side-btn" style="width:42px;height:42px;background:${u?'rgba(34,197,94,.2)':'rgba(255,109,0,.25)'};backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:1px solid ${u?'rgba(34,197,94,.3)':'rgba(255,109,0,.4)'};transition:.2s;box-shadow:0 0 16px ${u?'rgba(34,197,94,.15)':'rgba(255,109,0,.2)'}" title="Sign In">${u?'\u2705':'\ud83d\udd11'}</div>
+      <!-- 2. Get Affiliate Link -->
+      <div onclick="_creatorGetLink();_closeCreatorMore()" class="creator-side-btn" style="width:42px;height:42px;background:rgba(168,85,247,.2);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:1px solid rgba(168,85,247,.3);transition:.2s;box-shadow:0 0 12px rgba(168,85,247,.15)" title="Get Affiliate Link">\ud83d\udd17</div>
+      <!-- 3. Withdraw Money -->
+      <div onclick="_creatorWithdraw();_closeCreatorMore()" class="creator-side-btn" style="width:42px;height:42px;background:rgba(34,197,94,.15);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:1px solid rgba(34,197,94,.2);transition:.2s;box-shadow:0 0 12px rgba(34,197,94,.1)" title="Withdraw Money">\ud83d\udcb8</div>
+      <!-- 4. More -->
+      <div onclick="_toggleCreatorMore()" class="creator-side-btn" id="creator-more-btn" style="width:42px;height:42px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;letter-spacing:2px;border:1px solid rgba(255,255,255,.06);transition:.2s;color:rgba(255,255,255,.6)" title="More">\u2022\u2022\u2022</div>
+    </div>
+    <!-- More dropdown menu -->
+    <div id="creator-more-menu" style="display:none;position:absolute;right:58px;top:50%;transform:translateY(-50%);z-index:11;background:rgba(15,15,30,.95);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:8px;min-width:180px;box-shadow:0 8px 32px rgba(0,0,0,.5)">
+      <div onclick="_showCreatorScreen(0);_closeCreatorMore()" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:.15s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='transparent'">
+        <span style="font-size:16px">\ud83c\udfe0</span><span style="color:#fff;font-size:13px;font-weight:600">Home</span>
+      </div>
+      <div onclick="_showCreatorScreen(1);_closeCreatorMore()" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:.15s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='transparent'">
+        <span style="font-size:16px">\ud83d\udcca</span><span style="color:#fff;font-size:13px;font-weight:600">Analytics</span>
+      </div>
+      <div onclick="_showCreatorScreen(2);_closeCreatorMore()" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:.15s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='transparent'">
+        <span style="font-size:16px">\ud83d\udcf9</span><span style="color:#fff;font-size:13px;font-weight:600">Content</span>
+      </div>
+      <div onclick="_showCreatorScreen(4);_closeCreatorMore()" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:.15s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='transparent'">
+        <span style="font-size:16px">\ud83c\udfe0</span><span style="color:#fff;font-size:13px;font-weight:600">Storefront</span>
+      </div>
+      <div onclick="_showCreatorScreen(5);_closeCreatorMore()" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:.15s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='transparent'">
+        <span style="font-size:16px">\ud83c\udfa8</span><span style="color:#fff;font-size:13px;font-weight:600">Assets</span>
+      </div>
     </div>
     <!-- Screen 0: HOME \u2014 Percentile Ranking (OnlyFans) + Live Stats (Grab) + Bounty (Amazon) -->
     <div class="creator-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;padding:16px;padding-right:60px;overflow-y:auto">
@@ -16239,14 +16290,42 @@ function CreatorFullPage(){
   </div>`;
 }
 window._showCreatorScreen=function(idx){
-  var btns=document.querySelectorAll('.creator-side-btn');
   var screens=document.querySelectorAll('.creator-screen');
   screens.forEach(function(s,i){s.style.display=i===idx?'flex':'none';});
-  btns.forEach(function(b,i){
-    b.style.background=i===idx?'rgba(255,109,0,.25)':'rgba(255,255,255,.08)';
-    b.style.borderColor=i===idx?'rgba(255,109,0,.4)':'rgba(255,255,255,.06)';
-    b.style.boxShadow=i===idx?'0 0 16px rgba(255,109,0,.2)':'none';
+  // Highlight More button when viewing a screen from the More menu
+  var moreBtn=document.getElementById('creator-more-btn');
+  if(moreBtn){
+    var isMoreScreen=(idx===0||idx===1||idx===2||idx===4||idx===5);
+    moreBtn.style.background=isMoreScreen?'rgba(255,109,0,.25)':'rgba(255,255,255,.08)';
+    moreBtn.style.borderColor=isMoreScreen?'rgba(255,109,0,.4)':'rgba(255,255,255,.06)';
+    moreBtn.style.boxShadow=isMoreScreen?'0 0 16px rgba(255,109,0,.2)':'none';
+  }
+};
+window._toggleCreatorMore=function(){
+  var m=document.getElementById('creator-more-menu');
+  if(m) m.style.display=m.style.display==='none'?'block':'none';
+};
+window._closeCreatorMore=function(){
+  var m=document.getElementById('creator-more-menu');
+  if(m) m.style.display='none';
+};
+window._creatorGetLink=function(){
+  var u=window.state&&window.state.user;
+  if(!u){sgToast('Sign in first to get your affiliate link','info',2000);navigate('/login');return;}
+  var refCode=u.referral_code||'creator123';
+  var refLink='https://scangym.com/r/'+refCode;
+  navigator.clipboard.writeText(refLink).then(function(){
+    sgToast('Affiliate link copied! 🔗 '+refLink,'success',3000);
+  }).catch(function(){
+    sgToast('Your link: '+refLink,'info',5000);
   });
+  _showCreatorScreen(0);
+};
+window._creatorWithdraw=function(){
+  var u=window.state&&window.state.user;
+  if(!u){sgToast('Sign in first to withdraw earnings','info',2000);navigate('/login');return;}
+  _showCreatorScreen(3);
+  navigate('/creator-earnings');
 };
 
 // ═══ LOAD CREATOR FULL PAGE DATA FROM API ═══
