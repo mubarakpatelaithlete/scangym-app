@@ -261,10 +261,27 @@ router.post('/welcome', async (req, res) => {
 });
 
 // ─── GET /api/channels/whatsapp/number — Get WhatsApp number ─
-router.get('/whatsapp/number', (req, res) => {
-  const phone = process.env.TWILIO_PHONE_NUMBER || process.env.WHATSAPP_NUMBER || '';
+// Checks env vars first, then falls back to Twilio adapter's status endpoint,
+// then to the same hardcoded number the Twilio adapter uses.
+router.get('/whatsapp/number', async (req, res) => {
+  // 1. Check env vars
+  let phone = process.env.TWILIO_PHONE_NUMBER || process.env.WHATSAPP_NUMBER || process.env.TWILIO_WHATSAPP_NUMBER || '';
+
+  // 2. If no env var, ask the Twilio adapter for the live number
+  if (!phone) {
+    try {
+      const statusResp = await fetch(`${req.protocol}://${req.get('host')}/api/chatbot/twilio/status`);
+      const status = await statusResp.json();
+      if (status.active && status.phone) phone = status.phone;
+    } catch (e) {
+      console.warn('[Channels] Failed to fetch Twilio status for WhatsApp number:', e.message);
+    }
+  }
+
   if (!phone) return res.json({ number: '', error: 'WhatsApp number not configured' });
-  res.json({ number: phone, formatted: phone.replace(/(\+\d{2})(\d{4})(\d{6})/, '$1 $2 $3') });
+  // Strip whatsapp: prefix if present
+  phone = phone.replace('whatsapp:', '');
+  res.json({ number: phone, formatted: phone.replace(/(\+\d{1,3})(\d{3})(\d{3})(\d{4})/, '$1 $2 $3 $4') });
 });
 
 // ─── GET /api/channels/discord/invite — Get Discord bot invite ─
