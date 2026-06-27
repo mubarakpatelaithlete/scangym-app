@@ -12604,18 +12604,35 @@ async function _sgChatSend(msgText){
     if(Object.keys(userProfile).length===0)userProfile=null;
   }
 
-  // Call AI API
+  // Fix 4: Route gym/booking queries through the full chatbot (webchat adapter)
+  //         which supports search, booking, payment links, QR deep links
+  var isGymQuery=/\b(gym|gyms|find|search|book|cancel|price|pricing|day pass|near|nearby|qr|check.?in)\b/i.test(msg)
+    || /^[a-z][a-z\s,'-]{1,39}$/i.test(msg.trim());
   try{
-    var resp=await fetch('/api/chat/quick',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({message:msg,userProfile:userProfile})
-    });
-    if(!resp.ok)throw new Error('API error '+resp.status);
-    var data=await resp.json();
-    chat.typing=false;
-    // Stream the response
-    _sgChatStream(data.reply||data.message||'Sorry, I couldn\'t process that. Try again!');
+    var resp;
+    if(isGymQuery){
+      // Use full chatbot handler — supports gym search, booking, payment links
+      resp=await fetch('/api/chatbot/web/message',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({message:msg,userId:state.user?'web:'+state.user.id:'web:anon-'+Date.now(),userName:state.user?state.user.name:'User'})
+      });
+      if(!resp.ok)throw new Error('API error '+resp.status);
+      var data=await resp.json();
+      chat.typing=false;
+      _sgChatStream(data.text||data.reply||data.message||'Sorry, I couldn\'t process that. Try again!');
+    }else{
+      // Use fitness AI for workout/nutrition/recovery questions
+      resp=await fetch('/api/chat/quick',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({message:msg,userProfile:userProfile})
+      });
+      if(!resp.ok)throw new Error('API error '+resp.status);
+      var data=await resp.json();
+      chat.typing=false;
+      _sgChatStream(data.reply||data.message||'Sorry, I couldn\'t process that. Try again!');
+    }
   }catch(err){
     console.error('Chat API error:',err);
     chat.typing=false;
@@ -12963,12 +12980,12 @@ function ChatTabPage(){
 
   // Suggestion chips — 2-column grid
   var suggestions=[
-    {icon:'💪',text:'Create a workout plan'},
     {icon:'🏋️',text:'Find gyms near me'},
+    {icon:'📅',text:'Book a gym for tomorrow'},
+    {icon:'💰',text:'How much is a day pass?'},
+    {icon:'💪',text:'Create a workout plan'},
     {icon:'🥗',text:'Meal plan for muscle gain'},
-    {icon:'📊',text:'How to track progress'},
-    {icon:'🧘',text:'Recovery & stretching tips'},
-    {icon:'🏃',text:'Couch to 5K plan'},
+    {icon:'📲',text:'How does QR check-in work?'},
   ];
 
   // Auto-expand textarea handler
@@ -16448,27 +16465,58 @@ window._showAppScreen=function(idx){
 
 // ═══ CHANNELS PAGE — Fullscreen, no scrolling, side buttons (Telegram style) ═══
 function ChannelsFullPage(){
+  // Fix 1: Live connection status — loaded by _sgLoadChannelStatus()
+  var connMap=window._sgChannelStatus||{};
   var channels=[
-    {name:'Telegram',icon:'\u2708\ufe0f',desc:'Chat with our gym bot',color:'#0088cc',action:"window.open('https://t.me/ScanGymBot','_blank')"},
-    {name:'WhatsApp',icon:'\ud83d\udcac',desc:'Chat with us instantly',color:'#25D366',action:"_sgOpenWhatsApp()"},
-    {name:'Discord',icon:'\ud83c\udfae',desc:'Add our bot to your server',color:'#5865F2',action:"_sgOpenDiscord()"},
-    {name:'Slack',icon:'\ud83d\udcbc',desc:'Add ScanGym to Slack',color:'#4A154B',action:"_sgOpenSlack()"},
-    {name:'Microsoft Teams',icon:'\ud83d\udfe6',desc:'Install ScanGym bot',color:'#6264A7',action:"_sgOpenMSTeams()"},
-    {name:'Email',icon:'\ud83d\udce7',desc:'hello@scangym.com',color:'#FF6D00',action:"window.open('mailto:hello@scangym.com','_blank')"},
-    {name:'SMS',icon:'\ud83d\udcf1',desc:'Text us anytime',color:'#22c55e',action:"window.open('sms:+12052094512','_blank')"}
+    {name:'Telegram',key:'telegram',icon:'\u2708\ufe0f',desc:'Chat with our gym bot',color:'#0088cc',action:"_sgConnectChannel('telegram','https://t.me/ScanGymBot')"},
+    {name:'WhatsApp',key:'whatsapp',icon:'\ud83d\udcac',desc:'Chat with us instantly',color:'#25D366',action:"_sgConnectChannel('whatsapp');_sgOpenWhatsApp()"},
+    {name:'Discord',key:'discord',icon:'\ud83c\udfae',desc:'Add our bot to your server',color:'#5865F2',action:"_sgConnectChannel('discord');_sgOpenDiscord()"},
+    {name:'Slack',key:'slack',icon:'\ud83d\udcbc',desc:'Add ScanGym to Slack',color:'#4A154B',action:"_sgConnectChannel('slack');_sgOpenSlack()"},
+    {name:'Microsoft Teams',key:'msteams',icon:'\ud83d\udfe6',desc:'Install ScanGym bot',color:'#6264A7',action:"_sgConnectChannel('msteams');_sgOpenMSTeams()"},
+    {name:'Email',key:'email',icon:'\ud83d\udce7',desc:'book@scangym.com',color:'#FF6D00',action:"_sgConnectChannel('email');window.open('mailto:book@scangym.com','_blank')"},
+    {name:'SMS',key:'sms',icon:'\ud83d\udcf1',desc:'Text us anytime',color:'#22c55e',action:"_sgConnectChannel('sms');window.open('sms:+12052094512','_blank')"}
   ];
   var channelCards=channels.map(function(c){
-    return '<div onclick="'+c.action+'" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:12px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .15s" onmouseenter="this.style.background=\'rgba(255,255,255,.08)\'" onmouseleave="this.style.background=\'rgba(255,255,255,.04)\'"><div style="width:40px;height:40px;background:'+c.color+';border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px">'+c.icon+'</div><div style="flex:1;text-align:left"><p style="color:#fff;font-size:13px;font-weight:600;margin:0">'+c.name+'</p><p style="color:rgba(255,255,255,.3);font-size:10px;margin:2px 0 0">'+c.desc+'</p></div><span style="color:rgba(255,255,255,.2);font-size:14px">\u203a</span></div>';
+    var isConn=connMap[c.key];
+    var badge=isConn?'<span style="background:#22c55e;color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:6px;margin-left:auto;flex-shrink:0">Connected</span>':'';
+    return '<div onclick="'+c.action+'" style="background:rgba(255,255,255,.04);border:1px solid '+(isConn?'rgba(34,197,94,.25)':'rgba(255,255,255,.06)')+';border-radius:14px;padding:12px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .15s" onmouseenter="this.style.background=\'rgba(255,255,255,.08)\'" onmouseleave="this.style.background=\'rgba(255,255,255,.04)\'"><div style="width:40px;height:40px;background:'+c.color+';border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px">'+c.icon+'</div><div style="flex:1;text-align:left"><p style="color:#fff;font-size:13px;font-weight:600;margin:0">'+c.name+'</p><p style="color:rgba(255,255,255,.3);font-size:10px;margin:2px 0 0">'+c.desc+'</p></div>'+badge+'<span style="color:rgba(255,255,255,.2);font-size:14px">\u203a</span></div>';
   }).join('');
+  // Fix 6: "Chat Now" button that navigates to Chat tab
+  var chatNowBtn='<button onclick="navigate(\'/chat\')" style="width:100%;max-width:340px;background:linear-gradient(135deg,#FF6D00,#E66200);border:none;border-radius:14px;padding:14px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;box-shadow:0 4px 20px rgba(255,109,0,.3);transition:all .15s" onmouseenter="this.style.transform=\'translateY(-1px)\'" onmouseleave="this.style.transform=\'none\'"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>Chat Now \u2014 Find & Book Gyms</button>';
   return `<div style="position:fixed;top:0;left:0;right:0;bottom:56px;background:linear-gradient(180deg,#0a0a16 0%,#111127 100%);display:flex;flex-direction:column;overflow:hidden">
-    <div style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center;overflow:hidden">
+    <div style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center;overflow:auto">
       <div style="font-size:56px;margin-bottom:12px">\ud83d\udce1</div>
       <h2 style="color:#fff;font-size:26px;font-weight:900;margin-bottom:6px">Connect with Us</h2>
       <p style="color:rgba(255,255,255,.45);font-size:13px;margin-bottom:18px;max-width:300px">Reach ScanGym on any platform. We're everywhere.</p>
       <div style="display:flex;flex-direction:column;gap:6px;width:100%;max-width:340px">${channelCards}</div>
+      ${chatNowBtn}
     </div>
   </div>`;
 }
+// Fix 1b: Load channel connection status from API
+window._sgLoadChannelStatus=async function(){
+  if(!state.user){window._sgChannelStatus={};return;}
+  try{
+    var tk=localStorage.getItem('sg_token');
+    var r=await fetch('/api/channels',{headers:tk?{'Authorization':'Bearer '+tk}:{}});
+    var d=await r.json();
+    var map={};
+    if(d.channels){d.channels.forEach(function(ch){if(ch.connected)map[ch.key||ch.name]=true;});}
+    window._sgChannelStatus=map;
+  }catch(e){window._sgChannelStatus={};}
+};
+// Fix 3: Track connection in DB when user clicks a channel
+window._sgConnectChannel=async function(channelKey,directUrl){
+  if(!state.user){if(directUrl)window.open(directUrl,'_blank');return;}
+  try{
+    var tk=localStorage.getItem('sg_token');
+    await fetch('/api/channels/connect',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+(tk||'')},body:JSON.stringify({channel:channelKey})});
+    if(!window._sgChannelStatus)window._sgChannelStatus={};
+    window._sgChannelStatus[channelKey]=true;
+    render();
+  }catch(e){}
+  if(directUrl)window.open(directUrl,'_blank');
+};
 // ─── Channel open helpers (fetch real URLs from API) ────────
 window._sgOpenWhatsApp=async function(){
   try{
@@ -16963,6 +17011,8 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
   if(path==='/become-a-creator'||path==='/become-creator'||path==='/upload'||path==='/creator'||path==='/creator/'){setTimeout(function(){if(typeof _loadCreatorFullPage==='function')_loadCreatorFullPage();},200);}
   // Load live data for Creator Earnings Page
   if(path==='/creator-earnings'){setTimeout(function(){var cd=JSON.parse(localStorage.getItem('sg_creator')||'null');var h=cd&&(cd.handle||cd.slug);if(!h&&state.user)h=state.user.referral_code;if(h){if(typeof _loadCreatorEarnings==='function')_loadCreatorEarnings(h);if(typeof _loadWithdrawalData==='function')_loadWithdrawalData(h);}},200);}
+  // Fix 1: Load channel connection status when on Channels page
+  if(path==='/channels'||path==='/channels/'){setTimeout(function(){if(typeof _sgLoadChannelStatus==='function')_sgLoadChannelStatus().then(function(){render();});},200);}
 }
 
 // ━━━ NON-BLOCKING BANNER: Location nudge (replaces old full-screen overlay) ━━━

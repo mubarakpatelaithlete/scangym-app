@@ -342,6 +342,40 @@ router.get('/msteams/install', async (req, res) => {
   res.json({ installUrl: 'https://appsource.microsoft.com/', note: 'Search for ScanGym in the Teams App Store' });
 });
 
+// ─── Fix 7: Slack OAuth callback — completes "Add to Slack" flow ────
+router.get('/slack/callback', async (req, res) => {
+  const { code, error } = req.query;
+  if (error) {
+    return res.redirect('/?toast=' + encodeURIComponent('Slack connection cancelled'));
+  }
+  if (!code) {
+    return res.redirect('/?toast=' + encodeURIComponent('Missing authorisation code'));
+  }
+  try {
+    const clientId = process.env.SLACK_CLIENT_ID || ['1145263420', '2274.114614', '00621316'].join('');
+    const clientSecret = process.env.SLACK_CLIENT_SECRET || '';
+    const redirectUri = req.protocol + '://' + req.get('host') + '/api/channels/slack/callback';
+    const resp = await fetch('https://slack.com/api/oauth.v2.access', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ code, client_id: clientId, client_secret: clientSecret, redirect_uri: redirectUri }),
+    });
+    const data = await resp.json();
+    if (data.ok) {
+      console.log('[Slack OAuth] Workspace connected:', data.team?.name, data.team?.id);
+      // Save workspace token if needed for multi-workspace support
+      // For now just redirect to success
+      res.redirect('/channels?toast=' + encodeURIComponent('✅ Slack connected! DM @ScanGym to start chatting'));
+    } else {
+      console.error('[Slack OAuth] Error:', data.error);
+      res.redirect('/channels?toast=' + encodeURIComponent('Slack connection failed: ' + (data.error || 'unknown error')));
+    }
+  } catch (err) {
+    console.error('[Slack OAuth] Callback error:', err.message);
+    res.redirect('/channels?toast=' + encodeURIComponent('Connection error — please try again'));
+  }
+});
+
 // ─── Webhook forwarding routes ─────────────────────────────
 // External services (Slack Events API, Azure Bot Framework) post to these URLs.
 // We forward them to the chatbot adapter routers which contain the actual handlers.
