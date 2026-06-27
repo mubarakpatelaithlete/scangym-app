@@ -16264,16 +16264,16 @@ window._showAppScreen=function(idx){
 // ═══ CHANNELS PAGE — Fullscreen, no scrolling, side buttons (Telegram style) ═══
 function ChannelsFullPage(){
   var channels=[
-    {name:'Telegram',icon:'\u2708\ufe0f',desc:'Chat with our gym bot',color:'#0088cc',url:'https://t.me/ScanGymBot'},
-    {name:'WhatsApp',icon:'\ud83d\udcac',desc:'Chat with us instantly',color:'#25D366',url:'https://wa.me/12052094512?text=Hi%20ScanGym!'},
-    {name:'Discord',icon:'\ud83c\udfae',desc:'Join our community',color:'#5865F2',url:'https://discord.gg/scangym'},
-    {name:'Slack',icon:'\ud83d\udcbc',desc:'Partner workspace',color:'#4A154B',url:'https://scangym.slack.com'},
-    {name:'Microsoft Teams',icon:'\ud83d\udfe6',desc:'Business collaboration',color:'#6264A7',url:'https://teams.microsoft.com'},
-    {name:'Email',icon:'\ud83d\udce7',desc:'hello@scangym.com',color:'#FF6D00',url:'mailto:hello@scangym.com'},
-    {name:'SMS',icon:'\ud83d\udcf1',desc:'Text us anytime',color:'#22c55e',url:'sms:+12052094512'}
+    {name:'Telegram',icon:'\u2708\ufe0f',desc:'Chat with our gym bot',color:'#0088cc',action:"window.open('https://t.me/ScanGymBot','_blank')"},
+    {name:'WhatsApp',icon:'\ud83d\udcac',desc:'Chat with us instantly',color:'#25D366',action:"_sgOpenWhatsApp()"},
+    {name:'Discord',icon:'\ud83c\udfae',desc:'Add our bot to your server',color:'#5865F2',action:"_sgOpenDiscord()"},
+    {name:'Slack',icon:'\ud83d\udcbc',desc:'Add ScanGym to Slack',color:'#4A154B',action:"_sgOpenSlack()"},
+    {name:'Microsoft Teams',icon:'\ud83d\udfe6',desc:'Install ScanGym bot',color:'#6264A7',action:"_sgOpenMSTeams()"},
+    {name:'Email',icon:'\ud83d\udce7',desc:'hello@scangym.com',color:'#FF6D00',action:"window.open('mailto:hello@scangym.com','_blank')"},
+    {name:'SMS',icon:'\ud83d\udcf1',desc:'Text us anytime',color:'#22c55e',action:"window.open('sms:+12052094512','_blank')"}
   ];
   var channelCards=channels.map(function(c){
-    return '<div onclick="window.open(\''+c.url+'\',\'_blank\')" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:12px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .15s" onmouseenter="this.style.background=\'rgba(255,255,255,.08)\'" onmouseleave="this.style.background=\'rgba(255,255,255,.04)\'"><div style="width:40px;height:40px;background:'+c.color+';border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px">'+c.icon+'</div><div style="flex:1;text-align:left"><p style="color:#fff;font-size:13px;font-weight:600;margin:0">'+c.name+'</p><p style="color:rgba(255,255,255,.3);font-size:10px;margin:2px 0 0">'+c.desc+'</p></div><span style="color:rgba(255,255,255,.2);font-size:14px">\u203a</span></div>';
+    return '<div onclick="'+c.action+'" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:12px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .15s" onmouseenter="this.style.background=\'rgba(255,255,255,.08)\'" onmouseleave="this.style.background=\'rgba(255,255,255,.04)\'"><div style="width:40px;height:40px;background:'+c.color+';border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px">'+c.icon+'</div><div style="flex:1;text-align:left"><p style="color:#fff;font-size:13px;font-weight:600;margin:0">'+c.name+'</p><p style="color:rgba(255,255,255,.3);font-size:10px;margin:2px 0 0">'+c.desc+'</p></div><span style="color:rgba(255,255,255,.2);font-size:14px">\u203a</span></div>';
   }).join('');
   return `<div style="position:fixed;top:0;left:0;right:0;bottom:56px;background:linear-gradient(180deg,#0a0a16 0%,#111127 100%);display:flex;flex-direction:column;overflow:hidden">
     <div style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center;overflow:hidden">
@@ -16284,6 +16284,40 @@ function ChannelsFullPage(){
     </div>
   </div>`;
 }
+// ─── Channel open helpers (fetch real URLs from API) ────────
+window._sgOpenWhatsApp=async function(){
+  try{
+    var r=await fetch('/api/channels/whatsapp/number');
+    var d=await r.json();
+    var num=(d.number||'12052094512').replace(/[^0-9]/g,'');
+    window.open('https://wa.me/'+num+'?text=Hi%20ScanGym!%20I%20want%20to%20find%20gyms%20near%20me','_blank');
+  }catch(e){window.open('https://wa.me/12052094512?text=Hi%20ScanGym!%20I%20want%20to%20find%20gyms%20near%20me','_blank');}
+};
+window._sgOpenDiscord=async function(){
+  try{
+    var r=await fetch('/api/channels/discord/invite');
+    var d=await r.json();
+    if(d.inviteUrl){window.open(d.inviteUrl,'_blank');}
+    else{sgToast('Discord bot is being set up — check back soon!','info',3000);}
+  }catch(e){sgToast('Discord bot is being set up — check back soon!','info',3000);}
+};
+window._sgOpenSlack=async function(){
+  try{
+    var r=await fetch('/api/channels/slack/install');
+    var d=await r.json();
+    if(d.installUrl){window.open(d.installUrl,'_blank');}
+    else{sgToast('Slack bot is being set up — check back soon!','info',3000);}
+  }catch(e){sgToast('Slack bot is being set up — check back soon!','info',3000);}
+};
+window._sgOpenMSTeams=async function(){
+  try{
+    var r=await fetch('/api/channels/msteams/install');
+    var d=await r.json();
+    if(d.installUrl){window.open(d.installUrl,'_blank');}
+    else{sgToast('Teams bot is being set up — check back soon!','info',3000);}
+  }catch(e){sgToast('Teams bot is being set up — check back soon!','info',3000);}
+};
+
 window._showChannelScreen=function(idx){
   var btns=document.querySelectorAll('.channel-side-btn');
   var screens=document.querySelectorAll('.channel-screen');
