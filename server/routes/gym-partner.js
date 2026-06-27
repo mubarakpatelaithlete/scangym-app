@@ -852,6 +852,86 @@ router.get('/customers', authenticateUser, async (req, res) => {
   }
 });
 
+// ── R6-P06: Request payout ──
+router.post('/request-payout', authenticateUser, express.json(), async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const stripe = process.env.STRIPE_SECRET_KEY ? require('stripe')(process.env.STRIPE_SECRET_KEY) : null;
+    if (!stripe) return res.status(503).json({ error: 'Payment service not configured' });
+
+    // Check Stripe Connect
+    const userRes = await pool.query('SELECT stripe_connect_id FROM users WHERE id = $1', [userId]).catch(() => ({ rows: [] }));
+    const connectId = userRes.rows[0]?.stripe_connect_id;
+    if (!connectId) return res.status(400).json({ error: 'Connect your bank account first (Stripe Connect)' });
+
+    // Calculate pending
+    const gyms = await pool.query('SELECT id FROM gyms WHERE claimed_by::text = $1::text', [userId]).catch(() => ({ rows: [] }));
+    if (!gyms.rows.length) return res.json({ error: 'No claimed gyms found' });
+    const gymIds = gyms.rows.map(g => g.id);
+    const earnings = await pool.query(
+      `SELECT COALESCE(SUM(total_amount), 0) as revenue, COALESCE(SUM(amount_pence), 0) as revenue_pence
+       FROM bookings WHERE gym_id = ANY($1) AND status IN ('confirmed','completed')`, [gymIds]
+    ).catch(() => ({ rows: [{ revenue: 0, revenue_pence: 0 }] }));
+    const row = earnings.rows[0];
+    const totalRevenue = parseFloat(row.revenue) || (parseInt(row.revenue_pence) / 100) || 0;
+    const partnerShare = totalRevenue * 0.85;
+
+    if (partnerShare < 10) return res.json({ error: 'Minimum payout is £10. Current balance: £' + partnerShare.toFixed(2) });
+
+    // Create Stripe transfer
+    try {
+      const amountPence = Math.round(partnerShare * 100);
+      await stripe.transfers.create({
+        amount: amountPence,
+        currency: 'gbp',
+        destination: connectId,
+        description: 'ScanGym partner payout',
+        metadata: { scangym_user_id: String(userId) }
+      });
+      console.log(`[Payout] Transferred £${partnerShare.toFixed(2)} to ${connectId} for user ${userId}`);
+      res.json({ success: true, amount: partnerShare.toFixed(2), message: 'Payout of £' + partnerShare.toFixed(2) + ' initiated' });
+    } catch (transferErr) {
+      console.error('[Payout] Transfer failed:', transferErr.message);
+      res.json({ error: 'Transfer failed: ' + transferErr.message });
+    }
+  } catch (err) {
+    console.error('[Payout] Request error:', err.message);
+    res.status(500).json({ error: 'Payout request failed' });
+  }
+});
+
+// ── R6-P07: Daily revenue for sparkline ──
+router.get('/daily-revenue', authenticateUser, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const gyms = await pool.query('SELECT id FROM gyms WHERE claimed_by::text = $1::text', [userId]).catch(() => ({ rows: [] }));
+    if (!gyms.rows.length) return res.json({ dailyRevenue: [] });
+    const gymIds = gyms.rows.map(g => g.id);
+    const result = await pool.query(`
+      SELECT DATE(created_at) as date,
+             COALESCE(SUM(total_amount), 0) as amount
+      FROM bookings
+      WHERE gym_id = ANY($1) AND status IN ('confirmed','completed')
+        AND created_at >= NOW() - INTERVAL '7 days'
+      GROUP BY DATE(created_at)
+      ORDER BY date
+    `, [gymIds]).catch(() => ({ rows: [] }));
+
+    // Fill gaps for last 7 days
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      const found = result.rows.find(r => r.date && r.date.toISOString?.().slice(0, 10) === key);
+      days.push({ date: key, amount: found ? parseFloat(found.amount) : 0 });
+    }
+    res.json({ dailyRevenue: days });
+  } catch (err) {
+    console.error('[DailyRevenue]', err.message);
+    res.json({ dailyRevenue: [] });
+  }
+});
+
 // ── Partner payouts ──
 router.get('/payouts', authenticateUser, async (req, res) => {
   try {
@@ -886,10 +966,11 @@ router.get('/payouts', authenticateUser, async (req, res) => {
 
     res.json({
       totalEarned: partnerShare.toFixed(2),
-      pendingPayout: partnerShare.toFixed(2), // All earnings are pending until payout system is built
-      payouts: [], // No payout history yet — will be populated when Stripe payouts are set up
+      pendingPayout: partnerShare.toFixed(2),
+      payouts: [],
       stripeStatus,
-      bookingCount: parseInt(row.bookings) || 0
+      bookingCount: parseInt(row.bookings) || 0,
+      hasClaimed: true
     });
   } catch (err) {
     console.error('[Partner Payouts]', err.message);
