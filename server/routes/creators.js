@@ -152,7 +152,8 @@ router.post('/join', authenticateUser, async (req, res) => {
       tier: TIERS[tier],
     });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to join creator program' });
+    console.error('Creator join error:', err.message, err.stack);
+    res.status(500).json({ error: 'Failed to join creator program', detail: err.message });
   }
 });
 
