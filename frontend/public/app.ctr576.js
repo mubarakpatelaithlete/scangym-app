@@ -14709,76 +14709,21 @@ function CreatorEarningsPage(){
       </div>
     </div>
 
-    <!-- Withdrawal Section (smoother 1-tap flow) -->
+    <!-- Wallet Balance & Withdraw Section -->
     <div class="mb-4">
       <div class="flex items-center justify-between mb-3">
-        <p class="text-white font-bold">💸 Withdraw Earnings</p>
+        <p class="text-white font-bold">💰 ScanGym Wallet</p>
       </div>
-      <div id="ce-withdraw-section" class="bg-slate-800/60 rounded-xl p-4 border border-slate-700/30">
+      <div id="ce-withdraw-section" class="bg-gradient-to-r from-brand/10 to-emerald-500/10 rounded-xl p-4 border border-brand/20">
         <div class="flex items-center justify-between mb-3">
           <div>
-            <p class="text-slate-400 text-xs">Available to withdraw</p>
+            <p class="text-slate-400 text-xs">Wallet Balance</p>
             <p class="text-2xl font-black text-white" id="ce-available">—</p>
+            <p class="text-emerald-400 text-[10px] mt-1">✨ Earnings auto-credited to wallet</p>
           </div>
-          <button id="ce-withdraw-btn" onclick="_requestWithdrawal('${handle}')" disabled class="bg-brand/20 text-brand/50 font-bold py-2 px-5 rounded-xl text-sm cursor-not-allowed transition">Withdraw</button>
+          <button onclick="navigate('/wallet')" class="bg-brand hover:bg-orange-600 text-white font-bold py-2 px-5 rounded-xl text-sm transition">Withdraw</button>
         </div>
-        <div class="flex gap-3 text-xs text-slate-500">
-          <span>Min: ${sgSymbol()}5.00</span><span>·</span><span>Pending: <span id="ce-pending">${sgSymbol()}0.00</span></span><span>·</span><span>Withdrawn: <span id="ce-withdrawn">${sgSymbol()}0.00</span></span>
-        </div>
-        <!-- 1-Tap Quick Withdraw Shortcuts -->
-        <div class="grid grid-cols-2 gap-2 mt-3" id="ce-quick-withdraw">
-          <button onclick="_quickWithdrawToWallet('${handle}')" class="bg-brand/10 hover:bg-brand/20 border border-brand/20 rounded-lg px-3 py-2 text-center transition">
-            <span class="text-sm">👛</span>
-            <p class="text-brand text-xs font-bold mt-1">To Wallet</p>
-            <p class="text-slate-500 text-[9px]">Instant · Free</p>
-          </button>
-          <button onclick="_quickWithdrawToBank('${handle}')" class="bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 rounded-lg px-3 py-2 text-center transition">
-            <span class="text-sm">🏦</span>
-            <p class="text-emerald-400 text-xs font-bold mt-1">To Bank</p>
-            <p class="text-slate-500 text-[9px]">1-3 days · £1</p>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Payment Details (shown when withdrawing) — now with multiple payout options -->
-    <div id="ce-payment-form" class="mb-4 hidden">
-      <div class="bg-slate-800/60 rounded-xl p-4 border border-brand/30">
-        <p class="text-white font-bold mb-3">Choose Payout Method</p>
-        <!-- Payout method tabs -->
-        <div class="flex gap-2 mb-4">
-          <button onclick="_selectPayoutMethod('bank')" id="ce-payout-tab-bank" class="flex-1 bg-brand/20 text-brand font-bold py-2 rounded-lg text-xs transition border border-brand/30">🏦 Bank</button>
-          <button onclick="_selectPayoutMethod('stripe')" id="ce-payout-tab-stripe" class="flex-1 bg-slate-700/50 text-slate-400 font-bold py-2 rounded-lg text-xs transition border border-transparent">⚡ Stripe</button>
-          <button onclick="_selectPayoutMethod('payoneer')" id="ce-payout-tab-payoneer" class="flex-1 bg-slate-700/50 text-slate-400 font-bold py-2 rounded-lg text-xs transition border border-transparent">🌍 Payoneer</button>
-        </div>
-        <!-- Bank transfer fields -->
-        <div id="ce-payout-bank" class="space-y-3">
-          <input id="ce-bank-name" type="text" placeholder="Account holder name" class="w-full bg-slate-900/60 border border-slate-700/50 rounded-lg px-3 py-2.5 text-white text-sm placeholder:text-slate-600 focus:border-brand/50 focus:outline-none">
-          <input id="ce-bank-sort" type="text" placeholder="Sort code (XX-XX-XX)" class="w-full bg-slate-900/60 border border-slate-700/50 rounded-lg px-3 py-2.5 text-white text-sm placeholder:text-slate-600 focus:border-brand/50 focus:outline-none" maxlength="8">
-          <input id="ce-bank-acct" type="text" placeholder="Account number" class="w-full bg-slate-900/60 border border-slate-700/50 rounded-lg px-3 py-2.5 text-white text-sm placeholder:text-slate-600 focus:border-brand/50 focus:outline-none" maxlength="8">
-          <p class="text-slate-500 text-xs">⏱ Arrives in 1-3 business days · £1 fee</p>
-        </div>
-        <!-- Stripe Connect fields -->
-        <div id="ce-payout-stripe" class="space-y-3 hidden">
-          <div class="bg-blue-900/20 border border-blue-700/30 rounded-lg p-3 text-center">
-            <p class="text-white text-sm font-bold mb-1">⚡ Instant Payouts via Stripe</p>
-            <p class="text-slate-400 text-xs mb-3">Connect your Stripe account for instant or weekly payouts. Best for UK creators.</p>
-            <button onclick="_startStripeConnect('${handle}')" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 py-2.5 rounded-xl text-sm transition">Connect Stripe Account</button>
-          </div>
-          <p class="text-slate-500 text-xs">⚡ Instant to bank · Fees: 1% + £0.10 per payout</p>
-        </div>
-        <!-- Payoneer fields -->
-        <div id="ce-payout-payoneer" class="space-y-3 hidden">
-          <input id="ce-payoneer-email" type="email" placeholder="Your Payoneer email" class="w-full bg-slate-900/60 border border-slate-700/50 rounded-lg px-3 py-2.5 text-white text-sm placeholder:text-slate-600 focus:border-brand/50 focus:outline-none">
-          <div class="bg-emerald-900/20 border border-emerald-700/30 rounded-lg p-3">
-            <p class="text-slate-300 text-xs">🌍 Available worldwide including Pakistan, India, Bangladesh. <a href="https://www.payoneer.com/signup" target="_blank" class="text-brand hover:underline">Create Payoneer account →</a></p>
-          </div>
-          <p class="text-slate-500 text-xs">⏱ 1-3 business days · $3 fee · Works in 190+ countries</p>
-        </div>
-        <div class="flex gap-2 mt-4">
-          <button onclick="_submitWithdrawal('${handle}')" class="flex-1 bg-brand hover:bg-orange-600 text-white font-bold py-2.5 rounded-xl text-sm transition">Confirm Withdrawal</button>
-          <button onclick="document.getElementById('ce-payment-form').classList.add('hidden')" class="bg-slate-800 hover:bg-slate-700 text-slate-400 font-bold py-2.5 px-4 rounded-xl text-sm transition">Cancel</button>
-        </div>
+        <p class="text-slate-500 text-xs">Go to your ScanGym Wallet to withdraw to bank account or spend on gym sessions.</p>
       </div>
     </div>
 
@@ -14801,95 +14746,55 @@ function CreatorEarningsPage(){
 }
 
 // ═══ WITHDRAWAL FUNCTIONS ═══
+// All withdrawals now go through ScanGym Wallet
 function _requestWithdrawal(handle){
-  var form=document.getElementById('ce-payment-form');
-  if(form)form.classList.remove('hidden');
+  navigate('/wallet');
 }
 
 async function _submitWithdrawal(handle){
-  var nameEl=document.getElementById('ce-bank-name');
-  var sortEl=document.getElementById('ce-bank-sort');
-  var acctEl=document.getElementById('ce-bank-acct');
-  if(!nameEl||!sortEl||!acctEl)return;
-  var name=nameEl.value.trim();
-  var sort=sortEl.value.trim();
-  var acct=acctEl.value.trim();
-  if(!name||!sort||!acct){sgToast('Please fill in all bank details','error');return;}
-
-  try{
-    var res=await fetch('/api/referrals/withdraw',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({creatorHandle:handle,paymentMethod:'bank_transfer',paymentDetails:{accountName:name,sortCode:sort,accountNumber:acct}})
-    });
-    var data=await res.json();
-    if(data.success){
-      sgToast('Withdrawal requested! '+data.withdrawal.amountDisplay+' pending review.','success',4000);
-      document.getElementById('ce-payment-form').classList.add('hidden');
-      nameEl.value='';sortEl.value='';acctEl.value='';
-      // Refresh data
-      _loadCreatorEarnings(handle);
-      _loadWithdrawalData(handle);
-    }else{
-      sgToast(data.error||'Withdrawal failed','error');
-    }
-  }catch(e){
-    sgToast('Network error — try again','error');
-  }
+  navigate('/wallet');
 }
 
 async function _loadWithdrawalData(handle){
-  try{var pr=await fetch('/api/referrals/activity/'+encodeURIComponent(handle));var pd=await pr.json();
-    var hasPayout=pd.hasPayoutMethod||false;
+  // Payout banner — earnings auto-go to wallet, so mark as connected
+  try{
     var payIcon=document.getElementById('ce-payout-icon');var payTitle=document.getElementById('ce-payout-title');
     var payDesc=document.getElementById('ce-payout-desc');var payBtn=document.getElementById('ce-payout-action-btn');
-    if(hasPayout){
-      if(payIcon){payIcon.innerHTML='\u2705';payIcon.style.background='rgba(34,197,94,.1)';}
-      if(payTitle)payTitle.textContent='Payouts Connected';
-      if(payDesc)payDesc.textContent='Your withdrawal method is set up and ready';
-      if(payBtn){payBtn.textContent='Manage';payBtn.className='bg-slate-700 hover:bg-slate-600 text-white font-bold px-3 py-2 rounded-lg text-xs transition whitespace-nowrap';}
-    }
+    if(payIcon){payIcon.innerHTML='\u2705';payIcon.style.background='rgba(34,197,94,.1)';}
+    if(payTitle)payTitle.textContent='Earnings → ScanGym Wallet';
+    if(payDesc)payDesc.textContent='Commissions are automatically added to your ScanGym wallet';
+    if(payBtn){payBtn.textContent='Wallet';payBtn.onclick=function(){navigate('/wallet');};payBtn.className='bg-brand hover:bg-orange-600 text-white font-bold px-3 py-2 rounded-lg text-xs transition whitespace-nowrap';}
   }catch(e){}
+  // Load wallet balance (single source of truth)
   try{
-    // Load balance
-    var balRes=await fetch('/api/referrals/balance/'+encodeURIComponent(handle));
-    var bal=await balRes.json();
-    if(bal.success){
+    var walRes=await fetch('/api/wallet',{credentials:'include'});
+    var wal=await walRes.json();
+    if(wal.balancePence!==undefined){
       var el=function(id){return document.getElementById(id);};
-      if(el('ce-available'))el('ce-available').textContent=bal.availableDisplay;
-      if(el('ce-pending'))el('ce-pending').textContent=sgSymbol()+(bal.totalPendingPence/100).toFixed(2);
-      if(el('ce-withdrawn'))el('ce-withdrawn').textContent=sgSymbol()+(bal.totalWithdrawnPence/100).toFixed(2);
-      // Enable/disable withdraw button
-      var btn=el('ce-withdraw-btn');
-      if(btn){
-        if(bal.canWithdraw){
-          btn.disabled=false;btn.className='bg-brand hover:bg-orange-600 text-white font-bold py-2 px-5 rounded-xl text-sm transition';
-        }else{
-          btn.disabled=true;btn.className='bg-brand/20 text-brand/50 font-bold py-2 px-5 rounded-xl text-sm cursor-not-allowed transition';
-        }
-      }
+      if(el('ce-available'))el('ce-available').textContent=sgSymbol()+(wal.balancePence/100).toFixed(2);
     }
-    // Load history
-    var histRes=await fetch('/api/referrals/withdrawals/'+encodeURIComponent(handle));
+  }catch(e){
+    console.error('[Withdrawal] Wallet load failed:',e);
+  }
+  // Load wallet withdrawal history
+  try{
+    var histRes=await fetch('/api/wallet/transactions',{credentials:'include'});
     var hist=await histRes.json();
     var histEl=document.getElementById('ce-withdraw-history');
-    if(histEl&&hist.success){
-      if(hist.withdrawals.length===0){
-        histEl.innerHTML='<div class="bg-slate-800/40 rounded-lg p-3 text-center text-slate-500 text-sm">No withdrawals yet</div>';
+    if(histEl&&hist.transactions){
+      var withdrawals=(hist.transactions||[]).filter(function(t){return t.type==='withdrawal';});
+      if(withdrawals.length===0){
+        histEl.innerHTML='<div class="bg-slate-800/40 rounded-lg p-3 text-center text-slate-500 text-sm">No withdrawals yet — withdraw from your <a onclick="navigate(\'/wallet\')" style="color:#FF6D00;cursor:pointer">ScanGym Wallet</a></div>';
       }else{
-        /* R7-A06: Timeline */
-        histEl.innerHTML=hist.withdrawals.map(function(w){
-          var sc={pending:{i:'\u23f3',c:'#f59e0b',b:'rgba(245,158,11,.1)',l:'Pending',s:1},approved:{i:'\u2705',c:'#22c55e',b:'rgba(34,197,94,.1)',l:'Approved',s:2},processing:{i:'\u2699\ufe0f',c:'#3b82f6',b:'rgba(59,130,246,.1)',l:'Processing',s:2},paid:{i:'\ud83d\udcb0',c:'#22c55e',b:'rgba(34,197,94,.1)',l:'Paid',s:3},rejected:{i:'\u274c',c:'#ef4444',b:'rgba(239,68,68,.1)',l:'Rejected',s:0}}[w.status]||{i:'\u23f3',c:'#f59e0b',b:'rgba(245,158,11,.1)',l:'Pending',s:1};
-          var tl=['Requested','Processing','Paid'].map(function(st,idx){
-            var act=idx<sc.s;
-            return '<div style="display:flex;flex-direction:column;align-items:center;flex:1"><div style="width:16px;height:16px;border-radius:50%;background:'+(act?sc.c:'rgba(255,255,255,.1)')+';display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff">'+(act?'\u2713':'')+'</div><span style="font-size:8px;color:'+(act?sc.c:'rgba(255,255,255,.2)')+';margin-top:2px">'+st+'</span></div>';
-          }).join('<div style="flex:1;height:2px;background:'+(sc.s>1?sc.c:'rgba(255,255,255,.06)')+';margin-top:8px"></div>');
-          var d=new Date(w.requestedAt);var dateStr=d.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
-          return '<div class="bg-slate-800/60 rounded-lg p-3 border border-slate-700/30"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div><p class="text-white font-bold text-sm">'+sc.i+' '+w.amountDisplay+'</p><p class="text-slate-500 text-xs">'+dateStr+(w.method?' \u00b7 '+w.method.replace('_',' '):'')+'</p></div><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:'+sc.b+';color:'+sc.c+'">'+sc.l+'</span></div><div style="display:flex;align-items:flex-start;gap:0;padding:0 8px">'+tl+'</div></div>';
+        histEl.innerHTML=withdrawals.slice(0,5).map(function(w){
+          var d=new Date(w.createdAt||w.created_at);var dateStr=d.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+          var amt=(Math.abs(w.amountPence||w.amount_pence)/100).toFixed(2);
+          return '<div class="bg-slate-800/60 rounded-lg p-3 border border-slate-700/30"><div style="display:flex;align-items:center;justify-content:space-between"><div><p class="text-white font-bold text-sm">\ud83c\udfe6 \u00a3'+amt+'</p><p class="text-slate-500 text-xs">'+dateStr+' \u00b7 Bank transfer</p></div><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:rgba(34,197,94,.1);color:#22c55e">Withdrawn</span></div></div>';
         }).join('');
       }
     }
   }catch(e){
-    console.error('[Withdrawal] Load failed:',e);
+    console.error('[Withdrawal] History load failed:',e);
   }
 }
 
@@ -15124,36 +15029,13 @@ function _selectPayoutMethod(method){
 
 // ═══ STRIPE CONNECT ONBOARDING ═══
 // ── 1-Tap Quick Withdraw to ScanGym Wallet (instant, free) ──
+// All withdrawals go through ScanGym Wallet
 async function _quickWithdrawToWallet(handle){
-  try{
-    var avail=document.getElementById('ce-available');
-    var amt=parseFloat((avail?avail.textContent:'0').replace(/[^0-9.]/g,''));
-    if(!amt||amt<0.01){sgToast('No earnings to withdraw yet','info',2000);return;}
-    sgToast('Moving £'+amt.toFixed(2)+' to your ScanGym Wallet...','info',2000);
-    var r=await fetch('/api/wallet/reward',{
-      method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
-      body:JSON.stringify({amount:amt,reason:'Creator earnings withdrawal to wallet',referenceType:'creator_withdrawal'})
-    });
-    var d=await r.json();
-    if(d.success){
-      sgToast('👛 £'+amt.toFixed(2)+' added to your wallet! Use it to book gyms.','success',4000);
-      if(avail)avail.textContent='£0.00';
-    }else{
-      sgToast(d.error||'Withdrawal failed','error',3000);
-    }
-  }catch(e){sgToast('Something went wrong','error',2000);}
+  navigate('/wallet');
 }
 
-// ── 1-Tap Quick Withdraw to Bank (shows bank form) ──
 function _quickWithdrawToBank(handle){
-  var form=document.getElementById('ce-payment-form');
-  if(form){
-    form.classList.remove('hidden');
-    _selectPayoutMethod('bank');
-    form.scrollIntoView({behavior:'smooth',block:'center'});
-  }else{
-    _requestWithdrawal(handle);
-  }
+  navigate('/wallet');
 }
 
 async function _startStripeConnect(handle){
@@ -15746,9 +15628,9 @@ function CreatorDashboardPage(){
     <!-- R7-A02: Payout Setup Banner -->
     <div id="cd-payout-banner" style="display:none;margin:0 16px 12px;background:linear-gradient(135deg,rgba(168,85,247,.1),rgba(59,130,246,.06));border:1px solid rgba(168,85,247,.2);border-radius:14px;padding:14px;text-align:center">
       <p style="font-size:20px;margin-bottom:4px">🏦</p>
-      <p style="color:#fff;font-size:14px;font-weight:700;margin-bottom:2px">Set Up Payouts</p>
-      <p style="color:rgba(255,255,255,.35);font-size:11px;margin-bottom:10px">Connect your bank to withdraw your earnings</p>
-      <button onclick="navigate('/creator-earnings')" style="background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;border:none;padding:10px 24px;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer">Set Up Payouts →</button>
+      <p style="color:#fff;font-size:14px;font-weight:700;margin-bottom:2px">Withdraw Earnings</p>
+      <p style="color:rgba(255,255,255,.35);font-size:11px;margin-bottom:10px">Your earnings are in your ScanGym Wallet — withdraw to bank anytime</p>
+      <button onclick="navigate('/wallet')" style="background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;border:none;padding:10px 24px;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer">Go to Wallet →</button>
     </div>
 
     <!-- R7-A03: Affiliate Link Card -->
@@ -15855,10 +15737,10 @@ window._sgShowCreatorOnboarding=function(handle){
   h+='<div style="display:flex;gap:6px;margin-bottom:20px"><div style="flex:1;height:4px;border-radius:2px;background:#FF6D00"></div><div style="flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.1)"></div><div style="flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.1)"></div></div>';
   h+='<button onclick="_sgObStep(2)" style="width:100%;background:#FF6D00;color:#fff;border:none;padding:14px;border-radius:12px;font-weight:700;font-size:15px;cursor:pointer">Next: Set Up Payouts \u2192</button></div>';
   h+='<div id="sg-ob-s2" style="display:none"><p style="font-size:40px;margin-bottom:12px">\ud83c\udfe6</p>';
-  h+='<h2 style="color:#fff;font-size:20px;font-weight:900;margin-bottom:6px">Set Up Payouts</h2>';
-  h+='<p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:16px">Connect your bank to withdraw earnings.</p>';
+  h+='<h2 style="color:#fff;font-size:20px;font-weight:900;margin-bottom:6px">Your Wallet</h2>';
+  h+='<p style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:16px">Earnings go straight to your ScanGym Wallet — withdraw to bank anytime.</p>';
   h+='<div style="display:flex;gap:6px;margin-bottom:16px"><div style="flex:1;height:4px;border-radius:2px;background:#FF6D00"></div><div style="flex:1;height:4px;border-radius:2px;background:#FF6D00"></div><div style="flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.1)"></div></div>';
-  h+='<button onclick="document.getElementById(\'sg-creator-onboard\').remove();navigate(\'/creator-earnings\')" style="width:100%;background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;border:none;padding:12px;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;margin-bottom:8px">Set Up Payouts \u2192</button>';
+  h+='<button onclick="document.getElementById(\'sg-creator-onboard\').remove();navigate(\'/wallet\')" style="width:100%;background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;border:none;padding:12px;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;margin-bottom:8px">Go to Wallet \u2192</button>';
   h+='<button onclick="_sgObStep(3)" style="width:100%;background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.08);padding:10px;border-radius:10px;font-size:12px;cursor:pointer">Skip for now</button></div>';
   h+='<div id="sg-ob-s3" style="display:none"><p style="font-size:40px;margin-bottom:12px">\ud83d\udd17</p>';
   h+='<h2 style="color:#fff;font-size:20px;font-weight:900;margin-bottom:6px">Share Your Link</h2>';
@@ -15884,19 +15766,10 @@ window._sgCopyAffiliateLink=async function(handle){
     sgToast('Link copied! '+fallback,'success',2000);
   }
 };
-/* Withdraw — calls /api/referrals/withdraw */
-window._sgCreatorWithdraw=async function(handle){
-  try{
-    var br=await fetch('/api/referrals/balance/'+encodeURIComponent(handle),{credentials:'include'});
-    var bd=await br.json();
-    var bal=bd.availablePence||bd.available_pence||0;
-    if(bal<500){sgToast('Minimum withdrawal is \u00a35.00. Current: \u00a3'+(bal/100).toFixed(2)+'. Use the full withdrawal page for more options.','info',3000);navigate('/creator-earnings');return;}
-    if(!confirm('Withdraw \u00a3'+(bal/100).toFixed(2)+' to your account?'))return;
-    var wr=await fetch('/api/referrals/withdraw',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({creatorHandle:handle,amountPence:bal,paymentMethod:'wallet',paymentDetails:{type:'scangym_wallet'}})});
-    var wd=await wr.json();
-    if(wd.success||wd.withdrawal){sgToast('\u2705 Withdrawal requested! \u00a3'+(bal/100).toFixed(2)+' processing.','success',4000);_loadCreatorDash(handle);}
-    else{sgToast(wd.error||'Withdrawal failed — try the full payout page','error',3000);navigate('/creator-earnings');}
-  }catch(e){sgToast('Network error — try the payout page','error');navigate('/creator-earnings');}
+/* Withdraw — redirect to ScanGym Wallet */
+window._sgCreatorWithdraw=function(handle){
+  sgToast('Redirecting to your ScanGym Wallet...','info',2000);
+  navigate('/wallet');
 };
 /* R7-A03: Share affiliate link */
 window._sgShareAffiliate=function(handle,platform){
@@ -16233,8 +16106,8 @@ function CreatorFullPage(){
         <div id="cf-balance-sub" style="color:rgba(255,255,255,.3);font-size:10px">Loading...</div>
       </div>
       <div style="display:flex;gap:6px;margin-bottom:12px">
-        <button onclick="navigate('/creator-earnings')" style="flex:1;background:#22c55e;color:#fff;border:none;padding:12px;border-radius:12px;font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 4px 16px rgba(34,197,94,.25)">\u26a1 Withdraw</button>
-        <button onclick="navigate('/creator-earnings')" style="flex:1;background:rgba(255,255,255,.05);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.08);padding:12px;border-radius:12px;font-weight:700;font-size:13px;cursor:pointer">\ud83c\udfe6 Payout Setup</button>
+        <button onclick="navigate('/wallet')" style="flex:1;background:#22c55e;color:#fff;border:none;padding:12px;border-radius:12px;font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 4px 16px rgba(34,197,94,.25)">\ud83d\udcb0 Withdraw from Wallet</button>
+        <button onclick="navigate('/creator-earnings')" style="flex:1;background:rgba(255,255,255,.05);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.08);padding:12px;border-radius:12px;font-weight:700;font-size:13px;cursor:pointer">\ud83d\udcca Details</button>
       </div>
       <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:12px;margin-bottom:10px">
         <div style="color:rgba(255,255,255,.4);font-size:9px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">STATEMENT</div>
@@ -16345,7 +16218,7 @@ window._creatorWithdraw=function(){
     if(typeof window._sgShowAuthSheet==='function'){window._sgShowAuthSheet('book');}else{navigate('/login');}
     return;
   }
-  _showCreatorScreen(3);
+  navigate('/wallet');
 };
 
 // ═══ LOAD CREATOR FULL PAGE DATA FROM API ═══
@@ -16411,16 +16284,24 @@ window._loadCreatorFullPage=async function(){
     var ltv=bookings>0?((earnPence/bookings)/100).toFixed(2):'0.00';
     if(el('cf-ltv'))el('cf-ltv').textContent=sgSymbol()+ltv;
     if(el('cf-repeat'))el('cf-repeat').textContent=bookings>3?'34%':'0%';
-    // ── Screen 3: Earnings ──
-    var availPence=(balR.availablePence||0);
-    if(el('cf-balance'))el('cf-balance').textContent=sgSymbol()+(availPence/100).toFixed(2);
-    if(el('cf-balance-sub'))el('cf-balance-sub').textContent='From '+bookings+' booking'+(bookings!==1?'s':'')+' total';
+    // ── Screen 3: Earnings (wallet balance = single source of truth) ──
+    // Fetch wallet balance for the "AVAILABLE TO WITHDRAW" display
+    try{
+      var walRes=await fetch('/api/wallet',{credentials:'include'});
+      var walData=await walRes.json();
+      var walletPence=(walData.balancePence!==undefined)?(walData.balancePence||0):0;
+      if(el('cf-balance'))el('cf-balance').textContent=sgSymbol()+(walletPence/100).toFixed(2);
+      if(el('cf-balance-sub'))el('cf-balance-sub').textContent='ScanGym Wallet \u00b7 '+bookings+' booking'+(bookings!==1?'s':'')+' total';
+      if(el('cf-statement-bal'))el('cf-statement-bal').textContent=sgSymbol()+(walletPence/100).toFixed(2);
+    }catch(walE){
+      if(el('cf-balance'))el('cf-balance').textContent=sgSymbol()+'0.00';
+      if(el('cf-balance-sub'))el('cf-balance-sub').textContent='Sign in to see wallet balance';
+    }
     var grossPence=bookings>0?Math.round(earnPence/0.25):0;
     if(el('cf-gross'))el('cf-gross').textContent=sgSymbol()+(grossPence/100).toFixed(2);
     if(el('cf-commission'))el('cf-commission').textContent=sgSymbol()+(earnPence/100).toFixed(2);
     var paidPence=(balR.totalWithdrawnPence||0);
     if(el('cf-paid'))el('cf-paid').textContent=sgSymbol()+(paidPence/100).toFixed(2);
-    if(el('cf-statement-bal'))el('cf-statement-bal').textContent=sgSymbol()+(availPence/100).toFixed(2);
   }catch(e){console.error('[CreatorFull] Load failed:',e);}
 };
 // ═══ ASSET DOWNLOAD HELPER ═══
