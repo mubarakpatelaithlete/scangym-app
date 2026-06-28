@@ -398,7 +398,7 @@ router.post('/owner/connect-kisi', authenticateUser, async (req, res) => {
 // POST /api/access/owner/connect-seam — Connect via Seam (Salto/Brivo/etc)
 router.post('/owner/connect-seam', authenticateUser, async (req, res) => {
   try {
-    const { gymId, seamAcsSystemId, accessGroupId, accessType } = req.body;
+    const { gymId, seamAcsSystemId, accessGroupId, accessType, seamApiKey } = req.body;
 
     // Verify ownership
     const gym = await pool.query(
@@ -408,7 +408,7 @@ router.post('/owner/connect-seam', authenticateUser, async (req, res) => {
     if (gym.rows.length === 0) return res.status(403).json({ error: 'Not your gym' });
 
     // Validate Seam connection
-    const seam = new SeamClient();
+    const seam = new SeamClient(seamApiKey || null);
     let system;
     try {
       system = await seam.getSystem(seamAcsSystemId);
@@ -623,7 +623,7 @@ router.post('/owner/create-connect-webview', authenticateUser, async (req, res) 
     );
     if (gym.rows.length === 0) return res.status(403).json({ error: 'Not your gym' });
 
-    const seam = new SeamClient();
+    const seam = new SeamClient(seamApiKey || null);
     const webview = await seam.createConnectWebview({
       accepted_providers: [
         'kisi', 'salto_ks', 'brivo', 'august', 'yale', 'schlage',
@@ -659,7 +659,7 @@ router.post('/owner/complete-connect', authenticateUser, async (req, res) => {
     );
     if (gym.rows.length === 0) return res.status(403).json({ error: 'Not your gym' });
 
-    const seam = new SeamClient();
+    const seam = new SeamClient(seamApiKey || null);
 
     // Get the webview status
     const wv = await seam.getConnectWebview(connectWebviewId);
