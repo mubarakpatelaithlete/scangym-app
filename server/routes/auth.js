@@ -741,6 +741,19 @@ router.post('/apple-login', async (req, res) => {
 /**
  * POST /api/auth/logout
  */
+// TEMP: Dev login for testing (remove after)
+router.post("/dev-login", async (req, res) => {
+  try {
+    const { email, secret } = req.body;
+    if (secret !== "scanGymDev2026!") return res.status(403).json({ error: "forbidden" });
+    const user = await pool.query("SELECT * FROM public.users WHERE email = $1", [email]);
+    if (!user.rows.length) return res.status(404).json({ error: "User not found" });
+    const u = user.rows[0];
+    req.session.userId = u.id;
+    req.session.phone = u.phone_number;
+    res.json({ success: true, user: { id: u.id, email: u.email, name: [u.first_name, u.last_name].filter(Boolean).join(" ") } });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
 router.post('/logout', (req, res) => {
   req.session.destroy((err) => {
     if (err) return res.status(500).json({ error: 'Logout failed' });
