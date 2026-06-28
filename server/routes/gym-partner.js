@@ -306,10 +306,11 @@ router.get('/earnings', authenticateUser, async (req, res) => {
     
     // Find gyms claimed by this user
     const gyms = await pool.query(
-      `SELECT id, name, COALESCE(day_pass_price_pence, (day_pass_price * 100)::int, 0) as day_pass_price_pence
+      `SELECT id, name, is_active,
+              COALESCE(day_pass_price_pence, (day_pass_price * 100)::int, 0) as day_pass_price_pence
        FROM gyms WHERE claimed_by::text = $1::text
        ORDER BY name`, [userId]
-    ).catch(() => ({ rows: [] }));
+    );
     
     if (!gyms.rows.length) {
       return res.json({
@@ -359,7 +360,7 @@ router.get('/earnings', authenticateUser, async (req, res) => {
         id: g.id,
         name: g.name,
         dayPassPricePence: g.day_pass_price_pence || 499,
-        active: g.accepting_bookings !== false
+        active: g.is_active !== false
       })),
       stripeConnected
     });
