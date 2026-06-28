@@ -295,6 +295,7 @@ const apiPaths = [
   '/api/streaks',
   '/api/channels',
   '/api/chatbot',
+  '/api/referrals',
 ];
 apiPaths.forEach(p => app.use(p, express.json()));
 
