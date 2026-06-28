@@ -595,7 +595,7 @@ router.get('/dashboard', authenticateUser, async (req, res) => {
     // 3. Active check-ins (recent confirmed bookings today)
     const liveCheckins = await pool.query(`
       SELECT b.id, b.booking_code, b.qr_code, b.status, b.created_at,
-             b.total_amount, COALESCE((b.total_amount * 100)::int, 0) as amount_pence_calc, b.pass_type, b.booking_type,
+             b.total_amount, COALESCE((b.total_amount * 100)::int, 0) as amount_pence_calc, b.booking_type as pass_type,
              COALESCE(b.user_name, u.name, u.email, 'Guest') as customer_name
       FROM bookings b
       LEFT JOIN users u ON b.user_id::text = u.id::text
@@ -603,7 +603,10 @@ router.get('/dashboard', authenticateUser, async (req, res) => {
         AND DATE(b.created_at) = CURRENT_DATE
         AND b.status IN ('confirmed', 'pending', 'completed')
       ORDER BY b.created_at DESC LIMIT 20
-    `, [gymIds]).catch(() => ({ rows: [] }));
+    `, [gymIds]).catch(err => {
+      console.error('[Partner Checkins] Query failed:', err.message);
+      return { rows: [] };
+    });
 
     // 4. Weekly chart (last 7 days)
     const weeklyChart = await pool.query(`
@@ -622,7 +625,7 @@ router.get('/dashboard', authenticateUser, async (req, res) => {
     // 5. All orders (last 30 days)
     const orders = await pool.query(`
       SELECT b.id, b.booking_code, b.qr_code, b.status, b.created_at,
-             b.total_amount, COALESCE((b.total_amount * 100)::int, 0) as amount_pence_calc, b.pass_type, b.booking_type,
+             b.total_amount, COALESCE((b.total_amount * 100)::int, 0) as amount_pence_calc, b.booking_type as pass_type,
              b.booking_date, b.start_time,
              COALESCE(b.user_name, u.name, u.email, 'Guest') as customer_name,
              g.name as gym_name
@@ -632,7 +635,10 @@ router.get('/dashboard', authenticateUser, async (req, res) => {
       WHERE b.gym_id = ANY($1)
         AND b.created_at > NOW() - INTERVAL '30 days'
       ORDER BY b.created_at DESC LIMIT 100
-    `, [gymIds]).catch(() => ({ rows: [] }));
+    `, [gymIds]).catch(err => {
+      console.error('[Partner Orders] Query failed:', err.message);
+      return { rows: [] };
+    });
 
     // 6. Earnings summary
     const earningsMonth = await pool.query(`
@@ -803,7 +809,7 @@ router.get('/bookings', authenticateUser, async (req, res) => {
 
     const result = await pool.query(`
       SELECT b.id, b.booking_code, b.status, b.created_at, b.booking_date,
-             b.total_amount, COALESCE((b.total_amount * 100)::int, 0) as amount_pence_calc, b.pass_type, b.start_time,
+             b.total_amount, COALESCE((b.total_amount * 100)::int, 0) as amount_pence_calc, b.booking_type as pass_type, b.start_time,
              COALESCE(b.user_name, u.name, u.email, 'Guest') as user_name,
              g.name as gym_name
       FROM bookings b
