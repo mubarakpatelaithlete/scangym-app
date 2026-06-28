@@ -16352,7 +16352,20 @@ window._creatorWithdraw=function(){
 window._loadCreatorFullPage=async function(){
   var cd=JSON.parse(localStorage.getItem('sg_creator')||'null');
   var handle=cd&&(cd.handle||cd.slug);
-  if(!handle){var u=state&&state.user;if(u)handle=u.referral_code;if(!handle)return;}
+  if(!handle){var u=state&&state.user;if(u)handle=u.referral_code;}
+  if(!handle){
+    /* FIX: Auto-generate creator handle when missing so earnings always load */
+    var _u=state&&state.user;
+    if(!_u)return;
+    handle=(_u.name||'').replace(/[^a-z0-9]/gi,'').toLowerCase()||(_u.phone||'').replace(/[^0-9]/g,'').slice(-6)||('sg'+Date.now().toString(36));
+    if(_u)_u.referral_code=handle;
+    var _cd=cd||{};_cd.handle=handle;_cd.name=_u.name||'';_cd.email=_u.email||'';_cd.autoCreated=true;
+    localStorage.setItem('sg_creator',JSON.stringify(_cd));
+    fetch('/api/v2/creator-apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      first_name:(_u.name||'').split(' ')[0]||'',last_name:(_u.name||'').split(' ').slice(1).join(' ')||'',
+      email:_u.email||'',instagram:'',tiktok:'',youtube:'',followers:'',why:'auto-creator-dashboard'
+    })}).catch(function(){});
+  }
   var el=function(id){return document.getElementById(id);};
   try{
     // Fetch stats + earnings + balance + channels in parallel
@@ -21373,6 +21386,21 @@ window.sgFeedback = async function(elementId, vote, btn) {
     _sendToReels({type:'sg-auth-state',loggedIn:true,user:{name:state.user.name,phone:state.user.phone}});
     sgToast('Welcome, '+(state.user.name||'there')+'! 🎉','success',1500);
 
+    /* FIX: Auto-generate creator handle for ALL auth modes so creator dashboard works */
+    var _creatorData=null;
+    try{_creatorData=JSON.parse(localStorage.getItem('sg_creator')||'null');}catch(e){}
+    if(!_creatorData||!_creatorData.handle){
+      var _usr=state.user||{};
+      var _autoHandle=(_usr.name||'').replace(/[^a-z0-9]/gi,'').toLowerCase()||(_usr.phone||'').replace(/[^0-9]/g,'').slice(-6)||('sg'+Date.now().toString(36));
+      _creatorData=_creatorData||{};
+      _creatorData.handle=_autoHandle;_creatorData.name=_usr.name||'';_creatorData.email=_usr.email||'';_creatorData.autoCreated=true;
+      localStorage.setItem('sg_creator',JSON.stringify(_creatorData));
+      if(state.user)state.user.referral_code=_autoHandle;
+      fetch('/api/v2/creator-apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+        first_name:(_usr.name||'').split(' ')[0]||'',last_name:(_usr.name||'').split(' ').slice(1).join(' ')||'',
+        email:_usr.email||'',instagram:'',tiktok:'',youtube:'',followers:'',why:'auto-auth-success'
+      })}).catch(function(){});
+    }
     if(_sheetMode==='book'){
       /* After login, show saved cards picker (same style as Pay button).
          Users can select an existing card, add a new one, or skip. */
