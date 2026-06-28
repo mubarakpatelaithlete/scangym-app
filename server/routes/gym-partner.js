@@ -7,6 +7,40 @@ const router = express.Router();
 const pool = require('../middleware/db');
 const { authenticateUser } = require('../middleware/auth');
 
+// Auto-migration: ensure gyms table has partner columns
+(async () => {
+  try {
+    await pool.query(`
+      DO $$ BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='claimed_by') THEN
+          ALTER TABLE gyms ADD COLUMN claimed_by VARCHAR(255) DEFAULT NULL;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='owner_name') THEN
+          ALTER TABLE gyms ADD COLUMN owner_name VARCHAR(255) DEFAULT NULL;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='owner_email') THEN
+          ALTER TABLE gyms ADD COLUMN owner_email VARCHAR(255) DEFAULT NULL;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='owner_phone') THEN
+          ALTER TABLE gyms ADD COLUMN owner_phone VARCHAR(50) DEFAULT NULL;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='claim_proof_url') THEN
+          ALTER TABLE gyms ADD COLUMN claim_proof_url TEXT DEFAULT NULL;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='claimed_at') THEN
+          ALTER TABLE gyms ADD COLUMN claimed_at TIMESTAMP DEFAULT NULL;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='access_method') THEN
+          ALTER TABLE gyms ADD COLUMN access_method VARCHAR(50) DEFAULT 'qr';
+        END IF;
+      END $$;
+    `);
+    console.log('[GymPartner] gyms table partner columns verified');
+  } catch (err) {
+    console.error('[GymPartner] Migration error:', err.message);
+  }
+})();
+
 // ── #86: 3-Step Claim Wizard ──
 // Step 1: Claim gym (basic info check)
 router.post('/claim', authenticateUser, express.json(), async (req, res) => {
