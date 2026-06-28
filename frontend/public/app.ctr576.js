@@ -16090,7 +16090,7 @@ function CreatorFullPage(){
     <!-- Side nav buttons (3 core flow + More) -->
     <div style="position:absolute;right:8px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:10px;z-index:10">
       <!-- 1. Sign In -->
-      <div onclick="${u?'sgToast(\'Already signed in ✅\',\'success\',1500)':'navigate(\'/login\')'};_closeCreatorMore()" class="creator-side-btn" style="width:42px;height:42px;background:${u?'rgba(34,197,94,.2)':'rgba(255,109,0,.25)'};backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:1px solid ${u?'rgba(34,197,94,.3)':'rgba(255,109,0,.4)'};transition:.2s;box-shadow:0 0 16px ${u?'rgba(34,197,94,.15)':'rgba(255,109,0,.2)'}" title="Sign In">${u?'\u2705':'\ud83d\udd11'}</div>
+      <div onclick="${u?'sgToast(\'Already signed in ✅\',\'success\',1500)':'(typeof window._sgShowAuthSheet===\'function\'?window._sgShowAuthSheet(\'book\'):navigate(\'/login\'))'};_closeCreatorMore()" class="creator-side-btn" style="width:42px;height:42px;background:${u?'rgba(34,197,94,.2)':'rgba(255,109,0,.25)'};backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:1px solid ${u?'rgba(34,197,94,.3)':'rgba(255,109,0,.4)'};transition:.2s;box-shadow:0 0 16px ${u?'rgba(34,197,94,.15)':'rgba(255,109,0,.2)'}" title="Sign In">${u?'\u2705':'\ud83d\udd11'}</div>
       <!-- 2. Get Affiliate Link -->
       <div onclick="_creatorGetLink();_closeCreatorMore()" class="creator-side-btn" style="width:42px;height:42px;background:rgba(168,85,247,.2);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:1px solid rgba(168,85,247,.3);transition:.2s;box-shadow:0 0 12px rgba(168,85,247,.15)" title="Get Affiliate Link">\ud83d\udd17</div>
       <!-- 3. Withdraw Money -->
@@ -16311,8 +16311,25 @@ window._closeCreatorMore=function(){
 };
 window._creatorGetLink=function(){
   var u=window.state&&window.state.user;
-  if(!u){sgToast('Sign in first to get your affiliate link','info',2000);navigate('/login');return;}
-  var refCode=u.referral_code||'creator123';
+  if(!u){
+    sgToast('Sign in to get your affiliate link','info',2000);
+    if(typeof window._sgShowAuthSheet==='function'){window._sgShowAuthSheet('book');}else{navigate('/login');}
+    return;
+  }
+  // Auto-generate referral handle if missing (same logic as reels auth)
+  var refCode=u.referral_code;
+  if(!refCode){
+    refCode=(u.name||'').replace(/[^a-z0-9]/gi,'').toLowerCase()||(u.phone||'').replace(/[^0-9]/g,'').slice(-6)||('sg'+Date.now().toString(36));
+    u.referral_code=refCode;
+    // Register handle with server (fire-and-forget)
+    fetch('/api/v2/creator-apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      first_name:(u.name||'').split(' ')[0]||'',last_name:(u.name||'').split(' ').slice(1).join(' ')||'',
+      email:u.email||'',instagram:'',tiktok:'',youtube:'',followers:'',why:'auto-affiliate-link'
+    })}).catch(function(){});
+    var cd=JSON.parse(localStorage.getItem('sg_creator')||'{}');
+    cd.handle=refCode;cd.name=u.name||'';cd.email=u.email||'';cd.autoCreated=true;
+    localStorage.setItem('sg_creator',JSON.stringify(cd));
+  }
   var refLink='https://scangym.com/r/'+refCode;
   navigator.clipboard.writeText(refLink).then(function(){
     sgToast('Affiliate link copied! 🔗 '+refLink,'success',3000);
@@ -16323,9 +16340,12 @@ window._creatorGetLink=function(){
 };
 window._creatorWithdraw=function(){
   var u=window.state&&window.state.user;
-  if(!u){sgToast('Sign in first to withdraw earnings','info',2000);navigate('/login');return;}
+  if(!u){
+    sgToast('Sign in to withdraw earnings','info',2000);
+    if(typeof window._sgShowAuthSheet==='function'){window._sgShowAuthSheet('book');}else{navigate('/login');}
+    return;
+  }
   _showCreatorScreen(3);
-  navigate('/creator-earnings');
 };
 
 // ═══ LOAD CREATOR FULL PAGE DATA FROM API ═══
@@ -16443,7 +16463,7 @@ function PartnerFullPage(){
     <!-- Side nav buttons (3 core flow + More) -->
     <div style="position:absolute;right:8px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:10px;z-index:10">
       <!-- 1. Sign In -->
-      <div onclick="${u?'sgToast(\'Already signed in ✅\',\'success\',1500)':'navigate(\'/login\')'};_closePartnerMore()" class="partner-side-btn" style="width:42px;height:42px;background:${u?'rgba(34,197,94,.2)':'rgba(255,109,0,.25)'};backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:1px solid ${u?'rgba(34,197,94,.3)':'rgba(255,109,0,.4)'};transition:.2s;box-shadow:0 0 16px ${u?'rgba(34,197,94,.15)':'rgba(255,109,0,.2)'}" title="Sign In">${u?'\u2705':'\ud83d\udd11'}</div>
+      <div onclick="${u?'sgToast(\'Already signed in ✅\',\'success\',1500)':'(typeof window._sgShowAuthSheet===\'function\'?window._sgShowAuthSheet(\'book\'):navigate(\'/login\'))'};_closePartnerMore()" class="partner-side-btn" style="width:42px;height:42px;background:${u?'rgba(34,197,94,.2)':'rgba(255,109,0,.25)'};backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:1px solid ${u?'rgba(34,197,94,.3)':'rgba(255,109,0,.4)'};transition:.2s;box-shadow:0 0 16px ${u?'rgba(34,197,94,.15)':'rgba(255,109,0,.2)'}" title="Sign In">${u?'\u2705':'\ud83d\udd11'}</div>
       <!-- 2. Connect Seam Account -->
       <div onclick="_partnerConnectSeam();_closePartnerMore()" class="partner-side-btn" style="width:42px;height:42px;background:rgba(168,85,247,.2);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:1px solid rgba(168,85,247,.3);transition:.2s;box-shadow:0 0 12px rgba(168,85,247,.15)" title="Connect Seam Account">\ud83d\udd17</div>
       <!-- 3. Withdraw Money -->
@@ -16678,13 +16698,21 @@ window._closePartnerMore=function(){
 };
 window._partnerConnectSeam=function(){
   var u=window.state&&window.state.user;
-  if(!u){sgToast('Sign in first to connect your Seam account','info',2000);navigate('/login');return;}
+  if(!u){
+    sgToast('Sign in to connect your Seam account','info',2000);
+    if(typeof window._sgShowAuthSheet==='function'){window._sgShowAuthSheet('book');}else{navigate('/login');}
+    return;
+  }
   _showPartnerScreen(2);
   if(window._sgConnectSeam){window._sgConnectSeam();}else{sgToast('Opening Access Control — tap Connect Seam Account','info',2500);}
 };
 window._partnerWithdraw=function(){
   var u=window.state&&window.state.user;
-  if(!u){sgToast('Sign in first to withdraw earnings','info',2000);navigate('/login');return;}
+  if(!u){
+    sgToast('Sign in to withdraw earnings','info',2000);
+    if(typeof window._sgShowAuthSheet==='function'){window._sgShowAuthSheet('book');}else{navigate('/login');}
+    return;
+  }
   _showPartnerScreen(4);
 };
 
@@ -17230,8 +17258,8 @@ function _renderInner(){
   else if(path==='/blog')page=InfoPage('Blog / Transformations',`<p class="text-xl text-white">Real transformations. Real people. Real gyms.</p><p>Coming soon — stories from ScanGym users who found their perfect gym.</p><p>Want to share your story? <a onclick="navigate(\'/contact\')" class="text-brand cursor-pointer">Get in touch →</a></p>`);
   else if(path==='/contact')page=InfoPage('Contact',`<p class="text-lg text-slate-300 mb-6">Have a question? Fill out the form below or reach us directly.</p><div class="grid md:grid-cols-2 gap-8"><div><form onsubmit="event.preventDefault();alert('Thanks! We\'ll get back to you within 24 hours.');this.reset();" class="space-y-4"><div><label class="text-slate-400 text-sm block mb-1">Name</label><input type="text" required placeholder="Your name" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:border-brand outline-none text-sm"></div><div><label class="text-slate-400 text-sm block mb-1">Email</label><input type="email" required placeholder="your@email.com" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:border-brand outline-none text-sm"></div><div><label class="text-slate-400 text-sm block mb-1">Subject</label><select class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white focus:border-brand outline-none text-sm"><option>General Enquiry</option><option>Booking Issue</option><option>Gym Owner Enquiry</option><option>Creator / ScanSquad</option><option>Partnership</option><option>Bug Report</option></select></div><div><label class="text-slate-400 text-sm block mb-1">Message</label><textarea required rows="4" placeholder="How can we help?" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:border-brand outline-none text-sm resize-none"></textarea></div><button type="submit" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-3 rounded-xl transition">Send Message →</button></form></div><div class="space-y-4"><div class="bg-card rounded-xl p-5 border border-slate-700"><p class="text-white font-semibold mb-3">Get in Touch</p><div class="space-y-3 text-sm"><p class="text-slate-400">📧 <strong class="text-white">hello@scangym.com</strong></p><p class="text-slate-400">📍 <strong class="text-white">Manchester, UK</strong></p><p class="text-slate-400">📱 <strong class="text-white">Instagram: @scangym</strong></p><p class="text-slate-400">🐦 <strong class="text-white">Twitter/X: @scangym</strong></p></div></div><div class="bg-brand/10 border border-brand/30 rounded-xl p-5"><p class="text-white font-semibold mb-2">Gym Owner?</p><p class="text-slate-300 text-sm mb-3">Want to list your gym? We respond within 2 hours.</p><p class="text-brand text-sm font-medium">📧 hello@scangym.com</p></div></div></div>`);
   else if(path==='/refer'){const referHandle=state.user?(state.user.name||state.user.phone||'').replace(/[^a-z0-9]/gi,'').toLowerCase()||'user':'';const referLink=referHandle?'scangym.com/r/'+referHandle:'scangym.com/r/your-name';page=InfoPage('Refer & Earn',`<p class="text-xl text-white font-bold">£2 for you. £2 for them. Plus milestone bonuses.</p><p class="text-lg text-slate-300 mb-6">Share your link. When friends book, you both earn. The more you refer, the bigger the rewards.</p><div class="bg-card rounded-xl border border-slate-700 p-6 mb-6"><p class="text-white font-bold mb-1">Your Referral Link</p><div class="bg-slate-800 rounded-lg p-3 flex items-center justify-between"><code id="refer-link-code" class="text-brand text-sm">${referLink}</code><button onclick="navigator.clipboard.writeText('https://${referLink}').then(()=>{this.textContent='Copied!';this.classList.add('bg-green-600');this.classList.remove('bg-brand');setTimeout(()=>{this.textContent='Copy';this.classList.remove('bg-green-600');this.classList.add('bg-brand')},2000)})" class="text-xs bg-brand text-white px-3 py-1 rounded-md cursor-pointer hover:bg-orange-600 transition">${referHandle?'Copy':'Copy'}</button></div>${referHandle?`<p class="text-green-400 text-xs mt-2">✅ Your personal link is active!</p>`:`<p class="text-slate-500 text-xs mt-2">Log in to activate your personal link</p>`}</div>${referHandle?`<div class="flex gap-3 mb-6"><button onclick="navigator.share?navigator.share({title:'Join ScanGym',text:'Book any gym, anywhere! Use my link for £2 off your first session.',url:'https://${referLink}'}):navigator.clipboard.writeText('https://${referLink}')" class="flex-1 bg-brand hover:bg-orange-600 text-white font-bold py-3 rounded-xl cursor-pointer transition">📤 Share Link</button><a href="https://wa.me/?text=${encodeURIComponent('Book any gym, anywhere! £2 off your first session 🏋️ https://'+referLink)}" target="_blank" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl cursor-pointer transition text-center">💬 WhatsApp</a></div>`:''}<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">${[{refs:'1',reward:"£2 credit",icon:"🎯",desc:"Per referral"},{refs:5,reward:"Free session",icon:"🏋️",desc:`Worth ${sgPrice('day').display}`},{refs:15,reward:"Free merch",icon:"👕",desc:"ScanGym t-shirt"},{refs:25,reward:"£50 bonus",icon:"💰",desc:"Cash reward"}].map(m=>`<div class="bg-slate-800 rounded-xl p-4 text-center border border-slate-700"><div class="text-2xl mb-1">${m.icon}</div><p class="text-white font-bold text-sm">${m.refs} referral${m.refs===1||m.refs==='1'?'':'s'}</p><p class="text-brand font-medium text-sm">${m.reward}</p><p class="text-slate-500 text-[10px]">${m.desc}</p></div>`).join("")}</div><div class="bg-slate-800 rounded-xl p-4"><p class="text-white font-semibold text-sm mb-2">📊 Your Progress</p><div class="flex items-center gap-3"><div class="flex-1 bg-slate-700 rounded-full h-3"><div class="bg-brand h-3 rounded-full" style="width:0%"></div></div><span class="text-slate-400 text-xs">0/5 to next milestone</span></div></div>${referHandle?'':`<p class="mt-6 text-center"><a onclick="navigate('/login')" class="bg-brand hover:bg-orange-600 text-white font-bold px-8 py-4 rounded-xl cursor-pointer transition inline-block">Get Your Referral Link →</a></p>`}`);}
-  else if((path==='/become-a-creator'||path==='/become-creator'||path==='/upload')&&!state.user)page=CreatorsPage();
-  else if(path==='/become-a-creator'||path==='/become-creator'||path==='/upload')page=CreatorFullPage();
+  else if((path==='/become-a-creator'||path==='/become-creator'||path==='/upload'||path==='/be')&&!state.user)page=CreatorsPage();
+  else if(path==='/become-a-creator'||path==='/become-creator'||path==='/upload'||path==='/be')page=CreatorFullPage();
   else if(path==='/privacy')page=InfoPage('Privacy Policy',`<p>Last updated: May 2026</p><p>ScanGym ("we", "us") respects your privacy. We collect only what\'s needed to process bookings: name, email, phone number, payment details, and location data.</p><p>We use Stripe for payments (PCI compliant), Twilio for OTP verification, and mapping services for gym locations.</p><p>We never sell your data. Contact: hello@scangym.com</p>`);
   else if(path==='/terms')page=InfoPage('Terms of Service',`<p>Last updated: May 2026</p><p>By using ScanGym, you agree to these terms. ScanGym is a marketplace connecting gym-goers with gym owners. We are not a gym operator.</p><p>Bookings are 24-hour day passes. Free cancellation up to 2 hours before session start.</p><p>Contact: hello@scangym.com</p>`);
   else if(path==='/cookies')page=InfoPage('Cookie Policy',`<p>We use essential cookies for authentication and preferences. Analytics cookies help us understand usage patterns. You can disable non-essential cookies in your browser settings.</p>`);
