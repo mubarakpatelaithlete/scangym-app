@@ -79,6 +79,13 @@ const { authenticateUser, optionalAuth, requireAdmin } = require('../middleware/
         created_at TIMESTAMPTZ DEFAULT NOW()
       )
     `);
+    // Fix: ensure user_id is TEXT (may have been created as INTEGER before UUIDs)
+    try {
+      await pool.query(`ALTER TABLE creator_memberships ALTER COLUMN user_id TYPE TEXT USING user_id::text`);
+    } catch (e) { /* already TEXT or doesn't exist yet */ }
+    try {
+      await pool.query(`ALTER TABLE creator_landing_pages ALTER COLUMN creator_user_id TYPE TEXT USING creator_user_id::text`);
+    } catch (e) { /* already TEXT */ }
     console.log('Creator tables ready (ScanGym branding, ScanSquad community, uploads)');
   } catch (err) {
     console.error('Creator table creation error:', err.message);
