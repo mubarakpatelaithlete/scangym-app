@@ -16081,7 +16081,7 @@ window._requestPayNextVisit=async function(){
 
 // ═══ CREATOR TAB PAGE (OnlyFans-inspired) — Fixed fullscreen, no scrolling ═══
 function CreatorFullPage(){
-  var u=window.state&&window.state.user;
+  var u=state&&state.user;
   var name=u?(u.full_name||u.email||'Creator'):'Creator';
   var refCode=u?(u.referral_code||'creator123'):'creator123';
   var refLink='scangym.com/r/'+refCode;
@@ -16310,7 +16310,7 @@ window._closeCreatorMore=function(){
   if(m) m.style.display='none';
 };
 window._creatorGetLink=function(){
-  var u=window.state&&window.state.user;
+  var u=state&&state.user;
   if(!u){
     sgToast('Sign in to get your affiliate link','info',2000);
     if(typeof window._sgShowAuthSheet==='function'){window._sgShowAuthSheet('book');}else{navigate('/login');}
@@ -16339,7 +16339,7 @@ window._creatorGetLink=function(){
   _showCreatorScreen(0);
 };
 window._creatorWithdraw=function(){
-  var u=window.state&&window.state.user;
+  var u=state&&state.user;
   if(!u){
     sgToast('Sign in to withdraw earnings','info',2000);
     if(typeof window._sgShowAuthSheet==='function'){window._sgShowAuthSheet('book');}else{navigate('/login');}
@@ -16457,7 +16457,7 @@ function ListYourGymFullPage(){
 
 // ═══ PARTNER TAB PAGE — Merged with Team Admin Partner content ═══
 function PartnerFullPage(){
-  var u=window.state&&window.state.user;
+  var u=state&&state.user;
   var gymName=u?(u.gym_name||'Your Gym'):'Your Gym';
   return `<div style="position:fixed;top:0;left:0;right:0;bottom:56px;background:#0a0a16;display:flex;flex-direction:column;overflow:hidden">
     <!-- Side nav buttons (3 core flow + More) -->
@@ -16697,7 +16697,7 @@ window._closePartnerMore=function(){
   if(m) m.style.display='none';
 };
 window._partnerConnectSeam=function(){
-  var u=window.state&&window.state.user;
+  var u=state&&state.user;
   if(!u){
     sgToast('Sign in to connect your Seam account','info',2000);
     if(typeof window._sgShowAuthSheet==='function'){window._sgShowAuthSheet('book');}else{navigate('/login');}
@@ -16707,7 +16707,7 @@ window._partnerConnectSeam=function(){
   if(window._sgConnectSeam){window._sgConnectSeam();}else{sgToast('Opening Access Control — tap Connect Seam Account','info',2500);}
 };
 window._partnerWithdraw=function(){
-  var u=window.state&&window.state.user;
+  var u=state&&state.user;
   if(!u){
     sgToast('Sign in to withdraw earnings','info',2000);
     if(typeof window._sgShowAuthSheet==='function'){window._sgShowAuthSheet('book');}else{navigate('/login');}
@@ -16806,7 +16806,7 @@ window._partnerEarningsEmpty=function(){
 
 // ── Fix 2-6: Print QR Poster ──
 window._partnerPrintPoster=function(){
-  var u=window.state&&window.state.user;
+  var u=state&&state.user;
   var gymName=u?(u.gym_name||'Your Gym'):'Your Gym';
   var w=window.open('','_blank');
   if(!w){sgToast('Please allow popups to print poster','error',2500);return;}
