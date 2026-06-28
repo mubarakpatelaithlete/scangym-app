@@ -396,7 +396,7 @@ router.post('/owner/connect-kisi', authenticateUser, async (req, res) => {
 });
 
 // POST /api/access/owner/connect-seam — Connect via Seam (Salto/Brivo/etc)
-router.post('/owner/connect-seam', authenticateUser, async (req, res) => {
+router.post('/owner/connect-seam', authenticateUser, express.json(), async (req, res) => {
   try {
     const { gymId, seamAcsSystemId, accessGroupId, accessType, seamApiKey } = req.body;
 
