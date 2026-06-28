@@ -690,10 +690,8 @@ if (fs.existsSync(FRONTEND_DIR)) {
   // /creator now handled by SPA catch-all → renders CreatorFullPage() with tab bar
   // (standalone creator/index.html removed — SPA provides full in-app experience)
 
-  app.get('/partner', (req, res) => {
-    res.setHeader('Cache-Control', 'no-cache');
-    res.sendFile(path.join(FRONTEND_DIR, 'partner', 'index.html'));
-  });
+  // /partner now handled by SPA catch-all → renders PartnerFullPage() with tab bar
+  // (standalone partner/index.html removed — SPA provides full in-app experience)
 
   app.get('/admin', (req, res) => {
     res.setHeader('Cache-Control', 'no-cache');
