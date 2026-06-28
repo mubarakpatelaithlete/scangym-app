@@ -16519,6 +16519,9 @@ function PartnerFullPage(){
         <button onclick="navigate('/partner/payouts')" style="flex:1;background:#22c55e;color:#fff;border:none;padding:12px;border-radius:12px;font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 4px 16px rgba(34,197,94,.25)">\u26a1 View Payouts</button>
         <button onclick="window.open('/api/gym-partner/stripe-connect','_blank')" style="flex:1;background:rgba(255,255,255,.05);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.08);padding:12px;border-radius:12px;font-weight:700;font-size:13px;cursor:pointer">\ud83c\udfe6 Connect Bank</button>
       </div>
+      <div style="margin-bottom:12px">
+        <button onclick="navigate('/wallet')" style="width:100%;background:rgba(255,109,0,.12);color:#FF6D00;border:1px solid rgba(255,109,0,.2);padding:12px;border-radius:12px;font-weight:700;font-size:13px;cursor:pointer">\ud83d\udcb0 Withdraw via Wallet</button>
+      </div>
       <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:12px">
         <div style="color:rgba(255,255,255,.4);font-size:9px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">THIS MONTH</div>
         <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04)"><span style="color:rgba(255,255,255,.6);font-size:11px">Gross Revenue</span><span id="partner-earn-gross" style="color:#fff;font-size:11px;font-weight:600">\u2014</span></div>
@@ -16600,14 +16603,26 @@ window._partnerConnectSeam=function(){
   _showPartnerScreen(2);
   if(window._sgConnectSeam){window._sgConnectSeam();}else{sgToast('Opening Access Control — tap Connect Seam Account','info',2500);}
 };
-window._partnerWithdraw=function(){
+window._partnerWithdraw=async function(){
   var u=state&&state.user;
   if(!u){
     sgToast('Sign in to withdraw earnings','info',2000);
     if(typeof window._sgShowAuthSheet==='function'){window._sgShowAuthSheet('book');}else{navigate('/login');}
     return;
   }
+  // Show earnings screen
   _showPartnerScreen(4);
+  // Also check wallet balance — partners can withdraw via wallet too
+  try{
+    var wr=await fetch('/api/wallet',{credentials:'include',headers:{'Accept':'application/json'}}).catch(function(){return null;});
+    if(wr&&wr.ok){
+      var wd=await wr.json().catch(function(){return {};});
+      var bal=parseFloat(wd.balance||0);
+      if(bal>0){
+        sgToast('Wallet balance: £'+bal.toFixed(2)+' — tap Profile > Wallet to withdraw','success',4000);
+      }
+    }
+  }catch(e){}
 };
 
 // ── Fix 2-2: Load partner dashboard stats into Screen 0 ──
@@ -16617,6 +16632,14 @@ window._partnerLoadHome=async function(){
     if(!r||!r.ok){_partnerHomeEmpty();return;}
     var d=await r.json().catch(function(){return {};});
     var el=function(id){return document.getElementById(id);};
+    // Store gym info for other partner features (Seam connect, etc)
+    if(d.gyms&&d.gyms.length>0){
+      window._partnerGymId=d.gyms[0].id;
+      window._partnerGymName=d.gyms[0].name;
+      // Update gym name heading on partner dashboard
+      var h1=document.querySelector('.partner-screen h1');
+      if(h1&&d.gyms[0].name)h1.textContent=d.gyms[0].name;
+    }
     var tb=d.today?d.today.bookings:d.todayBookings||0;
     var tr=d.today?d.today.revenue:parseFloat(d.todayRevenue)||0;
     var ar=d.rating?d.rating.average:d.avgRating||0;
@@ -19069,15 +19092,25 @@ function CreatorReelsPage(){
 window._sgConnectSeam=async function(){
   var u=state.user;
   if(!u){navigate('/login');sgToast('Log in first to connect Seam','info');return;}
-  sgToast('Connecting to Seam...','info',2000);
+  // Auto-detect partner's claimed gym
+  var gymId=window._partnerGymId||0;
+  if(!gymId){
+    try{
+      var dr=await fetch('/api/gym-partner/dashboard',{credentials:'include'});
+      var dd=await dr.json();
+      if(dd.gyms&&dd.gyms.length>0){gymId=dd.gyms[0].id;window._partnerGymId=gymId;}
+    }catch(e){}
+  }
+  if(!gymId){sgToast('Claim a gym first before connecting Seam','info',3000);return;}
+  sgToast('Connecting Seam to your gym...','info',2000);
   try{
-    var r=await fetch('/api/access/owner/connect-seam',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({})});
+    var r=await fetch('/api/access/owner/connect-seam',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({gymId:gymId})});
     var d=await r.json();
     if(d.connectUrl||d.connect_url){
       window.open(d.connectUrl||d.connect_url,'_blank');
       sgToast('Seam connection page opened! Complete setup there.','success',4000);
-    }else if(d.success){
-      sgToast('Seam connected successfully!','success',3000);
+    }else if(d.success||d.connected){
+      sgToast('Seam connected successfully! ✅','success',3000);
     }else{
       sgToast(d.error||d.message||'Seam setup requires contacting support','info',4000);
     }
