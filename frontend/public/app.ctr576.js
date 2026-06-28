@@ -16440,14 +16440,37 @@ function PartnerFullPage(){
   var u=window.state&&window.state.user;
   var gymName=u?(u.gym_name||'Your Gym'):'Your Gym';
   return `<div style="position:fixed;top:0;left:0;right:0;bottom:56px;background:#0a0a16;display:flex;flex-direction:column;overflow:hidden">
-    <div style="position:absolute;right:8px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:8px;z-index:10">
-      <div onclick="_showPartnerScreen(0)" class="partner-side-btn" style="width:42px;height:42px;background:rgba(255,109,0,.25);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:1px solid rgba(255,109,0,.4);transition:.2s;box-shadow:0 0 16px rgba(255,109,0,.2)" title="Home">\ud83c\udfe0</div>
-      <div onclick="_showPartnerScreen(1)" class="partner-side-btn" style="width:42px;height:42px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:1px solid rgba(255,255,255,.06);transition:.2s" title="Live Orders">\ud83d\udccb</div>
-      <div onclick="_showPartnerScreen(2)" class="partner-side-btn" style="width:42px;height:42px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:1px solid rgba(255,255,255,.06);transition:.2s" title="Access">\ud83d\udd10</div>
-      <div onclick="_showPartnerScreen(3)" class="partner-side-btn" style="width:42px;height:42px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:1px solid rgba(255,255,255,.06);transition:.2s" title="Analytics">\ud83d\udcca</div>
-      <div onclick="_showPartnerScreen(4)" class="partner-side-btn" style="width:42px;height:42px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:1px solid rgba(255,255,255,.06);transition:.2s" title="Earnings">\ud83d\udcb0</div>
-      <div onclick="_showPartnerScreen(5)" class="partner-side-btn" style="width:42px;height:42px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:1px solid rgba(255,255,255,.06);transition:.2s" title="Manage">\u2699\ufe0f</div>
-      <div onclick="_showPartnerScreen(6)" class="partner-side-btn" style="width:42px;height:42px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:1px solid rgba(255,255,255,.06);transition:.2s" title="Growth">\ud83d\ude80</div>
+    <!-- Side nav buttons (3 core flow + More) -->
+    <div style="position:absolute;right:8px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:10px;z-index:10">
+      <!-- 1. Sign In -->
+      <div onclick="${u?'sgToast(\'Already signed in ✅\',\'success\',1500)':'navigate(\'/login\')'};_closePartnerMore()" class="partner-side-btn" style="width:42px;height:42px;background:${u?'rgba(34,197,94,.2)':'rgba(255,109,0,.25)'};backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:1px solid ${u?'rgba(34,197,94,.3)':'rgba(255,109,0,.4)'};transition:.2s;box-shadow:0 0 16px ${u?'rgba(34,197,94,.15)':'rgba(255,109,0,.2)'}" title="Sign In">${u?'\u2705':'\ud83d\udd11'}</div>
+      <!-- 2. Connect Seam Account -->
+      <div onclick="_partnerConnectSeam();_closePartnerMore()" class="partner-side-btn" style="width:42px;height:42px;background:rgba(168,85,247,.2);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:1px solid rgba(168,85,247,.3);transition:.2s;box-shadow:0 0 12px rgba(168,85,247,.15)" title="Connect Seam Account">\ud83d\udd17</div>
+      <!-- 3. Withdraw Money -->
+      <div onclick="_partnerWithdraw();_closePartnerMore()" class="partner-side-btn" style="width:42px;height:42px;background:rgba(34,197,94,.15);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:1px solid rgba(34,197,94,.2);transition:.2s;box-shadow:0 0 12px rgba(34,197,94,.1)" title="Withdraw Money">\ud83d\udcb8</div>
+      <!-- 4. More -->
+      <div onclick="_togglePartnerMore()" class="partner-side-btn" id="partner-more-btn" style="width:42px;height:42px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;letter-spacing:2px;border:1px solid rgba(255,255,255,.06);transition:.2s;color:rgba(255,255,255,.6)" title="More">\u2022\u2022\u2022</div>
+    </div>
+    <!-- More dropdown menu -->
+    <div id="partner-more-menu" style="display:none;position:absolute;right:58px;top:50%;transform:translateY(-50%);z-index:11;background:rgba(15,15,30,.95);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:8px;min-width:180px;box-shadow:0 8px 32px rgba(0,0,0,.5)">
+      <div onclick="_showPartnerScreen(0);_closePartnerMore()" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:.15s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='transparent'">
+        <span style="font-size:16px">\ud83c\udfe0</span><span style="color:#fff;font-size:13px;font-weight:600">Home</span>
+      </div>
+      <div onclick="_showPartnerScreen(1);_closePartnerMore()" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:.15s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='transparent'">
+        <span style="font-size:16px">\ud83d\udccb</span><span style="color:#fff;font-size:13px;font-weight:600">Live Orders</span>
+      </div>
+      <div onclick="_showPartnerScreen(2);_closePartnerMore()" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:.15s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='transparent'">
+        <span style="font-size:16px">\ud83d\udd10</span><span style="color:#fff;font-size:13px;font-weight:600">Access Control</span>
+      </div>
+      <div onclick="_showPartnerScreen(3);_closePartnerMore()" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:.15s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='transparent'">
+        <span style="font-size:16px">\ud83d\udcca</span><span style="color:#fff;font-size:13px;font-weight:600">Analytics</span>
+      </div>
+      <div onclick="_showPartnerScreen(5);_closePartnerMore()" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:.15s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='transparent'">
+        <span style="font-size:16px">\u2699\ufe0f</span><span style="color:#fff;font-size:13px;font-weight:600">Manage Gym</span>
+      </div>
+      <div onclick="_showPartnerScreen(6);_closePartnerMore()" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:.15s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='transparent'">
+        <span style="font-size:16px">\ud83d\ude80</span><span style="color:#fff;font-size:13px;font-weight:600">Growth Centre</span>
+      </div>
     </div>
     <!-- Screen 0: HOME -->
     <div class="partner-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;padding:16px;padding-right:60px;overflow-y:auto">
@@ -16631,17 +16654,38 @@ function PartnerFullPage(){
   </div>`;
 }
 window._showPartnerScreen=function(idx){
-  var btns=document.querySelectorAll('.partner-side-btn');
   var screens=document.querySelectorAll('.partner-screen');
   screens.forEach(function(s,i){s.style.display=i===idx?'flex':'none';});
-  btns.forEach(function(b,i){
-    b.style.background=i===idx?'rgba(255,109,0,.25)':'rgba(255,255,255,.08)';
-    b.style.borderColor=i===idx?'rgba(255,109,0,.4)':'rgba(255,255,255,.06)';
-    b.style.boxShadow=i===idx?'0 0 16px rgba(255,109,0,.2)':'none';
-  });
+  // Highlight More button when viewing a screen from the More menu
+  var moreBtn=document.getElementById('partner-more-btn');
+  if(moreBtn){
+    var isMoreScreen=(idx===0||idx===1||idx===2||idx===3||idx===5||idx===6);
+    moreBtn.style.background=isMoreScreen?'rgba(255,109,0,.25)':'rgba(255,255,255,.08)';
+    moreBtn.style.borderColor=isMoreScreen?'rgba(255,109,0,.4)':'rgba(255,255,255,.06)';
+    moreBtn.style.boxShadow=isMoreScreen?'0 0 16px rgba(255,109,0,.2)':'none';
+  }
   // Load data for the screen being shown
   if(idx===0)_partnerLoadHome();
   if(idx===4)_partnerLoadEarnings();
+};
+window._togglePartnerMore=function(){
+  var m=document.getElementById('partner-more-menu');
+  if(m) m.style.display=m.style.display==='none'?'block':'none';
+};
+window._closePartnerMore=function(){
+  var m=document.getElementById('partner-more-menu');
+  if(m) m.style.display='none';
+};
+window._partnerConnectSeam=function(){
+  var u=window.state&&window.state.user;
+  if(!u){sgToast('Sign in first to connect your Seam account','info',2000);navigate('/login');return;}
+  _showPartnerScreen(2);
+  if(window._sgConnectSeam){window._sgConnectSeam();}else{sgToast('Opening Access Control — tap Connect Seam Account','info',2500);}
+};
+window._partnerWithdraw=function(){
+  var u=window.state&&window.state.user;
+  if(!u){sgToast('Sign in first to withdraw earnings','info',2000);navigate('/login');return;}
+  _showPartnerScreen(4);
 };
 
 // ── Fix 2-2: Load partner dashboard stats into Screen 0 ──
