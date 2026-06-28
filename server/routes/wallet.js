@@ -234,8 +234,8 @@ router.post('/withdraw', async (req, res) => {
     }
     
     // Validation
-    if (!amountPence || amountPence < 1000) {
-      return res.status(400).json({ error: 'Minimum withdrawal is £10.00' });
+    if (!amountPence || amountPence < 100) {
+      return res.status(400).json({ error: 'Minimum withdrawal is £1.00' });
     }
     if (amountPence > 100000) {
       return res.status(400).json({ error: 'Maximum withdrawal is £1,000.00 per request' });
