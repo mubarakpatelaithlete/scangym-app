@@ -306,7 +306,7 @@ router.get('/earnings', authenticateUser, async (req, res) => {
     
     // Find gyms claimed by this user
     const gyms = await pool.query(
-      `SELECT id, name, day_pass_price_pence, accepting_bookings
+      `SELECT id, name, COALESCE(day_pass_price_pence, (day_pass_price * 100)::int, 0) as day_pass_price_pence
        FROM gyms WHERE claimed_by::text = $1::text
        ORDER BY name`, [userId]
     ).catch(() => ({ rows: [] }));
@@ -551,11 +551,12 @@ router.get('/dashboard', authenticateUser, async (req, res) => {
   try {
     const userId = req.user.id;
 
-    // 1. Get claimed gyms
+    // 1. Get claimed gyms (use only guaranteed columns)
     const gymsRes = await pool.query(
-      `SELECT id, name, address, latitude, longitude, day_pass_price,
-              is_active, claimed_at, average_rating, total_reviews,
-              accepting_bookings, is_24h
+      `SELECT id, name, address,
+              COALESCE(latitude, lat, 0) as latitude,
+              COALESCE(longitude, lng, 0) as longitude,
+              day_pass_price, is_active, claimed_at
        FROM gyms WHERE claimed_by::text = $1::text ORDER BY name`,
       [userId]
     ).catch(() => ({ rows: [] }));
