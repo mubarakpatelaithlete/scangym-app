@@ -687,10 +687,8 @@ if (fs.existsSync(FRONTEND_DIR)) {
   });
 
   // === Role-based dashboards (Option B: separate mini-apps) ===
-  app.get('/creator', (req, res) => {
-    res.setHeader('Cache-Control', 'no-cache');
-    res.sendFile(path.join(FRONTEND_DIR, 'creator', 'index.html'));
-  });
+  // /creator now handled by SPA catch-all → renders CreatorFullPage() with tab bar
+  // (standalone creator/index.html removed — SPA provides full in-app experience)
 
   app.get('/partner', (req, res) => {
     res.setHeader('Cache-Control', 'no-cache');
