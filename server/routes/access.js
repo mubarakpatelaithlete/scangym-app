@@ -407,37 +407,84 @@ router.post('/owner/connect-seam', authenticateUser, async (req, res) => {
     );
     if (gym.rows.length === 0) return res.status(403).json({ error: 'Not your gym' });
 
-    // Validate Seam connection
+    // Connect to Seam and discover systems
     const seam = new SeamClient(seamApiKey || null);
-    let system;
-    try {
-      system = await seam.getSystem(seamAcsSystemId);
-    } catch (e) {
-      return res.status(400).json({ error: 'Invalid Seam system ID — could not connect', detail: e.message });
+    let system = null;
+    let providerName = 'seam';
+    let resolvedSystemId = seamAcsSystemId || null;
+    let verified = false;
+
+    // Step 1: If a specific ACS system ID was provided, validate it
+    if (seamAcsSystemId) {
+      try {
+        system = await seam.getSystem(seamAcsSystemId);
+        providerName = system.acs_system?.external_type || 'seam';
+        verified = true;
+      } catch (e) {
+        // If the provided ID fails, try listing all systems
+        console.warn('[Seam] getSystem failed for', seamAcsSystemId, '- trying listSystems');
+      }
     }
 
-    const providerName = system.acs_system?.external_type || 'seam';
+    // Step 2: If no valid system yet, discover available systems
+    if (!system) {
+      try {
+        const systemsRes = await seam.listSystems();
+        const systems = systemsRes.acs_systems || [];
+        if (systems.length > 0) {
+          system = systems[0];
+          resolvedSystemId = system.acs_system_id;
+          providerName = system.external_type || 'seam';
+          verified = true;
+        }
+      } catch (e) {
+        console.warn('[Seam] listSystems failed:', e.message);
+      }
+    }
 
+    // Step 3: Save the connection (even if no ACS systems found yet)
+    // Store the API key so we can provision access later when hardware is added
     await pool.query(`
       UPDATE gyms SET
         access_system = $1,
         access_system_id = $2,
         access_group_id = $3,
         access_type = $4,
-        access_verified = true,
+        access_api_key = $5,
+        access_verified = $6,
         updated_at = NOW()
-      WHERE id = $5
-    `, [providerName, seamAcsSystemId, accessGroupId || null, accessType || 'code', gymId]);
+      WHERE id = $7
+    `, [
+      providerName,
+      resolvedSystemId,
+      accessGroupId || null,
+      accessType || 'code',
+      seamApiKey || null,
+      verified,
+      gymId
+    ]);
 
-    res.json({
-      connected: true,
-      system: providerName,
-      acs_system_id: seamAcsSystemId,
-      message: `${providerName} connected via Seam! Day-pass visitors will receive access credentials.`,
-    });
+    if (verified) {
+      res.json({
+        connected: true,
+        verified: true,
+        system: providerName,
+        acs_system_id: resolvedSystemId,
+        message: `${providerName} connected via Seam! Day-pass visitors will receive access credentials.`,
+      });
+    } else {
+      res.json({
+        connected: true,
+        verified: false,
+        system: 'seam',
+        message: 'Seam API key saved! No access control hardware detected yet. ' +
+          'Once you connect a lock system in your Seam Console (console.seam.co), ' +
+          'it will be automatically discovered and activated.',
+      });
+    }
   } catch (err) {
     console.error('Seam connection error:', err);
-    res.status(500).json({ error: 'Failed to connect via Seam' });
+    res.status(500).json({ error: 'Failed to connect via Seam', detail: err.message });
   }
 });
 
