@@ -608,12 +608,13 @@ router.post('/withdraw', async (req, res) => {
     }
 
     // Create withdrawal request
+    const detailsJson = JSON.stringify(paymentDetails || {});
     const result = await pool.query(
       `INSERT INTO creator_withdrawals
          (creator_handle, creator_email, amount_pence, payment_method, payment_details, status)
-       VALUES ($1, $2, $3, $4, $5, 'pending')
+       VALUES ($1, $2, $3, $4, $5::jsonb, 'pending')
        RETURNING *`,
-      [creatorHandle, email, requestAmount, paymentMethod || 'bank_transfer', JSON.stringify(paymentDetails || {})]
+      [creatorHandle, email, requestAmount, paymentMethod || 'bank_transfer', detailsJson]
     );
 
     console.log(`[Withdrawals] New request: £${(requestAmount/100).toFixed(2)} by ${creatorHandle}`);
@@ -629,8 +630,8 @@ router.post('/withdraw', async (req, res) => {
       },
     });
   } catch (err) {
-    console.error('[Withdrawals] Request error:', err.message);
-    res.status(500).json({ error: 'Failed to request withdrawal' });
+    console.error('[Withdrawals] Request error:', err.message, err.stack);
+    res.status(500).json({ error: 'Failed to request withdrawal', detail: err.message });
   }
 });
 
