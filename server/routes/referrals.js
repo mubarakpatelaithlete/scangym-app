@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../middleware/db');
 
+// Ensure JSON body parsing for all referral POST routes
+router.use(express.json());
+
 // ═══════════════════════════════════════════════════════════════════
 //  REFERRAL + COMMISSION PIPELINE
 //  End-to-end: track affiliate clicks → apply discount → credit commission
