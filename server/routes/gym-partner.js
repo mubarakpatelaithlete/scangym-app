@@ -365,8 +365,8 @@ router.get('/earnings', authenticateUser, async (req, res) => {
       stripeConnected
     });
   } catch (err) {
-    console.error('Gym earnings error:', err.message);
-    res.status(500).json({ error: 'Failed to fetch earnings' });
+    console.error('Gym earnings error:', err.message, err.stack);
+    res.status(500).json({ error: 'Failed to fetch earnings', detail: err.message });
   }
 });
 
