@@ -331,7 +331,7 @@ router.get('/earnings', authenticateUser, async (req, res) => {
     
     try {
       const bookingsRes = await pool.query(
-        `SELECT COUNT(*) as count, COALESCE(SUM(amount_pence), 0) as revenue
+        `SELECT COUNT(*) as count, COALESCE(SUM((total_amount * 100)::int), 0) as revenue
          FROM bookings WHERE gym_id = ANY($1) AND status IN ('confirmed', 'completed')`,
         [gymIds]
       );
@@ -582,7 +582,7 @@ router.get('/dashboard', authenticateUser, async (req, res) => {
         COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending,
         COUNT(CASE WHEN status = 'cancelled' THEN 1 END) as cancelled,
         COALESCE(SUM(CASE WHEN status IN ('confirmed','completed') THEN total_amount END), 0) as revenue,
-        COALESCE(SUM(CASE WHEN status IN ('confirmed','completed') THEN COALESCE(amount_pence,0) END), 0) as revenue_pence
+        COALESCE(SUM(CASE WHEN status IN ('confirmed','completed') THEN COALESCE((total_amount * 100)::int, 0) END), 0) as revenue_pence
       FROM bookings
       WHERE gym_id = ANY($1) AND DATE(created_at) = CURRENT_DATE
     `, [gymIds]).catch(() => ({
@@ -595,7 +595,7 @@ router.get('/dashboard', authenticateUser, async (req, res) => {
     // 3. Active check-ins (recent confirmed bookings today)
     const liveCheckins = await pool.query(`
       SELECT b.id, b.booking_code, b.qr_code, b.status, b.created_at,
-             b.total_amount, b.amount_pence, b.pass_type, b.booking_type,
+             b.total_amount, COALESCE((b.total_amount * 100)::int, 0) as amount_pence_calc, b.pass_type, b.booking_type,
              COALESCE(b.user_name, u.name, u.email, 'Guest') as customer_name
       FROM bookings b
       LEFT JOIN users u ON b.user_id::text = u.id::text
@@ -610,7 +610,7 @@ router.get('/dashboard', authenticateUser, async (req, res) => {
       SELECT DATE(created_at) as day,
              COUNT(*) as bookings,
              COALESCE(SUM(total_amount), 0) as revenue,
-             COALESCE(SUM(amount_pence), 0) as revenue_pence
+             COALESCE(SUM((total_amount * 100)::int), 0) as revenue_pence
       FROM bookings
       WHERE gym_id = ANY($1)
         AND created_at > NOW() - INTERVAL '7 days'
@@ -622,7 +622,7 @@ router.get('/dashboard', authenticateUser, async (req, res) => {
     // 5. All orders (last 30 days)
     const orders = await pool.query(`
       SELECT b.id, b.booking_code, b.qr_code, b.status, b.created_at,
-             b.total_amount, b.amount_pence, b.pass_type, b.booking_type,
+             b.total_amount, COALESCE((b.total_amount * 100)::int, 0) as amount_pence_calc, b.pass_type, b.booking_type,
              b.booking_date, b.start_time,
              COALESCE(b.user_name, u.name, u.email, 'Guest') as customer_name,
              g.name as gym_name
@@ -638,7 +638,7 @@ router.get('/dashboard', authenticateUser, async (req, res) => {
     const earningsMonth = await pool.query(`
       SELECT COUNT(*) as bookings,
              COALESCE(SUM(total_amount), 0) as revenue,
-             COALESCE(SUM(amount_pence), 0) as revenue_pence
+             COALESCE(SUM((total_amount * 100)::int), 0) as revenue_pence
       FROM bookings
       WHERE gym_id = ANY($1)
         AND created_at > DATE_TRUNC('month', NOW())
@@ -648,7 +648,7 @@ router.get('/dashboard', authenticateUser, async (req, res) => {
     const earningsWeek = await pool.query(`
       SELECT COUNT(*) as bookings,
              COALESCE(SUM(total_amount), 0) as revenue,
-             COALESCE(SUM(amount_pence), 0) as revenue_pence
+             COALESCE(SUM((total_amount * 100)::int), 0) as revenue_pence
       FROM bookings
       WHERE gym_id = ANY($1)
         AND created_at > DATE_TRUNC('week', NOW())
@@ -658,7 +658,7 @@ router.get('/dashboard', authenticateUser, async (req, res) => {
     const earningsAll = await pool.query(`
       SELECT COUNT(*) as bookings,
              COALESCE(SUM(total_amount), 0) as revenue,
-             COALESCE(SUM(amount_pence), 0) as revenue_pence
+             COALESCE(SUM((total_amount * 100)::int), 0) as revenue_pence
       FROM bookings
       WHERE gym_id = ANY($1)
         AND status IN ('confirmed','completed')
@@ -700,7 +700,7 @@ router.get('/dashboard', authenticateUser, async (req, res) => {
         customer: c.customer_name,
         status: c.status,
         passType: c.pass_type || 'day',
-        amount: parseFloat(c.total_amount) || (parseInt(c.amount_pence) / 100) || 0,
+        amount: parseFloat(c.total_amount) || 0,
         time: c.created_at
       })),
       weeklyChart: weeklyChart.rows.map(w => ({
@@ -713,7 +713,7 @@ router.get('/dashboard', authenticateUser, async (req, res) => {
         customer: o.customer_name,
         status: o.status,
         passType: o.pass_type || 'day',
-        amount: parseFloat(o.total_amount) || (parseInt(o.amount_pence) / 100) || 0,
+        amount: parseFloat(o.total_amount) || 0,
         date: o.booking_date || o.created_at,
         time: o.start_time,
         gymName: o.gym_name
@@ -803,7 +803,7 @@ router.get('/bookings', authenticateUser, async (req, res) => {
 
     const result = await pool.query(`
       SELECT b.id, b.booking_code, b.status, b.created_at, b.booking_date,
-             b.total_amount, b.amount_pence, b.pass_type, b.start_time,
+             b.total_amount, COALESCE((b.total_amount * 100)::int, 0) as amount_pence_calc, b.pass_type, b.start_time,
              COALESCE(b.user_name, u.name, u.email, 'Guest') as user_name,
              g.name as gym_name
       FROM bookings b
@@ -821,7 +821,7 @@ router.get('/bookings', authenticateUser, async (req, res) => {
         date: b.booking_date || (b.created_at ? new Date(b.created_at).toLocaleDateString() : ''),
         time: b.start_time || (b.created_at ? new Date(b.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : ''),
         passType: b.pass_type || 'Day Pass',
-        price: parseFloat(b.total_amount) || (parseInt(b.amount_pence) / 100) || 0,
+        price: parseFloat(b.total_amount) || 0,
         status: b.status || 'pending',
         gymName: b.gym_name
       }))
@@ -901,7 +901,7 @@ router.post('/request-payout', authenticateUser, express.json(), async (req, res
     if (!gyms.rows.length) return res.json({ error: 'No claimed gyms found' });
     const gymIds = gyms.rows.map(g => g.id);
     const earnings = await pool.query(
-      `SELECT COALESCE(SUM(total_amount), 0) as revenue, COALESCE(SUM(amount_pence), 0) as revenue_pence
+      `SELECT COALESCE(SUM(total_amount), 0) as revenue, COALESCE(SUM((total_amount * 100)::int), 0) as revenue_pence
        FROM bookings WHERE gym_id = ANY($1) AND status IN ('confirmed','completed')`, [gymIds]
     ).catch(() => ({ rows: [{ revenue: 0, revenue_pence: 0 }] }));
     const row = earnings.rows[0];
@@ -978,7 +978,7 @@ router.get('/payouts', authenticateUser, async (req, res) => {
     const earnings = await pool.query(`
       SELECT COUNT(*) as bookings,
              COALESCE(SUM(total_amount), 0) as revenue,
-             COALESCE(SUM(amount_pence), 0) as revenue_pence
+             COALESCE(SUM((total_amount * 100)::int), 0) as revenue_pence
       FROM bookings
       WHERE gym_id = ANY($1) AND status IN ('confirmed','completed')
     `, [gymIds]).catch(() => ({ rows: [{ bookings: 0, revenue: 0, revenue_pence: 0 }] }));
