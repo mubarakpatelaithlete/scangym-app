@@ -596,7 +596,7 @@ router.get('/dashboard', authenticateUser, async (req, res) => {
     const liveCheckins = await pool.query(`
       SELECT b.id, b.booking_code, b.qr_code, b.status, b.created_at,
              b.total_amount, COALESCE((b.total_amount * 100)::int, 0) as amount_pence_calc, b.booking_type as pass_type,
-             COALESCE(b.user_name, u.name, u.email, 'Guest') as customer_name
+             COALESCE(b.user_name, u.email, 'Guest') as customer_name
       FROM bookings b
       LEFT JOIN users u ON b.user_id::text = u.id::text
       WHERE b.gym_id = ANY($1)
@@ -627,7 +627,7 @@ router.get('/dashboard', authenticateUser, async (req, res) => {
       SELECT b.id, b.booking_code, b.qr_code, b.status, b.created_at,
              b.total_amount, COALESCE((b.total_amount * 100)::int, 0) as amount_pence_calc, b.booking_type as pass_type,
              b.booking_date, b.start_time,
-             COALESCE(b.user_name, u.name, u.email, 'Guest') as customer_name,
+             COALESCE(b.user_name, u.email, 'Guest') as customer_name,
              g.name as gym_name
       FROM bookings b
       LEFT JOIN users u ON b.user_id::text = u.id::text
@@ -767,7 +767,7 @@ router.get('/bookings/:gymId', authenticateUser, async (req, res) => {
     }
 
     const result = await pool.query(`
-      SELECT b.*, COALESCE(b.user_name, u.name, u.email, 'Guest') as customer_name
+      SELECT b.*, COALESCE(b.user_name, u.email, 'Guest') as customer_name
       FROM bookings b
       LEFT JOIN users u ON b.user_id::text = u.id::text
       ${whereClause}
@@ -810,7 +810,7 @@ router.get('/bookings', authenticateUser, async (req, res) => {
     const result = await pool.query(`
       SELECT b.id, b.booking_code, b.status, b.created_at, b.booking_date,
              b.total_amount, COALESCE((b.total_amount * 100)::int, 0) as amount_pence_calc, b.booking_type as pass_type, b.start_time,
-             COALESCE(b.user_name, u.name, u.email, 'Guest') as user_name,
+             COALESCE(b.user_name, u.email, 'Guest') as user_name,
              g.name as gym_name
       FROM bookings b
       LEFT JOIN users u ON b.user_id::text = u.id::text
@@ -851,7 +851,7 @@ router.get('/customers', authenticateUser, async (req, res) => {
     // Unique customers
     const customers = await pool.query(`
       SELECT DISTINCT ON (b.user_id)
-        b.user_id, COALESCE(b.user_name, u.name, u.email, 'Guest') as name,
+        b.user_id, COALESCE(b.user_name, u.email, 'Guest') as name,
         COUNT(*) OVER (PARTITION BY b.user_id) as visit_count,
         MAX(b.created_at) OVER (PARTITION BY b.user_id) as last_visit
       FROM bookings b
@@ -864,7 +864,7 @@ router.get('/customers', authenticateUser, async (req, res) => {
     // Reviews
     const reviews = await pool.query(`
       SELECT r.rating, r.comment as text, r.created_at,
-             COALESCE(u.name, u.email, 'User') as user_name
+             COALESCE(u.email, 'User') as user_name
       FROM reviews r
       LEFT JOIN users u ON r.user_id::text = u.id::text
       WHERE r.gym_id = ANY($1)
@@ -1037,68 +1037,5 @@ router.patch('/capacity', authenticateUser, express.json(), async (req, res) => 
     res.json({ success: true, maxCapacity });
   } catch (err) {
     res.status(500).json({ error: 'Failed to update capacity' });
-  }
-});
-
-// DEBUG: Test bookings query - remove after debugging
-router.get('/debug-bookings', authenticateUser, async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const gyms = await pool.query('SELECT id FROM gyms WHERE claimed_by::text = $1::text', [userId]);
-    if (!gyms.rows.length) return res.json({ error: 'No claimed gyms' });
-    const gymIds = gyms.rows.map(g => g.id);
-    
-    // Test 1: Ultra minimal query
-    let test1;
-    try {
-      test1 = await pool.query('SELECT id, status, total_amount, created_at FROM bookings WHERE gym_id = ANY($1) ORDER BY created_at DESC LIMIT 10', [gymIds]);
-      test1 = { success: true, count: test1.rows.length, rows: test1.rows };
-    } catch(e) { test1 = { error: e.message }; }
-    
-    // Test 2: With booking_code
-    let test2;
-    try {
-      test2 = await pool.query('SELECT id, booking_code, status FROM bookings WHERE gym_id = ANY($1) LIMIT 10', [gymIds]);
-      test2 = { success: true, count: test2.rows.length };
-    } catch(e) { test2 = { error: e.message }; }
-    
-    // Test 3: With qr_code
-    let test3;
-    try {
-      test3 = await pool.query('SELECT id, qr_code FROM bookings WHERE gym_id = ANY($1) LIMIT 10', [gymIds]);
-      test3 = { success: true, count: test3.rows.length };
-    } catch(e) { test3 = { error: e.message }; }
-    
-    // Test 4: With booking_type
-    let test4;
-    try {
-      test4 = await pool.query('SELECT id, booking_type FROM bookings WHERE gym_id = ANY($1) LIMIT 10', [gymIds]);
-      test4 = { success: true, count: test4.rows.length };
-    } catch(e) { test4 = { error: e.message }; }
-    
-    // Test 5: With user_name
-    let test5;
-    try {
-      test5 = await pool.query('SELECT id, user_name FROM bookings WHERE gym_id = ANY($1) LIMIT 10', [gymIds]);
-      test5 = { success: true, count: test5.rows.length };
-    } catch(e) { test5 = { error: e.message }; }
-    
-    // Test 6: With booking_date, start_time
-    let test6;
-    try {
-      test6 = await pool.query('SELECT id, booking_date, start_time FROM bookings WHERE gym_id = ANY($1) LIMIT 10', [gymIds]);
-      test6 = { success: true, count: test6.rows.length };
-    } catch(e) { test6 = { error: e.message }; }
-    
-    // Test 7: JOIN with users
-    let test7;
-    try {
-      test7 = await pool.query('SELECT b.id, COALESCE(b.user_name, u.name, u.email, \'Guest\') as customer_name FROM bookings b LEFT JOIN users u ON b.user_id::text = u.id::text WHERE b.gym_id = ANY($1) LIMIT 10', [gymIds]);
-      test7 = { success: true, count: test7.rows.length };
-    } catch(e) { test7 = { error: e.message }; }
-    
-    res.json({ gymIds, test1, test2, test3, test4, test5, test6, test7 });
-  } catch(err) {
-    res.json({ error: err.message });
   }
 });
