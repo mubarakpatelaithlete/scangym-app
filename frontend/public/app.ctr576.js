@@ -14362,7 +14362,7 @@ function MoreHubPage(){
       </div>
       <!-- ═══ RIGHT-SIDE BUTTONS — TikTok/Reels style, floating on QR ═══ -->
       <div style="position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:14px;align-items:center;z-index:10">
-        <div onclick="navigate('/become-a-creator')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
+        <div onclick="navigate('/creator')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
           <div style="width:46px;height:46px;background:rgba(255,109,0,.15);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,109,0,.3)">\ud83c\udfac</div>
           <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Creator</span>
         </div>
