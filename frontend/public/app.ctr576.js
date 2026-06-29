@@ -1296,8 +1296,10 @@ async function searchGyms(query, isExplicit, _triggerLayer){state.lastSearchQuer
     if(window._sgSearchCtrl){try{window._sgSearchCtrl.abort();}catch(e){}}
     window._sgSearchCtrl=controller;
     // ━━━ LOCATION BIAS FIX: Pass detected coordinates to bias Google Places search ━━━
+    // ━━━ BUT NOT for explicit searches — city name is enough, lat/lng bias breaks ━━━
+    // ━━━ results when user searches for a city far from their current location ━━━
     let searchUrl=`/search?q=${encodeURIComponent(query)}`;
-    if(state.searchLat&&state.searchLng){
+    if(!isExplicit&&state.searchLat&&state.searchLng){
       searchUrl+=`&lat=${state.searchLat}&lng=${state.searchLng}`;
     }
     // #17/#18: Pass 24h and self-service filter params to backend
