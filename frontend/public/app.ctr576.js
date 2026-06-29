@@ -12449,6 +12449,63 @@ function _sgFallbackCopy(url, hasAffiliate) {
   if (window._sgToast) window._sgToast(hasAffiliate ? 'Affiliate link copied! 💰' : 'Link copied!', '✅');
 }
 
+
+// ═══ PHOTO SHARE WITH AFFILIATE LINK ═══
+function _sgPhotoShareWithAffiliate(photoTitle, photoUser, photoIdx) {
+  // Auth gate: require login for affiliate link
+  if(!state.user){
+    window._pendingPhotoShare={title:photoTitle,user:photoUser,idx:photoIdx};
+    window._pendingReelsAction='share-photo';
+    if(typeof window._sgShowAuthSheet==='function'){
+      window._sgShowAuthSheet('reels');
+    }
+    return;
+  }
+
+  var baseUrl = 'https://scangym.com/photos?p=' + encodeURIComponent(photoTitle);
+
+  /* Get affiliate code */
+  var user = window._sgUser || state.user || null;
+  var affiliateCode = '';
+  if (user) {
+    affiliateCode = user.affiliateCode || user.referralCode || user.referral_code || user.uid || '';
+  }
+  if (!affiliateCode) {
+    try { var c=JSON.parse(localStorage.getItem('sg_creator')||'null');if(c&&c.handle)affiliateCode=c.handle; } catch(e) {}
+  }
+  if (!affiliateCode) {
+    try { affiliateCode = localStorage.getItem('sg_affiliate_code') || ''; } catch(e) {}
+  }
+  // Auto-generate affiliate code from user name if none exists
+  if (!affiliateCode && user) {
+    affiliateCode = (user.name||'').replace(/[^a-z0-9]/gi,'').toLowerCase() || (user.phone||'').replace(/[^0-9]/g,'').slice(-6) || '';
+    if (affiliateCode) {
+      user.referral_code = affiliateCode;
+      var cd = JSON.parse(localStorage.getItem('sg_creator') || '{}');
+      cd.handle = affiliateCode; cd.name = user.name || ''; cd.email = user.email || '';
+      localStorage.setItem('sg_creator', JSON.stringify(cd));
+    }
+  }
+
+  var shareUrl = affiliateCode ? baseUrl + '&ref=' + encodeURIComponent(affiliateCode) : baseUrl;
+  var shareText = photoTitle + ' on ScanGym! ' + (affiliateCode ? 'Book any gym with no membership!' : '');
+
+  /* Try Web Share API first (mobile) */
+  if (navigator.share) {
+    navigator.share({title: shareText, url: shareUrl}).catch(function(){});
+    if (window._sgToast) window._sgToast(affiliateCode ? 'Shared with your affiliate link!' : 'Shared!', '\u2705');
+    return;
+  }
+  /* Clipboard fallback */
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(shareUrl).then(function() {
+      if (window._sgToast) window._sgToast(affiliateCode ? 'Affiliate link copied! You earn on signups \ud83d\udcb0' : 'Link copied!', '\u2705');
+    }).catch(function() { _sgFallbackCopy(shareUrl, affiliateCode); });
+  } else {
+    _sgFallbackCopy(shareUrl, affiliateCode);
+  }
+}
+
 // Load saved playlist from localStorage on startup
 (function() {
   try {
@@ -21621,6 +21678,9 @@ window.sgFeedback = async function(elementId, vote, btn) {
         var ms=window._pendingMusicShare;
         window._pendingReelsAction=null;window._pendingReelsVideo=null;window._pendingMusicShare=null;
         setTimeout(function(){_sgMusicShareWithAffiliate(ms.trackName,ms.playlistIdx);},100);
+      }else if(window._pendingReelsAction==='share-photo'&&window._pendingPhotoShare){
+        var ps=window._pendingPhotoShare;window._pendingPhotoShare=null;window._pendingReelsAction='';
+        setTimeout(function(){_sgPhotoShareWithAffiliate(ps.title,ps.user,ps.idx);},100);
       }else{
         _sendToReels({type:'sg-auth-complete',action:window._pendingReelsAction,video:window._pendingReelsVideo});
         window._pendingReelsAction=null;window._pendingReelsVideo=null;
