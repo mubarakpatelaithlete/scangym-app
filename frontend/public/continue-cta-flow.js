@@ -1,10 +1,8 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    CONTINUE CTA FLOW — Partner Tab + Creator Tab
    Progressive "Continue" button that guides users through:
-     1. Sign In (half-page auth popup)
-     2. Add Withdraw Method (half-page popup)
-     3. Partner: Search/claim gym → Wallet → Withdraw
-        Creator: Confirm & Withdraw popup
+     Partner: Sign In → Connect Seam → Wallet/Withdraw
+     Creator: Sign In → Add Withdraw Method → Confirm & Withdraw
    
    Purely additive — no existing functions touched.
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -61,13 +59,232 @@ function _hasWithdrawMethod(){
     var cd=JSON.parse(localStorage.getItem('sg_creator')||'null');
     if(cd&&cd.withdrawMethod)return true;
   }catch(e){}
-  // Also check if partner has Stripe Connect
   try{
     var pd=JSON.parse(localStorage.getItem('sg_partner')||'null');
     if(pd&&pd.stripeConnected)return true;
   }catch(e){}
   return false;
 }
+
+
+// ══════════════════════════════════════════════════════════════════════
+// SHARED: Check if partner has Seam connected
+// ══════════════════════════════════════════════════════════════════════
+
+function _hasSeamConnected(){
+  try{
+    var pd=JSON.parse(localStorage.getItem('sg_partner')||'null');
+    if(pd&&pd.seamConnected)return true;
+  }catch(e){}
+  return false;
+}
+
+
+// ══════════════════════════════════════════════════════════════════════
+// PARTNER: "Connect Seam Account" half-page popup
+// Two options: connect existing Seam account OR create new one
+// ══════════════════════════════════════════════════════════════════════
+
+function _showSeamConnectSheet(onComplete){
+  var html=''
+    // Header
+    +'<div style="text-align:center;margin-bottom:20px">'
+    +'<div style="font-size:40px;margin-bottom:8px">🔐</div>'
+    +'<h2 style="color:#fff;font-size:20px;font-weight:800;margin:0 0 4px">Connect Smart Locks</h2>'
+    +'<p style="color:rgba(255,255,255,.4);font-size:13px;margin:0">Let customers unlock your gym doors automatically</p>'
+    +'</div>'
+
+    // Progress dots (Step 2 of 3)
+    +'<div style="display:flex;justify-content:center;gap:6px;margin-bottom:20px">'
+    +'<div style="width:6px;height:6px;border-radius:3px;background:#22c55e"></div>'
+    +'<div style="width:10px;height:6px;border-radius:3px;background:#fff"></div>'
+    +'<div style="width:6px;height:6px;border-radius:3px;background:rgba(255,255,255,.3)"></div>'
+    +'</div>'
+
+    // Option 1: I have a Seam account
+    +'<div id="sg-seam-opt-existing" onclick="window._ctaSelectSeamOpt(\'existing\')" style="display:flex;align-items:center;gap:14px;padding:16px;background:rgba(255,109,0,.06);border:2px solid rgba(255,109,0,.3);border-radius:16px;cursor:pointer;margin-bottom:10px;transition:all .15s">'
+    +'<div style="width:48px;height:48px;background:linear-gradient(135deg,#6366f1,#818cf8);border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="color:#fff;font-size:20px">🔑</span></div>'
+    +'<div style="flex:1"><div style="color:#fff;font-size:15px;font-weight:700">I have a Seam account</div><div style="color:rgba(255,255,255,.4);font-size:11px;margin-top:2px">Connect your existing Seam API key</div></div>'
+    +'<div style="width:20px;height:20px;border:2px solid #FF6D00;border-radius:50%;display:flex;align-items:center;justify-content:center"><div id="sg-seam-dot-existing" style="width:10px;height:10px;background:#FF6D00;border-radius:50%"></div></div>'
+    +'</div>'
+
+    // Option 2: Create new Seam account
+    +'<div id="sg-seam-opt-new" onclick="window._ctaSelectSeamOpt(\'new\')" style="display:flex;align-items:center;gap:14px;padding:16px;background:rgba(255,255,255,.03);border:2px solid rgba(255,255,255,.08);border-radius:16px;cursor:pointer;margin-bottom:10px;transition:all .15s">'
+    +'<div style="width:48px;height:48px;background:linear-gradient(135deg,#22c55e,#16a34a);border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="color:#fff;font-size:20px">✨</span></div>'
+    +'<div style="flex:1"><div style="color:#fff;font-size:15px;font-weight:700">Create new Seam account</div><div style="color:rgba(255,255,255,.4);font-size:11px;margin-top:2px">Free sign-up · Connect any smart lock brand</div></div>'
+    +'<div style="width:20px;height:20px;border:2px solid rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center"><div id="sg-seam-dot-new" style="width:10px;height:10px;background:transparent;border-radius:50%"></div></div>'
+    +'</div>'
+
+    // Dynamic form area
+    +'<div id="sg-seam-form-area" style="margin-top:16px"></div>'
+
+    // Error
+    +'<p id="sg-seam-error" style="color:#ef4444;font-size:13px;margin-top:8px;display:none"></p>'
+
+    // Connect button
+    +'<button id="sg-seam-connect-btn" onclick="window._ctaConnectSeam()" style="width:100%;background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;cursor:pointer;margin-top:16px;transition:all .2s;box-shadow:0 4px 20px rgba(255,109,0,.3)">Connect Seam Account →</button>'
+
+    // Skip option
+    +'<button onclick="window._ctaSkipSeam()" style="width:100%;background:none;border:none;color:rgba(255,255,255,.35);font-size:13px;font-weight:500;cursor:pointer;padding:12px;margin-top:4px">Skip for now — I\'ll set up later</button>';
+
+  _ctaOpenSheet(html);
+  window._ctaSeamCallback=onComplete;
+  window._ctaSelectedSeamOpt='existing';
+  _renderSeamForm('existing');
+}
+
+window._ctaSelectSeamOpt=function(type){
+  window._ctaSelectedSeamOpt=type;
+  var types=['existing','new'];
+  types.forEach(function(t){
+    var opt=document.getElementById('sg-seam-opt-'+t);
+    var dot=document.getElementById('sg-seam-dot-'+t);
+    if(opt){
+      opt.style.borderColor=t===type?'rgba(255,109,0,.3)':'rgba(255,255,255,.08)';
+      opt.style.background=t===type?'rgba(255,109,0,.06)':'rgba(255,255,255,.03)';
+    }
+    if(dot){
+      dot.style.background=t===type?'#FF6D00':'transparent';
+      dot.parentElement.style.borderColor=t===type?'#FF6D00':'rgba(255,255,255,.2)';
+    }
+  });
+  _renderSeamForm(type);
+};
+
+function _renderSeamForm(type){
+  var area=document.getElementById('sg-seam-form-area');
+  if(!area)return;
+  var btn=document.getElementById('sg-seam-connect-btn');
+
+  if(type==='existing'){
+    // Existing Seam account — enter API key
+    area.innerHTML=''
+      +'<div style="margin-bottom:12px">'
+      +'<label style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px">Seam API Key</label>'
+      +'<input id="sg-seam-api-key" type="text" placeholder="seam_apikey1_..." style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:14px 16px;color:#fff;font-size:14px;font-family:monospace;outline:none;transition:border-color .15s;box-sizing:border-box" onfocus="this.style.borderColor=\'rgba(255,109,0,.5)\'" onblur="this.style.borderColor=\'rgba(255,255,255,.12)\'">'
+      +'</div>'
+
+      // How to find your API key
+      +'<div style="background:rgba(99,102,241,.06);border:1px solid rgba(99,102,241,.15);border-radius:14px;padding:14px">'
+      +'<p style="color:#a5b4fc;font-size:11px;font-weight:600;margin:0 0 6px">💡 Where to find your API key</p>'
+      +'<ol style="color:rgba(255,255,255,.4);font-size:11px;line-height:1.6;margin:0;padding-left:16px">'
+      +'<li>Log into <b style="color:#a5b4fc">console.seam.co</b></li>'
+      +'<li>Go to <b style="color:#a5b4fc">API Keys</b> in sidebar</li>'
+      +'<li>Copy your API key</li>'
+      +'<li>Paste it above</li>'
+      +'</ol>'
+      +'</div>';
+    if(btn)btn.textContent='Connect Seam Account →';
+
+  }else{
+    // New Seam account — guide to create
+    area.innerHTML=''
+      // Step-by-step guide
+      +'<div style="background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.15);border-radius:14px;padding:16px;margin-bottom:14px">'
+      +'<p style="color:#4ade80;font-size:12px;font-weight:700;margin:0 0 10px">🚀 Create your free Seam account</p>'
+      +'<div style="display:flex;flex-direction:column;gap:10px">'
+      +'<div style="display:flex;gap:10px;align-items:flex-start">'
+      +'<div style="width:22px;height:22px;border-radius:50%;background:rgba(34,197,94,.2);color:#22c55e;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</div>'
+      +'<div style="flex:1"><p style="color:#fff;font-size:12px;font-weight:600;margin:0">Sign up at seam.co</p><p style="color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0">Free account — no credit card needed</p></div>'
+      +'</div>'
+      +'<div style="display:flex;gap:10px;align-items:flex-start">'
+      +'<div style="width:22px;height:22px;border-radius:50%;background:rgba(34,197,94,.2);color:#22c55e;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</div>'
+      +'<div style="flex:1"><p style="color:#fff;font-size:12px;font-weight:600;margin:0">Connect your lock brand</p><p style="color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0">Salto, Brivo, Yale, August, Schlage & 30+ more</p></div>'
+      +'</div>'
+      +'<div style="display:flex;gap:10px;align-items:flex-start">'
+      +'<div style="width:22px;height:22px;border-radius:50%;background:rgba(34,197,94,.2);color:#22c55e;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</div>'
+      +'<div style="flex:1"><p style="color:#fff;font-size:12px;font-weight:600;margin:0">Copy your API key</p><p style="color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0">Found in console.seam.co → API Keys</p></div>'
+      +'</div>'
+      +'</div>'
+      +'</div>'
+
+      // Open Seam button
+      +'<a href="https://console.seam.co/signup" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.3);border-radius:12px;padding:14px;color:#a5b4fc;font-size:14px;font-weight:700;text-decoration:none;cursor:pointer;margin-bottom:14px;transition:all .15s" ontouchstart="this.style.transform=\'scale(.98)\'" ontouchend="this.style.transform=\'scale(1)\'">'
+      +'🌐 Open Seam Console →'
+      +'</a>'
+
+      // After creating account, paste API key
+      +'<div style="margin-bottom:0">'
+      +'<label style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px">Then paste your API Key here</label>'
+      +'<input id="sg-seam-api-key" type="text" placeholder="seam_apikey1_..." style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:14px 16px;color:#fff;font-size:14px;font-family:monospace;outline:none;transition:border-color .15s;box-sizing:border-box" onfocus="this.style.borderColor=\'rgba(255,109,0,.5)\'" onblur="this.style.borderColor=\'rgba(255,255,255,.12)\'">'
+      +'</div>';
+    if(btn)btn.textContent='Connect & Continue →';
+  }
+}
+
+window._ctaConnectSeam=async function(){
+  var btn=document.getElementById('sg-seam-connect-btn');
+  var err=document.getElementById('sg-seam-error');
+  var keyEl=document.getElementById('sg-seam-api-key');
+  if(err)err.style.display='none';
+
+  var apiKey=(keyEl&&keyEl.value)?keyEl.value.trim():'';
+  if(!apiKey){
+    if(err){err.textContent='Please enter your Seam API key';err.style.display='block';}
+    return;
+  }
+
+  if(btn){btn.textContent='🔐 Connecting…';btn.style.opacity='.6';btn.style.pointerEvents='none';}
+
+  try{
+    // Auto-detect partner's claimed gym
+    var gymId=window._partnerGymId||0;
+    if(!gymId){
+      try{
+        var dr=await fetch('/api/gym-partner/dashboard',{credentials:'include'});
+        var dd=await dr.json();
+        if(dd.gyms&&dd.gyms.length>0){gymId=dd.gyms[0].id;window._partnerGymId=gymId;}
+      }catch(e){}
+    }
+
+    var res=await fetch('/api/access/owner/connect-seam',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      credentials:'include',
+      body:JSON.stringify({gymId:gymId||0,seamApiKey:apiKey})
+    });
+    var d=await res.json();
+
+    if(d.connected||d.success){
+      // Save Seam state locally
+      _saveSeamLocal(apiKey,d);
+      if(btn){btn.textContent='✅ Seam Connected!';btn.style.background='#22c55e';btn.style.opacity='1';}
+      if(navigator.vibrate)navigator.vibrate(50);
+      if(typeof sgToast==='function')sgToast(d.message||'Seam connected successfully! 🔐','success',3000);
+      setTimeout(function(){
+        _ctaCloseSheet();
+        if(window._ctaSeamCallback)window._ctaSeamCallback();
+      },500);
+    }else{
+      // API responded but couldn't connect
+      if(err){err.textContent=d.error||d.message||'Could not connect Seam — check your API key';err.style.display='block';}
+      if(btn){btn.textContent='Connect Seam Account →';btn.style.opacity='1';btn.style.pointerEvents='auto';}
+    }
+  }catch(e){
+    if(err){err.textContent='Network error — try again';err.style.display='block';}
+    if(btn){btn.textContent='Connect Seam Account →';btn.style.opacity='1';btn.style.pointerEvents='auto';}
+  }
+};
+
+window._ctaSkipSeam=function(){
+  // Mark as skipped so they can come back later
+  _saveSeamLocal(null,{skipped:true});
+  _ctaCloseSheet();
+  if(window._ctaSeamCallback)window._ctaSeamCallback();
+};
+
+function _saveSeamLocal(apiKey,response){
+  try{
+    var pd=JSON.parse(localStorage.getItem('sg_partner')||'{}');
+    pd.seamConnected=!!(response&&(response.connected||response.success));
+    pd.seamSkipped=!!(response&&response.skipped);
+    pd.seamVerified=!!(response&&response.verified);
+    pd.seamSystem=response&&response.system||null;
+    pd.seamConnectedAt=Date.now();
+    localStorage.setItem('sg_partner',JSON.stringify(pd));
+  }catch(e){}
+}
+
 
 // ══════════════════════════════════════════════════════════════════════
 // SHARED: "Add Withdraw Method" half-page popup
@@ -81,7 +298,7 @@ function _showAddWithdrawSheet(onComplete){
     +'<p style="color:rgba(255,255,255,.4);font-size:13px;margin:0">Choose how you want to receive your earnings</p>'
     +'</div>'
 
-    // Option 1: Stripe Connect (recommended for partners)
+    // Option 1: Stripe Connect (recommended)
     +'<div id="sg-wd-opt-stripe" onclick="window._ctaSelectWithdrawOpt(\'stripe\')" style="display:flex;align-items:center;gap:14px;padding:16px;background:rgba(255,109,0,.06);border:2px solid rgba(255,109,0,.3);border-radius:16px;cursor:pointer;margin-bottom:10px;transition:all .15s">'
     +'<div style="width:48px;height:48px;background:linear-gradient(135deg,#635BFF,#7A73FF);border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="color:#fff;font-size:18px;font-weight:800">S</span></div>'
     +'<div style="flex:1"><div style="color:#fff;font-size:15px;font-weight:700">Stripe Connect</div><div style="color:rgba(255,255,255,.4);font-size:11px;margin-top:2px">Direct bank deposits · Recommended</div></div>'
@@ -109,10 +326,9 @@ function _showAddWithdrawSheet(onComplete){
     +'<p id="sg-wd-error" style="color:#ef4444;font-size:13px;margin-top:8px;display:none"></p>'
 
     // Save button
-    +'<button id="sg-wd-save-btn" onclick="window._ctaSaveWithdrawMethod()" style="width:100%;background:#FF6D00;color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;cursor:pointer;margin-top:16px;transition:all .2s;box-shadow:0 4px 20px rgba(255,109,0,.3)">Connect & Continue →</button>';
+    +'<button id="sg-wd-save-btn" onclick="window._ctaSaveWithdrawMethod()" style="width:100%;background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;cursor:pointer;margin-top:16px;transition:all .2s;box-shadow:0 4px 20px rgba(255,109,0,.3)">Connect & Continue →</button>';
 
   _ctaOpenSheet(html);
-  // Store callback
   window._ctaWithdrawCallback=onComplete;
   window._ctaSelectedWithdraw='stripe';
   _renderWithdrawForm('stripe');
@@ -174,7 +390,6 @@ window._ctaSaveWithdrawMethod=async function(){
   if(err)err.style.display='none';
 
   if(type==='stripe'){
-    // Redirect to Stripe Connect onboarding
     if(btn){btn.textContent='⚡ Redirecting…';btn.style.opacity='.6';btn.style.pointerEvents='none';}
     try{
       var u=state&&state.user;
@@ -183,7 +398,6 @@ window._ctaSaveWithdrawMethod=async function(){
       var res=await fetch('/api/referrals/stripe-connect',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({creatorHandle:handle,email:email})});
       var d=await res.json();
       if(d.success&&d.onboardingUrl){
-        // Store method locally
         _saveWithdrawLocal('stripe_connect',{});
         window.location.href=d.onboardingUrl;
         return;
@@ -218,7 +432,6 @@ window._ctaSaveWithdrawMethod=async function(){
   if(btn){btn.textContent='Saving…';btn.style.opacity='.6';btn.style.pointerEvents='none';}
   try{
     _saveWithdrawLocal(type,details);
-    // Also save to server if creator has a handle
     var cd=JSON.parse(localStorage.getItem('sg_creator')||'null')||{};
     if(cd.handle||cd.slug){
       var payMethod=type==='paypal'?'paypal':'bank_transfer';
@@ -242,7 +455,6 @@ function _saveWithdrawLocal(type,details){
     var cd=JSON.parse(localStorage.getItem('sg_creator')||'{}');
     cd.withdrawMethod=type;cd.withdrawDetails=details;
     localStorage.setItem('sg_creator',JSON.stringify(cd));
-    // Also mark partner
     var pd=JSON.parse(localStorage.getItem('sg_partner')||'{}');
     pd.withdrawMethod=type;pd.withdrawDetails=details;
     if(type==='stripe_connect')pd.stripeConnected=true;
@@ -252,7 +464,7 @@ function _saveWithdrawLocal(type,details){
 
 
 // ══════════════════════════════════════════════════════════════════════
-// SHARED: "Confirm & Withdraw" half-page popup
+// SHARED: "Confirm & Withdraw" half-page popup (Wallet → Withdraw)
 // ══════════════════════════════════════════════════════════════════════
 
 function _showConfirmWithdrawSheet(tabType){
@@ -299,8 +511,6 @@ function _showConfirmWithdrawSheet(tabType){
     +'<button id="sg-cta-wd-confirm" onclick="window._ctaConfirmWithdraw(\''+tabType+'\')" style="width:100%;background:#22c55e;color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;cursor:pointer;transition:all .2s;box-shadow:0 4px 20px rgba(34,197,94,.3)">Confirm Withdrawal →</button>';
 
   _ctaOpenSheet(html);
-
-  // Load wallet balance
   _loadWithdrawBalance(tabType);
   _loadWithdrawMethodSummary();
 }
@@ -316,11 +526,9 @@ async function _loadWithdrawBalance(tabType){
   window._ctaAvailableBalance=0;
   try{
     var balEl=document.getElementById('sg-cta-wd-balance');
-    // Try wallet balance first
     var wr=await fetch('/api/wallet',{credentials:'include'}).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;});
     var walletBal=wr?parseFloat(wr.balance||0):0;
 
-    // Also try partner/creator earnings
     if(tabType==='partner'){
       var pr=await fetch('/api/gym-partner/dashboard',{credentials:'include'}).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;});
       var earnings=pr?parseFloat(pr.availableBalance||pr.totalEarnings||0):0;
@@ -384,13 +592,11 @@ window._ctaConfirmWithdraw=async function(tabType){
 
   try{
     var endpoint=tabType==='partner'?'/api/gym-partner/request-payout':'/api/referrals/withdraw';
-    var body=tabType==='partner'?{amount:amount}:{amount:amount};
-    var res=await fetch(endpoint,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    var res=await fetch(endpoint,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({amount:amount})});
     var d=await res.json();
     if(d.success||d.payout){
       if(btn){btn.textContent='✅ Withdrawal Requested!';btn.style.background='#22c55e';btn.style.opacity='1';}
       if(navigator.vibrate)navigator.vibrate([50,50,50]);
-      // Update balance display
       var balEl=document.getElementById('sg-cta-wd-balance');
       if(balEl)balEl.textContent='£'+(window._ctaAvailableBalance-amount).toFixed(2);
       if(typeof sgToast==='function')sgToast('£'+amount.toFixed(2)+' withdrawal requested! 🎉','success',4000);
@@ -408,16 +614,15 @@ window._ctaConfirmWithdraw=async function(tabType){
 
 // ══════════════════════════════════════════════════════════════════════
 // PARTNER TAB: Continue CTA Flow
-// Flow: Sign In → Add Withdraw Method → Search/Claim Gym → Wallet → Withdraw
+// Flow: Sign In → Connect Seam → Wallet/Withdraw
 // ══════════════════════════════════════════════════════════════════════
 
 window._partnerContinueFlow=function(){
   var u=state&&state.user;
 
-  // Step 1: Not signed in → show auth sheet
+  // Step 1: Not signed in → half-page auth sheet (same as Book/Reels)
   if(!u){
     if(typeof window._sgShowAuthSheet==='function'){
-      // Set callback so after auth we re-trigger the flow
       window._partnerPostAuth=true;
       window._sgShowAuthSheet('book');
     }else{
@@ -426,54 +631,27 @@ window._partnerContinueFlow=function(){
     return;
   }
 
-  // Step 2: No withdraw method → show add withdraw sheet
-  if(!_hasWithdrawMethod()){
-    _showAddWithdrawSheet(function(){
-      // After adding method, continue to step 3
+  // Step 2: Seam not connected → show Connect Seam sheet
+  if(!_hasSeamConnected()){
+    _showSeamConnectSheet(function(){
+      // After Seam connected (or skipped), continue to step 3
       window._partnerContinueFlow();
     });
     return;
   }
 
-  // Step 3: Has gym? → Show wallet/withdraw. No gym? → Search to claim
-  var hasGym=window._partnerGymId||false;
-  if(!hasGym){
-    // Check if they have a claimed gym
-    fetch('/api/gym-partner/dashboard',{credentials:'include'}).then(function(r){return r.ok?r.json():null;}).then(function(d){
-      if(d&&d.gyms&&d.gyms.length>0){
-        window._partnerGymId=d.gyms[0].id;
-        // Gym found → go to withdraw
-        _showConfirmWithdrawSheet('partner');
-      }else{
-        // No gym → show search to claim
-        if(typeof sgToast==='function')sgToast('Search for your gym to claim it 🔍','info',3000);
-        if(typeof window._openSearchOverlay==='function'){
-          window._openSearchOverlay();
-        }else{
-          navigate('/list-your-gym');
-        }
-      }
-    }).catch(function(){
-      // Fallback to wallet
-      _showConfirmWithdrawSheet('partner');
-    });
-    return;
-  }
-
-  // Step 4: Everything ready → show confirm & withdraw
+  // Step 3: Wallet balance → Withdraw (same as Creator tab)
   _showConfirmWithdrawSheet('partner');
 };
 
-// Hook into auth success to continue partner flow
+// Hook into auth success to continue partner/creator flow
 var _origAuthAfterSuccess=window._sgAuthAfterSuccess;
 window._sgAuthAfterSuccess=function(){
   if(_origAuthAfterSuccess)_origAuthAfterSuccess();
-  // If partner flow was in progress, continue it
   if(window._partnerPostAuth){
     window._partnerPostAuth=false;
     setTimeout(function(){window._partnerContinueFlow();},500);
   }
-  // If creator flow was in progress, continue it
   if(window._creatorPostAuth){
     window._creatorPostAuth=false;
     setTimeout(function(){window._creatorContinueFlow();},500);
@@ -482,8 +660,216 @@ window._sgAuthAfterSuccess=function(){
 
 
 // ══════════════════════════════════════════════════════════════════════
+// CREATOR: "Copy Affiliate Link" half-page popup
+// Regular affiliate link + deep link generator
+// ══════════════════════════════════════════════════════════════════════
+
+function _hasAffiliateLinkCopied(){
+  try{
+    var cd=JSON.parse(localStorage.getItem('sg_creator')||'null');
+    if(cd&&cd.linkCopied)return true;
+  }catch(e){}
+  return false;
+}
+
+function _getCreatorHandle(){
+  try{
+    var u=state&&state.user;
+    if(u&&u.referral_code)return u.referral_code;
+    var cd=JSON.parse(localStorage.getItem('sg_creator')||'null');
+    if(cd&&cd.handle)return cd.handle;
+    // Auto-generate handle from user info
+    if(u){
+      var h=(u.name||u.phone||u.email||'creator').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,15);
+      return h||'creator';
+    }
+  }catch(e){}
+  return 'creator';
+}
+
+function _showAffiliateLinkSheet(onComplete){
+  var handle=_getCreatorHandle();
+  var affLink='scangym.com/r/'+handle;
+  var fullLink='https://scangym.com/r/'+handle;
+
+  var html=''
+    // Header
+    +'<div style="text-align:center;margin-bottom:20px">'
+    +'<div style="font-size:40px;margin-bottom:8px">🔗</div>'
+    +'<h2 style="color:#fff;font-size:20px;font-weight:800;margin:0 0 4px">Your Affiliate Link</h2>'
+    +'<p style="color:rgba(255,255,255,.4);font-size:13px;margin:0">Share & earn 25% on every booking</p>'
+    +'</div>'
+
+    // Progress dots (Step 2 of 3)
+    +'<div style="display:flex;justify-content:center;gap:6px;margin-bottom:20px">'
+    +'<div style="width:6px;height:6px;border-radius:3px;background:#22c55e"></div>'
+    +'<div style="width:10px;height:6px;border-radius:3px;background:#fff"></div>'
+    +'<div style="width:6px;height:6px;border-radius:3px;background:rgba(255,255,255,.3)"></div>'
+    +'</div>'
+
+    // ── Affiliate Link Card ──
+    +'<div style="background:rgba(255,109,0,.06);border:1px solid rgba(255,109,0,.2);border-radius:16px;padding:16px;margin-bottom:14px">'
+    +'<p style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin:0 0 8px">📋 Your Affiliate Link</p>'
+    +'<div style="display:flex;gap:8px;align-items:center">'
+    +'<div style="flex:1;background:rgba(0,0,0,.3);border:1px solid rgba(255,109,0,.15);border-radius:10px;padding:12px 14px;overflow:hidden">'
+    +'<p id="sg-aff-link-text" style="color:#FF6D00;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0">'+affLink+'</p>'
+    +'</div>'
+    +'<button id="sg-aff-copy-btn" onclick="window._ctaCopyAffLink()" style="background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff;border:none;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s">📋 Copy</button>'
+    +'</div>'
+    +'</div>'
+
+    // ── Share Buttons ──
+    +'<div style="display:flex;gap:8px;margin-bottom:16px">'
+    +'<button onclick="window._ctaShareAff(\'whatsapp\')" style="flex:1;background:rgba(37,211,102,.08);border:1px solid rgba(37,211,102,.2);color:#25d366;padding:12px;border-radius:12px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">💬 WhatsApp</button>'
+    +'<button onclick="window._ctaShareAff(\'twitter\')" style="flex:1;background:rgba(29,161,242,.08);border:1px solid rgba(29,161,242,.2);color:#1da1f2;padding:12px;border-radius:12px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">🐦 Twitter/X</button>'
+    +'<button onclick="window._ctaShareAff(\'native\')" style="flex:1;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.6);padding:12px;border-radius:12px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">📤 Share</button>'
+    +'</div>'
+
+    // ── Divider ──
+    +'<div style="display:flex;align-items:center;gap:12px;margin:18px 0">'
+    +'<div style="flex:1;height:1px;background:rgba(255,255,255,.08)"></div>'
+    +'<span style="color:rgba(255,255,255,.25);font-size:11px;font-weight:600">OR</span>'
+    +'<div style="flex:1;height:1px;background:rgba(255,255,255,.08)"></div>'
+    +'</div>'
+
+    // ── Deep Affiliate Link Generator ──
+    +'<div style="background:rgba(99,102,241,.06);border:1px solid rgba(99,102,241,.15);border-radius:16px;padding:16px;margin-bottom:14px">'
+    +'<p style="color:#a5b4fc;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px">🎯 Deep Affiliate Link</p>'
+    +'<p style="color:rgba(255,255,255,.35);font-size:11px;margin:0 0 12px">Paste any ScanGym.com link to make it yours</p>'
+    +'<div style="display:flex;gap:8px">'
+    +'<input id="sg-deep-url-input" type="url" placeholder="Paste scangym.com/gym/... or any link" style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:12px 14px;color:#fff;font-size:13px;outline:none;min-width:0;box-sizing:border-box" onfocus="this.style.borderColor=\'rgba(99,102,241,.5)\'" onblur="this.style.borderColor=\'rgba(255,255,255,.12)\'" oninput="window._ctaGenDeepLink()">'
+    +'<button id="sg-deep-copy-btn" onclick="window._ctaCopyDeepLink()" style="background:rgba(99,102,241,.2);border:1px solid rgba(99,102,241,.3);color:#a5b4fc;padding:12px 16px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;opacity:.4;pointer-events:none;transition:all .15s">📋 Copy</button>'
+    +'</div>'
+    +'<div id="sg-deep-result" style="display:none;margin-top:8px;background:rgba(0,0,0,.3);border:1px solid rgba(99,102,241,.15);border-radius:8px;padding:10px 12px">'
+    +'<p id="sg-deep-link-text" style="color:#a5b4fc;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0"></p>'
+    +'</div>'
+    +'</div>'
+
+    // ── How it Works ──
+    +'<div style="background:rgba(34,197,94,.04);border:1px solid rgba(34,197,94,.1);border-radius:14px;padding:14px;margin-bottom:16px">'
+    +'<p style="color:#4ade80;font-size:11px;font-weight:700;margin:0 0 8px">💡 How it works</p>'
+    +'<div style="display:flex;flex-direction:column;gap:6px">'
+    +'<div style="display:flex;gap:8px;align-items:center"><span style="color:#22c55e;font-size:14px">1.</span><span style="color:rgba(255,255,255,.5);font-size:11px">Share your link on social media, stories, or DMs</span></div>'
+    +'<div style="display:flex;gap:8px;align-items:center"><span style="color:#22c55e;font-size:14px">2.</span><span style="color:rgba(255,255,255,.5);font-size:11px">Someone clicks and books a gym session</span></div>'
+    +'<div style="display:flex;gap:8px;align-items:center"><span style="color:#22c55e;font-size:14px">3.</span><span style="color:rgba(255,255,255,.5);font-size:11px">You earn <b style="color:#FF6D00">25% commission</b> — paid to your wallet!</span></div>'
+    +'</div>'
+    +'</div>'
+
+    // Continue button
+    +'<button id="sg-aff-continue-btn" onclick="window._ctaAffiliateDone()" style="width:100%;background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;cursor:pointer;transition:all .2s;box-shadow:0 4px 20px rgba(255,109,0,.3)">Continue →</button>';
+
+  _ctaOpenSheet(html);
+  window._ctaAffiliateCallback=onComplete;
+  window._ctaAffHandle=handle;
+
+  // Auto-generate link on server
+  _ensureCreatorLink(handle);
+}
+
+async function _ensureCreatorLink(handle){
+  try{
+    await fetch('/api/referrals/generate-link',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({handle:handle})});
+  }catch(e){}
+}
+
+window._ctaCopyAffLink=function(){
+  var handle=window._ctaAffHandle||'creator';
+  var link='https://scangym.com/r/'+handle;
+  var btn=document.getElementById('sg-aff-copy-btn');
+  try{
+    navigator.clipboard.writeText(link).then(function(){
+      if(btn){btn.textContent='✅ Copied!';btn.style.background='#22c55e';}
+      if(typeof sgToast==='function')sgToast('Affiliate link copied! 📋','success',2000);
+      _markAffiliateCopied();
+      setTimeout(function(){if(btn){btn.textContent='📋 Copy';btn.style.background='linear-gradient(135deg,#FF6D00,#E66200)';}},2000);
+    }).catch(function(){_fallbackCopyAff(link,btn);});
+  }catch(e){_fallbackCopyAff(link,btn);}
+};
+
+function _fallbackCopyAff(link,btn){
+  var ta=document.createElement('textarea');
+  ta.value=link;ta.style.cssText='position:fixed;opacity:0';
+  document.body.appendChild(ta);ta.select();
+  try{document.execCommand('copy');}catch(e){}
+  document.body.removeChild(ta);
+  if(btn){btn.textContent='✅ Copied!';btn.style.background='#22c55e';}
+  _markAffiliateCopied();
+  setTimeout(function(){if(btn){btn.textContent='📋 Copy';btn.style.background='linear-gradient(135deg,#FF6D00,#E66200)';}},2000);
+}
+
+function _markAffiliateCopied(){
+  try{
+    var cd=JSON.parse(localStorage.getItem('sg_creator')||'{}');
+    cd.linkCopied=true;cd.linkCopiedAt=Date.now();
+    localStorage.setItem('sg_creator',JSON.stringify(cd));
+  }catch(e){}
+}
+
+window._ctaShareAff=function(platform){
+  var handle=window._ctaAffHandle||'creator';
+  var link='https://scangym.com/r/'+handle;
+  var text='Check out ScanGym — gym day passes from £4.49! Use my link: ';
+  _markAffiliateCopied();
+  if(platform==='whatsapp'){window.open('https://wa.me/?text='+encodeURIComponent(text+link),'_blank');}
+  else if(platform==='twitter'){window.open('https://twitter.com/intent/tweet?text='+encodeURIComponent(text)+' '+encodeURIComponent(link),'_blank');}
+  else if(navigator.share){navigator.share({title:'ScanGym',text:text,url:link}).catch(function(){});}
+  else{window._ctaCopyAffLink();}
+};
+
+window._ctaGenDeepLink=function(){
+  var input=document.getElementById('sg-deep-url-input');
+  var result=document.getElementById('sg-deep-result');
+  var linkText=document.getElementById('sg-deep-link-text');
+  var copyBtn=document.getElementById('sg-deep-copy-btn');
+  if(!input||!result)return;
+  var url=input.value.trim();
+  if(!url||!url.includes('scangym.com')){
+    result.style.display='none';
+    if(copyBtn){copyBtn.style.opacity='.4';copyBtn.style.pointerEvents='none';}
+    return;
+  }
+  var handle=window._ctaAffHandle||'creator';
+  // Parse and append ref parameter
+  var deepUrl=url;
+  try{
+    if(!deepUrl.startsWith('http'))deepUrl='https://'+deepUrl;
+    var u=new URL(deepUrl);
+    u.searchParams.set('ref',handle);
+    deepUrl=u.toString();
+  }catch(e){
+    // Fallback: just append ?ref= or &ref=
+    deepUrl+=(deepUrl.includes('?')?'&':'?')+'ref='+encodeURIComponent(handle);
+  }
+  window._ctaDeepLinkUrl=deepUrl;
+  if(linkText)linkText.textContent=deepUrl;
+  result.style.display='block';
+  if(copyBtn){copyBtn.style.opacity='1';copyBtn.style.pointerEvents='auto';}
+};
+
+window._ctaCopyDeepLink=function(){
+  var url=window._ctaDeepLinkUrl;
+  if(!url)return;
+  var btn=document.getElementById('sg-deep-copy-btn');
+  try{
+    navigator.clipboard.writeText(url).then(function(){
+      if(btn){btn.textContent='✅ Copied!';btn.style.background='rgba(34,197,94,.2)';btn.style.borderColor='rgba(34,197,94,.3)';btn.style.color='#4ade80';}
+      if(typeof sgToast==='function')sgToast('Deep affiliate link copied! 🎯','success',2000);
+      _markAffiliateCopied();
+      setTimeout(function(){if(btn){btn.textContent='📋 Copy';btn.style.background='rgba(99,102,241,.2)';btn.style.borderColor='rgba(99,102,241,.3)';btn.style.color='#a5b4fc';}},2000);
+    }).catch(function(){});
+  }catch(e){}
+};
+
+window._ctaAffiliateDone=function(){
+  _markAffiliateCopied();
+  _ctaCloseSheet();
+  if(window._ctaAffiliateCallback)window._ctaAffiliateCallback();
+};
+
+
+// ══════════════════════════════════════════════════════════════════════
 // CREATOR TAB: Continue CTA Flow
-// Flow: Sign In → Add Withdraw Method → Confirm & Withdraw
+// Flow: Sign In → Copy Affiliate Link → Wallet/Withdraw
 // ══════════════════════════════════════════════════════════════════════
 
 window._creatorContinueFlow=function(){
@@ -500,48 +886,45 @@ window._creatorContinueFlow=function(){
     return;
   }
 
-  // Step 2: No withdraw method → show add withdraw sheet
-  if(!_hasWithdrawMethod()){
-    _showAddWithdrawSheet(function(){
-      // After adding method, continue to step 3
+  // Step 2: Haven't copied affiliate link yet → show affiliate link sheet
+  if(!_hasAffiliateLinkCopied()){
+    _showAffiliateLinkSheet(function(){
       window._creatorContinueFlow();
     });
     return;
   }
 
-  // Step 3: Everything ready → show confirm & withdraw
+  // Step 3: Wallet → Withdraw
   _showConfirmWithdrawSheet('creator');
 };
 
 
 // ══════════════════════════════════════════════════════════════════════
 // CONTINUE BANNER: Inject into Partner and Creator tabs
-// The orange CTA bar shown at the bottom of the tab, above the tab bar
+// Orange CTA bar at the bottom, above the tab bar
 // ══════════════════════════════════════════════════════════════════════
 
-// Compute what step the user is on and set the CTA label
 function _getCTAState(tabType){
   var u=state&&state.user;
   if(!u)return{step:1,label:'Continue',sublabel:'Sign in to get started'};
-  if(!_hasWithdrawMethod())return{step:2,label:'Continue',sublabel:'Add your withdraw method'};
+
   if(tabType==='partner'){
-    var hasGym=window._partnerGymId||false;
-    if(!hasGym)return{step:3,label:'Continue',sublabel:'Search & claim your gym'};
-    return{step:4,label:'Withdraw Earnings →',sublabel:'Your gym is live!'};
+    if(!_hasSeamConnected())return{step:2,label:'Continue',sublabel:'Connect your smart locks'};
+    return{step:3,label:'Withdraw Earnings →',sublabel:'Your gym is live!'};
   }
+  // Creator
+  if(!_hasAffiliateLinkCopied())return{step:2,label:'Continue',sublabel:'Copy your affiliate link'};
   return{step:3,label:'Withdraw Earnings →',sublabel:'You\'re all set!'};
 }
 
-// Inject the Continue CTA into Partner/Creator tab HTML
-// Called from the patched PartnerFullPage / CreatorFullPage
 function _injectContinueBanner(tabType){
   var containerId=tabType+'-continue-banner';
   setTimeout(function(){
-    // Remove old banner if exists
     var old=document.getElementById(containerId);
     if(old)old.remove();
 
     var ctaState=_getCTAState(tabType);
+    var totalSteps=3;
     var banner=document.createElement('div');
     banner.id=containerId;
     banner.style.cssText='position:fixed;bottom:calc(56px + env(safe-area-inset-bottom,0px));left:0;right:0;z-index:8999;padding:0 12px 0;pointer-events:none';
@@ -552,9 +935,8 @@ function _injectContinueBanner(tabType){
       +'<div style="color:rgba(255,255,255,.65);font-size:11px;font-weight:500;margin-top:1px">'+ctaState.sublabel+'</div>'
       +'</div>'
       +'<div style="display:flex;align-items:center;gap:8px">'
-      // Step dots (show progress)
       +'<div style="display:flex;gap:4px">'
-      +_stepDots(ctaState.step,tabType==='partner'?4:3)
+      +_stepDots(ctaState.step,totalSteps)
       +'</div>'
       +'<div style="color:#fff;font-size:20px;font-weight:700">→</div>'
       +'</div>'
@@ -575,20 +957,18 @@ function _stepDots(current,total){
   return html;
 }
 
-// Make injection available globally
 window._injectContinueBanner=_injectContinueBanner;
 
 
 // ══════════════════════════════════════════════════════════════════════
-// PATCH: Override PartnerFullPage and CreatorFullPage to add Continue CTA
+// PATCH: Hook into tab navigation to inject/remove banners
 // ══════════════════════════════════════════════════════════════════════
 
-// Wait for the original functions to be defined, then patch
 var _patchInterval=setInterval(function(){
   if(typeof PartnerFullPage==='function'&&typeof CreatorFullPage==='function'){
     clearInterval(_patchInterval);
 
-    // Patch _showPartnerScreen to refresh banner when switching screens
+    // Patch _showPartnerScreen to refresh banner
     var _origShowPartnerScreen=window._showPartnerScreen;
     window._showPartnerScreen=function(idx){
       _origShowPartnerScreen(idx);
@@ -605,7 +985,7 @@ var _patchInterval=setInterval(function(){
     }
 
     // Listen for route switches to inject/remove banner
-    // Note: /partner and /creator map to activeTab='more', so check route instead
+    // Note: /partner and /creator map to activeTab='more', so check route
     var _lastRoute='';
     setInterval(function(){
       var route=state&&state.route;
@@ -613,7 +993,6 @@ var _patchInterval=setInterval(function(){
       var isCreator=(route==='/creator'||route==='/creator/');
       if(route!==_lastRoute){
         _lastRoute=route;
-        // Clean up banners from other routes
         if(!isPartner){
           var pb=document.getElementById('partner-continue-banner');
           if(pb)pb.remove();
@@ -622,7 +1001,6 @@ var _patchInterval=setInterval(function(){
           var cb=document.getElementById('creator-continue-banner');
           if(cb)cb.remove();
         }
-        // Inject banner for current route
         if(isPartner)_injectContinueBanner('partner');
         if(isCreator)_injectContinueBanner('creator');
       }
@@ -630,10 +1008,7 @@ var _patchInterval=setInterval(function(){
   }
 },200);
 
-// ══════════════════════════════════════════════════════════════════════
-// ALSO: Patch tab bar bottom offset when banner is visible
-// ══════════════════════════════════════════════════════════════════════
-
+// Banner animation styles
 var _bannerStyle=document.createElement('style');
 _bannerStyle.textContent=''
   +'#partner-continue-banner,#creator-continue-banner{'
