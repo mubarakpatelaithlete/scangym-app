@@ -564,14 +564,16 @@ var _waitPatch=setInterval(function(){
     };
 
     // Auto-render when partner tab first loads
-    var _lastActiveTab='';
+    // Note: /partner route maps to activeTab='more', so check route instead
+    var _lastRoute='';
     setInterval(function(){
-      var tab=state&&state.activeTab;
-      if(tab==='partner'&&_lastActiveTab!=='partner'){
-        _lastActiveTab=tab;
+      var route=state&&state.route;
+      var isPartner=(route==='/partner'||route==='/partner/');
+      if(isPartner&&_lastRoute!==route){
+        _lastRoute=route;
         setTimeout(function(){_peLoadAndRender();},100);
-      }else if(tab!=='partner'){
-        _lastActiveTab=tab;
+      }else if(!isPartner){
+        _lastRoute=route;
       }
     },300);
   }

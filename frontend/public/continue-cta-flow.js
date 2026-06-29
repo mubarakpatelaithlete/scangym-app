@@ -604,30 +604,29 @@ var _patchInterval=setInterval(function(){
       };
     }
 
-    // Listen for tab switches to inject/remove banner
-    var _origRenderForCTA=window.render;
-    if(_origRenderForCTA){
-      // Use MutationObserver instead to avoid breaking render chain
-      var _lastTab='';
-      setInterval(function(){
-        var tab=state&&state.activeTab;
-        if(tab!==_lastTab){
-          _lastTab=tab;
-          // Clean up banners from other tabs
-          if(tab!=='partner'){
-            var pb=document.getElementById('partner-continue-banner');
-            if(pb)pb.remove();
-          }
-          if(tab!=='creator'){
-            var cb=document.getElementById('creator-continue-banner');
-            if(cb)cb.remove();
-          }
-          // Inject banner for current tab
-          if(tab==='partner')_injectContinueBanner('partner');
-          if(tab==='creator')_injectContinueBanner('creator');
+    // Listen for route switches to inject/remove banner
+    // Note: /partner and /creator map to activeTab='more', so check route instead
+    var _lastRoute='';
+    setInterval(function(){
+      var route=state&&state.route;
+      var isPartner=(route==='/partner'||route==='/partner/');
+      var isCreator=(route==='/creator'||route==='/creator/');
+      if(route!==_lastRoute){
+        _lastRoute=route;
+        // Clean up banners from other routes
+        if(!isPartner){
+          var pb=document.getElementById('partner-continue-banner');
+          if(pb)pb.remove();
         }
-      },300);
-    }
+        if(!isCreator){
+          var cb=document.getElementById('creator-continue-banner');
+          if(cb)cb.remove();
+        }
+        // Inject banner for current route
+        if(isPartner)_injectContinueBanner('partner');
+        if(isCreator)_injectContinueBanner('creator');
+      }
+    },300);
   }
 },200);
 
