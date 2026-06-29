@@ -660,6 +660,7 @@ function getTabForRoute(path){
   if(path==='/photos'||path==='/carousel')return 'photos';
   if(path==='/chat'||path==='/community')return 'chat';
   if(path==='/ai-trainer'||path==='/trainer')return 'trainer';
+  if(path==='/creator'||path==='/creator/')return 'creator';
   return 'more';
 }
 function switchTab(tab){
@@ -670,6 +671,7 @@ function switchTab(tab){
   else if(tab==='photos'){state.route='/photos';history.pushState(null,'','/photos');}
   else if(tab==='chat'){state.route='/chat';history.pushState(null,'','/chat');}
   else if(tab==='trainer'){state.route='/ai-trainer';history.pushState(null,'','/ai-trainer');}
+  else if(tab==='creator'){state.route='/creator';history.pushState(null,'','/creator');}
   else if(tab==='more'){state.route=state._lastMoreRoute||'/more';history.pushState(null,'',state.route);}
   render();
   // ── Bug Fix: Toggle persistent reels iframe visibility ──
@@ -13317,6 +13319,7 @@ function BottomTabBar(){
   const photosIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2" fill="${t==='photos'?'#FF6D00':'rgba(255,255,255,.3)'}"/><path d="M21 15l-5-5L5 21"/></svg>`;
   const chatIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>`;
   const trainerIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" fill="${t==='trainer'?'#FF6D00':'rgba(255,255,255,.3)'}"/><path d="M2 17l1-7h7l1 7"/><path d="M14 7h8M14 7v0M22 7v0M13 4h2M21 4h2M14 10h8"/></svg>`;
+  const creatorIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="4"/><circle cx="12" cy="12" r="3" fill="${t==='creator'?'#FF6D00':'rgba(255,255,255,.3)'}"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke-width="1.5"/></svg>`;
   const moreIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
   return`<nav class="sg-tab-bar" role="tablist" aria-label="Main navigation">
     <button class="sg-tab-item ${t==='reels'?'active':''}" role="tab" aria-selected="${t==='reels'}" aria-label="Reels" onclick="switchTab('reels')">
@@ -13326,6 +13329,10 @@ function BottomTabBar(){
     <button class="sg-tab-item ${t==='book'?'active':''}" role="tab" aria-selected="${t==='book'}" aria-label="Book a gym" onclick="switchTab('book')">
       ${bookIcon}
       <span class="sg-tab-label">Book</span>
+    </button>
+    <button class="sg-tab-item ${t==='creator'?'active':''}" role="tab" aria-selected="${t==='creator'}" aria-label="Creator" onclick="switchTab('creator')">
+      ${creatorIcon}
+      <span class="sg-tab-label">Creator</span>
     </button>
     <button class="sg-tab-item ${t==='music'?'active':''}" role="tab" aria-selected="${t==='music'}" aria-label="Music" onclick="switchTab('music')">
       ${musicIcon}
@@ -17283,6 +17290,8 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
     html=`<main class="sg-tab-content fade-in">${ChatTabPage()}</main>`+BottomTabBar();
   } else if(tab==='trainer') {
     html=`<main class="sg-tab-content fade-in">${TrainerTabPage()}</main>`+BottomTabBar();
+  } else if(tab==='creator') {
+    html=`<main class="sg-tab-content fade-in">${CreatorFullPage()}</main>`+BottomTabBar();
   } else if((path==='/explore'||path==='/nearby'||path==='/search') && tab==='book') {
     // Book tab home — scrollable so gym cards below the map are visible
     html=`<main class="sg-tab-content fade-in">${page}</main>`+BottomTabBar();
