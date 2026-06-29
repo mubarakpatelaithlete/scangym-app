@@ -11258,14 +11258,19 @@ function _startGPSWatch(highAccuracy){
           }
 
           if(mergedGyms.length>0){
-            window._locationLayer=5;
-            state.gyms=mergedGyms;
-            state.searchQuery=locationName;
-            state.searchResults=mergedGyms;
-            render();
-            console.log('[GPS] Upgraded to GPS results: H3:',h3Gyms.length,'Live:',liveGyms.length,'Merged:',mergedGyms.length,'radius:',searchRadius+'m','location:',locationName);
-            // Perf: Defer travel times to idle — GPS results already render immediately
-            _scheduleIdle(function(){fetchRealTravelTimes(gps.lat,gps.lng);});
+            // ━━━ FIX: Never override an explicit user search with GPS results ━━━
+            if(state.userExplicitSearch){
+              console.log('[GPS] Skipping GPS override — user has an explicit search active');
+            }else{
+              window._locationLayer=5;
+              state.gyms=mergedGyms;
+              state.searchQuery=locationName;
+              state.searchResults=mergedGyms;
+              render();
+              console.log('[GPS] Upgraded to GPS results: H3:',h3Gyms.length,'Live:',liveGyms.length,'Merged:',mergedGyms.length,'radius:',searchRadius+'m','location:',locationName);
+              // Perf: Defer travel times to idle — GPS results already render immediately
+              _scheduleIdle(function(){fetchRealTravelTimes(gps.lat,gps.lng);});
+            }
           }
         }catch(e){
           console.warn('[GPS] Nearby search error:',e.message);
@@ -11608,8 +11613,20 @@ window.doSearch=function(query){
   if(q){
     // Save to recent searches
     _saveRecentSearch(q);
-    navigate('/explore');
+    // ━━━ FIX: Clear old gyms so SearchPage shows skeleton during loading ━━━
+    // Without this, old results persist and isLoading stays false (gyms.length>0)
+    state.gyms=[];
+    state.searchResults=[];
+    // ━━━ FIX: Stop GPS watch to prevent it overriding the explicit search ━━━
+    if(window._gpsWatchId!==null){
+      navigator.geolocation.clearWatch(window._gpsWatchId);
+      window._gpsWatchId=null;
+    }
+    // ━━━ FIX: Call searchGyms BEFORE navigate (matching V1 top-bar order) ━━━
+    // searchGyms sets state.searchQuery + state._searchLoading synchronously,
+    // so when navigate→render fires, SearchPage sees the correct loading state.
     searchGyms(q,true);
+    navigate('/explore');
   }
 };
 
@@ -17293,7 +17310,7 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
     // ━━━ GPS BANNER: Gentle nudge to enable GPS, never blocks interaction ━━━
     _showLocationBannerIfNeeded();
     // ━━━ AUTO-PROMPT: Request location on first explore visit ━━━
-    if(!window._gpsGranted&&!window._gpsAutoPrompted&&navigator.geolocation){
+    if(!window._gpsGranted&&!window._gpsAutoPrompted&&!state.userExplicitSearch&&navigator.geolocation){
       window._gpsAutoPrompted=true;
       navigator.geolocation.getCurrentPosition(
         function(pos){
@@ -17301,7 +17318,8 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
           state.searchLat=pos.coords.latitude;
           state.searchLng=pos.coords.longitude;
           var b=document.getElementById('sg-location-banner');if(b)b.remove();
-          findGyms();
+          // ━━━ FIX: Don't call findGyms if user has an active explicit search ━━━
+          if(!state.userExplicitSearch) findGyms();
         },
         function(){/* user denied — banner stays */},
         {enableHighAccuracy:false,timeout:8000,maximumAge:300000}
