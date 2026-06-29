@@ -16215,6 +16215,64 @@ window._closeCreatorMore=function(){
   var m=document.getElementById('creator-more-menu');
   if(m) m.style.display='none';
 };
+
+// ═══ BOTTOM SHEET SYSTEM ═══
+(function(){
+  if(document.getElementById('sg-bottomsheet-styles'))return;
+  var s=document.createElement('style');s.id='sg-bottomsheet-styles';
+  s.textContent=`
+    @keyframes sgSheetSlideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+    @keyframes sgSheetFadeIn{from{opacity:0}to{opacity:1}}
+    @keyframes sgSheetSlideDown{from{transform:translateY(0)}to{transform:translateY(100%)}}
+    @keyframes sgSheetFadeOut{from{opacity:1}to{opacity:0}}
+    .sg-sheet-backdrop{position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.6);animation:sgSheetFadeIn .25s ease}
+    .sg-sheet-backdrop.closing{animation:sgSheetFadeOut .25s ease forwards}
+    .sg-sheet-container{position:fixed;bottom:0;left:0;right:0;z-index:9999;max-height:85vh;background:#111;border-radius:20px 20px 0 0;animation:sgSheetSlideUp .3s cubic-bezier(.32,.72,.37,1.02);overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:env(safe-area-inset-bottom,16px)}
+    .sg-sheet-container.closing{animation:sgSheetSlideDown .25s ease forwards}
+    .sg-sheet-handle{width:40px;height:4px;background:rgba(255,255,255,.2);border-radius:2px;margin:10px auto 6px}
+    .sg-sheet-close{position:absolute;top:14px;right:14px;width:32px;height:32px;background:rgba(255,255,255,.1);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:#fff;border:none;z-index:10}
+  `;
+  document.head.appendChild(s);
+})();
+window._sgOpenSheet=function(id,html){
+  // Remove existing
+  var old=document.getElementById(id+'-backdrop');if(old)old.remove();
+  var oldS=document.getElementById(id);if(oldS)oldS.remove();
+  // Backdrop
+  var bd=document.createElement('div');bd.id=id+'-backdrop';bd.className='sg-sheet-backdrop';
+  bd.onclick=function(e){if(e.target===bd)_sgCloseSheet(id);};
+  document.body.appendChild(bd);
+  // Sheet
+  var sh=document.createElement('div');sh.id=id;sh.className='sg-sheet-container';
+  sh.innerHTML='<div class="sg-sheet-handle"></div><button class="sg-sheet-close" onclick="_sgCloseSheet(\''+id+'\')">\u2715</button><div style="padding:4px 16px 20px">'+html+'</div>';
+  document.body.appendChild(sh);
+  // Swipe down to close
+  var startY=0,currentY=0,dragging=false;
+  sh.addEventListener('touchstart',function(e){
+    if(sh.scrollTop<=0){startY=e.touches[0].clientY;dragging=true;}
+  },{passive:true});
+  sh.addEventListener('touchmove',function(e){
+    if(!dragging)return;
+    currentY=e.touches[0].clientY;
+    var diff=currentY-startY;
+    if(diff>0){sh.style.transform='translateY('+diff+'px)';sh.style.transition='none';}
+  },{passive:true});
+  sh.addEventListener('touchend',function(){
+    if(!dragging)return;dragging=false;
+    var diff=currentY-startY;
+    if(diff>80){_sgCloseSheet(id);}
+    else{sh.style.transform='translateY(0)';sh.style.transition='transform .2s ease';}
+    currentY=0;
+  },{passive:true});
+};
+window._sgCloseSheet=function(id){
+  var sh=document.getElementById(id);
+  var bd=document.getElementById(id+'-backdrop');
+  if(sh){sh.classList.add('closing');}
+  if(bd){bd.classList.add('closing');}
+  setTimeout(function(){if(sh)sh.remove();if(bd)bd.remove();},250);
+};
+
 window._creatorGetLink=function(){
   var u=state&&state.user;
   if(!u){
@@ -16222,12 +16280,10 @@ window._creatorGetLink=function(){
     if(typeof window._sgShowAuthSheet==='function'){window._sgShowAuthSheet('book');}else{navigate('/login');}
     return;
   }
-  // Auto-generate referral handle if missing (same logic as reels auth)
   var refCode=u.referral_code;
   if(!refCode){
     refCode=(u.name||'').replace(/[^a-z0-9]/gi,'').toLowerCase()||(u.phone||'').replace(/[^0-9]/g,'').slice(-6)||('sg'+Date.now().toString(36));
     u.referral_code=refCode;
-    // Register handle with server (fire-and-forget)
     fetch('/api/v2/creator-apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
       first_name:(u.name||'').split(' ')[0]||'',last_name:(u.name||'').split(' ').slice(1).join(' ')||'',
       email:u.email||'',instagram:'',tiktok:'',youtube:'',followers:'',why:'auto-affiliate-link'
@@ -16237,12 +16293,29 @@ window._creatorGetLink=function(){
     localStorage.setItem('sg_creator',JSON.stringify(cd));
   }
   var refLink='https://scangym.com/r/'+refCode;
-  navigator.clipboard.writeText(refLink).then(function(){
-    sgToast('Affiliate link copied! 🔗 '+refLink,'success',3000);
-  }).catch(function(){
-    sgToast('Your link: '+refLink,'info',5000);
-  });
-  _showCreatorScreen(0);
+  var deepLink='scangym://r/'+refCode;
+  _sgOpenSheet('sg-affiliate-sheet',
+    '<h2 style="font-size:20px;font-weight:800;color:#fff;margin:0 0 16px">\ud83d\udd17 Your Affiliate Links</h2>'
+    +'<div style="background:#1a1a1a;border-radius:16px;padding:16px;border:1px solid rgba(255,255,255,.08);margin-bottom:14px">'
+    +'<div style="font-weight:700;font-size:14px;color:#fff;margin-bottom:8px">\ud83d\udcce Web Affiliate Link</div>'
+    +'<div style="background:#222;border:1px solid #FF6D00;border-radius:10px;padding:12px;font-size:12px;color:#FF6D00;font-family:monospace;word-break:break-all;margin-bottom:10px">'+refLink+'</div>'
+    +'<div style="display:flex;gap:8px">'
+    +'<button id="sg-copy-aff" onclick="navigator.clipboard.writeText(\''+refLink+'\').then(function(){sgToast(\'Affiliate link copied!\',\'success\',2000);document.getElementById(\'sg-copy-aff\').textContent=\'Copied!\';setTimeout(function(){try{document.getElementById(\'sg-copy-aff\').textContent=\'\ud83d\udccb Copy Link\'}catch(e){}},1500)}).catch(function(){sgToast(\''+refLink+'\',\'info\',5000)})" style="flex:1;background:#FF6D00;color:#fff;border:none;padding:12px;border-radius:12px;font-weight:700;font-size:13px;cursor:pointer">\ud83d\udccb Copy Link</button>'
+    +'<button onclick="if(navigator.share){navigator.share({title:\'ScanGym\',text:\'Book any gym with no membership!\',url:\''+refLink+'\'}).catch(function(){})}else{navigator.clipboard.writeText(\''+refLink+'\');sgToast(\'Link copied!\',\'success\',2000)}" style="flex:1;background:transparent;color:#FF6D00;border:2px solid #FF6D00;padding:12px;border-radius:12px;font-weight:700;font-size:13px;cursor:pointer">\ud83d\udce4 Share</button>'
+    +'</div></div>'
+    +'<div style="background:#1a1a1a;border-radius:16px;padding:16px;border:1px solid rgba(255,255,255,.08);margin-bottom:14px">'
+    +'<div style="font-weight:700;font-size:14px;color:#fff;margin-bottom:8px">\ud83d\udd17 Deep Link (App)</div>'
+    +'<div style="background:#222;border:1px solid #FF6D00;border-radius:10px;padding:12px;font-size:12px;color:#FF6D00;font-family:monospace;word-break:break-all;margin-bottom:10px">'+deepLink+'</div>'
+    +'<div style="display:flex;gap:8px">'
+    +'<button id="sg-copy-deep" onclick="navigator.clipboard.writeText(\''+deepLink+'\').then(function(){sgToast(\'Deep link copied!\',\'success\',2000);document.getElementById(\'sg-copy-deep\').textContent=\'Copied!\';setTimeout(function(){try{document.getElementById(\'sg-copy-deep\').textContent=\'\ud83d\udccb Copy Deep Link\'}catch(e){}},1500)}).catch(function(){sgToast(\''+deepLink+'\',\'info\',5000)})" style="flex:1;background:#FF6D00;color:#fff;border:none;padding:12px;border-radius:12px;font-weight:700;font-size:13px;cursor:pointer">\ud83d\udccb Copy Deep Link</button>'
+    +'<button onclick="if(navigator.share){navigator.share({title:\'ScanGym\',url:\''+deepLink+'\'}).catch(function(){})}else{navigator.clipboard.writeText(\''+deepLink+'\');sgToast(\'Deep link copied!\',\'success\',2000)}" style="flex:1;background:transparent;color:#FF6D00;border:2px solid #FF6D00;padding:12px;border-radius:12px;font-weight:700;font-size:13px;cursor:pointer">\ud83d\udce4 Share</button>'
+    +'</div></div>'
+    +'<div style="background:linear-gradient(135deg,rgba(255,109,0,.1),rgba(255,109,0,.02));border:1px solid rgba(255,109,0,.15);border-radius:16px;padding:16px;text-align:center">'
+    +'<div style="font-size:28px;margin-bottom:8px">\ud83d\udcb0</div>'
+    +'<div style="color:#fff;font-weight:700;font-size:16px;margin-bottom:4px">Earn 25% Commission</div>'
+    +'<div style="color:rgba(255,255,255,.5);font-size:12px;line-height:1.5">Share your link anywhere \u2014 social media, DMs, stories. You earn 25% on every gym booking!</div>'
+    +'</div>'
+  );
 };
 window._creatorWithdraw=function(){
   var u=state&&state.user;
@@ -16251,9 +16324,59 @@ window._creatorWithdraw=function(){
     if(typeof window._sgShowAuthSheet==='function'){window._sgShowAuthSheet('book');}else{navigate('/login');}
     return;
   }
-  navigate('/wallet');
+  _sgOpenSheet('sg-creator-wallet-sheet',
+    '<h2 style="font-size:20px;font-weight:800;color:#fff;margin:0 0 16px">\ud83d\udcb8 Affiliate Earnings</h2>'
+    +'<div style="background:linear-gradient(135deg,#FF6D00,#ff8f3f);border-radius:16px;padding:20px;margin-bottom:14px;text-align:center">'
+    +'<div style="font-size:12px;opacity:.8;margin-bottom:4px">ScanGym Wallet Balance</div>'
+    +'<div id="sg-cw-balance" style="font-size:36px;font-weight:800;font-family:Sora,Inter,sans-serif">\u2014</div>'
+    +'<div style="font-size:12px;opacity:.7;margin-top:4px">25% commission on referral bookings</div>'
+    +'</div>'
+    +'<button onclick="_sgCreatorWithdrawToBank()" style="width:100%;background:#22c55e;color:#fff;border:none;padding:14px;border-radius:12px;font-weight:700;font-size:15px;cursor:pointer;margin-bottom:8px;box-shadow:0 4px 16px rgba(34,197,94,.3)">\ud83d\udcb8 Withdraw to Bank</button>'
+    +'<button onclick="_sgCreatorAddWithdrawMethod()" style="width:100%;background:rgba(255,255,255,.05);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.08);padding:14px;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer;margin-bottom:14px">\ud83c\udfe6 Add / Change Withdraw Method</button>'
+    +'<div style="background:#1a1a1a;border-radius:16px;padding:16px;border:1px solid rgba(255,255,255,.08)">'
+    +'<div style="font-weight:600;font-size:14px;color:#fff;margin-bottom:10px">Recent Earnings</div>'
+    +'<div id="sg-cw-earnings" style="color:rgba(255,255,255,.4);font-size:13px">Loading...</div>'
+    +'</div>'
+  );
+  _sgLoadCreatorWallet();
 };
-
+window._sgLoadCreatorWallet=async function(){
+  var u=state&&state.user;if(!u)return;
+  var refCode=u.referral_code;if(!refCode){try{var c=JSON.parse(localStorage.getItem('sg_creator')||'null');if(c&&c.handle)refCode=c.handle;}catch(e){}}
+  if(!refCode)return;
+  try{
+    var balR=await fetch('/api/referrals/balance/'+encodeURIComponent(refCode)).then(function(r){return r.json()}).catch(function(){return {}});
+    var earnR=await fetch('/api/referrals/earnings/'+encodeURIComponent(refCode)).then(function(r){return r.json()}).catch(function(){return {}});
+    var balEl=document.getElementById('sg-cw-balance');
+    if(balEl){var bal=parseFloat(balR.balance||0);if(balR.balancePence)bal=parseInt(balR.balancePence)/100;balEl.textContent='\u00a3'+bal.toFixed(2);}
+    var earnEl=document.getElementById('sg-cw-earnings');
+    if(earnEl){
+      var recent=earnR.recentEarnings||earnR.earnings||[];
+      if(recent.length===0){earnEl.innerHTML='<div style="text-align:center;color:rgba(255,255,255,.3);padding:12px">No earnings yet \u2014 share your affiliate link to start earning!</div>';}
+      else{var h='';recent.slice(0,5).forEach(function(e){h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)"><div><div style="font-weight:600;font-size:13px;color:#fff">'+(e.gymName||e.gym_name||'Booking')+'</div><div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:2px">'+(e.date||e.created_at||'')+'</div></div><div style="font-weight:700;color:#22c55e;font-size:14px">+\u00a3'+((parseFloat(e.amount||e.earningsPence||0))/100).toFixed(2)+'</div></div>';});earnEl.innerHTML=h;}
+    }
+  }catch(ex){console.log('[CreatorWallet]',ex.message);}
+};
+window._sgCreatorWithdrawToBank=async function(){
+  var u=state&&state.user;if(!u)return;
+  var refCode=u.referral_code;if(!refCode){try{var c=JSON.parse(localStorage.getItem('sg_creator')||'null');if(c&&c.handle)refCode=c.handle;}catch(e){}}
+  if(!refCode){sgToast('Get your affiliate link first','info',2000);return;}
+  try{
+    var r=await fetch('/api/referrals/withdraw',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({handle:refCode})});
+    var d=await r.json();
+    if(d.success||d.ok){sgToast('Withdrawal requested! Funds arrive in 2-5 business days','success',4000);_sgCloseSheet('sg-creator-wallet-sheet');}
+    else{sgToast(d.error||d.message||'Set up a withdraw method first','info',3000);}
+  }catch(ex){sgToast('Could not process withdrawal','error',3000);}
+};
+window._sgCreatorAddWithdrawMethod=async function(){
+  var u=state&&state.user;if(!u)return;
+  try{
+    var r=await fetch('/api/referrals/stripe-connect',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({email:u.email})});
+    var d=await r.json();
+    if(d.url||d.onboardingUrl||d.connect_url){window.open(d.url||d.onboardingUrl||d.connect_url,'_blank');sgToast('Complete Stripe setup to receive payouts','success',4000);}
+    else{sgToast(d.error||d.message||'Contact support@scangym.com for payout setup','info',4000);}
+  }catch(ex){sgToast('Could not open payout setup','error',3000);}
+};
 // ═══ LOAD CREATOR FULL PAGE DATA FROM API ═══
 window._loadCreatorFullPage=async function(){
   var cd=JSON.parse(localStorage.getItem('sg_creator')||'null');
@@ -16633,8 +16756,53 @@ window._partnerConnectSeam=function(){
     if(typeof window._sgShowAuthSheet==='function'){window._sgShowAuthSheet('book');}else{navigate('/login');}
     return;
   }
-  _showPartnerScreen(2);
-  if(window._sgConnectSeam){window._sgConnectSeam();}else{sgToast('Opening Access Control — tap Connect Seam Account','info',2500);}
+  _sgOpenSheet('sg-seam-sheet',
+    '<h2 style="font-size:20px;font-weight:800;color:#fff;margin:0 0 16px">\ud83d\udd10 Connect Seam Account</h2>'
+    +'<div style="background:#1a1a1a;border-radius:16px;padding:16px;border:1px solid rgba(255,255,255,.08);margin-bottom:14px">'
+    +'<div style="font-weight:700;font-size:14px;color:#fff;margin-bottom:8px">\ud83d\udd12 Smart Lock Access</div>'
+    +'<div style="color:rgba(255,255,255,.5);font-size:12px;line-height:1.5;margin-bottom:14px">Connect your smart lock system via Seam so ScanGym customers can access your gym automatically after booking.</div>'
+    +'<button onclick="_sgSeamConnectExisting()" style="width:100%;background:#FF6D00;color:#fff;border:none;padding:14px;border-radius:12px;font-weight:700;font-size:15px;cursor:pointer;margin-bottom:8px">\ud83d\udd17 Connect Existing Seam Account</button>'
+    +'<div style="text-align:center;font-size:12px;color:rgba(255,255,255,.3);margin:4px 0">or</div>'
+    +'<button onclick="_sgSeamCreateNew()" style="width:100%;background:transparent;color:#FF6D00;border:2px solid #FF6D00;padding:14px;border-radius:12px;font-weight:700;font-size:15px;cursor:pointer">\u2795 Create New Seam Account</button>'
+    +'</div>'
+    +'<div style="background:#1a1a1a;border-radius:16px;padding:16px;border:1px solid rgba(255,255,255,.08)">'
+    +'<div style="font-weight:600;font-size:14px;color:#fff;margin-bottom:10px">Connected Devices</div>'
+    +'<div id="sg-seam-devices" style="color:rgba(255,255,255,.4);font-size:13px">Loading...</div>'
+    +'</div>'
+  );
+  _sgLoadSeamDevices();
+};
+window._sgSeamConnectExisting=async function(){
+  var gymId=window._partnerGymId||0;
+  if(!gymId){try{var dr=await fetch('/api/gym-partner/dashboard',{credentials:'include'});var dd=await dr.json();if(dd.gyms&&dd.gyms.length>0){gymId=dd.gyms[0].id;window._partnerGymId=gymId;}}catch(e){}}
+  if(!gymId){sgToast('Claim a gym first before connecting Seam','info',3000);return;}
+  sgToast('Connecting Seam...','info',2000);
+  try{
+    var r=await fetch('/api/access/owner/create-connect-webview',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({gymId:gymId})});
+    var d=await r.json();
+    if(d.url||d.connectUrl||d.connect_url){window.open(d.url||d.connectUrl||d.connect_url,'_blank');sgToast('Complete Seam setup in the new tab','success',4000);}
+    else{
+      var r2=await fetch('/api/access/owner/connect-seam',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({gymId:gymId})});
+      var d2=await r2.json();
+      if(d2.connectUrl||d2.connect_url){window.open(d2.connectUrl||d2.connect_url,'_blank');sgToast('Seam connection page opened!','success',4000);}
+      else if(d2.success||d2.connected){sgToast('Seam connected successfully!','success',3000);_sgLoadSeamDevices();}
+      else{sgToast(d2.error||d2.message||'Contact support@scangym.com for Seam setup','info',4000);}
+    }
+  }catch(ex){sgToast('Could not reach Seam','error',3000);}
+};
+window._sgSeamCreateNew=function(){
+  window.open('https://console.seam.co/signup','_blank');
+  sgToast('Create your Seam account, then come back and tap Connect','info',5000);
+};
+window._sgLoadSeamDevices=async function(){
+  var el=document.getElementById('sg-seam-devices');if(!el)return;
+  try{
+    var r=await fetch('/api/access/owner/systems',{credentials:'include'});
+    var d=await r.json();
+    var devices=d.systems||d.devices||d.locks||[];
+    if(devices.length===0){el.innerHTML='<div style="text-align:center;color:rgba(255,255,255,.3);padding:12px">No devices connected yet \u2014 connect your Seam account above.</div>';}
+    else{var h='';devices.forEach(function(dev){var name=dev.name||dev.display_name||'Smart Lock';var status=dev.connected||dev.online?'Connected':'Offline';var statusColor=dev.connected||dev.online?'#22c55e':'#ef4444';h+='<div style="display:flex;align-items:center;gap:12px;padding:12px;background:#222;border-radius:10px;margin-bottom:6px;border:1px solid rgba(255,255,255,.06)"><div style="width:40px;height:40px;border-radius:8px;background:#333;display:flex;align-items:center;justify-content:center;font-size:18px">\ud83d\udd12</div><div style="flex:1"><div style="font-weight:600;font-size:13px;color:#fff">'+name+'</div><div style="font-size:11px;color:'+statusColor+';margin-top:2px">\u25cf '+status+'</div></div></div>';});el.innerHTML=h;}
+  }catch(ex){el.innerHTML='<div style="text-align:center;color:rgba(255,255,255,.3);padding:12px">Could not load devices</div>';}
 };
 window._partnerWithdraw=async function(){
   var u=state&&state.user;
@@ -16643,21 +16811,62 @@ window._partnerWithdraw=async function(){
     if(typeof window._sgShowAuthSheet==='function'){window._sgShowAuthSheet('book');}else{navigate('/login');}
     return;
   }
-  // Show earnings screen
-  _showPartnerScreen(4);
-  // Also check wallet balance — partners can withdraw via wallet too
-  try{
-    var wr=await fetch('/api/wallet',{credentials:'include',headers:{'Accept':'application/json'}}).catch(function(){return null;});
-    if(wr&&wr.ok){
-      var wd=await wr.json().catch(function(){return {};});
-      var bal=parseFloat(wd.balance||0);
-      if(bal>0){
-        sgToast('Wallet balance: £'+bal.toFixed(2)+' — tap Profile > Wallet to withdraw','success',4000);
-      }
-    }
-  }catch(e){}
+  _sgOpenSheet('sg-partner-wallet-sheet',
+    '<h2 style="font-size:20px;font-weight:800;color:#fff;margin:0 0 16px">\ud83d\udcb8 Pass Earnings</h2>'
+    +'<div style="background:linear-gradient(135deg,#FF6D00,#ff8f3f);border-radius:16px;padding:20px;margin-bottom:14px;text-align:center">'
+    +'<div style="font-size:12px;opacity:.8;margin-bottom:4px">ScanGym Wallet Balance</div>'
+    +'<div id="sg-pw-balance" style="font-size:36px;font-weight:800;font-family:Sora,Inter,sans-serif">\u2014</div>'
+    +'<div style="font-size:12px;opacity:.7;margin-top:4px">85% commission \u00b7 You keep the most</div>'
+    +'</div>'
+    +'<button onclick="_sgPartnerWithdrawToBank()" style="width:100%;background:#22c55e;color:#fff;border:none;padding:14px;border-radius:12px;font-weight:700;font-size:15px;cursor:pointer;margin-bottom:8px;box-shadow:0 4px 16px rgba(34,197,94,.3)">\ud83d\udcb8 Withdraw to Bank</button>'
+    +'<button onclick="_sgPartnerAddWithdrawMethod()" style="width:100%;background:rgba(255,255,255,.05);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.08);padding:14px;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer;margin-bottom:14px">\ud83c\udfe6 Add / Change Withdraw Method</button>'
+    +'<div style="background:#1a1a1a;border-radius:16px;padding:16px;border:1px solid rgba(255,255,255,.08);margin-bottom:14px">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><div style="font-weight:600;font-size:14px;color:#fff">Recent Bookings</div><span style="display:inline-flex;align-items:center;gap:4px;background:rgba(76,175,80,.15);color:#4CAF50;font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px">\ud83d\udc9a You keep 85%</span></div>'
+    +'<div id="sg-pw-bookings" style="color:rgba(255,255,255,.4);font-size:13px">Loading...</div>'
+    +'</div>'
+    +'<div style="background:#1a1a1a;border-radius:16px;padding:16px;border:1px solid rgba(255,255,255,.08)">'
+    +'<div style="font-weight:600;font-size:14px;color:#fff;margin-bottom:8px">Payout History</div>'
+    +'<div id="sg-pw-payouts" style="color:rgba(255,255,255,.4);font-size:13px">Loading...</div>'
+    +'</div>'
+  );
+  _sgLoadPartnerWallet();
 };
-
+window._sgLoadPartnerWallet=async function(){
+  try{
+    var earnR=await fetch('/api/gym-partner/earnings',{credentials:'include'}).then(function(r){return r.json()}).catch(function(){return {}});
+    var payR=await fetch('/api/gym-partner/payouts',{credentials:'include'}).then(function(r){return r.json()}).catch(function(){return {}});
+    var balEl=document.getElementById('sg-pw-balance');
+    if(balEl){var bal=parseFloat(earnR.balance||earnR.availableBalance||0);balEl.textContent='\u00a3'+bal.toFixed(2);}
+    var bkEl=document.getElementById('sg-pw-bookings');
+    if(bkEl){
+      var bookings=earnR.recentBookings||earnR.bookings||[];
+      if(bookings.length===0){bkEl.innerHTML='<div style="text-align:center;color:rgba(255,255,255,.3);padding:12px">No bookings yet \u2014 once customers book your gym, earnings show here!</div>';}
+      else{var h='';bookings.slice(0,5).forEach(function(b){var amount=parseFloat(b.partnerAmount||b.amount||b.revenue||0);h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)"><div><div style="font-weight:600;font-size:13px;color:#fff">Day Pass \u2014 '+(b.customerName||b.customer_name||'Customer')+'</div><div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:2px">'+(b.date||b.created_at||'')+' \u00b7 \u00a3'+(parseFloat(b.totalAmount||b.total||0)).toFixed(2)+' pass</div></div><div style="font-weight:700;color:#22c55e;font-size:14px">+\u00a3'+amount.toFixed(2)+'</div></div>';});bkEl.innerHTML=h;}
+    }
+    var poEl=document.getElementById('sg-pw-payouts');
+    if(poEl){
+      var payouts=payR.payouts||payR.withdrawals||[];
+      if(payouts.length===0){poEl.innerHTML='<div style="text-align:center;color:rgba(255,255,255,.3);padding:12px">No payouts yet</div>';}
+      else{var h='';payouts.slice(0,5).forEach(function(p){var st=p.status||'pending';var stColor=st==='completed'||st==='paid'?'#22c55e':st==='pending'?'#fbbf24':'#ef4444';h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)"><div><div style="font-weight:600;font-size:13px;color:#fff">\u00a3'+parseFloat(p.amount||0).toFixed(2)+'</div><div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:2px">'+(p.date||p.created_at||'')+'</div></div><div style="font-size:12px;font-weight:600;color:'+stColor+'">'+st.charAt(0).toUpperCase()+st.slice(1)+'</div></div>';});poEl.innerHTML=h;}
+    }
+  }catch(ex){console.log('[PartnerWallet]',ex.message);}
+};
+window._sgPartnerWithdrawToBank=async function(){
+  try{
+    var r=await fetch('/api/gym-partner/request-payout',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({})});
+    var d=await r.json();
+    if(d.success||d.ok){sgToast('Payout requested! Funds arrive in 2-5 business days','success',4000);_sgCloseSheet('sg-partner-wallet-sheet');}
+    else{sgToast(d.error||d.message||'Set up a withdraw method first','info',3000);}
+  }catch(ex){sgToast('Could not process payout','error',3000);}
+};
+window._sgPartnerAddWithdrawMethod=async function(){
+  try{
+    var r=await fetch('/api/gym-partner/stripe-connect',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({})});
+    var d=await r.json();
+    if(d.url||d.onboardingUrl||d.connect_url){window.open(d.url||d.onboardingUrl||d.connect_url,'_blank');sgToast('Complete Stripe setup to receive payouts','success',4000);}
+    else{sgToast(d.error||d.message||'Contact support@scangym.com for payout setup','info',4000);}
+  }catch(ex){sgToast('Could not open payout setup','error',3000);}
+};
 // ── Fix 2-2: Load partner dashboard stats into Screen 0 ──
 window._partnerLoadHome=async function(){
   try{
