@@ -975,34 +975,22 @@ var _patchInterval=setInterval(function(){
       _injectContinueBanner('partner');
     };
 
-    // Patch _showCreatorScreen to refresh banner
-    var _origShowCreatorScreen=window._showCreatorScreen;
-    if(_origShowCreatorScreen){
-      window._showCreatorScreen=function(idx){
-        _origShowCreatorScreen(idx);
-        _injectContinueBanner('creator');
-      };
-    }
-
-    // Listen for route switches to inject/remove banner
-    // Note: /partner and /creator map to activeTab='more', so check route
+    // Listen for route switches to inject/remove partner banner
+    // Note: /partner maps to activeTab='more', so check route
     var _lastRoute='';
     setInterval(function(){
       var route=state&&state.route;
       var isPartner=(route==='/partner'||route==='/partner/');
-      var isCreator=(route==='/creator'||route==='/creator/');
       if(route!==_lastRoute){
         _lastRoute=route;
         if(!isPartner){
           var pb=document.getElementById('partner-continue-banner');
           if(pb)pb.remove();
         }
-        if(!isCreator){
-          var cb=document.getElementById('creator-continue-banner');
-          if(cb)cb.remove();
-        }
+        // Always remove creator banner (no longer used)
+        var cb=document.getElementById('creator-continue-banner');
+        if(cb)cb.remove();
         if(isPartner)_injectContinueBanner('partner');
-        if(isCreator)_injectContinueBanner('creator');
       }
     },300);
   }
@@ -1011,7 +999,7 @@ var _patchInterval=setInterval(function(){
 // Banner animation styles
 var _bannerStyle=document.createElement('style');
 _bannerStyle.textContent=''
-  +'#partner-continue-banner,#creator-continue-banner{'
+  +'#partner-continue-banner{'
   +'animation:ctaBannerIn .4s cubic-bezier(.32,.72,0,1) both;'
   +'}'
   +'@keyframes ctaBannerIn{'

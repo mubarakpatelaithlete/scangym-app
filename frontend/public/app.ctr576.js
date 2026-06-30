@@ -13392,9 +13392,9 @@ function BottomTabBar(){
       ${bookIcon}
       <span class="sg-tab-label">Book</span>
     </button>
-    <button class="sg-tab-item ${t==='creator'?'active':''}" role="tab" aria-selected="${t==='creator'}" aria-label="Creator" onclick="switchTab('creator')">
+    <button class="sg-tab-item ${t==='creator'?'active':''}" role="tab" aria-selected="${t==='creator'}" aria-label="ScanSquad" onclick="switchTab('creator')">
       ${creatorIcon}
-      <span class="sg-tab-label">Creator</span>
+      <span class="sg-tab-label">ScanSquad</span>
     </button>
     <button class="sg-tab-item ${t==='partner'?'active':''}" role="tab" aria-selected="${t==='partner'}" aria-label="Partner" onclick="switchTab('partner')">
       ${partnerIcon}
@@ -16045,7 +16045,7 @@ window._requestPayNextVisit=async function(){
 // ═══ CREATOR TAB PAGE (OnlyFans-inspired) — Fixed fullscreen, no scrolling ═══
 function CreatorFullPage(){
   var u=state&&state.user;
-  var name=u?(u.full_name||u.email||'Creator'):'Creator';
+  var name=u?(u.full_name||u.email||'ScanSquad'):'ScanSquad';
   var refCode=u?(u.referral_code||'creator123'):'creator123';
   var refLink='scangym.com/r/'+refCode;
   var firstName=name.split(' ')[0];
@@ -16085,7 +16085,7 @@ function CreatorFullPage(){
         <div style="width:48px;height:48px;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#fff">${firstName[0]}</div>
         <div>
           <h1 style="font-size:20px;font-weight:900;color:#fff;margin:0">Hey, ${firstName} \ud83d\udc4b</h1>
-          <p style="color:rgba(255,255,255,.4);font-size:11px;margin:2px 0 0">Creator since ${new Date().toLocaleDateString('en-GB',{month:'short',year:'numeric'})}</p>
+          <p style="color:rgba(255,255,255,.4);font-size:11px;margin:2px 0 0">ScanSquad since ${new Date().toLocaleDateString('en-GB',{month:'short',year:'numeric'})}</p>
         </div>
       </div>
       <div style="background:linear-gradient(135deg,rgba(168,85,247,.12),rgba(255,109,0,.08));border:1px solid rgba(168,85,247,.2);border-radius:16px;padding:14px;margin-bottom:12px;text-align:center">
@@ -16114,8 +16114,7 @@ function CreatorFullPage(){
         <button onclick="navigator.clipboard.writeText('https://${refLink}');this.textContent='\u2713';setTimeout(()=>this.textContent='Copy',1500)" style="background:#a855f7;color:#fff;border:none;padding:6px 12px;border-radius:8px;font-weight:700;font-size:11px;cursor:pointer">Copy</button>
       </div>
       <div style="display:flex;gap:6px">
-        <button onclick="navigator.share?navigator.share({title:'ScanGym',url:'https://${refLink}'}):navigator.clipboard.writeText('https://${refLink}')" style="flex:1;background:#a855f7;color:#fff;border:none;padding:10px;border-radius:12px;font-weight:700;font-size:12px;cursor:pointer">\ud83d\udce4 Share</button>
-        <button onclick="_showCreatorScreen(2)" style="flex:1;background:rgba(255,255,255,.05);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.08);padding:10px;border-radius:12px;font-weight:700;font-size:12px;cursor:pointer">\ud83d\udcf9 Create</button>
+        <button onclick="navigator.share?navigator.share({title:'ScanGym',url:'https://${refLink}'}):navigator.clipboard.writeText('https://${refLink}')" style="flex:1;background:#a855f7;color:#fff;border:none;padding:12px;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer">\ud83d\udce4 Share</button>
       </div>
     </div>
     <!-- Screen 1: ANALYTICS -->
