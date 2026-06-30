@@ -16603,6 +16603,47 @@ function PartnerFullPage(){
   })();
 
   return `<style>
+    /* ═══ Gym layout CSS (self-contained — mirrors GymProfilePage) ═══ */
+    .gym-fs-hero{position:relative;width:100%;height:calc(100vh - 56px);height:calc(100dvh - 56px);overflow:hidden;background:#0a0a0a;display:flex;flex-direction:column}
+    .gym-carousel-wrap{position:relative;width:100%;height:38vh;height:38dvh;overflow:hidden;background:#0a0a0a;flex-shrink:0}
+    .gym-carousel-track{display:flex;height:100%;transition:transform .3s cubic-bezier(.4,0,.2,1);will-change:transform}
+    .gym-carousel-track.dragging{transition:none}
+    .gym-carousel-slide{flex:0 0 100%;width:100%;height:100%;position:relative}
+    .gym-carousel-slide img{width:100%;height:100%;object-fit:cover}
+    .gym-carousel-slide .no-photo{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:64px;background:linear-gradient(135deg,#1e293b 0%,#0f172a 100%)}
+    .gym-carousel-counter{position:absolute;top:12px;right:12px;background:rgba(0,0,0,.7);color:#fff;font-size:13px;font-weight:600;padding:4px 10px;border-radius:12px;z-index:6;letter-spacing:.5px;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+    .gym-carousel-dots{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:5px;z-index:6}
+    .gym-carousel-dots span{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.35);transition:all .3s}
+    .gym-carousel-dots span.active{background:#fff;width:18px;border-radius:3px}
+    .gym-carousel-wrap::after{content:'';position:absolute;top:0;right:0;bottom:0;width:20px;background:linear-gradient(90deg,transparent,rgba(0,0,0,.15));pointer-events:none;z-index:3;opacity:0;transition:opacity .3s}
+    .gym-carousel-wrap.has-next::after{opacity:1}
+    .gym-carousel-price{position:absolute;bottom:10px;right:12px;background:#FF6D00;color:#fff;font-size:14px;font-weight:800;padding:4px 10px;border-radius:10px;z-index:6;box-shadow:0 2px 8px rgba(255,109,0,.4)}
+    .gym-info-section{flex:1;display:flex;flex-direction:column;padding:12px 16px 0;overflow-y:auto;-webkit-overflow-scrolling:touch;background:#0a0f14;position:relative}
+    .gym-info-section::before{content:'';position:absolute;top:20%;left:50%;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,rgba(255,109,0,.06) 0%,rgba(255,109,0,.02) 40%,transparent 70%);transform:translateX(-50%);pointer-events:none;z-index:0}
+    .gym-info-card{margin-bottom:8px}
+    .gym-info-name{font-family:'Sora',sans-serif;font-size:22px;font-weight:800;color:#fff;line-height:1.15;margin-bottom:2px}
+    .gym-info-addr{color:rgba(255,255,255,.55);font-size:13px;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .gym-tt-actions{position:absolute;right:14px;top:16px;display:flex;flex-direction:column;gap:16px;z-index:5}
+    .gym-tt-item{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+    .gym-tt-circle{width:44px;height:44px;border-radius:0;background:transparent;border:none;display:flex;align-items:center;justify-content:center;font-size:22px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.4));transition:transform .15s}
+    .gym-tt-circle:active{transform:scale(.85)}
+    .gym-tt-text{font-size:9px;color:rgba(255,255,255,.7);font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8);text-align:center;white-space:nowrap}
+    .gym-pass-header{color:#fff;font-size:18px;font-weight:800;text-align:center;padding:4px 0 8px;font-family:'Sora',sans-serif}
+    .gym-pass-cards{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;padding-bottom:140px}
+    .gym-pass-card{display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px;padding:12px 8px 10px;border-radius:14px;border:2px solid rgba(255,255,255,.08);background:transparent;cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent;position:relative}
+    .gym-pass-card.selected{border-color:#FF6D00;background:rgba(255,109,0,.04)}
+    .gym-pass-card:active{transform:scale(.98)}
+    .gym-pass-card-icon{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,rgba(255,109,0,.15),rgba(255,109,0,.05));display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+    .gym-pass-card-top{display:flex;align-items:center;gap:6px}
+    .gym-pass-card-info{flex:1;min-width:0}
+    .gym-pass-card-name{color:#fff;font-size:13px;font-weight:700}
+    .gym-pass-card-sub{color:rgba(255,255,255,.4);font-size:10px;margin-top:1px}
+    .gym-pass-card-badge{display:inline-block;background:#FF6D00;color:#fff;font-size:8px;font-weight:700;padding:2px 7px;border-radius:5px;position:absolute;top:-8px;left:50%;transform:translateX(-50%);white-space:nowrap;letter-spacing:.3px}
+    .gym-pass-card .gym-pass-price{color:#fff;font-size:20px;font-weight:900;margin:2px 0 1px}
+    .gym-pass-card .gym-pass-perday{color:rgba(255,255,255,.4);font-size:10px}
+    .gym-pass-card .gym-pass-save{font-size:9px;font-weight:700;color:#FF6D00;background:rgba(255,109,0,.1);padding:2px 6px;border-radius:4px;margin-top:3px}
+    .gym-sticky-bar{position:absolute;bottom:0;left:0;right:0;z-index:50;background:#0a0f14;border-top:1px solid rgba(255,255,255,.08);padding-bottom:env(safe-area-inset-bottom,0px)}
+    /* ═══ Partner edit controls ═══ */
     .pe-btn{position:absolute;background:rgba(255,109,0,.9);color:#fff;border:none;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;z-index:5;box-shadow:0 2px 8px rgba(0,0,0,.3);transition:transform .15s}
     .pe-btn:active{transform:scale(.9)}
     .pe-inline{display:inline-flex;align-items:center;gap:4px;cursor:pointer;-webkit-tap-highlight-color:transparent}
