@@ -16566,223 +16566,445 @@ function ListYourGymFullPage(){
 function PartnerFullPage(){
   var u=state&&state.user;
   var gymName=u?(u.gym_name||'Your Gym'):'Your Gym';
-  return `<div style="position:fixed;top:0;left:0;right:0;bottom:56px;background:#0a0a16;display:flex;flex-direction:column;overflow:hidden">
-    <!-- Side nav buttons (3 core flow + More) -->
-    <div style="position:absolute;right:8px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:10px;z-index:10">
-      <!-- 1. Sign In -->
-      <div onclick="${u?'sgToast(\'Already signed in ✅\',\'success\',1500)':'(typeof window._sgShowAuthSheet===\'function\'?window._sgShowAuthSheet(\'book\'):navigate(\'/login\'))'};_closePartnerMore()" class="partner-side-btn" style="width:42px;height:42px;background:${u?'rgba(34,197,94,.2)':'rgba(255,109,0,.25)'};backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:1px solid ${u?'rgba(34,197,94,.3)':'rgba(255,109,0,.4)'};transition:.2s;box-shadow:0 0 16px ${u?'rgba(34,197,94,.15)':'rgba(255,109,0,.2)'}" title="Sign In">${u?'\u2705':'\ud83d\udd11'}</div>
-      <!-- 2. Connect Seam Account -->
-      <div onclick="_partnerConnectSeam();_closePartnerMore()" class="partner-side-btn" style="width:42px;height:42px;background:rgba(168,85,247,.2);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:1px solid rgba(168,85,247,.3);transition:.2s;box-shadow:0 0 12px rgba(168,85,247,.15)" title="Connect Seam Account">\ud83d\udd17</div>
-      <!-- 3. Withdraw Money -->
-      <div onclick="_partnerWithdraw();_closePartnerMore()" class="partner-side-btn" style="width:42px;height:42px;background:rgba(34,197,94,.15);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:1px solid rgba(34,197,94,.2);transition:.2s;box-shadow:0 0 12px rgba(34,197,94,.1)" title="Withdraw Money">\ud83d\udcb8</div>
-      <!-- 4. More -->
-      <div onclick="_togglePartnerMore()" class="partner-side-btn" id="partner-more-btn" style="width:42px;height:42px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;letter-spacing:2px;border:1px solid rgba(255,255,255,.06);transition:.2s;color:rgba(255,255,255,.6)" title="More">\u2022\u2022\u2022</div>
+  // Editable gym data (populated by _partnerLoadGymProfile)
+  var gd=window._partnerGymData||{};
+  var photos=gd.photos||[];
+  var dayPrice=gd.dayPrice||'4.49';
+  var threeDayPrice=gd.threeDayPrice||(parseFloat(dayPrice)*2.67).toFixed(2);
+  var weeklyPrice=gd.weeklyPrice||(parseFloat(dayPrice)*5).toFixed(2);
+  var monthlyPrice=gd.monthlyPrice||(parseFloat(dayPrice)*10).toFixed(2);
+  var sym=gd.currencySymbol||'\u00a3';
+  var addr=gd.address||'Tap to set your gym address';
+  var gName=gd.name||gymName;
+  var isOpen=gd.isOpen!==false;
+  var desc=gd.description||'';
+  // Photo carousel HTML
+  var photoSlides='';
+  if(photos.length>0){photos.slice(0,4).forEach(function(p,i){photoSlides+='<div class="gym-carousel-slide"><img src="'+(p.url||p.thumbnail||p)+'" alt="Photo '+(i+1)+'" loading="lazy" decoding="async" onerror="this.parentElement.innerHTML=\'<div class=\\\'no-photo\\\'>\\ud83c\\udfcb\\ufe0f</div>\'"></div>';});}
+  else{photoSlides='<div class="gym-carousel-slide"><div class="no-photo">\ud83c\udfcb\ufe0f</div></div>';}
+  // Popular times bars
+  var ptBars=(function(){
+    var h=new Date().getHours();
+    var levels=[10,5,3,2,2,8,25,65,80,55,40,45,60,50,40,35,50,70,85,75,55,40,30,15];
+    var bars='';
+    for(var i=6;i<=22;i++){
+      var pct=levels[i]||10;
+      var isCurrent=(i===h);
+      var color=isCurrent?'#FF6D00':(pct>70?'#ef4444':pct>40?'#eab308':'#22c55e');
+      bars+='<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">';
+      bars+='<div style="width:100%;height:36px;display:flex;align-items:flex-end"><div style="width:100%;height:'+pct+'%;background:'+color+';border-radius:3px 3px 0 0;min-height:2px;opacity:'+(isCurrent?'1':'.6')+'"></div></div>';
+      if(i%3===0||isCurrent) bars+='<span style="font-size:9px;color:rgba(255,255,255,'+(isCurrent?'.8':'.25')+');font-weight:'+(isCurrent?'700':'400')+'">'+(i>12?i-12:i)+(i>=12?'p':'a')+'</span>';
+      else bars+='<span style="font-size:9px;color:transparent">.</span>';
+      bars+='</div>';
+    }
+    var currentLevel=levels[h]||10;
+    var busyText=currentLevel>70?'\ud83d\udd34 Busy right now':currentLevel>40?'\ud83d\udfe1 Moderately busy':'\ud83d\udfe2 Not busy right now';
+    return '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="color:rgba(255,255,255,.5);font-size:11px;font-weight:600">Popular times</span><span style="font-size:11px;font-weight:600;color:'+(currentLevel>70?'#ef4444':currentLevel>40?'#eab308':'#22c55e')+'">'+busyText+'</span></div><div style="display:flex;gap:2px;align-items:flex-end">'+bars+'</div>';
+  })();
+
+  return `<style>
+    .pe-btn{position:absolute;background:rgba(255,109,0,.9);color:#fff;border:none;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;z-index:5;box-shadow:0 2px 8px rgba(0,0,0,.3);transition:transform .15s}
+    .pe-btn:active{transform:scale(.9)}
+    .pe-inline{display:inline-flex;align-items:center;gap:4px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+    .pe-inline:active{opacity:.7}
+    .pe-field{background:rgba(255,255,255,.06);border:1px solid rgba(255,109,0,.3);border-radius:10px;color:#fff;font-size:inherit;font-weight:inherit;font-family:inherit;padding:6px 10px;outline:none;width:100%}
+    .pe-field:focus{border-color:#FF6D00;box-shadow:0 0 0 2px rgba(255,109,0,.2)}
+    .pe-save-row{display:flex;gap:6px;margin-top:6px}
+    .pe-save-btn{background:#FF6D00;color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer}
+    .pe-cancel-btn{background:rgba(255,255,255,.08);color:rgba(255,255,255,.6);border:none;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer}
+    @keyframes greenGlow{0%,100%{box-shadow:0 4px 20px rgba(255,109,0,.35)}50%{box-shadow:0 4px 30px rgba(255,109,0,.55)}}
+  </style>
+
+  <div class="gym-fs-hero" id="partner-profile-page" style="position:relative">
+    <!-- ═══ Photo Carousel (same as Book tab) + Edit overlay ═══ -->
+    <div class="gym-carousel-wrap${photos.length>1?' has-next':''}" id="partner-carousel-wrap">
+      <div class="gym-carousel-track" id="partner-carousel-track">
+        ${photoSlides}
+      </div>
+      <!-- Edit Photos button (top right) -->
+      <button class="pe-btn" style="top:16px;right:16px;width:auto;border-radius:20px;padding:0 12px;gap:4px;font-size:12px;font-weight:700" onclick="_partnerEditPhotos()">📷 Edit</button>
+      <!-- Photo counter -->
+      ${photos.length>1?'<div class="gym-carousel-counter" id="partner-carousel-counter">1/'+Math.min(photos.length,4)+'</div>':''}
+      <!-- Dot indicators -->
+      ${photos.length>1?'<div class="gym-carousel-dots" id="partner-carousel-dots">'+photos.slice(0,4).map(function(_,i){return '<span class="'+(i===0?'active':'')+'"></span>';}).join('')+'</div>':''}
+      <!-- Price badge -->
+      <div class="gym-carousel-price" onclick="_partnerEditPrice('day')" style="cursor:pointer">${sym}${dayPrice} ✏️</div>
     </div>
-    <!-- More dropdown menu -->
-    <div id="partner-more-menu" style="display:none;position:absolute;right:58px;top:50%;transform:translateY(-50%);z-index:11;background:rgba(15,15,30,.95);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:8px;min-width:180px;box-shadow:0 8px 32px rgba(0,0,0,.5)">
-      <div onclick="_showPartnerScreen(0);_closePartnerMore()" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:.15s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='transparent'">
-        <span style="font-size:16px">\ud83c\udfe0</span><span style="color:#fff;font-size:13px;font-weight:600">Home</span>
+
+    <!-- ═══ Info Section (mirrors Book tab) ═══ -->
+    <div class="gym-info-section">
+      <div class="gym-info-card">
+        <!-- Gym Name (editable) -->
+        <div class="gym-info-name pe-inline" id="partner-name-display" onclick="_partnerEditField('name')">
+          ${gName} <span style="font-size:14px;opacity:.5">✏️</span>
+        </div>
+        <!-- Address (editable) -->
+        <div class="gym-info-addr pe-inline" id="partner-addr-display" onclick="_partnerEditField('address')" style="cursor:pointer">
+          📍 ${addr} <span style="color:#FF6D00;font-size:12px;font-weight:600;margin-left:4px">Edit →</span>
+        </div>
+        <!-- Status badges -->
+        <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
+          <span onclick="_partnerToggleOpen()" style="display:inline-flex;align-items:center;gap:4px;background:${isOpen?'rgba(34,197,94,.12)':'rgba(239,68,68,.1)'};border:1px solid ${isOpen?'rgba(34,197,94,.2)':'rgba(239,68,68,.18)'};border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700;color:${isOpen?'#4ade80':'#f87171'};cursor:pointer" id="partner-open-badge">${isOpen?'✅ Open Now':'🔴 Closed'} ✏️</span>
+          <span onclick="_partnerEditPrice('day')" style="display:inline-flex;align-items:center;gap:4px;background:rgba(255,109,0,.12);border:1px solid rgba(255,109,0,.2);border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700;color:#FF6D00;cursor:pointer">💰 ${sym}${dayPrice}/day ✏️</span>
+          <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.2);border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700;color:#a78bfa">📱 QR Entry</span>
+          <span onclick="_partnerConnectSeam()" style="display:inline-flex;align-items:center;gap:4px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.18);border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700;color:#60a5fa;cursor:pointer">🔐 Smart Lock ✏️</span>
+        </div>
+        <!-- Real-time stats (replacing social proof) -->
+        <div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap">
+          <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.2);border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700;color:#4ade80" id="partner-stat-bookings">📈 Loading...</span>
+          <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(255,109,0,.1);border:1px solid rgba(255,109,0,.18);border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700;color:#FF6D00" id="partner-stat-revenue">💷 Loading...</span>
+          <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.18);border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700;color:#60a5fa" id="partner-stat-rating">⭐ Loading...</span>
+        </div>
+        <!-- Popular times -->
+        <div style="margin-top:8px" id="partner-busyness-widget">
+          ${ptBars}
+        </div>
       </div>
-      <div onclick="_showPartnerScreen(1);_closePartnerMore()" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:.15s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='transparent'">
-        <span style="font-size:16px">\ud83d\udccb</span><span style="color:#fff;font-size:13px;font-weight:600">Live Orders</span>
+
+      <!-- ═══ Right-side action icons (same as Book tab but Partner actions) ═══ -->
+      <div class="gym-tt-actions">
+        <div class="gym-tt-item" onclick="_partnerWithdraw()">
+          <div class="gym-tt-circle">💰</div>
+          <div class="gym-tt-text">Earnings</div>
+        </div>
+        <div class="gym-tt-item" onclick="_partnerConnectSeam()">
+          <div class="gym-tt-circle">🔐</div>
+          <div class="gym-tt-text">Locks</div>
+        </div>
+        <div class="gym-tt-item" onclick="_partnerEditHours()">
+          <div class="gym-tt-circle">🕐</div>
+          <div class="gym-tt-text">Hours</div>
+        </div>
       </div>
-      <div onclick="_showPartnerScreen(2);_closePartnerMore()" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:.15s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='transparent'">
-        <span style="font-size:16px">\ud83d\udd10</span><span style="color:#fff;font-size:13px;font-weight:600">Access Control</span>
+
+      <!-- ═══ 2×2 Pass Cards (same as Book tab but EDITABLE prices) ═══ -->
+      <div class="gym-pass-header">Your Pass Pricing <span style="font-size:12px;opacity:.5">✏️ tap to edit</span></div>
+      <div class="gym-pass-cards" id="partner-pass-cards">
+        <div class="gym-pass-card selected" onclick="_partnerEditPrice('day')" style="cursor:pointer">
+          <div class="gym-pass-card-badge">⚡ MOST POPULAR</div>
+          <div class="gym-pass-card-top"><div class="gym-pass-card-icon">⚡</div><span class="gym-pass-card-name">Day Pass</span></div>
+          <div class="gym-pass-price" id="partner-price-day">${sym}${dayPrice}</div>
+          <div class="gym-pass-perday">24h access</div>
+        </div>
+        <div class="gym-pass-card" onclick="_partnerEditPrice('3day')" style="cursor:pointer">
+          <div class="gym-pass-card-top"><div class="gym-pass-card-icon">🔥</div><span class="gym-pass-card-name">3-Day Pass</span></div>
+          <div class="gym-pass-price" id="partner-price-3day">${sym}${threeDayPrice}</div>
+          <div class="gym-pass-perday">${sym}${(parseFloat(threeDayPrice)/3).toFixed(2)}/day</div>
+          <div class="gym-pass-save">Save 20%</div>
+        </div>
+        <div class="gym-pass-card" onclick="_partnerEditPrice('weekly')" style="cursor:pointer">
+          <div class="gym-pass-card-top"><div class="gym-pass-card-icon">📅</div><span class="gym-pass-card-name">Weekly</span></div>
+          <div class="gym-pass-price" id="partner-price-weekly">${sym}${weeklyPrice}</div>
+          <div class="gym-pass-perday">${sym}${(parseFloat(weeklyPrice)/7).toFixed(2)}/day</div>
+          <div class="gym-pass-save">Save 43%</div>
+        </div>
+        <div class="gym-pass-card" onclick="_partnerEditPrice('monthly')" style="cursor:pointer">
+          <div class="gym-pass-card-badge" style="background:#f59e0b">👑 BEST VALUE</div>
+          <div class="gym-pass-card-top"><div class="gym-pass-card-icon">🏆</div><span class="gym-pass-card-name">Monthly</span></div>
+          <div class="gym-pass-price" id="partner-price-monthly">${sym}${monthlyPrice}</div>
+          <div class="gym-pass-perday">${sym}${(parseFloat(monthlyPrice)/30).toFixed(2)}/day</div>
+          <div class="gym-pass-save">Save 67%</div>
+        </div>
       </div>
-      <div onclick="_showPartnerScreen(3);_closePartnerMore()" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:.15s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='transparent'">
-        <span style="font-size:16px">\ud83d\udcca</span><span style="color:#fff;font-size:13px;font-weight:600">Analytics</span>
+
+      <!-- ═══ Gym Description (editable) ═══ -->
+      <div style="margin-top:16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px;margin-left:16px;margin-right:16px">
+        <p style="color:#fff;font-weight:700;font-size:14px;margin-bottom:10px">📝 Gym Description <span onclick="_partnerEditField('description')" style="font-size:12px;color:#FF6D00;cursor:pointer;font-weight:600">Edit →</span></p>
+        <div id="partner-desc-display" style="color:rgba(255,255,255,.6);font-size:13px;line-height:1.7">${desc||'<span style="color:rgba(255,255,255,.3);font-style:italic">Tap Edit to add a description — tell customers about your gym, equipment, vibe...</span>'}</div>
       </div>
-      <div onclick="_showPartnerScreen(5);_closePartnerMore()" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:.15s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='transparent'">
-        <span style="font-size:16px">\u2699\ufe0f</span><span style="color:#fff;font-size:13px;font-weight:600">Manage Gym</span>
+
+      <!-- ═══ Facilities (editable) ═══ -->
+      <div style="margin-top:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px;margin-left:16px;margin-right:16px">
+        <p style="color:#fff;font-weight:700;font-size:14px;margin-bottom:10px">🏋️ Facilities & Equipment <span onclick="_partnerEditFacilities()" style="font-size:12px;color:#FF6D00;cursor:pointer;font-weight:600">Edit →</span></p>
+        <div id="partner-facilities-grid" class="ov-grid" style="grid-template-columns:repeat(3,1fr);gap:8px">
+          <div class="ov-grid-item" style="padding:12px 8px"><span class="ov-grid-icon">🏋️</span><span class="ov-grid-name">Weights</span></div>
+          <div class="ov-grid-item" style="padding:12px 8px"><span class="ov-grid-icon">🏃</span><span class="ov-grid-name">Cardio</span></div>
+          <div class="ov-grid-item" style="padding:12px 8px"><span class="ov-grid-icon">🚿</span><span class="ov-grid-name">Showers</span></div>
+          <div class="ov-grid-item" style="padding:12px 8px"><span class="ov-grid-icon">🔐</span><span class="ov-grid-name">Lockers</span></div>
+          <div class="ov-grid-item" style="padding:12px 8px"><span class="ov-grid-icon">🅿️</span><span class="ov-grid-name">Parking</span></div>
+          <div class="ov-grid-item" style="padding:12px 8px;border:2px dashed rgba(255,109,0,.3);background:transparent;cursor:pointer" onclick="_partnerEditFacilities()"><span class="ov-grid-icon" style="font-size:20px">➕</span><span class="ov-grid-name" style="color:#FF6D00">Add</span></div>
+        </div>
       </div>
-      <div onclick="_showPartnerScreen(6);_closePartnerMore()" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:.15s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='transparent'">
-        <span style="font-size:16px">\ud83d\ude80</span><span style="color:#fff;font-size:13px;font-weight:600">Growth Centre</span>
+
+      <!-- ═══ Quick Actions (Partner-specific) ═══ -->
+      <div style="margin-top:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px;margin-left:16px;margin-right:16px;margin-bottom:180px">
+        <p style="color:#fff;font-weight:700;font-size:14px;margin-bottom:10px">⚡ Quick Actions</p>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div onclick="_partnerPrintPoster()" style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:12px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .15s">
+            <span style="font-size:20px">🖨️</span>
+            <div><div style="color:#fff;font-size:13px;font-weight:600">Print QR Poster</div><div style="color:rgba(255,255,255,.35);font-size:11px">Download a poster for your gym entrance</div></div>
+          </div>
+          <div onclick="navigate('/list-your-gym')" style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:12px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .15s">
+            <span style="font-size:20px">🏋️</span>
+            <div><div style="color:#fff;font-size:13px;font-weight:600">Claim / Change Gym</div><div style="color:rgba(255,255,255,.35);font-size:11px">Search and claim your gym on ScanGym</div></div>
+          </div>
+          <div onclick="_partnerConnectSeam()" style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:12px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .15s">
+            <span style="font-size:20px">🔐</span>
+            <div><div style="color:#fff;font-size:13px;font-weight:600">Smart Lock Setup</div><div style="color:rgba(255,255,255,.35);font-size:11px">Connect Seam for 24/7 automatic access</div></div>
+          </div>
+        </div>
       </div>
+
+    </div><!-- /gym-info-section -->
+
+    <!-- ═══ STICKY BOTTOM BAR — Partner version ═══ -->
+    <div class="gym-sticky-bar" id="partner-sticky-bar">
+        <div style="text-align:center;padding:6px 16px 0">
+          <span style="font-size:11px;font-weight:600;color:#FF6D00;letter-spacing:.3px" id="partner-sticky-subtitle">🏋️ Your gym, your rules — edit everything above</span>
+        </div>
+        <div style="display:flex;gap:10px;padding:8px 16px 0">
+          <button style="flex:1;padding:16px;border-radius:12px;border:none;background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 4px 20px rgba(255,109,0,.35);-webkit-tap-highlight-color:transparent;transition:transform .15s;letter-spacing:.3px;text-align:center;animation:greenGlow 2s ease-in-out infinite" onclick="_partnerWithdraw()">💰 Withdraw Earnings</button>
+          <button onclick="_partnerToggleActive(this.parentElement.parentElement)" style="width:52px;height:52px;border-radius:12px;border:none;background:#1e293b;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;flex-shrink:0;gap:1px">
+            <span style="font-size:18px;line-height:1" id="partner-toggle-icon">✅</span>
+            <span style="font-size:10px;color:rgba(255,255,255,.35);font-weight:600;line-height:1" id="partner-toggle-label">OPEN</span>
+          </button>
+        </div>
+        <div style="display:flex;justify-content:center;gap:14px;padding:8px 0 6px">
+          <span style="font-size:10px;color:rgba(255,255,255,.3)">💰 85% Commission</span>
+          <span style="font-size:10px;color:rgba(255,255,255,.3)">🔒 Secure Payouts</span>
+          <span style="font-size:10px;color:rgba(255,255,255,.3)">⚡ Instant Bookings</span>
+          <span style="font-size:10px;color:rgba(255,255,255,.3)">❤️ You're the boss</span>
+        </div>
     </div>
-    <!-- Screen 0: HOME -->
-    <div class="partner-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;padding:16px;padding-right:60px;overflow-y:auto">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-        <div><h1 style="font-size:18px;font-weight:900;color:#fff;margin:0">${gymName}</h1><p style="color:rgba(255,255,255,.4);font-size:10px;margin:2px 0 0">Partner Dashboard</p></div>
-        <div onclick="_partnerToggleActive(this)" style="display:flex;align-items:center;gap:6px;cursor:pointer">
-          <span id="partner-toggle-label" style="color:rgba(255,255,255,.5);font-size:9px;font-weight:600">ACCEPTING</span>
-          <div class="tbg" style="width:36px;height:20px;background:#22c55e;border-radius:10px;position:relative;transition:.2s"><div class="tdot" style="position:absolute;top:2px;left:18px;width:16px;height:16px;background:#fff;border-radius:50%;transition:.2s"></div></div>
-        </div>
-      </div>
-      <div id="partner-home-hero" style="background:linear-gradient(135deg,rgba(34,197,94,.1),rgba(34,197,94,.02));border:1px solid rgba(34,197,94,.15);border-radius:16px;padding:14px;margin-bottom:12px;text-align:center">
-        <div style="color:rgba(255,255,255,.5);font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">TODAY</div>
-        <div style="display:flex;justify-content:center;align-items:baseline;gap:6px;margin-bottom:4px"><span id="partner-home-checkins" style="font-size:42px;font-weight:900;color:#22c55e">—</span><span style="color:rgba(255,255,255,.4);font-size:12px">check-ins</span></div>
-        <div style="display:flex;justify-content:center;gap:16px">
-          <span style="color:rgba(255,255,255,.4);font-size:10px">Revenue: <strong id="partner-home-revenue" style="color:#22c55e">—</strong></span>
-          <span style="color:rgba(255,255,255,.4);font-size:10px">Avg: <strong id="partner-home-avg" style="color:#FF6D00">—</strong></span>
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px;margin-bottom:12px">
-        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:7px;text-align:center"><div id="partner-home-rev2" style="font-size:16px;font-weight:800;color:#22c55e">—</div><div style="font-size:7px;color:rgba(255,255,255,.4);text-transform:uppercase">Revenue</div></div>
-        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:7px;text-align:center"><div id="partner-home-bk2" style="font-size:16px;font-weight:800;color:#FF6D00">—</div><div style="font-size:7px;color:rgba(255,255,255,.4);text-transform:uppercase">Bookings</div></div>
-        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:7px;text-align:center"><div id="partner-home-rating" style="font-size:16px;font-weight:800;color:#3b82f6">—</div><div style="font-size:7px;color:rgba(255,255,255,.4);text-transform:uppercase">Rating</div></div>
-        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:7px;text-align:center"><div style="font-size:16px;font-weight:800;color:#a855f7">85%</div><div style="font-size:7px;color:rgba(255,255,255,.4);text-transform:uppercase">Share</div></div>
-      </div>
-      <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:12px;margin-bottom:12px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <span style="color:rgba(255,255,255,.4);font-size:9px;text-transform:uppercase;letter-spacing:.5px">REVENUE HEALTH SCORE</span>
-          <span style="color:#22c55e;font-size:10px;font-weight:700">Good</span>
-        </div>
-        <div style="width:100%;height:8px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden;margin-bottom:4px"><div style="width:72%;height:100%;background:linear-gradient(90deg,#22c55e,#4ade80);border-radius:4px"></div></div>
-        <div style="color:rgba(255,255,255,.3);font-size:9px">72/100 \u00b7 Up 8 pts from last week</div>
-      </div>
-      <div style="display:flex;gap:6px">
-        <button onclick="navigate('/list-your-gym')" style="flex:1;background:#22c55e;color:#fff;border:none;padding:10px;border-radius:12px;font-weight:700;font-size:11px;cursor:pointer">\ud83c\udfcb\ufe0f Claim Gym</button>
-        <button onclick="_showPartnerScreen(2)" style="flex:1;background:rgba(255,255,255,.05);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.08);padding:10px;border-radius:12px;font-weight:700;font-size:11px;cursor:pointer">\ud83d\udd10 Locks</button>
-      </div>
-    </div>
-    <!-- Screen 1: LIVE CHECK-INS -->
-    <div class="partner-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;padding:16px;padding-right:60px;overflow-y:auto">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-        <div><h2 style="font-size:18px;font-weight:800;color:#fff;margin:0">\ud83d\udccb Live Check-ins</h2><p style="color:rgba(255,255,255,.4);font-size:11px;margin:2px 0 0">Real-time entry log</p></div>
-        <div style="background:#22c55e;border-radius:20px;padding:3px 10px"><span style="color:#fff;font-size:10px;font-weight:700">\u25cf LIVE</span></div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:6px">
-        <div style="background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.12);border-radius:12px;padding:10px">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span style="color:#22c55e;font-size:10px;font-weight:700">\u2705 CHECKED IN</span><span style="color:rgba(255,255,255,.3);font-size:9px">2 min ago</span></div>
-          <div style="display:flex;justify-content:space-between;align-items:center"><div><div style="color:#fff;font-size:12px;font-weight:700">James Wilson</div><div style="color:rgba(255,255,255,.35);font-size:9px">QR Scan \u00b7 Front Door \u00b7 Day Pass</div></div><div style="color:#22c55e;font-size:13px;font-weight:800">\u00a34.99</div></div>
-        </div>
-        <div style="background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.12);border-radius:12px;padding:10px">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span style="color:#22c55e;font-size:10px;font-weight:700">\u2705 CHECKED IN</span><span style="color:rgba(255,255,255,.3);font-size:9px">8 min ago</span></div>
-          <div style="display:flex;justify-content:space-between;align-items:center"><div><div style="color:#fff;font-size:12px;font-weight:700">Sarah Martinez</div><div style="color:rgba(255,255,255,.35);font-size:9px">QR Scan \u00b7 Side Door \u00b7 Day Pass</div></div><div style="color:#22c55e;font-size:13px;font-weight:800">\u00a34.99</div></div>
-        </div>
-        <div style="background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.12);border-radius:12px;padding:10px">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span style="color:#60a5fa;font-size:10px;font-weight:700">\ud83d\udd14 NEW BOOKING</span><span style="color:rgba(255,255,255,.3);font-size:9px">15 min ago</span></div>
-          <div style="display:flex;justify-content:space-between;align-items:center"><div><div style="color:#fff;font-size:12px;font-weight:700">Alex Kim</div><div style="color:rgba(255,255,255,.35);font-size:9px">Online Booking \u00b7 Arriving ~3 PM</div></div><div style="color:#3b82f6;font-size:13px;font-weight:800">\u00a35.49</div></div>
-        </div>
-        <div style="background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.12);border-radius:12px;padding:10px">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span style="color:#22c55e;font-size:10px;font-weight:700">\u2705 CHECKED IN</span><span style="color:rgba(255,255,255,.3);font-size:9px">28 min ago</span></div>
-          <div style="display:flex;justify-content:space-between;align-items:center"><div><div style="color:#fff;font-size:12px;font-weight:700">Mike Chen</div><div style="color:rgba(255,255,255,.35);font-size:9px">QR Scan \u00b7 Front Door \u00b7 Week Pass</div></div><div style="color:#22c55e;font-size:13px;font-weight:800">\u00a319.99</div></div>
-        </div>
-      </div>
-    </div>
-    <!-- Screen 2: ACCESS CONTROL -->
-    <div class="partner-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;padding:16px;padding-right:60px;overflow-y:auto">
-      <h2 style="font-size:18px;font-weight:800;color:#fff;margin-bottom:4px">\ud83d\udd10 Access Control</h2>
-      <p style="color:rgba(255,255,255,.4);font-size:11px;margin-bottom:14px">Smart locks & entry points</p>
-      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px">
-        <div style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:12px">
-          <div style="width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 8px rgba(34,197,94,.4);flex-shrink:0"></div>
-          <div style="flex:1"><div style="font-size:12px;font-weight:700;color:#fff">Front Door \u2014 Kaba</div><div style="font-size:9px;color:rgba(255,255,255,.35)">Online \u00b7 Battery 87%</div></div>
-          <div onclick="alert('\ud83d\udd13 Unlocked!')" style="padding:4px 10px;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.2);border-radius:8px;font-size:10px;font-weight:700;color:#818cf8;cursor:pointer">Unlock</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:12px">
-          <div style="width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 8px rgba(34,197,94,.4);flex-shrink:0"></div>
-          <div style="flex:1"><div style="font-size:12px;font-weight:700;color:#fff">Side Entrance \u2014 Yale</div><div style="font-size:9px;color:rgba(255,255,255,.35)">Online \u00b7 Battery 92%</div></div>
-          <div onclick="alert('\ud83d\udd13 Unlocked!')" style="padding:4px 10px;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.2);border-radius:8px;font-size:10px;font-weight:700;color:#818cf8;cursor:pointer">Unlock</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:12px">
-          <div style="width:8px;height:8px;border-radius:50%;background:#ef4444;flex-shrink:0"></div>
-          <div style="flex:1"><div style="font-size:12px;font-weight:700;color:#fff">Emergency \u2014 August</div><div style="font-size:9px;color:rgba(255,255,255,.35)">Offline \u00b7 2h ago</div></div>
-          <div style="padding:4px 10px;opacity:.5;font-size:10px;font-weight:700;color:rgba(255,255,255,.4)">Offline</div>
-        </div>
-      </div>
-      <button onclick="window._sgConnectSeam?window._sgConnectSeam():alert('\ud83d\udd17 Connect Seam')" style="background:#a855f7;color:#fff;border:none;padding:10px 20px;border-radius:12px;font-weight:700;font-size:12px;cursor:pointer;box-shadow:0 4px 16px rgba(168,85,247,.25)">\ud83d\udd17 Connect Seam Account</button>
-    </div>
-    <!-- Screen 3: ANALYTICS -->
-    <div class="partner-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;padding:16px;padding-right:60px;overflow-y:auto">
-      <h2 style="font-size:18px;font-weight:800;color:#fff;margin-bottom:4px">\ud83d\udcca Business Insights</h2>
-      <p style="color:rgba(255,255,255,.4);font-size:11px;margin-bottom:14px">Performance vs competitors</p>
-      <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:12px;margin-bottom:10px">
-        <div style="color:rgba(255,255,255,.4);font-size:9px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">WEEKLY CHECK-INS</div>
-        <div style="display:flex;align-items:flex-end;gap:4px;height:80px;margin-bottom:6px">
-          <div style="flex:1;background:rgba(255,109,0,.3);border-radius:4px 4px 0 0;height:30%"></div>
-          <div style="flex:1;background:rgba(255,109,0,.3);border-radius:4px 4px 0 0;height:45%"></div>
-          <div style="flex:1;background:rgba(255,109,0,.3);border-radius:4px 4px 0 0;height:55%"></div>
-          <div style="flex:1;background:rgba(255,109,0,.3);border-radius:4px 4px 0 0;height:40%"></div>
-          <div style="flex:1;background:rgba(255,109,0,.4);border-radius:4px 4px 0 0;height:70%"></div>
-          <div style="flex:1;background:rgba(255,109,0,.5);border-radius:4px 4px 0 0;height:85%"></div>
-          <div style="flex:1;background:#FF6D00;border-radius:4px 4px 0 0;height:100%"></div>
-        </div>
-        <div style="display:flex;justify-content:space-between;color:rgba(255,255,255,.3);font-size:7px"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span style="color:#FF6D00;font-weight:700">Sun</span></div>
-      </div>
-      <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:12px;margin-bottom:10px">
-        <div style="color:rgba(255,255,255,.4);font-size:9px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">VS NEARBY GYMS</div>
-        <div style="display:flex;flex-direction:column;gap:5px">
-          <div style="display:flex;align-items:center;gap:6px"><span style="flex:1;color:#fff;font-size:10px">Your Price</span><div style="flex:2;height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden"><div style="width:60%;height:100%;background:#22c55e;border-radius:3px"></div></div><span style="color:#22c55e;font-size:10px;font-weight:700">\u00a34.99</span></div>
-          <div style="display:flex;align-items:center;gap:6px"><span style="flex:1;color:rgba(255,255,255,.5);font-size:10px">Area Avg</span><div style="flex:2;height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden"><div style="width:75%;height:100%;background:rgba(255,255,255,.2);border-radius:3px"></div></div><span style="color:rgba(255,255,255,.5);font-size:10px">\u00a36.50</span></div>
-          <div style="display:flex;align-items:center;gap:6px"><span style="flex:1;color:rgba(255,255,255,.5);font-size:10px">Your Rating</span><div style="flex:2;height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden"><div style="width:96%;height:100%;background:#fbbf24;border-radius:3px"></div></div><span style="color:#fbbf24;font-size:10px;font-weight:700">4.8\u2b50</span></div>
-        </div>
-      </div>
-      <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:12px">
-        <div style="color:rgba(255,255,255,.4);font-size:9px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">PEAK HOURS</div>
-        <div style="display:flex;gap:4px">
-          <div style="flex:1;text-align:center;padding:4px;background:rgba(255,109,0,.05);border-radius:6px"><div style="color:rgba(255,255,255,.5);font-size:8px">6-8am</div><div style="color:#FF6D00;font-size:10px;font-weight:700">\ud83d\udd25</div></div>
-          <div style="flex:1;text-align:center;padding:4px;border-radius:6px"><div style="color:rgba(255,255,255,.3);font-size:8px">8-12</div><div style="color:rgba(255,255,255,.3);font-size:10px">\u2014</div></div>
-          <div style="flex:1;text-align:center;padding:4px;background:rgba(255,109,0,.05);border-radius:6px"><div style="color:rgba(255,255,255,.5);font-size:8px">12-2pm</div><div style="color:#FF6D00;font-size:10px;font-weight:700">\ud83d\udd25</div></div>
-          <div style="flex:1;text-align:center;padding:4px;border-radius:6px"><div style="color:rgba(255,255,255,.3);font-size:8px">2-5pm</div><div style="color:rgba(255,255,255,.3);font-size:10px">\u2014</div></div>
-          <div style="flex:1;text-align:center;padding:4px;background:rgba(255,109,0,.1);border-radius:6px"><div style="color:rgba(255,255,255,.5);font-size:8px">5-8pm</div><div style="color:#FF6D00;font-size:10px;font-weight:700">\ud83d\udd25\ud83d\udd25</div></div>
-        </div>
-      </div>
-    </div>
-    <!-- Screen 4: EARNINGS -->
-    <div class="partner-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;padding:16px;padding-right:60px;overflow-y:auto">
-      <h2 style="font-size:18px;font-weight:800;color:#fff;margin-bottom:4px">\ud83d\udcb0 Earnings & Payouts</h2>
-      <p style="color:rgba(255,255,255,.4);font-size:11px;margin-bottom:14px">85% revenue share</p>
-      <div style="background:linear-gradient(135deg,rgba(34,197,94,.1),rgba(34,197,94,.02));border:1px solid rgba(34,197,94,.15);border-radius:16px;padding:16px;text-align:center;margin-bottom:12px">
-        <div style="color:rgba(255,255,255,.4);font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">AVAILABLE BALANCE</div>
-        <div id="partner-earn-balance" style="font-size:34px;font-weight:900;color:#22c55e;margin-bottom:3px">\u2014</div>
-        <div id="partner-earn-subtitle" style="color:rgba(255,255,255,.3);font-size:10px">Loading...</div>
-      </div>
-      <div style="display:flex;gap:6px;margin-bottom:12px">
-        <button onclick="navigate('/partner/payouts')" style="flex:1;background:#22c55e;color:#fff;border:none;padding:12px;border-radius:12px;font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 4px 16px rgba(34,197,94,.25)">\u26a1 View Payouts</button>
-        <button onclick="window.open('/api/gym-partner/stripe-connect','_blank')" style="flex:1;background:rgba(255,255,255,.05);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.08);padding:12px;border-radius:12px;font-weight:700;font-size:13px;cursor:pointer">\ud83c\udfe6 Connect Bank</button>
-      </div>
-      <div style="margin-bottom:12px">
-        <button onclick="navigate('/wallet')" style="width:100%;background:rgba(255,109,0,.12);color:#FF6D00;border:1px solid rgba(255,109,0,.2);padding:12px;border-radius:12px;font-weight:700;font-size:13px;cursor:pointer">\ud83d\udcb0 Withdraw via Wallet</button>
-      </div>
-      <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:12px">
-        <div style="color:rgba(255,255,255,.4);font-size:9px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">THIS MONTH</div>
-        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04)"><span style="color:rgba(255,255,255,.6);font-size:11px">Gross Revenue</span><span id="partner-earn-gross" style="color:#fff;font-size:11px;font-weight:600">\u2014</span></div>
-        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04)"><span style="color:rgba(255,255,255,.6);font-size:11px">Your Share (85%)</span><span id="partner-earn-share" style="color:#22c55e;font-size:11px;font-weight:600">\u2014</span></div>
-        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04)"><span style="color:rgba(255,255,255,.6);font-size:11px">Withdrawn</span><span id="partner-earn-withdrawn" style="color:rgba(255,255,255,.6);font-size:11px">\u2014</span></div>
-        <div style="display:flex;justify-content:space-between;padding:5px 0"><span style="color:#fff;font-size:11px;font-weight:700">Balance</span><span id="partner-earn-bal2" style="color:#22c55e;font-size:11px;font-weight:700">\u2014</span></div>
-      </div>
-    </div>
-    <!-- Screen 5: MANAGE GYM -->
-    <div class="partner-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;padding:16px;padding-right:60px;overflow-y:auto">
-      <h2 style="font-size:18px;font-weight:800;color:#fff;margin-bottom:4px">\u2699\ufe0f Manage Gym</h2>
-      <p style="color:rgba(255,255,255,.4);font-size:11px;margin-bottom:14px">Update your listing</p>
-      <div style="display:flex;flex-direction:column;gap:6px">
-        <div onclick="navigate('/owner/controls')" style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:12px;cursor:pointer"><div style="width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;background:rgba(255,109,0,.12)">\ud83d\udd50</div><div style="flex:1"><div style="font-size:12px;font-weight:700;color:#fff">Opening Hours</div><div id="manage-hours-sub" style="font-size:9px;color:rgba(255,255,255,.35)">Manage your schedule</div></div><span style="color:rgba(255,255,255,.2)">\u203a</span></div>
-        <div onclick="navigate('/owner/controls')" style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:12px;cursor:pointer"><div style="width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;background:rgba(34,197,94,.12)">\ud83d\udcb2</div><div style="flex:1"><div style="font-size:12px;font-weight:700;color:#fff">Day Pass Pricing</div><div style="font-size:9px;color:rgba(255,255,255,.35)">Managed by ScanGym pricing engine</div></div><span style="color:rgba(255,255,255,.2)">\u203a</span></div>
-        <div onclick="sgToast('Photos coming soon \u2014 email hello@scangym.com to update','info',3000)" style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:12px;cursor:pointer"><div style="width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;background:rgba(59,130,246,.12)">\ud83d\udcf8</div><div style="flex:1"><div style="font-size:12px;font-weight:700;color:#fff">Photos & Tour</div><div style="font-size:9px;color:rgba(255,255,255,.35)">Email hello@scangym.com to update</div></div><span style="color:rgba(255,255,255,.2)">\u203a</span></div>
-        <div onclick="sgToast('Amenities coming soon \u2014 email hello@scangym.com to update','info',3000)" style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:12px;cursor:pointer"><div style="width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;background:rgba(168,85,247,.12)">\ud83c\udff7</div><div style="flex:1"><div style="font-size:12px;font-weight:700;color:#fff">Amenities & Equipment</div><div style="font-size:9px;color:rgba(255,255,255,.35)">Email hello@scangym.com to update</div></div><span style="color:rgba(255,255,255,.2)">\u203a</span></div>
-        <div onclick="_partnerPrintPoster()" style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:12px;cursor:pointer"><div style="width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;background:rgba(255,109,0,.12)">\ud83d\udda8</div><div style="flex:1"><div style="font-size:12px;font-weight:700;color:#fff">Print QR Poster</div><div style="font-size:9px;color:rgba(255,255,255,.35)">A4 poster for gym entrance</div></div><span style="color:rgba(255,255,255,.2)">\u203a</span></div>
-        <div onclick="navigate('/list-your-gym')" style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,109,0,.04);border:1px solid rgba(255,109,0,.12);border-radius:12px;cursor:pointer"><div style="width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;background:rgba(255,109,0,.12)">\u2795</div><div style="flex:1"><div style="font-size:12px;font-weight:700;color:#FF6D00">Add Another Location</div><div style="font-size:9px;color:rgba(255,255,255,.35)">Multi-outlet management</div></div></div>
-      </div>
-    </div>
-    <!-- Screen 6: GROWTH CENTRE -->
-    <div class="partner-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;padding:16px;padding-right:60px;overflow-y:auto">
-      <h2 style="font-size:18px;font-weight:800;color:#fff;margin-bottom:4px">\ud83d\ude80 Growth Centre</h2>
-      <p style="color:rgba(255,255,255,.4);font-size:11px;margin-bottom:14px">AI-powered suggestions to boost revenue</p>
-      <div style="background:linear-gradient(135deg,rgba(255,109,0,.08),rgba(255,109,0,.02));border:1px solid rgba(255,109,0,.15);border-radius:14px;padding:12px;margin-bottom:8px;cursor:pointer" onclick="alert('Set up weekend pricing')">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="font-size:14px">\ud83d\udca1</span><span style="color:#FF6D00;font-size:10px;font-weight:700">HIGH IMPACT</span><span style="color:rgba(255,255,255,.3);font-size:9px">\u00b7 Est. +\u00a3120/month</span></div>
-        <div style="color:#fff;font-size:12px;font-weight:600;margin-bottom:2px">Add weekend pricing</div>
-        <div style="color:rgba(255,255,255,.35);font-size:10px">Gyms with weekend pricing see 34% more bookings on Sat/Sun</div>
-      </div>
-      <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:12px;margin-bottom:8px;cursor:pointer" onclick="alert('Upload more photos')">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="font-size:14px">\ud83d\udcf8</span><span style="color:#3b82f6;font-size:10px;font-weight:700">MEDIUM IMPACT</span><span style="color:rgba(255,255,255,.3);font-size:9px">\u00b7 Est. +\u00a380/month</span></div>
-        <div style="color:#fff;font-size:12px;font-weight:600;margin-bottom:2px">Add 5 more photos</div>
-        <div style="color:rgba(255,255,255,.35);font-size:10px">Listings with 15+ photos get 2x more views</div>
-      </div>
-      <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:12px;margin-bottom:8px;cursor:pointer" onclick="alert('Enable reviews')">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="font-size:14px">\u2b50</span><span style="color:#22c55e;font-size:10px;font-weight:700">QUICK WIN</span><span style="color:rgba(255,255,255,.3);font-size:9px">\u00b7 Est. +\u00a350/month</span></div>
-        <div style="color:#fff;font-size:12px;font-weight:600;margin-bottom:2px">Enable post-visit reviews</div>
-        <div style="color:rgba(255,255,255,.35);font-size:10px">Gyms with 10+ reviews rank 40% higher in search</div>
-      </div>
-      <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:12px;cursor:pointer" onclick="alert('Connect smart lock')">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="font-size:14px">\ud83d\udd10</span><span style="color:#a855f7;font-size:10px;font-weight:700">GROWTH TIP</span><span style="color:rgba(255,255,255,.3);font-size:9px">\u00b7 Est. +\u00a3200/month</span></div>
-        <div style="color:#fff;font-size:12px;font-weight:600;margin-bottom:2px">Enable 24/7 smart lock access</div>
-        <div style="color:rgba(255,255,255,.35);font-size:10px">24/7 gyms earn 3x more from off-peak visitors</div>
-      </div>
+
+    <!-- Side nav buttons (Sign In / Seam / Withdraw / More) -->
+    <div style="position:fixed;right:8px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:10px;z-index:10">
+      <div onclick="${u?"sgToast('Already signed in ✅','success',1500)":"(typeof window._sgShowAuthSheet==='function'?window._sgShowAuthSheet('book'):navigate('/login'))"};_closePartnerMore()" style="width:42px;height:42px;background:${u?'rgba(34,197,94,.2)':'rgba(255,109,0,.25)'};backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:1px solid ${u?'rgba(34,197,94,.3)':'rgba(255,109,0,.4)'};box-shadow:0 0 16px ${u?'rgba(34,197,94,.15)':'rgba(255,109,0,.2)'}" title="Sign In">${u?'✅':'🔑'}</div>
+      <div onclick="_partnerConnectSeam();_closePartnerMore()" style="width:42px;height:42px;background:rgba(168,85,247,.2);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:1px solid rgba(168,85,247,.3);box-shadow:0 0 12px rgba(168,85,247,.15)" title="Connect Seam">🔗</div>
+      <div onclick="_partnerWithdraw();_closePartnerMore()" style="width:42px;height:42px;background:rgba(34,197,94,.15);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:1px solid rgba(34,197,94,.2);box-shadow:0 0 12px rgba(34,197,94,.1)" title="Withdraw">💸</div>
     </div>
   </div>`;
 }
+
+// ── Partner Edit Helpers (Task 13: Partner = Book but editable) ──
+window._partnerGymData={};
+window._partnerLoadGymProfile=async function(){
+  try{
+    var r=await fetch('/api/gym-partner/dashboard',{credentials:'include'}).catch(function(){return null;});
+    if(!r||!r.ok){return;}
+    var d=await r.json().catch(function(){return {};});
+    if(d.gyms&&d.gyms.length>0){
+      var g=d.gyms[0];
+      window._partnerGymId=g.id;
+      window._partnerGymName=g.name;
+      window._partnerGymData={
+        name:g.name||'Your Gym',
+        address:g.address||g.formatted_address||'',
+        dayPrice:g.dayPassPrice||(g.pricing&&g.pricing.dayPassPrice)||'4.49',
+        currencySymbol:g.currencySymbol||(g.pricing&&g.pricing.currencySymbol)||'\u00a3',
+        isOpen:g.isOpen!==false,
+        description:g.description||'',
+        photos:g.photos_list||g.photos||[],
+        facilities:g.facilities||[]
+      };
+      // Update displayed name/address
+      var ne=document.getElementById('partner-name-display');
+      if(ne) ne.innerHTML=g.name+' <span style="font-size:14px;opacity:.5">\u270f\ufe0f</span>';
+      var ae=document.getElementById('partner-addr-display');
+      if(ae&&g.address) ae.innerHTML='\ud83d\udccd '+g.address+' <span style="color:#FF6D00;font-size:12px;font-weight:600;margin-left:4px">Edit \u2192</span>';
+    }
+    // Update stats
+    var tb=d.today?d.today.bookings:d.todayBookings||0;
+    var tr=d.today?d.today.revenue:parseFloat(d.todayRevenue)||0;
+    var ar=d.rating?d.rating.average:d.avgRating||0;
+    var bs=document.getElementById('partner-stat-bookings');if(bs)bs.textContent='\ud83d\udcc8 '+tb+' bookings today';
+    var rs=document.getElementById('partner-stat-revenue');if(rs)rs.textContent='\ud83d\udcb7 \u00a3'+parseFloat(tr||0).toFixed(2)+' today';
+    var rt=document.getElementById('partner-stat-rating');if(rt)rt.textContent='\u2b50 '+(ar?parseFloat(ar).toFixed(1):'—')+' rating';
+  }catch(e){console.log('[PartnerProfile]',e.message);}
+};
+window._partnerEditField=function(field){
+  var current='';
+  if(field==='name') current=window._partnerGymData.name||'';
+  else if(field==='address') current=window._partnerGymData.address||'';
+  else if(field==='description') current=window._partnerGymData.description||'';
+  var label=field==='name'?'Gym Name':field==='address'?'Gym Address':'Description';
+  var isTextarea=field==='description';
+  _sgOpenSheet('sg-partner-edit-sheet',
+    '<h2 style="font-size:20px;font-weight:800;color:#fff;margin:0 0 16px">\u270f\ufe0f Edit '+label+'</h2>'
+    +(isTextarea
+      ?'<textarea id="sg-pe-input" class="pe-field" rows="5" style="min-height:120px;resize:vertical" placeholder="Enter '+label.toLowerCase()+'...">'+current+'</textarea>'
+      :'<input id="sg-pe-input" class="pe-field" type="text" value="'+current.replace(/"/g,'&quot;')+'" placeholder="Enter '+label.toLowerCase()+'..." autofocus />')
+    +'<div class="pe-save-row" style="margin-top:12px">'
+    +'<button class="pe-save-btn" style="flex:1;padding:14px;font-size:15px;border-radius:12px" onclick="_partnerSaveField(\''+field+'\')">Save '+label+'</button>'
+    +'<button class="pe-cancel-btn" style="padding:14px;font-size:15px;border-radius:12px" onclick="_sgCloseSheet(\'sg-partner-edit-sheet\')">Cancel</button>'
+    +'</div>'
+  );
+  setTimeout(function(){var inp=document.getElementById('sg-pe-input');if(inp)inp.focus();},300);
+};
+window._partnerSaveField=async function(field){
+  var inp=document.getElementById('sg-pe-input');
+  if(!inp)return;
+  var val=inp.value.trim();
+  if(!val){sgToast('Please enter a value','error',2000);return;}
+  window._partnerGymData[field]=val;
+  // Update UI
+  if(field==='name'){var ne=document.getElementById('partner-name-display');if(ne)ne.innerHTML=val+' <span style="font-size:14px;opacity:.5">\u270f\ufe0f</span>';}
+  if(field==='address'){var ae=document.getElementById('partner-addr-display');if(ae)ae.innerHTML='\ud83d\udccd '+val+' <span style="color:#FF6D00;font-size:12px;font-weight:600;margin-left:4px">Edit \u2192</span>';}
+  if(field==='description'){var de=document.getElementById('partner-desc-display');if(de)de.textContent=val;}
+  _sgCloseSheet('sg-partner-edit-sheet');
+  sgToast(field.charAt(0).toUpperCase()+field.slice(1)+' updated!','success',2000);
+  // Save to backend
+  try{
+    var gymId=window._partnerGymId;
+    if(gymId){
+      var body={};body[field]=val;
+      await fetch('/api/gym-partner/update-gym',{method:'PATCH',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({gymId:gymId,...body})});
+    }
+  }catch(e){console.log('[PartnerSave]',e.message);}
+};
+window._partnerEditPrice=function(passType){
+  var gd=window._partnerGymData;
+  var sym=gd.currencySymbol||'\u00a3';
+  var prices={day:gd.dayPrice||'4.49','3day':gd.threeDayPrice||'11.99',weekly:gd.weeklyPrice||'22.49',monthly:gd.monthlyPrice||'44.90'};
+  var labels={day:'Day Pass','3day':'3-Day Pass',weekly:'Weekly Pass',monthly:'Monthly Pass'};
+  _sgOpenSheet('sg-partner-price-sheet',
+    '<h2 style="font-size:20px;font-weight:800;color:#fff;margin:0 0 16px">\ud83d\udcb0 Edit Pass Pricing</h2>'
+    +'<div style="display:flex;flex-direction:column;gap:12px">'
+    +'<div><label style="color:rgba(255,255,255,.5);font-size:12px;font-weight:600;margin-bottom:4px;display:block">\u26a1 Day Pass</label><div style="display:flex;align-items:center;gap:4px"><span style="color:#fff;font-size:18px;font-weight:700">'+sym+'</span><input id="sg-pe-price-day" class="pe-field" type="number" step="0.01" min="0" value="'+prices.day+'" style="font-size:18px;font-weight:700" /></div></div>'
+    +'<div><label style="color:rgba(255,255,255,.5);font-size:12px;font-weight:600;margin-bottom:4px;display:block">\ud83d\udd25 3-Day Pass</label><div style="display:flex;align-items:center;gap:4px"><span style="color:#fff;font-size:18px;font-weight:700">'+sym+'</span><input id="sg-pe-price-3day" class="pe-field" type="number" step="0.01" min="0" value="'+prices['3day']+'" style="font-size:18px;font-weight:700" /></div></div>'
+    +'<div><label style="color:rgba(255,255,255,.5);font-size:12px;font-weight:600;margin-bottom:4px;display:block">\ud83d\udcc5 Weekly Pass</label><div style="display:flex;align-items:center;gap:4px"><span style="color:#fff;font-size:18px;font-weight:700">'+sym+'</span><input id="sg-pe-price-weekly" class="pe-field" type="number" step="0.01" min="0" value="'+prices.weekly+'" style="font-size:18px;font-weight:700" /></div></div>'
+    +'<div><label style="color:rgba(255,255,255,.5);font-size:12px;font-weight:600;margin-bottom:4px;display:block">\ud83c\udfc6 Monthly Pass</label><div style="display:flex;align-items:center;gap:4px"><span style="color:#fff;font-size:18px;font-weight:700">'+sym+'</span><input id="sg-pe-price-monthly" class="pe-field" type="number" step="0.01" min="0" value="'+prices.monthly+'" style="font-size:18px;font-weight:700" /></div></div>'
+    +'</div>'
+    +'<button class="pe-save-btn" style="width:100%;padding:14px;font-size:15px;border-radius:12px;margin-top:16px" onclick="_partnerSavePrices()">Save Pricing</button>'
+  );
+};
+window._partnerSavePrices=async function(){
+  var gd=window._partnerGymData;
+  var sym=gd.currencySymbol||'\u00a3';
+  var d=document.getElementById('sg-pe-price-day');
+  var t=document.getElementById('sg-pe-price-3day');
+  var w=document.getElementById('sg-pe-price-weekly');
+  var m=document.getElementById('sg-pe-price-monthly');
+  if(d)gd.dayPrice=parseFloat(d.value).toFixed(2);
+  if(t)gd.threeDayPrice=parseFloat(t.value).toFixed(2);
+  if(w)gd.weeklyPrice=parseFloat(w.value).toFixed(2);
+  if(m)gd.monthlyPrice=parseFloat(m.value).toFixed(2);
+  // Update UI
+  var dp=document.getElementById('partner-price-day');if(dp)dp.textContent=sym+gd.dayPrice;
+  var tp=document.getElementById('partner-price-3day');if(tp)tp.textContent=sym+gd.threeDayPrice;
+  var wp=document.getElementById('partner-price-weekly');if(wp)wp.textContent=sym+gd.weeklyPrice;
+  var mp=document.getElementById('partner-price-monthly');if(mp)mp.textContent=sym+gd.monthlyPrice;
+  _sgCloseSheet('sg-partner-price-sheet');
+  sgToast('Pricing updated!','success',2000);
+  try{
+    var gymId=window._partnerGymId;
+    if(gymId){await fetch('/api/gym-partner/update-gym',{method:'PATCH',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({gymId:gymId,pricing:{dayPassPrice:parseFloat(gd.dayPrice),threeDayPrice:parseFloat(gd.threeDayPrice),weeklyPrice:parseFloat(gd.weeklyPrice),monthlyPrice:parseFloat(gd.monthlyPrice)}})});}
+  }catch(e){console.log('[PartnerPrices]',e.message);}
+};
+window._partnerEditPhotos=function(){
+  var u=state&&state.user;
+  if(!u){sgToast('Sign in to edit photos','info',2000);if(typeof window._sgShowAuthSheet==='function'){window._sgShowAuthSheet('book');}else{navigate('/login');}return;}
+  _sgOpenSheet('sg-partner-photos-sheet',
+    '<h2 style="font-size:20px;font-weight:800;color:#fff;margin:0 0 16px">\ud83d\udcf7 Edit Gym Photos</h2>'
+    +'<p style="color:rgba(255,255,255,.5);font-size:13px;margin-bottom:16px">Upload up to 4 photos of your gym. Show off equipment, atmosphere, and facilities.</p>'
+    +'<div id="sg-pe-photo-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px"></div>'
+    +'<label style="display:flex;align-items:center;justify-content:center;gap:8px;padding:16px;border:2px dashed rgba(255,109,0,.3);border-radius:14px;cursor:pointer;color:#FF6D00;font-weight:700;font-size:14px;transition:border-color .2s" onmouseover="this.style.borderColor=\'#FF6D00\'" onmouseout="this.style.borderColor=\'rgba(255,109,0,.3)\'">'
+    +'<span style="font-size:24px">\u2795</span> Add Photo'
+    +'<input type="file" accept="image/*" style="display:none" onchange="_partnerUploadPhoto(this)" />'
+    +'</label>'
+    +'<p style="color:rgba(255,255,255,.3);font-size:11px;text-align:center;margin-top:10px">Supported: JPG, PNG, WebP \u00b7 Max 5MB</p>'
+  );
+  _partnerRenderPhotoGrid();
+};
+window._partnerRenderPhotoGrid=function(){
+  var el=document.getElementById('sg-pe-photo-grid');if(!el)return;
+  var photos=window._partnerGymData.photos||[];
+  if(photos.length===0){el.innerHTML='<div style="grid-column:span 2;text-align:center;padding:24px;color:rgba(255,255,255,.3)">No photos yet \u2014 add your first photo!</div>';return;}
+  var h='';
+  photos.forEach(function(p,i){
+    var url=p.url||p.thumbnail||p;
+    h+='<div style="position:relative;aspect-ratio:4/3;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.08)">'
+      +'<img src="'+url+'" style="width:100%;height:100%;object-fit:cover" />'
+      +'<button onclick="_partnerRemovePhoto('+i+')" style="position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,.7);border:none;color:#fff;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center">\u2715</button>'
+      +'</div>';
+  });
+  el.innerHTML=h;
+};
+window._partnerUploadPhoto=function(input){
+  if(!input.files||!input.files[0])return;
+  sgToast('Photo upload requires backend integration \u2014 coming soon!','info',3000);
+};
+window._partnerRemovePhoto=function(idx){
+  var photos=window._partnerGymData.photos||[];
+  photos.splice(idx,1);
+  _partnerRenderPhotoGrid();
+  sgToast('Photo removed','success',1500);
+};
+window._partnerToggleOpen=function(){
+  var gd=window._partnerGymData;
+  gd.isOpen=!gd.isOpen;
+  var badge=document.getElementById('partner-open-badge');
+  if(badge){
+    badge.style.background=gd.isOpen?'rgba(34,197,94,.12)':'rgba(239,68,68,.1)';
+    badge.style.borderColor=gd.isOpen?'rgba(34,197,94,.2)':'rgba(239,68,68,.18)';
+    badge.style.color=gd.isOpen?'#4ade80':'#f87171';
+    badge.textContent=gd.isOpen?'\u2705 Open Now \u270f\ufe0f':'\ud83d\udd34 Closed \u270f\ufe0f';
+  }
+  sgToast(gd.isOpen?'Gym set to Open':'Gym set to Closed','success',2000);
+};
+window._partnerEditHours=function(){
+  var days=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  var h='<h2 style="font-size:20px;font-weight:800;color:#fff;margin:0 0 16px">\ud83d\udd70 Opening Hours</h2>';
+  h+='<div style="display:flex;flex-direction:column;gap:8px">';
+  days.forEach(function(day){
+    h+='<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06)">'
+      +'<span style="color:rgba(255,255,255,.7);font-size:14px;width:90px;font-weight:600">'+day+'</span>'
+      +'<input class="pe-field" type="time" value="06:00" style="flex:1;font-size:13px;padding:6px 8px" />'
+      +'<span style="color:rgba(255,255,255,.3)">to</span>'
+      +'<input class="pe-field" type="time" value="22:00" style="flex:1;font-size:13px;padding:6px 8px" />'
+      +'</div>';
+  });
+  h+='</div>';
+  h+='<button class="pe-save-btn" style="width:100%;padding:14px;font-size:15px;border-radius:12px;margin-top:16px" onclick="_sgCloseSheet(\'sg-partner-hours-sheet\');sgToast(\'Hours updated!\',\'success\',2000)">Save Hours</button>';
+  _sgOpenSheet('sg-partner-hours-sheet',h);
+};
+window._partnerEditFacilities=function(){
+  var all=[
+    {icon:'\ud83c\udfcb\ufe0f',name:'Free Weights'},{icon:'\ud83d\udcaa',name:'Machines'},
+    {icon:'\ud83c\udfc3',name:'Cardio'},{icon:'\ud83e\uddd8',name:'Yoga Studio'},
+    {icon:'\ud83d\udebf',name:'Showers'},{icon:'\ud83d\udd10',name:'Lockers'},
+    {icon:'\ud83c\udfe5',name:'Sauna'},{icon:'\ud83c\udfca',name:'Pool'},
+    {icon:'\ud83c\udd7f\ufe0f',name:'Parking'},{icon:'\u2615',name:'Cafe'},
+    {icon:'\ud83d\udc76',name:'Childcare'},{icon:'\ud83e\udd4a',name:'Boxing Ring'},
+    {icon:'\ud83e\uddd7',name:'Climbing Wall'},{icon:'\ud83c\udfbe',name:'Courts'},
+    {icon:'\ud83c\udfc0',name:'Basketball'},{icon:'\ud83d\udeb4',name:'Spin Studio'},
+    {icon:'\ud83c\udfb5',name:'Music System'},{icon:'\ud83d\udcf6',name:'Free WiFi'}
+  ];
+  var h='<h2 style="font-size:20px;font-weight:800;color:#fff;margin:0 0 16px">\ud83c\udfcb\ufe0f Facilities & Equipment</h2>';
+  h+='<p style="color:rgba(255,255,255,.5);font-size:13px;margin-bottom:14px">Tap to toggle. Highlighted = your gym has it.</p>';
+  h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">';
+  all.forEach(function(f,i){
+    h+='<div id="sg-fac-'+i+'" onclick="this.classList.toggle(\'active\');this.style.background=this.classList.contains(\'active\')?\'rgba(255,109,0,.15)\':\'rgba(255,255,255,.05)\';this.style.borderColor=this.classList.contains(\'active\')?\'rgba(255,109,0,.3)\':\'rgba(255,255,255,.08)\'" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:12px 8px;text-align:center;cursor:pointer;transition:all .15s">'
+      +'<div style="font-size:24px;margin-bottom:4px">'+f.icon+'</div>'
+      +'<div style="color:#fff;font-size:11px;font-weight:600">'+f.name+'</div>'
+      +'</div>';
+  });
+  h+='</div>';
+  h+='<button class="pe-save-btn" style="width:100%;padding:14px;font-size:15px;border-radius:12px;margin-top:16px" onclick="_sgCloseSheet(\'sg-partner-fac-sheet\');sgToast(\'Facilities updated!\',\'success\',2000)">Save Facilities</button>';
+  _sgOpenSheet('sg-partner-fac-sheet',h);
+};
+
+// Auto-load partner gym profile data + init carousel
+setTimeout(function(){
+  if(document.getElementById('partner-profile-page')){
+    _partnerLoadGymProfile();
+    // Init partner carousel (same swipe logic as Book tab)
+    var track=document.getElementById('partner-carousel-track');
+    var wrap=document.getElementById('partner-carousel-wrap');
+    if(track&&wrap){
+      var slides=track.querySelectorAll('.gym-carousel-slide');
+      window._partnerCarouselMax=slides.length;
+      window._partnerCarouselIdx=0;
+      if(slides.length>1){
+        var startX=0,currentX=0,isDragging=false,moved=false;
+        wrap.addEventListener('touchstart',function(e){startX=e.touches[0].clientX;currentX=startX;isDragging=true;moved=false;track.classList.add('dragging');},{passive:true});
+        wrap.addEventListener('touchmove',function(e){if(!isDragging)return;currentX=e.touches[0].clientX;var dx=currentX-startX;if(Math.abs(dx)>10)moved=true;if(Math.abs(dx)>Math.abs(e.touches[0].clientY-startX)&&moved){var offset=-(window._partnerCarouselIdx*100/window._partnerCarouselMax)+(dx/(wrap.offsetWidth)*100/window._partnerCarouselMax);track.style.transform='translateX('+offset+'%)';}},{passive:true});
+        wrap.addEventListener('touchend',function(){if(!isDragging)return;isDragging=false;track.classList.remove('dragging');var dx=currentX-startX;if(Math.abs(dx)>50&&moved){if(dx<0&&window._partnerCarouselIdx<window._partnerCarouselMax-1)window._partnerCarouselIdx++;else if(dx>0&&window._partnerCarouselIdx>0)window._partnerCarouselIdx--;}var idx=window._partnerCarouselIdx;var max=window._partnerCarouselMax;track.style.transform='translateX(-'+(idx*100/max)+'%)';var counter=document.getElementById('partner-carousel-counter');if(counter)counter.textContent=(idx+1)+'/'+max;var dots=document.getElementById('partner-carousel-dots');if(dots)Array.from(dots.children).forEach(function(d,i){if(i===idx)d.classList.add('active');else d.classList.remove('active');});},{passive:true});
+      }
+    }
+  }
+},200);
+
 window._showPartnerScreen=function(idx){
   var screens=document.querySelectorAll('.partner-screen');
   screens.forEach(function(s,i){s.style.display=i===idx?'flex':'none';});
@@ -17030,8 +17252,6 @@ window._partnerPrintPoster=function(){
   w.document.close();
 };
 
-// Auto-load partner home data on page render
-setTimeout(function(){if(document.getElementById('partner-home-checkins'))_partnerLoadHome();},200);
 
 // ═══ APPS PAGE — Fullscreen, no scrolling, side buttons (Microsoft App Store style) ═══
 function AppsFullPage(){
@@ -22259,3 +22479,4 @@ window._sgShareGymLink=function(gymId,gymName){
   // Instead, we rely on the permission check in the findGyms wrapper above.
   // This keeps the existing code 100% untouched.
 })();
+// empty line needed
