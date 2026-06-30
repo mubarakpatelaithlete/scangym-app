@@ -16562,88 +16562,26 @@ function ListYourGymFullPage(){
   </div>`;
 }
 
-// ═══ PARTNER TAB PAGE — Merged with Team Admin Partner content ═══
+// ═══ PARTNER TAB PAGE — TikTok full-screen style (mirrors Book tab layout) ═══
 function PartnerFullPage(){
   var u=state&&state.user;
   var gymName=u?(u.gym_name||'Your Gym'):'Your Gym';
-  // Editable gym data (populated by _partnerLoadGymProfile)
   var gd=window._partnerGymData||{};
   var photos=gd.photos||[];
   var dayPrice=gd.dayPrice||'4.49';
-  var threeDayPrice=gd.threeDayPrice||(parseFloat(dayPrice)*2.67).toFixed(2);
-  var weeklyPrice=gd.weeklyPrice||(parseFloat(dayPrice)*5).toFixed(2);
-  var monthlyPrice=gd.monthlyPrice||(parseFloat(dayPrice)*10).toFixed(2);
   var sym=gd.currencySymbol||'\u00a3';
   var addr=gd.address||'Tap to set your gym address';
   var gName=gd.name||gymName;
   var isOpen=gd.isOpen!==false;
   var desc=gd.description||'';
-  // Photo carousel HTML
+  // Photo slides for full-screen background
   var photoSlides='';
-  if(photos.length>0){photos.slice(0,4).forEach(function(p,i){photoSlides+='<div class="gym-carousel-slide"><img src="'+(p.url||p.thumbnail||p)+'" alt="Photo '+(i+1)+'" loading="lazy" decoding="async" onerror="this.parentElement.innerHTML=\'<div class=\\\'no-photo\\\'>\\ud83c\\udfcb\\ufe0f</div>\'"></div>';});}
-  else{photoSlides='<div class="gym-carousel-slide"><div class="no-photo">\ud83c\udfcb\ufe0f</div></div>';}
-  // Popular times bars
-  var ptBars=(function(){
-    var h=new Date().getHours();
-    var levels=[10,5,3,2,2,8,25,65,80,55,40,45,60,50,40,35,50,70,85,75,55,40,30,15];
-    var bars='';
-    for(var i=6;i<=22;i++){
-      var pct=levels[i]||10;
-      var isCurrent=(i===h);
-      var color=isCurrent?'#FF6D00':(pct>70?'#ef4444':pct>40?'#eab308':'#22c55e');
-      bars+='<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">';
-      bars+='<div style="width:100%;height:36px;display:flex;align-items:flex-end"><div style="width:100%;height:'+pct+'%;background:'+color+';border-radius:3px 3px 0 0;min-height:2px;opacity:'+(isCurrent?'1':'.6')+'"></div></div>';
-      if(i%3===0||isCurrent) bars+='<span style="font-size:9px;color:rgba(255,255,255,'+(isCurrent?'.8':'.25')+');font-weight:'+(isCurrent?'700':'400')+'">'+(i>12?i-12:i)+(i>=12?'p':'a')+'</span>';
-      else bars+='<span style="font-size:9px;color:transparent">.</span>';
-      bars+='</div>';
-    }
-    var currentLevel=levels[h]||10;
-    var busyText=currentLevel>70?'\ud83d\udd34 Busy right now':currentLevel>40?'\ud83d\udfe1 Moderately busy':'\ud83d\udfe2 Not busy right now';
-    return '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="color:rgba(255,255,255,.5);font-size:11px;font-weight:600">Popular times</span><span style="font-size:11px;font-weight:600;color:'+(currentLevel>70?'#ef4444':currentLevel>40?'#eab308':'#22c55e')+'">'+busyText+'</span></div><div style="display:flex;gap:2px;align-items:flex-end">'+bars+'</div>';
-  })();
+  if(photos.length>0){photos.slice(0,4).forEach(function(p,i){photoSlides+='<div class="tt-photo-slide" style="background-image:url('+(p.url||p.thumbnail||p)+')"></div>';});}
 
+  // Build the TikTok-style full-screen card (same as .tt-card in Book tab)
   return `<style>
-    /* ═══ Gym layout CSS (self-contained — mirrors GymProfilePage) ═══ */
-    .gym-fs-hero{position:relative;width:100%;height:calc(100vh - 56px);height:calc(100dvh - 56px);overflow:hidden;background:#0a0a0a;display:flex;flex-direction:column}
-    .gym-carousel-wrap{position:relative;width:100%;height:38vh;height:38dvh;overflow:hidden;background:#0a0a0a;flex-shrink:0}
-    .gym-carousel-track{display:flex;height:100%;transition:transform .3s cubic-bezier(.4,0,.2,1);will-change:transform}
-    .gym-carousel-track.dragging{transition:none}
-    .gym-carousel-slide{flex:0 0 100%;width:100%;height:100%;position:relative}
-    .gym-carousel-slide img{width:100%;height:100%;object-fit:cover}
-    .gym-carousel-slide .no-photo{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:64px;background:linear-gradient(135deg,#1e293b 0%,#0f172a 100%)}
-    .gym-carousel-counter{position:absolute;top:12px;right:12px;background:rgba(0,0,0,.7);color:#fff;font-size:13px;font-weight:600;padding:4px 10px;border-radius:12px;z-index:6;letter-spacing:.5px;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
-    .gym-carousel-dots{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:5px;z-index:6}
-    .gym-carousel-dots span{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.35);transition:all .3s}
-    .gym-carousel-dots span.active{background:#fff;width:18px;border-radius:3px}
-    .gym-carousel-wrap::after{content:'';position:absolute;top:0;right:0;bottom:0;width:20px;background:linear-gradient(90deg,transparent,rgba(0,0,0,.15));pointer-events:none;z-index:3;opacity:0;transition:opacity .3s}
-    .gym-carousel-wrap.has-next::after{opacity:1}
-    .gym-carousel-price{position:absolute;bottom:10px;right:12px;background:#FF6D00;color:#fff;font-size:14px;font-weight:800;padding:4px 10px;border-radius:10px;z-index:6;box-shadow:0 2px 8px rgba(255,109,0,.4)}
-    .gym-info-section{flex:1;display:flex;flex-direction:column;padding:12px 16px 0;overflow-y:auto;-webkit-overflow-scrolling:touch;background:#0a0f14;position:relative}
-    .gym-info-section::before{content:'';position:absolute;top:20%;left:50%;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,rgba(255,109,0,.06) 0%,rgba(255,109,0,.02) 40%,transparent 70%);transform:translateX(-50%);pointer-events:none;z-index:0}
-    .gym-info-card{margin-bottom:8px}
-    .gym-info-name{font-family:'Sora',sans-serif;font-size:22px;font-weight:800;color:#fff;line-height:1.15;margin-bottom:2px}
-    .gym-info-addr{color:rgba(255,255,255,.55);font-size:13px;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .gym-tt-actions{position:absolute;right:14px;top:16px;display:flex;flex-direction:column;gap:16px;z-index:5}
-    .gym-tt-item{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;-webkit-tap-highlight-color:transparent}
-    .gym-tt-circle{width:44px;height:44px;border-radius:0;background:transparent;border:none;display:flex;align-items:center;justify-content:center;font-size:22px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.4));transition:transform .15s}
-    .gym-tt-circle:active{transform:scale(.85)}
-    .gym-tt-text{font-size:9px;color:rgba(255,255,255,.7);font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8);text-align:center;white-space:nowrap}
-    .gym-pass-header{color:#fff;font-size:18px;font-weight:800;text-align:center;padding:4px 0 8px;font-family:'Sora',sans-serif}
-    .gym-pass-cards{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;padding-bottom:140px}
-    .gym-pass-card{display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px;padding:12px 8px 10px;border-radius:14px;border:2px solid rgba(255,255,255,.08);background:transparent;cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent;position:relative}
-    .gym-pass-card.selected{border-color:#FF6D00;background:rgba(255,109,0,.04)}
-    .gym-pass-card:active{transform:scale(.98)}
-    .gym-pass-card-icon{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,rgba(255,109,0,.15),rgba(255,109,0,.05));display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
-    .gym-pass-card-top{display:flex;align-items:center;gap:6px}
-    .gym-pass-card-info{flex:1;min-width:0}
-    .gym-pass-card-name{color:#fff;font-size:13px;font-weight:700}
-    .gym-pass-card-sub{color:rgba(255,255,255,.4);font-size:10px;margin-top:1px}
-    .gym-pass-card-badge{display:inline-block;background:#FF6D00;color:#fff;font-size:8px;font-weight:700;padding:2px 7px;border-radius:5px;position:absolute;top:-8px;left:50%;transform:translateX(-50%);white-space:nowrap;letter-spacing:.3px}
-    .gym-pass-card .gym-pass-price{color:#fff;font-size:20px;font-weight:900;margin:2px 0 1px}
-    .gym-pass-card .gym-pass-perday{color:rgba(255,255,255,.4);font-size:10px}
-    .gym-pass-card .gym-pass-save{font-size:9px;font-weight:700;color:#FF6D00;background:rgba(255,109,0,.1);padding:2px 6px;border-radius:4px;margin-top:3px}
-    .gym-sticky-bar{position:absolute;bottom:0;left:0;right:0;z-index:50;background:#0a0f14;border-top:1px solid rgba(255,255,255,.08);padding-bottom:env(safe-area-inset-bottom,0px)}
-    /* ═══ Partner edit controls ═══ */
+    /* ═══ Partner Tab — uses Book tab .tt-* classes (already defined globally) ═══ */
+    /* Only partner-specific overrides here */
     .pe-btn{position:absolute;background:rgba(255,109,0,.9);color:#fff;border:none;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;z-index:5;box-shadow:0 2px 8px rgba(0,0,0,.3);transition:transform .15s}
     .pe-btn:active{transform:scale(.9)}
     .pe-inline{display:inline-flex;align-items:center;gap:4px;cursor:pointer;-webkit-tap-highlight-color:transparent}
@@ -16653,169 +16591,87 @@ function PartnerFullPage(){
     .pe-save-row{display:flex;gap:6px;margin-top:6px}
     .pe-save-btn{background:#FF6D00;color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer}
     .pe-cancel-btn{background:rgba(255,255,255,.08);color:rgba(255,255,255,.6);border:none;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer}
-    @keyframes greenGlow{0%,100%{box-shadow:0 4px 20px rgba(255,109,0,.35)}50%{box-shadow:0 4px 30px rgba(255,109,0,.55)}}
   </style>
 
-  <div class="gym-fs-hero" id="partner-profile-page" style="position:relative">
-    <!-- ═══ Photo Carousel (same as Book tab) + Edit overlay ═══ -->
-    <div class="gym-carousel-wrap${photos.length>1?' has-next':''}" id="partner-carousel-wrap">
-      <div class="gym-carousel-track" id="partner-carousel-track">
-        ${photoSlides}
-      </div>
-      <!-- Edit Photos button (top right) -->
-      <button class="pe-btn" style="top:16px;right:16px;width:auto;border-radius:20px;padding:0 12px;gap:4px;font-size:12px;font-weight:700" onclick="_partnerEditPhotos()">📷 Edit</button>
-      <!-- Photo counter -->
-      ${photos.length>1?'<div class="gym-carousel-counter" id="partner-carousel-counter">1/'+Math.min(photos.length,4)+'</div>':''}
-      <!-- Dot indicators -->
-      ${photos.length>1?'<div class="gym-carousel-dots" id="partner-carousel-dots">'+photos.slice(0,4).map(function(_,i){return '<span class="'+(i===0?'active':'')+'"></span>';}).join('')+'</div>':''}
-      <!-- Price badge -->
-      <div class="gym-carousel-price" onclick="_partnerEditPrice('day')" style="cursor:pointer">${sym}${dayPrice} ✏️</div>
-    </div>
+  <div class="tt-view" style="height:calc(100vh - 56px);height:calc(100dvh - 56px)">
+    <div class="tt-card" id="partner-profile-page">
+      <!-- Full-screen photo background -->
+      ${photos.length>0?
+        '<div class="tt-photo-carousel" id="partner-photo-carousel">'+photoSlides+'</div>'
+        :'<div class="tt-photo"><div class="tt-photo-placeholder"></div></div>'}
+      <!-- Gradient overlay -->
+      <div class="tt-gradient"></div>
 
-    <!-- ═══ Info Section (mirrors Book tab) ═══ -->
-    <div class="gym-info-section">
-      <div class="gym-info-card">
-        <!-- Gym Name (editable) -->
-        <div class="gym-info-name pe-inline" id="partner-name-display" onclick="_partnerEditField('name')">
-          ${gName} <span style="font-size:14px;opacity:.5">✏️</span>
+      <!-- Top bar — Partner Dashboard label + Edit Photos button -->
+      <div style="position:absolute;top:0;left:0;right:0;z-index:20;display:flex;align-items:center;justify-content:space-between;padding:12px 12px 10px;padding-top:calc(env(safe-area-inset-top,8px) + 4px)">
+        <div style="display:flex;align-items:center;gap:6px;background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:8px 14px">
+          <span style="color:#FF6D00;font-size:14px">\ud83d\udfe0</span>
+          <span style="font-family:'Sora',sans-serif;font-size:13px;font-weight:700;color:rgba(255,255,255,.7)">Partner Dashboard</span>
         </div>
+        <button onclick="_partnerEditPhotos()" style="background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:8px 14px;color:rgba(255,255,255,.7);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px">\ud83d\udcf7 Edit</button>
+      </div>
+
+      <!-- ═══ RIGHT SIDE ACTION BUTTONS (same .tt-actions as Book tab) ═══ -->
+      <div class="tt-actions">
+        <div class="tt-action" onclick="event.stopPropagation();window._openSearchOverlay?window._openSearchOverlay():navigate('/list-your-gym')"><div class="tt-action-btn">\ud83d\udd0d</div><div class="tt-action-label">Search</div></div>
+        <div class="tt-action" onclick="event.stopPropagation();_partnerWithdraw()"><div class="tt-action-btn">\ud83d\udcb0</div><div class="tt-action-label">Earnings</div></div>
+        <div class="tt-action" onclick="event.stopPropagation();_partnerEditPrice('day')"><div class="tt-action-btn">\ud83c\udf9f\ufe0f</div><div class="tt-action-label">${sym}${dayPrice}</div></div>
+        <div class="tt-action" onclick="event.stopPropagation();_partnerEditHours()"><div class="tt-action-btn">\ud83d\udd50</div><div class="tt-action-label">Hours</div></div>
+        <div class="tt-action" onclick="event.stopPropagation();_partnerEditFacilities()"><div class="tt-action-btn">\ud83c\udfd7\ufe0f</div><div class="tt-action-label">Facilities</div></div>
+        <div class="tt-action" onclick="event.stopPropagation();_partnerConnectSeam()"><div class="tt-action-btn">\ud83d\udd12</div><div class="tt-action-label">Locks</div></div>
+        <div class="tt-action" onclick="event.stopPropagation();_partnerViewReviews()"><div class="tt-action-btn">\u2b50</div><div class="tt-action-label">Reviews</div></div>
+        <div class="tt-action" onclick="event.stopPropagation();_partnerViewBookings()"><div class="tt-action-btn">\ud83d\udcca</div><div class="tt-action-label">Bookings</div></div>
+        <div class="tt-action" onclick="event.stopPropagation();_partnerShareLink()"><div class="tt-action-btn">\ud83d\udd17</div><div class="tt-action-label">Share</div></div>
+      </div>
+
+      <!-- Gym logo (bottom left) -->
+      <div class="tt-logo" style="bottom:120px;background:rgba(255,109,0,.2)">🏠</div>
+
+      <!-- ═══ BOTTOM INFO OVERLAY (same .tt-info as Book tab) ═══ -->
+      <div class="tt-info" style="bottom:58px">
+        <!-- Photo dots -->
+        ${photos.length>1?'<div class="tt-dots" id="partner-tt-dots">'+photos.slice(0,4).map(function(_,i){return '<div class="tt-dot'+(i===0?' act':'')+'"></div>';}).join('')+'</div>':''}
+        <!-- Gym name (editable) -->
+        <div class="tt-gym-name pe-inline" onclick="_partnerEditField('name')" id="partner-name-display">${gName} \u270f\ufe0f</div>
         <!-- Address (editable) -->
-        <div class="gym-info-addr pe-inline" id="partner-addr-display" onclick="_partnerEditField('address')" style="cursor:pointer">
-          📍 ${addr} <span style="color:#FF6D00;font-size:12px;font-weight:600;margin-left:4px">Edit →</span>
+        <div class="tt-gym-addr pe-inline" onclick="_partnerEditField('address')" id="partner-addr-display">
+          \ud83d\udccd ${addr} \u00b7 <span style="color:${isOpen?'#4ade80':'#f87171'}" id="partner-open-badge">${isOpen?'\u2022 Open':'\u2022 Closed'}</span>
         </div>
-        <!-- Status badges -->
-        <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
-          <span onclick="_partnerToggleOpen()" style="display:inline-flex;align-items:center;gap:4px;background:${isOpen?'rgba(34,197,94,.12)':'rgba(239,68,68,.1)'};border:1px solid ${isOpen?'rgba(34,197,94,.2)':'rgba(239,68,68,.18)'};border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700;color:${isOpen?'#4ade80':'#f87171'};cursor:pointer" id="partner-open-badge">${isOpen?'✅ Open Now':'🔴 Closed'} ✏️</span>
-          <span onclick="_partnerEditPrice('day')" style="display:inline-flex;align-items:center;gap:4px;background:rgba(255,109,0,.12);border:1px solid rgba(255,109,0,.2);border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700;color:#FF6D00;cursor:pointer">💰 ${sym}${dayPrice}/day ✏️</span>
-          <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.2);border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700;color:#a78bfa">📱 QR Entry</span>
-          <span onclick="_partnerConnectSeam()" style="display:inline-flex;align-items:center;gap:4px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.18);border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700;color:#60a5fa;cursor:pointer">🔐 Smart Lock ✏️</span>
-        </div>
-        <!-- Real-time stats (replacing social proof) -->
-        <div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap">
-          <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.2);border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700;color:#4ade80" id="partner-stat-bookings">📈 Loading...</span>
-          <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(255,109,0,.1);border:1px solid rgba(255,109,0,.18);border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700;color:#FF6D00" id="partner-stat-revenue">💷 Loading...</span>
-          <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.18);border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700;color:#60a5fa" id="partner-stat-rating">⭐ Loading...</span>
-        </div>
-        <!-- Popular times -->
-        <div style="margin-top:8px" id="partner-busyness-widget">
-          ${ptBars}
+        <!-- Chips / badges -->
+        <div class="tt-chips">
+          <span class="tt-chip" onclick="_partnerEditPrice('day')" style="cursor:pointer">\ud83d\udd25 ${sym}${dayPrice}/day \u270f\ufe0f</span>
+          <span class="tt-chip">\ud83d\udcf1 QR Entry</span>
+          <span class="tt-chip" onclick="_partnerConnectSeam()" style="cursor:pointer">\ud83d\udd12 Smart Lock</span>
+          <span class="tt-chip">\u2705 Free Cancel</span>
         </div>
       </div>
 
-      <!-- ═══ Right-side action icons (same as Book tab but Partner actions) ═══ -->
-      <div class="gym-tt-actions">
-        <div class="gym-tt-item" onclick="_partnerWithdraw()">
-          <div class="gym-tt-circle">💰</div>
-          <div class="gym-tt-text">Earnings</div>
-        </div>
-        <div class="gym-tt-item" onclick="_partnerConnectSeam()">
-          <div class="gym-tt-circle">🔐</div>
-          <div class="gym-tt-text">Locks</div>
-        </div>
-        <div class="gym-tt-item" onclick="_partnerEditHours()">
-          <div class="gym-tt-circle">🕐</div>
-          <div class="gym-tt-text">Hours</div>
-        </div>
+      <!-- ═══ CTA BAR (same .tt-cta as Book tab) ═══ -->
+      <div class="tt-cta">
+        <button class="tt-cta-btn" onclick="_partnerWithdraw()" style="animation:casinoGlow 2s ease-in-out infinite">
+          Withdraw Earnings \u00b7 <span id="partner-wallet-badge" style="opacity:.75">\ud83d\udcb0 \u00a30.00</span> \u2192
+        </button>
       </div>
-
-      <!-- ═══ 2×2 Pass Cards (same as Book tab but EDITABLE prices) ═══ -->
-      <div class="gym-pass-header">Your Pass Pricing <span style="font-size:12px;opacity:.5">✏️ tap to edit</span></div>
-      <div class="gym-pass-cards" id="partner-pass-cards">
-        <div class="gym-pass-card selected" onclick="_partnerEditPrice('day')" style="cursor:pointer">
-          <div class="gym-pass-card-badge">⚡ MOST POPULAR</div>
-          <div class="gym-pass-card-top"><div class="gym-pass-card-icon">⚡</div><span class="gym-pass-card-name">Day Pass</span></div>
-          <div class="gym-pass-price" id="partner-price-day">${sym}${dayPrice}</div>
-          <div class="gym-pass-perday">24h access</div>
-        </div>
-        <div class="gym-pass-card" onclick="_partnerEditPrice('3day')" style="cursor:pointer">
-          <div class="gym-pass-card-top"><div class="gym-pass-card-icon">🔥</div><span class="gym-pass-card-name">3-Day Pass</span></div>
-          <div class="gym-pass-price" id="partner-price-3day">${sym}${threeDayPrice}</div>
-          <div class="gym-pass-perday">${sym}${(parseFloat(threeDayPrice)/3).toFixed(2)}/day</div>
-          <div class="gym-pass-save">Save 20%</div>
-        </div>
-        <div class="gym-pass-card" onclick="_partnerEditPrice('weekly')" style="cursor:pointer">
-          <div class="gym-pass-card-top"><div class="gym-pass-card-icon">📅</div><span class="gym-pass-card-name">Weekly</span></div>
-          <div class="gym-pass-price" id="partner-price-weekly">${sym}${weeklyPrice}</div>
-          <div class="gym-pass-perday">${sym}${(parseFloat(weeklyPrice)/7).toFixed(2)}/day</div>
-          <div class="gym-pass-save">Save 43%</div>
-        </div>
-        <div class="gym-pass-card" onclick="_partnerEditPrice('monthly')" style="cursor:pointer">
-          <div class="gym-pass-card-badge" style="background:#f59e0b">👑 BEST VALUE</div>
-          <div class="gym-pass-card-top"><div class="gym-pass-card-icon">🏆</div><span class="gym-pass-card-name">Monthly</span></div>
-          <div class="gym-pass-price" id="partner-price-monthly">${sym}${monthlyPrice}</div>
-          <div class="gym-pass-perday">${sym}${(parseFloat(monthlyPrice)/30).toFixed(2)}/day</div>
-          <div class="gym-pass-save">Save 67%</div>
-        </div>
-      </div>
-
-      <!-- ═══ Gym Description (editable) ═══ -->
-      <div style="margin-top:16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px;margin-left:16px;margin-right:16px">
-        <p style="color:#fff;font-weight:700;font-size:14px;margin-bottom:10px">📝 Gym Description <span onclick="_partnerEditField('description')" style="font-size:12px;color:#FF6D00;cursor:pointer;font-weight:600">Edit →</span></p>
-        <div id="partner-desc-display" style="color:rgba(255,255,255,.6);font-size:13px;line-height:1.7">${desc||'<span style="color:rgba(255,255,255,.3);font-style:italic">Tap Edit to add a description — tell customers about your gym, equipment, vibe...</span>'}</div>
-      </div>
-
-      <!-- ═══ Facilities (editable) ═══ -->
-      <div style="margin-top:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px;margin-left:16px;margin-right:16px">
-        <p style="color:#fff;font-weight:700;font-size:14px;margin-bottom:10px">🏋️ Facilities & Equipment <span onclick="_partnerEditFacilities()" style="font-size:12px;color:#FF6D00;cursor:pointer;font-weight:600">Edit →</span></p>
-        <div id="partner-facilities-grid" class="ov-grid" style="grid-template-columns:repeat(3,1fr);gap:8px">
-          <div class="ov-grid-item" style="padding:12px 8px"><span class="ov-grid-icon">🏋️</span><span class="ov-grid-name">Weights</span></div>
-          <div class="ov-grid-item" style="padding:12px 8px"><span class="ov-grid-icon">🏃</span><span class="ov-grid-name">Cardio</span></div>
-          <div class="ov-grid-item" style="padding:12px 8px"><span class="ov-grid-icon">🚿</span><span class="ov-grid-name">Showers</span></div>
-          <div class="ov-grid-item" style="padding:12px 8px"><span class="ov-grid-icon">🔐</span><span class="ov-grid-name">Lockers</span></div>
-          <div class="ov-grid-item" style="padding:12px 8px"><span class="ov-grid-icon">🅿️</span><span class="ov-grid-name">Parking</span></div>
-          <div class="ov-grid-item" style="padding:12px 8px;border:2px dashed rgba(255,109,0,.3);background:transparent;cursor:pointer" onclick="_partnerEditFacilities()"><span class="ov-grid-icon" style="font-size:20px">➕</span><span class="ov-grid-name" style="color:#FF6D00">Add</span></div>
-        </div>
-      </div>
-
-      <!-- ═══ Quick Actions (Partner-specific) ═══ -->
-      <div style="margin-top:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px;margin-left:16px;margin-right:16px;margin-bottom:180px">
-        <p style="color:#fff;font-weight:700;font-size:14px;margin-bottom:10px">⚡ Quick Actions</p>
-        <div style="display:flex;flex-direction:column;gap:8px">
-          <div onclick="_partnerPrintPoster()" style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:12px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .15s">
-            <span style="font-size:20px">🖨️</span>
-            <div><div style="color:#fff;font-size:13px;font-weight:600">Print QR Poster</div><div style="color:rgba(255,255,255,.35);font-size:11px">Download a poster for your gym entrance</div></div>
-          </div>
-          <div onclick="navigate('/list-your-gym')" style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:12px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .15s">
-            <span style="font-size:20px">🏋️</span>
-            <div><div style="color:#fff;font-size:13px;font-weight:600">Claim / Change Gym</div><div style="color:rgba(255,255,255,.35);font-size:11px">Search and claim your gym on ScanGym</div></div>
-          </div>
-          <div onclick="_partnerConnectSeam()" style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:12px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .15s">
-            <span style="font-size:20px">🔐</span>
-            <div><div style="color:#fff;font-size:13px;font-weight:600">Smart Lock Setup</div><div style="color:rgba(255,255,255,.35);font-size:11px">Connect Seam for 24/7 automatic access</div></div>
-          </div>
-        </div>
-      </div>
-
-    </div><!-- /gym-info-section -->
-
-    <!-- ═══ STICKY BOTTOM BAR — Partner version ═══ -->
-    <div class="gym-sticky-bar" id="partner-sticky-bar">
-        <div style="text-align:center;padding:6px 16px 0">
-          <span style="font-size:11px;font-weight:600;color:#FF6D00;letter-spacing:.3px" id="partner-sticky-subtitle">🏋️ Your gym, your rules — edit everything above</span>
-        </div>
-        <div style="display:flex;gap:10px;padding:8px 16px 0">
-          <button style="flex:1;padding:16px;border-radius:12px;border:none;background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 4px 20px rgba(255,109,0,.35);-webkit-tap-highlight-color:transparent;transition:transform .15s;letter-spacing:.3px;text-align:center;animation:greenGlow 2s ease-in-out infinite" onclick="_partnerWithdraw()">💰 Withdraw Earnings</button>
-          <button onclick="_partnerToggleActive(this.parentElement.parentElement)" style="width:52px;height:52px;border-radius:12px;border:none;background:#1e293b;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;flex-shrink:0;gap:1px">
-            <span style="font-size:18px;line-height:1" id="partner-toggle-icon">✅</span>
-            <span style="font-size:10px;color:rgba(255,255,255,.35);font-weight:600;line-height:1" id="partner-toggle-label">OPEN</span>
-          </button>
-        </div>
-        <div style="display:flex;justify-content:center;gap:14px;padding:8px 0 6px">
-          <span style="font-size:10px;color:rgba(255,255,255,.3)">💰 85% Commission</span>
-          <span style="font-size:10px;color:rgba(255,255,255,.3)">🔒 Secure Payouts</span>
-          <span style="font-size:10px;color:rgba(255,255,255,.3)">⚡ Instant Bookings</span>
-          <span style="font-size:10px;color:rgba(255,255,255,.3)">❤️ You're the boss</span>
-        </div>
-    </div>
-
-    <!-- Side nav buttons (Sign In / Seam / Withdraw / More) -->
-    <div style="position:fixed;right:8px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:10px;z-index:10">
-      <div onclick="${u?"sgToast('Already signed in ✅','success',1500)":"(typeof window._sgShowAuthSheet==='function'?window._sgShowAuthSheet('book'):navigate('/login'))"};_closePartnerMore()" style="width:42px;height:42px;background:${u?'rgba(34,197,94,.2)':'rgba(255,109,0,.25)'};backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:1px solid ${u?'rgba(34,197,94,.3)':'rgba(255,109,0,.4)'};box-shadow:0 0 16px ${u?'rgba(34,197,94,.15)':'rgba(255,109,0,.2)'}" title="Sign In">${u?'✅':'🔑'}</div>
-      <div onclick="_partnerConnectSeam();_closePartnerMore()" style="width:42px;height:42px;background:rgba(168,85,247,.2);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:1px solid rgba(168,85,247,.3);box-shadow:0 0 12px rgba(168,85,247,.15)" title="Connect Seam">🔗</div>
-      <div onclick="_partnerWithdraw();_closePartnerMore()" style="width:42px;height:42px;background:rgba(34,197,94,.15);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:1px solid rgba(34,197,94,.2);box-shadow:0 0 12px rgba(34,197,94,.1)" title="Withdraw">💸</div>
     </div>
   </div>`;
 }
+
+// ── Partner helper: view reviews bottom sheet ──
+window._partnerViewReviews=function(){
+  _sgOpenSheet('partner-reviews','<div style="padding:20px;text-align:center"><p style="font-size:18px;font-weight:800;color:#fff;margin-bottom:12px">\u2b50 Reviews</p><p style="color:rgba(255,255,255,.5);font-size:14px">Reviews from your guests will appear here once you start receiving bookings.</p><div style="font-size:48px;margin:24px 0">\ud83c\udf1f</div><p style="color:rgba(255,255,255,.3);font-size:12px">Coming soon — ratings, feedback & response tools</p></div>');
+};
+// ── Partner helper: view bookings bottom sheet ──
+window._partnerViewBookings=function(){
+  _sgOpenSheet('partner-bookings','<div style="padding:20px;text-align:center"><p style="font-size:18px;font-weight:800;color:#fff;margin-bottom:12px">\ud83d\udcca Bookings</p><p style="color:rgba(255,255,255,.5);font-size:14px">Your upcoming and past bookings will appear here.</p><div style="font-size:48px;margin:24px 0">\ud83d\udcc5</div><p style="color:rgba(255,255,255,.3);font-size:12px">Start receiving bookings by sharing your gym link</p></div>');
+};
+// ── Partner helper: share gym link ──
+window._partnerShareLink=function(){
+  var gd=window._partnerGymData||{};
+  var gymId=window._partnerGymId||'';
+  var link=gymId?('https://scangym.com/gym/'+gymId):'https://scangym.com/partner';
+  if(navigator.share){navigator.share({title:(gd.name||'My Gym')+' on ScanGym',text:'Book a day pass at '+(gd.name||'my gym')+' \u2014 from \u00a34.49',url:link}).catch(function(){});}
+  else{navigator.clipboard.writeText(link).then(function(){sgToast('Link copied! \ud83d\udccb','success',2000);}).catch(function(){sgToast('Could not copy link','error',2000);});}
+};
 
 // ── Partner Edit Helpers (Task 13: Partner = Book but editable) ──
 window._partnerGymData={};
@@ -16840,17 +16696,15 @@ window._partnerLoadGymProfile=async function(){
       };
       // Update displayed name/address
       var ne=document.getElementById('partner-name-display');
-      if(ne) ne.innerHTML=g.name+' <span style="font-size:14px;opacity:.5">\u270f\ufe0f</span>';
+      if(ne) ne.innerHTML=g.name+' \u270f\ufe0f';
       var ae=document.getElementById('partner-addr-display');
-      if(ae&&g.address) ae.innerHTML='\ud83d\udccd '+g.address+' <span style="color:#FF6D00;font-size:12px;font-weight:600;margin-left:4px">Edit \u2192</span>';
+      if(ae&&g.address){var _isO=g.isOpen!==false;ae.innerHTML='\ud83d\udccd '+g.address+' \u00b7 <span style="color:'+(_isO?'#4ade80':'#f87171')+'" id="partner-open-badge">'+(_isO?'\u2022 Open':'\u2022 Closed')+'</span>';}
+      // Update wallet balance badge
+      var wb=document.getElementById('partner-wallet-badge');
+      if(wb){var bal=d.balance||d.walletBalance||0;wb.textContent='\ud83d\udcb0 \u00a3'+parseFloat(bal||0).toFixed(2);}
+      // Re-render to show photos if loaded
+      if(g.photos_list&&g.photos_list.length>0||g.photos&&g.photos.length>0){render();}
     }
-    // Update stats
-    var tb=d.today?d.today.bookings:d.todayBookings||0;
-    var tr=d.today?d.today.revenue:parseFloat(d.todayRevenue)||0;
-    var ar=d.rating?d.rating.average:d.avgRating||0;
-    var bs=document.getElementById('partner-stat-bookings');if(bs)bs.textContent='\ud83d\udcc8 '+tb+' bookings today';
-    var rs=document.getElementById('partner-stat-revenue');if(rs)rs.textContent='\ud83d\udcb7 \u00a3'+parseFloat(tr||0).toFixed(2)+' today';
-    var rt=document.getElementById('partner-stat-rating');if(rt)rt.textContent='\u2b50 '+(ar?parseFloat(ar).toFixed(1):'—')+' rating';
   }catch(e){console.log('[PartnerProfile]',e.message);}
 };
 window._partnerEditField=function(field){
