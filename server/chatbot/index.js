@@ -48,9 +48,20 @@ router.use('/msteams', msteamsRouter);
 const webchatRouter = require('./webchat');
 router.use('/web', webchatRouter);
 
+// ManyChat (Instagram, Facebook Messenger, TikTok, YouTube)
+const manychatRouter = require('./manychat');
+router.use('/manychat', manychatRouter);
+
+// Reddit (custom polling bot — no ManyChat support)
+const { router: redditRouter, startRedditBot } = require('./reddit');
+router.use('/reddit', redditRouter);
+
 // ─── Start Discord Bot (connects on server boot) ────────────
 // Call this after Express is listening
 startDiscordBot();
+
+// ─── Start Reddit Bot (polling for DMs/mentions) ────────────
+startRedditBot();
 
 // ─── Test Endpoint (for development) ────────────────────────
 // POST /api/chatbot/test { "message": "Find gyms in Bolton", "userId": "test123" }
@@ -77,6 +88,8 @@ router.get('/health', (req, res) => {
     slack: !!(process.env.SLACK_BOT_TOKEN || true),
     msteams: !!(process.env.TEAMS_APP_ID || true),
     web: true, // Always available
+    manychat: true, // Instagram, Facebook, TikTok, YouTube via ManyChat
+    reddit: !!(process.env.REDDIT_CLIENT_ID),
   };
 
   const aiProviders = {
