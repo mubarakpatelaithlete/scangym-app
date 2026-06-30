@@ -11,9 +11,13 @@ User Message → Channel Adapter → Message Handler → ScanGym API → Reply
                    │                    │
               telegram.js         message-handler.js
               twilio.js           (intent detection,
-              discord.js*         entity extraction,
-              messenger.js*       session tracking)
-              (* = future)
+              discord.js          entity extraction,
+              msteams.js          session tracking)
+              slack.js
+              manychat.js → Instagram, Facebook, TikTok, YouTube
+              reddit.js
+              email.js
+              webchat.js
 ```
 
 ## Active Channels
@@ -23,6 +27,16 @@ User Message → Channel Adapter → Message Handler → ScanGym API → Reply
 | **Telegram** | `telegram.js` | Free | Create bot with @BotFather |
 | **WhatsApp** | `twilio.js` | ~$0.005/msg | Twilio WhatsApp Business API |
 | **SMS** | `twilio.js` | ~$0.01/msg | Twilio (already configured) |
+| **Discord** | `discord.js` | Free | Discord Developer Portal |
+| **MS Teams** | `msteams.js` | Free | Azure Bot Service |
+| **Slack** | `slack.js` | Free | Slack App |
+| **Instagram DM** | `manychat.js` | ManyChat plan | ManyChat + IG Business |
+| **Facebook Messenger** | `manychat.js` | ManyChat plan | ManyChat + FB Page |
+| **TikTok DM** | `manychat.js` | ManyChat plan | ManyChat + TikTok Business |
+| **YouTube** | `manychat.js` | ManyChat plan | ManyChat (comments only) |
+| **Reddit** | `reddit.js` | Free | Reddit API app (text-only) |
+| **Email** | `email.js` | Free | SendGrid inbound parse |
+| **Web Chat** | `webchat.js` | Free | REST API |
 
 ## Setup
 
