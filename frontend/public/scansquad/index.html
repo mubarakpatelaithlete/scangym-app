@@ -84,6 +84,40 @@
     .header-title { font-size: 16px; font-weight: 700; }
     .header-spacer { width: 36px; }
     
+    /* ── 🟠 Brand circle (matches reels/book tab top-left) ── */
+    .sg-brand-circle {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      width: 28px;
+      height: 28px;
+      background: #FF6D00;
+      border-radius: 50%;
+      z-index: 10;
+      opacity: .85;
+      box-shadow: 0 0 10px rgba(255,109,0,.5);
+      pointer-events: none;
+    }
+    
+    /* ── Deep Affiliate Link Button ── */
+    .affiliate-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,109,0,0.15);
+      border: 1px solid rgba(255,109,0,0.4);
+      border-radius: 10px;
+      padding: 8px 14px;
+      color: var(--brand);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+      -webkit-tap-highlight-color: transparent;
+      white-space: nowrap;
+    }
+    .affiliate-btn:active { transform: scale(0.95); background: rgba(255,109,0,0.25); }
+    
     /* ── Screen: Join ── */
     .join-hero { text-align: center; padding: 24px 0 20px; }
     .join-hero .emoji { font-size: 48px; margin-bottom: 12px; }
@@ -541,12 +575,35 @@
       }
     }
 
+    // ── Deep affiliate link copy ──
+    function copyDeepLink() {
+      var user = state.user || {};
+      var refSlug = (user.handle || '').replace(/[^a-zA-Z0-9]/g, '') || (user.name || 'scansquad').toLowerCase().replace(/\s+/g, '');
+      var link = 'https://scangym.com/scansquad?ref=' + encodeURIComponent(refSlug);
+      navigator.clipboard.writeText(link).then(function() {
+        showToast('🔗 Affiliate link copied!');
+      }).catch(function() {
+        var input = document.createElement('input');
+        input.value = link;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+        showToast('🔗 Affiliate link copied!');
+      });
+    }
+
+    // remove duplicate render closing brace below
+    function _noop() {
+    }
+
     function renderJoinScreen() {
       return `
+        <div class="sg-brand-circle"></div>
         <div class="header">
           <button class="header-back" onclick="goBack()">←</button>
           <div class="header-title">ScanSquad</div>
-          <div class="header-spacer"></div>
+          <div class="affiliate-btn" onclick="copyDeepLink()">🔗 Affiliate Link</div>
         </div>
 
         <div class="join-hero fade-in">
@@ -605,6 +662,7 @@
       const refSlug = handle.replace(/[^a-zA-Z0-9]/g, '') || name.toLowerCase().replace(/\s+/g, '');
       
       return `
+        <div class="sg-brand-circle"></div>
         <div class="success-screen fade-in">
           <div class="success-check">✓</div>
           <h2>Welcome to ScanSquad! 🎉</h2>
@@ -651,10 +709,11 @@
       const totalAssets = toolkit.totalAssets || 440;
 
       return `
+        <div class="sg-brand-circle"></div>
         <div class="header">
           <button class="header-back" onclick="goBack()">←</button>
           <div class="header-title">Creator Dashboard</div>
-          <div class="header-spacer"></div>
+          <div class="affiliate-btn" onclick="copyDeepLink()">🔗 Affiliate Link</div>
         </div>
 
         <div class="dash-profile fade-in">

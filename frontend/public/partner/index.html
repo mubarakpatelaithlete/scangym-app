@@ -71,6 +71,9 @@ a{text-decoration:none;color:inherit}
 /* Empty state */
 .empty-state{text-align:center;padding:40px 20px;color:rgba(255,255,255,.3)}
 .empty-state span{font-size:48px;display:block;margin-bottom:12px}
+
+/* ── 🟠 Brand circle (matches reels/book tab top-left) ── */
+.sg-brand-circle{position:absolute;top:16px;left:16px;width:28px;height:28px;background:#FF6D00;border-radius:50%;z-index:10;opacity:.85;box-shadow:0 0 10px rgba(255,109,0,.5);pointer-events:none}
 </style>
 </head>
 <body>
@@ -192,6 +195,7 @@ function renderApp() {
 // ── Login page ──
 function renderLogin() {
   return `
+    <div class="sg-brand-circle"></div>
     <div class="login-page">
       <div style="text-align:center;margin-bottom:32px">
         <div style="width:72px;height:72px;background:linear-gradient(135deg,var(--brand),var(--brand-dark));border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 16px;box-shadow:0 8px 40px rgba(255,109,0,.4)">🏋️</div>
@@ -239,6 +243,7 @@ function renderDashboard() {
   const gym = P.gyms[0] || {};
 
   return `
+    <div class="sg-brand-circle"></div>
     <div class="partner-tabs">
       <button class="${P.currentTab==='dashboard'?'active':''}" onclick="switchTab('dashboard')">📊 Dashboard</button>
       <button class="${P.currentTab==='orders'?'active':''}" onclick="switchTab('orders')">📋 Orders</button>
