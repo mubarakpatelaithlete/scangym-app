@@ -35,7 +35,7 @@ const TEAMS_APP_ID = process.env.TEAMS_APP_ID || _tai.join('');
 const _tap = ['f~r8Q~FGf5Ba', 'IrzRyGVvdqAV', 'kHlEu.QgRG4Lhajd'];
 const TEAMS_APP_PASSWORD = process.env.TEAMS_APP_PASSWORD || _tap.join('');
 const TEAMS_APP_TENANT_ID = process.env.TEAMS_APP_TENANT_ID || _tti.join('');
-const TEAMS_BOT_TYPE = process.env.TEAMS_BOT_TYPE || 'SingleTenant';
+const TEAMS_BOT_TYPE = process.env.TEAMS_BOT_TYPE || 'MultiTenant';
 const BASE_URL = process.env.BASE_URL || 'https://scangym.com';
 
 let _accessToken = null;
