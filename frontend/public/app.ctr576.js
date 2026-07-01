@@ -16600,13 +16600,16 @@ function PartnerFullPage(){
       <!-- Gradient overlay -->
       <div class="tt-gradient"></div>
 
-      <!-- Top bar — Partner Dashboard label + Edit Photos button -->
+      <!-- Orange brand circle top-left (matches Reels + Book tabs) -->
+      <div style="position:absolute;top:16px;left:16px;width:28px;height:28px;background:#FF6D00;border-radius:50%;z-index:20;opacity:.85;box-shadow:0 0 10px rgba(255,109,0,.5)"></div>
+
+      <!-- Top bar — Partner Dashboard label -->
       <div style="position:absolute;top:0;left:0;right:0;z-index:20;display:flex;align-items:center;justify-content:space-between;padding:12px 12px 10px;padding-top:calc(env(safe-area-inset-top,8px) + 4px)">
         <div style="display:flex;align-items:center;gap:6px;background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:8px 14px">
           <span style="color:#FF6D00;font-size:14px">\ud83d\udfe0</span>
           <span style="font-family:'Sora',sans-serif;font-size:13px;font-weight:700;color:rgba(255,255,255,.7)">Partner Dashboard</span>
         </div>
-        <button onclick="_partnerEditPhotos()" style="background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:8px 14px;color:rgba(255,255,255,.7);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px">\ud83d\udcf7 Edit</button>
+        <!-- Edit button removed per user request -->
       </div>
 
       <!-- ═══ RIGHT SIDE ACTION BUTTONS (same .tt-actions as Book tab) ═══ -->
@@ -16644,12 +16647,7 @@ function PartnerFullPage(){
         </div>
       </div>
 
-      <!-- ═══ CTA BAR (same .tt-cta as Book tab) ═══ -->
-      <div class="tt-cta">
-        <button class="tt-cta-btn" onclick="_partnerWithdraw()" style="animation:casinoGlow 2s ease-in-out infinite">
-          Withdraw Earnings \u00b7 <span id="partner-wallet-badge" style="opacity:.75">\ud83d\udcb0 \u00a30.00</span> \u2192
-        </button>
-      </div>
+      <!-- CTA bar removed per user request — Continue banner handles primary action -->
     </div>
   </div>`;
 }
