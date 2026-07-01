@@ -19370,11 +19370,11 @@ if(localStorage.getItem('sg_push_enabled')==='1'&&state.user){
   var _origSwitchTab=window.switchTab;
   if(typeof _origSwitchTab==='function'){
     window.switchTab=function(tab){
-      if(tab==='more'){
-        _hideBanner();
-      }else{
+      if(tab==='reels'||tab==='book'){
         _cbVisible=false;
         _showBanner();
+      }else{
+        _hideBanner();
       }
       _origSwitchTab.apply(this,arguments);
     };
