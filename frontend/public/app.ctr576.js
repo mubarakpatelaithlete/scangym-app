@@ -20622,10 +20622,10 @@ window._connectChannel=function(channelId,channelName,channelIcon,channelColor){
       note:'Works in DMs and channels — just mention @ScanGym'
     },
     msteams:{
-      steps:['Tap the button below to install the bot','Add ScanGym to your Teams workspace','Chat with the bot to search & book gyms'],
+      steps:['Tap below to download the ScanGym Teams app package','In Teams: Apps → Manage your apps → Upload a custom app','Select the downloaded .zip file and click Add — then chat with the bot!'],
       action:'_connectMSTeams()',
-      actionText:'Add to Teams 🟣',
-      note:'Works in personal chat and team channels'
+      actionText:'Download & Add to Teams 🟣',
+      note:'Custom app — requires sideloading (upload the .zip in Teams)'
     }
   };
 
@@ -20812,14 +20812,17 @@ window._connectMSTeams=async function(){
     var r=await fetch('/api/channels/connect',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({channel:'msteams',channelUsername:state.user&&state.user.name||'User'})});
     var data=await r.json();
     if(data.success){
-      // Try to get Teams install URL
-      var installUrl='';
-      try{var tr=await fetch('/api/channels/msteams/install');var td=await tr.json();installUrl=td.installUrl||'';}catch(e){}
-      if(installUrl){window.open(installUrl,'_blank');}
-      else{sgToast('Teams bot will be available soon — connected!','info');}
+      // Get manifest URL for sideloading
+      var manifestUrl='';
+      try{var tr=await fetch('/api/channels/msteams/install');var td=await tr.json();manifestUrl=td.manifestUrl||'';}catch(e){}
+      if(manifestUrl){
+        // Download the manifest and show sideload instructions
+        window.open(manifestUrl,'_blank');
+        sgToast('📥 Manifest downloaded! In Teams: Apps → Manage your apps → Upload a custom app → select the .zip','info',8000);
+      }else{sgToast('Teams bot will be available soon — connected!','info');}
       var popup=document.getElementById('sg-bottom-popup');
       if(popup)popup.remove();
-      sgToast('✅ Teams connected! Chat with the bot to start','success',3000);
+      sgToast('✅ Teams connected! Upload the manifest in Teams to start chatting','success',5000);
       _loadChannels();
     }else{sgToast(data.error||'Failed','error');btn.textContent='Add to Teams 🟣';btn.disabled=false;}
   }catch(e){sgToast('Network error','error');btn.textContent='Add to Teams 🟣';btn.disabled=false;}

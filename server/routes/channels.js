@@ -327,19 +327,31 @@ router.get('/slack/install', (req, res) => {
 
 // ─── GET /api/channels/msteams/install — Get Teams install link ─
 router.get('/msteams/install', async (req, res) => {
-  // Try to get app ID from the bot adapter's status endpoint first
-  let appId = process.env.TEAMS_APP_ID;
-  if (!appId) {
-    // Fallback: use the app registration ID from the adapter
-    appId = ['1b6f3573-928c', '-4dad-a905-', '47d6b75a58ae'].join('');
+  const appId = process.env.TEAMS_APP_ID || ['1b6f3573-928c', '-4dad-a905-', '47d6b75a58ae'].join('');
+  res.json({
+    installUrl: `https://teams.microsoft.com/l/app/${appId}`,
+    manifestUrl: `${req.protocol}://${req.get('host')}/api/channels/msteams/manifest`,
+    sideloadInstructions: [
+      '1. Download the manifest ZIP from the manifestUrl above',
+      '2. In Teams, go to Apps → Manage your apps → Upload a custom app',
+      '3. Select the downloaded .zip file',
+      '4. Click "Add" to install ScanGym bot',
+    ],
+    note: 'ScanGym bot is a custom app — install via sideloading or use the manifest URL',
+  });
+});
+
+// ─── GET /api/channels/msteams/manifest — Download Teams app package ─
+router.get('/msteams/manifest', (req, res) => {
+  const path = require('path');
+  const manifestPath = path.join(__dirname, '..', 'teams-manifest', 'scangym-teams-app.zip');
+  const fs = require('fs');
+  if (!fs.existsSync(manifestPath)) {
+    return res.status(404).json({ error: 'Teams manifest not found. Run the build step first.' });
   }
-  if (appId) {
-    return res.json({
-      installUrl: `https://teams.microsoft.com/l/app/${appId}`,
-      note: 'Install ScanGym bot in your Teams workspace',
-    });
-  }
-  res.json({ installUrl: 'https://appsource.microsoft.com/', note: 'Search for ScanGym in the Teams App Store' });
+  res.setHeader('Content-Type', 'application/zip');
+  res.setHeader('Content-Disposition', 'attachment; filename="scangym-teams-app.zip"');
+  fs.createReadStream(manifestPath).pipe(res);
 });
 
 // ─── Fix 7: Slack OAuth callback — completes "Add to Slack" flow ────

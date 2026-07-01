@@ -1,0 +1,77 @@
+{
+  "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.17/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.17",
+  "version": "4.0.0",
+  "id": "1b6f3573-928c-4dad-a905-47d6b75a58ae",
+  "developer": {
+    "name": "ScanGym",
+    "websiteUrl": "https://scangym.com",
+    "privacyUrl": "https://scangym.com/privacy",
+    "termsOfUseUrl": "https://scangym.com/terms"
+  },
+  "name": {
+    "short": "ScanGym",
+    "full": "ScanGym - Book a Gym. Anywhere."
+  },
+  "description": {
+    "short": "Find and book gyms near you. Day passes from $5.49, QR entry.",
+    "full": "ScanGym is a gym finder and booking marketplace. Search 1.2M+ gyms worldwide, buy day passes from $5.49, and enter with a QR code. No membership required. Chat with the bot to find gyms near any location, check pricing, and book instantly."
+  },
+  "icons": {
+    "outline": "outline.png",
+    "color": "color.png"
+  },
+  "accentColor": "#FF6D00",
+  "bots": [
+    {
+      "botId": "1b6f3573-928c-4dad-a905-47d6b75a58ae",
+      "scopes": [
+        "personal",
+        "team",
+        "groupChat"
+      ],
+      "supportsFiles": false,
+      "isNotificationOnly": false,
+      "commandLists": [
+        {
+          "scopes": [
+            "personal"
+          ],
+          "commands": [
+            {
+              "title": "find",
+              "description": "Find gyms near a location"
+            },
+            {
+              "title": "price",
+              "description": "Show pricing details"
+            },
+            {
+              "title": "help",
+              "description": "Show help and available commands"
+            },
+            {
+              "title": "creator",
+              "description": "Creator Programme information"
+            },
+            {
+              "title": "book",
+              "description": "Book a gym from search results"
+            },
+            {
+              "title": "cancel",
+              "description": "Cancel a booking"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "permissions": [
+    "identity",
+    "messageTeamMembers"
+  ],
+  "validDomains": [
+    "scangym.com"
+  ]
+}
