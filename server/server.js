@@ -23,6 +23,7 @@ const ingestRouter = require('./routes/ingest');
 const directionsRouter = require('./routes/directions');
 const qrRouter = require('./routes/qr');
 const convictionRouter = require('./routes/conviction');
+const identityRouter = require('./routes/identity');
 const authRouter = require('./routes/auth');
 const bookingRouter = require('./routes/booking');
 const paymentRouter = require('./routes/payment');
@@ -435,6 +436,7 @@ app.use('/api/social-reels', socialReelsRouter);
 app.use('/api/directions', directionsRouter);
 app.use('/api/qr', qrRouter);
 app.use('/api/conviction', convictionRouter);
+app.use('/api/identity', identityRouter);
 
 // -- Auth, Booking & Payment routes --
 app.use('/api/auth', authRouter);
