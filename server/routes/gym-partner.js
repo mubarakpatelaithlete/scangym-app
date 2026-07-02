@@ -1039,3 +1039,173 @@ router.patch('/capacity', authenticateUser, express.json(), async (req, res) => 
     res.status(500).json({ error: 'Failed to update capacity' });
   }
 });
+
+// ═══════════════════════════════════════════════════════════════════
+//  Ownership verification (Zomato-style)
+//  OTP is sent to the gym's *publicly registered* phone number —
+//  only someone at the business can read the code back.
+//  Fallback: document proof (claim_proof_url) reviewed by support.
+// ═══════════════════════════════════════════════════════════════════
+const OWN_TWILIO_SID = process.env.TWILIO_ACCOUNT_SID;
+const OWN_TWILIO_TOKEN = process.env.TWILIO_AUTH_TOKEN;
+const OWN_TWILIO_VERIFY_SID = process.env.TWILIO_VERIFY_SERVICE_SID;
+
+// Auto-migration: ownership columns
+(async () => {
+  try {
+    await pool.query(`
+      DO $$ BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='ownership_verified') THEN
+          ALTER TABLE gyms ADD COLUMN ownership_verified BOOLEAN DEFAULT false;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='ownership_verified_at') THEN
+          ALTER TABLE gyms ADD COLUMN ownership_verified_at TIMESTAMP DEFAULT NULL;
+        END IF;
+      END $$;
+    `);
+  } catch (err) {
+    console.error('[Ownership] Migration error:', err.message);
+  }
+})();
+
+function normalizeUkPhone(raw) {
+  if (!raw) return null;
+  let p = String(raw).replace(/[\s()-]/g, '');
+  if (p.startsWith('+')) return p;
+  if (p.startsWith('00')) return '+' + p.slice(2);
+  if (p.startsWith('0')) return '+44' + p.slice(1);
+  return '+' + p;
+}
+function maskPhone(p) {
+  if (!p || p.length < 6) return '•••';
+  return p.slice(0, 3) + ' ••• ••' + p.slice(-3);
+}
+
+// POST /claim/send-otp — text a code to the gym's registered business number
+router.post('/claim/send-otp', authenticateUser, express.json(), async (req, res) => {
+  try {
+    const { gymId } = req.body;
+    if (!gymId) return res.status(400).json({ error: 'gymId required' });
+
+    const gym = await pool.query(
+      `SELECT id, name, phone, owner_phone, claimed_by, ownership_verified FROM gyms WHERE id = $1`, [gymId]
+    );
+    if (!gym.rows.length) return res.status(404).json({ error: 'Gym not found' });
+    const g = gym.rows[0];
+    if (g.claimed_by && String(g.claimed_by) !== String(req.user.id)) {
+      return res.status(403).json({ error: 'This gym is claimed by another account' });
+    }
+    if (g.ownership_verified) return res.json({ success: true, alreadyVerified: true });
+
+    const bizPhone = normalizeUkPhone(g.phone || g.owner_phone);
+    if (!bizPhone) {
+      // No registered number on file — fall back to document proof
+      return res.json({
+        success: false,
+        fallback: 'document',
+        message: 'No registered business number on file for this gym. Upload proof of ownership instead (utility bill, lease, or business registration).',
+      });
+    }
+    if (!OWN_TWILIO_SID || !OWN_TWILIO_TOKEN || !OWN_TWILIO_VERIFY_SID) {
+      return res.status(500).json({ error: 'SMS service not configured' });
+    }
+
+    const url = `https://verify.twilio.com/v2/Services/${OWN_TWILIO_VERIFY_SID}/Verifications`;
+    const params = new URLSearchParams({ To: bizPhone, Channel: 'sms' });
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Basic ' + Buffer.from(`${OWN_TWILIO_SID}:${OWN_TWILIO_TOKEN}`).toString('base64'),
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: params.toString(),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      console.error('[Ownership] Twilio send error:', data.message);
+      return res.json({
+        success: false,
+        fallback: 'document',
+        message: 'Could not text the registered number. Upload proof of ownership instead.',
+      });
+    }
+
+    res.json({
+      success: true,
+      maskedPhone: maskPhone(bizPhone),
+      message: `Code sent to the gym's registered number ${maskPhone(bizPhone)}`,
+    });
+  } catch (err) {
+    console.error('[Ownership] send-otp error:', err.message);
+    res.status(500).json({ error: 'Failed to send verification code' });
+  }
+});
+
+// POST /claim/verify-otp — confirm the code, mark ownership verified
+router.post('/claim/verify-otp', authenticateUser, express.json(), async (req, res) => {
+  try {
+    const { gymId, code } = req.body;
+    if (!gymId || !code) return res.status(400).json({ error: 'gymId and code required' });
+
+    const gym = await pool.query(
+      `SELECT id, phone, owner_phone, claimed_by FROM gyms WHERE id = $1`, [gymId]
+    );
+    if (!gym.rows.length) return res.status(404).json({ error: 'Gym not found' });
+    const g = gym.rows[0];
+    if (g.claimed_by && String(g.claimed_by) !== String(req.user.id)) {
+      return res.status(403).json({ error: 'This gym is claimed by another account' });
+    }
+    const bizPhone = normalizeUkPhone(g.phone || g.owner_phone);
+    if (!bizPhone) return res.status(400).json({ error: 'No registered number on file' });
+
+    const url = `https://verify.twilio.com/v2/Services/${OWN_TWILIO_VERIFY_SID}/VerificationCheck`;
+    const params = new URLSearchParams({ To: bizPhone, Code: code });
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Basic ' + Buffer.from(`${OWN_TWILIO_SID}:${OWN_TWILIO_TOKEN}`).toString('base64'),
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: params.toString(),
+    });
+    const data = await response.json();
+    if (!response.ok || data.status !== 'approved') {
+      return res.status(400).json({ error: 'Invalid or expired code' });
+    }
+
+    await pool.query(
+      `UPDATE gyms SET ownership_verified = true, ownership_verified_at = NOW(),
+       claimed_by = COALESCE(claimed_by, $1), claim_status = 'verified', updated_at = NOW()
+       WHERE id = $2`,
+      [req.user.id, gymId]
+    ).catch(async () => {
+      await pool.query(
+        `UPDATE gyms SET ownership_verified = true, ownership_verified_at = NOW(), updated_at = NOW() WHERE id = $1`,
+        [gymId]
+      );
+    });
+
+    res.json({ success: true, message: '✅ Ownership verified — Verified badge unlocked!' });
+  } catch (err) {
+    console.error('[Ownership] verify-otp error:', err.message);
+    res.status(500).json({ error: 'Verification failed' });
+  }
+});
+
+// GET /claim/verification-status?gymId= — is this gym ownership-verified?
+router.get('/claim/verification-status', authenticateUser, async (req, res) => {
+  try {
+    const { gymId } = req.query;
+    if (!gymId) return res.status(400).json({ error: 'gymId required' });
+    const gym = await pool.query(
+      `SELECT ownership_verified, phone, owner_phone FROM gyms WHERE id = $1`, [gymId]
+    );
+    if (!gym.rows.length) return res.status(404).json({ error: 'Gym not found' });
+    res.json({
+      verified: gym.rows[0].ownership_verified === true,
+      hasRegisteredPhone: !!(gym.rows[0].phone || gym.rows[0].owner_phone),
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed' });
+  }
+});
