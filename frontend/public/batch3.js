@@ -45,7 +45,38 @@ window._sgB3VerifyOwnership=async function(){
     +'<div id="sg-own-step2" style="display:none;margin-top:14px">'
     +'<input id="sg-own-code" inputmode="numeric" maxlength="6" placeholder="Enter 6-digit code" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:13px;color:#fff;font-size:16px;letter-spacing:4px;text-align:center;outline:none;margin-bottom:10px">'
     +'<button onclick="_sgB3CheckOwnOtp('+gymId+')" style="width:100%;background:#22c55e;color:#fff;border:none;padding:13px;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer">Confirm code</button></div>'
-    +'<div id="sg-own-fallback" style="margin-top:14px;text-align:left"><p style="color:rgba(255,255,255,.35);font-size:12px;line-height:1.5;margin:0">Can\u2019t access that number? Email proof of ownership (utility bill, lease or business registration) to <a href="mailto:support@scangym.com" style="color:#FF6D00">support@scangym.com</a> and we\u2019ll verify manually.</p></div>');
+    +'<div id="sg-own-fallback" style="margin-top:16px;text-align:left;border-top:1px solid rgba(255,255,255,.08);padding-top:14px">'
+    +'<p style="color:rgba(255,255,255,.45);font-size:12px;line-height:1.5;margin:0 0 10px">Can\u2019t access that number? Upload proof instead \u2014 a utility bill, lease or business registration (photo/PDF), or a short video of you inside the gym.</p>'
+    +'<input type="file" id="sg-own-file" accept="image/*,video/*,.pdf" style="display:none" onchange="_sgB3UploadProof('+gymId+')">'
+    +'<button id="sg-own-upload" onclick="document.getElementById(\'sg-own-file\').click()" style="width:100%;background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.15);padding:12px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer">\uD83D\uDCC4 Upload proof of ownership</button></div>');
+};
+window._sgB3UploadProof=async function(gymId){
+  var inp=document.getElementById('sg-own-file');
+  if(!inp||!inp.files||!inp.files.length)return;
+  var f=inp.files[0];
+  if(f.size>50*1024*1024){toast('File too big \u2014 max 50MB','error',3000);return;}
+  var btn=document.getElementById('sg-own-upload');
+  if(btn){btn.textContent='Uploading\u2026';btn.style.opacity='.6';}
+  try{
+    var fd=new FormData();
+    fd.append('gymId',gymId);
+    fd.append('proof',f);
+    var r=await fetch('/api/gym-partner/claim/upload-proof',{method:'POST',credentials:'include',body:fd});
+    var d=await r.json();
+    if(d.alreadyVerified){toast('Already verified \u2705','success',2500);if(typeof window._sgCloseSheet==='function')window._sgCloseSheet('sg-own-sheet');return;}
+    if(r.ok&&d.success){
+      try{localStorage.setItem('sg_own_pending_'+gymId,'1');}catch(e){}
+      toast(d.message||'Proof sent \u2014 we review within 24h \u23F3','success',4000);
+      if(typeof window._sgCloseSheet==='function')window._sgCloseSheet('sg-own-sheet');
+      paintOwnBadge('pending');
+    }else{
+      if(btn){btn.textContent='\uD83D\uDCC4 Upload proof of ownership';btn.style.opacity='1';}
+      toast(d.error||'Upload failed \u2014 try again','error',3000);
+    }
+  }catch(e){
+    if(btn){btn.textContent='\uD83D\uDCC4 Upload proof of ownership';btn.style.opacity='1';}
+    toast('Upload failed \u2014 try again','error',3000);
+  }
 };
 window._sgB3SendOwnOtp=async function(gymId){
   var btn=document.getElementById('sg-own-send');
@@ -85,20 +116,22 @@ async function checkOwnState(){
   try{if(localStorage.getItem('sg_own_verified_'+gymId)){_ownState=true;return;}}catch(e){}
   try{
     var r=await fetch('/api/gym-partner/claim/verification-status?gymId='+gymId,{credentials:'include'});
-    if(r.ok){var d=await r.json();_ownState=d.verified===true;return;}
+    if(r.ok){var d=await r.json();_ownState=d.verified===true?true:(d.proofSubmitted?'pending':false);return;}
   }catch(e){}
+  try{if(localStorage.getItem('sg_own_pending_'+gymId)){_ownState='pending';return;}}catch(e){}
   _ownState=false;
 }
-function paintOwnBadge(verified){
+function paintOwnBadge(state){
   var el=document.getElementById('sg-own-chip');
   if(!el)return;
-  if(verified){el.innerHTML='<span style="color:#22c55e;font-weight:700">\u2705 Verified owner</span>';el.onclick=null;el.style.cursor='default';el.style.borderColor='rgba(34,197,94,.35)';}
+  if(state===true){el.innerHTML='<span style="color:#22c55e;font-weight:700">\u2705 Verified owner</span>';el.onclick=null;el.style.cursor='default';el.style.borderColor='rgba(34,197,94,.35)';}
+  else if(state==='pending'){el.innerHTML='<span style="color:#fbbf24;font-weight:700">\u23F3 Proof under review</span>';el.onclick=null;el.style.cursor='default';el.style.borderColor='rgba(251,191,36,.35)';}
 }
 function injectOwnChip(){
   var route=curRoute();
   var old=document.getElementById('sg-own-chip');
   if(route.indexOf('/partner')!==0){if(old)old.remove();return;}
-  if(old){if(_ownState===true)paintOwnBadge(true);return;}
+  if(old){if(_ownState===true||_ownState==='pending')paintOwnBadge(_ownState);return;}
   var host=document.getElementById('sg-gym-switch'); // sits right under the on/off switch from batch 2
   var b=document.createElement('div');
   b.id='sg-own-chip';
@@ -106,7 +139,7 @@ function injectOwnChip(){
   b.innerHTML='\uD83D\uDEE1\uFE0F Verify ownership \u2192';
   b.onclick=function(){window._sgB3VerifyOwnership();};
   document.body.appendChild(b);
-  checkOwnState().then(function(){if(_ownState===true)paintOwnBadge(true);});
+  checkOwnState().then(function(){if(_ownState===true||_ownState==='pending')paintOwnBadge(_ownState);});
 }
 setInterval(injectOwnChip,800);
 
