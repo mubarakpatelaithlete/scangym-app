@@ -42,28 +42,17 @@ function creatorHandle(){
    ════════════════════════════════════════════════════════════════════ */
 function fixPartnerBranding(){
   if(!onPartner())return;
-  /* remove the stray floating orange circle (duplicates the pill's 🟠) */
-  document.querySelectorAll('div[style*="width:28px"]').forEach(function(d){
-    if(d.dataset.sgR2Checked)return;
-    d.dataset.sgR2Checked='1';
-    var s=d.getAttribute('style')||'';
-    if(s.indexOf('background:#FF6D00')>-1&&s.indexOf('border-radius:50%')>-1&&s.indexOf('top:16px')>-1&&s.indexOf('left:16px')>-1){
-      d.style.display='none';
-    }
-  });
-  /* the "Partner Dashboard" pill was hidden behind the "My gym" switch —
-     stack them cleanly: pill on top, switch just below it */
+  /* Branding = just the orange circle top-left (same as Reels + Book).
+     Remove the "Partner Dashboard" pill that was hiding/duplicating it. */
   document.querySelectorAll('span').forEach(function(sp){
     if(sp.textContent==='Partner Dashboard'&&!sp.dataset.sgR2){
       sp.dataset.sgR2='1';
       var pill=sp.parentElement;
       var topbar=pill&&pill.parentElement;
-      if(pill)pill.style.cssText+=';position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);left:12px;z-index:9001;background:rgba(10,12,20,.85);backdrop-filter:blur(10px)';
-      if(topbar)topbar.style.padding='0';
+      if(topbar)topbar.style.display='none';
+      else if(pill)pill.style.display='none';
     }
   });
-  var sw=document.getElementById('sg-gym-switch');
-  if(sw&&!sw.dataset.sgR2){sw.dataset.sgR2='1';sw.style.top='calc(env(safe-area-inset-top,0px) + 56px)';}
   /* the Book-tab social-proof strip (#sg-sps) doesn't belong on the
      partner dashboard and stays stuck on "Loading..." there — hide it */
   var sps=document.getElementById('sg-sps');
@@ -77,23 +66,16 @@ function fixPartnerBranding(){
    ════════════════════════════════════════════════════════════════════ */
 function fixSquadBranding(){
   if(!onCreator())return;
+  /* Branding = just the orange circle top-left, exactly like Reels + Book. */
   var b=document.getElementById('sg-squad-brand');
-  if(!b)return;
-  if(!b.dataset.sgR2){
+  if(b&&!b.dataset.sgR2){
     b.dataset.sgR2='1';
-    b.style.cssText='display:flex;align-items:center;margin:0 0 12px;flex-shrink:0';
-    b.innerHTML=''
-      +'<div style="display:flex;align-items:center;gap:8px;background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:6px 14px 6px 6px">'
-      +'<div style="width:26px;height:26px;border-radius:50%;background:#FF6D00;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#fff;flex-shrink:0">S</div>'
-      +'<div>'
-      +'<span style="font-family:\'Sora\',sans-serif;font-size:13px;font-weight:800;color:#fff;letter-spacing:-.2px;display:block;line-height:1.1">ScanSquad</span>'
-      +'<span style="color:rgba(255,255,255,.4);font-size:9px;display:block;line-height:1.2">Share gyms \u00b7 Earn 25%</span>'
-      +'</div>'
-      +'</div>';
+    b.style.cssText='margin:0 0 14px;padding:0;flex-shrink:0';
+    b.innerHTML='<div style="width:28px;height:28px;background:#FF6D00;border-radius:50%;opacity:.85;box-shadow:0 0 10px rgba(255,109,0,.5)"></div>';
   }
-  /* keep clear of the temporary USP banner */
-  var usp=document.getElementById('sg-usp-banner');
-  b.style.marginTop=(usp&&usp.offsetHeight&&usp.style.display!=='none'&&usp.style.opacity!=='0')?(usp.offsetHeight+6)+'px':'0px';
+  /* the Book-tab social-proof strip doesn't belong here either */
+  var sps=document.getElementById('sg-sps');
+  if(sps)sps.style.display='none';
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -153,6 +135,37 @@ setInterval(function(){
     var cb=document.getElementById('creator-continue-banner');
     if(cb)cb.remove();
   }
+},400);
+
+/* Restyle the Continue banners (partner + creator) to match the slim
+   full-width orange bar used on the Reels and Book tabs:
+   centered "Continue →", no subtitle, no step dots. */
+function restyleContinueBanner(id){
+  var banner=document.getElementById(id);
+  if(!banner||banner.dataset.sgR2Slim)return;
+  var card=banner.firstElementChild;
+  if(!card)return;
+  banner.dataset.sgR2Slim='1';
+  banner.style.padding='0';
+  card.style.borderRadius='0';
+  card.style.margin='0';
+  card.style.padding='13px 16px';
+  card.style.justifyContent='center';
+  card.style.gap='10px';
+  var left=card.children[0],right=card.children[1];
+  if(left){
+    var label=left.children[0],sub=left.children[1];
+    if(label){label.style.fontSize='15px';label.style.letterSpacing='.3px';}
+    if(sub)sub.style.display='none';
+  }
+  if(right){
+    var dots=right.children[0];
+    if(dots)dots.style.display='none';
+    right.style.gap='0';
+  }
+}
+setInterval(function(){
+  try{restyleContinueBanner('partner-continue-banner');restyleContinueBanner('creator-continue-banner');}catch(e){}
 },400);
 
 /* ════════════════════════════════════════════════════════════════════
@@ -237,19 +250,17 @@ function r2ShowAddWithdrawSheet(){
   var html=''
     +'<div style="text-align:center;margin-bottom:20px">'
     +'<div style="font-size:40px;margin-bottom:8px">\ud83d\udcb0</div>'
-    +'<h2 style="color:#fff;font-size:20px;font-weight:800;margin:0 0 4px">Add Withdraw Method</h2>'
-    +'<p style="color:rgba(255,255,255,.4);font-size:13px;margin:0">Choose how you want to receive your earnings</p>'
+    +'<h2 style="color:#fff;font-size:20px;font-weight:800;margin:0 0 4px">Add Bank Account</h2>'
+    +'<p style="color:rgba(255,255,255,.4);font-size:13px;margin:0">Your ScanGym wallet balance is paid to your UK bank account</p>'
     +'</div>'
-    +r2MethodOption('stripe','linear-gradient(135deg,#635BFF,#7A73FF)','S','Stripe Connect','Direct bank deposits \u00b7 Recommended',true)
-    +r2MethodOption('paypal','linear-gradient(135deg,#003087,#009cde)','PP','PayPal','Withdraw to your PayPal account',false)
-    +r2MethodOption('bank','linear-gradient(135deg,#22c55e,#16a34a)','\ud83c\udfe6','Bank Transfer','UK sort code &amp; account number',false)
+    +r2MethodOption('bank','linear-gradient(135deg,#22c55e,#16a34a)','\ud83c\udfe6','Bank Transfer','UK sort code &amp; account number',true)
     +'<div id="sg-wd-form-area" style="margin-top:16px"></div>'
     +'<p id="sg-wd-error" style="color:#ef4444;font-size:13px;margin-top:8px;display:none"></p>'
-    +'<button id="sg-wd-save-btn" onclick="window._ctaSaveWithdrawMethod()" style="width:100%;background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;cursor:pointer;margin-top:16px;transition:all .2s;box-shadow:0 4px 20px rgba(255,109,0,.3)">Connect &amp; Continue \u2192</button>';
+    +'<button id="sg-wd-save-btn" onclick="window._ctaSaveWithdrawMethod()" style="width:100%;background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;cursor:pointer;margin-top:16px;transition:all .2s;box-shadow:0 4px 20px rgba(255,109,0,.3)">Save Bank Details \u2192</button>';
   r2OpenCtaSheet(html);
   window._ctaWithdrawCallback=null;
-  window._ctaSelectedWithdraw='stripe';
-  if(typeof window._ctaSelectWithdrawOpt==='function')window._ctaSelectWithdrawOpt('stripe');
+  window._ctaSelectedWithdraw='bank';
+  if(typeof window._ctaSelectWithdrawOpt==='function')window._ctaSelectWithdrawOpt('bank');
 }
 window._sgPartnerAddWithdrawMethod=function(){
   if(typeof _sgCloseSheet==='function')_sgCloseSheet('sg-partner-wallet-sheet');
@@ -264,17 +275,10 @@ window._sgCreatorAddWithdrawMethod=function(){
    to a pending bank-transfer request using the saved method. */
 window._sgPartnerWithdrawToBank=async function(){
   try{
-    var r=await fetch('/api/gym-partner/request-payout',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({})});
-    var d=await r.json();
-    if(d.success||d.ok){
-      sgToast('Payout requested! Funds arrive in 2-5 business days','success',4000);
-      _sgCloseSheet('sg-partner-wallet-sheet');return;
-    }
-    /* no Stripe Connect → bank transfer fallback */
     var f=await fetch('/api/gym-partner/withdraw-request',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({role:'partner'})});
     var fd=await f.json();
     if(fd.success){sgToast(fd.message||'Withdrawal requested! Funds arrive in 2-5 business days','success',4000);_sgCloseSheet('sg-partner-wallet-sheet');}
-    else{sgToast(fd.error||d.error||'Add a withdraw method first','info',3500);}
+    else{sgToast(fd.error||'Add your bank account first','info',3500);}
   }catch(ex){sgToast('Could not process payout \u2014 try again','error',3000);}
 };
 
@@ -285,7 +289,6 @@ window._sgCreatorWithdrawToBank=async function(){
   var method='bank_transfer',details={};
   try{
     var cd=JSON.parse(localStorage.getItem('sg_creator')||'{}');
-    if(cd.withdrawMethod==='paypal')method='paypal';
     details=cd.withdrawDetails||{};
   }catch(e){}
   try{
@@ -323,13 +326,10 @@ window._ctaConfirmWithdraw=async function(tabType){
   }
   try{
     if(tabType==='partner'){
-      var r=await fetch('/api/gym-partner/request-payout',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({amount:amount})});
-      var d=await r.json();
-      if(d.success||d.payout)return done();
       var f=await fetch('/api/gym-partner/withdraw-request',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({role:'partner',amount:amount})});
       var fd=await f.json();
       if(fd.success)return done();
-      return fail(fd.error||d.error);
+      return fail(fd.error);
     }
     /* creator */
     var h=creatorHandle();
@@ -337,7 +337,6 @@ window._ctaConfirmWithdraw=async function(tabType){
     var method='bank_transfer',details={};
     try{
       var cd=JSON.parse(localStorage.getItem('sg_creator')||'{}');
-      if(cd.withdrawMethod==='paypal')method='paypal';
       details=cd.withdrawDetails||{};
     }catch(e){}
     var cr=await fetch('/api/referrals/withdraw',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},
