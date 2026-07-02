@@ -501,7 +501,7 @@ function _showConfirmWithdrawSheet(tabType){
     +'<input id="sg-cta-wd-amount" type="number" placeholder="0.00" step="0.01" min="10" style="flex:1;background:none;border:none;padding:14px 14px 14px 0;color:#fff;font-size:20px;font-weight:700;outline:none">'
     +'<button onclick="window._ctaWithdrawMax()" style="background:rgba(255,109,0,.15);border:1px solid rgba(255,109,0,.3);color:#FF6D00;font-weight:700;font-size:11px;padding:8px 14px;margin:6px;border-radius:8px;cursor:pointer">MAX</button>'
     +'</div>'
-    +'<p style="color:rgba(255,255,255,.3);font-size:11px;margin-top:4px">Minimum withdrawal: £10.00</p>'
+    +'<p style="color:rgba(255,255,255,.3);font-size:11px;margin-top:4px">Minimum withdrawal: £1.00</p>'
     +'</div>'
 
     // Error
@@ -581,8 +581,8 @@ window._ctaConfirmWithdraw=async function(tabType){
   var amtEl=document.getElementById('sg-cta-wd-amount');
   if(!amtEl)return;
   var amount=parseFloat(amtEl.value);
-  if(isNaN(amount)||amount<10){
-    if(err){err.textContent='Minimum withdrawal is £10.00';err.style.display='block';}return;
+  if(isNaN(amount)||amount<1){
+    if(err){err.textContent='Minimum withdrawal is £1.00';err.style.display='block';}return;
   }
   if(amount>window._ctaAvailableBalance){
     if(err){err.textContent='Insufficient balance (£'+window._ctaAvailableBalance.toFixed(2)+' available)';err.style.display='block';}return;

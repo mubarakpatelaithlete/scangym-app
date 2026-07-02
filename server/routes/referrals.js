@@ -508,7 +508,7 @@ router.get('/discount/:handle', async (req, res) => {
   }
 })();
 
-const MINIMUM_WITHDRAWAL_PENCE = 500; // £5 minimum
+const MINIMUM_WITHDRAWAL_PENCE = 100; // £1 minimum
 
 // ─────────────────────────────────────────────────────────────────
 //  GET /api/referrals/balance/:handle

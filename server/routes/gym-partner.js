@@ -914,7 +914,7 @@ router.post('/request-payout', authenticateUser, express.json(), async (req, res
     const totalRevenue = parseFloat(row.revenue) || (parseInt(row.revenue_pence) / 100) || 0;
     const partnerShare = totalRevenue * 0.85;
 
-    if (partnerShare < 10) return res.json({ error: 'Minimum payout is £10. Current balance: £' + partnerShare.toFixed(2) });
+    if (partnerShare < 1) return res.json({ error: 'Minimum payout is £1. Current balance: £' + partnerShare.toFixed(2) });
 
     // Create Stripe transfer
     try {
@@ -1470,8 +1470,8 @@ router.post('/withdraw-request', authenticateUser, express.json(), async (req, r
     let amountPence = req.body.amountPence ? parseInt(req.body.amountPence)
       : req.body.amount ? Math.round(parseFloat(req.body.amount) * 100)
       : availablePence;
-    if (!amountPence || amountPence < 1000) {
-      return res.status(400).json({ error: `Minimum withdrawal is £10.00. Available: £${(Math.max(availablePence, 0) / 100).toFixed(2)}` });
+    if (!amountPence || amountPence < 100) {
+      return res.status(400).json({ error: `Minimum withdrawal is £1.00. Available: £${(Math.max(availablePence, 0) / 100).toFixed(2)}` });
     }
     if (amountPence > availablePence) {
       return res.status(400).json({ error: `Insufficient balance. Available: £${(Math.max(availablePence, 0) / 100).toFixed(2)}` });
