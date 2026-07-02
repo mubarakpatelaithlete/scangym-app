@@ -394,7 +394,7 @@ window._ctaConfirmWithdraw=async function(tabType){
   var amtEl=document.getElementById('sg-cta-wd-amount');
   if(!amtEl)return;
   var amount=parseFloat(amtEl.value);
-  if(isNaN(amount)||amount<10){if(err){err.textContent='Minimum withdrawal is \u00a310.00';err.style.display='block';}return;}
+  if(isNaN(amount)||amount<1){if(err){err.textContent='Minimum withdrawal is \u00a31.00';err.style.display='block';}return;}
   if(window._ctaAvailableBalance&&amount>window._ctaAvailableBalance){
     if(err){err.textContent='Insufficient balance (\u00a3'+window._ctaAvailableBalance.toFixed(2)+' available)';err.style.display='block';}return;
   }
