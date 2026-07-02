@@ -239,6 +239,65 @@ router.post('/generate', authenticateUser, async (req, res) => {
 // POST /api/qr/scan — Gym scans user's QR (called by gym's scanner hardware)
 // C13 FIX: Require authentication so random visitors can't burn QR scans.
 // Accepts either a logged-in session (authenticateUser) or a gym API key header.
+
+// ═══════════════════════════════════════════════════════════════════
+//  Batch 4: Auto-unlock smart lock on valid ENTRY scan (Seam chain)
+//  Owner connects their lock once (connect-seam) → every valid QR
+//  entry scan fires the door unlock automatically. Kisi included.
+// ═══════════════════════════════════════════════════════════════════
+const { SeamClient, KisiClient } = require('../lib/access-control');
+
+// Auto-migration: remember the discovered door device per gym
+(async () => {
+  try {
+    await pool.query(`
+      DO $$ BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='access_device_id') THEN
+          ALTER TABLE gyms ADD COLUMN access_device_id VARCHAR(255) DEFAULT NULL;
+        END IF;
+      END $$;
+    `);
+  } catch (e) { console.error('[AutoUnlock] Migration error:', e.message); }
+})();
+
+async function tryAutoUnlock(gymId) {
+  try {
+    const g = await pool.query(
+      `SELECT access_system, access_system_id, access_device_id, access_api_key FROM gyms WHERE id = $1`,
+      [gymId]
+    );
+    if (!g.rows.length) return { attempted: false };
+    const gym = g.rows[0];
+    if (!gym.access_system || gym.access_system === 'manual') return { attempted: false };
+
+    // Kisi direct
+    if (gym.access_system === 'kisi' && gym.access_device_id) {
+      const kisi = new KisiClient(gym.access_api_key || null);
+      await kisi.unlockDoor(gym.access_device_id);
+      return { attempted: true, unlocked: true };
+    }
+
+    // Seam (Salto/Brivo/Latch/etc)
+    const seam = new SeamClient(gym.access_api_key || null);
+    let deviceId = gym.access_device_id;
+    if (!deviceId) {
+      // Discover the first lock once, then remember it
+      const devices = await seam.listDevices();
+      const lock = (devices.devices || []).find(d =>
+        (d.capabilities_supported || []).includes('lock') || d.device_type?.includes('lock')
+      ) || (devices.devices || [])[0];
+      if (!lock) return { attempted: true, unlocked: false, reason: 'no_device' };
+      deviceId = lock.device_id;
+      await pool.query(`UPDATE gyms SET access_device_id = $1 WHERE id = $2`, [deviceId, gymId]).catch(() => {});
+    }
+    await seam.unlockDoor(deviceId);
+    return { attempted: true, unlocked: true };
+  } catch (e) {
+    console.warn('[AutoUnlock] gym', gymId, '-', e.message);
+    return { attempted: true, unlocked: false, reason: e.message };
+  }
+}
+
 router.post('/scan', async (req, res) => {
   try {
     // Check for gym API key (for hardware scanners) or logged-in session
@@ -251,7 +310,7 @@ router.post('/scan', async (req, res) => {
       });
     }
 
-    const { token } = req.body;
+    const token = req.body.token || req.body.qr_token; // accept both field names (scanner UI sends qr_token)
     if (!token) return res.status(400).json({ error: 'QR token is required' });
 
     // Find the QR code
@@ -363,8 +422,19 @@ router.post('/scan', async (req, res) => {
       VALUES ($1, $2, $3, $4, $5, $6)
     `, [qr.booking_id, qr.id, qr.gym_id, qr.user_id, actualScanType, actualScanCount]);
 
+    // Batch 4: fire the smart lock on a valid ENTRY scan (5s guard, non-blocking on failure)
+    let doorUnlock = { attempted: false };
+    if (actualScanType === 'entry') {
+      doorUnlock = await Promise.race([
+        tryAutoUnlock(qr.gym_id),
+        new Promise(resolve => setTimeout(() => resolve({ attempted: true, unlocked: false, reason: 'timeout' }), 5000)),
+      ]);
+    }
+
     res.json({
       valid: true,
+      doorUnlocked: doorUnlock.unlocked === true,
+      doorUnlockAttempted: doorUnlock.attempted === true,
       scanType: actualScanType,
       scanNumber: actualScanCount,
       scansRemaining: qr.max_scans - actualScanCount,
