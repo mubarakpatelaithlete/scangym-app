@@ -1362,6 +1362,7 @@ router.post('/claim/upload-proof', authenticateUser, (req, res) => {
 function maskAccount(details) {
   const d = details || {};
   if (d.accountNumber) return { type: 'bank', accountName: d.accountName || '', last4: String(d.accountNumber).slice(-4) };
+  if (d.iban) return { type: 'bank_international', accountName: d.accountName || '', last4: String(d.iban).slice(-4), swift: d.swift || '' };
   if (d.paypalEmail) {
     const [u, dom] = String(d.paypalEmail).split('@');
     return { type: 'paypal', email: (u || '').slice(0, 2) + '•••@' + (dom || '') };
@@ -1390,12 +1391,23 @@ router.post('/payout-method', authenticateUser, express.json(), async (req, res)
     }
     const d = details || {};
     if (method === 'bank') {
-      const sort = String(d.sortCode || '').replace(/[^0-9]/g, '');
-      const acct = String(d.accountNumber || '').replace(/[^0-9]/g, '');
-      if (!d.accountName || sort.length !== 6 || acct.length !== 8) {
-        return res.status(400).json({ error: 'Bank details need account name, 6-digit sort code and 8-digit account number' });
+      if (!d.accountName) return res.status(400).json({ error: 'Account holder name required' });
+      if (d.iban || d.swift) {
+        // International: any bank worldwide via IBAN/account number + SWIFT/BIC
+        const iban = String(d.iban || '').replace(/\s+/g, '').toUpperCase();
+        const swift = String(d.swift || '').replace(/\s+/g, '').toUpperCase();
+        if (iban.length < 8) return res.status(400).json({ error: 'IBAN or account number required' });
+        if (swift.length < 8 || swift.length > 11) return res.status(400).json({ error: 'SWIFT / BIC code must be 8-11 characters' });
+        d.iban = iban; d.swift = swift;
+        delete d.sortCode; delete d.accountNumber;
+      } else {
+        const sort = String(d.sortCode || '').replace(/[^0-9]/g, '');
+        const acct = String(d.accountNumber || '').replace(/[^0-9]/g, '');
+        if (sort.length !== 6 || acct.length !== 8) {
+          return res.status(400).json({ error: 'UK bank details need a 6-digit sort code and 8-digit account number' });
+        }
+        d.sortCode = sort; d.accountNumber = acct;
       }
-      d.sortCode = sort; d.accountNumber = acct;
     }
     if (method === 'paypal' && !(d.paypalEmail || '').includes('@')) {
       return res.status(400).json({ error: 'Valid PayPal email required' });
