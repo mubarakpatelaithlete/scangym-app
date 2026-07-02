@@ -234,7 +234,7 @@ function r2ShowAddWithdrawSheet(){
     +'<h2 style="color:#fff;font-size:20px;font-weight:800;margin:0 0 4px">Add Bank Account</h2>'
     +'<p style="color:rgba(255,255,255,.4);font-size:13px;margin:0">Your ScanGym wallet balance is paid to your bank account \u2014 any bank worldwide</p>'
     +'</div>'
-    +r2MethodOption('bank','linear-gradient(135deg,#22c55e,#16a34a)','\ud83c\udfe6','Bank Transfer','Any bank worldwide \u00b7 SWIFT / BIC',true)
+    +r2MethodOption('bank','linear-gradient(135deg,#22c55e,#16a34a)','\ud83c\udfe6','Bank Transfer','IBAN / account number + SWIFT code',true)
     +'<div id="sg-wd-form-area" style="margin-top:16px"></div>'
     +'<p id="sg-wd-error" style="color:#ef4444;font-size:13px;margin-top:8px;display:none"></p>'
     +'<button id="sg-wd-save-btn" onclick="window._ctaSaveWithdrawMethod()" style="width:100%;background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;cursor:pointer;margin-top:16px;transition:all .2s;box-shadow:0 4px 20px rgba(255,109,0,.3)">Save Bank Details \u2192</button>';
@@ -250,42 +250,14 @@ function r2Input(id,label,ph,max){
   return '<div style="flex:1"><label style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px">'+label+'</label>'
     +'<input id="'+id+'" type="text" placeholder="'+ph+'"'+(max?' maxlength="'+max+'"':'')+' style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:14px 16px;color:#fff;font-size:15px;outline:none;box-sizing:border-box" onfocus="this.style.borderColor=\'rgba(255,109,0,.5)\'" onblur="this.style.borderColor=\'rgba(255,255,255,.12)\'"></div>';
 }
-window._r2BankMode='uk';
-window._r2SetBankMode=function(mode){
-  window._r2BankMode=mode;
-  ['uk','intl'].forEach(function(m){
-    var t=document.getElementById('sg-wd-mode-'+m);
-    if(t){
-      t.style.background=m===mode?'rgba(255,109,0,.15)':'rgba(255,255,255,.04)';
-      t.style.borderColor=m===mode?'rgba(255,109,0,.5)':'rgba(255,255,255,.1)';
-      t.style.color=m===mode?'#FF6D00':'rgba(255,255,255,.5)';
-    }
-  });
-  var uk=document.getElementById('sg-wd-uk-fields');
-  var intl=document.getElementById('sg-wd-intl-fields');
-  if(uk)uk.style.display=mode==='uk'?'flex':'none';
-  if(intl)intl.style.display=mode==='intl'?'flex':'none';
-};
 function r2RenderBankForm(){
   var area=document.getElementById('sg-wd-form-area');
   if(!area)return;
-  var pill='padding:10px 0;border-radius:12px;border:1px solid;font-size:13px;font-weight:700;cursor:pointer;flex:1;text-align:center;background:rgba(255,255,255,.04)';
   area.innerHTML='<div style="display:flex;flex-direction:column;gap:10px;margin-top:4px">'
-    +'<div style="display:flex;gap:8px">'
-    +'<div id="sg-wd-mode-uk" onclick="window._r2SetBankMode(\'uk\')" style="'+pill+'">\ud83c\uddec\ud83c\udde7 UK bank</div>'
-    +'<div id="sg-wd-mode-intl" onclick="window._r2SetBankMode(\'intl\')" style="'+pill+'">\ud83c\udf0d International</div>'
-    +'</div>'
     +r2Input('sg-wd-bank-name','Account Holder Name','John Smith')
-    +'<div id="sg-wd-uk-fields" style="display:flex;gap:10px">'
-    +r2Input('sg-wd-bank-sort','Sort Code','12-34-56',8)
-    +r2Input('sg-wd-bank-acct','Account Number','12345678',8)
-    +'</div>'
-    +'<div id="sg-wd-intl-fields" style="display:none;flex-direction:column;gap:10px">'
-    +r2Input('sg-wd-bank-iban','IBAN / Account Number','DE89 3704 0044 0532 0130 00')
-    +r2Input('sg-wd-bank-swift','SWIFT / BIC Code','DEUTDEFF',11)
-    +'</div>'
+    +r2Input('sg-wd-bank-iban','IBAN / Account Number','GB29 NWBK 6016 1331 9268 19')
+    +r2Input('sg-wd-bank-swift','SWIFT / BIC Code','NWBKGB2L',11)
     +'</div>';
-  window._r2SetBankMode(window._r2BankMode||'uk');
 }
 
 /* Bank-only save — replaces the original 3-method save handler. */
@@ -301,19 +273,11 @@ window._ctaSaveWithdrawMethod=async function(){
   name=name.trim();
   if(!name)return fail('Enter the account holder name');
   var details={accountName:name};
-  if(window._r2BankMode==='intl'){
-    var iban=((document.getElementById('sg-wd-bank-iban')||{}).value||'').replace(/\s+/g,'').toUpperCase();
-    var swift=((document.getElementById('sg-wd-bank-swift')||{}).value||'').replace(/\s+/g,'').toUpperCase();
-    if(iban.length<8)return fail('Enter your IBAN or account number');
-    if(swift.length<8||swift.length>11)return fail('SWIFT / BIC code is 8-11 characters');
-    details.iban=iban;details.swift=swift;
-  }else{
-    var sort=((document.getElementById('sg-wd-bank-sort')||{}).value||'').replace(/[^0-9]/g,'');
-    var acct=((document.getElementById('sg-wd-bank-acct')||{}).value||'').replace(/[^0-9]/g,'');
-    if(sort.length!==6)return fail('Sort code is 6 digits');
-    if(acct.length!==8)return fail('Account number is 8 digits');
-    details.sortCode=sort;details.accountNumber=acct;
-  }
+  var iban=((document.getElementById('sg-wd-bank-iban')||{}).value||'').replace(/\s+/g,'').toUpperCase();
+  var swift=((document.getElementById('sg-wd-bank-swift')||{}).value||'').replace(/\s+/g,'').toUpperCase();
+  if(iban.length<8)return fail('Enter your IBAN or account number');
+  if(swift.length<8||swift.length>11)return fail('SWIFT / BIC code is 8-11 characters');
+  details.iban=iban;details.swift=swift;
   if(btn){btn.textContent='Saving\u2026';btn.style.opacity='.6';btn.style.pointerEvents='none';}
   /* save locally (both creator + partner profiles) */
   try{
