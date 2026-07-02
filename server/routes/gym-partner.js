@@ -1326,3 +1326,175 @@ router.post('/claim/upload-proof', authenticateUser, (req, res) => {
     }
   });
 });
+
+// ═══════════════════════════════════════════════════════════════
+// Round 2 — Withdraw methods + bank-transfer payout fallback
+// Saved payout method per user (bank / paypal / stripe_connect) and
+// a withdrawal-request queue for users without Stripe Connect.
+// ═══════════════════════════════════════════════════════════════
+(async () => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS payout_methods (
+        user_id TEXT PRIMARY KEY,
+        method VARCHAR(30) NOT NULL,
+        details JSONB DEFAULT '{}'::jsonb,
+        updated_at TIMESTAMP DEFAULT NOW()
+      );
+      CREATE TABLE IF NOT EXISTS payout_requests (
+        id SERIAL PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        role VARCHAR(20) DEFAULT 'partner',
+        amount_pence INTEGER NOT NULL,
+        method VARCHAR(30),
+        details JSONB DEFAULT '{}'::jsonb,
+        status VARCHAR(20) DEFAULT 'pending',
+        requested_at TIMESTAMP DEFAULT NOW(),
+        processed_at TIMESTAMP
+      );
+    `);
+    console.log('[Payouts] payout_methods / payout_requests tables verified');
+  } catch (err) {
+    console.error('[Payouts] migration error:', err.message);
+  }
+})();
+
+function maskAccount(details) {
+  const d = details || {};
+  if (d.accountNumber) return { type: 'bank', accountName: d.accountName || '', last4: String(d.accountNumber).slice(-4) };
+  if (d.paypalEmail) {
+    const [u, dom] = String(d.paypalEmail).split('@');
+    return { type: 'paypal', email: (u || '').slice(0, 2) + '•••@' + (dom || '') };
+  }
+  return { type: 'other' };
+}
+
+// GET /api/gym-partner/payout-method — masked saved method
+router.get('/payout-method', authenticateUser, async (req, res) => {
+  try {
+    const r = await pool.query('SELECT method, details FROM payout_methods WHERE user_id = $1', [String(req.user.id)]);
+    if (!r.rows.length) return res.json({ method: null });
+    res.json({ method: r.rows[0].method, summary: maskAccount(r.rows[0].details) });
+  } catch (err) {
+    console.error('[Payouts] get method error:', err.message);
+    res.status(500).json({ error: 'Failed to load payout method' });
+  }
+});
+
+// POST /api/gym-partner/payout-method — save/replace method
+router.post('/payout-method', authenticateUser, express.json(), async (req, res) => {
+  try {
+    const { method, details } = req.body;
+    if (!['bank', 'paypal', 'stripe_connect'].includes(method)) {
+      return res.status(400).json({ error: 'method must be bank, paypal or stripe_connect' });
+    }
+    const d = details || {};
+    if (method === 'bank') {
+      const sort = String(d.sortCode || '').replace(/[^0-9]/g, '');
+      const acct = String(d.accountNumber || '').replace(/[^0-9]/g, '');
+      if (!d.accountName || sort.length !== 6 || acct.length !== 8) {
+        return res.status(400).json({ error: 'Bank details need account name, 6-digit sort code and 8-digit account number' });
+      }
+      d.sortCode = sort; d.accountNumber = acct;
+    }
+    if (method === 'paypal' && !(d.paypalEmail || '').includes('@')) {
+      return res.status(400).json({ error: 'Valid PayPal email required' });
+    }
+    await pool.query(
+      `INSERT INTO payout_methods (user_id, method, details, updated_at)
+       VALUES ($1, $2, $3::jsonb, NOW())
+       ON CONFLICT (user_id) DO UPDATE SET method = $2, details = $3::jsonb, updated_at = NOW()`,
+      [String(req.user.id), method, JSON.stringify(d)]
+    );
+    res.json({ success: true, method, summary: maskAccount(d) });
+  } catch (err) {
+    console.error('[Payouts] save method error:', err.message);
+    res.status(500).json({ error: 'Failed to save payout method' });
+  }
+});
+
+// POST /api/gym-partner/withdraw-request — bank/paypal payout fallback
+// Used when Stripe Connect isn't set up. Creates a pending request
+// that is paid manually, and never double-counts earlier requests.
+router.post('/withdraw-request', authenticateUser, express.json(), async (req, res) => {
+  try {
+    const userId = String(req.user.id);
+    const role = req.body.role === 'creator' ? 'creator' : 'partner';
+
+    // Saved method required
+    const m = await pool.query('SELECT method, details FROM payout_methods WHERE user_id = $1', [userId]);
+    if (!m.rows.length) return res.status(400).json({ error: 'Add a withdraw method first' });
+
+    // Available balance
+    let availablePence = 0;
+    if (role === 'partner') {
+      const gyms = await pool.query('SELECT id FROM gyms WHERE claimed_by::text = $1::text', [userId]).catch(() => ({ rows: [] }));
+      if (gyms.rows.length) {
+        const gymIds = gyms.rows.map(g => g.id);
+        const earn = await pool.query(
+          `SELECT COALESCE(SUM((total_amount * 100)::int), 0) as revenue_pence
+           FROM bookings WHERE gym_id = ANY($1) AND status IN ('confirmed','completed')`, [gymIds]
+        ).catch(() => ({ rows: [{ revenue_pence: 0 }] }));
+        availablePence = Math.floor(parseInt(earn.rows[0].revenue_pence || 0) * 0.85);
+      }
+    } else {
+      // Creator: 25% commission balance from referrals system
+      const handle = req.body.creatorHandle;
+      if (handle) {
+        const earned = await pool.query(
+          `SELECT COALESCE(SUM(commission_pence), 0) as total FROM creator_referrals
+           WHERE creator_handle = $1 AND status = 'converted'`, [handle]
+        ).catch(() => ({ rows: [{ total: 0 }] }));
+        availablePence = parseInt(earned.rows[0].total || 0);
+      }
+    }
+    // Minus previous non-rejected requests
+    const prev = await pool.query(
+      `SELECT COALESCE(SUM(amount_pence), 0) as used FROM payout_requests
+       WHERE user_id = $1 AND status IN ('pending','approved','paid')`, [userId]
+    );
+    availablePence -= parseInt(prev.rows[0].used || 0);
+
+    let amountPence = req.body.amountPence ? parseInt(req.body.amountPence)
+      : req.body.amount ? Math.round(parseFloat(req.body.amount) * 100)
+      : availablePence;
+    if (!amountPence || amountPence < 1000) {
+      return res.status(400).json({ error: `Minimum withdrawal is £10.00. Available: £${(Math.max(availablePence, 0) / 100).toFixed(2)}` });
+    }
+    if (amountPence > availablePence) {
+      return res.status(400).json({ error: `Insufficient balance. Available: £${(Math.max(availablePence, 0) / 100).toFixed(2)}` });
+    }
+
+    const r = await pool.query(
+      `INSERT INTO payout_requests (user_id, role, amount_pence, method, details, status)
+       VALUES ($1, $2, $3, $4, $5, 'pending') RETURNING id, requested_at`,
+      [userId, role, amountPence, m.rows[0].method, JSON.stringify(m.rows[0].details || {})]
+    );
+    console.log(`[Payouts] Withdrawal request #${r.rows[0].id}: £${(amountPence / 100).toFixed(2)} (${role}) by user ${userId}`);
+    res.json({
+      success: true,
+      requestId: r.rows[0].id,
+      amount: (amountPence / 100).toFixed(2),
+      message: `Withdrawal of £${(amountPence / 100).toFixed(2)} requested — funds arrive in 2-5 business days.`,
+    });
+  } catch (err) {
+    console.error('[Payouts] withdraw-request error:', err.message);
+    res.status(500).json({ error: 'Withdrawal request failed' });
+  }
+});
+
+// GET /api/gym-partner/withdraw-requests — history for the signed-in user
+router.get('/withdraw-requests', authenticateUser, async (req, res) => {
+  try {
+    const r = await pool.query(
+      `SELECT id, role, amount_pence, method, status, requested_at
+       FROM payout_requests WHERE user_id = $1 ORDER BY requested_at DESC LIMIT 20`, [String(req.user.id)]
+    );
+    res.json({ requests: r.rows.map(x => ({
+      id: x.id, role: x.role, amount: (x.amount_pence / 100).toFixed(2),
+      method: x.method, status: x.status, date: x.requested_at,
+    })) });
+  } catch (err) {
+    res.json({ requests: [] });
+  }
+});
