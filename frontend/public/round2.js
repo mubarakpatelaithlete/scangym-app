@@ -123,6 +123,42 @@ function fixSquadShare(){
 }
 
 /* ════════════════════════════════════════════════════════════════════
+   4b) SHARE BUTTON ON THE SCANSQUAD RIGHT-SIDE RAIL — shares the
+       creator's deep affiliate link (scangym.com/r/{handle}) via the
+       native share sheet. Sits with the other right-side buttons.
+   ════════════════════════════════════════════════════════════════════ */
+window._r2SquadRailShare=function(){
+  var h=creatorHandle();
+  if(!h){if(typeof sgToast==='function')sgToast('Sign in to get your affiliate link','info',2500);return;}
+  if(typeof window._sgShareAffiliate==='function'){window._sgShareAffiliate(h,'native');return;}
+  var link='https://scangym.com/r/'+h;
+  var text='Check out ScanGym - gym access from \u00a34.49! Use my link: ';
+  if(navigator.share){navigator.share({title:'ScanGym',text:text,url:link}).catch(function(){});}
+  else{navigator.clipboard.writeText(link);if(typeof sgToast==='function')sgToast('Affiliate link copied!','success',2000);}
+};
+function addSquadRailShare(){
+  if(!onCreator())return;
+  if(document.getElementById('sg-r2-squad-share'))return;
+  var anyBtn=document.querySelector('.creator-side-btn');
+  if(!anyBtn||!anyBtn.parentElement)return;
+  var rail=anyBtn.parentElement;
+  var d=document.createElement('div');
+  d.id='sg-r2-squad-share';
+  d.className='creator-side-btn';
+  d.title='Share Affiliate Link';
+  d.style.cssText='width:42px;height:42px;background:rgba(255,109,0,.25);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:1px solid rgba(255,109,0,.4);transition:.2s;box-shadow:0 0 16px rgba(255,109,0,.2)';
+  d.innerHTML='\ud83d\udce4';
+  d.addEventListener('click',function(ev){ev.stopPropagation();window._r2SquadRailShare();if(typeof window._closeCreatorMore==='function')try{window._closeCreatorMore();}catch(e){}});
+  /* place right after the "Get Affiliate Link" (🔗) button if present */
+  var linkBtn=null;
+  rail.querySelectorAll('.creator-side-btn').forEach(function(b){
+    if((b.getAttribute('title')||'')==='Get Affiliate Link')linkBtn=b;
+  });
+  if(linkBtn&&linkBtn.nextSibling)rail.insertBefore(d,linkBtn.nextSibling);
+  else rail.appendChild(d);
+}
+
+/* ════════════════════════════════════════════════════════════════════
    5) CONTINUE CTA ON SCANSQUAD — re-enable the orange Continue bar on
       /creator (an older patch removes it on every route change; this
       re-injects it right after).
@@ -400,7 +436,7 @@ window._sgCreatorWithdraw=function(handle){
    Watchers
    ════════════════════════════════════════════════════════════════════ */
 setInterval(function(){
-  try{fixPartnerBranding();fixSquadBranding();fixSquadColors();fixSquadShare();}catch(e){}
+  try{fixPartnerBranding();fixSquadBranding();fixSquadColors();fixSquadShare();addSquadRailShare();}catch(e){}
 },700);
 
 console.log('[Round2] ScanSquad + Partner polish loaded');
