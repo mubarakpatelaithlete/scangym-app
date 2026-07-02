@@ -1198,14 +1198,131 @@ router.get('/claim/verification-status', authenticateUser, async (req, res) => {
     const { gymId } = req.query;
     if (!gymId) return res.status(400).json({ error: 'gymId required' });
     const gym = await pool.query(
-      `SELECT ownership_verified, phone, owner_phone FROM gyms WHERE id = $1`, [gymId]
+      `SELECT ownership_verified, phone, owner_phone, claim_status FROM gyms WHERE id = $1`, [gymId]
     );
     if (!gym.rows.length) return res.status(404).json({ error: 'Gym not found' });
     res.json({
       verified: gym.rows[0].ownership_verified === true,
       hasRegisteredPhone: !!(gym.rows[0].phone || gym.rows[0].owner_phone),
+      proofSubmitted: gym.rows[0].claim_status === 'proof_submitted',
     });
   } catch (err) {
     res.status(500).json({ error: 'Failed' });
   }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// Ownership proof fallback — upload a utility bill, lease,
+// business registration (photo/PDF) or a short video inside the gym.
+// Used when the OTP-to-registered-number path isn't possible.
+// ═══════════════════════════════════════════════════════════════
+const multerProof = require('multer');
+const pathProof = require('path');
+const fsProof = require('fs');
+const cryptoProof = require('crypto');
+
+const PROOF_DIR = process.env.RAILWAY_ENVIRONMENT
+  ? '/data/uploads/ownership-proofs'
+  : pathProof.join(__dirname, '..', 'uploads', 'ownership-proofs');
+
+const proofStorage = multerProof.diskStorage({
+  destination: (req, file, cb) => {
+    if (!fsProof.existsSync(PROOF_DIR)) fsProof.mkdirSync(PROOF_DIR, { recursive: true });
+    cb(null, PROOF_DIR);
+  },
+  filename: (req, file, cb) => {
+    const hash = cryptoProof.randomBytes(8).toString('hex');
+    const ext = pathProof.extname(file.originalname).toLowerCase() || '.jpg';
+    cb(null, `own_${Date.now()}_${hash}${ext}`);
+  },
+});
+
+const proofUpload = multerProof({
+  storage: proofStorage,
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB (allows a short video)
+  fileFilter: (req, file, cb) => {
+    const allowed = /^(image\/(jpeg|jpg|png|webp|heic)|video\/(mp4|quicktime|webm|mov)|application\/pdf)$/i;
+    if (allowed.test(file.mimetype)) cb(null, true);
+    else cb(new Error('Only images, PDFs and short videos are allowed'));
+  },
+});
+
+// Auto-migration: proof columns
+(async () => {
+  try {
+    await pool.query(`
+      DO $$ BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='claim_status') THEN
+          ALTER TABLE gyms ADD COLUMN claim_status VARCHAR(50) DEFAULT NULL;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='claim_proof_type') THEN
+          ALTER TABLE gyms ADD COLUMN claim_proof_type VARCHAR(20) DEFAULT NULL;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='claim_proof_at') THEN
+          ALTER TABLE gyms ADD COLUMN claim_proof_at TIMESTAMP DEFAULT NULL;
+        END IF;
+      END $$;
+    `);
+    console.log('[Ownership] proof columns verified');
+  } catch (err) {
+    console.error('[Ownership] proof migration error:', err.message);
+  }
+})();
+
+// POST /claim/upload-proof — multipart form, field name "proof"
+router.post('/claim/upload-proof', authenticateUser, (req, res) => {
+  proofUpload.single('proof')(req, res, async (uploadErr) => {
+    if (uploadErr) {
+      return res.status(400).json({ error: uploadErr.message || 'Upload failed' });
+    }
+    try {
+      const gymId = req.body.gymId;
+      if (!gymId) return res.status(400).json({ error: 'gymId required' });
+      if (!req.file) return res.status(400).json({ error: 'No file received' });
+
+      const gym = await pool.query(
+        `SELECT id, claimed_by, ownership_verified FROM gyms WHERE id = $1`, [gymId]
+      );
+      if (!gym.rows.length) return res.status(404).json({ error: 'Gym not found' });
+      const g = gym.rows[0];
+      if (g.claimed_by && String(g.claimed_by) !== String(req.user.id)) {
+        return res.status(403).json({ error: 'This gym is claimed by another account' });
+      }
+      if (g.ownership_verified) return res.json({ success: true, alreadyVerified: true });
+
+      const proofType = /^video\//i.test(req.file.mimetype) ? 'video'
+        : req.file.mimetype === 'application/pdf' ? 'pdf' : 'photo';
+      const localPath = req.file.path;
+
+      await pool.query(
+        `UPDATE gyms SET claim_proof_url = $1, claim_proof_type = $2, claim_proof_at = NOW(),
+           claim_status = 'proof_submitted', claimed_by = COALESCE(claimed_by, $3), updated_at = NOW()
+         WHERE id = $4`,
+        [localPath, proofType, req.user.id, gymId]
+      );
+
+      // Background R2 upload (non-blocking; keeps local path as fallback)
+      (async () => {
+        try {
+          const { uploadToR2 } = require('../lib/r2-upload');
+          const r2Key = `ownership-proofs/${gymId}/${pathProof.basename(localPath)}`;
+          const result = await uploadToR2(localPath, r2Key, { contentType: req.file.mimetype });
+          if (result && result.url) {
+            await pool.query('UPDATE gyms SET claim_proof_url = $1 WHERE id = $2', [result.url, gymId]);
+          }
+        } catch (e) {
+          console.log('[Ownership] R2 proof upload skipped:', e.message);
+        }
+      })();
+
+      res.json({
+        success: true,
+        status: 'proof_submitted',
+        message: 'Proof received — we review within 24 hours and mark you as verified owner.',
+      });
+    } catch (err) {
+      console.error('[Ownership] upload-proof error:', err.message);
+      res.status(500).json({ error: 'Failed to save proof' });
+    }
+  });
 });
