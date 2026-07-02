@@ -154,10 +154,12 @@ const ALLOWED_ORIGINS = [
 if (process.env.NODE_ENV !== 'production') {
   ALLOWED_ORIGINS.push('http://localhost:3000', 'http://localhost:5000');
 }
+const isLocalDevOrigin = (origin) =>
+  process.env.NODE_ENV !== 'production' && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin || '');
 app.use(cors({
   origin: (origin, cb) => {
     // Allow same-origin requests (no origin header) and whitelisted origins
-    if (!origin || ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+    if (!origin || ALLOWED_ORIGINS.includes(origin) || isLocalDevOrigin(origin)) return cb(null, true);
     cb(new Error('CORS: origin not allowed'));
   },
   credentials: true,
@@ -181,7 +183,7 @@ const pgSession = require('connect-pg-simple')(session);
 let sessionStore;
 if (process.env.DATABASE_URL) {
   const { Pool } = require('pg');
-  const sessionPool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
+  const sessionPool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: process.env.DB_SSL === 'off' ? false : { rejectUnauthorized: false } });
   // Ensure session table + index exist (idempotent)
   sessionPool.query(`
     CREATE TABLE IF NOT EXISTS "user_sessions" (
