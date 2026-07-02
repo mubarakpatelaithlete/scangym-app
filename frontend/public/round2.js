@@ -197,6 +197,16 @@ setInterval(function(){
    full method sheet (Stripe / PayPal / UK bank). The original sheet in
    continue-cta-flow.js was defined but never wired up anywhere — this
    re-creates it using the same shared sheet elements + save handlers. */
+/* Close whichever cta sheet exists — continue-cta-flow's private element or
+   the one round2 created. (Bug fix: _ctaCloseSheet only closes the element
+   continue-cta-flow itself created, so the round2 sheet could get stuck open.) */
+function r2CloseCtaSheet(){
+  if(typeof window._ctaCloseSheet==='function'){try{window._ctaCloseSheet();}catch(e){}}
+  var sheet=document.getElementById('sg-cta-sheet');
+  var overlay=document.getElementById('sg-cta-overlay');
+  if(sheet)sheet.style.transform='translateY(100%)';
+  if(overlay){overlay.style.opacity='0';overlay.style.pointerEvents='none';}
+}
 function r2OpenCtaSheet(html){
   var overlay=document.getElementById('sg-cta-overlay');
   var sheet=document.getElementById('sg-cta-sheet');
@@ -204,7 +214,7 @@ function r2OpenCtaSheet(html){
     overlay=document.createElement('div');
     overlay.id='sg-cta-overlay';
     overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9499;opacity:0;transition:opacity .3s;pointer-events:none';
-    overlay.onclick=function(){if(typeof window._ctaCloseSheet==='function')window._ctaCloseSheet();else{overlay.style.opacity='0';overlay.style.pointerEvents='none';if(sheet)sheet.style.transform='translateY(100%)';}};
+    overlay.onclick=function(){r2CloseCtaSheet();};
     document.body.appendChild(overlay);
   }
   if(!sheet){
@@ -242,6 +252,35 @@ function r2ShowAddWithdrawSheet(){
   window._ctaWithdrawCallback=null;
   window._ctaSelectedWithdraw='bank';
   r2RenderBankForm();
+  r2ShowSavedMethod();
+}
+
+/* Show what's already saved on the server (so it's obvious saving worked)
+   and prefill the form from the local copy. */
+function r2ShowSavedMethod(){
+  try{
+    var cd=JSON.parse(localStorage.getItem('sg_partner')||localStorage.getItem('sg_creator')||'{}');
+    var d=cd.withdrawDetails||{};
+    var elN=document.getElementById('sg-wd-bank-name');
+    var elI=document.getElementById('sg-wd-bank-iban');
+    var elS=document.getElementById('sg-wd-bank-swift');
+    if(elN&&d.accountName)elN.value=d.accountName;
+    if(elI&&d.iban)elI.value=d.iban;
+    if(elS&&d.swift)elS.value=d.swift;
+  }catch(e){}
+  fetch('/api/gym-partner/payout-method',{credentials:'include'})
+    .then(function(r){return r.ok?r.json():null;})
+    .then(function(d){
+      if(!d||!d.method||!d.summary)return;
+      var area=document.getElementById('sg-wd-form-area');
+      if(!area||document.getElementById('sg-wd-saved-note'))return;
+      var note=document.createElement('div');
+      note.id='sg-wd-saved-note';
+      note.style.cssText='background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.25);border-radius:12px;padding:10px 14px;margin-bottom:10px';
+      note.innerHTML='<p style="color:#22c55e;font-size:12px;font-weight:700;margin:0">\u2705 Bank account saved'+(d.summary.last4?' \u2014 \u2022\u2022\u2022\u2022'+d.summary.last4:'')+'</p>'
+        +'<p style="color:rgba(255,255,255,.4);font-size:11px;margin:2px 0 0">'+(d.summary.accountName||'')+' \u00b7 Save again below to change it</p>';
+      area.parentNode.insertBefore(note,area);
+    }).catch(function(){});
 }
 
 /* Bank form — UK (sort code + account number) or International (IBAN /
@@ -279,7 +318,21 @@ window._ctaSaveWithdrawMethod=async function(){
   if(swift.length<8||swift.length>11)return fail('SWIFT / BIC code is 8-11 characters');
   details.iban=iban;details.swift=swift;
   if(btn){btn.textContent='Saving\u2026';btn.style.opacity='.6';btn.style.pointerEvents='none';}
-  /* save locally (both creator + partner profiles) */
+  /* persist server-side FIRST \u2014 only celebrate once the server confirms.
+     (Bug fix: this used to be fire-and-forget, so the sheet said "Saved!"
+     even when the server rejected the request \u2014 then withdrawals failed
+     with "add a withdraw method first".) */
+  var resp=null;
+  try{
+    var r=await fetch('/api/gym-partner/payout-method',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({method:'bank',details:details})});
+    try{resp=await r.json();}catch(e){resp={};}
+    if(r.status===401)return fail('Please sign in first, then save your bank details again');
+    if(!r.ok||!resp||resp.success!==true)return fail((resp&&resp.error)||'Could not save \u2014 please try again');
+  }catch(e){
+    return fail('No connection \u2014 check your internet and try again');
+  }
+  /* server confirmed \u2014 now mirror locally (both creator + partner profiles) */
   try{
     var cd=JSON.parse(localStorage.getItem('sg_creator')||'{}');
     cd.withdrawMethod='bank';cd.withdrawDetails=details;
@@ -288,20 +341,10 @@ window._ctaSaveWithdrawMethod=async function(){
     pd.withdrawMethod='bank';pd.withdrawDetails=details;
     localStorage.setItem('sg_partner',JSON.stringify(pd));
   }catch(e){}
-  /* persist server-side */
-  try{
-    fetch('/api/gym-partner/payout-method',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({method:'bank',details:details})}).catch(function(){});
-    var cd2=JSON.parse(localStorage.getItem('sg_creator')||'null')||{};
-    if(cd2.handle||cd2.slug){
-      fetch('/api/referrals/update-payout',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({creatorHandle:cd2.handle||cd2.slug,paymentMethod:'bank_transfer',paymentDetails:details})}).catch(function(){});
-    }
-  }catch(e){}
   if(btn){btn.textContent='\u2705 Bank Account Saved!';btn.style.background='#22c55e';btn.style.opacity='1';}
   if(navigator.vibrate)navigator.vibrate(50);
   setTimeout(function(){
-    if(typeof window._ctaCloseSheet==='function')window._ctaCloseSheet();
+    r2CloseCtaSheet();
     if(window._ctaWithdrawCallback)window._ctaWithdrawCallback();
   },600);
 };
@@ -365,7 +408,7 @@ window._ctaConfirmWithdraw=async function(tabType){
     if(btn){btn.textContent='\u2705 Withdrawal Requested!';btn.style.background='#22c55e';btn.style.opacity='1';}
     if(navigator.vibrate)navigator.vibrate([50,50,50]);
     if(typeof sgToast==='function')sgToast('\u00a3'+amount.toFixed(2)+' withdrawal requested! \ud83c\udf89','success',4000);
-    setTimeout(function(){if(typeof window._ctaCloseSheet==='function')window._ctaCloseSheet();},1500);
+    setTimeout(function(){r2CloseCtaSheet();},1500);
   }
   try{
     if(tabType==='partner'){
