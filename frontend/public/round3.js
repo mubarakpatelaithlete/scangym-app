@@ -28,16 +28,21 @@ function ensureRail(){
   rail=document.createElement('div');
   rail.id='sg-reels-rail';
   var items=[
-    {tab:'music',icon:'\uD83C\uDFB5',label:'Music'},
-    {tab:'photos',icon:'\uD83D\uDCF8',label:'Photos'},
-    {tab:'chat',icon:'\uD83D\uDCAC',label:'Chat'},
-    {tab:'trainer',icon:'\uD83E\uDD16',label:'Trainer'}
+    {tab:'music',route:'/music',icon:'\uD83C\uDFB5',label:'Music'},
+    {tab:'photos',route:'/photos',icon:'\uD83D\uDCF8',label:'Photos'},
+    {tab:'chat',route:'/chat',icon:'\uD83D\uDCAC',label:'Chat'},
+    {tab:'trainer',route:'/ai-trainer',icon:'\uD83E\uDD16',label:'Trainer'}
   ];
   items.forEach(function(it){
     var b=document.createElement('div');
     b.className='sg-rr-btn';
     b.innerHTML='<div class="sg-rr-circle">'+it.icon+'</div><span class="sg-rr-label">'+it.label+'</span>';
-    b.onclick=function(){if(typeof switchTab==='function')switchTab(it.tab);};
+    b.onclick=function(){
+      /* Trello #Reels: right-side buttons open a half-screen popup from the
+         bottom (with \u2715 close + swipe-down) instead of switching tabs. */
+      if(typeof window._sgOpenPageSheet==='function'){window._sgOpenPageSheet(it.route,it.label);}
+      else if(typeof switchTab==='function'){switchTab(it.tab);}
+    };
     rail.appendChild(b);
   });
   document.body.appendChild(rail);

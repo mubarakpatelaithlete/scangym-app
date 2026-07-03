@@ -85,12 +85,15 @@ function _inRail(el){
   var p=el.parentElement;
   if(!p)return false;
   var st=p.getAttribute('style')||'';
-  return /right:\s*(8|10|12)px/.test(st)&&/flex-direction:\s*column/.test(st);
+  return /right:\s*(6|8|10|12|14|16)px/.test(st)&&/flex-direction:\s*column/.test(st);
 }
 function rewireRails(){
   if(IS_SHEET_EMBED)return; // never nest sheets inside sheets
   var route=curRoute();
   var tabOk=RAIL_TAB_ROUTES.some(function(r){return route===r||route.indexOf(r)===0;});
+  // Profile tab can sit on a remembered sub-route (state._lastMoreRoute), so
+  // also trust the active tab itself.
+  try{if(!tabOk&&typeof state!=='undefined'&&state&&['more','partner','creator','book'].indexOf(state.activeTab)>=0)tabOk=true;}catch(e){}
   if(!tabOk&&route!=='/creator/')return;
   var els=document.querySelectorAll('div[onclick]');
   for(var i=0;i<els.length;i++){
@@ -260,32 +263,31 @@ function injectProfileCTA(){
   if(IS_SHEET_EMBED)return;
   var route=curRoute();
   var isProfile=(route==='/more'||route==='/more/'||route==='/more/profile');
+  try{if(!isProfile&&typeof state!=='undefined'&&state&&state.activeTab==='more')isProfile=true;}catch(e){}
   var old=document.getElementById('profile-continue-banner');
   if(!isProfile){if(old)old.remove();return;}
   var u=curUser();
-  var label=u?'Book a Gym \u2192':'Continue';
+  var label=u?'Book a Gym':'Continue';
   var sub=u?'Your QR pass is ready after booking':'Sign in to unlock your QR pass';
   var step=u?2:1;
   if(old){
     if(old.getAttribute('data-step')===String(step))return;
     old.remove();
   }
+  // Full-width bar, identical design language to the Reels/Book
+  // #sg-continue-banner (52px, edge-to-edge, flush above the tab bar).
   var banner=document.createElement('div');
   banner.id='profile-continue-banner';
   banner.setAttribute('data-step',String(step));
-  banner.style.cssText='position:fixed;bottom:calc(56px + env(safe-area-inset-bottom,0px));left:0;right:0;z-index:8999;padding:0 12px 0;pointer-events:none';
-  var dots='';
-  for(var i=1;i<=2;i++){
-    var done=i<step,active=i===step;
-    dots+='<div style="width:'+(active?'10px':'6px')+';height:6px;border-radius:3px;background:'+(done?'#22c55e':active?'#fff':'rgba(255,255,255,.3)')+'"></div>';
-  }
+  banner.onclick=function(){window._profileContinueFlow();};
+  banner.style.cssText='position:fixed;bottom:calc(56px + env(safe-area-inset-bottom,0px));left:0;right:0;height:52px;'
+    +'background:linear-gradient(135deg,#FF6D00 0%,#E66200 100%);display:flex;align-items:center;justify-content:center;gap:8px;'
+    +'z-index:8999;box-shadow:0 -4px 20px rgba(255,109,0,.25);cursor:pointer;-webkit-tap-highlight-color:transparent;'
+    +'touch-action:manipulation;-webkit-user-select:none;user-select:none';
   banner.innerHTML=''
-    +'<div onclick="window._profileContinueFlow()" style="pointer-events:auto;background:linear-gradient(135deg,#FF6D00 0%,#E66200 100%);border-radius:16px;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;-webkit-tap-highlight-color:transparent;box-shadow:0 4px 24px rgba(255,109,0,.35),0 0 0 1px rgba(255,109,0,.15);margin:8px 0">'
-    +'<div><div style="color:#fff;font-size:16px;font-weight:800;letter-spacing:.3px">'+label+'</div>'
-    +'<div style="color:rgba(255,255,255,.65);font-size:11px;font-weight:500;margin-top:1px">'+sub+'</div></div>'
-    +'<div style="display:flex;align-items:center;gap:8px"><div style="display:flex;gap:4px">'+dots+'</div>'
-    +'<div style="color:#fff;font-size:20px;font-weight:700">\u2192</div></div>'
-    +'</div>';
+    +'<span style="font-size:16px;font-weight:700;color:#fff;letter-spacing:.3px">'+label+'</span>'
+    +'<span style="font-size:13px;font-weight:600;color:rgba(255,255,255,.75)">'+sub+'</span>'
+    +'<span style="font-size:18px;color:#fff;margin-left:2px">\u2192</span>';
   document.body.appendChild(banner);
 }
 setInterval(injectProfileCTA,400);
