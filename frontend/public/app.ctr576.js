@@ -1516,6 +1516,8 @@ function SearchPage(){
           html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'reviews\')"><div class="tt-action-btn">\u2B50</div><div class="tt-action-label">'+_reviewLabel+'</div></div>';
           /* Share/Affiliate link button (replaced Save — user request) */
           html+='<div class="tt-action" onclick="event.stopPropagation();window._sgShareGymLink(\''+c.id+'\',\''+c.name.replace(/'/g,"\\'")+'\')"><div class="tt-action-btn">🔗</div><div class="tt-action-label">Share</div></div>';
+          /* Deep affiliate share button (user request: separate from plain Share) */
+          html+='<div class="tt-action" onclick="event.stopPropagation();window._sgShareAffiliateLink(\''+c.id+'\',\''+c.name.replace(/'/g,"\\'")+'\')"><div class="tt-action-btn">💰</div><div class="tt-action-label">Earn</div></div>';
           html+='<div class="tt-action" onclick="event.stopPropagation();window._sgToggleBookFilters()"><div class="tt-action-btn" id="tt-filter-toggle">⚡</div><div class="tt-action-label">Filter</div></div>';
           html+='</div>';
           /* #103: Track gym view on scroll into view */
@@ -1600,6 +1602,8 @@ function SearchPage(){
               cardHtml+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'reviews\')"><div class="tt-action-btn">\u2B50</div><div class="tt-action-label">'+_rl2+'</div></div>';
               /* Share/Affiliate link button (replaced Save — user request) */
               cardHtml+='<div class="tt-action" onclick="event.stopPropagation();window._sgShareGymLink(\''+c.id+'\',\''+c.name.replace(/'/g,"\\'")+'\')"><div class="tt-action-btn">🔗</div><div class="tt-action-label">Share</div></div>';
+              /* Deep affiliate share button (user request: separate from plain Share) */
+              cardHtml+='<div class="tt-action" onclick="event.stopPropagation();window._sgShareAffiliateLink(\''+c.id+'\',\''+c.name.replace(/'/g,"\\'")+'\')"><div class="tt-action-btn">💰</div><div class="tt-action-label">Earn</div></div>';
               cardHtml+='</div>';
               /* Bottom info — match initial cards */
               cardHtml+='<div class="tt-info">';
@@ -21829,7 +21833,7 @@ window.sgFeedback = async function(elementId, vote, btn) {
         // Share button: after login, resume share with affiliate link
         var sg=window._pendingShareGym;
         window._pendingReelsAction=null;window._pendingReelsVideo=null;window._pendingShareGym=null;
-        setTimeout(function(){window._sgShareGymLink(sg.gymId,sg.gymName);},100);
+        setTimeout(function(){window._sgShareGymLink(sg.gymId,sg.gymName,!!sg.affiliate);},100);
       }else if(window._pendingReelsAction==='share-music'&&window._pendingMusicShare){
         // Music share: after login, resume share with affiliate link
         var ms=window._pendingMusicShare;
@@ -22201,11 +22205,14 @@ window._sgCopyChannelLink=function(handle,channel){
   }).catch(function(){sgToast('Could not copy link','error',2000);});
 };
 
-// ─── Amazon SiteStripe-style: Share affiliate link for any gym ───
-window._sgShareGymLink=function(gymId,gymName){
-  // If not logged in, require login first (auto-generates creator handle for affiliate link)
-  if(!state.user){
-    window._pendingShareGym={gymId:gymId,gymName:gymName};
+// ─── Two share modes (user request): plain Share + deep Affiliate Share ───
+// _sgShareGymLink(gymId,gymName)        -> plain link, no tracking, no login needed
+// _sgShareGymLink(gymId,gymName,true)   -> deep affiliate link with ?ref= (login required)
+window._sgShareAffiliateLink=function(gymId,gymName){window._sgShareGymLink(gymId,gymName,true);};
+window._sgShareGymLink=function(gymId,gymName,affiliate){
+  // Affiliate share needs an account (the ?ref= handle comes from the user)
+  if(affiliate&&!state.user){
+    window._pendingShareGym={gymId:gymId,gymName:gymName,affiliate:true};
     window._pendingReelsAction='share-gym';
     if(typeof window._sgShowAuthSheet==='function'){
       window._sgShowAuthSheet('reels');
@@ -22213,23 +22220,24 @@ window._sgShareGymLink=function(gymId,gymName){
     return;
   }
 
-  // Get creator handle from localStorage (if user is a creator)
   var creator=null;
-  try{var c=JSON.parse(localStorage.getItem('sg_creator')||'null');if(c&&c.handle)creator=c.handle;}catch(e){}
-  // FIX: every logged-in user has an affiliate referral_handle (auth.js) —
-  // fall back to it so the Share button ALWAYS produces a deep affiliate link,
-  // not just for Creator-program accounts. Wallet credit for referral_handle
-  // conversions is handled server-side (resolveReferralUserId fallback).
-  if(!creator&&state.user&&state.user.referralHandle)creator=state.user.referralHandle;
+  if(affiliate){
+    // Get creator handle from localStorage (if user is a creator)
+    try{var c=JSON.parse(localStorage.getItem('sg_creator')||'null');if(c&&c.handle)creator=c.handle;}catch(e){}
+    // Every logged-in user has an affiliate referral_handle (auth.js) — fall back
+    // so Affiliate Share always produces a deep link. Wallet credit for
+    // referral_handle conversions is handled server-side (resolveReferralUserId).
+    if(!creator&&state.user&&state.user.referralHandle)creator=state.user.referralHandle;
+    if(!creator){sgToast('Could not find your affiliate handle — try re-logging in','error',3000);return;}
+  }
 
-  // Build the link — always with affiliate code after login
   var baseUrl='https://scangym.com';
   var link;
   if(creator){
-    // Creator gets affiliate link with their handle
+    // Deep affiliate link with the user's handle (30-day attribution)
     link=baseUrl+'/gym/'+gymId+'?ref='+encodeURIComponent(creator);
   }else{
-    // Regular user gets plain gym link
+    // Plain share — clean link, no tracking params
     link=baseUrl+'/gym/'+gymId;
   }
 
@@ -22243,7 +22251,7 @@ window._sgShareGymLink=function(gymId,gymName){
     }).catch(function(){});
   }else{
     navigator.clipboard.writeText(shareText+' '+link).then(function(){
-      sgToast(creator?'🔗 Affiliate link copied!':'🔗 Link copied!','success',2500);
+      sgToast(creator?'💰 Affiliate link copied — you earn on bookings!':'🔗 Link copied!','success',2500);
       if(creator){fetch('/api/referrals/track-download',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({creatorHandle:creator,assetType:'gym_share',assetId:gymId})}).catch(function(){});}
     }).catch(function(){sgToast('Could not copy link','error',2000);});
   }
