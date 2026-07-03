@@ -509,6 +509,9 @@ function _showConfirmWithdrawSheet(tabType){
     // Error
     +'<p id="sg-cta-wd-error" style="color:#ef4444;font-size:13px;display:none"></p>'
 
+    // Add / Change method button
+    +'<button onclick="if(typeof _sgWalletAddMethod===\'function\'){_ctaCloseSheet();_sgWalletAddMethod();}else if(typeof _sgPartnerAddWithdrawMethod===\'function\'){_sgPartnerAddWithdrawMethod();}" style="width:100%;background:rgba(255,255,255,.05);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.08);padding:14px;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer;margin-bottom:12px">🏦 Add / Change Withdraw Method</button>'
+
     // Confirm button
     +'<button id="sg-cta-wd-confirm" onclick="window._ctaConfirmWithdraw(\''+tabType+'\')" style="width:100%;background:#22c55e;color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;cursor:pointer;transition:all .2s;box-shadow:0 4px 20px rgba(34,197,94,.3)">Confirm Withdrawal →</button>';
 
@@ -557,24 +560,29 @@ async function _loadWithdrawBalance(tabType){
   }
 }
 
-function _loadWithdrawMethodSummary(){
+async function _loadWithdrawMethodSummary(){
   var el=document.getElementById('sg-cta-wd-method');
   if(!el)return;
   try{
-    var cd=JSON.parse(localStorage.getItem('sg_creator')||'null')||{};
-    var pd=JSON.parse(localStorage.getItem('sg_partner')||'null')||{};
-    var method=cd.withdrawMethod||pd.withdrawMethod||'none';
-    var details=cd.withdrawDetails||pd.withdrawDetails||{};
-    if(method==='stripe_connect'||method==='stripe'){
-      el.innerHTML='<div style="font-size:20px">⚡</div><div style="flex:1"><div style="color:#fff;font-size:13px;font-weight:600">Stripe Connect</div><div style="color:rgba(255,255,255,.35);font-size:11px">Direct bank deposit</div></div><div style="color:#22c55e;font-size:11px;font-weight:700">Connected ✓</div>';
-    }else if(method==='paypal'){
-      el.innerHTML='<div style="font-size:20px">💳</div><div style="flex:1"><div style="color:#fff;font-size:13px;font-weight:600">PayPal</div><div style="color:rgba(255,255,255,.35);font-size:11px">'+(details.paypalEmail||'Connected')+'</div></div><div style="color:#22c55e;font-size:11px;font-weight:700">Connected ✓</div>';
-    }else if(method==='bank'||method==='bank_transfer'){
-      el.innerHTML='<div style="font-size:20px">🏦</div><div style="flex:1"><div style="color:#fff;font-size:13px;font-weight:600">Bank Transfer</div><div style="color:rgba(255,255,255,.35);font-size:11px">'+(details.accountName||'UK Bank')+'</div></div><div style="color:#22c55e;font-size:11px;font-weight:700">Connected ✓</div>';
-    }else{
-      el.innerHTML='<div style="font-size:20px">⚠️</div><div style="flex:1"><div style="color:#fff;font-size:13px;font-weight:600">No method set</div><div style="color:rgba(255,255,255,.35);font-size:11px">Go back and add one</div></div>';
+    // Load from server API (real source of truth), not just localStorage
+    var r=await fetch('/api/wallet/withdraw-method',{credentials:'include'}).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;});
+    if(r){
+      if(r.stripeReady){
+        el.innerHTML='<div style="font-size:20px">⚡</div><div style="flex:1"><div style="color:#fff;font-size:13px;font-weight:600">Stripe Connect</div><div style="color:rgba(255,255,255,.35);font-size:11px">Instant bank deposit</div></div><div style="color:#22c55e;font-size:11px;font-weight:700">Connected ✓</div>';
+        return;
+      }
+      if(r.saved){
+        var s=r.summary||{};
+        var desc=s.type==='paypal'?('PayPal · '+(s.email||'Connected')):(s.type==='bank'?('Bank ····'+(s.last4||'')):(r.saved));
+        el.innerHTML='<div style="font-size:20px">🏦</div><div style="flex:1"><div style="color:#fff;font-size:13px;font-weight:600">'+desc+'</div><div style="color:rgba(255,255,255,.35);font-size:11px">Payouts arrive in 2-5 business days</div></div><div style="color:#22c55e;font-size:11px;font-weight:700">Connected ✓</div>';
+        return;
+      }
     }
-  }catch(e){}
+    // Fallback: no method set
+    el.innerHTML='<div style="font-size:20px">⚠️</div><div style="flex:1"><div style="color:#fff;font-size:13px;font-weight:600">No method set</div><div style="color:rgba(255,255,255,.35);font-size:11px">Tap "Add / change withdraw method" below</div></div>';
+  }catch(e){
+    el.innerHTML='<div style="font-size:20px">⚠️</div><div style="flex:1"><div style="color:#fff;font-size:13px;font-weight:600">No method set</div><div style="color:rgba(255,255,255,.35);font-size:11px">Tap "Add / change withdraw method" below</div></div>';
+  }
 }
 
 window._ctaConfirmWithdraw=async function(tabType){
@@ -593,7 +601,8 @@ window._ctaConfirmWithdraw=async function(tabType){
   if(btn){btn.textContent='Processing…';btn.style.opacity='.6';btn.style.pointerEvents='none';}
 
   try{
-    var endpoint=tabType==='partner'?'/api/gym-partner/request-payout':'/api/referrals/withdraw';
+    // Use the unified wallet withdraw endpoint for ALL tabs (supports Stripe + bank/PayPal fallback)
+    var endpoint='/api/wallet/withdraw';
     var res=await fetch(endpoint,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({amount:amount})});
     var d=await res.json();
     if(d.success||d.payout){
@@ -604,6 +613,19 @@ window._ctaConfirmWithdraw=async function(tabType){
       if(typeof sgToast==='function')sgToast('£'+amount.toFixed(2)+' withdrawal requested! 🎉','success',4000);
       setTimeout(function(){_ctaCloseSheet();},1500);
     }else{
+      // If user needs to add a method, offer the add-method sheet
+      if(d.needsMethod&&typeof _sgWalletAddMethod==='function'){
+        if(err){err.textContent='Add a withdraw method first';err.style.display='block';}
+        if(btn){btn.textContent='Confirm Withdrawal →';btn.style.opacity='1';btn.style.pointerEvents='auto';}
+        setTimeout(function(){_ctaCloseSheet();_sgWalletAddMethod();},800);
+        return;
+      }
+      if(d.needsOnboarding&&typeof _sgWalletAddMethod==='function'){
+        if(err){err.textContent='Complete your Stripe setup first';err.style.display='block';}
+        if(btn){btn.textContent='Confirm Withdrawal →';btn.style.opacity='1';btn.style.pointerEvents='auto';}
+        setTimeout(function(){_ctaCloseSheet();_sgWalletAddMethod();},800);
+        return;
+      }
       if(err){err.textContent=d.error||'Withdrawal failed — try again';err.style.display='block';}
       if(btn){btn.textContent='Confirm Withdrawal →';btn.style.opacity='1';btn.style.pointerEvents='auto';}
     }
@@ -633,17 +655,13 @@ window._partnerContinueFlow=function(){
     return;
   }
 
-  // Step 2: Seam not connected → show Connect Seam sheet
-  if(!_hasSeamConnected()){
-    _showSeamConnectSheet(function(){
-      // After Seam connected (or skipped), continue to step 3
-      window._partnerContinueFlow();
-    });
-    return;
+  // Step 2: Go straight to the unified wallet withdraw sheet.
+  // Seam smart lock connection is optional — don't block withdrawals on it.
+  if(typeof window._sgWalletWithdraw==='function'){
+    window._sgWalletWithdraw();
+  }else{
+    _showConfirmWithdrawSheet('partner');
   }
-
-  // Step 3: Wallet balance → Withdraw (same as Creator tab)
-  _showConfirmWithdrawSheet('partner');
 };
 
 // Hook into auth success to continue partner/creator flow
@@ -896,8 +914,12 @@ window._creatorContinueFlow=function(){
     return;
   }
 
-  // Step 3: Wallet → Withdraw
-  _showConfirmWithdrawSheet('creator');
+  // Step 3: Wallet → Withdraw (use unified wallet withdraw sheet)
+  if(typeof window._sgWalletWithdraw==='function'){
+    window._sgWalletWithdraw();
+  }else{
+    _showConfirmWithdrawSheet('creator');
+  }
 };
 
 
@@ -911,7 +933,7 @@ function _getCTAState(tabType){
   if(!u)return{step:1,label:'Continue',sublabel:'Sign in to get started'};
 
   if(tabType==='partner'){
-    if(!_hasSeamConnected())return{step:2,label:'Continue',sublabel:'Connect your smart locks'};
+    // Seam smart lock is optional — don't block the CTA flow on it
     return{step:3,label:'Withdraw Earnings →',sublabel:'Your gym is live!'};
   }
   // Creator

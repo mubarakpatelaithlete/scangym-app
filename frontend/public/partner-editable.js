@@ -341,8 +341,8 @@ function _peRenderCards(){
     html+='<div class="pe-action" onclick="event.stopPropagation();_showPartnerScreen(4)">'
       +'<div class="pe-action-btn">💸</div><div class="pe-action-label">Earnings</div></div>';
 
-    // 5. Withdraw (replaces Payment)
-    html+='<div class="pe-action" onclick="event.stopPropagation();typeof _partnerContinueFlow===\'function\'?_partnerContinueFlow():_partnerWithdraw()">'
+    // 5. Withdraw (replaces Payment) — route to unified wallet withdraw sheet
+    html+='<div class="pe-action" onclick="event.stopPropagation();typeof _sgWalletWithdraw===\'function\'?_sgWalletWithdraw():typeof _partnerWithdraw===\'function\'?_partnerWithdraw():void 0">'
       +'<div class="pe-action-btn">🏦</div><div class="pe-action-label">Withdraw</div></div>';
 
     // 6. Analytics (replaces Hours)

@@ -305,13 +305,18 @@ function injectWalletButtons(){
 }
 setInterval(injectWalletButtons,700);
 
-// Creator dashboard's existing "Withdraw" rail buttons used to open the old
-// creator sheet / navigate to /wallet — point them at the real withdraw
-// sheet instead (it handles balance, method setup, and Stripe Connect).
+// Override ALL legacy withdraw functions from both Creator and Partner tabs
+// to route through the unified wallet withdraw sheet (balance, method
+// setup, Stripe Connect — all in one place).
 function upgradeCreatorWithdraw(){
   window._sgCreatorWithdraw=function(){window._sgWalletWithdraw();};
   window._creatorWithdraw=function(){window._sgWalletWithdraw();};
   window._sgCreatorAddWithdrawMethod=function(){window._sgWalletAddMethod();};
+  // Partner overrides — legacy sheets are Stripe-only; unified flow supports
+  // Stripe + bank + PayPal and doesn't require Seam connection.
+  window._partnerWithdraw=function(){window._sgWalletWithdraw();};
+  window._sgPartnerWithdrawToBank=function(){window._sgWalletWithdraw();};
+  window._sgPartnerAddWithdrawMethod=function(){window._sgWalletAddMethod();};
 }
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',function(){setTimeout(upgradeCreatorWithdraw,300);});}
 else{setTimeout(upgradeCreatorWithdraw,300);}
