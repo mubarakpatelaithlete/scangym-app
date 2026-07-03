@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../middleware/db');
+const { creditWallet } = require('../lib/wallet-credit');
 
 // Ensure JSON body parsing for all referral POST routes
 router.use(express.json());
@@ -227,32 +228,17 @@ router.post('/convert', async (req, res) => {
         if (u.rows.length > 0 && u.rows[0].id) creatorUserId = u.rows[0].id;
       }
       if (creatorUserId) {
-
-        const walletUpsert = await pool.query(`
-          INSERT INTO wallets (user_id, balance_pence, total_loaded_pence, total_spent_pence, currency, is_active, created_at, updated_at)
-          VALUES ($1, $2, $2, 0, 'GBP', true, NOW(), NOW())
-          ON CONFLICT (user_id) DO UPDATE
-          SET balance_pence = wallets.balance_pence + $2,
-              total_loaded_pence = wallets.total_loaded_pence + $2,
-              updated_at = NOW()
-          RETURNING id, balance_pence
-        `, [creatorUserId, commission]);
-
-        if (walletUpsert.rows.length > 0) {
-          await pool.query(`
-            INSERT INTO wallet_transactions (wallet_id, user_id, type, amount_pence, balance_after_pence, description, reference_type, created_at)
-            VALUES ($1, $2, 'reward', $3, $4, $5, 'commission', NOW())
-          `, [
-            walletUpsert.rows[0].id,
-            creatorUserId,
-            commission,
-            walletUpsert.rows[0].balance_pence,
-            `🎉 Creator commission: £${(commission / 100).toFixed(2)} from booking #${bookingId}`
-          ]);
+        // Constraint-free upsert via shared helper (old ON CONFLICT version
+        // silently failed when wallets.user_id lacks a UNIQUE constraint)
+        const credited = await creditWallet(
+          pool, creatorUserId, commission,
+          `🎉 Creator commission: £${(commission / 100).toFixed(2)} from booking #${bookingId}`,
+          'commission'
+        );
+        if (credited) {
           walletCredited = true;
+          console.log(`[Referrals] Wallet auto-credited: £${(commission / 100).toFixed(2)} → "${creatorHandle}" (balance: £${(credited.balanceAfterPence / 100).toFixed(2)})`);
         }
-
-        console.log(`[Referrals] Wallet auto-credited: £${(commission / 100).toFixed(2)} → "${creatorHandle}" (balance: £${(walletUpsert.rows[0].balance_pence / 100).toFixed(2)})`);
       }
     } catch (walletErr) {
       console.error('[Referrals] Wallet auto-credit failed (non-blocking):', walletErr.message);
