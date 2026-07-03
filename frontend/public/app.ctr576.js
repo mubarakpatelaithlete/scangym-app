@@ -15727,6 +15727,10 @@ function CreatorDashboardPage(){
         <div style="width:48px;height:48px;background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)">⬇️</div>
         <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">New</span>
       </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="_creatorGetLink()">
+        <div style="width:48px;height:48px;background:rgba(168,85,247,.15);border:1px solid rgba(168,85,247,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)">🔗</div>
+        <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">Deep Link</span>
+      </div>
       <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="sgToast('Live streaming coming soon! 🔴','info')">
         <div style="width:48px;height:48px;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)">📡</div>
         <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">Go Live</span>
@@ -15902,6 +15906,95 @@ window._sgCopyAffiliateLink=async function(handle){
 window._sgCreatorWithdraw=function(handle){
   sgToast('Redirecting to your ScanGym Wallet...','info',2000);
   navigate('/wallet');
+};
+/* Deep Affiliate Link — search a gym & generate gym-specific affiliate URL */
+window._sgCreatorDeepLink=function(){
+  var u=state&&state.user;
+  if(!u){
+    sgToast('Sign in to get deep affiliate links','info',2000);
+    if(typeof window._sgShowAuthSheet==='function'){window._sgShowAuthSheet('book');}else{navigate('/login');}
+    return;
+  }
+  var refCode=u.referral_code;
+  if(!refCode){try{var c=JSON.parse(localStorage.getItem('sg_creator')||'null');if(c&&c.handle)refCode=c.handle;}catch(e){}}
+  if(!refCode&&u.referralHandle)refCode=u.referralHandle;
+  if(!refCode){sgToast('Could not find your affiliate handle — try re-logging in','error',3000);return;}
+
+  _sgOpenSheet('sg-deep-link-sheet',
+    '<h2 style="font-size:20px;font-weight:800;color:#fff;margin:0 0 4px">🎯 Deep Affiliate Link</h2>'
+    +'<p style="color:rgba(255,255,255,.45);font-size:12px;margin:0 0 16px;line-height:1.4">Share a link to a <strong style="color:#FF6D00">specific gym</strong> with your referral code. You earn 25% on every booking!</p>'
+    +'<div style="position:relative;margin-bottom:12px">'
+    +'<input id="sg-deep-search" type="text" placeholder="Search gym name + city…" oninput="_sgDeepSearchGyms(this.value)" autocomplete="off" style="width:100%;box-sizing:border-box;background:#1a1a1a;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:14px 16px;color:#fff;font-size:14px;outline:none">'
+    +'</div>'
+    +'<div id="sg-deep-results" style="max-height:260px;overflow-y:auto;display:flex;flex-direction:column;gap:6px"></div>'
+    +'<div id="sg-deep-link-result" style="display:none;margin-top:12px">'
+    +'<div style="background:rgba(255,109,0,.06);border:1px solid rgba(255,109,0,.2);border-radius:12px;padding:14px">'
+    +'<p style="color:rgba(255,255,255,.5);font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 4px">Your Deep Affiliate Link</p>'
+    +'<p id="sg-deep-link-url" style="color:#FF6D00;font-size:13px;font-weight:700;font-family:monospace;word-break:break-all;margin:0 0 10px"></p>'
+    +'<div style="display:flex;gap:8px">'
+    +'<button id="sg-deep-copy" onclick="_sgDeepCopyLink()" style="flex:1;background:#FF6D00;color:#fff;border:none;padding:12px;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer">📋 Copy Link</button>'
+    +'<button onclick="_sgDeepShareLink()" style="flex:1;background:transparent;color:#FF6D00;border:2px solid #FF6D00;padding:12px;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer">📤 Share</button>'
+    +'</div></div></div>'
+  );
+  setTimeout(function(){var el=document.getElementById('sg-deep-search');if(el)el.focus();},300);
+};
+window._sgDeepSearchTimer=null;
+window._sgDeepSearchGyms=function(q){
+  clearTimeout(window._sgDeepSearchTimer);
+  if(!q||q.length<2){document.getElementById('sg-deep-results').innerHTML='<p style="color:rgba(255,255,255,.25);font-size:12px;text-align:center;padding:16px">Type a gym name to search…</p>';return;}
+  document.getElementById('sg-deep-results').innerHTML='<p style="color:rgba(255,255,255,.3);font-size:12px;text-align:center;padding:12px">Searching…</p>';
+  window._sgDeepSearchTimer=setTimeout(async function(){
+    try{
+      var r=await fetch('/api/live/search?q='+encodeURIComponent(q));
+      var d=await r.json();
+      var gyms=d.results||d.gyms||d||[];
+      if(!gyms.length){document.getElementById('sg-deep-results').innerHTML='<p style="color:rgba(255,255,255,.3);font-size:12px;text-align:center;padding:12px">No gyms found. Try a different search.</p>';return;}
+      var html='';
+      gyms.slice(0,8).forEach(function(g){
+        var id=g.place_id||g.id||'';
+        var name=(g.name||'').replace(/'/g,"\\'");
+        var addr=(g.address||g.formatted_address||g.vicinity||'').replace(/'/g,"\\'");
+        html+='<div onclick="_sgDeepSelectGym(\''+id+'\',\''+name+'\',\''+addr+'\')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px;cursor:pointer;transition:.15s" onmouseover="this.style.borderColor=\'rgba(255,109,0,.3)\'" onmouseout="this.style.borderColor=\'rgba(255,255,255,.06)\'">';
+        html+='<div style="width:36px;height:36px;background:rgba(255,109,0,.1);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">🏋️</div>';
+        html+='<div style="flex:1;min-width:0"><p style="color:#fff;font-size:13px;font-weight:600;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+g.name+'</p>';
+        html+='<p style="color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(g.address||g.formatted_address||g.vicinity||'')+'</p></div></div>';
+      });
+      document.getElementById('sg-deep-results').innerHTML=html;
+    }catch(e){document.getElementById('sg-deep-results').innerHTML='<p style="color:#ef4444;font-size:12px;text-align:center;padding:12px">Search error — try again</p>';}
+  },400);
+};
+window._sgDeepSelectedLink='';
+window._sgDeepSelectGym=function(gymId,gymName,gymAddr){
+  var u=state&&state.user;
+  var refCode=u?u.referral_code:'';
+  if(!refCode){try{var c=JSON.parse(localStorage.getItem('sg_creator')||'null');if(c&&c.handle)refCode=c.handle;}catch(e){}}
+  if(!refCode&&u&&u.referralHandle)refCode=u.referralHandle;
+  var link='https://scangym.com/gym/'+gymId+'?ref='+encodeURIComponent(refCode);
+  window._sgDeepSelectedLink=link;
+  window._sgDeepSelectedGym=gymName;
+  document.getElementById('sg-deep-results').innerHTML=
+    '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(255,109,0,.08);border:1px solid rgba(255,109,0,.25);border-radius:10px">'
+    +'<div style="width:36px;height:36px;background:rgba(255,109,0,.15);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">✅</div>'
+    +'<div style="flex:1;min-width:0"><p style="color:#fff;font-size:13px;font-weight:600;margin:0">'+gymName+'</p>'
+    +'<p style="color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0">'+gymAddr+'</p></div></div>';
+  document.getElementById('sg-deep-link-result').style.display='block';
+  document.getElementById('sg-deep-link-url').textContent=link;
+  // Track deep link generation
+  fetch('/api/referrals/generate-link',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({creatorHandle:refCode,gymId:gymId,gymName:gymName})}).catch(function(){});
+};
+window._sgDeepCopyLink=function(){
+  if(!window._sgDeepSelectedLink)return;
+  navigator.clipboard.writeText(window._sgDeepSelectedLink).then(function(){
+    sgToast('💰 Deep affiliate link copied — you earn 25% on bookings!','success',3000);
+    var btn=document.getElementById('sg-deep-copy');
+    if(btn){btn.textContent='Copied! ✅';setTimeout(function(){try{btn.textContent='📋 Copy Link';}catch(e){}},2000);}
+  }).catch(function(){sgToast(window._sgDeepSelectedLink,'info',5000);});
+};
+window._sgDeepShareLink=function(){
+  if(!window._sgDeepSelectedLink)return;
+  var text='Check out '+(window._sgDeepSelectedGym||'this gym')+' on ScanGym! 🏋️ No membership needed:';
+  if(navigator.share){navigator.share({title:'ScanGym — '+(window._sgDeepSelectedGym||''),text:text,url:window._sgDeepSelectedLink}).catch(function(){});}
+  else{navigator.clipboard.writeText(text+' '+window._sgDeepSelectedLink);sgToast('Link copied!','success',2000);}
 };
 /* R7-A03: Share affiliate link */
 window._sgShareAffiliate=function(handle,platform){
@@ -16100,7 +16193,9 @@ function CreatorFullPage(){
       <div onclick="_creatorGetLink();_closeCreatorMore()" class="creator-side-btn" style="width:42px;height:42px;background:rgba(168,85,247,.2);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:1px solid rgba(168,85,247,.3);transition:.2s;box-shadow:0 0 12px rgba(168,85,247,.15)" title="Get Affiliate Link">\ud83d\udd17</div>
       <!-- 3. Withdraw Money -->
       <div onclick="_creatorWithdraw();_closeCreatorMore()" class="creator-side-btn" style="width:42px;height:42px;background:rgba(34,197,94,.15);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:1px solid rgba(34,197,94,.2);transition:.2s;box-shadow:0 0 12px rgba(34,197,94,.1)" title="Withdraw Money">\ud83d\udcb8</div>
-      <!-- 4. More -->
+      <!-- 4. Deep Affiliate Link (gym-specific) -->
+      <div onclick="_sgCreatorDeepLink();_closeCreatorMore()" class="creator-side-btn" style="width:42px;height:42px;background:rgba(255,109,0,.2);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:1px solid rgba(255,109,0,.3);transition:.2s;box-shadow:0 0 12px rgba(255,109,0,.15)" title="Deep Affiliate Link">\ud83c\udfaf</div>
+      <!-- 5. More -->
       <div onclick="_toggleCreatorMore()" class="creator-side-btn" id="creator-more-btn" style="width:42px;height:42px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;letter-spacing:2px;border:1px solid rgba(255,255,255,.06);transition:.2s;color:rgba(255,255,255,.6)" title="More">\u2022\u2022\u2022</div>
     </div>
     <!-- More dropdown menu -->
