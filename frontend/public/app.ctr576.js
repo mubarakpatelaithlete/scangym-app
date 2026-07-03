@@ -15907,7 +15907,7 @@ window._sgCreatorWithdraw=function(handle){
   sgToast('Redirecting to your ScanGym Wallet...','info',2000);
   navigate('/wallet');
 };
-/* Deep Affiliate Link — search a gym & generate gym-specific affiliate URL */
+/* Deep Affiliate Link — paste any ScanGym page URL, auto-appends ?ref={handle} */
 window._sgCreatorDeepLink=function(){
   var u=state&&state.user;
   if(!u){
@@ -15921,80 +15921,59 @@ window._sgCreatorDeepLink=function(){
   if(!refCode){sgToast('Could not find your affiliate handle — try re-logging in','error',3000);return;}
 
   _sgOpenSheet('sg-deep-link-sheet',
-    '<h2 style="font-size:20px;font-weight:800;color:#fff;margin:0 0 4px">🎯 Deep Affiliate Link</h2>'
-    +'<p style="color:rgba(255,255,255,.45);font-size:12px;margin:0 0 16px;line-height:1.4">Share a link to a <strong style="color:#FF6D00">specific gym</strong> with your referral code. You earn 25% on every booking!</p>'
+    '<h2 style="font-size:20px;font-weight:800;color:#fff;margin:0 0 4px">\ud83c\udfaf Deep Affiliate Link</h2>'
+    +'<p style="color:rgba(255,255,255,.45);font-size:12px;margin:0 0 16px;line-height:1.4">Paste any <strong style="color:#FF6D00">ScanGym.com</strong> page link below. Your referral code is added automatically \u2014 you earn 25% on every booking!</p>'
     +'<div style="position:relative;margin-bottom:12px">'
-    +'<input id="sg-deep-search" type="text" placeholder="Search gym name + city…" oninput="_sgDeepSearchGyms(this.value)" autocomplete="off" style="width:100%;box-sizing:border-box;background:#1a1a1a;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:14px 16px;color:#fff;font-size:14px;outline:none">'
+    +'<input id="sg-deep-url" type="url" placeholder="Paste any scangym.com link\u2026" oninput="_sgDeepGenerate(this.value)" autocomplete="off" style="width:100%;box-sizing:border-box;background:#1a1a1a;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:14px 16px;color:#fff;font-size:14px;outline:none">'
     +'</div>'
-    +'<div id="sg-deep-results" style="max-height:260px;overflow-y:auto;display:flex;flex-direction:column;gap:6px"></div>'
-    +'<div id="sg-deep-link-result" style="display:none;margin-top:12px">'
+    +'<div id="sg-deep-preview" style="margin-bottom:12px"></div>'
+    +'<div id="sg-deep-link-result" style="display:none">'
     +'<div style="background:rgba(255,109,0,.06);border:1px solid rgba(255,109,0,.2);border-radius:12px;padding:14px">'
     +'<p style="color:rgba(255,255,255,.5);font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 4px">Your Deep Affiliate Link</p>'
     +'<p id="sg-deep-link-url" style="color:#FF6D00;font-size:13px;font-weight:700;font-family:monospace;word-break:break-all;margin:0 0 10px"></p>'
-    +'<div style="display:flex;gap:8px">'
-    +'<button id="sg-deep-copy" onclick="_sgDeepCopyLink()" style="flex:1;background:#FF6D00;color:#fff;border:none;padding:12px;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer">📋 Copy Link</button>'
-    +'<button onclick="_sgDeepShareLink()" style="flex:1;background:transparent;color:#FF6D00;border:2px solid #FF6D00;padding:12px;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer">📤 Share</button>'
-    +'</div></div></div>'
+    +'<button id="sg-deep-copy" onclick="_sgDeepCopyLink()" style="width:100%;background:#FF6D00;color:#fff;border:none;padding:14px;border-radius:12px;font-weight:700;font-size:15px;cursor:pointer;box-shadow:0 4px 16px rgba(255,109,0,.3)">\ud83d\udccb Click to Copy</button>'
+    +'</div></div>'
+    +'<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:12px;margin-top:12px">'
+    +'<p style="color:rgba(255,255,255,.4);font-size:11px;margin:0;line-height:1.5">\ud83d\udca1 <strong style="color:rgba(255,255,255,.6)">Tip:</strong> Browse scangym.com, find any page (gym, booking, city, etc.), copy the URL from the address bar, and paste it here.</p>'
+    +'</div>'
   );
-  setTimeout(function(){var el=document.getElementById('sg-deep-search');if(el)el.focus();},300);
-};
-window._sgDeepSearchTimer=null;
-window._sgDeepSearchGyms=function(q){
-  clearTimeout(window._sgDeepSearchTimer);
-  if(!q||q.length<2){document.getElementById('sg-deep-results').innerHTML='<p style="color:rgba(255,255,255,.25);font-size:12px;text-align:center;padding:16px">Type a gym name to search…</p>';return;}
-  document.getElementById('sg-deep-results').innerHTML='<p style="color:rgba(255,255,255,.3);font-size:12px;text-align:center;padding:12px">Searching…</p>';
-  window._sgDeepSearchTimer=setTimeout(async function(){
-    try{
-      var r=await fetch('/api/live/search?q='+encodeURIComponent(q));
-      var d=await r.json();
-      var gyms=d.results||d.gyms||d||[];
-      if(!gyms.length){document.getElementById('sg-deep-results').innerHTML='<p style="color:rgba(255,255,255,.3);font-size:12px;text-align:center;padding:12px">No gyms found. Try a different search.</p>';return;}
-      var html='';
-      gyms.slice(0,8).forEach(function(g){
-        var id=g.place_id||g.id||'';
-        var name=(g.name||'').replace(/'/g,"\\'");
-        var addr=(g.address||g.formatted_address||g.vicinity||'').replace(/'/g,"\\'");
-        html+='<div onclick="_sgDeepSelectGym(\''+id+'\',\''+name+'\',\''+addr+'\')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px;cursor:pointer;transition:.15s" onmouseover="this.style.borderColor=\'rgba(255,109,0,.3)\'" onmouseout="this.style.borderColor=\'rgba(255,255,255,.06)\'">';
-        html+='<div style="width:36px;height:36px;background:rgba(255,109,0,.1);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">🏋️</div>';
-        html+='<div style="flex:1;min-width:0"><p style="color:#fff;font-size:13px;font-weight:600;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+g.name+'</p>';
-        html+='<p style="color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(g.address||g.formatted_address||g.vicinity||'')+'</p></div></div>';
-      });
-      document.getElementById('sg-deep-results').innerHTML=html;
-    }catch(e){document.getElementById('sg-deep-results').innerHTML='<p style="color:#ef4444;font-size:12px;text-align:center;padding:12px">Search error — try again</p>';}
-  },400);
+  setTimeout(function(){var el=document.getElementById('sg-deep-url');if(el)el.focus();},300);
 };
 window._sgDeepSelectedLink='';
-window._sgDeepSelectGym=function(gymId,gymName,gymAddr){
-  var u=state&&state.user;
-  var refCode=u?u.referral_code:'';
+window._sgDeepGenerate=function(raw){
+  var resultEl=document.getElementById('sg-deep-link-result');
+  var previewEl=document.getElementById('sg-deep-preview');
+  if(!raw||!raw.trim()){resultEl.style.display='none';previewEl.innerHTML='';window._sgDeepSelectedLink='';return;}
+  var url=raw.trim();
+  // Normalise: add https:// if missing
+  if(!/^https?:\/\//i.test(url))url='https://'+url;
+  // Must be scangym.com
+  try{var h=new URL(url).hostname.replace(/^www\./,'');if(h!=='scangym.com'){previewEl.innerHTML='<p style="color:#ef4444;font-size:12px">\u26a0\ufe0f Enter a scangym.com link</p>';resultEl.style.display='none';window._sgDeepSelectedLink='';return;}}catch(e){previewEl.innerHTML='<p style="color:#ef4444;font-size:12px">\u26a0\ufe0f Invalid URL</p>';resultEl.style.display='none';window._sgDeepSelectedLink='';return;}
+  // Get ref code
+  var u=state&&state.user;var refCode=u?u.referral_code:'';
   if(!refCode){try{var c=JSON.parse(localStorage.getItem('sg_creator')||'null');if(c&&c.handle)refCode=c.handle;}catch(e){}}
   if(!refCode&&u&&u.referralHandle)refCode=u.referralHandle;
-  var link='https://scangym.com/gym/'+gymId+'?ref='+encodeURIComponent(refCode);
-  window._sgDeepSelectedLink=link;
-  window._sgDeepSelectedGym=gymName;
-  document.getElementById('sg-deep-results').innerHTML=
-    '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(255,109,0,.08);border:1px solid rgba(255,109,0,.25);border-radius:10px">'
-    +'<div style="width:36px;height:36px;background:rgba(255,109,0,.15);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">✅</div>'
-    +'<div style="flex:1;min-width:0"><p style="color:#fff;font-size:13px;font-weight:600;margin:0">'+gymName+'</p>'
-    +'<p style="color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0">'+gymAddr+'</p></div></div>';
-  document.getElementById('sg-deep-link-result').style.display='block';
-  document.getElementById('sg-deep-link-url').textContent=link;
-  // Track deep link generation
-  fetch('/api/referrals/generate-link',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({creatorHandle:refCode,gymId:gymId,gymName:gymName})}).catch(function(){});
+  // Build deep affiliate link: strip existing ref param, add ours
+  try{
+    var parsed=new URL(url);
+    parsed.searchParams.delete('ref');
+    parsed.searchParams.set('ref',refCode);
+    var deepLink=parsed.toString();
+    window._sgDeepSelectedLink=deepLink;
+    previewEl.innerHTML='<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:10px"><span style="font-size:16px">\u2705</span><span style="color:rgba(255,255,255,.6);font-size:12px">Valid ScanGym link detected</span></div>';
+    document.getElementById('sg-deep-link-url').textContent=deepLink;
+    resultEl.style.display='block';
+    // Track
+    fetch('/api/referrals/generate-link',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({creatorHandle:refCode,url:url,deepLink:deepLink})}).catch(function(){});
+  }catch(e){previewEl.innerHTML='<p style="color:#ef4444;font-size:12px">\u26a0\ufe0f Could not parse URL</p>';resultEl.style.display='none';}
 };
 window._sgDeepCopyLink=function(){
   if(!window._sgDeepSelectedLink)return;
   navigator.clipboard.writeText(window._sgDeepSelectedLink).then(function(){
-    sgToast('💰 Deep affiliate link copied — you earn 25% on bookings!','success',3000);
+    sgToast('\ud83d\udcb0 Deep affiliate link copied \u2014 you earn 25% on bookings!','success',3000);
     var btn=document.getElementById('sg-deep-copy');
-    if(btn){btn.textContent='Copied! ✅';setTimeout(function(){try{btn.textContent='📋 Copy Link';}catch(e){}},2000);}
+    if(btn){btn.textContent='Copied! \u2705';btn.style.background='#22c55e';setTimeout(function(){try{btn.textContent='\ud83d\udccb Click to Copy';btn.style.background='#FF6D00';}catch(e){}},2000);}
   }).catch(function(){sgToast(window._sgDeepSelectedLink,'info',5000);});
-};
-window._sgDeepShareLink=function(){
-  if(!window._sgDeepSelectedLink)return;
-  var text='Check out '+(window._sgDeepSelectedGym||'this gym')+' on ScanGym! 🏋️ No membership needed:';
-  if(navigator.share){navigator.share({title:'ScanGym — '+(window._sgDeepSelectedGym||''),text:text,url:window._sgDeepSelectedLink}).catch(function(){});}
-  else{navigator.clipboard.writeText(text+' '+window._sgDeepSelectedLink);sgToast('Link copied!','success',2000);}
 };
 /* R7-A03: Share affiliate link */
 window._sgShareAffiliate=function(handle,platform){
