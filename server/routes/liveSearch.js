@@ -691,7 +691,13 @@ router.get('/place/:placeId', optionalAuth, async (req, res) => {
     let scangymRating = null;
     if (dbGym) {
       try {
-        const reviews = await pool.query('SELECT rating, comment, created_at FROM reviews WHERE gym_id = $1 ORDER BY created_at DESC LIMIT 5', [dbGym.id]);
+        // REVIEW FIX: include the reviewer's name (was anonymous) and return more rows
+        const reviews = await pool.query(`
+          SELECT r.rating, r.comment, r.created_at,
+                 COALESCE(NULLIF(TRIM(u.first_name), ''), SPLIT_PART(u.email, '@', 1), 'ScanGym member') AS author
+          FROM reviews r
+          LEFT JOIN public.users u ON r.user_id::text = u.id::text
+          WHERE r.gym_id = $1 ORDER BY r.created_at DESC LIMIT 10`, [dbGym.id]);
         scangymReviews = reviews.rows;
         const stats = await pool.query('SELECT AVG(rating) as avg, COUNT(*) as total FROM reviews WHERE gym_id = $1', [dbGym.id]);
         if (parseInt(stats.rows[0].total) > 0) {
