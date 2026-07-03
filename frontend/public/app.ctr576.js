@@ -10613,17 +10613,27 @@ function BookingSuccessPage(){
 
 
 // ─── Fix #109: Enhanced review submission with tags ───
+// REVIEW FIX: the old version posted {booking_id,...} without gymId — the API
+// requires gymId (400) — and ignored the response, showing "Thanks!" while the
+// review was silently lost. Now sends the correct payload and checks r.ok.
 window.sgSubmitFullReview=async function(bookingId){
-  const stars=document.querySelectorAll('.sg-star-btn[data-selected="true"]').length||parseInt(document.querySelector('.sg-star-btn[data-selected="true"]')?.dataset.star||'0');
+  const stars=window._sgFullReviewRating||document.querySelectorAll('.sg-star-btn[data-selected="true"]').length||parseInt(document.querySelector('.sg-star-btn[data-selected="true"]')?.dataset.star||'0');
   const activeTags=Array.from(document.querySelectorAll('.sg-tag-active')).map(b=>b.textContent.trim());
   const text=(document.getElementById('sg-review-text')?.value||'').trim();
   const btn=event.target;
   btn.textContent='Submitting...';btn.disabled=true;
   try{
-    const r=await fetch('/api/reviews',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({booking_id:bookingId,rating:stars||5,comment:text||(activeTags.length?activeTags.join(', '):''),tags:activeTags})});
+    var _b=state.lastBooking||state.activeSession||{};
+    var gymId=_b.gymId||_b.gym_id||null;
+    if(!gymId){throw new Error('no-gym');}
+    const r=await fetch('/api/reviews',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({gymId:gymId,bookingId:bookingId,rating:stars||5,comment:text||(activeTags.length?activeTags.join(', '):'')})});
     const d=await r.json();
+    if(!r.ok){
+      if(r.status===409){document.getElementById('sg-post-feedback').innerHTML='<div style="padding:24px;text-align:center"><p style="font-size:36px;margin:0 0 8px">⭐</p><p style="color:#fff;font-weight:700">You already reviewed this gym</p><p style="color:rgba(255,255,255,.4);font-size:12px">Thanks for your feedback!</p></div>';return;}
+      throw new Error(d.error||('Failed '+r.status));
+    }
     document.getElementById('sg-post-feedback').innerHTML='<div style="padding:24px;text-align:center"><p style="font-size:36px;margin:0 0 8px">🎉</p><p style="color:#fff;font-weight:700">Thanks for your review!</p><p style="color:rgba(255,255,255,.4);font-size:12px">Your feedback helps other gym-goers</p></div>';
-  }catch(e){btn.textContent='Submit Review';btn.disabled=false;sgToast('Could not submit review','error');}
+  }catch(e){btn.textContent='Submit Review';btn.disabled=false;sgToast(e&&e.message&&e.message!=='no-gym'?('Could not submit review: '+e.message):'Could not submit review','error');}
 };
 
 // ─── Fix #109: Show follow-up after star selection ───
@@ -11540,11 +11550,26 @@ window.sgStarHover=function(n){
     b.style.transform=s<=n?'scale(1.15)':'scale(1)';
   });
 };
+// REVIEW FIX: this later definition used to OVERWRITE the Fix-#109 review flow —
+// it wiped the whole card (destroying the tags/comment/Submit follow-up) and only
+// logged booking_feedback, so a real review was NEVER created. Result: gym
+// partners saw no customer reviews and the Book-tab ⭐ overlay had no ScanGym
+// reviews. Now: keep stars + reveal the follow-up so the review actually submits.
 window.sgStarRate=async function(rating,bookingId){
-  var el=document.getElementById('sg-post-feedback');
-  if(!el) return;
-  var labels=['','😞 We\'ll do better','🤔 Room to improve','👍 Good gym!','🔥 Great workout!','🏆 Amazing — 5 stars!'];
-  el.innerHTML='<div style="padding:16px;text-align:center"><div style="font-size:36px;margin-bottom:8px">'+('⭐'.repeat(rating))+'</div><p style="color:#4ade80;font-weight:700;margin-top:4px">'+(labels[rating]||'Thanks!')+'</p><p style="color:rgba(255,255,255,.4);font-size:12px;margin-top:4px">Your rating helps other gym-goers</p></div>';
+  window._sgFullReviewRating=rating;
+  // Mark selected stars (visual)
+  document.querySelectorAll('.sg-star-btn').forEach(function(b){
+    var s=parseInt(b.dataset.star);
+    b.style.filter=s<=rating?'grayscale(0%) opacity(1)':'grayscale(100%) opacity(.3)';
+    b.style.transform=s<=rating?'scale(1.15)':'scale(1)';
+    b.dataset.selected=s<=rating?'true':'false';
+  });
+  var lbl=document.getElementById('sg-star-label');
+  if(lbl)lbl.textContent=['','😞 Poor','😐 Below Average','🙂 Good','😊 Very Good','🤩 Excellent'][rating]||'';
+  // Reveal the follow-up (tags + comment + Submit Review) instead of wiping the card
+  var fu=document.getElementById('sg-review-followup');
+  if(fu)fu.style.display='block';
+  // Quick positive/negative signal (kept — separate from the public review)
   try{
     await fetch('/api/bookings/feedback',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({bookingId:bookingId,type:rating>=4?'positive':'negative',rating:rating})}).catch(function(){});
   }catch(e){}
@@ -18103,9 +18128,11 @@ window._sgSubmitRating=async function(gymId,bookingId){
   if(btn){btn.textContent='Submitting...';btn.style.opacity='.5';}
   try{
     var comment=document.getElementById('sg-rate-comment')?.value||'';
-    await fetch('/api/reviews',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({gymId:gymId,rating:window._sgSelectedRating,comment:comment,bookingId:bookingId})});
-    sgToast('Thanks for rating! \u2B50','success',2000);
-  }catch(e){}
+    // REVIEW FIX: check the response — a failed save used to show success anyway
+    var _rr=await fetch('/api/reviews',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({gymId:gymId,rating:window._sgSelectedRating,comment:comment,bookingId:bookingId})});
+    if(_rr.ok||_rr.status===409){sgToast('Thanks for rating! \u2B50','success',2000);}
+    else{var _rd=await _rr.json().catch(function(){return{}});sgToast('Could not save rating'+(_rd.error?': '+_rd.error:''),'error',2500);}
+  }catch(e){sgToast('Could not save rating','error',2000);}
   var ov=document.getElementById('sg-rate-overlay');if(ov)ov.remove();
 };
 
