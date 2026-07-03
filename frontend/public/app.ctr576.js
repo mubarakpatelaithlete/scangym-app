@@ -22173,6 +22173,11 @@ window._sgShareGymLink=function(gymId,gymName){
   // Get creator handle from localStorage (if user is a creator)
   var creator=null;
   try{var c=JSON.parse(localStorage.getItem('sg_creator')||'null');if(c&&c.handle)creator=c.handle;}catch(e){}
+  // FIX: every logged-in user has an affiliate referral_handle (auth.js) —
+  // fall back to it so the Share button ALWAYS produces a deep affiliate link,
+  // not just for Creator-program accounts. Wallet credit for referral_handle
+  // conversions is handled server-side (resolveReferralUserId fallback).
+  if(!creator&&state.user&&state.user.referralHandle)creator=state.user.referralHandle;
 
   // Build the link — always with affiliate code after login
   var baseUrl='https://scangym.com';
