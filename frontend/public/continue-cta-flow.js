@@ -43,6 +43,8 @@ function _ctaOpenSheet(html){
   });});
 }
 
+window._ctaOpenSheet=_ctaOpenSheet; // export for partner-editable.js sheets (was IIFE-private — all pe- sheets silently no-op'd)
+
 function _ctaCloseSheet(){
   if(_ctaSheetEl)_ctaSheetEl.style.transform='translateY(100%)';
   if(_ctaOverlayEl){_ctaOverlayEl.style.opacity='0';_ctaOverlayEl.style.pointerEvents='none';}
