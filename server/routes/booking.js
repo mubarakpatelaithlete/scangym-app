@@ -148,7 +148,7 @@ router.get('/', async (req, res) => {
     }
 
     const result = await pool.query(
-      `SELECT b.*, g.name as gym_name, g.country as gym_country
+      `SELECT b.*, g.name as gym_name, g.country as gym_country, g.address as gym_address
        FROM public.bookings b 
        LEFT JOIN public.gyms g ON b.gym_id = g.id
        WHERE b.user_id = $1 
@@ -160,6 +160,10 @@ router.get('/', async (req, res) => {
       const currencyInfo = pricing.getCurrencyForCountry(b.gym_country || 'GB');
       return {
         id: b.id,
+        // REBOOK FIX: gymId was missing from this response, so the My Bookings
+        // "Book Again" button called showBookingCheckout('') and went nowhere.
+        gymId: b.gym_id,
+        gymAddress: b.gym_address || '',
         gymName: b.gym_name || 'Gym',
         date: b.booking_date,
         time: b.start_time,
