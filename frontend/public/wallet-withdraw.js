@@ -227,8 +227,10 @@ window._sgWMSave=async function(){
       if(curTab()==='partner'){
         d=await fetch('/api/gym-partner/stripe-connect',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:'{}'}).then(function(r){return r.json();});
       }else{
-        var u=curUser()||{};
-        d=await fetch('/api/referrals/stripe-connect',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({creatorHandle:creatorHandle(),email:u.email||''})}).then(function(r){return r.json();});
+        // FIX: session-based wallet endpoint — works for ANY logged-in user.
+        // The old /api/referrals/stripe-connect path failed with "Missing
+        // creatorHandle" / "Creator not found" for non-Creator accounts.
+        d=await fetch('/api/wallet/stripe-connect',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({creatorHandle:creatorHandle()})}).then(function(r){return r.json();});
       }
       var url=d.onboardingUrl||d.url||d.connect_url;
       if(url){window.location.href=url;return;}
@@ -295,18 +297,21 @@ function injectWalletButtons(){
   if(existing.length)return;
   var rail=findRail();
   if(!rail)return;
-  // Skip if this rail already has a withdraw button (creator dashboard) —
-  // in that case only add the payout-method button.
-  var hasWithdraw=/_sgCreatorWithdraw|_sgWalletWithdraw/.test(rail.innerHTML);
+  // ONE withdraw button per rail (user request) — recognise every existing
+  // withdraw-ish handler, and no separate Payout button: add/change method
+  // lives inside the withdraw sheet itself.
+  var hasWithdraw=/_sgCreatorWithdraw|_sgWalletWithdraw|_creatorWithdraw|_partnerWithdraw|_partnerContinueFlow/.test(rail.innerHTML);
   if(!hasWithdraw)rail.appendChild(railBtn('💸','Withdraw','_sgWalletWithdraw()'));
-  rail.appendChild(railBtn('🏦','Payout','_sgWalletAddMethod()'));
 }
 setInterval(injectWalletButtons,700);
 
-// Creator dashboard's existing "Withdraw" rail button used to just navigate
-// to /wallet — point it at the real withdraw sheet instead.
+// Creator dashboard's existing "Withdraw" rail buttons used to open the old
+// creator sheet / navigate to /wallet — point them at the real withdraw
+// sheet instead (it handles balance, method setup, and Stripe Connect).
 function upgradeCreatorWithdraw(){
   window._sgCreatorWithdraw=function(){window._sgWalletWithdraw();};
+  window._creatorWithdraw=function(){window._sgWalletWithdraw();};
+  window._sgCreatorAddWithdrawMethod=function(){window._sgWalletAddMethod();};
 }
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',function(){setTimeout(upgradeCreatorWithdraw,300);});}
 else{setTimeout(upgradeCreatorWithdraw,300);}
