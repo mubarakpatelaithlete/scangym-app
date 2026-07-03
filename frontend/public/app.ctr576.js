@@ -9063,6 +9063,15 @@ window.ubRemovePromo=function(){
 
 window._checkoutState={stripe:null,elements:null,bookingId:null,intentId:null,gymId:null};
 
+// REBOOK FIX: "Book Again" from My Bookings opens checkout in a fresh session where
+// state.currentGym is null (or a different gym) and state.gyms is empty — the sheet
+// showed "Gym" with no address, or the wrong gym's details. This wrapper carries the
+// booking's gym name/address into the checkout sheet.
+window.sgRebook=function(gymId,gymName,gymAddress){
+  if(!gymId){sgToast('This booking\'s gym is no longer available for rebooking','error',3000);return;}
+  window._rebookGym={id:gymId,name:gymName||'Gym',address:gymAddress||''};
+  showBookingCheckout(gymId);
+};
 window.showBookingCheckout=async function(gymId, prefillDate, prefillTime){
   // ═══ Auth gate: Require login before booking ═══
   // 1-click flow: inline auth sheet slides up — no page redirect.
@@ -9084,7 +9093,13 @@ window.showBookingCheckout=async function(gymId, prefillDate, prefillTime){
 
   document.getElementById('booking-sheet')?.remove();
 
-  const gym=state.currentGym||state.gyms.find(g=>(g.placeId||g.place_id||g.id)==gymId)||{};
+  // REBOOK FIX: resolve the gym for THIS gymId — prefer an exact id match, then the
+  // rebook payload from sgRebook(), then fall back to state.currentGym (the old
+  // fallback chain could show a stale, different gym's name/address on the sheet).
+  const _idMatch=[state.currentGym,...(state.gyms||[])].filter(Boolean).find(g=>(g.placeId||g.place_id||g.id||g.dbId)==gymId);
+  const _rbGym=(window._rebookGym&&String(window._rebookGym.id)===String(gymId))?window._rebookGym:null;
+  const gym=_idMatch||_rbGym||state.currentGym||{};
+  window._rebookGym=null;
   const gymName=gym.name||'Gym';
   const gymAddr=gym.vicinity||gym.formatted_address||gym.address||'';
   const today=new Date().toISOString().split('T')[0];
@@ -10575,7 +10590,7 @@ function BookingSuccessPage(){
       <div class="mt-4 bg-card rounded-2xl border border-slate-700 p-5">
         <p class="text-white font-bold mb-2">🔄 Quick Rebook</p>
         <p class="text-slate-400 text-xs mb-3">Book ${b.gymName} again with one tap</p>
-        <button onclick="navigate('/gym/'+(state.lastBooking&&state.lastBooking.gymId||''))" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-medium py-3 rounded-xl transition border border-slate-700 text-sm">
+        <button onclick="state.lastBooking&&state.lastBooking.gymId?openGym(state.lastBooking.gymId):sgToast('Booking info unavailable','error',2000)" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-medium py-3 rounded-xl transition border border-slate-700 text-sm">
           Rebook Same Gym →
         </button>
       </div>
@@ -10951,7 +10966,7 @@ function MyBookingsPage(){
           `}
           <!-- R5-C07: Quick re-book button -->
           <div class="mt-3 pt-3 border-t border-slate-700" style="display:flex;gap:8px">
-            <button onclick="showBookingCheckout('${b.gymId||b.gym_id||''}')" style="flex:1;background:rgba(255,109,0,.1);border:1px solid rgba(255,109,0,.2);color:#FF6D00;padding:10px;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">🔄 Book Again</button>
+            <button onclick="sgRebook('${b.gymId||b.gym_id||''}','${String(b.gymName||'Gym').replace(/'/g,'&#39;').replace(/"/g,'&quot;')}','${String(b.gymAddress||'').replace(/'/g,'&#39;').replace(/"/g,'&quot;')}')" style="flex:1;background:rgba(255,109,0,.1);border:1px solid rgba(255,109,0,.2);color:#FF6D00;padding:10px;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">🔄 Book Again</button>
             ${b.status==='confirmed'||b.status==='active'?'<button onclick="cancelBooking('+b.id+')" style="flex:1;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.12);color:#f87171;padding:10px;border-radius:12px;font-size:13px;font-weight:600;cursor:pointer">↩️ Cancel</button>':''}
           </div>
         </div>
@@ -15345,7 +15360,8 @@ window._quickRebook=async function(gymId){
   var credId=localStorage.getItem('sg_biometric_cred');
   if(!credId){
     // No biometric — fallback to normal booking
-    navigate('/gym/'+gymId);
+    // REBOOK FIX: openGym (not bare navigate) so the gym page actually loads data
+    openGym(gymId);
     return;
   }
   try{
@@ -15369,7 +15385,7 @@ window._quickRebook=async function(gymId){
     else{sgToast(rd.error||'Rebook failed','error');}
   }catch(e){
     if(e.name==='NotAllowedError'){sgToast('Fingerprint cancelled','info');}
-    else{navigate('/gym/'+gymId);}
+    else{openGym(gymId);}
   }
 };
 
