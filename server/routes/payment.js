@@ -33,6 +33,7 @@ const { authenticateUser } = require('../middleware/auth');
 // ─── Global Pricing Engine (PPP + Surge) ────────────────────────────────────
 const pricing = require('../lib/pricing-engine');
 const { getAccessService, isAccessControlEnabled } = require('../lib/access-control');
+const { creditWallet } = require('../lib/wallet-credit');
 // v4.0: Surge pricing removed — flat £4.49 base everywhere
 
 /**
@@ -466,33 +467,16 @@ async function creditCreatorCommission(booking) {
     try {
       const creatorUserId = await resolveReferralUserId(booking.referral_code);
       if (creatorUserId) {
-
-        // Upsert wallet: create if doesn't exist, add commission if it does
-        const walletUpsert = await pool.query(`
-          INSERT INTO wallets (user_id, balance_pence, total_loaded_pence, total_spent_pence, currency, is_active, created_at, updated_at)
-          VALUES ($1, $2, $2, 0, 'GBP', true, NOW(), NOW())
-          ON CONFLICT (user_id) DO UPDATE
-          SET balance_pence = wallets.balance_pence + $2,
-              total_loaded_pence = wallets.total_loaded_pence + $2,
-              updated_at = NOW()
-          RETURNING id, balance_pence
-        `, [creatorUserId, commissionPence]);
-
-        // Record the wallet transaction
-        if (walletUpsert.rows.length > 0) {
-          await pool.query(`
-            INSERT INTO wallet_transactions (wallet_id, user_id, type, amount_pence, balance_after_pence, description, reference_type, created_at)
-            VALUES ($1, $2, 'reward', $3, $4, $5, 'commission', NOW())
-          `, [
-            walletUpsert.rows[0].id,
-            creatorUserId,
-            commissionPence,
-            walletUpsert.rows[0].balance_pence,
-            `🎉 Creator commission: £${(commissionPence / 100).toFixed(2)} from booking #${booking.id}`
-          ]);
+        // Constraint-free upsert (old ON CONFLICT version silently failed
+        // when wallets.user_id lacks a UNIQUE constraint)
+        const credited = await creditWallet(
+          pool, creatorUserId, commissionPence,
+          `🎉 Creator commission: £${(commissionPence / 100).toFixed(2)} from booking #${booking.id}`,
+          'commission'
+        );
+        if (credited) {
+          console.log(`[Payment] Wallet auto-credited: £${(commissionPence / 100).toFixed(2)} → creator "${booking.referral_code}" (balance: £${(credited.balanceAfterPence / 100).toFixed(2)})`);
         }
-
-        console.log(`[Payment] Wallet auto-credited: £${(commissionPence / 100).toFixed(2)} → creator "${booking.referral_code}" (balance: £${(walletUpsert.rows[0].balance_pence / 100).toFixed(2)})`);
       } else {
         console.warn(`[Payment] Commission recorded but wallet NOT credited — no user found for referral handle "${booking.referral_code}"`);
       }
