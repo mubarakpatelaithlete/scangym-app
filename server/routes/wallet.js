@@ -5,9 +5,59 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../middleware/db');
-const { authenticateUser } = require('../middleware/auth');
+const { authenticateUser, requireAdmin } = require('../middleware/auth');
 
 router.use(authenticateUser);
+
+// ── Admin notification for manually-queued payouts ──
+// Bank/PayPal withdrawals cannot be paid automatically (no Stripe Connect),
+// so they land in payout_requests. Without this email nobody knows a payout
+// is waiting and the money never leaves. Non-blocking best-effort.
+async function notifyAdminQueuedPayout({ requestId, userId, userEmail, amountPence, method, details }) {
+  try {
+    const adminList = (process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || '')
+      .split(',').map((e) => e.trim()).filter(Boolean);
+    if (adminList.length === 0) {
+      console.warn('[WalletWithdraw] No ADMIN_EMAILS configured — queued payout has no notification recipient');
+      return;
+    }
+    if (!process.env.SENDGRID_API_KEY && !process.env.SMTP_HOST) {
+      console.warn('[WalletWithdraw] No email transport configured — cannot notify admin of queued payout');
+      return;
+    }
+    const nodemailer = require('nodemailer');
+    const transporter = nodemailer.createTransport(
+      process.env.SENDGRID_API_KEY
+        ? { host: 'smtp.sendgrid.net', port: 587, auth: { user: 'apikey', pass: process.env.SENDGRID_API_KEY } }
+        : { host: process.env.SMTP_HOST, port: parseInt(process.env.SMTP_PORT || '587'), auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } }
+    );
+    const amountDisp = '£' + (amountPence / 100).toFixed(2);
+    await transporter.sendMail({
+      from: process.env.EMAIL_FROM || 'ScanGym <noreply@scangym.com>',
+      to: adminList.join(','),
+      subject: `💸 Manual payout needed: ${amountDisp} via ${method} (request #${requestId})`,
+      html: `
+        <div style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;">
+          <h2 style="color:#f97316;">Wallet withdrawal awaiting manual payout</h2>
+          <p>A user withdrew from their ScanGym wallet using a <strong>${method}</strong> method,
+          which is not automated. Their wallet has already been deducted — please send the money.</p>
+          <table style="border-collapse:collapse;font-size:14px;">
+            <tr><td style="padding:4px 12px 4px 0;color:#64748b;">Request ID</td><td>#${requestId}</td></tr>
+            <tr><td style="padding:4px 12px 4px 0;color:#64748b;">User</td><td>${userEmail || userId}</td></tr>
+            <tr><td style="padding:4px 12px 4px 0;color:#64748b;">Amount</td><td><strong>${amountDisp}</strong></td></tr>
+            <tr><td style="padding:4px 12px 4px 0;color:#64748b;">Method</td><td>${method}</td></tr>
+          </table>
+          <p style="font-size:13px;color:#64748b;">Payout details are stored on the request:
+          <code>GET /api/wallet/admin/payout-requests?status=pending</code>.<br>
+          After sending, mark it paid: <code>POST /api/wallet/admin/payout-requests/${requestId}/mark-paid</code><br>
+          Or reject &amp; refund the wallet: <code>POST /api/wallet/admin/payout-requests/${requestId}/reject</code></p>
+        </div>`,
+    });
+    console.log(`[WalletWithdraw] Admin notified of queued payout request #${requestId}`);
+  } catch (e) {
+    console.error('[WalletWithdraw] Admin payout notification failed (non-blocking):', e.message);
+  }
+}
 
 // GET /api/wallet - Get wallet balance
 router.get('/', async (req, res) => {
@@ -375,15 +425,40 @@ router.post('/withdraw', async (req, res) => {
       `Wallet withdrawal ${amountDisp} (${payoutMethod})`, payoutMethod,
     ]);
 
-    // Audit row in the shared payout queue
-    await pool.query(`
-      INSERT INTO payout_requests (user_id, role, amount_pence, method, details, status, requested_at, processed_at)
-      VALUES ($1, 'wallet', $2, $3, $4::jsonb, $5, NOW(), $6)
-    `, [
-      String(userId), amountPence, payoutMethod,
-      JSON.stringify({ source: 'scangym_wallet' }), payoutStatus,
-      payoutStatus === 'paid' ? new Date() : null,
-    ]).catch((e) => console.warn('[WalletWithdraw] payout_requests insert skipped:', e.message));
+    // Audit row in the shared payout queue.
+    // For manual (bank/PayPal) payouts we MUST store the payout destination,
+    // otherwise the queued request is unpayable.
+    const requestDetails = { source: 'scangym_wallet' };
+    if (payoutStatus === 'pending' && savedMethod && savedMethod.details) {
+      requestDetails.payout = savedMethod.details;
+    }
+    let payoutRequestId = null;
+    try {
+      const pr = await pool.query(`
+        INSERT INTO payout_requests (user_id, role, amount_pence, method, details, status, requested_at, processed_at)
+        VALUES ($1, 'wallet', $2, $3, $4::jsonb, $5, NOW(), $6)
+        RETURNING id
+      `, [
+        String(userId), amountPence, payoutMethod,
+        JSON.stringify(requestDetails), payoutStatus,
+        payoutStatus === 'paid' ? new Date() : null,
+      ]);
+      payoutRequestId = pr.rows[0]?.id || null;
+    } catch (e) {
+      console.warn('[WalletWithdraw] payout_requests insert skipped:', e.message);
+    }
+
+    // Manual payouts sit in a queue a human must process — tell the admin NOW
+    if (payoutStatus === 'pending') {
+      notifyAdminQueuedPayout({
+        requestId: payoutRequestId || 'n/a',
+        userId,
+        userEmail: req.user.email || null,
+        amountPence,
+        method: payoutMethod,
+        details: requestDetails.payout || null,
+      }); // fire-and-forget
+    }
 
     console.log(`[WalletWithdraw] User ${userId}: ${amountDisp} via ${payoutMethod} (${payoutStatus}). Balance after: \u00a3${(newBalance / 100).toFixed(2)}`);
 
@@ -400,6 +475,114 @@ router.post('/withdraw', async (req, res) => {
   } catch (err) {
     console.error('Wallet withdrawal error:', err);
     res.status(500).json({ error: 'Failed to process withdrawal' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════
+//  ADMIN: Manual payout queue (bank / PayPal wallet withdrawals)
+//  Protected by requireAdmin (ADMIN_EMAILS / ADMIN_USER_IDS env vars).
+// ═══════════════════════════════════════════════════════════════════
+
+// GET /api/wallet/admin/payout-requests?status=pending
+router.get('/admin/payout-requests', requireAdmin, async (req, res) => {
+  try {
+    const { status } = req.query;
+    const filter = status ? `AND status = $1` : '';
+    const params = status ? [status] : [];
+    const result = await pool.query(
+      `SELECT id, user_id, amount_pence, method, details, status, requested_at, processed_at
+       FROM payout_requests
+       WHERE role = 'wallet' ${filter}
+       ORDER BY requested_at DESC LIMIT 200`,
+      params
+    );
+    res.json({
+      success: true,
+      requests: result.rows.map((r) => ({
+        id: r.id,
+        userId: r.user_id,
+        amountPence: r.amount_pence,
+        amountDisplay: '£' + (r.amount_pence / 100).toFixed(2),
+        method: r.method,
+        details: r.details,
+        status: r.status,
+        requestedAt: r.requested_at,
+        processedAt: r.processed_at,
+      })),
+    });
+  } catch (err) {
+    console.error('[WalletAdmin] List payout requests error:', err.message);
+    res.status(500).json({ error: 'Failed to load payout requests' });
+  }
+});
+
+// POST /api/wallet/admin/payout-requests/:id/mark-paid
+// Use after manually sending the bank transfer / PayPal payment.
+router.post('/admin/payout-requests/:id/mark-paid', requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query(
+      `UPDATE payout_requests SET status = 'paid', processed_at = NOW()
+       WHERE id = $1 AND role = 'wallet' AND status = 'pending'
+       RETURNING id, user_id, amount_pence, method`,
+      [id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Payout request not found or not pending' });
+    }
+    const r = result.rows[0];
+    console.log(`[WalletAdmin] Payout request #${r.id} marked paid (£${(r.amount_pence / 100).toFixed(2)} via ${r.method}) by ${req.user.email || req.user.id}`);
+    res.json({ success: true, id: r.id, status: 'paid' });
+  } catch (err) {
+    console.error('[WalletAdmin] Mark-paid error:', err.message);
+    res.status(500).json({ error: 'Failed to mark payout as paid' });
+  }
+});
+
+// POST /api/wallet/admin/payout-requests/:id/reject
+// Rejects a pending manual payout and refunds the user's wallet.
+router.post('/admin/payout-requests/:id/reject', requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body || {};
+    const result = await pool.query(
+      `UPDATE payout_requests SET status = 'rejected', processed_at = NOW()
+       WHERE id = $1 AND role = 'wallet' AND status = 'pending'
+       RETURNING id, user_id, amount_pence, method`,
+      [id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Payout request not found or not pending' });
+    }
+    const r = result.rows[0];
+
+    // Refund the wallet (the withdraw endpoint deducted it up-front)
+    const refund = await pool.query(`
+      UPDATE wallets
+      SET balance_pence = balance_pence + $1,
+          total_spent_pence = GREATEST(total_spent_pence - $1, 0),
+          updated_at = NOW()
+      WHERE user_id = $2
+      RETURNING id, balance_pence
+    `, [r.amount_pence, r.user_id]);
+
+    if (refund.rows.length > 0) {
+      await pool.query(`
+        INSERT INTO wallet_transactions (wallet_id, user_id, type, amount_pence, balance_after_pence, description, reference_type, created_at)
+        VALUES ($1, $2, 'refund', $3, $4, $5, 'withdrawal_rejected', NOW())
+      `, [
+        refund.rows[0].id, r.user_id, r.amount_pence, refund.rows[0].balance_pence,
+        `Withdrawal refunded — payout request #${r.id} rejected${reason ? ': ' + reason : ''}`,
+      ]);
+    } else {
+      console.error(`[WalletAdmin] Payout #${r.id} rejected but NO wallet found for user ${r.user_id} — manual refund needed!`);
+    }
+
+    console.log(`[WalletAdmin] Payout request #${r.id} rejected + refunded £${(r.amount_pence / 100).toFixed(2)} by ${req.user.email || req.user.id}`);
+    res.json({ success: true, id: r.id, status: 'rejected', refunded: refund.rows.length > 0 });
+  } catch (err) {
+    console.error('[WalletAdmin] Reject error:', err.message);
+    res.status(500).json({ error: 'Failed to reject payout request' });
   }
 });
 
