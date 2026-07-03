@@ -1102,8 +1102,12 @@ function maskPhone(p) {
 // POST /claim/send-otp — text a code to the gym's registered business number
 router.post('/claim/send-otp', authenticateUser, express.json(), async (req, res) => {
   try {
-    const { gymId } = req.body;
+    const { gymId, channel } = req.body;
     if (!gymId) return res.status(400).json({ error: 'gymId required' });
+
+    // Validate channel — Twilio Verify supports 'sms' and 'whatsapp'
+    const validChannels = ['sms', 'whatsapp'];
+    const sendChannel = validChannels.includes(channel) ? channel : 'sms';
 
     const gym = await pool.query(
       `SELECT id, name, phone, owner_phone, claimed_by, ownership_verified FROM gyms WHERE id = $1`, [gymId]
@@ -1129,7 +1133,7 @@ router.post('/claim/send-otp', authenticateUser, express.json(), async (req, res
     }
 
     const url = `https://verify.twilio.com/v2/Services/${OWN_TWILIO_VERIFY_SID}/Verifications`;
-    const params = new URLSearchParams({ To: bizPhone, Channel: 'sms' });
+    const params = new URLSearchParams({ To: bizPhone, Channel: sendChannel });
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -1140,7 +1144,15 @@ router.post('/claim/send-otp', authenticateUser, express.json(), async (req, res
     });
     const data = await response.json();
     if (!response.ok) {
-      console.error('[Ownership] Twilio send error:', data.message);
+      console.error(`[Ownership] Twilio ${sendChannel} send error:`, data.message);
+      // If WhatsApp fails, suggest trying SMS instead
+      if (sendChannel === 'whatsapp') {
+        return res.json({
+          success: false,
+          fallback: 'sms',
+          message: 'WhatsApp delivery failed — try SMS instead, or upload proof of ownership.',
+        });
+      }
       return res.json({
         success: false,
         fallback: 'document',
@@ -1148,10 +1160,12 @@ router.post('/claim/send-otp', authenticateUser, express.json(), async (req, res
       });
     }
 
+    const channelLabel = sendChannel === 'whatsapp' ? 'WhatsApp message' : 'SMS';
     res.json({
       success: true,
+      channel: sendChannel,
       maskedPhone: maskPhone(bizPhone),
-      message: `Code sent to the gym's registered number ${maskPhone(bizPhone)}`,
+      message: `${channelLabel} sent to the gym's registered number ${maskPhone(bizPhone)}`,
     });
   } catch (err) {
     console.error('[Ownership] send-otp error:', err.message);

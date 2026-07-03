@@ -40,8 +40,13 @@ window._sgB3VerifyOwnership=async function(){
   if(!gymId){toast('Claim your gym first','info',2500);return;}
   var head='<p style="font-size:18px;font-weight:800;color:#fff;margin:0 0 6px;text-align:left">\uD83D\uDEE1\uFE0F Verify ownership</p>';
   window._sgOpenSheet('sg-own-sheet',head
-    +'<p style="color:rgba(255,255,255,.55);font-size:13px;text-align:left;line-height:1.5;margin:0 0 16px">We\u2019ll text a 6-digit code to your gym\u2019s <b style="color:#fff">registered business number</b>. Only someone at the gym can read it \u2014 that proves you\u2019re the owner.</p>'
-    +'<button onclick="_sgB3SendOwnOtp('+gymId+')" id="sg-own-send" style="width:100%;background:#FF6D00;color:#fff;border:none;padding:14px;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer">Text code to registered number</button>'
+    +'<p style="color:rgba(255,255,255,.55);font-size:13px;text-align:left;line-height:1.5;margin:0 0 16px">We\u2019ll send a 6-digit code to your gym\u2019s <b style="color:#fff">registered business number</b>. Only someone at the gym can read it \u2014 that proves you\u2019re the owner.</p>'
+    // Channel selector — SMS or WhatsApp
+    +'<div style="display:flex;gap:8px;margin-bottom:14px" id="sg-own-channels">'
+    +'<button onclick="_sgB3SelectChannel(\'sms\')" id="sg-own-ch-sms" class="sg-own-ch-btn sg-own-ch-active" style="flex:1;padding:12px 8px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;border:2px solid #FF6D00;background:rgba(255,109,0,.12);color:#FF6D00;transition:all .15s">\uD83D\uDCF1 SMS</button>'
+    +'<button onclick="_sgB3SelectChannel(\'whatsapp\')" id="sg-own-ch-wa" class="sg-own-ch-btn" style="flex:1;padding:12px 8px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;border:2px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:rgba(255,255,255,.6);transition:all .15s">\uD83D\uDCAC WhatsApp</button>'
+    +'</div>'
+    +'<button onclick="_sgB3SendOwnOtp('+gymId+')" id="sg-own-send" style="width:100%;background:#FF6D00;color:#fff;border:none;padding:14px;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer">Send code via SMS \u2192</button>'
     +'<div id="sg-own-step2" style="display:none;margin-top:14px">'
     +'<input id="sg-own-code" inputmode="numeric" maxlength="6" placeholder="Enter 6-digit code" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:13px;color:#fff;font-size:16px;letter-spacing:4px;text-align:center;outline:none;margin-bottom:10px">'
     +'<button onclick="_sgB3CheckOwnOtp('+gymId+')" style="width:100%;background:#22c55e;color:#fff;border:none;padding:13px;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer">Confirm code</button></div>'
@@ -49,6 +54,24 @@ window._sgB3VerifyOwnership=async function(){
     +'<p style="color:rgba(255,255,255,.45);font-size:12px;line-height:1.5;margin:0 0 10px">Can\u2019t access that number? Upload proof instead \u2014 a utility bill, lease or business registration (photo/PDF), or a short video of you inside the gym.</p>'
     +'<input type="file" id="sg-own-file" accept="image/*,video/*,.pdf" style="display:none" onchange="_sgB3UploadProof('+gymId+')">'
     +'<button id="sg-own-upload" onclick="document.getElementById(\'sg-own-file\').click()" style="width:100%;background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.15);padding:12px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer">\uD83D\uDCC4 Upload proof of ownership</button></div>');
+  // Default channel state
+  window._sgOwnChannel='sms';
+};
+// Channel selector toggle
+window._sgB3SelectChannel=function(ch){
+  window._sgOwnChannel=ch;
+  var smsBtn=document.getElementById('sg-own-ch-sms');
+  var waBtn=document.getElementById('sg-own-ch-wa');
+  var sendBtn=document.getElementById('sg-own-send');
+  if(ch==='whatsapp'){
+    if(waBtn){waBtn.style.border='2px solid #25D366';waBtn.style.background='rgba(37,211,102,.12)';waBtn.style.color='#25D366';}
+    if(smsBtn){smsBtn.style.border='2px solid rgba(255,255,255,.12)';smsBtn.style.background='rgba(255,255,255,.04)';smsBtn.style.color='rgba(255,255,255,.6)';}
+    if(sendBtn){sendBtn.textContent='Send code via WhatsApp \u2192';sendBtn.style.background='#25D366';}
+  }else{
+    if(smsBtn){smsBtn.style.border='2px solid #FF6D00';smsBtn.style.background='rgba(255,109,0,.12)';smsBtn.style.color='#FF6D00';}
+    if(waBtn){waBtn.style.border='2px solid rgba(255,255,255,.12)';waBtn.style.background='rgba(255,255,255,.04)';waBtn.style.color='rgba(255,255,255,.6)';}
+    if(sendBtn){sendBtn.textContent='Send code via SMS \u2192';sendBtn.style.background='#FF6D00';}
+  }
 };
 window._sgB3UploadProof=async function(gymId){
   var inp=document.getElementById('sg-own-file');
@@ -79,20 +102,31 @@ window._sgB3UploadProof=async function(gymId){
   }
 };
 window._sgB3SendOwnOtp=async function(gymId){
+  var ch=window._sgOwnChannel||'sms';
+  var chLabel=ch==='whatsapp'?'WhatsApp':'SMS';
   var btn=document.getElementById('sg-own-send');
-  if(btn){btn.textContent='Sending\u2026';btn.style.opacity='.6';}
+  if(btn){btn.textContent='Sending via '+chLabel+'\u2026';btn.style.opacity='.6';}
   try{
-    var d=await post('/api/gym-partner/claim/send-otp',{gymId:gymId});
+    var d=await post('/api/gym-partner/claim/send-otp',{gymId:gymId,channel:ch});
     if(d.alreadyVerified){toast('Already verified \u2705','success',2500);return;}
     if(d.success){
-      if(btn){btn.textContent='Code sent to '+(d.maskedPhone||'registered number')+' \u2713';btn.style.opacity='.8';btn.style.background='rgba(255,255,255,.1)';}
+      var sentLabel=d.channel==='whatsapp'?'WhatsApp sent to':'SMS sent to';
+      if(btn){btn.textContent=sentLabel+' '+(d.maskedPhone||'registered number')+' \u2713';btn.style.opacity='.8';btn.style.background='rgba(255,255,255,.1)';}
+      // Hide channel selector after sending
+      var chDiv=document.getElementById('sg-own-channels');if(chDiv)chDiv.style.display='none';
       var s2=document.getElementById('sg-own-step2');if(s2)s2.style.display='block';
       var c=document.getElementById('sg-own-code');if(c)c.focus();
     }else{
-      if(btn){btn.textContent='Text code to registered number';btn.style.opacity='1';}
-      toast(d.message||d.error||'Could not send code \u2014 use the email fallback below','info',4000);
+      // If WhatsApp failed, suggest SMS
+      if(d.fallback==='sms'){
+        _sgB3SelectChannel('sms');
+        toast('WhatsApp failed \u2014 try SMS instead','info',3000);
+      }else{
+        toast(d.message||d.error||'Could not send code \u2014 upload proof below','info',4000);
+      }
+      if(btn){btn.textContent='Send code via '+chLabel+' \u2192';btn.style.opacity='1';}
     }
-  }catch(e){if(btn){btn.textContent='Text code to registered number';btn.style.opacity='1';}toast('Could not send code','error',2500);}
+  }catch(e){if(btn){btn.textContent='Send code via '+chLabel+' \u2192';btn.style.opacity='1';}toast('Could not send code','error',2500);}
 };
 window._sgB3CheckOwnOtp=async function(gymId){
   var c=document.getElementById('sg-own-code');
