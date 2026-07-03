@@ -398,6 +398,32 @@ async function autoSaveCardFromIntent(userId, paymentIntentId) {
 }
 
 /**
+ * Resolve the user id behind a referral handle.
+ * Checks creator_landing_pages.slug first (Creator program), then falls back
+ * to public.users.referral_handle (every user gets one at signup). Without
+ * the fallback, regular users sharing scangym.com/r/{handle} links earned
+ * commissions on paper but never received the wallet credit.
+ */
+async function resolveReferralUserId(handle) {
+  if (!handle) return null;
+  try {
+    const lp = await pool.query(
+      'SELECT creator_user_id FROM creator_landing_pages WHERE slug = $1 LIMIT 1',
+      [handle]
+    );
+    if (lp.rows.length > 0 && lp.rows[0].creator_user_id) return lp.rows[0].creator_user_id;
+  } catch (e) { /* fall through to users lookup */ }
+  try {
+    const u = await pool.query(
+      'SELECT id FROM public.users WHERE LOWER(referral_handle) = LOWER($1) LIMIT 1',
+      [handle]
+    );
+    if (u.rows.length > 0 && u.rows[0].id) return u.rows[0].id;
+  } catch (e) { /* no match */ }
+  return null;
+}
+
+/**
  * Credit creator commission for referred bookings (shared helper)
  */
 async function creditCreatorCommission(booking) {
@@ -438,12 +464,8 @@ async function creditCreatorCommission(booking) {
     // This is the zero-friction payout: creators earn into their wallet automatically.
     // They can spend on free gym sessions or cash out via Stripe Connect later.
     try {
-      const creatorUser = await pool.query(
-        'SELECT creator_user_id FROM creator_landing_pages WHERE slug = $1 LIMIT 1',
-        [booking.referral_code]
-      );
-      if (creatorUser.rows.length > 0 && creatorUser.rows[0].creator_user_id) {
-        const creatorUserId = creatorUser.rows[0].creator_user_id;
+      const creatorUserId = await resolveReferralUserId(booking.referral_code);
+      if (creatorUserId) {
 
         // Upsert wallet: create if doesn't exist, add commission if it does
         const walletUpsert = await pool.query(`
@@ -471,6 +493,8 @@ async function creditCreatorCommission(booking) {
         }
 
         console.log(`[Payment] Wallet auto-credited: £${(commissionPence / 100).toFixed(2)} → creator "${booking.referral_code}" (balance: £${(walletUpsert.rows[0].balance_pence / 100).toFixed(2)})`);
+      } else {
+        console.warn(`[Payment] Commission recorded but wallet NOT credited — no user found for referral handle "${booking.referral_code}"`);
       }
     } catch (walletErr) {
       // Non-blocking: commission is already recorded in creator_referrals

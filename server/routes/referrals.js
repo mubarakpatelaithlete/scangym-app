@@ -210,12 +210,23 @@ router.post('/convert', async (req, res) => {
     // Wallet balance can be spent on free gym sessions or cashed out via Stripe Connect.
     let walletCredited = false;
     try {
+      // Resolve the user behind the handle: Creator landing page slug first,
+      // then fall back to users.referral_handle (regular-user affiliate links).
+      let creatorUserId = null;
       const creatorUser = await pool.query(
         'SELECT creator_user_id FROM creator_landing_pages WHERE slug = $1 LIMIT 1',
         [creatorHandle]
       );
       if (creatorUser.rows.length > 0 && creatorUser.rows[0].creator_user_id) {
-        const creatorUserId = creatorUser.rows[0].creator_user_id;
+        creatorUserId = creatorUser.rows[0].creator_user_id;
+      } else {
+        const u = await pool.query(
+          'SELECT id FROM public.users WHERE LOWER(referral_handle) = LOWER($1) LIMIT 1',
+          [creatorHandle]
+        );
+        if (u.rows.length > 0 && u.rows[0].id) creatorUserId = u.rows[0].id;
+      }
+      if (creatorUserId) {
 
         const walletUpsert = await pool.query(`
           INSERT INTO wallets (user_id, balance_pence, total_loaded_pence, total_spent_pence, currency, is_active, created_at, updated_at)
