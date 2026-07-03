@@ -163,12 +163,24 @@ window._peSavePrice=async function(gymId){
 
 function _peEditHours(gymId){
   if(typeof _ctaOpenSheet!=='function')return;
+  // Gym on/off toggle lives here now (moved from top bar per user request)
+  var isActive=true;
+  try{(window._peGymsCache||[]).forEach(function(g){if(g.id==gymId)isActive=g.isActive!==false;});}catch(e){}
   var html=''
     +'<div style="text-align:center;margin-bottom:20px">'
     +'<div style="font-size:40px;margin-bottom:8px">🕐</div>'
     +'<h2 style="color:#fff;font-size:20px;font-weight:800;margin:0 0 4px">Opening Hours</h2>'
     +'<p style="color:rgba(255,255,255,.4);font-size:13px;margin:0">Override Google hours for your gym</p>'
     +'</div>'
+
+    // Gym LIVE/PAUSED master toggle
+    +'<div onclick="window._peToggleActive('+gymId+','+isActive+');if(typeof _ctaCloseSheet===\'function\')_ctaCloseSheet();" style="display:flex;align-items:center;gap:14px;padding:16px;background:'+(isActive?'rgba(34,197,94,.06)':'rgba(239,68,68,.06)')+';border:2px solid '+(isActive?'rgba(34,197,94,.25)':'rgba(239,68,68,.25)')+';border-radius:16px;cursor:pointer;margin-bottom:14px">'
+    +'<div style="width:48px;height:48px;background:'+(isActive?'rgba(34,197,94,.15)':'rgba(239,68,68,.12)')+';border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:20px">'+(isActive?'🟢':'🔴')+'</div>'
+    +'<div style="flex:1"><div style="color:#fff;font-size:15px;font-weight:700">Gym is '+(isActive?'LIVE':'PAUSED')+'</div><div style="color:rgba(255,255,255,.35);font-size:11px">'+(isActive?'Visible on ScanGym and accepting bookings — tap to pause':'Hidden from search, bookings paused — tap to go live')+'</div></div>'
+    +'<div style="position:relative;width:44px;height:24px;flex-shrink:0"><div style="position:absolute;inset:0;background:'+(isActive?'#22c55e':'rgba(255,255,255,.15)')+';border-radius:12px"></div><div style="position:absolute;top:2px;left:'+(isActive?'22px':'2px')+';width:20px;height:20px;background:#fff;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,.4)"></div></div>'
+    +'</div>'
+
+    +'<div style="height:1px;background:rgba(255,255,255,.07);margin:2px 0 14px"></div>'
 
     // Quick actions
     +'<div onclick="window._peSetHours('+gymId+',\'open_now\')" style="display:flex;align-items:center;gap:14px;padding:16px;background:rgba(34,197,94,.06);border:2px solid rgba(34,197,94,.2);border-radius:16px;cursor:pointer;margin-bottom:10px">'
@@ -306,9 +318,7 @@ function _peRenderCards(){
       +'<div onclick="_peEditPhotos('+gymId+')" style="flex:1;background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px 14px;color:rgba(255,255,255,.5);font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px;cursor:pointer">'
       +'<span>📸</span> <span>Edit Photos</span>'
       +'</div>'
-      +'<div onclick="window._peToggleActive('+gymId+','+isActive+')" style="background:rgba(10,12,20,.75);border:1px solid '+(isActive?'rgba(34,197,94,.3)':'rgba(239,68,68,.3)')+';border-radius:12px;width:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer">'
-      +(isActive?'🟢':'🔴')
-      +'</div>'
+      /* On/off toggle moved into the Opening Hours sheet (right rail) per user request */
       +'<div onclick="window._peOpenPartnerSettings('+gymId+')" style="background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;width:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer">⚙️</div>'
       +'</div>';
 

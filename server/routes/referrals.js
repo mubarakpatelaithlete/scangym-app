@@ -849,11 +849,21 @@ router.post('/stripe-connect', async (req, res) => {
       [creatorHandle]
     );
 
-    if (creator.rows.length === 0) {
-      return res.status(404).json({ error: 'Creator not found' });
+    // FIX: creator_landing_pages only covers Creator-program accounts.
+    // Every user has users.referral_handle — fall back so "Connect Stripe"
+    // works for regular affiliates too (two-handle-system gotcha).
+    let isCreatorRow = creator.rows.length > 0;
+    let userRow = null;
+    if (!isCreatorRow) {
+      const ur = await pool.query(
+        'SELECT id, email, stripe_connect_id FROM users WHERE referral_handle = $1 LIMIT 1',
+        [creatorHandle]
+      ).catch(() => ({ rows: [] }));
+      userRow = ur.rows[0] || null;
+      if (!userRow) return res.status(404).json({ error: 'Creator not found' });
     }
 
-    const c = creator.rows[0];
+    const c = isCreatorRow ? creator.rows[0] : userRow;
     let stripeAccountId = c.stripe_connect_id;
 
     // Create Connect Express account if not exists
@@ -875,10 +885,17 @@ router.post('/stripe-connect', async (req, res) => {
 
       // Save to DB (add column if needed, or store in metadata)
       try {
-        await pool.query(
-          'UPDATE creator_landing_pages SET stripe_connect_id = $1 WHERE slug = $2',
-          [stripeAccountId, creatorHandle]
-        );
+        if (isCreatorRow) {
+          await pool.query(
+            'UPDATE creator_landing_pages SET stripe_connect_id = $1 WHERE slug = $2',
+            [stripeAccountId, creatorHandle]
+          );
+        } else {
+          await pool.query(
+            'UPDATE users SET stripe_connect_id = $1 WHERE id = $2',
+            [stripeAccountId, userRow.id]
+          );
+        }
       } catch (e) {
         // Column might not exist yet — store in localStorage as fallback
         console.log('[StripeConnect] Could not save to DB (column may not exist):', e.message);

@@ -302,6 +302,72 @@ async function _resolveStripeConnectId(userId, creatorHandle) {
   return connectId;
 }
 
+// POST /api/wallet/stripe-connect - start Stripe Connect onboarding for the
+// LOGGED-IN user (any role). Fixes "Connect Stripe to withdraw" being broken:
+// the old path went through /api/referrals/stripe-connect which requires a
+// creator_landing_pages row, so regular users got "Creator not found" and
+// users without a handle got "Missing creatorHandle". This endpoint needs
+// only the session — it creates/reuses an Express account, saves it on
+// users.stripe_connect_id (which /api/wallet/withdraw reads), and returns
+// the hosted onboarding link.
+router.post('/stripe-connect', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const stripe = process.env.STRIPE_SECRET_KEY ? require('stripe')(process.env.STRIPE_SECRET_KEY) : null;
+    if (!stripe) return res.status(500).json({ error: 'Stripe not configured' });
+
+    // Reuse an existing account (users row, or self-healed from creator_landing_pages)
+    let connectId = await _resolveStripeConnectId(userId, req.body?.creatorHandle || null);
+
+    // Verify a stored account still exists in Stripe; drop it if not
+    if (connectId) {
+      try { await stripe.accounts.retrieve(connectId); }
+      catch (e) {
+        console.warn(`[WalletConnect] Stored account ${connectId} unreachable (${e.message}) — creating a new one`);
+        connectId = null;
+      }
+    }
+
+    if (!connectId) {
+      const u = await pool.query('SELECT email, first_name, last_name FROM users WHERE id = $1', [userId]).catch(() => ({ rows: [] }));
+      const account = await stripe.accounts.create({
+        type: 'express',
+        country: 'GB',
+        email: u.rows[0]?.email || undefined,
+        capabilities: { transfers: { requested: true } },
+        business_type: 'individual',
+        metadata: { userId: String(userId), source: 'scangym_wallet' },
+      });
+      connectId = account.id;
+      await pool.query('UPDATE users SET stripe_connect_id = $1 WHERE id = $2', [connectId, userId]).catch((e) => {
+        console.error('[WalletConnect] Could not save stripe_connect_id:', e.message);
+      });
+    }
+
+    // Already fully onboarded? No need for the hosted flow.
+    try {
+      const acct = await stripe.accounts.retrieve(connectId);
+      if (acct.payouts_enabled) {
+        return res.json({ success: true, stripeConnected: true, onboardingComplete: true, accountId: connectId });
+      }
+    } catch (e) { /* fall through to onboarding link */ }
+
+    const base = process.env.PUBLIC_URL || `${req.protocol}://${req.get('host')}`;
+    const accountLink = await stripe.accountLinks.create({
+      account: connectId,
+      refresh_url: `${base}/wallet?stripe_refresh=1`,
+      return_url: `${base}/wallet?stripe_connected=1`,
+      type: 'account_onboarding',
+    });
+
+    console.log(`[WalletConnect] Onboarding link created for user ${userId}: ${connectId}`);
+    res.json({ success: true, onboardingUrl: accountLink.url, accountId: connectId });
+  } catch (err) {
+    console.error('[WalletConnect] Error:', err.message);
+    res.status(500).json({ error: 'Stripe Connect setup failed', detail: err.message });
+  }
+});
+
 // GET /api/wallet/withdraw-method - which payout rail a withdrawal would use
 router.get('/withdraw-method', async (req, res) => {
   try {
