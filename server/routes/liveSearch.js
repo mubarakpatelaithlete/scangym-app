@@ -308,6 +308,8 @@ function parseSearchResult(place) {
     dayPassPrice: gymPrice.amount,
     currency: gymCurrency.currency,
     currencySymbol: gymCurrency.symbol,
+    phone: place.international_phone_number || place.formatted_phone_number || '',
+    website: place.website || '',
     source: 'google_places_live',
   };
 }

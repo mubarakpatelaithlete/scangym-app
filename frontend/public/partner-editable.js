@@ -315,6 +315,7 @@ function _peRenderCards(){
 
     // Search bar area (top) — same position as Book tab
     html+='<div class="pe-search">'
+      +'<div onclick="window._peOpenClaimSearch()" style="background:rgba(10,12,20,.75);border:1px solid rgba(255,109,0,.3);border-radius:12px;width:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer" title="Find & add another gym">🔍</div>'
       +'<div onclick="_peEditPhotos('+gymId+')" style="flex:1;background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px 14px;color:rgba(255,255,255,.5);font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px;cursor:pointer">'
       +'<span>📸</span> <span>Edit Photos</span>'
       +'</div>'
@@ -586,8 +587,17 @@ window._peSubmitClaim=async function(placeId){
       return showErr(d.error||'Claim failed — try again');
     }
     if(typeof window._ctaCloseSheet==='function')window._ctaCloseSheet();
-    _peToast('Gym claimed! 🎉 Setting up your dashboard…');
-    setTimeout(function(){_peLoadAndRender();},600);
+    _peToast('Gym claimed! 🎉 Verifying ownership…');
+    // Auto-trigger ownership verification after claim
+    setTimeout(function(){
+      _peLoadAndRender();
+      // Trigger the batch3 ownership verification flow if available
+      setTimeout(function(){
+        if(typeof window._sgB3VerifyOwnership==='function'){
+          window._sgB3VerifyOwnership();
+        }
+      },800);
+    },600);
   }catch(e){showErr('Network error — try again');}
 };
 
@@ -627,8 +637,8 @@ window._peOpenPartnerSettings=function(gymId){
     +'<div onclick="_showPartnerScreen(6);_ctaCloseSheet()" style="display:flex;align-items:center;gap:14px;padding:14px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px;cursor:pointer;margin-bottom:8px">'
     +'<span style="font-size:20px">🚀</span><div style="flex:1"><div style="color:#fff;font-size:14px;font-weight:600">Growth Centre</div><div style="color:rgba(255,255,255,.35);font-size:11px">AI tips to boost revenue</div></div><span style="color:rgba(255,255,255,.3)">→</span></div>'
 
-    +'<div onclick="navigate(\'/list-your-gym\');_ctaCloseSheet()" style="display:flex;align-items:center;gap:14px;padding:14px;background:rgba(255,109,0,.04);border:1px solid rgba(255,109,0,.12);border-radius:14px;cursor:pointer;margin-bottom:8px">'
-    +'<span style="font-size:20px">➕</span><div style="flex:1"><div style="color:#FF6D00;font-size:14px;font-weight:600">Add Another Location</div><div style="color:rgba(255,255,255,.35);font-size:11px">Multi-outlet management</div></div><span style="color:rgba(255,255,255,.3)">→</span></div>';
+    +'<div onclick="_ctaCloseSheet();setTimeout(function(){window._peOpenClaimSearch();},350)" style="display:flex;align-items:center;gap:14px;padding:14px;background:rgba(255,109,0,.04);border:1px solid rgba(255,109,0,.12);border-radius:14px;cursor:pointer;margin-bottom:8px">'
+    +'<span style="font-size:20px">➕</span><div style="flex:1"><div style="color:#FF6D00;font-size:14px;font-weight:600">Add Another Location</div><div style="color:rgba(255,255,255,.35);font-size:11px">Search & claim another gym</div></div><span style="color:rgba(255,255,255,.3)">→</span></div>';
 
   _ctaOpenSheet(html);
 };
