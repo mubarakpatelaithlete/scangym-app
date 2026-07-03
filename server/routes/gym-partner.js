@@ -45,8 +45,26 @@ const { authenticateUser } = require('../middleware/auth');
 // Step 1: Claim gym (basic info check)
 router.post('/claim', authenticateUser, express.json(), async (req, res) => {
   try {
-    const { gymId, ownerName, ownerEmail, ownerPhone, proofUrl } = req.body;
-    if (!gymId) return res.status(400).json({ error: 'gymId required' });
+    let { gymId, placeId, ownerName, ownerEmail, ownerPhone, proofUrl } = req.body;
+    if (!gymId && !placeId) return res.status(400).json({ error: 'gymId or placeId required' });
+
+    // Accept a Google place_id (either via placeId, or a non-numeric gymId sent
+    // by older clients) and resolve it to our internal gyms.id
+    if (!gymId || !/^\d+$/.test(String(gymId))) {
+      const pid = placeId || String(gymId || '');
+      const dbm = pid.match(/^db-(\d+)$/);
+      if (dbm) {
+        gymId = parseInt(dbm[1], 10);
+      } else {
+        const found = await pool.query('SELECT id FROM gyms WHERE place_id = $1', [pid]).catch(() => ({ rows: [] }));
+        if (!found.rows.length) {
+          return res.status(404).json({ error: 'Gym not found — call /api/live/ensure-gym with the placeId first' });
+        }
+        gymId = found.rows[0].id;
+      }
+    } else {
+      gymId = parseInt(String(gymId), 10);
+    }
 
     // Check not already claimed
     const existing = await pool.query(

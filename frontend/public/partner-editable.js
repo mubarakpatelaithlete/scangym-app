@@ -439,7 +439,7 @@ function _peClaimCard(){
     +'<div class="pe-gradient"></div>'
     // Search bar
     +'<div class="pe-search">'
-    +'<div onclick="typeof _openSearchOverlay===\'function\'?_openSearchOverlay():navigate(\'/list-your-gym\')" style="flex:1;background:rgba(10,12,20,.75);border:1px solid rgba(255,109,0,.3);border-radius:12px;padding:10px 14px;color:rgba(255,255,255,.5);font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px;cursor:pointer">'
+    +'<div onclick="window._peOpenClaimSearch()" style="flex:1;background:rgba(10,12,20,.75);border:1px solid rgba(255,109,0,.3);border-radius:12px;padding:10px 14px;color:rgba(255,255,255,.5);font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px;cursor:pointer">'
     +'<span>🔍</span> <span>Search for your gym to claim it</span>'
     +'</div>'
     +'</div>'
@@ -448,7 +448,7 @@ function _peClaimCard(){
     +'<div style="font-size:64px;margin-bottom:16px">🏋️</div>'
     +'<h2 style="color:#fff;font-size:24px;font-weight:900;margin:0 0 8px;text-shadow:0 2px 10px rgba(0,0,0,.5)">Your Gym Goes Here</h2>'
     +'<p style="color:rgba(255,255,255,.5);font-size:14px;margin:0 0 24px">Claim your gym to see it exactly like your customers do — but with full editing power</p>'
-    +'<button onclick="navigate(\'/list-your-gym\')" style="background:#FF6D00;color:#fff;border:none;border-radius:14px;padding:16px 32px;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 24px rgba(255,109,0,.4);width:100%">🔍 Find & Claim Your Gym</button>'
+    +'<button onclick="window._peOpenClaimSearch()" style="background:#FF6D00;color:#fff;border:none;border-radius:14px;padding:16px 32px;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 24px rgba(255,109,0,.4);width:100%">🔍 Find & Claim Your Gym</button>'
     +'<p style="color:rgba(255,255,255,.3);font-size:11px;margin-top:12px">1.2M+ gyms from Google Places · Free to claim</p>'
     +'</div>'
     // Bottom info (mimicking Book tab)
@@ -465,6 +465,131 @@ function _peClaimCard(){
     +'</div>'
     +'</div></div>';
 }
+
+// ══════════════════════════════════════════════════════════════════════
+// FIND & CLAIM YOUR GYM — search sheet (uses /api/live/search, the real
+// search endpoint). Previously the claim card sent owners to the Book-tab
+// search (which books, not claims) or /list-your-gym (a dead end).
+// ══════════════════════════════════════════════════════════════════════
+
+var _peClaimSearchTimer=null;
+
+window._peOpenClaimSearch=function(prefill){
+  if(typeof _ctaOpenSheet!=='function'){navigate('/list-your-gym');return;}
+  var html=''
+    +'<div style="text-align:center;margin-bottom:16px">'
+    +'<div style="font-size:40px;margin-bottom:8px">🔍</div>'
+    +'<h2 style="color:#fff;font-size:20px;font-weight:800;margin:0 0 4px">Find &amp; Claim Your Gym</h2>'
+    +'<p style="color:rgba(255,255,255,.4);font-size:13px;margin:0">Search 1.2M+ gyms · Free to claim</p>'
+    +'</div>'
+    +'<input id="pe-claim-search-input" type="text" placeholder="Gym name + city (e.g. PureGym Leeds)" value="'+String(prefill||'').replace(/"/g,'&quot;')+'" '
+    +'oninput="window._peClaimSearchInput(this.value)" '
+    +'style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,109,0,.3);border-radius:12px;padding:14px 16px;color:#fff;font-size:15px;outline:none;box-sizing:border-box;margin-bottom:12px">'
+    +'<div id="pe-claim-results" style="max-height:280px;overflow-y:auto"></div>'
+    +'<p style="color:rgba(255,255,255,.25);font-size:11px;text-align:center;margin-top:10px">Can\'t find your gym? Email <span style="color:#FF6D00">hello@scangym.com</span> and we\'ll add it</p>';
+  _ctaOpenSheet(html);
+  setTimeout(function(){
+    var inp=document.getElementById('pe-claim-search-input');
+    if(inp){inp.focus();if(inp.value&&inp.value.length>=2)window._peClaimSearchInput(inp.value);}
+  },400);
+};
+
+window._peClaimSearchInput=function(q){
+  clearTimeout(_peClaimSearchTimer);
+  var box=document.getElementById('pe-claim-results');
+  if(!box)return;
+  if(!q||q.length<2){box.innerHTML='';return;}
+  box.innerHTML='<p style="color:rgba(255,255,255,.3);font-size:12px;text-align:center;padding:10px">Searching…</p>';
+  _peClaimSearchTimer=setTimeout(async function(){
+    try{
+      var r=await fetch('/api/live/search?q='+encodeURIComponent(q));
+      if(!r.ok)throw new Error('search '+r.status);
+      var d=await r.json();
+      var gyms=(d.gyms||[]).slice(0,8);
+      box=document.getElementById('pe-claim-results');
+      if(!box)return;
+      if(!gyms.length){box.innerHTML='<p style="color:rgba(255,255,255,.3);font-size:12px;text-align:center;padding:10px">No gyms found — try adding your city</p>';return;}
+      box.innerHTML=gyms.map(function(g){
+        var pid=String(g.placeId||g.id||'');
+        var nm=String(g.name||'Gym');
+        return '<div style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;margin-bottom:6px">'
+          +(g.photo?'<div style="width:40px;height:40px;border-radius:10px;background-image:url(\''+g.photo+'\');background-size:cover;background-position:center;flex-shrink:0"></div>'
+                   :'<div style="width:40px;height:40px;background:rgba(255,109,0,.1);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">🏋️</div>')
+          +'<div style="flex:1;min-width:0">'
+          +'<p style="color:#fff;font-size:13px;font-weight:700;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+nm.replace(/</g,'&lt;')+'</p>'
+          +'<p style="color:rgba(255,255,255,.35);font-size:11px;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+String(g.address||g.city||'').replace(/</g,'&lt;')+'</p>'
+          +'</div>'
+          +'<button onclick="window._peStartClaim(\''+pid.replace(/'/g,'')+'\',\''+encodeURIComponent(nm)+'\')" style="background:#FF6D00;color:#fff;border:none;padding:8px 14px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0">Claim →</button>'
+          +'</div>';
+      }).join('');
+    }catch(e){
+      box=document.getElementById('pe-claim-results');
+      if(box)box.innerHTML='<p style="color:#f87171;font-size:12px;text-align:center;padding:10px">Search failed — check connection and try again</p>';
+    }
+  },350);
+};
+
+// Step 2: ownership details form
+window._peStartClaim=function(placeId,encName){
+  var u=(typeof state!=='undefined'&&state)?state.user:null;
+  if(!u){
+    if(typeof window._ctaCloseSheet==='function')window._ctaCloseSheet();
+    _peToast('Log in first to claim your gym');
+    if(typeof window._sgShowAuthSheet==='function'){window._sgShowAuthSheet('book');}else{navigate('/login');}
+    return;
+  }
+  var gymName=decodeURIComponent(encName||'');
+  var html=''
+    +'<div style="text-align:center;margin-bottom:16px">'
+    +'<div style="font-size:40px;margin-bottom:8px">🏢</div>'
+    +'<h2 style="color:#fff;font-size:19px;font-weight:800;margin:0 0 4px">Claim '+gymName.replace(/</g,'&lt;')+'</h2>'
+    +'<p style="color:rgba(255,255,255,.4);font-size:12px;margin:0">Tell us who you are — we verify every claim</p>'
+    +'</div>'
+    +'<label style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Your Name</label>'
+    +'<input id="pe-claim-owner-name" type="text" value="'+String(u.name||u.first_name||'').replace(/"/g,'&quot;')+'" placeholder="Full name" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:12px 14px;color:#fff;font-size:14px;outline:none;box-sizing:border-box;margin-bottom:10px">'
+    +'<label style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Business Email</label>'
+    +'<input id="pe-claim-owner-email" type="email" value="'+String(u.email||'').replace(/"/g,'&quot;')+'" placeholder="you@yourgym.com" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:12px 14px;color:#fff;font-size:14px;outline:none;box-sizing:border-box;margin-bottom:10px">'
+    +'<label style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Phone</label>'
+    +'<input id="pe-claim-owner-phone" type="tel" value="'+String(u.phone||'').replace(/"/g,'&quot;')+'" placeholder="+44…" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:12px 14px;color:#fff;font-size:14px;outline:none;box-sizing:border-box;margin-bottom:10px">'
+    +'<label style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Proof of Ownership <span style="color:rgba(255,255,255,.3);text-transform:none;font-weight:500">(optional)</span></label>'
+    +'<input id="pe-claim-proof" type="url" placeholder="Link: your gym\'s website, Google listing, business reg…" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:12px 14px;color:#fff;font-size:14px;outline:none;box-sizing:border-box;margin-bottom:6px">'
+    +'<p style="color:rgba(255,255,255,.3);font-size:11px;margin:0 0 14px">e.g. your gym website\'s contact page showing your name, or your Google Business profile</p>'
+    +'<div id="pe-claim-err" style="display:none;color:#f87171;font-size:12px;margin-bottom:10px;text-align:center"></div>'
+    +'<button id="pe-claim-submit" onclick="window._peSubmitClaim(\''+String(placeId).replace(/'/g,'')+'\')" style="width:100%;background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(255,109,0,.3)">Claim My Gym →</button>';
+  _ctaOpenSheet(html);
+};
+
+window._peSubmitClaim=async function(placeId){
+  var btn=document.getElementById('pe-claim-submit');
+  var err=document.getElementById('pe-claim-err');
+  var val=function(id){var el=document.getElementById(id);return el?el.value.trim():'';};
+  var ownerName=val('pe-claim-owner-name'),ownerEmail=val('pe-claim-owner-email'),ownerPhone=val('pe-claim-owner-phone'),proofUrl=val('pe-claim-proof');
+  var showErr=function(m){if(err){err.textContent=m;err.style.display='block';}if(btn){btn.disabled=false;btn.textContent='Claim My Gym →';}};
+  if(!ownerName)return showErr('Please enter your name');
+  if(!ownerEmail)return showErr('Please enter a contact email');
+  if(btn){btn.disabled=true;btn.textContent='Claiming…';}
+  try{
+    // Resolve to an internal gym id (db-123 rows are already internal; Places rows need ensure-gym)
+    var gymId=null;
+    var m=String(placeId).match(/^db-(\d+)$/);
+    if(m){gymId=parseInt(m[1],10);}
+    else{
+      var er=await fetch('/api/live/ensure-gym',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({placeId:placeId})});
+      var ed=await er.json().catch(function(){return{};});
+      if(!er.ok||!ed.gymId)return showErr(ed.error||'Could not load this gym — try again');
+      gymId=ed.gymId;
+    }
+    var r=await fetch('/api/gym-partner/claim',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({gymId:gymId,ownerName:ownerName,ownerEmail:ownerEmail,ownerPhone:ownerPhone,proofUrl:proofUrl||null})});
+    var d=await r.json().catch(function(){return{};});
+    if(!r.ok||!d.success){
+      if(r.status===409)return showErr('This gym is already claimed. If it\'s yours, email hello@scangym.com');
+      return showErr(d.error||'Claim failed — try again');
+    }
+    if(typeof window._ctaCloseSheet==='function')window._ctaCloseSheet();
+    _peToast('Gym claimed! 🎉 Setting up your dashboard…');
+    setTimeout(function(){_peLoadAndRender();},600);
+  }catch(e){showErr('Network error — try again');}
+};
 
 // ══════════════════════════════════════════════════════════════════════
 // Share listing

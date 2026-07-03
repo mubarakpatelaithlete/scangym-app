@@ -16597,7 +16597,7 @@ function ListYourGymFullPage(){
           <span style="color:#FF6D00;font-size:10px;font-weight:600">5 min</span>
         </div>
       </div>
-      <button onclick="navigate('/contact')" style="background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff;border:none;padding:14px 36px;border-radius:14px;font-weight:700;font-size:15px;cursor:pointer;box-shadow:0 4px 20px rgba(255,109,0,.3)">List Your Gym \u2014 Free \u2192</button>
+      <button onclick="window._peOpenClaimSearch?window._peOpenClaimSearch():navigate('/contact')" style="background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff;border:none;padding:14px 36px;border-radius:14px;font-weight:700;font-size:15px;cursor:pointer;box-shadow:0 4px 20px rgba(255,109,0,.3)">List Your Gym \u2014 Free \u2192</button>
       <p style="color:rgba(255,255,255,.25);font-size:10px;margin-top:10px">\ud83d\udce7 hello@scangym.com \u00b7 \ud83d\udcf1 @scangym</p>
     </div>
   </div>`;
@@ -19660,31 +19660,25 @@ window._partnerSearchGyms=function(q){
   if(!q||q.length<2){results.style.display='none';return;}
   _partnerSearchTimeout=setTimeout(async function(){
     try{
-      var r=await fetch('/api/gyms/search?q='+encodeURIComponent(q)+'&limit=5');
-      var d=await r.json();
+      var r=await fetch('/api/live/search?q='+encodeURIComponent(q)); // was /api/gyms/search — route never existed
+      var d=r.ok?await r.json():{};
+      d.results=(d.gyms||[]).slice(0,5);
       if(!d.results||!d.results.length){
         results.innerHTML='<div style="padding:12px 16px;color:rgba(255,255,255,.4);font-size:13px">No gyms found — <a onclick="navigate(\'/contact\')" style="color:#FF6D00;cursor:pointer">contact us to add yours</a></div>';
         results.style.display='block';
         return;
       }
       results.innerHTML=d.results.map(function(g){
-        return '<div onclick="_partnerClaimGym(\''+g.place_id+'\',\''+encodeURIComponent(g.name||'')+'\' )" style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer;display:flex;align-items:center;gap:10px;transition:background .15s" onmouseover="this.style.background=\'rgba(255,109,0,.08)\'" onmouseout="this.style.background=\'none\'"><div style="width:36px;height:36px;border-radius:10px;background:rgba(255,109,0,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0">🏢</div><div style="flex:1;min-width:0"><p style="color:#fff;font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(g.name||'Gym')+'</p><p style="color:rgba(255,255,255,.3);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(g.address||g.vicinity||'')+'</p></div><span style="color:#FF6D00;font-size:12px;font-weight:700;flex-shrink:0">Claim →</span></div>';
+        return '<div onclick="_partnerClaimGym(\''+String(g.placeId||g.id).replace(/'/g,'')+'\',\''+encodeURIComponent(g.name||'')+'\')" style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer;display:flex;align-items:center;gap:10px;transition:background .15s" onmouseover="this.style.background=\'rgba(255,109,0,.08)\'" onmouseout="this.style.background=\'none\'"><div style="width:36px;height:36px;border-radius:10px;background:rgba(255,109,0,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0">🏢</div><div style="flex:1;min-width:0"><p style="color:#fff;font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(g.name||'Gym')+'</p><p style="color:rgba(255,255,255,.3);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(g.address||g.vicinity||'')+'</p></div><span style="color:#FF6D00;font-size:12px;font-weight:700;flex-shrink:0">Claim →</span></div>';
       }).join('');
       results.style.display='block';
     }catch(e){results.style.display='none';}
   },350);
 };
-window._partnerClaimGym=function(placeId,gymName){
-  // Check login first
-  var token=localStorage.getItem('sg_token');
-  if(!token){
-    sgToast('Please log in first to claim your gym','info',3000);
-    navigate('/login');
-    return;
-  }
-  sgToast('Starting claim for '+decodeURIComponent(gymName)+'...','success',2000);
-  navigate('/list-your-gym?claim='+placeId);
-};
+/* NOTE: window._partnerClaimGym is defined ONCE below (after GymPartnerHubPage).
+   A duplicate definition here used to navigate to /list-your-gym?claim=... which
+   was a dead end (the ?claim= param was never handled) — and it was silently
+   overwritten by the later definition anyway. */
 
 function GymPartnerHubPage(){
   // Load partner data on mount
@@ -19838,7 +19832,7 @@ window._partnerSearchClaim=async function(q){
   var box=document.getElementById('partner-claim-results');if(!box)return;
   if(!q||q.length<2){box.innerHTML='';return;}
   try{
-    var r=await fetch('/api/search?q='+encodeURIComponent(q)+'&limit=5').catch(function(){return null;});
+    var r=await fetch('/api/live/search?q='+encodeURIComponent(q)).catch(function(){return null;}); // was /api/search — route never existed
     var d=r&&r.ok?await r.json().catch(function(){return{gyms:[]};}):({gyms:[]});
     var gyms=d.gyms||d.results||[];
     if(!gyms.length){box.innerHTML='<p style="color:rgba(255,255,255,.3);font-size:12px;padding:8px;text-align:center">No gyms found</p>';return;}
@@ -19849,18 +19843,36 @@ window._partnerSearchClaim=async function(q){
         +'<div style="flex:1;min-width:0"><p style="color:#fff;font-size:12px;font-weight:600;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(g.name||'Gym')+'</p>'
         +'<p style="color:rgba(255,255,255,.3);font-size:10px;margin:0">'+(g.city||g.address||'')+'</p></div>'
         +(claimed?'<span style="color:rgba(255,255,255,.3);font-size:10px">Claimed</span>'
-        :'<button onclick="_partnerClaimGym('+g.id+')" style="background:#FF6D00;color:#fff;border:none;padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0">Claim</button>')
+        :'<button onclick="_partnerClaimGym(\''+String(g.placeId||g.id).replace(/'/g,'')+'\',\''+encodeURIComponent(g.name||'')+'\')" style="background:#FF6D00;color:#fff;border:none;padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0">Claim</button>')
         +'</div>';
     }).join('');
   }catch(e){box.innerHTML='<p style="color:#f87171;font-size:11px;text-align:center">Search error</p>';}
 };
 
-window._partnerClaimGym=async function(gymId){
-  if(!confirm('Claim this gym as yours?'))return;
+window._partnerClaimGym=async function(idOrPlaceId,encName){
+  // Unified claim entry: accepts an internal numeric gym id, a "db-123" id,
+  // or a Google place_id string. Routes through the ownership-details sheet
+  // (partner-editable.js) so partners can prove ownership.
+  if(typeof window._peStartClaim==='function'){
+    window._peStartClaim(String(idOrPlaceId),encName||'');
+    return;
+  }
+  // Fallback (partner-editable.js not loaded): direct claim for internal ids
+  var gymId=null;
+  var sid=String(idOrPlaceId);
+  if(/^\d+$/.test(sid))gymId=parseInt(sid,10);
+  else{var m=sid.match(/^db-(\d+)$/);if(m)gymId=parseInt(m[1],10);}
   try{
+    if(!gymId){
+      var er=await fetch('/api/live/ensure-gym',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({placeId:sid})});
+      var ed=await er.json().catch(function(){return{};});
+      if(!er.ok||!ed.gymId){sgToast(ed.error||'Could not load this gym','error');return;}
+      gymId=ed.gymId;
+    }
+    if(!confirm('Claim this gym as yours?'))return;
     var r=await fetch('/api/gym-partner/claim',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({gymId:gymId})});
     var d=await r.json();
-    if(d.success){sgToast('Gym claimed! \ud83c\udf89','success');setTimeout(function(){navigate('/gym-partner-hub');},800);}
+    if(r.ok&&d.success){sgToast('Gym claimed! \ud83c\udf89','success');setTimeout(function(){navigate('/gym-partner-hub');},800);}
     else{sgToast(d.error||'Claim failed','error');}
   }catch(e){sgToast('Network error','error');}
 };
