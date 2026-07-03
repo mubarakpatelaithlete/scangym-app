@@ -839,6 +839,34 @@
         // Also store in the GYM_CACHE map if it exists
         if (typeof window._sgGymDetailCache === 'undefined') window._sgGymDetailCache = {};
         window._sgGymDetailCache[id] = { data: data, ts: Date.now() };
+        // FIX: feed the app's own _gymDataCache in the NORMALIZED shape the
+        // overlay expects (opening_hours, reviews_data, ...). This is what
+        // makes openGymDirectOverlay's cache-hit path open instantly WITH
+        // full data — via _ensureStandaloneOverlay, which actually creates
+        // the popup container.
+        try {
+          if (data && data.gym && window._gymDataCache) {
+            var _oh = data.openingHours || {};
+            if (data.gym.ownerIsOpen === true) _oh.isOpen = true;
+            else if (data.gym.ownerIsOpen === false) _oh.isOpen = false;
+            window._gymDataCache[id] = { data: Object.assign({}, data.gym, {
+              id: data.gym.dbId || data.gym.placeId,
+              place_id: data.gym.placeId,
+              photo_url: (data.photos && data.photos[0] && data.photos[0].url) || null,
+              photos_list: data.photos || [],
+              rating: (data.rating && data.rating.google) || null,
+              user_ratings_total: (data.rating && data.rating.googleTotal) || 0,
+              formatted_address: data.gym.address,
+              vicinity: data.gym.address,
+              opening_hours: _oh,
+              openNow: (_oh.isOpen !== undefined && _oh.isOpen !== null) ? _oh.isOpen : null,
+              reviews_data: data.reviews,
+              pricing: data.pricing,
+              map: data.map,
+              source: 'live'
+            }), ts: Date.now() };
+          }
+        } catch(e) {}
       })
       .catch(function(){})
       .finally(function() {
@@ -871,29 +899,15 @@
     console.log('[SPD2] Gym data prefetch (IntersectionObserver) applied');
   }
   
-  // Also patch openGymDirectOverlay to use prefetched data
-  var _origOpenDirect = window.openGymDirectOverlay;
-  if (typeof _origOpenDirect === 'function') {
-    window.openGymDirectOverlay = async function(id, isLive, section) {
-      // Check our prefetch cache first
-      var cached = window._sgGymDetailCache && window._sgGymDetailCache[id];
-      if (cached && (Date.now() - cached.ts) < 15 * 60 * 1000) {
-        // Use cached data — instant open!
-        try {
-          if (typeof state !== 'undefined') {
-            state.currentGym = cached.data;
-          }
-          if (typeof openGymOverlay === 'function' && section) {
-            openGymOverlay(section);
-            console.log('[SPD2] Instant overlay from prefetch cache:', section);
-            return;
-          }
-        } catch(e) {}
-      }
-      // Fallback to original
-      return _origOpenDirect.apply(this, arguments);
-    };
-  }
+  // REMOVED (bug fix): the old "instant open" shortcut here called
+  // openGymOverlay(section) WITHOUT _ensureStandaloneOverlay(), so when a
+  // card had been prefetched the tap silently did nothing (openGymOverlay
+  // returns early if #gym-overlay doesn't exist). It also set
+  // state.currentGym to the RAW /api/live/place response instead of the
+  // normalized gym shape, so hours/reviews showed "not available".
+  // The prefetch above now feeds window._gymDataCache in the normalized
+  // shape, and the original openGymDirectOverlay's own cache-hit path
+  // provides the same instant open — correctly.
 })();
 
 // ── CAL1: Calendar picker height fix + user-select on day cells ──
