@@ -46,6 +46,7 @@ const rebookRouter = require('./routes/rebook');
 const amenitiesRouter = require('./routes/amenities');
 const gymMgmtRouter = require('./routes/gym-management');
 const playlistsRouter = require('./routes/playlists');
+const adminDashboardRouter = require('./routes/admin-dashboard');
 const analyticsMiddleware = require('./middleware/analytics');
 
 const app = express();
@@ -463,6 +464,7 @@ app.use('/api/rebook', rebookRouter);
 app.use('/api/amenities', amenitiesRouter);
 app.use('/api/gym-mgmt', gymMgmtRouter);
 app.use('/api/playlists', playlistsRouter);
+app.use('/api/stats', adminDashboardRouter);
 
 // -- Serve Frontend --
 // Digital Asset Links for Android TWA verification
