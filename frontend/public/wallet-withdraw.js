@@ -195,7 +195,7 @@ function renderMethodForm(type){
   if(type==='stripe'){
     area.innerHTML='<div style="background:rgba(99,91,255,.06);border:1px solid rgba(99,91,255,.15);border-radius:14px;padding:14px;display:flex;align-items:center;gap:12px">'
       +'<span style="font-size:24px">⚡</span><div><p style="color:#fff;font-size:13px;font-weight:600;margin:0">Stripe Connect</p>'
-      +'<p style="color:rgba(255,255,255,.4);font-size:11px;margin:2px 0 0">You\'ll be redirected to Stripe to verify your bank. Takes ~2 minutes, then withdrawals are instant.</p></div></div>';
+      +'<p style="color:rgba(255,255,255,.4);font-size:11px;margin:2px 0 0">Verify your bank details right here. Takes ~2 minutes, then withdrawals are instant.</p></div></div>';
     if(btn)btn.textContent='Connect with Stripe →';
   }else if(type==='paypal'){
     area.innerHTML=input('sg-wm-paypal','PayPal Email','your@email.com','inputmode="email"');
@@ -220,22 +220,18 @@ window._sgWMSave=async function(){
   if(btn){btn.textContent='Saving…';btn.style.opacity='.6';btn.style.pointerEvents='none';}
 
   if(type==='stripe'){
-    // Route through the right Connect onboarding for the current tab —
-    // both save stripe_connect_id that /api/wallet/withdraw uses.
+    // Embedded Stripe Connect onboarding — renders inside the app
     try{
       var d;
       if(curTab()==='partner'){
         d=await fetch('/api/gym-partner/stripe-connect',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:'{}'}).then(function(r){return r.json();});
       }else{
-        // FIX: session-based wallet endpoint — works for ANY logged-in user.
-        // The old /api/referrals/stripe-connect path failed with "Missing
-        // creatorHandle" / "Creator not found" for non-Creator accounts.
         d=await fetch('/api/wallet/stripe-connect',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({creatorHandle:creatorHandle()})}).then(function(r){return r.json();});
       }
-      var url=d.onboardingUrl||d.url||d.connect_url;
-      if(url){window.location.href=url;return;}
       if(d.onboardingComplete||d.stripeConnected){closeSheet('sg-wallet-method-sheet');toast('Stripe already connected ✓','success',3000);return;}
-      fail(d.error||d.message||'Stripe Connect setup failed');
+      if(!d.clientSecret){fail(d.error||d.message||'Stripe Connect setup failed');return;}
+      // Open embedded onboarding in a full-screen overlay
+      window._sgOpenEmbeddedOnboarding(d.clientSecret, d.accountId);
     }catch(e){fail('Network error — try again');}
     return;
   }
@@ -321,5 +317,81 @@ function upgradeCreatorWithdraw(){
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',function(){setTimeout(upgradeCreatorWithdraw,300);});}
 else{setTimeout(upgradeCreatorWithdraw,300);}
 
-console.log('[WalletWithdraw] ScanSquad/Partner wallet withdraw flows active');
+/* ════════════════════════════════════════════════════════════════════
+   4) EMBEDDED STRIPE CONNECT ONBOARDING — renders the Stripe
+      <stripe-connect-account-onboarding> component in a full-screen
+      overlay instead of redirecting to Stripe's hosted page.
+   ════════════════════════════════════════════════════════════════════ */
+window._sgOpenEmbeddedOnboarding=function(clientSecret, accountId){
+  // Close the method sheet
+  closeSheet('sg-wallet-method-sheet');
+
+  // Build the overlay
+  var overlay=document.createElement('div');
+  overlay.id='sg-stripe-onboarding-overlay';
+  overlay.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background:#111;overflow-y:auto;display:flex;flex-direction:column;align-items:center';
+  overlay.innerHTML=''
+    +'<div style="width:100%;max-width:680px;padding:20px 16px;box-sizing:border-box">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">'
+    +'<div><h2 style="color:#fff;font-size:20px;font-weight:800;margin:0">🏦 Connect Your Bank</h2>'
+    +'<p style="color:rgba(255,255,255,.4);font-size:13px;margin:4px 0 0">Complete verification to receive payouts</p></div>'
+    +'<button id="sg-stripe-onb-close" style="background:rgba(255,255,255,.1);border:none;color:#fff;font-size:24px;width:40px;height:40px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>'
+    +'</div>'
+    +'<div id="sg-stripe-onb-container" style="background:#fff;border-radius:16px;overflow:hidden;min-height:400px;display:flex;align-items:center;justify-content:center">'
+    +'<p style="color:#666;font-size:14px;padding:40px">Loading Stripe onboarding…</p>'
+    +'</div>'
+    +'</div>';
+
+  document.body.appendChild(overlay);
+  document.body.style.overflow='hidden';
+
+  // Close button handler
+  document.getElementById('sg-stripe-onb-close').onclick=function(){
+    document.body.removeChild(overlay);
+    document.body.style.overflow='';
+  };
+
+  // Wait for Connect.js to load, then initialise
+  function initConnect(){
+    if(typeof StripeConnect==='undefined'){
+      setTimeout(initConnect,200);
+      return;
+    }
+    try{
+      window.__configPromise.then(function(cfg){
+        var stripePublishableKey=cfg.stripeKey;
+        if(!stripePublishableKey){
+          document.getElementById('sg-stripe-onb-container').innerHTML='<p style="color:#ef4444;padding:40px">Stripe not configured — contact support</p>';
+          return;
+        }
+        var instance=StripeConnect.init({
+          publishableKey:stripePublishableKey,
+          fetchClientSecret:function(){return Promise.resolve(clientSecret);},
+          appearance:{
+            colors:{
+              primary:'#FF6D00',
+              background:'#ffffff',
+              formBackground:'#f9fafb',
+            },
+          },
+        });
+        var onboarding=instance.create('account-onboarding');
+        onboarding.setOnExit(function(){
+          toast('Bank details saved ✓','success',3000);
+          document.body.removeChild(overlay);
+          document.body.style.overflow='';
+        });
+        var container=document.getElementById('sg-stripe-onb-container');
+        container.innerHTML='';
+        container.appendChild(onboarding);
+      });
+    }catch(e){
+      console.error('[EmbeddedOnboarding] Init error:',e);
+      document.getElementById('sg-stripe-onb-container').innerHTML='<p style="color:#ef4444;padding:40px">Failed to load onboarding — try again</p>';
+    }
+  }
+  initConnect();
+};
+
+console.log('[WalletWithdraw] ScanSquad/Partner wallet withdraw flows active (embedded onboarding v1.1)');
 })();
