@@ -550,17 +550,8 @@ window._peStartClaim=function(placeId,encName){
     +'<div style="text-align:center;margin-bottom:16px">'
     +'<div style="font-size:40px;margin-bottom:8px">🏢</div>'
     +'<h2 style="color:#fff;font-size:19px;font-weight:800;margin:0 0 4px">Claim '+gymName.replace(/</g,'&lt;')+'</h2>'
-    +'<p style="color:rgba(255,255,255,.4);font-size:12px;margin:0">Tell us who you are — we verify every claim</p>'
+    +'<p style="color:rgba(255,255,255,.4);font-size:12px;margin:0">One tap to claim — then verify ownership</p>'
     +'</div>'
-    +'<label style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Your Name</label>'
-    +'<input id="pe-claim-owner-name" type="text" value="'+String(u.name||u.first_name||'').replace(/"/g,'&quot;')+'" placeholder="Full name" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:12px 14px;color:#fff;font-size:14px;outline:none;box-sizing:border-box;margin-bottom:10px">'
-    +'<label style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Business Email</label>'
-    +'<input id="pe-claim-owner-email" type="email" value="'+String(u.email||'').replace(/"/g,'&quot;')+'" placeholder="you@yourgym.com" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:12px 14px;color:#fff;font-size:14px;outline:none;box-sizing:border-box;margin-bottom:10px">'
-    +'<label style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Phone</label>'
-    +'<input id="pe-claim-owner-phone" type="tel" value="'+String(u.phone||'').replace(/"/g,'&quot;')+'" placeholder="+44…" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:12px 14px;color:#fff;font-size:14px;outline:none;box-sizing:border-box;margin-bottom:10px">'
-    +'<label style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Proof of Ownership <span style="color:rgba(255,255,255,.3);text-transform:none;font-weight:500">(optional)</span></label>'
-    +'<input id="pe-claim-proof" type="url" placeholder="Link: your gym\'s website, Google listing, business reg…" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:12px 14px;color:#fff;font-size:14px;outline:none;box-sizing:border-box;margin-bottom:6px">'
-    +'<p style="color:rgba(255,255,255,.3);font-size:11px;margin:0 0 14px">e.g. your gym website\'s contact page showing your name, or your Google Business profile</p>'
     +'<div id="pe-claim-err" style="display:none;color:#f87171;font-size:12px;margin-bottom:10px;text-align:center"></div>'
     +'<button id="pe-claim-submit" onclick="window._peSubmitClaim(\''+String(placeId).replace(/'/g,'')+'\')" style="width:100%;background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(255,109,0,.3)">Claim My Gym →</button>';
   _ctaOpenSheet(html);
@@ -569,11 +560,8 @@ window._peStartClaim=function(placeId,encName){
 window._peSubmitClaim=async function(placeId){
   var btn=document.getElementById('pe-claim-submit');
   var err=document.getElementById('pe-claim-err');
-  var val=function(id){var el=document.getElementById(id);return el?el.value.trim():'';};
-  var ownerName=val('pe-claim-owner-name'),ownerEmail=val('pe-claim-owner-email'),ownerPhone=val('pe-claim-owner-phone'),proofUrl=val('pe-claim-proof');
   var showErr=function(m){if(err){err.textContent=m;err.style.display='block';}if(btn){btn.disabled=false;btn.textContent='Claim My Gym →';}};
-  if(!ownerName)return showErr('Please enter your name');
-  if(!ownerEmail)return showErr('Please enter a contact email');
+  var u=(typeof state!=='undefined'&&state)?state.user:null;
   if(btn){btn.disabled=true;btn.textContent='Claiming…';}
   try{
     // Resolve to an internal gym id (db-123 rows are already internal; Places rows need ensure-gym)
@@ -586,7 +574,7 @@ window._peSubmitClaim=async function(placeId){
       if(!er.ok||!ed.gymId)return showErr(ed.error||'Could not load this gym — try again');
       gymId=ed.gymId;
     }
-    var r=await fetch('/api/gym-partner/claim',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({gymId:gymId,ownerName:ownerName,ownerEmail:ownerEmail,ownerPhone:ownerPhone,proofUrl:proofUrl||null})});
+    var r=await fetch('/api/gym-partner/claim',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({gymId:gymId,ownerName:u?(u.name||u.first_name||null):null,ownerEmail:u?(u.email||null):null,ownerPhone:u?(u.phone||null):null})});
     var d=await r.json().catch(function(){return{};});
     if(!r.ok||!d.success){
       if(r.status===409)return showErr('This gym is already claimed. If it\'s yours, email hello@scangym.com');
