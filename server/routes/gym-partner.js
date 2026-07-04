@@ -417,18 +417,21 @@ router.post('/stripe-connect', authenticateUser, express.json(), async (req, res
     
     let stripeAccountId = user.stripe_connect_id;
     
-    // Create Express account if none exists
+    // Create Custom connected account for embedded onboarding
     if (!stripeAccountId) {
       try {
         const account = await stripe.accounts.create({
-          type: 'express',
           country: 'GB',
           email: user.email,
           capabilities: {
-            card_payments: { requested: true },
             transfers: { requested: true },
           },
-          business_type: 'individual',
+          controller: {
+            losses: { payments: 'application' },
+            fees: { payer: 'application' },
+            stripe_dashboard: { type: 'none' },
+            requirement_collection: 'application',
+          },
           metadata: {
             scangym_user_id: String(userId),
             gym_name: gyms.rows[0].name,
@@ -451,7 +454,7 @@ router.post('/stripe-connect', authenticateUser, express.json(), async (req, res
     // Check if onboarding is already complete
     try {
       const account = await stripe.accounts.retrieve(stripeAccountId);
-      if (account.charges_enabled && account.payouts_enabled) {
+      if (account.payouts_enabled) {
         return res.json({
           success: true,
           stripeConnected: true,
@@ -463,24 +466,24 @@ router.post('/stripe-connect', authenticateUser, express.json(), async (req, res
       console.warn('[StripeConnect] Account retrieve failed:', e.message);
     }
     
-    // Create onboarding link
-    const BASE = process.env.BASE_URL || 'https://scangym.com';
+    // Create an Account Session for embedded onboarding component
     try {
-      const accountLink = await stripe.accountLinks.create({
+      const accountSession = await stripe.accountSessions.create({
         account: stripeAccountId,
-        refresh_url: `${BASE}/partner?stripe=refresh`,
-        return_url: `${BASE}/partner?stripe=success`,
-        type: 'account_onboarding',
+        components: {
+          account_onboarding: { enabled: true },
+        },
       });
       
       res.json({
         success: true,
-        onboardingUrl: accountLink.url,
+        clientSecret: accountSession.client_secret,
+        accountId: stripeAccountId,
         message: 'Complete your bank details to receive payouts',
       });
-    } catch (linkErr) {
-      console.error('[StripeConnect] Account link creation failed:', linkErr.message);
-      return res.status(500).json({ error: 'Failed to generate onboarding link. Please try again.' });
+    } catch (sessionErr) {
+      console.error('[StripeConnect] Account session creation failed:', sessionErr.message);
+      return res.status(500).json({ error: 'Failed to start onboarding. Please try again.' });
     }
   } catch (err) {
     console.error('Gym Stripe Connect error:', err.message);

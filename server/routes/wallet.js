@@ -308,13 +308,10 @@ async function _resolveStripeConnectId(userId, creatorHandle) {
 }
 
 // POST /api/wallet/stripe-connect - start Stripe Connect onboarding for the
-// LOGGED-IN user (any role). Fixes "Connect Stripe to withdraw" being broken:
-// the old path went through /api/referrals/stripe-connect which requires a
-// creator_landing_pages row, so regular users got "Creator not found" and
-// users without a handle got "Missing creatorHandle". This endpoint needs
-// only the session — it creates/reuses an Express account, saves it on
-// users.stripe_connect_id (which /api/wallet/withdraw reads), and returns
-// the hosted onboarding link.
+// LOGGED-IN user (any role). Creates a Custom connected account (embedded
+// onboarding components) and returns an Account Session client_secret that
+// the frontend uses to render the <stripe-connect-account-onboarding>
+// component inline — no redirect to Stripe.
 router.post('/stripe-connect', async (req, res) => {
   try {
     const userId = req.user.id;
@@ -336,11 +333,15 @@ router.post('/stripe-connect', async (req, res) => {
     if (!connectId) {
       const u = await pool.query('SELECT email, first_name, last_name FROM users WHERE id = $1', [userId]).catch(() => ({ rows: [] }));
       const account = await stripe.accounts.create({
-        type: 'express',
         country: 'GB',
         email: u.rows[0]?.email || undefined,
         capabilities: { transfers: { requested: true } },
-        business_type: 'individual',
+        controller: {
+          losses: { payments: 'application' },
+          fees: { payer: 'application' },
+          stripe_dashboard: { type: 'none' },
+          requirement_collection: 'application',
+        },
         metadata: { userId: String(userId), source: 'scangym_wallet' },
       });
       connectId = account.id;
@@ -349,27 +350,52 @@ router.post('/stripe-connect', async (req, res) => {
       });
     }
 
-    // Already fully onboarded? No need for the hosted flow.
+    // Already fully onboarded? No need for the onboarding flow.
     try {
       const acct = await stripe.accounts.retrieve(connectId);
       if (acct.payouts_enabled) {
         return res.json({ success: true, stripeConnected: true, onboardingComplete: true, accountId: connectId });
       }
-    } catch (e) { /* fall through to onboarding link */ }
+    } catch (e) { /* fall through to embedded onboarding */ }
 
-    const base = process.env.PUBLIC_URL || `${req.protocol}://${req.get('host')}`;
-    const accountLink = await stripe.accountLinks.create({
+    // Create an Account Session for the embedded onboarding component
+    const accountSession = await stripe.accountSessions.create({
       account: connectId,
-      refresh_url: `${base}/wallet?stripe_refresh=1`,
-      return_url: `${base}/wallet?stripe_connected=1`,
-      type: 'account_onboarding',
+      components: {
+        account_onboarding: { enabled: true },
+      },
     });
 
-    console.log(`[WalletConnect] Onboarding link created for user ${userId}: ${connectId}`);
-    res.json({ success: true, onboardingUrl: accountLink.url, accountId: connectId });
+    console.log(`[WalletConnect] Embedded onboarding session created for user ${userId}: ${connectId}`);
+    res.json({ success: true, clientSecret: accountSession.client_secret, accountId: connectId });
   } catch (err) {
     console.error('[WalletConnect] Error:', err.message);
     res.status(500).json({ error: 'Stripe Connect setup failed', detail: err.message });
+  }
+});
+
+// POST /api/wallet/stripe-connect/session - refresh the Account Session for
+// an existing connected account (called by Connect.js fetchClientSecret).
+router.post('/stripe-connect/session', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const stripe = process.env.STRIPE_SECRET_KEY ? require('stripe')(process.env.STRIPE_SECRET_KEY) : null;
+    if (!stripe) return res.status(500).json({ error: 'Stripe not configured' });
+
+    const connectId = await _resolveStripeConnectId(userId, null);
+    if (!connectId) return res.status(400).json({ error: 'No connected account found — start onboarding first' });
+
+    const accountSession = await stripe.accountSessions.create({
+      account: connectId,
+      components: {
+        account_onboarding: { enabled: true },
+      },
+    });
+
+    res.json({ client_secret: accountSession.client_secret });
+  } catch (err) {
+    console.error('[WalletConnect] Session refresh error:', err.message);
+    res.status(500).json({ error: 'Could not create session', detail: err.message });
   }
 });
 
