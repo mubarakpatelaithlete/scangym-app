@@ -284,13 +284,19 @@ setInterval(function(){
   }
 },60000);
 
-// ─── Override the old DashboardPage to use enhanced version ───
-// The old DashboardPage() is defined in app.ctr576.js. We override it here
-// so /admin and /dashboard routes render the new dashboard.
+// ─── Override the old DashboardPage + CeoDashboardPage to use enhanced version ───
+// The old DashboardPage() and CeoDashboardPage() are defined in app.ctr576.js.
+// /admin uses CeoDashboardPage(), so we must override both.
 if(typeof window.DashboardPage==='function'){
   window._sgOldDashboardPage=window.DashboardPage;
 }
 window.DashboardPage=function(){
+  return window._sgAdminDashboardPage();
+};
+if(typeof window.CeoDashboardPage==='function'){
+  window._sgOldCeoDashboardPage=window.CeoDashboardPage;
+}
+window.CeoDashboardPage=function(){
   return window._sgAdminDashboardPage();
 };
 

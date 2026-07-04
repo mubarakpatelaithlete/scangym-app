@@ -261,13 +261,19 @@ window._peDashboardCache=null;
 function _peRenderCards(){
   var container=document.querySelector('.partner-screen');
   if(!container){
-    // Try to find the partner fixed container
-    var partnerRoot=document.querySelector('[style*="position:fixed"][style*="bottom:56px"]');
-    if(!partnerRoot){return;}
-    // Use the first .partner-screen
-    var screens=partnerRoot.querySelectorAll('.partner-screen');
-    if(screens.length>0)container=screens[0];
-    else return;
+    // PartnerFullPage uses .tt-view > .tt-card — look for those as fallback
+    container=document.querySelector('#partner-profile-page')
+              ||document.querySelector('.tt-card')
+              ||document.querySelector('.tt-view');
+    // Last resort: old layout fixed container
+    if(!container){
+      var partnerRoot=document.querySelector('[style*="position:fixed"][style*="bottom:56px"]');
+      if(partnerRoot){
+        var screens=partnerRoot.querySelectorAll('.partner-screen');
+        if(screens.length>0)container=screens[0];
+      }
+    }
+    if(!container)return;
   }
 
   var gyms=window._peGymsCache||[];
@@ -717,6 +723,16 @@ var _waitPatch=setInterval(function(){
       if(isPartner&&_lastRoute!==route){
         _lastRoute=route;
         setTimeout(function(){_peLoadAndRender();},100);
+        // Patch: hijack any tt-actions "Search" button so it opens the
+        // partner claim-search overlay, not the Book-tab visitor search.
+        setTimeout(function(){
+          var acts=document.querySelectorAll('.tt-action');
+          acts.forEach(function(a){
+            if(a.textContent.indexOf('Search')!==-1&&a.getAttribute('onclick')&&a.getAttribute('onclick').indexOf('_openSearchOverlay')!==-1){
+              a.setAttribute('onclick','event.stopPropagation();window._peOpenClaimSearch()');
+            }
+          });
+        },200);
       }else if(!isPartner){
         _lastRoute=route;
       }
