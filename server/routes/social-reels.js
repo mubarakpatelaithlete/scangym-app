@@ -27,7 +27,8 @@ const pool = require('../middleware/db');
 // ═══════════════════════════════════════════════════════════
 //  CONFIG
 // ═══════════════════════════════════════════════════════════
-const GOOGLE_API_KEY = process.env.GOOGLE_MAPS_API_KEY; // Same key works for YouTube
+// Prefer dedicated YOUTUBE_API_KEY, fall back to shared Google Maps key
+const GOOGLE_API_KEY = process.env.YOUTUBE_API_KEY || process.env.GOOGLE_MAPS_API_KEY;
 const CACHE_HOURS = 6;
 const MAX_RESULTS_PER_QUERY = 15;
 
@@ -42,6 +43,36 @@ const YOUTUBE_SEARCH_QUERIES = [
   'workout motivation gym',
   'gym first time',
   'gym newbie tips',
+];
+
+// ── Fitness-only discover queries (Option C: curated fitness content) ──
+const YOUTUBE_DISCOVER_QUERIES = [
+  'gym workout shorts',
+  'fitness motivation shorts',
+  'gym transformation before after',
+  'home workout routine short',
+  'weightlifting tips short',
+  'gym tour walkthrough',
+  'personal trainer tips',
+  'calisthenics workout short',
+  'HIIT workout short',
+  'yoga flow short',
+  'CrossFit workout short',
+  'boxing workout short',
+  'gym fail funny short',
+  'muscle building tips',
+  'stretching routine short',
+];
+
+// Keywords that must appear in title/description for fitness filtering
+const FITNESS_KEYWORDS = [
+  'gym', 'workout', 'fitness', 'exercise', 'training', 'muscle',
+  'lift', 'deadlift', 'squat', 'bench', 'cardio', 'hiit', 'yoga',
+  'crossfit', 'calisthenics', 'bodyweight', 'stretch', 'flex',
+  'gains', 'reps', 'sets', 'protein', 'bulk', 'cut', 'shred',
+  'boxing', 'martial arts', 'running', 'swimming', 'pilates',
+  'personal trainer', 'pt', 'coach', 'athlete', 'bodybuilding',
+  'weight loss', 'transformation', 'day pass', 'gym tour',
 ];
 
 const TIKTOK_CURATED_URLS = [
@@ -261,6 +292,132 @@ async function refreshSocialReels() {
 }
 
 // ═══════════════════════════════════════════════════════════
+//  DISCOVER FEED — YouTube fitness Shorts (Option C)
+//  Separate from main swipe feed. Returns thumbnails for a
+//  horizontal "Discover" carousel; tapping opens an overlay.
+// ═══════════════════════════════════════════════════════════
+
+// In-memory discover cache (refreshed every CACHE_HOURS)
+let _discoverCache = [];
+let _discoverCacheTime = 0;
+
+/**
+ * Fetch YouTube Shorts specifically for the Discover carousel.
+ * Uses YOUTUBE_DISCOVER_QUERIES and filters to fitness-only content.
+ */
+async function fetchDiscoverShorts() {
+  if (!GOOGLE_API_KEY) {
+    console.warn('[social-reels] No YouTube API key — skipping Discover fetch');
+    return [];
+  }
+
+  const results = [];
+  const seen = new Set();
+
+  for (const query of YOUTUBE_DISCOVER_QUERIES) {
+    try {
+      const params = new URLSearchParams({
+        part: 'snippet',
+        q: query,
+        type: 'video',
+        videoDuration: 'short',
+        videoDefinition: 'high',
+        maxResults: '10',
+        order: 'relevance',
+        safeSearch: 'strict',
+        relevanceLanguage: 'en',
+        // videoCategoryId 17 = Sports, but it's too restrictive.
+        // We rely on query keywords + post-fetch title filtering instead.
+        key: GOOGLE_API_KEY,
+      });
+
+      const res = await fetch(`https://www.googleapis.com/youtube/v3/search?${params}`);
+      if (!res.ok) {
+        console.error(`[social-reels] YouTube Discover API error ${res.status} for "${query}"`);
+        continue;
+      }
+
+      const data = await res.json();
+      for (const item of (data.items || [])) {
+        const videoId = item.id?.videoId;
+        if (!videoId || seen.has(videoId)) continue;
+
+        // Fitness keyword filter on title
+        const title = (item.snippet?.title || '').toLowerCase();
+        const desc = (item.snippet?.description || '').toLowerCase();
+        const combined = title + ' ' + desc;
+        const isFitness = FITNESS_KEYWORDS.some(kw => combined.includes(kw));
+        if (!isFitness) continue;
+
+        seen.add(videoId);
+        results.push({
+          videoId,
+          title: item.snippet.title,
+          channelTitle: item.snippet.channelTitle,
+          channelId: item.snippet.channelId,
+          thumbnail: item.snippet.thumbnails?.high?.url
+            || item.snippet.thumbnails?.medium?.url
+            || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+          publishedAt: item.snippet.publishedAt,
+          url: `https://www.youtube.com/shorts/${videoId}`,
+          embedUrl: `https://www.youtube.com/embed/${videoId}?autoplay=1&loop=1&playlist=${videoId}&mute=0&controls=1&playsinline=1&rel=0`,
+        });
+      }
+
+      // Rate limit: 500ms between queries
+      await new Promise(r => setTimeout(r, 500));
+    } catch (err) {
+      console.error(`[social-reels] Discover fetch error for "${query}":`, err.message);
+    }
+  }
+
+  console.log(`[social-reels] Discover: fetched ${results.length} fitness Shorts from ${YOUTUBE_DISCOVER_QUERIES.length} queries`);
+  return results;
+}
+
+/**
+ * GET /api/social-reels/discover
+ * Returns YouTube Shorts for the Discover carousel.
+ * Cached for CACHE_HOURS. Response is lightweight thumbnails only.
+ */
+router.get('/discover', async (req, res) => {
+  try {
+    const now = Date.now();
+    const cacheMs = CACHE_HOURS * 3600000;
+
+    // Return cached if fresh
+    if (_discoverCache.length > 0 && (now - _discoverCacheTime) < cacheMs) {
+      const { limit = 30, offset = 0 } = req.query;
+      const page = _discoverCache.slice(Number(offset), Number(offset) + Number(limit));
+      res.set('Cache-Control', 'public, max-age=300, s-maxage=600');
+      return res.json({
+        shorts: page,
+        total: _discoverCache.length,
+        hasMore: Number(offset) + Number(limit) < _discoverCache.length,
+        cached: true,
+      });
+    }
+
+    // Fetch fresh
+    _discoverCache = await fetchDiscoverShorts();
+    _discoverCacheTime = now;
+
+    const { limit = 30, offset = 0 } = req.query;
+    const page = _discoverCache.slice(Number(offset), Number(offset) + Number(limit));
+    res.set('Cache-Control', 'public, max-age=300, s-maxage=600');
+    res.json({
+      shorts: page,
+      total: _discoverCache.length,
+      hasMore: Number(offset) + Number(limit) < _discoverCache.length,
+      cached: false,
+    });
+  } catch (err) {
+    console.error('[social-reels] Discover endpoint error:', err.message);
+    res.status(500).json({ error: 'Failed to load discover shorts' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════
 //  API ROUTES
 // ═══════════════════════════════════════════════════════════
 
@@ -446,8 +603,24 @@ initSocialReelsTable().then(() => {
   // Initial fetch after 30s delay (let server start first)
   setTimeout(() => refreshSocialReels(), 30000);
   
+  // Warm up Discover cache 45s after startup
+  setTimeout(() => {
+    fetchDiscoverShorts().then(shorts => {
+      _discoverCache = shorts;
+      _discoverCacheTime = Date.now();
+      console.log(`[social-reels] Discover cache warmed: ${shorts.length} fitness Shorts`);
+    }).catch(err => console.error('[social-reels] Discover warm-up failed:', err.message));
+  }, 45000);
+
   // Refresh every 6 hours
   setInterval(() => refreshSocialReels(), CACHE_HOURS * 3600000);
+  // Refresh Discover cache every 6 hours too
+  setInterval(() => {
+    fetchDiscoverShorts().then(shorts => {
+      _discoverCache = shorts;
+      _discoverCacheTime = Date.now();
+    }).catch(() => {});
+  }, CACHE_HOURS * 3600000);
 });
 
 module.exports = router;
