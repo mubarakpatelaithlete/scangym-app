@@ -1035,10 +1035,10 @@ router.post('/confirm-sca', authenticateUser, express.json(), async (req, res) =
 
     // Create booking
     const bookingResult = await pool.query(
-      `INSERT INTO bookings (user_id, gym_id, place_id, date, time, status, payment_intent_id, amount_pence, pass_type, customer_email, gym_name, gym_address, created_at)
-       VALUES ($1, $2, $3, $4, $5, 'confirmed', $6, $7, $8, $9, $10, $11, NOW())
+      `INSERT INTO bookings (user_id, gym_id, place_id, date, time, status, payment_intent_id, amount_pence, currency, pass_type, customer_email, gym_name, gym_address, created_at)
+       VALUES ($1, $2, $3, $4, $5, 'confirmed', $6, $7, $8, $9, $10, $11, $12, NOW())
        RETURNING *`,
-      [req.user.id, gymId || null, placeId || null, date, time || '00:00', paymentIntentId, pi.amount, passType || 'day', email, gymName, gymAddress]
+      [req.user.id, gymId || null, placeId || null, date, time || '00:00', paymentIntentId, pi.amount, (pi.currency || 'gbp').toLowerCase(), passType || 'day', email, gymName, gymAddress]
     ).catch(async () => {
       // Fallback if columns missing
       const r = await pool.query(
