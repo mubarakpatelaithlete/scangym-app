@@ -22,13 +22,104 @@
 const express = require('express');
 const router = express.Router();
 const { handleMessage } = require('./message-handler');
+const pool = require('../middleware/db');
 
 const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_API = `https://api.telegram.org/bot${TELEGRAM_TOKEN}`;
 const BASE_URL = process.env.BASE_URL || 'https://scangym.com';
+const BOT_SECRET = process.env.BOT_CHECKOUT_SECRET || process.env.ADMIN_IMPORT_SECRET || '';
 
-// Session store for pagination
+// Session store for pagination + booking flow
 const sessions = new Map();
+
+// ═══════════════════════════════════════════════════════════
+//  USER LOOKUP — Link Telegram user to ScanGym account
+//  Uses the user_channels table populated by the Connect flow.
+// ═══════════════════════════════════════════════════════════
+async function lookupLinkedUser(telegramUserId) {
+  try {
+    const { rows } = await pool.query(
+      `SELECT uc.user_id, u.email, u.first_name, u.stripe_customer_id
+       FROM user_channels uc
+       JOIN public.users u ON u.id = uc.user_id
+       WHERE uc.channel = 'telegram' AND uc.channel_user_id = $1 AND uc.is_active = true
+       LIMIT 1`,
+      [String(telegramUserId)]
+    );
+    return rows.length > 0 ? rows[0] : null;
+  } catch (err) {
+    console.error('[Telegram] User lookup error:', err.message);
+    return null;
+  }
+}
+
+/**
+ * Get saved cards for a linked user (calls bot-cards endpoint internally)
+ */
+async function getSavedCards(userId) {
+  try {
+    const resp = await fetch(`${BASE_URL}/api/payment/bot-cards?userId=${encodeURIComponent(userId)}&botSecret=${encodeURIComponent(BOT_SECRET)}`);
+    const data = await resp.json();
+    return data.cards || [];
+  } catch (err) {
+    console.error('[Telegram] Get cards error:', err.message);
+    return [];
+  }
+}
+
+/**
+ * Execute bot checkout — charge saved card, get QR
+ */
+async function executeBotCheckout(params) {
+  try {
+    const resp = await fetch(`${BASE_URL}/api/payment/bot-checkout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...params, botSecret: BOT_SECRET }),
+    });
+    return await resp.json();
+  } catch (err) {
+    console.error('[Telegram] Bot checkout error:', err.message);
+    return { error: err.message };
+  }
+}
+
+/**
+ * Send a QR code image to Telegram chat
+ * The QR data URL is a base64 PNG — we convert and send as photo.
+ */
+async function sendQRPhoto(chatId, qrDataUrl, caption) {
+  if (!TELEGRAM_TOKEN || !qrDataUrl) return;
+  try {
+    // qrDataUrl is "data:image/png;base64,..." — extract the base64 part
+    const base64Data = qrDataUrl.replace(/^data:image\/\w+;base64,/, '');
+    const buffer = Buffer.from(base64Data, 'base64');
+
+    // Use multipart form to send photo
+    const FormData = require('form-data') || null;
+    // Fallback: send as document if form-data not available
+    // Use the Telegram sendPhoto with base64 file upload
+    const boundary = '----ScanGymQR' + Date.now();
+    const body = Buffer.concat([
+      Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="chat_id"\r\n\r\n${chatId}\r\n`),
+      Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="caption"\r\n\r\n${caption || ''}\r\n`),
+      Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="parse_mode"\r\n\r\nMarkdown\r\n`),
+      Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="photo"; filename="qr-code.png"\r\nContent-Type: image/png\r\n\r\n`),
+      buffer,
+      Buffer.from(`\r\n--${boundary}--\r\n`),
+    ]);
+
+    await fetch(`${TELEGRAM_API}/sendPhoto`, {
+      method: 'POST',
+      headers: { 'Content-Type': `multipart/form-data; boundary=${boundary}` },
+      body,
+    });
+  } catch (err) {
+    console.error('[Telegram] QR photo send error:', err.message);
+    // Fallback: send QR as a link
+    await sendTelegramMessage(chatId, `📲 *Your QR code:* ${BASE_URL}/booking/${chatId}/qr`);
+  }
+}
 
 // ─── Webhook endpoint ────────────────────────────────────────
 router.post('/webhook', async (req, res) => {
@@ -122,10 +213,14 @@ router.post('/webhook', async (req, res) => {
 
     sendAction(chatId, 'typing');
 
+    // Look up linked ScanGym account
+    const linkedUser = await lookupLinkedUser(msg.from.id);
+
     const response = await handleMessage(userId, input, {
       userName,
       platform: 'telegram',
       chatId,
+      linkedUser, // Pass linked user context to message handler
     });
 
     // If response has gym data, store for pagination and add buttons
@@ -134,8 +229,33 @@ router.post('/webhook', async (req, res) => {
         gyms: response.data.gyms,
         offset: 5,
         lastActive: Date.now(),
+        telegramUserId: msg.from.id,
       });
-      await sendWithButtons(chatId, response.text, getGymResultButtons(response.data.gyms));
+      await sendWithButtons(chatId, response.text, getGymResultButtons(response.data.gyms, linkedUser));
+    } else if (response.data && response.data.booking) {
+      // Booking was created (guest flow) — if linked user, offer to pay with saved card
+      if (linkedUser && linkedUser.stripe_customer_id) {
+        const cards = await getSavedCards(linkedUser.user_id);
+        if (cards.length > 0) {
+          const session = sessions.get(chatId) || {};
+          session.pendingPayment = {
+            booking: response.data.booking,
+            linkedUserId: linkedUser.user_id,
+          };
+          session.lastActive = Date.now();
+          sessions.set(chatId, session);
+
+          const payButtons = cards.slice(0, 3).map(c => ({
+            text: `💳 Pay with ${c.label}`,
+            callback_data: `pay_${c.id}_${response.data.booking.id}`,
+          }));
+          payButtons.push({ text: '🌐 Pay on website', url: `${BASE_URL}/booking/${response.data.booking.id}/pay` });
+
+          await sendWithButtons(chatId, response.text + `\n\n💳 *Pay instantly with your saved card:*`, [payButtons]);
+          return;
+        }
+      }
+      await sendTelegramMessage(chatId, response.text);
     } else if (input === 'help' || input === '/start') {
       await sendWithButtons(chatId, response.text, getMainMenuButtons());
     } else {
@@ -220,12 +340,118 @@ async function handleCallbackQuery(query) {
     const gymIdx = parseInt(data.split('_')[1]) - 1;
     const session = sessions.get(chatId);
     if (session && session.gyms && session.gyms[gymIdx]) {
+      // Look up linked user for booking flow
+      const linkedUser = await lookupLinkedUser(query.from.id);
       const response = await handleMessage(`telegram:${query.from.id}`, `Book gym ${gymIdx + 1} for tomorrow`, {
         platform: 'telegram',
         userName: query.from.first_name,
+        linkedUser,
       });
+
+      // If linked user has saved cards, offer instant payment
+      if (response.data?.booking && linkedUser?.stripe_customer_id) {
+        const cards = await getSavedCards(linkedUser.user_id);
+        if (cards.length > 0) {
+          const s = session || {};
+          s.pendingPayment = { booking: response.data.booking, linkedUserId: linkedUser.user_id };
+          s.lastActive = Date.now();
+          sessions.set(chatId, s);
+
+          const payRow = cards.slice(0, 2).map(c => ({
+            text: `💳 ${c.label}`, callback_data: `pay_${c.id}_${response.data.booking.id}`,
+          }));
+          payRow.push({ text: '🌐 Website', url: `${BASE_URL}/booking/${response.data.booking.id}/pay` });
+          await sendWithButtons(chatId, response.text + '\n\n💳 *Pay now with saved card:*', [payRow]);
+          return;
+        }
+      }
       await sendTelegramMessage(chatId, response.text);
     }
+
+  // ── PAY WITH SAVED CARD — bot-checkout flow ──
+  } else if (data.startsWith('pay_')) {
+    const parts = data.split('_');
+    // Format: pay_{cardId}_{bookingId} — cardId may contain underscores
+    const bookingId = parts[parts.length - 1];
+    const cardId = parts.slice(1, -1).join('_');
+
+    const session = sessions.get(chatId);
+    if (!session?.pendingPayment) {
+      await sendTelegramMessage(chatId, '⏱ This payment link has expired. Please try booking again.');
+      return;
+    }
+
+    const { booking, linkedUserId } = session.pendingPayment;
+
+    await sendAction(chatId, 'typing');
+    await sendTelegramMessage(chatId, '💳 Processing payment...');
+
+    const result = await executeBotCheckout({
+      userId: linkedUserId,
+      gymId: booking.gymId,
+      date: booking.date,
+      time: booking.time || 'anytime',
+      cardId,
+    });
+
+    if (result.success) {
+      // Clear pending payment
+      session.pendingPayment = null;
+      sessions.set(chatId, session);
+
+      // Send booking confirmation
+      const confirmText = `━━━━━━━━━━━━━━━━\n`
+        + `✅ *Booking Confirmed!*\n`
+        + `━━━━━━━━━━━━━━━━\n\n`
+        + `🏋️ *${result.booking.gymName}*\n`
+        + `📅 ${result.booking.date}\n`
+        + `⏰ ${result.booking.time}\n`
+        + `💰 ${result.booking.currencySymbol || '£'}${typeof result.booking.price === 'number' ? result.booking.price.toFixed(2) : result.booking.price}\n`
+        + `💳 Charged to ${result.cardUsed}\n`
+        + `🔖 Code: *${result.booking.bookingCode}*\n\n`
+        + `📲 *Your QR code is below!*\n`
+        + `Scan at the gym entrance — no reception needed! 🔑\n\n`
+        + `⏳ Free cancel: up to 2 hours before.\n`
+        + `To cancel: \"Cancel ${result.booking.bookingCode}\"\n\n`
+        + `Have an amazing workout! 💪🔥`;
+
+      await sendTelegramMessage(chatId, confirmText);
+
+      // Send QR code as photo
+      if (result.qr?.dataUrl) {
+        await sendQRPhoto(chatId, result.qr.dataUrl,
+          `🎟 QR Code for *${result.booking.gymName}*\n📅 ${result.booking.date} at ${result.booking.time}\n\nShow this at the gym entrance!`
+        );
+      }
+    } else {
+      // Payment failed
+      let errorMsg = '❌ *Payment failed*\n\n';
+      if (result.error === 'no_saved_card') {
+        errorMsg += '💳 No saved card found.\n\nPlease add a payment method at scangym.com first, then try again.';
+      } else if (result.error === 'sca_required') {
+        errorMsg += `🔐 Your card requires 3D Secure verification.\n\nPlease complete this booking on the website:\n${BASE_URL}/booking/${bookingId}/pay`;
+      } else if (result.error === 'duplicate') {
+        errorMsg += '📋 You already have a booking at this gym for this date/time!';
+      } else {
+        errorMsg += `${result.message || result.error || 'Unknown error'}\n\nTry again or book at scangym.com`;
+      }
+      await sendTelegramMessage(chatId, errorMsg);
+    }
+
+  // ── CONNECT ACCOUNT — prompt user to link Telegram to ScanGym ──
+  } else if (data === 'connect_account') {
+    await sendWithButtons(chatId,
+      '🔗 *Connect your ScanGym account*\n\n'
+      + 'Link your Telegram to ScanGym to:\n'
+      + '• 💳 Pay with your saved card\n'
+      + '• 📲 Get QR codes right here in Telegram\n'
+      + '• 📋 View your bookings\n\n'
+      + '1. Log in at scangym.com\n'
+      + '2. Go to Channels → Telegram\n'
+      + '3. Tap "Connect" — done!\n\n'
+      + 'Or tap below to open the website:',
+      [[{ text: '🔗 Connect at scangym.com', url: `${BASE_URL}/channels` }]]
+    );
   }
 }
 
@@ -276,7 +502,7 @@ function getMainMenuButtons() {
   ];
 }
 
-function getGymResultButtons(gyms) {
+function getGymResultButtons(gyms, linkedUser) {
   const buttons = [];
   
   // Book buttons for top 3 gyms
@@ -289,6 +515,13 @@ function getGymResultButtons(gyms) {
   // Show more button if there are more gyms
   if (gyms.length > 5) {
     buttons.push([{ text: `📋 Show more gyms (${gyms.length - 5} more)`, callback_data: 'show_more' }]);
+  }
+  
+  // If user is not linked, show connect prompt
+  if (!linkedUser) {
+    buttons.push([
+      { text: '🔗 Connect account (1-tap booking)', callback_data: 'connect_account' },
+    ]);
   }
   
   buttons.push([

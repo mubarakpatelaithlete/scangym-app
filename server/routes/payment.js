@@ -1087,6 +1087,274 @@ router.post('/confirm-sca', authenticateUser, express.json(), async (req, res) =
 //     After this payment, card is AUTO-SAVED for future 1-tap bookings.
 // ═══════════════════════════════════════════════════════════════════════════
 
+// ═══════════════════════════════════════════════════════════
+//  BOT-CHECKOUT — Server-to-server 1-tap booking for Telegram/WhatsApp
+//  Like quick-checkout but authenticated by internal bot secret, not session.
+//  Looks up user by ID, charges saved card, returns QR data URL.
+// ═══════════════════════════════════════════════════════════
+
+/**
+ * POST /api/payment/bot-checkout
+ * Internal endpoint for chatbot adapters (Telegram, WhatsApp, etc.)
+ * Body: { userId, gymId, placeId, date, time, cardId?, referral_code?, botSecret }
+ * Returns: { success, booking, qr } — same shape as quick-checkout
+ */
+router.post('/bot-checkout', express.json(), async (req, res) => {
+  let booking = null;
+  try {
+    if (!stripe) return res.status(500).json({ error: 'Payment not configured' });
+
+    // Auth: must be called by internal bot with shared secret
+    const botSecret = req.body.botSecret || req.headers['x-bot-secret'];
+    if (!botSecret || botSecret !== (process.env.BOT_CHECKOUT_SECRET || process.env.ADMIN_IMPORT_SECRET)) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    const { userId, gymId, placeId, date, cardId, referral_code } = req.body;
+    let { time } = req.body;
+    if (!userId || !date) return res.status(400).json({ error: 'userId and date required' });
+    if (!gymId && !placeId) return res.status(400).json({ error: 'gymId or placeId required' });
+
+    // Resolve time
+    if (!time || time === 'anytime') {
+      const nextH = Math.min(new Date().getHours() + 1, 22);
+      time = String(nextH).padStart(2, '0') + ':00';
+    }
+
+    // Get user + Stripe customer
+    const userResult = await pool.query(
+      'SELECT id, stripe_customer_id, email, phone_number, first_name FROM public.users WHERE id = $1',
+      [userId]
+    );
+    if (userResult.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+    const user = userResult.rows[0];
+
+    if (!user.stripe_customer_id) {
+      return res.status(400).json({ error: 'no_saved_card', message: 'No payment method on file. Please add a card at scangym.com first.' });
+    }
+
+    // Get default card or specified card
+    let paymentMethodId = cardId;
+    if (!paymentMethodId) {
+      const customer = await stripe.customers.retrieve(user.stripe_customer_id);
+      paymentMethodId = customer.invoice_settings?.default_payment_method;
+      if (!paymentMethodId) {
+        const methods = await stripe.paymentMethods.list({
+          customer: user.stripe_customer_id, type: 'card', limit: 1,
+        });
+        paymentMethodId = methods.data[0]?.id;
+      }
+    }
+    if (!paymentMethodId) {
+      return res.status(400).json({ error: 'no_saved_card', message: 'No saved card found. Please add a card at scangym.com.' });
+    }
+
+    // Get card details for display
+    let cardLabel = 'Saved card';
+    try {
+      const pm = await stripe.paymentMethods.retrieve(paymentMethodId);
+      if (pm.card) cardLabel = `${pm.card.brand?.toUpperCase()} ••${pm.card.last4}`;
+    } catch (e) { /* non-fatal */ }
+
+    // Resolve gym
+    let dbGymId = gymId;
+    if (placeId && (!gymId || isNaN(parseInt(gymId)))) {
+      const ensureResult = await pool.query('SELECT id FROM public.gyms WHERE place_id = $1', [placeId]);
+      if (ensureResult.rows.length > 0) dbGymId = ensureResult.rows[0].id;
+      else return res.status(404).json({ error: 'Gym not found' });
+    }
+
+    const gymResult = await pool.query('SELECT id, name, address, country FROM public.gyms WHERE id = $1', [dbGymId]);
+    if (gymResult.rows.length === 0) return res.status(404).json({ error: 'Gym not found' });
+    const g = gymResult.rows[0];
+
+    // Resolve times
+    const [hours, mins] = time.split(':').map(Number);
+    const endHour = Math.min(hours + 1, 23);
+    const startTime = time;
+    const endTime = String(endHour).padStart(2, '0') + ':' + String(mins || 0).padStart(2, '0');
+
+    // Price
+    const dayPrice = pricing.getDayPassPrice(g.country || 'GB');
+    let price = dayPrice.amount;
+    const gymCurrency = dayPrice.currency;
+    let amount = pricing.toStripeAmount(price, gymCurrency);
+
+    // Referral discount
+    if (referral_code) {
+      const discountAmount = parseFloat((price * 0.15).toFixed(2));
+      price = parseFloat((price - discountAmount).toFixed(2));
+      amount = pricing.toStripeAmount(price, gymCurrency);
+    }
+
+    // Clean up stale pending bookings
+    try {
+      await pool.query(
+        `UPDATE public.bookings SET status = 'failed', updated_at = NOW()
+         WHERE user_id = $1 AND status = 'pending' AND created_at < NOW() - INTERVAL '5 minutes'`,
+        [userId]
+      );
+    } catch (e) { /* non-fatal */ }
+
+    // Prevent duplicates
+    const existing = await pool.query(
+      `SELECT id FROM public.bookings
+       WHERE gym_id = $1 AND user_id = $2 AND booking_date = $3 AND start_time = $4
+       AND status IN ('confirmed', 'reserved') LIMIT 1`,
+      [dbGymId, userId, date, startTime]
+    );
+    if (existing.rows.length > 0) {
+      return res.status(409).json({ error: 'duplicate', message: 'You already have a booking at this gym for this date/time.' });
+    }
+
+    // Generate booking code
+    const crypto = require('crypto');
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let bookingCode = '';
+    for (let i = 0; i < 8; i++) {
+      bookingCode += chars[Math.floor(Math.random() * chars.length)];
+      if (i === 3) bookingCode += '-';
+    }
+
+    // Create booking
+    await ensureBookingColumns();
+    const bookingResult = await pool.query(
+      `INSERT INTO public.bookings
+        (gym_id, user_id, booking_date, start_time, end_time, total_amount,
+         platform_fee_amount, booking_type, booking_code, status,
+         user_email, user_name, referral_code, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'bot', $8, 'pending', $9, $10, $11, NOW(), NOW())
+       RETURNING *`,
+      [dbGymId, userId, date, startTime, endTime, price, price * 0.10,
+       bookingCode, user.email || '', user.first_name || 'Bot User', referral_code || null]
+    );
+    booking = bookingResult.rows[0];
+
+    // Charge saved card
+    const intent = await stripe.paymentIntents.create({
+      amount,
+      currency: gymCurrency,
+      customer: user.stripe_customer_id,
+      payment_method: paymentMethodId,
+      off_session: true,
+      confirm: true,
+      metadata: {
+        bookingId: String(booking.id),
+        gymName: g.name,
+        botCheckout: 'true',
+        country: g.country || 'GB',
+      },
+      receipt_email: user.email || undefined,
+    });
+
+    if (intent.status !== 'succeeded') {
+      await pool.query('UPDATE public.bookings SET status = $1, updated_at = NOW() WHERE id = $2', ['failed', booking.id]);
+      return res.status(400).json({ error: 'Payment failed. Card may have been declined.' });
+    }
+
+    // Generate QR
+    const qr = await generate2ScanQR(booking.id, userId, dbGymId);
+
+    // Confirm booking
+    await pool.query(
+      `UPDATE public.bookings SET status = 'confirmed', qr_code = $1, qr_code_url = $2,
+       stripe_payment_intent_id = $3, stripe_payment_status = 'paid', updated_at = NOW()
+       WHERE id = $4`,
+      [qr.token, qr.dataUrl, intent.id, booking.id]
+    );
+
+    // Credit creator commission
+    if (referral_code) booking.referral_code = referral_code;
+    await creditCreatorCommission(booking);
+
+    // Send confirmation email
+    const bookingDate = new Date(booking.booking_date).toLocaleDateString('en-GB');
+    if (user.email) {
+      sendConfirmationEmail({
+        to: user.email, gymName: g.name, date: bookingDate,
+        time: startTime, endTime, price: price.toFixed(2),
+        bookingCode, qrDataUrl: qr.dataUrl, currencySymbol: dayPrice.symbol,
+      }).catch(err => console.error('[Email] Bot checkout email failed:', err.message));
+    }
+
+    console.log(`[Payment] Bot checkout success: booking ${booking.id} at ${g.name} for user ${userId}, charged ${dayPrice.symbol}${price} on ${cardLabel}`);
+
+    res.json({
+      success: true,
+      botCheckout: true,
+      booking: {
+        id: booking.id, gymName: g.name, date: bookingDate,
+        time: startTime, price, bookingCode, status: 'confirmed',
+        currencySymbol: dayPrice.symbol,
+      },
+      qr: {
+        token: qr.token, scanUrl: qr.scanUrl, dataUrl: qr.dataUrl,
+        maxScans: qr.maxScans, scansRemaining: qr.scansRemaining,
+        expiresAt: qr.expiresAt,
+      },
+      cardUsed: cardLabel,
+      message: `⚡ Booked at ${g.name}! Charged ${dayPrice.symbol}${price.toFixed(2)} to ${cardLabel}.`,
+    });
+  } catch (err) {
+    console.error('[Payment] Bot checkout error:', err.message);
+    if (booking) {
+      try { await pool.query('UPDATE public.bookings SET status = $1, updated_at = NOW() WHERE id = $2', ['failed', booking.id]); } catch (e) {}
+    }
+
+    if (err.code === 'authentication_required') {
+      return res.status(402).json({
+        error: 'sca_required',
+        message: 'Your card requires 3D Secure authentication. Please complete this booking at scangym.com.',
+      });
+    }
+
+    res.status(500).json({ error: err.message || 'Payment failed' });
+  }
+});
+
+/**
+ * GET /api/payment/bot-cards
+ * Returns saved cards for a user (used by chatbot to show "Pay with Visa ••4242")
+ * Query: ?userId=xxx&botSecret=xxx
+ */
+router.get('/bot-cards', async (req, res) => {
+  try {
+    const botSecret = req.query.botSecret || req.headers['x-bot-secret'];
+    if (!botSecret || botSecret !== (process.env.BOT_CHECKOUT_SECRET || process.env.ADMIN_IMPORT_SECRET)) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    const { userId } = req.query;
+    if (!userId) return res.status(400).json({ error: 'userId required' });
+
+    const userResult = await pool.query(
+      'SELECT stripe_customer_id FROM public.users WHERE id = $1', [userId]
+    );
+    if (!userResult.rows.length || !userResult.rows[0].stripe_customer_id) {
+      return res.json({ cards: [], message: 'No payment methods on file' });
+    }
+
+    const methods = await stripe.paymentMethods.list({
+      customer: userResult.rows[0].stripe_customer_id,
+      type: 'card',
+    });
+
+    const cards = methods.data.map(pm => ({
+      id: pm.id,
+      brand: pm.card.brand,
+      last4: pm.card.last4,
+      expMonth: pm.card.exp_month,
+      expYear: pm.card.exp_year,
+      label: `${pm.card.brand?.toUpperCase()} ••${pm.card.last4}`,
+    }));
+
+    res.json({ cards });
+  } catch (err) {
+    console.error('[Payment] Bot cards error:', err.message);
+    res.status(500).json({ error: 'Failed to fetch cards' });
+  }
+});
+
 /**
  * POST /api/payment/create-intent
  * Create a Stripe PaymentIntent with a Customer attached.
