@@ -65,9 +65,13 @@ router.get('/', async (req, res) => {
   try {
     const userId = req.user.id;
     // Self-healing: back-pay any affiliate commissions recorded in
-    // creator_referrals that never reached the wallet (pre-fallback
-    // conversions, or wallet upserts that failed silently).
-    try { await reconcileCommissionBackpay(pool, userId); } catch (e) { /* non-blocking */ }
+    // creator_memberships or creator_referrals that never reached the wallet.
+    try {
+      const backpaid = await reconcileCommissionBackpay(pool, userId);
+      if (backpaid > 0) console.log(`[Wallet] Reconciliation credited ${backpaid}p to user ${userId}`);
+    } catch (e) {
+      console.error('[Wallet] Reconciliation error (non-blocking):', e.message);
+    }
     let wallet = await pool.query('SELECT * FROM wallets WHERE user_id = $1', [userId]);
     if (wallet.rows.length === 0) {
       wallet = await pool.query(`
