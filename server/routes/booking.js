@@ -369,8 +369,20 @@ router.post('/cancel', async (req, res) => {
          WHERE b.id = $1 AND b.user_email = $2`,
         [bookingId, email]
       );
+    } else if (email && req.body.bookingCode) {
+      // ChatGPT app / MCP guest cancellation: bookingId + email + bookingCode.
+      // The booking code is only issued to the booking creator (in the create
+      // response and the confirmation email), so this is materially stronger
+      // than email alone while restoring self-service guest cancellation
+      // (OpenAI app review test case: cancel a booking made in ChatGPT).
+      result = await pool.query(
+        `SELECT b.*, g.name as gym_name FROM public.bookings b
+         LEFT JOIN public.gyms g ON b.gym_id = g.id
+         WHERE b.id = $1 AND LOWER(b.user_email) = LOWER($2) AND UPPER(b.booking_code) = UPPER($3)`,
+        [bookingId, email, String(req.body.bookingCode).trim()]
+      );
     } else {
-      return res.status(401).json({ error: 'Please log in to cancel, or contact support at hello@scangym.com' });
+      return res.status(401).json({ error: 'Please log in to cancel, or provide your bookingCode from the confirmation, or contact support at hello@scangym.com' });
     }
 
     if (result.rows.length === 0) {

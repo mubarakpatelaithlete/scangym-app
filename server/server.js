@@ -719,6 +719,10 @@ if (fs.existsSync(FRONTEND_DIR)) {
     res.sendFile(path.join(FRONTEND_DIR, 'about', 'index.html'));
   });
 
+  app.get('/privacy', (req, res) => {
+    res.sendFile(path.join(FRONTEND_DIR, 'privacy', 'index.html'));
+  });
+
   // SPA fallback - serve index.html for all non-API routes
   // UBER PATTERN #4: Inject Cloudflare geolocation + IP geo into HTML for 0ms location detection
   let _indexHtmlCache = null;
