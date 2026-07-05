@@ -57,6 +57,15 @@ function metricBox(value, label, color){
     +'</div>';
 }
 
+// ─── Data-error banner (backend now flags query failures instead of silently returning 0) ───
+function errNote(section){
+  if(!section||!section._error)return '';
+  return '<div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:10px;padding:8px 12px;margin-bottom:10px">'
+    +'<p style="color:#ef4444;font-size:11px;font-weight:700">&#9888; Data error — this card may show zeros. Check server logs.</p>'
+    +'<p style="color:rgba(239,68,68,.6);font-size:10px;margin-top:2px">'+String(section._error).slice(0,140)+'</p>'
+    +'</div>';
+}
+
 // ─── Build the full page HTML ───
 function buildAdminDashboard(d){
   if(!d) return '<div style="padding:40px;text-align:center;color:rgba(255,255,255,.3)">Loading...</div>';
@@ -83,7 +92,8 @@ function buildAdminDashboard(d){
 
   // ═══ 1. TOTAL REGISTRATIONS ═══
   html+=card('👥','Total Registrations','User sign-ups across all channels',
-    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">'
+    errNote(reg)
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">'
     +metricBox(fmt(reg.total),'All Time','#FF6D00')
     +metricBox(fmt(reg.inPeriod),'This Period','#3b82f6')
     +metricBox(growthArrow(reg.growthPercent),'vs Previous','#fff')
@@ -93,8 +103,9 @@ function buildAdminDashboard(d){
   );
 
   // ═══ 2. ACTIVE USERS ═══
-  html+=card('🟢','Active Users','DAU · WAU · MAU · Stickiness',
-    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:10px">'
+  html+=card('🟢','Active Users','DAU · WAU · MAU · Stickiness (bots & health checks excluded)',
+    errNote(au)
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:10px">'
     +metricBox(fmt(au.dau),'DAU','#22c55e')
     +metricBox(fmt(au.wau),'WAU','#3b82f6')
     +metricBox(fmt(au.mau),'MAU','#a855f7')
@@ -129,10 +140,12 @@ function buildAdminDashboard(d){
     });
     topGymsStr+='</div>';
   }
-  html+=card('📊','Activity Levels','Bookings · Page views · Peak hours',
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">'
+  html+=card('📊','Activity Levels','Paid bookings · Real page views · Peak hours (UK time)',
+    errNote(act)
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">'
     +metricBox(fmt(act.totalBookingsInPeriod),'Bookings','#FF6D00')
     +metricBox(fmt(act.totalPageViewsInPeriod),'Page Views','#3b82f6')
+    +metricBox(fmt(act.totalApiCallsInPeriod),'API Calls','#a855f7')
     +'</div>'
     +'<p style="color:rgba(255,255,255,.4);font-size:11px;font-weight:600;margin-bottom:4px">📈 Booking Trend</p>'
     +sparkBars(act.bookingTrend,'count','rgba(255,109,0,.5)',50)
@@ -176,14 +189,19 @@ function buildAdminDashboard(d){
       cohortHtml+='</tr>';
     });
     cohortHtml+='</table></div>';
+  } else if(d.cohortRetentionError){
+    cohortHtml='<div style="color:#ef4444;font-size:12px;padding:20px;text-align:center">&#9888; Cohort query error: '+String(d.cohortRetentionError).slice(0,120)+'</div>';
   } else {
     cohortHtml='<div style="color:rgba(255,255,255,.2);font-size:12px;padding:20px;text-align:center">No cohort data yet — need more sign-ups & bookings</div>';
   }
   html+=card('🔄','Cohort Retention','Weekly user return rates',cohortHtml,'rgba(168,85,247,.15)');
 
   // ═══ 5. REVENUE ═══
-  html+=card('💰','Revenue','Income breakdown & trends',
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">'
+  var revNote='';
+  if(rev.fxNote){revNote='<p style="color:rgba(255,255,255,.3);font-size:10px;margin-top:8px">'+rev.fxNote+'</p>';}
+  html+=card('💰','Revenue','Actual charged amounts (not list prices)',
+    errNote(rev)
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">'
     +metricBox(fmtGBP(rev.totalAllTime),'All Time','#FF6D00')
     +metricBox(fmtGBP(rev.inPeriod),'This Period','#3b82f6')
     +'</div>'
@@ -193,7 +211,8 @@ function buildAdminDashboard(d){
     +metricBox(growthArrow(rev.growthPercent),'vs Previous','#fff')
     +'</div>'
     +'<p style="color:rgba(255,255,255,.4);font-size:11px;font-weight:600;margin-bottom:4px">📈 Revenue Trend</p>'
-    +sparkBars(rev.trend,'revenue','rgba(255,109,0,.6)',60),
+    +sparkBars(rev.trend,'revenue','rgba(255,109,0,.6)',60)
+    +revNote,
     'rgba(255,109,0,.15)'
   );
 
@@ -220,7 +239,8 @@ function buildAdminDashboard(d){
       +'</div>';
   }
   html+=card('⭐','Net Promoter Score',nps.note||'Customer satisfaction metric',
-    '<div style="text-align:center;margin-bottom:10px">'
+    errNote(nps)
+    +'<div style="text-align:center;margin-bottom:10px">'
     +'<p style="color:'+npsColor+';font-size:48px;font-weight:900;line-height:1">'+npsDisplay+'</p>'
     +'<p style="color:rgba(255,255,255,.3);font-size:11px;margin-top:4px">'+fmt(nps.totalResponses)+' responses</p>'
     +'</div>'

@@ -18,7 +18,7 @@ const pool = require('./db');
         funnel_step VARCHAR(30),
         path VARCHAR(500),
         method VARCHAR(10),
-        user_id INTEGER,
+        user_id VARCHAR(64),
         session_id VARCHAR(100),
         user_agent TEXT,
         ip_address VARCHAR(50),
@@ -35,6 +35,12 @@ const pool = require('./db');
       const name = col.split(' ')[0];
       try { await pool.query(`ALTER TABLE analytics_events ADD COLUMN IF NOT EXISTS ${col}`); } catch(e) { /* column exists */ }
     }
+    // MIGRATION: user_id was INTEGER but users.id is a UUID string, so every
+    // INSERT for an authenticated request failed silently and no logged-in
+    // activity was ever recorded. Widen to VARCHAR.
+    try {
+      await pool.query(`ALTER TABLE analytics_events ALTER COLUMN user_id TYPE VARCHAR(64) USING user_id::text`);
+    } catch (e) { /* already varchar */ }
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_analytics_created ON analytics_events(created_at DESC)`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_analytics_path ON analytics_events(path)`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_analytics_funnel ON analytics_events(funnel_step)`);
