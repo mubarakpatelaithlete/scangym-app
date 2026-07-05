@@ -878,6 +878,7 @@ router.post('/quick-checkout', async (req, res) => {
         gymName: g.name,
         quickCheckout: 'true',
         country: g.country || 'GB',
+        ...(referral_code ? { referral_code } : {}),
       },
       receipt_email: user.email || undefined,
     });
@@ -1024,7 +1025,8 @@ router.post('/quick-checkout', async (req, res) => {
 
 router.post('/confirm-sca', authenticateUser, express.json(), async (req, res) => {
   try {
-    const { paymentIntentId, gymId, placeId, date, time, email, gymName, gymAddress, passType } = req.body;
+    // FIX: Accept referral_code from request body (was missing — commissions lost on 3DS payments)
+    const { paymentIntentId, gymId, placeId, date, time, email, gymName, gymAddress, passType, referral_code } = req.body;
     if (!paymentIntentId) return res.status(400).json({ error: 'paymentIntentId required' });
 
     // Verify payment intent succeeded
@@ -1033,12 +1035,15 @@ router.post('/confirm-sca', authenticateUser, express.json(), async (req, res) =
       return res.status(400).json({ error: 'Payment not completed', status: pi.status });
     }
 
-    // Create booking
+    // FIX: Recover referral_code from PaymentIntent metadata if not in body
+    const effectiveReferral = referral_code || pi.metadata?.referral_code || null;
+
+    // Create booking (FIX: include referral_code in INSERT)
     const bookingResult = await pool.query(
-      `INSERT INTO bookings (user_id, gym_id, place_id, date, time, status, payment_intent_id, amount_pence, currency, pass_type, customer_email, gym_name, gym_address, created_at)
-       VALUES ($1, $2, $3, $4, $5, 'confirmed', $6, $7, $8, $9, $10, $11, $12, NOW())
+      `INSERT INTO bookings (user_id, gym_id, place_id, date, time, status, payment_intent_id, amount_pence, currency, pass_type, customer_email, gym_name, gym_address, referral_code, created_at)
+       VALUES ($1, $2, $3, $4, $5, 'confirmed', $6, $7, $8, $9, $10, $11, $12, $13, NOW())
        RETURNING *`,
-      [req.user.id, gymId || null, placeId || null, date, time || '00:00', paymentIntentId, pi.amount, (pi.currency || 'gbp').toLowerCase(), passType || 'day', email, gymName, gymAddress]
+      [req.user.id, gymId || null, placeId || null, date, time || '00:00', paymentIntentId, pi.amount, (pi.currency || 'gbp').toLowerCase(), passType || 'day', email, gymName, gymAddress, effectiveReferral]
     ).catch(async () => {
       // Fallback if columns missing
       const r = await pool.query(
@@ -1067,7 +1072,13 @@ router.post('/confirm-sca', authenticateUser, express.json(), async (req, res) =
       console.error('[SCA] QR generation error:', qrErr.message);
     }
 
-    console.log(`[SCA] Booking ${booking.id} confirmed after 3DS auth — PI ${paymentIntentId}`);
+    // FIX: Credit creator commission for 3DS-authenticated bookings (was completely missing!)
+    if (effectiveReferral) {
+      booking.referral_code = effectiveReferral;
+    }
+    await creditCreatorCommission(booking);
+
+    console.log(`[SCA] Booking ${booking.id} confirmed after 3DS auth — PI ${paymentIntentId}${effectiveReferral ? ` (referral: ${effectiveReferral})` : ''}`);
 
     res.json({
       success: true,
@@ -1217,6 +1228,16 @@ router.post('/confirm-intent', async (req, res) => {
       [qr.token, qr.dataUrl, paymentIntentId, booking.id]
     );
 
+    // FIX: Recover referral_code from PaymentIntent metadata if booking has none
+    // (Stripe Elements path stores referral in metadata but booking.referral_code may be null)
+    if (!booking.referral_code && intent.metadata?.referral_code) {
+      booking.referral_code = intent.metadata.referral_code;
+      // Persist to DB so future queries see it
+      await pool.query(
+        'UPDATE public.bookings SET referral_code = $1 WHERE id = $2',
+        [booking.referral_code, booking.id]
+      ).catch(() => {});
+    }
     // Credit creator commission
     await creditCreatorCommission(booking);
 
