@@ -181,14 +181,7 @@
       #sg-yt-overlay .sg-yt-info p{
         color:rgba(255,255,255,.4);font-size:12px;margin:4px 0 0;
       }
-      #sg-yt-overlay .sg-yt-open-yt{
-        margin-top:12px;padding:10px 24px;
-        background:rgba(255,0,0,.85);color:#fff;
-        border:none;border-radius:20px;
-        font-size:13px;font-weight:700;cursor:pointer;
-        display:inline-flex;align-items:center;gap:6px;
-      }
-      #sg-yt-overlay .sg-yt-open-yt:active{opacity:.8;}
+      /* Open in YouTube button removed per product decision */
       /* Gradient overlays */
       .reel::before{
         content:'';position:absolute;top:0;left:0;right:0;height:120px;
@@ -579,9 +572,7 @@
       <div class="sg-yt-info">
         <h4 id="sg-yt-title"></h4>
         <p id="sg-yt-channel"></p>
-        <button class="sg-yt-open-yt" id="sg-yt-open-btn" onclick="window._sgOpenInYouTube()">
-          ▶ Open in YouTube
-        </button>
+        <!-- Open in YouTube button removed -->
       </div>
     </div>
 
@@ -3206,9 +3197,7 @@
         if(active) try{ active.play(); }catch(e){}
       };
 
-      window._sgOpenInYouTube = function(){
-        if(_currentYtUrl) window.open(_currentYtUrl, '_blank');
-      };
+      // _sgOpenInYouTube removed — content stays within ScanGym
 
       // Close overlay on Escape key
       document.addEventListener('keydown', function(e){
