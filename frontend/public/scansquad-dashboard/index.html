@@ -98,10 +98,12 @@
 
     async function init() {
       try {
-        const [memberRes, uploadsRes, landingRes] = await Promise.all([
+        // FIX: Also fetch wallet balance (triggers commission back-pay reconciliation)
+        const [memberRes, uploadsRes, landingRes, walletRes] = await Promise.all([
           fetch('/api/creators/me').then(r => r.json()),
           fetch('/api/creators/uploads?limit=50').then(r => r.json()).catch(() => ({ uploads: [] })),
           fetch('/api/creators/landing-pages').then(r => r.json()).catch(() => ({ pages: [] })),
+          fetch('/api/wallet', { credentials: 'include' }).then(r => r.ok ? r.json() : null).catch(() => null),
         ]);
 
         const m = memberRes.membership || memberRes;
@@ -112,6 +114,8 @@
         const conversions = m.total_conversions || 0;
         const uploads = uploadsRes.uploads || [];
         const pages = landingRes.pages || landingRes.landingPages || [];
+        const walletBalance = walletRes ? walletRes.balance : 0;
+        const walletPence = walletRes ? walletRes.balancePence : 0;
 
         let html = '';
 
@@ -135,13 +139,26 @@
         }
         html += '</div>';
 
+        // === FIX: WALLET BALANCE CARD (was missing from ScanSquad dashboard) ===
+        html += `<div style="background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:20px;padding:20px 24px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;position:relative;overflow:hidden">
+          <div style="position:absolute;top:-20px;right:-20px;width:80px;height:80px;background:rgba(255,255,255,.1);border-radius:50%"></div>
+          <div>
+            <div style="color:rgba(255,255,255,.7);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">💰 ScanGym Wallet</div>
+            <div style="color:#fff;font-size:32px;font-weight:900;letter-spacing:-1px">£${walletBalance.toFixed(2)}</div>
+            <div style="color:rgba(255,255,255,.5);font-size:11px;margin-top:4px">Available to withdraw</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;z-index:1">
+            ${walletPence >= 100 ? '<a href="/wallet" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:12px;padding:10px 20px;font-size:13px;font-weight:700;cursor:pointer;text-decoration:none;text-align:center;backdrop-filter:blur(4px)">💳 Withdraw</a>' : '<span style="color:rgba(255,255,255,.5);font-size:11px">Min £1 to withdraw</span>'}
+          </div>
+        </div>`;
+
         // === STATS ===
         html += '<div class="section-title">📊 Your Stats</div>';
         html += '<div class="stats">';
         html += statCard(fmt(referrals), 'Referrals');
         html += statCard(fmt(conversions), 'Conversions');
         html += statCard(`£${(earnings / 100).toFixed(2)}`, 'Earnings');
-        html += statCard('25%', 'Commission Rate');
+        html += statCard(`£${walletBalance.toFixed(2)}`, 'Wallet');
         html += '</div>';
 
         // === PERKS ===
