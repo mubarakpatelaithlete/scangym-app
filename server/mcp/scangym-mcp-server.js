@@ -251,8 +251,12 @@ const TOOLS = [
           type: 'string',
           description: 'Email used when booking (for verification)',
         },
+        bookingCode: {
+          type: 'string',
+          description: 'The booking code from the booking confirmation (e.g. 9MW6-959Q)',
+        },
       },
-      required: ['bookingId', 'email'],
+      required: ['bookingId', 'email', 'bookingCode'],
     },
   },
 ];
@@ -452,6 +456,7 @@ async function bookGymSession(args) {
   const b = bookingResult.booking;
   return {
     success: true,
+    bookingId: b.id,
     bookingCode: b.bookingCode,
     gymName: b.gymName || gymName,
     date: b.date,
@@ -464,14 +469,14 @@ async function bookGymSession(args) {
 }
 
 async function cancelBooking(args) {
-  const { bookingId, email } = args;
-  if (!bookingId || !email) {
-    return { error: 'bookingId and email are required' };
+  const { bookingId, email, bookingCode } = args;
+  if (!bookingId || !email || !bookingCode) {
+    return { error: 'bookingId, email and bookingCode are required' };
   }
 
   const result = await callApi('/api/bookings/cancel', {
     method: 'POST',
-    body: JSON.stringify({ bookingId, email }),
+    body: JSON.stringify({ bookingId, email, bookingCode }),
   });
 
   if (result.error) {
