@@ -582,13 +582,17 @@ window._peSubmitClaim=async function(placeId){
     }
     if(typeof window._ctaCloseSheet==='function')window._ctaCloseSheet();
     _peToast('Gym claimed! 🎉 Verifying ownership…');
-    // Auto-trigger ownership verification after claim
+    // FIX: Clear stale cached gym id so verification targets the right gym
+    window._partnerGymId=null;
+    // Auto-trigger ownership verification after claim — pass the gym id
+    // directly so the OTP goes to THIS gym's registered number, not a
+    // previously cached gym.
     setTimeout(function(){
       _peLoadAndRender();
-      // Trigger the batch3 ownership verification flow if available
+      // Trigger the batch3 ownership verification flow with explicit gymId
       setTimeout(function(){
         if(typeof window._sgB3VerifyOwnership==='function'){
-          window._sgB3VerifyOwnership();
+          window._sgB3VerifyOwnership(gymId);
         }
       },800);
     },600);
