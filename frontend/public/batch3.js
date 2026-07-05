@@ -22,12 +22,20 @@ function toast(m,t,d){if(window.sgToast)sgToast(m,t||'success',d||2500);}
 function post(u,b){return fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(b||{})}).then(function(r){return r.json().then(function(d){d.__ok=r.ok;return d;});});}
 
 async function myGymId(){
-  if(window._partnerGymId)return window._partnerGymId;
+  // FIX: Never use a stale cache — always fetch fresh from dashboard.
+  // The old code cached window._partnerGymId permanently, so after claiming
+  // Gym A, every subsequent verification (for Gym B, C, …) would still
+  // resolve to Gym A's id — sending the OTP to Gym A's phone every time.
   try{
     var r=await fetch('/api/gym-partner/dashboard',{credentials:'include'});
     if(!r.ok)return null;
     var d=await r.json();
-    if(d.gyms&&d.gyms.length){window._partnerGymId=d.gyms[0].id;return d.gyms[0].id;}
+    if(d.gyms&&d.gyms.length){
+      // Return the most recently claimed gym (last in list) as a sensible default
+      var latest=d.gyms[d.gyms.length-1];
+      window._partnerGymId=latest.id;
+      return latest.id;
+    }
   }catch(e){}
   return null;
 }
@@ -35,8 +43,11 @@ async function myGymId(){
 /* ════════════════════════════════════════════════════════════════════
    1) OWNERSHIP PROOF (Zomato-style OTP to registered business number)
    ════════════════════════════════════════════════════════════════════ */
-window._sgB3VerifyOwnership=async function(){
-  var gymId=await myGymId();
+window._sgB3VerifyOwnership=async function(overrideGymId){
+  // FIX: Accept an explicit gymId so the caller (e.g. _peSubmitClaim after
+  // claiming a specific gym) can target the correct gym directly, instead of
+  // always falling back to myGymId() which previously returned a stale cache.
+  var gymId=overrideGymId||await myGymId();
   if(!gymId){toast('Claim your gym first','info',2500);return;}
   var head='<p style="font-size:18px;font-weight:800;color:#fff;margin:0 0 6px;text-align:left">\uD83D\uDEE1\uFE0F Verify ownership</p>';
   window._sgOpenSheet('sg-own-sheet',head
@@ -143,9 +154,12 @@ window._sgB3CheckOwnOtp=async function(gymId){
 };
 // Badge / entry chip on Partner tab
 var _ownState=null; // null unknown, true verified, false not
+var _ownCheckedGymId=null; // which gym was the last check for
 async function checkOwnState(){
-  if(_ownState!==null)return;
   var gymId=await myGymId();
+  // Re-check if the active gym changed (partner claimed a new gym)
+  if(_ownState!==null&&_ownCheckedGymId===gymId)return;
+  _ownCheckedGymId=gymId;
   if(!gymId){_ownState=false;return;}
   try{if(localStorage.getItem('sg_own_verified_'+gymId)){_ownState=true;return;}}catch(e){}
   try{
