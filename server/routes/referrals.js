@@ -192,14 +192,25 @@ router.post('/convert', async (req, res) => {
     }
 
     // Update creator_memberships totals
+    // Try landing page slug first, then fall back to users.referral_handle
     try {
-      await pool.query(
+      const cmResult = await pool.query(
         `UPDATE creator_memberships
          SET total_earnings_pence = total_earnings_pence + $1,
              total_conversions = total_conversions + 1
          WHERE user_id = (SELECT creator_user_id FROM creator_landing_pages WHERE slug = $2 LIMIT 1)`,
         [commission, creatorHandle]
       );
+      // If no landing page matched, try users.referral_handle
+      if (cmResult.rowCount === 0) {
+        await pool.query(
+          `UPDATE creator_memberships
+           SET total_earnings_pence = total_earnings_pence + $1,
+               total_conversions = total_conversions + 1
+           WHERE user_id = (SELECT id::text FROM public.users WHERE LOWER(referral_handle) = LOWER($2) LIMIT 1)`,
+          [commission, creatorHandle]
+        );
+      }
     } catch (e) {
       console.error('[Referrals] Failed to update creator earnings:', e.message);
     }
@@ -212,7 +223,7 @@ router.post('/convert', async (req, res) => {
     let walletCredited = false;
     try {
       // Resolve the user behind the handle: Creator landing page slug first,
-      // then fall back to users.referral_handle (regular-user affiliate links).
+      // then fall back to users.referral_handle, then creator_referrals email.
       let creatorUserId = null;
       const creatorUser = await pool.query(
         'SELECT creator_user_id FROM creator_landing_pages WHERE slug = $1 LIMIT 1',
@@ -226,6 +237,19 @@ router.post('/convert', async (req, res) => {
           [creatorHandle]
         );
         if (u.rows.length > 0 && u.rows[0].id) creatorUserId = u.rows[0].id;
+      }
+      // Last resort: match creator_referrals.creator_email → users.email
+      if (!creatorUserId) {
+        try {
+          const emailMatch = await pool.query(
+            `SELECT u.id FROM public.users u
+             JOIN creator_referrals cr ON LOWER(cr.creator_email) = LOWER(u.email)
+             WHERE cr.creator_handle = $1 AND cr.creator_email IS NOT NULL
+             LIMIT 1`,
+            [creatorHandle]
+          );
+          if (emailMatch.rows.length > 0) creatorUserId = emailMatch.rows[0].id;
+        } catch (e) { /* ignore */ }
       }
       if (creatorUserId) {
         // Constraint-free upsert via shared helper (old ON CONFLICT version
