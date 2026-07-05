@@ -210,4 +210,77 @@ async function reconcileCommissionBackpay(pool, userId) {
   }
 }
 
-module.exports = { creditWallet, reconcileCommissionBackpay };
+/**
+ * Back-pay partner's share of gym booking revenue that never reached the
+ * wallet. Partners earn 85% of each booking at their claimed gyms. This
+ * is normally only DISPLAYED (gym-partner.js /earnings) but never moves
+ * into the wallet — so the withdraw button (which reads the wallet) shows
+ * "Insufficient balance" even when the partner has real earnings.
+ *
+ * Compares total booking revenue × 85% against wallet 'partner_revenue'
+ * transactions and credits the shortfall once. Advisory-locked, safe to
+ * call on every wallet load.
+ *
+ * @param {object} pool - pg Pool
+ * @returns {number} pence credited (0 if nothing owed or user is not a partner)
+ */
+async function reconcilePartnerRevenue(pool, userId) {
+  if (!userId) return 0;
+
+  // Does the user own any gyms?
+  let gyms;
+  try {
+    gyms = await pool.query(
+      'SELECT id FROM gyms WHERE claimed_by::text = $1::text',
+      [userId]
+    );
+  } catch (e) { return 0; }
+  if (!gyms.rows.length) return 0;
+
+  const gymIds = gyms.rows.map(g => g.id);
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', ['wallet_partner:' + String(userId)]);
+
+    // Total booking revenue at partner's gyms (85% goes to partner)
+    const rev = await client.query(
+      `SELECT COALESCE(SUM((total_amount * 100)::int), 0) AS revenue_pence
+       FROM bookings
+       WHERE gym_id = ANY($1) AND status IN ('confirmed', 'completed')`,
+      [gymIds]
+    );
+    const partnerSharePence = Math.floor(parseInt(rev.rows[0].revenue_pence || 0, 10) * 0.85);
+
+    // Already credited to wallet under 'partner_revenue' reference type
+    const credited = await client.query(
+      `SELECT COALESCE(SUM(amount_pence), 0) AS pence
+       FROM wallet_transactions
+       WHERE user_id = $1 AND reference_type = 'partner_revenue'`,
+      [userId]
+    );
+    const alreadyCredited = parseInt(credited.rows[0].pence || 0, 10);
+
+    const shortfall = partnerSharePence - alreadyCredited;
+    if (shortfall > 0) {
+      await creditWallet(
+        client, userId, shortfall,
+        `🏋️ Partner revenue: £${(shortfall / 100).toFixed(2)} (85% of gym bookings)`,
+        'partner_revenue'
+      );
+      console.log(`[WalletPartner] Credited ${shortfall}p partner revenue to user ${userId} (${gymIds.length} gyms)`);
+    }
+
+    await client.query('COMMIT');
+    return Math.max(shortfall, 0);
+  } catch (e) {
+    await client.query('ROLLBACK').catch(() => {});
+    console.error('[WalletPartner] Partner revenue reconciliation failed (non-blocking):', e.message);
+    return 0;
+  } finally {
+    client.release();
+  }
+}
+
+module.exports = { creditWallet, reconcileCommissionBackpay, reconcilePartnerRevenue };
