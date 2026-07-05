@@ -1,21 +1,19 @@
 /**
  * Wallet credit helpers — shared by payment.js, referrals.js and wallet.js.
  *
- * Why this exists (bug: "Earned £1.25 as affiliate but wallet shows zero"):
- * 1. The old wallet auto-credit used `INSERT ... ON CONFLICT (user_id)` on
- *    the wallets table. If production `wallets.user_id` has no UNIQUE
- *    constraint, Postgres rejects the statement ("no unique or exclusion
- *    constraint matching the ON CONFLICT specification") and the error was
- *    swallowed by a non-blocking catch — so the ledger (creator_referrals)
- *    recorded the commission but the wallet was never credited.
- * 2. Conversions that happened BEFORE the users.referral_handle fallback
- *    shipped resolved no user at all — commission on paper, no wallet credit,
- *    and nothing ever back-paid the gap.
+ * Root cause of "Earned £X but wallet shows £0":
+ * The old reconciliation only checked creator_referrals (the click→convert
+ * ledger), but commission can also be recorded directly in
+ * creator_memberships.total_earnings_pence. If the creator_referrals entries
+ * have a mismatched handle or are missing, reconciliation found £0 shortfall.
  *
- * creditWallet() is a constraint-free upsert (UPDATE first, INSERT if no
- * row), and reconcileCommissionBackpay() heals historical gaps by comparing
- * the commission ledger against wallet_transactions and crediting the
- * shortfall exactly once (advisory-locked).
+ * Fix: reconcileCommissionBackpay() now uses TWO sources of truth:
+ * 1. creator_referrals — the detailed ledger (handle-based lookup)
+ * 2. creator_memberships.total_earnings_pence — the summary (user_id lookup)
+ * It takes the HIGHER of the two and credits the difference to the wallet.
+ *
+ * creditWallet() remains a constraint-free upsert (UPDATE first, INSERT if
+ * no row), safe regardless of whether wallets.user_id has a UNIQUE constraint.
  */
 
 /**
@@ -71,30 +69,21 @@ async function creditWallet(db, userId, amountPence, description, referenceType)
 }
 
 /**
- * Back-pay affiliate commissions that were recorded in creator_referrals but
- * never reached the wallet. Compares SUM(converted commissions) across all of
- * the user's handles vs SUM(wallet 'commission' transactions) and credits the
- * shortfall once. Safe to call on every wallet load: advisory xact lock
- * prevents double-credit under concurrent requests.
+ * Back-pay affiliate commissions that were recorded but never reached the
+ * wallet. Uses TWO sources of earned commission:
+ *   A) creator_referrals (handle-based ledger)
+ *   B) creator_memberships.total_earnings_pence (direct user_id lookup)
+ * Takes the higher of the two, compares against wallet_transactions with
+ * reference_type='commission', and credits the shortfall.
+ *
+ * Safe to call on every wallet load: advisory xact lock prevents
+ * double-credit under concurrent requests.
+ *
  * @param {object} pool - pg Pool (needs .connect())
  * @returns {number} pence credited (0 when already in sync)
  */
 async function reconcileCommissionBackpay(pool, userId) {
   if (!userId) return 0;
-
-  // Collect every handle that can earn for this user (two handle systems)
-  const handles = [];
-  try {
-    const u = await pool.query('SELECT referral_handle FROM public.users WHERE id = $1', [userId]);
-    if (u.rows[0]?.referral_handle) handles.push(u.rows[0].referral_handle);
-  } catch (e) { /* ignore */ }
-  for (const col of ['creator_user_id', 'user_id']) {
-    try {
-      const lp = await pool.query(`SELECT slug FROM creator_landing_pages WHERE ${col} = $1`, [userId]);
-      lp.rows.forEach((r) => { if (r.slug && !handles.includes(r.slug)) handles.push(r.slug); });
-    } catch (e) { /* column may not exist in this schema */ }
-  }
-  if (handles.length === 0) return 0;
 
   const client = await pool.connect();
   try {
@@ -102,28 +91,78 @@ async function reconcileCommissionBackpay(pool, userId) {
     // Per-user lock so two simultaneous wallet loads can't both back-pay
     await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', ['wallet_backpay:' + String(userId)]);
 
-    const earned = await client.query(
-      `SELECT COALESCE(SUM(commission_pence), 0) AS pence
-       FROM creator_referrals
-       WHERE status = 'converted' AND LOWER(creator_handle) = ANY($1)`,
-      [handles.map((h) => String(h).toLowerCase())]
-    );
+    // ── Source A: creator_referrals (handle-based) ──
+    let earnedFromReferrals = 0;
+    try {
+      const handles = [];
+      try {
+        const u = await client.query('SELECT referral_handle FROM public.users WHERE id = $1', [userId]);
+        if (u.rows[0]?.referral_handle) handles.push(u.rows[0].referral_handle);
+      } catch (e) { /* ignore */ }
+      for (const col of ['creator_user_id', 'user_id']) {
+        try {
+          const lp = await client.query(`SELECT slug FROM creator_landing_pages WHERE ${col} = $1`, [userId]);
+          lp.rows.forEach((r) => { if (r.slug && !handles.includes(r.slug)) handles.push(r.slug); });
+        } catch (e) { /* column may not exist */ }
+      }
+      if (handles.length > 0) {
+        const earned = await client.query(
+          `SELECT COALESCE(SUM(commission_pence), 0) AS pence
+           FROM creator_referrals
+           WHERE status = 'converted' AND LOWER(creator_handle) = ANY($1)`,
+          [handles.map((h) => String(h).toLowerCase())]
+        );
+        earnedFromReferrals = parseInt(earned.rows[0].pence, 10) || 0;
+      }
+    } catch (e) {
+      console.warn('[WalletBackpay] Source A (creator_referrals) failed:', e.message);
+    }
+
+    // ── Source B: creator_memberships.total_earnings_pence (user_id direct) ──
+    let earnedFromMemberships = 0;
+    try {
+      const cm = await client.query(
+        `SELECT COALESCE(total_earnings_pence, 0) AS pence
+         FROM creator_memberships
+         WHERE user_id::text = $1::text`,
+        [userId]
+      );
+      if (cm.rows.length > 0) {
+        earnedFromMemberships = parseInt(cm.rows[0].pence, 10) || 0;
+      }
+    } catch (e) {
+      console.warn('[WalletBackpay] Source B (creator_memberships) failed:', e.message);
+    }
+
+    // Take the HIGHER of the two sources (covers cases where one source
+    // recorded the commission but the other didn't)
+    const totalEarned = Math.max(earnedFromReferrals, earnedFromMemberships);
+    if (totalEarned === 0) {
+      await client.query('COMMIT');
+      return 0;
+    }
+
+    // ── Already credited to wallet ──
     const credited = await client.query(
       `SELECT COALESCE(SUM(amount_pence), 0) AS pence
        FROM wallet_transactions
        WHERE user_id = $1 AND reference_type = 'commission'`,
       [userId]
     );
+    const alreadyCredited = parseInt(credited.rows[0].pence, 10) || 0;
 
-    const shortfall = parseInt(earned.rows[0].pence, 10) - parseInt(credited.rows[0].pence, 10);
+    const shortfall = totalEarned - alreadyCredited;
     if (shortfall > 0) {
       await creditWallet(
         client, userId, shortfall,
-        `🎉 Affiliate commission back-pay: £${(shortfall / 100).toFixed(2)} (earnings that hadn't reached your wallet)`,
+        `🎉 Affiliate commission back-pay: £${(shortfall / 100).toFixed(2)} (earnings synced to your wallet)`,
         'commission'
       );
-      console.log(`[WalletBackpay] Credited ${shortfall}p to user ${userId} (handles: ${handles.join(', ')})`);
+      console.log(`[WalletBackpay] Credited ${shortfall}p to user ${userId} (referrals: ${earnedFromReferrals}p, memberships: ${earnedFromMemberships}p, was credited: ${alreadyCredited}p)`);
+    } else {
+      console.log(`[WalletBackpay] User ${userId} in sync (earned: ${totalEarned}p, credited: ${alreadyCredited}p)`);
     }
+
     await client.query('COMMIT');
     return Math.max(shortfall, 0);
   } catch (e) {
