@@ -6,7 +6,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../middleware/db');
 const { authenticateUser, requireAdmin } = require('../middleware/auth');
-const { reconcileCommissionBackpay } = require('../lib/wallet-credit');
+const { reconcileCommissionBackpay, creditWallet, reconcilePartnerRevenue } = require('../lib/wallet-credit');
 
 router.use(authenticateUser);
 
@@ -68,6 +68,9 @@ router.get('/', async (req, res) => {
     // creator_referrals that never reached the wallet (pre-fallback
     // conversions, or wallet upserts that failed silently).
     try { await reconcileCommissionBackpay(pool, userId); } catch (e) { /* non-blocking */ }
+    // Self-healing: credit partner's share of booking revenue that
+    // hasn't been synced to the wallet yet (gym owner earnings).
+    try { await reconcilePartnerRevenue(pool, userId); } catch (e) { /* non-blocking */ }
     let wallet = await pool.query('SELECT * FROM wallets WHERE user_id = $1', [userId]);
     if (wallet.rows.length === 0) {
       wallet = await pool.query(`
