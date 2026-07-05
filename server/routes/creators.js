@@ -646,6 +646,138 @@ router.patch('/uploads/:id/approve', authenticateUser, requireAdmin, async (req,
 });
 
 // GET /api/creators/me — Current creator's membership + stats
+/**
+ * POST /api/creators/sync-handle — Sync the creator's affiliate handle to the
+ * database so wallet reconciliation can find it.
+ *
+ * Root cause of "wallet shows £0": the handle (e.g. "mubarakibrahimpatel")
+ * was generated client-side during creator signup and stored ONLY in
+ * localStorage. The /api/v2/creator-apply endpoint never existed, so the
+ * handle was never persisted to the DB. Wallet reconciliation then couldn't
+ * map the handle → user_id → wallet, so commissions were never credited.
+ *
+ * This endpoint:
+ * 1. Sets users.referral_handle = handle (if not already set to something else)
+ * 2. Ensures a creator_landing_pages row exists with this slug
+ * 3. Is idempotent — safe to call on every ScanSquad tab load
+ */
+router.post('/sync-handle', authenticateUser, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { handle } = req.body;
+
+    if (!handle || typeof handle !== 'string') {
+      return res.status(400).json({ error: 'Handle is required' });
+    }
+
+    const cleanHandle = handle.replace(/[^a-zA-Z0-9_-]/g, '').toLowerCase().slice(0, 50);
+    if (!cleanHandle) {
+      return res.status(400).json({ error: 'Invalid handle' });
+    }
+
+    let synced = { referralHandle: false, landingPage: false };
+
+    // 1. Set users.referral_handle if not already set, or if it's a generic auto-generated one
+    try {
+      const current = await pool.query(
+        'SELECT referral_handle FROM public.users WHERE id = $1',
+        [userId]
+      );
+      const currentHandle = current.rows[0]?.referral_handle;
+
+      if (!currentHandle || currentHandle === '') {
+        // No handle yet — set it
+        await pool.query(
+          'UPDATE public.users SET referral_handle = $1 WHERE id = $2',
+          [cleanHandle, userId]
+        );
+        synced.referralHandle = true;
+        console.log(`[Creators] Synced referral_handle: ${cleanHandle} for user ${userId}`);
+      } else if (currentHandle !== cleanHandle) {
+        // Has a different handle — check if the current one has any earnings
+        const currentEarnings = await pool.query(
+          `SELECT COALESCE(SUM(commission_pence), 0) AS pence
+           FROM creator_referrals
+           WHERE LOWER(creator_handle) = LOWER($1) AND status = 'converted'`,
+          [currentHandle]
+        );
+        const newEarnings = await pool.query(
+          `SELECT COALESCE(SUM(commission_pence), 0) AS pence
+           FROM creator_referrals
+           WHERE LOWER(creator_handle) = LOWER($1) AND status = 'converted'`,
+          [cleanHandle]
+        );
+        // If the new handle has earnings but the current doesn't, update
+        if (parseInt(newEarnings.rows[0].pence) > 0 && parseInt(currentEarnings.rows[0].pence) === 0) {
+          await pool.query(
+            'UPDATE public.users SET referral_handle = $1 WHERE id = $2',
+            [cleanHandle, userId]
+          );
+          synced.referralHandle = true;
+          console.log(`[Creators] Updated referral_handle: ${currentHandle} → ${cleanHandle} for user ${userId} (new handle has earnings)`);
+        }
+      } else {
+        synced.referralHandle = true; // Already correct
+      }
+    } catch (e) {
+      console.warn('[Creators] sync-handle referral_handle update failed:', e.message);
+    }
+
+    // 2. Ensure creator_landing_pages has an entry with this slug
+    try {
+      const existing = await pool.query(
+        'SELECT id FROM creator_landing_pages WHERE slug = $1',
+        [cleanHandle]
+      );
+      if (existing.rows.length === 0) {
+        // Get user info for the landing page
+        const userInfo = await pool.query(
+          'SELECT first_name, last_name, email FROM public.users WHERE id = $1',
+          [userId]
+        );
+        const name = userInfo.rows[0]
+          ? `${userInfo.rows[0].first_name || ''} ${userInfo.rows[0].last_name || ''}`.trim() || 'Creator'
+          : 'Creator';
+
+        await pool.query(`
+          INSERT INTO creator_landing_pages (creator_user_id, slug, creator_name, creator_handle, creator_platform, is_active, created_at, updated_at)
+          VALUES ($1, $2, $3, $4, 'instagram', true, NOW(), NOW())
+          ON CONFLICT (slug) DO NOTHING
+        `, [userId, cleanHandle, name, cleanHandle]);
+        synced.landingPage = true;
+        console.log(`[Creators] Created landing page slug: ${cleanHandle} for user ${userId}`);
+      } else {
+        synced.landingPage = true; // Already exists
+      }
+    } catch (e) {
+      console.warn('[Creators] sync-handle landing page creation failed:', e.message);
+    }
+
+    // 3. Ensure creator_memberships exists
+    try {
+      const cm = await pool.query(
+        'SELECT id FROM creator_memberships WHERE user_id::text = $1::text',
+        [userId]
+      );
+      if (cm.rows.length === 0) {
+        await pool.query(`
+          INSERT INTO creator_memberships (user_id, tier, is_lifetime_free, total_referrals, badge, community_name)
+          VALUES ($1, 'starter', false, 0, '🌱', 'ScanSquad')
+          ON CONFLICT (user_id) DO NOTHING
+        `, [userId]);
+        console.log(`[Creators] Auto-created membership for user ${userId}`);
+      }
+    } catch (e) {
+      console.warn('[Creators] sync-handle membership creation failed:', e.message);
+    }
+
+    res.json({ success: true, handle: cleanHandle, synced });
+  } catch (err) {
+    console.error('[Creators] sync-handle error:', err.message);
+    res.status(500).json({ error: 'Failed to sync handle' });
+  }
+});
+
 router.get('/me', authenticateUser, async (req, res) => {
   try {
     const userId = req.user.id;

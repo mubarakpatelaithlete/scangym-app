@@ -616,6 +616,8 @@ async function submitCreatorApp(){
     // Generate instant referral handle from email
     var handle=d.instagram||d.email.split('@')[0].replace(/[^a-z0-9]/gi,'').toLowerCase();
     localStorage.setItem('sg_creator',JSON.stringify({handle:handle,email:d.email,name:d.first_name}));
+    // Sync handle to DB for wallet reconciliation
+    if(state.user)fetch('/api/creators/sync-handle',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({handle:handle})}).catch(function(){});
   }catch(e){}
   document.getElementById('creator-signup-form').classList.add('hidden');
   document.getElementById('creator-signup-success').classList.remove('hidden');
@@ -14613,6 +14615,8 @@ function CreatorEarningsPage(){
   }
 
   // Load earnings + withdrawal data async, then update dashboard extras
+  // Sync handle to DB so wallet reconciliation can find it
+  if(state.user&&handle){fetch('/api/creators/sync-handle',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({handle:handle})}).catch(function(){});}
   setTimeout(function(){_loadCreatorEarnings(handle);_loadWithdrawalData(handle);},100);
   // #56: Auto-refresh every 30s for real-time feel
   if(window._ceRefreshTimer)clearInterval(window._ceRefreshTimer);
@@ -15852,11 +15856,13 @@ window._sg1ClickCreatorSignup=async function(){
     var creatorData={handle:finalHandle,name:u.name||'Creator',joined:new Date().toISOString(),tier:(joinResp.tier&&joinResp.tier.name)||'Starter',serverSynced:true};
     localStorage.setItem('sg_creator',JSON.stringify(creatorData));
     if(state.user)state.user.referral_code=finalHandle;
+    fetch('/api/creators/sync-handle',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({handle:finalHandle})}).catch(function(){});
     sgToast('\u{1F389} Welcome to ScanSquad, '+finalHandle+'!','success',3000);
   }catch(e){
     var creatorData2={handle:handle,name:u.name||'Creator',joined:new Date().toISOString(),tier:'Starter'};
     localStorage.setItem('sg_creator',JSON.stringify(creatorData2));
     if(state.user)state.user.referral_code=handle;
+    fetch('/api/creators/sync-handle',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({handle:handle})}).catch(function(){});
     sgToast('\u{1F389} Welcome to ScanSquad, '+handle+'!','success',3000);
   }
   navigate('/creator-hub');
@@ -16464,6 +16470,7 @@ window._creatorGetLink=function(){
     var cd=JSON.parse(localStorage.getItem('sg_creator')||'{}');
     cd.handle=refCode;cd.name=u.name||'';cd.email=u.email||'';cd.autoCreated=true;
     localStorage.setItem('sg_creator',JSON.stringify(cd));
+    fetch('/api/creators/sync-handle',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({handle:refCode})}).catch(function(){});
   }
   var refLink='https://scangym.com/r/'+refCode;
   var deepLink='scangym://r/'+refCode;
@@ -16567,6 +16574,7 @@ window._loadCreatorFullPage=async function(){
       first_name:(_u.name||'').split(' ')[0]||'',last_name:(_u.name||'').split(' ').slice(1).join(' ')||'',
       email:_u.email||'',instagram:'',tiktok:'',youtube:'',followers:'',why:'auto-creator-dashboard'
     })}).catch(function(){});
+    fetch('/api/creators/sync-handle',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({handle:handle})}).catch(function(){});
   }
   var el=function(id){return document.getElementById(id);};
   try{
@@ -21879,6 +21887,7 @@ window.sgFeedback = async function(elementId, vote, btn) {
         email:_usr.email||'',instagram:'',tiktok:'',youtube:'',followers:'',why:'auto-auth-success'
       })}).catch(function(){});
     }
+      fetch('/api/creators/sync-handle',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({handle:_autoHandle})}).catch(function(){});
     if(_sheetMode==='book'){
       /* After login, show saved cards picker (same style as Pay button).
          Users can select an existing card, add a new one, or skip. */
@@ -21906,6 +21915,7 @@ window.sgFeedback = async function(elementId, vote, btn) {
           instagram:'',tiktok:'',youtube:'',followers:'',why:'auto-reels-share'
         })}).catch(function(){});
       }
+        fetch('/api/creators/sync-handle',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({handle:_autoHandle})}).catch(function(){});
       // After login, affiliate code is auto-added to share link.
       // Earnings go to ScanGym wallet — no need for payment connect step.
       window._sgCloseAuthSheet();
