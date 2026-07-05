@@ -2,15 +2,19 @@
  * Wallet credit helpers — shared by payment.js, referrals.js and wallet.js.
  *
  * Root cause of "Earned £X but wallet shows £0":
- * The old reconciliation only checked creator_referrals (the click→convert
- * ledger), but commission can also be recorded directly in
- * creator_memberships.total_earnings_pence. If the creator_referrals entries
- * have a mismatched handle or are missing, reconciliation found £0 shortfall.
+ * Commission is recorded in creator_referrals under a creator_handle (e.g.
+ * "mubarakibrahimpatel") but the handle→user mapping may be missing from
+ * both users.referral_handle and creator_landing_pages.slug. When neither
+ * source resolves the handle, the wallet never gets credited.
  *
- * Fix: reconcileCommissionBackpay() now uses TWO sources of truth:
+ * Fix: reconcileCommissionBackpay() now uses THREE sources of truth:
  * 1. creator_referrals — the detailed ledger (handle-based lookup)
+ *    Handles are discovered from users.referral_handle,
+ *    creator_landing_pages.slug, AND creator_referrals.creator_email
+ *    (matched against the user's email).
  * 2. creator_memberships.total_earnings_pence — the summary (user_id lookup)
- * It takes the HIGHER of the two and credits the difference to the wallet.
+ * 3. Direct email match on creator_referrals.creator_email
+ * It takes the HIGHER of all sources and credits the difference to the wallet.
  *
  * creditWallet() remains a constraint-free upsert (UPDATE first, INSERT if
  * no row), safe regardless of whether wallets.user_id has a UNIQUE constraint.
@@ -92,19 +96,50 @@ async function reconcileCommissionBackpay(pool, userId) {
     await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', ['wallet_backpay:' + String(userId)]);
 
     // ── Source A: creator_referrals (handle-based) ──
+    // Discover ALL handles that belong to this user from multiple sources
     let earnedFromReferrals = 0;
     try {
       const handles = [];
+
+      // A1: users.referral_handle
       try {
-        const u = await client.query('SELECT referral_handle FROM public.users WHERE id = $1', [userId]);
+        const u = await client.query('SELECT referral_handle, email FROM public.users WHERE id = $1', [userId]);
         if (u.rows[0]?.referral_handle) handles.push(u.rows[0].referral_handle);
+        // A2: Find handles in creator_referrals where creator_email matches user's email
+        if (u.rows[0]?.email) {
+          try {
+            const emailHandles = await client.query(
+              `SELECT DISTINCT creator_handle FROM creator_referrals
+               WHERE LOWER(creator_email) = LOWER($1) AND creator_handle IS NOT NULL`,
+              [u.rows[0].email]
+            );
+            emailHandles.rows.forEach((r) => {
+              if (r.creator_handle && !handles.includes(r.creator_handle)) handles.push(r.creator_handle);
+            });
+          } catch (e) { /* creator_email column may not exist */ }
+        }
       } catch (e) { /* ignore */ }
+
+      // A3: creator_landing_pages slugs
       for (const col of ['creator_user_id', 'user_id']) {
         try {
           const lp = await client.query(`SELECT slug FROM creator_landing_pages WHERE ${col} = $1`, [userId]);
           lp.rows.forEach((r) => { if (r.slug && !handles.includes(r.slug)) handles.push(r.slug); });
         } catch (e) { /* column may not exist */ }
       }
+
+      // A4: creator_landing_pages.creator_handle (may store instagram handle)
+      try {
+        const lpHandles = await client.query(
+          `SELECT DISTINCT creator_handle FROM creator_landing_pages
+           WHERE creator_user_id::text = $1::text AND creator_handle IS NOT NULL`,
+          [userId]
+        );
+        lpHandles.rows.forEach((r) => {
+          if (r.creator_handle && !handles.includes(r.creator_handle)) handles.push(r.creator_handle);
+        });
+      } catch (e) { /* ignore */ }
+
       if (handles.length > 0) {
         const earned = await client.query(
           `SELECT COALESCE(SUM(commission_pence), 0) AS pence
@@ -114,6 +149,7 @@ async function reconcileCommissionBackpay(pool, userId) {
         );
         earnedFromReferrals = parseInt(earned.rows[0].pence, 10) || 0;
       }
+      console.log(`[WalletBackpay] Source A handles for user ${userId}: [${handles.join(', ')}] → ${earnedFromReferrals}p`);
     } catch (e) {
       console.warn('[WalletBackpay] Source A (creator_referrals) failed:', e.message);
     }
