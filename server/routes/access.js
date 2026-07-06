@@ -10,6 +10,7 @@
  * Owner Endpoints (gym owners connecting their access system):
  *   POST /api/access/owner/connect-kisi    — Connect Kisi account
  *   POST /api/access/owner/connect-seam    — Connect via Seam (Salto/Brivo/etc)
+ *   POST /api/access/owner/connect-gymmaster — Connect GymMaster (direct Gatekeeper API)
  *   GET  /api/access/owner/systems         — List available access systems
  *   PUT  /api/access/owner/configure/:gymId — Configure access settings
  *   DELETE /api/access/owner/disconnect/:gymId — Disconnect access system
@@ -488,9 +489,87 @@ router.post('/owner/connect-seam', authenticateUser, express.json(), async (req,
   }
 });
 
+// POST /api/access/owner/connect-gymmaster — Connect GymMaster (direct Gatekeeper API)
+router.post('/owner/connect-gymmaster', authenticateUser, express.json(), async (req, res) => {
+  try {
+    const { gymId, gmSite, gmApiKey } = req.body;
+    if (!gymId || !gmSite || !gmApiKey) {
+      return res.status(400).json({ error: 'gymId, gmSite and gmApiKey are required' });
+    }
+
+    // Verify ownership
+    const gym = await pool.query(
+      'SELECT * FROM gyms WHERE id = $1 AND claimed_by::text = $2::text',
+      [gymId, req.user.id]
+    );
+    if (gym.rows.length === 0) return res.status(403).json({ error: 'Not your gym' });
+
+    // Test the connection with the GymMaster Gatekeeper API
+    const { GymMasterClient } = require('../lib/gymmaster-adapter');
+    const gm = new GymMasterClient({ gm_site: gmSite.trim(), gm_api_key: gmApiKey.trim() });
+
+    try {
+      const timeResult = await gm.testConnection();
+      console.log(`[GymMaster] Connection test OK for ${gmSite}:`, timeResult);
+    } catch (e) {
+      return res.status(400).json({
+        error: 'Could not connect to GymMaster — check your site name and API key.',
+        detail: e.message,
+      });
+    }
+
+    // Test passed — store the connection
+    // Use access_config JSONB column (from PR #508 migration) for credentials
+    const accessConfig = JSON.stringify({ gm_site: gmSite.trim(), gm_api_key: gmApiKey.trim() });
+
+    await pool.query(`
+      UPDATE gyms SET
+        access_system = 'gymmaster',
+        access_system_id = $1,
+        access_type = 'code',
+        access_verified = true,
+        access_config = $2::jsonb,
+        updated_at = NOW()
+      WHERE id = $3
+    `, [gmSite.trim(), accessConfig, gymId]).catch(async () => {
+      // Fallback: access_config column might not exist yet (migration not run)
+      await pool.query(`
+        UPDATE gyms SET
+          access_system = 'gymmaster',
+          access_system_id = $1,
+          access_type = 'code',
+          access_api_key = $2,
+          access_verified = true,
+          updated_at = NOW()
+        WHERE id = $3
+      `, [gmSite.trim(), accessConfig, gymId]);
+    });
+
+    // Fetch door list for confirmation
+    let doorsCount = 0;
+    try {
+      const doors = await gm.listDoors();
+      doorsCount = doors.length;
+    } catch (e) { /* non-critical */ }
+
+    res.json({
+      connected: true,
+      system: 'gymmaster',
+      site: gmSite,
+      doors_found: doorsCount,
+      message: `GymMaster connected! Visit logging is active.${doorsCount ? ' ' + doorsCount + ' door(s) detected.' : ''} Day-pass PIN issuance coming soon.`,
+    });
+  } catch (err) {
+    console.error('GymMaster connection error:', err);
+    res.status(500).json({ error: 'Failed to connect GymMaster' });
+  }
+});
+
 // GET /api/access/owner/systems — List available access systems for a gym
+// Full catalogue including Sprint 1 providers (PR #508)
 router.get('/owner/systems', authenticateUser, async (req, res) => {
   const systems = [
+    // ── Popular / Direct API ──────────────────────────────────────
     {
       id: 'kisi',
       name: 'Kisi',
@@ -499,41 +578,149 @@ router.get('/owner/systems', authenticateUser, async (req, res) => {
       features: ['QR code unlock', 'Mobile app unlock', 'PIN codes', 'Apple/Google Wallet'],
       website: 'https://getkisi.com',
       logo: '🔐',
+      connection: 'direct',
+      popular: true,
+      tags: ['gym-focused', 'qr-unlock'],
     },
+
+    // ── Via Seam (30+ brands, OAuth-style onboarding) ────────────
     {
       id: 'salto',
       name: 'Salto KS',
-      description: 'Cloud-based smart locks. Connected via Seam.',
-      setup: 'Connect your Salto KS account through Seam — members get PIN codes or mobile keys.',
+      description: 'Cloud-based smart locks popular in UK/EU gyms.',
+      setup: 'Connect your Salto KS account — members get PIN codes or mobile keys.',
       features: ['PIN codes', 'Mobile credentials', 'Face recognition (XS4 Face)'],
       website: 'https://saltoks.com',
       logo: '🏢',
+      connection: 'seam',
+      popular: true,
+      tags: ['uk-popular', 'eu-popular'],
     },
     {
       id: 'brivo',
       name: 'Brivo',
-      description: 'Enterprise cloud access control. Connected via Seam.',
-      setup: 'Connect your Brivo account through Seam — members get mobile access passes.',
+      description: 'Enterprise cloud access control for larger independents.',
+      setup: 'Connect your Brivo account — members get mobile access passes.',
       features: ['Mobile Pass', 'Card access', 'Video integration'],
       website: 'https://brivo.com',
       logo: '🔑',
+      connection: 'seam',
+      popular: true,
+      tags: ['us-popular', 'enterprise'],
     },
+    {
+      id: 'latch',
+      name: 'Latch',
+      description: 'Smart access for multitenant buildings — common in co-working gym spaces.',
+      setup: 'Connect your Latch account — members get mobile key access.',
+      features: ['Mobile key', 'PIN codes', 'Doorbell camera'],
+      website: 'https://latch.com',
+      logo: '🚪',
+      connection: 'seam',
+      popular: false,
+      tags: ['multitenant'],
+    },
+    {
+      id: 'avigilon',
+      name: 'Avigilon Alta (Openpath)',
+      description: 'Former Openpath — touchless mobile access with wave-to-unlock.',
+      setup: 'Connect your Avigilon/Openpath account — members get mobile credentials.',
+      features: ['Wave to unlock', 'Mobile credential', 'Cloud management'],
+      website: 'https://avigilon.com/alta',
+      logo: '📱',
+      connection: 'seam',
+      popular: false,
+      tags: ['touchless'],
+    },
+    {
+      id: 'akiles',
+      name: 'Akiles',
+      description: 'Smart access for co-working and fitness — popular in Spain.',
+      setup: 'Connect your Akiles account — members get mobile key or PIN access.',
+      features: ['Mobile key', 'PIN codes', 'Time-based access'],
+      website: 'https://akiles.app',
+      logo: '🇪🇸',
+      connection: 'seam',
+      popular: false,
+      tags: ['spain', 'eu'],
+    },
+    {
+      id: 'ttlock',
+      name: 'TTLock',
+      description: 'Widely used smart lock platform — covers Sifely, SwitchBot Lock, and rebadged brands.',
+      setup: 'Connect your TTLock account — members get time-limited PIN codes.',
+      features: ['PIN codes', 'Bluetooth unlock', 'Passcode management'],
+      website: 'https://ttlock.com',
+      logo: '🔒',
+      connection: 'seam',
+      popular: true,
+      tags: ['budget-friendly', 'wide-compatibility'],
+    },
+    {
+      id: 'sifely',
+      name: 'Sifely',
+      description: 'Smart lock brand built on TTLock — popular for smaller gyms.',
+      setup: 'Connect your Sifely account — members get time-limited PIN codes.',
+      features: ['PIN codes', 'Fingerprint', 'Bluetooth unlock'],
+      website: 'https://sifely.com',
+      logo: '🏠',
+      connection: 'seam',
+      popular: false,
+      tags: ['budget-friendly', 'small-gym'],
+    },
+    {
+      id: 'igloohome',
+      name: 'igloohome',
+      description: 'Offline-capable smart locks — works even without WiFi (algoPIN™).',
+      setup: 'Connect your igloohome account — members get offline-capable PIN codes.',
+      features: ['Offline PIN codes', 'Bluetooth unlock', 'No WiFi needed'],
+      website: 'https://igloohome.co',
+      logo: '🏔️',
+      connection: 'seam',
+      popular: false,
+      tags: ['offline-capable', 'apac'],
+    },
+
+    // ── Gym Software (Direct API) ────────────────────────────────
     {
       id: 'gymmaster',
       name: 'GymMaster',
-      description: 'All-in-one gym management with built-in access control.',
-      setup: 'Connect your GymMaster account — RFID and Bluetooth entry managed automatically.',
-      features: ['RFID', 'Bluetooth', 'Billing integration', 'Tailgating detection'],
+      description: 'All-in-one gym management with Gatekeeper door access. Visit logging + swipe validation.',
+      setup: 'Enter your GymMaster site name and API key — found in Settings > Integrations > Gatekeeper API.',
+      features: ['Swipe validation', 'Visit logging', 'Member sync', 'Attendance reports'],
       website: 'https://gymmaster.com',
       logo: '🏋️',
+      connection: 'direct',
+      popular: true,
+      tags: ['gym-software', 'all-in-one'],
+      note: 'Day-pass PIN issuance coming in Sprint 2. Until then, visitors use ScanGym QR + staff verification.',
     },
+
+    // ── Catch-all Seam ───────────────────────────────────────────
+    {
+      id: 'seam',
+      name: 'Other Smart Lock (30+ brands)',
+      description: 'Don\'t see your lock above? Seam supports 30+ brands including August, Yale, Schlage, Nuki, and more.',
+      setup: 'Click Connect and log into your lock provider — Seam handles the rest automatically.',
+      features: ['Auto-detect provider', 'PIN codes', 'Mobile keys', 'Remote unlock'],
+      website: 'https://seam.co',
+      logo: '🔗',
+      connection: 'seam',
+      popular: false,
+      tags: ['catch-all', 'auto-detect'],
+    },
+
+    // ── Manual fallback ──────────────────────────────────────────
     {
       id: 'manual',
-      name: 'Staff Verification',
-      description: 'Default mode. Staff scans the ScanGym QR code to verify the booking.',
+      name: 'No Smart Lock / Staff Verification',
+      description: 'Default mode. Staff scans the ScanGym QR code at reception to verify the booking.',
       setup: 'No setup needed — this is the default.',
       features: ['QR code shown at reception', '2-scan system (entry + exit)'],
       logo: '👤',
+      connection: 'none',
+      popular: false,
+      tags: ['fallback'],
     },
   ];
 
