@@ -342,6 +342,29 @@ async function handleCallbackQuery(query) {
     if (session && session.gyms && session.gyms[gymIdx]) {
       // Look up linked user for booking flow
       const linkedUser = await lookupLinkedUser(query.from.id);
+
+      // Linked user with a saved card → direct 1-tap checkout (skip the
+      // guest email dance — we already have their account + email on file)
+      if (linkedUser && linkedUser.stripe_customer_id) {
+        const cards = await getSavedCards(linkedUser.user_id);
+        if (cards.length > 0) {
+          const gym = session.gyms[gymIdx];
+          const date = new Date().toISOString().split('T')[0];
+          session.pendingPayment = { gym, date, linkedUserId: linkedUser.user_id };
+          session.lastActive = Date.now();
+          sessions.set(chatId, session);
+
+          const price = `${gym.currencySymbol || '£'}${gym.dayPassPrice}`;
+          const payRow = cards.slice(0, 2).map(c => ({
+            text: `💳 Pay with ${c.label}`, callback_data: `paydirect_${c.id}`,
+          }));
+          await sendWithButtons(chatId,
+            `🧾 *Confirm your booking*\n\n🏋️ *${gym.name}*\n📍 ${gym.address || ''}\n📅 ${date} (today)\n💰 ${price} — 24hr day pass\n\nTap to pay — your entry QR arrives right here:`,
+            [payRow, [{ text: '❌ Cancel', callback_data: 'cancel_pay' }]]);
+          return;
+        }
+      }
+
       const response = await handleMessage(`telegram:${query.from.id}`, `Book gym ${gymIdx + 1} for tomorrow`, {
         platform: 'telegram',
         userName: query.from.first_name,
@@ -367,6 +390,58 @@ async function handleCallbackQuery(query) {
       }
       await sendTelegramMessage(chatId, response.text);
     }
+
+  // ── DIRECT 1-TAP PAY (linked user, booking created by bot-checkout) ──
+  } else if (data.startsWith('paydirect_')) {
+    const cardId = data.replace('paydirect_', '');
+    const session = sessions.get(chatId);
+    if (!session?.pendingPayment?.gym) {
+      await sendTelegramMessage(chatId, '⏱ This payment prompt has expired. Please try booking again.');
+      return;
+    }
+    const { gym, date, linkedUserId } = session.pendingPayment;
+
+    await sendAction(chatId, 'typing');
+    await sendTelegramMessage(chatId, '💳 Processing payment...');
+
+    const result = await executeBotCheckout({
+      userId: linkedUserId,
+      gymId: gym.id || undefined,
+      placeId: gym.place_id || gym.placeId || undefined,
+      date,
+      time: 'anytime',
+      cardId,
+    });
+
+    if (result.success) {
+      session.pendingPayment = null;
+      sessions.set(chatId, session);
+
+      const confirmText = `✅ *Booking Confirmed!*\n\n`
+        + `🏋️ *${result.booking.gymName}*\n`
+        + `📅 ${result.booking.date} ⏰ ${result.booking.time}\n`
+        + `💰 ${result.booking.currencySymbol || '£'}${typeof result.booking.price === 'number' ? result.booking.price.toFixed(2) : result.booking.price} — charged to ${result.cardUsed}\n`
+        + `🔖 Code: *${result.booking.bookingCode}*\n\n`
+        + `📲 Your QR code is below — 1 scan to enter, 1 to exit.\n`
+        + `⏳ Free cancellation up to 2h before. To cancel: \"Cancel ${result.booking.bookingCode}\"`;
+      await sendTelegramMessage(chatId, confirmText);
+      if (result.qr?.dataUrl) {
+        await sendQRPhoto(chatId, result.qr.dataUrl,
+          `🎟 QR for *${result.booking.gymName}* — ${result.booking.date}`);
+      }
+    } else {
+      let errorMsg = '❌ *Payment failed*\n\n';
+      if (result.error === 'no_saved_card') errorMsg += '💳 No saved card found. Add one at scangym.com first.';
+      else if (result.error === 'sca_required') errorMsg += '🔐 Your card requires 3D Secure verification. Please book at scangym.com.';
+      else if (result.error === 'duplicate') errorMsg += '📋 You already have a booking at this gym for this date!';
+      else errorMsg += `${result.message || result.error || 'Unknown error'}\n\nTry again or book at scangym.com`;
+      await sendTelegramMessage(chatId, errorMsg);
+    }
+
+  } else if (data === 'cancel_pay') {
+    const session = sessions.get(chatId);
+    if (session) session.pendingPayment = null;
+    await sendTelegramMessage(chatId, '👍 Payment cancelled. Tap 📅 Book on another gym, or send a city name to search again.');
 
   // ── PAY WITH SAVED CARD — bot-checkout flow ──
   } else if (data.startsWith('pay_')) {

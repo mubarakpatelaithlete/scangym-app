@@ -28,13 +28,14 @@ const router = express.Router();
 const crypto = require('crypto');
 const { handleMessage } = require('./message-handler');
 
-// ─── Teams credentials (fragment-joined for scanning protection) ───
-const _tai = ['1b6f3573-928c', '-4dad-a905-', '47d6b75a58ae'];
-const _tti = ['9c3a3039-631e', '-415b-b64d-', '5ec2d9d18765'];
-const TEAMS_APP_ID = process.env.TEAMS_APP_ID || _tai.join('');
-const _tap = ['f~r8Q~FGf5Ba', 'IrzRyGVvdqAV', 'kHlEu.QgRG4Lhajd'];
-const TEAMS_APP_PASSWORD = process.env.TEAMS_APP_PASSWORD || _tap.join('');
-const TEAMS_APP_TENANT_ID = process.env.TEAMS_APP_TENANT_ID || _tti.join('');
+// ─── Teams credentials — env ONLY ────────────────────────────
+// SECURITY: app id / tenant id / APP PASSWORD were previously hardcoded
+// here (fragment-joined). This is a PUBLIC repo — that client secret must
+// be considered leaked and MUST be rotated in Azure (App registrations →
+// Certificates & secrets), then set via env vars on Railway.
+const TEAMS_APP_ID = process.env.TEAMS_APP_ID || '';
+const TEAMS_APP_PASSWORD = process.env.TEAMS_APP_PASSWORD || '';
+const TEAMS_APP_TENANT_ID = process.env.TEAMS_APP_TENANT_ID || '';
 const TEAMS_BOT_TYPE = process.env.TEAMS_BOT_TYPE || 'MultiTenant';
 const BASE_URL = process.env.BASE_URL || 'https://scangym.com';
 
@@ -43,6 +44,139 @@ let _tokenExpiry = 0;
 
 const conversationRefs = new Map();
 const sessions = new Map();
+
+// ─── 1-tap saved-card booking (linked ScanGym accounts) ──────
+const pool = require('../middleware/db');
+const BOT_SECRET = process.env.BOT_CHECKOUT_SECRET || process.env.ADMIN_IMPORT_SECRET || '';
+
+async function lookupLinkedUser(teamsUserId) {
+  if (!teamsUserId) return null;
+  try {
+    const { rows } = await pool.query(
+      `SELECT uc.user_id, u.email, u.first_name, u.stripe_customer_id
+       FROM user_channels uc
+       JOIN public.users u ON u.id = uc.user_id
+       WHERE uc.channel = 'msteams' AND uc.channel_user_id = $1 AND uc.is_active = true
+       LIMIT 1`,
+      [String(teamsUserId)]
+    );
+    return rows.length > 0 ? rows[0] : null;
+  } catch (err) {
+    console.error('[Teams] User lookup error:', err.message);
+    return null;
+  }
+}
+
+async function getSavedCards(userId) {
+  try {
+    const resp = await fetch(`${BASE_URL}/api/payment/bot-cards?userId=${encodeURIComponent(userId)}`, {
+      headers: { 'x-bot-secret': BOT_SECRET },
+    });
+    const data = await resp.json();
+    return data.cards || [];
+  } catch (err) {
+    console.error('[Teams] Get cards error:', err.message);
+    return [];
+  }
+}
+
+async function executeBotCheckout(params) {
+  try {
+    const resp = await fetch(`${BASE_URL}/api/payment/bot-checkout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...params, botSecret: BOT_SECRET }),
+    });
+    return await resp.json();
+  } catch (err) {
+    console.error('[Teams] Bot checkout error:', err.message);
+    return { error: err.message };
+  }
+}
+
+async function redeemLinkCode(token, teamsUserId, teamsUserName) {
+  try {
+    const resp = await fetch(`${BASE_URL}/api/channels/link/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-bot-secret': BOT_SECRET },
+      body: JSON.stringify({ token, channel: 'msteams', channelUserId: String(teamsUserId), channelUsername: teamsUserName || null }),
+    });
+    const data = await resp.json();
+    return !!data.success;
+  } catch (err) {
+    console.error('[Teams] Link redeem error:', err.message);
+    return false;
+  }
+}
+
+function getToday() {
+  return new Date().toISOString().split('T')[0];
+}
+
+// ─── Payment confirmation Adaptive Card ──────────────────────
+function buildPayConfirmCard(gym, date, card) {
+  const price = `${gym.currencySymbol || '£'}${gym.dayPassPrice}`;
+  return {
+    type: 'AdaptiveCard',
+    $schema: 'http://adaptivecards.io/schemas/adaptive-card.json',
+    version: '1.4',
+    body: [
+      { type: 'TextBlock', text: '🧾 Confirm your booking', weight: 'Bolder', size: 'Medium' },
+      {
+        type: 'FactSet',
+        facts: [
+          { title: 'Gym', value: gym.name || 'Gym' },
+          { title: 'Address', value: gym.address || '—' },
+          { title: 'Date', value: `${date} (today)` },
+          { title: 'Price', value: `${price} — 24hr day pass` },
+          { title: 'Card', value: card.label },
+        ],
+      },
+      { type: 'TextBlock', text: 'Free cancellation up to 2h before your session.', isSubtle: true, wrap: true, size: 'Small' },
+    ],
+    actions: [
+      { type: 'Action.Submit', title: `💳 Pay ${price} now`, style: 'positive', data: { action: 'pay_saved' } },
+      { type: 'Action.Submit', title: '❌ Cancel', data: { action: 'cancel_pay' } },
+    ],
+  };
+}
+
+// ─── Booking confirmed Adaptive Card (with QR image) ─────────
+function buildBookingConfirmedCard(result, gym) {
+  const b = result.booking || {};
+  const qrToken = result.qr?.token;
+  const priceStr = `${b.currencySymbol || '£'}${typeof b.price === 'number' ? b.price.toFixed(2) : b.price}`;
+  const body = [
+    { type: 'TextBlock', text: '✅ Booking Confirmed!', weight: 'Bolder', size: 'Large', color: 'Good' },
+    {
+      type: 'FactSet',
+      facts: [
+        { title: 'Gym', value: b.gymName || gym.name || 'Gym' },
+        { title: 'Date', value: `${b.date || ''} ${b.time || ''}`.trim() },
+        { title: 'Paid', value: `${priceStr}${result.cardUsed ? ' on ' + result.cardUsed : ''}` },
+        { title: 'Code', value: String(b.bookingCode || b.id || '') },
+      ],
+    },
+  ];
+  if (qrToken) {
+    body.push({ type: 'TextBlock', text: '📱 Scan at the gym door — 1 scan to enter, 1 to exit:', wrap: true });
+    body.push({
+      type: 'Image',
+      url: `${BASE_URL}/api/qr/image/${encodeURIComponent(qrToken)}.png`,
+      size: 'Large',
+      horizontalAlignment: 'Center',
+      altText: 'ScanGym entry QR code',
+    });
+  }
+  body.push({ type: 'TextBlock', text: '❌ Free cancellation up to 2h before your session.', isSubtle: true, size: 'Small', wrap: true });
+  return {
+    type: 'AdaptiveCard',
+    $schema: 'http://adaptivecards.io/schemas/adaptive-card.json',
+    version: '1.4',
+    body,
+    actions: [{ type: 'Action.OpenUrl', title: '📱 My Bookings', url: `${BASE_URL}/bookings` }],
+  };
+}
 
 // ─── Get Bot Framework access token ─────────────────────────
 async function getAccessToken() {
@@ -198,6 +332,16 @@ async function handleTextMessage(activity) {
     }
   }
 
+  // ── Account linking: "link a1b2c3d4" (code from scangym.com → Channels) ──
+  const linkMatch = text.match(/^link\s+([a-f0-9]{6,32})$/i);
+  if (linkMatch) {
+    const ok = await redeemLinkCode(linkMatch[1], activity.from?.id, userName);
+    await sendTeamsMessage(serviceUrl, conversationId, activity.id, ok
+      ? '✅ **Connected!** Your ScanGym account is now linked to Teams.\n\nSearch gyms, then hit **📅 Book** — pay with your saved card and your entry QR arrives right here. 🏋️'
+      : '❌ That link code is invalid or expired. Get a fresh one at scangym.com → Channels → Teams.');
+    return;
+  }
+
   await sendTypingIndicator(serviceUrl, conversationId);
 
   const response = await handleMessage(userId, text, {
@@ -252,11 +396,77 @@ async function handleCardAction(activity) {
     const session = sessions.get(conversationId);
     if (session && session.gyms?.[action.gymIndex]) {
       const gym = session.gyms[action.gymIndex];
+
+      // Linked user with a saved card → 1-tap checkout confirmation card
+      const linkedUser = await lookupLinkedUser(activity.from?.id);
+      if (linkedUser && linkedUser.stripe_customer_id) {
+        const cards = await getSavedCards(linkedUser.user_id);
+        if (cards.length > 0) {
+          const card = cards[0];
+          const date = getToday();
+          session.pendingPay = { gymIndex: action.gymIndex, cardId: card.id, date, teamsUserId: activity.from?.id };
+          session.lastActive = Date.now();
+          await sendAdaptiveCard(serviceUrl, conversationId, activity.id,
+            buildPayConfirmCard(gym, date, card), `Confirm booking at ${gym.name}`);
+          return;
+        }
+      }
+
+      // Guest flow (multi-turn: date → email) + linking hint
       const response = await handleMessage(userId, `Book gym ${action.gymIndex + 1} for tomorrow`, {
         userName, platform: 'msteams', conversationId,
       });
-      await sendTeamsMessage(serviceUrl, conversationId, activity.id, response.text);
+      await sendTeamsMessage(serviceUrl, conversationId, activity.id,
+        response.text + '\n\n💡 Tip: link your ScanGym account (scangym.com → Channels → Teams, then send me the code) to book with 1 tap using your saved card.');
     }
+  }
+  // ── Pay with saved card (1-tap checkout) ──
+  else if (action.action === 'pay_saved') {
+    const session = sessions.get(conversationId);
+    if (!session?.pendingPay || session.pendingPay.teamsUserId !== activity.from?.id) {
+      await sendTeamsMessage(serviceUrl, conversationId, activity.id, '⏱ This payment prompt has expired. Tap 📅 Book again.');
+      return;
+    }
+    const { gymIndex, cardId, date } = session.pendingPay;
+    const gym = session.gyms?.[gymIndex];
+    session.pendingPay = null;
+    if (!gym) {
+      await sendTeamsMessage(serviceUrl, conversationId, activity.id, '⏱ Session expired — search for gyms again.');
+      return;
+    }
+
+    const linkedUser = await lookupLinkedUser(activity.from?.id);
+    if (!linkedUser) {
+      await sendTeamsMessage(serviceUrl, conversationId, activity.id, '🔗 Link your ScanGym account first: scangym.com → Channels → Teams.');
+      return;
+    }
+
+    const result = await executeBotCheckout({
+      userId: linkedUser.user_id,
+      gymId: gym.id || undefined,
+      placeId: gym.place_id || gym.placeId || undefined,
+      date,
+      time: 'anytime',
+      cardId,
+    });
+
+    if (result.success) {
+      await sendAdaptiveCard(serviceUrl, conversationId, activity.id,
+        buildBookingConfirmedCard(result, gym),
+        `Booking confirmed at ${result.booking?.gymName || gym.name} — code ${result.booking?.bookingCode || ''}`);
+    } else {
+      let msg = '❌ Payment failed: ' + (result.message || result.error || 'Unknown error');
+      if (result.error === 'no_saved_card') msg = '💳 No saved card found. Add one at scangym.com first.';
+      if (result.error === 'sca_required') msg = '🔐 Your bank requires 3D Secure verification. Please complete the booking at scangym.com.';
+      if (result.error === 'duplicate') msg = '📋 You already have a booking at this gym for this date.';
+      await sendTeamsMessage(serviceUrl, conversationId, activity.id, msg);
+    }
+  }
+  // ── Cancel pending payment ──
+  else if (action.action === 'cancel_pay') {
+    const session = sessions.get(conversationId);
+    if (session) session.pendingPay = null;
+    await sendTeamsMessage(serviceUrl, conversationId, activity.id, '👍 Payment cancelled. Tap 📅 Book on another gym, or search a new city.');
   }
   // ── Pricing (NEW in v4.0) ──
   else if (action.action === 'pricing') {
