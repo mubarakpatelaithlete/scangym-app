@@ -22,6 +22,7 @@ const router = express.Router();
 const pool = require('../middleware/db');
 const { authenticateUser, optionalAuth } = require('../middleware/auth');
 const { getAccessService, isAccessControlEnabled, KisiClient, SeamClient } = require('../lib/access-control');
+const { GymMasterClient } = require('../lib/gymmaster-adapter');
 
 // ═══════════════════════════════════════════════════════════════════
 // DB Migration — adds access control columns to gyms table
@@ -62,6 +63,11 @@ const { getAccessService, isAccessControlEnabled, KisiClient, SeamClient } = req
         -- Whether access control is active and tested
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='access_verified') THEN
           ALTER TABLE gyms ADD COLUMN access_verified BOOLEAN DEFAULT FALSE;
+        END IF;
+
+        -- Per-provider config blob (e.g. GymMaster site + API key)
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='access_config') THEN
+          ALTER TABLE gyms ADD COLUMN access_config JSONB DEFAULT '{}'::jsonb;
         END IF;
       END $$;
     `);
@@ -659,9 +665,121 @@ function formatCredentialForClient(cred) {
 // ═══════════════════════════════════════════════════════════════════
 
 // POST /api/access/owner/create-connect-webview — Create a Seam Connect Webview
+
+// ═══════════════════════════════════════════════════════════════════
+// Provider catalog — single source of truth for the smartlock dropdown
+// connect method: seam_webview | api_key_form | gymmaster_form | waitlist | manual
+// ═══════════════════════════════════════════════════════════════════
+const ACCESS_PROVIDERS = [
+  { id: 'salto',     label: 'Salto KS',                  method: 'seam_webview',   seam: ['salto_ks'],      region: 'UK / Europe' },
+  { id: 'kisi',      label: 'Kisi',                      method: 'api_key_form',   seam: null,              region: 'US / Global' },
+  { id: 'brivo',     label: 'Brivo',                     method: 'seam_webview',   seam: ['brivo'],         region: 'US' },
+  { id: 'avigilon',  label: 'Avigilon Alta (Openpath)',  method: 'seam_webview',   seam: ['avigilon_alta'], region: 'US / Europe' },
+  { id: 'ttlock',    label: 'TTLock',                    method: 'seam_webview',   seam: ['ttlock'],        region: 'Global' },
+  { id: 'sifely',    label: 'Sifely',                    method: 'seam_webview',   seam: ['ttlock'],        region: 'US' },
+  { id: 'igloohome', label: 'igloohome',                 method: 'seam_webview',   seam: ['igloohome'],     region: 'Asia-Pacific / Global' },
+  { id: 'akiles',    label: 'Akiles',                    method: 'seam_webview',   seam: ['akiles'],        region: 'Spain' },
+  { id: 'latch',     label: 'Latch',                     method: 'seam_webview',   seam: ['latch'],         region: 'US' },
+  { id: 'nuki',      label: 'Nuki',                      method: 'seam_webview',   seam: ['nuki'],          region: 'Europe' },
+  { id: 'gymmaster', label: 'GymMaster (Gatekeeper)',    method: 'gymmaster_form', seam: null,              region: 'NZ / AU / UK' },
+  { id: 'hybridaf',  label: 'HybridAF',                  method: 'waitlist',       seam: null,              region: 'US' },
+  { id: 'tedee',     label: 'Tedee',                     method: 'waitlist',       seam: null,              region: 'Europe' },
+  { id: 'other',     label: 'Other / not sure',          method: 'manual',         seam: null,              region: null },
+  { id: 'none',      label: 'No smart lock yet',         method: 'manual',         seam: null,              region: null },
+];
+
+// GET /api/access/owner/providers — dropdown catalog
+router.get('/owner/providers', (req, res) => {
+  res.json({ providers: ACCESS_PROVIDERS });
+});
+
+// POST /api/access/owner/connect-gymmaster — direct Gatekeeper API
+// Body: { gymId, gmSite, gmApiKey }
+router.post('/owner/connect-gymmaster', authenticateUser, express.json(), async (req, res) => {
+  try {
+    const { gymId, gmSite, gmApiKey } = req.body;
+    if (!gymId || !gmSite || !gmApiKey) {
+      return res.status(400).json({ error: 'gymId, gmSite and gmApiKey are required' });
+    }
+
+    const gym = await pool.query(
+      'SELECT * FROM gyms WHERE id = $1 AND claimed_by::text = $2::text',
+      [gymId, req.user.id]
+    );
+    if (gym.rows.length === 0) return res.status(403).json({ error: 'Not your gym' });
+
+    // Validate credentials against the live Gatekeeper API
+    const gm = new GymMasterClient({ gm_site: String(gmSite).trim().toLowerCase(), gm_api_key: gmApiKey });
+    let doors = [];
+    try {
+      await gm.testConnection();
+      doors = await gm.listDoors();
+    } catch (e) {
+      return res.status(400).json({
+        error: 'Could not connect to GymMaster. Check your site name and API key (GymMaster → Settings → Integrations → Gatekeeper API).',
+        detail: e.message,
+      });
+    }
+
+    await pool.query(`
+      UPDATE gyms SET
+        access_system = 'gymmaster',
+        access_type = 'staff_verify',
+        access_verified = true,
+        access_config = $1::jsonb,
+        updated_at = NOW()
+      WHERE id = $2
+    `, [JSON.stringify({ gm_site: String(gmSite).trim().toLowerCase(), gm_api_key: gmApiKey }), gymId]);
+
+    res.json({
+      connected: true,
+      system: 'gymmaster',
+      doors: doors.map(d => ({ id: d.id, name: d.name })),
+      capabilities: GymMasterClient.capabilities(),
+      message: `GymMaster connected (${doors.length} door${doors.length === 1 ? '' : 's'} found). Visits will sync to your GymMaster attendance. Automated day-pass PINs are coming next.`,
+    });
+  } catch (err) {
+    console.error('GymMaster connection error:', err);
+    res.status(500).json({ error: 'Failed to connect GymMaster' });
+  }
+});
+
+// POST /api/access/owner/select-provider — record choice for waitlist/manual providers
+// Body: { gymId, provider }
+router.post('/owner/select-provider', authenticateUser, express.json(), async (req, res) => {
+  try {
+    const { gymId, provider } = req.body;
+    const entry = ACCESS_PROVIDERS.find(p => p.id === provider);
+    if (!gymId || !entry) return res.status(400).json({ error: 'Valid gymId and provider are required' });
+
+    const gym = await pool.query(
+      'SELECT * FROM gyms WHERE id = $1 AND claimed_by::text = $2::text',
+      [gymId, req.user.id]
+    );
+    if (gym.rows.length === 0) return res.status(403).json({ error: 'Not your gym' });
+
+    await pool.query(`
+      UPDATE gyms SET
+        access_system = $1,
+        access_type = 'staff_verify',
+        access_verified = false,
+        updated_at = NOW()
+      WHERE id = $2
+    `, [provider === 'none' ? 'manual' : provider, gymId]);
+
+    const msg = entry.method === 'waitlist'
+      ? `${entry.label} noted — we will email you the moment our ${entry.label} integration is live. Until then bookings use staff-verified QR.`
+      : 'Saved. Your gym uses staff-verified QR check-in.';
+    res.json({ saved: true, provider: entry.id, method: entry.method, message: msg });
+  } catch (err) {
+    console.error('Select provider error:', err);
+    res.status(500).json({ error: 'Failed to save choice' });
+  }
+});
+
 router.post('/owner/create-connect-webview', authenticateUser, async (req, res) => {
   try {
-    const { gymId } = req.body;
+    const { gymId, provider } = req.body;
 
     // Verify ownership
     const gym = await pool.query(
@@ -670,23 +788,36 @@ router.post('/owner/create-connect-webview', authenticateUser, async (req, res) 
     );
     if (gym.rows.length === 0) return res.status(403).json({ error: 'Not your gym' });
 
-    const seam = new SeamClient(seamApiKey || null);
+    // If the owner picked a brand in the dropdown, show ONLY that brand's
+    // login inside the Seam webview (less confusing than 12 logos).
+    const catalogEntry = ACCESS_PROVIDERS.find(p => p.id === provider && Array.isArray(p.seam));
+    const acceptedProviders = catalogEntry ? catalogEntry.seam : [
+      'kisi', 'salto_ks', 'brivo', 'avigilon_alta', 'ttlock', 'igloohome',
+      'akiles', 'august', 'yale', 'schlage', 'kwikset', 'nuki',
+      'dormakaba_oracode', 'latch', 'assa_abloy_credential_service', 'pti_storlogix'
+    ];
+
+    const seam = new SeamClient(null); // FIX: seamApiKey was undefined here (ReferenceError -> 500). Env key is used.
     const webview = await seam.createConnectWebview({
-      accepted_providers: [
-        'kisi', 'salto_ks', 'brivo', 'august', 'yale', 'schlage',
-        'kwikset', 'nuki', 'dormakaba_oracode', 'latch',
-        'assa_abloy_credential_service', 'pti_storlogix'
-      ],
+      accepted_providers: acceptedProviders,
       custom_redirect_url: `${req.protocol}://${req.get('host')}/gympartners-dashboard/connect-access?status=complete&gym_id=${gymId}`,
       custom_redirect_failure_url: `${req.protocol}://${req.get('host')}/gympartners-dashboard/connect-access?status=failed&gym_id=${gymId}`,
       custom_metadata: { gym_id: String(gymId), owner_id: String(req.user.id) },
       wait_for_device_creation: true,
     });
 
+    if (catalogEntry) {
+      await pool.query(
+        `UPDATE gyms SET access_system = $1, updated_at = NOW() WHERE id = $2`,
+        [catalogEntry.id, gymId]
+      );
+    }
+
     res.json({
       connect_webview_id: webview.connect_webview.connect_webview_id,
       url: webview.connect_webview.url,
       status: webview.connect_webview.status,
+      provider: catalogEntry ? catalogEntry.id : null,
     });
   } catch (err) {
     console.error('Create connect webview error:', err);
@@ -706,7 +837,7 @@ router.post('/owner/complete-connect', authenticateUser, async (req, res) => {
     );
     if (gym.rows.length === 0) return res.status(403).json({ error: 'Not your gym' });
 
-    const seam = new SeamClient(seamApiKey || null);
+    const seam = new SeamClient(null); // FIX: seamApiKey was undefined here (ReferenceError -> 500). Env key is used.
 
     // Get the webview status
     const wv = await seam.getConnectWebview(connectWebviewId);

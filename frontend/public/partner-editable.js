@@ -626,7 +626,7 @@ window._peOpenPartnerSettings=function(gymId){
     +'<span style="font-size:20px">🏢</span><div style="flex:1"><div style="color:#fff;font-size:14px;font-weight:600">Manage Gym</div><div style="color:rgba(255,255,255,.35);font-size:11px">Edit details, amenities, capacity</div></div><span style="color:rgba(255,255,255,.3)">→</span></div>'
 
     +'<div onclick="_partnerConnectSeam();_ctaCloseSheet()" style="display:flex;align-items:center;gap:14px;padding:14px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px;cursor:pointer;margin-bottom:8px">'
-    +'<span style="font-size:20px">🔐</span><div style="flex:1"><div style="color:#fff;font-size:14px;font-weight:600">Access Control</div><div style="color:rgba(255,255,255,.35);font-size:11px">Connect Seam / Kisi smart locks</div></div><span style="color:rgba(255,255,255,.3)">→</span></div>'
+    +'<span style="font-size:20px">🔐</span><div style="flex:1"><div style="color:#fff;font-size:14px;font-weight:600">Access Control</div><div style="color:rgba(255,255,255,.35);font-size:11px">Salto, Kisi, TTLock, GymMaster + more</div></div><span style="color:rgba(255,255,255,.3)">→</span></div>'
 
     +'<div onclick="_showPartnerScreen(6);_ctaCloseSheet()" style="display:flex;align-items:center;gap:14px;padding:14px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px;cursor:pointer;margin-bottom:8px">'
     +'<span style="font-size:20px">🚀</span><div style="flex:1"><div style="color:#fff;font-size:14px;font-weight:600">Growth Centre</div><div style="color:rgba(255,255,255,.35);font-size:11px">AI tips to boost revenue</div></div><span style="color:rgba(255,255,255,.3)">→</span></div>'
