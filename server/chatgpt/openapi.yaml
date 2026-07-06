@@ -22,7 +22,7 @@ info:
     - Monthly Pass: best value
     
     Free cancellation up to 2 hours before session.
-  version: 2.0.0
+  version: 2.1.0
 servers:
   - url: https://scangym.com
     description: ScanGym Production API
@@ -203,10 +203,35 @@ paths:
                 properties:
                   available:
                     type: boolean
+                    description: Whether the gym appears available for the requested date
                   gym:
                     type: object
+                    properties:
+                      placeId:
+                        type: string
+                      name:
+                        type: string
+                      address:
+                        type: string
                   pricing:
                     type: object
+                    properties:
+                      dayPass:
+                        type: number
+                      threeDay:
+                        type: number
+                      weekly:
+                        type: number
+                      monthly:
+                        type: number
+                      currency:
+                        type: string
+                      currencySymbol:
+                        type: string
+                  date:
+                    type: string
+                  time:
+                    type: string
                   message:
                     type: string
 
@@ -239,8 +264,8 @@ paths:
                 - email
               properties:
                 gymId:
-                  type: integer
-                  description: Internal gym ID (from search results)
+                  type: string
+                  description: Gym identifier — either the placeId string from search results or a numeric DB id
                 date:
                   type: string
                   format: date
@@ -335,11 +360,11 @@ components:
       description: Gym summary from search results — use dayPassPrice and currencySymbol for ACTUAL pricing
       properties:
         id:
-          type: integer
-          description: Internal gym ID (use for booking)
+          type: string
+          description: Gym identifier (Google placeId string — use for booking and getGymDetails)
         placeId:
           type: string
-          description: Google Places ID (use for getGymDetails)
+          description: Google Places ID (same as id — use for getGymDetails)
         name:
           type: string
           example: "PureGym Bolton"
@@ -347,8 +372,8 @@ components:
           type: string
           example: "123 High Street, Bolton BL1 1AA"
         distance:
-          type: string
-          description: Distance from search point
+          type: number
+          description: Distance from search point in km (when coordinates provided)
         distanceText:
           type: string
         dayPassPrice:
@@ -375,6 +400,9 @@ components:
     GymDetails:
       type: object
       properties:
+        placeId:
+          type: string
+          description: Google Places ID
         name:
           type: string
         address:
@@ -385,16 +413,17 @@ components:
           type: string
         googleMapsUrl:
           type: string
+        is24Hours:
+          type: boolean
+          description: Whether the gym is open 24/7
+        isSelfService:
+          type: boolean
+          description: Whether the gym uses self-service entry (keycard/QR/app)
         photos:
           type: array
           items:
             type: string
-          description: Photo URLs
-        facilities:
-          type: array
-          items:
-            type: string
-          description: Available facilities and equipment
+          description: Photo URLs (from the photos array in response)
 
     Pricing:
       type: object
@@ -402,6 +431,9 @@ components:
         dayPass:
           type: number
           description: Day pass price in local currency
+        dayPassPrice:
+          type: number
+          description: Day pass price (same as dayPass, for backward compatibility)
         threeDay:
           type: number
           description: 3-day pass price (~30% savings)
@@ -424,13 +456,21 @@ components:
     Rating:
       type: object
       properties:
-        average:
+        google:
           type: number
-        total:
+          description: Google Maps rating (1-5)
+        googleTotal:
           type: integer
-        breakdown:
+          description: Total number of Google reviews
+        scangym:
           type: object
-          description: Star distribution (1-5)
+          nullable: true
+          description: ScanGym community rating (if available)
+          properties:
+            average:
+              type: number
+            total:
+              type: integer
 
     Booking:
       type: object
@@ -440,6 +480,7 @@ components:
           description: Booking ID (save for cancellation)
         gymId:
           type: integer
+          description: Internal numeric gym ID
         gymName:
           type: string
         date:
@@ -464,6 +505,7 @@ components:
           description: URL to complete payment on scangym.com
         qrCodeUrl:
           type: string
+          nullable: true
           description: QR code URL (available after payment)
         status:
           type: string

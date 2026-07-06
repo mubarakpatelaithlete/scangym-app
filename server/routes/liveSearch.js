@@ -16,7 +16,7 @@ const router = express.Router();
 const pool = require('../middleware/db');
 const { optionalAuth, authenticateUser } = require('../middleware/auth');
 
-const { getCurrencyForCountry, getDayPassPrice, calculateGymPrice } = require('../lib/pricing-engine');
+const { getCurrencyForCountry, getDayPassPrice, calculateGymPrice, getAllGymPassPrices } = require('../lib/pricing-engine');
 
 const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
 const BASE_URL = 'https://maps.googleapis.com/maps/api/place';
@@ -265,6 +265,7 @@ function formatDbGym(row) {
     businessStatus: 'OPERATIONAL',
     openNow: null,
     is24Hours: row.is_24h || false,
+    is24h: row.is_24h || false,
     isSelfService: row.is_self_service || false,
     priceLevel: null,
     dayPassPrice: row.day_pass_price || gymPrice.amount,
@@ -303,6 +304,7 @@ function parseSearchResult(place) {
     businessStatus: place.business_status || 'OPERATIONAL',
     openNow: place.opening_hours?.open_now ?? null,
     is24Hours: detect24Hours(place),
+    is24h: detect24Hours(place),
     isSelfService: detectSelfService(place),
     priceLevel: place.price_level ?? null,
     dayPassPrice: gymPrice.amount,
@@ -346,8 +348,8 @@ async function enrichGymsWithDbPrices(gyms) {
       }
       if (dbRow.is_accepting_bookings === true) { gym.openNow = true; gym.ownerIsOpen = true; }
       else if (dbRow.is_accepting_bookings === false) { gym.openNow = false; gym.ownerIsOpen = false; }
-      if (dbRow.is_24h === true) gym.is24Hours = true;
-      if (dbRow.is_24h === false) gym.is24Hours = false;
+      if (dbRow.is_24h === true) { gym.is24Hours = true; gym.is24h = true; }
+      if (dbRow.is_24h === false) { gym.is24Hours = false; gym.is24h = false; }
       if (dbRow.is_self_service === true) gym.isSelfService = true;
       if (dbRow.is_self_service === false) gym.isSelfService = false;
     }
@@ -656,6 +658,95 @@ router.get('/nearby', async (req, res) => {
   }
 });
 
+// ─── Check Availability ─────────────────────────────────────────────
+// GET /api/live/check-availability?placeId=...&date=YYYY-MM-DD&time=HH:MM
+// Read-only check: is a gym likely available for a given date/time?
+// Does NOT create a booking or payment.
+router.get('/check-availability', async (req, res) => {
+  try {
+    const { placeId, date, time } = req.query;
+    if (!placeId || !date) {
+      return res.status(400).json({ error: 'placeId and date are required' });
+    }
+
+    // Validate date format
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return res.status(400).json({ error: 'date must be in YYYY-MM-DD format' });
+    }
+
+    // Fetch gym details (reuses the place details logic)
+    if (!GOOGLE_MAPS_API_KEY) {
+      return res.status(500).json({ error: 'Google Maps API key not configured' });
+    }
+
+    const cacheKey = `place:${placeId}`;
+    let placeData = getCached(cacheKey);
+
+    if (!placeData) {
+      const fields = 'name,formatted_address,formatted_phone_number,geometry,rating,user_ratings_total,opening_hours,types,website,url,price_level,business_status';
+      const url = `${BASE_URL}/details/json?place_id=${placeId}&fields=${fields}&key=${GOOGLE_MAPS_API_KEY}`;
+      const response = await fetch(url);
+      const data = await response.json();
+      if (data.status !== 'OK' || !data.result) {
+        return res.status(404).json({ error: 'Gym not found', available: false });
+      }
+      placeData = data.result;
+    }
+
+    const p = placeData.gym ? placeData : { gym: placeData };
+    const gymName = p.gym?.name || placeData.name || 'Unknown Gym';
+    const gymAddress = p.gym?.address || placeData.formatted_address || '';
+    const gymCountry = extractCountryCode(gymAddress);
+    const gymCurrency = getCurrencyForCountry(gymCountry);
+
+    // Look up owner price from DB if available
+    let ownerPrice = null;
+    try {
+      const dbResult = await pool.query('SELECT day_pass_price FROM gyms WHERE place_id = $1', [placeId]);
+      if (dbResult.rows.length > 0 && dbResult.rows[0].day_pass_price > 0) {
+        ownerPrice = parseFloat(dbResult.rows[0].day_pass_price);
+      }
+    } catch (e) { /* ignore DB errors */ }
+
+    const allPrices = getAllGymPassPrices({ gymDayPassPrice: ownerPrice, countryCode: gymCountry });
+
+    // Determine if gym is open on the requested date
+    const requestedDate = new Date(date + 'T12:00:00Z');
+    const dayOfWeek = requestedDate.getUTCDay(); // 0=Sun
+    const hours = placeData.opening_hours || p.openingHours || {};
+    const weekday = hours.weekday_text || hours.weekday || [];
+
+    // Basic availability: we assume available unless the gym is permanently closed
+    const businessStatus = placeData.business_status || p.gym?.businessStatus || 'OPERATIONAL';
+    const available = businessStatus !== 'CLOSED_PERMANENTLY' && businessStatus !== 'CLOSED_TEMPORARILY';
+
+    res.json({
+      available,
+      gym: {
+        placeId,
+        name: gymName,
+        address: gymAddress,
+      },
+      pricing: {
+        dayPass: allPrices.day.amount,
+        threeDay: allPrices['3day'].amount,
+        weekly: allPrices.weekly.amount,
+        monthly: allPrices.monthly.amount,
+        currency: gymCurrency.currency.toUpperCase(),
+        currencySymbol: gymCurrency.symbol,
+      },
+      date,
+      time: time || 'anytime',
+      message: available
+        ? 'This gym appears available for the requested date. Confirm details with the user before booking.'
+        : 'This gym may not be available. It appears to be temporarily or permanently closed.',
+    });
+  } catch (err) {
+    console.error('Check availability error:', err);
+    res.status(500).json({ error: 'Failed to check availability' });
+  }
+});
+
 router.get('/place/:placeId', optionalAuth, async (req, res) => {
   try {
     const { placeId } = req.params;
@@ -734,12 +825,20 @@ router.get('/place/:placeId', optionalAuth, async (req, res) => {
         isSelfService: detectSelfService(p),
         ownerIsOpen: dbGym?.is_accepting_bookings ?? null,
       },
-      pricing: {
-        dayPassPrice: calculateGymPrice({ gymDayPassPrice: dbGym?.day_pass_price, countryCode: gymCountry, passType: 'day' }).amount,
-        currency: gymCurrency.currency.toUpperCase(),
-        currencySymbol: gymCurrency.symbol,
-        source: (dbGym?.day_pass_price > 0) ? 'owner_price' : 'ppp_default',
-      },
+      pricing: (() => {
+        const allPrices = getAllGymPassPrices({ gymDayPassPrice: dbGym?.day_pass_price, countryCode: gymCountry });
+        return {
+          dayPass: allPrices.day.amount,
+          dayPassPrice: allPrices.day.amount, // backward compat
+          threeDay: allPrices['3day'].amount,
+          weekly: allPrices.weekly.amount,
+          monthly: allPrices.monthly.amount,
+          currency: gymCurrency.currency.toUpperCase(),
+          currencySymbol: gymCurrency.symbol,
+          surgeMultiplier: 1.0,
+          source: (dbGym?.day_pass_price > 0) ? 'owner_price' : 'ppp_default',
+        };
+      })(),
       rating: {
         google: p.rating || null,
         googleTotal: p.user_ratings_total || 0,

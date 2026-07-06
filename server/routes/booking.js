@@ -240,7 +240,8 @@ router.get('/:id', async (req, res) => {
  */
 router.post('/guest-create', async (req, res) => {
   try {
-    let { gymId, date, time, email, name, referral_code } = req.body;
+    let { gymId, date, time, email, name, referral_code, passType } = req.body;
+    passType = passType || 'Day Pass';
     if (!gymId || !date || !email) {
       return res.status(400).json({ error: 'gymId, date, and email are required' });
     }
@@ -256,11 +257,21 @@ router.post('/guest-create', async (req, res) => {
       return res.status(400).json({ error: 'Please enter a valid email address' });
     }
 
-    // Get gym info
-    const gym = await pool.query('SELECT id, name, address, country FROM gyms WHERE id = $1', [gymId]);
-    if (gym.rows.length === 0) {
-      return res.status(404).json({ error: 'Gym not found' });
+    // ChatGPT app fix: gymId may be a Google placeId string (e.g. "ChIJ...")
+    // instead of a numeric DB id. Resolve placeId → numeric id via gyms table.
+    const isNumericId = /^\d+$/.test(String(gymId));
+    let gym;
+    if (isNumericId) {
+      gym = await pool.query('SELECT id, name, address, country FROM gyms WHERE id = $1', [parseInt(gymId, 10)]);
+    } else {
+      // Lookup by place_id first
+      gym = await pool.query('SELECT id, name, address, country FROM gyms WHERE place_id = $1', [gymId]);
     }
+    if (gym.rows.length === 0) {
+      return res.status(404).json({ error: 'Gym not found. Use getGymDetails first to ensure the gym is registered.' });
+    }
+    // Normalise gymId to the numeric DB id for the rest of the handler
+    gymId = gym.rows[0].id;
 
     const g = gym.rows[0];
 
@@ -328,8 +339,12 @@ router.post('/guest-create', async (req, res) => {
         date: booking.booking_date,
         time: booking.start_time,
         endTime: booking.end_time,
+        passType: passType,
         price: parseFloat(booking.total_amount),
+        currency: pricing.getCurrencyForCountry(g.country || 'GB').currency.toUpperCase(),
         bookingCode: booking.booking_code,
+        paymentUrl: `https://scangym.com/checkout?booking=${booking.id}&code=${booking.booking_code}`,
+        qrCodeUrl: null, // available after payment
         status: booking.status,
       },
     });
