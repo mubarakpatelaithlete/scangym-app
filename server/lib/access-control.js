@@ -16,7 +16,7 @@
  *   - Kisi (direct API — best gym support, Access Links for day passes)
  *   - Salto KS (via Seam — cloud REST API)
  *   - Brivo (via Seam — cloud REST API)
- *   - GymMaster (via Seam — all-in-one gym software)
+ *   - GymMaster (direct Gatekeeper API — NOT available via Seam; see gymmaster-adapter.js)
  *   - Any Seam-supported system (30+ brands)
  *   - Manual/staff (fallback — existing QR flow)
  */
@@ -25,6 +25,7 @@ const SEAM_API_KEY = process.env.SEAM_API_KEY || '';
 const KISI_API_KEY = process.env.KISI_API_KEY || '';
 const SEAM_BASE = 'https://connect.getseam.com';
 const KISI_BASE = 'https://api.kisi.io';
+const { GymMasterClient } = require('./gymmaster-adapter');
 
 // ═══════════════════════════════════════════════════════════════════
 // Seam Universal API Client
@@ -292,8 +293,16 @@ class AccessProvisioningService {
         case 'salto':
         case 'brivo':
         case 'latch':
+        case 'avigilon':   // ex-Openpath
+        case 'openpath':
+        case 'akiles':     // Spain beachhead
+        case 'ttlock':     // covers Sifely + rebadged TTLock brands
+        case 'sifely':
+        case 'igloohome':
         case 'seam':
           return await this._provisionSeam(gym, booking, user, startsAt, endsAt);
+        case 'gymmaster':
+          return await this._provisionGymMaster(gym, booking, user, startsAt, endsAt);
         default:
           console.warn(`Unknown access system: ${system} for gym ${gym.id}`);
           return null;
@@ -330,6 +339,34 @@ class AccessProvisioningService {
       starts_at: startsAt.toISOString(),
       ends_at: endsAt.toISOString(),
       instructions: 'Scan this QR code at the gym door reader to unlock. No app download needed.',
+    };
+  }
+
+  /**
+   * GymMaster provisioning — direct Gatekeeper API.
+   * The Gatekeeper API (v2) validates swipes and logs visits but CANNOT
+   * issue temporary credentials, so day passes fall back to ScanGym's
+   * staff-verified QR flow. We still verify the connection and return a
+   * credential object that lets check-in write the visit back into
+   * GymMaster (attendance stays accurate for the gym owner).
+   * Full PIN issuance via GymMaster main API lands in Sprint 2.
+   */
+  async _provisionGymMaster(gym, booking, user, startsAt, endsAt) {
+    const cfg = gym.access_config || {};
+    const gm = new GymMasterClient(cfg);
+    await gm.testConnection(); // throws with clear error if creds are wrong
+
+    return {
+      type: 'gymmaster_manual',
+      provider: 'gymmaster',
+      access_url: null,
+      access_qr_url: null,
+      pin: null,
+      mobile_key: false,
+      starts_at: startsAt.toISOString(),
+      ends_at: endsAt.toISOString(),
+      log_visit_on_checkin: true, // check-in flow should call GymMasterClient.logVisit()
+      instructions: 'Show your ScanGym QR code at the front desk or door scanner. Staff will verify and let you in.',
     };
   }
 
