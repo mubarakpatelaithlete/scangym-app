@@ -11,7 +11,8 @@
  *   POST /api/access/owner/connect-kisi    — Connect Kisi account
  *   POST /api/access/owner/connect-seam    — Connect via Seam (Salto/Brivo/etc)
  *   POST /api/access/owner/connect-gymmaster — Connect GymMaster (direct Gatekeeper API)
- *   GET  /api/access/owner/systems         — List available access systems
+ *   POST /api/access/owner/request-integration — Log interest for upcoming integrations
+ *   GET  /api/access/owner/systems         — List available access systems (60+ brands)
  *   PUT  /api/access/owner/configure/:gymId — Configure access settings
  *   DELETE /api/access/owner/disconnect/:gymId — Disconnect access system
  *
@@ -565,166 +566,100 @@ router.post('/owner/connect-gymmaster', authenticateUser, express.json(), async 
   }
 });
 
-// GET /api/access/owner/systems — List available access systems for a gym
-// Full catalogue including Sprint 1 providers (PR #508)
+// GET /api/access/owner/systems — Full catalogue of supported access systems
+// Includes Seam-routed (60+), direct API, and request-integration brands
 router.get('/owner/systems', authenticateUser, async (req, res) => {
   const systems = [
-    // ── Popular / Direct API ──────────────────────────────────────
-    {
-      id: 'kisi',
-      name: 'Kisi',
-      description: 'Cloud-based access control with QR code door unlock. Best for gyms.',
-      setup: 'Enter your Kisi API key — members get time-limited QR codes.',
-      features: ['QR code unlock', 'Mobile app unlock', 'PIN codes', 'Apple/Google Wallet'],
-      website: 'https://getkisi.com',
-      logo: '🔐',
-      connection: 'direct',
-      popular: true,
-      tags: ['gym-focused', 'qr-unlock'],
-    },
+    // ── ⭐ GYM FAVOURITES (Direct + Seam) ─────────────────────────
+    { id: 'kisi',       name: 'Kisi',       connection: 'direct', popular: true,  cat: 'gym', tags: ['gym-focused', 'qr-unlock'], website: 'https://getkisi.com',  description: 'Cloud-based access with QR code door unlock — #1 for gyms' },
+    { id: 'salto',      name: 'Salto KS',   connection: 'seam',   popular: true,  cat: 'gym', tags: ['uk-popular', 'eu-popular'], website: 'https://saltoks.com',   description: 'Cloud smart locks — UK/EU gyms' },
+    { id: 'brivo',      name: 'Brivo',       connection: 'seam',   popular: true,  cat: 'gym', tags: ['us-popular', 'enterprise'], website: 'https://brivo.com',     description: 'Enterprise cloud access — US gyms' },
+    { id: 'gymmaster',  name: 'GymMaster',   connection: 'direct', popular: true,  cat: 'gym', tags: ['gym-software'],             website: 'https://gymmaster.com', description: 'All-in-one gym software + Gatekeeper door access' },
+    { id: 'paxton',     name: 'Paxton',      connection: 'seam',   popular: true,  cat: 'gym', tags: ['uk-popular'],               website: 'https://paxton.co.uk',  description: 'Very popular in UK gyms — Net2/10' },
+    { id: 'dormakaba',  name: 'Dormakaba',   connection: 'seam',   popular: true,  cat: 'gym', tags: ['commercial'],               website: 'https://dormakaba.com', description: 'Commercial locks — popular in gyms' },
 
-    // ── Via Seam (30+ brands, OAuth-style onboarding) ────────────
-    {
-      id: 'salto',
-      name: 'Salto KS',
-      description: 'Cloud-based smart locks popular in UK/EU gyms.',
-      setup: 'Connect your Salto KS account — members get PIN codes or mobile keys.',
-      features: ['PIN codes', 'Mobile credentials', 'Face recognition (XS4 Face)'],
-      website: 'https://saltoks.com',
-      logo: '🏢',
-      connection: 'seam',
-      popular: true,
-      tags: ['uk-popular', 'eu-popular'],
-    },
-    {
-      id: 'brivo',
-      name: 'Brivo',
-      description: 'Enterprise cloud access control for larger independents.',
-      setup: 'Connect your Brivo account — members get mobile access passes.',
-      features: ['Mobile Pass', 'Card access', 'Video integration'],
-      website: 'https://brivo.com',
-      logo: '🔑',
-      connection: 'seam',
-      popular: true,
-      tags: ['us-popular', 'enterprise'],
-    },
-    {
-      id: 'latch',
-      name: 'Latch',
-      description: 'Smart access for multitenant buildings — common in co-working gym spaces.',
-      setup: 'Connect your Latch account — members get mobile key access.',
-      features: ['Mobile key', 'PIN codes', 'Doorbell camera'],
-      website: 'https://latch.com',
-      logo: '🚪',
-      connection: 'seam',
-      popular: false,
-      tags: ['multitenant'],
-    },
-    {
-      id: 'avigilon',
-      name: 'Avigilon Alta (Openpath)',
-      description: 'Former Openpath — touchless mobile access with wave-to-unlock.',
-      setup: 'Connect your Avigilon/Openpath account — members get mobile credentials.',
-      features: ['Wave to unlock', 'Mobile credential', 'Cloud management'],
-      website: 'https://avigilon.com/alta',
-      logo: '📱',
-      connection: 'seam',
-      popular: false,
-      tags: ['touchless'],
-    },
-    {
-      id: 'akiles',
-      name: 'Akiles',
-      description: 'Smart access for co-working and fitness — popular in Spain.',
-      setup: 'Connect your Akiles account — members get mobile key or PIN access.',
-      features: ['Mobile key', 'PIN codes', 'Time-based access'],
-      website: 'https://akiles.app',
-      logo: '🇪🇸',
-      connection: 'seam',
-      popular: false,
-      tags: ['spain', 'eu'],
-    },
-    {
-      id: 'ttlock',
-      name: 'TTLock',
-      description: 'Widely used smart lock platform — covers Sifely, SwitchBot Lock, and rebadged brands.',
-      setup: 'Connect your TTLock account — members get time-limited PIN codes.',
-      features: ['PIN codes', 'Bluetooth unlock', 'Passcode management'],
-      website: 'https://ttlock.com',
-      logo: '🔒',
-      connection: 'seam',
-      popular: true,
-      tags: ['budget-friendly', 'wide-compatibility'],
-    },
-    {
-      id: 'sifely',
-      name: 'Sifely',
-      description: 'Smart lock brand built on TTLock — popular for smaller gyms.',
-      setup: 'Connect your Sifely account — members get time-limited PIN codes.',
-      features: ['PIN codes', 'Fingerprint', 'Bluetooth unlock'],
-      website: 'https://sifely.com',
-      logo: '🏠',
-      connection: 'seam',
-      popular: false,
-      tags: ['budget-friendly', 'small-gym'],
-    },
-    {
-      id: 'igloohome',
-      name: 'igloohome',
-      description: 'Offline-capable smart locks — works even without WiFi (algoPIN™).',
-      setup: 'Connect your igloohome account — members get offline-capable PIN codes.',
-      features: ['Offline PIN codes', 'Bluetooth unlock', 'No WiFi needed'],
-      website: 'https://igloohome.co',
-      logo: '🏔️',
-      connection: 'seam',
-      popular: false,
-      tags: ['offline-capable', 'apac'],
-    },
+    // ── 🔒 SMART LOCKS (via Seam) ─────────────────────────────────
+    { id: 'ttlock',      name: 'TTLock / Sifely',  connection: 'seam', popular: false, cat: 'smart', tags: ['budget'], website: 'https://ttlock.com',     description: 'Budget-friendly smart locks — PIN codes' },
+    { id: 'yale',        name: 'Yale',              connection: 'seam', popular: false, cat: 'smart', tags: [],         website: 'https://yalehome.com',   description: 'Smart locks — Assure, Linus, Conexis' },
+    { id: 'schlage',     name: 'Schlage',            connection: 'seam', popular: false, cat: 'smart', tags: [],         website: 'https://schlage.com',    description: 'Encode WiFi smart deadbolts' },
+    { id: 'august',      name: 'August',             connection: 'seam', popular: false, cat: 'smart', tags: [],         website: 'https://august.com',     description: 'WiFi smart locks — retrofit friendly' },
+    { id: 'nuki',        name: 'Nuki',               connection: 'seam', popular: false, cat: 'smart', tags: ['eu'],     website: 'https://nuki.io',        description: 'European smart locks — BLE + WiFi' },
+    { id: 'tedee',       name: 'Tedee',              connection: 'seam', popular: false, cat: 'smart', tags: ['eu'],     website: 'https://tedee.com',      description: 'Compact smart locks — Bluetooth/WiFi' },
+    { id: 'lockly',      name: 'Lockly',             connection: 'seam', popular: false, cat: 'smart', tags: [],         website: 'https://lockly.com',     description: 'PIN Genie rotating keypad' },
+    { id: 'ultraloq',    name: 'Ultraloq',           connection: 'seam', popular: false, cat: 'smart', tags: [],         website: 'https://u-tec.com',      description: 'Fingerprint + keypad smart locks' },
+    { id: 'igloohome',   name: 'igloohome',          connection: 'seam', popular: false, cat: 'smart', tags: ['offline'],website: 'https://igloohome.co',   description: 'Offline-capable — works without WiFi' },
+    { id: 'kwikset',     name: 'Kwikset',            connection: 'seam', popular: false, cat: 'smart', tags: [],         website: 'https://kwikset.com',    description: 'Halo WiFi smart locks' },
+    { id: 'level',       name: 'Level',              connection: 'seam', popular: false, cat: 'smart', tags: [],         website: 'https://level.co',       description: 'Invisible smart lock — hidden inside door' },
+    { id: 'wyze',        name: 'Wyze',               connection: 'seam', popular: false, cat: 'smart', tags: ['budget'], website: 'https://wyze.com',       description: 'Affordable smart home locks' },
+    { id: 'smonet',      name: 'Smonet',             connection: 'seam', popular: false, cat: 'smart', tags: [],         website: 'https://smonetlock.com', description: 'Keyless entry — fingerprint' },
+    { id: 'welock',      name: 'Welock',             connection: 'seam', popular: false, cat: 'smart', tags: ['eu'],     website: 'https://welock.com',     description: 'European fingerprint + card locks' },
+    { id: '33lock',      name: '33 Lock',            connection: 'seam', popular: false, cat: 'smart', tags: [],         description: 'Smart locks with remote access' },
+    { id: '4suites',     name: '4SUITES',            connection: 'seam', popular: false, cat: 'smart', tags: [],         description: 'Hospitality smart locks' },
+    { id: 'smartthings', name: 'SmartThings',        connection: 'seam', popular: false, cat: 'smart', tags: [],         description: 'Samsung smart home — locks & sensors' },
+    { id: 'switchbot',   name: 'SwitchBot',          connection: 'seam', popular: false, cat: 'smart', tags: [],         description: 'Smart home locks — BLE + WiFi' },
+    { id: 'ring',        name: 'Ring',               connection: 'seam', popular: false, cat: 'smart', tags: [],         description: 'Video doorbell + smart locks' },
+    { id: 'nest',        name: 'Google Nest',        connection: 'seam', popular: false, cat: 'smart', tags: [],         description: 'Nest × Yale smart locks' },
+    { id: 'tapkey',      name: 'Tapkey',             connection: 'request', popular: false, cat: 'smart', tags: ['api'], description: 'NFC + Bluetooth — digital keys for cylinders' },
 
-    // ── Gym Software (Direct API) ────────────────────────────────
-    {
-      id: 'gymmaster',
-      name: 'GymMaster',
-      description: 'All-in-one gym management with Gatekeeper door access. Visit logging + swipe validation.',
-      setup: 'Enter your GymMaster site name and API key — found in Settings > Integrations > Gatekeeper API.',
-      features: ['Swipe validation', 'Visit logging', 'Member sync', 'Attendance reports'],
-      website: 'https://gymmaster.com',
-      logo: '🏋️',
-      connection: 'direct',
-      popular: true,
-      tags: ['gym-software', 'all-in-one'],
-      note: 'Day-pass PIN issuance coming in Sprint 2. Until then, visitors use ScanGym QR + staff verification.',
-    },
+    // ── 🏢 COMMERCIAL ACCESS CONTROL (via Seam + request) ─────────
+    { id: 'avigilon',    name: 'Avigilon Alta / Openpath', connection: 'seam',    popular: false, cat: 'commercial', tags: ['touchless'],  description: 'Touchless wave-to-unlock — REST API' },
+    { id: 'latch',       name: 'Latch',                    connection: 'seam',    popular: false, cat: 'commercial', tags: ['multitenant'], description: 'Smart access for multi-tenant buildings' },
+    { id: 'assaabloy',   name: 'ASSA ABLOY',               connection: 'seam',    popular: false, cat: 'commercial', tags: ['enterprise'],  description: 'Global leader — Aperio, Incedo, HID' },
+    { id: 'hid',         name: 'HID Global',               connection: 'seam',    popular: false, cat: 'commercial', tags: ['enterprise'],  description: 'Enterprise card readers & mobile access' },
+    { id: 'allegion',    name: 'Allegion',                  connection: 'seam',    popular: false, cat: 'commercial', tags: [],              description: 'Schlage, Von Duprin — commercial hardware' },
+    { id: 'honeywell',   name: 'Honeywell',                connection: 'seam',    popular: false, cat: 'commercial', tags: [],              description: 'Building automation + access control' },
+    { id: '2n',          name: '2N',                        connection: 'seam',    popular: false, cat: 'commercial', tags: [],              description: 'IP intercoms + access — Axis company' },
+    { id: 'akiles',      name: 'Akiles',                    connection: 'seam',    popular: false, cat: 'commercial', tags: ['spain'],       description: 'Smart access — popular in Spain' },
+    { id: 'verkada',     name: 'Verkada',                   connection: 'seam',    popular: false, cat: 'commercial', tags: [],              description: 'Cloud security — cameras + access' },
+    { id: 'genetec',     name: 'Genetec',                   connection: 'seam',    popular: false, cat: 'commercial', tags: ['enterprise'],  description: 'Unified security platform' },
+    { id: 'lenel',       name: 'Lenel S2',                  connection: 'seam',    popular: false, cat: 'commercial', tags: ['enterprise'],  description: 'Enterprise access — Carrier company' },
+    { id: 'pdk',         name: 'ProdataKey (PDK)',          connection: 'request', popular: false, cat: 'commercial', tags: ['api'],         description: 'Cloud access control — open REST API' },
+    { id: 'swiftlane',   name: 'Swiftlane',                connection: 'seam',    popular: false, cat: 'commercial', tags: [],              description: 'Facial recognition + mobile access' },
+    { id: 'pti',         name: 'PTI Security',              connection: 'seam',    popular: false, cat: 'commercial', tags: [],              description: 'Self-storage & facility access' },
+    { id: 'kantech',     name: 'Kantech',                   connection: 'seam',    popular: false, cat: 'commercial', tags: [],              description: 'Tyco/Johnson Controls access' },
+    { id: 'doorking',    name: 'DoorKing',                  connection: 'seam',    popular: false, cat: 'commercial', tags: [],              description: 'Gate & door entry systems' },
+    { id: 'doorbird',    name: 'DoorBird',                  connection: 'seam',    popular: false, cat: 'commercial', tags: [],              description: 'IP video door stations + access' },
+    { id: 'iloq',        name: 'iLOQ',                      connection: 'seam',    popular: false, cat: 'commercial', tags: [],              description: 'Self-powered digital locks' },
 
-    // ── Catch-all Seam ───────────────────────────────────────────
-    {
-      id: 'seam',
-      name: 'Other Smart Lock (30+ brands)',
-      description: 'Don\'t see your lock above? Seam supports 30+ brands including August, Yale, Schlage, Nuki, and more.',
-      setup: 'Click Connect and log into your lock provider — Seam handles the rest automatically.',
-      features: ['Auto-detect provider', 'PIN codes', 'Mobile keys', 'Remote unlock'],
-      website: 'https://seam.co',
-      logo: '🔗',
-      connection: 'seam',
-      popular: false,
-      tags: ['catch-all', 'auto-detect'],
-    },
+    // ── 🏋️ GYM SOFTWARE (Open APIs — request) ─────────────────────
+    { id: 'perfectgym',  name: 'PerfectGym',           connection: 'request', popular: false, cat: 'gymsw', tags: ['openapi3'],   description: 'Gym software with OpenAPI 3.0 — access + CRM' },
+    { id: 'gymdesk',     name: 'Gymdesk',              connection: 'request', popular: false, cat: 'gymsw', tags: ['api'],        description: 'Gym management with door access integrations' },
+    { id: 'glofox',      name: 'Glofox / ABC Fitness', connection: 'request', popular: false, cat: 'gymsw', tags: ['api'],        description: 'Member apps + Kisi/Brivo integration' },
+    { id: 'clubready',   name: 'ClubReady',            connection: 'request', popular: false, cat: 'gymsw', tags: ['api'],        description: 'Club management with access control APIs' },
+    { id: 'mindbody',    name: 'Mindbody',             connection: 'request', popular: false, cat: 'gymsw', tags: ['api'],        description: 'Fitness & wellness platform with access APIs' },
+    { id: 'ezfacility',  name: 'EZFacility',           connection: 'request', popular: false, cat: 'gymsw', tags: ['api'],        description: 'Facility management with door integrations' },
 
-    // ── Manual fallback ──────────────────────────────────────────
-    {
-      id: 'manual',
-      name: 'No Smart Lock / Staff Verification',
-      description: 'Default mode. Staff scans the ScanGym QR code at reception to verify the booking.',
-      setup: 'No setup needed — this is the default.',
-      features: ['QR code shown at reception', '2-scan system (entry + exit)'],
-      logo: '👤',
-      connection: 'none',
-      popular: false,
-      tags: ['fallback'],
-    },
+    // ── 🔗 CATCH-ALL ──────────────────────────────────────────────
+    { id: 'seam',    name: 'Other / Not Listed (60+ brands)', connection: 'seam', popular: false, cat: 'other', tags: ['catch-all'], description: 'Auto-detect via Seam Connect — August, Nuki, and more' },
+    { id: 'manual',  name: 'No Smart Lock / Staff Verification', connection: 'none', popular: false, cat: 'other', tags: ['fallback'], description: 'Staff scans ScanGym QR to verify visitors' },
   ];
 
   res.json({ systems });
+});
+
+// POST /api/access/owner/request-integration — Log interest for upcoming integrations
+router.post('/owner/request-integration', authenticateUser, express.json(), async (req, res) => {
+  try {
+    const { gymId, system, email, note } = req.body;
+    // Log the request (store in a simple table or just console log for now)
+    console.log(`[Integration Request] gym=${gymId} system=${system} email=${email} note=${note} user=${req.user.id}`);
+
+    // Try to store in DB if integration_requests table exists, otherwise just log
+    try {
+      await pool.query(`
+        INSERT INTO integration_requests (gym_id, user_id, system_id, email, note, created_at)
+        VALUES ($1, $2, $3, $4, $5, NOW())
+      `, [gymId, req.user.id, system, email || '', note || '']);
+    } catch (e) {
+      // Table may not exist yet — that's fine, we logged it above
+      console.log('[Integration Request] DB insert skipped (table may not exist):', e.message);
+    }
+
+    res.json({ requested: true, system, message: `We've logged your interest in ${system}. We'll reach out when it's ready!` });
+  } catch (err) {
+    console.error('Integration request error:', err);
+    res.status(500).json({ error: 'Failed to submit request' });
+  }
 });
 
 // PUT /api/access/owner/configure/:gymId — Update access settings
