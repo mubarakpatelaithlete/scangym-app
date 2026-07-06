@@ -588,4 +588,38 @@ router.post('/confirm-cash', async (req, res) => {
   }
 });
 
+// ─── GET /api/qr/image/:token — Public QR PNG ────────────────
+// Serves the booking QR as a real PNG so chat channels that can't render
+// data-URLs (WhatsApp via ManyChat, Telegram, etc.) can send it as an image
+// message. The token is a long unguessable secret, so possession of the URL
+// is equivalent to possession of the QR itself (same trust level as email).
+// Accepts an optional .png suffix: /api/qr/image/{token}.png
+router.get('/image/:token', async (req, res) => {
+  try {
+    const token = String(req.params.token || '').replace(/\.png$/i, '');
+    if (!token || token.length < 10) return res.status(400).json({ error: 'Invalid token' });
+
+    const result = await pool.query(
+      'SELECT qr_token FROM booking_qr_codes WHERE qr_token = $1', [token]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'QR code not found' });
+
+    const scanUrl = `https://scangym.com/scan/${token}`;
+    const buf = await QRCode.toBuffer(scanUrl, {
+      type: 'png',
+      width: 500,
+      margin: 2,
+      color: { dark: '#000000', light: '#FFFFFF' },
+      errorCorrectionLevel: 'H',
+    });
+
+    res.set('Content-Type', 'image/png');
+    res.set('Cache-Control', 'private, max-age=3600');
+    res.send(buf);
+  } catch (err) {
+    console.error('QR image error:', err.message);
+    res.status(500).json({ error: 'Failed to render QR image' });
+  }
+});
+
 module.exports = router;
