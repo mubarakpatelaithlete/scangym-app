@@ -99,7 +99,22 @@
     async function init() {
       try {
         // FIX: Also fetch wallet balance (triggers commission back-pay reconciliation)
-        const [memberRes, uploadsRes, landingRes, walletRes] = await Promise.all([
+            // FIX: Sync creator handle from localStorage to backend (fixes wallet £0 bug)
+    try {
+      var cd = JSON.parse(localStorage.getItem('sg_creator') || 'null');
+      var h = cd && (cd.handle || cd.slug);
+      if (h) {
+        await fetch('/api/creators/sync-handle', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ handle: h })
+        });
+        console.log('[ScanSquad] Synced handle:', h);
+      }
+    } catch(e) { console.warn('[ScanSquad] Handle sync failed:', e.message); }
+
+const [memberRes, uploadsRes, landingRes, walletRes] = await Promise.all([
           fetch('/api/creators/me').then(r => r.json()),
           fetch('/api/creators/uploads?limit=50').then(r => r.json()).catch(() => ({ uploads: [] })),
           fetch('/api/creators/landing-pages').then(r => r.json()).catch(() => ({ pages: [] })),
