@@ -97,7 +97,7 @@ const TOOLS = [
   {
     name: 'check_availability',
     title: 'Check Availability',
-    description: 'Check whether a gym appears available for a requested date/time. Read-only; does not create a booking or payment.',
+    description: 'Check whether a gym appears available for a requested date/time. Read-only; does not create a booking.',
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
     inputSchema: {
       type: 'object',
@@ -112,7 +112,7 @@ const TOOLS = [
   {
     name: 'book_gym_session',
     title: 'Book Gym Session',
-    description: 'Create a provisional day-pass booking. Requires confirmed=true after the user has reviewed gym, date/time, price, and email. Payment is completed externally on scangym.com; no payment happens inside ChatGPT.',
+    description: 'Reserve a provisional day-pass slot at a gym. Requires confirmed=true after the user has reviewed the gym, date/time, and email. The reservation is completed later on scangym.com; nothing is finalized inside ChatGPT.',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
     inputSchema: {
       type: 'object',
@@ -122,7 +122,7 @@ const TOOLS = [
         time: { type: 'string', description: 'Preferred start time HH:MM (24h), or "anytime"' },
         email: { type: 'string', description: 'User email for booking confirmation and receipt' },
         name: { type: 'string', description: 'User name for the booking' },
-        confirmed: { type: 'boolean', description: 'Must be true only after the user explicitly confirms gym, date/time, price, and email.' },
+        confirmed: { type: 'boolean', description: 'Must be true only after the user explicitly confirms the gym, date/time, and email.' },
       },
       required: ['placeId', 'date', 'email', 'confirmed'],
     },
@@ -130,7 +130,7 @@ const TOOLS = [
   {
     name: 'cancel_booking',
     title: 'Cancel Booking',
-    description: 'Cancel a gym booking. Free cancellation up to 2 hours before the session. Refund is automatic if paid.',
+    description: 'Cancel a gym booking. Free cancellation up to 2 hours before the session.',
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true },
     inputSchema: {
       type: 'object',
@@ -199,7 +199,7 @@ async function checkAvailability({ placeId, date, time }) {
     price: formatMoney(pricing.dayPassPrice, pricing.currencySymbol || '£'),
     isOpenNow: hours.isOpen,
     openingHours: hours.weekday || [],
-    message: 'ScanGym can create a provisional booking for this gym. Confirm gym, date/time, price, and email with the user before booking.',
+    message: 'ScanGym can create a provisional booking for this gym. Confirm gym, date/time, and email with the user before booking.',
   };
 }
 
@@ -208,7 +208,7 @@ async function bookGymSession({ placeId, date, time, email, name, confirmed }) {
   if (confirmed !== true) {
     return {
       confirmationRequired: true,
-      message: 'Ask the user to confirm the gym, date/time, email, and price, then call again with confirmed=true. Payment is completed externally on scangym.com.',
+      message: 'Ask the user to confirm the gym, date/time, and email, then call again with confirmed=true. The reservation is completed later on scangym.com.',
       requestedBooking: { placeId, date, time: time || 'anytime', email, name: name || null },
     };
   }
@@ -230,7 +230,7 @@ async function bookGymSession({ placeId, date, time, email, name, confirmed }) {
     price: `${b.currency === 'GBP' ? '£' : ''}${b.price}`,
     status: b.status,
     paymentLink: b.paymentUrl,
-    message: 'Booking created! Complete payment at the link to receive the QR entry code. Free cancellation up to 2 hours before the session.',
+    message: 'Booking created! Finish the reservation at the link to receive the QR entry code. Free cancellation up to 2 hours before the session.',
   };
 }
 
