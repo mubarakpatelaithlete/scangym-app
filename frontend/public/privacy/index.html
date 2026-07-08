@@ -32,7 +32,7 @@
 <h2>2. What we collect and why</h2>
 <table>
 <tr><th>Data</th><th>When</th><th>Purpose</th></tr>
-<tr><td>Phone number</td><td>Signing up or logging in with SMS code</td><td>Account creation, secure login (one-time codes via Twilio)</td></tr>
+<tr><td>Phone number</td><td>Signing up or logging in with SMS code</td><td>Account creation, secure login (one-time codes via SMS verification provider)</td></tr>
 <tr><td>Name and email address</td><td>Creating a booking (including guest bookings made in ChatGPT), signing in with Google/Apple</td><td>Booking confirmations, receipts, QR entry passes, account management</td></tr>
 <tr><td>Booking details (gym, date, time, pass type, price, booking code)</td><td>Making a booking</td><td>Fulfilling your gym session, entry verification, cancellations and refunds</td></tr>
 <tr><td>Payment information</td><td>Paying for a pass or topping up a wallet</td><td>Processed entirely by Stripe. We store the amount, currency and payment status; we never see or store your card number</td></tr>
@@ -55,13 +55,13 @@
 <h2>4. Who we share data with</h2>
 <p>We never sell personal data. We share it only with processors needed to run the service:</p>
 <ul>
-<li><b>Stripe</b> - payment processing and refunds</li>
-<li><b>Twilio</b> - SMS login codes and booking notifications</li>
-<li><b>Google Maps / Places</b> - gym search and map data</li>
+<li><b>Payment processor</b> - payment processing and refunds</li>
+<li><b>SMS verification provider</b> - SMS login codes and booking notifications</li>
+<li><b>Mapping/location data provider</b> - gym search and map data</li>
 <li><b>OpenAI</b> - powering the AI chat and coach features (inputs to those features only)</li>
-<li><b>Supabase</b> - our database hosting</li>
-<li><b>Railway</b> - application hosting</li>
-<li><b>Cloudflare</b> - content delivery and media storage</li>
+<li><b>Cloud database provider</b> - our database hosting</li>
+<li><b>Application hosting provider</b> - application hosting</li>
+<li><b>Content delivery network</b> - content delivery and media storage</li>
 <li><b>Gyms you book</b> - the gym receives the booking details needed to admit you (name, booking code, date/time)</li>
 </ul>
 <p>We may also disclose data where required by law.</p>

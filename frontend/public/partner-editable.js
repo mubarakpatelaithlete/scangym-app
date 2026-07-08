@@ -456,7 +456,7 @@ function _peClaimCard(){
     +'<h2 style="color:#fff;font-size:24px;font-weight:900;margin:0 0 8px;text-shadow:0 2px 10px rgba(0,0,0,.5)">Your Gym Goes Here</h2>'
     +'<p style="color:rgba(255,255,255,.5);font-size:14px;margin:0 0 24px">Claim your gym to see it exactly like your customers do — but with full editing power</p>'
     +'<button onclick="window._peOpenClaimSearch()" style="background:#FF6D00;color:#fff;border:none;border-radius:14px;padding:16px 32px;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 24px rgba(255,109,0,.4);width:100%">🔍 Find & Claim Your Gym</button>'
-    +'<p style="color:rgba(255,255,255,.3);font-size:11px;margin-top:12px">1.2M+ gyms from Google Places · Free to claim</p>'
+    +'<p style="color:rgba(255,255,255,.3);font-size:11px;margin-top:12px">1.2M+ gyms · Free to claim</p>'
     +'</div>'
     // Bottom info (mimicking Book tab)
     +'<div class="pe-info">'
@@ -626,7 +626,7 @@ window._peOpenPartnerSettings=function(gymId){
     +'<span style="font-size:20px">🏢</span><div style="flex:1"><div style="color:#fff;font-size:14px;font-weight:600">Manage Gym</div><div style="color:rgba(255,255,255,.35);font-size:11px">Edit details, amenities, capacity</div></div><span style="color:rgba(255,255,255,.3)">→</span></div>'
 
     +'<div onclick="_partnerConnectSeam();_ctaCloseSheet()" style="display:flex;align-items:center;gap:14px;padding:14px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px;cursor:pointer;margin-bottom:8px">'
-    +'<span style="font-size:20px">🔐</span><div style="flex:1"><div style="color:#fff;font-size:14px;font-weight:600">Access Control</div><div style="color:rgba(255,255,255,.35);font-size:11px">Connect Seam / Kisi smart locks</div></div><span style="color:rgba(255,255,255,.3)">→</span></div>'
+    +'<span style="font-size:20px">🔐</span><div style="flex:1"><div style="color:#fff;font-size:14px;font-weight:600">Access Control</div><div style="color:rgba(255,255,255,.35);font-size:11px">Connect smart locks</div></div><span style="color:rgba(255,255,255,.3)">→</span></div>'
 
     +'<div onclick="_showPartnerScreen(6);_ctaCloseSheet()" style="display:flex;align-items:center;gap:14px;padding:14px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px;cursor:pointer;margin-bottom:8px">'
     +'<span style="font-size:20px">🚀</span><div style="flex:1"><div style="color:#fff;font-size:14px;font-weight:600">Growth Centre</div><div style="color:rgba(255,255,255,.35);font-size:11px">AI tips to boost revenue</div></div><span style="color:rgba(255,255,255,.3)">→</span></div>'

@@ -85,7 +85,7 @@ function trackPageView(p){if(typeof gtag==='function')gtag('event','page_view',{
 
 let MAPS_KEY='';
 let STRIPE_PK='';
-// Bug #14 fix: Use honest gym count — Google Places searchable, not "listed"
+// Bug #14 fix: Use honest gym count — gym directory searchable, not "listed"
 let GYM_COUNT=0;
 function fmtCount(n){if(n>=1000000)return (n/1000000).toFixed(1).replace(/\.0$/,'')+'M+';if(n>=1000)return (n/1000).toFixed(0)+'K+';return n.toLocaleString();}
 
@@ -944,14 +944,14 @@ function Footer(){
   </footer>`;
 }
 
-// Smart facility tags — derives badges from Google Places types + gym name
+// Smart facility tags — derives badges from location data types + gym name
 // H3 fix: prioritise real Google types data over hardcoded name guesses
 function getCardFacilities(gym){
   const n=(gym.name||'').toLowerCase();
   const types=(gym.types||[]).map(t=>t.toLowerCase());
   const t=types.join(' ');
 
-  // ── Step 1: Build tags from real Google Places types ──
+  // ── Step 1: Build tags from real location data types ──
   const typeMap={
     'swimming_pool':  '🏊 Pool',
     'spa':            '🧖 Spa',
@@ -1081,7 +1081,7 @@ function HomePage(){
   // Single-screen dashboard — everything fits in one viewport, no scroll
   const hour=new Date().getHours();
   const greeting=hour<12?'Good morning ☀️':hour<17?'Good afternoon 💪':'Good evening 🌙';
-  // Fix #6: Include country code so Google Places returns correct region (Bolton UK, not Bolton Canada)
+  // Fix #6: Include country code so location search returns correct region (Bolton UK, not Bolton Canada)
   const trendingCities=[
     {label:'🇬🇧 London',query:'London, UK'},
     {label:'🇬🇧 Manchester',query:'Manchester, UK'},
@@ -1240,7 +1240,7 @@ async function loadGyms(lat,lng){sgPerf.start('load_gyms');
       }).catch(function(){});
       return;
     }
-    // LIVE Google Places API — searches every gym on Earth
+    // LIVE gym directory search — searches every gym on Earth
     const data=await api.getLive(`/nearby?lat=${lat}&lng=${lng}&radius=10000`);
     state.gyms=data.gyms||[];
     state.searchResults=data.gyms||[];
@@ -1297,7 +1297,7 @@ async function searchGyms(query, isExplicit, _triggerLayer){state.lastSearchQuer
     const timeout=setTimeout(()=>controller.abort(),8000);
     if(window._sgSearchCtrl){try{window._sgSearchCtrl.abort();}catch(e){}}
     window._sgSearchCtrl=controller;
-    // ━━━ LOCATION BIAS FIX: Pass detected coordinates to bias Google Places search ━━━
+    // ━━━ LOCATION BIAS FIX: Pass detected coordinates to bias location search ━━━
     // ━━━ BUT NOT for explicit searches — city name is enough, lat/lng bias breaks ━━━
     // ━━━ results when user searches for a city far from their current location ━━━
     let searchUrl=`/search?q=${encodeURIComponent(query)}`;
@@ -6298,7 +6298,7 @@ function CoachPage(){
 // Also add the filterAssets function below the page function, and call initInteractive() after render.
 
 function CreatorsPage(){
-  // Asset paths — serve from /assets/scansquad/ on the server (Railway/Supabase)
+  // Asset paths — serve from /assets/scansquad/ on the server
   const A = '/assets/scansquad';
 
   // Real asset data from Google Drive
@@ -7847,7 +7847,7 @@ function DashboardPage(){
       </div>
       <div style="display:flex;flex-direction:column;gap:6px" id="admin-gym-chains">
         <div style="background:rgba(0,0,0,.3);border-radius:10px;padding:12px;display:flex;align-items:center;justify-content:space-between">
-          <div style="display:flex;align-items:center;gap:10px"><span style="font-size:20px">🔐</span><div><p style="color:#fff;font-size:13px;font-weight:700">Seam API</p><p style="color:rgba(255,255,255,.3);font-size:10px">Smart lock access control</p></div></div>
+          <div style="display:flex;align-items:center;gap:10px"><span style="font-size:20px">🔐</span><div><p style="color:#fff;font-size:13px;font-weight:700">Smart Access System</p><p style="color:rgba(255,255,255,.3);font-size:10px">Smart lock access control</p></div></div>
           <span style="color:#22c55e;font-size:10px;font-weight:700;background:rgba(34,197,94,.15);padding:3px 8px;border-radius:12px">Connected</span>
         </div>
         <div style="background:rgba(0,0,0,.3);border-radius:10px;padding:12px;display:flex;align-items:center;justify-content:space-between">
@@ -7898,10 +7898,10 @@ window._loadAdminStatus=async function(){
       var pc=document.getElementById('admin-pay-creators');if(pc)pc.textContent=sd.payouts.toCreators||'£0';
       var pp=document.getElementById('admin-pay-partners');if(pp)pp.textContent=sd.payouts.toPartners||'£0';
     }
-    /* Update Seam status dynamically */
+    /* Update smart access status dynamically */
     if(sd.seamStatus){
       var seamBadges=document.querySelectorAll('#admin-gym-chains span[style*="Connected"]');
-      /* First chain entry = Seam API */
+      /* First chain entry = smart access system */
       var seamEntry=document.querySelector('#admin-gym-chains > div:first-child span:last-child');
       if(seamEntry){
         if(sd.seamStatus==='connected'){seamEntry.textContent='Connected';seamEntry.style.color='#22c55e';}
@@ -10473,7 +10473,7 @@ function BookingSuccessPage(){
         <button onclick="const gymUrl='https://scangym.com/gym/${b.gymId}';const shareText='I just booked a session at ${b.gymName} on ScanGym! 🏋️ Check it out:';if(navigator.share){navigator.share({title:'ScanGym — ${b.gymName}',text:shareText,url:gymUrl}).catch(()=>{})}else{navigator.clipboard.writeText(shareText+' '+gymUrl).then(()=>{this.textContent='✅ Link Copied!';setTimeout(()=>{this.textContent='📤 Share Booking'},2000)}).catch(function(){sgToast('Could not copy link','error',2000)})}" class="mt-3 text-brand text-sm font-medium hover:text-orange-400 cursor-pointer transition">📤 Share Booking</button>
       </div>
 
-      <!-- Tier 2: Access Control Credentials (Kisi QR unlock / Seam PIN / Mobile Key) -->
+      <!-- Tier 2: Access Control Credentials (QR unlock / PIN / Mobile Key) -->
       ${(()=>{
         const ac=state.lastAccess;
         if(!ac)return '';
@@ -11027,7 +11027,7 @@ window.openGym=async function(id,isLive){
   const isPlaceId=isLive||isNaN(parseInt(id));
   try{
     if(isPlaceId){
-      // Live Google Places lookup
+      // Live gym directory lookup
       const data=await api.getLive('/place/'+id);
       if(data.gym){
         state.currentGym={
@@ -11450,7 +11450,7 @@ window.autoLoadGyms=async function(){
     console.log('[Location] L1 cache:',cached.city,'('+cached.age_ms+'ms old)');
   }
 
-  // ━━━ LAYER 2: Server-injected Cloudflare geo hint (0ms — embedded in HTML) ━━━
+  // ━━━ LAYER 2: Server-injected geo hint (0ms — embedded in HTML) ━━━
   if(window.__geoHint&&window.__geoHint.city){
     const gh=window.__geoHint;
     _upgradeLocation(2, 'gyms in '+gh.city, {city:gh.city,country:gh.country,lat:gh.lat,lng:gh.lng,query:'gyms in '+gh.city,source:gh.source});
@@ -13975,12 +13975,12 @@ function OwnerControlsPage(){
         </div>
       </div>
       <div style="background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.1);border-radius:10px;padding:10px 12px;margin-bottom:14px">
-        <p style="color:#60a5fa;font-size:11px;font-weight:600;margin-bottom:4px">💡 How Seam works</p>
-        <p style="color:rgba(255,255,255,.35);font-size:10px;line-height:1.5;margin:0">1. Sign up at <b style="color:#60a5fa">seam.co</b> (free trial)<br>2. Connect your lock brand (Salto, Brivo, etc)<br>3. Copy your ACS System ID<br>4. Paste it below — customers get auto-access!</p>
+        <p style="color:#60a5fa;font-size:11px;font-weight:600;margin-bottom:4px">💡 How smart access works</p>
+        <p style="color:rgba(255,255,255,.35);font-size:10px;line-height:1.5;margin:0">1. Sign up with your access control provider<br>2. Connect your lock brand (Salto, Brivo, etc)<br>3. Copy your ACS System ID<br>4. Paste it below — customers get auto-access!</p>
       </div>
       <p style="color:rgba(255,255,255,.4);font-size:11px;font-weight:600;margin-bottom:8px">UPGRADE TO SMART ACCESS:</p>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-        <button onclick="sgShowAccessConnect('kisi')" style="background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.15);color:#3b82f6;padding:12px 8px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;text-align:center">🔐 Kisi<br><span style='font-size:10px;opacity:.6'>QR door unlock</span></button>
+        <button onclick="sgShowAccessConnect('kisi')" style="background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.15);color:#3b82f6;padding:12px 8px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;text-align:center">🔐 QR Access<br><span style='font-size:10px;opacity:.6'>QR door unlock</span></button>
         <button onclick="sgShowAccessConnect('salto')" style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.15);color:#4ade80;padding:12px 8px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;text-align:center">🏢 Salto KS<br><span style='font-size:10px;opacity:.6'>PIN / mobile key</span></button>
         <button onclick="sgShowAccessConnect('brivo')" style="background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.15);color:#a855f7;padding:12px 8px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;text-align:center">🔑 Brivo<br><span style='font-size:10px;opacity:.6'>Mobile pass</span></button>
         <button onclick="sgShowAccessConnect('gymmaster')" style="background:rgba(255,109,0,.08);border:1px solid rgba(255,109,0,.15);color:#FF6D00;padding:12px 8px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;text-align:center">🏋️ GymMaster<br><span style='font-size:10px;opacity:.6'>RFID / Bluetooth</span></button>
@@ -14098,18 +14098,18 @@ window.sgShowAccessConnect=function(system){
   if(!form) return;
   form.style.display='block';
   var configs={
-    kisi:{name:'Kisi',color:'#3b82f6',fields:[
-      {id:'kisiApiKey',label:'Kisi API Key',placeholder:'Your Kisi API key',type:'password'},
+    kisi:{name:'QR Access',color:'#3b82f6',fields:[
+      {id:'kisiApiKey',label:'API Key',placeholder:'Your access system API key',type:'password'},
       {id:'kisiPlaceId',label:'Place ID (optional)',placeholder:'Auto-detected if blank',type:'text'}
     ],endpoint:'/api/access/owner/connect-kisi',bodyFn:function(){return{gymId:0,kisiApiKey:document.getElementById('kisiApiKey').value,placeId:document.getElementById('kisiPlaceId').value||undefined}}},
     salto:{name:'Salto KS',color:'#4ade80',fields:[
-      {id:'seamSystemId',label:'Seam ACS System ID',placeholder:'acs_system_...',type:'text'}
+      {id:'seamSystemId',label:'ACS System ID',placeholder:'acs_system_...',type:'text'}
     ],endpoint:'/api/access/owner/connect-seam',bodyFn:function(){return{gymId:0,seamAcsSystemId:document.getElementById('seamSystemId').value,accessType:'code'}}},
     brivo:{name:'Brivo',color:'#a855f7',fields:[
-      {id:'seamSystemId',label:'Seam ACS System ID',placeholder:'acs_system_...',type:'text'}
+      {id:'seamSystemId',label:'ACS System ID',placeholder:'acs_system_...',type:'text'}
     ],endpoint:'/api/access/owner/connect-seam',bodyFn:function(){return{gymId:0,seamAcsSystemId:document.getElementById('seamSystemId').value,accessType:'mobile_key'}}},
     gymmaster:{name:'GymMaster',color:'#FF6D00',fields:[
-      {id:'seamSystemId',label:'Seam ACS System ID',placeholder:'acs_system_...',type:'text'}
+      {id:'seamSystemId',label:'ACS System ID',placeholder:'acs_system_...',type:'text'}
     ],endpoint:'/api/access/owner/connect-seam',bodyFn:function(){return{gymId:0,seamAcsSystemId:document.getElementById('seamSystemId').value,accessType:'code'}}}
   };
   var c=configs[system];
@@ -14121,7 +14121,7 @@ window.sgShowAccessConnect=function(system){
     '<button onclick="sgConnectAccess(\''+system+'\')" style="flex:1;background:'+c.color+';color:#fff;border:none;padding:12px;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer">Connect '+c.name+' →</button>'+
     '<button onclick="document.getElementById(\'sg-access-form\').style.display=\'none\'" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.5);padding:12px 16px;border-radius:10px;font-size:13px;cursor:pointer">Cancel</button>'+
     '</div>'+
-    (system==='kisi'?'<p style="color:rgba(255,255,255,.3);font-size:10px;margin-top:8px">Find your API key at getkisi.com → Settings → API</p>':'<p style="color:rgba(255,255,255,.3);font-size:10px;margin-top:8px">Get your System ID from seam.co dashboard</p>')+
+    (system==='kisi'?'<p style="color:rgba(255,255,255,.3);font-size:10px;margin-top:8px">Find your API key in your access provider dashboard → Settings → API</p>':'<p style="color:rgba(255,255,255,.3);font-size:10px;margin-top:8px">Get your System ID from your access control dashboard</p>')+
     '</div>';
   window._sgAccessConfig=c;
 };
@@ -17050,18 +17050,18 @@ window._closePartnerMore=function(){
 window._partnerConnectSeam=function(){
   var u=state&&state.user;
   if(!u){
-    sgToast('Sign in to connect your Seam account','info',2000);
+    sgToast('Sign in to connect your smart access account','info',2000);
     if(typeof window._sgShowAuthSheet==='function'){window._sgShowAuthSheet('book');}else{navigate('/login');}
     return;
   }
   _sgOpenSheet('sg-seam-sheet',
-    '<h2 style="font-size:20px;font-weight:800;color:#fff;margin:0 0 16px">\ud83d\udd10 Connect Seam Account</h2>'
+    '<h2 style="font-size:20px;font-weight:800;color:#fff;margin:0 0 16px">\ud83d\udd10 Connect Smart Access</h2>'
     +'<div style="background:#1a1a1a;border-radius:16px;padding:16px;border:1px solid rgba(255,255,255,.08);margin-bottom:14px">'
     +'<div style="font-weight:700;font-size:14px;color:#fff;margin-bottom:8px">\ud83d\udd12 Smart Lock Access</div>'
-    +'<div style="color:rgba(255,255,255,.5);font-size:12px;line-height:1.5;margin-bottom:14px">Connect your smart lock system via Seam so ScanGym customers can access your gym automatically after booking.</div>'
-    +'<button onclick="_sgSeamConnectExisting()" style="width:100%;background:#FF6D00;color:#fff;border:none;padding:14px;border-radius:12px;font-weight:700;font-size:15px;cursor:pointer;margin-bottom:8px">\ud83d\udd17 Connect Existing Seam Account</button>'
+    +'<div style="color:rgba(255,255,255,.5);font-size:12px;line-height:1.5;margin-bottom:14px">Connect your smart lock system so ScanGym customers can access your gym automatically after booking.</div>'
+    +'<button onclick="_sgSeamConnectExisting()" style="width:100%;background:#FF6D00;color:#fff;border:none;padding:14px;border-radius:12px;font-weight:700;font-size:15px;cursor:pointer;margin-bottom:8px">\ud83d\udd17 Connect Existing Account</button>'
     +'<div style="text-align:center;font-size:12px;color:rgba(255,255,255,.3);margin:4px 0">or</div>'
-    +'<button onclick="_sgSeamCreateNew()" style="width:100%;background:transparent;color:#FF6D00;border:2px solid #FF6D00;padding:14px;border-radius:12px;font-weight:700;font-size:15px;cursor:pointer">\u2795 Create New Seam Account</button>'
+    +'<button onclick="_sgSeamCreateNew()" style="width:100%;background:transparent;color:#FF6D00;border:2px solid #FF6D00;padding:14px;border-radius:12px;font-weight:700;font-size:15px;cursor:pointer">\u2795 Set Up New Account</button>'
     +'</div>'
     +'<div style="background:#1a1a1a;border-radius:16px;padding:16px;border:1px solid rgba(255,255,255,.08)">'
     +'<div style="font-weight:600;font-size:14px;color:#fff;margin-bottom:10px">Connected Devices</div>'
@@ -17073,24 +17073,24 @@ window._partnerConnectSeam=function(){
 window._sgSeamConnectExisting=async function(){
   var gymId=window._partnerGymId||0;
   if(!gymId){try{var dr=await fetch('/api/gym-partner/dashboard',{credentials:'include'});var dd=await dr.json();if(dd.gyms&&dd.gyms.length>0){gymId=dd.gyms[0].id;window._partnerGymId=gymId;}}catch(e){}}
-  if(!gymId){sgToast('Claim a gym first before connecting Seam','info',3000);return;}
-  sgToast('Connecting Seam...','info',2000);
+  if(!gymId){sgToast('Claim a gym first before connecting smart access','info',3000);return;}
+  sgToast('Connecting smart access...','info',2000);
   try{
     var r=await fetch('/api/access/owner/create-connect-webview',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({gymId:gymId})});
     var d=await r.json();
-    if(d.url||d.connectUrl||d.connect_url){window.open(d.url||d.connectUrl||d.connect_url,'_blank');sgToast('Complete Seam setup in the new tab','success',4000);}
+    if(d.url||d.connectUrl||d.connect_url){window.open(d.url||d.connectUrl||d.connect_url,'_blank');sgToast('Complete smart access setup in the new tab','success',4000);}
     else{
       var r2=await fetch('/api/access/owner/connect-seam',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({gymId:gymId})});
       var d2=await r2.json();
-      if(d2.connectUrl||d2.connect_url){window.open(d2.connectUrl||d2.connect_url,'_blank');sgToast('Seam connection page opened!','success',4000);}
-      else if(d2.success||d2.connected){sgToast('Seam connected successfully!','success',3000);_sgLoadSeamDevices();}
-      else{sgToast(d2.error||d2.message||'Contact support@scangym.com for Seam setup','info',4000);}
+      if(d2.connectUrl||d2.connect_url){window.open(d2.connectUrl||d2.connect_url,'_blank');sgToast('Smart access connection page opened!','success',4000);}
+      else if(d2.success||d2.connected){sgToast('Smart access connected successfully!','success',3000);_sgLoadSeamDevices();}
+      else{sgToast(d2.error||d2.message||'Contact support@scangym.com for smart access setup','info',4000);}
     }
-  }catch(ex){sgToast('Could not reach Seam','error',3000);}
+  }catch(ex){sgToast('Could not reach access system','error',3000);}
 };
 window._sgSeamCreateNew=function(){
   window.open('https://console.seam.co/signup','_blank');
-  sgToast('Create your Seam account, then come back and tap Connect','info',5000);
+  sgToast('Create your smart access account, then come back and tap Connect','info',5000);
 };
 window._sgLoadSeamDevices=async function(){
   var el=document.getElementById('sg-seam-devices');if(!el)return;
@@ -17098,7 +17098,7 @@ window._sgLoadSeamDevices=async function(){
     var r=await fetch('/api/access/owner/systems',{credentials:'include'});
     var d=await r.json();
     var devices=d.systems||d.devices||d.locks||[];
-    if(devices.length===0){el.innerHTML='<div style="text-align:center;color:rgba(255,255,255,.3);padding:12px">No devices connected yet \u2014 connect your Seam account above.</div>';}
+    if(devices.length===0){el.innerHTML='<div style="text-align:center;color:rgba(255,255,255,.3);padding:12px">No devices connected yet \u2014 connect your smart access account above.</div>';}
     else{var h='';devices.forEach(function(dev){var name=dev.name||dev.display_name||'Smart Lock';var status=dev.connected||dev.online?'Connected':'Offline';var statusColor=dev.connected||dev.online?'#22c55e':'#ef4444';h+='<div style="display:flex;align-items:center;gap:12px;padding:12px;background:#222;border-radius:10px;margin-bottom:6px;border:1px solid rgba(255,255,255,.06)"><div style="width:40px;height:40px;border-radius:8px;background:#333;display:flex;align-items:center;justify-content:center;font-size:18px">\ud83d\udd12</div><div style="flex:1"><div style="font-weight:600;font-size:13px;color:#fff">'+name+'</div><div style="font-size:11px;color:'+statusColor+';margin-top:2px">\u25cf '+status+'</div></div></div>';});el.innerHTML=h;}
   }catch(ex){el.innerHTML='<div style="text-align:center;color:rgba(255,255,255,.3);padding:12px">Could not load devices</div>';}
 };
@@ -17172,7 +17172,7 @@ window._partnerLoadHome=async function(){
     if(!r||!r.ok){_partnerHomeEmpty();return;}
     var d=await r.json().catch(function(){return {};});
     var el=function(id){return document.getElementById(id);};
-    // Store gym info for other partner features (Seam connect, etc)
+    // Store gym info for other partner features (smart access connect, etc)
     if(d.gyms&&d.gyms.length>0){
       window._partnerGymId=d.gyms[0].id;
       window._partnerGymName=d.gyms[0].name;
@@ -17722,7 +17722,7 @@ function _renderInner(){
 <p class="mt-4"><b class="text-white">If you use ScanGym inside ChatGPT or another AI assistant.</b> When you use our ChatGPT app or MCP server, the assistant sends us only what our tools need: your search query (e.g. a city or gym name), optional coordinates, and — when you book — the gym, date, and the email address you provide for the booking. Our tools return gym information, prices, availability and booking confirmations to the assistant. We do not receive the rest of your conversation, and we do not use assistant inputs for advertising or sell them to anyone. Bookings made this way are stored and processed exactly like bookings made on scangym.com.</p>
 <p class="mt-4"><b class="text-white">Why we use your data (purposes & legal bases).</b> To provide bookings and gym access (contract); to process payments and payouts (contract); to verify your identity/phone via OTP and prevent fraud (legitimate interests); to send booking confirmations and service messages (contract); marketing emails only with your consent — unsubscribe anytime; to comply with tax, accounting and legal obligations (legal obligation).</p>
 <p class="mt-4"><b class="text-white">Who receives your data (processors & recipients).</b></p>
-<ul class="list-disc ml-6 text-slate-300"><li><b>Stripe</b> — card payments and Connect payouts (PCI-DSS compliant).</li><li><b>Twilio</b> — SMS one-time passcodes.</li><li><b>SendGrid</b> — transactional emails (confirmations, receipts).</li><li><b>Google Maps / Google Places</b> — gym search, locations and photos; your search text and coordinates are sent to Google to return results.</li><li><b>Railway & our database provider</b> — hosting and storage of the data above.</li><li><b>The gym you book</b> — receives your name and booking reference so they can admit you.</li><li><b>OpenAI</b> — if you use ScanGym inside ChatGPT, tool inputs/outputs pass through OpenAI's platform under their terms.</li></ul>
+<ul class="list-disc ml-6 text-slate-300"><li><b>Payment processor</b> — card payments and payouts (PCI-DSS compliant).</li><li><b>SMS verification provider</b> — SMS one-time passcodes.</li><li><b>Email service</b> — transactional emails (confirmations, receipts).</li><li><b>Mapping/location data provider</b> — gym search, locations and photos; your search text and coordinates are sent to return results.</li><li><b>Hosting and infrastructure providers</b> — hosting and storage of the data above.</li><li><b>The gym you book</b> — receives your name and booking reference so they can admit you.</li><li><b>OpenAI</b> — if you use ScanGym inside ChatGPT, tool inputs/outputs pass through OpenAI's platform under their terms.</li></ul>
 <p>We never sell your personal data. Some processors may store data outside the UK/EEA; where they do, transfers are protected by standard contractual clauses or equivalent safeguards.</p>
 <p class="mt-4"><b class="text-white">Retention.</b> Account data: until you delete your account (then removed or anonymised within 30 days). Booking and payment records: kept 6 years to meet UK tax and accounting rules. Security and server logs: up to 90 days. OTP codes: minutes.</p>
 <p class="mt-4"><b class="text-white">Your rights & controls.</b> Under UK GDPR you can ask us to access, correct, delete, or export your data, restrict or object to processing, and withdraw consent at any time. You can delete your account and unsubscribe from marketing in the app, or email hello@scangym.com — we respond within 30 days. You may also complain to the UK Information Commissioner's Office (ico.org.uk).</p>
@@ -18312,7 +18312,7 @@ window.sgFlashDeal=function(){ return null; };
 // H7 fix: REAL social proof toasts — 5 principles of authentic social proof:
 // 1. Specificity — real gym names, real ratings, real review counts
 // 2. Imperfection — real numbers (4.3 not 5.0), odd counts
-// 3. Verifiability — all data from Google Places API, user can check
+// 3. Verifiability — all data from location API, user can check
 // 4. Recency + timestamps — varied intervals, no clockwork timing
 // 5. Variety — different toast types, different gyms, never repetitive
 (function(){
@@ -19645,10 +19645,10 @@ function CreatorReelsPage(){
 
 // ═══ #143: Gym Partner Hub ═══
 // ═══ Gym Partner Landing Page — /partner (was 404) ═══
-/* FULL STACK: Connect Seam smart lock system */
+/* FULL STACK: Connect smart lock system */
 window._sgConnectSeam=async function(){
   var u=state.user;
-  if(!u){navigate('/login');sgToast('Log in first to connect Seam','info');return;}
+  if(!u){navigate('/login');sgToast('Log in first to connect smart access','info');return;}
   // Auto-detect partner's claimed gym
   var gymId=window._partnerGymId||0;
   if(!gymId){
@@ -19658,21 +19658,21 @@ window._sgConnectSeam=async function(){
       if(dd.gyms&&dd.gyms.length>0){gymId=dd.gyms[0].id;window._partnerGymId=gymId;}
     }catch(e){}
   }
-  if(!gymId){sgToast('Claim a gym first before connecting Seam','info',3000);return;}
-  sgToast('Connecting Seam to your gym...','info',2000);
+  if(!gymId){sgToast('Claim a gym first before connecting smart access','info',3000);return;}
+  sgToast('Connecting smart access to your gym...','info',2000);
   try{
     var r=await fetch('/api/access/owner/connect-seam',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({gymId:gymId})});
     var d=await r.json();
     if(d.connectUrl||d.connect_url){
       window.open(d.connectUrl||d.connect_url,'_blank');
-      sgToast('Seam connection page opened! Complete setup there.','success',4000);
+      sgToast('Smart access connection page opened! Complete setup there.','success',4000);
     }else if(d.success||d.connected){
-      sgToast('Seam connected successfully! ✅','success',3000);
+      sgToast('Smart access connected successfully! ✅','success',3000);
     }else{
-      sgToast(d.error||d.message||'Seam setup requires contacting support','info',4000);
+      sgToast(d.error||d.message||'Smart access setup requires contacting support','info',4000);
     }
   }catch(e){
-    sgToast('Could not reach Seam API - contact support@scangym.com','error',4000);
+    sgToast('Could not reach access system - contact support@scangym.com','error',4000);
   }
 };
 
@@ -19710,7 +19710,7 @@ function PartnerLandingPage(){
         </div>
         <div onclick="_sgConnectSeam()" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
           <div style="width:46px;height:46px;background:rgba(99,102,241,.15);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(99,102,241,.3)">` + '\ud83d\udd10' + `</div>
-          <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Seam</span>
+          <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Smart Lock</span>
         </div>
         <div onclick="navigate('/owner/controls')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
           <div style="width:46px;height:46px;background:rgba(255,109,0,.15);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,109,0,.3)">` + '\u2699\ufe0f' + `</div>

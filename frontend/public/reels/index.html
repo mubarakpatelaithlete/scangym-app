@@ -824,7 +824,7 @@
       //  ⑳ CDN ABSTRACTION LAYER — future-proof URL resolver
       // ═══════════════════════════════════════════════════════════
       //  Currently resolves to Convex proxy → Google Drive.
-      //  When migrating to CDN (Cloudflare R2, BunnyCDN, etc.),
+      //  When migrating to CDN,
       //  only this function needs to change.
 
       var CDN_CONFIG = {
@@ -1888,7 +1888,7 @@
 
       // ── Prefetch — use fetch() + Cache API for real pre-download ──
       // PERF FIX #1 + #3: Fixed cache name (was hardcoded to v4), removed mode:'cors'
-      // that was breaking Cloudflare edge caching, added connection-aware prefetch depth
+      // that was breaking CDN edge caching, added connection-aware prefetch depth
       function prefetchAhead(fromIndex){
         // PERF FIX #3: Adaptive prefetch depth based on connection speed
         var conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;

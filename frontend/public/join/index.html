@@ -77,7 +77,7 @@
     .selected-gym .sg-addr{font-size:12px;color:rgba(255,255,255,.4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .sg-change{font-size:12px;color:#FF6D00;font-weight:700;cursor:pointer;white-space:nowrap}
 
-    /* ── Seam webview ── */
+    /* ── Smart access webview ── */
     .seam-frame{width:100%;min-height:520px;border:none;border-radius:16px;background:#fff;margin-top:16px}
 
     /* ── Buttons ── */
@@ -453,7 +453,7 @@
       }
     });
 
-    /* ── STEP 2: Seam Connect ── */
+    /* ── STEP 2: Smart Access Connect ── */
     window.startSeamConnect = async function() {
       const loading = document.getElementById('seamLoading');
       const frame = document.getElementById('seamFrame');
@@ -538,7 +538,7 @@
       showStep(1);
     };
 
-    /* ── Check URL for redirect from Seam ── */
+    /* ── Check URL for redirect from access provider ── */
     const params = new URLSearchParams(window.location.search);
     if (params.get('status') === 'complete' && params.get('gym_id')) {
       claimedGymId = parseInt(params.get('gym_id'));

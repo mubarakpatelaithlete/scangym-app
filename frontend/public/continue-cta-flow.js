@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    CONTINUE CTA FLOW — Partner Tab + Creator Tab
    Progressive "Continue" button that guides users through:
-     Partner: Sign In → Connect Seam → Wallet/Withdraw
+     Partner: Sign In → Connect Smart Access → Wallet/Withdraw
      Creator: Sign In → Add Withdraw Method → Confirm & Withdraw
    
    Purely additive — no existing functions touched.
@@ -70,7 +70,7 @@ function _hasWithdrawMethod(){
 
 
 // ══════════════════════════════════════════════════════════════════════
-// SHARED: Check if partner has Seam connected
+// SHARED: Check if partner has smart access connected
 // ══════════════════════════════════════════════════════════════════════
 
 function _hasSeamConnected(){
@@ -83,8 +83,8 @@ function _hasSeamConnected(){
 
 
 // ══════════════════════════════════════════════════════════════════════
-// PARTNER: "Connect Seam Account" half-page popup
-// Two options: connect existing Seam account OR create new one
+// PARTNER: "Connect Smart Access" half-page popup
+// Two options: connect existing account OR create new one
 // ══════════════════════════════════════════════════════════════════════
 
 function _showSeamConnectSheet(onComplete){
@@ -103,17 +103,17 @@ function _showSeamConnectSheet(onComplete){
     +'<div style="width:6px;height:6px;border-radius:3px;background:rgba(255,255,255,.3)"></div>'
     +'</div>'
 
-    // Option 1: I have a Seam account
+    // Option 1: I have a smart access account
     +'<div id="sg-seam-opt-existing" onclick="window._ctaSelectSeamOpt(\'existing\')" style="display:flex;align-items:center;gap:14px;padding:16px;background:rgba(255,109,0,.06);border:2px solid rgba(255,109,0,.3);border-radius:16px;cursor:pointer;margin-bottom:10px;transition:all .15s">'
     +'<div style="width:48px;height:48px;background:linear-gradient(135deg,#6366f1,#818cf8);border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="color:#fff;font-size:20px">🔑</span></div>'
-    +'<div style="flex:1"><div style="color:#fff;font-size:15px;font-weight:700">I have a Seam account</div><div style="color:rgba(255,255,255,.4);font-size:11px;margin-top:2px">Connect your existing Seam API key</div></div>'
+    +'<div style="flex:1"><div style="color:#fff;font-size:15px;font-weight:700">I have a smart access account</div><div style="color:rgba(255,255,255,.4);font-size:11px;margin-top:2px">Connect your existing access system API key</div></div>'
     +'<div style="width:20px;height:20px;border:2px solid #FF6D00;border-radius:50%;display:flex;align-items:center;justify-content:center"><div id="sg-seam-dot-existing" style="width:10px;height:10px;background:#FF6D00;border-radius:50%"></div></div>'
     +'</div>'
 
-    // Option 2: Create new Seam account
+    // Option 2: Create new smart access account
     +'<div id="sg-seam-opt-new" onclick="window._ctaSelectSeamOpt(\'new\')" style="display:flex;align-items:center;gap:14px;padding:16px;background:rgba(255,255,255,.03);border:2px solid rgba(255,255,255,.08);border-radius:16px;cursor:pointer;margin-bottom:10px;transition:all .15s">'
     +'<div style="width:48px;height:48px;background:linear-gradient(135deg,#22c55e,#16a34a);border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="color:#fff;font-size:20px">✨</span></div>'
-    +'<div style="flex:1"><div style="color:#fff;font-size:15px;font-weight:700">Create new Seam account</div><div style="color:rgba(255,255,255,.4);font-size:11px;margin-top:2px">Free sign-up · Connect any smart lock brand</div></div>'
+    +'<div style="flex:1"><div style="color:#fff;font-size:15px;font-weight:700">Create new smart access account</div><div style="color:rgba(255,255,255,.4);font-size:11px;margin-top:2px">Free sign-up · Connect any smart lock brand</div></div>'
     +'<div style="width:20px;height:20px;border:2px solid rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center"><div id="sg-seam-dot-new" style="width:10px;height:10px;background:transparent;border-radius:50%"></div></div>'
     +'</div>'
 
@@ -124,7 +124,7 @@ function _showSeamConnectSheet(onComplete){
     +'<p id="sg-seam-error" style="color:#ef4444;font-size:13px;margin-top:8px;display:none"></p>'
 
     // Connect button
-    +'<button id="sg-seam-connect-btn" onclick="window._ctaConnectSeam()" style="width:100%;background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;cursor:pointer;margin-top:16px;transition:all .2s;box-shadow:0 4px 20px rgba(255,109,0,.3)">Connect Seam Account →</button>'
+    +'<button id="sg-seam-connect-btn" onclick="window._ctaConnectSeam()" style="width:100%;background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;cursor:pointer;margin-top:16px;transition:all .2s;box-shadow:0 4px 20px rgba(255,109,0,.3)">Connect Smart Access →</button>'
 
     // Skip option
     +'<button onclick="window._ctaSkipSeam()" style="width:100%;background:none;border:none;color:rgba(255,255,255,.35);font-size:13px;font-weight:500;cursor:pointer;padding:12px;margin-top:4px">Skip for now — I\'ll set up later</button>';
@@ -159,10 +159,10 @@ function _renderSeamForm(type){
   var btn=document.getElementById('sg-seam-connect-btn');
 
   if(type==='existing'){
-    // Existing Seam account — enter API key
+    // Existing smart access account — enter API key
     area.innerHTML=''
       +'<div style="margin-bottom:12px">'
-      +'<label style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px">Seam API Key</label>'
+      +'<label style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px">Access System API Key</label>'
       +'<input id="sg-seam-api-key" type="text" placeholder="seam_apikey1_..." style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:14px 16px;color:#fff;font-size:14px;font-family:monospace;outline:none;transition:border-color .15s;box-sizing:border-box" onfocus="this.style.borderColor=\'rgba(255,109,0,.5)\'" onblur="this.style.borderColor=\'rgba(255,255,255,.12)\'">'
       +'</div>'
 
@@ -176,18 +176,18 @@ function _renderSeamForm(type){
       +'<li>Paste it above</li>'
       +'</ol>'
       +'</div>';
-    if(btn)btn.textContent='Connect Seam Account →';
+    if(btn)btn.textContent='Connect Smart Access →';
 
   }else{
-    // New Seam account — guide to create
+    // New smart access account — guide to create
     area.innerHTML=''
       // Step-by-step guide
       +'<div style="background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.15);border-radius:14px;padding:16px;margin-bottom:14px">'
-      +'<p style="color:#4ade80;font-size:12px;font-weight:700;margin:0 0 10px">🚀 Create your free Seam account</p>'
+      +'<p style="color:#4ade80;font-size:12px;font-weight:700;margin:0 0 10px">🚀 Create your free smart access account</p>'
       +'<div style="display:flex;flex-direction:column;gap:10px">'
       +'<div style="display:flex;gap:10px;align-items:flex-start">'
       +'<div style="width:22px;height:22px;border-radius:50%;background:rgba(34,197,94,.2);color:#22c55e;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</div>'
-      +'<div style="flex:1"><p style="color:#fff;font-size:12px;font-weight:600;margin:0">Sign up at seam.co</p><p style="color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0">Free account — no credit card needed</p></div>'
+      +'<div style="flex:1"><p style="color:#fff;font-size:12px;font-weight:600;margin:0">Create your smart access account</p><p style="color:rgba(255,255,255,.35);font-size:11px;margin:2px 0 0">Free account — no credit card needed</p></div>'
       +'</div>'
       +'<div style="display:flex;gap:10px;align-items:flex-start">'
       +'<div style="width:22px;height:22px;border-radius:50%;background:rgba(34,197,94,.2);color:#22c55e;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</div>'
@@ -200,9 +200,9 @@ function _renderSeamForm(type){
       +'</div>'
       +'</div>'
 
-      // Open Seam button
+      // Open access console button
       +'<a href="https://console.seam.co/signup" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.3);border-radius:12px;padding:14px;color:#a5b4fc;font-size:14px;font-weight:700;text-decoration:none;cursor:pointer;margin-bottom:14px;transition:all .15s" ontouchstart="this.style.transform=\'scale(.98)\'" ontouchend="this.style.transform=\'scale(1)\'">'
-      +'🌐 Open Seam Console →'
+      +'🌐 Create Access Account →'
       +'</a>'
 
       // After creating account, paste API key
@@ -222,7 +222,7 @@ window._ctaConnectSeam=async function(){
 
   var apiKey=(keyEl&&keyEl.value)?keyEl.value.trim():'';
   if(!apiKey){
-    if(err){err.textContent='Please enter your Seam API key';err.style.display='block';}
+    if(err){err.textContent='Please enter your access system API key';err.style.display='block';}
     return;
   }
 
@@ -248,23 +248,23 @@ window._ctaConnectSeam=async function(){
     var d=await res.json();
 
     if(d.connected||d.success){
-      // Save Seam state locally
+      // Save smart access state locally
       _saveSeamLocal(apiKey,d);
-      if(btn){btn.textContent='✅ Seam Connected!';btn.style.background='#22c55e';btn.style.opacity='1';}
+      if(btn){btn.textContent='✅ Smart Access Connected!';btn.style.background='#22c55e';btn.style.opacity='1';}
       if(navigator.vibrate)navigator.vibrate(50);
-      if(typeof sgToast==='function')sgToast(d.message||'Seam connected successfully! 🔐','success',3000);
+      if(typeof sgToast==='function')sgToast(d.message||'Smart access connected successfully! 🔐','success',3000);
       setTimeout(function(){
         _ctaCloseSheet();
         if(window._ctaSeamCallback)window._ctaSeamCallback();
       },500);
     }else{
       // API responded but couldn't connect
-      if(err){err.textContent=d.error||d.message||'Could not connect Seam — check your API key';err.style.display='block';}
-      if(btn){btn.textContent='Connect Seam Account →';btn.style.opacity='1';btn.style.pointerEvents='auto';}
+      if(err){err.textContent=d.error||d.message||'Could not connect smart access — check your API key';err.style.display='block';}
+      if(btn){btn.textContent='Connect Smart Access →';btn.style.opacity='1';btn.style.pointerEvents='auto';}
     }
   }catch(e){
     if(err){err.textContent='Network error — try again';err.style.display='block';}
-    if(btn){btn.textContent='Connect Seam Account →';btn.style.opacity='1';btn.style.pointerEvents='auto';}
+    if(btn){btn.textContent='Connect Smart Access →';btn.style.opacity='1';btn.style.pointerEvents='auto';}
   }
 };
 
@@ -638,7 +638,7 @@ window._ctaConfirmWithdraw=async function(tabType){
 
 // ══════════════════════════════════════════════════════════════════════
 // PARTNER TAB: Continue CTA Flow
-// Flow: Sign In → Connect Seam → Wallet/Withdraw
+// Flow: Sign In → Connect Smart Access → Wallet/Withdraw
 // ══════════════════════════════════════════════════════════════════════
 
 window._partnerContinueFlow=function(){
@@ -656,7 +656,7 @@ window._partnerContinueFlow=function(){
   }
 
   // Step 2: Go straight to the unified wallet withdraw sheet.
-  // Seam smart lock connection is optional — don't block withdrawals on it.
+  // Smart access connection is optional — don't block withdrawals on it.
   if(typeof window._sgWalletWithdraw==='function'){
     window._sgWalletWithdraw();
   }else{
@@ -933,7 +933,7 @@ function _getCTAState(tabType){
   if(!u)return{step:1,label:'Continue',sublabel:'Sign in to get started'};
 
   if(tabType==='partner'){
-    // Seam smart lock is optional — don't block the CTA flow on it
+    // Smart access is optional — don't block the CTA flow on it
     return{step:3,label:'Withdraw Earnings →',sublabel:'Your gym is live!'};
   }
   // Creator

@@ -850,7 +850,7 @@ router.post('/stripe-connect', async (req, res) => {
       : null;
 
     if (!stripe) {
-      return res.status(500).json({ error: 'Stripe not configured' });
+      return res.status(500).json({ error: 'Payment service not configured' });
     }
 
     // Find creator by handle
@@ -924,7 +924,7 @@ router.post('/stripe-connect', async (req, res) => {
     res.json({ success: true, onboardingUrl: accountLink.url, accountId: stripeAccountId });
   } catch (err) {
     console.error('[StripeConnect] Error:', err.message);
-    res.status(500).json({ error: 'Stripe Connect setup failed', detail: err.message });
+    res.status(500).json({ error: 'Payout setup failed' });
   }
 });
 
@@ -1258,7 +1258,7 @@ router.post('/admin/withdrawals/:id/execute-payout', async (req, res) => {
     const stripe = process.env.STRIPE_SECRET_KEY
       ? require('stripe')(process.env.STRIPE_SECRET_KEY)
       : null;
-    if (!stripe) return res.status(500).json({ error: 'Stripe not configured' });
+    if (!stripe) return res.status(500).json({ error: 'Payment service not configured' });
 
     // Get withdrawal details
     const w = await pool.query(
@@ -1314,7 +1314,7 @@ router.post('/admin/withdrawals/:id/execute-payout', async (req, res) => {
     });
   } catch (err) {
     console.error('[Payout] Execute error:', err.message);
-    res.status(500).json({ error: 'Payout failed: ' + err.message });
+    console.error('[referrals] payout failed:', err.message); res.status(500).json({ error: 'Payout failed. Please contact support.' });
   }
 });
 

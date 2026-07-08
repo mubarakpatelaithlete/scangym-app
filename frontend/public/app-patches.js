@@ -485,7 +485,7 @@
           '<div onclick="navigate(\'/owner/controls\')" style="background:rgba(59,130,246,.04);border:1px solid rgba(59,130,246,.1);border-radius:14px;padding:16px;cursor:pointer;text-align:center;transition:border-color .2s" onmouseover="this.style.borderColor=\'rgba(59,130,246,.3)\'" onmouseout="this.style.borderColor=\'rgba(59,130,246,.1)\'">' +
             '<p style="font-size:28px;margin-bottom:6px">🔐</p>' +
             '<p style="color:#3b82f6;font-weight:700;font-size:13px;margin-bottom:2px">Access Control</p>' +
-            '<p style="color:rgba(255,255,255,.3);font-size:10px">Kisi, Salto, Brivo</p>' +
+            '<p style="color:rgba(255,255,255,.3);font-size:10px">Smart lock integration</p>' +
           '</div>' +
           '<div onclick="navigate(\'/forceo\')" style="background:rgba(168,85,247,.04);border:1px solid rgba(168,85,247,.1);border-radius:14px;padding:16px;cursor:pointer;text-align:center;transition:border-color .2s" onmouseover="this.style.borderColor=\'rgba(168,85,247,.3)\'" onmouseout="this.style.borderColor=\'rgba(168,85,247,.1)\'">' +
             '<p style="font-size:28px;margin-bottom:6px">📊</p>' +

@@ -77,7 +77,7 @@
     .btn-secondary{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#fff}
     .btn-danger{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.2);color:#ef4444}
 
-    /* Seam webview embed */
+    /* Smart access webview embed */
     .webview-frame{width:100%;min-height:500px;border:none;border-radius:14px;background:#fff;margin:16px 0}
 
     /* Loading/spinner */
@@ -146,11 +146,11 @@
         <div class="how-it-works">
           <div class="hiw-step">
             <div class="hiw-num">1</div>
-            <div class="hiw-text"><strong>Select your lock provider</strong> below — Kisi, Salto, Brivo, or any of 30+ brands</div>
+            <div class="hiw-text"><strong>Select your lock provider</strong> below — Salto, Brivo, or any of 30+ brands</div>
           </div>
           <div class="hiw-step">
             <div class="hiw-num">2</div>
-            <div class="hiw-text"><strong>Log in to your provider</strong> — secure connection handled by Seam (industry-standard)</div>
+            <div class="hiw-text"><strong>Log in to your provider</strong> — secure, industry-standard connection</div>
           </div>
           <div class="hiw-step">
             <div class="hiw-num">3</div>
@@ -164,11 +164,11 @@
       </button>
     </div>
 
-    <!-- STEP 2: Connect via Seam -->
+    <!-- STEP 2: Connect via smart access system -->
     <div id="step2" class="hidden">
       <div class="card">
         <h2>🔗 Connect Your Lock System</h2>
-        <p class="subtitle">Log in to your access control provider below. Your credentials are securely handled by <a href="https://seam.co" target="_blank" style="color:#60a5fa">Seam</a> — ScanGym never sees your password.</p>
+        <p class="subtitle">Log in to your access control provider below. Your credentials are securely handled by our smart access integration — ScanGym never sees your password.</p>
 
         <div id="connectLoading" class="hidden" style="text-align:center;padding:24px">
           <div class="spinner"></div>
@@ -237,7 +237,7 @@
     let currentStep = 1;
     const API = '';
 
-    // Check URL params for redirect-back from Seam
+    // Check URL params for redirect-back from access provider
     const params = new URLSearchParams(window.location.search);
     const redirectStatus = params.get('status');
     const redirectGymId = params.get('gym_id');
@@ -263,7 +263,7 @@
         gyms = data.gyms || [];
         renderGymSelect();
 
-        // If redirected back from Seam, auto-select gym and finalize
+        // If redirected back from access provider, auto-select gym and finalize
         if (redirectStatus === 'complete' && redirectGymId) {
           selectedGymId = parseInt(redirectGymId);
           document.getElementById('gymSelect').value = selectedGymId;
@@ -351,7 +351,7 @@
       startConnect();
     };
 
-    // ── Seam Connect ──────────────────────────────────────────────
+    
     async function startConnect() {
       const loading = document.getElementById('connectLoading');
       const frame = document.getElementById('seamFrame');
@@ -387,7 +387,7 @@
     async function pollConnection() {
       if (currentStep !== 2) return;
 
-      // Check Seam webview status via our backend
+      // Check smart access webview status via our backend
       try {
         // Use a simple interval — the redirect callback will also trigger step 3
         const check = setInterval(async () => {
@@ -410,7 +410,7 @@
     }
 
     async function finalizeConnection() {
-      // Called after redirect back from Seam
+      // Called after redirect back from access provider
       setStep(2);
       const loading = document.getElementById('connectLoading');
       loading.classList.remove('hidden');

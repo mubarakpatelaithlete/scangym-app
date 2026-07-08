@@ -487,7 +487,7 @@ router.post('/stripe-connect', authenticateUser, express.json(), async (req, res
     }
   } catch (err) {
     console.error('Gym Stripe Connect error:', err.message);
-    res.status(500).json({ error: 'Stripe setup failed' });
+    res.status(500).json({ error: 'Payment setup failed' });
   }
 });
 
@@ -921,7 +921,7 @@ router.post('/request-payout', authenticateUser, express.json(), async (req, res
     // Check Stripe Connect
     const userRes = await pool.query('SELECT stripe_connect_id FROM users WHERE id = $1', [userId]).catch(() => ({ rows: [] }));
     const connectId = userRes.rows[0]?.stripe_connect_id;
-    if (!connectId) return res.status(400).json({ error: 'Connect your bank account first (Stripe Connect)' });
+    if (!connectId) return res.status(400).json({ error: 'Connect your bank account first' });
 
     // Calculate pending
     const gyms = await pool.query('SELECT id FROM gyms WHERE claimed_by::text = $1::text', [userId]).catch(() => ({ rows: [] }));
@@ -1422,7 +1422,7 @@ router.post('/payout-method', authenticateUser, express.json(), async (req, res)
   try {
     const { method, details } = req.body;
     if (!['bank', 'paypal', 'stripe_connect'].includes(method)) {
-      return res.status(400).json({ error: 'method must be bank, paypal or stripe_connect' });
+      return res.status(400).json({ error: 'method must be bank, paypal or card_payout' });
     }
     const d = details || {};
     if (method === 'bank') {

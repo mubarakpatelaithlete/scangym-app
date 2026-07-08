@@ -5,7 +5,7 @@
    Gym owners pick their brand → connect in one tap.
 
    Connection types:
-     direct → Custom form (Kisi API key, GymMaster site+key)
+     direct → Custom form (QR access API key, GymMaster site+key)
      seam   → Seam Connect Webview (auto-detect via 60+ brands)
      request → "Request Integration" (we log interest + reach out)
 
@@ -99,54 +99,54 @@ var PROVIDERS = [
   { id:'dormakaba',   name:'Dormakaba',                 logo:'🔓', desc:'Commercial locks — popular in gyms',             conn:'seam',    cat:'gym', pop:true,  tag:'Popular',     tagClass:'slf-tag-popular' },
 
   // ── 🔒 SMART LOCKS ────────────────────────────────────────────
-  { id:'ttlock',      name:'TTLock / Sifely',           logo:'🔒', desc:'Budget-friendly smart locks — PIN codes',        conn:'seam',    cat:'smart', pop:false, tag:'Seam',      tagClass:'slf-tag-seam' },
-  { id:'yale',        name:'Yale',                      logo:'🔐', desc:'Smart locks — Yale Assure, Linus, Conexis',      conn:'seam',    cat:'smart', pop:false, tag:'Seam',      tagClass:'slf-tag-seam' },
-  { id:'schlage',     name:'Schlage',                   logo:'🔒', desc:'Encode WiFi smart deadbolts',                    conn:'seam',    cat:'smart', pop:false, tag:'Seam',      tagClass:'slf-tag-seam' },
-  { id:'august',      name:'August',                    logo:'🏠', desc:'WiFi smart locks — retrofit friendly',           conn:'seam',    cat:'smart', pop:false, tag:'Seam',      tagClass:'slf-tag-seam' },
-  { id:'nuki',        name:'Nuki',                      logo:'🇦🇹', desc:'European smart locks — BLE + WiFi',             conn:'seam',    cat:'smart', pop:false, tag:'Seam',      tagClass:'slf-tag-seam' },
-  { id:'tedee',       name:'Tedee',                     logo:'🔘', desc:'Compact smart locks — Bluetooth/WiFi',           conn:'seam',    cat:'smart', pop:false, tag:'Seam',      tagClass:'slf-tag-seam' },
-  { id:'lockly',      name:'Lockly',                    logo:'🔢', desc:'PIN Genie rotating keypad',                      conn:'seam',    cat:'smart', pop:false, tag:'Seam',      tagClass:'slf-tag-seam' },
-  { id:'ultraloq',    name:'Ultraloq',                  logo:'🖐️', desc:'Fingerprint + keypad smart locks',              conn:'seam',    cat:'smart', pop:false, tag:'Seam',      tagClass:'slf-tag-seam' },
-  { id:'igloohome',   name:'igloohome',                 logo:'🏔️', desc:'Offline-capable — works without WiFi',          conn:'seam',    cat:'smart', pop:false, tag:'Seam',      tagClass:'slf-tag-seam' },
-  { id:'kwikset',     name:'Kwikset',                   logo:'🔑', desc:'Halo WiFi smart locks',                          conn:'seam',    cat:'smart', pop:false, tag:'Seam',      tagClass:'slf-tag-seam' },
-  { id:'level',       name:'Level',                     logo:'🚪', desc:'Invisible smart lock — hidden inside door',      conn:'seam',    cat:'smart', pop:false, tag:'Seam',      tagClass:'slf-tag-seam' },
-  { id:'wyze',        name:'Wyze',                      logo:'📦', desc:'Affordable smart home locks',                    conn:'seam',    cat:'smart', pop:false, tag:'Seam',      tagClass:'slf-tag-seam' },
-  { id:'smonet',      name:'Smonet',                    logo:'🔒', desc:'Keyless entry smart locks — fingerprint',        conn:'seam',    cat:'smart', pop:false, tag:'Seam',      tagClass:'slf-tag-seam' },
-  { id:'welock',      name:'Welock',                    logo:'🔐', desc:'European fingerprint + card smart locks',        conn:'seam',    cat:'smart', pop:false, tag:'Seam',      tagClass:'slf-tag-seam' },
-  { id:'33lock',      name:'33 Lock',                   logo:'🔒', desc:'Smart locks with remote access',                 conn:'seam',    cat:'smart', pop:false, tag:'Seam',      tagClass:'slf-tag-seam' },
-  { id:'4suites',     name:'4SUITES',                   logo:'🏨', desc:'Hospitality smart locks',                        conn:'seam',    cat:'smart', pop:false, tag:'Seam',      tagClass:'slf-tag-seam' },
-  { id:'smartthings', name:'SmartThings',               logo:'📱', desc:'Samsung smart home — locks & sensors',           conn:'seam',    cat:'smart', pop:false, tag:'Seam',      tagClass:'slf-tag-seam' },
-  { id:'switchbot',   name:'SwitchBot',                 logo:'🤖', desc:'Smart home locks — BLE + WiFi',                  conn:'seam',    cat:'smart', pop:false, tag:'Seam',      tagClass:'slf-tag-seam' },
-  { id:'ring',        name:'Ring',                      logo:'🔔', desc:'Video doorbell + smart locks',                   conn:'seam',    cat:'smart', pop:false, tag:'Seam',      tagClass:'slf-tag-seam' },
-  { id:'nest',        name:'Google Nest',               logo:'🏠', desc:'Nest × Yale smart locks',                        conn:'seam',    cat:'smart', pop:false, tag:'Seam',      tagClass:'slf-tag-seam' },
+  { id:'ttlock',      name:'TTLock / Sifely',           logo:'🔒', desc:'Budget-friendly smart locks — PIN codes',        conn:'seam',    cat:'smart', pop:false, tag:'Cloud',     tagClass:'slf-tag-seam' },
+  { id:'yale',        name:'Yale',                      logo:'🔐', desc:'Smart locks — Yale Assure, Linus, Conexis',      conn:'seam',    cat:'smart', pop:false, tag:'Cloud',     tagClass:'slf-tag-seam' },
+  { id:'schlage',     name:'Schlage',                   logo:'🔒', desc:'Encode WiFi smart deadbolts',                    conn:'seam',    cat:'smart', pop:false, tag:'Cloud',     tagClass:'slf-tag-seam' },
+  { id:'august',      name:'August',                    logo:'🏠', desc:'WiFi smart locks — retrofit friendly',           conn:'seam',    cat:'smart', pop:false, tag:'Cloud',     tagClass:'slf-tag-seam' },
+  { id:'nuki',        name:'Nuki',                      logo:'🇦🇹', desc:'European smart locks — BLE + WiFi',             conn:'seam',    cat:'smart', pop:false, tag:'Cloud',     tagClass:'slf-tag-seam' },
+  { id:'tedee',       name:'Tedee',                     logo:'🔘', desc:'Compact smart locks — Bluetooth/WiFi',           conn:'seam',    cat:'smart', pop:false, tag:'Cloud',     tagClass:'slf-tag-seam' },
+  { id:'lockly',      name:'Lockly',                    logo:'🔢', desc:'PIN Genie rotating keypad',                      conn:'seam',    cat:'smart', pop:false, tag:'Cloud',     tagClass:'slf-tag-seam' },
+  { id:'ultraloq',    name:'Ultraloq',                  logo:'🖐️', desc:'Fingerprint + keypad smart locks',              conn:'seam',    cat:'smart', pop:false, tag:'Cloud',     tagClass:'slf-tag-seam' },
+  { id:'igloohome',   name:'igloohome',                 logo:'🏔️', desc:'Offline-capable — works without WiFi',          conn:'seam',    cat:'smart', pop:false, tag:'Cloud',     tagClass:'slf-tag-seam' },
+  { id:'kwikset',     name:'Kwikset',                   logo:'🔑', desc:'Halo WiFi smart locks',                          conn:'seam',    cat:'smart', pop:false, tag:'Cloud',     tagClass:'slf-tag-seam' },
+  { id:'level',       name:'Level',                     logo:'🚪', desc:'Invisible smart lock — hidden inside door',      conn:'seam',    cat:'smart', pop:false, tag:'Cloud',     tagClass:'slf-tag-seam' },
+  { id:'wyze',        name:'Wyze',                      logo:'📦', desc:'Affordable smart home locks',                    conn:'seam',    cat:'smart', pop:false, tag:'Cloud',     tagClass:'slf-tag-seam' },
+  { id:'smonet',      name:'Smonet',                    logo:'🔒', desc:'Keyless entry smart locks — fingerprint',        conn:'seam',    cat:'smart', pop:false, tag:'Cloud',     tagClass:'slf-tag-seam' },
+  { id:'welock',      name:'Welock',                    logo:'🔐', desc:'European fingerprint + card smart locks',        conn:'seam',    cat:'smart', pop:false, tag:'Cloud',     tagClass:'slf-tag-seam' },
+  { id:'33lock',      name:'33 Lock',                   logo:'🔒', desc:'Smart locks with remote access',                 conn:'seam',    cat:'smart', pop:false, tag:'Cloud',     tagClass:'slf-tag-seam' },
+  { id:'4suites',     name:'4SUITES',                   logo:'🏨', desc:'Hospitality smart locks',                        conn:'seam',    cat:'smart', pop:false, tag:'Cloud',     tagClass:'slf-tag-seam' },
+  { id:'smartthings', name:'SmartThings',               logo:'📱', desc:'Samsung smart home — locks & sensors',           conn:'seam',    cat:'smart', pop:false, tag:'Cloud',     tagClass:'slf-tag-seam' },
+  { id:'switchbot',   name:'SwitchBot',                 logo:'🤖', desc:'Smart home locks — BLE + WiFi',                  conn:'seam',    cat:'smart', pop:false, tag:'Cloud',     tagClass:'slf-tag-seam' },
+  { id:'ring',        name:'Ring',                      logo:'🔔', desc:'Video doorbell + smart locks',                   conn:'seam',    cat:'smart', pop:false, tag:'Cloud',     tagClass:'slf-tag-seam' },
+  { id:'nest',        name:'Google Nest',               logo:'🏠', desc:'Nest × Yale smart locks',                        conn:'seam',    cat:'smart', pop:false, tag:'Cloud',     tagClass:'slf-tag-seam' },
   { id:'tapkey',      name:'Tapkey',                    logo:'📲', desc:'NFC + Bluetooth — digital keys for cylinders',   conn:'request', cat:'smart', pop:false, tag:'Open API',  tagClass:'slf-tag-request' },
 
   // ── 🏢 COMMERCIAL ACCESS CONTROL ──────────────────────────────
-  { id:'avigilon',    name:'Avigilon Alta / Openpath',  logo:'📱', desc:'Touchless wave-to-unlock — REST API',            conn:'seam',    cat:'commercial', pop:false, tag:'Seam',      tagClass:'slf-tag-seam' },
-  { id:'latch',       name:'Latch',                     logo:'🚪', desc:'Smart access for multi-tenant buildings',        conn:'seam',    cat:'commercial', pop:false, tag:'Seam',      tagClass:'slf-tag-seam' },
-  { id:'assaabloy',   name:'ASSA ABLOY',                logo:'🏛️', desc:'Global leader — Aperio, Incedo, HID',           conn:'seam',    cat:'commercial', pop:false, tag:'Seam',      tagClass:'slf-tag-seam' },
-  { id:'hid',         name:'HID Global',                logo:'🪪', desc:'Enterprise card readers & mobile access',        conn:'seam',    cat:'commercial', pop:false, tag:'Seam',      tagClass:'slf-tag-seam' },
-  { id:'allegion',    name:'Allegion',                   logo:'🏢', desc:'Schlage, Von Duprin — commercial hardware',      conn:'seam',    cat:'commercial', pop:false, tag:'Seam',      tagClass:'slf-tag-seam' },
-  { id:'honeywell',   name:'Honeywell',                 logo:'🔴', desc:'Building automation + access control',           conn:'seam',    cat:'commercial', pop:false, tag:'Seam',      tagClass:'slf-tag-seam' },
-  { id:'2n',          name:'2N',                        logo:'📞', desc:'IP intercoms + access — Axis company',           conn:'seam',    cat:'commercial', pop:false, tag:'Seam',      tagClass:'slf-tag-seam' },
-  { id:'akiles',      name:'Akiles',                    logo:'🇪🇸', desc:'Smart access — popular in Spain',               conn:'seam',    cat:'commercial', pop:false, tag:'Seam',      tagClass:'slf-tag-seam' },
-  { id:'verkada',     name:'Verkada',                   logo:'📹', desc:'Cloud security — cameras + access in one',       conn:'seam',    cat:'commercial', pop:false, tag:'Seam',      tagClass:'slf-tag-seam' },
-  { id:'genetec',     name:'Genetec',                   logo:'🖥️', desc:'Enterprise unified security platform',          conn:'seam',    cat:'commercial', pop:false, tag:'Seam',      tagClass:'slf-tag-seam' },
-  { id:'lenel',       name:'Lenel S2 / LenelS2',       logo:'🏢', desc:'Enterprise access — Carrier company',            conn:'seam',    cat:'commercial', pop:false, tag:'Seam',      tagClass:'slf-tag-seam' },
+  { id:'avigilon',    name:'Avigilon Alta / Openpath',  logo:'📱', desc:'Touchless wave-to-unlock — REST API',            conn:'seam',    cat:'commercial', pop:false, tag:'Cloud',     tagClass:'slf-tag-seam' },
+  { id:'latch',       name:'Latch',                     logo:'🚪', desc:'Smart access for multi-tenant buildings',        conn:'seam',    cat:'commercial', pop:false, tag:'Cloud',     tagClass:'slf-tag-seam' },
+  { id:'assaabloy',   name:'ASSA ABLOY',                logo:'🏛️', desc:'Global leader — Aperio, Incedo, HID',           conn:'seam',    cat:'commercial', pop:false, tag:'Cloud',     tagClass:'slf-tag-seam' },
+  { id:'hid',         name:'HID Global',                logo:'🪪', desc:'Enterprise card readers & mobile access',        conn:'seam',    cat:'commercial', pop:false, tag:'Cloud',     tagClass:'slf-tag-seam' },
+  { id:'allegion',    name:'Allegion',                   logo:'🏢', desc:'Schlage, Von Duprin — commercial hardware',      conn:'seam',    cat:'commercial', pop:false, tag:'Cloud',     tagClass:'slf-tag-seam' },
+  { id:'honeywell',   name:'Honeywell',                 logo:'🔴', desc:'Building automation + access control',           conn:'seam',    cat:'commercial', pop:false, tag:'Cloud',     tagClass:'slf-tag-seam' },
+  { id:'2n',          name:'2N',                        logo:'📞', desc:'IP intercoms + access — Axis company',           conn:'seam',    cat:'commercial', pop:false, tag:'Cloud',     tagClass:'slf-tag-seam' },
+  { id:'akiles',      name:'Akiles',                    logo:'🇪🇸', desc:'Smart access — popular in Spain',               conn:'seam',    cat:'commercial', pop:false, tag:'Cloud',     tagClass:'slf-tag-seam' },
+  { id:'verkada',     name:'Verkada',                   logo:'📹', desc:'Cloud security — cameras + access in one',       conn:'seam',    cat:'commercial', pop:false, tag:'Cloud',     tagClass:'slf-tag-seam' },
+  { id:'genetec',     name:'Genetec',                   logo:'🖥️', desc:'Enterprise unified security platform',          conn:'seam',    cat:'commercial', pop:false, tag:'Cloud',     tagClass:'slf-tag-seam' },
+  { id:'lenel',       name:'Lenel S2 / LenelS2',       logo:'🏢', desc:'Enterprise access — Carrier company',            conn:'seam',    cat:'commercial', pop:false, tag:'Cloud',     tagClass:'slf-tag-seam' },
   { id:'pdk',         name:'ProdataKey (PDK)',          logo:'☁️', desc:'Cloud access control — open REST API',           conn:'request', cat:'commercial', pop:false, tag:'Open API',  tagClass:'slf-tag-request' },
-  { id:'swiftlane',   name:'Swiftlane',                 logo:'👤', desc:'Facial recognition + mobile access',             conn:'seam',    cat:'commercial', pop:false, tag:'Seam',      tagClass:'slf-tag-seam' },
-  { id:'pti',         name:'PTI Security',              logo:'🔧', desc:'Self-storage & facility access',                 conn:'seam',    cat:'commercial', pop:false, tag:'Seam',      tagClass:'slf-tag-seam' },
-  { id:'kantech',     name:'Kantech',                   logo:'🏢', desc:'Tyco/Johnson Controls access',                   conn:'seam',    cat:'commercial', pop:false, tag:'Seam',      tagClass:'slf-tag-seam' },
-  { id:'keyincode',   name:'KEYINCODE',                 logo:'🔢', desc:'Commercial keypad locks',                        conn:'seam',    cat:'commercial', pop:false, tag:'Seam',      tagClass:'slf-tag-seam' },
-  { id:'controlbyweb',name:'ControlByWeb',              logo:'🌐', desc:'IP relay controllers for doors',                 conn:'seam',    cat:'commercial', pop:false, tag:'Seam',      tagClass:'slf-tag-seam' },
-  { id:'doorking',    name:'DoorKing',                  logo:'🚧', desc:'Gate & door entry systems',                      conn:'seam',    cat:'commercial', pop:false, tag:'Seam',      tagClass:'slf-tag-seam' },
-  { id:'doorbird',    name:'DoorBird',                  logo:'🐦', desc:'IP video door stations + access',                conn:'seam',    cat:'commercial', pop:false, tag:'Seam',      tagClass:'slf-tag-seam' },
-  { id:'iloq',        name:'iLOQ',                      logo:'🔋', desc:'Self-powered digital locks — no batteries',      conn:'seam',    cat:'commercial', pop:false, tag:'Seam',      tagClass:'slf-tag-seam' },
+  { id:'swiftlane',   name:'Swiftlane',                 logo:'👤', desc:'Facial recognition + mobile access',             conn:'seam',    cat:'commercial', pop:false, tag:'Cloud',     tagClass:'slf-tag-seam' },
+  { id:'pti',         name:'PTI Security',              logo:'🔧', desc:'Self-storage & facility access',                 conn:'seam',    cat:'commercial', pop:false, tag:'Cloud',     tagClass:'slf-tag-seam' },
+  { id:'kantech',     name:'Kantech',                   logo:'🏢', desc:'Tyco/Johnson Controls access',                   conn:'seam',    cat:'commercial', pop:false, tag:'Cloud',     tagClass:'slf-tag-seam' },
+  { id:'keyincode',   name:'KEYINCODE',                 logo:'🔢', desc:'Commercial keypad locks',                        conn:'seam',    cat:'commercial', pop:false, tag:'Cloud',     tagClass:'slf-tag-seam' },
+  { id:'controlbyweb',name:'ControlByWeb',              logo:'🌐', desc:'IP relay controllers for doors',                 conn:'seam',    cat:'commercial', pop:false, tag:'Cloud',     tagClass:'slf-tag-seam' },
+  { id:'doorking',    name:'DoorKing',                  logo:'🚧', desc:'Gate & door entry systems',                      conn:'seam',    cat:'commercial', pop:false, tag:'Cloud',     tagClass:'slf-tag-seam' },
+  { id:'doorbird',    name:'DoorBird',                  logo:'🐦', desc:'IP video door stations + access',                conn:'seam',    cat:'commercial', pop:false, tag:'Cloud',     tagClass:'slf-tag-seam' },
+  { id:'iloq',        name:'iLOQ',                      logo:'🔋', desc:'Self-powered digital locks — no batteries',      conn:'seam',    cat:'commercial', pop:false, tag:'Cloud',     tagClass:'slf-tag-seam' },
 
   // ── 🏋️ GYM SOFTWARE ───────────────────────────────────────────
   { id:'perfectgym',  name:'PerfectGym',                logo:'💪', desc:'Gym software with OpenAPI 3.0 — access + CRM',   conn:'request', cat:'gymsw', pop:false, tag:'Open API',  tagClass:'slf-tag-request' },
   { id:'gymdesk',     name:'Gymdesk',                   logo:'🖥️', desc:'Gym management with door access integrations',  conn:'request', cat:'gymsw', pop:false, tag:'Open API',  tagClass:'slf-tag-request' },
-  { id:'glofox',      name:'Glofox / ABC Fitness',      logo:'🦊', desc:'Member apps + Kisi/Brivo access integration',    conn:'request', cat:'gymsw', pop:false, tag:'Open API',  tagClass:'slf-tag-request' },
+  { id:'glofox',      name:'Glofox / ABC Fitness',      logo:'🦊', desc:'Member apps + smart lock access integration',    conn:'request', cat:'gymsw', pop:false, tag:'Open API',  tagClass:'slf-tag-request' },
   { id:'clubready',   name:'ClubReady',                 logo:'💼', desc:'Club management with access control APIs',       conn:'request', cat:'gymsw', pop:false, tag:'Open API',  tagClass:'slf-tag-request' },
   { id:'mindbody',    name:'Mindbody',                  logo:'🧘', desc:'Fitness & wellness platform with access APIs',   conn:'request', cat:'gymsw', pop:false, tag:'Open API',  tagClass:'slf-tag-request' },
   { id:'ezfacility',  name:'EZFacility',                logo:'🏃', desc:'Facility management with door integrations',     conn:'request', cat:'gymsw', pop:false, tag:'Open API',  tagClass:'slf-tag-request' },
@@ -214,7 +214,7 @@ window._slfOpenFinder = function () {
     // Search bar
     + '<div class="slf-search-wrap">'
     + '<span class="slf-search-icon">🔍</span>'
-    + '<input id="slf-search" class="slf-search" type="text" placeholder="Search brands... (e.g. Yale, Salto, Kisi)" oninput="window._slfFilter(this.value)">'
+    + '<input id="slf-search" class="slf-search" type="text" placeholder="Search brands... (e.g. Yale, Salto, Brivo)" oninput="window._slfFilter(this.value)">'
     + '</div>';
 
   // Category grids
@@ -234,7 +234,7 @@ window._slfOpenFinder = function () {
   });
 
   // No results message
-  html += '<div id="slf-no-results" class="slf-no-results">No matching brands found. Try <strong>Other / Not Listed</strong> below — Seam auto-detects 60+ brands.</div>';
+  html += '<div id="slf-no-results" class="slf-no-results">No matching brands found. Try <strong>Other / Not Listed</strong> below — auto-detect from 60+ brands.</div>';
 
   // Help options
   html += '<div class="slf-help" onclick="window._slfNotSure()">'
@@ -398,12 +398,12 @@ function _slfShowKisiForm(gymId) {
   var html = ''
     + '<div style="text-align:center;margin-bottom:16px">'
     + '<div style="font-size:40px;margin-bottom:8px">🔐</div>'
-    + '<h2 style="color:#fff;font-size:20px;font-weight:800;margin:0 0 4px">Connect Kisi</h2>'
+    + '<h2 style="color:#fff;font-size:20px;font-weight:800;margin:0 0 4px">Connect QR Access System</h2>'
     + '<p style="color:rgba(255,255,255,.4);font-size:13px;margin:0">QR code unlock — no app needed for visitors</p>'
     + '</div>'
 
     + '<div class="slf-form-group">'
-    + '<label class="slf-label">Kisi API Key</label>'
+    + '<label class="slf-label">Access System API Key</label>'
     + '<input id="slf-kisi-key" class="slf-input" type="text" placeholder="Paste your API key from Kisi dashboard">'
     + '</div>'
 
@@ -423,7 +423,7 @@ function _slfShowKisiForm(gymId) {
 
 window._slfConnectKisi = async function (gymId) {
   var key = (document.getElementById('slf-kisi-key') || {}).value;
-  if (!key || key.trim().length < 10) { _slfToast('Please enter a valid Kisi API key', 'error'); return; }
+  if (!key || key.trim().length < 10) { _slfToast('Please enter a valid API key', 'error'); return; }
 
   var btn = document.getElementById('slf-kisi-btn');
   if (btn) { btn.disabled = true; btn.innerHTML = '<span class="slf-spinner"></span> Connecting…'; }
@@ -440,14 +440,14 @@ window._slfConnectKisi = async function (gymId) {
       var closeSheet = typeof _sgCloseSheet === 'function' ? _sgCloseSheet
         : typeof _ctaCloseSheet === 'function' ? _ctaCloseSheet : function () {};
       closeSheet();
-      _slfToast('🎉 Kisi connected! Visitors get QR code door access.', 'success', 5000);
+      _slfToast('🎉 QR access connected! Visitors get QR code door access.', 'success', 5000);
     } else {
       _slfToast(d.error || 'Connection failed — check your API key', 'error', 4000);
-      if (btn) { btn.disabled = false; btn.textContent = 'Connect Kisi →'; }
+      if (btn) { btn.disabled = false; btn.textContent = 'Connect →'; }
     }
   } catch (ex) {
     _slfToast('Connection failed — try again', 'error');
-    if (btn) { btn.disabled = false; btn.textContent = 'Connect Kisi →'; }
+    if (btn) { btn.disabled = false; btn.textContent = 'Connect →'; }
   }
 };
 
@@ -625,7 +625,7 @@ window._slfNotSure = function () {
 
     + '<div class="slf-help" onclick="window._slfSelectProvider(\'kisi\')">'
     + '<div class="slf-help-icon">📱</div>'
-    + '<div class="slf-help-text"><div class="slf-help-title">Tablet/reader on the wall with QR scanner</div><div class="slf-help-sub">Likely Kisi — tap to connect</div></div>'
+    + '<div class="slf-help-text"><div class="slf-help-title">Tablet/reader on the wall with QR scanner</div><div class="slf-help-sub">Likely QR-based system — tap to connect</div></div>'
     + '<div class="slf-arrow">›</div>'
     + '</div>'
 
@@ -667,7 +667,7 @@ window._slfNotSure = function () {
 
     + '<div class="slf-help" onclick="window._slfSelectProvider(\'seam\')">'
     + '<div class="slf-help-icon">🔗</div>'
-    + '<div class="slf-help-text"><div class="slf-help-title">Something else / I have an app for it</div><div class="slf-help-sub">Auto-detect from 60+ brands via Seam Connect</div></div>'
+    + '<div class="slf-help-text"><div class="slf-help-title">Something else / I have an app for it</div><div class="slf-help-sub">Auto-detect from 60+ brands</div></div>'
     + '<div class="slf-arrow">›</div>'
     + '</div>'
 

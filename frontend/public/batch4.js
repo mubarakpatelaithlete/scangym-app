@@ -1,6 +1,6 @@
 /**
- * ScanGym Batch 4 — smart lock auto-unlock on valid QR (Seam chain)
- * Backend now fires the connected smart lock (Seam/Kisi) on every valid
+ * ScanGym Batch 4 — smart lock auto-unlock on valid QR
+ * Backend now fires the connected smart lock on every valid
  * ENTRY scan. This patch surfaces it: the scanner result shows
  * "🔓 Door unlocked" when the lock fired.
  */

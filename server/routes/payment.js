@@ -739,8 +739,8 @@ router.post('/quick-checkout', async (req, res) => {
   // mark it as 'failed' → stuck 'pending' bookings blocked all future attempts.
   let booking = null;
   try {
-    if (!stripe) return res.status(500).json({ error: 'Payment not configured — Stripe not initialised' });
-    if (!stripeKeyValid) return res.status(500).json({ error: 'Payment not configured — invalid Stripe API key. Contact support.' });
+    if (!stripe) return res.status(500).json({ error: 'Payment not configured' });
+    if (!stripeKeyValid) return res.status(500).json({ error: 'Payment not configured. Contact support.' });
     if (!req.session?.userId) return res.status(401).json({ error: 'Login required for 1-tap booking' });
 
     let { gymId, date, time, cardId, savedCardId, placeId, passType, gymName: reqGymName, gymAddress: reqGymAddr, referral_code } = req.body;
