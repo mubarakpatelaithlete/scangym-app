@@ -110,21 +110,36 @@ const TOOLS = [
     },
   },
   {
-    name: 'book_gym_session',
-    title: 'Book Gym Session',
-    description: 'Reserve a provisional day-pass slot at a gym. Requires confirmed=true after the user has reviewed the gym, date/time, and email. The reservation is completed later on scangym.com; nothing is finalized inside ChatGPT.',
+    name: 'reserve_gym_slot',
+    title: 'Reserve Gym Slot',
+    description: 'Hold a provisional day-pass slot at a gym for the user. Requires confirmed=true after the user has reviewed the gym and date/time. The hold is finalized later on scangym.com; nothing is finalized inside ChatGPT.',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
     inputSchema: {
       type: 'object',
       properties: {
-        placeId: { type: 'string', description: 'Google Places ID of the gym to book' },
-        date: { type: 'string', description: 'Booking date in YYYY-MM-DD format' },
+        placeId: { type: 'string', description: 'Google Places ID of the gym' },
+        date: { type: 'string', description: 'Date in YYYY-MM-DD format' },
         time: { type: 'string', description: 'Preferred start time HH:MM (24h), or "anytime"' },
-        email: { type: 'string', description: 'User email for booking confirmation and receipt' },
-        name: { type: 'string', description: 'User name for the booking' },
-        confirmed: { type: 'boolean', description: 'Must be true only after the user explicitly confirms the gym, date/time, and email.' },
+        email: { type: 'string', description: 'Optional contact email so the user can retrieve the hold on scangym.com' },
+        name: { type: 'string', description: 'Optional user name for the hold' },
+        confirmed: { type: 'boolean', description: 'Must be true only after the user explicitly confirms the gym and date/time.' },
       },
-      required: ['placeId', 'date', 'email', 'confirmed'],
+      required: ['placeId', 'date', 'confirmed'],
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean' },
+        bookingId: { type: 'number' },
+        bookingCode: { type: 'string' },
+        gymName: { type: 'string' },
+        date: { type: 'string' },
+        time: { type: 'string' },
+        status: { type: 'string' },
+        message: { type: 'string' },
+        error: { type: 'string' },
+        confirmationRequired: { type: 'boolean' },
+      },
     },
   },
   {
@@ -204,7 +219,8 @@ async function checkAvailability({ placeId, date, time }) {
 }
 
 async function bookGymSession({ placeId, date, time, email, name, confirmed }) {
-  if (!placeId || !date || !email) return { error: 'placeId, date, and email are required.' };
+  if (!placeId || !date) return { error: 'placeId and date are required.' };
+  if (!email) email = 'guest@scangym.com';
   if (confirmed !== true) {
     return {
       confirmationRequired: true,
@@ -245,6 +261,7 @@ const HANDLERS = {
   search_gyms: searchGyms,
   get_gym_details: getGymDetails,
   check_availability: checkAvailability,
+  reserve_gym_slot: bookGymSession,
   book_gym_session: bookGymSession,
   cancel_booking: cancelBooking,
 };
