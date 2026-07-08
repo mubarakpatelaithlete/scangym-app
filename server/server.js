@@ -24,6 +24,7 @@ const directionsRouter = require('./routes/directions');
 const qrRouter = require('./routes/qr');
 const convictionRouter = require('./routes/conviction');
 const identityRouter = require('./routes/identity');
+const mcpRouter = require('./routes/mcp');
 const authRouter = require('./routes/auth');
 const bookingRouter = require('./routes/booking');
 const paymentRouter = require('./routes/payment');
@@ -440,6 +441,9 @@ app.use('/api/directions', directionsRouter);
 app.use('/api/qr', qrRouter);
 app.use('/api/conviction', convictionRouter);
 app.use('/api/identity', identityRouter);
+
+// -- MCP endpoint for the ScanGym ChatGPT app (Apps SDK) --
+app.use('/mcp', express.json({ limit: '1mb' }), mcpRouter);
 
 // -- Auth, Booking & Payment routes --
 app.use('/api/auth', authRouter);
