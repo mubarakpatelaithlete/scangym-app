@@ -69,7 +69,7 @@ const TOOLS = [
     name: 'search_gyms',
     title: 'Search Gyms',
     description: 'Search for gyms by city/location name or coordinates. Returns a ranked list of nearby gyms with prices, ratings, and availability.',
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     inputSchema: {
       type: 'object',
       properties: {
@@ -85,7 +85,7 @@ const TOOLS = [
     name: 'get_gym_details',
     title: 'Get Gym Details',
     description: 'Get full details for a specific gym including pricing, opening hours, photos, reviews, and address. Use the placeId from search results.',
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     inputSchema: {
       type: 'object',
       properties: {
@@ -98,7 +98,7 @@ const TOOLS = [
     name: 'check_availability',
     title: 'Check Availability',
     description: 'Check whether a gym appears available for a requested date/time. Read-only; does not create a booking.',
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     inputSchema: {
       type: 'object',
       properties: {
@@ -113,7 +113,7 @@ const TOOLS = [
     name: 'reserve_gym_slot',
     title: 'Reserve Gym Slot',
     description: 'Hold a provisional day-pass slot at a gym for the user. Requires confirmed=true after the user has reviewed the gym and date/time. The hold is finalized later on scangym.com; nothing is finalized inside ChatGPT.',
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     inputSchema: {
       type: 'object',
       properties: {
@@ -146,7 +146,7 @@ const TOOLS = [
     name: 'cancel_booking',
     title: 'Cancel Booking',
     description: 'Cancel a gym booking. Free cancellation up to 2 hours before the session.',
-    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true },
+    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
     inputSchema: {
       type: 'object',
       properties: {
