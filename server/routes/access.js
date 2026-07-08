@@ -355,7 +355,8 @@ router.post('/owner/connect-kisi', authenticateUser, async (req, res) => {
     try {
       places = await kisi.listPlaces();
     } catch (e) {
-      return res.status(400).json({ error: 'Invalid Kisi API key — could not connect', detail: e.message });
+      console.error('[access] kisi connect failed:', e.message);
+      return res.status(400).json({ error: 'Invalid API key — could not connect to access system' });
     }
 
     // Find the right place and group
@@ -393,7 +394,7 @@ router.post('/owner/connect-kisi', authenticateUser, async (req, res) => {
     });
   } catch (err) {
     console.error('Kisi connection error:', err);
-    res.status(500).json({ error: 'Failed to connect Kisi' });
+    res.status(500).json({ error: 'Failed to connect access system' });
   }
 });
 
@@ -486,7 +487,8 @@ router.post('/owner/connect-seam', authenticateUser, express.json(), async (req,
     }
   } catch (err) {
     console.error('Seam connection error:', err);
-    res.status(500).json({ error: 'Failed to connect via Seam', detail: err.message });
+    console.error('[access] smart access connect failed:', err.message);
+    res.status(500).json({ error: 'Failed to connect smart access system' });
   }
 });
 

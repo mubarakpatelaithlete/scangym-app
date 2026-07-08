@@ -309,7 +309,7 @@ function upgradeCreatorWithdraw(){
   window._creatorWithdraw=function(){window._sgWalletWithdraw();};
   window._sgCreatorAddWithdrawMethod=function(){window._sgWalletAddMethod();};
   // Partner overrides — legacy sheets are Stripe-only; unified flow supports
-  // Stripe + bank + PayPal and doesn't require Seam connection.
+  // Stripe + bank + PayPal and doesn't require smart access connection.
   window._partnerWithdraw=function(){window._sgWalletWithdraw();};
   window._sgPartnerWithdrawToBank=function(){window._sgWalletWithdraw();};
   window._sgPartnerAddWithdrawMethod=function(){window._sgWalletAddMethod();};

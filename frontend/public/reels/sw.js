@@ -1,7 +1,7 @@
 /**
  * ScanGym Reels Service Worker — TikTok-Speed v7
  * ─────────────────────────────────────────────────────
- * PERF FIX #1: Cloudflare caching — removed mode:'cors' from all fetches
+ * PERF FIX #1: CDN caching — removed mode:'cors' from all fetches
  *              so requests flow through CF edge cache naturally.
  * PERF FIX #3: Fast-start — prioritize first 512KB of video for instant
  *              playback, cache full response in background.

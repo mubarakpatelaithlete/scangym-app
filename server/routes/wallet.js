@@ -320,7 +320,7 @@ router.post('/stripe-connect', async (req, res) => {
   try {
     const userId = req.user.id;
     const stripe = process.env.STRIPE_SECRET_KEY ? require('stripe')(process.env.STRIPE_SECRET_KEY) : null;
-    if (!stripe) return res.status(500).json({ error: 'Stripe not configured' });
+    if (!stripe) return res.status(500).json({ error: 'Payment service not configured' });
 
     // Reuse an existing account (users row, or self-healed from creator_landing_pages)
     let connectId = await _resolveStripeConnectId(userId, req.body?.creatorHandle || null);
@@ -374,7 +374,7 @@ router.post('/stripe-connect', async (req, res) => {
     res.json({ success: true, clientSecret: accountSession.client_secret, accountId: connectId });
   } catch (err) {
     console.error('[WalletConnect] Error:', err.message);
-    res.status(500).json({ error: 'Stripe Connect setup failed', detail: err.message });
+    res.status(500).json({ error: 'Payout setup failed' });
   }
 });
 
@@ -384,7 +384,7 @@ router.post('/stripe-connect/session', async (req, res) => {
   try {
     const userId = req.user.id;
     const stripe = process.env.STRIPE_SECRET_KEY ? require('stripe')(process.env.STRIPE_SECRET_KEY) : null;
-    if (!stripe) return res.status(500).json({ error: 'Stripe not configured' });
+    if (!stripe) return res.status(500).json({ error: 'Payment service not configured' });
 
     const connectId = await _resolveStripeConnectId(userId, null);
     if (!connectId) return res.status(400).json({ error: 'No connected account found — start onboarding first' });
@@ -399,7 +399,7 @@ router.post('/stripe-connect/session', async (req, res) => {
     res.json({ client_secret: accountSession.client_secret });
   } catch (err) {
     console.error('[WalletConnect] Session refresh error:', err.message);
-    res.status(500).json({ error: 'Could not create session', detail: err.message });
+    console.error('[wallet] session error:', err.message); res.status(500).json({ error: 'Could not create session' });
   }
 });
 
