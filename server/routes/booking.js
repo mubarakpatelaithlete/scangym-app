@@ -63,7 +63,7 @@ router.post('/create', async (req, res) => {
     }
 
     // Get gym info
-    const gym = await pool.query('SELECT id, name, address, country FROM gyms WHERE id = $1', [gymId]);
+    const gym = await pool.query('SELECT id, name, address, country, day_pass_price FROM gyms WHERE id = $1', [gymId]);
     if (gym.rows.length === 0) {
       return res.status(404).json({ error: 'Gym not found' });
     }
@@ -75,8 +75,13 @@ router.post('/create', async (req, res) => {
     const endHour = Math.min(hours + 1, 23);
     const endTime = String(endHour).padStart(2, '0') + ':' + String(mins).padStart(2, '0');
 
-    // v4.0: Flat £4.49 base, PPP + currency by gym's country
-    const dayPrice = pricing.getDayPassPrice(g.country || 'GB');
+    // C6/ChatGPT-app FIX: respect the owner-set day-pass price so the booked
+    // price matches what search/details display (was: flat £4.49 PPP default).
+    const dayPrice = pricing.calculateGymPrice({
+      gymDayPassPrice: g.day_pass_price ? parseFloat(g.day_pass_price) : null,
+      countryCode: g.country || 'GB',
+      passType: 'day',
+    });
     let price = dayPrice.amount;
 
     // G4 FIX: Apply 15% referral discount (matches frontend display)
@@ -262,10 +267,10 @@ router.post('/guest-create', async (req, res) => {
     const isNumericId = /^\d+$/.test(String(gymId));
     let gym;
     if (isNumericId) {
-      gym = await pool.query('SELECT id, name, address, country FROM gyms WHERE id = $1', [parseInt(gymId, 10)]);
+      gym = await pool.query('SELECT id, name, address, country, day_pass_price FROM gyms WHERE id = $1', [parseInt(gymId, 10)]);
     } else {
       // Lookup by place_id first
-      gym = await pool.query('SELECT id, name, address, country FROM gyms WHERE place_id = $1', [gymId]);
+      gym = await pool.query('SELECT id, name, address, country, day_pass_price FROM gyms WHERE place_id = $1', [gymId]);
     }
     if (gym.rows.length === 0) {
       return res.status(404).json({ error: 'Gym not found. Use getGymDetails first to ensure the gym is registered.' });
@@ -280,8 +285,14 @@ router.post('/guest-create', async (req, res) => {
     const endHour = Math.min(hours + 1, 23);
     const endTime = String(endHour).padStart(2, '0') + ':' + String(mins).padStart(2, '0');
 
-    // v4.0: Flat £4.49 base, PPP + currency by gym's country
-    const dayPrice = pricing.getDayPassPrice(g.country || 'GB');
+    // C6/ChatGPT-app FIX: respect the owner-set day-pass price so the booked
+    // price matches what search/details display (was: flat £4.49 PPP default,
+    // which made ChatGPT/MCP quote one price and book another).
+    const dayPrice = pricing.calculateGymPrice({
+      gymDayPassPrice: g.day_pass_price ? parseFloat(g.day_pass_price) : null,
+      countryCode: g.country || 'GB',
+      passType: 'day',
+    });
     let price = dayPrice.amount;
 
     // G4 FIX: Apply 15% referral discount for guests too
