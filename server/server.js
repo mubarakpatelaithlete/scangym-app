@@ -470,6 +470,14 @@ app.use('/api/gym-mgmt', gymMgmtRouter);
 app.use('/api/playlists', playlistsRouter);
 app.use('/api/stats', adminDashboardRouter);
 
+// OpenAI ChatGPT Apps domain verification challenge
+app.get('/.well-known/openai-apps-challenge', (req, res) => {
+  const token = process.env.OPENAI_APPS_CHALLENGE_TOKEN
+    || 'uvQ2YsjnVp6NVLHiZ9lShRs95m1g6lcM-en5CB7k5kU';
+  res.setHeader('Content-Type', 'text/plain');
+  res.send(token);
+});
+
 // -- Serve Frontend --
 // Digital Asset Links for Android TWA verification
 app.get('/.well-known/assetlinks.json', (req, res) => {
