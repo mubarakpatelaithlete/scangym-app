@@ -23,9 +23,15 @@ const BASE_URL = 'https://maps.googleapis.com/maps/api/place';
 const PLACES_NEW_BASE = 'https://places.googleapis.com/v1/places';
 const USE_PLACES_NEW_API = process.env.USE_PLACES_NEW_API === 'true';
 
-async function searchWithPlacesNewAPI(searchQuery, lat, lng, radius, maxResults = 20) {
+// Partner-flow test whitelist: these queries bypass the gyms-only restriction
+// so a known demo Google Business Profile can be found and claimed for testing.
+const PARTNER_TEST_WHITELIST = [/maa\s*chikn/i];
+const isPartnerTestQuery = (q) => !!q && PARTNER_TEST_WHITELIST.some((re) => re.test(q));
+
+async function searchWithPlacesNewAPI(searchQuery, lat, lng, radius, maxResults = 20, anyType = false) {
   if (!GOOGLE_MAPS_API_KEY) throw new Error('No API key');
-  const requestBody = { textQuery: searchQuery, maxResultCount: Math.min(maxResults, 20), languageCode: 'en', includedType: 'gym' };
+  const requestBody = { textQuery: searchQuery, maxResultCount: Math.min(maxResults, 20), languageCode: 'en' };
+  if (!anyType) requestBody.includedType = 'gym';
   if (lat && lng) { requestBody.locationBias = { circle: { center: { latitude: parseFloat(lat), longitude: parseFloat(lng) }, radius: parseFloat(radius) || 20000 } }; }
   const fieldMask = ['places.id','places.displayName','places.formattedAddress','places.location','places.rating','places.userRatingCount','places.photos','places.currentOpeningHours','places.regularOpeningHours','places.types','places.internationalPhoneNumber','places.websiteUri','places.businessStatus'].join(',');
   const resp = await fetch(`${PLACES_NEW_BASE}:searchText`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY, 'X-Goog-FieldMask': fieldMask }, body: JSON.stringify(requestBody) });
@@ -425,7 +431,7 @@ router.get('/search', async (req, res) => {
     // #11: Places API (New) fast-path
     if (USE_PLACES_NEW_API && !pagetoken && searchQuery) {
       try {
-        let newGyms = await searchWithPlacesNewAPI(searchQuery, lat, lng, radius);
+        let newGyms = await searchWithPlacesNewAPI(searchQuery, lat, lng, radius, 20, isPartnerTestQuery(searchQuery));
         if (newGyms.length > 0) {
           newGyms = newGyms.map(parseSearchResult);
           await Promise.all([enrichGymsWithDbPrices(newGyms), enrichGymsWithBookingCounts(newGyms)]);
@@ -453,12 +459,13 @@ router.get('/search', async (req, res) => {
       url = `${BASE_URL}/textsearch/json?pagetoken=${pagetoken}&key=${GOOGLE_MAPS_API_KEY}`;
     } else {
       let q = searchQuery;
-      if (!q.toLowerCase().includes('gym') && !q.toLowerCase().includes('fitness') && !q.toLowerCase().includes('sport')) {
+      const partnerTest = isPartnerTestQuery(searchQuery);
+      if (!partnerTest && !q.toLowerCase().includes('gym') && !q.toLowerCase().includes('fitness') && !q.toLowerCase().includes('sport')) {
         q = `gym in ${q}`;
       }
       const encoded = encodeURIComponent(q);
       const typeParam = type || 'gym';
-      url = `${BASE_URL}/textsearch/json?query=${encoded}&type=${typeParam}&key=${GOOGLE_MAPS_API_KEY}`;
+      url = `${BASE_URL}/textsearch/json?query=${encoded}${partnerTest ? '' : `&type=${typeParam}`}&key=${GOOGLE_MAPS_API_KEY}`;
       if (lat && lng) {
         const r = radius || 20000;
         url += `&location=${lat},${lng}&radius=${r}`;
