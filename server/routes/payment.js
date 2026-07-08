@@ -28,3 +28,5 @@ async function resolveReferralUserId(handle) {
   } catch (e) { /* no match */ }
   return null;
 }
+
+module.exports = router;
