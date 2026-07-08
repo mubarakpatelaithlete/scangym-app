@@ -275,6 +275,7 @@ async function handleRpc(msg) {
     case 'tools/list':
       return rpcResult(id, { tools: TOOLS });
     case 'tools/call': {
+      console.log(`[MCP] tools/call ${params?.name} args=${JSON.stringify(params?.arguments || {})}`);
       const handler = HANDLERS[params?.name];
       if (!handler) return rpcError(id, -32602, `Unknown tool: ${params?.name}`);
       try {
