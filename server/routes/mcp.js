@@ -12,9 +12,10 @@
  */
 
 const express = require('express');
+const crypto = require('crypto');
 const router = express.Router();
 
-const SERVER_INFO = { name: 'scangym', version: '1.1.0' };
+const SERVER_INFO = { name: 'scangym', version: '1.1.1' };
 const PROTOCOL_VERSION = '2025-03-26';
 
 function apiBase() {
@@ -294,9 +295,22 @@ async function handleRpc(msg) {
   }
 }
 
+function isInitialize(body) {
+  if (Array.isArray(body)) return body.some((m) => m && m.method === 'initialize');
+  return body && body.method === 'initialize';
+}
+
 router.post('/', async (req, res) => {
   const body = req.body;
   try {
+    // Streamable HTTP transport: assign a session ID on initialize and
+    // echo/accept it on subsequent requests so clients (ChatGPT) keep the
+    // connector alive for the whole conversation.
+    if (isInitialize(body)) {
+      res.setHeader('Mcp-Session-Id', crypto.randomUUID());
+    } else if (req.headers['mcp-session-id']) {
+      res.setHeader('Mcp-Session-Id', req.headers['mcp-session-id']);
+    }
     if (Array.isArray(body)) {
       const responses = (await Promise.all(body.map(handleRpc))).filter(Boolean);
       if (responses.length === 0) return res.status(202).end();
@@ -311,8 +325,29 @@ router.post('/', async (req, res) => {
   }
 });
 
+// Server-initiated SSE stream. We never push messages, but clients that open
+// this stream must not get a hard 405 mid-conversation — keep it open with
+// periodic keep-alive comments instead.
 router.get('/', (req, res) => {
-  res.status(405).json({ error: 'Method Not Allowed. POST JSON-RPC messages to this endpoint.' });
+  const accept = String(req.headers.accept || '');
+  if (!accept.includes('text/event-stream')) {
+    return res
+      .status(405)
+      .json({ error: 'Method Not Allowed. POST JSON-RPC messages to this endpoint.' });
+  }
+  res.status(200);
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  if (req.headers['mcp-session-id']) {
+    res.setHeader('Mcp-Session-Id', req.headers['mcp-session-id']);
+  }
+  res.flushHeaders?.();
+  res.write(': connected\n\n');
+  const keepAlive = setInterval(() => {
+    res.write(': keep-alive\n\n');
+  }, 15000);
+  req.on('close', () => clearInterval(keepAlive));
 });
 
 router.delete('/', (req, res) => {
