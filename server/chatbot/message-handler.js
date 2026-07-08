@@ -504,6 +504,14 @@ async function handleMessage(userId, text, meta = {}) {
   const intent = detectIntent(text, session);
   const entities = extractEntities(text);
   
+  // ── Linked-account fallback (fix: one-tap booking for linked users) ──
+  // Linked users (Telegram/WhatsApp) already have an email on file.
+  // Use it automatically so tap-to-book completes without retyping,
+  // which lets the saved-card payment buttons appear.
+  if (!entities.email && meta.linkedUser && meta.linkedUser.email) {
+    entities.email = meta.linkedUser.email;
+  }
+  
   // Dedup
   const normalised = text.toLowerCase().trim();
   if (session.lastMessage === normalised && session.lastResponse) {
