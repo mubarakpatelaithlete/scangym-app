@@ -183,6 +183,7 @@ router.post('/webhook', async (req, res) => {
       userName,
       platform: platformName,
       phone: phone || undefined,
+      linkedUser: linkedUser || undefined,
     });
 
     // ── Build platform-appropriate response ──
@@ -370,7 +371,13 @@ async function lookupLinkedUser(phone, subscriberId) {
     if (resp.ok) {
       const data = await resp.json();
       if (data.userId) {
-        const linked = { userId: data.userId, phone: cleanPhone, ts: Date.now() };
+        const linked = {
+          userId: data.userId,
+          email: data.email || null,
+          stripeCustomerId: data.stripeCustomerId || null,
+          phone: cleanPhone,
+          ts: Date.now(),
+        };
         linkedAccounts.set(cacheKey, linked);
         return linked;
       }

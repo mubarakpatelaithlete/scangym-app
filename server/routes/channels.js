@@ -260,6 +260,46 @@ router.post('/welcome', async (req, res) => {
   }
 });
 
+// ─── GET /api/channels/lookup — Bot-to-server account lookup ─
+// Used by chatbot adapters (ManyChat/WhatsApp) to resolve a channel
+// identity (e.g. phone number) to a linked ScanGym account.
+// Protected by the bot secret. Returns email + stripe customer so
+// bots can complete bookings and offer saved-card payment.
+router.get('/lookup', async (req, res) => {
+  const botSecret = req.headers['x-bot-secret'] || req.query.botSecret;
+  const expected = process.env.BOT_CHECKOUT_SECRET || process.env.ADMIN_IMPORT_SECRET;
+  if (!expected || !botSecret || botSecret !== expected) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  const { channel, identifier } = req.query;
+  if (!channel || !identifier) {
+    return res.status(400).json({ error: 'channel and identifier are required' });
+  }
+  try {
+    const { rows } = await pool.query(
+      `SELECT uc.user_id, u.email, u.first_name, u.stripe_customer_id
+       FROM user_channels uc
+       JOIN public.users u ON u.id = uc.user_id
+       WHERE uc.channel = $1
+         AND (uc.channel_user_id = $2 OR uc.channel_user_id = $1 || ':' || $2 OR uc.channel_username = $2)
+         AND uc.is_active = true
+       LIMIT 1`,
+      [channel, String(identifier)]
+    );
+    if (rows.length === 0) return res.json({ userId: null });
+    const u = rows[0];
+    res.json({
+      userId: u.user_id,
+      email: u.email,
+      firstName: u.first_name,
+      stripeCustomerId: u.stripe_customer_id,
+    });
+  } catch (err) {
+    console.error('[Channels] Lookup error:', err.message);
+    res.status(500).json({ error: 'Lookup failed' });
+  }
+});
+
 // ─── GET /api/channels/whatsapp/number — Get WhatsApp number ─
 // Checks env vars first, then falls back to Twilio adapter's status endpoint,
 // then to the same hardcoded number the Twilio adapter uses.
