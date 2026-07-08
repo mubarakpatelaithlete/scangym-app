@@ -302,7 +302,13 @@ const apiPaths = [
   '/api/chatbot',
   '/api/referrals',
 ];
-apiPaths.forEach(p => app.use(p, express.json()));
+apiPaths.forEach(p => app.use(p, express.json({
+  // Capture the raw request body so webhook signature verification
+  // (Slack HMAC, Teams JWT, etc.) can hash the exact bytes received.
+  // Without this, adapters fall back to JSON.stringify(req.body),
+  // which may not byte-match and silently drops valid events.
+  verify: (req, res, buf) => { req.rawBody = buf.toString(); },
+})));
 
 // -- Health check (Railway uses this for deploy validation) --
 app.get('/health', (req, res) => res.status(200).send('ok'));
