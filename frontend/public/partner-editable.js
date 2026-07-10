@@ -655,20 +655,16 @@ async function _peLoadAndRender(){
     window._peDashboardCache=d;
 
     if(d.hasGyms&&d.gyms&&d.gyms.length>0){
-      // Try to get photos from search results / Google data
-      var enriched=d.gyms.map(function(g){
-        // Try to find a matching gym from state.gyms for the photo
-        var photo='';
-        if(state.gyms){
-          var match=state.gyms.find(function(sg){return sg.id==g.id||sg.placeId==g.id||sg.place_id==g.id;});
-          if(match)photo=typeof _gymPhotoUrl==='function'?_gymPhotoUrl(match):(match.photo||match.thumbnail||'');
-        }
-        return Object.assign({},g,{photo:photo});
-      });
-      window._peGymsCache=enriched;
-    }else{
-      window._peGymsCache=[];
+      // Owner has claimed gyms — keep the native Partner Dashboard page
+      // (PartnerFullPage in the main bundle) as the ONE partner screen.
+      // The old editable carousel takeover caused two competing screens.
+      // Just cache the gyms for the popups and refresh the native page data.
+      window._peGymsCache=d.gyms;
+      if(typeof window._partnerLoadGymProfile==='function')window._partnerLoadGymProfile();
+      return;
     }
+    // No gyms claimed — show the "Claim Your Gym" card
+    window._peGymsCache=[];
     _peRenderCards();
   }catch(e){
     console.error('[PartnerEditable] Load failed:',e.message);
@@ -694,12 +690,8 @@ var _waitPatch=setInterval(function(){
       }
     };
 
-    // Also patch _partnerLoadHome to use our view
-    var _origLoadHome=window._partnerLoadHome;
-    window._partnerLoadHome=function(){
-      // Don't run the old home loader — our view handles it
-      _peLoadAndRender();
-    };
+    // NOTE: _partnerLoadHome is no longer overridden — the native
+    // Partner Dashboard page is the single partner screen now.
 
     // Auto-render when partner tab first loads
     // Note: /partner route maps to activeTab='more', so check route instead

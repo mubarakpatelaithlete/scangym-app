@@ -142,7 +142,9 @@ function paintSwitch(){
 window._sgB2RailHost=function(){
   var stray=document.getElementById('sg-partner-rail');
   if(stray)stray.remove();
-  return document.querySelector('.pe-actions')||null;
+  // Native Partner Dashboard (PartnerFullPage) uses .tt-actions; the old
+  // editable carousel used .pe-actions (now only shown pre-claim).
+  return document.querySelector('.pe-actions')||document.querySelector('#partner-profile-page .tt-actions')||null;
 };
 function injectGymSwitch(){
   var route=curRoute();
