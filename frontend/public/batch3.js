@@ -166,9 +166,10 @@ function injectOwnChip(){
   var route=curRoute();
   var old=document.getElementById('sg-own-chip');
   if(route.indexOf('/partner')!==0){if(old)old.remove();return;}
-  // TikTok-style rail button — join the same right rail as the on/off toggle
-  var host=(typeof window._sgB2RailHost==='function')?window._sgB2RailHost():null;
-  if(!host)return; // batch2 not loaded yet; retry on next tick
+  // TikTok-style rail button — lives ONLY inside the .pe-actions owner rail,
+  // right next to the other owner buttons (no separate rail before claiming)
+  var host=(typeof window._sgB2RailHost==='function')?window._sgB2RailHost():document.querySelector('.pe-actions');
+  if(!host){if(old)old.remove();return;} // no owner rail yet (gym not claimed) — show nothing
   if(old){
     if(old.parentNode!==host){old.remove();}
     else{if(_ownState===true||_ownState==='pending')paintOwnBadge(_ownState);return;}
