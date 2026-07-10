@@ -827,7 +827,9 @@ router.post('/owner/create-connect-webview', authenticateUser, async (req, res) 
         ? SEAM_PROVIDER_KEYS[provider]
         : [];
 
-    const seam = new SeamClient(seamApiKey || null);
+    // Use the workspace key from env (SEAM_API_KEY). This handler doesn't take
+    // a per-request key, so referencing seamApiKey here throws ReferenceError.
+    const seam = new SeamClient();
     const webview = await seam.createConnectWebview({
       accepted_providers: acceptedProviders,
       custom_redirect_url: `${req.protocol}://${req.get('host')}/gympartners-dashboard/connect-access?status=complete&gym_id=${gymId}`,
@@ -859,7 +861,7 @@ router.post('/owner/complete-connect', authenticateUser, async (req, res) => {
     );
     if (gym.rows.length === 0) return res.status(403).json({ error: 'Not your gym' });
 
-    const seam = new SeamClient(seamApiKey || null);
+    const seam = new SeamClient();
 
     // Get the webview status
     const wv = await seam.getConnectWebview(connectWebviewId);
