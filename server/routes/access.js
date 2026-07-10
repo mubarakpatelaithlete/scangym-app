@@ -955,6 +955,128 @@ router.get('/owner/connection-status/:gymId', authenticateUser, async (req, res)
   }
 });
 
+// ═══════════════════════════════════════════════════════════════════
+// GET /api/access/owner/devices — Connected doors/locks for the owner's gyms
+// Optional ?gymId= to scope to one gym. Lists live devices from Seam for
+// seam-routed connections; direct providers (kisi/gymmaster) report
+// connection status only.
+// ═══════════════════════════════════════════════════════════════════
+router.get('/owner/devices', authenticateUser, async (req, res) => {
+  try {
+    const params = [req.user.id];
+    let where = `claimed_by::text = $1::text AND access_system IS NOT NULL`;
+    if (req.query.gymId) {
+      params.push(req.query.gymId);
+      where += ` AND id = $2`;
+    }
+    const gyms = await pool.query(
+      `SELECT id, name, access_system, access_api_key, access_verified, access_type
+       FROM gyms WHERE ${where} ORDER BY id`,
+      params
+    );
+
+    const seam = new SeamClient();
+    const out = [];
+    for (const g of gyms.rows) {
+      const entry = {
+        gym_id: g.id,
+        gym_name: g.name,
+        provider: g.access_system,
+        verified: !!g.access_verified,
+        access_type: g.access_type,
+        devices: [],
+      };
+      const seamRouted = g.access_api_key && !['kisi', 'gymmaster', 'manual'].includes(g.access_system);
+      if (seamRouted) {
+        try {
+          const resp = await seam.listDevices(g.access_api_key);
+          entry.devices = (resp.devices || []).map(d => ({
+            device_id: d.device_id,
+            name: (d.properties && d.properties.name) || d.display_name || 'Smart Lock',
+            online: !!(d.properties && d.properties.online),
+            locked: d.properties ? d.properties.locked : undefined,
+            battery: d.properties && d.properties.battery_level != null
+              ? Math.round(d.properties.battery_level * 100)
+              : null,
+            manufacturer: (d.properties && d.properties.manufacturer) || d.device_type || null,
+          }));
+        } catch (e) {
+          console.error(`Owner devices: Seam list failed for gym ${g.id}:`, e.message);
+          entry.error = 'Could not load live device list';
+        }
+      }
+      out.push(entry);
+    }
+    res.json({ gyms: out });
+  } catch (err) {
+    console.error('Owner devices error:', err);
+    res.status(500).json({ error: 'Failed to load devices' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// GET /api/access/admin/overview — All gyms with lock connections
+// Mirrors the admin-dashboard auth model: restricted to ADMIN_USER_IDS
+// when set, otherwise any logged-in user (with a server-side warning).
+// ═══════════════════════════════════════════════════════════════════
+const ACCESS_ADMIN_IDS = (process.env.ADMIN_USER_IDS || '')
+  .split(',').map(s => s.trim()).filter(Boolean);
+
+router.get('/admin/overview', authenticateUser, async (req, res) => {
+  try {
+    if (ACCESS_ADMIN_IDS.length > 0 && !ACCESS_ADMIN_IDS.includes(String(req.user.id))) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+    if (ACCESS_ADMIN_IDS.length === 0) {
+      console.warn('[AccessAdmin] ADMIN_USER_IDS not set — /admin/overview visible to ANY logged-in user');
+    }
+
+    const gyms = await pool.query(`
+      SELECT g.id, g.name, g.city, g.access_system, g.access_type, g.access_verified,
+             g.access_api_key, g.updated_at,
+             (SELECT COUNT(*)::int FROM booking_access_credentials c WHERE c.gym_id = g.id) AS credentials_issued
+      FROM gyms g
+      WHERE g.access_system IS NOT NULL
+      ORDER BY g.updated_at DESC
+    `);
+
+    const seam = new SeamClient();
+    const deviceCounts = {};
+    const rows = [];
+    for (const g of gyms.rows) {
+      let deviceCount = null;
+      const seamRouted = g.access_api_key && !['kisi', 'gymmaster', 'manual'].includes(g.access_system);
+      if (seamRouted) {
+        if (deviceCounts[g.access_api_key] === undefined) {
+          try {
+            const resp = await seam.listDevices(g.access_api_key);
+            deviceCounts[g.access_api_key] = (resp.devices || []).length;
+          } catch (e) {
+            deviceCounts[g.access_api_key] = null;
+          }
+        }
+        deviceCount = deviceCounts[g.access_api_key];
+      }
+      rows.push({
+        gym_id: g.id,
+        gym_name: g.name,
+        city: g.city,
+        provider: g.access_system,
+        access_type: g.access_type,
+        verified: !!g.access_verified,
+        devices: deviceCount,
+        credentials_issued: g.credentials_issued,
+        connected_at: g.updated_at,
+      });
+    }
+
+    res.json({ total_connected: rows.length, gyms: rows });
+  } catch (err) {
+    console.error('Access admin overview error:', err);
+    res.status(500).json({ error: 'Failed to load overview' });
+  }
+});
+
 function getAccessLabel(system, type) {
   const labels = {
     kisi: '🔓 QR code unlocks the door — no app needed',

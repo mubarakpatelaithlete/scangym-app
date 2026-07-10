@@ -17095,11 +17095,29 @@ window._sgSeamCreateNew=function(){
 window._sgLoadSeamDevices=async function(){
   var el=document.getElementById('sg-seam-devices');if(!el)return;
   try{
-    var r=await fetch('/api/access/owner/systems',{credentials:'include'});
+    var r=await fetch('/api/access/owner/devices',{credentials:'include'});
     var d=await r.json();
-    var devices=d.systems||d.devices||d.locks||[];
-    if(devices.length===0){el.innerHTML='<div style="text-align:center;color:rgba(255,255,255,.3);padding:12px">No devices connected yet \u2014 connect your smart access account above.</div>';}
-    else{var h='';devices.forEach(function(dev){var name=dev.name||dev.display_name||'Smart Lock';var status=dev.connected||dev.online?'Connected':'Offline';var statusColor=dev.connected||dev.online?'#22c55e':'#ef4444';h+='<div style="display:flex;align-items:center;gap:12px;padding:12px;background:#222;border-radius:10px;margin-bottom:6px;border:1px solid rgba(255,255,255,.06)"><div style="width:40px;height:40px;border-radius:8px;background:#333;display:flex;align-items:center;justify-content:center;font-size:18px">\ud83d\udd12</div><div style="flex:1"><div style="font-weight:600;font-size:13px;color:#fff">'+name+'</div><div style="font-size:11px;color:'+statusColor+';margin-top:2px">\u25cf '+status+'</div></div></div>';});el.innerHTML=h;}
+    var gyms=(d.gyms||[]).filter(function(g){return g.provider&&g.provider!=='manual';});
+    if(gyms.length===0){el.innerHTML='<div style="text-align:center;color:rgba(255,255,255,.3);padding:12px">No devices connected yet \u2014 connect your smart access account above.</div>';return;}
+    var h='';
+    gyms.forEach(function(g){
+      var prov=g.provider==='seam'?'Smart access':(g.provider.charAt(0).toUpperCase()+g.provider.slice(1));
+      h+='<div style="display:flex;align-items:center;justify-content:space-between;margin:10px 2px 6px"><div style="font-weight:700;font-size:12px;color:rgba(255,255,255,.75)">'+g.gym_name+'</div><span style="font-size:10px;font-weight:600;color:#22c55e;background:rgba(34,197,94,.12);padding:3px 8px;border-radius:12px">'+prov+' \u2713</span></div>';
+      if(g.devices&&g.devices.length){
+        g.devices.forEach(function(dev){
+          var on=!!dev.online;var statusColor=on?'#22c55e':'#ef4444';var status=on?'Online':'Offline';
+          var extra='';
+          if(dev.locked===true)extra=' \u00b7 \ud83d\udd12 Locked';else if(dev.locked===false)extra=' \u00b7 \ud83d\udd13 Unlocked';
+          if(dev.battery!==null&&dev.battery!==undefined)extra+=' \u00b7 \ud83d\udd0b '+dev.battery+'%';
+          h+='<div style="display:flex;align-items:center;gap:12px;padding:12px;background:#222;border-radius:10px;margin-bottom:6px;border:1px solid rgba(255,255,255,.06)"><div style="width:40px;height:40px;border-radius:8px;background:#333;display:flex;align-items:center;justify-content:center;font-size:18px">\ud83d\udeaa</div><div style="flex:1;min-width:0"><div style="font-weight:600;font-size:13px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(dev.name||'Smart Lock')+'</div><div style="font-size:11px;color:'+statusColor+';margin-top:2px">\u25cf '+status+'<span style="color:rgba(255,255,255,.4)">'+extra+'</span></div></div></div>';
+        });
+      } else if(g.error){
+        h+='<div style="color:rgba(255,255,255,.35);font-size:12px;padding:8px 2px">Connected \u2014 could not load the live door list right now.</div>';
+      } else {
+        h+='<div style="color:rgba(255,255,255,.35);font-size:12px;padding:8px 2px">Connected \u2014 no doors reported by your lock system yet.</div>';
+      }
+    });
+    el.innerHTML=h;
   }catch(ex){el.innerHTML='<div style="text-align:center;color:rgba(255,255,255,.3);padding:12px">Could not load devices</div>';}
 };
 window._partnerWithdraw=async function(){
