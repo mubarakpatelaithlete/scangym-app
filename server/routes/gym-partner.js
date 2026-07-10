@@ -1102,6 +1102,46 @@ function maskPhone(p) {
   return p.slice(0, 3) + ' ••• ••' + p.slice(-3);
 }
 
+// Look up the gym's REAL public phone number on Google Places, so the
+// ownership code always goes to the number Google lists for that specific
+// gym — never a stale/duplicated number in our own database.
+const OWN_GOOGLE_KEY = process.env.GOOGLE_MAPS_API_KEY;
+async function fetchGooglePlacePhone(gym) {
+  if (!OWN_GOOGLE_KEY) return null;
+  try {
+    // 1. Use the stored place_id when we have one
+    if (gym.place_id && !String(gym.place_id).startsWith('db-')) {
+      const url = `https://places.googleapis.com/v1/places/${encodeURIComponent(gym.place_id)}?fields=internationalPhoneNumber,nationalPhoneNumber&key=${OWN_GOOGLE_KEY}`;
+      const r = await fetch(url);
+      if (r.ok) {
+        const d = await r.json();
+        const num = d.internationalPhoneNumber || d.nationalPhoneNumber;
+        if (num) return num;
+      }
+    }
+    // 2. Fall back to a text search for "name, address"
+    const q = [gym.name, gym.address].filter(Boolean).join(', ');
+    if (!q) return null;
+    const r2 = await fetch('https://places.googleapis.com/v1/places:searchText', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': OWN_GOOGLE_KEY,
+        'X-Goog-FieldMask': 'places.id,places.displayName,places.internationalPhoneNumber,places.nationalPhoneNumber',
+      },
+      body: JSON.stringify({ textQuery: q, maxResultCount: 1 }),
+    });
+    if (r2.ok) {
+      const d2 = await r2.json();
+      const p = (d2.places || [])[0];
+      if (p) return p.internationalPhoneNumber || p.nationalPhoneNumber || null;
+    }
+  } catch (err) {
+    console.error('[Ownership] Google Places phone lookup failed:', err.message);
+  }
+  return null;
+}
+
 // POST /claim/send-otp — text a code to the gym's registered business number
 router.post('/claim/send-otp', authenticateUser, express.json(), async (req, res) => {
   try {
@@ -1113,7 +1153,7 @@ router.post('/claim/send-otp', authenticateUser, express.json(), async (req, res
     const sendChannel = validChannels.includes(channel) ? channel : 'sms';
 
     const gym = await pool.query(
-      `SELECT id, name, phone, owner_phone, claimed_by, ownership_verified FROM gyms WHERE id = $1`, [gymId]
+      `SELECT id, name, address, place_id, phone, owner_phone, claimed_by, ownership_verified FROM gyms WHERE id = $1`, [gymId]
     );
     if (!gym.rows.length) return res.status(404).json({ error: 'Gym not found' });
     const g = gym.rows[0];
@@ -1122,7 +1162,14 @@ router.post('/claim/send-otp', authenticateUser, express.json(), async (req, res
     }
     if (g.ownership_verified) return res.json({ success: true, alreadyVerified: true });
 
-    const bizPhone = normalizeUkPhone(g.phone || g.owner_phone);
+    // Prefer the gym's REAL public number from Google Places (per-gym), and only
+    // fall back to whatever is stored in our DB if Google has no number listed.
+    const googlePhone = await fetchGooglePlacePhone(g);
+    const bizPhone = normalizeUkPhone(googlePhone || g.phone || g.owner_phone);
+    if (googlePhone) {
+      // Keep our DB in sync with the real number for future use
+      pool.query('UPDATE gyms SET phone = $1 WHERE id = $2', [normalizeUkPhone(googlePhone), gymId]).catch(() => {});
+    }
     if (!bizPhone) {
       // No registered number on file — fall back to document proof
       return res.json({
