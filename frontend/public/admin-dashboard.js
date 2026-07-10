@@ -249,8 +249,45 @@ function buildAdminDashboard(d){
     'rgba(234,179,8,.15)'
   );
 
+  // ═══ 7. LOCK CONNECTIONS ═══
+  html+=card('🔐','Lock Connections','Gyms with smart access connected',
+    '<div id="sg-admin-locks"><div style="color:rgba(255,255,255,.2);font-size:12px;padding:12px;text-align:center">Loading lock connections…</div></div>',
+    'rgba(34,197,94,.15)');
+  setTimeout(function(){window._sgLoadAdminLocks();},50);
+
   return html;
 }
+
+// ─── Lock connections loader ───
+window._sgLoadAdminLocks=async function(){
+  var el=document.getElementById('sg-admin-locks');if(!el)return;
+  try{
+    var r=await fetch('/api/access/admin/overview',{credentials:'include'});
+    if(r.status===403){el.innerHTML='<div style="color:rgba(255,255,255,.3);font-size:12px;padding:12px;text-align:center">Admin access required</div>';return;}
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    var d=await r.json();
+    var gyms=d.gyms||[];
+    if(gyms.length===0){el.innerHTML='<div style="color:rgba(255,255,255,.2);font-size:12px;padding:12px;text-align:center">No gyms have connected a lock system yet</div>';return;}
+    var h='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">'
+      +metricBox(fmt(d.total_connected),'Gyms Connected','#22c55e')
+      +metricBox(fmt(gyms.reduce(function(a,g){return a+(g.credentials_issued||0);},0)),'Door Passes Issued','#3b82f6')
+      +'</div>';
+    gyms.forEach(function(g){
+      var prov=(g.provider||'').charAt(0).toUpperCase()+(g.provider||'').slice(1);
+      var vColor=g.verified?'#22c55e':'#eab308';
+      var vLabel=g.verified?'Active':'Pending';
+      var devs=(g.devices===null||g.devices===undefined)?'':' · 🚪 '+g.devices+' door'+(g.devices===1?'':'s');
+      h+='<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)">'
+        +'<div style="min-width:0;flex:1"><p style="color:#fff;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+g.gym_name+'</p>'
+        +'<p style="color:rgba(255,255,255,.35);font-size:11px;margin-top:2px">'+prov+(g.city?' · '+g.city:'')+devs+' · '+fmt(g.credentials_issued||0)+' passes</p></div>'
+        +'<span style="color:'+vColor+';font-size:11px;font-weight:700;white-space:nowrap;margin-left:10px">● '+vLabel+'</span>'
+        +'</div>';
+    });
+    el.innerHTML=h;
+  }catch(e){
+    el.innerHTML='<div style="color:rgba(239,68,68,.6);font-size:12px;padding:12px;text-align:center">Could not load lock connections ('+e.message+')</div>';
+  }
+};
 
 // ─── Main page renderer ───
 window._sgAdminDashboardPage=function(){
