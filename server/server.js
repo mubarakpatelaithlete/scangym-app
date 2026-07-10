@@ -301,6 +301,7 @@ const apiPaths = [
   '/api/channels',
   '/api/chatbot',
   '/api/referrals',
+  '/api/access',
 ];
 apiPaths.forEach(p => app.use(p, express.json({
   // Capture the raw request body so webhook signature verification
