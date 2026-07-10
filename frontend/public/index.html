@@ -85,7 +85,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://js.stripe.com" crossorigin>
-<link rel="preconnect" href="https://connect-js.stripe.com" crossorigin>
 <link rel="preconnect" href="https://maps.googleapis.com">
 <link rel="preconnect" href="https://maps.gstatic.com" crossorigin>
 
@@ -127,6 +126,10 @@ h1,h2,h3,.font-brand{font-family:'Sora',sans-serif}
 
 </head>
 <body class="bg-dark min-h-screen">
+<!-- Perf Round 1: USP banner rendered statically (was injected by JS 2s late, which
+     made it the LCP element and pushed LCP to ~8s under mobile throttling). -->
+<div id="sg-usp-banner" style="position:fixed;top:0;left:0;right:0;z-index:10500;background:linear-gradient(90deg,rgba(255,109,0,.95),rgba(230,98,0,.95));padding:6px 12px;text-align:center;font-size:11px;font-weight:700;color:#fff;display:flex;align-items:center;justify-content:center;gap:8px">&#127947;&#65039; <span>30 gyms in 30 days &mdash; No subscription. Pay only when you go.</span> <span onclick="this.parentElement.style.display='none'" style="opacity:.6;font-size:14px;cursor:pointer;margin-left:8px">&#10005;</span></div>
+<script>setTimeout(function(){var b=document.getElementById('sg-usp-banner');if(b&&b.parentElement){b.style.transition='opacity 1s';b.style.opacity='0';setTimeout(function(){b.remove();},1000);}},7000);</script>
 <div id="app">
   <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:0 24px;text-align:center">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:40px">
@@ -168,10 +171,9 @@ if('serviceWorker' in navigator){
 <script src="/batch4.js?v=1.0" defer></script>
 <script src="/round2.js?v=1.2" defer></script>
 <script src="/round3.js?v=1.0" defer></script>
-<script src="/wallet-withdraw.js?v=1.1" defer></script>
+<script src="/wallet-withdraw.js?v=1.2" defer></script>
 <script src="/admin-dashboard.js?v=1.0" defer></script>
 <script src="/nps-survey.js?v=1.0" defer></script>
-<script src="https://connect-js.stripe.com/v1.0/connect.js" defer></script>
 </body>
 </html>
 

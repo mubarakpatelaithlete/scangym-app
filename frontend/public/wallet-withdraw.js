@@ -351,8 +351,21 @@ window._sgOpenEmbeddedOnboarding=function(clientSecret, accountId){
     document.body.style.overflow='';
   };
 
+  // Perf Round 1: Connect.js is no longer loaded globally in index.html.
+  // Load it on demand the first time Stripe onboarding is actually opened.
+  function ensureConnectJs(){
+    if(typeof StripeConnect!=='undefined')return;
+    if(document.getElementById('sg-stripe-connect-js'))return;
+    var s=document.createElement('script');
+    s.id='sg-stripe-connect-js';
+    s.src='https://connect-js.stripe.com/v1.0/connect.js';
+    s.async=true;
+    document.head.appendChild(s);
+  }
+
   // Wait for Connect.js to load, then initialise
   function initConnect(){
+    ensureConnectJs();
     if(typeof StripeConnect==='undefined'){
       setTimeout(initConnect,200);
       return;
