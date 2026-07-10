@@ -137,28 +137,20 @@ function paintSwitch(){
   if(ic)ic.textContent=on?'\uD83D\uDFE2':'\u26AA';
   if(lb){lb.textContent=on?'Online':'Offline';lb.style.color=on?'#22c55e':'rgba(255,255,255,.45)';}
 }
-// TikTok-style right rail host — joins the Partner tab's .pe-actions rail when a
-// gym is claimed, otherwise creates a fixed fallback rail in the same spot.
+// TikTok-style right rail host — the buttons live ONLY inside the Partner tab's
+// existing .pe-actions owner rail (Set Price, Hours, …). No separate rail.
 window._sgB2RailHost=function(){
-  var rail=document.querySelector('.pe-actions');
-  var fallback=document.getElementById('sg-partner-rail');
-  if(rail){if(fallback)fallback.remove();return rail;}
-  if(!fallback){
-    fallback=document.createElement('div');
-    fallback.id='sg-partner-rail';
-    fallback.style.cssText='position:fixed;right:10px;top:calc(env(safe-area-inset-top,0px) + 65px);display:flex;flex-direction:column;gap:6px;z-index:8998;align-items:center';
-    document.body.appendChild(fallback);
-  }
-  return fallback;
+  var stray=document.getElementById('sg-partner-rail');
+  if(stray)stray.remove();
+  return document.querySelector('.pe-actions')||null;
 };
 function injectGymSwitch(){
   var route=curRoute();
-  if(route.indexOf('/partner')!==0){
+  var host=(route.indexOf('/partner')===0)?window._sgB2RailHost():null;
+  if(!host){
     var old=document.getElementById('sg-gym-switch');if(old)old.remove();
-    var fr=document.getElementById('sg-partner-rail');if(fr)fr.remove();
     return;
   }
-  var host=window._sgB2RailHost();
   var el=document.getElementById('sg-gym-switch');
   if(el&&el.parentNode===host)return;
   if(el)el.remove();
