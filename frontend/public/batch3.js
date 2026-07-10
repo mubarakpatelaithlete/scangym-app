@@ -158,21 +158,32 @@ async function checkOwnState(){
 function paintOwnBadge(state){
   var el=document.getElementById('sg-own-chip');
   if(!el)return;
-  if(state===true){el.innerHTML='<span style="color:#22c55e;font-weight:700">\u2705 Verified owner</span>';el.onclick=null;el.style.cursor='default';el.style.borderColor='rgba(34,197,94,.35)';}
-  else if(state==='pending'){el.innerHTML='<span style="color:#fbbf24;font-weight:700">\u23F3 Proof under review</span>';el.onclick=null;el.style.cursor='default';el.style.borderColor='rgba(251,191,36,.35)';}
+  var ic=el.querySelector('.own-icon');var lb=el.querySelector('.own-label');
+  if(state===true){if(ic)ic.textContent='\u2705';if(lb){lb.textContent='Verified';lb.style.color='#22c55e';}el.onclick=null;el.style.cursor='default';}
+  else if(state==='pending'){if(ic)ic.textContent='\u23F3';if(lb){lb.textContent='In review';lb.style.color='#fbbf24';}el.onclick=null;el.style.cursor='default';}
 }
 function injectOwnChip(){
   var route=curRoute();
   var old=document.getElementById('sg-own-chip');
   if(route.indexOf('/partner')!==0){if(old)old.remove();return;}
-  if(old){if(_ownState===true||_ownState==='pending')paintOwnBadge(_ownState);return;}
-  var host=document.getElementById('sg-gym-switch'); // sits right under the on/off switch from batch 2
+  // TikTok-style rail button — join the same right rail as the on/off toggle
+  var host=(typeof window._sgB2RailHost==='function')?window._sgB2RailHost():null;
+  if(!host)return; // batch2 not loaded yet; retry on next tick
+  if(old){
+    if(old.parentNode!==host){old.remove();}
+    else{if(_ownState===true||_ownState==='pending')paintOwnBadge(_ownState);return;}
+  }
   var b=document.createElement('div');
   b.id='sg-own-chip';
-  b.style.cssText='position:fixed;top:calc(env(safe-area-inset-top,0px) + '+(host?'112px':'52px')+');left:auto;right:12px;z-index:8997;background:rgba(10,12,20,.92);border:1px solid rgba(255,109,0,.35);border-radius:20px;padding:8px 14px;font-size:12px;font-weight:700;color:#fff;cursor:pointer;backdrop-filter:blur(10px)';
-  b.innerHTML='\uD83D\uDEE1\uFE0F Verify ownership \u2192';
-  b.onclick=function(){window._sgB3VerifyOwnership();};
-  document.body.appendChild(b);
+  b.style.cssText='display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;-webkit-tap-highlight-color:transparent';
+  b.innerHTML='<div class="own-icon" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:24px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5));opacity:.9">\uD83D\uDEE1\uFE0F</div>'
+    +'<div class="own-label" style="font-size:9px;color:rgba(255,255,255,.7);font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8);text-align:center;white-space:nowrap;max-width:52px;overflow:hidden;text-overflow:ellipsis;line-height:1.1">Verify</div>';
+  b.onclick=function(ev){ev.stopPropagation();window._sgB3VerifyOwnership();};
+  // Place directly after the on/off switch when present, else at the top of the rail
+  var sw=document.getElementById('sg-gym-switch');
+  if(sw&&sw.parentNode===host&&sw.nextSibling)host.insertBefore(b,sw.nextSibling);
+  else if(sw&&sw.parentNode===host)host.appendChild(b);
+  else host.insertBefore(b,host.firstChild);
   checkOwnState().then(function(){if(_ownState===true||_ownState==='pending')paintOwnBadge(_ownState);});
 }
 setInterval(injectOwnChip,800);

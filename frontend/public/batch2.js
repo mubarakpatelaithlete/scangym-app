@@ -133,26 +133,42 @@ function paintSwitch(){
   var el=document.getElementById('sg-gym-switch');
   if(!el)return;
   var on=window._sgB2GymActive!==false;
-  el.querySelector('.sw-dot').style.transform=on?'translateX(20px)':'translateX(0)';
-  el.querySelector('.sw-track').style.background=on?'#22c55e':'rgba(255,255,255,.15)';
-  el.querySelector('.sw-label').textContent=on?'Online \u2014 visible to gym-goers':'Offline \u2014 hidden from search';
-  el.querySelector('.sw-label').style.color=on?'#22c55e':'rgba(255,255,255,.45)';
+  var ic=el.querySelector('.sw-icon');var lb=el.querySelector('.sw-label');
+  if(ic)ic.textContent=on?'\uD83D\uDFE2':'\u26AA';
+  if(lb){lb.textContent=on?'Online':'Offline';lb.style.color=on?'#22c55e':'rgba(255,255,255,.45)';}
 }
+// TikTok-style right rail host — joins the Partner tab's .pe-actions rail when a
+// gym is claimed, otherwise creates a fixed fallback rail in the same spot.
+window._sgB2RailHost=function(){
+  var rail=document.querySelector('.pe-actions');
+  var fallback=document.getElementById('sg-partner-rail');
+  if(rail){if(fallback)fallback.remove();return rail;}
+  if(!fallback){
+    fallback=document.createElement('div');
+    fallback.id='sg-partner-rail';
+    fallback.style.cssText='position:fixed;right:10px;top:calc(env(safe-area-inset-top,0px) + 65px);display:flex;flex-direction:column;gap:6px;z-index:8998;align-items:center';
+    document.body.appendChild(fallback);
+  }
+  return fallback;
+};
 function injectGymSwitch(){
   var route=curRoute();
-  if(route.indexOf('/partner')!==0){var old=document.getElementById('sg-gym-switch');if(old)old.remove();return;}
-  if(document.getElementById('sg-gym-switch'))return;
-  // host: the partner continue banner's parent (bottom overlay) is unreliable; pin top under safe area
-  var b=document.createElement('div');
-  b.id='sg-gym-switch';
-  b.style.cssText='position:fixed;top:calc(env(safe-area-inset-top,0px) + 52px);left:auto;right:12px;max-width:min(75vw,320px);z-index:8998;background:rgba(10,12,20,.92);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;backdrop-filter:blur(10px)';
-  b.innerHTML='<div style="min-width:0"><p style="color:#fff;font-size:13px;font-weight:800;margin:0">My gym</p>'
-    +'<p class="sw-label" style="font-size:11px;font-weight:600;margin:1px 0 0;color:#22c55e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Online \u2014 visible to gym-goers</p></div>'
-    +'<div onclick="_sgB2ToggleGym()" style="cursor:pointer;flex-shrink:0;padding:4px">'
-    +'<div class="sw-track" style="width:44px;height:24px;border-radius:12px;background:#22c55e;position:relative;transition:background .2s">'
-    +'<div class="sw-dot" style="position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .2s;transform:translateX(20px)"></div>'
-    +'</div></div>';
-  document.body.appendChild(b);
+  if(route.indexOf('/partner')!==0){
+    var old=document.getElementById('sg-gym-switch');if(old)old.remove();
+    var fr=document.getElementById('sg-partner-rail');if(fr)fr.remove();
+    return;
+  }
+  var host=window._sgB2RailHost();
+  var el=document.getElementById('sg-gym-switch');
+  if(el&&el.parentNode===host)return;
+  if(el)el.remove();
+  el=document.createElement('div');
+  el.id='sg-gym-switch';
+  el.style.cssText='display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;-webkit-tap-highlight-color:transparent';
+  el.innerHTML='<div class="sw-icon" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:24px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5));opacity:.9">\uD83D\uDFE2</div>'
+    +'<div class="sw-label" style="font-size:9px;color:#22c55e;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8);text-align:center;white-space:nowrap;max-width:52px;overflow:hidden;text-overflow:ellipsis;line-height:1.1">Online</div>';
+  el.onclick=function(ev){ev.stopPropagation();window._sgB2ToggleGym();};
+  host.insertBefore(el,host.firstChild);
   partnerGymId().then(function(){paintSwitch();});
 }
 setInterval(injectGymSwitch,700);
