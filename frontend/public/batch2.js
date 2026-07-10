@@ -145,7 +145,7 @@ function injectGymSwitch(){
   // host: the partner continue banner's parent (bottom overlay) is unreliable; pin top under safe area
   var b=document.createElement('div');
   b.id='sg-gym-switch';
-  b.style.cssText='position:fixed;top:calc(env(safe-area-inset-top,0px) + 52px);left:12px;right:64px;z-index:8998;background:rgba(10,12,20,.92);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;backdrop-filter:blur(10px)';
+  b.style.cssText='position:fixed;top:calc(env(safe-area-inset-top,0px) + 52px);left:auto;right:12px;max-width:min(75vw,320px);z-index:8998;background:rgba(10,12,20,.92);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;backdrop-filter:blur(10px)';
   b.innerHTML='<div style="min-width:0"><p style="color:#fff;font-size:13px;font-weight:800;margin:0">My gym</p>'
     +'<p class="sw-label" style="font-size:11px;font-weight:600;margin:1px 0 0;color:#22c55e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Online \u2014 visible to gym-goers</p></div>'
     +'<div onclick="_sgB2ToggleGym()" style="cursor:pointer;flex-shrink:0;padding:4px">'

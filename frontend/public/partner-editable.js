@@ -455,7 +455,6 @@ function _peClaimCard(){
     +'<div style="font-size:64px;margin-bottom:16px">🏋️</div>'
     +'<h2 style="color:#fff;font-size:24px;font-weight:900;margin:0 0 8px;text-shadow:0 2px 10px rgba(0,0,0,.5)">Your Gym Goes Here</h2>'
     +'<p style="color:rgba(255,255,255,.5);font-size:14px;margin:0 0 24px">Claim your gym to see it exactly like your customers do — but with full editing power</p>'
-    +'<button onclick="window._peOpenClaimSearch()" style="background:#FF6D00;color:#fff;border:none;border-radius:14px;padding:16px 32px;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 24px rgba(255,109,0,.4);width:100%">🔍 Find & Claim Your Gym</button>'
     +'<p style="color:rgba(255,255,255,.3);font-size:11px;margin-top:12px">1.2M+ gyms · Free to claim</p>'
     +'</div>'
     // Bottom info (mimicking Book tab)
