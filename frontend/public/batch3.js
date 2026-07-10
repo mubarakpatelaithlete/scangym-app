@@ -169,7 +169,7 @@ function injectOwnChip(){
   var host=document.getElementById('sg-gym-switch'); // sits right under the on/off switch from batch 2
   var b=document.createElement('div');
   b.id='sg-own-chip';
-  b.style.cssText='position:fixed;top:calc(env(safe-area-inset-top,0px) + '+(host?'112px':'52px')+');left:12px;z-index:8997;background:rgba(10,12,20,.92);border:1px solid rgba(255,109,0,.35);border-radius:20px;padding:8px 14px;font-size:12px;font-weight:700;color:#fff;cursor:pointer;backdrop-filter:blur(10px)';
+  b.style.cssText='position:fixed;top:calc(env(safe-area-inset-top,0px) + '+(host?'112px':'52px')+');left:auto;right:12px;z-index:8997;background:rgba(10,12,20,.92);border:1px solid rgba(255,109,0,.35);border-radius:20px;padding:8px 14px;font-size:12px;font-weight:700;color:#fff;cursor:pointer;backdrop-filter:blur(10px)';
   b.innerHTML='\uD83D\uDEE1\uFE0F Verify ownership \u2192';
   b.onclick=function(){window._sgB3VerifyOwnership();};
   document.body.appendChild(b);
