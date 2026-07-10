@@ -91,6 +91,7 @@ function _slfToast(msg, type, ms) {
 
 var PROVIDERS = [
   // ── ⭐ GYM FAVOURITES ──────────────────────────────────────────
+  { id:'seam',        name:'Seam',                      logo:'🌐', desc:'Universal connector — 40+ lock brands, one login', conn:'seam', cat:'gym', pop:true, tag:'Universal',  tagClass:'slf-tag-popular' },
   { id:'kisi',        name:'Kisi',                     logo:'🔐', desc:'QR code door unlock — #1 for gyms',              conn:'direct',  cat:'gym', pop:true,  tag:'Direct API',  tagClass:'slf-tag-direct' },
   { id:'salto',       name:'Salto KS',                 logo:'🏢', desc:'Cloud smart locks — UK/EU gyms',                 conn:'seam',    cat:'gym', pop:true,  tag:'Popular',     tagClass:'slf-tag-popular' },
   { id:'brivo',       name:'Brivo',                     logo:'🔑', desc:'Enterprise cloud access — US gyms',              conn:'seam',    cat:'gym', pop:true,  tag:'Popular',     tagClass:'slf-tag-popular' },
@@ -336,7 +337,7 @@ async function _slfStartSeamConnect(gymId, providerId, providerName) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ gymId: gymId }),
+      body: JSON.stringify({ gymId: gymId, provider: providerId }),
     });
     var d = await r.json();
     var url = d.url || d.connectUrl || d.connect_url;

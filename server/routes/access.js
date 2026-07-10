@@ -783,9 +783,36 @@ function formatCredentialForClient(cred) {
 // ═══════════════════════════════════════════════════════════════════
 
 // POST /api/access/owner/create-connect-webview — Create a Seam Connect Webview
+// Map ScanGym provider ids (smart-lock-finder.js) → Seam provider keys.
+// 'seam' (universal) or an unmapped id → [] which shows Seam's full brand list.
+const SEAM_PROVIDER_KEYS = {
+  salto: ['salto_ks'],
+  brivo: ['brivo'],
+  paxton: [],                       // not yet a dedicated Seam key — show full list
+  dormakaba: ['dormakaba_oracode'],
+  ttlock: ['ttlock'],
+  yale: ['yale'],
+  schlage: ['schlage'],
+  august: ['august'],
+  nuki: ['nuki'],
+  tedee: ['tedee'],
+  lockly: ['lockly'],
+  ultraloq: ['ultraloq'],
+  igloohome: ['igloohome'],
+  kwikset: ['kwikset'],
+  wyze: ['wyze'],
+  smartthings: ['smartthings'],
+  avigilon: ['avigilon_alta'],
+  latch: ['latch'],
+  assaabloy: ['assa_abloy_credential_service'],
+  '4suites': ['four_suites'],
+  akiles: ['akiles'],
+  '2n': ['two_n'],
+};
+
 router.post('/owner/create-connect-webview', authenticateUser, async (req, res) => {
   try {
-    const { gymId } = req.body;
+    const { gymId, provider } = req.body;
 
     // Verify ownership
     const gym = await pool.query(
@@ -794,13 +821,15 @@ router.post('/owner/create-connect-webview', authenticateUser, async (req, res) 
     );
     if (gym.rows.length === 0) return res.status(403).json({ error: 'Not your gym' });
 
+    // Narrow the webview to the brand the owner tapped; 'seam' or unknown → all brands
+    const acceptedProviders =
+      provider && provider !== 'seam' && SEAM_PROVIDER_KEYS[provider] && SEAM_PROVIDER_KEYS[provider].length
+        ? SEAM_PROVIDER_KEYS[provider]
+        : [];
+
     const seam = new SeamClient(seamApiKey || null);
     const webview = await seam.createConnectWebview({
-      accepted_providers: [
-        'kisi', 'salto_ks', 'brivo', 'august', 'yale', 'schlage',
-        'kwikset', 'nuki', 'dormakaba_oracode', 'latch',
-        'assa_abloy_credential_service', 'pti_storlogix'
-      ],
+      accepted_providers: acceptedProviders,
       custom_redirect_url: `${req.protocol}://${req.get('host')}/gympartners-dashboard/connect-access?status=complete&gym_id=${gymId}`,
       custom_redirect_failure_url: `${req.protocol}://${req.get('host')}/gympartners-dashboard/connect-access?status=failed&gym_id=${gymId}`,
       custom_metadata: { gym_id: String(gymId), owner_id: String(req.user.id) },
