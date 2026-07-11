@@ -17487,6 +17487,9 @@ function _renderInner(){
 
   else if(path==='/coach')page=CoachPage();
   else if(path==='/creators')page=CreatorsPage();
+  /* UX fix: /scansquad deep links (shared URLs, typed from the tab name) used to
+   * fall through to "Page Not Found" / a blank screen — alias to the ScanSquad tab. */
+  else if(path==='/scansquad'||path==='/scansquad/')page=CreatorsPage();
   else if(path==='/creator-earnings')page=CreatorEarningsPage();
   else if(path.startsWith('/group-book'))page=GroupBookingPage();
   else if(path==='/group'){var code=state.routeQuery?.replace('?code=','');if(code){/* auto-join */}page=GroupBookingPage();}
@@ -19537,6 +19540,24 @@ if(localStorage.getItem('sg_push_enabled')==='1'&&state.user){
 
   var _cbVisible=false;
 
+  /* UX fix: banner price must match the gym card actually in view (cards carry
+   * data-price, which can be gym-specific / PPP) — not the generic default,
+   * which caused e.g. "$5.49/day" on the card vs "£4.49" on Continue. */
+  function _visibleCardPrice(){
+    var carousel=document.getElementById('bm-carousel');
+    if(!carousel)return null;
+    var cards=carousel.querySelectorAll('.tt-card[data-price]');
+    if(!cards.length)return null;
+    var scrollTop=carousel.scrollTop,viewH=carousel.clientHeight;
+    var best=null,bestOverlap=0;
+    cards.forEach(function(c){
+      var top=c.offsetTop,h=c.offsetHeight;
+      var overlap=Math.max(0,Math.min(top+h,scrollTop+viewH)-Math.max(top,scrollTop));
+      if(overlap>bestOverlap){bestOverlap=overlap;best=c;}
+    });
+    var p=best&&best.getAttribute('data-price');
+    return(p&&p!=='undefined'&&p!=='null')?p:null;
+  }
   function _updatePrice(){
     var priceEl=banner.querySelector('.sg-cb-price');
     if(!priceEl)return;
@@ -19544,12 +19565,22 @@ if(localStorage.getItem('sg_push_enabled')==='1'&&state.user){
     var activeLabel=document.querySelector('.sg-tab-item.active .sg-tab-label');
     var currentTab=activeLabel?activeLabel.textContent.trim().toLowerCase():'';
     if(currentTab==='book'){
+      var gymP=_visibleCardPrice();
+      if(gymP){priceEl.textContent='\u00b7 '+gymP;return;}
       var dp=(typeof sgPrice==='function')?sgPrice('day'):null;
       priceEl.textContent=dp&&dp.display?('\u00b7 '+dp.display):'';
     }else{
       priceEl.textContent='';
     }
   }
+  /* Keep price in sync while swiping through gym cards */
+  document.addEventListener('scroll',function(e){
+    if(!e.target||e.target.id!=='bm-carousel')return;
+    if(window._sgCbPriceT)clearTimeout(window._sgCbPriceT);
+    window._sgCbPriceT=setTimeout(_updatePrice,150);
+  },true);
+  /* Cards load async after the banner appears — refresh until they exist */
+  setInterval(function(){if(_cbVisible)_updatePrice();},2000);
 
   function _showBanner(){
     _updatePrice();

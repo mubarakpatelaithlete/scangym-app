@@ -9,8 +9,11 @@ function injectStyle(id,css){if(document.getElementById(id))return;var s=documen
 // #62: Live Visitor Counter
 function initVisitorCounter(){
   injectStyle('sg-sps-s','#sg-sps{position:sticky;top:0;z-index:100;background:rgba(255,109,0,.08);border-bottom:1px solid rgba(255,109,0,.15);padding:6px 16px;display:flex;align-items:center;gap:8px;font-size:11px;color:rgba(255,255,255,.7);font-weight:600}');
-  async function f(){try{var r=await fetch('/api/stats/live-visitors');var d=await r.json();var el=document.getElementById('sg-lvt');if(el)el.textContent=d.label||(d.count+' here now');}catch(e){}}
-  setTimeout(function(){var bc=document.querySelector('.sg-tab-content');if(!bc||document.getElementById('sg-sps'))return;var s=document.createElement('div');s.id='sg-sps';s.innerHTML='\u{1F525} <span id="sg-lvt">Loading...</span> \u00b7 \u26A1 Instant QR \u00b7 \u2705 Free cancel';bc.insertBefore(s,bc.firstChild);},3000);
+  /* UX fix: /api/stats/live-visitors doesn't exist on the server (returns the SPA
+   * HTML), so the ticker was stuck on "Loading..." forever. Validate the response
+   * and use a static default instead of a loading state. */
+  async function f(){try{var r=await fetch('/api/stats/live-visitors');if(!r.ok||((r.headers.get('content-type')||'').indexOf('json')===-1))return;var d=await r.json();var el=document.getElementById('sg-lvt');if(el&&(d.label||d.count))el.textContent=d.label||(d.count+' here now');}catch(e){}}
+  setTimeout(function(){var bc=document.querySelector('.sg-tab-content');if(!bc||document.getElementById('sg-sps'))return;var s=document.createElement('div');s.id='sg-sps';s.innerHTML='\u{1F525} <span id="sg-lvt">No membership needed</span> \u00b7 \u26A1 Instant QR \u00b7 \u2705 Free cancel';bc.insertBefore(s,bc.firstChild);},3000);
   f();setInterval(f,30000);
 }
 
