@@ -133,6 +133,10 @@ app.use((req, res, next) => {
   next();
 });
 
+// Live visitor tracker — powers GET /api/stats/live-visitors (real social proof)
+const liveVisitors = require('./middleware/live-visitors');
+app.use(liveVisitors.track);
+
 // On-the-fly gzip for ALL responses (static + API JSON + server-rendered HTML)
 // The filter ensures text-based content types are always compressed
 app.use(compression({
