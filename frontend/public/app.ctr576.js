@@ -16697,6 +16697,7 @@ function PartnerFullPage(){
   var addr=gd.address||'Tap to set your gym address';
   var gName=gd.name||gymName;
   var isOpen=gd.isOpen!==false;
+  var isActive=gd.isActive!==false;
   var desc=gd.description||'';
   // Photo slides for full-screen background
   var photoSlides='';
@@ -16743,6 +16744,8 @@ function PartnerFullPage(){
       <!-- ═══ RIGHT SIDE ACTION BUTTONS (same .tt-actions as Book tab) ═══ -->
       <div class="tt-actions">
         <div class="tt-action" onclick="event.stopPropagation();window._openSearchOverlay?window._openSearchOverlay():navigate('/list-your-gym')"><div class="tt-action-btn">\ud83d\udd0d</div><div class="tt-action-label">Search</div></div>
+        <div class="tt-action" onclick="event.stopPropagation();window._sgB3VerifyOwnership?window._sgB3VerifyOwnership():sgToast('Verification unavailable','error')"><div class="tt-action-btn">\ud83d\udee1\ufe0f</div><div class="tt-action-label">Verify</div></div>
+        <div class="tt-action" onclick="event.stopPropagation();_partnerRailToggleActive()"><div class="tt-action-btn" id="partner-rail-toggle-icon">${isActive?'\ud83d\udfe2':'\ud83d\udd34'}</div><div class="tt-action-label" id="partner-rail-toggle-label">${isActive?'On':'Off'}</div></div>
         <div class="tt-action" onclick="event.stopPropagation();_partnerWithdraw()"><div class="tt-action-btn">\ud83d\udcb0</div><div class="tt-action-label">Earnings</div></div>
         <div class="tt-action" onclick="event.stopPropagation();_partnerEditPrice('day')"><div class="tt-action-btn">\ud83c\udf9f\ufe0f</div><div class="tt-action-label">${sym}${dayPrice}</div></div>
         <div class="tt-action" onclick="event.stopPropagation();_partnerEditHours()"><div class="tt-action-btn">\ud83d\udd50</div><div class="tt-action-label">Hours</div></div>
@@ -16814,6 +16817,7 @@ window._partnerLoadGymProfile=async function(){
         dayPrice:g.dayPassPrice||(g.pricing&&g.pricing.dayPassPrice)||'4.49',
         currencySymbol:g.currencySymbol||(g.pricing&&g.pricing.currencySymbol)||'\u00a3',
         isOpen:g.isOpen!==false,
+        isActive:g.isActive!==false,
         description:g.description||'',
         photos:g.photos_list||g.photos||[],
         facilities:g.facilities||[]
@@ -16823,6 +16827,12 @@ window._partnerLoadGymProfile=async function(){
       if(ne) ne.innerHTML=g.name+' \u270f\ufe0f';
       var ae=document.getElementById('partner-addr-display');
       if(ae&&g.address){var _isO=g.isOpen!==false;ae.innerHTML='\ud83d\udccd '+g.address+' \u00b7 <span style="color:'+(_isO?'#4ade80':'#f87171')+'" id="partner-open-badge">'+(_isO?'\u2022 Open':'\u2022 Closed')+'</span>';}
+      // Sync right-rail On/Off toggle with actual accepting-bookings state
+      var _rIc=document.getElementById('partner-rail-toggle-icon');
+      var _rLb=document.getElementById('partner-rail-toggle-label');
+      var _rOn=g.isActive!==false;
+      if(_rIc)_rIc.textContent=_rOn?'\ud83d\udfe2':'\ud83d\udd34';
+      if(_rLb)_rLb.textContent=_rOn?'On':'Off';
       // Update wallet balance badge
       var wb=document.getElementById('partner-wallet-badge');
       if(wb){var bal=d.balance||d.walletBalance||0;wb.textContent='\ud83d\udcb0 \u00a3'+parseFloat(bal||0).toFixed(2);}
@@ -17245,6 +17255,39 @@ window._partnerToggleActive=async function(el){
       sgToast(d&&d.error||'Could not update status','error',2500);
     }else{sgToast((!isOn?'Gym is now accepting bookings':'Bookings paused'),'success',2000);}
   }catch(e){console.log('[PartnerToggle]',e.message);}
+};
+
+// ── Partner right-rail On/Off toggle (accepting bookings) ──
+window._partnerRailToggleActive=async function(){
+  var icon=document.getElementById('partner-rail-toggle-icon');
+  var lbl=document.getElementById('partner-rail-toggle-label');
+  var gd=window._partnerGymData||{};
+  var isOn=gd.isActive!==false;
+  var setUI=function(on){
+    if(icon)icon.textContent=on?'\ud83d\udfe2':'\ud83d\udd34';
+    if(lbl)lbl.textContent=on?'On':'Off';
+  };
+  // Optimistic UI update
+  setUI(!isOn);
+  try{
+    var gymId=window._partnerGymId;
+    if(!gymId){
+      var dr=await fetch('/api/gym-partner/dashboard',{credentials:'include'}).catch(function(){return null;});
+      var dd=dr&&dr.ok?await dr.json().catch(function(){return {};}):{};
+      gymId=dd.gyms&&dd.gyms[0]?dd.gyms[0].id:null;
+      if(gymId)window._partnerGymId=gymId;
+    }
+    if(!gymId){setUI(isOn);sgToast('No claimed gym found','error',2500);return;}
+    var r=await fetch('/api/gym-partner/toggle-active',{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({gymId:gymId,isActive:!isOn})});
+    var d=r.ok?await r.json().catch(function(){return {};}):null;
+    if(!d||d.error){
+      setUI(isOn);
+      sgToast(d&&d.error||'Could not update status','error',2500);
+    }else{
+      gd.isActive=!isOn;
+      sgToast((!isOn?'Gym is now accepting bookings \u2705':'Bookings paused \u23f8\ufe0f'),'success',2000);
+    }
+  }catch(e){setUI(isOn);console.log('[PartnerRailToggle]',e.message);}
 };
 
 // ── Fix 2-4: Load earnings data into Screen 4 ──

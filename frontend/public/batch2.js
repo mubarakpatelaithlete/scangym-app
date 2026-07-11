@@ -142,9 +142,11 @@ function paintSwitch(){
 window._sgB2RailHost=function(){
   var stray=document.getElementById('sg-partner-rail');
   if(stray)stray.remove();
-  // Native Partner Dashboard (PartnerFullPage) uses .tt-actions; the old
-  // editable carousel used .pe-actions (now only shown pre-claim).
-  return document.querySelector('.pe-actions')||document.querySelector('#partner-profile-page .tt-actions')||null;
+  // Native Partner Dashboard (PartnerFullPage) now renders its own Verify +
+  // On/Off buttons directly in .tt-actions (fixed order: Search, Verify,
+  // On/Off, Earnings, ...), so injected chips only target the pre-claim
+  // .pe-actions rail to avoid duplicates.
+  return document.querySelector('.pe-actions')||null;
 };
 function injectGymSwitch(){
   var route=curRoute();
