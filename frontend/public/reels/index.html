@@ -256,7 +256,9 @@
 
       /* ── Tap-for-sound indicator ── */
       #sound-hint{
-        position:fixed;top:16px;right:16px;z-index:35;
+        /* UX fix: was top:16px;right:16px — sat underneath the "3 / 115" counter
+         * pill (same corner, higher z-index), making both unreadable. */
+        position:fixed;top:52px;right:16px;z-index:35;
         display:flex;align-items:center;gap:6px;
         padding:6px 12px;border-radius:20px;
         background:rgba(0,0,0,.6);backdrop-filter:blur(8px);
@@ -2845,6 +2847,12 @@
       // "10 Mubarak Pvc Sp100 S50 Sb75 V3 Processed" → "Mubarak"
       function humanizeTitle(name){
         if(!name) return 'ScanGym Reels';
+        // UX fix: some uploads carry raw machine names (pure hex hashes like
+        // "02152304fbea…", "1.mp4_30b9911b…"). Never show those to users.
+        var probe = String(name).replace(/\.(mp4|webm|mov)$/i,'').replace(/[\s_.-]/g,'');
+        if(/^\d{1,4}$/.test(probe) || (probe.length >= 12 && /^[0-9a-f]+$/i.test(probe)) || /[0-9a-f]{16,}/i.test(probe)){
+          return 'ScanGym Reels';
+        }
         var s = name;
         // Strip file extensions
         s = s.replace(/\.(mp4|webm|mov)$/i, '');
@@ -2895,7 +2903,9 @@
           'ai cinematic': 'Cinematic',
           'youtube ai': 'Fitness',
           'general': 'General',
-          'content': 'Fitness'
+          'content': 'Fitness',
+          'ugc videos': 'Community',
+          'ugc': 'Community'
         };
         var lower = s.toLowerCase().trim();
         if(categoryMap[lower]) return categoryMap[lower];
