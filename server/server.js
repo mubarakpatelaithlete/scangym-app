@@ -89,12 +89,13 @@ app.use((req, res, next) => {
   const TYPES = { '.js': 'application/javascript', '.css': 'text/css', '.html': 'text/html', '.json': 'application/json', '.svg': 'image/svg+xml', '.xml': 'application/xml' };
   
   // Cache headers based on file type (match express.static logic)
-  function setCacheHeaders(res, reqPath) {
+  function setCacheHeaders(res, reqPath, versioned) {
     if (reqPath.endsWith('.html') || reqPath.endsWith('sw.js')) {
       res.setHeader('Cache-Control', 'no-cache');
     } else if (reqPath.endsWith('.js') || reqPath.endsWith('.css')) {
-      // Content-hashed files (e.g. app.ctr576.a3f2b9c.js) → immutable forever cache
-      if (/\.[a-f0-9]{8}\.(js|css)$/i.test(reqPath)) {
+      // Content-hashed files (e.g. app.ctr576.a3f2b9c.js) or query-versioned
+      // requests (?v=1.2 — URL changes on every edit) → immutable forever cache
+      if (/\.[a-f0-9]{8}\.(js|css)$/i.test(reqPath) || versioned) {
         res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
       } else {
         // Unhashed files: short cache with revalidation
@@ -111,7 +112,7 @@ app.use((req, res, next) => {
       res.setHeader('Vary', 'Accept-Encoding');
       const ext = path.extname(req.path);
       if (TYPES[ext]) res.setHeader('Content-Type', TYPES[ext] + '; charset=utf-8');
-      setCacheHeaders(res, req.path);
+      setCacheHeaders(res, req.path, !!(req.query && req.query.v));
       return res.sendFile(brPath);
     }
   }
@@ -124,7 +125,7 @@ app.use((req, res, next) => {
       res.setHeader('Vary', 'Accept-Encoding');
       const ext = path.extname(req.path);
       if (TYPES[ext]) res.setHeader('Content-Type', TYPES[ext] + '; charset=utf-8');
-      setCacheHeaders(res, req.path);
+      setCacheHeaders(res, req.path, !!(req.query && req.query.v));
       return res.sendFile(gzPath);
     }
   }
@@ -629,7 +630,10 @@ if (fs.existsSync(FRONTEND_DIR)) {
         // The hash changes when the file changes, so browsers always get fresh code
         const basename = path.basename(filePath);
         const isHashed = Object.values(ASSET_MANIFEST).some(h => basename === h || basename.startsWith(h.split('.')[0] + '.'));
-        if (/\.[a-f0-9]{8}\.(js|css)$/i.test(filePath) || isHashed) {
+        // Query-versioned requests (?v=1.2) are also safe to cache forever —
+        // the URL changes whenever index.html bumps the version.
+        const isVersioned = !!(res.req && res.req.query && res.req.query.v);
+        if (/\.[a-f0-9]{8}\.(js|css)$/i.test(filePath) || isHashed || isVersioned) {
           res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
         } else {
           res.setHeader('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400');

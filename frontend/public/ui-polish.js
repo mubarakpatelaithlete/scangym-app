@@ -61,6 +61,10 @@ function injectCSS(){
     '.tt-actions.sgi-open .tt-action.sgi-x{display:flex}'+
     '.tt-actions.sgi-open{max-height:calc(100vh - 300px);overflow-y:auto;overflow-x:visible;scrollbar-width:none;-ms-overflow-style:none;padding-bottom:8px}'+
     '.tt-actions.sgi-open::-webkit-scrollbar{display:none}'+
+    /* Round 4 — card declutter: tighter chips, hide redundant trust row */
+    '.tt-chips{gap:5px!important;margin-bottom:6px!important}'+
+    '.tt-chip{padding:4px 9px!important;font-size:11px!important;border-radius:8px!important}'+
+    '.sgi-trust-x{display:none!important}'+
     '.tt-action.sgi-more .tt-action-btn{background:rgba(255,109,0,.2);border-color:rgba(255,109,0,.35)}'+
     '.tt-actions{gap:8px}'+
     '#sg-reels-rail .sg-rr-circle.sgi{color:#fff;font-size:0}#sg-reels-rail .sg-rr-circle.sgi svg{opacity:.92}';
@@ -111,7 +115,22 @@ function enhanceReelsRail(){
   }
 }
 
-function tick(){enhanceBookRails();enhanceReelsRail();}
+/* Round 4 — hide the per-card "Free Cancel · Secure · Instant QR" mini-row:
+   it duplicates the global top ticker and adds noise under the chips. */
+function declutterCards(){
+  var infos=document.querySelectorAll('.tt-info');
+  for(var i=0;i<infos.length;i++){
+    if(infos[i].getAttribute('data-sgi-c'))continue;
+    infos[i].setAttribute('data-sgi-c','1');
+    var divs=infos[i].querySelectorAll(':scope > div');
+    for(var j=0;j<divs.length;j++){
+      var t=divs[j].textContent||'';
+      if(t.indexOf('Free Cancel')>-1&&t.indexOf('Instant QR')>-1){divs[j].classList.add('sgi-trust-x');}
+    }
+  }
+}
+
+function tick(){enhanceBookRails();enhanceReelsRail();declutterCards();}
 function init(){injectCSS();tick();setInterval(tick,600);}
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',init);}
 else{init();}
