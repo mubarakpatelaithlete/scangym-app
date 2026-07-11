@@ -259,12 +259,26 @@ window._peDashboardCache=null;
 
 // Render the gym cards in the partner tab container  
 function _peRenderCards(){
+  var gyms=window._peGymsCache||[];
+  var dash=window._peDashboardCache||{};
+
+  // ── ONE PARTNER SCREEN RULE ──────────────────────────────────────────
+  // Owners with claimed gyms use the native Partner Dashboard
+  // (PartnerFullPage) exclusively. The old pe-carousel takeover rendered a
+  // SECOND near-identical screen on top of it — never do that again.
+  if(gyms.length){
+    if(typeof window._partnerLoadGymProfile==='function')window._partnerLoadGymProfile();
+    return;
+  }
+
   var container=document.querySelector('.partner-screen');
   if(!container){
-    // PartnerFullPage uses .tt-view > .tt-card — look for those as fallback
-    container=document.querySelector('#partner-profile-page')
-              ||document.querySelector('.tt-card')
-              ||document.querySelector('.tt-view');
+    // PartnerFullPage uses .tt-view > .tt-card — replace the VIEW, not the
+    // card. Replacing the card's innerHTML nested a pe-card inside the
+    // native tt-card (a card-in-card duplicate screen).
+    container=document.querySelector('.tt-view')
+              ||document.querySelector('#partner-profile-page')
+              ||document.querySelector('.tt-card');
     // Last resort: old layout fixed container
     if(!container){
       var partnerRoot=document.querySelector('[style*="position:fixed"][style*="bottom:56px"]');
@@ -276,162 +290,10 @@ function _peRenderCards(){
     if(!container)return;
   }
 
-  var gyms=window._peGymsCache||[];
-  var dash=window._peDashboardCache||{};
-
-  if(!gyms.length){
-    // No gyms claimed — show "Claim Your Gym" card
-    container.style.display='flex';
-    container.innerHTML=_peClaimCard();
-    return;
-  }
-
-  // Build carousel of gym cards (exactly like Book tab)
-  var totalC=gyms.length;
-  var html='<div class="pe-view"><div class="pe-carousel" id="pe-carousel">';
-
-  gyms.forEach(function(gym,i){
-    var name=gym.name||'Your Gym';
-    var addr=gym.address||'';
-    var price=parseFloat(gym.dayPassPrice)||5;
-    var isActive=gym.isActive!==false;
-    var rating=gym.rating||dash.rating&&dash.rating.average||0;
-    var reviews=gym.reviews||dash.rating&&dash.rating.count||0;
-    var photo=gym.photo||gym.photoUrl||'';
-    var gymId=gym.id;
-
-    // Today's stats from dashboard
-    var todayBookings=dash.today?dash.today.bookings:0;
-    var todayRevenue=dash.today?dash.today.revenue:0;
-    var earnings=dash.earnings||{};
-    var monthEarnings=earnings.thisMonth||0;
-
-    html+='<div class="pe-card" data-pe-gym-id="'+gymId+'">';
-
-    // Photo background
-    if(photo){
-      html+='<div class="pe-photo" style="background-image:url(\''+photo+'\')"></div>';
-    }else{
-      html+='<div class="pe-photo-placeholder"></div>';
-    }
-    html+='<div class="pe-gradient"></div>';
-
-    // Owner badge (top-left, replaces Book tab's orange dot)
-    html+='<div class="pe-edit-badge"><span class="pe-status-dot" id="pe-status-dot-'+gymId+'" style="background:'+(isActive?'#4ade80':'#f87171')+'"></span> '+(isActive?'LIVE':'PAUSED')+' · Owner</div>';
-
-    // Search bar area (top) — same position as Book tab
-    html+='<div class="pe-search">'
-      +'<div onclick="window._peOpenClaimSearch()" style="background:rgba(10,12,20,.75);border:1px solid rgba(255,109,0,.3);border-radius:12px;width:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer" title="Find & add another gym">🔍</div>'
-      +'<div onclick="_peEditPhotos('+gymId+')" style="flex:1;background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px 14px;color:rgba(255,255,255,.5);font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px;cursor:pointer">'
-      +'<span>📸</span> <span>Edit Photos</span>'
-      +'</div>'
-      /* On/off toggle moved into the Opening Hours sheet (right rail) per user request */
-      +'<div onclick="window._peOpenPartnerSettings('+gymId+')" style="background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;width:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer">⚙️</div>'
-      +'</div>';
-
-    // Right-side action buttons (matching Book tab layout)
-    html+='<div class="pe-actions">';
-
-    // 1. Set Price (replaces Near Me)
-    html+='<div class="pe-action" onclick="event.stopPropagation();_peEditPrice('+gymId+','+price+')">'
-      +'<div class="pe-action-btn">💰</div><div class="pe-action-label">Set Price</div></div>';
-
-    // 2. Hours (replaces Search)
-    html+='<div class="pe-action" onclick="event.stopPropagation();_peEditHours('+gymId+')">'
-      +'<div class="pe-action-btn">🕐</div><div class="pe-action-label" id="pe-status-label-'+gymId+'" style="color:'+(isActive?'#4ade80':'#f87171')+'">'+(isActive?'Open':'Closed')+'</div></div>';
-
-    // 3. Bookings (replaces Calendar)
-    html+='<div class="pe-action" onclick="event.stopPropagation();_showPartnerScreen(1)">'
-      +'<div class="pe-action-btn">📋</div><div class="pe-action-label">'+todayBookings+' Today</div></div>';
-
-    // 4. Earnings (replaces Pass type)
-    html+='<div class="pe-action" onclick="event.stopPropagation();_showPartnerScreen(4)">'
-      +'<div class="pe-action-btn">💸</div><div class="pe-action-label">Earnings</div></div>';
-
-    // 5. Withdraw (replaces Payment) — route to unified wallet withdraw sheet
-    html+='<div class="pe-action" onclick="event.stopPropagation();typeof _sgWalletWithdraw===\'function\'?_sgWalletWithdraw():typeof _partnerWithdraw===\'function\'?_partnerWithdraw():void 0">'
-      +'<div class="pe-action-btn">🏦</div><div class="pe-action-label">Withdraw</div></div>';
-
-    // 6. Analytics (replaces Hours)
-    html+='<div class="pe-action" onclick="event.stopPropagation();_showPartnerScreen(3)">'
-      +'<div class="pe-action-btn">📊</div><div class="pe-action-label">Analytics</div></div>';
-
-    // 7. Access Control (replaces Reviews)
-    html+='<div class="pe-action" onclick="event.stopPropagation();_partnerConnectSeam()">'
-      +'<div class="pe-action-btn">🔐</div><div class="pe-action-label">Access</div></div>';
-
-    // 8. QR Codes
-    html+='<div class="pe-action" onclick="event.stopPropagation();_showPartnerScreen(1)">'
-      +'<div class="pe-action-btn">📱</div><div class="pe-action-label">Check-ins</div></div>';
-
-    // 9. Growth Centre
-    html+='<div class="pe-action" onclick="event.stopPropagation();_showPartnerScreen(6)">'
-      +'<div class="pe-action-btn">🚀</div><div class="pe-action-label">Growth</div></div>';
-
-    // 10. Share listing
-    html+='<div class="pe-action" onclick="event.stopPropagation();window._peShareListing('+gymId+',\''+name.replace(/'/g,"\\'")+'\')">'
-      +'<div class="pe-action-btn">🔗</div><div class="pe-action-label">Share</div></div>';
-
-    html+='</div>';
-
-    // Bottom info (matching Book tab layout exactly)
-    html+='<div class="pe-info">';
-
-    // Logo
-    var logoColors=['#FF6D00,#E66200','#8b5cf6,#6d28d9','#ef4444,#b91c1c','#3b82f6,#1d4ed8'];
-    var logoGrad=logoColors[i%4];
-    html+='<div class="pe-logo" style="background:linear-gradient(135deg,'+logoGrad+')">🏋️</div>';
-
-    // Counter
-    if(totalC>1){
-      html+='<div class="pe-counter">← '+(i+1)+' of '+totalC+' gyms →</div>';
-    }
-
-    // Gym name (editable)
-    html+='<div class="pe-gym-name pe-editable" onclick="_peEditField(\'Gym Name\',\''+name.replace(/'/g,"\\'")+'\',\'Enter gym name\',function(v){var el=this.parentElement;document.getElementById(\'pe-name-'+gymId+'\').childNodes[0].textContent=v})" id="pe-name-'+gymId+'">'+name+'</div>';
-
-    // Address (editable)
-    html+='<div class="pe-gym-addr">'
-      +'📍 <span class="pe-editable" onclick="_peEditField(\'Address\',\''+(addr?addr.split(',')[0]:'').replace(/'/g,"\\'")+'\',\'Enter address\',function(v){})">'
-      +(addr?addr.split(',')[0]:'Tap to add address')
-      +'</span>'
-      +' · <span class="pe-editable" onclick="_peEditHours('+gymId+')" style="color:'+(isActive?'#4ade80':'#f87171')+'">'
-      +(isActive?'● Open':'🌙 Closed')
-      +'</span>'
-      +'</div>';
-
-    // Chips — owner-focused metrics
-    html+='<div class="pe-chips">';
-    html+='<div class="pe-chip pe-editable" onclick="_peEditPrice('+gymId+','+price+')" id="pe-price-'+gymId+'">💰 £'+price.toFixed(2)+'/day</div>';
-    html+='<div class="pe-chip">⭐ '+(rating?parseFloat(rating).toFixed(1):'New')+(reviews?' ('+reviews+')':'')+'</div>';
-    if(todayBookings>0){
-      html+='<div class="pe-chip" style="background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.25)">📈 '+todayBookings+' today</div>';
-    }
-    if(todayRevenue>0){
-      html+='<div class="pe-chip" style="background:rgba(255,109,0,.15);border:1px solid rgba(255,109,0,.25)">💷 £'+todayRevenue.toFixed(2)+' today</div>';
-    }
-    if(monthEarnings>0){
-      html+='<div class="pe-chip">📅 £'+monthEarnings.toFixed(2)+'/mo</div>';
-    }
-    html+='<div class="pe-chip" style="background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.2)">💚 85% yours</div>';
-    html+='</div>';
-
-    // Trust badges (owner version)
-    html+='<div style="display:flex;gap:12px;margin-top:5px;padding-right:50px">'
-      +'<span style="font-size:10px;color:rgba(255,255,255,.35);font-weight:600">✅ Verified Owner</span>'
-      +'<span style="font-size:10px;color:rgba(255,255,255,.35);font-weight:600">🔒 Stripe Payouts</span>'
-      +'<span style="font-size:10px;color:rgba(255,255,255,.35);font-weight:600">⚡ Instant Bookings</span>'
-      +'</div>';
-
-    html+='</div>'; // pe-info
-    html+='</div>'; // pe-card
-  });
-
-  html+='</div></div>'; // pe-carousel, pe-view
-
-  // Replace the first partner-screen content
+  // No gyms claimed — show "Claim Your Gym" card (remove stray copies first)
+  document.querySelectorAll('.pe-view').forEach(function(v){if(!container.contains(v)||v.parentElement!==container)v.remove();});
   container.style.display='flex';
-  container.innerHTML=html;
+  container.innerHTML=_peClaimCard();
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -640,17 +502,31 @@ window._peOpenPartnerSettings=function(gymId){
 // LOAD: Fetch gym data and render
 // ══════════════════════════════════════════════════════════════════════
 
+var _peAuthRetries=0;
 async function _peLoadAndRender(){
   var u=state&&state.user;
   if(!u){
+    // Auth may still be resolving (/api/auth/me in flight). Rendering the
+    // claim card now would WIPE the native Partner Dashboard for a logged-in
+    // owner — the "two partner screens" bug. Retry briefly before deciding.
+    if(_peAuthRetries<12){
+      _peAuthRetries++;
+      setTimeout(_peLoadAndRender,400);
+      return;
+    }
     window._peGymsCache=[];
     _peRenderCards();
     return;
   }
+  _peAuthRetries=0;
 
   try{
     var r=await fetch('/api/gym-partner/dashboard',{credentials:'include'});
-    if(!r.ok){window._peGymsCache=[];_peRenderCards();return;}
+    if(!r.ok){
+      // Transient API error — don't wipe an owner's native dashboard.
+      if(window._peGymsCache&&window._peGymsCache.length>0)return;
+      window._peGymsCache=[];_peRenderCards();return;
+    }
     var d=await r.json();
     window._peDashboardCache=d;
 
@@ -668,6 +544,8 @@ async function _peLoadAndRender(){
     _peRenderCards();
   }catch(e){
     console.error('[PartnerEditable] Load failed:',e.message);
+    // Network error — keep whatever screen is showing rather than wiping it.
+    if(window._peGymsCache&&window._peGymsCache.length>0)return;
     window._peGymsCache=[];
     _peRenderCards();
   }
@@ -699,6 +577,21 @@ var _waitPatch=setInterval(function(){
     setInterval(function(){
       var route=state&&state.route;
       var isPartner=(route==='/partner'||route==='/partner/');
+      // ── ONE PARTNER SCREEN sweep ──────────────────────────────────────
+      // If the native dashboard is present, any .pe-view is a stale
+      // duplicate screen — remove it. Also drop duplicate .tt-view copies
+      // (keep the one inside the live #app main).
+      if(isPartner){
+        var nativeCard=document.getElementById('partner-profile-page');
+        if(nativeCard&&nativeCard.innerHTML.length>50){
+          document.querySelectorAll('.pe-view').forEach(function(v){v.remove();});
+        }
+        var views=document.querySelectorAll('.tt-view');
+        if(views.length>1){
+          var keep=document.querySelector('#app .sg-tab-content .tt-view')||views[0];
+          views.forEach(function(v){if(v!==keep)v.remove();});
+        }
+      }
       if(isPartner&&_lastRoute!==route){
         _lastRoute=route;
         setTimeout(function(){_peLoadAndRender();},100);

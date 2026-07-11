@@ -144,8 +144,9 @@ window._sgB2RailHost=function(){
   if(stray)stray.remove();
   // Native Partner Dashboard (PartnerFullPage) now renders its own Verify +
   // On/Off buttons directly in .tt-actions (fixed order: Search, Verify,
-  // On/Off, Earnings, ...), so injected chips only target the pre-claim
-  // .pe-actions rail to avoid duplicates.
+  // On/Off, Earnings, ...), so injected chips must NOT target the native
+  // rail (would duplicate). They only attach to a legacy pre-claim
+  // .pe-actions rail if one exists.
   return document.querySelector('.pe-actions')||null;
 };
 function injectGymSwitch(){
