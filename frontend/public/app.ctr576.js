@@ -16826,8 +16826,11 @@ window._partnerLoadGymProfile=async function(){
       // Update wallet balance badge
       var wb=document.getElementById('partner-wallet-badge');
       if(wb){var bal=d.balance||d.walletBalance||0;wb.textContent='\ud83d\udcb0 \u00a3'+parseFloat(bal||0).toFixed(2);}
-      // Re-render to show photos if loaded
-      if(g.photos_list&&g.photos_list.length>0||g.photos&&g.photos.length>0){render();}
+      // Re-render to show photos if loaded — but only once: repeated full
+      // render() calls rebuilt the partner card bare (injected rail buttons
+      // + banner vanish for ~1s) which looked like a second partner screen.
+      var _hasPhotos=(g.photos_list&&g.photos_list.length>0)||(g.photos&&g.photos.length>0);
+      if(_hasPhotos&&!document.getElementById('partner-photo-carousel')){render();}
     }
   }catch(e){console.log('[PartnerProfile]',e.message);}
 };
@@ -17791,7 +17794,7 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
   else if(path==='/partner/customers')page=PartnerCustomersPage();
   else if(path==='/partner/payouts')page=PartnerPayoutsPage();
   else if(path==='/partner/dashboard')page=GymPartnerHubPage();
-  else if(path==='/partner'||path==='/partners'||path==='/gym-partner')page=PartnerLandingPage();
+  else if(path==='/partners'||path==='/gym-partner')page=PartnerLandingPage(); // NOTE: '/partner' is handled above by PartnerFullPage — the ONE partner screen
   else if(path==='/apps')page=AppsPage();
   else if(path==='/channels')page=ChannelsPage();
   else if(path==='/onboard-chat')page=OnboardChatPage();
