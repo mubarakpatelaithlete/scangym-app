@@ -142,9 +142,10 @@ function paintSwitch(){
 window._sgB2RailHost=function(){
   var stray=document.getElementById('sg-partner-rail');
   if(stray)stray.remove();
-  // Native Partner Dashboard (PartnerFullPage) uses .tt-actions; the old
-  // editable carousel used .pe-actions (now only shown pre-claim).
-  return document.querySelector('.pe-actions')||document.querySelector('#partner-profile-page .tt-actions')||null;
+  // Native Partner Dashboard (PartnerFullPage) uses .tt-actions — this is
+  // THE one partner screen, so it always wins. The old editable carousel's
+  // .pe-actions is only a fallback for the pre-claim card.
+  return document.querySelector('#partner-profile-page .tt-actions')||document.querySelector('.pe-actions')||null;
 };
 function injectGymSwitch(){
   var route=curRoute();
