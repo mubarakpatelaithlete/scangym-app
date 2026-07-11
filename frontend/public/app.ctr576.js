@@ -16820,7 +16820,7 @@ window._partnerLoadGymProfile=async function(){
       };
       // Update displayed name/address
       var ne=document.getElementById('partner-name-display');
-      if(ne) ne.innerHTML=g.name+' \u270f\ufe0f';
+      if(ne) ne.innerHTML=(g.name||'Your Gym')+' \u270f\ufe0f';
       var ae=document.getElementById('partner-addr-display');
       if(ae&&g.address){var _isO=g.isOpen!==false;ae.innerHTML='\ud83d\udccd '+g.address+' \u00b7 <span style="color:'+(_isO?'#4ade80':'#f87171')+'" id="partner-open-badge">'+(_isO?'\u2022 Open':'\u2022 Closed')+'</span>';}
       // Update wallet balance badge
