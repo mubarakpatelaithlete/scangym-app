@@ -71,6 +71,117 @@
 
       /* Brand circle watermark */
       .sg-brand-circle{position:absolute;top:16px;left:16px;width:28px;height:28px;background:#FF6D00;border-radius:50%;z-index:10;opacity:.85;box-shadow:0 0 10px rgba(255,109,0,.5);pointer-events:none;}
+
+      /* ── Discover Carousel (YouTube Shorts) ── */
+      #sg-discover-toggle{
+        position:fixed;top:14px;right:54px;z-index:50;
+        width:36px;height:36px;border-radius:50%;
+        background:rgba(0,0,0,.45);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+        border:1px solid rgba(255,255,255,.12);
+        display:flex;align-items:center;justify-content:center;
+        cursor:pointer;-webkit-tap-highlight-color:transparent;
+        transition:all .25s ease;
+      }
+      #sg-discover-toggle:active{transform:scale(.9);}
+      #sg-discover-toggle.active{background:rgba(255,109,0,.35);border-color:rgba(255,109,0,.5);}
+      #sg-discover-toggle svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+
+      #sg-discover-tray{
+        position:fixed;top:0;left:0;right:0;z-index:40;
+        background:linear-gradient(180deg,rgba(0,0,0,.92) 0%,rgba(0,0,0,.75) 85%,transparent 100%);
+        backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+        padding:56px 0 16px;
+        transform:translateY(-100%);
+        transition:transform .35s cubic-bezier(.32,.72,0,1);
+        pointer-events:none;
+      }
+      #sg-discover-tray.open{
+        transform:translateY(0);
+        pointer-events:auto;
+      }
+      .sg-discover-title{
+        font-size:13px;font-weight:700;color:#fff;letter-spacing:.5px;
+        padding:0 16px 10px;display:flex;align-items:center;gap:6px;
+      }
+      .sg-discover-title span{color:rgba(255,255,255,.4);font-weight:400;font-size:11px;}
+      .sg-discover-scroll{
+        display:flex;gap:10px;padding:0 16px;
+        overflow-x:auto;overflow-y:hidden;
+        scrollbar-width:none;-ms-overflow-style:none;
+        -webkit-overflow-scrolling:touch;
+        scroll-snap-type:x proximity;
+      }
+      .sg-discover-scroll::-webkit-scrollbar{display:none;}
+      .sg-discover-card{
+        flex:0 0 140px;scroll-snap-align:start;
+        border-radius:12px;overflow:hidden;
+        background:rgba(255,255,255,.06);
+        border:1px solid rgba(255,255,255,.08);
+        cursor:pointer;-webkit-tap-highlight-color:transparent;
+        transition:transform .15s,border-color .15s;
+        position:relative;
+      }
+      .sg-discover-card:active{transform:scale(.96);}
+      .sg-discover-card:hover{border-color:rgba(255,109,0,.3);}
+      .sg-discover-card img{
+        width:140px;height:200px;object-fit:cover;display:block;
+      }
+      .sg-discover-card .sg-dc-info{
+        padding:8px;background:rgba(0,0,0,.6);
+      }
+      .sg-discover-card .sg-dc-title{
+        font-size:10px;font-weight:600;color:#fff;
+        display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+        line-height:1.3;
+      }
+      .sg-discover-card .sg-dc-channel{
+        font-size:9px;color:rgba(255,255,255,.4);margin-top:3px;
+        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+      }
+      .sg-discover-card .sg-dc-yt-badge{
+        position:absolute;top:8px;right:8px;
+        background:rgba(255,0,0,.85);color:#fff;
+        font-size:8px;font-weight:700;padding:2px 5px;border-radius:4px;
+        letter-spacing:.3px;
+      }
+      .sg-discover-skeleton{
+        flex:0 0 140px;height:248px;border-radius:12px;
+        background:rgba(255,255,255,.04);
+        animation:skeletonPulse 1.8s ease-in-out infinite;
+      }
+      @keyframes skeletonPulse{0%,100%{opacity:.6}50%{opacity:.3}}
+
+      /* ── YouTube Overlay Player ── */
+      #sg-yt-overlay{
+        position:fixed;inset:0;z-index:9999;
+        background:rgba(0,0,0,.95);
+        display:none;flex-direction:column;
+        align-items:center;justify-content:center;
+      }
+      #sg-yt-overlay.open{display:flex;}
+      #sg-yt-overlay iframe{
+        width:100%;max-width:420px;height:75vh;max-height:750px;
+        border:none;border-radius:14px;
+      }
+      #sg-yt-close{
+        position:absolute;top:16px;right:16px;
+        width:40px;height:40px;border-radius:50%;
+        background:rgba(255,255,255,.12);border:none;
+        display:flex;align-items:center;justify-content:center;
+        cursor:pointer;z-index:10;
+      }
+      #sg-yt-close svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;}
+      #sg-yt-overlay .sg-yt-info{
+        text-align:center;margin-top:14px;max-width:380px;padding:0 16px;
+      }
+      #sg-yt-overlay .sg-yt-info h4{
+        color:#fff;font-size:14px;font-weight:600;margin:0;
+        display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+      }
+      #sg-yt-overlay .sg-yt-info p{
+        color:rgba(255,255,255,.4);font-size:12px;margin:4px 0 0;
+      }
+      /* Open in YouTube button removed per product decision */
       /* Gradient overlays */
       .reel::before{
         content:'';position:absolute;top:0;left:0;right:0;height:120px;
@@ -436,6 +547,35 @@
       <svg viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
       Tap for sound
     </div>
+    <!-- Discover Toggle Button -->
+    <button id="sg-discover-toggle" onclick="window._sgToggleDiscover()" aria-label="Discover fitness shorts">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+    </button>
+
+    <!-- Discover Tray (YouTube Shorts carousel) -->
+    <div id="sg-discover-tray">
+      <div class="sg-discover-title">🔥 Discover Fitness Shorts <span>powered by YouTube</span></div>
+      <div class="sg-discover-scroll" id="sg-discover-scroll">
+        <div class="sg-discover-skeleton"></div>
+        <div class="sg-discover-skeleton"></div>
+        <div class="sg-discover-skeleton"></div>
+        <div class="sg-discover-skeleton"></div>
+      </div>
+    </div>
+
+    <!-- YouTube Overlay Player -->
+    <div id="sg-yt-overlay">
+      <button id="sg-yt-close" onclick="window._sgCloseYtOverlay()">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      <iframe id="sg-yt-iframe" src="about:blank" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>
+      <div class="sg-yt-info">
+        <h4 id="sg-yt-title"></h4>
+        <p id="sg-yt-channel"></p>
+        <!-- Open in YouTube button removed -->
+      </div>
+    </div>
+
     <div id="reel-track"></div>
         <div class="reel-counter" id="reel-counter">Loading…</div>
     <div class="swipe-hint" id="swipe-hint">
@@ -2946,6 +3086,132 @@
           setTimeout(function(){ if(hint && hint.parentNode) hint.parentNode.removeChild(hint); hint = null; }, 600);
         }
       }, 3000);
+
+      // ═══════════════════════════════════════════════════════════
+      //  DISCOVER — YouTube Fitness Shorts (Option C)
+      //  Horizontal carousel in a slide-down tray. Tapping opens
+      //  a YouTube embed overlay. Never mixes into the native
+      //  swipe feed — keeps <video> performance pristine.
+      // ═══════════════════════════════════════════════════════════
+
+      var _discoverOpen = false;
+      var _discoverLoaded = false;
+      var _discoverShorts = [];
+      var _currentYtUrl = '';
+
+      window._sgToggleDiscover = function(){
+        var tray = document.getElementById('sg-discover-tray');
+        var btn = document.getElementById('sg-discover-toggle');
+        _discoverOpen = !_discoverOpen;
+
+        if(_discoverOpen){
+          tray.classList.add('open');
+          btn.classList.add('active');
+          // Pause current reel video when discover opens
+          var pool = window._videoPool || [];
+          for(var p = 0; p < pool.length; p++){
+            try{ if(!pool[p].paused) pool[p].pause(); }catch(e){}
+          }
+          // Load discover content on first open
+          if(!_discoverLoaded) _loadDiscoverFeed();
+        } else {
+          tray.classList.remove('open');
+          btn.classList.remove('active');
+          // Resume current reel
+          var active = document.querySelector('.reel.current video');
+          if(active) try{ active.play(); }catch(e){}
+        }
+      };
+
+      function _loadDiscoverFeed(){
+        _discoverLoaded = true;
+        fetch('/api/social-reels/discover?limit=30&offset=0')
+          .then(function(r){ return r.json(); })
+          .then(function(data){
+            _discoverShorts = data.shorts || [];
+            _renderDiscoverCards();
+          })
+          .catch(function(err){
+            console.error('[Discover] Load error:', err);
+            var scroll = document.getElementById('sg-discover-scroll');
+            scroll.innerHTML = '<div style="color:rgba(255,255,255,.4);font-size:12px;padding:20px;text-align:center;width:100%">Failed to load. Try again later.</div>';
+          });
+      }
+
+      function _renderDiscoverCards(){
+        var scroll = document.getElementById('sg-discover-scroll');
+        if(!_discoverShorts.length){
+          scroll.innerHTML = '<div style="color:rgba(255,255,255,.4);font-size:12px;padding:20px;text-align:center;width:100%">No fitness shorts available right now.</div>';
+          return;
+        }
+        var html = '';
+        for(var i = 0; i < _discoverShorts.length; i++){
+          var s = _discoverShorts[i];
+          var safeTitle = (s.title || '').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+          var safeChannel = (s.channelTitle || '').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+          html += '<div class="sg-discover-card" onclick="window._sgPlayYtShort(' + i + ')">'
+            + '<img src="' + (s.thumbnail || '') + '" alt="' + safeTitle + '" loading="lazy" />'
+            + '<div class="sg-dc-yt-badge">YT</div>'
+            + '<div class="sg-dc-info">'
+            + '<div class="sg-dc-title">' + safeTitle + '</div>'
+            + '<div class="sg-dc-channel">' + safeChannel + '</div>'
+            + '</div></div>';
+        }
+        scroll.innerHTML = html;
+      }
+
+      window._sgPlayYtShort = function(idx){
+        var s = _discoverShorts[idx];
+        if(!s) return;
+
+        var overlay = document.getElementById('sg-yt-overlay');
+        var iframe = document.getElementById('sg-yt-iframe');
+        var title = document.getElementById('sg-yt-title');
+        var channel = document.getElementById('sg-yt-channel');
+
+        iframe.src = s.embedUrl || ('https://www.youtube.com/embed/' + s.videoId + '?autoplay=1&loop=1&playlist=' + s.videoId + '&mute=0&controls=1&playsinline=1&rel=0');
+        title.textContent = s.title || '';
+        channel.textContent = s.channelTitle || '';
+        _currentYtUrl = s.url || ('https://www.youtube.com/shorts/' + s.videoId);
+
+        overlay.classList.add('open');
+
+        // Close discover tray while overlay is open
+        var tray = document.getElementById('sg-discover-tray');
+        tray.classList.remove('open');
+      };
+
+      window._sgCloseYtOverlay = function(){
+        var overlay = document.getElementById('sg-yt-overlay');
+        var iframe = document.getElementById('sg-yt-iframe');
+        overlay.classList.remove('open');
+        iframe.src = 'about:blank'; // Stop playback
+
+        // Re-open discover tray
+        if(_discoverOpen){
+          document.getElementById('sg-discover-tray').classList.add('open');
+        }
+
+        // Resume current reel
+        var active = document.querySelector('.reel.current video');
+        if(active) try{ active.play(); }catch(e){}
+      };
+
+      // _sgOpenInYouTube removed — content stays within ScanGym
+
+      // Close overlay on Escape key
+      document.addEventListener('keydown', function(e){
+        if(e.key === 'Escape'){
+          var overlay = document.getElementById('sg-yt-overlay');
+          if(overlay.classList.contains('open')){
+            window._sgCloseYtOverlay();
+            e.preventDefault();
+          } else if(_discoverOpen){
+            window._sgToggleDiscover();
+            e.preventDefault();
+          }
+        }
+      });
 
       // ── Init ──
       initVideoPool();
