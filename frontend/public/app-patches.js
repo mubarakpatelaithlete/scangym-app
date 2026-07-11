@@ -257,6 +257,8 @@
     var done=false;
     var inj=function(){
       var a=document.querySelector('.tt-actions');
+      // Never inject the Book-tab Filter button into the Partner rail
+      if(a&&a.closest('#partner-profile-page'))return;
       if(a&&!a.querySelector('[data-filter-toggle]')){
         var b=document.createElement('div'); b.className='tt-action'; b.setAttribute('data-filter-toggle','1');
         b.innerHTML='<div class="tt-action-btn">⚙️</div><div class="tt-action-label">Filter</div>';

@@ -142,10 +142,12 @@ function paintSwitch(){
 window._sgB2RailHost=function(){
   var stray=document.getElementById('sg-partner-rail');
   if(stray)stray.remove();
-  // Native Partner Dashboard (PartnerFullPage) uses .tt-actions — this is
-  // THE one partner screen, so it always wins. The old editable carousel's
-  // .pe-actions is only a fallback for the pre-claim card.
-  return document.querySelector('#partner-profile-page .tt-actions')||document.querySelector('.pe-actions')||null;
+  // Native Partner Dashboard (PartnerFullPage) now renders its own Verify +
+  // On/Off buttons directly in .tt-actions (fixed order: Search, Verify,
+  // On/Off, Earnings, ...), so injected chips must NOT target the native
+  // rail (would duplicate). They only attach to a legacy pre-claim
+  // .pe-actions rail if one exists.
+  return document.querySelector('.pe-actions')||null;
 };
 function injectGymSwitch(){
   var route=curRoute();
