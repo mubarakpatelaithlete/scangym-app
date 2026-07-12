@@ -2,7 +2,12 @@
 <html lang="en" class="dark">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5,viewport-fit=cover">
+<meta name="theme-color" content="#080812">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="format-detection" content="telephone=no">
 <title>ScanGym - Book a Gym. Anywhere.</title>
 <meta name="description" content="Find and book gyms near you. 24-hour day passes, QR entry, no membership needed.">
 <meta name="keywords" content="gym finder, book gym, day pass gym, gym near me, 24 hour gym, gym booking app, no membership gym, drop-in gym, gym marketplace">
@@ -81,6 +86,8 @@
   ]
 }
 </script>
+
+<link rel="manifest" href="/manifest.json">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -167,6 +174,7 @@ if('serviceWorker' in navigator){
 <script src="/round2.js?v=1.2" defer></script>
 <script src="/round3.js?v=1.0" defer></script>
 <script src="/ui-polish.js?v=1.1" defer></script>
+<script src="/phase2-improvements.js?v=1.0" defer></script>
 <script>
 /* PERF: lazy-load non-first-paint patch scripts (partner/admin/wallet tooling)
    after the load event, at idle — keeps ~180KB of JS off the critical path. */
