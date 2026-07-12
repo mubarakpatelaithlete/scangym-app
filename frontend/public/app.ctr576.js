@@ -19491,7 +19491,7 @@ if(localStorage.getItem('sg_push_enabled')==='1'&&state.user){
   var banner=document.createElement('div');
   banner.id='sg-continue-banner';
   banner.className='sg-cb-hidden';
-  banner.innerHTML='<span class="sg-cb-text">Continue</span><span class="sg-cb-price"></span><span class="sg-cb-arrow">\u2192</span>';
+  banner.innerHTML='<span class="sg-cb-text">Find gyms near me</span><span class="sg-cb-price"></span><span class="sg-cb-arrow">\ud83d\udccd</span>';
 
   banner.addEventListener('click',function(){
     var activeLabel=document.querySelector('.sg-tab-item.active .sg-tab-label');
