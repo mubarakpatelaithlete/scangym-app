@@ -112,6 +112,7 @@ function contentHashAssets() {
     'robust-location.js',
     'pricing.js',
     'phase2-improvements.js',
+    'phase3-improvements.js',
   ];
 
   // Files that reference the assets (HTML, JS, SW)
