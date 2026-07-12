@@ -1,0 +1,30 @@
+{
+  "name": "ScanGym - Book a Gym. Anywhere.",
+  "short_name": "ScanGym",
+  "description": "Find and book gyms near you. Day passes from $5.49, QR entry, no membership needed.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#080812",
+  "theme_color": "#080812",
+  "categories": ["health", "fitness", "lifestyle"],
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='96' fill='%23080812'/><text x='256' y='340' text-anchor='middle' font-size='280' font-family='system-ui'>🏋️</text></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='32' fill='%23080812'/><text x='96' y='130' text-anchor='middle' font-size='100' font-family='system-ui'>🏋️</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [],
+  "prefer_related_applications": false,
+  "scope": "/",
+  "lang": "en",
+  "dir": "ltr"
+}
