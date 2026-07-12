@@ -43,9 +43,6 @@ async function minifyJS() {
   for (const file of jsFiles) {
     // Skip already-minified files and service worker
     if (file.endsWith('.min.js')) continue;
-    // Skip main app bundle — hand-written vanilla JS with complex CSS-in-JS
-    // strings that terser mangles (content:'' escapes, template strings, etc.)
-    if (path.basename(file).startsWith('app.ctr')) continue;
     
     const code = fs.readFileSync(file, 'utf8');
     const originalSize = Buffer.byteLength(code);
@@ -53,20 +50,35 @@ async function minifyJS() {
     // Skip small files
     if (originalSize < 1024) continue;
 
+    // Main app bundle needs special terser config to handle CSS-in-JS
+    // template strings safely. Other files use aggressive settings.
+    const isMainBundle = path.basename(file).startsWith('app.ctr');
+
     try {
       const result = await terser.minify(code, {
         compress: {
           dead_code: true,
           drop_console: false, // Keep console.log for debugging
-          passes: 2,
-          pure_getters: true,
-          unsafe_math: true,
+          passes: isMainBundle ? 1 : 2,
+          pure_getters: !isMainBundle,
+          unsafe_math: !isMainBundle,
+          // Safe settings for main bundle — preserve template literals
+          ...(isMainBundle ? {
+            collapse_vars: false,
+            sequences: false,
+          } : {}),
         },
         mangle: {
           toplevel: false, // Don't mangle top-level — vanilla JS relies on globals
+          ...(isMainBundle ? {
+            reserved: ['state', 'navigate', 'render', 'switchTab', 'sgToast',
+              'sgPerf', 'curRoute', 'curUser', 'checkAuth'],
+          } : {}),
         },
         format: {
           comments: false,
+          // Preserve template literal backticks in main bundle
+          ...(isMainBundle ? { ascii_only: false } : {}),
         },
       });
 
@@ -99,6 +111,7 @@ function contentHashAssets() {
     'styles.css',
     'robust-location.js',
     'pricing.js',
+    'phase2-improvements.js',
   ];
 
   // Files that reference the assets (HTML, JS, SW)
@@ -291,9 +304,6 @@ function validateJS() {
 
   for (const file of jsFiles) {
     if (file.endsWith('.min.js') || file.endsWith('.br') || file.endsWith('.gz')) continue;
-    // Skip main app bundle — same as minifyJS(). Hand-written vanilla JS with
-    // complex CSS-in-JS that triggers false positives in new Function() validation.
-    if (path.basename(file).startsWith('app.ctr')) continue;
 
     const code = fs.readFileSync(file, 'utf8');
     // Quick parse check — catches SyntaxError before deploy
