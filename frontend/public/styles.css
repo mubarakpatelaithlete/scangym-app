@@ -324,3 +324,96 @@ select:focus {
   from { opacity: 0; }
   to { opacity: 1; }
 }
+
+
+/* ═══ Phase 3: Round 3 CSS Improvements ═══ */
+
+/* === SPEED: GPU-accelerated transitions === */
+.tt-card, .gym-overlay-panel, .sg-checkout-sheet, .sg-bottom-sheet {
+  will-change: transform;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+}
+
+/* === UI: Better text rendering across all platforms === */
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* === UI: Staggered card entry for gym list === */
+.gym-card:nth-child(1) { animation-delay: 0s !important; }
+.gym-card:nth-child(2) { animation-delay: 0.04s !important; }
+.gym-card:nth-child(3) { animation-delay: 0.08s !important; }
+.gym-card:nth-child(4) { animation-delay: 0.12s !important; }
+.gym-card:nth-child(5) { animation-delay: 0.16s !important; }
+.gym-card:nth-child(6) { animation-delay: 0.20s !important; }
+
+/* === GRAPHICS: Enhanced image loading === */
+.tt-photo {
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.tt-photo.loaded {
+  opacity: 1;
+}
+
+/* === GRAPHICS: Better rating stars === */
+.tt-chip[style*="⭐"] {
+  background: rgba(234, 179, 8, .12) !important;
+  border-color: rgba(234, 179, 8, .2) !important;
+}
+
+/* === MOBILE: Prevent accidental link taps === */
+@media (pointer: coarse) {
+  a, button, [onclick] {
+    min-height: 36px;
+    min-width: 36px;
+  }
+}
+
+/* === MOBILE: Fix for Galaxy Fold / small foldables === */
+@media (max-width: 320px) {
+  .tt-gym-name { font-size: 20px !important; }
+  .tt-actions { right: 6px !important; gap: 4px !important; }
+  .tt-action-btn { width: 38px !important; height: 38px !important; font-size: 20px !important; }
+  .tt-action-label { font-size: 8px !important; }
+  .sg-tab-item .sg-tab-label { font-size: 7px !important; }
+}
+
+/* === UX: Smooth bottom sheet transitions === */
+.sg-bottom-sheet {
+  overscroll-behavior-y: contain;
+}
+
+/* === USER FRIENDLY: Better placeholder text styling === */
+::placeholder {
+  color: rgba(255, 255, 255, 0.25) !important;
+  opacity: 1;
+}
+:-ms-input-placeholder {
+  color: rgba(255, 255, 255, 0.25) !important;
+}
+
+/* === USER FRIENDLY: High contrast mode support === */
+@media (prefers-contrast: high) {
+  .tt-chip { border-width: 2px !important; }
+  .tt-action-label { color: #fff !important; text-shadow: 0 1px 4px rgba(0,0,0,1) !important; }
+  .sg-tab-item .sg-tab-label { color: rgba(255,255,255,.6) !important; }
+  .sg-tab-item.active .sg-tab-label { color: #FF6D00 !important; }
+}
+
+/* === GRAPHICS: Frosted glass on search bar === */
+.tt-search-input,
+.tt-search-gps,
+.tt-search-filter {
+  backdrop-filter: blur(16px) saturate(1.5) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(1.5) !important;
+  background: rgba(10, 12, 20, 0.65) !important;
+}
+
+/* === UX: Scroll snap for smoother gym card swiping === */
+.tt-carousel {
+  scroll-snap-type: y mandatory;
+  -webkit-scroll-snap-type: y mandatory;
+}
