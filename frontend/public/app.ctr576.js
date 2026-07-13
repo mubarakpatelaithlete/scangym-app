@@ -14922,6 +14922,103 @@ function CreatorEarningsPage(){
   </div>`;
 }
 
+// ═══ P2: SURFACE BUILT FEATURES — Tier Progress, Leaderboard, Page Customiser ═══
+window._sgTierDefs=[
+  {key:'starter',name:'Starter',badge:'\ud83c\udf31',min:0,perks:'25% commission \u00b7 Creator toolkit \u00b7 388+ assets'},
+  {key:'rising',name:'Rising Star',badge:'\u2b50',min:10,perks:'Priority support \u00b7 Early features \u00b7 Custom link'},
+  {key:'pro',name:'Pro Creator',badge:'\ud83d\udd25',min:50,perks:'Free Premium \u00b7 Custom branding \u00b7 Analytics'},
+  {key:'legend',name:'Legend',badge:'\ud83d\udc51',min:100,perks:'Lifetime Premium \u00b7 Rev share \u00b7 Account manager'}
+];
+window._sgCreatorTierSheet=function(handle){
+  fetch('/api/referrals/stats/'+encodeURIComponent(handle))
+    .then(function(r){return r.json();})
+    .then(function(d){
+      var conv=d.conversions||0;
+      var tiers=window._sgTierDefs;
+      var cur=tiers[0],next=null;
+      for(var i=0;i<tiers.length;i++){if(conv>=tiers[i].min)cur=tiers[i];else{next=tiers[i];break;}}
+      var pct=next?Math.min(100,Math.round((conv/next.min)*100)):100;
+      var html='<h2 style="font-size:20px;font-weight:800;color:#fff;margin:0 0 4px">'+cur.badge+' '+cur.name+'</h2>'
+        +'<p style="color:rgba(255,255,255,.5);font-size:12px;margin:0 0 14px">'+conv+' referral'+(conv===1?'':'s')+' so far</p>'
+        +'<div style="background:#1a1a1a;border-radius:16px;padding:16px;border:1px solid rgba(255,255,255,.08);margin-bottom:14px">'
+        +(next
+          ?'<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="color:#fff;font-size:12px;font-weight:700">Progress to '+next.badge+' '+next.name+'</span><span style="color:#FF6D00;font-size:12px;font-weight:700">'+conv+' / '+next.min+'</span></div>'
+           +'<div style="background:rgba(255,255,255,.08);border-radius:8px;height:10px;overflow:hidden"><div style="width:'+pct+'%;height:100%;background:linear-gradient(90deg,#FF6D00,#FF9100);border-radius:8px;transition:width 1s"></div></div>'
+           +'<p style="color:rgba(255,255,255,.4);font-size:11px;margin:8px 0 0">'+(next.min-conv)+' more referral'+((next.min-conv)===1?'':'s')+' to unlock: '+next.perks+'</p>'
+          :'<p style="color:#eab308;font-size:13px;font-weight:700;margin:0">\ud83d\udc51 Max tier reached \u2014 you are a ScanSquad Legend!</p>')
+        +'</div>'
+        +tiers.map(function(t){
+          var done=conv>=t.min;
+          return '<div style="display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid rgba(255,255,255,.05)">'
+            +'<span style="font-size:20px">'+t.badge+'</span>'
+            +'<div style="flex:1"><p style="color:#fff;font-size:13px;font-weight:600;margin:0">'+t.name+' <span style="color:rgba(255,255,255,.35);font-weight:400">\u00b7 '+t.min+'+ referrals</span></p>'
+            +'<p style="color:rgba(255,255,255,.4);font-size:10px;margin:2px 0 0">'+t.perks+'</p></div>'
+            +'<span style="color:'+(done?'#22c55e':'rgba(255,255,255,.25)')+';font-size:14px;font-weight:700">'+(done?'\u2713':'\u25cb')+'</span></div>';
+        }).join('');
+      _sgOpenSheet('sg-tier-sheet',html);
+    })
+    .catch(function(){sgToast('Could not load tier progress','error',2000);});
+};
+window._sgCreatorLeaderboardSheet=function(handle){
+  fetch('/api/creators/leaderboard')
+    .then(function(r){return r.json();})
+    .then(function(d){
+      var rows=d.leaderboard||[];
+      var medals=['\ud83e\udd47','\ud83e\udd48','\ud83e\udd49'];
+      var html='<h2 style="font-size:20px;font-weight:800;color:#fff;margin:0 0 4px">\ud83c\udfc6 ScanSquad Leaderboard</h2>'
+        +'<p style="color:rgba(255,255,255,.5);font-size:12px;margin:0 0 14px">Top creators by referrals</p>';
+      if(!rows.length){html+='<p style="color:rgba(255,255,255,.4);font-size:13px">No creators on the board yet \u2014 your spot is waiting!</p>';}
+      else{
+        html+=rows.map(function(c,i){
+          var name=(c.community_name||('Creator '+String(c.user_id||'').slice(0,6))).replace(/</g,'&lt;');
+          var isMe=c.community_name&&handle&&c.community_name.toLowerCase()===handle.toLowerCase();
+          return '<div style="display:flex;align-items:center;gap:10px;padding:10px 8px;border-radius:10px;margin-bottom:2px;'+(isMe?'background:rgba(255,109,0,.12);border:1px solid rgba(255,109,0,.3)':'border-bottom:1px solid rgba(255,255,255,.05)')+'">'
+            +'<span style="width:26px;text-align:center;font-size:'+(i<3?'16px':'12px')+';color:rgba(255,255,255,.5);font-weight:700">'+(i<3?medals[i]:(i+1))+'</span>'
+            +'<span style="font-size:16px">'+(c.badge||'\ud83c\udf31')+'</span>'
+            +'<div style="flex:1;min-width:0"><p style="color:#fff;font-size:13px;font-weight:600;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+name+(isMe?' <span style=\'color:#FF6D00;font-size:10px\'>(you)</span>':'')+'</p></div>'
+            +'<span style="color:#FF6D00;font-size:12px;font-weight:700">'+(c.total_referrals||0)+' refs</span></div>';
+        }).join('');
+      }
+      _sgOpenSheet('sg-leaderboard-sheet',html);
+    })
+    .catch(function(){sgToast('Could not load leaderboard','error',2000);});
+};
+window._sgCreatorPageSheet=function(handle){
+  var cd=JSON.parse(localStorage.getItem('sg_creator')||'{}');
+  function inp(id,label,ph,val){
+    return '<label style="display:block;color:rgba(255,255,255,.5);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin:10px 0 4px">'+label+'</label>'
+      +'<input id="'+id+'" placeholder="'+ph+'" value="'+String(val||'').replace(/"/g,'&quot;')+'" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:11px;color:#fff;font-size:13px;outline:none;box-sizing:border-box">';
+  }
+  var html='<h2 style="font-size:20px;font-weight:800;color:#fff;margin:0 0 4px">\ud83c\udfa8 Customise Your Page</h2>'
+    +'<p style="color:rgba(255,255,255,.5);font-size:12px;margin:0 0 8px">scangym.com/r/'+handle+'</p>'
+    +inp('sg-cp-name','Display name','Your name',cd.name||'')
+    +inp('sg-cp-headline','Headline','e.g. I train with ScanGym \u2014 join me','')
+    +inp('sg-cp-sub','Subheadline','e.g. 50% off your first session','')
+    +inp('sg-cp-photo','Photo URL','https://... your profile photo','')
+    +inp('sg-cp-cta','Button text','Book Your First Session \u2014 50% Off','')
+    +inp('sg-cp-msg','Personal message','Tell your followers why you love these gyms','')
+    +'<div style="display:flex;gap:8px;margin-top:16px">'
+    +'<button onclick="_sgCreatorPageSave(\''+handle+'\')" style="flex:1;background:#FF6D00;color:#fff;border:none;padding:13px;border-radius:12px;font-weight:700;font-size:13px;cursor:pointer">Save Page</button>'
+    +'<button onclick="navigate(\'/r/'+handle+'\')" style="flex:1;background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.12);padding:13px;border-radius:12px;font-weight:700;font-size:13px;cursor:pointer">View Page</button>'
+    +'</div>';
+  _sgOpenSheet('sg-custompage-sheet',html);
+};
+window._sgCreatorPageSave=function(handle){
+  var g=function(id){var el=document.getElementById(id);return el?el.value.trim():'';};
+  var body={slug:handle,creatorHandle:handle,creatorName:g('sg-cp-name'),headline:g('sg-cp-headline'),subheadline:g('sg-cp-sub'),creatorPhotoUrl:g('sg-cp-photo'),ctaText:g('sg-cp-cta'),customMessage:g('sg-cp-msg')};
+  fetch('/api/creators/landing-page',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+    .then(function(r){
+      if(r.status===401){sgToast('Sign in to customise your page','info',2500);if(typeof window._sgShowAuthSheet==='function')window._sgShowAuthSheet('book');return null;}
+      if(r.status===403){sgToast('Join ScanSquad first \u2014 tap 1-Click Signup','info',2500);return null;}
+      return r.json();
+    })
+    .then(function(d){
+      if(d&&(d.success||d.liveUrl||d.page)){sgToast('Page saved! \ud83c\udf89','success',2000);}
+      else if(d&&d.error){sgToast(d.error,'error',2500);}
+    })
+    .catch(function(){sgToast('Could not save page','error',2000);});
+};
+
 // ═══ P1: ADVANCED CREATOR ANALYTICS (per-reel, earnings graph, audience, per-gym) ═══
 window._caBucket='day';
 function _caSetBucket(handle,bucket){
@@ -15851,7 +15948,7 @@ function CreatorDashboardPage(){
     <div style="position:fixed;top:0;left:0;right:0;height:300px;background:linear-gradient(180deg,rgba(255,109,0,.06) 0%,transparent 100%);pointer-events:none;z-index:0"></div>
 
     <!-- Right-side TikTok buttons (fixed) -->
-    <div style="position:fixed;right:12px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:16px;z-index:20;align-items:center">
+    <div style="position:fixed;right:12px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:14px;z-index:20;align-items:center;max-height:82vh;overflow-y:auto;scrollbar-width:none">
       <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="_sgCopyAffiliateLink('${handle}')">
         <div style="width:48px;height:48px;background:rgba(255,109,0,.15);border:1px solid rgba(255,109,0,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)">📋</div>
         <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">Copy Link</span>
@@ -15875,6 +15972,26 @@ function CreatorDashboardPage(){
       <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="sgToast('Live streaming coming soon! 🔴','info')">
         <div style="width:48px;height:48px;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)">📡</div>
         <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">Go Live</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="navigate('/creator-earnings')">
+        <div style="width:48px;height:48px;background:rgba(56,189,248,.15);border:1px solid rgba(56,189,248,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)">\ud83d\udcca</div>
+        <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">Analytics</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="_sgCreatorTierSheet('${handle}')">
+        <div style="width:48px;height:48px;background:rgba(255,109,0,.15);border:1px solid rgba(255,109,0,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)">\ud83c\udfaf</div>
+        <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">Tiers</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="_sgCreatorLeaderboardSheet('${handle}')">
+        <div style="width:48px;height:48px;background:rgba(234,179,8,.15);border:1px solid rgba(234,179,8,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)">\ud83c\udfc6</div>
+        <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">Board</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="navigate('/upload')">
+        <div style="width:48px;height:48px;background:rgba(74,222,128,.15);border:1px solid rgba(74,222,128,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)">\ud83c\udfac</div>
+        <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">Upload</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="_sgCreatorPageSheet('${handle}')">
+        <div style="width:48px;height:48px;background:rgba(168,85,247,.15);border:1px solid rgba(168,85,247,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)">\ud83c\udfa8</div>
+        <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">My Page</span>
       </div>
     </div>
 
