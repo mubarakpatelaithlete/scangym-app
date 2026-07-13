@@ -49,6 +49,7 @@ const gymMgmtRouter = require('./routes/gym-management');
 const playlistsRouter = require('./routes/playlists');
 const adminDashboardRouter = require('./routes/admin-dashboard');
 const creatorAnalyticsRouter = require('./routes/creator-analytics');
+const creatorDistributionRouter = require('./routes/creator-distribution');
 const analyticsMiddleware = require('./middleware/analytics');
 
 const app = express();
@@ -472,6 +473,7 @@ app.use('/api/ai', aiFeaturesRouter);
 app.use('/api/gym-partner', gymPartnerRouter);
 app.use('/api/analytics', analyticsExtRouter);
 app.use('/api/creator-analytics', creatorAnalyticsRouter);
+app.use('/api/creator-distribution', creatorDistributionRouter);
 app.use('/api/pricing', pricingExtRouter);
 app.use('/api/group', groupBookingRouter);
 app.use('/api/rebook', rebookRouter);

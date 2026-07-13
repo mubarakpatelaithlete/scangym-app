@@ -2680,8 +2680,10 @@
         // The server sets Content-Disposition: attachment, which forces download
         // even on iOS Safari where <a download> is ignored for cross-origin URLs.
         if(video.cdnKey){
+          var _sgCr = null; try { _sgCr = JSON.parse(localStorage.getItem('sg_creator')||'null'); } catch(e) {}
+          var _sgCrHandle = (_sgCr && (_sgCr.handle||_sgCr.slug)) ? String(_sgCr.handle||_sgCr.slug).replace(/[^a-zA-Z0-9_-]/g,'') : '';
           var downloadUrl = '/api/reels/download/' + encodeURIComponent(video.cdnKey)
-            + '?name=' + encodeURIComponent(fname);
+            + '?name=' + encodeURIComponent(fname) + (_sgCrHandle ? ('&' + 'handle=' + _sgCrHandle) : '');
           // iOS: try Web Share API first (saves to Photos)
           if(isIOS && navigator.canShare){
             fetch(downloadUrl).then(function(res){

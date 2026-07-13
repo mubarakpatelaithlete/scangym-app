@@ -14922,6 +14922,125 @@ function CreatorEarningsPage(){
   </div>`;
 }
 
+// ═══ P3: DISTRIBUTION — Mass Share, Schedule Share, Notify Followers ═══
+window._sgMassShareSheet=function(handle){
+  var base='https://scangym.com/r/'+handle;
+  var caption='I train with ScanGym \u2014 \u00a35 day passes, no membership. Get 15% off your first session with my link: ';
+  function chan(src){return base+'?src='+src;}
+  function btn(emoji,label,onclick){
+    return '<div onclick="'+onclick.replace(/"/g,'&quot;')+'" style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px;margin-bottom:8px;cursor:pointer">'
+      +'<span style="font-size:20px">'+emoji+'</span><span style="color:#fff;font-size:13px;font-weight:600">'+label+'</span>'
+      +'<span style="margin-left:auto;color:rgba(255,255,255,.3);font-size:11px">\u2192</span></div>';
+  }
+  var html='<h2 style="font-size:20px;font-weight:800;color:#fff;margin:0 0 4px">\ud83d\udce3 Share Everywhere</h2>'
+    +'<p style="color:rgba(255,255,255,.5);font-size:12px;margin:0 0 14px">Each link is channel-tagged so you can see which platform converts best in Analytics.</p>'
+    +btn('\ud83d\udcf1','Share via device (all apps)',"window._sgMassNativeShare('"+handle+"')")
+    +btn('\ud83d\udcac','WhatsApp',"window.open('https://wa.me/?text='+encodeURIComponent('"+caption+"'+'"+chan('whatsapp')+"'),'_blank')")
+    +btn('\u2708\ufe0f','Telegram',"window.open('https://t.me/share/url?url='+encodeURIComponent('"+chan('telegram')+"')+'&text='+encodeURIComponent('"+caption+"'),'_blank')")
+    +btn('\ud83d\udc26','X / Twitter',"window.open('https://twitter.com/intent/tweet?text='+encodeURIComponent('"+caption+"'+'"+chan('x')+"'),'_blank')")
+    +btn('\ud83d\udc65','Facebook',"window.open('https://www.facebook.com/sharer/sharer.php?u='+encodeURIComponent('"+chan('facebook')+"'),'_blank')")
+    +btn('\ud83d\udcf8','Instagram (copy caption + link)',"navigator.clipboard.writeText('"+caption+"'+'"+chan('instagram')+"');sgToast('Caption + link copied \u2014 paste into your IG bio or story!','success',2500)")
+    +btn('\ud83c\udfb5','TikTok (copy caption + link)',"navigator.clipboard.writeText('"+caption+"'+'"+chan('tiktok')+"');sgToast('Caption + link copied \u2014 paste into your TikTok bio!','success',2500)")
+    +btn('\ud83d\udce7','Email',"location.href='mailto:?subject='+encodeURIComponent('\u00a35 gym day passes on ScanGym')+'&body='+encodeURIComponent('"+caption+"'+'"+chan('email')+"')");
+  _sgOpenSheet('sg-massshare-sheet',html);
+};
+window._sgMassNativeShare=function(handle){
+  var url='https://scangym.com/r/'+handle+'?src=native';
+  var text='I train with ScanGym \u2014 \u00a35 day passes, no membership. 15% off with my link:';
+  if(navigator.share){navigator.share({title:'ScanGym',text:text,url:url}).catch(function(){});}
+  else{navigator.clipboard.writeText(text+' '+url);sgToast('Link copied!','success',2000);}
+};
+window._sgScheduleShareSheet=function(handle){
+  fetch('/api/creator-distribution/schedule/'+encodeURIComponent(handle))
+    .then(function(r){return r.json();})
+    .then(function(d){
+      var shares=d.shares||[];var bt=d.bestTime||{hour:18,isoWeekday:7};
+      var dayNames=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+      var pending=shares.filter(function(x){return x.status==='pending';});
+      var html='<h2 style="font-size:20px;font-weight:800;color:#fff;margin:0 0 4px">\ud83d\udcc5 Schedule Shares</h2>'
+        +'<p style="color:rgba(255,255,255,.5);font-size:12px;margin:0 0 12px">Queue your posts for when your audience clicks most: <span style="color:#FF6D00;font-weight:700">'+dayNames[(bt.isoWeekday||7)-1]+' around '+bt.hour+':00</span></p>'
+        +'<select id="sg-ss-platform" style="width:100%;background:#1a1a1a;border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:11px;color:#fff;font-size:13px;margin-bottom:8px">'
+        +['instagram','tiktok','youtube','x','facebook','whatsapp','telegram','other'].map(function(pf){return '<option value="'+pf+'">'+pf.charAt(0).toUpperCase()+pf.slice(1)+'</option>';}).join('')
+        +'</select>'
+        +'<textarea id="sg-ss-caption" placeholder="Caption for this post..." rows="2" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:11px;color:#fff;font-size:13px;outline:none;box-sizing:border-box;margin-bottom:8px"></textarea>'
+        +'<input id="sg-ss-when" type="datetime-local" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:11px;color:#fff;font-size:13px;outline:none;box-sizing:border-box;margin-bottom:8px">'
+        +'<div style="display:flex;gap:8px;margin-bottom:16px">'
+        +'<button onclick="_sgSchedBestTime('+bt.hour+','+(bt.isoWeekday||7)+')" style="flex:1;background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.12);padding:12px;border-radius:12px;font-weight:700;font-size:12px;cursor:pointer">\u2728 Use Best Time</button>'
+        +'<button onclick="_sgSchedCreate(\''+handle+'\')" style="flex:1;background:#FF6D00;color:#fff;border:none;padding:12px;border-radius:12px;font-weight:700;font-size:12px;cursor:pointer">Schedule</button>'
+        +'</div>';
+      if(pending.length){
+        html+='<p style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin:0 0 8px">Upcoming ('+pending.length+')</p>'
+          +pending.map(function(x){
+            var when=new Date(x.scheduled_at);
+            return '<div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:10px;margin-bottom:6px">'
+              +'<div style="flex:1;min-width:0"><p style="color:#fff;font-size:12px;font-weight:600;margin:0">'+x.platform+' \u00b7 '+when.toLocaleString('en-GB',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+'</p>'
+              +'<p style="color:rgba(255,255,255,.4);font-size:11px;margin:2px 0 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+String(x.caption||'').replace(/</g,'&lt;')+'</p></div>'
+              +'<button onclick="_sgSchedAction('+x.id+',\'done\',\''+handle+'\')" style="background:rgba(34,197,94,.15);color:#22c55e;border:none;padding:6px 10px;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer">Posted</button>'
+              +'<button onclick="_sgSchedAction('+x.id+',\'cancel\',\''+handle+'\')" style="background:rgba(239,68,68,.12);color:#ef4444;border:none;padding:6px 10px;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer">\u2715</button></div>';
+          }).join('');
+      }
+      _sgOpenSheet('sg-schedule-sheet',html);
+    })
+    .catch(function(){sgToast('Could not load schedule','error',2000);});
+};
+window._sgSchedBestTime=function(hour,isoDow){
+  var now=new Date();var target=new Date(now);
+  var addDays=((isoDow-1)-((now.getDay()+6)%7)+7)%7;
+  target.setDate(now.getDate()+addDays);target.setHours(hour,0,0,0);
+  if(target<=now)target.setDate(target.getDate()+7);
+  var pad=function(n){return String(n).padStart(2,'0');};
+  var el=document.getElementById('sg-ss-when');
+  if(el)el.value=target.getFullYear()+'-'+pad(target.getMonth()+1)+'-'+pad(target.getDate())+'T'+pad(target.getHours())+':'+pad(target.getMinutes());
+};
+window._sgSchedCreate=function(handle){
+  var g=function(id){var el=document.getElementById(id);return el?el.value:'';};
+  var when=g('sg-ss-when');
+  if(!when){sgToast('Pick a date & time (or tap Use Best Time)','error',2500);return;}
+  fetch('/api/creator-distribution/schedule',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({handle:handle,platform:g('sg-ss-platform'),caption:g('sg-ss-caption'),scheduledAt:new Date(when).toISOString()})})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d.success){sgToast('Scheduled! We\u2019ll keep it in your queue \ud83d\udcc5','success',2500);_sgScheduleShareSheet(handle);}
+      else sgToast(d.error||'Could not schedule','error',2500);
+    }).catch(function(){sgToast('Could not schedule','error',2000);});
+};
+window._sgSchedAction=function(id,action,handle){
+  fetch('/api/creator-distribution/schedule/'+id+'/'+action,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({handle:handle})})
+    .then(function(){_sgScheduleShareSheet(handle);}).catch(function(){});
+};
+window._sgNotifyFollowersSheet=function(handle){
+  Promise.all([
+    fetch('/api/creator-distribution/followers/'+encodeURIComponent(handle)).then(function(r){return r.json();}),
+    fetch('/api/creator-distribution/announcements/'+encodeURIComponent(handle)).then(function(r){return r.json();})
+  ]).then(function(res){
+    var count=(res[0]&&res[0].count)||0;
+    var anns=(res[1]&&res[1].announcements)||[];
+    var html='<h2 style="font-size:20px;font-weight:800;color:#fff;margin:0 0 4px">\ud83d\udd14 Notify Followers</h2>'
+      +'<p style="color:rgba(255,255,255,.5);font-size:12px;margin:0 0 12px"><span style="color:#FF6D00;font-weight:700">'+count+'</span> follower'+(count===1?'':'s')+' will see your announcement when they visit your page.</p>'
+      +'<textarea id="sg-nf-msg" placeholder="e.g. New gym review just dropped \u2014 check my page for this week\u2019s top pick!" rows="3" maxlength="500" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:11px;color:#fff;font-size:13px;outline:none;box-sizing:border-box;margin-bottom:8px"></textarea>'
+      +'<button onclick="_sgNotifySend(\''+handle+'\')" style="width:100%;background:#FF6D00;color:#fff;border:none;padding:13px;border-radius:12px;font-weight:700;font-size:13px;cursor:pointer;margin-bottom:14px">Send Announcement</button>';
+    if(anns.length){
+      html+='<p style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin:0 0 8px">Recent</p>'
+        +anns.map(function(a){
+          return '<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:10px;margin-bottom:6px">'
+            +'<p style="color:#fff;font-size:12px;margin:0">'+String(a.message).replace(/</g,'&lt;')+'</p>'
+            +'<p style="color:rgba(255,255,255,.3);font-size:10px;margin:4px 0 0">'+new Date(a.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+'</p></div>';
+        }).join('');
+    }
+    _sgOpenSheet('sg-notify-sheet',html);
+  }).catch(function(){sgToast('Could not load followers','error',2000);});
+};
+window._sgNotifySend=function(handle){
+  var el=document.getElementById('sg-nf-msg');
+  var msg=el?el.value.trim():'';
+  if(msg.length<3){sgToast('Write a message first','error',2000);return;}
+  fetch('/api/creator-distribution/announce',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({handle:handle,message:msg})})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d.success){sgToast('\ud83d\udce2 Sent to '+(d.notified||0)+' follower'+((d.notified||0)===1?'':'s')+'!','success',3000);_sgNotifyFollowersSheet(handle);}
+      else sgToast(d.error||'Could not send','error',2500);
+    }).catch(function(){sgToast('Could not send','error',2000);});
+};
+
 // ═══ P2: SURFACE BUILT FEATURES — Tier Progress, Leaderboard, Page Customiser ═══
 window._sgTierDefs=[
   {key:'starter',name:'Starter',badge:'\ud83c\udf31',min:0,perks:'25% commission \u00b7 Creator toolkit \u00b7 388+ assets'},
@@ -15992,6 +16111,18 @@ function CreatorDashboardPage(){
       <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="_sgCreatorPageSheet('${handle}')">
         <div style="width:48px;height:48px;background:rgba(168,85,247,.15);border:1px solid rgba(168,85,247,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)">\ud83c\udfa8</div>
         <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">My Page</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="_sgMassShareSheet('${handle}')">
+        <div style="width:48px;height:48px;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)">\ud83d\udce3</div>
+        <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">Share All</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="_sgScheduleShareSheet('${handle}')">
+        <div style="width:48px;height:48px;background:rgba(56,189,248,.15);border:1px solid rgba(56,189,248,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)">\ud83d\udcc5</div>
+        <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">Schedule</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="_sgNotifyFollowersSheet('${handle}')">
+        <div style="width:48px;height:48px;background:rgba(234,179,8,.15);border:1px solid rgba(234,179,8,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)">\ud83d\udd14</div>
+        <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">Notify</span>
       </div>
     </div>
 
@@ -17734,6 +17865,19 @@ function _renderInner(){
       const expiry=Date.now()+(30*24*60*60*1000);
       localStorage.setItem('sg_referral',JSON.stringify({handle:creator,expiry:expiry}));
       document.cookie='sg_referral='+encodeURIComponent(creator)+';path=/;max-age='+(30*24*60*60)+';SameSite=Lax';
+      // P3: passive follow (powers Notify Followers) + latest creator announcement
+      try{
+        var _fsess=localStorage.getItem('sg_session_id');
+        if(!_fsess){_fsess='s'+Date.now().toString(36)+Math.random().toString(36).slice(2,10);localStorage.setItem('sg_session_id',_fsess);}
+        fetch('/api/creator-distribution/follow',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({handle:creator,session:_fsess})}).catch(function(){});
+        fetch('/api/creator-distribution/announcements/'+encodeURIComponent(creator)).then(function(r){return r.json();}).then(function(d){
+          var a=(d.announcements||[])[0];
+          if(a&&(Date.now()-new Date(a.created_at).getTime())<7*24*3600*1000){
+            var seen=localStorage.getItem('sg_ann_seen_'+a.id);
+            if(!seen){localStorage.setItem('sg_ann_seen_'+a.id,'1');setTimeout(function(){sgToast('\ud83d\udce2 '+String(a.message).slice(0,140),'info',5000);},1500);}
+          }
+        }).catch(function(){});
+      }catch(e){}
       // Track the click server-side
       try{fetch('/api/referrals/track',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({creatorHandle:creator,visitorSession:Date.now().toString(36)})}).catch(function(){});}catch(e){}
     }

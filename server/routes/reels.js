@@ -692,6 +692,8 @@ router.get('/download/:cdnKey', async (req, res) => {
   const cdnKey = req.params.cdnKey.replace(/[^a-zA-Z0-9_-]/g, '');
   const filename = (req.query.name || 'scangym-reel').replace(/[^a-zA-Z0-9_-]/g, '_') + '.mp4';
   const skipWatermark = req.query.raw === '1';
+  // P3 Link Sticker: personalise the watermark with the creator's /r/ link
+  const linkHandle = (req.query.handle || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 60);
 
   const origin = req.headers.origin;
   const allowedOrigins = ['https://scangym.com', 'https://www.scangym.com'];
@@ -707,7 +709,7 @@ router.get('/download/:cdnKey', async (req, res) => {
   if (!skipWatermark) {
     try {
       const { getWatermarkedVideo } = require('../lib/video-watermark');
-      const wmPath = await getWatermarkedVideo(cdnKey);
+      const wmPath = await getWatermarkedVideo(cdnKey, linkHandle);
       const stat = require('fs').statSync(wmPath);
       res.setHeader('Content-Length', stat.size);
       res.setHeader('Cache-Control', 'public, max-age=86400'); // cache 24h
