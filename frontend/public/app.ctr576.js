@@ -20288,6 +20288,19 @@ if(localStorage.getItem('sg_push_enabled')==='1'&&state.user){
     /* FIX #2: Only show price on Book tab, NOT on Reels */
     var activeLabel=document.querySelector('.sg-tab-item.active .sg-tab-label');
     var currentTab=activeLabel?activeLabel.textContent.trim().toLowerCase():'';
+    /* R4-#2 FIX: banner label must match what the tap actually does.
+       On Book tab the tap opens checkout for the visible gym, so label it
+       "Book this gym" (was the misleading "Find gyms near me" everywhere,
+       which read as search, not booking). Reels tap jumps to Book/search. */
+    var textEl=banner.querySelector('.sg-cb-text');
+    var arrowEl=banner.querySelector('.sg-cb-arrow');
+    if(currentTab==='book'){
+      if(textEl)textEl.textContent='Book this gym';
+      if(arrowEl)arrowEl.textContent='\u2192';
+    }else{
+      if(textEl)textEl.textContent='Find gyms near me';
+      if(arrowEl)arrowEl.textContent='\ud83d\udccd';
+    }
     if(currentTab==='book'){
       var gymP=_visibleCardPrice();
       if(gymP){priceEl.textContent='\u00b7 '+gymP;return;}
