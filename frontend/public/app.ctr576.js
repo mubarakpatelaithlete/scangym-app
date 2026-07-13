@@ -14617,7 +14617,7 @@ function CreatorEarningsPage(){
   // Load earnings + withdrawal data async, then update dashboard extras
   // Sync handle to DB so wallet reconciliation can find it
   if(state.user&&handle){fetch('/api/creators/sync-handle',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({handle:handle})}).catch(function(){});}
-  setTimeout(function(){_loadCreatorEarnings(handle);_loadWithdrawalData(handle);_loadCreatorAnalytics(handle);},100);
+  setTimeout(function(){_loadCreatorEarnings(handle);_loadWithdrawalData(handle);_loadCreatorAnalytics(handle);},100);_sgStartBookingAlerts(handle);
   // #56: Auto-refresh every 30s for real-time feel
   if(window._ceRefreshTimer)clearInterval(window._ceRefreshTimer);
   window._ceRefreshTimer=setInterval(function(){_loadCreatorEarnings(handle);_loadWithdrawalData(handle);},30000);
@@ -14921,6 +14921,165 @@ function CreatorEarningsPage(){
     </div>
   </div>`;
 }
+
+// ═══ P4: GROWTH LOOPS — Giveaway, Boost, Bundle, Booking Alerts ═══
+window._sgStartBookingAlerts=function(handle){
+  if(window._sgBaTimer)clearInterval(window._sgBaTimer);
+  function poll(){
+    fetch('/api/referrals/stats/'+encodeURIComponent(handle))
+      .then(function(r){return r.json();})
+      .then(function(d){
+        var key='sg_conv_'+handle;var prev=parseInt(localStorage.getItem(key)||'-1',10);
+        var now=d.conversions||0;
+        if(prev>=0&&now>prev){
+          var n=now-prev;
+          sgToast('\ud83c\udf89 '+(n===1?'Someone just booked through your link!':n+' new bookings through your link!')+' +\u00a3'+(n*1.25).toFixed(2)+' commission','success',6000);
+        }
+        localStorage.setItem(key,String(now));
+      }).catch(function(){});
+  }
+  poll();window._sgBaTimer=setInterval(poll,45000);
+};
+window._sgShowOfferBanner=function(text,onclickCode){
+  try{
+    var seen=sessionStorage.getItem('sg_offer_dismissed');if(seen)return;
+    var old=document.getElementById('sg-offer-banner');if(old)old.remove();
+    var b=document.createElement('div');b.id='sg-offer-banner';
+    b.style.cssText='position:fixed;left:12px;right:12px;bottom:84px;z-index:9998;background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid rgba(255,109,0,.4);border-radius:16px;padding:14px;display:flex;align-items:center;gap:10px;box-shadow:0 8px 32px rgba(0,0,0,.5);animation:slideUp .3s ease';
+    b.innerHTML='<span onclick="'+onclickCode.replace(/"/g,'&quot;')+'" style="flex:1;color:#fff;font-size:13px;font-weight:700;cursor:pointer">'+text+'</span>'
+      +'<span onclick="sessionStorage.setItem(\'sg_offer_dismissed\',\'1\');document.getElementById(\'sg-offer-banner\').remove()" style="color:rgba(255,255,255,.4);font-size:16px;cursor:pointer;padding:4px">\u2715</span>';
+    document.body.appendChild(b);
+  }catch(e){}
+};
+window._sgClaimGiveaway=function(code){
+  fetch('/api/creator-growth/giveaway/claim',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:code})})
+    .then(function(r){
+      if(r.status===401){sgToast('Sign in to claim your free pass','info',2500);if(typeof window._sgShowAuthSheet==='function')window._sgShowAuthSheet('book');return null;}
+      return r.json();
+    })
+    .then(function(d){
+      if(!d)return;
+      if(d.success){sgToast('\ud83c\udf89 \u00a35 credited to your wallet \u2014 enough for a full day pass!','success',5000);var b=document.getElementById('sg-offer-banner');if(b)b.remove();}
+      else sgToast(d.error||'Could not claim','error',3000);
+    }).catch(function(){sgToast('Could not claim','error',2000);});
+};
+window._sgRedeemBundle=function(handle,pricePence){
+  fetch('/api/creator-growth/bundle/redeem',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({handle:handle})})
+    .then(function(r){
+      if(r.status===401){sgToast('Sign in first to get the bundle','info',2500);if(typeof window._sgShowAuthSheet==='function')window._sgShowAuthSheet('book');return null;}
+      return r.json();
+    })
+    .then(function(d){
+      if(!d)return;
+      if(d.success){sgToast('\ud83c\udf89 Bonus \u00a3'+(d.bonusPence/100).toFixed(2)+' credited \u2014 enjoy your passes!','success',5000);var b=document.getElementById('sg-offer-banner');if(b)b.remove();}
+      else if(d.error&&d.error.indexOf('Top up')===0){sgToast(d.error+' \u2014 taking you to your wallet','info',3500);setTimeout(function(){navigate('/wallet');},1200);}
+      else sgToast(d.error||'Could not redeem','error',3000);
+    }).catch(function(){sgToast('Could not redeem','error',2000);});
+};
+window._sgGiveawaySheet=function(handle){
+  fetch('/api/creator-growth/giveaway/'+encodeURIComponent(handle))
+    .then(function(r){return r.json();})
+    .then(function(d){
+      var html='<h2 style="font-size:20px;font-weight:800;color:#fff;margin:0 0 4px">\ud83c\udf81 Free Pass Giveaway</h2>'
+        +'<p style="color:rgba(255,255,255,.5);font-size:12px;margin:0 0 14px">Give one follower a FREE \u00a35 gym pass, funded from your earnings. Massive engagement, one click.</p>';
+      if(d.active){
+        html+='<div style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.25);border-radius:14px;padding:14px;margin-bottom:10px">'
+          +'<p style="color:#22c55e;font-size:12px;font-weight:700;margin:0 0 6px">\u2713 GIVEAWAY LIVE</p>'
+          +'<p style="color:#fff;font-size:12px;margin:0 0 10px;word-break:break-all;font-family:monospace">'+d.active.claimUrl+'</p>'
+          +'<div style="display:flex;gap:8px">'
+          +'<button onclick="navigator.clipboard.writeText(\''+d.active.claimUrl+'\');sgToast(\'Giveaway link copied \u2014 post it!\',\'success\',2500)" style="flex:1;background:#FF6D00;color:#fff;border:none;padding:11px;border-radius:12px;font-weight:700;font-size:12px;cursor:pointer">Copy Link</button>'
+          +'<button onclick="_sgGiveawayCancel(\''+handle+'\')" style="background:rgba(239,68,68,.12);color:#ef4444;border:none;padding:11px 14px;border-radius:12px;font-weight:700;font-size:12px;cursor:pointer">Cancel</button>'
+          +'</div></div>';
+      }else{
+        html+='<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:14px;margin-bottom:10px">'
+          +'<p style="color:#fff;font-size:13px;margin:0 0 4px;font-weight:600">How it works</p>'
+          +'<p style="color:rgba(255,255,255,.45);font-size:12px;margin:0 0 12px;line-height:1.5">1. \u00a35 is reserved from your balance<br>2. You get a claim link to post anywhere<br>3. First follower to claim gets \u00a35 wallet credit \u2014 a full day pass on you</p>'
+          +'<button onclick="_sgGiveawayCreate(\''+handle+'\')" style="width:100%;background:#FF6D00;color:#fff;border:none;padding:13px;border-radius:12px;font-weight:700;font-size:13px;cursor:pointer">Start Giveaway (\u00a35 from balance)</button>'
+          +'</div>';
+      }
+      if(d.history&&d.history.length){
+        html+='<p style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin:6px 0 8px">History</p>'
+          +d.history.map(function(h){
+            var col=h.status==='claimed'?'#22c55e':h.status==='active'?'#FF6D00':'rgba(255,255,255,.35)';
+            return '<div style="display:flex;justify-content:space-between;padding:8px 4px;border-bottom:1px solid rgba(255,255,255,.05)"><span style="color:rgba(255,255,255,.6);font-size:12px">'+new Date(h.createdAt).toLocaleDateString('en-GB',{day:'numeric',month:'short'})+'</span><span style="color:'+col+';font-size:11px;font-weight:700;text-transform:uppercase">'+h.status+'</span></div>';
+          }).join('');
+      }
+      _sgOpenSheet('sg-giveaway-sheet',html);
+    }).catch(function(){sgToast('Could not load giveaways','error',2000);});
+};
+window._sgGiveawayCreate=function(handle){
+  fetch('/api/creator-growth/giveaway',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({handle:handle})})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d.success){sgToast('\ud83c\udf81 Giveaway live! Copy the link and post it.','success',3000);_sgGiveawaySheet(handle);}
+      else sgToast(d.error||'Could not start giveaway','error',3500);
+    }).catch(function(){sgToast('Could not start giveaway','error',2000);});
+};
+window._sgGiveawayCancel=function(handle){
+  fetch('/api/creator-growth/giveaway/cancel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({handle:handle})})
+    .then(function(){sgToast('Giveaway cancelled \u2014 \u00a35 released back to balance','info',2500);_sgGiveawaySheet(handle);}).catch(function(){});
+};
+window._sgBoostSheet=function(handle){
+  Promise.all([
+    fetch('/api/creator-analytics/'+encodeURIComponent(handle)+'/reels').then(function(r){return r.json();}),
+    fetch('/api/creator-growth/boosts/'+encodeURIComponent(handle)).then(function(r){return r.json();})
+  ]).then(function(res){
+    var reels=(res[0].reels||[]).filter(function(x){return x.status==='approved';});
+    var boosts=res[1].boosts||[];
+    var boostedIds={};boosts.forEach(function(b){boostedIds[b.upload_id]=b.boost_until;});
+    var html='<h2 style="font-size:20px;font-weight:800;color:#fff;margin:0 0 4px">\ud83d\ude80 Boost a Reel</h2>'
+      +'<p style="color:rgba(255,255,255,.5);font-size:12px;margin:0 0 14px">\u00a31/day from your balance pins your reel to the top of the public feed.</p>';
+    if(!reels.length){html+='<p style="color:rgba(255,255,255,.4);font-size:13px">No approved reels yet \u2014 upload one first (\ud83c\udfac Upload button).</p>';}
+    else{
+      html+=reels.slice(0,8).map(function(rl){
+        var until=boostedIds[rl.id];
+        return '<div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.03);border:1px solid '+(until?'rgba(255,109,0,.35)':'rgba(255,255,255,.06)')+';border-radius:12px;padding:10px;margin-bottom:6px">'
+          +'<span style="font-size:18px">\ud83c\udfac</span>'
+          +'<div style="flex:1;min-width:0"><p style="color:#fff;font-size:12px;font-weight:600;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+String(rl.caption).replace(/</g,'&lt;')+'</p>'
+          +'<p style="color:rgba(255,255,255,.35);font-size:10px;margin:2px 0 0">'+rl.views+' views'+(until?' \u00b7 \ud83d\ude80 boosted until '+new Date(until).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'')+'</p></div>'
+          +'<button onclick="_sgBoostReel(\''+handle+'\','+rl.id+',3)" style="background:rgba(255,109,0,.15);color:#FF6D00;border:1px solid rgba(255,109,0,.3);padding:8px 10px;border-radius:10px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap">'+(until?'+3 days \u00a33':'Boost 3d \u00a33')+'</button></div>';
+      }).join('');
+    }
+    _sgOpenSheet('sg-boost-sheet',html);
+  }).catch(function(){sgToast('Could not load reels','error',2000);});
+};
+window._sgBoostReel=function(handle,uploadId,days){
+  fetch('/api/creator-growth/boost',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({handle:handle,uploadId:uploadId,days:days})})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d.success){sgToast('\ud83d\ude80 Boosted! Your reel is now at the top of the feed.','success',3000);_sgBoostSheet(handle);}
+      else sgToast(d.error||'Could not boost','error',3500);
+    }).catch(function(){sgToast('Could not boost','error',2000);});
+};
+window._sgBundleSheet=function(handle){
+  fetch('/api/creator-growth/bundle/'+encodeURIComponent(handle))
+    .then(function(r){return r.json();})
+    .then(function(d){
+      var cur=d.bundle;
+      function card(preset,passes,price,value,label){
+        var isActive=cur&&cur.preset===preset;
+        return '<div style="background:rgba(255,255,255,.03);border:1px solid '+(isActive?'rgba(34,197,94,.4)':'rgba(255,255,255,.06)')+';border-radius:14px;padding:14px;margin-bottom:8px">'
+          +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
+          +'<p style="color:#fff;font-size:14px;font-weight:700;margin:0">'+label+'</p>'
+          +(isActive?'<span style="color:#22c55e;font-size:10px;font-weight:700">\u2713 LIVE</span>':'')+'</div>'
+          +'<p style="color:rgba(255,255,255,.45);font-size:11px;margin:0 0 10px">Follower pays \u00a3'+(price/100).toFixed(0)+' \u00b7 gets \u00a3'+(value/100).toFixed(0)+' credit \u00b7 you fund the \u00a3'+((value-price)/100).toFixed(0)+' bonus per redemption</p>'
+          +'<button onclick="_sgBundleSet(\''+handle+'\',\''+(isActive?'off':preset)+'\')" style="width:100%;background:'+(isActive?'rgba(239,68,68,.12)':'#FF6D00')+';color:'+(isActive?'#ef4444':'#fff')+';border:none;padding:11px;border-radius:12px;font-weight:700;font-size:12px;cursor:pointer">'+(isActive?'Turn Off':'Activate')+'</button></div>';
+      }
+      var html='<h2 style="font-size:20px;font-weight:800;color:#fff;margin:0 0 4px">\ud83c\udff7\ufe0f Bundle Deals</h2>'
+        +'<p style="color:rgba(255,255,255,.5);font-size:12px;margin:0 0 14px">Show a bundle offer on your page. Followers top up, then redeem the bonus \u2014 tracked to your link.</p>'
+        +card('3for12',3,1200,1500,'3 gym passes for \u00a312')
+        +card('5for20',5,2000,2500,'5 gym passes for \u00a320');
+      _sgOpenSheet('sg-bundle-sheet',html);
+    }).catch(function(){sgToast('Could not load bundles','error',2000);});
+};
+window._sgBundleSet=function(handle,preset){
+  fetch('/api/creator-growth/bundle',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({handle:handle,preset:preset==='off'?null:preset})})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d.success){sgToast(preset==='off'?'Bundle turned off':'\ud83c\udff7\ufe0f Bundle live on your page!','success',2500);_sgBundleSheet(handle);}
+      else sgToast(d.error||'Could not update bundle','error',2500);
+    }).catch(function(){sgToast('Could not update bundle','error',2000);});
+};
 
 // ═══ P3: DISTRIBUTION — Mass Share, Schedule Share, Notify Followers ═══
 window._sgMassShareSheet=function(handle){
@@ -16059,7 +16218,7 @@ function CreatorDashboardPage(){
       </div>
     </div>`;
   }
-  setTimeout(function(){_loadCreatorDash(handle);},200);
+  setTimeout(function(){_loadCreatorDash(handle);_sgStartBookingAlerts(handle);},200);
   var link='scangym.com/r/'+handle;
   /* TikTok full-screen creator dashboard */
   return`<div style="position:relative;min-height:100vh;background:#0a0a16;overflow-y:auto;padding-bottom:80px">
@@ -16123,6 +16282,18 @@ function CreatorDashboardPage(){
       <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="_sgNotifyFollowersSheet('${handle}')">
         <div style="width:48px;height:48px;background:rgba(234,179,8,.15);border:1px solid rgba(234,179,8,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)">\ud83d\udd14</div>
         <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">Notify</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="_sgGiveawaySheet('${handle}')">
+        <div style="width:48px;height:48px;background:rgba(236,72,153,.15);border:1px solid rgba(236,72,153,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)">\ud83c\udf81</div>
+        <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">Giveaway</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="_sgBoostSheet('${handle}')">
+        <div style="width:48px;height:48px;background:rgba(255,109,0,.15);border:1px solid rgba(255,109,0,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)">\ud83d\ude80</div>
+        <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">Boost</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="_sgBundleSheet('${handle}')">
+        <div style="width:48px;height:48px;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)">\ud83c\udff7\ufe0f</div>
+        <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">Bundle</span>
       </div>
     </div>
 
@@ -17876,6 +18047,17 @@ function _renderInner(){
             var seen=localStorage.getItem('sg_ann_seen_'+a.id);
             if(!seen){localStorage.setItem('sg_ann_seen_'+a.id,'1');setTimeout(function(){sgToast('\ud83d\udce2 '+String(a.message).slice(0,140),'info',5000);},1500);}
           }
+        }).catch(function(){});
+        // P4: giveaway + bundle offers on creator pages
+        var _gwCode=(new URLSearchParams(location.search)).get('giveaway')||'';
+        Promise.all([
+          fetch('/api/creator-growth/giveaway/'+encodeURIComponent(creator)).then(function(r){return r.json();}).catch(function(){return {};}),
+          fetch('/api/creator-growth/bundle/'+encodeURIComponent(creator)).then(function(r){return r.json();}).catch(function(){return {};})
+        ]).then(function(res){
+          var gw=res[0]&&res[0].active;var bd=res[1]&&res[1].bundle;
+          var code=_gwCode||(gw&&gw.claimCode)||'';
+          if(gw&&code){_sgShowOfferBanner('\ud83c\udf81 FREE gym pass giveaway \u2014 tap to claim \u00a35 credit!','_sgClaimGiveaway(\''+code+'\')');}
+          else if(bd){_sgShowOfferBanner('\ud83c\udff7\ufe0f '+bd.label+' \u2014 top up \u00a3'+(bd.pricePence/100).toFixed(0)+', get \u00a3'+(bd.valuePence/100).toFixed(0)+' credit!','_sgRedeemBundle(\''+creator+'\','+bd.pricePence+')');}
         }).catch(function(){});
       }catch(e){}
       // Track the click server-side
