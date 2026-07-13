@@ -278,6 +278,18 @@ router.get('/feed', async (req, res) => {
           uploadedAt: u.created_at,
         }));
 
+        // P4 Boost Reel: boosted uploads jump to the very front
+        try {
+          const boostRows = await pool.query(
+            `SELECT upload_id FROM creator_boosts WHERE boost_until > NOW()`
+          );
+          const boostedIds = new Set(boostRows.rows.map(b => `upload_${b.upload_id}`));
+          if (boostedIds.size > 0) {
+            uploads.sort((a, b) => (boostedIds.has(b.id) ? 1 : 0) - (boostedIds.has(a.id) ? 1 : 0));
+            uploads.forEach(u => { if (boostedIds.has(u.id)) u.boosted = true; });
+          }
+        } catch (boostErr) { /* creator_boosts may not exist yet */ }
+
         // Interleave uploads at the front of the feed
         feed = [...uploads, ...feed];
       } catch (dbErr) {
