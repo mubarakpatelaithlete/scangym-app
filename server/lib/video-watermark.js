@@ -74,7 +74,12 @@ function downloadVideo(cdnUrl, destPath) {
  * @param {string} outputPath - Destination watermarked video
  * @returns {Promise<void>}
  */
-function addWatermark(inputPath, outputPath) {
+function addWatermark(inputPath, outputPath, linkHandle) {
+  // P3 Link Sticker: burn the creator's personal booking link instead of the
+  // generic domain. Handle is sanitised to [a-zA-Z0-9_-] so it is safe for
+  // FFmpeg drawtext (no quotes/colons/backslashes possible).
+  const safeHandle = (linkHandle || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 60);
+  const urlText = safeHandle ? ('scangym.com/r/' + safeHandle) : 'scangym.com';
   return new Promise((resolve, reject) => {
     // Dual drawtext: "ScanGym" large + "scangym.com" small below it
     // Uses fontcolor with alpha for semi-transparency
@@ -89,9 +94,9 @@ function addWatermark(inputPath, outputPath) {
         "x=20:" +
         "y=h-th-60",                      // 60px from bottom
       // URL — smaller, below the name
-      "drawtext=text='scangym.com':" +
+      "drawtext=text='" + urlText + "':" +
         "fontsize=16:" +
-        "fontcolor=0xFFFFFF@0.35:" +     // white at 35% opacity
+        "fontcolor=0xFFFFFF@" + (linkHandle ? "0.55" : "0.35") + ":" +     // white at 35% opacity
         "borderw=1:" +
         "bordercolor=0x000000@0.2:" +
         "x=20:" +
@@ -141,8 +146,9 @@ function addWatermark(inputPath, outputPath) {
  * @param {string} cdnKey - The CDN key (filename without .mp4)
  * @returns {Promise<string>} Path to watermarked video file
  */
-async function getWatermarkedVideo(cdnKey) {
-  const cachedPath = path.join(WATERMARK_DIR, `${cdnKey}_wm.mp4`);
+async function getWatermarkedVideo(cdnKey, linkHandle) {
+  const safeHandle = (linkHandle || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 60);
+  const cachedPath = path.join(WATERMARK_DIR, safeHandle ? `${cdnKey}_wm_${safeHandle}.mp4` : `${cdnKey}_wm.mp4`);
 
   // Serve from cache if available
   if (fs.existsSync(cachedPath) && fs.statSync(cachedPath).size > 1000) {
@@ -157,7 +163,7 @@ async function getWatermarkedVideo(cdnKey) {
     await downloadVideo(cdnUrl, tmpInput);
 
     // Step 2: Add watermark
-    await addWatermark(tmpInput, cachedPath);
+    await addWatermark(tmpInput, cachedPath, safeHandle);
 
     return cachedPath;
   } finally {
