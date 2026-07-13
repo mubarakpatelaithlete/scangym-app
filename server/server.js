@@ -91,7 +91,7 @@ app.use((req, res, next) => {
   const filePath = path.join(FRONTEND_DIR, req.path);
   
   // Content type map
-  const TYPES = { '.js': 'application/javascript', '.css': 'text/css', '.html': 'text/html', '.json': 'application/json', '.svg': 'image/svg+xml', '.xml': 'application/xml' };
+  const TYPES = { '.js': 'application/javascript', '.css': 'text/css', '.html': 'text/html', '.json': 'application/json', '.svg': 'image/svg+xml', '.xml': 'application/xml', '.txt': 'text/plain' };
   
   // Cache headers based on file type (match express.static logic)
   function setCacheHeaders(res, reqPath, versioned) {
