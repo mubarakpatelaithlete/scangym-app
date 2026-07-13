@@ -214,12 +214,23 @@ router.get('/:handle/reels', async (req, res) => {
   const { handle } = req.params;
   if (!HANDLE_RE.test(handle)) return badHandle(res);
   try {
-    const uploads = await pool.query(
-      `SELECT id, caption, category, status, created_at
-       FROM creator_uploads WHERE creator_handle = $1
-       ORDER BY created_at DESC LIMIT 50`,
-      [handle]
-    );
+    let uploads;
+    try {
+      uploads = await pool.query(
+        `SELECT id, caption, category, status, created_at, COALESCE(is_pinned, false) AS is_pinned
+         FROM creator_uploads WHERE creator_handle = $1
+         ORDER BY COALESCE(is_pinned, false) DESC, created_at DESC LIMIT 50`,
+        [handle]
+      );
+    } catch (e) {
+      // is_pinned column may not exist yet
+      uploads = await pool.query(
+        `SELECT id, caption, category, status, created_at, false AS is_pinned
+         FROM creator_uploads WHERE creator_handle = $1
+         ORDER BY created_at DESC LIMIT 50`,
+        [handle]
+      );
+    }
     let statsByVideo = {};
     if (uploads.rows.length > 0) {
       const videoIds = uploads.rows.map(u => `upload_${u.id}`);
@@ -247,6 +258,7 @@ router.get('/:handle/reels', async (req, res) => {
           category: u.category,
           status: u.status,
           createdAt: u.created_at,
+          isPinned: !!u.is_pinned,
           views: s.views || 0,
           avgWatchPercent: s.avg_watch_percent || 0,
           completions: s.completions || 0,

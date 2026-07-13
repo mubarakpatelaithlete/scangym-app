@@ -14922,6 +14922,131 @@ function CreatorEarningsPage(){
   </div>`;
 }
 
+// ═══ P5: CONTENT TOOLING — Pin, Clip Studio, Add Sound, Fan Chat ═══
+window._sgPinReel=function(handle,uploadId,pin){
+  fetch('/api/creator-content/pin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({handle:handle,uploadId:pin?uploadId:null})})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d.success){sgToast(pin?'\ud83d\udccc Pinned to top!':'Unpinned','success',2000);_loadCreatorAnalytics(handle);}
+      else sgToast(d.error||'Could not pin','error',2500);
+    }).catch(function(){sgToast('Could not pin','error',2000);});
+};
+window._sgClipStudioSheet=function(handle){
+  fetch('/api/reels/feed')
+    .then(function(r){return r.json();})
+    .then(function(d){
+      var items=(d.feed||d.videos||[]).filter(function(v){return v.cdnKey||v.cdn_key;}).slice(0,12);
+      var soundOpts='<option value="">Original sound</option>'+items.map(function(v){
+        var k=v.cdnKey||v.cdn_key;
+        return '<option value="'+k+'">\ud83c\udfb5 '+String(v.name||k).replace(/</g,'&lt;').slice(0,40)+'</option>';
+      }).join('');
+      var html='<h2 style="font-size:20px;font-weight:800;color:#fff;margin:0 0 4px">\u2702\ufe0f Clip Studio</h2>'
+        +'<p style="color:rgba(255,255,255,.5);font-size:12px;margin:0 0 12px">Cut the best 15 seconds of any reel, swap in a trending sound, and get it stamped with your link \u2014 ready to post.</p>'
+        +'<label style="display:block;color:rgba(255,255,255,.5);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin:0 0 4px">Sound</label>'
+        +'<select id="sg-clip-audio" style="width:100%;background:#1a1a1a;border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:11px;color:#fff;font-size:13px;margin-bottom:12px">'+soundOpts+'</select>';
+      if(!items.length){html+='<p style="color:rgba(255,255,255,.4);font-size:13px">No clippable reels available right now.</p>';}
+      else{
+        html+=items.map(function(v){
+          var k=v.cdnKey||v.cdn_key;
+          return '<div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:10px;margin-bottom:6px">'
+            +'<span style="font-size:18px">\ud83c\udfac</span>'
+            +'<div style="flex:1;min-width:0"><p style="color:#fff;font-size:12px;font-weight:600;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+String(v.name||k).replace(/</g,'&lt;')+'</p>'
+            +'<p style="color:rgba(255,255,255,.35);font-size:10px;margin:2px 0 0">'+String(v.category||'').replace(/</g,'&lt;')+'</p></div>'
+            +'<button onclick="_sgMakeClip(\''+handle+'\',\''+k+'\')" style="background:rgba(168,85,247,.15);color:#a855f7;border:1px solid rgba(168,85,247,.3);padding:8px 12px;border-radius:10px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap">\u2702\ufe0f Clip 15s</button></div>';
+        }).join('');
+      }
+      _sgOpenSheet('sg-clipstudio-sheet',html);
+    }).catch(function(){sgToast('Could not load reels','error',2000);});
+};
+window._sgMakeClip=function(handle,cdnKey){
+  var sel=document.getElementById('sg-clip-audio');
+  var audio=sel?sel.value:'';
+  var url='/api/creator-content/clip/'+encodeURIComponent(cdnKey)+'?handle='+encodeURIComponent(handle)+(audio?'&audio='+encodeURIComponent(audio):'');
+  sgToast('\u2702\ufe0f Cutting your clip \u2014 download starts in a few seconds...','info',4000);
+  var a=document.createElement('a');a.href=url;a.download='scangym-clip.mp4';document.body.appendChild(a);a.click();setTimeout(function(){a.remove();},2000);
+};
+function _sgChatBubbles(messages,mineDir){
+  if(!messages.length)return '<p style="color:rgba(255,255,255,.35);font-size:12px;text-align:center;padding:20px 0">No messages yet \u2014 say hi!</p>';
+  return '<div style="max-height:40vh;overflow-y:auto;display:flex;flex-direction:column;gap:6px;margin-bottom:12px" id="sg-chat-scroll">'
+    +messages.map(function(m){
+      var mine=m.direction===mineDir;
+      return '<div style="align-self:'+(mine?'flex-end':'flex-start')+';max-width:80%;background:'+(mine?'#FF6D00':'rgba(255,255,255,.08)')+';color:#fff;border-radius:'+(mine?'14px 14px 4px 14px':'14px 14px 14px 4px')+';padding:8px 12px">'
+        +'<p style="font-size:13px;margin:0;word-break:break-word">'+String(m.message).replace(/</g,'&lt;')+'</p>'
+        +'<p style="font-size:9px;color:rgba(255,255,255,'+(mine?'.7':'.35')+');margin:3px 0 0;text-align:right">'+new Date(m.created_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+'</p></div>';
+    }).join('')+'</div>';
+}
+window._sgFanChatSheet=function(creator){
+  fetch('/api/fan-chat/thread/'+encodeURIComponent(creator))
+    .then(function(r){
+      if(r.status===401){sgToast('Sign in to message this creator','info',2500);if(typeof window._sgShowAuthSheet==='function')window._sgShowAuthSheet('book');return null;}
+      return r.json();
+    })
+    .then(function(d){
+      if(!d)return;
+      var html='<h2 style="font-size:20px;font-weight:800;color:#fff;margin:0 0 4px">\ud83d\udcac Message @'+creator+'</h2>'
+        +'<p style="color:rgba(255,255,255,.5);font-size:12px;margin:0 0 12px">Ask about gyms, workouts, or their picks.</p>'
+        +_sgChatBubbles(d.messages||[],'fan')
+        +'<div style="display:flex;gap:8px">'
+        +'<input id="sg-fan-msg" placeholder="Type a message..." maxlength="1000" style="flex:1;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:11px;color:#fff;font-size:13px;outline:none">'
+        +'<button onclick="_sgFanSend(\''+creator+'\')" style="background:#FF6D00;color:#fff;border:none;padding:11px 16px;border-radius:12px;font-weight:700;font-size:13px;cursor:pointer">Send</button></div>';
+      _sgOpenSheet('sg-fanchat-sheet',html);
+      setTimeout(function(){var sc=document.getElementById('sg-chat-scroll');if(sc)sc.scrollTop=sc.scrollHeight;},100);
+    }).catch(function(){sgToast('Could not load chat','error',2000);});
+};
+window._sgFanSend=function(creator){
+  var el=document.getElementById('sg-fan-msg');var msg=el?el.value.trim():'';
+  if(!msg)return;
+  fetch('/api/fan-chat/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({handle:creator,message:msg})})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d.success){_sgFanChatSheet(creator);}
+      else sgToast(d.error||'Could not send','error',2500);
+    }).catch(function(){sgToast('Could not send','error',2000);});
+};
+window._sgFanInboxSheet=function(handle){
+  fetch('/api/fan-chat/inbox/'+encodeURIComponent(handle))
+    .then(function(r){return r.json();})
+    .then(function(d){
+      var convos=d.conversations||[];
+      var html='<h2 style="font-size:20px;font-weight:800;color:#fff;margin:0 0 4px">\ud83d\udcac Fan Messages</h2>'
+        +'<p style="color:rgba(255,255,255,.5);font-size:12px;margin:0 0 12px">People who reached out from your page. \u2b50 = joined via your link.</p>';
+      if(!convos.length){html+='<p style="color:rgba(255,255,255,.4);font-size:13px">No messages yet \u2014 fans can message you from scangym.com/r/'+handle+'</p>';}
+      else{
+        html+=convos.map(function(c){
+          return '<div onclick="_sgFanConvoSheet(\''+handle+'\',\''+String(c.fan_user_id).replace(/[^a-zA-Z0-9_-]/g,'')+'\',\''+String(c.fan_name||'Fan').replace(/[^a-zA-Z0-9 _-]/g,'')+'\')" style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:12px;margin-bottom:6px;cursor:pointer">'
+            +'<span style="font-size:20px">\ud83e\uddd1</span>'
+            +'<div style="flex:1;min-width:0"><p style="color:#fff;font-size:13px;font-weight:600;margin:0">'+String(c.fan_name||'Fan').replace(/</g,'&lt;')+(c.via_link?' \u2b50':'')+'</p>'
+            +'<p style="color:rgba(255,255,255,.4);font-size:11px;margin:2px 0 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+String(c.last_message||'').replace(/</g,'&lt;')+'</p></div>'
+            +(c.unread>0?'<span style="background:#FF6D00;color:#fff;font-size:10px;font-weight:700;border-radius:10px;padding:2px 8px">'+c.unread+'</span>':'')+'</div>';
+        }).join('');
+      }
+      _sgOpenSheet('sg-faninbox-sheet',html);
+    }).catch(function(){sgToast('Could not load inbox','error',2000);});
+};
+window._sgFanConvoSheet=function(handle,userId,name){
+  fetch('/api/fan-chat/conversation/'+encodeURIComponent(handle)+'/'+encodeURIComponent(userId))
+    .then(function(r){return r.json();})
+    .then(function(d){
+      var html='<h2 style="font-size:18px;font-weight:800;color:#fff;margin:0 0 12px">\ud83d\udcac '+String(name||'Fan').replace(/</g,'&lt;')+'</h2>'
+        +_sgChatBubbles(d.messages||[],'creator')
+        +'<div style="display:flex;gap:8px">'
+        +'<input id="sg-creator-reply" placeholder="Reply..." maxlength="1000" style="flex:1;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:11px;color:#fff;font-size:13px;outline:none">'
+        +'<button onclick="_sgCreatorReply(\''+handle+'\',\''+userId+'\',\''+String(name||'Fan').replace(/[^a-zA-Z0-9 _-]/g,'')+'\')" style="background:#FF6D00;color:#fff;border:none;padding:11px 16px;border-radius:12px;font-weight:700;font-size:13px;cursor:pointer">Reply</button></div>';
+      _sgOpenSheet('sg-fanconvo-sheet',html);
+      setTimeout(function(){var sc=document.getElementById('sg-chat-scroll');if(sc)sc.scrollTop=sc.scrollHeight;},100);
+    }).catch(function(){sgToast('Could not load conversation','error',2000);});
+};
+window._sgCreatorReply=function(handle,userId,name){
+  var el=document.getElementById('sg-creator-reply');var msg=el?el.value.trim():'';
+  if(!msg)return;
+  fetch('/api/fan-chat/reply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({handle:handle,userId:userId,message:msg})})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d.success){_sgFanConvoSheet(handle,userId,name);}
+      else sgToast(d.error||'Could not reply','error',2500);
+    }).catch(function(){sgToast('Could not reply','error',2000);});
+};
+
 // ═══ P4: GROWTH LOOPS — Giveaway, Boost, Bundle, Booking Alerts ═══
 window._sgStartBookingAlerts=function(handle){
   if(window._sgBaTimer)clearInterval(window._sgBaTimer);
@@ -15387,6 +15512,7 @@ function _loadCreatorAnalytics(handle){
           +'<span class="text-lg">\ud83c\udfac</span>'
           +'<div class="flex-1 min-w-0"><p class="text-white text-xs font-medium truncate">'+String(rl.caption).replace(/</g,'&lt;')+'</p>'
           +'<p class="text-slate-500 text-[10px]">'+rl.views+' views \u00b7 '+rl.avgWatchPercent+'% avg watch \u00b7 '+rl.completions+' completed</p></div>'
+          +'<span onclick="_sgPinReel(\''+handle+'\','+rl.id+','+(rl.isPinned?'false':'true')+')" title="'+(rl.isPinned?'Unpin':'Pin to top')+'" style="cursor:pointer;font-size:14px;opacity:'+(rl.isPinned?'1':'.35')+'">\ud83d\udccc</span>'
           +'<span class="'+statusColor+' text-[10px] font-bold uppercase">'+rl.status+'</span></div>';
       }).join('');
     }).catch(function(){});
@@ -16294,6 +16420,14 @@ function CreatorDashboardPage(){
       <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="_sgBundleSheet('${handle}')">
         <div style="width:48px;height:48px;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)">\ud83c\udff7\ufe0f</div>
         <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">Bundle</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="_sgClipStudioSheet('${handle}')">
+        <div style="width:48px;height:48px;background:rgba(168,85,247,.15);border:1px solid rgba(168,85,247,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)">\u2702\ufe0f</div>
+        <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">Clip</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="_sgFanInboxSheet('${handle}')">
+        <div style="width:48px;height:48px;background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)">\ud83d\udcac</div>
+        <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">Fans</span>
       </div>
     </div>
 
@@ -18059,6 +18193,16 @@ function _renderInner(){
           if(gw&&code){_sgShowOfferBanner('\ud83c\udf81 FREE gym pass giveaway \u2014 tap to claim \u00a35 credit!','_sgClaimGiveaway(\''+code+'\')');}
           else if(bd){_sgShowOfferBanner('\ud83c\udff7\ufe0f '+bd.label+' \u2014 top up \u00a3'+(bd.pricePence/100).toFixed(0)+', get \u00a3'+(bd.valuePence/100).toFixed(0)+' credit!','_sgRedeemBundle(\''+creator+'\','+bd.pricePence+')');}
         }).catch(function(){});
+        // P5: fan chat button on creator pages
+        try{
+          var oldFc=document.getElementById('sg-fanchat-btn');if(oldFc)oldFc.remove();
+          var fc=document.createElement('div');fc.id='sg-fanchat-btn';
+          fc.style.cssText='position:fixed;right:14px;bottom:150px;z-index:9997;width:52px;height:52px;background:linear-gradient(135deg,#FF6D00,#ff8534);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;box-shadow:0 6px 24px rgba(255,109,0,.45)';
+          fc.innerHTML='\ud83d\udcac';
+          fc.onclick=function(){_sgFanChatSheet(creator);};
+          document.body.appendChild(fc);
+          var fcWatch=setInterval(function(){if(location.pathname.indexOf('/r/')!==0){var b=document.getElementById('sg-fanchat-btn');if(b)b.remove();clearInterval(fcWatch);}},2000);
+        }catch(e){}
       }catch(e){}
       // Track the click server-side
       try{fetch('/api/referrals/track',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({creatorHandle:creator,visitorSession:Date.now().toString(36)})}).catch(function(){});}catch(e){}

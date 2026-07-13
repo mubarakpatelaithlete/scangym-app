@@ -284,9 +284,21 @@ router.get('/feed', async (req, res) => {
             `SELECT upload_id FROM creator_boosts WHERE boost_until > NOW()`
           );
           const boostedIds = new Set(boostRows.rows.map(b => `upload_${b.upload_id}`));
-          if (boostedIds.size > 0) {
-            uploads.sort((a, b) => (boostedIds.has(b.id) ? 1 : 0) - (boostedIds.has(a.id) ? 1 : 0));
-            uploads.forEach(u => { if (boostedIds.has(u.id)) u.boosted = true; });
+          // P5 Pin Top Reel: pinned uploads rank just after boosted ones
+          let pinnedIds = new Set();
+          try {
+            const pinRows = await pool.query(
+              `SELECT id FROM creator_uploads WHERE is_pinned = true AND status = 'approved'`
+            );
+            pinnedIds = new Set(pinRows.rows.map(r => `upload_${r.id}`));
+          } catch (pinErr) { /* is_pinned column may not exist yet */ }
+          if (boostedIds.size > 0 || pinnedIds.size > 0) {
+            const score = (u) => (boostedIds.has(u.id) ? 2 : 0) + (pinnedIds.has(u.id) ? 1 : 0);
+            uploads.sort((a, b) => score(b) - score(a));
+            uploads.forEach(u => {
+              if (boostedIds.has(u.id)) u.boosted = true;
+              if (pinnedIds.has(u.id)) u.pinned = true;
+            });
           }
         } catch (boostErr) { /* creator_boosts may not exist yet */ }
 
