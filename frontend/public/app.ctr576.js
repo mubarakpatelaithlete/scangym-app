@@ -14617,7 +14617,7 @@ function CreatorEarningsPage(){
   // Load earnings + withdrawal data async, then update dashboard extras
   // Sync handle to DB so wallet reconciliation can find it
   if(state.user&&handle){fetch('/api/creators/sync-handle',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({handle:handle})}).catch(function(){});}
-  setTimeout(function(){_loadCreatorEarnings(handle);_loadWithdrawalData(handle);},100);
+  setTimeout(function(){_loadCreatorEarnings(handle);_loadWithdrawalData(handle);_loadCreatorAnalytics(handle);},100);
   // #56: Auto-refresh every 30s for real-time feel
   if(window._ceRefreshTimer)clearInterval(window._ceRefreshTimer);
   window._ceRefreshTimer=setInterval(function(){_loadCreatorEarnings(handle);_loadWithdrawalData(handle);},30000);
@@ -14799,6 +14799,48 @@ function CreatorEarningsPage(){
       </div>
     </div>
 
+    <!-- ═══ P1: ADVANCED CREATOR ANALYTICS (YouTube Studio style) ═══ -->
+    <div class="bg-slate-800/60 rounded-xl p-4 mb-4 border border-slate-700/30">
+      <div class="flex items-center justify-between mb-2">
+        <p class="text-white font-bold text-sm">\ud83d\udcc8 Earnings Graph</p>
+        <div class="flex gap-1" id="ca-bucket-tabs">
+          <button onclick="_caSetBucket('${handle}','day')" id="ca-b-day" class="bg-brand/20 text-brand text-[10px] font-bold px-2 py-1 rounded transition">Daily</button>
+          <button onclick="_caSetBucket('${handle}','week')" id="ca-b-week" class="bg-slate-700/50 text-slate-400 text-[10px] font-bold px-2 py-1 rounded transition">Weekly</button>
+          <button onclick="_caSetBucket('${handle}','month')" id="ca-b-month" class="bg-slate-700/50 text-slate-400 text-[10px] font-bold px-2 py-1 rounded transition">Monthly</button>
+        </div>
+      </div>
+      <div id="ca-earnings-chart" style="min-height:110px"><p class="text-slate-500 text-xs">Loading chart...</p></div>
+      <div class="flex items-center gap-3 mt-2">
+        <span class="flex items-center gap-1 text-[9px] text-slate-400"><span style="width:8px;height:8px;border-radius:2px;background:#FF6D00;display:inline-block"></span>Earnings</span>
+        <span class="flex items-center gap-1 text-[9px] text-slate-400"><span style="width:8px;height:8px;border-radius:2px;background:#38bdf8;display:inline-block"></span>Clicks</span>
+        <span class="ml-auto text-brand text-[10px] font-bold" id="ca-chart-total"></span>
+      </div>
+    </div>
+
+    <div class="bg-slate-800/60 rounded-xl p-4 mb-4 border border-slate-700/30">
+      <div class="flex items-center justify-between mb-3">
+        <p class="text-white font-bold text-sm">\ud83c\udfcb\ufe0f Top Gyms From Your Link</p>
+        <span class="text-xs text-slate-500">Per-gym clicks</span>
+      </div>
+      <div id="ca-gyms"><p class="text-slate-500 text-xs">Loading...</p></div>
+    </div>
+
+    <div class="bg-slate-800/60 rounded-xl p-4 mb-4 border border-slate-700/30">
+      <div class="flex items-center justify-between mb-3">
+        <p class="text-white font-bold text-sm">\ud83d\udca1 Audience Insights</p>
+        <span class="text-xs text-slate-500">Channel + timing</span>
+      </div>
+      <div id="ca-audience"><p class="text-slate-500 text-xs">Loading...</p></div>
+    </div>
+
+    <div class="bg-slate-800/60 rounded-xl p-4 mb-4 border border-slate-700/30">
+      <div class="flex items-center justify-between mb-3">
+        <p class="text-white font-bold text-sm">\ud83c\udfac Your Reels</p>
+        <button onclick="navigate('/upload')" class="bg-brand/20 hover:bg-brand/30 text-brand text-[10px] font-bold px-2 py-1 rounded transition">+ Upload Reel</button>
+      </div>
+      <div id="ca-reels"><p class="text-slate-500 text-xs">Loading...</p></div>
+    </div>
+
     <!-- ═══ SIGNUP BOUNTIES ═══ -->
     <div class="bg-slate-800/60 rounded-xl p-4 mb-4 border border-slate-700/30">
       <div class="flex items-center justify-between">
@@ -14878,6 +14920,101 @@ function CreatorEarningsPage(){
       </div>
     </div>
   </div>`;
+}
+
+// ═══ P1: ADVANCED CREATOR ANALYTICS (per-reel, earnings graph, audience, per-gym) ═══
+window._caBucket='day';
+function _caSetBucket(handle,bucket){
+  window._caBucket=bucket;
+  ['day','week','month'].forEach(function(b){
+    var el=document.getElementById('ca-b-'+b);if(!el)return;
+    if(b===bucket){el.className='bg-brand/20 text-brand text-[10px] font-bold px-2 py-1 rounded transition';}
+    else{el.className='bg-slate-700/50 text-slate-400 text-[10px] font-bold px-2 py-1 rounded transition';}
+  });
+  fetch('/api/creator-analytics/'+encodeURIComponent(handle)+'/series?bucket='+bucket)
+    .then(function(r){return r.json();})
+    .then(function(d){_caRenderChart(d.series||[]);})
+    .catch(function(){var c=document.getElementById('ca-earnings-chart');if(c)c.innerHTML='<p class="text-slate-500 text-xs">Chart unavailable</p>';});
+}
+function _caRenderChart(series){
+  var c=document.getElementById('ca-earnings-chart');if(!c)return;
+  if(!series.length){c.innerHTML='<p class="text-slate-500 text-xs">No data yet \u2014 share your link to see your earnings grow here.</p>';return;}
+  var W=300,H=100,PAD=4;
+  var maxE=1,maxC=1,totE=0;
+  series.forEach(function(p){totE+=p.earnings_pence;if(p.earnings_pence>maxE)maxE=p.earnings_pence;if(p.clicks>maxC)maxC=p.clicks;});
+  var n=series.length,step=n>1?(W-PAD*2)/(n-1):0;
+  function xy(i,v,mx){return (PAD+i*step).toFixed(1)+','+(H-PAD-(v/mx)*(H-PAD*2)).toFixed(1);}
+  var earnPts=series.map(function(p,i){return xy(i,p.earnings_pence,maxE);}).join(' ');
+  var clickPts=series.map(function(p,i){return xy(i,p.clicks,maxC);}).join(' ');
+  var areaPts=PAD+','+(H-PAD)+' '+earnPts+' '+(PAD+(n-1)*step).toFixed(1)+','+(H-PAD);
+  var html='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:110px;display:block" preserveAspectRatio="none">'
+    +'<polygon points="'+areaPts+'" fill="rgba(255,109,0,.15)"></polygon>'
+    +'<polyline points="'+earnPts+'" fill="none" stroke="#FF6D00" stroke-width="2" stroke-linejoin="round"></polyline>'
+    +'<polyline points="'+clickPts+'" fill="none" stroke="#38bdf8" stroke-width="1" stroke-dasharray="3,2" opacity=".8"></polyline>'
+    +'</svg>'
+    +'<div class="flex justify-between"><span class="text-slate-600 text-[9px]">'+(series[0].date||'')+'</span><span class="text-slate-600 text-[9px]">'+(series[n-1].date||'')+'</span></div>';
+  c.innerHTML=html;
+  var tot=document.getElementById('ca-chart-total');
+  if(tot)tot.textContent=sgSymbol()+(totE/100).toFixed(2)+' in period';
+}
+function _loadCreatorAnalytics(handle){
+  _caSetBucket(handle,window._caBucket||'day');
+  fetch('/api/creator-analytics/'+encodeURIComponent(handle)+'/gyms')
+    .then(function(r){return r.json();})
+    .then(function(d){
+      var el=document.getElementById('ca-gyms');if(!el)return;
+      var gyms=d.gyms||[];
+      if(!gyms.length){el.innerHTML='<p class="text-slate-500 text-xs">No gym clicks yet. Use Deep Link on a gym page to create gym-specific links.</p>';return;}
+      var maxClicks=gyms[0].clicks||1;
+      el.innerHTML=gyms.slice(0,8).map(function(g){
+        var w=Math.max(4,Math.round((g.clicks/maxClicks)*100));
+        return '<div class="mb-2"><div class="flex items-center justify-between mb-1">'
+          +'<p class="text-white text-xs font-medium truncate" style="max-width:60%">'+String(g.gymName).replace(/</g,'&lt;')+'</p>'
+          +'<p class="text-slate-400 text-[10px]">'+g.clicks+' clicks \u00b7 '+g.conversions+' booked \u00b7 '+sgSymbol()+(g.earningsPence/100).toFixed(2)+'</p></div>'
+          +'<div class="w-full bg-slate-700/40 rounded-full h-2 overflow-hidden"><div class="h-full rounded-full" style="width:'+w+'%;background:linear-gradient(90deg,#FF6D00,#FF9100)"></div></div></div>';
+      }).join('');
+    }).catch(function(){});
+  fetch('/api/creator-analytics/'+encodeURIComponent(handle)+'/audience')
+    .then(function(r){return r.json();})
+    .then(function(d){
+      var el=document.getElementById('ca-audience');if(!el)return;
+      var srcs=d.sources||[],hours=d.byHour||[],dows=d.byWeekday||[];
+      var total=srcs.reduce(function(a,s){return a+s.clicks;},0);
+      if(!total){el.innerHTML='<p class="text-slate-500 text-xs">No audience data yet \u2014 insights appear after your first link clicks.</p>';return;}
+      var chips=srcs.slice(0,6).map(function(s){
+        var pct=Math.round((s.clicks/total)*100);
+        return '<span class="bg-slate-700/50 text-slate-300 text-[10px] font-bold px-2 py-1 rounded-full">'+String(s.source).replace(/</g,'&lt;')+' '+pct+'%</span>';
+      }).join(' ');
+      var maxH=Math.max.apply(null,hours.concat([1]));
+      var bars=hours.map(function(v,h){
+        var hh=Math.max(6,Math.round((v/maxH)*100));
+        var hot=v===maxH&&v>0?'#FF6D00':'#475569';
+        return '<div title="'+h+':00 \u2014 '+v+' clicks" style="flex:1;height:'+hh+'%;background:'+hot+';border-radius:2px 2px 0 0"></div>';
+      }).join('');
+      var dayNames=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+      var maxD=Math.max.apply(null,dows.concat([1]));
+      var bestDay=dayNames[dows.indexOf(maxD)]||'\u2014';
+      var peakHour=hours.indexOf(maxH);
+      el.innerHTML='<div class="flex flex-wrap gap-1 mb-3">'+chips+'</div>'
+        +'<p class="text-slate-400 text-[10px] mb-1">Clicks by hour (best: <span class="text-brand font-bold">'+(maxH>0?peakHour+':00':'\u2014')+'</span> \u00b7 best day: <span class="text-brand font-bold">'+bestDay+'</span>)</p>'
+        +'<div style="display:flex;align-items:flex-end;gap:2px;height:40px">'+bars+'</div>'
+        +'<div class="flex justify-between mt-1"><span class="text-slate-600 text-[9px]">00:00</span><span class="text-slate-600 text-[9px]">12:00</span><span class="text-slate-600 text-[9px]">23:00</span></div>';
+    }).catch(function(){});
+  fetch('/api/creator-analytics/'+encodeURIComponent(handle)+'/reels')
+    .then(function(r){return r.json();})
+    .then(function(d){
+      var el=document.getElementById('ca-reels');if(!el)return;
+      var reels=d.reels||[];
+      if(!reels.length){el.innerHTML='<p class="text-slate-500 text-xs">No reels uploaded yet. Tap + Upload Reel to post your first gym video.</p>';return;}
+      el.innerHTML=reels.slice(0,10).map(function(rl){
+        var statusColor=rl.status==='approved'?'text-emerald-400':rl.status==='pending'?'text-yellow-400':'text-red-400';
+        return '<div class="flex items-center gap-3 bg-slate-800/40 rounded-lg p-2 mb-2">'
+          +'<span class="text-lg">\ud83c\udfac</span>'
+          +'<div class="flex-1 min-w-0"><p class="text-white text-xs font-medium truncate">'+String(rl.caption).replace(/</g,'&lt;')+'</p>'
+          +'<p class="text-slate-500 text-[10px]">'+rl.views+' views \u00b7 '+rl.avgWatchPercent+'% avg watch \u00b7 '+rl.completions+' completed</p></div>'
+          +'<span class="'+statusColor+' text-[10px] font-bold uppercase">'+rl.status+'</span></div>';
+      }).join('');
+    }).catch(function(){});
 }
 
 // ═══ WITHDRAWAL FUNCTIONS ═══
