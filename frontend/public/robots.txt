@@ -1,0 +1,12 @@
+# ScanGym — robots.txt
+User-agent: *
+Allow: /
+
+# Keep dashboards & internal tooling out of search results
+Disallow: /ceo-dashboard
+Disallow: /gympartners-dashboard
+Disallow: /scansquad-dashboard
+Disallow: /admin
+Disallow: /api/
+
+Sitemap: https://scangym.com/sitemap.xml

@@ -68,7 +68,7 @@ window._sgOpenPageSheet=function(path,title){
   var html=''
     +(title?'<p style="color:#fff;font-size:16px;font-weight:800;margin:0 0 8px 2px">'+title+'</p>':'')
     +'<div style="margin:0 -8px">'
-    +'<iframe src="'+src+'" style="display:block;width:100%;height:52vh;border:none;border-radius:14px;background:#0a0a16"></iframe>'
+    +'<iframe title="ScanGym content" src="'+src+'" style="display:block;width:100%;height:52vh;border:none;border-radius:14px;background:#0a0a16"></iframe>'
     +'</div>'
     +'<div onclick="_sgCloseSheet(\'sg-page-sheet\');navigate(\''+path+'\')" style="text-align:center;color:rgba(255,255,255,.45);font-size:12px;font-weight:600;padding:10px 0 2px;cursor:pointer">Open full page ↗</div>';
   window._sgOpenSheet('sg-page-sheet',html);
