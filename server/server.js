@@ -51,6 +51,8 @@ const adminDashboardRouter = require('./routes/admin-dashboard');
 const creatorAnalyticsRouter = require('./routes/creator-analytics');
 const creatorDistributionRouter = require('./routes/creator-distribution');
 const creatorGrowthRouter = require('./routes/creator-growth');
+const creatorContentRouter = require('./routes/creator-content');
+const fanChatRouter = require('./routes/fan-chat');
 const analyticsMiddleware = require('./middleware/analytics');
 
 const app = express();
@@ -476,6 +478,8 @@ app.use('/api/analytics', analyticsExtRouter);
 app.use('/api/creator-analytics', creatorAnalyticsRouter);
 app.use('/api/creator-distribution', creatorDistributionRouter);
 app.use('/api/creator-growth', creatorGrowthRouter);
+app.use('/api/creator-content', creatorContentRouter);
+app.use('/api/fan-chat', fanChatRouter);
 app.use('/api/pricing', pricingExtRouter);
 app.use('/api/group', groupBookingRouter);
 app.use('/api/rebook', rebookRouter);
