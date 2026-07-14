@@ -442,14 +442,14 @@ window._peSubmitClaim=async function(placeId){
       return showErr(d.error||'Claim failed — try again');
     }
     if(typeof window._ctaCloseSheet==='function')window._ctaCloseSheet();
-    _peToast('Gym claimed! 🎉 Verifying ownership…');
-    // Auto-trigger ownership verification after claim
+    _peToast(d.alreadyClaimed?'Already yours — verify ownership 🛡️':'Gym claimed! 🎉 Verifying ownership…');
+    // Auto-trigger ownership verification after claim — always for THIS gym
     setTimeout(function(){
       _peLoadAndRender();
       // Trigger the batch3 ownership verification flow if available
       setTimeout(function(){
         if(typeof window._sgB3VerifyOwnership==='function'){
-          window._sgB3VerifyOwnership();
+          window._sgB3VerifyOwnership(gymId);
         }
       },800);
     },600);

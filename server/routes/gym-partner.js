@@ -72,7 +72,12 @@ router.post('/claim', authenticateUser, express.json(), async (req, res) => {
     ).catch(() => ({ rows: [{}] }));
 
     if (existing.rows[0]?.claimed_by) {
-      return res.status(409).json({ error: 'This gym is already claimed' });
+      // If it's claimed by THIS user, don't error — let the client jump
+      // straight to ownership verification instead of a dead-end 409.
+      if (String(existing.rows[0].claimed_by) === String(req.user.id)) {
+        return res.json({ success: true, alreadyClaimed: true, claimedByYou: true, gymId, message: 'You already claimed this gym — verify ownership to unlock your badge.' });
+      }
+      return res.status(409).json({ error: 'This gym is already claimed', claimedByYou: false });
     }
 
     // Claim it

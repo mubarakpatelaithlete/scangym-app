@@ -35,8 +35,11 @@ async function myGymId(){
 /* ════════════════════════════════════════════════════════════════════
    1) OWNERSHIP PROOF (Zomato-style OTP to registered business number)
    ════════════════════════════════════════════════════════════════════ */
-window._sgB3VerifyOwnership=async function(){
-  var gymId=await myGymId();
+window._sgB3VerifyOwnership=async function(targetGymId){
+  // Use the explicitly-passed gym id when given — falling back to the first
+  // dashboard gym caused OTPs to go to the WRONG gym's number for multi-gym
+  // accounts (e.g. a Gym Group branch's shared 0300 303 4800 line).
+  var gymId=targetGymId||await myGymId();
   if(!gymId){toast('Claim your gym first','info',2500);return;}
   var head='<p style="font-size:18px;font-weight:800;color:#fff;margin:0 0 6px;text-align:left">\uD83D\uDEE1\uFE0F Verify ownership</p>';
   window._sgOpenSheet('sg-own-sheet',head
