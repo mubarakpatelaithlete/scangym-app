@@ -195,7 +195,7 @@ function injectOwnChip(){
   b.style.cssText='display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;-webkit-tap-highlight-color:transparent';
   b.innerHTML='<div class="own-icon" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:24px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5));opacity:.9">\uD83D\uDEE1\uFE0F</div>'
     +'<div class="own-label" style="font-size:9px;color:rgba(255,255,255,.7);font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8);text-align:center;white-space:nowrap;max-width:52px;overflow:hidden;text-overflow:ellipsis;line-height:1.1">Verify</div>';
-  b.onclick=function(ev){ev.stopPropagation();window._sgB3VerifyOwnership();};
+  b.onclick=function(ev){ev.stopPropagation();window._sgB3VerifyOwnership(window._partnerGymId);};
   // Place directly after the on/off switch when present, else at the top of the rail
   var sw=document.getElementById('sg-gym-switch');
   if(sw&&sw.parentNode===host&&sw.nextSibling)host.insertBefore(b,sw.nextSibling);
