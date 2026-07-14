@@ -31,6 +31,17 @@ async function myGymId(){
   }catch(e){}
   return null;
 }
+// Resolve a gym's name so the verify sheet always SHOWS which gym it's
+// about to text — the final safeguard against wrong-gym OTPs.
+async function gymNameById(gymId){
+  try{
+    var c=window._peGymsCache||(window._peDashboardCache&&window._peDashboardCache.gyms)||[];
+    for(var i=0;i<c.length;i++){if(String(c[i].id)===String(gymId))return c[i].name||'';}
+    var r=await fetch('/api/gym-partner/dashboard',{credentials:'include'});
+    if(r.ok){var d=await r.json();var g=(d.gyms||[]).filter(function(x){return String(x.id)===String(gymId);})[0];if(g)return g.name||'';}
+  }catch(e){}
+  return '';
+}
 
 /* ════════════════════════════════════════════════════════════════════
    1) OWNERSHIP PROOF (Zomato-style OTP to registered business number)
@@ -41,9 +52,11 @@ window._sgB3VerifyOwnership=async function(targetGymId){
   // accounts (e.g. a Gym Group branch's shared 0300 303 4800 line).
   var gymId=targetGymId||await myGymId();
   if(!gymId){toast('Claim your gym first','info',2500);return;}
-  var head='<p style="font-size:18px;font-weight:800;color:#fff;margin:0 0 6px;text-align:left">\uD83D\uDEE1\uFE0F Verify ownership</p>';
+  var gymName=await gymNameById(gymId);
+  var head='<p style="font-size:18px;font-weight:800;color:#fff;margin:0 0 6px;text-align:left">\uD83D\uDEE1\uFE0F Verify ownership</p>'
+    +(gymName?'<p style="color:#FF6D00;font-size:13px;font-weight:700;text-align:left;margin:0 0 10px">'+String(gymName).replace(/</g,'&lt;')+'</p>':'');
   window._sgOpenSheet('sg-own-sheet',head
-    +'<p style="color:rgba(255,255,255,.55);font-size:13px;text-align:left;line-height:1.5;margin:0 0 16px">We\u2019ll send a 6-digit code to your gym\u2019s <b style="color:#fff">registered business number</b>. Only someone at the gym can read it \u2014 that proves you\u2019re the owner.</p>'
+    +'<p style="color:rgba(255,255,255,.55);font-size:13px;text-align:left;line-height:1.5;margin:0 0 16px">We\u2019ll send a 6-digit code to <b style="color:#fff">this gym\u2019s registered business number</b>. Only someone at the gym can read it \u2014 that proves you\u2019re the owner.</p>'
     // Channel selector — SMS or WhatsApp
     +'<div style="display:flex;gap:8px;margin-bottom:14px" id="sg-own-channels">'
     +'<button onclick="_sgB3SelectChannel(\'sms\')" id="sg-own-ch-sms" class="sg-own-ch-btn sg-own-ch-active" style="flex:1;padding:12px 8px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;border:2px solid #FF6D00;background:rgba(255,109,0,.12);color:#FF6D00;transition:all .15s">\uD83D\uDCF1 SMS</button>'
