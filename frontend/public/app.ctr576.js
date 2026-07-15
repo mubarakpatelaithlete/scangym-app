@@ -17435,12 +17435,12 @@ function PartnerFullPage(){
       <div class="tt-actions">
         <div class="tt-action" onclick="event.stopPropagation();window._openSearchOverlay?window._openSearchOverlay():navigate('/list-your-gym')"><div class="tt-action-btn">\ud83d\udd0d</div><div class="tt-action-label">Search</div></div>
         <div class="tt-action" onclick="event.stopPropagation();window._sgB3VerifyOwnership?window._sgB3VerifyOwnership(window._partnerGymId):sgToast('Verification unavailable','error')"><div class="tt-action-btn">\ud83d\udee1\ufe0f</div><div class="tt-action-label">Verify</div></div>
+        <div class="tt-action" onclick="event.stopPropagation();_partnerConnectSeam()"><div class="tt-action-btn">\ud83d\udd12</div><div class="tt-action-label">Locks</div></div>
         <div class="tt-action" onclick="event.stopPropagation();_partnerRailToggleActive()"><div class="tt-action-btn" id="partner-rail-toggle-icon">${isActive?'\ud83d\udfe2':'\ud83d\udd34'}</div><div class="tt-action-label" id="partner-rail-toggle-label">${isActive?'On':'Off'}</div></div>
         <div class="tt-action" onclick="event.stopPropagation();_partnerWithdraw()"><div class="tt-action-btn">\ud83d\udcb0</div><div class="tt-action-label">Earnings</div></div>
         <div class="tt-action" onclick="event.stopPropagation();_partnerEditPrice('day')"><div class="tt-action-btn">\ud83c\udf9f\ufe0f</div><div class="tt-action-label">${sym}${dayPrice}</div></div>
         <div class="tt-action" onclick="event.stopPropagation();_partnerEditHours()"><div class="tt-action-btn">\ud83d\udd50</div><div class="tt-action-label">Hours</div></div>
         <div class="tt-action" onclick="event.stopPropagation();_partnerEditFacilities()"><div class="tt-action-btn">\ud83c\udfd7\ufe0f</div><div class="tt-action-label">Facilities</div></div>
-        <div class="tt-action" onclick="event.stopPropagation();_partnerConnectSeam()"><div class="tt-action-btn">\ud83d\udd12</div><div class="tt-action-label">Locks</div></div>
         <div class="tt-action" onclick="event.stopPropagation();_partnerViewReviews()"><div class="tt-action-btn">\u2b50</div><div class="tt-action-label">Reviews</div></div>
         <div class="tt-action" onclick="event.stopPropagation();_partnerViewBookings()"><div class="tt-action-btn">\ud83d\udcca</div><div class="tt-action-label">Bookings</div></div>
         <div class="tt-action" onclick="event.stopPropagation();_partnerShareLink()"><div class="tt-action-btn">\ud83d\udd17</div><div class="tt-action-label">Share</div></div>
