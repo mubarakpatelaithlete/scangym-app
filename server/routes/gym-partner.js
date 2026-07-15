@@ -336,6 +336,23 @@ router.post('/admin/unclaim', authenticateUser, express.json(), async (req, res)
   }
 });
 
+// POST /admin/reset-verification — clear ownership_verified so OTP flow can be re-tested
+router.post('/admin/reset-verification', authenticateUser, express.json(), async (req, res) => {
+  try {
+    const { gymId } = req.body;
+    if (!gymId) return res.status(400).json({ error: 'gymId required' });
+    await pool.query(
+      `UPDATE gyms SET ownership_verified = false, ownership_verified_at = NULL,
+       claim_status = 'claimed', updated_at = NOW() WHERE id = $1`,
+      [gymId]
+    );
+    res.json({ success: true, message: `Gym ${gymId} verification reset` });
+  } catch (err) {
+    console.error('[Admin] reset-verification error:', err.message);
+    res.status(500).json({ error: 'Reset verification failed' });
+  }
+});
+
 module.exports = router;
 
 // ── Gym Partner Earnings/Revenue Summary ──
