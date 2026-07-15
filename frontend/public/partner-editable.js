@@ -380,20 +380,7 @@ window._peClaimSearchInput=function(q){
       box.innerHTML=gyms.map(function(g){
         var pid=String(g.placeId||g.id||'');
         var nm=String(g.name||'Gym');
-        // Check if this gym is already claimed by the logged-in user
-        var ownedGym=null;
-        if(window._peGymsCache&&window._peGymsCache.length){
-          window._peGymsCache.forEach(function(og){
-            if(og.name&&nm&&og.name.toLowerCase()===nm.toLowerCase())ownedGym=og;
-          });
-        }
-        var actionBtn;
-        if(ownedGym){
-          // Already claimed → show "Verify →" that goes straight to verify sheet
-          actionBtn='<button onclick="if(typeof _ctaCloseSheet===\'function\')_ctaCloseSheet();setTimeout(function(){if(typeof window._sgB3VerifyOwnership===\'function\')window._sgB3VerifyOwnership('+ownedGym.id+');},300);" style="background:#22c55e;color:#fff;border:none;padding:8px 14px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0">Verify →</button>';
-        }else{
-          actionBtn='<button onclick="window._peStartClaim(\''+pid.replace(/'/g,'')+'\',\''+encodeURIComponent(nm)+'\')" style="background:#FF6D00;color:#fff;border:none;padding:8px 14px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0">Claim →</button>';
-        }
+        // All results show "Verify →" — claim happens silently behind the scenes
         return '<div style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;margin-bottom:6px">'
           +(g.photo?'<div style="width:40px;height:40px;border-radius:10px;background-image:url(\''+g.photo+'\');background-size:cover;background-position:center;flex-shrink:0"></div>'
                    :'<div style="width:40px;height:40px;background:rgba(255,109,0,.1);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">🏋️</div>')
@@ -401,7 +388,7 @@ window._peClaimSearchInput=function(q){
           +'<p style="color:#fff;font-size:13px;font-weight:700;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+nm.replace(/</g,'&lt;')+'</p>'
           +'<p style="color:rgba(255,255,255,.35);font-size:11px;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+String(g.address||g.city||'').replace(/</g,'&lt;')+'</p>'
           +'</div>'
-          +actionBtn
+          +'<button onclick="window._peVerifyGym(\''+pid.replace(/'/g,'')+'\',\''+encodeURIComponent(nm)+'\')" style="background:#22c55e;color:#fff;border:none;padding:8px 14px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0">Verify →</button>'
           +'</div>';
       }).join('');
     }catch(e){
@@ -411,7 +398,45 @@ window._peClaimSearchInput=function(q){
   },350);
 };
 
-// Step 2: ownership details form
+// ── Verify flow: auto-claim silently + open verify sheet directly ──
+// No "Claim" step visible to the user — claim happens behind the scenes.
+window._peVerifyGym=async function(placeId,encName){
+  var u=(typeof state!=='undefined'&&state)?state.user:null;
+  if(!u){
+    if(typeof window._ctaCloseSheet==='function')window._ctaCloseSheet();
+    _peToast('Log in first to verify your gym');
+    if(typeof window._sgShowAuthSheet==='function'){window._sgShowAuthSheet('book');}else{navigate('/login');}
+    return;
+  }
+  // Close the search sheet immediately
+  if(typeof window._ctaCloseSheet==='function')window._ctaCloseSheet();
+  try{
+    // 1. Resolve placeId → gymId
+    var gymId=null;
+    var m=String(placeId).match(/^db-(\d+)$/);
+    if(m){gymId=parseInt(m[1],10);}
+    else{
+      var er=await fetch('/api/live/ensure-gym',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({placeId:placeId})});
+      var ed=await er.json().catch(function(){return{};});
+      if(!er.ok||!ed.gymId){_peToast('Could not load this gym','#ef4444');return;}
+      gymId=ed.gymId;
+    }
+    // 2. Silent claim (idempotent — succeeds whether new or already yours)
+    var r=await fetch('/api/gym-partner/claim',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({gymId:gymId,ownerName:u?(u.name||u.first_name||null):null,ownerEmail:u?(u.email||null):null,ownerPhone:u?(u.phone||null):null})});
+    var d=await r.json().catch(function(){return{};});
+    if(!r.ok&&r.status===409){_peToast('This gym is already claimed by someone else','#ef4444');return;}
+    // 3. Reload dashboard in background
+    _peLoadAndRender();
+    // 4. Go straight to verify
+    setTimeout(function(){
+      if(typeof window._sgB3VerifyOwnership==='function'){
+        window._sgB3VerifyOwnership(gymId);
+      }
+    },400);
+  }catch(e){_peToast('Network error — try again','#ef4444');}
+};
+
+// Step 2: ownership details form (legacy — kept for backwards compat)
 window._peStartClaim=function(placeId,encName){
   var u=(typeof state!=='undefined'&&state)?state.user:null;
   if(!u){
