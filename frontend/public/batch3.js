@@ -151,11 +151,70 @@ window._sgB3CheckOwnOtp=async function(gymId){
     var d=await post('/api/gym-partner/claim/verify-otp',{gymId:gymId,code:c.value.trim()});
     if(d.success){
       try{localStorage.setItem('sg_own_verified_'+gymId,'1');}catch(e){}
-      toast(d.message||'Ownership verified \u2705','success',3000);
-      if(typeof window._sgCloseSheet==='function')window._sgCloseSheet('sg-own-sheet');
       paintOwnBadge(true);
+      // After verification, transition to lock setup flow
+      showLockSetupPrompt(gymId);
     }else toast(d.error||'Invalid code','error',2500);
   }catch(e){toast('Verification failed','error',2500);}
+};
+
+// ── After verification → auto-show lock setup prompt ──
+async function showLockSetupPrompt(gymId){
+  // Check if gym already has locks connected — skip if so
+  var hasLocks=false;
+  try{
+    var r=await fetch('/api/access/owner/connection-status/'+gymId,{credentials:'include'});
+    if(r.ok){var s=await r.json();hasLocks=s.connected===true;}
+  }catch(e){}
+  if(hasLocks){
+    toast('Ownership verified \u2705','success',3000);
+    if(typeof window._sgCloseSheet==='function')window._sgCloseSheet('sg-own-sheet');
+    return;
+  }
+  // Morph the existing sheet into the lock CTA
+  var sheet=document.getElementById('sg-own-sheet');
+  if(!sheet){toast('Ownership verified \u2705','success',3000);return;}
+  var inner=sheet.querySelector('div[style*="padding"]');
+  if(!inner){toast('Ownership verified \u2705','success',3000);return;}
+  inner.innerHTML=''
+    +'<div style="text-align:center;padding:8px 0 0">'
+    +'<div style="width:72px;height:72px;border-radius:50%;background:rgba(34,197,94,.15);display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto 16px;animation:sgLockPop .4s cubic-bezier(.17,.67,.21,1.28)">\u2705</div>'
+    +'<p style="font-size:20px;font-weight:900;color:#fff;margin:0 0 6px">Gym Verified!</p>'
+    +'<p style="color:rgba(255,255,255,.5);font-size:13px;line-height:1.5;margin:0 0 24px">Your verified badge is live. Now let\u2019s connect your lock system so day-pass visitors can get in automatically.</p>'
+    +'</div>'
+    // How it works mini-explainer
+    +'<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px;margin-bottom:20px">'
+    +'<p style="font-size:13px;font-weight:700;color:#fff;margin:0 0 12px">\u26A1 How Smart Access Works</p>'
+    +'<div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px">'
+    +'<div style="width:24px;height:24px;border-radius:50%;background:rgba(255,109,0,.15);color:#FF6D00;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</div>'
+    +'<p style="color:rgba(255,255,255,.6);font-size:12px;line-height:1.4;margin:0"><b style="color:#fff">Select your lock brand</b> \u2014 Salto, Brivo, Paxton, or 30+ more</p>'
+    +'</div>'
+    +'<div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px">'
+    +'<div style="width:24px;height:24px;border-radius:50%;background:rgba(255,109,0,.15);color:#FF6D00;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</div>'
+    +'<p style="color:rgba(255,255,255,.6);font-size:12px;line-height:1.4;margin:0"><b style="color:#fff">Log in to your provider</b> \u2014 secure connection, we never see your password</p>'
+    +'</div>'
+    +'<div style="display:flex;gap:10px;align-items:flex-start">'
+    +'<div style="width:24px;height:24px;border-radius:50%;background:rgba(255,109,0,.15);color:#FF6D00;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</div>'
+    +'<p style="color:rgba(255,255,255,.6);font-size:12px;line-height:1.4;margin:0"><b style="color:#fff">Done!</b> Every booking auto-generates a PIN/QR that works only during booked time</p>'
+    +'</div>'
+    +'</div>'
+    // CTA button
+    +'<button onclick="_sgB3GoToLockSetup('+gymId+')" style="width:100%;background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff;border:none;padding:15px;border-radius:14px;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 4px 20px rgba(255,109,0,.3);margin-bottom:10px">\uD83D\uDD10 Connect Lock System \u2192</button>'
+    +'<button onclick="_sgB3SkipLockSetup()" style="width:100%;background:none;color:rgba(255,255,255,.4);border:none;padding:12px;font-size:13px;font-weight:600;cursor:pointer">Set up later</button>';
+  // Add pop animation keyframes if not present
+  if(!document.getElementById('sg-lock-pop-css')){
+    var st=document.createElement('style');st.id='sg-lock-pop-css';
+    st.textContent='@keyframes sgLockPop{0%{transform:scale(0)}100%{transform:scale(1)}}';
+    document.head.appendChild(st);
+  }
+}
+window._sgB3GoToLockSetup=function(gymId){
+  if(typeof window._sgCloseSheet==='function')window._sgCloseSheet('sg-own-sheet');
+  window.location.href='/gympartners-dashboard/connect-access?gym_id='+gymId;
+};
+window._sgB3SkipLockSetup=function(){
+  toast('You can set up locks anytime from Manage \u2192 Access Control','info',3500);
+  if(typeof window._sgCloseSheet==='function')window._sgCloseSheet('sg-own-sheet');
 };
 // Badge / entry chip on Partner tab
 var _ownState=null; // null unknown, true verified, false not
