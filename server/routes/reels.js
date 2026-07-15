@@ -1052,7 +1052,10 @@ router.get('/geo-feed', async (req, res) => {
       );
       res.json({ reels: result.rows, language: 'en', country: 'GB', total: result.rows.length });
     } catch (e2) {
-      res.status(500).json({ error: 'Failed to load geo feed' });
+      // R3 #3: degrade gracefully instead of a hard 500 (removes console error;
+      // reels still load from their primary source). Log the real cause for a fix.
+      console.error('[geo-feed] both queries failed:', (e2 && e2.message) || e2);
+      res.json({ reels: [], language: 'en', country: 'GB', total: 0, degraded: true });
     }
   }
 });
