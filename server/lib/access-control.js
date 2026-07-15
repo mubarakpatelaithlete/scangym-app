@@ -471,11 +471,16 @@ class AccessProvisioningService {
     let pin = null;
     if (accessType === 'code') {
       try {
-        const methods = (grant.access_methods || []).filter(m => m.mode === 'code');
-        for (const m of methods) {
-          const got = await this.seam.getAccessMethod(m.access_method_id);
-          pin = got.access_method?.code || null;
-          if (pin) break;
+        // The grant returns access_method_ids (not embedded access_methods);
+        // fetch each method and read its code.
+        const methodIds = grant.access_method_ids
+          || (grant.requested_access_methods || []).flatMap(m => m.created_access_method_ids || []);
+        for (const id of methodIds) {
+          const got = await this.seam.getAccessMethod(id);
+          if (got.access_method?.mode === 'code' && got.access_method?.code) {
+            pin = got.access_method.code;
+            break;
+          }
         }
       } catch (e) {
         console.warn('[Seam] Could not fetch grant PIN yet:', e.message);
