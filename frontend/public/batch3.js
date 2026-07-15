@@ -52,6 +52,11 @@ window._sgB3VerifyOwnership=async function(targetGymId){
   // accounts (e.g. a Gym Group branch's shared 0300 303 4800 line).
   var gymId=targetGymId||await myGymId();
   if(!gymId){toast('Claim your gym first','info',2500);return;}
+  // If already verified, skip straight to the next step (lock setup)
+  try{
+    var vr=await fetch('/api/gym-partner/claim/verification-status?gymId='+gymId,{credentials:'include'});
+    if(vr.ok){var vd=await vr.json();if(vd.verified){toast('Already verified ✅','success',2500);if(typeof showLockSetupPrompt==='function')showLockSetupPrompt(gymId);return;}}
+  }catch(e){}
   var gymName=await gymNameById(gymId);
   var head='<p style="font-size:18px;font-weight:800;color:#fff;margin:0 0 6px;text-align:left">\uD83D\uDEE1\uFE0F Verify ownership</p>'
     +(gymName?'<p style="color:#FF6D00;font-size:13px;font-weight:700;text-align:left;margin:0 0 10px">'+String(gymName).replace(/</g,'&lt;')+'</p>':'');
@@ -102,7 +107,7 @@ window._sgB3UploadProof=async function(gymId){
     fd.append('proof',f);
     var r=await fetch('/api/gym-partner/claim/upload-proof',{method:'POST',credentials:'include',body:fd});
     var d=await r.json();
-    if(d.alreadyVerified){toast('Already verified \u2705','success',2500);if(typeof window._sgCloseSheet==='function')window._sgCloseSheet('sg-own-sheet');return;}
+    if(d.alreadyVerified){toast('Already verified ✅','success',2500);if(typeof window._sgCloseSheet==='function')window._sgCloseSheet('sg-own-sheet');if(typeof showLockSetupPrompt==='function')showLockSetupPrompt(gymId);return;}
     if(r.ok&&d.success){
       try{localStorage.setItem('sg_own_pending_'+gymId,'1');}catch(e){}
       toast(d.message||'Proof sent \u2014 we review within 24h \u23F3','success',4000);
@@ -124,7 +129,7 @@ window._sgB3SendOwnOtp=async function(gymId){
   if(btn){btn.textContent='Sending via '+chLabel+'\u2026';btn.style.opacity='.6';}
   try{
     var d=await post('/api/gym-partner/claim/send-otp',{gymId:gymId,channel:ch});
-    if(d.alreadyVerified){toast('Already verified \u2705','success',2500);return;}
+    if(d.alreadyVerified){toast('Already verified ✅','success',2500);if(typeof showLockSetupPrompt==='function')showLockSetupPrompt(gymId);return;}
     if(d.success){
       var sentLabel=d.channel==='whatsapp'?'WhatsApp sent to':'SMS sent to';
       if(btn){btn.textContent=sentLabel+' '+(d.maskedPhone||'registered number')+' \u2713';btn.style.opacity='.8';btn.style.background='rgba(255,255,255,.1)';}
