@@ -407,23 +407,29 @@ window._peStartClaim=function(placeId,encName){
     return;
   }
   var gymName=decodeURIComponent(encName||'');
+  // No extra "Claim My Gym" tap — claim starts immediately and flows straight
+  // into ownership verification. The button only appears as a retry on error.
   var html=''
     +'<div style="text-align:center;margin-bottom:16px">'
     +'<div style="font-size:40px;margin-bottom:8px">🏢</div>'
     +'<h2 style="color:#fff;font-size:19px;font-weight:800;margin:0 0 4px">Claim '+gymName.replace(/</g,'&lt;')+'</h2>'
-    +'<p style="color:rgba(255,255,255,.4);font-size:12px;margin:0">One tap to claim — then verify ownership</p>'
+    +'<p id="pe-claim-progress" style="color:rgba(255,255,255,.4);font-size:12px;margin:0">Claiming your gym — verification is next…</p>'
     +'</div>'
     +'<div id="pe-claim-err" style="display:none;color:#f87171;font-size:12px;margin-bottom:10px;text-align:center"></div>'
-    +'<button id="pe-claim-submit" onclick="window._peSubmitClaim(\''+String(placeId).replace(/'/g,'')+'\')" style="width:100%;background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(255,109,0,.3)">Claim My Gym →</button>';
+    +'<button id="pe-claim-submit" onclick="window._peSubmitClaim(\''+String(placeId).replace(/'/g,'')+'\')" style="display:none;width:100%;background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(255,109,0,.3)">Try Again →</button>';
   _ctaOpenSheet(html);
+  setTimeout(function(){window._peSubmitClaim(String(placeId));},250);
 };
 
 window._peSubmitClaim=async function(placeId){
   var btn=document.getElementById('pe-claim-submit');
   var err=document.getElementById('pe-claim-err');
-  var showErr=function(m){if(err){err.textContent=m;err.style.display='block';}if(btn){btn.disabled=false;btn.textContent='Claim My Gym →';}};
+  var prog=document.getElementById('pe-claim-progress');
+  var showErr=function(m){if(err){err.textContent=m;err.style.display='block';}if(prog){prog.textContent='Something went wrong';}if(btn){btn.disabled=false;btn.style.display='block';btn.textContent='Try Again →';}};
   var u=(typeof state!=='undefined'&&state)?state.user:null;
-  if(btn){btn.disabled=true;btn.textContent='Claiming…';}
+  if(btn){btn.disabled=true;btn.style.display='none';}
+  if(err){err.style.display='none';}
+  if(prog){prog.textContent='Claiming your gym — verification is next…';}
   try{
     // Resolve to an internal gym id (db-123 rows are already internal; Places rows need ensure-gym)
     var gymId=null;
