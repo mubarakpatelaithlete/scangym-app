@@ -28,6 +28,17 @@
 (function() {
   'use strict';
 
+  // R3 #1: Do NOT trigger the GPS permission prompt on page load (hurts conversion
+  // + fails Lighthouse best-practices). Wait until the user actually interacts;
+  // until then the waterfall falls through to server/IP location (no prompt).
+  var _sgUserEngaged = false;
+  function _sgMarkEngaged(){ _sgUserEngaged = true; }
+  if (typeof document !== 'undefined') {
+    ['pointerdown','touchstart','click','keydown'].forEach(function(ev){
+      document.addEventListener(ev, _sgMarkEngaged, { once:true, passive:true, capture:true });
+    });
+  }
+
   var CACHE_KEY = 'scangym_last_location';
   var CACHE_MAX_AGE = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -64,6 +75,11 @@
     return new Promise(function(resolve, reject) {
       if (!navigator.geolocation) {
         reject(new Error('No geolocation support'));
+        return;
+      }
+      // R3 #1: defer the GPS prompt until the user has interacted
+      if (!_sgUserEngaged) {
+        reject(new Error('GPS deferred until user interaction'));
         return;
       }
 
