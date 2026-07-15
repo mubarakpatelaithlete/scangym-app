@@ -269,6 +269,14 @@
           document.getElementById('gymSelect').value = selectedGymId;
           finalizeConnection();
         }
+        // If arriving from post-verification flow, auto-select gym and enable CTA
+        else if (redirectGymId && !redirectStatus) {
+          selectedGymId = parseInt(redirectGymId);
+          document.getElementById('gymSelect').value = selectedGymId;
+          document.getElementById('btnNext1').disabled = false;
+          document.getElementById('btnNext1').textContent = 'Connect Lock System \u2192';
+          showGymStatus(selectedGymId);
+        }
       } catch (err) {
         document.getElementById('gymSelect').innerHTML = '<option>Error loading gyms — please log in</option>';
       }
