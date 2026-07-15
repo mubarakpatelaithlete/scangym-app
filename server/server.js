@@ -350,11 +350,29 @@ app.get("/api/config", async (req, res) => {
 // ── C2-C4 fix: Photo proxy — keeps Google API key server-side ──
 // Frontend calls /api/photo?ref=PHOTO_REF&maxwidth=1200 instead of hitting Google directly.
 // Supports both legacy photo_reference (ref=) and new Places API (name=).
+// R4-#5: In-memory WebP cache for gym photos (convert once, serve many).
+const _photoCache = new Map();
+const _PHOTO_CACHE_MAX = 250;
+let _sharpMod = null;
+try { _sharpMod = require('sharp'); } catch (e) { _sharpMod = null; console.warn('sharp unavailable — photos served as original JPEG'); }
+
 app.get("/api/photo", async (req, res) => {
   try {
     const { ref, name, maxwidth = '1200', maxheight } = req.query;
     const apiKey = process.env.GOOGLE_MAPS_API_KEY;
     if (!apiKey) return res.status(500).json({ error: 'Maps API key not configured' });
+
+    // R4-#5: serve cached WebP/original if we've already fetched+converted this photo
+    const _acceptsWebp = /image\/webp/.test(req.headers.accept || '');
+    const _useWebp = _acceptsWebp && !!_sharpMod;
+    const _cacheKey = (name || ref || '') + '|' + maxwidth + '|' + (maxheight || '') + '|' + (_useWebp ? 'webp' : 'orig');
+    const _hit = _photoCache.get(_cacheKey);
+    if (_hit) {
+      res.setHeader('Content-Type', _hit.type);
+      res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=604800');
+      res.setHeader('Vary', 'Accept');
+      return res.send(_hit.buf);
+    }
 
     let googleUrl;
     if (name) {
@@ -378,14 +396,32 @@ app.get("/api/photo", async (req, res) => {
     const response = await fetch(googleUrl, { redirect: 'follow' });
     if (!response.ok) return res.status(response.status).send('Photo not found');
 
-    // Forward content-type and cache aggressively (photos don't change)
-    const contentType = response.headers.get('content-type');
-    if (contentType) res.setHeader('Content-Type', contentType);
-    res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=604800'); // 1d client, 7d CDN
+    const srcType = response.headers.get('content-type') || 'image/jpeg';
+    const srcBuf = Buffer.from(await response.arrayBuffer());
 
-    // Stream the image bytes to client
-    const arrayBuf = await response.arrayBuffer();
-    res.send(Buffer.from(arrayBuf));
+    // R4-#5: convert to WebP for browsers that accept it (~80% smaller, same quality).
+    // Any failure falls back to the original bytes — photos can never break.
+    let outBuf = srcBuf, outType = srcType;
+    if (_useWebp) {
+      try {
+        outBuf = await _sharpMod(srcBuf).webp({ quality: 82 }).toBuffer();
+        outType = 'image/webp';
+      } catch (convErr) {
+        outBuf = srcBuf; outType = srcType;
+        console.warn('WebP convert failed, serving original:', convErr.message);
+      }
+    }
+
+    // Cache the result (bounded — evict oldest when full)
+    try {
+      if (_photoCache.size >= _PHOTO_CACHE_MAX) { const _k = _photoCache.keys().next().value; _photoCache.delete(_k); }
+      _photoCache.set(_cacheKey, { buf: outBuf, type: outType });
+    } catch (e) {}
+
+    res.setHeader('Content-Type', outType);
+    res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=604800'); // 1d client, 7d CDN
+    res.setHeader('Vary', 'Accept');
+    res.send(outBuf);
   } catch (err) {
     console.error('Photo proxy error:', err.message);
     res.status(502).json({ error: 'Failed to fetch photo' });
