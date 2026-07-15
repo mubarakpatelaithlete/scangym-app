@@ -176,9 +176,17 @@ async function showLockSetupPrompt(gymId){
     if(typeof window._sgCloseSheet==='function')window._sgCloseSheet('sg-own-sheet');
     return;
   }
-  // Morph the existing sheet into the lock CTA
+  // Morph the existing sheet into the lock CTA, or create a new sheet if none exists
   var sheet=document.getElementById('sg-own-sheet');
-  if(!sheet){toast('Ownership verified \u2705','success',3000);return;}
+  if(!sheet){
+    // No sheet open — create one so we can show the lock setup prompt
+    if(typeof window._sgOpenSheet==='function'){
+      window._sgOpenSheet('sg-own-sheet','<div></div>');
+      await new Promise(function(resolve){setTimeout(resolve,300);});
+      sheet=document.getElementById('sg-own-sheet');
+    }
+    if(!sheet){toast('Ownership verified \u2705','success',3000);return;}
+  }
   var inner=sheet.querySelector('div[style*="padding"]');
   if(!inner){toast('Ownership verified \u2705','success',3000);return;}
   inner.innerHTML=''
