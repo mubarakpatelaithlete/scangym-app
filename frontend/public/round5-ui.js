@@ -35,13 +35,21 @@ function labelCreatorRail(){
     var lbl=null;
     if(oc.indexOf('Already signed')>-1) lbl='Account';
     else if(oc.indexOf('_sgShowAuthSheet')>-1||oc.indexOf("navigate('/login')")>-1||oc.indexOf('/login')>-1) lbl='Sign in';
-    else if(oc.indexOf('_creatorGetLink')>-1) lbl='My Link';
+    else if(oc.indexOf('_creatorGetLink')>-1){ b.style.display='none'; continue; } // R2: consolidate share (link is on the card via Copy+Share)
     else if(oc.indexOf('_creatorWithdraw')>-1) lbl='Withdraw';
     else if(oc.indexOf('_toggleCreatorMore')>-1) lbl='More';
     if(lbl && b.getAttribute('data-r5lbl')!==lbl) b.setAttribute('data-r5lbl',lbl);
   }
 }
 
+function hideRailFilter(){
+  // R2 #2: remove the gym-card rail 'Filter' button (duplicates the filter chips)
+  var acts=document.querySelectorAll('.tt-action');
+  for(var i=0;i<acts.length;i++){
+    var oc=acts[i].getAttribute('onclick')||'';
+    if(oc.indexOf('_sgToggleBookFilters')>-1) acts[i].style.display='none';
+  }
+}
 function mergeShareEarn(){
   // #3 hide the affiliate "Earn" on the gym card; keep the universal "Share"
   var acts=document.querySelectorAll('.tt-action');
@@ -65,6 +73,7 @@ function clarifyLabels(){
 function tick(){
   try{labelCreatorRail();}catch(e){}
   try{mergeShareEarn();}catch(e){}
+  try{hideRailFilter();}catch(e){}
   try{clarifyLabels();}catch(e){}
 }
 function init(){tick();setInterval(tick,600);}
