@@ -39,6 +39,25 @@
     });
   }
 
+  // Global guard: wrap the browser geolocation API so ANY caller (not just this
+  // file's waterfall) is deferred until the user interacts. On-load callers get a
+  // graceful permission-style error and fall back to server/IP location.
+  try {
+    if (navigator.geolocation && !navigator.geolocation.__sgWrapped) {
+      var _origGCP = navigator.geolocation.getCurrentPosition.bind(navigator.geolocation);
+      var _origWP  = navigator.geolocation.watchPosition.bind(navigator.geolocation);
+      navigator.geolocation.getCurrentPosition = function(success, error, opts){
+        if (!_sgUserEngaged) { if (typeof error === 'function') { try { error({ code:1, message:'GPS deferred until user interaction' }); } catch(e){} } return; }
+        return _origGCP(success, error, opts);
+      };
+      navigator.geolocation.watchPosition = function(success, error, opts){
+        if (!_sgUserEngaged) { if (typeof error === 'function') { try { error({ code:1, message:'GPS deferred until user interaction' }); } catch(e){} } return -1; }
+        return _origWP(success, error, opts);
+      };
+      try { navigator.geolocation.__sgWrapped = true; } catch(e){}
+    }
+  } catch(e){}
+
   var CACHE_KEY = 'scangym_last_location';
   var CACHE_MAX_AGE = 24 * 60 * 60 * 1000; // 24 hours
 
