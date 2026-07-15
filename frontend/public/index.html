@@ -180,7 +180,7 @@ if('serviceWorker' in navigator){
 /* PERF: lazy-load non-first-paint patch scripts (partner/admin/wallet tooling)
    after the load event, at idle — keeps ~180KB of JS off the critical path. */
 (function(){
-  var LAZY=['/partner-editable.js?v=1.3','/smart-lock-finder.js?v=1.1','/batch2.js?v=1.5','/batch3.js?v=1.3','/batch4.js?v=1.0','/wallet-withdraw.js?v=1.2','/admin-dashboard.js?v=1.0','/nps-survey.js?v=1.0','/ux-v5-improvements.js?v=1.0'];
+  var LAZY=['/partner-editable.js?v=1.3','/smart-lock-finder.js?v=1.1','/batch2.js?v=1.5','/batch3.js?v=1.3','/batch4.js?v=1.0','/wallet-withdraw.js?v=1.2','/admin-dashboard.js?v=1.0','/nps-survey.js?v=1.0','/ux-v5-improvements.js?v=1.0','/ux-v6-speed.js?v=1.0'];
   function load(){LAZY.forEach(function(src){var s=document.createElement('script');s.src=src;s.defer=true;document.head.appendChild(s);});}
   function idle(){('requestIdleCallback' in window)?requestIdleCallback(load,{timeout:2000}):setTimeout(load,300);}
   if(document.readyState==='complete'){idle();}else{window.addEventListener('load',idle);}
