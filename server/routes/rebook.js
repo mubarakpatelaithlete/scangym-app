@@ -169,7 +169,7 @@ router.post('/quick', requireAuth, express.json(), async (req, res) => {
 });
 
 // GET /suggestions — Frequent gyms for rebook
-router.get('/suggestions', requireAuth, async (req, res) => {
+router.get('/suggestions', function(req, res, next){ if(!req.session || !req.session.userId){ return res.json([]); } next(); }, requireAuth, async (req, res) => {
   try {
     const favs = await pool.query(
       `SELECT rf.*, g.name, g.address, g.photos, g.rating

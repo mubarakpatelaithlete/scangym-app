@@ -8098,8 +8098,11 @@ window._sgInitOneTap=async function(){
   }
 };
 
-// Auto-trigger One Tap after 1.5s on page load (non-blocking)
-setTimeout(function(){window._sgInitOneTap();},1500);
+// R3: One Tap deferred until first user interaction — was firing on page load,
+// loading Google's gsi/client (403 on load) + showing an intrusive auto-prompt.
+// The 'Continue with Google' button flow is unchanged.
+(function(){var _fired=false;function _go(){if(_fired)return;_fired=true;setTimeout(function(){window._sgInitOneTap&&window._sgInitOneTap();},300);}
+['pointerdown','touchstart','keydown','scroll'].forEach(function(ev){document.addEventListener(ev,_go,{once:true,passive:true,capture:true});});})();
 
 // Manual Google Sign-In button handler — uses OAuth token flow (reliable popup)
 // FIX: Replaced prompt() (One Tap) with initTokenClient().requestAccessToken()

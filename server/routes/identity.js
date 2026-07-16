@@ -49,7 +49,7 @@ router.post('/start', authenticateUser, express.json(), async (req, res) => {
 });
 
 // GET /api/identity/status — poll session, persist verified flag
-router.get('/status', authenticateUser, async (req, res) => {
+router.get('/status', function(req, res, next){ if(!req.session || !req.session.userId){ return res.json({ verified:false, authenticated:false }); } next(); }, authenticateUser, async (req, res) => {
   try {
     const u = await pool.query('SELECT identity_verified, identity_session_id FROM users WHERE id = $1', [req.user.id]);
     if (!u.rows.length) return res.status(404).json({ error: 'User not found' });

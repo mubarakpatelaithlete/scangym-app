@@ -81,6 +81,8 @@ const BADGES = {
   bookings_50: { name: 'Gym Rat', emoji: '🐀', desc: '50 total bookings' },
 };
 
+// R3: soft read for the on-load streak widget — return empty (not 401) when logged out
+router.get('/', function(req, res, next){ if(!req.session || !req.session.userId){ return res.json({ streak:null, badges:{earned:[],available:[]}, leaderboard:[], authenticated:false }); } next(); });
 router.use(authenticateUser);
 
 // GET /api/streaks — Get user's streak, badges, and leaderboard position

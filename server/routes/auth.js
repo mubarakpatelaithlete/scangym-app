@@ -254,7 +254,7 @@ router.post('/verify', async (req, res) => {
 router.get('/user', async (req, res) => {
   try {
     if (!req.session || !req.session.userId) {
-      return res.status(401).json({ error: 'Not authenticated', message: 'Please log in first' });
+      return res.json({ authenticated: false, user: null }); // R3: clean logged-out response (no console 401)
     }
 
     // Try with extended fields; fall back if columns don't exist yet
@@ -276,7 +276,7 @@ router.get('/user', async (req, res) => {
 
     if (user.rows.length === 0) {
       req.session.destroy();
-      return res.status(401).json({ error: 'User not found' });
+      return res.json({ authenticated: false, user: null }); // R3: clean logged-out response
     }
 
     const u = user.rows[0];
