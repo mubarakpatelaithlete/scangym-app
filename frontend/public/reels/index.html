@@ -1954,7 +1954,7 @@
           prefetchedPromise = fetch('/api/reels/geo-feed?limit=' + PAGE_SIZE + '&offset=0&lang=' + _userLang)
             .then(function(r){
               if(!r.ok) throw new Error('Geo feed error');
-              return r.json().then(function(d){ return {videos: d.reels || d.videos || [], total: d.total}; });
+              return r.json().then(function(d){ var vids = d.reels || d.videos || []; if(!vids.length) throw new Error('Geo feed empty'); return {videos: vids, total: d.total}; });
             })
             .catch(function(){
               return fetch('/api/reels/feed?limit=' + PAGE_SIZE + '&offset=0&shuffle=true')

@@ -1021,41 +1021,21 @@ router.post('/ai-enhance', express.json(), async (req, res) => {
 // ═══ #9: Geo-language reel recommendations ═══
 // Returns reels filtered by user's detected language/country
 router.get('/geo-feed', async (req, res) => {
+  // FIX (Task 31): the old query referenced non-existent columns (status/language/
+  // country/views — the real column is `active`), so this always returned empty and
+  // the reels tab showed "No reels". Use the same catalog loader as /feed, which
+  // reads `active = true` and returns the mapped shape the reels app expects.
+  const lang = req.query.lang || req.headers['accept-language']?.split(',')[0]?.split('-')[0] || 'en';
+  const country = req.query.country || req.headers['cf-ipcountry'] || 'GB';
+  const limit = Math.min(parseInt(req.query.limit) || 20, 50);
+  const offset = parseInt(req.query.offset) || 0;
   try {
-    const lang = req.query.lang || req.headers['accept-language']?.split(',')[0]?.split('-')[0] || 'en';
-    const country = req.query.country || req.headers['cf-ipcountry'] || 'GB';
-    const limit = Math.min(parseInt(req.query.limit) || 20, 50);
-    const offset = parseInt(req.query.offset) || 0;
-
-    // Priority: same language > same country > global trending
-    const result = await pool.query(`
-      SELECT * FROM video_catalog
-      WHERE status = 'active'
-      ORDER BY
-        CASE WHEN language = $1 THEN 0 WHEN country = $2 THEN 1 ELSE 2 END,
-        views DESC, created_at DESC
-      LIMIT $3 OFFSET $4
-    `, [lang, country, limit, offset]);
-
-    res.json({
-      reels: result.rows,
-      language: lang,
-      country,
-      total: result.rows.length
-    });
+    const catalog = await loadCatalogFromDB();
+    const total = catalog.length;
+    const slice = catalog.slice(offset, offset + limit);
+    res.json({ reels: slice, language: lang, country, total });
   } catch (err) {
-    // Fallback: return regular feed if language columns don't exist yet
-    try {
-      const result = await pool.query(
-        'SELECT * FROM video_catalog WHERE status = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3',
-        ['active', Math.min(parseInt(req.query.limit) || 20, 50), parseInt(req.query.offset) || 0]
-      );
-      res.json({ reels: result.rows, language: 'en', country: 'GB', total: result.rows.length });
-    } catch (e2) {
-      // R3 #3: degrade gracefully instead of a hard 500 (removes console error;
-      // reels still load from their primary source). Log the real cause for a fix.
-      console.error('[geo-feed] both queries failed:', (e2 && e2.message) || e2);
-      res.json({ reels: [], language: 'en', country: 'GB', total: 0, degraded: true });
-    }
+    console.error('[geo-feed] failed:', (err && err.message) || err);
+    res.json({ reels: [], language: lang, country, total: 0, degraded: true });
   }
 });
