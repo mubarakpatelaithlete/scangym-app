@@ -359,6 +359,19 @@ router.post('/scan', async (req, res) => {
     const booking = bookingRow.rows[0] || {};
     const isCashBooking = (booking.booking_type || '').includes('cash');
 
+    // SECURITY: only a currently-valid booking may open the door. A QR is only
+    // issued to eligible bookings, but a booking can later be cancelled or
+    // refunded — that pass must immediately stop working.
+    const ENTITLED_STATUSES = ['confirmed', 'completed', 'active', 'reserved', 'iou_pending'];
+    if (booking.status && !ENTITLED_STATUSES.includes(booking.status)) {
+      return res.json({
+        valid: false,
+        error: 'Booking not active',
+        message: 'This pass is no longer valid (the booking was cancelled or refunded).',
+        bookingStatus: booking.status,
+      });
+    }
+
     // Determine scan type
     const newScanCount = qr.scan_count + 1;
     const scanType = newScanCount === 1 ? 'entry' : 'exit';

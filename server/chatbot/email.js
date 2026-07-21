@@ -25,9 +25,8 @@ const express = require('express');
 const router = express.Router();
 const { handleMessage } = require('./message-handler');
 
-// ─── SendGrid API key (fragment-joined for scanning protection) ───
-const _sgk = ['SG.5KMpkMGI', 'Tjqw', 'CGkBd6qf1g.GSKy', 'Zdhr0DfjjxDCyy', 'SIjAxIgzv5WbXgwslml', 'OmO4yg'];
-const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY || _sgk.join('');
+// ─── SendGrid API key (from environment only — never hardcode secrets) ───
+const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
 const SMTP_FROM = process.env.SMTP_FROM || 'book@scangym.com';
 const BASE_URL = process.env.BASE_URL || 'https://scangym.com';
 

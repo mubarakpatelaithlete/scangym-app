@@ -1050,36 +1050,55 @@ router.post('/confirm-sca', authenticateUser, express.json(), async (req, res) =
     // FIX: Recover referral_code from PaymentIntent metadata if not in body
     const effectiveReferral = referral_code || pi.metadata?.referral_code || null;
 
-    // Create booking (FIX: include referral_code in INSERT)
+    // Make sure the bookings table has the canonical columns (same as every other path).
+    await ensureBookingColumns();
+
+    // Stripe returns the charged amount in the smallest currency unit (pence).
+    // Store pounds in total_amount so this booking matches the rest of the app.
+    const paidAmount = Math.round(pi.amount || 0) / 100;
+    const bookingTime = time || '00:00';
+    const [sh, sm] = bookingTime.split(':').map(Number);
+    const endHour = Math.min((isNaN(sh) ? 0 : sh) + 1, 23);
+    const endTime = String(endHour).padStart(2, '0') + ':' + String(isNaN(sm) ? 0 : sm).padStart(2, '0');
+
+    // Booking code in the same style as the primary booking path (e.g. AB12-CD34)
+    const _codeChars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let bookingCode = '';
+    for (let i = 0; i < 8; i++) {
+      bookingCode += _codeChars[Math.floor(Math.random() * _codeChars.length)];
+      if (i === 3) bookingCode += '-';
+    }
+
+    // FIX (P1): write the SAME columns as the rest of the app. Previously this
+    // 3DS/SCA path wrote a divergent column set behind an error-swallowing
+    // fallback, so a customer could be charged but the booking would never show
+    // in their history or generate a usable QR code.
     const bookingResult = await pool.query(
-      `INSERT INTO bookings (user_id, gym_id, place_id, date, time, status, payment_intent_id, amount_pence, currency, pass_type, customer_email, gym_name, gym_address, referral_code, created_at)
-       VALUES ($1, $2, $3, $4, $5, 'confirmed', $6, $7, $8, $9, $10, $11, $12, $13, NOW())
+      `INSERT INTO public.bookings
+        (gym_id, user_id, booking_date, start_time, end_time, total_amount,
+         platform_fee_amount, booking_type, booking_code, status,
+         stripe_payment_intent_id, stripe_payment_status, user_email, referral_code,
+         created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'instant', $8, 'confirmed', $9, 'paid', $10, $11, NOW(), NOW())
        RETURNING *`,
-      [req.user.id, gymId || null, placeId || null, date, time || '00:00', paymentIntentId, pi.amount, (pi.currency || 'gbp').toLowerCase(), passType || 'day', email, gymName, gymAddress, effectiveReferral]
-    ).catch(async () => {
-      // Fallback if columns missing
-      const r = await pool.query(
-        `INSERT INTO bookings (user_id, gym_id, date, status, payment_intent_id, created_at) VALUES ($1, $2, $3, 'confirmed', $4, NOW()) RETURNING *`,
-        [req.user.id, gymId, date, paymentIntentId]
-      );
-      return r;
-    });
+      [gymId || null, req.user.id, date, bookingTime, endTime, paidAmount,
+       Math.round(paidAmount * 0.10 * 100) / 100, bookingCode, paymentIntentId,
+       email || null, effectiveReferral]
+    );
 
     const booking = bookingResult.rows[0];
 
-    // Generate QR code
+    // Generate the standard 2-scan QR (same helper as every other path).
+    // Wrapped in try/catch: the payment already succeeded, so a QR hiccup must
+    // never fail the confirmation — the pass can be re-fetched via /api/qr/generate.
     let qr = { dataUrl: null, code: null };
     try {
-      const qrCode = 'SG-' + booking.id + '-' + Date.now().toString(36).toUpperCase();
-      const QRCode = require('qrcode');
-      const qrDataUrl = await QRCode.toDataURL(JSON.stringify({ bookingId: booking.id, code: qrCode, gym: gymName, date, time }), { width: 300, margin: 2 });
-      qr = { dataUrl: qrDataUrl, code: qrCode };
-
-      // Store QR in DB
+      const qrInfo = await generate2ScanQR(booking.id, req.user.id, gymId || null);
       await pool.query(
-        'UPDATE bookings SET qr_code = $1, qr_data_url = $2 WHERE id = $3',
-        [qrCode, qrDataUrl, booking.id]
-      ).catch(() => {});
+        'UPDATE public.bookings SET qr_code = $1, qr_code_url = $2, updated_at = NOW() WHERE id = $3',
+        [qrInfo.token, qrInfo.dataUrl, booking.id]
+      );
+      qr = { dataUrl: qrInfo.dataUrl, code: qrInfo.token };
     } catch (qrErr) {
       console.error('[SCA] QR generation error:', qrErr.message);
     }
