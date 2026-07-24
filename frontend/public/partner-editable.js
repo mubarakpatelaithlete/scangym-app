@@ -408,8 +408,7 @@ window._peVerifyGym=async function(placeId,encName){
     if(typeof window._sgShowAuthSheet==='function'){window._sgShowAuthSheet('book');}else{navigate('/login');}
     return;
   }
-  // Close the search sheet immediately
-  if(typeof window._ctaCloseSheet==='function')window._ctaCloseSheet();
+  // Don't close the search sheet yet — wait for API result
   try{
     // 1. Resolve placeId → gymId
     var gymId=null;
@@ -424,10 +423,30 @@ window._peVerifyGym=async function(placeId,encName){
     // 2. Silent claim (idempotent — succeeds whether new or already yours)
     var r=await fetch('/api/gym-partner/claim',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({gymId:gymId,ownerName:u?(u.name||u.first_name||null):null,ownerEmail:u?(u.email||null):null,ownerPhone:u?(u.phone||null):null})});
     var d=await r.json().catch(function(){return{};});
-    if(!r.ok&&r.status===409){_peToast('This gym is already claimed by someone else','#ef4444');return;}
-    // 3. Reload dashboard in background
+    if(!r.ok&&r.status===409){
+      // Show a visible error sheet instead of a brief toast
+      var gymName=decodeURIComponent(encName||'This gym');
+      if(typeof _ctaOpenSheet==='function'){
+        _ctaOpenSheet(''
+          +'<div style="text-align:center;padding:8px 0 16px">'
+          +'<div style="font-size:48px;margin-bottom:12px">\u26a0\ufe0f</div>'
+          +'<h2 style="color:#fff;font-size:18px;font-weight:800;margin:0 0 8px">Already Verified</h2>'
+          +'<p style="color:rgba(255,255,255,.5);font-size:13px;margin:0 0 20px;line-height:1.5"><strong style="color:#f87171">'+gymName.replace(/</g,'&lt;')+'</strong> has already been verified by another owner.</p>'
+          +'<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;margin-bottom:16px;text-align:left">'
+          +'<p style="color:rgba(255,255,255,.6);font-size:12px;margin:0;line-height:1.6">\ud83d\udce7 If this is your gym, email <strong style="color:#FF6D00">hello@scangym.com</strong> with proof of ownership and we\'ll transfer it to you.</p>'
+          +'</div>'
+          +'<button onclick="if(typeof _ctaCloseSheet===\'function\')_ctaCloseSheet();setTimeout(function(){var s=document.getElementById(\'pe-claim-search\');if(s){s.value=\'\';s.focus();}},300);" style="width:100%;background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff;border:none;border-radius:14px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(255,109,0,.3)">\ud83d\udd0d Search for a different gym</button>'
+          +'</div>');
+      }else{
+        _peToast('This gym is already verified by another owner — email hello@scangym.com','#ef4444',5000);
+      }
+      return;
+    }
+    // 3. Close search sheet on success
+    if(typeof window._ctaCloseSheet==='function')window._ctaCloseSheet();
+    // 4. Reload dashboard in background
     _peLoadAndRender();
-    // 4. Go straight to verify
+    // 5. Go straight to verify
     setTimeout(function(){
       if(typeof window._sgB3VerifyOwnership==='function'){
         window._sgB3VerifyOwnership(gymId);
@@ -483,7 +502,7 @@ window._peSubmitClaim=async function(placeId){
     var r=await fetch('/api/gym-partner/claim',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({gymId:gymId,ownerName:u?(u.name||u.first_name||null):null,ownerEmail:u?(u.email||null):null,ownerPhone:u?(u.phone||null):null})});
     var d=await r.json().catch(function(){return{};});
     if(!r.ok||!d.success){
-      if(r.status===409)return showErr('This gym is already claimed. If it\'s yours, email hello@scangym.com');
+      if(r.status===409)return showErr('This gym is already verified by another owner. If it\'s yours, email hello@scangym.com');
       return showErr(d.error||'Claim failed — try again');
     }
     if(typeof window._ctaCloseSheet==='function')window._ctaCloseSheet();

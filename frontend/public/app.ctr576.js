@@ -20799,11 +20799,12 @@ window._partnerClaimGym=async function(idOrPlaceId,encName){
       if(!er.ok||!ed.gymId){sgToast(ed.error||'Could not load this gym','error');return;}
       gymId=ed.gymId;
     }
-    if(!confirm('Claim this gym as yours?'))return;
+    if(!confirm('Verify this gym as yours?'))return;
     var r=await fetch('/api/gym-partner/claim',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({gymId:gymId})});
     var d=await r.json();
-    if(r.ok&&d.success){sgToast('Gym claimed! \ud83c\udf89','success');setTimeout(function(){navigate('/gym-partner-hub');},800);}
-    else{sgToast(d.error||'Claim failed','error');}
+    if(r.ok&&d.success){sgToast('Gym verified! \ud83c\udf89','success');setTimeout(function(){navigate('/gym-partner-hub');},800);}
+    else if(r.status===409){sgToast('This gym is already verified by another owner. Email hello@scangym.com if it\'s yours.','error',5000);}
+    else{sgToast(d.error||'Verification failed','error');}
   }catch(e){sgToast('Network error','error');}
 };
 
