@@ -195,6 +195,61 @@ router.get('/', async (req, res) => {
 });
 
 /**
+ * GET /api/bookings/guest-lookup
+ * Look up a guest booking by ID + bookingCode (for ChatGPT checkout page).
+ * No auth required — the booking code acts as the secret.
+ */
+router.get('/guest-lookup', async (req, res) => {
+  try {
+    const { booking, code } = req.query;
+    if (!booking || !code) {
+      return res.status(400).json({ error: 'booking and code are required' });
+    }
+    const result = await pool.query(
+      `SELECT b.id, b.gym_id, b.booking_date, b.start_time, b.end_time,
+              b.total_amount, b.booking_code, b.status, b.user_email, b.user_name,
+              b.stripe_payment_intent_id,
+              g.name as gym_name, g.address as gym_address, g.place_id,
+              g.country, g.day_pass_price
+       FROM public.bookings b
+       LEFT JOIN public.gyms g ON b.gym_id = g.id
+       WHERE b.id = $1 AND b.booking_code = $2`,
+      [parseInt(booking, 10), code]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Booking not found or invalid code' });
+    }
+    const b = result.rows[0];
+    const gymCountry = b.country || 'GB';
+    const gymCurrency = pricing.getCurrencyForCountry(gymCountry);
+    res.json({
+      success: true,
+      booking: {
+        id: b.id,
+        gymId: b.gym_id,
+        placeId: b.place_id,
+        gymName: b.gym_name || 'Gym',
+        gymAddress: b.gym_address || '',
+        date: b.booking_date,
+        time: b.start_time,
+        endTime: b.end_time,
+        price: parseFloat(b.total_amount || 0),
+        currency: gymCurrency.currency.toUpperCase(),
+        currencySymbol: gymCurrency.symbol,
+        bookingCode: b.booking_code,
+        status: b.status,
+        email: b.user_email,
+        name: b.user_name,
+        isPaid: !!b.stripe_payment_intent_id,
+      },
+    });
+  } catch (err) {
+    console.error('Guest lookup error:', err);
+    res.status(500).json({ error: 'Failed to look up booking' });
+  }
+});
+
+/**
  * GET /api/bookings/:id
  * Get single booking
  */
@@ -272,6 +327,28 @@ router.post('/guest-create', async (req, res) => {
       // Lookup by place_id first
       gym = await pool.query('SELECT id, name, address, country, day_pass_price FROM gyms WHERE place_id = $1', [gymId]);
     }
+
+    // ChatGPT/MCP auto-ensure: If placeId not in DB yet, auto-register it from Google Places
+    // so the booking can proceed without requiring a separate getGymDetails call.
+    if (gym.rows.length === 0 && !isNumericId) {
+      try {
+        const ensureResp = await fetch(`http://127.0.0.1:${process.env.PORT || 5000}/api/live/ensure-gym`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ placeId: gymId }),
+        });
+        if (ensureResp.ok) {
+          const ensureData = await ensureResp.json();
+          if (ensureData.gymId) {
+            gym = await pool.query('SELECT id, name, address, country, day_pass_price FROM gyms WHERE id = $1', [ensureData.gymId]);
+            console.log(`[Booking] Auto-ensured gym "${ensureData.name}" (ID:${ensureData.gymId}) for placeId ${gymId}`);
+          }
+        }
+      } catch (ensureErr) {
+        console.warn('[Booking] Auto-ensure gym failed:', ensureErr.message);
+      }
+    }
+
     if (gym.rows.length === 0) {
       return res.status(404).json({ error: 'Gym not found. Use getGymDetails first to ensure the gym is registered.' });
     }

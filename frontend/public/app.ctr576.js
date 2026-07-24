@@ -657,7 +657,7 @@ async function generateReferLink(){var em=document.getElementById('refer-email')
 function getTabForRoute(path){
   if(path==='/'||path==='')return 'reels';
   if(path==='/reels')return 'reels';
-  if(path==='/explore'||path==='/nearby'||path==='/search'||path.startsWith('/gym/')||path==='/booking-success'||path.startsWith('/r/'))return 'book';
+  if(path==='/explore'||path==='/nearby'||path==='/search'||path.startsWith('/gym/')||path==='/booking-success'||path.startsWith('/r/')||path==='/checkout')return 'book';
   if(path==='/music')return 'music';
   if(path==='/photos'||path==='/carousel')return 'photos';
   if(path==='/chat'||path==='/community')return 'chat';
@@ -7916,6 +7916,136 @@ window._loadAdminStatus=async function(){
 };
 
 // ─── Page: Generic Info Pages ───
+// ═══ Checkout Landing Page — /checkout?booking=ID&code=CODE ═══
+// ChatGPT plugin and external links send users here to complete payment.
+function CheckoutLandingPage(){
+  const params=new URLSearchParams(location.search||state.routeQuery||'');
+  const bookingId=params.get('booking');
+  const bookingCode=params.get('code');
+
+  if(!bookingId||!bookingCode){
+    return InfoPage('Invalid Link',`<p>This checkout link is missing booking details.</p><p>Please go back to ChatGPT or your booking confirmation and try again.</p><p><a onclick="navigate('/')" class="text-brand cursor-pointer">← Back to home</a></p>`);
+  }
+
+  // Fetch booking details and open checkout
+  setTimeout(async function(){
+    try{
+      var el=document.getElementById('sg-checkout-status');
+      if(el)el.innerHTML='<div class="sg-spinner"></div> Loading your booking...';
+
+      var resp=await fetch('/api/bookings/guest-lookup?booking='+encodeURIComponent(bookingId)+'&code='+encodeURIComponent(bookingCode),{credentials:'include'});
+      if(!resp.ok){
+        var err=await resp.json().catch(function(){return{error:'Booking not found'};});
+        if(el)el.innerHTML='<div style="text-align:center;padding:40px 0"><div style="font-size:48px;margin-bottom:16px">😕</div><p style="color:#fff;font-size:20px;font-weight:700;margin:0 0 8px">Booking Not Found</p><p style="color:rgba(255,255,255,.5);font-size:14px;margin:0 0 24px">'+(err.error||'This booking may have expired or been cancelled.')+'</p><button onclick="navigate(\'/explore\')" style="background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff;border:none;padding:14px 32px;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer">Find a Gym →</button></div>';
+        return;
+      }
+      var data=await resp.json();
+      var b=data.booking;
+
+      if(b.isPaid||b.status==='confirmed'){
+        // Already paid — show success
+        if(el)el.innerHTML='<div style="text-align:center;padding:40px 0"><div style="font-size:48px;margin-bottom:16px">✅</div><p style="color:#fff;font-size:20px;font-weight:700;margin:0 0 8px">Already Paid!</p><p style="color:rgba(255,255,255,.5);font-size:14px;margin:0 0 8px">Booking <strong style="color:#4ade80">'+b.bookingCode+'</strong> at <strong style="color:#fff">'+b.gymName+'</strong></p><p style="color:rgba(255,255,255,.5);font-size:14px;margin:0 0 24px">Your QR code has been sent to <strong style="color:#fff">'+b.email+'</strong></p><button onclick="navigate(\'/explore\')" style="background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff;border:none;padding:14px 32px;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer">Book Another Gym →</button></div>';
+        return;
+      }
+
+      if(b.status==='cancelled'){
+        if(el)el.innerHTML='<div style="text-align:center;padding:40px 0"><div style="font-size:48px;margin-bottom:16px">❌</div><p style="color:#fff;font-size:20px;font-weight:700;margin:0 0 8px">Booking Cancelled</p><p style="color:rgba(255,255,255,.5);font-size:14px;margin:0 0 24px">This booking was cancelled.</p><button onclick="navigate(\'/explore\')" style="background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff;border:none;padding:14px 32px;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer">Find a Gym →</button></div>';
+        return;
+      }
+
+      // Format date
+      var dateStr=b.date;
+      try{
+        var d=new Date(b.date);
+        var days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+        var months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        dateStr=days[d.getUTCDay()]+', '+d.getUTCDate()+' '+months[d.getUTCMonth()]+' '+d.getUTCFullYear();
+      }catch(e){}
+
+      // Show booking details with pay button
+      if(el)el.innerHTML=''
+        +'<div style="text-align:center;margin-bottom:20px">'
+        +'<div style="font-size:48px;margin-bottom:8px">🏋️</div>'
+        +'<p style="color:#fff;font-size:22px;font-weight:900;margin:0 0 4px">Complete Your Booking</p>'
+        +'<p style="color:rgba(255,255,255,.4);font-size:13px;margin:0">Confirm payment to get your QR gym pass</p>'
+        +'</div>'
+        +'<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:20px;margin-bottom:20px">'
+        +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">'
+        +'<div><p style="color:#fff;font-size:18px;font-weight:800;margin:0 0 4px">'+b.gymName+'</p>'
+        +'<p style="color:rgba(255,255,255,.4);font-size:12px;margin:0">'+(b.gymAddress||'')+'</p></div>'
+        +'<div style="text-align:right"><p style="color:#FF6D00;font-size:24px;font-weight:900;margin:0">'+b.currencySymbol+b.price.toFixed(2)+'</p>'
+        +'<p style="color:rgba(255,255,255,.3);font-size:11px;margin:2px 0 0">Day Pass</p></div>'
+        +'</div>'
+        +'<div style="display:flex;gap:16px;flex-wrap:wrap">'
+        +'<div style="flex:1;min-width:120px"><p style="color:rgba(255,255,255,.3);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px">Date</p><p style="color:#fff;font-size:14px;font-weight:600;margin:0">'+dateStr+'</p></div>'
+        +'<div style="flex:1;min-width:120px"><p style="color:rgba(255,255,255,.3);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px">Time</p><p style="color:#fff;font-size:14px;font-weight:600;margin:0">'+(b.time||'Anytime')+' — '+(b.endTime||'')+'</p></div>'
+        +'</div>'
+        +'</div>'
+        +'<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px;margin-bottom:20px">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
+        +'<p style="color:rgba(255,255,255,.5);font-size:13px;margin:0">Booking Code</p>'
+        +'<p style="color:#4ade80;font-size:15px;font-weight:800;font-family:monospace;letter-spacing:2px;margin:0">'+b.bookingCode+'</p>'
+        +'</div>'
+        +'<div style="display:flex;justify-content:space-between;align-items:center">'
+        +'<p style="color:rgba(255,255,255,.5);font-size:13px;margin:0">Email</p>'
+        +'<p style="color:#fff;font-size:13px;font-weight:600;margin:0">'+(b.email||'')+'</p>'
+        +'</div>'
+        +'</div>'
+        +'<button onclick="window._checkoutPayBooking('+b.id+',\''+b.bookingCode+'\')" id="sg-checkout-pay-btn" style="width:100%;background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff;border:none;padding:16px;border-radius:14px;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 4px 20px rgba(255,109,0,.3);margin-bottom:12px">💳 Pay '+b.currencySymbol+b.price.toFixed(2)+' →</button>'
+        +'<div style="display:flex;gap:8px">'
+        +'<button onclick="navigate(\'/explore\')" style="flex:1;background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.1);padding:12px;border-radius:12px;font-size:13px;font-weight:600;cursor:pointer">Browse Gyms</button>'
+        +'<button onclick="navigate(\'/\')" style="flex:1;background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.1);padding:12px;border-radius:12px;font-size:13px;font-weight:600;cursor:pointer">Home</button>'
+        +'</div>'
+        +'<p style="text-align:center;color:rgba(255,255,255,.25);font-size:11px;margin:16px 0 0">✅ Free cancellation up to 2 hours before · 🔒 Secured by Stripe</p>';
+
+      // If user is logged in, try opening the native checkout sheet instead
+      if(state.user && b.placeId && typeof window.showBookingCheckout==='function'){
+        window._rebookGym={id:b.gymId,name:b.gymName,address:b.gymAddress||''};
+        window.showBookingCheckout(b.placeId);
+      }
+
+    }catch(e){
+      console.error('[Checkout] Error loading booking:',e);
+      var el2=document.getElementById('sg-checkout-status');
+      if(el2)el2.innerHTML='<div style="text-align:center;padding:40px 0"><div style="font-size:48px;margin-bottom:16px">⚠️</div><p style="color:#fff;font-size:20px;font-weight:700;margin:0 0 8px">Something went wrong</p><p style="color:rgba(255,255,255,.5);font-size:14px;margin:0 0 24px">Please try again or contact support.</p><button onclick="location.reload()" style="background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff;border:none;padding:14px 32px;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer">Retry</button></div>';
+    }
+  },100);
+
+  return`<div class="pt-8 min-h-full px-4"><div class="max-w-md mx-auto py-12" id="sg-checkout-status" style="color:#fff;font-size:16px;text-align:center"><div class="sg-spinner"></div> Loading your booking...</div></div>`;
+}
+
+// Checkout pay action — opens Stripe payment for guest booking
+window._checkoutPayBooking=async function(bookingId,bookingCode){
+  var btn=document.getElementById('sg-checkout-pay-btn');
+  if(btn){btn.disabled=true;btn.innerHTML='<div class="sg-spinner"></div> Processing...';}
+  try{
+    // If logged in, open native checkout
+    if(state.user && typeof window.showBookingCheckout==='function'){
+      var bkResp=await fetch('/api/bookings/guest-lookup?booking='+bookingId+'&code='+encodeURIComponent(bookingCode),{credentials:'include'});
+      if(bkResp.ok){
+        var bkData=await bkResp.json();
+        if(bkData.booking.placeId){
+          window._rebookGym={id:bkData.booking.gymId,name:bkData.booking.gymName,address:bkData.booking.gymAddress||''};
+          window.showBookingCheckout(bkData.booking.placeId);
+          return;
+        }
+      }
+    }
+    // Guest flow: redirect to sign-in first, then checkout
+    if(typeof window._sgShowAuthSheet==='function'){
+      window._pendingCheckout={gymId:bookingId,bookingCode:bookingCode,isGuestCheckout:true};
+      window._sgShowAuthSheet('book');
+      sgToast('Sign in to complete payment — your card saves for 1-tap next time','info',4000);
+    }else{
+      navigate('/login');
+    }
+  }catch(e){
+    console.error('[Checkout] Pay error:',e);
+    sgToast('Payment failed — please try again','error',3000);
+    if(btn){btn.disabled=false;btn.innerHTML='💳 Pay →';}
+  }
+};
+
 function InfoPage(title,content){
   return`
   <div class="pt-8 min-h-full px-4">
@@ -18574,6 +18704,7 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
   else if(path==='/more')page=MoreHubPage();
   else if(path==='/book'){navigate('/explore',false);page=SearchPage();}
   else if(path==='/profile'){navigate('/more/profile',false);loadFullProfile();page=ProfilePage();}
+  else if(path==='/checkout')page=CheckoutLandingPage();
     else page=InfoPage('Page Not Found',`<p>Sorry, this page doesn\'t exist yet.</p><p><a onclick="navigate(\'/\')" class="text-brand cursor-pointer">← Back to home</a></p>`);
 
   // ── 3-Tab Layout: No NavBar, No Footer, Bottom Tab Bar ──
