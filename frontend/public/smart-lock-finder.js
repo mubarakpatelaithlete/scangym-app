@@ -385,7 +385,15 @@ async function _slfPollSeamComplete(gymId, webviewId, providerName) {
       var d = await r.json();
       if (d.connected) {
         clearInterval(poll);
-        _slfToast('🎉 ' + providerName + ' connected! Visitors will get auto door access.', 'success', 5000);
+        // Close iframe overlay if open (ux-v5 hosts Seam Connect in an iframe)
+        if (typeof window._sgCloseSeamIframe === 'function') window._sgCloseSeamIframe();
+        // Also clear the iframe's own polling to avoid double-toasts
+        if (window._sgSeamIframePoll) { clearInterval(window._sgSeamIframePoll); window._sgSeamIframePoll = null; }
+        // Only show toast if iframe polling didn't already show one
+        if (!window._sgSeamIframeConnected) {
+          _slfToast('🎉 ' + providerName + ' connected! Visitors will get auto door access.', 'success', 5000);
+        }
+        window._sgSeamIframeConnected = false;
       }
     } catch (e) {}
   }, 3000);
