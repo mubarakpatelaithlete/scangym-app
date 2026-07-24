@@ -667,15 +667,39 @@ window._partnerContinueFlow=function(){
 // Hook into auth success to continue partner/creator flow
 var _origAuthAfterSuccess=window._sgAuthAfterSuccess;
 window._sgAuthAfterSuccess=function(){
+  // If partner, creator, or verify flow is pending, skip the card/Stripe step
+  // entirely — close the auth sheet and resume the correct flow.
+  // This prevents Stripe "Pay with" + Wallet modals stacking on top of each other.
+  var isPartnerFlow=window._partnerPostAuth;
+  var isCreatorFlow=window._creatorPostAuth;
+  var isVerifyFlow=window._pePostAuthData;
+
+  if(isPartnerFlow||isCreatorFlow||isVerifyFlow){
+    // Close auth sheet immediately (prevents _renderCardStep from showing)
+    if(typeof window._sgCloseAuthSheet==='function')window._sgCloseAuthSheet();
+    // Still show the welcome toast
+    if(typeof state!=='undefined'&&state&&state.user){
+      sgToast('Welcome, '+(state.user.name||'there')+'! 🎉','success',1500);
+    }
+
+    if(isPartnerFlow){
+      window._partnerPostAuth=false;
+      setTimeout(function(){window._partnerContinueFlow();},400);
+    }
+    if(isCreatorFlow){
+      window._creatorPostAuth=false;
+      setTimeout(function(){window._creatorContinueFlow();},400);
+    }
+    if(isVerifyFlow){
+      var vd=window._pePostAuthData;
+      window._pePostAuthData=null;
+      setTimeout(function(){window._peVerifyGym(vd.placeId,vd.encName);},400);
+    }
+    return; // Don't call _origAuthAfterSuccess (which would show Stripe card step)
+  }
+
+  // Default: run original auth flow (card step for book mode, etc.)
   if(_origAuthAfterSuccess)_origAuthAfterSuccess();
-  if(window._partnerPostAuth){
-    window._partnerPostAuth=false;
-    setTimeout(function(){window._partnerContinueFlow();},500);
-  }
-  if(window._creatorPostAuth){
-    window._creatorPostAuth=false;
-    setTimeout(function(){window._creatorContinueFlow();},500);
-  }
 };
 
 
