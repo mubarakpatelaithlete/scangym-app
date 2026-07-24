@@ -394,6 +394,10 @@ async function _slfPollSeamComplete(gymId, webviewId, providerName) {
           _slfToast('🎉 ' + providerName + ' connected! Visitors will get auto door access.', 'success', 5000);
         }
         window._sgSeamIframeConnected = false;
+        // Show celebration panel (v6 UX improvement)
+        if (typeof window._slfShowConnectSuccess === 'function') {
+          window._slfShowConnectSuccess(gymId, providerName);
+        }
       }
     } catch (e) {}
   }, 3000);

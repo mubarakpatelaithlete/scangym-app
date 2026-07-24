@@ -439,5 +439,178 @@ var _waitFinalOverride = setInterval(function(){
 }, 200);
 
 
-console.log('[UX-V5] All 5 improvements loaded');
+// ═════════════════════════════════════════════════════════════════════
+// UX V6: Post-connect celebration panel
+// ═════════════════════════════════════════════════════════════════════
+// After lock connect success → close finder, show celebration with
+// next steps instead of just a toast.
+
+window._slfShowConnectSuccess = function(gymId, providerName) {
+  // Close the lock finder sheet first
+  if(typeof window._sgCloseSheet === 'function') window._sgCloseSheet('slf-finder-sheet');
+  if(typeof _ctaCloseSheet === 'function') _ctaCloseSheet();
+
+  // Small delay for sheet close animation
+  setTimeout(function(){
+    var html = ''
+      + '<div style="text-align:center;padding:8px 0 0">'
+      + '<div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,rgba(34,197,94,.2),rgba(16,185,129,.1));display:flex;align-items:center;justify-content:center;font-size:40px;margin:0 auto 16px;animation:sgLockPop .5s cubic-bezier(.17,.67,.21,1.28)">\uD83C\uDF89</div>'
+      + '<p style="font-size:22px;font-weight:900;color:#fff;margin:0 0 6px">All Set!</p>'
+      + '<p style="color:rgba(255,255,255,.5);font-size:14px;line-height:1.5;margin:0 0 24px">'
+      + '<strong style="color:#4ade80">' + (providerName || 'Smart Lock') + '</strong> is connected. Visitors now get auto door access with every booking.</p>'
+      + '</div>'
+
+      // How it works
+      + '<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px;margin-bottom:20px">'
+      + '<p style="font-size:13px;font-weight:700;color:#fff;margin:0 0 14px">\u26A1 What happens now</p>'
+      + '<div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:12px">'
+      + '<div style="width:24px;height:24px;border-radius:50%;background:rgba(34,197,94,.15);color:#22c55e;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</div>'
+      + '<p style="color:rgba(255,255,255,.6);font-size:12px;line-height:1.4;margin:0"><b style="color:#fff">Customer books a day pass</b> \u2014 pays through ScanGym</p>'
+      + '</div>'
+      + '<div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:12px">'
+      + '<div style="width:24px;height:24px;border-radius:50%;background:rgba(34,197,94,.15);color:#22c55e;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</div>'
+      + '<p style="color:rgba(255,255,255,.6);font-size:12px;line-height:1.4;margin:0"><b style="color:#fff">Auto PIN/QR generated</b> \u2014 works only during booked time</p>'
+      + '</div>'
+      + '<div style="display:flex;gap:10px;align-items:flex-start">'
+      + '<div style="width:24px;height:24px;border-radius:50%;background:rgba(34,197,94,.15);color:#22c55e;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</div>'
+      + '<p style="color:rgba(255,255,255,.6);font-size:12px;line-height:1.4;margin:0"><b style="color:#fff">You earn 85%</b> \u2014 auto-deposited to your wallet</p>'
+      + '</div>'
+      + '</div>'
+
+      // Quick action buttons
+      + '<button onclick="window._slfSuccessAction(\'price\', ' + gymId + ')" style="width:100%;background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff;border:none;padding:15px;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 4px 20px rgba(255,109,0,.3);margin-bottom:10px">\uD83D\uDCB0 Set Day Pass Price \u2192</button>'
+      + '<button onclick="window._slfSuccessAction(\'dashboard\', ' + gymId + ')" style="width:100%;background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.12);padding:14px;border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:10px">\uD83D\uDCCA Go to Dashboard</button>'
+      + '<button onclick="if(typeof _ctaCloseSheet===\'function\')_ctaCloseSheet();if(typeof window._sgCloseSheet===\'function\')window._sgCloseSheet(\'sg-connect-success\');" style="width:100%;background:none;color:rgba(255,255,255,.4);border:none;padding:10px;font-size:13px;font-weight:600;cursor:pointer">Done</button>';
+
+    if(typeof window._sgOpenSheet === 'function') {
+      window._sgOpenSheet('sg-connect-success', html);
+    } else if(typeof _ctaOpenSheet === 'function') {
+      _ctaOpenSheet(html);
+    }
+
+    // Add animation keyframes if not present
+    if(!document.getElementById('sg-lock-pop-css')){
+      var st=document.createElement('style');st.id='sg-lock-pop-css';
+      st.textContent='@keyframes sgLockPop{0%{transform:scale(0)}100%{transform:scale(1)}}';
+      document.head.appendChild(st);
+    }
+
+    // Haptic feedback on mobile
+    if(navigator.vibrate) navigator.vibrate([50, 30, 80, 30, 100]);
+
+    // Refresh dashboard data in background
+    if(typeof window._peLoadAndRender === 'function') window._peLoadAndRender();
+    if(typeof window._partnerLoadGymProfile === 'function') window._partnerLoadGymProfile();
+  }, 400);
+};
+
+// Success action handlers
+window._slfSuccessAction = function(action, gymId) {
+  if(typeof window._sgCloseSheet === 'function') window._sgCloseSheet('sg-connect-success');
+  if(typeof _ctaCloseSheet === 'function') _ctaCloseSheet();
+
+  if(action === 'price') {
+    // Open price editor
+    setTimeout(function(){
+      if(typeof window._peEditPrice === 'function') {
+        window._peEditPrice(gymId, 5.00);
+      }
+    }, 350);
+  } else if(action === 'dashboard') {
+    // Reload dashboard
+    if(typeof window._partnerLoadGymProfile === 'function') window._partnerLoadGymProfile();
+  }
+};
+
+
+// ═════════════════════════════════════════════════════════════════════
+// UX V6: Live lock status on dashboard
+// ═════════════════════════════════════════════════════════════════════
+// Replace static lock button label with live Connected/Not Connected
+// status. Check on dashboard load.
+
+window._sgUpdateLockStatus = async function(gymId) {
+  if(!gymId) return;
+  try {
+    var r = await fetch('/api/access/owner/connection-status/' + gymId, {credentials: 'include'});
+    if(!r.ok) return;
+    var d = await r.json();
+    window._sgLockConnected = d.connected;
+    window._sgLockSystem = d.system || null;
+
+    // Update the Locks action button label if it exists
+    var lockLabels = document.querySelectorAll('.pe-action-label');
+    lockLabels.forEach(function(el) {
+      if(el.textContent.trim() === 'Locks' || el.textContent.trim() === 'Connected \u2705' || el.textContent.trim() === 'Locks \u2192') {
+        if(d.connected) {
+          el.textContent = 'Connected \u2705';
+          el.style.color = '#4ade80';
+        } else {
+          el.textContent = 'Locks \u2192';
+        }
+      }
+    });
+
+    // Update lock button icon
+    var lockBtns = document.querySelectorAll('.pe-action-btn');
+    lockBtns.forEach(function(btn) {
+      if(btn.textContent.trim() === '\uD83D\uDD10' || btn.textContent.trim() === '\u2705\uD83D\uDD10') {
+        if(d.connected) {
+          btn.style.filter = 'drop-shadow(0 2px 4px rgba(34,197,94,.5))';
+          btn.style.opacity = '1';
+        }
+      }
+    });
+  } catch(e) {}
+};
+
+// Auto-check lock status when partner page loads
+var _lockStatusCheckInterval = setInterval(function(){
+  // Wait for dashboard to be loaded and a gym to be available
+  if(!window._partnerGymId) return;
+  clearInterval(_lockStatusCheckInterval);
+  window._sgUpdateLockStatus(window._partnerGymId);
+}, 1500);
+
+
+// ═════════════════════════════════════════════════════════════════════
+// UX V6: Seam iframe auto-close + celebration integration
+// ═════════════════════════════════════════════════════════════════════
+// Patch the iframe poll to trigger the celebration panel too
+
+var _waitIframePatch = setInterval(function(){
+  if(typeof window._sgOpenSeamIframe !== 'function') return;
+  clearInterval(_waitIframePatch);
+
+  var _origOpenSeamIframe = window._sgOpenSeamIframe;
+  window._sgOpenSeamIframe = function(url, providerName, gymId, webviewId) {
+    // Call original to set up iframe + polling
+    _origOpenSeamIframe(url, providerName, gymId, webviewId);
+
+    // Patch the existing poll to also trigger celebration
+    if(window._sgSeamIframePoll) {
+      // The original poll already handles success. We add a second
+      // listener that watches for the connected flag and shows celebration.
+      var _celebrationPoll = setInterval(function(){
+        if(window._sgSeamIframeConnected) {
+          clearInterval(_celebrationPoll);
+          // Celebration shown after a small delay so toast appears first
+          setTimeout(function(){
+            if(typeof window._slfShowConnectSuccess === 'function') {
+              window._slfShowConnectSuccess(gymId, providerName);
+            }
+          }, 1500);
+        }
+        // Stop polling if iframe is closed without connecting
+        var ov = document.getElementById('sg-seam-iframe-overlay');
+        if(ov && !ov.classList.contains('active') && !window._sgSeamIframeConnected) {
+          clearInterval(_celebrationPoll);
+        }
+      }, 1000);
+    }
+  };
+}, 300);
+
+
+console.log('[UX-V6] Post-connect celebration + live lock status loaded');
 })();

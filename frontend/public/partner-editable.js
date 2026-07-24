@@ -100,6 +100,7 @@ function _peEditField(title,currentValue,placeholder,onSave){
 // Helper: Price edit popup
 // ══════════════════════════════════════════════════════════════════════
 
+window._peEditPrice = _peEditPrice;
 function _peEditPrice(gymId,currentPrice){
   if(typeof _ctaOpenSheet!=='function')return;
   var html=''
@@ -571,6 +572,7 @@ window._peOpenPartnerSettings=function(gymId){
 // ══════════════════════════════════════════════════════════════════════
 
 var _peAuthRetries=0;
+window._peLoadAndRender = _peLoadAndRender;
 async function _peLoadAndRender(){
   var u=state&&state.user;
   if(!u){
