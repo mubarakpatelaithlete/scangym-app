@@ -405,6 +405,8 @@ window._peVerifyGym=async function(placeId,encName){
   if(!u){
     if(typeof window._ctaCloseSheet==='function')window._ctaCloseSheet();
     _peToast('Log in first to verify your gym');
+    // Save verify data so auth success can auto-retry (no Stripe card step)
+    window._pePostAuthData={placeId:placeId,encName:encName};
     if(typeof window._sgShowAuthSheet==='function'){window._sgShowAuthSheet('book');}else{navigate('/login');}
     return;
   }
@@ -461,6 +463,8 @@ window._peStartClaim=function(placeId,encName){
   if(!u){
     if(typeof window._ctaCloseSheet==='function')window._ctaCloseSheet();
     _peToast('Log in first to claim your gym');
+    // Save data so auth success can auto-retry (no Stripe card step)
+    window._pePostAuthData={placeId:placeId,encName:encName};
     if(typeof window._sgShowAuthSheet==='function'){window._sgShowAuthSheet('book');}else{navigate('/login');}
     return;
   }
