@@ -187,6 +187,9 @@ window._slfOpenFinder = function () {
     return;
   }
 
+  // Pre-fetch gymId so it's ready when user picks a brand (faster!)
+  _slfGetGymId();
+
   // Build cards grouped by category
   var cats = [
     { key:'gym',        label:'⭐ Gym Favourites',         items:[] },
@@ -327,9 +330,6 @@ window._slfSelectProvider = async function (providerId) {
 // ═════════════════════════════════════════════════════════════════════
 
 async function _slfStartSeamConnect(gymId, providerId, providerName) {
-  var closeSheet = typeof _sgCloseSheet === 'function' ? _sgCloseSheet
-    : typeof _ctaCloseSheet === 'function' ? _ctaCloseSheet : function () {};
-
   _slfToast('Connecting ' + providerName + '…', 'success', 2000);
 
   try {
@@ -343,7 +343,11 @@ async function _slfStartSeamConnect(gymId, providerId, providerName) {
     var url = d.url || d.connectUrl || d.connect_url;
 
     if (url) {
-      closeSheet();
+      // Close all open sheets before opening Seam webview
+      ['slf-finder-sheet','slf-identify-sheet'].forEach(function(id){
+        if(typeof _sgCloseSheet === 'function') _sgCloseSheet(id);
+      });
+      if(typeof _ctaCloseSheet === 'function') _ctaCloseSheet();
       window.open(url, '_blank');
       _slfToast('Complete ' + providerName + ' login in the new tab ✅', 'success', 5000);
       if (d.connect_webview_id) {
@@ -358,8 +362,10 @@ async function _slfStartSeamConnect(gymId, providerId, providerName) {
       });
       var d2 = await r2.json();
       if (d2.connected) {
-        closeSheet();
-        _slfToast(providerName + ' connected! ✅', 'success', 4000);
+        _slfToast(providerName + ' connected!', 'success', 3000);
+        if (typeof window._slfShowConnectSuccess === 'function') {
+          window._slfShowConnectSuccess(gymId, providerName, 'connected');
+        }
       } else {
         _slfToast(d2.error || 'Could not connect — try again', 'error', 4000);
       }
@@ -409,6 +415,11 @@ async function _slfPollSeamComplete(gymId, webviewId, providerName) {
 
 function _slfShowKisiForm(gymId) {
   var html = ''
+    + '<div style="display:flex;justify-content:center;gap:6px;margin-bottom:16px">'
+    + '<div style="width:32px;height:4px;border-radius:2px;background:#FF6D00"></div>'
+    + '<div style="width:32px;height:4px;border-radius:2px;background:#FF6D00"></div>'
+    + '<div style="width:32px;height:4px;border-radius:2px;background:rgba(255,255,255,.12)"></div>'
+    + '</div>'
     + '<div style="text-align:center;margin-bottom:16px">'
     + '<div style="font-size:40px;margin-bottom:8px">🔐</div>'
     + '<h2 style="color:#fff;font-size:20px;font-weight:800;margin:0 0 4px">Connect QR Access System</h2>'
@@ -450,10 +461,10 @@ window._slfConnectKisi = async function (gymId) {
     });
     var d = await r.json();
     if (d.connected) {
-      var closeSheet = typeof _sgCloseSheet === 'function' ? _sgCloseSheet
-        : typeof _ctaCloseSheet === 'function' ? _ctaCloseSheet : function () {};
-      closeSheet();
-      _slfToast('🎉 QR access connected! Visitors get QR code door access.', 'success', 5000);
+      _slfToast('🎉 Kisi connected!', 'success', 3000);
+      if (typeof window._slfShowConnectSuccess === 'function') {
+        window._slfShowConnectSuccess(gymId, 'Kisi (QR Access)', 'connected');
+      }
     } else {
       _slfToast(d.error || 'Connection failed — check your API key', 'error', 4000);
       if (btn) { btn.disabled = false; btn.textContent = 'Connect →'; }
@@ -470,6 +481,11 @@ window._slfConnectKisi = async function (gymId) {
 
 function _slfShowGymMasterForm(gymId) {
   var html = ''
+    + '<div style="display:flex;justify-content:center;gap:6px;margin-bottom:16px">'
+    + '<div style="width:32px;height:4px;border-radius:2px;background:#FF6D00"></div>'
+    + '<div style="width:32px;height:4px;border-radius:2px;background:#FF6D00"></div>'
+    + '<div style="width:32px;height:4px;border-radius:2px;background:rgba(255,255,255,.12)"></div>'
+    + '</div>'
     + '<div style="text-align:center;margin-bottom:16px">'
     + '<div style="font-size:40px;margin-bottom:8px">🏋️</div>'
     + '<h2 style="color:#fff;font-size:20px;font-weight:800;margin:0 0 4px">Connect GymMaster</h2>'
@@ -518,10 +534,10 @@ window._slfConnectGymMaster = async function (gymId) {
     });
     var d = await r.json();
     if (d.connected) {
-      var closeSheet = typeof _sgCloseSheet === 'function' ? _sgCloseSheet
-        : typeof _ctaCloseSheet === 'function' ? _ctaCloseSheet : function () {};
-      closeSheet();
-      _slfToast('🎉 GymMaster connected! Visit logging is active.', 'success', 5000);
+      _slfToast('🎉 GymMaster connected!', 'success', 3000);
+      if (typeof window._slfShowConnectSuccess === 'function') {
+        window._slfShowConnectSuccess(gymId, 'GymMaster', 'connected');
+      }
     } else {
       _slfToast(d.error || 'Connection failed — check your credentials', 'error', 4000);
       if (btn) { btn.disabled = false; btn.textContent = 'Connect GymMaster →'; }
@@ -537,7 +553,16 @@ window._slfConnectGymMaster = async function (gymId) {
 // ═════════════════════════════════════════════════════════════════════
 
 function _slfShowRequestForm(gymId, provider) {
+  // Auto-populate email from logged-in user
+  var userEmail = '';
+  try { userEmail = (state && state.user && state.user.email) || ''; } catch(e) {}
+
   var html = ''
+    + '<div style="display:flex;justify-content:center;gap:6px;margin-bottom:16px">'
+    + '<div style="width:32px;height:4px;border-radius:2px;background:#FF6D00"></div>'
+    + '<div style="width:32px;height:4px;border-radius:2px;background:#FF6D00"></div>'
+    + '<div style="width:32px;height:4px;border-radius:2px;background:rgba(255,255,255,.12)"></div>'
+    + '</div>'
     + '<div style="text-align:center;margin-bottom:16px">'
     + '<div style="font-size:40px;margin-bottom:8px">' + provider.logo + '</div>'
     + '<h2 style="color:#fff;font-size:20px;font-weight:800;margin:0 0 4px">' + provider.name + '</h2>'
@@ -553,7 +578,7 @@ function _slfShowRequestForm(gymId, provider) {
 
     + '<div class="slf-form-group">'
     + '<label class="slf-label">Your email (for notification)</label>'
-    + '<input id="slf-req-email" class="slf-input" type="email" placeholder="you@gym.com">'
+    + '<input id="slf-req-email" class="slf-input" type="email" placeholder="you@gym.com" value="' + userEmail + '">'
     + '</div>'
 
     + '<div class="slf-form-group">'
@@ -585,15 +610,15 @@ window._slfSubmitRequest = async function (gymId, providerId, providerName) {
       body: JSON.stringify({ gymId: gymId, system: providerId, email: email || '', note: note || '' }),
     });
     var d = await r.json();
-    var closeSheet = typeof _sgCloseSheet === 'function' ? _sgCloseSheet
-      : typeof _ctaCloseSheet === 'function' ? _ctaCloseSheet : function () {};
-    closeSheet();
-    _slfToast('🔔 ' + providerName + ' integration requested! We\'ll be in touch.', 'success', 5000);
+    _slfToast('🔔 Request sent!', 'success', 3000);
+    if (typeof window._slfShowConnectSuccess === 'function') {
+      window._slfShowConnectSuccess(gymId, providerName, 'requested');
+    }
   } catch (ex) {
-    _slfToast('Request saved — we\'ll be in touch!', 'success', 4000);
-    var closeSheet = typeof _sgCloseSheet === 'function' ? _sgCloseSheet
-      : typeof _ctaCloseSheet === 'function' ? _ctaCloseSheet : function () {};
-    closeSheet();
+    _slfToast('Request saved!', 'success', 3000);
+    if (typeof window._slfShowConnectSuccess === 'function') {
+      window._slfShowConnectSuccess(gymId, providerName, 'requested');
+    }
   }
 };
 
@@ -615,10 +640,10 @@ async function _slfSetManual(gymId) {
       credentials: 'include',
       body: JSON.stringify({ accessType: 'staff_verify' }),
     });
-    var closeSheet = typeof _sgCloseSheet === 'function' ? _sgCloseSheet
-      : typeof _ctaCloseSheet === 'function' ? _ctaCloseSheet : function () {};
-    closeSheet();
-    _slfToast('✅ Staff verification mode set — visitors show QR at reception.', 'success', 4000);
+    _slfToast('✅ Staff verification active!', 'success', 3000);
+    if (typeof window._slfShowConnectSuccess === 'function') {
+      window._slfShowConnectSuccess(gymId, 'Staff QR Verification', 'manual');
+    }
   } catch (e) {
     _slfToast('Failed to update — try again', 'error');
   }

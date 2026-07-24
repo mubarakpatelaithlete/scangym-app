@@ -445,41 +445,82 @@ var _waitFinalOverride = setInterval(function(){
 // After lock connect success → close finder, show celebration with
 // next steps instead of just a toast.
 
-window._slfShowConnectSuccess = function(gymId, providerName) {
-  // Close the lock finder sheet first
-  if(typeof window._sgCloseSheet === 'function') window._sgCloseSheet('slf-finder-sheet');
+// mode: 'connected' (default) | 'manual' | 'requested'
+window._slfShowConnectSuccess = function(gymId, providerName, mode) {
+  mode = mode || 'connected';
+
+  // Close any open sheets first
+  ['slf-finder-sheet','slf-kisi-sheet','slf-gm-sheet','slf-request-sheet','slf-identify-sheet'].forEach(function(id){
+    if(typeof window._sgCloseSheet === 'function') window._sgCloseSheet(id);
+  });
   if(typeof _ctaCloseSheet === 'function') _ctaCloseSheet();
+
+  // Config per mode
+  var cfg = {
+    connected: {
+      emoji: '\uD83C\uDF89', title: 'All Set!',
+      sub: '<strong style="color:#4ade80">' + (providerName || 'Smart Lock') + '</strong> is connected. Visitors now get auto door access with every booking.',
+      color: 'rgba(34,197,94', steps: true, showPrice: true
+    },
+    manual: {
+      emoji: '\u2705', title: 'Staff Mode Active!',
+      sub: 'Visitors will show a <strong style="color:#60a5fa">QR code</strong> at reception. Your staff scans to verify.',
+      color: 'rgba(59,130,246', steps: true, showPrice: true
+    },
+    requested: {
+      emoji: '\uD83D\uDD14', title: 'Request Sent!',
+      sub: 'We\'re building <strong style="color:#fbbf24">' + (providerName || 'this') + '</strong> integration. We\'ll notify you when it\'s ready.',
+      color: 'rgba(251,191,36', steps: false, showPrice: false
+    }
+  };
+  var c = cfg[mode] || cfg.connected;
 
   // Small delay for sheet close animation
   setTimeout(function(){
     var html = ''
       + '<div style="text-align:center;padding:8px 0 0">'
-      + '<div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,rgba(34,197,94,.2),rgba(16,185,129,.1));display:flex;align-items:center;justify-content:center;font-size:40px;margin:0 auto 16px;animation:sgLockPop .5s cubic-bezier(.17,.67,.21,1.28)">\uD83C\uDF89</div>'
-      + '<p style="font-size:22px;font-weight:900;color:#fff;margin:0 0 6px">All Set!</p>'
-      + '<p style="color:rgba(255,255,255,.5);font-size:14px;line-height:1.5;margin:0 0 24px">'
-      + '<strong style="color:#4ade80">' + (providerName || 'Smart Lock') + '</strong> is connected. Visitors now get auto door access with every booking.</p>'
-      + '</div>'
+      + '<div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,' + c.color + ',.2),' + c.color + ',.1));display:flex;align-items:center;justify-content:center;font-size:40px;margin:0 auto 16px;animation:sgLockPop .5s cubic-bezier(.17,.67,.21,1.28)">' + c.emoji + '</div>'
+      + '<p style="font-size:22px;font-weight:900;color:#fff;margin:0 0 6px">' + c.title + '</p>'
+      + '<p style="color:rgba(255,255,255,.5);font-size:14px;line-height:1.5;margin:0 0 24px">' + c.sub + '</p>'
+      + '</div>';
 
-      // How it works
-      + '<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px;margin-bottom:20px">'
-      + '<p style="font-size:13px;font-weight:700;color:#fff;margin:0 0 14px">\u26A1 What happens now</p>'
-      + '<div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:12px">'
-      + '<div style="width:24px;height:24px;border-radius:50%;background:rgba(34,197,94,.15);color:#22c55e;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</div>'
-      + '<p style="color:rgba(255,255,255,.6);font-size:12px;line-height:1.4;margin:0"><b style="color:#fff">Customer books a day pass</b> \u2014 pays through ScanGym</p>'
-      + '</div>'
-      + '<div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:12px">'
-      + '<div style="width:24px;height:24px;border-radius:50%;background:rgba(34,197,94,.15);color:#22c55e;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</div>'
-      + '<p style="color:rgba(255,255,255,.6);font-size:12px;line-height:1.4;margin:0"><b style="color:#fff">Auto PIN/QR generated</b> \u2014 works only during booked time</p>'
-      + '</div>'
-      + '<div style="display:flex;gap:10px;align-items:flex-start">'
-      + '<div style="width:24px;height:24px;border-radius:50%;background:rgba(34,197,94,.15);color:#22c55e;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</div>'
-      + '<p style="color:rgba(255,255,255,.6);font-size:12px;line-height:1.4;margin:0"><b style="color:#fff">You earn 85%</b> \u2014 auto-deposited to your wallet</p>'
-      + '</div>'
-      + '</div>'
+    // "What happens now" steps — for connected & manual
+    if(c.steps) {
+      var step2Label = mode === 'manual'
+        ? '<b style="color:#fff">Visitor shows QR</b> \u2014 staff scans to verify booking'
+        : '<b style="color:#fff">Auto PIN/QR generated</b> \u2014 works only during booked time';
 
-      // Quick action buttons
-      + '<button onclick="window._slfSuccessAction(\'price\', ' + gymId + ')" style="width:100%;background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff;border:none;padding:15px;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 4px 20px rgba(255,109,0,.3);margin-bottom:10px">\uD83D\uDCB0 Set Day Pass Price \u2192</button>'
-      + '<button onclick="window._slfSuccessAction(\'dashboard\', ' + gymId + ')" style="width:100%;background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.12);padding:14px;border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:10px">\uD83D\uDCCA Go to Dashboard</button>'
+      html += '<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px;margin-bottom:20px">'
+        + '<p style="font-size:13px;font-weight:700;color:#fff;margin:0 0 14px">\u26A1 What happens now</p>'
+        + '<div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:12px">'
+        + '<div style="width:24px;height:24px;border-radius:50%;background:' + c.color + ',.15);color:' + c.color + ',1);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</div>'
+        + '<p style="color:rgba(255,255,255,.6);font-size:12px;line-height:1.4;margin:0"><b style="color:#fff">Customer books a day pass</b> \u2014 pays through ScanGym</p>'
+        + '</div>'
+        + '<div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:12px">'
+        + '<div style="width:24px;height:24px;border-radius:50%;background:' + c.color + ',.15);color:' + c.color + ',1);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</div>'
+        + '<p style="color:rgba(255,255,255,.6);font-size:12px;line-height:1.4;margin:0">' + step2Label + '</p>'
+        + '</div>'
+        + '<div style="display:flex;gap:10px;align-items:flex-start">'
+        + '<div style="width:24px;height:24px;border-radius:50%;background:' + c.color + ',.15);color:' + c.color + ',1);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</div>'
+        + '<p style="color:rgba(255,255,255,.6);font-size:12px;line-height:1.4;margin:0"><b style="color:#fff">You earn 85%</b> \u2014 auto-deposited to your wallet</p>'
+        + '</div>'
+        + '</div>';
+    }
+
+    // "Requested" mode: different CTA
+    if(mode === 'requested') {
+      html += '<div style="background:rgba(251,191,36,.06);border:1px solid rgba(251,191,36,.15);border-radius:14px;padding:16px;margin-bottom:20px;text-align:center">'
+        + '<p style="font-size:13px;color:rgba(255,255,255,.6);line-height:1.5;margin:0">\u23F3 We\'re on it. In the meantime, you can <strong style="color:#fff">use staff QR verification</strong> so bookings still work.</p>'
+        + '</div>'
+        + '<button onclick="window._slfSuccessAction(\'manual\', ' + gymId + ')" style="width:100%;background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff;border:none;padding:15px;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 4px 20px rgba(255,109,0,.3);margin-bottom:10px">\uD83D\uDC64 Enable Staff Verification \u2192</button>';
+    }
+
+    // Quick action buttons for connected/manual
+    if(c.showPrice) {
+      html += '<button onclick="window._slfSuccessAction(\'price\', ' + gymId + ')" style="width:100%;background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff;border:none;padding:15px;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 4px 20px rgba(255,109,0,.3);margin-bottom:10px">\uD83D\uDCB0 Set Day Pass Price \u2192</button>';
+    }
+
+    html += '<button onclick="window._slfSuccessAction(\'dashboard\', ' + gymId + ')" style="width:100%;background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.12);padding:14px;border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:10px">\uD83D\uDCCA Go to Dashboard</button>'
       + '<button onclick="if(typeof _ctaCloseSheet===\'function\')_ctaCloseSheet();if(typeof window._sgCloseSheet===\'function\')window._sgCloseSheet(\'sg-connect-success\');" style="width:100%;background:none;color:rgba(255,255,255,.4);border:none;padding:10px;font-size:13px;font-weight:600;cursor:pointer">Done</button>';
 
     if(typeof window._sgOpenSheet === 'function') {
@@ -501,6 +542,9 @@ window._slfShowConnectSuccess = function(gymId, providerName) {
     // Refresh dashboard data in background
     if(typeof window._peLoadAndRender === 'function') window._peLoadAndRender();
     if(typeof window._partnerLoadGymProfile === 'function') window._partnerLoadGymProfile();
+
+    // Update lock status indicator
+    if(typeof window._sgUpdateLockStatus === 'function') window._sgUpdateLockStatus(gymId);
   }, 400);
 };
 
@@ -519,6 +563,9 @@ window._slfSuccessAction = function(action, gymId) {
   } else if(action === 'dashboard') {
     // Reload dashboard
     if(typeof window._partnerLoadGymProfile === 'function') window._partnerLoadGymProfile();
+  } else if(action === 'manual') {
+    // Enable staff verification then show its celebration
+    if(typeof window._slfNoLock === 'function') window._slfNoLock();
   }
 };
 
@@ -612,5 +659,5 @@ var _waitIframePatch = setInterval(function(){
 }, 300);
 
 
-console.log('[UX-V6] Post-connect celebration + live lock status loaded');
+console.log('[UX-V7] Post-connect celebration (all brands) + live lock status loaded');
 })();
