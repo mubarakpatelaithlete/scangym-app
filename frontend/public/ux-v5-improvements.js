@@ -155,6 +155,8 @@ window._sgOpenSeamIframe = function(url, providerName, gymId, webviewId){
         var d = await r.json();
         if(d.connected){
           clearInterval(window._sgSeamIframePoll);
+          window._sgSeamIframePoll = null;
+          window._sgSeamIframeConnected = true; // flag so SLF poll skips duplicate toast
           window._sgCloseSeamIframe();
           if(typeof _slfToast === 'function') _slfToast('🎉 ' + (providerName||'Lock') + ' connected! Visitors will get auto door access.', 'success', 5000);
           else if(typeof sgToast === 'function') sgToast('🎉 ' + (providerName||'Lock') + ' connected!', 'success', 5000);
@@ -230,7 +232,16 @@ var _waitSeamOverride = setInterval(function(){
     if(url && typeof url === 'string' && url.indexOf('connect.getseam.com/connect_webviews') !== -1){
       // Intercept and open in iframe instead
       var gymId = window._partnerGymId || 0;
-      window._sgOpenSeamIframe(url, 'Smart Lock', gymId, null);
+      // Extract connect_webview_id from URL so iframe polling can detect auth completion
+      var webviewId = null;
+      try {
+        var u = new URL(url);
+        webviewId = u.searchParams.get('connect_webview_id');
+      } catch(e) {
+        var match = url.match(/connect_webview_id=([^&]+)/);
+        if(match) webviewId = match[1];
+      }
+      window._sgOpenSeamIframe(url, 'Smart Lock', gymId, webviewId);
       return null; // Don't open new tab
     }
     // For all other window.open calls, use the original
