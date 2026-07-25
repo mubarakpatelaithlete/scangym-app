@@ -17909,7 +17909,7 @@ window._partnerConnectSeam=function(){
 window._sgSeamConnectExisting=async function(){
   var gymId=window._partnerGymId||0;
   if(!gymId){try{var dr=await fetch('/api/gym-partner/dashboard',{credentials:'include'});var dd=await dr.json();if(dd.gyms&&dd.gyms.length>0){gymId=dd.gyms[0].id;window._partnerGymId=gymId;}}catch(e){}}
-  if(!gymId){sgToast('Claim a gym first before connecting smart access','info',3000);return;}
+  if(!gymId){sgToast('Find and verify your gym first','info',3000);return;}
   sgToast('Connecting smart access...','info',2000);
   try{
     var r=await fetch('/api/access/owner/create-connect-webview',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({gymId:gymId})});
@@ -20624,7 +20624,7 @@ window._sgConnectSeam=async function(){
       if(dd.gyms&&dd.gyms.length>0){gymId=dd.gyms[0].id;window._partnerGymId=gymId;}
     }catch(e){}
   }
-  if(!gymId){sgToast('Claim a gym first before connecting smart access','info',3000);return;}
+  if(!gymId){sgToast('Find and verify your gym first','info',3000);return;}
   sgToast('Connecting smart access to your gym...','info',2000);
   try{
     var r=await fetch('/api/access/owner/connect-seam',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({gymId:gymId})});
@@ -20842,8 +20842,8 @@ function GymPartnerHubPage(){
     <!-- R6-P03: Gym Search & Claim (if not claimed) -->
     <div id="partner-claim-cta" style="background:rgba(255,109,0,.06);border:1px solid rgba(255,109,0,.1);border-radius:14px;padding:16px;margin-bottom:16px">
       <p style="font-size:22px;margin-bottom:6px;text-align:center">\ud83d\udd0d</p>
-      <h3 style="color:#fff;font-size:15px;font-weight:700;margin-bottom:4px;text-align:center">Find & Claim Your Gym</h3>
-      <p style="color:rgba(255,255,255,.4);font-size:11px;margin-bottom:12px;text-align:center">Search by name to claim and start earning</p>
+      <h3 style="color:#fff;font-size:15px;font-weight:700;margin-bottom:4px;text-align:center">Find Your Gym</h3>
+      <p style="color:rgba(255,255,255,.4);font-size:11px;margin-bottom:12px;text-align:center">Search → Verify → Connect Smart Locks</p>
       <div style="position:relative;margin-bottom:10px">
         <input id="partner-claim-search" type="text" placeholder="Search gym name..." oninput="_partnerSearchClaim(this.value)" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px 12px 10px 34px;color:#fff;font-size:13px;outline:none;box-sizing:border-box">
         <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:14px;opacity:.4">\ud83d\udd0d</span>
@@ -20965,7 +20965,7 @@ window._loadPartnerHub=async function(){
     var hasAccess=d.accessConnected||false;
     var hasPricing=d.pricingSet||true;
     var steps=[
-      {done:hasClaimed,label:'Claim your gym',icon:'\ud83c\udfe2'},
+      {done:hasClaimed,label:'Find your gym',icon:'\ud83d\udd0d'},
       {done:hasStripe,label:'Connect bank (Stripe)',icon:'\ud83c\udfe6'},
       {done:hasAccess,label:'Connect access control',icon:'\ud83d\udd10'},
       {done:hasPricing,label:'Set pricing',icon:'\ud83d\udcb0'},

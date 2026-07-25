@@ -10,7 +10,7 @@
    - Owner-specific action buttons: Edit Photos, Set Price, Hours, 
      Toggle Active, Analytics, Earnings, Access, Settings
    - Loads gym data from /api/gym-partner/dashboard
-   - Falls back to "Claim Your Gym" card if no gyms claimed
+   - Falls back to "List Your Gym" card if no gyms listed
    
    Purely additive drop-in script. Book tab code NOT touched.
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -310,20 +310,24 @@ function _peClaimCard(){
     // Search bar
     +'<div class="pe-search">'
     +'<div onclick="window._peOpenClaimSearch()" style="flex:1;background:rgba(10,12,20,.75);border:1px solid rgba(255,109,0,.3);border-radius:12px;padding:10px 14px;color:rgba(255,255,255,.5);font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px;cursor:pointer">'
-    +'<span>🔍</span> <span>Search for your gym to claim it</span>'
+    +'<span>🔍</span> <span>Search for your gym</span>'
     +'</div>'
     +'</div>'
     // Center CTA
     +'<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;z-index:20;width:85%">'
     +'<div style="font-size:64px;margin-bottom:16px">🏋️</div>'
-    +'<h2 style="color:#fff;font-size:24px;font-weight:900;margin:0 0 8px;text-shadow:0 2px 10px rgba(0,0,0,.5)">Your Gym Goes Here</h2>'
-    +'<p style="color:rgba(255,255,255,.5);font-size:14px;margin:0 0 24px">Claim your gym to see it exactly like your customers do — but with full editing power</p>'
-    +'<p style="color:rgba(255,255,255,.3);font-size:11px;margin-top:12px">1.2M+ gyms · Free to claim</p>'
+    +'<h2 style="color:#fff;font-size:24px;font-weight:900;margin:0 0 8px;text-shadow:0 2px 10px rgba(0,0,0,.5)">Get Started in 3 Steps</h2>'
+    +'<div style="text-align:left;display:inline-block;margin:0 0 16px">'
+    +'<p style="color:rgba(255,255,255,.65);font-size:14px;margin:0 0 6px;display:flex;align-items:center;gap:8px"><span style="background:rgba(255,109,0,.2);color:#FF6D00;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0">1</span> Search for your gym</p>'
+    +'<p style="color:rgba(255,255,255,.65);font-size:14px;margin:0 0 6px;display:flex;align-items:center;gap:8px"><span style="background:rgba(34,197,94,.2);color:#22c55e;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0">2</span> Verify ownership</p>'
+    +'<p style="color:rgba(255,255,255,.65);font-size:14px;margin:0 0 0;display:flex;align-items:center;gap:8px"><span style="background:rgba(59,130,246,.2);color:#3b82f6;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0">3</span> Connect smart locks</p>'
+    +'</div>'
+    +'<p style="color:rgba(255,255,255,.3);font-size:11px;margin-top:12px">1.2M+ gyms · Free to join</p>'
     +'</div>'
     // Bottom info (mimicking Book tab)
     +'<div class="pe-info">'
     +'<div class="pe-logo" style="background:linear-gradient(135deg,#FF6D00,#E66200)">🏋️</div>'
-    +'<div class="pe-gym-name">Claim Your Gym</div>'
+    +'<div class="pe-gym-name">List Your Gym</div>'
     +'<div class="pe-gym-addr">📍 Search from 1.2M+ gyms worldwide</div>'
     +'<div class="pe-chips">'
     +'<div class="pe-chip">💚 Keep 85%</div>'
@@ -348,14 +352,17 @@ window._peOpenClaimSearch=function(prefill){
   var html=''
     +'<div style="text-align:center;margin-bottom:16px">'
     +'<div style="font-size:40px;margin-bottom:8px">🔍</div>'
-    +'<h2 style="color:#fff;font-size:20px;font-weight:800;margin:0 0 4px">Find &amp; Claim Your Gym</h2>'
-    +'<p style="color:rgba(255,255,255,.4);font-size:13px;margin:0">Search 1.2M+ gyms · Free to claim</p>'
+    +'<h2 style="color:#fff;font-size:20px;font-weight:800;margin:0 0 4px">Find Your Gym</h2>'
+    +'<p style="color:rgba(255,255,255,.4);font-size:13px;margin:0">Search 1.2M+ gyms · Free to join</p>'
     +'</div>'
     +'<input id="pe-claim-search-input" type="text" placeholder="Gym name + city (e.g. PureGym Leeds)" value="'+String(prefill||'').replace(/"/g,'&quot;')+'" '
     +'oninput="window._peClaimSearchInput(this.value)" '
     +'style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,109,0,.3);border-radius:12px;padding:14px 16px;color:#fff;font-size:15px;outline:none;box-sizing:border-box;margin-bottom:12px">'
     +'<div id="pe-claim-results" style="max-height:280px;overflow-y:auto"></div>'
-    +'<p style="color:rgba(255,255,255,.25);font-size:11px;text-align:center;margin-top:10px">Can\'t find your gym? Email <span style="color:#FF6D00">hello@scangym.com</span> and we\'ll add it</p>';
+    +'<p style="color:rgba(255,255,255,.25);font-size:11px;text-align:center;margin-top:10px">Can\'t find your gym? Email <span style="color:#FF6D00">hello@scangym.com</span> and we\'ll add it</p>'
+    +'<div style="margin-top:14px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:12px">'
+    +'<p style="color:rgba(255,255,255,.35);font-size:11px;margin:0;line-height:1.5;text-align:center">🔍 Search → ✅ Verify → 🔐 Connect Locks</p>'
+    +'</div>';
   _ctaOpenSheet(html);
   setTimeout(function(){
     var inp=document.getElementById('pe-claim-search-input');
@@ -463,7 +470,7 @@ window._peStartClaim=function(placeId,encName){
   var u=(typeof state!=='undefined'&&state)?state.user:null;
   if(!u){
     if(typeof window._ctaCloseSheet==='function')window._ctaCloseSheet();
-    _peToast('Log in first to claim your gym');
+    _peToast('Log in first to list your gym');
     // Save data so auth success can auto-retry (no Stripe card step)
     window._pePostAuthData={placeId:placeId,encName:encName};
     if(typeof window._sgShowAuthSheet==='function'){window._sgShowAuthSheet('book');}else{navigate('/login');}
