@@ -8409,7 +8409,7 @@ window.handleSendCode=async function(){
       state.authStep='code';
       render();
     }else{
-      errDiv.textContent=r.error||'Failed to send code';errDiv.classList.remove('hidden');
+      errDiv.textContent=(r.error||'Failed to send code')+' — Try "Continue with Google" below instead';errDiv.classList.remove('hidden');
       btn.textContent='Send Verification Code';btn.disabled=false;
     }
   }catch(e){
@@ -22944,7 +22944,7 @@ window.sgFeedback = async function(elementId, vote, btn) {
         state.authPhone=r.phone||fullPhone;
         _renderCodeStep(state.authPhone);
       }else{
-        err.textContent=r.error||'Failed to send code';err.style.display='block';
+        err.textContent=(r.error||'Failed to send code')+' — Use Google sign-in instead';err.style.display='block';
         btn.textContent='📲 Send Code';btn.disabled=false;
       }
     }catch(e){

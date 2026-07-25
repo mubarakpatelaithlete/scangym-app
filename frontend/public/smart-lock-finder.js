@@ -332,6 +332,9 @@ window._slfSelectProvider = async function (providerId) {
 async function _slfStartSeamConnect(gymId, providerId, providerName) {
   _slfToast('Connecting ' + providerName + '…', 'success', 2000);
 
+  // Pre-open popup in the synchronous user-gesture context so browsers don't block it
+  var popup = window.open('about:blank', '_blank');
+
   try {
     var r = await fetch('/api/access/owner/create-connect-webview', {
       method: 'POST',
@@ -348,12 +351,20 @@ async function _slfStartSeamConnect(gymId, providerId, providerName) {
         if(typeof _sgCloseSheet === 'function') _sgCloseSheet(id);
       });
       if(typeof _ctaCloseSheet === 'function') _ctaCloseSheet();
-      window.open(url, '_blank');
+      // Navigate the pre-opened popup to the Seam webview URL
+      if (popup && !popup.closed) {
+        popup.location.href = url;
+      } else {
+        // Fallback: if popup was blocked, try location assign
+        window.open(url, '_blank');
+      }
       _slfToast('Complete ' + providerName + ' login in the new tab ✅', 'success', 5000);
       if (d.connect_webview_id) {
         _slfPollSeamComplete(gymId, d.connect_webview_id, providerName);
       }
     } else {
+      // Close unused popup
+      if (popup && !popup.closed) popup.close();
       var r2 = await fetch('/api/access/owner/connect-seam', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -371,6 +382,7 @@ async function _slfStartSeamConnect(gymId, providerId, providerName) {
       }
     }
   } catch (ex) {
+    if (popup && !popup.closed) popup.close();
     _slfToast('Connection failed — check your internet', 'error', 3000);
   }
 }
