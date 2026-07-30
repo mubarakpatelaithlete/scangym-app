@@ -22,6 +22,20 @@ function safeInterval(period) {
   return PERIOD_INTERVALS[period] || '7 days';
 }
 
+// GET /api/stats/live-visitors — Real "people browsing now" count (public)
+// Honest social proof: distinct visitors in the last 5 minutes (in-memory,
+// no PII). The frontend ticker only shows the label when count >= 5 so a
+// quiet moment never reads "1 person here" (which signals a dead product).
+const liveVisitors = require('../middleware/live-visitors');
+router.get('/live-visitors', (req, res) => {
+  const count = liveVisitors.getCount();
+  res.setHeader('Cache-Control', 'no-store');
+  res.json({
+    count,
+    label: count >= 5 ? `\u{1F525} ${count} people browsing now` : null
+  });
+});
+
 // GET /api/stats/gym/:gymId — Public stats summary
 router.get('/gym/:gymId', optionalAuth, async (req, res) => {
   try {
