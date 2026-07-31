@@ -516,10 +516,15 @@
   function syncVisibility() {
     build();
     var onPartner = /^\/partner(\/|$)/.test(location.pathname);
+    // The bottom bar is now itself an "Ask AI" bar, so a floating button beside it
+    // would be two doors to the same room. Show the button only when that bar is not
+    // on screen.
+    var bar = document.querySelector('[data-ai-bar]');
+    var barVisible = !!(bar && window.getComputedStyle(bar).display !== 'none');
     var fab = document.getElementById('pchat-fab');
     if (fab) {
-      fab.classList.toggle('show', onPartner);
-      if (onPartner) positionFab(fab);
+      fab.classList.toggle('show', onPartner && !barVisible);
+      if (onPartner && !barVisible) positionFab(fab);
     }
     if (!onPartner && S.open) close();
     if (onPartner && /[?&]chat=1/.test(location.search) && !S.open) open();
