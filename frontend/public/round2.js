@@ -143,6 +143,10 @@ setInterval(function(){
 function restyleContinueBanner(id){
   var banner=document.getElementById(id);
   if(!banner||banner.dataset.sgR2Slim)return;
+  /* The Ask AI bar ships its own slim full-width layout (icon + label + hint + arrow).
+     This restyler assumes the old label/subtitle/step-dot markup and would hide the
+     wrong child, so leave it alone. */
+  if(banner.getAttribute('data-ai-bar'))return;
   var card=banner.firstElementChild;
   if(!card)return;
   banner.dataset.sgR2Slim='1';
