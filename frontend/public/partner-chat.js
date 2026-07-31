@@ -87,6 +87,20 @@
       '.pchat-send[disabled]{opacity:.4}',
       '.pchat-hint{font-size:11px;color:rgba(255,255,255,.35);text-align:center;padding:0 14px 6px}',
       '.pchat-link{color:#FF6D00;text-decoration:underline}',
+      // 4. "Calm screen": replies are rendered, not dumped. Bold, bullets, numbered
+      // steps and links get real typography so an answer reads like an answer instead
+      // of a paragraph full of asterisks.
+      '.pchat-ai strong{color:#fff;font-weight:700}',
+      '.pchat-ai em{font-style:italic;opacity:.92}',
+      '.pchat-ai code{background:rgba(255,255,255,.09);border-radius:5px;padding:1px 5px;font-size:13px;font-family:ui-monospace,Menlo,monospace}',
+      '.pchat-ai ul,.pchat-ai ol{margin:6px 0 6px 0;padding-left:20px;display:flex;flex-direction:column;gap:4px}',
+      '.pchat-ai li{line-height:1.45}',
+      '.pchat-ai li::marker{color:#FF6D00}',
+      '.pchat-ai p{margin:0 0 8px}',
+      '.pchat-ai p:last-child{margin-bottom:0}',
+      '.pchat-ai a{color:#ffb87a;text-decoration:underline}',
+      '.pchat-ai.rich{white-space:normal}',
+      '.pchat-stop{background:#191926;border:1px solid rgba(255,255,255,.18);color:#fff}',
     ].join('');
     var el = document.createElement('style');
     el.id = 'pchat-styles';
@@ -126,6 +140,7 @@
 
     document.getElementById('pchat-close').onclick = close;
     document.getElementById('pchat-send').onclick = function () {
+      if (S.busy) { stopStream(); return; }
       send(document.getElementById('pchat-input').value);
     };
     document.getElementById('pchat-mic').onclick = toggleMic;
@@ -201,6 +216,93 @@
     if (d) d.innerHTML = (ok ? '✓ ' : '× ') + (TOOL_LABELS[tool] || 'Done');
   }
 
+  /**
+   * Markdown-lite renderer.
+   *
+   * The model naturally writes **bold**, `- ` bullets and numbered steps. Printed as
+   * plain text those become literal asterisks and dashes, which is the single biggest
+   * reason the chat looked less polished than ChatGPT. This turns the common cases into
+   * real HTML while it streams. Deliberately tiny: escape everything first, then only
+   * ever add tags we generated ourselves — no library, no innerHTML of model text.
+   */
+  function esc(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function inline(s) {
+    return esc(s)
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/(^|[\s(])\*([^*\n]+)\*/g, '$1<em>$2</em>')
+      .replace(/(https?:\/\/[^\s<]+[^\s<.,)])/g, '<a href="$1" target="_blank" rel="noopener">$1</a>')
+      .replace(/\n/g, '<br>');
+  }
+
+  function renderRich(el, text) {
+    var lines = String(text || '').split('\n');
+    var html = '';
+    var list = null; // 'ul' | 'ol'
+    var para = [];
+
+    function flushPara() {
+      if (para.length) {
+        html += '<p>' + inline(para.join('\n')) + '</p>';
+        para = [];
+      }
+    }
+    function flushList() {
+      if (list) {
+        html += '</' + list + '>';
+        list = null;
+      }
+    }
+
+    lines.forEach(function (raw) {
+      var line = raw.replace(/\s+$/, '');
+      var bullet = /^\s*[-*•]\s+(.*)$/.exec(line);
+      var numbered = /^\s*\d+[.)]\s+(.*)$/.exec(line);
+
+      if (bullet) {
+        flushPara();
+        if (list !== 'ul') { flushList(); html += '<ul>'; list = 'ul'; }
+        html += '<li>' + inline(bullet[1]) + '</li>';
+      } else if (numbered) {
+        flushPara();
+        if (list !== 'ol') { flushList(); html += '<ol>'; list = 'ol'; }
+        html += '<li>' + inline(numbered[1]) + '</li>';
+      } else if (!line.trim()) {
+        flushPara();
+        flushList();
+      } else {
+        flushList();
+        para.push(line);
+      }
+    });
+    flushPara();
+    flushList();
+
+    el.classList.add('rich');
+    el.innerHTML = html;
+  }
+
+  /**
+   * 1. "One box, no menus": suggestions belong on an empty thread only. Re-offering the
+   * same five chips after every answer is a menu by another name — and it buries the
+   * reply. Once the user has said anything, the box speaks for itself.
+   */
+  function startChips() {
+    var spoken = S.msgs.some(function (m) { return m.role === 'user'; });
+    return spoken ? [] : OPEN_CHIPS;
+  }
+
+  function setHint(text) {
+    var h = document.getElementById('pchat-hint');
+    if (!h) return;
+    if (text === null) { h.style.display = 'none'; return; }
+    h.style.display = '';
+    h.textContent = text;
+  }
+
   function chips(list) {
     var c = document.getElementById('pchat-chips');
     c.innerHTML = '';
@@ -249,6 +351,35 @@
     });
   }
 
+  /**
+   * 3. Turn the send button into a stop button while the model is talking, and back
+   * again when it stops. One button, two states — no extra furniture on screen.
+   */
+  function setBusyUI(busy) {
+    var btn = document.getElementById('pchat-send');
+    if (!btn) return;
+    btn.disabled = false;
+    btn.classList.toggle('pchat-stop', busy);
+    btn.classList.toggle('pchat-send', !busy);
+    btn.innerHTML = busy ? '■' : '➤';
+    btn.title = busy ? 'Stop' : 'Send';
+  }
+
+  function stopStream() {
+    if (S.ctrl) {
+      try { S.ctrl.abort(); } catch (_) {}
+    }
+  }
+
+  // Any tool line still spinning when the turn ends did not report back.
+  function resolveStrayTools() {
+    var nodes = document.querySelectorAll('.pchat-tool .pchat-spin');
+    for (var i = 0; i < nodes.length; i++) {
+      var row = nodes[i].parentNode;
+      row.innerHTML = '× ' + row.textContent.replace(/…$/, '') + ' — did not finish';
+    }
+  }
+
   function send(text, confirmPayload) {
     text = (text || '').trim();
     if (S.busy) return;
@@ -262,12 +393,13 @@
 
     if (text) {
       bubble('pchat-me', text);
+      setHint(null); // 4. calm screen: the how-to-use line has done its job
+      
       S.msgs.push({ role: 'user', text: text });
     }
     chips([]);
     S.busy = true;
-    document.getElementById('pchat-send').disabled = true;
-    typingOn();
+    typingOn(); // the send button becomes Stop in setBusyUI(true), so it stays tappable
 
     stream({ message: text, history: history(), confirm: confirmPayload || null });
   }
@@ -275,12 +407,18 @@
   function stream(body) {
     var aiBubble = null;
     var acc = '';
+    // 2/5. Streaming you can interrupt. ChatGPT's stop button is why long answers
+    // never feel like being trapped; aborting mid-stream keeps whatever arrived.
+    var ctrl = window.AbortController ? new AbortController() : null;
+    S.ctrl = ctrl;
+    setBusyUI(true);
 
     fetch('/api/partner/agent', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
       body: JSON.stringify(body),
+      signal: ctrl ? ctrl.signal : undefined,
     })
       .then(function (res) {
         if (res.status === 401) {
@@ -297,9 +435,11 @@
         }
         return readStream(res.body.getReader());
       })
-      .catch(function () {
+      .catch(function (err) {
         typingOff();
-        bubble('pchat-ai', 'Connection dropped — nothing was changed.');
+        if (!err || err.name !== 'AbortError') {
+          bubble('pchat-ai', 'Connection dropped — nothing was changed.');
+        }
         finish();
       });
 
@@ -343,7 +483,7 @@
         typingOff();
         if (!aiBubble) aiBubble = bubble('pchat-ai', '');
         acc += data.text;
-        aiBubble.textContent = acc;
+        renderRich(aiBubble, acc);
         scrollDown();
       } else if (event === 'tool') {
         typingOff();
@@ -354,7 +494,7 @@
         S.pending = { tool: data.tool, args: data.args };
         if (!aiBubble) aiBubble = bubble('pchat-ai', '');
         acc = (acc ? acc + '\n\n' : '') + confirmSummary(data.tool, data.args);
-        aiBubble.textContent = acc;
+        renderRich(aiBubble, acc);
         scrollDown();
       } else if (event === 'done') {
         if (data.result && data.result.url) {
@@ -371,8 +511,11 @@
     function finish() {
       typingOff();
       S.busy = false;
-      var btn = document.getElementById('pchat-send');
-      if (btn) btn.disabled = false;
+      S.ctrl = null;
+      setBusyUI(false);
+      // 3. "Shows its work" only works if every step ends. A dropped stream used to
+      // leave a spinner turning forever, which reads as "it is still doing it".
+      resolveStrayTools();
 
       if (acc) S.msgs.push({ role: 'ai', text: acc });
 
@@ -398,12 +541,12 @@
               S.pending = null;
               bubble('pchat-me', 'No');
               bubble('pchat-ai', 'Left as it was. Anything else?');
-              chips(OPEN_CHIPS);
+              chips(startChips());
             },
           },
         ]);
       } else {
-        chips(OPEN_CHIPS);
+        chips(startChips());
       }
     }
   }
@@ -458,6 +601,26 @@
   }
 
   // ── open / close ──────────────────────────────────────────────────────────
+  /** Opens the app's own sign-in sheet (it renders above this chat at z-index 9500). */
+  function openSignIn() {
+    if (typeof window._sgShowAuthSheet === 'function') {
+      window._sgShowAuthSheet('book');
+      var tries = 0;
+      var poll = setInterval(function () {
+        tries++;
+        if (window.state && window.state.user) {
+          clearInterval(poll);
+          bubble('pchat-ai', "You're in. What do you need?");
+          chips(OPEN_CHIPS);
+        } else if (tries > 240) {
+          clearInterval(poll);
+        }
+      }, 500);
+    } else {
+      bubble('pchat-ai', 'Tap Profile at the bottom to sign in, then come back here.');
+    }
+  }
+
   function greet() {
     var signedIn = !!(window.state && window.state.user);
     if (!signedIn) {
@@ -465,7 +628,8 @@
         'pchat-ai',
         "Hi — I'm your ScanGym assistant. Sign in with the number on your gym account and I can set your price, check your earnings, close the gym for a day, or pay you out."
       );
-      chips([]);
+      // 1. No dead ends: "sign in" used to be advice with nothing to tap.
+      chips([{ label: 'Sign me in', style: 'yes', onClick: openSignIn }]);
       return;
     }
     bubble(
