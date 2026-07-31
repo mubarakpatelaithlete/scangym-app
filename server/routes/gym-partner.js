@@ -1135,11 +1135,19 @@ router.post('/request-payout', authenticateUser, express.json(), async (req, res
     const totalRevenue = parseFloat(row.revenue) || (parseInt(row.revenue_pence) / 100) || 0;
     const partnerShare = totalRevenue * 0.85;
 
-    if (partnerShare < 1) return res.json({ error: 'Minimum payout is £1. Current balance: £' + partnerShare.toFixed(2) });
+    // Subtract anything already paid or in flight, same as /withdraw-request does. Without
+    // this the balance never went down and the same money could be transferred repeatedly.
+    const prior = await pool.query(
+      `SELECT COALESCE(SUM(amount_pence), 0)::int AS used FROM payout_requests
+        WHERE user_id::text = $1::text AND status IN ('pending','approved','paid')`, [String(userId)]
+    ).catch(() => ({ rows: [{ used: 0 }] }));
+    const available = Math.max(partnerShare - (parseInt(prior.rows[0].used) || 0) / 100, 0);
+
+    if (available < 1) return res.json({ error: 'Minimum payout is £1. Current balance: £' + available.toFixed(2) });
 
     // Create Stripe transfer
     try {
-      const amountPence = Math.round(partnerShare * 100);
+      const amountPence = Math.round(available * 100);
       await stripe.transfers.create({
         amount: amountPence,
         currency: 'gbp',
@@ -1147,8 +1155,13 @@ router.post('/request-payout', authenticateUser, express.json(), async (req, res
         description: 'ScanGym partner payout',
         metadata: { scangym_user_id: String(userId) }
       });
-      console.log(`[Payout] Transferred £${partnerShare.toFixed(2)} to ${connectId} for user ${userId}`);
-      res.json({ success: true, amount: partnerShare.toFixed(2), message: 'Payout of £' + partnerShare.toFixed(2) + ' initiated' });
+      await pool.query(
+        `INSERT INTO payout_requests (user_id, role, amount_pence, method, details, status, processed_at)
+         VALUES ($1, 'partner', $2, 'stripe_connect', $3, 'paid', NOW())`,
+        [String(userId), amountPence, JSON.stringify({ source: 'request-payout' })]
+      ).catch(err => console.error('[Payout] ledger write failed:', err.message));
+      console.log(`[Payout] Transferred £${available.toFixed(2)} to ${connectId} for user ${userId}`);
+      res.json({ success: true, amount: available.toFixed(2), message: 'Payout of £' + available.toFixed(2) + ' initiated' });
     } catch (transferErr) {
       console.error('[Payout] Transfer failed:', transferErr.message);
       res.json({ error: 'Transfer failed: ' + transferErr.message });
