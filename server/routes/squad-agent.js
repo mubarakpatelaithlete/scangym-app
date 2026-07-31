@@ -21,15 +21,11 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../middleware/db');
 const { authenticateUser } = require('../middleware/auth');
-const OpenAI = require('openai');
+const llm = require('../lib/llm');
 const squadTools = require('../lib/squad-tools');
 
-const MODEL = process.env.SQUAD_AGENT_MODEL || 'gpt-4o-mini';
 const MAX_TOOL_ROUNDS = 4;
 
-const openai = process.env.OPENAI_API_KEY
-  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-  : null;
 
 // Audit trail. Created lazily so a fresh database needs no migration step.
 (async () => {
@@ -99,7 +95,7 @@ router.post('/agent', authenticateUser, express.json(), async (req, res) => {
   const userId = req.user.id;
   const { message, history = [], confirm = null } = req.body || {};
 
-  if (!openai) {
+  if (!llm.configured()) {
     return res.status(503).json({ error: 'Assistant not configured' });
   }
   if (!message && !confirm) {
@@ -137,8 +133,8 @@ router.post('/agent', authenticateUser, express.json(), async (req, res) => {
     ];
 
     for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
-      const stream = await openai.chat.completions.create({
-        model: MODEL,
+      // Model choice and provider failover live in lib/llm.js.
+      const { stream } = await llm.streamChat('SquadAgent', {
         messages,
         tools: squadTools.openAiTools(),
         tool_choice: 'auto',
@@ -224,7 +220,13 @@ router.post('/agent', authenticateUser, express.json(), async (req, res) => {
     res.end();
   } catch (err) {
     console.error('[SquadAgent] error:', err.message);
-    sse(res, 'delta', { text: 'Something went wrong on my side — nothing was changed.' });
+    // The owner does not care which vendor is down; they care that nothing broke and
+    // whether it is worth trying again. Say which of those two it is.
+    var text =
+      err.message === 'no_provider'
+        ? "My assistant service is down at the moment, so I can't answer right now — nothing was changed. Everything else in the app works as normal."
+        : 'Something went wrong on my side — nothing was changed.';
+    sse(res, 'delta', { text });
     sse(res, 'done', { error: true });
     res.end();
   }
