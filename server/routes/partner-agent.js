@@ -21,7 +21,6 @@ const router = express.Router();
 const pool = require('../middleware/db');
 const { authenticateUser } = require('../middleware/auth');
 const llm = require('../lib/llm');
-const { collectToolCalls, normaliseToolCalls, assistantToolMessage } = require('../lib/tool-calls');
 const partnerTools = require('../lib/partner-tools');
 
 const MAX_TOOL_ROUNDS = 4;
@@ -56,8 +55,8 @@ How you behave:
 - Do the thing. If they say "make my day pass £6", call set_day_price — do not explain how to find the settings screen.
 - One short answer. Two sentences beats ten. No headings, no bullet lists unless you are listing bookings.
 - Money and state changes: say exactly what you are about to do with the number in it, and wait for their yes. Reads (earnings, bookings, customers) just run.
-- Never invent numbers. If you have not called a tool, you do not know their earnings.
-- Never report state you have not read. Anything about the smart lock or QR entry working requires get_smart_lock_status first — say "not connected" plainly when it is not, and never say a door is verified unless the tool says so.
+- Never invent numbers, names, dates or statuses. If a tool has not told you, you do not know it — say so.
+- If a tool returns ok:false, relay that plainly. Never dress a failure up as a success, and never say a change was made when the tool did not confirm it.
 - If they have not claimed a gym yet, search for it by name and offer to claim it.
 - ScanGym takes 15%, the owner keeps 85%. Day passes must be between £3 and £25.
 - Plain British English, warm, no exclamation marks, no emoji unless they use them first.`;
@@ -155,7 +154,13 @@ router.post('/agent', authenticateUser, express.json(), async (req, res) => {
           sse(res, 'delta', { text: delta.content });
         }
 
-        collectToolCalls(delta.tool_calls, calls);
+        for (const tc of delta.tool_calls || []) {
+          const i = tc.index || 0;
+          calls[i] = calls[i] || { id: '', name: '', args: '' };
+          if (tc.id) calls[i].id = tc.id;
+          if (tc.function?.name) calls[i].name += tc.function.name;
+          if (tc.function?.arguments) calls[i].args += tc.function.arguments;
+        }
       }
 
       // No tool wanted → the model has answered in prose. Turn over.
@@ -164,25 +169,23 @@ router.post('/agent', authenticateUser, express.json(), async (req, res) => {
         return res.end();
       }
 
-      // Normalise before we trust any of it. A mangled or unknown tool name is dropped
-      // rather than replayed to the provider, which used to abort the whole answer.
-      const { valid, dropped } = normaliseToolCalls(calls, partnerTools.tools, 'PartnerAgent');
+      messages.push({
+        role: 'assistant',
+        content: text || null,
+        tool_calls: calls.map((c) => ({
+          id: c.id,
+          type: 'function',
+          function: { name: c.name, arguments: c.args || '{}' },
+        })),
+      });
 
-      if (!valid.length) {
-        const asked = dropped[0]?.name;
-        sse(res, 'delta', {
-          text: asked
-            ? `I can't do "${asked}" from here yet — ask me another way and I'll tell you what I can do.`
-            : "I didn't quite follow that — could you say it a slightly different way?",
-        });
-        sse(res, 'done', { droppedToolCalls: dropped });
-        return res.end();
-      }
-
-      messages.push(assistantToolMessage(text, valid));
-
-      for (const call of valid) {
-        const args = call.args || {};
+      for (const call of calls) {
+        let args = {};
+        try {
+          args = JSON.parse(call.args || '{}');
+        } catch (_) {
+          args = {};
+        }
 
         // A write the owner has not approved yet: hand it back for confirmation.
         if (partnerTools.isWrite(call.name)) {
@@ -190,7 +193,7 @@ router.post('/agent', authenticateUser, express.json(), async (req, res) => {
           sse(res, 'confirm', {
             tool: call.name,
             args,
-            summary: partnerTools.tools[call.name]?.schema?.description || call.name,
+            summary: partnerTools.tools[call.name].schema.description,
           });
           sse(res, 'done', { awaitingConfirmation: true });
           return res.end();
