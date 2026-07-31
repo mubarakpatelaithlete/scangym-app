@@ -89,6 +89,20 @@
       '.schat-send[disabled]{opacity:.4}',
       '.schat-hint{font-size:11px;color:rgba(255,255,255,.35);text-align:center;padding:0 14px 6px}',
       '.schat-link{color:#FF6D00;text-decoration:underline}',
+      // 4. "Calm screen": replies are rendered, not dumped. Bold, bullets, numbered
+      // steps and links get real typography so an answer reads like an answer instead
+      // of a paragraph full of asterisks.
+      '.schat-ai strong{color:#fff;font-weight:700}',
+      '.schat-ai em{font-style:italic;opacity:.92}',
+      '.schat-ai code{background:rgba(255,255,255,.09);border-radius:5px;padding:1px 5px;font-size:13px;font-family:ui-monospace,Menlo,monospace}',
+      '.schat-ai ul,.schat-ai ol{margin:6px 0 6px 0;padding-left:20px;display:flex;flex-direction:column;gap:4px}',
+      '.schat-ai li{line-height:1.45}',
+      '.schat-ai li::marker{color:#FF6D00}',
+      '.schat-ai p{margin:0 0 8px}',
+      '.schat-ai p:last-child{margin-bottom:0}',
+      '.schat-ai a{color:#ffb87a;text-decoration:underline}',
+      '.schat-ai.rich{white-space:normal}',
+      '.schat-stop{background:#191926;border:1px solid rgba(255,255,255,.18);color:#fff}',
     ].join('');
     var el = document.createElement('style');
     el.id = 'schat-styles';
@@ -128,6 +142,7 @@
 
     document.getElementById('schat-close').onclick = close;
     document.getElementById('schat-send').onclick = function () {
+      if (S.busy) { stopStream(); return; }
       send(document.getElementById('schat-input').value);
     };
     document.getElementById('schat-mic').onclick = toggleMic;
@@ -206,6 +221,93 @@
     if (d) d.innerHTML = (ok ? '✓ ' : '× ') + (TOOL_LABELS[tool] || 'Done');
   }
 
+  /**
+   * Markdown-lite renderer.
+   *
+   * The model naturally writes **bold**, `- ` bullets and numbered steps. Printed as
+   * plain text those become literal asterisks and dashes, which is the single biggest
+   * reason the chat looked less polished than ChatGPT. This turns the common cases into
+   * real HTML while it streams. Deliberately tiny: escape everything first, then only
+   * ever add tags we generated ourselves — no library, no innerHTML of model text.
+   */
+  function esc(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function inline(s) {
+    return esc(s)
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/(^|[\s(])\*([^*\n]+)\*/g, '$1<em>$2</em>')
+      .replace(/(https?:\/\/[^\s<]+[^\s<.,)])/g, '<a href="$1" target="_blank" rel="noopener">$1</a>')
+      .replace(/\n/g, '<br>');
+  }
+
+  function renderRich(el, text) {
+    var lines = String(text || '').split('\n');
+    var html = '';
+    var list = null; // 'ul' | 'ol'
+    var para = [];
+
+    function flushPara() {
+      if (para.length) {
+        html += '<p>' + inline(para.join('\n')) + '</p>';
+        para = [];
+      }
+    }
+    function flushList() {
+      if (list) {
+        html += '</' + list + '>';
+        list = null;
+      }
+    }
+
+    lines.forEach(function (raw) {
+      var line = raw.replace(/\s+$/, '');
+      var bullet = /^\s*[-*•]\s+(.*)$/.exec(line);
+      var numbered = /^\s*\d+[.)]\s+(.*)$/.exec(line);
+
+      if (bullet) {
+        flushPara();
+        if (list !== 'ul') { flushList(); html += '<ul>'; list = 'ul'; }
+        html += '<li>' + inline(bullet[1]) + '</li>';
+      } else if (numbered) {
+        flushPara();
+        if (list !== 'ol') { flushList(); html += '<ol>'; list = 'ol'; }
+        html += '<li>' + inline(numbered[1]) + '</li>';
+      } else if (!line.trim()) {
+        flushPara();
+        flushList();
+      } else {
+        flushList();
+        para.push(line);
+      }
+    });
+    flushPara();
+    flushList();
+
+    el.classList.add('rich');
+    el.innerHTML = html;
+  }
+
+  /**
+   * 1. "One box, no menus": suggestions belong on an empty thread only. Re-offering the
+   * same five chips after every answer is a menu by another name — and it buries the
+   * reply. Once the user has said anything, the box speaks for itself.
+   */
+  function startChips() {
+    var spoken = S.msgs.some(function (m) { return m.role === 'user'; });
+    return spoken ? [] : OPEN_CHIPS;
+  }
+
+  function setHint(text) {
+    var h = document.getElementById('schat-hint');
+    if (!h) return;
+    if (text === null) { h.style.display = 'none'; return; }
+    h.style.display = '';
+    h.textContent = text;
+  }
+
   function chips(list) {
     var c = document.getElementById('schat-chips');
     c.innerHTML = '';
@@ -259,6 +361,35 @@
     });
   }
 
+  /**
+   * 3. Turn the send button into a stop button while the model is talking, and back
+   * again when it stops. One button, two states — no extra furniture on screen.
+   */
+  function setBusyUI(busy) {
+    var btn = document.getElementById('schat-send');
+    if (!btn) return;
+    btn.disabled = false;
+    btn.classList.toggle('schat-stop', busy);
+    btn.classList.toggle('schat-send', !busy);
+    btn.innerHTML = busy ? '■' : '➤';
+    btn.title = busy ? 'Stop' : 'Send';
+  }
+
+  function stopStream() {
+    if (S.ctrl) {
+      try { S.ctrl.abort(); } catch (_) {}
+    }
+  }
+
+  // Any tool line still spinning when the turn ends did not report back.
+  function resolveStrayTools() {
+    var nodes = document.querySelectorAll('.schat-tool .schat-spin');
+    for (var i = 0; i < nodes.length; i++) {
+      var row = nodes[i].parentNode;
+      row.innerHTML = '× ' + row.textContent.replace(/…$/, '') + ' — did not finish';
+    }
+  }
+
   function send(text, confirmPayload) {
     text = (text || '').trim();
     if (S.busy) return;
@@ -272,12 +403,13 @@
 
     if (text) {
       bubble('schat-me', text);
+      setHint(null); // 4. calm screen: the how-to-use line has done its job
+      
       S.msgs.push({ role: 'user', text: text });
     }
     chips([]);
     S.busy = true;
-    document.getElementById('schat-send').disabled = true;
-    typingOn();
+    typingOn(); // the send button becomes Stop in setBusyUI(true), so it stays tappable
 
     stream({ message: text, history: history(), confirm: confirmPayload || null });
   }
@@ -285,12 +417,18 @@
   function stream(body) {
     var aiBubble = null;
     var acc = '';
+    // 2/5. Streaming you can interrupt. ChatGPT's stop button is why long answers
+    // never feel like being trapped; aborting mid-stream keeps whatever arrived.
+    var ctrl = window.AbortController ? new AbortController() : null;
+    S.ctrl = ctrl;
+    setBusyUI(true);
 
     fetch('/api/squad/agent', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
       body: JSON.stringify(body),
+      signal: ctrl ? ctrl.signal : undefined,
     })
       .then(function (res) {
         if (res.status === 401) {
@@ -307,9 +445,11 @@
         }
         return readStream(res.body.getReader());
       })
-      .catch(function () {
+      .catch(function (err) {
         typingOff();
-        bubble('schat-ai', 'Connection dropped — nothing was changed.');
+        if (!err || err.name !== 'AbortError') {
+          bubble('schat-ai', 'Connection dropped — nothing was changed.');
+        }
         finish();
       });
 
@@ -353,7 +493,7 @@
         typingOff();
         if (!aiBubble) aiBubble = bubble('schat-ai', '');
         acc += data.text;
-        aiBubble.textContent = acc;
+        renderRich(aiBubble, acc);
         scrollDown();
       } else if (event === 'tool') {
         typingOff();
@@ -364,7 +504,7 @@
         S.pending = { tool: data.tool, args: data.args };
         if (!aiBubble) aiBubble = bubble('schat-ai', '');
         acc = (acc ? acc + '\n\n' : '') + confirmSummary(data.tool, data.args);
-        aiBubble.textContent = acc;
+        renderRich(aiBubble, acc);
         scrollDown();
       } else if (event === 'done') {
         var url = data.result && (data.result.claimUrl || data.result.referralLink);
@@ -382,8 +522,11 @@
     function finish() {
       typingOff();
       S.busy = false;
-      var btn = document.getElementById('schat-send');
-      if (btn) btn.disabled = false;
+      S.ctrl = null;
+      setBusyUI(false);
+      // 3. "Shows its work" only works if every step ends. A dropped stream used to
+      // leave a spinner turning forever, which reads as "it is still doing it".
+      resolveStrayTools();
 
       if (acc) S.msgs.push({ role: 'ai', text: acc });
 
@@ -409,12 +552,12 @@
               S.pending = null;
               bubble('schat-me', 'No');
               bubble('schat-ai', 'Left as it was. Anything else?');
-              chips(OPEN_CHIPS);
+              chips(startChips());
             },
           },
         ]);
       } else {
-        chips(OPEN_CHIPS);
+        chips(startChips());
       }
     }
   }
@@ -469,6 +612,26 @@
   }
 
   // ── open / close ──────────────────────────────────────────────────────────
+  /** Opens the app's own sign-in sheet (it renders above this chat at z-index 9500). */
+  function openSignIn() {
+    if (typeof window._sgShowAuthSheet === 'function') {
+      window._sgShowAuthSheet('book');
+      var tries = 0;
+      var poll = setInterval(function () {
+        tries++;
+        if (window.state && window.state.user) {
+          clearInterval(poll);
+          bubble('schat-ai', "You're in. What do you need?");
+          chips(OPEN_CHIPS);
+        } else if (tries > 240) {
+          clearInterval(poll);
+        }
+      }, 500);
+    } else {
+      bubble('schat-ai', 'Tap Profile at the bottom to sign in, then come back here.');
+    }
+  }
+
   function greet() {
     var signedIn = !!(window.state && window.state.user);
     if (!signedIn) {
@@ -476,7 +639,8 @@
         'schat-ai',
         "Hi — I'm your ScanSquad assistant. Sign in and I can show what you've earned, tell you which gym your link actually converts on, boost a reel, or get you paid out."
       );
-      chips([]);
+      // 1. No dead ends: "sign in" used to be advice with nothing to tap.
+      chips([{ label: 'Sign me in', style: 'yes', onClick: openSignIn }]);
       return;
     }
     bubble(
