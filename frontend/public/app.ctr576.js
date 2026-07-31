@@ -14150,9 +14150,10 @@ window.sgOwnerToggle=async function(isOpen){
   }
   try{
     // #88: Use new gym-partner 1-click toggle API
-    await fetch('/api/gym-partner/toggle-active',{method:'PATCH',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({gymId:0,isActive:isOpen})}).catch(()=>{});
+    const _gid=await window._sgResolvePartnerGymId();
+    if(_gid)await fetch('/api/gym-partner/toggle-active',{method:'PATCH',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({gymId:_gid,isActive:isOpen})}).catch(()=>{});
     // Fallback to old API
-    await fetch('/api/owner/toggle/0',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({isOpen})}).catch(()=>{});
+    if(_gid)await fetch('/api/owner/toggle/'+_gid,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({isOpen})}).catch(()=>{});
   }catch(e){}
 };
 
@@ -14161,7 +14162,9 @@ window.sgOwnerHoursOverride=async function(overrideStatus){
   var el=document.getElementById('sg-hours-result');
   if(el) el.innerHTML='<p style="color:rgba(255,255,255,.4);font-size:12px;margin-top:8px">Updating...</p>';
   try{
-    var r=await fetch('/api/gym-partner/hours-override',{method:'PATCH',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({gymId:0,overrideStatus:overrideStatus})});
+    var _gid=await window._sgResolvePartnerGymId();
+    if(!_gid){if(el) el.innerHTML='<p style="color:#f87171;font-size:12px;margin-top:8px">Claim your gym first</p>';return;}
+    var r=await fetch('/api/gym-partner/hours-override',{method:'PATCH',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({gymId:_gid,overrideStatus:overrideStatus})});
     var d=await r.json();
     if(el) el.innerHTML='<p style="color:#4ade80;font-size:12px;margin-top:8px">'+(d.message||'Updated')+'</p>';
   }catch(e){if(el) el.innerHTML='<p style="color:#f87171;font-size:12px;margin-top:8px">Failed to update</p>';}
@@ -14169,9 +14172,11 @@ window.sgOwnerHoursOverride=async function(overrideStatus){
 
 // #86: Tag toggle handler (24/7, self-serve)
 window.sgOwnerTag=async function(tag,val){
-  var body={gymId:0}; body[tag.replace('is_','is')]=val; body['is24h']=undefined; body['isSelfServe']=undefined;
-  if(tag==='is_24h') body={gymId:0,is24h:val};
-  if(tag==='is_self_serve') body={gymId:0,isSelfServe:val};
+  var _gid=await window._sgResolvePartnerGymId();
+  if(!_gid)return;
+  var body={gymId:_gid}; body[tag.replace('is_','is')]=val; body['is24h']=undefined; body['isSelfServe']=undefined;
+  if(tag==='is_24h') body={gymId:_gid,is24h:val};
+  if(tag==='is_self_serve') body={gymId:_gid,isSelfServe:val};
   try{
     await fetch('/api/gym-partner/claim/preferences',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(body)});
   }catch(e){}
@@ -14266,6 +14271,9 @@ window.sgConnectAccess=async function(system){
   if(result) result.innerHTML='<p style="color:rgba(255,255,255,.5);font-size:12px">Connecting '+c.name+'...</p>';
   try{
     var body=c.bodyFn();
+    var _gid=await window._sgResolvePartnerGymId();
+    if(!_gid){if(result) result.innerHTML='<p style="color:#f87171;font-size:12px">Claim your gym first, then connect access</p>';return;}
+    body.gymId=_gid;
     var r=await fetch(c.endpoint,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(body)});
     var d=await r.json();
     if(d.connected){
@@ -17700,12 +17708,14 @@ window._partnerSaveField=async function(field){
   sgToast(field.charAt(0).toUpperCase()+field.slice(1)+' updated!','success',2000);
   // Save to backend
   try{
-    var gymId=window._partnerGymId;
-    if(gymId){
-      var body={};body[field]=val;
-      await fetch('/api/gym-partner/update-gym',{method:'PATCH',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({gymId:gymId,...body})});
-    }
-  }catch(e){console.log('[PartnerSave]',e.message);}
+    var gymId=await window._sgResolvePartnerGymId();
+    if(!gymId){sgToast('Claim your gym first to save changes','error',3000);return;}
+    var body={};body[field]=val;
+    var r=await fetch('/api/gym-partner/update-gym',{method:'PATCH',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({gymId:gymId,...body})});
+    var d=await r.json().catch(function(){return {};});
+    if(!r.ok||!d.success){sgToast(d.error||'Could not save — please try again','error',3000);return;}
+    sgToast(d.message||'Saved','success',2000);
+  }catch(e){sgToast('Could not save — check your connection','error',3000);}
 };
 window._partnerEditPrice=function(passType){
   var gd=window._partnerGymData;
@@ -17742,9 +17752,13 @@ window._partnerSavePrices=async function(){
   _sgCloseSheet('sg-partner-price-sheet');
   sgToast('Pricing updated!','success',2000);
   try{
-    var gymId=window._partnerGymId;
-    if(gymId){await fetch('/api/gym-partner/update-gym',{method:'PATCH',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({gymId:gymId,pricing:{dayPassPrice:parseFloat(gd.dayPrice),threeDayPrice:parseFloat(gd.threeDayPrice),weeklyPrice:parseFloat(gd.weeklyPrice),monthlyPrice:parseFloat(gd.monthlyPrice)}})});}
-  }catch(e){console.log('[PartnerPrices]',e.message);}
+    var gymId=await window._sgResolvePartnerGymId();
+    if(!gymId){sgToast('Claim your gym first to set pricing','error',3000);return;}
+    var r=await fetch('/api/gym-partner/update-gym',{method:'PATCH',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({gymId:gymId,pricing:{dayPassPrice:parseFloat(gd.dayPrice),threeDayPrice:parseFloat(gd.threeDayPrice),weeklyPrice:parseFloat(gd.weeklyPrice),monthlyPrice:parseFloat(gd.monthlyPrice)}})});
+    var d=await r.json().catch(function(){return {};});
+    if(!r.ok||!d.success){sgToast(d.error||'Could not save pricing — please try again','error',3500);return;}
+    sgToast(d.message||'Pricing saved','success',2000);
+  }catch(e){sgToast('Could not save pricing — check your connection','error',3000);}
 };
 window._partnerEditPhotos=function(){
   var u=state&&state.user;
@@ -18019,6 +18033,22 @@ window._sgPartnerAddWithdrawMethod=async function(){
     else{sgToast(d.error||d.message||'Contact support@scangym.com for payout setup','info',4000);}
   }catch(ex){sgToast('Could not open payout setup','error',3000);}
 };
+// ── Resolve the owner's claimed gym id (was hardcoded to 0, so every save 400'd) ──
+window._sgResolvePartnerGymId=async function(){
+  if(window._partnerGymId&&String(window._partnerGymId)!=='0')return window._partnerGymId;
+  try{
+    var r=await fetch('/api/gym-partner/dashboard',{credentials:'include'});
+    if(!r||!r.ok)return null;
+    var d=await r.json().catch(function(){return {};});
+    if(d&&d.gyms&&d.gyms.length){
+      window._partnerGymId=d.gyms[0].id;
+      window._partnerGymName=d.gyms[0].name;
+      return window._partnerGymId;
+    }
+  }catch(e){}
+  return null;
+};
+
 // ── Fix 2-2: Load partner dashboard stats into Screen 0 ──
 window._partnerLoadHome=async function(){
   try{
@@ -20873,7 +20903,8 @@ window._partnerQuickToggle=async function(){
     if(txt){txt.textContent=newState?'LIVE \u2014 Accepting Bookings':'OFFLINE \u2014 Bookings Paused';txt.style.color=newState?'#4ade80':'#f87171';}
     if(badge){badge.style.background=newState?'rgba(34,197,94,.08)':'rgba(239,68,68,.06)';badge.style.borderColor=newState?'rgba(34,197,94,.15)':'rgba(239,68,68,.12)';}
     if(btn){btn.textContent=newState?'Pause':'Go Live';}
-    await fetch('/api/gym-partner/toggle-active',{method:'PATCH',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({gymId:0,isActive:newState})}).catch(function(){});
+    var _gid=await window._sgResolvePartnerGymId();
+    if(_gid)await fetch('/api/gym-partner/toggle-active',{method:'PATCH',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({gymId:_gid,isActive:newState})}).catch(function(){});
     sgToast(newState?'Your gym is now LIVE':'Bookings paused','info');
   }catch(e){}
 };
