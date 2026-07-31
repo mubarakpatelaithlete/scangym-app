@@ -35,10 +35,18 @@
   function injectStyles() {
     if (document.getElementById('pchat-styles')) return;
     var css = [
-      '#pchat-fab{position:fixed;right:16px;bottom:72px;z-index:900;width:52px;height:52px;border-radius:50%;',
-      'background:linear-gradient(135deg,#FF6D00,#ff9d4d);border:none;color:#fff;font-size:22px;cursor:pointer;',
-      'box-shadow:0 6px 24px rgba(255,109,0,.45);display:none;align-items:center;justify-content:center}',
+      // z-index sits above the partner Continue banner (8999) and the tab bar (9000),
+      // and `bottom` is recalculated from their real heights — a 52px circle at
+      // bottom:72px was completely buried behind the banner on the Partner tab.
+      '#pchat-fab{position:fixed;right:14px;z-index:9100;height:46px;padding:0 16px 0 13px;border-radius:23px;',
+      'background:linear-gradient(135deg,#FF6D00,#ff9d4d);border:none;color:#fff;font-size:14px;font-weight:700;',
+      'font-family:inherit;cursor:pointer;box-shadow:0 8px 28px rgba(255,109,0,.5);display:none;align-items:center;',
+      'gap:7px;white-space:nowrap;-webkit-tap-highlight-color:transparent}',
       '#pchat-fab.show{display:flex}',
+      '#pchat-fab:active{transform:scale(.96)}',
+      '#pchat-fab .pchat-fab-dot{width:7px;height:7px;border-radius:50%;background:#fff;opacity:.9;',
+      'animation:pchatfabp 1.6s ease-in-out infinite}',
+      '@keyframes pchatfabp{50%{opacity:.35}}',
       '#pchat{position:fixed;inset:0;z-index:1200;background:#080812;display:none;flex-direction:column}',
       '#pchat.open{display:flex}',
       '.pchat-top{display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top,10px) + 10px) 16px 12px;',
@@ -94,7 +102,7 @@
     var fab = document.createElement('button');
     fab.id = 'pchat-fab';
     fab.title = 'Ask ScanGym';
-    fab.innerHTML = '💬';
+    fab.innerHTML = '<span class="pchat-fab-dot"></span>Ask AI';
     fab.onclick = open;
     document.body.appendChild(fab);
 
@@ -485,12 +493,34 @@
     S.open = false;
   }
 
+  /**
+   * Keep the button clear of whatever the app has pinned to the bottom of the
+   * screen. On the Partner tab that is the tab bar (56px) plus, when a gym is not
+   * claimed yet, the full-width orange "Continue" banner (another 56px) — which
+   * used to sit directly on top of the button and hide it completely.
+   */
+  function positionFab(fab) {
+    var offset = 12;
+    ['.sg-tab-bar', '#partner-continue-banner'].forEach(function (sel) {
+      var el = document.querySelector(sel);
+      if (!el) return;
+      var s = window.getComputedStyle(el);
+      if (s.display === 'none' || s.visibility === 'hidden') return;
+      var h = el.getBoundingClientRect().height;
+      if (h > 0 && h < 200) offset += h;
+    });
+    fab.style.bottom = 'calc(env(safe-area-inset-bottom, 0px) + ' + offset + 'px)';
+  }
+
   // Show the button only on the Partner tab; open automatically for /partner?chat=1.
   function syncVisibility() {
     build();
     var onPartner = /^\/partner(\/|$)/.test(location.pathname);
     var fab = document.getElementById('pchat-fab');
-    if (fab) fab.classList.toggle('show', onPartner);
+    if (fab) {
+      fab.classList.toggle('show', onPartner);
+      if (onPartner) positionFab(fab);
+    }
     if (!onPartner && S.open) close();
     if (onPartner && /[?&]chat=1/.test(location.search) && !S.open) open();
   }
