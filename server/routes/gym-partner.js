@@ -229,6 +229,168 @@ router.patch('/hours-override', authenticateUser, express.json(), async (req, re
   }
 });
 
+// ── Partner tab: save gym profile / pricing / photos ──
+// The Partner tab (name, address, description, pass pricing, photos) used to
+// PATCH /api/gym-partner/update-gym, which did not exist — every edit 404'd
+// silently while the UI showed "Updated!". This is that endpoint.
+//
+// Only the owner (gyms.claimed_by = req.user.id) can write. Prices are
+// validated server-side, never trusting the client.
+const PARTNER_PRICE_MIN = 3;
+const PARTNER_PRICE_MAX = 25;
+
+// Ensure the columns the Partner tab writes to exist
+(async () => {
+  try {
+    await pool.query(`
+      DO $$ BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='description') THEN
+          ALTER TABLE gyms ADD COLUMN description TEXT DEFAULT NULL;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='three_day_price') THEN
+          ALTER TABLE gyms ADD COLUMN three_day_price NUMERIC(10,2) DEFAULT NULL;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='weekly_price') THEN
+          ALTER TABLE gyms ADD COLUMN weekly_price NUMERIC(10,2) DEFAULT NULL;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='monthly_price') THEN
+          ALTER TABLE gyms ADD COLUMN monthly_price NUMERIC(10,2) DEFAULT NULL;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='photos') THEN
+          ALTER TABLE gyms ADD COLUMN photos JSONB DEFAULT NULL;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='metadata') THEN
+          ALTER TABLE gyms ADD COLUMN metadata JSONB DEFAULT '{}'::jsonb;
+        END IF;
+      END $$;
+    `);
+    console.log('[GymPartner] update-gym columns verified');
+  } catch (err) {
+    console.error('[GymPartner] update-gym migration error:', err.message);
+  }
+})();
+
+// Validate one price. Returns { ok, value } or { ok:false, error }
+function validatePartnerPrice(raw, label) {
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return { ok: false, error: `${label} must be a number` };
+  if (n < PARTNER_PRICE_MIN || n > PARTNER_PRICE_MAX) {
+    return { ok: false, error: `${label} must be between £${PARTNER_PRICE_MIN} and £${PARTNER_PRICE_MAX}` };
+  }
+  return { ok: true, value: n.toFixed(2) };
+}
+
+router.patch('/update-gym', authenticateUser, express.json({ limit: '2mb' }), async (req, res) => {
+  try {
+    const { gymId, name, address, description, pricing, photos } = req.body || {};
+    if (!gymId || !/^\d+$/.test(String(gymId))) {
+      return res.status(400).json({ error: 'gymId required' });
+    }
+
+    // Ownership check first, so we never leak or touch someone else's gym
+    const owned = await pool.query(
+      'SELECT id, name FROM gyms WHERE id = $1 AND claimed_by::text = $2::text',
+      [gymId, req.user.id]
+    ).catch(() => ({ rows: [] }));
+    if (!owned.rows.length) {
+      return res.status(403).json({ error: 'Not your gym or gym not found' });
+    }
+
+    const sets = [];
+    const vals = [];
+    const changed = [];
+    const push = (col, val, label) => {
+      vals.push(val);
+      sets.push(`${col} = $${vals.length}`);
+      if (label) changed.push(label);
+    };
+
+    if (typeof name === 'string') {
+      const v = name.trim();
+      if (v.length < 2 || v.length > 120) return res.status(400).json({ error: 'Name must be 2–120 characters' });
+      push('name', v, 'name');
+    }
+    if (typeof address === 'string') {
+      const v = address.trim();
+      if (v.length < 5 || v.length > 300) return res.status(400).json({ error: 'Address must be 5–300 characters' });
+      push('address', v, 'address');
+    }
+    if (typeof description === 'string') {
+      const v = description.trim();
+      if (v.length > 2000) return res.status(400).json({ error: 'Description must be under 2000 characters' });
+      push('description', v, 'description');
+    }
+
+    if (pricing && typeof pricing === 'object') {
+      const map = [
+        ['dayPassPrice', 'day_pass_price', 'Day pass'],
+        ['threeDayPrice', 'three_day_price', '3-day pass'],
+        ['weeklyPrice', 'weekly_price', 'Weekly pass'],
+        ['monthlyPrice', 'monthly_price', 'Monthly pass']
+      ];
+      for (const [key, col, label] of map) {
+        if (pricing[key] === undefined || pricing[key] === null || pricing[key] === '') continue;
+        const check = validatePartnerPrice(pricing[key], label);
+        if (!check.ok) return res.status(400).json({ error: check.error });
+        push(col, check.value, label.toLowerCase());
+      }
+    }
+
+    if (Array.isArray(photos)) {
+      const clean = photos
+        .filter((p) => typeof p === 'string' && /^https?:\/\//i.test(p))
+        .slice(0, 4);
+      if (clean.length !== photos.length) {
+        return res.status(400).json({ error: 'Photos must be up to 4 valid https URLs' });
+      }
+      push('photos', JSON.stringify(clean), 'photos');
+    }
+
+    if (!sets.length) {
+      return res.status(400).json({ error: 'Nothing to update' });
+    }
+
+    vals.push(gymId, req.user.id);
+    const sql = `UPDATE gyms SET ${sets.join(', ')}, updated_at = NOW()
+                 WHERE id = $${vals.length - 1} AND claimed_by::text = $${vals.length}::text
+                 RETURNING id, name, address, description, day_pass_price, three_day_price, weekly_price, monthly_price, photos`;
+
+    let result;
+    try {
+      result = await pool.query(sql, vals);
+    } catch (dbErr) {
+      console.error('[GymPartner] update-gym SQL error:', dbErr.message);
+      return res.status(500).json({ error: 'Could not save changes' });
+    }
+    if (!result.rows.length) {
+      return res.status(403).json({ error: 'Not your gym or gym not found' });
+    }
+
+    const g = result.rows[0];
+    res.json({
+      success: true,
+      updated: changed,
+      message: changed.length === 1
+        ? `${changed[0].charAt(0).toUpperCase() + changed[0].slice(1)} saved — live on your listing.`
+        : 'Changes saved — live on your listing.',
+      gym: {
+        id: g.id,
+        name: g.name,
+        address: g.address,
+        description: g.description,
+        dayPassPrice: g.day_pass_price === null ? null : Number(g.day_pass_price),
+        threeDayPrice: g.three_day_price === null ? null : Number(g.three_day_price),
+        weeklyPrice: g.weekly_price === null ? null : Number(g.weekly_price),
+        monthlyPrice: g.monthly_price === null ? null : Number(g.monthly_price),
+        photos: g.photos || []
+      }
+    });
+  } catch (err) {
+    console.error('[GymPartner] update-gym error:', err.message);
+    res.status(500).json({ error: 'Could not save changes' });
+  }
+});
+
 // ── #90: 3 Strikes → Suspended ──
 router.post('/report', express.json(), async (req, res) => {
   try {
