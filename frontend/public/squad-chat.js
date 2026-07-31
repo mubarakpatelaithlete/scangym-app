@@ -523,17 +523,32 @@
     fab.style.bottom = 'calc(env(safe-area-inset-bottom, 0px) + ' + offset + 'px)';
   }
 
+  /**
+   * Which URLs count as "the ScanSquad tab".
+   *
+   * This is the bug that made the whole feature invisible: tapping the ScanSquad tab in
+   * the bottom bar runs switchTab('creator'), which pushes `/creator` (singular) — not
+   * `/scansquad`. So the button never showed, and worse, the 800ms sync below treated
+   * `/creator` as "off tab" and closed the chat again a moment after the Ask AI bar
+   * opened it. `/creator` (and `/creator/...`) are now first-class.
+   */
+  var SQUAD_PATHS = /^\/(creator|creators|scansquad|scansquad-dashboard|creator-earnings|become-a-creator)(\/|$)/;
+
   // Show the button only on the ScanSquad tab; open automatically for ?chat=1.
   function syncVisibility() {
     build();
-    var onPartner = /^\/(scansquad|creators|creator-earnings)(\/|$)/.test(location.pathname);
+    var onSquad = SQUAD_PATHS.test(location.pathname);
+    // The creator bottom bar is itself an "Ask AI" bar (round2.js injects it on
+    // /creator), so a floating button beside it would be two doors to the same room.
+    var bar = document.querySelector('[data-ai-bar]');
+    var barVisible = !!(bar && window.getComputedStyle(bar).display !== 'none');
     var fab = document.getElementById('schat-fab');
     if (fab) {
-      fab.classList.toggle('show', onPartner);
-      if (onPartner) positionFab(fab);
+      fab.classList.toggle('show', onSquad && !barVisible);
+      if (onSquad && !barVisible) positionFab(fab);
     }
-    if (!onPartner && S.open) close();
-    if (onPartner && /[?&]chat=1/.test(location.search) && !S.open) open();
+    if (!onSquad && S.open) close();
+    if (onSquad && /[?&]chat=1/.test(location.search) && !S.open) open();
   }
 
   window.sgSquadChat = { open: open, close: close };
