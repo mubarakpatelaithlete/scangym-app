@@ -18,6 +18,7 @@ const router = express.Router();
 const pool = require('../middleware/db');
 const { creditWallet } = require('../lib/wallet-credit');
 const { authenticateUser } = require('../middleware/auth');
+const { requireOwnHandle } = require('../lib/creator-identity');
 const crypto = require('crypto');
 
 router.use(express.json());
@@ -106,7 +107,7 @@ async function holdFunds(handle, pence, note, status) {
 
 // ── Free Pass Giveaway ──────────────────────────────────────────
 
-router.post('/giveaway', async (req, res) => {
+router.post('/giveaway', requireOwnHandle, async (req, res) => {
   try {
     const { handle } = req.body || {};
     if (!handle || !HANDLE_RE.test(handle)) return res.status(400).json({ error: 'Invalid handle' });
@@ -177,7 +178,7 @@ router.post('/giveaway/claim', authenticateUser, async (req, res) => {
   }
 });
 
-router.post('/giveaway/cancel', async (req, res) => {
+router.post('/giveaway/cancel', requireOwnHandle, async (req, res) => {
   try {
     const { handle } = req.body || {};
     if (!handle || !HANDLE_RE.test(handle)) return res.status(400).json({ error: 'Invalid handle' });
@@ -201,7 +202,7 @@ router.post('/giveaway/cancel', async (req, res) => {
 
 // ── Boost Reel ──────────────────────────────────────────────────
 
-router.post('/boost', async (req, res) => {
+router.post('/boost', requireOwnHandle, async (req, res) => {
   try {
     const { handle, uploadId } = req.body || {};
     let days = parseInt((req.body || {}).days, 10) || 1;
@@ -254,7 +255,7 @@ router.get('/boosts/:handle', async (req, res) => {
 
 // ── Bundle Deals ────────────────────────────────────────────────
 
-router.post('/bundle', async (req, res) => {
+router.post('/bundle', requireOwnHandle, async (req, res) => {
   try {
     const { handle, preset } = req.body || {};
     if (!handle || !HANDLE_RE.test(handle)) return res.status(400).json({ error: 'Invalid handle' });

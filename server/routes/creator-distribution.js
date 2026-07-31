@@ -12,6 +12,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../middleware/db');
+const { requireOwnHandle } = require('../lib/creator-identity');
 
 router.use(express.json());
 
@@ -60,7 +61,7 @@ const PLATFORMS = ['instagram', 'tiktok', 'youtube', 'x', 'facebook', 'whatsapp'
 
 // ── Schedule Share ──────────────────────────────────────────────
 
-router.post('/schedule', async (req, res) => {
+router.post('/schedule', requireOwnHandle, async (req, res) => {
   try {
     const { handle, platform, caption, scheduledAt } = req.body || {};
     if (!handle || !HANDLE_RE.test(handle)) return res.status(400).json({ error: 'Invalid handle' });
@@ -119,7 +120,7 @@ router.get('/schedule/:handle', async (req, res) => {
   }
 });
 
-router.post('/schedule/:id/:action(cancel|done)', async (req, res) => {
+router.post('/schedule/:id/:action(cancel|done)', requireOwnHandle, async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
     const { handle } = req.body || {};
@@ -172,7 +173,7 @@ router.get('/followers/:handle', async (req, res) => {
   }
 });
 
-router.post('/announce', async (req, res) => {
+router.post('/announce', requireOwnHandle, async (req, res) => {
   try {
     const { handle, message } = req.body || {};
     if (!handle || !HANDLE_RE.test(handle)) return res.status(400).json({ error: 'Invalid handle' });
