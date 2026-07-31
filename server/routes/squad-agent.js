@@ -22,6 +22,7 @@ const router = express.Router();
 const pool = require('../middleware/db');
 const { authenticateUser } = require('../middleware/auth');
 const llm = require('../lib/llm');
+const { collectToolCalls, normaliseToolCalls, assistantToolMessage } = require('../lib/tool-calls');
 const squadTools = require('../lib/squad-tools');
 
 const MAX_TOOL_ROUNDS = 4;
@@ -57,6 +58,7 @@ How you behave:
 - One short answer. Two sentences beats ten. No headings, no bullet lists unless you are listing reels or gyms.
 - Money and anything published: say exactly what you are about to do with the number in it, and wait for their yes. Reads (earnings, stats, leaderboard) just run.
 - Never invent numbers. If you have not called a tool, you do not know their earnings, clicks or rank.
+- Links come from get_affiliate_link only — never type a referral or deep link out of your head, and never guess a handle.
 - If they are not a ScanSquad member yet, explain it in one line (free, 25% per booking) and offer to sign them up.
 - If they have no handle, get one — without it their link tracks nothing.
 - Be useful about growth: when they ask "how do I earn more", look at get_my_link_performance first and answer with their actual best-converting gym and traffic source, not generic advice.
@@ -155,13 +157,7 @@ router.post('/agent', authenticateUser, express.json(), async (req, res) => {
           sse(res, 'delta', { text: delta.content });
         }
 
-        for (const tc of delta.tool_calls || []) {
-          const i = tc.index || 0;
-          calls[i] = calls[i] || { id: '', name: '', args: '' };
-          if (tc.id) calls[i].id = tc.id;
-          if (tc.function?.name) calls[i].name += tc.function.name;
-          if (tc.function?.arguments) calls[i].args += tc.function.arguments;
-        }
+        collectToolCalls(delta.tool_calls, calls);
       }
 
       // No tool wanted → the model has answered in prose. Turn over.
@@ -170,23 +166,25 @@ router.post('/agent', authenticateUser, express.json(), async (req, res) => {
         return res.end();
       }
 
-      messages.push({
-        role: 'assistant',
-        content: text || null,
-        tool_calls: calls.map((c) => ({
-          id: c.id,
-          type: 'function',
-          function: { name: c.name, arguments: c.args || '{}' },
-        })),
-      });
+      // Normalise before we trust any of it. A mangled or unknown tool name is dropped
+      // rather than replayed to the provider, which used to abort the whole answer.
+      const { valid, dropped } = normaliseToolCalls(calls, squadTools.tools, 'SquadAgent');
 
-      for (const call of calls) {
-        let args = {};
-        try {
-          args = JSON.parse(call.args || '{}');
-        } catch (_) {
-          args = {};
-        }
+      if (!valid.length) {
+        const asked = dropped[0]?.name;
+        sse(res, 'delta', {
+          text: asked
+            ? `I can't do "${asked}" from here yet — ask me another way and I'll tell you what I can do.`
+            : "I didn't quite follow that — could you say it a slightly different way?",
+        });
+        sse(res, 'done', { droppedToolCalls: dropped });
+        return res.end();
+      }
+
+      messages.push(assistantToolMessage(text, valid));
+
+      for (const call of valid) {
+        const args = call.args || {};
 
         // A write the creator has not approved yet: hand it back for confirmation.
         if (squadTools.isWrite(call.name)) {
@@ -194,7 +192,7 @@ router.post('/agent', authenticateUser, express.json(), async (req, res) => {
           sse(res, 'confirm', {
             tool: call.name,
             args,
-            summary: squadTools.tools[call.name].schema.description,
+            summary: squadTools.tools[call.name]?.schema?.description || call.name,
           });
           sse(res, 'done', { awaitingConfirmation: true });
           return res.end();
