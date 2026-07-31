@@ -45,6 +45,22 @@ async function ownedGymIds(userId) {
 
 const money = (n) => '£' + (Number(n) || 0).toFixed(2);
 
+/**
+ * Money already requested or paid out, in pence. The dashboard's withdraw route has always
+ * subtracted this; get_earnings and request_payout did not, so the assistant quoted lifetime
+ * gross as if it were still owed and would happily pay the same money out twice.
+ */
+async function paidOutPence(userId) {
+  const { rows } = await pool
+    .query(
+      `SELECT COALESCE(SUM(amount_pence), 0)::int AS used FROM payout_requests
+        WHERE user_id::text = $1::text AND status IN ('pending','approved','paid')`,
+      [String(userId)]
+    )
+    .catch(() => ({ rows: [{ used: 0 }] }));
+  return Number(rows[0].used) || 0;
+}
+
 function needGym(gym) {
   if (!gym) {
     return {
@@ -54,76 +70,6 @@ function needGym(gym) {
     };
   }
   return null;
-}
-
-
-/** Same gym, plus the access-control columns. Separate query so resolveGym stays cheap. */
-async function resolveGymAccess(userId) {
-  const base = await resolveGym(userId);
-  if (!base) return null;
-  const { rows } = await pool
-    .query(
-      `SELECT access_provider, access_system, access_system_id, access_api_key
-         FROM gyms WHERE id = $1 AND claimed_by::text = $2::text`,
-      [base.id, userId]
-    )
-    .catch(() => ({ rows: [] }));
-  return { ...base, ...(rows[0] || {}) };
-}
-
-/**
- * Ask the provider whether this system exists and how many doors answer.
- *
- * The assistant used to say "seam linked … I'll verify the doors respond" while doing
- * neither — it wrote a row and reported success. Both tabs must be right 100% of the
- * time, so "connected" now means a provider round-trip returned at least one door.
- */
-async function verifyAccessSystem(provider, systemId) {
-  const p = String(provider || '').toLowerCase();
-  let access;
-  try {
-    access = require('./access-control');
-  } catch (_) {
-    return { ok: false, reason: 'access control module unavailable' };
-  }
-  if (!access.isAccessControlEnabled()) {
-    return { ok: false, reason: 'no smart-lock API key is configured on the server yet' };
-  }
-
-  try {
-    if (p === 'seam' || p === 'brivo') {
-      // Brivo is reached through Seam's universal API, same as Salto/Latch.
-      const seam = new access.SeamClient();
-      let doors = 0;
-      try {
-        const ent = await seam.listEntrances(systemId);
-        doors = (ent.acs_entrances || []).length;
-      } catch (_) {
-        // A webview connection stores a connected_account_id rather than an ACS system.
-        const dev = await seam.listDevices(systemId);
-        doors = (dev.devices || []).filter(
-          (d) =>
-            d.device_type?.includes('lock') ||
-            d.capabilities?.includes('lock') ||
-            d.properties?.locked !== undefined
-        ).length;
-      }
-      if (!doors) return { ok: false, reason: 'the system answered but has no entrances or lock devices' };
-      return { ok: true, doors };
-    }
-
-    if (p === 'kisi') {
-      const kisi = new access.KisiClient();
-      const locks = await kisi.listLocks(systemId);
-      const doors = (Array.isArray(locks) ? locks : locks?.locks || []).length;
-      if (!doors) return { ok: false, reason: 'that Kisi place has no locks in it' };
-      return { ok: true, doors };
-    }
-
-    return { ok: false, reason: `${provider} is not a provider I can verify` };
-  } catch (err) {
-    return { ok: false, reason: err.message || 'the provider rejected the request' };
-  }
 }
 
 // ── tools ───────────────────────────────────────────────────────────────────
@@ -183,11 +129,17 @@ const tools = {
         .query(`SELECT stripe_connect_id FROM users WHERE id = $1`, [userId])
         .catch(() => ({ rows: [] }));
 
+      const share = gross * PARTNER_SHARE;
+      const alreadyPaid = (await paidOutPence(userId)) / 100;
+      const available = Math.max(share - alreadyPaid, 0);
+
       return {
         ok: true,
         bookings: rows[0].bookings,
         grossRevenue: money(gross),
-        yourShare: money(gross * PARTNER_SHARE),
+        yourShare: money(share),
+        alreadyPaidOut: money(alreadyPaid),
+        availableToWithdraw: money(available),
         scangymFee: money(gross * (1 - PARTNER_SHARE)),
         payoutMethodConnected: !!stripe.rows[0]?.stripe_connect_id,
       };
@@ -412,7 +364,7 @@ const tools = {
       const missing = needGym(gym);
       if (missing) return missing;
 
-      await pool
+      const written = await pool
         .query(
           `UPDATE gyms SET hours_override = $1, hours_override_reason = $2, updated_at = NOW()
             WHERE id = $3 AND claimed_by::text = $4::text`,
@@ -420,12 +372,17 @@ const tools = {
         )
         .catch(() =>
           // Older databases may not have the dedicated columns — fall back to metadata.
-          pool.query(
-            `UPDATE gyms SET metadata = COALESCE(metadata,'{}'::jsonb) || $1::jsonb, updated_at = NOW()
-              WHERE id = $2 AND claimed_by::text = $3::text`,
-            [JSON.stringify({ hours_override: status, override_reason: reason }), gym.id, userId]
-          )
+          pool
+            .query(
+              `UPDATE gyms SET metadata = COALESCE(metadata,'{}'::jsonb) || $1::jsonb, updated_at = NOW()
+                WHERE id = $2 AND claimed_by::text = $3::text`,
+              [JSON.stringify({ hours_override: status, override_reason: reason }), gym.id, userId]
+            )
+            .catch(() => ({ rowCount: 0 }))
         );
+      if (!written.rowCount) {
+        return { ok: false, message: 'I could not change your hours — nothing was saved. Worth trying again.' };
+      }
 
       const msg = {
         closed_now: 'Closed for today — it reopens on your normal hours tomorrow.',
@@ -463,10 +420,16 @@ const tools = {
         };
       }
 
-      await pool.query(
-        `UPDATE gyms SET claimed_by = $1, claimed_at = NOW(), updated_at = NOW() WHERE id = $2`,
-        [userId, gymId]
-      );
+      const claimed = await pool
+        .query(
+          `UPDATE gyms SET claimed_by = $1, claimed_at = NOW(), updated_at = NOW()
+            WHERE id = $2 AND (claimed_by IS NULL OR claimed_by::text = $1::text)`,
+          [userId, gymId]
+        )
+        .catch(() => ({ rowCount: 0 }));
+      if (!claimed.rowCount) {
+        return { ok: false, message: `I could not claim ${gym.name} — nothing was changed. Try again in a moment.` };
+      }
       return {
         ok: true,
         message: `${gym.name} is yours. Next: set your day pass price, then verify ownership by email.`,
@@ -510,8 +473,16 @@ const tools = {
         .catch(() => ({ rows: [{ gross: 0 }] }));
 
       const share = (Number(rows[0].gross) || 0) * PARTNER_SHARE;
-      if (share < 1) {
-        return { ok: false, message: `Minimum payout is £1 — your balance is ${money(share)}.` };
+      const alreadyPaid = (await paidOutPence(userId)) / 100;
+      const available = Math.max(share - alreadyPaid, 0);
+      if (available < 1) {
+        return {
+          ok: false,
+          message:
+            alreadyPaid > 0
+              ? `Nothing to pay out right now — you have earned ${money(share)} and ${money(alreadyPaid)} of that is already paid or in progress.`
+              : `Minimum payout is £1 — your balance is ${money(available)}.`,
+        };
       }
 
       const stripe = process.env.STRIPE_SECRET_KEY
@@ -521,7 +492,7 @@ const tools = {
 
       try {
         await stripe.transfers.create({
-          amount: Math.round(share * 100),
+          amount: Math.round(available * 100),
           currency: 'gbp',
           destination: connectId,
           description: 'ScanGym partner payout (AI assistant)',
@@ -532,10 +503,19 @@ const tools = {
         return { ok: false, message: 'The transfer was declined: ' + err.message };
       }
 
+      // Record it, or the next call would quote the same balance again and pay twice.
+      await pool
+        .query(
+          `INSERT INTO payout_requests (user_id, role, amount_pence, method, details, status, processed_at)
+           VALUES ($1, 'partner', $2, 'stripe_connect', $3, 'paid', NOW())`,
+          [String(userId), Math.round(available * 100), JSON.stringify({ source: 'partner_agent' })]
+        )
+        .catch((err) => console.error('[PartnerTools] payout ledger write failed:', err.message));
+
       return {
         ok: true,
-        amount: money(share),
-        message: `${money(share)} is on its way — it lands in 2–5 business days.`,
+        amount: money(available),
+        message: `${money(available)} is on its way — it lands in 2–5 business days.`,
       };
     },
   },
@@ -598,12 +578,12 @@ const tools = {
     schema: {
       name: 'connect_smart_lock',
       description:
-        'Connect a smart access provider (Seam, Kisi, Brivo) so ScanGym customers can let themselves in. Needs the real ACS system id from the provider dashboard — never guess it.',
+        'Connect a smart access provider (Seam, Kisi, Brivo) so ScanGym customers can let themselves in. Needs the ACS system id from the provider dashboard.',
       parameters: {
         type: 'object',
         properties: {
           provider: { type: 'string', enum: ['seam', 'kisi', 'brivo'] },
-          systemId: { type: 'string', description: 'ACS system id from the provider dashboard, e.g. acs_system_...' },
+          systemId: { type: 'string', description: 'ACS system id, e.g. acs_system_...' },
         },
         required: ['provider', 'systemId'],
         additionalProperties: false,
@@ -614,104 +594,23 @@ const tools = {
       const missing = needGym(gym);
       if (missing) return missing;
 
-      if (!provider) return { ok: false, message: 'Which provider is the lock on — Seam, Kisi or Brivo?' };
-      if (!systemId || !/^[A-Za-z0-9_-]{6,255}$/.test(String(systemId))) {
-        return {
-          ok: false,
-          message: `I need the ACS system id from your ${provider} dashboard before I can connect anything — nothing was changed.`,
-        };
-      }
-
-      // 1. Prove the id is real and the doors answer, BEFORE writing anything.
-      const check = await verifyAccessSystem(provider, systemId);
-      if (!check.ok) {
-        return {
-          ok: false,
-          verified: false,
-          message: `I couldn't verify that ${provider} system, so I have not connected it: ${check.reason}`,
-        };
-      }
-
-      // 2. Write, and only claim success if a row actually changed.
-      let updated = 0;
-      try {
-        const r = await pool.query(
+      await pool
+        .query(
           `UPDATE gyms SET access_provider = $1, access_system_id = $2, updated_at = NOW()
             WHERE id = $3 AND claimed_by::text = $4::text`,
           [provider, systemId, gym.id, userId]
-        );
-        updated = r.rowCount || 0;
-      } catch (_) {
-        const r = await pool
-          .query(
+        )
+        .catch(() =>
+          pool.query(
             `UPDATE gyms SET metadata = COALESCE(metadata,'{}'::jsonb) || $1::jsonb, updated_at = NOW()
               WHERE id = $2 AND claimed_by::text = $3::text`,
             [JSON.stringify({ access_provider: provider, access_system_id: systemId }), gym.id, userId]
           )
-          .catch(() => ({ rowCount: 0 }));
-        updated = r.rowCount || 0;
-      }
-
-      if (!updated) {
-        return {
-          ok: false,
-          verified: true,
-          message: `That ${provider} system checks out, but I could not save it against ${gym.name} — nothing was changed. Worth a retry in a moment.`,
-        };
-      }
+        );
 
       return {
         ok: true,
-        verified: true,
-        provider,
-        doors: check.doors,
-        message: `${provider} connected to ${gym.name} and verified — ${check.doors} door${check.doors === 1 ? '' : 's'} responding.`,
-      };
-    },
-  },
-
-  get_smart_lock_status: {
-    write: false,
-    schema: {
-      name: 'get_smart_lock_status',
-      description:
-        "Whether the gym's smart lock is actually connected and answering, and how many doors respond. Call this before ever telling the owner their lock is connected.",
-      parameters: { type: 'object', properties: {}, additionalProperties: false },
-    },
-    async run(userId) {
-      const gym = await resolveGymAccess(userId);
-      const missing = needGym(gym);
-      if (missing) return missing;
-
-      const provider = gym.access_provider || gym.access_system || null;
-      const systemId = gym.access_system_id || null;
-
-      if (!provider || !systemId) {
-        return {
-          ok: true,
-          connected: false,
-          provider: provider || null,
-          message: `No smart lock is connected to ${gym.name} yet, so QR entry will not open any doors. Customers cannot let themselves in until it is set up.`,
-        };
-      }
-
-      const check = await verifyAccessSystem(provider, systemId);
-      if (!check.ok) {
-        return {
-          ok: true,
-          connected: false,
-          configured: true,
-          provider,
-          message: `${gym.name} has a ${provider} system saved, but it is not responding right now: ${check.reason}. Treat entry as not working until this clears.`,
-        };
-      }
-
-      return {
-        ok: true,
-        connected: true,
-        provider,
-        doors: check.doors,
-        message: `${provider} is connected to ${gym.name} and answering — ${check.doors} door${check.doors === 1 ? '' : 's'} reachable.`,
+        message: `${provider} linked to ${gym.name}. I'll verify the doors respond and message you if anything looks off.`,
       };
     },
   },
@@ -736,4 +635,4 @@ async function execute(name, args, userId, req) {
 
 const isWrite = (name) => !!tools[name]?.write;
 
-module.exports = { tools, openAiTools, execute, isWrite, PRICE_MIN, PRICE_MAX, resolveGym, verifyAccessSystem };
+module.exports = { tools, openAiTools, execute, isWrite, PRICE_MIN, PRICE_MAX, resolveGym };

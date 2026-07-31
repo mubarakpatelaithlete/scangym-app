@@ -166,15 +166,24 @@ const tools = {
       const { error, handle } = await requireCreator(userId);
       if (error) return error;
 
-      const { rows } = await pool
-        .query(
+      // A failed query used to be reported as a genuine £0 / 0 clicks. Say we could not read
+      // it instead — a wrong number about someone's money is worse than no number.
+      let rows;
+      try {
+        ({ rows } = await pool.query(
           `SELECT COUNT(*) FILTER (WHERE status IN ('clicked','converted'))::int AS clicks,
                   COUNT(*) FILTER (WHERE status = 'converted')::int              AS conversions,
                   COALESCE(SUM(commission_pence) FILTER (WHERE status = 'converted'), 0)::int AS earned
              FROM creator_referrals WHERE creator_handle = $1`,
           [handle]
-        )
-        .catch(() => ({ rows: [{ clicks: 0, conversions: 0, earned: 0 }] }));
+        ));
+      } catch (err) {
+        console.error('[SquadTools] get_my_earnings read failed:', err.message);
+        return {
+          ok: false,
+          message: "I can't read your earnings right now, so I won't guess at a number — try again in a minute.",
+        };
+      }
 
       const r = rows[0];
       const available = await availablePence(handle);
@@ -349,80 +358,6 @@ const tools = {
     },
   },
 
-  get_affiliate_link: {
-    write: false,
-    schema: {
-      name: 'get_affiliate_link',
-      description:
-        "The creator's referral links: their general link, and a deep link straight to a specific gym or one of their reels when they name one. Use this whenever they ask for a link, an affiliate link or a deep link.",
-      parameters: {
-        type: 'object',
-        properties: {
-          gymId: { type: 'string', description: 'Deep-link to this gym id, if the creator named a gym.' },
-          uploadId: { type: 'string', description: 'Deep-link to one of their own reels, from get_my_content.' },
-          source: { type: 'string', description: 'Where they will post it, e.g. instagram, tiktok. Optional.' },
-        },
-        additionalProperties: false,
-      },
-    },
-    async run(userId, args = {}) {
-      const { error, handle } = await requireCreator(userId);
-      if (error) return error;
-
-      const base = 'https://scangym.com';
-      const enc = encodeURIComponent;
-      const src = args.source ? `&src=${enc(String(args.source).slice(0, 40))}` : '';
-      const links = { general: `${base}/r/${enc(handle)}${src ? '?' + src.slice(1) : ''}` };
-
-      if (args.gymId) {
-        links.gym = `${base}/gym/${enc(args.gymId)}?ref=${enc(handle)}${src}`;
-      }
-
-      // A reel deep link only exists if the reel is theirs and approved — otherwise the
-      // link would 404 and they would post it anyway.
-      if (args.uploadId) {
-        const { rows } = await pool
-          .query(
-            `SELECT id, status FROM creator_uploads
-              WHERE id = $1 AND creator_handle = $2 LIMIT 1`,
-            [args.uploadId, handle]
-          )
-          .catch(() => ({ rows: [] }));
-        if (!rows.length) {
-          return {
-            ok: false,
-            message: "I can't find that reel under your handle — ask me to list your reels and pick one.",
-          };
-        }
-        if (rows[0].status !== 'approved') {
-          return {
-            ok: false,
-            uploadStatus: rows[0].status,
-            message: `That reel is still ${rows[0].status}, so a deep link to it would not open yet. Your general link works now: ${links.general}`,
-          };
-        }
-        links.reel = `${base}/reels/${enc(rows[0].id)}?ref=${enc(handle)}${src}`;
-      }
-
-      // Same analytics event the /api/referrals/generate-link route writes, so links made
-      // in chat show up in link performance too.
-      try {
-        await pool.query(
-          `INSERT INTO referral_events (creator_handle, event_type, metadata, created_at)
-           VALUES ($1, 'link_generated', $2, NOW())`,
-          [handle, JSON.stringify({ gymId: args.gymId || null, uploadId: args.uploadId || null, source: args.source || null, link: links.reel || links.gym || links.general })]
-        );
-      } catch (_) { /* analytics table may not exist yet — never block the link */ }
-
-      return {
-        ok: true,
-        handle,
-        links,
-        commission: '25% of each booking made through it',
-      };
-    },
-  },
-
   get_my_toolkit: {
     write: false,
     schema: {
@@ -568,7 +503,12 @@ const tools = {
         .catch(() => ({ rows: [] }));
       if (taken.rows.length) return { ok: false, message: `${clean} is already taken — try another.` };
 
-      await pool.query('UPDATE public.users SET referral_handle = $1 WHERE id = $2', [clean, userId]);
+      const saved = await pool
+        .query('UPDATE public.users SET referral_handle = $1 WHERE id = $2', [clean, userId])
+        .catch(() => ({ rowCount: 0 }));
+      if (!saved.rowCount) {
+        return { ok: false, message: `I could not save ${clean} — your handle is unchanged.` };
+      }
       return {
         ok: true,
         handle: clean,
