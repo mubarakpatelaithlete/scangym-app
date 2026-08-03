@@ -41,7 +41,6 @@ if(IS_SHEET_EMBED){
   injectStyle('sg-sheet-embed-style',
     '.sg-sheet-embed .sg-tab-bar,'+
     '.sg-sheet-embed #sg-continue-banner,'+
-    '.sg-sheet-embed [id$="-continue-banner"],'+
     '.sg-sheet-embed #sg-sps,'+
     '.sg-sheet-embed #sg-reels-persistent{display:none!important}'+
     '.sg-sheet-embed .sg-tab-content{bottom:0!important}'+
@@ -272,42 +271,22 @@ window._profileContinueFlow=function(){
 };
 function injectProfileCTA(){
   if(IS_SHEET_EMBED)return;
+  if(!window.sgBottomBar)return;
   var route=curRoute();
   var isProfile=(route==='/more'||route==='/more/'||route==='/more/profile');
   try{if(!isProfile&&typeof state!=='undefined'&&state&&state.activeTab==='more')isProfile=true;}catch(e){}
-  var old=document.getElementById('profile-continue-banner');
-  if(!isProfile){if(old){old.remove();document.body.classList.remove('sg-profile-cta');}return;}
+  /* ONE BAR: this used to append its own fixed #profile-continue-banner at
+   * bottom:56px;z-index:8999 (a second orange bar, with its own body.sg-profile-cta
+   * spacing rule). It now borrows the single shared bar, which already reserves
+   * space via body.sg-cb-active. */
+  if(!isProfile){window.sgBottomBar.hide('profile');return;}
   var u=curUser();
-  var label=u?'Book a Gym':'Continue';
-  var sub=u?'Your QR pass is ready after booking':'Sign in to unlock your QR pass';
-  var step=u?2:1;
-  if(old){
-    if(old.getAttribute('data-step')===String(step))return;
-    old.remove();
-  }
-  // Full-width bar, identical design language to the Reels/Book
-  // #sg-continue-banner (52px, edge-to-edge, flush above the tab bar).
-  var banner=document.createElement('div');
-  banner.id='profile-continue-banner';
-  banner.setAttribute('data-step',String(step));
-  banner.onclick=function(){window._profileContinueFlow();};
-  banner.style.cssText='position:fixed;bottom:calc(56px + env(safe-area-inset-bottom,0px));left:0;right:0;height:52px;'
-    +'background:linear-gradient(135deg,#FF6D00 0%,#E66200 100%);display:flex;align-items:center;justify-content:center;gap:8px;'
-    +'z-index:8999;box-shadow:0 -4px 20px rgba(255,109,0,.25);cursor:pointer;-webkit-tap-highlight-color:transparent;'
-    +'touch-action:manipulation;-webkit-user-select:none;user-select:none';
-  banner.innerHTML=''
-    +'<span style="font-size:16px;font-weight:700;color:#fff;letter-spacing:.3px">'+label+'</span>'
-    +'<span style="font-size:13px;font-weight:600;color:rgba(255,255,255,.75);max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+sub+'</span>'
-    +'<span style="font-size:18px;color:#fff;margin-left:2px">\u2192</span>';
-  document.body.appendChild(banner);
-  /* UX fix: content at the bottom of the Profile page (e.g. the "Get ID verified"
-   * card) was hidden behind this fixed banner — reserve space for it. */
-  if(!document.getElementById('sg-profile-cta-css')){
-    var pcss=document.createElement('style');pcss.id='sg-profile-cta-css';
-    pcss.textContent='body.sg-profile-cta .sg-tab-content{bottom:calc(56px + 52px + env(safe-area-inset-bottom,0px))!important}';
-    document.head.appendChild(pcss);
-  }
-  document.body.classList.add('sg-profile-cta');
+  window.sgBottomBar.show('profile',{
+    label:u?'Book a Gym':'Continue',
+    sub:u?'Your QR pass is ready after booking':'Sign in to unlock your QR pass',
+    arrow:'\u2192',
+    onClick:function(){window._profileContinueFlow();}
+  });
 }
 setInterval(injectProfileCTA,400);
 

@@ -671,7 +671,7 @@
    * claimed yet, the full-width orange "Continue" banner (another 56px) — which
    * used to sit directly on top of the button and hide it completely.
    */
-  var BOTTOM_CHROME = ['.sg-tab-bar', '#sg-continue-banner', '#partner-continue-banner'];
+  var BOTTOM_CHROME = ['.sg-tab-bar', '#sg-continue-banner'];
 
   /** Total height of everything the app has pinned to the bottom of the screen. */
   function bottomChromeHeight() {
