@@ -199,19 +199,24 @@ window._sgDeepLinkSearch=function(q,handle){
   if(!box)return;
   if(!q||q.length<2){box.innerHTML='';return;}
   _deepLinkTimer=setTimeout(function(){
-    fetch('/api/gyms/search?q='+encodeURIComponent(q)+'&limit=5')
-      .then(function(r){return r.json();})
+    /* cleanup step 1: was /api/gyms/search (dead route -> HTML -> silent blank) */
+    fetch('/api/live/search?q='+encodeURIComponent(q)+'&limit=5')
+      .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
       .then(function(d){
-        if(!d.results||!d.results.length){box.innerHTML='<p style="color:rgba(255,255,255,.35);font-size:12px;padding:8px 2px">No gyms found</p>';return;}
-        box.innerHTML=d.results.map(function(g){
+        var list=(d.gyms||d.results||[]).slice(0,5);
+        if(!list.length){box.innerHTML='<p style="color:rgba(255,255,255,.35);font-size:12px;padding:8px 2px">No gyms found</p>';return;}
+        box.innerHTML=list.map(function(g){
           var name=(g.name||'Gym').replace(/'/g,'');
-          return '<div onclick="_sgCopyDeepLink(\''+g.place_id+'\',\''+handle+'\',\''+name+'\')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:12px;margin-top:6px;cursor:pointer">'
+          return '<div onclick="_sgCopyDeepLink(\''+(g.placeId||g.place_id||g.id||'')+'\',\''+handle+'\',\''+name+'\')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:12px;margin-top:6px;cursor:pointer">'
             +'<span style="font-size:16px">\uD83C\uDFCB\uFE0F</span>'
             +'<div style="flex:1;min-width:0"><p style="color:#fff;font-size:13px;font-weight:600;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+name+'</p>'
-            +'<p style="color:rgba(255,255,255,.3);font-size:10px;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(g.address||g.vicinity||'')+'</p></div>'
+            +'<p style="color:rgba(255,255,255,.3);font-size:10px;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(g.address||g.formatted_address||g.vicinity||'')+'</p></div>'
             +'<span style="color:#FF6D00;font-size:11px;font-weight:700;flex-shrink:0">Copy link</span></div>';
         }).join('');
-      }).catch(function(){});
+      }).catch(function(err){
+        box.innerHTML='<p style="color:#FF6D00;font-size:12px;padding:8px 2px">Search is unavailable right now \u2014 please try again.</p>';
+        try{console.warn('[deep-link search] failed:',err&&err.message);}catch(e){}
+      });
   },350);
 };
 window._sgCopyDeepLink=function(placeId,handle,name){
