@@ -199,11 +199,19 @@ window._sgDeepLinkSearch=function(q,handle){
   if(!box)return;
   if(!q||q.length<2){box.innerHTML='';return;}
   _deepLinkTimer=setTimeout(function(){
-    fetch('/api/gyms/search?q='+encodeURIComponent(q)+'&limit=5')
-      .then(function(r){return r.json();})
+    /* /api/gyms/search never existed on the server: it returned index.html, r.json()
+       threw and the .catch() below left this box blank forever. Use the live search. */
+    fetch('/api/live/search?q='+encodeURIComponent(q)+'&limit=5')
+      .then(function(r){
+        if(!r.ok)throw new Error('search failed: '+r.status);
+        return r.json();
+      })
       .then(function(d){
-        if(!d.results||!d.results.length){box.innerHTML='<p style="color:rgba(255,255,255,.35);font-size:12px;padding:8px 2px">No gyms found</p>';return;}
-        box.innerHTML=d.results.map(function(g){
+        var list=(d&&(d.gyms||d.results)||[]).slice(0,5).map(function(g){
+          return {place_id:g.placeId||g.place_id||g.id,name:g.name,address:g.address||g.vicinity||g.formatted_address};
+        }).filter(function(g){return g.place_id;});
+        if(!list.length){box.innerHTML='<p style="color:rgba(255,255,255,.35);font-size:12px;padding:8px 2px">No gyms found</p>';return;}
+        box.innerHTML=list.map(function(g){
           var name=(g.name||'Gym').replace(/'/g,'');
           return '<div onclick="_sgCopyDeepLink(\''+g.place_id+'\',\''+handle+'\',\''+name+'\')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:12px;margin-top:6px;cursor:pointer">'
             +'<span style="font-size:16px">\uD83C\uDFCB\uFE0F</span>'
@@ -211,7 +219,10 @@ window._sgDeepLinkSearch=function(q,handle){
             +'<p style="color:rgba(255,255,255,.3);font-size:10px;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(g.address||g.vicinity||'')+'</p></div>'
             +'<span style="color:#FF6D00;font-size:11px;font-weight:700;flex-shrink:0">Copy link</span></div>';
         }).join('');
-      }).catch(function(){});
+      }).catch(function(e){
+        console.error('[tabs-v4] deep-link gym search failed',e);
+        box.innerHTML='<p style="color:rgba(255,255,255,.45);font-size:12px;padding:8px 2px">Couldn\'t search right now — please try again.</p>';
+      });
   },350);
 };
 window._sgCopyDeepLink=function(placeId,handle,name){

@@ -798,6 +798,21 @@ if (fs.existsSync(FRONTEND_DIR)) {
     res.sendFile(path.join(FRONTEND_DIR, 'privacy', 'index.html'));
   });
 
+  // Real 404 for unknown API routes.
+  // Before this, an unknown /api/... path fell through to the SPA fallback below and
+  // returned 200 + index.html. Callers did response.json(), threw, swallowed the error
+  // in a .catch(), and silently rendered nothing (see /api/gyms/search, /api/gym/:id).
+  // Now they get an honest 404 JSON so failures are visible in logs and monitoring.
+  app.all(/^\/(api|mcp)\//, (req, res) => {
+    console.warn('[404] Unknown API route:', req.method, req.originalUrl);
+    res.status(404).json({
+      success: false,
+      error: 'Not found',
+      message: `No API route matches ${req.method} ${req.path}`,
+      path: req.path
+    });
+  });
+
   // SPA fallback - serve index.html for all non-API routes
   // UBER PATTERN #4: Inject Cloudflare geolocation + IP geo into HTML for 0ms location detection
   let _indexHtmlCache = null;
