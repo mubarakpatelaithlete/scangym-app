@@ -90,6 +90,25 @@
   // ── Public API ──
 
   /**
+   * Formatted price for a pass type, e.g. "£4.49".
+   * Use this INSTEAD of hardcoding '£4.49' anywhere: it always resolves through the
+   * single pricing source (API result, or the GBP fallback above) so the app can never
+   * show two different prices or two different currency symbols for the same pass.
+   * @param {string} passType - 'day', '3day', 'weekly', 'monthly'
+   */
+  window.sgPriceDisplay = function sgPriceDisplay(passType) {
+    return window.sgPrice(passType || 'day').display;
+  };
+
+  /**
+   * Numeric price for a pass type (no currency symbol), e.g. 4.49.
+   * @param {string} passType - 'day', '3day', 'weekly', 'monthly'
+   */
+  window.sgAmount = function sgAmount(passType) {
+    return window.sgPrice(passType || 'day').amount;
+  };
+
+  /**
    * Get current price for a pass type.
    * @param {string} passType - 'day', '3day', 'weekly', or 'monthly'
    * @returns {{ amount: number, display: string, symbol: string, currency: string, stripeAmount: number }}

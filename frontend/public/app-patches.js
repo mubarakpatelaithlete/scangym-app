@@ -124,7 +124,7 @@
     window.sgOpenReelBooking = function(gymId, gymName, gymAddr, gymPrice, gymCurrency) {
       var ov = getOrCreateOverlay();
       var sym = gymCurrency || (window.sgSymbol ? window.sgSymbol() : '£');
-      var price = gymPrice || (window.sgPrice ? window.sgPrice('day').amount : 4.49);
+      var price = gymPrice || sgAmount('day');
       var pd = sym + parseFloat(price).toFixed(2);
       ov.innerHTML = [
         '<div class="sg-rbo-header">',
@@ -163,7 +163,7 @@
       document.querySelectorAll('.sg-rbo-pass').forEach(function(p) { p.classList.remove('selected'); });
       btn.classList.add('selected');
       ov.dataset.selectedPass = pass;
-      var price = parseFloat(ov.dataset.price || 4.49);
+      var price = parseFloat(ov.dataset.price || sgAmount('day'));
       var sym = ov.dataset.sym || '£';
       var mults = { day:1, '3day':2.67, weekly:5, monthly:10 };
       var fp = (price * (mults[pass] || 1)).toFixed(2);
@@ -200,7 +200,7 @@
         if (reelsActive && gym) {
           e.stopImmediatePropagation();
           var sym = gym.currencySymbol || (window.sgSymbol ? window.sgSymbol() : '£');
-          var price = gym.dayPassPrice || (window.sgPrice ? window.sgPrice('day').amount : 4.49);
+          var price = gym.dayPassPrice || sgAmount('day');
           window.sgOpenReelBooking(gym.placeId || gym.id, gym.name, gym.address || gym.vicinity, price, sym);
         }
       }, true);
