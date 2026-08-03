@@ -528,6 +528,21 @@ app.use('/api/gym-mgmt', gymMgmtRouter);
 app.use('/api/playlists', playlistsRouter);
 app.use('/api/stats', adminDashboardRouter);
 
+// -- Legacy gym-discovery compat (cleanup step 1): old dead calls -> /api/live/* --
+const legacyGymCompatRouter = require('./routes/legacyGymCompat');
+app.use('/api', legacyGymCompatRouter);
+
+// -- Real API 404s: never let an unknown /api/* path fall through to the SPA HTML --
+app.use('/api', (req, res) => {
+  console.warn(`[api-404] ${req.method} ${req.originalUrl}`);
+  res.status(404).json({
+    error: 'Not Found',
+    code: 'API_ROUTE_NOT_FOUND',
+    method: req.method,
+    path: req.originalUrl.split('?')[0]
+  });
+});
+
 // OpenAI ChatGPT Apps domain verification challenge
 app.get('/.well-known/openai-apps-challenge', (req, res) => {
   const token = process.env.OPENAI_APPS_CHALLENGE_TOKEN
@@ -796,6 +811,23 @@ if (fs.existsSync(FRONTEND_DIR)) {
 
   app.get('/privacy', (req, res) => {
     res.sendFile(path.join(FRONTEND_DIR, 'privacy', 'index.html'));
+  });
+
+  // -- Real 404s for missing static assets: an unknown .js/.css/.png must not
+  //    be answered with index.html (that is what silently broke old callers) --
+  const ASSET_RE = /\.(js|mjs|css|map|json|png|jpe?g|gif|svg|webp|ico|woff2?|ttf|mp4|webm|txt|xml)$/i;
+  app.get('*', (req, res, next) => {
+    const pathname = req.path;
+    if (!ASSET_RE.test(pathname)) return next();
+    console.warn(`[asset-404] ${pathname}`);
+    const errorPage = path.join(FRONTEND_DIR, '404.html');
+    if (/\.(js|mjs|css|map|json)$/i.test(pathname)) {
+      return res.status(404).type('text/plain').send(`404 Not Found: ${pathname}`);
+    }
+    if (fs.existsSync(errorPage)) {
+      return res.status(404).sendFile(errorPage);
+    }
+    return res.status(404).type('text/plain').send(`404 Not Found: ${pathname}`);
   });
 
   // SPA fallback - serve index.html for all non-API routes

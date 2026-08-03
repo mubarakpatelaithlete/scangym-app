@@ -185,10 +185,12 @@ function prefetchGym(gymId){
 
   setTimeout(function(){
     if(_prefetchCache[gymId]) return;
+    /* cleanup step 1: /api/gyms/place/:id was a dead route returning HTML;
+       the live details endpoint is /api/live/place/:placeId */
     var isPlaceId = isNaN(parseInt(gymId));
-    var url = isPlaceId ? '/api/gyms/place/' + gymId : '/api/gym/' + gymId;
+    var url = isPlaceId ? '/api/live/place/' + gymId : '/api/gym/' + gymId;
     fetch(url, { credentials: 'include' })
-      .then(function(r){ return r.json(); })
+      .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
       .then(function(d){
         _prefetchCache[gymId] = d;
         _prefetchQueue.delete(gymId);
