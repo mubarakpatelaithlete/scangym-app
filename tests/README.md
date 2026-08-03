@@ -15,3 +15,14 @@ node --test tests/*.test.js
 | `syntax.test.js` | every shipped `.js` parses — the frontend has no build step, so a typo is a white screen |
 
 Add a test whenever you delete a duplicate: the test is what stops it growing back.
+
+## Running this on every push (needs one manual step)
+
+`docs/ci.yml.example` is a ready GitHub Actions workflow. Viktor's GitHub app is
+not allowed to create workflow files, so copy it in by hand once:
+
+```
+mkdir -p .github/workflows && cp docs/ci.yml.example .github/workflows/ci.yml
+```
+
+After that, every push and PR runs `node --test tests/*.test.js`.
