@@ -385,72 +385,7 @@ function _renderWithdrawForm(type){
   }
 }
 
-window._ctaSaveWithdrawMethod=async function(){
-  var type=window._ctaSelectedWithdraw;
-  var btn=document.getElementById('sg-wd-save-btn');
-  var err=document.getElementById('sg-wd-error');
-  if(err)err.style.display='none';
 
-  if(type==='stripe'){
-    if(btn){btn.textContent='⚡ Redirecting…';btn.style.opacity='.6';btn.style.pointerEvents='none';}
-    try{
-      var u=state&&state.user;
-      var email=u?u.email:'';
-      var handle=(u&&u.referral_code)||'';
-      var res=await fetch('/api/referrals/stripe-connect',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({creatorHandle:handle,email:email})});
-      var d=await res.json();
-      if(d.success&&d.onboardingUrl){
-        _saveWithdrawLocal('stripe_connect',{});
-        window.location.href=d.onboardingUrl;
-        return;
-      }else{
-        if(err){err.textContent=d.error||'Stripe Connect setup failed';err.style.display='block';}
-        if(btn){btn.textContent='Connect with Stripe →';btn.style.opacity='1';btn.style.pointerEvents='auto';}
-      }
-    }catch(e){
-      if(err){err.textContent='Network error — try again';err.style.display='block';}
-      if(btn){btn.textContent='Connect with Stripe →';btn.style.opacity='1';btn.style.pointerEvents='auto';}
-    }
-    return;
-  }
-
-  var details={};
-  if(type==='paypal'){
-    var emailEl=document.getElementById('sg-wd-paypal-email');
-    if(!emailEl||!emailEl.value.trim()||!emailEl.value.includes('@')){
-      if(err){err.textContent='Enter a valid PayPal email';err.style.display='block';}return;
-    }
-    details={paypalEmail:emailEl.value.trim()};
-  }else if(type==='bank'){
-    var nameEl=document.getElementById('sg-wd-bank-name');
-    var sortEl=document.getElementById('sg-wd-bank-sort');
-    var acctEl=document.getElementById('sg-wd-bank-acct');
-    if(!nameEl||!nameEl.value.trim()||!sortEl||!sortEl.value.trim()||!acctEl||!acctEl.value.trim()){
-      if(err){err.textContent='Fill in all bank details';err.style.display='block';}return;
-    }
-    details={accountName:nameEl.value.trim(),sortCode:sortEl.value.trim(),accountNumber:acctEl.value.trim()};
-  }
-
-  if(btn){btn.textContent='Saving…';btn.style.opacity='.6';btn.style.pointerEvents='none';}
-  try{
-    _saveWithdrawLocal(type,details);
-    var cd=JSON.parse(localStorage.getItem('sg_creator')||'null')||{};
-    if(cd.handle||cd.slug){
-      var payMethod=type==='paypal'?'paypal':'bank_transfer';
-      await fetch('/api/referrals/update-payout',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({creatorHandle:cd.handle||cd.slug,paymentMethod:payMethod,paymentDetails:details})}).catch(function(){});
-    }
-    if(btn){btn.textContent='✅ Connected!';btn.style.background='#22c55e';btn.style.opacity='1';}
-    if(navigator.vibrate)navigator.vibrate(50);
-    setTimeout(function(){
-      _ctaCloseSheet();
-      if(window._ctaWithdrawCallback)window._ctaWithdrawCallback();
-    },400);
-  }catch(e){
-    if(err){err.textContent='Failed to save — try again';err.style.display='block';}
-    if(btn){btn.textContent='Save & Continue →';btn.style.opacity='1';btn.style.pointerEvents='auto';}
-  }
-};
 
 function _saveWithdrawLocal(type,details){
   try{
@@ -585,55 +520,7 @@ async function _loadWithdrawMethodSummary(){
   }
 }
 
-window._ctaConfirmWithdraw=async function(tabType){
-  var btn=document.getElementById('sg-cta-wd-confirm');
-  var err=document.getElementById('sg-cta-wd-error');
-  var amtEl=document.getElementById('sg-cta-wd-amount');
-  if(!amtEl)return;
-  var amount=parseFloat(amtEl.value);
-  if(isNaN(amount)||amount<1){
-    if(err){err.textContent='Minimum withdrawal is £1.00';err.style.display='block';}return;
-  }
-  if(amount>window._ctaAvailableBalance){
-    if(err){err.textContent='Insufficient balance (£'+window._ctaAvailableBalance.toFixed(2)+' available)';err.style.display='block';}return;
-  }
-  if(err)err.style.display='none';
-  if(btn){btn.textContent='Processing…';btn.style.opacity='.6';btn.style.pointerEvents='none';}
 
-  try{
-    // Use the unified wallet withdraw endpoint for ALL tabs (supports Stripe + bank/PayPal fallback)
-    var endpoint='/api/wallet/withdraw';
-    var res=await fetch(endpoint,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({amount:amount})});
-    var d=await res.json();
-    if(d.success||d.payout){
-      if(btn){btn.textContent='✅ Withdrawal Requested!';btn.style.background='#22c55e';btn.style.opacity='1';}
-      if(navigator.vibrate)navigator.vibrate([50,50,50]);
-      var balEl=document.getElementById('sg-cta-wd-balance');
-      if(balEl)balEl.textContent='£'+(window._ctaAvailableBalance-amount).toFixed(2);
-      if(typeof sgToast==='function')sgToast('£'+amount.toFixed(2)+' withdrawal requested! 🎉','success',4000);
-      setTimeout(function(){_ctaCloseSheet();},1500);
-    }else{
-      // If user needs to add a method, offer the add-method sheet
-      if(d.needsMethod&&typeof _sgWalletAddMethod==='function'){
-        if(err){err.textContent='Add a withdraw method first';err.style.display='block';}
-        if(btn){btn.textContent='Confirm Withdrawal →';btn.style.opacity='1';btn.style.pointerEvents='auto';}
-        setTimeout(function(){_ctaCloseSheet();_sgWalletAddMethod();},800);
-        return;
-      }
-      if(d.needsOnboarding&&typeof _sgWalletAddMethod==='function'){
-        if(err){err.textContent='Complete your Stripe setup first';err.style.display='block';}
-        if(btn){btn.textContent='Confirm Withdrawal →';btn.style.opacity='1';btn.style.pointerEvents='auto';}
-        setTimeout(function(){_ctaCloseSheet();_sgWalletAddMethod();},800);
-        return;
-      }
-      if(err){err.textContent=d.error||'Withdrawal failed — try again';err.style.display='block';}
-      if(btn){btn.textContent='Confirm Withdrawal →';btn.style.opacity='1';btn.style.pointerEvents='auto';}
-    }
-  }catch(e){
-    if(err){err.textContent='Network error — try again';err.style.display='block';}
-    if(btn){btn.textContent='Confirm Withdrawal →';btn.style.opacity='1';btn.style.pointerEvents='auto';}
-  }
-};
 
 
 // ══════════════════════════════════════════════════════════════════════
@@ -967,7 +854,7 @@ function _getCTAState(tabType){
 
 function _injectContinueBanner(tabType){
   /* ONE BAR: this used to create its own fixed #partner-continue-banner (and a
-   * #creator-continue-banner) at bottom:56px;z-index:8999 — a third and fourth
+   * #creator-continue-banner) at bottom:56px;z-index:var(--sg-z-bottom-bar,8999) — a third and fourth
    * orange bar that could stack over the core one. It now renders into the single
    * shared bar owned by app.js (window.sgBottomBar).
    * The old flow is still reachable: window._partnerContinueFlow() is untouched

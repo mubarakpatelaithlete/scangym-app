@@ -18,35 +18,9 @@
 // Old: navigated to /gympartners-dashboard/connect-access (dead page)
 // New: opens the Smart Lock Finder sheet right here
 
-var _waitLockSetup = setInterval(function(){
-  // Wait for batch3's _sgB3GoToLockSetup to exist, then override
-  if(typeof window._sgB3GoToLockSetup !== 'function') return;
-  clearInterval(_waitLockSetup);
-
-  window._sgB3GoToLockSetup = function(gymId){
-    // Close the verification sheet
-    if(typeof window._sgCloseSheet === 'function') window._sgCloseSheet('sg-own-sheet');
-    // Store gymId so the Smart Lock Finder knows which gym
-    if(gymId) window._partnerGymId = gymId;
-    // Small delay for sheet close animation, then open the finder
-    setTimeout(function(){
-      if(typeof window._slfOpenFinder === 'function'){
-        window._slfOpenFinder();
-      } else if(typeof window._partnerConnectSeam === 'function'){
-        window._partnerConnectSeam();
-      }
-    }, 350);
-  };
-}, 200);
-
-// Also patch: if the "Connect Lock System →" CTA in showLockSetupPrompt
-// hasn't loaded yet, keep checking
-var _waitLockSetup2 = setInterval(function(){
-  if(typeof window._sgB3GoToLockSetup !== 'function') return;
-  // Already patched above, just clear
-  clearInterval(_waitLockSetup2);
-}, 500);
-
+/* FIX #2 folded into batch3.js: _sgB3GoToLockSetup now opens the Smart Lock
+   Finder there directly, so the two pollers that waited for batch3's old
+   version and overwrote it are gone. */
 
 // ═════════════════════════════════════════════════════════════════════
 // FIX #3: Better "Request" brands messaging

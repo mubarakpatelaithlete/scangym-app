@@ -149,7 +149,7 @@ document.addEventListener('click',function(e){
     if(_pullIndicator)return _pullIndicator;
     _pullIndicator=document.createElement('div');
     _pullIndicator.id='sg-pull-refresh';
-    _pullIndicator.style.cssText='position:fixed;top:-50px;left:50%;transform:translateX(-50%);width:40px;height:40px;border-radius:50%;background:rgba(255,109,0,.15);border:2px solid #FF6D00;display:flex;align-items:center;justify-content:center;z-index:10000;transition:top 0.2s ease;font-size:18px;';
+    _pullIndicator.style.cssText='position:fixed;top:-50px;left:50%;transform:translateX(-50%);width:40px;height:40px;border-radius:50%;background:rgba(255,109,0,.15);border:2px solid #FF6D00;display:flex;align-items:center;justify-content:center;z-index:var(--sg-z-overlay,10000);transition:top 0.2s ease;font-size:18px;';
     _pullIndicator.textContent='↻';
     document.body.appendChild(_pullIndicator);
     return _pullIndicator;
@@ -288,7 +288,7 @@ document.addEventListener('click',function(e){
     if(_offlineBanner)return;
     _offlineBanner=document.createElement('div');
     _offlineBanner.id='sg-offline-banner';
-    _offlineBanner.style.cssText='position:fixed;top:0;left:0;right:0;z-index:99999;background:linear-gradient(135deg,#dc2626,#b91c1c);color:#fff;text-align:center;padding:10px 16px;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px;animation:slideDown 0.3s ease;';
+    _offlineBanner.style.cssText='position:fixed;top:0;left:0;right:0;z-index:var(--sg-z-toast,11000);background:linear-gradient(135deg,#dc2626,#b91c1c);color:#fff;text-align:center;padding:10px 16px;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px;animation:slideDown 0.3s ease;';
     _offlineBanner.innerHTML='<span style="font-size:16px">📡</span> You\'re offline — some features may be limited <span onclick="location.reload()" style="margin-left:8px;background:rgba(255,255,255,.2);padding:4px 12px;border-radius:8px;cursor:pointer;font-size:12px">Retry</span>';
     document.body.appendChild(_offlineBanner);
 
@@ -322,7 +322,7 @@ window._sgLoadingOverlay={
   show:function(msg){
     if(this._el)return;
     this._el=document.createElement('div');
-    this._el.style.cssText='position:fixed;inset:0;z-index:99998;background:rgba(8,8,18,.6);backdrop-filter:blur(4px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;animation:fadeIn 0.2s ease';
+    this._el.style.cssText='position:fixed;inset:0;z-index:var(--sg-z-overlay,10000);background:rgba(8,8,18,.6);backdrop-filter:blur(4px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;animation:fadeIn 0.2s ease';
     this._el.innerHTML='<div class="sg-spinner" style="width:32px;height:32px;border-width:3px"></div><span style="color:rgba(255,255,255,.7);font-size:14px;font-weight:600">'+(msg||'Loading...')+'</span>';
     document.body.appendChild(this._el);
   },
@@ -340,7 +340,7 @@ window._sgLoadingOverlay={
 /* ── 7c. USER FRIENDLY: Confirm destructive actions ── */
 window._sgConfirm=function(msg,onYes,onNo){
   var overlay=document.createElement('div');
-  overlay.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;animation:fadeIn 0.2s ease;padding:24px';
+  overlay.style.cssText='position:fixed;inset:0;z-index:var(--sg-z-overlay,10000);background:rgba(0,0,0,.6);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;animation:fadeIn 0.2s ease;padding:24px';
   overlay.innerHTML=
     '<div style="background:rgba(20,22,36,.98);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:28px 24px;max-width:320px;width:100%;text-align:center">'+
       '<p style="color:#fff;font-size:16px;font-weight:700;margin-bottom:6px">'+msg+'</p>'+
