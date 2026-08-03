@@ -321,9 +321,16 @@ apiPaths.forEach(p => app.use(p, express.json({
 
 // -- Health check (Railway uses this for deploy validation) --
 app.get('/health', (req, res) => res.status(200).send('ok'));
+/* Key watchdog: pokes the OpenAI/Groq/Stripe keys and the database on a timer so
+   a revoked key is noticed here (log + email) instead of by a customer, as on
+   31 Jul 2026. Read-only, wrapped, cannot fail a request. */
+const selfCheck = require('./lib/self-check');
+selfCheck.start({ pool: require('./middleware/db') });
+
 app.get('/api/v2/health', (req, res) => {
   res.json({
     status: 'ok', version: 'v6.0.0', brand: 'ScanGym',
+    dependencies: selfCheck.snapshot(),
     ts: new Date().toISOString(),
     features: 22, tasks: '24/24 + auth + booking + payment + live-search + chatbot-ai + gym-partner + creator-earnings',
     ok: true,
