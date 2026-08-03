@@ -47,7 +47,12 @@
       '#pchat-fab .pchat-fab-dot{width:7px;height:7px;border-radius:50%;background:#fff;opacity:.9;',
       'animation:pchatfabp 1.6s ease-in-out infinite}',
       '@keyframes pchatfabp{50%{opacity:.35}}',
-      '#pchat{position:fixed;inset:0;z-index:9400;background:#080812;display:none;flex-direction:column}',
+      // The chat is a tab, not a modal: it stops above whatever the app has pinned to
+      // the bottom (tab bar 56px, plus the Continue banner when it is up), exactly like
+      // the Reels tab iframe does. `--pchat-bottom` is measured in syncBottomInset().
+      '#pchat{position:fixed;top:0;left:0;right:0;',
+      'bottom:var(--pchat-bottom,calc(56px + env(safe-area-inset-bottom,0px)));',
+      'z-index:9400;background:#080812;display:none;flex-direction:column}',
       '#pchat.open{display:flex}',
       '.pchat-top{display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top,10px) + 10px) 16px 12px;',
       'border-bottom:1px solid rgba(255,255,255,.08);background:linear-gradient(180deg,#14141f,#0b0b14)}',
@@ -73,7 +78,8 @@
       '.pchat-chip:active{background:#FF6D00;color:#fff}',
       '.pchat-chip.yes{background:rgba(74,222,128,.14);border-color:rgba(74,222,128,.5);color:#86efac}',
       '.pchat-chip.no{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.15);color:rgba(255,255,255,.6)}',
-      '.pchat-bar{border-top:1px solid rgba(255,255,255,.08);padding:10px 12px calc(env(safe-area-inset-bottom,10px) + 12px);',
+      // No safe-area padding here any more: the tab bar below already owns that space.
+      '.pchat-bar{border-top:1px solid rgba(255,255,255,.08);padding:10px 12px 12px;',
       'display:flex;gap:8px;align-items:flex-end;background:#0b0b14}',
       '.pchat-input{flex:1;background:#191926;border:1px solid rgba(255,255,255,.08);color:#e9edf5;border-radius:20px;',
       'padding:11px 15px;font-size:15px;font-family:inherit;resize:none;height:44px;max-height:110px;outline:none}',
@@ -642,6 +648,7 @@
 
   function open() {
     build();
+    syncBottomInset();
     var root = document.getElementById('pchat');
     root.classList.add('open');
     S.open = true;
@@ -664,17 +671,37 @@
    * claimed yet, the full-width orange "Continue" banner (another 56px) — which
    * used to sit directly on top of the button and hide it completely.
    */
-  function positionFab(fab) {
-    var offset = 12;
-    ['.sg-tab-bar', '#partner-continue-banner'].forEach(function (sel) {
+  var BOTTOM_CHROME = ['.sg-tab-bar', '#sg-continue-banner', '#partner-continue-banner'];
+
+  /** Total height of everything the app has pinned to the bottom of the screen. */
+  function bottomChromeHeight() {
+    var h = 0;
+    BOTTOM_CHROME.forEach(function (sel) {
       var el = document.querySelector(sel);
       if (!el) return;
       var s = window.getComputedStyle(el);
       if (s.display === 'none' || s.visibility === 'hidden') return;
-      var h = el.getBoundingClientRect().height;
-      if (h > 0 && h < 200) offset += h;
+      var r = el.getBoundingClientRect().height;
+      if (r > 0 && r < 200) h += r;
     });
-    fab.style.bottom = 'calc(env(safe-area-inset-bottom, 0px) + ' + offset + 'px)';
+    return h;
+  }
+
+  function positionFab(fab) {
+    fab.style.bottom = 'calc(env(safe-area-inset-bottom, 0px) + ' + (bottomChromeHeight() + 12) + 'px)';
+  }
+
+  /**
+   * Keeps the chat panel sitting on top of the bottom navigation instead of over it,
+   * so Reels / Book / ScanSquad / Partner stay tappable while the chat is open — the
+   * same behaviour as the Reels tab, which renders inside the same window.
+   */
+  function syncBottomInset() {
+    var h = bottomChromeHeight();
+    var val = h
+      ? h + 'px'
+      : 'calc(56px + env(safe-area-inset-bottom, 0px))';
+    document.documentElement.style.setProperty('--pchat-bottom', val);
   }
 
   // Show the button only on the Partner tab; open automatically for /partner?chat=1.
@@ -691,6 +718,7 @@
       fab.classList.toggle('show', onPartner && !barVisible);
       if (onPartner && !barVisible) positionFab(fab);
     }
+    if (S.open) syncBottomInset();
     if (!onPartner && S.open) close();
     if (onPartner && /[?&]chat=1/.test(location.search) && !S.open) open();
   }
@@ -703,5 +731,8 @@
     syncVisibility();
   }
   window.addEventListener('popstate', syncVisibility);
+  window.addEventListener('resize', function () {
+    if (S.open) syncBottomInset();
+  });
   setInterval(syncVisibility, 800); // the app routes without firing popstate
 })();

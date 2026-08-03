@@ -49,7 +49,10 @@
       '#schat-fab .schat-fab-dot{width:7px;height:7px;border-radius:50%;background:#fff;opacity:.9;',
       'animation:schatfabp 1.6s ease-in-out infinite}',
       '@keyframes schatfabp{50%{opacity:.35}}',
-      '#schat{position:fixed;inset:0;z-index:9400;background:#080812;display:none;flex-direction:column}',
+      // The overlay stops above whatever the app keeps pinned to the bottom (tab bar,
+      // Continue banner) so the fixed bottom navigation stays visible and tappable
+      // while the AI chat is open. `--schat-bottom` is set from real heights on open.
+      '#schat{position:fixed;top:0;left:0;right:0;bottom:var(--schat-bottom,0px);z-index:8500;background:#080812;display:none;flex-direction:column}',
       '#schat.open{display:flex}',
       '.schat-top{display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top,10px) + 10px) 16px 12px;',
       'border-bottom:1px solid rgba(255,255,255,.08);background:linear-gradient(180deg,#14141f,#0b0b14)}',
@@ -651,10 +654,33 @@
     chips(OPEN_CHIPS);
   }
 
+  /** Total height of the app's fixed bottom chrome (tab bar + banners). */
+  function bottomChromeHeight() {
+    var h = 0;
+    ['.sg-tab-bar', '#partner-continue-banner', '#sg-squad-brand'].forEach(function (sel) {
+      var el = document.querySelector(sel);
+      if (!el) return;
+      var st = window.getComputedStyle(el);
+      if (st.display === 'none' || st.visibility === 'hidden') return;
+      var eh = el.getBoundingClientRect().height;
+      if (eh > 0 && eh < 200) h += eh;
+    });
+    return h;
+  }
+
+  /** Reserve room for the fixed bottom navigation while the chat is open. */
+  function applyBottomInset() {
+    var root = document.getElementById('schat');
+    if (!root) return;
+    root.style.setProperty('--schat-bottom', bottomChromeHeight() + 'px');
+  }
+
   function open() {
     build();
     var root = document.getElementById('schat');
     root.classList.add('open');
+    applyBottomInset();
+    window.addEventListener('resize', applyBottomInset);
     S.open = true;
     if (!S.msgs.length && !document.getElementById('schat-scroll').children.length) greet();
     setTimeout(function () {
