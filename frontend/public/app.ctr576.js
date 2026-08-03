@@ -469,6 +469,48 @@ const api={
   async payGet(url){const r=await fetch('/api/payment'+url,{credentials:'include'});return r.json()},
 };
 
+/* ═══ ONE PAYMENT PATH ═══
+   Every screen that touches a saved card (gym pay sheet, gym overlay, Wallet,
+   Book sheet, checkout) goes through window.sgCards. Do not fetch
+   /api/payment/* card endpoints directly — add a method here instead, so a fix
+   to the card flow fixes every screen at once. Server side there is one route
+   each: setup-card, confirm-setup, saved-cards, set-default-card. */
+window.sgCards={
+  PATH:'/api/payment',
+  async listRaw(){
+    try{const r=await fetch(this.PATH+'/saved-cards',{credentials:'include'});
+      if(!r.ok)return{cards:[]};const d=await r.json();return d&&d.cards?d:{cards:[]};}
+    catch(e){return{cards:[]};}
+  },
+  async list(){return (await this.listRaw()).cards||[];},
+  async defaultCard(){const c=await this.list();return c.find(function(x){return x.isDefault;})||c[0]||null;},
+  async setDefault(cardId){
+    const r=await fetch(this.PATH+'/set-default-card',{method:'POST',credentials:'include',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify({cardId})});
+    return r.json().catch(function(){return{};});
+  },
+  async remove(cardId){
+    const r=await fetch(this.PATH+'/saved-cards/'+cardId,{method:'DELETE',credentials:'include'});
+    return r.json().catch(function(){return{};});
+  },
+  /* Full "add a card" flow: SetupIntent → Stripe confirm → save on server.
+     Throws an Error with a user-safe message; callers keep their own UI. */
+  async saveCard(stripeInstance,cardElement,opts){
+    opts=opts||{};
+    const si=await fetch(this.PATH+'/setup-card',{method:'POST',credentials:'include',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify({})}).then(function(r){return r.json();});
+    if(!si||!si.clientSecret)throw new Error((si&&si.error)||'Could not start card setup');
+    const billing={};
+    if(opts.country||opts.postcode)billing.address={country:opts.country||'GB',postal_code:opts.postcode||''};
+    const res=await stripeInstance.confirmCardSetup(si.clientSecret,{payment_method:{card:cardElement,billing_details:billing}});
+    if(res.error)throw new Error(res.error.message);
+    const saved=await fetch(this.PATH+'/confirm-setup',{method:'POST',credentials:'include',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({setupIntentId:res.setupIntent.id,nickname:opts.nickname||''})}).then(function(r){return r.json();}).catch(function(){return{};});
+    return {setupIntent:res.setupIntent,card:saved&&saved.card?saved.card:null,response:saved};
+  }
+};
+
 /* ═══ Perf #120/#121: Client-side gym data cache (sessionStorage) ═══
    Revisiting same area is instant, no refetch needed.
    Cache key = lat/lng rounded to 3 decimals (~111m precision). TTL = 10 min. */
@@ -3393,7 +3435,7 @@ window._gymBookingState={
 (async function _loadSavedCardForPayRow(){
   if(!state.user)return;
   try{
-    const resp=await fetch('/api/payment/saved-cards',{credentials:'include'}).then(r=>r.json());
+    const resp=await window.sgCards.listRaw();
     if(resp.cards&&resp.cards.length>0){
       const card=resp.cards.find(c=>c.isDefault)||resp.cards[0];
       window._gymBookingState.savedCard=card;
@@ -3516,7 +3558,7 @@ window.openPaySheet=function(){
   const savedArea=document.getElementById('gym-pay-saved-cards');
   if(savedArea&&state.user){
     savedArea.innerHTML='<div style="padding:12px 20px;color:#999;font-size:13px">Loading saved cards…</div>';
-    fetch('/api/payment/saved-cards',{credentials:'include'}).then(r=>r.json()).then(resp=>{
+    window.sgCards.listRaw().then(resp=>{
       if(!resp.cards||resp.cards.length===0){savedArea.innerHTML='';return;}
       const gbs=window._gymBookingState;
       let html='';
@@ -3576,17 +3618,15 @@ window._paySheetSaveCard=async function(){
   var btn=document.getElementById('gym-pay-inline-save');var errEl=document.getElementById('gym-pay-inline-error');
   if(btn){btn.textContent='Adding card…';btn.style.opacity='.6';btn.style.pointerEvents='none';}
   if(errEl)errEl.style.display='none';
-  try{var resp=await fetch('/api/payment/setup-intent',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'}});
-  var data=await resp.json();if(!data.clientSecret)throw new Error(data.error||'Could not create setup intent');
-  var {error,setupIntent}=await se.stripe.confirmCardSetup(data.clientSecret,{payment_method:{card:se.cardNum,billing_details:{address:{country:document.getElementById('gym-pay-inline-country')?.value||'GB',postal_code:document.getElementById('gym-pay-inline-postcode')?.value||''}}}});
-  if(error)throw new Error(error.message);
-  var nickname=document.getElementById('gym-pay-inline-nickname')?.value||'';
-  await fetch('/api/payment/confirm-card',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({setupIntentId:setupIntent.id,nickname})});
+  try{await window.sgCards.saveCard(se.stripe,se.cardNum,{
+    country:document.getElementById('gym-pay-inline-country')?.value||'GB',
+    postcode:document.getElementById('gym-pay-inline-postcode')?.value||'',
+    nickname:document.getElementById('gym-pay-inline-nickname')?.value||''});
   sgToast('Card added successfully!','success',2500);window._paySheetStripeElements=null;
   // FIX: After saving a new card, auto-resume pending booking instead of just refreshing the pay sheet
   if(window._pendingCheckout){
     // Fetch the card just saved so we can select it as payment method
-    try{var _newCards=await fetch('/api/payment/saved-cards',{credentials:'include'}).then(function(r){return r.json();});
+    try{var _newCards=await window.sgCards.listRaw();
     if(_newCards&&_newCards.cards&&_newCards.cards.length>0){
       var _nc=_newCards.cards[0];
       window._gymBookingState.paymentMethod='saved';
@@ -3658,7 +3698,7 @@ window._getCardBrandSvg=function(brand){
 window._payConnectPayPal=async function(){
   sgToast('Connecting PayPal...','info',1500);
   try{
-    var r=await fetch('/api/payments/paypal/connect',{method:'POST',headers:{'Content-Type':'application/json'}});
+    var r=await fetch('/api/payment/paypal/connect',{method:'POST',headers:{'Content-Type':'application/json'}});
     var d=await r.json();
     if(d.redirectUrl){window.location.href=d.redirectUrl;}
     else{sgToast('PayPal connected!','success',2000);closePaySheet();}
@@ -3668,7 +3708,7 @@ window._payConnectPayPal=async function(){
 window._payConnectGooglePay=async function(){
   if(!window.PaymentRequest){sgToast('Google Pay not supported on this device','info',2000);return;}
   try{
-    var r=await fetch('/api/payments/wallet-token',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({wallet:'google_pay'})});
+    var r=await fetch('/api/payment/wallet-token',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({wallet:'google_pay'})});
     var d=await r.json();
     if(d.success){
       selectPayMethod(document.querySelector('.gym-pay-item')||document.createElement('div'),'google_pay');
@@ -3680,7 +3720,7 @@ window._payConnectGooglePay=async function(){
 window._payConnectApplePay=async function(){
   if(!window.ApplePaySession){sgToast('Apple Pay requires Safari on iOS/macOS','info',2500);return;}
   try{
-    var r=await fetch('/api/payments/wallet-token',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({wallet:'apple_pay'})});
+    var r=await fetch('/api/payment/wallet-token',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({wallet:'apple_pay'})});
     var d=await r.json();
     if(d.success){
       selectPayMethod(document.querySelector('.gym-pay-item')||document.createElement('div'),'apple_pay');
@@ -3692,7 +3732,7 @@ window._payConnectApplePay=async function(){
 window._payConnectSamsungPay=async function(){
   sgToast('Samsung Pay — redirecting...','info',1500);
   try{
-    var r=await fetch('/api/payments/wallet-token',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({wallet:'samsung_pay'})});
+    var r=await fetch('/api/payment/wallet-token',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({wallet:'samsung_pay'})});
     var d=await r.json();
     if(d.success){sgToast('Samsung Pay linked!','success',1500);closePaySheet();}
     else{sgToast('Samsung Pay requires Samsung device','info',2500);}
@@ -3703,7 +3743,7 @@ window._payRedeemGiftCard=function(){
   var code=prompt('Enter your ScanGym gift card code:');
   if(!code)return;
   sgToast('Redeeming gift card...','info',1500);
-  fetch('/api/payments/gift-card/redeem',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:code.trim()})})
+  fetch('/api/payment/gift-card/redeem',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:code.trim()})})
     .then(function(r){return r.json()})
     .then(function(d){
       if(d.success){sgToast('Gift card applied! Balance: '+d.balance,'success',2500);closePaySheet();}
@@ -3714,7 +3754,7 @@ window._payRedeemGiftCard=function(){
 window._payConnectCrypto=async function(){
   sgToast('Setting up crypto payment...','info',1500);
   try{
-    var r=await fetch('/api/payments/crypto/setup',{method:'POST',headers:{'Content-Type':'application/json'}});
+    var r=await fetch('/api/payment/crypto/setup',{method:'POST',headers:{'Content-Type':'application/json'}});
     var d=await r.json();
     if(d.invoiceUrl){window.open(d.invoiceUrl,'_blank');}
     else{sgToast('Crypto payments coming soon!','info',2000);}
@@ -3724,7 +3764,7 @@ window._payConnectCrypto=async function(){
 window._payBankTransfer=async function(){
   sgToast('Setting up bank transfer...','info',1500);
   try{
-    var r=await fetch('/api/payments/bank-transfer/setup',{method:'POST',headers:{'Content-Type':'application/json'}});
+    var r=await fetch('/api/payment/bank-transfer/setup',{method:'POST',headers:{'Content-Type':'application/json'}});
     var d=await r.json();
     if(d.bankDetails){
       sgToast('Bank details sent to your email!','success',2500);closePaySheet();
@@ -3735,7 +3775,7 @@ window._payBankTransfer=async function(){
 window._payBNPL=async function(){
   sgToast('Checking eligibility...','info',1500);
   try{
-    var r=await fetch('/api/payments/bnpl/check',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include'});
+    var r=await fetch('/api/payment/bnpl/check',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include'});
     var d=await r.json();
     if(d.eligible){
       selectPayMethod(document.querySelector('.gym-pay-item')||document.createElement('div'),'bnpl');
@@ -3757,7 +3797,7 @@ window._ovPayLoadCards=async function(){
     return;
   }
   try{
-    const resp=await fetch('/api/payment/saved-cards',{credentials:'include'}).then(r=>r.json());
+    const resp=await window.sgCards.listRaw();
     if(!resp.cards||resp.cards.length===0){
       cardsEl.innerHTML='';
       // Fix 3: Auto-expand card form when no saved cards
@@ -3974,18 +4014,10 @@ window._ovPaySaveCard=async function(){
   if(!window._ovPayStripeInstance||!window._ovPayCardElement)return;
   if(saveBtn){saveBtn.textContent='Saving…';saveBtn.style.opacity='.6';saveBtn.style.pointerEvents='none';}
   try{
-    const siResp=await fetch('/api/payment/setup-card',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'}});
-    const siData=await siResp.json();
-    if(!siData.clientSecret)throw new Error(siData.error||'Failed to create setup');
-    // Include billing details (country, postcode, nickname)
-    const _payCountry=(document.getElementById('ov-pay-country')||{}).value||'GB';
-    const _payPostcode=(document.getElementById('ov-pay-postcode')||{}).value||'';
-    const _payNickname=(document.getElementById('ov-pay-nickname')||{}).value||'';
-    const{setupIntent,error}=await window._ovPayStripeInstance.confirmCardSetup(siData.clientSecret,{
-      payment_method:{card:window._ovPayCardElement,billing_details:{address:{country:_payCountry,postal_code:_payPostcode}}},
-    });
-    if(error)throw new Error(error.message);
-    await fetch('/api/payment/confirm-setup',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({setupIntentId:setupIntent.id})});
+    await window.sgCards.saveCard(window._ovPayStripeInstance,window._ovPayCardElement,{
+      country:(document.getElementById('ov-pay-country')||{}).value||'GB',
+      postcode:(document.getElementById('ov-pay-postcode')||{}).value||'',
+      nickname:(document.getElementById('ov-pay-nickname')||{}).value||''});
     _ovPayCloseCardForm();
     if(window._ovPayCardNumber){window._ovPayCardNumber.clear();window._ovPayCardExpiry.clear();window._ovPayCardCvc.clear();}
     _showToast('💳 Card saved successfully!');
@@ -3995,7 +4027,7 @@ window._ovPaySaveCard=async function(){
       const pc=window._pendingCheckout;
       window._pendingCheckout=null;
       try{
-        const freshCards=await fetch('/api/payment/saved-cards',{credentials:'include'}).then(r=>r.json());
+        const freshCards=await window.sgCards.listRaw();
         if(freshCards.cards&&freshCards.cards.length>0){
           const defCard=freshCards.cards.find(c=>c.isDefault)||freshCards.cards[0];
           window._gymBookingState=window._gymBookingState||{};
@@ -4016,7 +4048,7 @@ window._ovPaySaveCard=async function(){
 
 window._ovPaySetDefault=async function(cardId){
   try{
-    await fetch('/api/payment/set-default-card',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({cardId})});
+    await window.sgCards.setDefault(cardId);
     _showToast('✅ Default card updated');
     _ovPayLoadCards();
   }catch(err){_showToast('Failed to update default card');}
@@ -4025,7 +4057,7 @@ window._ovPaySetDefault=async function(cardId){
 window._ovPayDeleteCard=async function(cardId,label){
   if(!confirm('Remove '+label+'?'))return;
   try{
-    await fetch('/api/payment/saved-cards/'+cardId,{method:'DELETE',credentials:'include'});
+    await window.sgCards.remove(cardId);
     _showToast('Card removed');
     _ovPayLoadCards();
   }catch(err){_showToast('Failed to remove card');}
@@ -7501,7 +7533,7 @@ window._loadWalletScreen=async function(){
   // Load balance, cards, transactions in parallel
   const [balResp,cardsResp,txResp]=await Promise.all([
     fetch('/api/wallet',{credentials:'include'}).then(r=>r.ok?r.json():null).catch(()=>null),
-    fetch('/api/payment/saved-cards',{credentials:'include'}).then(r=>r.ok?r.json():null).catch(()=>null),
+    window.sgCards.listRaw(),
     fetch('/api/wallet/transactions?limit=5',{credentials:'include'}).then(r=>r.ok?r.json():null).catch(()=>null),
   ]);
 
@@ -7648,19 +7680,7 @@ window._walletSaveCard=async function(){
   if(saveBtn){saveBtn.textContent='Saving…';saveBtn.style.opacity='.6';saveBtn.style.pointerEvents='none';}
 
   try{
-    // Create SetupIntent on backend
-    const siResp=await fetch('/api/payment/setup-card',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'}});
-    const siData=await siResp.json();
-    if(!siData.clientSecret)throw new Error(siData.error||'Failed to create setup');
-
-    // Confirm with Stripe
-    const{setupIntent,error}=await window._walletStripeInstance.confirmCardSetup(siData.clientSecret,{
-      payment_method:{card:window._walletCardElement},
-    });
-    if(error)throw new Error(error.message);
-
-    // Confirm on backend to save
-    await fetch('/api/payment/confirm-setup',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({setupIntentId:setupIntent.id})});
+    await window.sgCards.saveCard(window._walletStripeInstance,window._walletCardElement,{});
 
     // Success — reload
     _walletCloseCardForm();
@@ -7676,7 +7696,7 @@ window._walletSaveCard=async function(){
 
 window._walletSetDefault=async function(cardId){
   try{
-    await fetch('/api/payment/set-default-card',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({cardId})});
+    await window.sgCards.setDefault(cardId);
     _showToast('✅ Default card updated');
     _loadWalletScreen();
   }catch(err){
@@ -7687,7 +7707,7 @@ window._walletSetDefault=async function(cardId){
 window._walletDeleteCard=async function(cardId,label){
   if(!confirm('Remove '+label+'?'))return;
   try{
-    await fetch('/api/payment/saved-cards/'+cardId,{method:'DELETE',credentials:'include'});
+    await window.sgCards.remove(cardId);
     _showToast('Card removed');
     _loadWalletScreen();
   }catch(err){
@@ -9275,7 +9295,7 @@ window.showBookingCheckout=async function(gymId, prefillDate, prefillTime){
     '&passType='+encodeURIComponent(_passKey)+
     (_sgRefActive?'&referral='+encodeURIComponent(_sgRefActive):'');
   const _priceFetch=fetch(_pUrl).then(function(r){return r.json();}).catch(function(){return null;});
-  const _cardsFetch=(!isCash&&!isSaved&&state.user)?fetch('/api/payment/saved-cards',{credentials:'include'}).then(function(r){return r.json();}).catch(function(){return null;}):Promise.resolve(null);
+  const _cardsFetch=(!isCash&&!isSaved&&state.user)?window.sgCards.listRaw():Promise.resolve(null);
   const [_pResp,_cardsResp]=await Promise.all([_priceFetch,_cardsFetch]);
   if(_pResp&&_pResp.success){
     _serverPrices=_pResp.prices;
@@ -9898,7 +9918,7 @@ async function _initUberPaymentNew(gymId, gym){
   // Check for saved cards first
   if(state.user){
     try{
-      const cardsResp=await fetch('/api/payment/saved-cards',{credentials:'include'}).then(r=>r.json());
+      const cardsResp=await window.sgCards.listRaw();
       if(cardsResp.cards&&cardsResp.cards.length>0){
         const card=cardsResp.cards.find(c=>c.isDefault)||cardsResp.cards[0];
         cs.savedCardId=card.id;
@@ -10146,71 +10166,9 @@ window.checkPendingBooking=async function(){
 // Check on page load
 setTimeout(()=>checkPendingBooking(),2000);
 
-// ─── Guest Checkout Flow ───
-window.handleGuestBook=async function(gymId){
-  // Show guest checkout form
-  const sidebar=document.getElementById('guest-form-area');
-  if(sidebar){sidebar.classList.toggle('hidden');return;}
-  
-  // If no form area exists, create inline form
-  const bookArea=document.querySelector('[data-guest-area]');
-  if(bookArea){bookArea.classList.toggle('hidden');return;}
-  
-  // Fallback: show prompt
-  const email=prompt('Enter your email for guest checkout:');
-  if(!email||!email.includes('@'))return;
-  
-  await processGuestBooking(gymId,email);
-};
-
-window.processGuestBooking=async function(gymId,email){
-  const dateInput=document.querySelector('input[type="date"]');
-  const timeSelect=document.querySelector('select');
-  const date=dateInput?dateInput.value:'';
-  const time=timeSelect?timeSelect.value:'';
-  if(!date||!time){sgToast('Please select a date and time','warning');return;}
-
-  // Show loading
-  const guestBtn=document.querySelector('[data-guest-btn]');
-  if(guestBtn){guestBtn.innerHTML='<span class="sg-spinner"></span>Creating booking...';guestBtn.disabled=true;}
-
-  try{
-    let dbGymId=gymId;
-    
-    // If Google Place ID, try ensure gym in DB (non-fatal — backend handles placeId resolution)
-    if(isNaN(parseInt(gymId))){
-      try{const ensured=await api.postLive('/ensure-gym',{placeId:gymId});if(ensured.gymId)dbGymId=ensured.gymId;}catch(e){}
-    }
-
-    // Step 1: Create guest booking
-    const booking=await fetch('/api/bookings/guest-create',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({gymId:parseInt(dbGymId),date,time,email})
-    }).then(r=>r.json());
-    
-    if(booking.error){sgToast(booking.error);if(guestBtn){guestBtn.textContent='Book Now';guestBtn.disabled=false;}return;}
-
-    // Step 2: Create Stripe guest checkout
-    const payment=await fetch('/api/payment/guest-checkout',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({bookingId:booking.booking.id,email})
-    }).then(r=>r.json());
-    
-    if(payment.error){sgToast(payment.error||'Payment could not be started');if(guestBtn){guestBtn.textContent='Book Now';guestBtn.disabled=false;}return;}
-
-    // Step 3: Redirect to Stripe
-    if(payment.checkoutUrl){
-      window.location.href=payment.checkoutUrl;
-    }
-  }catch(e){
-    console.error('Guest booking error:',e);
-    sgToast('Something went wrong. Please try again.');
-    if(guestBtn){guestBtn.textContent='Book Now';guestBtn.disabled=false;}
-  }
-};
-
+/* Guest checkout flow deleted: handleGuestBook()/processGuestBooking() had no
+   callers anywhere and POSTed to /api/payment/guest-checkout, which has never
+   existed on the server. Guest bookings go through the normal Book flow. */
 // ─── Page: Booking Success ───
 // ═══════════════════════════════════════════════════════════════════════════
 //  ACTIVE SESSION PAGE — Live session tracker (Fix #7A)
@@ -22732,7 +22690,7 @@ window.sgFeedback = async function(elementId, vote, btn) {
     var continueBtn=document.getElementById('sg-auth-card-continue');
     if(!listEl)return;
     try{
-      var resp=await fetch('/api/payment/saved-cards',{credentials:'include'}).then(function(r){return r.json();});
+      var resp=await window.sgCards.listRaw();
       if(!resp.cards||resp.cards.length===0){
         // No saved cards — show add card form + "+ Add new card" button
         listEl.innerHTML='<div style="text-align:center;padding:16px 0;color:rgba(255,255,255,.4);font-size:14px">No saved cards yet</div>'+
@@ -23067,16 +23025,9 @@ window.sgFeedback = async function(elementId, vote, btn) {
     if(btn){btn.textContent='Saving…';btn.style.opacity='.5';btn.style.pointerEvents='none';}
     err.style.display='none';
     try{
-      // Create SetupIntent on server
-      var resp=await fetch('/api/payment/setup-card',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({})}).then(function(r){return r.json();});
-      if(!resp.clientSecret)throw new Error(resp.error||'Could not create setup intent');
-      // Confirm with Stripe
-      var result=await _sheetStripeElements.stripe.confirmCardSetup(resp.clientSecret,{
-        payment_method:{card:_sheetStripeElements.cardNum,billing_details:{}}
-      });
-      if(result.error)throw new Error(result.error.message);
-      // Confirm on server
-      var _confirmResp=await fetch('/api/payment/confirm-setup',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({setupIntentId:result.setupIntent.id})}).then(function(r){return r.json();}).catch(function(){return {};});
+      var _saved=await window.sgCards.saveCard(_sheetStripeElements.stripe,_sheetStripeElements.cardNum,{});
+      var result={setupIntent:_saved.setupIntent};
+      var _confirmResp=_saved.response||{};
       _sheetStripeElements=null;
       /* R6: Store just-saved card in _gymBookingState so showBookingCheckout
          can find it instantly — eliminates race condition with /api/payment/saved-cards */

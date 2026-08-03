@@ -509,7 +509,12 @@ app.use('/api/access', accessRouter);
 app.use('/api/chatbot', chatbotRouter);
 app.use('/api/channels', channelsRouter);
 app.use('/api/comms-log', commsLogRouter);
-app.use('/api/payments', paymentsExtendedRouter);
+/* One payment path: the extended payment methods (PayPal, wallets, gift card,
+   crypto, bank transfer, BNPL, IAP) used to live under a second prefix
+   /api/payments. They are mounted on /api/payment with everything else — none
+   of their subpaths collide with payment.js — so there is one payment prefix,
+   covered by one rate limiter. */
+app.use('/api/payment', paymentsExtendedRouter);
 app.use('/api/ai', aiFeaturesRouter);
 app.use('/api/gym-partner', gymPartnerRouter);
 app.use('/api/partner', partnerAgentRouter);

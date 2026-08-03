@@ -546,7 +546,7 @@ router.post('/confirm-setup', async (req, res) => {
     if (!stripe) return res.status(500).json({ error: 'Payment not configured' });
     if (!req.session?.userId) return res.status(401).json({ error: 'Login required' });
 
-    const { setupIntentId } = req.body;
+    const { setupIntentId, nickname } = req.body;
     if (!setupIntentId) return res.status(400).json({ error: 'setupIntentId required' });
 
     const setupIntent = await stripe.setupIntents.retrieve(setupIntentId);
@@ -572,6 +572,7 @@ router.post('/confirm-setup', async (req, res) => {
         last4: pm.card?.last4 || '****',
         expMonth: pm.card?.exp_month,
         expYear: pm.card?.exp_year,
+        nickname: nickname || '',
       },
       message: '💳 Card saved! Future bookings will be 1-tap.',
     });
@@ -2184,141 +2185,12 @@ router.post('/first-free', async (req, res) => {
   }
 });
 
-// ─── Route Aliases ──────────────────────────────────────────────────────────
-// The frontend pay-sheet (app.js _paySheetSaveCard) calls:
-//   POST /api/payment/setup-intent   → needs to reach /setup-card
-//   POST /api/payment/confirm-card   → needs to reach /confirm-setup
-// Without these aliases the server's SPA catch-all returns index.html,
-// which the frontend tries to JSON.parse → "Unexpected token '<'" error.
-// ────────────────────────────────────────────────────────────────────────────
-
-router.post('/setup-intent', async (req, res) => {
-  // Alias for /setup-card — create a SetupIntent to save a card
-  try {
-    if (!stripe) return res.status(500).json({ error: 'Payment not configured' });
-    if (!req.session?.userId) return res.status(401).json({ error: 'Login required' });
-
-    const customerId = await getOrCreateStripeCustomer(req.session.userId);
-
-    const setupIntent = await stripe.setupIntents.create({
-      customer: customerId,
-      payment_method_types: ['card'],
-      usage: 'off_session',
-    });
-
-    res.json({
-      success: true,
-      clientSecret: setupIntent.client_secret,
-    });
-  } catch (err) {
-    console.error('Setup intent (alias) error:', err);
-    res.status(500).json({ error: 'Failed to set up card saving' });
-  }
-});
-
-router.post('/confirm-card', async (req, res) => {
-  // Alias for /confirm-setup — confirm a SetupIntent and save the card
-  try {
-    if (!stripe) return res.status(500).json({ error: 'Payment not configured' });
-    if (!req.session?.userId) return res.status(401).json({ error: 'Login required' });
-
-    const { setupIntentId, nickname } = req.body;
-    if (!setupIntentId) return res.status(400).json({ error: 'setupIntentId required' });
-
-    const setupIntent = await stripe.setupIntents.retrieve(setupIntentId);
-    if (setupIntent.status !== 'succeeded') {
-      return res.status(400).json({ error: 'Setup not completed', status: setupIntent.status });
-    }
-
-    const pmId = setupIntent.payment_method;
-    const customerId = await getOrCreateStripeCustomer(req.session.userId);
-
-    // Set as default
-    await stripe.customers.update(customerId, {
-      invoice_settings: { default_payment_method: pmId },
-    });
-
-    const pm = await stripe.paymentMethods.retrieve(pmId);
-
-    res.json({
-      success: true,
-      card: {
-        id: pm.id,
-        brand: pm.card?.brand || 'card',
-        last4: pm.card?.last4 || '****',
-        expMonth: pm.card?.exp_month,
-        expYear: pm.card?.exp_year,
-        nickname: nickname || '',
-      },
-      message: '💳 Card saved! Future bookings will be 1-tap.',
-    });
-  } catch (err) {
-    console.error('Confirm card (alias) error:', err);
-    res.status(500).json({ error: 'Failed to confirm card setup' });
-  }
-});
-
-
-// ═══ TEMPORARY: Admin endpoint to add card for testing ═══
-// Remove after testing
-router.post('/admin-add-card', async (req, res) => {
-  try {
-    if (!stripe) return res.status(500).json({ error: 'Payment not configured' });
-    if (!req.session?.userId) return res.status(401).json({ error: 'Login required' });
-    
-    const { number, exp_month, exp_year, cvc } = req.body;
-    if (!number || !exp_month || !exp_year || !cvc) {
-      return res.status(400).json({ error: 'Card details required: number, exp_month, exp_year, cvc' });
-    }
-    
-    // Create payment method using Stripe secret key (server-side)
-    const pm = await stripe.paymentMethods.create({
-      type: 'card',
-      card: { number, exp_month: parseInt(exp_month), exp_year: parseInt(exp_year), cvc },
-    });
-    
-    // Get or create Stripe customer for this user
-    const userResult = await pool.query(
-      'SELECT id, stripe_customer_id FROM public.users WHERE id = $1',
-      [req.session.userId]
-    );
-    if (userResult.rows.length === 0) return res.status(404).json({ error: 'User not found' });
-    
-    let customerId = userResult.rows[0].stripe_customer_id;
-    if (!customerId) {
-      const customer = await stripe.customers.create({
-        metadata: { userId: req.session.userId }
-      });
-      customerId = customer.id;
-      await pool.query(
-        'UPDATE public.users SET stripe_customer_id = $1 WHERE id = $2',
-        [customerId, req.session.userId]
-      );
-    }
-    
-    // Attach to customer
-    await stripe.paymentMethods.attach(pm.id, { customer: customerId });
-    
-    // Set as default
-    await stripe.customers.update(customerId, {
-      invoice_settings: { default_payment_method: pm.id },
-    });
-    
-    res.json({
-      success: true,
-      card: {
-        id: pm.id,
-        brand: pm.card?.brand || 'card',
-        last4: pm.card?.last4 || '****',
-        expMonth: pm.card?.exp_month,
-        expYear: pm.card?.exp_year,
-      },
-      message: 'Card added and set as default',
-    });
-  } catch (err) {
-    console.error('Admin add card error:', err);
-    res.status(500).json({ error: err.message || 'Failed to add card' });
-  }
-});
+/* Deleted here (one payment path):
+   - POST /setup-intent  and  POST /confirm-card  were copy-paste aliases of
+     /setup-card and /confirm-setup. The one frontend caller now uses the
+     canonical pair, and /confirm-setup accepts `nickname`.
+   - POST /admin-add-card took a raw card number + CVC through our server
+     (marked "TEMPORARY — remove after testing", no caller anywhere). Gone:
+     card details must only ever reach Stripe.js in the browser. */
 
 module.exports = router;
