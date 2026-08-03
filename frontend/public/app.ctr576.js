@@ -10264,7 +10264,7 @@ function ActiveSessionPage(){
           <div style="color:rgba(255,255,255,.4);font-size:13px">${b.passType||'Day Pass'} · ${b.date||'Today'}</div>
         </div>
         <div style="text-align:right">
-          <div style="color:#22c55e;font-size:14px;font-weight:700">${b.currencySymbol||'£'}${(sgNum(b.price)||5.00).toFixed(2)}</div>
+          <div style="color:#22c55e;font-size:14px;font-weight:700">${b.currencySymbol||sgSymbol()}${(sgNum(b.price)||5.00).toFixed(2)}</div>
           <div style="color:rgba(255,255,255,.3);font-size:11px">${(b.paymentMethod||b.booking_type||'').includes('cash')?'💷 PAY AT GYM':'PAID ✓'}</div>
         </div>
       </div>
@@ -10569,7 +10569,7 @@ function BookingSuccessPage(){
               <p class="text-slate-400 text-sm">Day Pass · 24-hour access</p>
             </div>
             <div class="text-right">
-              <p class="text-brand font-bold text-xl">${b.currencySymbol||'£'}${(sgNum(b.price)||0).toFixed(2)}</p>
+              <p class="text-brand font-bold text-xl">${b.currencySymbol||sgSymbol()}${(sgNum(b.price)||0).toFixed(2)}</p>
               <p class="text-green-400 text-xs font-medium">${b.paymentMethod==='cash'?'RESERVED ⏳':'PAID ✓'}</p>
             </div>
           </div>
@@ -11073,7 +11073,7 @@ function MyBookingsPage(){
             <div>
               <p class="text-white font-bold text-lg">${b.gymName||'Gym'}</p>
               <p class="text-slate-400 text-sm">${(()=>{try{const d=new Date(b.date);return d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'})}catch(e){return b.date}})()}${b.time?' at '+b.time:''}</p>
-              <p class="text-brand font-bold">${b.currencySymbol||'£'}${(sgNum(b.price)||0).toFixed(2)}</p>
+              <p class="text-brand font-bold">${b.currencySymbol||sgSymbol()}${(sgNum(b.price)||0).toFixed(2)}</p>
             </div>
             <span class="px-3 py-1 rounded-full text-xs font-bold ${b.status==='confirmed'?'bg-accent/20 text-accent':'bg-yellow-500/20 text-yellow-400'}">${b.status}</span>
           </div>
@@ -14726,7 +14726,7 @@ function MoreHubPage(){
       <div style="position:absolute;bottom:12px;left:16px;right:16px;z-index:10">
         <div style="display:flex;gap:20px;margin-bottom:14px;justify-content:center">
           <div style="text-align:center"><span style="color:#FF6D00;font-size:18px;font-weight:900;text-shadow:0 2px 8px rgba(0,0,0,.6)">1.2M+</span><span style="color:rgba(255,255,255,.4);font-size:9px;margin-left:4px">gyms</span></div>
-          <div style="text-align:center"><span style="color:#22c55e;font-size:18px;font-weight:900;text-shadow:0 2px 8px rgba(0,0,0,.6)">\u00a34.49</span><span style="color:rgba(255,255,255,.4);font-size:9px;margin-left:4px">from</span></div>
+          <div style="text-align:center"><span style="color:#22c55e;font-size:18px;font-weight:900;text-shadow:0 2px 8px rgba(0,0,0,.6)">${sgPriceDisplay('day')}</span><span style="color:rgba(255,255,255,.4);font-size:9px;margin-left:4px">from</span></div>
           <div style="text-align:center"><span style="color:#3b82f6;font-size:18px;font-weight:900;text-shadow:0 2px 8px rgba(0,0,0,.6)">190+</span><span style="color:rgba(255,255,255,.4);font-size:9px;margin-left:4px">countries</span></div>
         </div>
         <button onclick="navigate('/login')" style="width:100%;background:linear-gradient(135deg,#FF6D00,#ff8533);color:#fff;border:none;padding:15px;border-radius:16px;font-weight:800;font-size:16px;cursor:pointer;animation:sgCtaPulse 2s ease-in-out infinite;margin-bottom:8px;letter-spacing:.3px" ontouchstart="this.style.transform='scale(.97)'" ontouchend="this.style.transform=''">Get Your QR Pass \u2192</button>
@@ -16008,7 +16008,7 @@ function GroupBookingPage(){
 
       <div style="display:flex;justify-content:space-between;padding:12px 0;border-top:1px solid rgba(255,255,255,.06)">
         <span style="color:rgba(255,255,255,.5);font-size:14px">Per person</span>
-        <span id="gb-per-person" style="color:#FF6D00;font-size:18px;font-weight:800">${(typeof sgPrice==='function'&&sgPrice('day'))?sgPrice('day').display:'£4.49'}</span>
+        <span id="gb-per-person" style="color:#FF6D00;font-size:18px;font-weight:800">${sgPriceDisplay('day')}</span>
       </div>
       <div style="display:flex;justify-content:space-between;padding:12px 0;border-top:1px solid rgba(255,255,255,.06)">
         <span style="color:rgba(255,255,255,.5);font-size:14px">Total</span>
@@ -16116,7 +16116,7 @@ window._loadRebookSuggestions=async function(){
         +'<div style="width:56px;height:56px;background:rgba(255,109,0,.1);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">🏋️</div>'
         +'<div style="flex:1;min-width:0"><p style="color:#fff;font-size:15px;font-weight:700;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(g.name||'Gym')+'</p>'
         +'<p style="color:rgba(255,255,255,.4);font-size:12px;margin:2px 0 0">'+g.visit_count+' visits · '+(g.address||'').split(',')[0]+'</p></div>'
-        +'<div style="text-align:right"><span style="color:#FF6D00;font-size:16px;font-weight:800">'+(dp?dp.display:'£4.49')+'</span><p style="color:rgba(255,255,255,.3);font-size:10px;margin:2px 0 0">1 tap 🔐</p></div></div>';
+        +'<div style="text-align:right"><span style="color:#FF6D00;font-size:16px;font-weight:800">'+(dp?dp.display:sgPriceDisplay('day'))+'</span><p style="color:rgba(255,255,255,.3);font-size:10px;margin:2px 0 0">1 tap 🔐</p></div></div>';
     }).join('');
     list.innerHTML=html;
     // Show biometric setup if not done
@@ -16816,7 +16816,7 @@ window._sgDeepCopyLink=function(){
 /* R7-A03: Share affiliate link */
 window._sgShareAffiliate=function(handle,platform){
   var link='https://scangym.com/r/'+handle;
-  var text='Check out ScanGym - gym access from \u00a34.49! Use my link: ';
+  var text='Check out ScanGym - gym access from '+sgPriceDisplay('day')+'! Use my link: ';
   if(platform==='whatsapp'){window.open('https://wa.me/?text='+encodeURIComponent(text+link),'_blank');}
   else if(platform==='twitter'){window.open('https://twitter.com/intent/tweet?text='+encodeURIComponent(text)+' '+encodeURIComponent(link),'_blank');}
   else if(navigator.share){navigator.share({title:'ScanGym',text:text,url:link}).catch(function(){});}
@@ -16871,7 +16871,7 @@ window._sgCreatorShareReel=function(reelId){
   if(s.indexOf(reelId)<0){s.push(reelId);localStorage.setItem('sg_creator_shared',JSON.stringify(s));}
   var creatorData=JSON.parse(localStorage.getItem('sg_creator')||'{}');
   var link='https://scangym.com/r/'+(creatorData.handle||'creator');
-  if(navigator.share){navigator.share({title:'Check out ScanGym!',text:'Day passes from £4.49',url:link}).catch(function(){});}
+  if(navigator.share){navigator.share({title:'Check out ScanGym!',text:'Day passes from '+sgPriceDisplay('day'),url:link}).catch(function(){});}
   else{navigator.clipboard.writeText(link);sgToast('Affiliate link copied! \u{1F4CB}','success',2000);}
 };
 
@@ -17523,8 +17523,8 @@ function PartnerFullPage(){
   var gymName=u?(u.gym_name||'Your Gym'):'Your Gym';
   var gd=window._partnerGymData||{};
   var photos=gd.photos||[];
-  var dayPrice=gd.dayPrice||'4.49';
-  var sym=gd.currencySymbol||'\u00a3';
+  var dayPrice=gd.dayPrice||sgAmount('day');
+  var sym=gd.currencySymbol||sgSymbol();
   var addr=gd.address||'Tap to set your gym address';
   var gName=gd.name||gymName;
   var isOpen=gd.isOpen!==false;
@@ -17645,7 +17645,7 @@ window._partnerLoadGymProfile=async function(){
       window._partnerGymData={
         name:g.name||'Your Gym',
         address:g.address||g.formatted_address||'',
-        dayPrice:g.dayPassPrice||(g.pricing&&g.pricing.dayPassPrice)||'4.49',
+        dayPrice:g.dayPassPrice||(g.pricing&&g.pricing.dayPassPrice)||sgAmount('day'),
         currencySymbol:g.currencySymbol||(g.pricing&&g.pricing.currencySymbol)||'\u00a3',
         isOpen:g.isOpen!==false,
         isActive:g.isActive!==false,
@@ -17719,8 +17719,8 @@ window._partnerSaveField=async function(field){
 };
 window._partnerEditPrice=function(passType){
   var gd=window._partnerGymData;
-  var sym=gd.currencySymbol||'\u00a3';
-  var prices={day:gd.dayPrice||'4.49','3day':gd.threeDayPrice||'11.99',weekly:gd.weeklyPrice||'22.49',monthly:gd.monthlyPrice||'44.90'};
+  var sym=gd.currencySymbol||sgSymbol();
+  var prices={day:gd.dayPrice||sgAmount('day'),'3day':gd.threeDayPrice||sgAmount('3day'),weekly:gd.weeklyPrice||sgAmount('weekly'),monthly:gd.monthlyPrice||sgAmount('monthly')};
   var labels={day:'Day Pass','3day':'3-Day Pass',weekly:'Weekly Pass',monthly:'Monthly Pass'};
   _sgOpenSheet('sg-partner-price-sheet',
     '<h2 style="font-size:20px;font-weight:800;color:#fff;margin:0 0 16px">\ud83d\udcb0 Edit Pass Pricing</h2>'
@@ -17735,7 +17735,7 @@ window._partnerEditPrice=function(passType){
 };
 window._partnerSavePrices=async function(){
   var gd=window._partnerGymData;
-  var sym=gd.currencySymbol||'\u00a3';
+  var sym=gd.currencySymbol||sgSymbol();
   var d=document.getElementById('sg-pe-price-day');
   var t=document.getElementById('sg-pe-price-3day');
   var w=document.getElementById('sg-pe-price-weekly');

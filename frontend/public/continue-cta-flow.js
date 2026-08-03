@@ -852,7 +852,7 @@ function _markAffiliateCopied(){
 window._ctaShareAff=function(platform){
   var handle=window._ctaAffHandle||'creator';
   var link='https://scangym.com/r/'+handle;
-  var text='Check out ScanGym — gym day passes from £4.49! Use my link: ';
+  var text='Check out ScanGym — gym day passes from '+sgPriceDisplay('day')+'! Use my link: ';
   _markAffiliateCopied();
   if(platform==='whatsapp'){window.open('https://wa.me/?text='+encodeURIComponent(text+link),'_blank');}
   else if(platform==='twitter'){window.open('https://twitter.com/intent/tweet?text='+encodeURIComponent(text)+' '+encodeURIComponent(link),'_blank');}

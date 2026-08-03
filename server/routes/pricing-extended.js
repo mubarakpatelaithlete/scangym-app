@@ -5,6 +5,11 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../middleware/db');
+const { BASE_PRICE_GBP } = require('../lib/pricing-engine');
+
+// Single source of truth for the base day-pass price: lib/pricing-engine.js.
+// These routes used to hardcode 4.49 in three places, so a price change here
+// silently disagreed with /api/pricing, the app and Stripe.
 
 // #133: Price comparison — show 25% less than gym's own price
 router.get('/compare/:gymId', async (req, res) => {
@@ -30,7 +35,8 @@ router.get('/compare/:gymId', async (req, res) => {
       message: `Save ${savingsPct}% vs gym's own price!`
     });
   } catch (err) {
-    res.json({ gymPrice: 12, scanGymPrice: 4.49, savings: 7.51, savingsPct: 63, message: 'Save 63% with ScanGym!' });
+    const fallbackSavings = Math.round((12 - BASE_PRICE_GBP) * 100) / 100;
+    res.json({ gymPrice: 12, scanGymPrice: BASE_PRICE_GBP, savings: fallbackSavings, savingsPct: Math.round((fallbackSavings / 12) * 100), message: 'Save with ScanGym!' });
   }
 });
 
@@ -88,7 +94,7 @@ router.post('/group', express.json(), async (req, res) => {
     return res.status(400).json({ error: 'Group size must be 2-10' });
   }
 
-  const basePrice = 4.49;
+  const basePrice = BASE_PRICE_GBP;
   const discount = groupSize >= 5 ? 0.20 : groupSize >= 3 ? 0.10 : 0; // 10-20% group discount
   const perPerson = Math.round(basePrice * (1 - discount) * 100) / 100;
   const total = Math.round(perPerson * groupSize * 100) / 100;
@@ -108,7 +114,7 @@ router.post('/group', express.json(), async (req, res) => {
 // #136: Couple pass (2 people, 15% discount)
 router.post('/couple', express.json(), async (req, res) => {
   const { gymId, date, partnerEmail } = req.body;
-  const basePrice = 4.49;
+  const basePrice = BASE_PRICE_GBP;
   const couplePrice = Math.round(basePrice * 0.85 * 2 * 100) / 100; // 15% off for 2
   const perPerson = Math.round(basePrice * 0.85 * 100) / 100;
 

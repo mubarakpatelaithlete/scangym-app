@@ -1616,8 +1616,8 @@ router.post('/cash-booking', async (req, res) => {
           const gn = gymName || 'Gym';
           const insertResult = await pool.query(
             `INSERT INTO public.gyms (name, address, place_id, day_pass_price, owner_id, slug, is_active, created_at, updated_at)
-             VALUES ($1, $2, $3, 4.49, 'system', $4, true, NOW(), NOW()) RETURNING id`,
-            [gn, gymAddress || '', placeId, gn.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 100)]
+             VALUES ($1, $2, $3, $5, 'system', $4, true, NOW(), NOW()) RETURNING id`,
+            [gn, gymAddress || '', placeId, gn.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 100), pricing.BASE_PRICE_GBP]
           );
           dbGymId = insertResult.rows[0].id;
         } catch (e) {
