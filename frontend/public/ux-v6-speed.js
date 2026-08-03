@@ -185,10 +185,18 @@ function prefetchGym(gymId){
 
   setTimeout(function(){
     if(_prefetchCache[gymId]) return;
+    // /api/gyms/place/:id and /api/gym/:id never existed on the server (they returned
+    // index.html, so every prefetch silently failed). The real endpoint is
+    // /api/live/place/:placeId, which returns the {gym, photos, rating, pricing} shape
+    // used below. Numeric DB ids have no equivalent, so we simply skip prefetching them —
+    // prefetch is an optimisation, the normal openGym path still works.
     var isPlaceId = isNaN(parseInt(gymId));
-    var url = isPlaceId ? '/api/gyms/place/' + gymId : '/api/gym/' + gymId;
-    fetch(url, { credentials: 'include' })
-      .then(function(r){ return r.json(); })
+    if(!isPlaceId){ _prefetchQueue.delete(gymId); return; }
+    fetch('/api/live/place/' + encodeURIComponent(gymId), { credentials: 'include' })
+      .then(function(r){
+        if(!r.ok) throw new Error('prefetch failed: ' + r.status);
+        return r.json();
+      })
       .then(function(d){
         _prefetchCache[gymId] = d;
         _prefetchQueue.delete(gymId);

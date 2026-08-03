@@ -50,7 +50,8 @@ if('IntersectionObserver' in window){
 var _activeSearchController=null;
 var _origFetch=window.fetch;
 window.fetch=function(url,opts){
-  if(typeof url==='string'&&(url.includes('/api/gyms/search')||url.includes('/api/gyms/nearby'))){
+  /* live search endpoints (/api/gyms/* never existed on the server) */
+  if(typeof url==='string'&&(url.includes('/api/live/search')||url.includes('/api/live/nearby'))){
     if(_activeSearchController){try{_activeSearchController.abort();}catch(e){}}
     _activeSearchController=new AbortController();
     opts=opts||{};
