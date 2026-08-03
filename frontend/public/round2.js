@@ -122,54 +122,15 @@ function fixSquadShare(){
   });
 }
 
-/* ════════════════════════════════════════════════════════════════════
-   5) CONTINUE CTA ON SCANSQUAD — re-enable the orange Continue bar on
-      /creator (an older patch removes it on every route change; this
-      re-injects it right after).
-   ════════════════════════════════════════════════════════════════════ */
+/* ONE BAR: the ScanSquad/creator tab used to re-inject its own #creator-continue-banner
+   here every 400ms, and a second timer restyled it (and #partner-continue-banner) to look
+   like the core bar. Both elements are gone: there is one shared bottom bar
+   (window.sgBottomBar, owned by app.js) which is already the slim full-width style.
+   The ScanSquad Ask AI bar itself is kept — it now renders into that shared bar. */
 setInterval(function(){
-  if(typeof window._injectContinueBanner!=='function')return;
-  if(onCreator()){
-    if(!document.getElementById('creator-continue-banner'))window._injectContinueBanner('creator');
-  }else{
-    var cb=document.getElementById('creator-continue-banner');
-    if(cb)cb.remove();
-  }
-},400);
-
-/* Restyle the Continue banners (partner + creator) to match the slim
-   full-width orange bar used on the Reels and Book tabs:
-   centered "Continue →", no subtitle, no step dots. */
-function restyleContinueBanner(id){
-  var banner=document.getElementById(id);
-  if(!banner||banner.dataset.sgR2Slim)return;
-  /* The Ask AI bar ships its own slim full-width layout (icon + label + hint + arrow).
-     This restyler assumes the old label/subtitle/step-dot markup and would hide the
-     wrong child, so leave it alone. */
-  if(banner.getAttribute('data-ai-bar'))return;
-  var card=banner.firstElementChild;
-  if(!card)return;
-  banner.dataset.sgR2Slim='1';
-  banner.style.padding='0';
-  card.style.borderRadius='0';
-  card.style.margin='0';
-  card.style.padding='13px 16px';
-  card.style.justifyContent='center';
-  card.style.gap='10px';
-  var left=card.children[0],right=card.children[1];
-  if(left){
-    var label=left.children[0],sub=left.children[1];
-    if(label){label.style.fontSize='15px';label.style.letterSpacing='.3px';}
-    if(sub)sub.style.display='none';
-  }
-  if(right){
-    var dots=right.children[0];
-    if(dots)dots.style.display='none';
-    right.style.gap='0';
-  }
-}
-setInterval(function(){
-  try{restyleContinueBanner('partner-continue-banner');restyleContinueBanner('creator-continue-banner');}catch(e){}
+  if(typeof window._injectContinueBanner!=='function'||!window.sgBottomBar)return;
+  if(onCreator())window._injectContinueBanner('creator');
+  else if(window.sgBottomBar.owner()==='creator')window.sgBottomBar.hide('creator');
 },400);
 
 /* ════════════════════════════════════════════════════════════════════

@@ -306,7 +306,7 @@
     setTimeout(function(){
       if(document.getElementById('sg-usp-banner'))return;
       var b=document.createElement('div'); b.id='sg-usp-banner';
-      b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:10500;background:linear-gradient(90deg,rgba(255,109,0,.95),rgba(230,98,0,.95));padding:6px 12px;text-align:center;font-size:11px;font-weight:700;color:#fff;display:flex;align-items:center;justify-content:center;gap:8px';
+      b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:var(--sg-z-usp,10500);background:linear-gradient(90deg,rgba(255,109,0,.95),rgba(230,98,0,.95));padding:6px 12px;text-align:center;font-size:11px;font-weight:700;color:#fff;display:flex;align-items:center;justify-content:center;gap:8px';
       b.innerHTML='🏋️ <span>30 gyms in 30 days — No subscription. Pay only when you go.</span> <span onclick="this.parentElement.style.display=\'none\'" style="opacity:.6;font-size:14px;cursor:pointer;margin-left:8px">✕</span>';
       document.body.insertBefore(b,document.body.firstChild);
       setTimeout(function(){if(b.parentElement){b.style.transition='opacity 1s';b.style.opacity='0';setTimeout(function(){b.remove();},1000);}},5000);

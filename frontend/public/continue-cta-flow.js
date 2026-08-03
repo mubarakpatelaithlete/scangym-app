@@ -966,36 +966,27 @@ function _getCTAState(tabType){
 }
 
 function _injectContinueBanner(tabType){
-  var containerId=tabType+'-continue-banner';
-  setTimeout(function(){
-    var old=document.getElementById(containerId);
-    if(old)old.remove();
-
-    /* The bottom bar used to be a "Continue / Withdraw Earnings" step CTA. It is now
-     * the way into the assistant: one tap, ask for anything, including withdrawing.
-     * The old flow is still reachable — window._partnerContinueFlow() is untouched and
-     * the assistant has a payout tool — but a single "do what I say" bar beats a
-     * three-step wizard for a gym owner standing behind the front desk. */
-    var ctaState=_getCTAState(tabType);
-    var banner=document.createElement('div');
-    banner.id=containerId;
-    banner.setAttribute('data-ai-bar','1');
-    banner.style.cssText='position:fixed;bottom:calc(56px + env(safe-area-inset-bottom,0px));left:0;right:0;z-index:8999;padding:0;pointer-events:none';
-    banner.innerHTML=''
-      +'<div onclick="window._sgOpenAskAI(\''+tabType+'\')" style="pointer-events:auto;background:linear-gradient(135deg,#FF6D00 0%,#E66200 100%);padding:11px 16px;display:flex;align-items:center;gap:11px;cursor:pointer;-webkit-tap-highlight-color:transparent;box-shadow:0 -2px 20px rgba(255,109,0,.28);transition:transform .1s" ontouchstart="this.style.transform=\'scale(.98)\'" ontouchend="this.style.transform=\'scale(1)\'">'
-      +'<div style="width:30px;height:30px;border-radius:9px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:15px;flex:0 0 auto">'+(tabType==='partner'?'\ud83c\udfcb\ufe0f':'\ud83d\udcaa')+'</div>'
-      +'<div style="flex:1;min-width:0">'
-      +'<div style="color:#fff;font-size:15px;font-weight:800;letter-spacing:.2px">Ask AI</div>'
-      +'<div style="color:rgba(255,255,255,.7);font-size:11px;font-weight:500;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+_askAIHint(tabType)+'</div>'
-      +'</div>'
-      +'<div style="color:#fff;font-size:18px;font-weight:700;flex:0 0 auto">\u2192</div>'
-      +'</div>';
-    document.body.appendChild(banner);
-    void ctaState;
-  },100);
+  /* ONE BAR: this used to create its own fixed #partner-continue-banner (and a
+   * #creator-continue-banner) at bottom:56px;z-index:8999 — a third and fourth
+   * orange bar that could stack over the core one. It now renders into the single
+   * shared bar owned by app.js (window.sgBottomBar).
+   * The old flow is still reachable: window._partnerContinueFlow() is untouched
+   * and _sgOpenAskAI falls back to it when the chat script has not loaded. */
+  if(!window.sgBottomBar)return;
+  void _getCTAState(tabType);
+  window.sgBottomBar.show(tabType,{
+    label:'Ask AI',
+    sub:_askAIHint(tabType),
+    arrow:'\u2192',
+    onClick:function(){window._sgOpenAskAI(tabType);}
+  });
 }
 
-/* Rotating example so it reads as "you can say anything", not one fixed button. */
+function _removeContinueBanner(tabType){
+  if(window.sgBottomBar)window.sgBottomBar.hide(tabType);
+}
+window._removeContinueBanner=_removeContinueBanner;
+
 function _askAIHint(tabType){
   var partner=['"Change my day pass to \u00a35"','"How much have I made this week?"','"Close the gym today"','"Pay me out"'];
   var creator=['"How much have I earned?"','"What should I post next?"','"Boost my latest reel"','"Pay me out"'];
@@ -1050,14 +1041,8 @@ var _patchInterval=setInterval(function(){
       var isPartner=(route==='/partner'||route==='/partner/');
       if(route!==_lastRoute){
         _lastRoute=route;
-        if(!isPartner){
-          var pb=document.getElementById('partner-continue-banner');
-          if(pb)pb.remove();
-        }
-        // Always remove creator banner (no longer used)
-        var cb=document.getElementById('creator-continue-banner');
-        if(cb)cb.remove();
         if(isPartner)_injectContinueBanner('partner');
+        else _removeContinueBanner('partner');
       }
     },300);
   }
@@ -1066,7 +1051,7 @@ var _patchInterval=setInterval(function(){
 // Banner animation styles
 var _bannerStyle=document.createElement('style');
 _bannerStyle.textContent=''
-  +'#partner-continue-banner{'
+  +'#sg-continue-banner:not(.sg-cb-hidden){'
   +'animation:ctaBannerIn .4s cubic-bezier(.32,.72,0,1) both;'
   +'}'
   +'@keyframes ctaBannerIn{'

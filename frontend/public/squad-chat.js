@@ -657,7 +657,7 @@
   /** Total height of the app's fixed bottom chrome (tab bar + banners). */
   function bottomChromeHeight() {
     var h = 0;
-    ['.sg-tab-bar', '#partner-continue-banner', '#sg-squad-brand'].forEach(function (sel) {
+    ['.sg-tab-bar', '#sg-continue-banner', '#sg-squad-brand'].forEach(function (sel) {
       var el = document.querySelector(sel);
       if (!el) return;
       var st = window.getComputedStyle(el);
@@ -703,7 +703,7 @@
    */
   function positionFab(fab) {
     var offset = 12;
-    ['.sg-tab-bar', '#partner-continue-banner', '#sg-squad-brand'].forEach(function (sel) {
+    ['.sg-tab-bar', '#sg-continue-banner', '#sg-squad-brand'].forEach(function (sel) {
       var el = document.querySelector(sel);
       if (!el) return;
       var s = window.getComputedStyle(el);
