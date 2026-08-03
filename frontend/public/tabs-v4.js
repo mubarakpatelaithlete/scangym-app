@@ -276,7 +276,7 @@ function injectProfileCTA(){
   var isProfile=(route==='/more'||route==='/more/'||route==='/more/profile');
   try{if(!isProfile&&typeof state!=='undefined'&&state&&state.activeTab==='more')isProfile=true;}catch(e){}
   /* ONE BAR: this used to append its own fixed #profile-continue-banner at
-   * bottom:56px;z-index:8999 (a second orange bar, with its own body.sg-profile-cta
+   * bottom:56px;z-index:var(--sg-z-bottom-bar,8999) (a second orange bar, with its own body.sg-profile-cta
    * spacing rule). It now borrows the single shared bar, which already reserves
    * space via body.sg-cb-active. */
   if(!isProfile){window.sgBottomBar.hide('profile');return;}

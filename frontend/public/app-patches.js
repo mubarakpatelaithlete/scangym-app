@@ -91,7 +91,7 @@
       var s = document.createElement('style');
       s.id = styleId;
       s.textContent = [
-        '.sg-reel-book-overlay{position:fixed;inset:0;z-index:99999;background:rgba(5,8,22,.96);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);display:flex;flex-direction:column;transform:translateY(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);overflow-y:auto;-webkit-overflow-scrolling:touch;}',
+        '.sg-reel-book-overlay{position:fixed;inset:0;z-index:var(--sg-z-overlay,10000);background:rgba(5,8,22,.96);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);display:flex;flex-direction:column;transform:translateY(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);overflow-y:auto;-webkit-overflow-scrolling:touch;}',
         '.sg-reel-book-overlay.open{transform:translateY(0)}',
         '.sg-rbo-header{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 12px;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.08);}',
         '.sg-rbo-close{width:36px;height:36px;background:rgba(255,255,255,.08);border:none;border-radius:50%;color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;}',
@@ -105,7 +105,7 @@
         '.sg-rbo-pass-name{color:#fff;font-size:13px;font-weight:700;margin-bottom:2px}',
         '.sg-rbo-pass-price{color:#FF6D00;font-size:16px;font-weight:800}',
         '.sg-rbo-pass-sub{color:rgba(255,255,255,.4);font-size:10px}',
-        '.sg-rbo-cta{position:fixed;bottom:calc(56px + env(safe-area-inset-bottom,0px));left:0;right:0;padding:12px 16px;background:rgba(5,8,22,.95);border-top:1px solid rgba(255,255,255,.06);z-index:100000;}',
+        '.sg-rbo-cta{position:fixed;bottom:calc(56px + env(safe-area-inset-bottom,0px));left:0;right:0;padding:12px 16px;background:rgba(5,8,22,.95);border-top:1px solid rgba(255,255,255,.06);z-index:calc(var(--sg-z-overlay,10000) + 1);}',
         '.sg-rbo-book-btn{width:100%;padding:14px;border:none;border-radius:14px;background:linear-gradient(135deg,#FF6D00,#ff8534,#FF6D00);background-size:200% 200%;color:#fff;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(255,109,0,.4);animation:sgCasinoGlow 1.8s ease-in-out infinite;-webkit-tap-highlight-color:transparent;}',
       ].join('');
       document.head.appendChild(s);
@@ -541,7 +541,7 @@
       if (existing) existing.remove();
       var sheet = document.createElement('div');
       sheet.id = 'sg-gp-payout-sheet';
-      sheet.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:10000;display:flex;flex-direction:column;justify-content:flex-end;';
+      sheet.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:var(--sg-z-overlay,10000);display:flex;flex-direction:column;justify-content:flex-end;';
       sheet.innerHTML =
         '<div onclick="document.getElementById(\'sg-gp-payout-sheet\').remove()" style="flex:1;background:rgba(0,0,0,.6);backdrop-filter:blur(8px)"></div>' +
         '<div style="background:#1a1a2e;border-radius:24px 24px 0 0;padding:24px 20px 36px;max-height:80vh;overflow-y:auto">' +

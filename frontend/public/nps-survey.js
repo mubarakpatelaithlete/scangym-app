@@ -50,7 +50,7 @@
 
     var overlay = document.createElement('div');
     overlay.id = 'sg-nps-overlay';
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:99999;display:flex;align-items:flex-end;justify-content:center';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:var(--sg-z-overlay,10000);display:flex;align-items:flex-end;justify-content:center';
 
     var scoreBtns = '';
     for (var i = 0; i <= 10; i++) {

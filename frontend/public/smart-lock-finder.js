@@ -63,7 +63,7 @@ if (!document.getElementById('slf-css')) {
     + '.slf-btn-primary{background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff;box-shadow:0 4px 20px rgba(255,109,0,.3)}'
     + '.slf-btn-primary:disabled{opacity:.4;cursor:not-allowed;transform:none}'
     + '.slf-btn-secondary{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#fff}'
-    + '.slf-toast{position:fixed;top:20px;right:20px;padding:14px 22px;border-radius:14px;font-weight:700;font-size:13px;z-index:10000;animation:slfSlideIn .3s;box-shadow:0 4px 24px rgba(0,0,0,.4)}'
+    + '.slf-toast{position:fixed;top:20px;right:20px;padding:14px 22px;border-radius:14px;font-weight:700;font-size:13px;z-index:var(--sg-z-overlay,10000);animation:slfSlideIn .3s;box-shadow:0 4px 24px rgba(0,0,0,.4)}'
     + '.slf-toast.success{background:#22c55e;color:#fff}'
     + '.slf-toast.error{background:#ef4444;color:#fff}'
     + '@keyframes slfSlideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}'
@@ -174,9 +174,7 @@ async function _slfGetGymId() {
 // MAIN ENTRY: Smart Lock Finder sheet
 // ═════════════════════════════════════════════════════════════════════
 
-window._partnerConnectSeam = function () {
-  window._slfOpenFinder();
-};
+
 
 window._slfOpenFinder = function () {
   var u = (typeof state !== 'undefined' && state) ? state.user : null;

@@ -329,7 +329,7 @@ window._sgOpenEmbeddedOnboarding=function(clientSecret, accountId){
   // Build the overlay
   var overlay=document.createElement('div');
   overlay.id='sg-stripe-onboarding-overlay';
-  overlay.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background:#111;overflow-y:auto;display:flex;flex-direction:column;align-items:center';
+  overlay.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;z-index:var(--sg-z-overlay,10000);background:#111;overflow-y:auto;display:flex;flex-direction:column;align-items:center';
   overlay.innerHTML=''
     +'<div style="width:100%;max-width:680px;padding:20px 16px;box-sizing:border-box">'
     +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">'

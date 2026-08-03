@@ -221,9 +221,18 @@ async function showLockSetupPrompt(gymId){
     document.head.appendChild(st);
   }
 }
+
+/* ONE definition. This used to be defined here as a link to
+   /gympartners-dashboard/connect-access (a dead page) and then re-defined at
+   runtime by a poller in ux-v5-improvements.js; that poller is gone and this is
+   the real behaviour: open the Smart Lock Finder sheet. */
 window._sgB3GoToLockSetup=function(gymId){
   if(typeof window._sgCloseSheet==='function')window._sgCloseSheet('sg-own-sheet');
-  window.location.href='/gympartners-dashboard/connect-access?gym_id='+gymId;
+  if(gymId)window._partnerGymId=gymId;
+  setTimeout(function(){
+    if(typeof window._slfOpenFinder==='function')window._slfOpenFinder();
+    else if(typeof window._partnerConnectSeam==='function')window._partnerConnectSeam();
+  },350);
 };
 window._sgB3SkipLockSetup=function(){
   toast('You can set up locks anytime from Manage \u2192 Access Control','info',3500);

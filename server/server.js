@@ -525,12 +525,16 @@ app.use('/api/creator-distribution', creatorDistributionRouter);
 app.use('/api/creator-growth', creatorGrowthRouter);
 app.use('/api/creator-content', creatorContentRouter);
 app.use('/api/fan-chat', fanChatRouter);
+/* Second router on /api/pricing (gift, group, couple, compare, carry-forward).
+   Checked: no path collides with routes/pricing.js (/prices, /gym-price). */
 app.use('/api/pricing', pricingExtRouter);
 app.use('/api/group', groupBookingRouter);
 app.use('/api/rebook', rebookRouter);
 app.use('/api/amenities', amenitiesRouter);
 app.use('/api/gym-mgmt', gymMgmtRouter);
 app.use('/api/playlists', playlistsRouter);
+/* Second router on /api/stats (/admin-dashboard, /nps). Checked: no path
+   collides with routes/stats.js. */
 app.use('/api/stats', adminDashboardRouter);
 
 // OpenAI ChatGPT Apps domain verification challenge
