@@ -110,3 +110,49 @@ test('deleted server routes stay deleted', () => {
   assert.ok(!/paymentMethods\.create\(\s*\{[^}]*number/s.test(s),
     'payment.js takes a raw card number again — card details must only reach Stripe.js');
 });
+
+/* ── v7: ONE withdraw / payout sheet ─────────────────────────────────
+   The unified sheet lives in wallet-withdraw.js (_sgWalletWithdraw /
+   _sgWalletAddMethod). The old per-tab wallet sheets in app.ctr576.js and
+   their round2 / batch3 / continue-cta-flow copies were deleted. */
+test('one withdraw sheet: only wallet-withdraw.js builds one', () => {
+  for (const [f, s] of all()) {
+    if (f === 'wallet-withdraw.js') continue;
+    assert.ok(!/_sgOpenSheet\(\s*['"]sg-(creator|partner)-wallet-sheet/.test(s),
+      `${f} rebuilds an old per-tab wallet sheet — the unified one is _sgWalletWithdraw()`);
+  }
+  assert.ok(/window\._sgWalletWithdraw\s*=/.test(read('wallet-withdraw.js')),
+    'the unified withdraw sheet (_sgWalletWithdraw) is gone');
+});
+
+test('one withdraw sheet: the deleted old handlers stay deleted', () => {
+  const gone = ['_sgLoadCreatorWallet', '_sgLoadPartnerWallet', '_ctaSaveWithdrawMethod',
+    '_ctaConfirmWithdraw', '_showConfirmWithdrawSheet', '_showAddWithdrawSheet',
+    '_ctaSelectWithdrawOpt', 'r2ShowAddWithdrawSheet', 'fixWithdraw'];
+  for (const [f, s] of all()) {
+    for (const n of gone) {
+      assert.ok(!new RegExp(`(window\\.${n}\\s*=|function\\s+${n}\\s*\\()`).test(s),
+        `${f} re-added ${n} — withdrawals must go through _sgWalletWithdraw()`);
+    }
+  }
+});
+
+test('one withdraw sheet: every legacy withdraw name routes to the unified one', () => {
+  const s = all().map(([, x]) => x).join('\n');
+  for (const n of ['_creatorWithdraw', '_partnerWithdraw', '_sgCreatorWithdraw',
+    '_sgCreatorWithdrawToBank', '_sgPartnerWithdrawToBank',
+    '_sgCreatorAddWithdrawMethod', '_sgPartnerAddWithdrawMethod']) {
+    for (const m of s.matchAll(new RegExp(`window\\.${n}\\s*=\\s*(?:async\\s*)?function[^;]{0,400}`, 'g'))) {
+      assert.ok(/_sgWalletWithdraw|_sgWalletAddMethod|_sgUnifiedWithdraw/.test(m[0]),
+        `${n} was given its own withdraw logic again instead of calling the unified sheet`);
+    }
+  }
+});
+
+test('no /api/referrals/withdraw or payout-request call outside the unified sheet', () => {
+  for (const [f, s] of all()) {
+    if (f === 'wallet-withdraw.js') continue;
+    assert.ok(!/\/api\/(referrals\/withdraw|gym-partner\/withdraw-request)/.test(s),
+      `${f} posts a withdrawal itself — only wallet-withdraw.js may talk to the payout API`);
+  }
+});

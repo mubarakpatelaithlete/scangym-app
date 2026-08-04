@@ -301,21 +301,12 @@ function injectWalletButtons(){
 }
 setInterval(injectWalletButtons,700);
 
-// Override ALL legacy withdraw functions from both Creator and Partner tabs
-// to route through the unified wallet withdraw sheet (balance, method
-// setup, Stripe Connect — all in one place).
-function upgradeCreatorWithdraw(){
-  window._sgCreatorWithdraw=function(){window._sgWalletWithdraw();};
-  window._creatorWithdraw=function(){window._sgWalletWithdraw();};
-  window._sgCreatorAddWithdrawMethod=function(){window._sgWalletAddMethod();};
-  // Partner overrides — legacy sheets are Stripe-only; unified flow supports
-  // Stripe + bank + PayPal and doesn't require smart access connection.
-  window._partnerWithdraw=function(){window._sgWalletWithdraw();};
-  window._sgPartnerWithdrawToBank=function(){window._sgWalletWithdraw();};
-  window._sgPartnerAddWithdrawMethod=function(){window._sgWalletAddMethod();};
-}
-if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',function(){setTimeout(upgradeCreatorWithdraw,300);});}
-else{setTimeout(upgradeCreatorWithdraw,300);}
+// ONE withdraw path (v7). The old per-tab sheets in app.ctr576.js, round2.js,
+// batch3.js and continue-cta-flow.js were deleted; these aliases stay only so
+// a cached page or an old rail button still lands on the unified sheet.
+window._creatorWithdraw=window._partnerWithdraw=window._sgCreatorWithdraw=function(){window._sgWalletWithdraw();};
+window._sgCreatorWithdrawToBank=window._sgPartnerWithdrawToBank=function(){window._sgWalletWithdraw();};
+window._sgCreatorAddWithdrawMethod=window._sgPartnerAddWithdrawMethod=function(){window._sgWalletAddMethod();};
 
 /* ════════════════════════════════════════════════════════════════════
    4) EMBEDDED STRIPE CONNECT ONBOARDING — renders the Stripe

@@ -17283,46 +17283,19 @@ window._creatorGetLink=function(){
     +'</div>'
   );
 };
-window._creatorWithdraw=function(){
-  var u=state&&state.user;
-  if(!u){
-    sgToast('Sign in to withdraw earnings','info',2000);
-    if(typeof window._sgShowAuthSheet==='function'){window._sgShowAuthSheet('book');}else{navigate('/login');}
-    return;
-  }
-  _sgOpenSheet('sg-creator-wallet-sheet',
-    '<h2 style="font-size:20px;font-weight:800;color:#fff;margin:0 0 16px">\ud83d\udcb8 Affiliate Earnings</h2>'
-    +'<div style="background:linear-gradient(135deg,#FF6D00,#ff8f3f);border-radius:16px;padding:20px;margin-bottom:14px;text-align:center">'
-    +'<div style="font-size:12px;opacity:.8;margin-bottom:4px">ScanGym Wallet Balance</div>'
-    +'<div id="sg-cw-balance" style="font-size:36px;font-weight:800;font-family:Sora,Inter,sans-serif">\u2014</div>'
-    +'<div style="font-size:12px;opacity:.7;margin-top:4px">25% commission on referral bookings</div>'
-    +'</div>'
-    +'<button onclick="_sgCreatorWithdrawToBank()" style="width:100%;background:#22c55e;color:#fff;border:none;padding:14px;border-radius:12px;font-weight:700;font-size:15px;cursor:pointer;margin-bottom:8px;box-shadow:0 4px 16px rgba(34,197,94,.3)">\ud83d\udcb8 Withdraw to Bank</button>'
-    +'<button onclick="_sgCreatorAddWithdrawMethod()" style="width:100%;background:rgba(255,255,255,.05);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.08);padding:14px;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer;margin-bottom:14px">\ud83c\udfe6 Add / Change Withdraw Method</button>'
-    +'<div style="background:#1a1a1a;border-radius:16px;padding:16px;border:1px solid rgba(255,255,255,.08)">'
-    +'<div style="font-weight:600;font-size:14px;color:#fff;margin-bottom:10px">Recent Earnings</div>'
-    +'<div id="sg-cw-earnings" style="color:rgba(255,255,255,.4);font-size:13px">Loading...</div>'
-    +'</div>'
-  );
-  _sgLoadCreatorWallet();
+/* ONE withdraw sheet (v7): both creator and partner withdraw now open the
+   unified wallet sheet in wallet-withdraw.js. The old per-tab sheets, their
+   "Withdraw to Bank" / "Add Method" handlers and the round2 + batch3 + cta
+   copies of them were deleted - they were all overwritten at load time. */
+window._sgUnifiedWithdraw=function(){
+  if(typeof window._sgWalletWithdraw==='function'){window._sgWalletWithdraw();return;}
+  var n=0,t=setInterval(function(){
+    if(typeof window._sgWalletWithdraw==='function'){clearInterval(t);window._sgWalletWithdraw();}
+    else if(++n>50){clearInterval(t);if(typeof sgToast==='function')sgToast('Wallet is still loading \u2014 try again in a second','info',2500);}
+  },100);
 };
-window._sgLoadCreatorWallet=async function(){
-  var u=state&&state.user;if(!u)return;
-  var refCode=u.referral_code;if(!refCode){try{var c=JSON.parse(localStorage.getItem('sg_creator')||'null');if(c&&c.handle)refCode=c.handle;}catch(e){}}
-  if(!refCode)return;
-  try{
-    var balR=await fetch('/api/referrals/balance/'+encodeURIComponent(refCode)).then(function(r){return r.json()}).catch(function(){return {}});
-    var earnR=await fetch('/api/referrals/earnings/'+encodeURIComponent(refCode)).then(function(r){return r.json()}).catch(function(){return {}});
-    var balEl=document.getElementById('sg-cw-balance');
-    if(balEl){var bal=parseFloat(balR.balance||0);if(balR.balancePence)bal=parseInt(balR.balancePence)/100;balEl.textContent='\u00a3'+bal.toFixed(2);}
-    var earnEl=document.getElementById('sg-cw-earnings');
-    if(earnEl){
-      var recent=earnR.recentEarnings||earnR.earnings||[];
-      if(recent.length===0){earnEl.innerHTML='<div style="text-align:center;color:rgba(255,255,255,.3);padding:12px">No earnings yet \u2014 share your affiliate link to start earning!</div>';}
-      else{var h='';recent.slice(0,5).forEach(function(e){h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)"><div><div style="font-weight:600;font-size:13px;color:#fff">'+(e.gymName||e.gym_name||'Booking')+'</div><div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:2px">'+(e.date||e.created_at||'')+'</div></div><div style="font-weight:700;color:#22c55e;font-size:14px">+\u00a3'+((parseFloat(e.amount||e.earningsPence||0))/100).toFixed(2)+'</div></div>';});earnEl.innerHTML=h;}
-    }
-  }catch(ex){console.log('[CreatorWallet]',ex.message);}
-};
+window._creatorWithdraw=function(){window._sgUnifiedWithdraw();};
+window._sgCreatorWithdraw=function(){window._sgUnifiedWithdraw();};
 
 
 // ═══ LOAD CREATOR FULL PAGE DATA FROM API ═══
@@ -17907,53 +17880,7 @@ window._sgLoadSeamDevices=async function(){
     el.innerHTML=h;
   }catch(ex){el.innerHTML='<div style="text-align:center;color:rgba(255,255,255,.3);padding:12px">Could not load devices</div>';}
 };
-window._partnerWithdraw=async function(){
-  var u=state&&state.user;
-  if(!u){
-    sgToast('Sign in to withdraw earnings','info',2000);
-    if(typeof window._sgShowAuthSheet==='function'){window._sgShowAuthSheet('book');}else{navigate('/login');}
-    return;
-  }
-  _sgOpenSheet('sg-partner-wallet-sheet',
-    '<h2 style="font-size:20px;font-weight:800;color:#fff;margin:0 0 16px">\ud83d\udcb8 Pass Earnings</h2>'
-    +'<div style="background:linear-gradient(135deg,#FF6D00,#ff8f3f);border-radius:16px;padding:20px;margin-bottom:14px;text-align:center">'
-    +'<div style="font-size:12px;opacity:.8;margin-bottom:4px">ScanGym Wallet Balance</div>'
-    +'<div id="sg-pw-balance" style="font-size:36px;font-weight:800;font-family:Sora,Inter,sans-serif">\u2014</div>'
-    +'<div style="font-size:12px;opacity:.7;margin-top:4px">85% commission \u00b7 You keep the most</div>'
-    +'</div>'
-    +'<button onclick="_sgPartnerWithdrawToBank()" style="width:100%;background:#22c55e;color:#fff;border:none;padding:14px;border-radius:12px;font-weight:700;font-size:15px;cursor:pointer;margin-bottom:8px;box-shadow:0 4px 16px rgba(34,197,94,.3)">\ud83d\udcb8 Withdraw to Bank</button>'
-    +'<button onclick="_sgPartnerAddWithdrawMethod()" style="width:100%;background:rgba(255,255,255,.05);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.08);padding:14px;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer;margin-bottom:14px">\ud83c\udfe6 Add / Change Withdraw Method</button>'
-    +'<div style="background:#1a1a1a;border-radius:16px;padding:16px;border:1px solid rgba(255,255,255,.08);margin-bottom:14px">'
-    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><div style="font-weight:600;font-size:14px;color:#fff">Recent Bookings</div><span style="display:inline-flex;align-items:center;gap:4px;background:rgba(76,175,80,.15);color:#4CAF50;font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px">\ud83d\udc9a You keep 85%</span></div>'
-    +'<div id="sg-pw-bookings" style="color:rgba(255,255,255,.4);font-size:13px">Loading...</div>'
-    +'</div>'
-    +'<div style="background:#1a1a1a;border-radius:16px;padding:16px;border:1px solid rgba(255,255,255,.08)">'
-    +'<div style="font-weight:600;font-size:14px;color:#fff;margin-bottom:8px">Payout History</div>'
-    +'<div id="sg-pw-payouts" style="color:rgba(255,255,255,.4);font-size:13px">Loading...</div>'
-    +'</div>'
-  );
-  _sgLoadPartnerWallet();
-};
-window._sgLoadPartnerWallet=async function(){
-  try{
-    var earnR=await fetch('/api/gym-partner/earnings',{credentials:'include'}).then(function(r){return r.json()}).catch(function(){return {}});
-    var payR=await fetch('/api/gym-partner/payouts',{credentials:'include'}).then(function(r){return r.json()}).catch(function(){return {}});
-    var balEl=document.getElementById('sg-pw-balance');
-    if(balEl){var bal=parseFloat(earnR.balance||earnR.availableBalance||0);balEl.textContent='\u00a3'+bal.toFixed(2);}
-    var bkEl=document.getElementById('sg-pw-bookings');
-    if(bkEl){
-      var bookings=earnR.recentBookings||earnR.bookings||[];
-      if(bookings.length===0){bkEl.innerHTML='<div style="text-align:center;color:rgba(255,255,255,.3);padding:12px">No bookings yet \u2014 once customers book your gym, earnings show here!</div>';}
-      else{var h='';bookings.slice(0,5).forEach(function(b){var amount=parseFloat(b.partnerAmount||b.amount||b.revenue||0);h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)"><div><div style="font-weight:600;font-size:13px;color:#fff">Day Pass \u2014 '+(b.customerName||b.customer_name||'Customer')+'</div><div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:2px">'+(b.date||b.created_at||'')+' \u00b7 \u00a3'+(parseFloat(b.totalAmount||b.total||0)).toFixed(2)+' pass</div></div><div style="font-weight:700;color:#22c55e;font-size:14px">+\u00a3'+amount.toFixed(2)+'</div></div>';});bkEl.innerHTML=h;}
-    }
-    var poEl=document.getElementById('sg-pw-payouts');
-    if(poEl){
-      var payouts=payR.payouts||payR.withdrawals||[];
-      if(payouts.length===0){poEl.innerHTML='<div style="text-align:center;color:rgba(255,255,255,.3);padding:12px">No payouts yet</div>';}
-      else{var h='';payouts.slice(0,5).forEach(function(p){var st=p.status||'pending';var stColor=st==='completed'||st==='paid'?'#22c55e':st==='pending'?'#fbbf24':'#ef4444';h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)"><div><div style="font-weight:600;font-size:13px;color:#fff">\u00a3'+parseFloat(p.amount||0).toFixed(2)+'</div><div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:2px">'+(p.date||p.created_at||'')+'</div></div><div style="font-size:12px;font-weight:600;color:'+stColor+'">'+st.charAt(0).toUpperCase()+st.slice(1)+'</div></div>';});poEl.innerHTML=h;}
-    }
-  }catch(ex){console.log('[PartnerWallet]',ex.message);}
-};
+window._partnerWithdraw=function(){window._sgUnifiedWithdraw();};
 
 
 // ── Resolve the owner's claimed gym id (was hardcoded to 0, so every save 400'd) ──
