@@ -1,5 +1,5 @@
 /**
- * Guards for the "one single version" clean-up (steps 1-5).
+ * Guards for the "one single version" clean-up (one single version clean-up).
  *
  * These are deliberately dumb text checks on the shipped files. Every one of
  * them corresponds to a duplicate we deleted; if a future patch re-adds its own
@@ -154,5 +154,50 @@ test('no /api/referrals/withdraw or payout-request call outside the unified shee
     if (f === 'wallet-withdraw.js') continue;
     assert.ok(!/\/api\/(referrals\/withdraw|gym-partner\/withdraw-request)/.test(s),
       `${f} posts a withdrawal itself — only wallet-withdraw.js may talk to the payout API`);
+  }
+});
+
+// ─── v8: ONE admin / CEO dashboard ───────────────────────────────────────────
+test('one admin dashboard: only admin-dashboard.js builds it', () => {
+  for (const [f, s] of all()) {
+    if (f === 'admin-dashboard.js') continue;
+    assert.ok(!/_sgAdminDashboardPage\s*=\s*function/.test(s),
+      `${f} defines a second admin dashboard page builder`);
+  }
+  const admin = read('admin-dashboard.js');
+  assert.ok(/window\._sgAdminDashboardPage\s*=\s*function/.test(admin),
+    'the real admin dashboard page builder is gone');
+});
+
+test('one admin dashboard: the old CEO page stays deleted', () => {
+  const gone = ['sgLoadCeoStats', 'sgCeoExport', '_loadAdminStatus'];
+  const app = read('app.ctr576.js');
+  for (const n of gone) {
+    assert.ok(!new RegExp(`(window\\.${n}\\s*=\\s*(?:async\\s*)?function|function\\s+${n}\\s*\\()`).test(app),
+      `app.ctr576.js re-added ${n} — the old CEO dashboard is replaced by admin-dashboard.js`);
+  }
+  assert.ok(!/ceo-metric-val|id="ceo-bookings"|ceo-period-bar/.test(app),
+    'app.ctr576.js still renders the old CEO dashboard markup');
+});
+
+test('one admin dashboard: DashboardPage/CeoDashboardPage only route to the new page', () => {
+  const s = all().map(([, x]) => x).join('\n');
+  const defs = [...s.matchAll(/window\.(?:DashboardPage|CeoDashboardPage)\s*=[\s\S]{0,400}?\n};/g)];
+  assert.ok(defs.length >= 1, 'nothing defines DashboardPage/CeoDashboardPage any more');
+  for (const m of defs) {
+    assert.ok(/_sgAdminDashboardPage|_sgAdminDashboardBoot/.test(m[0]),
+      'a dashboard entry point renders its own page instead of the one admin dashboard');
+  }
+  assert.ok(!/^function\s+(DashboardPage|CeoDashboardPage)\s*\(/m.test(read('app.ctr576.js')),
+    'app.ctr576.js still declares its own DashboardPage/CeoDashboardPage function');
+});
+
+test('one admin stats endpoint: /api/stats/admin-status is gone', () => {
+  const stats = fs.readFileSync(path.join(SRV, "routes", "stats.js"), 'utf8');
+  assert.ok(!/['"]\/admin-status['"]/.test(stats),
+    'the old /api/stats/admin-status route is back — admin metrics come from /api/stats/admin-dashboard (admin-only auth)');
+  for (const [f, s] of all()) {
+    assert.ok(!/\/api\/stats\/admin-status/.test(s),
+      `${f} still calls the deleted /api/stats/admin-status`);
   }
 });

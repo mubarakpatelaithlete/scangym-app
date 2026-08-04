@@ -150,7 +150,8 @@ function buildAdminDashboard(d){
     +'<p style="color:rgba(255,255,255,.4);font-size:11px;font-weight:600;margin-bottom:4px">📈 Booking Trend</p>'
     +sparkBars(act.bookingTrend,'count','rgba(255,109,0,.5)',50)
     +(act.peakHours&&act.peakHours.length?'<p style="color:rgba(255,255,255,.4);font-size:11px;font-weight:600;margin-top:14px">⏰ Peak Hours</p>'+peakStr:'')
-    +(act.topGyms&&act.topGyms.length?'<p style="color:rgba(255,255,255,.4);font-size:11px;font-weight:600;margin-top:14px">🏆 Top Gyms</p>'+topGymsStr:''),
+    +(act.topGyms&&act.topGyms.length?'<p style="color:rgba(255,255,255,.4);font-size:11px;font-weight:600;margin-top:14px">🏆 Top Gyms</p>'+topGymsStr
+      +'<div style="text-align:right;margin-top:8px"><button onclick="window._sgAdminExport(\'gyms\')" style="background:none;border:none;color:rgba(255,255,255,.3);font-size:11px;cursor:pointer;padding:4px 0">📥 CSV</button></div>':''),
     'rgba(59,130,246,.15)'
   );
 
@@ -194,7 +195,10 @@ function buildAdminDashboard(d){
   } else {
     cohortHtml='<div style="color:rgba(255,255,255,.2);font-size:12px;padding:20px;text-align:center">No cohort data yet — need more sign-ups & bookings</div>';
   }
-  html+=card('🔄','Cohort Retention','Weekly user return rates',cohortHtml,'rgba(168,85,247,.15)');
+  html+=card('🔄','Cohort Retention','Weekly user return rates',
+    cohortHtml
+    +'<div style="text-align:right;margin-top:8px"><button onclick="window._sgAdminExport(\'cohorts\')" style="background:none;border:none;color:rgba(255,255,255,.3);font-size:11px;cursor:pointer;padding:4px 0">📥 CSV</button></div>',
+    'rgba(168,85,247,.15)');
 
   // ═══ 5. REVENUE ═══
   var revNote='';
@@ -212,7 +216,8 @@ function buildAdminDashboard(d){
     +'</div>'
     +'<p style="color:rgba(255,255,255,.4);font-size:11px;font-weight:600;margin-bottom:4px">📈 Revenue Trend</p>'
     +sparkBars(rev.trend,'revenue','rgba(255,109,0,.6)',60)
-    +revNote,
+    +revNote
+    +'<div style="text-align:right;margin-top:8px"><button onclick="window._sgAdminExport(\'trend\')" style="background:none;border:none;color:rgba(255,255,255,.3);font-size:11px;cursor:pointer;padding:4px 0">📥 Daily CSV</button></div>',
     'rgba(255,109,0,.15)'
   );
 
@@ -289,14 +294,98 @@ window._sgLoadAdminLocks=async function(){
   }
 };
 
+// ─── CSV export (ported from the old CEO dashboard, now reading the real data) ───
+// The old version scraped numbers out of the DOM, so it broke whenever the page
+// changed and could not export anything that wasn't on screen. This one exports
+// _adminData, the same JSON the cards are drawn from.
+function csvEscape(c){ return '"' + String(c===null||c===undefined?'':c).replace(/"/g,'""') + '"'; }
+function toCsv(rows){ return rows.map(function(r){ return r.map(csvEscape).join(','); }).join('\n'); }
+function download(name, csv){
+  var blob = new Blob(['\ufeff'+csv], {type:'text/csv;charset=utf-8'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
+}
+function exportRows(d, type){
+  var rows = [];
+  var reg=d.registrations||{}, au=d.activeUsers||{}, act=d.activityLevels||{}, rev=d.revenue||{}, nps=d.nps||{};
+  if(type==='trend'){
+    rows.push(['Date','Registrations','Bookings','Revenue (GBP)']);
+    var byDate={};
+    (reg.trend||[]).forEach(function(t){ byDate[t.date]=byDate[t.date]||{}; byDate[t.date].reg=t.count; });
+    (act.bookingTrend||[]).forEach(function(t){ byDate[t.date]=byDate[t.date]||{}; byDate[t.date].bk=t.count; });
+    (rev.trend||[]).forEach(function(t){ byDate[t.date]=byDate[t.date]||{}; byDate[t.date].rev=t.revenue; });
+    Object.keys(byDate).sort().forEach(function(k){
+      var v=byDate[k];
+      rows.push([k, v.reg||0, v.bk||0, (v.rev||0).toFixed ? (v.rev||0).toFixed(2) : (v.rev||0)]);
+    });
+  }else if(type==='gyms'){
+    rows.push(['Rank','Gym','Bookings']);
+    (act.topGyms||[]).forEach(function(g,i){ rows.push([i+1, g.name, g.bookings]); });
+  }else if(type==='cohorts'){
+    rows.push(['Cohort week','Size','Week','Retention %']);
+    (d.cohortRetention||[]).forEach(function(c){
+      (c.retention||[]).forEach(function(r){ rows.push([c.cohort_week, c.size, r.week, r.percent]); });
+    });
+  }else{
+    rows.push(['Section','Metric','Value']);
+    rows.push(['Meta','Period',_adminPeriod]);
+    rows.push(['Meta','Exported at',new Date().toISOString()]);
+    rows.push(['Registrations','All time',reg.total]);
+    rows.push(['Registrations','This period',reg.inPeriod]);
+    rows.push(['Registrations','Growth % vs previous',reg.growthPercent]);
+    rows.push(['Active users','DAU',au.dau]);
+    rows.push(['Active users','WAU',au.wau]);
+    rows.push(['Active users','MAU',au.mau]);
+    rows.push(['Active users','Stickiness %',au.stickiness]);
+    rows.push(['Active users','Booked in period',au.bookedInPeriod]);
+    rows.push(['Active users','Visitors in period',au.visitorsInPeriod]);
+    rows.push(['Activity','Bookings in period',act.totalBookingsInPeriod]);
+    rows.push(['Activity','Page views in period',act.totalPageViewsInPeriod]);
+    rows.push(['Activity','API calls in period',act.totalApiCallsInPeriod]);
+    (act.peakHours||[]).forEach(function(h){ rows.push(['Activity','Peak hour '+h.hour+':00',h.count]); });
+    rows.push(['Revenue','All time (GBP)',rev.totalAllTime]);
+    rows.push(['Revenue','This period (GBP)',rev.inPeriod]);
+    rows.push(['Revenue','ScanGym share 25% (GBP)',rev.scanGymShare]);
+    rows.push(['Revenue','Gym owner share 75% (GBP)',rev.gymOwnerShare]);
+    rows.push(['Revenue','Growth % vs previous',rev.growthPercent]);
+    rows.push(['NPS','Score',nps.score]);
+    rows.push(['NPS','Responses',nps.totalResponses]);
+    rows.push(['NPS','Promoters',nps.promoters]);
+    rows.push(['NPS','Passives',nps.passives]);
+    rows.push(['NPS','Detractors',nps.detractors]);
+  }
+  return rows;
+}
+window._sgAdminExport=function(type){
+  if(!_adminData){
+    if(window.sgToast)sgToast('Dashboard still loading — try again in a second','info',2200);
+    return;
+  }
+  var rows=exportRows(_adminData,type);
+  if(rows.length<=1){
+    if(window.sgToast)sgToast('No data to export yet','info',2000);
+    return;
+  }
+  download('scangym-'+(type||'metrics')+'-'+_adminPeriod+'-'+new Date().toISOString().slice(0,10)+'.csv', toCsv(rows));
+  if(window.sgToast)sgToast('\ud83d\udce5 CSV downloaded','success',2000);
+};
+// Old name kept as an alias: old bookmarks/buttons still work, one implementation.
+window.sgCeoExport=function(type){ return window._sgAdminExport(type==='bookings'?'trend':type); };
+
 // ─── Main page renderer ───
 window._sgAdminDashboardPage=function(){
   setTimeout(function(){window._sgLoadAdminDashboard();},200);
-  return '<div style="max-width:520px;margin:0 auto;padding:16px 16px 100px" id="sg-admin-dash">'
+  return '<div style="max-width:520px;margin:0 auto;padding:16px 16px 100px;box-sizing:border-box;width:100%;min-width:0;overflow-x:hidden" id="sg-admin-dash">'
     +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">'
     +'<div onclick="navigate(\'/more\')" style="cursor:pointer;color:rgba(255,255,255,.6);font-size:14px;font-weight:600">← Back</div>'
-    +'<p style="color:#fff;font-size:18px;font-weight:900">📊 Admin Dashboard</p>'
+    +'<p style="color:#fff;font-size:16px;font-weight:900;white-space:nowrap">📊 Admin</p>'
+    +'<div style="display:flex;gap:6px">'
+    +'<button onclick="window._sgAdminExport()" title="Export CSV" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.55);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer">📥 CSV</button>'
     +'<button onclick="window._sgLoadAdminDashboard()" style="background:rgba(255,109,0,.1);border:1px solid rgba(255,109,0,.2);color:#FF6D00;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:600;cursor:pointer">↻</button>'
+    +'</div>'
     +'</div>'
     +'<div id="sg-admin-content"><div style="padding:40px;text-align:center"><div class="skel-card" style="width:100%;height:200px;background:rgba(255,255,255,.03);border-radius:16px;margin-bottom:12px"></div><p style="color:rgba(255,255,255,.3);font-size:13px">Loading dashboard...</p></div></div>'
     +'<p style="text-align:center;color:rgba(255,255,255,.12);font-size:10px;margin-top:16px">Auto-refreshes every 60s · <span id="sg-admin-last-refresh">—</span></p>'
@@ -336,24 +425,15 @@ window._sgAdminSetPeriod=function(p){
 
 // ─── Auto refresh ───
 setInterval(function(){
-  if(window.state&&(window.state.route==='/admin'||window.state.route==='/dashboard')){
+  if(window.state&&(window.state.route==='/admin'||window.state.route==='/dashboard'||window.state.route==='/forceo')){
     window._sgLoadAdminDashboard();
   }
 },60000);
 
-// ─── Override the old DashboardPage + CeoDashboardPage to use enhanced version ───
-// The old DashboardPage() and CeoDashboardPage() are defined in app.ctr576.js.
-// /admin uses CeoDashboardPage(), so we must override both.
-if(typeof window.DashboardPage==='function'){
-  window._sgOldDashboardPage=window.DashboardPage;
-}
-window.DashboardPage=function(){
-  return window._sgAdminDashboardPage();
-};
-if(typeof window.CeoDashboardPage==='function'){
-  window._sgOldCeoDashboardPage=window.CeoDashboardPage;
-}
-window.CeoDashboardPage=function(){
+// ─── One dashboard: /dashboard, /admin and /forceo all render this page ───
+// app.ctr576.js keeps only a thin DashboardPage/CeoDashboardPage entry point that
+// waits for this file; there is no older dashboard left to fall back to.
+window.DashboardPage=window.CeoDashboardPage=function(){
   return window._sgAdminDashboardPage();
 };
 
