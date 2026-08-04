@@ -329,24 +329,6 @@ setInterval(function(){checkIdentity().then(injectIdRow);},900);
 /* ════════════════════════════════════════════════════════════════════
    3) WITHDRAWALS — fix creator withdraw field name + better feedback
    ════════════════════════════════════════════════════════════════════ */
-function fixWithdraw(){
-  if(typeof window._sgCreatorWithdrawToBank!=='function'||window._sgCreatorWithdrawToBank.__b3)return;
-  window._sgCreatorWithdrawToBank=async function(){
-    var u=(typeof state!=='undefined'&&state)?state.user:null;
-    var refCode=u&&u.referral_code;
-    if(!refCode){try{var c=JSON.parse(localStorage.getItem('sg_creator')||'null');if(c&&c.handle)refCode=c.handle;}catch(e){}}
-    if(!refCode){toast('Get your affiliate link first','info',2000);return;}
-    try{
-      var d=await post('/api/referrals/withdraw',{creatorHandle:refCode});
-      if(d.success){
-        toast('Withdrawal of '+((d.withdrawal&&d.withdrawal.amountDisplay)||'your balance')+' requested \u2014 funds arrive in 2\u20135 business days \uD83D\uDCB8','success',4000);
-        if(typeof window._sgCloseSheet==='function')window._sgCloseSheet('sg-creator-wallet-sheet');
-      }else toast(d.error||'Set up a withdraw method first','info',3500);
-    }catch(e){toast('Could not process withdrawal','error',2500);}
-  };
-  window._sgCreatorWithdrawToBank.__b3=true;
-}
-setInterval(fixWithdraw,900);
 
 console.log('[Batch3] ownership OTP, ID verification, withdraw fix');
 })();

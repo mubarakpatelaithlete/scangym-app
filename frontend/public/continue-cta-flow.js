@@ -53,20 +53,6 @@ window._ctaCloseSheet=_ctaCloseSheet;
 
 
 // ══════════════════════════════════════════════════════════════════════
-// SHARED: Check if user has a withdraw method set up
-// ══════════════════════════════════════════════════════════════════════
-
-function _hasWithdrawMethod(){
-  try{
-    var cd=JSON.parse(localStorage.getItem('sg_creator')||'null');
-    if(cd&&cd.withdrawMethod)return true;
-  }catch(e){}
-  try{
-    var pd=JSON.parse(localStorage.getItem('sg_partner')||'null');
-    if(pd&&pd.stripeConnected)return true;
-  }catch(e){}
-  return false;
-}
 
 
 // ══════════════════════════════════════════════════════════════════════
@@ -289,236 +275,6 @@ function _saveSeamLocal(apiKey,response){
 
 
 // ══════════════════════════════════════════════════════════════════════
-// SHARED: "Add Withdraw Method" half-page popup
-// ══════════════════════════════════════════════════════════════════════
-
-function _showAddWithdrawSheet(onComplete){
-  var html=''
-    +'<div style="text-align:center;margin-bottom:20px">'
-    +'<div style="font-size:40px;margin-bottom:8px">💰</div>'
-    +'<h2 style="color:#fff;font-size:20px;font-weight:800;margin:0 0 4px">Add Withdraw Method</h2>'
-    +'<p style="color:rgba(255,255,255,.4);font-size:13px;margin:0">Choose how you want to receive your earnings</p>'
-    +'</div>'
-
-    // Option 1: Stripe Connect (recommended)
-    +'<div id="sg-wd-opt-stripe" onclick="window._ctaSelectWithdrawOpt(\'stripe\')" style="display:flex;align-items:center;gap:14px;padding:16px;background:rgba(255,109,0,.06);border:2px solid rgba(255,109,0,.3);border-radius:16px;cursor:pointer;margin-bottom:10px;transition:all .15s">'
-    +'<div style="width:48px;height:48px;background:linear-gradient(135deg,#635BFF,#7A73FF);border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="color:#fff;font-size:18px;font-weight:800">S</span></div>'
-    +'<div style="flex:1"><div style="color:#fff;font-size:15px;font-weight:700">Stripe Connect</div><div style="color:rgba(255,255,255,.4);font-size:11px;margin-top:2px">Direct bank deposits · Recommended</div></div>'
-    +'<div style="width:20px;height:20px;border:2px solid #FF6D00;border-radius:50%;display:flex;align-items:center;justify-content:center"><div id="sg-wd-dot-stripe" style="width:10px;height:10px;background:#FF6D00;border-radius:50%"></div></div>'
-    +'</div>'
-
-    // Option 2: PayPal
-    +'<div id="sg-wd-opt-paypal" onclick="window._ctaSelectWithdrawOpt(\'paypal\')" style="display:flex;align-items:center;gap:14px;padding:16px;background:rgba(255,255,255,.03);border:2px solid rgba(255,255,255,.08);border-radius:16px;cursor:pointer;margin-bottom:10px;transition:all .15s">'
-    +'<div style="width:48px;height:48px;background:linear-gradient(135deg,#003087,#009cde);border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="color:#fff;font-size:14px;font-weight:800">PP</span></div>'
-    +'<div style="flex:1"><div style="color:#fff;font-size:15px;font-weight:700">PayPal</div><div style="color:rgba(255,255,255,.4);font-size:11px;margin-top:2px">Withdraw to your PayPal account</div></div>'
-    +'<div style="width:20px;height:20px;border:2px solid rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center"><div id="sg-wd-dot-paypal" style="width:10px;height:10px;background:transparent;border-radius:50%"></div></div>'
-    +'</div>'
-
-    // Option 3: Bank Transfer
-    +'<div id="sg-wd-opt-bank" onclick="window._ctaSelectWithdrawOpt(\'bank\')" style="display:flex;align-items:center;gap:14px;padding:16px;background:rgba(255,255,255,.03);border:2px solid rgba(255,255,255,.08);border-radius:16px;cursor:pointer;margin-bottom:10px;transition:all .15s">'
-    +'<div style="width:48px;height:48px;background:linear-gradient(135deg,#22c55e,#16a34a);border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="color:#fff;font-size:18px">🏦</span></div>'
-    +'<div style="flex:1"><div style="color:#fff;font-size:15px;font-weight:700">Bank Transfer</div><div style="color:rgba(255,255,255,.4);font-size:11px;margin-top:2px">UK sort code & account number</div></div>'
-    +'<div style="width:20px;height:20px;border:2px solid rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center"><div id="sg-wd-dot-bank" style="width:10px;height:10px;background:transparent;border-radius:50%"></div></div>'
-    +'</div>'
-
-    // Dynamic form area
-    +'<div id="sg-wd-form-area" style="margin-top:16px"></div>'
-
-    // Error
-    +'<p id="sg-wd-error" style="color:#ef4444;font-size:13px;margin-top:8px;display:none"></p>'
-
-    // Save button
-    +'<button id="sg-wd-save-btn" onclick="window._ctaSaveWithdrawMethod()" style="width:100%;background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;cursor:pointer;margin-top:16px;transition:all .2s;box-shadow:0 4px 20px rgba(255,109,0,.3)">Connect & Continue →</button>';
-
-  _ctaOpenSheet(html);
-  window._ctaWithdrawCallback=onComplete;
-  window._ctaSelectedWithdraw='stripe';
-  _renderWithdrawForm('stripe');
-}
-
-window._ctaSelectWithdrawOpt=function(type){
-  window._ctaSelectedWithdraw=type;
-  var types=['stripe','paypal','bank'];
-  types.forEach(function(t){
-    var opt=document.getElementById('sg-wd-opt-'+t);
-    var dot=document.getElementById('sg-wd-dot-'+t);
-    if(opt){
-      opt.style.borderColor=t===type?'rgba(255,109,0,.3)':'rgba(255,255,255,.08)';
-      opt.style.background=t===type?'rgba(255,109,0,.06)':'rgba(255,255,255,.03)';
-    }
-    if(dot){
-      dot.style.background=t===type?'#FF6D00':'transparent';
-      dot.parentElement.style.borderColor=t===type?'#FF6D00':'rgba(255,255,255,.2)';
-    }
-  });
-  _renderWithdrawForm(type);
-};
-
-function _renderWithdrawForm(type){
-  var area=document.getElementById('sg-wd-form-area');
-  if(!area)return;
-  var btn=document.getElementById('sg-wd-save-btn');
-  if(type==='stripe'){
-    area.innerHTML='<div style="background:rgba(99,91,255,.06);border:1px solid rgba(99,91,255,.15);border-radius:14px;padding:14px;display:flex;align-items:center;gap:12px">'
-      +'<span style="font-size:24px">⚡</span>'
-      +'<div><p style="color:#fff;font-size:13px;font-weight:600;margin:0">Stripe Connect</p>'
-      +'<p style="color:rgba(255,255,255,.4);font-size:11px;margin:2px 0 0">You\'ll be redirected to Stripe to set up secure payouts. Takes ~2 minutes.</p></div>'
-      +'</div>';
-    if(btn)btn.textContent='Connect with Stripe →';
-  }else if(type==='paypal'){
-    area.innerHTML='<div style="margin-top:4px">'
-      +'<label style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px">PayPal Email</label>'
-      +'<input id="sg-wd-paypal-email" type="email" placeholder="your@email.com" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:14px 16px;color:#fff;font-size:15px;outline:none;transition:border-color .15s;box-sizing:border-box" onfocus="this.style.borderColor=\'rgba(255,109,0,.5)\'" onblur="this.style.borderColor=\'rgba(255,255,255,.12)\'">'
-      +'</div>';
-    if(btn)btn.textContent='Save PayPal & Continue →';
-  }else{
-    area.innerHTML='<div style="display:flex;flex-direction:column;gap:10px;margin-top:4px">'
-      +'<div><label style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px">Account Holder Name</label>'
-      +'<input id="sg-wd-bank-name" type="text" placeholder="John Smith" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:14px 16px;color:#fff;font-size:15px;outline:none;box-sizing:border-box" onfocus="this.style.borderColor=\'rgba(255,109,0,.5)\'" onblur="this.style.borderColor=\'rgba(255,255,255,.12)\'"></div>'
-      +'<div style="display:flex;gap:10px">'
-      +'<div style="flex:1"><label style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px">Sort Code</label>'
-      +'<input id="sg-wd-bank-sort" type="text" placeholder="12-34-56" maxlength="8" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:14px 16px;color:#fff;font-size:15px;outline:none;box-sizing:border-box" onfocus="this.style.borderColor=\'rgba(255,109,0,.5)\'" onblur="this.style.borderColor=\'rgba(255,255,255,.12)\'"></div>'
-      +'<div style="flex:1"><label style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px">Account Number</label>'
-      +'<input id="sg-wd-bank-acct" type="text" placeholder="12345678" maxlength="8" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:14px 16px;color:#fff;font-size:15px;outline:none;box-sizing:border-box" onfocus="this.style.borderColor=\'rgba(255,109,0,.5)\'" onblur="this.style.borderColor=\'rgba(255,255,255,.12)\'"></div>'
-      +'</div></div>';
-    if(btn)btn.textContent='Save Bank Details & Continue →';
-  }
-}
-
-
-
-function _saveWithdrawLocal(type,details){
-  try{
-    var cd=JSON.parse(localStorage.getItem('sg_creator')||'{}');
-    cd.withdrawMethod=type;cd.withdrawDetails=details;
-    localStorage.setItem('sg_creator',JSON.stringify(cd));
-    var pd=JSON.parse(localStorage.getItem('sg_partner')||'{}');
-    pd.withdrawMethod=type;pd.withdrawDetails=details;
-    if(type==='stripe_connect')pd.stripeConnected=true;
-    localStorage.setItem('sg_partner',JSON.stringify(pd));
-  }catch(e){}
-}
-
-
-// ══════════════════════════════════════════════════════════════════════
-// SHARED: "Confirm & Withdraw" half-page popup (Wallet → Withdraw)
-// ══════════════════════════════════════════════════════════════════════
-
-function _showConfirmWithdrawSheet(tabType){
-  var isPartner=tabType==='partner';
-  var title=isPartner?'Partner Earnings':'Creator Earnings';
-  var commission=isPartner?'85%':'25%';
-
-  var html=''
-    +'<div style="text-align:center;margin-bottom:20px">'
-    +'<div style="font-size:40px;margin-bottom:8px">💸</div>'
-    +'<h2 style="color:#fff;font-size:20px;font-weight:800;margin:0 0 4px">Withdraw '+title+'</h2>'
-    +'<p style="color:rgba(255,255,255,.4);font-size:13px;margin:0">You earn '+commission+' of every booking</p>'
-    +'</div>'
-
-    // Balance card
-    +'<div style="background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:16px;padding:20px;margin-bottom:16px;position:relative;overflow:hidden">'
-    +'<div style="position:absolute;top:-20px;right:-20px;width:80px;height:80px;background:rgba(255,255,255,.1);border-radius:50%"></div>'
-    +'<p style="color:rgba(255,255,255,.7);font-size:12px;font-weight:500;margin:0 0 4px">Available Balance</p>'
-    +'<p id="sg-cta-wd-balance" style="color:#fff;font-size:32px;font-weight:900;letter-spacing:-1px;margin:0">Loading…</p>'
-    +'<p style="color:rgba(255,255,255,.5);font-size:11px;margin:6px 0 0">ScanGym Wallet</p>'
-    +'</div>'
-
-    // Withdraw method summary
-    +'<div id="sg-cta-wd-method" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px;margin-bottom:16px;display:flex;align-items:center;gap:12px">'
-    +'<div style="font-size:20px">🏦</div>'
-    +'<div style="flex:1"><div style="color:#fff;font-size:13px;font-weight:600">Loading withdraw method…</div></div>'
-    +'</div>'
-
-    // Amount input
-    +'<div style="margin-bottom:16px">'
-    +'<label style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px">Withdraw Amount</label>'
-    +'<div style="display:flex;align-items:center;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:12px;overflow:hidden">'
-    +'<span style="padding:0 14px;color:rgba(255,255,255,.4);font-size:18px;font-weight:700">£</span>'
-    +'<input id="sg-cta-wd-amount" type="number" placeholder="0.00" step="0.01" min="10" style="flex:1;background:none;border:none;padding:14px 14px 14px 0;color:#fff;font-size:20px;font-weight:700;outline:none">'
-    +'<button onclick="window._ctaWithdrawMax()" style="background:rgba(255,109,0,.15);border:1px solid rgba(255,109,0,.3);color:#FF6D00;font-weight:700;font-size:11px;padding:8px 14px;margin:6px;border-radius:8px;cursor:pointer">MAX</button>'
-    +'</div>'
-    +'<p style="color:rgba(255,255,255,.3);font-size:11px;margin-top:4px">Minimum withdrawal: £1.00</p>'
-    +'</div>'
-
-    // Error
-    +'<p id="sg-cta-wd-error" style="color:#ef4444;font-size:13px;display:none"></p>'
-
-    // Add / Change method button
-    +'<button onclick="if(typeof _sgWalletAddMethod===\'function\'){_ctaCloseSheet();_sgWalletAddMethod();}else if(typeof _sgPartnerAddWithdrawMethod===\'function\'){_sgPartnerAddWithdrawMethod();}" style="width:100%;background:rgba(255,255,255,.05);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.08);padding:14px;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer;margin-bottom:12px">🏦 Add / Change Withdraw Method</button>'
-
-    // Confirm button
-    +'<button id="sg-cta-wd-confirm" onclick="window._ctaConfirmWithdraw(\''+tabType+'\')" style="width:100%;background:#22c55e;color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;cursor:pointer;transition:all .2s;box-shadow:0 4px 20px rgba(34,197,94,.3)">Confirm Withdrawal →</button>';
-
-  _ctaOpenSheet(html);
-  _loadWithdrawBalance(tabType);
-  _loadWithdrawMethodSummary();
-}
-
-window._ctaWithdrawMax=function(){
-  var inp=document.getElementById('sg-cta-wd-amount');
-  if(inp&&window._ctaAvailableBalance){
-    inp.value=window._ctaAvailableBalance.toFixed(2);
-  }
-};
-
-async function _loadWithdrawBalance(tabType){
-  window._ctaAvailableBalance=0;
-  try{
-    var balEl=document.getElementById('sg-cta-wd-balance');
-    var wr=await fetch('/api/wallet',{credentials:'include'}).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;});
-    var walletBal=wr?parseFloat(wr.balance||0):0;
-
-    if(tabType==='partner'){
-      var pr=await fetch('/api/gym-partner/dashboard',{credentials:'include'}).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;});
-      var earnings=pr?parseFloat(pr.availableBalance||pr.totalEarnings||0):0;
-      var total=Math.max(walletBal,earnings);
-      window._ctaAvailableBalance=total;
-      if(balEl)balEl.textContent='£'+total.toFixed(2);
-    }else{
-      var cd=JSON.parse(localStorage.getItem('sg_creator')||'null')||{};
-      var handle=cd.handle||cd.slug||'';
-      if(handle){
-        var cr=await fetch('/api/referrals/'+encodeURIComponent(handle)+'/balance',{credentials:'include'}).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;});
-        var creatorBal=cr?parseFloat(cr.available||cr.balance||0):0;
-        var total=Math.max(walletBal,creatorBal);
-        window._ctaAvailableBalance=total;
-        if(balEl)balEl.textContent='£'+total.toFixed(2);
-      }else{
-        window._ctaAvailableBalance=walletBal;
-        if(balEl)balEl.textContent='£'+walletBal.toFixed(2);
-      }
-    }
-  }catch(e){
-    var balEl=document.getElementById('sg-cta-wd-balance');
-    if(balEl)balEl.textContent='£0.00';
-  }
-}
-
-async function _loadWithdrawMethodSummary(){
-  var el=document.getElementById('sg-cta-wd-method');
-  if(!el)return;
-  try{
-    // Load from server API (real source of truth), not just localStorage
-    var r=await fetch('/api/wallet/withdraw-method',{credentials:'include'}).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;});
-    if(r){
-      if(r.stripeReady){
-        el.innerHTML='<div style="font-size:20px">⚡</div><div style="flex:1"><div style="color:#fff;font-size:13px;font-weight:600">Stripe Connect</div><div style="color:rgba(255,255,255,.35);font-size:11px">Instant bank deposit</div></div><div style="color:#22c55e;font-size:11px;font-weight:700">Connected ✓</div>';
-        return;
-      }
-      if(r.saved){
-        var s=r.summary||{};
-        var desc=s.type==='paypal'?('PayPal · '+(s.email||'Connected')):(s.type==='bank'?('Bank ····'+(s.last4||'')):(r.saved));
-        el.innerHTML='<div style="font-size:20px">🏦</div><div style="flex:1"><div style="color:#fff;font-size:13px;font-weight:600">'+desc+'</div><div style="color:rgba(255,255,255,.35);font-size:11px">Payouts arrive in 2-5 business days</div></div><div style="color:#22c55e;font-size:11px;font-weight:700">Connected ✓</div>';
-        return;
-      }
-    }
-    // Fallback: no method set
-    el.innerHTML='<div style="font-size:20px">⚠️</div><div style="flex:1"><div style="color:#fff;font-size:13px;font-weight:600">No method set</div><div style="color:rgba(255,255,255,.35);font-size:11px">Tap "Add / change withdraw method" below</div></div>';
-  }catch(e){
-    el.innerHTML='<div style="font-size:20px">⚠️</div><div style="flex:1"><div style="color:#fff;font-size:13px;font-weight:600">No method set</div><div style="color:rgba(255,255,255,.35);font-size:11px">Tap "Add / change withdraw method" below</div></div>';
-  }
-}
 
 
 
@@ -544,11 +300,7 @@ window._partnerContinueFlow=function(){
 
   // Step 2: Go straight to the unified wallet withdraw sheet.
   // Smart access connection is optional — don't block withdrawals on it.
-  if(typeof window._sgWalletWithdraw==='function'){
-    window._sgWalletWithdraw();
-  }else{
-    _showConfirmWithdrawSheet('partner');
-  }
+  window._sgUnifiedWithdraw();
 };
 
 // Hook into auth success to continue partner/creator flow
@@ -826,11 +578,7 @@ window._creatorContinueFlow=function(){
   }
 
   // Step 3: Wallet → Withdraw (use unified wallet withdraw sheet)
-  if(typeof window._sgWalletWithdraw==='function'){
-    window._sgWalletWithdraw();
-  }else{
-    _showConfirmWithdrawSheet('creator');
-  }
+  window._sgUnifiedWithdraw();
 };
 
 
