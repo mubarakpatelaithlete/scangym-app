@@ -1,0 +1,112 @@
+/**
+ * Guards for the "one single version" clean-up (steps 1-5).
+ *
+ * These are deliberately dumb text checks on the shipped files. Every one of
+ * them corresponds to a duplicate we deleted; if a future patch re-adds its own
+ * bottom bar, its own price string, its own card fetch or its own sky-high
+ * z-index, this fails instead of the duplicate quietly coming back.
+ */
+const { test } = require('node:test');
+const assert = require('node:assert');
+const fs = require('node:fs');
+const path = require('node:path');
+
+const PUB = path.join(__dirname, '..', 'frontend', 'public');
+const SRV = path.join(__dirname, '..', 'server');
+const jsFiles = fs.readdirSync(PUB).filter((f) => f.endsWith('.js') && f !== 'sw.js');
+const read = (f) => fs.readFileSync(path.join(PUB, f), 'utf8');
+/* Comments are allowed to mention what we deleted (that is the point of them),
+   so the guards look at code with comments stripped. */
+const stripComments = (s) => s.replace(/^\s*\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
+const all = () => jsFiles.map((f) => [f, stripComments(read(f))]);
+
+test('one bottom bar: no file re-creates a second continue banner', () => {
+  const banned = ['partner-continue-banner', 'creator-continue-banner', 'profile-continue-banner'];
+  for (const [f, s] of all()) {
+    for (const id of banned) {
+      assert.ok(!s.includes(id), `${f} references deleted banner id ${id} — use window.sgBottomBar instead`);
+    }
+  }
+});
+
+test('one bottom bar: only app.ctr576.js creates #sg-continue-banner', () => {
+  for (const [f, s] of all()) {
+    if (f === 'app.ctr576.js') continue;
+    assert.ok(!/id\s*=\s*["']sg-continue-banner/.test(s) && !/createElement\([^)]*\)[^;]*sg-continue-banner/.test(s),
+      `${f} builds the bottom bar itself — call window.sgBottomBar.show(owner, {...})`);
+  }
+});
+
+test('one price source: no hardcoded pass prices or currency fallbacks', () => {
+  const price = /[£$€]\s?(4\.49|11\.99|22\.49|44\.99|44\.90|6\.99)/g;
+  const fallback = /currencySymbol\s*\|\|\s*['"]£['"]/;
+  for (const [f, s] of all()) {
+    if (f === 'pricing.js') continue; // the one source
+    /* Allowed: a literal kept as the fallback of a sgPriceDisplay() call. */
+    const offenders = [...s.matchAll(price)].filter((m) => !s.slice(Math.max(0, m.index - 60), m.index).includes('sgPriceDisplay'));
+    assert.equal(offenders.length, 0, `${f} hardcodes a pass price (${offenders.map((m) => m[0]).join(', ')}) — use sgPriceDisplay()/sgAmount() from pricing.js`);
+    assert.ok(!fallback.test(s), `${f} hardcodes a currency fallback — use pricing.js`);
+  }
+});
+
+test('one payment path: nothing calls /api/payments or the card endpoints directly', () => {
+  for (const [f, s] of all()) {
+    assert.ok(!s.includes('/api/payments/'), `${f} uses the deleted /api/payments prefix`);
+    if (f === 'app.ctr576.js') {
+      const direct = s.match(/fetch\(\s*['"]\/api\/payment\/(saved-cards|setup-card|confirm-setup|set-default-card)/g) || [];
+      assert.equal(direct.length, 0, `app.ctr576.js fetches card endpoints directly (${direct.join(', ')}) — use window.sgCards`);
+    } else {
+      assert.ok(!/\/api\/payment\/(saved-cards|setup-card|confirm-setup|set-default-card)/.test(s),
+        `${f} talks to the card endpoints directly — use window.sgCards`);
+    }
+    assert.ok(!s.includes('/api/payment/setup-intent') && !s.includes('/api/payment/confirm-card'),
+      `${f} uses a deleted alias endpoint`);
+    assert.ok(!s.includes('/api/payment/guest-checkout'), `${f} calls the endpoint that never existed`);
+  }
+});
+
+test('window.sgCards is the single card API and exposes the whole flow', () => {
+  const s = read('app.ctr576.js');
+  for (const m of ['listRaw', 'list', 'defaultCard', 'setDefault', 'remove', 'saveCard']) {
+    assert.ok(new RegExp('\\b' + m + '\\s*[:(]').test(s), `window.sgCards.${m} is missing`);
+  }
+});
+
+test('one z-index scale: no sky-high literals anywhere', () => {
+  const files = [...all(), ['index.html', fs.readFileSync(path.join(PUB, 'index.html'), 'utf8')]];
+  for (const [f, s] of files) {
+    for (const m of s.matchAll(/z-index:\s*(\d{4,})/g)) {
+      assert.ok(Number(m[1]) <= 11500, `${f} sets z-index:${m[1]} — use the --sg-z-* scale in app.ctr576.js`);
+    }
+  }
+});
+
+test('the z-index scale itself is defined and ordered', () => {
+  const s = read('app.ctr576.js');
+  const m = s.match(/:root\{--sg-z-bottom-bar:(\d+);--sg-z-tab-bar:(\d+);--sg-z-sheet:(\d+);--sg-z-usp:(\d+);--sg-z-overlay:(\d+);--sg-z-toast:(\d+);--sg-z-confetti:(\d+)\}/);
+  assert.ok(m, 'the :root --sg-z-* scale is missing from app.ctr576.js');
+  const nums = m.slice(1).map(Number);
+  for (let i = 1; i < nums.length; i++) {
+    assert.ok(nums[i] > nums[i - 1], `the scale is out of order at position ${i}: ${nums.join(' < ')}`);
+  }
+});
+
+test('no dead API routes are called: server 404s unknown /api paths', () => {
+  const s = fs.readFileSync(path.join(SRV, 'server.js'), 'utf8');
+  assert.ok(/app\.all\(\s*\/\^\\\/\(api\|mcp\)\\\//.test(s) || /api\|mcp/.test(s),
+    'the JSON 404 guard for unknown /api and /mcp routes is gone');
+});
+
+test('server mounts one payment prefix', () => {
+  const s = fs.readFileSync(path.join(SRV, 'server.js'), 'utf8');
+  assert.ok(!/app\.use\(\s*['"]\/api\/payments['"]/.test(s), "the second '/api/payments' mount is back");
+});
+
+test('deleted server routes stay deleted', () => {
+  const s = fs.readFileSync(path.join(SRV, 'routes', 'payment.js'), 'utf8');
+  for (const r of ["'/setup-intent'", "'/confirm-card'", "'/admin-add-card'"]) {
+    assert.ok(!s.includes('router.post(' + r), `payment.js re-added ${r}`);
+  }
+  assert.ok(!/paymentMethods\.create\(\s*\{[^}]*number/s.test(s),
+    'payment.js takes a raw card number again — card details must only reach Stripe.js');
+});
