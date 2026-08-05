@@ -233,3 +233,99 @@ test('one chat engine: chat-agent.js loads before the two personalities', () => 
   assert.ok(at('chat-agent.js') < at('partner-chat.js'), 'chat-agent.js must be before partner-chat.js');
   assert.ok(at('chat-agent.js') < at('squad-chat.js'), 'chat-agent.js must be before squad-chat.js');
 });
+
+// ─── v10: ONE database schema ────────────────────────────────────────────────
+const MIGRATIONS = path.join(__dirname, '..', 'migrations');
+const serverJsFiles = (() => {
+  const out = [];
+  const walk = (dir) => {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (e.name === 'node_modules' || e.name.startsWith('.')) continue;
+      const p = path.join(dir, e.name);
+      if (e.isDirectory()) walk(p);
+      else if (e.name.endsWith('.js')) out.push(p);
+    }
+  };
+  walk(SRV);
+  return out;
+})();
+
+test('one schema: no server file creates or alters tables outside /migrations', () => {
+  const offenders = [];
+  for (const p of serverJsFiles) {
+    if (p.endsWith(path.join('db', 'migrate.js'))) continue; // the runner is allowed to
+    const src = stripComments(fs.readFileSync(p, 'utf8'));
+    const m = src.match(/\b(CREATE TABLE|ALTER TABLE|CREATE INDEX|CREATE UNIQUE INDEX|DROP TABLE)\b/i);
+    if (m) offenders.push(`${path.relative(SRV, p)} (${m[1]})`);
+  }
+  assert.deepStrictEqual(offenders, [], 'schema changes belong in a /migrations file, not in server code');
+});
+
+test('one schema: every table is created exactly once, and only in /migrations', () => {
+  const files = fs.readdirSync(MIGRATIONS).filter((f) => f.endsWith('.sql'));
+  assert.ok(files.length >= 4, 'the baseline migrations are missing');
+  const seen = new Map();
+  for (const f of files) {
+    const sql = fs.readFileSync(path.join(MIGRATIONS, f), 'utf8').replace(/^\s*--.*$/gm, '');
+    for (const m of sql.matchAll(/CREATE TABLE\s+(?:IF NOT EXISTS\s+)?"?([\w.]+)"?/gi)) {
+      const table = m[1].replace(/^public\./, '').toLowerCase();
+      assert.ok(!seen.has(table), `table ${table} is created twice (${seen.get(table)} and ${f})`);
+      seen.set(table, f);
+    }
+  }
+  assert.ok(seen.size > 50, `expected the full baseline, found ${seen.size} tables`);
+});
+
+test('one schema: every migration is idempotent (safe to re-run on the live db)', () => {
+  for (const f of fs.readdirSync(MIGRATIONS).filter((x) => x.endsWith('.sql'))) {
+    const sql = fs.readFileSync(path.join(MIGRATIONS, f), 'utf8');
+    assert.ok(!/\$\{/.test(sql), `${f} contains a JS template placeholder`);
+    // Split on statement boundaries, but keep DO $$ ... $$ blocks whole.
+        const body = sql.replace(/^\s*--.*$/gm, '').replace(/DO \$\$[\s\S]*?END \$\$;/g, '');
+    for (const raw of body.split(';')) {
+      const st = raw.replace(/\s+/g, ' ').trim();
+      if (!st) continue;
+      if (/^(CREATE TABLE|CREATE INDEX|CREATE UNIQUE INDEX)\b/i.test(st)) {
+        assert.match(st, /IF NOT EXISTS/i, `${f}: not idempotent -> ${st.slice(0, 80)}`);
+      }
+      if (/^ALTER TABLE/i.test(st)) {
+        assert.ok(/IF NOT EXISTS|IF EXISTS/i.test(st), `${f}: not idempotent -> ${st.slice(0, 80)}`);
+      }
+      assert.ok(!/^(ALTER|CREATE) .*ADD CONSTRAINT/i.test(st), `${f}: unguarded ADD CONSTRAINT -> ${st.slice(0, 80)}`);
+    }
+  }
+});
+
+test('one schema: user id columns can hold a UUID, because users.id is one', () => {
+  const sql = fs.readdirSync(MIGRATIONS)
+    .filter((f) => f.endsWith('.sql'))
+    .map((f) => fs.readFileSync(path.join(MIGRATIONS, f), 'utf8'))
+    .join('\n')
+    .replace(/^\s*--.*$/gm, '');
+  for (const m of sql.matchAll(/CREATE TABLE\s+(?:IF NOT EXISTS\s+)?"?([\w.]+)"?\s*\(([\s\S]*?)\n\)/gi)) {
+    const [, table, body] = m;
+    const bad = body.split('\n').find((l) => /^\s*\w*user_id\s+(INTEGER|INT|BIGINT|SMALLINT)\b/i.test(l));
+    assert.ok(!bad, `${table}: user_id must be VARCHAR/TEXT/UUID, users.id is a UUID -> ${(bad || '').trim()}`);
+  }
+});
+
+test('one schema: exactly one connection pool', () => {
+  const pools = serverJsFiles.filter((p) => /new Pool\(/.test(stripComments(fs.readFileSync(p, 'utf8'))));
+  assert.deepStrictEqual(pools.map((p) => path.relative(SRV, p)), [path.join('middleware', 'db.js')]);
+});
+
+test('one schema: the migration runner is wired into startup', () => {
+  const runner = require(path.join(SRV, 'db', 'migrate.js'));
+  assert.strictEqual(typeof runner.runMigrations, 'function');
+  const files = runner.migrationFiles();
+  assert.deepStrictEqual(files, [...files].sort(), 'migrations must run in filename order');
+  const server = fs.readFileSync(path.join(SRV, 'server.js'), 'utf8');
+  assert.match(server, /require\('\.\/db\/migrate'\)/, 'server.js does not run the migrations');
+});
+
+test('one schema: routes the frontend calls are actually mounted', () => {
+  const server = fs.readFileSync(path.join(SRV, 'server.js'), 'utf8');
+  for (const p of ['/api/ai-trainer', '/api/gym-mgmt']) {
+    assert.ok(server.includes(`app.use('${p}'`), `${p} is called by the app but never mounted`);
+  }
+});

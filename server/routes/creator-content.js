@@ -28,14 +28,6 @@ for (const d of [CLIPS_DIR, TEMP_DIR]) {
   if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
 }
 
-(async () => {
-  try {
-    await pool.query(`ALTER TABLE creator_uploads ADD COLUMN IF NOT EXISTS is_pinned BOOLEAN DEFAULT false`);
-    console.log('[CreatorContent] Schema ready');
-  } catch (err) {
-    console.error('[CreatorContent] Schema error:', err.message);
-  }
-})();
 
 // ── Pin Top Reel ────────────────────────────────────────────────
 

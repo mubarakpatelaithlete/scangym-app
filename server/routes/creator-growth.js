@@ -31,55 +31,6 @@ const BUNDLE_PRESETS = {
   '5for20': { passes: 5, pricePence: 2000, valuePence: 2500, label: '5 gym passes for £20' },
 };
 
-(async () => {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS creator_giveaways (
-        id SERIAL PRIMARY KEY,
-        creator_handle VARCHAR(100) NOT NULL,
-        claim_code VARCHAR(20) UNIQUE NOT NULL,
-        status VARCHAR(20) NOT NULL DEFAULT 'active',
-        funded_withdrawal_id INTEGER,
-        claimed_by_user TEXT,
-        created_at TIMESTAMPTZ DEFAULT NOW(),
-        claimed_at TIMESTAMPTZ
-      )
-    `);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_giveaways_handle ON creator_giveaways(creator_handle, status)`);
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS creator_boosts (
-        id SERIAL PRIMARY KEY,
-        creator_handle VARCHAR(100) NOT NULL,
-        upload_id INTEGER UNIQUE NOT NULL,
-        boost_until TIMESTAMPTZ NOT NULL,
-        created_at TIMESTAMPTZ DEFAULT NOW()
-      )
-    `);
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS creator_bundles (
-        id SERIAL PRIMARY KEY,
-        creator_handle VARCHAR(100) UNIQUE NOT NULL,
-        preset VARCHAR(20) NOT NULL,
-        active BOOLEAN DEFAULT true,
-        created_at TIMESTAMPTZ DEFAULT NOW(),
-        updated_at TIMESTAMPTZ DEFAULT NOW()
-      )
-    `);
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS bundle_redemptions (
-        id SERIAL PRIMARY KEY,
-        creator_handle VARCHAR(100) NOT NULL,
-        user_id TEXT NOT NULL,
-        bonus_pence INTEGER NOT NULL,
-        created_at TIMESTAMPTZ DEFAULT NOW(),
-        UNIQUE(creator_handle, user_id)
-      )
-    `);
-    console.log('[CreatorGrowth] Tables ready');
-  } catch (err) {
-    console.error('[CreatorGrowth] Table setup error:', err.message);
-  }
-})();
 
 /** Available balance = converted commissions - held/paid withdrawals. */
 async function availablePence(handle) {

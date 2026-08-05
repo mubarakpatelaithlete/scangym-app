@@ -8,38 +8,6 @@ const pool = require('../middleware/db');
 const { authenticateUser } = require('../middleware/auth');
 
 // Auto-migration: ensure gyms table has partner columns
-(async () => {
-  try {
-    await pool.query(`
-      DO $$ BEGIN
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='claimed_by') THEN
-          ALTER TABLE gyms ADD COLUMN claimed_by VARCHAR(255) DEFAULT NULL;
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='owner_name') THEN
-          ALTER TABLE gyms ADD COLUMN owner_name VARCHAR(255) DEFAULT NULL;
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='owner_email') THEN
-          ALTER TABLE gyms ADD COLUMN owner_email VARCHAR(255) DEFAULT NULL;
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='owner_phone') THEN
-          ALTER TABLE gyms ADD COLUMN owner_phone VARCHAR(50) DEFAULT NULL;
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='claim_proof_url') THEN
-          ALTER TABLE gyms ADD COLUMN claim_proof_url TEXT DEFAULT NULL;
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='claimed_at') THEN
-          ALTER TABLE gyms ADD COLUMN claimed_at TIMESTAMP DEFAULT NULL;
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='access_method') THEN
-          ALTER TABLE gyms ADD COLUMN access_method VARCHAR(50) DEFAULT 'qr';
-        END IF;
-      END $$;
-    `);
-    console.log('[GymPartner] gyms table partner columns verified');
-  } catch (err) {
-    console.error('[GymPartner] Migration error:', err.message);
-  }
-})();
 
 // ── #86: 3-Step Claim Wizard ──
 // Step 1: Claim gym (basic info check)
@@ -239,36 +207,6 @@ router.patch('/hours-override', authenticateUser, express.json(), async (req, re
 const PARTNER_PRICE_MIN = 3;
 const PARTNER_PRICE_MAX = 25;
 
-// Ensure the columns the Partner tab writes to exist
-(async () => {
-  try {
-    await pool.query(`
-      DO $$ BEGIN
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='description') THEN
-          ALTER TABLE gyms ADD COLUMN description TEXT DEFAULT NULL;
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='three_day_price') THEN
-          ALTER TABLE gyms ADD COLUMN three_day_price NUMERIC(10,2) DEFAULT NULL;
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='weekly_price') THEN
-          ALTER TABLE gyms ADD COLUMN weekly_price NUMERIC(10,2) DEFAULT NULL;
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='monthly_price') THEN
-          ALTER TABLE gyms ADD COLUMN monthly_price NUMERIC(10,2) DEFAULT NULL;
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='photos') THEN
-          ALTER TABLE gyms ADD COLUMN photos JSONB DEFAULT NULL;
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='metadata') THEN
-          ALTER TABLE gyms ADD COLUMN metadata JSONB DEFAULT '{}'::jsonb;
-        END IF;
-      END $$;
-    `);
-    console.log('[GymPartner] update-gym columns verified');
-  } catch (err) {
-    console.error('[GymPartner] update-gym migration error:', err.message);
-  }
-})();
 
 // Validate one price. Returns { ok, value } or { ok:false, error }
 function validatePartnerPrice(raw, label) {
@@ -1285,22 +1223,6 @@ const OWN_TWILIO_TOKEN = process.env.TWILIO_AUTH_TOKEN;
 const OWN_TWILIO_VERIFY_SID = process.env.TWILIO_VERIFY_SERVICE_SID;
 
 // Auto-migration: ownership columns
-(async () => {
-  try {
-    await pool.query(`
-      DO $$ BEGIN
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='ownership_verified') THEN
-          ALTER TABLE gyms ADD COLUMN ownership_verified BOOLEAN DEFAULT false;
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='ownership_verified_at') THEN
-          ALTER TABLE gyms ADD COLUMN ownership_verified_at TIMESTAMP DEFAULT NULL;
-        END IF;
-      END $$;
-    `);
-  } catch (err) {
-    console.error('[Ownership] Migration error:', err.message);
-  }
-})();
 
 function normalizeUkPhone(raw) {
   if (!raw) return null;
@@ -1543,26 +1465,6 @@ const proofUpload = multerProof({
 });
 
 // Auto-migration: proof columns
-(async () => {
-  try {
-    await pool.query(`
-      DO $$ BEGIN
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='claim_status') THEN
-          ALTER TABLE gyms ADD COLUMN claim_status VARCHAR(50) DEFAULT NULL;
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='claim_proof_type') THEN
-          ALTER TABLE gyms ADD COLUMN claim_proof_type VARCHAR(20) DEFAULT NULL;
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='claim_proof_at') THEN
-          ALTER TABLE gyms ADD COLUMN claim_proof_at TIMESTAMP DEFAULT NULL;
-        END IF;
-      END $$;
-    `);
-    console.log('[Ownership] proof columns verified');
-  } catch (err) {
-    console.error('[Ownership] proof migration error:', err.message);
-  }
-})();
 
 // POST /claim/upload-proof — multipart form, field name "proof"
 router.post('/claim/upload-proof', authenticateUser, (req, res) => {
@@ -1627,32 +1529,6 @@ router.post('/claim/upload-proof', authenticateUser, (req, res) => {
 // Saved payout method per user (bank / paypal / stripe_connect) and
 // a withdrawal-request queue for users without Stripe Connect.
 // ═══════════════════════════════════════════════════════════════
-(async () => {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS payout_methods (
-        user_id TEXT PRIMARY KEY,
-        method VARCHAR(30) NOT NULL,
-        details JSONB DEFAULT '{}'::jsonb,
-        updated_at TIMESTAMP DEFAULT NOW()
-      );
-      CREATE TABLE IF NOT EXISTS payout_requests (
-        id SERIAL PRIMARY KEY,
-        user_id TEXT NOT NULL,
-        role VARCHAR(20) DEFAULT 'partner',
-        amount_pence INTEGER NOT NULL,
-        method VARCHAR(30),
-        details JSONB DEFAULT '{}'::jsonb,
-        status VARCHAR(20) DEFAULT 'pending',
-        requested_at TIMESTAMP DEFAULT NOW(),
-        processed_at TIMESTAMP
-      );
-    `);
-    console.log('[Payouts] payout_methods / payout_requests tables verified');
-  } catch (err) {
-    console.error('[Payouts] migration error:', err.message);
-  }
-})();
 
 function maskAccount(details) {
   const d = details || {};

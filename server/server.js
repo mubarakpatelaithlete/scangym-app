@@ -39,6 +39,7 @@ const channelsRouter = require('./routes/channels');
 const commsLogRouter = require('./routes/comms-log');
 const paymentsExtendedRouter = require('./routes/payments-extended');
 const aiFeaturesRouter = require('./routes/ai-features');
+const aiTrainerRouter = require('./routes/ai-trainer');
 const gymPartnerRouter = require('./routes/gym-partner');
 const partnerAgentRouter = require('./routes/partner-agent');
 const squadAgentRouter = require('./routes/squad-agent');
@@ -192,24 +193,17 @@ app.use('/api/payment', paymentLimiter);
 const pgSession = require('connect-pg-simple')(session);
 let sessionStore;
 if (process.env.DATABASE_URL) {
-  const { Pool } = require('pg');
-  const sessionPool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: process.env.DB_SSL === 'off' ? false : { rejectUnauthorized: false } });
-  // Ensure session table + index exist (idempotent)
-  sessionPool.query(`
-    CREATE TABLE IF NOT EXISTS "user_sessions" (
-      "sid" varchar NOT NULL COLLATE "default",
-      "sess" json NOT NULL,
-      "expire" timestamp(6) NOT NULL,
-      CONSTRAINT "user_sessions_pkey" PRIMARY KEY ("sid")
-    );
-    CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "user_sessions" ("expire");
-  `).then(() => console.log('Session table ready'))
-    .catch(err => console.error('Session table setup error:', err.message));
+  // One connection pool for the whole server (this used to open a second one).
+  // The user_sessions table + its index are created by /migrations, so
+  // connect-pg-simple must not try to create them itself: its own
+  // createTableIfMissing uses a bare CREATE INDEX and threw
+  // "relation IDX_session_expire already exists" on every request after the
+  // first boot.
   sessionStore = new pgSession({
-    pool: sessionPool,
+    pool: require('./middleware/db'),
     tableName: 'user_sessions',
-    createTableIfMissing: false,  // We handle it above with IF NOT EXISTS
-    pruneSessionInterval: 60 * 15, // Clean expired sessions every 15 min
+    createTableIfMissing: false,
+    pruneSessionInterval: 60 * 15, // clean expired sessions every 15 min
     errorLog: (err) => console.error('Session store error:', err.message),
   });
 } // falls back to MemoryStore in local dev only
@@ -450,36 +444,6 @@ app.get("/api/map-embed", (req, res) => {
   res.send(`<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width"><style>*{margin:0;padding:0}iframe{width:100%;height:100vh;border:none}</style></head><body><iframe src="https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=place_id:${encodeURIComponent(place_id)}" allowfullscreen></iframe></body></html>`);
 });
 
-// -- DB Migrations (idempotent — safe to run every startup) --
-if (process.env.DATABASE_URL) {
-  const _migrationPool = require('./middleware/db');
-  _migrationPool.query(`
-    ALTER TABLE public.users ADD COLUMN IF NOT EXISTS stripe_customer_id VARCHAR(255);
-    CREATE INDEX IF NOT EXISTS idx_users_stripe_customer ON public.users (stripe_customer_id) WHERE stripe_customer_id IS NOT NULL;
-  `).then(() => console.log('✅ DB migration: stripe_customer_id ready'))
-    .catch(err => console.error('DB migration error:', err.message));
-
-  // M11 FIX: Add duration column to video_catalog (stores video length in seconds)
-  _migrationPool.query(`
-    ALTER TABLE video_catalog ADD COLUMN IF NOT EXISTS duration REAL;
-  `).then(() => console.log('✅ DB migration: video_catalog.duration ready'))
-    .catch(err => console.error('DB migration (duration):', err.message));
-
-  // VIDEO OPTIMIZATIONS: Add variant tracking columns
-  _migrationPool.query(`
-    ALTER TABLE video_catalog ADD COLUMN IF NOT EXISTS has_faststart BOOLEAN DEFAULT false;
-    ALTER TABLE video_catalog ADD COLUMN IF NOT EXISTS variants_ready BOOLEAN DEFAULT false;
-  `).then(() => console.log('✅ DB migration: video variants columns ready'))
-    .catch(err => console.error('DB migration (variants):', err.message));
-
-  // ChatGPT Playbook: Auto-affiliate link for every user
-  _migrationPool.query(`
-    ALTER TABLE public.users ADD COLUMN IF NOT EXISTS referral_handle VARCHAR(100);
-    CREATE UNIQUE INDEX IF NOT EXISTS idx_users_referral_handle ON public.users (referral_handle) WHERE referral_handle IS NOT NULL;
-  `).then(() => console.log('✅ DB migration: referral_handle ready'))
-    .catch(err => console.error('DB migration (referral_handle):', err.message));
-}
-
 // -- Feature Routes (Tasks 1-24 with CEO corrections) --
 app.use('/api/reviews', reviewsRouter);
 app.use('/api/review-media', reviewMediaRouter);
@@ -523,6 +487,9 @@ app.use('/api/comms-log', commsLogRouter);
    covered by one rate limiter. */
 app.use('/api/payment', paymentsExtendedRouter);
 app.use('/api/ai', aiFeaturesRouter);
+// The Trainer tab has always called /api/ai-trainer/*; the router existed but was
+// never mounted, so those calls fell through to the catch-all.
+app.use('/api/ai-trainer', aiTrainerRouter);
 app.use('/api/gym-partner', gymPartnerRouter);
 app.use('/api/partner', partnerAgentRouter);
 app.use('/api/squad', squadAgentRouter);
@@ -919,6 +886,12 @@ function purgeCloudflareCache() {
 }
 
 // -- Start --
+// ── Schema: one place, applied once (server/db/migrate.js reads /migrations) ──
+const { runMigrations } = require('./db/migrate');
+if (process.env.DATABASE_URL) {
+  runMigrations().catch((err) => console.error('[migrate] unexpected error:', err.message));
+}
+
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`ScanGym v4.5.0 on :${PORT} | Frontend: ${fs.existsSync(FRONTEND_DIR+'/index.html')?'v3':'proxy'} | Auth: local session | Brotli+gzip pre-compressed`);
 

@@ -15,56 +15,6 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../middleware/db');
 
-// Ensure tables
-(async () => {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS gym_amenities (
-        id SERIAL PRIMARY KEY,
-        gym_id INTEGER UNIQUE NOT NULL,
-        has_locker BOOLEAN DEFAULT false,
-        locker_free BOOLEAN DEFAULT true,
-        has_towel BOOLEAN DEFAULT false,
-        towel_free BOOLEAN DEFAULT true,
-        has_shower BOOLEAN DEFAULT false,
-        shower_free BOOLEAN DEFAULT true,
-        has_changing_room BOOLEAN DEFAULT false,
-        has_hair_dryer BOOLEAN DEFAULT false,
-        has_music_system BOOLEAN DEFAULT false,
-        has_sauna BOOLEAN DEFAULT false,
-        has_wifi BOOLEAN DEFAULT false,
-        has_parking BOOLEAN DEFAULT false,
-        has_water_fountain BOOLEAN DEFAULT false,
-        notes TEXT,
-        updated_at TIMESTAMPTZ DEFAULT NOW()
-      )
-    `);
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS gym_vending (
-        id SERIAL PRIMARY KEY,
-        gym_id INTEGER NOT NULL,
-        item_name VARCHAR(100) NOT NULL,
-        item_category VARCHAR(50) NOT NULL,
-        item_emoji VARCHAR(10),
-        price_pence INTEGER NOT NULL,
-        in_stock BOOLEAN DEFAULT true,
-        sort_order INTEGER DEFAULT 0,
-        UNIQUE(gym_id, item_name)
-      )
-    `);
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS vending_purchases (
-        id SERIAL PRIMARY KEY,
-        gym_id INTEGER NOT NULL,
-        user_id TEXT NOT NULL,
-        item_name VARCHAR(100),
-        amount_pence INTEGER,
-        stripe_payment_intent_id TEXT,
-        created_at TIMESTAMPTZ DEFAULT NOW()
-      )
-    `);
-  } catch (e) { console.error('Amenities table init:', e.message); }
-})();
 
 function requireAuth(req, res, next) {
   if (!req.session?.userId) return res.status(401).json({ error: 'Login required' });

@@ -16,67 +16,6 @@ const pool = require('../middleware/db');
 const { authenticateUser } = require('../middleware/auth');
 const QRCode = require('qrcode');
 
-// Ensure QR tables exist
-(async () => {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS booking_qr_codes (
-        id SERIAL PRIMARY KEY,
-        booking_id INTEGER NOT NULL,
-        user_id VARCHAR(255) NOT NULL,
-        gym_id INTEGER NOT NULL,
-        qr_token VARCHAR(100) UNIQUE NOT NULL,
-        max_scans INTEGER DEFAULT 2,
-        scan_count INTEGER DEFAULT 0,
-        status VARCHAR(20) DEFAULT 'active',
-        expires_at TIMESTAMP NOT NULL,
-        created_at TIMESTAMP DEFAULT NOW()
-      )
-    `);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_qr_token ON booking_qr_codes(qr_token)`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_qr_booking ON booking_qr_codes(booking_id)`);
-
-    // Fix: ensure user_id is VARCHAR (may have been created as INTEGER in older schema)
-    try {
-      const colType = await pool.query(
-        `SELECT data_type FROM information_schema.columns WHERE table_name='booking_qr_codes' AND column_name='user_id'`
-      );
-      if (colType.rows.length > 0 && colType.rows[0].data_type === 'integer') {
-        await pool.query(`ALTER TABLE booking_qr_codes ALTER COLUMN user_id TYPE VARCHAR(255) USING user_id::text`);
-        console.log('[QR] Migrated booking_qr_codes.user_id from INTEGER to VARCHAR(255)');
-      }
-    } catch (e) { console.error('[QR] user_id migration check:', e.message); }
-
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS booking_checkins (
-        id SERIAL PRIMARY KEY,
-        booking_id INTEGER NOT NULL,
-        qr_code_id INTEGER NOT NULL,
-        gym_id INTEGER NOT NULL,
-        user_id VARCHAR(255) NOT NULL,
-        scan_type VARCHAR(10) NOT NULL,
-        scan_number INTEGER NOT NULL,
-        scanned_at TIMESTAMP DEFAULT NOW()
-      )
-    `);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_checkin_booking ON booking_checkins(booking_id)`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_checkin_user ON booking_checkins(user_id)`);
-    // S5-M14 FIX: Add foreign key constraints (safe — uses IF NOT EXISTS pattern)
-    try {
-      await pool.query(`ALTER TABLE booking_qr_codes ADD CONSTRAINT fk_qr_booking FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE`);
-    } catch(e) { /* constraint may already exist */ }
-    try {
-      await pool.query(`ALTER TABLE booking_checkins ADD CONSTRAINT fk_checkin_booking FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE`);
-    } catch(e) { /* constraint may already exist */ }
-    try {
-      await pool.query(`ALTER TABLE booking_checkins ADD CONSTRAINT fk_checkin_qr FOREIGN KEY (qr_code_id) REFERENCES booking_qr_codes(id) ON DELETE CASCADE`);
-    } catch(e) { /* constraint may already exist */ }
-
-    console.log('QR code tables ready (2-scan JD Gym model)');
-  } catch (err) {
-    console.error('QR table creation error:', err.message);
-  }
-})();
 
 /**
  * Generate a unique QR token
@@ -248,17 +187,6 @@ router.post('/generate', authenticateUser, async (req, res) => {
 const { SeamClient, KisiClient } = require('../lib/access-control');
 
 // Auto-migration: remember the discovered door device per gym
-(async () => {
-  try {
-    await pool.query(`
-      DO $$ BEGIN
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='access_device_id') THEN
-          ALTER TABLE gyms ADD COLUMN access_device_id VARCHAR(255) DEFAULT NULL;
-        END IF;
-      END $$;
-    `);
-  } catch (e) { console.error('[AutoUnlock] Migration error:', e.message); }
-})();
 
 async function tryAutoUnlock(gymId) {
   try {

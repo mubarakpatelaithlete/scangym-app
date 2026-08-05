@@ -11,86 +11,6 @@ router.use(express.json());
 //  End-to-end: track affiliate clicks → apply discount → credit commission
 // ═══════════════════════════════════════════════════════════════════
 
-// Ensure tables exist on startup
-(async () => {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS creator_referrals (
-        id SERIAL PRIMARY KEY,
-        creator_handle VARCHAR(100) NOT NULL,
-        creator_email VARCHAR(200),
-        visitor_session VARCHAR(200),
-        booking_id INTEGER,
-        commission_pence INTEGER DEFAULT 0,
-        status VARCHAR(30) DEFAULT 'clicked',
-        created_at TIMESTAMPTZ DEFAULT NOW(),
-        converted_at TIMESTAMPTZ
-      )
-    `);
-    await pool.query(`
-      CREATE INDEX IF NOT EXISTS idx_creator_referrals_handle
-      ON creator_referrals(creator_handle)
-    `);
-    await pool.query(`
-      CREATE INDEX IF NOT EXISTS idx_creator_referrals_status
-      ON creator_referrals(status)
-    `);
-    // Add referral_code column to bookings if it doesn't exist
-    await pool.query(`
-      ALTER TABLE public.bookings
-      ADD COLUMN IF NOT EXISTS referral_code VARCHAR(100)
-    `);
-
-    // ── Research 2 (Amazon Affiliate): Multi-channel tracking columns ──
-    await pool.query(`ALTER TABLE creator_referrals ADD COLUMN IF NOT EXISTS source VARCHAR(50)`);
-    await pool.query(`ALTER TABLE creator_referrals ADD COLUMN IF NOT EXISTS gym_id VARCHAR(100)`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_creator_referrals_source ON creator_referrals(source)`);
-
-    // ── Research 2 (Amazon Affiliate): Signup bounty tracking ──
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS creator_bounties (
-        id SERIAL PRIMARY KEY,
-        creator_handle VARCHAR(100) NOT NULL,
-        bounty_type VARCHAR(50) NOT NULL DEFAULT 'signup',
-        amount_pence INTEGER NOT NULL DEFAULT 100,
-        user_id TEXT,
-        status VARCHAR(30) DEFAULT 'pending',
-        created_at TIMESTAMPTZ DEFAULT NOW(),
-        paid_at TIMESTAMPTZ
-      )
-    `);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_creator_bounties_handle ON creator_bounties(creator_handle)`);
-
-    // ── Research 3 (Social Platforms): Gym saves/boards (Pinterest-style) ──
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS gym_boards (
-        id SERIAL PRIMARY KEY,
-        user_id TEXT NOT NULL,
-        name VARCHAR(200) NOT NULL DEFAULT 'Saved Gyms',
-        emoji VARCHAR(10) DEFAULT '💪',
-        created_at TIMESTAMPTZ DEFAULT NOW()
-      )
-    `);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_gym_boards_user ON gym_boards(user_id)`);
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS gym_saves (
-        id SERIAL PRIMARY KEY,
-        user_id TEXT NOT NULL,
-        gym_id VARCHAR(100) NOT NULL,
-        gym_name VARCHAR(300),
-        gym_photo_url TEXT,
-        board_id INTEGER REFERENCES gym_boards(id) ON DELETE SET NULL,
-        created_at TIMESTAMPTZ DEFAULT NOW(),
-        UNIQUE(user_id, gym_id)
-      )
-    `);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_gym_saves_user ON gym_saves(user_id)`);
-
-    console.log('[Referrals] Tables ready (+ multi-channel, bounties, gym boards)');
-  } catch (err) {
-    console.error('[Referrals] Table init error:', err.message);
-  }
-})();
 
 // ─────────────────────────────────────────────────────────────────
 //  POST /api/referrals/track
@@ -492,42 +412,6 @@ router.get('/discount/:handle', async (req, res) => {
 //  Creators request payouts when they hit the minimum threshold (£5)
 // ═══════════════════════════════════════════════════════════════════
 
-// Create withdrawals table on startup
-(async () => {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS creator_withdrawals (
-        id SERIAL PRIMARY KEY,
-        creator_handle VARCHAR(100) NOT NULL,
-        creator_email VARCHAR(200),
-        amount_pence INTEGER NOT NULL,
-        payment_method VARCHAR(50) DEFAULT 'bank_transfer',
-        payment_details JSONB DEFAULT '{}',
-        status VARCHAR(30) DEFAULT 'pending',
-        admin_notes TEXT,
-        requested_at TIMESTAMPTZ DEFAULT NOW(),
-        processed_at TIMESTAMPTZ,
-        rejected_at TIMESTAMPTZ
-      )
-    `);
-    await pool.query(`
-      CREATE INDEX IF NOT EXISTS idx_creator_withdrawals_handle
-      ON creator_withdrawals(creator_handle)
-    `);
-    await pool.query(`
-      CREATE INDEX IF NOT EXISTS idx_creator_withdrawals_status
-      ON creator_withdrawals(status)
-    `);
-    // Add withdrawn_pence to creator_memberships if not present
-    await pool.query(`
-      ALTER TABLE creator_memberships
-      ADD COLUMN IF NOT EXISTS total_withdrawn_pence INTEGER DEFAULT 0
-    `);
-    console.log('[Withdrawals] Tables ready');
-  } catch (err) {
-    console.error('[Withdrawals] Table init error:', err.message);
-  }
-})();
 
 const MINIMUM_WITHDRAWAL_PENCE = 100; // £1 minimum
 

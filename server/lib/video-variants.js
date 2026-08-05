@@ -74,40 +74,6 @@ const ALL_VARIANTS = [...VARIANTS, ...HEVC_VARIANTS];
 //  DB SETUP
 // ═══════════════════════════════════════════════════════════
 
-async function initVariantsTable() {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS video_variants (
-        id          SERIAL PRIMARY KEY,
-        video_id    INTEGER NOT NULL,
-        cdn_key     VARCHAR(200) NOT NULL,
-        quality     VARCHAR(10) NOT NULL,
-        r2_key      VARCHAR(300) NOT NULL,
-        width       INTEGER,
-        height      INTEGER,
-        file_size   INTEGER,
-        bitrate     INTEGER,
-        created_at  TIMESTAMPTZ DEFAULT NOW(),
-        UNIQUE(cdn_key, quality)
-      )
-    `);
-    await pool.query(`
-      CREATE INDEX IF NOT EXISTS idx_video_variants_cdn_key ON video_variants(cdn_key)
-    `);
-
-    // Add has_faststart column to video_catalog if missing
-    await pool.query(`
-      ALTER TABLE video_catalog ADD COLUMN IF NOT EXISTS has_faststart BOOLEAN DEFAULT false
-    `);
-    await pool.query(`
-      ALTER TABLE video_catalog ADD COLUMN IF NOT EXISTS variants_ready BOOLEAN DEFAULT false
-    `);
-
-    console.log('[VideoVariants] Tables ready');
-  } catch (err) {
-    console.error('[VideoVariants] Table init error:', err.message);
-  }
-}
 
 // ═══════════════════════════════════════════════════════════
 //  PROBE VIDEO
@@ -597,7 +563,6 @@ function cleanup(...paths) {
 }
 
 module.exports = {
-  initVariantsTable,
   processVideoVariants,
   processAllVariants,
   processUploadVariants,

@@ -30,29 +30,6 @@ const emailTransport = nodemailer.createTransport({
   },
 });
 
-// Ensure escalation table exists
-(async () => {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS chat_escalations (
-        id SERIAL PRIMARY KEY,
-        conversation_id INTEGER NOT NULL,
-        gym_id INTEGER NOT NULL,
-        user_message TEXT NOT NULL,
-        escalation_reason TEXT,
-        owner_notified_sms BOOLEAN DEFAULT false,
-        owner_notified_email BOOLEAN DEFAULT false,
-        owner_response TEXT,
-        status VARCHAR(20) DEFAULT 'pending',
-        created_at TIMESTAMP DEFAULT NOW(),
-        resolved_at TIMESTAMP
-      )
-    `);
-    console.log('Chat escalation table ready');
-  } catch (err) {
-    console.error('Chat escalation table error:', err.message);
-  }
-})();
 
 /**
  * Call Gemini API
@@ -199,18 +176,12 @@ router.post('/start', optionalAuth, async (req, res) => {
 
     const gym = gymResult.rows[0];
 
-    let conversationId;
-    try {
-      const convo = await pool.query(`
-        INSERT INTO conversations (title, created_at) VALUES ($1, NOW()) RETURNING *
-      `, [`Chat with ${gym.name}`]);
-      conversationId = convo.rows[0].id;
-    } catch (e) {
-      await pool.query(`CREATE TABLE IF NOT EXISTS conversations (id SERIAL PRIMARY KEY, title TEXT, created_at TIMESTAMP DEFAULT NOW())`);
-      await pool.query(`CREATE TABLE IF NOT EXISTS messages (id SERIAL PRIMARY KEY, conversation_id INTEGER, role VARCHAR(20), content TEXT, created_at TIMESTAMP DEFAULT NOW())`);
-      const convo = await pool.query(`INSERT INTO conversations (title, created_at) VALUES ($1, NOW()) RETURNING *`, [`Chat with ${gym.name}`]);
-      conversationId = convo.rows[0].id;
-    }
+    // conversations / messages are created by /migrations, not here.
+    const convo = await pool.query(
+      `INSERT INTO conversations (title, created_at) VALUES ($1, NOW()) RETURNING *`,
+      [`Chat with ${gym.name}`]
+    );
+    const conversationId = convo.rows[0].id;
 
     await pool.query(`
       INSERT INTO messages (conversation_id, role, content, created_at)

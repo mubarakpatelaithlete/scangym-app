@@ -41,50 +41,6 @@ async function searchWithPlacesNewAPI(searchQuery, lat, lng, radius, maxResults 
 }
 
 // ─── Auto-migration: ensure gyms table has currency & country columns ──
-(async () => {
-  try {
-    await pool.query(`
-      DO $$ BEGIN
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='currency') THEN
-          ALTER TABLE gyms ADD COLUMN currency VARCHAR(10) DEFAULT 'GBP';
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='country') THEN
-          ALTER TABLE gyms ADD COLUMN country VARCHAR(10) DEFAULT 'GB';
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='is_accepting_bookings') THEN
-          ALTER TABLE gyms ADD COLUMN is_accepting_bookings BOOLEAN DEFAULT TRUE;
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='is_24h') THEN
-          ALTER TABLE gyms ADD COLUMN is_24h BOOLEAN DEFAULT FALSE;
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='is_self_service') THEN
-          ALTER TABLE gyms ADD COLUMN is_self_service BOOLEAN DEFAULT FALSE;
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='lat') THEN
-          ALTER TABLE gyms ADD COLUMN lat DOUBLE PRECISION DEFAULT 0;
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='lng') THEN
-          ALTER TABLE gyms ADD COLUMN lng DOUBLE PRECISION DEFAULT 0;
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='phone') THEN
-          ALTER TABLE gyms ADD COLUMN phone VARCHAR(50) DEFAULT '';
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='website') THEN
-          ALTER TABLE gyms ADD COLUMN website TEXT DEFAULT '';
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='rating') THEN
-          ALTER TABLE gyms ADD COLUMN rating NUMERIC(3,2) DEFAULT 0;
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gyms' AND column_name='zip_code') THEN
-          ALTER TABLE gyms ADD COLUMN zip_code VARCHAR(20) DEFAULT '';
-        END IF;
-      END $$;
-    `);
-    console.log('[LiveSearch] gyms table columns verified (all ensure-gym columns)');
-  } catch (err) {
-    console.error('[LiveSearch] Migration error:', err.message);
-  }
-})();
 
 const COUNTRY_NAME_TO_CODE = {
   'uk': 'GB', 'united kingdom': 'GB', 'england': 'GB', 'scotland': 'GB', 'wales': 'GB',

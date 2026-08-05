@@ -19,45 +19,6 @@ router.use(express.json());
 const HANDLE_RE = /^[a-zA-Z0-9_-]{1,100}$/;
 const PLATFORMS = ['instagram', 'tiktok', 'youtube', 'x', 'facebook', 'whatsapp', 'telegram', 'snapchat', 'other'];
 
-(async () => {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS scheduled_shares (
-        id SERIAL PRIMARY KEY,
-        creator_handle VARCHAR(100) NOT NULL,
-        platform VARCHAR(30) NOT NULL DEFAULT 'other',
-        caption TEXT,
-        share_url TEXT,
-        scheduled_at TIMESTAMPTZ NOT NULL,
-        status VARCHAR(20) NOT NULL DEFAULT 'pending',
-        created_at TIMESTAMPTZ DEFAULT NOW()
-      )
-    `);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_sched_shares_handle ON scheduled_shares(creator_handle, status)`);
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS creator_followers (
-        id SERIAL PRIMARY KEY,
-        creator_handle VARCHAR(100) NOT NULL,
-        follower_session VARCHAR(200) NOT NULL,
-        created_at TIMESTAMPTZ DEFAULT NOW(),
-        UNIQUE(creator_handle, follower_session)
-      )
-    `);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_creator_followers_handle ON creator_followers(creator_handle)`);
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS creator_announcements (
-        id SERIAL PRIMARY KEY,
-        creator_handle VARCHAR(100) NOT NULL,
-        message TEXT NOT NULL,
-        created_at TIMESTAMPTZ DEFAULT NOW()
-      )
-    `);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_creator_announcements_handle ON creator_announcements(creator_handle, created_at)`);
-    console.log('[CreatorDistribution] Tables ready');
-  } catch (err) {
-    console.error('[CreatorDistribution] Table setup error:', err.message);
-  }
-})();
 
 // ── Schedule Share ──────────────────────────────────────────────
 

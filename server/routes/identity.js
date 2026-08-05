@@ -10,22 +10,6 @@ const { authenticateUser } = require('../middleware/auth');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 // Auto-migration: identity columns on users
-(async () => {
-  try {
-    await pool.query(`
-      DO $$ BEGIN
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='identity_verified') THEN
-          ALTER TABLE users ADD COLUMN identity_verified BOOLEAN DEFAULT false;
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='identity_session_id') THEN
-          ALTER TABLE users ADD COLUMN identity_session_id VARCHAR(255) DEFAULT NULL;
-        END IF;
-      END $$;
-    `);
-  } catch (err) {
-    console.error('[Identity] Migration error:', err.message);
-  }
-})();
 
 // POST /api/identity/start — create a Stripe Identity session, return hosted URL
 router.post('/start', authenticateUser, express.json(), async (req, res) => {

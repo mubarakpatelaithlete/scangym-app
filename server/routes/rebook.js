@@ -12,32 +12,6 @@ const router = express.Router();
 const pool = require('../middleware/db');
 const crypto = require('crypto');
 
-// Ensure tables
-(async () => {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS user_biometric_credentials (
-        id SERIAL PRIMARY KEY,
-        user_id TEXT UNIQUE NOT NULL,
-        credential_id TEXT NOT NULL,
-        public_key TEXT NOT NULL,
-        counter INTEGER DEFAULT 0,
-        created_at TIMESTAMPTZ DEFAULT NOW()
-      )
-    `);
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS rebook_favorites (
-        id SERIAL PRIMARY KEY,
-        user_id TEXT NOT NULL,
-        gym_id INTEGER NOT NULL,
-        visit_count INTEGER DEFAULT 1,
-        last_visited TIMESTAMPTZ DEFAULT NOW(),
-        preferred_time TEXT DEFAULT 'anytime',
-        UNIQUE(user_id, gym_id)
-      )
-    `);
-  } catch (e) { console.error('Rebook table init:', e.message); }
-})();
 
 function requireAuth(req, res, next) {
   if (!req.session?.userId) return res.status(401).json({ error: 'Login required' });

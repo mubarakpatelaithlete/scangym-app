@@ -14,25 +14,6 @@ router.use(express.json());
 
 const HANDLE_RE = /^[a-zA-Z0-9_-]{1,100}$/;
 
-(async () => {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS fan_messages (
-        id SERIAL PRIMARY KEY,
-        creator_handle VARCHAR(100) NOT NULL,
-        fan_user_id TEXT NOT NULL,
-        direction VARCHAR(10) NOT NULL DEFAULT 'fan',
-        message TEXT NOT NULL,
-        is_read BOOLEAN DEFAULT false,
-        created_at TIMESTAMPTZ DEFAULT NOW()
-      )
-    `);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_fan_messages_thread ON fan_messages(creator_handle, fan_user_id, created_at)`);
-    console.log('[FanChat] Tables ready');
-  } catch (err) {
-    console.error('[FanChat] Table setup error:', err.message);
-  }
-})();
 
 // Fan → creator
 router.post('/send', authenticateUser, async (req, res) => {

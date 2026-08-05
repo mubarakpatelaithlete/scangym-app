@@ -16,39 +16,6 @@ const { authenticateUser, optionalAuth } = require('../middleware/auth');
 // ═══════════════════════════════════════════════════════════════════
 // DB Migration — creates playlist tables on startup
 // ═══════════════════════════════════════════════════════════════════
-(async () => {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS user_playlists (
-        id SERIAL PRIMARY KEY,
-        user_id TEXT NOT NULL,
-        title VARCHAR(200) NOT NULL DEFAULT 'My Playlist',
-        description TEXT DEFAULT '',
-        is_public BOOLEAN DEFAULT false,
-        share_token VARCHAR(100) UNIQUE,
-        created_at TIMESTAMPTZ DEFAULT NOW(),
-        updated_at TIMESTAMPTZ DEFAULT NOW()
-      )
-    `);
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS playlist_tracks (
-        id SERIAL PRIMARY KEY,
-        playlist_id INTEGER NOT NULL REFERENCES user_playlists(id) ON DELETE CASCADE,
-        track_name VARCHAR(300) NOT NULL,
-        artist VARCHAR(300) DEFAULT '',
-        source_playlist VARCHAR(200) DEFAULT '',
-        source_index INTEGER DEFAULT 0,
-        saved_at TIMESTAMPTZ DEFAULT NOW(),
-        UNIQUE(playlist_id, track_name, artist)
-      )
-    `);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_playlists_user ON user_playlists(user_id)`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_playlist_tracks_pid ON playlist_tracks(playlist_id)`);
-    console.log('[Playlists] Tables ready');
-  } catch (e) {
-    console.warn('[Playlists] Migration skipped:', e.message);
-  }
-})();
 
 // Helper: generate share token
 function generateShareToken() {

@@ -161,20 +161,6 @@ router.post('/bnpl/create', async (req, res) => {
     const { gymId, amount, bookingId } = req.body;
     if (!gymId) return res.status(400).json({ error: 'gymId required' });
 
-    // Create deferred_payments table if not exists
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS deferred_payments (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER NOT NULL,
-        gym_id INTEGER NOT NULL,
-        booking_id INTEGER,
-        amount_pence INTEGER NOT NULL DEFAULT 449,
-        status VARCHAR(20) DEFAULT 'pending',
-        created_at TIMESTAMPTZ DEFAULT NOW(),
-        settled_at TIMESTAMPTZ
-      )
-    `);
-
     // Check no outstanding deferred payment
     const existing = await pool.query(
       `SELECT id FROM deferred_payments WHERE user_id = $1 AND status = 'pending' LIMIT 1`,

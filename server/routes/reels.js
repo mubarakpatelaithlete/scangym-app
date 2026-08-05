@@ -32,7 +32,6 @@ const { authenticateUser, requireAdmin } = require('../middleware/auth');
 //  engagement-driven ranking. See lib/reels-algorithm.js for details.
 // ═══════════════════════════════════════════════════════════
 const {
-  initPerformanceTables,
   rankFeed,
   processAnalytics,
   startBackgroundJobs,
@@ -43,44 +42,20 @@ const {
 //  VIDEO VARIANTS — Multi-resolution adaptive bitrate
 // ═══════════════════════════════════════════════════════════
 const {
-  initVariantsTable,
   getVariantsForFeed,
   processAllVariants,
 } = require('../lib/video-variants');
-
-// Init variants table alongside catalog
-initVariantsTable();
 
 // ═══════════════════════════════════════════════════════════
 //  M8 FIX: DATABASE CATALOG — replaces static JSON file
 // ═══════════════════════════════════════════════════════════
 
 /**
- * Ensure the video_catalog table exists and seed from JSON if empty.
- * Runs once at startup — idempotent, safe to call multiple times.
+ * Seed video_catalog from JSON if it is empty (first deploy only).
+ * The table itself is created by /migrations.
  */
 async function initCatalog() {
   try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS video_catalog (
-        id            SERIAL PRIMARY KEY,
-        name          TEXT NOT NULL,
-        category      VARCHAR(100) NOT NULL DEFAULT 'General',
-        source        VARCHAR(50) NOT NULL DEFAULT 'cdn',
-        url           TEXT,
-        thumb         TEXT,
-        cdn_key       VARCHAR(200) UNIQUE,
-        drive_id      VARCHAR(200),
-        file_size     INTEGER,
-        blurhash      TEXT,
-        orientation   VARCHAR(20) DEFAULT 'vertical',
-        width         INTEGER DEFAULT 720,
-        height        INTEGER DEFAULT 1280,
-        dopamine_tier INTEGER DEFAULT 3,
-        active        BOOLEAN DEFAULT true,
-        created_at    TIMESTAMPTZ DEFAULT NOW()
-      )
-    `);
 
     // Seed from JSON if table is empty (first deploy only)
     const countResult = await pool.query('SELECT COUNT(*) FROM video_catalog');
@@ -137,7 +112,6 @@ async function initCatalog() {
 
 // Run at module load (non-blocking)
 initCatalog();
-initPerformanceTables();
 startBackgroundJobs();
 
 // Load enrichment cache (auto-filled metadata: fileSize, blurhash, orientation, etc.)
@@ -807,17 +781,6 @@ router.post('/analytics', express.json(), async (req, res) => {
       return res.status(204).end();
     }
 
-    // Ensure reel_views table exists (backward compat — first-time setup)
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS reel_views (
-        id SERIAL PRIMARY KEY,
-        video_id VARCHAR(50),
-        category VARCHAR(50),
-        duration_ms INTEGER,
-        watch_percent INTEGER,
-        created_at TIMESTAMPTZ DEFAULT NOW()
-      )
-    `);
 
     // Normalise old format { id, cat, dur, pct } to new format { video_id, action, ... }
     const normalised = events.map(e => ({
