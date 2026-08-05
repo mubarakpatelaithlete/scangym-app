@@ -312,37 +312,22 @@ setInterval(injectQuickBook, 800);
 // immediately (no prompt needed) so gyms load faster
 
 (function(){
-  // Only trigger if no gyms loaded and no explicit search
+  // Location comes from the one engine (location.js / window.sgLocation), which
+  // owns the cache and the GPS-permission timing. This block used to ask the
+  // browser for a position itself and keep its own copy of the answer.
   setTimeout(function(){
     if(typeof state === 'undefined') return;
     if(state.gyms && state.gyms.length > 0) return;
     if(state.userExplicitSearch) return;
+    if(!window.sgLocation) return;
+    if(window.sgLocation.cached()) return; // we already know where we are
 
-    // Check if GPS is cached
-    try{
-      var gps = JSON.parse(localStorage.getItem('sg_gps') || 'null');
-      if(gps && gps.lat && (Date.now() - gps.ts < 86400000)) return; // fresh enough
-    }catch(e){}
-
-    // Try HTML5 geolocation with a very short timeout
-    if(navigator.geolocation){
-      navigator.geolocation.getCurrentPosition(
-        function(pos){
-          var lat = pos.coords.latitude;
-          var lng = pos.coords.longitude;
-          // Cache it
-          try{
-            localStorage.setItem('sg_gps', JSON.stringify({ lat: lat, lng: lng, ts: Date.now() }));
-          }catch(e){}
-          // Only load if user hasn't already searched
-          if(!state.userExplicitSearch && (!state.gyms || state.gyms.length === 0)){
-            if(typeof loadGyms === 'function') loadGyms(lat, lng);
-          }
-        },
-        function(){}, // silent fail — IP detection in app already handles this
-        { timeout: 3000, maximumAge: 300000 }
-      );
-    }
+    window.sgLocation.get().then(function(loc){
+      if(!loc) return;
+      if(state.userExplicitSearch) return;
+      if(state.gyms && state.gyms.length > 0) return;
+      if(typeof loadGyms === 'function') loadGyms(loc.lat, loc.lng);
+    }).catch(function(){});
   }, 1500);
 })();
 

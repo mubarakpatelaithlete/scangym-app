@@ -122,8 +122,8 @@ function prefetchNearby(){
   if(IS_SHEET_EMBED)return;
   try{
     var lat=null,lng=null;
-    var raw=localStorage.getItem('sg_gps')||localStorage.getItem('sg_location_cache');
-    if(raw){var d=JSON.parse(raw);lat=d.lat;lng=d.lng;}
+    var d=window.sgLocation?window.sgLocation.cached():null;
+    if(d){lat=d.lat;lng=d.lng;}
     if(typeof lat!=='number'||typeof lng!=='number')return;
     var k='sg_gc_'+Math.round(lat*1000)+','+Math.round(lng*1000);
     var ex=sessionStorage.getItem(k);

@@ -358,17 +358,8 @@ window._sgConfirm=function(msg,onYes,onNo){
 };
 
 
-/* ── 7d. USER FRIENDLY: Network-aware error messages ── */
-var _origSgToast=window.sgToast;
-if(typeof _origSgToast==='function'){
-  window.sgToast=function(msg,type,duration){
-    /* Auto-enhance network errors with helpful context */
-    if(type==='error'&&!navigator.onLine){
-      msg='📡 No internet — '+msg;
-    }
-    return _origSgToast.call(window,msg,type,duration);
-  };
-}
+/* 7d. Network-aware error messages: folded into the one sgToast() in
+   app.ctr576.js — this file no longer re-defines it. */
 
 
 /* ── 3b. UI: Scrollbar-free horizontal scroll indicators ── */

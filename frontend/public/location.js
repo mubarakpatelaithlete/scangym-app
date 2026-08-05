@@ -1,27 +1,30 @@
 /**
  * ═══════════════════════════════════════════════════════════════
- *  ROBUST LOCATION — 5-Layer Waterfall GPS (Vanilla JavaScript)
+ *  LOCATION — the one location engine for ScanGym
  * ═══════════════════════════════════════════════════════════════
- * 
- * Drop-in replacement for the current getLocation() in app.js.
- * No React, no TypeScript — pure vanilla JS for the GitHub codebase.
- * 
- * INSTALLATION:
- *   1. Copy this file to: frontend/public/robust-location.js
- *   2. Add <script src="/robust-location.js"></script> in index.html
- *      (BEFORE app.js)
- *   3. In app.js, delete the old getLocation() function (lines 81-89)
- *   4. That's it — the new getLocation() replaces the old one globally
- * 
- * THE 5 LAYERS:
- *   Layer 1: GPS High Accuracy (5s timeout)
- *   Layer 2: GPS Low Accuracy  (5s timeout, allows 60s cached)
- *   Layer 3: Google Geolocation API via server (WiFi/cell/IP)
- *   Layer 4: Cached location from localStorage (24hr TTL)
- *   Layer 5: Google Geolocation API — IP only (city-level fallback)
- * 
- * If ALL layers fail → returns null (not Bolton, not London)
- * Your app should show "Enter your location" when null is returned.
+ *
+ * There used to be three: this file's waterfall, a cache in
+ * app.ctr576.js and a third GPS call in ux-v6-speed.js, each with its own
+ * localStorage key ('scangym_last_location', 'sg_location_cache', 'sg_gps').
+ * They could hold three different positions at once, so "where am I" depended
+ * on which one the screen you were looking at happened to read.
+ *
+ * Everything now goes through window.sgLocation:
+ *
+ *   await sgLocation.get()      → { lat, lng, ... } or null   (5-layer waterfall)
+ *   sgLocation.cached()         → the last known fix or null  (24h)
+ *   sgLocation.save(loc)        → remember a fix
+ *   sgLocation.clear()          → forget it
+ *   sgLocation.CACHE_KEY        → 'sg_gps', the only key
+ *
+ * window.getLocation() is kept as an alias: the app calls it in many places.
+ *
+ * The 5 layers, in order, first success wins:
+ *   1 GPS high accuracy (5s)   2 GPS low accuracy (5s, 60s cached)
+ *   3 /api/geolocation (WiFi/cell/IP via the server)
+ *   4 the cached fix (24h)     5 /api/geolocation/ip (city level)
+ * If all five fail it returns null — never a made-up position.
+ * GPS is never asked for before the user interacts with the page.
  * ═══════════════════════════════════════════════════════════════
  */
 
@@ -58,35 +61,69 @@
     }
   } catch(e){}
 
-  var CACHE_KEY = 'scangym_last_location';
-  var CACHE_MAX_AGE = 24 * 60 * 60 * 1000; // 24 hours
+  // ─── The one cache ───
 
-  // ─── Cache Helpers ───
+  var CACHE_KEY = 'sg_gps';
+  var CACHE_MAX_AGE = 24 * 60 * 60 * 1000; // 24 hours
+  var LEGACY_KEYS = ['scangym_last_location', 'sg_location_cache'];
 
   function saveToCache(coords) {
+    if (!coords || typeof coords.lat !== 'number' || typeof coords.lng !== 'number') return;
     try {
+      var prev = readCache() || {};
       localStorage.setItem(CACHE_KEY, JSON.stringify({
         lat: coords.lat,
         lng: coords.lng,
-        timestamp: Date.now()
+        city: coords.city || prev.city || '',
+        query: coords.query || prev.query || '',
+        accuracy: coords.accuracy || null,
+        source: coords.source || 'gps',
+        ts: Date.now()
       }));
-    } catch(e) {}
+    } catch (e) {}
   }
 
-  function getFromCache() {
+  function readCache() {
     try {
       var raw = localStorage.getItem(CACHE_KEY);
       if (!raw) return null;
-      var parsed = JSON.parse(raw);
-      if (Date.now() - parsed.timestamp > CACHE_MAX_AGE) {
-        localStorage.removeItem(CACHE_KEY);
-        return null;
-      }
-      return { lat: parsed.lat, lng: parsed.lng };
-    } catch(e) {
-      return null;
-    }
+      var p = JSON.parse(raw);
+      if (!p || typeof p.lat !== 'number' || typeof p.lng !== 'number') return null;
+      // 'ts' is this file's field; 'timestamp' came from the old app cache.
+      var ts = p.ts || p.timestamp || 0;
+      if (Date.now() - ts > CACHE_MAX_AGE) { localStorage.removeItem(CACHE_KEY); return null; }
+      p.ts = ts;
+      p.age_ms = Date.now() - ts;
+      return p;
+    } catch (e) { return null; }
   }
+
+  // One-off: fold whatever the two old keys were holding into the one key,
+  // newest wins, then delete them so they can never disagree again.
+  (function migrateLegacyKeys() {
+    try {
+      var best = readCache();
+      LEGACY_KEYS.forEach(function (key) {
+        var raw = localStorage.getItem(key);
+        if (!raw) return;
+        try {
+          var p = JSON.parse(raw);
+          var ts = p && (p.ts || p.timestamp || 0);
+          if (p && typeof p.lat === 'number' && typeof p.lng === 'number' &&
+              Date.now() - ts < CACHE_MAX_AGE && (!best || ts > best.ts)) {
+            best = { lat: p.lat, lng: p.lng, city: p.city || '', query: p.query || '', ts: ts };
+          }
+        } catch (e) {}
+        localStorage.removeItem(key);
+      });
+      if (best) {
+        localStorage.setItem(CACHE_KEY, JSON.stringify({
+          lat: best.lat, lng: best.lng, city: best.city || '', query: best.query || '',
+          source: best.source || 'migrated', ts: best.ts || Date.now()
+        }));
+      }
+    } catch (e) {}
+  })();
 
   // ─── Layer 1 & 2: Browser GPS ───
 
@@ -213,77 +250,61 @@
     });
   }
 
-  // ─── Main: 5-Layer Waterfall ───
+  // ─── The waterfall ───
 
-  /**
-   * getLocation() — drop-in replacement
-   * 
-   * Returns a Promise that resolves to { lat, lng } or null.
-   * Tries 5 layers in order, stops at the first success.
-   * 
-   * OLD BEHAVIOR:  getLocation() → always returns {lat, lng} (Bolton if GPS fails)
-   * NEW BEHAVIOR:  getLocation() → returns {lat, lng} or null (no fake location)
-   */
-  window.getLocation = async function getLocation() {
-    console.log('[Location] Starting 5-layer waterfall...');
+  var _inFlight = null;
 
-    // Layer 1: GPS High Accuracy
-    try {
-      console.log('[Location] Layer 1: GPS high accuracy...');
-      var coords = await tryGPS(true, 5000);
-      console.log('[Location] ✅ Layer 1 success:', coords.lat.toFixed(4), coords.lng.toFixed(4));
-      saveToCache(coords);
-      return coords;
-    } catch(e) {
-      console.log('[Location] Layer 1 failed:', e.message);
-    }
+  async function getLocation() {
+    if (_inFlight) return _inFlight;            // never run two waterfalls at once
+    _inFlight = (async function () {
+      var coords;
+      // Layer 1 + 2: browser GPS, high then low accuracy
+      for (var i = 0; i < 2; i++) {
+        try {
+          coords = await tryGPS(i === 0, 5000);
+          coords.source = i === 0 ? 'gps-high' : 'gps-low';
+          saveToCache(coords);
+          return coords;
+        } catch (e) {
+          console.log('[Location] GPS layer ' + (i + 1) + ' failed:', e.message);
+        }
+      }
+      // Layer 3: server-side Google geolocation (WiFi/cell/IP)
+      try {
+        coords = await tryGoogleGeo();
+        coords.source = 'server';
+        saveToCache(coords);
+        return coords;
+      } catch (e) { console.log('[Location] server geo failed:', e.message); }
+      // Layer 4: the cached fix
+      var cached = readCache();
+      if (cached) { console.log('[Location] using cached fix'); return cached; }
+      // Layer 5: IP only (city level)
+      try {
+        coords = await tryGoogleIPGeo();
+        coords.source = 'ip';
+        saveToCache(coords);
+        return coords;
+      } catch (e) { console.log('[Location] IP geo failed:', e.message); }
+      console.warn('[Location] all 5 layers failed, returning null');
+      return null;
+    })();
+    try { return await _inFlight; } finally { _inFlight = null; }
+  }
 
-    // Layer 2: GPS Low Accuracy (faster, allows cached position)
-    try {
-      console.log('[Location] Layer 2: GPS low accuracy...');
-      var coords = await tryGPS(false, 5000);
-      console.log('[Location] ✅ Layer 2 success:', coords.lat.toFixed(4), coords.lng.toFixed(4));
-      saveToCache(coords);
-      return coords;
-    } catch(e) {
-      console.log('[Location] Layer 2 failed:', e.message);
-    }
-
-    // Layer 3: Google Geolocation API (server-side, WiFi/cell/IP)
-    try {
-      console.log('[Location] Layer 3: Google Geolocation API...');
-      var coords = await tryGoogleGeo();
-      console.log('[Location] ✅ Layer 3 success:', coords.lat.toFixed(4), coords.lng.toFixed(4));
-      saveToCache(coords);
-      return coords;
-    } catch(e) {
-      console.log('[Location] Layer 3 failed:', e.message);
-    }
-
-    // Layer 4: Cached location from localStorage (24hr TTL)
-    var cached = getFromCache();
-    if (cached) {
-      console.log('[Location] ✅ Layer 4 success (cached):', cached.lat.toFixed(4), cached.lng.toFixed(4));
-      return cached;
-    }
-    console.log('[Location] Layer 4: No cached location');
-
-    // Layer 5: Google Geolocation API — IP only (city-level)
-    try {
-      console.log('[Location] Layer 5: Google IP geolocation...');
-      var coords = await tryGoogleIPGeo();
-      console.log('[Location] ✅ Layer 5 success:', coords.lat.toFixed(4), coords.lng.toFixed(4));
-      saveToCache(coords);
-      return coords;
-    } catch(e) {
-      console.log('[Location] Layer 5 failed:', e.message);
-    }
-
-    // ALL LAYERS FAILED
-    console.warn('[Location] ❌ All 5 layers failed. Returning null.');
-    return null;
+  window.sgLocation = {
+    CACHE_KEY: CACHE_KEY,
+    MAX_AGE: CACHE_MAX_AGE,
+    get: getLocation,
+    cached: readCache,
+    save: saveToCache,
+    clear: function () { try { localStorage.removeItem(CACHE_KEY); } catch (e) {} },
+    engaged: function () { return _sgUserEngaged; }
   };
 
-  console.log('[Location] 🏋️ Robust 5-layer waterfall loaded');
+  // The app calls getLocation() from many places — keep the name working.
+  window.getLocation = getLocation;
+
+  console.log('[Location] one location engine ready (cache key: ' + CACHE_KEY + ')');
 
 })();
