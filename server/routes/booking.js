@@ -293,7 +293,6 @@ router.get('/:id', async (req, res) => {
 });
 
 
-
 /**
  * POST /api/bookings/guest-create
  * Create a booking as a guest (no login required - just email)
@@ -566,26 +565,6 @@ router.post('/cancel', async (req, res) => {
 
 // S5-C06 FIX: Create feedback table at startup, not on every request.
 // S5-C14 FIX: Add foreign key to bookings table for referential integrity.
-(async () => {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS booking_feedback (
-        id SERIAL PRIMARY KEY,
-        booking_id INTEGER NOT NULL REFERENCES public.bookings(id) ON DELETE CASCADE,
-        user_id VARCHAR(255),
-        feedback_type VARCHAR(20) NOT NULL CHECK (feedback_type IN ('positive', 'negative')),
-        detail TEXT,
-        created_at TIMESTAMP DEFAULT NOW()
-      )
-    `);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_feedback_booking ON booking_feedback(booking_id)`);
-    await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_feedback_unique ON booking_feedback(booking_id, user_id, feedback_type)`);
-    console.log('booking_feedback table ready');
-  } catch (err) {
-    // Table may already exist with different constraints — log but don't crash
-    console.error('Feedback table init:', err.message);
-  }
-})();
 
 // S5-C05 FIX: Require authentication so only real users can submit feedback.
 // S5-C13 FIX: Prevent duplicate feedback — one per user per booking per type.
@@ -804,14 +783,6 @@ module.exports = router;
 
 
 // ═══ S5-H11 FIX: Add rating column to feedback table ═══
-(async () => {
-  try {
-    await pool.query(`ALTER TABLE booking_feedback ADD COLUMN IF NOT EXISTS rating SMALLINT CHECK (rating >= 1 AND rating <= 5)`);
-    console.log('booking_feedback: rating column ready');
-  } catch (err) {
-    console.error('Add rating column:', err.message);
-  }
-})();
 
 // ═══ S5-H15 FIX: End session endpoint ═══
 router.post('/end', async (req, res) => {

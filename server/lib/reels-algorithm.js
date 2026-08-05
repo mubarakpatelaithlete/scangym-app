@@ -86,60 +86,6 @@ const REWARD_PATTERN = [
 //  DATABASE: Performance tracking tables
 // ═══════════════════════════════════════════════════════════
 
-/**
- * Create the video_performance table that aggregates engagement data.
- * This is the "brain" of the algorithm — it learns from real user behaviour.
- * Called once at startup (idempotent).
- */
-async function initPerformanceTables() {
-  try {
-    // Aggregated performance scores per video (updated periodically)
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS video_performance (
-        video_id        VARCHAR(50) PRIMARY KEY,
-        total_views     INTEGER DEFAULT 0,
-        avg_watch_pct   REAL DEFAULT 0,
-        avg_watch_ms    REAL DEFAULT 0,
-        completion_rate REAL DEFAULT 0,
-        skip_rate       REAL DEFAULT 0,
-        like_count      INTEGER DEFAULT 0,
-        share_count     INTEGER DEFAULT 0,
-        save_count      INTEGER DEFAULT 0,
-        engagement_score REAL DEFAULT 0.5,
-        last_updated    TIMESTAMPTZ DEFAULT NOW()
-      )
-    `);
-
-    // Session-level signals for within-session adaptation
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS reel_interactions (
-        id          SERIAL PRIMARY KEY,
-        session_id  VARCHAR(64),
-        video_id    VARCHAR(50),
-        action      VARCHAR(20),
-        watch_ms    INTEGER DEFAULT 0,
-        watch_pct   INTEGER DEFAULT 0,
-        created_at  TIMESTAMPTZ DEFAULT NOW()
-      )
-    `);
-
-    // Index for fast session lookups
-    await pool.query(`
-      CREATE INDEX IF NOT EXISTS idx_reel_interactions_session
-      ON reel_interactions (session_id, created_at DESC)
-    `);
-
-    // Index for performance aggregation
-    await pool.query(`
-      CREATE INDEX IF NOT EXISTS idx_reel_views_video
-      ON reel_views (video_id)
-    `);
-
-    console.log('Algorithm: Performance tables ready');
-  } catch (err) {
-    console.error('Algorithm: Failed to init performance tables:', err.message);
-  }
-}
 
 // ═══════════════════════════════════════════════════════════
 //  STAGE 1: CANDIDATE SCORING
@@ -726,7 +672,6 @@ function stopBackgroundJobs() {
 // ═══════════════════════════════════════════════════════════
 
 module.exports = {
-  initPerformanceTables,
   rankFeed,
   processAnalytics,
   aggregatePerformance,

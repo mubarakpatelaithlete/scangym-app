@@ -12,54 +12,6 @@ const { authenticateUser } = require('../middleware/auth');
 const OpenAI = require('openai');
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// Ensure coach tables exist
-(async () => {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS coach_profiles (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER UNIQUE NOT NULL,
-        fitness_goals TEXT,
-        experience_level VARCHAR(20) DEFAULT 'beginner',
-        age INTEGER,
-        weight_kg DECIMAL,
-        height_cm DECIMAL,
-        injuries TEXT,
-        preferred_workout_types TEXT,
-        available_days VARCHAR(100),
-        created_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW()
-      )
-    `);
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS coach_conversations (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER NOT NULL,
-        role VARCHAR(20) NOT NULL,
-        content TEXT NOT NULL,
-        created_at TIMESTAMP DEFAULT NOW()
-      )
-    `);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_coach_conv_user ON coach_conversations(user_id, created_at DESC)`);
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS workout_logs (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER NOT NULL,
-        gym_id INTEGER,
-        workout_type VARCHAR(100),
-        duration_minutes INTEGER,
-        exercises JSONB,
-        notes TEXT,
-        energy_level INTEGER,
-        created_at TIMESTAMP DEFAULT NOW()
-      )
-    `);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_workout_user ON workout_logs(user_id, created_at DESC)`);
-    console.log('Coach tables ready');
-  } catch (err) {
-    console.error('Coach table creation error:', err.message);
-  }
-})();
 
 /**
  * CORRECTION: Middleware that checks user has paid + checked in via QR.

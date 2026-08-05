@@ -13,53 +13,6 @@ const router = express.Router();
 const pool = require('../middleware/db');
 const { authenticateUser } = require('../middleware/auth');
 
-// Ensure tables exist
-(async () => {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS gym_streaks (
-        id SERIAL PRIMARY KEY,
-        user_id VARCHAR(255) UNIQUE NOT NULL,
-        current_streak INTEGER DEFAULT 0,
-        longest_streak INTEGER DEFAULT 0,
-        last_workout_date DATE,
-        streak_freezes INTEGER DEFAULT 1,
-        total_workouts INTEGER DEFAULT 0,
-        created_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW()
-      )
-    `);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_streak_user ON gym_streaks(user_id)`);
-
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS user_badges (
-        id SERIAL PRIMARY KEY,
-        user_id VARCHAR(255) NOT NULL,
-        badge_key VARCHAR(100) NOT NULL,
-        earned_at TIMESTAMP DEFAULT NOW(),
-        UNIQUE(user_id, badge_key)
-      )
-    `);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_badges_user ON user_badges(user_id)`);
-
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS weekly_leaderboard (
-        id SERIAL PRIMARY KEY,
-        user_id VARCHAR(255) NOT NULL,
-        week_start DATE NOT NULL,
-        workouts INTEGER DEFAULT 0,
-        total_minutes INTEGER DEFAULT 0,
-        updated_at TIMESTAMP DEFAULT NOW(),
-        UNIQUE(user_id, week_start)
-      )
-    `);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_leaderboard_week ON weekly_leaderboard(week_start, workouts DESC)`);
-
-    console.log('✅ Addiction mechanics tables ready (streaks, badges, leaderboard)');
-  } catch (err) {
-    console.error('Streak table creation error:', err.message);
-  }
-})();
 
 // Badge definitions
 const BADGES = {

@@ -28,27 +28,6 @@ const MAX_TOOL_ROUNDS = 4;
 
 
 // Audit trail. Created lazily so a fresh database needs no migration step.
-(async () => {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS squad_agent_actions (
-        id SERIAL PRIMARY KEY,
-        user_id TEXT NOT NULL,
-        tool VARCHAR(64) NOT NULL,
-        args JSONB,
-        result JSONB,
-        confirmed BOOLEAN DEFAULT false,
-        created_at TIMESTAMP DEFAULT NOW()
-      )
-    `);
-    await pool.query(
-      `CREATE INDEX IF NOT EXISTS idx_squad_agent_actions_user
-         ON squad_agent_actions(user_id, created_at DESC)`
-    );
-  } catch (err) {
-    console.error('[SquadAgent] audit table init failed:', err.message);
-  }
-})();
 
 const SYSTEM_PROMPT = `You are the ScanSquad assistant. You work for the creator you are talking to — a fitness content creator on Instagram or TikTok who earns 25% commission when someone books a gym through their link. They are usually on their phone, between posts.
 

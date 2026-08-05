@@ -12,34 +12,6 @@ const router = express.Router();
 const pool = require('../middleware/db');
 const { authenticateUser } = require('../middleware/auth');
 
-// Ensure pricing table — CORRECTED: 24hr model only
-(async () => {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS gym_pricing (
-        id SERIAL PRIMARY KEY,
-        gym_id INTEGER NOT NULL,
-        pricing_model VARCHAR(30) DEFAULT '24hr_day_pass',
-        day_pass_pence INTEGER NOT NULL DEFAULT 500,
-        weekly_pass_pence INTEGER,
-        monthly_pass_pence INTEGER,
-        peak_multiplier DECIMAL DEFAULT 1.0,
-        off_peak_discount_pct INTEGER DEFAULT 0,
-        student_discount_pct INTEGER DEFAULT 0,
-        first_visit_discount_pct INTEGER DEFAULT 50,
-        bnpl_enabled BOOLEAN DEFAULT false,
-        wallet_accepted BOOLEAN DEFAULT true,
-        currency VARCHAR(3) DEFAULT 'GBP',
-        created_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW(),
-        UNIQUE(gym_id)
-      )
-    `);
-    console.log('Gym pricing table ready (24hr model only)');
-  } catch (err) {
-    console.error('Pricing table creation error:', err.message);
-  }
-})();
 
 // Verify ownership middleware
 async function verifyOwner(req, res, next) {
@@ -329,19 +301,5 @@ router.put('/price-limits/:gymId', verifyOwner, async (req, res) => {
   }
 });
 
-// Create toggle log table
-(async () => {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS gym_toggle_log (
-        id SERIAL PRIMARY KEY,
-        gym_id INTEGER NOT NULL,
-        owner_id VARCHAR(255) NOT NULL,
-        action VARCHAR(20) NOT NULL,
-        created_at TIMESTAMP DEFAULT NOW()
-      )
-    `);
-  } catch (err) { /* table may already exist */ }
-})();
 
 module.exports = router;

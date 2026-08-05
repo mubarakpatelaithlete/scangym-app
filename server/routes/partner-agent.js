@@ -27,27 +27,6 @@ const MAX_TOOL_ROUNDS = 4;
 
 
 // Audit trail. Created lazily so a fresh database needs no migration step.
-(async () => {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS partner_agent_actions (
-        id SERIAL PRIMARY KEY,
-        user_id TEXT NOT NULL,
-        tool VARCHAR(64) NOT NULL,
-        args JSONB,
-        result JSONB,
-        confirmed BOOLEAN DEFAULT false,
-        created_at TIMESTAMP DEFAULT NOW()
-      )
-    `);
-    await pool.query(
-      `CREATE INDEX IF NOT EXISTS idx_partner_agent_actions_user
-         ON partner_agent_actions(user_id, created_at DESC)`
-    );
-  } catch (err) {
-    console.error('[PartnerAgent] audit table init failed:', err.message);
-  }
-})();
 
 const SYSTEM_PROMPT = `You are the ScanGym Partner assistant. You work for the gym owner you are talking to — an independent gym owner, usually not technical, often on their phone behind the front desk.
 

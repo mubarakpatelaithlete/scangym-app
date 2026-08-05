@@ -8,48 +8,6 @@
  */
 const pool = require('./db');
 
-// Create analytics table if not exists (with migration for missing columns)
-(async () => {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS analytics_events (
-        id SERIAL PRIMARY KEY,
-        event_type VARCHAR(50) NOT NULL,
-        funnel_step VARCHAR(30),
-        path VARCHAR(500),
-        method VARCHAR(10),
-        user_id VARCHAR(64),
-        session_id VARCHAR(100),
-        user_agent TEXT,
-        ip_address VARCHAR(50),
-        referrer TEXT,
-        query_params JSONB,
-        response_status INTEGER,
-        response_time_ms INTEGER,
-        created_at TIMESTAMP DEFAULT NOW()
-      )
-    `);
-    // Add missing columns if table was created before they were added
-    const cols = ['funnel_step VARCHAR(30)', 'query_params JSONB', 'response_status INTEGER', 'response_time_ms INTEGER'];
-    for (const col of cols) {
-      const name = col.split(' ')[0];
-      try { await pool.query(`ALTER TABLE analytics_events ADD COLUMN IF NOT EXISTS ${col}`); } catch(e) { /* column exists */ }
-    }
-    // MIGRATION: user_id was INTEGER but users.id is a UUID string, so every
-    // INSERT for an authenticated request failed silently and no logged-in
-    // activity was ever recorded. Widen to VARCHAR.
-    try {
-      await pool.query(`ALTER TABLE analytics_events ALTER COLUMN user_id TYPE VARCHAR(64) USING user_id::text`);
-    } catch (e) { /* already varchar */ }
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_analytics_created ON analytics_events(created_at DESC)`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_analytics_path ON analytics_events(path)`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_analytics_funnel ON analytics_events(funnel_step)`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_analytics_ip ON analytics_events(ip_address)`);
-    console.log('Analytics table ready (CEO funnel tracking)');
-  } catch (err) {
-    console.error('Analytics table creation error:', err.message);
-  }
-})();
 
 /**
  * Classify the request into a funnel step for CEO dashboard

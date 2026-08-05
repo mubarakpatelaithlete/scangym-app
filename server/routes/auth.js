@@ -321,32 +321,6 @@ router.put('/profile', async (req, res) => {
     const { first_name, last_name, email, fitness_level, emergency_contact, height_cm, weight_kg, body_fat_pct, muscle_mass_kg, fitness_goal } = req.body;
     const userId = req.session.userId;
 
-    // Ensure profile columns exist (idempotent)
-    await pool.query(`
-      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS fitness_level VARCHAR(50);
-      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS emergency_contact VARCHAR(255);
-      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS profile_complete BOOLEAN DEFAULT false;
-      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS height_cm NUMERIC;
-      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS weight_kg NUMERIC;
-      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS body_fat_pct NUMERIC;
-      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS muscle_mass_kg NUMERIC;
-      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS fitness_goal TEXT;
-      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS age INTEGER;
-      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS gender VARCHAR(20);
-      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS city VARCHAR(100);
-      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS country VARCHAR(100);
-      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS body_type VARCHAR(30);
-      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS weakest_muscle VARCHAR(100);
-      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS supplements TEXT;
-      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS diet TEXT;
-      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS sleep_hours NUMERIC;
-      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS water_litres NUMERIC;
-      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS workout_duration INTEGER;
-      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS weekly_sessions INTEGER;
-      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS diseases TEXT;
-      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS metabolism VARCHAR(30);
-    `);
-
     // Build dynamic update — accept any fitness profile field
     const fields = [];
     const values = [];
@@ -418,18 +392,6 @@ router.get('/profile', async (req, res) => {
     if (!req.session || !req.session.userId) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
-
-    // Ensure columns exist
-    await pool.query(`
-      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS fitness_level VARCHAR(50);
-      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS emergency_contact VARCHAR(255);
-      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS profile_complete BOOLEAN DEFAULT false;
-      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS height_cm NUMERIC;
-      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS weight_kg NUMERIC;
-      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS body_fat_pct NUMERIC;
-      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS muscle_mass_kg NUMERIC;
-      ALTER TABLE public.users ADD COLUMN IF NOT EXISTS fitness_goal TEXT;
-    `);
 
     const result = await pool.query(
       `SELECT id, phone_number, first_name, last_name, email, fitness_level, emergency_contact, 

@@ -45,37 +45,6 @@ const upload = multer({
 });
 
 // ─── Init table ──────────────────────────────────────────────
-(async () => {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS review_media (
-        id SERIAL PRIMARY KEY,
-        review_id INTEGER REFERENCES reviews(id) ON DELETE CASCADE,
-        user_id VARCHAR(255) NOT NULL,
-        gym_id INTEGER,
-        media_type VARCHAR(10) NOT NULL CHECK (media_type IN ('photo', 'video')),
-        file_path TEXT NOT NULL,
-        cdn_url TEXT,
-        thumbnail_url TEXT,
-        file_size INTEGER DEFAULT 0,
-        width INTEGER,
-        height INTEGER,
-        duration_sec REAL,
-        created_at TIMESTAMP DEFAULT NOW()
-      )
-    `);
-    // Index for fast gym lookups
-    await pool.query(`
-      CREATE INDEX IF NOT EXISTS idx_review_media_gym ON review_media(gym_id)
-    `);
-    await pool.query(`
-      CREATE INDEX IF NOT EXISTS idx_review_media_review ON review_media(review_id)
-    `);
-    console.log('Review media table ready');
-  } catch (e) {
-    console.error('Review media table init error:', e.message);
-  }
-})();
 
 // ─── POST /api/review-media/upload — Upload photos/videos for a review ───
 // Can upload before review is submitted (review_id = null, linked later)

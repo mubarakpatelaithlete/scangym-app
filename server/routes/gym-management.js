@@ -30,73 +30,6 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../middleware/db');
 
-// Ensure tables
-(async () => {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS gym_equipment (
-        id SERIAL PRIMARY KEY,
-        gym_id INTEGER NOT NULL,
-        name VARCHAR(200) NOT NULL,
-        category VARCHAR(100),
-        brand VARCHAR(100),
-        quantity INTEGER DEFAULT 1,
-        equipment_condition VARCHAR(50) DEFAULT 'good',
-        is_out_of_order BOOLEAN DEFAULT false,
-        out_of_order_since TIMESTAMPTZ,
-        out_of_order_reason TEXT,
-        photo_url TEXT,
-        sort_order INTEGER DEFAULT 0,
-        created_at TIMESTAMPTZ DEFAULT NOW(),
-        updated_at TIMESTAMPTZ DEFAULT NOW()
-      )
-    `);
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS gym_facilities (
-        id SERIAL PRIMARY KEY,
-        gym_id INTEGER NOT NULL,
-        name VARCHAR(200) NOT NULL,
-        category VARCHAR(100),
-        description TEXT,
-        is_free BOOLEAN DEFAULT true,
-        price_pence INTEGER DEFAULT 0,
-        is_out_of_order BOOLEAN DEFAULT false,
-        out_of_order_since TIMESTAMPTZ,
-        out_of_order_reason TEXT,
-        photo_url TEXT,
-        sort_order INTEGER DEFAULT 0,
-        created_at TIMESTAMPTZ DEFAULT NOW(),
-        updated_at TIMESTAMPTZ DEFAULT NOW()
-      )
-    `);
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS gym_schedule_overrides (
-        id SERIAL PRIMARY KEY,
-        gym_id INTEGER NOT NULL,
-        override_date DATE NOT NULL,
-        is_closed BOOLEAN DEFAULT true,
-        open_time TEXT,
-        close_time TEXT,
-        reason TEXT,
-        created_at TIMESTAMPTZ DEFAULT NOW(),
-        UNIQUE(gym_id, override_date)
-      )
-    `);
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS gym_review_responses (
-        id SERIAL PRIMARY KEY,
-        gym_id INTEGER NOT NULL,
-        review_id INTEGER NOT NULL,
-        responder_id TEXT NOT NULL,
-        response_text TEXT NOT NULL,
-        offer_type VARCHAR(50),
-        offer_value TEXT,
-        created_at TIMESTAMPTZ DEFAULT NOW(),
-        UNIQUE(gym_id, review_id)
-      )
-    `);
-  } catch (e) { console.error('Gym management table init:', e.message); }
-})();
 
 function requireAuth(req, res, next) {
   if (!req.session?.userId) return res.status(401).json({ error: 'Login required' });
@@ -108,15 +41,6 @@ function requireAuth(req, res, next) {
 
 router.get('/:gymId/equipment', async (req, res) => {
   try {
-    // Ensure table exists (in case init race condition)
-    await pool.query(`CREATE TABLE IF NOT EXISTS gym_equipment (
-      id SERIAL PRIMARY KEY, gym_id INTEGER NOT NULL, name VARCHAR(200) NOT NULL,
-      category VARCHAR(100), brand VARCHAR(100), quantity INTEGER DEFAULT 1,
-      equipment_condition VARCHAR(50) DEFAULT 'good',
-      is_out_of_order BOOLEAN DEFAULT false, out_of_order_since TIMESTAMPTZ,
-      out_of_order_reason TEXT, photo_url TEXT, sort_order INTEGER DEFAULT 0,
-      created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW()
-    )`);
     const r = await pool.query(
       'SELECT * FROM gym_equipment WHERE gym_id = $1 ORDER BY sort_order, category, name',
       [req.params.gymId]

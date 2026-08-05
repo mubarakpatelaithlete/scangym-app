@@ -14,39 +14,6 @@ const pool = require('../middleware/db');
 const crypto = require('crypto');
 const pricing = require('../lib/pricing-engine');
 
-// Ensure tables exist
-(async () => {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS group_bookings (
-        id SERIAL PRIMARY KEY,
-        group_code VARCHAR(12) UNIQUE NOT NULL,
-        organizer_id TEXT NOT NULL,
-        gym_id INTEGER NOT NULL,
-        booking_date DATE NOT NULL,
-        time_slot TEXT DEFAULT 'anytime',
-        max_members INTEGER DEFAULT 10,
-        status TEXT DEFAULT 'open',
-        total_amount_pence INTEGER DEFAULT 0,
-        created_at TIMESTAMPTZ DEFAULT NOW()
-      )
-    `);
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS group_members (
-        id SERIAL PRIMARY KEY,
-        group_booking_id INTEGER REFERENCES group_bookings(id),
-        user_id TEXT NOT NULL,
-        user_name VARCHAR(200),
-        user_email VARCHAR(200),
-        share_pence INTEGER DEFAULT 0,
-        paid BOOLEAN DEFAULT false,
-        stripe_payment_intent_id TEXT,
-        joined_at TIMESTAMPTZ DEFAULT NOW(),
-        UNIQUE(group_booking_id, user_id)
-      )
-    `);
-  } catch (e) { console.error('Group booking table init:', e.message); }
-})();
 
 function generateGroupCode() {
   return crypto.randomBytes(3).toString('hex').toUpperCase();

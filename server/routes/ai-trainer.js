@@ -13,23 +13,6 @@ const { optionalAuth } = require('../middleware/auth');
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_MAPS_API_KEY;
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
-(async () => {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS workout_logs (
-        id SERIAL PRIMARY KEY,
-        user_id TEXT NOT NULL,
-        gym_id TEXT,
-        gym_name TEXT,
-        date DATE DEFAULT CURRENT_DATE,
-        muscles_worked TEXT[],
-        duration_minutes INTEGER DEFAULT 60,
-        notes TEXT,
-        created_at TIMESTAMPTZ DEFAULT NOW()
-      );
-    `);
-  } catch (e) { console.error('[AI Trainer] Migration:', e.message); }
-})();
 
 function buildTrainerPrompt(p) {
   p = p || {};
@@ -132,7 +115,8 @@ router.post('/log', optionalAuth, async (req, res) => {
     const { gymId, gymName, musclesWorked = [], durationMinutes = 60, notes } = req.body;
     const userId = req.user?.id || 'anonymous';
     const r = await pool.query(
-      'INSERT INTO workout_logs (user_id, gym_id, gym_name, muscles_worked, duration_minutes, notes) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id, date',
+      `INSERT INTO workout_logs (user_id, gym_id, gym_name, muscles_trained, duration_minutes, notes)
+       VALUES ($1,$2,$3,$4,$5,$6) RETURNING id, created_at`,
       [userId, gymId, gymName, musclesWorked, durationMinutes, notes]
     );
     res.json({ success: true, log: r.rows[0] });
@@ -144,7 +128,10 @@ router.get('/progress', optionalAuth, async (req, res) => {
     const userId = req.user?.id;
     if (!userId) return res.json({ logs: [], streak: 0, totalSessions: 0 });
     const r = await pool.query(
-      'SELECT date, gym_name, muscles_worked, duration_minutes FROM workout_logs WHERE user_id = $1 AND date >= CURRENT_DATE - INTERVAL \'90 days\' ORDER BY date DESC',
+      `SELECT DATE(created_at) AS date, gym_name, muscles_trained, duration_minutes
+         FROM workout_logs
+        WHERE user_id = $1 AND created_at >= NOW() - INTERVAL '90 days'
+        ORDER BY created_at DESC`,
       [userId]
     );
     const logs = r.rows;

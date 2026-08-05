@@ -22,24 +22,6 @@ const router = express.Router();
 const pool = require('../middleware/db');
 
 // ── Startup migrations (idempotent) ──
-(async () => {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS nps_responses (
-        id SERIAL PRIMARY KEY,
-        user_id VARCHAR(255),
-        score INTEGER NOT NULL CHECK (score >= 0 AND score <= 10),
-        feedback TEXT,
-        created_at TIMESTAMP DEFAULT NOW()
-      )
-    `);
-    // Store the real charge currency on bookings (populated by payment.js going forward)
-    await pool.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS currency VARCHAR(8)`);
-    console.log('[AdminDash] migrations ok (nps_responses, bookings.currency)');
-  } catch (e) {
-    console.warn('[AdminDash] migration warning:', e.message);
-  }
-})();
 
 // ── Auth: session + optional admin allowlist ──
 // Set ADMIN_USER_IDS (comma-separated users.id UUIDs) to lock this down.

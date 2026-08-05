@@ -9,29 +9,6 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../middleware/db');
 
-// Ensure table exists
-(async () => {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS comms_log (
-        id SERIAL PRIMARY KEY,
-        channel VARCHAR(20) NOT NULL DEFAULT 'email',
-        direction VARCHAR(10) NOT NULL DEFAULT 'outbound',
-        from_addr VARCHAR(255),
-        to_addr VARCHAR(255),
-        subject VARCHAR(500),
-        body TEXT,
-        status VARCHAR(20) DEFAULT 'sent',
-        metadata JSONB DEFAULT '{}',
-        created_at TIMESTAMPTZ DEFAULT NOW()
-      )
-    `);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_comms_log_created ON comms_log(created_at DESC)`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_comms_log_channel ON comms_log(channel)`);
-  } catch (e) {
-    console.warn('[comms-log] Table init:', e.message);
-  }
-})();
 
 // Helper to log a message (called from email/twilio handlers)
 async function logComms({ channel, direction, from, to, subject, body, status, metadata }) {

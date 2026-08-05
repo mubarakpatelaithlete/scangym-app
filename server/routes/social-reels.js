@@ -54,37 +54,6 @@ const TIKTOK_CURATED_URLS = [
 // ═══════════════════════════════════════════════════════════
 async function initSocialReelsTable() {
   try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS social_reels (
-        id              SERIAL PRIMARY KEY,
-        platform        VARCHAR(20) NOT NULL,
-        external_id     VARCHAR(200) UNIQUE NOT NULL,
-        title           TEXT,
-        author_name     VARCHAR(200),
-        author_url      TEXT,
-        thumbnail_url   TEXT,
-        embed_html      TEXT,
-        video_url       TEXT,
-        view_count      INTEGER DEFAULT 0,
-        like_count      INTEGER DEFAULT 0,
-        duration_sec    INTEGER,
-        search_query    VARCHAR(200),
-        category        VARCHAR(100) DEFAULT 'Social',
-        is_approved     BOOLEAN DEFAULT true,
-        is_hidden       BOOLEAN DEFAULT false,
-        fetched_at      TIMESTAMPTZ DEFAULT NOW(),
-        created_at      TIMESTAMPTZ DEFAULT NOW()
-      )
-    `);
-    
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS social_reels_cache (
-        query_key       VARCHAR(200) PRIMARY KEY,
-        result_count    INTEGER DEFAULT 0,
-        last_fetched    TIMESTAMPTZ DEFAULT NOW()
-      )
-    `);
-    
     // Clear stale cache entries that have 0 results (from failed API calls)
     await pool.query("DELETE FROM social_reels_cache WHERE result_count = 0");
     

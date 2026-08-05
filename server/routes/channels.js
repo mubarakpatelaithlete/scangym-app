@@ -32,29 +32,6 @@ const CHANNELS = [
 ];
 
 // ─── DB migration (auto-creates table on first load) ────────
-(async () => {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS user_channels (
-        id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-        user_id VARCHAR(255) NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-        channel VARCHAR(50) NOT NULL,
-        channel_user_id VARCHAR(255),
-        channel_username VARCHAR(255),
-        connected_at TIMESTAMPTZ DEFAULT NOW(),
-        last_message_at TIMESTAMPTZ,
-        is_active BOOLEAN DEFAULT true,
-        metadata JSONB DEFAULT '{}',
-        UNIQUE(user_id, channel)
-      );
-      CREATE INDEX IF NOT EXISTS idx_user_channels_user ON user_channels(user_id);
-      CREATE INDEX IF NOT EXISTS idx_user_channels_channel ON user_channels(channel, channel_user_id);
-    `);
-    console.log('✅ DB migration: user_channels table ready');
-  } catch (err) {
-    console.error('DB migration (user_channels):', err.message);
-  }
-})();
 
 // Pending link tokens (in-memory, expires after 10 minutes)
 const pendingLinks = new Map();

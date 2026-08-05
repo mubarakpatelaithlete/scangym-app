@@ -63,7 +63,7 @@ router.get('/calendar', async (req, res) => {
       FROM workout_logs
       WHERE user_id = $1 AND TO_CHAR(created_at, 'YYYY-MM') = $2
       ORDER BY created_at
-    `, [userId, month]).catch(() => ({ rows: [] }));
+    `, [userId, month]).catch((e) => { console.error('[ai-features] query failed:', e.message); return { rows: [] }; });
 
     // Get bookings for the month
     const bookings = await pool.query(`
@@ -71,7 +71,7 @@ router.get('/calendar', async (req, res) => {
       FROM bookings
       WHERE user_id = $1 AND TO_CHAR(booking_date, 'YYYY-MM') = $2
       ORDER BY booking_date
-    `, [userId, month]).catch(() => ({ rows: [] }));
+    `, [userId, month]).catch((e) => { console.error('[ai-features] query failed:', e.message); return { rows: [] }; });
 
     // Build calendar data
     const days = {};
@@ -126,7 +126,7 @@ router.get('/progress', async (req, res) => {
       FROM workout_logs
       WHERE user_id = $1 AND created_at > NOW() - make_interval(weeks => $2)
       ORDER BY created_at
-    `, [userId, weeks]).catch(() => ({ rows: [] }));
+    `, [userId, weeks]).catch((e) => { console.error('[ai-features] query failed:', e.message); return { rows: [] }; });
 
     const data = workouts.rows || [];
     const weeklyVolume = {};
