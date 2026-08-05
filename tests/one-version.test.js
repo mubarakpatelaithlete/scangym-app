@@ -201,3 +201,35 @@ test('one admin stats endpoint: /api/stats/admin-status is gone', () => {
       `${f} still calls the deleted /api/stats/admin-status`);
   }
 });
+
+// ─── v9: ONE chat engine ─────────────────────────────────────────────────────
+test('one chat engine: only chat-agent.js implements the chat', () => {
+  const engine = read('chat-agent.js');
+  assert.ok(/window\.sgChatAgent\s*=\s*\{\s*create/.test(engine), 'the chat engine factory is gone');
+  for (const f of ['partner-chat.js', 'squad-chat.js']) {
+    const s = stripComments(read(f));
+    assert.ok(/window\.sgChatAgent\.create\(/.test(s), `${f} no longer uses the shared chat engine`);
+    // A personality file is configuration: no streaming, no rendering, no styles.
+    for (const re of [/getReader\(/, /new TextDecoder/, /injectStyles/, /document\.createElement\('style'\)/,
+      /SpeechRecognition/, /getBoundingClientRect/]) {
+      assert.ok(!re.test(s), `${f} re-implements chat machinery (${re}) instead of configuring chat-agent.js`);
+    }
+    assert.ok(s.split('\n').length < 200, `${f} is growing its own copy of the chat again`);
+  }
+});
+
+test('one chat engine: each chat keeps its own namespace and endpoint', () => {
+  const p = read('partner-chat.js');
+  const s = read('squad-chat.js');
+  assert.ok(/ns:\s*'pchat'/.test(p) && /endpoint:\s*'\/api\/partner\/agent'/.test(p));
+  assert.ok(/ns:\s*'schat'/.test(s) && /endpoint:\s*'\/api\/squad\/agent'/.test(s));
+  assert.ok(!/'pchat'/.test(s) && !/'schat'/.test(p), 'the two chats share a DOM namespace');
+});
+
+test('one chat engine: chat-agent.js loads before the two personalities', () => {
+  const html = fs.readFileSync(path.join(PUB, 'index.html'), 'utf8');
+  const at = (f) => html.indexOf(f);
+  assert.ok(at('chat-agent.js') > -1, 'chat-agent.js is not in index.html');
+  assert.ok(at('chat-agent.js') < at('partner-chat.js'), 'chat-agent.js must be before partner-chat.js');
+  assert.ok(at('chat-agent.js') < at('squad-chat.js'), 'chat-agent.js must be before squad-chat.js');
+});
