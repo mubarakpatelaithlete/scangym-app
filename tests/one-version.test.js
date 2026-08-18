@@ -329,3 +329,45 @@ test('one schema: routes the frontend calls are actually mounted', () => {
     assert.ok(server.includes(`app.use('${p}'`), `${p} is called by the app but never mounted`);
   }
 });
+
+// ─── v11: ONE location engine, ONE toast ─────────────────────────────────────
+test('one location engine: only location.js talks to the browser geolocation API', () => {
+  const offenders = [];
+  for (const f of jsFiles) {
+    if (f === 'location.js') continue;
+    const s = stripComments(read(f));
+    if (/navigator\.geolocation\.(getCurrentPosition|watchPosition)\s*\(/.test(s)) offenders.push(f);
+  }
+  // app.ctr576.js keeps one live watchPosition for the fast first fix; nothing else may ask.
+  assert.deepStrictEqual(offenders, ['app.ctr576.js'], 'ask window.sgLocation instead of the browser directly');
+  const core = stripComments(read('app.ctr576.js'));
+  assert.ok(!/navigator\.geolocation\.getCurrentPosition\s*\(/.test(core), 'core must use sgLocation.get(), not its own one-off GPS calls');
+});
+
+test('one location engine: one cache key, and the old ones are migrated away', () => {
+  const engine = read('location.js');
+  assert.match(engine, /window\.sgLocation\s*=/, 'the location engine is gone');
+  assert.match(engine, /CACHE_KEY\s*=\s*'sg_gps'/);
+  assert.match(engine, /LEGACY_KEYS\s*=\s*\['scangym_last_location', 'sg_location_cache'\]/);
+  for (const f of jsFiles) {
+    const s = stripComments(read(f));
+    if (f !== 'location.js') {
+      assert.ok(!/'scangym_last_location'|'sg_location_cache'/.test(s), `${f} still reads an old location cache key`);
+      assert.ok(!/localStorage\.(get|set)Item\('sg_gps'/.test(s), `${f} reads/writes the location cache directly instead of via sgLocation`);
+    }
+  }
+});
+
+test('one location engine: it is loaded, and the file it replaced is gone', () => {
+  const html = fs.readFileSync(path.join(PUB, 'index.html'), 'utf8');
+  assert.ok(html.includes('/location.js'), 'location.js is not loaded');
+  assert.ok(!html.includes('robust-location.js'), 'the old location file is still referenced');
+  assert.ok(!fs.existsSync(path.join(PUB, 'robust-location.js')), 'robust-location.js still exists');
+  assert.ok(html.indexOf('/location.js') < html.indexOf('<script src="/app.ctr576.js'), 'the engine must load before the app');
+});
+
+test('one toast: sgToast is defined exactly once', () => {
+  const defs = jsFiles.filter((f) => /window\.sgToast\s*=\s*function/.test(stripComments(read(f))));
+  assert.deepStrictEqual(defs, ['app.ctr576.js']);
+  assert.match(read('app.ctr576.js'), /navigator\.onLine === false|navigator\.onLine===false/, 'the offline hint was lost when the wrapper was removed');
+});

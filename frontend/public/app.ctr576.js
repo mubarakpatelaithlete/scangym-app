@@ -12,6 +12,9 @@ var l2=document.createElement('link');l2.rel='dns-prefetch';l2.href=d;document.h
 
 // ─── Toast Notification System (replaces alert()) ───
 window.sgToast=function(msg, type='error', duration=4000){
+  // Offline hint used to live in phase2-improvements.js, which wrapped this
+  // function at load time — one toast, one place.
+  if(type==='error'&&typeof navigator!=='undefined'&&navigator.onLine===false)msg='📡 No internet — '+msg;
   const existing=document.getElementById('sg-toast');
   if(existing)existing.remove();
   const colors={error:'bg-red-500',success:'bg-green-500',warning:'bg-amber-500',info:'bg-blue-500'};
@@ -10967,7 +10970,7 @@ window.findGyms=function(){
   const cached=getCachedLocation();
   if(state.gyms.length===0){
     // Perf #2b: Restore last GPS from localStorage for instant startup
-    (function(){try{var g=JSON.parse(localStorage.getItem('sg_gps')||'null');if(g&&g.lat&&(Date.now()-g.ts<86400000)){state.searchLat=g.lat;state.searchLng=g.lng;if(g.query&&!cached?.query){searchGyms(g.query,false);return;}}}catch(e){}})();
+    (function(){try{var g=window.sgLocation&&window.sgLocation.cached();if(g){state.searchLat=g.lat;state.searchLng=g.lng;if(g.query&&!cached?.query){searchGyms(g.query,false);return;}}}catch(e){}})();
     searchGyms(cached?.query||'gyms in London');
   }
 
@@ -11061,26 +11064,18 @@ window.filterGyms=function(type){
 // ═══════════════════════════════════════════════════════════════
 
 // Technique #2: Client-Side Location Cache (localStorage)
-const LOC_CACHE_KEY='sg_location_cache';
-const LOC_CACHE_TTL=5*60*1000; // 5 min active, 30 min return
 const LOC_HISTORY_KEY='sg_location_history'; // Technique #5: prediction data
 
+// One cache, owned by location.js (window.sgLocation). This used to keep its
+// own copy under 'sg_location_cache' as well, so the app and the location
+// engine could disagree about where the user was.
 function getCachedLocation(){
-  try{
-    const raw=localStorage.getItem(LOC_CACHE_KEY);
-    if(!raw)return null;
-    const cached=JSON.parse(raw);
-    const age=Date.now()-cached.timestamp;
-    if(age>30*60*1000)return null; // expired
-    return {...cached,age_ms:age,from_cache:true};
-  }catch(e){return null;}
+  const cached=window.sgLocation?window.sgLocation.cached():null;
+  if(!cached)return null;
+  return {...cached,from_cache:true};
 }
 function setCachedLocation(loc){
-    // Perf #2: Persist last GPS fix to localStorage for instant next-visit startup
-    try{localStorage.setItem('sg_gps',JSON.stringify({lat:loc.lat,lng:loc.lng,city:loc.city||'',query:loc.query||'',ts:Date.now()}));}catch(e){}
-  try{
-    localStorage.setItem(LOC_CACHE_KEY,JSON.stringify({...loc,timestamp:Date.now()}));
-  }catch(e){}
+  if(window.sgLocation)window.sgLocation.save(loc);
 }
 
 // Technique #5: Record search location for time-of-day prediction
@@ -18264,20 +18259,20 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
     // ━━━ GPS BANNER: Gentle nudge to enable GPS, never blocks interaction ━━━
     _showLocationBannerIfNeeded();
     // ━━━ AUTO-PROMPT: Request location on first explore visit ━━━
-    if(!window._gpsGranted&&!window._gpsAutoPrompted&&!state.userExplicitSearch&&navigator.geolocation){
+    // Position always comes from the one engine (window.sgLocation, location.js):
+    // it does the 5-layer waterfall, owns the cache and holds the GPS prompt
+    // back until the user has interacted with the page.
+    if(!window._gpsGranted&&!window._gpsAutoPrompted&&!state.userExplicitSearch&&window.sgLocation){
       window._gpsAutoPrompted=true;
-      navigator.geolocation.getCurrentPosition(
-        function(pos){
-          window._gpsGranted=true;
-          state.searchLat=pos.coords.latitude;
-          state.searchLng=pos.coords.longitude;
-          var b=document.getElementById('sg-location-banner');if(b)b.remove();
-          // ━━━ FIX: Don't call findGyms if user has an active explicit search ━━━
-          if(!state.userExplicitSearch) findGyms();
-        },
-        function(){/* user denied — banner stays */},
-        {enableHighAccuracy:false,timeout:8000,maximumAge:300000}
-      );
+      window.sgLocation.get().then(function(loc){
+        if(!loc)return; /* nothing found — banner stays */
+        window._gpsGranted=true;
+        state.searchLat=loc.lat;
+        state.searchLng=loc.lng;
+        var b=document.getElementById('sg-location-banner');if(b)b.remove();
+        // Don't call findGyms if the user has an active explicit search
+        if(!state.userExplicitSearch) findGyms();
+      }).catch(function(){});
     }
   }
   // Initialize staff QR scanner camera when on /staff/scan
@@ -18365,25 +18360,20 @@ function _injectLocationBanner(permState){
 }
 
 window._requestLocationFromBanner=function(){
-  if(navigator.geolocation){
-    navigator.geolocation.getCurrentPosition(
-      function(pos){
-        window._gpsGranted=true;
-        var b=document.getElementById('sg-location-banner');
-        if(b)b.remove();
-        state.searchLat=pos.coords.latitude;
-        state.searchLng=pos.coords.longitude;
-        findGyms();
-      },
-      function(err){
-        // User denied — update banner to denied state
-        var b=document.getElementById('sg-location-banner');
-        if(b)b.remove();
-        _injectLocationBanner('denied');
-      },
-      {enableHighAccuracy:true,timeout:10000,maximumAge:60000}
-    );
-  }
+  if(!window.sgLocation)return;
+  window.sgLocation.get().then(function(loc){
+    var b=document.getElementById('sg-location-banner');
+    if(b)b.remove();
+    if(!loc){_injectLocationBanner('denied');return;}
+    window._gpsGranted=true;
+    state.searchLat=loc.lat;
+    state.searchLng=loc.lng;
+    findGyms();
+  }).catch(function(){
+    var b=document.getElementById('sg-location-banner');
+    if(b)b.remove();
+    _injectLocationBanner('denied');
+  });
 };
 
 window._dismissLocationBanner=function(){
@@ -21886,7 +21876,7 @@ window.sgPerfDashboard=function(){
       'Total Size':Math.round(photos.reduce(function(s,r){return s+(r.transferSize||0);},0)/1024)+'KB'
     },
     'Caching':{
-      'GPS in localStorage':!!localStorage.getItem('sg_gps'),
+      'GPS in localStorage':!!(window.sgLocation&&window.sgLocation.cached()),
       'Search Cache Entries':Object.keys(window._sgSearchCache||{}).length,
       'Date Strip Cached':!!window._dateStripCacheHtml
     },
