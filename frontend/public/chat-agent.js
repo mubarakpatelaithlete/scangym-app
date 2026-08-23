@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Chat agent engine — ONE ChatGPT-style chat, configured per tab.
  *
  * partner-chat.js and squad-chat.js used to be two ~750-line copies of the same file.
@@ -39,7 +39,24 @@ function createChatAgent(cfg) {
     busy: false,
     pending: null, // { tool, args } awaiting a Yes
     listening: false,
+    voice: false,  // true once the customer has spoken: then we speak back
   };
+
+  /**
+   * Turns an answer into something worth hearing. Links, markdown scaffolding and
+   * bullet glyphs read as noise out loud ("asterisk asterisk Fitness First").
+   */
+  function speakable(text) {
+    return String(text || '')
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+      .replace(/[*_`#>]/g, '')
+      .replace(/^\s*[-•]\s*/gm, '')
+      .replace(/https?:\/\/\S+/g, 'the link on screen')
+      .replace(/\n{2,}/g, '. ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 700);
+  }
 
   // ── styles ────────────────────────────────────────────────────────────────
   function injectStyles() {
@@ -506,6 +523,10 @@ function createChatAgent(cfg) {
 
       if (acc) S.msgs.push({ role: 'ai', text: acc });
 
+      // Speech out. The promise of the product is that you hear the answer, not that
+      // you read it — but audio is a bonus layer: it never blocks or breaks the chat.
+      if (acc && S.voice && window.SGVoice) window.SGVoice.speak(speakable(acc));
+
       if (S.pending) {
         var p = S.pending;
         chips([
@@ -539,19 +560,73 @@ function createChatAgent(cfg) {
   }
 
   // ── voice ─────────────────────────────────────────────────────────────────
+  // Two paths. Preferred: record with MediaRecorder and transcribe on our server
+  // (works in every browser and inside the Android shell, and hears British gym
+  // names properly). Fallback: the browser's own SpeechRecognition, which only
+  // Chrome and Safari have. Either way one tap starts, one tap stops.
   var recognition = null;
 
-  function toggleMic() {
-    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    var mic = document.getElementById(T('pchat-mic'));
+  function micEl() {
+    return document.getElementById(T('pchat-mic'));
+  }
 
-    if (!SR) {
-      document.getElementById(T('pchat-hint')).textContent =
-        'Voice needs Chrome or Safari — typing works everywhere.';
+  function micOn(on) {
+    var mic = micEl();
+    if (mic) mic.classList[on ? 'add' : 'remove']('on');
+    S.listening = on;
+  }
+
+  function toggleMic() {
+    // Barge-in: if it is talking and you touch the mic, it stops talking at once.
+    if (window.SGVoice && window.SGVoice.isSpeaking()) window.SGVoice.shutUp();
+
+    if (S.listening) {
+      if (window.SGVoice && window.SGVoice.isListening()) window.SGVoice.stopListening();
+      else if (recognition) recognition.stop();
       return;
     }
-    if (S.listening && recognition) {
-      recognition.stop();
+
+    if (window.SGVoice && window.SGVoice.canRecord()) {
+      window.SGVoice.ready().then(function (on) {
+        if (on) serverListen();
+        else browserListen();
+      });
+      return;
+    }
+    browserListen();
+  }
+
+  function serverListen() {
+    window.SGVoice
+      .listen({
+        onStart: function () {
+          micOn(true);
+          setHint('Listening… tap again when you\'re done.');
+        },
+        onThinking: function () {
+          micOn(false);
+          setHint('One moment…');
+        },
+      })
+      .then(function (said) {
+        setHint(null);
+        if (!said) {
+          setHint("Didn't catch that — try again or type it.");
+          return;
+        }
+        S.voice = true; // they spoke, so answer out loud
+        send(said);
+      })
+      .catch(function (err) {
+        micOn(false);
+        setHint((err && err.message) || "Didn't catch that — try again or type it.");
+      });
+  }
+
+  function browserListen() {
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+      setHint('Voice needs Chrome or Safari here — typing works everywhere.');
       return;
     }
 
@@ -561,23 +636,25 @@ function createChatAgent(cfg) {
     recognition.maxAlternatives = 1;
 
     recognition.onstart = function () {
-      S.listening = true;
-      mic.classList.add('on');
-      document.getElementById(T('pchat-hint')).textContent = 'Listening…';
+      micOn(true);
+      setHint('Listening…');
     };
     recognition.onresult = function (e) {
       var said = e.results[0][0].transcript;
-      if (said) send(said);
+      if (said) {
+        S.voice = true;
+        send(said);
+      }
     };
     recognition.onerror = function (e) {
-      document.getElementById(T('pchat-hint')).textContent =
+      setHint(
         e.error === 'not-allowed'
           ? 'Microphone blocked — allow it in your browser settings.'
-          : "Didn't catch that — try again or type it.";
+          : "Didn't catch that — try again or type it."
+      );
     };
     recognition.onend = function () {
-      S.listening = false;
-      mic.classList.remove('on');
+      micOn(false);
     };
 
     try {
