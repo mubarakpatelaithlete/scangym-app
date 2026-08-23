@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Booking Routes — Create and manage gym bookings
  * 
  * Uses existing public.bookings table:
@@ -23,23 +23,12 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const pool = require('../middleware/db');
 const crypto = require('crypto');
 const pricing = require('../lib/pricing-engine');
+const bookingActions = require('../lib/booking-actions');
 const { authenticateUser, requireAdmin } = require('../middleware/auth');
 
-// Generate human-readable booking code (e.g., 5WCB-8VDY)
-function generateBookingCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let code = '';
-  for (let i = 0; i < 8; i++) {
-    code += chars[Math.floor(Math.random() * chars.length)];
-    if (i === 3) code += '-';
-  }
-  return code;
-}
-
-// Generate machine booking code
-function generateQRCode() {
-  return 'BOOK_' + crypto.randomBytes(8).toString('hex').toUpperCase();
-}
+// Booking codes are generated in lib/booking-actions (one implementation, shared
+// with the Book assistant); re-exported here for the other routes in this file.
+const { generateBookingCode, generateQRCode } = bookingActions;
 
 /**
  * POST /api/bookings/create
@@ -51,89 +40,46 @@ router.post('/create', async (req, res) => {
       return res.status(401).json({ error: 'Not authenticated', message: 'Please log in first' });
     }
 
-    let { gymId, date, time, referral_code } = req.body;
-    if (!gymId || !date) {
-      return res.status(400).json({ error: 'gymId and date are required' });
-    }
+    const { gymId, date, time, referral_code } = req.body;
 
-    // C2 fix: Resolve 'anytime' / empty time to a sensible default
-    if (!time || time === 'anytime') {
-      const nextH = Math.min(new Date().getHours() + 1, 22);
-      time = String(nextH).padStart(2, '0') + ':00';
-    }
-
-    // Get gym info
-    const gym = await pool.query('SELECT id, name, address, country, day_pass_price FROM gyms WHERE id = $1', [gymId]);
-    if (gym.rows.length === 0) {
-      return res.status(404).json({ error: 'Gym not found' });
-    }
-
-    const g = gym.rows[0];
-
-    // C3 FIX: endTime = startTime + 1 hour (not same as startTime)
-    const [hours, mins] = time.split(':').map(Number);
-    const endHour = Math.min(hours + 1, 23);
-    const endTime = String(endHour).padStart(2, '0') + ':' + String(mins).padStart(2, '0');
-
-    // C6/ChatGPT-app FIX: respect the owner-set day-pass price so the booked
-    // price matches what search/details display (was: flat £4.49 PPP default).
-    const dayPrice = pricing.calculateGymPrice({
-      gymDayPassPrice: g.day_pass_price ? parseFloat(g.day_pass_price) : null,
-      countryCode: g.country || 'GB',
-      passType: 'day',
+    // All the rules live in lib/booking-actions so the Book assistant books
+    // identically to this endpoint.
+    const result = await bookingActions.createBooking({
+      userId: req.session.userId,
+      gymId,
+      date,
+      time,
+      referralCode: referral_code,
     });
-    let price = dayPrice.amount;
 
-    // G4 FIX: Apply 15% referral discount (matches frontend display)
+    if (!result.ok) {
+      const status = { missing_fields: 400, gym_not_found: 404, duplicate: 409 }[result.code] || 400;
+      const body = { error: result.message, message: result.message };
+      if (result.code === 'duplicate') {
+        body.error = 'Duplicate booking';
+        body.existingBookingId = result.existingBookingId;
+      }
+      if (result.code === 'gym_not_found') body.error = 'Gym not found';
+      return res.status(status).json(body);
+    }
+
     if (referral_code) {
-      const discount = Math.round(price * 0.15 * 100) / 100;
-      price = Math.max(price - discount, 0.50); // minimum £0.50
-      console.log(`[Booking] Referral discount applied: -£${discount.toFixed(2)} for creator "${referral_code}"`);
+      console.log(`[Booking] Referral discount applied: -£${result.booking.discount.toFixed(2)} for creator "${referral_code}"`);
     }
 
-    // C8 FIX: Prevent duplicate bookings (same user + gym + date + time)
-    const existingBooking = await pool.query(
-      `SELECT id FROM public.bookings
-       WHERE gym_id = $1 AND user_id = $2 AND booking_date = $3 AND start_time = $4
-       AND status NOT IN ('cancelled')
-       LIMIT 1`,
-      [gymId, req.session.userId, date, time]
-    );
-    if (existingBooking.rows.length > 0) {
-      return res.status(409).json({
-        error: 'Duplicate booking',
-        message: 'You already have a booking at this gym for this date and time.',
-        existingBookingId: existingBooking.rows[0].id,
-      });
-    }
-
-    const bookingCode = generateBookingCode();
-    const qrCode = generateQRCode();
-
-    // G4 FIX: Include referral_code so creator commission pipeline works end-to-end
-    const result = await pool.query(
-      `INSERT INTO public.bookings 
-        (gym_id, user_id, booking_date, start_time, end_time, total_amount, 
-         platform_fee_amount, booking_type, booking_code, qr_code, status, referral_code, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 'instant', $8, $9, 'pending', $10, NOW(), NOW())
-       RETURNING *`,
-      [gymId, req.session.userId, date, time, endTime, price, price * 0.10, bookingCode, qrCode, referral_code || null]
-    );
-
-    const booking = result.rows[0];
-
+    const b = result.booking;
     res.json({
       success: true,
       booking: {
-        id: booking.id,
-        gymId: booking.gym_id,
-        gymName: g.name,
-        date: booking.booking_date,
-        time: booking.start_time,
-        endTime: booking.end_time,
-        price: parseFloat(booking.total_amount),
-        bookingCode: booking.booking_code,
-        status: booking.status,
+        id: b.id,
+        gymId: b.gymId,
+        gymName: b.gymName,
+        date: b.date,
+        time: b.time,
+        endTime: b.endTime,
+        price: b.price,
+        bookingCode: b.bookingCode,
+        status: b.status,
       },
     });
   } catch (err) {
