@@ -26,8 +26,8 @@ const router = express.Router();
 
 const GROQ_BASE = 'https://api.groq.com/openai/v1';
 const STT_MODEL = process.env.VOICE_STT_MODEL || 'whisper-large-v3-turbo';
-const TTS_MODEL = process.env.VOICE_TTS_MODEL || 'canopylabs/orpheus-3b-0.1-ft';
-const TTS_VOICE = process.env.VOICE_TTS_VOICE || 'tara';
+const TTS_MODEL = process.env.VOICE_TTS_MODEL || 'canopylabs/orpheus-v1-english';
+const TTS_VOICE = process.env.VOICE_TTS_VOICE || 'hannah';
 
 // Groq caps uploads at 25MB; a spoken sentence is well under 1MB. Cap low on purpose.
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 * 1024 * 1024 } });
@@ -115,7 +115,7 @@ router.post('/tts', async (req, res) => {
       const detail = r.body ? await r.text() : '';
       console.error('[Voice] TTS failed:', r.status, detail.slice(0, 300));
       // The caller falls back to text-only; never break the conversation over audio.
-      return res.status(502).json({ success: false, error: 'Voice is unavailable right now.' });
+      return res.status(502).json({ success: false, error: 'Voice is unavailable right now.', detail: String(detail).slice(0, 300) });
     }
 
     res.setHeader('Content-Type', 'audio/wav');
@@ -124,7 +124,7 @@ router.post('/tts', async (req, res) => {
     return res.end();
   } catch (err) {
     console.error('[Voice] TTS error:', err.message);
-    if (!res.headersSent) return res.status(502).json({ success: false, error: 'Voice is unavailable right now.' });
+    if (!res.headersSent) return res.status(502).json({ success: false, error: 'Voice is unavailable right now.', detail: String(detail).slice(0, 300) });
     return res.end();
   }
 });
