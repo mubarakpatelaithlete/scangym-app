@@ -74,3 +74,12 @@ test('uploads are capped so the endpoint cannot be farmed', () => {
   assert.ok(/fileSize:\s*\d+\s*\*\s*1024\s*\*\s*1024/.test(src), 'STT uploads must have a size limit');
   assert.ok(/MAX_TTS_CHARS/.test(src), 'TTS input must be length-capped');
 });
+
+test('the voice router parses its own JSON body', () => {
+  const src = read('server/routes/voice.js');
+  assert.ok(/router\.use\(express\.json/.test(src), 'server.js only json-parses a hand-listed set of prefixes, so this router must parse its own');
+
+  const server = read('server/server.js');
+  const list = server.slice(server.indexOf('const apiPaths'), server.indexOf('apiPaths.forEach'));
+  assert.ok(!/\/api\/voice/.test(list), 'if /api/voice is ever added to apiPaths, drop the local parser to avoid double-parsing');
+});
