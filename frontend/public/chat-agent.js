@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Chat agent engine — ONE ChatGPT-style chat, configured per tab.
  *
  * partner-chat.js and squad-chat.js used to be two ~750-line copies of the same file.
@@ -40,6 +40,8 @@ function createChatAgent(cfg) {
     pending: null, // { tool, args } awaiting a Yes
     listening: false,
     voice: false,  // true once the customer has spoken: then we speak back
+    live: false,   // hands-free: it listens, answers out loud, listens again
+    spoken: 0,     // how much of the streaming answer has been sent to be said
   };
 
   /**
@@ -135,6 +137,25 @@ function createChatAgent(cfg) {
       '.pchat-ai a{color:#ffb87a;text-decoration:underline}',
       '.pchat-ai.rich{white-space:normal}',
       '.pchat-stop{background:#191926;border:1px solid rgba(255,255,255,.18);color:#fff}',
+      // Live voice. The product promise is that you say it and it happens, so the
+      // hands-free surface is the whole panel, not a button you keep pressing.
+      '.pchat-live{position:absolute;inset:0;z-index:5;display:none;flex-direction:column;align-items:center;',
+      'justify-content:center;gap:22px;background:radial-gradient(120% 90% at 50% 20%,#151527 0%,#0b0b14 62%)}',
+      '.pchat-live.on{display:flex}',
+      '.pchat-orb{position:relative;width:132px;height:132px;border-radius:50%;',
+      'background:radial-gradient(circle at 34% 30%,#ffb87a 0%,#FF6D00 46%,#c23c00 100%);',
+      'box-shadow:0 0 46px rgba(255,109,0,.42);transition:transform .09s linear}',
+      '.pchat-orb::after{content:"";position:absolute;inset:-16px;border-radius:50%;',
+      'border:2px solid rgba(255,109,0,.32);animation:pchatring 2.1s ease-out infinite}',
+      '@keyframes pchatring{0%{transform:scale(.86);opacity:.85}100%{transform:scale(1.28);opacity:0}}',
+      '.pchat-live.thinking .pchat-orb{background:radial-gradient(circle at 34% 30%,#cfd6e6 0%,#7c8296 55%,#3a3f4f 100%);box-shadow:0 0 34px rgba(160,170,200,.3)}',
+      '.pchat-live.speaking .pchat-orb{background:radial-gradient(circle at 34% 30%,#9ff5c8 0%,#22c55e 52%,#0f7a3d 100%);box-shadow:0 0 46px rgba(34,197,94,.4)}',
+      '.pchat-live-state{font-size:15px;font-weight:600;color:#e9edf5;letter-spacing:.2px}',
+      '.pchat-live-sub{font-size:12.5px;color:rgba(255,255,255,.45);text-align:center;padding:0 34px;line-height:1.5}',
+      '.pchat-live-acts{display:flex;gap:10px;margin-top:4px}',
+      '.pchat-live-btn{background:#191926;border:1px solid rgba(255,255,255,.14);color:#e9edf5;border-radius:22px;',
+      'padding:10px 18px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit}',
+      '.pchat-live-btn.end{background:#ef4444;border-color:#ef4444;color:#fff}',
     ].join(''));
     var el = document.createElement('style');
     el.id = T('pchat-styles');
@@ -165,12 +186,20 @@ function createChatAgent(cfg) {
       '</div>' +
       T('<div class="pchat-scroll" id="pchat-scroll"></div>') +
       T('<div class="pchat-chips" id="pchat-chips"></div>') +
-      T('<div class="pchat-hint" id="pchat-hint">Tap, type, or hold the mic — all three work.</div>') +
+      T('<div class="pchat-hint" id="pchat-hint">Tap the mic and just talk — or type. Both work.</div>') +
       T('<div class="pchat-bar">') +
       T('<textarea class="pchat-input" id="pchat-input" rows="1" placeholder="Type or say what you need…"></textarea>') +
       T('<button class="pchat-rnd pchat-mic" id="pchat-mic">🎤</button>') +
       T('<button class="pchat-rnd pchat-send" id="pchat-send">➤</button>') +
-      '</div>';
+      '</div>' +
+      T('<div class="pchat-live" id="pchat-live">') +
+      T('<div class="pchat-orb" id="pchat-orb"></div>') +
+      T('<div class="pchat-live-state" id="pchat-live-state">Listening…</div>') +
+      T('<div class="pchat-live-sub" id="pchat-live-sub">Just say what you need — stop talking and I\'ll answer. Talk over me any time.</div>') +
+      T('<div class="pchat-live-acts">') +
+      T('<button class="pchat-live-btn" id="pchat-live-type">⌨ Type instead</button>') +
+      T('<button class="pchat-live-btn end" id="pchat-live-end">End voice</button>') +
+      '</div></div>';
     document.body.appendChild(root);
 
     document.getElementById(T('pchat-close')).onclick = close;
@@ -179,6 +208,8 @@ function createChatAgent(cfg) {
       send(document.getElementById(T('pchat-input')).value);
     };
     document.getElementById(T('pchat-mic')).onclick = toggleMic;
+    document.getElementById(T('pchat-live-end')).onclick = endLive;
+    document.getElementById(T('pchat-live-type')).onclick = endLive;
 
     var input = document.getElementById(T('pchat-input'));
     input.addEventListener('keydown', function (e) {
@@ -397,6 +428,7 @@ function createChatAgent(cfg) {
     }
     chips([]);
     S.busy = true;
+    S.spoken = 0;
     typingOn(); // the send button becomes Stop in setBusyUI(true), so it stays tappable
 
     stream({ message: text, history: history(), confirm: confirmPayload || null });
@@ -483,6 +515,7 @@ function createChatAgent(cfg) {
         acc += data.text;
         renderRich(aiBubble, acc);
         scrollDown();
+        sayReady(acc); // start talking on the first finished sentence, not the last
       } else if (event === 'tool') {
         typingOff();
         if (data.state === 'running') toolLine(data.tool);
@@ -525,7 +558,20 @@ function createChatAgent(cfg) {
 
       // Speech out. The promise of the product is that you hear the answer, not that
       // you read it — but audio is a bonus layer: it never blocks or breaks the chat.
-      if (acc && S.voice && window.SGVoice) window.SGVoice.speak(speakable(acc));
+      if (acc && S.voice && window.SGVoice) {
+        sayReady(acc, true);
+        if (window.SGVoice.endSay) {
+          window.SGVoice.endSay().then(function () {
+            if (S.live && window.SGVoice.isLive && window.SGVoice.isLive()) {
+              liveState('listening');
+              window.SGVoice.resumeLive();
+            }
+          });
+        }
+      } else if (S.live && window.SGVoice && window.SGVoice.isLive && window.SGVoice.isLive()) {
+        liveState('listening');
+        window.SGVoice.resumeLive();
+      }
 
       if (S.pending) {
         var p = S.pending;
@@ -576,7 +622,114 @@ function createChatAgent(cfg) {
     S.listening = on;
   }
 
+  /**
+   * Sends whole sentences to be spoken as they arrive. Waiting for the full
+   * answer adds a second of silence to every reply; a sentence is enough to
+   * start, and the queue keeps the order honest.
+   */
+  function sayReady(acc, flush) {
+    if (!S.voice || !window.SGVoice || !window.SGVoice.say) return;
+    var rest = acc.slice(S.spoken);
+    if (!rest) return;
+    if (flush) {
+      var tail = speakable(rest);
+      S.spoken = acc.length;
+      if (tail) window.SGVoice.say(tail);
+      return;
+    }
+    var cut = -1;
+    var m = /[.!?…](\s|$)|\n/g;
+    var hit;
+    while ((hit = m.exec(rest)) !== null) cut = hit.index + 1;
+    if (cut < 12) return;
+    var chunk = speakable(rest.slice(0, cut));
+    S.spoken += cut;
+    if (chunk) window.SGVoice.say(chunk);
+  }
+
+  // ── hands-free ────────────────────────────────────────────────────────────
+  function liveEl(id) { return document.getElementById(T(id)); }
+
+  var LIVE_COPY = {
+    listening: ['Listening…', 'Just say what you need — stop talking and I\'ll answer.'],
+    heard: ['Listening…', 'Go on, I\'m with you.'],
+    thinking: ['Thinking…', 'One moment.'],
+    speaking: ['Speaking…', 'Talk over me any time and I\'ll stop.'],
+  };
+
+  function liveState(state) {
+    var panel = liveEl('pchat-live');
+    if (!panel) return;
+    panel.classList.remove('thinking', 'speaking');
+    if (state === 'thinking' || state === 'speaking') panel.classList.add(state);
+    var copy = LIVE_COPY[state] || LIVE_COPY.listening;
+    var label = liveEl('pchat-live-state');
+    var sub = liveEl('pchat-live-sub');
+    if (label) label.textContent = copy[0];
+    if (sub) sub.textContent = copy[1];
+  }
+
+  function startLive() {
+    if (!window.SGVoice || !window.SGVoice.startLive) { toggleMicClassic(); return; }
+    var panel = liveEl('pchat-live');
+    if (panel) panel.classList.add('on');
+    liveState('listening');
+    S.live = true;
+    S.voice = true;
+    micOn(true);
+
+    window.SGVoice
+      .startLive({
+        onState: function (state) {
+          if (state === 'thinking') liveState('thinking');
+          else if (state === 'listening') liveState('listening');
+          else if (state === 'speaking') liveState('speaking');
+        },
+        onHeard: function () { liveState('heard'); },
+        onLevel: function (level) {
+          var orb = liveEl('pchat-orb');
+          if (orb) orb.style.transform = 'scale(' + (1 + Math.min(level * 3.2, 0.42)).toFixed(3) + ')';
+        },
+        onBargeIn: function () {
+          // You talked over it: stop the answer coming as well as the audio.
+          liveState('listening');
+          if (S.busy) stopStream();
+        },
+        onFinal: function (said) {
+          liveState('thinking');
+          S.spoken = 0;
+          S.voice = true;
+          if (S.busy) return;
+          send(said);
+        },
+      })
+      .catch(function (err) {
+        endLive();
+        setHint((err && err.message) || 'Voice is not available here — typing works.');
+      });
+  }
+
+  function endLive() {
+    S.live = false;
+    micOn(false);
+    var panel = liveEl('pchat-live');
+    if (panel) panel.classList.remove('on');
+    if (window.SGVoice && window.SGVoice.stopLive) window.SGVoice.stopLive();
+  }
+
   function toggleMic() {
+    if (S.live) { endLive(); return; }
+    if (window.SGVoice && window.SGVoice.startLive && window.SGVoice.canRecord()) {
+      window.SGVoice.ready().then(function (on) {
+        if (on) startLive();
+        else toggleMicClassic();
+      });
+      return;
+    }
+    toggleMicClassic();
+  }
+
+  function toggleMicClassic() {
     // Barge-in: if it is talking and you touch the mic, it stops talking at once.
     if (window.SGVoice && window.SGVoice.isSpeaking()) window.SGVoice.shutUp();
 
@@ -714,6 +867,7 @@ function createChatAgent(cfg) {
     var root = document.getElementById(T('pchat'));
     if (root) root.classList.remove('open');
     S.open = false;
+    endLive(); // never leave a microphone running behind a closed panel
   }
 
   /**

@@ -57,7 +57,9 @@ test('the server exposes voice and the page loads it', () => {
 
 test('every tab speaks, because speaking lives in the shared engine', () => {
   const src = read('frontend/public/chat-agent.js');
-  assert.ok(/SGVoice\.speak\(/.test(src), 'the shared engine must speak its answers');
+  // Answers are now spoken sentence by sentence as they stream (SGVoice.say),
+  // which is what keeps the first words under a second; .speak() stays valid too.
+  assert.ok(/SGVoice\.(speak|say)\(/.test(src), 'the shared engine must speak its answers');
   assert.ok(/speakable\(/.test(src), 'markdown and links must be stripped before speaking');
   assert.ok(/SGVoice\.shutUp\(\)/.test(src), 'tapping the mic while it talks must interrupt it (barge-in)');
 });
@@ -83,3 +85,36 @@ test('the voice router parses its own JSON body', () => {
   const list = server.slice(server.indexOf('const apiPaths'), server.indexOf('apiPaths.forEach'));
   assert.ok(!/\/api\/voice/.test(list), 'if /api/voice is ever added to apiPaths, drop the local parser to avoid double-parsing');
 });
+
+/* ── live voice (hands-free) ──────────────────────────────────────────────
+ * Section 9 of the product vision is "you just say it": no tap to start a
+ * sentence, no tap to end one, and you can talk over the answer. These are
+ * text guards on the shipped browser files, which have no test runtime of
+ * their own — if the hands-free path is deleted, this fails loudly.            */
+{
+  const fsx = require('node:fs');
+  const pathx = require('node:path');
+  const PUBX = pathx.join(__dirname, '..', 'frontend', 'public');
+  const readx = (f) => fsx.readFileSync(pathx.join(PUBX, f), 'utf8');
+
+  test('voice.js exposes hands-free live mode and streaming speech', () => {
+    const s = readx('voice.js');
+    for (const api of ['startLive', 'stopLive', 'resumeLive', 'isLive', 'say:', 'endSay']) {
+      assert.ok(s.includes(api), `voice.js no longer exposes ${api}`);
+    }
+    assert.ok(/getByteTimeDomainData/.test(s), 'voice.js lost its end-of-speech detection');
+  });
+
+  test('chat-agent.js starts live voice from the mic and speaks each sentence', () => {
+    const s = readx('chat-agent.js');
+    assert.ok(s.includes('startLive'), 'the mic no longer opens hands-free voice');
+    assert.ok(s.includes('sayReady'), 'answers are no longer spoken sentence by sentence');
+    assert.ok(s.includes('onBargeIn'), 'talking over the answer no longer stops it');
+  });
+
+  test('index.html loads the current voice bundles', () => {
+    const s = readx('index.html');
+    assert.ok(/\/voice\.js\?v=2\.0/.test(s), 'voice.js cache-bust not bumped');
+    assert.ok(/\/chat-agent\.js\?v=3\.0/.test(s), 'chat-agent.js cache-bust not bumped');
+  });
+}
