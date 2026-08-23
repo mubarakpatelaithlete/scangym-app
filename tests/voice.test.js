@@ -114,7 +114,19 @@ test('the voice router parses its own JSON body', () => {
 
   test('index.html loads the current voice bundles', () => {
     const s = readx('index.html');
-    assert.ok(/\/voice\.js\?v=2\.0/.test(s), 'voice.js cache-bust not bumped');
-    assert.ok(/\/chat-agent\.js\?v=3\.0/.test(s), 'chat-agent.js cache-bust not bumped');
+    assert.ok(/\/voice\.js\?v=3\.0/.test(s), 'voice.js cache-bust not bumped');
+    assert.ok(/\/chat-agent\.js\?v=4\.0/.test(s), 'chat-agent.js cache-bust not bumped');
   });
 }
+
+test('voice arms itself without a dedicated tap', () => {
+  const s = fs.readFileSync(path.join(ROOT, 'frontend/public/voice-always.js'), 'utf8');
+  assert.ok(/navigator\.permissions/.test(s), 'no already-granted fast path');
+  assert.ok(/pointerdown/.test(s) && /first-gesture/.test(s), 'no first-gesture arming');
+  assert.ok(/sg_voice_off_until/.test(s), 'opt-out is not remembered');
+  const html = fs.readFileSync(path.join(ROOT, 'frontend/public/index.html'), 'utf8');
+  assert.ok(/voice-always\.js/.test(html), 'voice-always.js is not loaded');
+  const agent = fs.readFileSync(path.join(ROOT, 'frontend/public/chat-agent.js'), 'utf8');
+  assert.ok(/startLive: function/.test(agent), 'agents do not expose startLive');
+  assert.ok(/onTab: function/.test(agent), 'agents do not expose onTab');
+});
