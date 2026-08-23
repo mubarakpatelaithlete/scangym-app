@@ -937,7 +937,17 @@ function createChatAgent(cfg) {
   });
   setInterval(syncVisibility, 800); // the app routes without firing popstate
 
-  return { open: open, close: close, ns: NS };
+  return {
+    open: open,
+    close: close,
+    ns: NS,
+    // Used by voice-always.js so voice can be the front door, not a button.
+    onTab: function () { return cfg.paths.test(location.pathname); },
+    isLive: function () { return !!S.live; },
+    isOpen: function () { return !!S.open; },
+    startLive: function () { build(); open(); startLive(); },
+    endLive: function () { endLive(); },
+  };
 }
 
 window.sgChatAgent = { create: createChatAgent };
