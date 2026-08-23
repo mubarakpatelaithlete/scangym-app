@@ -25,7 +25,7 @@ const PARTNER_SHARE = 0.85;
 /** Resolve the gym the owner is acting on. Never trusts a caller-supplied id blindly. */
 async function resolveGym(userId, gymId) {
   const params = [userId];
-  let sql = `SELECT id, name, address, day_pass_price, is_active
+  let sql = `SELECT id, name, address, day_pass_price, is_accepting_bookings
              FROM gyms WHERE claimed_by::text = $1::text`;
   if (gymId) {
     params.push(gymId);
@@ -96,7 +96,7 @@ const tools = {
           name: gym.name,
           address: gym.address,
           dayPassPrice: Number(gym.day_pass_price) || null,
-          acceptingBookings: gym.is_active !== false,
+          acceptingBookings: gym.is_accepting_bookings !== false,
         },
       };
     },
@@ -327,8 +327,8 @@ const tools = {
       if (missing) return missing;
 
       const { rows } = await pool.query(
-        `UPDATE gyms SET is_active = $1, updated_at = NOW()
-          WHERE id = $2 AND claimed_by::text = $3::text RETURNING is_active`,
+        `UPDATE gyms SET is_accepting_bookings = $1, updated_at = NOW()
+          WHERE id = $2 AND claimed_by::text = $3::text RETURNING is_accepting_bookings`,
         [!!open, gym.id, userId]
       );
       if (!rows.length) return { ok: false, message: 'Could not update that gym.' };
@@ -338,7 +338,7 @@ const tools = {
         message: open
           ? 'Open and accepting bookings again.'
           : 'Paused — hidden from search until you reopen.',
-        acceptingBookings: rows[0].is_active !== false,
+        acceptingBookings: rows[0].is_accepting_bookings !== false,
       };
     },
   },
