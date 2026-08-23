@@ -34,6 +34,12 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 *
 
 const MAX_TTS_CHARS = 700;
 
+// This router parses its own JSON. server.js only applies express.json to a hand-listed
+// set of API prefixes, so a new route silently receives an undefined body and every
+// request answers "Nothing to say." — which is exactly what happened on production the
+// first time. express.json ignores multipart, so /stt's file upload is unaffected.
+router.use(express.json({ limit: '64kb' }));
+
 function key() {
   return process.env.GROQ_API_KEY || '';
 }
