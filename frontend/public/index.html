@@ -1,1 +1,200 @@
-﻿Get-Clipboard -Raw | Set-Content -Path $p -Encoding utf8 -NoNewline
+﻿<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5,viewport-fit=cover">
+<meta name="theme-color" content="#080812">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="format-detection" content="telephone=no">
+<title>ScanGym - Book a Gym. Anywhere.</title>
+<meta name="description" content="Find and book gyms near you. 24-hour day passes, QR entry, no membership needed.">
+<meta name="keywords" content="gym finder, book gym, day pass gym, gym near me, 24 hour gym, gym booking app, no membership gym, drop-in gym, gym marketplace">
+<meta name="author" content="ScanGym">
+<link rel="canonical" href="https://scangym.com/">
+
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://scangym.com/">
+<meta property="og:title" content="ScanGym - Book a Gym. Anywhere.">
+<meta property="og:description" content="Find and book 1.2M+ gyms worldwide. Day passes from $5.49, QR entry, no membership needed.">
+<meta property="og:site_name" content="ScanGym">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="ScanGym - Book a Gym. Anywhere.">
+<meta name="twitter:description" content="Find and book 1.2M+ gyms worldwide. Day passes from $5.49, QR entry, no membership needed.">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "ScanGym",
+  "url": "https://scangym.com",
+  "description": "ScanGym is a gym finder and booking marketplace. Search 1.2 million+ gyms worldwide, buy day passes from $5.49, and enter with a QR code. No membership required.",
+  "applicationCategory": "HealthApplication",
+  "operatingSystem": "Web",
+  "offers": {
+    "@type": "Offer",
+    "price": "5.49",
+    "priceCurrency": "USD",
+    "description": "Day pass -- single visit to any gym"
+  },
+  "featureList": [
+    "Search 1.2M+ gyms worldwide",
+    "Day passes from $5.49",
+    "QR code gym entry",
+    "No membership required",
+    "24/7 gym filter",
+    "Self-service entry filter",
+    "Real-time gym availability",
+    "Stripe secure payments"
+  ],
+  "creator": {
+    "@type": "Organization",
+    "name": "ScanGym",
+    "url": "https://scangym.com"
+  }
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "ScanGym",
+  "url": "https://scangym.com",
+  "description": "ScanGym is a gym booking marketplace that lets anyone book a day pass at any gym, anywhere -- no membership needed.",
+  "foundingDate": "2024",
+  "sameAs": [],
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "contactType": "customer support",
+    "url": "https://scangym.com/more"
+  }
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {"@type":"Question","name":"What is ScanGym?","acceptedAnswer":{"@type":"Answer","text":"ScanGym is a gym finder and booking marketplace. It lets you search over 1.2 million gyms worldwide, buy a day pass starting from $5.49, and enter the gym using a QR code -- no membership or contract needed."}},
+    {"@type":"Question","name":"How much does a gym day pass cost on ScanGym?","acceptedAnswer":{"@type":"Answer","text":"Day passes on ScanGym start from $5.49 per visit. Prices vary by gym location and facilities. There are no monthly memberships or long-term commitments."}},
+    {"@type":"Question","name":"How does ScanGym work?","acceptedAnswer":{"@type":"Answer","text":"Search for gyms near you, pick one, buy a day pass with Stripe, and receive a QR code. Show the QR code at the gym entrance to check in."}},
+    {"@type":"Question","name":"Can I find 24-hour gyms on ScanGym?","acceptedAnswer":{"@type":"Answer","text":"Yes. ScanGym has a dedicated 24/7 gym filter that shows only gyms open around the clock."}},
+    {"@type":"Question","name":"Do I need a gym membership to use ScanGym?","acceptedAnswer":{"@type":"Answer","text":"No. ScanGym is built for people who don't want a membership. You pay per visit with a day pass. No contracts, no cancellation fees, no commitments."}}
+  ]
+}
+</script>
+
+<link rel="manifest" href="/manifest.json">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://js.stripe.com" crossorigin>
+<link rel="preconnect" href="https://maps.googleapis.com">
+<link rel="preconnect" href="https://maps.gstatic.com" crossorigin>
+
+<link rel="dns-prefetch" href="https://api.stripe.com">
+<link rel="preconnect" href="https://lh3.googleusercontent.com" crossorigin>
+<link rel="dns-prefetch" href="https://lh3.googleusercontent.com">
+<link rel="dns-prefetch" href="https://streetviewpixels-pa.googleapis.com">
+<link rel="dns-prefetch" href="https://places.googleapis.com">
+
+<link rel="preload" href="/styles.css?v=5.3.1" as="style">
+<link rel="preload" href="/app.ctr576.js?v=5.3.1" as="script" fetchpriority="high">
+
+<link rel="stylesheet" href="/styles.css?v=5.3.1">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Sora:wght@600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Sora:wght@600;700&display=swap" rel="stylesheet"></noscript>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:#0f172a;color:#e2e8f0;-webkit-font-smoothing:antialiased}
+h1,h2,h3,.font-brand{font-family:'Sora',sans-serif}
+#app{min-height:100vh}
+.fade-in{animation:fi .3s ease-in}
+@keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.gym-card:hover{transform:translateY(-4px);box-shadow:0 12px 40px rgba(255,109,0,.15)}
+.gym-card{transition:all .2s}
+.badge{animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.7}}
+.skeleton{background:linear-gradient(90deg,#1e293b 25%,#334155 50%,#1e293b 75%);background-size:200% 100%;animation:shimmer 1.5s infinite}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+</style>
+
+<script type="speculationrules">
+{
+  "prerender": [{"where": { "href_matches": "/*" },"eagerness": "moderate"}],
+  "prefetch": [{"where": { "href_matches": "/*" },"eagerness": "moderate"}]
+}
+</script>
+
+</head>
+<body class="bg-dark min-h-screen">
+<!-- Perf Round 1: USP banner rendered statically (was injected by JS 2s late, which
+     made it the LCP element and pushed LCP to ~8s under mobile throttling). -->
+<div id="sg-usp-banner" style="position:fixed;top:0;left:0;right:0;z-index:var(--sg-z-usp,9800);background:linear-gradient(90deg,rgba(255,109,0,.95),rgba(230,98,0,.95));padding:6px 12px;text-align:center;font-size:11px;font-weight:700;color:#fff;display:flex;align-items:center;justify-content:center;gap:8px">&#127947;&#65039; <span>30 gyms in 30 days &mdash; No subscription. Pay only when you go.</span> <span onclick="this.parentElement.style.display='none'" style="opacity:.6;font-size:14px;cursor:pointer;margin-left:8px">&#10005;</span></div>
+<script>setTimeout(function(){var b=document.getElementById('sg-usp-banner');if(b&&b.parentElement){b.style.transition='opacity 1s';b.style.opacity='0';setTimeout(function(){b.remove();},1000);}},7000);</script>
+<div id="app">
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:0 24px;text-align:center">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:40px">
+      <span style="font-size:28px">&#127947;</span>
+      <span style="font-family:Sora,sans-serif;font-weight:800;font-size:24px;color:white">Scan<span style="color:#FF6D00">Gym</span></span>
+    </div>
+    <div class="skeleton" style="width:100%;max-width:320px;height:48px;border-radius:14px;margin:0 auto 12px"></div>
+    <div class="skeleton" style="width:100%;max-width:320px;height:48px;border-radius:14px;margin:0 auto 16px"></div>
+    <div class="skeleton" style="width:200px;height:16px;border-radius:8px;margin:0 auto"></div>
+  </div>
+  <div id="skeleton-tab-bar" style="position:fixed;bottom:0;left:0;right:0;height:64px;background:rgba(10,10,22,.97);display:flex;align-items:center;justify-content:space-around;border-top:1px solid rgba(255,255,255,.08);padding-bottom:env(safe-area-inset-bottom,0)">
+    <div style="text-align:center"><span style="font-size:24px">&#127910;</span><br><span style="font-size:10px;color:#FF6D00;font-weight:600">Reels</span></div>
+    <div style="text-align:center;opacity:.45"><span style="font-size:24px">&#127947;</span><br><span style="font-size:10px;color:rgba(255,255,255,.4);font-weight:600">Book</span></div>
+    <div style="text-align:center;opacity:.45"><span style="font-size:24px">&#128100;</span><br><span style="font-size:10px;color:rgba(255,255,255,.4);font-weight:600">Profile</span></div>
+  </div>
+</div>
+
+<script>window.__configPromise=fetch('/api/config').then(r=>r.json()).catch(()=>({mapsKey:'',stripeKey:'',brand:'ScanGym',gymCount:1200000,liveSearch:true}));</script>
+
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('/sw.js').catch(()=>{});
+  });
+}
+</script>
+
+<script src="/robust-location.js" defer></script>
+<script src="/pricing.js" defer></script>
+<script src="/app.ctr576.js?v=5.3.1" defer></script>
+<script src="/app-patches.js?v=2.0" defer></script>
+<script src="/app-patches-v3.js?v=1.1" defer></script>
+<script src="/continue-cta-flow.js?v=1.2" defer></script>
+<script src="/tabs-v4.js?v=1.1" defer></script>
+<script src="/round2.js?v=1.3" defer></script>
+<script src="/round3.js?v=1.0" defer></script>
+<script src="/ui-polish.js?v=1.1" defer></script>
+<script src="/phase2-improvements.js?v=1.0" defer></script>
+<script src="/round4-ui.js?v=1.0" defer></script>
+<script>
+/* PERF: lazy-load non-first-paint patch scripts (partner/admin/wallet tooling)
+   after the load event, at idle — keeps ~180KB of JS off the critical path. */
+(function(){
+  var LAZY=['/partner-editable.js?v=1.3','/smart-lock-finder.js?v=1.1','/batch2.js?v=1.5','/batch3.js?v=1.3','/batch4.js?v=1.0','/wallet-withdraw.js?v=1.2','/admin-dashboard.js?v=1.0','/nps-survey.js?v=1.0','/ux-v5-improvements.js?v=1.0','/ux-v6-speed.js?v=1.0'];
+  function load(){LAZY.forEach(function(src){var s=document.createElement('script');s.src=src;s.defer=true;document.head.appendChild(s);});}
+  function idle(){('requestIdleCallback' in window)?requestIdleCallback(load,{timeout:2000}):setTimeout(load,300);}
+  if(document.readyState==='complete'){idle();}else{window.addEventListener('load',idle);}
+})();
+</script>
+
+<script src="/round5-ui.js?v=1.2" defer></script>
+<!-- one chat engine, two personalities (must load first; defer keeps the order) -->
+<script src="/chat-agent.js?v=1.0" defer></script>
+<script src="/partner-chat.js?v=2.0" defer></script>
+<script src="/squad-chat.js?v=2.0" defer></script>
+<script src="/book-chat.js?v=2.0" defer></script>
+</body>
+</html>
+
+<!-- deploy trigger v1.1 -->
+<!-- v1.1 deploy -->
