@@ -1364,9 +1364,21 @@ async function searchGyms(query, isExplicit, _triggerLayer){state.lastSearchQuer
     // ━━━ RACE CONDITION FIX: If GPS (layer 5) loaded while this API call was in-flight, ━━━
     // ━━━ discard these stale results. GPS data is always more accurate. ━━━
     if(_triggerLayer && window._locationLayer > _triggerLayer){
-      console.log('[Search] Discarding stale L'+_triggerLayer+' results for "'+query+'" — L'+window._locationLayer+' already loaded');
-      state._searchLoading=false;
-      return;
+      /* Stale only matters when something better is actually on screen. Discarding onto an
+         empty screen is how a visitor ends up staring at "No Gyms Found" while two searches
+         for the same city cancel each other out. */
+      var _stale=data.gyms||[];
+      if(state.gyms&&state.gyms.length>0){
+        console.log('[Search] Discarding stale L'+_triggerLayer+' results for "'+query+'" — L'+window._locationLayer+' already loaded');
+        state._searchLoading=false;
+        return;
+      }
+      if(_stale.length>0){
+        console.log('[Search] Keeping L'+_triggerLayer+' results for "'+query+'" — nothing better is showing yet');
+        state.gyms=_stale;state.lastNonEmptyQuery=query;state.searchQuery=query;
+        state._searchLoading=false;render();
+        return;
+      }
     }
     var _incoming=data.gyms||[];
     /* A location upgrade must never turn a working screen into an empty one. Boardman, Oregon
@@ -11415,6 +11427,16 @@ function _upgradeLocation(layer, query, meta){
   // GPS/IP should not hijack what the user deliberately asked for
   if(state.userExplicitSearch) return false;
   if(layer<=window._locationLayer) return false; // Already showing more precise data
+  /* Same city, more precise source: record the layer but do not fire a duplicate request.
+     Two searches for "gyms in Boardman" raced, one was aborted and the other discarded as
+     stale, and the visitor was left with an empty screen. */
+  if(query&&query===state.lastSearchQuery){
+    window._locationLayer=layer;
+    if(meta&&meta.lat&&meta.lng){state.searchLat=meta.lat;state.searchLng=meta.lng;}
+    if(meta){setCachedLocation(meta);recordLocationForPrediction(meta);}
+    console.log('[Location] Layer',layer,'confirms',query,'— no duplicate search');
+    return true;
+  }
   window._locationLayer=layer;
   console.log('[Location] Layer',layer,'upgrade →',query,meta?.source||'');
   // ━━━ FIX: Set searchLat/Lng from meta so text search gets location bias ━━━
