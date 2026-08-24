@@ -2153,3 +2153,8 @@ router.post('/first-free', async (req, res) => {
      card details must only ever reach Stripe.js in the browser. */
 
 module.exports = router;
+
+// Shared with lib/checkout-actions.js so a spoken booking issues exactly the same
+// 2-scan QR as the Book button. Attached to the router rather than re-exported to
+// keep `app.use('/api/payment', require('./routes/payment'))` working unchanged.
+module.exports.generate2ScanQR = generate2ScanQR;
