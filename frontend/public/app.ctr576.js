@@ -1406,6 +1406,9 @@ async function searchGyms(query, isExplicit, _triggerLayer){state.lastSearchQuer
       if(_stale.length>0){
         console.log('[Search] Keeping L'+_triggerLayer+' results for "'+query+'" — nothing better is showing yet');
         state.gyms=_stale;state.lastNonEmptyQuery=query;state.searchQuery=query;
+        /* This path returns early, so it must seed the caches itself or the next visit
+           has nothing to paint instantly. */
+        _gymCache.setSearch(query,_stale);
         state._searchLoading=false;render();
         return;
       }
