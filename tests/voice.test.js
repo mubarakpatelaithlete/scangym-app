@@ -160,3 +160,11 @@ test('saying yes confirms a booking — no tap required', () => {
   }
   assert.ok(/confirmByWord\(text\)/.test(src), 'send() must route spoken agreement through confirmByWord');
 });
+
+test('the browser is allowed to use the microphone on our own origin', () => {
+  const src = read('server/server.js');
+  const m = src.match(/'Permissions-Policy',\s*'([^']+)'/);
+  assert.ok(m, 'server must set a Permissions-Policy header');
+  assert.ok(/microphone=\(self\)/.test(m[1]),
+    'microphone must be allowed for self — microphone=() silently kills voice');
+});
