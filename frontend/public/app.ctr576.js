@@ -519,7 +519,37 @@ const _gymCache={
   get(lat,lng){try{var k=this._key(lat,lng);var raw=sessionStorage.getItem(k);if(!raw)return null;var d=JSON.parse(raw);if(Date.now()-d.t>600000)return null;return d.g;}catch(e){return null;}},
   set(lat,lng,gyms){try{var k=this._key(lat,lng);sessionStorage.setItem(k,JSON.stringify({g:gyms,t:Date.now()}));}catch(e){}},
   getSearch(q){try{var raw=sessionStorage.getItem('sg_sc_'+q);if(!raw)return null;var d=JSON.parse(raw);if(Date.now()-d.t>600000)return null;return d.g;}catch(e){return null;}},
-  setSearch(q,gyms){try{sessionStorage.setItem('sg_sc_'+q,JSON.stringify({g:gyms,t:Date.now()}));}catch(e){}}
+  setSearch(q,gyms){try{sessionStorage.setItem('sg_sc_'+q,JSON.stringify({g:gyms,t:Date.now()}));}catch(e){}this.persistBoot(q,gyms);},
+  /* First paint must never wait on a live Google call. Keep the last good result in
+     localStorage so a returning visitor sees real gyms immediately, then let the location
+     cascade upgrade underneath them. */
+  BOOT_KEY:'sg_boot_gyms',
+  BOOT_TTL:24*60*60*1000,
+  persistBoot(q,gyms){try{if(!gyms||!gyms.length)return;localStorage.setItem(this.BOOT_KEY,JSON.stringify({q:q,g:gyms.slice(0,12),t:Date.now()}));}catch(e){}},
+  getBoot(){try{var raw=localStorage.getItem(this.BOOT_KEY);if(!raw)return null;var d=JSON.parse(raw);if(!d.g||!d.g.length)return null;if(Date.now()-d.t>this.BOOT_TTL)return null;return d;}catch(e){return null;}}
+};
+
+/* The local offer behind a global reel: which city this viewer is in, and the cheapest day
+   pass actually visible there. Returns null when we genuinely do not know yet — a made-up
+   price under a video is worse than no price. */
+window._sgLocalOffer=function(){
+  try{
+    var q=state.searchQuery||state.lastNonEmptyQuery||'';
+    var m=q.match(/\b(?:gyms?|fitness)\s+(?:in|near)\s+(.+)$/i);
+    var city=m?m[1].replace(/\s+24 hour$/i,'').trim():'';
+    if(!city){var c=(typeof getCachedLocation==='function')?getCachedLocation():null;city=(c&&c.city)?c.city:'';}
+    if(!city)return null;
+    var from=null;
+    (state.gyms||[]).forEach(function(g){
+      var raw=g&&(g.price||g.dayPassPrice||g.day_price);
+      if(!raw)return;
+      var num=parseFloat(String(raw).replace(/[^0-9.]/g,''));
+      if(!isFinite(num)||num<=0)return;
+      var sym=(String(raw).match(/[^0-9.,\s]/)||['\u00a3'])[0];
+      if(from===null||num<from.num)from={num:num,text:sym+num.toFixed(2)};
+    });
+    return {city:city,from:from?from.text:null};
+  }catch(e){return null;}
 };
 
 /* ═══ Perf #121: Photo preloader (priority queue pattern) ═══
@@ -11460,6 +11490,20 @@ window.autoLoadGyms=async function(){
 
   const t0=performance.now();
 
+  // ━━━ LAYER 0: last good gyms from the previous visit (<1ms, no network) ━━━
+  // The screen shows real gyms before a single request leaves the device.
+  try{
+    const boot=_gymCache.getBoot();
+    if(boot&&(!state.gyms||!state.gyms.length)){
+      state.gyms=boot.g;
+      state.searchQuery=boot.q;
+      state.lastNonEmptyQuery=boot.q;
+      state._bootPainted=true;
+      render();
+      console.log('[Location] L0 instant paint:',boot.g.length,'gyms from last visit ('+boot.q+')');
+    }
+  }catch(e){}
+
   // ━━━ LAYER 1: localStorage cache (<1ms) ━━━
   const cached=getCachedLocation();
   if(cached&&cached.query){
@@ -11482,7 +11526,7 @@ window.autoLoadGyms=async function(){
   }
 
   // ━━━ If no layer fired yet, show London IMMEDIATELY (never empty screen) ━━━
-  if(window._locationLayer===0){
+  if(window._locationLayer===0&&!state._bootPainted){
     searchGyms('gyms in London', false, 0);
     console.log('[Location] Default: London (no cache/hint available)');
   }
@@ -19988,8 +20032,12 @@ if(localStorage.getItem('sg_push_enabled')==='1'&&state.user){
       if(textEl)textEl.textContent='Book this gym';
       if(arrowEl)arrowEl.textContent='\u2192';
     }else{
-      if(textEl)textEl.textContent='Find gyms near me';
-      if(arrowEl)arrowEl.textContent='\ud83d\udccd';
+      /* The reel is global content, so the *button* carries the local offer: the viewer's own
+         city and the real cheapest day pass we can see there. "Find gyms near me" asked the
+         viewer to go looking; this tells them what it costs before they tap. */
+      var _local=(typeof window._sgLocalOffer==='function')?window._sgLocalOffer():null;
+      if(textEl)textEl.textContent=(_local&&_local.city)?('Book in '+_local.city):'Find gyms near me';
+      if(arrowEl)arrowEl.textContent=(_local&&_local.city)?'\u2192':'\ud83d\udccd';
     }
     if(currentTab==='book'){
       var gymP=_visibleCardPrice();
@@ -19997,7 +20045,8 @@ if(localStorage.getItem('sg_push_enabled')==='1'&&state.user){
       var dp=(typeof sgPrice==='function')?sgPrice('day'):null;
       priceEl.textContent=dp&&dp.display?('\u00b7 '+dp.display):'';
     }else{
-      priceEl.textContent='';
+      var _lo=(typeof window._sgLocalOffer==='function')?window._sgLocalOffer():null;
+      priceEl.textContent=(_lo&&_lo.from)?('\u00b7 from '+_lo.from):'';
     }
   }
   /* Keep price in sync while swiping through gym cards */
