@@ -1368,7 +1368,23 @@ async function searchGyms(query, isExplicit, _triggerLayer){state.lastSearchQuer
       state._searchLoading=false;
       return;
     }
-    state.gyms=data.gyms||[];
+    var _incoming=data.gyms||[];
+    /* A location upgrade must never turn a working screen into an empty one. Boardman, Oregon
+       resolved from IP, returned zero gyms, and wiped the London results already on screen. */
+    if(!isExplicit && _incoming.length===0 && state.gyms.length>0){
+      console.log('[Search] "'+query+'" has no gyms — keeping the '+state.gyms.length+' already showing');
+      state._searchLoading=false;
+      state.searchQuery=state.lastNonEmptyQuery||state.searchQuery;
+      render();
+      return;
+    }
+    if(_incoming.length>0) state.lastNonEmptyQuery=query;
+    /* The server widened to the nearest city with gyms — say so instead of quietly relocating them. */
+    if(data.fallback&&data.fallback.city){
+      state.locationFallback=data.fallback;
+      if(window.sgToast) sgToast('No gyms in '+(data.fallback.requested||'your area')+' yet — showing '+data.fallback.city,'info',4000);
+    } else { state.locationFallback=null; }
+    state.gyms=_incoming;
     state.nextPageToken=data.nextPageToken||null;
     state._searchLoading=false;
     _gymCache.setSearch(query,state.gyms);
