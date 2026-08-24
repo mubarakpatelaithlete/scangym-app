@@ -79,3 +79,16 @@ test('the client search budget allows for a widened second lookup', () => {
   const src = fs.readFileSync(path.join(ROOT, 'frontend/public/app.ctr576.js'), 'utf8');
   assert.ok(src.includes('controller.abort(),12000'), '8s aborted before the widened search could answer');
 });
+
+test('two location layers agreeing on a city do not race two searches', () => {
+  const src = fs.readFileSync(path.join(ROOT, 'frontend/public/app.ctr576.js'), 'utf8');
+  assert.ok(src.includes('no duplicate search'), 'a same-city upgrade must not re-fire the search');
+  assert.ok(src.includes('if(query&&query===state.lastSearchQuery)'), 'guard missing');
+});
+
+test('stale results are only discarded when something better is already on screen', () => {
+  const src = fs.readFileSync(path.join(ROOT, 'frontend/public/app.ctr576.js'), 'utf8');
+  const block = src.slice(src.indexOf('Discarding stale L') - 600, src.indexOf('Discarding stale L') + 600);
+  assert.ok(block.includes('if(state.gyms&&state.gyms.length>0)'), 'must check the screen is not empty first');
+  assert.ok(block.includes('nothing better is showing yet'), 'empty screen must keep the results it has');
+});
