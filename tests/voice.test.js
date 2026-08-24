@@ -130,3 +130,13 @@ test('voice arms itself without a dedicated tap', () => {
   assert.ok(/startLive: function/.test(agent), 'agents do not expose startLive');
   assert.ok(/onTab: function/.test(agent), 'agents do not expose onTab');
 });
+
+test('the Book tab lives at /explore, so voice must claim that path too', () => {
+  const src = read('frontend/public/book-chat.js');
+  const m = src.match(/paths:\s*(\/[^\n,]+\/)/);
+  assert.ok(m, 'book-chat.js declares a paths regex');
+  const re = new RegExp(m[1].slice(1, -1));
+  for (const p of ['/explore', '/book', '/']) {
+    assert.ok(re.test(p), `book agent should claim ${p}`);
+  }
+});
