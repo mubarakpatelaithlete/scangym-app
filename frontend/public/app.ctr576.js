@@ -1094,6 +1094,39 @@ function getCardFacilities(gym){
    Rule: past SG_FAR_KM the number stops being useful, so we show the gym's own
    locality instead. Never show a distance we do not believe.
    ───────────────────────────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────────────────
+   SESSION HINT — do not call authenticated endpoints while logged out.
+
+   Auth is an httpOnly express session, so the client cannot read it. Every
+   logged-out visitor was therefore firing /api/bookings, /api/auth/profile,
+   /api/creators/membership and /api/gym-partner/dashboard and collecting a
+   401 for each: noise in the console, wasted round-trips, and a red herring
+   for anyone debugging a real auth failure.
+
+   We mirror the session with a localStorage hint written at login and cleared
+   at logout or on any 401. It is only a hint — the server remains the sole
+   authority, so a stale flag costs one 401 and then self-corrects.
+   ───────────────────────────────────────────────────────────────────────── */
+function sgSetSession(on){
+  try{ on?localStorage.setItem('sg_authed','1'):localStorage.removeItem('sg_authed'); }catch(e){}
+}
+function sgHasSession(){
+  try{ if(localStorage.getItem('sg_authed')==='1') return true; }catch(e){}
+  return !!(typeof state!=='undefined'&&state&&state.user);
+}
+/* fetch() for endpoints that require a session: skips the call when logged out,
+   and clears the hint when the server disagrees. */
+async function sgAuthedFetch(url,opts){
+  if(!sgHasSession()) return null;
+  var o=Object.assign({credentials:'include'},opts||{});
+  var r=await fetch(url,o);
+  if(r.status===401){ sgSetSession(false); return null; }
+  return r;
+}
+window.sgSetSession=sgSetSession;
+window.sgHasSession=sgHasSession;
+window.sgAuthedFetch=sgAuthedFetch;
+
 var SG_FAR_KM=60;
 function sgGymLocality(gym){
   if(!gym) return '';
@@ -8182,7 +8215,7 @@ window._sgGoogleCallback=async function(response){
     });
     const data=await r.json();
     if(data.success&&data.user){
-      state.user=data.user;
+      state.user=data.user;sgSetSession(true);
       state.authStep='phone';
       // If auth sheet is open, advance to next step (card/withdraw)
       if(typeof window._sgAuthAfterSuccess==='function'&&document.querySelector('.sg-auth-overlay.open')){
@@ -8282,7 +8315,7 @@ window.handleGoogleSignIn=async function(){
           });
           var data=await r.json();
           if(data.success&&data.user){
-            state.user=data.user;
+            state.user=data.user;sgSetSession(true);
             state.authStep='phone';
             if(typeof window._sgAuthAfterSuccess==='function'&&document.querySelector('.sg-auth-overlay.open')){
               window._sgAuthAfterSuccess();
@@ -8362,7 +8395,7 @@ window.handleAppleSignIn=async function(){
     });
     var result=await r.json();
     if(result.success&&result.user){
-      state.user=result.user;
+      state.user=result.user;sgSetSession(true);
       state.authStep='phone';
       if(typeof window._sgAuthAfterSuccess==='function'&&document.querySelector('.sg-auth-overlay.open')){
         window._sgAuthAfterSuccess();
@@ -8452,7 +8485,7 @@ window.handleVerifyCode=async function(){
   try{
     const r=await api.authPost('/verify',{phone:state.authPhone,code});
     if(r.success&&r.user){
-      state.user=r.user;
+      state.user=r.user;sgSetSession(true);
       state.authStep='phone';
       if(typeof window._sgAuthAfterSuccess==='function'&&document.querySelector('.sg-auth-overlay.open')){
         window._sgAuthAfterSuccess();
@@ -8486,7 +8519,7 @@ window.handleVerifyCode=async function(){
 
 window.handleLogout=async function(){
   await api.authPost('/logout',{});
-  state.user=null;
+  state.user=null;sgSetSession(false);
   navigate('/');
 };
 
@@ -14273,7 +14306,8 @@ window.saveProfile=async function(){
 // ── Load Full Profile (called when navigating to /more/profile) ──
 window.loadFullProfile=async function(){
   try{
-    var r=await fetch('/api/auth/profile');
+    var r=await sgAuthedFetch('/api/auth/profile');
+    if(!r) return;
     if(!r.ok)return;
     var data=await r.json();
     if(data.id){

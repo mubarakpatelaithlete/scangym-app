@@ -82,6 +82,8 @@ setInterval(hookRatePrompt,800);
 
 // boot catch-up: latest ended visit without a rating → prompt once
 function catchUpPrompt(){
+  /* Only signed-in visitors have bookings; asking anyway just collects a 401. */
+  if(window.sgHasSession&&!window.sgHasSession())return;
   fetch('/api/bookings',{credentials:'include'})
     .then(function(r){return r.ok?r.json():null;})
     .then(function(d){
@@ -109,6 +111,7 @@ setTimeout(catchUpPrompt,6000);
    ════════════════════════════════════════════════════════════════════ */
 async function partnerGymId(){
   if(window._partnerGymId)return window._partnerGymId;
+  if(window.sgHasSession&&!window.sgHasSession())return null;
   try{
     var r=await fetch('/api/gym-partner/dashboard',{credentials:'include'});
     if(!r.ok)return null;

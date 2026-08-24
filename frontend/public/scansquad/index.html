@@ -408,6 +408,10 @@
     // ── Check if user is already logged in ──
     async function checkAuth() {
       try {
+        // Membership only exists for signed-in creators; skip the guaranteed 401.
+        // This page is standalone and does not load the app bundle, so read the
+        // session hint directly rather than relying on window.sgHasSession.
+        try { if (localStorage.getItem('sg_authed') !== '1') return; } catch (e) { return; }
         const res = await fetch('/api/creators/membership', { credentials: 'include' });
         if (res.ok) {
           const data = await res.json();
