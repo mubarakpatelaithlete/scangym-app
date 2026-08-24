@@ -19,7 +19,7 @@
 
   window.sgPartnerChat = window.sgChatAgent.create({
     ns: 'pchat',
-    paths: /^\/partner(\/|$)/,
+    paths: /^\/partners?(\/|$)/,
     endpoint: '/api/partner/agent',
 
     avatar: '🏋️',

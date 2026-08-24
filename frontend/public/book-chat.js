@@ -19,7 +19,12 @@
 
   window.sgBookChat = window.sgChatAgent.create({
     ns: 'bchat',
-    paths: /^\/(book|explore|search|gyms?)(\/|$)|^\/$/,
+    /**
+     * Every route the Book tab actually routes to. getTabForRoute() in app.js sends
+     * /nearby, /checkout, /booking-success and /r/<code> to this tab as well, and voice
+     * used to fall silent on exactly those pages — including checkout, the money step.
+     */
+    paths: /^\/(book|explore|nearby|search|checkout|booking-success|gyms?|r)(\/|$)|^\/$/,
     endpoint: '/api/book/agent',
 
     avatar: '🔎',
