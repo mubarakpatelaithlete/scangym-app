@@ -409,10 +409,57 @@ function createChatAgent(cfg) {
     }
   }
 
+  // ── saying "yes" is the confirmation ────────────────────────────────────────
+  // The promise is zero taps. A pending booking used to need a tap on "Yes, do it",
+  // which is exactly the one click we said nobody should have to make. Spoken (or
+  // typed) agreement now carries the same weight as the chip.
+  var YES = /^(?:ok(?:ay)?|yes|yeah|yep|yup|sure|correct|confirm(?:ed|\s+it)?|go\s+ahead|do\s+it|book\s+it|please\s+do|that'?s\s+right|sounds?\s+good|let'?s\s+do\s+it)\b[\s.!,]*$/i;
+  var NO = /^(?:no|nope|nah|cancel|stop|don'?t|do\s+not|not\s+now|never\s+mind|nevermind|forget\s+it|wait)\b[\s.!,]*$/i;
+
+  function confirmByWord(text) {
+    if (!S.pending) return false;
+    var t = (text || '').trim();
+    if (YES.test(t)) {
+      var p = S.pending;
+      S.pending = null;
+      bubble(T('pchat-me'), t);
+      chips([]);
+      S.busy = true;
+      S.spoken = 0;
+      typingOn();
+      stream({ confirm: p });
+      return true;
+    }
+    if (NO.test(t)) {
+      S.pending = null;
+      bubble(T('pchat-me'), t);
+      chips(startChips());
+      var line = 'Left as it was. Anything else?';
+      bubble(T('pchat-ai'), line);
+      if (S.voice && window.SGVoice && window.SGVoice.say) {
+        window.SGVoice.say(line);
+        if (window.SGVoice.endSay) {
+          window.SGVoice.endSay().then(function () {
+            if (S.live && window.SGVoice.isLive && window.SGVoice.isLive()) {
+              liveState('listening');
+              window.SGVoice.resumeLive();
+            }
+          });
+        }
+      }
+      return true;
+    }
+    // Anything else: they changed their mind mid-flight. Drop the stale booking
+    // rather than let a later "yes" confirm a price they have moved on from.
+    S.pending = null;
+    return false;
+  }
+
   function send(text, confirmPayload) {
     text = (text || '').trim();
     if (S.busy) return;
     if (!text && !confirmPayload) return;
+    if (!confirmPayload && text && confirmByWord(text)) return;
 
     var input = document.getElementById(T('pchat-input'));
     if (input) {
