@@ -31,7 +31,7 @@ function build() {
   if (process.env.GROQ_API_KEY) {
     list.push({
       label: 'groq',
-      model: process.env.AGENT_MODEL_GROQ || 'llama-3.3-70b-versatile',
+      model: process.env.AGENT_MODEL_GROQ || 'openai/gpt-oss-120b',
       client: new OpenAI({
         apiKey: process.env.GROQ_API_KEY,
         baseURL: 'https://api.groq.com/openai/v1',
@@ -75,6 +75,40 @@ function isBenched(label) {
   return true;
 }
 
+/**
+ * Models get retired. On 24 Aug 2026 the assistant answered every single question with
+ * "my assistant service is down": the OpenAI key had been revoked (401) and Groq's
+ * hard-coded `llama-3.3-70b-versatile` had been decommissioned (404), so both providers
+ * failed and the failover had nothing left to fail over to. A pinned model name is a
+ * time bomb with no clock on it.
+ *
+ * So: when a provider says the model does not exist, ask it what it *does* have and pick
+ * the best tool-calling model on offer, once, then carry on. Failing over between two
+ * providers does not help when the thing that expired is the model name.
+ */
+const PREFERRED = [
+  /^openai\/gpt-oss-120b$/,
+  /^openai\/gpt-oss-20b$/,
+  /^qwen\/qwen3/,
+  /^llama-3\.[0-9]+-70b/,
+];
+// Models that cannot hold a booking conversation, whatever else they are good at.
+const UNUSABLE = /guard|whisper|tts|embed|safeguard|prompt-guard/i;
+
+function isMissingModel(err) {
+  return !!err && (err.status === 404 || /does not exist|decommissioned|model_not_found/i.test(err.message || ''));
+}
+
+async function repointToLiveModel(tag, p) {
+  const list = await p.client.models.list();
+  const ids = (list.data || []).map((m) => m.id).filter((id) => !UNUSABLE.test(id));
+  const pick = PREFERRED.map((rx) => ids.find((id) => rx.test(id))).find(Boolean) || ids[0];
+  if (!pick) return null;
+  console.warn(`[${tag}] ${p.label} model ${p.model} is gone; switching to ${pick}`);
+  p.model = pick;
+  return pick;
+}
+
 async function streamChat(tag, params) {
   let lastErr = null;
   const usable = providers.filter((p) => !isBenched(p.label));
@@ -90,6 +124,18 @@ async function streamChat(tag, params) {
       }
       return { stream, provider: p.label };
     } catch (err) {
+      // A retired model name is recoverable without human help: find a live one and retry.
+      if (isMissingModel(err)) {
+        try {
+          if (await repointToLiveModel(tag, p)) {
+            const stream = await p.client.chat.completions.create({ ...params, model: p.model });
+            benched.delete(p.label);
+            return { stream, provider: p.label };
+          }
+        } catch (retryErr) {
+          err = retryErr;
+        }
+      }
       lastErr = err;
       if ([401, 403, 429].includes(err.status)) {
         benched.set(p.label, Date.now() + COOLDOWN_MS);
@@ -103,4 +149,37 @@ async function streamChat(tag, params) {
   throw err;
 }
 
-module.exports = { streamChat, configured, providers };
+/**
+ * Prove the assistant can actually answer, rather than that a key is set.
+ * One tiny completion per provider — cheap, but it is the truth.
+ */
+async function health() {
+  const out = [];
+  for (const p of providers) {
+    const started = Date.now();
+    try {
+      await p.client.chat.completions.create({
+        model: p.model,
+        messages: [{ role: 'user', content: 'ping' }],
+        max_tokens: 1,
+      });
+      out.push({ provider: p.label, model: p.model, ok: true, ms: Date.now() - started });
+    } catch (err) {
+      if (isMissingModel(err)) {
+        try {
+          if (await repointToLiveModel('Health', p)) {
+            await p.client.chat.completions.create({
+              model: p.model, messages: [{ role: 'user', content: 'ping' }], max_tokens: 1,
+            });
+            out.push({ provider: p.label, model: p.model, ok: true, repointed: true, ms: Date.now() - started });
+            continue;
+          }
+        } catch (_) { /* fall through to the honest failure below */ }
+      }
+      out.push({ provider: p.label, model: p.model, ok: false, status: err.status || null, error: String(err.message).slice(0, 200) });
+    }
+  }
+  return out;
+}
+
+module.exports = { streamChat, configured, providers, health, _internals: { repointToLiveModel, isMissingModel, PREFERRED, UNUSABLE } };
