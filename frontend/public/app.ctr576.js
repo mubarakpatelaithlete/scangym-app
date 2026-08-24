@@ -1336,7 +1336,7 @@ async function searchGyms(query, isExplicit, _triggerLayer){state.lastSearchQuer
     state._searchLoading=true;
     // Add timeout to prevent infinite loading — abort after 8 seconds
     const controller=new AbortController();
-    const timeout=setTimeout(()=>controller.abort(),8000);
+    const timeout=setTimeout(()=>controller.abort(),12000);
     if(window._sgSearchCtrl){try{window._sgSearchCtrl.abort();}catch(e){}}
     window._sgSearchCtrl=controller;
     // ━━━ LOCATION BIAS FIX: Pass detected coordinates to bias location search ━━━
@@ -1404,7 +1404,24 @@ async function searchGyms(query, isExplicit, _triggerLayer){state.lastSearchQuer
     }
   }catch(e){
     console.error('Search failed:',e);
-    // Show error state instead of infinite loading
+    /* A failed or aborted search must not blank a working screen. The 8s abort was still
+       painting "No Gyms Found" over gyms that were already there. */
+    var _hadGyms=state.gyms&&state.gyms.length>0;
+    var _cachedFallback=(!_hadGyms&&typeof _gymCache!=='undefined'&&_gymCache.getSearch)?(_gymCache.getSearch(state.lastNonEmptyQuery||'gyms in London')||null):null;
+    if(_hadGyms){
+      state._searchLoading=false;
+      render();
+      sgPerf.end('search_gyms');
+      return;
+    }
+    if(_cachedFallback&&_cachedFallback.length){
+      state.gyms=_cachedFallback;
+      state.searchQuery=state.lastNonEmptyQuery||'gyms in London';
+      state._searchLoading=false;
+      render();
+      sgPerf.end('search_gyms');
+      return;
+    }
     state.gyms=[];
     state.searchQuery=query;
     state._searchLoading=false;

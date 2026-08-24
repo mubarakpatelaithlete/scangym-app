@@ -66,3 +66,16 @@ test('the client never lets an automatic empty result wipe a working screen', ()
   assert.ok(src.includes("if(!isExplicit && _incoming.length===0 && state.gyms.length>0)"), 'guard missing');
   assert.ok(src.includes('No gyms in '), 'the visitor must be told when we widened the area');
 });
+
+test('an aborted or failed search never blanks a screen that already has gyms', () => {
+  const src = fs.readFileSync(path.join(ROOT, 'frontend/public/app.ctr576.js'), 'utf8');
+  const catchBlock = src.slice(src.indexOf("console.error('Search failed:'"), src.indexOf("console.error('Search failed:'") + 1200);
+  assert.ok(catchBlock.includes('var _hadGyms'), 'the error path must check for results already showing');
+  assert.ok(catchBlock.indexOf('if(_hadGyms)') < catchBlock.indexOf('state.gyms=[]'), 'it must bail out before clearing the list');
+  assert.ok(catchBlock.includes('_cachedFallback'), 'with nothing showing, fall back to the last cached city');
+});
+
+test('the client search budget allows for a widened second lookup', () => {
+  const src = fs.readFileSync(path.join(ROOT, 'frontend/public/app.ctr576.js'), 'utf8');
+  assert.ok(src.includes('controller.abort(),12000'), '8s aborted before the widened search could answer');
+});
