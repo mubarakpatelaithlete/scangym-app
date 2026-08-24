@@ -88,3 +88,12 @@ test('the book agent exposes a deep health route that can fail loudly', () => {
   assert.ok(src.includes("router.get('/agent/health'"));
   assert.ok(src.includes('res.status(ok ? 200 : 503)'), 'a broken assistant must not answer 200');
 });
+
+test('a public health response never quotes the API key back, even masked', () => {
+  const { scrub } = require(path.join(ROOT, 'server/lib/llm.js'))._internals;
+  const real = 'Incorrect API key provided: sk-proj-***********dsEA. You can find your key at...';
+  const out = scrub(real);
+  assert.ok(!/sk-proj/.test(out), out);
+  assert.ok(out.includes('<redacted>'));
+  assert.ok(!/gsk_/.test(scrub('bad key gsk_abc123DEF')));
+});

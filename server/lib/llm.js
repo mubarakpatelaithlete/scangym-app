@@ -150,6 +150,16 @@ async function streamChat(tag, params) {
 }
 
 /**
+ * Provider errors quote the key back at you, partially masked. /agent/health is public, so
+ * even a masked key does not belong in its response body.
+ */
+function scrub(message) {
+  return String(message || '')
+    .replace(/\b(sk|gsk|xai)[-_][A-Za-z0-9-_*]+/g, '<redacted>')
+    .slice(0, 160);
+}
+
+/**
  * Prove the assistant can actually answer, rather than that a key is set.
  * One tiny completion per provider — cheap, but it is the truth.
  */
@@ -176,10 +186,10 @@ async function health() {
           }
         } catch (_) { /* fall through to the honest failure below */ }
       }
-      out.push({ provider: p.label, model: p.model, ok: false, status: err.status || null, error: String(err.message).slice(0, 200) });
+      out.push({ provider: p.label, model: p.model, ok: false, status: err.status || null, error: scrub(err.message) });
     }
   }
   return out;
 }
 
-module.exports = { streamChat, configured, providers, health, _internals: { repointToLiveModel, isMissingModel, PREFERRED, UNUSABLE } };
+module.exports = { streamChat, configured, providers, health, _internals: { repointToLiveModel, isMissingModel, scrub, PREFERRED, UNUSABLE } };
