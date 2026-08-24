@@ -12,6 +12,7 @@
  *   POST /api/live/ensure-gym                    — Ensure gym exists in DB (for booking)
  */
 const express = require('express');
+const { nearestMetro, requestedCity } = require('../lib/search-fallback');
 const router = express.Router();
 const pool = require('../middleware/db');
 const { optionalAuth, authenticateUser } = require('../middleware/auth');
@@ -366,6 +367,40 @@ async function enrichGymsWithBookingCounts(gyms) {
   return gyms;
 }
 
+
+/**
+ * The visitor's own town has no gyms. Offer the nearest city that does, and label it honestly
+ * so nobody thinks they are looking at something round the corner.
+ */
+async function fallbackToNearestCity(searchQuery, lat, lng) {
+  if (!GOOGLE_MAPS_API_KEY) return null;
+  const asked = requestedCity(searchQuery);
+  const metro = nearestMetro(lat, lng);
+  if (!metro || !metro.city) return null;
+  if (asked && asked.toLowerCase() === metro.city.toLowerCase()) return null; // already there
+  try {
+    const url = `${BASE_URL}/textsearch/json?query=${encodeURIComponent('gym in ' + metro.city)}&type=gym&key=${GOOGLE_MAPS_API_KEY}`;
+    const response = await fetch(url);
+    const data = await response.json();
+    if (!data || data.status !== 'OK' || !(data.results || []).length) return null;
+    const gyms = data.results.filter(p => p.business_status !== 'CLOSED_PERMANENTLY').map(parseSearchResult);
+    await Promise.all([enrichGymsWithDbPrices(gyms), enrichGymsWithBookingCounts(gyms)]);
+    rankGyms(gyms, metro.lat, metro.lng);
+    console.log(`[LiveSearch] "${searchQuery}" had nothing; offering ${metro.city} instead`);
+    return {
+      gyms,
+      total: gyms.length,
+      nextPageToken: null,
+      query: 'gyms in ' + metro.city,
+      source: 'nearest_city_fallback',
+      fallback: { requested: asked, city: metro.city, distanceKm: metro.distanceKm },
+    };
+  } catch (err) {
+    console.warn('[LiveSearch] fallback city search failed:', err.message);
+    return null;
+  }
+}
+
 router.get('/search', async (req, res) => {
   try {
     const { q, query, pagetoken, type, lat, lng, radius, filter24h, filterSelfService } = req.query;
@@ -474,6 +509,8 @@ router.get('/search', async (req, res) => {
     }
 
     if (!data || data.status === 'ZERO_RESULTS') {
+      const fb = await fallbackToNearestCity(searchQuery, lat, lng);
+      if (fb) return res.json(fb);
       const result = { gyms: [], total: 0, nextPageToken: null, query: searchQuery, source: 'google_places_live' };
       return res.json(result);
     }
@@ -510,11 +547,20 @@ router.get('/search', async (req, res) => {
     rankGyms(gyms, userLat, userLng);
 
     const MAX_SEARCH_DISTANCE_KM = 50;
-    const filteredGyms = gyms.filter(g => g.distance == null || g.distance <= MAX_SEARCH_DISTANCE_KM);
+    let filteredGyms = gyms.filter(g => g.distance == null || g.distance <= MAX_SEARCH_DISTANCE_KM);
+
+    // Widen before surrendering. An empty screen loses the visitor; a gym 60km away, clearly
+    // labelled, at least keeps the promise that ScanGym has something for them.
+    let widened = null;
+    if (filteredGyms.length === 0 && gyms.length > 0) {
+      filteredGyms = gyms;
+      widened = { reason: 'distance', from: MAX_SEARCH_DISTANCE_KM };
+    }
 
     const result = {
       gyms: filteredGyms,
       total: filteredGyms.length,
+      widened,
       nextPageToken: data.next_page_token || null,
       query: searchQuery,
       source: 'google_places_live',
