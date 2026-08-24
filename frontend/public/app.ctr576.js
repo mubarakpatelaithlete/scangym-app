@@ -17342,6 +17342,10 @@ window._partnerShareLink=function(){
 // ── Partner Edit Helpers (Task 13: Partner = Book but editable) ──
 window._partnerGymData={};
 window._partnerLoadGymProfile=async function(){
+  /* Fired on a timer whenever the partner page is in the DOM, including for
+     signed-out visitors, who can only ever get a 401 back. The function already
+     returns on a bad response, so bailing early here changes nothing else. */
+  if(!sgHasSession()) return;
   try{
     var r=await fetch('/api/gym-partner/dashboard',{credentials:'include'}).catch(function(){return null;});
     if(!r||!r.ok){return;}
