@@ -730,7 +730,7 @@ function createChatAgent(cfg) {
     S.voice = true;
     micOn(true);
 
-    window.SGVoice
+    var _live = window.SGVoice
       .startLive({
         onState: function (state) {
           if (state === 'thinking') liveState('thinking');
@@ -757,8 +757,19 @@ function createChatAgent(cfg) {
       })
       .catch(function (err) {
         endLive();
+        if (S.deferOpen) {
+          // Never opened, so there is nothing to explain: leave the visitor on the tab.
+          S.deferOpen = false;
+          console.log('[ChatAgent] voice unavailable — staying out of the way:', (err && err.message) || '');
+          return;
+        }
         setHint((err && err.message) || 'Voice is not available here — typing works.');
       });
+    if (_live && _live.then) {
+      _live.then(function () {
+        if (S.deferOpen) { S.deferOpen = false; open(); }
+      });
+    }
   }
 
   function endLive() {
@@ -997,7 +1008,13 @@ function createChatAgent(cfg) {
     onTab: function () { return cfg.paths.test(location.pathname); },
     isLive: function () { return !!S.live; },
     isOpen: function () { return !!S.open; },
-    startLive: function () { build(); open(); startLive(); },
+    /**
+     * Voice as the front door must not become a door in the way. If the microphone is
+     * blocked or missing, opening the sheet leaves an empty chat panel covering the whole
+     * Book tab — which is exactly what a visitor with no mic permission saw. So build it,
+     * try the mic, and only take over the screen once voice is genuinely live.
+     */
+    startLive: function () { build(); S.deferOpen = !S.open; startLive(); },
     endLive: function () { endLive(); },
   };
 }
