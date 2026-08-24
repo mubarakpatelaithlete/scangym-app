@@ -23,7 +23,7 @@
      * to. Missing one of these once made the whole feature invisible and closed the chat
      * a moment after it opened.
      */
-    paths: /^\/(creator|creators|scansquad|scansquad-dashboard|creator-earnings|become-a-creator)(\/|$)/,
+    paths: /^\/(creator|creators|creator-hub|creator-reels|scansquad|scansquad-dashboard|creator-earnings|become-a-creator)(\/|$)/,
     endpoint: '/api/squad/agent',
 
     avatar: '💪',

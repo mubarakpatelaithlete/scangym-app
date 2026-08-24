@@ -145,6 +145,48 @@ test('the Book tab lives at /explore, so voice must claim that path too', () => 
   }
 });
 
+/**
+ * Voice is only "on every tab" if each agent claims every route its own tab routes to.
+ * getTabForRoute() in app.ctr576.js is the source of truth for that mapping. Before this
+ * test, /nearby and /checkout had no agent at all — voice went silent on the money step.
+ */
+function pathsOf(file) {
+  const src = read(file);
+  const m = src.match(/^\s*paths:\s*(\/.+\/),\s*$/m);
+  assert.ok(m, `${file} declares a paths regex`);
+  // eslint-disable-next-line no-eval
+  return eval(m[1]);
+}
+
+test('every tab route has a voice agent that claims it', () => {
+  const claims = {
+    'frontend/public/book-chat.js': ['/explore', '/book', '/nearby', '/search', '/checkout',
+      '/booking-success', '/gym/42', '/r/abc', '/'],
+    'frontend/public/squad-chat.js': ['/creator', '/creator/', '/creators', '/scansquad',
+      '/creator-hub', '/creator-reels', '/creator-earnings'],
+    'frontend/public/partner-chat.js': ['/partner', '/partner/', '/partner/gyms', '/partners'],
+  };
+  for (const file of Object.keys(claims)) {
+    const re = pathsOf(file);
+    for (const p of claims[file]) {
+      assert.ok(re.test(p), `${file} should claim ${p}`);
+    }
+  }
+});
+
+test('no two tabs claim the same route — one live conversation at a time', () => {
+  const files = ['frontend/public/book-chat.js', 'frontend/public/squad-chat.js',
+    'frontend/public/partner-chat.js'];
+  const res = files.map(pathsOf);
+  const everyRoute = ['/', '/explore', '/nearby', '/checkout', '/booking-success', '/gym/42',
+    '/r/abc', '/creator', '/creators', '/creator-hub', '/creator-reels', '/scansquad',
+    '/partner', '/partners', '/partner/gyms'];
+  for (const p of everyRoute) {
+    const owners = res.filter((re) => re.test(p)).length;
+    assert.ok(owners <= 1, `${p} is claimed by ${owners} agents`);
+  }
+});
+
 test('saying yes confirms a booking — no tap required', () => {
   const src = read('frontend/public/chat-agent.js');
   const yes = src.match(/var YES = (\/.*\/i);/);
