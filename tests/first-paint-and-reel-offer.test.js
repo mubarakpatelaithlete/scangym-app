@@ -78,3 +78,8 @@ test('the boot cache is written from successful searches and expires', () => {
 test('the London default no longer overwrites a real cached first paint', () => {
   assert.ok(src.includes('if(window._locationLayer===0&&!state._bootPainted)'), 'guard missing');
 });
+
+test('every path that puts gyms on screen also seeds the next visit', () => {
+  const kept = src.slice(src.indexOf('nothing better is showing yet'), src.indexOf('nothing better is showing yet') + 500);
+  assert.ok(kept.includes('_gymCache.setSearch(query,_stale)'), 'the early-return path skipped the boot cache');
+});
