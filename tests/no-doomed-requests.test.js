@@ -180,3 +180,9 @@ test('scansquad gates its own membership call without depending on the app bundl
   const fetchIdx = ss.indexOf("fetch('/api/creators/membership'");
   assert.ok(idx !== -1 && idx < fetchIdx, 'guard must precede the fetch');
 });
+
+test('_partnerLoadGymProfile bails out before requesting a partner dashboard', () => {
+  // Fires on a timer whenever #partner-profile-page exists, including for
+  // signed-out visitors. This was the last 401 left on /partner.
+  assert.match(APP, /window\._partnerLoadGymProfile=async function\(\)\{[\s\S]{0,400}?if\(!sgHasSession\(\)\) return;/);
+});
