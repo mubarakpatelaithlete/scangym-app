@@ -196,6 +196,8 @@ if('serviceWorker' in navigator){
 <script src="/book-chat.js?v=2.1" defer></script>
 <!-- voice is the front door: arms itself, no dedicated tap -->
 <script src="/voice-always.js?v=1.0" defer></script>
+<!-- sg-dock owns the pinned overlay stack; must load after everything that injects one -->
+<script src="/sg-dock.js?v=1.0" defer></script>
 </body>
 </html>
 
