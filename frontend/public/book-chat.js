@@ -19,7 +19,7 @@
 
   window.sgBookChat = window.sgChatAgent.create({
     ns: 'bchat',
-    paths: /^\/(book|search|gyms?)(\/|$)|^\/$/,
+    paths: /^\/(book|explore|search|gyms?)(\/|$)|^\/$/,
     endpoint: '/api/book/agent',
 
     avatar: '🔎',
