@@ -54,6 +54,21 @@ async function audit(userId, tool, args, result, confirmed) {
   }
 }
 
+/**
+ * GET /agent/health        - is a provider configured (cheap)
+ * GET /agent/health?deep=1 - can it actually answer right now, and on which model
+ *
+ * The shallow answer was 200 for the whole of the outage where every question came back
+ * "my assistant service is down", because a configured key says nothing about a live model.
+ */
+router.get('/agent/health', async (req, res) => {
+  const base = { success: true, configured: llm.configured() };
+  if (!req.query || !req.query.deep) return res.json(base);
+  const providers = await llm.health();
+  const ok = providers.some((p) => p.ok);
+  res.status(ok ? 200 : 503).json({ ...base, success: ok, answers: ok, providers });
+});
+
 router.get('/agent/tools', (_req, res) => {
   res.json({
     success: true,
