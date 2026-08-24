@@ -27,6 +27,89 @@ if (!fs.existsSync(PUBLIC_DIR)) {
 
 console.log('🔨 ScanGym Build: Optimizing static assets...\n');
 
+
+// ─── Step 0: Bundle the patch chain ───────────────────────────────────
+// index.html loaded 20 separate deferred scripts. Ten of them are the historical
+// "patch pile" — app-patches, round2..round5, batch-style UI passes — each one
+// monkey-patching the app after it boots. They are 11% of delivered JS but half
+// the request count, and their execution order is load-bearing: a patch that
+// runs before the thing it patches silently does nothing.
+//
+// We concatenate them at build time, in the exact order index.html lists them,
+// into one file. The sources stay separate in the repo so they remain
+// individually editable and diffable; only the deployed artifact is merged.
+//
+// Safe because all ten are `defer` (already sequential, in document order) and
+// none use document.currentScript. Step 5 syntax-validates the result, and a
+// mismatch between this list and index.html fails the build rather than
+// silently dropping a patch.
+const PATCH_CHAIN = [
+  'app-patches.js',
+  'app-patches-v3.js',
+  'continue-cta-flow.js',
+  'tabs-v4.js',
+  'round2.js',
+  'round3.js',
+  'ui-polish.js',
+  'phase2-improvements.js',
+  'round4-ui.js',
+  'round5-ui.js',
+];
+const PATCH_BUNDLE = 'sg-patches.js';
+
+function bundlePatches() {
+  console.log('🧩 Bundling the patch chain...\n');
+  const indexPath = path.join(PUBLIC_DIR, 'index.html');
+  if (!fs.existsSync(indexPath)) {
+    console.log('  ⚠️  no index.html — skipping\n');
+    return;
+  }
+  let html = fs.readFileSync(indexPath, 'utf8');
+
+  // The order in index.html is the source of truth. Verify ours matches it.
+  const listed = [...html.matchAll(/<script\s+src="\/([^"?]+)(?:\?[^"]*)?"\s+defer><\/script>/g)]
+    .map((m) => m[1]);
+  const listedChain = listed.filter((f) => PATCH_CHAIN.includes(f));
+  if (listedChain.join(',') !== PATCH_CHAIN.join(',')) {
+    console.error('  ❌ PATCH_CHAIN does not match index.html order.');
+    console.error('     index.html: ' + listedChain.join(', '));
+    console.error('     build.js:   ' + PATCH_CHAIN.join(', '));
+    process.exit(1);
+  }
+
+  const parts = [];
+  let total = 0;
+  for (const name of PATCH_CHAIN) {
+    const f = path.join(PUBLIC_DIR, name);
+    if (!fs.existsSync(f)) {
+      console.error(`  ❌ ${name} is referenced by index.html but missing`);
+      process.exit(1);
+    }
+    const code = fs.readFileSync(f, 'utf8');
+    total += Buffer.byteLength(code);
+    // Semicolon guard: a file ending in an expression must not fuse with the next.
+    parts.push(`/* ── ${name} ── */\n;${code}\n`);
+  }
+  const bundled = parts.join('\n');
+  fs.writeFileSync(path.join(PUBLIC_DIR, PATCH_BUNDLE), bundled);
+
+  // Replace the first patch tag with the bundle, drop the other nine.
+  let replaced = false;
+  for (const name of PATCH_CHAIN) {
+    const re = new RegExp(`\\s*<script\\s+src="/${name.replace(/\./g, '\\.')}(?:\\?[^"]*)?"\\s+defer></script>`);
+    if (!replaced) {
+      html = html.replace(re, `\n    <script src="/${PATCH_BUNDLE}" defer></script>`);
+      replaced = true;
+    } else {
+      html = html.replace(re, '');
+    }
+  }
+  fs.writeFileSync(indexPath, html);
+
+  console.log(`  ✅ ${PATCH_CHAIN.length} patch scripts → ${PATCH_BUNDLE} (${fmt(total)})`);
+  console.log(`  📉 script tags: ${listed.length} → ${listed.length - PATCH_CHAIN.length + 1}\n`);
+}
+
 // ─── Step 1: Minify JS ────────────────────────────────────────────────
 async function minifyJS() {
   let terser;
@@ -112,6 +195,7 @@ function contentHashAssets() {
     'robust-location.js',
     'pricing.js',
     'phase2-improvements.js',
+    'sg-patches.js',
   ];
 
   // Files that reference the assets (HTML, JS, SW)
@@ -324,6 +408,7 @@ function validateJS() {
 
 // ─── Run ──────────────────────────────────────────────────────────────
 (async () => {
+  bundlePatches();
   await minifyJS();
   validateJS();
   contentHashAssets();
