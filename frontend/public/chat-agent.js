@@ -688,7 +688,12 @@ function createChatAgent(cfg) {
     var m = /[.!?…](\s|$)|\n/g;
     var hit;
     while ((hit = m.exec(rest)) !== null) cut = hit.index + 1;
-    if (cut < 12) return;
+    // Every chunk costs one request against a 10-per-minute provider limit, so only the
+    // opening line is allowed to be short — that one buys time-to-first-audio and is worth
+    // the request. After that, wait for a decent mouthful rather than spending a request
+    // on "Sure." and another on "OK." Anything left over is flushed at the end regardless.
+    var first = S.spoken === 0;
+    if (cut < (first ? 12 : 80)) return;
     var chunk = speakable(rest.slice(0, cut));
     S.spoken += cut;
     if (chunk) window.SGVoice.say(chunk);

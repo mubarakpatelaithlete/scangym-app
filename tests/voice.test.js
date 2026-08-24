@@ -168,3 +168,66 @@ test('the browser is allowed to use the microphone on our own origin', () => {
   assert.ok(/microphone=\(self\)/.test(m[1]),
     'microphone must be allowed for self — microphone=() silently kills voice');
 });
+
+/**
+ * Rate limiting is the thing that actually took voice down: the provider allows ten
+ * requests a minute for the whole organisation, we spend one per spoken sentence, and
+ * a throttle came back to the browser dressed as a 502 while /health still said 200.
+ * These tests pin the three habits that keep that from happening quietly again.
+ */
+test('a throttle is reported as a throttle, not a server fault', () => {
+  const src = read('server/routes/voice.js');
+  assert.ok(/status === 429/.test(src), 'the TTS route must recognise a 429 from the provider');
+  assert.ok(/res\.status\(429\)/.test(src), 'a provider throttle must surface as 429, not 502');
+  assert.ok(/Retry-After/.test(src), 'a throttled reply must tell the caller when to come back');
+  assert.ok(/retryAfterMs/.test(src), 'the wait the provider asks for must be honoured');
+});
+
+test('spoken lines are cached, so repeats cost neither time nor quota', () => {
+  const src = read('server/routes/voice.js');
+  assert.ok(/cacheGet\(text\)/.test(src), 'TTS must look in the cache before calling the provider');
+  assert.ok(/cachePut\(text/.test(src), 'freshly synthesised audio must be kept');
+  assert.ok(/CACHE_MAX_BYTES/.test(src), 'the cache must be bounded or it becomes a memory leak');
+  assert.ok(/X-TTS-Cache/.test(src), 'cache hits must be observable from outside');
+});
+
+test('the deep health check actually synthesises instead of trusting a key', async () => {
+  const src = read('server/routes/voice.js');
+  assert.ok(/req\.query.*deep/.test(src), '/health must support ?deep=1');
+  assert.ok(/isAudibleWav/.test(src), 'a deep check must prove the audio is not silence');
+
+  // The silence detector is the whole point — exercise it for real.
+  const routerPath = path.join(ROOT, 'server/routes/voice.js');
+  const before = process.env.GROQ_API_KEY;
+  process.env.GROQ_API_KEY = 'test-key';
+  try {
+    delete require.cache[require.resolve(routerPath)];
+    require(routerPath);
+    const body = fs.readFileSync(routerPath, 'utf8');
+    const fn = body.match(/function isAudibleWav\(buf\) \{[\s\S]*?\n\}/);
+    assert.ok(fn, 'isAudibleWav must be defined');
+    // eslint-disable-next-line no-eval
+    const isAudibleWav = eval(`(${fn[0]})`);
+
+    const wav = (fill) => {
+      const b = Buffer.alloc(44 + 200);
+      b.write('RIFF', 0, 'ascii'); b.write('WAVE', 8, 'ascii');
+      for (let i = 44; i + 1 < b.length; i += 2) b.writeInt16LE(fill, i);
+      return b;
+    };
+    assert.equal(isAudibleWav(wav(4000)), true, 'real speech must read as audible');
+    assert.equal(isAudibleWav(wav(0)), false, 'digital silence must fail the check');
+    assert.equal(isAudibleWav(Buffer.alloc(10)), false, 'a truncated file is not audio');
+    assert.equal(isAudibleWav(Buffer.alloc(200)), false, 'a non-RIFF blob is not audio');
+  } finally {
+    if (before === undefined) delete process.env.GROQ_API_KEY;
+    else process.env.GROQ_API_KEY = before;
+  }
+});
+
+test('only the opening line may be short, so we stop burning a request per clause', () => {
+  const src = read('frontend/public/chat-agent.js');
+  assert.ok(/S\.spoken === 0/.test(src), 'the first chunk of a turn must be identifiable');
+  assert.ok(/cut < \(first \? 12 : 80\)/.test(src),
+    'first chunk stays fast for time-to-first-audio; later chunks batch to save quota');
+});
