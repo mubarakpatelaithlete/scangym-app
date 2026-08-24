@@ -1082,6 +1082,57 @@ function getCardFacilities(gym){
   return['🏋️ Gym','🚴 Cardio','💪 Fitness'];
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   DISTANCE HONESTY — single source of truth for "how far is this gym"
+
+   A straight-line distance is only a proximity signal when the origin is
+   actually the visitor. When location resolution falls back to an IP-derived
+   city (or a datacenter), the origin can be a different continent, and we were
+   printing "3163.6km" onto the card as if it were a normal nearby result.
+   That reads as broken, not as distant.
+
+   Rule: past SG_FAR_KM the number stops being useful, so we show the gym's own
+   locality instead. Never show a distance we do not believe.
+   ───────────────────────────────────────────────────────────────────────── */
+var SG_FAR_KM=60;
+function sgGymLocality(gym){
+  if(!gym) return '';
+  var a=gym.address||gym.vicinity||'';
+  if(!a) return '';
+  var parts=a.split(',').map(function(x){return x.trim();}).filter(Boolean);
+  if(parts.length<2) return parts[0]||'';
+  /* Drop the trailing country, then the postal code. Postal codes are not always
+     numeric — "OH 44512" and "LS1 4HR" both have to go, but "OH" must survive. */
+  parts.pop();
+  var tail=parts[parts.length-1]||'';
+  var region=tail.replace(/\s*\b[A-Z0-9]*\d[A-Z0-9]*\b\s*/g,' ').replace(/\s+/g,' ').trim();
+  var city=parts.length>=2?parts[parts.length-2]:'';
+  /* "…Rd Ste 390, Boardman, OH 44512, USA" → "Boardman, OH"
+     "12 High St, Leeds, LS1 4HR, UK"       → "Leeds"        (no region survives) */
+  if(city&&region) return city+', '+region;
+  if(city) return city;
+  return region||tail;
+}
+function sgIsFar(gym){
+  return !!(gym&&typeof gym.distance==='number'&&isFinite(gym.distance)&&gym.distance>SG_FAR_KM);
+}
+/* Returns the label for the card's distance slot. */
+function sgDistanceLabel(gym){
+  if(!gym) return 'Nearby';
+  if(sgIsFar(gym)){
+    var loc=sgGymLocality(gym);
+    return loc?loc:'Far from you';
+  }
+  if(gym._realTravelLabel) return gym._realTravelLabel;
+  if(gym.distanceText) return gym.distanceText;
+  if(typeof gym.distance==='number'&&isFinite(gym.distance)){
+    return gym.distance<1?Math.round(gym.distance*1000)+'m':gym.distance.toFixed(1)+'km';
+  }
+  return 'Nearby';
+}
+window.sgDistanceLabel=sgDistanceLabel;
+window.sgIsFar=sgIsFar;
+
 function GymCard(gym){
   const badges=getRandomBadges(gym,3);
   // Fix: Always use pricing engine (sgPrice) — single source of truth
@@ -1090,7 +1141,7 @@ function GymCard(gym){
   const _hCard=new Date().getHours();
   const _isOPCard=_hCard<10||_hCard>=20;
   const cardCurrentPrice=dayP.display;
-  const dist=gym.distanceText||(gym.distance?`${gym.distance.toFixed(1)} km`:'Nearby');
+  const dist=sgDistanceLabel(gym);
   const photo=_gymPhotoUrl(gym);
   const photos=gym.photos_list||[];
   const hasPhoto=!!photo;
@@ -1527,8 +1578,7 @@ function SearchPage(){
           var photos=gym.photos_list||[];
           var allPhotos=photos.length>1?photos.slice(0,5).map(function(p){return p.thumbnail||p.url||photo;}):[photo];
           var photoCount=photos.length||1;
-          // H6 fix: show honest distance label — real Google travel time if loaded, otherwise straight-line km/m
-          var distMin=gym._realTravelLabel||(gym.distanceText?gym.distanceText:(gym.distance?gym.distance<1?Math.round(gym.distance*1000)+'m':gym.distance.toFixed(1)+'km':'Nearby'));
+          var distMin=sgDistanceLabel(gym);
           var facs=getCardFacilities(gym);
           var rating=gym.rating||'New';
           var reviews=gym.totalReviews||gym.user_ratings_total||0;
@@ -1658,7 +1708,8 @@ function SearchPage(){
           /* Perf v3: Removed O(N²) dot elements. Was: N cards × N dots = 400 DOM nodes for 20 gyms.
            * Replaced with text counter only (already existed below). Science: Leading apps
            * found that DOM node count is the #1 predictor of interaction latency on mobile. */
-          html+='<div class="tt-counter">\u2190 '+(i+1)+' of '+totalC+' \u2192</div>';
+          /* "\u2190 1 of 1 \u2192" advertises swipe affordances that do not exist. */
+          if(totalC>1) html+='<div class="tt-counter">\u2190 '+(i+1)+' of '+totalC+' \u2192</div>';
           /* Name */
           html+='<div class="tt-gym-name">'+c.name+'</div>';
           /* Address */
@@ -1730,7 +1781,7 @@ function SearchPage(){
               /* Bottom info — match initial cards */
               cardHtml+='<div class="tt-info">';
               cardHtml+='<div style="margin-bottom:6px"><div class="tt-logo" style="position:relative;background:linear-gradient(135deg,'+logoGrad+')">'+logoEmoji+'</div></div>';
-              cardHtml+='<div class="tt-counter">\u2190 '+(i+1)+' of '+_cards.length+' \u2192</div>';
+              if(_cards.length>1) cardHtml+='<div class="tt-counter">\u2190 '+(i+1)+' of '+_cards.length+' \u2192</div>';
               cardHtml+='<div class="tt-gym-name">'+c.name+'</div>';
               cardHtml+='<div class="tt-gym-addr">\u{1F4CD} '+(c.addr?c.addr.split(',')[0]:'Nearby')+' \u00b7 <span class="tt-travel-label" data-gym-travel-id="'+c.id+'">'+c.distMin+'</span> \u00b7 <span class="'+c.openClass+'">'+c.openTag+'</span></div>';
               var _bk=typeof bookedBucket==="function"?bookedBucket(c.gym):'';
@@ -8482,9 +8533,8 @@ window.showGymDiscovery=function(){
     const photos=gym.photos_list||[];
     const allPhotos=photos.length>1?photos.slice(0,5).map(p=>p.thumbnail||p.url||photo):[photo];
     const photoCount=photos.length||1;
-    const dist=gym.distanceText||(gym.distance?`${gym.distance.toFixed(1)} km`:'Nearby');
-    // H6 fix: show honest distance label — real Google travel time if loaded, otherwise straight-line km/m
-    const distMin=gym._realTravelLabel||(gym.distanceText?gym.distanceText:(gym.distance?gym.distance<1?Math.round(gym.distance*1000)+'m':gym.distance.toFixed(1)+'km':'Nearby'));
+    const dist=sgDistanceLabel(gym);
+    const distMin=sgDistanceLabel(gym);
     const facs=getCardFacilities(gym);
     const rating=gym.rating||'New';
     const reviews=gym.totalReviews||gym.user_ratings_total||0;
@@ -18427,6 +18477,19 @@ function _showLocationBannerIfNeeded(){
   }
 }
 
+/* The city behind the results currently on screen, e.g. "gyms in Leeds" -> "Leeds". */
+function sgCurrentSearchCity(){
+  try{
+    var q=state.searchQuery||state.lastNonEmptyQuery||'';
+    var m=q.match(/gyms?\s+in\s+(.+)$/i);
+    if(m&&m[1]) return m[1].trim();
+    var c=getCachedLocation();
+    if(c&&c.city) return c.city;
+  }catch(e){}
+  return '';
+}
+window.sgCurrentSearchCity=sgCurrentSearchCity;
+
 function _injectLocationBanner(permState){
   var isDenied=permState==='denied';
   // Insert banner ABOVE the search results, not over them
@@ -18441,12 +18504,18 @@ function _injectLocationBanner(permState){
     +'background:linear-gradient(135deg,#78350f,#92400e);border-bottom:1px solid rgba(251,191,36,.2);';
 
   if(isDenied){
-    // GPS blocked — show info banner with search hint
+    /* Denied location is not an error state — it is the normal case for most
+       first-time visitors. What actually matters to them is WHICH city they are
+       looking at, because without it a far-away result looks like a broken app
+       rather than a wrong guess. State the city, make it changeable. */
+    var _city=(typeof sgCurrentSearchCity==='function')?sgCurrentSearchCity():'';
+    var _title=_city?('Showing gyms in '+_city):'Choose a city to see gyms';
+    var _sub=_city?'Not your area? Tap to change':'Tap to search any city';
     banner.innerHTML=''
       +'<span style="font-size:18px;flex-shrink:0;">📍</span>'
       +'<div style="flex:1;min-width:0;">'
-      +'<p style="color:#fbbf24;font-size:13px;font-weight:700;margin:0;line-height:1.3;">Location sharing disabled</p>'
-      +'<p style="color:rgba(253,230,138,.7);font-size:11px;margin:2px 0 0;line-height:1.3;">Search for a city below to find gyms near you</p>'
+      +'<p style="color:#fbbf24;font-size:13px;font-weight:700;margin:0;line-height:1.3;">'+_title+'</p>'
+      +'<p style="color:rgba(253,230,138,.7);font-size:11px;margin:2px 0 0;line-height:1.3;">'+_sub+'</p>'
       +'</div>'
       +'<span onclick="event.stopPropagation();_dismissLocationBanner()" style="color:rgba(253,230,138,.5);font-size:18px;padding:4px 2px;cursor:pointer;flex-shrink:0;">✕</span>';
     banner.onclick=function(e){ if(e.target.tagName!=='SPAN')_showLocationPopup(); };
