@@ -29,6 +29,15 @@ const STT_MODEL = process.env.VOICE_STT_MODEL || 'whisper-large-v3-turbo';
 const TTS_MODEL = process.env.VOICE_TTS_MODEL || 'canopylabs/orpheus-v1-english';
 const TTS_VOICE = process.env.VOICE_TTS_VOICE || 'hannah';
 
+// Azure's free (F0) tier gives 500,000 neural characters a month that never expire, against
+// the ten-requests-a-minute ceiling that was making a third of spoken replies fail. Azure
+// leads and Groq stays behind it as a fallback, so a bad key or a regional outage degrades
+// to the old behaviour instead of to silence. VOICE_TTS_PROVIDER overrides the order and is
+// the rollback lever: set it to `groq` and the previous setup is back without a deploy.
+const AZURE_VOICE = () => process.env.AZURE_SPEECH_VOICE || 'en-GB-SoniaNeural';
+const PROVIDER_ORDER = () => String(process.env.VOICE_TTS_PROVIDER || 'azure,groq')
+  .split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
+
 // Groq caps uploads at 25MB; a spoken sentence is well under 1MB. Cap low on purpose.
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 * 1024 * 1024 } });
 
@@ -52,7 +61,9 @@ const ttsCache = new Map(); // key -> { buf, expires }; Map keeps insertion orde
 let cacheBytes = 0;
 
 function cacheKey(text) {
-  return require('crypto').createHash('sha256').update(`${TTS_MODEL}|${TTS_VOICE}|${text}`).digest('hex');
+  const primary = activeProviders()[0];
+  const sig = primary ? primary.signature() : 'none';
+  return require('crypto').createHash('sha256').update(`${sig}|${text}`).digest('hex');
 }
 
 function cacheGet(text) {
@@ -94,6 +105,49 @@ function key() {
   return process.env.GROQ_API_KEY || '';
 }
 
+function xmlEscape(s) {
+  return String(s).replace(/[<>&'"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' }[c]));
+}
+
+/**
+ * Each provider returns a plain fetch Response so retry, throttling and error handling stay
+ * in one place. Both ask for the same RIFF PCM container, so everything downstream — the
+ * cache, the audibility check, the Content-Type — is unchanged by which one answered.
+ */
+const PROVIDERS = {
+  azure: {
+    id: 'azure',
+    configured: () => !!(process.env.AZURE_SPEECH_KEY && process.env.AZURE_SPEECH_REGION),
+    signature: () => `azure|${AZURE_VOICE()}`,
+    describe: () => `azure:${AZURE_VOICE()}`,
+    call: (text) => fetch(`https://${process.env.AZURE_SPEECH_REGION}.tts.speech.microsoft.com/cognitiveservices/v1`, {
+      method: 'POST',
+      headers: {
+        'Ocp-Apim-Subscription-Key': process.env.AZURE_SPEECH_KEY,
+        'Content-Type': 'application/ssml+xml',
+        'X-Microsoft-OutputFormat': 'riff-24khz-16bit-mono-pcm',
+        'User-Agent': 'scangym-voice',
+      },
+      body: `<speak version="1.0" xml:lang="en-GB"><voice name="${AZURE_VOICE()}">${xmlEscape(text)}</voice></speak>`,
+    }),
+  },
+  groq: {
+    id: 'groq',
+    configured: () => !!key(),
+    signature: () => `${TTS_MODEL}|${TTS_VOICE}`,
+    describe: () => `groq:${TTS_MODEL}`,
+    call: (text) => fetch(`${GROQ_BASE}/audio/speech`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${key()}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: TTS_MODEL, voice: TTS_VOICE, input: text, response_format: 'wav' }),
+    }),
+  },
+};
+
+function activeProviders() {
+  return PROVIDER_ORDER().map((id) => PROVIDERS[id]).filter((p) => p && p.configured());
+}
+
 /**
  * GET /health          - what is configured. Cheap, safe to poll.
  * GET /health?deep=1   - actually synthesise two words and prove the audio is real.
@@ -105,15 +159,15 @@ function key() {
 router.get('/health', async (req, res) => {
   const base = {
     success: true,
-    configured: !!key(),
+    configured: activeProviders().length > 0,
     stt: key() ? STT_MODEL : null,
-    tts: key() ? TTS_MODEL : null,
-    voice: TTS_VOICE,
+    tts: activeProviders().map((p) => p.describe()),
+    voice: activeProviders().length ? activeProviders()[0].describe() : null,
     cache: { entries: ttsCache.size, bytes: cacheBytes },
   };
 
   if (!req.query || !req.query.deep) return res.json(base);
-  if (!key()) return res.status(503).json({ ...base, success: false, speaks: false, error: 'Voice is not configured on this server.' });
+  if (!activeProviders().length) return res.status(503).json({ ...base, success: false, speaks: false, error: 'Voice is not configured on this server.' });
 
   const started = Date.now();
   try {
@@ -129,7 +183,7 @@ router.get('/health', async (req, res) => {
     }
     const audible = isAudibleWav(out.buf);
     return res.status(audible ? 200 : 503).json({
-      ...base, success: audible, speaks: audible, ms, bytes: out.buf.length,
+      ...base, success: audible, speaks: audible, ms, bytes: out.buf.length, servedBy: out.provider,
       error: audible ? undefined : 'Synthesis returned silence.',
     });
   } catch (err) {
@@ -186,22 +240,43 @@ router.post('/stt', upload.single('audio'), async (req, res) => {
 });
 
 /**
- * Asks Groq to synthesise one line. Returns { ok, buf } or { ok:false, status, detail }.
+ * Synthesises one line, trying each configured provider in order. Returns
+ * { ok, buf, provider } or { ok:false, status, detail, provider }.
  *
- * Groq's on-demand tier allows 10 requests per minute for the whole organisation, and we
- * spend one request per spoken sentence — so a busy minute hits the wall. When it does,
- * Groq answers 429 and tells us how long to wait. A short wait is worth sitting out once,
- * because the alternative the user hears is silence.
+ * A provider that throttles us answers 429 and says how long to wait. A short wait is worth
+ * sitting out once, because the alternative the user hears is silence. If the wait is long,
+ * or the provider is simply broken, we move to the next one rather than give up — the whole
+ * point of having a second provider is that the first one is allowed to have a bad day.
  */
 async function synthesise(text) {
-  for (let attempt = 0; attempt < 2; attempt++) {
-    const r = await fetch(`${GROQ_BASE}/audio/speech`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${key()}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: TTS_MODEL, voice: TTS_VOICE, input: text, response_format: 'wav' }),
-    });
+  const providers = activeProviders();
+  if (!providers.length) return { ok: false, status: 503, detail: 'No speech provider is configured.' };
 
-    if (r.ok && r.body) return { ok: true, buf: Buffer.from(await r.arrayBuffer()) };
+  let last = null;
+  for (const p of providers) {
+    const out = await attemptSynthesis(p, text);
+    if (out.ok) return { ...out, provider: p.id };
+    console.error(`[Voice] ${p.id} TTS failed:`, out.status, String(out.detail).slice(0, 200));
+    last = { ...out, provider: p.id };
+  }
+  return last;
+}
+
+async function attemptSynthesis(provider, text) {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    let r;
+    try {
+      r = await provider.call(text);
+    } catch (err) {
+      return { ok: false, status: 502, detail: err.message };
+    }
+
+    if (r.ok) {
+      const buf = Buffer.from(await r.arrayBuffer());
+      // A 200 carrying no bytes is a failure wearing a success. Treat it as one.
+      if (buf.length) return { ok: true, buf };
+      return { ok: false, status: 502, detail: 'provider returned empty audio' };
+    }
 
     const detail = await r.text().catch(() => '');
     if (r.status === 429 && attempt === 0) {
@@ -216,7 +291,7 @@ async function synthesise(text) {
   return { ok: false, status: 429, detail: 'rate limited' };
 }
 
-/** Groq puts the wait in a Retry-After header, or in prose: "Please try again in 6s". */
+/** Providers put the wait in a Retry-After header, or in prose: "Please try again in 6s". */
 function retryAfterMs(r, detail) {
   const header = Number(r.headers.get('retry-after'));
   if (Number.isFinite(header) && header > 0) return header * 1000;
@@ -227,7 +302,7 @@ function retryAfterMs(r, detail) {
 
 /** Speech out. Returns audio bytes so the browser can play them straight back. */
 router.post('/tts', async (req, res) => {
-  if (!key()) return res.status(503).json({ success: false, error: 'Voice is not configured on this server.' });
+  if (!activeProviders().length) return res.status(503).json({ success: false, error: 'Voice is not configured on this server.' });
 
   const text = String((req.body && req.body.text) || '').trim().slice(0, MAX_TTS_CHARS);
   if (!text) return res.status(400).json({ success: false, error: 'Nothing to say.' });
@@ -255,8 +330,12 @@ router.post('/tts', async (req, res) => {
       return res.status(502).json({ success: false, error: 'Voice is unavailable right now.', detail: String(out.detail).slice(0, 300) });
     }
 
-    cachePut(text, out.buf);
+    // Only keep audio from the provider the cache key describes. Caching a fallback voice
+    // under the primary's key would leave one line in a different voice for a day.
+    const primary = activeProviders()[0];
+    if (primary && out.provider === primary.id) cachePut(text, out.buf);
     res.setHeader('Content-Type', 'audio/wav');
+    if (out.provider) res.setHeader('X-TTS-Provider', out.provider);
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('X-TTS-Cache', 'miss');
     return res.end(out.buf);
