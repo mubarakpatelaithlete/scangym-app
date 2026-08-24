@@ -26,8 +26,10 @@ test('the API key never leaves the server', () => {
 });
 
 test('voice endpoints refuse honestly when nothing is configured', async () => {
-  const before = process.env.GROQ_API_KEY;
+  const before = { ...process.env };
   delete process.env.GROQ_API_KEY;
+  delete process.env.AZURE_SPEECH_KEY;
+  delete process.env.AZURE_SPEECH_REGION;
   try {
     delete require.cache[require.resolve(path.join(ROOT, 'server/routes/voice.js'))];
     const router = require(path.join(ROOT, 'server/routes/voice.js'));
@@ -41,7 +43,9 @@ test('voice endpoints refuse honestly when nothing is configured', async () => {
     assert.equal(body.configured, false, 'health must admit voice is off');
     assert.equal(body.stt, null, 'no model may be advertised without a key');
   } finally {
-    if (before !== undefined) process.env.GROQ_API_KEY = before;
+    for (const k of ['GROQ_API_KEY', 'AZURE_SPEECH_KEY', 'AZURE_SPEECH_REGION']) {
+      if (before[k] !== undefined) process.env[k] = before[k]; else delete process.env[k];
+    }
   }
 });
 
@@ -230,4 +234,129 @@ test('only the opening line may be short, so we stop burning a request per claus
   assert.ok(/S\.spoken === 0/.test(src), 'the first chunk of a turn must be identifiable');
   assert.ok(/cut < \(first \? 12 : 80\)/.test(src),
     'first chunk stays fast for time-to-first-audio; later chunks batch to save quota');
+});
+
+
+/**
+ * The provider swap is the whole point of the change: Azure's free tier removes the
+ * ten-a-minute ceiling that was failing a third of spoken replies. These run the real
+ * router against a stubbed network, so they check behaviour rather than source text.
+ */
+const WAV = (() => {
+  const b = Buffer.alloc(200);
+  b.write('RIFF', 0, 'ascii'); b.write('WAVE', 8, 'ascii');
+  for (let i = 44; i + 1 < b.length; i += 2) b.writeInt16LE(4000, i);
+  return b;
+})();
+
+function loadVoiceRouter(env) {
+  const saved = { ...process.env };
+  for (const k of ['GROQ_API_KEY', 'AZURE_SPEECH_KEY', 'AZURE_SPEECH_REGION', 'VOICE_TTS_PROVIDER']) delete process.env[k];
+  Object.assign(process.env, env);
+  delete require.cache[require.resolve(path.join(ROOT, 'server/routes/voice.js'))];
+  const router = require(path.join(ROOT, 'server/routes/voice.js'));
+  return { router, restore: () => { for (const k of Object.keys(process.env)) delete process.env[k]; Object.assign(process.env, saved); } };
+}
+
+function postTts(router, text) {
+  const layer = router.stack.find((l) => l.route && l.route.path === '/tts');
+  const headers = {};
+  return new Promise((resolve) => {
+    const res = {
+      statusCode: 200,
+      setHeader: (k, v) => { headers[k.toLowerCase()] = v; },
+      status(c) { this.statusCode = c; return this; },
+      json: (body) => resolve({ status: res.statusCode, headers, body }),
+      end: (buf) => resolve({ status: res.statusCode, headers, buf }),
+    };
+    layer.route.stack[layer.route.stack.length - 1].handle({ body: { text } }, res, () => {});
+  });
+}
+
+const reply = (status, body, hdrs = {}) => ({
+  ok: status < 400, status,
+  headers: { get: (h) => hdrs[h.toLowerCase()] ?? null },
+  arrayBuffer: async () => body,
+  text: async () => String(body),
+});
+
+test('Azure serves the audio when it is configured, and says so', async () => {
+  const { router, restore } = loadVoiceRouter({ AZURE_SPEECH_KEY: 'k', AZURE_SPEECH_REGION: 'uksouth', GROQ_API_KEY: 'g' });
+  const realFetch = globalThis.fetch;
+  const seen = [];
+  globalThis.fetch = async (url, opts) => { seen.push(String(url)); return reply(200, WAV); };
+  try {
+    const out = await postTts(router, 'Booked. See you there.');
+    assert.equal(out.status, 200, 'a working provider must return audio');
+    assert.equal(out.headers['x-tts-provider'], 'azure', 'Azure must be preferred over Groq');
+    assert.ok(/tts\.speech\.microsoft\.com/.test(seen[0]), 'the call must go to Azure');
+    assert.equal(seen.length, 1, 'a success must not also call the fallback');
+  } finally { globalThis.fetch = realFetch; restore(); }
+});
+
+test('a broken Azure falls back to Groq instead of going silent', async () => {
+  const { router, restore } = loadVoiceRouter({ AZURE_SPEECH_KEY: 'bad', AZURE_SPEECH_REGION: 'uksouth', GROQ_API_KEY: 'g' });
+  const realFetch = globalThis.fetch;
+  const seen = [];
+  globalThis.fetch = async (url) => {
+    seen.push(String(url));
+    return /microsoft\.com/.test(String(url)) ? reply(401, 'Access denied') : reply(200, WAV);
+  };
+  try {
+    const out = await postTts(router, 'Which one shall I book?');
+    assert.equal(out.status, 200, 'the user must still hear an answer');
+    assert.equal(out.headers['x-tts-provider'], 'groq', 'the fallback must have served it');
+    assert.equal(seen.length, 2, 'both providers must have been tried');
+  } finally { globalThis.fetch = realFetch; restore(); }
+});
+
+test('audio from the fallback is not cached under the primary voice', async () => {
+  const { router, restore } = loadVoiceRouter({ AZURE_SPEECH_KEY: 'bad', AZURE_SPEECH_REGION: 'uksouth', GROQ_API_KEY: 'g' });
+  const realFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = async (url) => {
+    calls++;
+    return /microsoft\.com/.test(String(url)) ? reply(500, 'down') : reply(200, WAV);
+  };
+  try {
+    await postTts(router, 'Same line twice.');
+    const second = await postTts(router, 'Same line twice.');
+    assert.notEqual(second.headers['x-tts-cache'], 'hit',
+      'a fallback voice must not be served later as if it were the primary');
+    assert.equal(calls, 4, 'the second request must try the primary again, not serve stale audio');
+  } finally { globalThis.fetch = realFetch; restore(); }
+});
+
+test('a 200 carrying no audio is treated as a failure, not played as silence', async () => {
+  const { router, restore } = loadVoiceRouter({ AZURE_SPEECH_KEY: 'k', AZURE_SPEECH_REGION: 'uksouth' });
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async () => reply(200, Buffer.alloc(0));
+  try {
+    const out = await postTts(router, 'Hello.');
+    assert.equal(out.status, 502, 'empty audio must not be returned as success');
+  } finally { globalThis.fetch = realFetch; restore(); }
+});
+
+test('the provider order is overridable, so a bad swap can be rolled back without a deploy', async () => {
+  const { router, restore } = loadVoiceRouter({ AZURE_SPEECH_KEY: 'k', AZURE_SPEECH_REGION: 'uksouth', GROQ_API_KEY: 'g', VOICE_TTS_PROVIDER: 'groq' });
+  const realFetch = globalThis.fetch;
+  const seen = [];
+  globalThis.fetch = async (url) => { seen.push(String(url)); return reply(200, WAV); };
+  try {
+    const out = await postTts(router, 'Roll back.');
+    assert.equal(out.headers['x-tts-provider'], 'groq', 'VOICE_TTS_PROVIDER must decide who answers');
+    assert.ok(/api\.groq\.com/.test(seen[0]), 'Azure must not be called when it is not in the order');
+  } finally { globalThis.fetch = realFetch; restore(); }
+});
+
+test('spoken text is escaped before it becomes SSML', async () => {
+  const { router, restore } = loadVoiceRouter({ AZURE_SPEECH_KEY: 'k', AZURE_SPEECH_REGION: 'uksouth' });
+  const realFetch = globalThis.fetch;
+  let body = '';
+  globalThis.fetch = async (url, opts) => { body = String(opts.body); return reply(200, WAV); };
+  try {
+    await postTts(router, 'Fitness & Co <script> "gym"');
+    assert.ok(/Fitness &amp; Co &lt;script&gt;/.test(body), 'markup in a gym name must not break the SSML');
+    assert.ok(!/<script>/.test(body), 'raw tags must never reach the provider');
+  } finally { globalThis.fetch = realFetch; restore(); }
 });
