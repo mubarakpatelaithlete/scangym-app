@@ -115,7 +115,7 @@ test('the voice router parses its own JSON body', () => {
   test('index.html loads the current voice bundles', () => {
     const s = readx('index.html');
     assert.ok(/\/voice\.js\?v=3\.0/.test(s), 'voice.js cache-bust not bumped');
-    assert.ok(/\/chat-agent\.js\?v=4\.0/.test(s), 'chat-agent.js cache-bust not bumped');
+    assert.ok(/\/chat-agent\.js\?v=5\.0/.test(s), 'chat-agent.js cache-bust not bumped');
   });
 }
 
@@ -139,4 +139,24 @@ test('the Book tab lives at /explore, so voice must claim that path too', () => 
   for (const p of ['/explore', '/book', '/']) {
     assert.ok(re.test(p), `book agent should claim ${p}`);
   }
+});
+
+test('saying yes confirms a booking — no tap required', () => {
+  const src = read('frontend/public/chat-agent.js');
+  const yes = src.match(/var YES = (\/.*\/i);/);
+  const no = src.match(/var NO = (\/.*\/i);/);
+  assert.ok(yes && no, 'chat-agent must recognise spoken agreement');
+  // eslint-disable-next-line no-eval
+  const Y = eval(yes[1]); const N = eval(no[1]);
+  for (const s of ['yes', 'Yeah.', 'do it', 'book it', 'go ahead', 'confirm', 'sounds good']) {
+    assert.ok(Y.test(s), `"${s}" should confirm`);
+  }
+  for (const s of ['no', 'cancel', 'never mind', 'not now']) {
+    assert.ok(N.test(s), `"${s}" should cancel`);
+    assert.ok(!Y.test(s), `"${s}" must never confirm`);
+  }
+  for (const s of ['yes but change the time', 'book me a gym in Soho']) {
+    assert.ok(!Y.test(s), `"${s}" is a new instruction, not a confirmation`);
+  }
+  assert.ok(/confirmByWord\(text\)/.test(src), 'send() must route spoken agreement through confirmByWord');
 });
