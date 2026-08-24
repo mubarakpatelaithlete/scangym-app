@@ -20,7 +20,8 @@ test('booking is a write tool and everything else is a read', () => {
   const tools = require(path.join(ROOT, 'server/lib/book-tools.js'));
   const writes = Object.keys(tools.tools).filter((n) => tools.isWrite(n));
 
-  assert.deepEqual(writes, ['book_gym'], 'book_gym must be the only write tool');
+  // Both money paths are writes: book_gym reserves, book_and_pay reserves *and* charges.
+  assert.deepEqual(writes.sort(), ['book_and_pay', 'book_gym'], 'only the money tools may be writes');
   assert.equal(tools.isWrite('find_gyms'), false, 'searching must not need confirmation');
 });
 

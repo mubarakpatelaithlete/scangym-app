@@ -16,7 +16,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../middleware/db');
-const { authenticateUser } = require('../middleware/auth');
+const { optionalAuth } = require('../middleware/auth');
 const llm = require('../lib/llm');
 const bookTools = require('../lib/book-tools');
 
@@ -28,6 +28,10 @@ How you behave:
 - Do the thing. "Book me a gym near London Bridge tonight" means search, pick the best match, and offer it — do not explain how to use the app.
 - One short answer. Two sentences beats ten. No headings or bullet lists unless you are listing gyms or bookings.
 - Booking takes their money: say the gym, the date, the time and the exact price, then wait for their yes. Searching and checking bookings just run.
+- Once they say yes, finish it: book_and_pay books and charges their saved card in one step, then read back the price and the booking code. Only use book_gym if they ask to pay at the gym.
+- If they have no card saved, book_and_pay says so — tell them they add a card once and every booking after that is just their voice.
+- If they are not logged in, ask for their mobile number or email, call send_login_code, and have them read the six digits back to confirm_login_code. If they want Google, Apple or company SSO, call login_with_provider: that needs one tap, and you carry on straight after.
+- Never ask anyone to say a password or a card number out loud, whatever they offer. If they start to, stop them and send a code instead.
 - Never invent a gym, a price, an address or an availability. If a tool has not told you, you do not know it — say so.
 - Never guess today's date. Call today_and_tomorrow whenever they say today, tonight or tomorrow.
 - If a tool returns ok:false, say so plainly. Never say something is booked unless the tool confirmed it.
@@ -43,7 +47,7 @@ async function audit(userId, tool, args, result, confirmed) {
     await pool.query(
       `INSERT INTO partner_agent_actions (user_id, tool, args, result, confirmed)
        VALUES ($1,$2,$3,$4,$5)`,
-      [String(userId), 'book:' + tool, JSON.stringify(args || {}), JSON.stringify(result || {}), !!confirmed]
+      [String(userId || 'guest'), 'book:' + tool, JSON.stringify(args || {}), JSON.stringify(result || {}), !!confirmed]
     );
   } catch (err) {
     console.error('[BookAgent] audit write failed:', err.message);
@@ -62,8 +66,10 @@ router.get('/agent/tools', (_req, res) => {
   });
 });
 
-router.post('/agent', authenticateUser, express.json(), async (req, res) => {
-  const userId = req.user.id;
+router.post('/agent', optionalAuth, express.json(), async (req, res) => {
+  // Logged out is a normal state here: the agent's job is to log them in by voice
+  // (a texted or emailed six-digit code) and carry straight on with the booking.
+  let userId = req.user?.id || null;
   const { message, history = [], confirm = null } = req.body || {};
 
   if (!llm.configured()) {
@@ -84,6 +90,11 @@ router.post('/agent', authenticateUser, express.json(), async (req, res) => {
     // ── Path A: the customer tapped "Yes" on a pending booking. Execute directly,
     //    so a confirmed price can never drift from the one they agreed to.
     if (confirm && confirm.tool) {
+      if (bookTools.needsLogin(confirm.tool) && !userId) {
+        sse(res, 'delta', { text: 'I need to log you in first — what is your mobile number or email?' });
+        sse(res, 'done', { needsLogin: true });
+        return res.end();
+      }
       sse(res, 'tool', { tool: confirm.tool, state: 'running' });
       const result = await bookTools.execute(confirm.tool, confirm.args, userId, req);
       await audit(userId, confirm.tool, confirm.args, result, true);
@@ -158,7 +169,7 @@ router.post('/agent', authenticateUser, express.json(), async (req, res) => {
         }
 
         // A booking the customer has not approved yet: hand it back for confirmation.
-        if (bookTools.isWrite(call.name)) {
+        if (bookTools.isWrite(call.name) && userId) {
           await audit(userId, call.name, args, { pending: true }, false);
           sse(res, 'confirm', {
             tool: call.name,
@@ -169,8 +180,26 @@ router.post('/agent', authenticateUser, express.json(), async (req, res) => {
           return res.end();
         }
 
+        if (bookTools.needsLogin(call.name) && !userId) {
+          const result = {
+            ok: false,
+            needsLogin: true,
+            message: 'I need to log you in first. What is your mobile number or email address?',
+          };
+          messages.push({ role: 'tool', tool_call_id: call.id, content: JSON.stringify(result) });
+          continue;
+        }
+
         sse(res, 'tool', { tool: call.name, state: 'running' });
         const result = await bookTools.execute(call.name, args, userId, req);
+
+        // A voice login creates the session mid-conversation: pick it up so the
+        // booking they were already asking for can go ahead in the same breath.
+        if (!userId && req.session?.userId) {
+          userId = req.session.userId;
+          sse(res, 'login', { userId });
+        }
+
         await audit(userId, call.name, args, result, false);
         sse(res, 'tool', { tool: call.name, state: 'done', ok: result.ok !== false });
 

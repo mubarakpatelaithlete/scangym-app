@@ -217,6 +217,99 @@ const tools = {
       };
     },
   },
+
+  book_and_pay: {
+    write: true,
+    schema: {
+      name: 'book_and_pay',
+      description:
+        'Book a day pass AND charge the saved card in one step, so a spoken booking finishes itself. Use this by default for a customer who has paid before. Say the gym, the date, the time and the exact price, get their yes, and only then call this.',
+      parameters: {
+        type: 'object',
+        properties: {
+          gymId: { type: 'integer', description: 'The gym id from find_gyms.' },
+          date: { type: 'string', description: 'Date as YYYY-MM-DD.' },
+          time: { type: 'string', description: 'Start time as HH:MM (24h). Omit for the next hour.' },
+        },
+        required: ['gymId', 'date'],
+        additionalProperties: false,
+      },
+    },
+    async run(userId, args = {}) {
+      const { bookAndPay } = require('./checkout-actions');
+      return bookAndPay({ userId, gymId: args.gymId, date: args.date, time: args.time });
+    },
+  },
+
+  /* ---------- login: no password, no card number, ever ---------- */
+
+  send_login_code: {
+    write: false,
+    schema: {
+      name: 'send_login_code',
+      description:
+        'Send a six-digit login code by text or email when the customer is not logged in. Ask for their mobile number or email address, never a password.',
+      parameters: {
+        type: 'object',
+        properties: {
+          contact: { type: 'string', description: 'Mobile number or email address, as the customer said it.' },
+        },
+        required: ['contact'],
+        additionalProperties: false,
+      },
+    },
+    async run(_userId, args = {}) {
+      const { sendCode } = require('./voice-login');
+      return sendCode({ contact: args.contact });
+    },
+  },
+
+  confirm_login_code: {
+    write: false,
+    schema: {
+      name: 'confirm_login_code',
+      description: 'Check the six digits the customer read out and log them in, then carry on with what they were doing.',
+      parameters: {
+        type: 'object',
+        properties: {
+          contact: { type: 'string', description: 'The same number or email the code was sent to.' },
+          code: { type: 'string', description: 'The six digits the customer said.' },
+        },
+        required: ['contact', 'code'],
+        additionalProperties: false,
+      },
+    },
+    async run(_userId, args = {}, req) {
+      const { verifyCode } = require('./voice-login');
+      return verifyCode({ contact: args.contact, code: args.code, session: req?.session });
+    },
+  },
+
+  login_with_provider: {
+    write: false,
+    schema: {
+      name: 'login_with_provider',
+      description:
+        'Use when the customer wants to log in with Google, Apple or company SSO. These cannot be completed by voice, so this returns the one button they need to tap.',
+      parameters: {
+        type: 'object',
+        properties: {
+          provider: { type: 'string', enum: ['google', 'apple', 'sso'], description: 'Which provider they asked for.' },
+        },
+        required: ['provider'],
+        additionalProperties: false,
+      },
+    },
+    async run(_userId, args = {}) {
+      const { handoffFor } = require('./voice-login');
+      return (
+        handoffFor(args.provider) || {
+          ok: false,
+          message: 'I can log you in by text or email code — which would you prefer?',
+        }
+      );
+    },
+  },
 };
 
 /** Tool schemas in OpenAI chat-completions format. */
@@ -238,4 +331,20 @@ async function execute(name, args, userId, req) {
 
 const isWrite = (name) => !!tools[name]?.write;
 
-module.exports = { tools, openAiTools, execute, isWrite };
+/**
+ * Tools that need a logged-in customer. Searching a gym and logging in do not:
+ * someone who has never used ScanGym can still ask "any gyms near London Bridge?"
+ * and be walked into an account by voice.
+ */
+const PUBLIC_TOOLS = new Set([
+  'find_gyms',
+  'get_gym',
+  'today_and_tomorrow',
+  'send_login_code',
+  'confirm_login_code',
+  'login_with_provider',
+]);
+
+const needsLogin = (name) => !PUBLIC_TOOLS.has(name);
+
+module.exports = { tools, openAiTools, execute, isWrite, needsLogin, PUBLIC_TOOLS };
