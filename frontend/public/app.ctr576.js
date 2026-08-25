@@ -1328,7 +1328,7 @@ function HomePage(){
     <!-- Header -->
     <div style="display:flex;align-items:center;gap:12px;padding:16px 0 12px;flex-shrink:0;">
       <button onclick="event.stopPropagation();document.getElementById('sg-search-overlay').classList.remove('active');setTimeout(()=>document.getElementById('sg-search-overlay').style.display='none',200)" style="width:36px;height:36px;background:rgba(255,255,255,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;color:#fff;font-size:18px;">←</button>
-      <div style="width:28px;height:28px;background:#FF6D00;border-radius:50%;box-shadow:0 0 8px rgba(255,109,0,.4);flex-shrink:0;"></div>
+      <div style="width:28px;height:28px;background:#FF6D00;border-radius:50%;box-shadow:0 0 8px rgba(255,109,0,.4);flex-shrink:0;display:flex;align-items:center;justify-content:center;font:900 15px/1 system-ui,-apple-system,sans-serif;color:#fff;">S</div>
       <p style="color:#fff;font-size:18px;font-weight:700;margin:0;">Find a Gym</p>
     </div>
 
@@ -1686,7 +1686,7 @@ function SearchPage(){
           /* M8 fix: Removed fake "Gym Tour" badge */
 
           /* FIX #1: Orange brand circle top-left on ALL cards (brand identity) */
-          html+='<div style="position:absolute;top:16px;left:16px;width:28px;height:28px;background:#FF6D00;border-radius:50%;z-index:20;opacity:.85;box-shadow:0 0 10px rgba(255,109,0,.5)"></div>';
+          html+='<div style="position:absolute;top:16px;left:16px;width:28px;height:28px;background:#FF6D00;border-radius:50%;z-index:20;opacity:.85;box-shadow:0 0 10px rgba(255,109,0,.5);display:flex;align-items:center;justify-content:center;font:900 15px/1 system-ui,-apple-system,sans-serif;color:#fff;">S</div>';
 
           /* FIX #6: Removed duplicate top search bar — right-side Search + Near Me icons handle this now */
           /* Hidden input kept for backwards compat — doSearch still reads it */
@@ -1787,7 +1787,7 @@ function SearchPage(){
               else{cardHtml+=c.photo?'<div class="tt-photo" data-bg="'+c.photo+'"></div>':'<div class="tt-photo-placeholder"></div>';}
               cardHtml+='<div class="tt-gradient"></div>';
               /* FIX #1: Orange brand circle top-left on ALL cards (brand identity) */
-              cardHtml+='<div style="position:absolute;top:16px;left:16px;width:28px;height:28px;background:#FF6D00;border-radius:50%;z-index:20;opacity:.85;box-shadow:0 0 10px rgba(255,109,0,.5)"></div>';
+              cardHtml+='<div style="position:absolute;top:16px;left:16px;width:28px;height:28px;background:#FF6D00;border-radius:50%;z-index:20;opacity:.85;box-shadow:0 0 10px rgba(255,109,0,.5);display:flex;align-items:center;justify-content:center;font:900 15px/1 system-ui,-apple-system,sans-serif;color:#fff;">S</div>';
               /* Action buttons (right side) — match initial cards with labels */
               var _rl2=c.rating+(c.reviews?' ('+c.reviews+')':'');
               var _hc2=c.isOpen?'#4ade80':'#f87171';
@@ -17305,7 +17305,7 @@ function PartnerFullPage(){
       <div class="tt-gradient"></div>
 
       <!-- Orange brand circle top-left (matches Reels + Book tabs) -->
-      <div style="position:absolute;top:16px;left:16px;width:28px;height:28px;background:#FF6D00;border-radius:50%;z-index:20;opacity:.85;box-shadow:0 0 10px rgba(255,109,0,.5)"></div>
+      <div style="position:absolute;top:16px;left:16px;width:28px;height:28px;background:#FF6D00;border-radius:50%;z-index:20;opacity:.85;box-shadow:0 0 10px rgba(255,109,0,.5);display:flex;align-items:center;justify-content:center;font:900 15px/1 system-ui,-apple-system,sans-serif;color:#fff;">S</div>
 
       <!-- Top bar — Partner Dashboard label -->
       <div style="position:absolute;top:0;left:0;right:0;z-index:20;display:flex;align-items:center;justify-content:space-between;padding:12px 12px 10px;padding-top:calc(env(safe-area-inset-top,8px) + 4px)">
