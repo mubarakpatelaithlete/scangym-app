@@ -411,17 +411,23 @@
         // Membership only exists for signed-in creators; skip the guaranteed 401.
         // This page is standalone and does not load the app bundle, so read the
         // session hint directly rather than relying on window.sgHasSession.
-        try { if (localStorage.getItem('sg_authed') !== '1') return; } catch (e) { return; }
-        const res = await fetch('/api/creators/membership', { credentials: 'include' });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.isMember) {
-            state.membership = data;
-            state.screen = 'dashboard';
-            render();
-            loadToolkit();
-            loadWallet(); // FIX: Also load wallet balance (triggers back-pay reconciliation)
-            return;
+        // No session hint means the visitor is signed out. Fall through to the
+        // join screen below instead of returning: an early return here left
+        // render() uncalled, so every signed-out visitor got a blank page.
+        var authed = false;
+        try { authed = localStorage.getItem('sg_authed') === '1'; } catch (e) { authed = false; }
+        if (authed) {
+          const res = await fetch('/api/creators/membership', { credentials: 'include' });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.isMember) {
+              state.membership = data;
+              state.screen = 'dashboard';
+              render();
+              loadToolkit();
+              loadWallet(); // FIX: Also load wallet balance (triggers back-pay reconciliation)
+              return;
+            }
           }
         }
       } catch (e) {}
