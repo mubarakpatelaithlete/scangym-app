@@ -140,34 +140,19 @@ h1,h2,h3,.font-brand{font-family:'Sora',sans-serif}
      of the first rows of .sg-tab-content — on Book it covered "Showing gyms in
      Boardman", on Profile it covered the promo strip. Measure it and offset the
      scroll container while it is on screen, then release the offset when it goes. -->
-<style>body.sg-usp-on .sg-tab-content{top:var(--sg-usp-h,0px)}</style>
 <script>(function(){
+  /* Top spacing for the fixed promo banners is owned by sg-dock.js, which
+     stacks #sg-usp-banner then #sg-sps and sets the matching padding-top on
+     .sg-tab-content. Adding a second offset here double-counted the banner
+     height and pushed the sticky strip down onto the location banner. This
+     block now only auto-dismisses the banner and lets sg-dock re-layout. */
   var b=document.getElementById('sg-usp-banner');
   if(!b)return;
-  /* The banner wraps to two lines on narrow phones, so its height is not known
-     at first paint. Measuring once reserved 33px for a 45px banner and the top
-     12px of the page content stayed hidden underneath it. Observe instead. */
-  var released=false;
-  function apply(){
-    if(released)return;
-    var h=b.offsetHeight;
-    if(!h)return;
-    document.documentElement.style.setProperty('--sg-usp-h',h+'px');
-    document.body.classList.add('sg-usp-on');
-  }
-  function release(){released=true;document.body.classList.remove('sg-usp-on');document.documentElement.style.setProperty('--sg-usp-h','0px');}
-  if(document.body){apply();}else{document.addEventListener('DOMContentLoaded',apply);}
-  // Re-measure after fonts load and after any reflow that changes the wrap.
-  requestAnimationFrame(apply);
-  if(document.fonts&&document.fonts.ready&&document.fonts.ready.then)document.fonts.ready.then(apply);
-  try{if(window.ResizeObserver)new ResizeObserver(apply).observe(b);}catch(e){}
-  window.addEventListener('load',apply);
-  window.addEventListener('resize',apply);
-  // The ✕ hides the banner inline rather than removing it — watch for both.
-  b.addEventListener('click',function(e){if(e.target&&e.target.textContent.indexOf('\u2715')>-1)release();});
   setTimeout(function(){
-    if(b&&b.parentElement){b.style.transition='opacity 1s';b.style.opacity='0';setTimeout(function(){b.remove();release();},1000);}
-    else{release();}
+    if(!b.parentElement)return;
+    b.style.transition='opacity 1s';
+    b.style.opacity='0';
+    setTimeout(function(){b.remove();},1000);
   },7000);
 })();</script>
 <div id="app">
