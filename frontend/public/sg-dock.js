@@ -117,10 +117,11 @@
       top1.style.setProperty('top', '0px', 'important');
       topCursor = heightOf(top1);
     }
-    if (visible(top2)) {
-      top2.style.setProperty('top', topCursor + 'px', 'important');
-      topCursor += heightOf(top2);
-    }
+    /* #sg-sps is an in-flow strip, not a pinned one. Offsetting it here on top
+       of the container padding pushed it down onto whatever followed it — on
+       Book that was the "Showing gyms in ..." location banner. Leave it alone
+       and let it flow; only the fixed banner needs space reserved. */
+    if (top2) { top2.style.removeProperty('top'); }
     if (content) {
       content.style.setProperty('padding-top', topCursor + 'px', 'important');
     }
