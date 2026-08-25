@@ -144,10 +144,25 @@ h1,h2,h3,.font-brand{font-family:'Sora',sans-serif}
 <script>(function(){
   var b=document.getElementById('sg-usp-banner');
   if(!b)return;
-  function apply(){document.documentElement.style.setProperty('--sg-usp-h',b.offsetHeight+'px');document.body.classList.add('sg-usp-on');}
-  function release(){document.body.classList.remove('sg-usp-on');document.documentElement.style.setProperty('--sg-usp-h','0px');}
+  /* The banner wraps to two lines on narrow phones, so its height is not known
+     at first paint. Measuring once reserved 33px for a 45px banner and the top
+     12px of the page content stayed hidden underneath it. Observe instead. */
+  var released=false;
+  function apply(){
+    if(released)return;
+    var h=b.offsetHeight;
+    if(!h)return;
+    document.documentElement.style.setProperty('--sg-usp-h',h+'px');
+    document.body.classList.add('sg-usp-on');
+  }
+  function release(){released=true;document.body.classList.remove('sg-usp-on');document.documentElement.style.setProperty('--sg-usp-h','0px');}
   if(document.body){apply();}else{document.addEventListener('DOMContentLoaded',apply);}
-  window.addEventListener('resize',function(){if(document.body.classList.contains('sg-usp-on'))apply();});
+  // Re-measure after fonts load and after any reflow that changes the wrap.
+  requestAnimationFrame(apply);
+  if(document.fonts&&document.fonts.ready&&document.fonts.ready.then)document.fonts.ready.then(apply);
+  try{if(window.ResizeObserver)new ResizeObserver(apply).observe(b);}catch(e){}
+  window.addEventListener('load',apply);
+  window.addEventListener('resize',apply);
   // The ✕ hides the banner inline rather than removing it — watch for both.
   b.addEventListener('click',function(e){if(e.target&&e.target.textContent.indexOf('\u2715')>-1)release();});
   setTimeout(function(){
