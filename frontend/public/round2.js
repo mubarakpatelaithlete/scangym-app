@@ -71,7 +71,7 @@ function fixSquadBranding(){
   if(b&&!b.dataset.sgR2){
     b.dataset.sgR2='1';
     b.style.cssText='margin:0 0 14px;padding:0;flex-shrink:0';
-    b.innerHTML='<div style="width:28px;height:28px;background:#FF6D00;border-radius:50%;opacity:.85;box-shadow:0 0 10px rgba(255,109,0,.5)"></div>';
+    b.innerHTML='<div style="width:28px;height:28px;background:#FF6D00;border-radius:50%;opacity:.85;box-shadow:0 0 10px rgba(255,109,0,.5);display:flex;align-items:center;justify-content:center;font:900 15px/1 system-ui,-apple-system,sans-serif;color:#fff;">S</div>';
   }
   /* the Book-tab social-proof strip doesn't belong here either */
   var sps=document.getElementById('sg-sps');
