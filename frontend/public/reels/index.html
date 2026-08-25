@@ -70,7 +70,9 @@
       .reel video.has-frame{z-index:2;}
 
       /* Brand circle watermark */
-      .sg-brand-circle{position:absolute;top:16px;left:16px;width:28px;height:28px;background:#FF6D00;border-radius:50%;z-index:10;opacity:.85;box-shadow:0 0 10px rgba(255,109,0,.5);pointer-events:none;}
+      .sg-brand-circle{position:absolute;top:16px;left:16px;width:28px;height:28px;background:#FF6D00;border-radius:50%;z-index:10;opacity:.85;box-shadow:0 0 10px rgba(255,109,0,.5);pointer-events:none;display:flex;align-items:center;justify-content:center;font:900 15px/1 system-ui,-apple-system,sans-serif;color:#fff;}
+.sg-brand-circle::after{content:'S'}
+
       /* Gradient overlays */
       .reel::before{
         content:'';position:absolute;top:0;left:0;right:0;height:120px;
