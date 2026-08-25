@@ -1047,13 +1047,12 @@
           badgesDiv.className = 'sg-app-badges';
           badgesDiv.innerHTML = '<div class="sg-app-badges-label">📲 Get the app</div>'
             + '<div class="sg-app-badges-row">'
-            + '<a class="sg-app-badge" href="https://apps.apple.com/app/scangym" target="_blank" rel="noopener">'
-            + appleSvg
-            + '<div class="sg-app-badge-text"><span class="sg-abt">Download on the</span><span class="sg-abb">App Store</span></div>'
-            + '</a>'
-            + '<a class="sg-app-badge" href="https://play.google.com/store/apps/details?id=com.scangym" target="_blank" rel="noopener">'
-            + googleSvg
-            + '<div class="sg-app-badge-text"><span class="sg-abt">GET IT ON</span><span class="sg-abb">Google Play</span></div>'
+            /* These pointed at listings that do not resolve for the public:
+               the iOS app does not exist yet and Android is on a closed
+               testing track, so every tap was a 404. Send people to the
+               Apps page, which now carries real per-platform status. */
+            + '<a class="sg-app-badge" href="/apps" onclick="event.preventDefault();navigate(\'/apps\')">'
+            + '<div class="sg-app-badge-text"><span class="sg-abt">Available on</span><span class="sg-abb">Windows &amp; web</span></div>'
             + '</a>'
             + '</div>';
           bottomOverlay.parentElement.insertBefore(badgesDiv, bottomOverlay);

@@ -21140,113 +21140,71 @@ function TrainerTabPage(){
 
 
 function AppsPage(){
+  /* Store list is deliberately limited to platforms we can actually stand
+     behind, and ratings/review counts are NOT hardcoded here. Publishing
+     invented review data is a UK DMCC Act 2024 problem, and it was also
+     simply wrong: the live Microsoft listing carries no rating at all. If we
+     want stars on this page they must be read from the stores, not typed in. */
   var stores=[
-    {name:'App Store',icon:'🍏',desc:'iPhone & iPad',color:'#007AFF',url:'https://apps.apple.com/app/scangym/id6738043795',live:1,rating:'4.8',reviews:'2.4K',size:'28 MB',version:'2.1.0',updated:'Jun 2026',category:'Health & Fitness',developer:'ScanGym Ltd',age:'4+'},
-    {name:'Google Play',icon:'🤖',desc:'Android phones & tablets',color:'#34A853',url:'https://play.google.com/store/apps/details?id=com.scangym.app',live:1,rating:'4.7',reviews:'3.1K',size:'24 MB',version:'2.1.0',updated:'Jun 2026',category:'Health & Fitness',developer:'ScanGym Ltd',age:'Everyone'},
-    {name:'Microsoft Store',icon:'🪟',desc:'Windows 10 & 11',color:'#0078D4',url:'https://apps.microsoft.com/detail/9nh8vrn834dv',live:1,rating:'4.9',reviews:'856',size:'32 MB',version:'2.1.0',updated:'Jun 2026',category:'Health & Fitness',developer:'ScanGym Ltd',age:'3+'},
-    {name:'Samsung Galaxy Store',icon:'📱',desc:'Samsung devices',color:'#1428A0',url:'https://galaxy.store/scangym',live:1,rating:'4.6',reviews:'412',size:'25 MB',version:'2.1.0',updated:'Jun 2026',category:'Health & Fitness',developer:'ScanGym Ltd',age:'Everyone'},
-    {name:'Huawei AppGallery',icon:'🔴',desc:'Huawei devices',color:'#C7000B',url:'https://appgallery.huawei.com/scangym',live:1,rating:'4.5',reviews:'198',size:'26 MB',version:'2.0.8',updated:'Jun 2026',category:'Health & Fitness',developer:'ScanGym Ltd',age:'3+'},
-    {name:'Amazon Appstore',icon:'📦',desc:'Fire tablets & Fire TV',color:'#FF9900',url:'https://www.amazon.co.uk/dp/B0SCANGYM',live:1,rating:'4.4',reviews:'87',size:'27 MB',version:'2.0.5',updated:'May 2026',category:'Health & Fitness',developer:'ScanGym Ltd',age:'Everyone'},
-    {name:'Web App (PWA)',icon:'🌐',desc:'Any browser — install to home screen',color:'#FF6D00',url:'https://scangym.com',live:1,rating:'4.9',reviews:'5.2K',size:'0 MB',version:'Latest',updated:'Live',category:'Progressive Web App',developer:'ScanGym Ltd',age:'All'},
-    {name:'Mac App Store',icon:'🍎',desc:'macOS Ventura+',color:'#555555',url:'https://apps.apple.com/app/scangym/id6738043795',live:1,rating:'4.7',reviews:'342',size:'31 MB',version:'2.1.0',updated:'Jun 2026',category:'Health & Fitness',developer:'ScanGym Ltd',age:'4+'},
+    {name:'Microsoft Store',icon:'\u{1FA9F}',desc:'Windows 10 & 11',color:'#0078D4',url:'https://apps.microsoft.com/detail/9nh8vrn834dv',status:'live'},
+    {name:'Web App (PWA)',icon:'\u{1F310}',desc:'Any browser \u2014 install to home screen',color:'#FF6D00',url:'https://scangym.com',status:'live'},
+    {name:'Google Play',icon:'\u{1F916}',desc:'Android \u2014 in testing',color:'#34A853',url:'',status:'testing'},
+    {name:'App Store',icon:'\u{1F34F}',desc:'iPhone & iPad \u2014 not yet released',color:'#007AFF',url:'',status:'soon'}
   ];
-  var screenshots=[
-    'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=300&h=600&fit=crop',
-    'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=300&h=600&fit=crop',
-    'https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=300&h=600&fit=crop',
-    'https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?w=300&h=600&fit=crop'
-  ];
+  var STATUS={
+    live:{label:'LIVE',bg:'rgba(34,197,94,.15)',fg:'#22c55e',cta:'Get'},
+    testing:{label:'IN TESTING',bg:'rgba(251,191,36,.15)',fg:'#fbbf24',cta:'Soon'},
+    soon:{label:'COMING SOON',bg:'rgba(255,255,255,.08)',fg:'rgba(255,255,255,.45)',cta:'Soon'}
+  };
+  var liveCount=stores.filter(function(s){return s.status==='live';}).length;
   var features=['QR Scan Entry','AI Personal Trainer','Music Player','Photo Sharing','Day Pass Booking','Live Chat Support','Workout Calendar','Progress Tracking'];
-  var reviews=[
-    {name:'Sarah K.',stars:5,text:'Best gym app ever! Found amazing gyms near me at great prices.',date:'2 days ago',avatar:'🏋️'},
-    {name:'Mike R.',stars:5,text:'The AI trainer is incredible. Better than paying for a real PT.',date:'1 week ago',avatar:'💪'},
-    {name:'Emma L.',stars:4,text:'Love the QR entry system. So smooth and easy to use.',date:'2 weeks ago',avatar:'🧘'},
-    {name:'James W.',stars:5,text:'Music player while working out is a game changer!',date:'3 weeks ago',avatar:'🎵'}
-  ];
   return`<div style="max-width:520px;margin:0 auto;padding:20px 16px 100px;overflow-y:auto">
-    <div class="sg-more-back" onclick="navigate('/more')">← Back</div>
-    <!-- Hero Banner — Microsoft Store style -->
+    <div class="sg-more-back" onclick="navigate('/more')">\u2190 Back</div>
     <div style="background:linear-gradient(135deg,#FF6D00 0%,#E66200 50%,#cc5500 100%);border-radius:20px;padding:24px;margin-bottom:20px;position:relative;overflow:hidden">
       <div style="position:absolute;top:-20px;right:-20px;width:120px;height:120px;background:rgba(255,255,255,.1);border-radius:50%"></div>
       <div style="position:absolute;bottom:-30px;left:-30px;width:80px;height:80px;background:rgba(255,255,255,.08);border-radius:50%"></div>
       <div style="display:flex;align-items:center;gap:16px;position:relative;z-index:1">
-        <div style="width:72px;height:72px;background:rgba(255,255,255,.2);border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:32px;backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.3)">🏋️</div>
+        <div style="width:72px;height:72px;background:rgba(255,255,255,.2);border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:32px;backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.3)">\u{1F3CB}\uFE0F</div>
         <div>
           <h1 style="font-size:24px;font-weight:900;color:#fff;margin:0">ScanGym</h1>
-          <p style="color:rgba(255,255,255,.8);font-size:12px;margin:2px 0 0">ScanGym Ltd · Health & Fitness</p>
-          <div style="display:flex;align-items:center;gap:6px;margin-top:6px">
-            <span style="color:#fff;font-size:14px;font-weight:800">4.8</span>
-            <span style="color:#fbbf24;font-size:12px">★★★★★</span>
-            <span style="color:rgba(255,255,255,.6);font-size:11px">(11K+ reviews)</span>
-          </div>
+          <p style="color:rgba(255,255,255,.8);font-size:12px;margin:2px 0 0">AIthlete \u00b7 Health &amp; Fitness</p>
+          <p style="color:rgba(255,255,255,.75);font-size:12px;margin:6px 0 0;font-weight:600">No membership \u00b7 No contract \u00b7 Pay per visit</p>
         </div>
       </div>
       <div style="display:flex;gap:8px;margin-top:16px;position:relative;z-index:1">
-        <button onclick="window.open('https://scangym.com','_blank')" style="flex:1;background:rgba(255,255,255,.95);color:#E66200;border:none;padding:12px;border-radius:12px;font-size:14px;font-weight:800;cursor:pointer">Get App</button>
-        <button onclick="navigator.share&&navigator.share({title:'ScanGym',url:'https://scangym.com'})" style="width:44px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);border-radius:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:#fff">↗</button>
+        <button onclick="navigate('/explore')" style="flex:1;background:rgba(255,255,255,.95);color:#E66200;border:none;padding:12px;border-radius:12px;font-size:14px;font-weight:800;cursor:pointer">Book a gym</button>
+        <button onclick="navigator.share&&navigator.share({title:'ScanGym',url:'https://scangym.com'})" style="width:44px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);border-radius:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:#fff">\u2197</button>
       </div>
     </div>
 
-    <!-- Screenshots carousel -->
-    <div style="margin-bottom:20px">
-      <h3 style="color:#fff;font-size:15px;font-weight:800;margin:0 0 10px">📸 Screenshots</h3>
-      <div style="display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:4px">
-        ${screenshots.map(function(s){return '<img src="'+s+'" style="width:140px;height:250px;border-radius:12px;object-fit:cover;flex-shrink:0;border:1px solid rgba(255,255,255,.08)" loading="lazy">';}).join('')}
-      </div>
-    </div>
-
-    <!-- Platform Stores Grid — Microsoft Store style -->
-    <h3 style="color:#fff;font-size:15px;font-weight:800;margin:0 0 12px">📥 Available On ${stores.length} Platforms</h3>
+    <h3 style="color:#fff;font-size:15px;font-weight:800;margin:0 0 12px">\u{1F4E5} Available on ${liveCount} platform${liveCount===1?'':'s'}</h3>
     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px">
       ${stores.map(function(s){
-        var stars='★'.repeat(Math.floor(parseFloat(s.rating)))+(parseFloat(s.rating)%1>=0.5?'½':'');
-        return '<div onclick="window.open(\''+s.url+'\',\'_blank\')" style="cursor:pointer;display:flex;align-items:center;gap:12px;padding:14px;background:rgba(255,255,255,.03);border-radius:14px;border:1px solid rgba(255,255,255,.06);transition:.15s" onmouseenter="this.style.borderColor=\''+s.color+'50\';this.style.background=\''+s.color+'08\'" onmouseleave="this.style.borderColor=\'rgba(255,255,255,.06)\';this.style.background=\'rgba(255,255,255,.03)\'">'
+        var st=STATUS[s.status]||STATUS.soon;
+        var clickable=s.status==='live'&&s.url;
+        return '<div '+(clickable?'onclick="window.open(\''+s.url+'\',\'_blank\')"':'')+' style="'+(clickable?'cursor:pointer;':'opacity:.6;')+'display:flex;align-items:center;gap:12px;padding:14px;background:rgba(255,255,255,.03);border-radius:14px;border:1px solid rgba(255,255,255,.06)">'
           +'<div style="width:46px;height:46px;background:'+s.color+'18;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">'+s.icon+'</div>'
           +'<div style="flex:1;min-width:0">'
-          +'<div style="display:flex;align-items:center;gap:6px"><span style="color:#fff;font-size:14px;font-weight:700">'+s.name+'</span><span style="background:rgba(34,197,94,.15);color:#22c55e;font-size:8px;font-weight:800;padding:2px 6px;border-radius:4px">LIVE</span></div>'
-          +'<div style="display:flex;align-items:center;gap:8px;margin-top:2px">'
-          +'<span style="color:#fbbf24;font-size:10px">'+stars+'</span>'
-          +'<span style="color:rgba(255,255,255,.35);font-size:10px">'+s.rating+' ('+s.reviews+')</span>'
-          +'<span style="color:rgba(255,255,255,.2);font-size:10px">·</span>'
-          +'<span style="color:rgba(255,255,255,.3);font-size:10px">'+s.size+'</span>'
-          +'</div></div>'
-          +'<div style="background:'+s.color+'25;color:'+s.color+';font-size:11px;font-weight:700;padding:6px 14px;border-radius:8px;flex-shrink:0">Get</div>'
+          +'<div style="display:flex;align-items:center;gap:6px"><span style="color:#fff;font-size:14px;font-weight:700">'+s.name+'</span><span style="background:'+st.bg+';color:'+st.fg+';font-size:8px;font-weight:800;padding:2px 6px;border-radius:4px">'+st.label+'</span></div>'
+          +'<div style="color:rgba(255,255,255,.35);font-size:10px;margin-top:2px">'+s.desc+'</div>'
+          +'</div>'
+          +'<div style="background:'+s.color+'25;color:'+s.color+';font-size:11px;font-weight:700;padding:6px 14px;border-radius:8px;flex-shrink:0">'+st.cta+'</div>'
           +'</div>';
       }).join('')}
     </div>
 
-    <!-- Features -->
-    <h3 style="color:#fff;font-size:15px;font-weight:800;margin:0 0 10px">✨ Features</h3>
+    <h3 style="color:#fff;font-size:15px;font-weight:800;margin:0 0 10px">\u2728 Features</h3>
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px">
       ${features.map(function(f){return '<span style="background:rgba(255,109,0,.08);border:1px solid rgba(255,109,0,.15);color:#FF6D00;font-size:11px;font-weight:600;padding:6px 12px;border-radius:20px">'+f+'</span>';}).join('')}
     </div>
 
-    <!-- Reviews -->
-    <h3 style="color:#fff;font-size:15px;font-weight:800;margin:0 0 10px">⭐ Reviews</h3>
-    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px">
-      ${reviews.map(function(r){
-        return '<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:14px">'
-          +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
-          +'<span style="font-size:18px">'+r.avatar+'</span>'
-          +'<span style="color:#fff;font-size:13px;font-weight:700">'+r.name+'</span>'
-          +'<span style="color:#fbbf24;font-size:11px">'+'★'.repeat(r.stars)+'</span>'
-          +'<span style="color:rgba(255,255,255,.25);font-size:10px;margin-left:auto">'+r.date+'</span>'
-          +'</div>'
-          +'<p style="color:rgba(255,255,255,.6);font-size:12px;line-height:1.5;margin:0">'+r.text+'</p>'
-          +'</div>';
-      }).join('')}
-    </div>
-
-    <!-- App Info -->
     <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px">
-      <h3 style="color:#fff;font-size:14px;font-weight:700;margin:0 0 12px">ℹ️ App Information</h3>
+      <h3 style="color:#fff;font-size:14px;font-weight:700;margin:0 0 12px">\u2139\uFE0F App information</h3>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div><p style="color:rgba(255,255,255,.3);font-size:10px;margin:0">Version</p><p style="color:#fff;font-size:13px;font-weight:600;margin:2px 0 0">2.1.0</p></div>
-        <div><p style="color:rgba(255,255,255,.3);font-size:10px;margin:0">Updated</p><p style="color:#fff;font-size:13px;font-weight:600;margin:2px 0 0">June 2026</p></div>
-        <div><p style="color:rgba(255,255,255,.3);font-size:10px;margin:0">Developer</p><p style="color:#fff;font-size:13px;font-weight:600;margin:2px 0 0">ScanGym Ltd</p></div>
-        <div><p style="color:rgba(255,255,255,.3);font-size:10px;margin:0">Category</p><p style="color:#fff;font-size:13px;font-weight:600;margin:2px 0 0">Health & Fitness</p></div>
-        <div><p style="color:rgba(255,255,255,.3);font-size:10px;margin:0">Compatibility</p><p style="color:#fff;font-size:13px;font-weight:600;margin:2px 0 0">iOS, Android, Windows, Web</p></div>
-        <div><p style="color:rgba(255,255,255,.3);font-size:10px;margin:0">Languages</p><p style="color:#fff;font-size:13px;font-weight:600;margin:2px 0 0">English (12 more)</p></div>
+        <div><p style="color:rgba(255,255,255,.3);font-size:10px;margin:0">Publisher</p><p style="color:#fff;font-size:13px;font-weight:600;margin:2px 0 0">AIthlete</p></div>
+        <div><p style="color:rgba(255,255,255,.3);font-size:10px;margin:0">Category</p><p style="color:#fff;font-size:13px;font-weight:600;margin:2px 0 0">Health &amp; Fitness</p></div>
+        <div><p style="color:rgba(255,255,255,.3);font-size:10px;margin:0">Price</p><p style="color:#fff;font-size:13px;font-weight:600;margin:2px 0 0">Free \u00b7 pay per visit</p></div>
+        <div><p style="color:rgba(255,255,255,.3);font-size:10px;margin:0">Platforms</p><p style="color:#fff;font-size:13px;font-weight:600;margin:2px 0 0">Windows, Web</p></div>
       </div>
     </div>
   </div>`;
