@@ -65,14 +65,14 @@
       '-webkit-user-select:none;user-select:none;touch-action:manipulation}' +
     '.sg-tab-item svg{width:20px;height:20px;stroke:rgba(255,255,255,.4);fill:none;' +
       'stroke-width:1.8;transition:.25s cubic-bezier(.4,0,.2,1)}' +
-    '.sg-tab-item .sg-tab-label{font-size:8px;font-weight:600;letter-spacing:.2px;' +
+    '.sg-tab-item .sg-tab-label{font-size:11px;font-weight:600;letter-spacing:.2px;' +
       'color:rgba(255,255,255,.62);transition:.25s cubic-bezier(.4,0,.2,1)}' +
     '.sg-tab-item.active svg{stroke:#FF6D00;filter:drop-shadow(0 0 6px rgba(255,109,0,.35))}' +
     '.sg-tab-item.active .sg-tab-label{color:#FF6D00}' +
     '.sg-tab-item:active{transform:scale(.92)}' +
     '@media (max-height:500px) and (orientation:landscape){' +
       '.sg-tab-bar{height:44px}.sg-tab-item svg{width:16px;height:16px}' +
-      '.sg-tab-item .sg-tab-label{font-size:7px}}';
+      '.sg-tab-item .sg-tab-label{font-size:9px}}';
 
   function render() {
     if (document.querySelector('nav.sg-tab-bar')) return;
