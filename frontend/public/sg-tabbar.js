@@ -17,6 +17,17 @@
 (function () {
   'use strict';
 
+  // The SPA renders /reels inside an iframe (.sg-reels-frame). In that case this
+  // script runs against the IFRAME's document, which has no SPA bar of its own,
+  // so the guard below passes and we paint a second tab bar inside the frame —
+  // stacked directly above the parent's real one. Bail out whenever we are
+  // framed: the parent document already owns the navigation.
+  try {
+    if (window.top !== window.self) return;
+  } catch (e) {
+    return;   // cross-origin access threw — we are definitely framed
+  }
+
   if (document.querySelector('nav.sg-tab-bar')) return;   // SPA already has one
 
   var TABS = [
