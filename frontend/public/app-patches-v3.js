@@ -8,7 +8,7 @@ function injectStyle(id,css){if(document.getElementById(id))return;var s=documen
 
 // #62: Live Visitor Counter
 function initVisitorCounter(){
-  injectStyle('sg-sps-s','#sg-sps{position:sticky;top:0;z-index:100;background:rgba(255,109,0,.08);border-bottom:1px solid rgba(255,109,0,.15);padding:6px 16px;display:flex;align-items:center;gap:8px;font-size:11px;color:rgba(255,255,255,.7);font-weight:600}');
+  injectStyle('sg-sps-s','#sg-sps{position:relative;z-index:100;background:rgba(255,109,0,.08);border-bottom:1px solid rgba(255,109,0,.15);padding:6px 16px;display:flex;align-items:center;gap:8px;font-size:11px;color:rgba(255,255,255,.7);font-weight:600}');
   /* /api/stats/live-visitors has never existed on the server. A previous fix
    * validated the response instead of removing the call, so every visitor kept
    * firing a 404 every 30 seconds for the whole session while the label stayed
