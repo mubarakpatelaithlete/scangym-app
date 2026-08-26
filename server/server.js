@@ -5,6 +5,7 @@ const fs = require('fs');
 const session = require('express-session');
 const compression = require('compression');
 const { applyMeta: applyRouteMeta } = require('./lib/route-meta');
+const { applyBootSkeleton } = require('./lib/boot-skeleton');
 
 // Import feature routes
 const reviewsRouter = require('./routes/reviews');
@@ -841,7 +842,12 @@ if (fs.existsSync(FRONTEND_DIR)) {
     // Per-route <title>/description/canonical so each tab is its own page to a
     // crawler, a shared link preview and the browser tab strip.
     const shell = applyRouteMeta(_indexHtmlCache, req.path);
-    const html = shell.replace('</head>', perfHints + '</head>');
+    // The boot screen shipped in index.html is the same on every route (and
+    // shows three of the five tabs). Swap in one shaped like the page being
+    // served, with the real tab bar and a primary action that works before
+    // app.ctr576.js has parsed.
+    const booted = applyBootSkeleton(shell, req.path);
+    const html = booted.replace('</head>', perfHints + '</head>');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.send(html);
