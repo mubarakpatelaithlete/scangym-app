@@ -4,6 +4,7 @@ const cors = require('cors');
 const fs = require('fs');
 const session = require('express-session');
 const compression = require('compression');
+const { applyMeta: applyRouteMeta } = require('./lib/route-meta');
 
 // Import feature routes
 const reviewsRouter = require('./routes/reviews');
@@ -837,7 +838,10 @@ if (fs.existsSync(FRONTEND_DIR)) {
     const googleClientId = process.env.GOOGLE_CLIENT_ID || '';
     const appleClientId = process.env.APPLE_CLIENT_ID || '';
     const perfHints = `<script>window.__geoHint=${geoHint};window._sgGoogleClientId="${googleClientId}";window._sgAppleClientId="${appleClientId}";</script>\n`;
-    const html = _indexHtmlCache.replace('</head>', perfHints + '</head>');
+    // Per-route <title>/description/canonical so each tab is its own page to a
+    // crawler, a shared link preview and the browser tab strip.
+    const shell = applyRouteMeta(_indexHtmlCache, req.path);
+    const html = shell.replace('</head>', perfHints + '</head>');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.send(html);
