@@ -1,0 +1,67 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   talk-bar.css — the one call to action, as a bar across the bottom.
+
+   The product promise is that you say what you want and it happens. A 71x46
+   pill tucked in the bottom-right corner does not read as the main way to use
+   the app; it reads as a help widget. This makes it the widest, most obvious
+   thing on the screen.
+
+   ── Why this file sets no `bottom` ──────────────────────────────────────────
+   Each tab's script already positions its own pill with an inline
+   `style="bottom: Npx !important"`, and the values are per-tab and correct:
+
+       Reels 69   Book 102   ScanSquad 69   Partner 68   Profile 68
+
+   Book is higher because it alone has #sg-book-summary ("Today · Day Pass ·
+   £4.49"), a 26px fixed strip above the tab bar. That arithmetic is already
+   right, and an inline !important cannot be overridden from a stylesheet
+   anyway. So this file changes shape only and inherits the vertical position.
+   If you ever need to move it, change the JS that writes the inline style —
+   editing `bottom` here will silently do nothing.
+
+   ── The 52px gap on Book ────────────────────────────────────────────────────
+   The gym card ends at y710 and the summary strip starts at y762, leaving 52px
+   of bare page background in the middle of the thumb zone — measured with
+   elementFromPoint, which returns #app all the way through it. The bar lands in
+   that gap. It is a genuine fix for wasted space, not a cover-up: the gap is a
+   sizing bug in the card and is tracked separately.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Why every selector carries `.show` ─────────────────────────────────────
+   All five pills exist in the DOM of the single-page app at once. chat-agent.js
+   keeps them at `display:none` and adds `.show` to the one belonging to the
+   current tab. The first draft of this file styled the bare ids and included
+   `display:flex !important`, which overrode that and put FIVE full-width Talk
+   bars on Book, Partner and Profile simultaneously — the exact regression
+   one-cta.css warns about in its header. Rendering the tabs caught it; the unit
+   tests were all green.
+
+   So: never set `display` here, and only ever match the shown pill. */
+#rchat-fab.show,
+#bchat-fab.show,
+#schat-fab.show,
+#pchat-fab.show,
+#mchat-fab.show {
+  /* Full width, inset a little so it reads as a control rather than a slab. */
+  left: 12px !important;
+  right: 12px !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+
+  height: 52px !important;
+  padding: 0 20px !important;
+  border-radius: 14px !important;
+
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+
+  font-size: 17px !important;
+  font-weight: 800 !important;
+  letter-spacing: .2px !important;
+
+  /* Lifts the bar off the content behind it without adding a second colour. */
+  box-shadow: 0 -6px 24px rgba(0, 0, 0, .45),
+              0 0 0 1px rgba(255, 255, 255, .08) inset !important;
+}

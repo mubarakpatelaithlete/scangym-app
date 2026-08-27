@@ -141,3 +141,35 @@
     animation: none !important;
   }
 }
+
+/* ─── 8. The two the static tests could never see ───────────────────────────
+   Sections 1–7 were written by reading the source. These two were found by
+   driving the live site in a mobile browser and counting the orange surfaces
+   the user can actually see — which is the only measurement that matches the
+   rule. Both escaped every existing test because those tests grep this
+   stylesheet, and an element that was never added to this stylesheet is
+   invisible to them.
+
+   8a. #sg-sps — the "No membership needed · Instant QR · Free cancel" strip.
+   app-patches-v3.js injects it three seconds after paint with an orange wash
+   and an orange bottom border, full width, directly above the content. It is
+   reassurance copy, not a call to action, and on Book and Profile it was the
+   second orange surface on the screen. Keep the strip, drop the orange. */
+#sg-sps {
+  background: var(--sg-secondary-bg) !important;
+  border-bottom-color: rgba(255, 255, 255, .10) !important;
+}
+
+/* ─── The location prompt ────────────────────────────────────────────────────
+   #sg-location-banner is a full-width bar at the very top of Book, and it is
+   orange — but as a gradient in the amber family, rgb(120,53,15) to
+   rgb(146,64,14), not #FF6D00. Every rule above keys on the brand hex, so
+   nothing here caught it and no static test could: the colour is set inline
+   from JS. A rendered-page audit is what found it.
+
+   It reads as a second orange bar on the tab. Keep the prompt, drop the hue. */
+#sg-location-banner {
+  background-image: none !important;
+  background-color: var(--sg-secondary-bg) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, .10) !important;
+}

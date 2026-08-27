@@ -79,17 +79,21 @@ router.post('/test', async (req, res) => {
 
 // ─── Health check ────────────────────────────────────────────
 router.get('/health', (req, res) => {
+  // `!!(process.env.X || true)` is always true — it reported whatsapp, sms,
+  // email, slack and msteams as configured on a box with none of those keys
+  // set, which makes this endpoint useless for the one question it is asked:
+  // which channels can actually answer a customer right now.
   const channels = {
     telegram: !!process.env.TELEGRAM_BOT_TOKEN,
-    whatsapp: !!(process.env.TWILIO_ACCOUNT_SID || true),
-    sms: !!(process.env.TWILIO_ACCOUNT_SID || true),
+    whatsapp: !!process.env.TWILIO_ACCOUNT_SID,
+    sms: !!process.env.TWILIO_ACCOUNT_SID,
     discord: !!process.env.DISCORD_BOT_TOKEN,
-    email: !!(process.env.SENDGRID_API_KEY || true),
-    slack: !!(process.env.SLACK_BOT_TOKEN || true),
-    msteams: !!(process.env.TEAMS_APP_ID || true),
-    web: true, // Always available
-    manychat: true, // Instagram, Facebook, TikTok, YouTube via ManyChat
-    reddit: !!(process.env.REDDIT_CLIENT_ID),
+    email: !!process.env.SENDGRID_API_KEY,
+    slack: !!process.env.SLACK_BOT_TOKEN,
+    msteams: !!process.env.TEAMS_APP_ID,
+    web: true, // no credential needed
+    manychat: !!process.env.MANYCHAT_API_KEY,
+    reddit: !!process.env.REDDIT_CLIENT_ID,
   };
 
   const aiProviders = {
