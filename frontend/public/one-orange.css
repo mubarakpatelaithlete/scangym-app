@@ -159,3 +159,17 @@
   background: var(--sg-secondary-bg) !important;
   border-bottom-color: rgba(255, 255, 255, .10) !important;
 }
+
+/* ─── The location prompt ────────────────────────────────────────────────────
+   #sg-location-banner is a full-width bar at the very top of Book, and it is
+   orange — but as a gradient in the amber family, rgb(120,53,15) to
+   rgb(146,64,14), not #FF6D00. Every rule above keys on the brand hex, so
+   nothing here caught it and no static test could: the colour is set inline
+   from JS. A rendered-page audit is what found it.
+
+   It reads as a second orange bar on the tab. Keep the prompt, drop the hue. */
+#sg-location-banner {
+  background-image: none !important;
+  background-color: var(--sg-secondary-bg) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, .10) !important;
+}
