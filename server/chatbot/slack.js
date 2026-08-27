@@ -20,11 +20,9 @@ const router = express.Router();
 const crypto = require('crypto');
 const { handleMessage } = require('./message-handler');
 
-// ─── Slack credentials (fragment-joined for scanning protection) ───
-const _sbt = ['xoxb-114526342', '02274-11454458', '604101-Mda6EdefZ', 'NBlTQHMAIaAgCmj'];
-const _sss = ['8cf986fd21ef', '454b096d2a9f', 'c639fcec'];
-const SLACK_BOT_TOKEN = process.env.SLACK_BOT_TOKEN || _sbt.join('');
-const SLACK_SIGNING_SECRET = process.env.SLACK_SIGNING_SECRET || _sss.join('');
+// Slack credentials (env only - never hardcode)
+const SLACK_BOT_TOKEN = process.env.SLACK_BOT_TOKEN;
+const SLACK_SIGNING_SECRET = process.env.SLACK_SIGNING_SECRET;
 const BASE_URL = process.env.BASE_URL || 'https://scangym.com';
 const SLACK_API = 'https://slack.com/api';
 
