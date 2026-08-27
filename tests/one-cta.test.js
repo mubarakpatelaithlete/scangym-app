@@ -60,12 +60,31 @@ test('the competing calls to action are removed', () => {
   }
 });
 
-test('the voice pill is the survivor', () => {
+test('the voice pill is never hidden', () => {
+  // It survives by omission — see below for why it must not be forced visible.
   for (const pill of PILLS) {
-    assert.ok(css.includes(pill), `one-cta.css never mentions ${pill}`);
+    const rule = ruleFor(pill);
+    if (rule) assert.ok(!/display:\s*none/.test(rule), `${pill} must not be hidden`);
   }
-  const rule = ruleFor('#bchat-fab');
-  assert.ok(!/display:\s*none/.test(rule), 'the voice pill must not be hidden');
+});
+
+test('the pills are never forced visible', () => {
+  // This is a regression test for a bug this file shipped. In the SPA all five
+  // personalities load and each builds its own pill; chat-agent.js hides the four
+  // that do not belong to the current tab. An earlier version of one-cta.css set
+  // `display:inline-flex !important` on all of them to document which element
+  // survives, which overrode that logic and put FIVE "Talk" buttons on Book,
+  // Partner and Profile — the exact opposite of one call to action.
+  //
+  // Caught only by auditing the live site; every static test still passed.
+  for (const pill of PILLS) {
+    const rule = ruleFor(pill);
+    if (!rule) continue;
+    assert.ok(
+      !/display:\s*(inline-flex|flex|block|inline-block)/.test(rule),
+      `${pill} must not be forced visible — that breaks per-tab pill hiding`,
+    );
+  }
 });
 
 test('navigation is never removed', () => {
