@@ -11,6 +11,7 @@
  *   GET    /api/channels/telegram/deeplink — Get Telegram bot deep link for user
  *   POST   /api/channels/telegram/verify  — Called by Telegram webhook on /start
  *   POST   /api/channels/welcome   — Send welcome message on a connected channel
+ *   GET    /api/channels/lookup    — (bot-internal) resolve channel identity → userId
  */
 
 const express = require('express');
@@ -423,6 +424,136 @@ const msteamsChatbot = require('../chatbot/msteams');
 router.use('/msteams/webhook', (req, res, next) => {
   req.url = '/messages'; // Rewrite to match the Teams adapter's /messages route
   msteamsChatbot(req, res, next);
+});
+
+// ─── GET /api/channels/link/start — Get a link code (any channel) ─
+// Session-authed. Returns a short-lived code the user types to the bot,
+// e.g. "link a1b2c3d4" in Slack / Teams / Discord. Telegram keeps its
+// deep-link flow; WhatsApp auto-links by phone number.
+router.get('/link/start', async (req, res) => {
+  const userId = req.session?.userId;
+  if (!userId) return res.status(401).json({ error: 'Please log in first' });
+
+  const channel = String(req.query.channel || '').toLowerCase();
+  if (!channel) return res.status(400).json({ error: 'channel required' });
+
+  const token = crypto.randomBytes(4).toString('hex'); // 8 chars — easy to type
+  pendingLinks.set(token, { userId, channel, createdAt: Date.now() });
+  for (const [k, v] of pendingLinks) {
+    if (Date.now() - v.createdAt > 600000) pendingLinks.delete(k);
+  }
+
+  res.json({
+    token,
+    channel,
+    instructions: `Send "link ${token}" to the ScanGym bot on ${channel} within 10 minutes.`,
+    expiresIn: 600,
+  });
+});
+
+// ─── POST /api/channels/link/verify — Bot redeems a link code ─
+// Called by channel adapters (bot-secret guarded, NOT public).
+router.post('/link/verify', async (req, res) => {
+  const botSecret = req.headers['x-bot-secret'] || req.body.botSecret;
+  const expected = process.env.BOT_CHECKOUT_SECRET || process.env.ADMIN_IMPORT_SECRET;
+  if (!expected || !botSecret || botSecret !== expected) {
+    return res.status(403).json({ error: 'Not authorized' });
+  }
+
+  const { token, channel, channelUserId, channelUsername } = req.body;
+  if (!token || !channel || !channelUserId) {
+    return res.status(400).json({ error: 'token, channel, channelUserId required' });
+  }
+
+  const key = String(token).toLowerCase();
+  const pending = pendingLinks.get(key);
+  if (!pending || pending.channel !== String(channel).toLowerCase()) {
+    return res.status(400).json({ error: 'Invalid or expired code' });
+  }
+  if (Date.now() - pending.createdAt > 600000) {
+    pendingLinks.delete(key);
+    return res.status(400).json({ error: 'Code expired' });
+  }
+
+  try {
+    await pool.query(`
+      INSERT INTO user_channels (user_id, channel, channel_user_id, channel_username, is_active, connected_at)
+      VALUES ($1, $2, $3, $4, true, NOW())
+      ON CONFLICT (user_id, channel)
+      DO UPDATE SET channel_user_id = $3, channel_username = $4, is_active = true, connected_at = NOW()
+    `, [pending.userId, pending.channel, String(channelUserId), channelUsername || null]);
+    pendingLinks.delete(key);
+    res.json({ success: true, userId: pending.userId });
+  } catch (err) {
+    console.error('[Channels] Link verify error:', err.message);
+    res.status(500).json({ error: 'Failed to link' });
+  }
+});
+
+// ─── GET /api/channels/lookup — Bot-internal user lookup ─────
+// Used by chatbot adapters (ManyChat WhatsApp, Telegram, etc.) to resolve a
+// channel identity (phone number / channel user id) to a ScanGym user for
+// 1-tap saved-card checkout. Guarded by the internal bot secret — NOT public.
+//
+// Query:  ?channel=whatsapp&identifier=%2B447700900123
+// Header: x-bot-secret: {BOT_CHECKOUT_SECRET}
+router.get('/lookup', async (req, res) => {
+  try {
+    const botSecret = req.headers['x-bot-secret'] || req.query.botSecret;
+    const expected = process.env.BOT_CHECKOUT_SECRET || process.env.ADMIN_IMPORT_SECRET;
+    if (!expected || !botSecret || botSecret !== expected) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    const { channel, identifier } = req.query;
+    if (!channel || !identifier) return res.status(400).json({ error: 'channel and identifier required' });
+
+    const digits = String(identifier).replace(/[^0-9]/g, '');
+    const last10 = digits.slice(-10);
+
+    // 1) Explicit link in user_channels (digits-tolerant match for phone ids)
+    let result = await pool.query(
+      `SELECT user_id FROM user_channels
+       WHERE channel = $1 AND is_active = true
+         AND (channel_user_id = $2
+              OR ($3 <> '' AND regexp_replace(COALESCE(channel_user_id, ''), '[^0-9]', '', 'g') LIKE '%' || $3))
+       LIMIT 1`,
+      [channel, String(identifier), last10]
+    );
+    if (result.rows.length > 0) {
+      return res.json({ userId: result.rows[0].user_id, source: 'user_channels' });
+    }
+
+    // 2) WhatsApp/SMS fallback: ScanGym auth is phone-OTP, so the WhatsApp
+    //    number usually IS the account phone. Match users.phone_number and
+    //    auto-link for next time.
+    if ((channel === 'whatsapp' || channel === 'sms') && last10.length >= 7) {
+      result = await pool.query(
+        `SELECT id FROM public.users
+         WHERE regexp_replace(COALESCE(phone_number, ''), '[^0-9]', '', 'g') LIKE '%' || $1
+         LIMIT 1`,
+        [last10]
+      );
+      if (result.rows.length > 0) {
+        const userId = result.rows[0].id;
+        try {
+          await pool.query(
+            `INSERT INTO user_channels (user_id, channel, channel_user_id, is_active, metadata)
+             VALUES ($1, $2, $3, true, '{"auto_linked": true}'::jsonb)
+             ON CONFLICT (user_id, channel)
+             DO UPDATE SET channel_user_id = EXCLUDED.channel_user_id, is_active = true, last_message_at = NOW()`,
+            [userId, channel, String(identifier)]
+          );
+        } catch (e) { /* non-fatal */ }
+        return res.json({ userId, source: 'phone_match', autoLinked: true });
+      }
+    }
+
+    return res.status(404).json({ error: 'not_found' });
+  } catch (err) {
+    console.error('[Channels] Lookup error:', err.message);
+    res.status(500).json({ error: 'Lookup failed' });
+  }
 });
 
 module.exports = router;

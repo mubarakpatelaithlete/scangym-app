@@ -20,11 +20,12 @@ const router = express.Router();
 const crypto = require('crypto');
 const { handleMessage } = require('./message-handler');
 
-// ─── Slack credentials (fragment-joined for scanning protection) ───
-const _sbt = ['xoxb-114526342', '02274-11454458', '604101-Mda6EdefZ', 'NBlTQHMAIaAgCmj'];
-const _sss = ['8cf986fd21ef', '454b096d2a9f', 'c639fcec'];
-const SLACK_BOT_TOKEN = process.env.SLACK_BOT_TOKEN || _sbt.join('');
-const SLACK_SIGNING_SECRET = process.env.SLACK_SIGNING_SECRET || _sss.join('');
+// ─── Slack credentials — env ONLY ───────────────────────────
+// SECURITY: credentials were previously hardcoded here (fragment-joined).
+// This is a PUBLIC repo — those credentials must be considered leaked and
+// MUST be rotated in the Slack app admin, then set via env vars on Railway.
+const SLACK_BOT_TOKEN = process.env.SLACK_BOT_TOKEN || '';
+const SLACK_SIGNING_SECRET = process.env.SLACK_SIGNING_SECRET || '';
 const BASE_URL = process.env.BASE_URL || 'https://scangym.com';
 const SLACK_API = 'https://slack.com/api';
 
@@ -38,6 +39,138 @@ const USER_CACHE_TTL = 3600000;
 
 // Session store for pagination
 const sessions = new Map();
+
+// ─── 1-tap saved-card booking (linked ScanGym accounts) ──────
+const pool = require('../middleware/db');
+const BOT_SECRET = process.env.BOT_CHECKOUT_SECRET || process.env.ADMIN_IMPORT_SECRET || '';
+
+async function lookupLinkedUser(slackUserId) {
+  try {
+    const { rows } = await pool.query(
+      `SELECT uc.user_id, u.email, u.first_name, u.stripe_customer_id
+       FROM user_channels uc
+       JOIN public.users u ON u.id = uc.user_id
+       WHERE uc.channel = 'slack' AND uc.channel_user_id = $1 AND uc.is_active = true
+       LIMIT 1`,
+      [String(slackUserId)]
+    );
+    return rows.length > 0 ? rows[0] : null;
+  } catch (err) {
+    console.error('[Slack] User lookup error:', err.message);
+    return null;
+  }
+}
+
+async function getSavedCards(userId) {
+  try {
+    const resp = await fetch(`${BASE_URL}/api/payment/bot-cards?userId=${encodeURIComponent(userId)}`, {
+      headers: { 'x-bot-secret': BOT_SECRET },
+    });
+    const data = await resp.json();
+    return data.cards || [];
+  } catch (err) {
+    console.error('[Slack] Get cards error:', err.message);
+    return [];
+  }
+}
+
+async function executeBotCheckout(params) {
+  try {
+    const resp = await fetch(`${BASE_URL}/api/payment/bot-checkout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...params, botSecret: BOT_SECRET }),
+    });
+    return await resp.json();
+  } catch (err) {
+    console.error('[Slack] Bot checkout error:', err.message);
+    return { error: err.message };
+  }
+}
+
+async function redeemLinkCode(token, slackUserId, slackUserName) {
+  try {
+    const resp = await fetch(`${BASE_URL}/api/channels/link/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-bot-secret': BOT_SECRET },
+      body: JSON.stringify({ token, channel: 'slack', channelUserId: String(slackUserId), channelUsername: slackUserName || null }),
+    });
+    const data = await resp.json();
+    return !!data.success;
+  } catch (err) {
+    console.error('[Slack] Link redeem error:', err.message);
+    return false;
+  }
+}
+
+function getToday() {
+  return new Date().toISOString().split('T')[0];
+}
+
+async function postBlocks(channel, text, blocks, threadTs) {
+  if (!SLACK_BOT_TOKEN) return;
+  try {
+    await fetch(`${SLACK_API}/chat.postMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SLACK_BOT_TOKEN}` },
+      body: JSON.stringify({ channel, text, blocks, ...(threadTs ? { thread_ts: threadTs } : {}) }),
+    });
+  } catch (err) {
+    console.error('[Slack] postBlocks error:', err.message);
+  }
+}
+
+async function sendPayConfirmBlocks(channelId, gym, date, card, threadTs) {
+  const price = `${gym.currencySymbol || '£'}${gym.dayPassPrice}`;
+  const blocks = [
+    { type: 'header', text: { type: 'plain_text', text: '🧾 Confirm your booking', emoji: true } },
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: `*${gym.name}*\n📍 ${gym.address || ''}\n📅 ${date} (today) · 24hr day pass\n💰 *${price}* on ${card.label}`,
+      },
+    },
+    {
+      type: 'actions',
+      elements: [
+        { type: 'button', text: { type: 'plain_text', text: `💳 Pay ${price} now`, emoji: true }, style: 'primary', action_id: 'pay_saved_card' },
+        { type: 'button', text: { type: 'plain_text', text: '❌ Cancel', emoji: true }, action_id: 'cancel_pay' },
+      ],
+    },
+    { type: 'context', elements: [{ type: 'mrkdwn', text: 'Free cancellation up to 2h before your session.' }] },
+  ];
+  await postBlocks(channelId, `Confirm booking at ${gym.name} — ${price}`, blocks, threadTs);
+}
+
+async function sendBookingConfirmation(channelId, result, gym, threadTs) {
+  const b = result.booking || {};
+  const qrToken = result.qr?.token;
+  const priceStr = `${b.currencySymbol || '£'}${typeof b.price === 'number' ? b.price.toFixed(2) : b.price}`;
+  const blocks = [
+    { type: 'header', text: { type: 'plain_text', text: '✅ Booking Confirmed!', emoji: true } },
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: `*${b.gymName || gym.name}*\n📅 ${b.date || ''} ⏰ ${b.time || ''}\n💰 ${priceStr}${result.cardUsed ? ' on ' + result.cardUsed : ''}\n🔖 Code: *${b.bookingCode || b.id || ''}*`,
+      },
+    },
+  ];
+  if (qrToken) {
+    blocks.push({
+      type: 'image',
+      image_url: `${BASE_URL}/api/qr/image/${encodeURIComponent(qrToken)}.png`,
+      alt_text: 'ScanGym entry QR code',
+      title: { type: 'plain_text', text: '📱 Scan at the gym door — 1 scan in, 1 scan out' },
+    });
+  }
+  blocks.push({
+    type: 'context',
+    elements: [{ type: 'mrkdwn', text: `❌ Free cancellation up to 2h before · <${BASE_URL}/bookings|My Bookings>` }],
+  });
+  await postBlocks(channelId, `Booking confirmed at ${b.gymName || gym.name} — code ${b.bookingCode || ''}`, blocks, threadTs);
+}
 
 // ─── Verify Slack request signature ──────────────────────────
 function verifySlackSignature(req) {
@@ -124,6 +257,16 @@ router.post('/events', express.json({ verify: (req, res, buf) => { req.rawBody =
     const userName = await getUserName(slackUserId);
     console.log(`[Slack] From ${userName}: ${text.substring(0, 100)}`);
 
+    // ── Account linking: "link a1b2c3d4" (code from scangym.com → Channels) ──
+    const linkMatch = text.match(/^link\s+([a-f0-9]{6,32})$/i);
+    if (linkMatch) {
+      const ok = await redeemLinkCode(linkMatch[1], slackUserId, userName);
+      await sendSlackMessage(channelId, ok
+        ? '✅ *Connected!* Your ScanGym account is now linked to Slack.\n\nSearch gyms, then hit *📅 Book* — pay with your saved card and your entry QR arrives right here. 🏋️'
+        : '❌ That link code is invalid or expired. Get a fresh one at scangym.com → Channels → Slack.', threadTs);
+      return;
+    }
+
     sendTypingIndicator(channelId);
 
     const response = await handleMessage(userId, text, {
@@ -179,14 +322,76 @@ router.post('/interactive', express.urlencoded({ extended: true }), async (req, 
       const gymIdx = parseInt(action.action_id.split('_')[2]);
       const session = sessions.get(channelId);
       if (session && session.gyms?.[gymIdx]) {
+        const gym = session.gyms[gymIdx];
+
+        // Linked user with a saved card → 1-tap checkout confirmation
+        const linkedUser = await lookupLinkedUser(userId);
+        if (linkedUser && linkedUser.stripe_customer_id) {
+          const cards = await getSavedCards(linkedUser.user_id);
+          if (cards.length > 0) {
+            const card = cards[0];
+            const date = getToday();
+            session.pendingPay = { gymIdx, cardId: card.id, cardLabel: card.label, date, slackUserId: userId };
+            session.lastActive = Date.now();
+            await sendPayConfirmBlocks(channelId, gym, date, card, threadTs);
+            return;
+          }
+        }
+
+        // Guest flow (multi-turn: date → email) + linking hint
         const userName = await getUserName(userId);
         const response = await handleMessage(`slack:${userId}`, `Book gym ${gymIdx + 1} for tomorrow`, {
           userName,
           platform: 'slack',
           channelId,
         });
-        await sendSlackMessage(channelId, response.text, threadTs);
+        await sendSlackMessage(channelId,
+          response.text + '\n\n💡 _Tip: link your ScanGym account (scangym.com → Channels → Slack, then send me the code) to book with 1 tap using your saved card._',
+          threadTs);
       }
+    } else if (action.action_id === 'pay_saved_card') {
+      const session = sessions.get(channelId);
+      if (!session?.pendingPay || session.pendingPay.slackUserId !== userId) {
+        await sendSlackMessage(channelId, '⏱ This payment prompt has expired (or belongs to someone else). Tap *📅 Book* again.', threadTs);
+        return;
+      }
+      const { gymIdx, cardId, date } = session.pendingPay;
+      const gym = session.gyms?.[gymIdx];
+      session.pendingPay = null;
+      if (!gym) {
+        await sendSlackMessage(channelId, '⏱ Session expired — search for gyms again.', threadTs);
+        return;
+      }
+
+      const linkedUser = await lookupLinkedUser(userId);
+      if (!linkedUser) {
+        await sendSlackMessage(channelId, '🔗 Link your ScanGym account first: scangym.com → Channels → Slack.', threadTs);
+        return;
+      }
+
+      await sendSlackMessage(channelId, '💳 Processing payment...', threadTs);
+      const result = await executeBotCheckout({
+        userId: linkedUser.user_id,
+        gymId: gym.id || undefined,
+        placeId: gym.place_id || gym.placeId || undefined,
+        date,
+        time: 'anytime',
+        cardId,
+      });
+
+      if (result.success) {
+        await sendBookingConfirmation(channelId, result, gym, threadTs);
+      } else {
+        let msg = '❌ *Payment failed:* ' + (result.message || result.error || 'Unknown error');
+        if (result.error === 'no_saved_card') msg = '💳 No saved card found. Add one at scangym.com first.';
+        if (result.error === 'sca_required') msg = '🔐 Your bank requires 3D Secure verification. Please complete the booking at scangym.com.';
+        if (result.error === 'duplicate') msg = '📋 You already have a booking at this gym for this date.';
+        await sendSlackMessage(channelId, msg, threadTs);
+      }
+    } else if (action.action_id === 'cancel_pay') {
+      const session = sessions.get(channelId);
+      if (session) session.pendingPay = null;
+      await sendSlackMessage(channelId, '👍 Payment cancelled. Tap *📅 Book* on another gym, or search a new city.', threadTs);
     }
   } catch (err) {
     console.error('[Slack] Interactive error:', err);
@@ -314,7 +519,6 @@ function buildGymBlocks(gyms, offset) {
         type: 'button',
         text: { type: 'plain_text', text: '📅 Book', emoji: true },
         style: 'primary',
-        url: `${BASE_URL}/book?gym=${encodeURIComponent(g.name || '')}`,
         action_id: `book_gym_${offset + i}`,
       },
     });

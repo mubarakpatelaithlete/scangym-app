@@ -15,6 +15,12 @@
  *   ✅ Broadcast support for marketing messages via ManyChat API
  *   ✅ ManyChat v2 Dynamic Block response format for all platforms
  * 
+ * v2.1 (WhatsApp booking completion):
+ *   ✅ Text-driven in-chat checkout: "book 2" → confirm → "yes" → charged → QR
+ *   ✅ QR delivered as a real PNG via /api/qr/image/{token}.png
+ *   ✅ Account lookup fixed (/api/channels/lookup + phone auto-link)
+ *   ✅ Fixed bot-checkout response parsing (qr object, bookingCode fields)
+ * 
  * ManyChat Flow Architecture:
  *   ManyChat receives DM → triggers Flow → External Request to this webhook
  *   → ScanGym processes → returns structured JSON → ManyChat formats natively
@@ -178,6 +184,15 @@ router.post('/webhook', async (req, res) => {
       return await handlePayWithCard(input, userId, linkedUser, platformName, res);
     }
 
+    // ── WhatsApp text-driven checkout ──
+    // WhatsApp (via ManyChat) only supports URL buttons, so in-chat booking
+    // is driven by plain text: "book 2" → confirm summary → "yes" → charge
+    // saved card via bot-checkout → confirmation + QR image.
+    if (isWhatsApp(platformName)) {
+      const waCheckout = await handleWhatsAppCheckout(input, userId, linkedUser, platformName, phone);
+      if (waCheckout) return res.json(waCheckout);
+    }
+
     // ── Process through universal handler ──
     const response = await handleMessage(userId, input, {
       userName,
@@ -247,36 +262,112 @@ router.post('/show-more', async (req, res) => {
   }
 });
 
-// ─── Handle pay with saved card (WhatsApp booking) ───────────
-async function handlePayWithCard(input, userId, linkedUser, platformName, res) {
-  // input format: __pay_{cardId}_{gymIdx}
-  const parts = input.replace('__pay_', '').split('_');
-  if (parts.length < 2) {
-    return res.json(buildResponse('❌ Invalid payment action. Try booking again.', platformName, []));
+// ─── Saved cards helper (bot-cards endpoint) ─────────────────
+async function getSavedCards(scangymUserId) {
+  try {
+    const resp = await fetch(`${SCANGYM_API}/api/payment/bot-cards?userId=${encodeURIComponent(scangymUserId)}`, {
+      headers: { 'x-bot-secret': BOT_CHECKOUT_SECRET },
+    });
+    if (!resp.ok) return [];
+    const data = await resp.json();
+    return data.cards || [];
+  } catch (err) {
+    console.error('[ManyChat] bot-cards error:', err.message);
+    return [];
+  }
+}
+
+// ─── WhatsApp text-driven checkout ───────────────────────────
+// Commands (after a gym search):
+//   "book 2" / "book 2 tomorrow"  → confirmation summary (saved card)
+//   "yes" / "pay" / "confirm"     → charge card via bot-checkout → QR image
+//   "no" / "cancel"               → abort pending payment
+// Returns a ManyChat response object, or null to fall through to the
+// universal message handler.
+async function handleWhatsAppCheckout(input, userId, linkedUser, platformName, phone) {
+  const session = sessions.get(userId);
+  const lower = (input || '').toLowerCase().trim();
+
+  // 1) Confirm / cancel a pending 1-tap payment
+  if (session && session.pendingPay) {
+    if (/^(yes|y|yep|yeah|pay|confirm|ok|okay)\b/.test(lower)) {
+      const pending = session.pendingPay;
+      session.pendingPay = null;
+      return await executeBotCheckout(pending, linkedUser, platformName);
+    }
+    if (/^(no|n|nope|cancel|stop)\b/.test(lower)) {
+      session.pendingPay = null;
+      return buildResponse(
+        '👍 No problem — payment cancelled.\n\nReply *book 1*–*book 5* to pick another gym, or send a city name to search again.',
+        platformName, []
+      );
+    }
+    session.pendingPay = null; // any other message → drop pending payment, continue as chat
   }
 
-  const cardId = parts[0];
-  const gymIdx = parseInt(parts[1]) - 1;
+  // 2) "book N [today|tomorrow]" — start checkout
+  const m = lower.match(/^(?:book|pay)\s*(?:gym\s*)?#?(\d{1,2})(?:\s+for)?(?:\s+(today|tomorrow))?\s*$/);
+  if (!m) return null;
+  if (!session || !session.gyms || session.gyms.length === 0) return null; // no search yet → universal handler explains
+
+  const gymIdx = parseInt(m[1], 10) - 1;
+  const gym = session.gyms[gymIdx];
+  if (!gym) {
+    return buildResponse(`I only found ${session.gyms.length} gyms — reply *book 1* to *book ${session.gyms.length}*.`, platformName, []);
+  }
+  const date = m[2] === 'tomorrow' ? getTomorrow() : getToday();
+  session.lastActive = Date.now();
+
+  // Not linked → instant booking link on the website + connect tip
+  if (!linkedUser) {
+    const bookUrl = `${BASE_URL}/search?gym=${encodeURIComponent(gym.name || '')}&book=1`;
+    const connectUrl = `${BASE_URL}/channels?connect=whatsapp&phone=${encodeURIComponent(phone || '')}`;
+    return buildResponse(
+      `📅 *${gym.name}* — ${gym.currencySymbol || '£'}${gym.dayPassPrice}/day\n\nTap below to book & pay securely (takes ~1 min).\n\n💡 _Tip: connect your ScanGym account once, and next time you can book with a single \"yes\" right here in WhatsApp._`,
+      platformName,
+      [
+        { title: '📅 Book Now', url: bookUrl },
+        { title: '🔗 Connect Account', url: connectUrl },
+      ]
+    );
+  }
+
+  // Linked → fetch saved card
+  const cards = await getSavedCards(linkedUser.userId);
+  if (!cards.length) {
+    return buildResponse(
+      '💳 You don\'t have a saved card yet.\n\nAdd one on ScanGym (Settings → Payment methods) to unlock 1-tap WhatsApp booking, or book via the website:',
+      platformName,
+      [
+        { title: '💳 Add Card', url: `${BASE_URL}/settings` },
+        { title: '📅 Book on ScanGym', url: `${BASE_URL}/search` },
+      ]
+    );
+  }
+
+  const card = cards[0];
+  session.pendingPay = { gym, cardId: card.id, cardLabel: card.label, date };
+
+  const price = `${gym.currencySymbol || '£'}${gym.dayPassPrice}`;
+  return buildResponse(
+    `🧾 *Confirm your booking*\n\n🏋️ *${gym.name}*\n📍 ${gym.address || ''}\n📅 ${date}\n💰 ${price} — 24hr day pass\n💳 ${card.label}\n\nReply *YES* to pay now, or *NO* to cancel.\n\n❌ Free cancellation up to 2h before your session.`,
+    platformName, []
+  );
+}
+
+// ─── Execute bot-checkout (charge saved card, return QR) ─────
+async function executeBotCheckout(pending, linkedUser, platformName) {
+  const { gym, cardId, date } = pending;
 
   if (!linkedUser) {
-    return res.json(buildResponse(
-      '🔗 You need to connect your ScanGym account first to pay with a saved card.\n\nTap the button below:',
+    return buildResponse(
+      '🔗 You need to connect your ScanGym account first to pay with a saved card.',
       platformName,
       [{ title: '🔗 Connect Account', url: `${BASE_URL}/channels?connect=whatsapp` }]
-    ));
+    );
   }
-
-  const session = sessions.get(userId);
-  if (!session || !session.gyms || !session.gyms[gymIdx]) {
-    return res.json(buildResponse('❌ Session expired. Search for gyms again to book.', platformName,
-      [{ title: '🔍 Find Gyms', action: 'new_search' }]
-    ));
-  }
-
-  const gym = session.gyms[gymIdx];
 
   try {
-    // Call bot-checkout endpoint
     const checkoutResp = await fetch(`${SCANGYM_API}/api/payment/bot-checkout`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -284,7 +375,7 @@ async function handlePayWithCard(input, userId, linkedUser, platformName, res) {
         userId: linkedUser.userId,
         gymId: gym.id || undefined,
         placeId: gym.place_id || gym.placeId || undefined,
-        date: getTomorrow(),
+        date: date || getToday(),
         time: 'anytime',
         cardId,
         botSecret: BOT_CHECKOUT_SECRET,
@@ -295,61 +386,96 @@ async function handlePayWithCard(input, userId, linkedUser, platformName, res) {
 
     if (!checkoutResp.ok || !data.success) {
       if (data.error === 'no_saved_card') {
-        return res.json(buildResponse(
+        return buildResponse(
           '💳 No saved card found. Please add a payment method at scangym.com first.',
           platformName,
           [{ title: '💳 Add Card', url: `${BASE_URL}/settings` }]
-        ));
+        );
       }
-      if (data.error === 'requires_action' || data.error === 'sca_required') {
-        return res.json(buildResponse(
+      if (data.error === 'sca_required' || data.error === 'requires_action') {
+        return buildResponse(
           '🔐 Your bank requires 3D Secure verification. Please complete the booking on scangym.com.',
           platformName,
           [{ title: '📅 Book on ScanGym', url: `${BASE_URL}/search` }]
-        ));
+        );
+      }
+      if (data.error === 'duplicate') {
+        return buildResponse(
+          '📅 You already have a booking at this gym for that date!\n\nCheck your bookings:',
+          platformName,
+          [{ title: '📱 My Bookings', url: `${BASE_URL}/bookings` }]
+        );
       }
       throw new Error(data.error || 'Checkout failed');
     }
 
-    // Success! Build confirmation with QR image
-    const booking = data.booking || {};
-    const qr = data.qr || '';
-    const confirmCode = booking.confirmation_code || booking.id || 'N/A';
-    const gymName = gym.name || booking.gym_name || 'Gym';
-    const price = `${gym.currencySymbol || '£'}${gym.dayPassPrice || booking.amount || ''}`;
-
-    const confirmText = `✅ *Booking Confirmed!*\n\n🏋️ *${gymName}*\n📍 ${gym.address || ''}\n📅 ${booking.date || getTomorrow()}\n💰 ${price}\n🔖 Code: *${confirmCode}*\n\n📱 Your QR code is below — show it at the gym entrance to check in!\n\n❌ Free cancellation up to 2h before your session.`;
-
-    // Build response with QR image + confirmation
-    const messages = [];
-    messages.push({ type: 'text', text: confirmText });
-
-    // Send QR as image if available
-    if (qr && qr.startsWith('data:')) {
-      // QR is a data URL — ManyChat needs a hosted URL
-      // Point user to their bookings page where they can see QR
-      messages.push({
-        type: 'text',
-        text: '📱 View your QR code:',
-        buttons: [{ type: 'url', caption: '📱 View QR Code', url: `${BASE_URL}/bookings` }],
-      });
-    } else if (qr) {
-      messages.push({ type: 'image', url: qr });
-    }
-
-    return res.json(buildDynamicBlock(messages, platformName, [
-      { action: 'set_field_value', field_name: 'last_booking', value: confirmCode },
-      { action: 'add_tag', tag_name: 'booked' },
-    ]));
-
+    return buildCheckoutConfirmation(data, gym, platformName);
   } catch (err) {
     console.error('[ManyChat] Bot-checkout error:', err);
-    return res.json(buildResponse(
+    return buildResponse(
       '❌ Payment failed: ' + (err.message || 'Unknown error') + '\n\nTry booking on scangym.com instead.',
       platformName,
       [{ title: '📅 Book on ScanGym', url: `${BASE_URL}/search` }]
+    );
+  }
+}
+
+// ─── Build confirmation message (+ QR image) ─────────────────
+// bot-checkout returns:
+//   booking: { id, gymName, date, time, price, bookingCode, currencySymbol }
+//   qr:      { token, scanUrl, dataUrl, maxScans, scansRemaining, expiresAt }
+function buildCheckoutConfirmation(data, gym, platformName) {
+  const booking = data.booking || {};
+  const qr = data.qr || {};
+  const confirmCode = booking.bookingCode || booking.id || 'N/A';
+  const gymName = booking.gymName || (gym && gym.name) || 'Gym';
+  const sym = booking.currencySymbol || (gym && gym.currencySymbol) || '£';
+  const price = booking.price != null ? `${sym}${booking.price}` : `${sym}${(gym && gym.dayPassPrice) || ''}`;
+
+  const confirmText = `✅ *Booking Confirmed!*\n\n🏋️ *${gymName}*\n📍 ${(gym && gym.address) || ''}\n📅 ${booking.date || ''} ${booking.time || ''}\n💰 ${price}${data.cardUsed ? ` on ${data.cardUsed}` : ''}\n🔖 Code: *${confirmCode}*\n\n📱 Scan the QR below at the gym door — 1 scan to enter, 1 to exit. Expires after 2 scans or 24h.\n\n❌ Free cancellation up to 2h before your session.`;
+
+  const messages = [{ type: 'text', text: confirmText }];
+
+  // QR as a real image — served by the public PNG endpoint (WhatsApp can
+  // render hosted image URLs, but not data-URLs)
+  if (qr.token) {
+    messages.push({ type: 'image', url: `${BASE_URL}/api/qr/image/${encodeURIComponent(qr.token)}.png` });
+  }
+
+  messages.push({
+    type: 'text',
+    text: '🔗 Manage or cancel your booking anytime:',
+    buttons: [{ type: 'url', caption: '📱 My Bookings', url: `${BASE_URL}/bookings` }],
+  });
+
+  return buildDynamicBlock(messages, platformName, [
+    { action: 'set_field_value', field_name: 'last_booking', value: String(confirmCode) },
+    { action: 'add_tag', tag_name: 'booked' },
+  ]);
+}
+
+// ─── Legacy button flow: pay_{cardId}_{gymIdx} (IG/FB/TikTok) ─
+async function handlePayWithCard(input, userId, linkedUser, platformName, res) {
+  const parts = input.replace('__pay_', '').split('_');
+  if (parts.length < 2) {
+    return res.json(buildResponse('❌ Invalid payment action. Try booking again.', platformName, []));
+  }
+
+  const cardId = parts[0];
+  const gymIdx = parseInt(parts[1], 10) - 1;
+
+  const session = sessions.get(userId);
+  if (!session || !session.gyms || !session.gyms[gymIdx]) {
+    return res.json(buildResponse('❌ Session expired. Search for gyms again to book.', platformName,
+      [{ title: '🔍 Find Gyms', action: 'new_search' }]
     ));
   }
+
+  const result = await executeBotCheckout(
+    { gym: session.gyms[gymIdx], cardId, date: getToday() },
+    linkedUser, platformName
+  );
+  return res.json(result);
 }
 
 // ─── Look up linked ScanGym user by phone number ─────────────
@@ -425,13 +551,14 @@ function buildGymResponse(gyms, offset, platform, linkedUser) {
 
     // Show more if available
     if (offset + count < gyms.length) {
-      text += `📋 _${gyms.length - offset - count} more gyms available — reply "show more"_`;
+      text += `📋 _${gyms.length - offset - count} more gyms available — reply "show more"_\n\n`;
     }
 
-    // If user has a linked account with saved cards, offer 1-tap pay
+    // In-chat booking hint (WhatsApp is text-driven — no tap actions)
     if (linkedUser) {
-      const g = showing[0];
-      buttons.push({ type: 'url', caption: '💳 1-Tap Book', url: `${BASE_URL}/search?quick=1` });
+      text += `⚡ *1-tap booking:* reply *book 1*–*book ${offset + count}* to pay with your saved card and get your entry QR right here.`;
+    } else {
+      text += `📲 Reply *book 1*–*book ${offset + count}* for an instant booking link.`;
     }
 
     buttons.push({ type: 'url', caption: '🌐 View All', url: `${BASE_URL}/search` });
@@ -1055,6 +1182,10 @@ function getTomorrow() {
   return d.toISOString().split('T')[0];
 }
 
+function getToday() {
+  return new Date().toISOString().split('T')[0];
+}
+
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -1068,7 +1199,7 @@ router.get('/status', (req, res) => {
     hasBotCheckoutSecret: !!BOT_CHECKOUT_SECRET,
     activeSessions: sessions.size,
     linkedAccounts: linkedAccounts.size,
-    version: '2.0',
+    version: '2.1',
     endpoints: {
       webhook: '/api/chatbot/manychat/webhook',
       welcome: '/api/chatbot/manychat/welcome',
@@ -1091,6 +1222,8 @@ router.get('/status', (req, res) => {
         'booking_reminders',
         'broadcasts',
         'bot_checkout',
+        'in_chat_text_checkout',
+        'qr_png_delivery',
       ],
       limitations: [
         'no_galleries',
