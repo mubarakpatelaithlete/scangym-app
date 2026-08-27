@@ -175,10 +175,36 @@ test('scansquad gates its own membership call without depending on the app bundl
   // The page does not load app.ctr576.js, so window.sgHasSession would be
   // undefined there and a window-based guard would silently never fire.
   assert.strictEqual(ss.includes('app.ctr576.js'), false);
-  assert.match(ss, /localStorage\.getItem\('sg_authed'\) !== '1'\) return;/);
-  const idx = ss.indexOf("localStorage.getItem('sg_authed')");
-  const fetchIdx = ss.indexOf("fetch('/api/creators/membership'");
-  assert.ok(idx !== -1 && idx < fetchIdx, 'guard must precede the fetch');
+
+  // This used to assert the literal source shape
+  //   `localStorage.getItem('sg_authed') !== '1') return;`
+  // which #630 deliberately removed: that early return left render() uncalled,
+  // so every signed-out visitor got a blank page instead of the join screen.
+  // The assertion outlived the code it described and failed for four PRs. What
+  // matters is the behaviour — gate the fetch, and still reach the join screen
+  // when signed out — so assert that instead, plus a guard against the early
+  // return coming back.
+  const start = ss.indexOf('async function checkAuth()');
+  assert.notStrictEqual(start, -1, 'checkAuth missing');
+  const joinIdx = ss.indexOf("state.screen = 'join'", start);
+  assert.notStrictEqual(joinIdx, -1, 'signed-out visitors must fall through to the join screen');
+  const region = ss.slice(start, joinIdx);
+
+  // The hint is read directly, not through the app bundle's helper.
+  assert.match(region, /localStorage\.getItem\('sg_authed'\)/);
+  // The membership call happens only on the authed branch...
+  assert.match(region, /if\s*\(\s*authed\s*\)/);
+  // ...and the read precedes it, so no request can leave before the gate.
+  assert.ok(
+    region.indexOf("localStorage.getItem('sg_authed')") <
+      region.indexOf("fetch('/api/creators/membership'"),
+    'guard must precede the fetch'
+  );
+  // The #630 regression: bailing out on a missing hint skips render().
+  assert.doesNotMatch(
+    region, /sg_authed'\)\s*!==\s*'1'\s*\)\s*return/,
+    'do not early-return on a missing session hint — it leaves render() uncalled'
+  );
 });
 
 test('_partnerLoadGymProfile bails out before requesting a partner dashboard', () => {

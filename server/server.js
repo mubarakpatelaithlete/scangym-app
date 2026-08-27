@@ -84,6 +84,22 @@ if (fs.existsSync(manifestPath)) {
   }
 }
 
+// -- Lazy chunk manifest (written by build.js) --
+// Maps chunk name -> hashed URL, e.g. { "sg-scansquad": "/sg-scansquad.1a2b3c4d.js" }.
+// Injected into the SPA shell as window.__sgChunks so sg-chunk-loader.js can
+// fetch a content-hashed chunk at runtime. Empty in dev, where the loader falls
+// back to the unhashed filename.
+let CHUNK_MANIFEST = {};
+const chunkManifestPath = path.join(FRONTEND_DIR, '.chunk-manifest.json');
+if (fs.existsSync(chunkManifestPath)) {
+  try {
+    CHUNK_MANIFEST = JSON.parse(fs.readFileSync(chunkManifestPath, 'utf8'));
+    console.log(`[Build] Chunk manifest loaded: ${Object.keys(CHUNK_MANIFEST).length} lazy chunks`);
+  } catch (e) {
+    console.log('[Build] Chunk manifest parse error:', e.message);
+  }
+}
+
 // -- Middleware --
 // Serve pre-compressed Brotli (.br) and gzip (.gz) files when available
 // Generated at build time (build.js) with max compression (Brotli quality 11).
@@ -839,7 +855,7 @@ if (fs.existsSync(FRONTEND_DIR)) {
     // Inject geo hint + performance hints right before </head>
     const googleClientId = process.env.GOOGLE_CLIENT_ID || '';
     const appleClientId = process.env.APPLE_CLIENT_ID || '';
-    const perfHints = `<script>window.__geoHint=${geoHint};window._sgGoogleClientId="${googleClientId}";window._sgAppleClientId="${appleClientId}";</script>\n`;
+    const perfHints = `<script>window.__geoHint=${geoHint};window._sgGoogleClientId="${googleClientId}";window._sgAppleClientId="${appleClientId}";window.__sgChunks=${JSON.stringify(CHUNK_MANIFEST)};</script>\n`;
     // Per-route <title>/description/canonical so each tab is its own page to a
     // crawler, a shared link preview and the browser tab strip.
     const shell = applyRouteMeta(_indexHtmlCache, req.path);

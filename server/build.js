@@ -57,6 +57,14 @@ const PATCH_CHAIN = [
 ];
 const PATCH_BUNDLE = 'sg-patches.js';
 
+// ─── Lazy chunks ──────────────────────────────────────────────────────────
+// Areas split out of app.ctr576.js by tools/split-bundle.js. Unlike every
+// other asset these are never referenced from HTML — the loader fetches them
+// at runtime by name — so hashing them is not enough: the hashed URLs have to
+// reach the browser. Step 2 writes .chunk-manifest.json and server.js injects
+// it as window.__sgChunks.
+const LAZY_CHUNKS = ['sg-scansquad'];
+
 function bundlePatches() {
   console.log('🧩 Bundling the patch chain...\n');
   const indexPath = path.join(PUBLIC_DIR, 'index.html');
@@ -196,6 +204,8 @@ function contentHashAssets() {
     'pricing.js',
     'phase2-improvements.js',
     'sg-patches.js',
+    'sg-chunk-loader.js',
+    ...LAZY_CHUNKS.map((c) => c + '.js'),
   ];
 
   // Files that reference the assets (HTML, JS, SW)
@@ -262,6 +272,26 @@ function contentHashAssets() {
     fs.writeFileSync(swPath, swContent);
     console.log(`  📝 Updated SW cache name → scangym-${cacheHash}`);
   }
+
+  // 3b. Write the lazy-chunk manifest.
+  // A chunk with no manifest entry still works — the loader falls back to the
+  // unhashed name, which build.js leaves in place — but it would be served
+  // with a short cache lifetime instead of immutable. A missing chunk file is
+  // a build error, because the loader would 404 at runtime.
+  const chunkMap = {};
+  for (const name of LAZY_CHUNKS) {
+    const file = name + '.js';
+    if (!fs.existsSync(path.join(PUBLIC_DIR, file))) {
+      console.error(`  ❌ lazy chunk ${file} is missing — did tools/split-bundle.js run?`);
+      process.exit(1);
+    }
+    chunkMap[name] = '/' + (hashMap[file] || file);
+  }
+  fs.writeFileSync(
+    path.join(PUBLIC_DIR, '.chunk-manifest.json'),
+    JSON.stringify(chunkMap, null, 2)
+  );
+  console.log(`  📝 Wrote chunk manifest (${Object.keys(chunkMap).length} lazy chunks)`);
 
   // 4. Write hash manifest for server.js to read at runtime
   const manifestPath = path.join(PUBLIC_DIR, '.asset-manifest.json');
