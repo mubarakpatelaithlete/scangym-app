@@ -68,6 +68,13 @@ const CHATS = {
   'partner-chat.js': 'partner',
   'squad-chat.js': 'creator',
   'book-chat.js': 'book',
+  // areaFor() has no 'reels' area — /reels falls through to 'book' — so the Reels
+  // personality is grouped with Book. That is deliberate: it keeps this module's
+  // area list and the test that pins it unchanged, and the two tabs share both an
+  // agent endpoint and a visitor, who very often goes straight from a reel to
+  // booking the gym in it.
+  'reels-chat.js': 'book',
+  'profile-chat.js': 'profile',
 };
 
 /**

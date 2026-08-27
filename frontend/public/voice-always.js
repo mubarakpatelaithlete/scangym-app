@@ -24,7 +24,13 @@
   var arming = false;
 
   function agents() {
-    return [window.sgBookChat, window.sgSquadChat, window.sgPartnerChat].filter(Boolean);
+    return [
+      window.sgBookChat,
+      window.sgSquadChat,
+      window.sgPartnerChat,
+      window.sgReelsChat,
+      window.sgProfileChat,
+    ].filter(Boolean);
   }
 
   function current() {
@@ -50,10 +56,45 @@
     return !!(window.SGVoice && window.SGVoice.canRecord && window.SGVoice.canRecord());
   }
 
-  /** Reels plays audio of its own; a live mic there would only hear the reel. */
-  function noisyPage() {
-    var v = document.querySelector('video');
-    return !!(v && !v.paused && !v.muted && v.volume > 0);
+  /**
+   * Reels plays audio of its own, and a live mic would otherwise hear the reel and
+   * transcribe it as if you had said it.
+   *
+   * This used to refuse to arm at all whenever any video was playing — which meant
+   * voice was permanently off on Reels, the tab most visitors land on first. The
+   * zero-click promise was being broken on the only screen most people ever saw.
+   *
+   * So instead of standing down, we duck: while the conversation is live, the reel is
+   * muted, and it is unmuted again the moment the conversation ends. Only reels this
+   * function muted are restored, so a reel the user had already muted stays muted.
+   */
+  var ducked = [];
+
+  function duckAudio() {
+    var vids = document.querySelectorAll('video, audio');
+    for (var i = 0; i < vids.length; i++) {
+      var v = vids[i];
+      if (v.muted || v.paused) continue;
+      ducked.push(v);
+      v.muted = true;
+    }
+  }
+
+  function unduckAudio() {
+    for (var i = 0; i < ducked.length; i++) {
+      // If it left the document while we held it, unmuting is harmless.
+      try { ducked[i].muted = false; } catch (e) {}
+    }
+    ducked = [];
+  }
+
+  /** Keeps the ducking in step with the conversation, whoever started or ended it. */
+  var wasLive = false;
+  function followLive() {
+    var now = live();
+    if (now === wasLive) return;
+    wasLive = now;
+    if (now) duckAudio(); else unduckAudio();
   }
 
   function live() {
@@ -62,7 +103,7 @@
   }
 
   function arm(reason) {
-    if (arming || live() || optedOut() || !usable() || noisyPage()) return;
+    if (arming || live() || optedOut() || !usable()) return;
     var a = current();
     if (!a || !a.startLive) return;
     arming = true;
@@ -128,6 +169,9 @@
     armIfAlreadyTrusted();
     armOnFirstTouch();
     setInterval(followTabs, 600);
+    // Ducking has to be checked more often than tab changes: a reel can start playing
+    // in the middle of a sentence, and the user should not have to talk over it.
+    setInterval(followLive, 200);
   }
 
   function boot() {

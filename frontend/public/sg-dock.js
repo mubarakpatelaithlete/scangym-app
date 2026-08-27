@@ -35,7 +35,12 @@
   ];
 
   /* Floating pills — they ride above the whole stack rather than joining it. */
-  var FABS = ['#bchat-fab', '#pchat-fab', '#schat-fab', '#chat-fab'];
+  /* One per chat personality. chat-agent.js builds the id from the personality's
+     `ns` (T('pchat-fab') swaps in the namespace), so every ns in use must appear
+     here — a pill missing from this list is not docked, falls back to its own
+     hardcoded `bottom`, and lands on top of the stack this file exists to keep
+     apart. rchat = Reels, mchat = Profile. */
+  var FABS = ['#bchat-fab', '#pchat-fab', '#schat-fab', '#rchat-fab', '#mchat-fab', '#chat-fab'];
 
   var NAV = 'nav.sg-tab-bar';
   var CONTENT = 'main.sg-tab-content';
