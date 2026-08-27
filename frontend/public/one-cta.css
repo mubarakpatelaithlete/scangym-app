@@ -1,0 +1,82 @@
+/*
+ * One call to action per tab — and it is the voice.
+ *
+ * WHY
+ * one-orange.css made the voice pill the only *orange* thing. That fixed the
+ * colour clash but not the underlying problem: the tabs still offered several
+ * competing things to press. Measured live at phone width after that change:
+ *
+ *   Reels 1 · Book 2 · ScanSquad 3 · Partner 3 · Profile 5
+ *
+ * Profile alone asked you to log in, verify your ID, continue, and talk. The
+ * product's premise is that you say what you want and it happens, so every extra
+ * button is a second answer to a question that should only have one.
+ *
+ * THE RULE
+ * Each tab surfaces exactly one call to action: the Talk pill. Everything else
+ * that asked to be pressed is removed from the surface.
+ *
+ * WHAT IS DELIBERATELY KEPT
+ *   - Navigation is not a call to action. The bottom tab bar and the Profile
+ *     "Back to More" link stay: removing the way out of a screen strands people.
+ *   - Information stays. The price summary and the partner's gym name remain
+ *     visible; the gym name simply stops being tappable, so it informs without
+ *     competing.
+ *   - The Talk panel keeps its "Type instead" option. This is the important one:
+ *     a tab with no tap buttons would be a dead end for anyone whose microphone
+ *     is blocked, unsupported, or who simply cannot speak right now. One CTA on
+ *     the surface, never a dead end underneath.
+ *
+ * REVERSIBILITY
+ * Everything here is display:none on a handful of ids, in one file, loaded last.
+ * Deleting a rule brings a button back exactly as it was; nothing is unwired.
+ * Note that #sg-continue-banner carries the *purchase* action on Book, so this
+ * file is where booking-by-tap went. That was an explicit product decision, and
+ * it is one line to undo.
+ */
+
+/* ─── The bottom bar: "Book this gym", "Continue", "Ask AI …" ───────────────
+   One bar, three different second-best answers depending on the tab. */
+#sg-continue-banner {
+  display: none !important;
+}
+
+/* ─── Profile: the secondary prompts ────────────────────────────────────────
+   "Get ID verified" and the orange "Log In" button. Both are things the voice
+   can start on request, and neither needs to shout on arrival. The button has
+   no id or class, so it is matched by the brand orange it paints inline. */
+#sg-id-row,
+button[style*="background:#FF6D00"],
+button[style*="background: #FF6D00"] {
+  display: none !important;
+}
+
+/* ─── ScanSquad: "Start Earning" and the affiliate-link chip ────────────────
+   Both are reachable by saying so; the chip in particular was a second primary
+   sitting in the header, above the fold, before you had done anything. */
+#join-btn,
+#sg-aff-continue-btn,
+.affiliate-btn {
+  display: none !important;
+}
+
+/* ─── Partner: the gym name stays, but stops being a button ─────────────────
+   Hiding it would remove the one piece of information telling a partner which
+   gym they are looking at. Keeping it inert preserves that while removing the
+   invitation to press it — "change my gym address" is a sentence, not a tap. */
+#partner-name-display {
+  pointer-events: none !important;
+  cursor: default !important;
+}
+
+/* ─── The one that stays ────────────────────────────────────────────────────
+   Stated explicitly so it is obvious this file has a survivor, and obvious
+   which one it is if a future change starts hiding things more broadly. */
+#bchat-fab,
+#pchat-fab,
+#schat-fab,
+#rchat-fab,
+#mchat-fab,
+#chat-fab {
+  display: inline-flex !important;
+}
