@@ -45,9 +45,10 @@
       'Say "book this one" while you watch and I will find it, tell you the price, ' +
       'and book it when you say yes.',
     greetSignedOut:
-      'Tell me which reel you like and I will find the gym and the price. Sign in when ' +
-      'you are ready and I can book it.',
-    signedOutReply: 'Sign in and I can book that for you.',
+      'Tell me which reel you like and I will find the gym and the price. To book it, ' +
+      'just say your mobile number and I will text you a code.',
+    signedOutReply:
+      'Say your mobile number or email and I will text you a code — then I can book it.',
 
     // Same tools as the Book tab — this is the Book agent wearing a different face.
     toolLabels: {

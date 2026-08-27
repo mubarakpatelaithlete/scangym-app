@@ -44,11 +44,15 @@
       "Tell me where and when — \"a gym near London Bridge tonight\" — and I'll find it, " +
       "tell you the price, and book it when you say yes.",
     greetSignedOut:
-      "Hi — tell me where you want to train and I'll find you a gym. Sign in when you're " +
-      'ready to book and I can take care of it.',
-    signedOutReply: 'Sign in and I can book that for you.',
+      "Hi — tell me where you want to train and I'll find you a gym. When you want to " +
+      'book it, just say your mobile number and I will text you a code.',
+    signedOutReply:
+      'Say your mobile number or email and I will text you a code — then I can book it.',
 
     toolLabels: {
+      send_login_code: 'Texting you a code',
+      confirm_login_code: 'Signing you in',
+      login_with_provider: 'Opening sign-in',
       find_gyms: 'Searching gyms',
       get_gym: 'Checking the gym',
       get_my_bookings: 'Looking up your bookings',

@@ -50,7 +50,8 @@
     greetSignedOut:
       "Hi — I'm your ScanSquad assistant. Sign in and I can show what you've earned, tell " +
       'you which gym your link actually converts on, boost a reel, or get you paid out.',
-    signedOutReply: 'Sign in to your ScanGym account and I can help.',
+    signedOutReply:
+      'Say your mobile number or email and I will text you a code to get you in.',
 
     toolLabels: {
       get_my_squad_profile: 'Checking your ScanSquad status',

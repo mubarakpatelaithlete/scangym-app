@@ -41,7 +41,8 @@
     greetSignedOut:
       "Hi — I'm your ScanGym assistant. Sign in with the number on your gym account and I " +
       'can set your price, check your earnings, close the gym for a day, or pay you out.',
-    signedOutReply: 'Sign in with the phone number on your gym account and I can help.',
+    signedOutReply:
+      'Say the mobile number on your gym account and I will text you a code to get you in.',
 
     toolLabels: {
       get_my_gym: 'Checking your gym',

@@ -44,11 +44,15 @@
       'Ask me for your pass, your next session, or anything you have booked — no ' +
       'digging through menus.',
     greetSignedOut:
-      'Sign in and I can pull up your pass, your bookings and your verification status ' +
-      'just by asking.',
-    signedOutReply: 'Sign in and I can pull that up for you.',
+      'Say your mobile number and I will text you a six-digit code — read it back and ' +
+      'you are in. No password, no forms.',
+    signedOutReply:
+      'Tell me your mobile number or email and I will text you a code to get you in.',
 
     toolLabels: {
+      send_login_code: 'Texting you a code',
+      confirm_login_code: 'Signing you in',
+      login_with_provider: 'Opening sign-in',
       get_my_bookings: 'Looking up your bookings',
       get_gym: 'Checking the gym',
       today_and_tomorrow: 'Checking the date',
