@@ -70,13 +70,14 @@ button[style*="background: #FF6D00"] {
 }
 
 /* ─── The one that stays ────────────────────────────────────────────────────
-   Stated explicitly so it is obvious this file has a survivor, and obvious
-   which one it is if a future change starts hiding things more broadly. */
-#bchat-fab,
-#pchat-fab,
-#schat-fab,
-#rchat-fab,
-#mchat-fab,
-#chat-fab {
-  display: inline-flex !important;
-}
+   Nothing here. Stated on purpose.
+
+   This block used to force the pills visible with `display:inline-flex`, to make
+   it obvious which element survives. That was a mistake and it shipped: in the
+   SPA all five personalities are loaded, each builds its own pill, and
+   chat-agent.js hides the four that do not belong to the current tab. Forcing
+   display overrode that and put five "Talk" buttons on Book, Partner and
+   Profile at once — the exact opposite of one call to action.
+
+   The pill does not need a rule to survive. It survives because this file never
+   hides it. Do not "helpfully" add one back. */
