@@ -118,6 +118,34 @@
   }
 
   /**
+   * Load an arbitrary first-party script once, on demand.
+   *
+   * Unlike sgChunk this takes a URL rather than a manifest name, for the
+   * pre-existing standalone scripts (admin-dashboard.js and friends) that are
+   * not build-time chunks but also do not belong on every visitor's boot path.
+   * Same contracts: at most one fetch, never rejects, a failure is not cached.
+   */
+  function sgLoadScript(url) {
+    var key = 'url:' + url;
+    if (loaded[key]) return Promise.resolve(true);
+    if (pending[key]) return pending[key];
+
+    pending[key] = new Promise(function (resolve) {
+      var s = document.createElement('script');
+      s.src = url;
+      s.async = true;
+      s.onload = function () { loaded[key] = true; pending[key] = null; resolve(true); };
+      s.onerror = function () {
+        pending[key] = null;
+        console.warn('[sgLoadScript] failed to load ' + url);
+        resolve(false);
+      };
+      document.head.appendChild(s);
+    });
+    return pending[key];
+  }
+
+  /**
    * Prefetch chunks at idle, after first paint, lowest priority.
    *
    * This is what keeps tab switches instant: by the time a visitor taps
@@ -164,6 +192,7 @@
   window.sgChunkReady = sgChunkReady;
   window.sgOnChunk = sgOnChunk;
   window.sgChunkStub = sgChunkStub;
+  window.sgLoadScript = sgLoadScript;
   window.sgPrefetchChunks = sgPrefetchChunks;
   window.sgChunkProgress = bar;
 })();

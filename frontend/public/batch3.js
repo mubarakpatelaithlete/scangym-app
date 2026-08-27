@@ -324,7 +324,17 @@ function injectIdRow(){
     +(verified?'':'<span style="color:#FF6D00;font-weight:800">\u2192</span>')+'</div>';
   document.body.appendChild(b);
 }
-setInterval(function(){checkIdentity().then(injectIdRow);},900);
+/* PERF: run once now, then keep polling.
+ *
+ * This row is the LCP element of the Profile tab. A bare setInterval does not
+ * run until its first tick, so the row could not appear until 900ms after this
+ * file executed — and this file loads from the idle bucket (~1350ms live), so
+ * the Profile tab's largest element painted at 1732ms at 4x CPU throttle. The
+ * poll stays (identity state changes after a verification flow); it just no
+ * longer owns the first render. */
+function _sgB3IdentityTick(){checkIdentity().then(injectIdRow);}
+_sgB3IdentityTick();
+setInterval(_sgB3IdentityTick,900);
 
 /* ════════════════════════════════════════════════════════════════════
    3) WITHDRAWALS — fix creator withdraw field name + better feedback

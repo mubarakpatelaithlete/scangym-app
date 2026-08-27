@@ -645,9 +645,23 @@ async function _peLoadAndRender(){
 // PATCH: Override _showPartnerScreen to show our editable view on screen 0
 // ══════════════════════════════════════════════════════════════════════
 
-var _waitPatch=setInterval(function(){
-  if(typeof _showPartnerScreen==='function'){
-    clearInterval(_waitPatch);
+/* PERF: install the patch as soon as the app bundle's globals exist.
+ *
+ * This used to be a bare setInterval(...,200). A bare setInterval does not run
+ * its body until the *first tick*, so even in the common case — this file is a
+ * deferred tag after app.ctr576.js, so window._showPartnerScreen (app bundle
+ * L15002) already exists when we get here — we still burned 200ms before
+ * installing, then another 300ms waiting for the route poll below to notice
+ * the route, then a further 100ms setTimeout before rendering.
+ *
+ * That was up to 600ms of pure waiting on the Partner tab's first paint, with
+ * the main thread idle: measured LCP 2044ms live at 4x CPU throttle, against
+ * a bundle that had finished downloading at 564ms. Checking synchronously
+ * first collapses the common case to zero wait and keeps the poll purely as a
+ * fallback for load orders where the global genuinely is not ready yet.
+ */
+function _peInstallPatch(){
+  if(typeof _showPartnerScreen!=='function')return false;
 
     var _origShowPS=window._showPartnerScreen;
     window._showPartnerScreen=function(idx){
@@ -664,42 +678,68 @@ var _waitPatch=setInterval(function(){
     // Auto-render when partner tab first loads
     // Note: /partner route maps to activeTab='more', so check route instead
     var _lastRoute='';
-    setInterval(function(){
-      var route=state&&state.route;
-      var isPartner=(route==='/partner'||route==='/partner/');
-      // ── ONE PARTNER SCREEN sweep ──────────────────────────────────────
-      // If the native dashboard is present, any .pe-view is a stale
-      // duplicate screen — remove it. Also drop duplicate .tt-view copies
-      // (keep the one inside the live #app main).
-      if(isPartner){
-        var nativeCard=document.getElementById('partner-profile-page');
-        if(nativeCard&&nativeCard.innerHTML.length>50){
-          document.querySelectorAll('.pe-view').forEach(function(v){v.remove();});
-        }
-        var views=document.querySelectorAll('.tt-view');
-        if(views.length>1){
-          var keep=document.querySelector('#app .sg-tab-content .tt-view')||views[0];
-          views.forEach(function(v){if(v!==keep)v.remove();});
-        }
+
+    // ── ONE PARTNER SCREEN sweep ──────────────────────────────────────
+    // If the native dashboard is present, any .pe-view is a stale
+    // duplicate screen — remove it. Also drop duplicate .tt-view copies
+    // (keep the one inside the live #app main).
+    //
+    // This genuinely belongs on a timer: a duplicate screen can appear from
+    // any later navigation or patch, so there is no single event to hang it
+    // off. Only the *first render* was moved off the poll.
+    function _peSweep(){
+      var nativeCard=document.getElementById('partner-profile-page');
+      if(nativeCard&&nativeCard.innerHTML.length>50){
+        document.querySelectorAll('.pe-view').forEach(function(v){v.remove();});
       }
+      var views=document.querySelectorAll('.tt-view');
+      if(views.length>1){
+        var keep=document.querySelector('#app .sg-tab-content .tt-view')||views[0];
+        views.forEach(function(v){if(v!==keep)v.remove();});
+      }
+    }
+
+    // Patch: hijack any tt-actions "Search" button so it opens the
+    // partner claim-search overlay, not the Book-tab visitor search.
+    function _peHijackSearch(){
+      var acts=document.querySelectorAll('.tt-action');
+      acts.forEach(function(a){
+        if(a.textContent.indexOf('Search')!==-1&&a.getAttribute('onclick')&&a.getAttribute('onclick').indexOf('_openSearchOverlay')!==-1){
+          a.setAttribute('onclick','event.stopPropagation();window._peOpenClaimSearch()');
+        }
+      });
+    }
+
+    function _peRouteTick(){
+      // window.state, not the bare global: this now runs during script
+      // execution too, when the app bundle may not have created state yet.
+      var route=(window.state&&window.state.route)||'';
+      var isPartner=(route==='/partner'||route==='/partner/');
+      if(isPartner)_peSweep();
       if(isPartner&&_lastRoute!==route){
         _lastRoute=route;
-        setTimeout(function(){_peLoadAndRender();},100);
-        // Patch: hijack any tt-actions "Search" button so it opens the
-        // partner claim-search overlay, not the Book-tab visitor search.
-        setTimeout(function(){
-          var acts=document.querySelectorAll('.tt-action');
-          acts.forEach(function(a){
-            if(a.textContent.indexOf('Search')!==-1&&a.getAttribute('onclick')&&a.getAttribute('onclick').indexOf('_openSearchOverlay')!==-1){
-              a.setAttribute('onclick','event.stopPropagation();window._peOpenClaimSearch()');
-            }
-          });
-        },200);
+        // rAF rather than the old 100ms: the next frame is enough to let the
+        // app's own render settle, and _peLoadAndRender awaits auth before it
+        // touches the DOM anyway.
+        requestAnimationFrame(function(){_peLoadAndRender();});
+        setTimeout(_peHijackSearch,200);
       }else if(!isPartner){
         _lastRoute=route;
       }
-    },300);
-  }
-},200);
+    }
+
+    _peRouteTick();          // no first-tick delay on the tab being served
+    setInterval(_peRouteTick,300);
+    return true;
+}
+
+// Common case: app.ctr576.js is a deferred tag before this one, so its globals
+// already exist and the patch installs with zero delay. Only fall back to
+// polling if it somehow is not ready (cached shell, reordered tags).
+if(!_peInstallPatch()){
+  var _waitPatch=setInterval(function(){
+    if(_peInstallPatch())clearInterval(_waitPatch);
+  },200);
+}
 
 })();

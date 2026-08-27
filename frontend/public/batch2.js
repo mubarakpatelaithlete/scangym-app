@@ -200,7 +200,10 @@ function injectRebook(){
     +'<span style="color:#FF6D00;font-weight:800">\u2192</span></div>';
   document.body.appendChild(b);
 }
-setInterval(function(){loadRebook();injectRebook();},900);
+/* PERF: same first-tick fix as batch3 — do the work now, then poll. */
+function _sgB2RebookTick(){loadRebook();injectRebook();}
+_sgB2RebookTick();
+setInterval(_sgB2RebookTick,900);
 
 /* ════════════════════════════════════════════════════════════════════
    4) ZOMATO-STYLE REVIEW REPLIES — real Partner reviews sheet

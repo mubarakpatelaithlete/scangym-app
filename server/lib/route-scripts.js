@@ -39,6 +39,27 @@ const RENDERERS = {
   'partner-editable.js': ['partner'],
   'wallet-withdraw.js': ['wallet'],
   'admin-dashboard.js': ['admin'],
+  // batch3.js draws the "Get ID verified" row, which is the LCP element of the
+  // Profile tab — it was sitting in the idle bucket, so the largest element on
+  // that tab painted at 1732ms (live, 4x CPU throttle). Same class of
+  // mis-bucketing this module was written to fix for partner-editable.js.
+  'batch3.js': ['profile'],
+};
+
+/**
+ * Scripts that must not load at all for areas that cannot use them.
+ *
+ * This is the one deliberate exception to "priority changes, capability does
+ * not" below, and it is safe only because the app bundle already knows how to
+ * cope with the file being absent: DashboardPage() renders a placeholder and
+ * calls window.sgLoadScript() to fetch it on demand.
+ *
+ * admin-dashboard.js is 18.6KB that every anonymous visitor downloaded, parsed
+ * and then kept warm with a 60-second polling interval, to render a dashboard
+ * only staff can open. Value = key is the area allowed to preload it.
+ */
+const ADMIN_ONLY = {
+  'admin-dashboard.js': 'admin',
 };
 
 // One chat engine, one personality per tab. The personality for the tab being
@@ -117,6 +138,13 @@ function applyRouteScripts(html, pathname) {
       if (idx === -1) continue;
       promoted.push(entries[idx]);
       entries.splice(idx, 1);
+    }
+
+    // 1b. Drop admin-only scripts for every other area (loaded on demand).
+    for (const [file, owner] of Object.entries(ADMIN_ONLY)) {
+      if (owner === area) continue;
+      const idx = entries.findIndex((e) => fileOf(e) === file);
+      if (idx !== -1) entries.splice(idx, 1);
     }
 
     // 2. Demote the chat personalities this route cannot use.

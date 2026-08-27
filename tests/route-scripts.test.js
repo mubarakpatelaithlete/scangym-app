@@ -162,14 +162,62 @@ test('the shared chat engine and voice are never demoted', () => {
 
 // -- nothing is lost -----------------------------------------------------
 
-test('every route still requests every script the shell shipped', () => {
+// The one deliberate exception to "nothing is ever dropped". Staff-only code
+// is not loaded speculatively for the public; the app bundle fetches it on
+// demand via sgLoadScript when an admin route is actually rendered.
+const ADMIN_ONLY_SRCS = ['/admin-dashboard.js'];
+
+test('every route still requests every script the shell shipped, except admin-only', () => {
   const before = allRequested(SHELL);
   for (const p of ['/', '/explore', '/nearby', '/partner', '/creator', '/wallet', '/admin', '/more/profile', '/checkout', '/gym/x']) {
     const after = allRequested(applyRouteScripts(SHELL, p));
+    const isAdmin = areaFor(p) === 'admin';
     for (const src of before) {
+      if (!isAdmin && ADMIN_ONLY_SRCS.includes(src)) {
+        assert.ok(!after.has(src), p + ' should not preload staff-only ' + src);
+        continue;
+      }
       assert.ok(after.has(src), p + ' dropped ' + src + ' — SPA navigation would break');
     }
-    assert.strictEqual(after.size, before.size, p + ' changed the script count');
+    const expected = before.size - (isAdmin ? 0 : ADMIN_ONLY_SRCS.length);
+    assert.strictEqual(after.size, expected, p + ' changed the script count');
+  }
+});
+
+test('admin-dashboard.js is preloaded on admin routes only', () => {
+  assert.ok(allRequested(applyRouteScripts(SHELL, '/admin')).has('/admin-dashboard.js'));
+  for (const p of ['/', '/explore', '/partner', '/creator', '/wallet', '/more/profile']) {
+    assert.ok(
+      !allRequested(applyRouteScripts(SHELL, p)).has('/admin-dashboard.js'),
+      p + ' still ships the staff dashboard to the public'
+    );
+  }
+});
+
+test('dropping admin-dashboard.js is safe because the bundle loads it on demand', () => {
+  // If this assertion ever fails, the drop above turns /admin into a permanent
+  // "Loading dashboard..." placeholder for staff.
+  const bundle = fs.readFileSync(
+    path.join(__dirname, '..', 'frontend', 'public', 'app.ctr576.js'), 'utf8'
+  );
+  const loader = fs.readFileSync(
+    path.join(__dirname, '..', 'frontend', 'public', 'sg-chunk-loader.js'), 'utf8'
+  );
+  assert.ok(/window\.sgLoadScript\s*=/.test(loader), 'sgLoadScript is not exported');
+  const calls = bundle.match(/sgLoadScript\('\/admin-dashboard\.js[^']*'\)/g) || [];
+  assert.ok(calls.length >= 2,
+    'expected DashboardPage and _sgAdminDashboardBoot to both request the dashboard on demand');
+});
+
+test('batch3.js is promoted on the profile route (it draws the LCP element)', () => {
+  const profile = applyRouteScripts(SHELL, '/more/profile');
+  assert.ok(/batch3\.js[^"]*" defer data-sg-priority/.test(profile),
+    'batch3.js must leave the idle bucket on the profile tab');
+  assert.ok(!lazyList(profile).some((s) => s.includes('batch3')));
+  // ...and stay at idle everywhere else.
+  for (const p of ['/', '/explore', '/partner', '/creator']) {
+    assert.ok(lazyList(applyRouteScripts(SHELL, p)).some((s) => s.includes('batch3')),
+      p + ' unexpectedly promoted batch3.js');
   }
 });
 

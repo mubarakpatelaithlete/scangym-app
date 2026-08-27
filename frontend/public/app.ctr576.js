@@ -6876,6 +6876,9 @@ function SupplierPage(type){
    for it — never a second, older dashboard. */
 window._sgAdminDashboardBoot=function(){
   var el=document.getElementById('sg-admin-boot');if(!el)return;
+  if(typeof window._sgAdminDashboardPage!=='function'&&typeof window.sgLoadScript==='function'){
+    window.sgLoadScript('/admin-dashboard.js?v=1.0');
+  }
   var tries=0;
   var t=setInterval(function(){
     tries++;
@@ -6893,6 +6896,12 @@ window._sgAdminDashboardBoot=function(){
 };
 window.DashboardPage=window.CeoDashboardPage=function(){
   if(typeof window._sgAdminDashboardPage==='function')return window._sgAdminDashboardPage();
+  /* admin-dashboard.js is no longer in every visitor's idle bucket (18.6KB and
+     a 60s polling interval shipped to anonymous users to render a staff-only
+     page). route-scripts.js keeps it preloaded on /admin itself; reaching this
+     page by in-app navigation loads it here, on demand. Safe to call more than
+     once — sgLoadScript fetches at most once and never rejects. */
+  if(typeof window.sgLoadScript==='function')window.sgLoadScript('/admin-dashboard.js?v=1.0');
   setTimeout(window._sgAdminDashboardBoot,60);
   return '<div id="sg-admin-boot" style="max-width:520px;margin:0 auto;padding:40px 16px 100px;text-align:center"><div class="skel-card" style="width:100%;height:200px;background:rgba(255,255,255,.03);border-radius:16px;margin-bottom:12px"></div><p style="color:rgba(255,255,255,.3);font-size:13px">Loading dashboard...</p></div>';
 };
