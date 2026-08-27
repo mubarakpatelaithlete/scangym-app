@@ -103,7 +103,34 @@
   border: 1px solid var(--sg-secondary-border) !important;
 }
 
-/* ─── 6. Respect reduced motion on the pill's live dot ──────────────────────
+/* ─── 6. The catch-all: orange written straight into a style attribute ──────
+   The first pass of this file missed two elements, and the live audit caught
+   them: the ScanSquad avatar and Profile's "Log In" button both carry
+   `background:#FF6D00` inline with no id and no class, so there was nothing to
+   select them by.
+   Matching the style attribute itself fixes those two and, more usefully, any
+   future element that paints itself brand orange inline — which is how every
+   one of these got here. Restricted to `background`, so an element merely using
+   orange for text or a border is left alone, and the pills are exempt. */
+[style*="background:#FF6D00"]:not([id$="-fab"]),
+[style*="background: #FF6D00"]:not([id$="-fab"]),
+[style*="background:#FF6D00"] :not([id$="-fab"]),
+[style*="background:linear-gradient(135deg,#FF6D00"]:not([id$="-fab"]),
+[style*="background: linear-gradient(135deg, #FF6D00"]:not([id$="-fab"]) {
+  background: var(--sg-secondary-bg) !important;
+  background-image: none !important;
+  color: var(--sg-secondary-fg) !important;
+  box-shadow: none !important;
+}
+
+/* The "Finding new gyms…" toast is a status message, not something to press. */
+#sg-pull-refresh {
+  background: rgba(30, 41, 59, .95) !important;
+  background-image: none !important;
+  color: var(--sg-secondary-fg) !important;
+}
+
+/* ─── 7. Respect reduced motion on the pill's live dot ──────────────────────
    The pill is now the single focal point, so its pulse is more noticeable. */
 @media (prefers-reduced-motion: reduce) {
   #bchat-fab .pchat-fab-dot,
