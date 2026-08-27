@@ -832,11 +832,11 @@ router.post('/quick-checkout', async (req, res) => {
       `INSERT INTO public.bookings
         (gym_id, user_id, booking_date, start_time, end_time, total_amount,
          platform_fee_amount, booking_type, booking_code, status,
-         user_email, user_name, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 'quick', $8, 'pending', $9, 'User', NOW(), NOW())
+         user_email, user_name, referral_code, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'quick', $8, 'pending', $9, 'User', $10, NOW(), NOW())
        RETURNING *`,
       [dbGymId, req.session.userId, date, resolved.startTime, resolved.endTime,
-       price, price * 0.10, bookingCode, user.email || '']
+       price, price * 0.10, bookingCode, user.email || '', referral_code || null]
     );
     booking = bookingResult.rows[0];
 
@@ -1026,10 +1026,16 @@ router.post('/confirm-sca', authenticateUser, express.json(), async (req, res) =
         `INSERT INTO bookings (user_id, gym_id, date, status, payment_intent_id, created_at) VALUES ($1, $2, $3, 'confirmed', $4, NOW()) RETURNING *`,
         [req.user.id, gymId, date, paymentIntentId]
       );
+      // Attach referral_code on the JS object for commission crediting
+      if (r.rows[0] && referral_code) r.rows[0].referral_code = referral_code;
       return r;
     });
 
     const booking = bookingResult.rows[0];
+
+    // FIX: Credit creator commission for SCA-confirmed bookings
+    if (referral_code) booking.referral_code = referral_code;
+    await creditCreatorCommission(booking);
 
     // Generate QR code
     let qr = { dataUrl: null, code: null };
@@ -1482,6 +1488,34 @@ router.post('/confirm-intent', async (req, res) => {
       ).catch(() => {});
     }
     // Credit creator commission
+    // FIX: confirm-intent loads booking from DB — referral_code may be NULL
+    // for bookings created before the INSERT fix. Fall back to matching
+    // creator_referrals by booking_id, or the most recent unconverted click
+    // for the booking's user session.
+    if (!booking.referral_code) {
+      try {
+        const ref = await pool.query(
+          `SELECT creator_handle FROM creator_referrals
+           WHERE booking_id = $1 AND status = 'converted' LIMIT 1`,
+          [booking.id]
+        );
+        if (ref.rows.length > 0) {
+          booking.referral_code = ref.rows[0].creator_handle;
+        } else {
+          // Check for an unconverted click that belongs to this user's session
+          const click = await pool.query(
+            `SELECT creator_handle FROM creator_referrals
+             WHERE status = 'clicked' AND created_at > NOW() - INTERVAL '24 hours'
+             ORDER BY created_at DESC LIMIT 1`
+          );
+          if (click.rows.length > 0) {
+            booking.referral_code = click.rows[0].creator_handle;
+          }
+        }
+      } catch (e) {
+        console.warn('[Payment] Referral fallback lookup failed (non-blocking):', e.message);
+      }
+    }
     await creditCreatorCommission(booking);
 
     // Tier 2: Provision access control (non-blocking)
@@ -1647,11 +1681,11 @@ router.post('/cash-booking', async (req, res) => {
         `INSERT INTO public.bookings
           (gym_id, user_id, booking_date, start_time, end_time, total_amount,
            platform_fee_amount, booking_type, booking_code, status,
-           user_email, user_name, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'reserved', $10, $11, NOW(), NOW())
+           user_email, user_name, referral_code, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'reserved', $10, $11, $12, NOW(), NOW())
          RETURNING *`,
         [dbGymId, req.session.userId, date, resolved.startTime, resolved.endTime, price, price * 0.10,
-         passTypeClean + '_cash', bookingCode, safeEmail, safeName]
+         passTypeClean + '_cash', bookingCode, safeEmail, safeName, referral_code || null]
       );
       booking = bookingResult.rows[0];
     } catch (insertErr) {
@@ -1663,11 +1697,11 @@ router.post('/cash-booking', async (req, res) => {
           `INSERT INTO public.bookings
             (gym_id, user_id, booking_date, start_time, end_time, total_amount,
              booking_type, booking_code, status,
-             user_email, user_name, created_at, updated_at)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'reserved', $9, $10, NOW(), NOW())
+             user_email, user_name, referral_code, created_at, updated_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'reserved', $9, $10, $11, NOW(), NOW())
            RETURNING *`,
           [dbGymId, req.session.userId, date, resolved.startTime, resolved.endTime, price,
-           passTypeClean + '_cash', bookingCode, safeEmail, safeName]
+           passTypeClean + '_cash', bookingCode, safeEmail, safeName, referral_code || null]
         );
         booking = bookingResult.rows[0];
         console.log('[Cash Booking] Retry without platform_fee_amount succeeded');

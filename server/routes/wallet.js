@@ -6,7 +6,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../middleware/db');
 const { authenticateUser, requireAdmin } = require('../middleware/auth');
-const { reconcileCommissionBackpay } = require('../lib/wallet-credit');
+const { reconcileCommissionBackpay, creditWallet, reconcilePartnerRevenue } = require('../lib/wallet-credit');
 
 router.use(authenticateUser);
 
@@ -71,6 +71,13 @@ router.get('/', async (req, res) => {
       if (backpaid > 0) console.log(`[Wallet] Reconciliation credited ${backpaid}p to user ${userId}`);
     } catch (e) {
       console.error('[Wallet] Reconciliation error (non-blocking):', e.message);
+    }
+    // Self-healing: credit the partner's share of booking revenue that
+    // hasn't been synced to the wallet yet (gym owner earnings).
+    try {
+      await reconcilePartnerRevenue(pool, userId);
+    } catch (e) {
+      console.error('[Wallet] Partner revenue sync error (non-blocking):', e.message);
     }
     let wallet = await pool.query('SELECT * FROM wallets WHERE user_id = $1', [userId]);
     if (wallet.rows.length === 0) {
