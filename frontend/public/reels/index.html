@@ -3117,5 +3117,23 @@
     <!-- Social embed disabled: iframe embeds degraded performance. See PR fix notes. -->
     <!-- <script src="/reels/social-embed.js" defer></script> -->
   <script src="/sg-tabbar.js?v=1.0" defer></script>
+
+  <!--
+    Voice, on the tab most visitors land on.
+
+    /reels is not the SPA — it is this standalone SSR page, so none of the scripts
+    index.html loads are present here. That is why Reels was mute: not just a route
+    pattern that matched nothing, but the entire voice stack being absent from the
+    page. Adding a personality to the SPA did nothing for this file.
+
+    Order matters and mirrors index.html: engine, then personality, then the arming
+    layer that reads the personalities. All deferred, so none of this competes with
+    the video feed for first paint.
+  -->
+  <script src="/voice.js?v=3.0" defer></script>
+  <script src="/chat-agent.js?v=5.0" defer></script>
+  <script src="/reels-chat.js?v=1.0" defer></script>
+  <script src="/sg-dock.js?v=1.0" defer></script>
+  <script src="/voice-always.js?v=1.1" defer></script>
 </body>
 </html>
