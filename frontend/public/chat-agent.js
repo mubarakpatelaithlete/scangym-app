@@ -171,7 +171,10 @@ function createChatAgent(cfg) {
     var fab = document.createElement('button');
     fab.id = T('pchat-fab');
     fab.title = cfg.fabTitle || 'Ask ScanGym';
-    fab.innerHTML = T('<span class="pchat-fab-dot"></span>Ask AI');
+    // The pill is now the single orange element on the screen, so it has to say
+    // what the product actually wants you to do. "Ask AI" described a chat box;
+    // this is a microphone that books gyms. Say so.
+    fab.innerHTML = T('<span class="pchat-fab-dot"></span>Talk');
     fab.onclick = open;
     document.body.appendChild(fab);
 
