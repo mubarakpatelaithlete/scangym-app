@@ -261,13 +261,16 @@ const _stripeWebhookHandler = async (req, res) => {
 
   let event;
   try {
-    if (STRIPE_WEBHOOK_SECRET) {
-      const sig = req.headers['stripe-signature'];
-      event = stripe.webhooks.constructEvent(req.body, sig, STRIPE_WEBHOOK_SECRET);
-    } else {
-      // No webhook secret configured — parse directly (less secure, but functional)
-      event = JSON.parse(req.body.toString());
+    if (!STRIPE_WEBHOOK_SECRET) {
+      // SECURITY: never trust unsigned webhook events. Without the signing secret
+      // we cannot prove Stripe sent this, so an attacker could forge a
+      // "payment_intent.succeeded" event and confirm an unpaid booking (free entry).
+      // Reject instead of parsing the body directly.
+      console.error('Webhook rejected: STRIPE_WEBHOOK_SECRET is not set. Set it in Railway.');
+      return res.status(500).send('Webhook secret not configured');
     }
+    const sig = req.headers['stripe-signature'];
+    event = stripe.webhooks.constructEvent(req.body, sig, STRIPE_WEBHOOK_SECRET);
   } catch (err) {
     console.error('Webhook signature verification failed:', err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);

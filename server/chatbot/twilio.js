@@ -32,13 +32,10 @@ const router = express.Router();
 const crypto = require('crypto');
 const { handleMessage } = require('./message-handler');
 
-// ─── Twilio credentials (fragment-joined for scanning protection) ───
-const _tsid = ['AC919239d7', '3d8c5b74d0', 'f702a0fd9b1039'];
-const _tauth = ['be9edb0ee7', '283c2202a1', '175ef1a93517'];
-const _tphone = ['+12052', '094512'];
-const TWILIO_SID = process.env.TWILIO_ACCOUNT_SID || _tsid.join('');
-const TWILIO_AUTH = process.env.TWILIO_AUTH_TOKEN || _tauth.join('');
-const TWILIO_PHONE = process.env.TWILIO_PHONE_NUMBER || _tphone.join('');
+// ─── Twilio credentials (from environment only — never hardcode secrets) ───
+const TWILIO_SID = process.env.TWILIO_ACCOUNT_SID;
+const TWILIO_AUTH = process.env.TWILIO_AUTH_TOKEN;
+const TWILIO_PHONE = process.env.TWILIO_PHONE_NUMBER;
 const TWILIO_WA_PHONE = process.env.TWILIO_WHATSAPP_NUMBER || (TWILIO_PHONE ? `whatsapp:${TWILIO_PHONE}` : null);
 const BASE_URL = process.env.BASE_URL || 'https://scangym.com';
 
