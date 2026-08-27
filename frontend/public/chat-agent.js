@@ -29,6 +29,11 @@
 function createChatAgent(cfg) {
   var NS = cfg.ns;                                  // 'pchat' | 'schat' | …
   var T = function (str) { return String(str).split('pchat').join(NS); };
+
+  /* The Book agent is the only one that answers anonymous callers, and it is the
+     one that knows how to log someone in by voice. Any personality that gets a 401
+     hands that turn to it rather than dead-ending on "please sign in". */
+  var LOGIN_ENDPOINT = '/api/book/agent';
   var OPEN_CHIPS = cfg.chips || [];
   var TOOL_LABELS = cfg.toolLabels || {};
   var BOTTOM_CHROME = ['.sg-tab-bar', '#sg-continue-banner'].concat(cfg.bottomChrome || []);
@@ -42,6 +47,10 @@ function createChatAgent(cfg) {
     voice: false,  // true once the customer has spoken: then we speak back
     live: false,   // hands-free: it listens, answers out loud, listens again
     spoken: 0,     // how much of the streaming answer has been sent to be said
+    // One login hand-off per conversation. Set when a 401 sends a turn to the Book
+    // agent so it can sign the customer in; without it a fallback that also 401s
+    // would bounce between endpoints forever.
+    loginHandoffUsed: false,
   };
 
   /**
@@ -484,7 +493,8 @@ function createChatAgent(cfg) {
     stream({ message: text, history: history(), confirm: confirmPayload || null });
   }
 
-  function stream(body) {
+  function stream(body, endpointOverride) {
+    var endpoint = endpointOverride || cfg.endpoint;
     var aiBubble = null;
     var acc = '';
     // 2/5. Streaming you can interrupt. ChatGPT's stop button is why long answers
@@ -493,7 +503,7 @@ function createChatAgent(cfg) {
     S.ctrl = ctrl;
     setBusyUI(true);
 
-    fetch(cfg.endpoint, {
+    fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -502,6 +512,25 @@ function createChatAgent(cfg) {
     })
       .then(function (res) {
         if (res.status === 401) {
+          /* Signing in must never be a dead end.
+           *
+           * The Partner and ScanSquad agents sit behind authenticateUser, so an
+           * anonymous visitor got 401 and this handler printed a static "sign in
+           * first" line and stopped. There was no way to sign in by voice on those
+           * tabs at all -- the one moment the product hands you back to tapping.
+           *
+           * The Book agent is public and already knows how to log someone in by
+           * voice: it asks for a number, calls send_login_code, and takes the six
+           * digits back. So instead of giving up, hand this turn to it. Once the
+           * session exists the original agent answers normally on the next turn.
+           *
+           * Guarded by loginHandoffUsed so a 401 from the fallback itself cannot
+           * loop, and skipped when this personality already is the Book agent. */
+          if (!S.loginHandoffUsed && endpoint !== LOGIN_ENDPOINT) {
+            S.loginHandoffUsed = true;
+            stream(body, LOGIN_ENDPOINT);
+            return null;
+          }
           typingOff();
           bubble(T('pchat-ai'), cfg.signedOutReply);
           finish();
