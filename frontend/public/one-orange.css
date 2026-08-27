@@ -1,0 +1,116 @@
+/*
+ * One orange thing per screen — and it is the voice.
+ *
+ * WHY
+ * Orange was on everything: the top promo strip, the bottom bar, the chat pill,
+ * "Start Earning", "Log In", the ScanSquad avatar. Measured live at phone width,
+ * Book, Partner and Profile each painted three orange surfaces. On Partner two of
+ * them were both "Ask AI"; on Profile "Log In" and "Continue - Sign in to unlock
+ * your QR pass" were both sign-in. The same action, twice, in the loudest colour.
+ * When everything is the primary action, nothing is.
+ *
+ * Worse, #sg-usp-banner is orange and cannot be clicked at all, so the brightest
+ * thing on the page was not an action.
+ *
+ * THE RULE
+ * Orange marks the one thing we want you to do. The product's whole premise is
+ * that you say what you want rather than hunting for a button, so the voice
+ * affordance keeps the orange and every other call to action steps down to a
+ * legible neutral. Nothing is hidden or disabled — tapping still works exactly as
+ * before, it simply stops shouting over the microphone.
+ *
+ * HOW
+ * This file loads last and uses !important because the colours it overrides are
+ * inline gradients written by a dozen different scripts. Restyling each of those
+ * call sites would touch app.ctr576.js, round4-ui.js, continue-cta-flow.js,
+ * partner-editable.js and more; a single late stylesheet is reversible by deleting
+ * one <link>, which matters more here than purity.
+ */
+
+:root {
+  /* Neutral for demoted actions: reads as a real button on the dark theme,
+     clearly secondary next to orange, still WCAG-legible against #0f172a. */
+  --sg-secondary-bg: #1e293b;
+  --sg-secondary-bg-hover: #334155;
+  --sg-secondary-border: #475569;
+  --sg-secondary-fg: #e2e8f0;
+}
+
+/* ─── 1. The one orange thing: the voice pill ────────────────────────────────
+   Left orange on purpose, and lifted slightly so it reads as the primary
+   action now that it no longer competes with three other orange surfaces. */
+#bchat-fab,
+#pchat-fab,
+#schat-fab,
+#rchat-fab,
+#mchat-fab,
+#chat-fab {
+  background: linear-gradient(135deg, #FF6D00, #E66200) !important;
+  color: #fff !important;
+  box-shadow: 0 6px 24px rgba(255, 109, 0, .38) !important;
+  font-weight: 700 !important;
+}
+
+/* ─── 2. The promo strip is information, not an action ──────────────────────
+   It cannot be clicked, so it must not wear the colour that means "press me". */
+#sg-usp-banner {
+  background: #111827 !important;
+  background-image: none !important;
+  color: #cbd5e1 !important;
+  border-bottom: 1px solid #1f2937 !important;
+}
+
+/* ─── 3. Bottom bar: still the tap path, no longer the loudest thing ────────
+   This is the duplicate on Partner ("Ask AI" twice) and Profile ("Log In" plus
+   "Sign in"). Demoted rather than deleted: the tap route keeps working for
+   anyone who cannot or does not want to speak, which includes every visitor
+   with the microphone blocked. */
+#sg-continue-banner {
+  background: var(--sg-secondary-bg) !important;
+  background-image: none !important;
+  color: var(--sg-secondary-fg) !important;
+  border-top: 1px solid var(--sg-secondary-border) !important;
+  box-shadow: none !important;
+}
+#sg-continue-banner * {
+  color: var(--sg-secondary-fg) !important;
+}
+
+/* ─── 4. In-page primaries step down ────────────────────────────────────────
+   "Start Earning" (ScanSquad) and anything using the brand fill, e.g. "Log In". */
+#join-btn,
+#sg-aff-continue-btn,
+.bg-brand:not(#bchat-fab):not(#pchat-fab):not(#schat-fab):not(#rchat-fab):not(#mchat-fab) {
+  background: var(--sg-secondary-bg) !important;
+  background-image: none !important;
+  color: var(--sg-secondary-fg) !important;
+  border: 1px solid var(--sg-secondary-border) !important;
+  box-shadow: none !important;
+}
+#join-btn:hover,
+#sg-aff-continue-btn:hover,
+.bg-brand:not(#bchat-fab):not(#pchat-fab):not(#schat-fab):not(#rchat-fab):not(#mchat-fab):hover {
+  background: var(--sg-secondary-bg-hover) !important;
+}
+
+/* ─── 5. Decoration should never be orange ──────────────────────────────────
+   The ScanSquad avatar is an identity chip, not a button, but it was pulling
+   the eye as hard as the real call to action beside it. */
+.dash-avatar {
+  background: var(--sg-secondary-bg) !important;
+  background-image: none !important;
+  color: var(--sg-secondary-fg) !important;
+  border: 1px solid var(--sg-secondary-border) !important;
+}
+
+/* ─── 6. Respect reduced motion on the pill's live dot ──────────────────────
+   The pill is now the single focal point, so its pulse is more noticeable. */
+@media (prefers-reduced-motion: reduce) {
+  #bchat-fab .pchat-fab-dot,
+  #pchat-fab .pchat-fab-dot,
+  #schat-fab .pchat-fab-dot,
+  #rchat-fab .pchat-fab-dot,
+  #mchat-fab .pchat-fab-dot {
+    animation: none !important;
+  }
+}
