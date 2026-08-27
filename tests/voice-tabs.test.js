@@ -123,6 +123,20 @@ test('voice-always.js knows about all five personalities', () => {
   }
 });
 
+test('every personality has its chat pill docked', () => {
+  // chat-agent.js derives the pill id from ns, and sg-dock.js only positions pills it
+  // knows about. A personality missing from FABS gets an undocked pill that sits on
+  // top of the bottom stack — the exact overlap sg-dock.js was written to prevent.
+  const { captured } = loadPersonalities();
+  const dock = fs.readFileSync(path.join(PUBLIC, 'sg-dock.js'), 'utf8');
+  const fabs = dock.match(/var FABS = \[[^\]]*\]/);
+  assert.ok(fabs, 'FABS not found in sg-dock.js');
+  for (const [name, agent] of Object.entries(captured)) {
+    const id = `#${agent.__cfg.ns}-fab`;
+    assert.ok(fabs[0].includes(id), `sg-dock.js FABS is missing ${id} for ${name}`);
+  }
+});
+
 test('a playing reel no longer blocks voice from arming', () => {
   // The old noisyPage() guard refused to arm whenever any video had sound, which on
   // Reels meant always. Ducking replaced it; the guard must not come back.
