@@ -325,13 +325,27 @@ router.get('/discord/invite', async (req, res) => {
   res.json({ error: 'Discord bot not configured. Set DISCORD_BOT_TOKEN.' });
 });
 
+// Pending Slack OAuth state tokens (links an install back to the logged-in user).
+// Needed because the session cookie (sameSite:strict) is NOT sent on Slack's redirect.
+const slackStates = new Map();
+
 // ─── GET /api/channels/slack/install — Get Slack install link ─
 router.get('/slack/install', (req, res) => {
   const clientId = process.env.SLACK_CLIENT_ID || ['1145263420', '2274.114614', '00621316'].join('');
-  const scopes = 'chat:write,im:history,app_mentions:read,im:read';
+  // Bot scopes: chat:write (send), im:write (open DM), im:history, users:read, mentions, slash command
+  const scopes = 'chat:write,im:write,im:history,users:read,app_mentions:read,commands';
+  // Carry the logged-in user through OAuth via a short-lived state token.
+  let state = '';
+  const linkUserId = req.session?.userId;
+  if (linkUserId) {
+    state = crypto.randomBytes(16).toString('hex');
+    slackStates.set(state, { userId: linkUserId, createdAt: Date.now() });
+    for (const [k, v] of slackStates) { if (Date.now() - v.createdAt > 600000) slackStates.delete(k); }
+  }
   if (clientId) {
+    const redirectUri = req.protocol + '://' + req.get('host') + '/api/channels/slack/callback';
     return res.json({
-      installUrl: `https://slack.com/oauth/v2/authorize?client_id=${clientId}&scope=${scopes}&redirect_uri=${encodeURIComponent(req.protocol + '://' + req.get('host') + '/api/channels/slack/callback')}`,
+      installUrl: `https://slack.com/oauth/v2/authorize?client_id=${clientId}&scope=${encodeURIComponent(scopes)}&redirect_uri=${encodeURIComponent(redirectUri)}${state ? '&state=' + state : ''}`,
     });
   }
   // Fallback: direct Slack App page
@@ -371,18 +385,26 @@ router.get('/msteams/manifest', (req, res) => {
   fs.createReadStream(manifestPath).pipe(res);
 });
 
-// ─── Fix 7: Slack OAuth callback — completes "Add to Slack" flow ────
+// ─── Slack OAuth callback — completes "Add to Slack" flow ────
+// Fixes: (1) fail clearly when the client secret is missing; (2) link the install
+// back to the ScanGym user via the state token; (3) open a DM and send a welcome
+// message so the bot actually appears (Telegram parity), instead of silently
+// redirecting with nothing happening.
 router.get('/slack/callback', async (req, res) => {
-  const { code, error } = req.query;
+  const { code, error, state } = req.query;
   if (error) {
-    return res.redirect('/?toast=' + encodeURIComponent('Slack connection cancelled'));
+    return res.redirect('/channels?toast=' + encodeURIComponent('Slack connection cancelled'));
   }
   if (!code) {
-    return res.redirect('/?toast=' + encodeURIComponent('Missing authorisation code'));
+    return res.redirect('/channels?toast=' + encodeURIComponent('Missing authorisation code'));
+  }
+  const clientId = process.env.SLACK_CLIENT_ID || ['1145263420', '2274.114614', '00621316'].join('');
+  const clientSecret = process.env.SLACK_CLIENT_SECRET || '';
+  if (!clientSecret) {
+    console.error('[Slack OAuth] SLACK_CLIENT_SECRET is not set — cannot complete install');
+    return res.redirect('/channels?toast=' + encodeURIComponent('Slack is not fully configured yet — please try again later'));
   }
   try {
-    const clientId = process.env.SLACK_CLIENT_ID || ['1145263420', '2274.114614', '00621316'].join('');
-    const clientSecret = process.env.SLACK_CLIENT_SECRET || '';
     const redirectUri = req.protocol + '://' + req.get('host') + '/api/channels/slack/callback';
     const resp = await fetch('https://slack.com/api/oauth.v2.access', {
       method: 'POST',
@@ -390,15 +412,67 @@ router.get('/slack/callback', async (req, res) => {
       body: new URLSearchParams({ code, client_id: clientId, client_secret: clientSecret, redirect_uri: redirectUri }),
     });
     const data = await resp.json();
-    if (data.ok) {
-      console.log('[Slack OAuth] Workspace connected:', data.team?.name, data.team?.id);
-      // Save workspace token if needed for multi-workspace support
-      // For now just redirect to success
-      res.redirect('/channels?toast=' + encodeURIComponent('✅ Slack connected! DM @ScanGym to start chatting'));
-    } else {
+    if (!data.ok) {
       console.error('[Slack OAuth] Error:', data.error);
-      res.redirect('/channels?toast=' + encodeURIComponent('Slack connection failed: ' + (data.error || 'unknown error')));
+      return res.redirect('/channels?toast=' + encodeURIComponent('Slack connection failed: ' + (data.error || 'unknown error')));
     }
+    console.log('[Slack OAuth] Workspace connected:', data.team?.name, data.team?.id);
+
+    // Resolve the ScanGym user from the state token (session cookie is unavailable here)
+    let userId = null;
+    if (state && slackStates.has(state)) {
+      const pending = slackStates.get(state);
+      if (Date.now() - pending.createdAt <= 600000) userId = pending.userId;
+      slackStates.delete(state);
+    }
+
+    const botToken = data.access_token; // xoxb bot token for this workspace
+    const slackUserId = data.authed_user?.id;
+    const teamId = data.team?.id;
+    const teamName = data.team?.name;
+
+    // Persist the connection when we know which user it belongs to
+    if (userId) {
+      try {
+        await pool.query(`
+          INSERT INTO user_channels (user_id, channel, channel_user_id, channel_username, metadata, is_active, connected_at)
+          VALUES ($1, 'slack', $2, $3, $4, true, NOW())
+          ON CONFLICT (user_id, channel)
+          DO UPDATE SET channel_user_id = $2, channel_username = $3, metadata = $4, is_active = true, connected_at = NOW()
+        `, [userId, slackUserId || null, teamName || null, JSON.stringify({ teamId, teamName, botToken })]);
+      } catch (dbErr) {
+        console.error('[Slack OAuth] Failed to persist connection:', dbErr.message);
+      }
+    }
+
+    // Open a DM and send the welcome message so the bot conversation actually starts
+    if (botToken && slackUserId) {
+      try {
+        const openResp = await fetch('https://slack.com/api/conversations.open', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${botToken}` },
+          body: JSON.stringify({ users: slackUserId }),
+        });
+        const openData = await openResp.json();
+        if (openData.ok && openData.channel?.id) {
+          await fetch('https://slack.com/api/chat.postMessage', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${botToken}` },
+            body: JSON.stringify({
+              channel: openData.channel.id,
+              text: "👋 *Welcome to ScanGym!*\n\nI'm your gym-booking assistant. Try:\n🔍 \"Find gyms in London\"\n📅 \"Book a gym in Bolton for tomorrow\"\n💰 \"How much is a day pass?\"\n\nJust message me naturally and I'll help! 🏋️",
+              mrkdwn: true,
+            }),
+          });
+        } else {
+          console.error('[Slack OAuth] conversations.open failed:', openData.error);
+        }
+      } catch (dmErr) {
+        console.error('[Slack OAuth] Welcome DM failed:', dmErr.message);
+      }
+    }
+
+    res.redirect('/channels?toast=' + encodeURIComponent('✅ Slack connected! Check your DMs from ScanGym to start chatting'));
   } catch (err) {
     console.error('[Slack OAuth] Callback error:', err.message);
     res.redirect('/channels?toast=' + encodeURIComponent('Connection error — please try again'));

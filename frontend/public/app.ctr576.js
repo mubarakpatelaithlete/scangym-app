@@ -15385,8 +15385,18 @@ window._sgOpenMSTeams=async function(){
   try{
     var r=await fetch('/api/channels/msteams/install');
     var d=await r.json();
-    if(d.installUrl){window.open(d.installUrl,'_blank');}
-    else{sgToast('Teams bot is being set up — check back soon!','info',3000);}
+    // The Teams catalog deep link (installUrl) only resolves if the app is published
+    // org-wide. ScanGym is a custom app, so guide the user to sideload the manifest
+    // package instead of opening a dead catalog link where nothing happens.
+    if(d.manifestUrl){
+      window.open(d.manifestUrl,'_blank'); // downloads scangym-teams-app.zip
+      var steps=(d.sideloadInstructions&&d.sideloadInstructions.length)?d.sideloadInstructions.join('  '):'In Teams: Apps → Manage your apps → Upload a custom app → pick the downloaded .zip';
+      sgToast('📦 ScanGym Teams app downloaded. '+steps,'info',9000);
+    } else if(d.installUrl){
+      window.open(d.installUrl,'_blank');
+    } else {
+      sgToast('Teams bot is being set up — check back soon!','info',3000);
+    }
   }catch(e){sgToast('Teams bot is being set up — check back soon!','info',3000);}
 };
 
