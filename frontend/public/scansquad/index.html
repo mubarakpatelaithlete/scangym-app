@@ -891,5 +891,21 @@
     checkAuth();
   </script>
 <script src="/sg-tabbar.js?v=1.0" defer></script>
+
+  <!--
+    Voice on ScanSquad.
+
+    Like /reels, this tab was split out of the SPA bundle (#636) into a standalone
+    page, and the voice stack did not come with it — so the tab had a matching
+    personality in squad-chat.js that was never parsed here. Verified mute in
+    production before this change.
+
+    Order mirrors index.html: engine, personality, dock, then the arming layer.
+  -->
+  <script src="/voice.js?v=3.0" defer></script>
+  <script src="/chat-agent.js?v=5.0" defer></script>
+  <script src="/squad-chat.js?v=2.1" defer></script>
+  <script src="/sg-dock.js?v=1.0" defer></script>
+  <script src="/voice-always.js?v=1.1" defer></script>
 </body>
 </html>
