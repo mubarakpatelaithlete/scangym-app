@@ -83,6 +83,20 @@ test('demoted actions stay usable, not hidden', () => {
   assert.ok(!/visibility:\s*hidden/.test(css), 'one-orange.css must not hide any call to action');
 });
 
+test('inline brand-orange backgrounds are caught too', () => {
+  // The first pass of one-orange.css missed the ScanSquad avatar and Profile's
+  // "Log In" button: both carry background:#FF6D00 inline with no id and no class,
+  // so there was nothing to select them by. The live audit found them, not the
+  // tests — hence this rule, which also covers the next one written that way.
+  assert.ok(
+    /\[style\*=["']background:\s?#FF6D00["']\]/i.test(css),
+    'one-orange.css must demote elements that set brand orange inline',
+  );
+  // …without swallowing the pills, which legitimately keep the orange.
+  const inlineRule = css.slice(css.indexOf('[style*='));
+  assert.ok(/:not\(\[id\$=["']-fab["']\]\)/.test(inlineRule), 'the catch-all must exempt the voice pills');
+});
+
 test('the pill invites speech rather than describing a chat box', () => {
   // It is the single orange element now, so its label carries the product promise.
   const agent = fs.readFileSync(path.join(PUBLIC, 'chat-agent.js'), 'utf8');
