@@ -6,6 +6,7 @@ const session = require('express-session');
 const compression = require('compression');
 const { applyMeta: applyRouteMeta } = require('./lib/route-meta');
 const { applyBootSkeleton } = require('./lib/boot-skeleton');
+const { applyRouteScripts } = require('./lib/route-scripts');
 
 // Import feature routes
 const reviewsRouter = require('./routes/reviews');
@@ -847,7 +848,13 @@ if (fs.existsSync(FRONTEND_DIR)) {
     // served, with the real tab bar and a primary action that works before
     // app.ctr576.js has parsed.
     const booted = applyBootSkeleton(shell, req.path);
-    const html = booted.replace('</head>', perfHints + '</head>');
+    // index.html loads its scripts in Book-tab order on every route: the script
+    // that renders the Partner tab waited for idle (real content at ~6.4s on a
+    // throttled phone) while every tab paid boot cost for three chat
+    // personalities. Re-prioritise for the route being served — promote its
+    // renderer, push what it cannot use to idle. Nothing is dropped.
+    const prioritised = applyRouteScripts(booted, req.path);
+    const html = prioritised.replace('</head>', perfHints + '</head>');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.send(html);

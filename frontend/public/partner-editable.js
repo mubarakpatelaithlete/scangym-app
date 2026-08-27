@@ -583,10 +583,23 @@ window._peLoadAndRender = _peLoadAndRender;
 async function _peLoadAndRender(){
   var u=state&&state.user;
   if(!u){
-    // Auth may still be resolving (/api/auth/me in flight). Rendering the
-    // claim card now would WIPE the native Partner Dashboard for a logged-in
-    // owner — the "two partner screens" bug. Retry briefly before deciding.
-    if(_peAuthRetries<12){
+    // Auth may still be resolving. Rendering the claim card now would WIPE the
+    // native Partner Dashboard for a logged-in owner — the "two partner
+    // screens" bug. So we must not decide before the session is known.
+    //
+    // The app bundle publishes that moment as window.__sgAuthReady. Awaiting it
+    // means a logged-out visitor sees the real Partner page as soon as the
+    // session comes back (~0.6s) instead of after the old blind retry ladder
+    // (12 x 400ms = 4.8s of skeleton, measured live at 4x CPU throttle).
+    if(window.__sgAuthReady&&!window.__sgAuthResolved&&_peAuthRetries<1){
+      _peAuthRetries++;
+      try{
+        await window.__sgAuthReady;
+      }catch(e){}
+      return _peLoadAndRender();
+    }
+    // Fallback for a cached bundle that predates the signal: the old ladder.
+    if(!window.__sgAuthReady&&_peAuthRetries<12){
       _peAuthRetries++;
       setTimeout(_peLoadAndRender,400);
       return;
