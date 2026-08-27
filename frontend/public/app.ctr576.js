@@ -448,7 +448,17 @@ async function checkAuth() {
     }
   } catch(e) {}
 }
-checkAuth();
+// Publish when the session question has been answered. Without a signal the
+// only way for another script to know whether state.user is "not logged in" or
+// "not resolved yet" is to poll blindly — which is exactly what the Partner tab
+// used to do, costing every logged-out visitor ~4.8s of empty screen.
+// __sgAuthReady always resolves (never rejects); __sgAuthResolved is the
+// synchronous form for code that runs later and just needs the answer now.
+window.__sgAuthResolved = false;
+window.__sgAuthReady = checkAuth().then(function(){
+  window.__sgAuthResolved = true;
+  try { window.dispatchEvent(new Event('sg:auth-resolved')); } catch(e) {}
+});
 
 
 // ─── State ───
