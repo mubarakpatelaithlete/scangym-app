@@ -21,6 +21,12 @@ COPY package.json ./
 COPY server/ ./server/
 COPY frontend/ ./frontend/
 COPY tests/ ./tests/
+# tests/one-version.test.js reads /migrations to check the schema is declared in
+# exactly one place. Leaving it out of the build context made three tests fail
+# with ENOENT inside Docker while passing on a developer's checkout.
+COPY migrations/ ./migrations/
+# tests/docker-test-stage.test.js reads this file, to keep the two in step.
+COPY Dockerfile ./
 
 RUN npm test && mkdir -p /verified && date -u +%FT%TZ > /verified/tests-passed
 
