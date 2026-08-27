@@ -1,0 +1,53 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   brand-mark.css — one orange circle logo, in the same place, on every tab.
+
+   Why a file of its own rather than a few lines in one-orange.css: that file
+   is the colour layer, and its tests enforce that it only ever *recolours* —
+   it may not hide an element and may not set pointer-events, because doing
+   either to a call to action would strand anyone who cannot use a microphone.
+   Both of those are exactly what a logo needs. Different job, different file.
+
+   What was actually on the live site (mobile viewport, full page, 2026-08-27):
+
+     Reels      5 orange circle logos   one per reel card, several cards in the DOM
+     ScanSquad  1
+     Book       0
+     Partner    0
+     Profile    0
+
+   Five, one, or none, depending on the tab — "different branding on each tab".
+   The mark was never wrong; its *placement* was, because it was attached to
+   feed cards whose number varies instead of to the app.
+
+   So: paint it once, on the page itself, in a fixed position. Every tab gets
+   exactly one and it lands in the same spot on all five, regardless of what is
+   rendered underneath. The disc is unchanged from the original — 28px, brand
+   orange, white "S", same soft glow.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body::before {
+  content: 'S';
+  position: fixed;
+  top: max(14px, env(safe-area-inset-top, 0px));
+  left: 14px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #FF6D00;
+  color: #fff;
+  font: 900 15px/28px system-ui, -apple-system, sans-serif;
+  text-align: center;
+  box-shadow: 0 0 10px rgba(255, 109, 0, .5);
+  opacity: .85;
+  /* Decorative. Without this the disc would swallow taps on whatever sits
+     beneath the top-left corner of every screen. */
+  pointer-events: none;
+  z-index: 9500;
+}
+
+/* The per-card copies are retired in favour of the single fixed mark above.
+   Hidden rather than deleted from the shells so the markup that generates a
+   reel card stays untouched and this stays one reversible decision. */
+.sg-brand-circle {
+  display: none !important;
+}

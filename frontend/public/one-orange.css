@@ -141,3 +141,21 @@
     animation: none !important;
   }
 }
+
+/* ─── 8. The two the static tests could never see ───────────────────────────
+   Sections 1–7 were written by reading the source. These two were found by
+   driving the live site in a mobile browser and counting the orange surfaces
+   the user can actually see — which is the only measurement that matches the
+   rule. Both escaped every existing test because those tests grep this
+   stylesheet, and an element that was never added to this stylesheet is
+   invisible to them.
+
+   8a. #sg-sps — the "No membership needed · Instant QR · Free cancel" strip.
+   app-patches-v3.js injects it three seconds after paint with an orange wash
+   and an orange bottom border, full width, directly above the content. It is
+   reassurance copy, not a call to action, and on Book and Profile it was the
+   second orange surface on the screen. Keep the strip, drop the orange. */
+#sg-sps {
+  background: var(--sg-secondary-bg) !important;
+  border-bottom-color: rgba(255, 255, 255, .10) !important;
+}

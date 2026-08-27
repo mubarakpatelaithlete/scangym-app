@@ -81,3 +81,35 @@ button[style*="background: #FF6D00"] {
 
    The pill does not need a rule to survive. It survives because this file never
    hides it. Do not "helpfully" add one back. */
+
+/* ─── The four the earlier passes missed, all on Profile ────────────────────
+   Reported from the live app and then confirmed in source:
+
+     "Get Your QR Pass →"          #sg-qr-pass-cta    app.ctr576.js
+     "I already have an account"   #sg-login-alt      app.ctr576.js
+     "Join ScanSquad → 25% …"      #sg-bottom-popup   app.ctr576.js
+     "See how it works →"          #sg-how-it-works   sg-scansquad.js
+
+   None of them had an id, so there was nothing to select; the ids above were
+   added alongside this rule for exactly that reason.
+
+   Why every earlier audit missed them, including an automated one: they sit
+   below the fold, or arrive on a timer after first paint. An audit that only
+   inspects the viewport shortly after load reports the page as clean. Anything
+   measuring "one CTA per tab" has to scroll the full page and has to wait —
+   tools/brand-audit.js now does both.
+
+   Note "Get Your QR Pass" paints itself with a *gradient*
+   (linear-gradient(135deg,#FF6D00,#ff8533)), so the existing
+   button[style*="background:#FF6D00"] rule above never matched it. A flat
+   colour was demoted and the gradient beside it was not.
+
+   All four are removed as buttons, not as features: signing in, joining
+   ScanSquad and fetching a QR pass are all things the voice agent already
+   does. You get them by saying so. */
+#sg-qr-pass-cta,
+#sg-login-alt,
+#sg-how-it-works,
+#sg-bottom-popup {
+  display: none !important;
+}

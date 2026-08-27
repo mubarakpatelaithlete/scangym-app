@@ -2183,7 +2183,7 @@ function CreatorSignedOutPage(){
       +'<p style="color:rgba(255,255,255,.5);font-size:14px;line-height:1.5;margin:0 0 22px">ScanGym\u2019s creator programme. Share a link, earn a cut of every day pass booked through it.</p>'
       +'<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px">'+facts+'</div>'
       +'<button onclick="'+signIn+'" style="width:100%;background:linear-gradient(135deg,#a855f7,#FF6D00);color:#fff;border:none;padding:16px;border-radius:14px;font-weight:800;font-size:15px;cursor:pointer;-webkit-tap-highlight-color:transparent">Join ScanSquad \u2014 it\u2019s free</button>'
-      +'<div onclick="navigate(\'/scansquad\')" style="text-align:center;color:rgba(255,255,255,.4);font-size:13px;margin-top:14px;cursor:pointer;padding:8px">See how it works \u2192</div>'
+      +'<div id=\"sg-how-it-works\" onclick="navigate(\'/scansquad\')" style="text-align:center;color:rgba(255,255,255,.4);font-size:13px;margin-top:14px;cursor:pointer;padding:8px">See how it works \u2192</div>'
     +'</div></div>';
 }
 
