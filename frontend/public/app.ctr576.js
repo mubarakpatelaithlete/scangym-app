@@ -18153,7 +18153,7 @@ window._partnerClaimGym=async function(idOrPlaceId,encName){
     if(!confirm('Verify this gym as yours?'))return;
     var r=await fetch('/api/gym-partner/claim',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({gymId:gymId})});
     var d=await r.json();
-    if(r.ok&&d.success){sgToast('Gym verified! \ud83c\udf89','success');setTimeout(function(){navigate('/gym-partner-hub');},800);}
+    if(r.ok&&d.success){window._partnerGymId=null;sgToast('Gym verified! \ud83c\udf89','success');setTimeout(function(){navigate('/gym-partner-hub');},800);}
     else if(r.status===409){sgToast('This gym is already verified by another owner. Email hello@scangym.com if it\'s yours.','error',5000);}
     else{sgToast(d.error||'Verification failed','error');}
   }catch(e){sgToast('Network error','error');}
