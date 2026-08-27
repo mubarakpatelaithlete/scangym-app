@@ -182,6 +182,9 @@ if('serviceWorker' in navigator){
 }
 </script>
 
+<!-- Lazy chunk loader: must run before app.ctr576.js, which calls sgChunkReady()
+     on every render. defer keeps these in document order. -->
+<script src="/sg-chunk-loader.js" defer></script>
 <script src="/robust-location.js" defer></script>
 <script src="/pricing.js" defer></script>
 <script src="/app.ctr576.js?v=5.3.1" defer></script>

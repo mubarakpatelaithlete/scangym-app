@@ -657,8 +657,16 @@ window._injectContinueBanner=_injectContinueBanner;
 // PATCH: Hook into tab navigation to inject/remove banners
 // ══════════════════════════════════════════════════════════════════════
 
+/* This waits for the app bundle to have defined the globals it patches.
+ *
+ * It used to also require CreatorFullPage, which was never used below — it was
+ * only ever a second "has the app booted yet" proxy. CreatorFullPage now lives
+ * in the lazy sg-scansquad chunk, so on a visitor who never opens ScanSquad
+ * that condition would never come true: this interval would poll every 200ms
+ * for the whole session and the Partner tab's Continue banner would never be
+ * wired up. Only check what this block actually touches. */
 var _patchInterval=setInterval(function(){
-  if(typeof PartnerFullPage==='function'&&typeof CreatorFullPage==='function'){
+  if(typeof PartnerFullPage==='function'&&typeof window._showPartnerScreen==='function'){
     clearInterval(_patchInterval);
 
     // Patch _showPartnerScreen to refresh banner
