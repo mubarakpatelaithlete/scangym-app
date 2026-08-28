@@ -42,11 +42,18 @@ test('a missing or unusable value falls back to a bare address, never a 400', ()
   assert.equal(mailFrom('').email, DEFAULT_ADDRESS);
 });
 
-test('both SendGrid JSON senders go through the helper', () => {
+test('every email goes out through the one sender, which uses the helper', () => {
+  const sender = fs.readFileSync(path.join(LIB, 'mail-send.js'), 'utf8');
+  assert.match(sender, /mailFrom\(env\.SMTP_FROM\)/, 'the sender must resolve the address through the helper');
+  assert.match(sender, /from: \{ email: from\.email, name: from\.name \}/, 'the SendGrid API must get the bare address');
+  assert.match(sender, /from: `\$\{from\.name\} <\$\{from\.email\}>`/, 'Resend and SMTP take the header form');
+
+  // The callers must not talk to a provider themselves — that is how one supplier
+  // being refused took the whole sign-in flow down.
   for (const file of ['login-link.js', 'email-login-code.js']) {
     const src = fs.readFileSync(path.join(LIB, file), 'utf8');
-    assert.match(src, /mail-from'\)\.mailFrom\(\)/, `${file} must resolve the sender through the helper`);
-    assert.match(src, /from: \{ email: from\.email, name: from\.name \}/, `${file} must send the bare address`);
-    assert.ok(!/from: \{ email: from,/.test(src), `${file} must not pass the raw variable as an address again`);
+    assert.match(src, /require\('\.\/mail-send'\)\.sendMail/, `${file} must send through lib/mail-send`);
+    assert.ok(!/api\.sendgrid\.com|api\.resend\.com/.test(src), `${file} must not name a provider endpoint`);
+    assert.ok(!/SENDGRID_API_KEY/.test(src), `${file} must not read a provider key`);
   }
 });

@@ -29,7 +29,6 @@ const crypto = require('crypto');
 const TTL_MS = 15 * 60 * 1000;
 const TOKEN_BYTES = 32;
 const SWEEP_EVERY = 50;
-const SENDGRID_URL = 'https://api.sendgrid.com/v3/mail/send';
 
 let sinceSweep = 0;
 
@@ -72,11 +71,6 @@ function linkUrl(origin, token) {
 /* ── delivery ─────────────────────────────────────────────────────────────── */
 
 async function sendEmail(to, url, fetchImpl) {
-  const apiKey = process.env.SENDGRID_API_KEY;
-  // SMTP_FROM holds a display-name address; SendGrid's JSON API needs the bare one.
-  const from = require('./mail-from').mailFrom();
-  if (!apiKey) return { ok: false, reason: 'no-sendgrid-key' };
-
   const text =
     'Tap to sign in to ScanGym:\n\n' + url + '\n\n' +
     'The link works once, for the next 15 minutes.\n\n' +
@@ -90,21 +84,15 @@ async function sendEmail(to, url, fetchImpl) {
     '<p style="margin:0;color:#777;font-size:13px">If you did not ask to sign in, ignore this — nobody can ' +
     'get in without tapping it.</p></div>';
 
-  const res = await fetchImpl(SENDGRID_URL, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      personalizations: [{ to: [{ email: to }] }],
-      from: { email: from.email, name: from.name },
-      subject: 'Tap to sign in to ScanGym',
-      content: [
-        { type: 'text/plain', value: text },
-        { type: 'text/html', value: html },
-      ],
-    }),
+  // Whichever provider is configured — see lib/mail-send.js. SendGrid refused to
+  // activate this account, so hard-coding one supplier is how email breaks again.
+  return require('./mail-send').sendMail({
+    to,
+    subject: 'Tap to sign in to ScanGym',
+    text,
+    html,
+    deps: { fetch: fetchImpl },
   });
-  if (!res.ok) return { ok: false, reason: `sendgrid-${res.status}` };
-  return { ok: true };
 }
 
 async function sendSms(to, url, fetchImpl) {
