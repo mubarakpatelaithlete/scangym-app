@@ -45,11 +45,12 @@
       "tell you the price, and book it when you say yes.",
     greetSignedOut:
       "Hi — tell me where you want to train and I'll find you a gym. When you want to " +
-      'book it, just say your mobile number and I will text you a code.',
+      'book it, just say your mobile number and I will text you a link to tap.',
     signedOutReply:
-      'Say your mobile number or email and I will text you a code — then I can book it.',
+      'Say your mobile number or email and I will send you a link to tap — then I can book it.',
 
     toolLabels: {
+      send_login_link: 'Texting you a sign-in link',
       send_login_code: 'Texting you a code',
       confirm_login_code: 'Signing you in',
       login_with_provider: 'Opening sign-in',

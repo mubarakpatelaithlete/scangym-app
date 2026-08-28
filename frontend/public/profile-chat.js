@@ -44,12 +44,13 @@
       'Ask me for your pass, your next session, or anything you have booked — no ' +
       'digging through menus.',
     greetSignedOut:
-      'Say your mobile number and I will text you a six-digit code — read it back and ' +
+      'Say your mobile number and I will text you a link — tap it and ' +
       'you are in. No password, no forms.',
     signedOutReply:
-      'Tell me your mobile number or email and I will text you a code to get you in.',
+      'Tell me your mobile number or email and I will send you a link to tap to get you in.',
 
     toolLabels: {
+      send_login_link: 'Texting you a sign-in link',
       send_login_code: 'Texting you a code',
       confirm_login_code: 'Signing you in',
       login_with_provider: 'Opening sign-in',

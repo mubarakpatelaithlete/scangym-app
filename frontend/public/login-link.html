@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<!-- referrer:no-referrer keeps the token out of any other origin's logs. -->
+<meta name="referrer" content="no-referrer">
+<title>Sign in — ScanGym</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100dvh; display: grid; place-items: center;
+    background: #0B0B0C; color: #fff; padding: 24px;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .card { width: 100%; max-width: 380px; text-align: center; }
+  .mark { font-size: 15px; letter-spacing: .18em; font-weight: 700; color: #FF6D00; margin: 0 0 28px; }
+  h1 { font-size: 26px; line-height: 1.2; margin: 0 0 10px; font-weight: 700; }
+  p { margin: 0 0 26px; color: rgba(255,255,255,.6); font-size: 15px; line-height: 1.5; }
+  button {
+    width: 100%; border: 0; border-radius: 999px; padding: 17px 24px;
+    background: #FF6D00; color: #fff; font: inherit; font-weight: 700; font-size: 17px;
+    cursor: pointer; -webkit-tap-highlight-color: transparent;
+  }
+  button:disabled { opacity: .55; cursor: default; }
+  .err { color: #FF8A8A; font-size: 14px; margin-top: 18px; min-height: 20px; }
+  a { color: #FF6D00; }
+</style>
+</head>
+<body>
+  <main class="card">
+    <p class="mark">SCANGYM</p>
+    <h1 id="head">Sign in</h1>
+    <p id="sub">One tap and you are in — no password, no code to read out.</p>
+    <button id="go">Sign me in</button>
+    <div class="err" id="err"></div>
+  </main>
+<script>
+(function () {
+  'use strict';
+  // The token is injected by the server after being checked against the same
+  // pattern the API enforces; if it did not look like a token, this is "".
+  var token = "__SG_LOGIN_TOKEN__";
+  var go = document.getElementById('go');
+  var err = document.getElementById('err');
+  var head = document.getElementById('head');
+  var sub = document.getElementById('sub');
+
+  if (!token) {
+    head.textContent = 'That link looks broken';
+    sub.textContent = 'Ask ScanGym for a new sign-in link and tap the newest one.';
+    go.style.display = 'none';
+    return;
+  }
+
+  // Where to land afterwards. Same-origin path only — never a URL from the query
+  // string, which is how open-redirect phishing gets built.
+  function next() {
+    var m = /[?&]next=([^&]*)/.exec(location.search);
+    var p = m ? decodeURIComponent(m[1]) : '/';
+    return /^\/[A-Za-z0-9\-._~!$&'()*+,;=:@%/]*$/.test(p) ? p : '/';
+  }
+
+  go.addEventListener('click', function () {
+    go.disabled = true;
+    err.textContent = '';
+    go.textContent = 'Signing you in…';
+    fetch('/api/auth/redeem-link', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ token: token })
+    })
+      .then(function (r) { return r.json().catch(function () { return {}; }); })
+      .then(function (d) {
+        if (d && d.ok) {
+          // Drop the token out of history before leaving the page.
+          try { history.replaceState(null, '', '/login/link'); } catch (e) {}
+          location.replace(next());
+          return;
+        }
+        go.disabled = false;
+        go.textContent = 'Sign me in';
+        err.textContent = (d && d.message) || 'That did not work. Ask for a new link.';
+      })
+      .catch(function () {
+        go.disabled = false;
+        go.textContent = 'Sign me in';
+        err.textContent = 'No connection. Try again in a moment.';
+      });
+  });
+})();
+</script>
+</body>
+</html>

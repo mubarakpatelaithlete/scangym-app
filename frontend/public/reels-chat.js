@@ -63,9 +63,9 @@
       'and book it when you say yes.',
     greetSignedOut:
       'Tell me which reel you like and I will find the gym and the price. To book it, ' +
-      'just say your mobile number and I will text you a code.',
+      'just say your mobile number and I will text you a link to tap.',
     signedOutReply:
-      'Say your mobile number or email and I will text you a code — then I can book it.',
+      'Say your mobile number or email and I will send you a link to tap — then I can book it.',
 
     // Same tools as the Book tab — this is the Book agent wearing a different face.
     toolLabels: {

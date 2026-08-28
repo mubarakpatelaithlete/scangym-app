@@ -264,12 +264,33 @@ const tools = {
 
   /* ---------- login: no password, no card number, ever ---------- */
 
+  send_login_link: {
+    write: false,
+    schema: {
+      name: 'send_login_link',
+      description:
+        'PREFERRED way to sign someone in: text or email them a link they tap once. Nothing to read out, nothing to type. Ask for their mobile number or email address, never a password. Use send_login_code only if they say they cannot open a link.',
+      parameters: {
+        type: 'object',
+        properties: {
+          contact: { type: 'string', description: 'Mobile number or email address, as the customer said it.' },
+        },
+        required: ['contact'],
+        additionalProperties: false,
+      },
+    },
+    async run(_userId, args = {}) {
+      const { sendLoginLink } = require('./voice-login');
+      return sendLoginLink({ contact: args.contact });
+    },
+  },
+
   send_login_code: {
     write: false,
     schema: {
       name: 'send_login_code',
       description:
-        'Send a six-digit login code by text or email when the customer is not logged in. Ask for their mobile number or email address, never a password.',
+        'Fallback sign-in: send a six-digit code by text or email, which the customer then has to read back. Prefer send_login_link. Ask for their mobile number or email address, never a password.',
       parameters: {
         type: 'object',
         properties: {
@@ -361,6 +382,7 @@ const PUBLIC_TOOLS = new Set([
   'find_gyms',
   'get_gym',
   'today_and_tomorrow',
+  'send_login_link',
   'send_login_code',
   'confirm_login_code',
   'login_with_provider',

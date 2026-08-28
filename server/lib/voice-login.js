@@ -145,6 +145,24 @@ async function verifyCode({ contact, code, session, deps = {} } = {}) {
 }
 
 /**
+ * Send a tap-to-sign-in link instead of a code.
+ *
+ * This is the preferred way in now. A code has to be spoken back, and "read me the
+ * six digits" is the one moment in the whole product where the customer has to do
+ * the app's work for it. A link is one tap, nothing said, nothing misheard. The
+ * code flow stays for anyone who cannot or will not open a link.
+ */
+async function sendLoginLink({ contact, origin, deps = {} } = {}) {
+  const value = String(contact || '').trim();
+  if (!value) return { ok: false, message: 'I need your mobile number or your email address first.' };
+  if (/password/i.test(value)) {
+    return { ok: false, message: 'I never take passwords out loud. Give me your mobile or email and I will send you a link to tap.' };
+  }
+  const { issueLink } = deps.loginLink || require('./login-link');
+  return issueLink({ contact: value, origin: origin || process.env.PUBLIC_BASE_URL || 'https://scangym.com', deps });
+}
+
+/**
  * What to say when the customer wants Google, Apple or a company SSO login.
  * These are OAuth redirects: nobody can complete them by voice, and asking for a
  * Google password aloud would get the account locked. One tap, then voice resumes.
@@ -168,4 +186,4 @@ function handoffFor(provider) {
   };
 }
 
-module.exports = { sendCode, verifyCode, handoffFor, normalisePhone };
+module.exports = { sendCode, sendLoginLink, verifyCode, handoffFor, normalisePhone };
