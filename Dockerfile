@@ -50,6 +50,13 @@ COPY server/ ./
 # Copy frontend (respects .dockerignore)
 COPY frontend/public/ ./public/
 
+# The schema. server/db/migrate.js applies these at boot — and until this line
+# existed they were never in the runtime image at all, so every migration was a
+# silent no-op in production and `login_links` (and anything else added since the
+# baseline) simply did not exist. tests/migrations-reach-production.test.js pins
+# this COPY to the loader's search path.
+COPY migrations/ ./migrations/
+
 # Build step: minify JS + pre-compress all static assets with Brotli & gzip
 RUN node build.js
 
