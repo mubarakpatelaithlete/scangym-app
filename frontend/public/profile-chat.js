@@ -37,7 +37,7 @@
       'Show my pass',
       'When is my next session?',
       'What have I booked?',
-      'Am I verified?',
+      'Cancel my booking',
     ],
 
     greetSignedIn:
@@ -59,6 +59,7 @@
       find_gyms: 'Searching gyms',
       book_gym: 'Booking your session',
       book_and_pay: 'Booking and paying',
+      cancel_booking: 'Cancelling your booking',
     },
   });
 })();
