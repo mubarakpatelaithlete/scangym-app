@@ -17,6 +17,7 @@
  * login produce exactly the same session.
  */
 const pool = require('../middleware/db');
+const emailLogin = require('./email-login-code');
 
 const TWILIO_SID = process.env.TWILIO_ACCOUNT_SID;
 const TWILIO_TOKEN = process.env.TWILIO_AUTH_TOKEN;
@@ -62,6 +63,14 @@ async function sendCode({ contact, deps = {} } = {}) {
   const to = isEmail ? value.toLowerCase() : normalisePhone(value);
   const channel = isEmail ? 'email' : 'sms';
 
+  /* Email does not go through Twilio. Verify answered every email request with
+   * `60223 Delivery channel disabled: EMAIL`, so this door was shut for as long as
+   * it has existed. We send it ourselves through SendGrid instead. */
+  if (isEmail) {
+    const sent = await (deps.emailLogin || emailLogin).issueCode({ email: to, deps });
+    return sent.ok ? { ok: true, channel, to, message: sent.message } : { ok: false, message: sent.message };
+  }
+
   if (!twilioReady() && !deps.twilio) {
     return { ok: false, message: 'I cannot send a login code right now, so I have not logged you in.' };
   }
@@ -98,10 +107,15 @@ async function verifyCode({ contact, code, session, deps = {} } = {}) {
   const isEmail = EMAIL_RE.test(value);
   const to = isEmail ? value.toLowerCase() : normalisePhone(value);
 
-  const call = deps.twilio || twilio;
-  const { ok, data } = await call('VerificationCheck', { To: to, Code: digits });
-  if (!ok || data?.status !== 'approved') {
-    return { ok: false, message: 'That code was not right, or it has expired. Shall I send a new one?' };
+  if (isEmail) {
+    const checked = (deps.emailLogin || emailLogin).checkCode({ email: to, code: digits, deps });
+    if (!checked.ok) return { ok: false, message: checked.message };
+  } else {
+    const call = deps.twilio || twilio;
+    const { ok, data } = await call('VerificationCheck', { To: to, Code: digits });
+    if (!ok || data?.status !== 'approved') {
+      return { ok: false, message: 'That code was not right, or it has expired. Shall I send a new one?' };
+    }
   }
 
   const db = deps.pool || pool;

@@ -165,10 +165,17 @@ test('a mobile number gets an SMS code and an email gets an emailed one', async 
   assert.equal(sms.channel, 'sms');
   assert.equal(sms.to, '+447700900123', 'a UK number must be normalised for Twilio');
 
-  const email = await voiceLogin.sendCode({ contact: 'Sam@Example.COM', deps: { twilio } });
-  assert.equal(email.channel, 'email');
-  assert.equal(email.to, 'sam@example.com');
-  assert.equal(sent.length, 2);
+  // Email no longer goes through Twilio: Verify answers it with
+  // `60223 Delivery channel disabled: EMAIL`, so it sends via SendGrid instead.
+  // See tests/email-login-code.test.js.
+  process.env.SENDGRID_API_KEY = process.env.SENDGRID_API_KEY || 'SG.test';
+  const emailed = await voiceLogin.sendCode({
+    contact: 'Sam@Example.COM',
+    deps: { twilio, fetch: async () => ({ ok: true, status: 202, text: async () => '' }) },
+  });
+  assert.equal(emailed.channel, 'email');
+  assert.equal(emailed.to, 'sam@example.com');
+  assert.equal(sent.length, 1, 'only the SMS went to Twilio');
 });
 
 test('digits said out loud log the customer in on this session', async () => {
