@@ -678,6 +678,16 @@ if (fs.existsSync(FRONTEND_DIR)) {
     etag: true,
     lastModified: true,
     index: false, // Disable auto index.html so SPA catch-all can inject runtime config (geoHint, Google Client ID)
+    // index:false stops serve-static serving a directory's index.html, but NOT
+    // its directory redirect: /partner still answered 301 -> /partner/ because a
+    // frontend/public/partner/ directory exists. Measured live at 4x CPU
+    // throttle that detour cost 85ms of an extra round trip on /partner,
+    // /creator, /join, /about, /privacy, /admin, /scansquad, /team and
+    // /upload — and it also shadowed the explicit app.get() handlers for those
+    // paths, which are registered after this mount. With redirect:false the
+    // request falls through to its real handler (or the SPA catch-all) first
+    // time. Nothing else here serves directories, so no file stops resolving.
+    redirect: false,
     setHeaders: (res, filePath) => {
       if (filePath.endsWith('.html')) {
         res.setHeader('Cache-Control', 'no-cache');
@@ -855,7 +865,17 @@ if (fs.existsSync(FRONTEND_DIR)) {
     // Inject geo hint + performance hints right before </head>
     const googleClientId = process.env.GOOGLE_CLIENT_ID || '';
     const appleClientId = process.env.APPLE_CLIENT_ID || '';
-    const perfHints = `<script>window.__geoHint=${geoHint};window._sgGoogleClientId="${googleClientId}";window._sgAppleClientId="${appleClientId}";window.__sgChunks=${JSON.stringify(CHUNK_MANIFEST)};</script>\n`;
+    // Answer the session question in the HTML instead of making the browser ask.
+    // A visitor with no session cookie (or an expired one) still cost a full
+    // /api/auth/user round trip before the Partner tab was allowed to render,
+    // because the client could not tell "logged out" from "not answered yet".
+    // The server already knows: no req.session.userId => anonymous. The shell is
+    // sent Cache-Control: no-cache, and the client treats the hint as a fast
+    // path with a background verification, so a stale shell cannot log anyone
+    // out. Logged-in visitors get no hint and the unchanged code path.
+    const isAnonymous = !(req.session && req.session.userId);
+    const authHint = isAnonymous ? 'window.__sgAuthHint="anonymous";' : '';
+    const perfHints = `<script>window.__geoHint=${geoHint};window._sgGoogleClientId="${googleClientId}";window._sgAppleClientId="${appleClientId}";window.__sgChunks=${JSON.stringify(CHUNK_MANIFEST)};${authHint}</script>\n`;
     // Per-route <title>/description/canonical so each tab is its own page to a
     // crawler, a shared link preview and the browser tab strip.
     const shell = applyRouteMeta(_indexHtmlCache, req.path);

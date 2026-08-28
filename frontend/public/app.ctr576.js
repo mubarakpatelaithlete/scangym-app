@@ -459,6 +459,24 @@ window.__sgAuthReady = checkAuth().then(function(){
   window.__sgAuthResolved = true;
   try { window.dispatchEvent(new Event('sg:auth-resolved')); } catch(e) {}
 });
+// Fast path: the server injects window.__sgAuthHint="anonymous" into the shell
+// when the request carried no session, so for a logged-out visitor the answer
+// is already on the page and nobody has to wait for /api/auth/user before
+// painting. The real check still runs — if the shell came from a stale cache
+// (service worker) and a session does exist, we adopt the user and re-render,
+// so the fast path can never sign an owner out of their own dashboard.
+if (window.__sgAuthHint === 'anonymous') {
+  var _sgAuthVerify = window.__sgAuthReady;
+  window.__sgAuthResolved = true;
+  window.__sgAuthReady = Promise.resolve();
+  try { window.dispatchEvent(new Event('sg:auth-resolved')); } catch(e) {}
+  _sgAuthVerify.then(function(){
+    if (state && state.user) {
+      try { render(); } catch(e) {}
+      try { if (window._peLoadAndRender) window._peLoadAndRender(); } catch(e) {}
+    }
+  });
+}
 
 
 // ─── State ───
