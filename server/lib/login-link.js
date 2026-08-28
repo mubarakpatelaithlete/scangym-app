@@ -73,7 +73,8 @@ function linkUrl(origin, token) {
 
 async function sendEmail(to, url, fetchImpl) {
   const apiKey = process.env.SENDGRID_API_KEY;
-  const from = process.env.SMTP_FROM || 'book@scangym.com';
+  // SMTP_FROM holds a display-name address; SendGrid's JSON API needs the bare one.
+  const from = require('./mail-from').mailFrom();
   if (!apiKey) return { ok: false, reason: 'no-sendgrid-key' };
 
   const text =
@@ -94,7 +95,7 @@ async function sendEmail(to, url, fetchImpl) {
     headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       personalizations: [{ to: [{ email: to }] }],
-      from: { email: from, name: 'ScanGym' },
+      from: { email: from.email, name: from.name },
       subject: 'Tap to sign in to ScanGym',
       content: [
         { type: 'text/plain', value: text },
