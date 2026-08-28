@@ -112,3 +112,96 @@ test('every migration is idempotent enough to re-run against a live database', (
     }
   }
 });
+
+/**
+ * Second failure mode, found the same day: `CREATE TABLE IF NOT EXISTS` is a
+ * no-op when the table exists in an *older, narrower shape*, so the baseline can
+ * "declare" a column that production has never had. That is how
+ * booking_feedback.user_id and eight gym_equipment columns went missing while the
+ * routes using them returned 500s, and how 0003 came to fail as a whole.
+ *
+ * These tests keep the SQL self-consistent, which is what can be checked without
+ * a database: every column an index needs must be declared by some migration, and
+ * a file whose statements may legitimately not apply must not be all-or-nothing.
+ */
+const MIG_DIR = migrate.migrationsDir();
+const allSql = migrate.migrationFiles()
+  .map((f) => fs.readFileSync(path.join(MIG_DIR, f), 'utf8'))
+  .join('\n');
+
+test('every column an index is built on is declared by a migration', () => {
+  const declared = new Set();
+  // CREATE TABLE bodies
+  const tableRe = /CREATE TABLE IF NOT EXISTS\s+(?:public\.)?"?([a-zA-Z_]+)"?\s*\(/g;
+  let m;
+  while ((m = tableRe.exec(allSql))) {
+    let i = tableRe.lastIndex;
+    let depth = 1;
+    let body = '';
+    while (i < allSql.length && depth > 0) {
+      const ch = allSql[i];
+      if (ch === '(') depth++;
+      else if (ch === ')') { depth--; if (!depth) break; }
+      body += ch;
+      i++;
+    }
+    tableRe.lastIndex = i;
+    for (const line of body.split('\n')) {
+      // Column names may be quoted ("expire" in user_sessions, from connect-pg-simple).
+      const c = line.trim().match(/^"?([a-z_][a-z0-9_]*)"?\s+[A-Za-z]/);
+      if (c && !/^(primary|unique|check|foreign|constraint)$/i.test(c[1])) declared.add(`${m[1]}.${c[1]}`);
+    }
+  }
+  // ADD COLUMN statements
+  for (const a of allSql.matchAll(/ALTER TABLE\s+(?:public\.)?([a-zA-Z_]+)\s+ADD COLUMN IF NOT EXISTS\s+([a-z_][a-z0-9_]*)/gi)) {
+    declared.add(`${a[1]}.${a[2]}`);
+  }
+
+  const undeclared = [];
+  for (const stmt of allSql.matchAll(/CREATE (?:UNIQUE )?INDEX IF NOT EXISTS\s+"?[a-zA-Z_]+"?\s+ON\s+(?:public\.)?"?([a-zA-Z_]+)"?\s*\(([^)]*)\)/gi)) {
+    const table = stmt[1];
+    for (const raw of stmt[2].split(',')) {
+      const col = raw.trim().replace(/"/g, '').split(/\s+/)[0];
+      if (!col || /\(/.test(col)) continue; // expression index
+      if (!declared.has(`${table}.${col}`)) undeclared.push(`${table}.${col}`);
+    }
+  }
+  assert.deepEqual(
+    undeclared,
+    [],
+    `indexed columns that no migration declares (production will reject these): ${undeclared.join(', ')}`
+  );
+});
+
+test('the index baseline cannot be taken down by one bad statement', () => {
+  const sql = fs.readFileSync(path.join(MIG_DIR, '0003_baseline_indexes.sql'), 'utf8');
+  assert.match(sql, /FOREACH s IN ARRAY stmts/, 'statements must run one at a time');
+  assert.match(sql, /EXCEPTION[\s\S]*undefined_column[\s\S]*undefined_table/, 'a missing column or table must be survivable');
+  assert.match(sql, /RAISE WARNING/, 'a skipped index must say so in the logs');
+  const count = (sql.match(/\$stmt\$CREATE/g) || []).length;
+  assert.ok(count >= 49, `expected the full index set inside the guarded loop, found ${count}`);
+});
+
+test('the drift repair covers exactly what production was missing', () => {
+  const sql = fs.readFileSync(path.join(MIG_DIR, '0006_repair_drifted_tables.sql'), 'utf8');
+  const expected = [
+    ['booking_feedback', 'user_id'],
+    ['gym_equipment', 'brand'],
+    ['gym_equipment', 'equipment_condition'],
+    ['gym_equipment', 'is_out_of_order'],
+    ['gym_equipment', 'out_of_order_since'],
+    ['gym_equipment', 'out_of_order_reason'],
+    ['gym_equipment', 'photo_url'],
+    ['gym_equipment', 'sort_order'],
+    ['gym_equipment', 'updated_at'],
+  ];
+  for (const [table, col] of expected) {
+    assert.match(
+      sql,
+      new RegExp(`ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS ${col}\\b`),
+      `0006 must repair ${table}.${col}`
+    );
+  }
+  // The index 0003 now skips has to be created here instead, or it is never built.
+  assert.match(sql, /CREATE UNIQUE INDEX IF NOT EXISTS idx_feedback_unique/);
+});
