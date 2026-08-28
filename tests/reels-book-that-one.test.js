@@ -52,6 +52,18 @@ test('the context may describe the screen but never price it', () => {
     'a reel is not a listing — prices must come from a tool');
 });
 
+test('on Reels the model is told what "that one" means, because naming it was not enough', () => {
+  // Live check against production with the city in context still came back with
+  // "which gym did you see in the reel?" — so the instruction is the fix, not the label.
+  const reels = describeContext({ tab: 'reels', city: 'Bolton' });
+  assert.match(reels, /Never ask which gym they saw/);
+  assert.match(reels, /call find_gyms for their city/);
+  assert.match(reels, /not a gym listing/);
+
+  const book = describeContext({ tab: 'book', city: 'Bolton' });
+  assert.ok(!/Never ask which gym they saw/.test(book), 'that rule belongs to Reels only');
+});
+
 test('the Reels tab supplies its screen, read fresh on every send', () => {
   const reels = read('frontend/public/reels-chat.js');
   assert.ok(/context: function \(\)/.test(reels), 'Reels must implement the hook');
