@@ -76,6 +76,31 @@ function isBenched(label) {
 }
 
 /**
+ * Bench a provider from the outside.
+ *
+ * The 5-minute cooldown above only starts once a *customer* has already paid for a failed
+ * round-trip: someone has to ask a question, wait for the 401, and wait again while we fail
+ * over. With a key that stays dead for days, that is one unlucky customer every five
+ * minutes, indefinitely.
+ *
+ * lib/self-check.js is already poking every key on a timer and knows the answer before any
+ * customer does. It calls this so a provider we *know* is dead is skipped outright, and
+ * calls it with ms = 0 the moment the probe says the key works again. Nobody waits for a
+ * failure we have already observed.
+ *
+ * @param {string} label   'openai' | 'groq'
+ * @param {number} ms      how long to skip it; 0 or less clears the bench
+ */
+function bench(label, ms) {
+  if (!label) return;
+  if (!(ms > 0)) {
+    benched.delete(label);
+    return;
+  }
+  benched.set(label, Date.now() + ms);
+}
+
+/**
  * Models get retired. On 24 Aug 2026 the assistant answered every single question with
  * "my assistant service is down": the OpenAI key had been revoked (401) and Groq's
  * hard-coded `llama-3.3-70b-versatile` had been decommissioned (404), so both providers
@@ -192,4 +217,4 @@ async function health() {
   return out;
 }
 
-module.exports = { streamChat, configured, providers, health, _internals: { repointToLiveModel, isMissingModel, scrub, PREFERRED, UNUSABLE } };
+module.exports = { streamChat, configured, providers, health, bench, isBenched, _internals: { repointToLiveModel, isMissingModel, scrub, PREFERRED, UNUSABLE, benched } };

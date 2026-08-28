@@ -400,4 +400,4 @@ const PUBLIC_TOOLS = new Set([
 
 const needsLogin = (name) => !PUBLIC_TOOLS.has(name);
 
-module.exports = { tools, openAiTools, execute, isWrite, needsLogin, PUBLIC_TOOLS };
+module.exports = { tools, openAiTools, execute, isWrite, needsLogin, PUBLIC_TOOLS, isoDate };

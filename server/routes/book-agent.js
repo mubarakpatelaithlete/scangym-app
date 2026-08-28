@@ -19,6 +19,7 @@ const pool = require('../middleware/db');
 const { optionalAuth } = require('../middleware/auth');
 const llm = require('../lib/llm');
 const bookTools = require('../lib/book-tools');
+const { confirmLine } = require('../lib/confirm-line');
 
 const MAX_TOOL_ROUNDS = 4;
 
@@ -35,13 +36,32 @@ How you behave:
 - If they are not logged in, ask for their mobile number or email and call send_login_link: they tap the link and they are in, with nothing to read out. Only if they say they cannot open a link, fall back to send_login_code and take the six digits with confirm_login_code. If they want Google, Apple or company SSO, call login_with_provider: that needs one tap, and you carry on straight after.
 - Never ask anyone to say a password or a card number out loud, whatever they offer. If they start to, stop them and send a code instead.
 - Never invent a gym, a price, an address or an availability. If a tool has not told you, you do not know it — say so.
-- Never guess today's date. Call today_and_tomorrow whenever they say today, tonight or tomorrow.
+- Never guess today's date. The dates are given to you below — use them. Only call today_and_tomorrow for a date they are still not enough for.
 - If a tool returns ok:false, say so plainly. Never say something is booked unless the tool confirmed it.
 - Prices are day passes. Free cancellation up to 2 hours before the session.
 - "Cancel my booking" is one job, not a signpost: call get_my_bookings, say which session you are about to cancel and what comes back to their card, then cancel_booking on their yes. Never send them to a settings screen.
 - Account questions are yours to answer, not a screen to point at: get_my_wallet for balance and spending, get_my_pass for the pass and entry code for the next session, get_my_verification for the ID check, get_my_streak for the streak, get_saved_gyms for their list. Answer with the number the tool gave you and nothing more.
 - "Save that one" means save_gym straight away — it moves no money and "unsave it" undoes it, so do not ask them to confirm. You need a gym id: take it from the reel or offer on screen, or find_gyms first.
 - Plain British English, warm, no exclamation marks, no emoji unless they use them first.`;
+
+/**
+ * The date, handed over rather than asked for.
+ *
+ * "A gym near London Bridge tonight" used to cost two model round-trips: one to call
+ * today_and_tomorrow and learn what day it is, another to answer. That is a whole second
+ * of silence to look up something the server already knows. Spoken, a second of silence is
+ * the difference between a conversation and a form.
+ *
+ * Built per request, not at boot: this process runs for weeks and a date baked into a
+ * module constant is wrong by the morning. It uses book-tools' own isoDate so the dates the
+ * model is told and the dates the tool would have returned can never disagree.
+ */
+function dateLine(now = new Date()) {
+  const today = bookTools.isoDate(0);
+  const tomorrow = bookTools.isoDate(1);
+  const spoken = now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+  return `Today is ${spoken}, ${today}. Tomorrow is ${tomorrow}. "Today", "tonight" and "later" all mean ${today}.`;
+}
 
 function sse(res, event, data) {
   res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
@@ -128,6 +148,7 @@ router.post('/agent', optionalAuth, express.json(), async (req, res) => {
     const contextLine = describeContext(context);
     const messages = [
       { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'system', content: dateLine() },
       ...(contextLine ? [{ role: 'system', content: contextLine }] : []),
       ...history
         .filter((m) => m && m.role && m.content)
@@ -193,10 +214,15 @@ router.post('/agent', optionalAuth, express.json(), async (req, res) => {
         // A booking the customer has not approved yet: hand it back for confirmation.
         if (bookTools.isWrite(call.name) && userId) {
           await audit(userId, call.name, args, { pending: true }, false);
+          // The question has to carry the real amount, from the pricing engine rather than
+          // the model's memory of a search result. confirmLine returns null for tools that
+          // move no money — those keep the tab's own wording.
+          const line = await confirmLine(call.name, args, userId);
           sse(res, 'confirm', {
             tool: call.name,
             args,
-            summary: bookTools.tools[call.name].schema.description,
+            summary: line || bookTools.tools[call.name].schema.description,
+            spoken: !!line,
           });
           sse(res, 'done', { awaitingConfirmation: true });
           return res.end();
