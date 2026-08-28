@@ -22,7 +22,17 @@ function isoDate(offsetDays = 0) {
   return d.toISOString().split('T')[0];
 }
 
+/**
+ * Account tools (wallet, pass, ID check, streak, saved gyms) live in their own file
+ * and are merged in here rather than duplicated, because the Profile and Reels tabs
+ * both talk to this agent. Before this, those two tabs could talk and could book —
+ * and could not answer the questions their own screens exist for.
+ */
+const accountTools = require('./account-tools');
+
 const tools = {
+  ...accountTools.tools,
+
   /* ---------- reads ---------- */
 
   find_gyms: {
