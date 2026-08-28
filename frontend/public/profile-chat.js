@@ -30,19 +30,19 @@
 
     avatar: '👤',
     title: 'ScanGym',
-    subtitle: 'Your passes and account',
+    subtitle: 'Your pass, wallet and account',
     fabTitle: 'Ask ScanGym',
 
     chips: [
-      'Show my pass',
-      'When is my next session?',
-      'What have I booked?',
+      'Where is my pass?',
+      "What's in my wallet?",
+      'Am I verified?',
       'Cancel my booking',
     ],
 
     greetSignedIn:
-      'Ask me for your pass, your next session, or anything you have booked — no ' +
-      'digging through menus.',
+      'Ask me for your pass, your wallet balance, your ID check, your streak or ' +
+      'anything you have booked — no digging through menus.',
     greetSignedOut:
       'Say your mobile number and I will text you a link — tap it and ' +
       'you are in. No password, no forms.',
@@ -55,6 +55,12 @@
       confirm_login_code: 'Signing you in',
       login_with_provider: 'Opening sign-in',
       get_my_bookings: 'Looking up your bookings',
+      get_my_pass: 'Finding your pass',
+      get_my_wallet: 'Checking your wallet',
+      get_my_verification: 'Checking your ID status',
+      get_my_streak: 'Checking your streak',
+      get_saved_gyms: 'Opening your saved list',
+      save_gym: 'Updating your list',
       get_gym: 'Checking the gym',
       today_and_tomorrow: 'Checking the date',
       find_gyms: 'Searching gyms',

@@ -54,7 +54,7 @@
     chips: [
       'Book that one',
       'How much is this one?',
-      'Is it open now?',
+      'Save that one',
       'Find one like this near me',
     ],
 
@@ -70,6 +70,8 @@
     // Same tools as the Book tab — this is the Book agent wearing a different face.
     toolLabels: {
       find_gyms: 'Finding that gym',
+      save_gym: 'Saving it to your list',
+      get_saved_gyms: 'Opening your saved list',
       get_gym: 'Checking the gym',
       get_my_bookings: 'Looking up your bookings',
       today_and_tomorrow: 'Checking the date',
