@@ -28,6 +28,7 @@ const CHANNELS = [
   { id: 'email',     name: 'Email',          icon: '📧',  color: '#EA580C', status: 'active',   difficulty: 'easy',   description: 'Email book@scangym.com to find gyms' },
   { id: 'slack',     name: 'Slack',          icon: '💼',  color: '#E01E5A', status: 'active', difficulty: 'easy', description: 'Add ScanGym to your Slack workspace' },
   { id: 'msteams',   name: 'Microsoft Teams', icon: '🟣',  color: '#6264A7', status: 'active', difficulty: 'easy', description: 'Install ScanGym bot in Teams' },
+  { id: 'googlechat', name: 'Google Chat',  icon: '🟢',  color: '#1A73E8', status: 'active', difficulty: 'easy', description: 'Chat with ScanGym from Google Chat / Workspace' },
   { id: 'chatgpt',   name: 'ChatGPT',        icon: '🤖',  color: '#10A37F', status: 'coming_soon', difficulty: 'medium', description: 'Find gyms through ChatGPT' },
 ];
 

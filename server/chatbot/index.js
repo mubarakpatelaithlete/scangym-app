@@ -8,6 +8,7 @@
  *   /api/chatbot/email/*      → Email booking via SendGrid
  *   /api/chatbot/slack/*      → Slack bot (Events API + slash commands)
  *   /api/chatbot/msteams/*    → Microsoft Teams bot (Bot Framework)
+ *   /api/chatbot/googlechat/* → Google Chat bot (responds in the HTTP reply)
  *   /api/chatbot/test         → Test endpoint (for development)
  * 
  * Each adapter is a thin Express router that receives messages
@@ -43,6 +44,10 @@ router.use('/slack', slackRouter);
 // Microsoft Teams (Bot Framework)
 const msteamsRouter = require('./msteams');
 router.use('/msteams', msteamsRouter);
+
+// Google Chat (no bot token — the reply is the HTTP response body)
+const googlechatRouter = require('./googlechat');
+router.use('/googlechat', googlechatRouter);
 
 // Web Chat (REST API — same handler as all channels)
 const webchatRouter = require('./webchat');
@@ -91,6 +96,9 @@ router.get('/health', (req, res) => {
     email: !!process.env.SENDGRID_API_KEY,
     slack: !!process.env.SLACK_BOT_TOKEN,
     msteams: !!process.env.TEAMS_APP_ID,
+    // Google Chat has no token to check: it is live once the app is pointed at
+    // our endpoint, which is what the audience value records.
+    googlechat: !!(process.env.GOOGLE_CHAT_AUDIENCE || process.env.GOOGLE_CHAT_PROJECT_NUMBER),
     web: true, // no credential needed
     manychat: !!process.env.MANYCHAT_API_KEY,
     reddit: !!process.env.REDDIT_CLIENT_ID,
