@@ -11,9 +11,15 @@
  * thing you want to say — "book that one" — so this reuses the Book agent and its
  * tools rather than inventing a second booking path that could drift from it.
  *
- * Note: chat-agent.js has no hook for passing page context to the model, so "that
- * gym" is resolved by the agent asking, not by the reel on screen. Threading the
- * current reel through is the obvious next step and wants an engine change.
+ * The reel on screen is now threaded through cfg.context(), so "book that one" no
+ * longer starts with the agent asking which one.
+ *
+ * One honesty point that shaped this: a reel is not a gym. The feed is global
+ * content ("Tiktok Gym Hopping"), not a listing, so the bookable thing behind a
+ * reel is the local offer the CTA already shows — this viewer's city and the
+ * cheapest day pass actually visible there, from window._sgLocalOffer(). We pass
+ * that, plus which reel is playing, and let the agent's own tools price it. The
+ * context never carries a price the agent may quote.
  */
 (function () {
   'use strict';
@@ -21,6 +27,17 @@
   if (!window.sgChatAgent) {
     console.warn('[ReelsChat] chat-agent.js not loaded');
     return;
+  }
+
+  /* The player lives in an iframe and posts its status to the app shell. The shell
+   * stores it on its own module-scoped `state`, which is not `window.state` — other
+   * files already read window.state and get undefined — so rather than rely on a
+   * reference that does not exist, listen for the same message directly. */
+  var lastStatus = null;
+  if (typeof window.addEventListener === 'function') {
+    window.addEventListener('message', function (e) {
+      if (e && e.data && e.data.type === 'sg-reels-status') lastStatus = e.data;
+    });
   }
 
   window.sgReelsChat = window.sgChatAgent.create({
@@ -35,7 +52,7 @@
     fabTitle: 'Ask ScanGym',
 
     chips: [
-      'Book this gym',
+      'Book that one',
       'How much is this one?',
       'Is it open now?',
       'Find one like this near me',
@@ -58,6 +75,32 @@
       today_and_tomorrow: 'Checking the date',
       book_gym: 'Booking your session',
       book_and_pay: 'Booking and paying',
+      cancel_booking: 'Cancelling your booking',
+    },
+
+    /* Read at send time, never cached: they swipe between reels mid-conversation. */
+    context: function () {
+      var ctx = { tab: 'reels' };
+
+      var offer = null;
+      try {
+        offer = typeof window._sgLocalOffer === 'function' ? window._sgLocalOffer() : null;
+      } catch (e) {
+        offer = null;
+      }
+      if (offer && offer.city) ctx.city = offer.city;
+      if (offer && offer.from) ctx.fromPrice = offer.from;
+
+      var status = lastStatus;
+      if (status && status.video) {
+        if (status.video.name) ctx.reelName = status.video.name;
+        if (status.video.category) ctx.reelCategory = status.video.category;
+      }
+      if (status && typeof status.index === 'number' && status.total) {
+        ctx.reelPosition = (status.index + 1) + ' of ' + status.total;
+      }
+
+      return ctx;
     },
 
   });

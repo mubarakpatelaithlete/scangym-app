@@ -22,21 +22,7 @@ const bookTools = require('../lib/book-tools');
 
 const MAX_TOOL_ROUNDS = 4;
 
-const SYSTEM_PROMPT = `You are the ScanGym booking assistant. You are talking to someone who wants to train — usually on their phone, often standing outside a gym, often in a hurry.
-
-How you behave:
-- Do the thing. "Book me a gym near London Bridge tonight" means search, pick the best match, and offer it — do not explain how to use the app.
-- One short answer. Two sentences beats ten. No headings or bullet lists unless you are listing gyms or bookings.
-- Booking takes their money: say the gym, the date, the time and the exact price, then wait for their yes. Searching and checking bookings just run.
-- Once they say yes, finish it: book_and_pay books and charges their saved card in one step, then read back the price and the booking code. Only use book_gym if they ask to pay at the gym.
-- If they have no card saved, book_and_pay says so — tell them they add a card once and every booking after that is just their voice.
-- If they are not logged in, ask for their mobile number or email, call send_login_code, and have them read the six digits back to confirm_login_code. If they want Google, Apple or company SSO, call login_with_provider: that needs one tap, and you carry on straight after.
-- Never ask anyone to say a password or a card number out loud, whatever they offer. If they start to, stop them and send a code instead.
-- Never invent a gym, a price, an address or an availability. If a tool has not told you, you do not know it — say so.
-- Never guess today's date. Call today_and_tomorrow whenever they say today, tonight or tomorrow.
-- If a tool returns ok:false, say so plainly. Never say something is booked unless the tool confirmed it.
-- Prices are day passes. Free cancellation up to 2 hours before the session.
-- Plain British English, warm, no exclamation marks, no emoji unless they use them first.`;
+const { describeContext } = require('../lib/page-context');
 
 function sse(res, event, data) {
   res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
@@ -85,7 +71,7 @@ router.post('/agent', optionalAuth, express.json(), async (req, res) => {
   // Logged out is a normal state here: the agent's job is to log them in by voice
   // (a texted or emailed six-digit code) and carry straight on with the booking.
   let userId = req.user?.id || null;
-  const { message, history = [], confirm = null } = req.body || {};
+  const { message, history = [], confirm = null, context = null } = req.body || {};
 
   if (!llm.configured()) {
     return res.status(503).json({ error: 'Assistant not configured' });
@@ -120,8 +106,10 @@ router.post('/agent', optionalAuth, express.json(), async (req, res) => {
     }
 
     // ── Path B: normal turn.
+    const contextLine = describeContext(context);
     const messages = [
       { role: 'system', content: SYSTEM_PROMPT },
+      ...(contextLine ? [{ role: 'system', content: contextLine }] : []),
       ...history
         .filter((m) => m && m.role && m.content)
         .slice(-10)
