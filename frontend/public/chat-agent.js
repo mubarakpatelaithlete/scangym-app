@@ -493,6 +493,31 @@ function createChatAgent(cfg) {
     stream({ message: text, history: history(), confirm: confirmPayload || null });
   }
 
+  /* What the customer is looking at right now.
+   *
+   * Until this existed, every tab's agent was blind to its own screen: on Reels
+   * "book that one" could only be answered by asking which one, which is the
+   * conversation the tab exists to avoid. A personality supplies cfg.context()
+   * and the server folds it into the prompt as context, never as instructions. */
+  function pageContext() {
+    if (typeof cfg.context !== 'function') return null;
+    try {
+      var ctx = cfg.context();
+      return ctx && typeof ctx === 'object' ? ctx : null;
+    } catch (e) {
+      return null; // a broken personality must never break sending a message
+    }
+  }
+
+  function withContext(body) {
+    var ctx = pageContext();
+    if (!ctx) return body;
+    var out = {};
+    for (var k in body) if (Object.prototype.hasOwnProperty.call(body, k)) out[k] = body[k];
+    out.context = ctx;
+    return out;
+  }
+
   function stream(body, endpointOverride) {
     var endpoint = endpointOverride || cfg.endpoint;
     var aiBubble = null;
@@ -507,7 +532,7 @@ function createChatAgent(cfg) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify(body),
+      body: JSON.stringify(withContext(body)),
       signal: ctrl ? ctrl.signal : undefined,
     })
       .then(function (res) {
