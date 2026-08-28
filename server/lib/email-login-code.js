@@ -71,7 +71,10 @@ function body(code) {
 
 async function sendViaSendGrid(email, code, fetchImpl) {
   const apiKey = process.env.SENDGRID_API_KEY;
-  const from = process.env.SMTP_FROM || 'book@scangym.com';
+  // SMTP_FROM is 'ScanGym Bookings <bookings@scangym.com>' on production. SendGrid's
+  // JSON API rejects that shape with a 400, which is why this door was still shut
+  // after the Twilio fix: every send failed on the sender, not the recipient.
+  const from = require('./mail-from').mailFrom();
   if (!apiKey) return { ok: false, reason: 'no-key' };
 
   const content = body(code);
@@ -80,7 +83,7 @@ async function sendViaSendGrid(email, code, fetchImpl) {
     headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       personalizations: [{ to: [{ email }] }],
-      from: { email: from, name: 'ScanGym' },
+      from: { email: from.email, name: from.name },
       subject: `${code} is your ScanGym code`,
       content: [
         { type: 'text/plain', value: content.text },
