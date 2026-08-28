@@ -59,6 +59,33 @@ async function probeDatabase(pool) {
 
 /* ── runner ──────────────────────────────────────────────────────────────── */
 
+/**
+ * Act on the verdict, do not just email it.
+ *
+ * Finding out a key is dead and then letting customers discover it again one at a time is
+ * only half a check. lib/llm.js benches a provider for five minutes *after* a live request
+ * fails, so a key that stays revoked costs one real customer a slow answer every five
+ * minutes. We already know better, here, on a timer, for free — so tell it.
+ *
+ * Benched until a little past the next probe: if the key is still dead the next run renews
+ * it, and if it recovers the same run clears it. The bench never outlives our knowledge.
+ */
+function applyVerdictToLLM(name, result) {
+  if (name !== 'openai' && name !== 'groq') return;
+  try {
+    const llm = require('./llm');
+    if (typeof llm.bench !== 'function') return;
+    if (result.status === 'broken') {
+      llm.bench(name, CHECK_INTERVAL_MS + 60 * 1000);
+    } else if (result.status === 'ok') {
+      llm.bench(name, 0);
+    }
+  } catch (err) {
+    // A self-check must never be able to break the thing it is checking.
+    console.error('[SelfCheck] could not update provider bench:', err.message);
+  }
+}
+
 async function runProbe(name, fn, notify) {
   const previous = state.checks[name];
   let result;
@@ -71,6 +98,7 @@ async function runProbe(name, fn, notify) {
     result = { status: 'broken', detail: (err && err.message) || String(err), at: new Date().toISOString() };
   }
   state.checks[name] = result;
+  applyVerdictToLLM(name, result);
 
   const was = previous && previous.status;
   if (was && was !== result.status && (was === 'ok' || result.status === 'ok')) {
