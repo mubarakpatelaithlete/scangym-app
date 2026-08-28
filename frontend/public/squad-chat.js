@@ -51,7 +51,7 @@
       "Hi — I'm your ScanSquad assistant. Sign in and I can show what you've earned, tell " +
       'you which gym your link actually converts on, boost a reel, or get you paid out.',
     signedOutReply:
-      'Say your mobile number or email and I will text you a code to get you in.',
+      'Say your mobile number or email and I will send you a link to tap to get you in.',
 
     toolLabels: {
       get_my_squad_profile: 'Checking your ScanSquad status',

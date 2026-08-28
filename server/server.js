@@ -805,6 +805,30 @@ if (fs.existsSync(FRONTEND_DIR)) {
     res.sendFile(path.join(FRONTEND_DIR, 'team', 'index.html'));
   });
 
+  // Sign-in link landing page. Serves a page with one button; the button POSTs
+  // to /api/auth/redeem-link. Nothing is spent by this GET, because mail
+  // scanners, link previewers and Safari's prefetch all issue GETs — a GET that
+  // logged you in would let a preview burn (or use) the link before the customer
+  // ever tapped it. The token is validated against the same pattern the API
+  // enforces before it goes anywhere near the HTML, so a crafted ?t= cannot
+  // inject script.
+  const LOGIN_LINK_PAGE = path.join(FRONTEND_DIR, 'login-link.html');
+  app.get('/login/link', (req, res) => {
+    const { TOKEN_RE } = require('./lib/login-link');
+    const raw = String(req.query.t || '');
+    const token = TOKEN_RE.test(raw) ? raw : '';
+    let page;
+    try {
+      page = fs.readFileSync(LOGIN_LINK_PAGE, 'utf8');
+    } catch (e) {
+      return res.status(500).send('Sign-in page unavailable');
+    }
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(page.replace('__SG_LOGIN_TOKEN__', token));
+  });
+
   // /about page — static, SEO-friendly, crawlable by LLMs
   app.get('/about', (req, res) => {
     res.sendFile(path.join(FRONTEND_DIR, 'about', 'index.html'));

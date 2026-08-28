@@ -701,6 +701,64 @@ router.post('/apple-login', async (req, res) => {
 });
 
 /**
+ * POST /api/auth/send-link  { contact }
+ *
+ * Text or email a single-use sign-in link. The point of it: the voice assistant
+ * currently has to say "read me the six digits", which is the last spoken step in
+ * a product whose promise is that you just say what you want. A link is one tap.
+ *
+ * Deliberately vague on failure? No — the opposite. This tells the caller whether
+ * the link went, because the assistant has to say something true out loud, and
+ * "check your phone" when nothing was sent is the worst possible answer. It does
+ * not reveal whether the contact belongs to an existing account: a link is sent
+ * either way and the account is created on redemption, exactly like the code flow.
+ */
+router.post('/send-link', async (req, res) => {
+  try {
+    const { contact } = req.body || {};
+    const { issueLink } = require('../lib/login-link');
+    const origin = process.env.PUBLIC_BASE_URL || 'https://scangym.com';
+    const result = await issueLink({ contact, origin, ip: req.ip });
+    return res.status(result.ok ? 200 : 400).json(result);
+  } catch (err) {
+    console.error('[Auth] send-link error:', err.message);
+    return res.status(500).json({ ok: false, message: 'Could not send a sign-in link' });
+  }
+});
+
+/**
+ * POST /api/auth/redeem-link  { token }
+ *
+ * Spend a link and create the session. POST, not GET, on purpose: mail scanners
+ * and link previewers fetch URLs before a human ever sees them, and a GET login
+ * would hand them the session (or at least burn the link). /login/link serves a
+ * page whose button posts here, so a real person's tap is what signs them in.
+ */
+router.post('/redeem-link', async (req, res) => {
+  try {
+    const { token } = req.body || {};
+    const { redeemLink } = require('../lib/login-link');
+    const result = await redeemLink({ token, session: req.session });
+    if (!result.ok) return res.status(400).json(result);
+
+    // Same post-login housekeeping as the code flow, so a link login is not a
+    // second-class account: Stripe customer and referral handle both exist.
+    const u = result.user;
+    let referralHandle = null;
+    try {
+      await ensureStripeCustomer(u.id, u.phone, u.email);
+      referralHandle = await ensureReferralHandle(u.id, null, null, u.email, u.phone);
+    } catch (e) {
+      console.error('[Auth] post-link setup failed (non-fatal):', e.message);
+    }
+    return res.json({ ...result, success: true, referralHandle });
+  } catch (err) {
+    console.error('[Auth] redeem-link error:', err.message);
+    return res.status(500).json({ ok: false, message: 'Could not complete sign-in' });
+  }
+});
+
+/**
  * POST /api/auth/logout
  */
 router.post('/logout', (req, res) => {
