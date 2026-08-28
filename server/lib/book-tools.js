@@ -218,6 +218,27 @@ const tools = {
     },
   },
 
+  cancel_booking: {
+    write: true,
+    schema: {
+      name: 'cancel_booking',
+      description:
+        'Cancel one of the customer\'s own bookings and refund it. Always confirmed first. Call get_my_bookings to get the id — never guess one. Free cancellation ends two hours before the session.',
+      parameters: {
+        type: 'object',
+        properties: {
+          bookingId: { type: 'integer', description: 'The booking id from get_my_bookings.' },
+        },
+        required: ['bookingId'],
+        additionalProperties: false,
+      },
+    },
+    async run(userId, args = {}) {
+      const { cancelBooking } = require('./booking-actions');
+      return cancelBooking({ userId, bookingId: args.bookingId });
+    },
+  },
+
   book_and_pay: {
     write: true,
     schema: {

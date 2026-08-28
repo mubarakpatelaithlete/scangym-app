@@ -401,15 +401,20 @@ router.post('/cancel', async (req, res) => {
     // Guest cancellation by email alone is too easy to exploit — anyone who knows
     // a booking ID + email can cancel someone else's session. Now guests must
     // cancel through a confirmation email link (future) or contact support.
-    let result;
+    // Logged-in cancellation is delegated to lib/booking-actions so the Cancel
+    // button and the "cancel my booking" voice command run the identical policy.
     if (req.session?.userId) {
-      result = await pool.query(
-        `SELECT b.*, g.name as gym_name FROM public.bookings b
-         LEFT JOIN public.gyms g ON b.gym_id = g.id
-         WHERE b.id = $1 AND b.user_id = $2`,
-        [bookingId, req.session.userId]
-      );
-    } else if (email && req.session?.guestEmail === email && req.session?.guestBookingId == bookingId) {
+      const { cancelBooking } = require('../lib/booking-actions');
+      const out = await cancelBooking({ userId: req.session.userId, bookingId });
+      if (!out.ok) {
+        const status = out.code === 'not_found' ? 404 : out.code === 'refund_failed' ? 500 : 400;
+        return res.status(status).json({ error: out.message, code: out.code });
+      }
+      return res.json({ success: true, refunded: out.refunded, message: out.message });
+    }
+
+    let result;
+    if (email && req.session?.guestEmail === email && req.session?.guestBookingId == bookingId) {
       // Only allow guest cancel if the session matches the guest who made the booking
       result = await pool.query(
         `SELECT b.*, g.name as gym_name FROM public.bookings b

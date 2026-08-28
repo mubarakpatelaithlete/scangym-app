@@ -58,10 +58,16 @@
       get_my_bookings: 'Looking up your bookings',
       today_and_tomorrow: 'Checking the date',
       book_gym: 'Booking your session',
+      cancel_booking: 'Cancelling your booking',
     },
 
     // Booking takes money — they must see gym, day, time and price before saying yes.
     confirmSummary: function (tool, args, ctx) {
+      // Cancelling gives money back rather than taking it, but it is just as
+      // irreversible, so it gets the same explicit yes.
+      // chat-agent.js calls this with (tool, args) only — there is no page context
+      // to name the gym from, so the model's own sentence above carries the detail.
+      if (tool === 'cancel_booking') return 'Cancel that booking and refund it?';
       if (tool !== 'book_gym') return null;
 
       var gymName = (ctx && ctx.lastGymName) || 'this gym';

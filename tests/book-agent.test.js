@@ -21,7 +21,8 @@ test('booking is a write tool and everything else is a read', () => {
   const writes = Object.keys(tools.tools).filter((n) => tools.isWrite(n));
 
   // Both money paths are writes: book_gym reserves, book_and_pay reserves *and* charges.
-  assert.deepEqual(writes.sort(), ['book_and_pay', 'book_gym'], 'only the money tools may be writes');
+  // Every tool that moves money — taking it or giving it back — must be a write.
+  assert.deepEqual(writes.sort(), ['book_and_pay', 'book_gym', 'cancel_booking'], 'only the money tools may be writes');
   assert.equal(tools.isWrite('find_gyms'), false, 'searching must not need confirmation');
 });
 
