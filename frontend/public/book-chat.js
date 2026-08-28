@@ -59,6 +59,7 @@
       get_my_bookings: 'Looking up your bookings',
       today_and_tomorrow: 'Checking the date',
       book_gym: 'Booking your session',
+      book_and_pay: 'Booking and paying',
       cancel_booking: 'Cancelling your booking',
     },
 

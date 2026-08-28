@@ -78,6 +78,45 @@ function priceFor(gym, referralCode) {
 }
 
 /**
+ * Price a booking without creating one.
+ *
+ * The confirmation the customer says "yes" to has to name the amount, and that amount has
+ * to be the amount we are about to charge — not one the model inferred from a search
+ * result and read out from memory. This walks the same path createBooking walks (same gym
+ * row, same priceFor, same resolveTime default) and stops short of writing anything, so
+ * the number in the question and the number on the card come from one place.
+ *
+ * @returns {Promise<{ok: true, gymId, gymName, date, time, price, discount, symbol, display}
+ *   | {ok: false, code: string}>}
+ */
+async function quoteBooking({ gymId, date, time, referralCode = null, deps = {} } = {}) {
+  const db = deps.pool || pool;
+  if (!gymId || !date) return { ok: false, code: 'missing_fields' };
+
+  const gym = await db.query(
+    'SELECT id, name, country, day_pass_price FROM gyms WHERE id = $1',
+    [gymId]
+  );
+  if (gym.rows.length === 0) return { ok: false, code: 'gym_not_found' };
+  const g = gym.rows[0];
+
+  const { price, discount } = priceFor(g, referralCode);
+  const { symbol } = pricing.getCurrencyForCountry(g.country || 'GB');
+
+  return {
+    ok: true,
+    gymId: g.id,
+    gymName: g.name,
+    date,
+    time: resolveTime(time),
+    price,
+    discount,
+    symbol,
+    display: symbol + Number(price).toFixed(2),
+  };
+}
+
+/**
  * Create a pending booking.
  *
  * @returns {Promise<{ok: true, booking: object} | {ok: false, code: string, message: string}>}
@@ -253,6 +292,7 @@ async function cancelBooking({ userId, bookingId } = {}) {
 module.exports = {
   createBooking,
   cancelBooking,
+  quoteBooking,
   generateBookingCode,
   generateQRCode,
   resolveTime,

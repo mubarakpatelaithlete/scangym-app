@@ -380,7 +380,12 @@ function createChatAgent(cfg) {
   }
 
   // ── confirmation copy — the user must see the number before saying yes ────
-  function confirmSummary(tool, args) {
+  // The server sends the line for anything that moves money, priced by the pricing engine
+  // rather than by the model, and marks it `spoken:true`. Prefer it: a tab's own copy
+  // cannot know the amount (book_and_pay's args are only gymId, date and time), and the
+  // last-resort 'Go ahead with this?' asks for a yes to a number nobody has said.
+  function confirmSummary(tool, args, evt) {
+    if (evt && evt.spoken && evt.summary) return evt.summary;
     var text = cfg.confirmSummary ? cfg.confirmSummary(tool, args || {}) : null;
     return text || 'Go ahead with this?';
   }
@@ -628,7 +633,7 @@ function createChatAgent(cfg) {
         typingOff();
         S.pending = { tool: data.tool, args: data.args };
         if (!aiBubble) aiBubble = bubble(T('pchat-ai'), '');
-        acc = (acc ? acc + '\n\n' : '') + confirmSummary(data.tool, data.args);
+        acc = (acc ? acc + '\n\n' : '') + confirmSummary(data.tool, data.args, data);
         renderRich(aiBubble, acc);
         scrollDown();
       } else if (event === 'done') {
