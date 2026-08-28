@@ -32,7 +32,6 @@ const SWEEP_EVERY = 200;
 const codes = new Map();
 let sinceSweep = 0;
 
-const SENDGRID_URL = 'https://api.sendgrid.com/v3/mail/send';
 
 function key(email) {
   return String(email || '').trim().toLowerCase();
@@ -69,34 +68,16 @@ function body(code) {
   };
 }
 
-async function sendViaSendGrid(email, code, fetchImpl) {
-  const apiKey = process.env.SENDGRID_API_KEY;
-  // SMTP_FROM is 'ScanGym Bookings <bookings@scangym.com>' on production. SendGrid's
-  // JSON API rejects that shape with a 400, which is why this door was still shut
-  // after the Twilio fix: every send failed on the sender, not the recipient.
-  const from = require('./mail-from').mailFrom();
-  if (!apiKey) return { ok: false, reason: 'no-key' };
-
+/** Deliver through whichever provider is configured — see lib/mail-send.js. */
+async function deliver(email, code, fetchImpl) {
   const content = body(code);
-  const res = await fetchImpl(SENDGRID_URL, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      personalizations: [{ to: [{ email }] }],
-      from: { email: from.email, name: from.name },
-      subject: `${code} is your ScanGym code`,
-      content: [
-        { type: 'text/plain', value: content.text },
-        { type: 'text/html', value: content.html },
-      ],
-    }),
+  return require('./mail-send').sendMail({
+    to: email,
+    subject: `${code} is your ScanGym code`,
+    text: content.text,
+    html: content.html,
+    deps: { fetch: fetchImpl },
   });
-
-  if (!res.ok) {
-    const detail = await (res.text ? res.text().catch(() => '') : Promise.resolve(''));
-    return { ok: false, reason: `sendgrid-${res.status}`, detail: String(detail).slice(0, 200) };
-  }
-  return { ok: true };
 }
 
 /**
@@ -111,7 +92,7 @@ async function issueCode({ email, deps = {} } = {}) {
   if (++sinceSweep >= SWEEP_EVERY) { sinceSweep = 0; sweep(now); }
 
   const code = deps.code || newCode();
-  const sent = await sendViaSendGrid(to, code, deps.fetch || fetch);
+  const sent = await deliver(to, code, deps.fetch || fetch);
   if (!sent.ok) {
     console.error('[EmailLogin] send failed:', sent.reason, sent.detail || '');
     return { ok: false, message: 'I could not email you a code just now, so I have not logged you in.' };
