@@ -770,4 +770,12 @@ router.post('/connect', async (req, res) => {
   }
 });
 
-module.exports = { router, startDiscordBot };
+/** Gateway truth for the deep health check: a valid token is not a live bot. */
+function gatewayStatus() {
+  return {
+    connected: ws?.readyState === WS.OPEN,
+    bot: botUser ? { username: botUser.username, id: botUser.id } : null,
+  };
+}
+
+module.exports = { router, startDiscordBot, gatewayStatus };
