@@ -28,13 +28,9 @@ const router = express.Router();
 const crypto = require('crypto');
 const { handleMessage } = require('./message-handler');
 
-// ─── Teams credentials (fragment-joined for scanning protection) ───
-const _tai = ['1b6f3573-928c', '-4dad-a905-', '47d6b75a58ae'];
-const _tti = ['9c3a3039-631e', '-415b-b64d-', '5ec2d9d18765'];
-const TEAMS_APP_ID = process.env.TEAMS_APP_ID || _tai.join('');
-const _tap = ['f~r8Q~FGf5Ba', 'IrzRyGVvdqAV', 'kHlEu.QgRG4Lhajd'];
-const TEAMS_APP_PASSWORD = process.env.TEAMS_APP_PASSWORD || _tap.join('');
-const TEAMS_APP_TENANT_ID = process.env.TEAMS_APP_TENANT_ID || _tti.join('');
+const TEAMS_APP_ID = process.env.TEAMS_APP_ID;
+const TEAMS_APP_PASSWORD = process.env.TEAMS_APP_PASSWORD;
+const TEAMS_APP_TENANT_ID = process.env.TEAMS_APP_TENANT_ID;
 const TEAMS_BOT_TYPE = process.env.TEAMS_BOT_TYPE || 'MultiTenant';
 const BASE_URL = process.env.BASE_URL || 'https://scangym.com';
 
