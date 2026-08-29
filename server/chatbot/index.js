@@ -30,7 +30,7 @@ const twilioRouter = require('./twilio');
 router.use('/twilio', twilioRouter);
 
 // Discord (free, connects via WebSocket Gateway)
-const { router: discordRouter, startDiscordBot } = require('./discord');
+const { router: discordRouter, startDiscordBot, gatewayStatus: discordGatewayStatus } = require('./discord');
 router.use('/discord', discordRouter);
 
 // Email booking (inbound via SendGrid Parse, replies via SMTP)
@@ -38,6 +38,7 @@ const emailRouter = require('./email');
 router.use('/email', emailRouter);
 
 // Slack (Events API + slash commands)
+const { probeChannels } = require('./channel-probe');
 const slackRouter = require('./slack');
 router.use('/slack', slackRouter);
 
@@ -83,7 +84,7 @@ router.post('/test', async (req, res) => {
 });
 
 // ─── Health check ────────────────────────────────────────────
-router.get('/health', (req, res) => {
+router.get('/health', async (req, res) => {
   // `!!(process.env.X || true)` is always true — it reported whatsapp, sms,
   // email, slack and msteams as configured on a box with none of those keys
   // set, which makes this endpoint useless for the one question it is asked:
@@ -106,18 +107,37 @@ router.get('/health', (req, res) => {
 
   const aiProviders = {
     groq: !!process.env.GROQ_API_KEY,
-    gemini: !!(process.env.GEMINI_API_KEY || process.env.GOOGLE_MAPS_API_KEY),
+    // GOOGLE_MAPS_API_KEY is a different key on a different product; counting
+    // it here reported Gemini as configured on a box that had no Gemini access.
+    gemini: !!process.env.GEMINI_API_KEY,
     cloudflare: !!(process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_AI_TOKEN),
     huggingface: !!(process.env.HF_API_KEY || process.env.HUGGINGFACE_API_KEY),
     fallback: true, // Pattern-matching always available
   };
 
-  res.json({
+  const base = {
     status: 'ok',
     channels,
     activeChannels: Object.entries(channels).filter(([, v]) => v).map(([k]) => k),
     aiProviders,
     activeAI: Object.entries(aiProviders).filter(([, v]) => v).map(([k]) => k),
+  };
+
+  if (!req.query || !req.query.deep) return res.json(base);
+
+  // ?deep=1 asks every provider a question only a working credential can answer.
+  // Costs one API call per channel, so it is for humans and alerts, not polling.
+  const probes = await probeChannels(process.env, { discordGatewayStatus });
+  const live = Object.entries(probes).filter(([, p]) => p.live === true).map(([k]) => k);
+  const broken = Object.entries(probes).filter(([, p]) => p.live === false && p.configured).map(([k]) => k);
+
+  return res.status(broken.length ? 503 : 200).json({
+    ...base,
+    status: broken.length ? 'degraded' : 'ok',
+    deep: true,
+    probes,
+    liveChannels: live,
+    brokenChannels: broken,
   });
 });
 
