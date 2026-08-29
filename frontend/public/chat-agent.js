@@ -783,6 +783,34 @@ function createChatAgent(cfg) {
     if (sub) sub.textContent = copy[1];
   }
 
+  // One utterance may wait for the current turn to finish. The newest wins — if you
+  // talk over yourself twice, the last thing you said is the thing you meant.
+  var livePending = null;
+  var livePolling = false;
+
+  function sendWhenIdle(said) {
+    livePending = said;
+    if (livePolling) return;
+    livePolling = true;
+    var tries = 0;
+    (function poll() {
+      if (!S.busy) {
+        livePolling = false;
+        var text = livePending;
+        livePending = null;
+        if (text) send(text);
+        return;
+      }
+      if (++tries > 40) { // ~2s, then say so rather than swallowing it
+        livePolling = false;
+        livePending = null;
+        setHint('That did not go through — say it again.');
+        return;
+      }
+      setTimeout(poll, 50);
+    })();
+  }
+
   function startLive() {
     if (!window.SGVoice || !window.SGVoice.startLive) { toggleMicClassic(); return; }
     var panel = liveEl('pchat-live');
@@ -813,7 +841,11 @@ function createChatAgent(cfg) {
           liveState('thinking');
           S.spoken = 0;
           S.voice = true;
-          if (S.busy) return;
+          // Interrupting aborts the previous turn, but the abort unwinds a moment
+          // later — so this used to arrive while still busy and be dropped on the
+          // floor, which is exactly what made it feel like it ignored you. Hold it
+          // until the turn ends instead. Never two turns at once: that could book twice.
+          if (S.busy) { sendWhenIdle(said); return; }
           send(said);
         },
       })

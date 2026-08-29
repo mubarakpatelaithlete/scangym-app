@@ -25,6 +25,28 @@
   var stream = null;
   var audioEl = null;
   var speaking = false;
+  var errorHandlers = [];
+
+  /**
+   * Something went wrong with audio. Voice-first users cannot see a console, and
+   * silence is indistinguishable from thinking — so a caller can subscribe and say
+   * it out loud or on screen. Never throws: a broken listener must not break voice.
+   */
+  function notifyError(reason) {
+    var why = String(reason || 'voice');
+    for (var i = 0; i < errorHandlers.length; i++) {
+      try { errorHandlers[i](why); } catch (_) {}
+    }
+    try {
+      if (window.dispatchEvent && window.CustomEvent) {
+        window.dispatchEvent(new CustomEvent('sgvoice:error', { detail: { reason: why } }));
+      }
+    } catch (_) {}
+  }
+
+  function onError(fn) {
+    if (typeof fn === 'function') errorHandlers.push(fn);
+  }
 
   function ready() {
     if (!readyPromise) {
@@ -136,7 +158,12 @@
             audioEl.play().catch(done); // autoplay refused: stay silent, keep the text
           });
         })
-        .catch(function () { speaking = false; }); // audio is a bonus, never a blocker
+        .catch(function (e) {
+          // Audio is a bonus, never a blocker — but the caller is told, so a
+          // voice-first user gets something instead of unexplained silence.
+          speaking = false;
+          notifyError((e && e.message) || 'tts');
+        });
     });
   }
 
@@ -171,7 +198,7 @@
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: text }),
     }).then(function (r) {
-      if (!r.ok) throw new Error('tts');
+      if (!r.ok) throw new Error(r.status === 429 ? 'tts_busy' : 'tts_' + r.status);
       return r.blob();
     });
   }
@@ -209,7 +236,7 @@
     var item = queue.shift();
     item.blob
       .then(playBlob)
-      .catch(function () {})
+      .catch(function (e) { notifyError((e && e.message) || 'tts'); })
       .then(function () {
         playing = false;
         if (queue.length) pump();
@@ -229,7 +256,7 @@
       if (!on) { settleDrain(); return; }
       queue.push({ blob: synth(line) });
       pump();
-    }).catch(function () { pendingSays--; settleDrain(); });
+    }).catch(function (e) { pendingSays--; notifyError((e && e.message) || 'tts'); settleDrain(); });
   }
 
   /** Resolves once everything queued has finished playing. */
@@ -327,7 +354,7 @@
       var segment = live.chunks.slice();
       var spoke = live.heard;
       live.chunks = [];
-      if (!live || !spoke || !segment.length) { if (live && live.state === 'listening') openSegment(); return; }
+      if (!live || !spoke || !segment.length) { if (live) openSegment(); return; }
       transcribe(segment);
     };
     try { live.rec.start(); } catch (_) {}
@@ -341,7 +368,10 @@
   function transcribe(segment) {
     var type = (segment[0] && segment[0].type) || live.mime || 'audio/webm';
     var blob = new Blob(segment, { type: type });
-    if (blob.size < 2500) { if (live && live.state === 'listening') openSegment(); return; }
+    // Never go deaf. Recording restarts before the network call, so anything said
+    // while we transcribe, think and answer is captured instead of lost forever.
+    openSegment();
+    if (blob.size < 2500) return;
 
     setState('thinking');
     var form = new FormData();
@@ -351,14 +381,14 @@
       .then(function (res) {
         if (!live) return;
         var said = res.ok && res.d && res.d.success ? String(res.d.text || '').trim() : '';
-        if (!said) { setState('listening'); openSegment(); return; }
+        if (!said) { setState('listening'); return; }
         setState('speaking'); // we hold the floor until the answer is done
         if (live.opts.onFinal) live.opts.onFinal(said);
       })
       .catch(function () {
         if (!live) return;
+        notifyError('stt');
         setState('listening');
-        openSegment();
       });
   }
 
@@ -367,7 +397,9 @@
     if (!live) return;
     if (live.state === 'listening') return; // already holding the mic open
     setState('listening');
-    openSegment();
+    // A segment is normally already rolling; only reopen if one somehow is not,
+    // otherwise we would discard speech captured while we were answering.
+    if (!live.rec || live.rec.state !== 'recording') openSegment();
   }
 
   function tick() {
@@ -377,43 +409,42 @@
 
     // A slowly-learned noise floor keeps a humming gym from counting as speech.
     if (level < live.floor) live.floor = live.floor * 0.98 + level * 0.02;
-    var speechAt = Math.max(0.018, live.floor * 3.2);
 
-    if (live.state === 'listening') {
-      var now = Date.now();
-      if (level > speechAt) {
-        live.loud++;
-        if (live.loud >= ONSET_FRAMES && !live.heard) {
-          live.heard = true;
-          if (live.opts.onHeard) live.opts.onHeard();
-        }
-        live.quietSince = 0;
-      } else {
-        live.loud = 0;
-        if (live.heard) {
-          if (!live.quietSince) live.quietSince = now;
-          else if (now - live.quietSince > SILENCE_MS) { closeSegment(); return; }
-        }
-      }
-      if (live.heard && now - live.startedAt > MAX_SEGMENT_MS) { closeSegment(); return; }
-      if (!live.heard && now - live.startedAt > IDLE_RESTART_MS) { closeSegment(); openSegment(); }
-      return;
-    }
+    var now = Date.now();
+    var holding = live.state !== 'listening';
 
-    if (live.state === 'speaking' && speaking) {
-      // Barge-in: start talking and it stops mid-sentence, like a person would.
-      if (level > Math.max(0.05, live.floor * 6)) {
-        live.loud++;
-        if (live.loud >= BARGE_FRAMES) {
-          live.loud = 0;
+    // While we hold the floor our own voice leaks back into the mic, so the bar to
+    // interrupt is deliberately higher, and held for longer, than the bar to start
+    // talking into silence. Same detector either way — the mic never stops.
+    var speechAt = holding ? Math.max(0.05, live.floor * 6) : Math.max(0.018, live.floor * 3.2);
+    var needFrames = holding ? BARGE_FRAMES : ONSET_FRAMES;
+
+    if (level > speechAt) {
+      live.loud++;
+      if (live.loud >= needFrames && !live.heard) {
+        live.heard = true;
+        if (holding) {
+          // Barge-in, including while we are still thinking. The words that
+          // triggered this are already in the open segment, so nothing is lost.
           shutUp();
           if (live.opts.onBargeIn) live.opts.onBargeIn();
-          resumeLive();
+          setState('listening');
         }
-      } else {
-        live.loud = 0;
+        if (live.opts.onHeard) live.opts.onHeard();
+      }
+      live.quietSince = 0;
+    } else {
+      live.loud = 0;
+      if (live.heard) {
+        if (!live.quietSince) live.quietSince = now;
+        else if (now - live.quietSince > SILENCE_MS) { closeSegment(); return; }
       }
     }
+
+    if (live.heard && now - live.startedAt > MAX_SEGMENT_MS) { closeSegment(); return; }
+    // Rotate an idle recorder only while listening; mid-answer a swap would drop
+    // the very speech that is about to interrupt us.
+    if (!live.heard && !holding && now - live.startedAt > IDLE_RESTART_MS) { closeSegment(); openSegment(); }
   }
 
   function stopLive() {
@@ -444,6 +475,7 @@
     startLive: startLive,
     stopLive: stopLive,
     resumeLive: resumeLive,
+    onError: onError,
     isLive: isLive,
   };
 })();
