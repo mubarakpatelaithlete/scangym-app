@@ -2,29 +2,17 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.mubarakpatelaithlete/scangym",
   "title": "ScanGym — Book Any Gym",
-  "description": "Search, compare prices, and book gym day passes. No memberships, just flexible pay-per-session gym access through ScanGym.",
+  "description": "Search, compare prices, and book gym day passes worldwide. No membership required.",
+  "websiteUrl": "https://scangym.com",
   "repository": {
     "url": "https://github.com/mubarakpatelaithlete/scangym-app",
     "source": "github"
   },
-  "version": "1.0.0",
-  "packages": [
+  "version": "1.1.1",
+  "remotes": [
     {
-      "registryType": "npm",
-      "identifier": "@scangym/mcp-server",
-      "version": "1.0.0",
-      "transport": {
-        "type": "stdio"
-      },
-      "environmentVariables": [
-        {
-          "description": "ScanGym API base URL",
-          "isRequired": false,
-          "format": "string",
-          "isSecret": false,
-          "name": "SCANGYM_API_URL"
-        }
-      ]
+      "type": "streamable-http",
+      "url": "https://scangym.com/mcp"
     }
   ]
 }

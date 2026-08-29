@@ -12,7 +12,8 @@ No memberships. Just flexible pay-per-session gym access through ScanGym.
 |------|-------------|
 | `search_gyms` | Search for gyms by location name or coordinates |
 | `get_gym_details` | Get full details, pricing, hours, reviews, photos |
-| `book_gym_session` | Book a day pass (guest checkout, email only) |
+| `check_availability` | Check whether a gym is available for a date/time (read-only) |
+| `reserve_gym_slot` | Hold a provisional day-pass slot (requires `confirmed=true`) |
 | `cancel_booking` | Cancel a booking with automatic refund |
 
 ## Quick Start
@@ -20,7 +21,7 @@ No memberships. Just flexible pay-per-session gym access through ScanGym.
 ### Install from npm
 
 ```bash
-npm install -g @scangym/mcp-server
+npm install -g @scangym/mcp-server   # not yet published to npm
 ```
 
 ### Claude Desktop Configuration
@@ -65,7 +66,7 @@ Claude calls search_gyms("gym in Bolton")
   ↓
 Shows top gyms ranked: closest → cheapest → highest rated → 24/7
   ↓
-You pick one → Claude calls book_gym_session
+You pick one → Claude calls reserve_gym_slot
   ↓
 You get a booking code + payment link → pay → get QR code for entry
 ```
