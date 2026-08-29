@@ -25,10 +25,10 @@ const SCANGYM_API = (
 ).replace(/\/+$/, '');
 
 // ─── Multi-Provider AI with automatic fallback ──────────────
-const _gk = ['AQ.Ab8RN6Jv', 'LoJwYcQz9', 'D75oPFAs5GRFgbw', 'B8fFb', '7eRHpsIb3qQHA'];
-const _rk = ['gsk_nXSqOqy', 'GfeaDiUFN', 'PKdyWGdyb3FYZyOq', 'eTiU', 'EpUSMcCGLLEMUzl4'];
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_MAPS_API_KEY || _gk.join('');
-const GROQ_API_KEY = process.env.GROQ_API_KEY || _rk.join('');
+// GOOGLE_MAPS_API_KEY is a different key for a different product; it was never a
+// valid Gemini credential and only made a missing key look present.
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const CLOUDFLARE_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID;
 const CLOUDFLARE_AI_TOKEN = process.env.CLOUDFLARE_AI_TOKEN;
 const HF_API_KEY = process.env.HF_API_KEY || process.env.HUGGINGFACE_API_KEY;
