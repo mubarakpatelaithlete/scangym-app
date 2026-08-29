@@ -15,11 +15,10 @@
     "node": ">=18.0.0"
   },
   "devDependencies": {
+    "@capacitor/android": "^6.2.1",
     "@capacitor/cli": "^6.2.1",
+    "@capacitor/core": "^6.2.1",
     "typescript": "^5.4.5"
   },
-  "dependencies": {
-    "@capacitor/android": "^6.2.1",
-    "@capacitor/core": "^6.2.1"
-  }
+  "dependencies": {}
 }
