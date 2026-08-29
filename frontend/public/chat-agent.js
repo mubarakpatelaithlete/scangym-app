@@ -26,6 +26,124 @@
 (function () {
   'use strict';
 
+/**
+ * The three moments voice has to borrow the screen.
+ *
+ * The product promise is "you say it and it is done". Three things in a card payment
+ * cannot be done by saying them, and never will be: you must be logged in, a card
+ * number cannot be read out loud (PCI), and a bank's 3-D Secure challenge must be
+ * answered by the cardholder on-session — that last one is a Visa/Mastercard rule, not
+ * a design choice, so no amount of engineering removes it.
+ *
+ * The server already handles all three correctly. `lib/checkout-actions.js` returns
+ * `not_authenticated`, `no_saved_card` (with an `addCardUrl`) and `requires_action`
+ * (with a Stripe `clientSecret`), each carrying a sentence written to be spoken.
+ *
+ * Nothing on the client ever listened for them. So the assistant said "approve it on
+ * your screen and it is done" and no screen appeared: the booking sat pending, the
+ * customer heard a confident voice describe a button that did not exist, and the only
+ * way out was to reload and start again. The Book *button* has handled 3-D Secure since
+ * day one — but under a different field name (`requiresAuth`), on a separate code path,
+ * so the voice flow could never have reached it even by accident. It was tested by
+ * clicking, never by talking.
+ *
+ * This is the escape hatch, and it is the whole difference between a demo and a product:
+ * voice does everything it legally can, then hands the screen exactly one thing to do,
+ * keeps the conversation open, and speaks the reason out loud so the handover is never
+ * a silent dead end.
+ *
+ * The 3-D Secure path is Stripe's own documented pattern for a PaymentIntent confirmed
+ * on the server (`stripe.handleNextAction`). We deliberately do NOT tell the server the
+ * outcome: the customer can close the tab mid-challenge, so the booking is confirmed by
+ * the `payment_intent.succeeded` webhook in server.js, which already matches on
+ * `metadata.bookingId`. The client is the trigger, never the source of truth.
+ */
+var SGCheckout = (function () {
+  var pkPromise = null;
+
+  function publishableKey() {
+    if (window._stripePublicKey) return Promise.resolve(window._stripePublicKey);
+    if (pkPromise) return pkPromise;
+    pkPromise = fetch('/api/config')
+      .then(function (r) { return r.json(); })
+      .then(function (c) { return (c && (c.stripeKey || c.stripePk)) || null; })
+      .catch(function () { return null; });
+    return pkPromise;
+  }
+
+  function stripeJs() {
+    if (window.Stripe) return Promise.resolve();
+    return new Promise(function (resolve, reject) {
+      var s = document.createElement('script');
+      s.src = 'https://js.stripe.com/v3/';
+      s.async = true;
+      s.onload = resolve;
+      s.onerror = reject;
+      document.head.appendChild(s);
+    });
+  }
+
+  /** Prefer the app's own sheet; fall back to a plain navigation so this never dead-ends. */
+  function openSheet(which, url) {
+    if (typeof window._sgShowAuthSheet === 'function') {
+      try { window._sgShowAuthSheet(which); return true; } catch (_) {}
+    }
+    if (url) { window.location.href = url; return true; }
+    return false;
+  }
+
+  async function threeDSecure(result, say) {
+    var pk = await publishableKey();
+    if (!pk) { say("I couldn't open your bank's check. Please finish this booking on the booking page."); return; }
+    await stripeJs();
+    var out;
+    try {
+      out = await window.Stripe(pk).handleNextAction({ clientSecret: result.clientSecret });
+    } catch (e) {
+      say("Your bank's check didn't open. Please try that booking once more.");
+      return;
+    }
+    if (out && out.error) {
+      // A failed challenge is not a crash — say why, and leave the slot held.
+      say(out.error.message || "Your bank didn't approve that. Nothing has been charged.");
+      return;
+    }
+    say("That's approved and your booking is confirmed. Your QR code is on your bookings page.");
+  }
+
+  /**
+   * @returns true if this result was a hand-off and has been dealt with.
+   */
+  function handle(result, say) {
+    if (!result) return false;
+    var code = result.code;
+    var spoken = result.message;
+
+    if (result.needsLogin || code === 'not_authenticated') {
+      if (spoken) say(spoken); else say('I just need you signed in first — I have opened that for you.');
+      openSheet('login', '/login');
+      return true;
+    }
+
+    if (code === 'no_saved_card') {
+      // Said out loud because the customer may not be looking at the screen at all.
+      say(spoken || 'You have no card saved yet. Add one once and every booking after this is just your voice.');
+      openSheet('card', result.addCardUrl || '/checkout?add_card=1');
+      return true;
+    }
+
+    if (code === 'requires_action' && result.clientSecret) {
+      say(spoken || 'Your bank wants to check it is you. I have held the slot — approve it on your screen and it is done.');
+      threeDSecure(result, say);
+      return true;
+    }
+
+    return false;
+  }
+
+  return { handle: handle };
+})();
+
 function createChatAgent(cfg) {
   var NS = cfg.ns;                                  // 'pchat' | 'schat' | …
   var T = function (str) { return String(str).split('pchat').join(NS); };
@@ -602,6 +720,27 @@ function createChatAgent(cfg) {
       return pump();
     }
 
+    /**
+     * Say a line out loud AND put it in the chat.
+     *
+     * Hand-off lines are the one case where speaking is not optional decoration: if the
+     * customer is mid-sentence with their phone in a pocket, an unspoken "add a card" is
+     * indistinguishable from the assistant having crashed. Bypasses sayReady's sentence
+     * buffering deliberately — this text is already one short, complete, spoken sentence.
+     */
+    function sayAndShow(text) {
+      if (!text) return;
+      typingOff();
+      if (!aiBubble) aiBubble = bubble(T('pchat-ai'), '');
+      acc = (acc ? acc + '\n\n' : '') + text;
+      renderRich(aiBubble, acc);
+      scrollDown();
+      if (S.voice && window.SGVoice && window.SGVoice.say) {
+        S.spoken = acc.length; // don't let the end-of-turn flush repeat it
+        try { window.SGVoice.say(text); } catch (_) {}
+      }
+    }
+
     function handleEvent(block) {
       var event = 'message';
       var dataLines = [];
@@ -637,6 +776,11 @@ function createChatAgent(cfg) {
         renderRich(aiBubble, acc);
         scrollDown();
       } else if (event === 'done') {
+        // A payment that stopped for log-in, a card, or a bank check is not an answer —
+        // it is a hand-off. Deal with it before the result link, which would otherwise
+        // be the only thing shown for a booking that never actually completed.
+        if (SGCheckout.handle(data.result || data, sayAndShow)) return;
+
         var link = cfg.resultLink ? cfg.resultLink(data.result || {}) : null;
         if (link && link.href) {
           var row = document.createElement('div');
