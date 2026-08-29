@@ -1,31 +1,29 @@
-// ScanGym Android App — Build Configuration
-// Build release: ./gradlew assembleRelease
-// Build AAB for Play Store: ./gradlew bundleRelease
-
 apply plugin: 'com.android.application'
 
 android {
     namespace "com.scangym.app"
-    compileSdkVersion 34
-
+    compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
         applicationId "com.scangym.app"
-        minSdkVersion 23
-        targetSdkVersion 34
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
-        versionName "1.0.0"
+        versionName "3.2.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        aaptOptions {
+             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
     }
-
     signingConfigs {
         release {
-            // To sign for Play Store / Galaxy Store:
-            // 1. Generate keystore: keytool -genkey -v -keystore scangym-release.keystore -alias scangym -keyalg RSA -keysize 2048 -validity 10000
-            // 2. Set environment variables:
-            //    SCANGYM_RELEASE_STORE_FILE=./scangym-release.keystore
-            //    SCANGYM_RELEASE_STORE_PASSWORD=your_password
-            //    SCANGYM_RELEASE_KEY_ALIAS=scangym
-            //    SCANGYM_RELEASE_KEY_PASSWORD=your_password
+            // Play Store / Galaxy Store signing. Generate a keystore once:
+            //   keytool -genkey -v -keystore scangym-release.keystore -alias scangym \
+            //           -keyalg RSA -keysize 2048 -validity 10000
+            // Then set these environment variables in CI (never commit the keystore):
+            //   SCANGYM_RELEASE_STORE_FILE, SCANGYM_RELEASE_STORE_PASSWORD,
+            //   SCANGYM_RELEASE_KEY_ALIAS, SCANGYM_RELEASE_KEY_PASSWORD
             if (System.getenv("SCANGYM_RELEASE_STORE_FILE")) {
                 storeFile file(System.getenv("SCANGYM_RELEASE_STORE_FILE"))
                 storePassword System.getenv("SCANGYM_RELEASE_STORE_PASSWORD")
@@ -34,38 +32,42 @@ android {
             }
         }
     }
-
     buildTypes {
         release {
-            minifyEnabled true
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            if (signingConfigs.release.storeFile) {
+            if (System.getenv("SCANGYM_RELEASE_STORE_FILE")) {
                 signingConfig signingConfigs.release
             }
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
-    }
-
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
     }
 }
 
 repositories {
-    flatDir {
+    flatDir{
         dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
     }
 }
 
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
-    implementation "androidx.appcompat:appcompat:1.6.1"
-    implementation "androidx.coordinatorlayout:coordinatorlayout:1.2.0"
-    implementation "androidx.core:core-splashscreen:1.0.1"
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     implementation project(':capacitor-android')
-    testImplementation "junit:junit:4.13.2"
-    androidTestImplementation "androidx.test.ext:junit:1.1.5"
-    androidTestImplementation "androidx.test.espresso:espresso-core:3.5.1"
+    testImplementation "junit:junit:$junitVersion"
+    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+    implementation project(':capacitor-cordova-android-plugins')
 }
 
 apply from: 'capacitor.build.gradle'
+
+try {
+    def servicesJSON = file('google-services.json')
+    if (servicesJSON.text) {
+        apply plugin: 'com.google.gms.google-services'
+    }
+} catch(Exception e) {
+    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+}
