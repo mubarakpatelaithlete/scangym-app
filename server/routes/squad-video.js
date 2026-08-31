@@ -145,7 +145,12 @@ router.get('/health', optionalAuth, async (req, res) => {
 });
 
 // ─── POST /generate — kick off a render ──────────────────────────────────
-router.post('/generate', optionalAuth, async (req, res) => {
+// express.json() is applied per-route here, the same way squad-agent.js and
+// partner-agent.js do it. The app-level parser in server.js runs only for an
+// allowlist of prefixes and /api/squad-video is not one of them, so without
+// this req.body is undefined and every generate answered "prompt required" —
+// the feature could never have worked, with or without a valid model key.
+router.post('/generate', optionalAuth, express.json(), async (req, res) => {
   if (!GEMINI_KEY) return res.status(503).json({ error: 'Video generation is not configured yet.' });
   const prompt = (req.body?.prompt || '').trim();
   if (!prompt) return res.status(400).json({ error: 'prompt required' });
