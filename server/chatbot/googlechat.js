@@ -24,6 +24,8 @@ const { handleMessage } = require('./message-handler');
 const AUDIENCE = process.env.GOOGLE_CHAT_AUDIENCE || process.env.GOOGLE_CHAT_PROJECT_NUMBER;
 const BASE_URL = process.env.BASE_URL || 'https://scangym.com';
 const GOOGLE_CHAT_ISSUER = 'chat@system.gserviceaccount.com';
+const ADDON_ISSUER = 'service-' + AUDIENCE + '@gcp-sa-gsuiteaddons.iam.gserviceaccount.com';
+const EVENTS_URL = BASE_URL + '/api/chatbot/googlechat/events';
 const TOKENINFO = 'https://oauth2.googleapis.com/tokeninfo?id_token=';
 
 // Google Chat retries an event it thinks failed, which would answer twice.
@@ -49,9 +51,7 @@ async function verifyGoogleRequest(req) {
     const resp = await fetch(TOKENINFO + encodeURIComponent(token));
     if (!resp.ok) return false;
     const info = await resp.json();
-    const ok = info.email === GOOGLE_CHAT_ISSUER &&
-               info.email_verified !== 'false' &&
-               String(info.aud) === String(AUDIENCE);
+    const ok = (info.email === GOOGLE_CHAT_ISSUER || info.email === ADDON_ISSUER) && info.email_verified !== 'false' && (String(info.aud) === String(AUDIENCE) || String(info.aud) === EVENTS_URL);   
     if (!ok) {
       // Log the claims we actually got, so a mismatch is diagnosable instead of
       // silently turning into "ScanGym not responding" in the Chat client.
