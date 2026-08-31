@@ -40,6 +40,7 @@ const accessRouter = require('./routes/access');
 const chatbotRouter = require('./chatbot');
 const channelsRouter = require('./routes/channels');
 const squadVideoRouter = require('./routes/squad-video');
+const squadCreateRouter = require('./routes/squad-create');
 const commsLogRouter = require('./routes/comms-log');
 const paymentsExtendedRouter = require('./routes/payments-extended');
 const aiFeaturesRouter = require('./routes/ai-features');
@@ -502,6 +503,7 @@ app.use('/api/access', accessRouter);
 app.use('/api/chatbot', chatbotRouter);
 app.use('/api/channels', channelsRouter);
 app.use('/api/squad-video', squadVideoRouter);
+app.use('/api/squad-create', express.json({ limit: '1mb' }), squadCreateRouter);
 app.use('/api/comms-log', commsLogRouter);
 /* One payment path: the extended payment methods (PayPal, wallets, gift card,
    crypto, bank transfer, BNPL, IAP) used to live under a second prefix
