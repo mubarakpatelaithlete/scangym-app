@@ -36,11 +36,16 @@
 
   // Channels verified live end-to-end (deep probe, 2026-08-31). Others render
   // dimmed+amber until verified. Health check below can only demote, not promote.
-  var VERIFIED_LIVE = { telegram: true, discord: true, slack: true };
+  var VERIFIED_LIVE = { telegram: true, discord: true, slack: true, msstore: true, install: true };
+  // App stores: only ones that actually resolve get a button. Google Play is on a
+  // closed testing track (public 404) and the Apple listing does not exist yet —
+  // same policy as the Apps page: no dead links, they appear here once live.
+  var MS_STORE_URL = 'https://apps.microsoft.com/detail/9nh8vrn834dv';
 
   // ── Styles (injected once) ─────────────────────────────────────────────
   var css = [
-    '#' + RAIL_ID + '{position:fixed;top:140px;right:10px;display:flex;flex-direction:column;gap:11px;align-items:center;z-index:8990;}',
+    '#' + RAIL_ID + '{position:fixed;top:120px;right:10px;bottom:190px;display:flex;flex-direction:column;gap:11px;align-items:center;z-index:8990;overflow-y:auto;overflow-x:visible;scrollbar-width:none;padding:2px 2px 6px;}',
+    '#' + RAIL_ID + '::-webkit-scrollbar{display:none;}',
     '#' + RAIL_ID + ' .sg-pr-sec{font-size:8.5px;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.35);font-weight:700;text-align:center;width:44px;margin-bottom:-4px;}',
     '#' + RAIL_ID + ' .sg-pr-btn{display:flex;flex-direction:column;align-items:center;gap:2px;width:44px;cursor:pointer;-webkit-tap-highlight-color:transparent;}',
     '#' + RAIL_ID + ' .sg-pr-btn:active .sg-pr-circle{transform:scale(.92);}',
@@ -62,7 +67,17 @@
     slack: '<svg viewBox="0 0 24 24"><path d="M5.1 15.1a2.1 2.1 0 11-2.1-2.1h2.1v2.1zm1.05 0a2.1 2.1 0 014.2 0v5.25a2.1 2.1 0 11-4.2 0V15.1z" fill="#e01e5a"/><path d="M8.25 5.1A2.1 2.1 0 116.15 3v2.1H8.25zm0 1.05a2.1 2.1 0 010 4.2H3A2.1 2.1 0 013 6.15h5.25z" fill="#36c5f0"/><path d="M18.9 8.25A2.1 2.1 0 1121 6.15v2.1h-2.1zm-1.05 0a2.1 2.1 0 01-4.2 0V3a2.1 2.1 0 014.2 0v5.25z" fill="#2eb67d"/><path d="M15.75 18.9A2.1 2.1 0 1117.85 21h-2.1v-2.1zm0-1.05a2.1 2.1 0 010-4.2H21a2.1 2.1 0 010 4.2h-5.25z" fill="#ecb22e"/></svg>',
     msteams: '<svg viewBox="0 0 24 24"><path d="M13 6.2h7.2c.44 0 .8.36.8.8v9.9a2.4 2.4 0 01-2.4 2.4h-3A4.8 4.8 0 0013 15V6.2z" fill="#5b5fc7"/><circle cx="17.4" cy="4.6" r="2.2" fill="#5b5fc7"/><rect x="1.5" y="7.5" width="11.5" height="10.5" rx="1" fill="#4b53bc"/><text x="7.2" y="15.2" font-size="8" fill="#fff" text-anchor="middle" font-family="Arial" font-weight="700">T</text></svg>',
     claude: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#d97757"/><path d="M12 6l1.5 3.5L17 11l-3.5 1.5L12 16l-1.5-3.5L7 11l3.5-1.5z" fill="#fff"/></svg>',
+    msstore: '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="8.5" height="8.5" fill="#F25022"/><rect x="12.5" y="3" width="8.5" height="8.5" fill="#7FBA00"/><rect x="3" y="12.5" width="8.5" height="8.5" fill="#00A4EF"/><rect x="12.5" y="12.5" width="8.5" height="8.5" fill="#FFB900"/></svg>',
+    install: '<svg viewBox="0 0 24 24" fill="none" stroke="#FF6D00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v10"/><path d="M8 9l4 4 4-4"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>',
   };
+
+  // PWA install: capture the browser prompt when offered so the Install button
+  // can trigger it natively; otherwise fall back to add-to-home-screen steps.
+  var deferredInstall = null;
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    deferredInstall = e;
+  });
 
   function toast(msg, kind, ms) {
     if (typeof window.sgToast === 'function') window.sgToast(msg, kind || 'info', ms || 4000);
@@ -104,6 +119,19 @@
         toast('In Claude: Settings → Connectors → Add custom connector → ' + MCP_URL, 'info', 8000);
       }
     },
+    msstore: function () {
+      window.open(MS_STORE_URL, '_blank');
+    },
+    install: function () {
+      if (deferredInstall) {
+        deferredInstall.prompt();
+        deferredInstall = null;
+      } else if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) {
+        toast('✅ ScanGym is already installed on this device.', 'success', 3000);
+      } else {
+        toast('📲 Install: open your browser menu → "Add to Home screen" (Android) or Share → "Add to Home Screen" (iPhone).', 'info', 7000);
+      }
+    },
   };
 
   // ── Health (cheap endpoint; can only demote a verified channel) ────────
@@ -117,7 +145,7 @@
 
   function isLive(key) {
     if (!VERIFIED_LIVE[key]) return false;
-    if (health && health[key] === false) return false; // credential pulled
+    if (health && health.hasOwnProperty(key) && health[key] === false) return false; // credential pulled
     return true;
   }
 
@@ -159,6 +187,11 @@
     ai.style.marginTop = '6px';
     rail.appendChild(ai);
     rail.appendChild(btn('claude', 'Claude'));
+    var apps = sec('Apps');
+    apps.style.marginTop = '6px';
+    rail.appendChild(apps);
+    rail.appendChild(btn('msstore', 'MS Store'));
+    rail.appendChild(btn('install', 'Install'));
     return rail;
   }
 
