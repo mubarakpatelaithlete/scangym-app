@@ -52,6 +52,11 @@ async function verifyGoogleRequest(req) {
     const ok = info.email === GOOGLE_CHAT_ISSUER &&
                info.email_verified !== 'false' &&
                String(info.aud) === String(AUDIENCE);
+    if (!ok) {
+      // Log the claims we actually got, so a mismatch is diagnosable instead of
+      // silently turning into "ScanGym not responding" in the Chat client.
+      console.error(`[GoogleChat] Token claims mismatch: email=${info.email} aud=${info.aud} expected_aud=${AUDIENCE}`);
+    }
     tokenCache.set(token, { ok, expiresAt: Date.now() + TOKEN_CACHE_TTL });
     if (tokenCache.size > 500) {
       const now = Date.now();
