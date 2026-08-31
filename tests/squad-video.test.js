@@ -227,6 +227,20 @@ test('health reports remaining renders so the sheet never guesses', async () => 
   }
 });
 
+/* ── the body never arrived at all ──────────────────────────────────────── */
+
+test('/generate parses its JSON body, so a prompt actually reaches the handler', async () => {
+  const { router } = loadRouter(() => ({ rows: [{ n: 0 }] }));
+  const layer = router.stack.find((l) => l.route && l.route.path === '/generate');
+  const names = layer.route.stack.map((h) => h.name);
+  assert.ok(
+    names.includes('jsonParser'),
+    'no body parser on /generate: server.js only parses an allowlist of /api prefixes and ' +
+    '/api/squad-video is not one of them, so req.body is undefined and every call ' +
+    'answers "prompt required"',
+  );
+});
+
 /* ── the decorative-control regression ──────────────────────────────────── */
 
 test('the sheet has no fake settings label, and sends every control it shows', () => {
