@@ -243,13 +243,17 @@ test('/generate parses its JSON body, so a prompt actually reaches the handler',
 
 /* ── the decorative-control regression ──────────────────────────────────── */
 
-test('the sheet has no fake settings label, and sends every control it shows', () => {
+test('the sheet still declares all four video controls in one place', () => {
   const src = fs.readFileSync(path.join(ROOT, 'frontend', 'public', 'squad-create.js'), 'utf8');
-  assert.ok(!/⏱ 8s · 🔊 audio/.test(src), 'the decorative settings chip is back');
+  assert.ok(!/\u23f1 8s \u00b7 \ud83d\udd0a audio/.test(src), 'the decorative settings chip is back');
+  // The sheet now builds its request body by iterating the SAME list it
+  // renders, so shown and sent cannot drift. That guarantee is exercised for
+  // real in squad-create-sends-settings.test.js (minimal DOM, real click);
+  // here we only pin that the four controls are still declared.
   for (const field of ['durationSeconds', 'resolution', 'generateAudio', 'aspectRatio']) {
     assert.ok(
-      new RegExp(field + '\\s*:\\s*state\\.' + field).test(src),
-      `${field} is shown in the sheet but not sent to /generate`,
+      new RegExp("key: '" + field + "'").test(src),
+      `${field} is no longer a declared video setting`,
     );
   }
 });
