@@ -13,6 +13,15 @@
  * is PREPENDED into that rail when it exists and only floats when it doesn't.
  * Only the Video mode is wired; Image / Lip sync segments and the non-Veo
  * models are visible but marked coming-soon — no dead primary actions.
+ *
+ * Settings (duration / resolution / audio / aspect) are real controls: they
+ * are sent to /generate and the server whitelists them. They used to be a
+ * single decorative "8s · audio" label, which is worse than showing nothing —
+ * it told the user they had chosen something when nothing was being sent.
+ *
+ * History comes from /api/squad-video/history, so clips survive a deploy and
+ * a new session. Remaining daily renders come from the same payload rather
+ * than being discovered by hitting a 429.
  */
 (function () {
   'use strict';
@@ -89,7 +98,27 @@
     return e;
   }
 
-  var state = { aspect: '9:16', modelOpen: false };
+  var state = { aspectRatio: '9:16', durationSeconds: 8, resolution: '720p', generateAudio: true };
+  var quota = null;
+
+  var SETTINGS = [
+    { key: 'aspectRatio', label: 'Aspect ratio', values: ['9:16', '16:9'] },
+    { key: 'durationSeconds', label: 'Duration', values: [4, 6, 8], fmt: function (v) { return v + 's'; } },
+    { key: 'resolution', label: 'Resolution', values: ['720p', '1080p'] },
+    { key: 'generateAudio', label: 'Generate audio', values: [true, false], fmt: function (v) { return v ? 'On' : 'Off'; } },
+  ];
+
+  /** Tap a value to cycle to the next allowed one — no nested pickers on mobile. */
+  function cycle(setting) {
+    var vals = setting.values;
+    var i = vals.indexOf(state[setting.key]);
+    state[setting.key] = vals[(i + 1) % vals.length];
+  }
+
+  function shown(setting) {
+    var v = state[setting.key];
+    return setting.fmt ? setting.fmt(v) : String(v);
+  }
 
   function openSheet() {
     closeSheet();
@@ -133,14 +162,31 @@
     var mchip = el('div', 'sv-mchip', '🎞 Veo 3.1 Fast ›');
     mchip.addEventListener('click', function () { toggleModels(sh); });
     row.appendChild(mchip);
-    var aspect = el('div', 'sv-mchip', '▯ 9:16');
-    aspect.addEventListener('click', function () {
-      state.aspect = state.aspect === '9:16' ? '16:9' : '9:16';
-      aspect.textContent = state.aspect === '9:16' ? '▯ 9:16' : '▭ 16:9';
-    });
-    row.appendChild(aspect);
-    row.appendChild(el('div', 'sv-mchip', '⏱ 8s · 🔊 audio'));
+    var setChip = el('div', 'sv-mchip', '⚙ Settings ›');
+    setChip.addEventListener('click', function () { toggleSettings(sh); });
+    row.appendChild(setChip);
+    var summary = el('div', 'sv-mchip');
+    summary.id = 'sv-summary';
+    summary.style.cssText = 'background:transparent;border:none;color:#7d8ba3;padding-left:0;cursor:default;';
+    row.appendChild(summary);
     sh.appendChild(row);
+
+    var settings = el('div');
+    settings.id = 'sv-settings';
+    settings.style.display = 'none';
+    SETTINGS.forEach(function (st) {
+      var line = el('div', 'sv-set');
+      line.appendChild(el('span', '', st.label));
+      var val = el('span', 'sv-val', shown(st));
+      val.addEventListener('click', function () {
+        cycle(st);
+        val.textContent = shown(st);
+        refreshSummary(sh);
+      });
+      line.appendChild(val);
+      settings.appendChild(line);
+    });
+    sh.appendChild(settings);
 
     var models = el('div');
     models.id = 'sv-models';
@@ -163,7 +209,16 @@
     var out = el('div');
     out.id = 'sv-out';
     sh.appendChild(out);
-    sh.appendChild(el('div', 'sv-note', 'Renders in ~1 min · 5 per day · then share straight to your socials'));
+    var note = el('div', 'sv-note', 'Renders in ~1 min · 5 per day · then share straight to your socials');
+    note.id = 'sv-note';
+    sh.appendChild(note);
+
+    var hist = el('div', 'sv-note');
+    hist.id = 'sv-history';
+    sh.appendChild(hist);
+
+    refreshSummary(sh);
+    loadHistory(sh);
 
     document.body.appendChild(sh);
     requestAnimationFrame(function () { ov.classList.add('open'); sh.classList.add('open'); });
@@ -171,6 +226,12 @@
     // runtime truth: can this deployment actually render?
     fetch('/api/squad-video/health').then(function (r) { return r.json(); }).then(function (d) {
       health = d;
+      if (d.quota) { quota = d.quota; refreshQuota(sh); }
+      if (d.available && quota && quota.remaining <= 0) {
+        warn.style.display = 'block';
+        warn.innerHTML = '\u23f3 You have used all <b>' + quota.limit + '</b> renders for today. Fresh batch tomorrow — or grab one of the ready-to-post clips in your library below.';
+        gen.disabled = true;
+      }
       if (!d.available) {
         warn.style.display = 'block';
         warn.innerHTML = '⏳ AI video rendering is still being switched on for this account (' + (d.reason || 'unavailable') + '). Meanwhile: <b>440+ ready-to-post clips</b> are in your ScanSquad library below.';
@@ -182,6 +243,27 @@
   function toggleModels(sh) {
     var m = sh.querySelector('#sv-models');
     m.style.display = m.style.display === 'none' ? 'block' : 'none';
+  }
+
+  function toggleSettings(sh) {
+    var m = sh.querySelector('#sv-settings');
+    m.style.display = m.style.display === 'none' ? 'block' : 'none';
+  }
+
+  /** The one-line echo of the current settings, so the sheet reads at a glance. */
+  function refreshSummary(sh) {
+    var n = sh.querySelector('#sv-summary');
+    if (!n) return;
+    n.textContent = state.aspectRatio + ' · ' + state.durationSeconds + 's · ' + state.resolution +
+      (state.generateAudio ? ' · 🔊' : ' · 🔇');
+  }
+
+  /** "2 of 5 left today", straight from the server rather than guessed. */
+  function refreshQuota(sh) {
+    var n = sh.querySelector('#sv-note');
+    if (!n || !quota) return;
+    n.textContent = 'Renders in ~1 min · ' + quota.remaining + ' of ' + quota.limit +
+      ' left today · then share straight to your socials';
   }
 
   function closeSheet() {
@@ -203,10 +285,17 @@
     fetch('/api/squad-video/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt: prompt, aspectRatio: state.aspect }),
+      body: JSON.stringify({
+        prompt: prompt,
+        aspectRatio: state.aspectRatio,
+        durationSeconds: state.durationSeconds,
+        resolution: state.resolution,
+        generateAudio: state.generateAudio,
+      }),
     }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
       .then(function (res) {
         if (!res.ok || !res.d.jobId) throw new Error(res.d.error || 'could not start');
+        if (res.d.quota) { quota = res.d.quota; refreshQuota(sh); }
         var start = Date.now();
         out.innerHTML = '<div class="sv-prog"><div class="sv-spin"></div><span id="sv-prog-t">Rendering… usually under a minute.</span></div>';
         job = { id: res.d.jobId };
@@ -266,6 +355,34 @@
     dl.style.textDecoration = 'none';
     row.appendChild(dl);
     out.appendChild(row);
+  }
+
+  // ── history ─────────────────────────────────────────────────────────────
+  /**
+   * Past clips for this user. Only finished ones are offered as links: a row
+   * still 'running' after a deploy is real, but there is nothing to play yet.
+   */
+  function loadHistory(sh) {
+    fetch('/api/squad-video/history').then(function (r) { return r.json(); }).then(function (d) {
+      if (d.quota) { quota = d.quota; refreshQuota(sh); }
+      var box = sh.querySelector('#sv-history');
+      if (!box) return;
+      var done = (d.jobs || []).filter(function (j) { return j.status === 'done' && j.video_url; });
+      if (!done.length) { box.textContent = ''; return; }
+      box.innerHTML = '';
+      var head = el('div', '', 'Your recent clips');
+      head.style.cssText = 'margin:14px 0 6px;color:#cbd5e1;font-weight:700;text-align:left;';
+      box.appendChild(head);
+      done.slice(0, 6).forEach(function (j) {
+        var a = el('div', 'sv-set');
+        a.style.cursor = 'pointer';
+        var label = (j.prompt || 'Clip').slice(0, 38) + ((j.prompt || '').length > 38 ? '…' : '');
+        a.appendChild(el('span', '', label));
+        a.appendChild(el('span', 'sv-val', '▶ Play'));
+        a.addEventListener('click', function () { showResult(sh.querySelector('#sv-out'), j.video_url); });
+        box.appendChild(a);
+      });
+    }).catch(function () {});
   }
 
   // ── rail button placement (native-rail-first, profile-rail.js lesson) ──
