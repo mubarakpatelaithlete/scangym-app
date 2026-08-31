@@ -44,7 +44,12 @@
 
   // Channels verified live end-to-end (deep probe, 2026-08-31). Others render
   // dimmed+amber until verified. Health check below can only demote, not promote.
-  var VERIFIED_LIVE = { telegram: true, discord: true, slack: true, msstore: true, install: true };
+  var VERIFIED_LIVE = { telegram: true, discord: true, slack: true, msstore: true, install: true, tiktok: true };
+  // Social: tiktok.com/@scangym verified live (real profile page renders).
+  // instagram.com/scangym + facebook.com/scangym sit behind login walls we
+  // can't verify through, so they render amber until confirmed. x.com/scangym
+  // is owned by an unrelated account ("Nworah jekwu") and youtube/@scangym
+  // 404s — both are omitted, same no-dead-links policy as the app stores.
   // App stores: only ones that actually resolve get a button. Google Play is on a
   // closed testing track (public 404) and the Apple listing does not exist yet —
   // same policy as the Apps page: no dead links, they appear here once live.
@@ -91,6 +96,9 @@
     claude: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#d97757"/><path d="M12 6l1.5 3.5L17 11l-3.5 1.5L12 16l-1.5-3.5L7 11l3.5-1.5z" fill="#fff"/></svg>',
     msstore: '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="8.5" height="8.5" fill="#F25022"/><rect x="12.5" y="3" width="8.5" height="8.5" fill="#7FBA00"/><rect x="3" y="12.5" width="8.5" height="8.5" fill="#00A4EF"/><rect x="12.5" y="12.5" width="8.5" height="8.5" fill="#FFB900"/></svg>',
     install: '<svg viewBox="0 0 24 24" fill="none" stroke="#FF6D00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v10"/><path d="M8 9l4 4 4-4"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>',
+    tiktok: '<svg viewBox="0 0 24 24"><path d="M16.6 3c.35 1.9 1.5 3.35 3.4 3.75v3.1c-1.35.05-2.55-.35-3.85-1.15v5.85c0 4.05-3.05 6.05-5.95 5.4-2.55-.55-4.2-2.85-3.85-5.4.4-2.85 3-4.55 5.6-4.1v3.15c-.85-.25-1.75-.1-2.3.6-.9 1.05-.45 2.7.9 3.05 1.25.35 2.45-.55 2.45-2.05V3h3.6z" fill="#fff"/><path d="M16.6 3c.35 1.9 1.5 3.35 3.4 3.75v1.5c-1.9-.4-3.05-1.85-3.4-3.75V3z" fill="#25f4ee"/><path d="M12.35 10.45v1.6c-.85-.25-1.75-.1-2.3.6-.9 1.05-.45 2.7.9 3.05l-.6 1.4c-2.1-.75-2.95-3.35-1.6-5.15.8-1.1 2.2-1.7 3.6-1.5z" fill="#fe2c55"/></svg>',
+    instagram: '<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="5.5" stroke="url(#igg)" stroke-width="2"/><circle cx="12" cy="12" r="4.2" stroke="url(#igg)" stroke-width="2"/><circle cx="17.2" cy="6.8" r="1.3" fill="#e1306c"/><defs><linearGradient id="igg" x1="3" y1="21" x2="21" y2="3"><stop stop-color="#fd5949"/><stop offset=".5" stop-color="#d6249f"/><stop offset="1" stop-color="#285AEB"/></linearGradient></defs></svg>',
+    facebook: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#1877f2"/><path d="M15.5 12.6h-2.4V20h-2.9v-7.4H8.3v-2.7h1.9V8.3c0-2 1.2-3.1 3-3.1.9 0 1.8.15 1.8.15v2h-1c-1 0-1.3.6-1.3 1.25v1.3h2.3l-.5 2.7z" fill="#fff"/></svg>',
   };
 
   // PWA install: capture the browser prompt when offered so the Install button
@@ -144,6 +152,9 @@
     msstore: function () {
       window.open(MS_STORE_URL, '_blank');
     },
+    tiktok: function () { window.open('https://www.tiktok.com/@scangym', '_blank'); },
+    instagram: function () { window.open('https://instagram.com/scangym', '_blank'); },
+    facebook: function () { window.open('https://facebook.com/scangym', '_blank'); },
     install: function () {
       if (deferredInstall) {
         deferredInstall.prompt();
@@ -223,6 +234,12 @@
     frag.appendChild(apps);
     frag.appendChild(btn('msstore', 'MS Store'));
     frag.appendChild(btn('install', 'Install'));
+    var social = sec('Social');
+    social.style.marginTop = '4px';
+    frag.appendChild(social);
+    frag.appendChild(btn('tiktok', 'TikTok'));
+    frag.appendChild(btn('instagram', 'Instagram'));
+    frag.appendChild(btn('facebook', 'Facebook'));
     return frag;
   }
 
