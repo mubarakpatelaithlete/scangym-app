@@ -26,6 +26,14 @@
  * Actions reuse the app's existing channel helpers (_sgConnectChannel,
  * _sgOpenDiscord, _sgOpenSlack, _sgOpenMSTeams) so connect-tracking and the
  * real install URLs stay in one place — this file owns pixels, not plumbing.
+ *
+ * Placement: the logged-in /more hub (and the logged-out /more QR page)
+ * already render a native TikTok-style rail (Creator/Partner/Apps…) baked
+ * into the app bundle at right:10px/top:50%. Floating a second fixed rail
+ * on top of it stacked two button columns over each other. So: when a
+ * native rail exists on the page we EXTEND it (append our buttons inside,
+ * and let it scroll), and only when there is none (e.g. /more/profile
+ * logged out) do we float our own.
  */
 (function () {
   'use strict';
@@ -58,6 +66,20 @@
     '#' + RAIL_ID + ' .sg-pr-btn.pending .sg-pr-circle{opacity:.55;}',
     '#' + RAIL_ID + ' .sg-pr-btn.pending .sg-pr-label{color:rgba(255,255,255,.45);}',
     '@media (min-width:768px){#' + RAIL_ID + '{right:max(10px,calc(50vw - 230px));}}',
+    // native-rail mode: our buttons adopt the host rail look; host gets a scroll cap
+    '.sg-pr-host-capped{max-height:calc(100vh - 240px);overflow-y:auto!important;scrollbar-width:none;padding:2px;}',
+    '.sg-pr-host-capped::-webkit-scrollbar{display:none;}',
+    '.sg-pr-btn{display:flex;flex-direction:column;align-items:center;gap:2px;width:44px;cursor:pointer;-webkit-tap-highlight-color:transparent;}',
+    '.sg-pr-btn:active .sg-pr-circle{transform:scale(.92);}',
+    '.sg-pr-circle{width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.12);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 2px 10px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;position:relative;transition:transform .15s;}',
+    '.sg-pr-circle svg{width:22px;height:22px;}',
+    '.sg-pr-label{font-size:10px;color:#fff;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8);white-space:nowrap;}',
+    '.sg-pr-dot{position:absolute;top:-2px;right:-2px;width:12px;height:12px;border-radius:50%;border:2px solid #0f172a;}',
+    '.sg-pr-dot.live{background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,.8);}',
+    '.sg-pr-dot.pending{background:#f59e0b;}',
+    '.sg-pr-btn.pending .sg-pr-circle{opacity:.55;}',
+    '.sg-pr-btn.pending .sg-pr-label{color:rgba(255,255,255,.45);}',
+    '.sg-pr-sec{font-size:8.5px;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.35);font-weight:700;text-align:center;width:44px;}',
   ].join('');
 
   // ── Brand icons (inline SVG, official palette) ─────────────────────────
@@ -175,39 +197,78 @@
     return el;
   }
 
+  // The app bundle's own rail: right:10px + top:50% + column flex, not ours.
+  function nativeRail() {
+    var els = document.querySelectorAll('div[style*="flex-direction:column"]');
+    for (var i = 0; i < els.length; i++) {
+      var st = els[i].getAttribute('style') || '';
+      if (els[i].id !== RAIL_ID && /right:\s*10px/.test(st) && /top:\s*50%/.test(st) && els[i].offsetParent) return els[i];
+    }
+    return null;
+  }
+
+  function buttonList() {
+    var frag = document.createDocumentFragment();
+    frag.appendChild(sec('Chatbots'));
+    frag.appendChild(btn('telegram', 'Telegram'));
+    frag.appendChild(btn('discord', 'Discord'));
+    frag.appendChild(btn('slack', 'Slack'));
+    frag.appendChild(btn('msteams', 'Teams'));
+    var ai = sec('AI');
+    ai.style.marginTop = '4px';
+    frag.appendChild(ai);
+    frag.appendChild(btn('claude', 'Claude'));
+    var apps = sec('Apps');
+    apps.style.marginTop = '4px';
+    frag.appendChild(apps);
+    frag.appendChild(btn('msstore', 'MS Store'));
+    frag.appendChild(btn('install', 'Install'));
+    return frag;
+  }
+
   function build() {
     var rail = document.createElement('div');
     rail.id = RAIL_ID;
-    rail.appendChild(sec('Chatbots'));
-    rail.appendChild(btn('telegram', 'Telegram'));
-    rail.appendChild(btn('discord', 'Discord'));
-    rail.appendChild(btn('slack', 'Slack'));
-    rail.appendChild(btn('msteams', 'Teams'));
-    var ai = sec('AI');
-    ai.style.marginTop = '6px';
-    rail.appendChild(ai);
-    rail.appendChild(btn('claude', 'Claude'));
-    var apps = sec('Apps');
-    apps.style.marginTop = '6px';
-    rail.appendChild(apps);
-    rail.appendChild(btn('msstore', 'MS Store'));
-    rail.appendChild(btn('install', 'Install'));
+    rail.appendChild(buttonList());
     return rail;
   }
 
   // ── Visibility (the app routes without firing popstate; poll like
   //    chat-agent.js does) ─────────────────────────────────────────────────
+  var EXT_ID = 'sg-profile-rail-ext';
   function sync() {
     var onProfile = ROUTE.test(location.pathname);
-    var el = document.getElementById(RAIL_ID);
-    if (onProfile && !el) {
-      document.body.appendChild(build());
-    } else if (onProfile && el && el.getAttribute('data-health') !== String(!!health)) {
-      el.replaceWith(build());
-      var fresh = document.getElementById(RAIL_ID);
-      if (fresh) fresh.setAttribute('data-health', String(!!health));
-    } else if (!onProfile && el) {
-      el.remove();
+    var floatEl = document.getElementById(RAIL_ID);
+    var extEl = document.getElementById(EXT_ID);
+    if (!onProfile) {
+      if (floatEl) floatEl.remove();
+      if (extEl) extEl.remove();
+      return;
+    }
+    var host = nativeRail();
+    if (host) {
+      // native rail exists: extend it, never float a second column over it
+      if (floatEl) floatEl.remove();
+      if (extEl && extEl.parentNode !== host) { extEl.remove(); extEl = null; }
+      if (extEl && extEl.getAttribute('data-health') !== String(!!health)) { extEl.remove(); extEl = null; }
+      if (!extEl) {
+        var wrap = document.createElement('div');
+        wrap.id = EXT_ID;
+        wrap.setAttribute('data-health', String(!!health));
+        wrap.style.cssText = 'display:flex;flex-direction:column;gap:10px;align-items:center;margin-top:4px;';
+        wrap.appendChild(buttonList());
+        host.appendChild(wrap);
+        host.classList.add('sg-pr-host-capped');
+      }
+    } else {
+      if (extEl) extEl.remove();
+      if (!floatEl) {
+        document.body.appendChild(build());
+      } else if (floatEl.getAttribute('data-health') !== String(!!health)) {
+        floatEl.replaceWith(build());
+        var fresh = document.getElementById(RAIL_ID);
+        if (fresh) fresh.setAttribute('data-health', String(!!health));
+      }
     }
   }
 
