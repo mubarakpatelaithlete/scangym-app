@@ -206,10 +206,20 @@ function createChatAgent(cfg) {
       // The chat is a tab, not a modal: it stops above whatever the app has pinned to
       // the bottom (tab bar 56px, plus the Continue banner when it is up), exactly like
       // the Reels tab iframe does. `--pchat-bottom` is measured in syncBottomInset().
-      '#pchat{position:fixed;top:0;left:0;right:0;',
+      // A half sheet from the bottom, dismissed the same two ways as every other
+      // sheet in the app: swipe the handle down, or the x. It used to cover the whole
+      // screen, which was the only surface in the product that did.
+      '#pchat{position:fixed;left:0;right:0;top:auto;',
       'bottom:var(--pchat-bottom,calc(56px + env(safe-area-inset-bottom,0px)));',
-      'z-index:9400;background:#080812;display:none;flex-direction:column}',
+      'height:min(50vh,540px);z-index:9400;background:#080812;display:none;flex-direction:column;',
+      'border-radius:20px 20px 0 0;box-shadow:0 -18px 50px rgba(0,0,0,.55);overflow:hidden;',
+      'transform:translateY(100%);transition:transform .26s cubic-bezier(.32,.72,0,1)}',
       '#pchat.open{display:flex}',
+      '#pchat.in{transform:translateY(0)}',
+      '#pchat.drag{transition:none}',
+      '.pchat-grab{flex:none;padding:8px 0 2px;display:flex;justify-content:center;cursor:grab;',
+      'touch-action:none}',
+      '.pchat-grab i{display:block;width:38px;height:4px;border-radius:2px;background:rgba(255,255,255,.28)}',
       '.pchat-top{display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top,10px) + 10px) 16px 12px;',
       'border-bottom:1px solid rgba(255,255,255,.08);background:linear-gradient(180deg,#14141f,#0b0b14)}',
       '.pchat-av{width:36px;height:36px;border-radius:11px;background:linear-gradient(135deg,#FF6D00,#ff9d4d);',
@@ -308,6 +318,7 @@ function createChatAgent(cfg) {
     var root = document.createElement('div');
     root.id = T('pchat');
     root.innerHTML =
+      T('<div class="pchat-grab" id="pchat-grab"><i></i></div>') +
       T('<div class="pchat-top">') +
       T('<div class="pchat-av">') + esc(cfg.avatar || '🏋️') + '</div>' +
       T('<div><div class="pchat-title">') + esc(cfg.title) +
@@ -333,6 +344,7 @@ function createChatAgent(cfg) {
     document.body.appendChild(root);
 
     document.getElementById(T('pchat-close')).onclick = close;
+    wireSwipeToClose(root, document.getElementById(T('pchat-grab')));
     document.getElementById(T('pchat-send')).onclick = function () {
       if (S.busy) { stopStream(); return; }
       send(document.getElementById(T('pchat-input')).value);
@@ -1156,6 +1168,14 @@ function createChatAgent(cfg) {
     syncBottomInset();
     var root = document.getElementById(T('pchat'));
     root.classList.add('open');
+    root.style.transform = '';
+    // One frame between display:flex and the transform, or the sheet is simply
+    // there instead of sliding up.
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(function () { root.classList.add('in'); });
+    } else {
+      root.classList.add('in');
+    }
     S.open = true;
     if (!S.msgs.length && !document.getElementById(T('pchat-scroll')).children.length) greet();
     setTimeout(function () {
@@ -1166,9 +1186,45 @@ function createChatAgent(cfg) {
 
   function close() {
     var root = document.getElementById(T('pchat'));
-    if (root) root.classList.remove('open');
+    if (root) {
+      root.classList.remove('in', 'drag');
+      root.style.transform = '';
+      // Let it slide back down before it stops being laid out. Guarded on S.open so a
+      // reopen mid-animation is not torn down by the close that preceded it.
+      setTimeout(function () { if (!S.open) root.classList.remove('open'); }, 260);
+    }
     S.open = false;
     endLive(); // never leave a microphone running behind a closed panel
+  }
+
+  /**
+   * Swipe the handle down to dismiss. Past a third of the sheet (or a clear flick)
+   * it closes; anything less springs back, so a mis-swipe never loses the chat.
+   */
+  function wireSwipeToClose(root, grab) {
+    if (!grab) return;
+    var startY = 0, dy = 0, startT = 0, dragging = false;
+    grab.addEventListener('touchstart', function (e) {
+      var t = e.touches && e.touches[0];
+      if (!t) return;
+      dragging = true; startY = t.clientY; dy = 0; startT = Date.now();
+      root.classList.add('drag');
+    }, { passive: true });
+    grab.addEventListener('touchmove', function (e) {
+      var t = e.touches && e.touches[0];
+      if (!dragging || !t) return;
+      dy = Math.max(0, t.clientY - startY);
+      root.style.transform = 'translateY(' + dy + 'px)';
+    }, { passive: true });
+    grab.addEventListener('touchend', function () {
+      if (!dragging) return;
+      dragging = false;
+      root.classList.remove('drag');
+      root.style.transform = '';
+      var h = root.getBoundingClientRect().height || 1;
+      var flick = dy > 40 && (Date.now() - startT) < 300;
+      if (dy > h / 3 || flick) close();
+    });
   }
 
   /**
