@@ -124,6 +124,27 @@ async function run() {
   assert.strictEqual(out.sms.live, false);
   assert.match(out.sms.detail, /suspended/);
 
+  // ── "Add to Slack" is a separate claim from "the bot can talk" ──────────
+  // Verified on production 2026-09-01: slack read healthy on a valid bot token
+  // while every customer install died at our callback, because the OAuth pair
+  // was missing and the client_id belonged to an app we do not own.
+  stubFetch(HAPPY);
+  out = await probeChannels({ ...ENV, SLACK_BOT_TOKEN: 'xoxb-111-222-zzz' }, {});
+  assert.strictEqual(out.slack.live, true, 'a good token still means the bot can talk');
+  assert.strictEqual(out.slack.installable, false, 'no OAuth pair means nobody can install it');
+  assert.match(out.slack.installDetail, /SLACK_CLIENT_ID/);
+
+  stubFetch(HAPPY);
+  out = await probeChannels(
+    { ...ENV, SLACK_BOT_TOKEN: 'xoxb-111-222-zzz', SLACK_CLIENT_ID: '999.888', SLACK_CLIENT_SECRET: 'sec' }, {});
+  assert.strictEqual(out.slack.installable, false, 'a client_id from another app must be caught');
+  assert.match(out.slack.installDetail, /different Slack app/);
+
+  stubFetch(HAPPY);
+  out = await probeChannels(
+    { ...ENV, SLACK_BOT_TOKEN: 'xoxb-111-222-zzz', SLACK_CLIENT_ID: '111.888', SLACK_CLIENT_SECRET: 'sec' }, {});
+  assert.strictEqual(out.slack.installable, true, 'matching app + full OAuth pair is installable');
+
   // ── Never echo a credential into the health payload ─────────────────────
   stubFetch(HAPPY);
   out = await probeChannels(ENV, { discordGatewayStatus: () => ({ connected: true, bot: { username: 'ScanGym', id: '1' } }) });
