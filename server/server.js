@@ -757,6 +757,12 @@ if (fs.existsSync(FRONTEND_DIR)) {
 
   // Reels SSR routes are registered BEFORE express.static (see above)
 
+  // "Use ScanGym in Claude" — customer-friendly MCP connector setup guide
+  app.get('/claude', (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache');
+    res.sendFile(path.join(FRONTEND_DIR, 'claude', 'index.html'));
+  });
+
   // CEO Dashboard
   app.get('/ceo-dashboard', (req, res) => {
     res.setHeader('Cache-Control', 'no-cache');
