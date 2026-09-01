@@ -29,19 +29,50 @@ const pool = require('../middleware/db');
 // ═══════════════════════════════════════════════════════════
 const GOOGLE_API_KEY = process.env.GOOGLE_MAPS_API_KEY; // Same key works for YouTube
 const CACHE_HOURS = 6;
-const MAX_RESULTS_PER_QUERY = 15;
+const MAX_RESULTS_PER_QUERY = 50; // YouTube API max page size (was 15)
 
+// How many result pages to pull per query (each page = 1 search = 100 quota units).
+// Default 1 keeps quota use identical per-query to before; raise via env once the
+// GCP project's YouTube quota is lifted. Pagination uses nextPageToken.
+const YT_PAGES_PER_QUERY = Math.max(1, Number(process.env.YT_PAGES_PER_QUERY) || 1);
+
+// Hard ceiling on YouTube search calls per refresh cycle, regardless of how many
+// queries/pages are configured. Protects the shared GOOGLE_MAPS_API_KEY quota
+// (default 10k units/day = 100 searches/day; 4 refreshes/day). At 20 the worst
+// case is 80 searches/day, safely under the cap. Tune via env.
+const YT_MAX_SEARCHES_PER_REFRESH = Math.max(1, Number(process.env.YT_MAX_SEARCHES_PER_REFRESH) || 20);
+
+// Broadened gym-related coverage. Keeps the original UK day-pass intent but adds
+// wider gym/fitness terms so the Reels feed pulls a much larger slice of gym
+// content. Still short + embeddable + HD only, so the vertical Reels UI/UX is
+// unchanged — only the breadth of videos grows.
 const YOUTUBE_SEARCH_QUERIES = [
+  // Original UK day-pass set
   'gym day pass UK',
   'gym hopping UK',
   'gym tour London',
-  'fitness motivation short',
   'day pass gym review',
   'budget gym UK',
   'gym walkthrough',
-  'workout motivation gym',
   'gym first time',
   'gym newbie tips',
+  // Broader gym content
+  'gym motivation short',
+  'workout motivation gym',
+  'gym workout routine',
+  'gym transformation',
+  'gym leg day',
+  'gym push day',
+  'gym pull day',
+  'gym form tips',
+  'best gym exercises',
+  'gym fails funny',
+  'gym aesthetic',
+  'home gym setup',
+  'crossfit gym',
+  'gym equipment guide',
+  'gym for beginners',
+  'women gym workout',
 ];
 
 const TIKTOK_CURATED_URLS = [
@@ -66,18 +97,20 @@ async function initSocialReelsTable() {
 // ═══════════════════════════════════════════════════════════
 //  YOUTUBE SHORTS — Search & Cache
 // ═══════════════════════════════════════════════════════════
-async function fetchYouTubeShorts(query, maxResults = MAX_RESULTS_PER_QUERY) {
+// Fetch a single page of YouTube results for a query. Returns
+// { items: [...normalized reels], nextPageToken } so the caller can paginate.
+async function fetchYouTubeShortsPage(query, pageToken = null, maxResults = MAX_RESULTS_PER_QUERY) {
   if (!GOOGLE_API_KEY) {
     console.warn('[social-reels] No GOOGLE_MAPS_API_KEY — skipping YouTube fetch');
-    return [];
+    return { items: [], nextPageToken: null };
   }
-  
+
   try {
     const params = new URLSearchParams({
       part: 'snippet',
       q: query,
       type: 'video',
-      videoDuration: 'short',        // Only shorts (< 4 min)
+      videoDuration: 'short',        // Only shorts (< 4 min) — keeps the vertical Reels UX intact
       videoDefinition: 'high',       // HD only
       // Without this, search happily returns videos whose owner has disabled
       // embedding. Those render as a permanently black slide with no error —
@@ -92,31 +125,42 @@ async function fetchYouTubeShorts(query, maxResults = MAX_RESULTS_PER_QUERY) {
       relevanceLanguage: 'en',
       key: GOOGLE_API_KEY,
     });
-    
+    if (pageToken) params.set('pageToken', pageToken);
+
     const res = await fetch(`https://www.googleapis.com/youtube/v3/search?${params}`);
     if (!res.ok) {
       console.error(`[social-reels] YouTube API error ${res.status}:`, await res.text());
-      return [];
+      return { items: [], nextPageToken: null };
     }
-    
+
     const data = await res.json();
-    
-    return (data.items || []).map(item => ({
-      platform: 'youtube',
-      external_id: `yt_${item.id.videoId}`,
-      title: item.snippet.title,
-      author_name: item.snippet.channelTitle,
-      author_url: `https://www.youtube.com/channel/${item.snippet.channelId}`,
-      thumbnail_url: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.medium?.url,
-      video_url: `https://www.youtube.com/shorts/${item.id.videoId}`,
-      embed_html: `<iframe src="https://www.youtube.com/embed/${item.id.videoId}?autoplay=1&loop=1&mute=1&controls=0&playsinline=1" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen style="width:100%;height:100%;position:absolute;top:0;left:0;"></iframe>`,
-      search_query: query,
-      category: 'YouTube Shorts',
-    }));
+
+    const items = (data.items || [])
+      .filter(item => item.id && item.id.videoId)
+      .map(item => ({
+        platform: 'youtube',
+        external_id: `yt_${item.id.videoId}`,
+        title: item.snippet.title,
+        author_name: item.snippet.channelTitle,
+        author_url: `https://www.youtube.com/channel/${item.snippet.channelId}`,
+        thumbnail_url: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.medium?.url,
+        video_url: `https://www.youtube.com/shorts/${item.id.videoId}`,
+        embed_html: `<iframe src="https://www.youtube.com/embed/${item.id.videoId}?autoplay=1&loop=1&mute=1&controls=0&playsinline=1" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen style="width:100%;height:100%;position:absolute;top:0;left:0;"></iframe>`,
+        search_query: query,
+        category: 'YouTube Shorts',
+      }));
+
+    return { items, nextPageToken: data.nextPageToken || null };
   } catch (err) {
     console.error('[social-reels] YouTube fetch error:', err.message);
-    return [];
+    return { items: [], nextPageToken: null };
   }
+}
+
+// Backwards-compatible single-page helper (used by callers expecting an array).
+async function fetchYouTubeShorts(query, maxResults = MAX_RESULTS_PER_QUERY) {
+  const { items } = await fetchYouTubeShortsPage(query, null, maxResults);
+  return items;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -204,19 +248,33 @@ async function upsertSocialReel(reel) {
 async function refreshSocialReels() {
   console.log('[social-reels] Starting background refresh...');
   let total = 0;
-  
-  // YouTube Shorts
+  let searchCalls = 0; // global YouTube search-call counter (quota guard)
+
+  // YouTube Shorts — paginate per query, but never exceed the per-refresh cap.
   for (const query of YOUTUBE_SEARCH_QUERIES) {
+    if (searchCalls >= YT_MAX_SEARCHES_PER_REFRESH) {
+      console.log(`[social-reels] Hit YouTube search cap (${YT_MAX_SEARCHES_PER_REFRESH}) — stopping early to protect quota`);
+      break;
+    }
     const cacheKey = `youtube:${query}`;
     if (await isCacheStale(cacheKey)) {
-      const results = await fetchYouTubeShorts(query);
-      for (const reel of results) {
-        await upsertSocialReel(reel);
-        total++;
+      let queryTotal = 0;
+      let pageToken = null;
+      for (let page = 0; page < YT_PAGES_PER_QUERY; page++) {
+        if (searchCalls >= YT_MAX_SEARCHES_PER_REFRESH) break;
+        const { items, nextPageToken } = await fetchYouTubeShortsPage(query, pageToken);
+        searchCalls++;
+        for (const reel of items) {
+          await upsertSocialReel(reel);
+          total++;
+          queryTotal++;
+        }
+        // Rate limit: wait 1s between API calls
+        await new Promise(r => setTimeout(r, 1000));
+        if (!nextPageToken) break; // no more pages for this query
+        pageToken = nextPageToken;
       }
-      await updateCache(cacheKey, results.length);
-      // Rate limit: wait 1s between queries
-      await new Promise(r => setTimeout(r, 1000));
+      await updateCache(cacheKey, queryTotal);
     }
   }
   
