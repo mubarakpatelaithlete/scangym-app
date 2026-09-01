@@ -343,15 +343,15 @@ function createChatAgent(cfg) {
       '</div></div>';
     document.body.appendChild(root);
 
-    document.getElementById(T('pchat-close')).onclick = close;
+    document.getElementById(T('pchat-close')).onclick = function () { close('user'); };
     wireSwipeToClose(root, document.getElementById(T('pchat-grab')));
     document.getElementById(T('pchat-send')).onclick = function () {
       if (S.busy) { stopStream(); return; }
       send(document.getElementById(T('pchat-input')).value);
     };
     document.getElementById(T('pchat-mic')).onclick = toggleMic;
-    document.getElementById(T('pchat-live-end')).onclick = endLive;
-    document.getElementById(T('pchat-live-type')).onclick = endLive;
+    document.getElementById(T('pchat-live-end')).onclick = function () { endLive('user'); };
+    document.getElementById(T('pchat-live-type')).onclick = function () { endLive('user'); };
 
     var input = document.getElementById(T('pchat-input'));
     input.addEventListener('keydown', function (e) {
@@ -993,10 +993,18 @@ function createChatAgent(cfg) {
           liveState('listening');
           if (S.busy) stopStream();
         },
+        onIdleEnd: function () {
+          // Two minutes of silence. Say so, or it looks like it broke.
+          endLive('idle');
+          setHint('Voice paused after a quiet minute — tap the mic when you want me back.');
+        },
         onFinal: function (said) {
           liveState('thinking');
           S.spoken = 0;
           S.voice = true;
+          // They have genuinely talked to us now, which is what earns the
+          // no-gesture open on their next visit (see voice-always.js).
+          if (window.SGVoiceAlways && window.SGVoiceAlways.markUsed) window.SGVoiceAlways.markUsed();
           // Interrupting aborts the previous turn, but the abort unwinds a moment
           // later — so this used to arrive while still busy and be dropped on the
           // floor, which is exactly what made it feel like it ignored you. Hold it
@@ -1022,16 +1030,32 @@ function createChatAgent(cfg) {
     }
   }
 
-  function endLive() {
+  /**
+   * Stop the live conversation.
+   *
+   * The reason matters. Voice ends for three different reasons and they are not the
+   * same promise to the customer:
+   *   'user'     — they tapped End/Type, or closed the panel. Stay off until asked.
+   *   'handover' — they changed tab; the next agent picks the conversation up.
+   *   'idle'     — two minutes of silence. Not a decision, so nothing is remembered.
+   * Treating all three as "off for a day" (or none of them as off at all) is what
+   * made "End voice" stop meaning end.
+   */
+  function endLive(reason) {
     S.live = false;
     micOn(false);
     var panel = liveEl('pchat-live');
     if (panel) panel.classList.remove('on');
     if (window.SGVoice && window.SGVoice.stopLive) window.SGVoice.stopLive();
+    if (reason === 'user' && window.SGVoiceAlways && window.SGVoiceAlways.userEnded) {
+      window.SGVoiceAlways.userEnded();
+    }
   }
 
   function toggleMic() {
-    if (S.live) { endLive(); return; }
+    if (S.live) { endLive('user'); return; }
+    // Tapping the mic is the clearest "yes" there is: undo any previous opt-out.
+    if (window.SGVoiceAlways && window.SGVoiceAlways.optIn) window.SGVoiceAlways.optIn();
     if (window.SGVoice && window.SGVoice.startLive && window.SGVoice.canRecord()) {
       window.SGVoice.ready().then(function (on) {
         if (on) startLive();
@@ -1184,7 +1208,12 @@ function createChatAgent(cfg) {
     }, 120);
   }
 
-  function close() {
+  /**
+   * @param reason 'user' when a person closed it (tap on ×, swipe down) — anything
+   * else (a route change, say) is the app tidying up and must not be read as the
+   * customer switching voice off.
+   */
+  function close(reason) {
     var root = document.getElementById(T('pchat'));
     if (root) {
       root.classList.remove('in', 'drag');
@@ -1194,7 +1223,8 @@ function createChatAgent(cfg) {
       setTimeout(function () { if (!S.open) root.classList.remove('open'); }, 260);
     }
     S.open = false;
-    endLive(); // never leave a microphone running behind a closed panel
+    // Never leave a microphone running behind a closed panel.
+    endLive(reason === 'user' ? 'user' : 'handover');
   }
 
   /**
@@ -1223,7 +1253,7 @@ function createChatAgent(cfg) {
       root.style.transform = '';
       var h = root.getBoundingClientRect().height || 1;
       var flick = dy > 40 && (Date.now() - startT) < 300;
-      if (dy > h / 3 || flick) close();
+      if (dy > h / 3 || flick) close('user');
     });
   }
 
@@ -1279,7 +1309,7 @@ function createChatAgent(cfg) {
       if (onTab && !barVisible) positionFab(fab);
     }
     if (S.open) syncBottomInset();
-    if (!onTab && S.open) close();
+    if (!onTab && S.open) close('route');
     if (onTab && /[?&]chat=1/.test(location.search) && !S.open) open();
   }
 
@@ -1309,7 +1339,29 @@ function createChatAgent(cfg) {
      * try the mic, and only take over the screen once voice is genuinely live.
      */
     startLive: function () { build(); S.deferOpen = !S.open; startLive(); },
-    endLive: function () { endLive(); },
+    endLive: function (reason) { endLive(reason); },
+    /**
+     * The conversation so far, so a tab change hands over the conversation and not
+     * just the microphone. Same shape history() sends to the server.
+     */
+    exportHistory: function () { return S.msgs.slice(-10); },
+    /**
+     * Adopt a conversation carried over from another tab's agent. Only into an empty
+     * agent: silently prepending someone else's turns to an existing thread would
+     * change what the model is answering.
+     */
+    importHistory: function (msgs) {
+      if (!Array.isArray(msgs) || !msgs.length) return;
+      if (S.msgs.length) return;
+      S.msgs = msgs.slice(-10);
+      build();
+      // Show it, so the customer can see it did not forget them.
+      for (var i = 0; i < S.msgs.length; i++) {
+        var m = S.msgs[i];
+        if (!m || !m.text) continue;
+        bubble(m.role === 'user' ? T('pchat-me') : T('pchat-ai'), m.text);
+      }
+    },
   };
 }
 

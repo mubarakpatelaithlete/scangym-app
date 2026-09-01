@@ -276,6 +276,10 @@
   var BARGE_FRAMES = 5;      // ~150ms of you talking kills our audio
   var MAX_SEGMENT_MS = 30000;
   var IDLE_RESTART_MS = 20000;
+  // An open microphone that nobody is talking into is a battery drain and a privacy
+  // story we do not want to have to explain. Two minutes of genuine silence and we
+  // hand the mic back; the caller is told so it can say so on screen.
+  var IDLE_END_MS = 120000;
 
   function rms(analyser, buf) {
     analyser.getByteTimeDomainData(buf);
@@ -285,6 +289,35 @@
       sum += v * v;
     }
     return Math.sqrt(sum / buf.length);
+  }
+
+  /**
+   * A short, quiet blip the moment we start thinking.
+   *
+   * Without it, "thinking" and "the microphone is broken" sound exactly the same —
+   * both are silence — and this file's own comment above says as much. Synthesised
+   * rather than shipped as an asset: no extra request, and it cannot 404.
+   */
+  function playEarcon() {
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      var ctx = live && live.ctx ? live.ctx : new AC();
+      if (ctx.state === 'suspended' && ctx.resume) ctx.resume();
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      var t = ctx.currentTime;
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, t);
+      osc.frequency.exponentialRampToValueAtTime(620, t + 0.16);
+      // Quiet, and shaped so it reads as a soft "mm-hm" rather than an alert.
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.exponentialRampToValueAtTime(0.06, t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.22);
+    } catch (_) { /* a missing blip must never break voice */ }
   }
 
   function startLive(opts) {
@@ -321,6 +354,7 @@
           floor: 0.012,
           opts: opts,
           timer: null,
+          lastVoiceAt: Date.now(),
         };
 
         setState('listening');
@@ -332,8 +366,16 @@
 
   function setState(state) {
     if (!live) return;
+    var was = live.state;
     live.state = state;
+    // Only on the transition, so a re-entrant setState cannot blip twice per turn.
+    if (state === 'thinking' && was !== 'thinking') playEarcon();
     if (live.opts.onState) live.opts.onState(state);
+  }
+
+  /** 'off' when there is no conversation — lets callers duck audio only when we hold the floor. */
+  function liveState() {
+    return live ? live.state : 'off';
   }
 
   function openSegment() {
@@ -374,6 +416,7 @@
     if (blob.size < 2500) return;
 
     setState('thinking');
+    if (live) live.lastVoiceAt = Date.now();
     var form = new FormData();
     form.append('audio', blob, 'speech.' + (type.indexOf('mp4') > -1 ? 'mp4' : 'webm'));
     fetch('/api/voice/stt', { method: 'POST', body: form })
@@ -423,6 +466,7 @@
       live.loud++;
       if (live.loud >= needFrames && !live.heard) {
         live.heard = true;
+        live.lastVoiceAt = now;
         if (holding) {
           // Barge-in, including while we are still thinking. The words that
           // triggered this are already in the open segment, so nothing is lost.
@@ -442,6 +486,15 @@
     }
 
     if (live.heard && now - live.startedAt > MAX_SEGMENT_MS) { closeSegment(); return; }
+
+    // Nobody has said anything for two minutes: give the microphone back. Only while
+    // listening — never mid-answer — and this is not an opt-out, so one tap resumes.
+    if (!holding && now - live.lastVoiceAt > IDLE_END_MS) {
+      var onIdle = live.opts.onIdleEnd;
+      stopLive();
+      if (onIdle) { try { onIdle(); } catch (_) {} }
+      return;
+    }
     // Rotate an idle recorder only while listening; mid-answer a swap would drop
     // the very speech that is about to interrupt us.
     if (!live.heard && !holding && now - live.startedAt > IDLE_RESTART_MS) { closeSegment(); openSegment(); }
@@ -464,6 +517,7 @@
   window.SGVoice = {
     ready: ready,
     listen: listen,
+    liveState: liveState,
     stopListening: stopListening,
     isListening: isListening,
     speak: speak,
