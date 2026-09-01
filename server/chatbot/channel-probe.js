@@ -91,6 +91,14 @@ async function probeDiscord(env, gatewayStatus) {
   return out;
 }
 
+/** True when an xoxb token and a client_id look like the same Slack app. */
+function sameSlackApp(botToken, clientId) {
+  const tokenPart = String(botToken || '').split('-')[1] || '';
+  const idPart = String(clientId || '').split('.')[0] || '';
+  if (!tokenPart || !idPart) return true; // nothing to compare — do not cry wolf
+  return tokenPart === idPart;
+}
+
 async function probeSlack(env) {
   if (!env.SLACK_BOT_TOKEN) return notConfigured('SLACK_BOT_TOKEN');
 
@@ -108,6 +116,21 @@ async function probeSlack(env) {
   if (!env.SLACK_SIGNING_SECRET) {
     out.live = false;
     out.detail = 'SLACK_SIGNING_SECRET is not set, so inbound events cannot be verified';
+  }
+  // A valid bot token says the bot can talk in workspaces it is already in. It
+  // says nothing about whether a new customer can install it — that needs the
+  // OAuth pair, from the same app as the token. Reported separately, because on
+  // 2026-09-01 this channel read healthy while every install died at the
+  // callback.
+  out.installable = Boolean(env.SLACK_CLIENT_ID && env.SLACK_CLIENT_SECRET);
+  if (!out.installable) {
+    out.installDetail = 'SLACK_CLIENT_ID/SLACK_CLIENT_SECRET are not both set — "Add to Slack" cannot complete';
+  } else if (!sameSlackApp(env.SLACK_BOT_TOKEN, env.SLACK_CLIENT_ID)) {
+    // Heuristic, but it catches exactly the failure we hit: a bot token from
+    // the app we own paired with a client_id from an app we do not. Slack's
+    // xoxb token and the client_id share their leading numeric segment.
+    out.installable = false;
+    out.installDetail = 'SLACK_CLIENT_ID belongs to a different Slack app than SLACK_BOT_TOKEN';
   }
   return out;
 }

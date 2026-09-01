@@ -330,9 +330,28 @@ router.get('/discord/invite', async (req, res) => {
 // Needed because the session cookie (sameSite:strict) is NOT sent on Slack's redirect.
 const slackStates = new Map();
 
+// Slack OAuth credentials come from the environment and nowhere else.
+//
+// There used to be a hardcoded client_id here (split across an array so it did
+// not read as a literal). It belonged to a Slack app this account does not own,
+// and it was never paired with a secret. The result, verified end to end on
+// 2026-09-01: a customer clicked Slack, got a real Slack consent screen for an
+// app called "ScanGym", clicked Allow, and landed back on a toast reading
+// "Slack is not fully configured yet" — because the callback had no secret to
+// exchange the code with, and could not have had one for someone else's app.
+//
+// A fallback that produces a working-looking screen and a broken outcome is
+// worse than no button. So: no credentials, no install URL, and the rail says
+// "being set up" instead of walking someone into a dead end.
+function slackOAuth() {
+  const clientId = process.env.SLACK_CLIENT_ID || '';
+  const clientSecret = process.env.SLACK_CLIENT_SECRET || '';
+  return { clientId, clientSecret, ready: Boolean(clientId && clientSecret) };
+}
+
 // ─── GET /api/channels/slack/install — Get Slack install link ─
 router.get('/slack/install', (req, res) => {
-  const clientId = process.env.SLACK_CLIENT_ID || ['1145263420', '2274.114614', '00621316'].join('');
+  const { clientId, ready } = slackOAuth();
   // Bot scopes: chat:write (send), im:write (open DM), im:history, users:read, mentions, slash command
   const scopes = 'chat:write,im:write,im:history,users:read,app_mentions:read,commands';
   // Carry the logged-in user through OAuth via a short-lived state token.
@@ -343,18 +362,18 @@ router.get('/slack/install', (req, res) => {
     slackStates.set(state, { userId: linkUserId, createdAt: Date.now() });
     for (const [k, v] of slackStates) { if (Date.now() - v.createdAt > 600000) slackStates.delete(k); }
   }
-  if (clientId) {
+  if (ready) {
     const redirectUri = req.protocol + '://' + req.get('host') + '/api/channels/slack/callback';
     return res.json({
       installUrl: `https://slack.com/oauth/v2/authorize?client_id=${clientId}&scope=${encodeURIComponent(scopes)}&redirect_uri=${encodeURIComponent(redirectUri)}${state ? '&state=' + state : ''}`,
     });
   }
-  // Fallback: direct Slack App page
-  const appId = process.env.SLACK_APP_ID || 'A0BDKBSJ99A';
-  if (appId) {
-    return res.json({ installUrl: `https://slack.com/apps/${appId}` });
-  }
-  res.json({ installUrl: 'https://slack.com/apps', note: 'Search for ScanGym in the Slack App Directory' });
+  // No installUrl on purpose — the rail shows "Slack is being set up" for this.
+  res.json({
+    configured: false,
+    error: 'Slack install is not configured',
+    detail: 'SLACK_CLIENT_ID and SLACK_CLIENT_SECRET must both be set, and must belong to the same Slack app as SLACK_BOT_TOKEN.',
+  });
 });
 
 // ─── GET /api/channels/msteams/install — Get Teams install link ─
@@ -399,10 +418,9 @@ router.get('/slack/callback', async (req, res) => {
   if (!code) {
     return res.redirect('/channels?toast=' + encodeURIComponent('Missing authorisation code'));
   }
-  const clientId = process.env.SLACK_CLIENT_ID || ['1145263420', '2274.114614', '00621316'].join('');
-  const clientSecret = process.env.SLACK_CLIENT_SECRET || '';
-  if (!clientSecret) {
-    console.error('[Slack OAuth] SLACK_CLIENT_SECRET is not set — cannot complete install');
+  const { clientId, clientSecret, ready } = slackOAuth();
+  if (!ready) {
+    console.error('[Slack OAuth] SLACK_CLIENT_ID/SLACK_CLIENT_SECRET are not both set — cannot complete install');
     return res.redirect('/channels?toast=' + encodeURIComponent('Slack is not fully configured yet — please try again later'));
   }
   try {
