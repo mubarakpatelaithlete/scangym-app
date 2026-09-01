@@ -33,15 +33,19 @@ const PLATFORMS = {
   claude: {
     slug: 'claude',
     name: 'Claude',
-    settingsUrl: 'https://claude.ai/settings/connectors',
+    // Verified in a browser 2026-09-01: /settings/connectors now renders only
+    // "Connectors have moved to Customize". This is where they actually live.
+    settingsUrl: 'https://claude.ai/new#settings/customize-connectors',
     settingsBtn: 'Open Claude connectors',
-    step2Title: 'Open Claude’s connector settings',
+    step2Title: 'Open Claude’s connectors',
     step3Body:
-      'Tap <span class="k">Add custom connector</span>, paste the link, then tap <span class="k">Add</span>.',
-    faqFindQ: 'I can’t find “Add custom connector”.',
+      'Tap <span class="k">Add</span> → <span class="k">Custom connector</span>, paste the link, then confirm.',
+    faqFindQ: 'I can’t find where to add a connector.',
     faqFindA:
-      'Make sure you’re on the Connectors page in Claude’s settings (use the orange button above). On phones, scroll to the bottom of that page — the button sits under your existing connectors.',
-    accountNote: 'Custom connectors need a paid Claude plan — that part is Anthropic’s, not ours.',
+      'Claude moved connectors: they now sit under Customize → Connectors, not the old settings page. The orange button above goes straight there. Use the Add button at the top right.',
+    // Checked on a free Claude account on 2026-09-01: a custom connector added,
+    // listed and used. So no paid-plan claim here — it would not be true.
+    accountNote: 'A free Claude account is enough — we tested it on one.',
   },
   grok: {
     slug: 'grok',
@@ -54,7 +58,8 @@ const PLATFORMS = {
     faqFindQ: 'I can’t find “New Connector”.',
     faqFindA:
       'Use the orange button above to land on the Connectors page, then look for the button at the top right. If it is not there, your plan does not include custom connectors yet.',
-    accountNote: 'Custom connectors need a paid Grok plan — that part is xAI’s, not ours.',
+    accountNote:
+      'If Grok doesn’t offer “New Connector”, your Grok plan doesn’t include custom connectors yet.',
   },
   gemini: {
     slug: 'gemini',
@@ -66,9 +71,8 @@ const PLATFORMS = {
       'Tap <span class="k">Add a custom app</span>, paste the link, then confirm.',
     faqFindQ: 'I can’t find “Add a custom app”.',
     faqFindA:
-      'Custom apps are rolling out gradually — today they need a personal Google account, and in most cases a US one. If you cannot see the option, that is why, and Claude or Grok will work in the meantime.',
-    accountNote:
-      'Custom apps in Gemini are still rolling out (personal Google accounts, mostly US at the moment).',
+      'Custom apps are a Gemini Spark feature. On a Gemini account without Spark the Connected apps page only lists Google’s own apps and a fixed set of partners — no box to paste a link into. That is why the option is missing, and Claude works today in the meantime.',
+    accountNote: 'Custom apps need Gemini Spark — without it, Connected apps is a fixed list.',
   },
 };
 

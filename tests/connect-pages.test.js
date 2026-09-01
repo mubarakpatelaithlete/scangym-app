@@ -106,3 +106,19 @@ test('every rail button that opens a local path points at a real route', () => {
 test('an unknown platform is a thrown error, not a half-rendered page', () => {
   assert.throws(() => connect.render(FRONTEND, 'copilot'), /unknown connector platform/);
 });
+
+test('the Claude page links where connectors actually live now', () => {
+  // Checked in a browser on 2026-09-01: claude.ai/settings/connectors renders
+  // only "Connectors have moved to Customize", which is a dead end for a
+  // customer following our step 2.
+  const url = connect.PLATFORMS.claude.settingsUrl;
+  assert.match(url, /customize-connectors/);
+  assert.ok(!/claude\.ai\/settings\/connectors$/.test(url), 'the moved URL is back');
+});
+
+test('no page invents a plan requirement we have not checked', () => {
+  // A custom connector was added and used on a FREE Claude account that day,
+  // so "needs a paid plan" would be a lie told to a paying-nothing customer.
+  assert.ok(!/paid/i.test(connect.PLATFORMS.claude.accountNote));
+  assert.match(connect.PLATFORMS.gemini.accountNote, /Spark/);
+});
