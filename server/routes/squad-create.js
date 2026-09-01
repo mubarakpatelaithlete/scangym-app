@@ -22,13 +22,17 @@ const express = require('express');
 const router = express.Router();
 
 /**
- * key → { label, env, api }
- *   env: provider credential that must be present for the mode to run.
- *   api: base path of the route that serves it; null = not built yet.
- * A mode needs BOTH to count as configured.
+ * key → { label, env | ready, api }
+ *   env:   provider credential that must be present for the mode to run.
+ *   ready: for modes served by an existing subsystem rather than by one
+ *          dedicated key — text runs on lib/llm.js, which is happy with
+ *          OPENAI_API_KEY *or* GROQ_API_KEY, so naming a single variable
+ *          would report a working mode as broken on a Groq-only box.
+ *   api:   base path of the route that serves it; null = not built yet.
+ * A mode needs a route AND a provider to count as configured.
  */
 const MODES = {
-  text: { label: 'Text', env: 'SQUAD_TEXT_API_KEY', api: null },
+  text: { label: 'Text', ready: () => require('../lib/llm').configured(), api: '/api/squad-text' },
   image: { label: 'Image', env: 'SQUAD_IMAGE_API_KEY', api: null },
   video: { label: 'Video', env: 'GEMINI_API_KEY', api: '/api/squad-video' },
   audio: { label: 'Audio', env: 'SQUAD_AUDIO_API_KEY', api: null },
@@ -41,7 +45,8 @@ const MODES = {
 /** Why a mode cannot run yet — specific enough to act on. */
 function statusFor(def) {
   if (!def.api) return { configured: false, reason: 'not_built' };
-  if (!process.env[def.env]) return { configured: false, reason: 'no_provider' };
+  const ok = def.ready ? !!def.ready() : !!process.env[def.env];
+  if (!ok) return { configured: false, reason: 'no_provider' };
   return { configured: true };
 }
 

@@ -42,15 +42,27 @@ test('every one of the eight modes is reported', () => {
 });
 
 test('a mode with no route is never configured, even with a key set', () => {
-  process.env.SQUAD_TEXT_API_KEY = 'pretend-this-exists';
+  // Text used to be the example here; it now has a route (/api/squad-text), so
+  // the unbuilt case is demonstrated with image, which does not.
+  process.env.SQUAD_IMAGE_API_KEY = 'pretend-this-exists';
   try {
     const modes = getModes();
-    assert.equal(modes.text.configured, false);
-    assert.equal(modes.text.reason, 'not_built');
-    assert.equal(modes.text.api, null);
+    assert.equal(modes.image.configured, false);
+    assert.equal(modes.image.reason, 'not_built');
+    assert.equal(modes.image.api, null);
   } finally {
-    delete process.env.SQUAD_TEXT_API_KEY;
+    delete process.env.SQUAD_IMAGE_API_KEY;
   }
+});
+
+test('text is configured off the shared LLM, not off a dedicated key', () => {
+  // lib/llm.js is happy with OpenAI or Groq, so the mode must ask it rather
+  // than name one variable — a Groq-only box has a working Text mode.
+  const modes = getModes();
+  const llm = require('../server/lib/llm');
+  assert.equal(modes.text.api, '/api/squad-text');
+  assert.equal(modes.text.configured, llm.configured());
+  if (!llm.configured()) assert.equal(modes.text.reason, 'no_provider');
 });
 
 test('a built mode with no provider key is not configured, and says so', () => {

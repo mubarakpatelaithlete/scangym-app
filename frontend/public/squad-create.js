@@ -41,7 +41,7 @@
    */
   var MODES = [
     {
-      key: 'text', label: 'Text', icon: '✍️', api: null,
+      key: 'text', label: 'Text', icon: '✍️', api: '/api/squad-text',
       title: 'Create text', placeholder: 'What should the post say?',
       gen: '⚡ Generate text', resultKind: 'text',
       templates: [
@@ -435,7 +435,17 @@
       body: JSON.stringify(body),
     }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
       .then(function (res) {
-        if (!res.ok || !res.d.jobId) throw new Error(res.d.error || 'could not start');
+        if (!res.ok) throw new Error(res.d.error || 'could not start');
+        // Some modes finish inside the request (text is a couple of seconds, not
+        // a minute), and answer with the result instead of a job to poll. A job
+        // id for something already finished would be state we invent and then
+        // have to keep across instances.
+        if (res.d.text) {
+          showText(out, res.d.text);
+          gen.disabled = false;
+          return;
+        }
+        if (!res.d.jobId) throw new Error(res.d.error || 'could not start');
         if (res.d.quota) { quota = res.d.quota; refreshQuota(sh, mode); }
         var start = Date.now();
         out.innerHTML = '<div class="sv-prog"><div class="sv-spin"></div><span id="sv-prog-t">Rendering… usually under a minute.</span></div>';
@@ -466,6 +476,36 @@
         out.innerHTML = '<div class="sv-warn">❌ ' + e.message + '</div>';
         gen.disabled = false;
       });
+  }
+
+  /** A caption is read, copied and pasted — not played. */
+  function showText(out, text) {
+    out.innerHTML = '';
+    var box = el('div', 'sv-textout');
+    box.textContent = text;
+    box.style.cssText = 'white-space:pre-wrap;text-align:left;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px;margin-top:12px;color:#f1f5f9;font-size:15px;line-height:1.5;';
+    out.appendChild(box);
+
+    var row = el('div', 'sv-row');
+    var copy = el('div', 'sv-mchip', '📋 Copy');
+    copy.style.cssText = 'background:linear-gradient(135deg,#FF6D00,#E66200);border:none;color:#fff;';
+    copy.addEventListener('click', function () {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(function () { toast('Copied — paste it anywhere.', 'success', 2500); });
+      } else {
+        var r = document.createRange(); r.selectNodeContents(box);
+        var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+        try { document.execCommand('copy'); toast('Copied — paste it anywhere.', 'success', 2500); } catch (e) {}
+      }
+    });
+    row.appendChild(copy);
+    var share = el('div', 'sv-mchip', '📤 Share');
+    share.addEventListener('click', function () {
+      if (navigator.share) navigator.share({ text: text }).catch(function () {});
+      else if (navigator.clipboard) navigator.clipboard.writeText(text).then(function () { toast('Copied — paste it anywhere.', 'success', 2500); });
+    });
+    row.appendChild(share);
+    out.appendChild(row);
   }
 
   function showResult(out, url, mode) {
@@ -509,7 +549,8 @@
 
   // ── history ─────────────────────────────────────────────────────────────
   function loadHistory(sh, mode) {
-    if (!mode.api) return;
+    if (!mode.api || mode.resultKind === 'text') return; // captions are not stored
+
     fetch(mode.api + '/history').then(function (r) { return r.json(); }).then(function (d) {
       if (d.quota) { quota = d.quota; refreshQuota(sh, mode); }
       var box = sh.querySelector('#sv-history');
