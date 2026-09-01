@@ -79,6 +79,13 @@ async function fetchYouTubeShorts(query, maxResults = MAX_RESULTS_PER_QUERY) {
       type: 'video',
       videoDuration: 'short',        // Only shorts (< 4 min)
       videoDefinition: 'high',       // HD only
+      // Without this, search happily returns videos whose owner has disabled
+      // embedding. Those render as a permanently black slide with no error —
+      // the player cannot detect it, so the only fix is to never store them.
+      videoEmbeddable: 'true',
+      // The queries are UK day-pass queries; without a region the results drift
+      // to whatever is globally popular for "gym".
+      regionCode: 'GB',
       maxResults: String(maxResults),
       order: 'relevance',
       safeSearch: 'strict',

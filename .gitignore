@@ -7,3 +7,7 @@ server/node_modules/
 server/package-lock.json
 scangym-app
 package-lock.json
+
+# Jest coverage output (npm test in server/)
+server/coverage/
+coverage/
