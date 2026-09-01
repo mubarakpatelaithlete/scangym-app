@@ -769,11 +769,21 @@ if (fs.existsSync(FRONTEND_DIR)) {
 
   // Reels SSR routes are registered BEFORE express.static (see above)
 
-  // "Use ScanGym in Claude" — customer-friendly MCP connector setup guide
-  app.get('/claude', (req, res) => {
-    res.setHeader('Cache-Control', 'no-cache');
-    res.sendFile(path.join(FRONTEND_DIR, 'claude', 'index.html'));
-  });
+  // "Use ScanGym in <assistant>" — customer-friendly MCP connector setup guides.
+  // Claude, Grok and Gemini connect the same way (a custom MCP connector URL),
+  // so they share one page; see lib/connect-page.js for what differs.
+  const connectPage = require('./lib/connect-page');
+  for (const slug of connectPage.slugs()) {
+    app.get('/' + slug, (req, res) => {
+      res.setHeader('Cache-Control', 'no-cache');
+      try {
+        res.type('html').send(connectPage.render(FRONTEND_DIR, slug));
+      } catch (err) {
+        console.error('[connect] could not render /' + slug + ':', err.message);
+        res.redirect('/more/profile');
+      }
+    });
+  }
 
   // CEO Dashboard
   app.get('/ceo-dashboard', (req, res) => {
