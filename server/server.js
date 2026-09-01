@@ -261,15 +261,25 @@ const _stripeWebhookHandler = async (req, res) => {
   let stripe;
   try { stripe = require('stripe')(STRIPE_SECRET); } catch(e) { return res.status(500).send('Stripe not configured'); }
 
+  // This handler confirms a booking and mints its QR code purely on the say-so of
+  // the request body. Until this check existed, a missing STRIPE_WEBHOOK_SECRET made
+  // it fall back to parsing the body unverified — so anyone who could POST here with
+  // {type:'payment_intent.succeeded', data:{object:{metadata:{bookingId}}}} was handed
+  // a free gym pass. An unsigned event is not a Stripe event, and a config gap must
+  // never widen into an unauthenticated write. Fail closed.
+  if (!STRIPE_WEBHOOK_SECRET) {
+    console.error(
+      '[stripe-webhook] REJECTED: STRIPE_WEBHOOK_SECRET is not set. ' +
+      'Set it from the Stripe dashboard (Developers → Webhooks → signing secret). ' +
+      'Refusing to process unsigned webhook events.'
+    );
+    return res.status(503).send('Webhook not configured');
+  }
+
   let event;
   try {
-    if (STRIPE_WEBHOOK_SECRET) {
-      const sig = req.headers['stripe-signature'];
-      event = stripe.webhooks.constructEvent(req.body, sig, STRIPE_WEBHOOK_SECRET);
-    } else {
-      // No webhook secret configured — parse directly (less secure, but functional)
-      event = JSON.parse(req.body.toString());
-    }
+    const sig = req.headers['stripe-signature'];
+    event = stripe.webhooks.constructEvent(req.body, sig, STRIPE_WEBHOOK_SECRET);
   } catch (err) {
     console.error('Webhook signature verification failed:', err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
