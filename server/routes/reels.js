@@ -1095,8 +1095,24 @@ router.get('/geo-feed', async (req, res) => {
   const offset = parseInt(req.query.offset) || 0;
   try {
     const catalog = await loadCatalogFromDB();
-    const total = catalog.length;
-    const slice = catalog.slice(offset, offset + limit);
+
+    // The reels player asks THIS endpoint first and only falls back to /feed if
+    // it errors or comes back empty — so whatever is missing here is missing for
+    // every customer on their first page. YouTube slides were: /feed interleaved
+    // them, this did not, and the first ~20 reels a visitor swiped were therefore
+    // always catalog-only. Measured on the live site: 0 social slides on load.
+    // Same helpers as /feed, same fixed positions, so paging stays stable.
+    let reels = catalog;
+    try {
+      const socialReels = await loadSocialReels();
+      if (socialReels.length) reels = interleaveSocial(catalog, socialReels, SOCIAL_EVERY_NTH);
+    } catch (socialErr) {
+      // Non-fatal: our own reels are the product, social is a top-up.
+      console.warn('[geo-feed] social reel injection failed:', socialErr.message);
+    }
+
+    const total = reels.length;
+    const slice = reels.slice(offset, offset + limit);
     res.json({ reels: slice, language: lang, country, total });
   } catch (err) {
     console.error('[geo-feed] failed:', (err && err.message) || err);
