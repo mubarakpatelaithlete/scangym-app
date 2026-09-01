@@ -114,6 +114,46 @@
     if (typeof window.sgToast === 'function') window.sgToast(msg, kind || 'info', ms || 4000);
   }
 
+  /**
+   * Open the real install/invite link for a channel, asking the server for it.
+   *
+   * These buttons normally delegate to the app bundle's helpers (_sgOpenDiscord
+   * and friends), which do exactly this. The helpers live in app.ctr576.js, so
+   * on any page where the bundle has not loaded — or has not loaded *yet* — the
+   * fallbacks used to be: Discord opened discord.com (the marketing homepage, a
+   * dead end: no bot, no server, nothing to click), and Slack and Teams did
+   * nothing at all, silently. A button that looks live and goes nowhere is worse
+   * than one that says it is not ready.
+   *
+   * So the fallback asks the same endpoint the helper would and opens the same
+   * URL. If the server has no link to give (unconfigured channel), we say so.
+   *
+   * The window is opened synchronously and navigated when the URL arrives:
+   * window.open() after an await is a popup blocker's definition of a popup.
+   */
+  function openFromApi(endpoint, fields, label) {
+    var w = window.open('', '_blank');
+    fetch(endpoint)
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        var url = null;
+        for (var i = 0; i < fields.length; i++) {
+          if (d && d[fields[i]]) { url = d[fields[i]]; break; }
+        }
+        if (url) {
+          if (w) w.location = url;
+          else window.open(url, '_blank');
+          return;
+        }
+        if (w) w.close();
+        toast('⏳ ' + label + ' is being set up — check back soon!', 'info', 3000);
+      })
+      .catch(function () {
+        if (w) w.close();
+        toast('⏳ ' + label + ' is being set up — check back soon!', 'info', 3000);
+      });
+  }
+
   // ── Actions ────────────────────────────────────────────────────────────
   var ACTIONS = {
     telegram: function () {
@@ -126,15 +166,19 @@
     discord: function () {
       if (typeof window._sgConnectChannel === 'function') window._sgConnectChannel('discord');
       if (typeof window._sgOpenDiscord === 'function') window._sgOpenDiscord();
-      else window.open('https://discord.com', '_blank');
+      else openFromApi('/api/channels/discord/invite', ['inviteUrl'], 'Discord');
     },
     slack: function () {
       if (typeof window._sgConnectChannel === 'function') window._sgConnectChannel('slack');
       if (typeof window._sgOpenSlack === 'function') window._sgOpenSlack();
+      else openFromApi('/api/channels/slack/install', ['installUrl'], 'Slack');
     },
     msteams: function () {
       if (typeof window._sgConnectChannel === 'function') window._sgConnectChannel('msteams');
       if (typeof window._sgOpenMSTeams === 'function') window._sgOpenMSTeams();
+      // The Teams catalog link only resolves for an org-published app, so prefer
+      // the manifest download (sideload) exactly as the app helper does.
+      else openFromApi('/api/channels/msteams/install', ['manifestUrl', 'installUrl'], 'Teams');
     },
     claude: function () {
       // Claude connects via an MCP URL, which is far too technical for a normal
