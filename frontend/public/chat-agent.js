@@ -194,22 +194,41 @@ function createChatAgent(cfg) {
       // z-index sits above the partner Continue banner (8999) and the tab bar (9000),
       // and `bottom` is recalculated from their real heights — a 52px circle at
       // bottom:72px was completely buried behind the banner on the Partner tab.
-      '#pchat-fab{position:fixed;right:14px;z-index:9100;height:46px;padding:0 16px 0 13px;border-radius:23px;',
-      'background:linear-gradient(135deg,#FF6D00,#ff9d4d);border:none;color:#fff;font-size:14px;font-weight:700;',
-      'font-family:inherit;cursor:pointer;box-shadow:0 8px 28px rgba(255,109,0,.5);display:none;align-items:center;',
-      'gap:7px;white-space:nowrap;-webkit-tap-highlight-color:transparent}',
-      '#pchat-fab.show{display:flex}',
-      '#pchat-fab:active{transform:scale(.96)}',
-      '#pchat-fab .pchat-fab-dot{width:7px;height:7px;border-radius:50%;background:#fff;opacity:.9;',
-      'animation:pchatfabp 1.6s ease-in-out infinite}',
+      // Talk is a rail button now, not a floating pill. The pill was fixed over the
+      // content on all five tabs and was a second door to the same room as the rail.
+      // When a tab already has a rail this button is adopted into it (and wears that
+      // rail's own classes); #pchat-rail below is only the fallback host for tabs
+      // that have no rail of their own.
+      '#pchat-rail{position:fixed;right:10px;top:50%;transform:translateY(-50%);z-index:8990;',
+      'display:none;flex-direction:column;gap:14px;align-items:center}',
+      '#pchat-rail.show{display:flex}',
+      '.pchat-talk{background:none;border:none;padding:0;font-family:inherit;cursor:pointer;',
+      'display:flex;flex-direction:column;align-items:center;gap:5px;-webkit-tap-highlight-color:transparent}',
+      '.pchat-talk:active{transform:scale(.94)}',
+      '.pchat-talk[hidden]{display:none}',
+      '.pchat-talk .pchat-talk-circle{width:44px;height:44px;border-radius:50%;display:flex;',
+      'align-items:center;justify-content:center;font-size:20px;position:relative;',
+      'background:linear-gradient(135deg,#FF6D00,#ff9d4d);box-shadow:0 6px 20px rgba(255,109,0,.45)}',
+      '.pchat-talk .pchat-talk-label{font-size:10px;font-weight:700;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.8)}',
+      '.pchat-talk .pchat-fab-dot{position:absolute;top:3px;right:3px;width:7px;height:7px;border-radius:50%;',
+      'background:#fff;opacity:.9;animation:pchatfabp 1.6s ease-in-out infinite}',
       '@keyframes pchatfabp{50%{opacity:.35}}',
       // The chat is a tab, not a modal: it stops above whatever the app has pinned to
       // the bottom (tab bar 56px, plus the Continue banner when it is up), exactly like
       // the Reels tab iframe does. `--pchat-bottom` is measured in syncBottomInset().
-      '#pchat{position:fixed;top:0;left:0;right:0;',
+      // Half sheet from the bottom, matching every other rail button on the app, and
+      // dismissed the same two ways: swipe the handle down, or the x.
+      '#pchat{position:fixed;left:0;right:0;top:auto;',
       'bottom:var(--pchat-bottom,calc(56px + env(safe-area-inset-bottom,0px)));',
-      'z-index:9400;background:#080812;display:none;flex-direction:column}',
+      'height:min(50vh,540px);z-index:9400;background:#080812;display:none;flex-direction:column;',
+      'border-radius:20px 20px 0 0;box-shadow:0 -18px 50px rgba(0,0,0,.55);overflow:hidden;',
+      'transform:translateY(100%);transition:transform .26s cubic-bezier(.32,.72,0,1)}',
       '#pchat.open{display:flex}',
+      '#pchat.in{transform:translateY(0)}',
+      '#pchat.drag{transition:none}',
+      '.pchat-grab{flex:none;padding:8px 0 2px;display:flex;justify-content:center;cursor:grab;',
+      'touch-action:none}',
+      '.pchat-grab i{display:block;width:38px;height:4px;border-radius:2px;background:rgba(255,255,255,.28)}',
       '.pchat-top{display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top,10px) + 10px) 16px 12px;',
       'border-bottom:1px solid rgba(255,255,255,.08);background:linear-gradient(180deg,#14141f,#0b0b14)}',
       '.pchat-av{width:36px;height:36px;border-radius:11px;background:linear-gradient(135deg,#FF6D00,#ff9d4d);',
@@ -295,19 +314,12 @@ function createChatAgent(cfg) {
     if (document.getElementById(T('pchat'))) return;
     injectStyles();
 
-    var fab = document.createElement('button');
-    fab.id = T('pchat-fab');
-    fab.title = cfg.fabTitle || 'Ask ScanGym';
-    // The pill is now the single orange element on the screen, so it has to say
-    // what the product actually wants you to do. "Ask AI" described a chat box;
-    // this is a microphone that books gyms. Say so.
-    fab.innerHTML = T('<span class="pchat-fab-dot"></span>Talk');
-    fab.onclick = open;
-    document.body.appendChild(fab);
+    ensureTalkButton();
 
     var root = document.createElement('div');
     root.id = T('pchat');
     root.innerHTML =
+      T('<div class="pchat-grab" id="pchat-grab"><i></i></div>') +
       T('<div class="pchat-top">') +
       T('<div class="pchat-av">') + esc(cfg.avatar || '🏋️') + '</div>' +
       T('<div><div class="pchat-title">') + esc(cfg.title) +
@@ -333,6 +345,7 @@ function createChatAgent(cfg) {
     document.body.appendChild(root);
 
     document.getElementById(T('pchat-close')).onclick = close;
+    wireSwipeToClose(root, document.getElementById(T('pchat-grab')));
     document.getElementById(T('pchat-send')).onclick = function () {
       if (S.busy) { stopStream(); return; }
       send(document.getElementById(T('pchat-input')).value);
@@ -1156,6 +1169,14 @@ function createChatAgent(cfg) {
     syncBottomInset();
     var root = document.getElementById(T('pchat'));
     root.classList.add('open');
+    root.style.transform = '';
+    // One frame between display:flex and the transform, or the sheet appears
+    // already-open instead of sliding up.
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(function () { root.classList.add('in'); });
+    } else {
+      root.classList.add('in');
+    }
     S.open = true;
     if (!S.msgs.length && !document.getElementById(T('pchat-scroll')).children.length) greet();
     setTimeout(function () {
@@ -1166,9 +1187,46 @@ function createChatAgent(cfg) {
 
   function close() {
     var root = document.getElementById(T('pchat'));
-    if (root) root.classList.remove('open');
+    if (root) {
+      root.classList.remove('in', 'drag');
+      root.style.transform = '';
+      // Let it slide back down before it stops being laid out. Guarded by S.open so a
+      // reopen during the animation is not torn down by the previous close.
+      setTimeout(function () { if (!S.open) root.classList.remove('open'); }, 260);
+    }
     S.open = false;
     endLive(); // never leave a microphone running behind a closed panel
+  }
+
+  /**
+   * Swipe the handle down to dismiss, like the rest of the app's sheets. Past a third
+   * of the sheet (or a clear flick) it closes; anything less springs back, so a
+   * mis-swipe never loses the conversation.
+   */
+  function wireSwipeToClose(root, grab) {
+    if (!grab) return;
+    var startY = 0, dy = 0, startT = 0, dragging = false;
+    grab.addEventListener('touchstart', function (e) {
+      var t = e.touches && e.touches[0];
+      if (!t) return;
+      dragging = true; startY = t.clientY; dy = 0; startT = Date.now();
+      root.classList.add('drag');
+    }, { passive: true });
+    grab.addEventListener('touchmove', function (e) {
+      var t = e.touches && e.touches[0];
+      if (!dragging || !t) return;
+      dy = Math.max(0, t.clientY - startY);
+      root.style.transform = 'translateY(' + dy + 'px)';
+    }, { passive: true });
+    grab.addEventListener('touchend', function () {
+      if (!dragging) return;
+      dragging = false;
+      root.classList.remove('drag');
+      root.style.transform = '';
+      var h = root.getBoundingClientRect().height || 1;
+      var flick = dy > 40 && (Date.now() - startT) < 300;
+      if (dy > h / 3 || flick) close();
+    });
   }
 
   /**
@@ -1191,8 +1249,53 @@ function createChatAgent(cfg) {
     return h;
   }
 
-  function positionFab(fab) {
-    fab.style.bottom = 'calc(env(safe-area-inset-bottom, 0px) + ' + (bottomChromeHeight() + 12) + 'px)';
+  /**
+   * Tabs that already have a right-hand rail own the look of it, so Talk joins that
+   * rail wearing its classes instead of planting a second column beside it. Rails are
+   * rendered asynchronously (ScanSquad waits on /api/squad-create/modes), so this is
+   * re-run from syncVisibility and re-homes the button if a native rail turns up late.
+   */
+  var NATIVE_RAILS = [
+    { host: 'sg-sv-rail', btn: 'sg-sv-btn', circle: 'sv-circle', label: 'sv-label' },
+    { host: 'sg-pr-host', btn: 'sg-pr-btn', circle: 'sg-pr-circle', label: 'sg-pr-label' },
+  ];
+
+  function railTarget() {
+    for (var i = 0; i < NATIVE_RAILS.length; i++) {
+      var host = document.getElementById(NATIVE_RAILS[i].host);
+      if (host) return { host: host, skin: NATIVE_RAILS[i] };
+    }
+    var own = document.getElementById(T('pchat-rail'));
+    if (!own) {
+      own = document.createElement('div');
+      own.id = T('pchat-rail');
+      document.body.appendChild(own);
+    }
+    return { host: own, skin: null, own: true };
+  }
+
+  /** The Talk button, dressed for whichever rail is hosting it. */
+  function ensureTalkButton() {
+    var target = railTarget();
+    var btn = document.getElementById(T('pchat-fab'));
+    if (!btn) {
+      btn = document.createElement('button');
+      btn.id = T('pchat-fab');
+      btn.title = cfg.fabTitle || 'Ask ScanGym';
+      btn.onclick = open;
+    }
+    var skin = target.skin;
+    var circle = skin ? skin.circle : T('pchat-talk-circle');
+    var label = skin ? skin.label : T('pchat-talk-label');
+    var wanted = (skin ? skin.btn + ' ' : '') + T('pchat-talk');
+    if (btn.className !== wanted) {
+      btn.className = wanted;
+      btn.innerHTML =
+        '<div class="' + circle + '">\ud83c\udf99\ufe0f' + T('<span class="pchat-fab-dot"></span>') + '</div>' +
+        '<div class="' + label + '">Talk</div>';
+    }
+    if (btn.parentNode !== target.host) target.host.appendChild(btn);
+    return btn;
   }
 
   /**
@@ -1217,11 +1320,13 @@ function createChatAgent(cfg) {
     // on screen.
     var bar = document.querySelector('[data-ai-bar]');
     var barVisible = !!(bar && window.getComputedStyle(bar).display !== 'none');
-    var fab = document.getElementById(T('pchat-fab'));
-    if (fab) {
-      fab.classList.toggle('show', onTab && !barVisible);
-      if (onTab && !barVisible) positionFab(fab);
-    }
+    var show = onTab && !barVisible;
+    var fab = ensureTalkButton();
+    fab.hidden = !show;
+    var own = document.getElementById(T('pchat-rail'));
+    // The fallback rail must not sit on the page as an empty strip when Talk is the
+    // only thing in it and Talk is hidden.
+    if (own) own.classList.toggle('show', show && fab.parentNode === own);
     if (S.open) syncBottomInset();
     if (!onTab && S.open) close();
     if (onTab && /[?&]chat=1/.test(location.search) && !S.open) open();
