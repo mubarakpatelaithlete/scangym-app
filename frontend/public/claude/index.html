@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Use ScanGym in Claude — book a gym just by asking</title>
+<meta name="description" content="Connect ScanGym to Claude in three taps, then just ask Claude to find and book a gym day pass near you.">
+<meta name="theme-color" content="#127947">
+<meta property="og:title" content="Use ScanGym in Claude">
+<meta property="og:description" content="Connect ScanGym to Claude in three taps, then just ask for a gym day pass.">
+<meta property="og:url" content="https://scangym.com/claude">
+<link rel="icon" href="/favicon.ico">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --green:#127947; --green-d:#0d5c36; --orange:#FF6D00;
+    --ink:#0f172a; --body:#334155; --mute:#64748b;
+    --line:#e2e8f0; --bg:#f6f8f7; --card:#fff;
+  }
+  body{
+    font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--body);background:var(--bg);
+    -webkit-font-smoothing:antialiased;
+    padding:0 0 56px;
+  }
+  .wrap{max-width:620px;margin:0 auto;padding:0 20px}
+
+  /* header */
+  header{background:linear-gradient(160deg,var(--green) 0%,var(--green-d) 100%);color:#fff;padding:40px 0 44px;text-align:center}
+  .marks{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:22px}
+  .mark{width:52px;height:52px;border-radius:14px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+  .mark svg{width:30px;height:30px;display:block}
+  .plus{font-size:20px;font-weight:700;opacity:.85}
+  header h1{font-size:27px;line-height:1.25;font-weight:800;color:#fff;letter-spacing:-.4px}
+  header p{margin-top:12px;font-size:16px;color:#d8ece2;max-width:420px;margin-left:auto;margin-right:auto}
+
+  /* speech example */
+  .say{margin:-24px auto 0;max-width:580px;background:var(--card);border:1px solid var(--line);border-radius:16px;
+       padding:18px 20px;box-shadow:0 8px 26px rgba(15,23,42,.08);position:relative}
+  .say .lbl{font-size:11px;font-weight:800;letter-spacing:.9px;text-transform:uppercase;color:var(--mute)}
+  .say .q{margin-top:7px;font-size:17px;color:var(--ink);font-weight:600}
+  .say .a{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);font-size:15px;color:var(--body)}
+  .say .a b{color:var(--green);font-weight:700}
+
+  h2{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--mute);margin:34px 0 14px}
+
+  /* steps */
+  .step{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:14px;position:relative}
+  .step .n{position:absolute;top:-11px;left:20px;width:26px;height:26px;border-radius:50%;background:var(--green);color:#fff;
+           font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(18,121,71,.4)}
+  .step h3{font-size:17px;color:var(--ink);font-weight:700;margin:6px 0 6px}
+  .step p{font-size:15px;color:var(--body)}
+  .step p .k{background:#eef4f1;border:1px solid #dbe7e1;border-radius:5px;padding:1px 6px;font-weight:600;color:var(--green-d);white-space:nowrap;font-size:14px}
+
+  /* buttons */
+  .btn{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;margin-top:14px;padding:15px 18px;
+       border:0;border-radius:12px;font:inherit;font-size:16px;font-weight:700;cursor:pointer;text-decoration:none;
+       transition:transform .06s ease,filter .15s ease}
+  .btn:active{transform:scale(.985)}
+  .btn svg{width:18px;height:18px;flex:none}
+  .btn-green{background:var(--green);color:#fff}
+  .btn-green:hover{filter:brightness(1.07)}
+  .btn-green.done{background:#0d5c36}
+  .btn-orange{background:var(--orange);color:#fff}
+  .btn-orange:hover{filter:brightness(1.07)}
+
+  .urlbox{margin-top:12px;display:flex;align-items:center;gap:8px;background:#f1f5f4;border:1px solid var(--line);
+          border-radius:10px;padding:11px 13px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:14px;
+          color:var(--ink);word-break:break-all}
+  .urlbox svg{width:15px;height:15px;flex:none;opacity:.5}
+
+  /* prompts */
+  .p{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;
+     padding:13px 15px;margin-bottom:9px;cursor:pointer;transition:border-color .15s ease,background .15s ease}
+  .p:hover{border-color:var(--green);background:#fbfdfc}
+  .p span{flex:1;font-size:15px;color:var(--ink)}
+  .p em{font-style:normal;font-size:11px;font-weight:700;color:var(--mute);letter-spacing:.5px;flex:none}
+
+  details{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:15px 18px;margin-top:10px}
+  details summary{font-size:15px;font-weight:700;color:var(--ink);cursor:pointer}
+  details p{font-size:14.5px;color:var(--body);margin-top:9px}
+
+  footer{text-align:center;margin-top:34px;font-size:14px;color:var(--mute)}
+  footer a{color:var(--green);font-weight:600;text-decoration:none}
+
+  #toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);background:var(--ink);color:#fff;
+         padding:12px 20px;border-radius:10px;font-size:14.5px;font-weight:600;opacity:0;pointer-events:none;
+         transition:opacity .2s ease,transform .2s ease;z-index:99;box-shadow:0 6px 22px rgba(0,0,0,.28);max-width:90vw;text-align:center}
+  #toast.on{opacity:1;transform:translate(-50%,0)}
+  @media(max-width:420px){header h1{font-size:23px}.wrap{padding:0 16px}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="marks">
+      <div class="mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 9v6M8 6v12M12 4v16M16 6v12M20 9v6" stroke="#127947" stroke-width="2.4" stroke-linecap="round"/></svg>
+      </div>
+      <div class="plus">+</div>
+      <div class="mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#d97757"/><path d="M12 5.5l1.8 4.2 4.2 1.8-4.2 1.8L12 17.5l-1.8-4.2L6 11.5l4.2-1.8z" fill="#fff"/></svg>
+      </div>
+    </div>
+    <h1>Book a gym in Claude,<br>just by asking</h1>
+    <p>Connect ScanGym once, then Claude can find gyms near you, show real day‑pass prices and hold your slot.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="say">
+    <div class="lbl">For example, you type</div>
+    <div class="q">“Find me a gym in Bolton for tomorrow morning.”</div>
+    <div class="a">Claude replies with real gyms, ratings and live day‑pass prices from <b>ScanGym</b> — and can hold your spot.</div>
+  </div>
+
+  <h2>Set it up — takes about a minute</h2>
+
+  <div class="step">
+    <div class="n">1</div>
+    <h3>Copy the ScanGym link</h3>
+    <p>One tap. This is the link Claude needs to connect to ScanGym.</p>
+    <button class="btn btn-green" id="copyBtn">
+      <svg viewBox="0 0 24 24" fill="none"><rect x="9" y="9" width="12" height="12" rx="2" stroke="currentColor" stroke-width="2"/><path d="M5 15V5a2 2 0 012-2h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <span id="copyTxt">Copy the ScanGym link</span>
+    </button>
+    <div class="urlbox">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M10 13a5 5 0 007.5.5l3-3a5 5 0 00-7-7l-1.5 1.5M14 11a5 5 0 00-7.5-.5l-3 3a5 5 0 007 7L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <span id="mcpUrl">https://scangym.com/mcp</span>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="n">2</div>
+    <h3>Open Claude’s connector settings</h3>
+    <p>This button opens the right page in Claude. Sign in if it asks.</p>
+    <a class="btn btn-orange" href="https://claude.ai/settings/connectors" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M14 5h5v5M19 5l-8 8M18 14v4a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Open Claude connectors
+    </a>
+  </div>
+
+  <div class="step">
+    <div class="n">3</div>
+    <h3>Add it, and you’re done</h3>
+    <p>Tap <span class="k">Add custom connector</span>, paste the link, then tap <span class="k">Add</span>. ScanGym now appears in your Claude chats.</p>
+  </div>
+
+  <h2>Now try asking Claude</h2>
+  <div class="p" data-p="Find me a gym in Bolton for tomorrow morning."><span>“Find me a gym in Bolton for tomorrow morning.”</span><em>COPY</em></div>
+  <div class="p" data-p="What's the cheapest gym day pass near me?"><span>“What’s the cheapest gym day pass near me?”</span><em>COPY</em></div>
+  <div class="p" data-p="Show me the opening hours and photos for that gym."><span>“Show me the opening hours and photos for that gym.”</span><em>COPY</em></div>
+  <div class="p" data-p="Hold me a slot at that gym for Saturday at 9am."><span>“Hold me a slot at that gym for Saturday at 9am.”</span><em>COPY</em></div>
+
+  <h2>Questions</h2>
+  <details>
+    <summary>Do I need to pay for anything to connect?</summary>
+    <p>Connecting ScanGym to Claude is free. You only pay when you actually book a gym day pass, at the price shown.</p>
+  </details>
+  <details>
+    <summary>I can’t find “Add custom connector”.</summary>
+    <p>Make sure you’re on the Connectors page in Claude’s settings (use the orange button above). On phones, scroll to the bottom of that page — the button sits under your existing connectors.</p>
+  </details>
+  <details>
+    <summary>Can Claude book and take my money automatically?</summary>
+    <p>No. Claude can search gyms, show prices and hold a provisional slot, but it always asks you to confirm before anything is booked. You can cancel free up to 2 hours before your session.</p>
+  </details>
+  <details>
+    <summary>Is my ScanGym account linked?</summary>
+    <p>Bookings you confirm through Claude appear in your normal ScanGym account, so you can manage or cancel them in the app as usual.</p>
+  </details>
+
+  <footer>
+    Prefer the app? <a href="/">Open ScanGym</a> &nbsp;·&nbsp; Need a hand? <a href="/more/profile">Contact us</a>
+  </footer>
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  var MCP_URL = 'https://scangym.com/mcp';
+  var toastEl = document.getElementById('toast'), tmr;
+
+  function toast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('on');
+    clearTimeout(tmr);
+    tmr = setTimeout(function () { toastEl.classList.remove('on'); }, 2600);
+  }
+
+  // Clipboard with a execCommand fallback for older / in-app browsers.
+  function copy(text, okMsg, failMsg) {
+    function fallback() {
+      try {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.cssText = 'position:absolute;left:-9999px;top:0';
+        document.body.appendChild(ta);
+        ta.select();
+        ta.setSelectionRange(0, text.length);
+        var ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        return ok;
+      } catch (e) { return false; }
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text).then(
+        function () { toast(okMsg); return true; },
+        function () { fallback() ? toast(okMsg) : toast(failMsg); }
+      );
+    }
+    fallback() ? toast(okMsg) : toast(failMsg);
+  }
+
+  var btn = document.getElementById('copyBtn'), txt = document.getElementById('copyTxt');
+  btn.addEventListener('click', function () {
+    copy(MCP_URL, '✓ Link copied — now tap “Open Claude connectors”', 'Copy failed — long-press the link below to copy it');
+    btn.classList.add('done');
+    txt.textContent = '✓ Copied — go to step 2';
+    setTimeout(function () {
+      btn.classList.remove('done');
+      txt.textContent = 'Copy the ScanGym link';
+    }, 4000);
+  });
+
+  // Tap an example prompt to copy it.
+  Array.prototype.forEach.call(document.querySelectorAll('.p'), function (el) {
+    el.addEventListener('click', function () {
+      copy(el.getAttribute('data-p'), '✓ Copied — paste it into Claude', 'Copy failed');
+    });
+  });
+})();
+</script>
+</body>
+</html>

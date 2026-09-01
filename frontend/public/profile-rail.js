@@ -40,7 +40,8 @@
 
   var ROUTE = /^\/(profile|more)(\/|$)/; // same area profile-chat.js owns
   var RAIL_ID = 'sg-profile-rail';
-  var MCP_URL = 'https://scangym.com/mcp';
+  // MCP endpoint (used by the /claude guided setup page, kept here for reference).
+  var MCP_URL = 'https://scangym.com/mcp'; // eslint-disable-line no-unused-vars
 
   // Channels verified live end-to-end (deep probe, 2026-08-31). Others render
   // dimmed+amber until verified. Health check below can only demote, not promote.
@@ -136,18 +137,10 @@
       if (typeof window._sgOpenMSTeams === 'function') window._sgOpenMSTeams();
     },
     claude: function () {
-      // Claude is an MCP connector, not a chat channel: hand the user the MCP
-      // URL because Claude's UI is where the connection happens, not ours.
-      var done = function () {
-        toast('🔗 MCP link copied — in Claude: Settings → Connectors → Add custom connector → paste ' + MCP_URL, 'info', 8000);
-      };
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(MCP_URL).then(done).catch(function () {
-          toast('In Claude: Settings → Connectors → Add custom connector → ' + MCP_URL, 'info', 8000);
-        });
-      } else {
-        toast('In Claude: Settings → Connectors → Add custom connector → ' + MCP_URL, 'info', 8000);
-      }
+      // Claude connects via an MCP URL, which is far too technical for a normal
+      // customer to wire up from a toast. Send them to the guided setup page
+      // (/claude) which copies the link for them and deep-links Claude settings.
+      window.open('/claude', '_blank');
     },
     msstore: function () {
       window.open(MS_STORE_URL, '_blank');
