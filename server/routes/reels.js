@@ -175,9 +175,92 @@ async function loadCatalogFromDB() {
   }));
 }
 
+// ══════════════════════════════════════════════════════════════════════════
+//  SOCIAL REELS (YouTube) — read side
+// ══════════════════════════════════════════════════════════════════════════
+// routes/social-reels.js fills the social_reels table from the YouTube Data
+// API on a 6-hour cycle. This is the read side: the Reels feed treats those
+// rows as ordinary slides so the tab's UI is unchanged, while the frontend
+// renders them as a poster with a single lazily-mounted iframe (see
+// reels/index.html → createSocialReel).
+
+/** One social slide per this many of our own reels. */
+const SOCIAL_EVERY_NTH = 4;
+const SOCIAL_CACHE_TTL = 5 * 60 * 1000;
+let _socialCache = null;
+let _socialCacheTime = 0;
+
+/**
+ * Approved, non-hidden social reels mapped onto the shape the reels player
+ * already understands. `type: 'social'` is the only branch the frontend needs.
+ *
+ * Ordering is deterministic (fetched_at, then id) because the feed interleaves
+ * the full list and then paginates — a non-deterministic order here would let a
+ * reel appear on two pages or on none.
+ */
+async function loadSocialReels() {
+  const now = Date.now();
+  if (_socialCache && (now - _socialCacheTime) < SOCIAL_CACHE_TTL) {
+    return _socialCache.map(v => ({ ...v }));
+  }
+  const { rows } = await pool.query(
+    `SELECT id, platform, external_id, title, author_name, author_url,
+            thumbnail_url, video_url, duration_sec, category
+       FROM social_reels
+      WHERE is_approved = true AND is_hidden = false
+      ORDER BY fetched_at DESC, id DESC
+      LIMIT 500`
+  );
+  _socialCache = rows.map(r => ({
+    id: `social_${r.id}`,
+    name: r.title || '',
+    category: r.category || 'YouTube Shorts',
+    // `source` names the platform so the renderer can pick an embed URL;
+    // `type` is what the player branches on.
+    source: r.platform,
+    type: 'social',
+    externalId: r.external_id,
+    // The canonical watch URL, used by the "Watch on YouTube" link and Share.
+    url: r.video_url,
+    thumb: r.thumbnail_url,
+    posterUrl: r.thumbnail_url,
+    duration: r.duration_sec || null,
+    // Social reels have no ScanGym creator, so the player falls back to its
+    // standard "Book a Gym" CTA — the same one an uncredited catalog reel gets.
+    author: r.author_name || '',
+    authorUrl: r.author_url || '',
+    orientation: 'vertical',
+  }));
+  _socialCacheTime = now;
+  return _socialCache.map(v => ({ ...v }));
+}
+
+/**
+ * Place one social reel after every `everyNth` of our own, without ever
+ * putting one first — the first slide is the one that has to paint instantly,
+ * and ours are native <video> on our own CDN.
+ */
+function interleaveSocial(own, social, everyNth) {
+  if (!social.length || !own.length) return own;
+  const out = [];
+  let s = 0;
+  for (let i = 0; i < own.length; i++) {
+    out.push(own[i]);
+    const placed = i + 1;
+    if (placed % everyNth === 0 && s < social.length) {
+      out.push(social[s++]);
+    }
+  }
+  // Anything left over is appended, so a large social library still gets seen
+  // by someone who swipes to the end instead of being silently dropped.
+  while (s < social.length) out.push(social[s++]);
+  return out;
+}
+
 /**
  * GET /api/reels/feed
- * Returns the combined video feed: DB catalog + approved creator uploads.
+ * Returns the combined video feed: DB catalog + approved creator uploads +
+ * interleaved social (YouTube) reels.
  * Query params:
  *   - category: filter by category (optional)
  *   - limit: max videos to return (default 200, max 200)
@@ -185,6 +268,7 @@ async function loadCatalogFromDB() {
  *   - shuffle: "true" to randomize order (default true)
  *   - seed: numeric seed for deterministic shuffle (auto-generated if omitted)
  *   - include_uploads: "true" to include approved creator uploads (default true)
+ *   - include_social: "false" to exclude social (YouTube) reels (default true)
  *   - session_id: session identifier for within-session adaptation (optional)
  */
 router.get('/feed', async (req, res) => {
@@ -195,6 +279,7 @@ router.get('/feed', async (req, res) => {
     const shuffle = req.query.shuffle !== 'false';
     const seed = parseInt(req.query.seed) || Math.floor(Math.random() * 2147483647);
     const includeUploads = req.query.include_uploads !== 'false';
+    const includeSocial = req.query.include_social !== 'false';
     // M10 UPGRADE: Session ID for within-session adaptation (TikTok-style)
     const sessionId = req.query.session_id || req.headers['x-session-id'] || null;
 
@@ -320,11 +405,11 @@ router.get('/feed', async (req, res) => {
     }
 
 
-    // 2e. SOCIAL REELS: DISABLED — iframe embeds caused speed degradation and
-    // inflated reel count (127 catalog + 18 social = 145 shown as broken reels).
-    // Social reels rendered as heavy YouTube/TikTok iframes instead of native <video>.
-    // TODO: Re-enable when social reels are proxied as native video URLs.
-    // See: PR #386 (original), disabled by UI cleanup PR.
+    // 2e. SOCIAL REELS: re-enabled, see loadSocialReels() / interleaveSocial()
+    // below. They are deliberately NOT part of _feedCache: they carry no cdnKey,
+    // no variants and no performance rows, so they must not travel through the
+    // enrichment/variant/ranking stages built for our own videos. They are
+    // interleaved at fixed positions after ranking instead.
 
     // ── Store in cache (before category filter/ranking) ──
     _feedCache = feed.map(v => ({ ...v, variants: v.variants ? { ...v.variants } : undefined }));
@@ -348,11 +433,27 @@ router.get('/feed', async (req, res) => {
     // See lib/reels-algorithm.js for full documentation.
     // G3 FIX: Capture the true total BEFORE ranking, so the count is always
     // consistent regardless of algorithm behaviour.
-    const total = feed.length;
-
     if (shuffle) {
       feed = await rankFeed(feed, { seed, sessionId, offset });
     }
+
+    // 4b. SOCIAL REELS: interleave at fixed positions, after ranking.
+    // Fixed positions (not ranked, not shuffled) are what make paging stable:
+    // every request interleaves the same full list and then slices, so a reel
+    // can never appear twice or vanish between pages.
+    if (includeSocial) {
+      try {
+        const socialReels = await loadSocialReels();
+        if (socialReels.length) feed = interleaveSocial(feed, socialReels, SOCIAL_EVERY_NTH);
+      } catch (socialErr) {
+        // Non-fatal — our own reels are the product, social is a top-up.
+        console.warn('Feed: social reel injection failed:', socialErr.message);
+      }
+    }
+
+    // G3 FIX: total is captured after interleaving so the reel counter the user
+    // sees matches the feed they can actually swipe through.
+    const total = feed.length;
 
     // 5. Paginate
     feed = feed.slice(offset, offset + limit);
