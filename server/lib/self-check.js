@@ -51,6 +51,25 @@ async function probeStripe() {
   return { detail: 'key accepted, livemode=' + !!balance.livemode };
 }
 
+/**
+ * The webhook handler now refuses unsigned events (see _stripeWebhookHandler in
+ * server.js). That is the right call, but it means a missing signing secret turns
+ * the payment safety net off silently — exactly the kind of config gap that only
+ * shows up when a customer pays and never gets their QR. Probe it, so it is loud.
+ */
+async function probeStripeWebhook() {
+  if (!process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_SECRET) {
+    return { skipped: true, detail: 'Stripe not configured' };
+  }
+  if (!process.env.STRIPE_WEBHOOK_SECRET) {
+    throw new Error(
+      'STRIPE_WEBHOOK_SECRET not set — webhook events are rejected, so the ' +
+      'payment safety net is off (Stripe dashboard → Developers → Webhooks → signing secret)'
+    );
+  }
+  return { detail: 'signing secret present' };
+}
+
 async function probeDatabase(pool) {
   if (!pool) return { skipped: true, detail: 'no pool' };
   await pool.query('SELECT 1');
@@ -144,6 +163,7 @@ async function runAll({ pool, probes, notify } = {}) {
     openai: probeOpenAI,
     groq: probeGroq,
     stripe: probeStripe,
+    stripe_webhook: probeStripeWebhook,
     database: () => probeDatabase(pool),
   };
   for (const [name, fn] of Object.entries(p)) {
