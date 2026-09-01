@@ -272,7 +272,23 @@
   var live = null;
 
   var ONSET_FRAMES = 3;      // ~90ms of sound before we call it speech
-  var SILENCE_MS = 750;      // end of turn
+  /**
+   * End of turn.
+   *
+   * A flat 750ms was charged to every single turn: say "yes" and you still wait
+   * three quarters of a second before we even start thinking. Dropping it flat to
+   * 450ms buys that back on long sentences and loses it on short ones, because the
+   * short utterances are exactly the ones people pause in the middle of — "book
+   * me…" *(thinks)* "…a gym near Bolton". Cutting that in half is a worse product
+   * than waiting.
+   *
+   * So the wait shrinks with the evidence. Once someone has been talking for
+   * SETTLED_MS the phrase is almost certainly finished when they stop, and we take
+   * the short wait. Below that we keep the patient one.
+   */
+  var SILENCE_MS = 750;      // end of turn, before we have much to go on
+  var SILENCE_SETTLED_MS = 450;
+  var SETTLED_MS = 1500;     // speech this long counts as a finished phrase
   var BARGE_FRAMES = 5;      // ~150ms of you talking kills our audio
   var MAX_SEGMENT_MS = 30000;
   var IDLE_RESTART_MS = 20000;
@@ -390,6 +406,7 @@
     live.heard = false;
     live.loud = 0;
     live.quietSince = 0;
+    live.speechStartedAt = 0;
     live.startedAt = Date.now();
     live.rec.ondataavailable = function (e) { if (e.data && e.data.size) live.chunks.push(e.data); };
     live.rec.onstop = function () {
@@ -445,6 +462,13 @@
     if (!live.rec || live.rec.state !== 'recording') openSegment();
   }
 
+  /** How long a pause has to last before we call the turn finished. */
+  function endOfTurnMs() {
+    if (!live || !live.heard) return SILENCE_MS;
+    var spoken = (live.quietSince || Date.now()) - (live.speechStartedAt || live.startedAt);
+    return spoken >= SETTLED_MS ? SILENCE_SETTLED_MS : SILENCE_MS;
+  }
+
   function tick() {
     if (!live) return;
     var level = rms(live.analyser, live.buf);
@@ -466,6 +490,7 @@
       live.loud++;
       if (live.loud >= needFrames && !live.heard) {
         live.heard = true;
+        live.speechStartedAt = now;
         live.lastVoiceAt = now;
         if (holding) {
           // Barge-in, including while we are still thinking. The words that
@@ -481,7 +506,7 @@
       live.loud = 0;
       if (live.heard) {
         if (!live.quietSince) live.quietSince = now;
-        else if (now - live.quietSince > SILENCE_MS) { closeSegment(); return; }
+        else if (now - live.quietSince > endOfTurnMs()) { closeSegment(); return; }
       }
     }
 
