@@ -565,10 +565,15 @@ const _gymCache={
    price under a video is worse than no price. */
 window._sgLocalOffer=function(){
   try{
-    var q=state.searchQuery||state.lastNonEmptyQuery||'';
-    var m=q.match(/\b(?:gyms?|fitness)\s+(?:in|near)\s+(.+)$/i);
-    var city=m?m[1].replace(/\s+24 hour$/i,'').trim():'';
-    if(!city){var c=(typeof getCachedLocation==='function')?getCachedLocation():null;city=(c&&c.city)?c.city:'';}
+    /* The visitor's own choice first — this button used to read "Book in
+       Boardman" while the results on screen were Manchester's. */
+    var city=(typeof window.sgChosenCity==='function')?window.sgChosenCity():'';
+    if(!city){
+      var q=state.searchQuery||state.lastNonEmptyQuery||'';
+      var m=q.match(/\b(?:gyms?|fitness)\s+(?:in|near)\s+(.+)$/i);
+      city=m?m[1].replace(/\s+24 hour$/i,'').trim():'';
+    }
+    if(!city){var c=(typeof getCachedLocation==='function')?getCachedLocation():null;city=(c&&c.city&&!c.needs_confirmation)?c.city:'';}
     if(!city)return null;
     var from=null;
     (state.gyms||[]).forEach(function(g){
@@ -10094,9 +10099,9 @@ window.findGyms=function(){
 
   // ━━━ Fire IP detection — upgrades in ~100ms (non-blocking) ━━━
   fetch('/api/geolocation/auto-city',{credentials:'include'}).then(r=>r.json()).then(cityData=>{
-    if(cityData&&cityData.city&&cityData.query){
-      _upgradeLocation(3, cityData.query, cityData);
-    }
+    if(!cityData||!cityData.city||!cityData.query)return;
+    if(cityData.needs_confirmation&&!window.sgChosenCity())return; // an IP guess we don't trust
+    _upgradeLocation(3, cityData.query, cityData);
   }).catch(()=>{});
 
   // ━━━ Fire GPS — FIRE AND FORGET, NEVER awaited (non-blocking) ━━━
@@ -10580,10 +10585,18 @@ window.autoLoadGyms=async function(){
   // ━━━ LAYER 3: Server-side IP geolocation (<5ms via geoip-lite in-memory) ━━━
   // Fires in background — upgrades results when response arrives
   fetch('/api/geolocation/auto-city',{credentials:'include'}).then(r=>r.json()).then(cityData=>{
-    if(cityData&&cityData.city&&cityData.query){
-      _upgradeLocation(3, cityData.query, cityData);
-      console.log('[Location] L3 IP city:',cityData.city,'via',cityData.source,'in',cityData.resolve_ms+'ms');
+    if(!cityData||!cityData.city||!cityData.query)return;
+    /* needs_confirmation = the IP resolved to a hosting region (Boardman,
+       Ashburn…) or nothing at all. Showing gyms 40km away in the wrong
+       currency and calling it the visitor's area is worse than asking. */
+    if(cityData.needs_confirmation&&!window.sgChosenCity()){
+      console.log('[Location] L3 IP city',cityData.city,'is not trustworthy — asking instead');
+      if(typeof _injectLocationBanner==='function'&&!document.getElementById('sg-location-banner'))_injectLocationBanner('denied');
+      if(typeof window._refreshLocationBanner==='function')window._refreshLocationBanner();
+      return;
     }
+    _upgradeLocation(3, cityData.query, cityData);
+    console.log('[Location] L3 IP city:',cityData.city,'via',cityData.source,'in',cityData.resolve_ms+'ms');
   }).catch(()=>{});
 
   // ━━━ LAYER 5: GPS — FIRE AND FORGET via _fireGPS() ━━━
@@ -10769,6 +10782,11 @@ window.doSearch=function(query){
   if(q){
     // Save to recent searches
     _saveRecentSearch(q);
+    /* An explicit search IS the visitor telling us where they are. Record it so
+       the banner, the sticky CTA and the search box stop showing an IP guess. */
+    var _cityM=q.match(/gyms?\s+(?:in|near)\s+(.+)$/i);
+    if(_cityM&&_cityM[1])window.sgSetChosenCity(_cityM[1].replace(/\s+24 hour$/i,'').trim());
+    else if(/^[A-Za-z\s'.-]{2,40}$/.test(q))window.sgSetChosenCity(q);
     // ━━━ FIX: Clear old gyms so SearchPage shows skeleton during loading ━━━
     // Without this, old results persist and isLoading stays false (gyms.length>0)
     state.gyms=[];
@@ -10830,7 +10848,10 @@ window._openSearchOverlay=function(){
   document.getElementById('sg-search-overlay-v2')?.remove();
 
   var recent=_getRecentSearches();
-  var currentQuery=state.searchQuery||'';
+  /* Opening the sheet with "gyms in Boardman" already typed means the first
+     thing a visitor does is delete our guess. Show it as the placeholder. */
+  var currentQuery='';
+  var _placeholderCity=(typeof sgCurrentSearchCity==='function')?sgCurrentSearchCity():'';
 
   var el=document.createElement('div');
   el.id='sg-search-overlay-v2';
@@ -10885,7 +10906,7 @@ window._openSearchOverlay=function(){
     +'<button class="sso-back" onclick="window._closeSearchOverlay()">←</button>'
     +'<div class="sso-input-wrap">'
     +'<span class="sso-input-icon">🔍</span>'
-    +'<input class="sso-input" id="sso-search-input" type="text" placeholder="Search city, area, or gym name…" value="'+currentQuery+'" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">'
+    +'<input class="sso-input" id="sso-search-input" type="text" placeholder="'+(_placeholderCity?('Search \u2014 showing '+_placeholderCity):'Search city, area, or gym name\u2026')+'" value="'+currentQuery+'" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">'
     +'<button class="sso-clear'+(currentQuery?' show':'')+'" id="sso-clear-btn" onclick="document.getElementById(\'sso-search-input\').value=\'\';document.getElementById(\'sso-clear-btn\').classList.remove(\'show\');window._ssoShowDefault()">✕</button>'
     +'</div>'
     +'</div>'
@@ -16023,18 +16044,69 @@ function _showLocationBannerIfNeeded(){
   }
 }
 
+/* ═══ Which city are we actually showing? ═══════════════════════════════════
+   One answer, used by the location banner, the reels CTA and the assistant.
+   A city the visitor chose outranks anything we guessed from their IP —
+   previously the banner and the sticky CTA kept saying "Boardman" (an IP
+   guess) after the visitor had explicitly switched to Manchester, so the app
+   was arguing with its own results. */
+var CHOSEN_CITY_KEY='sg_chosen_city';
+var CHOSEN_CITY_TTL=12*60*60*1000; // a day trip is fine; a stale week is not
+
+window.sgChosenCity=function sgChosenCity(){
+  try{
+    var raw=localStorage.getItem(CHOSEN_CITY_KEY);
+    if(!raw)return '';
+    var v=JSON.parse(raw);
+    if(!v||!v.city)return '';
+    if(Date.now()-(v.ts||0)>CHOSEN_CITY_TTL){localStorage.removeItem(CHOSEN_CITY_KEY);return '';}
+    return v.city;
+  }catch(e){return '';}
+};
+
+/* Call whenever the visitor tells us where they are: city chip, typed search,
+   or a GPS fix they granted. Everything that displays a city re-reads it. */
+window.sgSetChosenCity=function sgSetChosenCity(city){
+  var c=(city||'').trim();
+  if(!c)return;
+  try{localStorage.setItem(CHOSEN_CITY_KEY,JSON.stringify({city:c,ts:Date.now()}));}catch(e){}
+  if(typeof window._refreshLocationBanner==='function')window._refreshLocationBanner();
+  if(typeof window._sgRefreshCtaText==='function')window._sgRefreshCtaText();
+};
+
+window.sgClearChosenCity=function sgClearChosenCity(){
+  try{localStorage.removeItem(CHOSEN_CITY_KEY);}catch(e){}
+};
+
 /* The city behind the results currently on screen, e.g. "gyms in Leeds" -> "Leeds". */
 function sgCurrentSearchCity(){
   try{
+    var chosen=window.sgChosenCity();
+    if(chosen)return chosen;
     var q=state.searchQuery||state.lastNonEmptyQuery||'';
     var m=q.match(/gyms?\s+in\s+(.+)$/i);
     if(m&&m[1]) return m[1].trim();
     var c=getCachedLocation();
-    if(c&&c.city) return c.city;
+    /* An IP guess we could not stand behind (datacenter town) is not a city we
+       show to anyone — the banner offers the picker instead. */
+    if(c&&c.city&&!c.needs_confirmation) return c.city;
   }catch(e){}
   return '';
 }
 window.sgCurrentSearchCity=sgCurrentSearchCity;
+
+/* Update the banner text in place. It used to be written once at injection
+   time, so after switching city it kept advertising the old (wrong) one. */
+window._refreshLocationBanner=function(){
+  var banner=document.getElementById('sg-location-banner');
+  if(!banner)return;
+  var titleEl=banner.querySelector('[data-sg-loc-title]');
+  var subEl=banner.querySelector('[data-sg-loc-sub]');
+  if(!titleEl)return;
+  var city=(typeof sgCurrentSearchCity==='function')?sgCurrentSearchCity():'';
+  titleEl.textContent=city?('Showing gyms in '+city):'Choose a city to see gyms';
+  if(subEl)subEl.textContent=city?'Not your area? Tap to change':'Tap to search any city';
+};
 
 function _injectLocationBanner(permState){
   var isDenied=permState==='denied';
@@ -16060,8 +16132,8 @@ function _injectLocationBanner(permState){
     banner.innerHTML=''
       +'<span style="font-size:18px;flex-shrink:0;">📍</span>'
       +'<div style="flex:1;min-width:0;">'
-      +'<p style="color:#fbbf24;font-size:13px;font-weight:700;margin:0;line-height:1.3;">'+_title+'</p>'
-      +'<p style="color:rgba(253,230,138,.7);font-size:11px;margin:2px 0 0;line-height:1.3;">'+_sub+'</p>'
+      +'<p data-sg-loc-title style="color:#fbbf24;font-size:13px;font-weight:700;margin:0;line-height:1.3;">'+_title+'</p>'
+      +'<p data-sg-loc-sub style="color:rgba(253,230,138,.7);font-size:11px;margin:2px 0 0;line-height:1.3;">'+_sub+'</p>'
       +'</div>'
       +'<span onclick="event.stopPropagation();_dismissLocationBanner()" style="color:rgba(253,230,138,.5);font-size:18px;padding:4px 2px;cursor:pointer;flex-shrink:0;">✕</span>';
     banner.onclick=function(e){ if(e.target.tagName!=='SPAN')_showLocationPopup(); };
@@ -17667,6 +17739,9 @@ if(localStorage.getItem('sg_push_enabled')==='1'&&state.user){
       priceEl.textContent=(_lo&&_lo.from)?('\u00b7 from '+_lo.from):'';
     }
   }
+  /* Let a city change update this button immediately (sgSetChosenCity). */
+  window._sgRefreshCtaText=_updatePrice;
+
   /* Keep price in sync while swiping through gym cards */
   document.addEventListener('scroll',function(e){
     if(!e.target||e.target.id!=='bm-carousel')return;

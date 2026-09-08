@@ -148,6 +148,37 @@ function recordLocationForPrediction(req, location) {
 }
 
 // ─── Technique #4: In-Memory IP Lookup (<1ms) ───
+// ─── Hosting-region cities: an IP that resolves here is almost never a person ───
+// A UK visitor on a VPN/CDN/cloud egress resolved to "Boardman" (the AWS
+// us-west-2 region town, population 4,000) and the app confidently told them
+// "Showing gyms in Boardman" with two gyms 40km away, priced in dollars. IP
+// geolocation is a hint, never a fact: when it lands on a datacenter town we
+// return the hint but flag it, and the client asks the visitor instead of
+// asserting a city it cannot stand behind.
+const DATACENTER_CITIES = new Set([
+  'boardman', 'the dalles', 'umatilla', 'hermiston', 'prineville', // OR — AWS/Google/Meta
+  'ashburn', 'sterling', 'dulles', 'chantilly', 'herndon',         // VA — us-east-1
+  'columbus', 'dublin', 'new albany', 'hilliard',                  // OH — AWS/Google
+  'council bluffs', 'des moines',                                  // IA — Google
+  'cheyenne',                                                       // WY — Microsoft
+  'quincy', 'moses lake',                                           // WA
+  'san jose', 'santa clara', 'mountain view',                       // CA — cloud egress
+  'kansas city', 'papillion', 'omaha',
+  'clarksville', 'lenoir', 'maiden', 'forest city',                 // NC
+  'eemshaven', 'groningen', 'middenmeer',                           // NL — Google
+  'st ghislain', 'saint-ghislain', 'mons',                          // BE — Google
+  'hamina', 'kajaani',                                              // FI — Google
+  'frankfurt am main', 'falkenstein', 'nuremberg', 'gunzenhausen',  // DE — Hetzner/AWS
+  'roubaix', 'gravelines', 'strasbourg',                            // FR — OVH
+  'singapore', 'jurong east',
+]);
+
+/** Is this IP-derived city a hosting region rather than somewhere people live? */
+function isDatacenterCity(city) {
+  if (!city) return false;
+  return DATACENTER_CITIES.has(String(city).trim().toLowerCase());
+}
+
 function lookupIpInMemory(ip) {
   if (!geoip) return null;
   // Skip local IPs
@@ -305,14 +336,21 @@ router.get('/auto-city', async (req, res) => {
     // 2. In-memory GeoIP lookup (Technique #4: <1ms)
     const inMemory = lookupIpInMemory(ip);
     if (inMemory) {
+      const datacenter = isDatacenterCity(inMemory.city);
       const result = {
         city: inMemory.city, region: inMemory.region, country: inMemory.country,
         lat: inMemory.lat, lng: inMemory.lng,
         query: inMemory.query, source: 'geoip_inmemory',
+        // An IP is a guess. `needs_confirmation` tells the client not to label
+        // the screen with this city — ask, don't assert.
+        confidence: datacenter ? 'low' : 'ip',
+        needs_confirmation: datacenter,
+        datacenter_city: datacenter,
         resolve_ms: Date.now() - start,
       };
+      // Don't teach the prediction cache that a datacenter town is home.
       setCachedLocation(req, result);
-      recordLocationForPrediction(req, result);
+      if (!datacenter) recordLocationForPrediction(req, result);
       return res.json(result);
     }
 
@@ -336,26 +374,33 @@ router.get('/auto-city', async (req, res) => {
 
     const extResult = ipapiResult.value || ipApiComResult.value;
     if (extResult && extResult.city) {
+      const datacenter = isDatacenterCity(extResult.city);
       const result = {
         city: extResult.city, lat: extResult.lat, lng: extResult.lng,
         query: `gyms in ${extResult.city}`, source: extResult.source,
+        confidence: datacenter ? 'low' : 'ip',
+        needs_confirmation: datacenter,
+        datacenter_city: datacenter,
         resolve_ms: Date.now() - start,
       };
       setCachedLocation(req, result);
-      recordLocationForPrediction(req, result);
+      if (!datacenter) recordLocationForPrediction(req, result);
       return res.json(result);
     }
 
-    // 5. Default fallback
+    // 5. Default fallback — London is a placeholder so the screen is never
+    // empty, not a claim about where the visitor is.
     res.json({
       city: 'London', region: 'England', country: 'United Kingdom',
       lat: 51.5074, lng: -0.1278,
       query: 'gyms in London', source: 'default',
+      confidence: 'none', needs_confirmation: true,
       resolve_ms: Date.now() - start,
     });
   } catch (error) {
     console.error('[Geolocation/auto-city] Error:', error.message);
-    res.json({ city: 'London', query: 'gyms in London', source: 'default' });
+    res.json({ city: 'London', query: 'gyms in London', source: 'default',
+      confidence: 'none', needs_confirmation: true });
   }
 });
 
@@ -615,3 +660,6 @@ router.get('/reverse-geocode', async (req, res) => {
 router.buildH3Index = buildH3Index;
 
 module.exports = router;
+// Exposed for tests — see tests/location-honesty.test.js
+module.exports.isDatacenterCity = isDatacenterCity;
+module.exports.DATACENTER_CITIES = DATACENTER_CITIES;
