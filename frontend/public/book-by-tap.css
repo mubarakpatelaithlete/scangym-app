@@ -1,0 +1,60 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   book-by-tap.css — the purchase is a button again.
+
+   WHY
+   one-cta.css made the Talk pill the only call to action on every tab and, as
+   its own header says, "#sg-continue-banner carries the *purchase* action on
+   Book, so this file is where booking-by-tap went". A first-customer test on
+   8 Sep 2026 showed what that costs: a visitor on the Book tab tapped the card,
+   the gym name and the price strip, none of which book, and never found the
+   "Day" icon in the right rail that does. The only orange thing on the screen
+   said "Talk". People who will not speak to a website did not pay.
+
+   THE RULE
+   Talk stays on every tab. But when the app has a concrete thing to sell —
+   the continue banner is active (body.sg-cb-active, set by app.ctr576.js on
+   Reels and Book) — that bar is the primary action and is painted brand orange;
+   the Talk bar steps back to a compact pill on the right. ScanSquad's form gets
+   its submit button back, because a form you cannot submit is a dead end.
+
+   Loaded last, after one-cta.css / one-orange.css / talk-bar.css, so it wins
+   on order alone. Deleting this file restores the voice-only surface exactly.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* The purchase bar: visible and orange while it has something to sell. */
+body.sg-cb-active #sg-continue-banner {
+  display: flex !important;
+  background: linear-gradient(135deg, #FF6D00 0%, #E66200 100%) !important;
+  background-image: linear-gradient(135deg, #FF6D00 0%, #E66200 100%) !important;
+  box-shadow: 0 -4px 20px rgba(255, 109, 0, .25) !important;
+}
+body.sg-cb-active #sg-continue-banner .sg-cb-text,
+body.sg-cb-active #sg-continue-banner .sg-cb-arrow {
+  color: #fff !important;
+}
+body.sg-cb-active #sg-continue-banner .sg-cb-price {
+  color: rgba(255, 255, 255, .8) !important;
+}
+
+/* Talk steps back to a pill while the purchase bar is showing. Same element,
+   same handler — only its shape changes. `bottom` is left alone on purpose:
+   sg-dock.js writes it inline so the pill clears the stacked bars. */
+body.sg-cb-active #bchat-fab.show,
+body.sg-cb-active #rchat-fab.show,
+body.sg-cb-active #schat-fab.show,
+body.sg-cb-active #pchat-fab.show,
+body.sg-cb-active #mchat-fab.show {
+  left: auto !important;
+  right: 12px !important;
+  width: auto !important;
+  height: 42px !important;
+  padding: 0 16px 0 13px !important;
+  border-radius: 21px !important;
+  font-size: 14px !important;
+  box-shadow: 0 8px 28px rgba(255, 109, 0, .45) !important;
+}
+
+/* ScanSquad: the join form's own submit button. */
+#join-btn {
+  display: inline-flex !important;
+}
