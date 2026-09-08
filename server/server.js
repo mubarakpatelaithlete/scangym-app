@@ -212,7 +212,18 @@ app.use(cors({
 // Rate limiting — protect auth, payment, and chat endpoints from abuse
 const rateLimit = require('express-rate-limit');
 const globalLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 1000, standardHeaders: true, legacyHeaders: false });
-const authLimiter  = rateLimit({ windowMs: 15 * 60 * 1000, max: 10,  message: { error: 'Too many attempts, try again in 15 minutes' } });
+// The limiter exists to slow down OTP guessing (send-code / verify / send-link).
+// It must NOT count the session read: every shell load calls GET /api/auth/user
+// (often twice), so a signed-in user who opened the app a few times in 15 minutes
+// got a 429 there and saw "Log in to view your profile" / "Sign in to view your
+// bookings" while their cookie was perfectly valid. Mobile carriers also NAT many
+// customers behind one IP, so the 10-per-IP budget was shared with strangers.
+const authLimiter  = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  skip: (req) => req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS',
+  message: { error: 'Too many attempts, try again in 15 minutes' },
+});
 const paymentLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20, message: { error: 'Too many payment requests, try again later' } });
 app.use(globalLimiter);
 app.use('/api/auth', authLimiter);
