@@ -92,10 +92,6 @@ function fmtCount(n){if(n>=1000000)return (n/1000000).toFixed(1).replace(/\.0$/,
 // ─── World-Class Utilities  ───
 function sgNum(v){if(v==null||v==='')return null;if(typeof v==='number')return isFinite(v)?v:null;var n=Number(String(v).replace(/[^0-9.-]/g,''));return isFinite(n)?n:null;}
 function sgMoney(v,sym){var n=sgNum(v);return n!=null&&n>0?(sym||sgSymbol())+n.toFixed(2):null;}
-function urgencyNum(name,max){let h=0;for(let i=0;i<(name||'').length;i++)h=((h<<5)-h)+name.charCodeAt(i);return Math.abs(h%max)+1;}
-function minutesAgo(name){return urgencyNum(name,45)+1;}
-function peopleLooking(name){return urgencyNum(name,8)+2;}
-function spotsLeft(name){return urgencyNum(name,6)+2;}
 // #59: Rating distribution bucket — uses API data when available, falls back to seeded
 function bookedBucket(gym){
   // #170 fix: Only show real booking data — no fake numbers
@@ -1171,7 +1167,6 @@ function GymCard(gym){
   const topGym=isTopGym(gym);
   const cTime=closingTime(gym);
   // const looking removed - was fake
-  const mAgo=minutesAgo(gym.name);
   // Photo carousel (multiple photos if available)
   const allPhotos=photos.length>1?photos.slice(0,5).map(p=>p.thumbnail||p.url||photo):[photo];
   const carouselHTML=hasPhoto&&allPhotos.length>1?`
@@ -1735,10 +1730,8 @@ function SearchPage(){
           html+='<div class="tt-gym-name">'+c.name+'</div>';
           /* Address */
           html+='<div class="tt-gym-addr">\u{1F4CD} '+(c.addr?c.addr.split(',')[0]:'Nearby')+' \u00b7 <span class="tt-travel-label" data-gym-travel-id="'+c.id+'">'+c.distMin+'</span> \u00b7 <span class="'+c.openClass+'">'+c.openTag+'</span></div>';
-          /* Chips — Fix #59, #105, #107: Social proof & FOMO signals (seeded until real analytics wired up) */
+          /* Chips — booking count shown only when the server has real bookings (bookedBucket) */
           var _bMonth=bookedBucket(c.gym);
-          var _pLook=peopleLooking(c.name);
-          var _mAgo=minutesAgo(c.name);
           html+='<div class="tt-chips">';
           if(c.isPop) html+='<div class="tt-chip">\u{1F525} Popular</div>';
           if(c.gym.is24Hours) html+='<div class="tt-chip" style="background:rgba(234,179,8,.15);border:1px solid rgba(234,179,8,.3);color:#fbbf24">\u23F0 24/7</div>';
