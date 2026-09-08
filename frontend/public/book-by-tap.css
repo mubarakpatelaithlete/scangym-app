@@ -80,3 +80,12 @@ body.sg-cb-active #mchat-fab.show {
 html.sg-framed #rchat-fab.show {
   display: none !important;
 }
+
+/* Straight after paying, the confirmation page still carried "Book this gym · £4.49 →"
+   at the bottom — an invitation to buy the same pass twice. render() stamps the route
+   on <body>; on the success page the bar steps aside and Talk returns to full width. */
+body[data-route="/booking-success"] #sg-continue-banner { display: none !important; }
+body[data-route="/booking-success"].sg-cb-active #bchat-fab.show,
+body[data-route="/booking-success"].sg-cb-active #chat-fab.show {
+  left: 12px !important; right: 12px !important; width: auto !important;
+}

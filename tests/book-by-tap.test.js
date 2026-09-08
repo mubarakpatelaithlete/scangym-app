@@ -24,7 +24,7 @@ test('Talk stays on screen but steps back to a pill beside the purchase bar', ()
   // The only display:none allowed is the framed Reels copy — the shell around the
   // iframe still shows its own Talk pill, so Talk is never actually off the screen.
   const hides = css.match(/[^{}]+\{[^}]*display:\s*none[^}]*\}/g) || [];
-  for (const rule of hides) assert.ok(/html\.sg-framed #rchat-fab\.show/.test(rule), `unexpected hide rule: ${rule.slice(0, 80)}`);
+  for (const rule of hides) assert.ok(/html\.sg-framed #rchat-fab\.show|data-route="\/booking-success"\] #sg-continue-banner/.test(rule), `unexpected hide rule: ${rule.slice(0, 80)}`);
   assert.ok(/#bchat-fab\.show[^{]*\{[^}]*left:\s*auto\s*!important/.test(css));
 });
 

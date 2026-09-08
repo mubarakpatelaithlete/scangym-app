@@ -453,6 +453,12 @@ async function checkAuth() {
 window.__sgAuthResolved = false;
 window.__sgAuthReady = checkAuth().then(function(){
   window.__sgAuthResolved = true;
+  // The first paint usually wins the race against /api/auth/user. Pages that
+  // gate on state.user (My Bookings, Profile, QR pass) then show their
+  // logged-out copy to a signed-in member and nothing re-renders them — a
+  // customer with a fresh booking opened /bookings and read "Sign in to view
+  // your bookings". Paint once more now that the session is known.
+  if (state && state.user && typeof document !== 'undefined' && document.getElementById('app')) { try { render(); } catch(e) {} }
   try { window.dispatchEvent(new Event('sg:auth-resolved')); } catch(e) {}
 });
 // Fast path: the server injects window.__sgAuthHint="anonymous" into the shell
@@ -13911,6 +13917,7 @@ function render(){sgPerf.start('render');
   _renderQueued=true;
   requestAnimationFrame(function(){
     _renderQueued=false;
+    try{ document.body.setAttribute('data-route',state.route||'/'); }catch(e){}
     try{ _renderInner();sgPerf.end('render'); }catch(err){
       sgPerf.end('render');console.error('[Render] Error rendering page:',err);
       const app=document.getElementById('app');
