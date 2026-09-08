@@ -1,4 +1,7 @@
 ﻿const express = require('express');
+// Route async errors (rejected promises in async handlers) to the Express error
+// handler instead of crashing the process. Must be required before any routes.
+require('express-async-errors');
 const path = require('path');
 const cors = require('cors');
 const fs = require('fs');
@@ -67,6 +70,12 @@ const fanChatRouter = require('./routes/fan-chat');
 const analyticsMiddleware = require('./middleware/analytics');
 
 const app = express();
+
+// Last line of defence: log instead of dying. Railway restarts a crashed container,
+// but after 10 crashes marks the deploy CRASHED and the site stays down.
+process.on('unhandledRejection', (reason) => {
+  console.error('[unhandledRejection]', reason && reason.stack ? reason.stack : reason);
+});
 app.set('trust proxy', 1); // Trust Railway's reverse proxy (needed for secure cookies + IP detection)
 app.disable('x-powered-by'); // Don't leak server technology
 const PORT = process.env.PORT || 5000;
@@ -338,6 +347,13 @@ const apiPaths = [
   '/api/chatbot',
   '/api/referrals',
   '/api/access',
+  // Added 2026-09-08: these routers read req.body but had no JSON parser mounted,
+  // so every POST threw "Cannot destructure property ... of 'req.body' as it is undefined"
+  // inside an async handler -> unhandled rejection -> whole process crashed (Railway CRASHED).
+  '/api/social-reels',
+  '/api/review-media',
+  '/api/ai-trainer',
+  '/api/playlists',
 ];
 apiPaths.forEach(p => app.use(p, express.json({
   // Capture the raw request body so webhook signature verification

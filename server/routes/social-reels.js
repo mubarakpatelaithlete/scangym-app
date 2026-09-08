@@ -458,7 +458,7 @@ router.patch('/:id/hide', async (req, res) => {
  * Track view/engagement for social reels
  */
 router.post('/analytics', async (req, res) => {
-  const { external_id, event } = req.body;
+  const { external_id, event } = req.body || {};
   if (!external_id || !event) return res.status(400).json({ error: 'Missing fields' });
   
   try {
