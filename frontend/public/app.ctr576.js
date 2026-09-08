@@ -419,6 +419,9 @@ function initDynamicPricing(){
 
 function initInteractive(){setTimeout(()=>{initCounters();initCarousels();initAccordions();initDynamicPricing();window._heroIdx=0;},100);}
 
+/* Creator library size — see /squad-config.js (one number for every surface). */
+var SQUAD_ASSET_COUNT=(typeof window!=='undefined'&&window.SQUAD_ASSET_COUNT)||242;
+
 // Load public config from server (uses prefetched promise if available)
 async function loadConfig() {
   try {
@@ -5055,7 +5058,10 @@ window._renderCalPickerPopularTimes=function(dateIdx){
     var currentBusy=null;
     for(var j=0;j<hours.length;j++){if(hours[j].hour===nowH){currentBusy=hours[j];break;}}
     if(currentBusy){
-      var label=currentBusy.busy>=70?'\U0001F534 Busy now':currentBusy.busy>=40?'\U0001F7E1 Moderate':'\U0001F7E2 Not busy';
+      /* The old code used Python-style \\U escapes, which JavaScript does not
+         understand: the date sheet literally read "U0001F7E1 Moderate".
+         Use the \u{...} form (or the character itself). */
+      var label=currentBusy.busy>=70?'\u{1F534} Busy now':currentBusy.busy>=40?'\u{1F7E1} Moderate':'\u{1F7E2} Not busy';
       liveEl.innerHTML=label;
     }
   }else{liveEl.innerHTML='';}
@@ -7098,9 +7104,21 @@ function _getCountryCodeOptions(){
     {code:'+62',flag:'🇮🇩',country:'ID'},{code:'+63',flag:'🇵🇭',country:'PH'},
     {code:'+60',flag:'🇲🇾',country:'MY'},{code:'+66',flag:'🇹🇭',country:'TH'},
   ];
-  // Auto-detect from geoHint
+  /* Which dialling code to pre-select. The sheet defaulted to 🇺🇸 +1 for a
+     visitor browsing UK gyms in £, because the country came from an IP that
+     resolved to a US datacenter. Order of trust:
+       1. the browser's own locale region (the visitor's setting)
+       2. the server geo hint, but only if it was confident
+       3. GB — every gym we can actually book is in the UK */
   const geo=window.__geoHint||{};
-  const detectedCountry=(geo.country||'GB').toUpperCase();
+  var _localeRegion='';
+  try{
+    var _loc=(navigator.languages&&navigator.languages[0])||navigator.language||'';
+    var _m=_loc.match(/[-_]([A-Za-z]{2})$/);
+    if(_m)_localeRegion=_m[1].toUpperCase();
+  }catch(e){}
+  const _hintCountry=(geo&&!geo.needs_confirmation&&geo.country)?String(geo.country).toUpperCase():'';
+  const detectedCountry=_localeRegion||_hintCountry||'GB';
   return codes.map(c=>`<option value="${c.code}" ${c.country===detectedCountry?'selected':''}>${c.flag} ${c.code}</option>`).join('');
 }
 
@@ -9993,7 +10011,7 @@ function MyBookingsPage(){
           <div style="display:flex;align-items:center;gap:10px"><span style="font-size:18px">❌</span><span style="color:rgba(255,255,255,.6);font-size:13px">Free cancellation up to 2 hours before</span></div>
         </div>
         <button onclick="navigate('/login')" class="bg-brand hover:bg-orange-600 text-white font-bold px-8 py-3 rounded-xl transition shadow-lg shadow-brand/20 w-full">🔑 Sign In to View Bookings</button>
-        <p class="text-slate-500 text-sm mt-4">No account yet? Book a gym and one is created automatically.</p>
+        <p class="text-slate-500 text-sm mt-4">No account yet? Signing in takes one tap with Google or Apple — your pass and QR code live in it.</p>
         <button onclick="navigate('/explore')" class="mt-3 bg-slate-800 hover:bg-slate-700 text-white px-8 py-3 rounded-xl transition w-full">🔍 Find a Gym Near You</button>
       </div>
     </div>`;
@@ -13743,7 +13761,9 @@ window._sgNotifySend=function(handle){
 
 // ═══ P2: SURFACE BUILT FEATURES — Tier Progress, Leaderboard, Page Customiser ═══
 window._sgTierDefs=[
-  {key:'starter',name:'Starter',badge:'\ud83c\udf31',min:0,perks:'25% commission \u00b7 Creator toolkit \u00b7 388+ assets'},
+  /* Third different asset count found in the app (388 here, 440 in the create
+     flow, 242 on the dashboard). One constant: /squad-config.js. */
+  {key:'starter',name:'Starter',badge:'\ud83c\udf31',min:0,perks:'25% commission \u00b7 Creator toolkit \u00b7 '+SQUAD_ASSET_COUNT+'+ assets'},
   {key:'rising',name:'Rising Star',badge:'\u2b50',min:10,perks:'Priority support \u00b7 Early features \u00b7 Custom link'},
   {key:'pro',name:'Pro Creator',badge:'\ud83d\udd25',min:50,perks:'Free Premium \u00b7 Custom branding \u00b7 Analytics'},
   {key:'legend',name:'Legend',badge:'\ud83d\udc51',min:100,perks:'Lifetime Premium \u00b7 Rev share \u00b7 Account manager'}
@@ -15574,13 +15594,16 @@ function _renderInner(){
   else if(path==='/suppliers/loans')page=SupplierPage('loans');
   else if(path==='/more/profile'){loadFullProfile();page=ProfilePage();}
   else if(path==='/login'||path==='/signup'||path==='/register')page=LoginPage();
-  else if(path==='/how-it-works')page=InfoPage('How It Works',`<p>1. Find a gym near you using GPS or search</p><p>2. Book a 24-hour day pass — localized pricing worldwide</p><p>3. Pay with Apple Pay, Google Pay, or card (guest checkout available)</p><p>4. Get your QR code — scan in at the gym, scan out when done</p><p>5. Rate your session and earn rewards</p>`);
+  else if(path==='/how-it-works')page=InfoPage('How It Works',`<p>1. Find a gym near you using GPS or search</p><p>2. Book a 24-hour day pass — localized pricing worldwide</p><p>3. Sign in with Google, Apple or your phone, then pay with Apple Pay, Google Pay or card</p><p>4. Get your QR code — scan in at the gym, scan out when done</p><p>5. Rate your session and earn rewards</p>`);
   else if(path==='/pricing')page=InfoPage('Pricing',`
 <!-- Hero Section -->
 <div class="text-center mb-10">
-  <p class="text-brand text-sm font-bold tracking-widest uppercase mb-3">⚡ Live Pricing</p>
+  <p class="text-brand text-sm font-bold tracking-widest uppercase mb-3">⚡ One flat price</p>
   <h1 class="text-4xl sm:text-5xl font-black text-white leading-tight mb-4">How much does<br>a gym session cost?</h1>
-  <p class="text-slate-400 text-lg">Real-time pricing. Changes by time of day.</p>
+  <!-- Pricing has been flat since engine v4.1 (off-peak/surge removed). This
+       page claimed prices "change by time of day" while the FAQ two taps away
+       said "same price any time of day" — the FAQ was right. -->
+  <p class="text-slate-400 text-lg">${sgPrice('day').display} a day, any time of day. The gym sets its own price; we never surge it.</p>
 </div>
 
 <!-- Live Price Clock -->
@@ -15631,13 +15654,13 @@ function _renderInner(){
       <div class="flex items-center gap-4">
         <div class="w-12 h-12 bg-slate-700 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition">🏋️</div>
         <div>
-          <p class="text-white font-bold text-lg">Basic</p>
-          <p class="text-slate-400 text-sm">Gym floor access · QR entry</p>
+          <p class="text-white font-bold text-lg">Day Pass</p>
+          <p class="text-slate-400 text-sm">24 hours · gym floor access · QR entry</p>
         </div>
       </div>
       <div class="text-right">
         <p class="text-white font-bold text-xl" data-tier-price="basic">${sgPrice('day').display}</p>
-        <p class="text-emerald-400 text-xs font-medium">25% off now</p>
+        <p class="text-slate-400 text-xs font-medium">Pay per visit</p>
       </div>
     </div>
     <div class="mt-3 pt-3 border-t border-slate-700/30 flex flex-wrap gap-2">
@@ -15654,13 +15677,16 @@ function _renderInner(){
       <div class="flex items-center gap-4">
         <div class="w-12 h-12 bg-brand/20 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition">💪</div>
         <div>
-          <p class="text-white font-bold text-lg">Standard</p>
-          <p class="text-slate-400 text-sm">+ Classes · Sauna · Towel</p>
+          <p class="text-white font-bold text-lg">3-Day Pass</p>
+          <p class="text-slate-400 text-sm">Three 24-hour sessions · ${sgPrice('3day').display}</p>
         </div>
       </div>
       <div class="text-right">
-        <p class="text-white font-bold text-xl" data-tier-price="standard">${sgPrice('day').display}</p>
-        <p class="text-emerald-400 text-xs font-medium">25% off now</p>
+        <!-- "Standard" used to show the same ${sgPrice('day').display} as Basic
+             with more features listed, which reads as a mistake or a trick.
+             These are pass lengths, so name them after the pass. -->
+        <p class="text-white font-bold text-xl" data-tier-price="standard">${sgPrice('3day').display}</p>
+        <p class="text-emerald-400 text-xs font-medium">Save ${window.sgPassSave?sgPassSave('3day'):10}%</p>
       </div>
     </div>
     <div class="mt-3 pt-3 border-t border-slate-700/30 flex flex-wrap gap-2">
@@ -15677,7 +15703,7 @@ function _renderInner(){
       <div class="flex items-center gap-4">
         <div class="w-12 h-12 bg-purple-900/30 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition">🔥</div>
         <div>
-          <p class="text-white font-bold text-lg">Premium</p>
+          <p class="text-white font-bold text-lg">Weekly Pass</p>
           <p class="text-slate-400 text-sm">+ Locker · Priority · Peak hrs</p>
         </div>
       </div>
@@ -15700,7 +15726,7 @@ function _renderInner(){
       <div class="flex items-center gap-4">
         <div class="w-12 h-12 bg-yellow-900/30 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition">👑</div>
         <div>
-          <p class="text-white font-bold text-lg">Elite</p>
+          <p class="text-white font-bold text-lg">Monthly Pass</p>
           <p class="text-slate-400 text-sm">+ Guest +1 · VIP · All access</p>
         </div>
       </div>
@@ -15738,8 +15764,8 @@ function _renderInner(){
     </div>
     <div class="bg-slate-800/50 rounded-xl p-5 text-center">
       <div class="text-3xl mb-3">📊</div>
-      <p class="text-white font-bold mb-1">Demand-driven</p>
-      <p class="text-slate-400 text-sm">Dynamic pricing — busy = slightly higher. Quiet = cheaper. Real-time.</p>
+      <p class="text-white font-bold mb-1">No surge</p>
+      <p class="text-slate-400 text-sm">Peak or quiet, the price is the same. Busy times show how full a gym usually is, not a higher price.</p>
     </div>
     <div class="bg-slate-800/50 rounded-xl p-5 text-center">
       <div class="text-3xl mb-3">🎯</div>
@@ -15896,7 +15922,7 @@ function _renderInner(){
   else if(path.startsWith('/scan/')&&path.split('/').length===3)page=QRScanVerifyPage(path.split('/')[2]);
   else if(path==='/scan')page=ScanInfoPage();
   else if(path==='/top-creators')page=InfoPage('Top Creators',`<div class="text-center mb-8"><p class="text-xl text-white font-bold">🏆 ScanSquad Leaderboard</p><p class="text-slate-300">Our top-performing creators this month</p></div><div class="space-y-4">${[{rank:1,name:'Coming Soon',handle:'@your-name-here',bookings:'-',earned:'-',badge:'🥇'},{rank:2,name:'Coming Soon',handle:'@your-name-here',bookings:'-',earned:'-',badge:'🥈'},{rank:3,name:'Coming Soon',handle:'@your-name-here',bookings:'-',earned:'-',badge:'🥉'}].map(c=>`<div class="bg-slate-800 rounded-xl p-4 flex items-center gap-4 border border-slate-700"><span class="text-3xl">\${c.badge}</span><div class="flex-1"><p class="text-white font-bold">\${c.name}</p><p class="text-slate-400 text-sm">\${c.handle}</p></div><div class="text-right"><p class="text-brand font-bold">\${c.earned}</p><p class="text-slate-500 text-xs">\${c.bookings} bookings</p></div></div>`).join("")}</div><div class="mt-8 bg-brand/10 border border-brand/30 rounded-xl p-6 text-center"><p class="text-white font-bold mb-2">Want to see your name here?</p><p class="text-slate-300 text-sm mb-4">Join ScanSquad and start earning 25% commission on every referred booking.</p><div class="flex gap-3 justify-center flex-wrap"><a onclick="navigate('/become-a-creator')" class="bg-brand hover:bg-orange-600 text-white font-bold px-6 py-3 rounded-xl cursor-pointer transition inline-block">Become a Creator →</a><a onclick="navigate('/creators')" class="border border-brand text-brand hover:bg-brand hover:text-white font-bold px-6 py-3 rounded-xl cursor-pointer transition inline-block">Browse Assets →</a></div></div>`);
-else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class="text-center mb-8"><h2 class="text-2xl text-white font-bold">ScanGym ScanSquad vs The Rest</h2><p class="text-slate-400">See why creators choose ScanGym</p></div><div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="border-b border-slate-700"><th class="text-left py-3 px-4 text-slate-400">Feature</th><th class="py-3 px-4 text-brand font-bold">ScanGym</th><th class="py-3 px-4 text-slate-400">ClassPass</th><th class="py-3 px-4 text-slate-400">Gymshark</th></tr></thead><tbody><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Commission</td><td class="py-3 px-4 text-brand font-semibold">25% recurring</td><td class="py-3 px-4 text-slate-400">5-10% one-time</td><td class="py-3 px-4 text-slate-400">Free products</td></tr><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Cookie Duration</td><td class="py-3 px-4 text-brand font-semibold">30 days</td><td class="py-3 px-4 text-slate-400">7 days</td><td class="py-3 px-4 text-slate-400">N/A</td></tr><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Min Followers</td><td class="py-3 px-4 text-brand font-semibold">None</td><td class="py-3 px-4 text-slate-400">10K+</td><td class="py-3 px-4 text-slate-400">50K+</td></tr><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Ready Assets</td><td class="py-3 px-4 text-brand font-semibold">242+</td><td class="py-3 px-4 text-slate-400">Banners only</td><td class="py-3 px-4 text-slate-400">PDF guide</td></tr><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Monthly (10K)</td><td class="py-3 px-4 text-brand font-semibold">\u00a3609/mo</td><td class="py-3 px-4 text-slate-400">\u00a350-100/mo</td><td class="py-3 px-4 text-slate-400">\u00a30</td></tr><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Payouts</td><td class="py-3 px-4 text-brand font-semibold">Weekly</td><td class="py-3 px-4 text-slate-400">Monthly (60d delay)</td><td class="py-3 px-4 text-slate-400">Quarterly</td></tr><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Free Gym Access</td><td class="py-3 px-4 text-brand font-semibold">Yes (25+/mo)</td><td class="py-3 px-4 text-slate-400">No</td><td class="py-3 px-4 text-slate-400">No</td></tr><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Onboarding</td><td class="py-3 px-4 text-brand font-semibold">Instant</td><td class="py-3 px-4 text-slate-400">2-week wait</td><td class="py-3 px-4 text-slate-400">Invite only</td></tr></tbody></table></div><div class="mt-8 text-center"><a onclick="navigate(\'/become-a-creator\')" class="bg-brand hover:bg-orange-600 text-white font-bold px-8 py-4 rounded-xl cursor-pointer transition inline-block">Join ScanSquad \u2014 It\'s Free \u2192</a></div>`);
+else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class="text-center mb-8"><h2 class="text-2xl text-white font-bold">ScanGym ScanSquad vs The Rest</h2><p class="text-slate-400">See why creators choose ScanGym</p></div><div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="border-b border-slate-700"><th class="text-left py-3 px-4 text-slate-400">Feature</th><th class="py-3 px-4 text-brand font-bold">ScanGym</th><th class="py-3 px-4 text-slate-400">ClassPass</th><th class="py-3 px-4 text-slate-400">Gymshark</th></tr></thead><tbody><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Commission</td><td class="py-3 px-4 text-brand font-semibold">25% recurring</td><td class="py-3 px-4 text-slate-400">5-10% one-time</td><td class="py-3 px-4 text-slate-400">Free products</td></tr><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Cookie Duration</td><td class="py-3 px-4 text-brand font-semibold">30 days</td><td class="py-3 px-4 text-slate-400">7 days</td><td class="py-3 px-4 text-slate-400">N/A</td></tr><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Min Followers</td><td class="py-3 px-4 text-brand font-semibold">None</td><td class="py-3 px-4 text-slate-400">10K+</td><td class="py-3 px-4 text-slate-400">50K+</td></tr><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Ready Assets</td><td class="py-3 px-4 text-brand font-semibold">${SQUAD_ASSET_COUNT}+</td><td class="py-3 px-4 text-slate-400">Banners only</td><td class="py-3 px-4 text-slate-400">PDF guide</td></tr><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Monthly (10K)</td><td class="py-3 px-4 text-brand font-semibold">\u00a3609/mo</td><td class="py-3 px-4 text-slate-400">\u00a350-100/mo</td><td class="py-3 px-4 text-slate-400">\u00a30</td></tr><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Payouts</td><td class="py-3 px-4 text-brand font-semibold">Weekly</td><td class="py-3 px-4 text-slate-400">Monthly (60d delay)</td><td class="py-3 px-4 text-slate-400">Quarterly</td></tr><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Free Gym Access</td><td class="py-3 px-4 text-brand font-semibold">Yes (25+/mo)</td><td class="py-3 px-4 text-slate-400">No</td><td class="py-3 px-4 text-slate-400">No</td></tr><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Onboarding</td><td class="py-3 px-4 text-brand font-semibold">Instant</td><td class="py-3 px-4 text-slate-400">2-week wait</td><td class="py-3 px-4 text-slate-400">Invite only</td></tr></tbody></table></div><div class="mt-8 text-center"><a onclick="navigate(\'/become-a-creator\')" class="bg-brand hover:bg-orange-600 text-white font-bold px-8 py-4 rounded-xl cursor-pointer transition inline-block">Join ScanSquad \u2014 It\'s Free \u2192</a></div>`);
 
   else if(path==='/booking')page=InfoPage('Book a Gym Session',`<p class="text-xl text-white font-bold mb-2">3 taps. That’s it.</p><p class="text-lg text-slate-300 mb-8">Find a gym, pick your time, and go. No membership required.</p><div class="relative space-y-6 mb-8">${[{step:"1",icon:"🔍",title:"Find a Gym",desc:"Search by city, area, or gym name. Filter by price, rating, facilities, and distance. gyms across the UK.",time:"30 sec"},{step:"2",icon:"📅",title:"Pick Your Session",desc:"Choose your date and time slot. Day passes are valid for 24 hours from scan-in. Day Pass from ${sgPrice('day').display}.",time:"20 sec"},{step:"3",icon:"💳",title:"Pay Securely",desc:"Apple Pay, Google Pay, or card. Sign in once and your card saves for 1-tap booking. Free cancellation up to 2 hours before.",time:"10 sec"},{step:"4",icon:"📱",title:"Get Your QR Code",desc:"Instant QR code on your phone. Walk up to the gym, scan at the entrance, and you’re in. Quick and easy.",time:"Instant"},{step:"5",icon:"🏋️",title:"Train & Check Out",desc:"Enjoy the full gym for 24 hours. Scan out when you leave. Rate your experience and earn rewards.",time:"Your pace"}].map(s=>`<div class="flex gap-4"><div class="w-10 h-10 bg-brand rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">${s.step}</div><div class="flex-1 bg-slate-800 rounded-lg p-4"><div class="flex items-center justify-between"><p class="text-white font-bold"><span class="mr-2">${s.icon}</span>${s.title}</p><span class="text-brand text-xs font-medium">${s.time}</span></div><p class="text-slate-400 text-sm mt-1">${s.desc}</p></div></div>`).join("")}</div><div class="grid sm:grid-cols-3 gap-4 mb-8"><div class="bg-green-900/20 border border-green-800/30 rounded-xl p-4 text-center"><p class="text-2xl mb-1">✅</p><p class="text-white font-semibold text-sm">Free Cancellation</p><p class="text-slate-500 text-xs">Up to 2 hours before</p></div><div class="bg-blue-900/20 border border-blue-800/30 rounded-xl p-4 text-center"><p class="text-2xl mb-1">🔒</p><p class="text-white font-semibold text-sm">Secure Payment</p><p class="text-slate-500 text-xs">Stripe + Apple/Google Pay</p></div><div class="bg-brand/10 border border-brand/30 rounded-xl p-4 text-center"><p class="text-2xl mb-1">⚡</p><p class="text-white font-semibold text-sm">No Membership</p><p class="text-slate-500 text-xs">Pay per session only</p></div></div><div class="text-center"><a onclick="navigate('/explore')" class="bg-brand hover:bg-orange-600 text-white font-bold px-10 py-4 rounded-xl cursor-pointer transition inline-block shadow-lg shadow-brand/20 text-lg">Find a Gym Near You →</a><p class="text-slate-500 text-sm mt-3">From ${sgPrice('day').display} per session · No contracts · No sign-up required</p></div>`);
   else if(path==='/for-corporates')page=InfoPage('Corporate Wellness',`<p class="text-xl text-white font-bold mb-2">Gym access for your entire team. Zero admin.</p><p class="text-lg text-slate-300 mb-8">Give employees access to gyms across the UK. No memberships, no contracts, no hassle.</p><div class="bg-brand/10 border border-brand/30 rounded-xl p-6 mb-8"><p class="text-white font-bold mb-3">📊 Why Companies Choose ScanGym</p><div class="grid sm:grid-cols-4 gap-4">${[{stat:"67%",label:"less sick days",desc:"with active employees"},{stat:"41%",label:"higher retention",desc:"with wellness perks"},{stat:"3.2x",label:"ROI",desc:"on wellness spend"},{stat:"£0",label:"setup cost",desc:"start immediately"}].map(s=>`<div class="text-center"><p class="text-2xl font-bold text-brand">${s.stat}</p><p class="text-white text-sm font-medium">${s.label}</p><p class="text-slate-500 text-xs">${s.desc}</p></div>`).join("")}</div></div><div class="grid sm:grid-cols-2 gap-6 mb-8"><div class="bg-slate-800 rounded-xl p-6 border border-slate-700"><p class="text-2xl mb-2">🏢</p><p class="text-white font-bold mb-1">Pay-Per-Use</p><p class="text-slate-400 text-sm mb-3">Only pay when employees actually use a gym. No monthly minimums.</p><div class="space-y-2"><p class="text-slate-300 text-sm flex items-center gap-2"><span class="text-green-400">✓</span> From ${sgPrice('day').display} per session</p><p class="text-slate-300 text-sm flex items-center gap-2"><span class="text-green-400">✓</span> Monthly invoicing</p><p class="text-slate-300 text-sm flex items-center gap-2"><span class="text-green-400">✓</span> Usage dashboard</p></div></div><div class="bg-slate-800 rounded-xl p-6 border border-slate-700"><p class="text-2xl mb-2">💳</p><p class="text-white font-bold mb-1">Credit Allowance</p><p class="text-slate-400 text-sm mb-3">Give each employee a monthly gym credit. They choose where to train.</p><div class="space-y-2"><p class="text-slate-300 text-sm flex items-center gap-2"><span class="text-green-400">✓</span> Set per-employee budgets</p><p class="text-slate-300 text-sm flex items-center gap-2"><span class="text-green-400">✓</span> Unused credits roll over</p><p class="text-slate-300 text-sm flex items-center gap-2"><span class="text-green-400">✓</span> Admin controls</p></div></div></div><div class="bg-slate-800 rounded-xl p-6 border border-slate-700 mb-8"><p class="text-white font-bold mb-4">How It Works for Companies</p><div class="grid sm:grid-cols-3 gap-4">${[{step:"1",title:"Sign Up",desc:"Tell us your team size and budget. We set up your company portal in minutes."},{step:"2",title:"Invite Team",desc:"Send email invites. Employees use the web or app — no training needed."},{step:"3",title:"Track & Report",desc:"See usage, spend, and engagement in your admin dashboard. Export reports for HR."}].map(s=>`<div class="text-center"><div class="w-10 h-10 bg-brand rounded-full flex items-center justify-center text-white font-bold text-sm mx-auto mb-3">${s.step}</div><p class="text-white font-semibold text-sm">${s.title}</p><p class="text-slate-400 text-xs mt-1">${s.desc}</p></div>`).join("")}</div></div><div class="bg-green-900/20 border border-green-800/30 rounded-xl p-6 mb-8"><p class="text-white font-bold mb-3">✅ What’s Included — Every Plan</p><div class="grid sm:grid-cols-2 gap-2 text-sm">${["Access to gyms across the UK","No per-employee minimums","Admin dashboard & reporting","Free cancellation policy","24/7 email & chat support","GDPR compliant","Monthly or annual billing","Dedicated account manager (50+ staff)"].map(f=>`<p class="text-slate-300 flex items-center gap-2"><span class="text-green-400">✓</span>${f}</p>`).join("")}</div></div><div class="text-center"><a onclick="navigate('/contact')" class="bg-brand hover:bg-orange-600 text-white font-bold px-10 py-4 rounded-xl cursor-pointer transition inline-block shadow-lg shadow-brand/20 text-lg">Get a Corporate Quote →</a><p class="text-slate-500 text-sm mt-3">📧 hello@scangym.com · Free setup · Cancel anytime</p></div>`);
@@ -20136,13 +20162,25 @@ window.sgFeedback = async function(elementId, vote, btn) {
     var btn=document.getElementById('sg-auth-send-btn');
     var err=document.getElementById('sg-auth-err');
     if(!inp)return;
-    var phone=inp.value.replace(/\s/g,'');
-    if(!phone||phone.length<7){err.textContent='Enter a valid phone number';err.style.display='block';return;}
+    var phone=inp.value.replace(/[\s()-]/g,'');
+    var cc=document.getElementById('sg-auth-cc');
+    var countryCode=cc?cc.value:'+44';
+    /* Validate here instead of letting Twilio reject it: typing "123" used to
+       reach the API and the SMS provider's own error ("Invalid parameter `To`:
+       +44123") was shown to the visitor. */
+    var _digits=phone.replace(/\D/g,'');
+    if(!_digits){err.textContent='Enter your mobile number';err.style.display='block';return;}
+    if(_digits.length<7||_digits.length>15){
+      err.textContent='That doesn\'t look like a mobile number — check the digits';
+      err.style.display='block';return;
+    }
+    if(countryCode==='+44'&&!/^(0?7\d{9})$/.test(_digits)){
+      err.textContent='Enter a UK mobile, e.g. 07123 456789';
+      err.style.display='block';return;
+    }
     err.style.display='none';
     btn.textContent='Sending…';btn.disabled=true;
     try{
-      var cc=document.getElementById('sg-auth-cc');
-      var countryCode=cc?cc.value:'+44';
       var fullPhone=phone.startsWith('+')?phone:countryCode+phone.replace(/^0/,'');
       var r=await fetch('/api/auth/send-code',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({phone:fullPhone})}).then(function(r){return r.json();});
       if(r.success){

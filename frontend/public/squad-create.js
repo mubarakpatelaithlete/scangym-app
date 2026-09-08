@@ -351,7 +351,7 @@
         gen.textContent = '🔒 Not switched on yet';
         warn.style.display = 'block';
         warn.innerHTML = '⏳ <b>' + mode.label + '</b> — ' + reasonText(mode) +
-          ' The controls above are a preview of the flow. <b>440+ ready-to-post clips</b> are in your ScanSquad library.';
+          ' The controls above are a preview of the flow. <b>'+((window.SQUAD_ASSET_COUNT||242))+'+ ready-to-post clips</b> are in your ScanSquad library.';
         return;
       }
       if (!mode.api) return;
@@ -363,7 +363,7 @@
           gen.disabled = true;
           warn.style.display = 'block';
           warn.innerHTML = '⏳ ' + mode.label + ' rendering is still being switched on for this account (' +
-            (d.reason || 'unavailable') + '). Meanwhile: <b>440+ ready-to-post clips</b> are in your ScanSquad library below.';
+            (d.reason || 'unavailable') + '). Meanwhile: <b>' + ((window.SQUAD_ASSET_COUNT||242)) + '+ ready-to-post clips</b> are in your ScanSquad library below.';
           return;
         }
         if (quota && quota.remaining <= 0) {
