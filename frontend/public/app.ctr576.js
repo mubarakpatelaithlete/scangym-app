@@ -9802,7 +9802,10 @@ window.cancelBooking=function(bookingId){
     ? 'Since you selected cash, no card refund is needed.'
     : 'You\'ll receive a full refund to your card within 3-5 business days.';
   const knownEmail = document.getElementById('sheet-email')?.value||state.user?.email||localStorage.getItem('sg_last_email')||'';
-  const needEmail = !knownEmail;
+  // Signed-in members cancel by session (see routes/booking.js: the email is
+  // ignored when req.session.userId is set). A phone-only member has no email to
+  // type, so asking for "the email you used to book" made the Cancel button a dead end.
+  const needEmail = !knownEmail && !state.user;
   const modal = document.createElement('div');
   modal.id='sg-cancel-modal';
   modal.style.cssText='position:fixed;inset:0;z-index:var(--sg-z-overlay,10000);display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.7);padding:16px';
@@ -9819,7 +9822,7 @@ window.cancelBooking=function(bookingId){
   modal.onclick=function(e){if(e.target===modal)modal.remove()};
   modal.querySelector('#sg-cancel-yes').onclick=async function(){
     var email=needEmail?(document.getElementById('sg-cancel-email')?.value||'').trim():knownEmail;
-    if(!email){sgToast('Please enter your email');return;}
+    if(!email&&!state.user){sgToast('Please enter your email');return;}
     var btn=this;btn.textContent='Cancelling...';btn.style.opacity='.6';btn.disabled=true;
     try{
       var r=await fetch('/api/bookings/cancel',{
