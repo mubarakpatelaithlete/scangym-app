@@ -426,6 +426,7 @@ async function loadConfig() {
     MAPS_KEY = c.mapsKey || '';
     window._sgMapboxToken = c.mapboxToken || '';
     STRIPE_PK = c.stripeKey || '';
+    window._sgPromoCodesEnabled = c.promoCodes === true;
     // Honest gym count from DB (0 if API doesn't return one)
     GYM_COUNT = c.gymCount || 1200000;
     // Re-render if already on page so dynamic count shows
@@ -8182,17 +8183,13 @@ window.sgApplyPromo=async function(){
       sgToast(data.message||'Invalid promo code','error',2500);
     }
   }catch(e){
-    // Fallback: Accept known promotional codes client-side
-    var knownCodes={'WELCOME10':{pct:10,desc:'10% off first booking'},'SCANGYM20':{pct:20,desc:'20% off — early bird'},'FIRST50':{pct:50,desc:'50% off first session'},'GYM15':{pct:15,desc:'15% partner discount'}};
-    var promo=knownCodes[code];
-    if(promo){
-      resultEl.innerHTML='<div style="display:flex;align-items:center;gap:6px"><span style="color:#22c55e;font-size:13px;font-weight:600">✅ '+promo.desc+'</span><span onclick="ubRemovePromo()" style="color:rgba(255,255,255,.4);font-size:11px;cursor:pointer;margin-left:auto">Remove</span></div>';
-      window._checkoutState.promoCode=code;
-      window._checkoutState.promoDiscount=promo.pct;
-      sgToast('🎉 '+promo.desc+' applied!','success',2500);
-    }else{
-      resultEl.innerHTML='<span style="color:#f87171;font-size:12px">❌ Invalid or expired promo code</span>';
-    }
+    /* Never grant a discount the server has not granted. This used to fall
+       back to a client-side code table, so a shopper saw "🎉 50% off applied!"
+       and was then charged the full price by Stripe. */
+    console.warn('Promo validation failed:',e);
+    resultEl.innerHTML='<span style="color:#f87171;font-size:12px">❌ Couldn\'t check that code right now — you have not been charged for it</span>';
+    window._checkoutState.promoCode=null;
+    window._checkoutState.promoDiscount=0;
   }
 };
 window.ubRemovePromo=function(){
@@ -8446,8 +8443,9 @@ window.showBookingCheckout=async function(gymId, prefillDate, prefillTime){
         <div style="text-align:center;margin-top:4px">
           <span style="color:rgba(255,255,255,.2);font-size:11px">No hidden fees · Pay exactly what you see</span>
         </div>
-        <!-- FIX #13: Promo code field -->
-        <div id="sg-promo-section" style="margin-top:12px">
+        <!-- Promo field only exists when the server can actually honour a code
+             (config.promoCodes). See /api/config for why. -->
+        <div id="sg-promo-section" style="margin-top:12px;display:${window._sgPromoCodesEnabled?'block':'none'}">
           <div id="sg-promo-toggle" onclick="document.getElementById('sg-promo-input-row').style.display='flex';this.style.display='none'" style="cursor:pointer;display:flex;align-items:center;gap:6px">
             <span style="color:#FF6D00;font-size:13px;font-weight:600">🏷️ Have a promo code?</span>
           </div>
@@ -9102,16 +9100,12 @@ window.sgApplyPromo=async function(){
       sgToast(data.message||'Invalid promo code','error',2500);
     }
   }catch(e){
-    var knownCodes={'WELCOME10':{pct:10,desc:'10% off first booking'},'SCANGYM20':{pct:20,desc:'20% off — early bird'},'FIRST50':{pct:50,desc:'50% off first session'},'GYM15':{pct:15,desc:'15% partner discount'}};
-    var promo=knownCodes[code];
-    if(promo){
-      resultEl.innerHTML='<div style="display:flex;align-items:center;gap:6px"><span style="color:#22c55e;font-size:13px;font-weight:600">✅ '+promo.desc+'</span><span onclick="ubRemovePromo()" style="color:rgba(255,255,255,.4);font-size:11px;cursor:pointer;margin-left:auto">Remove</span></div>';
-      window._checkoutState.promoCode=code;
-      window._checkoutState.promoDiscount=promo.pct;
-      sgToast('🎉 '+promo.desc+' applied!','success',2500);
-    }else{
-      resultEl.innerHTML='<span style="color:#f87171;font-size:12px">❌ Invalid or expired promo code</span>';
-    }
+    /* No client-side discount table. See the note on the other promo handler:
+       a code the server never granted must never look applied. */
+    console.warn('Promo validation failed:',e);
+    resultEl.innerHTML='<span style="color:#f87171;font-size:12px">❌ Couldn\'t check that code right now — you have not been charged for it</span>';
+    window._checkoutState.promoCode=null;
+    window._checkoutState.promoDiscount=0;
   }
 };
 window.ubRemovePromo=function(){

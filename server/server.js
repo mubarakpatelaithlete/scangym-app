@@ -408,6 +408,12 @@ app.get("/api/config", async (req, res) => {
     brand: "ScanGym",
     liveSearch: true,
     gymCount: 1200000, // Google Places searchable gyms worldwide
+    // Promo redemption is not built yet: there is no /api/promo/validate and
+    // nothing applies a discount at checkout. Until that ships the field stays
+    // hidden, because "🎉 50% off applied!" followed by a full-price charge is
+    // worse than no promo field at all. Flip PROMO_CODES_ENABLED when the
+    // server can honour a code end to end.
+    promoCodes: process.env.PROMO_CODES_ENABLED === 'true',
   });
 });
 
