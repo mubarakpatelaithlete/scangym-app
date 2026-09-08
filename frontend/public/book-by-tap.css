@@ -58,3 +58,25 @@ body.sg-cb-active #mchat-fab.show {
 #join-btn {
   display: inline-flex !important;
 }
+
+/* ScanSquad is its own page (no continue banner, so no body.sg-cb-active) and the
+   full-width Talk bar sat exactly on top of the form's "Start Earning" button.
+   Talk stays; it is a pill here so the form can be submitted. */
+#schat-fab.show {
+  left: auto !important;
+  right: 12px !important;
+  width: auto !important;
+  height: 42px !important;
+  padding: 0 16px 0 13px !important;
+  border-radius: 21px !important;
+  font-size: 14px !important;
+}
+
+/* The Reels tab embeds /reels/ in an iframe. The framed page has its own Talk bar
+   and the shell around it has a Talk pill *and* the "Book in London →" bar, so the
+   screen showed two Talk buttons. reels/index.html adds .sg-framed to <html> when
+   it is inside the shell; the framed copy of Talk then steps aside. Opening /reels/
+   directly (no frame) keeps its bar. */
+html.sg-framed #rchat-fab.show {
+  display: none !important;
+}

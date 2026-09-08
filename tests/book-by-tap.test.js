@@ -21,12 +21,21 @@ test('the purchase bar is shown and orange while the app has something to sell',
 });
 
 test('Talk stays on screen but steps back to a pill beside the purchase bar', () => {
-  assert.ok(!/display:\s*none/.test(css), 'book-by-tap.css must never hide the Talk pill');
+  // The only display:none allowed is the framed Reels copy — the shell around the
+  // iframe still shows its own Talk pill, so Talk is never actually off the screen.
+  const hides = css.match(/[^{}]+\{[^}]*display:\s*none[^}]*\}/g) || [];
+  for (const rule of hides) assert.ok(/html\.sg-framed #rchat-fab\.show/.test(rule), `unexpected hide rule: ${rule.slice(0, 80)}`);
   assert.ok(/#bchat-fab\.show[^{]*\{[^}]*left:\s*auto\s*!important/.test(css));
 });
 
 test('the ScanSquad form can be submitted', () => {
   assert.ok(/#join-btn\s*\{[^}]*display:\s*inline-flex\s*!important/.test(css));
+});
+
+test('the framed Reels page marks itself so its Talk copy steps aside', () => {
+  const html = fs.readFileSync(path.join(PUBLIC, 'reels/index.html'), 'utf8');
+  assert.ok(/window\.top!==window\.self[^<]*sg-framed/.test(html), 'reels/index.html must add .sg-framed when embedded');
+  assert.ok(/html\.sg-framed #rchat-fab\.show\s*\{[^}]*display:\s*none/.test(css));
 });
 
 test('every shell loads it after talk-bar.css', () => {
