@@ -29,6 +29,65 @@ function isoDate(offsetDays = 0) {
  * and could not answer the questions their own screens exist for.
  */
 const accountTools = require('./account-tools');
+function formatGymRow(g) {
+  return {
+    id: g.id,
+    name: g.name,
+    address: g.address,
+    city: g.city,
+    dayPassPrice: g.day_pass_price ? Number(g.day_pass_price) : null,
+    open24h: g.is_24h === true,
+    rating: g.average_rating ? Number(g.average_rating) : null,
+  };
+}
+
+const LOCAL_BASE = `http://127.0.0.1:${process.env.PORT || 5000}`;
+
+/**
+ * Same search the Book tab runs (/api/live/search), then /api/live/ensure-gym for each
+ * hit so the result carries a real gyms.id that book_gym / get_gym accept. Both routes
+ * already exist and are the ones the Book button uses (see routes/booking.js), so the
+ * assistant cannot drift from the screen. Any failure degrades to "no results".
+ */
+async function liveSearchFallback(q, limit) {
+  try {
+    const r = await fetch(`${LOCAL_BASE}/api/live/search?q=${encodeURIComponent(q)}`, {
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!r.ok) return [];
+    const data = await r.json();
+    const hits = (data.gyms || []).filter((g) => g.placeId || g.id).slice(0, limit);
+    const out = [];
+    for (const g of hits) {
+      const placeId = g.placeId || g.id;
+      let gymId = null;
+      try {
+        const er = await fetch(`${LOCAL_BASE}/api/live/ensure-gym`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ placeId }),
+          signal: AbortSignal.timeout(8000),
+        });
+        if (er.ok) gymId = (await er.json()).gymId || null;
+      } catch (_) { /* leave id null: still a useful search answer */ }
+      out.push({
+        id: gymId,
+        name: g.name,
+        address: g.address,
+        city: g.city,
+        dayPassPrice: g.dayPassPrice != null ? Number(g.dayPassPrice) : null,
+        open24h: g.is24Hours === true,
+        rating: g.rating != null ? Number(g.rating) : null,
+        distanceText: g.distanceText || null,
+      });
+    }
+    return out;
+  } catch (e) {
+    console.error('[BookTools] live search fallback failed:', e.message);
+    return [];
+  }
+}
+
 
 const tools = {
   ...accountTools.tools,
@@ -56,34 +115,38 @@ const tools = {
       if (!q) return { ok: false, message: 'I need a place or gym name to search for.' };
 
       const limit = Math.min(Math.max(Number(args.limit) || 5, 1), 10);
+
+      // Apostrophes are the classic miss here: a customer types "Kings Cross", the gym is
+      // stored as "Anytime Fitness King's Cross". Compare with apostrophes stripped on both sides.
+      const loose = q.replace(/['\u2019]/g, '');
       const { rows } = await pool
         .query(
           `SELECT id, name, address, city, day_pass_price, is_24h, average_rating
              FROM gyms
             WHERE is_accepting_bookings IS NOT FALSE
-              AND (name ILIKE $1 OR city ILIKE $1 OR address ILIKE $1)
+              AND (regexp_replace(name, '[''\u2019]', '', 'g') ILIKE $1
+                OR regexp_replace(city, '[''\u2019]', '', 'g') ILIKE $1
+                OR regexp_replace(address, '[''\u2019]', '', 'g') ILIKE $1)
             ORDER BY average_rating DESC NULLS LAST, id
             LIMIT $2`,
-          [`%${q}%`, limit]
+          [`%${loose}%`, limit]
         )
         .catch(() => ({ rows: [] }));
 
-      if (!rows.length) {
-        return { ok: true, gyms: [], message: `No gyms on ScanGym match "${q}" yet.` };
+      if (rows.length) {
+        return { ok: true, gyms: rows.map(formatGymRow) };
       }
 
-      return {
-        ok: true,
-        gyms: rows.map((g) => ({
-          id: g.id,
-          name: g.name,
-          address: g.address,
-          city: g.city,
-          dayPassPrice: g.day_pass_price ? Number(g.day_pass_price) : null,
-          open24h: g.is_24h === true,
-          rating: g.average_rating ? Number(g.average_rating) : null,
-        })),
-      };
+      // Nothing in our own table. The Book tab would still show this customer gyms here,
+      // because it searches Google Places live and creates the gym row at booking time.
+      // The assistant must see the same product the screen behind it shows, so fall back
+      // to that exact search and register the top results so book_gym can use their ids.
+      const live = await liveSearchFallback(q, limit);
+      if (live.length) {
+        return { ok: true, gyms: live, source: 'live_search' };
+      }
+
+      return { ok: true, gyms: [], message: `No gyms on ScanGym match "${q}" yet.` };
     },
   },
 
