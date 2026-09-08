@@ -29,13 +29,10 @@ const MIN_PRICE_USD = 0.50; // ~£0.40 / €0.46 — absolute floor for any book
 // ============================================================================
 // PASS MULTIPLIERS (relative to single day pass)
 // ============================================================================
-const PASS_MULTIPLIERS = {
-  day: 1.0,
-  '3day': 2.67,      // 3 days for 2.67× (11 % discount / day)
-  three_day: 2.67,
-  weekly: 5.0,        // 7 days for 5× (29 % discount / day)
-  monthly: 10.0,      // 30 days for 10× (67 % discount / day)
-};
+// Shared with the browser (frontend/public/pass-math.js) so a displayed price
+// and a charged price can never diverge again — see that file's header.
+const PASS_MATH = require('../../frontend/public/pass-math.js');
+const PASS_MULTIPLIERS = PASS_MATH.PASS_MULTIPLIERS;
 
 // ============================================================================
 // COUNTRY PRICING DATA — 99 countries, each with local currency + PPP
@@ -169,10 +166,7 @@ const COUNTRY_PRICING = {
 // ============================================================================
 // ZERO-DECIMAL CURRENCIES — Stripe sends amount as-is (not in cents/pence)
 // ============================================================================
-const ZERO_DECIMAL_CURRENCIES = new Set([
-  'jpy', 'krw', 'vnd', 'clp', 'pyg', 'bif', 'djf', 'gnf', 'kmf',
-  'mga', 'rwf', 'ugx', 'vuf', 'xaf', 'xof', 'xpf', 'isk',
-]);
+const ZERO_DECIMAL_CURRENCIES = new Set(PASS_MATH.ZERO_DECIMAL_CURRENCIES);
 
 // ============================================================================
 // STRIPE PRICE ID MAP — Pre-created localized prices (15 high-volume currencies)
@@ -278,30 +272,12 @@ const STRIPE_PRICE_MAP = {
 /**
  * Apply charm pricing — make price end in .99 or .49 (or nice round for large)
  */
-function charmPrice(raw, currencyCode) {
-  if (ZERO_DECIMAL_CURRENCIES.has(currencyCode)) {
-    if (raw >= 100000) return Math.max(Math.round(raw / 1000) * 1000 - 1, 999);
-    if (raw >= 10000)  return Math.max(Math.round(raw / 100) * 100 - 1, 99);
-    return Math.max(Math.round(raw / 10) * 10 - 1, 9);
-  }
-  if (raw >= 10000) return Math.max(Math.round(raw / 100) * 100 - 1, 99);
-  if (raw >= 1000)  return Math.max(Math.round(raw / 10) * 10 - 1, 9);
-
-  const whole = Math.floor(raw);
-  const decimal = raw - whole;
-  if (raw < 1) return 0.99;
-  if (decimal < 0.25) return whole - 0.01;
-  if (decimal < 0.75) return whole + 0.49;
-  return whole + 0.99;
-}
+const charmPrice = PASS_MATH.charmPrice;
 
 /**
  * Convert a price to Stripe's smallest currency unit
  */
-function toStripeAmount(amount, currencyCode) {
-  if (ZERO_DECIMAL_CURRENCIES.has(currencyCode)) return Math.round(amount);
-  return Math.round(amount * 100);
-}
+const toStripeAmount = PASS_MATH.toStripeAmount;
 
 /**
  * Main pricing function — ONE source of truth.

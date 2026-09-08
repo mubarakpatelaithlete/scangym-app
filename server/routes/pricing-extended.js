@@ -6,6 +6,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../middleware/db');
 const { BASE_PRICE_GBP } = require('../lib/pricing-engine');
+const PASS_MATH = require('../../frontend/public/pass-math.js');
 
 // Single source of truth for the base day-pass price: lib/pricing-engine.js.
 // These routes used to hardcode 4.49 in three places, so a price change here
@@ -94,10 +95,11 @@ router.post('/group', express.json(), async (req, res) => {
     return res.status(400).json({ error: 'Group size must be 2-10' });
   }
 
-  const basePrice = BASE_PRICE_GBP;
-  const discount = groupSize >= 5 ? 0.20 : groupSize >= 3 ? 0.10 : 0; // 10-20% group discount
-  const perPerson = Math.round(basePrice * (1 - discount) * 100) / 100;
-  const total = Math.round(perPerson * groupSize * 100) / 100;
+  // Shared with the browser so the group card and the charge agree.
+  const group = PASS_MATH.groupPrice(BASE_PRICE_GBP, groupSize, { currency: 'gbp', symbol: '£' });
+  const discount = PASS_MATH.groupDiscount(group.groupSize);
+  const perPerson = group.perPerson;
+  const total = group.total;
   const groupCode = 'GRP-' + Math.random().toString(36).slice(2, 8).toUpperCase();
 
   res.json({
@@ -114,9 +116,13 @@ router.post('/group', express.json(), async (req, res) => {
 // #136: Couple pass (2 people, 15% discount)
 router.post('/couple', express.json(), async (req, res) => {
   const { gymId, date, partnerEmail } = req.body;
+  // Charge exactly what the pass sheet showed: shared maths, charm-rounded once
+  // (frontend/public/pass-math.js). Computing 0.85 × 2 here produced £7.63
+  // against a £7.49 price on screen.
   const basePrice = BASE_PRICE_GBP;
-  const couplePrice = Math.round(basePrice * 0.85 * 2 * 100) / 100; // 15% off for 2
-  const perPerson = Math.round(basePrice * 0.85 * 100) / 100;
+  const couple = PASS_MATH.passPrice(basePrice, 'couple', { currency: 'gbp', symbol: '£' });
+  const couplePrice = couple.amount;
+  const perPerson = Math.round((couplePrice / 2) * 100) / 100;
 
   res.json({
     success: true,

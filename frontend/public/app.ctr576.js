@@ -1876,9 +1876,14 @@ function GymProfilePage(){
   // C7 fix: Always use gym's currency/price (from gym's country), never visitor's
   const _gymPrice=sgNum((gym.pricing&&sgNum(gym.pricing.dayPassPrice)>0)?gym.pricing.dayPassPrice:gym.dayPassPrice);
   const _sym=(gym.pricing&&gym.pricing.currencySymbol)||gym.currencySymbol||sgSymbol();
-  const _dayP=_gymPrice?{amount:_gymPrice,display:_sym+_gymPrice.toFixed(2)}:sgPrice('day');
-  const _3dayP=_gymPrice?{amount:parseFloat((_gymPrice*2.67).toFixed(2)),display:_sym+(_gymPrice*2.67).toFixed(2)}:sgPrice('3day');
-  const _weekP=_gymPrice?{amount:parseFloat((_gymPrice*5).toFixed(2)),display:_sym+(_gymPrice*5).toFixed(2)}:sgPrice('weekly');
+  /* Prices come from the shared pass maths (/pass-math.js) — the same code the
+     server charges with. Hand-multiplying showed £22.45 for a pass that cost
+     £22.49 at checkout. */
+  const _dayP=sgGymPass(_gymPrice,'day',_sym);
+  const _3dayP=sgGymPass(_gymPrice,'3day',_sym);
+  const _weekP=sgGymPass(_gymPrice,'weekly',_sym);
+  const _monthP=sgGymPass(_gymPrice,'monthly',_sym);
+  const _coupleP=sgGymPass(_gymPrice,'couple',_sym);
   const currentPrice=_dayP.display;
   const threeDayPrice=_3dayP.display;
   const weeklyPrice=_weekP.display;
@@ -2296,15 +2301,15 @@ function GymProfilePage(){
         <div class="gym-pass-card" onclick="selectGymPassCard(this,2,'${gymId}')" data-pass="weekly">
           <div class="gym-pass-card-top"><div class="gym-pass-card-icon">📅</div><span class="gym-pass-card-name">Weekly</span></div>
           <div class="gym-pass-price">${weeklyPrice}</div>
-          <div class="gym-pass-perday">${_sym}${(_weekP.amount/7).toFixed(2)}/day</div>
-          <div class="gym-pass-save">Save 43%</div>
+          <div class="gym-pass-perday">${_weekP.perDayDisplay}/day</div>
+          <div class="gym-pass-save">Save ${_weekP.savePercent}%</div>
         </div>
         <div class="gym-pass-card" onclick="selectGymPassCard(this,3,'${gymId}')" data-pass="monthly">
           <div class="gym-pass-card-badge" style="background:#f59e0b">👑 BEST VALUE</div>
           <div class="gym-pass-card-top"><div class="gym-pass-card-icon">🏆</div><span class="gym-pass-card-name">Monthly</span></div>
-          <div class="gym-pass-price">${_gymPrice?_sym+(_gymPrice*10).toFixed(2):sgPrice('monthly').display}</div>
-          <div class="gym-pass-perday">${_sym}${(_gymPrice?(_gymPrice*10/30):sgPrice('monthly').amount/30).toFixed(2)}/day</div>
-          <div class="gym-pass-save">Save 67%</div>
+          <div class="gym-pass-price">${_monthP.display}</div>
+          <div class="gym-pass-perday">${_monthP.perDayDisplay}/day</div>
+          <div class="gym-pass-save">Save ${_monthP.savePercent}%</div>
         </div>
       </div>
 
@@ -3101,10 +3106,13 @@ window.rvShowFullscreen=function(url){
     const _ovGym=state.currentGym;
     const _ovGymP=(_ovGym&&_ovGym.pricing&&_ovGym.pricing.dayPassPrice>0)?_ovGym.pricing.dayPassPrice:((_ovGym&&_ovGym.dayPassPrice&&_ovGym.dayPassPrice>0)?_ovGym.dayPassPrice:null);
     const _sym=(_ovGym&&_ovGym.pricing&&_ovGym.pricing.currencySymbol)||(_ovGym&&_ovGym.currencySymbol)||sgSymbol();
-    const dayP=_ovGymP?{amount:_ovGymP,display:_sym+_ovGymP.toFixed(2)}:sgPrice('day');
-    const threeDayP=_ovGymP?{amount:parseFloat((_ovGymP*2.67).toFixed(2)),display:_sym+(_ovGymP*2.67).toFixed(2)}:sgPrice('3day');
-    const weeklyP=_ovGymP?{amount:parseFloat((_ovGymP*5).toFixed(2)),display:_sym+(_ovGymP*5).toFixed(2)}:sgPrice('weekly');
-    const monthlyP=_ovGymP?{amount:parseFloat((_ovGymP*10).toFixed(2)),display:_sym+(_ovGymP*10).toFixed(2)}:sgPrice('monthly');
+    /* Shared pass maths — see /pass-math.js. Displayed price == charged price. */
+    const dayP=sgGymPass(_ovGymP,'day',_sym);
+    const threeDayP=sgGymPass(_ovGymP,'3day',_sym);
+    const weeklyP=sgGymPass(_ovGymP,'weekly',_sym);
+    const monthlyP=sgGymPass(_ovGymP,'monthly',_sym);
+    const coupleP=sgGymPass(_ovGymP,'couple',_sym);
+    const groupP=(window.SGPassMath&&window.SGPassMath.groupPrice(dayP.amount,4,{currency:sgPrice('day').currency,symbol:_sym}))||null;
     const gymId=gym.placeId||gym.place_id||gym.id;
     body.innerHTML=`
       <!-- FIX #7: Day Pass pre-selected by default, other passes behind expandable -->
@@ -3136,37 +3144,37 @@ window.rvShowFullscreen=function(url){
             <div style="font-size:28px;margin:8px 0 4px">🔥</div>
             <div style="color:#fff;font-size:15px;font-weight:700">3-Day Pass</div>
             <div style="color:#fff;font-size:24px;font-weight:800;margin:8px 0 4px">${threeDayP.display}</div>
-            <div style="color:rgba(255,255,255,.4);font-size:12px">${_sym}${(threeDayP.amount/3).toFixed(2)}/day</div>
-            <div style="color:#22c55e;font-size:11px;font-weight:700;margin-top:4px">Save 20%</div>
+            <div style="color:rgba(255,255,255,.4);font-size:12px">${threeDayP.perDayDisplay}/day</div>
+            <div style="color:#22c55e;font-size:11px;font-weight:700;margin-top:4px">Save ${threeDayP.savePercent}%</div>
           </div>
           <div class="ov-pass-card" onclick="overlaySelectPass(this,2,'${gymId}')" style="background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.1);border-radius:16px;padding:16px;text-align:center;cursor:pointer">
             <div style="font-size:28px;margin:8px 0 4px">📅</div>
             <div style="color:#fff;font-size:15px;font-weight:700">Weekly</div>
             <div style="color:#fff;font-size:24px;font-weight:800;margin:8px 0 4px">${weeklyP.display}</div>
-            <div style="color:rgba(255,255,255,.4);font-size:12px">${_sym}${(weeklyP.amount/7).toFixed(2)}/day</div>
-            <div style="color:#22c55e;font-size:11px;font-weight:700;margin-top:4px">Save 43%</div>
+            <div style="color:rgba(255,255,255,.4);font-size:12px">${weeklyP.perDayDisplay}/day</div>
+            <div style="color:#22c55e;font-size:11px;font-weight:700;margin-top:4px">Save ${weeklyP.savePercent}%</div>
           </div>
           <div class="ov-pass-card" onclick="overlaySelectPass(this,3,'${gymId}')" style="background:linear-gradient(135deg,rgba(245,158,11,.15),rgba(245,158,11,.05));border:2px solid rgba(245,158,11,.3);border-radius:16px;padding:16px;text-align:center;cursor:pointer;position:relative">
             <div style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:#f59e0b;color:#000;font-size:10px;font-weight:800;padding:2px 10px;border-radius:20px;">👑 BEST VALUE</div>
             <div style="font-size:28px;margin:8px 0 4px">🏆</div>
             <div style="color:#fff;font-size:15px;font-weight:700">Monthly</div>
             <div style="color:#f59e0b;font-size:24px;font-weight:800;margin:8px 0 4px">${monthlyP.display}</div>
-            <div style="color:rgba(255,255,255,.4);font-size:12px">${_sym}${(monthlyP.amount/30).toFixed(2)}/day</div>
-            <div style="color:#22c55e;font-size:11px;font-weight:700;margin-top:4px">Save 67%</div>
+            <div style="color:rgba(255,255,255,.4);font-size:12px">${monthlyP.perDayDisplay}/day</div>
+            <div style="color:#22c55e;font-size:11px;font-weight:700;margin-top:4px">Save ${monthlyP.savePercent}%</div>
           </div>
           <div class="ov-pass-card" onclick="overlaySelectPass(this,4,'${gymId}')" style="background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.1);border-radius:16px;padding:16px;text-align:center;cursor:pointer">
             <div style="font-size:28px;margin:8px 0 4px">👫</div>
             <div style="color:#fff;font-size:15px;font-weight:700">Couple Pass</div>
-            <div style="color:#fff;font-size:24px;font-weight:800;margin:8px 0 4px">${_sym}${(dayP.amount*1.8).toFixed(2)}</div>
+            <div style="color:#fff;font-size:24px;font-weight:800;margin:8px 0 4px">${coupleP.display}</div>
             <div style="color:rgba(255,255,255,.4);font-size:12px">2 people · 24h</div>
-            <div style="color:#22c55e;font-size:11px;font-weight:700;margin-top:4px">Save 10%</div>
+            <div style="color:#22c55e;font-size:11px;font-weight:700;margin-top:4px">Save ${coupleP.savePercent}%</div>
           </div>
           <div class="ov-pass-card" onclick="overlaySelectPass(this,5,'${gymId}')" style="background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.1);border-radius:16px;padding:16px;text-align:center;cursor:pointer;grid-column:span 2">
             <div style="font-size:28px;margin:8px 0 4px">👥</div>
             <div style="color:#fff;font-size:15px;font-weight:700">Group Pass</div>
-            <div style="color:#fff;font-size:24px;font-weight:800;margin:8px 0 4px">${_sym}${(dayP.amount*3.2).toFixed(2)}</div>
-            <div style="color:rgba(255,255,255,.4);font-size:12px">Up to 4 people · 24h</div>
-            <div style="color:#22c55e;font-size:11px;font-weight:700;margin-top:4px">Save 20%</div>
+            <div style="color:#fff;font-size:24px;font-weight:800;margin:8px 0 4px">${groupP?groupP.display:monthlyP.display}</div>
+            <div style="color:rgba(255,255,255,.4);font-size:12px">4 people · 24h · ${groupP?groupP.perPersonDisplay+' each':''}</div>
+            <div style="color:#22c55e;font-size:11px;font-weight:700;margin-top:4px">Save ${groupP?groupP.savePercent:0}%</div>
           </div>
         </div>
       </div>

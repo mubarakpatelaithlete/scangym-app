@@ -137,6 +137,46 @@
     };
   };
 
+  /**
+   * Price of a pass for a gym with its own day-pass price.
+   *
+   * Never multiply a day price by hand: the server charm-rounds after
+   * multiplying (4.49 × 5 = 22.45 → charged £22.49), so hand-rolled
+   * multipliers put a different number on screen than on the card. This
+   * uses the shared maths in /pass-math.js, which is the same code the
+   * pricing engine runs server-side.
+   *
+   * @param {number|string} gymDayAmount - the gym's own day price (null → platform price)
+   * @param {string} passType - 'day' | '3day' | 'weekly' | 'monthly' | 'couple'
+   * @param {string} [symbol] - gym's currency symbol, defaults to the visitor's
+   * @returns {{amount:number, display:string, perDay:number, perDayDisplay:string, savePercent:number}}
+   */
+  window.sgGymPass = function sgGymPass(gymDayAmount, passType, symbol) {
+    var type = passType || 'day';
+    var day = parseFloat(gymDayAmount);
+    var M = window.SGPassMath;
+    var platform = window.sgPrice(type);
+    if (!M || !isFinite(day) || day <= 0) {
+      var days = (M && M.PASS_DAYS[type]) || 1;
+      return {
+        amount: platform.amount,
+        display: platform.display,
+        perDay: platform.amount / days,
+        perDayDisplay: platform.symbol + (platform.amount / days).toFixed(2),
+        savePercent: M ? M.savePercent(type) : 0
+      };
+    }
+    return M.passPrice(day, type, {
+      currency: window.sgPrice('day').currency,
+      symbol: symbol || window.sgSymbol()
+    });
+  };
+
+  /** Honest "save X%" for a pass type, derived from the multipliers. */
+  window.sgPassSave = function sgPassSave(passType) {
+    return window.SGPassMath ? window.SGPassMath.savePercent(passType || 'day') : 0;
+  };
+
   /** Get the user's currency symbol */
   window.sgSymbol = function sgSymbol() {
     var p = window.__sgPricing;
