@@ -13148,7 +13148,7 @@ function MoreHubPage(){
     var uName=u.name||u.phone||'Member';
     var initial=uName.charAt(0).toUpperCase();
     var since=u.member_since?new Date(u.member_since).toLocaleDateString('en-GB',{month:'short',year:'numeric'}):'2026';
-    var tS=u.stats?.totalSessions||0;var tG=u.stats?.totalGyms||0;var stk=u.stats?.streak||0;
+    var _ps=u.stats||{};var tS=_ps.totalSessions??_ps.total_bookings??0;var tG=_ps.totalGyms??_ps.gyms_visited??0;var stk=_ps.streak??0;/* /api/auth/profile sends snake_case; the profile showed 0·0·0 to a member with ten bookings */
     var tier=tS>=100?{n:'Elite',i:'\ud83d\udc51',c:'#a855f7'}:tS>=50?{n:'Gold',i:'\ud83e\udd47',c:'#eab308'}:tS>=10?{n:'Silver',i:'\ud83e\udd48',c:'#94a3b8'}:{n:'Basic',i:'\ud83c\udfcb\ufe0f',c:'#FF6D00'};
     return`<div style="position:absolute;inset:0;background:#000;overflow:hidden">
       <style>
@@ -19790,7 +19790,7 @@ window.sgFeedback = async function(elementId, vote, btn) {
         var defaultBadge=isDefault?'<span style="background:rgba(34,197,94,.15);color:#22c55e;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;margin-left:8px">Default</span>':'';
         html+='<div class="sg-auth-check'+(isSelected?' selected':'')+'" onclick="window._sgAuthSelectCard(this,\''+card.id+'\',\''+card.brand+'\',\''+card.last4+'\')" data-card-id="'+card.id+'" style="'+(isSelected?'border-color:rgba(255,109,0,.4);background:rgba(255,109,0,.06)':'')+'">';
         html+='<div style="width:40px;height:28px;border-radius:6px;background:'+bgColor+';display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="color:#fff;font-size:9px;font-weight:800;text-transform:uppercase">'+brandName.slice(0,4)+'</span></div>';
-        html+='<div class="sg-auth-check-text"><strong>'+brandName+' ••••'+card.last4+defaultBadge+'</strong><span>'+((card.nickname)?card.nickname:'Expires '+((card.exp_month||'')+'/'+( card.exp_year||'')))+'</span></div>';
+        html+='<div class="sg-auth-check-text"><strong>'+brandName+' ••••'+card.last4+defaultBadge+'</strong><span>'+((card.nickname)?card.nickname:'Expires '+((card.exp_month||card.expMonth||'')+'/'+(card.exp_year||card.expYear||'')))+'</span></div>';
         html+='<div style="width:20px;height:20px;border-radius:50%;border:2px solid '+(isSelected?'#FF6D00':'rgba(255,255,255,.2)')+';display:flex;align-items:center;justify-content:center">'+(isSelected?'<div style="width:10px;height:10px;border-radius:50%;background:#FF6D00"></div>':'')+'</div>';
         html+='</div>';
         // Auto-select default card into booking state
