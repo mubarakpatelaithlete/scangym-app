@@ -57,30 +57,30 @@ async function liveSearchFallback(q, limit) {
     if (!r.ok) return [];
     const data = await r.json();
     const hits = (data.gyms || []).filter((g) => g.placeId || g.id).slice(0, limit);
-    const out = [];
-    for (const g of hits) {
+    // Register all hits at once: ensure-gym may call Google Place Details, and five of
+    // those in sequence made the assistant say "Searching gyms — did not finish".
+    const ids = await Promise.all(hits.map(async (g) => {
       const placeId = g.placeId || g.id;
-      let gymId = null;
       try {
         const er = await fetch(`${LOCAL_BASE}/api/live/ensure-gym`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ placeId }),
-          signal: AbortSignal.timeout(8000),
+          signal: AbortSignal.timeout(6000),
         });
-        if (er.ok) gymId = (await er.json()).gymId || null;
-      } catch (_) { /* leave id null: still a useful search answer */ }
-      out.push({
-        id: gymId,
-        name: g.name,
-        address: g.address,
-        city: g.city,
-        dayPassPrice: g.dayPassPrice != null ? Number(g.dayPassPrice) : null,
-        open24h: g.is24Hours === true,
-        rating: g.rating != null ? Number(g.rating) : null,
-        distanceText: g.distanceText || null,
-      });
-    }
+        return er.ok ? ((await er.json()).gymId || null) : null;
+      } catch (_) { return null; /* still a useful search answer without an id */ }
+    }));
+    const out = hits.map((g, i) => ({
+      id: ids[i],
+      name: g.name,
+      address: g.address,
+      city: g.city,
+      dayPassPrice: g.dayPassPrice != null ? Number(g.dayPassPrice) : null,
+      open24h: g.is24Hours === true,
+      rating: g.rating != null ? Number(g.rating) : null,
+      distanceText: g.distanceText || null,
+    }));
     return out;
   } catch (e) {
     console.error('[BookTools] live search fallback failed:', e.message);
