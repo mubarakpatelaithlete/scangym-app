@@ -329,12 +329,6 @@ function bucketLabel(count) {
   }
   return null;
 }
-function seededBookingCount(placeId) {
-  let h = 0;
-  for (let i = 0; i < (placeId || '').length; i++) { h = ((h << 5) - h) + placeId.charCodeAt(i); }
-  return Math.abs(h % 166) + 15;
-}
-
 async function enrichGymsWithBookingCounts(gyms) {
   if (!gyms || gyms.length === 0) return gyms;
   const dbCounts = {};
@@ -356,13 +350,21 @@ async function enrichGymsWithBookingCounts(gyms) {
   } catch (e) {
     console.error('[enrichBookingCounts] DB error:', e.message);
   }
+  // Only real bookings are shown. A gym with no bookings in the last 30 days gets no
+  // count at all — never a number invented from its place ID. Fabricated social proof
+  // on a payment screen is a trust problem and, in the UK, a CMA/DMCC one.
   for (const gym of gyms) {
     const pid = gym.placeId || gym.id;
     const realCount = dbCounts[pid];
-    const count = (realCount !== undefined && realCount > 0) ? realCount : seededBookingCount(pid);
-    gym.bookedThisMonth = count;
-    gym.bookedBucket = bucketLabel(count);
-    gym.bookedIsReal = (realCount !== undefined && realCount > 0);
+    if (realCount !== undefined && realCount > 0) {
+      gym.bookedThisMonth = realCount;
+      gym.bookedBucket = bucketLabel(realCount);
+      gym.bookedIsReal = true;
+    } else {
+      gym.bookedThisMonth = 0;
+      gym.bookedBucket = null;
+      gym.bookedIsReal = false;
+    }
   }
   return gyms;
 }
