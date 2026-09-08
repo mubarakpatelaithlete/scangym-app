@@ -16168,7 +16168,7 @@ window._showLocationPopup=function(){
     +'<p style="color:rgba(255,255,255,.5);font-size:13px;margin:6px 0 0">So we can find the best gyms near you</p></div>'
     +steps
     +'<button onclick="_closeLocationPopup();location.reload();" style="width:100%;background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;font-size:14px;font-weight:800;padding:14px;border:none;border-radius:12px;cursor:pointer;margin-top:8px">Refresh Page</button>'
-    +'<p onclick="_closeLocationPopup();var inp=document.getElementById(\'tt-search-real-input\')||document.getElementById(\'sg-search-input\');if(inp)inp.focus();" style="text-align:center;color:rgba(255,255,255,.4);font-size:12px;margin:12px 0 0;cursor:pointer;text-decoration:underline">Or search for a city instead</p>'
+    +'<p onclick="_closeLocationPopup();if(typeof window._openSearchOverlay===\'function\'){window._openSearchOverlay();}else{var inp=document.getElementById(\'sg-search-input\');if(inp)inp.focus();}" style="text-align:center;color:rgba(255,255,255,.4);font-size:12px;margin:12px 0 0;cursor:pointer;text-decoration:underline">Or search for a city instead</p>'
     +'</div>';
   document.body.appendChild(popup);
 };
