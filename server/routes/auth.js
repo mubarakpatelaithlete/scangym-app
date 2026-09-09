@@ -157,12 +157,13 @@ router.post('/send-code', async (req, res) => {
          which tells a visitor nothing and tells everyone else which provider
          we use and how we call it. */
       console.error('Twilio send error:', { status: response.status, code: data && data.code, message: data && data.message });
-      const invalidNumber = data && (data.code === 60200 || data.code === 21211);
-      return res.status(400).json({
-        error: invalidNumber
-          ? 'That phone number doesn\'t look right — check the number and country code'
-          : 'We couldn\'t send your code just now. Try again, or sign in with Google.',
-      });
+      /* A blocked region is not a retry — it is a door we have to keep shut
+         until someone changes the Twilio console, so say so and point at the
+         other ways in. See server/lib/sms-error.js. */
+      const { classifySmsFailure, alertLine } = require('../lib/sms-error');
+      const verdict = classifySmsFailure(data);
+      if (verdict.alert) console.error(alertLine(data, normalizedPhone));
+      return res.status(verdict.httpStatus).json({ error: verdict.message, reason: verdict.kind });
     }
 
     res.json({

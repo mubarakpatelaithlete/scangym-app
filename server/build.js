@@ -202,6 +202,8 @@ function contentHashAssets() {
     'styles.css',
     'robust-location.js',
     'pricing.js',
+    'sheet-dismiss.js',
+    'guest-checkout.js',
     'phase2-improvements.js',
     'sg-patches.js',
     'sg-chunk-loader.js',
