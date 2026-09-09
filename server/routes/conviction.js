@@ -1,17 +1,41 @@
 /**
- * Task 9: Conviction Model — CORRECTED
- * CEO: "also implement all 33" — implement ALL 33 Booking.com persuasion techniques.
+ * Conviction Model — social proof, but only when it is true.
  *
- * Each technique generates real-time social proof / urgency / trust signals
- * contextualized to the specific gym being viewed.
+ * 33 Booking.com-style persuasion techniques, contextualised to a gym. Every
+ * signal here must be backed by data in our own tables. Signals that cannot be
+ * verified are not shown — no exceptions, no defaults, no "0 people already
+ * booked today" dressed up as urgency.
+ *
+ * Why the rule is this strict:
+ *   • A first-time visitor was shown "100% of visitors come back again" from a
+ *     sample of one booking, "🏆 #1 most booked gym in Bolton" on a platform
+ *     with no bookings, and "✅ Verified ScanGym partner gym" for a gym that has
+ *     never been claimed by its owner. That is the fastest way to lose the one
+ *     thing a marketplace sells: trust that the QR will work at the door.
+ *   • In the UK, fake urgency, invented social proof and unverifiable trust
+ *     badges are banned practices under the DMCC Act 2024 (schedule 20) and the
+ *     CMA can fine up to 10% of global turnover for them.
+ *
+ * Adding a technique? It must take its numbers from `data` and return null when
+ * the sample is too small to mean anything (MIN_SAMPLE below).
  */
 const express = require('express');
 const router = express.Router();
 const pool = require('../middleware/db');
 const { optionalAuth } = require('../middleware/auth');
 
+// A percentage or a ranking from a handful of rows is noise dressed as proof.
+const MIN_SAMPLE = {
+  repeatRate: 20,      // unique visitors before we quote a repeat %
+  cityRank: 10,        // bookings for this gym before we call it a city favourite
+  cityRankGyms: 3,     // ranked gyms in the city before a rank means anything
+  members: 10,         // members before "N have trained here"
+  growth: 20,          // bookings last month before a growth % is meaningful
+};
+
 /**
- * ALL 33 Booking.com Persuasion Techniques adapted for ScanGym
+ * The 33 techniques. Each `generate` returns a string only when the underlying
+ * data supports it, otherwise null (the signal is dropped).
  */
 const TECHNIQUE_DEFINITIONS = [
   // --- SOCIAL PROOF (1-8) ---
@@ -24,27 +48,43 @@ const TECHNIQUE_DEFINITIONS = [
   { id: 4, name: 'review_count', category: 'social_proof', label: 'Trusted',
     generate: (d) => d.totalReviews > 0 ? `⭐ ${d.avgRating}/5 from ${d.totalReviews} verified reviews` : null },
   { id: 5, name: 'repeat_visitors', category: 'social_proof', label: 'Regulars Love It',
-    generate: (d) => d.repeatRate > 20 ? `${d.repeatRate}% of visitors come back again` : null },
+    // "100% come back" from one visitor is not proof — require a real sample.
+    generate: (d) => (d.totalMembers >= MIN_SAMPLE.repeatRate && d.repeatRate > 20)
+      ? `${d.repeatRate}% of ${d.totalMembers} visitors came back again` : null },
   { id: 6, name: 'local_favourite', category: 'social_proof', label: 'Local Favourite',
-    generate: (d) => d.cityRank && d.cityRank <= 3 ? `🏆 #${d.cityRank} most booked gym in ${d.city}` : null },
+    // A rank is only a rank if there is competition and volume behind it.
+    generate: (d) => (d.cityRank && d.cityRank <= 3
+      && d.cityRankedGyms >= MIN_SAMPLE.cityRankGyms
+      && d.weeklyBookings + d.monthBookings >= MIN_SAMPLE.cityRank)
+      ? `🏆 #${d.cityRank} most booked gym in ${d.city}` : null },
   { id: 7, name: 'just_booked', category: 'social_proof', label: 'Just Booked',
     generate: (d) => d.lastBookingMinsAgo < 60 ? `Someone booked ${d.lastBookingMinsAgo} min ago` : null },
   { id: 8, name: 'community_size', category: 'social_proof', label: 'Community',
-    generate: (d) => d.totalMembers > 10 ? `${d.totalMembers} ScanGym members have trained here` : null },
+    generate: (d) => d.totalMembers >= MIN_SAMPLE.members ? `${d.totalMembers} ScanGym members have trained here` : null },
 
   // --- SCARCITY (9-14) ---
   { id: 9, name: 'limited_slots', category: 'scarcity', label: 'Limited Availability',
     generate: (d) => d.isPeakHour ? `⚡ Peak hours — book now to guarantee your spot` : null },
   { id: 10, name: 'first_visit_discount', category: 'scarcity', label: 'First Visit Deal',
-    generate: (d) => d.firstVisitDiscount > 0 && !d.hasVisited ? `🎁 First visit: ${d.firstVisitDiscount}% off — only for new visitors` : null },
+    // Only advertise a discount the gym has actually configured and checkout
+    // can apply. There is no promo-redemption endpoint yet, so an offer with
+    // no configured discount row is not shown at all.
+    generate: (d) => (d.firstVisitDiscount > 0 && d.firstVisitDiscountRedeemable && !d.hasVisited)
+      ? `🎁 First visit: ${d.firstVisitDiscount}% off — applied at checkout` : null },
   { id: 11, name: 'off_peak_deal', category: 'scarcity', label: 'Off-Peak Deal',
     generate: () => null }, // v4.1: Off-peak discount removed — flat pricing
   { id: 12, name: 'wallet_bonus', category: 'scarcity', label: 'Wallet Bonus',
-    generate: (d) => d.hasWallet === false ? `💰 Top up £20+ and get 10% bonus credits for this booking` : null },
+    // Gated on the promotion being switched on — WALLET_TOPUP_BONUS_PCT.
+    generate: (d) => (d.walletBonusPct > 0 && d.hasWallet === false)
+      ? `💰 Top up £20+ and get ${d.walletBonusPct}% bonus credits for this booking` : null },
   { id: 13, name: 'popular_time', category: 'scarcity', label: 'Popular Time',
-    generate: (d) => d.isPeakHour ? `📈 This is a popular time — ${d.todayBookings} people already booked today` : null },
+    // Used to render "0 people already booked today", which advertises the
+    // trick instead of the gym. Needs actual bookings today.
+    generate: (d) => (d.isPeakHour && d.todayBookings > 0)
+      ? `📈 This is a popular time — ${d.todayBookings} ${d.todayBookings === 1 ? 'person has' : 'people have'} booked today` : null },
   { id: 14, name: 'seasonal_demand', category: 'scarcity', label: 'High Demand',
-    generate: (d) => d.monthlyGrowth > 10 ? `📊 Bookings up ${d.monthlyGrowth}% this month` : null },
+    generate: (d) => (d.lastMonthBookings >= MIN_SAMPLE.growth && d.monthlyGrowth > 10)
+      ? `📊 Bookings up ${d.monthlyGrowth}% this month` : null },
 
   // --- URGENCY (15-20) ---
   { id: 15, name: 'closing_soon', category: 'urgency', label: 'Closing Time',
@@ -54,7 +94,9 @@ const TECHNIQUE_DEFINITIONS = [
   { id: 17, name: 'day_pass_timer', category: 'urgency', label: '24hr Timer',
     generate: () => `⏱️ 24hr day pass — full access from the moment you scan in` },
   { id: 18, name: 'weekend_rush', category: 'urgency', label: 'Weekend Rush',
-    generate: (d) => d.isWeekend ? `Weekend sessions fill up fast — secure your spot` : null },
+    // Claiming sessions "fill up fast" requires evidence that they do.
+    generate: (d) => (d.isWeekend && d.weeklyBookings >= MIN_SAMPLE.cityRank)
+      ? `Weekend sessions are our busiest — secure your spot` : null },
   { id: 19, name: 'new_year_surge', category: 'urgency', label: 'Seasonal Surge',
     generate: (d) => [0, 1].includes(d.month) ? `🎯 New Year fitness season — gyms are busier than usual` : null },
   { id: 20, name: 'same_day_booking', category: 'urgency', label: 'Same Day',
@@ -62,31 +104,41 @@ const TECHNIQUE_DEFINITIONS = [
 
   // --- TRUST (21-27) ---
   { id: 21, name: 'verified_gym', category: 'trust', label: 'Verified',
-    generate: () => `✅ Verified ScanGym partner gym` },
+    // The badge every visitor reads as "this gym agreed to let me in". Only
+    // shown when the owner has claimed the listing and access is verified.
+    generate: (d) => d.isVerifiedPartner ? `✅ Verified ScanGym partner gym` : null },
   { id: 22, name: 'secure_payment', category: 'trust', label: 'Secure',
     generate: () => `🔒 Secure payment via Stripe — your data is protected` },
   { id: 23, name: 'money_back', category: 'trust', label: 'Guarantee',
-    generate: () => `💯 Not satisfied? Full refund within 2 hours of booking` },
+    // Wording matches the Help Centre policy: cancel up to 2 hours *before*
+    // the session, not 2 hours after buying.
+    generate: () => `💯 Free cancellation up to 2 hours before your session` },
   { id: 24, name: 'no_contract', category: 'trust', label: 'No Commitment',
     generate: () => `📝 No contracts, no memberships — pay per visit` },
   { id: 25, name: 'google_rating', category: 'trust', label: 'Google Verified',
     generate: (d) => d.googleRating ? `Google Maps: ${d.googleRating}⭐ (${d.googleReviewCount} reviews)` : null },
   { id: 26, name: 'insurance_covered', category: 'trust', label: 'Insured',
-    generate: () => `🛡️ All partner gyms carry public liability insurance` },
+    // We can only speak for gyms whose paperwork we have seen.
+    generate: (d) => d.isVerifiedPartner ? `🛡️ Partner gym — public liability insurance on file` : null },
   { id: 27, name: 'qr_access', category: 'trust', label: 'Easy Access',
     generate: () => `📲 QR code entry — no reception queue, scan and go` },
 
   // --- AUTHORITY (28-30) ---
   { id: 28, name: 'gym_count', category: 'authority', label: 'Network',
-    generate: (d) => d.totalGymsOnPlatform > 1 ? `Part of ${d.totalGymsOnPlatform} gyms on ScanGym` : null },
+    // "1.2M gyms" counts scraped Google listings. Only bookable partner gyms
+    // are a network the visitor can use.
+    generate: (d) => d.partnerGymCount > 1 ? `Part of ${d.partnerGymCount} partner gyms on ScanGym` : null },
   { id: 29, name: 'city_presence', category: 'authority', label: 'Local',
-    generate: (d) => d.cityGymCount > 1 ? `${d.cityGymCount} gyms available in ${d.city}` : null },
+    generate: (d) => d.cityGymCount > 1 ? `${d.cityGymCount} gyms listed in ${d.city}` : null },
   { id: 30, name: 'years_established', category: 'authority', label: 'Established',
     generate: (d) => d.gymAge > 1 ? `Established gym — serving the community for ${d.gymAge}+ years` : null },
 
   // --- RECIPROCITY/ANCHORING (31-33) ---
   { id: 31, name: 'free_trial_nudge', category: 'reciprocity', label: 'Try Free',
-    generate: (d) => !d.hasVisited ? `🆓 Your first visit could be up to 50% off` : null },
+    // Was shown to everybody with no way to redeem it (there is no promo
+    // endpoint). Now mirrors technique 10: real, configured, redeemable.
+    generate: (d) => (!d.hasVisited && d.firstVisitDiscount > 0 && d.firstVisitDiscountRedeemable)
+      ? `🆓 Your first visit is ${d.firstVisitDiscount}% off` : null },
   { id: 32, name: 'price_comparison', category: 'anchoring', label: 'Value',
     generate: (d) => d.dayPassPrice ? `£${d.dayPassPrice}/day vs typical gym membership £30-50/month` : null },
   { id: 33, name: 'savings_calculator', category: 'anchoring', label: 'Savings',
@@ -113,17 +165,24 @@ async function gatherGymData(gymId, userId) {
     totalMembers: 0,
     lastBookingMinsAgo: null,
     cityRank: null,
+    cityRankedGyms: 0,
     city: null,
     dayPassPrice: null,
-    firstVisitDiscount: 50,
+    firstVisitDiscount: 0,          // 0 until a gym_pricing row says otherwise
+    firstVisitDiscountRedeemable: false,
+    walletBonusPct: parseFloat(process.env.WALLET_TOPUP_BONUS_PCT || '0') || 0,
     offPeakDiscount: 0,
     hasVisited: false,
     hasWallet: false,
     monthlyGrowth: 0,
+    monthBookings: 0,
+    lastMonthBookings: 0,
     googleRating: null,
     googleReviewCount: 0,
     totalGymsOnPlatform: 0,
+    partnerGymCount: 0,
     cityGymCount: 0,
+    isVerifiedPartner: false,
     gymAge: null,
   };
 
@@ -143,6 +202,9 @@ async function gatherGymData(gymId, userId) {
       data.dayPassPrice = g.day_pass_price;
       data.googleRating = g.average_rating;
       data.googleReviewCount = g.total_reviews || 0;
+      // "Verified partner" means: an owner claimed this listing AND we checked
+      // that a ScanGym QR actually gets you in. Both, or no badge.
+      data.isVerifiedPartner = Boolean(g.claimed_by) && (g.access_verified === true || g.ownership_verified === true);
     }
 
     // Booking stats
@@ -188,9 +250,18 @@ async function gatherGymData(gymId, userId) {
       console.warn('[Conviction] Failed to fetch recent view count:', e.message);
     }
 
-    // Platform stats
+    // Platform stats. Listed ≠ bookable: `gyms` holds scraped Google listings,
+    // so authority signals count claimed + access-verified partners only.
     const totalGyms = await pool.query('SELECT COUNT(*) FROM gyms');
     data.totalGymsOnPlatform = parseInt(totalGyms.rows[0].count);
+
+    try {
+      const partnerGyms = await pool.query(
+        `SELECT COUNT(*) FROM gyms WHERE claimed_by IS NOT NULL AND (access_verified = true OR ownership_verified = true)`);
+      data.partnerGymCount = parseInt(partnerGyms.rows[0].count);
+    } catch (e) {
+      console.warn('[Conviction] Failed to count partner gyms:', e.message);
+    }
 
     if (data.city) {
       const cityGyms = await pool.query('SELECT COUNT(*) FROM gyms WHERE city = $1', [data.city]);
@@ -201,6 +272,7 @@ async function gatherGymData(gymId, userId) {
         SELECT gym_id, COUNT(*) as bk FROM bookings b
         JOIN gyms g ON b.gym_id = g.id WHERE g.city = $1
         GROUP BY gym_id ORDER BY bk DESC`, [data.city]);
+      data.cityRankedGyms = ranked.rows.length;
       const idx = ranked.rows.findIndex(r => r.gym_id === gymId);
       if (idx >= 0) data.cityRank = idx + 1;
     }
@@ -209,8 +281,14 @@ async function gatherGymData(gymId, userId) {
     try {
       const pricing = await pool.query('SELECT * FROM gym_pricing WHERE gym_id = $1', [gymId]);
       if (pricing.rows[0]) {
-        data.firstVisitDiscount = pricing.rows[0].first_visit_discount_pct || 50;
-        data.offPeakDiscount = pricing.rows[0].off_peak_discount_pct || 0;
+        // No default. A discount exists only if the gym configured one — the
+        // old `|| 50` advertised "50% off your first visit" for every gym on
+        // the platform, with nothing at checkout to honour it.
+        data.firstVisitDiscount = parseFloat(pricing.rows[0].first_visit_discount_pct) || 0;
+        data.offPeakDiscount = parseFloat(pricing.rows[0].off_peak_discount_pct) || 0;
+        // Redeemable = the discount is stored against the gym, so booking
+        // applies it server-side. Flip this on when promo codes ship.
+        data.firstVisitDiscountRedeemable = data.firstVisitDiscount > 0;
       }
     } catch (e) {
       console.warn('[Conviction] Failed to fetch gym pricing:', e.message);
@@ -233,6 +311,8 @@ async function gatherGymData(gymId, userId) {
       `SELECT COUNT(*) FROM bookings WHERE gym_id = $1 AND created_at > DATE_TRUNC('month', NOW() - INTERVAL '1 month') AND created_at < DATE_TRUNC('month', NOW())`, [gymId]);
     const tm = parseInt(thisMonth.rows[0].count);
     const lm = parseInt(lastMonth.rows[0].count);
+    data.monthBookings = tm;
+    data.lastMonthBookings = lm;
     if (lm > 0) data.monthlyGrowth = Math.round(((tm - lm) / lm) * 100);
 
   } catch (err) {
@@ -282,8 +362,12 @@ router.get('/gym/:gymId', optionalAuth, async (req, res) => {
 
     res.json({
       gymId,
-      totalTechniques: 33,
+      totalTechniques: TECHNIQUE_DEFINITIONS.length,
       activeTechniques: signals.length,
+      // Signals are suppressed when the data does not support them. A low
+      // number here is a supply/traffic fact, not a bug.
+      suppressedTechniques: TECHNIQUE_DEFINITIONS.length - signals.length,
+      verifiedPartner: data.isVerifiedPartner,
       signals,
       byCategory,
       categories: ['social_proof', 'scarcity', 'urgency', 'trust', 'authority', 'reciprocity', 'anchoring'],

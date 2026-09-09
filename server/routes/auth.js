@@ -126,6 +126,12 @@ router.post('/send-code', async (req, res) => {
     // Normalize phone — ensure it starts with +
     const normalizedPhone = phone.startsWith('+') ? phone : `+44${phone.replace(/^0/, '')}`;
 
+    // Validate before spending a Twilio request (and before Twilio's own error
+    // text can reach a visitor). E.164: + then 8-15 digits, first one non-zero.
+    if (!/^\+[1-9]\d{7,14}$/.test(normalizedPhone)) {
+      return res.status(400).json({ error: 'That phone number doesn\'t look right — check the number and country code' });
+    }
+
     if (!TWILIO_SID || !TWILIO_TOKEN || !TWILIO_VERIFY_SID) {
       return res.status(500).json({ error: 'SMS service not configured' });
     }
@@ -146,8 +152,17 @@ router.post('/send-code', async (req, res) => {
     const data = await response.json();
 
     if (!response.ok) {
-      console.error('Twilio send error:', data);
-      return res.status(400).json({ error: 'Failed to send code', detail: data.message });
+      /* Log the provider's message, never return it. Twilio's "Invalid
+         parameter `To`: +44123" was rendered straight into the sign-in sheet,
+         which tells a visitor nothing and tells everyone else which provider
+         we use and how we call it. */
+      console.error('Twilio send error:', { status: response.status, code: data && data.code, message: data && data.message });
+      const invalidNumber = data && (data.code === 60200 || data.code === 21211);
+      return res.status(400).json({
+        error: invalidNumber
+          ? 'That phone number doesn\'t look right — check the number and country code'
+          : 'We couldn\'t send your code just now. Try again, or sign in with Google.',
+      });
     }
 
     res.json({

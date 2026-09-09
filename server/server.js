@@ -408,6 +408,12 @@ app.get("/api/config", async (req, res) => {
     brand: "ScanGym",
     liveSearch: true,
     gymCount: 1200000, // Google Places searchable gyms worldwide
+    // Promo redemption is not built yet: there is no /api/promo/validate and
+    // nothing applies a discount at checkout. Until that ships the field stays
+    // hidden, because "🎉 50% off applied!" followed by a full-price charge is
+    // worse than no promo field at all. Flip PROMO_CODES_ENABLED when the
+    // server can honour a code end to end.
+    promoCodes: process.env.PROMO_CODES_ENABLED === 'true',
   });
 });
 
@@ -802,9 +808,44 @@ if (fs.existsSync(FRONTEND_DIR)) {
     res.sendFile(path.join(FRONTEND_DIR, 'claude', 'index.html'));
   });
 
+  /* ── Internal pages: gate the HTML, not just the data ─────────────────────
+     The data APIs already return 401, but /admin served its full shell to
+     anyone: dashboard tiles, section names, and our live/£0/0 numbers, from a
+     path that robots.txt helpfully lists. A logged-out visitor should see a
+     sign-in prompt, the way /ceo-dashboard behaves. Admin identity comes from
+     ADMIN_USER_IDS / ADMIN_EMAILS (see middleware/auth.js); with neither set,
+     any signed-in session may view and we log a warning. */
+  const INTERNAL_PAGE_SIGN_IN = `<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow">
+<title>ScanGym — sign in</title><style>body{margin:0;min-height:100vh;display:flex;align-items:center;
+justify-content:center;background:#0a0a16;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+.card{max-width:360px;padding:32px;text-align:center;background:rgba(255,255,255,.04);
+border:1px solid rgba(255,255,255,.08);border-radius:16px}h1{font-size:18px;margin:0 0 8px}
+p{color:rgba(255,255,255,.5);font-size:14px;margin:0 0 20px}a{display:inline-block;background:#FF6D00;color:#fff;
+text-decoration:none;font-weight:700;padding:12px 22px;border-radius:10px}</style></head>
+<body><div class="card"><h1>Please sign in</h1><p>This page is for the ScanGym team.</p>
+<a href="/login">Sign in</a></div></body></html>`;
+
+  function requireInternalPage(req, res, next) {
+    if (!req.session || !req.session.userId) {
+      res.setHeader('Cache-Control', 'no-store');
+      res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+      return res.status(401).send(INTERNAL_PAGE_SIGN_IN);
+    }
+    const adminIds = (process.env.ADMIN_USER_IDS || '').split(',').map((v) => v.trim()).filter(Boolean);
+    if (adminIds.length > 0 && !adminIds.includes(String(req.session.userId))) {
+      res.setHeader('Cache-Control', 'no-store');
+      return res.status(403).send(INTERNAL_PAGE_SIGN_IN);
+    }
+    if (adminIds.length === 0) {
+      console.warn('[Internal] ADMIN_USER_IDS not set — %s visible to any signed-in user', req.path);
+    }
+    next();
+  }
+
   // CEO Dashboard
-  app.get('/ceo-dashboard', (req, res) => {
-    res.setHeader('Cache-Control', 'no-cache');
+  app.get('/ceo-dashboard', requireInternalPage, (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
     res.sendFile(path.join(FRONTEND_DIR, 'ceo-dashboard', 'index.html'));
   });
 
@@ -827,8 +868,8 @@ if (fs.existsSync(FRONTEND_DIR)) {
   });
 
   // Admin panel — upload review dashboard
-  app.get('/admin/uploads', (req, res) => {
-    res.setHeader('Cache-Control', 'no-cache');
+  app.get('/admin/uploads', requireInternalPage, (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
     res.sendFile(path.join(FRONTEND_DIR, 'admin', 'uploads', 'index.html'));
   });
 
@@ -839,8 +880,8 @@ if (fs.existsSync(FRONTEND_DIR)) {
   // /partner now handled by SPA catch-all → renders PartnerFullPage() with tab bar
   // (standalone partner/index.html removed — SPA provides full in-app experience)
 
-  app.get('/admin', (req, res) => {
-    res.setHeader('Cache-Control', 'no-cache');
+  app.get('/admin', requireInternalPage, (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
     res.sendFile(path.join(FRONTEND_DIR, 'admin', 'index.html'));
   });
 
