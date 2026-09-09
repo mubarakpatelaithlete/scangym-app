@@ -7059,7 +7059,14 @@ window._checkoutPayBooking=async function(bookingId,bookingCode){
         }
       }
     }
-    // Guest flow: redirect to sign-in first, then checkout
+    /* Guest flow: take the money. This branch used to open the sign-in sheet —
+       one line short of the finish line, with the booking already created and
+       /api/payment/create-intent perfectly happy to run without a session. */
+    var host=document.getElementById('sg-checkout-status');
+    if(typeof window.sgGuestCheckout==='object'&&host){
+      var started=await window.sgGuestCheckout.payForExistingBooking(bookingId,bookingCode,host);
+      if(started)return;
+    }
     if(typeof window._sgShowAuthSheet==='function'){
       window._pendingCheckout={gymId:bookingId,bookingCode:bookingCode,isGuestCheckout:true};
       window._sgShowAuthSheet('book');
@@ -19760,6 +19767,16 @@ window.sgFeedback = async function(elementId, vote, btn) {
     `;
     document.body.appendChild(el);
     _sheetEl=el;
+    /* A tap on the backdrop closed this sheet and nothing else did: no x, no
+       Escape, no swipe — and when the panel is tall the backdrop is a sliver.
+       sheet-dismiss.js adds the other three. */
+    if(typeof window.sgMakeSheetDismissible==='function'){
+      window.sgMakeSheetDismissible({
+        panel:el.querySelector('.sg-auth-panel'),
+        onClose:function(){window._sgCloseAuthSheet();},
+        isOpen:function(){return el.classList.contains('open');},
+      });
+    }
     _renderAuthStep();
   }
 
@@ -19770,9 +19787,21 @@ window.sgFeedback = async function(elementId, vote, btn) {
     if(!content)return;
     var titles={book:{t:'Sign in to book',s:'1 tap — your card saves for instant booking ⚡'},reels:{t:'Sign in to share',s:'Get your personal affiliate link & start earning 💰'}};
     var t=titles[_sheetMode]||titles.book;
+    /* Booking never required an account on the server — guest-create has always
+       been there. Offer it first: a card and an email is the shortest path to a
+       pass, and an account is worth more once someone has actually paid. */
+    var _guestable=_sheetMode==='book'&&!state.user&&typeof window.sgGuestCheckout==='object'&&window._pendingCheckout&&window._pendingCheckout.gymId;
     content.innerHTML=`<div class="sg-auth-step-enter">`+_progressDots('auth')+`
-      <div class="sg-auth-title">${t.t}</div>
-      <div class="sg-auth-sub">${t.s}</div>
+      <div class="sg-auth-title">${_guestable?'Book it now':t.t}</div>
+      <div class="sg-auth-sub">${_guestable?'Pay by card — your QR pass arrives by email':t.s}</div>
+      ${_guestable?`<button class="sg-auth-btn sg-auth-btn-green" onclick="window._sgAuthGuestCheckout()" style="margin-bottom:10px">
+        ⚡ Continue as guest — no account
+      </button>
+      <div class="sg-auth-divider">
+        <div class="sg-auth-divider-line"></div>
+        <span class="sg-auth-divider-text">or sign in to save your card</span>
+        <div class="sg-auth-divider-line"></div>
+      </div>`:''}
       <button class="sg-auth-btn sg-auth-btn-google" onclick="handleGoogleSignIn()">
         <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#34A853" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#FBBC05" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
         Continue with Google
@@ -19794,6 +19823,7 @@ window.sgFeedback = async function(elementId, vote, btn) {
       <button class="sg-auth-btn sg-auth-btn-phone" id="sg-auth-send-btn" onclick="window._sgAuthSendCode()">
         📲 Send Code
       </button>
+      <div class="sg-auth-back" onclick="window._sgAuthEmailLink()" style="margin-top:12px">✉️ Email me a sign-in link instead</div>
       <div class="sg-auth-footer">Sign in once — works everywhere in ScanGym</div>
     </div>`;
     // R6: Don't auto-focus phone input — avoids keyboard pop when user wants Google/Apple
@@ -20352,6 +20382,83 @@ window.sgFeedback = async function(elementId, vote, btn) {
   window._sgAuthSkipWithdraw=function(){
     window._sgCloseAuthSheet();
     _resumePendingAction();
+  };
+
+  /* ── Guest checkout, inside the same sheet ──
+   * The sheet is where we lost people: they tapped Book, were asked to open an
+   * account, and left. guest-checkout.js drives the purchase; this only hands it
+   * the gym the visitor was looking at and a way back to sign-in. */
+  window._sgAuthGuestCheckout=function(){
+    var content=document.getElementById('sg-auth-content');
+    if(!content||typeof window.sgGuestCheckout!=='object')return;
+    var pc=window._pendingCheckout||{};
+    var gbs=window._gymBookingState||{};
+    var gymName='';
+    try{
+      var g=[state.currentGym,...(state.gyms||[])].filter(Boolean).find(function(x){return (x.placeId||x.place_id||x.id||x.dbId)==pc.gymId;});
+      gymName=(g&&g.name)||(window._rebookGym&&window._rebookGym.name)||'';
+    }catch(e){}
+    _sheetStep='guest';
+    window.sgGuestCheckout.render(content,{
+      gymId:pc.gymId,
+      gymName:gymName,
+      date:pc.prefillDate||gbs.selectedDate||null,
+      time:pc.prefillTime||gbs.selectedTime||null,
+      passType:pc.passName||gbs.passName||'Day Pass',
+      referralCode:(function(){try{var r=JSON.parse(localStorage.getItem('sg_referral')||'null');return r&&r.handle&&r.expiry>Date.now()?r.handle:null;}catch(e){return null;}})(),
+      onSignIn:function(){_renderAuthStep();},
+    });
+  };
+
+  /* ── Email sign-in link ──
+   * Twilio blocks whole regions for SMS (Verify geo-permissions), and when it
+   * does, "Send Code" can never work no matter how many times it is tapped.
+   * /api/auth/send-link has always existed and had no button anywhere. */
+  window._sgAuthEmailLink=function(){
+    var content=document.getElementById('sg-auth-content');
+    if(!content)return;
+    _sheetStep='emaillink';
+    var saved='';try{saved=localStorage.getItem('sg_last_email')||'';}catch(e){}
+    content.innerHTML=`<div class="sg-auth-step-enter">
+      <div class="sg-auth-title">Sign in by email</div>
+      <div class="sg-auth-sub">We'll send you a one-tap sign-in link</div>
+      <input class="sg-auth-field" id="sg-auth-email" type="email" inputmode="email" autocomplete="email" placeholder="you@email.com" value="${saved.replace(/"/g,'&quot;')}">
+      <div class="sg-auth-error" id="sg-auth-err"></div>
+      <button class="sg-auth-btn sg-auth-btn-phone" id="sg-auth-link-btn" onclick="window._sgAuthSendLink()">✉️ Send me the link</button>
+      <div class="sg-auth-back" onclick="window._sgAuthBackToOptions()">← Other ways to sign in</div>
+    </div>`;
+  };
+
+  window._sgAuthBackToOptions=function(){_renderAuthStep();};
+
+  window._sgAuthSendLink=async function(){
+    var input=document.getElementById('sg-auth-email');
+    var err=document.getElementById('sg-auth-err');
+    var btn=document.getElementById('sg-auth-link-btn');
+    var email=((input&&input.value)||'').trim();
+    function fail(m){if(err){err.textContent=m;err.style.display='block';}}
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){fail('That email doesn\'t look right');return;}
+    if(err)err.style.display='none';
+    if(btn){btn.disabled=true;btn.innerHTML='Sending…';}
+    try{
+      var r=await fetch('/api/auth/send-link',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({contact:email})});
+      var d=await r.json().catch(function(){return{};});
+      if(d&&d.ok){
+        try{localStorage.setItem('sg_last_email',email);}catch(e){}
+        var content=document.getElementById('sg-auth-content');
+        if(content)content.innerHTML=`<div class="sg-auth-success">
+          <div class="sg-auth-success-icon">✉️</div>
+          <div class="sg-auth-success-text">Check your email</div>
+          <div class="sg-auth-success-sub">We sent a sign-in link to ${email}. It works for 15 minutes.</div>
+        </div>`;
+      }else{
+        if(btn){btn.disabled=false;btn.innerHTML='✉️ Send me the link';}
+        fail((d&&d.message)||'We couldn\'t email you a link just now');
+      }
+    }catch(e){
+      if(btn){btn.disabled=false;btn.innerHTML='✉️ Send me the link';}
+      fail('We couldn\'t email you a link just now');
+    }
   };
 
   // ── Public API ──
