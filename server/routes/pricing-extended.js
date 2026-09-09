@@ -6,7 +6,8 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../middleware/db');
 const { BASE_PRICE_GBP } = require('../lib/pricing-engine');
-const PASS_MATH = require('../../frontend/public/pass-math.js');
+const { requireShared } = require('../lib/require-shared');
+const PASS_MATH = requireShared('pass-math.js');
 
 // Single source of truth for the base day-pass price: lib/pricing-engine.js.
 // These routes used to hardcode 4.49 in three places, so a price change here
