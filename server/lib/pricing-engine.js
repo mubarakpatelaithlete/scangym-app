@@ -31,7 +31,8 @@ const MIN_PRICE_USD = 0.50; // ~£0.40 / €0.46 — absolute floor for any book
 // ============================================================================
 // Shared with the browser (frontend/public/pass-math.js) so a displayed price
 // and a charged price can never diverge again — see that file's header.
-const PASS_MATH = require('../../frontend/public/pass-math.js');
+const { requireShared } = require('./require-shared');
+const PASS_MATH = requireShared('pass-math.js');
 const PASS_MULTIPLIERS = PASS_MATH.PASS_MULTIPLIERS;
 
 // ============================================================================

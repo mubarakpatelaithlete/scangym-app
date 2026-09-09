@@ -12,7 +12,8 @@
  * so multipliers, charm rounding and savings percentages live here, once, and
  * both sides import them.
  *
- * Node:    const M = require('../../frontend/public/pass-math.js');
+ * Node:    const { requireShared } = require('./require-shared');
+ *          const M = requireShared('pass-math.js');   // server/lib/require-shared.js
  * Browser: <script src="/pass-math.js"></script>  →  window.SGPassMath
  *
  * Pure functions only. No I/O, no DOM, no dependencies.
