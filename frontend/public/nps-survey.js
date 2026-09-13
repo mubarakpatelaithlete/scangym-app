@@ -17,12 +17,26 @@
   var ASK_COOLDOWN_DAYS = 90;
   var SHOW_DELAY_MS = 4000;
 
+  // Only calls that COMPLETE a booking. A prefix like '/api/bookings' used
+  // to be here and matched /api/bookings/guest-create — the pending booking
+  // made before the card form — so the survey landed on top of the payment
+  // sheet (and fired after /api/bookings/cancel too).
   var CONFIRM_ENDPOINTS = [
-    '/api/payment/confirm',      // covers /confirm, /confirm-sca, /confirm-*
-    '/api/payment/quick',
-    '/api/payment/first-free',
-    '/api/bookings',             // wallet / direct booking flows (POST)
+    /^\/api\/payment\/confirm(-[a-z]+)?$/,   // /confirm, /confirm-intent, /confirm-sca
+    /^\/api\/payment\/quick$/,
+    /^\/api\/payment\/first-free$/,
+    /^\/api\/bookings\/create$/,              // pay-at-gym / wallet booking (final step)
+    /^\/api\/bookings\/confirm-iou$/,
+    /^\/api\/bookings\/pay-next-visit$/,
   ];
+
+  // Never interrupt someone who is mid-checkout or mid-conversation.
+  function checkoutOpen() {
+    return !!(document.getElementById('sg-guest-card') ||
+              document.getElementById('sg-guest-email') ||
+              document.getElementById('booking-sheet') ||
+              document.querySelector('[data-sg-checkout]'));
+  }
 
   function askedRecently() {
     var t = parseInt(localStorage.getItem(NPS_ASKED_KEY) || '0', 10);
@@ -36,12 +50,27 @@
     } catch (e) { /* private mode */ }
   }
 
+  function pathOf(url) {
+    try { return new URL(url, location.origin).pathname; } catch (e) { return String(url || ''); }
+  }
+
   function isConfirmCall(url, method) {
     if (!url || (method || 'GET').toUpperCase() !== 'POST') return false;
+    var path = pathOf(url);
     for (var i = 0; i < CONFIRM_ENDPOINTS.length; i++) {
-      if (url.indexOf(CONFIRM_ENDPOINTS[i]) !== -1) return true;
+      if (CONFIRM_ENDPOINTS[i].test(path)) return true;
     }
     return false;
+  }
+
+  // Show once the checkout UI is gone; give up after ~60s rather than nag.
+  function showWhenIdle(triesLeft) {
+    if (askedRecently() || document.getElementById('sg-nps-overlay')) return;
+    if (checkoutOpen()) {
+      if (triesLeft > 0) setTimeout(function () { showWhenIdle(triesLeft - 1); }, 2000);
+      return;
+    }
+    showSurvey();
   }
 
   function showSurvey() {
@@ -119,7 +148,7 @@
       p.then(function (resp) {
         if (resp && resp.ok) {
           bumpBookingCount();
-          if (!askedRecently()) setTimeout(showSurvey, SHOW_DELAY_MS);
+          if (!askedRecently()) setTimeout(function () { showWhenIdle(30); }, SHOW_DELAY_MS);
         }
       }).catch(function () {});
     }
