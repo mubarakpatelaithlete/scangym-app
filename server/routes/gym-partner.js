@@ -218,9 +218,69 @@ function validatePartnerPrice(raw, label) {
   return { ok: true, value: n.toFixed(2) };
 }
 
+const DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+const AMENITY_KEYS = ['has_locker', 'has_towel', 'has_shower', 'has_changing_room', 'has_hair_dryer',
+  'has_music_system', 'has_sauna', 'has_wifi', 'has_parking', 'has_water_fountain'];
+
+/**
+ * { mon: {open:'06:00', close:'22:00'} | {closed:true}, ... } + optional is24h.
+ * Returns { value: {hours, allDay} | null } or { error }.
+ */
+function normaliseOpeningHours(openingHours, is24h) {
+  const allDay = typeof is24h === 'boolean' ? is24h : null;
+  if (openingHours === undefined || openingHours === null) {
+    return { value: allDay === null ? null : { hours: null, allDay } };
+  }
+  if (typeof openingHours !== 'object' || Array.isArray(openingHours)) {
+    return { error: 'openingHours must be an object keyed by day (mon..sun)' };
+  }
+  const hours = {};
+  for (const day of Object.keys(openingHours)) {
+    if (!DAY_KEYS.includes(day)) return { error: `Unknown day "${day}" — use mon..sun` };
+    const v = openingHours[day] || {};
+    if (v.closed === true) { hours[day] = { closed: true }; continue; }
+    if (!TIME_RE.test(String(v.open)) || !TIME_RE.test(String(v.close))) {
+      return { error: `${day}: open/close must be HH:MM (24h)` };
+    }
+    hours[day] = { open: v.open, close: v.close };
+  }
+  return { value: { hours, allDay } };
+}
+
+/** Whitelisted booleans + optional notes for gym_amenities. */
+function normaliseAmenities(amenities) {
+  if (amenities === undefined || amenities === null) return { value: null };
+  if (typeof amenities !== 'object' || Array.isArray(amenities)) {
+    return { error: 'amenities must be an object of booleans' };
+  }
+  const out = {};
+  let any = false;
+  for (const k of AMENITY_KEYS) {
+    if (amenities[k] === undefined) { out[k] = null; continue; }
+    if (typeof amenities[k] !== 'boolean') return { error: `${k} must be true or false` };
+    out[k] = amenities[k]; any = true;
+  }
+  if (amenities.extras !== undefined) {
+    // Free-form facility chips (Pool, Cafe, Boxing Ring…) that have no column
+    // in gym_amenities. Stored as rows in gym_facilities.
+    if (!Array.isArray(amenities.extras) || amenities.extras.length > 40 ||
+        amenities.extras.some((x) => typeof x !== 'string' || !x.trim() || x.length > 60)) {
+      return { error: 'extras must be up to 40 short facility names' };
+    }
+    out.extras = [...new Set(amenities.extras.map((x) => x.trim()))]; any = true;
+  }
+  if (amenities.notes !== undefined) {
+    if (typeof amenities.notes !== 'string' || amenities.notes.length > 500) return { error: 'notes must be a string under 500 characters' };
+    out.notes = amenities.notes; any = true;
+  } else out.notes = null;
+  if (!any) return { error: 'amenities has no known fields' };
+  return { value: out };
+}
+
 router.patch('/update-gym', authenticateUser, express.json({ limit: '2mb' }), async (req, res) => {
   try {
-    const { gymId, name, address, description, pricing, photos } = req.body || {};
+    const { gymId, name, address, description, pricing, photos, openingHours, is24h, amenities } = req.body || {};
     if (!gymId || !/^\d+$/.test(String(gymId))) {
       return res.status(400).json({ error: 'gymId required' });
     }
@@ -284,8 +344,85 @@ router.patch('/update-gym', authenticateUser, express.json({ limit: '2mb' }), as
       push('photos', JSON.stringify(clean), 'photos');
     }
 
-    if (!sets.length) {
+    // Opening hours + facilities used to be edited by two other endpoints that
+    // never compared the owner. They live here now, behind the same ownership
+    // check as everything else on this route.
+    const hoursCheck = normaliseOpeningHours(openingHours, is24h);
+    if (hoursCheck.error) return res.status(400).json({ error: hoursCheck.error });
+    const amenCheck = normaliseAmenities(amenities);
+    if (amenCheck.error) return res.status(400).json({ error: amenCheck.error });
+
+    if (!sets.length && !hoursCheck.value && !amenCheck.value) {
       return res.status(400).json({ error: 'Nothing to update' });
+    }
+
+    if (hoursCheck.value) {
+      const { hours, allDay } = hoursCheck.value;
+      try {
+        await pool.query(
+          `UPDATE gyms SET opening_hours = COALESCE($1::jsonb, opening_hours), is_24h = COALESCE($2, is_24h), updated_at = NOW()
+           WHERE id = $3 AND claimed_by::text = $4::text`,
+          [hours ? JSON.stringify(hours) : null, allDay, gymId, req.user.id]
+        );
+      } catch (dbErr) {
+        // 42703 = column does not exist on this database — keep it in metadata
+        // (the same fallback /setup-gym uses) rather than losing the edit.
+        if (dbErr.code !== '42703') {
+          console.error('[GymPartner] update-gym hours SQL error:', dbErr.message);
+          return res.status(500).json({ error: 'Could not save opening hours' });
+        }
+        const meta = {};
+        if (hours) meta.opening_hours = hours;
+        if (allDay !== null) meta.is_24h = allDay;
+        await pool.query(
+          `UPDATE gyms SET metadata = COALESCE(metadata, '{}'::jsonb) || $1::jsonb, updated_at = NOW()
+           WHERE id = $2 AND claimed_by::text = $3::text`,
+          [JSON.stringify(meta), gymId, req.user.id]
+        ).catch((e) => console.error('[GymPartner] update-gym hours metadata error:', e.message));
+      }
+      changed.push('opening hours');
+    }
+
+    if (amenCheck.value) {
+      const a = amenCheck.value;
+      try {
+        await pool.query(
+          `INSERT INTO gym_amenities (gym_id, has_locker, has_towel, has_shower, has_changing_room, has_hair_dryer,
+             has_music_system, has_sauna, has_wifi, has_parking, has_water_fountain, notes)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+           ON CONFLICT (gym_id) DO UPDATE SET
+             has_locker=COALESCE($2,gym_amenities.has_locker), has_towel=COALESCE($3,gym_amenities.has_towel),
+             has_shower=COALESCE($4,gym_amenities.has_shower), has_changing_room=COALESCE($5,gym_amenities.has_changing_room),
+             has_hair_dryer=COALESCE($6,gym_amenities.has_hair_dryer), has_music_system=COALESCE($7,gym_amenities.has_music_system),
+             has_sauna=COALESCE($8,gym_amenities.has_sauna), has_wifi=COALESCE($9,gym_amenities.has_wifi),
+             has_parking=COALESCE($10,gym_amenities.has_parking), has_water_fountain=COALESCE($11,gym_amenities.has_water_fountain),
+             notes=COALESCE($12,gym_amenities.notes), updated_at=NOW()`,
+          [gymId, a.has_locker, a.has_towel, a.has_shower, a.has_changing_room, a.has_hair_dryer,
+           a.has_music_system, a.has_sauna, a.has_wifi, a.has_parking, a.has_water_fountain, a.notes]
+        );
+        if (Array.isArray(a.extras)) {
+          await pool.query(`DELETE FROM gym_facilities WHERE gym_id = $1 AND category = 'partner_chip'`, [gymId]);
+          for (let i = 0; i < a.extras.length; i++) {
+            await pool.query(
+              `INSERT INTO gym_facilities (gym_id, name, category, is_free, sort_order) VALUES ($1, $2, 'partner_chip', true, $3)`,
+              [gymId, a.extras[i], i]
+            );
+          }
+        }
+      } catch (dbErr) {
+        console.error('[GymPartner] update-gym amenities SQL error:', dbErr.message);
+        return res.status(500).json({ error: 'Could not save facilities' });
+      }
+      changed.push('facilities');
+    }
+
+    if (!sets.length) {
+      return res.json({
+        success: true,
+        updated: changed,
+        message: 'Changes saved — live on your listing.',
+        gym: { id: Number(gymId), name: owned.rows[0].name }
+      });
     }
 
     vals.push(gymId, req.user.id);
@@ -848,6 +985,27 @@ router.get('/dashboard', authenticateUser, async (req, res) => {
     // Calculate revenue helper
     const calcRev = (row) => parseFloat(row.revenue) || (parseInt(row.revenue_pence) / 100) || 0;
 
+    // Opening hours + facilities so the Partner rail's Hours/Facilities sheets
+    // open pre-filled with what is actually saved (queried separately: the
+    // columns may be missing on older databases, so a failure here must not
+    // take the whole dashboard down).
+    const hoursRes = await pool.query(
+      `SELECT opening_hours, is_24h, metadata FROM gyms WHERE id = $1`, [primaryGym.id]
+    ).catch(() => pool.query(`SELECT metadata FROM gyms WHERE id = $1`, [primaryGym.id]).catch(() => ({ rows: [] })));
+    const hoursRow = hoursRes.rows[0] || {};
+    const openingHours = hoursRow.opening_hours || (hoursRow.metadata && hoursRow.metadata.opening_hours) || null;
+    const is24h = typeof hoursRow.is_24h === 'boolean' ? hoursRow.is_24h
+      : (hoursRow.metadata && typeof hoursRow.metadata.is_24h === 'boolean' ? hoursRow.metadata.is_24h : false);
+    const amenRes = await pool.query(`SELECT * FROM gym_amenities WHERE gym_id = $1`, [primaryGym.id]).catch(() => ({ rows: [] }));
+    const amenRow = amenRes.rows[0] || null;
+    const amenitiesOut = amenRow ? Object.fromEntries(
+      Object.entries(amenRow).filter(([k]) => k.startsWith('has_'))
+    ) : {};
+    const extrasRes = await pool.query(
+      `SELECT name FROM gym_facilities WHERE gym_id = $1 AND category = 'partner_chip' ORDER BY sort_order`, [primaryGym.id]
+    ).catch(() => ({ rows: [] }));
+    amenitiesOut.extras = extrasRes.rows.map((r) => r.name);
+
     res.json({
       success: true,
       hasGyms: true,
@@ -856,7 +1014,9 @@ router.get('/dashboard', authenticateUser, async (req, res) => {
         dayPassPrice: g.day_pass_price || 5,
         isActive: g.is_active !== false && g.accepting_bookings !== false,
         rating: g.average_rating, reviews: g.total_reviews,
-        is24h: g.is_24h, claimedAt: g.claimed_at
+        is24h: g.id === primaryGym.id ? is24h : g.is_24h, claimedAt: g.claimed_at,
+        openingHours: g.id === primaryGym.id ? openingHours : undefined,
+        amenities: g.id === primaryGym.id ? amenitiesOut : undefined
       })),
       today: {
         bookings: parseInt(ts.total_bookings) || 0,

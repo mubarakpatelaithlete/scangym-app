@@ -22,6 +22,25 @@ function requireAuth(req, res, next) {
   next();
 }
 
+// Owner-only: the amenity list and vending menu are the gym's own listing.
+// The old check fetched claimed_by and then never compared it.
+async function requireGymOwner(req, res, next) {
+  if (!req.session?.userId) return res.status(401).json({ error: 'Login required' });
+  const gymId = req.params.gymId;
+  if (!/^\d+$/.test(String(gymId))) return res.status(400).json({ error: 'Invalid gym id' });
+  try {
+    const gym = await pool.query('SELECT claimed_by FROM gyms WHERE id = $1', [gymId]);
+    if (!gym.rows.length) return res.status(404).json({ error: 'Gym not found' });
+    if (String(gym.rows[0].claimed_by || '') !== String(req.session.userId)) {
+      return res.status(403).json({ error: 'Not your gym' });
+    }
+    next();
+  } catch (e) {
+    console.error('Amenities ownership check error:', e.message);
+    res.status(500).json({ error: 'Update failed' });
+  }
+}
+
 // Default vending items for new gyms
 const DEFAULT_VENDING = [
   { name: 'Water Bottle', category: 'drinks', emoji: '💧', price: 150 },
@@ -64,7 +83,7 @@ router.get('/:gymId', async (req, res) => {
 });
 
 // PUT /:gymId — Update amenities (gym owner)
-router.put('/:gymId', requireAuth, express.json(), async (req, res) => {
+router.put('/:gymId', requireGymOwner, express.json(), async (req, res) => {
   try {
     const gymId = req.params.gymId;
     // Verify ownership
@@ -119,7 +138,7 @@ router.get('/:gymId/vending', async (req, res) => {
 });
 
 // PUT /:gymId/vending — Update vending menu (owner)
-router.put('/:gymId/vending', requireAuth, express.json(), async (req, res) => {
+router.put('/:gymId/vending', requireGymOwner, express.json(), async (req, res) => {
   try {
     const { items } = req.body;
     if (!items || !Array.isArray(items)) return res.status(400).json({ error: 'items array required' });
