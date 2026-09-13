@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Use ScanGym in Claude — book a gym just by asking</title>
-<meta name="description" content="Connect ScanGym to Claude in three taps, then just ask Claude to find and book a gym day pass near you.">
+<title>Use ScanGym in {{NAME}} — book a gym just by asking</title>
+<meta name="description" content="Connect ScanGym to {{NAME}} in three taps, then just ask {{NAME}} to find and book a gym day pass near you.">
 <meta name="theme-color" content="#127947">
-<meta property="og:title" content="Use ScanGym in Claude">
-<meta property="og:description" content="Connect ScanGym to Claude in three taps, then just ask for a gym day pass.">
-<meta property="og:url" content="https://scangym.com/claude">
+<meta property="og:title" content="Use ScanGym in {{NAME}}">
+<meta property="og:description" content="Connect ScanGym to {{NAME}} in three taps, then just ask for a gym day pass.">
+<meta property="og:url" content="https://scangym.com/{{SLUG}}">
 <link rel="icon" href="/favicon.ico">
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
@@ -100,11 +100,11 @@
       </div>
       <div class="plus">+</div>
       <div class="mark" aria-hidden="true">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#d97757"/><path d="M12 5.5l1.8 4.2 4.2 1.8-4.2 1.8L12 17.5l-1.8-4.2L6 11.5l4.2-1.8z" fill="#fff"/></svg>
+        {{MARK}}
       </div>
     </div>
-    <h1>Book a gym in Claude,<br>just by asking</h1>
-    <p>Connect ScanGym once, then Claude can find gyms near you, show real day‑pass prices and hold your slot.</p>
+    <h1>Book a gym in {{NAME}},<br>just by asking</h1>
+    <p>Connect ScanGym once, then {{NAME}} can find gyms near you, show real day‑pass prices and hold your slot.</p>
   </div>
 </header>
 
@@ -113,7 +113,7 @@
   <div class="say">
     <div class="lbl">For example, you type</div>
     <div class="q">“Find me a gym in Bolton for tomorrow morning.”</div>
-    <div class="a">Claude replies with real gyms, ratings and live day‑pass prices from <b>ScanGym</b> — and can hold your spot.</div>
+    <div class="a">{{NAME}} replies with real gyms, ratings and live day‑pass prices from <b>ScanGym</b> — and can hold your spot.</div>
   </div>
 
   <h2>Set it up — takes about a minute</h2>
@@ -121,7 +121,7 @@
   <div class="step">
     <div class="n">1</div>
     <h3>Copy the ScanGym link</h3>
-    <p>One tap. This is the link Claude needs to connect to ScanGym.</p>
+    <p>One tap. This is the link {{NAME}} needs to connect to ScanGym.</p>
     <button class="btn btn-green" id="copyBtn">
       <svg viewBox="0 0 24 24" fill="none"><rect x="9" y="9" width="12" height="12" rx="2" stroke="currentColor" stroke-width="2"/><path d="M5 15V5a2 2 0 012-2h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       <span id="copyTxt">Copy the ScanGym link</span>
@@ -134,21 +134,21 @@
 
   <div class="step">
     <div class="n">2</div>
-    <h3>Open Claude’s connector settings</h3>
-    <p>This button opens the right page in Claude. Sign in if it asks.</p>
-    <a class="btn btn-orange" href="https://claude.ai/settings/connectors" target="_blank" rel="noopener">
+    <h3>{{STEP2_TITLE}}</h3>
+    <p>This button opens the right page in {{NAME}}. Sign in if it asks.</p>
+    <a class="btn btn-orange" href="{{SETTINGS_URL}}" target="_blank" rel="noopener">
       <svg viewBox="0 0 24 24" fill="none"><path d="M14 5h5v5M19 5l-8 8M18 14v4a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      Open Claude connectors
+      {{SETTINGS_BTN}}
     </a>
   </div>
 
   <div class="step">
     <div class="n">3</div>
     <h3>Add it, and you’re done</h3>
-    <p>Tap <span class="k">Add custom connector</span>, paste the link, then tap <span class="k">Add</span>. ScanGym now appears in your Claude chats.</p>
+    <p>{{STEP3_BODY}} ScanGym now appears in your {{NAME}} chats.</p>
   </div>
 
-  <h2>Now try asking Claude</h2>
+  <h2>Now try asking {{NAME}}</h2>
   <div class="p" data-p="Find me a gym in Bolton for tomorrow morning."><span>“Find me a gym in Bolton for tomorrow morning.”</span><em>COPY</em></div>
   <div class="p" data-p="What's the cheapest gym day pass near me?"><span>“What’s the cheapest gym day pass near me?”</span><em>COPY</em></div>
   <div class="p" data-p="Show me the opening hours and photos for that gym."><span>“Show me the opening hours and photos for that gym.”</span><em>COPY</em></div>
@@ -157,19 +157,19 @@
   <h2>Questions</h2>
   <details>
     <summary>Do I need to pay for anything to connect?</summary>
-    <p>Connecting ScanGym to Claude is free. You only pay when you actually book a gym day pass, at the price shown.</p>
+    <p>Connecting ScanGym is free. You only pay when you actually book a gym day pass, at the price shown. {{ACCOUNT_NOTE}}</p>
   </details>
   <details>
-    <summary>I can’t find “Add custom connector”.</summary>
-    <p>Make sure you’re on the Connectors page in Claude’s settings (use the orange button above). On phones, scroll to the bottom of that page — the button sits under your existing connectors.</p>
+    <summary>{{FAQ_FIND_Q}}</summary>
+    <p>{{FAQ_FIND_A}}</p>
   </details>
   <details>
-    <summary>Can Claude book and take my money automatically?</summary>
-    <p>No. Claude can search gyms, show prices and hold a provisional slot, but it always asks you to confirm before anything is booked. You can cancel free up to 2 hours before your session.</p>
+    <summary>Can {{NAME}} book and take my money automatically?</summary>
+    <p>No. {{NAME}} can search gyms, show prices and hold a provisional slot, but it always asks you to confirm before anything is booked. You can cancel free up to 2 hours before your session.</p>
   </details>
   <details>
     <summary>Is my ScanGym account linked?</summary>
-    <p>Bookings you confirm through Claude appear in your normal ScanGym account, so you can manage or cancel them in the app as usual.</p>
+    <p>Bookings you confirm through {{NAME}} appear in your normal ScanGym account, so you can manage or cancel them in the app as usual.</p>
   </details>
 
   <footer>
@@ -218,7 +218,7 @@
 
   var btn = document.getElementById('copyBtn'), txt = document.getElementById('copyTxt');
   btn.addEventListener('click', function () {
-    copy(MCP_URL, '✓ Link copied — now tap “Open Claude connectors”', 'Copy failed — long-press the link below to copy it');
+    copy(MCP_URL, '✓ Link copied — now tap “{{SETTINGS_BTN}}”', 'Copy failed — long-press the link below to copy it');
     btn.classList.add('done');
     txt.textContent = '✓ Copied — go to step 2';
     setTimeout(function () {
@@ -230,7 +230,7 @@
   // Tap an example prompt to copy it.
   Array.prototype.forEach.call(document.querySelectorAll('.p'), function (el) {
     el.addEventListener('click', function () {
-      copy(el.getAttribute('data-p'), '✓ Copied — paste it into Claude', 'Copy failed');
+      copy(el.getAttribute('data-p'), '✓ Copied — paste it into {{NAME}}', 'Copy failed');
     });
   });
 })();

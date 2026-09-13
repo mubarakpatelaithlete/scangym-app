@@ -95,6 +95,8 @@
     slack: '<svg viewBox="0 0 24 24"><path d="M5.1 15.1a2.1 2.1 0 11-2.1-2.1h2.1v2.1zm1.05 0a2.1 2.1 0 014.2 0v5.25a2.1 2.1 0 11-4.2 0V15.1z" fill="#e01e5a"/><path d="M8.25 5.1A2.1 2.1 0 116.15 3v2.1H8.25zm0 1.05a2.1 2.1 0 010 4.2H3A2.1 2.1 0 013 6.15h5.25z" fill="#36c5f0"/><path d="M18.9 8.25A2.1 2.1 0 1121 6.15v2.1h-2.1zm-1.05 0a2.1 2.1 0 01-4.2 0V3a2.1 2.1 0 014.2 0v5.25z" fill="#2eb67d"/><path d="M15.75 18.9A2.1 2.1 0 1117.85 21h-2.1v-2.1zm0-1.05a2.1 2.1 0 010-4.2H21a2.1 2.1 0 010 4.2h-5.25z" fill="#ecb22e"/></svg>',
     msteams: '<svg viewBox="0 0 24 24"><path d="M13 6.2h7.2c.44 0 .8.36.8.8v9.9a2.4 2.4 0 01-2.4 2.4h-3A4.8 4.8 0 0013 15V6.2z" fill="#5b5fc7"/><circle cx="17.4" cy="4.6" r="2.2" fill="#5b5fc7"/><rect x="1.5" y="7.5" width="11.5" height="10.5" rx="1" fill="#4b53bc"/><text x="7.2" y="15.2" font-size="8" fill="#fff" text-anchor="middle" font-family="Arial" font-weight="700">T</text></svg>',
     claude: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#d97757"/><path d="M12 6l1.5 3.5L17 11l-3.5 1.5L12 16l-1.5-3.5L7 11l3.5-1.5z" fill="#fff"/></svg>',
+    grok: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#111827"/><path d="M8.5 7.5l7 9M15.5 7.5l-7 9" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    gemini: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#1a73e8"/><path d="M12 6c.5 2.9 1.6 4 4.5 4.5-2.9.5-4 1.6-4.5 4.5-.5-2.9-1.6-4-4.5-4.5C10.4 10 11.5 8.9 12 6z" fill="#fff"/></svg>',
     msstore: '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="8.5" height="8.5" fill="#F25022"/><rect x="12.5" y="3" width="8.5" height="8.5" fill="#7FBA00"/><rect x="3" y="12.5" width="8.5" height="8.5" fill="#00A4EF"/><rect x="12.5" y="12.5" width="8.5" height="8.5" fill="#FFB900"/></svg>',
     install: '<svg viewBox="0 0 24 24" fill="none" stroke="#FF6D00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v10"/><path d="M8 9l4 4 4-4"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>',
     tiktok: '<svg viewBox="0 0 24 24"><path d="M16.6 3c.35 1.9 1.5 3.35 3.4 3.75v3.1c-1.35.05-2.55-.35-3.85-1.15v5.85c0 4.05-3.05 6.05-5.95 5.4-2.55-.55-4.2-2.85-3.85-5.4.4-2.85 3-4.55 5.6-4.1v3.15c-.85-.25-1.75-.1-2.3.6-.9 1.05-.45 2.7.9 3.05 1.25.35 2.45-.55 2.45-2.05V3h3.6z" fill="#fff"/><path d="M16.6 3c.35 1.9 1.5 3.35 3.4 3.75v1.5c-1.9-.4-3.05-1.85-3.4-3.75V3z" fill="#25f4ee"/><path d="M12.35 10.45v1.6c-.85-.25-1.75-.1-2.3.6-.9 1.05-.45 2.7.9 3.05l-.6 1.4c-2.1-.75-2.95-3.35-1.6-5.15.8-1.1 2.2-1.7 3.6-1.5z" fill="#fe2c55"/></svg>',
@@ -186,6 +188,15 @@
       // (/claude) which copies the link for them and deep-links Claude settings.
       window.open('/claude', '_blank');
     },
+    // Grok and Gemini take the same MCP connector URL as Claude, so they get the
+    // same guided page with their own settings link and wording — one page,
+    // three routes (server/lib/connect-page.js), not three copies to drift.
+    grok: function () {
+      window.open('/grok', '_blank');
+    },
+    gemini: function () {
+      window.open('/gemini', '_blank');
+    },
     msstore: function () {
       window.open(MS_STORE_URL, '_blank');
     },
@@ -266,6 +277,8 @@
     ai.style.marginTop = '4px';
     frag.appendChild(ai);
     frag.appendChild(btn('claude', 'Claude'));
+    frag.appendChild(btn('grok', 'Grok'));
+    frag.appendChild(btn('gemini', 'Gemini'));
     var apps = sec('Apps');
     apps.style.marginTop = '4px';
     frag.appendChild(apps);
