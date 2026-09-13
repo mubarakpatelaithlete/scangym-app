@@ -919,6 +919,16 @@ text-decoration:none;font-weight:700;padding:12px 22px;border-radius:10px}</styl
     res.send(page.replace('__SG_LOGIN_TOKEN__', token));
   });
 
+  // /join — the standalone "List your gym in 2 minutes" wizard
+  // (frontend/public/join/index.html). It is in sitemap.xml and the express.static
+  // mount has index:false + redirect:false, so without an explicit handler the
+  // request fell through to the SPA catch-all, which has no /join route and
+  // rendered "Page Not Found".
+  app.get(['/join', '/join/'], (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache');
+    res.sendFile(path.join(FRONTEND_DIR, 'join', 'index.html'));
+  });
+
   // /about page — static, SEO-friendly, crawlable by LLMs
   app.get('/about', (req, res) => {
     res.sendFile(path.join(FRONTEND_DIR, 'about', 'index.html'));
