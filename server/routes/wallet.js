@@ -7,6 +7,7 @@ const router = express.Router();
 const pool = require('../middleware/db');
 const { authenticateUser, requireAdmin } = require('../middleware/auth');
 const { reconcileCommissionBackpay, creditWallet, reconcilePartnerRevenue } = require('../lib/wallet-credit');
+const stripe = process.env.STRIPE_SECRET_KEY ? require('stripe')(process.env.STRIPE_SECRET_KEY) : null;
 
 router.use(authenticateUser);
 
@@ -122,6 +123,34 @@ router.post('/topup', async (req, res) => {
     else if (amountPence >= 2000) bonusPence = Math.round(amountPence * 0.10);
     const totalCredit = amountPence + bonusPence;
 
+    // A top-up is a purchase. The wallet is only credited once Stripe has
+    // actually taken the money — a bare POST with an amount must never mint
+    // balance that /withdraw can later turn into a real Stripe transfer.
+    if (!paymentMethodId) {
+      return res.status(400).json({ error: 'paymentMethodId required' });
+    }
+    if (!stripe) {
+      return res.status(503).json({ error: 'Payments are not configured' });
+    }
+    let intent;
+    try {
+      intent = await stripe.paymentIntents.create({
+        amount: amountPence,
+        currency: 'gbp',
+        payment_method: paymentMethodId,
+        confirm: true,
+        off_session: false,
+        automatic_payment_methods: { enabled: true, allow_redirects: 'never' },
+        metadata: { userId: String(userId), purpose: 'wallet_topup' },
+      }, { idempotencyKey: `wallet-topup-${userId}-${paymentMethodId}-${amountPence}-${Date.now()}` });
+    } catch (e) {
+      console.warn('[Wallet] Top-up charge failed:', e.message);
+      return res.status(402).json({ error: 'Card was declined', detail: e.message });
+    }
+    if (intent.status !== 'succeeded') {
+      return res.status(402).json({ error: 'Payment not completed', status: intent.status });
+    }
+
     let wallet = await pool.query('SELECT * FROM wallets WHERE user_id = $1', [userId]);
     if (wallet.rows.length === 0) {
       wallet = await pool.query(`
@@ -142,7 +171,7 @@ router.post('/topup', async (req, res) => {
       VALUES ($1, $2, 'top_up', $3, $4, $5, 'stripe', NOW())
     `, [
       wallet.rows[0].id, userId, totalCredit, newBalance,
-      bonusPence > 0 ? `Top-up £${(amountPence/100).toFixed(2)} + £${(bonusPence/100).toFixed(2)} bonus` : `Top-up £${(amountPence/100).toFixed(2)}`,
+      (bonusPence > 0 ? `Top-up £${(amountPence/100).toFixed(2)} + £${(bonusPence/100).toFixed(2)} bonus` : `Top-up £${(amountPence/100).toFixed(2)}`) + ` (${intent.id})`,
     ]);
 
     res.json({
@@ -202,10 +231,12 @@ router.post('/spend', async (req, res) => {
   }
 });
 
-// POST /api/wallet/reward - Add reward credits
-router.post('/reward', async (req, res) => {
+// POST /api/wallet/reward - Add reward credits (admin only: this mints
+// balance with no payment behind it, and /withdraw pays balance out for real).
+// Body may name a target `userId`; defaults to the admin's own wallet.
+router.post('/reward', requireAdmin, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.body.userId || req.user.id;
     let { amountPence, reason, referenceType } = req.body;
     if (req.body.amount && !amountPence) {
       amountPence = Math.round(req.body.amount * 100);

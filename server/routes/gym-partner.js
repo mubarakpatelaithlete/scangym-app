@@ -670,11 +670,16 @@ router.post('/stripe-connect/webhook', express.raw({ type: 'application/json' })
   try {
     const sig = req.headers['stripe-signature'];
     const endpointSecret = process.env.STRIPE_CONNECT_WEBHOOK_SECRET;
-    if (endpointSecret && sig) {
-      event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
-    } else {
-      event = JSON.parse(req.body);
+    // Fail closed: an unsigned body can flip any partner to "onboarded /
+    // payouts enabled". No secret configured means the endpoint is off.
+    if (!endpointSecret) {
+      console.error('[StripeConnect] STRIPE_CONNECT_WEBHOOK_SECRET is not set — webhook ignored');
+      return res.status(503).send('Connect webhook not configured');
     }
+    if (!sig) {
+      return res.status(400).send('Missing stripe-signature header');
+    }
+    event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
   } catch (err) {
     console.error('[StripeConnect] Webhook error:', err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
