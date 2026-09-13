@@ -31,10 +31,27 @@ const router = express.Router();
 const pool = require('../middleware/db');
 
 
-function requireAuth(req, res, next) {
+// Every write on this router is scoped to /:gymId and changes what the public
+// sees about that gym (hours, equipment, facilities, review replies). Being
+// logged in is not enough — the caller has to be the owner who claimed it.
+// Before this, any account could rewrite any gym's opening hours.
+async function requireAuth(req, res, next) {
   if (!req.session?.userId) return res.status(401).json({ error: 'Login required' });
   req.user = { id: req.session.userId };
-  next();
+  const gymId = req.params && req.params.gymId;
+  if (!gymId) return next();
+  if (!/^\d+$/.test(String(gymId))) return res.status(400).json({ error: 'Invalid gym id' });
+  try {
+    const owned = await pool.query(
+      'SELECT id FROM gyms WHERE id = $1 AND claimed_by::text = $2::text',
+      [gymId, String(req.session.userId)]
+    );
+    if (!owned.rows.length) return res.status(403).json({ error: 'Not your gym or gym not found' });
+    next();
+  } catch (e) {
+    console.error('[GymMgmt] ownership check failed:', e.message);
+    res.status(500).json({ error: 'Failed' });
+  }
 }
 
 // ═══ Equipment CRUD ═══

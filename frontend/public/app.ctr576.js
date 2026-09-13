@@ -2528,7 +2528,7 @@ function GymProfilePage(){
       <div class="gym-overlay-footer">
         <div>
           <div style="color:#fff;font-size:22px;font-weight:800">${currentPrice}</div>
-          <div style="color:rgba(255,255,255,.4);font-size:11px">Your ScanGym pass works here ✓</div>
+          <div style="color:rgba(255,255,255,.4);font-size:11px">${gym.isClaimed||gym.is_claimed||gym.claimed_by?'Your ScanGym pass works here ✓':'Listed from Google Maps · not yet a ScanGym partner'}</div>
         </div>
         <button class="gym-book-btn" onclick="event.preventDefault();event.stopPropagation();closeGymOverlay();showBookingCheckout('${gymId}')">Book Now</button>
       </div>
@@ -2824,7 +2824,7 @@ window.openGymOverlay=function(section){
           <div style="color:rgba(255,255,255,.35);font-size:13px;margin:10px 0 8px">${helpCount} ${helpCount===1?'person':'people'} found this helpful</div>
           <div class="ov-review-actions" style="display:flex;align-items:center;gap:16px">
             <button class="ov-review-helpful${voted?' active':''}" id="helpful_${rid}" onclick="event.stopPropagation();_toggleReviewHelpful('${rid}',${helpfulBase})" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:6px 16px;color:rgba(255,255,255,.7);font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent">Helpful</button>
-            <span onclick="event.stopPropagation();sgToast('Link copied!','info',2000)" style="color:rgba(255,255,255,.4);font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:4px"><span style="font-size:14px">\u2197</span> Share</span>
+            <span onclick="event.stopPropagation();_sgShareReview('${rid}')" style="color:rgba(255,255,255,.4);font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:4px"><span style="font-size:14px">\u2197</span> Share</span>
             <span class="ov-review-report" onclick="event.stopPropagation();sgToast('Review reported. We will look into it.','info',2500)" style="margin-left:auto;color:rgba(255,255,255,.3);font-size:13px;cursor:pointer">Report</span>
           </div>
         </div>`;
@@ -3426,7 +3426,7 @@ function _ensureStandaloneOverlay(gymId){
   var gym=state.currentGym||{};
   var currentPrice=(gym.pricing?.display)||sgMoney(gym.dayPassPrice,gym.currencySymbol)||sgPrice('day').display;
   var div=document.createElement('div');
-  div.innerHTML='<div class="gym-overlay" id="gym-overlay" onclick="if(event.target===this||event.target.classList.contains(\'gym-overlay-bg\'))closeGymOverlay()"><div class="gym-overlay-bg"></div><div class="gym-overlay-panel"><div class="gym-overlay-drag"></div><div class="gym-overlay-header"><div style="display:flex;align-items:center;gap:10px;"><div style="width:24px;height:24px;background:#FF6D00;border-radius:50%;flex-shrink:0;box-shadow:0 0 8px rgba(255,109,0,.4);"></div><div class="gym-overlay-title" id="gym-overlay-title"></div></div><button class="gym-overlay-close" onclick="closeGymOverlay()">✕</button></div><div class="gym-overlay-body" id="gym-overlay-body"></div><div class="gym-overlay-footer"><div><div style="color:#fff;font-size:22px;font-weight:800">'+currentPrice+'</div><div style="color:rgba(255,255,255,.4);font-size:11px">Your ScanGym pass works here ✓</div></div><button class="gym-book-btn" onclick="event.preventDefault();event.stopPropagation();closeGymOverlay();showBookingCheckout(\''+gymId+'\')">Book Now</button></div></div></div>';
+  div.innerHTML='<div class="gym-overlay" id="gym-overlay" onclick="if(event.target===this||event.target.classList.contains(\'gym-overlay-bg\'))closeGymOverlay()"><div class="gym-overlay-bg"></div><div class="gym-overlay-panel"><div class="gym-overlay-drag"></div><div class="gym-overlay-header"><div style="display:flex;align-items:center;gap:10px;"><div style="width:24px;height:24px;background:#FF6D00;border-radius:50%;flex-shrink:0;box-shadow:0 0 8px rgba(255,109,0,.4);"></div><div class="gym-overlay-title" id="gym-overlay-title"></div></div><button class="gym-overlay-close" onclick="closeGymOverlay()">✕</button></div><div class="gym-overlay-body" id="gym-overlay-body"></div><div class="gym-overlay-footer"><div><div style="color:#fff;font-size:22px;font-weight:800">'+currentPrice+'</div><div style="color:rgba(255,255,255,.4);font-size:11px">'+((gym.isClaimed||gym.is_claimed||gym.claimed_by)?'Your ScanGym pass works here ✓':'Listed from Google Maps · not yet a ScanGym partner')+'</div></div><button class="gym-book-btn" onclick="event.preventDefault();event.stopPropagation();closeGymOverlay();showBookingCheckout(\''+gymId+'\')">Book Now</button></div></div></div>';
   document.body.appendChild(div.firstChild);
   // Swipe-down-to-close
   var panel=document.querySelector('.gym-overlay-panel');
@@ -11172,79 +11172,16 @@ function _sgRenderLyrics(track,elapsed,pl){
 }
 
 function MusicTabPage(){
-  // ── Playlist data (8 curated workout playlists) ──
+  // ── Playlist data ──
+  // Only tracks that ship with real audio are listed. This page used to list
+  // eight playlists of well-known chart songs that had no
+  // audio file behind them: "play" ran a silent progress bar. Add a track here
+  // only when its file exists under frontend/public/audio/.
   var playlists=[
-    {id:1,title:'Beast Mode',sub:'High intensity',img:'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=600&h=600&fit=crop',color:'#c62828',
+    {id:1,title:'Beast Mode',sub:'High intensity \u00b7 ScanGym Beats',img:'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=600&h=600&fit=crop',color:'#c62828',
      tracks:[
-       {n:'Unstoppable',a:'The Score',d:'3:24',dur:204,img:'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=600&h=600&fit=crop',audio:'/audio/beast-mode-1.mp3'},
-       {n:'Till I Collapse',a:'Eminem ft. Nate Dogg',d:'4:57',dur:297,img:'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=600&h=600&fit=crop',audio:'/audio/beast-mode-2.mp3'},
-       {n:'Stronger',a:'Kanye West',d:'5:11',dur:311,img:'https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=600&h=600&fit=crop'},
-       {n:'Remember the Name',a:'Fort Minor',d:'3:50',dur:230,img:'https://images.unsplash.com/photo-1605296867304-46d5465a13f1?w=600&h=600&fit=crop'},
-       {n:'Thunderstruck',a:'AC/DC',d:'4:52',dur:292,img:'https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=600&h=600&fit=crop'},
-       {n:'Lose Yourself',a:'Eminem',d:'5:26',dur:326,img:'https://images.unsplash.com/photo-1550345332-09e3ac987658?w=600&h=600&fit=crop'}
-     ]},
-    {id:2,title:'Cardio Rush',sub:'Running & HIIT',img:'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=600&h=600&fit=crop',color:'#e65100',
-     tracks:[
-       {n:'Blinding Lights',a:'The Weeknd',d:'3:20',dur:200,img:'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=600&h=600&fit=crop'},
-       {n:'Physical',a:'Dua Lipa',d:'3:13',dur:193,img:'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=600&h=600&fit=crop'},
-       {n:'Don\'t Start Now',a:'Dua Lipa',d:'3:03',dur:183,img:'https://images.unsplash.com/photo-1486218119243-13883505764c?w=600&h=600&fit=crop'},
-       {n:'Levitating',a:'Dua Lipa',d:'3:23',dur:203,img:'https://images.unsplash.com/photo-1538805060514-97d9cc17730c?w=600&h=600&fit=crop'},
-       {n:'Savage Love',a:'Jawsh 685',d:'2:51',dur:171,img:'https://images.unsplash.com/photo-1571008887538-b36bb32f4571?w=600&h=600&fit=crop'},
-       {n:'Dynamite',a:'BTS',d:'3:19',dur:199,img:'https://images.unsplash.com/photo-1461896836934-bd45ba8bca5e?w=600&h=600&fit=crop'}
-     ]},
-    {id:3,title:'Power Lift',sub:'Heavy sets',img:'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=600&h=600&fit=crop',color:'#4a148c',
-     tracks:[
-       {n:'Enter Sandman',a:'Metallica',d:'5:31',dur:331,img:'https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?w=600&h=600&fit=crop'},
-       {n:'Back in Black',a:'AC/DC',d:'4:15',dur:255,img:'https://images.unsplash.com/photo-1532029837206-abbe2b7620e3?w=600&h=600&fit=crop'},
-       {n:'Killing in the Name',a:'Rage Against the Machine',d:'5:13',dur:313,img:'https://images.unsplash.com/photo-1567598508481-65985588e295?w=600&h=600&fit=crop'},
-       {n:'Bodies',a:'Drowning Pool',d:'3:22',dur:202,img:'https://images.unsplash.com/photo-1579758629938-03607ccdbaba?w=600&h=600&fit=crop'},
-       {n:'Indestructible',a:'Disturbed',d:'4:36',dur:276,img:'https://images.unsplash.com/photo-1533681904393-9ab6ebed60d5?w=600&h=600&fit=crop'},
-       {n:'Last Resort',a:'Papa Roach',d:'3:19',dur:199,img:'https://images.unsplash.com/photo-1546483875-ad9014c88eba?w=600&h=600&fit=crop'}
-     ]},
-    {id:4,title:'Yoga Flow',sub:'Stretch & calm',img:'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=600&h=600&fit=crop',color:'#1b5e20',
-     tracks:[
-       {n:'Weightless',a:'Marconi Union',d:'8:09',dur:489,img:'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=600&h=600&fit=crop'},
-       {n:'Breathe Me',a:'Sia',d:'4:34',dur:274,img:'https://images.unsplash.com/photo-1545205597-3d9d02c29597?w=600&h=600&fit=crop'},
-       {n:'River Flows in You',a:'Yiruma',d:'3:12',dur:192,img:'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=600&h=600&fit=crop'},
-       {n:'Sunset Lover',a:'Petit Biscuit',d:'3:30',dur:210,img:'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&h=600&fit=crop'},
-       {n:'Orinoco Flow',a:'Enya',d:'4:25',dur:265,img:'https://images.unsplash.com/photo-1510797215324-95aa89f43c33?w=600&h=600&fit=crop'},
-       {n:'Clair de Lune',a:'Debussy',d:'5:00',dur:300,img:'https://images.unsplash.com/photo-1515377905703-c4788e51af15?w=600&h=600&fit=crop'}
-     ]},
-    {id:5,title:'Boxing Beat',sub:'Combat rhythm',img:'https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?w=600&h=600&fit=crop',color:'#b71c1c',
-     tracks:[
-       {n:'Eye of the Tiger',a:'Survivor',d:'4:05',dur:245,img:'https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?w=600&h=600&fit=crop'},
-       {n:'Gonna Fly Now',a:'Bill Conti',d:'2:48',dur:168,img:'https://images.unsplash.com/photo-1517438322307-e67111335449?w=600&h=600&fit=crop'},
-       {n:'X Gon\' Give It to Ya',a:'DMX',d:'3:42',dur:222,img:'https://images.unsplash.com/photo-1495555961986-6d4c1ecb7be3?w=600&h=600&fit=crop'},
-       {n:'Can\'t Be Touched',a:'Roy Jones Jr',d:'4:01',dur:241,img:'https://images.unsplash.com/photo-1544717297-fa95b6ee9643?w=600&h=600&fit=crop'},
-       {n:'Warrior',a:'Disturbed',d:'3:49',dur:229,img:'https://images.unsplash.com/photo-1591117207239-788bf8486b09?w=600&h=600&fit=crop'},
-       {n:'Smells Like Teen Spirit',a:'Nirvana',d:'5:01',dur:301,img:'https://images.unsplash.com/photo-1552072092-7f9b8d63efcb?w=600&h=600&fit=crop'}
-     ]},
-    {id:6,title:'Lo-Fi Focus',sub:'Zen concentration',img:'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=600&h=600&fit=crop',color:'#0d47a1',
-     tracks:[
-       {n:'Snowman',a:'WYS',d:'2:45',dur:165,img:'https://images.unsplash.com/photo-1483412033650-1015ddeb83d1?w=600&h=600&fit=crop'},
-       {n:'Coffee',a:'beabadoobee',d:'3:26',dur:206,img:'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=600&h=600&fit=crop'},
-       {n:'i love u',a:'Billie Eilish (lo-fi)',d:'2:53',dur:173,img:'https://images.unsplash.com/photo-1487180144351-b8472da7d491?w=600&h=600&fit=crop'},
-       {n:'Aesthetic',a:'Xilo',d:'3:10',dur:190,img:'https://images.unsplash.com/photo-1494232410401-ad00d5433cfa?w=600&h=600&fit=crop'},
-       {n:'Chill Vibes',a:'Saib',d:'2:35',dur:155,img:'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&h=600&fit=crop'},
-       {n:'Daylight',a:'Joji',d:'2:43',dur:163,img:'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=600&h=600&fit=crop'}
-     ]},
-    {id:7,title:'Heavy Metal',sub:'Aggressive lifts',img:'https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=600&h=600&fit=crop',color:'#212121',
-     tracks:[
-       {n:'Master of Puppets',a:'Metallica',d:'8:36',dur:516,img:'https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?w=600&h=600&fit=crop'},
-       {n:'Chop Suey!',a:'System of a Down',d:'3:30',dur:210,img:'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&h=600&fit=crop'},
-       {n:'Walk',a:'Pantera',d:'5:15',dur:315,img:'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&h=600&fit=crop'},
-       {n:'Raining Blood',a:'Slayer',d:'4:17',dur:257,img:'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=600&h=600&fit=crop'},
-       {n:'Du Hast',a:'Rammstein',d:'3:54',dur:234,img:'https://images.unsplash.com/photo-1470468969717-61d5d54fd036?w=600&h=600&fit=crop'},
-       {n:'Psychosocial',a:'Slipknot',d:'4:43',dur:283,img:'https://images.unsplash.com/photo-1504898770365-14faca6a7320?w=600&h=600&fit=crop'}
-     ]},
-    {id:8,title:'Cool Down',sub:'Recovery & stretch',img:'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=600&h=600&fit=crop',color:'#006064',
-     tracks:[
-       {n:'Someone Like You',a:'Adele',d:'4:45',dur:285,img:'https://images.unsplash.com/photo-1515377905703-c4788e51af15?w=600&h=600&fit=crop'},
-       {n:'Fix You',a:'Coldplay',d:'4:55',dur:295,img:'https://images.unsplash.com/photo-1504609773096-104ff2c73ba4?w=600&h=600&fit=crop'},
-       {n:'Let Her Go',a:'Passenger',d:'4:12',dur:252,img:'https://images.unsplash.com/photo-1499346030926-9a72daac6c63?w=600&h=600&fit=crop'},
-       {n:'Skinny Love',a:'Bon Iver',d:'3:58',dur:238,img:'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=600&h=600&fit=crop'},
-       {n:'Chasing Cars',a:'Snow Patrol',d:'4:27',dur:267,img:'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=600&h=600&fit=crop'},
-       {n:'Falling Slowly',a:'Glen Hansard',d:'4:02',dur:242,img:'https://images.unsplash.com/photo-1490730141103-6cac27aaab94?w=600&h=600&fit=crop'}
+       {n:'Beast Mode 1',a:'ScanGym Beats',d:'2:45',dur:165,img:'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=600&h=600&fit=crop',audio:'/audio/beast-mode-1.mp3'},
+       {n:'Beast Mode 2',a:'ScanGym Beats',d:'2:59',dur:179,img:'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=600&h=600&fit=crop',audio:'/audio/beast-mode-2.mp3'}
      ]}
   ];
 
@@ -11711,138 +11648,95 @@ function _sgPhotoShareWithAffiliate(photoTitle, photoUser, photoIdx) {
 })();
 
 // ═══ PHOTOS TAB — Steal Pinterest: masonry grid, real photos, working filters ═══
+/* Photos = real photos of real gyms near the visitor (the Google Places data
+   the Book tab already loaded). It used to be Unsplash stock shots captioned
+   with invented usernames and like counts. */
+function _sgPhotoEsc(t){return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function _sgGymPhotos(){
+  var gyms=(state.gyms&&state.gyms.length?state.gyms:state.searchResults)||[];
+  var out=[];
+  gyms.forEach(function(g){
+    var list=(g.photos_list&&g.photos_list.length?g.photos_list:(g.photo||g.photo_url?[{url:g.photo||g.photo_url}]:[])).slice(0,3);
+    list.forEach(function(ph,k){
+      var url=typeof ph==='string'?ph:(ph.url||ph.thumbnail);
+      if(!url)return;
+      out.push({img:url,gymId:g.placeId||g.place_id||g.id,name:g.name||'Gym',address:g.address||g.vicinity||g.formatted_address||'',
+        rating:g.rating?Number(g.rating).toFixed(1):'',reviews:g.totalReviews||g.user_ratings_total||0,
+        price:(g.currencySymbol||'\u00a3')+(g.dayPassPrice||sgAmount('day')),openNow:g.openNow===true||g.openNow==='true',
+        is24h:g.is24h===true||g.is24Hours===true,distance:g.distanceText||'',live:!!(g.isClaimed||g.is_claimed),nth:k});
+    });
+  });
+  return out;
+}
 function PhotosTabPage(){
-  var categories=['🔥 Trending','💪 Before/After','🏋️ Form Tips','🍽 Meal Prep','📊 Progress','🏅 PRs'];
+  var categories=['\ud83d\udccd Near you','\ud83d\udfe2 Open now','\ud83c\udf19 24/7','\u2b50 Top rated'];
   var _catIdx=window._sgPhotosCat||0;
-  // Real Unsplash gym/fitness photos — high-res for full-screen
-  var allPhotos=[
-    {img:'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1080&h=1920&fit=crop',title:'Morning Deadlift PR',user:'@fitking_23',likes:'2.4K',likesN:2400,comments:'148',cat:0,avatar:'🏋️'},
-    {img:'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=1080&h=1920&fit=crop',title:'6 Month Transformation',user:'@sarah_gains',likes:'8.1K',likesN:8100,comments:'432',cat:1,avatar:'💪'},
-    {img:'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=1080&h=1920&fit=crop',title:'High Protein Meal Prep',user:'@mealmaster',likes:'3.7K',likesN:3700,comments:'215',cat:3,avatar:'🍳'},
-    {img:'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=1080&h=1920&fit=crop',title:'5K Personal Best!',user:'@runner_mike',likes:'1.9K',likesN:1900,comments:'97',cat:4,avatar:'🏃'},
-    {img:'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=1080&h=1920&fit=crop',title:'Sunrise Yoga Session',user:'@zen_fit',likes:'5.2K',likesN:5200,comments:'284',cat:0,avatar:'🧘'},
-    {img:'https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?w=1080&h=1920&fit=crop',title:'Boxing Highlights',user:'@boxfit_uk',likes:'4.6K',likesN:4600,comments:'310',cat:2,avatar:'🥊'},
-    {img:'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=1080&h=1920&fit=crop',title:'12 Week Progress',user:'@trackingpro',likes:'6.3K',likesN:6300,comments:'521',cat:4,avatar:'📊'},
-    {img:'https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=1080&h=1920&fit=crop',title:'Competition Day!',user:'@powerlifter99',likes:'9.8K',likesN:9800,comments:'673',cat:5,avatar:'🏅'},
-    {img:'https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=1080&h=1920&fit=crop',title:'Leg Day Pump',user:'@quad_queen',likes:'3.1K',likesN:3100,comments:'176',cat:0,avatar:'🦵'},
-    {img:'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=1080&h=1920&fit=crop',title:'Perfect Squat Form',user:'@formcheck',likes:'7.2K',likesN:7200,comments:'445',cat:2,avatar:'✅'},
-    {img:'https://images.unsplash.com/photo-1532384748853-8f54a8f476e2?w=1080&h=1920&fit=crop',title:'Healthy Bowl Prep',user:'@eatclean',likes:'4.1K',likesN:4100,comments:'232',cat:3,avatar:'🥗'},
-    {img:'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=1080&h=1920&fit=crop',title:'Cable Fly Gains',user:'@chestday',likes:'5.8K',likesN:5800,comments:'367',cat:0,avatar:'💥'},
-    {img:'https://images.unsplash.com/photo-1605296867304-46d5465a13f1?w=1080&h=1920&fit=crop',title:'Home Workout Setup',user:'@homegym_pro',likes:'6.5K',likesN:6500,comments:'401',cat:2,avatar:'🏠'},
-    {img:'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=1080&h=1920&fit=crop',title:'Stretching Routine',user:'@flex_daily',likes:'2.8K',likesN:2800,comments:'134',cat:1,avatar:'🤸'},
-    {img:'https://images.unsplash.com/photo-1546483875-ad9014c88eba?w=1080&h=1920&fit=crop',title:'Marathon Training',user:'@run_26mi',likes:'3.9K',likesN:3900,comments:'198',cat:4,avatar:'🏃'},
-    {img:'https://images.unsplash.com/photo-1579758629938-03607ccdbaba?w=1080&h=1920&fit=crop',title:'Bench PR 140kg!',user:'@benchbeast',likes:'11.2K',likesN:11200,comments:'892',cat:5,avatar:'🔥'}
-  ];
-  // Filter by category (0 = trending = show all)
-  var photos=_catIdx===0?allPhotos:allPhotos.filter(function(p){return p.cat===_catIdx;});
-  if(photos.length===0)photos=allPhotos;
-  // Store filtered photos globally for actions
+  var allPhotos=_sgGymPhotos();
+  var photos=allPhotos;
+  if(_catIdx===1)photos=allPhotos.filter(function(p){return p.openNow;});
+  else if(_catIdx===2)photos=allPhotos.filter(function(p){return p.is24h;});
+  else if(_catIdx===3)photos=allPhotos.filter(function(p){return parseFloat(p.rating)>=4.5;});
   window._sgPhotosAll=photos;
   var curIdx=window._sgPhotoCur||0;
   if(curIdx>=photos.length)curIdx=0;
+  var empty=allPhotos.length===0
+    ?'<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;gap:12px"><div style="font-size:56px">\ud83d\udcf8</div><p style="color:#fff;font-size:18px;font-weight:800;margin:0">Photos of gyms near you</p><p style="color:rgba(255,255,255,.5);font-size:14px;margin:0;max-width:280px">Find gyms first and their real photos show up here.</p><button onclick="findGyms()" style="background:#FF6D00;color:#fff;border:none;padding:12px 24px;border-radius:12px;font-weight:700;font-size:15px;cursor:pointer;margin-top:8px">\ud83d\udccd Find gyms near me</button></div>'
+    :(photos.length===0?'<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.5);font-size:14px;padding:24px;text-align:center">No gyms match this filter yet \u2014 try another.</div>':'');
   return`<div id="sg-photos-wrap" style="position:absolute;inset:0;background:#000;overflow:hidden">
     <style>
-      @keyframes sgHeartPop{0%{transform:translate(-50%,-50%) scale(0);opacity:1}50%{transform:translate(-50%,-50%) scale(1.3);opacity:1}100%{transform:translate(-50%,-50%) scale(1);opacity:0}}
-      @keyframes sgActionBounce{0%{transform:scale(1)}50%{transform:scale(1.3)}100%{transform:scale(1)}}
       #sg-photo-track{scroll-snap-type:y mandatory;overflow-y:scroll;height:100%;-webkit-overflow-scrolling:touch;scrollbar-width:none}
       #sg-photo-track::-webkit-scrollbar{display:none}
       .sg-photo-slide{scroll-snap-align:start;scroll-snap-stop:always;width:100%;height:100%;position:relative;flex-shrink:0}
       .sg-photo-slide img{width:100%;height:100%;object-fit:cover;display:block}
     </style>
-    <!-- Floating category pills -->
     <div style="position:absolute;top:0;left:0;right:0;z-index:20;background:linear-gradient(180deg,rgba(0,0,0,.7) 0%,rgba(0,0,0,.3) 70%,transparent 100%);padding:14px 16px 20px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <span style="color:#fff;font-size:17px;font-weight:800;text-shadow:0 1px 8px rgba(0,0,0,.5)">📸 Photos</span>
-        <div style="display:flex;gap:8px;align-items:center">
-          <span style="color:rgba(255,255,255,.5);font-size:12px;font-weight:600" id="sg-photo-counter">${curIdx+1}/${photos.length}</span>
-          <div onclick="sgToast('📷 Upload coming soon','info',2000)" style="width:32px;height:32px;background:rgba(255,255,255,.15);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px">➕</div>
-        </div>
+        <span style="color:#fff;font-size:17px;font-weight:800;text-shadow:0 1px 8px rgba(0,0,0,.5)">\ud83d\udcf8 Gym Photos</span>
+        <span style="color:rgba(255,255,255,.5);font-size:12px;font-weight:600" id="sg-photo-counter">${photos.length?(curIdx+1)+'/'+photos.length:''}</span>
       </div>
       <div style="display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none" class="sg-pills-row">
-        ${categories.map(function(c,i){return '<button onclick="event.stopPropagation();window._sgPhotosCat='+i+';window._sgPhotoCur=0;render()" style="flex-shrink:0;background:'+(i===_catIdx?'rgba(255,109,0,.25)':'rgba(255,255,255,.1)')+';backdrop-filter:blur(8px);border:1px solid '+(i===_catIdx?'rgba(255,109,0,.4)':'rgba(255,255,255,.12)')+';color:'+(i===_catIdx?'#FF6D00':'rgba(255,255,255,.7)')+';padding:6px 14px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;transition:.15s">'+c+'</button>';}).join('')}
+        ${categories.map(function(c,i){return '<button onclick="event.stopPropagation();window._sgPhotosCat='+i+';window._sgPhotoCur=0;render()" style="flex-shrink:0;background:'+(i===_catIdx?'rgba(255,109,0,.25)':'rgba(255,255,255,.1)')+';backdrop-filter:blur(8px);border:1px solid '+(i===_catIdx?'rgba(255,109,0,.4)':'rgba(255,255,255,.15)')+';color:#fff;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">'+c+'</button>';}).join('')}
       </div>
     </div>
-    <!-- Full-screen snap scroll track -->
+    ${empty}
     <div id="sg-photo-track" style="display:flex;flex-direction:column">
       ${photos.map(function(p,i){return _photoSlide(p,i,photos.length);}).join('')}
     </div>
   </div>`;
 }
-// Full-screen photo slide (like a Reel but for photos)
+// Full-screen photo slide: one real gym photo, real name, real actions
 function _photoSlide(p,idx,total){
+  var id=_sgPhotoEsc(p.gymId),name=_sgPhotoEsc(p.name);
   return '<div class="sg-photo-slide" data-idx="'+idx+'">'
-    // Photo fills entire screen
-    +'<img src="'+p.img+'" alt="'+p.title+'" loading="'+(idx<3?'eager':'lazy')+'" onerror="this.style.background=\'linear-gradient(135deg,#1a1a2e,#16213e)\'">'
-    // Bottom gradient + info
+    +'<img src="'+_sgPhotoEsc(p.img)+'" alt="'+name+'" loading="'+(idx<3?'eager':'lazy')+'" onerror="this.style.background=\'linear-gradient(135deg,#1a1a2e,#16213e)\'">'
     +'<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent 0%,rgba(0,0,0,.4) 30%,rgba(0,0,0,.8) 100%);padding:60px 16px 20px;z-index:15">'
     +'<div style="display:flex;align-items:flex-end;gap:12px">'
-    // Left: user info + title
-    +'<div style="flex:1;min-width:0">'
-    +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
-    +'<div style="width:36px;height:36px;background:linear-gradient(135deg,#FF6D00,#ff8533);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;border:2px solid rgba(255,255,255,.3)">'+p.avatar+'</div>'
-    +'<div><p style="color:#fff;font-size:13px;font-weight:700;margin:0">'+p.user+'</p>'
-    +'<p style="color:rgba(255,255,255,.5);font-size:10px;margin:0">ScanGym Member</p></div>'
+    +'<div style="flex:1;min-width:0;cursor:pointer" onclick="event.stopPropagation();openGym(\''+id+'\',true)">'
+    +'<p style="color:#fff;font-size:17px;font-weight:800;margin:0 0 4px;text-shadow:0 1px 6px rgba(0,0,0,.5)">'+name+'</p>'
+    +'<p style="color:rgba(255,255,255,.6);font-size:12px;margin:0 0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">\ud83d\udccd '+_sgPhotoEsc(p.address)+(p.distance?' \u00b7 '+_sgPhotoEsc(p.distance):'')+'</p>'
+    +'<p style="color:rgba(255,255,255,.75);font-size:12px;margin:0">'+(p.rating?'\u2b50 '+p.rating+' ('+p.reviews+')':'')+(p.openNow?' \u00b7 <span style="color:#4ade80">Open now</span>':'')+(p.is24h?' \u00b7 24/7':'')+'</p>'
+    +'<p style="color:rgba(255,255,255,.4);font-size:10px;margin:4px 0 0">Photo via Google Maps'+(p.live?' \u00b7 ScanGym partner':'')+'</p>'
     +'</div>'
-    +'<p style="color:#fff;font-size:15px;font-weight:800;margin:0 0 4px;text-shadow:0 1px 6px rgba(0,0,0,.5)">'+p.title+'</p>'
-    +'<p style="color:rgba(255,255,255,.45);font-size:11px;margin:0">\ud83c\udfcb\ufe0f ScanGym Community</p>'
+    +'<div style="display:flex;flex-direction:column;align-items:center;gap:14px;flex-shrink:0">'
+    +'<div onclick="event.stopPropagation();openGymDirectOverlay(\''+id+'\',true,\'passes\')" style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer">'
+    +'<div style="width:44px;height:44px;background:#FF6D00;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 4px 16px rgba(255,109,0,.4)">\ud83c\udf9f\ufe0f</div>'
+    +'<span style="color:#fff;font-size:11px;font-weight:700">'+_sgPhotoEsc(p.price)+'</span>'
     +'</div>'
-    // Right: action buttons (TikTok-style vertical stack)
-    +'<div style="display:flex;flex-direction:column;align-items:center;gap:16px;flex-shrink:0">'
-    // Share button
-    +'<div onclick="event.stopPropagation();sgToast(\'📤 Link copied!\',\'success\',2000)" style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer">'
+    +'<div onclick="event.stopPropagation();window._sgShareGymLink(\''+id+'\',\''+name.replace(/'/g,'')+'\')" style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer">'
     +'<div style="width:44px;height:44px;background:rgba(255,255,255,.12);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px">\ud83d\udce4</div>'
     +'<span style="color:#fff;font-size:11px;font-weight:600">Share</span>'
     +'</div>'
-    // Bookmark button
-    +'<div onclick="event.stopPropagation();this.querySelector(\'div\').style.background=\'rgba(255,109,0,.25)\';sgToast(\'🔖 Saved!\',\'success\',1500)" style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer">'
-    +'<div style="width:44px;height:44px;background:rgba(255,255,255,.12);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px">\ud83d\udd16</div>'
-    +'<span style="color:#fff;font-size:11px;font-weight:600">Save</span>'
+    +'<div onclick="event.stopPropagation();window._sgSaveGym(\''+id+'\',\''+name.replace(/'/g,'')+'\',this)" style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer">'
+    +'<div id="tt-save-btn-'+id+'" style="width:44px;height:44px;background:rgba(255,255,255,.12);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px">\ud83d\udd16</div>'
+    +'<span id="tt-save-label-'+id+'" style="color:#fff;font-size:11px;font-weight:600">Save</span>'
     +'</div>'
     +'</div>'
     +'</div>'
     +'</div>'
     +'</div>';
 }
-// Toggle like on photo
-function _sgToggleLike(idx){
-  var p=window._sgPhotosAll[idx];if(!p)return;
-  var el=document.getElementById('sg-plike-'+idx);if(!el)return;
-  var liked=el.getAttribute('data-liked')==='1';
-  if(!liked){
-    el.setAttribute('data-liked','1');
-    el.querySelector('div').style.background='rgba(255,109,0,.25)';
-    el.querySelector('div').style.borderColor='rgba(255,109,0,.4)';
-    el.querySelector('span').textContent=(parseFloat(p.likes)+0.1).toFixed(1)+'K';
-    el.querySelector('div').style.animation='sgActionBounce .3s ease';
-    // Show heart pop
-    var heart=document.getElementById('sg-heart-'+idx);
-    if(heart){heart.style.display='block';setTimeout(function(){heart.style.display='none'},800);}
-  }else{
-    el.setAttribute('data-liked','0');
-    el.querySelector('div').style.background='rgba(255,255,255,.12)';
-    el.querySelector('div').style.borderColor='transparent';
-    el.querySelector('span').textContent=p.likes;
-    el.querySelector('div').style.animation='';
-  }
-}
-// Double-tap to like on photo slides
+// Photo slide helpers (double-tap-to-like removed with the fake like counts)
 (function(){
-  var _lastTap=0;
-  document.addEventListener('touchend',function(e){
-    var slide=e.target.closest('.sg-photo-slide');
-    if(!slide)return;
-    var now=Date.now();
-    if(now-_lastTap<300){
-      var idx=parseInt(slide.getAttribute('data-idx'));
-      var el=document.getElementById('sg-plike-'+idx);
-      if(el&&el.getAttribute('data-liked')!=='1')_sgToggleLike(idx);
-      else{
-        var heart=document.getElementById('sg-heart-'+idx);
-        if(heart){heart.style.display='block';setTimeout(function(){heart.style.display='none'},800);}
-      }
-    }
-    _lastTap=now;
-  });
   // Update photo counter on scroll
   var _scrollTimer=null;
   document.addEventListener('scroll',function(e){
@@ -13329,7 +13223,7 @@ function MoreHubPage(){
           <div style="width:46px;height:46px;background:rgba(0,0,0,.45);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.12)">\ud83d\udd0d</div>
           <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Find Gym</span>
         </div>
-        <div onclick="navigate('/login')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
+        <div onclick="navigate('/pricing')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
           <div style="width:46px;height:46px;background:rgba(0,0,0,.45);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.12)">\ud83d\udcb3</div>
           <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Pricing</span>
         </div>
@@ -14856,7 +14750,10 @@ window._partnerLoadGymProfile=async function(){
         isActive:g.isActive!==false,
         description:g.description||'',
         photos:g.photos_list||g.photos||[],
-        facilities:g.facilities||[]
+        facilities:g.facilities||[],
+        openingHours:g.openingHours||null,
+        is24h:g.is24h===true,
+        amenities:g.amenities||{}
       };
       // Update displayed name/address
       var ne=document.getElementById('partner-name-display');
@@ -15017,45 +14914,116 @@ window._partnerToggleOpen=function(){
   sgToast(gd.isOpen?'Gym set to Open':'Gym set to Closed','success',2000);
 };
 window._partnerEditHours=function(){
-  var days=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  var days=[['mon','Monday'],['tue','Tuesday'],['wed','Wednesday'],['thu','Thursday'],['fri','Friday'],['sat','Saturday'],['sun','Sunday']];
+  var gd=window._partnerGymData||{};
+  var saved=gd.openingHours||{};
+  var is24=gd.is24h===true;
   var h='<h2 style="font-size:20px;font-weight:800;color:#fff;margin:0 0 16px">\ud83d\udd70 Opening Hours</h2>';
-  h+='<div style="display:flex;flex-direction:column;gap:8px">';
-  days.forEach(function(day){
+  h+='<label style="display:flex;align-items:center;gap:10px;padding:10px 0 14px;color:#fff;font-size:14px;font-weight:600;cursor:pointer"><input type="checkbox" id="sg-hours-24h" '+(is24?'checked':'')+' onchange="document.getElementById(\'sg-hours-grid\').style.opacity=this.checked?.35:1" style="width:18px;height:18px;accent-color:#FF6D00"/> Open 24 hours, every day</label>';
+  h+='<div id="sg-hours-grid" style="display:flex;flex-direction:column;gap:8px;opacity:'+(is24?'.35':'1')+'">';
+  days.forEach(function(d){
+    var v=saved[d[0]]||{};
+    var closed=v.closed===true;
     h+='<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06)">'
-      +'<span style="color:rgba(255,255,255,.7);font-size:14px;width:90px;font-weight:600">'+day+'</span>'
-      +'<input class="pe-field" type="time" value="06:00" style="flex:1;font-size:13px;padding:6px 8px" />'
+      +'<span style="color:rgba(255,255,255,.7);font-size:14px;width:90px;font-weight:600">'+d[1]+'</span>'
+      +'<input class="pe-field" type="time" id="sg-hours-'+d[0]+'-open" value="'+(v.open||'06:00')+'" style="flex:1;font-size:13px;padding:6px 8px" />'
       +'<span style="color:rgba(255,255,255,.3)">to</span>'
-      +'<input class="pe-field" type="time" value="22:00" style="flex:1;font-size:13px;padding:6px 8px" />'
+      +'<input class="pe-field" type="time" id="sg-hours-'+d[0]+'-close" value="'+(v.close||'22:00')+'" style="flex:1;font-size:13px;padding:6px 8px" />'
+      +'<label title="Closed" style="display:flex;align-items:center;gap:4px;color:rgba(255,255,255,.5);font-size:11px;cursor:pointer"><input type="checkbox" id="sg-hours-'+d[0]+'-closed" '+(closed?'checked':'')+' style="accent-color:#FF6D00"/>Closed</label>'
       +'</div>';
   });
   h+='</div>';
-  h+='<button class="pe-save-btn" style="width:100%;padding:14px;font-size:15px;border-radius:12px;margin-top:16px" onclick="_sgCloseSheet(\'sg-partner-hours-sheet\');sgToast(\'Hours updated!\',\'success\',2000)">Save Hours</button>';
+  h+='<button class="pe-save-btn" id="sg-hours-save" style="width:100%;padding:14px;font-size:15px;border-radius:12px;margin-top:16px" onclick="_partnerSaveHours()">Save Hours</button>';
   _sgOpenSheet('sg-partner-hours-sheet',h);
 };
+window._partnerSaveHours=async function(){
+  var days=['mon','tue','wed','thu','fri','sat','sun'];
+  var hours={};
+  days.forEach(function(d){
+    var closed=document.getElementById('sg-hours-'+d+'-closed');
+    if(closed&&closed.checked){hours[d]={closed:true};return;}
+    var o=document.getElementById('sg-hours-'+d+'-open'),c=document.getElementById('sg-hours-'+d+'-close');
+    hours[d]={open:(o&&o.value)||'06:00',close:(c&&c.value)||'22:00'};
+  });
+  var is24=!!(document.getElementById('sg-hours-24h')||{}).checked;
+  var btn=document.getElementById('sg-hours-save');
+  if(btn){btn.disabled=true;btn.textContent='Saving\u2026';}
+  try{
+    var gymId=await window._sgResolvePartnerGymId();
+    if(!gymId){sgToast('Claim your gym first to set opening hours','error',3000);return;}
+    var r=await fetch('/api/gym-partner/update-gym',{method:'PATCH',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({gymId:gymId,openingHours:hours,is24h:is24})});
+    var d=await r.json().catch(function(){return {};});
+    if(!r.ok||!d.success){sgToast(d.error||'Could not save hours \u2014 please try again','error',3500);return;}
+    window._partnerGymData=window._partnerGymData||{};
+    window._partnerGymData.openingHours=hours;
+    window._partnerGymData.is24h=is24;
+    _sgCloseSheet('sg-partner-hours-sheet');
+    sgToast(d.message||'Opening hours saved','success',2000);
+  }catch(e){
+    sgToast('Could not save hours \u2014 check your connection','error',3500);
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='Save Hours';}
+  }
+};
+/* Chips with a column in gym_amenities carry `key`; the rest are saved as
+   free-form facility rows. Both come back on /api/gym-partner/dashboard. */
+window._partnerFacilityChips=[
+  {icon:'\ud83d\udd10',name:'Lockers',key:'has_locker'},{icon:'\ud83d\udebf',name:'Showers',key:'has_shower'},
+  {icon:'\ud83d\udc55',name:'Changing Room',key:'has_changing_room'},{icon:'\ud83e\uddfb',name:'Towels',key:'has_towel'},
+  {icon:'\ud83d\udca8',name:'Hair Dryer',key:'has_hair_dryer'},{icon:'\ud83c\udfe5',name:'Sauna',key:'has_sauna'},
+  {icon:'\ud83d\udcf6',name:'Free WiFi',key:'has_wifi'},{icon:'\ud83c\udd7f\ufe0f',name:'Parking',key:'has_parking'},
+  {icon:'\ud83c\udfb5',name:'Music System',key:'has_music_system'},{icon:'\ud83d\udca7',name:'Water Fountain',key:'has_water_fountain'},
+  {icon:'\ud83c\udfcb\ufe0f',name:'Free Weights'},{icon:'\ud83d\udcaa',name:'Machines'},
+  {icon:'\ud83c\udfc3',name:'Cardio'},{icon:'\ud83e\uddd8',name:'Yoga Studio'},
+  {icon:'\ud83c\udfca',name:'Pool'},{icon:'\u2615',name:'Cafe'},
+  {icon:'\ud83d\udc76',name:'Childcare'},{icon:'\ud83e\udd4a',name:'Boxing Ring'},
+  {icon:'\ud83e\uddd7',name:'Climbing Wall'},{icon:'\ud83c\udfbe',name:'Courts'},
+  {icon:'\ud83c\udfc0',name:'Basketball'},{icon:'\ud83d\udeb4',name:'Spin Studio'}
+];
 window._partnerEditFacilities=function(){
-  var all=[
-    {icon:'\ud83c\udfcb\ufe0f',name:'Free Weights'},{icon:'\ud83d\udcaa',name:'Machines'},
-    {icon:'\ud83c\udfc3',name:'Cardio'},{icon:'\ud83e\uddd8',name:'Yoga Studio'},
-    {icon:'\ud83d\udebf',name:'Showers'},{icon:'\ud83d\udd10',name:'Lockers'},
-    {icon:'\ud83c\udfe5',name:'Sauna'},{icon:'\ud83c\udfca',name:'Pool'},
-    {icon:'\ud83c\udd7f\ufe0f',name:'Parking'},{icon:'\u2615',name:'Cafe'},
-    {icon:'\ud83d\udc76',name:'Childcare'},{icon:'\ud83e\udd4a',name:'Boxing Ring'},
-    {icon:'\ud83e\uddd7',name:'Climbing Wall'},{icon:'\ud83c\udfbe',name:'Courts'},
-    {icon:'\ud83c\udfc0',name:'Basketball'},{icon:'\ud83d\udeb4',name:'Spin Studio'},
-    {icon:'\ud83c\udfb5',name:'Music System'},{icon:'\ud83d\udcf6',name:'Free WiFi'}
-  ];
+  var all=window._partnerFacilityChips;
+  var gd=window._partnerGymData||{};
+  var am=gd.amenities||{};
+  var extras=am.extras||[];
   var h='<h2 style="font-size:20px;font-weight:800;color:#fff;margin:0 0 16px">\ud83c\udfcb\ufe0f Facilities & Equipment</h2>';
   h+='<p style="color:rgba(255,255,255,.5);font-size:13px;margin-bottom:14px">Tap to toggle. Highlighted = your gym has it.</p>';
   h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">';
   all.forEach(function(f,i){
-    h+='<div id="sg-fac-'+i+'" onclick="this.classList.toggle(\'active\');this.style.background=this.classList.contains(\'active\')?\'rgba(255,109,0,.15)\':\'rgba(255,255,255,.05)\';this.style.borderColor=this.classList.contains(\'active\')?\'rgba(255,109,0,.3)\':\'rgba(255,255,255,.08)\'" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:12px 8px;text-align:center;cursor:pointer;transition:all .15s">'
+    var on=f.key?am[f.key]===true:extras.indexOf(f.name)>=0;
+    h+='<div id="sg-fac-'+i+'" class="sg-fac-chip'+(on?' active':'')+'" onclick="this.classList.toggle(\'active\');this.style.background=this.classList.contains(\'active\')?\'rgba(255,109,0,.15)\':\'rgba(255,255,255,.05)\';this.style.borderColor=this.classList.contains(\'active\')?\'rgba(255,109,0,.3)\':\'rgba(255,255,255,.08)\'" style="background:'+(on?'rgba(255,109,0,.15)':'rgba(255,255,255,.05)')+';border:1px solid '+(on?'rgba(255,109,0,.3)':'rgba(255,255,255,.08)')+';border-radius:12px;padding:12px 8px;text-align:center;cursor:pointer;transition:all .15s">'
       +'<div style="font-size:24px;margin-bottom:4px">'+f.icon+'</div>'
       +'<div style="color:#fff;font-size:11px;font-weight:600">'+f.name+'</div>'
       +'</div>';
   });
   h+='</div>';
-  h+='<button class="pe-save-btn" style="width:100%;padding:14px;font-size:15px;border-radius:12px;margin-top:16px" onclick="_sgCloseSheet(\'sg-partner-fac-sheet\');sgToast(\'Facilities updated!\',\'success\',2000)">Save Facilities</button>';
+  h+='<button class="pe-save-btn" id="sg-fac-save" style="width:100%;padding:14px;font-size:15px;border-radius:12px;margin-top:16px" onclick="_partnerSaveFacilities()">Save Facilities</button>';
   _sgOpenSheet('sg-partner-fac-sheet',h);
+};
+window._partnerSaveFacilities=async function(){
+  var all=window._partnerFacilityChips;
+  var amenities={extras:[]};
+  all.forEach(function(f,i){
+    var el=document.getElementById('sg-fac-'+i);
+    var on=!!(el&&el.classList.contains('active'));
+    if(f.key)amenities[f.key]=on;else if(on)amenities.extras.push(f.name);
+  });
+  var btn=document.getElementById('sg-fac-save');
+  if(btn){btn.disabled=true;btn.textContent='Saving\u2026';}
+  try{
+    var gymId=await window._sgResolvePartnerGymId();
+    if(!gymId){sgToast('Claim your gym first to set facilities','error',3000);return;}
+    var r=await fetch('/api/gym-partner/update-gym',{method:'PATCH',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({gymId:gymId,amenities:amenities})});
+    var d=await r.json().catch(function(){return {};});
+    if(!r.ok||!d.success){sgToast(d.error||'Could not save facilities \u2014 please try again','error',3500);return;}
+    window._partnerGymData=window._partnerGymData||{};
+    window._partnerGymData.amenities=amenities;
+    _sgCloseSheet('sg-partner-fac-sheet');
+    sgToast(d.message||'Facilities saved','success',2000);
+  }catch(e){
+    sgToast('Could not save facilities \u2014 check your connection','error',3500);
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='Save Facilities';}
+  }
 };
 
 // Auto-load partner gym profile data + init carousel
@@ -20627,6 +20595,17 @@ window._sgCopyChannelLink=function(handle,channel){
 // ─── Two share modes (user request): plain Share + deep Affiliate Share ───
 // _sgShareGymLink(gymId,gymName)        -> plain link, no tracking, no login needed
 // _sgShareGymLink(gymId,gymName,true)   -> deep affiliate link with ?ref= (login required)
+/* Review "Share" used to only toast "Link copied!" without copying anything. */
+window._sgShareReview=function(reviewId){
+  var gym=state.currentGym||{};
+  var gymId=gym.place_id||gym.placeId||gym.id||'';
+  var url=location.origin+'/gym/'+encodeURIComponent(gymId)+(reviewId?'#review-'+reviewId:'');
+  var text='Review of '+(gym.name||'this gym')+' on ScanGym';
+  if(navigator.share){navigator.share({title:text,text:text,url:url}).catch(function(){});return;}
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(url).then(function(){sgToast('Link copied!','success',2000);}).catch(function(){sgToast('Could not copy link','error',2000);});
+  }else{sgToast('Sharing not supported on this browser','error',2000);}
+};
 window._sgShareAffiliateLink=function(gymId,gymName){window._sgShareGymLink(gymId,gymName,true);};
 window._sgShareGymLink=function(gymId,gymName,affiliate){
   // Affiliate share needs an account (the ?ref= handle comes from the user)
