@@ -15,7 +15,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../middleware/db');
-const { authenticateUser, optionalAuth } = require('../middleware/auth');
+const { authenticateUser, optionalAuth, requireAdmin } = require('../middleware/auth');
 
 const PERIOD_INTERVALS = { '24h': '1 day', '7d': '7 days', '30d': '30 days' };
 function safeInterval(period) {
@@ -128,7 +128,7 @@ router.get('/owner/:gymId', authenticateUser, async (req, res) => {
 // GET /api/stats/ceo — CORRECTED: CEO Dashboard
 // "I want to know traffic volume and conversion of that traffic"
 // One screen: traffic in, money out. Full funnel conversion.
-router.get('/ceo', authenticateUser, async (req, res) => {
+router.get('/ceo', authenticateUser, requireAdmin, async (req, res) => {
   try {
     const { period = '7d' } = req.query;
     const interval = safeInterval(period);

@@ -1443,10 +1443,28 @@ router.post('/confirm-intent', async (req, res) => {
       return res.status(400).json({ error: 'Payment not completed', status: intent.status });
     }
 
+    // The intent must be the one minted for THIS booking. Without this check a
+    // single £4.49 payment could be replayed to confirm any booking id.
+    if (String(intent.metadata?.bookingId || '') !== String(bookingId)) {
+      console.warn(`[Payment] confirm-intent mismatch: intent ${paymentIntentId} is for booking ${intent.metadata?.bookingId}, not ${bookingId}`);
+      return res.status(400).json({ error: 'Payment does not belong to this booking' });
+    }
+
     // Get booking
     const result = await pool.query('SELECT * FROM public.bookings WHERE id = $1', [bookingId]);
     if (result.rows.length === 0) return res.status(404).json({ error: 'Booking not found' });
     const booking = result.rows[0];
+
+    // Charged amount must cover what the booking says it costs.
+    const expectedPence = Math.round(parseFloat(booking.total_amount || 0) * 100);
+    if (expectedPence > 0 && (intent.amount_received || 0) < expectedPence) {
+      return res.status(400).json({ error: 'Payment amount does not match booking' });
+    }
+
+    // Already confirmed by a different intent? Don't re-issue a QR.
+    if (booking.status === 'confirmed' && booking.stripe_payment_intent_id && booking.stripe_payment_intent_id !== paymentIntentId) {
+      return res.status(409).json({ error: 'Booking already confirmed' });
+    }
 
     // Update email if provided
     if (email && email.includes('@')) {
@@ -1501,17 +1519,9 @@ router.post('/confirm-intent', async (req, res) => {
         );
         if (ref.rows.length > 0) {
           booking.referral_code = ref.rows[0].creator_handle;
-        } else {
-          // Check for an unconverted click that belongs to this user's session
-          const click = await pool.query(
-            `SELECT creator_handle FROM creator_referrals
-             WHERE status = 'clicked' AND created_at > NOW() - INTERVAL '24 hours'
-             ORDER BY created_at DESC LIMIT 1`
-          );
-          if (click.rows.length > 0) {
-            booking.referral_code = click.rows[0].creator_handle;
-          }
         }
+        // No global "newest click anywhere" fallback: that paid commission to
+        // whichever creator's link was clicked most recently by anyone.
       } catch (e) {
         console.warn('[Payment] Referral fallback lookup failed (non-blocking):', e.message);
       }

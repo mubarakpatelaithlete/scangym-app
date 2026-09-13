@@ -2,9 +2,43 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../middleware/db');
 const { creditWallet } = require('../lib/wallet-credit');
+const { authenticateUser, requireAdmin } = require('../middleware/auth');
 
 // Ensure JSON body parsing for all referral POST routes
 router.use(express.json());
+
+/**
+ * requireOwnCreatorHandle — for routes that move or redirect money.
+ *
+ * Creator handles are public (they are in every referral link), so a body
+ * field `creatorHandle` proves nothing. This authenticates the caller and
+ * only lets the request through when the handle is theirs — either
+ * users.referral_handle or a creator_landing_pages row they own.
+ */
+async function attachOwnCreatorHandle(req, res, next) {
+  try {
+    const claimed = req.body && req.body.creatorHandle ? String(req.body.creatorHandle) : '';
+    if (!claimed) return res.status(400).json({ error: 'creatorHandle required' });
+    const own = await pool.query(
+      `SELECT 1 FROM public.users WHERE id::text = $1 AND referral_handle = $2
+       UNION ALL
+       SELECT 1 FROM creator_landing_pages WHERE creator_user_id::text = $1 AND slug = $2
+       LIMIT 1`,
+      [String(req.user.id), claimed]
+    );
+    if (own.rows.length === 0) {
+      console.warn(`[Referrals] user ${req.user.id} tried to act as creator "${claimed}" — denied`);
+      return res.status(403).json({ error: 'That creator handle is not yours' });
+    }
+    req.creatorHandle = claimed;
+    next();
+  } catch (err) {
+    console.error('[Referrals] handle ownership check failed:', err.message);
+    res.status(500).json({ error: 'Could not verify your creator account' });
+  }
+}
+const requireOwnCreatorHandle = [authenticateUser, attachOwnCreatorHandle];
+const requireAdminUser = [authenticateUser, requireAdmin];
 
 // ═══════════════════════════════════════════════════════════════════
 //  REFERRAL + COMMISSION PIPELINE
@@ -465,7 +499,7 @@ router.get('/balance/:handle', async (req, res) => {
 //  POST /api/referrals/withdraw
 //  Creator requests a withdrawal
 // ─────────────────────────────────────────────────────────────────
-router.post('/withdraw', async (req, res) => {
+router.post('/withdraw', ...requireOwnCreatorHandle, async (req, res) => {
   try {
     const { creatorHandle, amountPence, paymentMethod, paymentDetails } = req.body;
     if (!creatorHandle) return res.status(400).json({ error: 'creatorHandle required' });
@@ -582,7 +616,7 @@ router.get('/withdrawals/:handle', async (req, res) => {
 //  Admin: GET /api/referrals/admin/withdrawals
 //  Lists all pending withdrawal requests (for admin dashboard)
 // ─────────────────────────────────────────────────────────────────
-router.get('/admin/withdrawals', async (req, res) => {
+router.get('/admin/withdrawals', ...requireAdminUser, async (req, res) => {
   try {
     const { status } = req.query;
     const filter = status ? `WHERE status = $1` : '';
@@ -622,7 +656,7 @@ router.get('/admin/withdrawals', async (req, res) => {
 //  Admin: POST /api/referrals/admin/withdrawals/:id/approve
 //  Approve a withdrawal request
 // ─────────────────────────────────────────────────────────────────
-router.post('/admin/withdrawals/:id/approve', async (req, res) => {
+router.post('/admin/withdrawals/:id/approve', ...requireAdminUser, async (req, res) => {
   try {
     const { id } = req.params;
     const { adminNotes, autoExecute } = req.body;
@@ -695,7 +729,7 @@ router.post('/admin/withdrawals/:id/approve', async (req, res) => {
 // ─────────────────────────────────────────────────────────────────
 //  Admin: POST /api/referrals/admin/withdrawals/:id/reject
 // ─────────────────────────────────────────────────────────────────
-router.post('/admin/withdrawals/:id/reject', async (req, res) => {
+router.post('/admin/withdrawals/:id/reject', ...requireAdminUser, async (req, res) => {
   try {
     const { id } = req.params;
     const { reason } = req.body;
@@ -724,7 +758,7 @@ router.post('/admin/withdrawals/:id/reject', async (req, res) => {
 //  POST /api/referrals/stripe-connect
 //  Create Stripe Connect Express account for creator payouts
 // ─────────────────────────────────────────────────────────────────
-router.post('/stripe-connect', async (req, res) => {
+router.post('/stripe-connect', ...requireOwnCreatorHandle, async (req, res) => {
   try {
     const { creatorHandle } = req.body;
     if (!creatorHandle) return res.status(400).json({ error: 'Missing creatorHandle' });
@@ -902,7 +936,7 @@ router.post('/track-download', async (req, res) => {
 });
 
 // ─── Update creator payout method (from auth sheet step 2) ───
-router.post('/update-payout', async (req, res) => {
+router.post('/update-payout', ...requireOwnCreatorHandle, async (req, res) => {
   try {
     const { creatorHandle, paymentMethod, paymentDetails } = req.body;
     if (!creatorHandle) return res.status(400).json({ error: 'Missing creator handle' });
@@ -1135,7 +1169,7 @@ router.post('/generate-link', async (req, res) => {
 //  POST /api/referrals/admin/withdrawals/:id/execute-payout
 //  Auto-execute payout via Stripe Connect (replaces manual bank transfer)
 // ─────────────────────────────────────────────────────────────────
-router.post('/admin/withdrawals/:id/execute-payout', async (req, res) => {
+router.post('/admin/withdrawals/:id/execute-payout', ...requireAdminUser, async (req, res) => {
   try {
     const { id } = req.params;
 
