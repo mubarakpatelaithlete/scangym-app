@@ -218,6 +218,28 @@ const tools = {
     },
   },
 
+  start_verification: {
+    write: false,
+    schema: {
+      name: 'start_verification',
+      description:
+        'The Verify button: start the photo-ID + selfie check (Stripe Identity) when the customer asks to verify their identity or get verified. It opens on their screen — the ID and selfie cannot be done by voice.',
+      parameters: { type: 'object', properties: {}, additionalProperties: false },
+    },
+    async run(userId) {
+      if (!userId) return { ok: false, message: 'You need to be signed in to verify your ID.' };
+      try {
+        const { startVerification } = require('./identity-core');
+        const out = await startVerification(userId);
+        if (out.alreadyVerified) return { ok: true, verified: true, message: 'Your ID is already verified.' };
+        return { ok: true, handoff: true, url: out.url, ui: { action: 'open_url', url: out.url }, message: 'I have opened the ID check — hold up your photo ID, then take the selfie, and you are verified.' };
+      } catch (err) {
+        console.error('[AccountTools] start_verification failed:', err.message);
+        return { ok: false, message: 'I could not start the ID check right now — try again in a minute.' };
+      }
+    },
+  },
+
   get_my_streak: {
     write: false,
     schema: {

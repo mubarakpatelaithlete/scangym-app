@@ -23,7 +23,7 @@ test('booking is a write tool and everything else is a read', () => {
   // Both money paths are writes: book_gym reserves, book_and_pay reserves *and* charges.
   // Every tool that moves money — taking it or giving it back — must be a write. A public
   // review is not money, but it is irreversible in public, so it is confirmed the same way.
-  assert.deepEqual(writes.sort(), ['book_and_pay', 'book_gym', 'cancel_booking', 'leave_review'], 'only money tools and public posts may be writes');
+  assert.deepEqual(writes.sort(), ['book_and_pay', 'book_gym', 'cancel_booking', 'leave_review', 'message_gym'], 'only money tools and outbound messages/posts may be writes');
   assert.equal(tools.isWrite('find_gyms'), false, 'searching must not need confirmation');
 });
 

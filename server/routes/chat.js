@@ -8,28 +8,12 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../middleware/db');
 const { optionalAuth } = require('../middleware/auth');
+const { sendOwnerSMS, sendOwnerEmail } = require('../lib/owner-notify');
 
 // Gemini API config
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_MAPS_API_KEY;
 const GEMINI_MODEL = 'gemini-2.0-flash';
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
-
-// Twilio config for SMS escalation
-const TWILIO_SID = process.env.TWILIO_ACCOUNT_SID;
-const TWILIO_TOKEN = process.env.TWILIO_AUTH_TOKEN;
-const TWILIO_PHONE = process.env.TWILIO_PHONE_NUMBER;
-
-// Nodemailer for email escalation
-const nodemailer = require('nodemailer');
-const emailTransport = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: parseInt(process.env.SMTP_PORT || '587'),
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
-
 
 /**
  * Call Gemini API
@@ -71,67 +55,6 @@ async function callGemini(messages, maxTokens = 300) {
 
   const data = await response.json();
   return data.candidates?.[0]?.content?.parts?.[0]?.text || '[ESCALATE] Unable to process the question.';
-}
-
-/**
- * Send SMS to gym owner via Twilio
- */
-async function sendOwnerSMS(ownerPhone, gymName, userMessage) {
-  if (!TWILIO_SID || !TWILIO_TOKEN || !TWILIO_PHONE || !ownerPhone) return false;
-  try {
-    const url = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`;
-    const body = new URLSearchParams({
-      To: ownerPhone,
-      From: TWILIO_PHONE,
-      Body: `[ScanGym] New customer question for ${gymName}:\n"${userMessage.substring(0, 160)}"\n\nReply at scangym.com/owner/messages`,
-    });
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Authorization': 'Basic ' + Buffer.from(`${TWILIO_SID}:${TWILIO_TOKEN}`).toString('base64') },
-      body,
-    });
-    return response.ok;
-  } catch (err) {
-    console.error('SMS send error:', err.message);
-    return false;
-  }
-}
-
-/**
- * Send email to gym owner
- */
-function escapeHtml(str) {
-  if (!str) return '';
-  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-}
-
-async function sendOwnerEmail(ownerEmail, gymName, userMessage, conversationId) {
-  if (!ownerEmail || !process.env.SMTP_USER) return false;
-  try {
-    const safeGymName = escapeHtml(gymName);
-    const safeMessage = escapeHtml(userMessage);
-    const safeConvoId = encodeURIComponent(conversationId);
-    await emailTransport.sendMail({
-      from: `"ScanGym" <${process.env.SMTP_USER || 'noreply@scangym.com'}>`,
-      to: ownerEmail,
-      subject: `[ScanGym] Customer needs help at ${safeGymName}`,
-      html: `
-        <h2>A customer needs your help</h2>
-        <p><strong>Gym:</strong> ${safeGymName}</p>
-        <p><strong>Customer message:</strong></p>
-        <blockquote style="background:#f5f5f5;padding:12px;border-left:3px solid #FF6B35;">
-          ${safeMessage}
-        </blockquote>
-        <p>Our AI couldn't fully answer this question. Please reply at:</p>
-        <p><a href="https://scangym.com/owner/messages/${safeConvoId}" style="background:#FF6B35;color:white;padding:10px 20px;text-decoration:none;display:inline-block;">Reply to Customer</a></p>
-        <p style="color:#666;font-size:12px;">— ScanGym Team</p>
-      `,
-    });
-    return true;
-  } catch (err) {
-    console.error('Email send error:', err.message);
-    return false;
-  }
 }
 
 function buildGymContext(gym) {

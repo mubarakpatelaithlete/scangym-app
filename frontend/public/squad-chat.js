@@ -56,6 +56,7 @@
     toolLabels: {
       go_to_tab: 'Opening the tab',
       share_my_link: 'Opening share',
+      create_content: 'Creating',
       get_my_squad_profile: 'Checking your ScanSquad status',
       get_my_earnings: 'Checking your earnings',
       get_my_link_performance: 'Looking at what converts',

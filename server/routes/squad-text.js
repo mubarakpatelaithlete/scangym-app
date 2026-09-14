@@ -89,6 +89,31 @@ router.get('/health', (req, res) => {
 });
 
 // ─── POST /api/squad-text/generate ───
+/**
+ * Write one post. Shared by the sheet's /generate and the ScanSquad voice tool
+ * (lib/squad-tools.js create_content), so "write me a punchy caption" by voice is
+ * the same writer, same brief, same guard-rails as the Text button.
+ * @returns {{ text, provider, tone, length }}  throws on provider failure
+ */
+async function writePost(body) {
+  const { tone, length, prompt } = clean(body);
+  if (!prompt) throw Object.assign(new Error('Describe the post first.'), { status: 400 });
+  if (!llm.configured()) throw Object.assign(new Error('Text is not switched on yet.'), { status: 503 });
+  const { stream, provider } = await llm.streamChat('SquadText', {
+    stream: false,
+    temperature: 0.9,
+    max_tokens: 400,
+    messages: [
+      { role: 'system', content: systemPrompt({ tone, length }) },
+      { role: 'user', content: prompt },
+    ],
+  });
+  const text = (stream.choices?.[0]?.message?.content || '').trim();
+  if (!text) throw Object.assign(new Error('Nothing came back — try again.'), { status: 502 });
+  console.log(`[SquadText] ${provider} wrote ${text.length} chars (${tone}/${length})`);
+  return { text, provider, tone, length };
+}
+
 router.post('/generate', textLimiter, optionalAuth, express.json(), async (req, res) => {
   const { tone, length, prompt } = clean(req.body);
   if (!prompt) return res.status(400).json({ error: 'Describe the post first.' });
@@ -128,3 +153,4 @@ router.get('/history', (req, res) => res.json({ items: [] }));
 
 module.exports = router;
 module.exports._internals = { clean, systemPrompt, TONES, LENGTHS, MAX_PROMPT };
+module.exports.writePost = writePost;

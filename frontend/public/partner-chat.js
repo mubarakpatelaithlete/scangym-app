@@ -49,6 +49,8 @@
       share_my_link: 'Opening share',
       get_gym_reviews: 'Reading your reviews',
       reply_to_review: 'Posting your reply',
+      get_customer_messages: 'Reading customer messages',
+      reply_to_customer: 'Sending your reply',
       get_my_gym: 'Checking your gym',
       get_earnings: 'Checking your earnings',
       get_bookings: 'Looking up bookings',
@@ -66,6 +68,8 @@
     // The owner must see the number before saying yes.
     confirmSummary: function (tool, args) {
       switch (tool) {
+        case 'reply_to_customer':
+          return 'Send the customer "' + String(args.reply || '').slice(0, 140) + '"?';
         case 'reply_to_review':
           return 'Reply publicly with "' + String(args.reply || '').slice(0, 140) + '"?';
         case 'set_day_price':

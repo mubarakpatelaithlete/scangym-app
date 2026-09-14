@@ -120,6 +120,8 @@ async function confirmLine(tool, args = {}, userId = null, deps = {}) {
   try {
     if (tool === 'leave_review') return await reviewLine(args, deps);
     if (tool === 'reply_to_review') return `Reply publicly with "${String(args.reply || '').trim().slice(0, 140)}"?`;
+    if (tool === 'reply_to_customer') return `Send the customer "${String(args.reply || '').trim().slice(0, 140)}"?`;
+    if (tool === 'message_gym') return `Send the gym "${String(args.message || '').trim().slice(0, 140)}"?`;
     if (tool === 'book_gym' || tool === 'book_and_pay') return await bookingLine(tool, args, deps);
     if (tool === 'cancel_booking') return await cancelLine(args, userId, deps);
     return null;

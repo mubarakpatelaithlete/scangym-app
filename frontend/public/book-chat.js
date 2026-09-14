@@ -58,6 +58,14 @@
       leave_review: 'Posting your review',
       get_gym_photos: 'Finding photos',
       add_photo: 'Opening the photo picker',
+      message_gym: 'Sending to the gym',
+      read_gym_replies: 'Checking for replies',
+      ask_coach: 'Asking your coach',
+      log_workout: 'Logging your workout',
+      play_music: 'Music',
+      save_track: 'Saving the track',
+      get_my_playlists: 'Finding your playlists',
+      start_verification: 'Opening the ID check',
       send_login_link: 'Texting you a sign-in link',
       send_login_code: 'Texting you a code',
       confirm_login_code: 'Signing you in',
@@ -78,6 +86,7 @@
       // chat-agent.js calls this with (tool, args) only — there is no page context
       // to name the gym from, so the model's own sentence above carries the detail.
       if (tool === 'cancel_booking') return 'Cancel that booking and refund it?';
+      if (tool === 'message_gym') return 'Send the gym "' + String(args.message || '').slice(0, 140) + '"?';
       if (tool === 'leave_review') return 'Post your ' + args.rating + '-star review? It\'s public.';
       if (tool !== 'book_gym') return null;
 
