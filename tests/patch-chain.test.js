@@ -2,7 +2,7 @@
  * The patch chain must stay consistent between index.html and the build.
  *
  * index.html loads a run of deferred scripts. Seven are the historical "patch pile"
- * (app-patches, app-patches-v3, continue-cta-flow, tabs-v4, round2, sg-rail-ui,
+ * (app-patches, continue-cta-flow, sg-rail-ui,
  * phase2-improvements) — each monkey-patches the app after it boots, so their
  * execution order is load-bearing: a patch that runs before the thing it
  * patches silently does nothing.

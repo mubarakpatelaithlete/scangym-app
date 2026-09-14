@@ -35,8 +35,6 @@ const ROUTES = path.join(ROOT, 'server', 'routes');
 
 const PATCHES = [
   'app-patches.js',
-  'app-patches-v3.js',
-  'round2.js',
   'sg-rail-ui.js',
   'batch2.js',
   'batch3.js',
@@ -60,7 +58,8 @@ const allRoutes = routerSources.join('\n');
 const serverJs = fs.readFileSync(path.join(ROOT, 'server', 'server.js'), 'utf8');
 
 test('the dead owner quick-controls patch stays deleted', () => {
-  const src = code('app-patches-v3.js');
+  // app-patches-v3.js was merged into sg-rail-ui.js (uspStrip module); the dead code must not return there either.
+  const src = code('sg-rail-ui.js');
   for (const gone of [
     'addOwnerControls',
     'sgOwnerQuickToggle',

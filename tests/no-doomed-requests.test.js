@@ -70,7 +70,7 @@ test('the server genuinely has no live-visitors route (the call was never going 
 });
 
 test('the 30-second polling interval is gone', () => {
-  assert.doesNotMatch(read('app-patches-v3.js'), /setInterval\(\s*f\s*,\s*30000\s*\)/);
+  assert.doesNotMatch(read('sg-rail-ui.js'), /setInterval\(\s*f\s*,\s*30000\s*\)/);
 });
 
 // ─── 2. the session hint ─────────────────────────────────────────────────────
