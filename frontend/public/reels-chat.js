@@ -71,6 +71,12 @@
     toolLabels: {
       go_to_tab: 'Opening the tab',
       share_my_link: 'Opening share',
+      get_schedule: 'Checking opening days',
+      get_facilities: 'Checking facilities',
+      get_reviews: 'Reading reviews',
+      leave_review: 'Posting your review',
+      get_gym_photos: 'Finding photos',
+      add_photo: 'Opening the photo picker',
       find_gyms: 'Finding that gym',
       save_gym: 'Saving it to your list',
       get_saved_gyms: 'Opening your saved list',

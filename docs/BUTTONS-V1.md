@@ -53,11 +53,11 @@ Source: Trello 🧠 ScanGym memory board, list "Buttons" (89 cards). Generated b
 | 43 | Save clickable button | ✅ | account: `save_gym`, `get_saved_gyms` | app-patches.js ui-polish.js |
 | 44 | Search clickable button | ✅ | book: `find_gyms` / partner: `search_gyms` | app-patches.js ui-polish.js |
 | 45 | Nearme  clickable button | ✅ | book: `find_gyms` (uses device location) | ui-polish.js |
-| 46 | Calendar clickable button | 🔧 | `get_schedule(range)` — `today_and_tomorrow` covers 2 days only | app-patches.js ui-polish.js |
+| 46 | Calendar clickable button | ✅ | batch 2 (2026-09-14): `get_schedule(gymId, days)` — hours + closures + dated weekdays (replaces the picker) | app-patches.js ui-polish.js |
 | 47 | Passes clickable button | ✅ | account: `get_my_pass`, `get_my_wallet` | app-patches.js tabs-v4.js |
 | 48 | Payment clickable button | ✅ | book: `book_and_pay` / partner: `connect_payout_method`, `request_payout` | app-patches.js round5-ui.js |
 | 49 | Open close clickable button | ✅ | partner: `set_bookings_open` | batch2.js round5-ui.js |
-| 50 | Reviews clickable button | 🔧 | `get_reviews`, `leave_review`, `reply_to_review` — routes exist in reviews.js, no tool | batch2.js batch3.js |
+| 50 | Reviews clickable button | ✅ | batch 2 (2026-09-14): `get_reviews`, `leave_review` (confirmed), owner `get_gym_reviews` + `reply_to_review` (scoped in the UPDATE) | batch2.js batch3.js |
 | 51 | Talk clickable button | ✅ | This *is* the voice button (talk-bar) | — |
 | 52 | Verify clickable button | 🔧 | `start_verification` — only read-side `get_my_verification` exists; Stripe Identity flow in batch3 | batch3.js batch4.js |
 | 53 | Locks clickable button | ✅ | partner: `connect_smart_lock` | ux-v5-improvements.js batch4.js |
@@ -65,10 +65,10 @@ Source: Trello 🧠 ScanGym memory board, list "Buttons" (89 cards). Generated b
 | 55 | Earnings clickable button | ✅ | partner: `get_earnings` / squad: `get_my_earnings` | app-patches.js batch2.js |
 | 56 | Pricing clickable button | ✅ | partner: `set_day_price` | app-patches.js |
 | 57 | Hours clickable button | ✅ | partner: `set_hours_override` | app-patches.js batch2.js |
-| 58 | Facilities clickable button | 🔧 | `get_facilities(gym)` — amenities.js routes exist, no tool | — |
+| 58 | Facilities clickable button | ✅ | batch 2 (2026-09-14): `get_facilities(gymId)` from gym_amenities | — |
 | 59 | Bookings clickable button | ✅ | book: `get_my_bookings` / partner: `get_bookings` | app-patches.js batch2.js |
 | 60 | Music clickable button🕘 | 🔧 | `play_playlist` / `save_playlist` — playlists.js routes exist, no tool | round3.js ui-polish.js |
-| 61 | Photos clickable button🕘 | 🔧 | `get_gym_photos` / `add_photo` — review-media routes exist, no tool | round3.js ui-polish.js |
+| 61 | Photos clickable button🕘 | ✅ | batch 2 (2026-09-14): `get_gym_photos` → opens the gym on screen; `add_photo` → opens the review form's picker (a file can't be spoken) | round3.js ui-polish.js |
 | 62 | Messages clickable button🕘 | 🔧 | `send_message` / `read_messages` — chat.js routes exist, no tool | phase2-improvements.js round5-ui.js |
 | 63 | AI coach clickable button🕘 | 🔧 | `ask_coach` — coach.js routes exist, no tool | round5-ui.js |
 | 64 | Create text clickable button | 🔧 | one `create_content(mode)` tool over squad-create modes (text/image/audio/music/video/edit/twin) | continue-cta-flow.js round4-ui.js |
@@ -101,7 +101,7 @@ Source: Trello 🧠 ScanGym memory board, list "Buttons" (89 cards). Generated b
 ## Phase 2 batches (🔧 only, ~5 per PR)
 
 1. **Navigation + share** ✅ PR batch 1: `go_to_tab`, `share_my_link` (mechanism: `server/lib/screen-tools.js` + `SGScreen` in chat-agent.js). `get_schedule`, `get_facilities` → moved to batch 2.
-2. **Social**: `get_schedule`, `get_facilities`, `get_reviews`, `leave_review`, `reply_to_review`, `get_gym_photos`, `add_photo`
+2. **Social** ✅ PR batch 2 (`server/lib/social-tools.js`): `get_schedule`, `get_facilities`, `get_reviews`, `leave_review`, `reply_to_review`, `get_gym_photos`, `add_photo`
 3. **Comms + coach**: `send_message`, `read_messages`, `ask_coach`, `play_playlist`, `save_playlist`
 4. **Create**: `create_content(mode)` covering text/image/audio/music/video/edit/twin
 5. **Identity**: `start_verification`, phone `send_login_code`

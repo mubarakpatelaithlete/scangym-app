@@ -102,10 +102,10 @@ test('each agent route forwards a tool result\'s ui on the done event', () => {
   }
 });
 
-test('chat-agent.js performs only the two screen actions, via the functions the buttons use', () => {
+test('chat-agent.js performs only the listed screen actions, via the functions the buttons use', () => {
   const src = read('chat-agent.js');
   assert.ok(src.includes('var SGScreen = (function () {'));
-  assert.match(src, /var ACTIONS = \{ go_to_tab: goToTab, share: share \};/, 'closed vocabulary');
+  assert.match(src, /var ACTIONS = \{ go_to_tab: goToTab, share: share, open_gym: openGym, open_write_review: openWriteReview \};/, 'closed vocabulary');
   assert.ok(src.includes('window.switchTab(ui.tab)'), 'tabs move through switchTab, same as the tab bar');
   assert.ok(src.includes("window._sgShareAffiliate(handle"), 'share goes through the Share button\'s own function');
   assert.ok(src.includes("url.indexOf('https://scangym.com/') !== 0) return false"), 'only our own link is ever shared');

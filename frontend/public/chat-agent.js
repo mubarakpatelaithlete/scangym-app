@@ -63,8 +63,8 @@
  *
  * A screen tool (server/lib/screen-tools.js) does not act on the server; it returns a
  * small `ui` object that rides on the `tool` SSE event, and this performs it. The
- * vocabulary is closed on purpose: two actions, each calling the one function the
- * button itself calls (switchTab for the tab bar, _sgShareAffiliate for Share). A tool
+ * vocabulary is closed on purpose: a handful of actions, each calling the one function the
+ * button itself calls (switchTab, _sgShareAffiliate, openGym, openWriteReviewModal). A tool
  * result can never name a function to run — only pick one of these.
  */
 var SGScreen = (function () {
@@ -93,7 +93,20 @@ var SGScreen = (function () {
     return true;
   }
 
-  var ACTIONS = { go_to_tab: goToTab, share: share };
+  function openGym(ui) {
+    var id = parseInt(ui.gymId, 10);
+    if (!(id > 0) || typeof window.openGym !== 'function') return false;
+    window.openGym(id);
+    return true;
+  }
+
+  function openWriteReview() {
+    if (typeof window.openWriteReviewModal !== 'function') return false;
+    window.openWriteReviewModal(); // has the camera / photo picker; a file cannot be spoken
+    return true;
+  }
+
+  var ACTIONS = { go_to_tab: goToTab, share: share, open_gym: openGym, open_write_review: openWriteReview };
 
   /** Perform a `ui` instruction from a tool result. Unknown actions are ignored. */
   function perform(ui) {

@@ -52,6 +52,12 @@
     toolLabels: {
       go_to_tab: 'Opening the tab',
       share_my_link: 'Opening share',
+      get_schedule: 'Checking opening days',
+      get_facilities: 'Checking facilities',
+      get_reviews: 'Reading reviews',
+      leave_review: 'Posting your review',
+      get_gym_photos: 'Finding photos',
+      add_photo: 'Opening the photo picker',
       send_login_link: 'Texting you a sign-in link',
       send_login_code: 'Texting you a code',
       confirm_login_code: 'Signing you in',
@@ -72,6 +78,7 @@
       // chat-agent.js calls this with (tool, args) only — there is no page context
       // to name the gym from, so the model's own sentence above carries the detail.
       if (tool === 'cancel_booking') return 'Cancel that booking and refund it?';
+      if (tool === 'leave_review') return 'Post your ' + args.rating + '-star review? It\'s public.';
       if (tool !== 'book_gym') return null;
 
       var gymName = (ctx && ctx.lastGymName) || 'this gym';
