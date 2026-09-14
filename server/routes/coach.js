@@ -9,8 +9,11 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../middleware/db');
 const { authenticateUser } = require('../middleware/auth');
-const OpenAI = require('openai');
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// Deliberately no `new OpenAI(...)` here. Constructing a client at require time threw
+// when OPENAI_API_KEY was unset, which took the entire server down — the coach is one
+// feature, not a boot requirement. lib/llm.js owns provider choice and failover, so the
+// coach answers from Groq (or whatever is configured) when OpenAI is absent or dead.
+const llm = require('../lib/llm');
 const { buildCoachSystemPrompt } = require('../lib/coach-core');
 
 
@@ -114,8 +117,7 @@ router.post('/message', authenticateUser, requireCheckedIn, async (req, res) => 
       ...history.map(h => ({ role: h.role, content: h.content })),
     ];
 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+    const { completion } = await llm.chat('Coach', {
       messages,
       max_tokens: 500,
       temperature: 0.7,
@@ -135,7 +137,7 @@ router.post('/message', authenticateUser, requireCheckedIn, async (req, res) => 
     });
   } catch (err) {
     console.error('Coach message error:', err);
-    if (err.status === 401 || err.code === 'invalid_api_key') {
+    if (err.message === 'no_provider' || err.status === 401 || err.code === 'invalid_api_key') {
       return res.status(503).json({ error: 'AI service temporarily unavailable' });
     }
     res.status(500).json({ error: 'Failed to get coach response' });

@@ -175,6 +175,52 @@ async function streamChat(tag, params) {
 }
 
 /**
+ * One-shot completion, same failover as streamChat.
+ *
+ * The AI coach used to construct its own `new OpenAI(...)` at require time, which made the
+ * whole server refuse to boot when OPENAI_API_KEY was absent, and made the coach the only
+ * feature with no fallback when the key was merely dead. Same queue, same benching, same
+ * model-repointing as the streaming path — just without the stream.
+ *
+ * @param {string} tag  log prefix, e.g. 'Coach'
+ * @param {object} params  chat.completions.create params (model is filled in)
+ * @returns {Promise<{completion: object, provider: string}>}
+ */
+async function chat(tag, params) {
+  let lastErr = null;
+  const usable = providers.filter((p) => !isBenched(p.label));
+  const queue = usable.length ? usable : providers;
+
+  for (const p of queue) {
+    try {
+      const completion = await p.client.chat.completions.create({ ...params, model: p.model });
+      benched.delete(p.label);
+      if (lastErr) console.warn(`[${tag}] falling back to ${p.label} (${p.model})`);
+      return { completion, provider: p.label };
+    } catch (err) {
+      if (isMissingModel(err)) {
+        try {
+          if (await repointToLiveModel(tag, p)) {
+            const completion = await p.client.chat.completions.create({ ...params, model: p.model });
+            benched.delete(p.label);
+            return { completion, provider: p.label };
+          }
+        } catch (retryErr) {
+          err = retryErr;
+        }
+      }
+      lastErr = err;
+      if ([401, 403, 429].includes(err.status)) benched.set(p.label, Date.now() + COOLDOWN_MS);
+      console.error(`[${tag}] provider ${p.label} unavailable: ${err.status || ''} ${err.message}`);
+    }
+  }
+
+  const err = new Error('no_provider');
+  err.cause = lastErr;
+  throw err;
+}
+
+/**
  * Provider errors quote the key back at you, partially masked. /agent/health is public, so
  * even a masked key does not belong in its response body.
  */
@@ -217,4 +263,4 @@ async function health() {
   return out;
 }
 
-module.exports = { streamChat, configured, providers, health, bench, isBenched, _internals: { repointToLiveModel, isMissingModel, scrub, PREFERRED, UNUSABLE, benched } };
+module.exports = { streamChat, chat, configured, providers, health, bench, isBenched, _internals: { repointToLiveModel, isMissingModel, scrub, PREFERRED, UNUSABLE, benched } };
