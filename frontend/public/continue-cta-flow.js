@@ -657,39 +657,20 @@ window._injectContinueBanner=_injectContinueBanner;
 // PATCH: Hook into tab navigation to inject/remove banners
 // ══════════════════════════════════════════════════════════════════════
 
-/* This waits for the app bundle to have defined the globals it patches.
- *
- * It used to also require CreatorFullPage, which was never used below — it was
- * only ever a second "has the app booted yet" proxy. CreatorFullPage now lives
- * in the lazy sg-scansquad chunk, so on a visitor who never opens ScanSquad
- * that condition would never come true: this interval would poll every 200ms
- * for the whole session and the Partner tab's Continue banner would never be
- * wired up. Only check what this block actually touches. */
-var _patchInterval=setInterval(function(){
-  if(typeof PartnerFullPage==='function'&&typeof window._showPartnerScreen==='function'){
-    clearInterval(_patchInterval);
-
-    // Patch _showPartnerScreen to refresh banner
-    var _origShowPartnerScreen=window._showPartnerScreen;
-    window._showPartnerScreen=function(idx){
-      _origShowPartnerScreen(idx);
-      _injectContinueBanner('partner');
-    };
-
-    // Listen for route switches to inject/remove partner banner
-    // Note: /partner maps to activeTab='more', so check route
-    var _lastRoute='';
-    setInterval(function(){
-      var route=state&&state.route;
-      var isPartner=(route==='/partner'||route==='/partner/');
-      if(route!==_lastRoute){
-        _lastRoute=route;
-        if(isPartner)_injectContinueBanner('partner');
-        else _removeContinueBanner('partner');
-      }
-    },300);
-  }
-},200);
+/* The app bundle defines PartnerFullPage and window._showPartnerScreen at top level
+ * and index.html loads it before this file (both `defer`, document order), so the
+ * globals exist by the time this runs — no need to poll for them. This used to be a
+ * 200ms setInterval, plus a 300ms one that watched state.route for the Partner tab;
+ * the route watcher now runs from sg-rail-ui.js's single shared tick
+ * (partnerContinueBanner), which already drives the Creator-tab banner. */
+if(typeof window._showPartnerScreen==='function'){
+  var _origShowPartnerScreen=window._showPartnerScreen;
+  window._showPartnerScreen=function(idx){
+    _origShowPartnerScreen(idx);
+    _injectContinueBanner('partner');
+  };
+}
+window._removeContinueBanner=_removeContinueBanner;
 
 // Banner animation styles
 var _bannerStyle=document.createElement('style');

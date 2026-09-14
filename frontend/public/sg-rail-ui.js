@@ -506,6 +506,19 @@ function squadContinueBar(){
   else if(window.sgBottomBar.owner()==='creator')window.sgBottomBar.hide('creator');
 }
 
+/* Partner tab: moved here from continue-cta-flow.js, which used to poll state.route
+   every 300ms on its own timer. Same logic: inject on entering /partner, remove on
+   leaving. (/partner maps to activeTab='more', so the route is what to check.) */
+var _lastPartnerRoute='';
+function partnerContinueBanner(){
+  if(typeof window._injectContinueBanner!=='function'||typeof window._removeContinueBanner!=='function')return;
+  var r=route();
+  if(r===_lastPartnerRoute)return;
+  _lastPartnerRoute=r;
+  if(onPartner())window._injectContinueBanner('partner');
+  else window._removeContinueBanner('partner');
+}
+
 /* ════════════════════════════════════════════════════════════════════
    6) WITHDRAW FLOW FIXES
    ════════════════════════════════════════════════════════════════════ */
@@ -535,6 +548,7 @@ function hydratePayoutMethod(){
    ════════════════════════════════════════════════════════════════════ */
 function tick(){
   try{squadContinueBar();}catch(e){}
+  try{partnerContinueBanner();}catch(e){}
   try{hydratePayoutMethod();}catch(e){}
   try{fixPartnerBranding();fixSquadBranding();fixSquadColors();fixSquadShare();}catch(e){}
 }

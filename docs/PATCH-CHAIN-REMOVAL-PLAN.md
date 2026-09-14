@@ -53,7 +53,7 @@ re-applying them on an interval, and almost none call `clearInterval`:
 | File | Intervals (ms) | Cleared? |
 |---|---|---|
 | `ux-v5-improvements.js` | 300, 300, 3000, 300, 3000, 1000, 200, 1500, 300, 1000 | partly (12 clears) |
-| `continue-cta-flow.js` | 200, 300 | 1 |
+| `continue-cta-flow.js` | ~~200, 300~~ → 0 (partner route watcher moved to the sg-rail-ui tick, 2026-09-14) | — |
 | `tabs-v4.js` | 700, 600, 600, 400 | **no** |
 | `round2.js` | 400, 1000, 700 | **no** |
 | `batch2.js` | 800, 700, 900, 900 | **no** |
