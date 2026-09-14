@@ -1,15 +1,19 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   sg-rail-ui.js — the right-rail / gym-card UI enhancers, in ONE file with ONE tick.
+   sg-rail-ui.js — the tab / rail / gym-card UI enhancers, in ONE file with ONE tick.
 
-   Merged 2026-09-14 from four patch files that each ran their own setInterval:
+   Merged 2026-09-14 (PR 2) from three more patch files, kept in load order:
+     app-patches-v3.js (once)          USP strip under the tab content
+     tabs-v4.js  (700/600/600/400ms)   rails→half sheets, Book prefetch, Squad brand, deep links, Profile CTA
+     round2.js   (400/1000/700ms)      Squad Ask-AI bar, payout-method hydrate, Squad/Partner branding
+   and earlier (PR 1) from four patch files that each ran their own setInterval:
      round3.js     (400ms)  Reels right rail: Music / Photos / Chat / Trainer
      ui-polish.js  (600ms)  Line icons on the rails, "More" collapse, card declutter
      round4-ui.js  (600ms)  Logo square removal, booking summary bar, Book-tap spinner
      round5-ui.js  (600ms)  Rail labels, duplicate-button merges, clearer labels
    Behaviour is unchanged; the code of each module is byte-for-byte the original
    body. Only the wrappers changed: each module now returns its tick() and the
-   shared scheduler below runs the four ticks together every 600ms instead of
-   four independent timers (~9 ticks/s → ~1.7 ticks/s).
+   shared scheduler below runs all ticks together every 600ms instead of
+   eleven independent timers (~20 ticks/s → ~1.7 ticks/s).
    Module order == the original load order, so CSS overrides still cascade the
    same way (round4 overrides ui-polish's "More" colour, etc.).
 
@@ -18,6 +22,526 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 (function(){
 'use strict';
+
+/* ─────────────── app-patches-v3.js ─────────────── */
+var uspStrip=(function(){
+'use strict';
+/**
+ * ScanGym App Patches v3 — USP strip.
+ *
+ * What is left of this file: the one-line trust strip under the tab bar
+ * ("No membership needed · Instant QR · Free cancel").
+ *
+ * What used to be here, and why it is gone:
+ *
+ *  - #62 live visitor counter: the poller called /api/stats/live-visitors, which
+ *    has never existed on the server. Removed earlier; the strip it lived in is
+ *    kept because the static copy is the part that was doing the work.
+ *
+ *  - #75/#76 AI Trainer tab: injected a DOM tab that bypassed SPA routing.
+ *    Replaced by the native TrainerTabPage in app.ctr576.js.
+ *
+ *  - #98/#99/#100 owner quick controls: injected a panel into
+ *    `#sg-owner-controls` / `[class*="owner-controls"]` and called
+ *    `PUT /api/gym-mgmt/:id/quick-toggle` and `/quick-price`. None of those four
+ *    things exist — not the element, not either route. So the panel could never
+ *    appear and the buttons could only ever 404. The cost of keeping it was not
+ *    zero: it ran a MutationObserver over document.body with subtree:true for
+ *    every visitor on every page, for the entire session, waiting for an element
+ *    that is never created. Deleted. tests/no-dead-patches.test.js keeps it out.
+ *    (If gym owners do want a quick open/closed + price control, the working
+ *    version already exists: the Partner tab toggle in batch2.js, which posts to
+ *    the real PATCH /api/gym-partner/toggle-active.)
+ */
+function injectStyle(id,css){if(document.getElementById(id))return;var s=document.createElement('style');s.id=id;s.textContent=css;document.head.appendChild(s);}
+
+function initUspStrip(){
+  injectStyle('sg-sps-s','#sg-sps{position:relative;z-index:100;background:rgba(255,109,0,.08);border-bottom:1px solid rgba(255,109,0,.15);padding:6px 16px;display:flex;align-items:center;gap:8px;font-size:11px;color:rgba(255,255,255,.7);font-weight:600}');
+  setTimeout(function(){var bc=document.querySelector('.sg-tab-content');if(!bc||document.getElementById('sg-sps'))return;var s=document.createElement('div');s.id='sg-sps';s.innerHTML='\u{1F525} <span id="sg-lvt">No membership needed</span> \u00b7 \u26A1 Instant QR \u00b7 \u2705 Free cancel';bc.insertBefore(s,bc.firstChild);},3000);
+}
+
+var _done=false;
+function tick(){if(_done)return;_done=true;initUspStrip();}
+return tick;
+})();
+
+/* ─────────────── tabs-v4.js ─────────────── */
+var tabsV4=(function(){
+'use strict';
+/**
+ * ScanGym Tabs Batch v4 — Trello board "1. Tabs" pending items
+ *
+ *  A) Right-side buttons → half-screen popup from bottom (Book / ScanSquad / Partner / Profile)
+ *     Same UX as Reels: tap a right-rail button, content slides up in a half sheet
+ *     instead of navigating away to a full page.
+ *  B) Book tab speed — boot-time nearby prefetch that seeds the sg_gc_* session cache,
+ *     so the first tap on Book renders instantly (cache-hit path in loadGyms).
+ *  C) ScanSquad tab branding — same top-left brand header style as Reels/Book/Partner.
+ *  D) Deep affiliate links — creators can link straight to a specific gym:
+ *     scangym.com/r/{handle}?gym={placeId} (landing auto-forwards to that gym).
+ *  E) Continue CTA orange button on the Profile tab (Partner already has one).
+ */
+
+function curRoute(){
+  // state is a top-level `let` in app.ctr576.js (not on window); the SPA keeps
+  // the URL in sync via history.pushState, so pathname is the reliable source.
+  try{if(typeof state!=='undefined'&&state&&state.route)return state.route;}catch(e){}
+  return location.pathname||'';
+}
+function curUser(){
+  try{if(typeof state!=='undefined'&&state)return state.user||null;}catch(e){}
+  return null;
+}
+
+function injectStyle(id,css){
+  if(document.getElementById(id))return;
+  var s=document.createElement('style');s.id=id;s.textContent=css;document.head.appendChild(s);
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   A1) SHEET-EMBED MODE — when a page is loaded inside the half sheet
+       (?sg_sheet=1) hide app chrome: tab bar, banners, right rails.
+   ════════════════════════════════════════════════════════════════════ */
+var IS_SHEET_EMBED=false;
+try{IS_SHEET_EMBED=new URLSearchParams(location.search).get('sg_sheet')==='1';}catch(e){}
+if(IS_SHEET_EMBED){
+  document.documentElement.classList.add('sg-sheet-embed');
+  injectStyle('sg-sheet-embed-style',
+    '.sg-sheet-embed .sg-tab-bar,'+
+    '.sg-sheet-embed #sg-continue-banner,'+
+    '.sg-sheet-embed #sg-sps,'+
+    '.sg-sheet-embed #sg-reels-persistent{display:none!important}'+
+    '.sg-sheet-embed .sg-tab-content{bottom:0!important}'+
+    '.sg-sheet-embed .sg-dashboard{bottom:0!important}'
+  );
+  // Links opened from inside the sheet that leave the SPA should escape the iframe
+  document.addEventListener('click',function(e){
+    var a=e.target.closest('a[target="_blank"]');
+    if(a)a.setAttribute('rel','noopener');
+  },true);
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   A2) HALF-SCREEN PAGE SHEET — generic "open any route as a bottom
+       popup" using the existing _sgOpenSheet system.
+   ════════════════════════════════════════════════════════════════════ */
+window._sgOpenPageSheet=function(path,title){
+  if(typeof window._sgOpenSheet!=='function'){ // fallback: old behaviour
+    if(typeof navigate==='function')navigate(path);
+    return;
+  }
+  var sep=path.indexOf('?')>=0?'&':'?';
+  var src=path+sep+'sg_sheet=1';
+  var html=''
+    +(title?'<p style="color:#fff;font-size:16px;font-weight:800;margin:0 0 8px 2px">'+title+'</p>':'')
+    +'<div style="margin:0 -8px">'
+    +'<iframe title="ScanGym content" src="'+src+'" style="display:block;width:100%;height:52vh;border:none;border-radius:14px;background:#0a0a16"></iframe>'
+    +'</div>'
+    +'<div onclick="_sgCloseSheet(\'sg-page-sheet\');navigate(\''+path+'\')" style="text-align:center;color:rgba(255,255,255,.45);font-size:12px;font-weight:600;padding:10px 0 2px;cursor:pointer">Open full page ↗</div>';
+  window._sgOpenSheet('sg-page-sheet',html);
+};
+
+/* ════════════════════════════════════════════════════════════════════
+   A3) REWIRE RIGHT-SIDE RAIL BUTTONS on Book / ScanSquad / Partner /
+       Profile tabs: navigate('/x') → half-screen popup from bottom.
+       Rails are the vertical TikTok-style button columns pinned to the
+       right edge (style contains right:<n>px + flex-direction:column).
+   ════════════════════════════════════════════════════════════════════ */
+var RAIL_TAB_ROUTES=['/more','/partner','/creator','/explore']; // Profile, Partner, ScanSquad, Book
+function _inRail(el){
+  var p=el.parentElement;
+  if(!p)return false;
+  var st=p.getAttribute('style')||'';
+  return /right:\s*(6|8|10|12|14|16)px/.test(st)&&/flex-direction:\s*column/.test(st);
+}
+function rewireRails(){
+  if(IS_SHEET_EMBED)return; // never nest sheets inside sheets
+  var route=curRoute();
+  var tabOk=RAIL_TAB_ROUTES.some(function(r){return route===r||route.indexOf(r)===0;});
+  // Profile tab can sit on a remembered sub-route (state._lastMoreRoute), so
+  // also trust the active tab itself.
+  try{if(!tabOk&&typeof state!=='undefined'&&state&&['more','partner','creator','book'].indexOf(state.activeTab)>=0)tabOk=true;}catch(e){}
+  if(!tabOk&&route!=='/creator/')return;
+  var els=document.querySelectorAll('div[onclick]');
+  for(var i=0;i<els.length;i++){
+    var el=els[i];
+    if(el.__sgSheetWired)continue;
+    var oc=el.getAttribute('onclick')||'';
+    var m=oc.match(/^\s*navigate\('([^']+)'\)\s*$/);
+    if(!m)continue;
+    if(!_inRail(el))continue;
+    var path=m[1];
+    var lbl='';
+    var sp=el.querySelector('span');
+    if(sp)lbl=(sp.textContent||'').replace(/'/g,'');
+    el.__sgSheetWired=true;
+    el.setAttribute('onclick','_sgOpenPageSheet(\''+path+'\',\''+lbl+'\')');
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   B) BOOK TAB SPEED — prefetch nearby gyms at boot idle, seed the
+      sg_gc_* sessionStorage cache used by loadGyms (Perf #120 path).
+      First tap on Book then renders instantly from cache while a
+      background refresh keeps data current.
+   ════════════════════════════════════════════════════════════════════ */
+function prefetchNearby(){
+  if(IS_SHEET_EMBED)return;
+  try{
+    var lat=null,lng=null;
+    var raw=localStorage.getItem('sg_gps')||localStorage.getItem('sg_location_cache');
+    if(raw){var d=JSON.parse(raw);lat=d.lat;lng=d.lng;}
+    if(typeof lat!=='number'||typeof lng!=='number')return;
+    var k='sg_gc_'+Math.round(lat*1000)+','+Math.round(lng*1000);
+    var ex=sessionStorage.getItem(k);
+    if(ex){try{var p=JSON.parse(ex);if(Date.now()-p.t<600000)return;}catch(e){}}
+    fetch('/api/live/nearby?lat='+lat+'&lng='+lng+'&radius=10000')
+      .then(function(r){return r.json();})
+      .then(function(data){
+        if(data&&data.gyms&&data.gyms.length){
+          try{sessionStorage.setItem(k,JSON.stringify({g:data.gyms,t:Date.now()}));}catch(e){}
+          console.log('[TabsV4] Book prefetch: '+data.gyms.length+' gyms cached');
+        }
+      }).catch(function(){});
+  }catch(e){}
+}
+function idle(fn,t){('requestIdleCallback' in window)?requestIdleCallback(fn,{timeout:t||4000}):setTimeout(fn,t||2500);}
+
+/* ════════════════════════════════════════════════════════════════════
+   C) SCANSQUAD TAB BRANDING — top-left brand header, identical layout
+      to the Partner tab header (which mirrors Reels/Book), in ScanGym
+      orange with the ScanSquad identity.
+   ════════════════════════════════════════════════════════════════════ */
+function injectSquadBranding(){
+  if(IS_SHEET_EMBED)return;
+  var route=curRoute();
+  if(route!=='/creator'&&route!=='/creator/'){
+    var old=document.getElementById('sg-squad-brand');
+    if(old)old.remove();
+    return;
+  }
+  if(document.getElementById('sg-squad-brand'))return;
+  // Insert in-flow at the top of the first creator screen (above the greeting)
+  var host=document.querySelector('.creator-screen');
+  if(!host)return;
+  var b=document.createElement('div');
+  b.id='sg-squad-brand';
+  b.style.cssText='display:flex;align-items:center;gap:8px;margin:0 0 12px;flex-shrink:0';
+  b.innerHTML=''
+    +'<div style="width:28px;height:28px;border-radius:50%;background:#FF6D00;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#fff;flex-shrink:0">S</div>'
+    +'<div>'
+    +'<span style="font-size:15px;font-weight:800;color:#fff;letter-spacing:-.3px">ScanSquad</span>'
+    +'<p style="color:rgba(255,255,255,.4);font-size:10px;margin:0">Share gyms \u00b7 Earn 25% commission</p>'
+    +'</div>';
+  host.insertBefore(b,host.firstChild);
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   D) DEEP AFFILIATE LINKS — share a specific gym, not just the homepage.
+      D1: on scangym.com/r/{handle}?gym={placeId}, auto-forward to that
+          gym after the referral is captured (booking page in 1 tap).
+      D2: the creator affiliate sheet gets a "Link a specific gym"
+          search — picking a gym builds the deep link + copies it.
+   ════════════════════════════════════════════════════════════════════ */
+// D1: deep-link receiver
+(function(){
+  try{
+    var params=new URLSearchParams(location.search);
+    var gym=params.get('gym');
+    if(gym&&location.pathname.indexOf('/r/')===0){
+      setTimeout(function(){
+        if(typeof navigate==='function')navigate('/gym/'+gym);
+      },900);
+    }
+  }catch(e){}
+})();
+
+// D2: extend the affiliate sheet with a gym search
+var _deepLinkTimer=null;
+window._sgDeepLinkSearch=function(q,handle){
+  clearTimeout(_deepLinkTimer);
+  var box=document.getElementById('sg-dl-results');
+  if(!box)return;
+  if(!q||q.length<2){box.innerHTML='';return;}
+  _deepLinkTimer=setTimeout(function(){
+    /* /api/gyms/search never existed on the server: it returned index.html, r.json()
+       threw and the .catch() below left this box blank forever. Use the live search. */
+    fetch('/api/live/search?q='+encodeURIComponent(q)+'&limit=5')
+      .then(function(r){
+        if(!r.ok)throw new Error('search failed: '+r.status);
+        return r.json();
+      })
+      .then(function(d){
+        var list=(d&&(d.gyms||d.results)||[]).slice(0,5).map(function(g){
+          return {place_id:g.placeId||g.place_id||g.id,name:g.name,address:g.address||g.vicinity||g.formatted_address};
+        }).filter(function(g){return g.place_id;});
+        if(!list.length){box.innerHTML='<p style="color:rgba(255,255,255,.35);font-size:12px;padding:8px 2px">No gyms found</p>';return;}
+        box.innerHTML=list.map(function(g){
+          var name=(g.name||'Gym').replace(/'/g,'');
+          return '<div onclick="_sgCopyDeepLink(\''+g.place_id+'\',\''+handle+'\',\''+name+'\')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:12px;margin-top:6px;cursor:pointer">'
+            +'<span style="font-size:16px">\uD83C\uDFCB\uFE0F</span>'
+            +'<div style="flex:1;min-width:0"><p style="color:#fff;font-size:13px;font-weight:600;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+name+'</p>'
+            +'<p style="color:rgba(255,255,255,.3);font-size:10px;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(g.address||g.vicinity||'')+'</p></div>'
+            +'<span style="color:#FF6D00;font-size:11px;font-weight:700;flex-shrink:0">Copy link</span></div>';
+        }).join('');
+      }).catch(function(e){
+        console.error('[tabs-v4] deep-link gym search failed',e);
+        box.innerHTML='<p style="color:rgba(255,255,255,.45);font-size:12px;padding:8px 2px">Couldn\'t search right now — please try again.</p>';
+      });
+  },350);
+};
+window._sgCopyDeepLink=function(placeId,handle,name){
+  var link='https://scangym.com/r/'+handle+'?gym='+placeId;
+  var done=function(){
+    if(window.sgToast)sgToast('\uD83D\uDD17 Deep link for '+name+' copied!','success',2500);
+    var box=document.getElementById('sg-dl-results');
+    if(box)box.innerHTML='<div style="background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.25);border-radius:12px;padding:10px 12px;margin-top:6px"><p style="color:#22c55e;font-size:12px;font-weight:700;margin:0">\u2705 Copied — sends fans straight to '+name+'</p><p style="color:rgba(255,255,255,.4);font-size:11px;margin:4px 0 0;word-break:break-all">'+link+'</p></div>';
+  };
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(link).then(done).catch(done);}
+  else{try{var t=document.createElement('textarea');t.value=link;document.body.appendChild(t);t.select();document.execCommand('copy');t.remove();}catch(e){}done();}
+  if(navigator.share){try{navigator.share({title:'Train at '+name,text:'Book '+name+' on ScanGym — day passes, no membership',url:link}).catch(function(){});}catch(e){}}
+};
+function injectDeepLinkSection(){
+  var sheet=document.getElementById('sg-affiliate-sheet');
+  if(!sheet||document.getElementById('sg-dl-section'))return;
+  var handle='';
+  var m=(sheet.textContent||'').match(/scangym\.com\/r\/([a-z0-9_-]+)/i);
+  if(m)handle=m[1];
+  if(!handle)return;
+  var wrap=sheet.querySelector('div[style*="padding"]')||sheet;
+  var sec=document.createElement('div');
+  sec.id='sg-dl-section';
+  sec.innerHTML=''
+    +'<div style="border-top:1px solid rgba(255,255,255,.08);margin-top:14px;padding-top:14px">'
+    +'<p style="color:#fff;font-size:13px;font-weight:700;margin:0 0 2px">\uD83C\uDFAF Link a specific gym</p>'
+    +'<p style="color:rgba(255,255,255,.4);font-size:11px;margin:0 0 8px">Deep links convert better — fans land straight on the gym\u2019s booking page</p>'
+    +'<input id="sg-dl-input" placeholder="Search a gym to link\u2026" oninput="_sgDeepLinkSearch(this.value,\''+handle+'\')" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:11px 14px;color:#fff;font-size:14px;outline:none;box-sizing:border-box">'
+    +'<div id="sg-dl-results"></div>'
+    +'</div>';
+  wrap.appendChild(sec);
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   E) PROFILE TAB CONTINUE CTA — orange button above the tab bar,
+      same design language as the Partner tab continue banner.
+   ════════════════════════════════════════════════════════════════════ */
+window._profileContinueFlow=function(){
+  var u=curUser();
+  if(!u){
+    if(typeof window._sgShowAuthSheet==='function')window._sgShowAuthSheet('book');
+    else if(typeof navigate==='function')navigate('/login');
+    return;
+  }
+  if(typeof switchTab==='function')switchTab('book');
+};
+function injectProfileCTA(){
+  if(IS_SHEET_EMBED)return;
+  if(!window.sgBottomBar)return;
+  var route=curRoute();
+  var isProfile=(route==='/more'||route==='/more/'||route==='/more/profile');
+  try{if(!isProfile&&typeof state!=='undefined'&&state&&state.activeTab==='more')isProfile=true;}catch(e){}
+  /* ONE BAR: this used to append its own fixed #profile-continue-banner at
+   * bottom:56px;z-index:var(--sg-z-bottom-bar,8999) (a second orange bar, with its own body.sg-profile-cta
+   * spacing rule). It now borrows the single shared bar, which already reserves
+   * space via body.sg-cb-active. */
+  if(!isProfile){window.sgBottomBar.hide('profile');return;}
+  var u=curUser();
+  window.sgBottomBar.show('profile',{
+    label:u?'Book a Gym':'Continue',
+    sub:u?'Your QR pass is ready after booking':'Sign in to unlock your QR pass',
+    arrow:'\u2192',
+    onClick:function(){window._profileContinueFlow();}
+  });
+}
+
+/* ════════════════════════════════════════════════ boot ═══ */
+function init(){
+  idle(prefetchNearby,3000);
+  console.log('[TabsV4] rails\u2192sheets, book prefetch, squad branding, deep links, profile CTA'+(IS_SHEET_EMBED?' (sheet-embed mode)':''));
+}
+if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',init);}
+else{setTimeout(init,400);}
+function tick(){
+  try{rewireRails();}catch(e){}
+  try{injectSquadBranding();}catch(e){}
+  try{injectDeepLinkSection();}catch(e){}
+  try{injectProfileCTA();}catch(e){}
+}
+return tick;
+})();
+
+/* ─────────────── round2.js ─────────────── */
+var squadPartnerPolish=(function(){
+'use strict';
+/* ═══════════════════════════════════════════════════════════════════════════
+   ScanGym Round 2 — Tabs board polish (ScanSquad + Partner)
+   1) Partner branding — remove the stray orange circle that overlaps the
+      "Partner Dashboard" pill (the pill already carries the 🟠 brand mark).
+   2) ScanSquad branding — brand header styled as a proper pill (same look
+      as the Partner header) and kept clear of the temporary USP banner.
+   3) ScanSquad brand colours — the purple Copy/Share buttons become
+      ScanGym orange.
+   4) Share = deep affiliate link — the ScanSquad Share button shares the
+      creator's affiliate link via the native share sheet.
+   5) Continue CTA on ScanSquad — the orange full-width Continue bar
+      (like Reels/Book/Partner) is re-enabled on the /creator tab.
+   6) Withdraw flow fixes:
+      - "Add / Change Withdraw Method" buttons open the proper method sheet
+        (Stripe / PayPal / UK bank) instead of a broken Stripe-only call.
+      - Saved methods are persisted server-side (survives new devices).
+      - "Withdraw to Bank" works without Stripe Connect via a pending
+        payout request (bank transfer fallback), and creator withdrawals
+        send the right fields.
+      - 💸 rail button on ScanSquad opens the wallet sheet in place
+        instead of navigating away.
+   Purely additive patch file — loaded after app.ctr576.js + continue-cta-flow.js.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+function route(){return (window.state&&state.route)||location.pathname;}
+function onCreator(){var r=route();return r==='/creator'||r==='/creator/';}
+function onPartner(){var r=route();return r==='/partner'||r==='/partner/';}
+function creatorHandle(){
+  try{
+    var cd=JSON.parse(localStorage.getItem('sg_creator')||'null')||{};
+    if(cd.handle||cd.slug)return cd.handle||cd.slug;
+  }catch(e){}
+  var u=window.state&&state.user;
+  return (u&&u.referral_code)||'';
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   1) PARTNER BRANDING — remove the floating 28px orange circle that
+      overlaps the "Partner Dashboard" pill top-left.
+   ════════════════════════════════════════════════════════════════════ */
+function fixPartnerBranding(){
+  if(!onPartner())return;
+  /* Branding = just the orange circle top-left (same as Reels + Book).
+     Remove the "Partner Dashboard" pill that was hiding/duplicating it. */
+  document.querySelectorAll('span').forEach(function(sp){
+    if(sp.textContent==='Partner Dashboard'&&!sp.dataset.sgR2){
+      sp.dataset.sgR2='1';
+      var pill=sp.parentElement;
+      var topbar=pill&&pill.parentElement;
+      if(topbar)topbar.style.display='none';
+      else if(pill)pill.style.display='none';
+    }
+  });
+  /* the Book-tab social-proof strip (#sg-sps) doesn't belong on the
+     partner dashboard and stays stuck on "Loading..." there — hide it */
+  var sps=document.getElementById('sg-sps');
+  if(sps)sps.style.display='none';
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   2) SCANSQUAD BRANDING — restyle the injected brand header into the
+      same dark pill used on the Partner tab, and keep it visible when
+      the temporary USP banner is on screen.
+   ════════════════════════════════════════════════════════════════════ */
+function fixSquadBranding(){
+  if(!onCreator())return;
+  /* Branding = just the orange circle top-left, exactly like Reels + Book. */
+  var b=document.getElementById('sg-squad-brand');
+  if(b&&!b.dataset.sgR2){
+    b.dataset.sgR2='1';
+    b.style.cssText='margin:0 0 14px;padding:0;flex-shrink:0';
+    b.innerHTML='<div style="width:28px;height:28px;background:#FF6D00;border-radius:50%;opacity:.85;box-shadow:0 0 10px rgba(255,109,0,.5);display:flex;align-items:center;justify-content:center;font:900 15px/1 system-ui,-apple-system,sans-serif;color:#fff;">S</div>';
+  }
+  /* the Book-tab social-proof strip doesn't belong here either */
+  var sps=document.getElementById('sg-sps');
+  if(sps)sps.style.display='none';
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   3) SCANSQUAD ORANGE — purple (#a855f7) Copy / Share buttons become
+      ScanGym brand orange.
+   ════════════════════════════════════════════════════════════════════ */
+function fixSquadColors(){
+  if(!onCreator())return;
+  document.querySelectorAll('button').forEach(function(btn){
+    if(btn.dataset.sgR2Orange)return;
+    var s=btn.getAttribute('style')||'';
+    if(s.indexOf('#a855f7')>-1||s.indexOf('#7c3aed')>-1){
+      btn.dataset.sgR2Orange='1';
+      btn.style.background='linear-gradient(135deg,#FF6D00,#E66200)';
+      btn.style.boxShadow='0 2px 12px rgba(255,109,0,.3)';
+    }
+  });
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   4) SHARE = DEEP AFFILIATE LINK — the ScanSquad Share button shares
+      scangym.com/r/{handle} through the native share sheet.
+   ════════════════════════════════════════════════════════════════════ */
+function fixSquadShare(){
+  if(!onCreator())return;
+  document.querySelectorAll('button').forEach(function(btn){
+    if(btn.dataset.sgR2Share)return;
+    var txt=(btn.textContent||'').trim();
+    if(txt.indexOf('Share')===-1||txt.length>12)return;
+    var oc=btn.getAttribute('onclick')||'';
+    if(oc.indexOf('navigator.share')===-1&&oc.indexOf('Share')===-1&&oc.indexOf('share')===-1)return;
+    btn.dataset.sgR2Share='1';
+    btn.removeAttribute('onclick');
+    btn.addEventListener('click',function(ev){
+      ev.stopPropagation();
+      var h=creatorHandle();
+      if(h&&typeof window._sgShareAffiliate==='function'){window._sgShareAffiliate(h);}
+      else if(h){
+        var link='https://scangym.com/r/'+h;
+        if(navigator.share){navigator.share({title:'ScanGym',text:'Gym passes from \u00a34.49 \u2014 use my link:',url:link}).catch(function(){});}
+        else{navigator.clipboard.writeText(link);if(typeof sgToast==='function')sgToast('Affiliate link copied!','success',2000);}
+      }else if(typeof sgToast==='function'){sgToast('Sign in to get your affiliate link','info',2500);}
+    });
+  });
+}
+
+/* ONE BAR: the ScanSquad/creator tab used to re-inject its own #creator-continue-banner
+   here every 400ms, and a second timer restyled it (and #partner-continue-banner) to look
+   like the core bar. Both elements are gone: there is one shared bottom bar
+   (window.sgBottomBar, owned by app.js) which is already the slim full-width style.
+   The ScanSquad Ask AI bar itself is kept — it now renders into that shared bar. */
+function squadContinueBar(){
+  if(typeof window._injectContinueBanner!=='function'||!window.sgBottomBar)return;
+  if(onCreator())window._injectContinueBanner('creator');
+  else if(window.sgBottomBar.owner()==='creator')window.sgBottomBar.hide('creator');
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   6) WITHDRAW FLOW FIXES
+   ════════════════════════════════════════════════════════════════════ */
+
+/* Hydrate the saved payout method from the server on login (new-device
+   support). The withdraw UI itself lives only in wallet-withdraw.js. */
+var _hydrated=false;
+function hydratePayoutMethod(){
+  if(_hydrated||!(window.state&&state.user))return;
+  _hydrated=true;
+  fetch('/api/gym-partner/payout-method',{credentials:'include'})
+    .then(function(r){return r.ok?r.json():null;})
+    .then(function(d){
+      if(!d||!d.method)return;
+      try{
+        var cd=JSON.parse(localStorage.getItem('sg_creator')||'{}');
+        var pd=JSON.parse(localStorage.getItem('sg_partner')||'{}');
+        if(!cd.withdrawMethod){cd.withdrawMethod=d.method;localStorage.setItem('sg_creator',JSON.stringify(cd));}
+        if(!pd.withdrawMethod){pd.withdrawMethod=d.method;localStorage.setItem('sg_partner',JSON.stringify(pd));}
+      }catch(e){}
+    }).catch(function(){});
+}
+
+
+/* ════════════════════════════════════════════════════════════════════
+   Watchers
+   ════════════════════════════════════════════════════════════════════ */
+function tick(){
+  try{squadContinueBar();}catch(e){}
+  try{hydratePayoutMethod();}catch(e){}
+  try{fixPartnerBranding();fixSquadBranding();fixSquadColors();fixSquadShare();}catch(e){}
+}
+
+console.log('[Round2] ScanSquad + Partner polish loaded');
+return tick;
+})();
 
 
 /* ─────────────── round3.js ─────────────── */
@@ -447,7 +971,7 @@ return tick;
 })();
 
 /* ── shared scheduler ─────────────────────────────────────────────────────── */
-var ENHANCERS=[reelsRail,railIcons,bookSummary,buttonCleanup];
+var ENHANCERS=[uspStrip,tabsV4,squadPartnerPolish,reelsRail,railIcons,bookSummary,buttonCleanup];
 function tick(){
   for(var i=0;i<ENHANCERS.length;i++){try{ENHANCERS[i]();}catch(e){}}
 }

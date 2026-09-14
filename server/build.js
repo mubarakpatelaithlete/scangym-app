@@ -45,10 +45,7 @@ console.log('🔨 ScanGym Build: Optimizing static assets...\n');
 // silently dropping a patch.
 const PATCH_CHAIN = [
   'app-patches.js',
-  'app-patches-v3.js',
   'continue-cta-flow.js',
-  'tabs-v4.js',
-  'round2.js',
   'sg-rail-ui.js',
   'phase2-improvements.js',
 ];
