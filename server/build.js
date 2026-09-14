@@ -49,11 +49,8 @@ const PATCH_CHAIN = [
   'continue-cta-flow.js',
   'tabs-v4.js',
   'round2.js',
-  'round3.js',
-  'ui-polish.js',
+  'sg-rail-ui.js',
   'phase2-improvements.js',
-  'round4-ui.js',
-  'round5-ui.js',
 ];
 const PATCH_BUNDLE = 'sg-patches.js';
 
