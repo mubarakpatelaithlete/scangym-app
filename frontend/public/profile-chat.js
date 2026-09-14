@@ -52,6 +52,12 @@
     toolLabels: {
       go_to_tab: 'Opening the tab',
       share_my_link: 'Opening share',
+      get_schedule: 'Checking opening days',
+      get_facilities: 'Checking facilities',
+      get_reviews: 'Reading reviews',
+      leave_review: 'Posting your review',
+      get_gym_photos: 'Finding photos',
+      add_photo: 'Opening the photo picker',
       send_login_link: 'Texting you a sign-in link',
       send_login_code: 'Texting you a code',
       confirm_login_code: 'Signing you in',

@@ -30,6 +30,7 @@ function isoDate(offsetDays = 0) {
  */
 const accountTools = require('./account-tools');
 const screenTools = require('./screen-tools');
+const socialTools = require('./social-tools');
 function formatGymRow(g) {
   return {
     id: g.id,
@@ -93,6 +94,7 @@ async function liveSearchFallback(q, limit) {
 const tools = {
   ...accountTools.tools,
   ...screenTools.tools,
+  ...socialTools.tools,
 
   /* ---------- reads ---------- */
 
@@ -455,6 +457,7 @@ const isWrite = (name) => !!tools[name]?.write;
  */
 const PUBLIC_TOOLS = new Set([
   ...screenTools.PUBLIC_SCREEN_TOOLS,
+  ...socialTools.PUBLIC_SOCIAL_TOOLS,
   'find_gyms',
   'get_gym',
   'today_and_tomorrow',

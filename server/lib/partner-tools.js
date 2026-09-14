@@ -396,6 +396,76 @@ const tools = {
     },
   },
 
+  reply_to_review: {
+    write: true,
+    schema: {
+      name: 'reply_to_review',
+      description:
+        "Post the owner's public reply under one review of their own gym. Read the reply back before calling — it is public. Use get_gym_reviews first to get the review id.",
+      parameters: {
+        type: 'object',
+        properties: {
+          reviewId: { type: 'integer', description: 'The review id from get_gym_reviews.' },
+          reply: { type: 'string', description: 'The reply, as the owner said it.' },
+        },
+        required: ['reviewId', 'reply'],
+        additionalProperties: false,
+      },
+    },
+    async run(userId, args = {}) {
+      const reply = String(args.reply || '').trim().slice(0, 1000);
+      if (!reply) return { ok: false, message: 'What would you like to say back?' };
+      const reviewId = Number.parseInt(args.reviewId, 10);
+      if (!Number.isInteger(reviewId)) return { ok: false, message: "I couldn't find that review." };
+      // Scoped through the owner's gyms: a review id from someone else's gym does not match.
+      const { rows } = await pool.query(
+        `UPDATE reviews r SET owner_response = $1, updated_at = NOW()
+           FROM gyms g
+          WHERE r.id = $2 AND g.id = r.gym_id AND g.claimed_by::text = $3::text
+          RETURNING r.id, r.rating, g.name AS gym_name`,
+        [reply, reviewId, String(userId)]
+      );
+      if (!rows.length) return { ok: false, message: "That review isn't on one of your gyms." };
+      return { ok: true, reviewId: rows[0].id, gym: rows[0].gym_name, message: `Your reply is now under that ${rows[0].rating}-star review of ${rows[0].gym_name}.` };
+    },
+  },
+
+  get_gym_reviews: {
+    write: false,
+    schema: {
+      name: 'get_gym_reviews',
+      description: "The latest reviews of the owner's gym, with ids, and which ones have no reply yet.",
+      parameters: {
+        type: 'object',
+        properties: {
+          gymId: { type: 'integer', description: 'Which of their gyms. Omit for the first.' },
+          unansweredOnly: { type: 'boolean', description: 'Only reviews without an owner reply.' },
+        },
+        additionalProperties: false,
+      },
+    },
+    async run(userId, args = {}) {
+      const gym = await resolveGym(userId, args.gymId);
+      if (!gym) return { ok: false, message: "You don't have a claimed gym yet." };
+      const { rows } = await pool
+        .query(
+          `SELECT id, rating, comment, owner_response, created_at FROM reviews
+            WHERE gym_id = $1 ${args.unansweredOnly ? 'AND (owner_response IS NULL OR owner_response = \'\')' : ''}
+            ORDER BY created_at DESC LIMIT 10`,
+          [gym.id]
+        )
+        .catch(() => ({ rows: [] }));
+      const unanswered = rows.filter((r) => !r.owner_response).length;
+      return {
+        ok: true,
+        gym: { id: gym.id, name: gym.name },
+        reviews: rows.map((r) => ({ id: r.id, rating: r.rating, comment: r.comment, replied: !!r.owner_response })),
+        unanswered,
+        message: rows.length ? `${rows.length} recent review${rows.length === 1 ? '' : 's'} of ${gym.name}, ${unanswered} without a reply.` : `${gym.name} has no reviews yet.`,
+      };
+    },
+  },
+
   claim_gym: {
     write: true,
     schema: {

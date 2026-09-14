@@ -104,8 +104,22 @@ async function cancelLine(args, userId, deps) {
  * @returns {Promise<string|null>} the question to ask, or null for tools that are not
  *   about money (the tab's own copy is fine for those)
  */
+async function reviewLine(args, deps) {
+  const db = deps.pool || require('../middleware/db');
+  const stars = `${args.rating}-star`;
+  let name = 'this gym';
+  try {
+    const { rows } = await db.query('SELECT name FROM public.gyms WHERE id = $1', [args.gymId]);
+    if (rows[0]?.name) name = rows[0].name;
+  } catch (_) {}
+  const words = args.comment ? ` saying "${String(args.comment).trim().slice(0, 140)}"` : '';
+  return `Post a ${stars} review of ${name}${words}? It's public.`;
+}
+
 async function confirmLine(tool, args = {}, userId = null, deps = {}) {
   try {
+    if (tool === 'leave_review') return await reviewLine(args, deps);
+    if (tool === 'reply_to_review') return `Reply publicly with "${String(args.reply || '').trim().slice(0, 140)}"?`;
     if (tool === 'book_gym' || tool === 'book_and_pay') return await bookingLine(tool, args, deps);
     if (tool === 'cancel_booking') return await cancelLine(args, userId, deps);
     return null;
