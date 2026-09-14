@@ -302,6 +302,17 @@ router.get('/whatsapp/number', async (req, res) => {
   res.json({ number: phone, formatted: phone.replace(/(\+\d{1,3})(\d{3})(\d{3})(\d{4})/, '$1 $2 $3 $4') });
 });
 
+// ─── GET /api/channels/sms/number — the number a customer texts ─
+router.get('/sms/number', (req, res) => {
+  const phone = (process.env.TWILIO_PHONE_NUMBER || process.env.SMS_NUMBER || '').replace('whatsapp:', '');
+  if (!phone) return res.status(503).json({ number: '', error: 'SMS number not configured' });
+  res.json({
+    number: phone,
+    formatted: phone.replace(/(\+\d{1,3})(\d{3})(\d{3})(\d{4})/, '$1 $2 $3 $4'),
+    smsUrl: `sms:${phone}`,
+  });
+});
+
 // ─── GET /api/channels/discord/invite — Get Discord bot invite ─
 router.get('/discord/invite', async (req, res) => {
   // Try to get bot ID from Discord status endpoint
