@@ -111,3 +111,21 @@ five stray logos that every static test reported as clean.
 
 Push to `main` → Railway builds `Dockerfile` → tests run in the build → image
 deploys → health check `/api/v2/health`.
+
+## Where every button lives
+
+`server/lib/buttons-catalog.js` is the single list of every destination ScanGym
+can send a customer to — one entry per card on the Buttons board, with what it
+needs in order to work. `GET /api/buttons` resolves it against the environment;
+`/everything` renders the result.
+
+Consequences worth knowing before adding a button anywhere else:
+
+- A destination with an unmet requirement is returned **without a href** and
+  renders as a non-tappable "Coming soon" tile. The no-dead-links rule is
+  enforced in code, not by convention.
+- Adding a credential (Railway variable) or filling a store/profile URL into
+  `LISTINGS` turns the button on for everyone on their next load. No deploy.
+- `tests/everything-buttons.test.js` fails if a board card has no catalog entry,
+  so the board and the code cannot drift apart silently.
+

@@ -42,6 +42,7 @@ const streaksRouter = require('./routes/streaks');
 const accessRouter = require('./routes/access');
 const chatbotRouter = require('./chatbot');
 const channelsRouter = require('./routes/channels');
+const buttonsRouter = require('./routes/buttons');
 const squadVideoRouter = require('./routes/squad-video');
 const squadCreateRouter = require('./routes/squad-create');
 const squadTextRouter = require('./routes/squad-text');
@@ -546,6 +547,9 @@ app.use('/api/streaks', streaksRouter);
 app.use('/api/access', accessRouter);
 app.use('/api/chatbot', chatbotRouter);
 app.use('/api/channels', channelsRouter);
+// Every destination ScanGym can send a customer to, with live state (see
+// lib/buttons-catalog.js). Read-only, no body parsing needed.
+app.use('/api/buttons', buttonsRouter);
 app.use('/api/squad-video', squadVideoRouter);
 app.use('/api/squad-create', express.json({ limit: '1mb' }), squadCreateRouter);
 app.use('/api/squad-text', squadTextRouter);
@@ -801,6 +805,13 @@ if (fs.existsSync(FRONTEND_DIR)) {
   });
 
   // Reels SSR routes are registered BEFORE express.static (see above)
+
+  // "Everything ScanGym" — the full map of places ScanGym works. Every tile is
+  // driven by /api/buttons, so this page never needs editing when one goes live.
+  app.get('/everything', (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache');
+    res.sendFile(path.join(FRONTEND_DIR, 'everything', 'index.html'));
+  });
 
   // "Use ScanGym in Claude" — customer-friendly MCP connector setup guide
   app.get('/claude', (req, res) => {
