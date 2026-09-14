@@ -183,7 +183,7 @@ router.post('/agent', authenticateUser, express.json(), async (req, res) => {
         sse(res, 'tool', { tool: call.name, state: 'running' });
         const result = await squadTools.execute(call.name, args, userId, req);
         await audit(userId, call.name, args, result, false);
-        sse(res, 'tool', { tool: call.name, state: 'done', ok: result.ok !== false });
+        sse(res, 'tool', { tool: call.name, state: 'done', ok: result.ok !== false, ...(result.ui ? { ui: result.ui } : {}) });
 
         messages.push({
           role: 'tool',

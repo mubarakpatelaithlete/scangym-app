@@ -69,6 +69,8 @@
 
     // Same tools as the Book tab — this is the Book agent wearing a different face.
     toolLabels: {
+      go_to_tab: 'Opening the tab',
+      share_my_link: 'Opening share',
       find_gyms: 'Finding that gym',
       save_gym: 'Saving it to your list',
       get_saved_gyms: 'Opening your saved list',

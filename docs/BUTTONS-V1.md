@@ -43,13 +43,13 @@ Source: Trello 🧠 ScanGym memory board, list "Buttons" (89 cards). Generated b
 | 33 | Scangym is now in WhatsApp clickable button | 🚫 | Distribution channel — chatbot/plugin work tracked in 🔴 Not started, not a button | — |
 | 34 | Scangym is now in Gmail clickable button | 🚫 | Distribution channel — chatbot/plugin work tracked in 🔴 Not started, not a button | — |
 | 35 | Scangym is now in SMS clickable button | 🚫 | Distribution channel — chatbot/plugin work tracked in 🔴 Not started, not a button | — |
-| 36 | Reels tab clickable button | 🔧 | `go_to_tab` client-side voice tool (voice already arms on every tab) | round3.js ui-polish.js sg-dock.js tabs-v4.js |
-| 37 | Maps tab clickable button | 🔧 | `go_to_tab` client-side voice tool (voice already arms on every tab) | round3.js ui-polish.js sg-dock.js tabs-v4.js |
-| 38 | Book tab clickable button | 🔧 | `go_to_tab` client-side voice tool (voice already arms on every tab) | round3.js ui-polish.js sg-dock.js tabs-v4.js |
-| 39 | Partner tab button clickable button | 🔧 | `go_to_tab` client-side voice tool (voice already arms on every tab) | round3.js ui-polish.js sg-dock.js tabs-v4.js |
-| 40 | Profile tab clickable button | 🔧 | `go_to_tab` client-side voice tool (voice already arms on every tab) | round3.js ui-polish.js sg-dock.js tabs-v4.js |
-| 41 | Scansquad tab clickable button | 🔧 | `go_to_tab` client-side voice tool (voice already arms on every tab) | round3.js ui-polish.js sg-dock.js tabs-v4.js |
-| 42 | Share clickable button | 🔧 | `share_my_link` — affiliate link exists (round2), no agent tool yet | round2.js round5-ui.js sg-dock.js |
+| 36 | Reels tab clickable button | ✅ | batch 1 (2026-09-14): `go_to_tab` in every agent → `ui` on the tool event → SGScreen → `switchTab` | round3.js ui-polish.js sg-dock.js tabs-v4.js |
+| 37 | Maps tab clickable button | ✅ | batch 1 (2026-09-14): `go_to_tab` in every agent → `ui` on the tool event → SGScreen → `switchTab` | round3.js ui-polish.js sg-dock.js tabs-v4.js |
+| 38 | Book tab clickable button | ✅ | batch 1 (2026-09-14): `go_to_tab` in every agent → `ui` on the tool event → SGScreen → `switchTab` | round3.js ui-polish.js sg-dock.js tabs-v4.js |
+| 39 | Partner tab button clickable button | ✅ | batch 1 (2026-09-14): `go_to_tab` in every agent → `ui` on the tool event → SGScreen → `switchTab` | round3.js ui-polish.js sg-dock.js tabs-v4.js |
+| 40 | Profile tab clickable button | ✅ | batch 1 (2026-09-14): `go_to_tab` in every agent → `ui` on the tool event → SGScreen → `switchTab` | round3.js ui-polish.js sg-dock.js tabs-v4.js |
+| 41 | Scansquad tab clickable button | ✅ | batch 1 (2026-09-14): `go_to_tab` in every agent → `ui` on the tool event → SGScreen → `switchTab` | round3.js ui-polish.js sg-dock.js tabs-v4.js |
+| 42 | Share clickable button | ✅ | batch 1 (2026-09-14): `share_my_link` resolves the caller's own handle → SGScreen → `_sgShareAffiliate` | round2.js round5-ui.js sg-dock.js |
 | 43 | Save clickable button | ✅ | account: `save_gym`, `get_saved_gyms` | app-patches.js ui-polish.js |
 | 44 | Search clickable button | ✅ | book: `find_gyms` / partner: `search_gyms` | app-patches.js ui-polish.js |
 | 45 | Nearme  clickable button | ✅ | book: `find_gyms` (uses device location) | ui-polish.js |
@@ -100,8 +100,8 @@ Source: Trello 🧠 ScanGym memory board, list "Buttons" (89 cards). Generated b
 
 ## Phase 2 batches (🔧 only, ~5 per PR)
 
-1. **Navigation + share**: `go_to_tab`, `share_my_link`, `get_schedule`, `get_facilities`
-2. **Social**: `get_reviews`, `leave_review`, `reply_to_review`, `get_gym_photos`, `add_photo`
+1. **Navigation + share** ✅ PR batch 1: `go_to_tab`, `share_my_link` (mechanism: `server/lib/screen-tools.js` + `SGScreen` in chat-agent.js). `get_schedule`, `get_facilities` → moved to batch 2.
+2. **Social**: `get_schedule`, `get_facilities`, `get_reviews`, `leave_review`, `reply_to_review`, `get_gym_photos`, `add_photo`
 3. **Comms + coach**: `send_message`, `read_messages`, `ask_coach`, `play_playlist`, `save_playlist`
 4. **Create**: `create_content(mode)` covering text/image/audio/music/video/edit/twin
 5. **Identity**: `start_verification`, phone `send_login_code`
