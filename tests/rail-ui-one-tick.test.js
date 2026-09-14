@@ -33,3 +33,12 @@ test('sg-rail-ui.js has exactly one timer and runs all seven enhancers from it',
   }
   assert.ok(/ENHANCERS=\[uspStrip,tabsV4,squadPartnerPolish,reelsRail,railIcons,bookSummary,buttonCleanup\]/.test(src), 'enhancer order must match the original load order');
 });
+
+test('continue-cta-flow.js no longer polls: zero setInterval, partner banner runs from the shared tick', () => {
+  const cta = fs.readFileSync(path.join(PUB, 'continue-cta-flow.js'), 'utf8');
+  assert.equal((cta.match(/setInterval\(/g) || []).length, 0, 'continue-cta-flow.js must not own a timer');
+  assert.ok(cta.includes('window._removeContinueBanner=_removeContinueBanner'), 'must export _removeContinueBanner for the tick');
+  const rail = fs.readFileSync(path.join(PUB, 'sg-rail-ui.js'), 'utf8');
+  assert.ok(rail.includes('function partnerContinueBanner()'), 'partner route watcher lives in sg-rail-ui.js');
+  assert.ok(/try\{partnerContinueBanner\(\);\}catch/.test(rail), 'partnerContinueBanner runs from the squadPartnerPolish tick');
+});
