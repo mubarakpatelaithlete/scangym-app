@@ -29,6 +29,7 @@ function isoDate(offsetDays = 0) {
  * and could not answer the questions their own screens exist for.
  */
 const accountTools = require('./account-tools');
+const screenTools = require('./screen-tools');
 function formatGymRow(g) {
   return {
     id: g.id,
@@ -91,6 +92,7 @@ async function liveSearchFallback(q, limit) {
 
 const tools = {
   ...accountTools.tools,
+  ...screenTools.tools,
 
   /* ---------- reads ---------- */
 
@@ -452,6 +454,7 @@ const isWrite = (name) => !!tools[name]?.write;
  * and be walked into an account by voice.
  */
 const PUBLIC_TOOLS = new Set([
+  ...screenTools.PUBLIC_SCREEN_TOOLS,
   'find_gyms',
   'get_gym',
   'today_and_tomorrow',

@@ -16,6 +16,7 @@
  *    the agent stop and ask for a yes before it runs.
  */
 const pool = require('../middleware/db');
+const screenTools = require('./screen-tools');
 
 const HANDLE_RE = /^[a-zA-Z0-9_-]{1,100}$/;
 const COMMISSION_RATE = 0.25;      // creators earn 25%
@@ -122,6 +123,8 @@ async function requireCreator(userId, { needsHandle = true } = {}) {
 // ── tools ───────────────────────────────────────────────────────────────────
 
 const tools = {
+  ...screenTools.tools,
+
   /* ---------- reads ---------- */
 
   get_my_squad_profile: {

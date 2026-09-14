@@ -54,6 +54,8 @@
       'Say your mobile number or email and I will send you a link to tap to get you in.',
 
     toolLabels: {
+      go_to_tab: 'Opening the tab',
+      share_my_link: 'Opening share',
       get_my_squad_profile: 'Checking your ScanSquad status',
       get_my_earnings: 'Checking your earnings',
       get_my_link_performance: 'Looking at what converts',

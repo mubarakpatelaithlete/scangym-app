@@ -58,6 +58,55 @@
  * the `payment_intent.succeeded` webhook in server.js, which already matches on
  * `metadata.bookingId`. The client is the trigger, never the source of truth.
  */
+/**
+ * Screen actions — the tab buttons and Share, performed by voice.
+ *
+ * A screen tool (server/lib/screen-tools.js) does not act on the server; it returns a
+ * small `ui` object that rides on the `tool` SSE event, and this performs it. The
+ * vocabulary is closed on purpose: two actions, each calling the one function the
+ * button itself calls (switchTab for the tab bar, _sgShareAffiliate for Share). A tool
+ * result can never name a function to run — only pick one of these.
+ */
+var SGScreen = (function () {
+  var TABS = ['reels', 'book', 'music', 'photos', 'chat', 'trainer', 'creator', 'partner', 'more'];
+
+  function goToTab(ui) {
+    if (TABS.indexOf(ui.tab) === -1 || typeof window.switchTab !== 'function') return false;
+    window.switchTab(ui.tab);
+    return true;
+  }
+
+  function share(ui) {
+    var url = String(ui.url || '');
+    if (url.indexOf('https://scangym.com/') !== 0) return false; // only our own link
+    var handle = url.slice('https://scangym.com/r/'.length);
+    if (ui.via === 'copy' || (!navigator.share && ui.via === 'share')) {
+      if (navigator.clipboard) navigator.clipboard.writeText(url).catch(function () {});
+      if (typeof window.sgToast === 'function') window.sgToast('Link copied!', 'success');
+      return true;
+    }
+    if (typeof window._sgShareAffiliate === 'function' && handle) {
+      window._sgShareAffiliate(handle, ui.via === 'share' ? undefined : ui.via);
+      return true;
+    }
+    if (navigator.share) navigator.share({ title: 'ScanGym', url: url }).catch(function () {});
+    return true;
+  }
+
+  var ACTIONS = { go_to_tab: goToTab, share: share };
+
+  /** Perform a `ui` instruction from a tool result. Unknown actions are ignored. */
+  function perform(ui) {
+    if (!ui || typeof ui !== 'object') return false;
+    var fn = ACTIONS[ui.action];
+    if (!fn) return false;
+    try { return fn(ui); } catch (_) { return false; }
+  }
+
+  return { perform: perform, TABS: TABS };
+})();
+window.SGScreen = SGScreen;
+
 var SGCheckout = (function () {
   var pkPromise = null;
 
@@ -779,7 +828,10 @@ function createChatAgent(cfg) {
       } else if (event === 'tool') {
         typingOff();
         if (data.state === 'running') toolLine(data.tool);
-        else toolDone(data.tool, data.ok !== false);
+        else {
+          toolDone(data.tool, data.ok !== false);
+          if (data.ui) SGScreen.perform(data.ui); // screen tools: the tab does the moving
+        }
       } else if (event === 'confirm') {
         typingOff();
         S.pending = { tool: data.tool, args: data.args };

@@ -50,6 +50,8 @@
       'Tell me your mobile number or email and I will send you a link to tap to get you in.',
 
     toolLabels: {
+      go_to_tab: 'Opening the tab',
+      share_my_link: 'Opening share',
       send_login_link: 'Texting you a sign-in link',
       send_login_code: 'Texting you a code',
       confirm_login_code: 'Signing you in',

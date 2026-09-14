@@ -15,6 +15,7 @@
  * touch a gym the caller does not own, regardless of the gymId the model invents.
  */
 const pool = require('../middleware/db');
+const screenTools = require('./screen-tools');
 
 const PRICE_MIN = 3;
 const PRICE_MAX = 25;
@@ -75,6 +76,8 @@ function needGym(gym) {
 // ── tools ───────────────────────────────────────────────────────────────────
 
 const tools = {
+  ...screenTools.tools,
+
   /* ---------- reads: run silently, no confirmation ---------- */
 
   get_my_gym: {

@@ -249,7 +249,7 @@ router.post('/agent', optionalAuth, express.json(), async (req, res) => {
         }
 
         await audit(userId, call.name, args, result, false);
-        sse(res, 'tool', { tool: call.name, state: 'done', ok: result.ok !== false });
+        sse(res, 'tool', { tool: call.name, state: 'done', ok: result.ok !== false, ...(result.ui ? { ui: result.ui } : {}) });
 
         messages.push({
           role: 'tool',
