@@ -8,24 +8,16 @@ const router = express.Router();
 const pool = require('../middleware/db');
 const { authenticateUser } = require('../middleware/auth');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const { startVerification } = require('../lib/identity-core');
 
 // Auto-migration: identity columns on users
 
 // POST /api/identity/start — create a Stripe Identity session, return hosted URL
 router.post('/start', authenticateUser, express.json(), async (req, res) => {
   try {
-    const u = await pool.query('SELECT identity_verified, email FROM users WHERE id = $1', [req.user.id]);
-    if (u.rows[0]?.identity_verified) return res.json({ success: true, alreadyVerified: true });
-
-    const BASE = process.env.BASE_URL || 'https://scangym.com';
-    const session = await stripe.identity.verificationSessions.create({
-      type: 'document',
-      options: { document: { require_matching_selfie: true } },
-      metadata: { scangym_user_id: String(req.user.id) },
-      return_url: `${BASE}/profile?identity=done`,
-    });
-    await pool.query('UPDATE users SET identity_session_id = $1 WHERE id = $2', [session.id, req.user.id]).catch(() => {});
-    res.json({ success: true, url: session.url });
+    const out = await startVerification(req.user.id, { stripe });
+    if (out.alreadyVerified) return res.json({ success: true, alreadyVerified: true });
+    res.json({ success: true, url: out.url });
   } catch (err) {
     console.error('[Identity] start error:', err.message);
     res.status(500).json({ error: 'Could not start identity check — try again later' });

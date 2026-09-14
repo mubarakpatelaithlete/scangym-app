@@ -106,7 +106,40 @@ var SGScreen = (function () {
     return true;
   }
 
-  var ACTIONS = { go_to_tab: goToTab, share: share, open_gym: openGym, open_write_review: openWriteReview };
+  function music(ui) {
+    var cmd = ui.command;
+    if (['play', 'pause', 'next', 'previous'].indexOf(cmd) === -1) return false;
+    if (typeof window.switchTab === 'function' && window.location.pathname !== '/music') window.switchTab('music');
+    var lists = window._sgMusicPlaylists || [];
+    var pl = lists[window._sgMusicPI || 0];
+    var n = pl && pl.tracks ? pl.tracks.length : 0;
+    if (cmd === 'next' && n) window._sgMusicTI = ((window._sgMusicTI || 0) + 1) % n;
+    if (cmd === 'previous' && n) window._sgMusicTI = ((window._sgMusicTI || 0) - 1 + n) % n;
+    if (cmd === 'next' || cmd === 'previous') { window._sgAudioLoaded = false; if (window._sgAudio) { try { window._sgAudio.pause(); window._sgAudio.currentTime = 0; } catch (_) {} } }
+    window._sgMusicPlaying = cmd !== 'pause';
+    if (window._sgAudio && cmd === 'pause') { try { window._sgAudio.pause(); } catch (_) {} }
+    if (window._sgAudio && cmd === 'play') { try { window._sgAudio.play(); } catch (_) {} }
+    if (typeof window.render === 'function') window.render(); // MusicTabPage reads the _sgMusic* state
+    return true;
+  }
+
+  function openCreate(ui) {
+    if (!window.sgSquadCreate || typeof window.sgSquadCreate.open !== 'function') return false;
+    return window.sgSquadCreate.open(String(ui.mode || ''), String(ui.prompt || ''), ui.result ? String(ui.result) : '');
+  }
+
+  /* Only hosted pages we hand off to on purpose. Anything else is refused. */
+  var URL_ALLOW = ['https://verify.stripe.com/', 'https://scangym.com/'];
+  function openUrl(ui) {
+    var url = String(ui.url || '');
+    var ok = false;
+    for (var i = 0; i < URL_ALLOW.length; i++) if (url.indexOf(URL_ALLOW[i]) === 0) ok = true;
+    if (!ok) return false;
+    window.location.href = url;
+    return true;
+  }
+
+  var ACTIONS = { go_to_tab: goToTab, share: share, open_gym: openGym, open_write_review: openWriteReview, music: music, open_create: openCreate, open_url: openUrl };
 
   /** Perform a `ui` instruction from a tool result. Unknown actions are ignored. */
   function perform(ui) {

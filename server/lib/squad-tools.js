@@ -125,6 +125,57 @@ async function requireCreator(userId, { needsHandle = true } = {}) {
 const tools = {
   ...screenTools.tools,
 
+  create_content: {
+    write: false,
+    schema: {
+      name: 'create_content',
+      description:
+        'The ScanSquad Create buttons by voice. Text is written right here (a caption or post — say the tone: punchy, friendly or professional). ' +
+        'Video, image, audio, music, twin, clipping and UGC need the Create sheet: this opens it on that mode with their idea already typed in, or says plainly if that mode is not switched on yet.',
+      parameters: {
+        type: 'object',
+        properties: {
+          mode: { type: 'string', enum: ['text', 'image', 'video', 'audio', 'music', 'twin', 'clipping', 'ugc'] },
+          prompt: { type: 'string', description: 'What they want, in their words.' },
+          tone: { type: 'string', enum: ['Punchy', 'Friendly', 'Professional'], description: 'Text only.' },
+          length: { type: 'string', enum: ['Short', 'Medium', 'Long'], description: 'Text only.' },
+        },
+        required: ['mode', 'prompt'],
+        additionalProperties: false,
+      },
+    },
+    async run(_userId, args = {}) {
+      const { MODES } = require('../routes/squad-create');
+      const def = MODES[args.mode];
+      if (!def) return { ok: false, message: "I don't have a Create mode called that." };
+      const prompt = String(args.prompt || '').trim().slice(0, 600);
+      if (!prompt) return { ok: false, message: 'Tell me what you want to make.' };
+
+      if (args.mode === 'text') {
+        try {
+          const { writePost } = require('../routes/squad-text');
+          const out = await writePost({ prompt, tone: args.tone, length: args.length });
+          return { ok: true, mode: 'text', text: out.text, tone: out.tone, length: out.length, ui: { action: 'open_create', mode: 'text', prompt, result: out.text }, message: `Here's your ${out.tone.toLowerCase()} post: ${out.text}` };
+        } catch (err) {
+          return { ok: false, message: err.status === 503 ? 'Writing is switched off right now.' : 'Could not write that one — try again.' };
+        }
+      }
+
+      const built = !!def.api;
+      const configured = built && (def.ready ? !!def.ready() : !!process.env[def.env]);
+      if (!configured) {
+        return { ok: false, notAvailable: true, mode: args.mode, message: `${def.label} isn't switched on yet${built ? '' : ' — it hasn\'t been built'}. Text and video are.` };
+      }
+      return {
+        ok: true,
+        mode: args.mode,
+        handoff: true,
+        ui: { action: 'open_create', mode: args.mode, prompt },
+        message: `Opened ${def.label} with your idea typed in — check the settings and tap Generate. A ${def.label.toLowerCase()} takes a few minutes, so I won't hold you.`,
+      };
+    },
+  },
+
   /* ---------- reads ---------- */
 
   get_my_squad_profile: {

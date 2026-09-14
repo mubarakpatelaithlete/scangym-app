@@ -396,6 +396,75 @@ const tools = {
     },
   },
 
+  get_customer_messages: {
+    write: false,
+    schema: {
+      name: 'get_customer_messages',
+      description: "Messages customers sent to the owner's gym and are still waiting for an answer (with ids), newest first.",
+      parameters: {
+        type: 'object',
+        properties: { gymId: { type: 'integer', description: 'Which of their gyms. Omit for the first.' } },
+        additionalProperties: false,
+      },
+    },
+    async run(userId, args = {}) {
+      const gym = await resolveGym(userId, args.gymId);
+      if (!gym) return { ok: false, message: "You don't have a claimed gym yet." };
+      const { rows } = await pool
+        .query(
+          `SELECT id, user_message, status, owner_response, created_at FROM chat_escalations
+            WHERE gym_id = $1 ORDER BY created_at DESC LIMIT 10`,
+          [gym.id]
+        )
+        .catch(() => ({ rows: [] }));
+      const waiting = rows.filter((r) => !r.owner_response);
+      return {
+        ok: true,
+        gym: { id: gym.id, name: gym.name },
+        messages: rows.map((r) => ({ id: r.id, message: r.user_message, answered: !!r.owner_response })),
+        waiting: waiting.length,
+        message: waiting.length ? `${waiting.length} customer message${waiting.length === 1 ? '' : 's'} waiting for ${gym.name}.` : `No customer messages waiting for ${gym.name}.`,
+      };
+    },
+  },
+
+  reply_to_customer: {
+    write: true,
+    schema: {
+      name: 'reply_to_customer',
+      description: "Answer one customer message (from get_customer_messages). Read the reply back before calling — the customer sees it word for word.",
+      parameters: {
+        type: 'object',
+        properties: {
+          messageId: { type: 'integer', description: 'The message id from get_customer_messages.' },
+          reply: { type: 'string' },
+        },
+        required: ['messageId', 'reply'],
+        additionalProperties: false,
+      },
+    },
+    async run(userId, args = {}) {
+      const reply = String(args.reply || '').trim().slice(0, 1000);
+      if (!reply) return { ok: false, message: 'What would you like to say back?' };
+      const id = Number.parseInt(args.messageId, 10);
+      if (!Number.isInteger(id)) return { ok: false, message: "I couldn't find that message." };
+      // Scoped through the owner's gyms, inside the UPDATE.
+      const { rows } = await pool.query(
+        `UPDATE chat_escalations ce SET owner_response = $1, status = 'resolved', resolved_at = NOW()
+           FROM gyms g
+          WHERE ce.id = $2 AND g.id = ce.gym_id AND g.claimed_by::text = $3::text
+          RETURNING ce.id, ce.conversation_id, g.name AS gym_name`,
+        [reply, id, String(userId)]
+      );
+      if (!rows.length) return { ok: false, message: "That message isn't for one of your gyms." };
+      // Same line the tap flow writes, so the customer's chat and read_gym_replies agree.
+      await pool
+        .query("INSERT INTO messages (conversation_id, role, content, created_at) VALUES ($1, 'assistant', $2, NOW())", [rows[0].conversation_id, `📞 Message from the gym team: ${reply}`])
+        .catch(() => null);
+      return { ok: true, messageId: rows[0].id, message: `Replied for ${rows[0].gym_name}.` };
+    },
+  },
+
   reply_to_review: {
     write: true,
     schema: {

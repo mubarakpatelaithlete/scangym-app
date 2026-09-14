@@ -634,6 +634,23 @@
     }
   }
 
+  /* Voice entry point (chat-agent.js SGScreen open_create): open a mode with the
+   * creator's idea already typed in; for text, show the copy the voice tool wrote. */
+  window.sgSquadCreate = {
+    open: function (key, prompt, result) {
+      var mode = null;
+      for (var i = 0; i < MODES.length; i++) if (MODES[i].key === key) mode = MODES[i];
+      if (!mode) return false;
+      openSheet(mode);
+      var sh = document.getElementById(SHEET_ID);
+      if (!sh) return false;
+      var ta = sh.querySelector('.sv-prompt');
+      if (ta && prompt) ta.value = prompt;
+      if (result) { var out = sh.querySelector('#sv-out'); if (out) showText(out, result); }
+      return true;
+    },
+  };
+
   function init() {
     var style = document.createElement('style');
     style.textContent = css;

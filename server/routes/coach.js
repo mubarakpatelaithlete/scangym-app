@@ -11,6 +11,7 @@ const pool = require('../middleware/db');
 const { authenticateUser } = require('../middleware/auth');
 const OpenAI = require('openai');
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const { buildCoachSystemPrompt } = require('../lib/coach-core');
 
 
 /**
@@ -67,53 +68,6 @@ async function requireCheckedIn(req, res, next) {
   }
 }
 
-function buildCoachSystemPrompt(profile, recentWorkouts, bookingHistory) {
-  let prompt = `You are ScanGym's AI Personal Trainer — a friendly, knowledgeable fitness coach.
-You are ONLY available to users who have paid for a gym session and checked in at the gym.
-You remember everything the user has told you and use it to give personalized advice.
-
-USER PROFILE:
-`;
-  if (profile) {
-    prompt += `- Goals: ${profile.fitness_goals || 'Not set'}
-- Experience: ${profile.experience_level || 'beginner'}
-- Age: ${profile.age || 'Unknown'}
-- Weight: ${profile.weight_kg ? profile.weight_kg + 'kg' : 'Unknown'}
-- Height: ${profile.height_cm ? profile.height_cm + 'cm' : 'Unknown'}
-- Injuries/Limitations: ${profile.injuries || 'None reported'}
-- Preferred workouts: ${profile.preferred_workout_types || 'Any'}
-- Available days: ${profile.available_days || 'Flexible'}
-`;
-  } else {
-    prompt += `- New user — no profile yet. Ask about their goals and experience level.\n`;
-  }
-
-  if (recentWorkouts && recentWorkouts.length > 0) {
-    prompt += `\nRECENT WORKOUTS (last 5):\n`;
-    recentWorkouts.forEach(w => {
-      prompt += `- ${w.workout_type || 'Workout'} on ${new Date(w.created_at).toLocaleDateString()} (${w.duration_minutes || '?'}min, energy: ${w.energy_level || '?'}/10)\n`;
-    });
-  }
-
-  if (bookingHistory && bookingHistory.length > 0) {
-    prompt += `\nGYM VISITS (recent bookings):\n`;
-    bookingHistory.forEach(b => {
-      prompt += `- ${b.gym_name || 'Gym'} on ${new Date(b.created_at).toLocaleDateString()}\n`;
-    });
-  }
-
-  prompt += `
-GUIDELINES:
-- Give specific, actionable advice based on their profile
-- If they're new, help them set up their profile first
-- Suggest workouts appropriate to their level and goals
-- Track progress and celebrate wins
-- Warn about overtraining or injury risks
-- Keep responses concise (under 200 words) unless they ask for detailed plans
-- Be motivating and supportive`;
-
-  return prompt;
-}
 
 // POST /api/coach/message — GATED: requires paid booking + QR check-in
 router.post('/message', authenticateUser, requireCheckedIn, async (req, res) => {

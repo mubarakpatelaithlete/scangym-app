@@ -187,7 +187,7 @@ test('the Book agent carries the social tools, reads are public, and the screen 
   assert.equal(book.needsLogin('add_photo'), true);
 
   const src = fs.readFileSync(path.join(PUB, 'chat-agent.js'), 'utf8');
-  assert.match(src, /var ACTIONS = \{ go_to_tab: goToTab, share: share, open_gym: openGym, open_write_review: openWriteReview \};/);
+  assert.match(src, /var ACTIONS = \{ go_to_tab: goToTab, share: share, open_gym: openGym, open_write_review: openWriteReview, music: music, open_create: openCreate, open_url: openUrl \};/);
   assert.ok(src.includes('window.openGym(id)') && src.includes('window.openWriteReviewModal()'));
 
   const confirm = require(path.join(ROOT, 'server', 'lib', 'confirm-line'));
