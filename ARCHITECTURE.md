@@ -82,9 +82,10 @@ frontend/public/
 ```
 
 **Known debt — read before adding a feature.** On top of `app.ctr576.js` sits a
-stack of roughly sixteen patch scripts (`app-patches.js`, `app-patches-v3.js`,
-`round2..round5`, `batch2..batch4`, `phase2-improvements.js`, `ux-v5`, `ux-v6`,
-`ui-polish.js`, `tabs-v4.js`, `continue-cta-flow.js`) totalling ~5,100 lines,
+stack of a dozen patch scripts (`app-patches.js`, `app-patches-v3.js`,
+`round2.js`, `sg-rail-ui.js` (the merged round3/ui-polish/round4/round5),
+`batch2..batch4`, `phase2-improvements.js`, `ux-v5`, `tabs-v4.js`,
+`continue-cta-flow.js`) totalling ~5,000 lines,
 each patching the layer beneath it at runtime. Several tests
 (`patch-chain`, `one-cta`, `one-orange`, `one-version`) exist specifically to
 police regressions this arrangement keeps reintroducing. Prefer changing the
