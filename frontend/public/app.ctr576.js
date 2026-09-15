@@ -19888,6 +19888,7 @@ window.sgFeedback = async function(elementId, vote, btn) {
     .sg-auth-btn:active{transform:scale(.97)}
     .sg-auth-btn-google{background:#fff;color:#1f1f1f;margin-bottom:10px}
     .sg-auth-btn-apple{background:#000;color:#fff;border:1px solid rgba(255,255,255,.15)!important;margin-bottom:10px}
+    .sg-auth-btn-ms{background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.15)!important;margin-bottom:10px}
     .sg-auth-divider{display:flex;align-items:center;gap:12px;margin:16px 0}
     .sg-auth-divider-line{flex:1;height:1px;background:rgba(255,255,255,.1)}
     .sg-auth-divider-text{color:rgba(255,255,255,.3);font-size:12px;font-weight:500}
@@ -20003,6 +20004,13 @@ window.sgFeedback = async function(elementId, vote, btn) {
       <button class="sg-auth-btn sg-auth-btn-apple" onclick="handleAppleSignIn()">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
         Continue with Apple
+      </button>
+      <!-- Same sign-in options in the booking sheet as on the sign-in page:
+           Microsoft was only on /login, so a customer who taps "Book this gym"
+           never saw it. One account per email either way. -->
+      <button class="sg-auth-btn sg-auth-btn-ms" onclick="window._sgMicrosoftSignIn()">
+        <svg width="18" height="18" viewBox="0 0 23 23"><path fill="#f35325" d="M1 1h10v10H1z"/><path fill="#81bc06" d="M12 1h10v10H12z"/><path fill="#05a6f0" d="M1 12h10v10H1z"/><path fill="#ffba08" d="M12 12h10v10H12z"/></svg>
+        Continue with Microsoft
       </button>
       <div class="sg-auth-divider">
         <div class="sg-auth-divider-line"></div>
