@@ -2677,10 +2677,12 @@
         if(ev.data.type === 'sg-auth-state'){
           _reelsUserLoggedIn = !!ev.data.loggedIn;
           _reelsUser = ev.data.user || null;
+          if(_reelsUserLoggedIn) _loadReferralHandle();
         }
         if(ev.data.type === 'sg-auth-complete'){
           _reelsUserLoggedIn = true;
           _reelsUser = ev.data.user || _reelsUser;
+          _loadReferralHandle();
 
           // ── Auto-enroll as ScanSquad creator on first Share/Save ──
           // Zero-friction: user logs in → automatically becomes a creator →
@@ -2699,6 +2701,37 @@
           }
         }
       });
+
+      // ── Personal affiliate handle (Share link + Save watermark) ──
+      // Source of truth is the server (/api/auth/user → referralHandle);
+      // localStorage sg_creator is only a fallback for legacy creator sessions.
+      var _referralHandle = '';
+      var _referralPromise = null;
+      function _loadReferralHandle(){
+        if(_referralHandle) return Promise.resolve(_referralHandle);
+        if(_referralPromise) return _referralPromise;
+        _referralPromise = fetch('/api/auth/user', {credentials:'same-origin'})
+          .then(function(r){ return r.ok ? r.json() : null; })
+          .then(function(d){
+            var u = d && (d.user || d);
+            if(u && u.referralHandle){
+              _referralHandle = String(u.referralHandle).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,60);
+              _reelsUserLoggedIn = true;
+              _reelsUser = _reelsUser || u;
+            }
+            return _referralHandle;
+          })
+          .catch(function(){ return ''; })
+          .finally(function(){ _referralPromise = null; });
+        return _referralPromise;
+      }
+      function _getAffiliateHandle(){
+        if(_referralHandle) return _referralHandle;
+        try{var _vc=JSON.parse(localStorage.getItem('sg_creator')||'null');if(_vc&&_vc.handle)return String(_vc.handle).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,60);}catch(e){}
+        return '';
+      }
+      // Existing session cookie? → warm up the handle on load
+      _loadReferralHandle();
 
       // Also check localStorage for existing session
       try{var _sc=localStorage.getItem('sg_creator');if(_sc){var _p=JSON.parse(_sc);if(_p&&_p.handle)_reelsUserLoggedIn=true;}}catch(e){}
@@ -2798,13 +2831,18 @@
       }
 
       function _doShare(video){
+        // Make sure we have the viewer's personal affiliate handle first
+        // (server is the source of truth) — then build the deep link.
+        _loadReferralHandle().then(function(){ _doShareNow(video); });
+      }
+
+      function _doShareNow(video){
         // Build reel-specific deep link — falls back to affiliate link if present, then generic
         var reelUrl = video.id
           ? (window.location.origin + '/reels?v=' + encodeURIComponent(video.id))
           : ((video.creator && video.creator.affiliateLink) || 'https://scangym.com/reels');
-        // #60: Inject viewer's affiliate handle into share URL (if they're a creator)
-        var _viewerHandle='';
-        try{var _vc=JSON.parse(localStorage.getItem('sg_creator')||'null');if(_vc&&_vc.handle)_viewerHandle=_vc.handle;}catch(e){}
+        // Personal affiliate link: every logged-in viewer shares with their own ?ref=<handle>
+        var _viewerHandle = _getAffiliateHandle();
         if(_viewerHandle&&reelUrl.indexOf('ref=')===-1){reelUrl+=(reelUrl.indexOf('?')>=0?'&':'?')+'ref='+encodeURIComponent(_viewerHandle);}
         var url = reelUrl;
         var displayName = humanizeTitle(video.name);
@@ -2907,9 +2945,17 @@
           return;
         }
 
+        // Social (YouTube/TikTok/IG) reels are embedded, not hosted by us —
+        // they can't be saved to the gallery. Say so instead of silently opening a tab.
+        if(!video.cdnKey && /youtu\.be|youtube\.com|tiktok\.com|instagram\.com/i.test(url)){
+          showToast('\uD83C\uDFAC This reel is hosted on YouTube \u2014 opening it there');
+          setTimeout(function(){ window.open(url, '_blank'); }, 600);
+          return;
+        }
+
         // Show Creative Commons notice first — download only after user agrees
         showCCNotice(video, url, function(){
-          doDownload(video, url);
+          _loadReferralHandle().then(function(){ doDownload(video, url); });
         });
       }
 
@@ -2921,8 +2967,7 @@
         // The server sets Content-Disposition: attachment, which forces download
         // even on iOS Safari where <a download> is ignored for cross-origin URLs.
         if(video.cdnKey){
-          var _sgCr = null; try { _sgCr = JSON.parse(localStorage.getItem('sg_creator')||'null'); } catch(e) {}
-          var _sgCrHandle = (_sgCr && (_sgCr.handle||_sgCr.slug)) ? String(_sgCr.handle||_sgCr.slug).replace(/[^a-zA-Z0-9_-]/g,'') : '';
+          var _sgCrHandle = _getAffiliateHandle(); // personal /r/<handle> burned into the watermark
           var downloadUrl = '/api/reels/download/' + encodeURIComponent(video.cdnKey)
             + '?name=' + encodeURIComponent(fname) + (_sgCrHandle ? ('&' + 'handle=' + _sgCrHandle) : '');
           // iOS: try Web Share API first (saves to Photos)
