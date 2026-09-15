@@ -33,7 +33,7 @@ const router = express.Router();
  */
 const MODES = {
   text: { label: 'Text', ready: () => require('../lib/llm').configured(), api: '/api/squad-text' },
-  image: { label: 'Image', env: 'SQUAD_IMAGE_API_KEY', api: null },
+  image: { label: 'Image', env: 'FAL_KEY', api: '/api/squad-image' },
   video: { label: 'Video', env: 'GEMINI_API_KEY', api: '/api/squad-video' },
   audio: { label: 'Audio', env: 'SQUAD_AUDIO_API_KEY', api: null },
   music: { label: 'Music', env: 'SQUAD_MUSIC_API_KEY', api: null },
