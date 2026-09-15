@@ -914,5 +914,45 @@
   <script src="/squad-chat.js?v=2.1" defer></script>
   <script src="/sg-dock.js?v=1.0" defer></script>
   <script src="/voice-always.js?v=1.1" defer></script>
+<script>
+/* Create/tool deep-link: /scansquad?create=text|audio|video|edit|twin or ?tool=elevenlabs|heygen
+   Shows the customer which mode they picked instead of a generic join screen. */
+(function(){
+  var MODES = {
+    'create:text':  { icon:'\u270D\uFE0F', title:'Create text',        sub:'Captions & posts written for you \u2014 join to start' },
+    'create:audio': { icon:'\uD83C\uDFA7', title:'Create audio',       sub:'Voiceovers for your gym videos \u2014 join to start' },
+    'create:video': { icon:'\uD83C\uDFAC', title:'Create video',       sub:'440+ ready-to-post gym videos \u2014 join to start' },
+    'create:edit':  { icon:'\u2702\uFE0F', title:'Edit video',         sub:'Trim, caption and brand your clips \u2014 join to start' },
+    'create:twin':  { icon:'\uD83E\uDDD1', title:'Create your twin',   sub:'Your AI avatar presenter \u2014 join to start' },
+    'tool:elevenlabs': { icon:'\uD83D\uDD0A', title:'ElevenLabs voice', sub:'AI voiceovers \u2014 join to unlock' },
+    'tool:heygen':     { icon:'\uD83E\uDDD1\u200D\uD83D\uDCBB', title:'HeyGen avatars', sub:'AI presenter videos \u2014 join to unlock' }
+  };
+  var q; try { q = new URLSearchParams(location.search); } catch(e){ return; }
+  var key = q.get('create') ? 'create:'+q.get('create') : (q.get('tool') ? 'tool:'+q.get('tool') : null);
+  var m = key && MODES[key];
+  if (!m) return;
+  try { sessionStorage.setItem('sg_squad_mode', key); } catch(e){}
+  function apply(){
+    var hero = document.querySelector('.join-hero');
+    if (!hero) return false;
+    if (!document.getElementById('sgModeChip')) {
+      var chip = document.createElement('div');
+      chip.id = 'sgModeChip';
+      chip.style.cssText = 'display:inline-flex;align-items:center;gap:8px;margin:0 auto 10px;padding:7px 14px;border-radius:999px;background:rgba(255,109,0,.16);border:1px solid rgba(255,109,0,.4);color:#FF8A3D;font-size:13px;font-weight:800';
+      chip.innerHTML = '<span>'+m.icon+'</span><span>'+m.title+'</span>';
+      hero.insertBefore(chip, hero.firstChild);
+    }
+    var h1 = hero.querySelector('h1'); if (h1) h1.textContent = m.title;
+    var pEl = hero.querySelector('p'); if (pEl) pEl.innerHTML = m.sub;
+    var btn = document.getElementById('join-btn');
+    if (btn) btn.textContent = 'Start ' + m.title.toLowerCase() + ' \u2192';
+    return true;
+  }
+  var tries = 0;
+  var iv = setInterval(function(){ if (apply() || ++tries > 40) clearInterval(iv); }, 150);
+  if (document.readyState !== 'loading') apply();
+  else document.addEventListener('DOMContentLoaded', apply);
+})();
+</script>
 </body>
 </html>
