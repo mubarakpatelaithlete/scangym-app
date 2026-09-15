@@ -122,8 +122,10 @@
       }
 
       /* ── Video info (bottom-left) ── */
+      /* bottom:132px — the Talk bar (#rchat-fab) sits at bottom:69px, 52px tall,
+         so anything below 121px is hidden under it. Rail + info clear it by 11px. */
       .reel-info{
-        position:absolute;bottom:72px;left:16px;right:72px;z-index:20;
+        position:absolute;bottom:132px;left:16px;right:72px;z-index:20;
         color:#fff;
       }
       .reel-info .reel-title{
@@ -157,7 +159,7 @@
 
       /* ── Action sidebar (right) ── */
       .reel-actions{
-        position:absolute;bottom:80px;right:10px;z-index:20;
+        position:absolute;bottom:132px;right:10px;z-index:20;
         display:flex;flex-direction:column;align-items:center;gap:12px;
       }
       .reel-action{
@@ -236,7 +238,7 @@
         width:100%;height:100%;position:relative;overflow:hidden;
       }
       .shimmer-content{
-        position:absolute;bottom:80px;left:16px;right:72px;
+        position:absolute;bottom:132px;left:16px;right:72px;
         display:flex;flex-direction:column;gap:8px;
       }
       .shimmer-line{
@@ -249,7 +251,7 @@
       .shimmer-line:nth-child(2){width:45%;height:10px;}
       .shimmer-line:nth-child(3){width:80%;height:10px;margin-top:4px;}
       .shimmer-actions{
-        position:absolute;bottom:80px;right:10px;
+        position:absolute;bottom:132px;right:10px;
         display:flex;flex-direction:column;gap:12px;align-items:center;
       }
       .shimmer-circle{
