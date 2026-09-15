@@ -62,12 +62,12 @@ test('a far gym with no usable address still avoids a bogus distance', () => {
   assert.doesNotMatch(label, /\d/);
 });
 
-test('genuinely nearby distances are still shown, in km', () => {
-  assert.strictEqual(H.sgDistanceLabel({ distance: 2.4, address: 'Camden, London, UK' }), '2.4km');
+test('genuinely nearby distances are still shown, in km, with a walk estimate', () => {
+  assert.strictEqual(H.sgDistanceLabel({ distance: 2.4, address: 'Camden, London, UK' }), '2.4km \u00b7 29 min walk');
 });
 
 test('sub-kilometre distances are shown in metres, not "0.4km"', () => {
-  assert.strictEqual(H.sgDistanceLabel({ distance: 0.42, address: 'Soho, London, UK' }), '420m');
+  assert.strictEqual(H.sgDistanceLabel({ distance: 0.42, address: 'Soho, London, UK' }), '420m \u00b7 5 min walk');
 });
 
 test('a real Google travel label wins over straight-line distance when close', () => {
