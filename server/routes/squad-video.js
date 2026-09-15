@@ -146,10 +146,16 @@ async function finishJob(id, fields) {
 router.get('/health', optionalAuth, async (req, res) => {
   const quota = await quotaFor(req);
   const catalogue = models.catalogueFor('video', { seconds: DEFAULTS.durationSeconds });
-  const chosen = models.resolve('video', req.query.model);
+  const chosen = models.resolveAvailable('video', req.query.model, genProvider.configured);
 
-  // The default model is on fal now, so a box with FAL_KEY and no Gemini key
-  // can still render. Only report unavailable when nothing at all is keyed.
+  // Nothing keyed at all — neither fal nor Gemini.
+  if (!chosen) {
+    return res.json({ available: false, reason: 'no_api_key', models: catalogue, quota });
+  }
+
+  // The cheap default lives on fal, but this box may only have a Gemini key
+  // (or vice versa). resolveAvailable() already picked a reachable provider;
+  // report on that one rather than on a model we cannot run.
   if (chosen.provider === 'fal') {
     const available = genProvider.configured('fal');
     return res.json({
@@ -198,8 +204,8 @@ router.post('/generate', optionalAuth, express.json(), async (req, res) => {
   const refusal = genJobs.screenPrompt(prompt);
   if (refusal) return res.status(400).json({ error: refusal });
 
-  const model = models.resolve('video', req.body?.model);
-  if (!genProvider.configured(model.provider)) {
+  const model = models.resolveAvailable('video', req.body?.model, genProvider.configured);
+  if (!model) {
     return res.status(503).json({ error: 'Video generation is not configured yet.' });
   }
 

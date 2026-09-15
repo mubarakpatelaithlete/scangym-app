@@ -216,4 +216,66 @@ function catalogueFor(kind, units = {}) {
     }));
 }
 
-module.exports = { MODELS, byKind, resolve, estimateUsd, catalogueFor, premiumEnabled };
+/**
+ * Resolve a model, but never land on a provider this deployment cannot reach.
+ *
+ * Why this exists: the cheap default for video is on fal, while production ran
+ * on Gemini/Veo. Merging the catalogue without this function would have pointed
+ * every default request at fal, found no FAL_KEY, and returned 503 — i.e. it
+ * would have *broken a working Create Video button* the moment it deployed.
+ * A refactor that silently turns a live feature off is a regression no matter
+ * how much nicer the new code is.
+ *
+ * Order of preference:
+ *   1. exactly what the caller asked for, if it is reachable,
+ *   2. the kind's default, if it is reachable,
+ *   3. the cheapest reachable model of that kind,
+ *   4. null — nothing is keyed, and the caller must say so honestly.
+ *
+ * Preference never escalates past an explicit ask: falling back picks the
+ * cheapest reachable option, so a missing key can cost availability but never
+ * money.
+ *
+ * @param {string}   kind          'video' | 'image' | 'audio' | 'music'
+ * @param {string}   modelId       client-supplied id, may be undefined
+ * @param {function} isConfigured  (provider) => boolean, injected for testing
+ */
+function resolveAvailable(kind, modelId, isConfigured) {
+  const reachable = (m) => !!m && isConfigured(m.provider);
+
+  const wanted = resolve(kind, modelId);
+  if (reachable(wanted)) return wanted;
+
+  const cheapest = (rows) =>
+    rows.reduce((best, m) => (unitPrice(m) < unitPrice(best) ? m : best));
+
+  const reachableRows = byKind(kind).filter(reachable);
+  if (!reachableRows.length) return null;
+
+  const affordable = reachableRows.filter((m) => m.tier !== 'premium' || premiumEnabled());
+  if (affordable.length) return cheapest(affordable);
+
+  // Last resort: the only reachable model is a premium one. This is exactly
+  // production on 2026-09-16 — a Gemini key and no FAL_KEY, where the sole
+  // video row is Veo. Refusing here would be "cost control" that switches a
+  // working customer feature off, and Veo is what that box was already
+  // running, so this is the status quo rather than an escalation. The moment
+  // FAL_KEY exists the cheap default wins again, automatically.
+  return cheapest(reachableRows);
+}
+
+/** Comparable per-unit price for ranking fallbacks. Unpriced sorts last. */
+function unitPrice(m) {
+  const p = m.usdPerSecond ?? m.usdPerImage ?? m.usdPerMinute ?? m.usdPerThousandChars;
+  return p == null ? Number.POSITIVE_INFINITY : p;
+}
+
+module.exports = {
+  MODELS,
+  byKind,
+  resolve,
+  resolveAvailable,
+  estimateUsd,
+  catalogueFor,
+  premiumEnabled,
+};

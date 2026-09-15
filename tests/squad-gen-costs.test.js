@@ -139,3 +139,52 @@ test('a video clip costs more than an image, so their caps differ', () => {
   const jobs = require(p);
   assert.ok(jobs.capFor('video') < jobs.capFor('image'), 'the dear mode must have the tighter cap');
 });
+
+// ── resolveAvailable: a missing key must not silently break a live button ──
+// Regression guard for the deploy of 2026-09-16: production had a Gemini key
+// and no FAL_KEY, so defaulting video to fal would have 503'd a Create Video
+// button that was working minutes earlier.
+test('resolveAvailable falls back to a reachable provider when the default is unkeyed', () => {
+  const models = loadModels();
+  clearPremium();
+  const m = models.resolveAvailable('video', undefined, (p) => p === 'gemini');
+  assert.ok(m, 'expected a model when Gemini is keyed');
+  assert.equal(m.provider, 'gemini');
+});
+
+test('resolveAvailable prefers the cheap default when its provider is reachable', () => {
+  const models = loadModels();
+  const all = () => true;
+  assert.equal(models.resolveAvailable('video', undefined, all).id, 'wan-2.5');
+});
+
+test('resolveAvailable honours an explicit reachable choice', () => {
+  const models = loadModels();
+  const all = () => true;
+  assert.equal(models.resolveAvailable('video', 'kling-2.5-turbo', all).id, 'kling-2.5-turbo');
+});
+
+test('resolveAvailable returns null when nothing is keyed', () => {
+  const models = loadModels();
+  assert.equal(models.resolveAvailable('video', undefined, () => false), null);
+});
+
+test('resolveAvailable never picks premium while a cheaper model is reachable', () => {
+  const models = loadModels();
+  clearPremium();
+  const falOnly = (p) => p === 'fal';
+  const m = models.resolveAvailable('video', 'veo-3.1-fast', falOnly);
+  assert.equal(m.provider, 'fal', 'unreachable premium ask must fall back to fal');
+  assert.ok(m.tier !== 'premium');
+});
+
+test('resolveAvailable uses a premium model only as a last resort', () => {
+  // Production on 2026-09-16: Gemini keyed, no FAL_KEY. Veo is premium and is
+  // the only reachable video row, so availability beats thrift — refusing
+  // would switch off a button customers can use right now.
+  const models = loadModels();
+  clearPremium();
+  const m = models.resolveAvailable('video', undefined, (p) => p === 'gemini');
+  assert.ok(m, 'must stay available when only Veo is reachable');
+  assert.equal(m.provider, 'gemini');
+});
