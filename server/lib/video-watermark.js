@@ -101,6 +101,14 @@ function addWatermark(inputPath, outputPath, linkHandle) {
         "bordercolor=0x000000@0.2:" +
         "x=20:" +
         "y=h-th-30",                      // 30px from bottom
+      // Copyright line — bottom-right (TikTok-style attribution)
+      "drawtext=text='© ScanGym " + new Date().getFullYear() + "':" +
+        "fontsize=14:" +
+        "fontcolor=0xFFFFFF@0.45:" +
+        "borderw=1:" +
+        "bordercolor=0x000000@0.3:" +
+        "x=w-tw-16:" +
+        "y=h-th-30",
       // Orange dot (circle emoji effect via small text)
       "drawtext=text='●':" +
         "fontsize=10:" +
@@ -148,7 +156,8 @@ function addWatermark(inputPath, outputPath, linkHandle) {
  */
 async function getWatermarkedVideo(cdnKey, linkHandle) {
   const safeHandle = (linkHandle || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 60);
-  const cachedPath = path.join(WATERMARK_DIR, safeHandle ? `${cdnKey}_wm_${safeHandle}.mp4` : `${cdnKey}_wm.mp4`);
+  // v2: cache key bumped when the stamp design changed (added © line)
+  const cachedPath = path.join(WATERMARK_DIR, safeHandle ? `${cdnKey}_wm2_${safeHandle}.mp4` : `${cdnKey}_wm2.mp4`);
 
   // Serve from cache if available
   if (fs.existsSync(cachedPath) && fs.statSync(cachedPath).size > 1000) {
