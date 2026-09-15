@@ -58,7 +58,7 @@ const LISTINGS = {
   instagram: 'https://instagram.com/scangym',
   facebook: 'https://facebook.com/scangym',
   twitter: null,         // x.com/scangym belongs to an unrelated account
-  youtube: null,         // youtube/@scangym 404s
+  youtube: 'https://www.youtube.com/@scangym',  // verified live 2026-09-15: ScanGym channel, correct bio
   linkedin: null,
   snapchat: null,
   chatgptPlugin: null,   // app submission pending
