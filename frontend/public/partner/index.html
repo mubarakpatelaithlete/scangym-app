@@ -721,15 +721,17 @@ function managePhotos() {
     var b = document.createElement('div');
     b.id = 'sgPanelBanner';
     b.setAttribute('data-panel', key);
-    b.style.cssText = 'position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:10px;padding:12px 14px;background:linear-gradient(90deg,rgba(255,109,0,.18),rgba(255,109,0,.04));border-bottom:1px solid rgba(255,109,0,.28);backdrop-filter:blur(8px)';
+    b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;display:flex;align-items:center;gap:10px;padding:12px 14px;background:linear-gradient(90deg,rgba(255,109,0,.18),rgba(255,109,0,.04));border-bottom:1px solid rgba(255,109,0,.28);backdrop-filter:blur(8px)';
     b.innerHTML = '<span style="font-size:20px">'+p.icon+'</span>'+
       '<span style="display:flex;flex-direction:column">'+
       '<strong style="color:#fff;font-size:15px;font-weight:800">'+p.title+'</strong>'+
       '<span style="color:rgba(255,255,255,.65);font-size:12px">'+p.sub+'</span></span>';
     document.body.insertBefore(b, document.body.firstChild);
   }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);
-  else mount();
+  function ensure(){ if (!document.getElementById('sgPanelBanner')) mount(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ensure);
+  else ensure();
+  var n = 0, iv = setInterval(function(){ ensure(); if (++n > 20) clearInterval(iv); }, 300);
 })();
 </script>
 </body>
