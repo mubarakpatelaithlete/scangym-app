@@ -95,7 +95,15 @@ const P = {
   gyms: [],
   dashboard: null,
   activeGymId: null,
-  currentTab: 'dashboard',
+  currentTab: (function(){
+    // Deep-link: /partner?panel=locks|hours|status|earnings opens the right tab
+    try{
+      var pn = new URLSearchParams(location.search).get('panel');
+      var map = { locks:'manage', hours:'manage', status:'manage', earnings:'earnings' };
+      if (pn && map[pn]) return map[pn];
+    }catch(e){}
+    return 'dashboard';
+  })(),
   loading: true
 };
 
@@ -695,5 +703,34 @@ function managePhotos() {
 })();
 </script>
 <script src="/smart-lock-finder.js"></script>
+<script>
+/* Panel deep-link banner: tells the customer which panel they opened, and
+   scrolls/highlights the matching control once the dashboard is rendered. */
+(function(){
+  var PANELS = {
+    locks:    { icon:'\uD83D\uDD10', title:'Smart locks',    sub:'Door access & QR entry for your gym' },
+    hours:    { icon:'\uD83D\uDD53', title:'Open / close',   sub:'Set the hours your gym accepts bookings' },
+    status:   { icon:'\uD83D\uDFE2', title:'Listing on / off', sub:'Pause or resume your gym listing' },
+    earnings: { icon:'\uD83D\uDCB0', title:'Earnings',       sub:'What you have made and your payouts' }
+  };
+  var key; try { key = new URLSearchParams(location.search).get('panel'); } catch(e){}
+  var p = key && PANELS[key];
+  if (!p) return;
+  function mount(){
+    if (document.getElementById('sgPanelBanner')) return;
+    var b = document.createElement('div');
+    b.id = 'sgPanelBanner';
+    b.setAttribute('data-panel', key);
+    b.style.cssText = 'position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:10px;padding:12px 14px;background:linear-gradient(90deg,rgba(255,109,0,.18),rgba(255,109,0,.04));border-bottom:1px solid rgba(255,109,0,.28);backdrop-filter:blur(8px)';
+    b.innerHTML = '<span style="font-size:20px">'+p.icon+'</span>'+
+      '<span style="display:flex;flex-direction:column">'+
+      '<strong style="color:#fff;font-size:15px;font-weight:800">'+p.title+'</strong>'+
+      '<span style="color:rgba(255,255,255,.65);font-size:12px">'+p.sub+'</span></span>';
+    document.body.insertBefore(b, document.body.firstChild);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);
+  else mount();
+})();
+</script>
 </body>
 </html>
