@@ -802,6 +802,10 @@ function navigate(path,pushState=true){
   // Fix: separate pathname from query string so route matching works
   var qIdx=path.indexOf('?');
   var pathname=qIdx>=0?path.substring(0,qIdx):path;
+  // Sent to /login? Remember where from, so sign-in returns the customer there.
+  if(/^\/(login|signup|register)$/.test(pathname)&&!/^\/(login|signup|register)$/.test(location.pathname)){
+    try{sessionStorage.setItem('sg_return_to',location.pathname+location.search);}catch(e){}
+  }
   state.route=pathname;
   state.routeQuery=qIdx>=0?path.substring(qIdx):'';
   state.activeTab=getTabForRoute(pathname);
@@ -7165,6 +7169,25 @@ function LoginPage(){
         <div class="text-center">
           <a onclick="state.authStep='phone';render()" class="text-slate-400 text-sm hover:text-brand cursor-pointer">← Change phone number</a>
         </div>
+        ` : state.authStep === 'emailcode' ? `
+        <div>
+          <label class="text-slate-400 text-xs mb-1 block">Code emailed to ${state.authEmail||''}</label>
+          <input id="auth-code" type="text" maxlength="6" inputmode="numeric" autocomplete="one-time-code" placeholder="Enter 6-digit code" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-3 text-white text-sm placeholder-slate-500 outline-none focus:border-brand text-center tracking-widest text-lg">
+        </div>
+        <button id="auth-btn" onclick="handleVerifyEmailCode()" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-4 rounded-xl transition">Verify & Log In</button>
+        <div class="text-center">
+          <a onclick="state.authStep='email';render()" class="text-slate-400 text-sm hover:text-brand cursor-pointer">← Change email</a>
+        </div>
+        ` : state.authStep === 'email' ? `
+        <div>
+          <label class="text-slate-400 text-xs mb-1 block">Email address</label>
+          <input id="auth-email" type="email" inputmode="email" autocomplete="email" placeholder="you@email.com" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-3 text-white text-sm placeholder-slate-500 outline-none focus:border-brand">
+          <p class="text-slate-500 text-xs mt-2">We'll email you a 6-digit code — no password needed.</p>
+        </div>
+        <button id="auth-btn" onclick="handleSendEmailCode()" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-4 rounded-xl transition">Send Code</button>
+        <div class="text-center">
+          <a onclick="state.authStep='phone';render()" class="text-slate-400 text-sm hover:text-brand cursor-pointer">← Other ways to sign in</a>
+        </div>
         ` : `
         <div>
           <label class="text-slate-400 text-xs mb-1 block">Phone Number</label>
@@ -7186,6 +7209,9 @@ function LoginPage(){
         <button id="apple-signin-btn" onclick="handleAppleSignIn()" style="background:#000;color:#fff;border:1px solid rgba(255,255,255,.15);padding:14px;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;width:100%;transition:all .15s">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
           Continue with Apple
+        </button>
+        <button id="email-signin-btn" onclick="state.authStep='email';render()" style="background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.15);padding:14px;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;width:100%;transition:all .15s">
+          ✉️ Continue with Email
         </button>
         `}
         <div class="text-center">
@@ -7229,7 +7255,7 @@ window._sgGoogleCallback=async function(response){
           window._sgOneTapCreatorMode=false;
           _handleCreatorGoogleSignup(data.user);
         }else{
-          navigate('/explore');
+          navigate(_sgAuthReturnPath());
         }
       }
     }else{
@@ -7328,7 +7354,7 @@ window.handleGoogleSignIn=async function(){
                 window._sgOneTapCreatorMode=false;
                 _handleCreatorGoogleSignup(data.user);
               }else{
-                navigate('/explore');
+                navigate(_sgAuthReturnPath());
               }
             }
           }else{
@@ -7405,7 +7431,7 @@ window.handleAppleSignIn=async function(){
           _sendToReels({type:'sg-auth-complete',action:window._pendingReelsAction,video:window._pendingReelsVideo});
           window._pendingReelsAction=null;window._pendingReelsVideo=null;
         }else{
-          navigate('/explore');
+          navigate(_sgAuthReturnPath());
         }
       }
     }else{
@@ -7498,7 +7524,7 @@ window.handleVerifyCode=async function(){
           navigate('/gym/'+state.pendingBookGym);
           state.pendingBookGym=null;
         }else{
-          navigate('/explore');
+          navigate(_sgAuthReturnPath());
         }
       }
     }else{
@@ -7510,6 +7536,86 @@ window.handleVerifyCode=async function(){
     btn.textContent='Verify & Log In';btn.disabled=false;
   }
 };
+
+window.handleSendEmailCode=async function(){
+  const input=document.getElementById('auth-email');
+  const btn=document.getElementById('auth-btn');
+  const errDiv=document.getElementById('auth-error');
+  if(!input)return;
+  const email=input.value.trim().toLowerCase();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){
+    errDiv.textContent='Please enter a valid email address';errDiv.classList.remove('hidden');return;
+  }
+  btn.textContent='Sending...';btn.disabled=true;
+  errDiv.classList.add('hidden');
+  try{
+    const r=await api.authPost('/email/send-code',{email});
+    if(r.success){
+      state.authEmail=email;
+      try{localStorage.setItem('sg_last_email',email);}catch(e){}
+      state.authStep='emailcode';
+      render();
+    }else{
+      errDiv.textContent=r.error||'Failed to send code';errDiv.classList.remove('hidden');
+      btn.textContent='Send Code';btn.disabled=false;
+    }
+  }catch(e){
+    errDiv.textContent='Network error — try again';errDiv.classList.remove('hidden');
+    btn.textContent='Send Code';btn.disabled=false;
+  }
+};
+
+window.handleVerifyEmailCode=async function(){
+  const codeInput=document.getElementById('auth-code');
+  const btn=document.getElementById('auth-btn');
+  const errDiv=document.getElementById('auth-error');
+  if(!codeInput)return;
+  const code=codeInput.value.replace(/\D/g,'');
+  if(code.length!==6){
+    errDiv.textContent='Please enter the 6-digit code';errDiv.classList.remove('hidden');return;
+  }
+  btn.textContent='Verifying...';btn.disabled=true;
+  errDiv.classList.add('hidden');
+  try{
+    const r=await api.authPost('/email/verify',{email:state.authEmail,code});
+    if(r.success&&r.user){
+      state.user=r.user;sgSetSession(true);
+      state.authStep='phone';
+      if(typeof window._sgAuthAfterSuccess==='function'&&document.querySelector('.sg-auth-overlay.open')){
+        window._sgAuthAfterSuccess();
+      }else{
+        if(typeof _sendToReels==='function')_sendToReels({type:'sg-auth-state',loggedIn:true,user:{name:r.user.name,phone:r.user.phone}});
+        sgToast('Welcome'+(r.user.name?', '+r.user.name:'')+'! 🎉','success',3000);
+        if(window._pendingCheckout&&window._pendingCheckout.gymId){
+          const pc=window._pendingCheckout;
+          window._pendingCheckout=null;
+          if(state.activeTab!=='book')navigate('/explore');
+          setTimeout(()=>showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime),200);
+        }else if(state.pendingBookGym){
+          navigate('/gym/'+state.pendingBookGym);
+          state.pendingBookGym=null;
+        }else{
+          navigate(_sgAuthReturnPath());
+        }
+      }
+    }else{
+      errDiv.textContent=r.error||'Invalid code';errDiv.classList.remove('hidden');
+      btn.textContent='Verify & Log In';btn.disabled=false;
+    }
+  }catch(e){
+    errDiv.textContent='Network error — try again';errDiv.classList.remove('hidden');
+    btn.textContent='Verify & Log In';btn.disabled=false;
+  }
+};
+
+/* Where to send someone after signing in on /login: back to the page they came
+   from (remembered by navigate() when it sends them to /login), else Book. */
+function _sgAuthReturnPath(){
+  var back=null;
+  try{back=sessionStorage.getItem('sg_return_to');sessionStorage.removeItem('sg_return_to');}catch(e){}
+  if(back&&/^\/(?!login|signup|register)[^\s]*$/.test(back))return back;
+  return '/explore';
+}
 
 window.handleLogout=async function(){
   await api.authPost('/logout',{});
@@ -19804,7 +19910,7 @@ window.sgFeedback = async function(elementId, vote, btn) {
       <button class="sg-auth-btn sg-auth-btn-phone" id="sg-auth-send-btn" onclick="window._sgAuthSendCode()">
         📲 Send Code
       </button>
-      <div class="sg-auth-back" onclick="window._sgAuthEmailLink()" style="margin-top:12px">✉️ Email me a sign-in link instead</div>
+      <div class="sg-auth-back" onclick="window._sgAuthEmailLink()" style="margin-top:12px">✉️ Continue with Email instead</div>
       <div class="sg-auth-footer">Sign in once — works everywhere in ScanGym</div>
     </div>`;
     // R6: Don't auto-focus phone input — avoids keyboard pop when user wants Google/Apple
@@ -20398,47 +20504,86 @@ window.sgFeedback = async function(elementId, vote, btn) {
   window._sgAuthEmailLink=function(){
     var content=document.getElementById('sg-auth-content');
     if(!content)return;
-    _sheetStep='emaillink';
+    _sheetStep='email';
     var saved='';try{saved=localStorage.getItem('sg_last_email')||'';}catch(e){}
     content.innerHTML=`<div class="sg-auth-step-enter">
-      <div class="sg-auth-title">Sign in by email</div>
-      <div class="sg-auth-sub">We'll send you a one-tap sign-in link</div>
+      <div class="sg-auth-title">Sign in with email</div>
+      <div class="sg-auth-sub">We'll email you a 6-digit code — no password</div>
       <input class="sg-auth-field" id="sg-auth-email" type="email" inputmode="email" autocomplete="email" placeholder="you@email.com" value="${saved.replace(/"/g,'&quot;')}">
       <div class="sg-auth-error" id="sg-auth-err"></div>
-      <button class="sg-auth-btn sg-auth-btn-phone" id="sg-auth-link-btn" onclick="window._sgAuthSendLink()">✉️ Send me the link</button>
+      <button class="sg-auth-btn sg-auth-btn-phone" id="sg-auth-link-btn" onclick="window._sgAuthSendEmailCode()">✉️ Send code</button>
       <div class="sg-auth-back" onclick="window._sgAuthBackToOptions()">← Other ways to sign in</div>
     </div>`;
+    setTimeout(function(){var inp=document.getElementById('sg-auth-email');if(inp&&!inp.value)inp.focus();},350);
   };
 
   window._sgAuthBackToOptions=function(){_renderAuthStep();};
 
-  window._sgAuthSendLink=async function(){
+  function _renderEmailCodeStep(email){
+    _sheetStep='emailcode';
+    var content=document.getElementById('sg-auth-content');
+    if(!content)return;
+    content.innerHTML=`<div class="sg-auth-step-enter">`+_progressDots('auth')+`
+      <div class="sg-auth-title">Enter your code</div>
+      <div class="sg-auth-sub">Emailed to ${email}</div>
+      <input class="sg-auth-code-input" id="sg-auth-code" type="text" maxlength="6" placeholder="••••••" inputmode="numeric" autocomplete="one-time-code">
+      <div class="sg-auth-error" id="sg-auth-err"></div>
+      <button class="sg-auth-btn sg-auth-btn-phone" id="sg-auth-verify-btn" onclick="window._sgAuthVerifyEmailCode()">
+        Verify & Continue
+      </button>
+      <div class="sg-auth-back" onclick="window._sgAuthEmailLink()">← Change email</div>
+    </div>`;
+    setTimeout(function(){var inp=document.getElementById('sg-auth-code');if(inp)inp.focus();},350);
+  }
+
+  window._sgAuthSendEmailCode=async function(){
     var input=document.getElementById('sg-auth-email');
     var err=document.getElementById('sg-auth-err');
     var btn=document.getElementById('sg-auth-link-btn');
-    var email=((input&&input.value)||'').trim();
+    var email=((input&&input.value)||'').trim().toLowerCase();
     function fail(m){if(err){err.textContent=m;err.style.display='block';}}
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){fail('That email doesn\'t look right');return;}
     if(err)err.style.display='none';
     if(btn){btn.disabled=true;btn.innerHTML='Sending…';}
     try{
-      var r=await fetch('/api/auth/send-link',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({contact:email})});
+      var r=await fetch('/api/auth/email/send-code',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({email:email})});
       var d=await r.json().catch(function(){return{};});
-      if(d&&d.ok){
+      if(d&&d.success){
         try{localStorage.setItem('sg_last_email',email);}catch(e){}
-        var content=document.getElementById('sg-auth-content');
-        if(content)content.innerHTML=`<div class="sg-auth-success">
-          <div class="sg-auth-success-icon">✉️</div>
-          <div class="sg-auth-success-text">Check your email</div>
-          <div class="sg-auth-success-sub">We sent a sign-in link to ${email}. It works for 15 minutes.</div>
-        </div>`;
+        state.authEmail=email;
+        _renderEmailCodeStep(email);
       }else{
-        if(btn){btn.disabled=false;btn.innerHTML='✉️ Send me the link';}
-        fail((d&&d.message)||'We couldn\'t email you a link just now');
+        if(btn){btn.disabled=false;btn.innerHTML='✉️ Send code';}
+        fail((d&&d.error)||'We couldn\'t email you a code just now');
       }
     }catch(e){
-      if(btn){btn.disabled=false;btn.innerHTML='✉️ Send me the link';}
-      fail('We couldn\'t email you a link just now');
+      if(btn){btn.disabled=false;btn.innerHTML='✉️ Send code';}
+      fail('We couldn\'t email you a code just now');
+    }
+  };
+
+  window._sgAuthVerifyEmailCode=async function(){
+    var inp=document.getElementById('sg-auth-code');
+    var btn=document.getElementById('sg-auth-verify-btn');
+    var err=document.getElementById('sg-auth-err');
+    if(!inp)return;
+    var code=inp.value.replace(/\D/g,'');
+    if(code.length!==6){err.textContent='Enter the 6-digit code';err.style.display='block';return;}
+    err.style.display='none';
+    btn.textContent='Verifying…';btn.disabled=true;
+    try{
+      var r=await fetch('/api/auth/email/verify',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({email:state.authEmail,code:code})}).then(function(r){return r.json();});
+      if(r.success&&r.user){
+        state.user=r.user;sgSetSession(true);
+        state.authStep='phone';
+        _afterAuthSuccess();
+      }else{
+        err.textContent=r.error||'Invalid code';err.style.display='block';
+        btn.textContent='Verify & Continue';btn.disabled=false;
+      }
+    }catch(e){
+      err.textContent='Network error';err.style.display='block';
+      btn.textContent='Verify & Continue';btn.disabled=false;
     }
   };
 
@@ -20467,7 +20612,7 @@ window.sgFeedback = async function(elementId, vote, btn) {
 
   // ── Hook: called by Google/Apple auth callbacks to advance the sheet ──
   window._sgAuthAfterSuccess=function(){
-    if(_sheetStep==='auth'||_sheetStep==='code'){
+    if(_sheetStep==='auth'||_sheetStep==='code'||_sheetStep==='email'||_sheetStep==='emailcode'){
       _afterAuthSuccess();
     }
   };

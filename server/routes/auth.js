@@ -775,6 +775,98 @@ router.post('/redeem-link', async (req, res) => {
 });
 
 /**
+ * POST /api/auth/email/send-code  { email }
+ *
+ * Six-digit code by email — the same door the voice assistant already uses
+ * (lib/email-login-code.js), now with a button. No password, no link to tap:
+ * type the code you were sent. Same 10-minute expiry, hashed at rest, 5 wrong
+ * guesses burn it. Never says whether the address already has an account.
+ */
+const _emailCodeSends = new Map(); // key → [timestamps]; tiny in-memory throttle
+function _emailCodeThrottled(key, now = Date.now()) {
+  const recent = (_emailCodeSends.get(key) || []).filter((t) => now - t < 10 * 60 * 1000);
+  recent.push(now);
+  _emailCodeSends.set(key, recent);
+  if (_emailCodeSends.size > 5000) _emailCodeSends.clear();
+  return recent.length > 4;
+}
+
+router.post('/email/send-code', async (req, res) => {
+  try {
+    const email = String((req.body || {}).email || '').trim().toLowerCase();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(email)) {
+      return res.status(400).json({ error: 'That email address doesn\'t look right' });
+    }
+    if (_emailCodeThrottled(email) || _emailCodeThrottled('ip:' + req.ip)) {
+      return res.status(429).json({ error: 'Too many codes requested — wait a few minutes and try again' });
+    }
+    const { issueCode } = require('../lib/email-login-code');
+    const result = await issueCode({ email });
+    if (!result.ok) return res.status(502).json({ error: 'We couldn\'t email you a code just now — try phone or Google instead' });
+    return res.json({ success: true, email, message: `Code sent to ${email}` });
+  } catch (err) {
+    console.error('[Auth] email/send-code error:', err.message);
+    return res.status(500).json({ error: 'Failed to send code' });
+  }
+});
+
+/**
+ * POST /api/auth/email/verify  { email, code }
+ *
+ * Checks the code, then finds or creates the account by email. Google/Apple
+ * logins also key on the email column, so a customer who signed in with Google
+ * yesterday and email today lands on the same account, with the same card.
+ */
+router.post('/email/verify', async (req, res) => {
+  try {
+    const email = String((req.body || {}).email || '').trim().toLowerCase();
+    const code = String((req.body || {}).code || '').replace(/\D/g, '');
+    if (!email || !code) return res.status(400).json({ error: 'Email and code are required' });
+
+    const { checkCode } = require('../lib/email-login-code');
+    const checked = checkCode({ email, code });
+    if (!checked.ok) return res.status(400).json({ error: 'Invalid or expired code' });
+
+    let user = await pool.query('SELECT * FROM public.users WHERE LOWER(email) = $1 ORDER BY created_at ASC LIMIT 1', [email]);
+    if (user.rows.length === 0) {
+      user = await pool.query(
+        `INSERT INTO public.users (id, email, created_at, updated_at)
+         VALUES (gen_random_uuid(), $1, NOW(), NOW()) RETURNING *`,
+        [email]
+      );
+      console.log('Created new user via email code:', email);
+    } else {
+      await pool.query('UPDATE public.users SET updated_at = NOW() WHERE id = $1', [user.rows[0].id]);
+      console.log('Existing user email-code login:', email);
+    }
+    const u = user.rows[0];
+
+    const stripeCustomerId = await ensureStripeCustomer(u.id, u.phone_number, email);
+    const referralHandle = await ensureReferralHandle(u.id, u.first_name, u.last_name, email, u.phone_number);
+
+    req.session.userId = u.id;
+    if (u.phone_number) req.session.phone = u.phone_number;
+
+    return res.json({
+      success: true,
+      user: {
+        id: u.id,
+        phone: u.phone_number || null,
+        name: [u.first_name, u.last_name].filter(Boolean).join(' ') || null,
+        email,
+        hasStripeCustomer: !!stripeCustomerId,
+        referralHandle,
+        referralLink: referralHandle ? `scangym.com/r/${referralHandle}` : null,
+      },
+      message: 'Logged in successfully',
+    });
+  } catch (err) {
+    console.error('[Auth] email/verify error:', err.message);
+    return res.status(500).json({ error: 'Verification failed' });
+  }
+});
+
+/**
  * POST /api/auth/logout
  */
 router.post('/logout', (req, res) => {
