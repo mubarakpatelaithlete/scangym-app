@@ -1162,7 +1162,10 @@ function sgDistanceLabel(gym){
   if(gym._realTravelLabel) return gym._realTravelLabel;
   if(gym.distanceText) return gym.distanceText;
   if(typeof gym.distance==='number'&&isFinite(gym.distance)){
-    return gym.distance<1?Math.round(gym.distance*1000)+'m':gym.distance.toFixed(1)+'km';
+    /* "0.4km" makes a visitor do the maths. Walking pace ~5km/h = 12 min/km. */
+    var _mins=Math.max(1,Math.round(gym.distance*12));
+    var _d=gym.distance<1?Math.round(gym.distance*1000)+'m':gym.distance.toFixed(1)+'km';
+    return _mins<=45?(_d+' \u00b7 '+_mins+' min walk'):_d;
   }
   return 'Nearby';
 }
@@ -1698,6 +1701,8 @@ function SearchPage(){
               +'<div class="sg-filter-pill" data-filter="24h" onclick="_sgApplyBookFilter(this)">⏰ 24/7 Gyms</div>'
               +'<div class="sg-filter-pill" data-filter="self-serve" onclick="_sgApplyBookFilter(this)">🔓 Self-Serve</div>'
               +'<div class="sg-filter-pill" data-filter="open" onclick="_sgApplyBookFilter(this)">🟢 Open Now</div>'
+              +'<div class="sg-filter-pill" data-filter="price-low" onclick="_sgApplyBookFilter(this)">💰 Under £5</div>'
+              +'<div class="sg-filter-pill" data-filter="price-mid" onclick="_sgApplyBookFilter(this)">💵 £5-£10</div>'
               +'<div class="sg-filter-pill" data-filter="frequent" onclick="_sgApplyBookFilter(this)">🔥 Frequently Visited</div>'
               +'<div class="sg-filter-pill" data-filter="recent" onclick="_sgApplyBookFilter(this)">🕐 Recently Visited</div>'
               +'</div>';
@@ -1748,7 +1753,7 @@ function SearchPage(){
           /* Name */
           html+='<div class="tt-gym-name">'+c.name+'</div>';
           /* Address */
-          html+='<div class="tt-gym-addr">\u{1F4CD} '+(c.addr?c.addr.split(',')[0]:'Nearby')+' \u00b7 <span class="tt-travel-label" data-gym-travel-id="'+c.id+'">'+c.distMin+'</span> \u00b7 <span class="'+c.openClass+'">'+c.openTag+'</span></div>';
+          html+='<div class="tt-gym-addr">\u{1F4CD} '+(c.addr?c.addr.split(',')[0]:'Nearby')+' \u00b7 <span class="tt-travel-label" data-gym-travel-id="'+c.id+'">'+c.distMin+'</span> \u00b7 <span class="'+c.openClass+'">'+(c.openText||c.openTag)+'</span></div>';
           /* Chips — booking count shown only when the server has real bookings (bookedBucket) */
           var _bMonth=bookedBucket(c.gym);
           html+='<div class="tt-chips">';
@@ -6516,6 +6521,74 @@ window._fsFilter=function(type){
   });
 };
 
+
+/* ─── Page: pick a booking date (Book tab → Calendar) ───
+   This route used to show a read-only training history that sat on "Loading..."
+   forever when signed out. A customer tapping the calendar in the Book tab is
+   trying to book a day, like Uber's "Schedule" — so it now picks a date. */
+function BookDatePage(){
+  var _mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var _dow=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  var sel=(window._gymBookingState&&window._gymBookingState.selectedDate)||'';
+  var out='';
+  for(var i=0;i<14;i++){
+    var d=new Date();d.setDate(d.getDate()+i);
+    var iso=d.toISOString().split('T')[0];
+    var name=i===0?'Today':i===1?'Tomorrow':_dow[d.getDay()];
+    var on=(sel===iso)||(!sel&&i===0);
+    out+='<div onclick="window._sgPickBookDate(\''+iso+'\')" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;margin-bottom:8px;border-radius:14px;cursor:pointer;background:'+(on?'rgba(255,109,0,.14)':'rgba(255,255,255,.04)')+';border:1px solid '+(on?'rgba(255,109,0,.4)':'rgba(255,255,255,.06)')+'">'
+      +'<div><div style="color:#fff;font-size:15px;font-weight:700">'+name+'</div>'
+      +'<div style="color:rgba(255,255,255,.4);font-size:12px;margin-top:2px">'+d.getDate()+' '+_mo[d.getMonth()]+'</div></div>'
+      +'<span style="color:'+(on?'#FF6D00':'rgba(255,255,255,.25)')+';font-size:16px">'+(on?'\u2713':'\u203a')+'</span></div>';
+  }
+  return'<div class="pt-8 min-h-full px-4 pb-28"><div class="max-w-md mx-auto py-4">'
+    +'<h1 class="font-brand text-2xl font-bold text-white mb-1">When do you want to train?</h1>'
+    +'<p class="text-slate-400 text-sm mb-5">Pick a day — free cancellation, and you only pay for the day you book.</p>'
+    +out
+    +'<p style="color:rgba(255,255,255,.35);font-size:12px;margin-top:14px">Booked days you have already paid for show in <span onclick="navigate(\'/my-bookings\')" style="color:#FF6D00;cursor:pointer">My bookings</span>.</p>'
+    +'</div></div>';
+}
+window._sgPickBookDate=function(iso){
+  window._gymBookingState=window._gymBookingState||{};
+  window._gymBookingState.selectedDate=iso;
+  if(window.sgToast)sgToast('\uD83D\uDCC5 Booking for '+iso,'success',1800);
+  navigate('/explore');
+};
+
+/* ─── Page: pick a pass (Book tab → Passes) ───
+   Passes used to land on the payment wallet. A customer wants the options and
+   what each costs first — the way Uber shows ride types before you pay. */
+function BookPassesPage(){
+  function pr(t,fb){try{var x=(typeof sgPrice==='function')&&sgPrice(t);return x?x.symbol+Number(x.amount).toFixed(2):fb;}catch(e){return fb;}}
+  var opts=[
+    {k:'day',i:'\u26A1',n:'Day Pass',d:'24 hours full gym access',p:pr('day','\u00a34.49'),tag:'MOST POPULAR'},
+    {k:'3day',i:'\uD83D\uDD25',n:'3-Day Pass',d:'Three separate days, use any time',p:pr('3day','\u00a311.99'),tag:''},
+    {k:'weekly',i:'\uD83D\uDCC5',n:'Weekly',d:'7 days in a row',p:pr('weekly','\u00a322.49'),tag:''},
+    {k:'monthly',i:'\uD83C\uDFC6',n:'Monthly',d:'30 days, best value per day',p:pr('monthly','\u00a349.99'),tag:'BEST VALUE'}
+  ];
+  var sel=(window._gymBookingState&&window._gymBookingState.selectedPass)||'day';
+  var out=opts.map(function(o){
+    var on=sel===o.k;
+    return'<div onclick="window._sgPickPass(\''+o.k+'\')" style="display:flex;align-items:center;gap:14px;padding:16px;margin-bottom:10px;border-radius:16px;cursor:pointer;background:'+(on?'rgba(255,109,0,.12)':'rgba(255,255,255,.04)')+';border:1px solid '+(on?'rgba(255,109,0,.4)':'rgba(255,255,255,.06)')+'">'
+      +'<span style="font-size:24px">'+o.i+'</span>'
+      +'<div style="flex:1"><div style="color:#fff;font-size:15px;font-weight:700">'+o.n+(o.tag?' <span style="background:rgba(34,197,94,.18);color:#22c55e;font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;letter-spacing:.5px">'+o.tag+'</span>':'')+'</div>'
+      +'<div style="color:rgba(255,255,255,.4);font-size:12px;margin-top:2px">'+o.d+'</div></div>'
+      +'<div style="color:#fff;font-size:16px;font-weight:800">'+o.p+'</div></div>';
+  }).join('');
+  return'<div class="pt-8 min-h-full px-4 pb-28"><div class="max-w-md mx-auto py-4">'
+    +'<h1 class="font-brand text-2xl font-bold text-white mb-1">Choose your pass</h1>'
+    +'<p class="text-slate-400 text-sm mb-5">No membership, no joining fee. Free cancellation — and nothing is charged until you book.</p>'
+    +out
+    +'<p style="color:rgba(255,255,255,.35);font-size:12px;margin-top:6px">Already bought one? See it in <span onclick="navigate(\'/my-bookings\')" style="color:#FF6D00;cursor:pointer">My bookings</span> · cards live in <span onclick="navigate(\'/wallet\')" style="color:#FF6D00;cursor:pointer">Payment</span>.</p>'
+    +'</div></div>';
+}
+window._sgPickPass=function(k){
+  window._gymBookingState=window._gymBookingState||{};
+  window._gymBookingState.selectedPass=k;
+  if(window.sgToast)sgToast('\uD83C\uDF9F\uFE0F Pass selected','success',1600);
+  navigate('/explore');
+};
+
 // ─── Page: Wallet (payment wallet) ───
 function WalletPage(){
   if(!state.user){
@@ -6530,6 +6603,7 @@ function WalletPage(){
         <div style="display:flex;align-items:center;gap:10px"><span style="font-size:18px">🔒</span><span style="color:rgba(255,255,255,.6);font-size:13px">Secured by Stripe — bank-level encryption</span></div>
       </div>
       <button onclick="navigate('/login')" class="bg-brand hover:bg-orange-600 text-white font-bold py-4 px-8 rounded-xl transition text-lg w-full">Sign In to Get Started</button>
+      <p style="color:rgba(255,255,255,.45);font-size:12px;margin-top:12px">🔒 No charge until you book — adding a card just makes checkout one tap.</p>
     </div></div>`;
   }
 
@@ -7129,7 +7203,13 @@ function _getCountryCodeOptions(){
     if(_m)_localeRegion=_m[1].toUpperCase();
   }catch(e){}
   const _hintCountry=(geo&&!geo.needs_confirmation&&geo.country)?String(geo.country).toUpperCase():'';
-  const detectedCountry=_localeRegion||_hintCountry||'GB';
+  /* A visitor browsing London gyms in GBP was offered US +1 because a
+     US-English browser reports en-US. The country whose gyms we are actually
+     showing is the better guess, so it now wins; the browser locale is the
+     fallback, and anything we do not recognise lands on GB. */
+  const _known=codes.map(c=>c.country);
+  const _cands=[_hintCountry,_localeRegion,'GB'].filter(c=>c&&_known.indexOf(c)>=0);
+  const detectedCountry=_cands[0]||'GB';
   return codes.map(c=>`<option value="${c.code}" ${c.country===detectedCountry?'selected':''}>${c.flag} ${c.code}</option>`).join('');
 }
 
@@ -7189,19 +7269,10 @@ function LoginPage(){
           <a onclick="state.authStep='phone';render()" class="text-slate-400 text-sm hover:text-brand cursor-pointer">← Other ways to sign in</a>
         </div>
         ` : `
-        <div>
-          <label class="text-slate-400 text-xs mb-1 block">Phone Number</label>
-          <div class="flex gap-2">
-            <select id="auth-country-code" class="bg-slate-800 border border-slate-600 rounded-lg px-2 py-3 text-white text-sm outline-none" style="min-width:72px">${_getCountryCodeOptions()}</select>
-            <input id="auth-phone" type="tel" placeholder="7XXX XXXXXX" class="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-3 py-3 text-white text-sm placeholder-slate-500 outline-none focus:border-brand">
-          </div>
-        </div>
-        <button id="auth-btn" onclick="handleSendCode()" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-4 rounded-xl transition">Send Verification Code</button>
-        <div style="display:flex;align-items:center;gap:12px;margin:4px 0">
-          <div style="flex:1;height:1px;background:rgba(255,255,255,.1)"></div>
-          <span style="color:rgba(255,255,255,.3);font-size:12px;font-weight:500">or</span>
-          <div style="flex:1;height:1px;background:rgba(255,255,255,.1)"></div>
-        </div>
+        <!-- Order matters: the taps most visitors actually use come first, and
+             the phone form (which used to sit on top and dominate the sheet)
+             now sits below its own divider. Microsoft is here for gym staff and
+             partners too, not hidden away. -->
         <button id="google-signin-btn" onclick="handleGoogleSignIn()" class="w-full bg-white hover:bg-gray-100 text-gray-800 font-bold py-3 rounded-xl transition flex items-center justify-center gap-3" style="background:#fff;color:#1f1f1f;border:none;padding:14px;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px">
           <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#34A853" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#FBBC05" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
           Continue with Google
@@ -7210,9 +7281,27 @@ function LoginPage(){
           <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
           Continue with Apple
         </button>
-        <button id="email-signin-btn" onclick="state.authStep='email';render()" style="background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.15);padding:14px;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;width:100%;transition:all .15s">
-          ✉️ Continue with Email
+        <button id="ms-signin-btn" onclick="window._sgMicrosoftSignIn()" style="background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.15);padding:14px;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;width:100%;transition:all .15s">
+          <svg width="18" height="18" viewBox="0 0 23 23"><path fill="#f35325" d="M1 1h10v10H1z"/><path fill="#81bc06" d="M12 1h10v10H12z"/><path fill="#05a6f0" d="M1 12h10v10H1z"/><path fill="#ffba08" d="M12 12h10v10H12z"/></svg>
+          Continue with Microsoft
         </button>
+        <button id="email-signin-btn" onclick="state.authStep='email';render()" style="background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.15);padding:14px;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;width:100%;transition:all .15s">
+
+        <p class="text-slate-500 text-xs text-center" style="margin-top:-2px">One tap — we never ask for a password.</p>
+        <div style="display:flex;align-items:center;gap:12px;margin:4px 0">
+          <div style="flex:1;height:1px;background:rgba(255,255,255,.1)"></div>
+          <span style="color:rgba(255,255,255,.3);font-size:12px;font-weight:500">or use your phone</span>
+          <div style="flex:1;height:1px;background:rgba(255,255,255,.1)"></div>
+        </div>
+        <div>
+          <label class="text-slate-400 text-xs mb-1 block">Phone Number</label>
+          <div class="flex gap-2">
+            <select id="auth-country-code" class="bg-slate-800 border border-slate-600 rounded-lg px-2 py-3 text-white text-sm outline-none" style="min-width:72px">${_getCountryCodeOptions()}</select>
+            <input id="auth-phone" type="tel" placeholder="7XXX XXXXXX" class="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-3 py-3 text-white text-sm placeholder-slate-500 outline-none focus:border-brand">
+          </div>
+          <p class="text-slate-500 text-xs mt-2">We'll text you a 6-digit code — no password needed.</p>
+        </div>
+        <button id="auth-btn" onclick="handleSendCode()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-4 rounded-xl transition">Send Verification Code</button>
         `}
         <div class="text-center">
           <p class="text-slate-500 text-xs mt-2">Sign in once — your card saves for 1-tap booking ⚡</p>
@@ -7222,6 +7311,16 @@ function LoginPage(){
   </div>`;
 }
 
+
+/* Microsoft / Workspace sign-in. Same /api/auth/sso endpoint as gym staff, but
+   offered to every customer: one account per email either way. Returns the
+   visitor to the page they were on. */
+window._sgMicrosoftSignIn=function(){
+  try{
+    var back=(state&&state.returnTo)||location.pathname+location.search;
+    location.href='/api/auth/sso/start?returnTo='+encodeURIComponent(back);
+  }catch(e){location.href='/api/auth/sso/start';}
+};
 
 // ─── Google One Tap + Sign-In Handler (upgraded from Fix #5B) ───
 // Shared callback for both One Tap auto-prompt and manual button click
@@ -12397,6 +12496,13 @@ window._sgApplyBookFilter=function(el){
       if(f==='24h'&&card.getAttribute('data-is-24h')!=='true')show=false;
       if(f==='self-serve'&&card.getAttribute('data-self-service')!=='true')show=false;
       if(f==='open'&&card.getAttribute('data-is-open')!=='true')show=false;
+      /* Price filters: the card carries its own day-pass price as text. */
+      if(f==='price-low'||f==='price-mid'){
+        var _pv=parseFloat(String(card.getAttribute('data-price')||'').replace(/[^0-9.]/g,''));
+        if(!isFinite(_pv))show=false;
+        else if(f==='price-low'&&_pv>=5)show=false;
+        else if(f==='price-mid'&&(_pv<5||_pv>10))show=false;
+      }
       if(f==='frequent'){
         var gid=card.getAttribute('data-gym-id');
         var v=visitHistory[gid];
@@ -15681,7 +15787,8 @@ function _renderInner(){
   else if(path.startsWith('/gym-manage/'))page=GymPartnerManagePage();
   else if(path==='/creator-hub')page=CreatorDashboardPage();
   else if(path==='/pay-next-visit')page=PayNextVisitPage();
-  else if(path==='/wallet'||path==='/more/passes')page=WalletPage();
+  else if(path==='/more/passes'||path==='/passes')page=BookPassesPage();
+  else if(path==='/wallet')page=WalletPage();
   else if(path==='/dashboard'||path==='/admin'){const tk=localStorage.getItem('sg_token');if(!tk){page=`<div class="max-w-md mx-auto mt-20 text-center"><p class="text-2xl mb-4">🔒</p><p class="text-white font-bold text-xl mb-2">Dashboard Access Required</p><p class="text-slate-400 mb-4">Please log in with your admin account to view the dashboard.</p><button onclick="navigate(\'/login\')" class="bg-brand text-white px-6 py-3 rounded-lg font-bold">Log In →</button></div>`;}else{page=DashboardPage();}}
   else if(path==='/suppliers/vending')page=SupplierPage('vending');
   else if(path==='/suppliers/qr')page=SupplierPage('qr');
@@ -15998,7 +16105,7 @@ function _renderInner(){
   else if(path==='/apps'||path==='/apps/')page=AppsFullPage();
   else if(path==='/channels'||path==='/channels/')page=ChannelsFullPage();
   // #80: Calendar page
-  else if(path==='/calendar'||path==='/more/calendar')page=InfoPage('Workout Calendar',`<div style="text-align:center;padding:16px 0"><p style="font-size:48px">📅</p><h2 style="color:#fff;font-size:22px;font-weight:800;margin:12px 0">Your Training Calendar</h2><div id="sg-calendar-grid" style="padding:8px"><p style="color:rgba(255,255,255,.3)">Loading...</p></div><script>setTimeout(async function(){try{var r=await fetch('/api/ai/calendar',{credentials:'include'});var d=await r.json();var h='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:16px">';['M','T','W','T','F','S','S'].forEach(function(d){h+='<div style="color:rgba(255,255,255,.3);font-size:11px;font-weight:700;text-align:center;padding:4px">'+d+'</div>';});for(var i=1;i<=30;i++){var dd=d.month+'-'+(i<10?'0':'')+i;var active=d.days&&d.days[dd];h+='<div style="aspect-ratio:1;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff;background:'+(active?'rgba(255,109,0,.3)':'rgba(255,255,255,.04)')+'">'+i+'</div>';}h+='</div>';h+='<div style="margin-top:16px;display:flex;gap:12px;justify-content:center"><div style="text-align:center"><div style="color:#FF6D00;font-size:24px;font-weight:900">'+(d.stats?.activeDays||0)+'</div><div style="color:rgba(255,255,255,.3);font-size:11px">Active Days</div></div><div style="text-align:center"><div style="color:#22c55e;font-size:24px;font-weight:900">'+(d.stats?.consistency||0)+'%</div><div style="color:rgba(255,255,255,.3);font-size:11px">Consistency</div></div></div>';document.getElementById('sg-calendar-grid').innerHTML=h;}catch(e){document.getElementById('sg-calendar-grid').innerHTML='<p style="color:#FF6D00">Sign in to see your calendar</p>';}},300)</script></div>`);
+  else if(path==='/calendar'||path==='/more/calendar')page=BookDatePage();
   // #81: Progress page
   else if(path==='/progress')page=InfoPage('Progress Tracking',`<div style="text-align:center;padding:16px 0"><p style="font-size:48px">📈</p><h2 style="color:#fff;font-size:22px;font-weight:800;margin:12px 0">Your Progress</h2><div id="sg-progress-data" style="padding:8px"><p style="color:rgba(255,255,255,.3)">Loading...</p></div><script>setTimeout(async function(){try{var r=await fetch('/api/ai/progress?weeks=12',{credentials:'include'});var d=await r.json();var h='<div style="text-align:left;margin-top:16px"><div style="display:flex;gap:12px;margin-bottom:20px"><div style="flex:1;background:rgba(255,109,0,.08);border:1px solid rgba(255,109,0,.2);border-radius:16px;padding:16px;text-align:center"><div style="color:#FF6D00;font-size:28px;font-weight:900">'+d.totalSessions+'</div><div style="color:rgba(255,255,255,.4);font-size:11px">Sessions</div></div><div style="flex:1;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:16px;padding:16px;text-align:center"><div style="color:#22c55e;font-size:28px;font-weight:900">'+d.avgSessionsPerWeek+'</div><div style="color:rgba(255,255,255,.4);font-size:11px">Avg/Week</div></div></div>';if(d.corrections&&d.corrections.length>0){h+='<div style="margin-bottom:16px"><p style="color:#fff;font-size:14px;font-weight:700;margin-bottom:8px">🔬 Science Corrections</p>';d.corrections.forEach(function(c){h+='<div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:12px;padding:12px;margin-bottom:8px"><p style="color:#ef4444;font-size:13px;font-weight:600">'+c.type.toUpperCase()+'</p><p style="color:rgba(255,255,255,.7);font-size:13px;margin-top:4px">'+c.message+'</p></div>';});h+='</div>';}h+='</div>';document.getElementById('sg-progress-data').innerHTML=h;}catch(e){document.getElementById('sg-progress-data').innerHTML='<p style="color:#FF6D00">Sign in to track progress</p>';}},300)</script></div>`);
   // #82: Weight calculator page
@@ -20766,6 +20873,10 @@ window._sgShareReview=function(reviewId){
 };
 window._sgShareAffiliateLink=function(gymId,gymName){window._sgShareGymLink(gymId,gymName,true);};
 window._sgShareGymLink=function(gymId,gymName,affiliate){
+  /* A signed-in customer sharing a gym should earn from it: default the plain
+     Share button to their own referral deep link. Signed out it stays a clean
+     link (no account = no handle to attribute to). */
+  if(affiliate===undefined&&typeof state!=='undefined'&&state&&state.user)affiliate=true;
   // Affiliate share needs an account (the ?ref= handle comes from the user)
   if(affiliate&&!state.user){
     window._pendingShareGym={gymId:gymId,gymName:gymName,affiliate:true};
