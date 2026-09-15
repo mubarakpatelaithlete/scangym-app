@@ -20,6 +20,10 @@ const Module = require('node:module');
 
 process.env.DATABASE_URL = process.env.DATABASE_URL || 'postgres://user:pass@127.0.0.1:5432/none';
 process.env.GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'test-key';
+// Create Video is multi-model now and defaults to WAN 2.5 on fal, because Veo
+// bills ~10x per second. Both providers are keyed here so these tests exercise
+// the real default rather than silently falling back.
+process.env.FAL_KEY = process.env.FAL_KEY || 'test-fal-key';
 
 const ROOT = path.join(__dirname, '..');
 const ROUTE = path.join(ROOT, 'server', 'routes', 'squad-video');
@@ -73,7 +77,7 @@ function mockRes() {
   res.setHeader = (k, v) => { res.headers[k] = v; };
   return res;
 }
-const mockReq = (over = {}) => ({ ip: '1.2.3.4', body: {}, params: {}, ...over });
+const mockReq = (over = {}) => ({ ip: '1.2.3.4', body: {}, params: {}, query: {}, ...over });
 
 function stubFetch(fn) {
   const real = global.fetch;
@@ -86,9 +90,11 @@ function stubFetch(fn) {
 test('the settings the user picks are actually sent to the model', async () => {
   const { router } = loadRouter(() => ({ rows: [{ n: 0 }] }));
   let sent = null;
+  let calledUrl = null;
   const restore = stubFetch(async (url, opts) => {
+    calledUrl = String(url);
     sent = JSON.parse(opts.body);
-    return { ok: true, json: async () => ({ name: 'operations/abc' }) };
+    return { ok: true, json: async () => ({ request_id: 'fal-abc' }) };
   });
   try {
     const res = mockRes();
@@ -96,13 +102,71 @@ test('the settings the user picks are actually sent to the model', async () => {
       mockReq({ body: { prompt: 'a gym', aspectRatio: '16:9', durationSeconds: 4, resolution: '1080p', generateAudio: false } }),
       res,
     );
+    // The default provider is fal, so the settings arrive in fal's shape.
+    // What matters is unchanged from the original bug: the values the user
+    // picked reach the model instead of being decoration.
+    assert.match(calledUrl, /queue\.fal\.run/);
+    assert.strictEqual(sent.aspect_ratio, '16:9');
+    assert.strictEqual(sent.duration, 4);
+    assert.strictEqual(sent.resolution, '1080p');
+    assert.strictEqual(sent.enable_audio, false);
+    assert.ok(res.body.jobId, 'a job id comes back');
+    assert.strictEqual(res.body.model.id, 'wan-2.5', 'the cheap model is the default');
+    assert.ok(res.body.costUsd > 0, 'the sheet is told what it will cost before spending');
+  } finally {
+    restore();
+  }
+});
+
+test('choosing Veo still sends Veo-shaped settings to Gemini', async () => {
+  // The premium path must keep working: the same picked settings, translated
+  // for the other provider rather than dropped.
+  process.env.PREMIUM_MODELS_ENABLED = 'true';
+  const { router } = loadRouter(() => ({ rows: [{ n: 0 }] }));
+  let sent = null;
+  let calledUrl = null;
+  const restore = stubFetch(async (url, opts) => {
+    calledUrl = String(url);
+    sent = JSON.parse(opts.body);
+    return { ok: true, json: async () => ({ name: 'operations/abc' }) };
+  });
+  try {
+    const res = mockRes();
+    await handlerFor(router, 'post', '/generate')(
+      mockReq({ body: { prompt: 'a gym', model: 'veo-3.1-fast', aspectRatio: '16:9', durationSeconds: 4, resolution: '1080p', generateAudio: false } }),
+      res,
+    );
+    assert.match(calledUrl, /generativelanguage\.googleapis\.com/);
     assert.deepStrictEqual(sent.parameters, {
       aspectRatio: '16:9',
       durationSeconds: 4,
       resolution: '1080p',
       generateAudio: false,
-    }, 'the chosen settings must reach Veo, not be dropped like the old 8s chip');
-    assert.ok(res.body.jobId, 'a job id comes back');
+    });
+    assert.strictEqual(res.body.model.id, 'veo-3.1-fast');
+  } finally {
+    restore();
+    delete process.env.PREMIUM_MODELS_ENABLED;
+  }
+});
+
+test('Veo cannot be reached unless premium is explicitly enabled', async () => {
+  // The regression that would quietly cost ~£104/creator/month: a request
+  // naming the dear model must fall back to the cheap one, not honour it.
+  const { router } = loadRouter(() => ({ rows: [{ n: 0 }] }));
+  let calledUrl = null;
+  const restore = stubFetch(async (url) => {
+    calledUrl = String(url);
+    return { ok: true, json: async () => ({ request_id: 'fal-abc' }) };
+  });
+  try {
+    const res = mockRes();
+    await handlerFor(router, 'post', '/generate')(
+      mockReq({ body: { prompt: 'a gym', model: 'veo-3.1-fast' } }),
+      res,
+    );
+    assert.match(calledUrl, /queue\.fal\.run/, 'must not reach Gemini');
+    assert.strictEqual(res.body.model.id, 'wan-2.5');
   } finally {
     restore();
   }
@@ -113,16 +177,16 @@ test('settings the client invents are replaced by defaults, never forwarded', as
   let sent = null;
   const restore = stubFetch(async (url, opts) => {
     sent = JSON.parse(opts.body);
-    return { ok: true, json: async () => ({ name: 'operations/abc' }) };
+    return { ok: true, json: async () => ({ request_id: 'fal-abc' }) };
   });
   try {
     await handlerFor(router, 'post', '/generate')(
       mockReq({ body: { prompt: 'a gym', aspectRatio: '4:3', durationSeconds: 3600, resolution: '8k' } }),
       mockRes(),
     );
-    assert.strictEqual(sent.parameters.durationSeconds, 8, '3600s would be a billing hole');
-    assert.strictEqual(sent.parameters.aspectRatio, '9:16');
-    assert.strictEqual(sent.parameters.resolution, '720p');
+    assert.strictEqual(sent.duration, 8, '3600s would be a billing hole');
+    assert.strictEqual(sent.aspect_ratio, '9:16');
+    assert.strictEqual(sent.resolution, '720p');
   } finally {
     restore();
   }
@@ -157,7 +221,7 @@ test('a database that is down does not block rendering', async () => {
   let reached = false;
   const restore = stubFetch(async () => {
     reached = true;
-    return { ok: true, json: async () => ({ name: 'operations/abc' }) };
+    return { ok: true, json: async () => ({ request_id: 'fal-abc' }) };
   });
   try {
     const res = mockRes();
@@ -173,7 +237,7 @@ test('a database that is down does not block rendering', async () => {
 
 test('a started job is written to squad_video_jobs', async () => {
   const { router, calls } = loadRouter(() => ({ rows: [{ n: 0 }] }));
-  const restore = stubFetch(async () => ({ ok: true, json: async () => ({ name: 'operations/xyz' }) }));
+  const restore = stubFetch(async () => ({ ok: true, json: async () => ({ request_id: 'fal-xyz' }) }));
   try {
     await handlerFor(router, 'post', '/generate')(
       mockReq({ body: { prompt: 'squat racks' } }),
@@ -182,7 +246,9 @@ test('a started job is written to squad_video_jobs', async () => {
     const insert = calls.find((c) => /INSERT INTO squad_video_jobs/.test(c.sql));
     assert.ok(insert, 'the job must be recorded, or history and the cap are fiction');
     assert.ok(insert.params.includes('squat racks'));
-    assert.ok(insert.params.includes('operations/xyz'), 'the operation name is what lets polling resume after a deploy');
+    assert.ok(insert.params.includes('fal-xyz'), 'the provider job id is what lets polling resume after a deploy');
+    assert.ok(insert.params.includes('wan-2.5'), 'the row remembers which model rendered it');
+    assert.ok(insert.params.includes('fal'), 'and which provider, so a changed default cannot orphan it');
   } finally {
     restore();
   }
@@ -222,6 +288,9 @@ test('health reports remaining renders so the sheet never guesses', async () => 
     assert.strictEqual(res.body.available, true);
     assert.deepStrictEqual(res.body.quota, { used: 1, limit: 5, remaining: 4 });
     assert.ok(res.body.options, 'the sheet needs the allowed values to render its controls');
+    assert.ok(Array.isArray(res.body.models) && res.body.models.length > 1,
+      'the sheet needs the model menu, with a price against each one');
+    assert.ok(res.body.models.every((m) => m.estimateUsd > 0), 'every offered model is priced');
   } finally {
     restore();
   }

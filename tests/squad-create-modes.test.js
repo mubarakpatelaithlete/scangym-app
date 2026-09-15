@@ -42,16 +42,35 @@ test('every one of the eight modes is reported', () => {
 });
 
 test('a mode with no route is never configured, even with a key set', () => {
-  // Text used to be the example here; it now has a route (/api/squad-text), so
-  // the unbuilt case is demonstrated with image, which does not.
-  process.env.SQUAD_IMAGE_API_KEY = 'pretend-this-exists';
+  // The example here moves as modes get built: text first, then image
+  // (/api/squad-image), now twin. When twin ships, move it again rather than
+  // deleting the test — the invariant is what matters, not the mode.
+  process.env.SQUAD_TWIN_API_KEY = 'pretend-this-exists';
   try {
     const modes = getModes();
-    assert.equal(modes.image.configured, false);
-    assert.equal(modes.image.reason, 'not_built');
-    assert.equal(modes.image.api, null);
+    assert.equal(modes.twin.configured, false);
+    assert.equal(modes.twin.reason, 'not_built');
+    assert.equal(modes.twin.api, null);
   } finally {
-    delete process.env.SQUAD_IMAGE_API_KEY;
+    delete process.env.SQUAD_TWIN_API_KEY;
+  }
+});
+
+test('image is built and gated on the fal key', () => {
+  const saved = process.env.FAL_KEY;
+  delete process.env.FAL_KEY;
+  try {
+    let modes = getModes();
+    assert.equal(modes.image.api, '/api/squad-image');
+    assert.equal(modes.image.configured, false);
+    assert.equal(modes.image.reason, 'no_provider', 'built but unkeyed is no_provider, not not_built');
+
+    process.env.FAL_KEY = 'pretend-this-exists';
+    modes = getModes();
+    assert.equal(modes.image.configured, true);
+  } finally {
+    if (saved === undefined) delete process.env.FAL_KEY;
+    else process.env.FAL_KEY = saved;
   }
 });
 

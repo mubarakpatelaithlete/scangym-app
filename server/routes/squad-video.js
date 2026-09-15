@@ -1,11 +1,21 @@
 /**
  * Squad Video — generate a gym promo clip from a prompt, on the phone.
  *
- * Powers the ScanSquad "Create" sheet: prompt → Veo 3.1 Fast (Gemini API,
- * paid preview) → poll → MP4. The model runs on the GEMINI_API_KEY that is
- * already on this box for the AI Trainer; whether that key's billing tier
- * can actually run Veo is answered by /health at runtime, not assumed here —
- * the sheet uses that answer to show Generate or point at the clip library.
+ * Powers the ScanSquad "Create" sheet: prompt → a video model → poll → MP4.
+ *
+ * This route used to be Veo and nothing else. Veo 3.1 Fast bills about $0.15
+ * a second, so an 8-second clip is ~$1.20 and a creator making two a day
+ * costs roughly £104 a month — around 23 day passes at £4.49 to serve one
+ * person's reels. WAN 2.5 renders the same button for about £19 a month. The
+ * model is now chosen from lib/gen-models.js, the cheap one is the default,
+ * and Veo stays available as an opt-in premium tier (PREMIUM_MODELS_ENABLED).
+ * That single change is the largest cost decision in the feature, which is
+ * why it is a catalogue row and covered by tests/squad-gen-costs.test.js.
+ *
+ * Two providers, therefore two paths: Gemini long-running operations (Veo)
+ * and the fal queue (everything else), both behind lib/gen-provider.js. A job
+ * row remembers which model made it, so a deploy that changes the default
+ * cannot orphan a clip that is still rendering on the old one.
  *
  * Storage: finished MP4s go to R2 (cdn path squad-gen/) when configured,
  * else to local disk served from /file/:id.
@@ -34,6 +44,9 @@ const path = require('path');
 const crypto = require('crypto');
 const { optionalAuth } = require('../middleware/auth');
 const pool = require('../middleware/db');
+const models = require('../lib/gen-models');
+const genProvider = require('../lib/gen-provider');
+const genJobs = require('../lib/gen-jobs');
 
 const router = express.Router();
 
@@ -82,7 +95,9 @@ function userKey(req) {
 async function usedToday(req) {
   try {
     const r = await pool.query(
-      "SELECT COUNT(*)::int AS n FROM squad_video_jobs WHERE user_id = $1 AND created_at >= date_trunc('day', NOW())",
+      // kind is filtered because the table now holds every Create mode: without
+      // it, 30 images a day would consume the 5-a-day video budget.
+      "SELECT COUNT(*)::int AS n FROM squad_video_jobs WHERE user_id = $1 AND kind = 'video' AND created_at >= date_trunc('day', NOW())",
       [String(userKey(req))],
     );
     return r.rows[0].n;
@@ -98,12 +113,15 @@ async function quotaFor(req) {
 }
 
 /** Best-effort persistence: never let a database problem fail a render. */
-async function recordJob(id, req, prompt, settings, op) {
+async function recordJob(id, req, prompt, settings, op, model, costUsd) {
   try {
     await pool.query(
-      `INSERT INTO squad_video_jobs (id, user_id, op, prompt, params, status)
-       VALUES ($1, $2, $3, $4, $5::jsonb, 'running') ON CONFLICT (id) DO NOTHING`,
-      [id, String(userKey(req)), op, prompt, JSON.stringify(settings)],
+      `INSERT INTO squad_video_jobs
+         (id, user_id, op, prompt, params, status, kind, provider, model, cost_usd)
+       VALUES ($1, $2, $3, $4, $5::jsonb, 'running', 'video', $6, $7, $8)
+       ON CONFLICT (id) DO NOTHING`,
+      [id, String(userKey(req)), op, prompt, JSON.stringify(settings),
+       model?.provider || 'gemini', model?.id || 'veo-3.1-fast', costUsd ?? null],
     );
   } catch (e) {
     console.error('[SquadVideo] could not record job:', e.message);
@@ -127,16 +145,35 @@ async function finishJob(id, fields) {
 // Free check: lists models and looks for the Veo id. No generation spend.
 router.get('/health', optionalAuth, async (req, res) => {
   const quota = await quotaFor(req);
-  if (!GEMINI_KEY) return res.json({ available: false, reason: 'no_api_key', quota });
+  const catalogue = models.catalogueFor('video', { seconds: DEFAULTS.durationSeconds });
+  const chosen = models.resolve('video', req.query.model);
+
+  // The default model is on fal now, so a box with FAL_KEY and no Gemini key
+  // can still render. Only report unavailable when nothing at all is keyed.
+  if (chosen.provider === 'fal') {
+    const available = genProvider.configured('fal');
+    return res.json({
+      available,
+      reason: available ? undefined : 'no_api_key',
+      model: chosen.id,
+      models: catalogue,
+      quota,
+      options: ALLOWED,
+      defaults: DEFAULTS,
+    });
+  }
+
+  if (!GEMINI_KEY) return res.json({ available: false, reason: 'no_api_key', models: catalogue, quota });
   try {
     const r = await fetch(`${API_BASE}/models/${VEO_MODEL}?key=${GEMINI_KEY}`);
-    if (r.ok) return res.json({ available: true, model: VEO_MODEL, quota, options: ALLOWED, defaults: DEFAULTS });
+    if (r.ok) return res.json({ available: true, model: chosen.id, models: catalogue, quota, options: ALLOWED, defaults: DEFAULTS });
     const body = await r.json().catch(() => ({}));
     return res.json({
       available: false,
       reason: r.status === 404 ? 'model_not_visible' : 'key_rejected',
       status: r.status,
       detail: body.error?.message?.slice(0, 200),
+      models: catalogue,
       quota,
     });
   } catch (e) {
@@ -151,10 +188,21 @@ router.get('/health', optionalAuth, async (req, res) => {
 // this req.body is undefined and every generate answered "prompt required" —
 // the feature could never have worked, with or without a valid model key.
 router.post('/generate', optionalAuth, express.json(), async (req, res) => {
-  if (!GEMINI_KEY) return res.status(503).json({ error: 'Video generation is not configured yet.' });
   const prompt = (req.body?.prompt || '').trim();
   if (!prompt) return res.status(400).json({ error: 'prompt required' });
   if (prompt.length > 1500) return res.status(400).json({ error: 'prompt too long' });
+
+  // Screened before we spend and before the provider sees it: providers ban
+  // accounts for prohibited prompts, and a ban takes out every Create mode,
+  // not just this request.
+  const refusal = genJobs.screenPrompt(prompt);
+  if (refusal) return res.status(400).json({ error: refusal });
+
+  const model = models.resolve('video', req.body?.model);
+  if (!genProvider.configured(model.provider)) {
+    return res.status(503).json({ error: 'Video generation is not configured yet.' });
+  }
+
   const quota = await quotaFor(req);
   if (quota.remaining <= 0) {
     return res.status(429).json({
@@ -164,32 +212,56 @@ router.post('/generate', optionalAuth, express.json(), async (req, res) => {
   }
 
   const settings = cleanSettings(req.body);
+  const costUsd = models.estimateUsd(model, { seconds: settings.durationSeconds });
+
   try {
-    const r = await fetch(`${API_BASE}/models/${VEO_MODEL}:predictLongRunning?key=${GEMINI_KEY}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        instances: [{ prompt }],
-        parameters: settings,
-      }),
-    });
-    const data = await r.json();
-    if (!r.ok || !data.name) {
-      console.error('[SquadVideo] generate failed:', r.status, JSON.stringify(data).slice(0, 300));
-      const msg = data.error?.message || 'Video model refused the request.';
-      return res.status(502).json({ error: msg.slice(0, 300) });
-    }
+    const op = model.provider === 'fal'
+      ? (await genProvider.submit(model, falInput(prompt, settings))).op
+      : await veoSubmit(prompt, settings);
+
     const jobId = crypto.randomBytes(8).toString('hex');
-    jobs.set(jobId, { op: data.name, status: 'running', createdAt: Date.now() });
+    jobs.set(jobId, { op, status: 'running', createdAt: Date.now(), model: model.id });
     // GC: drop cached jobs older than 2h — the row in Postgres is the record.
     for (const [k, v] of jobs) if (Date.now() - v.createdAt > 7200000) jobs.delete(k);
-    await recordJob(jobId, req, prompt, settings, data.name);
-    res.json({ jobId, settings, quota: { ...quota, used: quota.used + 1, remaining: quota.remaining - 1 } });
+    await recordJob(jobId, req, prompt, settings, op, model, costUsd);
+    res.json({
+      jobId,
+      settings,
+      model: { id: model.id, label: model.label },
+      costUsd,
+      quota: { ...quota, used: quota.used + 1, remaining: quota.remaining - 1 },
+    });
   } catch (e) {
     console.error('[SquadVideo] generate error:', e.message);
-    res.status(502).json({ error: 'Could not reach the video model.' });
+    res.status(502).json({ error: genProvider.scrub(e.message) || 'Could not reach the video model.' });
   }
 });
+
+/** Whitelisted settings → the payload a fal text-to-video model expects. */
+function falInput(prompt, settings) {
+  return {
+    prompt,
+    duration: settings.durationSeconds,
+    aspect_ratio: settings.aspectRatio,
+    resolution: settings.resolution,
+    enable_audio: settings.generateAudio,
+  };
+}
+
+/** Start a Veo long-running operation and return its name. */
+async function veoSubmit(prompt, settings) {
+  const r = await fetch(`${API_BASE}/models/${VEO_MODEL}:predictLongRunning?key=${GEMINI_KEY}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ instances: [{ prompt }], parameters: settings }),
+  });
+  const data = await r.json();
+  if (!r.ok || !data.name) {
+    console.error('[SquadVideo] veo generate failed:', r.status, JSON.stringify(data).slice(0, 300));
+    throw new Error(data.error?.message || 'Video model refused the request.');
+  }
+  return data.name;
+}
 
 // ─── GET /status/:jobId — poll until done ────────────────────────────────
 router.get('/status/:jobId', async (req, res) => {
@@ -200,12 +272,12 @@ router.get('/status/:jobId', async (req, res) => {
   if (!job) {
     try {
       const r = await pool.query(
-        'SELECT op, status, video_url, error FROM squad_video_jobs WHERE id = $1',
+        'SELECT op, status, video_url, error, model FROM squad_video_jobs WHERE id = $1',
         [req.params.jobId],
       );
       if (r.rows[0]) {
         const row = r.rows[0];
-        job = { op: row.op, status: row.status, videoUrl: row.video_url, error: row.error, createdAt: Date.now() };
+        job = { op: row.op, status: row.status, videoUrl: row.video_url, error: row.error, model: row.model, createdAt: Date.now() };
         jobs.set(req.params.jobId, job);
       }
     } catch (e) {
@@ -216,6 +288,34 @@ router.get('/status/:jobId', async (req, res) => {
   if (!job) return res.status(404).json({ error: 'unknown job' });
   if (job.status === 'done') return res.json({ status: 'done', videoUrl: job.videoUrl });
   if (job.status === 'error') return res.json({ status: 'error', error: job.error });
+
+  // Poll whoever rendered it, not whoever is default today: a deploy that
+  // changes the default must not orphan a clip already running elsewhere.
+  const jobModel = models.resolve('video', job.model);
+  if (jobModel.provider === 'fal') {
+    try {
+      const out = await genProvider.poll(jobModel, job.op);
+      if (out.status === 'running') {
+        return res.json({ status: 'running', queuePosition: out.queuePosition ?? null });
+      }
+      if (out.status === 'error') {
+        job.status = 'error';
+        job.error = out.error;
+        await finishJob(req.params.jobId, { status: 'error', error: out.error });
+        return res.json({ status: 'error', error: out.error });
+      }
+      // fal's CDN keeps outputs about 7 days, so the finished MP4 is copied to
+      // R2 the same way the Veo path does it — a creator's clip must not
+      // vanish from their history after a week.
+      job.videoUrl = await rehost(out.url, req.params.jobId);
+      job.status = 'done';
+      await finishJob(req.params.jobId, { status: 'done', videoUrl: job.videoUrl });
+      return res.json({ status: 'done', videoUrl: job.videoUrl });
+    } catch (e) {
+      console.error('[SquadVideo] fal status error:', e.message);
+      return res.json({ status: 'running' }); // transient — keep polling
+    }
+  }
 
   try {
     const r = await fetch(`${API_BASE}/${job.op}?key=${GEMINI_KEY}`);
@@ -294,5 +394,29 @@ router.get('/file/:jobId', (req, res) => {
   res.setHeader('Content-Type', 'video/mp4');
   fs.createReadStream(job.filePath).pipe(res);
 });
+
+/**
+ * Copy a provider's temporary output URL to R2 and return the durable link.
+ *
+ * Falls back to the provider URL if R2 is not configured or the copy fails:
+ * a link that works for a week is better than no link at all, and this runs
+ * inside a poll the client is waiting on.
+ */
+async function rehost(url, jobId) {
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error('download failed: ' + resp.status);
+    fs.mkdirSync(OUT_DIR, { recursive: true });
+    const filePath = path.join(OUT_DIR, `${jobId}.mp4`);
+    fs.writeFileSync(filePath, Buffer.from(await resp.arrayBuffer()));
+    const { uploadToR2 } = require('../lib/r2-upload');
+    const key = `squad-gen/${jobId}.mp4`;
+    const up = await uploadToR2(filePath, key, { contentType: 'video/mp4' });
+    return up?.url || `https://cdn.scangym.com/${key}`;
+  } catch (e) {
+    console.warn('[SquadVideo] could not re-host clip, using provider URL:', e.message);
+    return url;
+  }
+}
 
 module.exports = router;
