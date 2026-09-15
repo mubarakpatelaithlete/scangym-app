@@ -867,6 +867,154 @@ router.post('/email/verify', async (req, res) => {
 });
 
 /**
+ * Staff / partner SSO — "Sign in with your gym"  (Microsoft Entra ID)
+ *
+ * Deliberately NOT shown to customers: there is no button for it in the
+ * customer login sheet. Gym staff reach it by link (or the Partner tab), so a
+ * normal gym-goer never sees a corporate sign-in they cannot use.
+ *
+ * Reuses the Azure app already registered for the Teams bot
+ * (TEAMS_APP_ID / TEAMS_APP_PASSWORD / TEAMS_APP_TENANT_ID) — no new app.
+ * Set SSO_TENANT=common to accept any Microsoft Workspace tenant, or leave it
+ * unset to accept only our own tenant.
+ *
+ * Flow: GET /sso/start → Microsoft → GET /sso/callback → session → back to
+ * the page the person came from (same rule as the email-code login).
+ */
+const SSO_CLIENT_ID = process.env.SSO_CLIENT_ID || process.env.TEAMS_APP_ID;
+const SSO_CLIENT_SECRET = process.env.SSO_CLIENT_SECRET || process.env.TEAMS_APP_PASSWORD;
+const SSO_TENANT = process.env.SSO_TENANT || process.env.TEAMS_APP_TENANT_ID || 'common';
+
+function _ssoOrigin(req) {
+  return process.env.PUBLIC_BASE_URL || `${req.protocol}://${req.get('host')}`;
+}
+function _ssoRedirectUri(req) {
+  return `${_ssoOrigin(req)}/api/auth/sso/callback`;
+}
+/* Only ever send people back inside our own site. An open redirect on a login
+   endpoint is how phishing links get to look legitimate. */
+function _safeReturnTo(value) {
+  const v = String(value || '');
+  return /^\/[^/\\]/.test(v) ? v : '/partner';
+}
+
+router.get('/sso/start', (req, res) => {
+  if (!SSO_CLIENT_ID || !SSO_CLIENT_SECRET) {
+    return res.status(503).json({ error: 'Gym sign-in is not configured yet' });
+  }
+  const crypto = require('crypto');
+  const state = crypto.randomBytes(16).toString('hex');
+  req.session.ssoState = state;
+  req.session.ssoReturnTo = _safeReturnTo(req.query.returnTo);
+
+  const params = new URLSearchParams({
+    client_id: SSO_CLIENT_ID,
+    response_type: 'code',
+    redirect_uri: _ssoRedirectUri(req),
+    response_mode: 'query',
+    scope: 'openid email profile',
+    state,
+  });
+  return res.redirect(
+    `https://login.microsoftonline.com/${encodeURIComponent(SSO_TENANT)}/oauth2/v2.0/authorize?${params}`
+  );
+});
+
+router.get('/sso/callback', async (req, res) => {
+  const back = _safeReturnTo(req.session.ssoReturnTo);
+  try {
+    const { code, state, error: msError, error_description: msDesc } = req.query;
+    if (msError) {
+      console.error('[Auth] sso provider error:', msError, msDesc);
+      return res.redirect('/login?sso=failed');
+    }
+    /* A callback whose state does not match the one we issued is not our
+       redirect — treat it as CSRF and start over rather than logging anyone in. */
+    if (!code || !state || state !== req.session.ssoState) {
+      return res.redirect('/login?sso=expired');
+    }
+    delete req.session.ssoState;
+
+    const tokenResp = await fetch(
+      `https://login.microsoftonline.com/${encodeURIComponent(SSO_TENANT)}/oauth2/v2.0/token`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          client_id: SSO_CLIENT_ID,
+          client_secret: SSO_CLIENT_SECRET,
+          grant_type: 'authorization_code',
+          code: String(code),
+          redirect_uri: _ssoRedirectUri(req),
+          scope: 'openid email profile',
+        }),
+      }
+    );
+    const tokens = await tokenResp.json();
+    if (!tokenResp.ok || !tokens.id_token) {
+      console.error('[Auth] sso token exchange failed:', tokens.error, tokens.error_description);
+      return res.redirect('/login?sso=failed');
+    }
+
+    /* The id_token came straight from Microsoft's token endpoint over TLS,
+       authenticated with our client secret, so the claims are trustworthy
+       without a second JWKS signature check. */
+    const payload = JSON.parse(
+      Buffer.from(String(tokens.id_token).split('.')[1], 'base64url').toString()
+    );
+    const email = String(payload.email || payload.preferred_username || '').trim().toLowerCase();
+    if (!email) {
+      console.error('[Auth] sso token carried no email claim');
+      return res.redirect('/login?sso=noemail');
+    }
+    const [firstName, ...restName] = String(payload.name || '').trim().split(/\s+/);
+    const lastName = restName.join(' ');
+
+    /* Same email = same account as Google / Apple / phone / email-code. */
+    let user = await pool.query(
+      'SELECT * FROM public.users WHERE LOWER(email) = $1 ORDER BY created_at ASC LIMIT 1',
+      [email]
+    );
+    if (user.rows.length === 0) {
+      user = await pool.query(
+        `INSERT INTO public.users (id, email, first_name, last_name, created_at, updated_at)
+         VALUES (gen_random_uuid(), $1, $2, $3, NOW(), NOW()) RETURNING *`,
+        [email, firstName || null, lastName || null]
+      );
+      console.log('Created new user via gym SSO:', email);
+    } else {
+      await pool.query('UPDATE public.users SET updated_at = NOW() WHERE id = $1', [user.rows[0].id]);
+      console.log('Existing user gym SSO login:', email);
+    }
+    const u = user.rows[0];
+
+    await ensureStripeCustomer(u.id, u.phone_number, email);
+    await ensureReferralHandle(u.id, firstName || u.first_name, lastName || u.last_name, email, u.phone_number);
+
+    req.session.userId = u.id;
+    if (u.phone_number) req.session.phone = u.phone_number;
+    req.session.ssoStaff = true;
+
+    return res.redirect(back);
+  } catch (err) {
+    console.error('[Auth] sso/callback error:', err.message);
+    return res.redirect('/login?sso=failed');
+  }
+});
+
+/**
+ * GET /api/auth/sso/status — is gym sign-in switched on, and am I staff?
+ * Lets the Partner tab show the button only when it can actually work.
+ */
+router.get('/sso/status', (req, res) => {
+  res.json({
+    configured: !!(SSO_CLIENT_ID && SSO_CLIENT_SECRET),
+    tenant: SSO_TENANT === 'common' ? 'any' : 'single',
+    isStaff: !!(req.session && req.session.ssoStaff),
+  });
+});
+
+/**
  * POST /api/auth/logout
  */
 router.post('/logout', (req, res) => {
