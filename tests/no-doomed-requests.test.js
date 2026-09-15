@@ -145,7 +145,7 @@ test('a thrown localStorage never breaks the app', () => {
 
 test('every login success sets the session hint', () => {
   const sets = APP.match(/sgSetSession\(true\)/g) || [];
-  assert.strictEqual(sets.length, 4, 'all four login paths must set the hint');
+  assert.strictEqual(sets.length, 6, 'all six login paths (phone, Google, Apple, email code ×3) must set the hint');
 });
 
 test('logout clears the session hint', () => {

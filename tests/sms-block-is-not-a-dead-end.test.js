@@ -81,5 +81,5 @@ test('send-code routes its failures through the classifier', () => {
 
 test('the sheet offers a door that does not depend on SMS at all', () => {
   assert.match(APP, /_sgAuthEmailLink/, 'no email sign-in option exists in the sheet');
-  assert.match(APP, /\/api\/auth\/send-link/, 'the email sign-in endpoint is still unreachable from the app');
+  assert.match(APP, /\/api\/auth\/email\/send-code/, 'the email sign-in endpoint is still unreachable from the app');
 });

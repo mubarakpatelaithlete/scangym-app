@@ -214,8 +214,8 @@ test('the sign-in sheet offers the guest path and an email fallback', () => {
   assert.ok(step.length > 100, 'could not find _renderAuthStep');
   assert.match(step, /_sgAuthGuestCheckout/, 'the sheet does not offer guest checkout');
   assert.match(step, /_sgAuthEmailLink/, 'the sheet does not offer an email sign-in link');
-  assert.match(APP, /window\._sgAuthSendLink\s*=/, 'nothing calls /api/auth/send-link');
-  assert.match(APP, /'\/api\/auth\/send-link'/, 'the email link endpoint is not wired up');
+  assert.match(APP, /window\._sgAuthSendEmailCode\s*=/, 'nothing calls /api/auth/email/send-code');
+  assert.match(APP, /'\/api\/auth\/email\/send-code'/, 'the email code endpoint is not wired up');
 });
 
 test('the shell loads guest-checkout.js', () => {
