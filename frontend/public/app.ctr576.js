@@ -14624,7 +14624,7 @@ function PartnerFullPage(){
              status:['\uD83D\uDFE2','Listing on / off','Pause or resume your gym listing'],
              earnings:['\uD83D\uDCB0','Earnings','What you have made and your payouts']};
     if(_pk&&_PB[_pk]){
-      _sgPanelBanner='<div id="sgPanelBanner" data-panel="'+_pk+'" style="position:absolute;top:0;left:0;right:0;z-index:60;display:flex;align-items:center;gap:10px;padding:10px 14px;padding-top:calc(env(safe-area-inset-top,8px) + 10px);background:linear-gradient(90deg,rgba(255,109,0,.92),rgba(255,109,0,.72));"><span style="font-size:18px">'+_PB[_pk][0]+'</span><span style="display:flex;flex-direction:column"><strong style="color:#fff;font-size:14px;font-weight:800">'+_PB[_pk][1]+'</strong><span style="color:rgba(255,255,255,.9);font-size:11px">'+_PB[_pk][2]+'</span></span></div>';
+      _sgPanelBanner='<div id="sgPanelBanner" data-panel="'+_pk+'" style="position:absolute;top:44px;left:0;right:0;z-index:60;display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:0 0 14px 14px;background:linear-gradient(90deg,rgba(255,109,0,.92),rgba(255,109,0,.72));"><span style="font-size:18px">'+_PB[_pk][0]+'</span><span style="display:flex;flex-direction:column"><strong style="color:#fff;font-size:14px;font-weight:800">'+_PB[_pk][1]+'</strong><span style="color:rgba(255,255,255,.9);font-size:11px">'+_PB[_pk][2]+'</span></span></div>';
     }
   }catch(e){}
   var u=state&&state.user;
