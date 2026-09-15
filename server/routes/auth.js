@@ -993,6 +993,9 @@ router.get('/sso/callback', async (req, res) => {
 
     req.session.userId = u.id;
     if (u.phone_number) req.session.phone = u.phone_number;
+    /* Microsoft sign-in is offered to customers as well as gym staff now, so
+       this only records "signed in via SSO" — it is not a staff permission. */
+    req.session.ssoLogin = true;
     req.session.ssoStaff = true;
 
     return res.redirect(back);
