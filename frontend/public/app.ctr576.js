@@ -4332,6 +4332,9 @@ window.showCalendarPicker=async function(gymId){
       .sg-cal-day.empty{pointer-events:none;cursor:default}
       .sg-cal-today-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:20px;color:rgba(255,255,255,.6);font-size:13px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;margin:0 24px 12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
       .sg-cal-today-btn:active{background:rgba(255,255,255,.1)}
+      .sg-cal-quick-chip{padding:9px 14px;border-radius:20px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.75);font-size:13px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+      .sg-cal-quick-chip:active{background:rgba(255,109,0,.15);border-color:rgba(255,109,0,.4);color:#fff}
+      .sg-cal-quick-chip.selected{background:rgba(255,109,0,.15);border-color:#FF6D00;color:#FF6D00}
       .sg-cal-body{flex:1;overflow-y:auto;padding:0 24px 16px;-webkit-overflow-scrolling:touch}
       .sg-cal-time{padding:10px 16px;border-radius:10px;cursor:pointer;background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.06);color:#fff;font-size:14px;font-weight:600;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;transition:all .15s;-webkit-tap-highlight-color:transparent;text-align:center;min-width:64px}
       .sg-cal-time:active{transform:scale(.96)}
@@ -4354,7 +4357,13 @@ window.showCalendarPicker=async function(gymId){
           <button class="sg-cal-nav-btn" id="sg-cal-next" onclick="window._calNextMonth()">›</button>
         </div>
         <div class="sg-cal-grid" id="sg-cal-grid"></div>
-        <div style="padding:0 0 4px"><button class="sg-cal-today-btn" onclick="window._calGoToday()">📅 Today</button></div>
+        <!-- Booking.com/Airbnb pattern: most people book today, tomorrow or the
+             weekend. One tap for those instead of hunting the grid. -->
+        <div style="padding:0 24px 10px;display:flex;gap:8px;flex-wrap:wrap" id="sg-cal-quick">
+          <button class="sg-cal-quick-chip" onclick="window._calQuickDate('today')">Today</button>
+          <button class="sg-cal-quick-chip" onclick="window._calQuickDate('tomorrow')">Tomorrow</button>
+          <button class="sg-cal-quick-chip" onclick="window._calQuickDate('weekend')">This weekend</button>
+        </div>
         <!-- FIX #10: Pass type selector (removed per Zafira — Day Pass only) -->
         <div style="padding:0 24px 16px;display:none;gap:8px;overflow-x:auto;scrollbar-width:none;flex-shrink:0" id="sg-cal-pass-strip">
           <div class="sg-cal-pass selected" onclick="window._calSelectPass(this,'day','⚡','Day Pass')" data-pass="day">
@@ -4491,6 +4500,27 @@ window._calGoToday=function(){
   window._calPickerState.viewMonth=now.getMonth();
   window._calSelectDate(todayStr,null);
   window._calBuildGrid(now.getFullYear(),now.getMonth());
+};
+
+/* Quick date chips (Today / Tomorrow / This weekend). "This weekend" means the
+   coming Saturday; if it is already Saturday or Sunday it means today. */
+window._calQuickDate=function(which){
+  var now=new Date();
+  var d=new Date(now);
+  if(which==='tomorrow')d.setDate(d.getDate()+1);
+  else if(which==='weekend'){
+    var dow=now.getDay(); // 0 Sun .. 6 Sat
+    if(dow!==0&&dow!==6)d.setDate(d.getDate()+((6-dow+7)%7));
+  }
+  var str=d.toISOString().split('T')[0];
+  window._calPickerState.viewYear=d.getFullYear();
+  window._calPickerState.viewMonth=d.getMonth();
+  window._calSelectDate(str,null);
+  if(typeof window._calBuildGrid==='function')window._calBuildGrid(d.getFullYear(),d.getMonth());
+  var chips=document.querySelectorAll('#sg-cal-quick .sg-cal-quick-chip');
+  for(var i=0;i<chips.length;i++)chips[i].classList.remove('selected');
+  var idx=which==='today'?0:(which==='tomorrow'?1:2);
+  if(chips[idx])chips[idx].classList.add('selected');
 };
 
 window._calSelectDate=function(dateStr,el){
@@ -16337,6 +16367,10 @@ window._refreshLocationBanner=function(){
 
 function _injectLocationBanner(permState){
   var isDenied=permState==='denied';
+  /* Two async paths can reach this (the permissions promise and the GPS-denied
+     handler), which printed the "Showing gyms in ..." banner twice. One banner. */
+  var _dupe=document.getElementById('sg-location-banner');
+  if(_dupe&&_dupe.parentNode)_dupe.parentNode.removeChild(_dupe);
   // Insert banner ABOVE the search results, not over them
   var searchContainer=document.getElementById('tt-search-real-input')||document.getElementById('sg-search-input');
   var insertTarget=searchContainer?searchContainer.closest('.sg-tab-content')||document.querySelector('main'):document.querySelector('main');
