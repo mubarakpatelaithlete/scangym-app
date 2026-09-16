@@ -101,10 +101,16 @@ test('the sheet can display what the route returns', () => {
   assert.match(SHEET, /navigator\.clipboard/, 'a caption must be copyable');
 });
 
-test('text history is not requested, because captions are not stored', () => {
-  assert.match(
-    SHEET,
-    /if \(!mode\.api \|\| mode\.resultKind === 'text'\) return;/,
-    'loadHistory must skip text rather than parse a video-shaped payload'
+test('captions are kept, and shown in My Creations with everything else', () => {
+  /* This test used to assert the opposite: the sheet skipped history for text
+     because captions were written and thrown away. A caption is a creation —
+     it is the mode every creator uses — so it is now recorded (kind 'text',
+     the words in params.text) and listed by the one cross-mode library. */
+  assert.match(SHEET, /squad-create\/library/, 'the sheet reads one library for every mode');
+  assert.match(SHEET, /My Creations/);
+  const route = require('fs').readFileSync(
+    require('path').join(__dirname, '..', 'server', 'routes', 'squad-text.js'), 'utf8',
   );
+  assert.match(route, /recordCaption/, 'a caption that is not stored cannot be re-shared or improved');
+  assert.match(route, /kind: 'text'/);
 });
