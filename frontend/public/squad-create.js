@@ -51,6 +51,12 @@
       settings: [
         { key: 'tone', label: 'Tone', values: ['Punchy', 'Friendly', 'Professional'] },
         { key: 'length', label: 'Length', values: ['Short', 'Medium', 'Long'] },
+        /* Live web results, off by default and priced in the label: a search
+           costs about £0.02 against a caption's £0.001, so a creator should
+           see the trade before tapping it, not on a bill. Needs one of the
+           named models — the house writer cannot search, and the route says so
+           rather than quietly writing without it. */
+        { key: 'webSearch', label: 'Web search', values: [false, true], fmt: function (v) { return v ? 'On · ~£0.02' : 'Off'; } },
       ],
     },
     {

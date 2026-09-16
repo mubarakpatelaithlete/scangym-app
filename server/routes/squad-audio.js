@@ -46,6 +46,16 @@ const VOICES = {
 };
 
 /**
+ * The same three voices as fal knows them.
+ *
+ * ElevenLabs takes account-scoped voice ids; fal's wrapper takes the public
+ * voice *name*. Same speakers either way — George, Sarah and Adam are the
+ * voices the ids above point at — so a creator hears the same cast whichever
+ * row serves the request.
+ */
+const FAL_VOICES = { Coach: 'George', Calm: 'Sarah', Hype: 'Adam' };
+
+/**
  * Length presets → a character budget. Speech runs at roughly 15 characters
  * a second, and the honest way to offer "30 seconds" from a text-to-speech
  * model is to bound the script rather than pretend to stretch it.
@@ -85,13 +95,17 @@ router.get('/health', optionalAuth, async (req, res) => {
 
   // A present key with an empty monthly allowance is not "available" — it is
   // a button that would fail on tap, which is the one thing the Create sheet
-  // is built to avoid.
+  // is built to avoid. But that is only fatal when ElevenLabs direct is the
+  // only way to speak: the fal row has no monthly ceiling, so a spent
+  // allowance now costs a row, not the button.
   const exhausted = !!balance && balance.remaining <= 0;
-  const available = keyed && !exhausted;
+  const model = models.resolveAvailable(KIND, undefined, (p) => reachable(p, { exhausted }));
+  const available = !!model;
 
   res.json({
     available,
     reason: available ? undefined : keyed ? 'monthly_characters_spent' : 'no_api_key',
+    via: model ? model.provider : undefined,
     quota,
     characters: balance
       ? { remaining: balance.remaining, limit: balance.limit, tier: balance.tier, resetsAt: balance.resetsAt }
@@ -102,9 +116,22 @@ router.get('/health', optionalAuth, async (req, res) => {
   });
 });
 
+/**
+ * Which providers can actually speak right now.
+ *
+ * ElevenLabs direct needs a key *and* characters left this month — a valid key
+ * with a spent allowance is a button that fails on tap. fal needs only its
+ * key. Written as one predicate so the catalogue picks the row (cheapest
+ * reachable first), rather than a branch here choosing a vendor.
+ */
+function reachable(p, { exhausted }) {
+  if (p === 'elevenlabs') return provider.configured('elevenlabs') && !exhausted;
+  return provider.configured(p);
+}
+
 // ─── POST /generate — speak the script, inline ────────────────────────────
 router.post('/generate', optionalAuth, express.json({ limit: '64kb' }), limiter, async (req, res) => {
-  if (!provider.configured('elevenlabs')) {
+  if (!provider.configured('elevenlabs') && !provider.configured('fal')) {
     return res.status(503).json({ error: 'Voiceover is not configured yet.' });
   }
 
@@ -130,18 +157,24 @@ router.post('/generate', optionalAuth, express.json({ limit: '64kb' }), limiter,
     });
   }
 
-  // The shared monthly allowance. Checked live rather than assumed, and only
-  // enforced when we could actually read it.
-  const balance = await provider.elevenCharacterQuota();
-  if (balance && balance.remaining < text.length) {
-    return res.status(429).json({
-      error: `Voiceovers are out for this month (${balance.remaining} characters left of ${balance.limit}). They reset on the 1st.`,
-      characters: { remaining: balance.remaining, limit: balance.limit },
-    });
-  }
+  /* The shared monthly allowance. Checked live rather than assumed, and only
+     enforced when we could actually read it — and now only against the rows it
+     applies to. It is ElevenLabs' own limit on our free plan, not a fact about
+     speech, so letting it block a fal generation would be inventing a ceiling
+     that does not exist. */
+  const balance = provider.configured('elevenlabs') ? await provider.elevenCharacterQuota() : null;
+  const short = !!balance && balance.remaining < text.length;
 
-  const model = models.resolveAvailable(KIND, req.body?.model, provider.configured);
-  if (!model) return res.status(503).json({ error: 'No voice model is reachable on this deployment.' });
+  const model = models.resolveAvailable(KIND, req.body?.model, (p) => reachable(p, { exhausted: short }));
+  if (!model) {
+    if (short) {
+      return res.status(429).json({
+        error: `Voiceovers are out for this month (${balance.remaining} characters left of ${balance.limit}). They reset on the 1st.`,
+        characters: { remaining: balance.remaining, limit: balance.limit },
+      });
+    }
+    return res.status(503).json({ error: 'No voice model is reachable on this deployment.' });
+  }
   const costUsd = models.estimateUsd(model, { chars: text.length });
   const jobId = crypto.randomBytes(8).toString('hex');
 
@@ -149,8 +182,12 @@ router.post('/generate', optionalAuth, express.json({ limit: '64kb' }), limiter,
     const { buffer, contentType } = await provider.generate(model, {
       text,
       voiceId: VOICES[settings.voice],
+      voiceName: FAL_VOICES[settings.voice],
     });
-    provider.invalidateCharacterQuota(); // we just spent some of it
+    // Only the direct rows spend the ElevenLabs allowance; a fal generation
+    // leaves it untouched, and forgetting a balance we did not move would
+    // cost a needless vendor call on the next health poll.
+    if (model.provider === 'elevenlabs') provider.invalidateCharacterQuota();
 
     const url = await store(buffer, contentType, jobId);
 
@@ -216,4 +253,4 @@ router.get('/history', optionalAuth, async (req, res) => {
 });
 
 module.exports = router;
-module.exports._internals = { VOICES, LENGTH_CHARS, cleanSettings, MAX_CHARS };
+module.exports._internals = { VOICES, FAL_VOICES, LENGTH_CHARS, cleanSettings, MAX_CHARS, reachable };

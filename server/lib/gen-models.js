@@ -241,6 +241,27 @@ const MODELS = [
     tier: 'default',
   },
   {
+    /* The same ElevenLabs v3 voice, billed through fal — the trick Music
+       already uses (eleven-music-fal), for a harder reason. The direct rows
+       run on the free ElevenLabs plan: 10,000 characters a month for the whole
+       site, shared by every creator, roughly fourteen voiceovers before every
+       later tap fails. fal has no monthly ceiling, so this row is what makes
+       Create Audio a feature rather than a fortnight's allowance.
+       $0.10 per 1,000 characters against $0.07 direct: dearer per voiceover,
+       and the honest comparison is against a monthly subscription plus usage.
+       The cheap direct row keeps the default slot, so the day the ElevenLabs
+       plan goes paid it wins again with no release. */
+    id: 'eleven-v3-fal',
+    kind: 'audio',
+    label: 'ElevenLabs v3 (via fal)',
+    provider: 'fal',
+    providerModel: 'fal-ai/elevenlabs/tts/eleven-v3',
+    usdPerThousandChars: 0.10,
+    tier: 'standard',
+    voiceNames: true,
+    note: 'Same voice, billed through fal. No monthly character cap.',
+  },
+  {
     id: 'eleven-multilingual-v2',
     kind: 'audio',
     label: 'ElevenLabs Multilingual v2',
