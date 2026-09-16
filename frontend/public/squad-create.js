@@ -284,6 +284,12 @@
     ta.placeholder = mode.placeholder;
     sh.appendChild(ta);
 
+    var picker = el('div', 'sv-row');
+    picker.id = 'sv-models';
+    picker.style.display = 'none';
+    picker.style.flexWrap = 'wrap';
+    sh.appendChild(picker);
+
     var row = el('div', 'sv-row');
     var setChip = el('div', 'sv-mchip', '⚙ Settings ›');
     setChip.addEventListener('click', function () { toggleSettings(sh); });
@@ -359,7 +365,12 @@
       fetch(mode.api + '/health').then(function (r) { return r.json(); }).then(function (d) {
         health = d;
         if (d.quota) { quota = d.quota; refreshQuota(sh, mode); }
-        if (!d.available) {
+        renderModelPicker(sh, mode, d);
+        /* Two health shapes in the wild: the media modes answer `available`,
+           text answers `configured`. Treat either as yes, or a working Text
+           button ends up disabled by a check written for video. */
+        var usable = (d.available === undefined) ? (d.configured !== false) : d.available;
+        if (!usable) {
           gen.disabled = true;
           warn.style.display = 'block';
           warn.innerHTML = '⏳ ' + mode.label + ' rendering is still being switched on for this account (' +
@@ -428,6 +439,7 @@
 
     var body = { prompt: prompt };
     (mode.settings || []).forEach(function (st) { body[st.key] = state[mode.key][st.key]; });
+    if (state[mode.key].__model) body.model = state[mode.key].__model;
 
     fetch(mode.api + '/generate', {
       method: 'POST',
@@ -485,6 +497,53 @@
         out.innerHTML = '<div class="sv-warn">❌ ' + e.message + '</div>';
         gen.disabled = false;
       });
+  }
+
+  /**
+   * The model row.
+   *
+   * Every mode's /health already returned its catalogue — the prices, the
+   * labels, the cheap default — and until now the sheet threw it away, so a
+   * customer could not actually choose a model however many the server could
+   * reach. One account, one balance, many models behind one button is the
+   * whole point of ScanSquad; this is where a creator gets to see it.
+   *
+   * Hidden when there is nothing to choose between, because a dropdown with
+   * one entry is furniture, not a feature.
+   */
+  function renderModelPicker(sh, mode, d) {
+    var list = (d && d.models) || [];
+    if (list.length < 2) return;
+    var host = sh.querySelector('#sv-models');
+    if (!host) return;
+    host.innerHTML = '';
+    host.style.display = 'flex';
+
+    var chosen = state[mode.key].__model
+      || (list.filter(function (m) { return m.tier === 'default'; })[0] || list[0]).id;
+    state[mode.key].__model = chosen;
+
+    list.forEach(function (m) {
+      var chip = el('div', 'sv-mchip');
+      var price = (m.estimateUsd != null)
+        ? ' · £' + (m.estimateUsd * 0.79).toFixed(m.estimateUsd < 0.05 ? 3 : 2)
+        : '';
+      chip.textContent = m.label + price;
+      if (m.note) chip.title = m.note;
+      var paint = function () {
+        var on = state[mode.key].__model === m.id;
+        chip.style.cssText = on
+          ? 'background:linear-gradient(135deg,#FF6D00,#E66200);border:none;color:#fff;font-size:11.5px;font-weight:700;padding:8px 11px;border-radius:10px;cursor:pointer;'
+          : '';
+      };
+      chip.addEventListener('click', function () {
+        state[mode.key].__model = m.id;
+        Array.prototype.forEach.call(host.children, function (c) { if (c.__paint) c.__paint(); });
+      });
+      chip.__paint = paint;
+      paint();
+      host.appendChild(chip);
+    });
   }
 
   /** A caption is read, copied and pasted — not played. */

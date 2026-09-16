@@ -49,7 +49,14 @@ test('a missing prompt is caught before any provider is called', () => {
   const src = fs.readFileSync(path.join(ROOT, 'server', 'routes', 'squad-text.js'), 'utf8');
   const gen = src.slice(src.indexOf("router.post('/generate'"));
   const guard = gen.indexOf('if (!prompt)');
-  const call = gen.indexOf('llm.streamChat');
+  /* The writer moved into writePost() so the button and the voice tool share
+     one brief, so the model call in this handler is that delegation. The
+     invariant is unchanged: nothing reaches a model before the guard. */
+  const call = Math.min(
+    ...['writePost(', 'llm.streamChat', 'genProvider.generate']
+      .map((needle) => gen.indexOf(needle))
+      .filter((i) => i > -1),
+  );
   assert.ok(guard > -1 && guard < call, 'the empty-prompt guard must come before the model call');
 });
 

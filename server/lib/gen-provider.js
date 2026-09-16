@@ -31,6 +31,7 @@
  */
 
 const FAL_QUEUE = 'https://queue.fal.run';
+const OPENROUTER_API = 'https://openrouter.ai/api/v1';
 const ELEVEN_API = 'https://api.elevenlabs.io/v1';
 
 /** A provider is usable only if its credential is present. */
@@ -38,6 +39,7 @@ function configured(provider) {
   if (provider === 'fal') return !!process.env.FAL_KEY;
   if (provider === 'elevenlabs') return !!process.env.ELEVENLABS_API_KEY;
   if (provider === 'gemini') return !!process.env.GEMINI_API_KEY;
+  if (provider === 'openrouter') return !!process.env.OPENROUTER_API_KEY;
   return false;
 }
 
@@ -130,6 +132,52 @@ function firstMediaUrl(out) {
   }
   if (typeof out.url === 'string') return out.url;
   return null;
+}
+
+// ─── OpenRouter: one key in front of every text model ──────────────────────
+
+/**
+ * Write text with a named third-party model.
+ *
+ * Five vendors behind one credential, which is the whole reason this exists:
+ * offering ChatGPT, Claude, Gemini, Kimi and Grok as separate integrations
+ * would mean five accounts, five billing relationships and five sets of
+ * outage handling for what a creator experiences as one dropdown. OpenRouter
+ * is an OpenAI-shaped endpoint in front of 400+ models, so the catalogue row
+ * carries the vendor slug and nothing here needs to know whose model it is.
+ *
+ * lib/llm.js stays the default path for captions on a box with no OpenRouter
+ * key — it has the provider failover and model-repointing that the booking
+ * agent depends on. This is the picker, not a replacement.
+ */
+async function openrouterText(model, { prompt, system, maxTokens = 400 }) {
+  const messages = [];
+  if (system) messages.push({ role: 'system', content: system });
+  messages.push({ role: 'user', content: prompt });
+
+  const r = await fetch(`${OPENROUTER_API}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+      'Content-Type': 'application/json',
+      // OpenRouter attributes traffic by these, and they are how our rate
+      // limits and spend show up on their dashboard rather than as anonymous.
+      'HTTP-Referer': process.env.PUBLIC_BASE_URL || 'https://www.scangym.com',
+      'X-Title': 'ScanGym ScanSquad',
+    },
+    body: JSON.stringify({
+      model: model.providerModel,
+      messages,
+      max_tokens: maxTokens,
+    }),
+  });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    throw new Error(`${model.label} refused the request (${r.status}): ${scrub(data.error?.message)}`);
+  }
+  const text = data.choices?.[0]?.message?.content?.trim();
+  if (!text) throw new Error(`${model.label} returned nothing`);
+  return { text, usage: data.usage || null };
 }
 
 // ─── ElevenLabs: synchronous bytes ─────────────────────────────────────────
@@ -355,6 +403,7 @@ async function poll(model, op) {
 /** Run a synchronous generation and return bytes. */
 async function generate(model, input) {
   if (!configured(model.provider)) throw new Error(`${model.provider} is not configured`);
+  if (model.provider === 'openrouter') return openrouterText(model, input);
   if (model.provider === 'elevenlabs') {
     if (model.kind === 'music') return elevenMusic(model, input);
     return elevenSpeech(model, input);

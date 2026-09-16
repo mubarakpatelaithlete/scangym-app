@@ -24,6 +24,8 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const llm = require('../lib/llm');
+const models = require('../lib/gen-models');
+const genProvider = require('../lib/gen-provider');
 const { optionalAuth } = require('../middleware/auth');
 
 const router = express.Router();
@@ -85,7 +87,20 @@ function systemPrompt({ tone, length }) {
 // ─── GET /api/squad-text/health ───
 // The sheet asks this before offering Generate, exactly as it does for video.
 router.get('/health', (req, res) => {
-  res.json({ ok: true, configured: llm.configured() });
+  /* Two ways this mode can be on, and the sheet needs to know which:
+     - the house writer (lib/llm.js on OpenAI or Groq), always available,
+     - a named model via OpenRouter, when that key exists.
+     `models` is empty rather than absent when there is no picker, so the
+     sheet renders a working button with no dropdown instead of a dropdown
+     whose entries all fail. */
+  const picker = genProvider.configured('openrouter');
+  res.json({
+    ok: true,
+    configured: llm.configured() || picker,
+    house: llm.configured(),
+    models: picker ? models.catalogueFor('text', { tokensIn: 700, tokensOut: 200 }) : [],
+    defaults: { model: 'house' },
+  });
 });
 
 // ─── POST /api/squad-text/generate ───
@@ -98,6 +113,25 @@ router.get('/health', (req, res) => {
 async function writePost(body) {
   const { tone, length, prompt } = clean(body);
   if (!prompt) throw Object.assign(new Error('Describe the post first.'), { status: 400 });
+
+  /* A named model, if the creator picked one and we can reach it. Anything
+     unknown, or a picker with no key behind it, falls through to the house
+     writer rather than erroring: a caption is worth writing with whatever is
+     available, and a dropdown that can fail the whole request would be a
+     worse button than no dropdown. */
+  const named = pickNamedModel(body);
+  if (named) {
+    const out = await genProvider.generate(named, {
+      prompt,
+      system: systemPrompt({ tone, length }),
+      maxTokens: 400,
+    });
+    const chosen = (out.text || '').trim();
+    if (!chosen) throw Object.assign(new Error('Nothing came back — try again.'), { status: 502 });
+    console.log(`[SquadText] ${named.id} wrote ${chosen.length} chars (${tone}/${length})`);
+    return { text: chosen, provider: named.id, model: { id: named.id, label: named.label }, tone, length };
+  }
+
   if (!llm.configured()) throw Object.assign(new Error('Text is not switched on yet.'), { status: 503 });
   const { stream, provider } = await llm.streamChat('SquadText', {
     stream: false,
@@ -114,34 +148,45 @@ async function writePost(body) {
   return { text, provider, tone, length };
 }
 
+/**
+ * Which catalogue row the body asked for, or null for the house writer.
+ *
+ * Never throws on a bad id: the client is untrusted and a typo should cost a
+ * dropdown selection, not the caption.
+ */
+function pickNamedModel(body) {
+  const wanted = body && body.model;
+  if (!wanted || wanted === 'house') return null;
+  const row = models.byKind('text').find((m) => m.id === wanted);
+  if (!row || !genProvider.configured(row.provider)) return null;
+  return row;
+}
+
 router.post('/generate', textLimiter, optionalAuth, express.json(), async (req, res) => {
-  const { tone, length, prompt } = clean(req.body);
+  const { prompt } = clean(req.body);
   if (!prompt) return res.status(400).json({ error: 'Describe the post first.' });
-  if (!llm.configured()) return res.status(503).json({ error: 'Text is not switched on yet.' });
+  if (!llm.configured() && !pickNamedModel(req.body)) {
+    return res.status(503).json({ error: 'Text is not switched on yet.' });
+  }
 
   try {
-    const { stream, provider } = await llm.streamChat('SquadText', {
-      stream: false,
-      temperature: 0.9,
-      max_tokens: 400,
-      messages: [
-        { role: 'system', content: systemPrompt({ tone, length }) },
-        { role: 'user', content: prompt },
-      ],
-    });
-
-    const text = (stream.choices?.[0]?.message?.content || '').trim();
-    if (!text) return res.status(502).json({ error: 'Nothing came back — try again.' });
-
-    console.log(`[SquadText] ${provider} wrote ${text.length} chars (${tone}/${length})`);
-    return res.json({ text, provider, tone, length });
+    /* One writer for both callers. The voice tool (lib/squad-tools.js) and
+       this button used to hold two copies of the same call, which is how the
+       tone/length brief drifted between them once already. */
+    return res.json(await writePost(req.body));
   } catch (err) {
     // no_provider means every key is dead or benched. Say that, do not pretend.
     const dead = err && err.message === 'no_provider';
     console.error('[SquadText] generation failed:', (err && err.message) || err);
-    return res
-      .status(dead ? 503 : 500)
-      .json({ error: dead ? 'Writing is offline for a moment — try again shortly.' : 'Could not write that one.' });
+    // writePost carries a status for the cases it knows about (empty prompt,
+    // empty answer). Losing it turned a 400 into a 500 and made a user error
+    // look like an outage.
+    const status = dead ? 503 : (err && err.status) || 500;
+    return res.status(status).json({
+      error: dead
+        ? 'Writing is offline for a moment — try again shortly.'
+        : (status === 400 || status === 502) && err.message ? err.message : 'Could not write that one.',
+    });
   }
 });
 
@@ -152,5 +197,5 @@ router.post('/generate', textLimiter, optionalAuth, express.json(), async (req, 
 router.get('/history', (req, res) => res.json({ items: [] }));
 
 module.exports = router;
-module.exports._internals = { clean, systemPrompt, TONES, LENGTHS, MAX_PROMPT };
+module.exports._internals = { clean, systemPrompt, TONES, LENGTHS, MAX_PROMPT, pickNamedModel };
 module.exports.writePost = writePost;
