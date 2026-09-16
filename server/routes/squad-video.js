@@ -170,21 +170,33 @@ router.get('/health', optionalAuth, async (req, res) => {
   }
 
   if (!GEMINI_KEY) return res.json({ available: false, reason: 'no_api_key', models: catalogue, quota });
-  try {
-    const r = await fetch(`${API_BASE}/models/${VEO_MODEL}?key=${GEMINI_KEY}`);
-    if (r.ok) return res.json({ available: true, model: chosen.id, models: catalogue, quota, options: ALLOWED, defaults: DEFAULTS });
-    const body = await r.json().catch(() => ({}));
+
+  /* Ask whether this key may *generate*, not whether the model exists.
+     This probe used to be GET /models/{VEO_MODEL}, which answered 200 on a
+     project Google had blocked from generating — so health said
+     "available: true" while every customer render returned 403. See
+     lib/gen-provider.js#geminiGenerationAccess. Costs nothing and renders
+     nothing. */
+  const access = await genProvider.geminiGenerationAccess(VEO_MODEL);
+  if (access.ok) {
     return res.json({
-      available: false,
-      reason: r.status === 404 ? 'model_not_visible' : 'key_rejected',
-      status: r.status,
-      detail: body.error?.message?.slice(0, 200),
+      available: true,
+      unverified: access.unverified || undefined,
+      model: chosen.id,
       models: catalogue,
       quota,
+      options: ALLOWED,
+      defaults: DEFAULTS,
     });
-  } catch (e) {
-    return res.json({ available: false, reason: 'network', detail: e.message, quota });
   }
+  return res.json({
+    available: false,
+    reason: access.reason,
+    status: access.status,
+    detail: access.detail,
+    models: catalogue,
+    quota,
+  });
 });
 
 // ─── POST /generate — kick off a render ──────────────────────────────────
@@ -264,8 +276,13 @@ async function veoSubmit(prompt, settings) {
   const data = await r.json();
   if (!r.ok || !data.name) {
     console.error('[SquadVideo] veo generate failed:', r.status, JSON.stringify(data).slice(0, 300));
+    // A real refusal is better evidence than any probe: record it so /health
+    // stops advertising a button that just failed, rather than waiting for
+    // the next customer to find out.
+    genProvider.noteGenerationOutcome('gemini', VEO_MODEL, { ok: false, status: r.status });
     throw new Error(data.error?.message || 'Video model refused the request.');
   }
+  genProvider.noteGenerationOutcome('gemini', VEO_MODEL, { ok: true });
   return data.name;
 }
 
