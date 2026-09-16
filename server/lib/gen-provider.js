@@ -120,16 +120,35 @@ async function falSubmit(model, input) {
  * telling a creator their clip failed because one poll timed out would throw
  * away a generation we have already paid for.
  */
+const FAL_FAILED_STATUS = new Set(['FAILED', 'ERROR', 'CANCELLED', 'CANCELED', 'TIMED_OUT']);
+
 async function falPoll(model, op) {
   const base = `${FAL_QUEUE}/${model.providerModel}/requests/${op}`;
   const r = await fetch(`${base}/status`, {
     headers: { Authorization: `Key ${process.env.FAL_KEY}` },
   });
   const status = await r.json().catch(() => ({}));
-  if (!r.ok) return { status: 'running' };
+  if (!r.ok) {
+    // A 5xx or a rate limit is a blip: the job is still out there, keep polling.
+    // A 400/401/403/404/422 is permanent — the request id or the model route
+    // does not exist at fal — and answering 'running' to those is how four
+    // jobs sat spinning for ninety minutes with no error a creator could see.
+    if (r.status >= 500 || r.status === 429) return { status: 'running' };
+    return {
+      status: 'error',
+      error: `fal could not report on this job (${r.status}): ${scrub(status.detail || status.error) || 'unknown request or model'}`,
+    };
+  }
 
   if (status.status === 'IN_QUEUE' || status.status === 'IN_PROGRESS') {
     return { status: 'running', queuePosition: status.queue_position ?? null };
+  }
+  // fal's terminal failure words. Anything else unknown stays 'running'.
+  if (FAL_FAILED_STATUS.has(String(status.status || '').toUpperCase())) {
+    return {
+      status: 'error',
+      error: `the model failed this job: ${scrub(status.error || status.detail) || String(status.status).toLowerCase()}`,
+    };
   }
   if (status.status !== 'COMPLETED') return { status: 'running' };
 
@@ -559,5 +578,5 @@ module.exports = {
   cachedGenerationAccess,
   noteGenerationOutcome,
   invalidateCharacterQuota,
-  _internals: { firstMediaUrl, falRouterText, openrouterText, falSpeech },
+  _internals: { falPoll, firstMediaUrl, falRouterText, openrouterText, falSpeech },
 };
