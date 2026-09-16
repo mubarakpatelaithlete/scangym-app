@@ -129,7 +129,7 @@ const MODELS = [
     usdPerSecond: 0.40,
     tier: 'premium',
     inputProfile: 'veo-fal',
-    note: 'Google Veo with synced audio, billed through fal.',
+    note: 'Google Veo with synced audio.',
   },
   {
     id: 'seedance-1-pro',
@@ -253,13 +253,13 @@ const MODELS = [
        plan goes paid it wins again with no release. */
     id: 'eleven-v3-fal',
     kind: 'audio',
-    label: 'ElevenLabs v3 (via fal)',
+    label: 'ElevenLabs v3',
     provider: 'fal',
     providerModel: 'fal-ai/elevenlabs/tts/eleven-v3',
     usdPerThousandChars: 0.10,
     tier: 'standard',
     voiceNames: true,
-    note: 'Same voice, billed through fal. No monthly character cap.',
+    note: null,
   },
   {
     id: 'eleven-multilingual-v2',
@@ -379,13 +379,13 @@ const MODELS = [
     // account goes paid, resolveAvailable() picks it again with no release.
     id: 'eleven-music-fal',
     kind: 'music',
-    label: 'Eleven Music (via fal)',
+    label: 'Eleven Music',
     provider: 'fal',
     providerModel: 'fal-ai/elevenlabs/music',
     usdPerMinute: 0.60,
     tier: 'standard',
     inputProfile: 'fal-music',
-    note: 'Same model, billed through fal. No ElevenLabs plan needed.',
+    note: null,
   },
 ];
 
@@ -458,8 +458,25 @@ function round(n) {
  * request ask for a model we have not priced.
  */
 function catalogueFor(kind, units = {}) {
-  return byKind(kind)
-    .filter((m) => m.tier !== 'premium' || premiumEnabled())
+  const rows = byKind(kind).filter((m) => m.tier !== 'premium' || premiumEnabled());
+
+  /* One chip per model a creator can hear the difference between, not one per
+     route we can reach it by.
+     ScanGym is the product; which wholesaler carries a model is our plumbing,
+     and the same voice listed twice — once direct, once through a reseller —
+     is a choice a customer cannot make sense of and should not have to. So
+     duplicate labels collapse to the first row, which is catalogue order:
+     the cheap default first. Nothing is lost, because resolveAvailable()
+     falls through to the other row by itself when the first is unreachable
+     (a spent ElevenLabs allowance, a plan that refuses music), and the
+     creator gets the same model at the price the chip quoted. */
+  const seen = new Set();
+  return rows
+    .filter((m) => {
+      if (seen.has(m.label)) return false;
+      seen.add(m.label);
+      return true;
+    })
     .map((m) => ({
       id: m.id,
       label: m.label,
