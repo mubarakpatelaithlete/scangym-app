@@ -24,7 +24,8 @@ const router = express.Router();
 /**
  * key → { label, env | ready, api }
  *   env:   provider credential that must be present for the mode to run.
- *   notReady: a more specific reason than 'no_provider' when ready() is false
+ *   notReady: a more specific reason than 'no_provider' when ready() is false,
+ *          either a string or a function returning one
  *          — Music has a key and a route but needs a paid plan, and
  *          'no_provider' would send someone hunting for a missing variable.
  *   ready: for modes served by an existing subsystem rather than by one
@@ -37,7 +38,29 @@ const router = express.Router();
 const MODES = {
   text: { label: 'Text', ready: () => require('../lib/llm').configured(), api: '/api/squad-text' },
   image: { label: 'Image', env: 'FAL_KEY', api: '/api/squad-image' },
-  video: { label: 'Video', env: 'GEMINI_API_KEY', api: '/api/squad-video' },
+  /* A key being present is not the same as being allowed to use it. On
+     2026-09-16 this box had a valid-looking GEMINI_API_KEY whose project
+     Google had blocked from generating, so this registry advertised Video as
+     usable while every render 403'd. If a probe or a real render has told us
+     the provider refuses us, the mode is not on offer — see
+     lib/gen-provider.js#geminiGenerationAccess. Unknown stays optimistic:
+     the video route's own /health does the authoritative check, and going
+     dark on no evidence would be its own outage. */
+  video: {
+    label: 'Video',
+    ready: () => {
+      const p = require('../lib/gen-provider');
+      if (!p.configured('gemini')) return false;
+      const access = p.cachedGenerationAccess('gemini', 'veo-3.1-fast-generate-preview');
+      return !access || access.ok;
+    },
+    /* Two different problems, two different answers: no key at all is
+       'no_provider' (set one), a key we are not allowed to use is
+       'provider_denied' (a wrong reason sends someone hunting for a
+       variable that is already there). */
+    notReady: () => (require('../lib/gen-provider').configured('gemini') ? 'provider_denied' : 'no_provider'),
+    api: '/api/squad-video',
+  },
   audio: {
     label: 'Audio',
     ready: () => require('../lib/gen-provider').configured('elevenlabs'),
@@ -69,7 +92,10 @@ const MODES = {
 function statusFor(def) {
   if (!def.api) return { configured: false, reason: 'not_built' };
   const ok = def.ready ? !!def.ready() : !!process.env[def.env];
-  if (!ok) return { configured: false, reason: def.notReady || 'no_provider' };
+  if (!ok) {
+    const reason = typeof def.notReady === 'function' ? def.notReady() : def.notReady;
+    return { configured: false, reason: reason || 'no_provider' };
+  }
   return { configured: true };
 }
 

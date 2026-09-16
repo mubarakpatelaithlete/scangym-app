@@ -304,6 +304,18 @@ async function geminiGenerationAccess(providerModel, { force = false } = {}) {
 }
 
 /**
+ * The last known generation access for a model, without a network call.
+ *
+ * routes/squad-create.js answers synchronously on every sheet open, so it
+ * cannot await a probe — but it must not advertise a mode whose provider we
+ * already know has refused us. Returns null when nothing is known yet.
+ */
+function cachedGenerationAccess(provider, providerModel) {
+  const hit = _access.get(`${provider}:${providerModel}`);
+  return hit ? hit.value : null;
+}
+
+/**
  * Teach the cache from a real generation result.
  *
  * A live 403 is better evidence than any probe, and a success proves access
@@ -359,6 +371,7 @@ module.exports = {
   elevenCharacterQuota,
   cachedElevenTier,
   geminiGenerationAccess,
+  cachedGenerationAccess,
   noteGenerationOutcome,
   invalidateCharacterQuota,
   _internals: { firstMediaUrl },
