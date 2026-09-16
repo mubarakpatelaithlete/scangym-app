@@ -65,6 +65,31 @@ const MODELS = [
     tier: 'premium',
   },
   {
+    // The same Veo, reached through fal instead of Google directly. This row
+    // exists because of an outage: the Google project behind GEMINI_API_KEY
+    // was blocked from generating (403 PERMISSION_DENIED) while the key
+    // itself looked fine, and Veo was the only video model wired. With this
+    // row a fal key restores Veo without touching the Google account at all.
+    id: 'veo-3.1-fal',
+    kind: 'video',
+    label: 'Veo 3.1',
+    provider: 'fal',
+    providerModel: 'fal-ai/veo3.1',
+    usdPerSecond: 0.40,
+    tier: 'premium',
+    note: 'Google Veo with synced audio, billed through fal.',
+  },
+  {
+    id: 'seedance-1-pro',
+    kind: 'video',
+    label: 'Seedance 1 Pro',
+    provider: 'fal',
+    providerModel: 'fal-ai/bytedance/seedance/v1/pro/text-to-video',
+    usdPerSecond: 0.10,
+    tier: 'standard',
+    note: 'ByteDance. Strong motion, mid-price.',
+  },
+  {
     id: 'veo-3.1-fast',
     kind: 'video',
     label: 'Veo 3.1 Fast',
@@ -108,6 +133,20 @@ const MODELS = [
 
   // ── Audio (speech) ───────────────────────────────────────────────────────
   {
+    // ElevenLabs' most expressive speech model, GA since 2026-02-02. Verified
+    // against this account's key on 2026-09-16: 200 and real audio back, on
+    // the free tier. The default, because a creator's voiceover is the one
+    // place where "sounds human" beats "costs 30% less".
+    id: 'eleven-v3',
+    kind: 'audio',
+    label: 'ElevenLabs v3',
+    provider: 'elevenlabs',
+    providerModel: 'eleven_v3',
+    usdPerThousandChars: 0.10,
+    tier: 'standard',
+    note: 'Most natural. Best for a voiceover someone will actually post.',
+  },
+  {
     id: 'eleven-flash-v2.5',
     kind: 'audio',
     label: 'ElevenLabs Flash v2.5',
@@ -123,6 +162,67 @@ const MODELS = [
     provider: 'elevenlabs',
     providerModel: 'eleven_multilingual_v2',
     usdPerThousandChars: 0.10,
+    tier: 'standard',
+  },
+
+  // ── Text ─────────────────────────────────────────────────────────────────
+  // Billed per million tokens, and a caption is ~700 tokens in and ~200 out:
+  // a fraction of a penny whichever row runs. So unlike video, the choice
+  // here is about voice and not cost, and every row is 'standard'.
+  //
+  // One provider, OpenRouter, rather than five vendor accounts: it is a
+  // single key, a single balance and an OpenAI-shaped API in front of 400+
+  // models, which is exactly the shape this catalogue already assumes. Slugs
+  // and prices were read from openrouter.ai/api/v1/models on 2026-09-16 —
+  // vendor marketing names drift, the API's own list does not.
+  {
+    id: 'gpt-5.6',
+    kind: 'text',
+    label: 'ChatGPT 5.6',
+    provider: 'openrouter',
+    providerModel: 'openai/gpt-5.6-sol',
+    usdPerMillionInput: 2.0,
+    usdPerMillionOutput: 10.0,
+    tier: 'standard',
+  },
+  {
+    id: 'claude-5',
+    kind: 'text',
+    label: 'Claude Sonnet 5',
+    provider: 'openrouter',
+    providerModel: 'anthropic/claude-sonnet-5',
+    usdPerMillionInput: 2.0,
+    usdPerMillionOutput: 10.0,
+    tier: 'standard',
+  },
+  {
+    id: 'gemini-3',
+    kind: 'text',
+    label: 'Gemini 3 Flash',
+    provider: 'openrouter',
+    providerModel: 'google/gemini-3-flash-preview',
+    usdPerMillionInput: 0.5,
+    usdPerMillionOutput: 3.0,
+    tier: 'standard',
+  },
+  {
+    id: 'kimi-k2.5',
+    kind: 'text',
+    label: 'Moonshot Kimi K2.5',
+    provider: 'openrouter',
+    providerModel: 'moonshotai/kimi-k2.5',
+    usdPerMillionInput: 0.45,
+    usdPerMillionOutput: 2.25,
+    tier: 'standard',
+  },
+  {
+    id: 'grok-4.5',
+    kind: 'text',
+    label: 'Grok 4.5',
+    provider: 'openrouter',
+    providerModel: 'x-ai/grok-4.5',
+    usdPerMillionInput: 2.0,
+    usdPerMillionOutput: 6.0,
     tier: 'standard',
   },
 
@@ -190,6 +290,11 @@ function estimateUsd(model, units = {}) {
   }
   if (model.usdPerThousandChars != null && units.chars != null) {
     return round((model.usdPerThousandChars * units.chars) / 1000);
+  }
+  if (model.usdPerMillionOutput != null && (units.tokensIn != null || units.tokensOut != null)) {
+    const inCost = ((units.tokensIn || 0) * (model.usdPerMillionInput || 0)) / 1e6;
+    const outCost = ((units.tokensOut || 0) * model.usdPerMillionOutput) / 1e6;
+    return round(inCost + outCost);
   }
   return null;
 }
@@ -266,7 +371,8 @@ function resolveAvailable(kind, modelId, isConfigured) {
 
 /** Comparable per-unit price for ranking fallbacks. Unpriced sorts last. */
 function unitPrice(m) {
-  const p = m.usdPerSecond ?? m.usdPerImage ?? m.usdPerMinute ?? m.usdPerThousandChars;
+  const p = m.usdPerSecond ?? m.usdPerImage ?? m.usdPerMinute ?? m.usdPerThousandChars
+    ?? (m.usdPerMillionOutput != null ? m.usdPerMillionOutput / 1e6 : undefined);
   return p == null ? Number.POSITIVE_INFINITY : p;
 }
 
