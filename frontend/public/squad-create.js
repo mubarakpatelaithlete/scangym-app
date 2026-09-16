@@ -54,7 +54,7 @@
       ],
     },
     {
-      key: 'image', label: 'Image', icon: '🖼️', api: null,
+      key: 'image', label: 'Image', icon: '🖼️', api: '/api/squad-image',
       title: 'Create image', placeholder: 'Describe the image…',
       gen: '⚡ Generate image', resultKind: 'image',
       templates: [
@@ -87,7 +87,7 @@
       },
     },
     {
-      key: 'audio', label: 'Audio', icon: '🎙️', api: null,
+      key: 'audio', label: 'Audio', icon: '🎙️', api: '/api/squad-audio',
       title: 'Create audio', placeholder: 'What should the voice say?',
       gen: '⚡ Generate audio', resultKind: 'audio',
       templates: [
@@ -99,7 +99,7 @@
       ],
     },
     {
-      key: 'music', label: 'Music', icon: '🎵', api: null,
+      key: 'music', label: 'Music', icon: '🎵', api: '/api/squad-music',
       title: 'Create music', placeholder: 'Describe the track…',
       gen: '⚡ Generate music', resultKind: 'audio',
       templates: [
@@ -445,6 +445,15 @@
           gen.disabled = false;
           return;
         }
+        // Speech and music finish inside the request and answer with the
+        // media url as well as a job id. Showing it now saves a poll for
+        // something already on disk.
+        if (res.d.status === 'done' && (res.d.audioUrl || res.d.url)) {
+          if (res.d.quota) { quota = res.d.quota; refreshQuota(sh, mode); }
+          showResult(out, res.d.audioUrl || res.d.url, mode);
+          gen.disabled = false;
+          return;
+        }
         if (!res.d.jobId) throw new Error(res.d.error || 'could not start');
         if (res.d.quota) { quota = res.d.quota; refreshQuota(sh, mode); }
         var start = Date.now();
@@ -454,7 +463,7 @@
           fetch(mode.api + '/status/' + job.id).then(function (r) { return r.json(); }).then(function (st) {
             if (st.status === 'done') {
               clearInterval(job.timer);
-              showResult(out, st.videoUrl || st.url, mode);
+              showResult(out, st.videoUrl || st.imageUrl || st.audioUrl || st.url, mode);
               gen.disabled = false;
             } else if (st.status === 'error') {
               clearInterval(job.timer);

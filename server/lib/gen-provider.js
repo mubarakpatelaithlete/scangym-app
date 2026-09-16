@@ -137,12 +137,12 @@ function firstMediaUrl(out) {
 /**
  * Speech. Returns a Buffer of MP3.
  *
- * The voice is a deployment setting, not a client choice: voice ids are
- * account-scoped and letting the body pick one would let a caller probe the
- * account's private voices.
+ * The voice is chosen from a named preset by the route, never taken raw from
+ * the body: voice ids are account-scoped, and letting a caller pass one would
+ * let them probe (and spend against) the account's private voices.
  */
-async function elevenSpeech(model, { text }) {
-  const voice = process.env.ELEVENLABS_VOICE_ID || 'JBFqnCBsd6RMkjVDRZzb';
+async function elevenSpeech(model, { text, voiceId }) {
+  const voice = voiceId || process.env.ELEVENLABS_VOICE_ID || 'JBFqnCBsd6RMkjVDRZzb';
   const r = await fetch(`${ELEVEN_API}/text-to-speech/${voice}`, {
     method: 'POST',
     headers: {
@@ -177,6 +177,71 @@ async function elevenMusic(model, { prompt, ms }) {
   return { buffer: Buffer.from(await r.arrayBuffer()), contentType: 'audio/mpeg' };
 }
 
+/**
+ * How much of the ElevenLabs character allowance is left this month.
+ *
+ * This matters more than it looks. The account is on the free tier: 10,000
+ * characters a month for the whole deployment, not per creator. At a 700
+ * character voiceover that is fourteen generations in total, so two
+ * enthusiastic creators can exhaust everyone's allowance before lunch and
+ * every later request fails at the vendor with a 401 the sheet would render
+ * as "something went wrong".
+ *
+ * So the route checks the remaining balance before spending it, and says
+ * plainly when it is gone. Cached for five minutes: the number moves only
+ * when we ourselves spend, and health is polled every time the sheet opens.
+ *
+ * Returns null when the balance cannot be read — callers must treat that as
+ * "unknown, carry on" rather than "empty", because refusing to generate
+ * because a status endpoint blipped would be a self-inflicted outage.
+ */
+let _quotaCache = { at: 0, value: null };
+const QUOTA_TTL_MS = 5 * 60 * 1000;
+
+async function elevenCharacterQuota({ force = false } = {}) {
+  if (!configured('elevenlabs')) return null;
+  if (!force && Date.now() - _quotaCache.at < QUOTA_TTL_MS) return _quotaCache.value;
+  try {
+    const r = await fetch(`${ELEVEN_API}/user/subscription`, {
+      headers: { 'xi-api-key': process.env.ELEVENLABS_API_KEY },
+    });
+    if (!r.ok) return null;
+    const d = await r.json();
+    const used = Number(d.character_count);
+    const limit = Number(d.character_limit);
+    if (!Number.isFinite(used) || !Number.isFinite(limit)) return null;
+    const value = {
+      tier: d.tier || 'unknown',
+      used,
+      limit,
+      remaining: Math.max(0, limit - used),
+      resetsAt: d.next_character_count_reset_unix ? d.next_character_count_reset_unix * 1000 : null,
+    };
+    _quotaCache = { at: Date.now(), value };
+    return value;
+  } catch (e) {
+    console.error('[SquadGen] could not read ElevenLabs balance:', e.message);
+    return null;
+  }
+}
+
+/**
+ * The last known plan tier, without a network call.
+ *
+ * routes/squad-create.js answers synchronously (it is polled on every sheet
+ * open and must not wait on a vendor), but it still needs to know whether
+ * Music is purchasable on this account. Returns null when nothing has been
+ * read yet, which callers must treat as "not known to be allowed".
+ */
+function cachedElevenTier() {
+  return _quotaCache.value ? _quotaCache.value.tier : null;
+}
+
+/** Forget the cached balance — called after we spend characters. */
+function invalidateCharacterQuota() {
+  _quotaCache = { at: 0, value: null };
+}
+
 // ─── The interface the routes use ──────────────────────────────────────────
 
 /**
@@ -206,4 +271,14 @@ async function generate(model, input) {
   throw new Error(`${model.provider} has no sync generate path`);
 }
 
-module.exports = { submit, poll, generate, configured, scrub, _internals: { firstMediaUrl } };
+module.exports = {
+  submit,
+  poll,
+  generate,
+  configured,
+  scrub,
+  elevenCharacterQuota,
+  cachedElevenTier,
+  invalidateCharacterQuota,
+  _internals: { firstMediaUrl },
+};
