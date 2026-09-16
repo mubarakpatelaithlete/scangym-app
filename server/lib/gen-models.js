@@ -54,15 +54,66 @@ const MODELS = [
     providerModel: 'fal-ai/kling-video/v2.5-turbo/pro/text-to-video',
     usdPerSecond: 0.07,
     tier: 'standard',
+    inputProfile: 'kling-2.5',
   },
   {
+    // Price corrected 2026-09-16 against fal's published rate. This row said
+    // $0.22/s, which is roughly double what fal actually bills: $0.112/s with
+    // audio off, $0.168/s with audio on. We quote the audio-on number because
+    // the route sends generateAudio: true by default, and quoting the cheaper
+    // variant of a setting we do not use is how a sheet under-charges.
     id: 'kling-3.0-pro',
     kind: 'video',
     label: 'Kling 3.0 Pro',
     provider: 'fal',
     providerModel: 'fal-ai/kling-video/v3/pro/text-to-video',
-    usdPerSecond: 0.22,
+    usdPerSecond: 0.168,
     tier: 'premium',
+    inputProfile: 'kling-v3',
+  },
+  {
+    // Alibaba's current generation, and the reason to carry it next to WAN
+    // 2.5: 2.5 is a preview endpoint. "WAN 2.7" does not exist — 3.0 is what
+    // followed 2.5 — so this is the row to reach for when someone asks for a
+    // newer WAN.
+    id: 'wan-3.0',
+    kind: 'video',
+    label: 'WAN 3.0',
+    provider: 'fal',
+    providerModel: 'alibaba/wan-3.0/text-to-video',
+    usdPerSecond: 0.10, // 720p. 480p is $0.05, 1080p $0.20.
+    tier: 'standard',
+    inputProfile: 'wan-3',
+    note: 'Newest WAN. Smoother motion than 2.5, twice the price.',
+  },
+  {
+    // 480p only, and that is the whole point: at $0.05/s this is the cheapest
+    // clip in the catalogue, half the cost of the WAN 2.5 default. fal
+    // publishes a rate for 480p and not for 720p on this endpoint, so the
+    // profile pins the resolution we can actually quote rather than sending a
+    // setting whose price we would be guessing.
+    id: 'grok-imagine-video',
+    kind: 'video',
+    label: 'Grok Imagine',
+    provider: 'fal',
+    providerModel: 'xai/grok-imagine-video/text-to-video',
+    usdPerSecond: 0.05,
+    tier: 'standard',
+    inputProfile: 'grok-video',
+    note: 'Cheapest clip here, at 480p. Good for a quick draft.',
+  },
+  {
+    // Nearly 5x Seedance 1 Pro and ~9x the WAN 2.5 default: an 8s clip is
+    // $3.78. Premium is not a label here, it is a guard.
+    id: 'seedance-2.5',
+    kind: 'video',
+    label: 'Seedance 2.5',
+    provider: 'fal',
+    providerModel: 'bytedance/seedance-2.5/text-to-video',
+    usdPerSecond: 0.473, // 720p. 480p is $0.2205, 1080p $1.164.
+    tier: 'premium',
+    inputProfile: 'seedance-2.5',
+    note: 'ByteDance flagship. Best motion here, and by far the dearest.',
   },
   {
     // The same Veo, reached through fal instead of Google directly. This row
@@ -77,6 +128,7 @@ const MODELS = [
     providerModel: 'fal-ai/veo3.1',
     usdPerSecond: 0.40,
     tier: 'premium',
+    inputProfile: 'veo-fal',
     note: 'Google Veo with synced audio, billed through fal.',
   },
   {
@@ -87,6 +139,7 @@ const MODELS = [
     providerModel: 'fal-ai/bytedance/seedance/v1/pro/text-to-video',
     usdPerSecond: 0.10,
     tier: 'standard',
+    inputProfile: 'seedance-1',
     note: 'ByteDance. Strong motion, mid-price.',
   },
   {
@@ -120,6 +173,7 @@ const MODELS = [
     providerModel: 'fal-ai/bytedance/seedream/v4/text-to-image',
     usdPerImage: 0.03,
     tier: 'standard',
+    inputProfile: 'seedream',
   },
   {
     id: 'flux-kontext-pro',
@@ -129,6 +183,37 @@ const MODELS = [
     providerModel: 'fal-ai/flux-pro/kontext/text-to-image',
     usdPerImage: 0.04,
     tier: 'standard',
+  },
+  {
+    // Google's newest. Twice the price of Nano Banana 1, which is why 1 keeps
+    // the default slot. Pinned to 1K: fal charges 1.5x at 2K and 2x at 4K, so
+    // an un-pinned resolution is a billing hole rather than a nicer picture.
+    id: 'nano-banana-2',
+    kind: 'image',
+    label: 'Nano Banana 2',
+    provider: 'fal',
+    providerModel: 'fal-ai/nano-banana-2',
+    usdPerImage: 0.08,
+    tier: 'standard',
+    inputProfile: 'nano-banana-2',
+    note: 'Newest Google image model. Twice the price of Nano Banana.',
+  },
+  {
+    // OpenAI bills this per token, not per image, so unlike every other row
+    // here the price is a considered estimate rather than a list price: at
+    // quality 'medium' a 1024px image is ~1,050 output image tokens at
+    // $30/1M, so ~$0.032, and we quote $0.04 to stay on the safe side of a
+    // number a creator sees before they spend. The profile pins quality to
+    // medium — fal's default is 'high', which is ~4x dearer.
+    id: 'gpt-image-2.5',
+    kind: 'image',
+    label: 'ChatGPT Images 2.5',
+    provider: 'fal',
+    providerModel: 'openai/gpt-image-2.5/flare/text-to-image',
+    usdPerImage: 0.04,
+    tier: 'standard',
+    inputProfile: 'openai-image',
+    note: 'OpenAI, at medium quality. Billed per token, so this price is an estimate.',
   },
 
   // ── Audio (speech) ───────────────────────────────────────────────────────
@@ -238,6 +323,27 @@ const MODELS = [
     providerModel: 'music_v1',
     usdPerMinute: 0.30,
     tier: 'default',
+  },
+  {
+    // The same ElevenLabs music model, reached through fal — the same trick
+    // the Veo rows use, and for the same reason: a mode that depends on one
+    // account's plan is a mode that is off.
+    //
+    // Direct costs $0.30/minute but is unavailable on the free ElevenLabs
+    // tier (402 paid_plan_required), so the honest comparison is not
+    // $0.30 vs $0.60 — it is $0.60 a minute against a monthly subscription
+    // plus $0.30 a minute. Below roughly an hour of music a month, fal is
+    // cheaper. The direct row keeps the default slot so that the day the
+    // account goes paid, resolveAvailable() picks it again with no release.
+    id: 'eleven-music-fal',
+    kind: 'music',
+    label: 'Eleven Music (via fal)',
+    provider: 'fal',
+    providerModel: 'fal-ai/elevenlabs/music',
+    usdPerMinute: 0.60,
+    tier: 'standard',
+    inputProfile: 'fal-music',
+    note: 'Same model, billed through fal. No ElevenLabs plan needed.',
   },
 ];
 

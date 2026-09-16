@@ -229,12 +229,18 @@ router.post('/generate', optionalAuth, express.json(), async (req, res) => {
     });
   }
 
-  const settings = cleanSettings(req.body);
+  const requested = cleanSettings(req.body);
+  // Price and report the length that will actually render. Vendors accept
+  // different duration sets (WAN 2.5 is 5s or 10s), so a 4s request becomes a
+  // 5s clip — and quoting the 4s would under-charge by a fifth.
+  const settings = model.provider === 'fal'
+    ? { ...requested, durationSeconds: effectiveSeconds(model, requested.durationSeconds) }
+    : requested;
   const costUsd = models.estimateUsd(model, { seconds: settings.durationSeconds });
 
   try {
     const op = model.provider === 'fal'
-      ? (await genProvider.submit(model, falInput(prompt, settings))).op
+      ? (await genProvider.submit(model, falInput(prompt, settings, model))).op
       : await veoSubmit(prompt, settings);
 
     const jobId = crypto.randomBytes(8).toString('hex');
@@ -255,15 +261,144 @@ router.post('/generate', optionalAuth, express.json(), async (req, res) => {
   }
 });
 
-/** Whitelisted settings → the payload a fal text-to-video model expects. */
-function falInput(prompt, settings) {
-  return {
-    prompt,
-    duration: settings.durationSeconds,
-    aspect_ratio: settings.aspectRatio,
-    resolution: settings.resolution,
-    enable_audio: settings.generateAudio,
-  };
+/**
+ * Whitelisted settings → the payload a fal text-to-video model expects.
+ *
+ * **This table exists because Create Video was broken in production.** The
+ * sheet offers 4s, 6s and 8s. WAN 2.5 — the default — accepts `'5'` or
+ * `'10'` and nothing else, as does Kling 2.5 Turbo. Verified against the live
+ * API on 2026-09-16 with the exact payload this route was sending: fal
+ * answers 200 with a request id, the status endpoint then reports
+ * `COMPLETED`, and fetching the result returns
+ * `422 Input should be '5' or '10'`. No video, every time, for every
+ * customer who pressed the button.
+ *
+ * That failure shape is why it survived: the submit succeeds, so nothing
+ * logs an error at send time, and /health only checks that a key exists.
+ *
+ * fal does *not* reject unknown fields — it ignores them — so the danger is
+ * never a loud 422 at submit. It is a setting that silently does nothing:
+ * `enable_audio` sent to a model whose flag is `generate_audio` leaves audio
+ * on at the vendor default and bills 50% more than the sheet quoted.
+ *
+ * So each profile declares the durations its vendor actually accepts, and
+ * `effectiveSeconds()` maps the creator's choice onto one of them. Rounding
+ * is upward: a creator who asked for 4s gets 5s rather than a failure, and
+ * the quote is calculated from the 5s that will really render, never from
+ * the 4s they tapped. All duration lists and field names are from fal's
+ * OpenAPI schemas, read on 2026-09-16.
+ */
+const VIDEO_PROFILES = {
+  /** WAN 2.5 preview. 5s or 10s only, and the audio flag does not exist. */
+  'fal-video': {
+    durations: [5, 10],
+    build: (prompt, s) => ({
+      prompt,
+      duration: String(s.durationSeconds),
+      aspect_ratio: s.aspectRatio,
+      resolution: s.resolution,
+    }),
+  },
+  /** Kling 2.5 Turbo: 5s or 10s, no resolution field, no audio field. */
+  'kling-2.5': {
+    durations: [5, 10],
+    build: (prompt, s) => ({
+      prompt,
+      duration: String(s.durationSeconds),
+      aspect_ratio: s.aspectRatio,
+    }),
+  },
+  /** Kling v3: 3–15s as a string, generate_audio, still no resolution. */
+  'kling-v3': {
+    durations: [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+    build: (prompt, s) => ({
+      prompt,
+      duration: String(s.durationSeconds),
+      aspect_ratio: s.aspectRatio,
+      generate_audio: s.generateAudio,
+    }),
+  },
+  /** Seedance 1 Pro: 2–12s as a string, resolution, no audio field. */
+  'seedance-1': {
+    durations: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+    build: (prompt, s) => ({
+      prompt,
+      duration: String(s.durationSeconds),
+      aspect_ratio: s.aspectRatio,
+      resolution: s.resolution,
+    }),
+  },
+  /** Seedance 2.5: 4–30s as a string, resolution, generate_audio. */
+  'seedance-2.5': {
+    durations: [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+    build: (prompt, s) => ({
+      prompt,
+      duration: String(s.durationSeconds),
+      aspect_ratio: s.aspectRatio,
+      resolution: s.resolution,
+      generate_audio: s.generateAudio,
+    }),
+  },
+  /** Veo 3.1 through fal: the duration carries an 's', and it is generate_audio. */
+  'veo-fal': {
+    durations: [4, 6, 8],
+    build: (prompt, s) => ({
+      prompt,
+      duration: `${s.durationSeconds}s`,
+      aspect_ratio: s.aspectRatio,
+      resolution: s.resolution,
+      generate_audio: s.generateAudio,
+    }),
+  },
+  /** WAN 3.0: a real integer duration, and the audio flag is just `audio`. */
+  'wan-3': {
+    durations: null, // any integer 2–30
+    build: (prompt, s) => ({
+      prompt,
+      duration: s.durationSeconds,
+      aspect_ratio: s.aspectRatio,
+      resolution: s.resolution,
+      audio: s.generateAudio,
+    }),
+  },
+  /**
+   * Grok Imagine: integer duration, no audio, and pinned to 480p. fal
+   * publishes $0.05/s at 480p and no rate for 720p on this endpoint, so 480p
+   * is the only resolution we can put a price against — and the catalogue
+   * row quotes exactly that.
+   */
+  'grok-video': {
+    durations: null,
+    build: (prompt, s) => ({
+      prompt,
+      duration: s.durationSeconds,
+      aspect_ratio: s.aspectRatio,
+      resolution: '480p',
+    }),
+  },
+};
+
+function profileFor(model) {
+  return VIDEO_PROFILES[model?.inputProfile] || VIDEO_PROFILES['fal-video'];
+}
+
+/**
+ * The duration this model will really render, given what the creator picked.
+ *
+ * Rounds up to the vendor's next allowed length, because a slightly longer
+ * clip is a better answer than a failed one. The caller prices *this* number:
+ * quoting the 4s a creator tapped for a clip WAN will render at 5s is the
+ * same class of mistake as the Kling row that quoted double.
+ */
+function effectiveSeconds(model, requested) {
+  const { durations } = profileFor(model);
+  if (!durations) return requested;
+  return durations.find((d) => d >= requested) ?? durations[durations.length - 1];
+}
+
+function falInput(prompt, settings, model) {
+  const seconds = effectiveSeconds(model, settings.durationSeconds);
+  return profileFor(model).build(prompt, { ...settings, durationSeconds: seconds });
 }
 
 /** Start a Veo long-running operation and return its name. */
@@ -443,3 +578,4 @@ async function rehost(url, jobId) {
 }
 
 module.exports = router;
+module.exports._internals = { falInput, cleanSettings, VIDEO_PROFILES, effectiveSeconds, profileFor };

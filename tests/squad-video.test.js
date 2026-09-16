@@ -105,11 +105,20 @@ test('the settings the user picks are actually sent to the model', async () => {
     // The default provider is fal, so the settings arrive in fal's shape.
     // What matters is unchanged from the original bug: the values the user
     // picked reach the model instead of being decoration.
+    //
+    // Updated 2026-09-16: this test used to assert `duration: 4` and
+    // `enable_audio: false`, which is what the route sent and what WAN 2.5
+    // rejects — it accepts the strings '5' and '10', and has no audio field
+    // at all. The assertions encoded the bug, so Create Video returned an
+    // error for every customer while this test passed. A 4s request now
+    // renders as WAN's nearest real length, and the quote follows it.
     assert.match(calledUrl, /queue\.fal\.run/);
     assert.strictEqual(sent.aspect_ratio, '16:9');
-    assert.strictEqual(sent.duration, 4);
+    assert.strictEqual(sent.duration, '5', "4s is not a length WAN 2.5 offers; '5' is the nearest it will render");
     assert.strictEqual(sent.resolution, '1080p');
-    assert.strictEqual(sent.enable_audio, false);
+    assert.ok(!('enable_audio' in sent), 'WAN 2.5 has no audio field — sending one silently did nothing');
+    assert.strictEqual(res.body.settings.durationSeconds, 5, 'the sheet is told the length it is really getting');
+    assert.strictEqual(res.body.costUsd, 0.25, 'and billed for the 5s that renders, not the 4s tapped');
     assert.ok(res.body.jobId, 'a job id comes back');
     assert.strictEqual(res.body.model.id, 'wan-2.5', 'the cheap model is the default');
     assert.ok(res.body.costUsd > 0, 'the sheet is told what it will cost before spending');
@@ -184,7 +193,10 @@ test('settings the client invents are replaced by defaults, never forwarded', as
       mockReq({ body: { prompt: 'a gym', aspectRatio: '4:3', durationSeconds: 3600, resolution: '8k' } }),
       mockRes(),
     );
-    assert.strictEqual(sent.duration, 8, '3600s would be a billing hole');
+    // 3600s falls back to the 8s default, which WAN 2.5 then renders as its
+    // nearest real length, '10'. Both steps matter: the whitelist stops the
+    // billing hole, and the duration map stops the vendor rejecting us.
+    assert.strictEqual(sent.duration, '10', '3600s would be a billing hole');
     assert.strictEqual(sent.aspect_ratio, '9:16');
     assert.strictEqual(sent.resolution, '720p');
   } finally {

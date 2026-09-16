@@ -69,13 +69,45 @@ function cleanSettings(body) {
  * anything other than free is allowed, and an unreadable tier is treated as
  * not allowed, because the cost of guessing wrong is a dead button.
  */
-async function musicAllowed() {
+async function elevenMusicAllowed() {
   if (!provider.configured('elevenlabs')) return { ok: false, reason: 'no_api_key' };
   if (process.env.ELEVENLABS_MUSIC_ENABLED === 'true') return { ok: true };
   const balance = await provider.elevenCharacterQuota();
   if (!balance) return { ok: false, reason: 'paid_plan_required' };
   if (balance.tier === 'free') return { ok: false, reason: 'paid_plan_required' };
   return { ok: true, tier: balance.tier };
+}
+
+/**
+ * Which providers can actually make music on this box right now.
+ *
+ * "Has a key" is not the same as "may generate" for ElevenLabs music — the
+ * free tier holds a perfectly valid key and still answers 402. So the
+ * predicate handed to the catalogue reports ElevenLabs as unreachable *for
+ * music* on a free plan, and the cheapest-reachable rule then lands on the
+ * fal row by itself. No branch here picks a vendor; the catalogue does, which
+ * is why the direct row can keep the default slot and win again the moment
+ * the account goes paid.
+ */
+async function musicProviders() {
+  const eleven = await elevenMusicAllowed();
+  const isConfigured = (p) =>
+    p === 'elevenlabs' ? eleven.ok : provider.configured(p);
+  return { eleven, isConfigured };
+}
+
+/**
+ * Can this box make music at all, and with what?
+ *
+ * Reports the reason from whichever provider got closest: if fal is keyed we
+ * are available regardless of the ElevenLabs plan, and if neither works the
+ * ElevenLabs reason is the useful one to show.
+ */
+async function musicAllowed() {
+  const { eleven, isConfigured } = await musicProviders();
+  const model = models.resolveAvailable(KIND, undefined, isConfigured);
+  if (!model) return { ok: false, reason: eleven.reason || 'no_api_key' };
+  return { ok: true, tier: eleven.tier, via: model.provider, model };
 }
 
 // ─── GET /health — may this box make music right now? ─────────────────────
@@ -129,11 +161,37 @@ router.post('/generate', optionalAuth, express.json({ limit: '64kb' }), limiter,
 
   const settings = cleanSettings(req.body);
   const ms = LENGTH_MS[settings.length];
-  const model = models.resolveAvailable(KIND, req.body?.model, provider.configured);
+  const { isConfigured } = await musicProviders();
+  const model = models.resolveAvailable(KIND, req.body?.model, isConfigured);
   if (!model) return res.status(503).json({ error: 'No music model is reachable on this deployment.' });
   const costUsd = models.estimateUsd(model, { minutes: ms / 60000 });
   const jobId = crypto.randomBytes(8).toString('hex');
   const fullPrompt = `${prompt}. Style: ${GENRE_HINT[settings.genre]}.`;
+
+  /*
+   * fal is a queue, not a synchronous call. A minute of music takes longer
+   * than the 30s this app's proxy allows, so the fal path answers with a job
+   * and the sheet polls — exactly what Create Image does. The sheet already
+   * handles both shapes (it shows the media inline when `status: done`
+   * arrives with a url, and polls otherwise), so this needs no client change.
+   */
+  if (model.provider === 'fal') {
+    try {
+      const { op } = await provider.submit(model, falMusicInput(fullPrompt, ms));
+      await jobs.recordJob({ id: jobId, req, kind: KIND, prompt, params: { ...settings, op }, op, model, costUsd });
+      return res.json({
+        jobId,
+        status: 'running',
+        settings,
+        model: { id: model.id, label: model.label },
+        costUsd,
+        quota: { ...quota, used: quota.used + 1, remaining: quota.remaining - 1 },
+      });
+    } catch (e) {
+      console.error('[SquadMusic] fal submit failed:', e.message);
+      return res.status(502).json({ error: provider.scrub(e.message) || 'Could not reach the music model.' });
+    }
+  }
 
   try {
     const { buffer, contentType } = await provider.generate(model, { prompt: fullPrompt, ms });
@@ -159,6 +217,17 @@ router.post('/generate', optionalAuth, express.json({ limit: '64kb' }), limiter,
   }
 });
 
+/**
+ * The payload fal's Eleven Music endpoint takes.
+ *
+ * `music_length_ms` is the same field the direct API uses, which is the
+ * whole reason this row was worth adding rather than a cheaper generator:
+ * same model, same controls, same licensing, different bill.
+ */
+function falMusicInput(prompt, ms) {
+  return { prompt, music_length_ms: ms, output_format: 'mp3_44100_128' };
+}
+
 /** Same storage rule as voiceovers — see routes/squad-audio.js. */
 async function store(buffer, contentType, jobId) {
   if (!r2.r2Configured()) {
@@ -181,7 +250,28 @@ router.get('/status/:jobId', async (req, res) => {
   if (!row) return res.status(404).json({ error: 'unknown job' });
   if (row.status === 'error') return res.json({ status: 'error', error: row.error });
   if (row.status === 'done') return res.json({ status: 'done', audioUrl: row.video_url, url: row.video_url });
-  return res.json({ status: 'running' });
+
+  // A row with an `op` is a fal job: still out at the vendor, so ask. Rows
+  // without one are the direct ElevenLabs path, which finishes inside the
+  // request and can only be 'running' here if it died mid-flight.
+  if (!row.op) return res.json({ status: 'running' });
+
+  const model = models.resolve(KIND, row.model);
+  try {
+    const out = await provider.poll(model, row.op);
+    if (out.status === 'running') {
+      return res.json({ status: 'running', queuePosition: out.queuePosition ?? null });
+    }
+    if (out.status === 'error') {
+      await jobs.finishJob(req.params.jobId, { status: 'error', error: out.error });
+      return res.json({ status: 'error', error: out.error });
+    }
+    await jobs.finishJob(req.params.jobId, { status: 'done', url: out.url });
+    return res.json({ status: 'done', audioUrl: out.url, url: out.url });
+  } catch (e) {
+    console.error('[SquadMusic] status error:', e.message);
+    return res.json({ status: 'running' }); // transient — let the client keep polling
+  }
 });
 
 // ─── GET /history ─────────────────────────────────────────────────────────
@@ -191,4 +281,4 @@ router.get('/history', optionalAuth, async (req, res) => {
 });
 
 module.exports = router;
-module.exports._internals = { LENGTH_MS, GENRE_HINT, cleanSettings, musicAllowed };
+module.exports._internals = { LENGTH_MS, GENRE_HINT, cleanSettings, musicAllowed, elevenMusicAllowed, musicProviders, falMusicInput };
