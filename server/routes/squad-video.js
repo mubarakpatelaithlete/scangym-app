@@ -43,6 +43,9 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { optionalAuth } = require('../middleware/auth');
+const { requireCreator } = require('../lib/gen-guard');
+const spend = require('../lib/gen-budget');
+const etaOf = require('../lib/gen-eta');
 const pool = require('../middleware/db');
 const models = require('../lib/gen-models');
 const genProvider = require('../lib/gen-provider');
@@ -130,12 +133,18 @@ async function recordJob(id, req, prompt, settings, op, model, costUsd) {
 
 async function finishJob(id, fields) {
   try {
-    await pool.query(
+    const r = await pool.query(
       `UPDATE squad_video_jobs
           SET status = $2, video_url = $3, error = $4, completed_at = NOW()
-        WHERE id = $1`,
+        WHERE id = $1
+      RETURNING id, user_id, kind, model, prompt, video_url, created_at, completed_at`,
       [id, fields.status, fields.videoUrl || null, fields.error || null],
     );
+    /* Video is the slow mode — 2 to 4 minutes measured — so a creator who left
+       the sheet gets told rather than losing the clip they paid for. */
+    if (fields.status === 'done' && r.rows[0]) {
+      require('../lib/gen-notify').notifyReady(r.rows[0]).catch(() => {});
+    }
   } catch (e) {
     console.error('[SquadVideo] could not finish job:', e.message);
   }
@@ -145,12 +154,20 @@ async function finishJob(id, fields) {
 // Free check: lists models and looks for the Veo id. No generation spend.
 router.get('/health', optionalAuth, async (req, res) => {
   const quota = await quotaFor(req);
-  const catalogue = models.catalogueFor('video', { seconds: DEFAULTS.durationSeconds });
+  /* What this creator can afford, decided before the row is drawn rather than
+     after a 402 — and it is what tier-gates Veo and Seedance without hiding
+     them. @see lib/gen-budget.js */
+  const budget = await spend.budgetFor(req);
+  const catalogue = spend.annotate(
+    models.catalogueFor('video', { seconds: DEFAULTS.durationSeconds })
+      .map((m) => ({ ...m, etaSeconds: etaOf.etaSeconds('video', m.id, { seconds: DEFAULTS.durationSeconds }) })),
+    budget,
+  );
   const chosen = models.resolveAvailable('video', req.query.model, genProvider.configured);
 
   // Nothing keyed at all — neither fal nor Gemini.
   if (!chosen) {
-    return res.json({ available: false, reason: 'no_api_key', models: catalogue, quota });
+    return res.json({ available: false, reason: 'no_api_key', models: catalogue, quota, budget });
   }
 
   // The cheap default lives on fal, but this box may only have a Gemini key
@@ -164,12 +181,13 @@ router.get('/health', optionalAuth, async (req, res) => {
       model: chosen.id,
       models: catalogue,
       quota,
+      budget,
       options: ALLOWED,
       defaults: DEFAULTS,
     });
   }
 
-  if (!GEMINI_KEY) return res.json({ available: false, reason: 'no_api_key', models: catalogue, quota });
+  if (!GEMINI_KEY) return res.json({ available: false, reason: 'no_api_key', models: catalogue, quota, budget });
 
   /* Ask whether this key may *generate*, not whether the model exists.
      This probe used to be GET /models/{VEO_MODEL}, which answered 200 on a
@@ -185,6 +203,7 @@ router.get('/health', optionalAuth, async (req, res) => {
       model: chosen.id,
       models: catalogue,
       quota,
+      budget,
       options: ALLOWED,
       defaults: DEFAULTS,
     });
@@ -196,6 +215,7 @@ router.get('/health', optionalAuth, async (req, res) => {
     detail: access.detail,
     models: catalogue,
     quota,
+    budget,
   });
 });
 
@@ -205,7 +225,7 @@ router.get('/health', optionalAuth, async (req, res) => {
 // allowlist of prefixes and /api/squad-video is not one of them, so without
 // this req.body is undefined and every generate answered "prompt required" —
 // the feature could never have worked, with or without a valid model key.
-router.post('/generate', optionalAuth, express.json(), async (req, res) => {
+router.post('/generate', requireCreator, express.json(), async (req, res) => {
   const prompt = (req.body?.prompt || '').trim();
   if (!prompt) return res.status(400).json({ error: 'prompt required' });
   if (prompt.length > 1500) return res.status(400).json({ error: 'prompt too long' });
@@ -238,6 +258,13 @@ router.post('/generate', optionalAuth, express.json(), async (req, res) => {
     : requested;
   const costUsd = models.estimateUsd(model, { seconds: settings.durationSeconds });
 
+  /* The reason this route exists in this shape: five clips a day was the cap,
+     and five Seedance clips is $18.90 of our money on a caller who never
+     signed in. Spend is now priced against the creator's tier and the bookings
+     they have driven. @see lib/gen-budget.js */
+  const refused = spend.verdict(await spend.budgetFor(req), costUsd);
+  if (refused) return res.status(refused.status).json(refused.body);
+
   try {
     const op = model.provider === 'fal'
       ? (await genProvider.submit(model, falInput(prompt, settings, model))).op
@@ -253,6 +280,9 @@ router.post('/generate', optionalAuth, express.json(), async (req, res) => {
       settings,
       model: { id: model.id, label: model.label },
       costUsd,
+      /* Measured, per model, not "usually under a minute" — Seedance is 226s.
+         @see lib/gen-eta.js */
+      etaSeconds: etaOf.etaSeconds('video', model.id, { seconds: settings.durationSeconds }),
       quota: { ...quota, used: quota.used + 1, remaining: quota.remaining - 1 },
     });
   } catch (e) {
@@ -421,6 +451,23 @@ async function veoSubmit(prompt, settings) {
   return data.name;
 }
 
+
+/**
+ * How long this render has been going and how long is left, in the same shape
+ * every mode answers with.
+ *
+ * The sheet used to print "usually under a minute" and then count upwards past
+ * four minutes, which reads as a hang. Both numbers come from measurement
+ * (lib/gen-eta.js), and `remainingSeconds` is null once we are past the
+ * estimate rather than negative — "any moment now" is the honest phrasing when
+ * the vendor is slower than its median.
+ */
+function timing(job, model) {
+  const elapsed = Math.round((Date.now() - (job.createdAt || Date.now())) / 1000);
+  const total = etaOf.etaSeconds('video', model && model.id, { seconds: job.durationSeconds || DEFAULTS.durationSeconds });
+  return { elapsedSeconds: elapsed, etaSeconds: total, remainingSeconds: etaOf.remainingSeconds(total, elapsed) };
+}
+
 // ─── GET /status/:jobId — poll until done ────────────────────────────────
 router.get('/status/:jobId', async (req, res) => {
   let job = jobs.get(req.params.jobId);
@@ -430,12 +477,18 @@ router.get('/status/:jobId', async (req, res) => {
   if (!job) {
     try {
       const r = await pool.query(
-        'SELECT op, status, video_url, error, model FROM squad_video_jobs WHERE id = $1',
+        'SELECT op, status, video_url, error, model, created_at FROM squad_video_jobs WHERE id = $1',
         [req.params.jobId],
       );
       if (r.rows[0]) {
         const row = r.rows[0];
-        job = { op: row.op, status: row.status, videoUrl: row.video_url, error: row.error, model: row.model, createdAt: Date.now() };
+        /* created_at from the row, not Date.now(): after a deploy the clip has
+           already been rendering for minutes, and "0s elapsed" would restart a
+           progress bar the creator has been watching. */
+        job = {
+          op: row.op, status: row.status, videoUrl: row.video_url, error: row.error, model: row.model,
+          createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now(),
+        };
         jobs.set(req.params.jobId, job);
       }
     } catch (e) {
@@ -454,7 +507,7 @@ router.get('/status/:jobId', async (req, res) => {
     try {
       const out = await genProvider.poll(jobModel, job.op);
       if (out.status === 'running') {
-        return res.json({ status: 'running', queuePosition: out.queuePosition ?? null });
+        return res.json({ status: 'running', queuePosition: out.queuePosition ?? null, ...timing(job, jobModel) });
       }
       if (out.status === 'error') {
         job.status = 'error';

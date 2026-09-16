@@ -27,6 +27,10 @@ const llm = require('../lib/llm');
 const models = require('../lib/gen-models');
 const genProvider = require('../lib/gen-provider');
 const { optionalAuth } = require('../middleware/auth');
+const { requireCreator } = require('../lib/gen-guard');
+const spend = require('../lib/gen-budget');
+const jobs = require('../lib/gen-jobs');
+const crypto = require('crypto');
 
 const router = express.Router();
 
@@ -100,7 +104,7 @@ function systemPrompt({ tone, length }) {
 
 // ─── GET /api/squad-text/health ───
 // The sheet asks this before offering Generate, exactly as it does for video.
-router.get('/health', (req, res) => {
+router.get('/health', optionalAuth, async (req, res) => {
   /* Two ways this mode can be on, and the sheet needs to know which:
      - the house writer (lib/llm.js on OpenAI or Groq), always available,
      - the named models, when either OpenRouter transport is reachable: our
@@ -110,11 +114,18 @@ router.get('/health', (req, res) => {
      sheet renders a working button with no dropdown instead of a dropdown
      whose entries all fail. */
   const picker = genProvider.configured('openrouter');
+  /* Captions cost a fraction of a penny, so the budget almost never blocks one
+     — it is here so the sheet can show one balance for every mode instead of a
+     rule that appears only when a creator reaches for video. */
+  const creatorBudget = await spend.budgetFor(req);
   res.json({
     ok: true,
     configured: llm.configured() || picker,
     house: llm.configured(),
-    models: picker ? models.catalogueFor('text', { tokensIn: 700, tokensOut: 200 }) : [],
+    budget: creatorBudget,
+    models: picker
+      ? spend.annotate(models.catalogueFor('text', { tokensIn: 700, tokensOut: 200 }), creatorBudget)
+      : [],
     /* Live web results are a property of the router, not of the house writer:
        lib/llm.js has no search. So the sheet only offers the toggle when a
        named model can serve it, and it is told the surcharge rather than
@@ -201,18 +212,31 @@ function pickNamedModel(body) {
   return row;
 }
 
-router.post('/generate', textLimiter, optionalAuth, express.json(), async (req, res) => {
+router.post('/generate', textLimiter, requireCreator, express.json(), async (req, res) => {
   const { prompt } = clean(req.body);
   if (!prompt) return res.status(400).json({ error: 'Describe the post first.' });
   if (!llm.configured() && !pickNamedModel(req.body)) {
     return res.status(503).json({ error: 'Text is not switched on yet.' });
   }
 
+  /* A named model is priced; the house writer is not. Same budget as every
+     other mode so a creator reads one balance, not five. */
+  const named = pickNamedModel(req.body);
+  const estimate = named ? models.estimateUsd(named, { tokensIn: 700, tokensOut: 200 }) : null;
+  const refused = spend.verdict(await spend.budgetFor(req), estimate);
+  if (refused) return res.status(refused.status).json(refused.body);
+
   try {
     /* One writer for both callers. The voice tool (lib/squad-tools.js) and
        this button used to hold two copies of the same call, which is how the
        tone/length brief drifted between them once already. */
-    return res.json(await writePost(req.body));
+    const written = await writePost(req.body);
+    /* A caption is a creation too. It used to be written and forgotten — the
+       sheet's history was empty by design and "My Creations" could not show the
+       one mode every creator uses. The text lives in params because there is no
+       file to point at. */
+    recordCaption(req, written).catch(() => {});
+    return res.json(written);
   } catch (err) {
     // no_provider means every key is dead or benched. Say that, do not pretend.
     const dead = err && err.message === 'no_provider';
@@ -233,7 +257,29 @@ router.post('/generate', textLimiter, optionalAuth, express.json(), async (req, 
 // The sheet asks every mode for history. Text is not stored anywhere: a caption
 // lives in the creator's clipboard, not in our database. Answer honestly and
 // empty rather than 404 into the sheet's error path.
-router.get('/history', (req, res) => res.json({ items: [] }));
+router.get('/history', optionalAuth, async (req, res) => {
+  const out = await jobs.historyFor(req, 'text', 20);
+  res.json({ items: out.jobs || [], degraded: out.degraded });
+});
+
+/**
+ * Keep the caption. Best effort: a database blip must not lose the creator the
+ * text that is already in the response body in front of them.
+ */
+async function recordCaption(req, written) {
+  const id = crypto.randomBytes(8).toString('hex');
+  await jobs.recordJob({
+    id,
+    req,
+    kind: 'text',
+    prompt: clean(req.body).prompt,
+    params: { tone: written.tone, length: written.length, webSearch: !!written.webSearch, text: written.text },
+    op: null,
+    model: { id: written.provider, provider: written.provider === 'groq' ? 'groq' : 'openrouter' },
+    costUsd: written.costUsd ?? null,
+  });
+  await jobs.finishJob(id, { status: 'done', url: null });
+}
 
 module.exports = router;
 module.exports._internals = { clean, systemPrompt, TONES, LENGTHS, MAX_PROMPT, pickNamedModel, WEB_SEARCH_USD };

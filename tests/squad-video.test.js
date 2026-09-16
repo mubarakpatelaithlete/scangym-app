@@ -77,7 +77,10 @@ function mockRes() {
   res.setHeader = (k, v) => { res.headers[k] = v; };
   return res;
 }
-const mockReq = (over = {}) => ({ ip: '1.2.3.4', body: {}, params: {}, query: {}, ...over });
+/* Create is signed-in only since ScanSquad 2.0: spend is priced against a
+   creator's tier and the bookings they have driven, so every request carries a
+   user. @see server/lib/gen-guard.js, server/lib/gen-budget.js */
+const mockReq = (over = {}) => ({ ip: '1.2.3.4', body: {}, params: {}, query: {}, user: { id: 'creator-under-test' }, ...over });
 
 function stubFetch(fn) {
   const real = global.fetch;

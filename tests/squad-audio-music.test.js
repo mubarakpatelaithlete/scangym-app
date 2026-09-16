@@ -109,7 +109,10 @@ function mockRes() {
   res.json = (b) => { res.body = b; return res; };
   return res;
 }
-const mockReq = (over = {}) => ({ ip: '1.2.3.4', body: {}, params: {}, query: {}, ...over });
+/* Create is signed-in only since ScanSquad 2.0: spend is priced against a
+   creator's tier and the bookings they have driven, so every request carries a
+   user. @see server/lib/gen-guard.js, server/lib/gen-budget.js */
+const mockReq = (over = {}) => ({ ip: '1.2.3.4', body: {}, params: {}, query: {}, user: { id: 'creator-under-test' }, ...over });
 
 const FREE = { tier: 'free', used: 0, limit: 10000, remaining: 10000, resetsAt: null };
 const PAID = { tier: 'creator', used: 0, limit: 100000, remaining: 100000, resetsAt: null };

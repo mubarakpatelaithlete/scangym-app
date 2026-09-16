@@ -1806,10 +1806,6 @@ function CreatorDashboardPage(){
         <div style="width:48px;height:48px;background:rgba(168,85,247,.15);border:1px solid rgba(168,85,247,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)">🔗</div>
         <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">Deep Link</span>
       </div>
-      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="sgToast('Live streaming coming soon! 🔴','info')">
-        <div style="width:48px;height:48px;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)">📡</div>
-        <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">Go Live</span>
-      </div>
       <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="navigate('/creator-earnings')">
         <div style="width:48px;height:48px;background:rgba(56,189,248,.15);border:1px solid rgba(56,189,248,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)">\ud83d\udcca</div>
         <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:600">Analytics</span>
@@ -2058,6 +2054,9 @@ window._sgCreatorFilterReels=function(filter,el){
   var reels=grid.querySelectorAll('[data-reel-card]');
   var downloaded=JSON.parse(localStorage.getItem('sg_creator_downloaded')||'[]');
   var shared=JSON.parse(localStorage.getItem('sg_creator_shared')||'[]');
+  /* Refresh the cache from the server in the background: "Not Downloaded" was
+     wrong on every new device because the truth only existed on the old one. */
+  window._sgSyncAssetEvents&&window._sgSyncAssetEvents();
   reels.forEach(function(card){
     var id=card.getAttribute('data-reel-id');
     var show=true;
@@ -2078,16 +2077,53 @@ window._sgCreatorFilterReels=function(filter,el){
   }
 };
 
+/* Downloads and shares are recorded on the server as well as locally.
+   They used to live only in localStorage, which meant the numbers on the
+   Creator dashboard existed on one phone, vanished on the next, and could never
+   feed the tier ladder that decides who earns what. localStorage stays as the
+   optimistic cache the filter pills read; the server row is the record.
+   @see server/routes/squad-create.js POST /events */
+window._sgLogAssetEvent=function(assetId,action){
+  if(!assetId)return;
+  try{
+    fetch('/api/squad-create/events',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({assetId:String(assetId),action:action,assetKind:'library'})}).catch(function(){});
+  }catch(e){}
+};
+
+window._sgSyncAssetEvents=function(){
+  if(window.__sgEventsSynced)return;window.__sgEventsSynced=true;
+  try{
+    fetch('/api/squad-create/events/summary').then(function(r){return r.ok?r.json():null;}).then(function(d){
+      if(!d)return;
+      if(d.downloaded)localStorage.setItem('sg_creator_downloaded',JSON.stringify(d.downloaded));
+      if(d.shared)localStorage.setItem('sg_creator_shared',JSON.stringify(d.shared));
+      var dlEl=document.getElementById('ce-downloads');var shEl=document.getElementById('ce-shares');
+      if(dlEl&&d.downloads!=null)dlEl.textContent=String(d.downloads);
+      if(shEl&&d.shares!=null)shEl.textContent=String(d.shares);
+    }).catch(function(){});
+  }catch(e){}
+};
+
 window._sgCreatorDownloadReel=function(reelId,url){
   var d=JSON.parse(localStorage.getItem('sg_creator_downloaded')||'[]');
   if(d.indexOf(reelId)<0){d.push(reelId);localStorage.setItem('sg_creator_downloaded',JSON.stringify(d));}
+  window._sgLogAssetEvent(reelId,'download');
   if(url)window.open(url,'_blank');
   sgToast('Downloaded! Share it with your affiliate link baked in \u{1F680}','success',2000);
+};
+
+/* The reel grid tile: a real download instead of "Download coming soon!". */
+window._sgReelDownload=function(reelId,url){
+  if(!url){sgToast('That reel has no file to download yet.','info',2500);return;}
+  window._sgLogAssetEvent(reelId,'download');
+  window.open(url,'_blank');
 };
 
 window._sgCreatorShareReel=function(reelId){
   var s=JSON.parse(localStorage.getItem('sg_creator_shared')||'[]');
   if(s.indexOf(reelId)<0){s.push(reelId);localStorage.setItem('sg_creator_shared',JSON.stringify(s));}
+  window._sgLogAssetEvent(reelId,'share');
   var creatorData=JSON.parse(localStorage.getItem('sg_creator')||'{}');
   var link='https://scangym.com/r/'+(creatorData.handle||'creator');
   if(navigator.share){navigator.share({title:'Check out ScanGym!',text:'Day passes from '+sgPriceDisplay('day'),url:link}).catch(function(){});}
@@ -2139,7 +2175,12 @@ window._loadCreatorDash=async function(handle){
     if(!reels.length){grid.innerHTML='<p style="color:rgba(255,255,255,.3);grid-column:span 2;text-align:center">No reels available yet</p>';return;}
     grid.innerHTML=reels.slice(0,6).map(function(reel){
       var thumb=reel.thumbnail_url||reel.video_url||'';
-      return'<div style="position:relative;aspect-ratio:9/16;background:rgba(255,255,255,.05);border-radius:12px;overflow:hidden;cursor:pointer" onclick="sgToast(\'Download coming soon!\',\'info\')">'
+      /* This tile used to answer a tap with "Download coming soon!". It has a
+         video url in hand, so it now downloads the reel and records the
+         download on the server (localStorage counts died with the phone). */
+      var dlUrl=reel.video_url||reel.download_url||thumb;
+      var rid=String(reel.id||reel.reel_id||reel.slug||thumb);
+      return'<div style="position:relative;aspect-ratio:9/16;background:rgba(255,255,255,.05);border-radius:12px;overflow:hidden;cursor:pointer" onclick="_sgReelDownload(\''+rid+'\',\''+dlUrl+'\')">'
         +(thumb?'<img src="'+thumb+'" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display=\'none\'">':'')
         +'<div style="position:absolute;bottom:0;left:0;right:0;padding:8px;background:linear-gradient(transparent,rgba(0,0,0,.8))"><p style="color:#fff;font-size:11px;font-weight:600;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(reel.caption||reel.title||'Gym Reel')+'</p>'
         +'<p style="color:rgba(255,255,255,.4);font-size:10px;margin:2px 0 0">'+(reel.views||0)+' views</p></div></div>';
