@@ -125,21 +125,27 @@ test('an unknown or unkeyed model falls back to the house writer instead of fail
   }
 });
 
-test('text health offers the picker only when there is a key behind it', () => {
+test('text health offers the picker only when there is a key behind it', async () => {
   const saved = process.env.OPENROUTER_API_KEY;
-  const call = () => {
+  /* Health is async since it also reports the creator's daily budget
+     (server/lib/gen-budget.js), so the body has to be awaited — a synchronous
+     read of it was null and the assertions below silently passed on nothing. */
+  const call = async () => {
     const router = loadTextRoute();
     const layer = router.stack.find((l) => l.route && l.route.path === '/health' && l.route.methods.get);
     let body = null;
-    layer.route.stack[layer.route.stack.length - 1].handle({}, { json: (d) => { body = d; } });
+    await layer.route.stack[layer.route.stack.length - 1].handle(
+      { ip: '1.2.3.4', query: {} },
+      { json: (d) => { body = d; } },
+    );
     return body;
   };
   try {
     delete process.env.OPENROUTER_API_KEY;
-    assert.deepEqual(call().models, [], 'an empty list renders a button with no dropdown');
+    assert.deepEqual((await call()).models, [], 'an empty list renders a button with no dropdown');
 
     process.env.OPENROUTER_API_KEY = 'pretend-this-exists';
-    const withKey = call();
+    const withKey = await call();
     assert.ok(withKey.models.length >= 5);
     assert.ok(!('providerModel' in withKey.models[0]), 'vendor slugs stay server-side');
     assert.ok(withKey.models.every((m) => m.estimateUsd != null), 'a price is quoted before spending');
