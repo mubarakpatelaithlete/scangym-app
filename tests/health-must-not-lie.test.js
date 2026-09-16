@@ -181,3 +181,51 @@ test('health reports the denial rather than the model catalogue looking fine', a
     if (savedFal !== undefined) process.env.FAL_KEY = savedFal;
   }
 });
+
+/**
+ * The second half of the same lie: /health told the truth while
+ * /api/squad-create/modes still said video was configured, because the
+ * registry only checked that a key existed. The sheet reads the registry, so
+ * the button stayed on offer.
+ */
+test('the mode registry stops offering a mode whose provider has refused us', () => {
+  const providerId = require.resolve(PROVIDER);
+  const routeId = require.resolve(path.join(ROOT, 'server', 'routes', 'squad-create'));
+  const saved = process.env.GEMINI_API_KEY;
+  process.env.GEMINI_API_KEY = 'test-key';
+  delete require.cache[providerId];
+  delete require.cache[routeId];
+
+  const getModes = () => {
+    const router = require(path.join(ROOT, 'server', 'routes', 'squad-create'));
+    const layer = router.stack.find((l) => l.route && l.route.path === '/modes');
+    let payload = null;
+    layer.route.stack[0].handle({}, { json: (d) => { payload = d; } });
+    return payload.modes;
+  };
+
+  try {
+    const provider = require(PROVIDER);
+
+    // Nothing known yet: stay optimistic, the route's own health is the
+    // authority and going dark on no evidence is its own outage.
+    assert.equal(getModes().video.configured, true);
+
+    // Now Google has refused an actual render.
+    provider.noteGenerationOutcome('gemini', 'veo-3.1-fast-generate-preview', { ok: false, status: 403 });
+    delete require.cache[routeId];
+    const denied = getModes().video;
+    assert.equal(denied.configured, false, 'a key we are not allowed to use is not a working mode');
+    assert.equal(denied.reason, 'provider_denied');
+
+    // And when access comes back, so does the button.
+    provider.noteGenerationOutcome('gemini', 'veo-3.1-fast-generate-preview', { ok: true });
+    delete require.cache[routeId];
+    assert.equal(getModes().video.configured, true);
+  } finally {
+    if (saved === undefined) delete process.env.GEMINI_API_KEY;
+    else process.env.GEMINI_API_KEY = saved;
+    delete require.cache[providerId];
+    delete require.cache[routeId];
+  }
+});

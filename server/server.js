@@ -1090,6 +1090,14 @@ function purgeCloudflareCache() {
    account once at boot so the first caller gets the right answer instead of a
    pessimistic one. Failure is fine: the tier stays unknown and Music reports
    itself off, which is the safe direction. */
+/* Same reason, for video: ask Google once at boot whether this key may
+   actually render, so /modes does not advertise a blocked provider to the
+   first caller. Free — it generates nothing. */
+require('./lib/gen-provider')
+  .geminiGenerationAccess('veo-3.1-fast-generate-preview', { force: true })
+  .then((a) => console.log(`[SquadGen] Veo generation access: ${a.ok ? 'ok' : a.reason}`))
+  .catch(() => {});
+
 require('./lib/gen-provider')
   .elevenCharacterQuota({ force: true })
   .then((b) => b && console.log(`[SquadGen] ElevenLabs plan: ${b.tier}, ${b.remaining}/${b.limit} characters left`))
