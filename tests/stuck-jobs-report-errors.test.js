@@ -59,6 +59,22 @@ test('a failed job at the vendor is reported as failed', async () => {
   }
 });
 
+test('the queue is asked by app id, not by the full endpoint path', async () => {
+  // fal answers 405 to a status URL that carries the sub-route.
+  const real = global.fetch;
+  const seen = [];
+  global.fetch = async (url) => {
+    seen.push(String(url));
+    return { ok: true, status: 200, json: async () => ({ status: 'IN_PROGRESS' }) };
+  };
+  try {
+    await falPoll({ provider: 'fal', providerModel: 'openai/gpt-image-2.5/flare/text-to-image' }, 'req-6');
+    assert.strictEqual(seen[0], 'https://queue.fal.run/openai/gpt-image-2.5/requests/req-6/status');
+  } finally {
+    global.fetch = real;
+  }
+});
+
 test('a queued job is still running, with its position', async () => {
   const restore = stubFetch([{ status: 200, body: { status: 'IN_QUEUE', queue_position: 3 } }]);
   try {
