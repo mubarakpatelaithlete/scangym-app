@@ -720,7 +720,6 @@ function CreatorsPage(){
           <div class="text-center"><p class="text-3xl md:text-4xl font-bold text-brand">FREE</p><p class="text-slate-500 text-sm">Gym Sessions</p></div>
         </div>
         <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
-          <button onclick="state.user?window._sg1ClickCreatorSignup():navigate('/login')" class="bg-brand hover:bg-orange-600 text-white font-bold px-8 py-4 rounded-xl transition text-lg shadow-lg shadow-brand/20 hover:shadow-brand/40">Join ScanSquad — It's Free</button>
           <a href="#fs-how" onclick="event.preventDefault();document.getElementById('fs-how').scrollIntoView({behavior:'smooth'})" class="text-slate-300 hover:text-white font-medium px-6 py-4 rounded-xl border border-slate-700 hover:border-slate-500 transition cursor-pointer">See How It Works ↓</a>
         </div>
         <p class="text-slate-600 text-sm mt-4">No minimum followers · No application · Start in 60 seconds</p>
