@@ -31,15 +31,46 @@
  */
 
 const FAL_QUEUE = 'https://queue.fal.run';
+const FAL_SYNC = 'https://fal.run';
 const OPENROUTER_API = 'https://openrouter.ai/api/v1';
 const ELEVEN_API = 'https://api.elevenlabs.io/v1';
+
+/**
+ * How the OpenRouter catalogue can be reached from this box.
+ *
+ * Two transports, same model slugs, same bill-per-token shape:
+ *   'direct' — OPENROUTER_API_KEY, an account of our own at openrouter.ai,
+ *   'fal'    — FAL_KEY, through fal's `openrouter/router` endpoint, which is
+ *              fal reselling the same catalogue and billing it to the fal
+ *              balance the app already tops up for image and video.
+ *
+ * The fal transport exists because signing up at openrouter.ai cannot be
+ * completed headlessly (their bot check refuses automated browsers) and,
+ * more importantly, because a second vendor account is a second balance to
+ * remember, a second card and a second thing to run dry. FAL_KEY is already
+ * in production, so this turns Create Text's model picker on with no new
+ * credential and no new billing relationship.
+ *
+ * Direct wins when both exist: it is one hop fewer and slightly cheaper
+ * (fal adds its margin on top of OpenRouter's token price).
+ *
+ * @returns {'direct'|'fal'|null}
+ */
+function routerTransport() {
+  if (process.env.OPENROUTER_API_KEY) return 'direct';
+  if (process.env.FAL_KEY) return 'fal';
+  return null;
+}
 
 /** A provider is usable only if its credential is present. */
 function configured(provider) {
   if (provider === 'fal') return !!process.env.FAL_KEY;
   if (provider === 'elevenlabs') return !!process.env.ELEVENLABS_API_KEY;
   if (provider === 'gemini') return !!process.env.GEMINI_API_KEY;
-  if (provider === 'openrouter') return !!process.env.OPENROUTER_API_KEY;
+  // Either transport counts: the catalogue rows do not care which one carries
+  // them, and gating on OPENROUTER_API_KEY alone reported an empty model
+  // picker on a box that could reach every one of those models through fal.
+  if (provider === 'openrouter') return routerTransport() !== null;
   return false;
 }
 
@@ -151,6 +182,8 @@ function firstMediaUrl(out) {
  * agent depends on. This is the picker, not a replacement.
  */
 async function openrouterText(model, { prompt, system, maxTokens = 400 }) {
+  if (routerTransport() === 'fal') return falRouterText(model, { prompt, system, maxTokens });
+
   const messages = [];
   if (system) messages.push({ role: 'system', content: system });
   messages.push({ role: 'user', content: prompt });
@@ -178,6 +211,55 @@ async function openrouterText(model, { prompt, system, maxTokens = 400 }) {
   const text = data.choices?.[0]?.message?.content?.trim();
   if (!text) throw new Error(`${model.label} returned nothing`);
   return { text, usage: data.usage || null };
+}
+
+/**
+ * The same named models, reached through fal instead of an OpenRouter account.
+ *
+ * fal's `openrouter/router` takes the OpenRouter model slug verbatim, so the
+ * catalogue rows need no second set of ids — the row that says
+ * `anthropic/claude-sonnet-5` works on either transport. The envelope differs:
+ * fal answers `{ output, usage }` rather than OpenAI's `{ choices: [...] }`,
+ * and it is a plain synchronous POST to fal.run rather than the queue the
+ * video rows use, because a caption comes back in a couple of seconds and a
+ * job id for something already finished would mean cross-instance state.
+ *
+ * Billed per token to the fal balance, ~$0.000003 for a caption on Gemini
+ * Flash, so the price the sheet quotes from the catalogue stays the right
+ * order of magnitude; fal's own `usage.cost` is passed back for the log.
+ */
+async function falRouterText(model, { prompt, system, maxTokens = 400 }) {
+  const r = await fetch(`${FAL_SYNC}/openrouter/router`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Key ${process.env.FAL_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: model.providerModel,
+      prompt,
+      ...(system ? { system_prompt: system } : {}),
+      max_tokens: maxTokens,
+      // Some rows have no non-reasoning mode at all (Grok 4.5 answers 400
+      // without it). The reasoning text is never shown: `output` is the post.
+      ...(model.requiresReasoning ? { reasoning: true } : {}),
+    }),
+  });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    const detail = Array.isArray(data.detail)
+      ? data.detail.map((d) => d && d.msg).filter(Boolean).join('; ')
+      : data.detail || data.error;
+    throw Object.assign(new Error(`${model.label} refused the request (${r.status}): ${scrub(detail)}`), {
+      status: r.status,
+    });
+  }
+  // fal reports a model-side failure inside a 200 envelope, so an `error`
+  // field is a failure even though the HTTP call succeeded.
+  if (data.error) throw new Error(`${model.label} failed: ${scrub(data.error)}`);
+  const text = String(data.output || '').trim();
+  if (!text) throw new Error(`${model.label} returned nothing`);
+  return { text, usage: data.usage || null, via: 'fal' };
 }
 
 // ─── ElevenLabs: synchronous bytes ─────────────────────────────────────────
@@ -416,6 +498,7 @@ module.exports = {
   poll,
   generate,
   configured,
+  routerTransport,
   scrub,
   elevenCharacterQuota,
   cachedElevenTier,
@@ -423,5 +506,5 @@ module.exports = {
   cachedGenerationAccess,
   noteGenerationOutcome,
   invalidateCharacterQuota,
-  _internals: { firstMediaUrl },
+  _internals: { firstMediaUrl, falRouterText, openrouterText },
 };

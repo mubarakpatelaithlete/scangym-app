@@ -89,7 +89,9 @@ function systemPrompt({ tone, length }) {
 router.get('/health', (req, res) => {
   /* Two ways this mode can be on, and the sheet needs to know which:
      - the house writer (lib/llm.js on OpenAI or Groq), always available,
-     - a named model via OpenRouter, when that key exists.
+     - the named models, when either OpenRouter transport is reachable: our
+       own OPENROUTER_API_KEY, or fal's openrouter/router on the FAL_KEY the
+       app already has (lib/gen-provider.js#routerTransport).
      `models` is empty rather than absent when there is no picker, so the
      sheet renders a working button with no dropdown instead of a dropdown
      whose entries all fail. */
