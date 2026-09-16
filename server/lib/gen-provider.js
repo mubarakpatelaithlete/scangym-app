@@ -123,7 +123,14 @@ async function falSubmit(model, input) {
 const FAL_FAILED_STATUS = new Set(['FAILED', 'ERROR', 'CANCELLED', 'CANCELED', 'TIMED_OUT']);
 
 async function falPoll(model, op) {
-  const base = `${FAL_QUEUE}/${model.providerModel}/requests/${op}`;
+  // fal's queue is addressed by *app* (owner/app) once a request exists, not by
+  // the full endpoint path: you submit to `.../fal-ai/flux/dev` but ask about it
+  // at `.../fal-ai/flux/requests/{id}/status`. Sending the whole path back gets
+  // a 405, which is how gpt-image-2.5, WAN 3.0, Grok Imagine and Eleven Music
+  // (all of them paths with a sub-route) hung at "running" while two-segment
+  // models like fal-ai/nano-banana-2 polled fine.
+  const app = String(model.providerModel || '').split('/').slice(0, 2).join('/');
+  const base = `${FAL_QUEUE}/${app}/requests/${op}`;
   const r = await fetch(`${base}/status`, {
     headers: { Authorization: `Key ${process.env.FAL_KEY}` },
   });
