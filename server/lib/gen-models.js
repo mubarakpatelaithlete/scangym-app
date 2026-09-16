@@ -54,6 +54,7 @@ const MODELS = [
     providerModel: 'fal-ai/kling-video/v2.5-turbo/pro/text-to-video',
     usdPerSecond: 0.07,
     tier: 'standard',
+    inputProfile: 'kling-2.5',
   },
   {
     // Price corrected 2026-09-16 against fal's published rate. This row said
@@ -127,6 +128,7 @@ const MODELS = [
     providerModel: 'fal-ai/veo3.1',
     usdPerSecond: 0.40,
     tier: 'premium',
+    inputProfile: 'veo-fal',
     note: 'Google Veo with synced audio, billed through fal.',
   },
   {
@@ -137,6 +139,7 @@ const MODELS = [
     providerModel: 'fal-ai/bytedance/seedance/v1/pro/text-to-video',
     usdPerSecond: 0.10,
     tier: 'standard',
+    inputProfile: 'seedance-1',
     note: 'ByteDance. Strong motion, mid-price.',
   },
   {
@@ -170,6 +173,7 @@ const MODELS = [
     providerModel: 'fal-ai/bytedance/seedream/v4/text-to-image',
     usdPerImage: 0.03,
     tier: 'standard',
+    inputProfile: 'seedream',
   },
   {
     id: 'flux-kontext-pro',

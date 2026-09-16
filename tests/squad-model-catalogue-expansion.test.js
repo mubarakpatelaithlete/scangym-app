@@ -1,28 +1,31 @@
 /**
- * Adding models to the Create sheet, without a 422 or a wrong price.
+ * The Create sheet sends each vendor the payload that vendor documents.
  *
- * Two things broke the "adding a model is a row, not a branch" promise the
- * catalogue was built on, and these tests pin both:
+ * Three live faults are pinned here. All three were found by checking the
+ * payloads this app sends against fal's OpenAPI schemas on 2026-09-16, and
+ * all three were invisible in production, because **fal ignores unknown
+ * fields rather than rejecting them**. Nothing 422s at submit. The feature
+ * just quietly does the wrong thing:
  *
- *  1. **fal has no single payload.** Verified against fal's own OpenAPI
- *     schemas on 2026-09-16: Kling v3 wants a *string* duration, calls the
- *     audio flag `generate_audio` and has no `resolution` field; OpenAI's
- *     image model has no `aspect_ratio` and takes `image_size`; WAN 3.0 calls
- *     the flag `audio`; Grok Imagine has no audio flag at all. fal rejects
- *     unknown fields, so a row added without a matching payload profile is a
- *     model that 422s on every tap — the exact "button that looks live and
- *     fails" failure the sheet exists to prevent. Kling 3.0 Pro shipped in
- *     that state and was invisible only because premium was gated off.
+ *  1. **Create Video returned no video at all.** WAN 2.5 (the default) and
+ *     Kling 2.5 Turbo accept a duration of '5' or '10'. The sheet offers 4,
+ *     6 and 8. Probed live with the exact payload this route sent: fal
+ *     answers 200 with a request id, status goes to COMPLETED, and the
+ *     result is `422 Input should be '5' or '10'`. Every tap, every
+ *     customer. The submit succeeding is precisely why nobody saw it.
  *
- *  2. **A price nobody checked.** Kling 3.0 Pro was catalogued at $0.22/s
- *     against fal's actual $0.112 (audio off) / $0.168 (audio on) — the sheet
- *     quoted a creator roughly double. estimateUsd() is described in
- *     gen-models.js as "the single most effective cost control we have", and
- *     a cost control that is wrong in the customer's disfavour is worse than
- *     none, because it is trusted.
+ *  2. **Seedream V4 ignored the shape the creator picked.** It has no
+ *     `aspect_ratio` field; it takes `image_size`. So a 9:16 story image
+ *     came back as a 2048x2048 square, with no error anywhere.
  *
- * Plus the point of the whole change: Create Music works on a free
- * ElevenLabs plan by going through fal, and goes back to the cheaper direct
+ *  3. **Kling 3.0 Pro was quoted at ~2x its price** — $0.22/s catalogued
+ *     against fal's real $0.112 (audio off) / $0.168 (audio on).
+ *     estimateUsd() is called "the single most effective cost control we
+ *     have" in gen-models.js, and a cost control that is wrong against the
+ *     customer is worse than none, because it is trusted.
+ *
+ * Plus the point of the change that found them: Create Music works on a free
+ * ElevenLabs plan by going through fal, and returns to the cheaper direct
  * row on its own the day the account is upgraded — no release, no env var.
  */
 const { test } = require('node:test');
@@ -61,6 +64,32 @@ test('every catalogue row names a payload profile its route actually implements'
   }
 });
 
+test('the default video model gets a duration it actually accepts', () => {
+  const { falInput } = videoRoute();
+  const wan = models().byKind('video').find((r) => r.tier === 'default');
+  for (const asked of [4, 6, 8]) {
+    const out = falInput('a gym reel', { durationSeconds: asked, aspectRatio: '9:16', resolution: '720p', generateAudio: true }, wan);
+    assert.ok(['5', '10'].includes(out.duration), `asked ${asked}s, sent ${out.duration} — fal accepts only '5' or '10'`);
+  }
+});
+
+test('a duration rounds up to the vendor length, and the quote follows the render', () => {
+  const m = models();
+  const { effectiveSeconds } = videoRoute();
+  const wan = m.byKind('video').find((r) => r.id === 'wan-2.5');
+
+  assert.equal(effectiveSeconds(wan, 4), 5, 'a longer clip beats a failed one');
+  assert.equal(effectiveSeconds(wan, 8), 10);
+  // The whole point: price what renders. 8s asked, 10s rendered, 10s billed.
+  assert.equal(m.estimateUsd(wan, { seconds: effectiveSeconds(wan, 8) }), 0.5);
+});
+
+test('a model that accepts the asked-for length is left alone', () => {
+  const { effectiveSeconds } = videoRoute();
+  const kling3 = models().MODELS.find((r) => r.id === 'kling-3.0-pro');
+  assert.equal(effectiveSeconds(kling3, 8), 8, 'Kling v3 takes 3-15s; no rounding needed');
+});
+
 test('Kling v3 gets a string duration and generate_audio, and never a resolution', () => {
   const { falInput } = videoRoute();
   const kling = models().MODELS.find((r) => r.id === 'kling-3.0-pro');
@@ -68,8 +97,26 @@ test('Kling v3 gets a string duration and generate_audio, and never a resolution
 
   assert.equal(out.duration, '8', 'fal types this field as a string enum');
   assert.equal(out.generate_audio, true);
-  assert.ok(!('enable_audio' in out), 'the WAN spelling of the flag is an unknown field here');
-  assert.ok(!('resolution' in out), 'Kling v3 has no resolution field; sending one is a 422');
+  assert.ok(!('enable_audio' in out), 'that spelling is ignored, so audio silently stays on and bills 50% more');
+  assert.ok(!('resolution' in out), 'Kling v3 has no resolution field');
+});
+
+test('Veo through fal gets the duration suffix it insists on', () => {
+  const { falInput } = videoRoute();
+  const veo = models().MODELS.find((r) => r.id === 'veo-3.1-fal');
+  const out = falInput('a gym reel', { durationSeconds: 8, aspectRatio: '9:16', resolution: '720p', generateAudio: true }, veo);
+
+  assert.equal(out.duration, '8s', "fal's Veo enum is '4s' | '6s' | '8s'");
+  assert.equal(out.generate_audio, true);
+});
+
+test('Seedream renders the shape the creator picked, not a square', () => {
+  const { buildInput } = imageRoute();
+  const seedream = models().MODELS.find((r) => r.id === 'seedream-v4');
+  const out = buildInput(seedream, 'a kettlebell', { aspectRatio: '9:16', count: 1 });
+
+  assert.equal(out.image_size, 'portrait_16_9');
+  assert.ok(!('aspect_ratio' in out), 'the field Seedream ignored while stories came out square');
 });
 
 test('Grok Imagine is pinned to the one resolution fal publishes a price for', () => {
@@ -91,19 +138,30 @@ test('WAN 3.0 spells the audio flag its own way', () => {
   assert.equal(out.duration, 8, 'WAN takes a number where Kling takes a string');
 });
 
-test('models that shipped before profiles existed keep their exact payload', () => {
-  const { falInput } = videoRoute();
-  const wan25 = models().MODELS.find((r) => r.id === 'wan-2.5');
-  assert.equal(wan25.inputProfile, undefined, 'the row that works should not need a profile');
+test('no fal video payload carries a field that vendor does not define', () => {
+  const { falInput, VIDEO_PROFILES } = videoRoute();
+  // Field names per fal's schemas, 2026-09-16. An audio flag by the wrong
+  // name is not an error — it is ignored, and the vendor default (audio on,
+  // ~50% dearer) applies instead of the creator's choice.
+  const AUDIO_FLAG = {
+    'fal-video': null, 'kling-2.5': null, 'seedance-1': null, 'grok-video': null,
+    'kling-v3': 'generate_audio', 'seedance-2.5': 'generate_audio', 'veo-fal': 'generate_audio',
+    'wan-3': 'audio',
+  };
+  const NO_RESOLUTION = new Set(['kling-2.5', 'kling-v3']);
 
-  const settings = { durationSeconds: 8, aspectRatio: '9:16', resolution: '720p', generateAudio: true };
-  assert.deepEqual(falInput('a gym reel', settings, wan25), {
-    prompt: 'a gym reel',
-    duration: 8,
-    aspect_ratio: '9:16',
-    resolution: '720p',
-    enable_audio: true,
-  });
+  for (const row of models().byKind('video').filter((r) => r.provider === 'fal')) {
+    const profile = row.inputProfile || 'fal-video';
+    assert.ok(VIDEO_PROFILES[profile], `${row.id} has no profile`);
+    const out = falInput('a gym reel', { durationSeconds: 8, aspectRatio: '9:16', resolution: '720p', generateAudio: false }, row);
+
+    const flag = AUDIO_FLAG[profile];
+    for (const name of ['audio', 'enable_audio', 'generate_audio']) {
+      if (name === flag) assert.equal(out[name], false, `${row.id} must pass the creator's audio choice through`);
+      else assert.ok(!(name in out), `${row.id} sends '${name}', which ${profile} ignores`);
+    }
+    if (NO_RESOLUTION.has(profile)) assert.ok(!('resolution' in out), `${row.id} has no resolution field`);
+  }
 });
 
 test('OpenAI takes image_size and never aspect_ratio, and is pinned off fal default quality', () => {

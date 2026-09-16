@@ -71,6 +71,7 @@ function cleanSettings(body) {
  * payload is the one failure the catalogue cannot express, so it lives here
  * next to the route that sends it.
  */
+/** fal's shared image_size enum, used by OpenAI and Seedream alike. */
 const OPENAI_IMAGE_SIZE = {
   '9:16': 'portrait_16_9',
   '1:1': 'square_hd',
@@ -92,6 +93,17 @@ const IMAGE_PROFILES = {
     aspect_ratio: settings.aspectRatio,
     output_format: 'jpeg',
     resolution: '1K',
+  }),
+  /**
+   * Seedream V4 has no `aspect_ratio` either — and because fal ignores
+   * unknown fields rather than rejecting them, every Seedream image rendered
+   * as a 2048x2048 square while the creator's 9:16 choice went in the bin.
+   * Silent, so nothing logged it. Verified against fal's schema 2026-09-16.
+   */
+  seedream: (prompt, settings) => ({
+    prompt,
+    num_images: settings.count,
+    image_size: OPENAI_IMAGE_SIZE[settings.aspectRatio] || 'portrait_16_9',
   }),
   /** OpenAI: image_size instead of aspect_ratio, and quality drives the bill. */
   'openai-image': (prompt, settings) => ({
