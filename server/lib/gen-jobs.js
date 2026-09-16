@@ -97,12 +97,20 @@ async function recordJob({ id, req, kind, prompt, params, op, model, costUsd }) 
 
 async function finishJob(id, { status, url, error }) {
   try {
-    await pool.query(
+    /* RETURNING rather than a second SELECT: the notification needs the row we
+       have just written (who, which mode, how long it took), and a slow render
+       that nobody is still watching is exactly the case worth an email. */
+    const r = await pool.query(
       `UPDATE squad_video_jobs
           SET status = $2, video_url = $3, error = $4, completed_at = NOW()
-        WHERE id = $1`,
+        WHERE id = $1
+      RETURNING id, user_id, kind, model, prompt, video_url, created_at, completed_at`,
       [id, status, url || null, error || null],
     );
+    if (status === 'done' && r.rows[0]) {
+      // Best effort, never awaited into the caller's critical path.
+      require('./gen-notify').notifyReady(r.rows[0]).catch(() => {});
+    }
   } catch (e) {
     console.error('[SquadGen] could not finish job:', e.message);
   }
@@ -168,6 +176,100 @@ function screenPrompt(prompt) {
   return null;
 }
 
+
+/**
+ * Everything this creator has made, newest first, across every mode.
+ *
+ * "My Creations", the thing the sheet could not show. Per-mode history existed
+ * (historyFor), so a creator could see their clips inside the Video sheet and
+ * their images inside the Image sheet and nowhere see their work — and the row
+ * carried the url but not the prompt they wrote, so a good result could not be
+ * re-run or tweaked. Both are the same query with the columns nobody selected.
+ *
+ * Text is included: a caption is a creation. It has no url, which is exactly
+ * how the client tells the two apart.
+ */
+async function libraryFor(userId, { limit = 40, kind = null } = {}) {
+  try {
+    const params = [String(userId), Math.min(100, Math.max(1, limit))];
+    const kindClause = kind ? ' AND kind = $3' : '';
+    if (kind) params.push(kind);
+    const r = await pool.query(
+      `SELECT id, kind, model, prompt, params, status, video_url AS url, error,
+              cost_usd, download_count, share_count, created_at, completed_at
+         FROM squad_video_jobs
+        WHERE user_id = $1${kindClause}
+        ORDER BY created_at DESC
+        LIMIT $2`,
+      params,
+    );
+    return { items: r.rows };
+  } catch (e) {
+    console.error('[SquadGen] library failed:', e.message);
+    return { items: [], degraded: true };
+  }
+}
+
+/**
+ * Record that a creator downloaded or shared something.
+ *
+ * These counts used to live in localStorage, which meant they were lost on a
+ * new phone and could never feed the tier ladder that decides who earns what —
+ * the dashboard was showing a number that only existed on that device. One row
+ * per creator per asset per action: tapping Share twice is still one share, so
+ * the count moves and the row does not multiply.
+ *
+ * Covers both the ready-made library assets and generated jobs; `assetKind`
+ * says which, and a generated asset also bumps the counter on its own job row
+ * so "which of my creations actually got posted" is one query.
+ */
+async function recordEvent({ userId, assetId, action, assetKind = 'library' }) {
+  if (!userId || !assetId) return { ok: false, reason: 'missing_ids' };
+  if (action !== 'download' && action !== 'share') return { ok: false, reason: 'bad_action' };
+  try {
+    await pool.query(
+      `INSERT INTO squad_asset_events (user_id, asset_id, asset_kind, action)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (user_id, asset_id, action)
+       DO UPDATE SET count = squad_asset_events.count + 1, last_at = NOW()`,
+      [String(userId), String(assetId), assetKind, action],
+    );
+    if (assetKind === 'generated') {
+      const column = action === 'share' ? 'share_count' : 'download_count';
+      await pool.query(
+        `UPDATE squad_video_jobs SET ${column} = ${column} + 1 WHERE id = $1 AND user_id = $2`,
+        [String(assetId), String(userId)],
+      );
+    }
+    return { ok: true };
+  } catch (e) {
+    console.error('[SquadGen] could not record asset event:', e.message);
+    return { ok: false, reason: 'db' };
+  }
+}
+
+/**
+ * The creator's own totals, and which asset ids they have already acted on —
+ * what the library grid used to read out of localStorage to grey out a tile.
+ */
+async function eventSummaryFor(userId) {
+  try {
+    const r = await pool.query(
+      `SELECT action, asset_id, count FROM squad_asset_events WHERE user_id = $1`,
+      [String(userId)],
+    );
+    const summary = { downloads: 0, shares: 0, downloaded: [], shared: [] };
+    for (const row of r.rows) {
+      if (row.action === 'download') { summary.downloads += row.count; summary.downloaded.push(row.asset_id); }
+      if (row.action === 'share') { summary.shares += row.count; summary.shared.push(row.asset_id); }
+    }
+    return summary;
+  } catch (e) {
+    console.error('[SquadGen] event summary failed:', e.message);
+    return { downloads: 0, shares: 0, downloaded: [], shared: [], degraded: true };
+  }
+}
+
 module.exports = {
   CAPS,
   capFor,
@@ -177,5 +279,8 @@ module.exports = {
   finishJob,
   loadJob,
   historyFor,
+  libraryFor,
+  recordEvent,
+  eventSummaryFor,
   screenPrompt,
 };
