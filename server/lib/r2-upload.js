@@ -85,6 +85,41 @@ async function uploadToR2(localPath, r2Key, opts = {}) {
 }
 
 /**
+ * Upload bytes we already hold in memory.
+ *
+ * Speech and music arrive from ElevenLabs as a response body, not a file, and
+ * they are small (a 30s MP3 is well under a megabyte). Writing them to disk
+ * just to stream them back up would add a temp file to clean up on a
+ * container that may be replaced mid-request.
+ *
+ * @param {Buffer} buffer
+ * @param {string} r2Key
+ * @param {object} [opts] { contentType, cacheControl }
+ * @returns {{ key: string, size: number, url: string }}
+ */
+async function uploadBufferToR2(buffer, r2Key, opts = {}) {
+  const client = getR2Client();
+  const bucket = process.env.R2_BUCKET || 'scangym-videos';
+
+  await client.send(new PutObjectCommand({
+    Bucket: bucket,
+    Key: r2Key,
+    Body: buffer,
+    ContentType: opts.contentType || 'application/octet-stream',
+    CacheControl: opts.cacheControl || 'public, max-age=31536000',
+    ContentLength: buffer.length,
+  }));
+
+  const cdnBase = process.env.R2_CDN_URL || 'https://cdn.scangym.com';
+  return { key: r2Key, size: buffer.length, url: `${cdnBase}/${r2Key}` };
+}
+
+/** Whether R2 credentials are present. Callers degrade instead of throwing. */
+function r2Configured() {
+  return !!(process.env.R2_ENDPOINT && process.env.R2_ACCESS_KEY_ID && process.env.R2_SECRET_KEY);
+}
+
+/**
  * Check if an object already exists in R2.
  */
 async function existsInR2(r2Key) {
@@ -113,4 +148,4 @@ async function deleteFromR2(r2Key) {
   console.log(`R2: Deleted ${r2Key}`);
 }
 
-module.exports = { uploadToR2, existsInR2, deleteFromR2, getR2Client };
+module.exports = { uploadToR2, uploadBufferToR2, r2Configured, existsInR2, deleteFromR2, getR2Client };

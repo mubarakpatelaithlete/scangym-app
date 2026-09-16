@@ -47,6 +47,8 @@ const squadVideoRouter = require('./routes/squad-video');
 const squadCreateRouter = require('./routes/squad-create');
 const squadTextRouter = require('./routes/squad-text');
 const squadImageRouter = require('./routes/squad-image');
+const squadAudioRouter = require('./routes/squad-audio');
+const squadMusicRouter = require('./routes/squad-music');
 const commsLogRouter = require('./routes/comms-log');
 const paymentsExtendedRouter = require('./routes/payments-extended');
 const aiFeaturesRouter = require('./routes/ai-features');
@@ -555,6 +557,8 @@ app.use('/api/squad-video', squadVideoRouter);
 app.use('/api/squad-create', express.json({ limit: '1mb' }), squadCreateRouter);
 app.use('/api/squad-text', squadTextRouter);
 app.use('/api/squad-image', squadImageRouter);
+app.use('/api/squad-audio', squadAudioRouter);
+app.use('/api/squad-music', squadMusicRouter);
 app.use('/api/comms-log', commsLogRouter);
 /* One payment path: the extended payment methods (PayPal, wallets, gift card,
    crypto, bank transfer, BNPL, IAP) used to live under a second prefix
@@ -1081,6 +1085,16 @@ function purgeCloudflareCache() {
 
 // -- Start --
 // ── Schema: one place, applied once (server/db/migrate.js reads /migrations) ──
+/* Music availability depends on the ElevenLabs plan tier, and
+   /api/squad-create/modes answers synchronously on every sheet open. Read the
+   account once at boot so the first caller gets the right answer instead of a
+   pessimistic one. Failure is fine: the tier stays unknown and Music reports
+   itself off, which is the safe direction. */
+require('./lib/gen-provider')
+  .elevenCharacterQuota({ force: true })
+  .then((b) => b && console.log(`[SquadGen] ElevenLabs plan: ${b.tier}, ${b.remaining}/${b.limit} characters left`))
+  .catch(() => {});
+
 const { runMigrations } = require('./db/migrate');
 if (process.env.DATABASE_URL) {
   runMigrations().catch((err) => console.error('[migrate] unexpected error:', err.message));

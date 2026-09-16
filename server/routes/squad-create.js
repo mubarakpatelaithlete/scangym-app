@@ -24,6 +24,9 @@ const router = express.Router();
 /**
  * key → { label, env | ready, api }
  *   env:   provider credential that must be present for the mode to run.
+ *   notReady: a more specific reason than 'no_provider' when ready() is false
+ *          — Music has a key and a route but needs a paid plan, and
+ *          'no_provider' would send someone hunting for a missing variable.
  *   ready: for modes served by an existing subsystem rather than by one
  *          dedicated key — text runs on lib/llm.js, which is happy with
  *          OPENAI_API_KEY *or* GROQ_API_KEY, so naming a single variable
@@ -35,8 +38,28 @@ const MODES = {
   text: { label: 'Text', ready: () => require('../lib/llm').configured(), api: '/api/squad-text' },
   image: { label: 'Image', env: 'FAL_KEY', api: '/api/squad-image' },
   video: { label: 'Video', env: 'GEMINI_API_KEY', api: '/api/squad-video' },
-  audio: { label: 'Audio', env: 'SQUAD_AUDIO_API_KEY', api: null },
-  music: { label: 'Music', env: 'SQUAD_MUSIC_API_KEY', api: null },
+  audio: {
+    label: 'Audio',
+    ready: () => require('../lib/gen-provider').configured('elevenlabs'),
+    api: '/api/squad-audio',
+  },
+  // Music runs on the same key as Audio and is still not offered on a free
+  // ElevenLabs plan: the vendor answers 402 paid_plan_required. So the gate
+  // is the account's tier, read once at boot and cached, not an env var
+  // somebody has to remember to flip. Forced on with
+  // ELEVENLABS_MUSIC_ENABLED=true. See routes/squad-music.js.
+  music: {
+    label: 'Music',
+    ready: () => {
+      const p = require('../lib/gen-provider');
+      if (!p.configured('elevenlabs')) return false;
+      if (process.env.ELEVENLABS_MUSIC_ENABLED === 'true') return true;
+      const tier = p.cachedElevenTier();
+      return !!tier && tier !== 'free';
+    },
+    notReady: 'paid_plan_required',
+    api: '/api/squad-music',
+  },
   twin: { label: 'Twin', env: 'SQUAD_TWIN_API_KEY', api: null },
   clipping: { label: 'Clipping', env: 'SQUAD_CLIP_API_KEY', api: null },
   ugc: { label: 'UGC', env: 'SQUAD_UGC_API_KEY', api: null },
@@ -46,7 +69,7 @@ const MODES = {
 function statusFor(def) {
   if (!def.api) return { configured: false, reason: 'not_built' };
   const ok = def.ready ? !!def.ready() : !!process.env[def.env];
-  if (!ok) return { configured: false, reason: 'no_provider' };
+  if (!ok) return { configured: false, reason: def.notReady || 'no_provider' };
   return { configured: true };
 }
 
