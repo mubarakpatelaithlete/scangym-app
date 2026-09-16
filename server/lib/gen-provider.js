@@ -242,6 +242,85 @@ function invalidateCharacterQuota() {
   _quotaCache = { at: 0, value: null };
 }
 
+/**
+ * Whether this key may actually *generate* with a Gemini model — not merely
+ * read its description.
+ *
+ * This function exists because of a real outage that a health check reported
+ * as healthy. On 2026-09-16 the production Gemini key could list models and
+ * fetch model metadata perfectly well, while every render came back
+ * `403 PERMISSION_DENIED — "Your project has been denied access"`. Create
+ * Video's health probe fetched model metadata, so it answered
+ * `available: true` for a button that failed for every customer who pressed
+ * it. A health check that passes while the feature is dead is worse than no
+ * health check, because it stops anybody looking.
+ *
+ * There is no free "can I generate" endpoint, so this asks the generation
+ * endpoint itself with a deliberately empty payload. Google checks
+ * authorization before it validates arguments, which makes the two answers
+ * unambiguous and costs nothing:
+ *
+ *   403 → the project is blocked. Nothing will render.
+ *   400 → authorized; it only refused our intentionally invalid arguments.
+ *
+ * Nothing is generated either way, so this is safe to call from a health
+ * endpoint. Cached for five minutes: access changes at Google's pace, not
+ * per request.
+ */
+const _access = new Map(); // `${provider}:${providerModel}` → { at, value }
+const ACCESS_TTL_MS = 5 * 60 * 1000;
+
+async function geminiGenerationAccess(providerModel, { force = false } = {}) {
+  const key = `gemini:${providerModel}`;
+  if (!configured('gemini')) return { ok: false, reason: 'no_api_key' };
+  const hit = _access.get(key);
+  if (!force && hit && Date.now() - hit.at < ACCESS_TTL_MS) return hit.value;
+
+  let value;
+  try {
+    const r = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${providerModel}:predictLongRunning?key=${process.env.GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ instances: [] }), // invalid on purpose: no render, no bill
+      },
+    );
+    const body = await r.json().catch(() => ({}));
+    const detail = scrub(body.error?.message);
+    if (r.status === 400) value = { ok: true };
+    else if (r.status === 403) value = { ok: false, reason: 'provider_denied', status: 403, detail };
+    else if (r.status === 401) value = { ok: false, reason: 'key_rejected', status: 401, detail };
+    else if (r.status === 404) value = { ok: false, reason: 'model_not_visible', status: 404, detail };
+    else if (r.ok) value = { ok: true }; // accepted our nonsense; access is clearly not the problem
+    else value = { ok: false, reason: 'provider_error', status: r.status, detail };
+  } catch (e) {
+    // A network blip is not a denial. Report unknown and let the caller
+    // decide; refusing here would switch a working feature off.
+    return { ok: true, unverified: true, detail: scrub(e.message) };
+  }
+  _access.set(key, { at: Date.now(), value });
+  return value;
+}
+
+/**
+ * Teach the cache from a real generation result.
+ *
+ * A live 403 is better evidence than any probe, and a success proves access
+ * regardless of what the last probe said.
+ */
+function noteGenerationOutcome(provider, providerModel, { ok, status }) {
+  const key = `${provider}:${providerModel}`;
+  if (ok) {
+    _access.set(key, { at: Date.now(), value: { ok: true } });
+  } else if (status === 403 || status === 401) {
+    _access.set(key, {
+      at: Date.now(),
+      value: { ok: false, reason: status === 403 ? 'provider_denied' : 'key_rejected', status },
+    });
+  }
+}
+
 // ─── The interface the routes use ──────────────────────────────────────────
 
 /**
@@ -279,6 +358,8 @@ module.exports = {
   scrub,
   elevenCharacterQuota,
   cachedElevenTier,
+  geminiGenerationAccess,
+  noteGenerationOutcome,
   invalidateCharacterQuota,
   _internals: { firstMediaUrl },
 };
