@@ -22,6 +22,44 @@ const express = require('express');
 const router = express.Router();
 
 /**
+ * Is there any video model this box can actually run?
+ *
+ * Mirrors routes/squad-video.js: whatever models.resolveAvailable() would
+ * choose is what a creator would get. The Gemini access cache is still
+ * consulted, because a key we are known to be forbidden to use is not
+ * reachability — but only for the row it applies to, so a blocked Gemini
+ * project no longer hides the fal rows next to it.
+ */
+function videoReachable() {
+  const p = require('../lib/gen-provider');
+  const models = require('../lib/gen-models');
+  const usable = (provider) => {
+    if (!p.configured(provider)) return false;
+    if (provider !== 'gemini') return true;
+    const access = p.cachedGenerationAccess('gemini', 'veo-3.1-fast-generate-preview');
+    return !access || access.ok; // unknown stays optimistic; /health is authoritative
+  };
+  return !!models.resolveAvailable('video', undefined, usable);
+}
+
+/**
+ * Is Music purchasable on this box?
+ *
+ * Two ways: an ElevenLabs plan that allows it (their free tier answers 402
+ * paid_plan_required), or the same ElevenLabs model through fal, which needs
+ * no plan at all — the eleven-music-fal row. Gating on the plan alone kept
+ * Music dark on a box holding a working FAL_KEY.
+ */
+function musicReachable() {
+  const p = require('../lib/gen-provider');
+  if (p.configured('fal')) return true;
+  if (!p.configured('elevenlabs')) return false;
+  if (process.env.ELEVENLABS_MUSIC_ENABLED === 'true') return true;
+  const tier = p.cachedElevenTier();
+  return !!tier && tier !== 'free';
+}
+
+/**
  * key → { label, env | ready, api }
  *   env:   provider credential that must be present for the mode to run.
  *   notReady: a more specific reason than 'no_provider' when ready() is false,
@@ -46,14 +84,17 @@ const MODES = {
      lib/gen-provider.js#geminiGenerationAccess. Unknown stays optimistic:
      the video route's own /health does the authoritative check, and going
      dark on no evidence would be its own outage. */
+  /* Reachability is a question about the catalogue, not about one vendor.
+     This gate named Gemini only, which was true when Veo was the only video
+     row — and then wrong: on 2026-09-16 production had a working FAL_KEY and
+     six fal video rows, Google had blocked the Gemini project, and this
+     registry answered `provider_denied` and hid a Video button that worked.
+     The route itself already picks a reachable model with
+     models.resolveAvailable(), so the gate now asks the same question the
+     route will answer. */
   video: {
     label: 'Video',
-    ready: () => {
-      const p = require('../lib/gen-provider');
-      if (!p.configured('gemini')) return false;
-      const access = p.cachedGenerationAccess('gemini', 'veo-3.1-fast-generate-preview');
-      return !access || access.ok;
-    },
+    ready: () => videoReachable(),
     /* Two different problems, two different answers: no key at all is
        'no_provider' (set one), a key we are not allowed to use is
        'provider_denied' (a wrong reason sends someone hunting for a
@@ -73,14 +114,8 @@ const MODES = {
   // ELEVENLABS_MUSIC_ENABLED=true. See routes/squad-music.js.
   music: {
     label: 'Music',
-    ready: () => {
-      const p = require('../lib/gen-provider');
-      if (!p.configured('elevenlabs')) return false;
-      if (process.env.ELEVENLABS_MUSIC_ENABLED === 'true') return true;
-      const tier = p.cachedElevenTier();
-      return !!tier && tier !== 'free';
-    },
-    notReady: 'paid_plan_required',
+    ready: () => musicReachable(),
+    notReady: () => (require('../lib/gen-provider').configured('elevenlabs') ? 'paid_plan_required' : 'no_provider'),
     api: '/api/squad-music',
   },
   twin: { label: 'Twin', env: 'SQUAD_TWIN_API_KEY', api: null },

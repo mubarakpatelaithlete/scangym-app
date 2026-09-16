@@ -301,6 +301,20 @@ const MODELS = [
     tier: 'standard',
   },
   {
+    /* Asked for by name (2026-09-16). Dearer than K2.5 at $3/$15 per million
+       against $0.45/$2.25, which is still a third of a penny a caption, so
+       both rows stay: the picker is about voice, and K2.5 is the value pick.
+       Verified writing on the live router the same day. */
+    id: 'kimi-k3',
+    kind: 'text',
+    label: 'Moonshot Kimi K3',
+    provider: 'openrouter',
+    providerModel: 'moonshotai/kimi-k3',
+    usdPerMillionInput: 3.0,
+    usdPerMillionOutput: 15.0,
+    tier: 'standard',
+  },
+  {
     id: 'grok-4.5',
     kind: 'text',
     label: 'Grok 4.5',
@@ -309,6 +323,13 @@ const MODELS = [
     usdPerMillionInput: 2.0,
     usdPerMillionOutput: 6.0,
     tier: 'standard',
+    /* Grok 4.5 is a reasoning-only endpoint: asked without it, the router
+       answers 400 "Reasoning is mandatory for this endpoint and cannot be
+       disabled." Verified against the live router on 2026-09-16 — with the
+       flag it writes a caption for ~$0.0006, which is dearer than the other
+       rows because the thinking tokens are billed too. The reasoning text
+       itself is dropped; a creator wants the post, not the deliberation. */
+    requiresReasoning: true,
   },
 
   // ── Music ────────────────────────────────────────────────────────────────
