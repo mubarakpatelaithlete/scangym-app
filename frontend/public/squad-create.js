@@ -163,6 +163,38 @@
   var health = null;     // per-mode runtime health, keyed by mode
   var job = null;        // {id, timer}
   var quota = null;
+  var budget = null;     // {signedIn,tier,dailyUsd,remainingUsd} — one balance for every mode
+  var serverTemplates = null; // /api/squad-create/templates, so a better opener needs no deploy
+  var shareInfo = null;  // {refLink, shareText} — a share has to carry the link that earns
+
+  function gbp(usd) {
+    if (usd == null) return '';
+    var v = usd * 0.79;
+    return v < 1 ? Math.round(v * 100) + 'p' : '£' + v.toFixed(2);
+  }
+
+  /** Mirrors lib/gen-eta.js#phrase so the sheet and the server say the same thing. */
+  function phrase(seconds) {
+    if (seconds == null) return 'any moment now';
+    if (seconds < 45) return 'about ' + Math.max(5, Math.round(seconds / 5) * 5) + ' seconds';
+    if (seconds / 60 < 1.5) return 'about a minute';
+    return 'about ' + Math.round(seconds / 60) + ' minutes';
+  }
+
+  /* Records that a creator downloaded or shared something. These counts used to
+     live in localStorage, where they died with the phone and could not feed the
+     tier ladder that decides who earns what. Fire and forget: a failed count
+     must never interrupt a share. */
+  function logEvent(assetId, action, assetKind) {
+    if (!assetId) return;
+    try {
+      fetch('/api/squad-create/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ assetId: assetId, action: action, assetKind: assetKind || 'generated' }),
+      }).catch(function () {});
+    } catch (e) {}
+  }
 
   function toast(m, k, t) { if (typeof window.sgToast === 'function') window.sgToast(m, k || 'info', t || 3000); }
 
@@ -367,10 +399,13 @@
         return;
       }
       if (!mode.api) return;
-      loadHistory(sh, mode);
+      loadHistory(sh, mode); // My Creations: every mode, not just this one
+      loadTemplates(sh, mode);
       fetch(mode.api + '/health').then(function (r) { return r.json(); }).then(function (d) {
         health = d;
-        if (d.quota) { quota = d.quota; refreshQuota(sh, mode); }
+        if (d.budget) { budget = d.budget; }
+        if (d.quota) { quota = d.quota; }
+        refreshQuota(sh, mode);
         renderModelPicker(sh, mode, d);
         /* Two health shapes in the wild: the media modes answer `available`,
            text answers `configured`. Treat either as yes, or a working Text
@@ -398,6 +433,58 @@
     });
   }
 
+  /**
+   * Starters from the server, merged over the built-in chips.
+   *
+   * A starter carries prompt + settings + a model that suits it, so tapping
+   * "Gym tour" no longer means paying for 1080p on whatever model happened to
+   * be first in the list. Cached for the session; if the call fails the
+   * built-in chips stay, which is why they are still in MODES.
+   * @see server/lib/gen-templates.js
+   */
+  function loadTemplates(sh, mode) {
+    var apply = function (list) {
+      if (!list || !list.length) return;
+      var host = sh.querySelector('.sv-chips');
+      if (!host) return;
+      host.innerHTML = '';
+      list.forEach(function (t) {
+        var c = el('div', 'sv-chip', t.label);
+        c.addEventListener('click', function () {
+          var ta = sh.querySelector('.sv-prompt');
+          if (ta) ta.value = t.prompt;
+          if (t.settings) {
+            Object.keys(t.settings).forEach(function (k) { state[mode.key][k] = t.settings[k]; });
+            repaintSettings(sh, mode);
+          }
+          if (t.model) {
+            state[mode.key].__model = t.model;
+            var picker = sh.querySelector('#sv-models');
+            if (picker) Array.prototype.forEach.call(picker.children, function (ch) { if (ch.__paint) ch.__paint(); });
+          }
+          refreshSummary(sh, mode);
+        });
+        host.appendChild(c);
+      });
+    };
+    if (serverTemplates && serverTemplates[mode.key]) { apply(serverTemplates[mode.key]); return; }
+    fetch('/api/squad-create/templates').then(function (r) { return r.json(); }).then(function (d) {
+      serverTemplates = (d && d.templates) || {};
+      apply(serverTemplates[mode.key]);
+    }).catch(function () {});
+  }
+
+  /** Redraw the settings rows after a starter has set them. */
+  function repaintSettings(sh, mode) {
+    var rows = sh.querySelectorAll('#sv-settings .sv-set');
+    (mode.settings || []).forEach(function (st, i) {
+      var row = rows[i];
+      if (!row) return;
+      var val = row.querySelector('.sv-val');
+      if (val) val.textContent = shown(mode, st);
+    });
+  }
+
   /** Cached: the registry is a deployment fact, it will not change mid-session. */
   function loadModes() {
     if (modeStatus) return Promise.resolve(modeStatus);
@@ -419,11 +506,23 @@
     n.textContent = (mode.settings || []).map(function (st) { return shown(mode, st); }).join(' · ');
   }
 
+  /**
+   * The line under Generate. It used to count clips per mode ("3 of 5 left"),
+   * which could not explain why a £3 model was out of reach — so it now reads
+   * out the one thing that decides: today's credit, and what grows it.
+   */
   function refreshQuota(sh, mode) {
     var n = sh.querySelector('#sv-note');
-    if (!n || !quota || !mode.note) return;
-    n.textContent = 'Renders in ~1 min · ' + quota.remaining + ' of ' + quota.limit +
-      ' left today · then share straight to your socials';
+    if (!n) return;
+    var bits = [];
+    if (budget && budget.signedIn) {
+      bits.push('💳 ' + gbp(budget.remainingUsd) + ' of today\'s ' + gbp(budget.dailyUsd) + ' credit left');
+      if (budget.remainingUsd <= 0) bits.push('every booking you drive adds credit');
+    } else if (budget && budget.signedIn === false) {
+      bits.push('🔐 Sign in to create — your work and your credit live on your account');
+    }
+    if (quota && mode.note) bits.push(quota.remaining + ' of ' + quota.limit + ' ' + mode.key + ' runs left today');
+    n.innerHTML = bits.length ? bits.join(' · ') : (mode.note || '');
   }
 
   function closeSheet() {
@@ -451,8 +550,23 @@
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
-    }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+    }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, status: r.status, d: d }; }); })
       .then(function (res) {
+        /* Two refusals a creator can act on, and both used to arrive as a bare
+           red line: not signed in, and out of today's credit. */
+        if (res.status === 401 || (res.d && res.d.needsLogin)) {
+          out.innerHTML = '<div class="sv-warn">🔐 ' + (res.d.error || 'Sign in to create.') +
+            ' <a href="/login" style="color:#FF6D00;font-weight:700">Sign in</a></div>';
+          gen.disabled = false;
+          return;
+        }
+        if (res.status === 402 || (res.d && res.d.needsBudget)) {
+          if (res.d.budget) { budget = res.d.budget; }
+          out.innerHTML = '<div class="sv-warn">💳 ' + (res.d.error || 'Out of today\'s credit.') + '</div>';
+          refreshQuota(sh, mode);
+          gen.disabled = false;
+          return;
+        }
         if (!res.ok) throw new Error(res.d.error || 'could not start');
         // Some modes finish inside the request (text is a couple of seconds, not
         // a minute), and answer with the result instead of a job to poll. A job
@@ -468,20 +582,26 @@
         // something already on disk.
         if (res.d.status === 'done' && (res.d.audioUrl || res.d.url)) {
           if (res.d.quota) { quota = res.d.quota; refreshQuota(sh, mode); }
-          showResult(out, res.d.audioUrl || res.d.url, mode);
+          showResult(out, res.d.audioUrl || res.d.url, mode, res.d.jobId);
           gen.disabled = false;
           return;
         }
         if (!res.d.jobId) throw new Error(res.d.error || 'could not start');
         if (res.d.quota) { quota = res.d.quota; refreshQuota(sh, mode); }
         var start = Date.now();
-        out.innerHTML = '<div class="sv-prog"><div class="sv-spin"></div><span id="sv-prog-t">Rendering… usually under a minute.</span></div>';
+        /* The measured time for this exact model, from the server, instead of
+           "usually under a minute" on a render measured at 226 seconds. */
+        var etaS = res.d.etaSeconds || null;
+        var slow = etaS && etaS >= 60;
+        out.innerHTML = '<div class="sv-prog"><div class="sv-spin"></div><span id="sv-prog-t">' +
+          (etaS ? 'Rendering… ' + phrase(etaS) : 'Rendering…') + '</span></div>' +
+          (slow ? '<div class="sv-note" style="margin-top:6px">You can close this — we\'ll email you the moment it lands, and it will be waiting in My Creations.</div>' : '');
         job = { id: res.d.jobId };
         job.timer = setInterval(function () {
           fetch(mode.api + '/status/' + job.id).then(function (r) { return r.json(); }).then(function (st) {
             if (st.status === 'done') {
               clearInterval(job.timer);
-              showResult(out, st.videoUrl || st.imageUrl || st.audioUrl || st.url, mode);
+              showResult(out, st.videoUrl || st.imageUrl || st.audioUrl || st.url, mode, job.id);
               gen.disabled = false;
             } else if (st.status === 'error') {
               clearInterval(job.timer);
@@ -489,8 +609,15 @@
               gen.disabled = false;
             } else {
               var t = document.getElementById('sv-prog-t');
-              if (t) t.textContent = 'Rendering… ' + Math.round((Date.now() - start) / 1000) + 's';
-              if (Date.now() - start > 300000) { // 5 min: stop hammering
+              if (t) {
+                var elapsed = Math.round((Date.now() - start) / 1000);
+                var left = st.remainingSeconds != null ? st.remainingSeconds
+                  : (etaS ? Math.max(0, etaS - elapsed) : null);
+                t.textContent = 'Rendering… ' + elapsed + 's · ' +
+                  (left ? phrase(left) + ' to go' : 'any moment now') +
+                  (st.queuePosition ? ' · queue position ' + st.queuePosition : '');
+              }
+              if (Date.now() - start > 600000) { // 10 min: measured worst case is under 4
                 clearInterval(job.timer);
                 out.innerHTML = '<div class="sv-warn">⏳ Still rendering server-side — reopen Create in a minute.</div>';
                 gen.disabled = false;
@@ -525,8 +652,11 @@
     host.innerHTML = '';
     host.style.display = 'flex';
 
+    /* Default to something the creator can actually run: picking a locked
+       premium row for them is a 402 they did not ask for. */
+    var runnable = list.filter(function (m) { return m.affordable !== false; });
     var chosen = state[mode.key].__model
-      || (list.filter(function (m) { return m.tier === 'default'; })[0] || list[0]).id;
+      || (runnable.filter(function (m) { return m.tier === 'default'; })[0] || runnable[0] || list[0]).id;
     state[mode.key].__model = chosen;
 
     list.forEach(function (m) {
@@ -534,15 +664,26 @@
       var price = (m.estimateUsd != null)
         ? ' · £' + (m.estimateUsd * 0.79).toFixed(m.estimateUsd < 0.05 ? 3 : 2)
         : '';
-      chip.textContent = m.label + price;
+      /* The role first, the vendor's release name second: "Seedance 2.5" is not
+         an answer to "which one do I tap". @see server/lib/gen-models.js#ROLES */
+      var locked = m.affordable === false;
+      chip.innerHTML = (locked ? '🔒 ' : '') + (m.role ? '<b>' + m.role + '</b> · ' : '') +
+        m.label + price;
       if (m.note) chip.title = m.note;
+      if (locked) chip.title = (m.lockedReason === 'sign_in')
+        ? 'Sign in to use this model'
+        : 'Above today\'s credit — every booking you drive adds to it';
       var paint = function () {
         var on = state[mode.key].__model === m.id;
         chip.style.cssText = on
           ? 'background:linear-gradient(135deg,#FF6D00,#E66200);border:none;color:#fff;font-size:11.5px;font-weight:700;padding:8px 11px;border-radius:10px;cursor:pointer;'
-          : '';
+          : (locked ? 'opacity:.45;' : '');
       };
       chip.addEventListener('click', function () {
+        if (locked) {
+          toast(chip.title, 'info', 3500);
+          return;
+        }
         state[mode.key].__model = m.id;
         Array.prototype.forEach.call(host.children, function (c) { if (c.__paint) c.__paint(); });
       });
@@ -575,14 +716,19 @@
     row.appendChild(copy);
     var share = el('div', 'sv-mchip', '📤 Share');
     share.addEventListener('click', function () {
-      if (navigator.share) navigator.share({ text: text }).catch(function () {});
-      else if (navigator.clipboard) navigator.clipboard.writeText(text).then(function () { toast('Copied — paste it anywhere.', 'success', 2500); });
+      /* A caption that goes out without the referral link earns nothing, so the
+         link is appended once, here, rather than left to the creator to remember. */
+      var withLink = (shareInfo && shareInfo.refLink && text.indexOf(shareInfo.refLink) === -1)
+        ? text + '\n\n' + shareInfo.refLink
+        : text;
+      if (navigator.share) navigator.share({ text: withLink }).catch(function () {});
+      else if (navigator.clipboard) navigator.clipboard.writeText(withLink).then(function () { toast('Copied with your link — paste it anywhere.', 'success', 2500); });
     });
     row.appendChild(share);
     out.appendChild(row);
   }
 
-  function showResult(out, url, mode) {
+  function showResult(out, url, mode, jobId) {
     if (!url) return;
     out.innerHTML = '';
     if (mode.resultKind === 'image') {
@@ -606,10 +752,16 @@
     share.style.cssText = 'background:linear-gradient(135deg,#FF6D00,#E66200);border:none;color:#fff;';
     share.addEventListener('click', function () {
       var abs = url.indexOf('http') === 0 ? url : location.origin + url;
+      /* The clip used to go out as a bare CDN link: the creator posted our
+         content and there was nothing in the post to book through. The caption
+         and the referral link come from /api/squad-create/library. */
+      var caption = (shareInfo && shareInfo.shareText) || 'Made with ScanGym — any gym, £5/day.';
+      logEvent(jobId, 'share', 'generated');
       if (navigator.share) {
-        navigator.share({ title: 'My ScanGym clip', text: 'Made with ScanGym — any gym, £5/day.', url: abs }).catch(function () {});
+        navigator.share({ title: 'My ScanGym clip', text: caption, url: abs }).catch(function () {});
       } else if (navigator.clipboard) {
-        navigator.clipboard.writeText(abs).then(function () { toast('Link copied!', 'success', 2500); });
+        navigator.clipboard.writeText(caption + ' ' + abs)
+          .then(function () { toast('Caption and your link copied — paste it in your post.', 'success', 3000); });
       }
     });
     row.appendChild(share);
@@ -617,32 +769,66 @@
     dl.href = url;
     dl.download = 'scangym-clip';
     dl.style.textDecoration = 'none';
+    dl.addEventListener('click', function () { logEvent(jobId, 'download', 'generated'); });
     row.appendChild(dl);
+    if (shareInfo && shareInfo.refLink) {
+      var copyCap = el('div', 'sv-mchip', '📋 Caption + link');
+      copyCap.addEventListener('click', function () {
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(shareInfo.shareText)
+            .then(function () { toast('Caption copied — your referral link is in it.', 'success', 3000); });
+        }
+      });
+      row.appendChild(copyCap);
+    }
     out.appendChild(row);
   }
 
-  // ── history ─────────────────────────────────────────────────────────────
+  // ── My Creations ────────────────────────────────────────────────────────
+  /**
+   * Everything this creator has made, every mode, newest first.
+   *
+   * What this replaces: per-mode history, so a creator saw their clips inside
+   * the Video sheet and their images inside the Image sheet and nowhere saw
+   * their work. Worse, the row carried the url but not the prompt, so a good
+   * result could not be run again — the output was effectively disposable.
+   * Each row here can be replayed, re-shared with the referral link, or loaded
+   * back into the prompt box to tweak.
+   * @see server/routes/squad-create.js GET /library
+   */
   function loadHistory(sh, mode) {
-    if (!mode.api || mode.resultKind === 'text') return; // captions are not stored
-
-    fetch(mode.api + '/history').then(function (r) { return r.json(); }).then(function (d) {
-      if (d.quota) { quota = d.quota; refreshQuota(sh, mode); }
+    fetch('/api/squad-create/library?limit=12').then(function (r) {
+      if (r.status === 401) return null; // signed out: the note already says so
+      return r.json();
+    }).then(function (d) {
+      if (!d) return;
+      shareInfo = { refLink: d.refLink, shareText: d.shareText };
       var box = sh.querySelector('#sv-history');
       if (!box) return;
-      var done = (d.jobs || []).filter(function (j) { return j.status === 'done' && j.video_url; });
-      if (!done.length) { box.textContent = ''; return; }
+      var items = (d.items || []).filter(function (j) { return j.status === 'done' && (j.url || j.text); });
+      if (!items.length) { box.textContent = ''; return; }
       box.innerHTML = '';
-      var head = el('div', '', 'Your recent clips');
-      head.style.cssText = 'margin:14px 0 6px;color:#cbd5e1;font-weight:700;text-align:left;';
+      var head = el('div', '', 'My Creations');
+      head.style.cssText = 'margin:16px 0 6px;color:#cbd5e1;font-weight:700;text-align:left;';
       box.appendChild(head);
-      done.slice(0, 6).forEach(function (j) {
-        var a = el('div', 'sv-set');
-        a.style.cursor = 'pointer';
-        var label = (j.prompt || 'Clip').slice(0, 38) + ((j.prompt || '').length > 38 ? '…' : '');
-        a.appendChild(el('span', '', label));
-        a.appendChild(el('span', 'sv-val', '▶ Play'));
-        a.addEventListener('click', function () { showResult(sh.querySelector('#sv-out'), j.video_url, mode); });
-        box.appendChild(a);
+      items.slice(0, 8).forEach(function (j) {
+        var icon = { video: '🎬', image: '🖼️', audio: '🎙️', music: '🎵', text: '✍️' }[j.kind] || '✨';
+        var row = el('div', 'sv-set');
+        row.style.cursor = 'pointer';
+        var label = icon + ' ' + (j.prompt || j.kind).slice(0, 34) + ((j.prompt || '').length > 34 ? '…' : '');
+        row.appendChild(el('span', '', label));
+        var open = el('span', 'sv-val', j.kind === 'text' ? '📋 Copy' : '▶ Open');
+        row.appendChild(open);
+        row.addEventListener('click', function () {
+          var out = sh.querySelector('#sv-out');
+          if (j.kind === 'text') { showText(out, j.text || j.prompt); return; }
+          /* Show it in whichever player the creation needs, not whichever mode
+             the sheet happens to be on. */
+          showResult(out, j.url, { resultKind: j.kind === 'image' ? 'image' : (j.kind === 'video' ? 'video' : 'audio') }, j.id);
+          var ta = sh.querySelector('.sv-prompt');
+          if (ta && !ta.value && j.prompt) ta.value = j.prompt; // tweak-and-rerun
+        });
+        box.appendChild(row);
       });
     }).catch(function () {});
   }
