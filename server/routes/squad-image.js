@@ -23,6 +23,9 @@ const express = require('express');
 const crypto = require('crypto');
 const rateLimit = require('express-rate-limit');
 const { optionalAuth } = require('../middleware/auth');
+const { requireCreator } = require('../lib/gen-guard');
+const spend = require('../lib/gen-budget');
+const eta = require('../lib/gen-eta');
 const models = require('../lib/gen-models');
 const provider = require('../lib/gen-provider');
 const jobs = require('../lib/gen-jobs');
@@ -126,20 +129,24 @@ function buildInput(model, prompt, settings) {
 router.get('/health', optionalAuth, async (req, res) => {
   const quota = await jobs.quotaFor(req, KIND);
   const available = provider.configured('fal');
+  /* The sheet needs to know what this creator can afford before it draws the
+     model row, not after a 402: lib/gen-budget.js#annotate marks each row. */
+  const budget = await spend.budgetFor(req);
   res.json({
     available,
     reason: available ? undefined : 'no_api_key',
     quota,
+    budget,
     options: ALLOWED,
     defaults: DEFAULTS,
-    models: models.catalogueFor(KIND, { images: DEFAULTS.count }),
+    models: spend.annotate(models.catalogueFor(KIND, { images: DEFAULTS.count }), budget),
   });
 });
 
 // ─── POST /generate — start an image job ──────────────────────────────────
 // express.json() per route: the app-level parser in server.js runs for an
 // allowlist of prefixes only, and without this req.body is undefined.
-router.post('/generate', optionalAuth, express.json({ limit: '64kb' }), limiter, async (req, res) => {
+router.post('/generate', requireCreator, express.json({ limit: '64kb' }), limiter, async (req, res) => {
   if (!provider.configured('fal')) {
     return res.status(503).json({ error: 'Image generation is not configured yet.' });
   }
@@ -165,6 +172,10 @@ router.post('/generate', optionalAuth, express.json({ limit: '64kb' }), limiter,
   const model = models.resolve(KIND, req.body?.model);
   const costUsd = models.estimateUsd(model, { images: settings.count });
 
+  /* Money, not clip count, is what needs guarding. @see lib/gen-budget.js */
+  const refused = spend.verdict(await spend.budgetFor(req), costUsd);
+  if (refused) return res.status(refused.status).json(refused.body);
+
   try {
     const { op } = await provider.submit(model, buildInput(model, prompt, settings));
     const jobId = crypto.randomBytes(8).toString('hex');
@@ -174,6 +185,7 @@ router.post('/generate', optionalAuth, express.json({ limit: '64kb' }), limiter,
       settings,
       model: { id: model.id, label: model.label },
       costUsd,
+      etaSeconds: eta.etaSeconds(KIND, model.id),
       quota: { ...quota, used: quota.used + 1, remaining: quota.remaining - 1 },
     });
   } catch (e) {
