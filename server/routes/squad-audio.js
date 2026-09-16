@@ -26,6 +26,9 @@ const express = require('express');
 const crypto = require('crypto');
 const rateLimit = require('express-rate-limit');
 const { optionalAuth } = require('../middleware/auth');
+const { requireCreator } = require('../lib/gen-guard');
+const spend = require('../lib/gen-budget');
+const eta = require('../lib/gen-eta');
 const models = require('../lib/gen-models');
 const provider = require('../lib/gen-provider');
 const jobs = require('../lib/gen-jobs');
@@ -101,6 +104,7 @@ router.get('/health', optionalAuth, async (req, res) => {
   const exhausted = !!balance && balance.remaining <= 0;
   const model = models.resolveAvailable(KIND, undefined, (p) => reachable(p, { exhausted }));
   const available = !!model;
+  const creatorBudget = await spend.budgetFor(req);
 
   res.json({
     available,
@@ -112,7 +116,8 @@ router.get('/health', optionalAuth, async (req, res) => {
       : null,
     options: ALLOWED,
     defaults: DEFAULTS,
-    models: models.catalogueFor(KIND, { chars: LENGTH_CHARS[DEFAULTS.length] }),
+    budget: creatorBudget,
+    models: spend.annotate(models.catalogueFor(KIND, { chars: LENGTH_CHARS[DEFAULTS.length] }), creatorBudget),
   });
 });
 
@@ -130,7 +135,7 @@ function reachable(p, { exhausted }) {
 }
 
 // ─── POST /generate — speak the script, inline ────────────────────────────
-router.post('/generate', optionalAuth, express.json({ limit: '64kb' }), limiter, async (req, res) => {
+router.post('/generate', requireCreator, express.json({ limit: '64kb' }), limiter, async (req, res) => {
   if (!provider.configured('elevenlabs') && !provider.configured('fal')) {
     return res.status(503).json({ error: 'Voiceover is not configured yet.' });
   }
@@ -176,6 +181,11 @@ router.post('/generate', optionalAuth, express.json({ limit: '64kb' }), limiter,
     return res.status(503).json({ error: 'No voice model is reachable on this deployment.' });
   }
   const costUsd = models.estimateUsd(model, { chars: text.length });
+
+  /* Money, not clip count, is what needs guarding. @see lib/gen-budget.js */
+  const refused = spend.verdict(await spend.budgetFor(req), costUsd);
+  if (refused) return res.status(refused.status).json(refused.body);
+
   const jobId = crypto.randomBytes(8).toString('hex');
 
   try {
