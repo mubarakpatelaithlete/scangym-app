@@ -457,6 +457,49 @@ function round(n) {
  * internal routing detail and naming it in the client would let a crafted
  * request ask for a model we have not priced.
  */
+/**
+ * What each model is *for*, in the words a creator thinks in.
+ *
+ * "Seedance 2.5" and "WAN 3.0" mean nothing to someone making a gym reel; they
+ * are vendor release names and the sheet was asking a creator to pick between
+ * them on vibes. The role is the answer to "which one do I tap", the label
+ * stays as the small print, and the price is already on the chip.
+ *
+ * Kept as a map rather than a field on each row so a row can be added from a
+ * vendor page without inventing marketing copy for it: no role simply means no
+ * badge, which is honest.
+ */
+const ROLES = {
+  // text
+  'gpt-5.6': 'All-rounder',
+  'claude-5': 'Best writer',
+  'gemini-3': 'Fastest',
+  'kimi-k2.5': 'Cheapest',
+  'kimi-k3': 'Punchiest',
+  'grok-4.5': 'Most opinionated',
+  // image
+  'nano-banana-2': 'Best all-round',
+  'nano-banana': 'Cheapest',
+  'gpt-image-2.5': 'Best with text in the image',
+  'seedream-v4': 'Most photographic',
+  'flux-kontext-pro': 'Best for edits',
+  // audio / music
+  'eleven-v3': 'Most natural',
+  'eleven-flash-v2.5': 'Fastest',
+  'eleven-multilingual-v2': 'Other languages',
+  'eleven-music': 'Full track',
+  // video
+  'grok-imagine-video': 'Cheapest',
+  'wan-2.5': 'Good value',
+  'wan-3.0': 'Good value',
+  'kling-2.5-turbo': 'Fast and smooth',
+  'kling-3.0-pro': 'Best motion',
+  'seedance-1-pro': 'Cinematic',
+  'seedance-2.5': 'Cinematic, premium',
+  'veo-3.1-fast': 'Best with dialogue, quicker',
+  'veo-3.1-fal': 'Best with dialogue',
+};
+
 function catalogueFor(kind, units = {}) {
   const rows = byKind(kind).filter((m) => m.tier !== 'premium' || premiumEnabled());
 
@@ -481,6 +524,7 @@ function catalogueFor(kind, units = {}) {
       id: m.id,
       label: m.label,
       tier: m.tier,
+      role: ROLES[m.id] || null,
       estimateUsd: estimateUsd(m, units),
       note: m.note || null,
     }));
@@ -543,6 +587,7 @@ function unitPrice(m) {
 
 module.exports = {
   MODELS,
+  ROLES,
   byKind,
   resolve,
   resolveAvailable,
