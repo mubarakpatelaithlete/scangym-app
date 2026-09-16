@@ -61,14 +61,52 @@ function cleanSettings(body) {
   };
 }
 
-/** Catalogue row → the payload fal expects for a text-to-image model. */
-function buildInput(prompt, settings) {
-  return {
+/**
+ * fal's image models do not share one payload shape, so the catalogue row
+ * names a profile and this table knows what that profile wants.
+ *
+ * Without this, adding OpenAI's model would 422 every request: it takes
+ * `image_size` (an enum or {width,height}) and has no `aspect_ratio` at all,
+ * and fal rejects unknown fields rather than ignoring them. Guessing the
+ * payload is the one failure the catalogue cannot express, so it lives here
+ * next to the route that sends it.
+ */
+const OPENAI_IMAGE_SIZE = {
+  '9:16': 'portrait_16_9',
+  '1:1': 'square_hd',
+  '16:9': 'landscape_16_9',
+};
+
+const IMAGE_PROFILES = {
+  /** The shape fal's own models take: Nano Banana, Seedream, FLUX. */
+  'fal-image': (prompt, settings) => ({
     prompt,
     num_images: settings.count,
     aspect_ratio: settings.aspectRatio,
     output_format: 'jpeg',
-  };
+  }),
+  /** Nano Banana 2: same, plus a pinned resolution — 2K bills 1.5x, 4K 2x. */
+  'nano-banana-2': (prompt, settings) => ({
+    prompt,
+    num_images: settings.count,
+    aspect_ratio: settings.aspectRatio,
+    output_format: 'jpeg',
+    resolution: '1K',
+  }),
+  /** OpenAI: image_size instead of aspect_ratio, and quality drives the bill. */
+  'openai-image': (prompt, settings) => ({
+    prompt,
+    num_images: settings.count,
+    image_size: OPENAI_IMAGE_SIZE[settings.aspectRatio] || 'portrait_16_9',
+    output_format: 'jpeg',
+    quality: 'medium',
+  }),
+};
+
+/** Catalogue row → the payload that model expects. */
+function buildInput(model, prompt, settings) {
+  const profile = IMAGE_PROFILES[model?.inputProfile] || IMAGE_PROFILES['fal-image'];
+  return profile(prompt, settings);
 }
 
 // ─── GET /health — can this box make an image right now? ──────────────────
@@ -116,7 +154,7 @@ router.post('/generate', optionalAuth, express.json({ limit: '64kb' }), limiter,
   const costUsd = models.estimateUsd(model, { images: settings.count });
 
   try {
-    const { op } = await provider.submit(model, buildInput(prompt, settings));
+    const { op } = await provider.submit(model, buildInput(model, prompt, settings));
     const jobId = crypto.randomBytes(8).toString('hex');
     await jobs.recordJob({ id: jobId, req, kind: KIND, prompt, params: { ...settings, op }, op, model, costUsd });
     res.json({
@@ -170,3 +208,4 @@ router.get('/history', optionalAuth, async (req, res) => {
 });
 
 module.exports = router;
+module.exports._internals = { buildInput, cleanSettings, IMAGE_PROFILES };

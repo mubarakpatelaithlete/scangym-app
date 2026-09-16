@@ -234,7 +234,7 @@ router.post('/generate', optionalAuth, express.json(), async (req, res) => {
 
   try {
     const op = model.provider === 'fal'
-      ? (await genProvider.submit(model, falInput(prompt, settings))).op
+      ? (await genProvider.submit(model, falInput(prompt, settings, model))).op
       : await veoSubmit(prompt, settings);
 
     const jobId = crypto.randomBytes(8).toString('hex');
@@ -255,15 +255,69 @@ router.post('/generate', optionalAuth, express.json(), async (req, res) => {
   }
 });
 
-/** Whitelisted settings → the payload a fal text-to-video model expects. */
-function falInput(prompt, settings) {
-  return {
+/**
+ * Whitelisted settings → the payload a fal text-to-video model expects.
+ *
+ * There is no single fal video payload. Verified against fal's OpenAPI
+ * schemas on 2026-09-16: WAN 2.5 takes `enable_audio` and a numeric
+ * `duration`; Kling v3 takes `generate_audio`, a *string* duration and has no
+ * `resolution` field at all; Seedance 2.5 takes a string duration with a
+ * resolution; WAN 3.0 calls the flag `audio`; Grok has no audio flag and
+ * serves 480p/720p only. fal rejects unknown fields, so sending one shape to
+ * all of them is a 422 per model, not a graceful degrade.
+ *
+ * The catalogue row names its profile. A row with no profile gets the
+ * original shape, so every model that shipped before this keeps its exact
+ * payload.
+ */
+const VIDEO_PROFILES = {
+  /** WAN 2.5, Seedance 1 Pro, Veo 3.1 via fal — the shape that shipped. */
+  'fal-video': (prompt, s) => ({
     prompt,
-    duration: settings.durationSeconds,
-    aspect_ratio: settings.aspectRatio,
-    resolution: settings.resolution,
-    enable_audio: settings.generateAudio,
-  };
+    duration: s.durationSeconds,
+    aspect_ratio: s.aspectRatio,
+    resolution: s.resolution,
+    enable_audio: s.generateAudio,
+  }),
+  /** Kling v3: string duration, generate_audio, no resolution. */
+  'kling-v3': (prompt, s) => ({
+    prompt,
+    duration: String(s.durationSeconds),
+    aspect_ratio: s.aspectRatio,
+    generate_audio: s.generateAudio,
+  }),
+  /** Seedance 2.5: string duration, keeps resolution. */
+  'seedance-2.5': (prompt, s) => ({
+    prompt,
+    duration: String(s.durationSeconds),
+    aspect_ratio: s.aspectRatio,
+    resolution: s.resolution,
+    generate_audio: s.generateAudio,
+  }),
+  /** WAN 3.0: the audio flag is just `audio`. */
+  'wan-3': (prompt, s) => ({
+    prompt,
+    duration: s.durationSeconds,
+    aspect_ratio: s.aspectRatio,
+    resolution: s.resolution,
+    audio: s.generateAudio,
+  }),
+  /**
+   * Grok Imagine: no audio, and pinned to 480p. fal publishes $0.05/s at
+   * 480p and no rate for 720p on this endpoint, so 480p is the only
+   * resolution we can put a price against — and the catalogue row quotes it.
+   */
+  'grok-video': (prompt, s) => ({
+    prompt,
+    duration: s.durationSeconds,
+    aspect_ratio: s.aspectRatio,
+    resolution: '480p',
+  }),
+};
+
+function falInput(prompt, settings, model) {
+  const profile = VIDEO_PROFILES[model?.inputProfile] || VIDEO_PROFILES['fal-video'];
+  return profile(prompt, settings);
 }
 
 /** Start a Veo long-running operation and return its name. */
@@ -443,3 +497,4 @@ async function rehost(url, jobId) {
 }
 
 module.exports = router;
+module.exports._internals = { falInput, cleanSettings, VIDEO_PROFILES };
