@@ -43,6 +43,16 @@ const LENGTHS = {
 };
 const DEFAULTS = { tone: 'Punchy', length: 'Short' };
 
+/**
+ * What a live-web answer costs, per generation, on top of the tokens.
+ *
+ * Measured on the router on 2026-09-16: $0.028 for one search-backed caption
+ * against $0.000008 for the same caption without it. Quoted to the sheet
+ * rather than buried, because a toggle that multiplies the bill by three
+ * thousand has to say so before it is tapped.
+ */
+const WEB_SEARCH_USD = 0.028;
+
 const MAX_PROMPT = 600;
 
 /**
@@ -63,7 +73,11 @@ function clean(body) {
   const tone = TONES[b.tone] ? b.tone : DEFAULTS.tone;
   const length = LENGTHS[b.length] ? b.length : DEFAULTS.length;
   const prompt = String(b.prompt || '').trim().slice(0, MAX_PROMPT);
-  return { tone, length, prompt };
+  /* The sheet cycles settings as values, so this arrives as true, 'On' or
+     'true' depending on the caller. Anything else is off: a paid extra defaults
+     to off and must be asked for explicitly. */
+  const webSearch = b.webSearch === true || b.webSearch === 'On' || b.webSearch === 'true';
+  return { tone, length, prompt, webSearch };
 }
 
 /**
@@ -101,6 +115,11 @@ router.get('/health', (req, res) => {
     configured: llm.configured() || picker,
     house: llm.configured(),
     models: picker ? models.catalogueFor('text', { tokensIn: 700, tokensOut: 200 }) : [],
+    /* Live web results are a property of the router, not of the house writer:
+       lib/llm.js has no search. So the sheet only offers the toggle when a
+       named model can serve it, and it is told the surcharge rather than
+       discovering it on the bill. */
+    webSearch: { available: picker, estimateUsd: picker ? WEB_SEARCH_USD : null },
     defaults: { model: 'house' },
   });
 });
@@ -113,7 +132,7 @@ router.get('/health', (req, res) => {
  * @returns {{ text, provider, tone, length }}  throws on provider failure
  */
 async function writePost(body) {
-  const { tone, length, prompt } = clean(body);
+  const { tone, length, prompt, webSearch } = clean(body);
   if (!prompt) throw Object.assign(new Error('Describe the post first.'), { status: 400 });
 
   /* A named model, if the creator picked one and we can reach it. Anything
@@ -127,13 +146,31 @@ async function writePost(body) {
       prompt,
       system: systemPrompt({ tone, length }),
       maxTokens: 400,
+      webSearch,
     });
     const chosen = (out.text || '').trim();
     if (!chosen) throw Object.assign(new Error('Nothing came back — try again.'), { status: 502 });
-    console.log(`[SquadText] ${named.id} wrote ${chosen.length} chars (${tone}/${length})`);
-    return { text: chosen, provider: named.id, model: { id: named.id, label: named.label }, tone, length };
+    const cost = out.usage && out.usage.cost != null ? out.usage.cost : null;
+    console.log(
+      `[SquadText] ${named.id} wrote ${chosen.length} chars (${tone}/${length}`
+      + `${webSearch ? ', web search' : ''})${cost != null ? ` for $${cost}` : ''}`,
+    );
+    return {
+      text: chosen,
+      provider: named.id,
+      model: { id: named.id, label: named.label },
+      tone,
+      length,
+      webSearch,
+      costUsd: cost,
+    };
   }
 
+  if (webSearch) {
+    /* Asked for something the house writer cannot do. Silently writing a
+       caption with no web results would look like the search happened. */
+    throw Object.assign(new Error('Web search needs one of the named models — pick one first.'), { status: 400 });
+  }
   if (!llm.configured()) throw Object.assign(new Error('Text is not switched on yet.'), { status: 503 });
   const { stream, provider } = await llm.streamChat('SquadText', {
     stream: false,
@@ -199,5 +236,5 @@ router.post('/generate', textLimiter, optionalAuth, express.json(), async (req, 
 router.get('/history', (req, res) => res.json({ items: [] }));
 
 module.exports = router;
-module.exports._internals = { clean, systemPrompt, TONES, LENGTHS, MAX_PROMPT, pickNamedModel };
+module.exports._internals = { clean, systemPrompt, TONES, LENGTHS, MAX_PROMPT, pickNamedModel, WEB_SEARCH_USD };
 module.exports.writePost = writePost;

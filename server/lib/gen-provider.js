@@ -181,8 +181,8 @@ function firstMediaUrl(out) {
  * key — it has the provider failover and model-repointing that the booking
  * agent depends on. This is the picker, not a replacement.
  */
-async function openrouterText(model, { prompt, system, maxTokens = 400 }) {
-  if (routerTransport() === 'fal') return falRouterText(model, { prompt, system, maxTokens });
+async function openrouterText(model, { prompt, system, maxTokens = 400, webSearch = false }) {
+  if (routerTransport() === 'fal') return falRouterText(model, { prompt, system, maxTokens, webSearch });
 
   const messages = [];
   if (system) messages.push({ role: 'system', content: system });
@@ -199,7 +199,10 @@ async function openrouterText(model, { prompt, system, maxTokens = 400 }) {
       'X-Title': 'ScanGym ScanSquad',
     },
     body: JSON.stringify({
-      model: model.providerModel,
+      /* OpenRouter's own way of asking for search is the `:online` suffix on
+         the slug — same feature, same per-search fee, different spelling from
+         fal's boolean. */
+      model: webSearch ? `${model.providerModel}:online` : model.providerModel,
       messages,
       max_tokens: maxTokens,
     }),
@@ -228,7 +231,7 @@ async function openrouterText(model, { prompt, system, maxTokens = 400 }) {
  * Flash, so the price the sheet quotes from the catalogue stays the right
  * order of magnitude; fal's own `usage.cost` is passed back for the log.
  */
-async function falRouterText(model, { prompt, system, maxTokens = 400 }) {
+async function falRouterText(model, { prompt, system, maxTokens = 400, webSearch = false }) {
   const r = await fetch(`${FAL_SYNC}/openrouter/router`, {
     method: 'POST',
     headers: {
@@ -243,6 +246,11 @@ async function falRouterText(model, { prompt, system, maxTokens = 400 }) {
       // Some rows have no non-reasoning mode at all (Grok 4.5 answers 400
       // without it). The reasoning text is never shown: `output` is the post.
       ...(model.requiresReasoning ? { reasoning: true } : {}),
+      /* Live web results, when the creator asked for them. Off by default and
+         priced separately on purpose: a search-backed answer cost $0.028 in
+         testing against $0.000008 for the same caption without it — three
+         thousand times the price, so it can never be silently on. */
+      ...(webSearch ? { enable_web_search: true } : {}),
     }),
   });
   const data = await r.json().catch(() => ({}));
@@ -260,6 +268,50 @@ async function falRouterText(model, { prompt, system, maxTokens = 400 }) {
   const text = String(data.output || '').trim();
   if (!text) throw new Error(`${model.label} returned nothing`);
   return { text, usage: data.usage || null, via: 'fal' };
+}
+
+/**
+ * Speech through fal instead of an ElevenLabs account.
+ *
+ * The same reason Music went this way: the ElevenLabs plan is the free tier,
+ * 10,000 characters a month for the whole deployment — about fourteen
+ * voiceovers shared by every creator on the site. fal bills the same model
+ * per character against the balance the app already tops up, with no monthly
+ * ceiling, so the cap stops being a product limit.
+ *
+ * Two shape differences from the direct call: fal takes a voice *name*
+ * ('George') where ElevenLabs takes an account-scoped voice id, and it answers
+ * with a hosted url rather than bytes. The route stores bytes (R2, or an
+ * inline data url when R2 is unset), so the audio is fetched here and the
+ * interface stays `{ buffer, contentType }` — one place that knows about fal
+ * instead of a second storage path in the route.
+ */
+async function falSpeech(model, { text, voiceName, stability }) {
+  const r = await fetch(`${FAL_SYNC}/${model.providerModel}`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Key ${process.env.FAL_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      text,
+      ...(voiceName ? { voice: voiceName } : {}),
+      ...(stability != null ? { stability } : {}),
+    }),
+  });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    throw new Error(`voice model refused the request (${r.status}): ${scrub(data.detail || data.error)}`);
+  }
+  const url = data.audio && data.audio.url;
+  if (!url) throw new Error('voice model returned no audio');
+
+  const media = await fetch(url);
+  if (!media.ok) throw new Error(`voice audio could not be fetched (${media.status})`);
+  return {
+    buffer: Buffer.from(await media.arrayBuffer()),
+    contentType: (data.audio && data.audio.content_type) || 'audio/mpeg',
+  };
 }
 
 // ─── ElevenLabs: synchronous bytes ─────────────────────────────────────────
@@ -486,6 +538,7 @@ async function poll(model, op) {
 async function generate(model, input) {
   if (!configured(model.provider)) throw new Error(`${model.provider} is not configured`);
   if (model.provider === 'openrouter') return openrouterText(model, input);
+  if (model.provider === 'fal' && model.kind === 'audio') return falSpeech(model, input);
   if (model.provider === 'elevenlabs') {
     if (model.kind === 'music') return elevenMusic(model, input);
     return elevenSpeech(model, input);
@@ -506,5 +559,5 @@ module.exports = {
   cachedGenerationAccess,
   noteGenerationOutcome,
   invalidateCharacterQuota,
-  _internals: { firstMediaUrl, falRouterText, openrouterText },
+  _internals: { firstMediaUrl, falRouterText, openrouterText, falSpeech },
 };
