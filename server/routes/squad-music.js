@@ -24,6 +24,9 @@ const express = require('express');
 const crypto = require('crypto');
 const rateLimit = require('express-rate-limit');
 const { optionalAuth } = require('../middleware/auth');
+const { requireCreator } = require('../lib/gen-guard');
+const spend = require('../lib/gen-budget');
+const eta = require('../lib/gen-eta');
 const models = require('../lib/gen-models');
 const provider = require('../lib/gen-provider');
 const jobs = require('../lib/gen-jobs');
@@ -114,6 +117,7 @@ async function musicAllowed() {
 router.get('/health', optionalAuth, async (req, res) => {
   const quota = await jobs.quotaFor(req, KIND);
   const allowed = await musicAllowed();
+  const creatorBudget = await spend.budgetFor(req);
   res.json({
     available: allowed.ok,
     reason: allowed.ok ? undefined : allowed.reason,
@@ -125,12 +129,13 @@ router.get('/health', optionalAuth, async (req, res) => {
     quota,
     options: ALLOWED,
     defaults: DEFAULTS,
-    models: models.catalogueFor(KIND, { minutes: LENGTH_MS[DEFAULTS.length] / 60000 }),
+    budget: creatorBudget,
+    models: spend.annotate(models.catalogueFor(KIND, { minutes: LENGTH_MS[DEFAULTS.length] / 60000 }), creatorBudget),
   });
 });
 
 // ─── POST /generate — compose the track, inline ───────────────────────────
-router.post('/generate', optionalAuth, express.json({ limit: '64kb' }), limiter, async (req, res) => {
+router.post('/generate', requireCreator, express.json({ limit: '64kb' }), limiter, async (req, res) => {
   const allowed = await musicAllowed();
   if (!allowed.ok) {
     // 503, not 402: this is our deployment not being able to serve the
@@ -165,6 +170,10 @@ router.post('/generate', optionalAuth, express.json({ limit: '64kb' }), limiter,
   const model = models.resolveAvailable(KIND, req.body?.model, isConfigured);
   if (!model) return res.status(503).json({ error: 'No music model is reachable on this deployment.' });
   const costUsd = models.estimateUsd(model, { minutes: ms / 60000 });
+
+  /* Money, not clip count, is what needs guarding. @see lib/gen-budget.js */
+  const refusedForBudget = spend.verdict(await spend.budgetFor(req), costUsd);
+  if (refusedForBudget) return res.status(refusedForBudget.status).json(refusedForBudget.body);
   const jobId = crypto.randomBytes(8).toString('hex');
   const fullPrompt = `${prompt}. Style: ${GENRE_HINT[settings.genre]}.`;
 
