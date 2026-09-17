@@ -711,16 +711,11 @@ function _peInstallPatch(){
       }
     }
 
-    // Patch: hijack any tt-actions "Search" button so it opens the
-    // partner claim-search overlay, not the Book-tab visitor search.
-    function _peHijackSearch(){
-      var acts=document.querySelectorAll('.tt-action');
-      acts.forEach(function(a){
-        if(a.textContent.indexOf('Search')!==-1&&a.getAttribute('onclick')&&a.getAttribute('onclick').indexOf('_openSearchOverlay')!==-1){
-          a.setAttribute('onclick','event.stopPropagation();window._peOpenClaimSearch()');
-        }
-      });
-    }
+    // The partner rail's Search button is now wired to _peOpenClaimSearch()
+    // in its own template (app.ctr576.js), so the old runtime hijack is gone.
+    // It ran once per route change on a 200ms timeout, which meant any later
+    // re-render (price edit, active toggle, dashboard reload) silently handed
+    // a partner the visitor gym-finder instead of the claim search.
 
     function _peRouteTick(){
       // window.state, not the bare global: this now runs during script
@@ -734,7 +729,6 @@ function _peInstallPatch(){
         // app's own render settle, and _peLoadAndRender awaits auth before it
         // touches the DOM anyway.
         requestAnimationFrame(function(){_peLoadAndRender();});
-        setTimeout(_peHijackSearch,200);
       }else if(!isPartner){
         _lastRoute=route;
       }

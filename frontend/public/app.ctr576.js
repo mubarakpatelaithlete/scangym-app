@@ -1575,6 +1575,48 @@ async function searchGyms(query, isExplicit, _triggerLayer){state.lastSearchQuer
   sgPerf.end('search_gyms');
 }
 
+/* ── ONE RAIL, ONE TRUTH ────────────────────────────────────────────────────
+ * The Book-tab action rail used to be written out twice — once in the main
+ * card renderer and again in the lazy renderer for cards below the fold —
+ * so the two copies had to stay byte-identical by hand, and any fix had to
+ * be made twice. Both renderers now call this single template.
+ * opts.filter adds the Filter toggle (main cards only: it owns a unique id).
+ */
+function _sgBookRailHtml(c,opts){
+  opts=opts||{};
+  var gbs=window._gymBookingState||{};
+  var reviewLabel=c.rating+(c.reviews?' ('+c.reviews+')':'');
+  var hoursColor=c.isOpen?'#4ade80':'#f87171';
+  var hoursLabel=c.isOpen?'Open':'Closed';
+  var payLabel=(gbs.paymentMethod==='saved'&&gbs.savedCard)?('\u2022\u2022\u2022\u2022 '+gbs.savedCard.last4):'Pay';
+  var passMap={day:'Day','3day':'3-Day',weekly:'Weekly',monthly:'Monthly'};
+  var passLabel=passMap[gbs.selectedPass||'day']||'Day';
+  var calDate=gbs.selectedDate||(function(){var d=new Date();var mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return d.getDate()+' '+mo[d.getMonth()];})();
+  if(calDate!=='Today'){var dp=String(calDate).split('-');if(dp.length===3){var months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];calDate=parseInt(dp[2])+' '+(months[parseInt(dp[1])-1]||dp[1]);}}
+  var safeName=String(c.name||'').replace(/'/g,"\\'");
+  function act(onclick,icon,label,labelStyle,btnId){
+    return '<div class="tt-action" onclick="event.stopPropagation();'+onclick+'">'
+      +'<div class="tt-action-btn"'+(btnId?' id="'+btnId+'"':'')+'>'+icon+'</div>'
+      +'<div class="tt-action-label"'+(labelStyle?' style="'+labelStyle+'"':'')+'>'+label+'</div></div>';
+  }
+  /* Button order: Find → When → What → Pay → Info (Uber booking flow) */
+  var html='<div class="tt-actions">';
+  html+=act('findGyms()','\u{1F4CD}','Near Me');
+  html+=act('window._openSearchOverlay()','\u{1F50D}','Search');
+  html+=act("showCalendarPicker('"+c.id+"')",'\u{1F4C5}',calDate);
+  html+=act("openGymDirectOverlay('"+c.id+"',true,'passes')",'\u{1F39F}\uFE0F',passLabel);
+  html+=act("openGymDirectOverlay('"+c.id+"',true,'payment')",'\u{1F4B3}',payLabel);
+  html+=act("openGymDirectOverlay('"+c.id+"',true,'hours')",'\u{1F550}',hoursLabel,'color:'+hoursColor);
+  html+=act("openGymDirectOverlay('"+c.id+"',true,'reviews')",'\u2B50',reviewLabel);
+  /* Share/Affiliate link button (replaced Save — user request) */
+  html+=act("window._sgShareGymLink('"+c.id+"','"+safeName+"')",'\u{1F517}','Share');
+  /* Deep affiliate share button (user request: separate from plain Share) */
+  html+=act("window._sgShareAffiliateLink('"+c.id+"','"+safeName+"')",'\u{1F4B0}','Earn');
+  if(opts.filter)html+=act('window._sgToggleBookFilters()','\u26A1','Filter','','tt-filter-toggle');
+  html+='</div>';
+  return html;
+}
+
 function SearchPage(){
   const gyms=state.gyms||[];
   const isLoading=state._searchLoading===true&&gyms.length===0;
@@ -1708,30 +1750,7 @@ function SearchPage(){
               +'</div>';
           }
 
-          /* Action buttons (right side) — with contextual labels */
-          var _reviewLabel=c.rating+(c.reviews?' ('+c.reviews+')':'');
-          var _hoursColor=c.isOpen?'#4ade80':'#f87171';
-          var _hoursLabel=c.isOpen?'Open':'Closed';
-          var _gbs=window._gymBookingState||{};
-          var _payLabel=(_gbs.paymentMethod==='saved'&&_gbs.savedCard)?('\u2022\u2022\u2022\u2022 '+_gbs.savedCard.last4):'Pay';
-          var _passMap={day:'Day','3day':'3-Day',weekly:'Weekly',monthly:'Monthly'};var _passLabel=_passMap[_gbs.selectedPass||'day']||'Day';
-          var _calDate=_gbs.selectedDate||(function(){var _d=new Date();var _mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return _d.getDate()+' '+_mo[_d.getMonth()]})();
-          if(_calDate!=='Today'){var _dp=_calDate.split('-');if(_dp.length===3){var _months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];_calDate=parseInt(_dp[2])+' '+(_months[parseInt(_dp[1])-1]||_dp[1]);}}
-          html+='<div class="tt-actions">';
-          /* Button order: Find → When → What → Pay → Info (Uber booking flow) */
-          html+='<div class="tt-action" onclick="event.stopPropagation();findGyms()"><div class="tt-action-btn">\u{1F4CD}</div><div class="tt-action-label">Near Me</div></div>';
-          html+='<div class="tt-action" onclick="event.stopPropagation();window._openSearchOverlay()"><div class="tt-action-btn">\u{1F50D}</div><div class="tt-action-label">Search</div></div>';
-          html+='<div class="tt-action" onclick="event.stopPropagation();showCalendarPicker(\''+c.id+'\')"><div class="tt-action-btn">\u{1F4C5}</div><div class="tt-action-label">'+_calDate+'</div></div>';
-          html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'passes\')"><div class="tt-action-btn">\u{1F39F}\uFE0F</div><div class="tt-action-label">'+_passLabel+'</div></div>';
-          html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'payment\')"><div class="tt-action-btn">\u{1F4B3}</div><div class="tt-action-label">'+_payLabel+'</div></div>';
-          html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'hours\')"><div class="tt-action-btn">\u{1F550}</div><div class="tt-action-label" style="color:'+_hoursColor+'">'+_hoursLabel+'</div></div>';
-          html+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'reviews\')"><div class="tt-action-btn">\u2B50</div><div class="tt-action-label">'+_reviewLabel+'</div></div>';
-          /* Share/Affiliate link button (replaced Save — user request) */
-          html+='<div class="tt-action" onclick="event.stopPropagation();window._sgShareGymLink(\''+c.id+'\',\''+c.name.replace(/'/g,"\\'")+'\')"><div class="tt-action-btn">🔗</div><div class="tt-action-label">Share</div></div>';
-          /* Deep affiliate share button (user request: separate from plain Share) */
-          html+='<div class="tt-action" onclick="event.stopPropagation();window._sgShareAffiliateLink(\''+c.id+'\',\''+c.name.replace(/'/g,"\\'")+'\')"><div class="tt-action-btn">💰</div><div class="tt-action-label">Earn</div></div>';
-          html+='<div class="tt-action" onclick="event.stopPropagation();window._sgToggleBookFilters()"><div class="tt-action-btn" id="tt-filter-toggle">⚡</div><div class="tt-action-label">Filter</div></div>';
-          html+='</div>';
+          html+=_sgBookRailHtml(c,{filter:true});
           /* #103: Track gym view on scroll into view */
           html+='<script>sgTrackView&&sgTrackView("gym","'+c.id+'")<\/script>';
 
@@ -1793,29 +1812,7 @@ function SearchPage(){
               cardHtml+='<div class="tt-gradient"></div>';
               /* FIX #1: Orange brand circle top-left on ALL cards (brand identity) */
               cardHtml+='<div style="position:absolute;top:16px;left:16px;width:28px;height:28px;background:#FF6D00;border-radius:50%;z-index:20;opacity:.85;box-shadow:0 0 10px rgba(255,109,0,.5);display:flex;align-items:center;justify-content:center;font:900 15px/1 system-ui,-apple-system,sans-serif;color:#fff;">S</div>';
-              /* Action buttons (right side) — match initial cards with labels */
-              var _rl2=c.rating+(c.reviews?' ('+c.reviews+')':'');
-              var _hc2=c.isOpen?'#4ade80':'#f87171';
-              var _hl2=c.isOpen?'Open':'Closed';
-              var _gbs2=window._gymBookingState||{};
-              var _pl2=(_gbs2.paymentMethod==='saved'&&_gbs2.savedCard)?('\u2022\u2022\u2022\u2022 '+_gbs2.savedCard.last4):'Pay';
-              var _pm2={day:'Day','3day':'3-Day',weekly:'Weekly',monthly:'Monthly'};var _psl2=_pm2[_gbs2.selectedPass||'day']||'Day';
-              var _cd2=_gbs2.selectedDate||(function(){var _d=new Date();var _mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return _d.getDate()+' '+_mo[_d.getMonth()]})();
-              if(_cd2!=='Today'){var _dp2=_cd2.split('-');if(_dp2.length===3){var _mo2=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];_cd2=parseInt(_dp2[2])+' '+(_mo2[parseInt(_dp2[1])-1]||_dp2[1]);}}
-              cardHtml+='<div class="tt-actions">';
-              /* Button order: Find → When → What → Pay → Info (lazy cards) */
-              cardHtml+='<div class="tt-action" onclick="event.stopPropagation();findGyms()"><div class="tt-action-btn">\u{1F4CD}</div><div class="tt-action-label">Near Me</div></div>';
-              cardHtml+='<div class="tt-action" onclick="event.stopPropagation();window._openSearchOverlay()"><div class="tt-action-btn">\u{1F50D}</div><div class="tt-action-label">Search</div></div>';
-              cardHtml+='<div class="tt-action" onclick="event.stopPropagation();showCalendarPicker(\''+c.id+'\')"><div class="tt-action-btn">\u{1F4C5}</div><div class="tt-action-label">'+_cd2+'</div></div>';
-              cardHtml+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'passes\')"><div class="tt-action-btn">\u{1F39F}\uFE0F</div><div class="tt-action-label">'+_psl2+'</div></div>';
-              cardHtml+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'payment\')"><div class="tt-action-btn">\u{1F4B3}</div><div class="tt-action-label">'+_pl2+'</div></div>';
-              cardHtml+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'hours\')"><div class="tt-action-btn">\u{1F550}</div><div class="tt-action-label" style="color:'+_hc2+'">'+_hl2+'</div></div>';
-              cardHtml+='<div class="tt-action" onclick="event.stopPropagation();openGymDirectOverlay(\''+c.id+'\',true,\'reviews\')"><div class="tt-action-btn">\u2B50</div><div class="tt-action-label">'+_rl2+'</div></div>';
-              /* Share/Affiliate link button (replaced Save — user request) */
-              cardHtml+='<div class="tt-action" onclick="event.stopPropagation();window._sgShareGymLink(\''+c.id+'\',\''+c.name.replace(/'/g,"\\'")+'\')"><div class="tt-action-btn">🔗</div><div class="tt-action-label">Share</div></div>';
-              /* Deep affiliate share button (user request: separate from plain Share) */
-              cardHtml+='<div class="tt-action" onclick="event.stopPropagation();window._sgShareAffiliateLink(\''+c.id+'\',\''+c.name.replace(/'/g,"\\'")+'\')"><div class="tt-action-btn">💰</div><div class="tt-action-label">Earn</div></div>';
-              cardHtml+='</div>';
+              cardHtml+=_sgBookRailHtml(c);
               /* Bottom info — match initial cards */
               cardHtml+='<div class="tt-info">';
               cardHtml+='<div style="margin-bottom:6px"><div class="tt-logo" style="position:relative;background:linear-gradient(135deg,'+logoGrad+')">'+logoEmoji+'</div></div>';
@@ -12171,7 +12168,7 @@ function _sgFallback(msg){
   if(m.indexOf('workout')>=0||m.indexOf('plan')>=0||m.indexOf('exercise')>=0)
     return '💪 Here\'s a solid **Push/Pull/Legs** split:\n\n**Day 1 — Push:**\n• Bench Press: 4×8\n• Overhead Press: 3×10\n• Incline DB Press: 3×12\n• Lateral Raises: 3×15\n• Tricep Pushdown: 3×12\n\n**Day 2 — Pull:**\n• Deadlift: 4×5\n• Barbell Row: 4×8\n• Pull-ups: 3×max\n• Face Pulls: 3×15\n\n**Day 3 — Legs:**\n• Squat: 4×6\n• Romanian DL: 3×10\n• Leg Press: 3×12\n• Walking Lunges: 3×10/side\n\nRest 2-3 min between heavy sets. Progressive overload weekly! 🔥';
   if(m.indexOf('gym')>=0||m.indexOf('find')>=0||m.indexOf('near')>=0||m.indexOf('book')>=0)
-    return '🏋️ To find gyms near you:\n\n1. Tap the **Book** tab\n2. Enable location or search by city\n3. Filter by amenities & price\n4. Book a day pass from '+(window.sgPriceDisplay?sgPriceDisplay('day'):'£4.49')+'\n5. Get your QR code → scan at entry\n\n📍 We have *1.2M+ gyms* across 190+ countries. No membership needed — just book and go!';
+    return '🏋️ To find gyms near you:\n\n1. Tap the **Book** tab\n2. Enable location or search by city\n3. Filter by amenities & price\n4. Book a day pass from '+(window.sgPriceDisplay?sgPriceDisplay('day'):'the gym\'s day rate')+'\n5. Get your QR code → scan at entry\n\n📍 We have *1.2M+ gyms* across 190+ countries. No membership needed — just book and go!';
   if(m.indexOf('meal')>=0||m.indexOf('food')>=0||m.indexOf('protein')>=0||m.indexOf('nutrition')>=0||m.indexOf('eat')>=0)
     return '🥗 **High-protein meal plan:**\n\n**Breakfast:**\n• 4 eggs + 2 toast + avocado (35g protein)\n\n**Lunch:**\n• Chicken breast 200g + rice + broccoli (50g protein)\n\n**Dinner:**\n• Salmon 200g + sweet potato + salad (45g protein)\n\n**Snacks:**\n• Greek yogurt + berries (20g)\n• Protein shake + banana (25g)\n\n**Total: ~175g protein | ~2,350 cals**\n\nAdjust based on your goals! 📊';
   if(m.indexOf('recover')>=0||m.indexOf('rest')>=0||m.indexOf('sleep')>=0||m.indexOf('stretch')>=0)
@@ -14143,7 +14140,7 @@ function GroupBookingPage(){
       </div>
       <div style="display:flex;justify-content:space-between;padding:12px 0;border-top:1px solid rgba(255,255,255,.06)">
         <span style="color:rgba(255,255,255,.5);font-size:14px">Total</span>
-        <span id="gb-total" style="color:#fff;font-size:18px;font-weight:800">${(typeof sgPrice==='function'&&sgPrice('day'))?sgPrice('day').symbol+(sgPrice('day').amount*2).toFixed(2):'£8.98'}</span>
+        <span id="gb-total" style="color:#fff;font-size:18px;font-weight:800">${(typeof sgPrice==='function'&&sgPrice('day'))?sgPrice('day').symbol+(sgPrice('day').amount*2).toFixed(2):'…'}</span>
       </div>
     </div>
 
@@ -14927,7 +14924,7 @@ function PartnerFullPage(){
 
       <!-- ═══ RIGHT SIDE ACTION BUTTONS (same .tt-actions as Book tab) ═══ -->
       <div class="tt-actions">
-        <div class="tt-action" onclick="event.stopPropagation();window._openSearchOverlay?window._openSearchOverlay():navigate('/list-your-gym')"><div class="tt-action-btn">\ud83d\udd0d</div><div class="tt-action-label">Search</div></div>
+        <div class="tt-action" onclick="event.stopPropagation();window._peOpenClaimSearch?window._peOpenClaimSearch():(window._openSearchOverlay?window._openSearchOverlay():navigate('/list-your-gym'))"><div class="tt-action-btn">\ud83d\udd0d</div><div class="tt-action-label">Search</div></div>
         <div class="tt-action" onclick="event.stopPropagation();window._sgB3VerifyOwnership?window._sgB3VerifyOwnership(window._partnerGymId):sgToast('Verification unavailable','error')"><div class="tt-action-btn">\ud83d\udee1\ufe0f</div><div class="tt-action-label">Verify</div></div>
         <div class="tt-action" onclick="event.stopPropagation();_partnerConnectSeam()"><div class="tt-action-btn">\ud83d\udd12</div><div class="tt-action-label">Locks</div></div>
         <div class="tt-action" onclick="event.stopPropagation();_partnerRailToggleActive()"><div class="tt-action-btn" id="partner-rail-toggle-icon">${isActive?'\ud83d\udfe2':'\ud83d\udd34'}</div><div class="tt-action-label" id="partner-rail-toggle-label">${isActive?'On':'Off'}</div></div>
@@ -19647,9 +19644,9 @@ window.sgOpenPassOptions = function(gymId) {
     + '<div style="width:40px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;margin:0 auto 20px"></div>'
     + '<h3 style="color:#fff;font-size:18px;font-weight:800;margin-bottom:20px">🎫 Pass Options</h3>'
     // Solo
-    + '<div onclick="document.getElementById(\'sg-pass-options\').remove();sgBookGym&&sgBookGym()" style="display:flex;align-items:center;gap:14px;padding:16px;background:rgba(255,109,0,.08);border:1px solid rgba(255,109,0,.15);border-radius:14px;margin-bottom:10px;cursor:pointer"><span style="font-size:28px">🏃</span><div style="flex:1"><p style="color:#fff;font-weight:700;font-size:15px;margin:0">Solo Day Pass</p><p style="color:rgba(255,255,255,.4);font-size:12px;margin:2px 0 0">Just for you · From '+(window.sgPriceDisplay?sgPriceDisplay('day'):'£4.49')+'</p></div><span style="color:#FF6D00;font-weight:700">→</span></div>'
+    + '<div onclick="document.getElementById(\'sg-pass-options\').remove();sgBookGym&&sgBookGym()" style="display:flex;align-items:center;gap:14px;padding:16px;background:rgba(255,109,0,.08);border:1px solid rgba(255,109,0,.15);border-radius:14px;margin-bottom:10px;cursor:pointer"><span style="font-size:28px">🏃</span><div style="flex:1"><p style="color:#fff;font-weight:700;font-size:15px;margin:0">Solo Day Pass</p><p style="color:rgba(255,255,255,.4);font-size:12px;margin:2px 0 0">Just for you · From '+(window.sgPriceDisplay?sgPriceDisplay('day'):'the gym\'s day rate')+'</p></div><span style="color:#FF6D00;font-weight:700">→</span></div>'
     // Couple
-    + '<div onclick="sgToast(\'💑 Couple pass: 15% off for 2!\',\'success\',3000);document.getElementById(\'sg-pass-options\').remove()" style="display:flex;align-items:center;gap:14px;padding:16px;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.1);border-radius:14px;margin-bottom:10px;cursor:pointer"><span style="font-size:28px">💑</span><div style="flex:1"><p style="color:#fff;font-weight:700;font-size:15px;margin:0">Couple Pass</p><p style="color:rgba(255,255,255,.4);font-size:12px;margin:2px 0 0">Save 15% for two · ~£7.63 total</p></div><span style="color:#f87171;font-weight:700">→</span></div>'
+    + '<div onclick="sgToast(\'💑 Couple pass: 15% off for 2!\',\'success\',3000);document.getElementById(\'sg-pass-options\').remove()" style="display:flex;align-items:center;gap:14px;padding:16px;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.1);border-radius:14px;margin-bottom:10px;cursor:pointer"><span style="font-size:28px">💑</span><div style="flex:1"><p style="color:#fff;font-weight:700;font-size:15px;margin:0">Couple Pass</p><p style="color:rgba(255,255,255,.4);font-size:12px;margin:2px 0 0">Save 15% for two</p></div><span style="color:#f87171;font-weight:700">→</span></div>'
     // Group
     + '<div onclick="sgToast(\'👥 Group pass: up to 20% off!\',\'success\',3000);document.getElementById(\'sg-pass-options\').remove()" style="display:flex;align-items:center;gap:14px;padding:16px;background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.1);border-radius:14px;margin-bottom:10px;cursor:pointer"><span style="font-size:28px">👥</span><div style="flex:1"><p style="color:#fff;font-weight:700;font-size:15px;margin:0">Group Pass (3-10)</p><p style="color:rgba(255,255,255,.4);font-size:12px;margin:2px 0 0">10-20% off per person</p></div><span style="color:#3b82f6;font-weight:700">→</span></div>'
     // Gift
