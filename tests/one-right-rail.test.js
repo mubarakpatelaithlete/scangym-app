@@ -10,6 +10,11 @@
  *
  * Nothing was wrong with any single file: four of them each decided where a
  * right rail belongs. These tests keep that decision in one place.
+ *
+ * The owner has since chosen a different shape — one horizontal row that
+ * side-scrolls, above the bottom navigation — so the geometry assertions now
+ * describe that row. What they protect is unchanged: one owner of the geometry,
+ * clear of the bottom furniture, nothing silently cut off, one row at a time.
  */
 const { test } = require('node:test');
 const assert = require('node:assert');
@@ -32,22 +37,24 @@ test('rails.css is loaded, and after the stylesheets it has to beat', () => {
   assert.ok(js > index.indexOf('sg-rail-ui.js'), 'rails.js must run after the rail enhancer');
 });
 
-test('the bottom furniture is reserved, so no rail can hide behind it', () => {
-  assert.match(railsCss, /--sg-rail-bottom-reserve:/, 'no bottom reserve is defined');
-  assert.match(railsCss, /env\(safe-area-inset-bottom/, 'the reserve ignores the home-bar inset');
-  for (const sel of ['#sg-reels-rail', '#sg-sv-rail.sv-float', '#sg-profile-rail']) {
+test('the row clears the bottom furniture and every rail reads it from here', () => {
+  assert.match(railsCss, /--sg-band-bottom:\s*calc\((\d+)px/, 'the row has no defined height above the bottom');
+  assert.match(railsCss, /env\(safe-area-inset-bottom/, 'the row ignores the home-bar inset');
+  const clearance = Number(railsCss.match(/--sg-band-bottom:\s*calc\((\d+)px/)[1]);
+  // tab bar 56 + orange CTA 52 + Talk pill 46 + its 12px gap = 166px, measured
+  // on production. Anything less puts the row back under the pill, which is the
+  // bug this file exists for.
+  assert.ok(clearance >= 166, `the row sits ${clearance}px up — the Talk pill starts at 166px`);
+  for (const sel of ['#sg-reels-rail', '#sg-sv-rail.sv-float', '#sg-profile-rail', '.tt-actions']) {
     assert.ok(railsCss.includes(sel), `${sel} does not read its geometry from rails.css`);
   }
-  assert.match(railsCss, /bottom:\s*var\(--sg-rail-bottom-reserve\)/,
-    'floating rails are not bounded by the reserve');
-  // A card rail is positioned inside its card but covered by screen-fixed
-  // furniture, so it needs its own reserve — the first fix bounded it to the
-  // card and its last buttons went straight back under the Talk pill.
-  assert.match(railsCss, /--sg-rail-card-bottom-reserve:\s*\d+px/,
-    'card rails have no bottom reserve of their own');
+  assert.match(railsCss, /bottom:\s*var\(--sg-band-bottom\)/, 'a rail is not bounded by the row position');
   const caps = railsCss.match(/max-height:[^;]+/g) || [];
-  assert.ok(caps.length >= 2 && caps.every((c) => c.includes('card-bottom-reserve') || c.includes('none')),
-    `a rail height is capped without the reserve: ${caps.join(' | ')}`);
+  assert.ok(caps.length > 0 && caps.every((c) => c.includes('--sg-band-height')),
+    `a row height is set without the band variable: ${caps.join(' | ')}`);
+  // Sideways scrolling replaces hiding: "More" must not swallow buttons any more.
+  assert.match(railsCss, /\.sgi-x\s*\{\s*display:\s*flex/, 'buttons are still hidden behind "More"');
+  assert.match(railsCss, /\.sgi-more\s*\{\s*display:\s*none/, 'the redundant "More" button is still shown');
 });
 
 test('no other file sets right-rail position any more', () => {
@@ -81,9 +88,19 @@ test('the arbiter picks one winner and cleans up cards that left', () => {
     'the observer has no threshold list, so ratios are meaningless');
 });
 
-test('a rail that had to scroll says so instead of cutting buttons off', () => {
-  assert.match(railsJs, /scrollHeight - rail\.clientHeight/, 'overflow is never detected');
-  assert.ok(railsCss.includes('.sg-rail-scrollable::after'), 'no affordance for a scrolled rail');
+test('a row with more buttons to the right says so, and stops saying it at the end', () => {
+  assert.match(railsJs, /scrollWidth - row\.clientWidth - row\.scrollLeft/,
+    'the indication is still measured vertically, or ignores how far the row is scrolled');
+  assert.match(railsJs, /addEventListener\('scroll'[\s\S]{0,80}markRow/,
+    'the arrow never updates while the row is scrolled, so it points at nothing at the end');
+  assert.match(railsJs, /#sg-reels-rail[\s\S]{0,80}#sg-profile-rail/,
+    'the floating rows do not get the same indication as the card rows');
+  assert.match(railsCss, /\.sg-rail-scrollable::after[\s\S]{0,200}content:\s*'›'/,
+    'there is no visible affordance for a row that scrolls');
+  assert.match(railsCss, /mask-image:\s*linear-gradient\(to right/,
+    'the right edge is not faded, so a cut-off button looks like a whole one');
+  assert.match(railsCss, /:not\(\.sg-rail-scrollable\)[\s\S]{0,220}mask-image:\s*none/,
+    'a row that fits is still faded and arrowed');
 });
 
 test('one brand mark per tab: no per-card copies', () => {

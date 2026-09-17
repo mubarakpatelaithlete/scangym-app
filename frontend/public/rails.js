@@ -60,11 +60,26 @@
     markScroll(winner);
   }, { threshold: [0, 0.25, 0.5, 0.75, 1] });
 
-  /** A rail taller than its box gets a chevron, so nothing vanishes silently. */
+  /* The rails are a horizontal row now (see rails.css), so "there is more" is a
+     question about width, and it changes as the row is scrolled: the arrow has
+     to disappear at the end, or it points at nothing. */
+  var ROWS = '.tt-actions, #sg-reels-rail, #sg-sv-rail.sv-float, #sg-profile-rail';
+  function markRow(row) {
+    if (!row) return;
+    var more = row.scrollWidth - row.clientWidth - row.scrollLeft > 8;
+    if (more !== row.classList.contains(SCROLLABLE)) row.classList.toggle(SCROLLABLE, more);
+    if (!row.getAttribute('data-sg-scroll-watch')) {
+      row.setAttribute('data-sg-scroll-watch', '1');
+      row.addEventListener('scroll', function () { markRow(row); }, { passive: true });
+    }
+  }
   function markScroll(card) {
-    var rail = card.querySelector('.tt-actions');
-    if (!rail) return;
-    rail.classList.toggle(SCROLLABLE, rail.scrollHeight - rail.clientHeight > 4);
+    markRow(card.querySelector('.tt-actions'));
+  }
+  /** Every row on screen, card or floating. */
+  function markAllRows() {
+    var rows = document.querySelectorAll(ROWS);
+    for (var i = 0; i < rows.length; i++) markRow(rows[i]);
   }
 
   var known = [];
@@ -81,15 +96,14 @@
     }
     var live = document.querySelector('.tt-card.' + LIVE);
     if (live) markScroll(live);
+    markAllRows();
   }
 
   function init() {
     scan();
     setInterval(scan, 800); // same heartbeat the other rail scripts use
-    window.addEventListener('resize', function () {
-      var live = document.querySelector('.tt-card.' + LIVE);
-      if (live) markScroll(live);
-    });
+    window.addEventListener('resize', markAllRows);
+    document.addEventListener('sg:tabchange', function () { requestAnimationFrame(markAllRows); });
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
