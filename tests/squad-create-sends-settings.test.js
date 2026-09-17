@@ -195,9 +195,22 @@ test('changing a setting changes what is sent', async () => {
 });
 
 test('a mode the server refused cannot generate anything', async () => {
+  // Behaviour change (refactor/one-rail-one-truth): a mode the server reports
+  // as `not_built` is no longer shown in the rail at all, so it can't be
+  // reached by tapping. The invariant below is unchanged — reached any other
+  // way (the voice entry point), it still refuses to generate.
   const sb = boot(VIDEO_LIVE);
   for (let i = 0; i < 6; i++) await tick();
-  const sheet = await openMode(sb, 'text');
+
+  const rail = sb.document.getElementById('sg-sv-rail');
+  assert.ok(rail, 'the Create rail was never rendered');
+  assert.equal(rail.querySelector('.sg-sv-btn[data-mode="text"]'), null,
+    'an unbuilt mode is still offered as a button');
+
+  sb.window.sgSquadCreate.open('text');
+  for (let i = 0; i < 6; i++) await tick();
+  const sheet = sb.document.getElementById('sg-sv-sheet');
+  assert.ok(sheet, 'the sheet did not open via the voice entry point');
 
   const gen = sheet.querySelector('#sv-gen');
   assert.equal(gen.disabled, true, 'an unbuilt mode offered a working Generate');

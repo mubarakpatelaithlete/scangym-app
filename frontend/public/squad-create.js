@@ -277,6 +277,20 @@
     return !!(s && s.configured);
   }
 
+  /* A control that apologises is still a control. Modes the server reports as
+   * `not_built` have no backend at all and never will on this deployment, so
+   * they are hidden from the rail and the switcher instead of shown locked.
+   * Before /modes lands (modeStatus null) nothing is hidden — a mode is only
+   * removed on server truth, never guessed. */
+  function isHidden(mode) {
+    var s = modeStatus && modeStatus[mode.key];
+    return !!(s && !s.configured && s.reason === 'not_built');
+  }
+
+  function visibleModes() {
+    return MODES.filter(function (m) { return !isHidden(m); });
+  }
+
   function reasonText(mode) {
     var s = modeStatus && modeStatus[mode.key];
     var why = s && s.reason;
@@ -300,7 +314,7 @@
 
     // mode switcher — every mode reachable from every sheet
     var seg = el('div', 'sv-seg');
-    MODES.forEach(function (m) {
+    visibleModes().forEach(function (m) {
       var d = el('div', m.key === mode.key ? 'on' : '', m.icon + ' ' + m.label);
       if (m.key !== mode.key) d.addEventListener('click', function () { openSheet(m); });
       seg.appendChild(d);
@@ -943,7 +957,7 @@
     var r = el('div');
     r.id = RAIL_ID;
     if (floating) r.classList.add('sv-float');
-    MODES.forEach(function (m) { r.appendChild(makeBtn(m)); });
+    visibleModes().forEach(function (m) { r.appendChild(makeBtn(m)); });
     return r;
   }
 
@@ -954,6 +968,7 @@
     MODES.forEach(function (m) {
       var b = r.querySelector('.' + BTN_ID + '[data-mode="' + m.key + '"]');
       if (!b) return;
+      if (isHidden(m)) { b.remove(); return; }
       var live = isConfigured(m);
       b.classList.toggle('sv-off', !live);
       var dot = b.querySelector('.sv-dot');
