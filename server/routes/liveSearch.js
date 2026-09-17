@@ -785,7 +785,11 @@ router.get('/place/:placeId', optionalAuth, async (req, res) => {
 
     let dbGym = null;
     try {
-      const dbResult = await pool.query('SELECT id, day_pass_price, hourly_rate, is_claimed, is_accepting_bookings FROM gyms WHERE place_id = $1', [placeId]);
+      /* `claimed_by` is the column the claim route writes and every partner
+         query filters on; `is_claimed` is a legacy flag nothing sets. Reading
+         only the flag made a claimed gym look free: the sheet said "unclaimed"
+         while POST /api/gym-partner/claim answered 409 "already claimed". */
+      const dbResult = await pool.query('SELECT id, day_pass_price, hourly_rate, is_claimed, claimed_by, is_accepting_bookings FROM gyms WHERE place_id = $1', [placeId]);
       if (dbResult.rows.length > 0) dbGym = dbResult.rows[0];
     } catch (e) {
       console.warn('[LiveSearch] Failed to fetch gym from DB by place_id:', e.message);
@@ -831,7 +835,7 @@ router.get('/place/:placeId', optionalAuth, async (req, res) => {
         businessStatus: p.business_status || 'OPERATIONAL',
         types: p.types || [],
         priceLevel: p.price_level ?? null,
-        isClaimed: dbGym?.is_claimed || false,
+        isClaimed: !!(dbGym?.claimed_by || dbGym?.is_claimed),
         is24Hours: detect24Hours(p),
         isSelfService: detectSelfService(p),
         ownerIsOpen: dbGym?.is_accepting_bookings ?? null,

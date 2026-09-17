@@ -378,7 +378,16 @@ window._peClaimSearchInput=function(q){
   box.innerHTML='<p style="color:rgba(255,255,255,.3);font-size:12px;text-align:center;padding:10px">Searching…</p>';
   _peClaimSearchTimer=setTimeout(async function(){
     try{
-      var r=await fetch('/api/live/search?q='+encodeURIComponent(q));
+      /* Send where the owner is. Without a location bias Google answers a bare
+         name like "maa chikn" with big-city gyms hundreds of miles away, so an
+         owner outside the default region can never find their own venue. */
+      var _q='/api/live/search?q='+encodeURIComponent(q);
+      try{
+        var _lat=(typeof state!=='undefined'&&state.userLat)||(window.__geoHint&&window.__geoHint.lat);
+        var _lng=(typeof state!=='undefined'&&state.userLng)||(window.__geoHint&&window.__geoHint.lng);
+        if(_lat&&_lng)_q+='&lat='+encodeURIComponent(_lat)+'&lng='+encodeURIComponent(_lng);
+      }catch(e){}
+      var r=await fetch(_q);
       if(!r.ok)throw new Error('search '+r.status);
       var d=await r.json();
       var gyms=(d.gyms||[]).slice(0,8);
