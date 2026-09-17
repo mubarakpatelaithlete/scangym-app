@@ -29,4 +29,30 @@ function requireCreator(req, res, next) {
   });
 }
 
-module.exports = { requireCreator };
+/**
+ * Signed in *and* in good standing to pay for it.
+ *
+ * Create is postpaid: nothing is prepaid, so the render we are about to buy is
+ * credit we extend. Two conditions beyond a session, both from lib/gen-billing:
+ * a saved card we may charge, and an unpaid balance under this creator's limit.
+ * A suspended account is refused here too, which is what makes suspension mean
+ * anything.
+ *
+ * Reads stay open, as above: prices, templates and the catalogue are how a
+ * visitor decides whether to sign up at all.
+ */
+function requireBillable(req, res, next) {
+  requireCreator(req, res, async () => {
+    try {
+      const verdict = await require('./gen-billing').gate(req);
+      if (verdict) return res.status(verdict.status).json(verdict.body);
+    } catch (e) {
+      /* A billing check that throws must not take Create down with it: the
+         daily budget in lib/gen-budget.js still caps the exposure. */
+      console.error('[SquadBilling] gate error, allowing generation:', e.message);
+    }
+    return next();
+  });
+}
+
+module.exports = { requireCreator, requireBillable };
