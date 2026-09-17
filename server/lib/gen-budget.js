@@ -150,13 +150,19 @@ async function budgetFor(req, db = pool) {
   const dailyUsd = round(Math.min(MAX_DAILY_USD, floorFor(tier) + PER_CONVERSION_USD * conversions));
   const spentUsd = spent || 0;
 
+  const remainingUsd = round(Math.max(0, dailyUsd - spentUsd));
   return {
     signedIn: true,
     tier,
     conversions,
     dailyUsd,
     spentUsd,
-    remainingUsd: round(Math.max(0, dailyUsd - spentUsd)),
+    remainingUsd,
+    /* The same allowance in the currency and at the prices the creator sees, so
+       "£1.10 a clip" and "your allowance" are comparable numbers rather than one
+       retail and one wholesale. */
+    daily: money(dailyUsd),
+    remaining: money(remainingUsd),
     degraded,
   };
 }
@@ -207,9 +213,17 @@ function verdict(budget, estimateUsd) {
   return null;
 }
 
+/**
+ * A number a creator can act on: the *price*, not our cost.
+ *
+ * This used to be `usd * 0.79`, i.e. the supplier's charge to us, printed in a
+ * refusal message to the customer. Budgets are still reckoned in the dollars we
+ * are billed in — that is what protects the business — but anything a creator
+ * reads has to be what they would pay. @see lib/gen-pricing.js
+ */
 function money(usd) {
-  const gbp = usd * 0.79; // the sheet prices in pounds; see squad-create.js
-  return gbp < 1 ? `${Math.round(gbp * 100)}p` : `£${gbp.toFixed(2)}`;
+  const priced = require('./gen-pricing').retail(usd);
+  return priced ? require('./gen-pricing').money(priced.grossPence) : 'nothing';
 }
 
 /**
@@ -220,10 +234,24 @@ function money(usd) {
  * one tells them exactly what climbing a tier buys.
  */
 function annotate(catalogue, budget) {
+  const pricing = require('./gen-pricing');
   return (catalogue || []).map((m) => {
     const priced = m.estimateUsd != null && m.estimateUsd > 0;
     const affordable = !priced || budget.degraded || (budget.signedIn && m.estimateUsd <= budget.remainingUsd);
-    return { ...m, affordable, lockedReason: affordable ? null : (budget.signedIn ? 'budget' : 'sign_in') };
+    /* The row leaves the server with a retail price and without our cost. The
+       sheet used to receive estimateUsd and render it as the price (`* 0.79`),
+       which quoted the creator our wholesale rate — a price at which ScanGym
+       earns nothing, and a leak of supplier pricing into a browser. */
+    const retail = pricing.retail(m.estimateUsd);
+    const { estimateUsd, ...row } = m;
+    return {
+      ...row,
+      pricePence: retail ? retail.grossPence : null,
+      price: retail ? pricing.money(retail.grossPence) : null,
+      vatIncluded: retail ? pricing.vatRegistered() : false,
+      affordable,
+      lockedReason: affordable ? null : (budget.signedIn ? 'budget' : 'sign_in'),
+    };
   });
 }
 

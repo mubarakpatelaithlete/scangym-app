@@ -47,8 +47,12 @@ test('every Create /generate is behind the login gate', () => {
     const layer = router.stack.find((l) => l.route && l.route.path === '/generate' && l.route.methods.post);
     assert.ok(layer, `${name} has no POST /generate`);
     const names = layer.route.stack.map((h) => h.handle.name);
+    /* requireBillable is requireCreator plus the postpaid checks (a saved card,
+       an unpaid balance under the cap, not suspended) — Create bills after the
+       render, so the login gate alone is no longer enough.
+       @see server/lib/gen-guard.js, server/lib/gen-billing.js */
     assert.ok(
-      names.includes('requireCreator'),
+      names.includes('requireCreator') || names.includes('requireBillable'),
       `${name} /generate must require a signed-in creator — a signed-out caller rendered a $3.78 clip on 2026-09-17`,
     );
   }

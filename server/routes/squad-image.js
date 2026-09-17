@@ -23,7 +23,7 @@ const express = require('express');
 const crypto = require('crypto');
 const rateLimit = require('express-rate-limit');
 const { optionalAuth } = require('../middleware/auth');
-const { requireCreator } = require('../lib/gen-guard');
+const { requireBillable } = require('../lib/gen-guard');
 const spend = require('../lib/gen-budget');
 const eta = require('../lib/gen-eta');
 const models = require('../lib/gen-models');
@@ -146,7 +146,7 @@ router.get('/health', optionalAuth, async (req, res) => {
 // ─── POST /generate — start an image job ──────────────────────────────────
 // express.json() per route: the app-level parser in server.js runs for an
 // allowlist of prefixes only, and without this req.body is undefined.
-router.post('/generate', requireCreator, express.json({ limit: '64kb' }), limiter, async (req, res) => {
+router.post('/generate', requireBillable, express.json({ limit: '64kb' }), limiter, async (req, res) => {
   if (!provider.configured('fal')) {
     return res.status(503).json({ error: 'Image generation is not configured yet.' });
   }

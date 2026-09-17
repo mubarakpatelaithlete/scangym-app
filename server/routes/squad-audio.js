@@ -26,7 +26,7 @@ const express = require('express');
 const crypto = require('crypto');
 const rateLimit = require('express-rate-limit');
 const { optionalAuth } = require('../middleware/auth');
-const { requireCreator } = require('../lib/gen-guard');
+const { requireBillable } = require('../lib/gen-guard');
 const spend = require('../lib/gen-budget');
 const eta = require('../lib/gen-eta');
 const models = require('../lib/gen-models');
@@ -135,7 +135,7 @@ function reachable(p, { exhausted }) {
 }
 
 // ─── POST /generate — speak the script, inline ────────────────────────────
-router.post('/generate', requireCreator, express.json({ limit: '64kb' }), limiter, async (req, res) => {
+router.post('/generate', requireBillable, express.json({ limit: '64kb' }), limiter, async (req, res) => {
   if (!provider.configured('elevenlabs') && !provider.configured('fal')) {
     return res.status(503).json({ error: 'Voiceover is not configured yet.' });
   }

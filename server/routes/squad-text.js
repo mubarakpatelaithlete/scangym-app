@@ -27,7 +27,7 @@ const llm = require('../lib/llm');
 const models = require('../lib/gen-models');
 const genProvider = require('../lib/gen-provider');
 const { optionalAuth } = require('../middleware/auth');
-const { requireCreator } = require('../lib/gen-guard');
+const { requireBillable } = require('../lib/gen-guard');
 const spend = require('../lib/gen-budget');
 const jobs = require('../lib/gen-jobs');
 const crypto = require('crypto');
@@ -212,7 +212,7 @@ function pickNamedModel(body) {
   return row;
 }
 
-router.post('/generate', textLimiter, requireCreator, express.json(), async (req, res) => {
+router.post('/generate', textLimiter, requireBillable, express.json(), async (req, res) => {
   const { prompt } = clean(req.body);
   if (!prompt) return res.status(400).json({ error: 'Describe the post first.' });
   if (!llm.configured() && !pickNamedModel(req.body)) {

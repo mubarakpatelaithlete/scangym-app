@@ -73,10 +73,17 @@ async function quotaFor(req, kind) {
 /** Best-effort persistence: never let a database problem fail a generation. */
 async function recordJob({ id, req, kind, prompt, params, op, model, costUsd }) {
   try {
+    /* Price the row as well as cost it. Create is postpaid, so the invoice is
+       built from these rows the next morning — and the price has to be the one
+       quoted at submit time, not one recomputed later against a multiplier or
+       an FX rate that has since moved. A render we could not price (the house
+       writer, a free path) stores nulls and is simply not billed. */
+    const retail = require('./gen-pricing').retail(costUsd);
     await pool.query(
       `INSERT INTO squad_video_jobs
-         (id, user_id, op, prompt, params, status, kind, provider, model, cost_usd)
-       VALUES ($1, $2, $3, $4, $5::jsonb, 'running', $6, $7, $8, $9)
+         (id, user_id, op, prompt, params, status, kind, provider, model, cost_usd,
+          retail_net_pence, retail_vat_pence, retail_gross_pence)
+       VALUES ($1, $2, $3, $4, $5::jsonb, 'running', $6, $7, $8, $9, $10, $11, $12)
        ON CONFLICT (id) DO NOTHING`,
       [
         id,
@@ -88,6 +95,9 @@ async function recordJob({ id, req, kind, prompt, params, op, model, costUsd }) 
         model?.provider || null,
         model?.id || null,
         costUsd ?? null,
+        retail ? retail.netPence : null,
+        retail ? retail.vatPence : null,
+        retail ? retail.grossPence : null,
       ],
     );
   } catch (e) {

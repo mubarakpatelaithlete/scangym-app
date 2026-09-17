@@ -148,7 +148,11 @@ test('text health offers the picker only when there is a key behind it', async (
     const withKey = await call();
     assert.ok(withKey.models.length >= 5);
     assert.ok(!('providerModel' in withKey.models[0]), 'vendor slugs stay server-side');
-    assert.ok(withKey.models.every((m) => m.estimateUsd != null), 'a price is quoted before spending');
+    /* The quote is the retail price now, not our cost: the row leaves the
+       server priced (lib/gen-pricing.js) and without estimateUsd, so a creator
+       is never shown what we pay. */
+    assert.ok(!('estimateUsd' in withKey.models[0]), 'supplier cost stays server-side');
+    assert.ok(withKey.models.every((m) => m.pricePence != null), 'a price is quoted before spending');
   } finally {
     if (saved === undefined) delete process.env.OPENROUTER_API_KEY;
     else process.env.OPENROUTER_API_KEY = saved;
