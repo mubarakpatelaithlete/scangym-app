@@ -97,3 +97,23 @@
   text-shadow: 0 1px 3px rgba(0, 0, 0, .8);
   pointer-events: none;
 }
+
+/* ── No half-built rail on screen ──────────────────────────────────────────
+   A gym card renders with the app's raw rail: emoji icons, every item
+   expanded. sg-rail-ui.js turns that into the white 4 + More rail and stamps
+   it `data-sgi`. Until it does, the raw version is a second, different-looking
+   column of the same buttons — what the owner saw as "white button and emoji
+   button on the right side".
+
+   So: while sg-rail-ui.js is confirmed alive (`sg-rail-ui-ready` on <html>,
+   set only after it has decorated a rail), an undecorated rail stays
+   invisible. It is still laid out and measurable — only unpainted — so nothing
+   jumps when it is decorated a frame later. If that script never runs, this
+   rule never applies and the raw rail shows as before. */
+.sg-rail-ui-ready .tt-actions:not([data-sgi]) {
+  opacity: 0;
+  pointer-events: none;
+}
+.tt-actions[data-sgi] {
+  transition: opacity .12s linear;
+}

@@ -995,8 +995,42 @@ return tick;
 var ENHANCERS=[uspStrip,tabsV4,squadPartnerPolish,reelsRail,railIcons,bookSummary,buttonCleanup];
 function tick(){
   for(var i=0;i<ENHANCERS.length;i++){try{ENHANCERS[i]();}catch(e){}}
+  /* Tell the stylesheet this script is alive and has decorated at least one
+     rail. rails.css keeps an *undecorated* rail invisible only while this class
+     is present, so if this file ever fails to load nothing is hidden. */
+  if(!READY&&document.querySelector('.tt-actions[data-sgi]')){
+    READY=true;document.documentElement.classList.add('sg-rail-ui-ready');
+  }
 }
-function init(){tick();setInterval(tick,600);}
+var READY=false;
+/* The 600ms heartbeat below was the whole bug behind "double buttons, one white
+   one emoji": a freshly rendered gym card carries the app's raw emoji rail with
+   every item expanded, and it stayed that way for up to 600ms until the next
+   tick swapped in the white icons and collapsed it to 4 + More. During a card
+   swipe you therefore saw the decorated rail and an undecorated one together.
+   Decorating in the same frame the card appears removes the window entirely;
+   the interval stays as a safety net. */
+function watch(){
+  if(typeof MutationObserver==='undefined')return;
+  var queued=false;
+  new MutationObserver(function(){
+    /* Only the rail decorator runs here, never the full tick: several other
+       enhancers write to the DOM on every pass (hiding "Earn", rewriting the
+       booking summary), which would re-trigger this observer every frame. The
+       decorator is guarded by data-sgi, so it is a no-op once a rail is done
+       and cannot feed itself. */
+    if(queued||!document.querySelector('.tt-actions:not([data-sgi])'))return;
+    queued=true;
+    requestAnimationFrame(function(){
+      queued=false;
+      try{railIcons();}catch(e){}
+      if(!READY&&document.querySelector('.tt-actions[data-sgi]')){
+        READY=true;document.documentElement.classList.add('sg-rail-ui-ready');
+      }
+    });
+  }).observe(document.body,{childList:true,subtree:true});
+}
+function init(){tick();watch();setInterval(tick,600);}
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',init);}
 else{init();}
 })();
