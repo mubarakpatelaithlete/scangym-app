@@ -1023,7 +1023,29 @@
        later, which showed Create buttons on top of another tab. */
     document.addEventListener('sg:tabchange', function () { sync(); requestAnimationFrame(sync); });
     sync();
-    loadModes().then(paintDots);
+    loadModes().then(paintDots).then(openFromUrl);
+  }
+
+  /* Arriving from a reel's "Use this prompt" button: /creator?prompt=<text>.
+     The reels page navigates rather than posting a message, because it runs both
+     inside the app's iframe and standalone. Waits for loadModes() so the sheet
+     knows which modes exist, strips the parameter from the URL afterwards (a
+     refresh should not reopen the sheet), and opens Video — the mode a reel came
+     from. An empty prompt still opens Create, per the owner's call. */
+  function openFromUrl() {
+    var p;
+    try { p = new URLSearchParams(location.search).get('prompt'); } catch (e) { return; }
+    if (p === null) return;
+    if (!/^\/creator/.test(location.pathname)) return;
+    try {
+      var clean = location.pathname + location.hash;
+      history.replaceState(null, '', clean);
+    } catch (e) { /* keep going: the sheet matters more than the URL */ }
+    var open = function () {
+      if (window.sgSquadCreate && window.sgSquadCreate.open('video', String(p).slice(0, 600))) return;
+      setTimeout(open, 300);
+    };
+    setTimeout(open, 150);
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

@@ -105,6 +105,34 @@
         font:500 11px/1.3 system-ui,-apple-system,sans-serif;
       }
 
+      /* ── "Use this prompt" — TikTok's "Use this sound", for a text-to-video app ──
+         Bottom-right of every reel, above the action column's reach. The prompt
+         itself is the label (the owner asked for the text on the button), which is
+         also what makes the loop obvious: you see what produced the clip you just
+         watched. Long prompts scroll on their own like TikTok's sound title. */
+      .reel-prompt{
+        position:absolute; right:10px; bottom:calc(96px + env(safe-area-inset-bottom,0px));
+        z-index:18; max-width:62%; display:flex; align-items:center; gap:8px;
+        padding:8px 12px 8px 10px; border-radius:999px;
+        background:rgba(13,16,25,.62); border:1px solid rgba(255,255,255,.14);
+        -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px);
+        color:#fff; font-size:12px; font-weight:600; cursor:pointer;
+        box-shadow:0 4px 16px rgba(0,0,0,.35);
+      }
+      .reel-prompt:active{transform:scale(.96)}
+      .reel-prompt .rp-spark{color:#FF6D00;font-size:14px;flex:0 0 auto}
+      .reel-prompt .rp-text{
+        overflow:hidden; white-space:nowrap; text-overflow:ellipsis; max-width:100%;
+      }
+      /* A prompt too long to read sitting still scrolls once it is on screen. */
+      .reel-prompt.rp-long .rp-text{text-overflow:clip}
+      .reel-prompt.rp-long .rp-text span{display:inline-block;padding-right:28px;animation:rpMarquee 12s linear infinite}
+      @keyframes rpMarquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+      @media (prefers-reduced-motion:reduce){
+        .reel-prompt.rp-long .rp-text span{animation:none}
+        .reel-prompt.rp-long .rp-text{text-overflow:ellipsis}
+      }
+
       /* Brand circle watermark */
       .sg-brand-circle{position:absolute;top:16px;left:16px;width:28px;height:28px;background:#FF6D00;border-radius:50%;z-index:10;opacity:.85;box-shadow:0 0 10px rgba(255,109,0,.5);pointer-events:none;display:flex;align-items:center;justify-content:center;font:900 15px/1 system-ui,-apple-system,sans-serif;color:#fff;}
 .sg-brand-circle::after{content:'S'}
@@ -2594,6 +2622,24 @@
           ; /* Earn action removed — moved to Profile tab */
         div.appendChild(actions);
 
+        /* "Use this prompt": hands this reel's prompt to ScanSquad Create. When
+           the reel has no prompt (seeded and stock clips do not), it still shows
+           — as "Make one like this", opening Create empty (owner's call) — because
+           a missing prompt is not a reason to hide the way in. */
+        var promptBtn = document.createElement('div');
+        promptBtn.className = 'reel-prompt';
+        var pText = (video.prompt || '').trim();
+        var label = pText || 'Make one like this';
+        promptBtn.innerHTML = '<span class="rp-spark">\u2728</span>'
+          + '<span class="rp-text">' + (pText.length > 42 ? '<span>' + escHtml(label) + '</span>' : escHtml(label)) + '</span>';
+        if (pText.length > 42) promptBtn.classList.add('rp-long');
+        promptBtn.setAttribute('aria-label', pText ? 'Use this prompt' : 'Make a reel like this');
+        promptBtn.addEventListener('click', function(ev){
+          ev.stopPropagation();
+          usePrompt(video);
+        });
+        div.appendChild(promptBtn);
+
         // Double-tap like
         var lastTapTime = 0;
         div.addEventListener('click', function(e){
@@ -2869,6 +2915,20 @@
           copyToClipboard(sharePayload); _markReelShared(video.id);
           if(_viewerHandle) setTimeout(function(){ showToast('💰 You earn 25% when someone books!'); }, 2000);
         }
+      }
+
+      /* Open ScanSquad Create with this reel's prompt already typed in.
+         Navigating the TOP window rather than posting a message: this page runs
+         both inside the app's iframe and standalone (a shared /reels?v= link),
+         and a URL works in both without the two sides having to agree on a
+         protocol. squad-create.js reads ?prompt= and opens the sheet. */
+      function usePrompt(video){
+        trackEvent('use_prompt', currentIndex);
+        if(navigator.vibrate) navigator.vibrate(10);
+        var p = (video && video.prompt || '').trim();
+        var url = '/creator' + (p ? ('?prompt=' + encodeURIComponent(p.slice(0, 600))) : '');
+        try { (window.top || window).location.href = url; }
+        catch(e){ window.location.href = url; }
       }
 
       function copyToClipboard(text){
