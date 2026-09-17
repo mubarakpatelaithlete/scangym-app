@@ -45,12 +45,22 @@ router.post('/claim', authenticateUser, express.json(), async (req, res) => {
       if (String(existing.rows[0].claimed_by) === String(req.user.id)) {
         return res.json({ success: true, alreadyClaimed: true, claimedByYou: true, gymId, message: 'You already claimed this gym — verify ownership to unlock your badge.' });
       }
-      return res.status(409).json({ error: 'This gym is already claimed', claimedByYou: false });
+      /* A bare "already claimed" is a dead end: the owner standing in their own
+         gym has no next step and no idea who to ask. Same wording and route out
+         as the partner assistant uses (lib/partner-tools.js). */
+      return res.status(409).json({
+        error: 'This gym is already claimed',
+        claimedByYou: false,
+        gymId,
+        supportEmail: 'book@scangym.com',
+        message: 'This gym is already claimed. Email book@scangym.com if that is your gym and we will sort it.',
+      });
     }
 
     // Claim it
     await pool.query(
       `UPDATE gyms SET claimed_by = $1, 
+       is_claimed = TRUE,
        owner_name = COALESCE($2, owner_name),
        owner_email = COALESCE($3, owner_email),
        owner_phone = COALESCE($4, owner_phone),
