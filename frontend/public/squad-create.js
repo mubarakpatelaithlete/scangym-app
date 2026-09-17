@@ -163,7 +163,9 @@
   var health = null;     // per-mode runtime health, keyed by mode
   var job = null;        // {id, timer}
   var quota = null;
-  var budget = null;     // {signedIn,tier,dailyUsd,remainingUsd} — one balance for every mode
+  var budget = null;     // {signedIn,tier,dailyUsd,remainingUsd} — one allowance for every mode
+  /* Card on file, what is owed, whether Create is paused: /api/squad-billing/status */
+  var billing = null;
   var serverTemplates = null; // /api/squad-create/templates, so a better opener needs no deploy
   var shareInfo = null;  // {refLink, shareText} — a share has to carry the link that earns
 
@@ -401,6 +403,7 @@
       if (!mode.api) return;
       loadHistory(sh, mode); // My Creations: every mode, not just this one
       loadTemplates(sh, mode);
+      loadBilling(sh, mode);  // card on file, what is owed, whether Create is paused
       fetch(mode.api + '/health').then(function (r) { return r.json(); }).then(function (d) {
         health = d;
         if (d.budget) { budget = d.budget; }
@@ -515,8 +518,19 @@
     var n = sh.querySelector('#sv-note');
     if (!n) return;
     var bits = [];
+    /* What this tap will cost, before it is spent. Create is postpaid — the
+       creator is invoiced in the morning — so the one moment they can still
+       change their mind is now. @see server/lib/gen-billing.js */
+    var p = state[mode.key] && state[mode.key].__price;
+    if (p) bits.push('⚡ This run: ' + p + (billing && billing.vatIncluded ? ' inc VAT' : ''));
+    if (billing && billing.suspended) {
+      bits.push('⏸ Creating is paused until your invoice is paid');
+    } else if (billing && billing.unpaid && billing.unpaidPence > 0) {
+      bits.push('🧾 ' + billing.unpaid + ' on your next invoice');
+    }
     if (budget && budget.signedIn) {
-      bits.push('💳 ' + gbp(budget.remainingUsd) + ' of today\'s ' + gbp(budget.dailyUsd) + ' credit left');
+      bits.push('💳 ' + (budget.remaining || gbp(budget.remainingUsd)) + ' of today\'s ' +
+        (budget.daily || gbp(budget.dailyUsd)) + ' allowance left');
       if (budget.remainingUsd <= 0) bits.push('every booking you drive adds credit');
     } else if (budget && budget.signedIn === false) {
       bits.push('🔐 Sign in to create — your work and your credit live on your account');
@@ -538,6 +552,15 @@
     if (!isConfigured(mode) || !mode.api) return; // belt and braces: never fire a dead mode
     var prompt = (ta.value || '').trim();
     if (!prompt) { toast('Describe it first — or tap a template.', 'info', 2500); return; }
+    /* Postpaid means the bill arrives after the render, so anything over a
+       pound gets an explicit yes first. Cheap runs (a caption, an image) are
+       not worth a dialog — the price is already on the note line. */
+    var px = state[mode.key].__pricePence;
+    var pl = state[mode.key].__price;
+    if (px != null && px >= 100 && typeof window.confirm === 'function') {
+      if (!window.confirm('Generate for ' + pl + (billing && billing.vatIncluded ? ' inc VAT' : '') +
+        '? It goes on your next invoice.')) return;
+    }
     gen.disabled = true;
     var out = sh.querySelector('#sv-out');
     out.innerHTML = '<div class="sv-prog"><div class="sv-spin"></div><span>Sending…</span></div>';
@@ -557,6 +580,22 @@
         if (res.status === 401 || (res.d && res.d.needsLogin)) {
           out.innerHTML = '<div class="sv-warn">🔐 ' + (res.d.error || 'Sign in to create.') +
             ' <a href="/login" style="color:#FF6D00;font-weight:700">Sign in</a></div>';
+          gen.disabled = false;
+          return;
+        }
+        /* Postpaid refusals, both fixable by the creator in one tap: no card on
+           file, and suspended for an unpaid invoice. @see lib/gen-billing.js */
+        if (res.d && res.d.needsCard) {
+          out.innerHTML = '';
+          out.appendChild(cardPrompt(res.d.error));
+          billing = null; // re-read after they add one
+          gen.disabled = false;
+          return;
+        }
+        if (res.status === 403 && res.d && res.d.suspended) {
+          out.innerHTML = '<div class="sv-warn">⏸ ' + (res.d.error || 'Creating is paused until your invoice is paid.') +
+            ' <a href="/api/squad-billing/invoices" style="color:#FF6D00;font-weight:700">See invoices</a></div>';
+          billing = null;
           gen.disabled = false;
           return;
         }
@@ -658,12 +697,18 @@
     var chosen = state[mode.key].__model
       || (runnable.filter(function (m) { return m.tier === 'default'; })[0] || runnable[0] || list[0]).id;
     state[mode.key].__model = chosen;
+    var chosenRow = list.filter(function (m) { return m.id === chosen; })[0];
+    if (chosenRow) {
+      state[mode.key].__price = chosenRow.price || null;
+      state[mode.key].__pricePence = (chosenRow.pricePence != null) ? chosenRow.pricePence : null;
+    }
 
     list.forEach(function (m) {
       var chip = el('div', 'sv-mchip');
-      var price = (m.estimateUsd != null)
-        ? ' · £' + (m.estimateUsd * 0.79).toFixed(m.estimateUsd < 0.05 ? 3 : 2)
-        : '';
+      /* The price the creator pays, formatted by the server (VAT included), not
+         our supplier cost converted at a hard-coded FX rate — which is what
+         this line used to print. @see server/lib/gen-pricing.js */
+      var price = m.price ? ' · ' + m.price : '';
       /* The role first, the vendor's release name second: "Seedance 2.5" is not
          an answer to "which one do I tap". @see server/lib/gen-models.js#ROLES */
       var locked = m.affordable === false;
@@ -685,7 +730,10 @@
           return;
         }
         state[mode.key].__model = m.id;
+        state[mode.key].__price = m.price || null;
+        state[mode.key].__pricePence = (m.pricePence != null) ? m.pricePence : null;
         Array.prototype.forEach.call(host.children, function (c) { if (c.__paint) c.__paint(); });
+        refreshQuota(sh, mode);
       });
       chip.__paint = paint;
       paint();
@@ -796,6 +844,43 @@
    * back into the prompt box to tweak.
    * @see server/routes/squad-create.js GET /library
    */
+  /**
+   * The billing side of the same sheet: is there a card, is anything owed, is
+   * Create paused. Cheap, cached per sheet open, and silent for a visitor —
+   * a signed-out creator gets 401 and the sign-in note already covers them.
+   * @see server/routes/squad-billing.js GET /status
+   */
+  function loadBilling(sh, mode) {
+    if (billing) { refreshQuota(sh, mode); return; }
+    fetch('/api/squad-billing/status').then(function (r) {
+      return r.status === 401 ? null : r.json();
+    }).then(function (d) {
+      if (!d) return;
+      billing = d;
+      refreshQuota(sh, mode);
+    }).catch(function () {});
+  }
+
+  /**
+   * "Add a card" without leaving the sheet where possible.
+   *
+   * Card handling lives in one place app-wide (window.sgCards), so this hands
+   * off to the app's own wallet screen rather than building a second card form
+   * that would need its own Stripe wiring and its own bugs.
+   */
+  function cardPrompt(message) {
+    var box = el('div', 'sv-warn');
+    box.innerHTML = '💳 ' + (message || 'Add a card to start creating.') + ' ';
+    var b = el('span', 'sv-mchip', 'Add a card');
+    b.style.cssText = 'display:inline-block;margin-left:6px;background:linear-gradient(135deg,#FF6D00,#E66200);border:none;color:#fff;font-weight:700;';
+    b.addEventListener('click', function () {
+      if (typeof window._loadWalletScreen === 'function') { window._loadWalletScreen(); return; }
+      toast('Open Wallet → Cards to add a card, then come back.', 'info', 4000);
+    });
+    box.appendChild(b);
+    return box;
+  }
+
   function loadHistory(sh, mode) {
     fetch('/api/squad-create/library?limit=12').then(function (r) {
       if (r.status === 401) return null; // signed out: the note already says so
