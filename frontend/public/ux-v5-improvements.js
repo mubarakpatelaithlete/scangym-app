@@ -441,6 +441,14 @@ window._slfShowConnectSuccess = function(gymId, providerName, mode) {
       sub: 'Visitors will show a <strong style="color:#60a5fa">QR code</strong> at reception. Your staff scans to verify.',
       color: 'rgba(59,130,246', steps: true, showPrice: true
     },
+    /* Seam accepted the API key but found no access-control hardware, so no
+       door opens yet. This used to fall through to `connected` and promise
+       "Visitors now get auto door access" — a promise the gym cannot keep. */
+    pending: {
+      emoji: '\u23F3', title: 'Almost There',
+      sub: '<strong style="color:#fbbf24">' + (providerName || 'Your provider') + '</strong> is linked, but we found no lock hardware yet. Add your lock in the provider console — we activate door access automatically once it appears.',
+      color: 'rgba(251,191,36', steps: false, showPrice: true
+    },
     requested: {
       emoji: '\uD83D\uDD14', title: 'Request Sent!',
       sub: 'We\'re building <strong style="color:#fbbf24">' + (providerName || 'this') + '</strong> integration. We\'ll notify you when it\'s ready.',

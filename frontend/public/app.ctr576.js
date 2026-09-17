@@ -15281,8 +15281,14 @@ window._partnerSaveFacilities=async function(){
   }
 };
 
-// Auto-load partner gym profile data + init carousel
-setTimeout(function(){
+/* Auto-load partner gym profile data + init carousel.
+   This ran once, 200ms after the script loaded. A visitor who opens the Partner
+   tab later — the normal way in — had no #partner-profile-page yet, so the gym
+   was never fetched: the header kept the "Your Gym / Tap to set your gym
+   address" placeholder for an owner with a claimed gym, and _partnerGymId
+   stayed undefined, so every rail control that needs it had nothing to act on.
+   Now it re-checks while the app is open and runs the moment the tab mounts. */
+function _sgPartnerPageInit(){
   if(document.getElementById('partner-profile-page')){
     _partnerLoadGymProfile();
     // Init partner carousel (same swipe logic as Book tab)
@@ -15300,7 +15306,15 @@ setTimeout(function(){
       }
     }
   }
-},200);
+}
+setInterval(function(){
+  var page=document.getElementById('partner-profile-page');
+  if(!page){window._sgPartnerInited=false;return;}
+  if(window._sgPartnerInited)return;
+  window._sgPartnerInited=true;
+  _sgPartnerPageInit();
+},600);
+setTimeout(_sgPartnerPageInit,200);
 
 window._showPartnerScreen=function(idx){
   var screens=document.querySelectorAll('.partner-screen');

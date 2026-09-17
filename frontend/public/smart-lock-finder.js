@@ -370,10 +370,20 @@ async function _slfStartSeamConnect(gymId, providerId, providerName) {
         body: JSON.stringify({ gymId: gymId }),
       });
       var d2 = await r2.json();
-      if (d2.connected) {
+      /* `connected` only means the API key was stored. When `verified` is false
+         Seam found no hardware, so no door will open — announcing "All Set!
+         visitors now get auto door access" there is a promise the gym cannot
+         keep, and the owner only finds out when a paying customer is locked
+         out. Celebrate on `verified`; otherwise say what is still missing. */
+      if (d2.connected && d2.verified) {
         _slfToast(providerName + ' connected!', 'success', 3000);
         if (typeof window._slfShowConnectSuccess === 'function') {
           window._slfShowConnectSuccess(gymId, providerName, 'connected');
+        }
+      } else if (d2.connected) {
+        _slfToast(d2.message || (providerName + ' saved — no lock hardware found yet'), 'success', 6000);
+        if (typeof window._slfShowConnectSuccess === 'function') {
+          window._slfShowConnectSuccess(gymId, providerName, 'pending');
         }
       } else {
         _slfToast(d2.error || 'Could not connect — try again', 'error', 4000);
