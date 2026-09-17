@@ -105,3 +105,22 @@ test('the four unbuilt Reels rail buttons are off, and an empty rail hides', () 
   assert.match(rail, /rail\.children\.length\s*>\s*0\s*&&\s*isReelsActive\(\)/,
     'an empty rail can still render as a stray column');
 });
+
+test('a rail is decorated in the frame it appears, and never shown half-built', () => {
+  const rail = read('sg-rail-ui.js');
+  // The 600ms heartbeat alone left the app's raw emoji rail on screen for up to
+  // 600ms per new card — visible next to the finished white rail during a swipe.
+  assert.match(rail, /new MutationObserver\(/, 'new cards are still only decorated by the interval');
+  assert.match(rail, /requestAnimationFrame\(function\s*\(\)\s*\{[\s\S]{0,200}railIcons\(\)/,
+    'the mutation path does not decorate rails in the same frame');
+  assert.ok(!/requestAnimationFrame\(function\s*\(\)\s*\{[^}]*\btick\(\)/.test(rail),
+    'the mutation path runs the full tick, which rewrites the DOM and would re-trigger itself');
+  assert.match(rail, /sg-rail-ui-ready/, 'nothing signals that the decorator is alive');
+  assert.match(rail, /\.tt-actions\[data-sgi\]/, 'the ready flag is set without proof a rail was decorated');
+
+  const css = read('rails.css');
+  assert.match(css, /\.sg-rail-ui-ready \.tt-actions:not\(\[data-sgi\]\)\s*\{[^}]*opacity:\s*0/,
+    'an undecorated rail can still paint next to the decorated one');
+  assert.ok(!/:not\(\[data-sgi\]\)\s*\{[^}]*display:\s*none/.test(css),
+    'hiding with display:none would stop the rail being measured before it is decorated');
+});
