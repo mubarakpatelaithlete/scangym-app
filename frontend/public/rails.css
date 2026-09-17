@@ -34,13 +34,19 @@
   --sg-rail-top: 96px;
   /* Where a card's own rail starts, inside the card. */
   --sg-rail-card-top: 65px;
+  /* A card rail is positioned inside its card, but the furniture that covers it
+     is fixed to the *screen*: measured after the first fix, the card ends at
+     y711 while the Talk pill starts at y640, so the bottom ~71px of every card
+     is overlaid. Reserve that inside the card too, or the rail simply scrolls
+     its last buttons under the pill again. */
+  --sg-rail-card-bottom-reserve: 96px;
 }
 
 /* ── Card rails (Book, Partner): scroll inside the card, never under the CTA ── */
 .tt-actions {
   right: var(--sg-rail-right);
   top: var(--sg-rail-card-top);
-  max-height: calc(100% - var(--sg-rail-card-top) - 12px) !important;
+  max-height: calc(100% - var(--sg-rail-card-top) - var(--sg-rail-card-bottom-reserve)) !important;
   overflow-y: auto;
   overflow-x: visible;
   scrollbar-width: none;
@@ -51,7 +57,7 @@
 /* The expanded ("More") state used to be allowed 100vh − 300px, which on a
    844px screen reaches y544 past the card and straight under the Talk pill. */
 .tt-actions.sgi-open {
-  max-height: calc(100% - var(--sg-rail-card-top) - 12px) !important;
+  max-height: calc(100% - var(--sg-rail-card-top) - var(--sg-rail-card-bottom-reserve)) !important;
 }
 
 /* ── Only the card you are looking at shows its rail ────────────────────────

@@ -40,6 +40,14 @@ test('the bottom furniture is reserved, so no rail can hide behind it', () => {
   }
   assert.match(railsCss, /bottom:\s*var\(--sg-rail-bottom-reserve\)/,
     'floating rails are not bounded by the reserve');
+  // A card rail is positioned inside its card but covered by screen-fixed
+  // furniture, so it needs its own reserve — the first fix bounded it to the
+  // card and its last buttons went straight back under the Talk pill.
+  assert.match(railsCss, /--sg-rail-card-bottom-reserve:\s*\d+px/,
+    'card rails have no bottom reserve of their own');
+  const caps = railsCss.match(/max-height:[^;]+/g) || [];
+  assert.ok(caps.length >= 2 && caps.every((c) => c.includes('card-bottom-reserve') || c.includes('none')),
+    `a rail height is capped without the reserve: ${caps.join(' | ')}`);
 });
 
 test('no other file sets right-rail position any more', () => {
