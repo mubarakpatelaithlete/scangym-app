@@ -1019,6 +1019,9 @@
     document.head.appendChild(style);
     window.addEventListener('popstate', sync);
     setInterval(sync, 800);
+    /* Tab changed: drop this tab's rail in the same frame instead of up to 800ms
+       later, which showed Create buttons on top of another tab. */
+    document.addEventListener('sg:tabchange', function () { sync(); requestAnimationFrame(sync); });
     sync();
     loadModes().then(paintDots);
   }

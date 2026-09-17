@@ -343,6 +343,9 @@
     loadHealth();
     window.addEventListener('popstate', sync);
     setInterval(sync, 800);
+    /* Tab changed: leave with the tab, in the same frame. Polling alone left the
+       Profile rail hanging over whatever tab came next for up to 800ms. */
+    document.addEventListener('sg:tabchange', function () { sync(); requestAnimationFrame(sync); });
     sync();
   }
 
