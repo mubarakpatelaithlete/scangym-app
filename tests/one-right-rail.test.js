@@ -141,3 +141,39 @@ test('a rail is decorated in the frame it appears, and never shown half-built', 
   assert.ok(!/:not\(\[data-sgi\]\)\s*\{[^}]*display:\s*none/.test(css),
     'hiding with display:none would stop the rail being measured before it is decorated');
 });
+
+test('a row is pinned to something that is actually full-screen', () => {
+  // The first pass used `position: fixed` everywhere. `.tt-card` ships
+  // `contain: layout style paint` and `.tt-carousel` `contain: strict`, and a
+  // contained element is the containing block for its fixed descendants — so
+  // the Book and Partner rows measured 174px from the bottom of the CARD and
+  // landed in the middle of the photo.
+  const app = read('app.ctr576.js');
+  assert.ok(/\.tt-card\{[^}]*contain:layout style paint/.test(app),
+    'the containment that breaks position:fixed is gone — this rule can be simplified');
+  assert.match(railsCss, /\.tt-actions\s*\{\s*position:\s*absolute\s*!important;\s*bottom:\s*var\(--sg-band-bottom-card\)/,
+    'card rails are positioned against the card again');
+  assert.match(railsCss, /--sg-band-bottom-card:\s*calc\(var\(--sg-band-bottom\) - 56px\)/,
+    'a card rail must not reserve the tab bar twice: .tt-view already stops above it');
+  assert.match(railsCss, /#sg-profile-rail\s*\{\s*position:\s*fixed/,
+    'the body-level rails should stay fixed — they have no contained ancestor');
+});
+
+test('the Reels feed gets the same row as every other tab', () => {
+  const reels = read('reels/index.html');
+  assert.ok(reels.includes('rails.css'), 'the Reels document never loads the band');
+  assert.ok(reels.includes('rails.js'), 'the Reels row has no scroll indication');
+  assert.match(railsCss, /\.reel-actions\s*\{\s*position:\s*absolute\s*!important;\s*bottom:\s*var\(--sg-band-bottom\)/,
+    '.reel-actions is not pinned to the bottom of its 100dvh slide');
+  assert.match(railsJs, /ROWS = '\.tt-actions, \.reel-actions/, 'reel rows get no arrow');
+});
+
+test('every row is the same white, not grey over a bright photo', () => {
+  assert.match(railsCss, /\.tt-actions \.tt-action-label[\s\S]{0,260}color:\s*#fff/,
+    'card labels are still rgba(255,255,255,.7), which reads grey on a gym photo');
+  assert.match(railsCss, /text-shadow:[^;]+rgba\(0, 0, 0, \.85\)/, 'white with no shadow is unreadable on white');
+  const ui = read('sg-rail-ui.js');
+  for (const label of ['verify', 'locks', 'earnings', 'pricing', 'facilities', 'bookings']) {
+    assert.ok(ui.includes(`'${label}'`), `the Partner label "${label}" has no icon, so it keeps its raw emoji`);
+  }
+});
