@@ -1733,7 +1733,9 @@ function SearchPage(){
           /* M8 fix: Removed fake "Gym Tour" badge */
 
           /* FIX #1: Orange brand circle top-left on ALL cards (brand identity) */
-          html+='<div style="position:absolute;top:16px;left:16px;width:28px;height:28px;background:#FF6D00;border-radius:50%;z-index:20;opacity:.85;box-shadow:0 0 10px rgba(255,109,0,.5);display:flex;align-items:center;justify-content:center;font:900 15px/1 system-ui,-apple-system,sans-serif;color:#fff;">S</div>';
+          /* Brand mark: one per tab, painted by brand-mark.css (body::before). The
+             per-card copy that used to be emitted here put a second disc a few pixels
+             below the fixed one, and a third while the next card was on screen. */
 
           /* FIX #6: Removed duplicate top search bar — right-side Search + Near Me icons handle this now */
           /* Hidden input kept for backwards compat — doSearch still reads it */
@@ -1811,7 +1813,7 @@ function SearchPage(){
               else{cardHtml+=c.photo?'<div class="tt-photo" data-bg="'+c.photo+'"></div>':'<div class="tt-photo-placeholder"></div>';}
               cardHtml+='<div class="tt-gradient"></div>';
               /* FIX #1: Orange brand circle top-left on ALL cards (brand identity) */
-              cardHtml+='<div style="position:absolute;top:16px;left:16px;width:28px;height:28px;background:#FF6D00;border-radius:50%;z-index:20;opacity:.85;box-shadow:0 0 10px rgba(255,109,0,.5);display:flex;align-items:center;justify-content:center;font:900 15px/1 system-ui,-apple-system,sans-serif;color:#fff;">S</div>';
+              /* No per-card brand mark — see the note in the main renderer. */
               cardHtml+=_sgBookRailHtml(c);
               /* Bottom info — match initial cards */
               cardHtml+='<div class="tt-info">';
@@ -14911,7 +14913,7 @@ function PartnerFullPage(){
       <div class="tt-gradient"></div>
 
       <!-- Orange brand circle top-left (matches Reels + Book tabs) -->
-      <div style="position:absolute;top:16px;left:16px;width:28px;height:28px;background:#FF6D00;border-radius:50%;z-index:20;opacity:.85;box-shadow:0 0 10px rgba(255,109,0,.5);display:flex;align-items:center;justify-content:center;font:900 15px/1 system-ui,-apple-system,sans-serif;color:#fff;">S</div>
+      <!-- No per-card brand mark: brand-mark.css paints exactly one per tab. -->
 
       <!-- Top bar — Partner Dashboard label -->
       <div style="position:absolute;top:0;left:0;right:0;z-index:20;display:flex;align-items:center;justify-content:space-between;padding:12px 12px 10px;padding-top:calc(env(safe-area-inset-top,8px) + 4px)">

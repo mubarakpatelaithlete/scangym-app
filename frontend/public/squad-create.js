@@ -203,7 +203,9 @@
   // ── styles ──────────────────────────────────────────────────────────────
   var css = [
     '#' + RAIL_ID + '{display:flex;flex-direction:column;gap:10px;}',
-    '#' + RAIL_ID + '.sv-float{position:fixed;top:96px;right:10px;z-index:8990;max-height:64vh;overflow-y:auto;scrollbar-width:none;}',
+    /* Geometry (top/right/bottom/max-height) lives in rails.css — a second
+       opinion here is what let this column land on the card rail. */
+    '#' + RAIL_ID + '.sv-float{position:fixed;z-index:8990;}',
     '#' + RAIL_ID + '.sv-float::-webkit-scrollbar{display:none;}',
     '.' + BTN_ID + '{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;-webkit-tap-highlight-color:transparent;}',
     '.' + BTN_ID + ' .sv-circle{position:relative;width:44px;height:44px;border-radius:50%;background:rgba(255,109,0,.18);border:1px solid rgba(255,109,0,.5);backdrop-filter:blur(12px);box-shadow:0 0 14px rgba(255,109,0,.3);display:flex;align-items:center;justify-content:center;font-size:19px;transition:transform .15s;}',
