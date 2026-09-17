@@ -43,7 +43,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { optionalAuth } = require('../middleware/auth');
-const { requireCreator } = require('../lib/gen-guard');
+const { requireBillable } = require('../lib/gen-guard');
 const spend = require('../lib/gen-budget');
 const etaOf = require('../lib/gen-eta');
 const pool = require('../middleware/db');
@@ -225,7 +225,7 @@ router.get('/health', optionalAuth, async (req, res) => {
 // allowlist of prefixes and /api/squad-video is not one of them, so without
 // this req.body is undefined and every generate answered "prompt required" —
 // the feature could never have worked, with or without a valid model key.
-router.post('/generate', requireCreator, express.json(), async (req, res) => {
+router.post('/generate', requireBillable, express.json(), async (req, res) => {
   const prompt = (req.body?.prompt || '').trim();
   if (!prompt) return res.status(400).json({ error: 'prompt required' });
   if (prompt.length > 1500) return res.status(400).json({ error: 'prompt too long' });

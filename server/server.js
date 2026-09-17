@@ -45,6 +45,7 @@ const channelsRouter = require('./routes/channels');
 const buttonsRouter = require('./routes/buttons');
 const squadVideoRouter = require('./routes/squad-video');
 const squadCreateRouter = require('./routes/squad-create');
+const squadBillingRouter = require('./routes/squad-billing');
 const squadTextRouter = require('./routes/squad-text');
 const squadImageRouter = require('./routes/squad-image');
 const squadAudioRouter = require('./routes/squad-audio');
@@ -555,6 +556,7 @@ app.use('/api/channels', channelsRouter);
 app.use('/api/buttons', buttonsRouter);
 app.use('/api/squad-video', squadVideoRouter);
 app.use('/api/squad-create', express.json({ limit: '1mb' }), squadCreateRouter);
+app.use('/api/squad-billing', squadBillingRouter);
 app.use('/api/squad-text', squadTextRouter);
 app.use('/api/squad-image', squadImageRouter);
 app.use('/api/squad-audio', squadAudioRouter);
@@ -1106,6 +1108,10 @@ require('./lib/gen-provider')
 const { runMigrations } = require('./db/migrate');
 if (process.env.DATABASE_URL) {
   runMigrations().catch((err) => console.error('[migrate] unexpected error:', err.message));
+  /* Create is postpaid, so somebody has to issue yesterday's invoices, charge
+     the balances worth charging and suspend the two-days-unpaid. Idempotent,
+     so a repeated or missed tick costs nothing. */
+  require('./lib/gen-billing').scheduleDaily();
 }
 
 app.listen(PORT, '0.0.0.0', () => {
