@@ -25,13 +25,21 @@ test('the seven merged patches stay deleted', () => {
   assert.ok(index.includes('/sg-rail-ui.js'), 'index.html must load sg-rail-ui.js');
 });
 
-test('sg-rail-ui.js has exactly one timer and runs all seven enhancers from it', () => {
+test('sg-rail-ui.js has exactly one timer and runs every enhancer from it', () => {
   const src = strip(fs.readFileSync(path.join(PUB, 'sg-rail-ui.js'), 'utf8'));
   assert.strictEqual((src.match(/setInterval\(/g) || []).length, 1, 'one shared tick, not one per module');
   for (const m of ['uspStrip', 'tabsV4', 'squadPartnerPolish', 'reelsRail', 'railIcons', 'bookSummary', 'buttonCleanup']) {
     assert.ok(new RegExp(`var ${m}=\\(function\\(\\)\\{`).test(src), `${m} module missing`);
   }
-  assert.ok(/ENHANCERS=\[uspStrip,tabsV4,squadPartnerPolish,reelsRail,railIcons,bookSummary,buttonCleanup\]/.test(src), 'enhancer order must match the original load order');
+  /* The original seven keep their load order; later enhancers (railLabelSync,
+     which keeps the rail's date/pass labels in step with the booking state) are
+     appended, never inserted, and must also run from this one list. */
+  assert.ok(/ENHANCERS=\[uspStrip,tabsV4,squadPartnerPolish,reelsRail,railIcons,bookSummary,buttonCleanup(,[A-Za-z0-9_]+)*\]/.test(src),
+    'the original seven must keep their load order and any new enhancer must be appended to the same list');
+  const declared = src.match(/ENHANCERS=\[([^\]]*)\]/)[1].split(',');
+  for (const m of declared) {
+    assert.ok(new RegExp(`var ${m}=\\(function\\(\\)\\{`).test(src), `${m} is in ENHANCERS but not defined here`);
+  }
 });
 
 test('continue-cta-flow.js no longer polls: zero setInterval, partner banner runs from the shared tick', () => {

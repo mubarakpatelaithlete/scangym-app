@@ -766,7 +766,18 @@ function _ensureReelsIframe(){
   wrap.id='sg-reels-persistent';
   var showNow=state.activeTab==='reels';
   wrap.style.cssText='position:fixed;top:0;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom, 0px));z-index:'+(showNow?'8000':'1')+';background:#000;display:'+(showNow?'block':'none')+';';
-  wrap.innerHTML='<iframe id="sg-reels-iframe" title="ScanGym Reels" src="/reels/" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;z-index:1;" allow="autoplay; fullscreen"></iframe>'
+  /* Deep links: a shared reel is scangym.com/reels?v=<id> (+ ?ref=<handle>).
+     The feed lives in this iframe and reads ?v= from ITS OWN location, so with a
+     fixed src="/reels/" the id never reached it and every shared link opened at
+     the top of the feed instead of that reel. Forward what the feed understands. */
+  var _rq=(function(){
+    try{
+      var p=new URLSearchParams(window.location.search),o=[];
+      ['v','ref'].forEach(function(k){var val=p.get(k);if(val)o.push(k+'='+encodeURIComponent(val));});
+      return o.length?('?'+o.join('&')):'';
+    }catch(e){return '';}
+  })();
+  wrap.innerHTML='<iframe id="sg-reels-iframe" title="ScanGym Reels" src="/reels/'+_rq+'" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;z-index:1;" allow="autoplay; fullscreen"></iframe>'
     +'<div id="sg-reels-fallback" style="display:none;position:absolute;top:0;left:0;right:0;bottom:0;z-index:2;background:linear-gradient(180deg,#0a0a16 0%,#111127 100%);flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;">'
     +'<div style="font-size:64px;margin-bottom:16px;">🎬</div>'
     +'<p style="color:#fff;font-size:22px;font-weight:800;margin:0 0 8px;">Reels Coming Soon</p>'
@@ -20958,7 +20969,25 @@ window._sgShareGymLink=function(gymId,gymName,affiliate){
     // so Affiliate Share always produces a deep link. Wallet credit for
     // referral_handle conversions is handled server-side (resolveReferralUserId).
     if(!creator&&state.user&&state.user.referralHandle)creator=state.user.referralHandle;
-    if(!creator){sgToast('Could not find your affiliate handle — try re-logging in','error',3000);return;}
+    /* The cached state.user often predates the referral handle, so Share used to
+       dead-end here with an error toast and no link — the owner's "Share gives no
+       affiliate link in the Book tab". The server is the source of truth (the Reels
+       tab already asks it), so ask it once and retry instead of blaming the user. */
+    if(!creator){
+      if(window._sgShareHandleRetry){window._sgShareHandleRetry=false;sgToast('Could not find your affiliate handle — try re-logging in','error',3000);return;}
+      window._sgShareHandleRetry=true;
+      fetch('/api/auth/user',{credentials:'same-origin'}).then(function(r){return r.ok?r.json():null;}).then(function(d){
+        var u=d&&(d.user||d);
+        var h=u&&u.referralHandle?String(u.referralHandle).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,60):'';
+        if(h){
+          if(state.user)state.user.referralHandle=h;
+          try{var cd=JSON.parse(localStorage.getItem('sg_creator')||'{}');cd.handle=h;localStorage.setItem('sg_creator',JSON.stringify(cd));}catch(e){}
+        }
+        window._sgShareGymLink(gymId,gymName,true);
+      }).catch(function(){window._sgShareGymLink(gymId,gymName,true);});
+      return;
+    }
+    window._sgShareHandleRetry=false;
   }
 
   var baseUrl='https://scangym.com';

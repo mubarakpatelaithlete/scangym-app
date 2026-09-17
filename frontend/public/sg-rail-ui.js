@@ -992,7 +992,67 @@ return tick;
 })();
 
 /* ── shared scheduler ─────────────────────────────────────────────────────── */
-var ENHANCERS=[uspStrip,tabsV4,squadPartnerPolish,reelsRail,railIcons,bookSummary,buttonCleanup];
+
+/* ── rail label sync ──────────────────────────────────────────────────────────
+   The Book rail's date, pass and payment labels are baked into the card's HTML
+   when the card is rendered, from window._gymBookingState. Picking a different
+   date in the calendar sheet, or a different pass in the passes sheet, only
+   writes to that object — so the rail kept showing the old date and the old
+   pass until something happened to re-render the card. Owner-visible as "the
+   right side calendar/pass button doesn't update in real time".
+
+   This keeps the labels honest from one place instead of patching the eight
+   call sites that assign selectedDate/selectedPass. It runs on the shared tick,
+   and, so it feels instant, immediately after any tap. */
+var railLabelSync=(function(){
+  var PASS={day:'Day','3day':'3-Day',weekly:'Weekly',monthly:'Monthly',couple:'Couple',group:'Group'};
+  var MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  /* Same shape the card renderer produces: "17 Sep", or "Today". */
+  function dateLabel(v){
+    if(!v)return null;
+    if(v==='Today')return 'Today';
+    var p=String(v).split('-');
+    if(p.length===3){
+      var d=parseInt(p[2],10),m=parseInt(p[1],10)-1;
+      if(!isNaN(d)&&MONTHS[m])return d+' '+MONTHS[m];
+    }
+    return String(v);
+  }
+  function setLabel(rail,match,text){
+    if(!text)return;
+    var acts=rail.querySelectorAll('.tt-action');
+    for(var i=0;i<acts.length;i++){
+      var oc=acts[i].getAttribute('onclick')||'';
+      if(oc.indexOf(match)===-1)continue;
+      var lbl=acts[i].querySelector('.tt-action-label');
+      if(lbl&&lbl.textContent!==text)lbl.textContent=text;
+      return;
+    }
+  }
+  function tick(){
+    var gbs=window._gymBookingState;
+    if(!gbs)return;
+    var rails=document.querySelectorAll('.tt-actions');
+    if(!rails.length)return;
+    var dl=dateLabel(gbs.selectedDate);
+    var pl=PASS[gbs.selectedPass||'day']||'Day';
+    var pay=(gbs.paymentMethod==='saved'&&gbs.savedCard&&gbs.savedCard.last4)
+      ? ('\u2022\u2022\u2022\u2022 '+gbs.savedCard.last4) : 'Payment';
+    for(var i=0;i<rails.length;i++){
+      setLabel(rails[i],'showCalendarPicker',dl);
+      setLabel(rails[i],"'passes'",pl);
+      setLabel(rails[i],"'payment'",pay);
+    }
+  }
+  /* A sheet closes on the same tap that changes the selection, so run just after
+     it — three cheap passes cover the animation without a second timer. */
+  document.addEventListener('click',function(){
+    setTimeout(tick,60);setTimeout(tick,220);setTimeout(tick,600);
+  },true);
+  return tick;
+})();
+
+var ENHANCERS=[uspStrip,tabsV4,squadPartnerPolish,reelsRail,railIcons,bookSummary,buttonCleanup,railLabelSync];
 function tick(){
   for(var i=0;i<ENHANCERS.length;i++){try{ENHANCERS[i]();}catch(e){}}
   /* Tell the stylesheet this script is alive and has decorated at least one

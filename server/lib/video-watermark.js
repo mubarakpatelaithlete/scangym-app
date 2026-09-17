@@ -74,68 +74,87 @@ function downloadVideo(cdnUrl, destPath) {
  * @param {string} outputPath - Destination watermarked video
  * @returns {Promise<void>}
  */
+const LOGO_PATH = path.join(__dirname, '..', 'assets', 'scangym-watermark.png');
+
+/**
+ * Add the ScanGym stamp to a video: the orange disc logo + wordmark, with the
+ * creator's personal booking link under it.
+ *
+ * It used to be drawtext only — small orange "ScanGym" text at 45% opacity and
+ * a 10px bullet standing in for the logo. On a phone screen the owner read that
+ * as "saved without the ScanGym logo branding like TikTok", and he was right:
+ * there was no mark, just letters. This overlays the real disc (server/assets/
+ * scangym-watermark.png, the same #FF6D00 circle with the white S the app paints)
+ * so a reposted clip is recognisably ScanGym's.
+ *
+ * Scaled to the video: 34% of its width, so it reads the same on 720p and 1080p.
+ * Kept above the bottom edge where TikTok/Instagram put their own UI, and out of
+ * the top-right corner where the app's own chrome sits.
+ */
 function addWatermark(inputPath, outputPath, linkHandle) {
-  // P3 Link Sticker: burn the creator's personal booking link instead of the
-  // generic domain. Handle is sanitised to [a-zA-Z0-9_-] so it is safe for
-  // FFmpeg drawtext (no quotes/colons/backslashes possible).
   const safeHandle = (linkHandle || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 60);
   const urlText = safeHandle ? ('scangym.com/r/' + safeHandle) : 'scangym.com';
+  const hasLogo = fs.existsSync(LOGO_PATH);
   return new Promise((resolve, reject) => {
-    // Dual drawtext: "ScanGym" large + "scangym.com" small below it
-    // Uses fontcolor with alpha for semi-transparency
-    // borderw for glow/shadow effect (like TikTok)
-    const watermarkFilter = [
-      // Main brand name — bottom-left
-      "drawtext=text='ScanGym':" +
-        "fontsize=28:" +
-        "fontcolor=0xFF6D00@0.45:" +    // orange at 45% opacity
-        "borderw=1:" +
-        "bordercolor=0x000000@0.3:" +    // subtle dark border
-        "x=20:" +
-        "y=h-th-60",                      // 60px from bottom
-      // URL — smaller, below the name
+    const textChain = [
+      // Personal booking link, directly under the mark.
       "drawtext=text='" + urlText + "':" +
-        "fontsize=16:" +
-        "fontcolor=0xFFFFFF@" + (linkHandle ? "0.55" : "0.35") + ":" +     // white at 35% opacity
-        "borderw=1:" +
-        "bordercolor=0x000000@0.2:" +
-        "x=20:" +
-        "y=h-th-30",                      // 30px from bottom
-      // Copyright line — bottom-right (TikTok-style attribution)
-      "drawtext=text='© ScanGym " + new Date().getFullYear() + "':" +
-        "fontsize=14:" +
-        "fontcolor=0xFFFFFF@0.45:" +
-        "borderw=1:" +
-        "bordercolor=0x000000@0.3:" +
-        "x=w-tw-16:" +
-        "y=h-th-30",
-      // Orange dot (circle emoji effect via small text)
-      "drawtext=text='●':" +
-        "fontsize=10:" +
-        "fontcolor=0xFF6D00@0.5:" +
-        "x=8:" +
-        "y=h-40"
+        'fontsize=h/44:' +
+        'fontcolor=0xFFFFFF@' + (safeHandle ? '0.85' : '0.65') + ':' +
+        'borderw=2:bordercolor=0x000000@0.35:' +
+        'x=w*0.055:' +
+        'y=h-th-h*0.055',
+      // Attribution, bottom-right.
+      "drawtext=text='\u00a9 ScanGym " + new Date().getFullYear() + "':" +
+        'fontsize=h/56:' +
+        'fontcolor=0xFFFFFF@0.5:' +
+        'borderw=1:bordercolor=0x000000@0.3:' +
+        'x=w-tw-w*0.04:' +
+        'y=h-th-h*0.03',
     ].join(',');
 
-    const args = [
-      '-i', inputPath,
-      '-vf', watermarkFilter,
-      '-c:v', 'libx264',
-      '-preset', 'ultrafast',   // fast encoding for on-demand processing
-      '-crf', '23',             // good quality, reasonable file size
-      '-c:a', 'copy',           // don't re-encode audio
-      '-movflags', '+faststart', // optimize for web streaming
-      '-y',                     // overwrite output
-      outputPath,
-    ];
+    let args;
+    if (hasLogo) {
+      // [0:v] video, [1:v] logo → scale the logo to 34% of the video width,
+      // fade it to 90% opacity, place it above the link text, then draw text.
+      args = [
+        '-i', inputPath,
+        '-i', LOGO_PATH,
+        '-filter_complex',
+        /* scale2ref sizes the logo against the video itself (42% of its width),
+           so the stamp reads the same on a 720p and a 1080p clip. */
+        '[1:v][0:v]scale2ref=w=iw*0.42:h=ow/mdar[wmr][base];' +
+        '[wmr]format=rgba,colorchannelmixer=aa=0.9[wm];' +
+        '[base][wm]overlay=' +
+          'W*0.05:' +                       // left margin
+          'H-h-H*0.085:' +                  // sits just above the link line
+          'format=auto[stamped];' +
+        '[stamped]' + textChain + '[out]',
+        '-map', '[out]',
+        '-map', '0:a?',
+        '-c:v', 'libx264',
+        '-preset', 'ultrafast',
+        '-crf', '23',
+        '-c:a', 'copy',
+        '-movflags', '+faststart',
+        '-y',
+        outputPath,
+      ];
+    } else {
+      // Logo asset missing (should not happen): keep the text stamp rather than
+      // shipping an unbranded file.
+      args = [
+        '-i', inputPath,
+        '-vf', "drawtext=text='ScanGym':fontsize=h/26:fontcolor=0xFF6D00@0.85:borderw=2:bordercolor=0x000000@0.35:x=w*0.055:y=h-th-h*0.10," + textChain,
+        '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '23',
+        '-c:a', 'copy', '-movflags', '+faststart', '-y', outputPath,
+      ];
+    }
 
-    execFile(FFMPEG_PATH, args, { timeout: 120000 }, (err, stdout, stderr) => {
+    execFile(FFMPEG_PATH, args, { timeout: 120000 }, (err) => {
       if (err) {
         console.error('Watermark FFmpeg error:', err.message);
-        // Check if output exists anyway (some warnings are non-fatal)
-        if (fs.existsSync(outputPath) && fs.statSync(outputPath).size > 1000) {
-          return resolve();
-        }
+        if (fs.existsSync(outputPath) && fs.statSync(outputPath).size > 1000) return resolve();
         return reject(new Error(`Watermark failed: ${err.message}`));
       }
       if (!fs.existsSync(outputPath) || fs.statSync(outputPath).size < 100) {
@@ -157,7 +176,7 @@ function addWatermark(inputPath, outputPath, linkHandle) {
 async function getWatermarkedVideo(cdnKey, linkHandle) {
   const safeHandle = (linkHandle || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 60);
   // v2: cache key bumped when the stamp design changed (added © line)
-  const cachedPath = path.join(WATERMARK_DIR, safeHandle ? `${cdnKey}_wm2_${safeHandle}.mp4` : `${cdnKey}_wm2.mp4`);
+  const cachedPath = path.join(WATERMARK_DIR, safeHandle ? `${cdnKey}_wm3_${safeHandle}.mp4` : `${cdnKey}_wm3.mp4`);
 
   // Serve from cache if available
   if (fs.existsSync(cachedPath) && fs.statSync(cachedPath).size > 1000) {
