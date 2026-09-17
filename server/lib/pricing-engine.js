@@ -415,9 +415,12 @@ function calculateGymPrice({ gymDayPassPrice, countryCode = 'GB', passType = 'da
   const country = COUNTRY_PRICING[cc] || COUNTRY_PRICING.GB;
   const passMultiplier = PASS_MULTIPLIERS[passType] || 1.0;
 
-  // Convert owner's GBP price to local currency (skip PPP — owner chose this price)
-  const baseInUSD = gymDayPassPrice / COUNTRY_PRICING.GB.fxRate;
-  const rawPrice = baseInUSD * country.fxRate * passMultiplier;
+  // The owner's price is ALREADY in the gym's own currency.
+  // The partner dashboard shows and saves it with the gym's local symbol
+  // (an Indian gym owner types ₹104.49, not £104.49), so FX-converting it here
+  // multiplied it by the local rate and charged ₹10,999 for a ₹104 day pass.
+  // Only the pass multiplier applies — never a currency conversion.
+  const rawPrice = Number(gymDayPassPrice) * passMultiplier;
 
   // M20 FIX: Enforce minimum price floor
   const minLocal = MIN_PRICE_USD * country.fxRate * passMultiplier;

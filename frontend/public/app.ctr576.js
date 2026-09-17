@@ -8567,7 +8567,10 @@ window.showBookingCheckout=async function(gymId, prefillDate, prefillTime){
 
   // Use server price if available, otherwise fall back to sgPrice()
   const _priceInfo=_serverPrices&&_serverPrices[_passKey]?_serverPrices[_passKey]:sgPrice(_passKey);
-  const _sym=_priceInfo.symbol||(_serverPrices?'£':'£');
+  /* Currency follows the GYM's location, not the visitor's: the server sends it
+     in location.symbol (and now on each price too). Never fall back to '£' for a
+     gym we have server pricing for — that showed an Indian customer £10999.00. */
+  const _sym=_priceInfo.symbol||(_pResp&&_pResp.location&&_pResp.location.symbol)||(typeof sgSymbol==='function'?sgSymbol():'£');
   const _baseAmount=_priceInfo.amount;
   const passInfo={name:selPassName,icon:selPassIcon,amount:_baseAmount,display:_priceInfo.display||(_sym+_baseAmount.toFixed(2))};
   const h=selTime==='anytime'?12:parseInt(selTime||'10');
@@ -14977,7 +14980,12 @@ window._partnerShareLink=function(){
   var gd=window._partnerGymData||{};
   var gymId=window._partnerGymId||'';
   var link=gymId?('https://scangym.com/gym/'+gymId):'https://scangym.com/partner';
-  if(navigator.share){navigator.share({title:(gd.name||'My Gym')+' on ScanGym',text:'Book a day pass at '+(gd.name||'my gym')+' \u2014 from \u00a34.49',url:link}).catch(function(){});}
+  /* Price in the GYM's currency, from the gym's own day price — never a
+     hardcoded '\u00a34.49', which was wrong for every non-UK partner. */
+  var _pSym=gd.currencySymbol||(typeof sgSymbol==='function'?sgSymbol():'\u00a3');
+  var _pAmt=parseFloat(gd.dayPassPrice);
+  var _pFrom=isFinite(_pAmt)&&_pAmt>0?(' \u2014 from '+_pSym+_pAmt.toFixed(2)):'';
+  if(navigator.share){navigator.share({title:(gd.name||'My Gym')+' on ScanGym',text:'Book a day pass at '+(gd.name||'my gym')+_pFrom,url:link}).catch(function(){});}
   else{navigator.clipboard.writeText(link).then(function(){sgToast('Link copied! \ud83d\udccb','success',2000);}).catch(function(){sgToast('Could not copy link','error',2000);});}
 };
 
