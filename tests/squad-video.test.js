@@ -305,7 +305,10 @@ test('health reports remaining renders so the sheet never guesses', async () => 
     assert.ok(res.body.options, 'the sheet needs the allowed values to render its controls');
     assert.ok(Array.isArray(res.body.models) && res.body.models.length > 1,
       'the sheet needs the model menu, with a price against each one');
-    assert.ok(res.body.models.every((m) => m.estimateUsd > 0), 'every offered model is priced');
+    /* Priced in what the creator pays (lib/gen-pricing.js), not in what the
+       render costs us — that number no longer leaves the server. */
+    assert.ok(res.body.models.every((m) => m.pricePence > 0), 'every offered model is priced');
+    assert.ok(res.body.models.every((m) => !('estimateUsd' in m)), 'supplier cost stays server-side');
   } finally {
     restore();
   }
