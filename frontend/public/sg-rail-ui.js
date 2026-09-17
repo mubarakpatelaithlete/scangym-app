@@ -666,12 +666,31 @@ var ICONS={
   music:I('<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>'),
   camera:I('<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>'),
   chat:I('<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>'),
+  shield:I('<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>'),
+  lock:I('<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>'),
+  power:I('<path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/>'),
+  wallet:I('<path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/>'),
+  tag:I('<path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/>'),
+  dumbbell:I('<path d="M6.5 6.5v11"/><path d="M17.5 6.5v11"/><path d="M3 9v6"/><path d="M21 9v6"/><line x1="6.5" y1="12" x2="17.5" y2="12"/>'),
+  book:I('<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>'),
+  check:I('<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>'),
   trainer:I('<rect x="4" y="7" width="16" height="13" rx="2"/><line x1="12" y1="3" x2="12" y2="7"/><circle cx="12" cy="2.5" r="1"/><circle cx="9" cy="12.5" r="1"/><circle cx="15" cy="12.5" r="1"/><path d="M9 16.5h6"/>')
 };
 /* Book-rail label → icon (date labels like "11 Jul" fall back to calendar). */
 function iconForLabel(t){
   t=(t||'').trim().toLowerCase();
   if(t==='near me')return 'pin';
+  /* Partner tab — these had no mapping, so the raw emoji survived and the row
+     showed as grey emoji next to Book's white line icons. */
+  if(t==='verify'||t==='verified')return 'check';
+  if(t==='locks'||t==='lock'||t==='smart lock')return 'lock';
+  if(t==='on'||t==='off'||t==='on off'||t==='on/off')return 'power';
+  if(t==='earnings'||t==='earned'||t==='payout'||t==='payouts')return 'wallet';
+  if(t==='pricing'||t==='price')return 'tag';
+  if(t==='hours')return 'clock';
+  if(t==='facilities'||t==='gear'||t==='equipment')return 'dumbbell';
+  if(t==='bookings')return 'book';
+  if(t==='shield'||t==='trust')return 'shield';
   if(t==='search')return 'search';
   if(t==='share')return 'share';
   if(t==='earn')return 'earn';

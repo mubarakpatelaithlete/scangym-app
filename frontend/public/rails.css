@@ -68,21 +68,43 @@
   --sg-band-height: 72px;
   /* What the row must clear: tab bar + CTA + Talk pill + gaps. */
   --sg-band-bottom: calc(174px + env(safe-area-inset-bottom, 0px));
+  /* A .tt-card lives inside .tt-view, which already stops above the 56px tab
+     bar, so a card rail must not reserve it twice. */
+  --sg-band-bottom-card: calc(var(--sg-band-bottom) - 56px);
   --sg-band-pad: 12px;
 }
 
-/* Card rails (Book, Partner) and the three floating rails all become the row.
-   `position: fixed` takes the card rails out of their card, which is what makes
-   them sit above the CTA instead of scrolling away with the photo. */
+/* ── WHERE THE ROW SITS (fixed 2026-09-17, second pass) ───────────────────
+   The first pass made every row `position: fixed`. On Book and Partner that
+   put the row in the MIDDLE of the photo instead of above the CTA, and the
+   cause is not the carousel's transform but containment: app.ctr576.js ships
+   `.tt-card{contain:layout style paint}` and `.tt-carousel{contain:strict}`,
+   and a contained element is a containing block for its fixed descendants.
+   So `bottom: 174px` was measured from the bottom of the CARD, which is
+   min-height:100% of a scroll-snap strip, not from the screen.
+
+   Fixing it by removing containment would hand back the paint budget those
+   two rules were added for. So each row is pinned to the bottom of whatever
+   is genuinely full-screen:
+
+     .tt-actions   card rails       absolute inside .tt-card — the card fills
+                                    .tt-view, which is 100dvh - 56px tab bar,
+                                    so it clears 174 - 56 = 118px
+     .reel-actions reel slides      absolute inside .reel, a full 100dvh slide
+     the three floating rails       body-level, so fixed and the full 174px
+
+   Every one of them still reads the SAME band variables; only the reference
+   frame differs, and that is the whole reason this file exists.
+   ───────────────────────────────────────────────────────────────────────── */
+
 .tt-actions,
+.reel-actions,
 #sg-reels-rail,
 #sg-sv-rail.sv-float,
 #sg-profile-rail {
-  position: fixed !important;
   left: 0 !important;
   right: 0 !important;
   top: auto !important;
-  bottom: var(--sg-band-bottom) !important;
   height: var(--sg-band-height) !important;
   max-height: var(--sg-band-height) !important;
   flex-direction: row !important;
@@ -96,17 +118,40 @@
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   -ms-overflow-style: none;
+  z-index: 26;
   /* Fade the right edge so a half-cut button reads as "there is more". */
   -webkit-mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 34px), transparent 100%);
   mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 34px), transparent 100%);
 }
+
+/* Body-level rails: fixed, clearing the whole stack. */
+#sg-reels-rail,
+#sg-sv-rail.sv-float,
+#sg-profile-rail {
+  position: fixed !important;
+  bottom: var(--sg-band-bottom) !important;
+}
+
+/* Card and reel rails: absolute, pinned to the bottom of their full-screen
+   parent. Same band, measured from the right edge of the world. */
+.tt-actions {
+  position: absolute !important;
+  bottom: var(--sg-band-bottom-card) !important;
+}
+.reel-actions {
+  position: absolute !important;
+  bottom: var(--sg-band-bottom) !important;
+}
+
 .tt-actions::-webkit-scrollbar,
+.reel-actions::-webkit-scrollbar,
 #sg-reels-rail::-webkit-scrollbar,
 #sg-sv-rail.sv-float::-webkit-scrollbar,
 #sg-profile-rail::-webkit-scrollbar { display: none; }
 
 /* A row that is fully visible should not be faded or arrowed. */
 .tt-actions:not(.sg-rail-scrollable),
+.reel-actions:not(.sg-rail-scrollable),
 #sg-reels-rail:not(.sg-rail-scrollable),
 #sg-sv-rail.sv-float:not(.sg-rail-scrollable),
 #sg-profile-rail:not(.sg-rail-scrollable) {
@@ -115,6 +160,7 @@
 }
 
 .tt-actions > *,
+.reel-actions > *,
 #sg-reels-rail > *,
 #sg-sv-rail.sv-float > *,
 #sg-profile-rail > * {
@@ -161,4 +207,49 @@
 }
 .tt-actions[data-sgi] {
   transition: opacity .12s linear;
+}
+
+/* ── The white the owner asked for ────────────────────────────────────────
+   "Same white colour like reels and book tab buttons." Reels labels are solid
+   #fff with a shadow; the card rails were rgba(255,255,255,.7) at 9px, which
+   over a bright gym photo read as grey (measured on the Partner tab: the row
+   was barely legible). One white, one shadow, everywhere. */
+.tt-actions .tt-action-label,
+.reel-actions .label,
+#sg-reels-rail .sg-rr-label,
+#sg-profile-rail .sg-rr-label {
+  color: #fff !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, .85) !important;
+}
+.tt-actions .tt-action-btn,
+.reel-actions .icon {
+  opacity: 1 !important;
+  color: #fff !important;
+}
+
+/* The row reads over any photo without darkening the picture itself. */
+.tt-actions::before { content: none; }
+.tt-actions,
+.reel-actions,
+#sg-reels-rail,
+#sg-sv-rail.sv-float,
+#sg-profile-rail {
+  background: linear-gradient(to top, rgba(0, 0, 0, .34), rgba(0, 0, 0, 0));
+}
+
+/* A clearer "there is more than fits" than a lone chevron: the arrow sits in a
+   small dark disc, so it is visible on a white-lit photo too. */
+.sg-rail-scrollable::after {
+  background: rgba(13, 16, 25, .62);
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  padding: 0 0 2px 0;
 }
