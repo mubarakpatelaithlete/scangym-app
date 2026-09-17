@@ -1,0 +1,93 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   rails.css — the ONE place that decides where a right-edge rail may live.
+
+   The bug this closes (measured on production, iPhone-width 390×844, Book tab
+   with the rail's "More" list expanded):
+
+     rail of card 1 .............. y197 → y741
+       · "4.4 (136)" at y665 ...... covered by the Talk pill (#bchat-fab)
+       · "Share"     at y728 ...... covered by the page/summary strip
+       · "Earn", "Filter" ......... pushed off the bottom of the screen
+     rail of card 2 .............. y775 → y1083   ← a SECOND column of the
+       · "Filter" at y791, "Near Me" at y803, both behind the tab bar
+
+   Two separate faults with one shape: nothing told a rail where it must stop,
+   and nothing said only one rail may be on screen at a time. The rails sit at
+   z-index 25/8990/8998 while the orange CTA bar sits at 10001, so "make the
+   rail higher" would only have hidden the CTA instead. The fix is geometry,
+   not layering: reserve the bottom strip that the summary line, the Talk pill
+   and the orange CTA own, and let the rail scroll inside what is left.
+
+   Every right-edge rail in the app (card rails, the Reels rail, the ScanSquad
+   Create rail, the Profile rail) reads its position from the variables below.
+   If you need to move a rail, change it HERE — a second opinion in another
+   file is what produced the overlap in the first place.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Distance from the right edge. One value, every rail. */
+  --sg-rail-right: 10px;
+  /* The bottom furniture a rail must never run under, measured on production:
+     tab bar 56 + Talk pill 46 + its 12 gap + summary strip 26 + CTA bar 52. */
+  --sg-rail-bottom-reserve: calc(192px + env(safe-area-inset-bottom, 0px));
+  /* Where a floating rail starts (Reels / Create / Profile). */
+  --sg-rail-top: 96px;
+  /* Where a card's own rail starts, inside the card. */
+  --sg-rail-card-top: 65px;
+}
+
+/* ── Card rails (Book, Partner): scroll inside the card, never under the CTA ── */
+.tt-actions {
+  right: var(--sg-rail-right);
+  top: var(--sg-rail-card-top);
+  max-height: calc(100% - var(--sg-rail-card-top) - 12px) !important;
+  overflow-y: auto;
+  overflow-x: visible;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.tt-actions::-webkit-scrollbar { display: none; }
+
+/* The expanded ("More") state used to be allowed 100vh − 300px, which on a
+   844px screen reaches y544 past the card and straight under the Talk pill. */
+.tt-actions.sgi-open {
+  max-height: calc(100% - var(--sg-rail-card-top) - 12px) !important;
+}
+
+/* ── Only the card you are looking at shows its rail ────────────────────────
+   rails.js marks the dominant card `sg-card-live`. Until it has run nothing is
+   hidden: a rail you cannot see is worse than one column too many. */
+.tt-view.sg-rails-arbitrated .tt-card:not(.sg-card-live) .tt-actions {
+  display: none;
+}
+
+/* ── Floating rails: a hard bottom stop, then scroll ───────────────────────── */
+#sg-reels-rail,
+#sg-sv-rail.sv-float,
+#sg-profile-rail {
+  right: var(--sg-rail-right);
+  top: var(--sg-rail-top);
+  bottom: var(--sg-rail-bottom-reserve);
+  max-height: none;
+  height: auto;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+#sg-reels-rail::-webkit-scrollbar,
+#sg-sv-rail.sv-float::-webkit-scrollbar,
+#sg-profile-rail::-webkit-scrollbar { display: none; }
+
+/* A rail that had to scroll should say so, or it reads as "the app lost my
+   buttons" — the same complaint that started this file. */
+.sg-rail-scrollable::after {
+  content: '⌄';
+  position: sticky;
+  bottom: 0;
+  display: block;
+  text-align: center;
+  font-size: 13px;
+  line-height: 14px;
+  color: rgba(255, 255, 255, .55);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, .8);
+  pointer-events: none;
+}

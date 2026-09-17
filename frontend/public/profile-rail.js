@@ -58,7 +58,8 @@
 
   // ── Styles (injected once) ─────────────────────────────────────────────
   var css = [
-    '#' + RAIL_ID + '{position:fixed;top:120px;right:10px;bottom:190px;display:flex;flex-direction:column;gap:11px;align-items:center;z-index:8990;overflow-y:auto;overflow-x:visible;scrollbar-width:none;padding:2px 2px 6px;}',
+    /* top/right/bottom: rails.css owns rail geometry. */
+    '#' + RAIL_ID + '{position:fixed;display:flex;flex-direction:column;gap:11px;align-items:center;z-index:8990;overflow-y:auto;overflow-x:visible;scrollbar-width:none;padding:2px 2px 6px;}',
     '#' + RAIL_ID + '::-webkit-scrollbar{display:none;}',
     '#' + RAIL_ID + ' .sg-pr-sec{font-size:8.5px;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.35);font-weight:700;text-align:center;width:44px;margin-bottom:-4px;}',
     '#' + RAIL_ID + ' .sg-pr-btn{display:flex;flex-direction:column;align-items:center;gap:2px;width:44px;cursor:pointer;-webkit-tap-highlight-color:transparent;}',

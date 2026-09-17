@@ -572,7 +572,8 @@ var reelsRail=(function(){
 (function(){
   var s=document.createElement('style');
   s.textContent='.sg-tab-item[aria-label="Music"],.sg-tab-item[aria-label="Photos"],.sg-tab-item[aria-label="Chat"],.sg-tab-item[aria-label="AI Trainer"]{display:none!important}'
-    +'#sg-reels-rail{position:fixed;right:10px;top:96px;z-index:8998;display:none;flex-direction:column;gap:14px;pointer-events:none}'
+    /* right/top/bottom: rails.css */
+    +'#sg-reels-rail{position:fixed;z-index:8998;display:none;flex-direction:column;gap:14px;pointer-events:none}'
     +'#sg-reels-rail.visible{display:flex}'
     +'.sg-rr-btn{pointer-events:auto;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none}'
     +'.sg-rr-btn:active .sg-rr-circle{transform:scale(.9)}'
@@ -587,12 +588,16 @@ function ensureRail(){
   if(rail)return rail;
   rail=document.createElement('div');
   rail.id='sg-reels-rail';
+  /* Hidden for now (owner's call, 2026-09-17): Music, Photos, Chat/Messages and
+     Trainer/AI Coach are routes without a product behind them yet, and a rail
+     button is a promise. They stay in this list — flip `on` to true to bring one
+     back — rather than being deleted, so turning them on is one edit. */
   var items=[
-    {tab:'music',route:'/music',icon:'\uD83C\uDFB5',label:'Music'},
-    {tab:'photos',route:'/photos',icon:'\uD83D\uDCF8',label:'Photos'},
-    {tab:'chat',route:'/chat',icon:'\uD83D\uDCAC',label:'Chat'},
-    {tab:'trainer',route:'/ai-trainer',icon:'\uD83E\uDD16',label:'Trainer'}
-  ];
+    {tab:'music',route:'/music',icon:'\uD83C\uDFB5',label:'Music',on:false},
+    {tab:'photos',route:'/photos',icon:'\uD83D\uDCF8',label:'Photos',on:false},
+    {tab:'chat',route:'/chat',icon:'\uD83D\uDCAC',label:'Chat',on:false},
+    {tab:'trainer',route:'/ai-trainer',icon:'\uD83E\uDD16',label:'Trainer',on:false}
+  ].filter(function(it){return it.on;});
   items.forEach(function(it){
     var b=document.createElement('div');
     b.className='sg-rr-btn';
@@ -620,7 +625,8 @@ function isReelsActive(){
 }
 function tick(){
   var rail=ensureRail();
-  var show=isReelsActive();
+  /* Every item is off: show nothing rather than an empty floating column. */
+  var show=rail.children.length>0&&isReelsActive();
   if(show!==rail.classList.contains('visible'))rail.classList.toggle('visible',show);
 }
 return tick;
@@ -687,7 +693,8 @@ function injectCSS(){
     '.tt-action-btn.sgi svg{opacity:.92}'+
     '.tt-actions .tt-action.sgi-x{display:none}'+
     '.tt-actions.sgi-open .tt-action.sgi-x{display:flex}'+
-    '.tt-actions.sgi-open{max-height:calc(100vh - 300px);overflow-y:auto;overflow-x:visible;scrollbar-width:none;-ms-overflow-style:none;padding-bottom:8px}'+
+    /* max-height moved to rails.css: 100vh-300px ran under the Talk pill. */
+    '.tt-actions.sgi-open{overflow-y:auto;overflow-x:visible;scrollbar-width:none;-ms-overflow-style:none;padding-bottom:8px}'+
     '.tt-actions.sgi-open::-webkit-scrollbar{display:none}'+
     /* Round 4 — card declutter: tighter chips, hide redundant trust row */
     '.tt-chips{gap:5px!important;margin-bottom:6px!important}'+
