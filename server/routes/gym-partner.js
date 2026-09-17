@@ -5,7 +5,20 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../middleware/db');
-const { authenticateUser } = require('../middleware/auth');
+const { authenticateUser, requireAdmin } = require('../middleware/auth');
+const { getCurrencyForCountry } = require('../lib/pricing-engine');
+
+/* Currency for a gym's own country, so a price is never shown under the wrong
+   symbol. Falls back to GBP, which is what every reader assumed before. */
+function _gymCurrency(countryCode) {
+  try {
+    const c = getCurrencyForCountry(String(countryCode || 'GB').toUpperCase()) || {};
+    return { code: String(c.currency || 'gbp').toUpperCase(), symbol: c.symbol || '\u00a3' };
+  } catch (e) {
+    return { code: 'GBP', symbol: '\u00a3' };
+  }
+}
+
 
 // Auto-migration: ensure gyms table has partner columns
 
@@ -567,15 +580,26 @@ router.get('/filter', async (req, res) => {
   }
 });
 
-// ── Admin: unclaim a gym (dev/testing only) ──
-router.post('/admin/unclaim', authenticateUser, express.json(), async (req, res) => {
+/* ── Admin: unclaim a gym (dev/testing only) ──
+   This route only required *being signed in*, so any customer with an account
+   could take a claimed gym away from the owner who runs it — including a large
+   chain's listing. It is now admin-only (ADMIN_EMAILS / ADMIN_USER_IDS, which
+   deny everyone when unset), and it clears `is_claimed` as well: leaving that
+   flag set re-created the exact "unclaimed here, already claimed there"
+   contradiction the claim flow was just fixed for. */
+router.post('/admin/unclaim', authenticateUser, requireAdmin, express.json(), async (req, res) => {
   try {
     const { gymId } = req.body;
     if (!gymId) return res.status(400).json({ error: 'gymId required' });
     await pool.query(
-      'UPDATE gyms SET claimed_by = NULL, claimed_at = NULL, updated_at = NOW() WHERE id = $1',
+      'UPDATE gyms SET claimed_by = NULL, claimed_at = NULL, is_claimed = FALSE, updated_at = NOW() WHERE id = $1',
       [gymId]
-    );
+    ).catch(async () => {
+      await pool.query(
+        'UPDATE gyms SET claimed_by = NULL, claimed_at = NULL, updated_at = NOW() WHERE id = $1',
+        [gymId]
+      );
+    });
     res.json({ success: true, message: `Gym ${gymId} unclaimed` });
   } catch (err) {
     console.error('[Admin] unclaim error:', err.message);
@@ -865,7 +889,7 @@ router.get('/dashboard', authenticateUser, async (req, res) => {
 
     // 1. Get claimed gyms (use only guaranteed columns)
     const gymsRes = await pool.query(
-      `SELECT id, name, address,
+      `SELECT id, name, address, country,
               COALESCE(latitude, lat, 0) as latitude,
               COALESCE(longitude, lng, 0) as longitude,
               day_pass_price, is_active, claimed_at
@@ -1022,6 +1046,11 @@ router.get('/dashboard', authenticateUser, async (req, res) => {
       gyms: gymsRes.rows.map(g => ({
         id: g.id, name: g.name, address: g.address,
         dayPassPrice: g.day_pass_price || 5,
+        /* The dashboard sent a bare number and the Partner header defaulted to
+           "£", so a Bharuch gym priced 104.49 rupees was shown to its owner as
+           "£4.49/day". Send the gym's own currency with the number. */
+        currency: _gymCurrency(g.country).code,
+        currencySymbol: _gymCurrency(g.country).symbol,
         isActive: g.is_active !== false && g.accepting_bookings !== false,
         rating: g.average_rating, reviews: g.total_reviews,
         is24h: g.id === primaryGym.id ? is24h : g.is_24h, claimedAt: g.claimed_at,
