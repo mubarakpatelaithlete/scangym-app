@@ -129,10 +129,13 @@ router.get('/gym-price', async (req, res) => {
         symbol: mainPrice.symbol,
       },
       prices: {
-        day:     { amount: prices.day.amount,     display: prices.day.display,     stripeAmount: prices.day.stripeAmount },
-        '3day':  { amount: prices['3day'].amount,  display: prices['3day'].display,  stripeAmount: prices['3day'].stripeAmount },
-        weekly:  { amount: prices.weekly.amount,   display: prices.weekly.display,   stripeAmount: prices.weekly.stripeAmount },
-        monthly: { amount: prices.monthly.amount,  display: prices.monthly.display,  stripeAmount: prices.monthly.stripeAmount },
+        // Every price object carries its own currency + symbol. A consumer that
+        // reads prices[type].symbol must never fall back to a hardcoded '£' —
+        // that is how an INR gym rendered "£10999.00" at checkout.
+        day:     { amount: prices.day.amount,     display: prices.day.display,     stripeAmount: prices.day.stripeAmount,     currency: prices.day.currency,     symbol: prices.day.symbol },
+        '3day':  { amount: prices['3day'].amount,  display: prices['3day'].display,  stripeAmount: prices['3day'].stripeAmount,  currency: prices['3day'].currency,  symbol: prices['3day'].symbol },
+        weekly:  { amount: prices.weekly.amount,   display: prices.weekly.display,   stripeAmount: prices.weekly.stripeAmount,   currency: prices.weekly.currency,   symbol: prices.weekly.symbol },
+        monthly: { amount: prices.monthly.amount,  display: prices.monthly.display,  stripeAmount: prices.monthly.stripeAmount,  currency: prices.monthly.currency,  symbol: prices.monthly.symbol },
       },
       referralDiscount,
     });
