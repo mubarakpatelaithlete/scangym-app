@@ -149,7 +149,7 @@ async function loadCatalogFromDB() {
   const result = await pool.query(
     `SELECT id, name, category, source, url, thumb, cdn_key, drive_id,
             file_size, blurhash, orientation, width, height, dopamine_tier, duration,
-            has_faststart, variants_ready
+            has_faststart, variants_ready, prompt
      FROM video_catalog
      WHERE active = true
      ORDER BY id ASC`
@@ -163,6 +163,9 @@ async function loadCatalogFromDB() {
     thumb: row.thumb,
     cdnKey: row.cdn_key,
     driveId: row.drive_id,
+    /* The prompt this reel was rendered from, when it is known. Drives the
+       "Use this prompt" button; null means the button opens Create empty. */
+    prompt: row.prompt || null,
     fileSize: row.file_size,
     blurhash: row.blurhash,
     orientation: row.orientation,
