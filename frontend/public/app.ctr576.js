@@ -749,6 +749,16 @@ function switchTab(tab){
   else if(tab==='partner'){state.route='/partner';history.pushState(null,'','/partner');}
   else if(tab==='more'){state.route=state._lastMoreRoute||'/more';history.pushState(null,'',state.route);}
   render();
+  /* Chrome that lives OUTSIDE #app — the Reels rail, the ScanSquad Create rail,
+     the Profile rail, the orange "Ask AI" bar — used to discover a tab change by
+     polling (600ms in sg-rail-ui.js, 800ms in squad-create.js, and a poll in
+     profile-rail.js). #app is rebuilt in the same frame as the tap, so for up to
+     ~0.8s the new tab was on screen wearing the previous tab's floating buttons.
+     Measured on the live site with the CPU throttled 4x: the Ask AI bar appeared
+     638ms after tapping ScanSquad, and was still on screen on the Profile tab.
+     One event, dispatched here, lets every owner sync in the same frame. Their
+     timers stay as a safety net, so a listener that fails is still corrected. */
+  try{document.dispatchEvent(new CustomEvent('sg:tabchange',{detail:{tab:tab,route:state.route}}));}catch(e){}
   // ── Bug Fix: Toggle persistent reels iframe visibility ──
   _syncReelsVisibility();
   // ── Bug Fix: Force pointer-events restore on Book/More tab ──

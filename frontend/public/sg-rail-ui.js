@@ -1090,7 +1090,11 @@ function watch(){
     });
   }).observe(document.body,{childList:true,subtree:true});
 }
-function init(){tick();watch();setInterval(tick,600);}
+function init(){
+  tick();watch();setInterval(tick,600);
+  /* Tab changed: re-decide what this tab shows now, not up to 600ms later. */
+  document.addEventListener('sg:tabchange',function(){tick();requestAnimationFrame(tick);});
+}
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',init);}
 else{init();}
 })();
