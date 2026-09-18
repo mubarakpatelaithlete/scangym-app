@@ -290,4 +290,18 @@ test('the Reels iframe reaches the nav and the dock reserves the band for it', (
   // The pill must leave room for the row: uncapped labels ("Ask AI \"How much
   // have I made this week\"") took 293-312px of 390px.
   assert.match(pill[0], /max-width:\s*58%/, 'the CTA pill is uncapped and will eat the row');
+
+  // A fixed rail inside the tab content is not pinned to the viewport: on
+  // Profile a computed bottom of 60px landed the row at y676-748. The dock
+  // measures where it landed and corrects the difference.
+  assert.match(dockJs, /wantBottom[\s\S]{0,600}?getBoundingClientRect[\s\S]{0,400}?setProperty\('bottom'/,
+    'sg-dock.js does not verify where a fixed rail actually landed');
+  // The primary word must not be the flex item that shrinks ("As...").
+  assert.match(railsCss, /\.sg-cb-text\s*\{[^}]*flex:\s*0 0 auto/,
+    'the CTA label can shrink again');
+  assert.match(railsCss, /\.sg-cb-sub\s*\{[^}]*text-overflow:\s*ellipsis/,
+    'the sub-label is not the one giving way');
+  // profile-rail.js injects its overflow rule later, so specificity must win.
+  assert.match(railsCss, /html body \.sg-pr-host-capped/,
+    'the Profile host override is not specific enough to beat profile-rail.js');
 });
