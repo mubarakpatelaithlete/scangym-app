@@ -717,12 +717,16 @@ router.get('/partner-search', async (req, res) => {
       }
     }
 
-    // Places API (New) — exact words, any business type
-    try {
-      places = await searchWithPlacesNewAPI(searchQuery, lat, lng, radius, 20, true);
-      if (places.length) source = 'google_places_new_api';
-    } catch (e) {
-      console.warn('[PartnerSearch] New API failed, using legacy:', e.message);
+    // Places API (New) — exact words, any business type.
+    // Only when a pasted link has not already resolved the listing: searching
+    // the raw URL text finds nothing and threw away a perfectly good result.
+    if (!places.length) {
+      try {
+        places = await searchWithPlacesNewAPI(searchQuery, lat, lng, radius, 20, true);
+        if (places.length) source = 'google_places_new_api';
+      } catch (e) {
+        console.warn('[PartnerSearch] New API failed, using legacy:', e.message);
+      }
     }
 
     // Legacy text search — still no type filter, still no query rewriting
