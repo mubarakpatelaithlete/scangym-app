@@ -257,7 +257,7 @@ test('the Reels iframe reaches the nav and the dock reserves the band for it', (
   // The rows have to start after the pill, or it covers their first button.
   // Must be margin, not padding: padding is inside the scroller and scrolls
   // away, letting the first buttons slide under the fixed pills.
-  assert.match(railsCss, /body\.sg-cta-in-row[^{]*\.tt-actions[\s\S]{0,400}?margin-left:\s*calc\(var\(--sg-cta-w\)/,
+  assert.match(railsCss, /body\.sg-cta-in-row:not\(\.sg-pills-instrip\)[^{]*\.tt-actions[\s\S]{0,600}?margin-left:\s*calc\(var\(--sg-cta-w\)/,
     'rows are not inset by the pill width');
 
   // rails.js owns the class and the measurement, so the change reverts in one
@@ -353,4 +353,17 @@ test('the CTA and Talk are icon-and-label items, sized like the row', () => {
   // The caption must not be read back into the label match.
   assert.ok(!/\(cta\.textContent/.test(railsJs),
     'iconify reads textContent, which includes the caption it just wrote');
+});
+
+test('option A: the pills are moved into the row and un-fixed', () => {
+  const railsCss = read('rails.css');
+  const railsJs = read('rails.js');
+  // Fixed positioning must come off, or a fixed node ignores its new parent.
+  assert.match(railsCss, /\.sg-pills-instrip[\s\S]{0,600}?position:\s*static\s*!important/);
+  // The inset must switch off while they are in the row, or they count twice.
+  assert.match(railsCss, /body\.sg-cta-in-row:not\(\.sg-pills-instrip\)/);
+  // A re-rendered card must not take the only Book button with it.
+  assert.match(railsJs, /isConnected\)\s*sendHome/);
+  assert.ok(railsJs.includes('function placePills'));
+  assert.ok(railsJs.includes("var INSTRIP = 'sg-pills-instrip'"));
 });
