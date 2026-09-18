@@ -480,12 +480,17 @@ html body.sg-cta-in-row #sg-continue-banner#sg-continue-banner {
    publishes where that is, because the main button's width changes with its
    label. Its own sheet pins it `right: 14px; z-index: 9100`, so both are
    overridden here. */
-body.sg-cta-in-row #bchat-fab,
-body.sg-cta-in-row #pchat-fab,
-body.sg-cta-in-row #schat-fab,
-body.sg-cta-in-row #rchat-fab,
-body.sg-cta-in-row #mchat-fab,
-body.sg-cta-in-row #chat-fab {
+/* Each id twice. book-by-tap.css pins the pill with
+   `body.sg-cb-active #bchat-fab.show{left:auto!important;right:12px!important}`
+   — id + TWO classes — so the first attempt (v2.2) recoloured the pill but
+   left it at the right edge, sitting on top of the row's buttons: measured
+   Talk at x301-378 over the first button at x335-379. Two ids beat it. */
+body.sg-cta-in-row #bchat-fab#bchat-fab,
+body.sg-cta-in-row #pchat-fab#pchat-fab,
+body.sg-cta-in-row #schat-fab#schat-fab,
+body.sg-cta-in-row #rchat-fab#rchat-fab,
+body.sg-cta-in-row #mchat-fab#mchat-fab,
+body.sg-cta-in-row #chat-fab#chat-fab {
   position: fixed !important;
   left: var(--sg-talk-left, 12px) !important;
   right: auto !important;
