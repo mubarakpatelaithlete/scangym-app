@@ -323,3 +323,32 @@ test('the Reels iframe reaches the nav and the dock reserves the band for it', (
   assert.match(dockJs, /ctaInRow\(\)[\s\S]{0,120}removeProperty\('bottom'\);\s*continue;\s*\}\s*\n\s*el\.style\.setProperty\('bottom', \(cursor \+ FAB_GAP\)/,
     'sg-dock.js still docks the Talk pill above the row');
 });
+
+/* Option A (owner, 2026-09-18): the main button and Talk take the row's shape,
+   not just its colour — a 42px circle with a 10px caption under it. The bug
+   this guards is the one the owner reported twice: same colour, wrong size. */
+test('the CTA and Talk are icon-and-label items, sized like the row', () => {
+  const railsCss = read('rails.css');
+  const railsJs = read('rails.js');
+
+  // The words are what made the button 218px wide.
+  assert.match(railsCss,
+    /#sg-continue-banner \.sg-cb-text,[\s\S]{0,240}?display:\s*none/,
+    'the CTA still shows its own label text, so it cannot match the row width');
+  assert.match(railsCss, /\.sg-cb-ico[\s\S]{0,400}?width:\s*var\(--sg-row-ico\)/,
+    'the CTA glyph is not sized from --sg-row-ico');
+  assert.match(railsJs, /\.sg-cb-ico/, 'rails.js never creates the glyph the CSS styles');
+  assert.match(railsJs, /\.sg-cb-cap/, 'rails.js never creates the caption');
+
+  // Talk's own text is a bare node; only font-size:0 collapses it.
+  for (const fab of ['#bchat-fab', '#pchat-fab', '#schat-fab', '#rchat-fab', '#mchat-fab', '#chat-fab']) {
+    assert.ok(railsCss.includes('body.sg-cta-in-row ' + fab + fab + '::before'),
+      fab + ' has no glyph, so it would render as an empty circle');
+  }
+  assert.match(railsCss, /font-size:\s*0\s*!important/,
+    'the Talk label is not collapsed, so the circle stays pill-shaped');
+
+  // The caption must not be read back into the label match.
+  assert.ok(!/\(cta\.textContent/.test(railsJs),
+    'iconify reads textContent, which includes the caption it just wrote');
+});
