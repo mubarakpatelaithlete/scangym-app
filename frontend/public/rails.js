@@ -224,14 +224,102 @@
     return cta.getBoundingClientRect().width;
   }
 
+  /* ── Option A (owner, 2026-09-18): actually inside the strip ─────────────
+     Pinned-but-aligned was not what he asked for: "Still button are not in
+     same row with other buttons. Why they're separate?" They matched in size
+     and spacing, but they were `position: fixed` while the other buttons sat
+     in a scroller, so swiping moved the row and left these two behind. He
+     chose A: move the nodes INTO the row so they scroll with it.
+
+     Two things this has to survive:
+
+     1. The app re-renders carousel cards wholesale (see `scan()`), so a row
+        holding the CTA can be thrown away and take the only Book button in
+        the app with it. Every pass checks `isConnected` and puts the node
+        back where it came from if its row vanished.
+     2. The Reels row lives in a different document, which these nodes cannot
+        join. There, they go home and stay pinned over the frame — invisible
+        as a difference, because that row holds two buttons and never scrolls.
+  */
+  var INSTRIP = 'sg-pills-instrip';
+  /* Same list as ROWS, minus `.reel-actions`: that one is inside the frame. */
+  var HOST_ROWS = '.tt-card.' + LIVE + ' .tt-actions, #sg-sv-rail.sv-float, #sg-profile-rail, .sg-pr-host-capped';
+
+  function onScreen(el) {
+    if (!el) return false;
+    var cs = getComputedStyle(el);
+    if (cs.display === 'none' || cs.visibility === 'hidden') return false;
+    var r = el.getBoundingClientRect();
+    return r.width > 1 && r.height > 1 && r.bottom > 0 && r.top < innerHeight;
+  }
+
+  /** The row in THIS document that owns the screen right now, if any. */
+  function hostRow() {
+    var rows = document.querySelectorAll(HOST_ROWS);
+    for (var i = 0; i < rows.length; i++) if (onScreen(rows[i])) return rows[i];
+    return null;
+  }
+
+  /** Remember where a node lived before it was moved, so it can go back. */
+  function remember(el) {
+    if (el && !el._sgHome && el.parentNode) {
+      el._sgHome = el.parentNode;
+      el._sgNext = el.nextSibling;
+    }
+  }
+  function sendHome(el) {
+    if (!el || !el._sgHome) return;
+    if (el.parentNode === el._sgHome) return;
+    el._sgHome.insertBefore(el, el._sgNext && el._sgNext.parentNode === el._sgHome
+      ? el._sgNext : null);
+  }
+
+  function visibleTalk() {
+    var els = document.querySelectorAll(TALK);
+    for (var i = 0; i < els.length; i++) if (widthOf(els[i])) return els[i];
+    return null;
+  }
+
+  /** Move the two pills in or out. Returns true while they are in a row. */
+  function placePills() {
+    var cta = document.querySelector(CTA);
+    var talk = visibleTalk();
+    remember(cta); remember(talk);
+
+    /* A row that was re-rendered away takes its children with it. */
+    if (cta && !cta.isConnected) sendHome(cta);
+    if (talk && !talk.isConnected) sendHome(talk);
+
+    var row = hostRow();
+    var ctaLive = cta && !cta.classList.contains('sg-cb-hidden') && measureCta() > 0;
+    if (!row || (!ctaLive && !talk)) {
+      sendHome(cta); sendHome(talk);
+      document.body.classList.remove(INSTRIP);
+      return false;
+    }
+    /* First item, then Talk, then whatever the tab already had. */
+    if (talk && talk.parentNode !== row) row.insertBefore(talk, row.firstChild);
+    if (ctaLive && cta.parentNode !== row) row.insertBefore(cta, row.firstChild);
+    document.body.classList.add(INSTRIP);
+    return true;
+  }
+
   function syncCta() {
     if (FRAMED) return;               // the parent owns the pill
     document.body.classList.add(CTA_IN_ROW);
     iconify(document.querySelector(CTA));
-    var w = measureCta();
-    publish(w, measureTalk());
-    var total = parseFloat(
-      getComputedStyle(document.documentElement).getPropertyValue('--sg-cta-w')) || 0;
+    var inStrip = placePills();
+    /* In the strip the pills take their own space as flex items, so the row
+       must NOT also hold an inset open for them — that would double-count.
+       Only the Reels frame still needs the number. */
+    var w = inStrip ? 0 : measureCta();
+    publish(w, inStrip ? 0 : measureTalk());
+    /* The frame is a different document: its row cannot hold these nodes, so
+       the pills stay pinned over it and it still needs the real inset. */
+    var total = inStrip
+      ? Math.round(measureCta() + (measureTalk() ? 14 + measureTalk() : 0))
+      : (parseFloat(getComputedStyle(document.documentElement)
+          .getPropertyValue('--sg-cta-w')) || 0);
     /* Tell every Reels frame, so its row starts after the pill drawn over it. */
     var frames = document.querySelectorAll('#sg-reels-iframe, .sg-reels-frame, iframe[src*="reels"]');
     for (var i = 0; i < frames.length; i++) {

@@ -446,12 +446,16 @@ body.sg-cta-in-row #sg-continue-banner .sg-cb-price {
    padding-left 124px and scrollLeft 124, "Near Me" sat at x0-44 beneath a
    button at x12-54. A margin shortens the scroller itself, so there is no
    space under the pills for content to reach. */
-body.sg-cta-in-row .tt-actions,
-body.sg-cta-in-row .reel-actions,
-body.sg-cta-in-row #sg-reels-rail,
-body.sg-cta-in-row #sg-sv-rail.sv-float,
-body.sg-cta-in-row #sg-profile-rail,
-body.sg-cta-in-row .sg-pr-host-capped {
+/* `:not(.sg-pills-instrip)` — once the pills are flex items inside the row
+   (option A) they take their own space, so an inset as well would count them
+   twice and push the row off to the right. The Reels frame never carries the
+   class, so the framed row keeps its inset. */
+body.sg-cta-in-row:not(.sg-pills-instrip) .tt-actions,
+body.sg-cta-in-row:not(.sg-pills-instrip) .reel-actions,
+body.sg-cta-in-row:not(.sg-pills-instrip) #sg-reels-rail,
+body.sg-cta-in-row:not(.sg-pills-instrip) #sg-sv-rail.sv-float,
+body.sg-cta-in-row:not(.sg-pills-instrip) #sg-profile-rail,
+body.sg-cta-in-row:not(.sg-pills-instrip) .sg-pr-host-capped {
   margin-left: calc(var(--sg-cta-w) + var(--sg-band-pad) + 14px) !important;
   padding-left: var(--sg-band-pad) !important;
 }
@@ -664,4 +668,30 @@ body.sg-cta-in-row #chat-fab#chat-fab::after {
   line-height: var(--sg-row-cap) !important;
   white-space: nowrap !important;
   text-shadow: 0 1px 4px rgba(0, 0, 0, .85) !important;
+}
+
+
+/* ── Option A: the pills are row items now (owner, 2026-09-18 20:06) ───────
+   "Still button are not in same row with other buttons. Why they're
+   separate?" — because they were `position: fixed` and the others were in a
+   scroller. rails.js moves the nodes into the row; everything positional they
+   carried has to come off, or a fixed element simply ignores its new parent.
+   Each id twice for the book-by-tap.css specificity reason above. */
+html body.sg-pills-instrip #sg-continue-banner#sg-continue-banner,
+html body.sg-pills-instrip #bchat-fab#bchat-fab,
+html body.sg-pills-instrip #pchat-fab#pchat-fab,
+html body.sg-pills-instrip #schat-fab#schat-fab,
+html body.sg-pills-instrip #rchat-fab#rchat-fab,
+html body.sg-pills-instrip #mchat-fab#mchat-fab,
+html body.sg-pills-instrip #chat-fab#chat-fab {
+  position: static !important;
+  left: auto !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: auto !important;
+  transform: none !important;
+  margin: 0 !important;
+  flex: 0 0 auto !important;
+  align-self: flex-start !important;
+  z-index: auto !important;
 }
