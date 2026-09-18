@@ -510,3 +510,150 @@ body.sg-cta-in-row #chat-fab#chat-fab {
   z-index: 27 !important;
   animation: none !important;
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ONE ROW, ONE SHAPE (owner, 2026-09-18, fourth decision — chose option A)
+
+   "Yes but this are not same size or same looking like other buttons in same
+   row." Correct: v2.3 gave both pills the row's colour but not its shape —
+   the main button measured 218px wide and Talk 74px, next to 42px circles
+   with a 10px label under them.
+
+   So the main button and Talk become that same icon-and-label item. The words
+   go: "Book this gym · £5.00" becomes a 💳 circle labelled "Book". The owner
+   was told the price and the Ask AI prompt stop showing on screen and chose
+   this over keeping the text, because it also frees ~250px — every button in
+   the row now fits without the chevron.
+
+   Ids and handlers are untouched, as before: only looks and place change.
+   Revert = drop CTA_IN_ROW in rails.js.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* The row's own metrics, read off .tt-action-btn.sgi in sg-rail-ui.js and
+     the measured live rects: circle 42px, 10px label 3px under it. --sg-row-
+     lift is the gap from the band's bottom to the circle's bottom, so both
+     new items line up with the buttons already in the row. */
+  --sg-row-ico: 42px;
+  --sg-row-cap: 12px;
+  --sg-row-lift: 23px;
+}
+
+/* The main button is now a column: circle on top, label under. Its own box
+   carries nothing visible — the circle inside it does — so the glass look set
+   by the third decision above is switched back off here. */
+html body.sg-cta-in-row #sg-continue-banner#sg-continue-banner {
+  left: var(--sg-band-pad) !important;
+  right: auto !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  height: auto !important;
+  bottom: calc(var(--sg-band-bottom) + var(--sg-row-lift) - var(--sg-row-cap) - 3px) !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 3px !important;
+  padding: 0 !important;
+  background: none !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* The label text the button used to show is what made it 218px wide. */
+html body.sg-cta-in-row #sg-continue-banner .sg-cb-text,
+html body.sg-cta-in-row #sg-continue-banner .sg-cb-sub,
+html body.sg-cta-in-row #sg-continue-banner .sg-cb-price,
+html body.sg-cta-in-row #sg-continue-banner .sg-cb-arrow {
+  display: none !important;
+}
+
+/* rails.js puts these two in: the glyph and the short caption. */
+html body.sg-cta-in-row #sg-continue-banner .sg-cb-ico {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  width: var(--sg-row-ico) !important;
+  height: var(--sg-row-ico) !important;
+  border-radius: 50% !important;
+  background: rgba(13, 16, 25, .62) !important;
+  border: 1px solid rgba(255, 255, 255, .12) !important;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .35) !important;
+  font-size: 19px !important;
+  line-height: 1 !important;
+}
+html body.sg-cta-in-row #sg-continue-banner .sg-cb-cap {
+  display: block !important;
+  color: #fff !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  line-height: var(--sg-row-cap) !important;
+  letter-spacing: 0 !important;
+  white-space: nowrap !important;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, .85) !important;
+}
+
+/* Talk, same treatment. Its text is a bare node inside the button, not an
+   element, so it cannot be hidden with a selector: `font-size: 0` collapses
+   it and the glyph and caption come from pseudo-elements. Each id twice, for
+   the book-by-tap.css reason noted above. */
+body.sg-cta-in-row #bchat-fab#bchat-fab,
+body.sg-cta-in-row #pchat-fab#pchat-fab,
+body.sg-cta-in-row #schat-fab#schat-fab,
+body.sg-cta-in-row #rchat-fab#rchat-fab,
+body.sg-cta-in-row #mchat-fab#mchat-fab,
+body.sg-cta-in-row #chat-fab#chat-fab {
+  left: var(--sg-talk-left, 12px) !important;
+  bottom: calc(var(--sg-band-bottom) + var(--sg-row-lift)) !important;
+  width: var(--sg-row-ico) !important;
+  min-width: 0 !important;
+  height: var(--sg-row-ico) !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  background: rgba(13, 16, 25, .62) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .35) !important;
+  font-size: 0 !important;
+  overflow: visible !important;
+}
+body.sg-cta-in-row #bchat-fab#bchat-fab > *,
+body.sg-cta-in-row #pchat-fab#pchat-fab > *,
+body.sg-cta-in-row #schat-fab#schat-fab > *,
+body.sg-cta-in-row #rchat-fab#rchat-fab > *,
+body.sg-cta-in-row #mchat-fab#mchat-fab > *,
+body.sg-cta-in-row #chat-fab#chat-fab > * {
+  display: none !important;
+}
+body.sg-cta-in-row #bchat-fab#bchat-fab::before,
+body.sg-cta-in-row #pchat-fab#pchat-fab::before,
+body.sg-cta-in-row #schat-fab#schat-fab::before,
+body.sg-cta-in-row #rchat-fab#rchat-fab::before,
+body.sg-cta-in-row #mchat-fab#mchat-fab::before,
+body.sg-cta-in-row #chat-fab#chat-fab::before {
+  content: '\1F3A4' !important;
+  font-size: 19px !important;
+  line-height: 1 !important;
+}
+body.sg-cta-in-row #bchat-fab#bchat-fab::after,
+body.sg-cta-in-row #pchat-fab#pchat-fab::after,
+body.sg-cta-in-row #schat-fab#schat-fab::after,
+body.sg-cta-in-row #rchat-fab#rchat-fab::after,
+body.sg-cta-in-row #mchat-fab#mchat-fab::after,
+body.sg-cta-in-row #chat-fab#chat-fab::after {
+  content: 'Talk' !important;
+  position: absolute !important;
+  top: calc(100% + 3px) !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  color: #fff !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  line-height: var(--sg-row-cap) !important;
+  white-space: nowrap !important;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, .85) !important;
+}

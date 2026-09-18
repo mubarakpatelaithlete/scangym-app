@@ -164,6 +164,49 @@
     return 0;
   }
 
+  /* The glyph and caption that replace the button's own words. Matched on the
+     label text rather than on the tab, because the same tab can show a
+     different action (Profile shows "Continue" signed out and nothing signed
+     in) and because the framed Reels document has no tab state at all. */
+  var CAPTIONS = [
+    [/^\s*book/i,      '\uD83D\uDCB3', 'Book'],
+    [/ask ai/i,         '\u2728',       'Ask AI'],
+    [/^\s*continue/i,  '\uD83D\uDD13', 'Sign in'],
+    [/gym|near me/i,    '\uD83D\uDCCD', 'Gyms']
+  ];
+
+  /* Give the CTA the row's shape: a glyph in a circle with a caption under it.
+     Called every pass because the label changes as the user moves around, and
+     the caption has to follow it. */
+  function iconify(cta) {
+    if (!cta) return;
+    /* Read the label elements, NOT cta.textContent: the caption this function
+       appends is inside the button too, so textContent would feed last pass's
+       caption back in and the glyph could stick on a stale action. */
+    var parts = cta.querySelectorAll('.sg-cb-text, .sg-cb-sub, .sg-cb-price');
+    var words = '';
+    for (var p = 0; p < parts.length; p++) words += ' ' + (parts[p].textContent || '');
+    words = words.replace(/\s+/g, ' ').trim();
+    var ico = '\u2728', cap = 'Ask AI';
+    for (var i = 0; i < CAPTIONS.length; i++) {
+      if (CAPTIONS[i][0].test(words)) { ico = CAPTIONS[i][1]; cap = CAPTIONS[i][2]; break; }
+    }
+    var iel = cta.querySelector('.sg-cb-ico');
+    if (!iel) {
+      iel = document.createElement('span');
+      iel.className = 'sg-cb-ico';
+      cta.insertBefore(iel, cta.firstChild);
+    }
+    var cel = cta.querySelector('.sg-cb-cap');
+    if (!cel) {
+      cel = document.createElement('span');
+      cel.className = 'sg-cb-cap';
+      cta.appendChild(cel);
+    }
+    if (iel.textContent !== ico) iel.textContent = ico;
+    if (cel.textContent !== cap) cel.textContent = cap;
+  }
+
   function measureCta() {
     var cta = document.querySelector(CTA);
     /* Hidden (`sg-cb-hidden`) or absent — e.g. a tab with no primary action.
@@ -184,6 +227,7 @@
   function syncCta() {
     if (FRAMED) return;               // the parent owns the pill
     document.body.classList.add(CTA_IN_ROW);
+    iconify(document.querySelector(CTA));
     var w = measureCta();
     publish(w, measureTalk());
     var total = parseFloat(
