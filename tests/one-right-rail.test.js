@@ -310,8 +310,9 @@ test('the Reels iframe reaches the nav and the dock reserves the band for it', (
   assert.match(railsCss, /html body\.sg-cta-in-row #sg-continue-banner#sg-continue-banner\s*\{[^}]*background:\s*rgba\(0, 0, 0/,
     'the main button is orange again');
   for (const fab of ['#bchat-fab', '#pchat-fab', '#schat-fab', '#rchat-fab', '#mchat-fab', '#chat-fab']) {
-    assert.ok(railsCss.includes('body.sg-cta-in-row ' + fab),
-      fab + ' is not placed in the row, so it keeps its own right:14px and floats');
+    // Two ids: book-by-tap.css uses id + two classes to pin it right: 12px.
+    assert.ok(railsCss.includes('body.sg-cta-in-row ' + fab + fab),
+      fab + ' is not placed in the row, so it stays at the right edge over the buttons');
     assert.ok(railsJs.includes(fab),
       fab + ' is not measured, so the row will not leave room for it');
   }
