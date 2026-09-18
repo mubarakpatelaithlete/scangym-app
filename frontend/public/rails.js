@@ -358,9 +358,17 @@
     var slot = slotIn(row);
     var cta = document.querySelector(CTA), talk = talkEl();
     remember(cta); remember(talk);
-    if (cta && cta.parentNode !== slot) slot.appendChild(cta);
-    if (talk && talk.parentNode !== slot) slot.appendChild(talk);
+    var moved = false;
+    if (cta && cta.parentNode !== slot) { slot.appendChild(cta); moved = true; }
+    if (talk && talk.parentNode !== slot) { slot.appendChild(talk); moved = true; }
     if (document.body) document.body.classList.add(RIDES);
+    /* sg-rail-ui scrolls the active chip into view, and that scroll was sized
+       for a row that started 124px in. With the pills inside the scroller the
+       same 124px hides them: measured on Book and Partner, the main button sat
+       at x-112, off screen, before the customer had touched anything. Rewound
+       once, when the pills arrive — never on a later pass, so a swipe of the
+       user's own is never undone. */
+    if (moved && row.scrollLeft) row.scrollLeft = 0;
   }
 
   window.sgRails = { scan: scan, LIVE_CLASS: LIVE, syncCta: syncCta, ride: ride };
