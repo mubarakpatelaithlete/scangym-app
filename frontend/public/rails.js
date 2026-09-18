@@ -96,18 +96,77 @@
     }
     var live = document.querySelector('.tt-card.' + LIVE);
     if (live) markScroll(live);
+    syncCta();          // before markAllRows: the inset decides what overflows
     markAllRows();
   }
 
   function init() {
     scan();
     setInterval(scan, 800); // same heartbeat the other rail scripts use
-    window.addEventListener('resize', markAllRows);
-    document.addEventListener('sg:tabchange', function () { requestAnimationFrame(markAllRows); });
+    window.addEventListener('resize', function () { syncCta(); markAllRows(); });
+    /* The label — and so the pill's width — changes with the tab. */
+    document.addEventListener('sg:tabchange', function () {
+      requestAnimationFrame(function () { syncCta(); markAllRows(); });
+    });
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 
-  window.sgRails = { scan: scan, LIVE_CLASS: LIVE };
+  /* ── The orange CTA as the row's first item (owner, 2026-09-18) ───────────
+     rails.css parks `#sg-continue-banner` at the left end of the band as a
+     pill and insets the rows by `--sg-cta-w`. Only this file knows how wide
+     the pill actually is — the label changes per tab ("Book this gym · £5.49"
+     is far wider than "Continue") — so it measures it every pass and
+     publishes the number.
+
+     The class lives here rather than in the stylesheet so the decision can be
+     reverted in one line if bookings dip: drop CTA_IN_ROW and the bar goes
+     back to full width, untouched.
+
+     The Reels tab is a separate document, so the framed copy of this script
+     cannot see the pill at all. The top window posts the width in; the framed
+     branch below applies it. */
+  var CTA_IN_ROW = 'sg-cta-in-row';
+  var CTA = '#sg-continue-banner';
+  var FRAMED = (function () { try { return window.top !== window.self; } catch (e) { return true; } })();
+
+  function publishCtaWidth(w) {
+    document.documentElement.style.setProperty('--sg-cta-w', Math.round(w) + 'px');
+  }
+
+  function measureCta() {
+    var cta = document.querySelector(CTA);
+    /* Hidden (`sg-cb-hidden`) or absent — e.g. a tab with no primary action.
+       Inset 0 so the row uses the full width instead of holding a gap open
+       for a button that is not there. */
+    if (!cta || !cta.offsetParent || cta.classList.contains('sg-cb-hidden')) return 0;
+    return cta.getBoundingClientRect().width;
+  }
+
+  function syncCta() {
+    if (FRAMED) return;               // the parent owns the pill
+    document.body.classList.add(CTA_IN_ROW);
+    var w = measureCta();
+    publishCtaWidth(w);
+    /* Tell every Reels frame, so its row starts after the pill drawn over it. */
+    var frames = document.querySelectorAll('#sg-reels-iframe, .sg-reels-frame, iframe[src*="reels"]');
+    for (var i = 0; i < frames.length; i++) {
+      try {
+        frames[i].contentWindow.postMessage({ sg: 'cta-in-row', width: Math.round(w) }, '*');
+      } catch (e) { /* cross-origin or not loaded yet: next pass */ }
+    }
+  }
+
+  if (FRAMED) {
+    window.addEventListener('message', function (ev) {
+      var d = ev.data;
+      if (!d || d.sg !== 'cta-in-row') return;
+      if (document.body) document.body.classList.add(CTA_IN_ROW);
+      publishCtaWidth(d.width || 0);
+      markAllRows();                  // the inset changed how much overflows
+    });
+  }
+
+  window.sgRails = { scan: scan, LIVE_CLASS: LIVE, syncCta: syncCta };
 })();

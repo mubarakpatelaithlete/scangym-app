@@ -82,6 +82,15 @@
     return parseInt(v, 10) || 72;
   }
 
+  /* Is rails.js running the CTA as the row's first item? Read defensively:
+     this file is also loaded into minimal DOM stubs (tests/dock-no-overlap),
+     and a missing classList must mean "no", not a thrown layout pass. */
+  function ctaInRow() {
+    try { return !!(document.body && document.body.classList &&
+                    document.body.classList.contains('sg-cta-in-row')); }
+    catch (e) { return false; }
+  }
+
   function heightOf(el) {
     return el ? Math.round(el.getBoundingClientRect().height) : 0;
   }
@@ -133,6 +142,17 @@
     for (i = 0; i < BOTTOM_STACK.length; i++) {
       el = $(BOTTOM_STACK[i]);
       if (!visible(el)) continue;
+      /* The orange CTA is IN the row now (owner, 2026-09-18): rails.css parks
+         it as a pill at the left end of the band, which this file has already
+         reserved. Docking it as its own layer would both fight that rule with
+         an inline `bottom` and reserve a second 52px strip for a bar that is
+         no longer full-width — the 52px the owner asked to get back. So while
+         rails.js has the class on, the dock lets go of it: the inline value
+         from earlier passes is removed, not just skipped, or it would stick. */
+      if (el.id === 'sg-continue-banner' && ctaInRow()) {
+        el.style.removeProperty('bottom');
+        continue;
+      }
       h = heightOf(el);
       el.style.setProperty('bottom', cursor + 'px', 'important');
       cursor += h + GAP;
