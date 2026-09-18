@@ -139,8 +139,16 @@
     var cta = document.querySelector(CTA);
     /* Hidden (`sg-cb-hidden`) or absent — e.g. a tab with no primary action.
        Inset 0 so the row uses the full width instead of holding a gap open
-       for a button that is not there. */
-    if (!cta || !cta.offsetParent || cta.classList.contains('sg-cb-hidden')) return 0;
+       for a button that is not there.
+
+       Do NOT test `offsetParent` here: the CTA is `position: fixed`, and a
+       fixed element's offsetParent is null even when it is plainly on screen.
+       The first deploy did exactly that, published --sg-cta-w: 0px, and the
+       row's first buttons rendered UNDER a 217px pill. Measured, plus the
+       properties that actually mean "not painted". */
+    if (!cta || cta.classList.contains('sg-cb-hidden')) return 0;
+    var cs = getComputedStyle(cta);
+    if (cs.display === 'none' || cs.visibility === 'hidden' || cs.opacity === '0') return 0;
     return cta.getBoundingClientRect().width;
   }
 
