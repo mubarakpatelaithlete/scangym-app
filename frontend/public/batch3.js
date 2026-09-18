@@ -62,7 +62,7 @@ window._sgB3VerifyOwnership=async function(targetGymId){
     +(gymName?'<p style="color:#FF6D00;font-size:13px;font-weight:700;text-align:left;margin:0 0 10px">'+String(gymName).replace(/</g,'&lt;')+'</p>':'');
   window._sgOpenSheet('sg-own-sheet',head
     +'<p style="color:rgba(255,255,255,.55);font-size:13px;text-align:left;line-height:1.5;margin:0 0 10px">We\u2019ll send a 6-digit code to <b style="color:#fff">this gym\u2019s registered business number</b>. Only someone at the gym can read it \u2014 that proves you\u2019re the owner.</p>'
-    +'<div id="sg-own-preview" style="font-size:12px;color:rgba(255,255,255,.4);text-align:left;line-height:1.5;margin:0 0 16px">Checking which number Google has for you\u2026</div>'
+    +'<div id="sg-own-preview" style="font-size:12px;color:rgba(255,255,255,.4);text-align:left;line-height:1.5;margin:0 0 16px">Checking the number listed for your gym\u2026</div>'
     // Channel selector — SMS or WhatsApp
     +'<div style="display:flex;gap:8px;margin-bottom:14px" id="sg-own-channels">'
     +'<button onclick="_sgB3SelectChannel(\'sms\')" id="sg-own-ch-sms" class="sg-own-ch-btn sg-own-ch-active" style="flex:1;padding:12px 8px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;border:2px solid #FF6D00;background:rgba(255,109,0,.12);color:#FF6D00;transition:all .15s">\uD83D\uDCF1 SMS</button>'
@@ -91,9 +91,9 @@ window._sgB3PhonePreview=async function(gymId){
     if(d.hasNumber){
       box.innerHTML='<span style="color:#fff">\uD83D\uDCF1 '+(d.message||'')+'</span><div style="margin-top:3px">'+(d.action||'')+'</div>';
     }else{
-      box.innerHTML='<span style="color:#fbbf24">\u26A0\uFE0F '+(d.message||'No phone number on your Google listing.')+'</span><div style="margin-top:3px">'+(d.action||'Upload proof of ownership below instead.')+'</div>';
+      box.innerHTML='<span style="color:#fbbf24">\u26A0\uFE0F '+(d.message||'No public phone number listed for your gym.')+'</span><div style="margin-top:3px">'+(d.action||'Upload proof of ownership below instead.')+'</div>';
       var send=document.getElementById('sg-own-send');
-      if(send){send.style.opacity='.45';send.title='No number on your Google listing';}
+      if(send){send.style.opacity='.45';send.title='No public number listed for your gym';}
     }
   }catch(e){var b2=el();if(b2)b2.textContent='';}
 };

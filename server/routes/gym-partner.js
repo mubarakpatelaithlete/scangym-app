@@ -1506,7 +1506,7 @@ router.get('/claim/phone-preview', authenticateUser, async (req, res) => {
     if (!bizPhone) {
       return res.json({
         hasNumber: false,
-        message: 'Google has no phone number on your listing, so we cannot text you a code.',
+        message: 'There is no public phone number listed for your gym, so we cannot text you a code.',
         action: 'Upload proof of ownership instead — we review it within 24 hours.',
       });
     }
@@ -1514,7 +1514,7 @@ router.get('/claim/phone-preview', authenticateUser, async (req, res) => {
       hasNumber: true,
       maskedPhone: maskPhone(bizPhone),
       source: googlePhone ? 'google_listing' : 'scangym_record',
-      message: `We'll text a 6-digit code to ${maskPhone(bizPhone)} — the number on your Google listing.`,
+      message: `We'll text a 6-digit code to ${maskPhone(bizPhone)} — the number listed publicly for your gym.`,
       action: 'Not a number you can answer? Upload proof of ownership instead.',
     });
   } catch (err) {

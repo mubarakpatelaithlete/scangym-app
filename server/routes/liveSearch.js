@@ -418,7 +418,7 @@ router.get('/search', async (req, res) => {
       if (fallbackGyms.length > 0) {
         return res.json({ gyms: fallbackGyms, total: fallbackGyms.length, nextPageToken: null, query: searchQuery, source: 'database_fallback' });
       }
-      return res.status(500).json({ error: 'Google Maps API key not configured' });
+      return res.status(503).json({ error: 'search_unavailable', message: 'Gym search is temporarily unavailable.' });
     }
 
     // #11: Places API (New) fast-path
@@ -710,7 +710,7 @@ router.get('/partner-search', async (req, res) => {
           gyms: [], total: 0, source: 'google_maps_link',
           resolvedName: resolved.names[0] || null,
           message: resolved.names.length
-            ? `That link points to "${resolved.names[0]}", which we could not find on Google Maps.`
+            ? `That link points to "${resolved.names[0]}", which we could not find in our directory.`
             : 'We could not read that link.',
           action: 'Type your gym name plus your town instead, e.g. "Iron Works Bharuch".',
         });
@@ -751,8 +751,8 @@ router.get('/partner-search', async (req, res) => {
         gyms: [],
         total: 0,
         source: source || 'google',
-        message: 'We could not find that on Google Maps.',
-        action: 'Add your town or city to the name, or paste your Google Maps link here.',
+        message: 'We could not find your gym in our directory.',
+        action: 'Add your town or city to the name, or paste the link to your gym\u2019s map listing.',
       });
     }
 
@@ -761,8 +761,8 @@ router.get('/partner-search', async (req, res) => {
     const payload = { gyms, total: gyms.length, query: searchQuery, source };
     if (source !== 'google_maps_link' && !looksLikeNameMatch(searchQuery, gyms)) {
       payload.weakMatch = true;
-      payload.message = 'Your gym may not be in this list \u2014 Google shows bigger places first.';
-      payload.action = 'Add your town or city (e.g. "your gym name Bharuch"), or paste your Google Maps link.';
+      payload.message = 'Your gym may not be in this list \u2014 bigger, better-known places show first.';
+      payload.action = 'Add your town or city (e.g. "your gym name Bharuch"), or paste the link to your gym’s map listing.';
     }
     res.json(payload);
   } catch (err) {
@@ -780,7 +780,7 @@ router.get('/nearby', async (req, res) => {
     }
 
     if (!GOOGLE_MAPS_API_KEY) {
-      return res.status(500).json({ error: 'Google Maps API key not configured' });
+      return res.status(503).json({ error: 'search_unavailable', message: 'Gym search is temporarily unavailable.' });
     }
 
     let searchKeyword = keyword || 'gym fitness';
@@ -877,7 +877,7 @@ router.get('/check-availability', async (req, res) => {
 
     // Fetch gym details (reuses the place details logic)
     if (!GOOGLE_MAPS_API_KEY) {
-      return res.status(500).json({ error: 'Google Maps API key not configured' });
+      return res.status(503).json({ error: 'search_unavailable', message: 'Gym search is temporarily unavailable.' });
     }
 
     const cacheKey = `place:${placeId}`;
@@ -1105,7 +1105,7 @@ router.post('/ensure-gym', optionalAuth, async (req, res) => {
     const data = await response.json();
 
     if (data.status !== 'OK' || !data.result) {
-      return res.status(404).json({ error: 'Place not found on Google' });
+      return res.status(404).json({ error: 'not_found', message: 'We could not find that gym.' });
     }
 
     const p = data.result;

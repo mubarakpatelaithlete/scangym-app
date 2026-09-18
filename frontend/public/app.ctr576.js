@@ -18358,7 +18358,7 @@ window._partnerSearchGyms=function(q){
       var d=r.ok?await r.json():{};
       d.results=(d.gyms||[]).slice(0,5);
       if(!d.results||!d.results.length){
-        results.innerHTML='<div style="padding:12px 16px;color:rgba(255,255,255,.45);font-size:13px;line-height:1.5">'+(d.message||'We could not find that on Google Maps.')+'<div style="color:rgba(255,255,255,.3);font-size:11px;margin-top:4px">'+(d.action||'Try the exact name on your Google listing, or add your town.')+'</div><a onclick="navigate(\'/contact\')" style="color:#FF6D00;cursor:pointer;font-size:12px;display:inline-block;margin-top:6px">Still stuck? Contact us</a></div>';
+        results.innerHTML='<div style="padding:12px 16px;color:rgba(255,255,255,.45);font-size:13px;line-height:1.5">'+(d.message||'We could not find your gym in our directory.')+'<div style="color:rgba(255,255,255,.3);font-size:11px;margin-top:4px">'+(d.action||'Try the exact name of your gym, plus your town.')+'</div><a onclick="navigate(\'/contact\')" style="color:#FF6D00;cursor:pointer;font-size:12px;display:inline-block;margin-top:6px">Still stuck? Contact us</a></div>';
         results.style.display='block';
         return;
       }
@@ -18533,7 +18533,7 @@ window._partnerSearchClaim=async function(q){
     var r=await fetch('/api/live/partner-search?q='+encodeURIComponent(q)).catch(function(){return null;}); // owner searches their own name: no type filter
     var d=r&&r.ok?await r.json().catch(function(){return{gyms:[]};}):({gyms:[]});
     var gyms=d.gyms||d.results||[];
-    if(!gyms.length){box.innerHTML='<p style="color:rgba(255,255,255,.45);font-size:12px;padding:8px;text-align:center;line-height:1.5">'+(d.message||'Not found on Google Maps.')+'<br><span style="color:rgba(255,255,255,.3);font-size:11px">'+(d.action||'Add your town, or paste your Google Maps link.')+'</span></p>';return;}
+    if(!gyms.length){box.innerHTML='<p style="color:rgba(255,255,255,.45);font-size:12px;padding:8px;text-align:center;line-height:1.5">'+(d.message||'We could not find your gym in our directory.')+'<br><span style="color:rgba(255,255,255,.3);font-size:11px">'+(d.action||'Add your town or city to the name.')+'</span></p>';return;}
     box.innerHTML=gyms.slice(0,5).map(function(g){
       var claimed=g.claimed_by?true:false;
       return '<div style="display:flex;align-items:center;gap:10px;padding:8px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px;margin-bottom:4px">'
