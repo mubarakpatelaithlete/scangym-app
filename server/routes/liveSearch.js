@@ -581,6 +581,70 @@ router.get('/search', async (req, res) => {
   }
 });
 
+// ═══════════════════════════════════════════════════════════════════
+// GET /api/live/partner-search — "find MY gym" search for onboarding
+// Customer search deliberately narrows to type=gym and rewrites a bare
+// query to "gym in X". That is right for browsing and wrong for an owner
+// typing their own business name: plenty of real gyms, studios and
+// combined premises are not typed 'gym' by Google, so the owner searched
+// their own gym, saw nothing, and gave up before ever reaching Verify.
+// This endpoint searches the exact words the owner typed, no type filter.
+// ═══════════════════════════════════════════════════════════════════
+router.get('/partner-search', async (req, res) => {
+  try {
+    const searchQuery = (req.query.q || req.query.query || '').trim();
+    if (!searchQuery) return res.status(400).json({ error: 'Query parameter "q" is required' });
+    if (!GOOGLE_MAPS_API_KEY) {
+      const dbGyms = await searchGymsFromDatabase(searchQuery);
+      return res.json({ gyms: dbGyms, total: dbGyms.length, source: 'database' });
+    }
+
+    const { lat, lng, radius } = req.query;
+    let places = [];
+    let source = null;
+
+    // Places API (New) — exact words, any business type
+    try {
+      places = await searchWithPlacesNewAPI(searchQuery, lat, lng, radius, 20, true);
+      if (places.length) source = 'google_places_new_api';
+    } catch (e) {
+      console.warn('[PartnerSearch] New API failed, using legacy:', e.message);
+    }
+
+    // Legacy text search — still no type filter, still no query rewriting
+    if (!places.length) {
+      let url = `${BASE_URL}/textsearch/json?query=${encodeURIComponent(searchQuery)}&key=${GOOGLE_MAPS_API_KEY}`;
+      if (lat && lng) url += `&location=${lat},${lng}&radius=${radius || 20000}`;
+      const resp = await fetch(url);
+      const data = await resp.json();
+      if (data.status === 'OK' || data.status === 'ZERO_RESULTS') {
+        places = data.results || [];
+        if (places.length) source = 'google_places_legacy';
+      } else {
+        console.error('[PartnerSearch] Places error:', data.status, data.error_message || '');
+      }
+    }
+
+    const gyms = places.map(parseSearchResult);
+
+    if (!gyms.length) {
+      // Say what to do instead of showing an empty list with no explanation
+      return res.json({
+        gyms: [],
+        total: 0,
+        source: source || 'google',
+        message: 'We could not find that on Google Maps.',
+        action: 'Try the exact name on your Google listing, add your town, or paste your Google Maps link.',
+      });
+    }
+
+    res.json({ gyms, total: gyms.length, query: searchQuery, source });
+  } catch (err) {
+    console.error('Partner search error:', err);
+    res.status(500).json({ error: 'search_failed', message: 'Could not search for your gym right now.', action: 'Try again in a moment.' });
+  }
+});
+
 router.get('/nearby', async (req, res) => {
   try {
     const { lat, lng, radius = 5000, pagetoken, keyword, filter24h, filterSelfService } = req.query;

@@ -18354,11 +18354,11 @@ window._partnerSearchGyms=function(q){
   if(!q||q.length<2){results.style.display='none';return;}
   _partnerSearchTimeout=setTimeout(async function(){
     try{
-      var r=await fetch('/api/live/search?q='+encodeURIComponent(q)); // was /api/gyms/search — route never existed
+      var r=await fetch('/api/live/partner-search?q='+encodeURIComponent(q)); // owner searches their own name: no type filter
       var d=r.ok?await r.json():{};
       d.results=(d.gyms||[]).slice(0,5);
       if(!d.results||!d.results.length){
-        results.innerHTML='<div style="padding:12px 16px;color:rgba(255,255,255,.4);font-size:13px">No gyms found — <a onclick="navigate(\'/contact\')" style="color:#FF6D00;cursor:pointer">contact us to add yours</a></div>';
+        results.innerHTML='<div style="padding:12px 16px;color:rgba(255,255,255,.45);font-size:13px;line-height:1.5">'+(d.message||'We could not find that on Google Maps.')+'<div style="color:rgba(255,255,255,.3);font-size:11px;margin-top:4px">'+(d.action||'Try the exact name on your Google listing, or add your town.')+'</div><a onclick="navigate(\'/contact\')" style="color:#FF6D00;cursor:pointer;font-size:12px;display:inline-block;margin-top:6px">Still stuck? Contact us</a></div>';
         results.style.display='block';
         return;
       }
@@ -18527,7 +18527,7 @@ window._partnerSearchClaim=async function(q){
   var box=document.getElementById('partner-claim-results');if(!box)return;
   if(!q||q.length<2){box.innerHTML='';return;}
   try{
-    var r=await fetch('/api/live/search?q='+encodeURIComponent(q)).catch(function(){return null;}); // was /api/search — route never existed
+    var r=await fetch('/api/live/partner-search?q='+encodeURIComponent(q)).catch(function(){return null;}); // owner searches their own name: no type filter
     var d=r&&r.ok?await r.json().catch(function(){return{gyms:[]};}):({gyms:[]});
     var gyms=d.gyms||d.results||[];
     if(!gyms.length){box.innerHTML='<p style="color:rgba(255,255,255,.3);font-size:12px;padding:8px;text-align:center">No gyms found</p>';return;}

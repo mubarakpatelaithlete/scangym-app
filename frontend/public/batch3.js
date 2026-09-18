@@ -61,7 +61,8 @@ window._sgB3VerifyOwnership=async function(targetGymId){
   var head='<p style="font-size:18px;font-weight:800;color:#fff;margin:0 0 6px;text-align:left">\uD83D\uDEE1\uFE0F Verify ownership</p>'
     +(gymName?'<p style="color:#FF6D00;font-size:13px;font-weight:700;text-align:left;margin:0 0 10px">'+String(gymName).replace(/</g,'&lt;')+'</p>':'');
   window._sgOpenSheet('sg-own-sheet',head
-    +'<p style="color:rgba(255,255,255,.55);font-size:13px;text-align:left;line-height:1.5;margin:0 0 16px">We\u2019ll send a 6-digit code to <b style="color:#fff">this gym\u2019s registered business number</b>. Only someone at the gym can read it \u2014 that proves you\u2019re the owner.</p>'
+    +'<p style="color:rgba(255,255,255,.55);font-size:13px;text-align:left;line-height:1.5;margin:0 0 10px">We\u2019ll send a 6-digit code to <b style="color:#fff">this gym\u2019s registered business number</b>. Only someone at the gym can read it \u2014 that proves you\u2019re the owner.</p>'
+    +'<div id="sg-own-preview" style="font-size:12px;color:rgba(255,255,255,.4);text-align:left;line-height:1.5;margin:0 0 16px">Checking which number Google has for you\u2026</div>'
     // Channel selector — SMS or WhatsApp
     +'<div style="display:flex;gap:8px;margin-bottom:14px" id="sg-own-channels">'
     +'<button onclick="_sgB3SelectChannel(\'sms\')" id="sg-own-ch-sms" class="sg-own-ch-btn sg-own-ch-active" style="flex:1;padding:12px 8px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;border:2px solid #FF6D00;background:rgba(255,109,0,.12);color:#FF6D00;transition:all .15s">\uD83D\uDCF1 SMS</button>'
@@ -77,6 +78,24 @@ window._sgB3VerifyOwnership=async function(targetGymId){
     +'<button id="sg-own-upload" onclick="document.getElementById(\'sg-own-file\').click()" style="width:100%;background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.15);padding:12px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer">\uD83D\uDCC4 Upload proof of ownership</button></div>');
   // Default channel state
   window._sgOwnChannel='sms';
+  // Show WHICH number gets the code before anything is sent
+  _sgB3PhonePreview(gymId);
+};
+window._sgB3PhonePreview=async function(gymId){
+  var el=function(){return document.getElementById('sg-own-preview');};
+  try{
+    var r=await fetch('/api/gym-partner/claim/phone-preview?gymId='+encodeURIComponent(gymId),{credentials:'include'});
+    var d=await r.json().catch(function(){return {};});
+    var box=el();if(!box)return;
+    if(d.alreadyVerified){box.innerHTML='<span style="color:#22c55e">Already verified \u2705</span>';return;}
+    if(d.hasNumber){
+      box.innerHTML='<span style="color:#fff">\uD83D\uDCF1 '+(d.message||'')+'</span><div style="margin-top:3px">'+(d.action||'')+'</div>';
+    }else{
+      box.innerHTML='<span style="color:#fbbf24">\u26A0\uFE0F '+(d.message||'No phone number on your Google listing.')+'</span><div style="margin-top:3px">'+(d.action||'Upload proof of ownership below instead.')+'</div>';
+      var send=document.getElementById('sg-own-send');
+      if(send){send.style.opacity='.45';send.title='No number on your Google listing';}
+    }
+  }catch(e){var b2=el();if(b2)b2.textContent='';}
 };
 // Channel selector toggle
 window._sgB3SelectChannel=function(ch){
@@ -132,6 +151,7 @@ window._sgB3SendOwnOtp=async function(gymId){
     if(d.alreadyVerified){toast('Already verified ✅','success',2500);if(typeof showLockSetupPrompt==='function')showLockSetupPrompt(gymId);return;}
     if(d.success){
       var sentLabel=d.channel==='whatsapp'?'WhatsApp sent to':'SMS sent to';
+      if(d.downgraded)toast(d.message||'WhatsApp unavailable \u2014 sent by SMS instead','info',5000);
       if(btn){btn.textContent=sentLabel+' '+(d.maskedPhone||'registered number')+' \u2713';btn.style.opacity='.8';btn.style.background='rgba(255,255,255,.1)';}
       // Hide channel selector after sending
       var chDiv=document.getElementById('sg-own-channels');if(chDiv)chDiv.style.display='none';
