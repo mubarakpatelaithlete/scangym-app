@@ -608,7 +608,7 @@ router.post('/admin/unclaim', authenticateUser, requireAdmin, express.json(), as
 });
 
 // POST /admin/reset-verification — clear ownership_verified so OTP flow can be re-tested
-router.post('/admin/reset-verification', authenticateUser, express.json(), async (req, res) => {
+router.post('/admin/reset-verification', authenticateUser, requireAdmin, express.json(), async (req, res) => {
   try {
     const { gymId } = req.body;
     if (!gymId) return res.status(400).json({ error: 'gymId required' });
