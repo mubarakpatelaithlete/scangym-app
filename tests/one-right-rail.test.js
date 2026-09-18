@@ -161,7 +161,8 @@ test('a row is pinned to something that is actually full-screen', () => {
     'card rails are positioned against the card again');
   assert.match(railsCss, /--sg-band-bottom-card:\s*var\(--sg-band-gap\)/,
     'a card rail must not reserve the tab bar twice: .tt-view already stops above it');
-  assert.match(railsCss, /#sg-profile-rail\s*\{\s*position:\s*fixed/,
+  // (#sg-profile-rail now shares this rule with .sg-pr-host-capped)
+  assert.match(railsCss, /#sg-profile-rail,\s*\n?\s*\.sg-pr-host-capped\s*\{\s*position:\s*fixed/,
     'the body-level rails should stay fixed — they have no contained ancestor');
 });
 
@@ -273,4 +274,20 @@ test('the Reels iframe reaches the nav and the dock reserves the band for it', (
   assert.match(dockJs, /sg-cta-in-row/, 'sg-dock.js does not know about the CTA-in-row mode');
   assert.match(dockJs, /ctaInRow\(\)[\s\S]{0,200}removeProperty\('bottom'\)/,
     'sg-dock.js still docks the CTA as its own layer instead of releasing it');
+
+  // ── Profile's second rail (found on production 2026-09-18) ──────────────
+  // profile-rail.js floats #sg-profile-rail only when the app has no rail of
+  // its own; otherwise it extends the app's native rail and marks it
+  // sg-pr-host-capped. Unstyled, that host stayed a vertical column
+  // (x330-380, y92-696) while every other tab had the row.
+  assert.match(railsCss, /\.sg-pr-host-capped[\s\S]{0,600}?position:\s*fixed/,
+    'the native Profile rail host is not pinned into the band');
+  assert.match(railsCss, /\.sg-pr-host-capped\s*\{[\s\S]{0,300}?overflow-y:\s*hidden/,
+    'the Profile host keeps its own vertical scroll, so it stays a column');
+  assert.match(dockJs, /sg-pr-host-capped/, 'the dock does not reserve the Profile host');
+  assert.match(railsJs, /sg-pr-host-capped/, 'rails.js does not watch the Profile host');
+
+  // The pill must leave room for the row: uncapped labels ("Ask AI \"How much
+  // have I made this week\"") took 293-312px of 390px.
+  assert.match(pill[0], /max-width:\s*58%/, 'the CTA pill is uncapped and will eat the row');
 });

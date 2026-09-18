@@ -50,7 +50,8 @@
     '.reel-actions',
     '#sg-reels-rail',
     '#sg-sv-rail.sv-float',
-    '#sg-profile-rail'
+    '#sg-profile-rail',
+    '.sg-pr-host-capped'     // the app's own Profile rail, extended in place
   ];
 
   /* Floating pills — they ride above the whole stack rather than joining it. */
