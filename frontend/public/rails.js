@@ -490,7 +490,10 @@
     var slot = slotIn(row);
     var fresh = !slot.querySelector('.' + TRIO);
     buildTrio(slot);
-    if (!FRAMED) parkOldPills(slot);        // the pills themselves are up in the parent
+    /* The Reels frame loads the whole app, so it has its own copy of the bar
+       and the chat pill — measured live: the frame's bar, iconified to "Gyms",
+       sat on top of the strip's first item. Same treatment in both documents. */
+    parkOldPills(slot);
     mergeInto(row);
     if (document.body) document.body.classList.add(RIDES);
     /* sg-rail-ui scrolls the active chip into view with an offset sized for a
