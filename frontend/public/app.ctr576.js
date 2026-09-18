@@ -18347,6 +18347,10 @@ function PartnerLandingPage(){
 
 
 // Partner gym search function
+function _sgSearchHint(d){
+  var t=d&&d.weakMatch?(d.message||'')+' '+(d.action||''):'Not your gym? Add your town or city to the name.';
+  return '<div style="padding:9px 14px;color:rgba(255,255,255,.38);font-size:11px;line-height:1.5;text-align:center">'+t+'</div>';
+}
 var _partnerSearchTimeout;
 window._partnerSearchGyms=function(q){
   clearTimeout(_partnerSearchTimeout);
@@ -18358,14 +18362,14 @@ window._partnerSearchGyms=function(q){
       var d=r.ok?await r.json():{};
       d.results=(d.gyms||[]).slice(0,20);
       if(!d.results||!d.results.length){
-        results.innerHTML='<div style="padding:12px 16px;color:rgba(255,255,255,.45);font-size:13px;line-height:1.5">'+(d.message||'We could not find your gym in our directory.')+'<div style="color:rgba(255,255,255,.3);font-size:11px;margin-top:4px">'+(d.action||'Try the exact name of your gym, plus your town.')+'</div><a onclick="navigate(\'/contact\')" style="color:#FF6D00;cursor:pointer;font-size:12px;display:inline-block;margin-top:6px">Still stuck? Contact us</a></div>';
+        results.innerHTML=_sgSearchHint({weakMatch:true,message:d.message||'We could not find your gym.',action:(d.action||'Add your town or city to the name.')+' <a onclick="navigate(\'/contact\')" style="color:#FF6D00;cursor:pointer">Still stuck?</a>'});
         results.style.display='block';
         return;
       }
       results.innerHTML=d.results.map(function(g){
         return '<div onclick="_partnerClaimGym(\''+String(g.placeId||g.id).replace(/'/g,'')+'\',\''+encodeURIComponent(g.name||'')+'\')" style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer;display:flex;align-items:center;gap:10px;transition:background .15s" onmouseover="this.style.background=\'rgba(255,109,0,.08)\'" onmouseout="this.style.background=\'none\'"><div style="width:36px;height:36px;border-radius:10px;background:rgba(255,109,0,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0">🏢</div><div style="flex:1;min-width:0"><p style="color:#fff;font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(g.name||'Gym')+'</p><p style="color:rgba(255,255,255,.3);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(g.address||g.vicinity||'')+'</p></div><span style="color:#FF6D00;font-size:12px;font-weight:700;flex-shrink:0">Claim →</span></div>';
       }).join('');
-      results.innerHTML+='<div style="padding:10px 16px;color:rgba(255,255,255,.4);font-size:11px;line-height:1.5;text-align:center">'+(d.weakMatch?(d.message||'')+'<div style="color:rgba(255,255,255,.3);margin-top:2px">'+(d.action||'')+'</div>':'Not your gym? Add your town or city to the name.')+'</div>';
+      results.innerHTML+=_sgSearchHint(d);
       // Scrollable list: every result stays reachable, right down to the last one
       results.style.maxHeight='340px';results.style.overflowY='auto';
       results.style.display='block';
@@ -18533,7 +18537,7 @@ window._partnerSearchClaim=async function(q){
     var r=await fetch('/api/live/partner-search?q='+encodeURIComponent(q)).catch(function(){return null;}); // owner searches their own name: no type filter
     var d=r&&r.ok?await r.json().catch(function(){return{gyms:[]};}):({gyms:[]});
     var gyms=d.gyms||d.results||[];
-    if(!gyms.length){box.innerHTML='<p style="color:rgba(255,255,255,.45);font-size:12px;padding:8px;text-align:center;line-height:1.5">'+(d.message||'We could not find your gym in our directory.')+'<br><span style="color:rgba(255,255,255,.3);font-size:11px">'+(d.action||'Add your town or city to the name.')+'</span></p>';return;}
+    if(!gyms.length){box.innerHTML=_sgSearchHint({weakMatch:true,message:d.message||'We could not find your gym.',action:d.action||'Add your town or city to the name.'});return;}
     box.style.maxHeight='340px';
     box.innerHTML=gyms.slice(0,20).map(function(g){
       var claimed=g.claimed_by?true:false;
@@ -18545,7 +18549,7 @@ window._partnerSearchClaim=async function(q){
         :'<button onclick="_partnerClaimGym(\''+String(g.placeId||g.id).replace(/'/g,'')+'\',\''+encodeURIComponent(g.name||'')+'\')" style="background:#FF6D00;color:#fff;border:none;padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0">Claim</button>')
         +'</div>';
     }).join('');
-    box.innerHTML+='<p style="color:rgba(255,255,255,.4);font-size:11px;padding:8px;line-height:1.5;margin:0;text-align:center">'+(d.weakMatch?(d.message||'')+'<br><span style="color:rgba(255,255,255,.3)">'+(d.action||'')+'</span>':'Not your gym? Add your town or city to the name.')+'</p>';
+    box.innerHTML+=_sgSearchHint(d);
   }catch(e){box.innerHTML='<p style="color:#f87171;font-size:11px;text-align:center">Search error</p>';}
 };
 
