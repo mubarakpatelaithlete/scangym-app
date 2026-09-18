@@ -712,7 +712,7 @@ router.get('/partner-search', async (req, res) => {
           message: resolved.names.length
             ? `That link points to "${resolved.names[0]}", which we could not find in our directory.`
             : 'We could not read that link.',
-          action: 'Type your gym name plus your town instead, e.g. "Iron Works Bharuch".',
+          action: 'Try your gym name plus your town, e.g. "Iron Works Bharuch".',
         });
       }
     }
@@ -752,7 +752,7 @@ router.get('/partner-search', async (req, res) => {
         total: 0,
         source: source || 'google',
         message: 'We could not find your gym in our directory.',
-        action: 'Add your town or city to the name, or paste the link to your gym\u2019s map listing.',
+        action: 'Try your gym name plus your town or city.',
       });
     }
 
@@ -761,8 +761,8 @@ router.get('/partner-search', async (req, res) => {
     const payload = { gyms, total: gyms.length, query: searchQuery, source };
     if (source !== 'google_maps_link' && !looksLikeNameMatch(searchQuery, gyms)) {
       payload.weakMatch = true;
-      payload.message = 'Your gym may not be in this list \u2014 bigger, better-known places show first.';
-      payload.action = 'Add your town or city (e.g. "your gym name Bharuch"), or paste the link to your gym’s map listing.';
+      payload.message = 'Keep scrolling \u2014 more results below.';
+      payload.action = 'Still not there? Add your town or city, e.g. "your gym name Bharuch".';
     }
     res.json(payload);
   } catch (err) {
