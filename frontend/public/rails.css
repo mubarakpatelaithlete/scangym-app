@@ -38,24 +38,33 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   THE BAND (owner's call, 2026-09-17)
+   THE BAND (owner's call, 2026-09-17; position corrected 2026-09-18)
 
    The buttons move off the right edge and become ONE horizontal row that
-   side-scrolls, in the same white style Reels and Book already use, sitting
-   above the bottom navigation. Each tab keeps its own buttons — this file only
-   decides where the row lives and how it behaves, never what is in it.
+   side-scrolls, in the same white style Reels and Book already use. Each tab
+   keeps its own buttons — this file only decides where the row lives and how
+   it behaves, never what is in it.
 
-   Stacking from the bottom of the screen upwards, measured on production:
+   WHERE, exactly (owner, 2026-09-18): "Between bottom navigation and Ask AI
+   orange CTA button". Stacking from the bottom of the screen upwards:
 
-     tab bar ......... 56px
-     orange CTA ...... 52px   ("Book this gym")
-     Talk pill ....... 46px + 12px gap   (#bchat-fab / #pchat-fab / #schat-fab)
-     ── the row sits above all three ──
+     tab bar ......... nav, 56px on production
+     ── THE ROW ──     here
+     orange CTA ...... "Book this gym" / "Ask AI"
+     price summary ... the line that explains the CTA
+     Talk pill ....... floats above the whole stack
 
-   The row is deliberately NOT squeezed between the CTA and the tab bar: the
-   Talk pill lives in that gap on the right, and measurement is what settled it
-   (the pill covered the rail's last buttons at y665 before this work started).
-   Putting the row under the pill would recreate exactly that bug.
+   An earlier pass put the row ABOVE the CTA and the pill, on the reasoning
+   that the pill sat in this gap and would cover the row's last buttons. That
+   was true of the old vertical rail, which nothing docked. It is not true now:
+   sg-dock.js owns the bottom edge, and it has been taught to count the row as
+   the first thing above the nav — so the CTA, the summary and the pill all
+   stack ON TOP of the row and cannot reach it. The gap is the row's.
+
+   That is also why this file no longer hardcodes 174px. The dock measures the
+   nav and publishes `--sg-nav-h` / `--sg-safe-b`; the row is defined in terms
+   of those, so a taller nav or a device with a home bar moves the row with it
+   instead of leaving it floating or buried.
 
    Because it scrolls sideways, nothing has to hide any more: the "More"
    collapse the vertical rail needed is switched off here, so every button is
@@ -66,11 +75,15 @@
 :root {
   /* Height of the row itself (44px circle + 11px label + breathing room). */
   --sg-band-height: 72px;
-  /* What the row must clear: tab bar + CTA + Talk pill + gaps. */
-  --sg-band-bottom: calc(174px + env(safe-area-inset-bottom, 0px));
-  /* A .tt-card lives inside .tt-view, which already stops above the 56px tab
-     bar, so a card rail must not reserve it twice. */
-  --sg-band-bottom-card: calc(var(--sg-band-bottom) - 56px);
+  /* Breathing room between the nav and the row. */
+  --sg-band-gap: 4px;
+  /* The row sits directly above the bottom navigation. sg-dock.js measures the
+     nav every pass and publishes these; the fallbacks are production's numbers
+     for the frame before the dock's first pass. */
+  --sg-band-bottom: calc(var(--sg-nav-h, 56px) + var(--sg-safe-b, 0px) + var(--sg-band-gap));
+  /* A .tt-card lives inside .tt-view, which already stops above the nav, so a
+     card rail must not reserve it — or its safe area — twice. */
+  --sg-band-bottom-card: var(--sg-band-gap);
   --sg-band-pad: 12px;
 }
 
@@ -88,10 +101,10 @@
    is genuinely full-screen:
 
      .tt-actions   card rails       absolute inside .tt-card — the card fills
-                                    .tt-view, which is 100dvh - 56px tab bar,
-                                    so it clears 174 - 56 = 118px
+                                    .tt-view, which already stops above the
+                                    nav, so it only needs the gap
      .reel-actions reel slides      absolute inside .reel, a full 100dvh slide
-     the three floating rails       body-level, so fixed and the full 174px
+     the three floating rails       body-level, so fixed and clearing the nav
 
    Every one of them still reads the SAME band variables; only the reference
    frame differs, and that is the whole reason this file exists.

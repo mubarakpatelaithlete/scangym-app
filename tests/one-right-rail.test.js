@@ -27,6 +27,7 @@ const read = (f) => fs.readFileSync(path.join(PUB, f), 'utf8');
 const railsCss = read('rails.css');
 const railsJs = read('rails.js');
 const index = read('index.html');
+const dockJs = read('sg-dock.js');
 
 test('rails.css is loaded, and after the stylesheets it has to beat', () => {
   const css = index.indexOf('rails.css');
@@ -37,16 +38,21 @@ test('rails.css is loaded, and after the stylesheets it has to beat', () => {
   assert.ok(js > index.indexOf('sg-rail-ui.js'), 'rails.js must run after the rail enhancer');
 });
 
-test('the row clears the bottom furniture and every rail reads it from here', () => {
-  assert.match(railsCss, /--sg-band-bottom:\s*calc\((\d+)px/, 'the row has no defined height above the bottom');
-  assert.match(railsCss, /env\(safe-area-inset-bottom/, 'the row ignores the home-bar inset');
-  const clearance = Number(railsCss.match(/--sg-band-bottom:\s*calc\((\d+)px/)[1]);
-  // tab bar 56 + orange CTA 52 + Talk pill 46 + its 12px gap = 166px, measured
-  // on production. Anything less puts the row back under the pill, which is the
-  // bug this file exists for.
-  assert.ok(clearance >= 166, `the row sits ${clearance}px up — the Talk pill starts at 166px`);
+test('the row sits between the nav and the CTA, and every rail reads it from here', () => {
+  // Owner, 2026-09-18: "Between bottom navigation and Ask AI orange CTA button".
+  // So the row is defined against the nav, not against a hardcoded stack of
+  // furniture — sg-dock.js measures the nav and publishes --sg-nav-h, and the
+  // same file reserves the row so the CTA/summary/pill stack on top of it.
+  assert.match(railsCss, /--sg-band-bottom:\s*calc\(var\(--sg-nav-h[^)]*\)[^;]*var\(--sg-safe-b/,
+    'the row position is not derived from the measured nav — a hardcoded offset drifts');
+  assert.ok(!/--sg-band-bottom:\s*calc\(1?\d\dpx/.test(railsCss),
+    'the row is back on a hardcoded offset above the CTA');
+  assert.match(dockJs, /ROW_SELECTORS/, 'the dock does not know the row exists, so the CTA can cover it');
+  assert.match(dockJs, /if \(rowH\) cursor \+= rowH \+ GAP;/,
+    'the dock does not reserve the row, which is what keeps the CTA above it');
   for (const sel of ['#sg-reels-rail', '#sg-sv-rail.sv-float', '#sg-profile-rail', '.tt-actions']) {
     assert.ok(railsCss.includes(sel), `${sel} does not read its geometry from rails.css`);
+    assert.ok(dockJs.includes(sel), `${sel} is not reserved by the dock`);
   }
   assert.match(railsCss, /bottom:\s*var\(--sg-band-bottom\)/, 'a rail is not bounded by the row position');
   const caps = railsCss.match(/max-height:[^;]+/g) || [];
@@ -146,14 +152,14 @@ test('a row is pinned to something that is actually full-screen', () => {
   // The first pass used `position: fixed` everywhere. `.tt-card` ships
   // `contain: layout style paint` and `.tt-carousel` `contain: strict`, and a
   // contained element is the containing block for its fixed descendants — so
-  // the Book and Partner rows measured 174px from the bottom of the CARD and
+  // the Book and Partner rows were measured from the bottom of the CARD and
   // landed in the middle of the photo.
   const app = read('app.ctr576.js');
   assert.ok(/\.tt-card\{[^}]*contain:layout style paint/.test(app),
     'the containment that breaks position:fixed is gone — this rule can be simplified');
   assert.match(railsCss, /\.tt-actions\s*\{\s*position:\s*absolute\s*!important;\s*bottom:\s*var\(--sg-band-bottom-card\)/,
     'card rails are positioned against the card again');
-  assert.match(railsCss, /--sg-band-bottom-card:\s*calc\(var\(--sg-band-bottom\) - 56px\)/,
+  assert.match(railsCss, /--sg-band-bottom-card:\s*var\(--sg-band-gap\)/,
     'a card rail must not reserve the tab bar twice: .tt-view already stops above it');
   assert.match(railsCss, /#sg-profile-rail\s*\{\s*position:\s*fixed/,
     'the body-level rails should stay fixed — they have no contained ancestor');
@@ -175,5 +181,20 @@ test('every row is the same white, not grey over a bright photo', () => {
   const ui = read('sg-rail-ui.js');
   for (const label of ['verify', 'locks', 'earnings', 'pricing', 'facilities', 'bookings']) {
     assert.ok(ui.includes(`'${label}'`), `the Partner label "${label}" has no icon, so it keeps its raw emoji`);
+  }
+});
+
+test('a changed row ships: the cache-busting versions moved together', () => {
+  // The row lives in three files. index.html was still asking for
+  // rails.css?v=1.0 after the first fix, so a phone with the old file cached
+  // kept the old position and the fix looked like it had not deployed.
+  const versions = new Set();
+  for (const doc of [index, read('reels/index.html')]) {
+    for (const m of doc.matchAll(/\/rails\.(?:css|js)\?v=([\d.]+)/g)) versions.add(m[1]);
+  }
+  assert.equal(versions.size, 1, `the two documents ask for different row versions: ${[...versions]}`);
+  assert.ok(parseFloat([...versions][0]) >= 1.2, 'the row changed but its ?v= did not');
+  for (const m of index.matchAll(/\/sg-dock\.js\?v=([\d.]+)/g)) {
+    assert.ok(parseFloat(m[1]) >= 1.1, 'the dock changed but its ?v= did not');
   }
 });
