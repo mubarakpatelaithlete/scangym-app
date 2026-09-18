@@ -300,8 +300,21 @@ html body main.sg-tab-content.sg-tab-content.sg-tab-content.sg-tab-content {
    floats over it — sg-dock.js reserves the band for the frame because it
    cannot measure into another document. Three classes to beat the injected
    `body.sg-cb-active .sg-reels-frame !important`. */
-html body .sg-reels-frame.sg-reels-frame.sg-reels-frame,
-html body #sg-reels-iframe.sg-reels-frame.sg-reels-frame {
+html body .sg-reels-frame.sg-reels-frame.sg-reels-frame {
   bottom: calc(var(--sg-nav-h, 56px) + var(--sg-safe-b, 0px)) !important;
   height: calc(100dvh - var(--sg-nav-h, 56px) - var(--sg-safe-b, 0px)) !important;
+}
+
+/* The SPA's live path is not that one. It keeps a persistent wrapper,
+   `#sg-reels-persistent`, which ALREADY ends at the nav (measured: 0→788), and
+   puts `#sg-reels-iframe` inside it — but app.ctr576.js shortens the iframe to
+   `calc(100vh - 56px - 52px - safe)` = 736px whenever the CTA is up. So the
+   frame stopped 52px short of its own wrapper and the row went with it: row
+   y660–732, CTA y656–708 on top of it. The iframe fills its wrapper instead;
+   the wrapper is the thing that knows about the nav. An id beats the injected
+   `body.sg-cb-active #sg-reels-iframe` on specificity. */
+html body #sg-reels-iframe {
+  top: 0 !important;
+  bottom: 0 !important;
+  height: 100% !important;
 }
