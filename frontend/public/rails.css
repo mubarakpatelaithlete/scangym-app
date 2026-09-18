@@ -776,9 +776,25 @@ html body.sg-cta-rides-row .sg-row-slot > #chat-fab#chat-fab {
   line-height: 1.1 !important;
 }
 
-/* The main bar only stays in the strip when it is offering something the three
-   do not — signing in. Otherwise it is the same door as Ask AI, and gone. */
-html body.sg-cta-rides-row #sg-continue-banner#sg-continue-banner:not(.sg-cb-in-strip):not(.sg-row-slot *) {
-  /* left where the parked rules put it; nothing here hides a bar the app still
-     needs, it is simply no longer part of the strip */
+/* The main bar and the floating Talk pill are the same doors as Ask AI and
+   Talk, which are now items in the strip. Left where they were they simply sat
+   on top of the new items: measured live on Book (the orange bar over "Book"
+   and "Talk") and on Reels (the parent's "Gyms" pill over the framed row). So
+   once the strip exists they are hidden — not removed, so every flow bound to
+   them still works, and the sign-in case keeps its place in the strip via
+   `.sg-cb-in-strip`. */
+html body.sg-cta-rides-row #sg-continue-banner#sg-continue-banner:not(.sg-cb-in-strip),
+html body.sg-cta-rides-row #bchat-fab#bchat-fab,
+html body.sg-cta-rides-row #pchat-fab#pchat-fab,
+html body.sg-cta-rides-row #schat-fab#schat-fab,
+html body.sg-cta-rides-row #rchat-fab#rchat-fab,
+html body.sg-cta-rides-row #mchat-fab#mchat-fab,
+html body.sg-cta-rides-row #chat-fab#chat-fab {
+  display: none !important;
+}
+
+/* In the strip the bar is an ordinary item again, so the rule above must not
+   catch it: same specificity, later, and only when it is actually in there. */
+html body.sg-cta-rides-row .sg-row-slot > #sg-continue-banner#sg-continue-banner {
+  display: flex !important;
 }
