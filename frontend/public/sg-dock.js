@@ -34,6 +34,25 @@
     '#sg-id-row'             // secondary prompt (ID verification)
   ];
 
+  /* The action row (rails.css) is the first thing above the nav — the owner's
+     call: "between bottom navigation and Ask AI orange CTA button". It is NOT
+     in BOTTOM_STACK because this file does not position it: rails.css pins it
+     to the nav, since a card rail is `absolute` inside a contained card and a
+     screen-space `bottom` written here would land in the wrong frame. What the
+     dock does is RESERVE it, so the CTA, the summary and the Talk pill stack
+     above the row and can never cover it (the old vertical rail was covered by
+     the pill at y665 precisely because nothing reserved it).
+     Listed most-specific first; only the visible one counts, and card rails are
+     arbitrated to one by rails.js. */
+  var ROW_SELECTORS = [
+    '.tt-view .tt-card.sg-card-live .tt-actions',
+    '.tt-view .tt-card .tt-actions',
+    '.reel-actions',
+    '#sg-reels-rail',
+    '#sg-sv-rail.sv-float',
+    '#sg-profile-rail'
+  ];
+
   /* Floating pills — they ride above the whole stack rather than joining it. */
   /* One per chat personality. chat-agent.js builds the id from the personality's
      `ns` (T('pchat-fab') swaps in the namespace), so every ns in use must appear
@@ -84,6 +103,16 @@
     /* ---- bottom edge: stack upward from the nav ---- */
     var cursor = navH + (navH ? 0 : safe);
     var i, el, h;
+
+    /* Reserve the action row's strip first, so everything else clears it. */
+    var rowH = 0;
+    for (i = 0; i < ROW_SELECTORS.length; i++) {
+      el = $(ROW_SELECTORS[i]);
+      if (!visible(el)) continue;
+      rowH = heightOf(el);
+      break;
+    }
+    if (rowH) cursor += rowH + GAP;
 
     for (i = 0; i < BOTTOM_STACK.length; i++) {
       el = $(BOTTOM_STACK[i]);
@@ -136,6 +165,7 @@
     rs.setProperty('--sg-nav-h', navH + 'px');
     rs.setProperty('--sg-safe-b', safe + 'px');
     rs.setProperty('--sg-dock-h', cursor + 'px');
+    rs.setProperty('--sg-row-h', rowH + 'px');
     rs.setProperty('--sg-top-h', topCursor + 'px');
   }
 

@@ -207,3 +207,42 @@ test('a full-bleed tab gets no padding, so the hero keeps its height', () => {
     'full-bleed content must not gain a dead band below the hero'
   );
 });
+
+test('the action row owns the gap above the nav: the CTA and pill stack on top', () => {
+  // Owner, 2026-09-18: the row belongs "between bottom navigation and Ask AI
+  // orange CTA button". rails.css pins the row 4px above the nav; this file's
+  // job is to reserve that strip so the CTA, the price summary and the Talk
+  // pill are pushed above it. Without the reservation the CTA is at bottom:56
+  // and sits exactly where the row is — the row's own z-index cannot save it,
+  // because the CTA is 10001.
+  const ROW_H = 72;
+  const NAV_H = 56;
+  const byId = run([
+    makeEl('sg-tab-bar', NAV_H),
+    makeEl('tt-actions', ROW_H, { bottom: NAV_H + 4 }),   // positioned by rails.css
+    makeEl('sg-continue-banner', 52),
+    makeEl('sg-book-summary', 26),
+    makeEl('bchat-fab', 46),
+  ]);
+  const row = byId.get('tt-actions').getBoundingClientRect();
+  const nav = byId.get('sg-tab-bar').getBoundingClientRect();
+  assert.ok(row.bottom <= nav.top, `the row (${row.top}..${row.bottom}) dips into the nav at ${nav.top}`);
+  for (const id of ['sg-continue-banner', 'sg-book-summary', 'bchat-fab']) {
+    const el = byId.get(id).getBoundingClientRect();
+    assert.ok(el.bottom <= row.top,
+      `${id} (${el.top}..${el.bottom}) covers the action row at ${row.top}..${row.bottom}`);
+  }
+  assertNoOverlap(['sg-tab-bar', 'tt-actions', 'sg-continue-banner', 'sg-book-summary', 'bchat-fab'], byId);
+});
+
+test('no row on screen means no reserved strip', () => {
+  // Reels before the feed loads, or a tab with no buttons: the CTA must not
+  // float 76px up over a gap that nothing occupies.
+  const byId = run([
+    makeEl('sg-tab-bar', 56),
+    makeEl('tt-actions', 72, { hidden: true }),
+    makeEl('sg-continue-banner', 52),
+  ]);
+  assert.equal(byId.get('sg-continue-banner')._bottom, 56,
+    'an invisible row still reserves space, leaving a dead band under the CTA');
+});
