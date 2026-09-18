@@ -204,8 +204,13 @@ test('the card tabs reach the nav, so the in-card row has a strip to sit in', ()
   // main.sg-tab-content stops 134px above the bottom (sg-rail-ui.js reserves
   // that for the CTA + summary), the row lands where the CTA is and its icons
   // are covered — the 2026-09-18 production bug.
-  assert.match(railsCss, /main\.sg-tab-content\.sg-tab-content\s*\{\s*bottom:\s*calc\(var\(--sg-nav-h[^)]*\)\s*\+\s*var\(--sg-safe-b/,
-    'the tab container does not end at the nav, so the in-card row has nowhere to go');
-  assert.match(railsCss, /html body main\.sg-tab-content/,
-    'the rule needs to out-specify the !important that sg-rail-ui.js injects later');
+  const rule = railsCss.match(/html body main(\.sg-tab-content)+\s*\{[^}]*\}/);
+  assert.ok(rule, 'the tab container does not end at the nav, so the in-card row has nowhere to go');
+  assert.match(rule[0], /bottom:\s*calc\(var\(--sg-nav-h[^)]*\)\s*\+\s*var\(--sg-safe-b/,
+    'the container bottom is not derived from the measured nav');
+  // sg-rail-ui.js injects `body.sg-r4-summary.sg-cb-active .sg-tab-content`
+  // (three classes) with !important. Book carries both body classes, so three
+  // classes here lost and only Partner got fixed. Four is the minimum.
+  const classes = (rule[0].match(/\.sg-tab-content/g) || []).length;
+  assert.ok(classes >= 4, `the rule has ${classes} classes; it needs 4 to beat sg-rail-ui.js on Book`);
 });
