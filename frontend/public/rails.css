@@ -266,3 +266,21 @@
   color: #fff;
   padding: 0 0 2px 0;
 }
+
+/* ── The card tabs have to reach the nav, or the row cannot sit above it ──────
+   Book and Partner draw their row INSIDE the card (`.tt-card` has
+   `contain: content`, so a fixed child is impossible and anything sticking out
+   is clipped). The card is as tall as `main.sg-tab-content`, and sg-rail-ui.js
+   ends that container 134px above the bottom — room it reserves for the CTA and
+   the price summary. Result on 2026-09-18: the row rendered 4px above the CARD,
+   at y660–732, while the CTA sat at y656–708 and covered its icons; only the
+   labels showed below it. Measured on production, 390×844.
+   So the container owns the nav's edge and nothing else. The CTA, the summary
+   and the Talk pill are `fixed`: sg-dock.js already stacks them above the
+   reserved row, and they float over the photo the way they do on Reels.
+   Specificity (html body main.x.x) beats sg-rail-ui.js's injected !important,
+   which lands later in the cascade. --sg-nav-h is 0 when the nav is hidden, so
+   a full-bleed state still gets the whole viewport. */
+html body main.sg-tab-content.sg-tab-content {
+  bottom: calc(var(--sg-nav-h, 56px) + var(--sg-safe-b, 0px)) !important;
+}

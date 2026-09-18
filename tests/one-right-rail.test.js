@@ -198,3 +198,14 @@ test('a changed row ships: the cache-busting versions moved together', () => {
     assert.ok(parseFloat(m[1]) >= 1.1, 'the dock changed but its ?v= did not');
   }
 });
+
+test('the card tabs reach the nav, so the in-card row has a strip to sit in', () => {
+  // Book/Partner draw the row inside .tt-card, which clips its overflow. If
+  // main.sg-tab-content stops 134px above the bottom (sg-rail-ui.js reserves
+  // that for the CTA + summary), the row lands where the CTA is and its icons
+  // are covered — the 2026-09-18 production bug.
+  assert.match(railsCss, /main\.sg-tab-content\.sg-tab-content\s*\{\s*bottom:\s*calc\(var\(--sg-nav-h[^)]*\)\s*\+\s*var\(--sg-safe-b/,
+    'the tab container does not end at the nav, so the in-card row has nowhere to go');
+  assert.match(railsCss, /html body main\.sg-tab-content/,
+    'the rule needs to out-specify the !important that sg-rail-ui.js injects later');
+});
