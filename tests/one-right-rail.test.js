@@ -255,7 +255,9 @@ test('the Reels iframe reaches the nav and the dock reserves the band for it', (
     'the pill must sit in the band rails.css already reserves, not at its own offset');
 
   // The rows have to start after the pill, or it covers their first button.
-  assert.match(railsCss, /body\.sg-cta-in-row[^{]*\.tt-actions[\s\S]{0,400}?padding-left:\s*calc\(var\(--sg-cta-w\)/,
+  // Must be margin, not padding: padding is inside the scroller and scrolls
+  // away, letting the first buttons slide under the fixed pills.
+  assert.match(railsCss, /body\.sg-cta-in-row[^{]*\.tt-actions[\s\S]{0,400}?margin-left:\s*calc\(var\(--sg-cta-w\)/,
     'rows are not inset by the pill width');
 
   // rails.js owns the class and the measurement, so the change reverts in one
