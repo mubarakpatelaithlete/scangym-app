@@ -606,14 +606,22 @@ async function resolvePlaceFromUrl(rawUrl) {
       const qParam = finalUrl.match(/[?&]q=([^&]+)/);
       if (qParam) name = decodeURIComponent(qParam[1]).replace(/\+/g, ' ').trim();
     }
+    // Some share links only redirect client-side, so the business name has to
+    // come out of the HTML instead of the final URL.
     if (!name) {
-      const title = html.match(/<title>([^<]{3,160})<\/title>/i);
+      const htmlKg = html.match(/[?&]q=([^&"'<]{3,120})/);
+      if (htmlKg) name = decodeURIComponent(htmlKg[1]).replace(/\+/g, ' ').trim();
+    }
+    if (!name) {
+      const title = html.match(/<title[^>]*>([^<]{3,160})</i);
       if (title) name = title[1].replace(/\s*[-–|]\s*Google\s*Maps.*$/i, '').trim();
       if (!name) {
         const og = html.match(/property=["']og:title["']\s+content=["']([^"']{3,160})["']/i);
         if (og) name = og[1].trim();
       }
     }
+    // "Google Search" / "Google Maps" is the wrapper page, not a business
+    if (name && /^google(\s|$)/i.test(name)) name = null;
     return name ? { name } : null;
   } catch (e) {
     console.warn('[PartnerSearch] URL resolve failed:', e.message);
@@ -681,12 +689,20 @@ router.get('/partner-search', async (req, res) => {
         try {
           places = await searchWithPlacesNewAPI(resolved.name, lat, lng, radius, 10, true);
           if (places.length) source = 'google_maps_link';
-        } catch (e) { /* fall through to normal search */ }
+        } catch (e) { console.warn('[PartnerSearch] link name search failed:', e.message); }
+      }
+      if (places.length) {
+        // Rank the listing the link actually named first
+        const target = (resolved?.name || '').toLowerCase();
+        places.sort((a, b) => (b.name.toLowerCase() === target ? 1 : 0) - (a.name.toLowerCase() === target ? 1 : 0));
       }
       if (!places.length) {
         return res.json({
           gyms: [], total: 0, source: 'google_maps_link',
-          message: 'We could not open that link.',
+          resolvedName: resolved?.name || null,
+          message: resolved?.name
+            ? `That link points to "${resolved.name}", which we could not find on Google Maps.`
+            : 'We could not open that link.',
           action: 'Type your gym name plus your town instead, e.g. "Iron Works Bharuch".',
         });
       }
