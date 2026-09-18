@@ -72,7 +72,7 @@
     if (more !== row.classList.contains(SCROLLABLE)) row.classList.toggle(SCROLLABLE, more);
     if (!row.getAttribute('data-sg-scroll-watch')) {
       row.setAttribute('data-sg-scroll-watch', '1');
-      row.addEventListener('scroll', function () { markRow(row); rideSoon(); }, { passive: true });
+      row.addEventListener('scroll', function () { markRow(row); }, { passive: true });
     }
   }
   function markScroll(card) {
@@ -105,6 +105,7 @@
   }
 
   function init() {
+    if (document.body) watchRemovals();
     scan();
     setInterval(scan, 800); // same heartbeat the other rail scripts use
     window.addEventListener('resize', function () { syncCta(); markAllRows(); ride(); });
@@ -146,7 +147,6 @@
     var rs = document.documentElement.style;
     var talkLeft = pad + (ctaW ? ctaW + gap : 0);
     rs.setProperty('--sg-talk-left', Math.round(talkLeft) + 'px');
-    rs.setProperty('--sg-cta-left', pad + 'px');   // ride() moves it from here
     rs.setProperty('--sg-cta-w',
       Math.round(ctaW + (talkW ? (ctaW ? gap : 0) + talkW : 0)) + 'px');
   }
@@ -254,25 +254,28 @@
     });
   }
 
-  /* ── The pills ride the row (owner, 2026-09-18, fourth decision) ─────────
-     Parked pills stayed exactly where they were while the circles beside them
-     scrolled away, so the strip read as two separate sets of buttons: "these
-     buttons are not moved in with other scrolling buttons". Now the row itself
-     carries a slot as wide as both pills, and the pills follow that slot — one
-     swipe and they scroll off with everything else, on all five tabs.
+  /* ── The pills moved INTO the row (owner, 2026-09-18, fourth decision) ───
+     "These buttons are not moved in with other scrolling buttons." They were
+     fixed pills parked at the left of the band: the circles scrolled past them
+     and they held still, so the strip read as two separate sets of buttons.
 
-     Position only. The elements, their tap handlers and their styling are
-     untouched, and dropping RIDES puts the parked layout back: the margin
-     inset in rails.css is still there underneath, so the fallback is today's
-     shipped behaviour rather than buttons under a pill. */
+     They are now real children of the row's scroller, inside a slot at its
+     left end, so they scroll exactly like every other button and the scroller
+     clips them at its edge. No per-frame maths and no second position to keep
+     in sync — the browser does it.
+
+     Same elements throughout: `#sg-continue-banner` and the chat pill are
+     MOVED, never rebuilt, so the checkout flow, the per-tab label and every
+     tap handler bound to them keep working. Drop RIDES and the parked layout
+     in rails.css (pill at --sg-band-pad, rows inset by --sg-cta-w) is still
+     there underneath, so the fallback is the shipped behaviour. */
   var RIDES = 'sg-cta-rides-row';
   var SLOT = 'sg-row-slot';
-  var GONE = 'sg-cta-gone';
 
   function painted(el) {
     if (!el) return false;
     var cs = getComputedStyle(el);
-    if (cs.display === 'none' || cs.visibility === 'hidden' || cs.opacity === '0') return false;
+    if (cs.display === 'none' || cs.visibility === 'hidden') return false;
     var r = el.getBoundingClientRect();
     return r.width > 0 && r.height > 0 && r.bottom > 0 && r.top < innerHeight;
   }
@@ -286,20 +289,15 @@
     return null;
   }
 
-  /* Every row gets a slot, not just the live one: a card can become live
-     between passes, and a row with no slot would put its first circle where
-     the pills are drawn. Width comes from --sg-cta-w in the stylesheet, so
-     there is one measurement, not two. */
-  function ensureSlots() {
-    var rows = document.querySelectorAll(ROWS);
-    for (var i = 0; i < rows.length; i++) {
-      var first = rows[i].firstElementChild;
-      if (first && first.classList.contains(SLOT)) continue;
-      var slot = document.createElement('i');
-      slot.className = SLOT;
-      slot.setAttribute('aria-hidden', 'true');
-      rows[i].insertBefore(slot, rows[i].firstChild);
-    }
+  /* One slot per row, always its first child: a card can become live between
+     passes, and the slot is where the pills go when it does. */
+  function slotIn(row) {
+    var first = row.firstElementChild;
+    if (first && first.classList.contains(SLOT)) return first;
+    var slot = document.createElement('span');
+    slot.className = SLOT;
+    row.insertBefore(slot, row.firstChild);
+    return slot;
   }
 
   function talkEl() {
@@ -308,33 +306,54 @@
     return null;
   }
 
-  function ride() {
-    if (FRAMED) return;                          // the pills are up in the parent
-    var row = activeRow();
-    if (!row) return;
-    var slot = row.firstElementChild;
-    if (!slot || !slot.classList.contains(SLOT)) return;
-    var sr = slot.getBoundingClientRect(), rr = row.getBoundingClientRect();
-    var ctaW = measureCta(), gap = 14;
-    var rs = document.documentElement.style;
-    rs.setProperty('--sg-cta-left', Math.round(sr.left) + 'px');
-    rs.setProperty('--sg-talk-left', Math.round(sr.left + (ctaW ? ctaW + gap : 0)) + 'px');
-    /* Scrolled past the row's left edge means off the strip. Hidden rather
-       than left hanging over the content: floating over the photos is the
-       thing this whole file exists to stop. */
-    var gone = sr.right < rr.left + 8;
-    var cta = document.querySelector(CTA), talk = talkEl();
-    if (cta) cta.classList.toggle(GONE, gone);
-    if (talk) talk.classList.toggle(GONE, gone);
-    if (document.body) document.body.classList.toggle(RIDES, true);
+  /* Put the pills in the visible row's slot. Cheap to call often: if they are
+     already there, nothing is touched, so no tap is ever interrupted by a
+     re-parent mid-press. */
+  /* A card is replaced wholesale on re-render, and the pills are now inside
+     one. The removed subtree is detached, not destroyed, so the element is
+     still there to be rescued — and it has to be, because there is only one of
+     each and nothing rebuilds them: a lost CTA means a tab with no way to
+     book. Watched, and put back on the body, where the parked rules apply,
+     until the next pass moves it into the new row. */
+  function rescue(el) {
+    if (el && !el.isConnected && document.body) document.body.appendChild(el);
+  }
+  function watchRemovals() {
+    if (typeof MutationObserver === 'undefined') return;
+    new MutationObserver(function (recs) {
+      var cta = null, talk = null;
+      for (var i = 0; i < recs.length; i++) {
+        var gone = recs[i].removedNodes;
+        for (var j = 0; j < gone.length; j++) {
+          var n = gone[j];
+          if (!n.querySelector) continue;
+          cta = cta || (n.id === CTA.slice(1) ? n : n.querySelector(CTA));
+          talk = talk || (n.matches && n.matches(TALK) ? n : n.querySelector(TALK));
+        }
+      }
+      if (cta) rescue(cta);
+      if (talk) rescue(talk);
+      if (cta || talk) ride();              // straight into the row that replaced it
+    }).observe(document.body, { childList: true, subtree: true });
   }
 
-  /* A swipe fires scroll events far faster than the 800ms heartbeat, so the
-     pills are moved per frame while a row is being scrolled. */
-  var frame = 0;
-  function rideSoon() {
-    if (frame) return;
-    frame = requestAnimationFrame(function () { frame = 0; ride(); });
+  /* Remembered, because `document.querySelector` cannot find a detached
+     element: once a card takes a pill out of the document, this list is the
+     only way back to it. */
+  var pills = [];
+  function remember(el) { if (el && pills.indexOf(el) === -1) pills.push(el); }
+
+  function ride() {
+    if (FRAMED) return;                     // the pills live in the parent document
+    for (var i = 0; i < pills.length; i++) rescue(pills[i]);
+    var row = activeRow();
+    if (!row) return;
+    var slot = slotIn(row);
+    var cta = document.querySelector(CTA), talk = talkEl();
+    remember(cta); remember(talk);
+    if (cta && cta.parentNode !== slot) slot.appendChild(cta);
+    if (talk && talk.parentNode !== slot) slot.appendChild(talk);
+    if (document.body) document.body.classList.add(RIDES);
   }
 
   window.sgRails = { scan: scan, LIVE_CLASS: LIVE, syncCta: syncCta, ride: ride };

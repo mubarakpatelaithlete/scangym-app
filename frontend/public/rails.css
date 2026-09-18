@@ -395,9 +395,7 @@ html body #sg-reels-iframe#sg-reels-iframe {
    sets an inline `bottom` — it is taught to leave this element alone while the
    class is on (see sg-dock.js), but the specificity still has to hold. */
 html body.sg-cta-in-row #sg-continue-banner#sg-continue-banner {
-  /* Published by rails.js: where the row's slot for this pill currently is, so
-     the pill scrolls with the row. --sg-band-pad until it has been measured. */
-  left: var(--sg-cta-left, var(--sg-band-pad)) !important;
+  left: var(--sg-band-pad) !important;
   right: auto !important;
   width: auto !important;
   /* Measured 2026-09-18: with no cap, "Ask AI \"How much have I made this
@@ -670,32 +668,30 @@ body.sg-cta-in-row #chat-fab#chat-fab::after {
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   THE PILLS RIDE THE ROW (owner, 2026-09-18, fourth decision)
+   THE PILLS ARE IN THE ROW (owner, 2026-09-18, fourth decision)
 
-   "These buttons are not moved in with other scrolling buttons." Parked pills
-   held still while the circles scrolled past them. Now each row carries a slot
-   as wide as the pills, the pills follow that slot (rails.js publishes
-   --sg-cta-left and --sg-talk-left every frame while a row is scrolled), and
-   the margin inset above is switched off because the slot holds that space
-   inside the scroller instead. Remove `sg-cta-rides-row` in rails.js and the
-   parked layout above comes back untouched.
+   "These buttons are not moved in with other scrolling buttons." rails.js now
+   moves the main button and the Talk pill into `.sg-row-slot`, the first item
+   of the row's own scroller, so they scroll and clip with every other button.
+   Everything below undoes the fixed positioning those elements carry from
+   sg-dock.js / book-by-tap.css / the parked rules above, which still apply
+   whenever `sg-cta-rides-row` is absent.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-body.sg-cta-in-row .tt-actions > .sg-row-slot,
-body.sg-cta-in-row .reel-actions > .sg-row-slot,
-body.sg-cta-in-row #sg-reels-rail > .sg-row-slot,
-body.sg-cta-in-row #sg-sv-rail.sv-float > .sg-row-slot,
-body.sg-cta-in-row #sg-profile-rail > .sg-row-slot,
-body.sg-cta-in-row .sg-pr-host-capped > .sg-row-slot {
+.sg-row-slot {
+  display: flex !important;
+  align-items: center !important;
+  gap: 14px !important;                    /* the row's own gap, between the two pills */
   flex: 0 0 auto !important;
-  width: var(--sg-cta-w) !important;
-  height: 1px !important;
   margin: 0 !important;
   padding: 0 !important;
-  pointer-events: none !important;
 }
 
-/* The space is in the scroller now, so the row starts at the band's own pad.
+/* A slot with nothing in it must take no space, or every other row holds a gap
+   open for pills that are in the live row. */
+.sg-row-slot:empty { display: none !important; }
+
+/* The space is inside the scroller now, so the rows keep only the band's pad.
    Later and equally !important, so it beats the inset rule above. */
 body.sg-cta-in-row.sg-cta-rides-row .tt-actions,
 body.sg-cta-in-row.sg-cta-rides-row .reel-actions,
@@ -707,25 +703,103 @@ body.sg-cta-in-row.sg-cta-rides-row .sg-pr-host-capped {
   padding-left: var(--sg-band-pad) !important;
 }
 
-/* Scrolled off the strip. Faded rather than left floating over the photos, and
-   untappable while invisible so a swipe cannot hit a pill that is not there. */
-html body.sg-cta-in-row #sg-continue-banner#sg-continue-banner.sg-cta-gone,
-html body.sg-cta-in-row #bchat-fab#bchat-fab.sg-cta-gone,
-html body.sg-cta-in-row #pchat-fab#pchat-fab.sg-cta-gone,
-html body.sg-cta-in-row #schat-fab#schat-fab.sg-cta-gone,
-html body.sg-cta-in-row #rchat-fab#rchat-fab.sg-cta-gone,
-html body.sg-cta-in-row #mchat-fab#mchat-fab.sg-cta-gone,
-html body.sg-cta-in-row #chat-fab#chat-fab.sg-cta-gone {
-  opacity: 0 !important;
-  pointer-events: none !important;
-}
-
-html body.sg-cta-in-row #sg-continue-banner#sg-continue-banner,
-html body.sg-cta-in-row #bchat-fab#bchat-fab,
-html body.sg-cta-in-row #pchat-fab#pchat-fab,
-html body.sg-cta-in-row #schat-fab#schat-fab,
-html body.sg-cta-in-row #rchat-fab#rchat-fab,
-html body.sg-cta-in-row #mchat-fab#mchat-fab,
-html body.sg-cta-in-row #chat-fab#chat-fab {
-  transition: opacity .12s linear !important;
+/* In the row they are ordinary flex items: no fixed corner, no own offsets,
+   no z-index above the content they now sit inside. Ids doubled and `html`
+   prefixed because this has to beat the parked rules and book-by-tap.css. */
+h,
+t,
+m,
+l,
+ ,
+b,
+o,
+d,
+y,
+.,
+s,
+g,
+-,
+c,
+t,
+a,
+-,
+r,
+i,
+d,
+e,
+s,
+-,
+r,
+o,
+w,
+ ,
+.,
+s,
+g,
+-,
+r,
+o,
+w,
+-,
+s,
+l,
+o,
+t,
+ ,
+>,
+ ,
+#,
+s,
+g,
+-,
+c,
+o,
+n,
+t,
+i,
+n,
+u,
+e,
+-,
+b,
+a,
+n,
+n,
+e,
+r,
+#,
+s,
+g,
+-,
+c,
+o,
+n,
+t,
+i,
+n,
+u,
+e,
+-,
+b,
+a,
+n,
+n,
+e,
+r,
+html body.sg-cta-rides-row .sg-row-slot > #bchat-fab#bchat-fab,
+html body.sg-cta-rides-row .sg-row-slot > #pchat-fab#pchat-fab,
+html body.sg-cta-rides-row .sg-row-slot > #schat-fab#schat-fab,
+html body.sg-cta-rides-row .sg-row-slot > #rchat-fab#rchat-fab,
+html body.sg-cta-rides-row .sg-row-slot > #mchat-fab#mchat-fab,
+html body.sg-cta-rides-row .sg-row-slot > #chat-fab#chat-fab {
+  position: static !important;
+  left: auto !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: auto !important;
+  margin: 0 !important;
+  transform: none !important;
+  z-index: auto !important;
+  flex: 0 0 auto !important;
+  max-width: none !important;
 }
