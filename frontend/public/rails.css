@@ -798,3 +798,19 @@ html body.sg-cta-rides-row #chat-fab#chat-fab {
 html body.sg-cta-rides-row .sg-row-slot > #sg-continue-banner#sg-continue-banner {
   display: flex !important;
 }
+
+
+/* A row emptied into the host must not keep holding space or a background in
+   the band; it is left in the DOM so whatever re-renders it still finds it. */
+.sg-row-merged {
+  display: none !important;
+}
+
+/* The card's own text — price, rating, opening hours — was written for a band
+   with a 124px gap at its left. With the strip starting at the edge the two
+   overlapped: measured live on Book, "£5.48/day" and "4.4 (136)" sat across the
+   Book and Talk labels. The card's text ends above the band instead. */
+body.sg-cta-rides-row .tt-info,
+body.sg-cta-rides-row .tt-chips {
+  padding-bottom: calc(var(--sg-band-height, 62px) + 4px) !important;
+}

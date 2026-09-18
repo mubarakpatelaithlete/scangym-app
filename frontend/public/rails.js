@@ -461,6 +461,28 @@
     }).observe(document.body, { childList: true, subtree: true });
   }
 
+  /* "Why all buttons are not in 1 row… why it is separate separate in a row?"
+     Some tabs paint two rows in the same band — Profile has its own rail behind
+     the app's chip host, measured live with Book/Talk/Ask AI drawn on top of
+     Telegram/Discord/Slack. One row is the whole point of this file, so the
+     second row's items are moved into the host and the empty row is taken out
+     of the band. Only rows sharing the host's band are touched, so a card's own
+     rail somewhere else on the screen is left alone. */
+  var MERGED = 'sg-row-merged';
+  function mergeInto(host) {
+    var hostRect = host.getBoundingClientRect();
+    var rows = document.querySelectorAll(ROWS);
+    for (var i = 0; i < rows.length; i++) {
+      var row = rows[i];
+      if (row === host || row.contains(host) || host.contains(row)) continue;
+      if (!painted(row)) continue;
+      var r = row.getBoundingClientRect();
+      if (Math.abs(r.top - hostRect.top) > 60) continue;   // a different band
+      while (row.firstChild) host.appendChild(row.firstChild);
+      row.classList.add(MERGED);
+    }
+  }
+
   function ride() {
     for (var i = 0; i < pills.length; i++) rescue(pills[i]);
     var row = activeRow();
@@ -469,6 +491,7 @@
     var fresh = !slot.querySelector('.' + TRIO);
     buildTrio(slot);
     if (!FRAMED) parkOldPills(slot);        // the pills themselves are up in the parent
+    mergeInto(row);
     if (document.body) document.body.classList.add(RIDES);
     /* sg-rail-ui scrolls the active chip into view with an offset sized for a
        row that started after the pills. With these items inside the scroller
