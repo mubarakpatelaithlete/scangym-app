@@ -183,10 +183,14 @@
       break;
     }
 
-    /* Floating pills clear everything already stacked. */
+    /* Floating pills clear everything already stacked — unless they are IN the
+       row (owner, 2026-09-18): rails.css places the Talk pill next to the main
+       button inside the band, so docking it above the stack would pull it back
+       out. Release it, inline value and all, exactly like the CTA. */
     for (i = 0; i < FABS.length; i++) {
       el = $(FABS[i]);
       if (!visible(el)) continue;
+      if (ctaInRow()) { el.style.removeProperty('bottom'); continue; }
       el.style.setProperty('bottom', (cursor + FAB_GAP) + 'px', 'important');
     }
 

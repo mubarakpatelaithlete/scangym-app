@@ -137,7 +137,7 @@ h1,h2,h3,.font-brand{font-family:'Sora',sans-serif}
   <link rel="stylesheet" href="/talk-bar.css?v=1.0">
   <link rel="stylesheet" href="/book-by-tap.css?v=1.1">
   <!-- One place decides where right-edge rails live; loaded last so it wins. -->
-  <link rel="stylesheet" href="/rails.css?v=2.1">
+  <link rel="stylesheet" href="/rails.css?v=2.2">
 </head>
 <body class="bg-dark min-h-screen">
 <!-- The app renders its headings client-side, so the document shipped with no
@@ -211,7 +211,7 @@ if('serviceWorker' in navigator){
 <!-- After the patch pile: rails.js only reads the DOM the rails leave behind.
      Kept OUT of PATCH_CHAIN (see tests/patch-chain.test.js) so the chain stays
      contiguous and build.js keeps bundling exactly those four files. -->
-<script src="/rails.js?v=2.1" defer></script>
+<script src="/rails.js?v=2.2" defer></script>
 <script>
 /* PERF: lazy-load non-first-paint patch scripts (partner/admin/wallet tooling)
    after the load event, at idle — keeps ~180KB of JS off the critical path. */
@@ -238,7 +238,7 @@ if('serviceWorker' in navigator){
      tab it is on, and a personality that loads later is one voice cannot use. -->
 <script src="/voice-always.js?v=1.1" defer></script>
 <!-- sg-dock owns the pinned overlay stack; must load after everything that injects one -->
-<script src="/sg-dock.js?v=1.7" defer></script>
+<script src="/sg-dock.js?v=1.8" defer></script>
 </body>
 </html>
 

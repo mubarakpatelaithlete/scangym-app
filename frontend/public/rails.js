@@ -131,10 +131,37 @@
      branch below applies it. */
   var CTA_IN_ROW = 'sg-cta-in-row';
   var CTA = '#sg-continue-banner';
+  /* One Talk pill per chat personality; only one is ever on screen. Same list
+     as sg-dock.js FABS — a pill missing here keeps its own `right: 14px` and
+     floats over the row instead of joining it. */
+  var TALK = '#bchat-fab, #pchat-fab, #schat-fab, #rchat-fab, #mchat-fab, #chat-fab';
   var FRAMED = (function () { try { return window.top !== window.self; } catch (e) { return true; } })();
 
-  function publishCtaWidth(w) {
-    document.documentElement.style.setProperty('--sg-cta-w', Math.round(w) + 'px');
+  /* --sg-cta-w is the whole inset the rows must leave: main button + Talk.
+     --sg-talk-left is where the Talk pill starts, so it lands between them. */
+  function publish(ctaW, talkW) {
+    var pad = 12, gap = 14;                    // --sg-band-pad, the row's gap
+    var rs = document.documentElement.style;
+    var talkLeft = pad + (ctaW ? ctaW + gap : 0);
+    rs.setProperty('--sg-talk-left', Math.round(talkLeft) + 'px');
+    rs.setProperty('--sg-cta-w',
+      Math.round(ctaW + (talkW ? (ctaW ? gap : 0) + talkW : 0)) + 'px');
+  }
+
+  function widthOf(el) {
+    if (!el) return 0;
+    var cs = getComputedStyle(el);
+    if (cs.display === 'none' || cs.visibility === 'hidden' || cs.opacity === '0') return 0;
+    return el.getBoundingClientRect().width;
+  }
+
+  function measureTalk() {
+    var els = document.querySelectorAll(TALK);
+    for (var i = 0; i < els.length; i++) {
+      var w = widthOf(els[i]);
+      if (w) return w;                          // only one is ever visible
+    }
+    return 0;
   }
 
   function measureCta() {
@@ -158,12 +185,14 @@
     if (FRAMED) return;               // the parent owns the pill
     document.body.classList.add(CTA_IN_ROW);
     var w = measureCta();
-    publishCtaWidth(w);
+    publish(w, measureTalk());
+    var total = parseFloat(
+      getComputedStyle(document.documentElement).getPropertyValue('--sg-cta-w')) || 0;
     /* Tell every Reels frame, so its row starts after the pill drawn over it. */
     var frames = document.querySelectorAll('#sg-reels-iframe, .sg-reels-frame, iframe[src*="reels"]');
     for (var i = 0; i < frames.length; i++) {
       try {
-        frames[i].contentWindow.postMessage({ sg: 'cta-in-row', width: Math.round(w) }, '*');
+        frames[i].contentWindow.postMessage({ sg: 'cta-in-row', width: Math.round(total) }, '*');
       } catch (e) { /* cross-origin or not loaded yet: next pass */ }
     }
   }
@@ -173,7 +202,7 @@
       var d = ev.data;
       if (!d || d.sg !== 'cta-in-row') return;
       if (document.body) document.body.classList.add(CTA_IN_ROW);
-      publishCtaWidth(d.width || 0);
+      document.documentElement.style.setProperty('--sg-cta-w', (d.width || 0) + 'px');
       markAllRows();                  // the inset changed how much overflows
     });
   }
