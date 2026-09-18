@@ -287,3 +287,21 @@
 html body main.sg-tab-content.sg-tab-content.sg-tab-content.sg-tab-content {
   bottom: calc(var(--sg-nav-h, 56px) + var(--sg-safe-b, 0px)) !important;
 }
+
+/* ── The Reels tab is an iframe, and it has to reach the nav too ────────────
+   /reels is its own document; the SPA shows it in `.sg-reels-frame`. The frame
+   is sized by app.ctr576.js, which ends it above the orange CTA
+   (`body.sg-cb-active .sg-reels-frame{bottom:calc(56px+52px+safe)!important}`).
+   The row inside the frame is pinned to the frame's bottom, so the order came
+   out nav → CTA → row: measured on production 2026-09-18, row y660–730 with
+   the CTA below it at y736–788. The owner wants the row directly above the nav
+   on every tab.
+   So the frame owns the nav's edge, exactly like the card tabs, and the CTA
+   floats over it — sg-dock.js reserves the band for the frame because it
+   cannot measure into another document. Three classes to beat the injected
+   `body.sg-cb-active .sg-reels-frame !important`. */
+html body .sg-reels-frame.sg-reels-frame.sg-reels-frame,
+html body #sg-reels-iframe.sg-reels-frame.sg-reels-frame {
+  bottom: calc(var(--sg-nav-h, 56px) + var(--sg-safe-b, 0px)) !important;
+  height: calc(100dvh - var(--sg-nav-h, 56px) - var(--sg-safe-b, 0px)) !important;
+}

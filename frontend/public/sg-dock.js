@@ -62,6 +62,7 @@
   var FABS = ['#bchat-fab', '#pchat-fab', '#schat-fab', '#rchat-fab', '#mchat-fab', '#chat-fab'];
 
   var NAV = 'nav.sg-tab-bar';
+  var REELS_FRAME = '.sg-reels-frame, #sg-reels-iframe';
   var CONTENT = 'main.sg-tab-content';
   var TOP_PRIMARY = '#sg-usp-banner';
   var TOP_SECONDARY = '#sg-sps';
@@ -73,6 +74,12 @@
     var cs = getComputedStyle(el);
     if (cs.display === 'none' || cs.visibility === 'hidden' || cs.opacity === '0') return false;
     return el.getBoundingClientRect().height > 1;
+  }
+
+  /* The row's height, read from rails.css rather than repeated here. */
+  function bandHeight() {
+    var v = getComputedStyle(document.documentElement).getPropertyValue('--sg-band-height');
+    return parseInt(v, 10) || 72;
   }
 
   function heightOf(el) {
@@ -111,6 +118,15 @@
       if (!visible(el)) continue;
       rowH = heightOf(el);
       break;
+    }
+    /* The Reels tab is an iframe (.sg-reels-frame), so its row lives in another
+       document and none of the selectors above can measure it. Reserve the
+       band's own height instead — rails.css inside the frame uses exactly that
+       number, and the frame is made to reach the nav below. Without this the
+       orange CTA took the strip and the row rendered ABOVE it (measured on
+       production 2026-09-18: row y660-730, CTA y736-788 — the wrong order). */
+    if (!rowH && visible($(REELS_FRAME))) {
+      rowH = bandHeight();
     }
     if (rowH) cursor += rowH + GAP;
 
