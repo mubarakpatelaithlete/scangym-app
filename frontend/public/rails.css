@@ -159,7 +159,11 @@
    The host joins the band on the same terms as the others. Its own
    `max-height: calc(100vh - 240px)` and `overflow-y: auto` are what made it a
    tall scrolling column, so both are overridden here. */
-.sg-pr-host-capped {
+/* `html body` because profile-rail.js injects its own
+   `.sg-pr-host-capped{overflow-y:auto!important}` from a <style> appended at
+   init — later in the document, so with equal specificity it wins. Measured
+   2026-09-18: max-height applied, overflow-y did not. */
+html body .sg-pr-host-capped {
   max-height: var(--sg-band-height) !important;
   overflow-y: hidden !important;
   padding: 0 var(--sg-band-pad) !important;
@@ -412,20 +416,26 @@ html body.sg-cta-in-row #sg-continue-banner#sg-continue-banner {
 
 /* 16px was sized for a full-width bar. In a pill it pushes "Book this gym ·
    £5.49" wider than half the screen and leaves no room to swipe the row. */
+/* Measured 2026-09-18: capping the pill made flexbox shrink the FIRST child,
+   so "Ask AI" rendered as "As..." and "Continue" as "Co...". The primary word
+   is the whole point of the button, so it never shrinks; the quoted sub-label
+   ("How much have I made this week") is what gives way. */
 body.sg-cta-in-row #sg-continue-banner .sg-cb-text {
   font-size: 14px !important;
   white-space: nowrap !important;
+  flex: 0 0 auto !important;
+}
+body.sg-cta-in-row #sg-continue-banner .sg-cb-sub {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
-  min-width: 0 !important;
 }
 body.sg-cta-in-row #sg-continue-banner .sg-cb-price {
   font-size: 12px !important;
   white-space: nowrap !important;
 }
-body.sg-cta-in-row #sg-continue-banner .sg-cb-sub {
-  max-width: 44vw !important;
-}
+
 
 /* The rows start after the pill. Later than the `padding: 0 var(--sg-band-pad)`
    rule above and equally !important, so this wins without another class. */

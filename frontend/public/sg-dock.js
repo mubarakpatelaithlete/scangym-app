@@ -159,6 +159,30 @@
       cursor += h + GAP;
     }
 
+    /* ---- the row's own pinning, verified rather than assumed ----
+       rails.css pins the body-level rails with `bottom: var(--sg-band-bottom)`,
+       which is correct only if their containing block is the viewport. On
+       Profile it is not: the app's native rail (`.sg-pr-host-capped`) sits
+       inside the tab content, and some ancestor there establishes a containing
+       block for fixed children, so a computed `bottom: 60px` put the row at
+       y676-748 instead of y712-784 — 36px too high, measured on production
+       2026-09-18. Rather than hunt the ancestor (backdrop-filter, will-change
+       and containment all do this, and the app uses all three), measure where
+       the row actually landed and correct by the difference. A rail already in
+       the right place is left alone. */
+    var wantBottom = navH + safe + 4;          // --sg-band-gap
+    for (i = 0; i < ROW_SELECTORS.length; i++) {
+      el = $(ROW_SELECTORS[i]);
+      if (!visible(el)) continue;
+      if (getComputedStyle(el).position !== 'fixed') continue;
+      var rect = el.getBoundingClientRect();
+      var landed = Math.round(innerHeight - rect.bottom);
+      if (Math.abs(landed - wantBottom) <= 1) { el.style.removeProperty('bottom'); continue; }
+      var current = parseFloat(getComputedStyle(el).bottom) || 0;
+      el.style.setProperty('bottom', (current + (wantBottom - landed)) + 'px', 'important');
+      break;
+    }
+
     /* Floating pills clear everything already stacked. */
     for (i = 0; i < FABS.length; i++) {
       el = $(FABS[i]);
