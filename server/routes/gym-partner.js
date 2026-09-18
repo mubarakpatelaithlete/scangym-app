@@ -608,7 +608,7 @@ router.post('/admin/unclaim', authenticateUser, requireAdmin, express.json(), as
 });
 
 // POST /admin/reset-verification — clear ownership_verified so OTP flow can be re-tested
-router.post('/admin/reset-verification', authenticateUser, express.json(), async (req, res) => {
+router.post('/admin/reset-verification', authenticateUser, requireAdmin, express.json(), async (req, res) => {
   try {
     const { gymId } = req.body;
     if (!gymId) return res.status(400).json({ error: 'gymId required' });
@@ -1481,6 +1481,48 @@ async function fetchGooglePlacePhone(gym) {
   return null;
 }
 
+// GET /claim/phone-preview — which number will receive the code, masked.
+// Shown before sending so an owner with a stale Google number is never
+// stuck waiting for a text that goes to a phone they cannot answer.
+router.get('/claim/phone-preview', authenticateUser, async (req, res) => {
+  try {
+    const gymId = req.query.gymId;
+    if (!gymId) return res.status(400).json({ error: 'gymId required' });
+
+    const gym = await pool.query(
+      `SELECT id, name, address, place_id, phone, owner_phone, claimed_by, ownership_verified
+       FROM gyms WHERE id = $1`, [gymId]
+    );
+    if (!gym.rows.length) return res.status(404).json({ error: 'Gym not found' });
+    const g = gym.rows[0];
+    if (g.claimed_by && String(g.claimed_by) !== String(req.user.id)) {
+      return res.status(403).json({ error: 'This gym is claimed by another account' });
+    }
+    if (g.ownership_verified) return res.json({ alreadyVerified: true });
+
+    const googlePhone = await fetchGooglePlacePhone(g);
+    const bizPhone = normalizeUkPhone(googlePhone || g.phone || g.owner_phone);
+
+    if (!bizPhone) {
+      return res.json({
+        hasNumber: false,
+        message: 'Google has no phone number on your listing, so we cannot text you a code.',
+        action: 'Upload proof of ownership instead — we review it within 24 hours.',
+      });
+    }
+    res.json({
+      hasNumber: true,
+      maskedPhone: maskPhone(bizPhone),
+      source: googlePhone ? 'google_listing' : 'scangym_record',
+      message: `We'll text a 6-digit code to ${maskPhone(bizPhone)} — the number on your Google listing.`,
+      action: 'Not a number you can answer? Upload proof of ownership instead.',
+    });
+  } catch (err) {
+    console.error('Phone preview error:', err);
+    res.status(500).json({ error: 'preview_failed', message: 'Could not check your listed number.' });
+  }
+});
+
 // POST /claim/send-otp — text a code to the gym's registered business number
 router.post('/claim/send-otp', authenticateUser, express.json(), async (req, res) => {
   try {
@@ -1549,12 +1591,21 @@ router.post('/claim/send-otp', authenticateUser, express.json(), async (req, res
       });
     }
 
-    const channelLabel = sendChannel === 'whatsapp' ? 'WhatsApp message' : 'SMS';
+    // Report the channel TWILIO actually used, not the one we asked for. With no
+    // WhatsApp sender on the account Twilio quietly delivers by SMS, and echoing
+    // the request made the app tell owners to check WhatsApp for a text message.
+    const actualChannel = data.channel || sendChannel;
+    const channelLabel = actualChannel === 'whatsapp' ? 'WhatsApp message' : 'SMS';
+    const downgraded = sendChannel === 'whatsapp' && actualChannel !== 'whatsapp';
     res.json({
       success: true,
-      channel: sendChannel,
+      channel: actualChannel,
+      requestedChannel: sendChannel,
+      downgraded,
       maskedPhone: maskPhone(bizPhone),
-      message: `${channelLabel} sent to the gym's registered number ${maskPhone(bizPhone)}`,
+      message: downgraded
+        ? `WhatsApp isn't available for this number, so we sent an SMS to ${maskPhone(bizPhone)} instead.`
+        : `${channelLabel} sent to the gym's registered number ${maskPhone(bizPhone)}`,
     });
   } catch (err) {
     console.error('[Ownership] send-otp error:', err.message);
@@ -1569,14 +1620,18 @@ router.post('/claim/verify-otp', authenticateUser, express.json(), async (req, r
     if (!gymId || !code) return res.status(400).json({ error: 'gymId and code required' });
 
     const gym = await pool.query(
-      `SELECT id, phone, owner_phone, claimed_by FROM gyms WHERE id = $1`, [gymId]
+      `SELECT id, name, address, place_id, phone, owner_phone, claimed_by FROM gyms WHERE id = $1`, [gymId]
     );
     if (!gym.rows.length) return res.status(404).json({ error: 'Gym not found' });
     const g = gym.rows[0];
     if (g.claimed_by && String(g.claimed_by) !== String(req.user.id)) {
       return res.status(403).json({ error: 'This gym is claimed by another account' });
     }
-    const bizPhone = normalizeUkPhone(g.phone || g.owner_phone);
+    // send-otp texts the Google-listed number and only writes it back to the DB
+    // fire-and-forget. If that write lost the race, checking against the DB
+    // number alone rejected a perfectly good code as "invalid or expired".
+    let bizPhone = normalizeUkPhone(g.phone || g.owner_phone);
+    if (!bizPhone) bizPhone = normalizeUkPhone(await fetchGooglePlacePhone(g));
     if (!bizPhone) return res.status(400).json({ error: 'No registered number on file' });
 
     const url = `https://verify.twilio.com/v2/Services/${OWN_TWILIO_VERIFY_SID}/VerificationCheck`;

@@ -15429,16 +15429,29 @@ window._sgLoadSeamDevices=async function(){
           var extra='';
           if(dev.locked===true)extra=' \u00b7 \ud83d\udd12 Locked';else if(dev.locked===false)extra=' \u00b7 \ud83d\udd13 Unlocked';
           if(dev.battery!==null&&dev.battery!==undefined)extra+=' \u00b7 \ud83d\udd0b '+dev.battery+'%';
-          h+='<div style="display:flex;align-items:center;gap:12px;padding:12px;background:#222;border-radius:10px;margin-bottom:6px;border:1px solid rgba(255,255,255,.06)"><div style="width:40px;height:40px;border-radius:8px;background:#333;display:flex;align-items:center;justify-content:center;font-size:18px">\ud83d\udeaa</div><div style="flex:1;min-width:0"><div style="font-weight:600;font-size:13px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(dev.name||'Smart Lock')+'</div><div style="font-size:11px;color:'+statusColor+';margin-top:2px">\u25cf '+status+'<span style="color:rgba(255,255,255,.4)">'+extra+'</span></div></div></div>';
+          var testBtn='<button onclick="_sgTestUnlock('+g.gym_id+',\''+dev.device_id+'\',this)" style="flex-shrink:0;background:rgba(255,109,0,.12);color:#FF6D00;border:1px solid rgba(255,109,0,.35);padding:8px 12px;border-radius:10px;font-weight:700;font-size:11px;cursor:pointer">Test unlock</button>';
+          h+='<div style="display:flex;align-items:center;gap:12px;padding:12px;background:#222;border-radius:10px;margin-bottom:6px;border:1px solid rgba(255,255,255,.06)"><div style="width:40px;height:40px;border-radius:8px;background:#333;display:flex;align-items:center;justify-content:center;font-size:18px">\ud83d\udeaa</div><div style="flex:1;min-width:0"><div style="font-weight:600;font-size:13px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(dev.name||'Smart Lock')+'</div><div style="font-size:11px;color:'+statusColor+';margin-top:2px">\u25cf '+status+'<span style="color:rgba(255,255,255,.4)">'+extra+'</span></div></div>'+testBtn+'</div>';
         });
       } else if(g.error){
-        h+='<div style="color:rgba(255,255,255,.35);font-size:12px;padding:8px 2px">Connected \u2014 could not load the live door list right now.</div>';
+        h+='<div style="color:#fbbf24;font-size:12px;padding:8px 2px;line-height:1.5">\u26a0\ufe0f '+g.error+(g.error_action?'<div style="color:rgba(255,255,255,.45);font-size:11px;margin-top:3px">'+g.error_action+'</div>':'')+'</div>';
       } else {
         h+='<div style="color:rgba(255,255,255,.35);font-size:12px;padding:8px 2px">Connected \u2014 no doors reported by your lock system yet.</div>';
       }
     });
     el.innerHTML=h;
   }catch(ex){el.innerHTML='<div style="text-align:center;color:rgba(255,255,255,.3);padding:12px">Could not load devices</div>';}
+};
+window._sgTestUnlock=async function(gymId,deviceId,btn){
+  var label=btn?btn.textContent:'';
+  if(btn){btn.disabled=true;btn.textContent='Testing...';}
+  try{
+    var r=await fetch('/api/access/owner/test-unlock',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({gymId:gymId,deviceId:deviceId})});
+    var d=await r.json().catch(function(){return {};});
+    if(r.ok&&d.unlocked){sgToast(d.message||'Door unlocked','success',5000);}
+    else{sgToast((d.message||'Test unlock failed')+(d.action?' \u2014 '+d.action:''),'error',7000);}
+  }catch(ex){sgToast('Could not reach ScanGym to run the test','error',4000);}
+  if(btn){btn.disabled=false;btn.textContent=label||'Test unlock';}
+  setTimeout(function(){window._sgLoadSeamDevices&&window._sgLoadSeamDevices();},2500);
 };
 window._partnerWithdraw=function(){window._sgUnifiedWithdraw();};
 
@@ -18341,11 +18354,11 @@ window._partnerSearchGyms=function(q){
   if(!q||q.length<2){results.style.display='none';return;}
   _partnerSearchTimeout=setTimeout(async function(){
     try{
-      var r=await fetch('/api/live/search?q='+encodeURIComponent(q)); // was /api/gyms/search — route never existed
+      var r=await fetch('/api/live/partner-search?q='+encodeURIComponent(q)); // owner searches their own name: no type filter
       var d=r.ok?await r.json():{};
       d.results=(d.gyms||[]).slice(0,5);
       if(!d.results||!d.results.length){
-        results.innerHTML='<div style="padding:12px 16px;color:rgba(255,255,255,.4);font-size:13px">No gyms found — <a onclick="navigate(\'/contact\')" style="color:#FF6D00;cursor:pointer">contact us to add yours</a></div>';
+        results.innerHTML='<div style="padding:12px 16px;color:rgba(255,255,255,.45);font-size:13px;line-height:1.5">'+(d.message||'We could not find that on Google Maps.')+'<div style="color:rgba(255,255,255,.3);font-size:11px;margin-top:4px">'+(d.action||'Try the exact name on your Google listing, or add your town.')+'</div><a onclick="navigate(\'/contact\')" style="color:#FF6D00;cursor:pointer;font-size:12px;display:inline-block;margin-top:6px">Still stuck? Contact us</a></div>';
         results.style.display='block';
         return;
       }
@@ -18514,7 +18527,7 @@ window._partnerSearchClaim=async function(q){
   var box=document.getElementById('partner-claim-results');if(!box)return;
   if(!q||q.length<2){box.innerHTML='';return;}
   try{
-    var r=await fetch('/api/live/search?q='+encodeURIComponent(q)).catch(function(){return null;}); // was /api/search — route never existed
+    var r=await fetch('/api/live/partner-search?q='+encodeURIComponent(q)).catch(function(){return null;}); // owner searches their own name: no type filter
     var d=r&&r.ok?await r.json().catch(function(){return{gyms:[]};}):({gyms:[]});
     var gyms=d.gyms||d.results||[];
     if(!gyms.length){box.innerHTML='<p style="color:rgba(255,255,255,.3);font-size:12px;padding:8px;text-align:center">No gyms found</p>';return;}

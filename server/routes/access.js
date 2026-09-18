@@ -762,7 +762,7 @@ router.post('/owner/create-connect-webview', authenticateUser, async (req, res) 
     });
   } catch (err) {
     console.error('Create connect webview error:', err);
-    res.status(500).json({ error: 'Failed to create connection flow' });
+    res.status(502).json(describeLockError(err, 'Could not open the lock connection page'));
   }
 });
 
@@ -843,7 +843,7 @@ router.post('/owner/complete-connect', authenticateUser, async (req, res) => {
     });
   } catch (err) {
     console.error('Complete connect error:', err);
-    res.status(500).json({ error: 'Failed to finalize connection' });
+    res.status(502).json(describeLockError(err, 'Could not finish connecting your lock account'));
   }
 });
 
@@ -919,7 +919,9 @@ router.get('/owner/devices', authenticateUser, async (req, res) => {
           }));
         } catch (e) {
           console.error(`Owner devices: Seam list failed for gym ${g.id}:`, e.message);
-          entry.error = 'Could not load live device list';
+          const described = describeLockError(e, 'Could not load your live door list');
+          entry.error = described.message;
+          entry.error_action = described.action;
         }
       }
       out.push(entry);
@@ -991,6 +993,147 @@ router.get('/admin/overview', authenticateUser, async (req, res) => {
   } catch (err) {
     console.error('Access admin overview error:', err);
     res.status(500).json({ error: 'Failed to load overview' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// describeLockError — turn a provider/Seam failure into a message a gym
+// owner can act on. The old code answered every failure with a flat
+// "Failed to …", which is how a suspended Seam workspace looked
+// identical to a broken button for days. Never hide the cause.
+// ═══════════════════════════════════════════════════════════════════
+function describeLockError(err, fallback) {
+  const raw = String((err && (err.seamError?.message || err.message)) || '');
+  const lower = raw.toLowerCase();
+
+  if (lower.includes('sandbox') && lower.includes('suspended')) {
+    return {
+      error: 'lock_workspace_suspended',
+      message: 'Your smart-lock test account is switched off, so nothing could load.',
+      action: 'Email support@scangym.com — we switch it back on. Your real locks are unaffected.',
+      detail: raw,
+    };
+  }
+  if (err && (err.status === 401 || err.status === 403)) {
+    return {
+      error: 'lock_auth_failed',
+      message: 'Your lock provider rejected our login.',
+      action: 'Reconnect your lock account — the password or permission may have changed.',
+      detail: raw,
+    };
+  }
+  if (err && err.status === 429) {
+    return {
+      error: 'lock_rate_limited',
+      message: 'Your lock provider is asking us to slow down.',
+      action: 'Wait a minute and try again.',
+      detail: raw,
+    };
+  }
+  if (lower.includes('offline') || lower.includes('unreachable') || lower.includes('timeout')) {
+    return {
+      error: 'lock_offline',
+      message: 'The lock is offline, so it could not be reached.',
+      action: 'Check the lock has power and its bridge/WiFi is online, then try again.',
+      detail: raw,
+    };
+  }
+  return {
+    error: 'lock_error',
+    message: fallback,
+    action: 'Try again. If it keeps failing, send this to support@scangym.com.',
+    detail: raw,
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// POST /api/access/owner/test-unlock — owner-triggered door test
+// Body: { gymId, deviceId? }  (deviceId optional — single lock is used)
+// Proves the connection works end to end without making a booking.
+// ═══════════════════════════════════════════════════════════════════
+router.post('/owner/test-unlock', authenticateUser, express.json(), async (req, res) => {
+  try {
+    const { gymId, deviceId } = req.body || {};
+    if (!gymId) return res.status(400).json({ error: 'missing_gym', message: 'gymId is required' });
+
+    const gymResult = await pool.query(
+      `SELECT id, name, access_system, access_api_key
+       FROM gyms WHERE id = $1 AND claimed_by::text = $2::text`,
+      [gymId, req.user.id]
+    );
+    if (gymResult.rows.length === 0) {
+      return res.status(403).json({ error: 'not_your_gym', message: 'That gym is not on your account.' });
+    }
+    const gym = gymResult.rows[0];
+
+    const seamRouted = gym.access_api_key && !['kisi', 'gymmaster', 'manual'].includes(gym.access_system);
+    if (!seamRouted) {
+      return res.status(400).json({
+        error: 'not_supported',
+        message: 'Test unlock only works for cloud smart locks connected through ScanGym.',
+        action: 'Connect a smart lock account first.',
+      });
+    }
+
+    const seam = new SeamClient();
+    let devices;
+    try {
+      devices = (await seam.listDevices(gym.access_api_key)).devices || [];
+    } catch (e) {
+      return res.status(502).json(describeLockError(e, 'Could not reach your lock system'));
+    }
+
+    const locks = devices.filter(d =>
+      d.device_type?.includes('lock') || d.capabilities?.includes('lock') || d.properties?.locked !== undefined
+    );
+    const target = deviceId
+      ? locks.find(d => d.device_id === deviceId)
+      : (locks.length === 1 ? locks[0] : null);
+
+    if (!target) {
+      return res.status(400).json({
+        error: locks.length ? 'pick_a_door' : 'no_doors',
+        message: locks.length
+          ? 'You have more than one door — tell us which one to test.'
+          : 'Your lock account is connected but reports no doors yet.',
+        action: locks.length ? 'Pick a door and tap Test unlock again.' : 'Add a lock in your lock provider\'s app, then reload this page.',
+        doors: locks.map(d => ({ device_id: d.device_id, name: (d.properties && d.properties.name) || d.display_name || 'Smart Lock' })),
+      });
+    }
+
+    const targetName = (target.properties && target.properties.name) || target.display_name || 'Smart Lock';
+    if (target.properties && target.properties.online === false) {
+      return res.status(409).json({
+        error: 'lock_offline',
+        message: `${targetName} is offline, so it cannot be unlocked right now.`,
+        action: 'Check the lock has power and its bridge/WiFi is online, then try again.',
+        door: { device_id: target.device_id, name: targetName },
+      });
+    }
+
+    try {
+      await seam.unlockDoor(target.device_id);
+    } catch (e) {
+      return res.status(502).json({
+        ...describeLockError(e, `${targetName} did not accept the unlock command`),
+        door: { device_id: target.device_id, name: targetName },
+      });
+    }
+
+    console.log(`[TestUnlock] gym ${gym.id} owner ${req.user.id} unlocked ${target.device_id}`);
+    res.json({
+      unlocked: true,
+      message: `${targetName} unlocked. If the door did not open, the lock is connected but not wired to that door.`,
+      door: {
+        device_id: target.device_id,
+        name: targetName,
+        battery: target.properties && target.properties.battery_level != null
+          ? Math.round(target.properties.battery_level * 100) : null,
+      },
+    });
+  } catch (err) {
+    console.error('Test unlock error:', err);
+    res.status(500).json(describeLockError(err, 'Test unlock failed'));
   }
 });
 
