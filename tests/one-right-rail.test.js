@@ -261,6 +261,11 @@ test('the Reels iframe reaches the nav and the dock reserves the band for it', (
   // line, and the Reels iframe cannot measure a pill in the parent document.
   assert.match(railsJs, /sg-cta-in-row/, 'rails.js no longer sets the CTA-in-row class');
   assert.match(railsJs, /--sg-cta-w/, 'rails.js does not publish the pill width');
+  // The CTA is position:fixed, so offsetParent is null even on screen. v1.8
+  // used it, published 0px, and the row's buttons rendered under the pill.
+  // (matched with a dot so the explanatory comment in rails.js does not trip it)
+  assert.ok(!/\.offsetParent/.test(railsJs),
+    'rails.js uses offsetParent, which is null for the fixed CTA');
   assert.match(railsJs, /postMessage/, 'the Reels frame is never told the pill width');
 
   // The dock must let go of the CTA, inline value removed — otherwise it both
