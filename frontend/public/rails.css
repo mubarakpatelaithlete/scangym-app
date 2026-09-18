@@ -114,7 +114,8 @@
 .reel-actions,
 #sg-reels-rail,
 #sg-sv-rail.sv-float,
-#sg-profile-rail {
+#sg-profile-rail,
+.sg-pr-host-capped {
   left: 0 !important;
   right: 0 !important;
   top: auto !important;
@@ -140,9 +141,36 @@
 /* Body-level rails: fixed, clearing the whole stack. */
 #sg-reels-rail,
 #sg-sv-rail.sv-float,
-#sg-profile-rail {
+#sg-profile-rail,
+.sg-pr-host-capped {
   position: fixed !important;
   bottom: var(--sg-band-bottom) !important;
+}
+
+/* ── Profile has TWO rails, and only one of them was ever styled ───────────
+   profile-rail.js floats `#sg-profile-rail` only when the app has no rail of
+   its own; when the app DOES render one, it extends that native rail instead
+   and marks it `sg-pr-host-capped`. That host is the app's own element, so
+   none of the rules above reached it: measured on production 2026-09-18,
+   Profile was a VERTICAL column at x330-380, y92-696 (Sign Up, Find Gym,
+   Pricing, Creator, Help, Connect, Telegram) while every other tab had the
+   row. Which rail you get depends on app state, so the tab looked fixed in
+   one check and unfixed in the next.
+   The host joins the band on the same terms as the others. Its own
+   `max-height: calc(100vh - 240px)` and `overflow-y: auto` are what made it a
+   tall scrolling column, so both are overridden here. */
+.sg-pr-host-capped {
+  max-height: var(--sg-band-height) !important;
+  overflow-y: hidden !important;
+  padding: 0 var(--sg-band-pad) !important;
+  margin: 0 !important;
+}
+/* The column stacked its children vertically with a wrapper in the middle. */
+.sg-pr-host-capped #sg-profile-rail-ext {
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 14px !important;
+  margin-top: 0 !important;
 }
 
 /* Card and reel rails: absolute, pinned to the bottom of their full-screen
@@ -160,14 +188,16 @@
 .reel-actions::-webkit-scrollbar,
 #sg-reels-rail::-webkit-scrollbar,
 #sg-sv-rail.sv-float::-webkit-scrollbar,
-#sg-profile-rail::-webkit-scrollbar { display: none; }
+#sg-profile-rail::-webkit-scrollbar,
+.sg-pr-host-capped::-webkit-scrollbar { display: none; }
 
 /* A row that is fully visible should not be faded or arrowed. */
 .tt-actions:not(.sg-rail-scrollable),
 .reel-actions:not(.sg-rail-scrollable),
 #sg-reels-rail:not(.sg-rail-scrollable),
 #sg-sv-rail.sv-float:not(.sg-rail-scrollable),
-#sg-profile-rail:not(.sg-rail-scrollable) {
+#sg-profile-rail:not(.sg-rail-scrollable),
+.sg-pr-host-capped:not(.sg-rail-scrollable) {
   -webkit-mask-image: none;
   mask-image: none;
 }
@@ -176,7 +206,9 @@
 .reel-actions > *,
 #sg-reels-rail > *,
 #sg-sv-rail.sv-float > *,
-#sg-profile-rail > * {
+#sg-profile-rail > *,
+.sg-pr-host-capped > *,
+.sg-pr-host-capped #sg-profile-rail-ext > * {
   flex: 0 0 auto;
   scroll-snap-align: start;
 }
@@ -230,7 +262,8 @@
 .tt-actions .tt-action-label,
 .reel-actions .label,
 #sg-reels-rail .sg-rr-label,
-#sg-profile-rail .sg-rr-label {
+#sg-profile-rail .sg-rr-label,
+.sg-pr-host-capped .sg-pr-label {
   color: #fff !important;
   font-size: 10px !important;
   font-weight: 600 !important;
@@ -248,7 +281,8 @@
 .reel-actions,
 #sg-reels-rail,
 #sg-sv-rail.sv-float,
-#sg-profile-rail {
+#sg-profile-rail,
+.sg-pr-host-capped {
   background: linear-gradient(to top, rgba(0, 0, 0, .34), rgba(0, 0, 0, 0));
 }
 
@@ -360,7 +394,12 @@ html body.sg-cta-in-row #sg-continue-banner#sg-continue-banner {
   left: var(--sg-band-pad) !important;
   right: auto !important;
   width: auto !important;
-  max-width: calc(100% - 2 * var(--sg-band-pad)) !important;
+  /* Measured 2026-09-18: with no cap, "Ask AI \"How much have I made this
+     week\"" made the pill 293px of a 390px screen on Partner and 312px on
+     Profile, leaving one clipped circle and nothing to swipe. The pill takes
+     at most 58% and the label ellipsises; the row keeps the rest. */
+  max-width: 58% !important;
+  overflow: hidden !important;
   height: var(--sg-cta-h) !important;
   /* Centred in the band, so the pill and the circles share a midline. */
   bottom: calc(var(--sg-band-bottom) + (var(--sg-band-height) - var(--sg-cta-h)) / 2) !important;
@@ -376,6 +415,9 @@ html body.sg-cta-in-row #sg-continue-banner#sg-continue-banner {
 body.sg-cta-in-row #sg-continue-banner .sg-cb-text {
   font-size: 14px !important;
   white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  min-width: 0 !important;
 }
 body.sg-cta-in-row #sg-continue-banner .sg-cb-price {
   font-size: 12px !important;
@@ -391,7 +433,8 @@ body.sg-cta-in-row .tt-actions,
 body.sg-cta-in-row .reel-actions,
 body.sg-cta-in-row #sg-reels-rail,
 body.sg-cta-in-row #sg-sv-rail.sv-float,
-body.sg-cta-in-row #sg-profile-rail {
+body.sg-cta-in-row #sg-profile-rail,
+body.sg-cta-in-row .sg-pr-host-capped {
   padding-left: calc(var(--sg-cta-w) + var(--sg-band-pad) + 14px) !important;
 }
 

@@ -63,7 +63,9 @@
   /* The rails are a horizontal row now (see rails.css), so "there is more" is a
      question about width, and it changes as the row is scrolled: the arrow has
      to disappear at the end, or it points at nothing. */
-  var ROWS = '.tt-actions, .reel-actions, #sg-reels-rail, #sg-sv-rail.sv-float, #sg-profile-rail';
+  /* `.sg-pr-host-capped` is the app's own Profile rail, which profile-rail.js
+     extends instead of floating its own when it exists (see rails.css). */
+  var ROWS = '.tt-actions, .reel-actions, #sg-reels-rail, #sg-sv-rail.sv-float, #sg-profile-rail, .sg-pr-host-capped';
   function markRow(row) {
     if (!row) return;
     var more = row.scrollWidth - row.clientWidth - row.scrollLeft > 8;
