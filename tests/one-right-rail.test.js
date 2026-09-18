@@ -230,8 +230,13 @@ test('the Reels iframe reaches the nav and the dock reserves the band for it', (
   // The SPA's live path: #sg-reels-iframe inside #sg-reels-persistent, which
   // already ends at the nav. app.ctr576.js shortened the iframe by the CTA's
   // 52px, so the row inside it sat under the CTA.
-  assert.match(railsCss, /html body #sg-reels-iframe\s*\{[^}]*height:\s*100%/,
+  const fr = railsCss.match(/html body #sg-reels-iframe[^{]*\{[^}]*\}/);
+  assert.ok(fr && /height:\s*100%/.test(fr[0]),
     'the Reels iframe does not fill its wrapper, so its row stops short of the nav');
+  // `body.sg-cb-active #sg-reels-iframe` is one id AND a class, so one id here
+  // loses — v1.6 shipped and changed nothing on screen.
+  assert.ok((fr[0].match(/#sg-reels-iframe/g) || []).length >= 2,
+    'one id does not beat body.sg-cb-active #sg-reels-iframe');
   assert.match(dockJs, /REELS_FRAME/,
     'sg-dock.js does not know about the Reels frame, so the CTA will take the row strip');
   assert.match(dockJs, /--sg-band-height/,
