@@ -589,43 +589,52 @@ router.get('/search', async (req, res) => {
 function looksLikeUrl(q) { return /^https?:\/\//i.test(q.trim()); }
 
 async function resolvePlaceFromUrl(rawUrl) {
+  const out = { placeId: null, names: [], finalUrl: null };
   try {
     const resp = await fetch(rawUrl.trim(), { redirect: 'follow', headers: { 'User-Agent': 'Mozilla/5.0' } });
     const finalUrl = resp.url || '';
+    out.finalUrl = finalUrl;
     const html = await resp.text().catch(() => '');
-    // A place_id in the URL is the cleanest signal
+
     const pidMatch = finalUrl.match(/[?&](?:place_id|query_place_id)=([A-Za-z0-9_-]+)/);
-    if (pidMatch) return { placeId: pidMatch[1] };
-    // Otherwise recover the business name Google put in the URL or page title
-    let name = null;
-    const placeName = finalUrl.match(/\/maps\/place\/([^/@?]+)/);
-    if (placeName) name = decodeURIComponent(placeName[1]).replace(/\+/g, ' ');
-    // A share.google link lands on /search?...&q=<business name>, whose page
-    // title is just "Google Search" — the q parameter is the usable signal.
-    if (!name) {
-      const qParam = finalUrl.match(/[?&]q=([^&]+)/);
-      if (qParam) name = decodeURIComponent(qParam[1]).replace(/\+/g, ' ').trim();
+    if (pidMatch) { out.placeId = pidMatch[1]; return out; }
+
+    const candidates = [];
+    const push = (v) => { if (v) candidates.push(String(v)); };
+    const fromUrl = finalUrl.match(/\/maps\/place\/([^/@?]+)/);
+    if (fromUrl) push(decodeURIComponent(fromUrl[1]));
+    const qUrl = finalUrl.match(/[?&]q=([^&]+)/);
+    if (qUrl) push(decodeURIComponent(qUrl[1]));
+    // Client-side redirect pages keep the name in the HTML instead
+    for (const m of html.matchAll(/[?&]q=([^&"'<\\]{3,120})/g)) {
+      try { push(decodeURIComponent(m[1])); } catch (e) { push(m[1]); }
     }
-    // Some share links only redirect client-side, so the business name has to
-    // come out of the HTML instead of the final URL.
-    if (!name) {
-      const htmlKg = html.match(/[?&]q=([^&"'<]{3,120})/);
-      if (htmlKg) name = decodeURIComponent(htmlKg[1]).replace(/\+/g, ' ').trim();
-    }
-    if (!name) {
-      const title = html.match(/<title[^>]*>([^<]{3,160})</i);
-      if (title) name = title[1].replace(/\s*[-–|]\s*Google\s*Maps.*$/i, '').trim();
-      if (!name) {
-        const og = html.match(/property=["']og:title["']\s+content=["']([^"']{3,160})["']/i);
-        if (og) name = og[1].trim();
-      }
-    }
-    // "Google Search" / "Google Maps" is the wrapper page, not a business
-    if (name && /^google(\s|$)/i.test(name)) name = null;
-    return name ? { name } : null;
+    const title = html.match(/<title[^>]*>([^<]{3,160})</i);
+    if (title) push(title[1].replace(/\s*[-–|]\s*Google\s*Maps.*$/i, ''));
+    const og = html.match(/property=["']og:title["']\s+content=["']([^"']{3,160})["']/i);
+    if (og) push(og[1]);
+
+    // Keep only strings that read like a business name. Google's pages are full
+    // of opaque tokens, and searching one of those finds nothing at all.
+    const seen = new Set();
+    out.names = candidates
+      .map(c => c.replace(/\+/g, ' ').trim())
+      .filter(c => {
+        if (c.length < 3 || c.length > 80) return false;
+        if (/^google(\s|$)/i.test(c)) return false;
+        const letters = (c.match(/[a-z]/gi) || []).length;
+        if (letters / c.length < 0.6) return false;
+        if (!c.includes(' ') && c.length > 20) return false;
+        const key = c.toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .slice(0, 3);
+    return out;
   } catch (e) {
     console.warn('[PartnerSearch] URL resolve failed:', e.message);
-    return null;
+    return out;
   }
 }
 
@@ -681,28 +690,28 @@ router.get('/partner-search', async (req, res) => {
     // Pasted a Google Maps / share link? Resolve it straight to the listing.
     if (looksLikeUrl(searchQuery)) {
       const resolved = await resolvePlaceFromUrl(searchQuery);
-      if (resolved?.placeId) {
+      if (resolved.placeId) {
         const one = await placeDetailsById(resolved.placeId);
         if (one) { places = [one]; source = 'google_maps_link'; }
       }
-      if (!places.length && resolved?.name) {
+      for (const cand of resolved.names) {
+        if (places.length) break;
         try {
-          places = await searchWithPlacesNewAPI(resolved.name, lat, lng, radius, 10, true);
-          if (places.length) source = 'google_maps_link';
+          places = await searchWithPlacesNewAPI(cand, lat, lng, radius, 10, true);
+          if (places.length) {
+            source = 'google_maps_link';
+            const target = cand.toLowerCase();
+            places.sort((a, b) => (b.name.toLowerCase() === target ? 1 : 0) - (a.name.toLowerCase() === target ? 1 : 0));
+          }
         } catch (e) { console.warn('[PartnerSearch] link name search failed:', e.message); }
-      }
-      if (places.length) {
-        // Rank the listing the link actually named first
-        const target = (resolved?.name || '').toLowerCase();
-        places.sort((a, b) => (b.name.toLowerCase() === target ? 1 : 0) - (a.name.toLowerCase() === target ? 1 : 0));
       }
       if (!places.length) {
         return res.json({
           gyms: [], total: 0, source: 'google_maps_link',
-          resolvedName: resolved?.name || null,
-          message: resolved?.name
-            ? `That link points to "${resolved.name}", which we could not find on Google Maps.`
-            : 'We could not open that link.',
+          resolvedName: resolved.names[0] || null,
+          message: resolved.names.length
+            ? `That link points to "${resolved.names[0]}", which we could not find on Google Maps.`
+            : 'We could not read that link.',
           action: 'Type your gym name plus your town instead, e.g. "Iron Works Bharuch".',
         });
       }
