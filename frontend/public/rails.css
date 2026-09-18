@@ -311,9 +311,11 @@ html body .sg-reels-frame.sg-reels-frame.sg-reels-frame {
    `calc(100vh - 56px - 52px - safe)` = 736px whenever the CTA is up. So the
    frame stopped 52px short of its own wrapper and the row went with it: row
    y660–732, CTA y656–708 on top of it. The iframe fills its wrapper instead;
-   the wrapper is the thing that knows about the nav. An id beats the injected
-   `body.sg-cb-active #sg-reels-iframe` on specificity. */
-html body #sg-reels-iframe {
+   the wrapper is the thing that knows about the nav.
+   The id is written twice on purpose: the injected rule is
+   `body.sg-cb-active #sg-reels-iframe` — one id AND a class — so a single id
+   here loses and the first attempt (v1.6) changed nothing on screen. */
+html body #sg-reels-iframe#sg-reels-iframe {
   top: 0 !important;
   bottom: 0 !important;
   height: 100% !important;
