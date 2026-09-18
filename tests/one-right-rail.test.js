@@ -395,23 +395,41 @@ test('rails.js calls no function it does not define, and one bad pass cannot kil
     'safeScan does not actually catch anything');
 });
 
-test('the pills are moved into the row, and can be rescued when a card is replaced', () => {
+test('every tab gets the same three row buttons, built from the row\'s own markup', () => {
   const js = read('rails.js');
   const css = read('rails.css');
 
-  assert.match(js, /slot\.appendChild\(cta\)/, 'the main button is no longer moved into the row');
-  assert.match(js, /slot\.appendChild\(talk\)/, 'the Talk pill is no longer moved into the row');
-  // Same element, never rebuilt: checkout and the per-tab label are bound to it.
-  assert.ok(!/createElement\('button'\)/.test(js), 'rails.js builds a button instead of moving the real one');
-  // A card is replaced wholesale on re-render; a lost CTA means no way to book.
+  // Owner, 2026-09-18: "why all buttons are not in 1 row… why they're not same
+  // colour, same size, same design… why reels tab is missing ask AI and talk".
+  for (const cap of ['Book', 'Talk', 'Ask AI']) {
+    assert.ok(js.includes("cap: '" + cap + "'"), cap + ' is not one of the row items');
+  }
+  // Built from the app's own item markup, so the look is inherited, not copied.
+  assert.match(js, /className = 'tt-action /, 'the items do not use the row\'s item class');
+  assert.match(js, /className = 'tt-action-btn'/, 'the glyph is not the row\'s own circle');
+  assert.match(js, /className = 'tt-action-label'/, 'the caption is not the row\'s own label');
+  // And repeated for the rows that are not .tt-actions, or the tabs diverge again.
+  assert.match(css, /\.sg-row-slot \.sg-row-trio > \.tt-action-btn[\s\S]{0,400}?border-radius:\s*50%/,
+    'the three buttons are not given the circle look outside .tt-actions');
+
+  // Talk and Ask AI open the chat the tab already has; Book uses the card's own
+  // button when there is one. Nothing here may invent a second chat or checkout.
+  assert.match(js, /fab\.click\(\)/, 'Talk and Ask AI do not open the existing chat');
+  assert.match(js, /'-mic'/, 'Talk does not reach the microphone');
+  assert.match(js, /'-input'/, 'Ask AI does not reach the typing box');
+  assert.match(js, /tt-cta-btn'\)/, 'Book ignores the card\'s own book button');
+  assert.ok(!/fetch\(|XMLHttpRequest/.test(js), 'rails.js talks to the server: it is a layout file');
+
+  // The Reels tab is a separate document: its copy asks the parent to act.
+  assert.match(js, /sg: 'row-act'/, 'the framed row cannot ask the parent to open the chat');
+  assert.match(js, /d\.sg !== 'row-act'/, 'the parent never serves taps from the Reels frame');
+
+  // A card is replaced wholesale on re-render; a lost sign-in bar means no way in.
   assert.match(js, /MutationObserver/, 'nothing watches for the row being removed');
   assert.match(js, /function rescue\(el\)[\s\S]{0,200}?appendChild\(el\)/,
-    'a pill taken out with its card is never put back');
+    'an element taken out with its card is never put back');
   assert.match(js, /pills\.indexOf\(el\)/,
-    'detached pills are not remembered, and querySelector cannot find them');
-  // In the row they must stop being fixed, or they sit in the corner regardless.
+    'detached elements are not remembered, and querySelector cannot find them');
   assert.match(css, /\.sg-row-slot > #sg-continue-banner#sg-continue-banner[\s\S]{0,600}?position:\s*static/,
-    'the main button keeps its fixed position inside the row');
-  assert.match(css, /\.sg-row-slot:empty\s*\{[^}]*display:\s*none/,
-    'an empty slot still holds space open in every other row');
+    'the main bar keeps its fixed position inside the row');
 });

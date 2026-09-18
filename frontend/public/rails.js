@@ -259,6 +259,14 @@
       document.documentElement.style.setProperty('--sg-cta-w', (d.width || 0) + 'px');
       markAllRows();                  // the inset changed how much overflows
     });
+  } else {
+    /* Book / Talk / Ask AI tapped inside the Reels frame: it has no chat of its
+       own, so the tap is performed here, on the tab the customer is looking at. */
+    window.addEventListener('message', function (ev) {
+      var d = ev.data;
+      if (!d || d.sg !== 'row-act' || !d.key) return;
+      act(String(d.key));
+    });
   }
 
   /* ── The pills moved INTO the row (owner, 2026-09-18, fourth decision) ───
@@ -313,63 +321,162 @@
     return null;
   }
 
-  /* Put the pills in the visible row's slot. Cheap to call often: if they are
-     already there, nothing is touched, so no tap is ever interrupted by a
-     re-parent mid-press. */
-  /* A card is replaced wholesale on re-render, and the pills are now inside
-     one. The removed subtree is detached, not destroyed, so the element is
-     still there to be rescued — and it has to be, because there is only one of
-     each and nothing rebuilds them: a lost CTA means a tab with no way to
-     book. Watched, and put back on the body, where the parked rules apply,
-     until the next pass moves it into the new row. */
+  /* ── One strip, the same three buttons on every tab (owner, 2026-09-18) ──
+     "Why all buttons are not in 1 row… why they're not same colour, same size,
+     same design… why reels tab is missing ask AI and talk button."
+
+     Before this there was one orange bar whose label changed per tab, plus a
+     Talk pill that only appeared on the tab that owned its chat, plus the
+     card's own circles: three different shapes, and which of them you got
+     depended on the tab. Now every tab's row starts with the same three items,
+     built from the app's own row markup (.tt-action > .tt-action-btn +
+     .tt-action-label), so they are the same size, colour and shape as every
+     circle beside them by construction, not by copied numbers.
+
+     Nothing new is invented behind them: Book taps the card's own book button
+     or moves to the Book tab, and Talk and Ask AI open the tab's existing chat
+     (voice or typing), which is the same object its floating pill opened. */
+  var TRIO = 'sg-row-trio';
+  var ITEMS = [
+    { key: 'book', ico: '\uD83D\uDCB3', cap: 'Book' },
+    { key: 'talk', ico: '\uD83C\uDFA4', cap: 'Talk' },
+    { key: 'ai',   ico: '\u2728',       cap: 'Ask AI' }
+  ];
+
+  /** The chat this tab owns. Built by its own script, so it is already there. */
+  function chatFab() { return document.querySelector(TALK); }
+
+  function openChat(mode) {
+    var fab = chatFab();
+    if (!fab) { if (typeof window.switchTab === 'function') window.switchTab('book'); return; }
+    fab.click();                                  // the pill's own handler opens it
+    var ns = (fab.id || '').replace('-fab', '');  // bchat-fab -> bchat
+    /* Straight to the microphone for Talk, straight to the keyboard for Ask AI.
+       Kept inside the tap so the browser still counts it as a user gesture,
+       which the microphone needs. */
+    setTimeout(function () {
+      var el = document.getElementById(ns + (mode === 'talk' ? '-mic' : '-input'));
+      if (!el) return;
+      if (mode === 'talk') el.click(); else el.focus();
+    }, 260);
+  }
+
+  function act(key) {
+    /* The Reels tab is its own document: the chats and the tab switcher are in
+       the parent, so the framed copy asks rather than does. */
+    if (FRAMED) {
+      try { window.parent.postMessage({ sg: 'row-act', key: key }, '*'); } catch (e) { /* closed */ }
+      return;
+    }
+    if (key === 'talk') return openChat('talk');
+    if (key === 'ai') return openChat('ai');
+    /* Book: the card in front of the customer has its own book button, with the
+       gym and the price already bound to it. Only when there is none — Profile,
+       ScanSquad, Reels — does this become "go to the Book tab". */
+    var live = document.querySelector('.tt-card.' + LIVE + ' .tt-cta-btn') ||
+               document.querySelector('.tt-card.' + LIVE + ' .sg-cb-book');
+    if (live) return live.click();
+    var cta = document.querySelector(CTA);
+    if (cta && /book/i.test(ctaWords(cta))) return cta.click();
+    if (typeof window.switchTab === 'function') return window.switchTab('book');
+    location.href = '/book';
+  }
+
+  function buildTrio(slot) {
+    if (slot.querySelector('.' + TRIO)) return;
+    for (var i = 0; i < ITEMS.length; i++) {
+      var it = ITEMS[i];
+      var item = document.createElement('div');
+      item.className = 'tt-action ' + TRIO;
+      item.setAttribute('data-sg-row-act', it.key);
+      var btn = document.createElement('div');
+      btn.className = 'tt-action-btn';
+      btn.textContent = it.ico;
+      var lab = document.createElement('div');
+      lab.className = 'tt-action-label';
+      lab.textContent = it.cap;
+      item.appendChild(btn);
+      item.appendChild(lab);
+      item.addEventListener('click', (function (key) {
+        return function (ev) { ev.stopPropagation(); act(key); };
+      })(it.key));
+      slot.appendChild(item);
+    }
+  }
+
+  /* The old floating pills are the same doors as Talk and Ask AI, so they are
+     taken out of the strip — except when the main bar is offering something the
+     trio does not cover (signing in), where it stays as a row item of its own. */
+  /* The bar's own label elements, never its textContent: iconify() appends a
+     caption inside the same element, and reading that back makes the label look
+     like whatever the last pass wrote. */
+  function ctaWords(el) {
+    var parts = el.querySelectorAll('.sg-cb-text, .sg-cb-sub, .sg-cb-price');
+    var out = '';
+    for (var i = 0; i < parts.length; i++) out += ' ' + (parts[i].textContent || '');
+    return out.trim() || (el.getAttribute('data-sg-label') || '');
+  }
+
+  function parkOldPills(slot) {
+    var cta = document.querySelector(CTA);
+    if (cta) {
+      remember(cta);
+      var words = ctaWords(cta);
+      var ownAction = /continue|sign in|log in/i.test(words);
+      cta.classList.toggle('sg-cb-in-strip', ownAction);
+      if (ownAction && cta.parentNode !== slot) slot.appendChild(cta);
+      if (!ownAction && cta.parentNode === slot) document.body.appendChild(cta);
+    }
+    var talk = document.querySelector(TALK);
+    if (talk) { remember(talk); if (talk.parentNode === slot) document.body.appendChild(talk); }
+  }
+
+  /* A card is replaced wholesale on re-render, and the main bar can be sitting
+     inside one. The removed subtree is detached, not destroyed, so the element
+     is still there to be rescued — and it has to be, because there is one of it
+     and nothing rebuilds it: a lost bar means a tab with no way to sign in.
+     Remembered in a list because `document.querySelector` cannot find a
+     detached element. */
+  var pills = [];
+  function remember(el) { if (el && pills.indexOf(el) === -1) pills.push(el); }
   function rescue(el) {
     if (el && !el.isConnected && document.body) document.body.appendChild(el);
   }
   function watchRemovals() {
     if (typeof MutationObserver === 'undefined') return;
     new MutationObserver(function (recs) {
-      var cta = null, talk = null;
+      var rescued = false;
       for (var i = 0; i < recs.length; i++) {
         var gone = recs[i].removedNodes;
         for (var j = 0; j < gone.length; j++) {
-          var n = gone[j];
-          if (!n.querySelector) continue;
-          cta = cta || (n.id === CTA.slice(1) ? n : n.querySelector(CTA));
-          talk = talk || (n.matches && n.matches(TALK) ? n : n.querySelector(TALK));
+          if (!gone[j].querySelector) continue;
+          for (var k = 0; k < pills.length; k++) {
+            if (gone[j] === pills[k] || gone[j].contains(pills[k])) {
+              rescue(pills[k]); rescued = true;
+            }
+          }
         }
       }
-      if (cta) rescue(cta);
-      if (talk) rescue(talk);
-      if (cta || talk) ride();              // straight into the row that replaced it
+      if (rescued) ride();                  // straight into the row that replaced it
     }).observe(document.body, { childList: true, subtree: true });
   }
 
-  /* Remembered, because `document.querySelector` cannot find a detached
-     element: once a card takes a pill out of the document, this list is the
-     only way back to it. */
-  var pills = [];
-  function remember(el) { if (el && pills.indexOf(el) === -1) pills.push(el); }
-
   function ride() {
-    if (FRAMED) return;                     // the pills live in the parent document
     for (var i = 0; i < pills.length; i++) rescue(pills[i]);
     var row = activeRow();
     if (!row) return;
     var slot = slotIn(row);
-    var cta = document.querySelector(CTA), talk = talkEl();
-    remember(cta); remember(talk);
-    var moved = false;
-    if (cta && cta.parentNode !== slot) { slot.appendChild(cta); moved = true; }
-    if (talk && talk.parentNode !== slot) { slot.appendChild(talk); moved = true; }
+    var fresh = !slot.querySelector('.' + TRIO);
+    buildTrio(slot);
+    if (!FRAMED) parkOldPills(slot);        // the pills themselves are up in the parent
     if (document.body) document.body.classList.add(RIDES);
-    /* sg-rail-ui scrolls the active chip into view, and that scroll was sized
-       for a row that started 124px in. With the pills inside the scroller the
-       same 124px hides them: measured on Book and Partner, the main button sat
-       at x-112, off screen, before the customer had touched anything. Rewound
-       once, when the pills arrive — never on a later pass, so a swipe of the
-       user's own is never undone. */
-    if (moved && row.scrollLeft) row.scrollLeft = 0;
+    /* sg-rail-ui scrolls the active chip into view with an offset sized for a
+       row that started after the pills. With these items inside the scroller
+       the same offset hid them: measured live on Book and Partner, the first
+       button sat at x-112 before the customer touched anything. Rewound once,
+       when the items arrive, so a swipe of the user's own is never undone. */
+    if (fresh && row.scrollLeft) row.scrollLeft = 0;
   }
 
-  window.sgRails = { scan: scan, LIVE_CLASS: LIVE, syncCta: syncCta, ride: ride };
+  window.sgRails = { scan: scan, LIVE_CLASS: LIVE, syncCta: syncCta, ride: ride, act: act };
 })();

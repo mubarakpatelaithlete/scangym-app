@@ -725,3 +725,60 @@ html body.sg-cta-rides-row .sg-row-slot > #chat-fab#chat-fab {
   flex: 0 0 auto !important;
   max-width: none !important;
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   THE SAME THREE BUTTONS, THE SAME LOOK, EVERY TAB (owner, 2026-09-18)
+
+   rails.js builds Book / Talk / Ask AI from the app's own row markup, so they
+   inherit the circles' size and colour wherever `.tt-actions` styles reach.
+   These rules repeat that look for the rows that are NOT .tt-actions — the
+   Profile rail, the ScanSquad float, the Reels strip — so the strip is one set
+   of identical buttons on all five tabs instead of five near-misses.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.sg-row-slot .tt-action.sg-row-trio {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 3px !important;
+  flex: 0 0 auto !important;
+  cursor: pointer !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+.sg-row-slot .sg-row-trio > .tt-action-btn {
+  width: var(--sg-row-ico, 42px) !important;
+  height: var(--sg-row-ico, 42px) !important;
+  border-radius: 50% !important;
+  background: rgba(13, 16, 25, .62) !important;
+  border: 1px solid rgba(255, 255, 255, .10) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 20px !important;
+  line-height: 1 !important;
+  opacity: 1 !important;
+}
+
+.sg-row-slot .sg-row-trio > .tt-action-btn:active { transform: scale(.9) !important; }
+
+.sg-row-slot .sg-row-trio > .tt-action-label {
+  display: block !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  color: rgba(255, 255, 255, .72) !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, .8) !important;
+  white-space: nowrap !important;
+  max-width: 60px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  line-height: 1.1 !important;
+}
+
+/* The main bar only stays in the strip when it is offering something the three
+   do not — signing in. Otherwise it is the same door as Ask AI, and gone. */
+html body.sg-cta-rides-row #sg-continue-banner#sg-continue-banner:not(.sg-cb-in-strip):not(.sg-row-slot *) {
+  /* left where the parked rules put it; nothing here hides a bar the app still
+     needs, it is simply no longer part of the strip */
+}
