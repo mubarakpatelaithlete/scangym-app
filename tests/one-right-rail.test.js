@@ -214,3 +214,21 @@ test('the card tabs reach the nav, so the in-card row has a strip to sit in', ()
   const classes = (rule[0].match(/\.sg-tab-content/g) || []).length;
   assert.ok(classes >= 4, `the rule has ${classes} classes; it needs 4 to beat sg-rail-ui.js on Book`);
 });
+
+test('the Reels iframe reaches the nav and the dock reserves the band for it', () => {
+  // /reels is its own document inside `.sg-reels-frame`. app.ctr576.js ends the
+  // frame above the orange CTA, so the row inside it rendered ABOVE the CTA
+  // (production 2026-09-18: row y660-730, CTA y736-788 — the wrong order).
+  const rule = railsCss.match(/html body [^{]*sg-reels-frame[^{]*\{[^}]*\}/);
+  assert.ok(rule, 'nothing makes the Reels frame end at the nav');
+  assert.match(rule[0], /bottom:\s*calc\(var\(--sg-nav-h/,
+    'the frame bottom is not derived from the measured nav');
+  const classes = (rule[0].match(/\.sg-reels-frame/g) || []).length;
+  assert.ok(classes >= 3,
+    `the rule has ${classes} classes; it needs 3 to beat body.sg-cb-active .sg-reels-frame`);
+  // The parent cannot measure a row in another document, so it reserves the band.
+  assert.match(dockJs, /REELS_FRAME/,
+    'sg-dock.js does not know about the Reels frame, so the CTA will take the row strip');
+  assert.match(dockJs, /--sg-band-height/,
+    'the reserved height should come from rails.css, not a second hardcoded number');
+});
