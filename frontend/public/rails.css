@@ -451,3 +451,57 @@ body.sg-cta-in-row .sg-pr-host-capped {
 /* Inside the Reels iframe the pill is in the PARENT document and cannot be
    measured, so rails.js posts its width across and the framed copy of this
    file applies the same inset. Nothing else about the row changes. */
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ONE ROW, ONE STYLE (owner, 2026-09-18, third decision)
+
+   "No orange button — looks same like other white button in row", and the
+   floating Talk pill joins the row too. After this there is nothing floating
+   over the content: the whole bottom is nav + one strip.
+
+   The buttons keep their ids and handlers for the same reason as before —
+   `#sg-continue-banner` owns checkout, and each tab's Talk pill
+   (#bchat-fab … #chat-fab, one per chat personality) owns the voice agent.
+   Only their looks and their place change.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* The main button loses the orange and takes the row's glass-circle look:
+   same background, border, blur and shadow as .sg-pr-circle / .tt-action-btn. */
+html body.sg-cta-in-row #sg-continue-banner#sg-continue-banner {
+  background: rgba(0, 0, 0, .4) !important;
+  border: 1px solid rgba(255, 255, 255, .12) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  backdrop-filter: blur(12px) !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .25) !important;
+}
+
+/* The Talk pill sits next in the row, after the main button. rails.js
+   publishes where that is, because the main button's width changes with its
+   label. Its own sheet pins it `right: 14px; z-index: 9100`, so both are
+   overridden here. */
+body.sg-cta-in-row #bchat-fab,
+body.sg-cta-in-row #pchat-fab,
+body.sg-cta-in-row #schat-fab,
+body.sg-cta-in-row #rchat-fab,
+body.sg-cta-in-row #mchat-fab,
+body.sg-cta-in-row #chat-fab {
+  position: fixed !important;
+  left: var(--sg-talk-left, 12px) !important;
+  right: auto !important;
+  bottom: calc(var(--sg-band-bottom) + (var(--sg-band-height) - var(--sg-cta-h)) / 2) !important;
+  height: var(--sg-cta-h) !important;
+  padding: 0 14px !important;
+  border-radius: calc(var(--sg-cta-h) / 2) !important;
+  background: rgba(0, 0, 0, .4) !important;
+  border: 1px solid rgba(255, 255, 255, .12) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  backdrop-filter: blur(12px) !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .25) !important;
+  color: #fff !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  /* Above the row's own scroll strip, below the nav. */
+  z-index: 27 !important;
+  animation: none !important;
+}

@@ -304,4 +304,21 @@ test('the Reels iframe reaches the nav and the dock reserves the band for it', (
   // profile-rail.js injects its overflow rule later, so specificity must win.
   assert.match(railsCss, /html body \.sg-pr-host-capped/,
     'the Profile host override is not specific enough to beat profile-rail.js');
+
+  // ── Owner, 2026-09-18: no orange, and the Talk pill joins the row ───────
+  // Nothing floats over the content any more: nav + one strip.
+  assert.match(railsCss, /html body\.sg-cta-in-row #sg-continue-banner#sg-continue-banner\s*\{[^}]*background:\s*rgba\(0, 0, 0/,
+    'the main button is orange again');
+  for (const fab of ['#bchat-fab', '#pchat-fab', '#schat-fab', '#rchat-fab', '#mchat-fab', '#chat-fab']) {
+    assert.ok(railsCss.includes('body.sg-cta-in-row ' + fab),
+      fab + ' is not placed in the row, so it keeps its own right:14px and floats');
+    assert.ok(railsJs.includes(fab),
+      fab + ' is not measured, so the row will not leave room for it');
+  }
+  // The pill sits after the main button, whose width changes with its label.
+  assert.match(railsCss, /left:\s*var\(--sg-talk-left/, 'the Talk pill has no measured position');
+  assert.match(railsJs, /--sg-talk-left/, 'rails.js does not publish where the Talk pill starts');
+  // And the dock must stop lifting it above the stack.
+  assert.match(dockJs, /ctaInRow\(\)[\s\S]{0,120}removeProperty\('bottom'\);\s*continue;\s*\}\s*\n\s*el\.style\.setProperty\('bottom', \(cursor \+ FAB_GAP\)/,
+    'sg-dock.js still docks the Talk pill above the row');
 });
