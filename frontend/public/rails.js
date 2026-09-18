@@ -99,19 +99,26 @@
     var live = document.querySelector('.tt-card.' + LIVE);
     if (live) markScroll(live);
     syncCta();          // before markAllRows: the inset decides what overflows
-    ensureSlots();
-    markAllRows();
-    ride();             // last: it reads where the slot actually landed
+    ride();             // the pills belong to the visible row, so move them first
+    markAllRows();      // then measure what still overflows, pills included
+  }
+
+  /* One bad pass must not take the rails down. init() called scan() before
+     setInterval, so a single throw in there meant no heartbeat at all and every
+     tab silently fell back to the pre-rails layout — measured in production on
+     2026-09-18, after a call to a function that had been renamed. */
+  function safeScan() {
+    try { scan(); } catch (e) { /* next pass */ }
   }
 
   function init() {
     if (document.body) watchRemovals();
-    scan();
-    setInterval(scan, 800); // same heartbeat the other rail scripts use
+    safeScan();
+    setInterval(safeScan, 800); // same heartbeat the other rail scripts use
     window.addEventListener('resize', function () { syncCta(); markAllRows(); ride(); });
     /* The label — and so the pill's width — changes with the tab. */
     document.addEventListener('sg:tabchange', function () {
-      requestAnimationFrame(function () { syncCta(); ensureSlots(); markAllRows(); ride(); });
+      requestAnimationFrame(function () { syncCta(); ride(); markAllRows(); });
     });
   }
 

@@ -354,3 +354,64 @@ test('the CTA and Talk are icon-and-label items, sized like the row', () => {
   assert.ok(!/\(cta\.textContent/.test(railsJs),
     'iconify reads textContent, which includes the caption it just wrote');
 });
+
+/* Production, 2026-09-18: rails.js called ensureSlots(), a function that had
+   been renamed. init() ran the first pass BEFORE setInterval, so the throw
+   killed the heartbeat and every tab fell back to the pre-rails layout — the
+   pills back in the corner, the rows full width. Nothing in this file noticed,
+   because it all reads text. These two tests read the text that matters. */
+test('rails.js calls no function it does not define, and one bad pass cannot kill the heartbeat', () => {
+  const raw = read('rails.js');
+  // Comments and strings are prose and selectors: "the rail (measured at y775)"
+  // is not a call. Strip them, then read what is left.
+  const js = raw
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/(^|[^:])\/\/[^\n]*/g, '$1 ')
+    .replace(/'(?:[^'\\]|\\.)*'/g, "''")
+    .replace(/"(?:[^"\\]|\\.)*"/g, '""');
+
+  // Every `name(` that is called, minus the ones it declares and the platform's.
+  const declared = new Set();
+  for (const m of js.matchAll(/function\s+([A-Za-z_$][\w$]*)\s*\(/g)) declared.add(m[1]);
+  for (const m of js.matchAll(/var\s+([A-Za-z_$][\w$]*)\s*=\s*function/g)) declared.add(m[1]);
+  const known = new Set(['if', 'for', 'while', 'switch', 'catch', 'return', 'typeof', 'function',
+    'requestAnimationFrame', 'cancelAnimationFrame', 'setInterval', 'setTimeout', 'clearInterval',
+    'getComputedStyle', 'IntersectionObserver', 'MutationObserver', 'Event', 'Math', 'parseFloat',
+    'Number', 'String', 'Boolean', 'Array', 'Object', 'Set', 'Map']);
+  const missing = new Set();
+  for (const m of js.matchAll(/(?:^|[\s;{}(,=!?:&|+])([a-z][\w$]*)\s*\(/g)) {
+    const name = m[1];
+    if (declared.has(name) || known.has(name)) continue;
+    // Method calls (`el.remove()`) and property reads are matched by the class above.
+    missing.add(name);
+  }
+  assert.deepEqual([...missing], [],
+    'rails.js calls ' + [...missing].join(', ') + ' without declaring it: the first pass throws');
+
+  // The heartbeat must be armed even if a pass throws.
+  assert.match(raw, /setInterval\(\s*safeScan/,
+    'the heartbeat runs scan() raw, so one throw stops every later pass');
+  assert.match(raw, /function safeScan\(\)\s*\{\s*try\s*\{\s*scan\(\)/,
+    'safeScan does not actually catch anything');
+});
+
+test('the pills are moved into the row, and can be rescued when a card is replaced', () => {
+  const js = read('rails.js');
+  const css = read('rails.css');
+
+  assert.match(js, /slot\.appendChild\(cta\)/, 'the main button is no longer moved into the row');
+  assert.match(js, /slot\.appendChild\(talk\)/, 'the Talk pill is no longer moved into the row');
+  // Same element, never rebuilt: checkout and the per-tab label are bound to it.
+  assert.ok(!/createElement\('button'\)/.test(js), 'rails.js builds a button instead of moving the real one');
+  // A card is replaced wholesale on re-render; a lost CTA means no way to book.
+  assert.match(js, /MutationObserver/, 'nothing watches for the row being removed');
+  assert.match(js, /function rescue\(el\)[\s\S]{0,200}?appendChild\(el\)/,
+    'a pill taken out with its card is never put back');
+  assert.match(js, /pills\.indexOf\(el\)/,
+    'detached pills are not remembered, and querySelector cannot find them');
+  // In the row they must stop being fixed, or they sit in the corner regardless.
+  assert.match(css, /\.sg-row-slot > #sg-continue-banner#sg-continue-banner[\s\S]{0,600}?position:\s*static/,
+    'the main button keeps its fixed position inside the row');
+  assert.match(css, /\.sg-row-slot:empty\s*\{[^}]*display:\s*none/,
+    'an empty slot still holds space open in every other row');
+});
