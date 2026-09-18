@@ -600,6 +600,12 @@ async function resolvePlaceFromUrl(rawUrl) {
     let name = null;
     const placeName = finalUrl.match(/\/maps\/place\/([^/@?]+)/);
     if (placeName) name = decodeURIComponent(placeName[1]).replace(/\+/g, ' ');
+    // A share.google link lands on /search?...&q=<business name>, whose page
+    // title is just "Google Search" — the q parameter is the usable signal.
+    if (!name) {
+      const qParam = finalUrl.match(/[?&]q=([^&]+)/);
+      if (qParam) name = decodeURIComponent(qParam[1]).replace(/\+/g, ' ').trim();
+    }
     if (!name) {
       const title = html.match(/<title>([^<]{3,160})<\/title>/i);
       if (title) name = title[1].replace(/\s*[-–|]\s*Google\s*Maps.*$/i, '').trim();
