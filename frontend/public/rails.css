@@ -278,9 +278,12 @@
    So the container owns the nav's edge and nothing else. The CTA, the summary
    and the Talk pill are `fixed`: sg-dock.js already stacks them above the
    reserved row, and they float over the photo the way they do on Reels.
-   Specificity (html body main.x.x) beats sg-rail-ui.js's injected !important,
-   which lands later in the cascade. --sg-nav-h is 0 when the nav is hidden, so
+   The class is repeated to win on specificity: sg-rail-ui.js injects
+   `body.sg-r4-summary.sg-cb-active .sg-tab-content!important` (three classes),
+   which is why the first attempt fixed Partner but not Book — Book is the tab
+   that carries both body classes. Four classes here beats it, and because both
+   are !important the later-injected sheet no longer decides. --sg-nav-h is 0 when the nav is hidden, so
    a full-bleed state still gets the whole viewport. */
-html body main.sg-tab-content.sg-tab-content {
+html body main.sg-tab-content.sg-tab-content.sg-tab-content.sg-tab-content {
   bottom: calc(var(--sg-nav-h, 56px) + var(--sg-safe-b, 0px)) !important;
 }
