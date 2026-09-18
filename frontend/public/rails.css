@@ -439,13 +439,21 @@ body.sg-cta-in-row #sg-continue-banner .sg-cb-price {
 
 /* The rows start after the pill. Later than the `padding: 0 var(--sg-band-pad)`
    rule above and equally !important, so this wins without another class. */
+/* MARGIN, not padding. Padding lives INSIDE the scroller, so the moment
+   anything scrolls the row (sg-rail-ui scrolls the active chip into view, and
+   these rows overflow by design) the padding scrolls away with it and the
+   first buttons slide UNDER the fixed pills: measured on Book with
+   padding-left 124px and scrollLeft 124, "Near Me" sat at x0-44 beneath a
+   button at x12-54. A margin shortens the scroller itself, so there is no
+   space under the pills for content to reach. */
 body.sg-cta-in-row .tt-actions,
 body.sg-cta-in-row .reel-actions,
 body.sg-cta-in-row #sg-reels-rail,
 body.sg-cta-in-row #sg-sv-rail.sv-float,
 body.sg-cta-in-row #sg-profile-rail,
 body.sg-cta-in-row .sg-pr-host-capped {
-  padding-left: calc(var(--sg-cta-w) + var(--sg-band-pad) + 14px) !important;
+  margin-left: calc(var(--sg-cta-w) + var(--sg-band-pad) + 14px) !important;
+  padding-left: var(--sg-band-pad) !important;
 }
 
 /* Inside the Reels iframe the pill is in the PARENT document and cannot be
