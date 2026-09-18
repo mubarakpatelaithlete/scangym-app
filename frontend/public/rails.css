@@ -320,3 +320,81 @@ html body #sg-reels-iframe#sg-reels-iframe {
   bottom: 0 !important;
   height: 100% !important;
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   THE ORANGE CTA JOINS THE ROW (owner's call, 2026-09-18, second decision)
+
+   Until now the bottom of the screen had three layers: nav 56 + row 72 + the
+   full-width orange bar 52, plus the price summary and the Talk pill floating
+   over them — 188px of chrome before any content. The owner asked for the
+   orange CTA to move INTO the row with the other buttons, one strip per tab.
+
+   It stays the SAME element, `#sg-continue-banner`. Everything that makes it
+   work — the tap handler, the checkout flow, the per-tab label ("Book this gym
+   · £5.49", "Find gyms near me", "Start Earning", "Continue"), the loading
+   spinner sg-rail-ui.js puts in it — is bound to that id, so re-parenting or
+   rebuilding it would mean re-testing checkout on every tab. Instead it is
+   restyled into a pill and parked at the left end of the band, where a row's
+   first item would be, and the rows are given a left inset so their circles
+   start after it. Same pixels as a real first item, none of the risk.
+
+   `sg-cta-in-row` is set by rails.js, not hardcoded here, so the whole change
+   can be turned off from one line if the booking rate dips.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* The pill matches the white circles' 44px so the row reads as one strip. */
+  --sg-cta-h: 44px;
+  /* Published by rails.js once the pill has been measured; the rows read it to
+     know how far in to start. 0 until then, which is the old full-width look
+     for one frame rather than a gap where the buttons should be. */
+  --sg-cta-w: 0px;
+}
+
+/* The id twice, for the same reason as the Reels iframe above: sg-dock.js and
+   app-patches.js both write `#sg-continue-banner` rules, and the dock also
+   sets an inline `bottom` — it is taught to leave this element alone while the
+   class is on (see sg-dock.js), but the specificity still has to hold. */
+html body.sg-cta-in-row #sg-continue-banner#sg-continue-banner {
+  left: var(--sg-band-pad) !important;
+  right: auto !important;
+  width: auto !important;
+  max-width: calc(100% - 2 * var(--sg-band-pad)) !important;
+  height: var(--sg-cta-h) !important;
+  /* Centred in the band, so the pill and the circles share a midline. */
+  bottom: calc(var(--sg-band-bottom) + (var(--sg-band-height) - var(--sg-cta-h)) / 2) !important;
+  padding: 0 18px !important;
+  border-radius: calc(var(--sg-cta-h) / 2) !important;
+  box-shadow: 0 2px 14px rgba(0, 0, 0, .45) !important;
+  /* A pill over a photo needs its own edge; the full-width bar never did. */
+  border: 1px solid rgba(255, 255, 255, .16) !important;
+}
+
+/* 16px was sized for a full-width bar. In a pill it pushes "Book this gym ·
+   £5.49" wider than half the screen and leaves no room to swipe the row. */
+body.sg-cta-in-row #sg-continue-banner .sg-cb-text {
+  font-size: 14px !important;
+  white-space: nowrap !important;
+}
+body.sg-cta-in-row #sg-continue-banner .sg-cb-price {
+  font-size: 12px !important;
+  white-space: nowrap !important;
+}
+body.sg-cta-in-row #sg-continue-banner .sg-cb-sub {
+  max-width: 44vw !important;
+}
+
+/* The rows start after the pill. Later than the `padding: 0 var(--sg-band-pad)`
+   rule above and equally !important, so this wins without another class. */
+body.sg-cta-in-row .tt-actions,
+body.sg-cta-in-row .reel-actions,
+body.sg-cta-in-row #sg-reels-rail,
+body.sg-cta-in-row #sg-sv-rail.sv-float,
+body.sg-cta-in-row #sg-profile-rail {
+  padding-left: calc(var(--sg-cta-w) + var(--sg-band-pad) + 14px) !important;
+}
+
+/* Inside the Reels iframe the pill is in the PARENT document and cannot be
+   measured, so rails.js posts its width across and the framed copy of this
+   file applies the same inset. Nothing else about the row changes. */

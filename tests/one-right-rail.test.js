@@ -241,4 +241,31 @@ test('the Reels iframe reaches the nav and the dock reserves the band for it', (
     'sg-dock.js does not know about the Reels frame, so the CTA will take the row strip');
   assert.match(dockJs, /--sg-band-height/,
     'the reserved height should come from rails.css, not a second hardcoded number');
+
+  // ── The orange CTA joined the row (owner, 2026-09-18) ──────────────────
+  // It must stay the same element: the tap handler, the checkout flow and the
+  // per-tab label are all bound to #sg-continue-banner, so a rebuild would
+  // mean re-testing checkout on every tab.
+  const pill = railsCss.match(/body\.sg-cta-in-row #sg-continue-banner[^{]*\{[^}]*\}/);
+  assert.ok(pill, 'the CTA pill rule is gone: the CTA is back to a full-width bar');
+  assert.ok((pill[0].match(/#sg-continue-banner/g) || []).length >= 2,
+    'one id does not beat the #sg-continue-banner rules in sg-dock.js/app-patches.js');
+  assert.match(pill[0], /bottom:\s*calc\(var\(--sg-band-bottom\)/,
+    'the pill must sit in the band rails.css already reserves, not at its own offset');
+
+  // The rows have to start after the pill, or it covers their first button.
+  assert.match(railsCss, /body\.sg-cta-in-row[^{]*\.tt-actions[\s\S]{0,400}?padding-left:\s*calc\(var\(--sg-cta-w\)/,
+    'rows are not inset by the pill width');
+
+  // rails.js owns the class and the measurement, so the change reverts in one
+  // line, and the Reels iframe cannot measure a pill in the parent document.
+  assert.match(railsJs, /sg-cta-in-row/, 'rails.js no longer sets the CTA-in-row class');
+  assert.match(railsJs, /--sg-cta-w/, 'rails.js does not publish the pill width');
+  assert.match(railsJs, /postMessage/, 'the Reels frame is never told the pill width');
+
+  // The dock must let go of the CTA, inline value removed — otherwise it both
+  // fights the pill rule and reserves a second 52px strip.
+  assert.match(dockJs, /sg-cta-in-row/, 'sg-dock.js does not know about the CTA-in-row mode');
+  assert.match(dockJs, /ctaInRow\(\)[\s\S]{0,200}removeProperty\('bottom'\)/,
+    'sg-dock.js still docks the CTA as its own layer instead of releasing it');
 });
