@@ -18365,6 +18365,9 @@ window._partnerSearchGyms=function(q){
       results.innerHTML=d.results.map(function(g){
         return '<div onclick="_partnerClaimGym(\''+String(g.placeId||g.id).replace(/'/g,'')+'\',\''+encodeURIComponent(g.name||'')+'\')" style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer;display:flex;align-items:center;gap:10px;transition:background .15s" onmouseover="this.style.background=\'rgba(255,109,0,.08)\'" onmouseout="this.style.background=\'none\'"><div style="width:36px;height:36px;border-radius:10px;background:rgba(255,109,0,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0">🏢</div><div style="flex:1;min-width:0"><p style="color:#fff;font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(g.name||'Gym')+'</p><p style="color:rgba(255,255,255,.3);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(g.address||g.vicinity||'')+'</p></div><span style="color:#FF6D00;font-size:12px;font-weight:700;flex-shrink:0">Claim →</span></div>';
       }).join('');
+      if(d.weakMatch){
+        results.innerHTML+='<div style="padding:10px 16px;background:rgba(255,109,0,.06);color:rgba(255,255,255,.55);font-size:11px;line-height:1.5">'+(d.message||'')+'<div style="color:rgba(255,255,255,.35);margin-top:2px">'+(d.action||'')+'</div></div>';
+      }
       results.style.display='block';
     }catch(e){results.style.display='none';}
   },350);
@@ -18530,7 +18533,7 @@ window._partnerSearchClaim=async function(q){
     var r=await fetch('/api/live/partner-search?q='+encodeURIComponent(q)).catch(function(){return null;}); // owner searches their own name: no type filter
     var d=r&&r.ok?await r.json().catch(function(){return{gyms:[]};}):({gyms:[]});
     var gyms=d.gyms||d.results||[];
-    if(!gyms.length){box.innerHTML='<p style="color:rgba(255,255,255,.3);font-size:12px;padding:8px;text-align:center">No gyms found</p>';return;}
+    if(!gyms.length){box.innerHTML='<p style="color:rgba(255,255,255,.45);font-size:12px;padding:8px;text-align:center;line-height:1.5">'+(d.message||'Not found on Google Maps.')+'<br><span style="color:rgba(255,255,255,.3);font-size:11px">'+(d.action||'Add your town, or paste your Google Maps link.')+'</span></p>';return;}
     box.innerHTML=gyms.slice(0,5).map(function(g){
       var claimed=g.claimed_by?true:false;
       return '<div style="display:flex;align-items:center;gap:10px;padding:8px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px;margin-bottom:4px">'
@@ -18541,6 +18544,7 @@ window._partnerSearchClaim=async function(q){
         :'<button onclick="_partnerClaimGym(\''+String(g.placeId||g.id).replace(/'/g,'')+'\',\''+encodeURIComponent(g.name||'')+'\')" style="background:#FF6D00;color:#fff;border:none;padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0">Claim</button>')
         +'</div>';
     }).join('');
+    if(d.weakMatch){box.innerHTML+='<p style="color:rgba(255,255,255,.45);font-size:11px;padding:8px;line-height:1.5;margin:0">'+(d.message||'')+'<br><span style="color:rgba(255,255,255,.3)">'+(d.action||'')+'</span></p>';}
   }catch(e){box.innerHTML='<p style="color:#f87171;font-size:11px;text-align:center">Search error</p>';}
 };
 

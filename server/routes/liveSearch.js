@@ -581,6 +581,67 @@ router.get('/search', async (req, res) => {
   }
 });
 
+// ── Partner search helpers ──────────────────────────────────────────
+// Google's text search ranks by global prominence, so a small local gym
+// searched by name alone loses to famous businesses on the other side of
+// the world. Two ways out: let the owner paste their Google Maps link, and
+// tell them to add their town when nothing looks like a name match.
+function looksLikeUrl(q) { return /^https?:\/\//i.test(q.trim()); }
+
+async function resolvePlaceFromUrl(rawUrl) {
+  try {
+    const resp = await fetch(rawUrl.trim(), { redirect: 'follow', headers: { 'User-Agent': 'Mozilla/5.0' } });
+    const finalUrl = resp.url || '';
+    const html = await resp.text().catch(() => '');
+    // A place_id in the URL is the cleanest signal
+    const pidMatch = finalUrl.match(/[?&](?:place_id|query_place_id)=([A-Za-z0-9_-]+)/);
+    if (pidMatch) return { placeId: pidMatch[1] };
+    // Otherwise recover the business name Google put in the URL or page title
+    let name = null;
+    const placeName = finalUrl.match(/\/maps\/place\/([^/@?]+)/);
+    if (placeName) name = decodeURIComponent(placeName[1]).replace(/\+/g, ' ');
+    if (!name) {
+      const title = html.match(/<title>([^<]{3,160})<\/title>/i);
+      if (title) name = title[1].replace(/\s*[-–|]\s*Google\s*Maps.*$/i, '').trim();
+      if (!name) {
+        const og = html.match(/property=["']og:title["']\s+content=["']([^"']{3,160})["']/i);
+        if (og) name = og[1].trim();
+      }
+    }
+    return name ? { name } : null;
+  } catch (e) {
+    console.warn('[PartnerSearch] URL resolve failed:', e.message);
+    return null;
+  }
+}
+
+async function placeDetailsById(placeId) {
+  const fieldMask = ['id','displayName','formattedAddress','location','rating','userRatingCount','photos','currentOpeningHours','regularOpeningHours','types','internationalPhoneNumber','websiteUri','businessStatus'].join(',');
+  const resp = await fetch(`${PLACES_NEW_BASE}/${encodeURIComponent(placeId)}`, { headers: { 'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY, 'X-Goog-FieldMask': fieldMask } });
+  if (!resp.ok) return null;
+  const p = await resp.json();
+  return {
+    place_id: p.id, name: p.displayName?.text || '', formatted_address: p.formattedAddress || '',
+    geometry: { location: { lat: p.location?.latitude, lng: p.location?.longitude } },
+    rating: p.rating || 0, user_ratings_total: p.userRatingCount || 0,
+    photos: (p.photos || []).slice(0, 5).map(ph => ({ photo_reference: ph.name })),
+    opening_hours: { open_now: p.currentOpeningHours?.openNow || false, weekday_text: p.regularOpeningHours?.weekdayDescriptions || [], periods: p.regularOpeningHours?.periods || [] },
+    types: p.types || [], business_status: p.businessStatus || 'OPERATIONAL',
+    international_phone_number: p.internationalPhoneNumber || '', website: p.websiteUri || '',
+  };
+}
+
+const normWords = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').split(/\s+/).filter(w => w.length > 2);
+function looksLikeNameMatch(query, gyms) {
+  const qw = normWords(query);
+  if (!qw.length) return true;
+  return gyms.some(g => {
+    const nw = new Set(normWords(g.name));
+    const hits = qw.filter(w => nw.has(w)).length;
+    return hits >= Math.max(1, Math.ceil(qw.length * 0.6));
+  });
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // GET /api/live/partner-search — "find MY gym" search for onboarding
 // Customer search deliberately narrows to type=gym and rewrites a bare
@@ -602,6 +663,28 @@ router.get('/partner-search', async (req, res) => {
     const { lat, lng, radius } = req.query;
     let places = [];
     let source = null;
+
+    // Pasted a Google Maps / share link? Resolve it straight to the listing.
+    if (looksLikeUrl(searchQuery)) {
+      const resolved = await resolvePlaceFromUrl(searchQuery);
+      if (resolved?.placeId) {
+        const one = await placeDetailsById(resolved.placeId);
+        if (one) { places = [one]; source = 'google_maps_link'; }
+      }
+      if (!places.length && resolved?.name) {
+        try {
+          places = await searchWithPlacesNewAPI(resolved.name, lat, lng, radius, 10, true);
+          if (places.length) source = 'google_maps_link';
+        } catch (e) { /* fall through to normal search */ }
+      }
+      if (!places.length) {
+        return res.json({
+          gyms: [], total: 0, source: 'google_maps_link',
+          message: 'We could not open that link.',
+          action: 'Type your gym name plus your town instead, e.g. "Iron Works Bharuch".',
+        });
+      }
+    }
 
     // Places API (New) — exact words, any business type
     try {
@@ -634,11 +717,19 @@ router.get('/partner-search', async (req, res) => {
         total: 0,
         source: source || 'google',
         message: 'We could not find that on Google Maps.',
-        action: 'Try the exact name on your Google listing, add your town, or paste your Google Maps link.',
+        action: 'Add your town or city to the name, or paste your Google Maps link here.',
       });
     }
 
-    res.json({ gyms, total: gyms.length, query: searchQuery, source });
+    // Nothing that resembles the typed name? Google ranked famous places above
+    // this owner's gym. Say so, instead of leaving them scrolling strangers.
+    const payload = { gyms, total: gyms.length, query: searchQuery, source };
+    if (source !== 'google_maps_link' && !looksLikeNameMatch(searchQuery, gyms)) {
+      payload.weakMatch = true;
+      payload.message = 'Your gym may not be in this list \u2014 Google shows bigger places first.';
+      payload.action = 'Add your town or city (e.g. "your gym name Bharuch"), or paste your Google Maps link.';
+    }
+    res.json(payload);
   } catch (err) {
     console.error('Partner search error:', err);
     res.status(500).json({ error: 'search_failed', message: 'Could not search for your gym right now.', action: 'Try again in a moment.' });
