@@ -72,7 +72,7 @@
     if (more !== row.classList.contains(SCROLLABLE)) row.classList.toggle(SCROLLABLE, more);
     if (!row.getAttribute('data-sg-scroll-watch')) {
       row.setAttribute('data-sg-scroll-watch', '1');
-      row.addEventListener('scroll', function () { markRow(row); }, { passive: true });
+      row.addEventListener('scroll', function () { markRow(row); rideSoon(); }, { passive: true });
     }
   }
   function markScroll(card) {
@@ -99,16 +99,18 @@
     var live = document.querySelector('.tt-card.' + LIVE);
     if (live) markScroll(live);
     syncCta();          // before markAllRows: the inset decides what overflows
+    ensureSlots();
     markAllRows();
+    ride();             // last: it reads where the slot actually landed
   }
 
   function init() {
     scan();
     setInterval(scan, 800); // same heartbeat the other rail scripts use
-    window.addEventListener('resize', function () { syncCta(); markAllRows(); });
+    window.addEventListener('resize', function () { syncCta(); markAllRows(); ride(); });
     /* The label — and so the pill's width — changes with the tab. */
     document.addEventListener('sg:tabchange', function () {
-      requestAnimationFrame(function () { syncCta(); markAllRows(); });
+      requestAnimationFrame(function () { syncCta(); ensureSlots(); markAllRows(); ride(); });
     });
   }
 
@@ -144,6 +146,7 @@
     var rs = document.documentElement.style;
     var talkLeft = pad + (ctaW ? ctaW + gap : 0);
     rs.setProperty('--sg-talk-left', Math.round(talkLeft) + 'px');
+    rs.setProperty('--sg-cta-left', pad + 'px');   // ride() moves it from here
     rs.setProperty('--sg-cta-w',
       Math.round(ctaW + (talkW ? (ctaW ? gap : 0) + talkW : 0)) + 'px');
   }
@@ -251,5 +254,88 @@
     });
   }
 
-  window.sgRails = { scan: scan, LIVE_CLASS: LIVE, syncCta: syncCta };
+  /* ── The pills ride the row (owner, 2026-09-18, fourth decision) ─────────
+     Parked pills stayed exactly where they were while the circles beside them
+     scrolled away, so the strip read as two separate sets of buttons: "these
+     buttons are not moved in with other scrolling buttons". Now the row itself
+     carries a slot as wide as both pills, and the pills follow that slot — one
+     swipe and they scroll off with everything else, on all five tabs.
+
+     Position only. The elements, their tap handlers and their styling are
+     untouched, and dropping RIDES puts the parked layout back: the margin
+     inset in rails.css is still there underneath, so the fallback is today's
+     shipped behaviour rather than buttons under a pill. */
+  var RIDES = 'sg-cta-rides-row';
+  var SLOT = 'sg-row-slot';
+  var GONE = 'sg-cta-gone';
+
+  function painted(el) {
+    if (!el) return false;
+    var cs = getComputedStyle(el);
+    if (cs.display === 'none' || cs.visibility === 'hidden' || cs.opacity === '0') return false;
+    var r = el.getBoundingClientRect();
+    return r.width > 0 && r.height > 0 && r.bottom > 0 && r.top < innerHeight;
+  }
+
+  /** The one row the user is actually looking at: live card first, then rails. */
+  function activeRow() {
+    var live = document.querySelector('.tt-card.' + LIVE + ' .tt-actions');
+    if (painted(live)) return live;
+    var rows = document.querySelectorAll(ROWS);
+    for (var i = 0; i < rows.length; i++) if (painted(rows[i])) return rows[i];
+    return null;
+  }
+
+  /* Every row gets a slot, not just the live one: a card can become live
+     between passes, and a row with no slot would put its first circle where
+     the pills are drawn. Width comes from --sg-cta-w in the stylesheet, so
+     there is one measurement, not two. */
+  function ensureSlots() {
+    var rows = document.querySelectorAll(ROWS);
+    for (var i = 0; i < rows.length; i++) {
+      var first = rows[i].firstElementChild;
+      if (first && first.classList.contains(SLOT)) continue;
+      var slot = document.createElement('i');
+      slot.className = SLOT;
+      slot.setAttribute('aria-hidden', 'true');
+      rows[i].insertBefore(slot, rows[i].firstChild);
+    }
+  }
+
+  function talkEl() {
+    var els = document.querySelectorAll(TALK);
+    for (var i = 0; i < els.length; i++) if (widthOf(els[i])) return els[i];
+    return null;
+  }
+
+  function ride() {
+    if (FRAMED) return;                          // the pills are up in the parent
+    var row = activeRow();
+    if (!row) return;
+    var slot = row.firstElementChild;
+    if (!slot || !slot.classList.contains(SLOT)) return;
+    var sr = slot.getBoundingClientRect(), rr = row.getBoundingClientRect();
+    var ctaW = measureCta(), gap = 14;
+    var rs = document.documentElement.style;
+    rs.setProperty('--sg-cta-left', Math.round(sr.left) + 'px');
+    rs.setProperty('--sg-talk-left', Math.round(sr.left + (ctaW ? ctaW + gap : 0)) + 'px');
+    /* Scrolled past the row's left edge means off the strip. Hidden rather
+       than left hanging over the content: floating over the photos is the
+       thing this whole file exists to stop. */
+    var gone = sr.right < rr.left + 8;
+    var cta = document.querySelector(CTA), talk = talkEl();
+    if (cta) cta.classList.toggle(GONE, gone);
+    if (talk) talk.classList.toggle(GONE, gone);
+    if (document.body) document.body.classList.toggle(RIDES, true);
+  }
+
+  /* A swipe fires scroll events far faster than the 800ms heartbeat, so the
+     pills are moved per frame while a row is being scrolled. */
+  var frame = 0;
+  function rideSoon() {
+    if (frame) return;
+    frame = requestAnimationFrame(function () { frame = 0; ride(); });
+  }
+
+  window.sgRails = { scan: scan, LIVE_CLASS: LIVE, syncCta: syncCta, ride: ride };
 })();
