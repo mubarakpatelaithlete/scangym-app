@@ -2238,39 +2238,19 @@ function CreatorFullPage(){
   var refLink='scangym.com/r/'+refCode;
   var firstName=name.split(' ')[0];
   return `<div style="position:fixed;top:0;left:0;right:0;bottom:56px;background:#0a0a16;display:flex;flex-direction:column;overflow:hidden">
-    <!-- Side nav buttons (3 core flow + More) -->
-    <div style="position:absolute;right:8px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:10px;z-index:10">
-      <!-- 1. Sign In -->
-      <div onclick="${u?'sgToast(\'Already signed in ✅\',\'success\',1500)':'(typeof window._sgShowAuthSheet===\'function\'?window._sgShowAuthSheet(\'book\'):navigate(\'/login\'))'};_closeCreatorMore()" class="creator-side-btn" style="width:42px;height:42px;background:${u?'rgba(34,197,94,.2)':'rgba(255,109,0,.25)'};backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:1px solid ${u?'rgba(34,197,94,.3)':'rgba(255,109,0,.4)'};transition:.2s;box-shadow:0 0 16px ${u?'rgba(34,197,94,.15)':'rgba(255,109,0,.2)'}" title="Sign In">${u?'\u2705':'\ud83d\udd11'}</div>
-      <!-- 2. Get Affiliate Link -->
-      <div onclick="_creatorGetLink();_closeCreatorMore()" class="creator-side-btn" style="width:42px;height:42px;background:rgba(168,85,247,.2);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:1px solid rgba(168,85,247,.3);transition:.2s;box-shadow:0 0 12px rgba(168,85,247,.15)" title="Get Affiliate Link">\ud83d\udd17</div>
-      <!-- 3. Withdraw Money -->
-      <div onclick="_creatorWithdraw();_closeCreatorMore()" class="creator-side-btn" style="width:42px;height:42px;background:rgba(34,197,94,.15);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:1px solid rgba(34,197,94,.2);transition:.2s;box-shadow:0 0 12px rgba(34,197,94,.1)" title="Withdraw Money">\ud83d\udcb8</div>
-      <!-- 4. Deep Affiliate Link (gym-specific) -->
-      <div onclick="_sgCreatorDeepLink();_closeCreatorMore()" class="creator-side-btn" style="width:42px;height:42px;background:rgba(255,109,0,.2);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;border:1px solid rgba(255,109,0,.3);transition:.2s;box-shadow:0 0 12px rgba(255,109,0,.15)" title="Deep Affiliate Link">\ud83c\udfaf</div>
-      <!-- 5. More -->
-      <div onclick="_toggleCreatorMore()" class="creator-side-btn" id="creator-more-btn" style="width:42px;height:42px;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;letter-spacing:2px;border:1px solid rgba(255,255,255,.06);transition:.2s;color:rgba(255,255,255,.6)" title="More">\u2022\u2022\u2022</div>
-    </div>
-    <!-- More dropdown menu -->
-    <div id="creator-more-menu" style="display:none;position:absolute;right:58px;top:50%;transform:translateY(-50%);z-index:11;background:rgba(15,15,30,.95);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:8px;min-width:180px;box-shadow:0 8px 32px rgba(0,0,0,.5)">
-      <div onclick="_showCreatorScreen(0);_closeCreatorMore()" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:.15s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='transparent'">
-        <span style="font-size:16px">\ud83c\udfe0</span><span style="color:#fff;font-size:13px;font-weight:600">Home</span>
-      </div>
-      <div onclick="_showCreatorScreen(1);_closeCreatorMore()" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:.15s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='transparent'">
-        <span style="font-size:16px">\ud83d\udcca</span><span style="color:#fff;font-size:13px;font-weight:600">Analytics</span>
-      </div>
-      <div onclick="_showCreatorScreen(2);_closeCreatorMore()" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:.15s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='transparent'">
-        <span style="font-size:16px">\ud83d\udcf9</span><span style="color:#fff;font-size:13px;font-weight:600">Content</span>
-      </div>
-      <div onclick="_showCreatorScreen(4);_closeCreatorMore()" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:.15s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='transparent'">
-        <span style="font-size:16px">\ud83c\udfe0</span><span style="color:#fff;font-size:13px;font-weight:600">Storefront</span>
-      </div>
-      <div onclick="_showCreatorScreen(5);_closeCreatorMore()" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:.15s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='transparent'">
-        <span style="font-size:16px">\ud83c\udfa8</span><span style="color:#fff;font-size:13px;font-weight:600">Assets</span>
-      </div>
+    <!-- Screen switcher. This tab used to carry a floating column of round
+         buttons on the right (Account / Withdraw / More) plus a dropdown, and
+         the five screens below could only be reached through that dropdown.
+         The owner asked for the column gone, so the screens get a plain named
+         strip instead: same destinations, visible names, nothing floating over
+         the content. (owner, 2026-09-19) -->
+    <div id="creator-tabs" style="position:absolute;top:0;left:0;right:0;z-index:12;display:flex;gap:6px;padding:10px 12px;overflow-x:auto;scrollbar-width:none;background:linear-gradient(180deg,#0a0a16 60%,rgba(10,10,22,0));-webkit-overflow-scrolling:touch">
+      ${[['Home',0],['Analytics',1],['Content',2],['Earnings',3],['Storefront',4],['Assets',5]].map(function(t,i){
+        return '<div class="creator-tab" data-screen='+t[1]+' onclick="_showCreatorScreen('+t[1]+')" style="flex:0 0 auto;padding:7px 14px;border-radius:999px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;background:'+(i===0?'rgba(255,255,255,.12)':'rgba(255,255,255,.04)')+';color:'+(i===0?'#fff':'rgba(255,255,255,.55)')+';border:1px solid rgba(255,255,255,.08)">'+t[0]+'</div>';
+      }).join('')}
     </div>
     <!-- Screen 0: HOME \u2014 Percentile Ranking (OnlyFans) + Live Stats (Grab) + Bounty (Amazon) -->
-    <div class="creator-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;padding:16px;padding-right:60px;overflow-y:auto">
+    <div class="creator-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;padding:16px;padding-top:56px;overflow-y:auto">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
         <div style="width:48px;height:48px;background:linear-gradient(135deg,#FF6D00,#E66200);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#fff">${firstName[0]}</div>
         <div>
@@ -2299,16 +2279,16 @@ function CreatorFullPage(){
         <div style="color:rgba(255,255,255,.35);font-size:10px;margin-bottom:6px">Progress: 1/3 completed</div>
         <div style="width:100%;height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden"><div style="width:33%;height:100%;background:#FF6D00;border-radius:3px"></div></div>
       </div>
-      <div style="display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:10px 12px;margin-bottom:10px">
-        <code style="flex:1;color:#a855f7;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${refLink}</code>
-        <button onclick="navigator.clipboard.writeText('https://${refLink}');this.textContent='\u2713';setTimeout(()=>this.textContent='Copy',1500)" style="background:#a855f7;color:#fff;border:none;padding:6px 12px;border-radius:8px;font-weight:700;font-size:11px;cursor:pointer">Copy</button>
-      </div>
-      <div style="display:flex;gap:6px">
-        <button onclick="navigator.share?navigator.share({title:'ScanGym',url:'https://${refLink}'}):navigator.clipboard.writeText('https://${refLink}')" style="flex:1;background:#a855f7;color:#fff;border:none;padding:12px;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer">\ud83d\udce4 Share</button>
+      <!-- Was a purple Copy button beside the link and a full-width Share
+           button under it; the owner asked for both gone. The whole row is the
+           button now: one tap copies the link, and it says so. -->
+      <div onclick="navigator.clipboard.writeText('https://${refLink}');var c=this.querySelector('[data-copy-hint]');if(c){c.textContent='Copied';setTimeout(function(){c.textContent='Tap to copy';},1500);}" style="display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:10px 12px;margin-bottom:10px;cursor:pointer">
+        <code style="flex:1;color:rgba(255,255,255,.9);font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${refLink}</code>
+        <span data-copy-hint style="color:rgba(255,255,255,.45);font-size:10px;font-weight:600;white-space:nowrap">Tap to copy</span>
       </div>
     </div>
     <!-- Screen 1: ANALYTICS -->
-    <div class="creator-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;padding:16px;padding-right:60px;overflow-y:auto">
+    <div class="creator-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;padding:16px;padding-top:56px;overflow-y:auto">
       <h2 style="font-size:18px;font-weight:800;color:#fff;margin-bottom:4px">\ud83d\udcca Analytics</h2>
       <p style="color:rgba(255,255,255,.4);font-size:11px;margin-bottom:14px">Real-time performance data</p>
       <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:12px;margin-bottom:10px">
@@ -2344,7 +2324,7 @@ function CreatorFullPage(){
       </div>
     </div>
     <!-- Screen 2: CONTENT -->
-    <div class="creator-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;padding:16px;padding-right:60px;overflow-y:auto">
+    <div class="creator-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;padding:16px;padding-top:56px;overflow-y:auto">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
         <div><h2 style="font-size:18px;font-weight:800;color:#fff;margin:0">\ud83d\udcf9 Content</h2><p style="color:rgba(255,255,255,.4);font-size:11px;margin:2px 0 0">Your vault</p></div>
         <div style="display:flex;gap:4px"><button onclick="alert('\ud83d\udcf9 Upload')" style="background:#FF6D00;color:#fff;border:none;padding:6px 10px;border-radius:8px;font-weight:700;font-size:10px;cursor:pointer">Upload</button><button onclick="alert('\ud83c\udfa5 Record')" style="background:rgba(255,255,255,.06);color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.06);padding:6px 10px;border-radius:8px;font-weight:700;font-size:10px;cursor:pointer">Record</button></div>
@@ -2376,7 +2356,7 @@ function CreatorFullPage(){
       </div>
     </div>
     <!-- Screen 3: EARNINGS -->
-    <div class="creator-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;padding:16px;padding-right:60px;overflow-y:auto">
+    <div class="creator-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;padding:16px;padding-top:56px;overflow-y:auto">
       <h2 style="font-size:18px;font-weight:800;color:#fff;margin-bottom:4px">\ud83d\udcb0 Earnings</h2>
       <p style="color:rgba(255,255,255,.4);font-size:11px;margin-bottom:14px">25% commission on every booking</p>
       <div style="background:linear-gradient(135deg,rgba(34,197,94,.1),rgba(34,197,94,.02));border:1px solid rgba(34,197,94,.15);border-radius:16px;padding:16px;text-align:center;margin-bottom:12px">
@@ -2402,7 +2382,7 @@ function CreatorFullPage(){
       </div>
     </div>
     <!-- Screen 4: STOREFRONT -->
-    <div class="creator-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;padding:16px;padding-right:60px;overflow-y:auto">
+    <div class="creator-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;padding:16px;padding-top:56px;overflow-y:auto">
       <h2 style="font-size:18px;font-weight:800;color:#fff;margin-bottom:4px">\ud83c\udfe0 Your Storefront</h2>
       <p style="color:rgba(255,255,255,.4);font-size:11px;margin-bottom:14px">Your personal gym recommendation page</p>
       <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:14px;margin-bottom:12px">
@@ -2428,7 +2408,7 @@ function CreatorFullPage(){
       </div>
     </div>
     <!-- Screen 5: ASSETS -->
-    <div class="creator-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;padding:16px;padding-right:60px;overflow-y:auto">
+    <div class="creator-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;padding:16px;padding-top:56px;overflow-y:auto">
       <h2 style="font-size:18px;font-weight:800;color:#fff;margin-bottom:4px">\ud83c\udfa8 Asset Library</h2>
       <p style="color:rgba(255,255,255,.4);font-size:11px;margin-bottom:14px">Ready-made content to boost earnings</p>
       <div style="display:flex;flex-direction:column;gap:6px">
@@ -2445,25 +2425,20 @@ function CreatorFullPage(){
 window._showCreatorScreen=function(idx){
   var screens=document.querySelectorAll('.creator-screen');
   screens.forEach(function(s,i){s.style.display=i===idx?'flex':'none';});
-  // Highlight More button when viewing a screen from the More menu
-  var moreBtn=document.getElementById('creator-more-btn');
-  if(moreBtn){
-    var isMoreScreen=(idx===0||idx===1||idx===2||idx===4||idx===5);
-    moreBtn.style.background=isMoreScreen?'rgba(255,109,0,.25)':'rgba(255,255,255,.08)';
-    moreBtn.style.borderColor=isMoreScreen?'rgba(255,109,0,.4)':'rgba(255,255,255,.06)';
-    moreBtn.style.boxShadow=isMoreScreen?'0 0 16px rgba(255,109,0,.2)':'none';
-  }
+  /* Light the chip for the screen now showing. Replaces the old code that lit
+     the floating More button, which no longer exists. */
+  var tabs=document.querySelectorAll('#creator-tabs .creator-tab');
+  tabs.forEach(function(t){
+    var on=Number(t.getAttribute('data-screen'))===idx;
+    t.style.background=on?'rgba(255,255,255,.12)':'rgba(255,255,255,.04)';
+    t.style.color=on?'#fff':'rgba(255,255,255,.55)';
+  });
 };
 
-window._toggleCreatorMore=function(){
-  var m=document.getElementById('creator-more-menu');
-  if(m) m.style.display=m.style.display==='none'?'block':'none';
-};
-
-window._closeCreatorMore=function(){
-  var m=document.getElementById('creator-more-menu');
-  if(m) m.style.display='none';
-};
+/* The dropdown these opened is gone — the named strip replaced it. Kept as
+   no-ops because older onclick strings elsewhere still call them. */
+window._toggleCreatorMore=function(){};
+window._closeCreatorMore=function(){};
 
 window._creatorGetLink=function(){
   var u=state&&state.user;
