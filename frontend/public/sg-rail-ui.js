@@ -922,13 +922,11 @@ function hideRailFilter(){
   }
 }
 function mergeShareEarn(){
-  // #3 hide the affiliate "Earn" on the gym card; keep the universal "Share"
-  var acts=document.querySelectorAll('.tt-action');
-  for(var i=0;i<acts.length;i++){
-    var a=acts[i];
-    var oc=a.getAttribute('onclick')||'';
-    if(oc.indexOf('_sgShareAffiliateLink')>-1){ a.style.display='none'; }
-  }
+  /* The card rail no longer renders "Earn" at all (owner request 2026-09-19), so
+     there is nothing to hide on each pass. Kept as a no-op guard for any older
+     cached markup still in a customer's service worker. */
+  var acts=document.querySelectorAll('.tt-action[onclick*="_sgShareAffiliateLink"]');
+  for(var i=0;i<acts.length;i++)acts[i].style.display='none';
 }
 
 var RELABEL={'Pay':'Payment','Trainer':'AI Coach','Chat':'Messages'};

@@ -1640,6 +1640,19 @@ async function searchGyms(query, isExplicit, _triggerLayer){state.lastSearchQuer
  * be made twice. Both renderers now call this single template.
  * opts.filter adds the Filter toggle (main cards only: it owns a unique id).
  */
+
+/* The address line prints street · place. When the place label has no city of its
+   own it falls back to the street, and the row read "3 Hardman St · 3 Hardman St,
+   Manchester". Drop the street half when the place already starts with it. */
+function _sgAddrHead(c){
+  var street=c&&c.addr?String(c.addr).split(',')[0].trim():'';
+  var place=String((c&&c.distMin)||'').trim();
+  if(!street)return '';
+  if(place&&place.toLowerCase().indexOf(street.toLowerCase())===0)return '';
+  return street+' \u00b7';
+}
+window._sgAddrHead=_sgAddrHead;
+
 function _sgBookRailHtml(c,opts){
   opts=opts||{};
   var gbs=window._gymBookingState||{};
@@ -1668,8 +1681,10 @@ function _sgBookRailHtml(c,opts){
   html+=act("openGymDirectOverlay('"+c.id+"',true,'reviews')",'\u2B50',reviewLabel);
   /* Share/Affiliate link button (replaced Save — user request) */
   html+=act("window._sgShareGymLink('"+c.id+"','"+safeName+"')",'\u{1F517}','Share');
-  /* Deep affiliate share button (user request: separate from plain Share) */
-  html+=act("window._sgShareAffiliateLink('"+c.id+"','"+safeName+"')",'\u{1F4B0}','Earn');
+  /* Owner request 2026-09-19: no "Earn" on the Book tab. It was rendered here and
+     then hidden again by sg-rail-ui's mergeShareEarn() on a later pass, which left
+     it flickering in and present in the DOM. Not rendered at all now; the
+     affiliate link still lives behind Share and on the Creator tab. */
   if(opts.filter)html+=act('window._sgToggleBookFilters()','\u26A1','Filter','','tt-filter-toggle');
   html+='</div>';
   return html;
@@ -1832,7 +1847,7 @@ function SearchPage(){
           /* Name */
           html+='<div class="tt-gym-name">'+c.name+'</div>';
           /* Address */
-          html+='<div class="tt-gym-addr">\u{1F4CD} '+(c.addr?c.addr.split(',')[0]:'Nearby')+' \u00b7 <span class="tt-travel-label" data-gym-travel-id="'+c.id+'">'+c.distMin+'</span> \u00b7 <span class="'+c.openClass+'">'+(c.openText||c.openTag)+'</span></div>';
+          html+='<div class="tt-gym-addr">\u{1F4CD} '+_sgAddrHead(c)+' \u00b7 <span class="tt-travel-label" data-gym-travel-id="'+c.id+'">'+c.distMin+'</span> \u00b7 <span class="'+c.openClass+'">'+(c.openText||c.openTag)+'</span></div>';
           /* Chips — booking count shown only when the server has real bookings (bookedBucket) */
           var _bMonth=bookedBucket(c.gym);
           html+='<div class="tt-chips">';
@@ -1878,7 +1893,7 @@ function SearchPage(){
               cardHtml+='<div style="margin-bottom:6px"><div class="tt-logo" style="position:relative;background:linear-gradient(135deg,'+logoGrad+')">'+logoEmoji+'</div></div>';
               if(_cards.length>1) cardHtml+='<div class="tt-counter">\u2190 '+(i+1)+' of '+_cards.length+' \u2192</div>';
               cardHtml+='<div class="tt-gym-name">'+c.name+'</div>';
-              cardHtml+='<div class="tt-gym-addr">\u{1F4CD} '+(c.addr?c.addr.split(',')[0]:'Nearby')+' \u00b7 <span class="tt-travel-label" data-gym-travel-id="'+c.id+'">'+c.distMin+'</span> \u00b7 <span class="'+c.openClass+'">'+c.openTag+'</span></div>';
+              cardHtml+='<div class="tt-gym-addr">\u{1F4CD} '+_sgAddrHead(c)+' \u00b7 <span class="tt-travel-label" data-gym-travel-id="'+c.id+'">'+c.distMin+'</span> \u00b7 <span class="'+c.openClass+'">'+c.openTag+'</span></div>';
               var _bk=typeof bookedBucket==="function"?bookedBucket(c.gym):'';
               cardHtml+='<div class="tt-chips">';
               if(c.isPop) cardHtml+='<div class="tt-chip">\u{1F525} Popular</div>';
@@ -4321,8 +4336,12 @@ window.showCalendarPicker=async function(gymId){
      Name the day it actually books. */
   const _satDate=(function(){var d=new Date(now);var dow=d.getDay();
     if(dow!==0&&dow!==6)d.setDate(d.getDate()+((6-dow+7)%7));return d;})();
-  const _satLabel=(_satDate.toDateString()===now.toDateString())?'Today (Sat/Sun)'
-    :['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][_satDate.getDay()]+' '+_satDate.getDate();
+  /* On a Saturday the coming weekend day is tomorrow's Sunday — naming it "Today"
+     duplicated the Today chip. */
+  const _wkDate=(function(){var d=new Date(_satDate);
+    if(d.toDateString()===now.toDateString()&&now.getDay()===6)d.setDate(d.getDate()+1);
+    return d;})();
+  const _satLabel=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][_wkDate.getDay()]+' '+_wkDate.getDate();
   /* C2: days the gym is shut are not bookable. Taken from the gym's own opening
      hours, so nothing is invented: any weekday with no opening period is out. */
   window._calPickerState.closedDows=_sgClosedWeekdays(gym);
@@ -4632,6 +4651,7 @@ window._calQuickDate=function(which){
   else if(which==='weekend'){
     var dow=now.getDay(); // 0 Sun .. 6 Sat
     if(dow!==0&&dow!==6)d.setDate(d.getDate()+((6-dow+7)%7));
+    else if(dow===6)d.setDate(d.getDate()+1); // Saturday -> the Sunday, not today
   }
   var str=d.toISOString().split('T')[0];
   window._calPickerState.viewYear=d.getFullYear();
