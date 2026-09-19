@@ -509,10 +509,29 @@
     }
   }
 
+  /* The Reels tab's row lives in the frame, so there is nothing in THIS document
+     to move the bar into and it stayed where it was: fixed, drawn over the
+     frame, sitting on the frame's first button. Measured on production
+     2026-09-19, 390x844 — the parent's pill ("Gyms", pin) covered the framed
+     row's Book, showing both labels stacked. The frame has its own bar and
+     parks it in its own row, so while the frame owns the view this document's
+     bar stands down rather than floating over someone else's row. */
+  var FRAME_OWNS = 'sg-cta-frame-owns';
+  function reelsFrameOwnsTheRow() {
+    var f = document.querySelector('#sg-reels-iframe, .sg-reels-frame, iframe[src*="reels"]');
+    return !!(f && painted(f));
+  }
+
   function ride() {
     for (var i = 0; i < pills.length; i++) rescue(pills[i]);
     var row = activeRow();
-    if (!row) return;
+    if (!row) {
+      if (document.body && !FRAMED) {
+        document.body.classList[reelsFrameOwnsTheRow() ? 'add' : 'remove'](FRAME_OWNS);
+      }
+      return;
+    }
+    if (document.body) document.body.classList.remove(FRAME_OWNS);
     var slot = slotIn(row);
     var fresh = !slot.querySelector('.' + TRIO);
     buildTrio(slot);
