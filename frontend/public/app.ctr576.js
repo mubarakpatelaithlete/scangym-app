@@ -13427,14 +13427,11 @@ function MoreHubPage(){
       </div>
       <!-- ═══ RIGHT-SIDE BUTTONS — TikTok/Reels style, floating on QR ═══ -->
       <div style="position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:14px;align-items:center;z-index:10">
-        <div onclick="navigate('/creator')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
-          ${sgRailCircle('film','\ud83c\udfac')}
-          <span style="color:#fff;font-size:10px;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8)">Creator</span>
-        </div>
-        <div onclick="navigate('/partner')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
-          ${sgRailCircle('shield','\ud83c\udfcb\ufe0f')}
-          <span style="color:#fff;font-size:10px;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8)">Partner</span>
-        </div>
+        <!-- Creator (/creator) and Partner (/partner) used to sit here, which put
+             them twice on one screen: this rail and the tab bar underneath it,
+             where ScanSquad IS /creator and Partner IS /partner. The owner called
+             it the double buttons. Removed from the rail; the tab bar keeps them,
+             so nothing became unreachable. (owner, 2026-09-19) -->
         <div onclick="navigate('/apps')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
           ${sgRailCircle('grid','\ud83d\udcf1')}
           <span style="color:#fff;font-size:10px;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8)">Apps</span>

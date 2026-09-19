@@ -27,7 +27,10 @@ const PUB = path.join(__dirname, '..', 'frontend', 'public');
 const read = (p) => fs.readFileSync(path.join(PUB, p), 'utf8');
 
 const tokens = read('one-button.css');
-const railUi = read('sg-rail-ui.js');
+/* The icon table moved to sg-icons.js so the Reels document can load it without
+   pulling in the whole rail enhancer; the assertions below read both as one. */
+const railIcons = read('sg-icons.js');
+const railUi = railIcons + read('sg-rail-ui.js');
 const railsJs = read('rails.js');
 const railsCss = read('rails.css');
 const reels = read('reels/index.html');
@@ -249,7 +252,8 @@ test('the profile rails use the shared circle, not hand-built 46px emoji buttons
     'a profile rail button is back to a hand-set 46px circle');
   assert.ok(!/rgba\(255,109,0,\.15\)|rgba\(34,197,94,\.12\)/.test(profileRails),
     'a profile rail button is tinted orange or green again');
-  for (const icon of ['film', 'shield', 'grid', 'chat', 'more', 'search', 'card', 'help']) {
+  // shield left with Partner when the rail stopped repeating the tab bar.
+  for (const icon of ['film', 'grid', 'chat', 'more', 'search', 'card', 'help']) {
     assert.ok(profileRails.includes(`sgRailCircle('${icon}'`),
       `the profile rail stopped drawing ${icon} from the shared table`);
   }
@@ -311,4 +315,31 @@ test('the ScanSquad creator dashboard has no floating side column', () => {
   const home = dash.slice(dash.indexOf('Screen 0: HOME'), dash.indexOf('Screen 1: ANALYTICS'));
   assert.ok(!/<button/.test(home), 'a coloured Copy or Share button is back on the home screen');
   assert.ok(home.includes('Tap to copy'), 'the referral link can no longer be copied');
+});
+
+test('every document that draws row buttons loads the icon table', () => {
+  // Reels loaded rails.js without the table, so window.SG_ICONS was undefined
+  // and Book / Talk / Ask AI silently fell back to emoji beside white icons.
+  assert.match(railIcons, /window\.SG_ICONS=ICONS/, 'sg-icons.js stopped exporting the table');
+  assert.ok(!/var ICONS=\{/.test(read('sg-rail-ui.js')),
+    'sg-rail-ui.js keeps a second copy of the table');
+  for (const doc of ['index.html', 'reels/index.html']) {
+    const html = read(doc);
+    assert.ok(html.includes('/sg-icons.js'), `${doc} does not load the icon table`);
+    const consumer = html.search(/\/(rails|sg-rail-ui)\.js/);
+    assert.ok(html.indexOf('/sg-icons.js') < consumer,
+      `${doc} loads the table after the file that needs it`);
+  }
+});
+
+test('the profile rail does not repeat the tab bar', () => {
+  // Creator and Partner appeared on the rail AND as tabs directly below it.
+  const app = read('app.ctr576.js');
+  const rail = app.slice(app.indexOf('RIGHT-SIDE BUTTONS \u2014 TikTok/Reels style'),
+                         app.indexOf('MORE MENU POPUP'));
+  for (const dup of ["navigate('/creator')", "navigate('/partner')"]) {
+    assert.ok(!rail.includes(dup), `${dup} is back on the rail as well as the tab bar`);
+  }
+  assert.ok(rail.includes("navigate('/apps')") && rail.includes("navigate('/channels')"),
+    'the rail lost the destinations the tab bar does not carry');
 });
