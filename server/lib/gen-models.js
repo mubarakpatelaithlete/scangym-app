@@ -383,6 +383,12 @@ const MODELS = [
     provider: 'fal',
     providerModel: 'fal-ai/elevenlabs/music',
     usdPerMinute: 0.60,
+    /* fal publishes this model's price per minute, so a 15s track cannot be
+       assumed to cost a quarter of a minute: the quote is rounded up to the
+       published unit. Quoting a fraction of a unit we are not billed in is how
+       a 15s track shows 4p in the sheet and lands as 47p on the invoice.
+       Remove this when fal documents sub-minute billing. */
+    billingIncrementMinutes: 1,
     tier: 'standard',
     inputProfile: 'fal-music',
     note: null,
@@ -434,7 +440,10 @@ function estimateUsd(model, units = {}) {
     return round(model.usdPerImage * (units.images || 1));
   }
   if (model.usdPerMinute != null && units.minutes != null) {
-    return round(model.usdPerMinute * units.minutes);
+    /* Bill in the unit the provider bills in (see billingIncrementMinutes). */
+    const inc = model.billingIncrementMinutes || 0;
+    const minutes = inc > 0 ? Math.max(inc, Math.ceil(units.minutes / inc) * inc) : units.minutes;
+    return round(model.usdPerMinute * minutes);
   }
   if (model.usdPerThousandChars != null && units.chars != null) {
     return round((model.usdPerThousandChars * units.chars) / 1000);
@@ -500,8 +509,28 @@ const ROLES = {
   'veo-3.1-fal': 'Best with dialogue',
 };
 
-function catalogueFor(kind, units = {}) {
-  const rows = byKind(kind).filter((m) => m.tier !== 'premium' || premiumEnabled());
+/**
+ * @param {string}   kind
+ * @param {object}   units
+ * @param {function} [isReachable]  (row) => boolean. Pass it when the caller
+ *   knows which providers this deployment can actually reach.
+ *
+ *   Why it matters for money: Eleven Music is carried twice — direct at
+ *   $0.30/min and through fal at $0.60/min — and the dedupe below keeps the
+ *   first row, which is the direct one. On a free ElevenLabs plan the direct
+ *   row is unreachable, so the sheet quoted 28p for a track that resolves to
+ *   fal and bills twice that. Filtering by reachability before the dedupe
+ *   makes the quote the price of the row that will really run.
+ */
+function catalogueFor(kind, units = {}, isReachable) {
+  let rows = byKind(kind).filter((m) => m.tier !== 'premium' || premiumEnabled());
+  if (typeof isReachable === 'function') {
+    const reach = rows.filter((m) => isReachable(m));
+    // Never return an empty sheet just because nothing is keyed: an unreachable
+    // row still tells the creator what the button is for, and /health's
+    // `available:false` is what stops the tap.
+    if (reach.length) rows = reach;
+  }
 
   /* One chip per model a creator can hear the difference between, not one per
      route we can reach it by.
@@ -526,6 +555,14 @@ function catalogueFor(kind, units = {}) {
       tier: m.tier,
       role: ROLES[m.id] || null,
       estimateUsd: estimateUsd(m, units),
+      /* The unit the price is quoted in. "8p" on an image chip and "28p" on a
+         music chip are not the same kind of number, and the sheet was showing
+         both the same way. Music through fal is billed per whole minute, so
+         say "per full minute" rather than implying a 15s track is cheaper. */
+      unit: m.usdPerImage != null ? 'per image'
+        : m.usdPerMinute != null ? (m.billingIncrementMinutes ? 'per full minute' : 'per minute')
+        : m.usdPerSecond != null ? 'per clip'
+        : null,
       note: m.note || null,
     }));
 }

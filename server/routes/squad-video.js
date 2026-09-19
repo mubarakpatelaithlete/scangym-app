@@ -158,9 +158,34 @@ router.get('/health', optionalAuth, async (req, res) => {
      after a 402 — and it is what tier-gates Veo and Seedance without hiding
      them. @see lib/gen-budget.js */
   const budget = await spend.budgetFor(req);
+  /* Quote the seconds that will actually be billed.
+     The sheet offers 4s/6s/8s, WAN and Kling only accept 5s or 10s, and
+     effectiveSeconds() rounds a request up onto one of those — so an 8s tap
+     renders and bills 10s. Quoting the 8s the creator tapped under-charged
+     every clip by 25%, and the number on the chip disagreed with the invoice.
+     Each row now carries billedSeconds so the sheet can say so out loud. */
   const catalogue = spend.annotate(
     models.catalogueFor('video', { seconds: DEFAULTS.durationSeconds })
-      .map((m) => ({ ...m, etaSeconds: etaOf.etaSeconds('video', m.id, { seconds: DEFAULTS.durationSeconds }) })),
+      .map((m) => {
+        const row = models.resolve('video', m.id);
+        /* Only the fal path is snapped onto vendor durations (the Veo path
+           takes 4/6/8 as asked), so mirror that condition exactly rather than
+           letting profileFor()'s fal default speak for Gemini. */
+        const billed = (row && row.provider === 'fal')
+          ? effectiveSeconds(row, DEFAULTS.durationSeconds)
+          : DEFAULTS.durationSeconds;
+        return {
+          ...m,
+          /* The durations this vendor really renders, so the sheet can snap the
+             creator's pick the same way this route will and quote that. null
+             means "what you pick is what renders" (the Veo path). */
+          durations: (row && row.provider === 'fal') ? profileFor(row).durations || null : null,
+          quotedSeconds: billed,
+          billedSeconds: billed,
+          estimateUsd: models.estimateUsd(row, { seconds: billed }),
+          etaSeconds: etaOf.etaSeconds('video', m.id, { seconds: billed }),
+        };
+      }),
     budget,
   );
   const chosen = models.resolveAvailable('video', req.query.model, genProvider.configured);

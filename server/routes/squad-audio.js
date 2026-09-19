@@ -245,6 +245,48 @@ async function store(buffer, contentType, jobId) {
   }
 }
 
+/**
+ * GET /preview?voice=Coach — hear the voice before spending on a script.
+ *
+ * ElevenLabs' own funnel is built on this: you press play on a voice, and only
+ * then write the script. Our sheet asked a creator to choose between "Coach",
+ * "Calm" and "Hype" — three words with no sound attached — and then bill them
+ * for a 30s read in whichever one they guessed.
+ *
+ * Cheap on purpose: one fixed eight-word line, generated at most once per
+ * voice per deployment and cached under a stable key, so the whole feature
+ * costs about a penny in total rather than a penny per curious tap. It does
+ * not touch the creator's daily quota or budget, because they are not buying
+ * anything yet.
+ */
+const PREVIEW_LINE = 'Any gym. Five pounds a day. No membership.';
+const previewCache = new Map(); // voice -> url
+
+router.get('/preview', async (req, res) => {
+  const voice = ALLOWED.voice.includes(req.query.voice) ? req.query.voice : DEFAULTS.voice;
+  if (previewCache.has(voice)) return res.json({ voice, url: previewCache.get(voice), cached: true });
+
+  const model = models.resolveAvailable(KIND, null, (p) => reachable(p, { exhausted: false }));
+  if (!model) return res.status(503).json({ error: 'No voice model is reachable on this deployment.' });
+
+  try {
+    const { buffer, contentType } = await provider.generate(model, {
+      text: PREVIEW_LINE,
+      voiceId: VOICES[voice],
+      voiceName: FAL_VOICES[voice],
+    });
+    if (model.provider === 'elevenlabs') provider.invalidateCharacterQuota();
+    // Stable key: the same eight words in the same voice is the same file, so
+    // a redeploy reuses what R2 already holds instead of paying again.
+    const url = await store(buffer, contentType, `preview-${voice.toLowerCase()}`);
+    previewCache.set(voice, url);
+    res.json({ voice, url, cached: false });
+  } catch (e) {
+    console.error('[SquadAudio] voice preview failed:', e.message);
+    res.status(502).json({ error: provider.scrub(e.message) || 'Could not reach the voice model.' });
+  }
+});
+
 // ─── GET /status/:jobId — always already finished ─────────────────────────
 // Kept so the sheet's one polling path works for every mode. The row is the
 // record; there is nothing to ask a vendor.
