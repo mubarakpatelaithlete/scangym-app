@@ -290,3 +290,25 @@ test('the CTA that rides the row draws a shared icon, not an emoji', () => {
     assert.ok(ico.includes(token), `the CTA circle stopped reading ${token}`);
   }
 });
+
+test('the ScanSquad creator dashboard has no floating side column', () => {
+  // The owner asked for Account / Withdraw / More gone from the right edge; the
+  // five screens they hid behind are reached from a named strip instead.
+  const squadJs = read('sg-scansquad.js');
+  const dash = squadJs.slice(squadJs.indexOf('var refLink=\'scangym.com/r/\''),
+                             squadJs.indexOf('window._showCreatorScreen'));
+  assert.ok(!dash.includes('creator-side-btn'), 'the floating side column is back');
+  assert.ok(!dash.includes('creator-more-menu'), 'the More dropdown is back');
+  assert.ok(!dash.includes('padding-right:60px'), 'the screens still reserve the gutter for it');
+  assert.ok(dash.includes('id="creator-tabs"'), 'the screen switcher strip is missing');
+  for (const name of ['Home', 'Analytics', 'Content', 'Earnings', 'Storefront', 'Assets']) {
+    assert.ok(dash.includes(`'${name}'`), `${name} can no longer be reached`);
+  }
+  // Every screen the strip names must exist, or a chip would open nothing.
+  const screens = (dash.match(/class="creator-screen"/g) || []).length;
+  assert.equal(screens, 6, `the strip names 6 screens but the page renders ${screens}`);
+  // And the two coloured link buttons on the home screen are gone.
+  const home = dash.slice(dash.indexOf('Screen 0: HOME'), dash.indexOf('Screen 1: ANALYTICS'));
+  assert.ok(!/<button/.test(home), 'a coloured Copy or Share button is back on the home screen');
+  assert.ok(home.includes('Tap to copy'), 'the referral link can no longer be copied');
+});
