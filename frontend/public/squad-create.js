@@ -214,6 +214,10 @@
     // reserves for the voice pill. The live/soon dot below still carries the
     // state the tint was pretending to carry.
     '.' + BTN_ID + ' .sv-circle{position:relative;width:var(--sg-btn-size,44px);height:var(--sg-btn-size,44px);border-radius:50%;background:var(--sg-btn-bg,rgba(0,0,0,.40));border:var(--sg-btn-border-width,1.5px) solid var(--sg-btn-border-color,rgba(255,255,255,.12));backdrop-filter:var(--sg-btn-blur,blur(12px));-webkit-backdrop-filter:var(--sg-btn-blur,blur(12px));box-shadow:var(--sg-btn-shadow,0 2px 10px rgba(0,0,0,.25));display:flex;align-items:center;justify-content:center;font-size:var(--sg-btn-icon,20px);color:#fff;transition:transform .15s;}',
+    // The icon itself, same drawing set and same 20px as every other rail: the
+    // eight modes used to be colour emoji, which is why this row still looked
+    // unlike Share and Save once the circles already matched.
+    '.' + BTN_ID + ' .sv-circle svg{width:var(--sg-btn-icon,20px);height:var(--sg-btn-icon,20px);display:block;}',
     '.' + BTN_ID + '.sv-off .sv-circle{opacity:.55;}',
     '.' + BTN_ID + ':active .sv-circle{transform:scale(.92);}',
     '.' + BTN_ID + ' .sv-label{font-size:10px;color:#fff;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8);}',
@@ -949,13 +953,26 @@
     return null;
   }
 
+  // sg-rail-ui.js owns the app's one icon table and exports it; read it here so
+  // ScanSquad draws the same white line icons as every other rail instead of its
+  // own colour emoji. Resolved at render time, not at load: the table arrives
+  // with a deferred script and the emoji stays as the last-resort fallback.
+  var ICON_KEYS = {
+    text: 'pen', image: 'image', video: 'film', audio: 'mic',
+    music: 'music', twin: 'person', clipping: 'scissors', ugc: 'phone'
+  };
+  function iconFor(mode) {
+    var table = (typeof window !== 'undefined' && window.SG_ICONS) || {};
+    return table[ICON_KEYS[mode.key]] || mode.icon;
+  }
+
   function makeBtn(mode) {
     var b = el('div', BTN_ID);
     b.setAttribute('data-mode', mode.key);
     var live = isConfigured(mode);
     if (!live) b.classList.add('sv-off');
     b.innerHTML = '<div class="sv-circle"><span class="sv-dot ' + (live ? 'live' : 'soon') + '"></span>' +
-      mode.icon + '</div><div class="sv-label">' + mode.label + '</div>';
+      iconFor(mode) + '</div><div class="sv-label">' + mode.label + '</div>';
     b.addEventListener('click', function (ev) { ev.stopPropagation(); openSheet(mode); });
     return b;
   }
