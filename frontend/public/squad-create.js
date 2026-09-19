@@ -350,8 +350,23 @@
   }
 
   // ── sheet ───────────────────────────────────────────────────────────────
+  /* The back button used to leave ScanSquad — leave the app, in fact — instead
+     of closing this sheet, because the sheet was never a history entry. It is
+     one now: back closes Create and lands the creator back on the tab they
+     opened it from, which is what every phone user expects and what Uber,
+     Airbnb and Booking all do on mobile web. @see frontend/public/sg-sheets.js
+     for the same treatment of the booking sheets. */
+  var sheetEntry = false;
+
+  function pushSheetEntry() {
+    if (sheetEntry) return;
+    sheetEntry = true;
+    try { history.pushState({ sgCreateSheet: 1 }, '', location.href); } catch (e) {}
+  }
+
   function openSheet(mode) {
     closeSheet();
+    pushSheetEntry();
     var ov = el('div', '', '');
     ov.id = 'sg-sv-overlay';
     ov.addEventListener('click', closeSheet);
@@ -632,13 +647,26 @@
     n.innerHTML = bits.length ? bits.join(' · ') : (mode.note || '');
   }
 
-  function closeSheet() {
+  function closeSheet(fromPop) {
     var ov = document.getElementById('sg-sv-overlay');
     var sh = document.getElementById(SHEET_ID);
+    var wasOpen = !!(ov || sh);
     if (ov) ov.remove();
     if (sh) sh.remove();
     if (job && job.timer) { clearInterval(job.timer); job = null; }
+    stopPreview();
+    /* Closing by ✕ or backdrop has to consume the entry we pushed, or the next
+       back press would do nothing at all. When the pop *is* what closed us, the
+       entry is already gone. */
+    if (sheetEntry) {
+      sheetEntry = false;
+      if (wasOpen && !fromPop) { try { history.back(); } catch (e) {} }
+    }
   }
+
+  window.addEventListener('popstate', function () {
+    if (sheetEntry) closeSheet(true);
+  });
 
   // ── generation ──────────────────────────────────────────────────────────
   function startJob(sh, ta, gen, mode) {
@@ -1097,7 +1125,10 @@
     var rail = document.getElementById(RAIL_ID);
     if (!on) {
       if (rail) rail.remove();
-      closeSheet();
+      /* Left the tab: drop the sheet without touching history. sync() runs on a
+         timer, and a history.back() from a timer would drag the visitor back to
+         a page they had just left. */
+      closeSheet(true);
       return;
     }
     var host = nativeRail();
