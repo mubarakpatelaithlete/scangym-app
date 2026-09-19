@@ -169,6 +169,45 @@
   var serverTemplates = null; // /api/squad-create/templates, so a better opener needs no deploy
   var shareInfo = null;  // {refLink, shareText} — a share has to carry the link that earns
 
+  /**
+   * The seconds this model will really render.
+   *
+   * Mirrors squad-video.js#effectiveSeconds. The sheet offers 4s, 6s and 8s;
+   * WAN 2.5 and Kling only accept 5s or 10s, so the route rounds up and bills
+   * the longer clip. Showing the 4s the creator tapped, at the 4s price, was a
+   * quote the invoice then disagreed with.
+   */
+  function billedSeconds(durations, picked) {
+    if (!durations || !durations.length) return picked;
+    for (var i = 0; i < durations.length; i++) if (durations[i] >= picked) return durations[i];
+    return durations[durations.length - 1];
+  }
+
+  // ── Voice preview ────────────────────────────────────────────────────────
+  var previewAudio = null;
+  function stopPreview() {
+    if (previewAudio) { try { previewAudio.pause(); } catch (e) {} previewAudio = null; }
+  }
+  function playVoicePreview(btn, voice) {
+    stopPreview();
+    var label = btn.textContent;
+    btn.textContent = '\u2026';
+    fetch('/api/squad-audio/preview?voice=' + encodeURIComponent(voice))
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+      .then(function (res) {
+        btn.textContent = label;
+        if (!res.ok || !res.d.url) { toast(res.d.error || 'Could not play that voice', 'info', 3000); return; }
+        previewAudio = new Audio(res.d.url);
+        previewAudio.play().catch(function () { toast('Tap again to play', 'info', 2000); });
+      })
+      .catch(function () { btn.textContent = label; toast('Could not play that voice', 'info', 3000); });
+  }
+
+  function pence(p) {
+    if (p == null) return '';
+    return p < 100 ? Math.round(p) + 'p' : '\u00a3' + (p / 100).toFixed(2);
+  }
+
   function gbp(usd) {
     if (usd == null) return '';
     var v = usd * 0.79;
@@ -376,8 +415,17 @@
         cycle(mode, st);
         val.textContent = shown(mode, st);
         refreshSummary(sh, mode);
+        if (mode.key === 'audio' && st.key === 'voice') stopPreview();
       });
       line.appendChild(val);
+      /* Hearing the voice is free and comes before paying for a read of it —
+         the ElevenLabs funnel. @see server/routes/squad-audio.js#/preview */
+      if (mode.key === 'audio' && st.key === 'voice') {
+        var play = el('span', 'sv-val', '\u25b6 Hear it');
+        play.style.cssText = 'margin-left:8px;color:#FF6D00;';
+        play.addEventListener('click', function () { playVoicePreview(play, state.audio.voice); });
+        line.appendChild(play);
+      }
       settings.appendChild(line);
     });
     sh.appendChild(settings);
@@ -546,8 +594,28 @@
     /* What this tap will cost, before it is spent. Create is postpaid — the
        creator is invoiced in the morning — so the one moment they can still
        change their mind is now. @see server/lib/gen-billing.js */
-    var p = state[mode.key] && state[mode.key].__price;
-    if (p) bits.push('⚡ This run: ' + p + (billing && billing.vatIncluded ? ' inc VAT' : ''));
+    var st = state[mode.key] || {};
+    var p = st.__price;
+    var vat = (billing && billing.vatIncluded) ? ' inc VAT' : '';
+    /* Video is the one mode where the number on the chip is not the number on
+       the invoice: the quote covers the vendor's nearest allowed length, not
+       the length in the settings row. Say both, and say why. */
+    if (mode.key === 'video' && st.__durations && st.__pricePence != null && st.__quotedSeconds) {
+      var billed = billedSeconds(st.__durations, st.durationSeconds);
+      var runPence = Math.round(st.__pricePence * (billed / st.__quotedSeconds));
+      bits.push('⚡ This run: ' + pence(runPence) + vat + ' · ' + billed + 's billed');
+      if (billed !== st.durationSeconds) {
+        bits.push('this model only renders ' + st.__durations.join('s or ') + 's, so ' +
+          st.durationSeconds + 's becomes ' + billed + 's');
+      }
+    } else if (p) {
+      /* "8p" and "28p" are not the same kind of number: one is per image, the
+         other is a whole minute of music whether you asked for 15s or 60s. */
+      bits.push('⚡ This run: ' + p + vat + (st.__unit ? ' ' + st.__unit : ''));
+    }
+    /* Every text model prices out at a penny a caption, so six chips reading
+       "1p" made the price look like the thing to choose on. It is not. */
+    if (mode.key === 'text' && p) bits.push('any model here costs about a penny a caption — pick on style, not price');
     if (billing && billing.suspended) {
       bits.push('⏸ Creating is paused until your invoice is paid');
     } else if (billing && billing.unpaid && billing.unpaidPence > 0) {
@@ -710,7 +778,22 @@
    */
   function renderModelPicker(sh, mode, d) {
     var list = (d && d.models) || [];
-    if (list.length < 2) return;
+    /* One model is still a price. This used to return before reading the row,
+       so on any mode with a single reachable model ("This run: …") showed
+       nothing at all and the creator tapped Generate with no idea of the cost —
+       Music, where one label hides two differently-priced routes, is exactly
+       that case. Take the price first, then decide whether chips are worth
+       drawing: a picker with one entry is furniture, a price is not. */
+    if (list.length) {
+      var only = list[0];
+      var st0 = state[mode.key];
+      if (!st0.__model || list.length === 1) {
+        st0.__price = only.price || st0.__price || null;
+        st0.__pricePence = (only.pricePence != null) ? only.pricePence : st0.__pricePence;
+        st0.__unit = only.unit || null;
+      }
+    }
+    if (list.length < 2) { refreshQuota(sh, mode); return; }
     var host = sh.querySelector('#sv-models');
     if (!host) return;
     host.innerHTML = '';
@@ -726,6 +809,9 @@
     if (chosenRow) {
       state[mode.key].__price = chosenRow.price || null;
       state[mode.key].__pricePence = (chosenRow.pricePence != null) ? chosenRow.pricePence : null;
+      state[mode.key].__durations = chosenRow.durations || null;
+      state[mode.key].__quotedSeconds = chosenRow.quotedSeconds || null;
+      state[mode.key].__unit = chosenRow.unit || null;
     }
 
     list.forEach(function (m) {
@@ -734,6 +820,9 @@
          our supplier cost converted at a hard-coded FX rate — which is what
          this line used to print. @see server/lib/gen-pricing.js */
       var price = m.price ? ' · ' + m.price : '';
+      /* See refreshQuota: identical penny prices on every text chip are noise. */
+      if (mode.key === 'text') price = '';
+      else if (m.unit === 'per image') price += '/image';
       /* The role first, the vendor's release name second: "Seedance 2.5" is not
          an answer to "which one do I tap". @see server/lib/gen-models.js#ROLES */
       var locked = m.affordable === false;
@@ -757,6 +846,9 @@
         state[mode.key].__model = m.id;
         state[mode.key].__price = m.price || null;
         state[mode.key].__pricePence = (m.pricePence != null) ? m.pricePence : null;
+        state[mode.key].__durations = m.durations || null;
+        state[mode.key].__quotedSeconds = m.quotedSeconds || null;
+        state[mode.key].__unit = m.unit || null;
         Array.prototype.forEach.call(host.children, function (c) { if (c.__paint) c.__paint(); });
         refreshQuota(sh, mode);
       });

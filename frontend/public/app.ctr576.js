@@ -1218,6 +1218,36 @@ window._sgPhotoFallback=_sgPhotoFallback;
 /* The gym card and the calendar footer computed the day-pass price two different
    ways, so the same gym read "$4.99/day" on the card and "\u00a34.49" in the
    calendar — a different currency at the moment of payment. One source now. */
+/* The card counter, with the one thing it was missing: what the order means.
+   "1 of 12" says nothing about why this gym is first. Booking.com never shows a
+   result list without the sort next to the count, because the sort is what the
+   count means. Distance when we have a fix, rating when we do not — and never a
+   claim we cannot back: with no location and no ratings it stays a plain count. */
+/* What the same number of day passes would have cost, minus this pass. Shown
+   only when both prices are real numbers — a saving we cannot compute is left
+   out rather than printed as £0. */
+function _sgPassSaving(dayP,passP,days,sym){
+  try{
+    var d=Number(dayP&&dayP.amount),p=Number(passP&&passP.amount);
+    if(!isFinite(d)||!isFinite(p)||d<=0||p<=0)return '';
+    var saved=(d*days)-p;
+    if(saved<=0.005)return '';
+    return ' \u00b7 '+(sym||'')+saved.toFixed(2)+' less than '+days+' day passes';
+  }catch(e){return '';}
+}
+window._sgPassSaving=_sgPassSaving;
+
+function _sgCounterText(i,total){
+  var basis='';
+  try{
+    var g=(state.gyms||[])[0]||{};
+    if(typeof g.distance==='number'&&isFinite(g.distance))basis='nearest first';
+    else if(Number(g.rating)>0)basis='best rated first';
+  }catch(e){}
+  return '\u2190 '+(i+1)+' of '+total+(basis?' \u00b7 '+basis:'')+' \u2192';
+}
+window._sgCounterText=_sgCounterText;
+
 function sgGymDayPrice(gym){
   try{
     var sym=(gym&&gym.pricing&&gym.pricing.currencySymbol)||(gym&&gym.currencySymbol)||sgSymbol();
@@ -1694,6 +1724,13 @@ function _sgBookRailHtml(c,opts){
   html+=act("openGymDirectOverlay('"+c.id+"',true,'reviews')",'\u2B50',reviewLabel);
   /* Share/Affiliate link button (replaced Save — user request) */
   html+=act("window._sgShareGymLink('"+c.id+"','"+safeName+"')",'\u{1F517}','Share');
+  /* Save, back on the rail. It was removed, which left _sgSaveGym writing to
+     /api/referrals/gyms/save with no button to press and no list to read it
+     back from — see the Saved Gyms section in the search sheet for the read
+     side. The ids are the ones that function already looks for. */
+  html+='<div class="tt-action" onclick="event.stopPropagation();window._sgSaveGym(\''+c.id+'\',\''+safeName+'\',this)">'
+    +'<div class="tt-action-btn" id="tt-save-btn-'+c.id+'">\u{1F516}</div>'
+    +'<div class="tt-action-label" id="tt-save-label-'+c.id+'">Save</div></div>';
   /* Owner request 2026-09-19: no "Earn" on the Book tab. It was rendered here and
      then hidden again by sg-rail-ui's mergeShareEarn() on a later pass, which left
      it flickering in and present in the DOM. Not rendered at all now; the
@@ -1858,7 +1895,7 @@ function SearchPage(){
            * Replaced with text counter only (already existed below). Science: Leading apps
            * found that DOM node count is the #1 predictor of interaction latency on mobile. */
           /* "\u2190 1 of 1 \u2192" advertises swipe affordances that do not exist. */
-          if(totalC>1) html+='<div class="tt-counter">\u2190 '+(i+1)+' of '+totalC+' \u2192</div>';
+          if(totalC>1) html+='<div class="tt-counter">'+_sgCounterText(i,totalC)+'</div>';
           /* Name */
           html+='<div class="tt-gym-name">'+c.name+'</div>';
           /* Address */
@@ -1906,7 +1943,7 @@ function SearchPage(){
               /* Bottom info — match initial cards */
               cardHtml+='<div class="tt-info">';
               cardHtml+='<div style="margin-bottom:6px"><div class="tt-logo" style="position:relative;background:linear-gradient(135deg,'+logoGrad+')">'+logoEmoji+'</div></div>';
-              if(_cards.length>1) cardHtml+='<div class="tt-counter">\u2190 '+(i+1)+' of '+_cards.length+' \u2192</div>';
+              if(_cards.length>1) cardHtml+='<div class="tt-counter">'+_sgCounterText(i,_cards.length)+'</div>';
               cardHtml+='<div class="tt-gym-name">'+c.name+'</div>';
               cardHtml+=_sgAddrRow(c,c.openTag);
               var _bk=typeof bookedBucket==="function"?bookedBucket(c.gym):'';
@@ -2366,7 +2403,7 @@ function GymProfilePage(){
             }
             var currentLevel=levels[h]||10;
             var busyText=currentLevel>70?'🔴 Busy right now':currentLevel>40?'🟡 Moderately busy':'🟢 Not busy right now';
-            return '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="color:rgba(255,255,255,.5);font-size:11px;font-weight:600">Popular times</span><span style="font-size:11px;font-weight:600;color:'+(currentLevel>70?'#ef4444':currentLevel>40?'#eab308':'#22c55e')+'">'+busyText+'</span></div><div style="display:flex;gap:2px;align-items:flex-end">'+bars+'</div>';
+            return '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="color:rgba(255,255,255,.5);font-size:11px;font-weight:600">Typical busyness</span><span style="font-size:11px;font-weight:600;color:'+(currentLevel>70?'#ef4444':currentLevel>40?'#eab308':'#22c55e')+'">'+busyText+'</span></div><div style="display:flex;gap:2px;align-items:flex-end">'+bars+'</div>';
           })()}
         </div>
       </div>
@@ -2470,7 +2507,7 @@ function GymProfilePage(){
             <button class="gym-pay-sheet-close" onclick="closePaySheet()">✕</button>
             <button class="gym-pay-sheet-add-btn" onclick="window._paySheetShowAdd()">+ Add</button>
           </div>
-          <div class="gym-pay-sheet-title">Pay with</div>
+          <div class="gym-pay-sheet-title">Pay with</div><div id="gym-pay-due" style="padding:0 20px 4px;color:#555;font-size:15px;font-weight:600"></div>
           <!-- ScanGym Balance -->
           <div style="padding:8px 20px 0">
             <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0">
@@ -2480,7 +2517,7 @@ function GymProfilePage(){
           </div>
           <div style="display:flex;align-items:center;gap:14px;padding:14px 20px">
             <div style="width:36px;height:36px;border-radius:8px;background:#FF6D00;display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="color:#fff;font-size:11px;font-weight:800">SG</span></div>
-            <span style="flex:1;color:#333;font-size:15px;font-weight:500;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">ScanGym Credits: £0.00</span>
+            <span id="gym-pay-credits" style="flex:1;color:#333;font-size:15px;font-weight:500;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">ScanGym Credits: …</span>
           </div>
           <div style="height:1px;background:rgba(0,0,0,.06);margin:0 20px"></div>
           <!-- Payment Methods -->
@@ -2599,7 +2636,8 @@ function GymProfilePage(){
         <div id="sg-month-grid" style="padding:0 12px"></div>
         <div class="sg-date-divider"></div>
         <div class="sg-popular-times" id="sg-popular-times" style="display:none">
-          <div class="sg-popular-label">📊 Popular times <span id="sg-popular-day-label" style="color:rgba(255,255,255,.2)"></span></div>
+          <!-- Typical pattern, not this gym's measured data. @see _renderPopularTimes -->
+          <div class="sg-popular-label">📊 Typical gym busyness <span id="sg-popular-day-label" style="color:rgba(255,255,255,.2)"></span></div>
           <div class="sg-popular-bars" id="sg-popular-bars"></div>
           <div class="sg-popular-hours" id="sg-popular-hours"></div>
           <div style="text-align:right;margin-top:2px"><span id="sg-popular-live" style="font-size:10px;color:rgba(255,255,255,.2)"></span></div>
@@ -2920,7 +2958,11 @@ window.openGymOverlay=function(section){
           })()}
           ${r.media&&r.media.length>0?'<div class="rv-review-photos" style="margin-top:10px">'+r.media.map(function(m){return '<div class="rv-review-photo" onclick="rvShowFullscreen(\''+m.url+'\')"><'+(m.type==='video'?'video':'img')+' src="'+(m.thumbnail||m.url)+'" loading="lazy" />'+(m.type==='video'?'<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.3)"><span style="font-size:24px">\u25b6</span></div>':'')+'</div>';}).join('')+'</div>':''}
           <!-- Helpful count + actions -->
-          <div style="color:rgba(255,255,255,.35);font-size:13px;margin:10px 0 8px">${helpCount} ${helpCount===1?'person':'people'} found this helpful</div>
+          <!-- The seed used to invent a plausible count; it returns 0 now, which
+               printed "0 people found this helpful" under every single review.
+               A count of nobody is not a signal, so it appears only once it is
+               real (i.e. after someone votes). -->
+          ${helpCount>0?`<div style="color:rgba(255,255,255,.35);font-size:13px;margin:10px 0 8px">${helpCount} ${helpCount===1?'person':'people'} found this helpful</div>`:''}
           <div class="ov-review-actions" style="display:flex;align-items:center;gap:16px">
             <button class="ov-review-helpful${voted?' active':''}" id="helpful_${rid}" onclick="event.stopPropagation();_toggleReviewHelpful('${rid}',${helpfulBase})" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:6px 16px;color:rgba(255,255,255,.7);font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent">Helpful</button>
             <span onclick="event.stopPropagation();_sgShareReview('${rid}')" style="color:rgba(255,255,255,.4);font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:4px"><span style="font-size:14px">\u2197</span> Share</span>
@@ -3201,7 +3243,20 @@ window.rvShowFullscreen=function(url){
             </div>`;
           }).join('')}
         </div>
-        <div style="margin-top:20px;padding:12px 16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;display:flex;align-items:center;gap:10px">
+        <!-- The one thing a table of hours does not tell you: when to turn up.
+             This is the typical gym pattern (weekday peaks at 7am and 6pm), not
+             this gym's measured footfall, and it says so rather than dressing a
+             rule of thumb up as data. -->
+        <div style="margin-top:16px;padding:12px 16px;background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.15);border-radius:12px;display:flex;align-items:center;gap:10px">
+          <span style="font-size:20px">\ud83e\uddd8</span>
+          <div style="color:rgba(255,255,255,.55);font-size:12px">${(function(){
+            var wknd=(today===0||today===6);
+            return wknd
+              ? 'Quietest mid-afternoon, around 14:00\u201316:00 \u00b7 busiest late morning. Typical weekend pattern, not this gym\u2019s own data.'
+              : 'Quietest early afternoon, around 14:00\u201316:00 \u00b7 busiest 17:00\u201320:00. Typical weekday pattern, not this gym\u2019s own data.';
+          })()}</div>
+        </div>
+        <div style="margin-top:12px;padding:12px 16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;display:flex;align-items:center;gap:10px">
           <span style="font-size:20px">\ud83d\udca1</span>
           <div style="color:rgba(255,255,255,.4);font-size:12px">Hours may vary on holidays. Check with the gym for special schedules.</div>
         </div>
@@ -3261,14 +3316,18 @@ window.rvShowFullscreen=function(url){
             <div style="color:#fff;font-size:15px;font-weight:700">3-Day Pass</div>
             <div style="color:#fff;font-size:24px;font-weight:800;margin:8px 0 4px">${threeDayP.display}</div>
             <div style="color:rgba(255,255,255,.4);font-size:12px">${threeDayP.perDayDisplay}/day</div>
-            <div style="color:#22c55e;font-size:11px;font-weight:700;margin-top:4px">Save ${threeDayP.savePercent}%</div>
+            <!-- "Save 12%" is a number you have to do arithmetic on. Booking.com
+                 puts the cash difference next to it, because that is the number
+                 people decide with. _sgPassSaving computes it from the same
+                 prices shown above, so it cannot disagree with them. -->
+            <div style="color:#22c55e;font-size:11px;font-weight:700;margin-top:4px">Save ${threeDayP.savePercent}%${_sgPassSaving(dayP,threeDayP,3,_sym)}</div>
           </div>
           <div class="ov-pass-card" onclick="overlaySelectPass(this,2,'${gymId}')" style="background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.1);border-radius:16px;padding:16px;text-align:center;cursor:pointer">
             <div style="font-size:28px;margin:8px 0 4px">📅</div>
             <div style="color:#fff;font-size:15px;font-weight:700">Weekly</div>
             <div style="color:#fff;font-size:24px;font-weight:800;margin:8px 0 4px">${weeklyP.display}</div>
             <div style="color:rgba(255,255,255,.4);font-size:12px">${weeklyP.perDayDisplay}/day</div>
-            <div style="color:#22c55e;font-size:11px;font-weight:700;margin-top:4px">Save ${weeklyP.savePercent}%</div>
+            <div style="color:#22c55e;font-size:11px;font-weight:700;margin-top:4px">Save ${weeklyP.savePercent}%${_sgPassSaving(dayP,weeklyP,7,_sym)}</div>
           </div>
           <div class="ov-pass-card" onclick="overlaySelectPass(this,3,'${gymId}')" style="background:linear-gradient(135deg,rgba(245,158,11,.15),rgba(245,158,11,.05));border:2px solid rgba(245,158,11,.3);border-radius:16px;padding:16px;text-align:center;cursor:pointer;position:relative">
             <div style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:#f59e0b;color:#000;font-size:10px;font-weight:800;padding:2px 10px;border-radius:20px;">👑 BEST VALUE</div>
@@ -3276,7 +3335,7 @@ window.rvShowFullscreen=function(url){
             <div style="color:#fff;font-size:15px;font-weight:700">Monthly</div>
             <div style="color:#f59e0b;font-size:24px;font-weight:800;margin:8px 0 4px">${monthlyP.display}</div>
             <div style="color:rgba(255,255,255,.4);font-size:12px">${monthlyP.perDayDisplay}/day</div>
-            <div style="color:#22c55e;font-size:11px;font-weight:700;margin-top:4px">Save ${monthlyP.savePercent}%</div>
+            <div style="color:#22c55e;font-size:11px;font-weight:700;margin-top:4px">Save ${monthlyP.savePercent}%${_sgPassSaving(dayP,monthlyP,30,_sym)}</div>
           </div>
           <div class="ov-pass-card" onclick="overlaySelectPass(this,4,'${gymId}')" style="background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.1);border-radius:16px;padding:16px;text-align:center;cursor:pointer">
             <div style="font-size:28px;margin:8px 0 4px">👫</div>
@@ -3814,7 +3873,7 @@ window._ensurePaySheetHTML=function(){
   }
   // Inject pay sheet HTML
   var div=document.createElement('div');
-  div.innerHTML='<div class="gym-pay-sheet" id="gym-pay-sheet" onclick="if(event.target===this||event.target.classList.contains(\'gym-pay-sheet-bg\'))closePaySheet()"><div class="gym-pay-sheet-bg"></div><div class="gym-pay-sheet-panel"><div class="gym-pay-sheet-drag"></div><div id="gym-pay-main-sheet"><div class="gym-pay-sheet-header"><button class="gym-pay-sheet-close" onclick="closePaySheet()">\u2715</button><button class="gym-pay-sheet-add-btn" onclick="window._paySheetShowAdd()">+ Add</button></div><div class="gym-pay-sheet-title">Pay with</div><div style="padding:8px 20px 0"><div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0"><span style="color:#000;font-size:17px;font-weight:700;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif">ScanGym balance</span><label style="position:relative;display:inline-block;width:48px;height:28px;cursor:pointer"><input type="checkbox" checked style="opacity:0;width:0;height:0" onchange="window._payToggleBalance(this)"><span id="sg-pay-toggle-track" style="position:absolute;inset:0;background:#000;border-radius:28px;transition:.3s"></span><span id="sg-pay-toggle-dot" style="position:absolute;height:22px;width:22px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s;transform:translateX(20px)"></span></label></div></div><div style="display:flex;align-items:center;gap:14px;padding:14px 20px"><div style="width:36px;height:36px;border-radius:8px;background:#FF6D00;display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="color:#fff;font-size:11px;font-weight:800">SG</span></div><span style="flex:1;color:#333;font-size:15px;font-weight:500;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif">ScanGym Credits: \u00a30.00</span></div><div style="height:1px;background:rgba(0,0,0,.06);margin:0 20px"></div><div class="gym-pay-section-title">Payment methods</div><div id="gym-pay-saved-cards"></div><div id="gym-pay-options"><div class="gym-pay-item" onclick="selectPayMethod(this,\'cash\')" data-method="cash"><div class="gym-pay-item-icon" style="background:#e8f5e9;border-radius:8px"><span style="font-size:18px">\ud83d\udcb7</span></div><span class="gym-pay-item-label">Cash</span><div class="gym-pay-item-check"></div></div></div><button class="gym-pay-save-btn" onclick="closePaySheet()">Save</button></div><div id="gym-pay-add-sheet" style="display:none"><div class="gym-pay-add-back" onclick="window._paySheetShowMain()"><span style="color:#000;font-size:22px">\u2190</span><span class="gym-pay-add-title">Add a payment method</span></div><div class="gym-pay-add-item" onclick="window._paySheetShowCardForm()"><div class="gym-pay-add-item-icon"><span style="font-size:18px">\ud83d\udcb3</span></div><span class="gym-pay-item-label">Credit or debit card</span><span style="color:#999;font-size:20px">\u203a</span></div><div class="gym-pay-add-item" onclick="window._payConnectPayPal()"><div class="gym-pay-add-item-icon" style="background:#e3f2fd"><span style="color:#003087;font-size:14px;font-weight:800">P</span></div><span class="gym-pay-item-label">PayPal</span><span style="color:#999;font-size:20px">\u203a</span></div><div class="gym-pay-add-item" onclick="window._payRedeemGiftCard()"><div class="gym-pay-add-item-icon" style="background:#f3e5f5"><span style="font-size:18px">\ud83c\udf81</span></div><span class="gym-pay-item-label">Gift card</span><span style="color:#999;font-size:20px">\u203a</span></div></div><div id="gym-pay-card-sheet" style="display:none"><div class="gym-pay-add-back" onclick="window._paySheetShowAdd()"><span style="color:#000;font-size:22px">\u2190</span><span class="gym-pay-add-title">Add a payment method</span></div><div style="padding:16px 20px 8px"><div style="color:#000;font-size:26px;font-weight:800;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;line-height:1.2">Add credit or<br>debit card</div></div><div style="padding:8px 20px"><div style="margin-bottom:16px"><label style="color:#333;font-size:13px;font-weight:600;display:block;margin-bottom:6px">Card number</label><div id="gym-pay-inline-card-number" style="padding:14px 16px;background:#f5f5f5;border:1px solid #ddd;border-radius:8px;min-height:20px"></div></div><div style="display:flex;gap:12px;margin-bottom:16px"><div style="flex:1"><label style="color:#333;font-size:13px;font-weight:600;display:block;margin-bottom:6px">Exp. date</label><div id="gym-pay-inline-expiry" style="padding:14px 16px;background:#f5f5f5;border:1px solid #ddd;border-radius:8px;min-height:20px"></div></div><div style="flex:1"><div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><label style="color:#333;font-size:13px;font-weight:600">Security code</label><span style="color:#999;font-size:14px;cursor:help" title="3-digit code on back of card">\u2753</span></div><div id="gym-pay-inline-cvc" style="padding:14px 16px;background:#f5f5f5;border:1px solid #ddd;border-radius:8px;min-height:20px"></div></div></div><div style="margin-bottom:16px"><label style="color:#333;font-size:13px;font-weight:600;display:block;margin-bottom:6px">Country</label><select id="gym-pay-inline-country" style="width:100%;padding:14px 16px;background:#f5f5f5;border:1px solid #ddd;border-radius:8px;font-size:15px;color:#333;-webkit-appearance:none;appearance:none;cursor:pointer"><option value=\'GB\' selected>United Kingdom</option><option value=\'US\'>United States</option><option value=\'IE\'>Ireland</option><option value=\'DE\'>Germany</option><option value=\'FR\'>France</option><option value=\'ES\'>Spain</option><option value=\'IT\'>Italy</option><option value=\'NL\'>Netherlands</option><option value=\'AU\'>Australia</option><option value=\'CA\'>Canada</option></select></div><div style="margin-bottom:16px"><label style="color:#333;font-size:13px;font-weight:600;display:block;margin-bottom:6px">Postcode</label><input id="gym-pay-inline-postcode" type="text" style="width:100%;padding:14px 16px;background:#f5f5f5;border:1px solid #ddd;border-radius:8px;font-size:15px;color:#333;outline:none;box-sizing:border-box" /></div><div style="margin-bottom:8px"><label style="color:#333;font-size:13px;font-weight:600;display:block;margin-bottom:6px">Nickname (optional)</label><input id="gym-pay-inline-nickname" type="text" style="width:100%;padding:14px 16px;background:#f5f5f5;border:1px solid #ddd;border-radius:8px;font-size:15px;color:#333;outline:none;box-sizing:border-box" /></div></div><button id="gym-pay-inline-save" class="gym-pay-save-btn" onclick="window._paySheetSaveCard()" style="opacity:.5;pointer-events:none">Add card</button><p id="gym-pay-inline-error" style="color:#ef4444;font-size:13px;padding:0 20px;display:none"></p><div style="text-align:center;padding:8px 0 16px"><button onclick="window._paySheetShowAdd()" style="background:none;border:none;color:#999;font-size:14px;cursor:pointer;padding:8px 16px">Cancel</button></div></div></div></div>';
+  div.innerHTML='<div class="gym-pay-sheet" id="gym-pay-sheet" onclick="if(event.target===this||event.target.classList.contains(\'gym-pay-sheet-bg\'))closePaySheet()"><div class="gym-pay-sheet-bg"></div><div class="gym-pay-sheet-panel"><div class="gym-pay-sheet-drag"></div><div id="gym-pay-main-sheet"><div class="gym-pay-sheet-header"><button class="gym-pay-sheet-close" onclick="closePaySheet()">\u2715</button><button class="gym-pay-sheet-add-btn" onclick="window._paySheetShowAdd()">+ Add</button></div><div class="gym-pay-sheet-title">Pay with</div><div id="gym-pay-due" style="padding:0 20px 4px;color:#555;font-size:15px;font-weight:600"></div><div style="padding:8px 20px 0"><div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0"><span style="color:#000;font-size:17px;font-weight:700;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif">ScanGym balance</span><label style="position:relative;display:inline-block;width:48px;height:28px;cursor:pointer"><input type="checkbox" checked style="opacity:0;width:0;height:0" onchange="window._payToggleBalance(this)"><span id="sg-pay-toggle-track" style="position:absolute;inset:0;background:#000;border-radius:28px;transition:.3s"></span><span id="sg-pay-toggle-dot" style="position:absolute;height:22px;width:22px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s;transform:translateX(20px)"></span></label></div></div><div style="display:flex;align-items:center;gap:14px;padding:14px 20px"><div style="width:36px;height:36px;border-radius:8px;background:#FF6D00;display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="color:#fff;font-size:11px;font-weight:800">SG</span></div><span id="gym-pay-credits" style="flex:1;color:#333;font-size:15px;font-weight:500;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif">ScanGym Credits: \u2026</span></div><div style="height:1px;background:rgba(0,0,0,.06);margin:0 20px"></div><div class="gym-pay-section-title">Payment methods</div><div id="gym-pay-saved-cards"></div><div id="gym-pay-options"><div class="gym-pay-item" onclick="selectPayMethod(this,\'cash\')" data-method="cash"><div class="gym-pay-item-icon" style="background:#e8f5e9;border-radius:8px"><span style="font-size:18px">\ud83d\udcb7</span></div><span class="gym-pay-item-label">Cash</span><div class="gym-pay-item-check"></div></div></div><button class="gym-pay-save-btn" onclick="closePaySheet()">Save</button></div><div id="gym-pay-add-sheet" style="display:none"><div class="gym-pay-add-back" onclick="window._paySheetShowMain()"><span style="color:#000;font-size:22px">\u2190</span><span class="gym-pay-add-title">Add a payment method</span></div><div class="gym-pay-add-item" onclick="window._paySheetShowCardForm()"><div class="gym-pay-add-item-icon"><span style="font-size:18px">\ud83d\udcb3</span></div><span class="gym-pay-item-label">Credit or debit card</span><span style="color:#999;font-size:20px">\u203a</span></div><div class="gym-pay-add-item" onclick="window._payConnectPayPal()"><div class="gym-pay-add-item-icon" style="background:#e3f2fd"><span style="color:#003087;font-size:14px;font-weight:800">P</span></div><span class="gym-pay-item-label">PayPal</span><span style="color:#999;font-size:20px">\u203a</span></div><div class="gym-pay-add-item" onclick="window._payRedeemGiftCard()"><div class="gym-pay-add-item-icon" style="background:#f3e5f5"><span style="font-size:18px">\ud83c\udf81</span></div><span class="gym-pay-item-label">Gift card</span><span style="color:#999;font-size:20px">\u203a</span></div></div><div id="gym-pay-card-sheet" style="display:none"><div class="gym-pay-add-back" onclick="window._paySheetShowAdd()"><span style="color:#000;font-size:22px">\u2190</span><span class="gym-pay-add-title">Add a payment method</span></div><div style="padding:16px 20px 8px"><div style="color:#000;font-size:26px;font-weight:800;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;line-height:1.2">Add credit or<br>debit card</div></div><div style="padding:8px 20px"><div style="margin-bottom:16px"><label style="color:#333;font-size:13px;font-weight:600;display:block;margin-bottom:6px">Card number</label><div id="gym-pay-inline-card-number" style="padding:14px 16px;background:#f5f5f5;border:1px solid #ddd;border-radius:8px;min-height:20px"></div></div><div style="display:flex;gap:12px;margin-bottom:16px"><div style="flex:1"><label style="color:#333;font-size:13px;font-weight:600;display:block;margin-bottom:6px">Exp. date</label><div id="gym-pay-inline-expiry" style="padding:14px 16px;background:#f5f5f5;border:1px solid #ddd;border-radius:8px;min-height:20px"></div></div><div style="flex:1"><div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><label style="color:#333;font-size:13px;font-weight:600">Security code</label><span style="color:#999;font-size:14px;cursor:help" title="3-digit code on back of card">\u2753</span></div><div id="gym-pay-inline-cvc" style="padding:14px 16px;background:#f5f5f5;border:1px solid #ddd;border-radius:8px;min-height:20px"></div></div></div><div style="margin-bottom:16px"><label style="color:#333;font-size:13px;font-weight:600;display:block;margin-bottom:6px">Country</label><select id="gym-pay-inline-country" style="width:100%;padding:14px 16px;background:#f5f5f5;border:1px solid #ddd;border-radius:8px;font-size:15px;color:#333;-webkit-appearance:none;appearance:none;cursor:pointer"><option value=\'GB\' selected>United Kingdom</option><option value=\'US\'>United States</option><option value=\'IE\'>Ireland</option><option value=\'DE\'>Germany</option><option value=\'FR\'>France</option><option value=\'ES\'>Spain</option><option value=\'IT\'>Italy</option><option value=\'NL\'>Netherlands</option><option value=\'AU\'>Australia</option><option value=\'CA\'>Canada</option></select></div><div style="margin-bottom:16px"><label style="color:#333;font-size:13px;font-weight:600;display:block;margin-bottom:6px">Postcode</label><input id="gym-pay-inline-postcode" type="text" style="width:100%;padding:14px 16px;background:#f5f5f5;border:1px solid #ddd;border-radius:8px;font-size:15px;color:#333;outline:none;box-sizing:border-box" /></div><div style="margin-bottom:8px"><label style="color:#333;font-size:13px;font-weight:600;display:block;margin-bottom:6px">Nickname (optional)</label><input id="gym-pay-inline-nickname" type="text" style="width:100%;padding:14px 16px;background:#f5f5f5;border:1px solid #ddd;border-radius:8px;font-size:15px;color:#333;outline:none;box-sizing:border-box" /></div></div><button id="gym-pay-inline-save" class="gym-pay-save-btn" onclick="window._paySheetSaveCard()" style="opacity:.5;pointer-events:none">Add card</button><p id="gym-pay-inline-error" style="color:#ef4444;font-size:13px;padding:0 20px;display:none"></p><div style="text-align:center;padding:8px 0 16px"><button onclick="window._paySheetShowAdd()" style="background:none;border:none;color:#999;font-size:14px;cursor:pointer;padding:8px 16px">Cancel</button></div></div></div></div>';
   document.body.appendChild(div.firstChild);
 };
 window.openPaySheet=function(){
@@ -3827,6 +3886,31 @@ window.openPaySheet=function(){
   }
   // Always show main view first
   window._paySheetShowMain();
+  /* What am I paying, and what have I got?
+     The sheet said "Pay with" and printed "ScanGym Credits: £0.00" as a
+     hard-coded string — so a customer with credit was told they had none, and
+     nobody was ever shown the amount before choosing how to pay it. Uber puts
+     the total at the top of this sheet for exactly that reason. Both numbers
+     come from live state now, and a number we cannot read is left blank rather
+     than printed as zero. */
+  try{
+    var dueEl=document.getElementById('gym-pay-due');
+    if(dueEl){
+      var gbs2=window._gymBookingState||{};
+      var g2=state.currentGym||null;
+      var amt=(g2&&typeof sgGymDayPrice==='function')?sgGymDayPrice(g2):'';
+      var passName={day:'day pass','3day':'3-day pass',weekly:'weekly pass',monthly:'monthly pass'}[gbs2.selectedPass||'day']||'day pass';
+      dueEl.textContent=amt?(amt+' \u00b7 '+passName+(g2&&g2.name?' at '+g2.name:'')):'';
+    }
+    var credEl=document.getElementById('gym-pay-credits');
+    if(credEl){
+      credEl.textContent='ScanGym Credits: \u2026';
+      fetch('/api/wallet',{credentials:'include'}).then(function(r){return r.ok?r.json():null;}).then(function(d){
+        var bal=d&&(d.balance!=null?d.balance:(d.wallet&&d.wallet.balance));
+        credEl.textContent=(bal!=null)?('ScanGym Credits: \u00a3'+Number(bal).toFixed(2)):'ScanGym Credits';
+      }).catch(function(){credEl.textContent='ScanGym Credits';});
+    }
+  }catch(e){}
   // ═══ Inject saved cards (Uber-style: brand icon + last4 + checkmark) ═══
   const savedArea=document.getElementById('gym-pay-saved-cards');
   if(savedArea&&state.user){
@@ -4517,7 +4601,11 @@ window.showCalendarPicker=async function(gymId){
         </div>
         <!-- FIX #14: Popular Times in Calendar Picker -->
         <div id="sg-cal-popular" style="padding:0 24px 12px;display:none">
-          <div style="color:rgba(255,255,255,.4);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">📊 Popular times <span id="sg-cal-popular-day" style="color:rgba(255,255,255,.2)"></span></div>
+          <!-- Honesty: _renderPopularTimes() generates this curve from a hash of
+               the gym's name, not from Google's popular-times data (we do not
+               receive it). It is a useful shape — gyms really do peak at 7am and
+               6pm — but it is a typical pattern, so it says so. -->
+          <div style="color:rgba(255,255,255,.4);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">📊 Typical gym busyness <span id="sg-cal-popular-day" style="color:rgba(255,255,255,.2)"></span></div>
           <div id="sg-cal-popular-bars" style="display:flex;align-items:flex-end;gap:2px;height:40px"></div>
           <div id="sg-cal-popular-hours" style="display:flex;justify-content:space-between;margin-top:3px"></div>
           <div style="text-align:right;margin-top:2px"><span id="sg-cal-popular-live" style="font-size:10px;color:rgba(255,255,255,.3)"></span></div>
@@ -8226,7 +8314,7 @@ window._initBookMapCarousel=function(){
       var dots=card.querySelectorAll('.tt-dot');
       dots.forEach(function(d,j){if(j===idx)d.classList.add('act');else d.classList.remove('act');});
       var counter=card.querySelector('.tt-counter');
-      if(counter)counter.textContent='\u2190 '+(idx+1)+' of '+cards.length+' \u2192';
+      if(counter)counter.textContent=_sgCounterText(idx,cards.length);
     });
     // Move search bar to current card
     var search=document.getElementById('tt-search');
@@ -10875,6 +10963,14 @@ function _startGPSWatch(highAccuracy){
               state.searchQuery=locationName;
               state.searchResults=mergedGyms;
               render();
+              /* Near Me used to re-run GPS in silence: the cards changed and
+                 nothing said which place they were for, so a wrong fix (a VPN,
+                 a phone that last saw GPS three towns ago) looked like correct
+                 results. Uber confirms the pin; this names the place and gives
+                 the one tap that corrects it. */
+              if(locationName&&locationName!=='Near You'&&typeof sgToast==='function'){
+                sgToast('\ud83d\udccd '+mergedGyms.length+' gyms near '+locationName+' \u00b7 wrong place? Tap Search','info',4000);
+              }
               console.log('[GPS] Upgraded to GPS results: H3:',h3Gyms.length,'Live:',liveGyms.length,'Merged:',mergedGyms.length,'radius:',searchRadius+'m','location:',locationName);
               // Perf: Defer travel times to idle — GPS results already render immediately
               _scheduleIdle(function(){fetchRealTravelTimes(gps.lat,gps.lng);});
@@ -11448,6 +11544,16 @@ window._openSearchOverlay=function(){
       +'<div class="sso-gps-sub">Find gyms near you automatically</div></div>'
       +'</div>';
 
+    /* Saved gyms.
+       Save has been writing to /api/referrals/gyms/save for months and nothing
+       in the app ever read it back, so a saved gym was saved into a hole. This
+       is the read side: the sheet a visitor already opens to find a gym is
+       where their own list belongs. Loaded after paint (see below) so the
+       sheet never waits on a request. */
+    html+='<div class="sso-section" id="sso-saved-section" style="display:none">'
+      +'<div class="sso-section-title">Saved Gyms</div>'
+      +'<div id="sso-saved-list"></div></div>';
+
     // Recent searches
     var rec=_getRecentSearches();
     if(rec.length>0){
@@ -11486,6 +11592,30 @@ window._openSearchOverlay=function(){
     html+='</div></div>';
 
     body.innerHTML=html;
+    window._ssoLoadSaved();
+  };
+
+  /** Fill the Saved Gyms section, or leave it hidden when there is nothing. */
+  window._ssoLoadSaved=function(){
+    fetch('/api/referrals/gyms/saved',{credentials:'include'})
+      .then(function(r){return r.ok?r.json():null;})
+      .then(function(d){
+        var list=(d&&(d.gyms||d.saved||d.savedGyms))||[];
+        if(!list.length)return;
+        var sec=document.getElementById('sso-saved-section');
+        var host=document.getElementById('sso-saved-list');
+        if(!sec||!host)return;
+        host.innerHTML=list.slice(0,6).map(function(g){
+          var id=String(g.gym_id||g.gymId||g.id||'').replace(/'/g,'');
+          var nm=String(g.gym_name||g.gymName||g.name||'Saved gym');
+          return '<div class="sso-item" onclick="window._closeSearchOverlay();'
+            +(id?'openGymDirectOverlay(\''+id+'\',true)':'window._ssoSelectSearch(\''+nm.replace(/'/g,'')+'\')')+'">'
+            +'<div class="sso-item-icon">\ud83d\udd16</div>'
+            +'<div class="sso-item-text"><div class="sso-item-name">'+nm+'</div>'
+            +'<div class="sso-item-sub">Saved</div></div></div>';
+        }).join('');
+        sec.style.display='';
+      }).catch(function(){});
   };
 
   // FIX #1: Search bar speed improvements — AbortController, cache, fuzzy matching, skeleton
@@ -21151,9 +21281,11 @@ window._sgSaveGym=function(gymId,gymName,btnEl){
     if(d.saved){
       if(iconEl)iconEl.textContent='✅';
       if(labelEl){labelEl.textContent='Saved';labelEl.style.color='#4ade80';}
-      sgToast('💪 Saving branded image…','success',2000);
-      // TikTok-style: watermark image with ScanGym branding and download
-      window._sgDownloadBrandedImage(gymId,gymName);
+      /* Tapping Save used to download a watermarked image to the visitor's
+         phone. That is a creator action (it is how ScanSquad gets a post-ready
+         asset); for a customer it is a file they did not ask for. Say where
+         the gym went instead, which is now a real place they can look. */
+      sgToast('🔖 Saved — find it under Saved Gyms in search','success',2600);
     }else{
       if(iconEl)iconEl.textContent='🔖';
       if(labelEl){labelEl.textContent='Save';labelEl.style.color='';}
@@ -21273,10 +21405,29 @@ window._sgShareReview=function(reviewId){
 };
 window._sgShareAffiliateLink=function(gymId,gymName){window._sgShareGymLink(gymId,gymName,true);};
 window._sgShareGymLink=function(gymId,gymName,affiliate){
-  /* A signed-in customer sharing a gym should earn from it: default the plain
-     Share button to their own referral deep link. Signed out it stays a clean
-     link (no account = no handle to attribute to). */
-  if(affiliate===undefined&&typeof state!=='undefined'&&state&&state.user)affiliate=true;
+  /* Share and "Share gym" were two buttons doing the same job with different
+     silent defaults — one plain, one affiliate — so which link went out
+     depended on which button you happened to find. One control now, and the
+     choice is the customer's: plain link, or the one they earn from. Asked
+     once per session; "affiliate" passed explicitly still wins, so the
+     Creator tab's own affiliate action is unchanged. */
+  if(affiliate===undefined&&typeof state!=='undefined'&&state&&state.user){
+    var askedKey='sg_share_choice';
+    var remembered=null;
+    try{remembered=sessionStorage.getItem(askedKey);}catch(e){}
+    if(remembered==='plain'||remembered==='affiliate'){
+      affiliate=(remembered==='affiliate');
+    }else if(typeof sgBottomPopup==='function'){
+      var safe=String(gymName||'').replace(/'/g,'');
+      sgBottomPopup('Share '+safe,
+        '<p style="color:rgba(255,255,255,.55);font-size:14px;line-height:1.5;margin-bottom:16px">Send a plain link, or your own link so you earn 25% when they book.</p>'
+        +'<button onclick="try{sessionStorage.setItem(\'sg_share_choice\',\'affiliate\')}catch(e){};document.getElementById(\'sg-bottom-popup\').remove();window._sgShareGymLink(\''+gymId+'\',\''+safe+'\',true)" style="width:100%;background:#FF6D00;color:#fff;border:none;padding:14px;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:10px">\ud83d\udcb0 With my link \u2014 I earn on bookings</button>'
+        +'<button onclick="try{sessionStorage.setItem(\'sg_share_choice\',\'plain\')}catch(e){};document.getElementById(\'sg-bottom-popup\').remove();window._sgShareGymLink(\''+gymId+'\',\''+safe+'\',false)" style="width:100%;background:rgba(255,255,255,.08);color:#fff;border:none;padding:14px;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer">\ud83d\udd17 Just the link</button>');
+      return;
+    }else{
+      affiliate=true;
+    }
+  }
   // Affiliate share needs an account (the ?ref= handle comes from the user)
   if(affiliate&&!state.user){
     window._pendingShareGym={gymId:gymId,gymName:gymName,affiliate:true};
@@ -21326,7 +21477,31 @@ window._sgShareGymLink=function(gymId,gymName,affiliate){
     link=baseUrl+'/gym/'+gymId;
   }
 
-  var shareText='Check out '+gymName+' on ScanGym! 🏋️ No membership needed, just scan & train:';
+  /* A bare "check this out" link asks the friend to do the work. Airbnb sends
+     the price, the rating and the place with the link, and the message itself
+     does the selling. Everything here is already loaded for the card, so this
+     costs nothing extra; anything we do not know is simply left out rather
+     than filled with a guess. */
+  var shareText=(function(){
+    try{
+      var g=(state.gyms||[]).find(function(x){return (x.place_id||x.id)===gymId;})||
+            ((state.currentGym&&((state.currentGym.place_id||state.currentGym.id)===gymId))?state.currentGym:null);
+      var bits=[];
+      if(g){
+        var price=(typeof sgGymDayPrice==='function')?sgGymDayPrice(g):'';
+        if(price)bits.push(price+' day pass');
+        var r=Number(g.rating)||0;
+        if(r>0)bits.push('\u2b50 '+r.toFixed(1)+(g.reviews?' ('+g.reviews+' reviews)':''));
+        var area=(typeof sgGymLocality==='function')?sgGymLocality(g):'';
+        if(area)bits.push(area);
+        if(g.is24Hours===true||(g.opening_hours&&g.opening_hours.is24Hours===true))bits.push('open 24/7');
+      }
+      var head=gymName+' on ScanGym';
+      return bits.length
+        ? head+' \u2014 '+bits.join(' \u00b7 ')+'. No membership, just scan and train:'
+        : head+' \ud83c\udfcb\ufe0f No membership needed, just scan & train:';
+    }catch(e){return 'Check out '+gymName+' on ScanGym! \ud83c\udfcb\ufe0f No membership needed, just scan & train:';}
+  })();
 
   // Use native share if available, otherwise copy
   if(navigator.share){

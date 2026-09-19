@@ -118,6 +118,11 @@ router.get('/health', optionalAuth, async (req, res) => {
   const quota = await jobs.quotaFor(req, KIND);
   const allowed = await musicAllowed();
   const creatorBudget = await spend.budgetFor(req);
+  /* Quote the row that will really run. Eleven Music direct ($0.30/min) and
+     the same model through fal ($0.60/min, billed per whole minute) share a
+     label, so the sheet used to quote the direct price on a deployment where
+     only fal is reachable — half the real cost. */
+  const { isConfigured: musicReachable } = await musicProviders();
   res.json({
     available: allowed.ok,
     reason: allowed.ok ? undefined : allowed.reason,
@@ -130,7 +135,14 @@ router.get('/health', optionalAuth, async (req, res) => {
     options: ALLOWED,
     defaults: DEFAULTS,
     budget: creatorBudget,
-    models: spend.annotate(models.catalogueFor(KIND, { minutes: LENGTH_MS[DEFAULTS.length] / 60000 }), creatorBudget),
+    models: spend.annotate(
+      models.catalogueFor(
+        KIND,
+        { minutes: LENGTH_MS[DEFAULTS.length] / 60000 },
+        (m) => musicReachable(m.provider),
+      ),
+      creatorBudget,
+    ),
   });
 });
 
