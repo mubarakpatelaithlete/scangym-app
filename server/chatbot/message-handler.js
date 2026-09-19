@@ -431,14 +431,43 @@ function pickCityLabel(gyms) {
   return best;
 }
 
-function formatGymList(gyms, platform, offset = 0) {
+/**
+ * The customer asked for "Bolton", so the answer has to say Bolton.
+ *
+ * Google hands back whichever suburb each gym sits in, so counting the most
+ * common one used to name the whole search after a neighbour of the place the
+ * customer typed ("Found 20 gyms in Farnworth" for a Bolton search). Echoing
+ * what they typed is both friendlier and impossible to get wrong; the derived
+ * city stays as a fallback for searches with no usable query (a dropped pin,
+ * pagination after a restart).
+ */
+function placeLabel(gyms, query) {
+  const typed = String(query || '')
+    .replace(/[?!.,]+$/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // Postcodes, coordinates and "near me" read badly in a headline; a plain
+  // place name does not.
+  const unusable = !typed
+    || typed.length > 40
+    || /\d/.test(typed)
+    || /\b(near|around)\s+me\b/i.test(typed)
+    || /^(me|here|nearby|gym|gyms)$/i.test(typed);
+
+  if (unusable) return pickCityLabel(gyms);
+
+  return typed.replace(/\b[a-z]/g, (c) => c.toUpperCase());
+}
+
+function formatGymList(gyms, platform, offset = 0, query = '') {
   if (!gyms || gyms.length === 0) {
     return "😕 No gyms found in that area.\n\nTry a different city or neighbourhood?\nExamples: \"London\", \"Manchester city centre\", \"New York\"";
   }
   
   const count = Math.min(5, gyms.length - offset);
   const showing = gyms.slice(offset, offset + count);
-  const cityName = pickCityLabel(gyms);
+  const cityName = placeLabel(gyms, query);
   
   let text = '';
   if (offset === 0) {
@@ -551,7 +580,7 @@ async function handleMessage(userId, text, meta = {}) {
         const newOffset = (session.lastResultsOffset || 0) + 5;
         if (newOffset < session.lastResults.length) {
           session.lastResultsOffset = newOffset;
-          result = { text: formatGymList(session.lastResults, meta.platform, newOffset), data: { gyms: session.lastResults } };
+          result = { text: formatGymList(session.lastResults, meta.platform, newOffset, session.lastQuery), data: { gyms: session.lastResults } };
         } else {
           result = { text: "That's all the gyms I found! 🏋️\n\nTry searching another area — just type a city name.\nOr visit scangym.com for the full map view with photos! 🗺️" };
         }
@@ -722,8 +751,9 @@ async function handleSearch(session, text, entities, meta) {
   
   session.lastResults = data.gyms || [];
   session.lastResultsOffset = 0;
+  session.lastQuery = query;
   
-  return { text: formatGymList(data.gyms, meta.platform, 0), data: { gyms: data.gyms } };
+  return { text: formatGymList(data.gyms, meta.platform, 0, query), data: { gyms: data.gyms } };
 }
 
 // ─── Book handler ────────────────────────────────────────────
@@ -885,4 +915,5 @@ function getFallbackText() {
 
 module.exports = { handleMessage, detectIntent, extractEntities, INTENTS,
   pickCityLabel,
+  placeLabel,
 };

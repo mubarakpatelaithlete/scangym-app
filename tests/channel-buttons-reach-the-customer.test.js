@@ -36,7 +36,7 @@ test('the city label is what the results agree on, never a street', () => {
 
 test('formatGymList uses the agreed label, not gyms[0].city', () => {
   const src = read('server/chatbot/message-handler.js');
-  assert.match(src, /const cityName = pickCityLabel\(gyms\)/);
+  assert.match(src, /const cityName = placeLabel\(gyms, query\)/);
   assert.ok(!/const cityName = gyms\[0\]\?\.city/.test(src), 'the first result must not name the city on its own');
 });
 
