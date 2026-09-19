@@ -238,3 +238,34 @@ test('the profile rail draws its channel icons in white, like every other rail',
     assert.ok(new RegExp(`${key}: '<svg`).test(profileRail), `${key} lost its icon`);
   }
 });
+
+test('the profile rails use the shared circle, not hand-built 46px emoji buttons', () => {
+  // The owner asked the same question once per tab; these two rails in the app
+  // bundle were the last place the answer was "because it is built by hand".
+  const app = fs.readFileSync(path.join(PUB, 'app.ctr576.js'), 'utf8');
+  const profileRails = app.slice(app.indexOf('function MoreHubPage()'),
+                                 app.indexOf('CREATOR EARNINGS DASHBOARD'));
+  assert.ok(!/width:46px;height:46px/.test(profileRails),
+    'a profile rail button is back to a hand-set 46px circle');
+  assert.ok(!/rgba\(255,109,0,\.15\)|rgba\(34,197,94,\.12\)/.test(profileRails),
+    'a profile rail button is tinted orange or green again');
+  for (const icon of ['film', 'shield', 'grid', 'chat', 'more', 'search', 'card', 'help']) {
+    assert.ok(profileRails.includes(`sgRailCircle('${icon}'`),
+      `the profile rail stopped drawing ${icon} from the shared table`);
+  }
+  // One door to /login on the signed-out rail, not two side by side.
+  const signedOutRail = profileRails.slice(profileRails.indexOf('RIGHT-SIDE BUTTONS \u2014 TikTok style'),
+                                           profileRails.indexOf('BOTTOM \u2014 Stats + CTA'));
+  const doors = (signedOutRail.match(/navigate\('\/login'\)/g) || []).length;
+  assert.equal(doors, 0, 'the signed-out rail has a duplicate sign-in door again');
+  // The caption area clears the button band instead of sitting under it.
+  assert.ok(!/position:absolute;bottom:12px;left:16px;right:70px/.test(profileRails),
+    'the profile stats are back underneath the button band');
+});
+
+test('every icon the profile rails ask for exists in the one table', () => {
+  for (const icon of ['film', 'shield', 'grid', 'chat', 'more', 'search', 'card', 'help', 'person']) {
+    assert.ok(new RegExp(`\\n  ${icon}:I\\(`).test(railUi),
+      `${icon} is missing from sg-rail-ui.js's table, so that button would fall back to emoji`);
+  }
+});
