@@ -45,6 +45,9 @@ test('a downloaded reel carries the orange disc logo, not just text', () => {
     'the watermark logo asset is missing — downloads would fall back to text');
   assert.match(wm, /filter_complex/, 'the logo is not overlaid onto the video');
   assert.match(wm, /scale2ref/, 'the logo is not scaled to the video, so it will be wrong on 1080p');
-  assert.match(wm, /_wm3_/, 'the cache key was not bumped, so old text-only files keep being served');
+  // The tag is version-checked in saved-reel-carries-the-mark.test.js; here we
+  // only require that cached files are keyed by stamp version at all, so a
+  // design change can never keep serving the previous stamp.
+  assert.match(wm, /'wm\d+'/, 'cached files are not keyed by stamp version');
   assert.match(wm, /hasLogo/, 'a missing asset would produce an unbranded download with no fallback');
 });
