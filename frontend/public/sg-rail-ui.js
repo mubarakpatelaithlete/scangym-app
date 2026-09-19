@@ -789,9 +789,10 @@ css.id='sg-r4-css';
 css.textContent=
   /* #1 */ '.tt-logo{display:none!important}'+
   /* #3 the "More" circle is neutral — now stated once, in one-button.css */
-  /* #4 */ '#sg-book-summary{position:fixed;left:0;right:0;bottom:calc(56px + 52px + env(safe-area-inset-bottom,0px));z-index:8998;display:none;align-items:center;justify-content:center;height:26px;background:rgba(10,10,18,.96);border-top:1px solid rgba(255,255,255,.06);color:rgba(255,255,255,.78);font-size:12px;font-weight:600;letter-spacing:.2px;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);pointer-events:none}'+
-  'body.sg-r4-summary #sg-book-summary{display:flex}'+
-  'body.sg-r4-summary.sg-cb-active .sg-tab-content{bottom:calc(56px + 52px + 26px + env(safe-area-inset-bottom,0px))!important}'+
+  /* #4 was a fixed "Today · Day Pass · £X" strip above the Book button. The
+     owner asked for it gone (owner, 2026-09-19): the same three facts are on
+     the gym card above it and in the Book button itself, and the strip was a
+     third bar stacked between the row and the nav. */
   /* #1 Book-tap loading feedback */
   '#sg-r4-book-spin{position:absolute;inset:0;display:none;align-items:center;justify-content:center;gap:10px;color:#fff;font-size:16px;font-weight:700;z-index:3}'+
   '#sg-continue-banner.sg-r4-loading .sg-cb-text,#sg-continue-banner.sg-r4-loading .sg-cb-price,#sg-continue-banner.sg-r4-loading .sg-cb-arrow{opacity:0}'+
@@ -802,55 +803,6 @@ css.textContent=
   '.sg-r4-ring{position:absolute;inset:-7px;border-radius:50%;border:3px solid rgba(34,197,94,.6);pointer-events:none;animation:sgR4Ring 1.1s ease-out 2}'+
   '@keyframes sgR4Ring{0%{transform:scale(.85);opacity:.85}100%{transform:scale(1.7);opacity:0}}';
 document.head.appendChild(css);
-
-var bar=document.createElement('div');
-bar.id='sg-book-summary';
-document.body.appendChild(bar);
-
-function currentTab(){
-  var a=document.querySelector('.sg-tab-item.active .sg-tab-label');
-  return a?a.textContent.trim().toLowerCase():'';
-}
-
-function visibleCardPrice(){
-  var c=document.getElementById('bm-carousel');
-  if(!c)return null;
-  var cards=c.querySelectorAll('.tt-card[data-price]');
-  if(!cards.length)return null;
-  var st=c.scrollTop,vh=c.clientHeight,best=null,bo=0;
-  cards.forEach(function(k){
-    var t=k.offsetTop,h=k.offsetHeight;
-    var o=Math.max(0,Math.min(t+h,st+vh)-Math.max(t,st));
-    if(o>bo){bo=o;best=k;}
-  });
-  var p=best&&best.getAttribute('data-price');
-  return (p&&p!=='undefined'&&p!=='null')?p:null;
-}
-
-function summaryText(){
-  var gbs=window._gymBookingState||{};
-  var date=gbs.selectedDate;
-  var dLabel='Today';
-  if(date&&date!=='Today'){
-    var dp=String(date).split('-');
-    if(dp.length===3){
-      var mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-      dLabel=parseInt(dp[2])+' '+(mo[parseInt(dp[1])-1]||dp[1]);
-    }else{dLabel=date;}
-  }
-  // Show friendly 'Today' when the selected date is today
-  (function(){
-    var d=new Date();
-    var mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    var todayLbl=d.getDate()+' '+mo[d.getMonth()];
-    if(dLabel===todayLbl||!date)dLabel='Today';
-  })();
-  var passMap={day:'Day Pass','3day':'3-Day Pass',weekly:'Weekly Pass',monthly:'Monthly Pass'};
-  var pass=passMap[gbs.selectedPass||'day']||'Day Pass';
-  var price=visibleCardPrice();
-  if(!price&&typeof window.sgPrice==='function'){try{var dpr=window.sgPrice('day');price=dpr&&dpr.display;}catch(e){}}
-  return dLabel+' \u00b7 '+pass+(price?(' \u00b7 '+price):'');
-}
 
 function ensureBookSpin(){
   var b=document.getElementById('sg-continue-banner');
@@ -900,13 +852,7 @@ function tick(){
   wrapBookingCheckout();
   wrapPay();
   celebrateSuccess();
-  if(currentTab()==='book'){
-    var t=summaryText();
-    if(bar.textContent!==t)bar.textContent=t;
-    document.body.classList.add('sg-r4-summary');
-  }else{
-    document.body.classList.remove('sg-r4-summary');
-  }
+  /* The tab check only drove the removed summary strip. */
 }
 
 return tick;
