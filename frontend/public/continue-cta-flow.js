@@ -674,8 +674,14 @@ window._removeContinueBanner=_removeContinueBanner;
 
 // Banner animation styles
 var _bannerStyle=document.createElement('style');
+/* #7: This used to animate `#sg-continue-banner:not(.sg-cb-hidden)`, i.e. a rule
+   that re-fires every time any class on the banner changes — and the rail's
+   800ms heartbeat touches it constantly. The button therefore slid 20px up on a
+   loop and never settled: taps (and Playwright, which reported "element is not
+   stable" for 30s straight) could land on nothing. One-shot class instead,
+   removed when it finishes, so the button is still after the first paint. */
 _bannerStyle.textContent=''
-  +'#sg-continue-banner:not(.sg-cb-hidden){'
+  +'#sg-continue-banner.sg-cb-in{'
   +'animation:ctaBannerIn .4s cubic-bezier(.32,.72,0,1) both;'
   +'}'
   +'@keyframes ctaBannerIn{'
@@ -683,5 +689,21 @@ _bannerStyle.textContent=''
   +'to{opacity:1;transform:translateY(0)}'
   +'}';
 document.head.appendChild(_bannerStyle);
+
+/* Add the entry animation once, when the banner appears, and take it off again. */
+(function(){
+  function arm(el){
+    if(!el||el.getAttribute('data-sg-cb-in'))return;
+    el.setAttribute('data-sg-cb-in','1');
+    el.classList.add('sg-cb-in');
+    el.addEventListener('animationend',function(){el.classList.remove('sg-cb-in');},{once:true});
+    setTimeout(function(){el.classList.remove('sg-cb-in');},600);
+  }
+  if(typeof MutationObserver==='function'){
+    new MutationObserver(function(){arm(document.getElementById('sg-continue-banner'));})
+      .observe(document.documentElement,{childList:true,subtree:true});
+  }
+  arm(document.getElementById('sg-continue-banner'));
+})();
 
 })();
