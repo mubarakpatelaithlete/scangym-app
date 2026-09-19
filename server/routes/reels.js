@@ -780,62 +780,92 @@ router.get('/cdn-proxy/:cdnKey', (req, res) => {
 
 /**
  * GET /api/reels/download/:cdnKey
- * M5 FIX: Server-side download endpoint for iOS compatibility.
- * iOS Safari blocks <a download> on cross-origin URLs and sometimes on blob URLs.
- * This endpoint proxies the CDN video with Content-Disposition: attachment,
- * which forces the browser to download rather than play inline.
+ * Server-side download endpoint (iOS Safari blocks <a download> cross-origin).
  *
- * 🟠 WATERMARK: All downloaded reels now include ScanGym orange branding
- * (like TikTok's @username watermark). Uses FFmpeg drawtext overlay.
- * Watermarked files are cached so repeat downloads are instant.
- * Pass ?raw=1 to skip watermark (internal/admin use only).
+ * This is the "Save" path, and it is the ONLY path a customer has to the file,
+ * which is how TikTok works: the clean master never leaves through Save, the
+ * stamp is composited at request time and cached.
+ *
+ * Two holes closed on 2026-09-19:
+ *  1. If FFmpeg threw, this route fell through to the raw CDN proxy - the
+ *     download still succeeded, so nobody noticed, and the saved clip carried
+ *     no link at all. Now a failure is retried as a text-only stamp and, if
+ *     that fails too, answered with 503 "still preparing". Better a customer
+ *     taps Save twice than a video circulating with nobody's link on it.
+ *  2. ?raw=1 skipped the stamp with no auth check, so anyone who read the URL
+ *     could strip the branding. The unstamped file now has its own
+ *     admin-only route below.
  */
 router.get('/download/:cdnKey', async (req, res) => {
   const cdnKey = req.params.cdnKey.replace(/[^a-zA-Z0-9_-]/g, '');
   const filename = (req.query.name || 'scangym-reel').replace(/[^a-zA-Z0-9_-]/g, '_') + '.mp4';
-  const skipWatermark = req.query.raw === '1';
   // P3 Link Sticker: personalise the watermark with the creator's /r/ link
   const linkHandle = (req.query.handle || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 60);
 
   const origin = req.headers.origin;
   const allowedOrigins = ['https://scangym.com', 'https://www.scangym.com'];
-  if (origin && allowedOrigins.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  } else {
-    res.setHeader('Access-Control-Allow-Origin', 'https://scangym.com');
-  }
-  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-  res.setHeader('Content-Type', 'video/mp4');
+  res.setHeader('Access-Control-Allow-Origin',
+    origin && allowedOrigins.includes(origin) ? origin : 'https://scangym.com');
 
-  // ── Watermarked download (default) ──
-  if (!skipWatermark) {
+  const { getWatermarkedVideo } = require('../lib/video-watermark');
+  let stampedPath;
+  try {
+    stampedPath = await getWatermarkedVideo(cdnKey, linkHandle);
+  } catch (err) {
+    console.error('[reels/download] stamp failed for', cdnKey, '-', err.message, '- retrying text-only');
     try {
-      const { getWatermarkedVideo } = require('../lib/video-watermark');
-      const wmPath = await getWatermarkedVideo(cdnKey, linkHandle);
-      const stat = require('fs').statSync(wmPath);
-      res.setHeader('Content-Length', stat.size);
-      res.setHeader('Cache-Control', 'public, max-age=86400'); // cache 24h
-      return require('fs').createReadStream(wmPath).pipe(res);
-    } catch (err) {
-      console.warn('Watermark failed, falling back to raw download:', err.message);
-      // Fall through to raw CDN proxy below
+      stampedPath = await getWatermarkedVideo(cdnKey, linkHandle, { safeMode: true });
+      console.warn('[reels/download] served text-only stamp for', cdnKey);
+    } catch (err2) {
+      console.error('[reels/download] text-only stamp also failed for', cdnKey, '-', err2.message);
+      // Content-Type/Disposition are set only below, so this JSON is never
+      // saved to the customer's phone as a broken .mp4.
+      return res.status(503).json({
+        error: 'still_preparing',
+        message: 'Your video is still being prepared \u2014 tap Save again in a moment.',
+      });
     }
   }
 
-  // ── Raw CDN proxy (fallback / ?raw=1) ──
+  let stat;
+  try {
+    stat = fs.statSync(stampedPath);
+  } catch (err) {
+    return res.status(503).json({
+      error: 'still_preparing',
+      message: 'Your video is still being prepared \u2014 tap Save again in a moment.',
+    });
+  }
+
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.setHeader('Content-Type', 'video/mp4');
+  res.setHeader('Content-Length', stat.size);
+  res.setHeader('Cache-Control', 'public, max-age=86400'); // cache 24h
+  return fs.createReadStream(stampedPath).pipe(res);
+});
+
+/**
+ * GET /api/reels/download-clean/:cdnKey  (admin only)
+ * The unstamped master, for internal re-edits. Replaces the old public ?raw=1.
+ */
+router.get('/download-clean/:cdnKey', authenticateUser, requireAdmin, (req, res) => {
+  const cdnKey = req.params.cdnKey.replace(/[^a-zA-Z0-9_-]/g, '');
+  const filename = (req.query.name || 'scangym-reel-clean').replace(/[^a-zA-Z0-9_-]/g, '_') + '.mp4';
   const cdnUrl = `https://cdn.scangym.com/videos/${cdnKey}.mp4`;
-  res.setHeader('Cache-Control', 'no-cache');
 
   https.get(cdnUrl, (upstream) => {
     if (upstream.statusCode >= 400) {
       return res.status(upstream.statusCode).json({ error: 'Video not found' });
     }
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Type', 'video/mp4');
+    res.setHeader('Cache-Control', 'no-cache');
     if (upstream.headers['content-length']) {
       res.setHeader('Content-Length', upstream.headers['content-length']);
     }
     upstream.pipe(res);
   }).on('error', (err) => {
-    console.error('Download proxy error:', err.message);
+    console.error('Clean download proxy error:', err.message);
     res.status(502).json({ error: 'Download failed' });
   });
 });

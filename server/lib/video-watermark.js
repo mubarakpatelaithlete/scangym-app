@@ -91,44 +91,60 @@ const LOGO_PATH = path.join(__dirname, '..', 'assets', 'scangym-watermark.png');
  * Kept above the bottom edge where TikTok/Instagram put their own UI, and out of
  * the top-right corner where the app's own chrome sits.
  */
-function addWatermark(inputPath, outputPath, linkHandle) {
+function addWatermark(inputPath, outputPath, linkHandle, opts) {
   const safeHandle = (linkHandle || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 60);
   const urlText = safeHandle ? ('scangym.com/r/' + safeHandle) : 'scangym.com';
-  const hasLogo = fs.existsSync(LOGO_PATH);
+  /* safeMode = the retry after the full stamp failed. Text only: no second
+     input, no scale2ref, no overlay - the parts that break when a clip has an
+     odd pixel format or ffmpeg drops a filter between versions. A plain stamp
+     still carries the link, which is the whole point of stamping. */
+  const safeMode = !!(opts && opts.safeMode);
+  const hasLogo = !safeMode && fs.existsSync(LOGO_PATH);
+
+  /* TikTok's mark does not sit still: the logo drifts between corners every few
+     seconds so cropping one corner cannot remove it, and so a reposted clip
+     shows the mark wherever the viewer looks. Same idea here - phase A bottom
+     left, phase B top right, swapping every PHASE seconds. Commas inside an
+     ffmpeg expression have to be escaped or they read as filter separators. */
+  const PHASE = 6;
+  const phaseA = "enable='lt(mod(t\\," + (PHASE * 2) + ")\\," + PHASE + ")'";
+  const phaseB = "enable='gte(mod(t\\," + (PHASE * 2) + ")\\," + PHASE + ")'";
+
+  const linkText = (pos) =>
+    "drawtext=text='" + urlText + "':" +
+      'fontsize=h/44:' +
+      'fontcolor=0xFFFFFF@' + (safeHandle ? '0.85' : '0.65') + ':' +
+      'borderw=2:bordercolor=0x000000@0.35:' +
+      (pos === 'top'
+        ? 'x=w-tw-w*0.055:y=h*0.055:'
+        : 'x=w*0.055:y=h-th-h*0.055:') +
+      (pos === 'top' ? phaseB : phaseA);
+
   return new Promise((resolve, reject) => {
-    const textChain = [
-      // Personal booking link, directly under the mark.
-      "drawtext=text='" + urlText + "':" +
-        'fontsize=h/44:' +
-        'fontcolor=0xFFFFFF@' + (safeHandle ? '0.85' : '0.65') + ':' +
-        'borderw=2:bordercolor=0x000000@0.35:' +
-        'x=w*0.055:' +
-        'y=h-th-h*0.055',
-      // Attribution, bottom-right.
+    const attribution =
       "drawtext=text='\u00a9 ScanGym " + new Date().getFullYear() + "':" +
         'fontsize=h/56:' +
         'fontcolor=0xFFFFFF@0.5:' +
         'borderw=1:bordercolor=0x000000@0.3:' +
         'x=w-tw-w*0.04:' +
-        'y=h-th-h*0.03',
-    ].join(',');
+        'y=h-th-h*0.03';
+
+    // Drifting link line (follows the logo) + a fixed attribution line.
+    const textChain = [linkText('bottom'), linkText('top'), attribution].join(',');
 
     let args;
     if (hasLogo) {
-      // [0:v] video, [1:v] logo → scale the logo to 34% of the video width,
-      // fade it to 90% opacity, place it above the link text, then draw text.
       args = [
         '-i', inputPath,
         '-i', LOGO_PATH,
         '-filter_complex',
         /* scale2ref sizes the logo against the video itself (42% of its width),
-           so the stamp reads the same on a 720p and a 1080p clip. */
+           so the stamp reads the same on a 720p and a 1080p clip. split feeds
+           the same scaled logo to both corner overlays. */
         '[1:v][0:v]scale2ref=w=iw*0.42:h=ow/mdar[wmr][base];' +
-        '[wmr]format=rgba,colorchannelmixer=aa=0.9[wm];' +
-        '[base][wm]overlay=' +
-          'W*0.05:' +                       // left margin
-          'H-h-H*0.085:' +                  // sits just above the link line
-          'format=auto[stamped];' +
+        '[wmr]format=rgba,colorchannelmixer=aa=0.9,split=2[wmA][wmB];' +
+        '[base][wmA]overlay=W*0.05:H-h-H*0.085:' + phaseA + ':format=auto[ph1];' +
+        '[ph1][wmB]overlay=W*0.53:H*0.14:' + phaseB + ':format=auto[stamped];' +
         '[stamped]' + textChain + '[out]',
         '-map', '[out]',
         '-map', '0:a?',
@@ -141,8 +157,7 @@ function addWatermark(inputPath, outputPath, linkHandle) {
         outputPath,
       ];
     } else {
-      // Logo asset missing (should not happen): keep the text stamp rather than
-      // shipping an unbranded file.
+      // No logo asset, or the retry: keep a text stamp rather than ship a clean file.
       args = [
         '-i', inputPath,
         '-vf', "drawtext=text='ScanGym':fontsize=h/26:fontcolor=0xFF6D00@0.85:borderw=2:bordercolor=0x000000@0.35:x=w*0.055:y=h-th-h*0.10," + textChain,
@@ -155,9 +170,11 @@ function addWatermark(inputPath, outputPath, linkHandle) {
       if (err) {
         console.error('Watermark FFmpeg error:', err.message);
         if (fs.existsSync(outputPath) && fs.statSync(outputPath).size > 1000) return resolve();
+        try { fs.unlinkSync(outputPath); } catch {}
         return reject(new Error(`Watermark failed: ${err.message}`));
       }
       if (!fs.existsSync(outputPath) || fs.statSync(outputPath).size < 100) {
+        try { fs.unlinkSync(outputPath); } catch {}
         return reject(new Error('Watermark produced empty output'));
       }
       resolve();
@@ -173,10 +190,13 @@ function addWatermark(inputPath, outputPath, linkHandle) {
  * @param {string} cdnKey - The CDN key (filename without .mp4)
  * @returns {Promise<string>} Path to watermarked video file
  */
-async function getWatermarkedVideo(cdnKey, linkHandle) {
+async function getWatermarkedVideo(cdnKey, linkHandle, opts) {
   const safeHandle = (linkHandle || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 60);
-  // v2: cache key bumped when the stamp design changed (added © line)
-  const cachedPath = path.join(WATERMARK_DIR, safeHandle ? `${cdnKey}_wm3_${safeHandle}.mp4` : `${cdnKey}_wm3.mp4`);
+  const safeMode = !!(opts && opts.safeMode);
+  /* wm4: the stamp now drifts between corners, so older cached files are stale.
+     Safe-mode output is cached separately - it is the text-only version. */
+  const tag = 'wm4' + (safeMode ? 'safe' : '');
+  const cachedPath = path.join(WATERMARK_DIR, safeHandle ? `${cdnKey}_${tag}_${safeHandle}.mp4` : `${cdnKey}_${tag}.mp4`);
 
   // Serve from cache if available
   if (fs.existsSync(cachedPath) && fs.statSync(cachedPath).size > 1000) {
@@ -187,15 +207,10 @@ async function getWatermarkedVideo(cdnKey, linkHandle) {
   const cdnUrl = `https://cdn.scangym.com/videos/${cdnKey}.mp4`;
 
   try {
-    // Step 1: Download original from CDN
     await downloadVideo(cdnUrl, tmpInput);
-
-    // Step 2: Add watermark
-    await addWatermark(tmpInput, cachedPath, safeHandle);
-
+    await addWatermark(tmpInput, cachedPath, safeHandle, { safeMode });
     return cachedPath;
   } finally {
-    // Always clean up temp download
     try { fs.unlinkSync(tmpInput); } catch {}
   }
 }
