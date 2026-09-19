@@ -216,3 +216,25 @@ test("ScanSquad's create rail draws line icons from the one icon table, not emoj
   assert.ok(/\.sv-circle svg\{[^}]*--sg-btn-icon/.test(squadCreate),
     'the ScanSquad icon is not sized off the shared icon token');
 });
+
+test('the profile rail draws its channel icons in white, like every other rail', () => {
+  // "yes all white" (owner, 2026-09-19). These were each in their brand palette,
+  // so the profile column read as a different family from Share, Save and the
+  // ScanSquad row beside it.
+  const banned = [
+    '#29b6f6', '#7289da', '#e01e5a', '#36c5f0', '#2eb67d', '#ecb22e', '#5b5fc7',
+    '#4b53bc', '#d97757', '#F25022', '#7FBA00', '#00A4EF', '#FFB900', '#25f4ee',
+    '#fe2c55', '#e1306c', '#1877f2', '#fd5949', '#d6249f', '#285AEB', '#FF6D00'
+  ];
+  const icons = profileRail.slice(profileRail.indexOf('var ICONS = {'), profileRail.indexOf('};', profileRail.indexOf('var ICONS = {')));
+  for (const hex of banned) {
+    assert.ok(!icons.toLowerCase().includes(hex.toLowerCase()),
+      `the profile rail paints a channel icon ${hex} again`);
+  }
+  assert.ok(!/url\(#/.test(icons), 'a gradient fill is back in the profile rail icons');
+  // Every channel still has an icon — white, not missing.
+  for (const key of ['telegram', 'discord', 'slack', 'msteams', 'claude', 'msstore',
+                     'install', 'tiktok', 'instagram', 'facebook', 'everything']) {
+    assert.ok(new RegExp(`${key}: '<svg`).test(profileRail), `${key} lost its icon`);
+  }
+});
