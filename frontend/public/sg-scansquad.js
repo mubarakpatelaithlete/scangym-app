@@ -2234,8 +2234,13 @@ function CreatorFullPage(){
   // ScanSquad actually is and one way in instead.
   if(!u) return CreatorSignedOutPage();
   var name=u.full_name||u.email||'ScanSquad';
-  var refCode=u.referral_code||'creator123';
-  var refLink='scangym.com/r/'+refCode;
+  /* The server is the source of truth and calls it referralHandle (see
+     /api/auth/user); this page read only the snake_case field, found nothing,
+     and printed the placeholder. Live on 2026-09-19 the signed-in dashboard
+     showed "scangym.com/r/creator123" while the real handle was "frugah", so
+     anyone who copied the link from here earned the owner nothing. */
+  var refCode=u.referralHandle||u.referral_code||'';
+  var refLink=refCode?('scangym.com/r/'+refCode):'';
   var firstName=name.split(' ')[0];
   return `<div style="position:fixed;top:0;left:0;right:0;bottom:56px;background:#0a0a16;display:flex;flex-direction:column;overflow:hidden">
     <!-- Screen switcher. This tab used to carry a floating column of round
@@ -2244,7 +2249,7 @@ function CreatorFullPage(){
          The owner asked for the column gone, so the screens get a plain named
          strip instead: same destinations, visible names, nothing floating over
          the content. (owner, 2026-09-19) -->
-    <div id="creator-tabs" style="position:absolute;top:0;left:0;right:0;z-index:12;display:flex;gap:6px;padding:10px 12px;overflow-x:auto;scrollbar-width:none;background:linear-gradient(180deg,#0a0a16 60%,rgba(10,10,22,0));-webkit-overflow-scrolling:touch">
+    <div id="creator-tabs" style="position:absolute;top:0;left:0;right:0;z-index:12;display:flex;gap:6px;padding:10px 12px 10px 56px;overflow-x:auto;scrollbar-width:none;background:linear-gradient(180deg,#0a0a16 60%,rgba(10,10,22,0));-webkit-overflow-scrolling:touch">
       ${[['Home',0],['Analytics',1],['Content',2],['Earnings',3],['Storefront',4],['Assets',5]].map(function(t,i){
         return '<div class="creator-tab" data-screen='+t[1]+' onclick="_showCreatorScreen('+t[1]+')" style="flex:0 0 auto;padding:7px 14px;border-radius:999px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;background:'+(i===0?'rgba(255,255,255,.12)':'rgba(255,255,255,.04)')+';color:'+(i===0?'#fff':'rgba(255,255,255,.55)')+';border:1px solid rgba(255,255,255,.08)">'+t[0]+'</div>';
       }).join('')}
@@ -2282,10 +2287,10 @@ function CreatorFullPage(){
       <!-- Was a purple Copy button beside the link and a full-width Share
            button under it; the owner asked for both gone. The whole row is the
            button now: one tap copies the link, and it says so. -->
-      <div onclick="navigator.clipboard.writeText('https://${refLink}');var c=this.querySelector('[data-copy-hint]');if(c){c.textContent='Copied';setTimeout(function(){c.textContent='Tap to copy';},1500);}" style="display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:10px 12px;margin-bottom:10px;cursor:pointer">
+      ${refCode ? `<div onclick="navigator.clipboard.writeText('https://${refLink}');var c=this.querySelector('[data-copy-hint]');if(c){c.textContent='Copied';setTimeout(function(){c.textContent='Tap to copy';},1500);}" style="display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:10px 12px;margin-bottom:10px;cursor:pointer">
         <code style="flex:1;color:rgba(255,255,255,.9);font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${refLink}</code>
         <span data-copy-hint style="color:rgba(255,255,255,.45);font-size:10px;font-weight:600;white-space:nowrap">Tap to copy</span>
-      </div>
+      </div>` : `<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:10px 12px;margin-bottom:10px;color:rgba(255,255,255,.5);font-size:11px">Your referral link is still being set up — reopen this tab in a moment.</div>`}
     </div>
     <!-- Screen 1: ANALYTICS -->
     <div class="creator-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;padding:16px;padding-top:56px;overflow-y:auto">

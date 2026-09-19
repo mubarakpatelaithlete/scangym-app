@@ -299,7 +299,8 @@ test('the ScanSquad creator dashboard has no floating side column', () => {
   // The owner asked for Account / Withdraw / More gone from the right edge; the
   // five screens they hid behind are reached from a named strip instead.
   const squadJs = read('sg-scansquad.js');
-  const dash = squadJs.slice(squadJs.indexOf('var refLink=\'scangym.com/r/\''),
+  // Anchored on the handle line: the refLink line changed when the placeholder went.
+  const dash = squadJs.slice(squadJs.indexOf('var refCode=u.referralHandle'),
                              squadJs.indexOf('window._showCreatorScreen'));
   assert.ok(!dash.includes('creator-side-btn'), 'the floating side column is back');
   assert.ok(!dash.includes('creator-more-menu'), 'the More dropdown is back');
@@ -368,4 +369,19 @@ test('only one document draws the bar while the Reels frame is the view', () => 
   const ride = railsJs.slice(railsJs.indexOf('function ride() {'), railsJs.indexOf('window.sgRails'));
   assert.match(ride, /classList\.remove\(FRAME_OWNS\)/,
     'the bar would stay hidden after the customer leaves Reels');
+});
+
+test('the creator dashboard shows the real referral link or none at all', () => {
+  // Live on 2026-09-19 it printed scangym.com/r/creator123 while the signed-in
+  // account's handle was "frugah": a copyable link that earns the owner nothing.
+  const squadJs = read('sg-scansquad.js');
+  const dash = squadJs.slice(squadJs.indexOf("var refCode=u.referralHandle"),
+                            squadJs.indexOf('window._showCreatorScreen'));
+  assert.ok(dash.length > 0, 'the dashboard stopped reading referralHandle from the server');
+  assert.ok(!/refCode=u\.referral_code\|\|'creator123'/.test(squadJs),
+    'the placeholder handle is back');
+  assert.ok(!/creator123/.test(dash.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*/g, '')),
+    'the dashboard can still render a placeholder link');
+  assert.match(dash, /still being set up/,
+    'with no handle the dashboard shows nothing instead of saying so');
 });
