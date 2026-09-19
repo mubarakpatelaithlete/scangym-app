@@ -82,6 +82,17 @@
   function markAllRows() {
     var rows = document.querySelectorAll(ROWS);
     for (var i = 0; i < rows.length; i++) markRow(rows[i]);
+    markFullBleed();
+  }
+
+  /* The scroll container reserves the row's height so text can clear it. A card
+     tab has no text to clear — the card fills the container — so the reserve
+     showed up as dead space above the nav. Mark it so the CSS can skip it. */
+  function markFullBleed() {
+    var host = document.querySelector('main.sg-tab-content');
+    if (!host) return;
+    var full = !!host.querySelector('.tt-card, .tt-view');
+    host.classList[full ? 'add' : 'remove']('sg-fullbleed');
   }
 
   var known = [];

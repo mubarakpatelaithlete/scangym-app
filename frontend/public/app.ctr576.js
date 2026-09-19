@@ -1698,7 +1698,9 @@ function _sgBookRailHtml(c,opts){
      then hidden again by sg-rail-ui's mergeShareEarn() on a later pass, which left
      it flickering in and present in the DOM. Not rendered at all now; the
      affiliate link still lives behind Share and on the Creator tab. */
-  if(opts.filter)html+=act('window._sgToggleBookFilters()','\u26A1','Filter','','tt-filter-toggle');
+  /* The rail's "Filter" button duplicated the filter chips and sg-rail-ui hid it
+     again on every pass, so tapping it did nothing at all (owner-reported
+     2026-09-19). The chips above the carousel are the filter control. */
   html+='</div>';
   return html;
 }
@@ -2713,7 +2715,7 @@ window.openGymOverlay=function(section){
           <span style="color:#fff;font-size:16px;font-weight:600">${rating} out of 5</span>
           <span style="color:rgba(255,255,255,.3);font-size:18px;margin-left:auto">›</span>
         </div>
-        <div style="color:rgba(255,255,255,.4);font-size:14px;margin-bottom:16px">${reviewCount.toLocaleString()} global ratings</div>
+        <div style="color:rgba(255,255,255,.4);font-size:14px;margin-bottom:16px">${reviewCount.toLocaleString()} ratings <span style="color:rgba(255,255,255,.25)">\u00b7 breakdown below is estimated from the average</span></div>
         <div>
           ${[5,4,3,2,1].map(s=>`
             <div class="rating-bar-row" onclick="rvFilterByStar(${s},this)" title="Show ${s}-star reviews" style="cursor:pointer">
@@ -2732,9 +2734,12 @@ window.openGymOverlay=function(section){
         <div style="display:flex;flex-wrap:wrap;gap:8px">
         <span class="topic-pill active" onclick="rvFilterByTopic(this,'All')" style="display:none">All</span>
         ${topics.map(t=>{
+          /* Show the score, not just an arrow: "clean 4.6★ (23)" is Airbnb's
+             category row in one chip, and it comes from real star ratings. */
           const arrow=t.sentiment>=80?'↗':'∼';
           const color=t.sentiment>=80?'#e68a00':'#3b82f6';
-          return '<span class="topic-pill" onclick="rvFilterByTopic(this,\''+t.name.replace(/'/g,"\'")+'\')"><span style="color:'+color+';font-weight:700;font-size:13px">'+arrow+'</span> '+t.name+' <span style="color:rgba(255,255,255,.35);font-size:12px">('+t.count+')</span></span>';
+          const score=(t.avgStars!=null)?(' <span style="color:#fbbf24;font-size:12px;font-weight:700">'+t.avgStars.toFixed(1)+'\u2605</span>'):'';
+          return '<span class="topic-pill" onclick="rvFilterByTopic(this,\''+t.name.replace(/'/g,"\'")+'\')"><span style="color:'+color+';font-weight:700;font-size:13px">'+arrow+'</span> '+t.name+score+' <span style="color:rgba(255,255,255,.35);font-size:12px">('+t.count+')</span></span>';
         }).join('')}
       </div></div>`:''}
 
@@ -3162,7 +3167,15 @@ window.rvShowFullscreen=function(url){
           <span style="width:10px;height:10px;border-radius:50%;background:${_isOpen5?'#4ade80':'#ef4444'};${_isOpen5?'animation:pulse 2s infinite;':''}flex-shrink:0"></span>
           <div style="flex:1">
             <div style="color:${_isOpen5?'#4ade80':'#f87171'};font-size:15px;font-weight:700">${_isOpen5?'Open Now':'Currently Closed'}</div>
-            ${_isOpen5&&_closesAt5?`<div style="color:rgba(255,255,255,.5);font-size:12px">Closes at ${_closesAt5}${_closesIn5?' \u00b7 '+_closesIn5+' left':''}</div>`:''}
+            ${(function(){
+              /* A table of "Open 24 hours" ×7 never answered the only question the
+                 customer has. Say it in words, and say QR entry needs no staff. */
+              var _24=/24\s*hours/i.test(String((gym.opening_hours&&(gym.opening_hours.weekday||[])[todayIdx])||''))||gym.is24Hours===true;
+              if(_isOpen5&&_24)return '<div style="color:rgba(255,255,255,.5);font-size:12px">You can get in any time today \u00b7 QR entry, no staff needed</div>';
+              if(_isOpen5&&_closesAt5)return '<div style="color:rgba(255,255,255,.5);font-size:12px">You can get in now \u00b7 last entry '+_closesAt5+(_closesIn5?' \u00b7 '+_closesIn5+' left':'')+'</div>';
+              if(!_isOpen5)return '<div style="color:rgba(255,255,255,.5);font-size:12px">Opens '+openingTime(gym)+'</div>';
+              return '';
+            })()}
           </div>
         </div>
         <div style="display:flex;flex-direction:column;gap:2px">
@@ -5446,21 +5459,34 @@ function extractReviewTopics(reviews){
   const positive={pool:0,sauna:0,weights:0,cardio:0,showers:0,parking:0,staff:0,classes:0,lockers:0,clean:0};
   const posWords=['great','good','excellent','love','clean','nice','best','amazing','awesome','friendly','helpful','perfect','spacious','modern','well'];
   const negWords=['bad','poor','dirty','broken','rude','slow','old','terrible','worst','crowded','small','expensive','lacking'];
+  /* The old scoring counted a topic as positive unless a negative word appeared
+     anywhere in the review, so almost every topic scored 100% and the chips said
+     nothing. Airbnb's version works because it is a real score: use the star
+     rating the reviewer actually gave, and fall back to word sentiment only when
+     a review has no rating. */
+  const stars={},rated={};
+  Object.keys(keywords).forEach(k=>{stars[k]=0;rated[k]=0;});
   reviews.forEach(r=>{
     const txt=((r.text||r.comment||'')+(r.title||'')).toLowerCase();
+    const rt=Number(r.rating)||0;
     Object.keys(keywords).forEach(k=>{
       if(txt.includes(k)){
         keywords[k]++;
-        const isPos=posWords.some(w=>txt.includes(w));
-        const isNeg=negWords.some(w=>txt.includes(w));
-        if(isPos&&!isNeg)positive[k]++;
-        else if(!isNeg)positive[k]++;
+        if(rt>0){stars[k]+=rt;rated[k]++;}
+        else{
+          const isNeg=negWords.some(w=>txt.includes(w));
+          const isPos=posWords.some(w=>txt.includes(w));
+          if(isPos&&!isNeg)positive[k]++;
+        }
       }
     });
   });
   return Object.entries(keywords).filter(([,c])=>c>0).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([name,count])=>{
-    const pct=count>0?Math.round((positive[name]/count)*100):0;
-    return {name,count,sentiment:pct};
+    /* Percent of five stars when we have ratings; word sentiment otherwise. */
+    const pct=rated[name]>0
+      ? Math.round((stars[name]/rated[name])/5*100)
+      : (count>0?Math.round((positive[name]/count)*100):0);
+    return {name,count,sentiment:pct,avgStars:rated[name]>0?(stars[name]/rated[name]):null};
   });
 }
 
