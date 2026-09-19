@@ -575,10 +575,12 @@ var reelsRail=(function(){
     /* right/top/bottom: rails.css */
     +'#sg-reels-rail{position:fixed;z-index:8998;display:none;flex-direction:column;gap:14px;pointer-events:none}'
     +'#sg-reels-rail.visible{display:flex}'
-    +'.sg-rr-btn{pointer-events:auto;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none}'
+    +'.sg-rr-btn{pointer-events:auto;display:flex;flex-direction:column;align-items:center;gap:var(--sg-btn-gap,3px);cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none}'
     +'.sg-rr-btn:active .sg-rr-circle{transform:scale(.9)}'
-    +'.sg-rr-circle{width:44px;height:44px;border-radius:50%;background:rgba(20,20,35,.72);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;font-size:20px;transition:transform .15s;box-shadow:0 2px 10px rgba(0,0,0,.35)}'
-    +'.sg-rr-label{font-size:9px;font-weight:700;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.8);letter-spacing:.2px}';
+    /* Look comes from one-button.css; the fallbacks are that file's values, so
+       this row still matches every other row if the sheet is missing. */
+    +'.sg-rr-circle{width:var(--sg-btn-size,44px);height:var(--sg-btn-size,44px);border-radius:50%;background:var(--sg-btn-bg,rgba(0,0,0,.40));backdrop-filter:var(--sg-btn-blur,blur(12px));-webkit-backdrop-filter:var(--sg-btn-blur,blur(12px));border:var(--sg-btn-border-width,1.5px) solid var(--sg-btn-border-color,rgba(255,255,255,.12));display:flex;align-items:center;justify-content:center;font-size:var(--sg-btn-icon,22px);transition:transform .15s;box-shadow:var(--sg-btn-shadow,0 2px 10px rgba(0,0,0,.25))}'
+    +'.sg-rr-label{font-size:var(--sg-btn-label-size,10px);font-weight:var(--sg-btn-label-weight,600);color:var(--sg-btn-label-color,#fff);text-shadow:var(--sg-btn-label-shadow,0 1px 4px rgba(0,0,0,.8));letter-spacing:var(--sg-btn-label-tracking,.2px)}';
   document.head.appendChild(s);
 })();
 
@@ -674,8 +676,17 @@ var ICONS={
   dumbbell:I('<path d="M6.5 6.5v11"/><path d="M17.5 6.5v11"/><path d="M3 9v6"/><path d="M21 9v6"/><line x1="6.5" y1="12" x2="17.5" y2="12"/>'),
   book:I('<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>'),
   check:I('<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>'),
-  trainer:I('<rect x="4" y="7" width="16" height="13" rx="2"/><line x1="12" y1="3" x2="12" y2="7"/><circle cx="12" cy="2.5" r="1"/><circle cx="9" cy="12.5" r="1"/><circle cx="15" cy="12.5" r="1"/><path d="M9 16.5h6"/>')
+  trainer:I('<rect x="4" y="7" width="16" height="13" rx="2"/><line x1="12" y1="3" x2="12" y2="7"/><circle cx="12" cy="2.5" r="1"/><circle cx="9" cy="12.5" r="1"/><circle cx="15" cy="12.5" r="1"/><path d="M9 16.5h6"/>'),
+  /* Talk and Ask AI. rails.js drew these two as colour emoji (\uD83C\uDFA4 \u2728), which is
+     why the strip never matched the row it sits in: one emoji beside nine line
+     icons is a different colour and a different weight, on every tab. */
+  mic:I('<path d="M12 1a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>'),
+  sparkle:I('<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><line x1="19" y1="17" x2="19" y2="21"/><line x1="17" y1="19" x2="21" y2="19"/>')
 };
+/* The one icon table in the app. rails.js builds Book / Talk / Ask AI in a
+   different file and could not reach it, so it used emoji instead; exported so
+   there is one drawing per idea rather than one per file. */
+try{window.SG_ICONS=ICONS;}catch(e){}
 /* Book-rail label → icon (date labels like "11 Jul" fall back to calendar). */
 function iconForLabel(t){
   t=(t||'').trim().toLowerCase();
@@ -708,8 +719,11 @@ function injectCSS(){
   if(document.getElementById('sg-uip-css'))return;
   var s=document.createElement('style');s.id='sg-uip-css';
   s.textContent=
-    '.tt-action-btn.sgi{width:42px;height:42px;border-radius:50%;background:rgba(13,16,25,.62);border:1px solid rgba(255,255,255,.09);color:#fff;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);opacity:1;filter:none;box-shadow:0 2px 8px rgba(0,0,0,.35)}'+
-    '.tt-action-btn.sgi svg{opacity:.92}'+
+    /* Same circle as the Reels rail and the strip: values live in
+       one-button.css, fallbacks repeat them so this row never drifts. */
+    '.tt-action-btn.sgi{width:var(--sg-btn-size,44px);height:var(--sg-btn-size,44px);border-radius:50%;background:var(--sg-btn-bg,rgba(0,0,0,.40));border:var(--sg-btn-border-width,1.5px) solid var(--sg-btn-border-color,rgba(255,255,255,.12));color:#fff;backdrop-filter:var(--sg-btn-blur,blur(12px));-webkit-backdrop-filter:var(--sg-btn-blur,blur(12px));opacity:1;filter:none;box-shadow:var(--sg-btn-shadow,0 2px 10px rgba(0,0,0,.25))}'+
+    '.tt-action-btn.sgi svg{width:var(--sg-btn-icon,22px);height:var(--sg-btn-icon,22px)}'+
+    '.tt-actions .tt-action-label{font-size:var(--sg-btn-label-size,10px);font-weight:var(--sg-btn-label-weight,600);color:var(--sg-btn-label-color,#fff);text-shadow:var(--sg-btn-label-shadow,0 1px 4px rgba(0,0,0,.8));letter-spacing:var(--sg-btn-label-tracking,.2px)}'+
     '.tt-actions .tt-action.sgi-x{display:none}'+
     '.tt-actions.sgi-open .tt-action.sgi-x{display:flex}'+
     /* max-height moved to rails.css: 100vh-300px ran under the Talk pill. */
@@ -719,7 +733,9 @@ function injectCSS(){
     '.tt-chips{gap:5px!important;margin-bottom:6px!important}'+
     '.tt-chip{padding:4px 9px!important;font-size:11px!important;border-radius:8px!important}'+
     '.sgi-trust-x{display:none!important}'+
-    '.tt-action.sgi-more .tt-action-btn{background:rgba(255,109,0,.2);border-color:rgba(255,109,0,.35)}'+
+    /* The "More" circle used to be painted orange here and neutralised again
+       further down this same file. Both rules are gone: one-button.css says it
+       once, and it says the same thing as every other strip button. */
     '.tt-actions{gap:8px}'+
     '#sg-reels-rail .sg-rr-circle.sgi{color:#fff;font-size:0}#sg-reels-rail .sg-rr-circle.sgi svg{opacity:.92}';
   document.head.appendChild(s);
@@ -805,7 +821,7 @@ var css=document.createElement('style');
 css.id='sg-r4-css';
 css.textContent=
   /* #1 */ '.tt-logo{display:none!important}'+
-  /* #3 */ '.tt-action.sgi-more .tt-action-btn{background:rgba(13,16,25,.62)!important;border-color:rgba(255,255,255,.09)!important}'+
+  /* #3 the "More" circle is neutral — now stated once, in one-button.css */
   /* #4 */ '#sg-book-summary{position:fixed;left:0;right:0;bottom:calc(56px + 52px + env(safe-area-inset-bottom,0px));z-index:8998;display:none;align-items:center;justify-content:center;height:26px;background:rgba(10,10,18,.96);border-top:1px solid rgba(255,255,255,.06);color:rgba(255,255,255,.78);font-size:12px;font-weight:600;letter-spacing:.2px;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);pointer-events:none}'+
   'body.sg-r4-summary #sg-book-summary{display:flex}'+
   'body.sg-r4-summary.sg-cb-active .sg-tab-content{bottom:calc(56px + 52px + 26px + env(safe-area-inset-bottom,0px))!important}'+
@@ -946,7 +962,7 @@ css.id='sg-r5-css';
 css.textContent=
   /* #1 visible labels for the ScanSquad creator rail icons */
   '.creator-side-btn{position:relative;overflow:visible}'+
-  '.creator-side-btn[data-r5lbl]::after{content:attr(data-r5lbl);position:absolute;top:calc(100% + 1px);left:50%;transform:translateX(-50%);font-size:9px;font-weight:700;color:#fff;white-space:nowrap;text-shadow:0 1px 3px rgba(0,0,0,.95);letter-spacing:.2px;pointer-events:none}'+
+  '.creator-side-btn[data-r5lbl]::after{content:attr(data-r5lbl);position:absolute;top:calc(100% + var(--sg-btn-gap,3px));left:50%;transform:translateX(-50%);font-size:var(--sg-btn-label-size,10px);font-weight:var(--sg-btn-label-weight,600);color:var(--sg-btn-label-color,#fff);white-space:nowrap;text-shadow:var(--sg-btn-label-shadow,0 1px 4px rgba(0,0,0,.8));letter-spacing:var(--sg-btn-label-tracking,.2px);pointer-events:none}'+
   /* #4 hide the duplicate per-card quick-book button */
   '.sg-quick-book{display:none!important}';
 document.head.appendChild(css);
@@ -970,6 +986,17 @@ function labelCreatorRail(){
     else if(oc.indexOf('_creatorWithdraw')>-1) lbl='Withdraw';
     else if(oc.indexOf('_toggleCreatorMore')>-1) lbl='More';
     if(lbl && b.getAttribute('data-r5lbl')!==lbl) b.setAttribute('data-r5lbl',lbl);
+    /* Same drawing as every other strip button: the tab used \ud83d\udd11 \ud83d\udcb8 \u2022\u2022\u2022 as text,
+       so ScanSquad was a row of colour emoji next to Reels' white line icons.
+       Keyed off the label this function just decided, so there is no second
+       place deciding what a button means. */
+    var CREATOR_ICON={'Sign in':'lock','Account':'check','Withdraw':'wallet','More':'more'};
+    var icons=window.SG_ICONS||{};            /* a different IIFE owns the table */
+    var key=CREATOR_ICON[lbl];
+    if(key&&icons[key]&&b.getAttribute('data-r5ico')!==key){
+      b.innerHTML=icons[key];
+      b.setAttribute('data-r5ico',key);
+    }
   }
 }
 
