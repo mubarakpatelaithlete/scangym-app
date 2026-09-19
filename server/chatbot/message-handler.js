@@ -407,6 +407,30 @@ async function callApi(path, options = {}) {
 
 // ─── Response Formatters ────────────────────────────────────
 
+/**
+ * Name the place the results are in.
+ *
+ * Taking `gyms[0].city` blindly produced "Found 20 gyms in 116 Bark St" for a
+ * Bolton search: Google had filled the first result's locality with a street.
+ * A street number is the giveaway, so digits disqualify a candidate, and the
+ * label is the locality most of the results agree on rather than whichever one
+ * happened to rank first.
+ */
+function pickCityLabel(gyms) {
+  const counts = new Map();
+  for (const g of gyms || []) {
+    const city = String(g?.city || '').trim();
+    if (!city || /\d/.test(city)) continue;   // "116 Bark St" is a street, not a city
+    counts.set(city, (counts.get(city) || 0) + 1);
+  }
+  let best = '';
+  let bestN = 0;
+  for (const [city, n] of counts) {
+    if (n > bestN) { best = city; bestN = n; }
+  }
+  return best;
+}
+
 function formatGymList(gyms, platform, offset = 0) {
   if (!gyms || gyms.length === 0) {
     return "😕 No gyms found in that area.\n\nTry a different city or neighbourhood?\nExamples: \"London\", \"Manchester city centre\", \"New York\"";
@@ -414,7 +438,7 @@ function formatGymList(gyms, platform, offset = 0) {
   
   const count = Math.min(5, gyms.length - offset);
   const showing = gyms.slice(offset, offset + count);
-  const cityName = gyms[0]?.city || '';
+  const cityName = pickCityLabel(gyms);
   
   let text = '';
   if (offset === 0) {
@@ -859,4 +883,6 @@ function getFallbackText() {
     `Or visit scangym.com 🌐`;
 }
 
-module.exports = { handleMessage, detectIntent, extractEntities, INTENTS };
+module.exports = { handleMessage, detectIntent, extractEntities, INTENTS,
+  pickCityLabel,
+};

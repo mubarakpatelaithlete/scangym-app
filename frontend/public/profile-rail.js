@@ -168,13 +168,25 @@
       });
   }
 
+  /** t.me link for the bot, carrying the member id when we know it. */
+  function telegramUrl() {
+    var base = 'https://t.me/ScanGymBot';
+    var st = window.state || {};
+    var id = st.user && st.user.id;
+    return id ? base + '?start=' + encodeURIComponent(String(id)) : base;
+  }
+
   // ── Actions ────────────────────────────────────────────────────────────
   var ACTIONS = {
     telegram: function () {
+      /* Deep-link the signed-in member. Without ?start=<id> the bot opens on a
+         blank hello and the customer has to tap "Connect account" by hand
+         before a booking can be tied to them. */
+      var url = telegramUrl();
       if (typeof window._sgConnectChannel === 'function') {
-        window._sgConnectChannel('telegram', 'https://t.me/ScanGymBot');
+        window._sgConnectChannel('telegram', url);
       } else {
-        window.open('https://t.me/ScanGymBot', '_blank');
+        window.open(url, '_blank');
       }
     },
     discord: function () {
@@ -281,35 +293,53 @@
     return null;
   }
 
-  function buttonList() {
-    var frag = document.createDocumentFragment();
-    frag.appendChild(sec('Chatbots'));
-    frag.appendChild(btn('telegram', 'Telegram'));
-    frag.appendChild(btn('discord', 'Discord'));
-    frag.appendChild(btn('slack', 'Slack'));
-    frag.appendChild(btn('msteams', 'Teams'));
-    var ai = sec('AI');
-    ai.style.marginTop = '4px';
-    frag.appendChild(ai);
-    frag.appendChild(btn('claude', 'Claude'));
-    var apps = sec('Apps');
-    apps.style.marginTop = '4px';
-    frag.appendChild(apps);
-    frag.appendChild(btn('msstore', 'MS Store'));
-    frag.appendChild(btn('install', 'Install'));
-    var social = sec('Social');
-    social.style.marginTop = '4px';
-    frag.appendChild(social);
-    frag.appendChild(btn('tiktok', 'TikTok'));
-    frag.appendChild(btn('instagram', 'Instagram'));
-    frag.appendChild(btn('facebook', 'Facebook'));
+  /**
+   * Labels already rendered inside a host rail.
+   *
+   * The app bundle's own Profile rail ships the same channel buttons this file
+   * adds. Appending the full list into it produced two identical Telegram /
+   * Discord / Slack / … rows — visible as a doubled strip on the Profile tab.
+   * So extend a host rail only with what it is missing.
+   */
+  function labelsIn(host) {
+    var seen = {};
+    if (!host) return seen;
+    var els = host.querySelectorAll('.sg-pr-label, .sg-pr-btn');
+    for (var i = 0; i < els.length; i++) {
+      var t = (els[i].textContent || '').trim().toLowerCase();
+      if (t) seen[t] = true;
+    }
+    return seen;
+  }
+
+  /* Groups, so a section header never survives on its own: if the host rail
+     already shows every button in a group, the header goes too. */
+  var GROUPS = [
+    { title: 'Chatbots', items: [['telegram', 'Telegram'], ['discord', 'Discord'], ['slack', 'Slack'], ['msteams', 'Teams']] },
+    { title: 'AI', items: [['claude', 'Claude']] },
+    { title: 'Apps', items: [['msstore', 'MS Store'], ['install', 'Install']] },
+    { title: 'Social', items: [['tiktok', 'TikTok'], ['instagram', 'Instagram'], ['facebook', 'Facebook']] },
     // The rail can only hold the handful of channels that fit. Everything else
     // ScanGym does lives on /everything, one tap from here, so nothing on the
     // Buttons board is unreachable just because it did not fit in a column.
-    var more = sec('More');
-    more.style.marginTop = '4px';
-    frag.appendChild(more);
-    frag.appendChild(btn('everything', 'All'));
+    { title: 'More', items: [['everything', 'All']] },
+  ];
+
+  function buttonList(skip) {
+    var frag = document.createDocumentFragment();
+    var first = true;
+    for (var g = 0; g < GROUPS.length; g++) {
+      var group = GROUPS[g];
+      var wanted = group.items.filter(function (it) {
+        return !(skip && skip[it[1].toLowerCase()]);
+      });
+      if (!wanted.length) continue;
+      var header = sec(group.title);
+      if (!first) header.style.marginTop = '4px';
+      frag.appendChild(header);
+      for (var i = 0; i < wanted.length; i++) frag.appendChild(btn(wanted[i][0], wanted[i][1]));
+      first = false;
+    }
     return frag;
   }
 
@@ -343,7 +373,7 @@
         wrap.id = EXT_ID;
         wrap.setAttribute('data-health', String(!!health));
         wrap.style.cssText = 'display:flex;flex-direction:column;gap:10px;align-items:center;margin-top:4px;';
-        wrap.appendChild(buttonList());
+        wrap.appendChild(buttonList(labelsIn(host)));
         host.appendChild(wrap);
         host.classList.add('sg-pr-host-capped');
       }

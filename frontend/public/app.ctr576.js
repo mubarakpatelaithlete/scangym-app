@@ -16137,7 +16137,11 @@ window._sgOpenDiscord=async function(){
   try{
     var r=await fetch('/api/channels/discord/invite');
     var d=await r.json();
-    if(d.inviteUrl){window.open(d.inviteUrl,'_blank');}
+    /* preferredUrl is the customer route (community invite, else user-install so
+       they can DM the bot). inviteUrl used to be an "add bot to your server"
+       screen, which dead-ends for anyone who does not run a Discord server. */
+    var url=d.preferredUrl||d.communityUrl||d.userInstallUrl||d.inviteUrl;
+    if(url){window.open(url,'_blank');}
     else{sgToast('Discord bot is being set up — check back soon!','info',3000);}
   }catch(e){sgToast('Discord bot is being set up — check back soon!','info',3000);}
 };
