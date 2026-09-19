@@ -13346,6 +13346,35 @@ window.loadFullProfile=async function(){
   }catch(e){}
 };
 
+
+/* ── The profile rails read the app's one button style (owner, 2026-09-19) ──
+   These two rails — the signed-in one (Creator / Partner / Apps / Channels /
+   More) and the signed-out one (Find Gym / Pricing / Creator / Help) — were
+   the last hand-built buttons in the app: 46px circles holding colour emoji,
+   Creator tinted orange and Partner green, while every other circle beside
+   them (Share, Save, Search, Near me, Book, Talk, Ask AI, and the whole
+   ScanSquad row) is a 44px white line icon on dark glass.
+
+   The owner asked the same question five times, once per tab, and this rail is
+   the last place the answer was still "because this one is built by hand". So
+   it is built from one-button.css's tokens and sg-rail-ui.js's icon table,
+   like the others: nothing here decides what a button looks like.
+
+   The emoji stays as the fallback for the case where the rail script has not
+   loaded, so a button is never blank. */
+function sgRailCircle(iconName, emoji){
+  var icons = (typeof window !== 'undefined' && window.SG_ICONS) || {};
+  var inner = icons[iconName] || emoji;
+  return '<div style="width:var(--sg-btn-size,44px);height:var(--sg-btn-size,44px);'
+    + 'background:var(--sg-btn-bg,rgba(0,0,0,.40));'
+    + 'backdrop-filter:var(--sg-btn-blur,blur(12px));-webkit-backdrop-filter:var(--sg-btn-blur,blur(12px));'
+    + 'border:var(--sg-btn-border-width,1.5px) solid var(--sg-btn-border-color,rgba(255,255,255,.12));'
+    + 'box-shadow:var(--sg-btn-shadow,0 2px 10px rgba(0,0,0,.25));'
+    + 'border-radius:50%;display:flex;align-items:center;justify-content:center;'
+    + 'font-size:var(--sg-btn-icon,20px);color:#fff">' + inner + '</div>';
+}
+try{ window.sgRailCircle = sgRailCircle; }catch(e){}
+
 // ─── More Hub Page (Everything Else) ───
 function _isAdmin(u){return u&&['8111c9b2-552a-442c-aeff-0580c60ba75e'].indexOf(u.id)>=0;}
 function MoreHubPage(){
@@ -13399,24 +13428,24 @@ function MoreHubPage(){
       <!-- ═══ RIGHT-SIDE BUTTONS — TikTok/Reels style, floating on QR ═══ -->
       <div style="position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:14px;align-items:center;z-index:10">
         <div onclick="navigate('/creator')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
-          <div style="width:46px;height:46px;background:rgba(255,109,0,.15);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,109,0,.3)">\ud83c\udfac</div>
-          <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Creator</span>
+          ${sgRailCircle('film','\ud83c\udfac')}
+          <span style="color:#fff;font-size:10px;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8)">Creator</span>
         </div>
         <div onclick="navigate('/partner')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
-          <div style="width:46px;height:46px;background:rgba(34,197,94,.12);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(34,197,94,.25)">\ud83c\udfcb\ufe0f</div>
-          <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Partner</span>
+          ${sgRailCircle('shield','\ud83c\udfcb\ufe0f')}
+          <span style="color:#fff;font-size:10px;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8)">Partner</span>
         </div>
         <div onclick="navigate('/apps')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
-          <div style="width:46px;height:46px;background:rgba(0,0,0,.45);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.12)">\ud83d\udcf1</div>
-          <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Apps</span>
+          ${sgRailCircle('grid','\ud83d\udcf1')}
+          <span style="color:#fff;font-size:10px;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8)">Apps</span>
         </div>
         <div onclick="navigate('/channels')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
-          <div style="width:46px;height:46px;background:rgba(0,0,0,.45);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.12)">\ud83d\udce1</div>
-          <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Channels</span>
+          ${sgRailCircle('chat','\ud83d\udce1')}
+          <span style="color:#fff;font-size:10px;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8)">Channels</span>
         </div>
         <div onclick="(function(e){e.stopPropagation();var m=document.getElementById('sgMoreMenu');if(m)m.style.display=m.style.display==='flex'?'none':'flex'})(event)" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
-          <div style="width:46px;height:46px;background:rgba(0,0,0,.45);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.85)">\u22ef</div>
-          <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">More</span>
+          ${sgRailCircle('more','\u22ef')}
+          <span style="color:#fff;font-size:10px;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8)">More</span>
         </div>
       </div>
       <!-- ═══ MORE MENU POPUP — Edit, Bookings, Wallet, Out ═══ -->
@@ -13442,7 +13471,12 @@ function MoreHubPage(){
         </div>
       </div>
       <!-- ═══ BOTTOM OVERLAY — Stats + badge (like TikTok caption area) ═══ -->
-      <div style="position:absolute;bottom:12px;left:16px;right:70px;z-index:10">
+      <!-- Clear of the button band: rails.css floats Book / Talk / Ask AI and the
+           rest of the row above the tab bar, and bottom:12px put this text
+           directly underneath it, so the stats and the labels overlapped
+           (owner, 2026-09-19). Read from the same variables the band uses, so
+           the two cannot drift apart again. -->
+      <div style="position:absolute;bottom:calc(var(--sg-band-bottom, 60px) + var(--sg-band-height, 72px) + 8px);left:16px;right:70px;z-index:10">
         <div style="display:inline-block;background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff;font-size:11px;font-weight:800;padding:6px 20px;border-radius:20px;letter-spacing:.8px;text-transform:uppercase;box-shadow:0 4px 20px rgba(255,109,0,.4);margin-bottom:12px">\ud83d\udccd SCAN TO ENTER</div>
         <div style="display:flex;gap:20px">
           <div><span style="color:#FF6D00;font-size:20px;font-weight:900;text-shadow:0 2px 8px rgba(0,0,0,.6)">${tS}</span><span style="color:rgba(255,255,255,.5);font-size:10px;font-weight:600;margin-left:4px">sessions</span></div>
@@ -13480,29 +13514,34 @@ function MoreHubPage(){
       </div>
       <!-- ═══ RIGHT-SIDE BUTTONS — TikTok style ═══ -->
       <div style="position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:18px;align-items:center;z-index:10">
-        <div onclick="navigate('/login')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
-          <div style="width:46px;height:46px;background:rgba(0,0,0,.45);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.12)">\ud83d\udc64</div>
-          <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Sign Up</span>
-        </div>
+        <!-- The "Sign Up" circle stood here. It opened /login, which is where the
+             "Get Your QR Pass" button below and the row's own Sign in button
+             already go: three doors, one room, two of them side by side on the
+             same rail (owner: "double double button in profile tab"). One door. -->
         <div onclick="switchTab('book')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
-          <div style="width:46px;height:46px;background:rgba(0,0,0,.45);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.12)">\ud83d\udd0d</div>
-          <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Find Gym</span>
+          ${sgRailCircle('search','\ud83d\udd0d')}
+          <span style="color:#fff;font-size:10px;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8)">Find Gym</span>
         </div>
         <div onclick="navigate('/pricing')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
-          <div style="width:46px;height:46px;background:rgba(0,0,0,.45);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.12)">\ud83d\udcb3</div>
-          <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Pricing</span>
+          ${sgRailCircle('card','\ud83d\udcb3')}
+          <span style="color:#fff;font-size:10px;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8)">Pricing</span>
         </div>
         <div onclick="navigate('/creator')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
-          <div style="width:46px;height:46px;background:rgba(255,109,0,.15);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,109,0,.3)">\ud83c\udfac</div>
-          <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Creator</span>
+          ${sgRailCircle('film','\ud83c\udfac')}
+          <span style="color:#fff;font-size:10px;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8)">Creator</span>
         </div>
         <div onclick="navigate('/help')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
-          <div style="width:46px;height:46px;background:rgba(0,0,0,.45);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(255,255,255,.12)">\u2753</div>
-          <span style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.8)">Help</span>
+          ${sgRailCircle('help','\u2753')}
+          <span style="color:#fff;font-size:10px;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8)">Help</span>
         </div>
       </div>
       <!-- ═══ BOTTOM — Stats + CTA ═══ -->
-      <div style="position:absolute;bottom:12px;left:16px;right:16px;z-index:10">
+      <!-- Clear of the button band: rails.css floats Book / Talk / Ask AI and the
+           rest of the row above the tab bar, and bottom:12px put this text
+           directly underneath it, so the stats and the labels overlapped
+           (owner, 2026-09-19). Read from the same variables the band uses, so
+           the two cannot drift apart again. -->
+      <div style="position:absolute;bottom:calc(var(--sg-band-bottom, 60px) + var(--sg-band-height, 72px) + 8px);left:16px;right:16px;z-index:10">
         <div style="display:flex;gap:20px;margin-bottom:14px;justify-content:center">
           <div style="text-align:center"><span style="color:#FF6D00;font-size:18px;font-weight:900;text-shadow:0 2px 8px rgba(0,0,0,.6)">1.2M+</span><span style="color:rgba(255,255,255,.4);font-size:9px;margin-left:4px">gyms</span></div>
           <div style="text-align:center"><span style="color:#22c55e;font-size:18px;font-weight:900;text-shadow:0 2px 8px rgba(0,0,0,.6)">${sgPriceDisplay('day')}</span><span style="color:rgba(255,255,255,.4);font-size:9px;margin-left:4px">from</span></div>
