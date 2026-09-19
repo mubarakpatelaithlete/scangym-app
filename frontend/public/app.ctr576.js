@@ -1649,9 +1649,22 @@ function _sgAddrHead(c){
   var place=String((c&&c.distMin)||'').trim();
   if(!street)return '';
   if(place&&place.toLowerCase().indexOf(street.toLowerCase())===0)return '';
-  return street+' \u00b7';
+  return street;
 }
 window._sgAddrHead=_sgAddrHead;
+
+/* Build the address row from the parts that exist, joined once. Returning the
+   separator from the helper (first cut, #790) printed "Unit 22 \u00b7 \u00b7 Ashton Old Rd"
+   whenever the street was dropped — owner-reported the same evening. */
+function _sgAddrRow(c,openLabel){
+  var bits=[];
+  var head=_sgAddrHead(c); if(head)bits.push(head);
+  var place=String((c&&c.distMin)||'').trim();
+  if(place)bits.push('<span class="tt-travel-label" data-gym-travel-id="'+c.id+'">'+place+'</span>');
+  if(openLabel)bits.push('<span class="'+c.openClass+'">'+openLabel+'</span>');
+  return '<div class="tt-gym-addr">\u{1F4CD} '+bits.join(' \u00b7 ')+'</div>';
+}
+window._sgAddrRow=_sgAddrRow;
 
 function _sgBookRailHtml(c,opts){
   opts=opts||{};
@@ -1847,7 +1860,7 @@ function SearchPage(){
           /* Name */
           html+='<div class="tt-gym-name">'+c.name+'</div>';
           /* Address */
-          html+='<div class="tt-gym-addr">\u{1F4CD} '+_sgAddrHead(c)+' \u00b7 <span class="tt-travel-label" data-gym-travel-id="'+c.id+'">'+c.distMin+'</span> \u00b7 <span class="'+c.openClass+'">'+(c.openText||c.openTag)+'</span></div>';
+          html+=_sgAddrRow(c,c.openText||c.openTag);
           /* Chips — booking count shown only when the server has real bookings (bookedBucket) */
           var _bMonth=bookedBucket(c.gym);
           html+='<div class="tt-chips">';
@@ -1893,7 +1906,7 @@ function SearchPage(){
               cardHtml+='<div style="margin-bottom:6px"><div class="tt-logo" style="position:relative;background:linear-gradient(135deg,'+logoGrad+')">'+logoEmoji+'</div></div>';
               if(_cards.length>1) cardHtml+='<div class="tt-counter">\u2190 '+(i+1)+' of '+_cards.length+' \u2192</div>';
               cardHtml+='<div class="tt-gym-name">'+c.name+'</div>';
-              cardHtml+='<div class="tt-gym-addr">\u{1F4CD} '+_sgAddrHead(c)+' \u00b7 <span class="tt-travel-label" data-gym-travel-id="'+c.id+'">'+c.distMin+'</span> \u00b7 <span class="'+c.openClass+'">'+c.openTag+'</span></div>';
+              cardHtml+=_sgAddrRow(c,c.openTag);
               var _bk=typeof bookedBucket==="function"?bookedBucket(c.gym):'';
               cardHtml+='<div class="tt-chips">';
               if(c.isPop) cardHtml+='<div class="tt-chip">\u{1F525} Popular</div>';
