@@ -24,6 +24,9 @@ const { handleMessage } = require('./message-handler');
 // Telegram (free, no cost per message)
 const telegramRouter = require('./telegram');
 router.use('/telegram', telegramRouter);
+// Inbound Telegram depends on a URL registered in Telegram's console; verify it
+// on boot so a stale or redirecting webhook cannot silence the bot unnoticed.
+if (typeof telegramRouter.ensureWebhook === 'function') telegramRouter.ensureWebhook();
 
 // Twilio: WhatsApp + SMS (uses existing Twilio account)
 const twilioRouter = require('./twilio');
@@ -126,8 +129,11 @@ router.get('/health', async (req, res) => {
   if (!req.query || !req.query.deep) return res.json(base);
 
   // ?deep=1 asks every provider a question only a working credential can answer.
-  // Costs one API call per channel, so it is for humans and alerts, not polling.
-  const probes = await probeChannels(process.env, { discordGatewayStatus });
+  // One API call per channel, so the result is cached briefly: the profile rail
+  // needs the deep answer (the shallow one only sees env vars and showed the
+  // Telegram dot green while every message was being dropped), and without a
+  // cache each page load would fan out to ten providers.
+  const probes = await cachedProbes();
   const live = Object.entries(probes).filter(([, p]) => p.live === true).map(([k]) => k);
   const broken = Object.entries(probes).filter(([, p]) => p.live === false && p.configured).map(([k]) => k);
 
@@ -140,6 +146,20 @@ router.get('/health', async (req, res) => {
     brokenChannels: broken,
   });
 });
+
+// ─── Deep probe cache ────────────────────────────────────────
+const PROBE_TTL_MS = 60 * 1000;
+let probeCache = { at: 0, probes: null, inflight: null };
+
+async function cachedProbes() {
+  const now = Date.now();
+  if (probeCache.probes && now - probeCache.at < PROBE_TTL_MS) return probeCache.probes;
+  if (probeCache.inflight) return probeCache.inflight;
+  probeCache.inflight = probeChannels(process.env, { discordGatewayStatus })
+    .then((probes) => { probeCache = { at: Date.now(), probes, inflight: null }; return probes; })
+    .catch((err) => { probeCache.inflight = null; throw err; });
+  return probeCache.inflight;
+}
 
 module.exports = router;
 
