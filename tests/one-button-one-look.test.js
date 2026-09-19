@@ -192,3 +192,12 @@ test('the chat composer is left out on purpose, and stays out', () => {
   assert.ok(!/\.pchat-rnd\{[^}]*--sg-btn-/.test(chatAgent),
     'the chat composer buttons were folded in without updating the note');
 });
+
+test('Book in the Reels sidebar is the same button as Share and Save', () => {
+  // It was an orange disc while Share, Save and Comment beside it were dark glass.
+  // The label under it already says "Book"; colour was carrying no extra meaning.
+  assert.ok(!/\.reel-action\[data-action="book"\] \.icon\{[^}]*rgba\(255,109,0/.test(reels),
+    'the orange Book disc is back in the Reels sidebar');
+  assert.ok(!/\.reel-action\[data-action="book"\][^{]*\{[^}]*(background|border-color)\s*:/.test(reels),
+    'Book is being restyled away from the shared button again');
+});
