@@ -614,7 +614,27 @@
     }
 
     // ── Deep affiliate link copy ──
+    /* Guest browsing: see the dashboard and the toolkit without handing over an
+       email. Anything that pays out asks for the details first (needsIdentity). */
+    function browseAsGuest() {
+      state.user = { name: 'Guest', handle: '', guest: true };
+      state.screen = 'dashboard';
+      try { sessionStorage.setItem('scansquad_guest', '1'); } catch (e) {}
+      render();
+    }
+    window.browseAsGuest = browseAsGuest;
+
+    function needsIdentity() {
+      if (!state.user || !state.user.guest) return false;
+      state.screen = 'join';
+      render();
+      if (typeof showToast === 'function') showToast('Add your name and email to earn from this');
+      return true;
+    }
+    window.needsIdentity = needsIdentity;
+
     function copyDeepLink() {
+      if (needsIdentity()) return;
       var user = state.user || {};
       var refSlug = (user.handle || '').replace(/[^a-zA-Z0-9]/g, '') || (user.name || 'scansquad').toLowerCase().replace(/\s+/g, '');
       var link = 'https://scangym.com/scansquad?ref=' + encodeURIComponent(refSlug);
@@ -689,6 +709,16 @@
           </div>
           <button type="submit" class="btn-primary" id="join-btn">Start Earning →</button>
           <div class="time-badge"><span>⚡ Takes under 30 seconds</span></div>
+          <!-- Owner request 2026-09-19: the whole tab was a name/handle/email wall,
+               so a new creator never saw the 440 videos or a single Create button.
+               Higgsfield and ElevenLabs both let you look and make one thing first
+               and ask who you are at the point it matters. Details are still
+               required before anything can be earned or posted. -->
+          <div style="text-align:center;margin-top:14px">
+            <a onclick="browseAsGuest()" style="color:rgba(255,255,255,.55);font-size:14px;font-weight:600;cursor:pointer;text-decoration:underline">
+              Just look around first →
+            </a>
+          </div>
         </form>
 
         <div class="bottom-pad"></div>`;
