@@ -201,3 +201,18 @@ test('Book in the Reels sidebar is the same button as Share and Save', () => {
   assert.ok(!/\.reel-action\[data-action="book"\][^{]*\{[^}]*(background|border-color)\s*:/.test(reels),
     'Book is being restyled away from the shared button again');
 });
+
+test("ScanSquad's create rail draws line icons from the one icon table, not emoji", () => {
+  // The circles already matched; the eight modes inside them were colour emoji
+  // (✍️ 🖼️ 🎬 …), so the row still looked unlike Share and Save.
+  assert.ok(/window\.SG_ICONS/.test(squadCreate),
+    'squad-create.js no longer reads the shared icon table');
+  assert.match(squadCreate, /iconFor\(mode\)/);
+  for (const key of ['pen', 'image', 'film', 'mic', 'music', 'person', 'scissors', 'phone']) {
+    assert.ok(new RegExp(`\\n  ${key}:I\\(`).test(railUi),
+      `the icon table has no ${key}, so a ScanSquad mode falls back to emoji`);
+  }
+  // The circle must size an SVG, not only a font.
+  assert.ok(/\.sv-circle svg\{[^}]*--sg-btn-icon/.test(squadCreate),
+    'the ScanSquad icon is not sized off the shared icon token');
+});
