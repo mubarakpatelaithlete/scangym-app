@@ -26,7 +26,15 @@ const pool = require('../middleware/db');
 
 const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_API = `https://api.telegram.org/bot${TELEGRAM_TOKEN}`;
-const BASE_URL = process.env.BASE_URL || 'https://scangym.com';
+// The apex host 301-redirects to www, and Telegram does not follow redirects:
+// a webhook registered on the apex host answered every update with
+// "Wrong response from the webhook: 301 Moved Permanently" and the bot went
+// silent while /health still reported telegram as configured. Default to the
+// canonical host so a missing BASE_URL cannot take the bot down again.
+const { canonicalBase } = require('./canonical-host');
+const BASE_URL = canonicalBase(process.env.BASE_URL || 'https://www.scangym.com');
+const WEBHOOK_PATH = '/api/chatbot/telegram/webhook';
+
 const BOT_SECRET = process.env.BOT_CHECKOUT_SECRET || process.env.ADMIN_IMPORT_SECRET || '';
 
 // Session store for pagination + booking flow
@@ -554,8 +562,53 @@ async function sendLocationRequest(chatId) {
   }
 }
 
+// ─── Admin guard ─────────────────────────────────────────────
+// This route repoints the bot's webhook. Unauthenticated, it let anyone on the
+// internet redirect every customer conversation to their own server.
+function requireChatbotAdmin(req, res, next) {
+  const expected = process.env.CHATBOT_ADMIN_KEY;
+  if (!expected) {
+    return res.status(503).json({ error: 'CHATBOT_ADMIN_KEY is not set, so webhook changes are refused' });
+  }
+  const given = req.get('x-admin-key') || '';
+  if (given.length !== expected.length || given !== expected) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+  return next();
+}
+
+/**
+ * Point Telegram at the canonical webhook URL on boot.
+ *
+ * Registration lives in Telegram's console, not in this repo, so a deploy can
+ * be perfectly healthy while inbound messages go to a stale or redirecting
+ * URL. Checking it at startup makes that self-healing instead of silent.
+ */
+async function ensureWebhook() {
+  if (!TELEGRAM_TOKEN) return { ok: false, reason: 'no token' };
+  const want = `${BASE_URL}${WEBHOOK_PATH}`;
+  try {
+    const info = await (await fetch(`${TELEGRAM_API}/getWebhookInfo`)).json();
+    const current = info?.result?.url || '';
+    const lastError = info?.result?.last_error_message || '';
+    if (current === want && !lastError) return { ok: true, changed: false, url: current };
+
+    const resp = await fetch(`${TELEGRAM_API}/setWebhook`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: want, allowed_updates: ['message', 'callback_query'] }),
+    });
+    const data = await resp.json();
+    console.log(`[Telegram] webhook ${current ? `was ${current}` : 'was missing'}${lastError ? ` (last error: ${lastError})` : ''} → set to ${want}:`, data.ok ? 'ok' : data.description);
+    return { ok: !!data.ok, changed: true, url: want, previous: current };
+  } catch (err) {
+    console.error('[Telegram] ensureWebhook failed:', err.message);
+    return { ok: false, reason: err.message };
+  }
+}
+
 // ─── Set up webhook ──────────────────────────────────────────
-router.post('/setup', async (req, res) => {
+router.post('/setup', requireChatbotAdmin, async (req, res) => {
   const { webhookUrl } = req.body;
   if (!webhookUrl) {
     return res.status(400).json({ error: 'webhookUrl required' });
@@ -689,3 +742,4 @@ function splitMessage(text, maxLen) {
 }
 
 module.exports = router;
+module.exports.ensureWebhook = ensureWebhook;

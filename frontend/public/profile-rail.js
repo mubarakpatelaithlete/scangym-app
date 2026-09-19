@@ -219,18 +219,29 @@
     },
   };
 
-  // ── Health (cheap endpoint; can only demote a verified channel) ────────
-  var health = null;
+  // ── Health (deep probes, server-cached; can only demote a channel) ─────
+  // The shallow endpoint only reports whether an env var is set. It showed the
+  // Telegram dot green for weeks while Telegram was rejecting every update with
+  // a 301 from the apex host, so the dot claimed live on a mute bot. ?deep=1
+  // asks each provider a question only a working credential can answer and is
+  // cached server-side, so this stays one cheap request per load.
+  var health = null;   // shallow: credential present
+  var probes = null;   // deep: provider actually answers as us
   function loadHealth() {
-    fetch('/api/chatbot/health')
+    fetch('/api/chatbot/health?deep=1')
       .then(function (r) { return r.json(); })
-      .then(function (d) { health = (d && d.channels) || null; sync(); })
-      .catch(function () { health = null; });
+      .then(function (d) {
+        health = (d && d.channels) || null;
+        probes = (d && d.probes) || null;
+        sync();
+      })
+      .catch(function () { health = null; probes = null; });
   }
 
   function isLive(key) {
     if (!VERIFIED_LIVE[key]) return false;
     if (health && health.hasOwnProperty(key) && health[key] === false) return false; // credential pulled
+    if (probes && probes[key] && probes[key].live === false) return false;           // credential dead or webhook broken
     return true;
   }
 
