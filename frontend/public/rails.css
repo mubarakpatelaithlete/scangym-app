@@ -766,14 +766,14 @@ html body.sg-cta-rides-row .sg-row-slot > #chat-fab#chat-fab {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  font-size: var(--sg-btn-icon, 22px) !important;
+  font-size: var(--sg-btn-icon, 20px) !important;
   line-height: 1 !important;
   opacity: 1 !important;
 }
 
 .sg-row-slot .sg-row-trio > .tt-action-btn svg {
-  width: var(--sg-btn-icon, 22px) !important;
-  height: var(--sg-btn-icon, 22px) !important;
+  width: var(--sg-btn-icon, 20px) !important;
+  height: var(--sg-btn-icon, 20px) !important;
   stroke: currentColor !important;
   color: #fff !important;
 }

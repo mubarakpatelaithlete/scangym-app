@@ -579,7 +579,7 @@ var reelsRail=(function(){
     +'.sg-rr-btn:active .sg-rr-circle{transform:scale(.9)}'
     /* Look comes from one-button.css; the fallbacks are that file's values, so
        this row still matches every other row if the sheet is missing. */
-    +'.sg-rr-circle{width:var(--sg-btn-size,44px);height:var(--sg-btn-size,44px);border-radius:50%;background:var(--sg-btn-bg,rgba(0,0,0,.40));backdrop-filter:var(--sg-btn-blur,blur(12px));-webkit-backdrop-filter:var(--sg-btn-blur,blur(12px));border:var(--sg-btn-border-width,1.5px) solid var(--sg-btn-border-color,rgba(255,255,255,.12));display:flex;align-items:center;justify-content:center;font-size:var(--sg-btn-icon,22px);transition:transform .15s;box-shadow:var(--sg-btn-shadow,0 2px 10px rgba(0,0,0,.25))}'
+    +'.sg-rr-circle{width:var(--sg-btn-size,44px);height:var(--sg-btn-size,44px);border-radius:50%;background:var(--sg-btn-bg,rgba(0,0,0,.40));backdrop-filter:var(--sg-btn-blur,blur(12px));-webkit-backdrop-filter:var(--sg-btn-blur,blur(12px));border:var(--sg-btn-border-width,1.5px) solid var(--sg-btn-border-color,rgba(255,255,255,.12));display:flex;align-items:center;justify-content:center;font-size:var(--sg-btn-icon,20px);transition:transform .15s;box-shadow:var(--sg-btn-shadow,0 2px 10px rgba(0,0,0,.25))}'
     +'.sg-rr-label{font-size:var(--sg-btn-label-size,10px);font-weight:var(--sg-btn-label-weight,600);color:var(--sg-btn-label-color,#fff);text-shadow:var(--sg-btn-label-shadow,0 1px 4px rgba(0,0,0,.8));letter-spacing:var(--sg-btn-label-tracking,.2px)}';
   document.head.appendChild(s);
 })();
@@ -722,7 +722,7 @@ function injectCSS(){
     /* Same circle as the Reels rail and the strip: values live in
        one-button.css, fallbacks repeat them so this row never drifts. */
     '.tt-action-btn.sgi{width:var(--sg-btn-size,44px);height:var(--sg-btn-size,44px);border-radius:50%;background:var(--sg-btn-bg,rgba(0,0,0,.40));border:var(--sg-btn-border-width,1.5px) solid var(--sg-btn-border-color,rgba(255,255,255,.12));color:#fff;backdrop-filter:var(--sg-btn-blur,blur(12px));-webkit-backdrop-filter:var(--sg-btn-blur,blur(12px));opacity:1;filter:none;box-shadow:var(--sg-btn-shadow,0 2px 10px rgba(0,0,0,.25))}'+
-    '.tt-action-btn.sgi svg{width:var(--sg-btn-icon,22px);height:var(--sg-btn-icon,22px)}'+
+    '.tt-action-btn.sgi svg{width:var(--sg-btn-icon,20px);height:var(--sg-btn-icon,20px)}'+
     '.tt-actions .tt-action-label{font-size:var(--sg-btn-label-size,10px);font-weight:var(--sg-btn-label-weight,600);color:var(--sg-btn-label-color,#fff);text-shadow:var(--sg-btn-label-shadow,0 1px 4px rgba(0,0,0,.8));letter-spacing:var(--sg-btn-label-tracking,.2px)}'+
     '.tt-actions .tt-action.sgi-x{display:none}'+
     '.tt-actions.sgi-open .tt-action.sgi-x{display:flex}'+

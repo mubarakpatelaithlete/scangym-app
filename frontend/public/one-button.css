@@ -15,6 +15,12 @@
  *   sg-scansquad.js   .creator-side-btn    42px  purple/green/orange tints, inline   blur  8px  COLOUR EMOJI
  *   rails.js          .sg-row-trio         42px  rgba(13,16,25,.62)  border 1px   .10  no blur   COLOUR EMOJI
  *
+ * and two more rails found on the second pass, once he said "all remaining
+ * button also":
+ *
+ *   profile-rail.js   .sg-pr-circle        44px  rgba(0,0,0,.4)      border 1px   .12  blur 12px  22px SVG
+ *   squad-create.js   .sv-circle           44px  rgba(255,109,0,.18) border 1px orange  blur 12px  19px EMOJI + orange glow
+ *
  * plus three caption styles: 10px/600 full white (Reels), 9px/700 full white
  * (ScanSquad, reels rail), 10px/600 at 72% white (Book / Talk / Ask AI). So the
  * trio always read bigger, greyer and — because of the emoji — in a different
@@ -62,7 +68,10 @@
   --sg-btn-border-color: rgba(255, 255, 255, .12);
   --sg-btn-blur: blur(12px);
   --sg-btn-shadow: 0 2px 10px rgba(0, 0, 0, .25);
-  --sg-btn-icon: 22px;           /* the SVG; also the emoji size where one is left */
+  /* 20px, the owner's call (2026-09-19). Reels' Share/Save were drawn at 22px
+     and every rail behind them at 20px, so one of the two had to move; the
+     smaller icon is the one four of the six rows already used. */
+  --sg-btn-icon: 20px;           /* the SVG; also the emoji size where one is left */
   --sg-btn-gap: 3px;             /* circle → caption */
 
   /* The caption. Full white: 72% white over a bright frame of video is the one
@@ -112,3 +121,57 @@
   background: var(--sg-btn-bg);
   border: var(--sg-btn-border-width) solid var(--sg-btn-border-color);
 }
+
+/* ─── Two rails that were missed on the first pass ──────────────────────────
+   profile-rail.js had the right values already, arrived at separately: same
+   44px, same rgba(0,0,0,.4), same blur — with a 1px border instead of 1.5px and
+   a 22px icon. Being right by coincidence is still a copy, so it reads the
+   properties now like everything else.
+
+   squad-create.js's button was orange-tinted with an orange glow, which made it
+   read as the primary action on a screen where it is not, and collided with the
+   one-orange rule (the voice pill is the orange thing). The live/soon dot still
+   carries its state — the tint never did. */
+.sg-pr-circle,
+#sg-profile-rail .sg-pr-circle {
+  width: var(--sg-btn-size);
+  height: var(--sg-btn-size);
+  background: var(--sg-btn-bg);
+  border: var(--sg-btn-border-width) solid var(--sg-btn-border-color);
+  -webkit-backdrop-filter: var(--sg-btn-blur);
+  backdrop-filter: var(--sg-btn-blur);
+  box-shadow: var(--sg-btn-shadow);
+}
+
+.sg-pr-circle svg,
+#sg-profile-rail .sg-pr-circle svg {
+  width: var(--sg-btn-icon);
+  height: var(--sg-btn-icon);
+}
+
+.sv-circle {
+  width: var(--sg-btn-size) !important;
+  height: var(--sg-btn-size) !important;
+  background: var(--sg-btn-bg) !important;
+  border: var(--sg-btn-border-width) solid var(--sg-btn-border-color) !important;
+  -webkit-backdrop-filter: var(--sg-btn-blur) !important;
+  backdrop-filter: var(--sg-btn-blur) !important;
+  box-shadow: var(--sg-btn-shadow) !important;
+  font-size: var(--sg-btn-icon) !important;
+  color: #fff !important;
+}
+
+.sv-circle svg {
+  width: var(--sg-btn-icon) !important;
+  height: var(--sg-btn-icon) !important;
+  stroke: currentColor !important;
+}
+
+/* ─── Deliberately NOT in here ──────────────────────────────────────────────
+   chat-agent.js's .pchat-rnd (the mic and send buttons in the chat composer).
+   They are 44px circles too, but they sit on a solid #0b0b14 sheet inside a
+   panel, not over content: glass has nothing to blur there, and send is the
+   primary action of that panel. Same for avatars, unread dots, spinners, the
+   voice pill (one-orange.css) and the admin and partner dashboards, which are
+   desktop surfaces with their own buttons. This file governs the round action
+   buttons that sit over the app's content. */

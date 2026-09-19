@@ -31,6 +31,9 @@ const railUi = read('sg-rail-ui.js');
 const railsJs = read('rails.js');
 const railsCss = read('rails.css');
 const reels = read('reels/index.html');
+const profileRail = read('profile-rail.js');
+const squadCreate = read('squad-create.js');
+const chatAgent = read('chat-agent.js');
 
 const TOKENS = [
   '--sg-btn-size',
@@ -53,7 +56,8 @@ test('every button token is declared exactly once, in one-button.css', () => {
   }
   // No other file may declare them — a second declaration is a second answer.
   for (const [name, src] of [['sg-rail-ui.js', railUi], ['rails.css', railsCss],
-    ['rails.js', railsJs], ['reels/index.html', reels]]) {
+    ['rails.js', railsJs], ['reels/index.html', reels],
+    ['profile-rail.js', profileRail], ['squad-create.js', squadCreate]]) {
     for (const t of TOKENS) {
       assert.ok(!new RegExp(`${t}\\s*:`).test(src), `${name} redeclares ${t}`);
     }
@@ -133,4 +137,58 @@ test('every document that has a strip loads the stylesheet that defines it', () 
   for (const doc of ['index.html', 'reels/index.html', 'scansquad/index.html']) {
     assert.match(read(doc), /<link rel="stylesheet" href="\/one-button\.css/, `${doc} is missing it`);
   }
+});
+
+test('every var() fallback repeats the value the token actually holds', () => {
+  // A fallback that disagrees with :root is a second opinion waiting to be seen
+  // the one time the stylesheet does not load.
+  const root = tokens.slice(tokens.indexOf(':root'), tokens.indexOf('}', tokens.indexOf(':root')));
+  const declared = {};
+  for (const m of root.matchAll(/(--sg-btn-[a-z-]+):\s*([^;]+);/g)) {
+    declared[m[1]] = m[2].trim();
+  }
+  const norm = (v) => v.replace(/\s+/g, '').toLowerCase();
+  for (const [name, src] of [['one-button.css', tokens], ['rails.css', railsCss],
+    ['sg-rail-ui.js', railUi], ['rails.js', railsJs], ['reels/index.html', reels],
+    ['profile-rail.js', profileRail], ['squad-create.js', squadCreate]]) {
+    for (const m of src.matchAll(/var\((--sg-btn-[a-z-]+),([^()]*(?:\([^()]*\))?[^()]*)\)/g)) {
+      const [, token, fallback] = m;
+      assert.ok(declared[token], `${name} reads ${token}, which nothing declares`);
+      assert.equal(norm(fallback), norm(declared[token]),
+        `${name}: fallback for ${token} is ${fallback.trim()}, the token is ${declared[token]}`);
+    }
+  }
+});
+
+test('the icon is 20px, the size the owner chose', () => {
+  assert.match(tokens, /--sg-btn-icon:\s*20px/);
+  // Nothing may quietly keep drawing a 22px icon in a strip button.
+  assert.ok(!/\.reel-action \.icon svg\{[^}]*22px/.test(reels));
+  assert.ok(!/\.sg-pr-circle svg\{width:22px/.test(profileRail));
+});
+
+test('the profile and squad-create rails joined the same button', () => {
+  for (const [name, src, marker] of [
+    ['profile-rail.js', profileRail, "'.sg-pr-circle{"],
+    ['squad-create.js', squadCreate, "' .sv-circle{"]
+  ]) {
+    const i = src.indexOf(marker);
+    assert.ok(i > 0, `${name}: ${marker} is gone`);
+    const rule = src.slice(i, src.indexOf('}', i));
+    for (const t of ['--sg-btn-size', '--sg-btn-bg', '--sg-btn-blur', '--sg-btn-border-color']) {
+      assert.ok(rule.includes(t), `${name} still hardcodes ${t.replace('--sg-btn-', '')}`);
+    }
+  }
+  // squad-create's orange tint and glow were the loudest disagreement of all.
+  assert.ok(!squadCreate.includes('background:rgba(255,109,0,.18)'), 'the orange tint is back');
+  assert.ok(!squadCreate.includes('box-shadow:0 0 14px rgba(255,109,0,.3)'), 'the orange glow is back');
+});
+
+test('the chat composer is left out on purpose, and stays out', () => {
+  // Documented exclusion: mic and send sit on a solid sheet inside a panel, and
+  // send is that panel's primary action. If someone "fixes" it, this fails and
+  // they have to read why first.
+  assert.match(tokens, /Deliberately NOT in here/);
+  assert.ok(!/\.pchat-rnd\{[^}]*--sg-btn-/.test(chatAgent),
+    'the chat composer buttons were folded in without updating the note');
 });

@@ -57,6 +57,10 @@
   var MS_STORE_URL = 'https://apps.microsoft.com/detail/9nh8vrn834dv';
 
   // ── Styles (injected once) ─────────────────────────────────────────────
+  // The circle, the icon size and the caption are one-button.css's, read through
+  // var(): this rail had arrived at the same 44px glass circle on its own, with a
+  // 1px border and a 22px icon, and "the same by coincidence" is what drifts.
+  // Fallbacks are one-button.css's values, so the rail is unchanged without it.
   var css = [
     /* top/right/bottom: rails.css owns rail geometry. */
     '#' + RAIL_ID + '{position:fixed;display:flex;flex-direction:column;gap:11px;align-items:center;z-index:8990;overflow-y:auto;overflow-x:visible;scrollbar-width:none;padding:2px 2px 6px;}',
@@ -64,9 +68,9 @@
     '#' + RAIL_ID + ' .sg-pr-sec{font-size:8.5px;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.35);font-weight:700;text-align:center;width:44px;margin-bottom:-4px;}',
     '#' + RAIL_ID + ' .sg-pr-btn{display:flex;flex-direction:column;align-items:center;gap:2px;width:44px;cursor:pointer;-webkit-tap-highlight-color:transparent;}',
     '#' + RAIL_ID + ' .sg-pr-btn:active .sg-pr-circle{transform:scale(.92);}',
-    '#' + RAIL_ID + ' .sg-pr-circle{width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.12);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 2px 10px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;position:relative;transition:transform .15s;}',
-    '#' + RAIL_ID + ' .sg-pr-circle svg{width:22px;height:22px;}',
-    '#' + RAIL_ID + ' .sg-pr-label{font-size:10px;color:#fff;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8);white-space:nowrap;}',
+    '#' + RAIL_ID + ' .sg-pr-circle{width:var(--sg-btn-size,44px);height:var(--sg-btn-size,44px);border-radius:50%;background:var(--sg-btn-bg,rgba(0,0,0,.40));border:var(--sg-btn-border-width,1.5px) solid var(--sg-btn-border-color,rgba(255,255,255,.12));backdrop-filter:var(--sg-btn-blur,blur(12px));-webkit-backdrop-filter:var(--sg-btn-blur,blur(12px));box-shadow:var(--sg-btn-shadow,0 2px 10px rgba(0,0,0,.25));display:flex;align-items:center;justify-content:center;position:relative;transition:transform .15s;}',
+    '#' + RAIL_ID + ' .sg-pr-circle svg{width:var(--sg-btn-icon,20px);height:var(--sg-btn-icon,20px);}',
+    '#' + RAIL_ID + ' .sg-pr-label{font-size:var(--sg-btn-label-size,10px);color:var(--sg-btn-label-color,#fff);font-weight:var(--sg-btn-label-weight,600);text-shadow:var(--sg-btn-label-shadow,0 1px 4px rgba(0,0,0,.8));white-space:nowrap;}',
     '#' + RAIL_ID + ' .sg-pr-dot{position:absolute;top:-2px;right:-2px;width:12px;height:12px;border-radius:50%;border:2px solid #0f172a;}',
     '#' + RAIL_ID + ' .sg-pr-dot.live{background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,.8);}',
     '#' + RAIL_ID + ' .sg-pr-dot.pending{background:#f59e0b;}',
@@ -78,9 +82,9 @@
     '.sg-pr-host-capped::-webkit-scrollbar{display:none;}',
     '.sg-pr-btn{display:flex;flex-direction:column;align-items:center;gap:2px;width:44px;cursor:pointer;-webkit-tap-highlight-color:transparent;}',
     '.sg-pr-btn:active .sg-pr-circle{transform:scale(.92);}',
-    '.sg-pr-circle{width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.12);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 2px 10px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;position:relative;transition:transform .15s;}',
-    '.sg-pr-circle svg{width:22px;height:22px;}',
-    '.sg-pr-label{font-size:10px;color:#fff;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8);white-space:nowrap;}',
+    '.sg-pr-circle{width:var(--sg-btn-size,44px);height:var(--sg-btn-size,44px);border-radius:50%;background:var(--sg-btn-bg,rgba(0,0,0,.40));border:var(--sg-btn-border-width,1.5px) solid var(--sg-btn-border-color,rgba(255,255,255,.12));backdrop-filter:var(--sg-btn-blur,blur(12px));-webkit-backdrop-filter:var(--sg-btn-blur,blur(12px));box-shadow:var(--sg-btn-shadow,0 2px 10px rgba(0,0,0,.25));display:flex;align-items:center;justify-content:center;position:relative;transition:transform .15s;}',
+    '.sg-pr-circle svg{width:var(--sg-btn-icon,20px);height:var(--sg-btn-icon,20px);}',
+    '.sg-pr-label{font-size:var(--sg-btn-label-size,10px);color:var(--sg-btn-label-color,#fff);font-weight:var(--sg-btn-label-weight,600);text-shadow:var(--sg-btn-label-shadow,0 1px 4px rgba(0,0,0,.8));white-space:nowrap;}',
     '.sg-pr-dot{position:absolute;top:-2px;right:-2px;width:12px;height:12px;border-radius:50%;border:2px solid #0f172a;}',
     '.sg-pr-dot.live{background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,.8);}',
     '.sg-pr-dot.pending{background:#f59e0b;}',
