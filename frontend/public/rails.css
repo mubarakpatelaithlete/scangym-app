@@ -598,9 +598,9 @@ html body.sg-cta-in-row #sg-continue-banner .sg-cb-ico {
 }
 html body.sg-cta-in-row #sg-continue-banner .sg-cb-cap {
   display: block !important;
-  color: #fff !important;
-  font-size: 10px !important;
-  font-weight: 600 !important;
+  color: var(--sg-btn-label-color, #fff) !important;
+  font-size: var(--sg-btn-label-size, 10px) !important;
+  font-weight: var(--sg-btn-label-weight, 600) !important;
   line-height: var(--sg-row-cap) !important;
   letter-spacing: 0 !important;
   white-space: nowrap !important;
@@ -624,8 +624,11 @@ body.sg-cta-in-row #chat-fab#chat-fab {
   height: var(--sg-row-ico) !important;
   padding: 0 !important;
   border-radius: 50% !important;
-  background: rgba(13, 16, 25, .62) !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, .35) !important;
+  background: var(--sg-btn-bg, rgba(0, 0, 0, .40)) !important;
+  border: var(--sg-btn-border-width, 1.5px) solid var(--sg-btn-border-color, rgba(255, 255, 255, .12)) !important;
+  -webkit-backdrop-filter: var(--sg-btn-blur, blur(12px)) !important;
+  backdrop-filter: var(--sg-btn-blur, blur(12px)) !important;
+  box-shadow: var(--sg-btn-shadow, 0 2px 10px rgba(0, 0, 0, .25)) !important;
   font-size: 0 !important;
   overflow: visible !important;
 }
@@ -658,9 +661,9 @@ body.sg-cta-in-row #chat-fab#chat-fab::after {
   top: calc(100% + 3px) !important;
   left: 50% !important;
   transform: translateX(-50%) !important;
-  color: #fff !important;
-  font-size: 10px !important;
-  font-weight: 600 !important;
+  color: var(--sg-btn-label-color, #fff) !important;
+  font-size: var(--sg-btn-label-size, 10px) !important;
+  font-weight: var(--sg-btn-label-weight, 600) !important;
   line-height: var(--sg-row-cap) !important;
   white-space: nowrap !important;
   text-shadow: 0 1px 4px rgba(0, 0, 0, .85) !important;
@@ -741,34 +744,51 @@ html body.sg-cta-rides-row .sg-row-slot > #chat-fab#chat-fab {
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
-  gap: 3px !important;
+  gap: var(--sg-btn-gap, 3px) !important;
   flex: 0 0 auto !important;
   cursor: pointer !important;
   -webkit-tap-highlight-color: transparent !important;
 }
 
+/* The circle is one-button.css's, read through var() rather than restated here:
+   the numbers this block used to carry (42px, rgba(13,16,25,.62), border .10, no
+   blur) were a copy of the Book rail's, and by 2026-09-19 the copy no longer
+   matched anything on screen. Fallbacks are one-button.css's own values. */
 .sg-row-slot .sg-row-trio > .tt-action-btn {
-  width: var(--sg-row-ico, 42px) !important;
-  height: var(--sg-row-ico, 42px) !important;
+  width: var(--sg-btn-size, 44px) !important;
+  height: var(--sg-btn-size, 44px) !important;
   border-radius: 50% !important;
-  background: rgba(13, 16, 25, .62) !important;
-  border: 1px solid rgba(255, 255, 255, .10) !important;
+  background: var(--sg-btn-bg, rgba(0, 0, 0, .40)) !important;
+  border: var(--sg-btn-border-width, 1.5px) solid var(--sg-btn-border-color, rgba(255, 255, 255, .12)) !important;
+  -webkit-backdrop-filter: var(--sg-btn-blur, blur(12px)) !important;
+  backdrop-filter: var(--sg-btn-blur, blur(12px)) !important;
+  box-shadow: var(--sg-btn-shadow, 0 2px 10px rgba(0, 0, 0, .25)) !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  font-size: 20px !important;
+  font-size: var(--sg-btn-icon, 20px) !important;
   line-height: 1 !important;
   opacity: 1 !important;
 }
 
+.sg-row-slot .sg-row-trio > .tt-action-btn svg {
+  width: var(--sg-btn-icon, 20px) !important;
+  height: var(--sg-btn-icon, 20px) !important;
+  stroke: currentColor !important;
+  color: #fff !important;
+}
+
 .sg-row-slot .sg-row-trio > .tt-action-btn:active { transform: scale(.9) !important; }
 
+/* Caption, same source. It was 72% white here and 100% everywhere else, which is
+   why Book / Talk / Ask AI read greyer than the buttons beside them. */
 .sg-row-slot .sg-row-trio > .tt-action-label {
   display: block !important;
-  font-size: 10px !important;
-  font-weight: 600 !important;
-  color: rgba(255, 255, 255, .72) !important;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, .8) !important;
+  font-size: var(--sg-btn-label-size, 10px) !important;
+  font-weight: var(--sg-btn-label-weight, 600) !important;
+  color: var(--sg-btn-label-color, #fff) !important;
+  letter-spacing: var(--sg-btn-label-tracking, .2px) !important;
+  text-shadow: var(--sg-btn-label-shadow, 0 1px 4px rgba(0, 0, 0, .8)) !important;
   white-space: nowrap !important;
   max-width: 60px !important;
   overflow: hidden !important;

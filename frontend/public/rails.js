@@ -337,10 +337,17 @@
      or moves to the Book tab, and Talk and Ask AI open the tab's existing chat
      (voice or typing), which is the same object its floating pill opened. */
   var TRIO = 'sg-row-trio';
+  /* `ico` names an icon in sg-rail-ui.js's one table (window.SG_ICONS), the same
+     one the Search, Near me, Verify and Share circles draw from. `emoji` is the
+     fallback for the framed documents, which load this file without that script.
+
+     This used to be emoji only — \uD83D\uDCB3 \uD83C\uDFA4 \u2728 — and that was the answer to "why in
+     reels tab book / talk / ask AI buttons are not same colour, same looking
+     like share button": three colour glyphs in a row of white line icons. */
   var ITEMS = [
-    { key: 'book', ico: '\uD83D\uDCB3', cap: 'Book' },
-    { key: 'talk', ico: '\uD83C\uDFA4', cap: 'Talk' },
-    { key: 'ai',   ico: '\u2728',       cap: 'Ask AI' }
+    { key: 'book', ico: 'calendar', emoji: '\uD83D\uDCB3', cap: 'Book' },
+    { key: 'talk', ico: 'mic',      emoji: '\uD83C\uDFA4', cap: 'Talk' },
+    { key: 'ai',   ico: 'sparkle',  emoji: '\u2728',       cap: 'Ask AI' }
   ];
 
   /** The chat this tab owns. Built by its own script, so it is already there. */
@@ -391,7 +398,13 @@
       item.setAttribute('data-sg-row-act', it.key);
       var btn = document.createElement('div');
       btn.className = 'tt-action-btn';
-      btn.textContent = it.ico;
+      var icons = window.SG_ICONS || {};
+      if (icons[it.ico]) {
+        btn.innerHTML = icons[it.ico];
+        btn.classList.add('sgi');       /* the shared circle, not a copy of it */
+      } else {
+        btn.textContent = it.emoji;
+      }
       var lab = document.createElement('div');
       lab.className = 'tt-action-label';
       lab.textContent = it.cap;

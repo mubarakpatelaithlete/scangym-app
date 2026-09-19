@@ -208,8 +208,13 @@
     '#' + RAIL_ID + '.sv-float{position:fixed;z-index:8990;}',
     '#' + RAIL_ID + '.sv-float::-webkit-scrollbar{display:none;}',
     '.' + BTN_ID + '{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;-webkit-tap-highlight-color:transparent;}',
-    '.' + BTN_ID + ' .sv-circle{position:relative;width:44px;height:44px;border-radius:50%;background:rgba(255,109,0,.18);border:1px solid rgba(255,109,0,.5);backdrop-filter:blur(12px);box-shadow:0 0 14px rgba(255,109,0,.3);display:flex;align-items:center;justify-content:center;font-size:19px;transition:transform .15s;}',
-    '.' + BTN_ID + '.sv-off .sv-circle{background:rgba(148,163,184,.14);border-color:rgba(148,163,184,.4);box-shadow:none;}',
+    // One circle, one-button.css's, read through var(). This button used to be
+    // orange-tinted with an orange glow, which read as the primary action of a
+    // screen where it is not one, and took the orange that one-orange.css
+    // reserves for the voice pill. The live/soon dot below still carries the
+    // state the tint was pretending to carry.
+    '.' + BTN_ID + ' .sv-circle{position:relative;width:var(--sg-btn-size,44px);height:var(--sg-btn-size,44px);border-radius:50%;background:var(--sg-btn-bg,rgba(0,0,0,.40));border:var(--sg-btn-border-width,1.5px) solid var(--sg-btn-border-color,rgba(255,255,255,.12));backdrop-filter:var(--sg-btn-blur,blur(12px));-webkit-backdrop-filter:var(--sg-btn-blur,blur(12px));box-shadow:var(--sg-btn-shadow,0 2px 10px rgba(0,0,0,.25));display:flex;align-items:center;justify-content:center;font-size:var(--sg-btn-icon,20px);color:#fff;transition:transform .15s;}',
+    '.' + BTN_ID + '.sv-off .sv-circle{opacity:.55;}',
     '.' + BTN_ID + ':active .sv-circle{transform:scale(.92);}',
     '.' + BTN_ID + ' .sv-label{font-size:10px;color:#fff;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8);}',
     '.sv-dot{position:absolute;top:1px;right:1px;width:8px;height:8px;border-radius:50%;border:1.5px solid #0b1424;}',
