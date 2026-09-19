@@ -852,3 +852,13 @@ body.sg-cta-rides-row .tt-chips {
 html body main.sg-tab-content.sg-tab-content.sg-tab-content {
   padding-bottom: calc(var(--sg-band-height, 72px) + 12px) !important;
 }
+
+/* ── One bar per view, even across two documents ─────────────────────────────
+   While the Reels frame is the view, the row is inside it and so is the frame's
+   own copy of the bar. This document's bar has nothing to ride and used to stay
+   fixed on top of the framed row's first button (owner screenshot, 2026-09-19).
+   rails.js sets the class only while a painted reels frame is on screen and no
+   row of this document's own is. */
+html body.sg-cta-frame-owns #sg-continue-banner#sg-continue-banner {
+  display: none !important;
+}

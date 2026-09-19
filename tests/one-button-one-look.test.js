@@ -355,3 +355,17 @@ test('nothing stacks a third bar between the row and the nav', () => {
   assert.match(railsCss, /padding-bottom: calc\(var\(--sg-band-height/,
     'content no longer reserves the row height, so page endings hide under it');
 });
+
+test('only one document draws the bar while the Reels frame is the view', () => {
+  // The parent's pill was sitting on the framed row's first button, showing two
+  // labels stacked ("Gyms" over "Book") on production.
+  assert.match(railsJs, /function reelsFrameOwnsTheRow\(\)/,
+    'rails.js no longer notices when the frame owns the row');
+  assert.match(railsJs, /sg-cta-frame-owns/, 'the stand-down class is gone');
+  assert.match(railsCss, /body\.sg-cta-frame-owns #sg-continue-banner#sg-continue-banner\s*\{\s*display: none/,
+    'the parent bar is no longer hidden while the frame owns the row');
+  // It must stand down only in that case, never when this document has a row.
+  const ride = railsJs.slice(railsJs.indexOf('function ride() {'), railsJs.indexOf('window.sgRails'));
+  assert.match(ride, /classList\.remove\(FRAME_OWNS\)/,
+    'the bar would stay hidden after the customer leaves Reels');
+});
