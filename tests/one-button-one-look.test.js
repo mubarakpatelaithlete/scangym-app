@@ -343,3 +343,15 @@ test('the profile rail does not repeat the tab bar', () => {
   assert.ok(rail.includes("navigate('/apps')") && rail.includes("navigate('/channels')"),
     'the rail lost the destinations the tab bar does not carry');
 });
+
+test('nothing stacks a third bar between the row and the nav', () => {
+  // The owner asked for the "Today · Day Pass · £4.49" strip to go; the card
+  // above it and the Book button already carry the date and the price.
+  const ui = read('sg-rail-ui.js');
+  assert.ok(!ui.includes('sg-book-summary'), 'the day-pass summary strip is back');
+  assert.ok(!ui.includes('sg-r4-summary'), 'the class that showed it is back');
+  assert.ok(!ui.includes('summaryText'), 'dead code for the strip is back');
+  // And the end of a page can scroll clear of the floating row.
+  assert.match(railsCss, /padding-bottom: calc\(var\(--sg-band-height/,
+    'content no longer reserves the row height, so page endings hide under it');
+});

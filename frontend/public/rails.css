@@ -842,3 +842,13 @@ body.sg-cta-rides-row .tt-info,
 body.sg-cta-rides-row .tt-chips {
   padding-bottom: calc(var(--sg-band-height, 62px) + 4px) !important;
 }
+
+/* ── Content has to be able to scroll clear of the row ───────────────────────
+   The containers above end at the nav and the row floats over them, which is
+   right for a photo but wrong for a page that ends in text: on the Profile tab
+   the closing line and the Channels section sat underneath the buttons (owner
+   screenshot, 2026-09-19). Reserve the row's height at the end of the scroll,
+   from the same variables the row is positioned with. */
+html body main.sg-tab-content.sg-tab-content.sg-tab-content {
+  padding-bottom: calc(var(--sg-band-height, 72px) + 12px) !important;
+}
