@@ -10366,6 +10366,38 @@ async function loadFallbackGyms(){
   }catch(e){console.warn('Fallback gym load failed:',e);}
 }
 
+/* The city we can stand behind: one the visitor chose or typed, then a fresh
+   IP city we trusted, then their last GPS fix. '' = we do not know, and the
+   caller must say it is guessing instead of implying "near you". */
+function _sgKnownCityQuery(){
+  try{
+    var chosen=window.sgChosenCity&&window.sgChosenCity();
+    if(chosen)return 'gyms in '+chosen;
+    var c=getCachedLocation();
+    if(c&&!c.needs_confirmation&&(c.query||c.city))return c.query||('gyms in '+c.city);
+    var g=JSON.parse(localStorage.getItem('sg_gps')||'null');
+    if(g&&g.query&&(Date.now()-g.ts<86400000))return g.query;
+    if(g&&g.city&&(Date.now()-g.ts<86400000))return 'gyms in '+g.city;
+  }catch(e){}
+  return '';
+}
+window._sgKnownCityQuery=_sgKnownCityQuery;
+
+/* A guessed city is fine; a guess presented as "near you" is not. An untrusted
+   IP or the London default is a prior, not a verdict - name the city on screen
+   and make changing it one tap. The banner copy ("Showing gyms in X / Not your
+   area? Tap to change") does both. */
+function _sgSayItIsAGuess(){
+  window._sgCityIsGuess=true;
+  try{
+    if(typeof _injectLocationBanner==='function'){
+      if(!document.getElementById('sg-location-banner'))_injectLocationBanner('denied');
+      if(typeof window._refreshLocationBanner==='function')window._refreshLocationBanner();
+    }
+  }catch(e){}
+}
+window._sgSayItIsAGuess=_sgSayItIsAGuess;
+
 window.findGyms=function(){
   navigate('/explore');
   // User explicitly requested GPS — clear the explicit search lock
@@ -10373,17 +10405,22 @@ window.findGyms=function(){
 
   // ━━━ Show results INSTANTLY, upgrade in background ━━━
   // NEVER await GPS. NEVER show blank screen. NEVER block the UI.
-  const cached=getCachedLocation();
-  if(state.gyms.length===0){
-    // Perf #2b: Restore last GPS from localStorage for instant startup
-    (function(){try{var g=JSON.parse(localStorage.getItem('sg_gps')||'null');if(g&&g.lat&&(Date.now()-g.ts<86400000)){state.searchLat=g.lat;state.searchLng=g.lng;if(g.query&&!cached?.query){searchGyms(g.query,false);return;}}}catch(e){}})();
-    searchGyms(cached?.query||'gyms in London');
+  /* It used to search only when the screen was empty, so a tap with results
+     already up and GPS off did nothing visible - a dead button. And when it
+     knew nothing it showed London as if it were near you. Now: always
+     re-search the best city we know, and label a guess as a guess. */
+  var known=_sgKnownCityQuery();
+  if(known){
+    searchGyms(known);
+  }else{
+    searchGyms('gyms in London');
+    _sgSayItIsAGuess();
   }
 
   // ━━━ Fire IP detection — upgrades in ~100ms (non-blocking) ━━━
   fetch('/api/geolocation/auto-city',{credentials:'include'}).then(r=>r.json()).then(cityData=>{
     if(!cityData||!cityData.city||!cityData.query)return;
-    if(cityData.needs_confirmation&&!window.sgChosenCity())return; // an IP guess we don't trust
+    if(cityData.needs_confirmation&&!window.sgChosenCity()){_sgSayItIsAGuess();return;} // an IP guess we don't trust
     _upgradeLocation(3, cityData.query, cityData);
   }).catch(()=>{});
 
@@ -10566,6 +10603,9 @@ function _fireGPS(highAccuracy){sgPerf.start('gps_fix');
     navigator.permissions.query({name:'geolocation'}).then(function(status){
       if(status.state==='denied'){
         console.log('[Location] GPS permission denied — skipping entirely (0ms saved vs 5s timeout)');
+        /* Denied is the normal case, not an error - but not a dead end
+           either: put the picker one tap away, city named. */
+        if(!window.sgChosenCity||!window.sgChosenCity())_sgSayItIsAGuess();
         return;
       }
       _startGPSWatch(highAccuracy);
@@ -10579,7 +10619,9 @@ function _fireGPS(highAccuracy){sgPerf.start('gps_fix');
 }
 
 function _startGPSWatch(highAccuracy){
-  if(!navigator.geolocation) return;
+  // No geolocation at all (old browser, lockdown mode, insecure context):
+  // same rule as a denial — name the city, offer the picker.
+  if(!navigator.geolocation){ if(!window.sgChosenCity||!window.sgChosenCity())_sgSayItIsAGuess(); return; }
   // Clear any existing watch
   if(window._gpsWatchId!==null){
     navigator.geolocation.clearWatch(window._gpsWatchId);
@@ -10861,8 +10903,10 @@ window.autoLoadGyms=async function(){
 
   // ━━━ If no layer fired yet, show London IMMEDIATELY (never empty screen) ━━━
   if(window._locationLayer===0&&!state._bootPainted){
-    searchGyms('gyms in London', false, 0);
-    console.log('[Location] Default: London (no cache/hint available)');
+    var _known=_sgKnownCityQuery();
+    searchGyms(_known||'gyms in London', false, 0);
+    if(!_known)_sgSayItIsAGuess();
+    console.log('[Location] Default:',_known||'London (guess - labelled)');
   }
 
   // ━━━ LAYER 3: Server-side IP geolocation (<5ms via geoip-lite in-memory) ━━━

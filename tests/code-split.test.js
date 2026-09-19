@@ -238,7 +238,11 @@ test('core stays under its size budget', () => {
   // measured size plus ~2% headroom: it is here to catch a whole tab being
   // pasted back into core, not to police ordinary edits. If you add a feature
   // and this fails, raise it in the same commit and say why in the message.
-  const CORE_BUDGET = 1_450_000;
+  // Raised 1,450,000 -> 1,480,000 on 2026-09-19 (near-me honesty fix): main was
+  // already at 1,449,357, i.e. 643 bytes of headroom, so the next ordinary edit
+  // of any size would have failed this. Re-set to measured + ~2% per the rule
+  // above; the check still catches a whole tab being pasted back in.
+  const CORE_BUDGET = 1_480_000;
   const size = Buffer.byteLength(APP);
   assert.ok(size < CORE_BUDGET,
     `app.ctr576.js is ${size} bytes, over the ${CORE_BUDGET} budget. ` +
