@@ -313,7 +313,34 @@ router.get('/sms/number', (req, res) => {
   });
 });
 
-// ─── GET /api/channels/discord/invite — Get Discord bot invite ─
+// ─── GET /api/channels/discord/invite — how a customer reaches the bot ─
+//
+// This used to hand back only an "add bot to your server" OAuth URL. Almost no
+// gym customer administers a Discord server, so the Profile tab's Discord
+// button dead-ended for them. Discord's user-install flow (integration_type=1)
+// is the customer route: it adds the app to their account so they can DM the
+// bot. A community invite, when we have one, is better still — it is a place
+// with people in it — so it wins when configured.
+//
+// permissions: send messages (2048) is not enough to deliver a QR pass;
+// embed links (16384) and attach files (32768) are what a booking reply needs.
+const DISCORD_BOT_PERMISSIONS = 2048 + 16384 + 32768; // 51200
+
+function discordUrls(appId) {
+  const serverInviteUrl = `https://discord.com/api/oauth2/authorize?client_id=${appId}&permissions=${DISCORD_BOT_PERMISSIONS}&scope=bot%20applications.commands`;
+  const userInstallUrl = `https://discord.com/oauth2/authorize?client_id=${appId}&integration_type=1&scope=applications.commands`;
+  const communityUrl = process.env.DISCORD_COMMUNITY_INVITE || null;
+  return {
+    communityUrl,
+    userInstallUrl,
+    serverInviteUrl,
+    // One place decides what a customer should see first.
+    preferredUrl: communityUrl || userInstallUrl,
+    // Kept for older clients that only read inviteUrl.
+    inviteUrl: communityUrl || userInstallUrl,
+  };
+}
+
 router.get('/discord/invite', async (req, res) => {
   // Try to get bot ID from Discord status endpoint
   try {
@@ -321,7 +348,7 @@ router.get('/discord/invite', async (req, res) => {
     const status = await statusResp.json();
     if (status.bot && status.bot.id) {
       return res.json({
-        inviteUrl: `https://discord.com/api/oauth2/authorize?client_id=${status.bot.id}&permissions=2048&scope=bot`,
+        ...discordUrls(status.bot.id),
         botId: status.bot.id,
         botUsername: status.bot.username,
       });
@@ -332,7 +359,7 @@ router.get('/discord/invite', async (req, res) => {
   // Fallback: use env var
   const appId = process.env.DISCORD_APP_ID || process.env.DISCORD_CLIENT_ID || '';
   if (appId) {
-    return res.json({ inviteUrl: `https://discord.com/api/oauth2/authorize?client_id=${appId}&permissions=2048&scope=bot` });
+    return res.json(discordUrls(appId));
   }
   res.json({ error: 'Discord bot not configured. Set DISCORD_BOT_TOKEN.' });
 });

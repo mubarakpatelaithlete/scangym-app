@@ -95,5 +95,8 @@ test('a channel with no link says so instead of failing silently', () => {
 });
 
 test('Telegram still deep-links to the actual bot', () => {
-  assert.match(action('telegram'), /https:\/\/t\.me\/ScanGymBot/);
+  // The URL now comes from telegramUrl(), which appends ?start=<member id> so
+  // the bot knows who opened it; the action delegates to that helper.
+  assert.match(action('telegram'), /telegramUrl\(\)/);
+  assert.match(RAIL, /function telegramUrl\(\)[\s\S]*?https:\/\/t\.me\/ScanGymBot/);
 });
