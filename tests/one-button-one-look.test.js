@@ -269,3 +269,24 @@ test('every icon the profile rails ask for exists in the one table', () => {
       `${icon} is missing from sg-rail-ui.js's table, so that button would fall back to emoji`);
   }
 });
+
+test('the CTA that rides the row draws a shared icon, not an emoji', () => {
+  // Last colour glyph in the row after #776-#780: the owner saw it as "Sign in"
+  // not matching Book, Talk and Ask AI beside it.
+  const table = railUi.slice(railUi.indexOf('var ICONS={'), railUi.indexOf('window.SG_ICONS'));
+  const caps = railsJs.slice(railsJs.indexOf('var CAPTIONS = ['), railsJs.indexOf('];', railsJs.indexOf('var CAPTIONS = [')));
+  const names = [...caps.matchAll(/'([a-z]+)',\s*'\\u/g)].map((m) => m[1]);
+  assert.ok(names.length >= 4, 'the caption table stopped naming icons');
+  for (const name of names) {
+    assert.ok(new RegExp(`\\n  ${name}:I\\(`).test(table),
+      `rails.js asks for the icon "${name}", which is not in the one table`);
+  }
+  assert.ok(railsJs.includes("(window.SG_ICONS || {})[name]"),
+    'rails.js no longer resolves the CTA glyph from the shared table');
+  // And its circle reads the tokens rather than carrying its own glass.
+  const ico = railsCss.slice(railsCss.indexOf('.sg-cb-ico {'), railsCss.indexOf('.sg-cb-cap'));
+  assert.ok(!/rgba\(13, 16, 25, \.62\)/.test(ico), 'the CTA circle has its own background again');
+  for (const token of ['--sg-btn-bg', '--sg-btn-blur', '--sg-btn-icon']) {
+    assert.ok(ico.includes(token), `the CTA circle stopped reading ${token}`);
+  }
+});

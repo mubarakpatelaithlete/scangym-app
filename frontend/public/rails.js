@@ -178,11 +178,16 @@
      label text rather than on the tab, because the same tab can show a
      different action (Profile shows "Continue" signed out and nothing signed
      in) and because the framed Reels document has no tab state at all. */
+  /* `ico` names a drawing in sg-rail-ui.js's one table; the emoji is only the
+     fallback for the framed Reels document, which loads this file without that
+     script. This button sits between Book/Talk/Ask AI and the rail's own
+     circles, so an emoji here was the last colour glyph left in the row after
+     #776–#780 — the owner spotted it as "Sign in" still not matching. */
   var CAPTIONS = [
-    [/^\s*book/i,      '\uD83D\uDCB3', 'Book'],
-    [/ask ai/i,         '\u2728',       'Ask AI'],
-    [/^\s*continue/i,  '\uD83D\uDD13', 'Sign in'],
-    [/gym|near me/i,    '\uD83D\uDCCD', 'Gyms']
+    [/^\s*book/i,      'calendar', '\uD83D\uDCB3', 'Book'],
+    [/ask ai/i,        'sparkle',  '\u2728',       'Ask AI'],
+    [/^\s*continue/i, 'lock',     '\uD83D\uDD13', 'Sign in'],
+    [/gym|near me/i,   'pin',      '\uD83D\uDCCD', 'Gyms']
   ];
 
   /* Give the CTA the row's shape: a glyph in a circle with a caption under it.
@@ -197,10 +202,13 @@
     var words = '';
     for (var p = 0; p < parts.length; p++) words += ' ' + (parts[p].textContent || '');
     words = words.replace(/\s+/g, ' ').trim();
-    var ico = '\u2728', cap = 'Ask AI';
+    var name = 'sparkle', ico = '\u2728', cap = 'Ask AI';
     for (var i = 0; i < CAPTIONS.length; i++) {
-      if (CAPTIONS[i][0].test(words)) { ico = CAPTIONS[i][1]; cap = CAPTIONS[i][2]; break; }
+      if (CAPTIONS[i][0].test(words)) {
+        name = CAPTIONS[i][1]; ico = CAPTIONS[i][2]; cap = CAPTIONS[i][3]; break;
+      }
     }
+    var svg = (window.SG_ICONS || {})[name] || '';
     var iel = cta.querySelector('.sg-cb-ico');
     if (!iel) {
       iel = document.createElement('span');
@@ -213,7 +221,12 @@
       cel.className = 'sg-cb-cap';
       cta.appendChild(cel);
     }
-    if (iel.textContent !== ico) iel.textContent = ico;
+    /* Drawn from the shared table when it is there, the emoji when it is not.
+       Keyed on the icon name so a repaint on the same action does no work. */
+    if (iel.getAttribute('data-sg-ico') !== name) {
+      iel.setAttribute('data-sg-ico', name);
+      if (svg) iel.innerHTML = svg; else iel.textContent = ico;
+    }
     if (cel.textContent !== cap) cel.textContent = cap;
   }
 
