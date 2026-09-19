@@ -1182,6 +1182,13 @@ function sgDistanceLabel(gym){
   }
   if(gym._realTravelLabel) return gym._realTravelLabel;
   if(gym.distanceText) return gym.distanceText;
+  /* #1: With no distance at all we used to print "Nearby", which is a claim we
+     cannot make — a city search from another country showed Manchester gyms as
+     "Nearby". Say where it is instead; only say Nearby when we know it is. */
+  if(typeof gym.distance!=='number'||!isFinite(gym.distance)){
+    var _loc=sgGymLocality(gym);
+    if(_loc) return _loc;
+  }
   if(typeof gym.distance==='number'&&isFinite(gym.distance)){
     /* "0.4km" makes a visitor do the maths. Walking pace ~5km/h = 12 min/km. */
     var _mins=Math.max(1,Math.round(gym.distance*12));
@@ -1192,6 +1199,36 @@ function sgDistanceLabel(gym){
 }
 window.sgDistanceLabel=sgDistanceLabel;
 window.sgIsFar=sgIsFar;
+
+
+/* #2: A result with no photo used to render a grey tile with a faint dumbbell.
+   Search results (city/brand queries) often have no photo, so the best cards in
+   the app looked broken. Draw a branded tile with the gym's initials instead. */
+function _sgPhotoFallback(name,i){
+  var grads=['#FF6D00,#E66200','#8b5cf6,#6d28d9','#ef4444,#b91c1c','#3b82f6,#1d4ed8','#eab308,#a16207','#22c55e,#15803d','#ec4899,#be185d','#14b8a6,#0f766e'];
+  var g=grads[(i||0)%8];
+  var words=String(name||'Gym').replace(/[^A-Za-z0-9 ]/g,' ').trim().split(/\s+/);
+  var ini=((words[0]||'G')[0]+((words[1]||'')[0]||'')).toUpperCase();
+  return '<div class="tt-photo tt-photo-brand" style="background:linear-gradient(145deg,'+g+')">'
+    +'<div class="tt-photo-brand-ini">'+ini+'</div></div>';
+}
+window._sgPhotoFallback=_sgPhotoFallback;
+
+
+/* The gym card and the calendar footer computed the day-pass price two different
+   ways, so the same gym read "$4.99/day" on the card and "\u00a34.49" in the
+   calendar — a different currency at the moment of payment. One source now. */
+function sgGymDayPrice(gym){
+  try{
+    var sym=(gym&&gym.pricing&&gym.pricing.currencySymbol)||(gym&&gym.currencySymbol)||sgSymbol();
+    var raw=(gym&&gym.pricing&&sgNum(gym.pricing.dayPassPrice)>0)?gym.pricing.dayPassPrice:(gym&&gym.dayPassPrice);
+    var n=sgNum(raw)||0;
+    if(n>0)return sym+n.toFixed(2);
+    if(gym&&gym.pricing&&gym.pricing.day&&gym.pricing.day.display)return gym.pricing.day.display;
+  }catch(e){}
+  return sgPrice('day').display;
+}
+window.sgGymDayPrice=sgGymDayPrice;
 
 function GymCard(gym){
   const badges=getRandomBadges(gym,3);
@@ -1691,7 +1728,7 @@ function SearchPage(){
           var openClass=isOpen?'tt-tag-open':'tt-tag-closed';
           var isPop=isTopGym(gym);
           // C6 fix: Use gym-specific price if owner set one, otherwise PPP default
-          var _gymSym=(gym.pricing&&gym.pricing.currencySymbol)||gym.currencySymbol||sgSymbol();var _rawGymDPP=(gym.pricing&&sgNum(gym.pricing.dayPassPrice)>0)?gym.pricing.dayPassPrice:gym.dayPassPrice;var _gymDPP=sgNum(_rawGymDPP)||0;var price=_gymDPP>0?(_gymSym+_gymDPP.toFixed(2)):dayP.display;
+          var price=sgGymDayPrice(gym);
           var pos=_pinPos(i);
           var facList=facs.map(function(f){return f.replace(/^[^\s]+\s/,'');}).join(', ');
           var equipList=['Free weights','Cardio','Machines'].filter(function(_,j){return((gym.name||'').charCodeAt(0)+j)%3!==0;}).join(', ')||'Machines, Cardio';
@@ -1704,7 +1741,7 @@ function SearchPage(){
         /* Perf: Inject card CSS once (persists across re-renders — saves ~12KB per render) */
         if(!document.getElementById('tt-css')){
           var _s=document.createElement('style');_s.id='tt-css';
-          _s.textContent='.tt-view{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;position:relative}.tt-carousel{display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;flex:1;min-height:0;will-change:scroll-position;contain:strict}.tt-carousel::-webkit-scrollbar{display:none}.tt-card{width:100%;min-height:100%;max-height:100%;scroll-snap-align:start;position:relative;display:flex;flex-direction:column;overflow:hidden;contain:layout style paint}.tt-card.tt-closed{opacity:0.5;filter:grayscale(25%)}.tt-card.tt-closed .tt-cta-btn{background:#6b7280;box-shadow:none}.tt-photo{position:absolute;inset:0;background-size:cover;background-position:center;background-color:#1a1f2e}.tt-photo-carousel{position:absolute;inset:0;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;display:flex;z-index:0;touch-action:pan-x}.tt-photo-carousel::-webkit-scrollbar{display:none}.tt-photo-slide{flex:0 0 100%;width:100%;height:100%;scroll-snap-align:start;background-size:cover;background-position:center;background-color:#1a1f2e;transition:background-color .3s ease;user-select:none;-webkit-user-select:none;-webkit-user-drag:none}.tt-photo-dots{position:absolute;bottom:0;left:14px;display:flex;gap:4px;z-index:12}.tt-photo-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.3);transition:all .3s}.tt-photo-dot.act{background:#FF6D00;width:18px;border-radius:3px}.tt-photo-placeholder{position:absolute;inset:0;background:#1a1f2e;display:flex;align-items:center;justify-content:center}.tt-photo-placeholder::after{content:"🏋️";font-size:56px;opacity:.15}.tt-gradient{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.35) 0%,transparent 22%,transparent 55%,rgba(0,0,0,.55) 75%,rgba(0,0,0,.82) 100%);pointer-events:none;z-index:1}.tt-card::after{content:"";position:absolute;bottom:18%;left:50%;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(255,109,0,.08) 0%,rgba(255,109,0,.03) 40%,transparent 70%);transform:translateX(-50%);pointer-events:none;z-index:0}.tt-search{position:absolute;top:0;left:0;right:0;z-index:20;display:flex;gap:8px;padding:8px 12px;padding-top:calc(env(safe-area-inset-top,8px) + 4px)}.tt-search-input{flex:1;background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px 14px;color:rgba(255,255,255,.7);font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px;cursor:pointer}.tt-search-gps{background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;width:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-search-filter{background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;width:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-actions{position:absolute;right:10px;top:65px;display:flex;flex-direction:column;gap:6px;z-index:25;align-items:center}.tt-action{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-action-btn{width:44px;height:44px;background:transparent;border:none;border-radius:0;display:flex;align-items:center;justify-content:center;font-size:24px;transition:all .15s;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5));opacity:.75}.tt-action-btn:active{transform:scale(.85);transition:transform .05s}.tt-action-label{display:block;font-size:9px;color:rgba(255,255,255,.7);font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8);text-align:center;white-space:nowrap;max-width:52px;overflow:hidden;text-overflow:ellipsis;line-height:1.1}.tt-info{position:absolute;bottom:0;left:0;right:60px;padding:0 14px 14px;z-index:15;pointer-events:none}.tt-info>*{pointer-events:auto}.tt-dots{display:flex;gap:3px;margin-bottom:4px;flex-wrap:wrap;max-width:280px}.tt-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.25);transition:all .3s}.tt-dot.act{background:#FF6D00;width:18px;border-radius:3px}.tt-counter{font-size:10px;color:rgba(255,255,255,.4);margin-bottom:4px;font-weight:500}.tt-gym-name{color:#fff;font-size:28px;font-weight:900;text-shadow:0 2px 10px rgba(0,0,0,.6);line-height:1.15;margin-bottom:4px;letter-spacing:-.3px}.tt-gym-addr{color:rgba(255,255,255,.7);font-size:12px;margin-bottom:6px;text-shadow:0 1px 4px rgba(0,0,0,.5);display:flex;align-items:center;gap:4px;flex-wrap:wrap}.tt-tag-open{color:#4ade80}.tt-tag-closed{color:#f87171}.tt-chips{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}.tt-chip{display:flex;align-items:center;gap:5px;background:rgba(30,33,45,.85);border-radius:10px;padding:6px 12px;font-size:12px;color:rgba(255,255,255,.92);font-weight:700}.tt-cta{position:absolute;bottom:0;left:0;right:0;padding:8px 14px;z-index:16}.tt-cta-btn{width:100%;padding:12px 0;border:none;border-radius:12px;background:linear-gradient(135deg,#FF6D00,#ff8534,#FF6D00);background-size:200% 200%;color:#fff;font-size:15px;font-weight:700;letter-spacing:.3px;cursor:pointer;-webkit-tap-highlight-color:transparent;box-shadow:0 4px 20px rgba(255,109,0,.4),0 0 20px rgba(255,109,0,.2);transition:all .15s;animation:casinoGlow 2s ease-in-out infinite}.tt-cta-btn:active{transform:scale(.97);box-shadow:0 2px 10px rgba(255,109,0,.3)}.tt-filter-sheet{display:none;position:absolute;top:52px;left:12px;right:12px;background:rgba(17,19,24,.98);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px;z-index:25;flex-wrap:wrap;gap:8px}.tt-filter-sheet.open{display:flex}.sg-filter-pill{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:7px 14px;color:rgba(255,255,255,.6);font-size:12px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;white-space:nowrap}.sg-filter-pill.active{background:rgba(255,109,0,.15);border-color:rgba(255,109,0,.4);color:#FF6D00}.tt-logo{position:absolute;left:14px;bottom:0;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;z-index:15;border:2px solid rgba(255,255,255,.15);box-shadow:0 2px 8px rgba(0,0,0,.3)}.tt-card.tt-offscreen{content-visibility:auto;contain-intrinsic-size:auto 100vh}.tt-card.tt-offscreen .tt-cta-btn{animation:none}.tt-card.tt-offscreen .tt-gradient{backdrop-filter:none;-webkit-backdrop-filter:none}';
+          _s.textContent='.tt-view{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;position:relative}.tt-carousel{display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;flex:1;min-height:0;will-change:scroll-position;contain:strict}.tt-carousel::-webkit-scrollbar{display:none}.tt-card{width:100%;min-height:100%;max-height:100%;scroll-snap-align:start;position:relative;display:flex;flex-direction:column;overflow:hidden;contain:layout style paint}.tt-card.tt-closed{opacity:0.5;filter:grayscale(25%)}.tt-card.tt-closed .tt-cta-btn{background:#6b7280;box-shadow:none}.tt-photo{position:absolute;inset:0;background-size:cover;background-position:center;background-color:#1a1f2e}.tt-photo-carousel{position:absolute;inset:0;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;display:flex;z-index:0;touch-action:pan-x}.tt-photo-carousel::-webkit-scrollbar{display:none}.tt-photo-slide{flex:0 0 100%;width:100%;height:100%;scroll-snap-align:start;background-size:cover;background-position:center;background-color:#1a1f2e;transition:background-color .3s ease;user-select:none;-webkit-user-select:none;-webkit-user-drag:none}.tt-photo-dots{position:absolute;bottom:0;left:14px;display:flex;gap:4px;z-index:12}.tt-photo-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.3);transition:all .3s}.tt-photo-dot.act{background:#FF6D00;width:18px;border-radius:3px}.tt-photo-placeholder{position:absolute;inset:0;background:#1a1f2e;display:flex;align-items:center;justify-content:center}.tt-photo-placeholder::after{content:"🏋️";font-size:56px;opacity:.15}.tt-photo-brand{display:flex;align-items:center;justify-content:center}.tt-photo-brand-ini{font-size:96px;font-weight:900;color:rgba(255,255,255,.22);letter-spacing:-2px}.tt-gradient{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.35) 0%,transparent 22%,transparent 55%,rgba(0,0,0,.55) 75%,rgba(0,0,0,.82) 100%);pointer-events:none;z-index:1}.tt-card::after{content:"";position:absolute;bottom:18%;left:50%;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(255,109,0,.08) 0%,rgba(255,109,0,.03) 40%,transparent 70%);transform:translateX(-50%);pointer-events:none;z-index:0}.tt-search{position:absolute;top:0;left:0;right:0;z-index:20;display:flex;gap:8px;padding:8px 12px;padding-top:calc(env(safe-area-inset-top,8px) + 4px)}.tt-search-input{flex:1;background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px 14px;color:rgba(255,255,255,.7);font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px;cursor:pointer}.tt-search-gps{background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;width:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-search-filter{background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;width:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-actions{position:absolute;right:10px;top:65px;display:flex;flex-direction:column;gap:6px;z-index:25;align-items:center}.tt-action{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-action-btn{width:44px;height:44px;background:transparent;border:none;border-radius:0;display:flex;align-items:center;justify-content:center;font-size:24px;transition:all .15s;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5));opacity:.75}.tt-action-btn:active{transform:scale(.85);transition:transform .05s}.tt-action-label{display:block;font-size:9px;color:rgba(255,255,255,.7);font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8);text-align:center;white-space:nowrap;max-width:52px;overflow:hidden;text-overflow:ellipsis;line-height:1.1}.tt-info{position:absolute;bottom:0;left:0;right:60px;padding:0 14px 14px;z-index:15;pointer-events:none}.tt-info>*{pointer-events:auto}.tt-dots{display:flex;gap:3px;margin-bottom:4px;flex-wrap:wrap;max-width:280px}.tt-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.25);transition:all .3s}.tt-dot.act{background:#FF6D00;width:18px;border-radius:3px}.tt-counter{font-size:10px;color:rgba(255,255,255,.4);margin-bottom:4px;font-weight:500}.tt-gym-name{color:#fff;font-size:28px;font-weight:900;text-shadow:0 2px 10px rgba(0,0,0,.6);line-height:1.15;margin-bottom:4px;letter-spacing:-.3px}.tt-gym-addr{color:rgba(255,255,255,.7);font-size:12px;margin-bottom:6px;text-shadow:0 1px 4px rgba(0,0,0,.5);display:flex;align-items:center;gap:4px;flex-wrap:wrap}.tt-tag-open{color:#4ade80}.tt-tag-closed{color:#f87171}.tt-chips{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}.tt-chip{display:flex;align-items:center;gap:5px;background:rgba(30,33,45,.85);border-radius:10px;padding:6px 12px;font-size:12px;color:rgba(255,255,255,.92);font-weight:700}.tt-cta{position:absolute;bottom:0;left:0;right:0;padding:8px 14px;z-index:16}.tt-cta-btn{width:100%;padding:12px 0;border:none;border-radius:12px;background:linear-gradient(135deg,#FF6D00,#ff8534,#FF6D00);background-size:200% 200%;color:#fff;font-size:15px;font-weight:700;letter-spacing:.3px;cursor:pointer;-webkit-tap-highlight-color:transparent;box-shadow:0 4px 20px rgba(255,109,0,.4),0 0 20px rgba(255,109,0,.2);transition:all .15s;animation:casinoGlow 2s ease-in-out infinite}.tt-cta-btn:active{transform:scale(.97);box-shadow:0 2px 10px rgba(255,109,0,.3)}.tt-filter-sheet{display:none;position:absolute;top:52px;left:12px;right:12px;background:rgba(17,19,24,.98);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px;z-index:25;flex-wrap:wrap;gap:8px}.tt-filter-sheet.open{display:flex}.sg-filter-pill{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:7px 14px;color:rgba(255,255,255,.6);font-size:12px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;white-space:nowrap}.sg-filter-pill.active{background:rgba(255,109,0,.15);border-color:rgba(255,109,0,.4);color:#FF6D00}.tt-logo{position:absolute;left:14px;bottom:0;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;z-index:15;border:2px solid rgba(255,255,255,.15);box-shadow:0 2px 8px rgba(0,0,0,.3)}.tt-card.tt-offscreen{content-visibility:auto;contain-intrinsic-size:auto 100vh}.tt-card.tt-offscreen .tt-cta-btn{animation:none}.tt-card.tt-offscreen .tt-gradient{backdrop-filter:none;-webkit-backdrop-filter:none}';
           document.head.appendChild(_s);
         }
 
@@ -1744,9 +1781,9 @@ function SearchPage(){
             html+='</div>';
           } else {
             if(i===0){
-              html+=c.photo?'<div class="tt-photo" style="background-image:url(\''+c.photo+'\')"></div>':'<div class="tt-photo-placeholder"></div>';
+              html+=c.photo?'<div class="tt-photo" style="background-image:url(\''+c.photo+'\')"></div>':_sgPhotoFallback(c.name,i);
             } else {
-              html+=c.photo?'<div class="tt-photo" data-bg="'+c.photo+'"></div>':'<div class="tt-photo-placeholder"></div>';
+              html+=c.photo?'<div class="tt-photo" data-bg="'+c.photo+'"></div>':_sgPhotoFallback(c.name,i);
             }
           }
           html+='<div class="tt-gradient"></div>';
@@ -1831,7 +1868,7 @@ function SearchPage(){
               var cardHtml='<div class="tt-card'+(c.isOpen?'':' tt-closed')+'" data-gym-card data-gym-id="'+c.id+'" data-price="'+c.price+'" data-idx="'+i+'" data-is-open="'+c.isOpen+'" data-rating="'+(c.rating||0)+'" data-reviews="'+(c.reviews||0)+'" data-distance="'+(c.gym.distance||99)+'" data-is-24h="'+(c.gym.is24Hours||false)+'" data-self-service="'+(c.gym.isSelfService||false)+'">';
               var _isVidLazy=/\.(mp4|webm|mov)(\?|$)/i.test(c.photo||'');
               if(_isVidLazy){cardHtml+='<div class="tt-photo" style="background:#0a0a0a"><video src="'+c.photo+'" autoplay muted loop playsinline style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0"></video></div>';}
-              else{cardHtml+=c.photo?'<div class="tt-photo" data-bg="'+c.photo+'"></div>':'<div class="tt-photo-placeholder"></div>';}
+              else{cardHtml+=c.photo?'<div class="tt-photo" data-bg="'+c.photo+'"></div>':_sgPhotoFallback(c.name,i);}
               cardHtml+='<div class="tt-gradient"></div>';
               /* FIX #1: Orange brand circle top-left on ALL cards (brand identity) */
               /* No per-card brand mark — see the note in the main renderer. */
@@ -4278,8 +4315,17 @@ window.showCalendarPicker=async function(gymId){
   // Get gym info for price display
   const gym=state.currentGym||state.gyms.find(g=>(g.placeId||g.place_id||g.id)==gymId)||{};
   const gymName=gym.name||'Gym';
-  const currentPrice=gym.pricing?.day?.display||sgPrice('day').display;
+  const currentPrice=sgGymDayPrice(gym);
 
+  /* C4: "This weekend" reads like a 2-day range, but a day pass is one day.
+     Name the day it actually books. */
+  const _satDate=(function(){var d=new Date(now);var dow=d.getDay();
+    if(dow!==0&&dow!==6)d.setDate(d.getDate()+((6-dow+7)%7));return d;})();
+  const _satLabel=(_satDate.toDateString()===now.toDateString())?'Today (Sat/Sun)'
+    :['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][_satDate.getDay()]+' '+_satDate.getDate();
+  /* C2: days the gym is shut are not bookable. Taken from the gym's own opening
+     hours, so nothing is invented: any weekday with no opening period is out. */
+  window._calPickerState.closedDows=_sgClosedWeekdays(gym);
   // Store current view month for navigation
   window._calPickerState.viewYear=now.getFullYear();
   window._calPickerState.viewMonth=now.getMonth();
@@ -4334,6 +4380,9 @@ window.showCalendarPicker=async function(gymId){
       @keyframes sgCalSlideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
       .sg-cal-header{display:flex;align-items:center;justify-content:space-between;padding:20px 24px 16px;flex-shrink:0}
       .sg-cal-title{color:#fff;font-size:20px;font-weight:700;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+      .sg-cal-subtitle{color:rgba(255,255,255,.45);font-size:12px;font-weight:600;margin-top:2px;max-width:70vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      .sg-cal-day.closed{color:rgba(255,255,255,.2);pointer-events:none;text-decoration:line-through}
+      .sg-cal-legend{color:rgba(255,255,255,.3);font-size:11px;padding:0 24px 10px;font-weight:600}
       .sg-cal-close{width:36px;height:36px;background:rgba(255,255,255,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:rgba(255,255,255,.5);font-size:18px;border:none;-webkit-tap-highlight-color:transparent}
       .sg-cal-close:active{background:rgba(255,255,255,.15)}
       .sg-cal-month-nav{display:flex;align-items:center;justify-content:space-between;padding:0 24px 8px;flex-shrink:0}
@@ -4368,7 +4417,12 @@ window.showCalendarPicker=async function(gymId){
     <div class="sg-cal-overlay" onclick="if(event.target===this)window._calPickerClose()">
       <div class="sg-cal-sheet">
         <div class="sg-cal-header">
-          <div class="sg-cal-title">📅 Pick a date & time</div>
+          <div>
+            <div class="sg-cal-title">📅 Pick a date & time</div>
+            <!-- C3: you used to learn which gym you were booking only from the
+                 footer. C1: and what a day costs, in the same breath. -->
+            <div class="sg-cal-subtitle">${gymName} · ${currentPrice} per day</div>
+          </div>
           <button class="sg-cal-close" onclick="window._calPickerClose()">✕</button>
         </div>
         <div class="sg-cal-month-nav">
@@ -4379,10 +4433,12 @@ window.showCalendarPicker=async function(gymId){
         <div class="sg-cal-grid" id="sg-cal-grid"></div>
         <!-- Booking.com/Airbnb pattern: most people book today, tomorrow or the
              weekend. One tap for those instead of hunting the grid. -->
+        <div class="sg-cal-legend" id="sg-cal-legend">${currentPrice} on every open day · struck-through days the gym is closed</div>
         <div style="padding:0 24px 10px;display:flex;gap:8px;flex-wrap:wrap" id="sg-cal-quick">
+          <button class="sg-cal-quick-chip" onclick="window._calNextSlot()">⚡ Next slot · ${defaultTime}</button>
           <button class="sg-cal-quick-chip" onclick="window._calQuickDate('today')">Today</button>
           <button class="sg-cal-quick-chip" onclick="window._calQuickDate('tomorrow')">Tomorrow</button>
-          <button class="sg-cal-quick-chip" onclick="window._calQuickDate('weekend')">This weekend</button>
+          <button class="sg-cal-quick-chip" onclick="window._calQuickDate('weekend')">${_satLabel}</button>
         </div>
         <!-- FIX #10: Pass type selector (removed per Zafira — Day Pass only) -->
         <div style="padding:0 24px 16px;display:none;gap:8px;overflow-x:auto;scrollbar-width:none;flex-shrink:0" id="sg-cal-pass-strip">
@@ -4450,6 +4506,48 @@ window.showCalendarPicker=async function(gymId){
   if(window._renderCalPickerPopularTimes)window._renderCalPickerPopularTimes(0);
 };
 
+
+/* C2: Which weekdays this gym is shut, read from its own opening hours
+   ("Sunday: Closed"). Returns JS day numbers (0=Sun). Unknown hours -> nothing
+   is disabled, because a guess that blocks a booking is worse than no guess. */
+function _sgClosedWeekdays(gym){
+  var out=[];
+  try{
+    var wk=(gym&&gym.opening_hours&&(gym.opening_hours.weekday||gym.opening_hours.weekday_text))||[];
+    if(!wk.length)return out;
+    /* Google lists Monday first. */
+    for(var i=0;i<wk.length&&i<7;i++){
+      if(/closed/i.test(String(wk[i]))) out.push((i+1)%7);
+    }
+  }catch(e){}
+  return out;
+}
+window._sgClosedWeekdays=_sgClosedWeekdays;
+
+/* C6: Uber's promise is "now". One tap for today's next free slot. */
+window._calNextSlot=function(){
+  try{
+    var now=new Date();
+    var todayStr=now.toISOString().split('T')[0];
+    var closed=(window._calPickerState&&window._calPickerState.closedDows)||[];
+    var d=new Date(now);
+    /* If the gym is shut today, roll forward to the next day it opens. */
+    for(var i=0;i<7&&closed.indexOf(d.getDay())!==-1;i++)d.setDate(d.getDate()+1);
+    var str=d.toISOString().split('T')[0];
+    window._calPickerState.viewYear=d.getFullYear();
+    window._calPickerState.viewMonth=d.getMonth();
+    window._calSelectDate(str,null);
+    window._calBuildGrid(d.getFullYear(),d.getMonth());
+    var mins=(str===todayStr)
+      ? Math.max(360,Math.min(Math.ceil((now.getHours()*60+now.getMinutes()+1)/30)*30,1290))
+      : 360;
+    var label=String(Math.floor(mins/60)).padStart(2,'0')+':'+String(mins%60).padStart(2,'0');
+    var el=document.querySelector('.sg-cal-time[data-hour="'+Math.floor(mins/60)+'"][data-mins="'+(mins%60)+'"]');
+    window._calSelectTime(label,el||null);
+    if(el&&el.scrollIntoView)el.scrollIntoView({block:'nearest'});
+  }catch(e){}
+};
+
 // ═══ Calendar Grid Builder (Uber-style month grid) ═══
 window._calBuildGrid=function(year,month){
   const grid=document.getElementById('sg-cal-grid');
@@ -4485,11 +4583,14 @@ window._calBuildGrid=function(year,month){
     const isToday=dateStr===todayStr;
     const isSelected=dateStr===selDate;
     let cls='sg-cal-day';
+    const _closedDows=(window._calPickerState.closedDows)||[];
+    const _isClosed=_closedDows.indexOf(new Date(year,month,d).getDay())!==-1;
     if(isPast||isFuture)cls+=' past';
     if(isToday)cls+=' today';
     if(isSelected)cls+=' selected';
-    if(isPast||isFuture){
-      html+='<div class="'+cls+'">'+d+'</div>';
+    if(_isClosed&&!isPast&&!isFuture)cls+=' closed';
+    if(isPast||isFuture||_isClosed){
+      html+='<div class="'+cls+'"'+(_isClosed?' title="Gym closed this day"':'')+'>'+d+'</div>';
     }else{
       html+='<div class="'+cls+'" onclick="window._calSelectDate(\''+dateStr+'\',this)" data-date="'+dateStr+'">'+d+'</div>';
     }
@@ -5105,7 +5206,8 @@ window._renderCalPickerPopularTimes=function(dateIdx){
     var color=isCurrent?'#22c55e':h.busy>=70?'rgba(251,191,36,.6)':h.busy>=40?'rgba(255,255,255,.2)':'rgba(255,255,255,.1)';
     barsHtml+='<div style="flex:1;height:'+Math.max(pct,8)+'%;background:'+color+';border-radius:2px 2px 0 0;transition:height .3s'+(isCurrent?';box-shadow:0 0 6px rgba(34,197,94,.4)':'')+'" title="'+h.hour+':00"></div>';
     if(i===0||i===hours.length-1||h.hour%3===0){
-      hoursHtml+='<span style="font-size:9px;color:rgba(255,255,255,.2);flex:'+(i===0||i===hours.length-1?'0 0 auto':'1')+'">'+(h.hour%12||12)+(h.hour<12?'a':'p')+'</span>';
+      /* C5: 24-hour, matching the time slots underneath (was "6a"/"9p"). */
+      hoursHtml+='<span style="font-size:9px;color:rgba(255,255,255,.2);flex:'+(i===0||i===hours.length-1?'0 0 auto':'1')+'">'+String(h.hour).padStart(2,'0')+':00</span>';
     }else{
       hoursHtml+='<span style="flex:1"></span>';
     }
@@ -11112,8 +11214,14 @@ window.doSearch=function(query){
     /* An explicit search IS the visitor telling us where they are. Record it so
        the banner, the sticky CTA and the search box stop showing an IP guess. */
     var _cityM=q.match(/gyms?\s+(?:in|near)\s+(.+)$/i);
+    /* #5: A chain or facility query ("puregym", "open now") is not a place. Filing
+       it as the chosen city left the banner and the search box claiming a city the
+       results were not from. Remember it as the search label instead. */
+    var _isChain=(window._sgChains||[]).some(function(c){return c.toLowerCase()===q.toLowerCase();})
+      ||/(gym group|fitness|leisure|pool|24 ?hour|open now|under |women)/i.test(q);
+    window._sgSearchLabel=q;
     if(_cityM&&_cityM[1])window.sgSetChosenCity(_cityM[1].replace(/\s+24 hour$/i,'').trim());
-    else if(/^[A-Za-z\s'.-]{2,40}$/.test(q))window.sgSetChosenCity(q);
+    else if(!_isChain&&/^[A-Za-z\s'.-]{2,40}$/.test(q))window.sgSetChosenCity(q);
     // ━━━ FIX: Clear old gyms so SearchPage shows skeleton during loading ━━━
     // Without this, old results persist and isLoading stays false (gyms.length>0)
     state.gyms=[];
@@ -11155,6 +11263,29 @@ function _removeRecentSearch(q){
   }catch(e){}
 }
 
+
+/* #4: Typing a chain name ("puregym") matched nothing, because autocomplete only
+   looked at the gyms already loaded for the current city. These are the UK chains
+   customers actually type; each one becomes a real search. */
+window._sgChains=['PureGym','The Gym Group','Anytime Fitness','JD Gyms','Everyone Active',
+  'Nuffield Health','David Lloyd','Bannatyne','Fitness First','Virgin Active','Snap Fitness',
+  '\u00c9nergie Fitness','Better','Places Leisure','Village Gym','Xercise4Less','Gymbox','Third Space'];
+var _sgChains=window._sgChains;
+/* #6: The results view has filters but the search panel did not, so the only way
+   to say "open now, under \u00a35" was to search first and then go hunting. */
+var _sgSearchFilters=[
+  {k:'open now',    lbl:'\ud83d\udfe2 Open now'},
+  {k:'under \u00a35',    lbl:'\ud83d\udcb0 Under \u00a35'},
+  {k:'24 hour',     lbl:'\u23f0 24/7'},
+  {k:'with pool',   lbl:'\ud83c\udfca Pool'},
+  {k:'women only',  lbl:'\ud83d\udc69 Women only'}
+];
+window._ssoFilterSearch=function(word){
+  var inp=document.getElementById('sso-search-input');
+  var base=(inp&&inp.value.trim())||(inp&&inp.getAttribute('data-sg-city'))||'';
+  window._ssoSelectSearch((base?base+' ':'gyms ')+word);
+};
+
 // Popular UK cities for quick access
 var _popularCities=[
   {name:'London',emoji:'🏙️',query:'gyms in London'},
@@ -11178,7 +11309,8 @@ window._openSearchOverlay=function(){
   /* Opening the sheet with "gyms in Boardman" already typed means the first
      thing a visitor does is delete our guess. Show it as the placeholder. */
   var currentQuery='';
-  var _placeholderCity=(typeof sgCurrentSearchCity==='function')?sgCurrentSearchCity():'';
+  /* #5: What is on screen beats an IP guess: show the live search term first. */
+  var _placeholderCity=window._sgSearchLabel||((typeof sgCurrentSearchCity==='function')?sgCurrentSearchCity():'');
 
   var el=document.createElement('div');
   el.id='sg-search-overlay-v2';
@@ -11233,7 +11365,7 @@ window._openSearchOverlay=function(){
     +'<button class="sso-back" onclick="window._closeSearchOverlay()">←</button>'
     +'<div class="sso-input-wrap">'
     +'<span class="sso-input-icon">🔍</span>'
-    +'<input class="sso-input" id="sso-search-input" type="text" placeholder="'+(_placeholderCity?('Search \u2014 showing '+_placeholderCity):'Search city, area, or gym name\u2026')+'" value="'+currentQuery+'" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">'
+    +'<input class="sso-input" id="sso-search-input" type="text" placeholder="'+(_placeholderCity?('Search \u2014 showing '+_placeholderCity):'Search city, area, or gym name\u2026')+'" data-sg-city="'+(_placeholderCity||'')+'" value="'+currentQuery+'" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">'
     +'<button class="sso-clear'+(currentQuery?' show':'')+'" id="sso-clear-btn" onclick="document.getElementById(\'sso-search-input\').value=\'\';document.getElementById(\'sso-clear-btn\').classList.remove(\'show\');window._ssoShowDefault()">✕</button>'
     +'</div>'
     +'</div>'
@@ -11271,6 +11403,16 @@ window._openSearchOverlay=function(){
       });
       html+='</div>';
     }
+
+    // Quick filters (#6)
+    html+='<div class="sso-section">'
+      +'<div class="sso-section-title">Quick Filters</div>'
+      +'<div class="sso-cities">';
+    _sgSearchFilters.forEach(function(f){
+      html+='<div class="sso-city" onclick="window._ssoFilterSearch(\''+f.k+'\')">'
+        +'<span class="sso-city-name">'+f.lbl+'</span></div>';
+    });
+    html+='</div></div>';
 
     // Popular cities
     html+='<div class="sso-section">'
@@ -11356,6 +11498,14 @@ window._openSearchOverlay=function(){
       html+='<div class="sso-ac-item" onclick="window._ssoSelectSearch(\''+c.query+'\')">'
         +'<span class="sso-ac-icon">'+c.emoji+'</span>'
         +'<span class="sso-ac-text">Gyms in '+highlighted+'</span>'
+        +'</div>';
+    });
+
+    // Chain matches (#4) — a brand name is a search, not a dead end
+    _sgChains.filter(function(c){return _ssoFuzzyMatch(c,q);}).slice(0,4).forEach(function(c){
+      html+='<div class="sso-ac-item" onclick="window._ssoSelectSearch(\''+c.replace(/'/g,"\\'")+'\')">'
+        +'<span class="sso-ac-icon">\ud83c\udfe2</span>'
+        +'<span class="sso-ac-text">'+c+' <span style="color:rgba(255,255,255,.35);font-weight:500">\u00b7 all branches</span></span>'
         +'</div>';
     });
 
@@ -14990,7 +15140,7 @@ function PartnerFullPage(){
   // Build the TikTok-style full-screen card (same as .tt-card in Book tab)
   return _sgPanelBanner + `<style>
     /* ═══ Partner Tab — Book tab .tt-* CSS (self-contained, same as Task 14) ═══ */
-    .tt-view{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;position:relative}.tt-carousel{display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;flex:1;min-height:0;will-change:scroll-position;contain:strict}.tt-carousel::-webkit-scrollbar{display:none}.tt-card{width:100%;min-height:100%;max-height:100%;scroll-snap-align:start;position:relative;display:flex;flex-direction:column;overflow:hidden;contain:layout style paint}.tt-card.tt-closed{opacity:0.5;filter:grayscale(25%)}.tt-card.tt-closed .tt-cta-btn{background:#6b7280;box-shadow:none}.tt-photo{position:absolute;inset:0;background-size:cover;background-position:center;background-color:#1a1f2e}.tt-photo-carousel{position:absolute;inset:0;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;display:flex;z-index:0;touch-action:pan-x}.tt-photo-carousel::-webkit-scrollbar{display:none}.tt-photo-slide{flex:0 0 100%;width:100%;height:100%;scroll-snap-align:start;background-size:cover;background-position:center;background-color:#1a1f2e;transition:background-color .3s ease;user-select:none;-webkit-user-select:none;-webkit-user-drag:none}.tt-photo-dots{position:absolute;bottom:0;left:14px;display:flex;gap:4px;z-index:12}.tt-photo-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.3);transition:all .3s}.tt-photo-dot.act{background:#FF6D00;width:18px;border-radius:3px}.tt-photo-placeholder{position:absolute;inset:0;background:#1a1f2e;display:flex;align-items:center;justify-content:center}.tt-photo-placeholder::after{content:"🏋️";font-size:56px;opacity:.15}.tt-gradient{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.35) 0%,transparent 22%,transparent 55%,rgba(0,0,0,.55) 75%,rgba(0,0,0,.82) 100%);pointer-events:none;z-index:1}.tt-card::after{content:"";position:absolute;bottom:18%;left:50%;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(255,109,0,.08) 0%,rgba(255,109,0,.03) 40%,transparent 70%);transform:translateX(-50%);pointer-events:none;z-index:0}.tt-search{position:absolute;top:0;left:0;right:0;z-index:20;display:flex;gap:8px;padding:8px 12px;padding-top:calc(env(safe-area-inset-top,8px) + 4px)}.tt-search-input{flex:1;background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px 14px;color:rgba(255,255,255,.7);font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px;cursor:pointer}.tt-search-gps{background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;width:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-search-filter{background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;width:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-actions{position:absolute;right:10px;top:65px;display:flex;flex-direction:column;gap:6px;z-index:25;align-items:center}.tt-action{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-action-btn{width:44px;height:44px;background:transparent;border:none;border-radius:0;display:flex;align-items:center;justify-content:center;font-size:24px;transition:all .15s;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5));opacity:.75}.tt-action-btn:active{transform:scale(.85);transition:transform .05s}.tt-action-label{display:block;font-size:9px;color:rgba(255,255,255,.7);font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8);text-align:center;white-space:nowrap;max-width:52px;overflow:hidden;text-overflow:ellipsis;line-height:1.1}.tt-info{position:absolute;bottom:0;left:0;right:60px;padding:0 14px 14px;z-index:15;pointer-events:none}.tt-info>*{pointer-events:auto}.tt-dots{display:flex;gap:3px;margin-bottom:4px;flex-wrap:wrap;max-width:280px}.tt-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.25);transition:all .3s}.tt-dot.act{background:#FF6D00;width:18px;border-radius:3px}.tt-counter{font-size:10px;color:rgba(255,255,255,.4);margin-bottom:4px;font-weight:500}.tt-gym-name{color:#fff;font-size:28px;font-weight:900;text-shadow:0 2px 10px rgba(0,0,0,.6);line-height:1.15;margin-bottom:4px;letter-spacing:-.3px}.tt-gym-addr{color:rgba(255,255,255,.7);font-size:12px;margin-bottom:6px;text-shadow:0 1px 4px rgba(0,0,0,.5);display:flex;align-items:center;gap:4px;flex-wrap:wrap}.tt-tag-open{color:#4ade80}.tt-tag-closed{color:#f87171}.tt-chips{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}.tt-chip{display:flex;align-items:center;gap:5px;background:rgba(30,33,45,.85);border-radius:10px;padding:6px 12px;font-size:12px;color:rgba(255,255,255,.92);font-weight:700}.tt-cta{position:absolute;bottom:0;left:0;right:0;padding:8px 14px;z-index:16}.tt-cta-btn{width:100%;padding:12px 0;border:none;border-radius:12px;background:linear-gradient(135deg,#FF6D00,#ff8534,#FF6D00);background-size:200% 200%;color:#fff;font-size:15px;font-weight:700;letter-spacing:.3px;cursor:pointer;-webkit-tap-highlight-color:transparent;box-shadow:0 4px 20px rgba(255,109,0,.4),0 0 20px rgba(255,109,0,.2);transition:all .15s;animation:casinoGlow 2s ease-in-out infinite}.tt-cta-btn:active{transform:scale(.97);box-shadow:0 2px 10px rgba(255,109,0,.3)}.tt-filter-sheet{display:none;position:absolute;top:52px;left:12px;right:12px;background:rgba(17,19,24,.98);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px;z-index:25;flex-wrap:wrap;gap:8px}.tt-filter-sheet.open{display:flex}.sg-filter-pill{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:7px 14px;color:rgba(255,255,255,.6);font-size:12px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;white-space:nowrap}.sg-filter-pill.active{background:rgba(255,109,0,.15);border-color:rgba(255,109,0,.4);color:#FF6D00}.tt-logo{position:absolute;left:14px;bottom:0;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;z-index:15;border:2px solid rgba(255,255,255,.15);box-shadow:0 2px 8px rgba(0,0,0,.3)}.tt-card.tt-offscreen{content-visibility:auto;contain-intrinsic-size:auto 100vh}.tt-card.tt-offscreen .tt-cta-btn{animation:none}.tt-card.tt-offscreen .tt-gradient{backdrop-filter:none;-webkit-backdrop-filter:none}
+    .tt-view{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;position:relative}.tt-carousel{display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;flex:1;min-height:0;will-change:scroll-position;contain:strict}.tt-carousel::-webkit-scrollbar{display:none}.tt-card{width:100%;min-height:100%;max-height:100%;scroll-snap-align:start;position:relative;display:flex;flex-direction:column;overflow:hidden;contain:layout style paint}.tt-card.tt-closed{opacity:0.5;filter:grayscale(25%)}.tt-card.tt-closed .tt-cta-btn{background:#6b7280;box-shadow:none}.tt-photo{position:absolute;inset:0;background-size:cover;background-position:center;background-color:#1a1f2e}.tt-photo-carousel{position:absolute;inset:0;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;display:flex;z-index:0;touch-action:pan-x}.tt-photo-carousel::-webkit-scrollbar{display:none}.tt-photo-slide{flex:0 0 100%;width:100%;height:100%;scroll-snap-align:start;background-size:cover;background-position:center;background-color:#1a1f2e;transition:background-color .3s ease;user-select:none;-webkit-user-select:none;-webkit-user-drag:none}.tt-photo-dots{position:absolute;bottom:0;left:14px;display:flex;gap:4px;z-index:12}.tt-photo-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.3);transition:all .3s}.tt-photo-dot.act{background:#FF6D00;width:18px;border-radius:3px}.tt-photo-placeholder{position:absolute;inset:0;background:#1a1f2e;display:flex;align-items:center;justify-content:center}.tt-photo-placeholder::after{content:"🏋️";font-size:56px;opacity:.15}.tt-photo-brand{display:flex;align-items:center;justify-content:center}.tt-photo-brand-ini{font-size:96px;font-weight:900;color:rgba(255,255,255,.22);letter-spacing:-2px}.tt-gradient{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.35) 0%,transparent 22%,transparent 55%,rgba(0,0,0,.55) 75%,rgba(0,0,0,.82) 100%);pointer-events:none;z-index:1}.tt-card::after{content:"";position:absolute;bottom:18%;left:50%;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(255,109,0,.08) 0%,rgba(255,109,0,.03) 40%,transparent 70%);transform:translateX(-50%);pointer-events:none;z-index:0}.tt-search{position:absolute;top:0;left:0;right:0;z-index:20;display:flex;gap:8px;padding:8px 12px;padding-top:calc(env(safe-area-inset-top,8px) + 4px)}.tt-search-input{flex:1;background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px 14px;color:rgba(255,255,255,.7);font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px;cursor:pointer}.tt-search-gps{background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;width:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-search-filter{background:rgba(10,12,20,.75);border:1px solid rgba(255,255,255,.1);border-radius:12px;width:44px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-actions{position:absolute;right:10px;top:65px;display:flex;flex-direction:column;gap:6px;z-index:25;align-items:center}.tt-action{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;-webkit-tap-highlight-color:transparent}.tt-action-btn{width:44px;height:44px;background:transparent;border:none;border-radius:0;display:flex;align-items:center;justify-content:center;font-size:24px;transition:all .15s;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5));opacity:.75}.tt-action-btn:active{transform:scale(.85);transition:transform .05s}.tt-action-label{display:block;font-size:9px;color:rgba(255,255,255,.7);font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8);text-align:center;white-space:nowrap;max-width:52px;overflow:hidden;text-overflow:ellipsis;line-height:1.1}.tt-info{position:absolute;bottom:0;left:0;right:60px;padding:0 14px 14px;z-index:15;pointer-events:none}.tt-info>*{pointer-events:auto}.tt-dots{display:flex;gap:3px;margin-bottom:4px;flex-wrap:wrap;max-width:280px}.tt-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.25);transition:all .3s}.tt-dot.act{background:#FF6D00;width:18px;border-radius:3px}.tt-counter{font-size:10px;color:rgba(255,255,255,.4);margin-bottom:4px;font-weight:500}.tt-gym-name{color:#fff;font-size:28px;font-weight:900;text-shadow:0 2px 10px rgba(0,0,0,.6);line-height:1.15;margin-bottom:4px;letter-spacing:-.3px}.tt-gym-addr{color:rgba(255,255,255,.7);font-size:12px;margin-bottom:6px;text-shadow:0 1px 4px rgba(0,0,0,.5);display:flex;align-items:center;gap:4px;flex-wrap:wrap}.tt-tag-open{color:#4ade80}.tt-tag-closed{color:#f87171}.tt-chips{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}.tt-chip{display:flex;align-items:center;gap:5px;background:rgba(30,33,45,.85);border-radius:10px;padding:6px 12px;font-size:12px;color:rgba(255,255,255,.92);font-weight:700}.tt-cta{position:absolute;bottom:0;left:0;right:0;padding:8px 14px;z-index:16}.tt-cta-btn{width:100%;padding:12px 0;border:none;border-radius:12px;background:linear-gradient(135deg,#FF6D00,#ff8534,#FF6D00);background-size:200% 200%;color:#fff;font-size:15px;font-weight:700;letter-spacing:.3px;cursor:pointer;-webkit-tap-highlight-color:transparent;box-shadow:0 4px 20px rgba(255,109,0,.4),0 0 20px rgba(255,109,0,.2);transition:all .15s;animation:casinoGlow 2s ease-in-out infinite}.tt-cta-btn:active{transform:scale(.97);box-shadow:0 2px 10px rgba(255,109,0,.3)}.tt-filter-sheet{display:none;position:absolute;top:52px;left:12px;right:12px;background:rgba(17,19,24,.98);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px;z-index:25;flex-wrap:wrap;gap:8px}.tt-filter-sheet.open{display:flex}.sg-filter-pill{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:7px 14px;color:rgba(255,255,255,.6);font-size:12px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;white-space:nowrap}.sg-filter-pill.active{background:rgba(255,109,0,.15);border-color:rgba(255,109,0,.4);color:#FF6D00}.tt-logo{position:absolute;left:14px;bottom:0;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;z-index:15;border:2px solid rgba(255,255,255,.15);box-shadow:0 2px 8px rgba(0,0,0,.3)}.tt-card.tt-offscreen{content-visibility:auto;contain-intrinsic-size:auto 100vh}.tt-card.tt-offscreen .tt-cta-btn{animation:none}.tt-card.tt-offscreen .tt-gradient{backdrop-filter:none;-webkit-backdrop-filter:none}
     @keyframes casinoGlow{0%,100%{box-shadow:0 4px 20px rgba(255,109,0,.4),0 0 15px rgba(255,109,0,.15);background-position:0% 50%}50%{box-shadow:0 4px 30px rgba(255,109,0,.65),0 0 30px rgba(255,109,0,.3),0 0 60px rgba(255,109,0,.1);background-position:100% 50%}}
     /* ═══ Partner edit controls ═══ */
     .pe-btn{position:absolute;background:rgba(255,109,0,.9);color:#fff;border:none;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;z-index:5;box-shadow:0 2px 8px rgba(0,0,0,.3);transition:transform .15s}
@@ -15944,6 +16094,9 @@ function _renderInner(){
   /* UX fix: /scansquad deep links (shared URLs, typed from the tab name) used to
    * fall through to "Page Not Found" / a blank screen — alias to the ScanSquad tab. */
   else if(path==='/scansquad'||path==='/scansquad/')page=CreatorsPage();
+  /* #7: /signin, /sign-in and /log-in are what people type and what other pages
+     link to; they used to render "Page Not Found" while only /login worked. */
+
   else if(path==='/creator-earnings')page=CreatorEarningsPage();
   else if(path.startsWith('/group-book'))page=GroupBookingPage();
   else if(path==='/group'){var code=state.routeQuery?.replace('?code=','');if(code){/* auto-join */}page=GroupBookingPage();}
@@ -15959,7 +16112,9 @@ function _renderInner(){
   else if(path==='/suppliers/qr')page=SupplierPage('qr');
   else if(path==='/suppliers/loans')page=SupplierPage('loans');
   else if(path==='/more/profile'){loadFullProfile();page=ProfilePage();}
-  else if(path==='/login'||path==='/signup'||path==='/register')page=LoginPage();
+  /* #7: /signin, /sign-in and /log-in are what people type and what other pages
+     link to; they used to render "Page Not Found" while only /login worked. */
+  else if(path==='/login'||path==='/signup'||path==='/register'||path==='/signin'||path==='/sign-in'||path==='/sign-up'||path==='/log-in')page=LoginPage();
   else if(path==='/how-it-works')page=InfoPage('How It Works',`<p>1. Find a gym near you using GPS or search</p><p>2. Book a 24-hour day pass — localized pricing worldwide</p><p>3. Sign in with Google, Apple or your phone, then pay with Apple Pay, Google Pay or card</p><p>4. Get your QR code — scan in at the gym, scan out when done</p><p>5. Rate your session and earn rewards</p>`);
   else if(path==='/pricing')page=InfoPage('Pricing',`
 <!-- Hero Section -->

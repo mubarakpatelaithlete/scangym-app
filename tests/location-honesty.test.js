@@ -82,8 +82,12 @@ test('but a travel label cannot rescue a gym on another continent', () => {
   assert.strictEqual(H.sgDistanceLabel(gym), 'Boardman, OH');
 });
 
-test('missing distance degrades to "Nearby" rather than NaN or undefined', () => {
-  assert.strictEqual(H.sgDistanceLabel({ address: 'Leeds, UK' }), 'Nearby');
+/* Owner-reported, 2026-09-19: a search for a UK chain from a US IP showed
+   Manchester gyms labelled "Nearby". With no distance we cannot claim nearness,
+   so the card names the place instead; "Nearby" survives only when there is
+   nothing at all to say. */
+test('missing distance names the place instead of claiming "Nearby"', () => {
+  assert.strictEqual(H.sgDistanceLabel({ address: 'Leeds, UK' }), 'Leeds');
   assert.strictEqual(H.sgDistanceLabel({}), 'Nearby');
 });
 
