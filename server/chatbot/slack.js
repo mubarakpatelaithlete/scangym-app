@@ -178,7 +178,8 @@ router.post('/interactive', express.urlencoded({ extended: true }), async (req, 
       const session = sessions.get(channelId);
       if (session && session.gyms?.[gymIdx]) {
         const userName = await getUserName(userId);
-        const response = await handleMessage(`slack:${userId}`, `Book gym ${gymIdx + 1} for tomorrow`, {
+        const slackWhen = action.value === 'today' ? 'today' : 'tomorrow';
+        const response = await handleMessage(`slack:${userId}`, `Book gym ${gymIdx + 1} for ${slackWhen}`, {
           userName,
           platform: 'slack',
           channelId,
@@ -308,11 +309,13 @@ function buildGymBlocks(gyms, offset) {
         type: 'mrkdwn',
         text: `*${idx}. ${g.name || 'Gym'}*\n📍 ${g.address || 'Address unavailable'}\n💰 *${price}/day* ${stars ? '· ' + stars : ''} ${open ? '· ' + open : ''}`,
       },
+      /* A url button sent the customer out of Slack; booking now happens in the
+         chat itself, with the day chosen in the same tap. */
       accessory: {
         type: 'button',
-        text: { type: 'plain_text', text: '📅 Book', emoji: true },
+        text: { type: 'plain_text', text: '☀️ Book today', emoji: true },
         style: 'primary',
-        url: `${BASE_URL}/book?gym=${encodeURIComponent(g.name || '')}`,
+        value: 'today',
         action_id: `book_gym_${offset + i}`,
       },
     });

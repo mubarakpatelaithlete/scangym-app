@@ -350,13 +350,18 @@ async function handleCallbackQuery(query) {
     await sendTelegramMessage(chatId, response.text);
   } else if (data === 'share_location') {
     await sendLocationRequest(chatId);
-  } else if (data.startsWith('book_')) {
-    const gymIdx = parseInt(data.split('_')[1]) - 1;
+  } else if (data.startsWith('book_') || data.startsWith('bookday_')) {
+    /* Day-pass customers usually want to train TODAY, but the old single
+       "Book #N" button silently booked tomorrow. bookday_<n>_<today|tomorrow>
+       lets them pick the day in the same tap. */
+    const parts = data.split('_');
+    const gymIdx = parseInt(parts[1]) - 1;
+    const when = parts[2] === 'today' ? 'today' : 'tomorrow';
     const session = sessions.get(chatId);
     if (session && session.gyms && session.gyms[gymIdx]) {
       // Look up linked user for booking flow
       const linkedUser = await lookupLinkedUser(query.from.id);
-      const response = await handleMessage(`telegram:${query.from.id}`, `Book gym ${gymIdx + 1} for tomorrow`, {
+      const response = await handleMessage(`telegram:${query.from.id}`, `Book gym ${gymIdx + 1} for ${when}`, {
         platform: 'telegram',
         userName: query.from.first_name,
         linkedUser,
@@ -519,12 +524,15 @@ function getMainMenuButtons() {
 function getGymResultButtons(gyms, linkedUser) {
   const buttons = [];
   
-  // Book buttons for top 3 gyms
-  const bookRow = [];
+  // Book buttons for the top 3 gyms — one tap per day, so the customer never
+  // has to type a date and never gets a surprise day.
+  const todayRow = [];
+  const tomorrowRow = [];
   for (let i = 0; i < Math.min(3, gyms.length); i++) {
-    bookRow.push({ text: `📅 Book #${i + 1}`, callback_data: `book_${i + 1}` });
+    todayRow.push({ text: `☀️ #${i + 1} today`, callback_data: `bookday_${i + 1}_today` });
+    tomorrowRow.push({ text: `📅 #${i + 1} tomorrow`, callback_data: `bookday_${i + 1}_tomorrow` });
   }
-  if (bookRow.length > 0) buttons.push(bookRow);
+  if (todayRow.length > 0) { buttons.push(todayRow); buttons.push(tomorrowRow); }
   
   // Show more button if there are more gyms
   if (gyms.length > 5) {

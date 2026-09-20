@@ -333,11 +333,12 @@ async function handleButtonClick(interaction) {
   // Acknowledge the button click
   await respondToInteraction(interaction, null, false, true);
 
-  if (customId.startsWith('book_')) {
+  if (customId.startsWith('book_') || customId.startsWith('bookday_')) {
     const gymIdx = parseInt(customId.split('_')[1]) - 1;
     const session = sessions.get(channelId);
     if (session && session.gyms && session.gyms[gymIdx]) {
-      const response = await handleMessage(userId, `Book gym ${gymIdx + 1} for tomorrow`, {
+      const bookWhen = customId.split('_')[2] === 'today' ? 'today' : 'tomorrow';
+      const response = await handleMessage(userId, `Book gym ${gymIdx + 1} for ${bookWhen}`, {
         userName, platform: 'discord', channelId,
       });
       await followUpInteraction(interaction, response.text);
@@ -463,20 +464,18 @@ function buildGymButtons(gyms, offset) {
   const showing = gyms.slice(offset, offset + count);
   const components = [];
 
-  // Row 1: Book buttons for top 3 gyms
-  const bookRow = [];
+  // Rows 1-2: book the top 3 gyms for today or tomorrow in a single tap, so a
+  // customer never types a date and never gets a day they did not choose.
+  const todayRow = [];
+  const tomorrowRow = [];
   for (let i = 0; i < Math.min(3, showing.length); i++) {
     const idx = offset + i + 1;
-    const gymName = (showing[i].name || 'Gym').substring(0, 30);
-    bookRow.push({
-      type: 2, // Button
-      style: 3, // Success (green)
-      label: `📅 Book #${idx}`,
-      custom_id: `book_${idx}`,
-    });
+    todayRow.push({ type: 2, style: 3, label: `☀️ #${idx} today`, custom_id: `bookday_${idx}_today` });
+    tomorrowRow.push({ type: 2, style: 1, label: `📅 #${idx} tomorrow`, custom_id: `bookday_${idx}_tomorrow` });
   }
-  if (bookRow.length > 0) {
-    components.push({ type: 1, components: bookRow }); // Action Row
+  if (todayRow.length > 0) {
+    components.push({ type: 1, components: todayRow });
+    components.push({ type: 1, components: tomorrowRow });
   }
 
   // Row 2: Show More + New Search + Pricing
