@@ -368,6 +368,29 @@ router.get('/discord/invite', async (req, res) => {
 // Needed because the session cookie (sameSite:strict) is NOT sent on Slack's redirect.
 const slackStates = new Map();
 
+// ─── GET /api/channels/googlechat/install — Google Chat setup info ─
+// The Google Chat button on the profile tab called this route and got a 404, so
+// the customer was dropped with nothing. The channel only works once the Chat
+// app is configured in Google Cloud (GOOGLE_CHAT_AUDIENCE), so report that
+// honestly rather than sending people to search for an app Google cannot show.
+router.get('/googlechat/install', (req, res) => {
+  const configured = !!(process.env.GOOGLE_CHAT_AUDIENCE || process.env.GOOGLE_CHAT_PROJECT_NUMBER);
+  res.json({
+    configured,
+    installUrl: `${req.protocol}://${req.get('host')}/googlechat`,
+    chatUrl: 'https://chat.google.com/',
+    fallbackUrl: 'https://t.me/ScanGymBot',
+    steps: [
+      'Open Google Chat (chat.google.com) with your Google account',
+      'New chat → Apps tab → search “ScanGym”',
+      'Open it and send “help” to start',
+    ],
+    note: configured
+      ? 'Add the ScanGym app from the Apps tab in Google Chat.'
+      : 'Google Chat is not switched on yet — use Telegram in the meantime.',
+  });
+});
+
 // ─── GET /api/channels/slack/install — Get Slack install link ─
 router.get('/slack/install', (req, res) => {
   const clientId = process.env.SLACK_CLIENT_ID || ['1145263420', '2274.114614', '00621316'].join('');
