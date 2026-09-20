@@ -254,6 +254,23 @@ const INTENTS = {
   CHANNELS: 'channels', SHOW_MORE: 'show_more', UNKNOWN: 'unknown',
 };
 
+/**
+ * "yes", "yep confirm", "ok go ahead" — agreement, not a destination.
+ */
+function isAffirmation(lower) {
+  const clean = lower.replace(/[.,!?]/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!clean || clean.length > 24) return false;
+  const words = clean.split(' ');
+  const AFFIRM_WORDS = new Set([
+    'y','ya','yaa','yes','yess','yeah','yep','yup','yh','sure','ok','okay','okey','k','kk',
+    'confirm','confirmed','confirming','correct','right','proceed','continue','go','ahead',
+    'do','it','that','please','pls','thanks','agreed','fine','alright','absolutely',
+    'definitely','affirmative','yesss','good','great','perfect','cool','done',
+  ]);
+  const hasCore = words.some((w) => ['y','ya','yaa','yes','yess','yeah','yep','yup','yh','sure','ok','okay','okey','k','kk','confirm','confirmed','confirming','correct','proceed','continue','agreed','affirmative','yesss'].includes(w));
+  return hasCore && words.every((w) => AFFIRM_WORDS.has(w));
+}
+
 function detectIntent(text, session) {
   const lower = text.toLowerCase().trim();
   
@@ -270,6 +287,14 @@ function detectIntent(text, session) {
   
   // ── Cancel ──
   if (/\bcancel\b/.test(lower)) return INTENTS.CANCEL;
+  
+  /* ── Plain agreement ──
+   * "yes confirm" used to fall through to the city guesser, so the bot
+   * answered "Found 13 gyms in Yes Confirm". Agreement is never a place name:
+   * mid-booking it continues the booking, otherwise it re-offers the menu. */
+  if (isAffirmation(lower)) {
+    return (session && session.pendingBooking) ? INTENTS.FOLLOW_UP : INTENTS.HELP;
+  }
   
   // ── Book ──
   if (/\b(book|reserve|schedule)\b/.test(lower)) return INTENTS.BOOK;
@@ -756,13 +781,34 @@ async function handleSearch(session, text, entities, meta) {
   return { text: formatGymList(data.gyms, meta.platform, 0, query), data: { gyms: data.gyms } };
 }
 
+/**
+ * "Book the first one for today" is how people actually talk, and it used to
+ * get the "which gym?" dead end right after a list of 20 gyms. Word ordinals
+ * and "1st/2nd" map onto the numbered list the customer is looking at.
+ */
+const ORDINAL_WORDS = {
+  first: 1, '1st': 1, second: 2, '2nd': 2, third: 3, '3rd': 3, fourth: 4, '4th': 4,
+  fifth: 5, '5th': 5, sixth: 6, '6th': 6, seventh: 7, '7th': 7, eighth: 8, '8th': 8,
+  ninth: 9, '9th': 9, tenth: 10, '10th': 10, last: -1,
+};
+
+function matchOrdinal(text) {
+  const m = text.toLowerCase().match(/\b(first|1st|second|2nd|third|3rd|fourth|4th|fifth|5th|sixth|6th|seventh|7th|eighth|8th|ninth|9th|tenth|10th|last)\b/);
+  if (!m) return null;
+  return [m[0], String(ORDINAL_WORDS[m[1]])];
+}
+
 // ─── Book handler ────────────────────────────────────────────
 async function handleBook(session, text, entities, meta) {
-  const numMatch = text.match(/\bgym\s*(\d+)\b/i) || text.match(/\b#(\d+)\b/);
+  const numMatch = text.match(/\bgym\s*(\d+)\b/i)
+    || text.match(/\b#(\d+)\b/)
+    || text.match(/\b(?:number|no\.?|option|the)\s*(\d{1,2})\b/i)
+    || matchOrdinal(text);
   let targetGym = null;
   
   if (numMatch && session.lastResults.length > 0) {
-    const idx = parseInt(numMatch[1]) - 1;
+    const n = parseInt(numMatch[1]);
+    const idx = n === -1 ? session.lastResults.length - 1 : n - 1;
     if (idx >= 0 && idx < session.lastResults.length) targetGym = session.lastResults[idx];
     else return { text: `I found ${session.lastResults.length} gyms. Try "Book gym 1" to "Book gym ${session.lastResults.length}".` };
   }
