@@ -420,7 +420,7 @@ router.get('/slack/install', (req, res) => {
 
 // ─── GET /api/channels/msteams/install — Get Teams install link ─
 router.get('/msteams/install', async (req, res) => {
-  const appId = process.env.TEAMS_APP_ID || ['1b6f3573-928c', '-4dad-a905-', '47d6b75a58ae'].join('');
+  const appId = process.env.TEAMS_APP_ID || ['72d3f0da-959e', '-478c-b8e2-', 'e22a656e4eea'].join('');
   res.json({
     installUrl: `https://teams.microsoft.com/l/app/${appId}`,
     manifestUrl: `${req.protocol}://${req.get('host')}/api/channels/msteams/manifest`,
