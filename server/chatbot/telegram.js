@@ -165,7 +165,7 @@ router.post('/webhook', async (req, res) => {
       const token = text.split('/start ')[1].trim();
       if (token && token.length >= 16) {
         try {
-          const verifyResp = await fetch((process.env.BASE_URL || 'https://scangym.com') + '/api/channels/telegram/verify', {
+          const verifyResp = await fetch(`${BASE_URL}/api/channels/telegram/verify`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -195,6 +195,7 @@ router.post('/webhook', async (req, res) => {
       const args = input.split(' ').slice(1).join(' ');
       switch (cmd) {
         case '/find':
+        case '/gyms':
         case '/search':
           input = args ? `Find gyms in ${args}` : 'Find gyms';
           break;
@@ -204,6 +205,11 @@ router.post('/webhook', async (req, res) => {
         case '/price':
         case '/pricing':
           input = 'pricing';
+          break;
+        case '/pass':
+        case '/passes':
+        case '/mypasses':
+          input = 'my bookings';
           break;
         case '/help':
           input = 'help';
@@ -607,6 +613,40 @@ async function ensureWebhook() {
   }
 }
 
+/**
+ * Publish the command menu to Telegram.
+ *
+ * The bot already understood /find, /book and friends, but nothing ever called
+ * setMyCommands, so Telegram's blue "Menu" button listed nothing and customers
+ * had no way to discover them. Registering on boot keeps the menu in step with
+ * the switch statement above.
+ */
+const BOT_COMMANDS = [
+  { command: 'gyms', description: 'Find gyms near a place' },
+  { command: 'book', description: 'Book a day pass' },
+  { command: 'pass', description: 'Show my passes and bookings' },
+  { command: 'price', description: 'See pricing' },
+  { command: 'cancel', description: 'Cancel a booking' },
+  { command: 'help', description: 'What this bot can do' },
+];
+
+async function ensureCommands() {
+  if (!TELEGRAM_TOKEN) return { ok: false, reason: 'no token' };
+  try {
+    const resp = await fetch(`${TELEGRAM_API}/setMyCommands`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ commands: BOT_COMMANDS }),
+    });
+    const data = await resp.json();
+    if (!data.ok) console.error('[Telegram] setMyCommands failed:', data.description);
+    return { ok: !!data.ok, commands: BOT_COMMANDS.length };
+  } catch (err) {
+    console.error('[Telegram] ensureCommands failed:', err.message);
+    return { ok: false, reason: err.message };
+  }
+}
+
 // ─── Set up webhook ──────────────────────────────────────────
 router.post('/setup', requireChatbotAdmin, async (req, res) => {
   const { webhookUrl } = req.body;
@@ -743,3 +783,5 @@ function splitMessage(text, maxLen) {
 
 module.exports = router;
 module.exports.ensureWebhook = ensureWebhook;
+module.exports.ensureCommands = ensureCommands;
+module.exports.BOT_COMMANDS = BOT_COMMANDS;

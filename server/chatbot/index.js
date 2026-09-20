@@ -27,6 +27,8 @@ router.use('/telegram', telegramRouter);
 // Inbound Telegram depends on a URL registered in Telegram's console; verify it
 // on boot so a stale or redirecting webhook cannot silence the bot unnoticed.
 if (typeof telegramRouter.ensureWebhook === 'function') telegramRouter.ensureWebhook();
+// Publish the slash-command menu so customers can discover the commands.
+if (typeof telegramRouter.ensureCommands === 'function') telegramRouter.ensureCommands();
 
 // Twilio: WhatsApp + SMS (uses existing Twilio account)
 const twilioRouter = require('./twilio');
