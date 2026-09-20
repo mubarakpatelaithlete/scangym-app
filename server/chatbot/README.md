@@ -50,6 +50,10 @@ curl -X POST "https://api.telegram.org/bot{TOKEN}/setWebhook" \
   -d '{"url": "https://scangym.com/api/chatbot/telegram/webhook"}'
 ```
 
+4. Nothing else to do by hand: on boot `index.js` calls `ensureWebhook()`,
+   `ensureCommands()`, `ensureMenuButton()` (blue menu button → `BASE_URL/nearby`
+   as a Web App, the one-tap path) and `ensureProfileText()`.
+
 ### WhatsApp + SMS (Twilio)
 1. Already have Twilio account (used for OTP)
 2. Set webhook in Twilio Console → Phone Number → Messaging:

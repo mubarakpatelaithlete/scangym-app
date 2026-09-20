@@ -704,6 +704,75 @@ async function ensureCommands() {
   }
 }
 
+/**
+ * Publish the blue menu button as a Web App shortcut.
+ *
+ * Telegram's default menu button only lists slash commands, so the shortest
+ * path to a gym was: tap Menu → read six commands → pick one → type a city.
+ * A `web_app` menu button collapses that to one tap: it opens /nearby inside
+ * Telegram's in-app browser, where the site already asks for GPS and lists the
+ * closest gyms. Setting it here rather than by hand means a deploy cannot
+ * silently drop it, the way the webhook once was.
+ */
+async function ensureMenuButton() {
+  if (!TELEGRAM_TOKEN) return { ok: false, reason: 'no token' };
+  const url = `${BASE_URL}/nearby`;
+  try {
+    const resp = await fetch(`${TELEGRAM_API}/setChatMenuButton`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        menu_button: { type: 'web_app', text: 'Find gyms near me', web_app: { url } },
+      }),
+    });
+    const data = await resp.json();
+    if (!data.ok) console.error('[Telegram] setChatMenuButton failed:', data.description);
+    return { ok: !!data.ok, url };
+  } catch (err) {
+    console.error('[Telegram] ensureMenuButton failed:', err.message);
+    return { ok: false, reason: err.message };
+  }
+}
+
+/**
+ * Fill the bot's profile text.
+ *
+ * `description` is the screen a first-time visitor sees before they ever tap
+ * Start, and `short_description` is what shows in the bot's profile card and in
+ * search results. Both were empty, so the bot read as abandoned at exactly the
+ * moment a new customer decides whether to trust it.
+ */
+const BOT_SHORT_DESCRIPTION =
+  'Book a gym session near you. No membership, pay per visit.';
+const BOT_DESCRIPTION =
+  'ScanGym lets you train at any partner gym with no membership \u2014 find a gym, ' +
+  'pay for one session, scan your QR code and go. Tap the menu button to find gyms near you.';
+
+async function ensureProfileText() {
+  if (!TELEGRAM_TOKEN) return { ok: false, reason: 'no token' };
+  const calls = [
+    ['setMyShortDescription', { short_description: BOT_SHORT_DESCRIPTION }],
+    ['setMyDescription', { description: BOT_DESCRIPTION }],
+  ];
+  const results = {};
+  for (const [method, body] of calls) {
+    try {
+      const resp = await fetch(`${TELEGRAM_API}/${method}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await resp.json();
+      if (!data.ok) console.error(`[Telegram] ${method} failed:`, data.description);
+      results[method] = !!data.ok;
+    } catch (err) {
+      console.error(`[Telegram] ${method} failed:`, err.message);
+      results[method] = false;
+    }
+  }
+  return { ok: Object.values(results).every(Boolean), results };
+}
+
 // ─── Set up webhook ──────────────────────────────────────────
 router.post('/setup', requireChatbotAdmin, async (req, res) => {
   const { webhookUrl } = req.body;
@@ -841,4 +910,6 @@ function splitMessage(text, maxLen) {
 module.exports = router;
 module.exports.ensureWebhook = ensureWebhook;
 module.exports.ensureCommands = ensureCommands;
+module.exports.ensureMenuButton = ensureMenuButton;
+module.exports.ensureProfileText = ensureProfileText;
 module.exports.BOT_COMMANDS = BOT_COMMANDS;
