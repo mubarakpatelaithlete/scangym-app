@@ -77,12 +77,16 @@ startRedditBot();
 // ─── Test Endpoint (for development) ────────────────────────
 // POST /api/chatbot/test { "message": "Find gyms in Bolton", "userId": "test123" }
 router.post('/test', async (req, res) => {
-  const { message, userId } = req.body;
+  const { message, userId, rebookGym, linkedUser } = req.body;
   if (!message) return res.status(400).json({ error: 'message is required' });
 
+  /* rebookGym/linkedUser are forwarded so the one-tap repeat-booking path the
+     chat buttons use can be exercised without a real Telegram client. */
   const response = await handleMessage(userId || 'test:user', message, {
     userName: 'Test User',
     platform: 'test',
+    ...(rebookGym ? { rebookGym } : {}),
+    ...(linkedUser ? { linkedUser } : {}),
   });
 
   res.json(response);
