@@ -29,6 +29,11 @@ router.use('/telegram', telegramRouter);
 if (typeof telegramRouter.ensureWebhook === 'function') telegramRouter.ensureWebhook();
 // Publish the slash-command menu so customers can discover the commands.
 if (typeof telegramRouter.ensureCommands === 'function') telegramRouter.ensureCommands();
+// One tap to a gym: the blue menu button opens /nearby as a Web App instead of
+// listing commands the customer then has to type into.
+if (typeof telegramRouter.ensureMenuButton === 'function') telegramRouter.ensureMenuButton();
+// An empty bot profile reads as abandoned; publish the description text too.
+if (typeof telegramRouter.ensureProfileText === 'function') telegramRouter.ensureProfileText();
 
 // Twilio: WhatsApp + SMS (uses existing Twilio account)
 const twilioRouter = require('./twilio');
