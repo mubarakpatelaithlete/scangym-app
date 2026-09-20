@@ -62,7 +62,7 @@ const LISTINGS = {
   linkedin: null,
   snapchat: null,
   chatgptPlugin: null,   // app submission pending
-  chatgptGpt: null,      // custom GPT not published
+  chatgptGpt: 'https://chatgpt.com/g/g-6a445a2958e48191bc28d9f14374b8ea',  // ScanGym custom GPT, verified live 2026-09-20
   gemini: null,
   kimi: null,
   grok: null,
