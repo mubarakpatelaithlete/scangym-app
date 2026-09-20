@@ -827,6 +827,20 @@ if (fs.existsSync(FRONTEND_DIR)) {
     res.sendFile(path.join(FRONTEND_DIR, 'claude', 'index.html'));
   });
 
+  // "Use ScanGym in ChatGPT" — same guided connector flow as /claude.
+  app.get('/chatgpt', (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache');
+    res.sendFile(path.join(FRONTEND_DIR, 'chatgpt', 'index.html'));
+  });
+
+  // "Use ScanGym in Google Chat" — the profile tab's Google Chat button used to
+  // point at /api/channels/googlechat/install, which did not exist (404), so the
+  // button took customers nowhere. This is where it lands now.
+  app.get('/googlechat', (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache');
+    res.sendFile(path.join(FRONTEND_DIR, 'googlechat', 'index.html'));
+  });
+
   /* ── Internal pages: gate the HTML, not just the data ─────────────────────
      The data APIs already return 401, but /admin served its full shell to
      anyone: dashboard tiles, section names, and our live/£0/0 numbers, from a
