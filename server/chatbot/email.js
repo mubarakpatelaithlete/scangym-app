@@ -25,7 +25,10 @@ const express = require('express');
 const router = express.Router();
 const { handleMessage } = require('./message-handler');
 
+const pool = require('../middleware/db');
+
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const SMTP_FROM = process.env.SMTP_FROM || 'book@scangym.com';
 const BASE_URL = process.env.BASE_URL || 'https://scangym.com';
 
@@ -68,20 +71,20 @@ router.post('/webhook', express.urlencoded({ extended: true, limit: '10mb' }), a
       console.warn('[Email] Failed to log inbound comms:', e.message);
     }
 
-    // Try to auto-link by email address
+    // Recognise the sender if they already have a ScanGym account.
+    // This used to POST to /api/channels/email/auto-link, a route that does not
+    // exist — live logs showed `[404] Unknown API route .../email/auto-link` on
+    // every inbound mail, so nobody was ever recognised. The same answer is one
+    // query away in-process, with no HTTP hop to fail.
     let linkedUserName = senderName;
     try {
-      const linkResp = await fetch(`${BASE_URL}/api/channels/email/auto-link`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: senderEmail, name: senderName }),
-      });
-      const linkData = await linkResp.json();
-      if (linkData.linked && linkData.userName) {
-        linkedUserName = linkData.userName;
-      }
+      const { rows } = await pool.query(
+        'SELECT first_name FROM public.users WHERE lower(email) = lower($1) LIMIT 1',
+        [senderEmail]
+      );
+      if (rows[0]?.first_name) linkedUserName = rows[0].first_name;
     } catch (e) {
-      console.warn('[Email] Failed to auto-link email to user:', e.message);
+      console.warn('[Email] Could not match sender to an account:', e.message);
     }
 
     // Process through universal handler
@@ -138,7 +141,7 @@ router.post('/send', async (req, res) => {
 
 // ─── Booking Confirmation Email ──────────────────────────────
 async function sendBookingConfirmation(toEmail, toName, booking) {
-  if (!SENDGRID_API_KEY) return;
+  if (!RESEND_API_KEY && !SENDGRID_API_KEY) return;
 
   const html = `<!DOCTYPE html>
 <html>
@@ -170,7 +173,16 @@ async function sendBookingConfirmation(toEmail, toName, booking) {
 </body>
 </html>`;
 
+  const confirmationSubject = `✅ Booking Confirmed — ${booking.gymName || 'Your Gym Session'}`;
+  const confirmationText = `Booking confirmed! ${booking.gymName || 'Gym'} on ${booking.date || 'Date'} at ${booking.time || 'Time'}. View at ${BASE_URL}/bookings`;
+
   try {
+    if (RESEND_API_KEY) {
+      await sendViaResend({ to: toEmail, subject: confirmationSubject, text: confirmationText, html });
+      console.log(`[Email] Booking confirmation sent to ${toEmail} via Resend`);
+      return;
+    }
+
     const nodemailer = require('nodemailer');
     const transporter = nodemailer.createTransport({
       host: 'smtp.sendgrid.net', port: 587,
@@ -180,8 +192,8 @@ async function sendBookingConfirmation(toEmail, toName, booking) {
     await transporter.sendMail({
       from: `ScanGym <${SMTP_FROM}>`,
       to: toEmail,
-      subject: `✅ Booking Confirmed — ${booking.gymName || 'Your Gym Session'}`,
-      text: `Booking confirmed! ${booking.gymName || 'Gym'} on ${booking.date || 'Date'} at ${booking.time || 'Time'}. View at ${BASE_URL}/bookings`,
+      subject: confirmationSubject,
+      text: confirmationText,
       html,
     });
     console.log(`[Email] Booking confirmation sent to ${toEmail}`);
@@ -230,9 +242,47 @@ router.get('/status', (req, res) => {
 
 // ─── Email Sending ──────────────────────────────────────────
 
+/**
+ * Send a reply through Resend's HTTP API.
+ *
+ * Resend is tried before SendGrid because on 2026-09-20 the SendGrid account was
+ * out of credits (`Maximum credits exceeded`) and SMTP to smtp.sendgrid.net was
+ * timing out, so every reply this bot produced was logged as
+ * `[Email] Send failed: Connection timeout` and the customer heard nothing.
+ * scangym.com is a verified sending domain on Resend, and an HTTP call has no
+ * SMTP port to be blocked on.
+ */
+async function sendViaResend({ to, subject, text, html, inReplyTo }) {
+  const payload = {
+    from: `ScanGym <${SMTP_FROM.replace(/^.*</, '').replace(/>$/, '')}>`,
+    to: [to],
+    subject,
+    text,
+    html,
+  };
+  if (inReplyTo) {
+    payload.headers = { 'In-Reply-To': inReplyTo, References: inReplyTo };
+  }
+
+  const resp = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${RESEND_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!resp.ok) {
+    throw new Error(`Resend ${resp.status}: ${(await resp.text()).slice(0, 200)}`);
+  }
+  const data = await resp.json();
+  return data.id ? `<${data.id}@resend>` : null;
+}
+
 async function sendEmailReply(toEmail, toName, originalSubject, responseText, inReplyTo) {
-  if (!SENDGRID_API_KEY) {
-    console.error('[Email] No SENDGRID_API_KEY — cannot send reply');
+  if (!RESEND_API_KEY && !SENDGRID_API_KEY) {
+    console.error('[Email] No RESEND_API_KEY or SENDGRID_API_KEY — cannot send reply');
     return;
   }
 
@@ -244,6 +294,21 @@ async function sendEmailReply(toEmail, toName, originalSubject, responseText, in
   const plainText = responseText.replace(/\*([^*]+)\*/g, '$1');
 
   try {
+    if (RESEND_API_KEY) {
+      const messageId = await sendViaResend({
+        to: toEmail, subject: reSubject, text: plainText, html: htmlBody, inReplyTo,
+      });
+      console.log(`[Email] Reply sent to ${toEmail} via Resend`);
+      if (messageId) messageThreads.set(toEmail, messageId);
+      try {
+        const { logComms } = require('../routes/comms-log');
+        await logComms({ channel: 'email', direction: 'outbound', from: SMTP_FROM, to: toEmail, subject: reSubject, body: plainText, status: 'sent' });
+      } catch (e) {
+        console.warn('[Email] Failed to log outbound comms:', e.message);
+      }
+      return;
+    }
+
     const nodemailer = require('nodemailer');
     const transporter = nodemailer.createTransport({
       host: 'smtp.sendgrid.net', port: 587,
