@@ -187,17 +187,11 @@ async function searchGymsFromDatabase(searchQuery, limit = 20) {
       [q, limit]
     );
     if (result.rows.length === 0) {
-      const allGyms = await pool.query(
-        `SELECT id, name, address, city, country, lat, lng, latitude, longitude,
-                rating, average_rating, total_reviews, day_pass_price, currency,
-                place_id, is_24h, is_self_service, phone, website, zip_code,
-                is_accepting_bookings
-         FROM gyms 
-         ORDER BY rating DESC NULLS LAST, total_reviews DESC NULLS LAST
-         LIMIT $1`,
-        [limit]
-      );
-      return allGyms.rows.map(formatDbGym);
+      // Never fall back to "top rated gyms anywhere": that showed a customer searching
+      // Inverness or Dubai our Bolton and Naples gyms as if they were local results.
+      // Callers widen explicitly (and label it) via dbFallbackToNearestCity instead.
+      console.log('[LiveSearch] no saved gyms match location:', searchQuery);
+      return [];
     }
     return result.rows.map(formatDbGym);
   } catch (err) {
@@ -403,6 +397,30 @@ async function fallbackToNearestCity(searchQuery, lat, lng) {
   }
 }
 
+/**
+ * The same honest widening as fallbackToNearestCity, but served from our own gyms table so
+ * it still works when Google Places is unavailable (billing disabled, quota, outage).
+ * The response names the city actually searched, so the UI can say "nothing in Inverness —
+ * here is London" rather than presenting distant gyms as local ones.
+ */
+async function dbFallbackToNearestCity(searchQuery, lat, lng) {
+  const asked = requestedCity(searchQuery);
+  const metro = nearestMetro(lat, lng);
+  if (!metro || !metro.city) return null;
+  if (asked && asked.toLowerCase() === metro.city.toLowerCase()) return null;
+  const gyms = await searchGymsFromDatabase(metro.city);
+  if (!gyms.length) return null;
+  console.log(`[LiveSearch] "${searchQuery}" had no saved gyms; offering ${metro.city} from the database`);
+  return {
+    gyms,
+    total: gyms.length,
+    nextPageToken: null,
+    query: 'gyms in ' + metro.city,
+    source: 'database_nearest_city_fallback',
+    fallback: { requested: asked, city: metro.city, distanceKm: metro.distanceKm },
+  };
+}
+
 router.get('/search', async (req, res) => {
   try {
     const { q, query, pagetoken, type, lat, lng, radius, filter24h, filterSelfService } = req.query;
@@ -418,6 +436,8 @@ router.get('/search', async (req, res) => {
       if (fallbackGyms.length > 0) {
         return res.json({ gyms: fallbackGyms, total: fallbackGyms.length, nextPageToken: null, query: searchQuery, source: 'database_fallback' });
       }
+      const widened = await dbFallbackToNearestCity(searchQuery, req.query.lat, req.query.lng);
+      if (widened) return res.json({ ...widened, liveSearchUnavailable: true });
       return res.status(503).json({ error: 'search_unavailable', message: 'Gym search is temporarily unavailable.' });
     }
 
@@ -525,6 +545,8 @@ router.get('/search', async (req, res) => {
         const result = { gyms: fallbackGyms, total: fallbackGyms.length, nextPageToken: null, query: searchQuery, source: 'database_fallback' };
         return res.json(result);
       }
+      const widenedDb = await dbFallbackToNearestCity(searchQuery, lat, lng);
+      if (widenedDb) return res.json({ ...widenedDb, liveSearchUnavailable: true, error: data.status });
       return res.json({ gyms: [], total: 0, nextPageToken: null, query: searchQuery, source: 'google_places_live', error: data.status });
     }
 
