@@ -805,8 +805,12 @@ async function handleBook(session, text, entities, meta) {
     || text.match(/\b(?:number|no\.?|option|the)\s*(\d{1,2})\b/i)
     || matchOrdinal(text);
   let targetGym = null;
-  
-  if (numMatch && session.lastResults.length > 0) {
+
+  /* Repeat booking: the channel can hand us the exact gym the customer used
+     last time, so "book my usual again" needs no search and no typing. */
+  if (meta.rebookGym && (meta.rebookGym.placeId || meta.rebookGym.id)) targetGym = meta.rebookGym;
+
+  if (!targetGym && numMatch && session.lastResults.length > 0) {
     const n = parseInt(numMatch[1]);
     const idx = n === -1 ? session.lastResults.length - 1 : n - 1;
     if (idx >= 0 && idx < session.lastResults.length) targetGym = session.lastResults[idx];

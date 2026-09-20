@@ -62,6 +62,31 @@ async function lookupLinkedUser(telegramUserId) {
 }
 
 /**
+ * The gym this customer booked most recently — powers the one-tap
+ * "book my usual again today" button, so a returning customer never has to
+ * type a city or pick from a list again.
+ */
+async function lookupLastGym(userId) {
+  try {
+    const { rows } = await pool.query(
+      `SELECT place_id, gym_name FROM bookings
+        WHERE user_id = $1 AND place_id IS NOT NULL AND gym_name IS NOT NULL
+        ORDER BY created_at DESC LIMIT 1`,
+      [userId]
+    );
+    return rows.length > 0 ? { placeId: rows[0].place_id, name: rows[0].gym_name } : null;
+  } catch (err) {
+    console.error('[Telegram] Last gym lookup error:', err.message);
+    return null;
+  }
+}
+
+function rebookButton(lastGym) {
+  const short = (lastGym.name || 'my gym').substring(0, 24);
+  return { text: `🔁 ${short} again today`, callback_data: 'rebook_today' };
+}
+
+/**
  * Get saved cards for a linked user (calls bot-cards endpoint internally)
  */
 async function getSavedCards(userId) {
@@ -271,7 +296,16 @@ router.post('/webhook', async (req, res) => {
       }
       await sendTelegramMessage(chatId, response.text);
     } else if (input === 'help' || input === '/start') {
-      await sendWithButtons(chatId, response.text, getMainMenuButtons());
+      const lastGym = linkedUser ? await lookupLastGym(linkedUser.user_id) : null;
+      const menu = getMainMenuButtons();
+      if (lastGym) {
+        const session = sessions.get(chatId) || {};
+        session.lastGym = lastGym;
+        session.lastActive = Date.now();
+        sessions.set(chatId, session);
+        menu.unshift([rebookButton(lastGym)]);
+      }
+      await sendWithButtons(chatId, response.text, menu);
     } else {
       await sendTelegramMessage(chatId, response.text);
     }
@@ -337,6 +371,21 @@ async function handleCallbackQuery(query) {
     } else {
       await sendTelegramMessage(chatId, "That's all the gyms I found! 🏋️\n\nTry searching another city or visit scangym.com for more.");
     }
+  } else if (data === 'rebook_today') {
+    const session = sessions.get(chatId) || {};
+    const linkedUser = await lookupLinkedUser(query.from.id);
+    const lastGym = session.lastGym || (linkedUser ? await lookupLastGym(linkedUser.user_id) : null);
+    if (!lastGym) {
+      await sendTelegramMessage(chatId, "I don't have a previous gym for you yet — tap 🔍 Find Gyms and I'll book it in one tap next time.");
+      return;
+    }
+    const response = await handleMessage(`telegram:${query.from.id}`, 'Book it for today', {
+      platform: 'telegram',
+      userName: query.from.first_name,
+      linkedUser,
+      rebookGym: lastGym,
+    });
+    await sendTelegramMessage(chatId, response.text);
   } else if (data === 'new_search') {
     await sendTelegramMessage(chatId, '📍 Sure! Which city would you like to search?\n\nJust type a city name like "London" or "New York"');
   } else if (data === 'pricing') {
