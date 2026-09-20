@@ -296,6 +296,23 @@ async function handleInteraction(interaction) {
         text = options[0]?.value || 'help';
       }
       break;
+    // The one-tap commands: the name already says the intent, so there is
+    // nothing to parse except an optional location.
+    case 'gyms':
+      text = options[0]?.value || 'help';
+      break;
+    case 'book':
+      text = `book ${options[0]?.value || ''}`.trim();
+      break;
+    case 'pricing':
+      text = 'pricing';
+      break;
+    case 'creator':
+      text = 'How to become a creator';
+      break;
+    case 'help':
+      text = 'help';
+      break;
     default:
       text = 'help';
   }
@@ -370,6 +387,28 @@ async function handleButtonClick(interaction) {
 async function registerSlashCommands() {
   if (!DISCORD_TOKEN || !DISCORD_APP_ID) return;
 
+  // Discord shows subcommands as arguments you must type: reaching gyms meant
+  // `/scangym search location:Bolton`. These top-level commands are the same
+  // journeys in one tap, and `/gyms` takes no required argument at all, so an
+  // empty `/gyms` opens the welcome card whose buttons carry the rest.
+  const oneTapCommands = [
+    {
+      name: 'gyms',
+      description: 'Find gyms near you — no membership, pay per session',
+      type: 1,
+      options: [{ name: 'location', description: 'City or area (e.g. Bolton). Leave empty to browse.', type: 3, required: false }],
+    },
+    {
+      name: 'book',
+      description: 'Book a gym session',
+      type: 1,
+      options: [{ name: 'gym', description: 'Gym name or location', type: 3, required: true }],
+    },
+    { name: 'pricing', description: 'What a session costs', type: 1 },
+    { name: 'creator', description: 'Earn 30% commission as a ScanGym creator', type: 1 },
+    { name: 'help', description: 'What this bot can do', type: 1 },
+  ];
+
   const commands = [{
     name: 'scangym',
     description: 'Find and book gyms worldwide — day passes from £4.49',
@@ -413,10 +452,10 @@ async function registerSlashCommands() {
         'Authorization': `Bot ${DISCORD_TOKEN}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(commands),
+      body: JSON.stringify([...commands, ...oneTapCommands]),
     });
     if (resp.ok) {
-      console.log('[Discord] Slash commands registered (v3.0 — with pricing & creator)');
+      console.log(`[Discord] Slash commands registered: /scangym + ${oneTapCommands.map((c) => `/${c.name}`).join(' ')}`);
     } else {
       console.error('[Discord] Slash command registration failed:', await resp.text());
     }
