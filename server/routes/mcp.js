@@ -62,6 +62,37 @@ function formatGym(g) {
   };
 }
 
+// ─── Dates ───────────────────────────────────────────────────
+/*
+ * Assistants do not know today's date, so ChatGPT resolved "tomorrow" as a date
+ * in 2024 and customers would have been booked on the wrong day. Every tool now
+ * reports `today`, and past dates are refused with the real date rather than
+ * silently booked.
+ */
+function todayISO() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function shiftDays(days) {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+function resolveDate(input) {
+  const today = todayISO();
+  const raw = String(input == null ? '' : input).trim().toLowerCase();
+  if (!raw || raw === 'today') return { date: today };
+  if (raw === 'tomorrow') return { date: shiftDays(1) };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    return { error: `Could not read the date "${input}". Today is ${today}; send the date as YYYY-MM-DD.` };
+  }
+  if (raw < today) {
+    return { error: `${raw} is in the past. Today is ${today} — confirm the correct date with the user and call again.` };
+  }
+  return { date: raw };
+}
+
 // ─── Tool definitions ────────────────────────────────────────
 
 const TOOLS = [
@@ -103,7 +134,7 @@ const TOOLS = [
       type: 'object',
       properties: {
         placeId: { type: 'string', description: 'Google Places ID of the gym' },
-        date: { type: 'string', description: 'Requested booking date in YYYY-MM-DD format' },
+        date: { type: 'string', description: 'Requested booking date as YYYY-MM-DD, or "today"/"tomorrow". Never guess the year: the server returns today\'s date in every response.' },
         time: { type: 'string', description: 'Requested start time HH:MM (24h), or "anytime"' },
       },
       required: ['placeId', 'date'],
@@ -118,7 +149,7 @@ const TOOLS = [
       type: 'object',
       properties: {
         placeId: { type: 'string', description: 'Google Places ID of the gym' },
-        date: { type: 'string', description: 'Date in YYYY-MM-DD format' },
+        date: { type: 'string', description: 'Booking date as YYYY-MM-DD, or "today"/"tomorrow". Never guess the year: the server returns today\'s date in every response.' },
         time: { type: 'string', description: 'Preferred start time HH:MM (24h), or "anytime"' },
         email: { type: 'string', description: 'Optional contact email so the user can retrieve the hold on scangym.com' },
         name: { type: 'string', description: 'Optional user name for the hold' },
@@ -166,12 +197,12 @@ async function searchGyms({ query, latitude, longitude, radius }) {
     const params = new URLSearchParams({ lat: String(latitude), lng: String(longitude), radius: String(radius || 5000) });
     const data = await callApi(`/api/live/nearby?${params}`);
     if (data.error) return { error: data.error };
-    return { total: data.total || (data.gyms || []).length, gyms: (data.gyms || []).slice(0, 10).map(formatGym) };
+    return { today: todayISO(), total: data.total || (data.gyms || []).length, gyms: (data.gyms || []).slice(0, 10).map(formatGym) };
   }
   if (!query) return { error: 'Provide a search query (e.g. "gym in Bolton") or latitude/longitude.' };
   const data = await callApi(`/api/live/search?${new URLSearchParams({ q: query })}`);
   if (data.error) return { error: data.error };
-  return { total: data.total || (data.gyms || []).length, gyms: (data.gyms || []).slice(0, 10).map(formatGym) };
+  return { today: todayISO(), total: data.total || (data.gyms || []).length, gyms: (data.gyms || []).slice(0, 10).map(formatGym) };
 }
 
 async function getGymDetails({ placeId }) {
@@ -200,6 +231,9 @@ async function getGymDetails({ placeId }) {
 
 async function checkAvailability({ placeId, date, time }) {
   if (!placeId || !date) return { error: 'placeId and date are required.' };
+  const resolved = resolveDate(date);
+  if (resolved.error) return { error: resolved.error, today: todayISO() };
+  date = resolved.date;
   const data = await callApi(`/api/live/place/${encodeURIComponent(placeId)}`);
   if (data.error) return { error: data.error };
   const pricing = data.pricing || {};
@@ -207,6 +241,7 @@ async function checkAvailability({ placeId, date, time }) {
   return {
     available: true,
     provisional: true,
+    today: todayISO(),
     gymName: (data.gym || {}).name,
     address: (data.gym || {}).address,
     date,
@@ -220,10 +255,14 @@ async function checkAvailability({ placeId, date, time }) {
 
 async function bookGymSession({ placeId, date, time, email, name, confirmed }) {
   if (!placeId || !date) return { error: 'placeId and date are required.' };
+  const resolved = resolveDate(date);
+  if (resolved.error) return { error: resolved.error, today: todayISO() };
+  date = resolved.date;
   if (!email) email = 'guest@scangym.com';
   if (confirmed !== true) {
     return {
       confirmationRequired: true,
+      today: todayISO(),
       message: 'Ask the user to confirm the gym, date/time, and email, then call again with confirmed=true. The reservation is completed later on scangym.com.',
       requestedBooking: { placeId, date, time: time || 'anytime', email, name: name || null },
     };

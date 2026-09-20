@@ -178,6 +178,8 @@
     return id ? base + '?start=' + encodeURIComponent(String(id)) : base;
   }
 
+  var SCANGYM_GPT_URL = 'https://chatgpt.com/g/g-6a445a2958e48191bc28d9f14374b8ea';
+
   // ── Actions ────────────────────────────────────────────────────────────
   var ACTIONS = {
     telegram: function () {
@@ -216,8 +218,10 @@
       window.open('/googlechat', '_blank');
     },
     chatgpt: function () {
-      // Same reasoning as Claude: a raw MCP link is unusable in a toast.
-      window.open('/chatgpt', '_blank');
+      /* One tap straight into the published ScanGym custom GPT: a non-technical
+         customer can ask for gyms immediately, with no connector setup. The
+         /chatgpt guide page stays for people who want the raw MCP link. */
+      window.open(SCANGYM_GPT_URL, '_blank');
     },
     claude: function () {
       // Claude connects via an MCP URL, which is far too technical for a normal
