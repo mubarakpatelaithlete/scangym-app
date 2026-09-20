@@ -1,7 +1,7 @@
 {
   "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.17/MicrosoftTeams.schema.json",
   "manifestVersion": "1.17",
-  "version": "4.0.1",
+  "version": "4.0.2",
   "id": "72d3f0da-959e-478c-b8e2-e22a656e4eea",
   "developer": {
     "name": "ScanGym",
@@ -14,8 +14,8 @@
     "full": "ScanGym - Book a Gym. Anywhere."
   },
   "description": {
-    "short": "Find and book gyms near you. Day passes from $5.49, QR entry.",
-    "full": "ScanGym is a gym finder and booking marketplace. Search 1.2M+ gyms worldwide, buy day passes from $5.49, and enter with a QR code. No membership required. Chat with the bot to find gyms near any location, check pricing, and book instantly."
+    "short": "Find and book a gym near you. UK day passes from £4.49, QR entry, no membership.",
+    "full": "ScanGym is a gym finder and booking marketplace. Search partner gyms, buy a day pass (from £4.49 in the UK, PPP-adjusted in other countries) and enter with a QR code — no membership and no contract. Chat with the bot to find gyms near any location, check pricing, and book instantly."
   },
   "icons": {
     "outline": "outline.png",
