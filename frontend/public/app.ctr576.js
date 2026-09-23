@@ -7403,11 +7403,10 @@ function CheckoutLandingPage(){
         +'</div>'
         +'<p style="text-align:center;color:rgba(255,255,255,.25);font-size:11px;margin:16px 0 0">✅ Free cancellation up to 2 hours before · 🔒 Secured by Stripe</p>';
 
-      // If user is logged in, try opening the native checkout sheet instead
-      if(state.user && b.placeId && typeof window.showBookingCheckout==='function'){
-        window._rebookGym={id:b.gymId,name:b.gymName,address:b.gymAddress||''};
-        window.showBookingCheckout(b.placeId);
-      }
+      /* No auto-jump to the native booking sheet here. For logged-in users it
+         covered this page with a blank "Gym / Today" sheet whose Confirm & Pay
+         started a *new* booking instead of paying this one — chatbot
+         customers could never pay. This page pays the existing booking. */
 
     }catch(e){
       console.error('[Checkout] Error loading booking:',e);
@@ -7424,21 +7423,10 @@ window._checkoutPayBooking=async function(bookingId,bookingCode){
   var btn=document.getElementById('sg-checkout-pay-btn');
   if(btn){btn.disabled=true;btn.innerHTML='<div class="sg-spinner"></div> Processing...';}
   try{
-    // If logged in, open native checkout
-    if(state.user && typeof window.showBookingCheckout==='function'){
-      var bkResp=await fetch('/api/bookings/guest-lookup?booking='+bookingId+'&code='+encodeURIComponent(bookingCode),{credentials:'include'});
-      if(bkResp.ok){
-        var bkData=await bkResp.json();
-        if(bkData.booking.placeId){
-          window._rebookGym={id:bkData.booking.gymId,name:bkData.booking.gymName,address:bkData.booking.gymAddress||''};
-          window.showBookingCheckout(bkData.booking.placeId);
-          return;
-        }
-      }
-    }
-    /* Guest flow: take the money. This branch used to open the sign-in sheet —
-       one line short of the finish line, with the booking already created and
-       /api/payment/create-intent perfectly happy to run without a session. */
+    /* Pay this exact booking (id + code) — for guests and logged-in users
+       alike. Logged-in users used to be sent to the native booking sheet,
+       which re-booked the gym from scratch and never charged for this one.
+       /api/payment/create-intent runs fine without a session. */
     var host=document.getElementById('sg-checkout-status');
     if(typeof window.sgGuestCheckout==='object'&&host){
       var started=await window.sgGuestCheckout.payForExistingBooking(bookingId,bookingCode,host);

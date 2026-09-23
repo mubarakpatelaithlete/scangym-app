@@ -19,6 +19,7 @@
  *      Body: { "url": "https://scangym.com/api/chatbot/telegram/webhook" }
  */
 
+const { checkoutLink } = require('../lib/checkout-link');
 const express = require('express');
 const router = express.Router();
 const { handleMessage } = require('./message-handler');
@@ -150,7 +151,7 @@ async function sendQRPhoto(chatId, qrDataUrl, caption) {
   } catch (err) {
     console.error('[Telegram] QR photo send error:', err.message);
     // Fallback: send QR as a link
-    await sendTelegramMessage(chatId, `📲 *Your QR code:* ${BASE_URL}/booking/${chatId}/qr`);
+    await sendTelegramMessage(chatId, `📲 *Your QR passes:* ${BASE_URL}/bookings`);
   }
 }
 
@@ -288,7 +289,7 @@ router.post('/webhook', async (req, res) => {
             text: `💳 Pay with ${c.label}`,
             callback_data: `pay_${c.id}_${response.data.booking.id}`,
           }));
-          payButtons.push({ text: '🌐 Pay on website', url: `${BASE_URL}/booking/${response.data.booking.id}/pay` });
+          payButtons.push({ text: '🌐 Pay on website', url: checkoutLink(response.data.booking.id, response.data.booking.bookingCode, BASE_URL) });
 
           await sendWithButtons(chatId, response.text + `\n\n💳 *Pay instantly with your saved card:*`, [payButtons]);
           return;
@@ -428,7 +429,7 @@ async function handleCallbackQuery(query) {
           const payRow = cards.slice(0, 2).map(c => ({
             text: `💳 ${c.label}`, callback_data: `pay_${c.id}_${response.data.booking.id}`,
           }));
-          payRow.push({ text: '🌐 Website', url: `${BASE_URL}/booking/${response.data.booking.id}/pay` });
+          payRow.push({ text: '🌐 Website', url: checkoutLink(response.data.booking.id, response.data.booking.bookingCode, BASE_URL) });
           await sendWithButtons(chatId, response.text + '\n\n💳 *Pay now with saved card:*', [payRow]);
           return;
         }
@@ -497,7 +498,7 @@ async function handleCallbackQuery(query) {
       if (result.error === 'no_saved_card') {
         errorMsg += '💳 No saved card found.\n\nPlease add a payment method at scangym.com first, then try again.';
       } else if (result.error === 'sca_required') {
-        errorMsg += `🔐 Your card requires 3D Secure verification.\n\nPlease complete this booking on the website:\n${BASE_URL}/booking/${bookingId}/pay`;
+        errorMsg += `🔐 Your card requires 3D Secure verification.\n\nPlease complete this booking on the website:\n${checkoutLink(bookingId, booking.bookingCode, BASE_URL)}`;
       } else if (result.error === 'duplicate') {
         errorMsg += '📋 You already have a booking at this gym for this date/time!';
       } else {
