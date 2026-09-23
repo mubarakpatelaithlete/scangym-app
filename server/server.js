@@ -596,6 +596,14 @@ app.use('/api/playlists', playlistsRouter);
 app.use('/api/stats', adminDashboardRouter);
 
 // OpenAI ChatGPT Apps domain verification challenge
+/* The MCP connector (/mcp) needs no sign-in. But the SPA catch-all answered
+   /.well-known/oauth-protected-resource and oauth-authorization-server with
+   index.html and a 200, so Claude decided the server wants OAuth and refused
+   to use the connector ("server asked for sign-in"). Say plainly: no OAuth. */
+app.get(/^\/\.well-known\/(oauth-protected-resource|oauth-authorization-server|openid-configuration)(\/.*)?$/, (req, res) => {
+  res.status(404).json({ error: 'not_found', message: 'This server does not use OAuth. The MCP endpoint at /mcp is open.' });
+});
+
 app.get('/.well-known/openai-apps-challenge', (req, res) => {
   const token = process.env.OPENAI_APPS_CHALLENGE_TOKEN
     || 'uvQ2YsjnVp6NVLHiZ9lShRs95m1g6lcM-en5CB7k5kU';
