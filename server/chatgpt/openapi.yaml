@@ -24,7 +24,7 @@ info:
     Free cancellation up to 2 hours before session.
   version: 2.1.0
 servers:
-  - url: https://scangym.com
+  - url: https://www.scangym.com
     description: ScanGym Production API
 
 paths:
