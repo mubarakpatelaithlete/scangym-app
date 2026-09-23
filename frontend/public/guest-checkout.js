@@ -143,8 +143,29 @@
     'font-weight:800;color:#fff;background:linear-gradient(135deg,#22c55e,#16a34a);cursor:pointer';
   var SMALL = 'color:rgba(255,255,255,.3);font-size:11px;text-align:center;margin-top:12px';
 
+  /* Stripe.js is loaded lazily elsewhere in the app (on scroll/touch or when
+     the native sheet opens). Someone arriving at /checkout from a chatbot link
+     and tapping Pay straight away had no window.Stripe yet, so the card form
+     said "Card payments are unavailable right now". Load it ourselves. */
+  var _stripeJs = null;
+  function loadStripeJs() {
+    if (typeof window.Stripe === 'function') return Promise.resolve();
+    if (_stripeJs) return _stripeJs;
+    _stripeJs = new Promise(function (resolve) {
+      var s = document.createElement('script');
+      s.src = 'https://js.stripe.com/v3/';
+      s.async = true;
+      s.onload = resolve;
+      s.onerror = resolve;
+      document.head.appendChild(s);
+      setTimeout(resolve, 10000);
+    });
+    return _stripeJs;
+  }
+
   async function ensureStripe() {
     if (_stripe) return _stripe;
+    await loadStripeJs();
     if (typeof window.Stripe !== 'function') return null;
     var key = window._sgStripePublishableKey;
     if (!key && window.__configPromise) {
