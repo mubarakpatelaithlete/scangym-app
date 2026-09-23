@@ -1111,6 +1111,53 @@ router.get('/place/:placeId', optionalAuth, async (req, res) => {
   }
 });
 
+/* Gym details for /ensure-gym, in the legacy Place Details shape the insert
+   below expects. Search already runs on Places API (New); ensure-gym still
+   called the legacy details/json endpoint, which is not enabled for this key —
+   so every gym found by search but not yet in the DB came back "not_found" and
+   chatbot customers saw "Couldn't set up that gym". Try New first, legacy as a
+   fallback. */
+async function fetchPlaceForEnsure(placeId) {
+  try {
+    const fieldMask = 'id,displayName,formattedAddress,nationalPhoneNumber,location,rating,userRatingCount,types,websiteUri,addressComponents';
+    const r = await fetch(`${PLACES_NEW_BASE}/${encodeURIComponent(placeId)}`, {
+      headers: { 'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY, 'X-Goog-FieldMask': fieldMask },
+    });
+    if (r.ok) {
+      const n = await r.json();
+      if (n && (n.displayName || n.formattedAddress)) {
+        return {
+          name: n.displayName?.text || '',
+          formatted_address: n.formattedAddress || '',
+          formatted_phone_number: n.nationalPhoneNumber || '',
+          geometry: { location: { lat: n.location?.latitude, lng: n.location?.longitude } },
+          rating: n.rating || 0,
+          user_ratings_total: n.userRatingCount || 0,
+          types: n.types || [],
+          website: n.websiteUri || '',
+          address_components: (n.addressComponents || []).map(c => ({
+            long_name: c.longText, short_name: c.shortText, types: c.types || [],
+          })),
+        };
+      }
+    } else {
+      console.warn('[ensure-gym] Places New details', r.status);
+    }
+  } catch (e) {
+    console.warn('[ensure-gym] Places New details failed:', e.message);
+  }
+  try {
+    const fields = 'name,formatted_address,formatted_phone_number,geometry,rating,user_ratings_total,types,website,price_level,address_components';
+    const r = await fetch(`${BASE_URL}/details/json?place_id=${encodeURIComponent(placeId)}&fields=${fields}&key=${GOOGLE_MAPS_API_KEY}`);
+    const d = await r.json();
+    if (d.status === 'OK' && d.result) return d.result;
+    console.warn('[ensure-gym] legacy details status', d.status);
+  } catch (e) {
+    console.warn('[ensure-gym] legacy details failed:', e.message);
+  }
+  return null;
+}
+
 router.post('/ensure-gym', optionalAuth, async (req, res) => {
   try {
     const { placeId } = req.body;
@@ -1121,16 +1168,10 @@ router.post('/ensure-gym', optionalAuth, async (req, res) => {
       return res.json({ gymId: existing.rows[0].id, name: existing.rows[0].name, created: false });
     }
 
-    const fields = 'name,formatted_address,formatted_phone_number,geometry,rating,user_ratings_total,types,website,price_level,address_components';
-    const url = `${BASE_URL}/details/json?place_id=${placeId}&fields=${fields}&key=${GOOGLE_MAPS_API_KEY}`;
-    const response = await fetch(url);
-    const data = await response.json();
-
-    if (data.status !== 'OK' || !data.result) {
+    const p = await fetchPlaceForEnsure(placeId);
+    if (!p) {
       return res.status(404).json({ error: 'not_found', message: 'We could not find that gym.' });
     }
-
-    const p = data.result;
     const geo = p.geometry?.location || {};
     const city = extractCity(p.formatted_address);
 
