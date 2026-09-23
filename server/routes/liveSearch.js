@@ -906,14 +906,10 @@ router.get('/check-availability', async (req, res) => {
     let placeData = getCached(cacheKey);
 
     if (!placeData) {
-      const fields = 'name,formatted_address,formatted_phone_number,geometry,rating,user_ratings_total,opening_hours,types,website,url,price_level,business_status';
-      const url = `${BASE_URL}/details/json?place_id=${placeId}&fields=${fields}&key=${GOOGLE_MAPS_API_KEY}`;
-      const response = await fetch(url);
-      const data = await response.json();
-      if (data.status !== 'OK' || !data.result) {
+      placeData = await fetchPlaceForEnsure(placeId);
+      if (!placeData) {
         return res.status(404).json({ error: 'Gym not found', available: false });
       }
-      placeData = data.result;
     }
 
     const p = placeData.gym ? placeData : { gym: placeData };
@@ -982,17 +978,10 @@ router.get('/place/:placeId', optionalAuth, async (req, res) => {
     const cached = getCached(cacheKey);
     if (cached) return res.json(cached);
 
-    const fields = 'name,formatted_address,formatted_phone_number,geometry,rating,user_ratings_total,reviews,photos,opening_hours,types,website,url,price_level,business_status';
-    const url = `${BASE_URL}/details/json?place_id=${placeId}&fields=${fields}&key=${GOOGLE_MAPS_API_KEY}`;
-
-    const response = await fetch(url);
-    const data = await response.json();
-
-    if (data.status !== 'OK' || !data.result) {
+    const p = await fetchPlaceForEnsure(placeId);
+    if (!p) {
       return res.status(404).json({ error: 'Place not found' });
     }
-
-    const p = data.result;
     const geo = p.geometry?.location || {};
 
     let dbGym = null;
@@ -1119,7 +1108,7 @@ router.get('/place/:placeId', optionalAuth, async (req, res) => {
    fallback. */
 async function fetchPlaceForEnsure(placeId) {
   try {
-    const fieldMask = 'id,displayName,formattedAddress,nationalPhoneNumber,location,rating,userRatingCount,types,websiteUri,addressComponents';
+    const fieldMask = 'id,displayName,formattedAddress,nationalPhoneNumber,location,rating,userRatingCount,types,websiteUri,addressComponents,regularOpeningHours,currentOpeningHours,businessStatus,photos,reviews,googleMapsUri';
     const r = await fetch(`${PLACES_NEW_BASE}/${encodeURIComponent(placeId)}`, {
       headers: { 'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY, 'X-Goog-FieldMask': fieldMask },
     });
@@ -1138,6 +1127,21 @@ async function fetchPlaceForEnsure(placeId) {
           address_components: (n.addressComponents || []).map(c => ({
             long_name: c.longText, short_name: c.shortText, types: c.types || [],
           })),
+          opening_hours: {
+            open_now: n.currentOpeningHours?.openNow || false,
+            weekday_text: n.regularOpeningHours?.weekdayDescriptions || [],
+            periods: n.regularOpeningHours?.periods || [],
+          },
+          business_status: n.businessStatus || 'OPERATIONAL',
+          photos: (n.photos || []).map(ph => ({ photo_reference: ph.name })),
+          reviews: (n.reviews || []).map(r => ({
+            author_name: r.authorAttribution?.displayName || '',
+            rating: r.rating || 0,
+            text: r.text?.text || r.originalText?.text || '',
+            relative_time_description: r.relativePublishTimeDescription || '',
+            time: r.publishTime ? Math.floor(new Date(r.publishTime).getTime() / 1000) : 0,
+          })),
+          url: n.googleMapsUri || '',
         };
       }
     } else {
@@ -1147,7 +1151,7 @@ async function fetchPlaceForEnsure(placeId) {
     console.warn('[ensure-gym] Places New details failed:', e.message);
   }
   try {
-    const fields = 'name,formatted_address,formatted_phone_number,geometry,rating,user_ratings_total,types,website,price_level,address_components';
+    const fields = 'name,formatted_address,formatted_phone_number,geometry,rating,user_ratings_total,types,website,price_level,address_components,opening_hours,business_status,photos,reviews,url';
     const r = await fetch(`${BASE_URL}/details/json?place_id=${encodeURIComponent(placeId)}&fields=${fields}&key=${GOOGLE_MAPS_API_KEY}`);
     const d = await r.json();
     if (d.status === 'OK' && d.result) return d.result;
