@@ -394,7 +394,18 @@ router.post('/guest-create', async (req, res) => {
  */
 router.post('/cancel', async (req, res) => {
   try {
-    const { bookingId, email } = req.body;
+    let { bookingId, email } = req.body;
+    /* Chatbots (Slack, Teams, web...) only know what the customer typed:
+     * "Cancel CODE email". Code + email is the same proof the code branch
+     * below already accepts, so resolve the id from them. */
+    if (!bookingId && email && req.body.bookingCode) {
+      const found = await pool.query(
+        `SELECT id FROM public.bookings WHERE LOWER(user_email) = LOWER($1) AND UPPER(booking_code) = UPPER($2) LIMIT 1`,
+        [email, String(req.body.bookingCode).trim()]
+      );
+      if (found.rows.length === 0) return res.status(404).json({ error: 'Booking not found. Check the code and email.' });
+      bookingId = found.rows[0].id;
+    }
     if (!bookingId) return res.status(400).json({ error: 'bookingId is required' });
 
     // S5-C08 FIX: Require authenticated session for cancel.
