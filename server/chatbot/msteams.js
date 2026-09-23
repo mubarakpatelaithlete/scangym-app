@@ -33,6 +33,8 @@ const TEAMS_APP_PASSWORD = process.env.TEAMS_APP_PASSWORD;
 const TEAMS_APP_TENANT_ID = process.env.TEAMS_APP_TENANT_ID;
 const TEAMS_BOT_TYPE = process.env.TEAMS_BOT_TYPE || 'MultiTenant';
 const BASE_URL = process.env.BASE_URL || 'https://scangym.com';
+// Absolute host for images/links fetched by Microsoft (scangym.com 301s to www).
+const PUBLIC_URL = BASE_URL.replace('://scangym.com', '://www.scangym.com').replace(/\/+$/, '');
 
 let _accessToken = null;
 let _tokenExpiry = 0;
@@ -334,13 +336,17 @@ function buildGymCard(gyms, offset) {
     };
 
     // Photo column (if photo URL available)
-    if (g.photoUrl || g.photo) {
+    // Teams rejects the WHOLE card ("Invalid image URI") if an image URL is
+    // relative — live search returns photo as "/api/photo?ref=…".
+    const rawPhoto = g.photoUrl || g.photo;
+    const photoUrl = rawPhoto && rawPhoto.startsWith('/') ? `${PUBLIC_URL}${rawPhoto}` : rawPhoto;
+    if (photoUrl && /^https:\/\//.test(photoUrl)) {
       gymCard.columns.push({
         type: 'Column',
         width: '60px',
         items: [{
           type: 'Image',
-          url: g.photoUrl || g.photo,
+          url: photoUrl,
           size: 'Small',
           style: 'Default',
           altText: gymName,
@@ -623,7 +629,7 @@ async function sendAdaptiveCard(serviceUrl, conversationId, replyToId, card, fal
     : `${serviceUrl.replace(/\/+$/, '')}/v3/conversations/${conversationId}/activities`;
 
   try {
-    await fetch(url, {
+    const resp = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -638,6 +644,11 @@ async function sendAdaptiveCard(serviceUrl, conversationId, replyToId, card, fal
         }],
       }),
     });
+    if (!resp.ok) {
+      // A rejected card used to fail silently — the customer saw nothing.
+      console.error(`[Teams] Card rejected ${resp.status}:`, (await resp.text()).slice(0, 300));
+      if (fallbackText) await sendTeamsMessage(serviceUrl, conversationId, replyToId, fallbackText);
+    }
   } catch (err) {
     console.error('[Teams] Card send error:', err.message);
     if (fallbackText) await sendTeamsMessage(serviceUrl, conversationId, replyToId, fallbackText);
