@@ -32,6 +32,7 @@ const SCANGYM_API = (process.env.SCANGYM_API_URL || 'https://scangym.com').repla
 // The MCP spec uses JSON-RPC messages over stdin/stdout.
 // We implement the minimum: initialize, tools/list, tools/call.
 
+const { checkoutLink, prettyDate } = require('../lib/checkout-link');
 const readline = require('readline');
 
 const rl = readline.createInterface({ input: process.stdin, terminal: false });
@@ -459,11 +460,11 @@ async function bookGymSession(args) {
     bookingId: b.id,
     bookingCode: b.bookingCode,
     gymName: b.gymName || gymName,
-    date: b.date,
+    date: prettyDate(b.date),
     time: b.time,
     price: `£${b.price}`,
     status: b.status,
-    paymentLink: `${SCANGYM_API}/booking/${b.id}/pay`,
+    paymentLink: checkoutLink(b.id, b.bookingCode, SCANGYM_API),
     message: `Booking created! The user needs to complete payment at the link above. After paying, they'll receive a QR code for gym entry. Free cancellation up to 2 hours before the session.`,
   };
 }

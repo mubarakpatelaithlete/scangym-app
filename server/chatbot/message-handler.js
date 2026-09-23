@@ -18,6 +18,8 @@
  *   - Improved booking confirmation with deep links
  */
 
+const { checkoutLink, prettyDate } = require('../lib/checkout-link');
+
 const SCANGYM_API = (
   process.env.SCANGYM_API_URL ||
   (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : null) ||
@@ -531,25 +533,28 @@ function formatGymList(gyms, platform, offset = 0, query = '') {
 function formatBookingConfirmation(booking, gymName, passType) {
   const pass = passType || booking.passType || 'Day Pass';
   const bookingId = booking.id || booking.bookingId || '';
-  const qrLink = bookingId ? `https://scangym.com/booking/${bookingId}/qr` : 'https://scangym.com/bookings';
-  const payLink = bookingId ? `https://scangym.com/booking/${bookingId}/pay` : '';
   const price = booking.currencySymbol ? `${booking.currencySymbol}${booking.price}` : `£${booking.price}`;
-  return `━━━━━━━━━━━━━━━━\n` +
-    `✅ *Booking Confirmed!*\n` +
-    `━━━━━━━━━━━━━━━━\n\n` +
+  const details =
     `🏋️ *${gymName}*\n` +
-    `📅 ${booking.date}\n` +
+    `📅 ${prettyDate(booking.date)}\n` +
     `⏰ ${booking.time || 'Anytime during opening hours'}\n` +
     `🎫 ${pass}\n` +
     `💰 ${price}\n` +
-    `🔖 Code: *${booking.bookingCode}*\n\n` +
-    (payLink ? `💳 *Complete payment:* ${payLink}\n\n` : '') +
-    `📲 *Your QR code is ready!*\n` +
-    `🔗 View QR: ${qrLink}\n` +
-    `Scan at the gym entrance — no reception needed! 🔑\n\n` +
+    `🔖 Code: *${booking.bookingCode}*\n\n`;
+  const footer =
     `⏳ Free cancel: up to 2 hours before.\n` +
-    `To cancel: "Cancel ${booking.bookingCode}"\n\n` +
-    `Have an amazing workout! 💪🔥`;
+    `To cancel: "Cancel ${booking.bookingCode}"`;
+  // Only a paid booking is confirmed. Unpaid ones used to say "Booking
+  // Confirmed! QR ready" with a dead pay link, so customers thought they had
+  // booked when nothing had been paid.
+  if (booking.isPaid || booking.paymentStatus === 'paid') {
+    return `━━━━━━━━━━━━━━━━\n✅ *Booking Confirmed!*\n━━━━━━━━━━━━━━━━\n\n` + details +
+      `📲 Your QR gym pass: https://www.scangym.com/bookings\n` +
+      `Scan at the gym entrance — no reception needed! 🔑\n\n` + footer;
+  }
+  return `━━━━━━━━━━━━━━━━\n🕐 *Almost done — pay to confirm*\n━━━━━━━━━━━━━━━━\n\n` + details +
+    `💳 *Pay here to confirm:* ${checkoutLink(bookingId, booking.bookingCode)}\n\n` +
+    `📲 Your QR gym pass appears straight after payment.\n` + footer;
 }
 
 // ─── Session Store ───────────────────────────────────────────
