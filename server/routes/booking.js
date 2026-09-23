@@ -253,8 +253,20 @@ router.post('/guest-create', async (req, res) => {
 
     // C2 fix: Resolve 'anytime' / empty time to a sensible default
     if (!time || time === 'anytime') {
-      const nextH = Math.min(new Date().getHours() + 1, 22);
-      time = String(nextH).padStart(2, '0') + ':00';
+      /* UK-local clock (server is UTC). A "today" booking made after the last
+       * slot used to get a 22:00 slot that had already passed; roll it to
+       * tomorrow morning instead. */
+      const ukNow = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', hour: '2-digit', hourCycle: 'h23' }).format(new Date());
+      const ukToday = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London' }).format(new Date());
+      const nextH = parseInt(ukNow, 10) + 1;
+      if (date <= ukToday && nextH > 22) {
+        date = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London' }).format(new Date(Date.now() + 86400000));
+        time = '09:00';
+      } else if (date > ukToday) {
+        time = '09:00';
+      } else {
+        time = String(Math.max(nextH, 6)).padStart(2, '0') + ':00';
+      }
     }
 
     // Validate email

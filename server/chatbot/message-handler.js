@@ -279,6 +279,11 @@ function detectIntent(text, session) {
   // ── Show more gyms ──
   if (/\b(show more|more gyms|next|next page|more results|see more|load more)\b/.test(lower)) return INTENTS.SHOW_MORE;
   
+  /* ── Cancel ── checked before the pending-booking follow-up: "Cancel CODE
+   * me@mail.com" contains an email, and used to be swallowed as the email
+   * reply to an unrelated half-finished booking. */
+  if (/\bcancel\b/.test(lower)) return INTENTS.CANCEL;
+
   // ── Context-aware follow-up ──
   if (session && session.pendingBooking) {
     if (!session.pendingBooking.passType && /\b(day|3.?day|week|month|single|one.?day)\b/.test(lower)) return INTENTS.FOLLOW_UP;
@@ -286,9 +291,6 @@ function detectIntent(text, session) {
     if (!session.pendingBooking.email && /@/.test(lower)) return INTENTS.FOLLOW_UP;
     if (lower.length < 30 && !session.pendingBooking.date) return INTENTS.FOLLOW_UP;
   }
-  
-  // ── Cancel ──
-  if (/\bcancel\b/.test(lower)) return INTENTS.CANCEL;
   
   /* ── Plain agreement ──
    * "yes confirm" used to fall through to the city guesser, so the bot
@@ -337,6 +339,13 @@ function detectIntent(text, session) {
 
 // ─── Entity Extraction ──────────────────────────────────────
 
+/* Customers are mostly UK-based and the server runs on UTC: after 23:00 UTC
+ * (midnight BST) "today" was yesterday's date. Dates are UK-local. */
+function ukDate(offsetDays = 0) {
+  const d = new Date(Date.now() + offsetDays * 86400000);
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London' }).format(d);
+}
+
 function extractEntities(text) {
   const entities = {};
   const lower = text.toLowerCase();
@@ -353,10 +362,9 @@ function extractEntities(text) {
   
   // Date
   if (/\btomorrow\b/.test(lower)) {
-    const d = new Date(); d.setDate(d.getDate() + 1);
-    entities.date = d.toISOString().split('T')[0];
+    entities.date = ukDate(1);
   } else if (/\btoday\b/.test(lower)) {
-    entities.date = new Date().toISOString().split('T')[0];
+    entities.date = ukDate(0);
   } else if (/\bnext\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/.test(lower)) {
     const dayNames = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
     const match = lower.match(/\bnext\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/);
@@ -402,10 +410,13 @@ function extractEntities(text) {
   else if (/\blunch\b/.test(lower)) entities.time = '12:00';
   
   // Location
-  const locMatch = lower.match(/(?:in|near|at|around)\s+(.+?)(?:\s+(?:for|on|at|tomorrow|today|\d)|\s*$)/);
+  /* Word boundaries: "at 10am" used to become the location "10am", which
+   * searched the wrong country and overwrote the customer's gym list. */
+  const locMatch = lower.match(/\b(?:in|near|at|around)\s+(.+?)(?:\s+(?:for|on|at|tomorrow|today|\d)|\s*$)/);
   if (locMatch) {
     const loc = locMatch[1].replace(/\b(gym|gyms|fitness|a|the|some)\b/g, '').trim();
-    if (loc.length > 1) entities.location = loc;
+    const looksLikeTime = /^\d{1,2}([:.]\d{2})?\s*(am|pm)?$|^(noon|midnight|morning|evening|night|lunch)$/.test(loc);
+    if (loc.length > 1 && !looksLikeTime) entities.location = loc;
   }
   
   // Booking ID & code
@@ -710,9 +721,8 @@ async function handleFollowUp(session, text, entities, meta) {
     if (entities.date) { pending.date = entities.date; if (entities.time) pending.time = entities.time; }
     else {
       const lower = text.toLowerCase().trim();
-      if (lower === 'today') pending.date = new Date().toISOString().split('T')[0];
-      else if (lower === 'tomorrow') { const d = new Date(); d.setDate(d.getDate() + 1); pending.date = d.toISOString().split('T')[0]; }
-      else pending.date = new Date().toISOString().split('T')[0];
+      if (lower === 'tomorrow') pending.date = ukDate(1);
+      else pending.date = ukDate(0);
     }
     if (!pending.email && !entities.email) {
       session.pendingBooking = pending;
@@ -822,6 +832,14 @@ async function handleBook(session, text, entities, meta) {
     else return { text: `I found ${session.lastResults.length} gyms. Try "Book gym 1" to "Book gym ${session.lastResults.length}".` };
   }
   
+  /* "Book Anytime Fitness Hereford tomorrow" names a gym from the list the
+     customer is looking at; match it there before searching anywhere else. */
+  if (!targetGym && session.lastResults.length > 0) {
+    const norm = (x) => (x || '').toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+    const said = norm(text);
+    targetGym = session.lastResults.find((g) => g.name && norm(g.name).length > 3 && said.includes(norm(g.name))) || null;
+  }
+
   if (!targetGym && entities.location) {
     const params = new URLSearchParams({ q: `gym in ${entities.location}` });
     const data = await callApi(`/api/live/search?${params}`);
