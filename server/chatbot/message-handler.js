@@ -595,8 +595,17 @@ async function handleMessage(userId, text, meta = {}) {
   const session = getSession(userId);
   session.messageCount++;
   
+  /* After "Book a gym in Hereford tomorrow" we show a numbered list; a bare
+     "2" then books gym 2 for the date already given (WhatsApp test 2026-09-24). */
+  if (session.pendingPick && /^\s*#?\d{1,2}\s*$/.test(text)) {
+    text = `book gym ${text.replace(/\D/g, '')}`;
+  }
   const intent = detectIntent(text, session);
   const entities = extractEntities(text);
+  if (session.pendingPick && intent === INTENTS.BOOK && !entities.date) {
+    entities.date = session.pendingPick.date;
+    if (!entities.time && session.pendingPick.time) entities.time = session.pendingPick.time;
+  }
   
   // ── Linked-account fallback (fix: one-tap booking for linked users) ──
   // Linked users (Telegram/WhatsApp) already have an email on file.
@@ -862,10 +871,19 @@ async function handleBook(session, text, entities, meta) {
     }
   }
 
+  /* Only a town was given: let the customer choose instead of silently
+     booking the first search hit (WhatsApp test 2026-09-24). */
   if (!targetGym && entities.location) {
     const params = new URLSearchParams({ q: `gym in ${entities.location}` });
     const data = await callApi(`/api/live/search?${params}`);
-    if (data.gyms?.length > 0) { targetGym = data.gyms[0]; session.lastResults = data.gyms; }
+    if (data.gyms?.length === 1) { targetGym = data.gyms[0]; session.lastResults = data.gyms; }
+    else if (data.gyms?.length > 1) {
+      session.lastResults = data.gyms; session.lastResultsOffset = 0; session.lastQuery = entities.location;
+      session.pendingPick = entities.date ? { date: entities.date, time: entities.time } : null;
+      let list = formatGymList(data.gyms, meta.platform, 0, entities.location);
+      if (entities.date) list = list.replace(/💡 To book: "Book gym 1 for tomorrow"/, '💡 To book: reply with the gym number, e.g. "1"');
+      return { text: list, data: { gyms: data.gyms } };
+    }
   }
   
   if (!targetGym && session.pendingBooking?.gym) targetGym = session.pendingBooking.gym;
@@ -903,9 +921,15 @@ async function completeBooking(session, targetGym, entities, meta, passType) {
     }),
   });
   
-  if (!bookingResult.success) return { text: `😕 Booking failed: ${bookingResult.error || 'Unknown error'}\n\nPlease try again or visit scangym.com.` };
+  if (!bookingResult.success) {
+    if (bookingResult.error === 'Duplicate booking') {
+      session.pendingBooking = null; session.pendingPick = null;
+      return { text: `ℹ️ You already have a booking at *${targetGym.name}* on ${entities.date}${entities.time && entities.time !== 'anytime' ? ' at ' + entities.time : ''} with ${entities.email}.\n\nYour code and payment link are in your email.\n\nWant a different day or gym? Try: "Book gym 2 for Saturday"` };
+    }
+    return { text: `😕 Booking failed: ${bookingResult.error || 'Unknown error'}\n\nPlease try again or visit scangym.com.` };
+  }
   
-  session.pendingBooking = null;
+  session.pendingBooking = null; session.pendingPick = null;
   return { text: formatBookingConfirmation(bookingResult.booking, targetGym.name, passType), data: { booking: bookingResult.booking } };
 }
 

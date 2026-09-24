@@ -139,6 +139,10 @@ router.post('/webhook', express.urlencoded({ extended: true }), async (req, res)
     try { const { logComms } = require('../routes/comms-log'); await logComms({ channel: platform, direction: 'inbound', from: userPhone, to: TWILIO_PHONE || '', subject: '', body: bodyTrimmed, status: 'received' }); } catch(e) {}
 
     // ─── Welcome message on first interaction (NEW in v3.0) ──
+    // Only greet people who said hello; a real request ("Book gym in Hereford
+    // tomorrow") gets answered straight away without a welcome wall first.
+    const isGreeting = ['hi', 'hello', 'hey', 'hola', 'bonjour', 'start', 'yo', 'sup', 'hii', 'hiii'].includes(bodyTrimmed.toLowerCase());
+    if (!knownUsers.has(userId) && !isGreeting) knownUsers.add(userId);
     if (!knownUsers.has(userId)) {
       knownUsers.add(userId);
       const welcomeMsg = `👋 Hey! Welcome to *ScanGym* — the Uber for Gyms 🏋️\n\nI can find and book gym day passes anywhere in the world!\n\n🔍 *Find gyms* — send a city name\n💰 *Pricing* — type "pricing"\n📅 *Book* — "Book gym 1 for tomorrow"\n❌ *Cancel* — "Cancel 5WCB-8VDY"\n💳 *Earn money* — type "creator"\n\n📍 Or share your location to find gyms near you!\n\nWhat city would you like to find gyms in?`;
